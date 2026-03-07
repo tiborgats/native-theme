@@ -35,9 +35,9 @@ Decimal phases appear between their surrounding integers in numeric order.
   5. All public structs are non_exhaustive, Send + Sync, Default, Clone, Debug; Error enum has correct variants and implements Display + std::error::Error
 **Plans:** 3 plans
 Plans:
-- [ ] 01-01-PLAN.md -- Project scaffold, Rgba color type, Error enum, merge macro
-- [ ] 01-02-PLAN.md -- All theme model structs (ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing, ThemeVariant, NativeTheme)
-- [ ] 01-03-PLAN.md -- Integration tests (TOML round-trip, merge behavior, trait assertions)
+- [x] 01-01-PLAN.md -- Project scaffold, Rgba color type, Error enum, merge macro
+- [x] 01-02-PLAN.md -- All theme model structs (ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing, ThemeVariant, NativeTheme)
+- [x] 01-03-PLAN.md -- Integration tests (TOML round-trip, merge behavior, trait assertions)
 
 ### Phase 2: Core Presets
 **Goal**: Users can load bundled theme presets and work with TOML theme files without any platform features
@@ -47,7 +47,10 @@ Plans:
   1. preset("default"), preset("kde-breeze"), and preset("adwaita") each return a valid NativeTheme with both light and dark variants populated
   2. list_presets() returns all available preset names; from_toml() parses a TOML string into NativeTheme; from_file() loads from a path; to_toml() produces valid TOML
   3. All bundled presets parse without error and contain reasonable values (non-empty color sets, valid font sizes)
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 02-01-PLAN.md -- TOML preset files (default, kde-breeze, adwaita) + presets.rs API module + lib.rs wiring
+- [ ] 02-02-PLAN.md -- Integration tests for preset loading (parse, variants, colors, fonts, round-trip)
 
 ### Phase 3: KDE Reader
 **Goal**: Apps on KDE Linux desktops can read the user's live theme colors and fonts
@@ -117,7 +120,7 @@ Phases execute in numeric order. Phase 3, 4, 5 can potentially execute in parall
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Model Foundation | 3/3 | ✓ Complete | 2026-03-07 |
-| 2. Core Presets | 0/? | Not started | - |
+| 2. Core Presets | 0/2 | Planning | - |
 | 3. KDE Reader | 0/? | Not started | - |
 | 4. GNOME Portal Reader | 0/? | Not started | - |
 | 5. Windows Reader | 0/? | Not started | - |
