@@ -1,0 +1,151 @@
+# Dracula - dark theme with vibrant accent colors
+# Source: https://draculatheme.com/spec
+name = "Dracula"
+
+# === Light variant (Alucard - official light) ===
+
+[light.colors.core]
+accent = "#644ac9"
+background = "#fffbeb"
+foreground = "#1f1f1f"
+surface = "#cfcfde"
+border = "#b8b8c8"
+muted = "#6c664b"
+shadow = "#00000018"
+
+[light.colors.primary]
+background = "#644ac9"
+foreground = "#ffffff"
+
+[light.colors.secondary]
+background = "#cfcfde"
+foreground = "#1f1f1f"
+
+[light.colors.status]
+danger = "#cb3a2a"
+danger_foreground = "#ffffff"
+warning = "#846e15"
+warning_foreground = "#1f1f1f"
+success = "#14710a"
+success_foreground = "#ffffff"
+info = "#036a96"
+info_foreground = "#ffffff"
+
+[light.colors.interactive]
+selection = "#644ac9"
+selection_foreground = "#ffffff"
+link = "#036a96"
+focus_ring = "#644ac9"
+
+[light.colors.panel]
+sidebar = "#cfcfde"
+sidebar_foreground = "#1f1f1f"
+tooltip = "#1f1f1f"
+tooltip_foreground = "#fffbeb"
+popover = "#cfcfde"
+popover_foreground = "#1f1f1f"
+
+[light.colors.component]
+button = "#cfcfde"
+button_foreground = "#1f1f1f"
+input = "#fffbeb"
+input_foreground = "#1f1f1f"
+disabled = "#b8b8c8"
+separator = "#b8b8c8"
+alternate_row = "#f5f0e0"
+
+[light.fonts]
+family = "sans-serif"
+size = 10.0
+mono_family = "monospace"
+mono_size = 10.0
+
+[light.geometry]
+radius = 8.0
+frame_width = 1.0
+disabled_opacity = 0.5
+border_opacity = 0.15
+scroll_width = 8.0
+
+[light.spacing]
+xxs = 2.0
+xs = 4.0
+s = 6.0
+m = 12.0
+l = 18.0
+xl = 24.0
+xxl = 36.0
+
+# === Dark variant (Classic Dracula) ===
+
+[dark.colors.core]
+accent = "#bd93f9"
+background = "#282a36"
+foreground = "#f8f8f2"
+surface = "#44475a"
+border = "#6272a4"
+muted = "#6272a4"
+shadow = "#00000040"
+
+[dark.colors.primary]
+background = "#bd93f9"
+foreground = "#282a36"
+
+[dark.colors.secondary]
+background = "#44475a"
+foreground = "#f8f8f2"
+
+[dark.colors.status]
+danger = "#ff5555"
+danger_foreground = "#282a36"
+warning = "#f1fa8c"
+warning_foreground = "#282a36"
+success = "#50fa7b"
+success_foreground = "#282a36"
+info = "#8be9fd"
+info_foreground = "#282a36"
+
+[dark.colors.interactive]
+selection = "#bd93f9"
+selection_foreground = "#282a36"
+link = "#8be9fd"
+focus_ring = "#bd93f9"
+
+[dark.colors.panel]
+sidebar = "#44475a"
+sidebar_foreground = "#f8f8f2"
+tooltip = "#44475a"
+tooltip_foreground = "#f8f8f2"
+popover = "#44475a"
+popover_foreground = "#f8f8f2"
+
+[dark.colors.component]
+button = "#44475a"
+button_foreground = "#f8f8f2"
+input = "#282a36"
+input_foreground = "#f8f8f2"
+disabled = "#6272a4"
+separator = "#6272a4"
+alternate_row = "#343746"
+
+[dark.fonts]
+family = "sans-serif"
+size = 10.0
+mono_family = "monospace"
+mono_size = 10.0
+
+[dark.geometry]
+radius = 8.0
+frame_width = 1.0
+disabled_opacity = 0.5
+border_opacity = 0.15
+scroll_width = 8.0
+
+[dark.spacing]
+xxs = 2.0
+xs = 4.0
+s = 6.0
+m = 12.0
+l = 18.0
+xl = 24.0
+xxl = 36.0

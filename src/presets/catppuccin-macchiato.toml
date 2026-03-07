@@ -1,0 +1,151 @@
+# Catppuccin Macchiato - medium-dark flavor of the Catppuccin palette
+# Source: https://catppuccin.com/palette/
+name = "Catppuccin Macchiato"
+
+# === Light variant (derived - Latte base with Macchiato accents) ===
+
+[light.colors.core]
+accent = "#8aadf4"
+background = "#eff1f5"
+foreground = "#4c4f69"
+surface = "#e6e9ef"
+border = "#bcc0cc"
+muted = "#6c6f85"
+shadow = "#00000018"
+
+[light.colors.primary]
+background = "#8aadf4"
+foreground = "#ffffff"
+
+[light.colors.secondary]
+background = "#ccd0da"
+foreground = "#4c4f69"
+
+[light.colors.status]
+danger = "#ed8796"
+danger_foreground = "#4c4f69"
+warning = "#eed49f"
+warning_foreground = "#4c4f69"
+success = "#a6da95"
+success_foreground = "#4c4f69"
+info = "#91d7e3"
+info_foreground = "#4c4f69"
+
+[light.colors.interactive]
+selection = "#8aadf4"
+selection_foreground = "#ffffff"
+link = "#8aadf4"
+focus_ring = "#8aadf4"
+
+[light.colors.panel]
+sidebar = "#e6e9ef"
+sidebar_foreground = "#4c4f69"
+tooltip = "#4c4f69"
+tooltip_foreground = "#eff1f5"
+popover = "#e6e9ef"
+popover_foreground = "#4c4f69"
+
+[light.colors.component]
+button = "#e6e9ef"
+button_foreground = "#4c4f69"
+input = "#eff1f5"
+input_foreground = "#4c4f69"
+disabled = "#bcc0cc"
+separator = "#bcc0cc"
+alternate_row = "#e6e9ef"
+
+[light.fonts]
+family = "sans-serif"
+size = 10.0
+mono_family = "monospace"
+mono_size = 10.0
+
+[light.geometry]
+radius = 8.0
+frame_width = 1.0
+disabled_opacity = 0.5
+border_opacity = 0.15
+scroll_width = 8.0
+
+[light.spacing]
+xxs = 2.0
+xs = 4.0
+s = 6.0
+m = 12.0
+l = 18.0
+xl = 24.0
+xxl = 36.0
+
+# === Dark variant (Macchiato palette - primary) ===
+
+[dark.colors.core]
+accent = "#8aadf4"
+background = "#24273a"
+foreground = "#cad3f5"
+surface = "#1e2030"
+border = "#494d64"
+muted = "#a5adcb"
+shadow = "#00000040"
+
+[dark.colors.primary]
+background = "#8aadf4"
+foreground = "#24273a"
+
+[dark.colors.secondary]
+background = "#363a4f"
+foreground = "#cad3f5"
+
+[dark.colors.status]
+danger = "#ed8796"
+danger_foreground = "#24273a"
+warning = "#eed49f"
+warning_foreground = "#24273a"
+success = "#a6da95"
+success_foreground = "#24273a"
+info = "#91d7e3"
+info_foreground = "#24273a"
+
+[dark.colors.interactive]
+selection = "#8aadf4"
+selection_foreground = "#24273a"
+link = "#8aadf4"
+focus_ring = "#8aadf4"
+
+[dark.colors.panel]
+sidebar = "#1e2030"
+sidebar_foreground = "#cad3f5"
+tooltip = "#181926"
+tooltip_foreground = "#cad3f5"
+popover = "#363a4f"
+popover_foreground = "#cad3f5"
+
+[dark.colors.component]
+button = "#363a4f"
+button_foreground = "#cad3f5"
+input = "#1e2030"
+input_foreground = "#cad3f5"
+disabled = "#494d64"
+separator = "#494d64"
+alternate_row = "#1e2030"
+
+[dark.fonts]
+family = "sans-serif"
+size = 10.0
+mono_family = "monospace"
+mono_size = 10.0
+
+[dark.geometry]
+radius = 8.0
+frame_width = 1.0
+disabled_opacity = 0.5
+border_opacity = 0.15
+scroll_width = 8.0
+
+[dark.spacing]
+xxs = 2.0
+xs = 4.0
+s = 6.0
+m = 12.0
+l = 18.0
+xl = 24.0
+xxl = 36.0

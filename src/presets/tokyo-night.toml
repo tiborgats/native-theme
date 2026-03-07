@@ -1,0 +1,151 @@
+# Tokyo Night - clean dark theme inspired by Tokyo city lights
+# Source: https://github.com/folke/tokyonight.nvim
+name = "Tokyo Night"
+
+# === Light variant (Tokyo Night Day) ===
+
+[light.colors.core]
+accent = "#2e7de9"
+background = "#e1e2e7"
+foreground = "#3760bf"
+surface = "#d0d5e3"
+border = "#c4c8da"
+muted = "#848cb5"
+shadow = "#00000018"
+
+[light.colors.primary]
+background = "#2e7de9"
+foreground = "#ffffff"
+
+[light.colors.secondary]
+background = "#d0d5e3"
+foreground = "#3760bf"
+
+[light.colors.status]
+danger = "#c64343"
+danger_foreground = "#ffffff"
+warning = "#8c6c3e"
+warning_foreground = "#e1e2e7"
+success = "#587539"
+success_foreground = "#ffffff"
+info = "#007197"
+info_foreground = "#ffffff"
+
+[light.colors.interactive]
+selection = "#2e7de9"
+selection_foreground = "#ffffff"
+link = "#2e7de9"
+focus_ring = "#2e7de9"
+
+[light.colors.panel]
+sidebar = "#d0d5e3"
+sidebar_foreground = "#3760bf"
+tooltip = "#3760bf"
+tooltip_foreground = "#e1e2e7"
+popover = "#d0d5e3"
+popover_foreground = "#3760bf"
+
+[light.colors.component]
+button = "#d0d5e3"
+button_foreground = "#3760bf"
+input = "#e1e2e7"
+input_foreground = "#3760bf"
+disabled = "#c4c8da"
+separator = "#c4c8da"
+alternate_row = "#d0d5e3"
+
+[light.fonts]
+family = "sans-serif"
+size = 10.0
+mono_family = "monospace"
+mono_size = 10.0
+
+[light.geometry]
+radius = 8.0
+frame_width = 1.0
+disabled_opacity = 0.5
+border_opacity = 0.15
+scroll_width = 8.0
+
+[light.spacing]
+xxs = 2.0
+xs = 4.0
+s = 6.0
+m = 12.0
+l = 18.0
+xl = 24.0
+xxl = 36.0
+
+# === Dark variant (Tokyo Night) ===
+
+[dark.colors.core]
+accent = "#7aa2f7"
+background = "#1a1b26"
+foreground = "#a9b1d6"
+surface = "#16161e"
+border = "#292e42"
+muted = "#565f89"
+shadow = "#00000040"
+
+[dark.colors.primary]
+background = "#7aa2f7"
+foreground = "#1a1b26"
+
+[dark.colors.secondary]
+background = "#292e42"
+foreground = "#a9b1d6"
+
+[dark.colors.status]
+danger = "#f7768e"
+danger_foreground = "#1a1b26"
+warning = "#e0af68"
+warning_foreground = "#1a1b26"
+success = "#9ece6a"
+success_foreground = "#1a1b26"
+info = "#7dcfff"
+info_foreground = "#1a1b26"
+
+[dark.colors.interactive]
+selection = "#7aa2f7"
+selection_foreground = "#1a1b26"
+link = "#7dcfff"
+focus_ring = "#7aa2f7"
+
+[dark.colors.panel]
+sidebar = "#16161e"
+sidebar_foreground = "#a9b1d6"
+tooltip = "#292e42"
+tooltip_foreground = "#a9b1d6"
+popover = "#292e42"
+popover_foreground = "#a9b1d6"
+
+[dark.colors.component]
+button = "#292e42"
+button_foreground = "#a9b1d6"
+input = "#16161e"
+input_foreground = "#a9b1d6"
+disabled = "#292e42"
+separator = "#292e42"
+alternate_row = "#16161e"
+
+[dark.fonts]
+family = "sans-serif"
+size = 10.0
+mono_family = "monospace"
+mono_size = 10.0
+
+[dark.geometry]
+radius = 8.0
+frame_width = 1.0
+disabled_opacity = 0.5
+border_opacity = 0.15
+scroll_width = 8.0
+
+[dark.spacing]
+xxs = 2.0
+xs = 4.0
+s = 6.0
+m = 12.0
+l = 18.0
+xl = 24.0
+xxl = 36.0

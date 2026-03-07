@@ -1,0 +1,151 @@
+# Catppuccin Mocha - darkest flavor of the Catppuccin palette
+# Source: https://catppuccin.com/palette/
+name = "Catppuccin Mocha"
+
+# === Light variant (derived - Latte base with Mocha accents) ===
+
+[light.colors.core]
+accent = "#89b4fa"
+background = "#eff1f5"
+foreground = "#4c4f69"
+surface = "#e6e9ef"
+border = "#bcc0cc"
+muted = "#6c6f85"
+shadow = "#00000018"
+
+[light.colors.primary]
+background = "#89b4fa"
+foreground = "#ffffff"
+
+[light.colors.secondary]
+background = "#ccd0da"
+foreground = "#4c4f69"
+
+[light.colors.status]
+danger = "#f38ba8"
+danger_foreground = "#4c4f69"
+warning = "#f9e2af"
+warning_foreground = "#4c4f69"
+success = "#a6e3a1"
+success_foreground = "#4c4f69"
+info = "#89dceb"
+info_foreground = "#4c4f69"
+
+[light.colors.interactive]
+selection = "#89b4fa"
+selection_foreground = "#ffffff"
+link = "#89b4fa"
+focus_ring = "#89b4fa"
+
+[light.colors.panel]
+sidebar = "#e6e9ef"
+sidebar_foreground = "#4c4f69"
+tooltip = "#4c4f69"
+tooltip_foreground = "#eff1f5"
+popover = "#e6e9ef"
+popover_foreground = "#4c4f69"
+
+[light.colors.component]
+button = "#e6e9ef"
+button_foreground = "#4c4f69"
+input = "#eff1f5"
+input_foreground = "#4c4f69"
+disabled = "#bcc0cc"
+separator = "#bcc0cc"
+alternate_row = "#e6e9ef"
+
+[light.fonts]
+family = "sans-serif"
+size = 10.0
+mono_family = "monospace"
+mono_size = 10.0
+
+[light.geometry]
+radius = 8.0
+frame_width = 1.0
+disabled_opacity = 0.5
+border_opacity = 0.15
+scroll_width = 8.0
+
+[light.spacing]
+xxs = 2.0
+xs = 4.0
+s = 6.0
+m = 12.0
+l = 18.0
+xl = 24.0
+xxl = 36.0
+
+# === Dark variant (Mocha palette - primary) ===
+
+[dark.colors.core]
+accent = "#89b4fa"
+background = "#1e1e2e"
+foreground = "#cdd6f4"
+surface = "#181825"
+border = "#45475a"
+muted = "#a6adc8"
+shadow = "#00000040"
+
+[dark.colors.primary]
+background = "#89b4fa"
+foreground = "#1e1e2e"
+
+[dark.colors.secondary]
+background = "#313244"
+foreground = "#cdd6f4"
+
+[dark.colors.status]
+danger = "#f38ba8"
+danger_foreground = "#1e1e2e"
+warning = "#f9e2af"
+warning_foreground = "#1e1e2e"
+success = "#a6e3a1"
+success_foreground = "#1e1e2e"
+info = "#89dceb"
+info_foreground = "#1e1e2e"
+
+[dark.colors.interactive]
+selection = "#89b4fa"
+selection_foreground = "#1e1e2e"
+link = "#89b4fa"
+focus_ring = "#89b4fa"
+
+[dark.colors.panel]
+sidebar = "#181825"
+sidebar_foreground = "#cdd6f4"
+tooltip = "#11111b"
+tooltip_foreground = "#cdd6f4"
+popover = "#313244"
+popover_foreground = "#cdd6f4"
+
+[dark.colors.component]
+button = "#313244"
+button_foreground = "#cdd6f4"
+input = "#181825"
+input_foreground = "#cdd6f4"
+disabled = "#45475a"
+separator = "#45475a"
+alternate_row = "#181825"
+
+[dark.fonts]
+family = "sans-serif"
+size = 10.0
+mono_family = "monospace"
+mono_size = 10.0
+
+[dark.geometry]
+radius = 8.0
+frame_width = 1.0
+disabled_opacity = 0.5
+border_opacity = 0.15
+scroll_width = 8.0
+
+[dark.spacing]
+xxs = 2.0
+xs = 4.0
+s = 6.0
+m = 12.0
+l = 18.0
+xl = 24.0
+xxl = 36.0

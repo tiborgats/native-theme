@@ -1,0 +1,151 @@
+# Gruvbox - retro groove color scheme
+# Source: https://github.com/morhetz/gruvbox
+name = "Gruvbox"
+
+# === Light variant (Gruvbox Light medium contrast) ===
+
+[light.colors.core]
+accent = "#076678"
+background = "#fbf1c7"
+foreground = "#3c3836"
+surface = "#ebdbb2"
+border = "#d5c4a1"
+muted = "#7c6f64"
+shadow = "#00000018"
+
+[light.colors.primary]
+background = "#076678"
+foreground = "#fbf1c7"
+
+[light.colors.secondary]
+background = "#ebdbb2"
+foreground = "#3c3836"
+
+[light.colors.status]
+danger = "#9d0006"
+danger_foreground = "#fbf1c7"
+warning = "#b57614"
+warning_foreground = "#3c3836"
+success = "#79740e"
+success_foreground = "#fbf1c7"
+info = "#076678"
+info_foreground = "#fbf1c7"
+
+[light.colors.interactive]
+selection = "#076678"
+selection_foreground = "#fbf1c7"
+link = "#076678"
+focus_ring = "#076678"
+
+[light.colors.panel]
+sidebar = "#ebdbb2"
+sidebar_foreground = "#3c3836"
+tooltip = "#3c3836"
+tooltip_foreground = "#fbf1c7"
+popover = "#ebdbb2"
+popover_foreground = "#3c3836"
+
+[light.colors.component]
+button = "#ebdbb2"
+button_foreground = "#3c3836"
+input = "#fbf1c7"
+input_foreground = "#3c3836"
+disabled = "#d5c4a1"
+separator = "#d5c4a1"
+alternate_row = "#ebdbb2"
+
+[light.fonts]
+family = "sans-serif"
+size = 10.0
+mono_family = "monospace"
+mono_size = 10.0
+
+[light.geometry]
+radius = 8.0
+frame_width = 1.0
+disabled_opacity = 0.5
+border_opacity = 0.15
+scroll_width = 8.0
+
+[light.spacing]
+xxs = 2.0
+xs = 4.0
+s = 6.0
+m = 12.0
+l = 18.0
+xl = 24.0
+xxl = 36.0
+
+# === Dark variant (Gruvbox Dark medium contrast) ===
+
+[dark.colors.core]
+accent = "#83a598"
+background = "#282828"
+foreground = "#ebdbb2"
+surface = "#3c3836"
+border = "#504945"
+muted = "#a89984"
+shadow = "#00000040"
+
+[dark.colors.primary]
+background = "#83a598"
+foreground = "#282828"
+
+[dark.colors.secondary]
+background = "#504945"
+foreground = "#ebdbb2"
+
+[dark.colors.status]
+danger = "#fb4934"
+danger_foreground = "#282828"
+warning = "#fabd2f"
+warning_foreground = "#282828"
+success = "#b8bb26"
+success_foreground = "#282828"
+info = "#83a598"
+info_foreground = "#282828"
+
+[dark.colors.interactive]
+selection = "#83a598"
+selection_foreground = "#282828"
+link = "#83a598"
+focus_ring = "#83a598"
+
+[dark.colors.panel]
+sidebar = "#3c3836"
+sidebar_foreground = "#ebdbb2"
+tooltip = "#504945"
+tooltip_foreground = "#ebdbb2"
+popover = "#3c3836"
+popover_foreground = "#ebdbb2"
+
+[dark.colors.component]
+button = "#504945"
+button_foreground = "#ebdbb2"
+input = "#3c3836"
+input_foreground = "#ebdbb2"
+disabled = "#504945"
+separator = "#504945"
+alternate_row = "#3c3836"
+
+[dark.fonts]
+family = "sans-serif"
+size = 10.0
+mono_family = "monospace"
+mono_size = 10.0
+
+[dark.geometry]
+radius = 8.0
+frame_width = 1.0
+disabled_opacity = 0.5
+border_opacity = 0.15
+scroll_width = 8.0
+
+[dark.spacing]
+xxs = 2.0
+xs = 4.0
+s = 6.0
+m = 12.0
+l = 18.0
+xl = 24.0
+xxl = 36.0

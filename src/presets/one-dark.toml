@@ -1,0 +1,151 @@
+# One Dark - Atom editor's iconic dark theme
+# Source: https://github.com/atom/one-dark-syntax
+name = "One Dark"
+
+# === Light variant (One Light) ===
+
+[light.colors.core]
+accent = "#4078f2"
+background = "#fafafa"
+foreground = "#383a42"
+surface = "#f0f0f0"
+border = "#e0e0e0"
+muted = "#a0a1a7"
+shadow = "#00000018"
+
+[light.colors.primary]
+background = "#4078f2"
+foreground = "#ffffff"
+
+[light.colors.secondary]
+background = "#f0f0f0"
+foreground = "#383a42"
+
+[light.colors.status]
+danger = "#e45649"
+danger_foreground = "#ffffff"
+warning = "#c18401"
+warning_foreground = "#383a42"
+success = "#50a14f"
+success_foreground = "#ffffff"
+info = "#0184bc"
+info_foreground = "#ffffff"
+
+[light.colors.interactive]
+selection = "#4078f2"
+selection_foreground = "#ffffff"
+link = "#4078f2"
+focus_ring = "#4078f2"
+
+[light.colors.panel]
+sidebar = "#f0f0f0"
+sidebar_foreground = "#383a42"
+tooltip = "#383a42"
+tooltip_foreground = "#fafafa"
+popover = "#f0f0f0"
+popover_foreground = "#383a42"
+
+[light.colors.component]
+button = "#f0f0f0"
+button_foreground = "#383a42"
+input = "#fafafa"
+input_foreground = "#383a42"
+disabled = "#e0e0e0"
+separator = "#e0e0e0"
+alternate_row = "#f0f0f0"
+
+[light.fonts]
+family = "sans-serif"
+size = 10.0
+mono_family = "monospace"
+mono_size = 10.0
+
+[light.geometry]
+radius = 8.0
+frame_width = 1.0
+disabled_opacity = 0.5
+border_opacity = 0.15
+scroll_width = 8.0
+
+[light.spacing]
+xxs = 2.0
+xs = 4.0
+s = 6.0
+m = 12.0
+l = 18.0
+xl = 24.0
+xxl = 36.0
+
+# === Dark variant (One Dark) ===
+
+[dark.colors.core]
+accent = "#61aeee"
+background = "#282c34"
+foreground = "#abb2bf"
+surface = "#21252b"
+border = "#3e4451"
+muted = "#5c6370"
+shadow = "#00000040"
+
+[dark.colors.primary]
+background = "#61aeee"
+foreground = "#282c34"
+
+[dark.colors.secondary]
+background = "#3e4451"
+foreground = "#abb2bf"
+
+[dark.colors.status]
+danger = "#e06c75"
+danger_foreground = "#282c34"
+warning = "#e6c07b"
+warning_foreground = "#282c34"
+success = "#98c379"
+success_foreground = "#282c34"
+info = "#56b6c2"
+info_foreground = "#282c34"
+
+[dark.colors.interactive]
+selection = "#61aeee"
+selection_foreground = "#282c34"
+link = "#61aeee"
+focus_ring = "#61aeee"
+
+[dark.colors.panel]
+sidebar = "#21252b"
+sidebar_foreground = "#abb2bf"
+tooltip = "#3e4451"
+tooltip_foreground = "#abb2bf"
+popover = "#3e4451"
+popover_foreground = "#abb2bf"
+
+[dark.colors.component]
+button = "#3e4451"
+button_foreground = "#abb2bf"
+input = "#21252b"
+input_foreground = "#abb2bf"
+disabled = "#3e4451"
+separator = "#3e4451"
+alternate_row = "#21252b"
+
+[dark.fonts]
+family = "sans-serif"
+size = 10.0
+mono_family = "monospace"
+mono_size = 10.0
+
+[dark.geometry]
+radius = 8.0
+frame_width = 1.0
+disabled_opacity = 0.5
+border_opacity = 0.15
+scroll_width = 8.0
+
+[dark.spacing]
+xxs = 2.0
+xs = 4.0
+s = 6.0
+m = 12.0
+l = 18.0
+xl = 24.0
+xxl = 36.0

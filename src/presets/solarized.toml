@@ -1,0 +1,151 @@
+# Solarized - precision colors for machines and people
+# Source: https://ethanschoonover.com/solarized/
+name = "Solarized"
+
+# === Light variant (Solarized Light) ===
+
+[light.colors.core]
+accent = "#268bd2"
+background = "#fdf6e3"
+foreground = "#657b83"
+surface = "#eee8d5"
+border = "#eee8d5"
+muted = "#93a1a1"
+shadow = "#00000018"
+
+[light.colors.primary]
+background = "#268bd2"
+foreground = "#fdf6e3"
+
+[light.colors.secondary]
+background = "#eee8d5"
+foreground = "#657b83"
+
+[light.colors.status]
+danger = "#dc322f"
+danger_foreground = "#fdf6e3"
+warning = "#b58900"
+warning_foreground = "#fdf6e3"
+success = "#859900"
+success_foreground = "#fdf6e3"
+info = "#268bd2"
+info_foreground = "#fdf6e3"
+
+[light.colors.interactive]
+selection = "#268bd2"
+selection_foreground = "#fdf6e3"
+link = "#268bd2"
+focus_ring = "#268bd2"
+
+[light.colors.panel]
+sidebar = "#eee8d5"
+sidebar_foreground = "#657b83"
+tooltip = "#002b36"
+tooltip_foreground = "#839496"
+popover = "#eee8d5"
+popover_foreground = "#657b83"
+
+[light.colors.component]
+button = "#eee8d5"
+button_foreground = "#657b83"
+input = "#fdf6e3"
+input_foreground = "#657b83"
+disabled = "#93a1a1"
+separator = "#eee8d5"
+alternate_row = "#eee8d5"
+
+[light.fonts]
+family = "sans-serif"
+size = 10.0
+mono_family = "monospace"
+mono_size = 10.0
+
+[light.geometry]
+radius = 8.0
+frame_width = 1.0
+disabled_opacity = 0.5
+border_opacity = 0.15
+scroll_width = 8.0
+
+[light.spacing]
+xxs = 2.0
+xs = 4.0
+s = 6.0
+m = 12.0
+l = 18.0
+xl = 24.0
+xxl = 36.0
+
+# === Dark variant (Solarized Dark) ===
+
+[dark.colors.core]
+accent = "#268bd2"
+background = "#002b36"
+foreground = "#839496"
+surface = "#073642"
+border = "#073642"
+muted = "#586e75"
+shadow = "#00000040"
+
+[dark.colors.primary]
+background = "#268bd2"
+foreground = "#002b36"
+
+[dark.colors.secondary]
+background = "#073642"
+foreground = "#839496"
+
+[dark.colors.status]
+danger = "#dc322f"
+danger_foreground = "#002b36"
+warning = "#b58900"
+warning_foreground = "#002b36"
+success = "#859900"
+success_foreground = "#002b36"
+info = "#268bd2"
+info_foreground = "#002b36"
+
+[dark.colors.interactive]
+selection = "#268bd2"
+selection_foreground = "#002b36"
+link = "#268bd2"
+focus_ring = "#268bd2"
+
+[dark.colors.panel]
+sidebar = "#073642"
+sidebar_foreground = "#839496"
+tooltip = "#073642"
+tooltip_foreground = "#839496"
+popover = "#073642"
+popover_foreground = "#839496"
+
+[dark.colors.component]
+button = "#073642"
+button_foreground = "#839496"
+input = "#002b36"
+input_foreground = "#839496"
+disabled = "#586e75"
+separator = "#073642"
+alternate_row = "#073642"
+
+[dark.fonts]
+family = "sans-serif"
+size = 10.0
+mono_family = "monospace"
+mono_size = 10.0
+
+[dark.geometry]
+radius = 8.0
+frame_width = 1.0
+disabled_opacity = 0.5
+border_opacity = 0.15
+scroll_width = 8.0
+
+[dark.spacing]
+xxs = 2.0
+xs = 4.0
+s = 6.0
+m = 12.0
+l = 18.0
+xl = 24.0
+xxl = 36.0
