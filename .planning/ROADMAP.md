@@ -86,7 +86,9 @@ Plans:
   1. from_windows() returns a NativeTheme with accent color, foreground/background from UISettings, and geometry values from GetSystemMetrics
   2. from_windows() degrades gracefully on older Windows versions where UISettings APIs are unavailable (returns partial theme or Error::Unavailable)
   3. The "windows" feature only pulls in the minimal windows crate features needed (UI_ViewManagement, Win32_UI_WindowsAndMessaging)
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 05-01-PLAN.md -- Feature flag, module scaffold, build_theme core, from_windows() with UISettings + GetSystemMetrics (TDD)
 
 ### Phase 6: Cross-Platform Dispatch
 **Goal**: Apps can call one function to get the current OS theme regardless of platform
@@ -129,7 +131,7 @@ Phases execute in numeric order. Phase 3, 4, 5 can potentially execute in parall
 | 2. Core Presets | 2/2 | ✓ Complete | 2026-03-07 |
 | 3. KDE Reader | 2/2 | ✓ Complete | 2026-03-07 |
 | 4. GNOME Portal Reader | 2/2 | ✓ Complete | 2026-03-07 |
-| 5. Windows Reader | 0/? | Not started | - |
+| 5. Windows Reader | 0/1 | Not started | - |
 | 6. Cross-Platform Dispatch | 0/? | Not started | - |
 | 7. Extended Presets | 0/? | Not started | - |
 | 8. Documentation | 0/? | Not started | - |
