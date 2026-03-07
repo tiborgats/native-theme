@@ -33,7 +33,11 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. A sparse TOML file with only a few fields deserializes successfully (all missing fields are None), and serialization skips None fields
   4. merge() on any theme struct overlays non-None fields from the overlay onto the base, leaving base values where overlay is None
   5. All public structs are non_exhaustive, Send + Sync, Default, Clone, Debug; Error enum has correct variants and implements Display + std::error::Error
-**Plans**: TBD
+**Plans:** 3 plans
+Plans:
+- [ ] 01-01-PLAN.md -- Project scaffold, Rgba color type, Error enum, merge macro
+- [ ] 01-02-PLAN.md -- All theme model structs (ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing, ThemeVariant, NativeTheme)
+- [ ] 01-03-PLAN.md -- Integration tests (TOML round-trip, merge behavior, trait assertions)
 
 ### Phase 2: Core Presets
 **Goal**: Users can load bundled theme presets and work with TOML theme files without any platform features
@@ -112,7 +116,7 @@ Phases execute in numeric order. Phase 3, 4, 5 can potentially execute in parall
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Model Foundation | 0/? | Not started | - |
+| 1. Data Model Foundation | 0/3 | Planning complete | - |
 | 2. Core Presets | 0/? | Not started | - |
 | 3. KDE Reader | 0/? | Not started | - |
 | 4. GNOME Portal Reader | 0/? | Not started | - |
