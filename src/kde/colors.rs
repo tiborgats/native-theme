@@ -15,8 +15,61 @@ fn get_color(ini: &configparser::ini::Ini, section: &str, key: &str) -> Option<R
 /// Maps all 35 populated color roles (shadow is always None) from the
 /// standard KDE color groups: View, Window, Button, Selection, Tooltip,
 /// and the optional Complementary group.
-pub(crate) fn parse_colors(_ini: &configparser::ini::Ini) -> ThemeColors {
-    ThemeColors::default() // Stub -- will be implemented in GREEN phase
+pub(crate) fn parse_colors(ini: &configparser::ini::Ini) -> ThemeColors {
+    let window_fg = get_color(ini, "Colors:Window", "ForegroundNormal");
+
+    ThemeColors {
+        core: CoreColors {
+            accent: get_color(ini, "Colors:View", "DecorationFocus"),
+            background: get_color(ini, "Colors:Window", "BackgroundNormal"),
+            foreground: window_fg,
+            surface: get_color(ini, "Colors:View", "BackgroundNormal"),
+            border: get_color(ini, "Colors:Window", "DecorationFocus"),
+            muted: get_color(ini, "Colors:Window", "ForegroundInactive"),
+            shadow: None, // KDE does not expose shadow color in kdeglobals
+        },
+        primary: ActionColors {
+            background: get_color(ini, "Colors:Selection", "BackgroundNormal"),
+            foreground: get_color(ini, "Colors:Selection", "ForegroundNormal"),
+        },
+        secondary: ActionColors {
+            background: get_color(ini, "Colors:Button", "BackgroundNormal"),
+            foreground: get_color(ini, "Colors:Button", "ForegroundNormal"),
+        },
+        status: StatusColors {
+            danger: get_color(ini, "Colors:View", "ForegroundNegative"),
+            danger_foreground: window_fg,
+            warning: get_color(ini, "Colors:View", "ForegroundNeutral"),
+            warning_foreground: window_fg,
+            success: get_color(ini, "Colors:View", "ForegroundPositive"),
+            success_foreground: window_fg,
+            info: get_color(ini, "Colors:View", "ForegroundActive"),
+            info_foreground: window_fg,
+        },
+        interactive: InteractiveColors {
+            selection: get_color(ini, "Colors:Selection", "BackgroundNormal"),
+            selection_foreground: get_color(ini, "Colors:Selection", "ForegroundNormal"),
+            link: get_color(ini, "Colors:View", "ForegroundLink"),
+            focus_ring: get_color(ini, "Colors:View", "DecorationFocus"),
+        },
+        panel: PanelColors {
+            sidebar: get_color(ini, "Colors:Complementary", "BackgroundNormal"),
+            sidebar_foreground: get_color(ini, "Colors:Complementary", "ForegroundNormal"),
+            tooltip: get_color(ini, "Colors:Tooltip", "BackgroundNormal"),
+            tooltip_foreground: get_color(ini, "Colors:Tooltip", "ForegroundNormal"),
+            popover: get_color(ini, "Colors:View", "BackgroundNormal"),
+            popover_foreground: get_color(ini, "Colors:View", "ForegroundNormal"),
+        },
+        component: ComponentColors {
+            button: get_color(ini, "Colors:Button", "BackgroundNormal"),
+            button_foreground: get_color(ini, "Colors:Button", "ForegroundNormal"),
+            input: get_color(ini, "Colors:View", "BackgroundNormal"),
+            input_foreground: get_color(ini, "Colors:View", "ForegroundNormal"),
+            disabled: get_color(ini, "Colors:View", "ForegroundInactive"),
+            separator: get_color(ini, "Colors:Window", "ForegroundInactive"),
+            alternate_row: get_color(ini, "Colors:View", "BackgroundAlternate"),
+        },
+    }
 }
 
 #[cfg(test)]
