@@ -10,18 +10,31 @@ use ashpd::desktop::Color;
 /// Convert an ashpd portal Color to an Rgba, returning None if any
 /// component is outside the [0.0, 1.0] range (per XDG spec: out-of-range
 /// means "unset").
-pub(crate) fn portal_color_to_rgba(_color: &Color) -> Option<crate::Rgba> {
-    todo!()
+pub(crate) fn portal_color_to_rgba(color: &Color) -> Option<crate::Rgba> {
+    let r = color.red();
+    let g = color.green();
+    let b = color.blue();
+
+    // Per XDG spec: out-of-range means "accent color not set"
+    if r < 0.0 || r > 1.0 || g < 0.0 || g > 1.0 || b < 0.0 || b > 1.0 {
+        return None;
+    }
+
+    Some(crate::Rgba::from_f32(r as f32, g as f32, b as f32, 1.0))
 }
 
 /// Apply a portal accent color across multiple semantic color roles.
-fn apply_accent(_variant: &mut crate::ThemeVariant, _accent: &crate::Rgba) {
-    todo!()
+fn apply_accent(variant: &mut crate::ThemeVariant, accent: &crate::Rgba) {
+    variant.colors.core.accent = Some(*accent);
+    variant.colors.interactive.selection = Some(*accent);
+    variant.colors.interactive.focus_ring = Some(*accent);
+    variant.colors.primary.background = Some(*accent);
 }
 
 /// Adjust theme variant for high contrast preference.
-fn apply_high_contrast(_variant: &mut crate::ThemeVariant) {
-    todo!()
+fn apply_high_contrast(variant: &mut crate::ThemeVariant) {
+    variant.geometry.border_opacity = Some(1.0);
+    variant.geometry.disabled_opacity = Some(0.7);
 }
 
 /// Build a NativeTheme from an Adwaita base, applying portal-provided
@@ -29,12 +42,48 @@ fn apply_high_contrast(_variant: &mut crate::ThemeVariant) {
 ///
 /// This is the testable core -- no D-Bus required.
 pub(crate) fn build_theme(
-    _base: crate::NativeTheme,
-    _scheme: ColorScheme,
-    _accent: Option<Color>,
-    _contrast: Contrast,
+    base: crate::NativeTheme,
+    scheme: ColorScheme,
+    accent: Option<Color>,
+    contrast: Contrast,
 ) -> crate::Result<crate::NativeTheme> {
-    todo!()
+    let is_dark = matches!(scheme, ColorScheme::PreferDark);
+
+    // Pick the appropriate variant from the Adwaita base
+    let mut variant = if is_dark {
+        base.dark.unwrap_or_default()
+    } else {
+        base.light.unwrap_or_default()
+    };
+
+    // Apply accent color if available and in range
+    if let Some(color) = accent {
+        if let Some(rgba) = portal_color_to_rgba(&color) {
+            apply_accent(&mut variant, &rgba);
+        }
+    }
+
+    // Apply high contrast adjustments
+    if matches!(contrast, Contrast::High) {
+        apply_high_contrast(&mut variant);
+    }
+
+    // Build NativeTheme with only the selected variant populated
+    let theme = if is_dark {
+        crate::NativeTheme {
+            name: "GNOME".to_string(),
+            light: None,
+            dark: Some(variant),
+        }
+    } else {
+        crate::NativeTheme {
+            name: "GNOME".to_string(),
+            light: Some(variant),
+            dark: None,
+        }
+    };
+
+    Ok(theme)
 }
 
 /// Read the user's GNOME theme from the XDG Desktop Portal.
