@@ -99,6 +99,82 @@ pub use windows::from_windows;
 /// Convenience Result type alias for this crate.
 pub type Result<T> = std::result::Result<T, Error>;
 
+/// Desktop environments recognized on Linux.
+#[cfg(target_os = "linux")]
+#[derive(Debug, PartialEq)]
+enum LinuxDesktop {
+    Kde,
+    Gnome,
+    Unknown,
+}
+
+/// Parse `XDG_CURRENT_DESKTOP` (a colon-separated list) and return
+/// the recognized desktop environment.
+#[cfg(target_os = "linux")]
+fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
+    for component in xdg_current_desktop.split(':') {
+        match component {
+            "KDE" => return LinuxDesktop::Kde,
+            "GNOME" => return LinuxDesktop::Gnome,
+            _ => {}
+        }
+    }
+    LinuxDesktop::Unknown
+}
+
+/// Read the current system theme on Linux by detecting the desktop
+/// environment and calling the appropriate reader or returning a
+/// preset fallback.
+#[cfg(target_os = "linux")]
+fn from_linux() -> crate::Result<NativeTheme> {
+    let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
+    match detect_linux_de(&desktop) {
+        #[cfg(feature = "kde")]
+        LinuxDesktop::Kde => crate::kde::from_kde(),
+        #[cfg(not(feature = "kde"))]
+        LinuxDesktop::Kde => crate::preset("adwaita"),
+        LinuxDesktop::Gnome | LinuxDesktop::Unknown => crate::preset("adwaita"),
+    }
+}
+
+/// Read the current system theme, auto-detecting the platform and
+/// desktop environment.
+///
+/// # Platform Behavior
+///
+/// - **Linux (KDE):** Calls `from_kde()` when `XDG_CURRENT_DESKTOP` contains
+///   "KDE" and the `kde` feature is enabled.
+/// - **Linux (other):** Returns the bundled Adwaita preset. For live GNOME
+///   portal data, call [`from_gnome()`] directly.
+/// - **Windows:** Calls `from_windows()` when the `windows` feature is enabled.
+/// - **Other platforms:** Returns `Error::Unsupported`.
+///
+/// # Errors
+///
+/// - `Error::Unsupported` if the platform has no reader or the required feature
+///   is not enabled.
+/// - `Error::Unavailable` if the platform reader cannot access theme data.
+pub fn from_system() -> crate::Result<NativeTheme> {
+    #[cfg(target_os = "windows")]
+    {
+        #[cfg(feature = "windows")]
+        return crate::windows::from_windows();
+
+        #[cfg(not(feature = "windows"))]
+        return Err(crate::Error::Unsupported);
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        return from_linux();
+    }
+
+    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+    {
+        Err(crate::Error::Unsupported)
+    }
+}
+
 #[cfg(test)]
 mod dispatch_tests {
     use super::*;
