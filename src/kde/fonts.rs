@@ -7,8 +7,20 @@ use crate::ThemeFonts;
 /// Handles both Qt4 (10 fields) and Qt5/6 (16+ fields) formats.
 /// Only extracts family (field 0) and point size (field 1).
 /// Returns None if fewer than 2 fields, empty family, or invalid/non-positive size.
-fn parse_qt_font(_font_str: &str) -> Option<(String, f32)> {
-    todo!()
+fn parse_qt_font(font_str: &str) -> Option<(String, f32)> {
+    let fields: Vec<&str> = font_str.split(',').collect();
+    if fields.len() < 2 {
+        return None;
+    }
+    let family = fields[0].trim().to_string();
+    if family.is_empty() {
+        return None;
+    }
+    let size = fields[1].trim().parse::<f32>().ok()?;
+    if size <= 0.0 {
+        return None;
+    }
+    Some((family, size))
 }
 
 /// Parse font settings from KDE's [General] section.
@@ -16,8 +28,24 @@ fn parse_qt_font(_font_str: &str) -> Option<(String, f32)> {
 /// Reads the `font` key for the primary UI font and `fixed` key for
 /// the monospace font. Returns a `ThemeFonts` with all fields `None`
 /// if the keys are missing or unparseable.
-pub(crate) fn parse_fonts(_ini: &configparser::ini::Ini) -> ThemeFonts {
-    todo!()
+pub(crate) fn parse_fonts(ini: &configparser::ini::Ini) -> ThemeFonts {
+    let mut fonts = ThemeFonts::default();
+
+    if let Some(font_str) = ini.get("General", "font") {
+        if let Some((family, size)) = parse_qt_font(&font_str) {
+            fonts.family = Some(family);
+            fonts.size = Some(size);
+        }
+    }
+
+    if let Some(fixed_str) = ini.get("General", "fixed") {
+        if let Some((family, size)) = parse_qt_font(&fixed_str) {
+            fonts.mono_family = Some(family);
+            fonts.mono_size = Some(size);
+        }
+    }
+
+    fonts
 }
 
 #[cfg(test)]
