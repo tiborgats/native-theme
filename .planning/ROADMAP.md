@@ -13,7 +13,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Data Model Foundation** - Rgba, all theme structs, merge macro, error type, serde, and validation tests _(completed 2026-03-07)_
-- [ ] **Phase 2: Core Presets** - Bundled preset TOML files, preset loading API, and preset tests
+- [x] **Phase 2: Core Presets** - Bundled preset TOML files, preset loading API, and preset tests _(completed 2026-03-07)_
 - [ ] **Phase 3: KDE Reader** - Sync Linux KDE reader parsing kdeglobals (feature "kde")
 - [ ] **Phase 4: GNOME Portal Reader** - Async Linux GNOME reader via freedesktop portal (feature "portal")
 - [ ] **Phase 5: Windows Reader** - Sync Windows reader via UISettings and system metrics (feature "windows")
@@ -49,8 +49,8 @@ Plans:
   3. All bundled presets parse without error and contain reasonable values (non-empty color sets, valid font sizes)
 **Plans:** 2 plans
 Plans:
-- [ ] 02-01-PLAN.md -- TOML preset files (default, kde-breeze, adwaita) + presets.rs API module + lib.rs wiring
-- [ ] 02-02-PLAN.md -- Integration tests for preset loading (parse, variants, colors, fonts, round-trip)
+- [x] 02-01-PLAN.md -- TOML preset files (default, kde-breeze, adwaita) + presets.rs API module + lib.rs wiring
+- [x] 02-02-PLAN.md -- Integration tests for preset loading (parse, variants, colors, fonts, round-trip)
 
 ### Phase 3: KDE Reader
 **Goal**: Apps on KDE Linux desktops can read the user's live theme colors and fonts
@@ -120,7 +120,7 @@ Phases execute in numeric order. Phase 3, 4, 5 can potentially execute in parall
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Data Model Foundation | 3/3 | ✓ Complete | 2026-03-07 |
-| 2. Core Presets | 0/2 | Planning | - |
+| 2. Core Presets | 2/2 | ✓ Complete | 2026-03-07 |
 | 3. KDE Reader | 0/? | Not started | - |
 | 4. GNOME Portal Reader | 0/? | Not started | - |
 | 5. Windows Reader | 0/? | Not started | - |
