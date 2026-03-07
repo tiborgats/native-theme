@@ -10,7 +10,9 @@ use crate::Rgba;
 /// Parses `~/.config/kdeglobals` (respecting `XDG_CONFIG_HOME`) and maps
 /// KDE color groups and font strings to a `NativeTheme`.
 pub fn from_kde() -> crate::Result<crate::NativeTheme> {
-    todo!("Plan 02 implements the full body")
+    Err(crate::Error::Unavailable(
+        "from_kde() not yet implemented (Plan 02)".into(),
+    ))
 }
 
 /// Create a configparser Ini instance configured for KDE files.
@@ -18,15 +20,25 @@ pub fn from_kde() -> crate::Result<crate::NativeTheme> {
 /// Uses case-sensitive mode and equals-only delimiter to correctly
 /// handle KDE's PascalCase keys and colon-containing section names.
 pub(crate) fn create_kde_parser() -> configparser::ini::Ini {
-    todo!()
+    let tmp = configparser::ini::Ini::new_cs();
+    let mut defaults = tmp.defaults();
+    defaults.delimiters = vec!['='];
+    configparser::ini::Ini::new_from_defaults(defaults)
 }
 
 /// Parse a KDE "R,G,B" color string into an Rgba (opaque).
 ///
 /// Returns None for malformed values (never panics).
 /// Exactly 3 comma-separated u8 components required.
-pub(crate) fn parse_rgb(_value: &str) -> Option<Rgba> {
-    todo!()
+pub(crate) fn parse_rgb(value: &str) -> Option<Rgba> {
+    let parts: Vec<&str> = value.split(',').collect();
+    if parts.len() != 3 {
+        return None;
+    }
+    let r = parts[0].trim().parse::<u8>().ok()?;
+    let g = parts[1].trim().parse::<u8>().ok()?;
+    let b = parts[2].trim().parse::<u8>().ok()?;
+    Some(Rgba::rgb(r, g, b))
 }
 
 /// Resolve the path to the kdeglobals file.
@@ -34,15 +46,33 @@ pub(crate) fn parse_rgb(_value: &str) -> Option<Rgba> {
 /// Checks XDG_CONFIG_HOME (non-empty), then $HOME/.config/kdeglobals,
 /// then /etc/xdg/kdeglobals as last resort.
 pub(crate) fn kdeglobals_path() -> std::path::PathBuf {
-    todo!()
+    if let Ok(config_home) = std::env::var("XDG_CONFIG_HOME") {
+        if !config_home.is_empty() {
+            return std::path::PathBuf::from(config_home).join("kdeglobals");
+        }
+    }
+    if let Ok(home) = std::env::var("HOME") {
+        return std::path::PathBuf::from(home)
+            .join(".config")
+            .join("kdeglobals");
+    }
+    // Last resort fallback
+    std::path::PathBuf::from("/etc/xdg/kdeglobals")
 }
 
 /// Detect whether the active KDE theme is dark based on background luminance.
 ///
 /// Uses BT.601 luminance coefficients on Colors:Window/BackgroundNormal.
 /// Defaults to false (light) if the section/key is missing.
-pub(crate) fn is_dark_theme(_ini: &configparser::ini::Ini) -> bool {
-    todo!()
+pub(crate) fn is_dark_theme(ini: &configparser::ini::Ini) -> bool {
+    if let Some(bg_str) = ini.get("Colors:Window", "BackgroundNormal") {
+        if let Some(bg) = parse_rgb(&bg_str) {
+            let luma =
+                0.299 * (bg.r as f32) + 0.587 * (bg.g as f32) + 0.114 * (bg.b as f32);
+            return luma < 128.0;
+        }
+    }
+    false
 }
 
 #[cfg(test)]
