@@ -19,7 +19,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 5: Windows Reader** - Sync Windows reader via UISettings and system metrics (feature "windows") _(completed 2026-03-07)_
 - [x] **Phase 6: Cross-Platform Dispatch** - from_system() auto-detection and platform reader unit tests _(completed 2026-03-07)_
 - [x] **Phase 7: Extended Presets** - Platform presets (windows-11, macos-sonoma, material, ios) and community presets (completed 2026-03-07)
-- [ ] **Phase 8: Documentation** - README with adapter examples for egui, iced, and slint
+- [x] **Phase 8: Documentation** - README with adapter examples for egui, iced, and slint _(completed 2026-03-07)_
 
 ## Phase Details
 
@@ -125,7 +125,7 @@ Plans:
   3. README documents feature flags and their platform requirements
 **Plans:** 1 plan
 Plans:
-- [ ] 08-01-PLAN.md -- README with adapter examples, workflow docs, feature flags, and doctest wiring
+- [x] 08-01-PLAN.md -- README with adapter examples, workflow docs, feature flags, and doctest wiring
 
 ## Progress
 
@@ -141,4 +141,4 @@ Phases execute in numeric order. Phase 3, 4, 5 can potentially execute in parall
 | 5. Windows Reader | 1/1 | ✓ Complete | 2026-03-07 |
 | 6. Cross-Platform Dispatch | 1/1 | ✓ Complete | 2026-03-07 |
 | 7. Extended Presets | 2/2 | ✓ Complete | 2026-03-07 |
-| 8. Documentation | 0/1 | Not started | - |
+| 8. Documentation | 1/1 | ✓ Complete | 2026-03-07 |
