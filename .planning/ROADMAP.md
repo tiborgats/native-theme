@@ -73,7 +73,10 @@ Plans:
   1. from_gnome() returns a NativeTheme with accent color, color scheme (light/dark), and contrast preference read from the portal
   2. When portal values are unavailable (no D-Bus session, sandboxed environment), from_gnome() falls back to hardcoded Adwaita defaults rather than failing
   3. The "portal" feature compiles without pulling in tokio when the consumer uses async-io (ashpd default features disabled)
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 04-01-PLAN.md -- Feature flags (portal/portal-tokio/portal-async-io), module scaffold, build_theme core with TDD
+- [ ] 04-02-PLAN.md -- Wire from_gnome() to live portal via ashpd Settings proxy
 
 ### Phase 5: Windows Reader
 **Goal**: Apps on Windows can read the user's live accent colors and system metrics
@@ -125,7 +128,7 @@ Phases execute in numeric order. Phase 3, 4, 5 can potentially execute in parall
 | 1. Data Model Foundation | 3/3 | ✓ Complete | 2026-03-07 |
 | 2. Core Presets | 2/2 | ✓ Complete | 2026-03-07 |
 | 3. KDE Reader | 2/2 | ✓ Complete | 2026-03-07 |
-| 4. GNOME Portal Reader | 0/? | Not started | - |
+| 4. GNOME Portal Reader | 0/2 | Planning complete | - |
 | 5. Windows Reader | 0/? | Not started | - |
 | 6. Cross-Platform Dispatch | 0/? | Not started | - |
 | 7. Extended Presets | 0/? | Not started | - |
