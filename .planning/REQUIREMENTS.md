@@ -39,7 +39,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Platform Readers
 
 - [x] **PLAT-01**: Linux KDE reader: from_kde() -- sync, parses ~/.config/kdeglobals via configparser (feature "kde")
-- [ ] **PLAT-02**: Linux GNOME reader: from_gnome() -- async, reads freedesktop portal via ashpd (feature "portal")
+- [x] **PLAT-02**: Linux GNOME reader: from_gnome() -- async, reads freedesktop portal via ashpd (feature "portal")
 - [ ] **PLAT-03**: Cross-platform dispatch: from_system() -- auto-detects platform/DE, calls appropriate reader
 - [ ] **PLAT-04**: Windows reader: from_windows() -- UISettings + GetSystemMetrics (feature "windows")
 
@@ -109,7 +109,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PRESET-04 | Phase 7 | Pending |
 | ERR-01 | Phase 1 | Complete |
 | PLAT-01 | Phase 3 | Complete |
-| PLAT-02 | Phase 4 | Pending |
+| PLAT-02 | Phase 4 | Complete |
 | PLAT-03 | Phase 6 | Pending |
 | PLAT-04 | Phase 5 | Pending |
 | DOC-01 | Phase 8 | Pending |

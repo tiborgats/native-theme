@@ -75,7 +75,7 @@ Plans:
   3. The "portal" feature compiles without pulling in tokio when the consumer uses async-io (ashpd default features disabled)
 **Plans:** 2 plans
 Plans:
-- [ ] 04-01-PLAN.md -- Feature flags (portal/portal-tokio/portal-async-io), module scaffold, build_theme core with TDD
+- [x] 04-01-PLAN.md -- Feature flags (portal/portal-tokio/portal-async-io), module scaffold, build_theme core with TDD
 - [ ] 04-02-PLAN.md -- Wire from_gnome() to live portal via ashpd Settings proxy
 
 ### Phase 5: Windows Reader

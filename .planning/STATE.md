@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 03-02-PLAN.md
-last_updated: "2026-03-07T16:47:04Z"
-last_activity: "2026-03-07 -- Completed 03-02: KDE color mapping and from_kde() orchestrator, 19 new tests"
+stopped_at: Completed 04-01-PLAN.md
+last_updated: "2026-03-07T17:25:27Z"
+last_activity: "2026-03-07 -- Completed 04-01: GNOME portal feature flags and build_theme core with TDD, 10 new tests"
 progress:
   total_phases: 8
   completed_phases: 3
-  total_plans: 7
-  completed_plans: 7
-  percent: 100
+  total_plans: 9
+  completed_plans: 8
+  percent: 89
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 3: KDE Reader (Complete -- both plans done)
+**Current focus:** Phase 4: GNOME Portal Reader (Plan 1 of 2 complete)
 
 ## Current Position
 
-Phase: 3 of 8 (KDE Reader) -- COMPLETE
-Plan: 2 of 2 in current phase
-Status: Phase Complete
-Last activity: 2026-03-07 -- Completed 03-02: KDE color mapping and from_kde() orchestrator, 19 new tests
+Phase: 4 of 8 (GNOME Portal Reader)
+Plan: 1 of 2 in current phase
+Status: Executing
+Last activity: 2026-03-07 -- Completed 04-01: GNOME portal feature flags and build_theme core with TDD, 10 new tests
 
-Progress: [██████████] 100%
+Progress: [████████░░] 89%
 
 ## Performance Metrics
 
@@ -57,6 +57,7 @@ Progress: [██████████] 100%
 | Phase 02 P02 | 1min | 1 tasks | 1 files |
 | Phase 03 P01 | 3min | 2 tasks | 5 files |
 | Phase 03 P02 | 3min | 2 tasks | 2 files |
+| Phase 04 P01 | 3min | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -84,6 +85,11 @@ Recent decisions affecting current work:
 - [Phase 03]: get_color helper DRYs 35 INI lookups into section/key pair calls
 - [Phase 03]: from_kde_content internal helper enables integration testing without filesystem
 - [Phase 03]: configparser empty string parses as empty INI (Ok with default theme, not error)
+- [Phase 04]: ashpd default-features=false prevents tokio leakage to sync-only consumers
+- [Phase 04]: portal_color_to_rgba returns None for out-of-range (per XDG spec), not clamped
+- [Phase 04]: apply_high_contrast unconditionally sets border_opacity=1.0, disabled_opacity=0.7
+- [Phase 04]: NoPreference defaults to light variant (matching Adwaita default)
+- [Phase 04]: Only the active variant populated in output NativeTheme (matches KDE reader pattern)
 
 ### Pending Todos
 
@@ -91,12 +97,12 @@ None yet.
 
 ### Blockers/Concerns
 
-- [Research]: ashpd tokio dependency leak must be designed correctly in Phase 4 (portal feature) -- changing feature structure post-publish is breaking
+- [Research]: ashpd tokio dependency leak -- RESOLVED in Phase 4 Plan 1 (default-features=false, portal-tokio/portal-async-io feature flags)
 - [Research]: configparser case sensitivity (must use Ini::new_cs() in Phase 3) -- silent data loss if missed
 - [Research]: merge() desynchronization risk -- Phase 1 must use declarative macro from day one
 
 ## Session Continuity
 
-Last session: 2026-03-07T16:47:04Z
-Stopped at: Completed 03-02-PLAN.md (Phase 3 complete)
+Last session: 2026-03-07T17:25:27Z
+Stopped at: Completed 04-01-PLAN.md
 Resume file: None
