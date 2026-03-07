@@ -22,7 +22,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Serialization
 
-- [ ] **SERDE-01**: TOML serialization/deserialization mapping 1:1 to struct field names
+- [x] **SERDE-01**: TOML serialization/deserialization mapping 1:1 to struct field names
 - [x] **SERDE-02**: #[serde(default)] + skip_serializing_if = "Option::is_none" on all fields for sparse TOML support
 
 ### Presets
@@ -49,7 +49,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Testing
 
-- [ ] **TEST-01**: Round-trip serde tests for all types
+- [x] **TEST-01**: Round-trip serde tests for all types
 - [ ] **TEST-02**: Preset loading tests (all presets parse correctly)
 - [x] **TEST-03**: Rgba hex parsing edge cases (3/4/6/8 char, with/without #, invalid)
 - [ ] **TEST-04**: Platform reader unit tests with mock data
@@ -101,7 +101,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CORE-08 | Phase 1 | Complete |
 | CORE-09 | Phase 1 | Complete |
 | CORE-10 | Phase 1 | Complete |
-| SERDE-01 | Phase 1 | Pending |
+| SERDE-01 | Phase 1 | Complete |
 | SERDE-02 | Phase 1 | Complete |
 | PRESET-01 | Phase 2 | Pending |
 | PRESET-02 | Phase 2 | Pending |
@@ -113,7 +113,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PLAT-03 | Phase 6 | Pending |
 | PLAT-04 | Phase 5 | Pending |
 | DOC-01 | Phase 8 | Pending |
-| TEST-01 | Phase 1 | Pending |
+| TEST-01 | Phase 1 | Complete |
 | TEST-02 | Phase 2 | Pending |
 | TEST-03 | Phase 1 | Complete |
 | TEST-04 | Phase 6 | Pending |
