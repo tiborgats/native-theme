@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
-status: phase-complete
-stopped_at: Completed 01-03-PLAN.md (Phase 1 complete)
-last_updated: "2026-03-07T15:26:24Z"
-last_activity: "2026-03-07 -- Completed 01-03: integration tests (TOML round-trip, merge behavior, trait assertions) - Phase 1 complete"
+status: executing
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-03-07T15:54:43.471Z"
+last_activity: "2026-03-07 -- Completed 02-01: core presets with 3 TOML files and 5-function API"
 progress:
   total_phases: 8
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
-  percent: 100
+  total_plans: 5
+  completed_plans: 4
+  percent: 80
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 1: Data Model Foundation
+**Current focus:** Phase 2: Core Presets
 
 ## Current Position
 
-Phase: 1 of 8 (Data Model Foundation) -- COMPLETE
-Plan: 3 of 3 in current phase
-Status: Phase Complete
-Last activity: 2026-03-07 -- Completed 01-03: integration tests (TOML round-trip, merge behavior, trait assertions) - Phase 1 complete
+Phase: 2 of 8 (Core Presets)
+Plan: 1 of 2 in current phase
+Status: In Progress
+Last activity: 2026-03-07 -- Completed 02-01: core presets with 3 TOML files and 5-function API
 
-Progress: [██████████] 100%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
@@ -53,6 +53,7 @@ Progress: [██████████] 100%
 | Phase 01 P01 | 3min | 3 tasks | 4 files |
 | Phase 01 P02 | 3min | 2 tasks | 6 files |
 | Phase 01 P03 | 3min | 2 tasks | 2 files |
+| Phase 02 P01 | 2min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -69,6 +70,9 @@ Recent decisions affecting current work:
 - [Phase 01]: PanelColors (not SurfaceColors) to avoid CoreColors.surface naming collision
 - [Phase 01]: NativeTheme.merge() manual impl (not macro) -- keeps base name, special variant logic
 - [Phase 01]: r##"..."## double-hash raw strings for TOML literals containing hex colors
+- [Phase 02]: Pre-computed solid hex for Adwaita alpha colors (foreground #2e3436 GTK convention, border #d5d5d5)
+- [Phase 02]: Fresh owned NativeTheme per preset() call -- no caching, callers free to mutate for merge
+- [Phase 02]: Match statement for 3 presets (not HashMap) -- compile-time exhaustive, zero allocation
 
 ### Pending Todos
 
@@ -82,6 +86,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-07T15:26:24Z
-Stopped at: Completed 01-03-PLAN.md (Phase 1 complete)
+Last session: 2026-03-07T15:54:43.469Z
+Stopped at: Completed 02-01-PLAN.md
 Resume file: None

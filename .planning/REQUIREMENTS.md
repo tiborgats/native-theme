@@ -27,8 +27,8 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Presets
 
-- [ ] **PRESET-01**: Bundled core presets embedded via include_str!(): default, kde-breeze, adwaita (light + dark each)
-- [ ] **PRESET-02**: Preset loading API: preset(), list_presets(), from_toml(), from_file(), to_toml()
+- [x] **PRESET-01**: Bundled core presets embedded via include_str!(): default, kde-breeze, adwaita (light + dark each)
+- [x] **PRESET-02**: Preset loading API: preset(), list_presets(), from_toml(), from_file(), to_toml()
 - [ ] **PRESET-03**: Additional platform presets: windows-11, macos-sonoma, material, ios
 - [ ] **PRESET-04**: Community presets: Catppuccin (4 flavors), Nord, Dracula, Gruvbox, Solarized, Tokyo Night, One Dark
 
@@ -103,8 +103,8 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CORE-10 | Phase 1 | Complete |
 | SERDE-01 | Phase 1 | Complete |
 | SERDE-02 | Phase 1 | Complete |
-| PRESET-01 | Phase 2 | Pending |
-| PRESET-02 | Phase 2 | Pending |
+| PRESET-01 | Phase 2 | Complete |
+| PRESET-02 | Phase 2 | Complete |
 | PRESET-03 | Phase 7 | Pending |
 | PRESET-04 | Phase 7 | Pending |
 | ERR-01 | Phase 1 | Complete |
