@@ -71,7 +71,7 @@ macro_rules! impl_merge {
 
 pub mod color;
 pub mod error;
-// pub mod model; // Uncommented in Plan 02
+pub mod model;
 
 pub use color::Rgba;
 pub use error::Error;
