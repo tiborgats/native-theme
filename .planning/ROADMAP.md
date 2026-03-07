@@ -123,7 +123,9 @@ Plans:
   1. README contains working adapter code examples for egui, iced, and slint that map NativeTheme fields to each toolkit's styling API
   2. README documents the preset workflow (load preset, merge user overrides) and the runtime workflow (from_system() with preset fallback)
   3. README documents feature flags and their platform requirements
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 08-01-PLAN.md -- README with adapter examples, workflow docs, feature flags, and doctest wiring
 
 ## Progress
 
@@ -139,4 +141,4 @@ Phases execute in numeric order. Phase 3, 4, 5 can potentially execute in parall
 | 5. Windows Reader | 1/1 | ✓ Complete | 2026-03-07 |
 | 6. Cross-Platform Dispatch | 1/1 | ✓ Complete | 2026-03-07 |
 | 7. Extended Presets | 2/2 | ✓ Complete | 2026-03-07 |
-| 8. Documentation | 0/? | Not started | - |
+| 8. Documentation | 0/1 | Not started | - |
