@@ -15,7 +15,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 1: Data Model Foundation** - Rgba, all theme structs, merge macro, error type, serde, and validation tests _(completed 2026-03-07)_
 - [x] **Phase 2: Core Presets** - Bundled preset TOML files, preset loading API, and preset tests _(completed 2026-03-07)_
 - [x] **Phase 3: KDE Reader** - Sync Linux KDE reader parsing kdeglobals (feature "kde") _(completed 2026-03-07)_
-- [ ] **Phase 4: GNOME Portal Reader** - Async Linux GNOME reader via freedesktop portal (feature "portal")
+- [x] **Phase 4: GNOME Portal Reader** - Async Linux GNOME reader via freedesktop portal (feature "portal") _(completed 2026-03-07)_
 - [ ] **Phase 5: Windows Reader** - Sync Windows reader via UISettings and system metrics (feature "windows")
 - [ ] **Phase 6: Cross-Platform Dispatch** - from_system() auto-detection and platform reader unit tests
 - [ ] **Phase 7: Extended Presets** - Platform presets (windows-11, macos-sonoma, material, ios) and community presets
@@ -76,7 +76,7 @@ Plans:
 **Plans:** 2 plans
 Plans:
 - [x] 04-01-PLAN.md -- Feature flags (portal/portal-tokio/portal-async-io), module scaffold, build_theme core with TDD
-- [ ] 04-02-PLAN.md -- Wire from_gnome() to live portal via ashpd Settings proxy
+- [x] 04-02-PLAN.md -- Wire from_gnome() to live portal via ashpd Settings proxy
 
 ### Phase 5: Windows Reader
 **Goal**: Apps on Windows can read the user's live accent colors and system metrics
@@ -128,7 +128,7 @@ Phases execute in numeric order. Phase 3, 4, 5 can potentially execute in parall
 | 1. Data Model Foundation | 3/3 | ✓ Complete | 2026-03-07 |
 | 2. Core Presets | 2/2 | ✓ Complete | 2026-03-07 |
 | 3. KDE Reader | 2/2 | ✓ Complete | 2026-03-07 |
-| 4. GNOME Portal Reader | 0/2 | Planning complete | - |
+| 4. GNOME Portal Reader | 2/2 | ✓ Complete | 2026-03-07 |
 | 5. Windows Reader | 0/? | Not started | - |
 | 6. Cross-Platform Dispatch | 0/? | Not started | - |
 | 7. Extended Presets | 0/? | Not started | - |
