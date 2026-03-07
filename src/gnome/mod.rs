@@ -86,21 +86,35 @@ pub(crate) fn build_theme(
     Ok(theme)
 }
 
-/// Read the user's GNOME theme from the XDG Desktop Portal.
+/// Read the current GNOME theme from the XDG Desktop Portal.
 ///
-/// Returns a [`NativeTheme`](crate::NativeTheme) with the active variant
-/// (light or dark) populated based on the portal's color scheme preference,
-/// with accent color and contrast adjustments applied.
+/// Reads color scheme (light/dark), accent color, and contrast preference
+/// from the `org.freedesktop.appearance` portal namespace via ashpd.
 ///
-/// Falls back to Adwaita defaults if the portal is unavailable.
+/// Falls back to bundled Adwaita defaults when the portal is unavailable
+/// (no D-Bus session, sandboxed environment, or old portal version).
 pub async fn from_gnome() -> crate::Result<crate::NativeTheme> {
     let base = crate::preset("adwaita").expect("adwaita preset must be bundled");
-    build_theme(
-        base,
-        ColorScheme::NoPreference,
-        None,
-        Contrast::NoPreference,
-    )
+
+    // Try to connect to the portal. If unavailable, return Adwaita defaults.
+    let settings = match ashpd::desktop::settings::Settings::new().await {
+        Ok(s) => s,
+        Err(_) => {
+            return build_theme(
+                base,
+                ColorScheme::NoPreference,
+                None,
+                Contrast::NoPreference,
+            )
+        }
+    };
+
+    // Read the three appearance settings. Each can fail independently.
+    let scheme = settings.color_scheme().await.unwrap_or_default();
+    let accent = settings.accent_color().await.ok();
+    let contrast = settings.contrast().await.unwrap_or_default();
+
+    build_theme(base, scheme, accent, contrast)
 }
 
 #[cfg(test)]
