@@ -88,7 +88,7 @@ Plans:
   3. The "windows" feature only pulls in the minimal windows crate features needed (UI_ViewManagement, Win32_UI_WindowsAndMessaging)
 **Plans:** 1 plan
 Plans:
-- [ ] 05-01-PLAN.md -- Feature flag, module scaffold, build_theme core, from_windows() with UISettings + GetSystemMetrics (TDD)
+- [x] 05-01-PLAN.md -- Feature flag, module scaffold, build_theme core, from_windows() with UISettings + GetSystemMetrics (TDD)
 
 ### Phase 6: Cross-Platform Dispatch
 **Goal**: Apps can call one function to get the current OS theme regardless of platform
@@ -98,7 +98,9 @@ Plans:
   1. from_system() on Linux auto-detects KDE vs GNOME and calls the appropriate reader; on Windows calls from_windows(); on unsupported platforms returns Error::Unsupported
   2. from_system() compiles on all platforms regardless of which reader features are enabled (missing features produce Error::Unsupported at runtime)
   3. Platform reader unit tests pass with mock/fixture data for each supported platform (KDE kdeglobals fixture, portal mock, Windows mock)
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 06-01-PLAN.md -- from_system() dispatch with detect_linux_de(), platform cfg gates, and dispatch routing tests
 
 ### Phase 7: Extended Presets
 **Goal**: Users have preset themes covering all major platforms and popular community color schemes
@@ -132,6 +134,6 @@ Phases execute in numeric order. Phase 3, 4, 5 can potentially execute in parall
 | 3. KDE Reader | 2/2 | ✓ Complete | 2026-03-07 |
 | 4. GNOME Portal Reader | 2/2 | ✓ Complete | 2026-03-07 |
 | 5. Windows Reader | 1/1 | ✓ Complete | 2026-03-07 |
-| 6. Cross-Platform Dispatch | 0/? | Not started | - |
+| 6. Cross-Platform Dispatch | 0/1 | Not started | - |
 | 7. Extended Presets | 0/? | Not started | - |
 | 8. Documentation | 0/? | Not started | - |
