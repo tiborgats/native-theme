@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 06-01-PLAN.md
-last_updated: "2026-03-07T21:00:01.240Z"
-last_activity: "2026-03-07 -- Completed 06-01: from_system() dispatch with XDG_CURRENT_DESKTOP parsing, cfg-gated platform routing, Adwaita fallback"
+stopped_at: Completed 07-01-PLAN.md
+last_updated: "2026-03-07T21:50:06.681Z"
+last_activity: "2026-03-07 -- Completed 07-01: 4 platform preset TOML files (Windows 11, macOS Sonoma, Material, iOS) wired into 7-entry preset registry"
 progress:
   total_phases: 8
   completed_phases: 6
-  total_plans: 11
-  completed_plans: 11
-  percent: 100
+  total_plans: 13
+  completed_plans: 12
+  percent: 92
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 6: Cross-Platform Dispatch (Complete - 1 of 1 plans done)
+**Current focus:** Phase 7: Extended Presets (In Progress - 1 of 2 plans done)
 
 ## Current Position
 
-Phase: 6 of 8 (Cross-Platform Dispatch)
-Plan: 1 of 1 in current phase (complete)
+Phase: 7 of 8 (Extended Presets)
+Plan: 1 of 2 in current phase (complete)
 Status: Executing
-Last activity: 2026-03-07 -- Completed 06-01: from_system() dispatch with XDG_CURRENT_DESKTOP parsing, cfg-gated platform routing, Adwaita fallback
+Last activity: 2026-03-07 -- Completed 07-01: 4 platform preset TOML files (Windows 11, macOS Sonoma, Material, iOS) wired into 7-entry preset registry
 
-Progress: [██████████] 100%
+Progress: [█████████░] 92%
 
 ## Performance Metrics
 
@@ -61,6 +61,7 @@ Progress: [██████████] 100%
 | Phase 04 P02 | 1min | 1 tasks | 1 files |
 | Phase 05 P01 | 2min | 1 tasks | 4 files |
 | Phase 06 P01 | 2min | 1 tasks | 1 files |
+| Phase 07 P01 | 2min | 2 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -102,6 +103,9 @@ Recent decisions affecting current work:
 - [Phase 06]: Match on LinuxDesktop enum with cfg-gated arms (not if-let chains) to avoid dead code warnings
 - [Phase 06]: KDE without kde feature falls through to Adwaita preset (not Error::Unsupported)
 - [Phase 06]: from_system() directly in lib.rs (not separate dispatch.rs) -- 30 lines of routing logic
+- [Phase 07]: Platform-appropriate spacing values (Windows/Material 8px base, macOS/iOS 6/8px base)
+- [Phase 07]: Dark variant status colors use lighter readable tones for contrast on dark backgrounds
+- [Phase 07]: Material Design 3 disabled_opacity 0.38 matching official M3 spec
 
 ### Pending Todos
 
@@ -115,6 +119,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-07T21:00:01.238Z
-Stopped at: Completed 06-01-PLAN.md
+Last session: 2026-03-07T21:50:06.679Z
+Stopped at: Completed 07-01-PLAN.md
 Resume file: None
