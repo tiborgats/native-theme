@@ -45,7 +45,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Documentation
 
-- [ ] **DOC-01**: README with adapter examples for egui, iced, and slint
+- [x] **DOC-01**: README with adapter examples for egui, iced, and slint
 
 ### Testing
 
@@ -112,7 +112,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PLAT-02 | Phase 4 | Complete |
 | PLAT-03 | Phase 6 | Complete |
 | PLAT-04 | Phase 5 | Complete |
-| DOC-01 | Phase 8 | Pending |
+| DOC-01 | Phase 8 | Complete |
 | TEST-01 | Phase 1 | Complete |
 | TEST-02 | Phase 2 | Complete |
 | TEST-03 | Phase 1 | Complete |

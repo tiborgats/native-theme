@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 07-02-PLAN.md
-last_updated: "2026-03-07T21:56:50.537Z"
+stopped_at: Completed 08-01-PLAN.md
+last_updated: "2026-03-07T22:29:25.060Z"
 last_activity: "2026-03-07 -- Completed 07-02: 10 community preset TOML files wired into 17-entry preset registry"
 progress:
   total_phases: 8
-  completed_phases: 7
-  total_plans: 13
-  completed_plans: 13
+  completed_phases: 8
+  total_plans: 14
+  completed_plans: 14
   percent: 100
 ---
 
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 7: Extended Presets (Complete - 2 of 2 plans done)
+**Current focus:** Phase 8: Documentation (Complete - 1 of 1 plans done)
 
 ## Current Position
 
-Phase: 7 of 8 (Extended Presets)
-Plan: 2 of 2 in current phase (complete)
-Status: Executing
-Last activity: 2026-03-07 -- Completed 07-02: 10 community preset TOML files wired into 17-entry preset registry
+Phase: 8 of 8 (Documentation)
+Plan: 1 of 1 in current phase (complete)
+Status: Complete
+Last activity: 2026-03-07 -- Completed 08-01: README with adapter examples, workflow docs, feature flags, and doctest wiring
 
 Progress: [██████████] 100%
 
@@ -63,6 +63,7 @@ Progress: [██████████] 100%
 | Phase 06 P01 | 2min | 1 tasks | 1 files |
 | Phase 07 P01 | 2min | 2 tasks | 5 files |
 | Phase 07 P02 | 4min | 2 tasks | 12 files |
+| Phase 08 P01 | 2min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -108,6 +109,9 @@ Recent decisions affecting current work:
 - [Phase 07]: Dark variant status colors use lighter readable tones for contrast on dark backgrounds
 - [Phase 07]: Material Design 3 disabled_opacity 0.38 matching official M3 spec
 - [Phase 07]: 17 total presets (not 18): plan arithmetic corrected; 10 community themes on Latte base for derived light variants
+- [Phase 08]: ReadmeDoctests struct placed after crate docs (not before) to avoid E0753 inner doc comment error
+- [Phase 08]: Adapter examples use rust,ignore (external toolkit deps); workflow examples compile-tested
+- [Phase 08]: Double-hash raw strings r##..## for TOML examples with hex color # characters
 
 ### Pending Todos
 
@@ -121,6 +125,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-07T21:56:50.535Z
-Stopped at: Completed 07-02-PLAN.md
+Last session: 2026-03-07T22:29:25.058Z
+Stopped at: Completed 08-01-PLAN.md
 Resume file: None
