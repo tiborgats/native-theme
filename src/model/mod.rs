@@ -1,3 +1,282 @@
+// Theme model: ThemeVariant and NativeTheme, plus sub-module re-exports
+
 pub mod colors;
+pub mod fonts;
+pub mod geometry;
+pub mod spacing;
 
 pub use colors::*;
+pub use fonts::ThemeFonts;
+pub use geometry::ThemeGeometry;
+pub use spacing::ThemeSpacing;
+
+use serde::{Deserialize, Serialize};
+
+/// A single light or dark theme variant containing all visual properties.
+///
+/// Composes colors, fonts, geometry, and spacing into one coherent set.
+/// Empty sub-structs are omitted from serialization to keep TOML files clean.
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+#[non_exhaustive]
+pub struct ThemeVariant {
+    #[serde(default, skip_serializing_if = "ThemeColors::is_empty")]
+    pub colors: ThemeColors,
+
+    #[serde(default, skip_serializing_if = "ThemeFonts::is_empty")]
+    pub fonts: ThemeFonts,
+
+    #[serde(default, skip_serializing_if = "ThemeGeometry::is_empty")]
+    pub geometry: ThemeGeometry,
+
+    #[serde(default, skip_serializing_if = "ThemeSpacing::is_empty")]
+    pub spacing: ThemeSpacing,
+}
+
+impl_merge!(ThemeVariant {
+    nested { colors, fonts, geometry, spacing }
+});
+
+/// A complete native theme with a name and optional light/dark variants.
+///
+/// This is the top-level type that theme files deserialize into and that
+/// platform readers produce.
+#[derive(Clone, Debug, Serialize, Deserialize)]
+#[non_exhaustive]
+pub struct NativeTheme {
+    /// Theme name (e.g., "Breeze", "Adwaita", "Windows 11").
+    pub name: String,
+
+    /// Light variant of the theme.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub light: Option<ThemeVariant>,
+
+    /// Dark variant of the theme.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub dark: Option<ThemeVariant>,
+}
+
+impl Default for NativeTheme {
+    fn default() -> Self {
+        Self {
+            name: String::new(),
+            light: None,
+            dark: None,
+        }
+    }
+}
+
+impl NativeTheme {
+    /// Create a new theme with the given name and no variants.
+    pub fn new(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            light: None,
+            dark: None,
+        }
+    }
+
+    /// Merge an overlay theme into this theme.
+    ///
+    /// The base name is kept. For each variant (light/dark):
+    /// - If both base and overlay have a variant, they are merged recursively.
+    /// - If only the overlay has a variant, it is cloned into the base.
+    /// - If only the base has a variant (or neither), no change.
+    pub fn merge(&mut self, overlay: &Self) {
+        // Keep base name (do not overwrite)
+
+        match (&mut self.light, &overlay.light) {
+            (Some(base), Some(over)) => base.merge(over),
+            (None, Some(over)) => self.light = Some(over.clone()),
+            _ => {}
+        }
+
+        match (&mut self.dark, &overlay.dark) {
+            (Some(base), Some(over)) => base.merge(over),
+            (None, Some(over)) => self.dark = Some(over.clone()),
+            _ => {}
+        }
+    }
+
+    /// Returns true if the theme has no variants set.
+    pub fn is_empty(&self) -> bool {
+        self.light.is_none() && self.dark.is_none()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::Rgba;
+
+    // === ThemeVariant tests ===
+
+    #[test]
+    fn theme_variant_default_is_empty() {
+        assert!(ThemeVariant::default().is_empty());
+    }
+
+    #[test]
+    fn theme_variant_not_empty_when_color_set() {
+        let mut v = ThemeVariant::default();
+        v.colors.core.accent = Some(Rgba::rgb(0, 120, 215));
+        assert!(!v.is_empty());
+    }
+
+    #[test]
+    fn theme_variant_not_empty_when_font_set() {
+        let mut v = ThemeVariant::default();
+        v.fonts.family = Some("Inter".into());
+        assert!(!v.is_empty());
+    }
+
+    #[test]
+    fn theme_variant_merge_recursively() {
+        let mut base = ThemeVariant::default();
+        base.colors.core.background = Some(Rgba::rgb(255, 255, 255));
+        base.fonts.family = Some("Noto Sans".into());
+
+        let mut overlay = ThemeVariant::default();
+        overlay.colors.core.accent = Some(Rgba::rgb(0, 120, 215));
+        overlay.spacing.m = Some(12.0);
+
+        base.merge(&overlay);
+
+        // base background preserved
+        assert_eq!(base.colors.core.background, Some(Rgba::rgb(255, 255, 255)));
+        // overlay accent applied
+        assert_eq!(base.colors.core.accent, Some(Rgba::rgb(0, 120, 215)));
+        // base font preserved
+        assert_eq!(base.fonts.family.as_deref(), Some("Noto Sans"));
+        // overlay spacing applied
+        assert_eq!(base.spacing.m, Some(12.0));
+    }
+
+    // === NativeTheme tests ===
+
+    #[test]
+    fn native_theme_new_constructor() {
+        let theme = NativeTheme::new("Breeze");
+        assert_eq!(theme.name, "Breeze");
+        assert!(theme.light.is_none());
+        assert!(theme.dark.is_none());
+    }
+
+    #[test]
+    fn native_theme_default_is_empty() {
+        let theme = NativeTheme::default();
+        assert!(theme.is_empty());
+        assert_eq!(theme.name, "");
+    }
+
+    #[test]
+    fn native_theme_merge_keeps_base_name() {
+        let mut base = NativeTheme::new("Base Theme");
+        let overlay = NativeTheme::new("Overlay Theme");
+        base.merge(&overlay);
+        assert_eq!(base.name, "Base Theme");
+    }
+
+    #[test]
+    fn native_theme_merge_overlay_light_into_none() {
+        let mut base = NativeTheme::new("Theme");
+
+        let mut overlay = NativeTheme::new("Overlay");
+        let mut light = ThemeVariant::default();
+        light.colors.core.accent = Some(Rgba::rgb(0, 120, 215));
+        overlay.light = Some(light);
+
+        base.merge(&overlay);
+
+        assert!(base.light.is_some());
+        assert_eq!(
+            base.light.as_ref().unwrap().colors.core.accent,
+            Some(Rgba::rgb(0, 120, 215))
+        );
+    }
+
+    #[test]
+    fn native_theme_merge_both_light_variants() {
+        let mut base = NativeTheme::new("Theme");
+        let mut base_light = ThemeVariant::default();
+        base_light.colors.core.background = Some(Rgba::rgb(255, 255, 255));
+        base.light = Some(base_light);
+
+        let mut overlay = NativeTheme::new("Overlay");
+        let mut overlay_light = ThemeVariant::default();
+        overlay_light.colors.core.accent = Some(Rgba::rgb(0, 120, 215));
+        overlay.light = Some(overlay_light);
+
+        base.merge(&overlay);
+
+        let light = base.light.as_ref().unwrap();
+        // base background preserved
+        assert_eq!(light.colors.core.background, Some(Rgba::rgb(255, 255, 255)));
+        // overlay accent merged in
+        assert_eq!(light.colors.core.accent, Some(Rgba::rgb(0, 120, 215)));
+    }
+
+    #[test]
+    fn native_theme_merge_base_light_only_preserved() {
+        let mut base = NativeTheme::new("Theme");
+        let mut base_light = ThemeVariant::default();
+        base_light.fonts.family = Some("Inter".into());
+        base.light = Some(base_light);
+
+        let overlay = NativeTheme::new("Overlay"); // no light
+
+        base.merge(&overlay);
+
+        assert!(base.light.is_some());
+        assert_eq!(
+            base.light.as_ref().unwrap().fonts.family.as_deref(),
+            Some("Inter")
+        );
+    }
+
+    #[test]
+    fn native_theme_merge_dark_variant() {
+        let mut base = NativeTheme::new("Theme");
+
+        let mut overlay = NativeTheme::new("Overlay");
+        let mut dark = ThemeVariant::default();
+        dark.colors.core.background = Some(Rgba::rgb(30, 30, 30));
+        overlay.dark = Some(dark);
+
+        base.merge(&overlay);
+
+        assert!(base.dark.is_some());
+        assert_eq!(
+            base.dark.as_ref().unwrap().colors.core.background,
+            Some(Rgba::rgb(30, 30, 30))
+        );
+    }
+
+    #[test]
+    fn native_theme_not_empty_with_light() {
+        let mut theme = NativeTheme::new("Theme");
+        theme.light = Some(ThemeVariant::default());
+        assert!(!theme.is_empty());
+    }
+
+    #[test]
+    fn native_theme_serde_toml_round_trip() {
+        let mut theme = NativeTheme::new("Test Theme");
+        let mut light = ThemeVariant::default();
+        light.colors.core.accent = Some(Rgba::rgb(0, 120, 215));
+        light.fonts.family = Some("Segoe UI".into());
+        light.geometry.radius = Some(4.0);
+        light.spacing.m = Some(12.0);
+        theme.light = Some(light);
+
+        let toml_str = toml::to_string(&theme).unwrap();
+        let deserialized: NativeTheme = toml::from_str(&toml_str).unwrap();
+
+        assert_eq!(deserialized.name, "Test Theme");
+        let l = deserialized.light.unwrap();
+        assert_eq!(l.colors.core.accent, Some(Rgba::rgb(0, 120, 215)));
+        assert_eq!(l.fonts.family.as_deref(), Some("Segoe UI"));
+        assert_eq!(l.geometry.radius, Some(4.0));
+        assert_eq!(l.spacing.m, Some(12.0));
+    }
+}

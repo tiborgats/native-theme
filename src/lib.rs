@@ -75,6 +75,10 @@ pub mod model;
 
 pub use color::Rgba;
 pub use error::Error;
+pub use model::{
+    ActionColors, ComponentColors, CoreColors, InteractiveColors, NativeTheme, PanelColors,
+    StatusColors, ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing, ThemeVariant,
+};
 
 /// Convenience Result type alias for this crate.
 pub type Result<T> = std::result::Result<T, Error>;
