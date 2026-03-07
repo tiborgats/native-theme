@@ -14,7 +14,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 
 - [x] **Phase 1: Data Model Foundation** - Rgba, all theme structs, merge macro, error type, serde, and validation tests _(completed 2026-03-07)_
 - [x] **Phase 2: Core Presets** - Bundled preset TOML files, preset loading API, and preset tests _(completed 2026-03-07)_
-- [ ] **Phase 3: KDE Reader** - Sync Linux KDE reader parsing kdeglobals (feature "kde")
+- [x] **Phase 3: KDE Reader** - Sync Linux KDE reader parsing kdeglobals (feature "kde") _(completed 2026-03-07)_
 - [ ] **Phase 4: GNOME Portal Reader** - Async Linux GNOME reader via freedesktop portal (feature "portal")
 - [ ] **Phase 5: Windows Reader** - Sync Windows reader via UISettings and system metrics (feature "windows")
 - [ ] **Phase 6: Cross-Platform Dispatch** - from_system() auto-detection and platform reader unit tests
@@ -62,8 +62,8 @@ Plans:
   3. KDE font strings from both Qt 4 (10 fields) and Qt 5/6 (16 fields) formats parse correctly into ThemeFonts
 **Plans:** 2 plans
 Plans:
-- [ ] 03-01-PLAN.md -- Module scaffold, feature flag, helper functions (parse_rgb, font parser, path resolution, dark/light detection)
-- [ ] 03-02-PLAN.md -- KDE color mapping (36 semantic roles) and from_kde() orchestrator with integration tests
+- [x] 03-01-PLAN.md -- Module scaffold, feature flag, helper functions (parse_rgb, font parser, path resolution, dark/light detection)
+- [x] 03-02-PLAN.md -- KDE color mapping (36 semantic roles) and from_kde() orchestrator with integration tests
 
 ### Phase 4: GNOME Portal Reader
 **Goal**: Apps on GNOME Linux desktops can read the user's theme via the freedesktop settings portal
@@ -124,7 +124,7 @@ Phases execute in numeric order. Phase 3, 4, 5 can potentially execute in parall
 |-------|----------------|--------|-----------|
 | 1. Data Model Foundation | 3/3 | ✓ Complete | 2026-03-07 |
 | 2. Core Presets | 2/2 | ✓ Complete | 2026-03-07 |
-| 3. KDE Reader | 0/2 | Planning | - |
+| 3. KDE Reader | 2/2 | ✓ Complete | 2026-03-07 |
 | 4. GNOME Portal Reader | 0/? | Not started | - |
 | 5. Windows Reader | 0/? | Not started | - |
 | 6. Cross-Platform Dispatch | 0/? | Not started | - |
