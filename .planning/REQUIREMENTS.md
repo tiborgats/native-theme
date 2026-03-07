@@ -10,12 +10,12 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Core Data Model
 
 - [x] **CORE-01**: Rgba color type with 8-bit-per-channel sRGB + alpha, custom hex serde (#RRGGBB / #RRGGBBAA)
-- [ ] **CORE-02**: ThemeColors struct with 36 semantic color roles, all fields Option<Rgba>
-- [ ] **CORE-03**: ThemeFonts struct with family, size, monospace family/size, all Option<T>
-- [ ] **CORE-04**: ThemeGeometry struct with border radius, border width, disabled/border opacity, all Option<f32>
-- [ ] **CORE-05**: ThemeSpacing struct with named spacing scale (xxs through xxl), all Option<f32>
-- [ ] **CORE-06**: ThemeVariant composing ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing
-- [ ] **CORE-07**: NativeTheme with name, light variant, dark variant
+- [x] **CORE-02**: ThemeColors struct with 36 semantic color roles, all fields Option<Rgba>
+- [x] **CORE-03**: ThemeFonts struct with family, size, monospace family/size, all Option<T>
+- [x] **CORE-04**: ThemeGeometry struct with border radius, border width, disabled/border opacity, all Option<f32>
+- [x] **CORE-05**: ThemeSpacing struct with named spacing scale (xxs through xxl), all Option<f32>
+- [x] **CORE-06**: ThemeVariant composing ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing
+- [x] **CORE-07**: NativeTheme with name, light variant, dark variant
 - [x] **CORE-08**: merge() method on all structs via declarative macro for theme layering
 - [x] **CORE-09**: All public structs #[non_exhaustive] for forward compatibility
 - [x] **CORE-10**: All types Send + Sync, Default, Clone, Debug
@@ -23,7 +23,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Serialization
 
 - [ ] **SERDE-01**: TOML serialization/deserialization mapping 1:1 to struct field names
-- [ ] **SERDE-02**: #[serde(default)] + skip_serializing_if = "Option::is_none" on all fields for sparse TOML support
+- [x] **SERDE-02**: #[serde(default)] + skip_serializing_if = "Option::is_none" on all fields for sparse TOML support
 
 ### Presets
 
@@ -92,17 +92,17 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | CORE-01 | Phase 1 | Complete |
-| CORE-02 | Phase 1 | Pending |
-| CORE-03 | Phase 1 | Pending |
-| CORE-04 | Phase 1 | Pending |
-| CORE-05 | Phase 1 | Pending |
-| CORE-06 | Phase 1 | Pending |
-| CORE-07 | Phase 1 | Pending |
+| CORE-02 | Phase 1 | Complete |
+| CORE-03 | Phase 1 | Complete |
+| CORE-04 | Phase 1 | Complete |
+| CORE-05 | Phase 1 | Complete |
+| CORE-06 | Phase 1 | Complete |
+| CORE-07 | Phase 1 | Complete |
 | CORE-08 | Phase 1 | Complete |
 | CORE-09 | Phase 1 | Complete |
 | CORE-10 | Phase 1 | Complete |
 | SERDE-01 | Phase 1 | Pending |
-| SERDE-02 | Phase 1 | Pending |
+| SERDE-02 | Phase 1 | Complete |
 | PRESET-01 | Phase 2 | Pending |
 | PRESET-02 | Phase 2 | Pending |
 | PRESET-03 | Phase 7 | Pending |

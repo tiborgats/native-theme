@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 01-01-PLAN.md
-last_updated: "2026-03-07T15:15:10.977Z"
-last_activity: "2026-03-07 -- Completed 01-01: project scaffold, Rgba, Error, impl_merge!"
+stopped_at: Completed 01-02-PLAN.md
+last_updated: "2026-03-07T15:20:15Z"
+last_activity: "2026-03-07 -- Completed 01-02: theme model structs (ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing, ThemeVariant, NativeTheme)"
 progress:
   total_phases: 8
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
-  percent: 33
+  completed_plans: 2
+  percent: 67
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-07)
 ## Current Position
 
 Phase: 1 of 8 (Data Model Foundation)
-Plan: 1 of 3 in current phase
+Plan: 2 of 3 in current phase
 Status: Executing
-Last activity: 2026-03-07 -- Completed 01-01: project scaffold, Rgba, Error, impl_merge!
+Last activity: 2026-03-07 -- Completed 01-02: theme model structs (ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing, ThemeVariant, NativeTheme)
 
-Progress: [███░░░░░░░] 33%
+Progress: [██████░░░░] 67%
 
 ## Performance Metrics
 
@@ -51,6 +51,7 @@ Progress: [███░░░░░░░] 33%
 
 *Updated after each plan completion*
 | Phase 01 P01 | 3min | 3 tasks | 4 files |
+| Phase 01 P02 | 3min | 2 tasks | 6 files |
 
 ## Accumulated Context
 
@@ -64,6 +65,8 @@ Recent decisions affecting current work:
 - [Roadmap]: Phase 7 (Extended Presets) depends only on Phase 1, enabling parallel execution with reader phases
 - [Phase 01]: u8 internal representation for Rgba (matches platform sources, enables Copy/Eq/Hash)
 - [Phase 01]: impl_merge! macro with option/nested field categories for deep recursive merge
+- [Phase 01]: PanelColors (not SurfaceColors) to avoid CoreColors.surface naming collision
+- [Phase 01]: NativeTheme.merge() manual impl (not macro) -- keeps base name, special variant logic
 
 ### Pending Todos
 
@@ -77,6 +80,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-07T15:15:10.975Z
-Stopped at: Completed 01-01-PLAN.md
+Last session: 2026-03-07T15:20:15Z
+Stopped at: Completed 01-02-PLAN.md
 Resume file: None
