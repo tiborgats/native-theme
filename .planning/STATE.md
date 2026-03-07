@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 02-01-PLAN.md
-last_updated: "2026-03-07T15:54:43.471Z"
-last_activity: "2026-03-07 -- Completed 02-01: core presets with 3 TOML files and 5-function API"
+stopped_at: Completed 02-02-PLAN.md
+last_updated: "2026-03-07T15:57:56.060Z"
+last_activity: "2026-03-07 -- Completed 02-02: 12 integration tests validating all bundled presets"
 progress:
   total_phases: 8
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 5
-  completed_plans: 4
+  completed_plans: 5
   percent: 80
 ---
 
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 2: Core Presets
+**Current focus:** Phase 3: KDE Reader (Phase 2 complete)
 
 ## Current Position
 
-Phase: 2 of 8 (Core Presets)
-Plan: 1 of 2 in current phase
-Status: In Progress
-Last activity: 2026-03-07 -- Completed 02-01: core presets with 3 TOML files and 5-function API
+Phase: 2 of 8 (Core Presets) -- COMPLETE
+Plan: 2 of 2 in current phase
+Status: Phase Complete
+Last activity: 2026-03-07 -- Completed 02-02: 12 integration tests validating all bundled presets
 
-Progress: [████████░░] 80%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -54,6 +54,7 @@ Progress: [████████░░] 80%
 | Phase 01 P02 | 3min | 2 tasks | 6 files |
 | Phase 01 P03 | 3min | 2 tasks | 2 files |
 | Phase 02 P01 | 2min | 2 tasks | 5 files |
+| Phase 02 P02 | 1min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,8 @@ Recent decisions affecting current work:
 - [Phase 02]: Pre-computed solid hex for Adwaita alpha colors (foreground #2e3436 GTK convention, border #d5d5d5)
 - [Phase 02]: Fresh owned NativeTheme per preset() call -- no caching, callers free to mutate for merge
 - [Phase 02]: Match statement for 3 presets (not HashMap) -- compile-time exhaustive, zero allocation
+- [Phase 02]: Individual test functions per invariant (not mega-test) for clear failure isolation
+- [Phase 02]: RGB sum comparison for dark-is-darker sanity check (simple, no floating-point needed)
 
 ### Pending Todos
 
@@ -86,6 +89,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-07T15:54:43.469Z
-Stopped at: Completed 02-01-PLAN.md
+Last session: 2026-03-07T15:57:16Z
+Stopped at: Completed 02-02-PLAN.md
 Resume file: None

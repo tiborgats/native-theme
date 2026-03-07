@@ -50,7 +50,7 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Testing
 
 - [x] **TEST-01**: Round-trip serde tests for all types
-- [ ] **TEST-02**: Preset loading tests (all presets parse correctly)
+- [x] **TEST-02**: Preset loading tests (all presets parse correctly)
 - [x] **TEST-03**: Rgba hex parsing edge cases (3/4/6/8 char, with/without #, invalid)
 - [ ] **TEST-04**: Platform reader unit tests with mock data
 
@@ -114,7 +114,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PLAT-04 | Phase 5 | Pending |
 | DOC-01 | Phase 8 | Pending |
 | TEST-01 | Phase 1 | Complete |
-| TEST-02 | Phase 2 | Pending |
+| TEST-02 | Phase 2 | Complete |
 | TEST-03 | Phase 1 | Complete |
 | TEST-04 | Phase 6 | Pending |
 
