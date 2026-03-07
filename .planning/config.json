@@ -1,6 +1,5 @@
 {
   "mode": "yolo",
-  "depth": "comprehensive",
   "model_profile": "quality",
   "commit_docs": true,
   "search_gitignored": false,
@@ -12,5 +11,6 @@
     "plan_check": true,
     "verifier": true
   },
-  "parallelization": true
+  "parallelization": true,
+  "granularity": "fine"
 }

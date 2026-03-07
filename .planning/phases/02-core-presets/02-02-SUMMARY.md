@@ -62,7 +62,7 @@ Each task was committed atomically:
 
 1. **Task 1: Create integration tests for preset loading** - `5b3b977` (test)
 
-**Plan metadata:** TBD (docs: complete plan)
+**Plan metadata:** `7359a89` (docs: complete plan)
 
 ## Files Created/Modified
 - `tests/preset_loading.rs` - 12 integration tests (290 lines) validating all bundled preset invariants
