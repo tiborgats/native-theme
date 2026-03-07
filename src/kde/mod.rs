@@ -10,9 +10,40 @@ use crate::Rgba;
 /// Internal helper that encapsulates all parsing logic for testability
 /// without requiring filesystem access.
 fn from_kde_content(content: &str) -> crate::Result<crate::NativeTheme> {
-    // Stub -- will be implemented in GREEN phase
-    let _ = content;
-    Err(crate::Error::Unavailable("not yet implemented".into()))
+    let mut ini = create_kde_parser();
+    ini.read(content.to_string())
+        .map_err(|e| crate::Error::Format(e))?;
+
+    let theme_colors = colors::parse_colors(&ini);
+    let theme_fonts = fonts::parse_fonts(&ini);
+    let dark = is_dark_theme(&ini);
+
+    let name = ini
+        .get("General", "ColorScheme")
+        .unwrap_or_else(|| "KDE".to_string());
+
+    let variant = crate::ThemeVariant {
+        colors: theme_colors,
+        fonts: theme_fonts,
+        geometry: Default::default(),
+        spacing: Default::default(),
+    };
+
+    let theme = if dark {
+        crate::NativeTheme {
+            name,
+            light: None,
+            dark: Some(variant),
+        }
+    } else {
+        crate::NativeTheme {
+            name,
+            light: Some(variant),
+            dark: None,
+        }
+    };
+
+    Ok(theme)
 }
 
 /// Read the current KDE theme from kdeglobals.
@@ -20,9 +51,11 @@ fn from_kde_content(content: &str) -> crate::Result<crate::NativeTheme> {
 /// Parses `~/.config/kdeglobals` (respecting `XDG_CONFIG_HOME`) and maps
 /// KDE color groups and font strings to a `NativeTheme`.
 pub fn from_kde() -> crate::Result<crate::NativeTheme> {
-    Err(crate::Error::Unavailable(
-        "from_kde() not yet implemented (Plan 02)".into(),
-    ))
+    let path = kdeglobals_path();
+    let content = std::fs::read_to_string(&path).map_err(|e| {
+        crate::Error::Unavailable(format!("cannot read {}: {e}", path.display()))
+    })?;
+    from_kde_content(&content)
 }
 
 /// Create a configparser Ini instance configured for KDE files.
