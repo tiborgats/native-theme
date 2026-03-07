@@ -1,8 +1,8 @@
 //! Bundled theme presets and TOML serialization API.
 //!
-//! Provides three built-in presets (default, kde-breeze, adwaita) embedded
-//! at compile time, plus functions for loading themes from TOML strings
-//! and files.
+//! Provides seven built-in presets (default, kde-breeze, adwaita, windows-11,
+//! macos-sonoma, material, ios) embedded at compile time, plus functions for
+//! loading themes from TOML strings and files.
 
 use crate::{Error, NativeTheme, Result};
 use std::path::Path;
@@ -11,9 +11,16 @@ use std::path::Path;
 const DEFAULT_TOML: &str = include_str!("presets/default.toml");
 const KDE_BREEZE_TOML: &str = include_str!("presets/kde-breeze.toml");
 const ADWAITA_TOML: &str = include_str!("presets/adwaita.toml");
+const WINDOWS_11_TOML: &str = include_str!("presets/windows-11.toml");
+const MACOS_SONOMA_TOML: &str = include_str!("presets/macos-sonoma.toml");
+const MATERIAL_TOML: &str = include_str!("presets/material.toml");
+const IOS_TOML: &str = include_str!("presets/ios.toml");
 
 /// All available preset names.
-const PRESET_NAMES: &[&str] = &["default", "kde-breeze", "adwaita"];
+const PRESET_NAMES: &[&str] = &[
+    "default", "kde-breeze", "adwaita",
+    "windows-11", "macos-sonoma", "material", "ios",
+];
 
 /// Load a bundled theme preset by name.
 ///
@@ -36,6 +43,10 @@ pub fn preset(name: &str) -> Result<NativeTheme> {
         "default" => DEFAULT_TOML,
         "kde-breeze" => KDE_BREEZE_TOML,
         "adwaita" => ADWAITA_TOML,
+        "windows-11" => WINDOWS_11_TOML,
+        "macos-sonoma" => MACOS_SONOMA_TOML,
+        "material" => MATERIAL_TOML,
+        "ios" => IOS_TOML,
         _ => return Err(Error::Unavailable(format!("unknown preset: {name}"))),
     };
     from_toml(toml_str)
@@ -177,12 +188,16 @@ mod tests {
     }
 
     #[test]
-    fn list_presets_returns_all_three() {
+    fn list_presets_returns_all_seven() {
         let names = list_presets();
-        assert_eq!(names.len(), 3);
+        assert_eq!(names.len(), 7);
         assert!(names.contains(&"default"));
         assert!(names.contains(&"kde-breeze"));
         assert!(names.contains(&"adwaita"));
+        assert!(names.contains(&"windows-11"));
+        assert!(names.contains(&"macos-sonoma"));
+        assert!(names.contains(&"material"));
+        assert!(names.contains(&"ios"));
     }
 
     #[test]
@@ -274,6 +289,10 @@ accent = "#00ff00"
         assert_eq!(preset("default").unwrap().name, "Default");
         assert_eq!(preset("kde-breeze").unwrap().name, "KDE Breeze");
         assert_eq!(preset("adwaita").unwrap().name, "Adwaita");
+        assert_eq!(preset("windows-11").unwrap().name, "Windows 11");
+        assert_eq!(preset("macos-sonoma").unwrap().name, "macOS Sonoma");
+        assert_eq!(preset("material").unwrap().name, "Material");
+        assert_eq!(preset("ios").unwrap().name, "iOS");
     }
 
     #[test]
