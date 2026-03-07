@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
 milestone: v1.0
-milestone_name: milestone
-status: executing
-stopped_at: Completed 08-01-PLAN.md
-last_updated: "2026-03-07T22:29:25.060Z"
-last_activity: "2026-03-07 -- Completed 07-02: 10 community preset TOML files wired into 17-entry preset registry"
+milestone_name: MVP
+status: milestone_complete
+stopped_at: v1.0 milestone complete
+last_updated: "2026-03-07T23:59:00Z"
+last_activity: "2026-03-07 -- v1.0 MVP milestone completed and archived"
 progress:
   total_phases: 8
   completed_phases: 8
@@ -21,35 +21,18 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 8: Documentation (Complete - 1 of 1 plans done)
+**Current focus:** v1.0 milestone complete — planning next milestone
 
 ## Current Position
 
-Phase: 8 of 8 (Documentation)
-Plan: 1 of 1 in current phase (complete)
+Milestone: v1.0 MVP — SHIPPED 2026-03-07
 Status: Complete
-Last activity: 2026-03-07 -- Completed 08-01: README with adapter examples, workflow docs, feature flags, and doctest wiring
+Phases: 8/8 | Plans: 14/14
 
 Progress: [██████████] 100%
 
 ## Performance Metrics
 
-**Velocity:**
-- Total plans completed: 0
-- Average duration: -
-- Total execution time: 0 hours
-
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| - | - | - | - |
-
-**Recent Trend:**
-- Last 5 plans: -
-- Trend: -
-
-*Updated after each plan completion*
 | Phase 01 P01 | 3min | 3 tasks | 4 files |
 | Phase 01 P02 | 3min | 2 tasks | 6 files |
 | Phase 01 P03 | 3min | 2 tasks | 2 files |
@@ -69,62 +52,22 @@ Progress: [██████████] 100%
 
 ### Decisions
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- [Roadmap]: 8 phases at fine granularity; platform readers split into separate phases (KDE, GNOME, Windows) for independent development
-- [Roadmap]: Tests co-located with the phases they validate (not separate test phases)
-- [Roadmap]: Phase 7 (Extended Presets) depends only on Phase 1, enabling parallel execution with reader phases
-- [Phase 01]: u8 internal representation for Rgba (matches platform sources, enables Copy/Eq/Hash)
-- [Phase 01]: impl_merge! macro with option/nested field categories for deep recursive merge
-- [Phase 01]: PanelColors (not SurfaceColors) to avoid CoreColors.surface naming collision
-- [Phase 01]: NativeTheme.merge() manual impl (not macro) -- keeps base name, special variant logic
-- [Phase 01]: r##"..."## double-hash raw strings for TOML literals containing hex colors
-- [Phase 02]: Pre-computed solid hex for Adwaita alpha colors (foreground #2e3436 GTK convention, border #d5d5d5)
-- [Phase 02]: Fresh owned NativeTheme per preset() call -- no caching, callers free to mutate for merge
-- [Phase 02]: Match statement for 3 presets (not HashMap) -- compile-time exhaustive, zero allocation
-- [Phase 02]: Individual test functions per invariant (not mega-test) for clear failure isolation
-- [Phase 02]: RGB sum comparison for dark-is-darker sanity check (simple, no floating-point needed)
-- [Phase 03]: configparser configured via Ini::new_cs() + custom IniDefault with delimiters vec\!['='] only
-- [Phase 03]: from_kde() stub returns Error::Unavailable (not todo\!()) for graceful runtime behavior
-- [Phase 03]: unsafe blocks for env var manipulation in tests (Rust 2024 edition)
-- [Phase 03]: get_color helper DRYs 35 INI lookups into section/key pair calls
-- [Phase 03]: from_kde_content internal helper enables integration testing without filesystem
-- [Phase 03]: configparser empty string parses as empty INI (Ok with default theme, not error)
-- [Phase 04]: ashpd default-features=false prevents tokio leakage to sync-only consumers
-- [Phase 04]: portal_color_to_rgba returns None for out-of-range (per XDG spec), not clamped
-- [Phase 04]: apply_high_contrast unconditionally sets border_opacity=1.0, disabled_opacity=0.7
-- [Phase 04]: NoPreference defaults to light variant (matching Adwaita default)
-- [Phase 04]: Only the active variant populated in output NativeTheme (matches KDE reader pattern)
-- [Phase 04]: Settings::new() failure returns Adwaita defaults (not Err) for graceful degradation
-- [Phase 04]: accent_color uses .ok() converting Result to Option for portal accent support detection
-- [Phase 04]: color_scheme and contrast use unwrap_or_default (NoPreference) for independent failure tolerance
-- [Phase 05]: Error::Unavailable for windows::core::Error conversion (does not impl std::error::Error, cannot use Error::Platform)
-- [Phase 05]: Module named windows.rs with ::windows:: prefix for external crate references (not win.rs rename)
-- [Phase 05]: Single TDD commit since tests inside cfg(feature="windows") cannot run on Linux cross-compilation host
-- [Phase 06]: Match on LinuxDesktop enum with cfg-gated arms (not if-let chains) to avoid dead code warnings
-- [Phase 06]: KDE without kde feature falls through to Adwaita preset (not Error::Unsupported)
-- [Phase 06]: from_system() directly in lib.rs (not separate dispatch.rs) -- 30 lines of routing logic
-- [Phase 07]: Platform-appropriate spacing values (Windows/Material 8px base, macOS/iOS 6/8px base)
-- [Phase 07]: Dark variant status colors use lighter readable tones for contrast on dark backgrounds
-- [Phase 07]: Material Design 3 disabled_opacity 0.38 matching official M3 spec
-- [Phase 07]: 17 total presets (not 18): plan arithmetic corrected; 10 community themes on Latte base for derived light variants
-- [Phase 08]: ReadmeDoctests struct placed after crate docs (not before) to avoid E0753 inner doc comment error
-- [Phase 08]: Adapter examples use rust,ignore (external toolkit deps); workflow examples compile-tested
-- [Phase 08]: Double-hash raw strings r##..## for TOML examples with hex color # characters
+Decisions logged in PROJECT.md Key Decisions table (10 entries with outcomes).
+All v1.0 decisions marked ✓ Good after milestone review.
 
 ### Pending Todos
 
-None yet.
+None.
 
 ### Blockers/Concerns
 
-- [Research]: ashpd tokio dependency leak -- RESOLVED in Phase 4 Plan 1 (default-features=false, portal-tokio/portal-async-io feature flags)
-- [Research]: configparser case sensitivity (must use Ini::new_cs() in Phase 3) -- silent data loss if missed
-- [Research]: merge() desynchronization risk -- Phase 1 must use declarative macro from day one
+All v1.0 blockers resolved:
+- ashpd tokio leak — RESOLVED (default-features=false)
+- configparser case sensitivity — RESOLVED (Ini::new_cs())
+- merge() desynchronization — RESOLVED (impl_merge! macro)
 
 ## Session Continuity
 
-Last session: 2026-03-07T22:29:25.058Z
-Stopped at: Completed 08-01-PLAN.md
+Last session: 2026-03-07T23:59:00Z
+Stopped at: v1.0 milestone complete
 Resume file: None
