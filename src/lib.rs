@@ -5,6 +5,10 @@
 //! Any Rust GUI app can look native on any platform by loading a single theme
 //! file or reading live OS settings, without coupling to any specific toolkit.
 
+#[doc = include_str!("../README.md")]
+#[cfg(doctest)]
+pub struct ReadmeDoctests;
+
 /// Generates `merge()` and `is_empty()` methods for theme structs.
 ///
 /// Two field categories:

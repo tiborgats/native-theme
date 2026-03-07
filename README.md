@@ -55,11 +55,11 @@ leaving everything else from the base preset intact.
 ```rust
 use native_theme::{NativeTheme, Rgba, preset, from_toml};
 let mut theme = preset("nord").unwrap();
-let user_overrides = from_toml(r#"
+let user_overrides = from_toml(r##"
 name = "My Custom Nord"
 [light.colors.core]
 accent = "#ff6600"
-"#).unwrap();
+"##).unwrap();
 theme.merge(&user_overrides);
 ```
 
