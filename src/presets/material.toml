@@ -1,0 +1,151 @@
+# Material Design 3 baseline theme
+# Source: m3.material.io baseline color scheme
+name = "Material"
+
+# === Light variant ===
+
+[light.colors.core]
+accent = "#6750a4"
+background = "#fffbfe"
+foreground = "#1c1b1f"
+surface = "#fffbfe"
+border = "#79747e"
+muted = "#49454f"
+shadow = "#00000018"
+
+[light.colors.primary]
+background = "#6750a4"
+foreground = "#ffffff"
+
+[light.colors.secondary]
+background = "#e8def8"
+foreground = "#1d192b"
+
+[light.colors.status]
+danger = "#b3261e"
+danger_foreground = "#ffffff"
+warning = "#7d5700"
+warning_foreground = "#ffffff"
+success = "#386a20"
+success_foreground = "#ffffff"
+info = "#6750a4"
+info_foreground = "#ffffff"
+
+[light.colors.interactive]
+selection = "#6750a4"
+selection_foreground = "#ffffff"
+link = "#6750a4"
+focus_ring = "#6750a4"
+
+[light.colors.panel]
+sidebar = "#f3edf7"
+sidebar_foreground = "#1c1b1f"
+tooltip = "#313033"
+tooltip_foreground = "#f4eff4"
+popover = "#fffbfe"
+popover_foreground = "#1c1b1f"
+
+[light.colors.component]
+button = "#e8def8"
+button_foreground = "#1d192b"
+input = "#fffbfe"
+input_foreground = "#1c1b1f"
+disabled = "#c4c7c5"
+separator = "#cac4d0"
+alternate_row = "#f7f2fa"
+
+[light.fonts]
+family = "Roboto"
+size = 14.0
+mono_family = "Roboto Mono"
+mono_size = 14.0
+
+[light.geometry]
+radius = 12.0
+frame_width = 1.0
+disabled_opacity = 0.38
+border_opacity = 0.12
+scroll_width = 8.0
+
+[light.spacing]
+xxs = 2.0
+xs = 4.0
+s = 8.0
+m = 12.0
+l = 16.0
+xl = 24.0
+xxl = 36.0
+
+# === Dark variant ===
+
+[dark.colors.core]
+accent = "#d0bcff"
+background = "#1c1b1f"
+foreground = "#e6e1e5"
+surface = "#1c1b1e"
+border = "#938f99"
+muted = "#cac4d0"
+shadow = "#00000040"
+
+[dark.colors.primary]
+background = "#d0bcff"
+foreground = "#381e72"
+
+[dark.colors.secondary]
+background = "#4a4458"
+foreground = "#e8def8"
+
+[dark.colors.status]
+danger = "#f2b8b5"
+danger_foreground = "#601410"
+warning = "#e6c18e"
+warning_foreground = "#3e2e00"
+success = "#b1d18a"
+success_foreground = "#1b3700"
+info = "#d0bcff"
+info_foreground = "#381e72"
+
+[dark.colors.interactive]
+selection = "#d0bcff"
+selection_foreground = "#381e72"
+link = "#d0bcff"
+focus_ring = "#d0bcff"
+
+[dark.colors.panel]
+sidebar = "#25232a"
+sidebar_foreground = "#e6e1e5"
+tooltip = "#e6e1e5"
+tooltip_foreground = "#313033"
+popover = "#2b2930"
+popover_foreground = "#e6e1e5"
+
+[dark.colors.component]
+button = "#4a4458"
+button_foreground = "#e8def8"
+input = "#1c1b1e"
+input_foreground = "#e6e1e5"
+disabled = "#49454f"
+separator = "#49454f"
+alternate_row = "#211f26"
+
+[dark.fonts]
+family = "Roboto"
+size = 14.0
+mono_family = "Roboto Mono"
+mono_size = 14.0
+
+[dark.geometry]
+radius = 12.0
+frame_width = 1.0
+disabled_opacity = 0.38
+border_opacity = 0.12
+scroll_width = 8.0
+
+[dark.spacing]
+xxs = 2.0
+xs = 4.0
+s = 8.0
+m = 12.0
+l = 16.0
+xl = 24.0
+xxl = 36.0

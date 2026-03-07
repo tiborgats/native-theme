@@ -1,0 +1,151 @@
+# macOS Sonoma theme
+# Source: Apple Human Interface Guidelines, NSColor system colors
+name = "macOS Sonoma"
+
+# === Light variant ===
+
+[light.colors.core]
+accent = "#007aff"
+background = "#f0f0f0"
+foreground = "#1d1d1f"
+surface = "#ffffff"
+border = "#d5d5d5"
+muted = "#86868b"
+shadow = "#00000018"
+
+[light.colors.primary]
+background = "#007aff"
+foreground = "#ffffff"
+
+[light.colors.secondary]
+background = "#e8e8ed"
+foreground = "#1d1d1f"
+
+[light.colors.status]
+danger = "#ff3b30"
+danger_foreground = "#ffffff"
+warning = "#ff9500"
+warning_foreground = "#1d1d1f"
+success = "#34c759"
+success_foreground = "#ffffff"
+info = "#007aff"
+info_foreground = "#ffffff"
+
+[light.colors.interactive]
+selection = "#007aff"
+selection_foreground = "#ffffff"
+link = "#007aff"
+focus_ring = "#007aff"
+
+[light.colors.panel]
+sidebar = "#e8e8ed"
+sidebar_foreground = "#1d1d1f"
+tooltip = "#2c2c2e"
+tooltip_foreground = "#ffffff"
+popover = "#ffffff"
+popover_foreground = "#1d1d1f"
+
+[light.colors.component]
+button = "#e8e8ed"
+button_foreground = "#1d1d1f"
+input = "#ffffff"
+input_foreground = "#1d1d1f"
+disabled = "#c7c7cc"
+separator = "#d5d5d5"
+alternate_row = "#f5f5fa"
+
+[light.fonts]
+family = "SF Pro"
+size = 13.0
+mono_family = "SF Mono"
+mono_size = 13.0
+
+[light.geometry]
+radius = 6.0
+frame_width = 1.0
+disabled_opacity = 0.5
+border_opacity = 0.2
+scroll_width = 8.0
+
+[light.spacing]
+xxs = 2.0
+xs = 4.0
+s = 6.0
+m = 10.0
+l = 16.0
+xl = 20.0
+xxl = 32.0
+
+# === Dark variant ===
+
+[dark.colors.core]
+accent = "#0a84ff"
+background = "#1e1e1e"
+foreground = "#ffffff"
+surface = "#2d2d2d"
+border = "#3d3d3d"
+muted = "#98989d"
+shadow = "#00000040"
+
+[dark.colors.primary]
+background = "#0a84ff"
+foreground = "#ffffff"
+
+[dark.colors.secondary]
+background = "#3a3a3c"
+foreground = "#ffffff"
+
+[dark.colors.status]
+danger = "#ff453a"
+danger_foreground = "#ffffff"
+warning = "#ff9f0a"
+warning_foreground = "#1e1e1e"
+success = "#30d158"
+success_foreground = "#ffffff"
+info = "#0a84ff"
+info_foreground = "#ffffff"
+
+[dark.colors.interactive]
+selection = "#0a84ff"
+selection_foreground = "#ffffff"
+link = "#0a84ff"
+focus_ring = "#0a84ff"
+
+[dark.colors.panel]
+sidebar = "#262626"
+sidebar_foreground = "#ffffff"
+tooltip = "#3a3a3c"
+tooltip_foreground = "#ffffff"
+popover = "#2d2d2d"
+popover_foreground = "#ffffff"
+
+[dark.colors.component]
+button = "#3a3a3c"
+button_foreground = "#ffffff"
+input = "#2d2d2d"
+input_foreground = "#ffffff"
+disabled = "#48484a"
+separator = "#3d3d3d"
+alternate_row = "#252527"
+
+[dark.fonts]
+family = "SF Pro"
+size = 13.0
+mono_family = "SF Mono"
+mono_size = 13.0
+
+[dark.geometry]
+radius = 6.0
+frame_width = 1.0
+disabled_opacity = 0.5
+border_opacity = 0.2
+scroll_width = 8.0
+
+[dark.spacing]
+xxs = 2.0
+xs = 4.0
+s = 6.0
+m = 10.0
+l = 16.0
+xl = 20.0
+xxl = 32.0
