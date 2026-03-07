@@ -28,7 +28,138 @@ pub struct Rgba {
     pub a: u8,
 }
 
-// Implementation will be added in GREEN phase
+impl Rgba {
+    /// Create an opaque color (alpha = 255).
+    pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
+        Self { r, g, b, a: 255 }
+    }
+
+    /// Create a color with explicit alpha.
+    pub const fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
+        Self { r, g, b, a }
+    }
+
+    /// Create a color from floating-point components in the 0.0..=1.0 range.
+    ///
+    /// Values are clamped to 0.0..=1.0 before conversion.
+    pub fn from_f32(r: f32, g: f32, b: f32, a: f32) -> Self {
+        Self {
+            r: (r.clamp(0.0, 1.0) * 255.0).round() as u8,
+            g: (g.clamp(0.0, 1.0) * 255.0).round() as u8,
+            b: (b.clamp(0.0, 1.0) * 255.0).round() as u8,
+            a: (a.clamp(0.0, 1.0) * 255.0).round() as u8,
+        }
+    }
+
+    /// Convert to `[r, g, b, a]` in the 0.0..=1.0 range (for toolkit interop).
+    pub fn to_f32_array(&self) -> [f32; 4] {
+        [
+            self.r as f32 / 255.0,
+            self.g as f32 / 255.0,
+            self.b as f32 / 255.0,
+            self.a as f32 / 255.0,
+        ]
+    }
+
+    /// Convert to `(r, g, b, a)` tuple in the 0.0..=1.0 range.
+    pub fn to_f32_tuple(&self) -> (f32, f32, f32, f32) {
+        (
+            self.r as f32 / 255.0,
+            self.g as f32 / 255.0,
+            self.b as f32 / 255.0,
+            self.a as f32 / 255.0,
+        )
+    }
+}
+
+impl fmt::Display for Rgba {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        if self.a == 255 {
+            write!(f, "#{:02x}{:02x}{:02x}", self.r, self.g, self.b)
+        } else {
+            write!(
+                f,
+                "#{:02x}{:02x}{:02x}{:02x}",
+                self.r, self.g, self.b, self.a
+            )
+        }
+    }
+}
+
+impl FromStr for Rgba {
+    type Err = String;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let hex = s.strip_prefix('#').unwrap_or(s);
+
+        if hex.is_empty() {
+            return Err("empty hex color string".to_string());
+        }
+
+        match hex.len() {
+            // #RGB shorthand: each digit doubled (e.g., 'a' -> 0xaa = a * 17)
+            3 => {
+                let r = u8::from_str_radix(&hex[0..1], 16)
+                    .map_err(|e| format!("invalid red component: {e}"))?;
+                let g = u8::from_str_radix(&hex[1..2], 16)
+                    .map_err(|e| format!("invalid green component: {e}"))?;
+                let b = u8::from_str_radix(&hex[2..3], 16)
+                    .map_err(|e| format!("invalid blue component: {e}"))?;
+                Ok(Rgba::rgb(r * 17, g * 17, b * 17))
+            }
+            // #RGBA shorthand
+            4 => {
+                let r = u8::from_str_radix(&hex[0..1], 16)
+                    .map_err(|e| format!("invalid red component: {e}"))?;
+                let g = u8::from_str_radix(&hex[1..2], 16)
+                    .map_err(|e| format!("invalid green component: {e}"))?;
+                let b = u8::from_str_radix(&hex[2..3], 16)
+                    .map_err(|e| format!("invalid blue component: {e}"))?;
+                let a = u8::from_str_radix(&hex[3..4], 16)
+                    .map_err(|e| format!("invalid alpha component: {e}"))?;
+                Ok(Rgba::rgba(r * 17, g * 17, b * 17, a * 17))
+            }
+            // #RRGGBB
+            6 => {
+                let r = u8::from_str_radix(&hex[0..2], 16)
+                    .map_err(|e| format!("invalid red component: {e}"))?;
+                let g = u8::from_str_radix(&hex[2..4], 16)
+                    .map_err(|e| format!("invalid green component: {e}"))?;
+                let b = u8::from_str_radix(&hex[4..6], 16)
+                    .map_err(|e| format!("invalid blue component: {e}"))?;
+                Ok(Rgba::rgb(r, g, b))
+            }
+            // #RRGGBBAA
+            8 => {
+                let r = u8::from_str_radix(&hex[0..2], 16)
+                    .map_err(|e| format!("invalid red component: {e}"))?;
+                let g = u8::from_str_radix(&hex[2..4], 16)
+                    .map_err(|e| format!("invalid green component: {e}"))?;
+                let b = u8::from_str_radix(&hex[4..6], 16)
+                    .map_err(|e| format!("invalid blue component: {e}"))?;
+                let a = u8::from_str_radix(&hex[6..8], 16)
+                    .map_err(|e| format!("invalid alpha component: {e}"))?;
+                Ok(Rgba::rgba(r, g, b, a))
+            }
+            other => Err(format!(
+                "invalid hex color length {other}: expected 3, 4, 6, or 8 hex digits"
+            )),
+        }
+    }
+}
+
+impl Serialize for Rgba {
+    fn serialize<S: Serializer>(&self, serializer: S) -> Result<S::Ok, S::Error> {
+        serializer.serialize_str(&self.to_string())
+    }
+}
+
+impl<'de> Deserialize<'de> for Rgba {
+    fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(deserializer)?;
+        Rgba::from_str(&s).map_err(de::Error::custom)
+    }
+}
 
 #[cfg(test)]
 mod tests {
