@@ -91,38 +91,38 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CORE-01 | - | Pending |
-| CORE-02 | - | Pending |
-| CORE-03 | - | Pending |
-| CORE-04 | - | Pending |
-| CORE-05 | - | Pending |
-| CORE-06 | - | Pending |
-| CORE-07 | - | Pending |
-| CORE-08 | - | Pending |
-| CORE-09 | - | Pending |
-| CORE-10 | - | Pending |
-| SERDE-01 | - | Pending |
-| SERDE-02 | - | Pending |
-| PRESET-01 | - | Pending |
-| PRESET-02 | - | Pending |
-| PRESET-03 | - | Pending |
-| PRESET-04 | - | Pending |
-| ERR-01 | - | Pending |
-| PLAT-01 | - | Pending |
-| PLAT-02 | - | Pending |
-| PLAT-03 | - | Pending |
-| PLAT-04 | - | Pending |
-| DOC-01 | - | Pending |
-| TEST-01 | - | Pending |
-| TEST-02 | - | Pending |
-| TEST-03 | - | Pending |
-| TEST-04 | - | Pending |
+| CORE-01 | Phase 1 | Pending |
+| CORE-02 | Phase 1 | Pending |
+| CORE-03 | Phase 1 | Pending |
+| CORE-04 | Phase 1 | Pending |
+| CORE-05 | Phase 1 | Pending |
+| CORE-06 | Phase 1 | Pending |
+| CORE-07 | Phase 1 | Pending |
+| CORE-08 | Phase 1 | Pending |
+| CORE-09 | Phase 1 | Pending |
+| CORE-10 | Phase 1 | Pending |
+| SERDE-01 | Phase 1 | Pending |
+| SERDE-02 | Phase 1 | Pending |
+| PRESET-01 | Phase 2 | Pending |
+| PRESET-02 | Phase 2 | Pending |
+| PRESET-03 | Phase 7 | Pending |
+| PRESET-04 | Phase 7 | Pending |
+| ERR-01 | Phase 1 | Pending |
+| PLAT-01 | Phase 3 | Pending |
+| PLAT-02 | Phase 4 | Pending |
+| PLAT-03 | Phase 6 | Pending |
+| PLAT-04 | Phase 5 | Pending |
+| DOC-01 | Phase 8 | Pending |
+| TEST-01 | Phase 1 | Pending |
+| TEST-02 | Phase 2 | Pending |
+| TEST-03 | Phase 1 | Pending |
+| TEST-04 | Phase 6 | Pending |
 
 **Coverage:**
 - v1 requirements: 26 total
-- Mapped to phases: 0
-- Unmapped: 26
+- Mapped to phases: 26
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-07*
-*Last updated: 2026-03-07 after initial definition*
+*Last updated: 2026-03-07 after roadmap creation*
