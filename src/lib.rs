@@ -98,3 +98,78 @@ pub use windows::from_windows;
 
 /// Convenience Result type alias for this crate.
 pub type Result<T> = std::result::Result<T, Error>;
+
+#[cfg(test)]
+mod dispatch_tests {
+    use super::*;
+
+    // -- detect_linux_de() pure function tests --
+
+    #[test]
+    fn detect_kde_simple() {
+        assert_eq!(detect_linux_de("KDE"), LinuxDesktop::Kde);
+    }
+
+    #[test]
+    fn detect_kde_colon_separated_after() {
+        assert_eq!(detect_linux_de("ubuntu:KDE"), LinuxDesktop::Kde);
+    }
+
+    #[test]
+    fn detect_kde_colon_separated_before() {
+        assert_eq!(detect_linux_de("KDE:plasma"), LinuxDesktop::Kde);
+    }
+
+    #[test]
+    fn detect_gnome_simple() {
+        assert_eq!(detect_linux_de("GNOME"), LinuxDesktop::Gnome);
+    }
+
+    #[test]
+    fn detect_gnome_ubuntu() {
+        assert_eq!(detect_linux_de("ubuntu:GNOME"), LinuxDesktop::Gnome);
+    }
+
+    #[test]
+    fn detect_unknown_xfce() {
+        assert_eq!(detect_linux_de("XFCE"), LinuxDesktop::Unknown);
+    }
+
+    #[test]
+    fn detect_unknown_cinnamon() {
+        assert_eq!(detect_linux_de("Cinnamon"), LinuxDesktop::Unknown);
+    }
+
+    #[test]
+    fn detect_empty_string() {
+        assert_eq!(detect_linux_de(""), LinuxDesktop::Unknown);
+    }
+
+    // -- from_linux() fallback test --
+
+    #[test]
+    fn from_linux_non_kde_returns_adwaita() {
+        // Temporarily set XDG_CURRENT_DESKTOP to GNOME so from_linux()
+        // takes the preset fallback path.
+        unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "GNOME") };
+        let result = from_linux();
+        unsafe { std::env::remove_var("XDG_CURRENT_DESKTOP") };
+
+        let theme = result.expect("from_linux() should return Ok for non-KDE desktop");
+        assert_eq!(theme.name, "Adwaita");
+    }
+
+    // -- from_system() smoke test --
+
+    #[test]
+    fn from_system_returns_result() {
+        // On Linux (our test platform), from_system() should return a Result.
+        // With GNOME set, it should return the Adwaita preset.
+        unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "GNOME") };
+        let result = from_system();
+        unsafe { std::env::remove_var("XDG_CURRENT_DESKTOP") };
+
+        let theme = result.expect("from_system() should return Ok on Linux");
+        assert_eq!(theme.name, "Adwaita");
+    }
+}
