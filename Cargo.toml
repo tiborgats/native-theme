@@ -10,10 +10,15 @@ kde = ["dep:configparser"]
 portal = ["dep:ashpd"]
 portal-tokio = ["portal", "ashpd/tokio"]
 portal-async-io = ["portal", "ashpd/async-io"]
+windows = ["dep:windows"]
 
 [dependencies]
 ashpd = { version = "0.13", optional = true, default-features = false, features = ["settings"] }
 configparser = { version = "3.1.0", optional = true }
+windows = { version = ">=0.59, <=0.62", optional = true, default-features = false, features = [
+    "UI_ViewManagement",
+    "Win32_UI_WindowsAndMessaging",
+] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_with = "3.17.0"
 toml = "1.0.6"

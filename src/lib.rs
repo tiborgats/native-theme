@@ -86,10 +86,15 @@ pub use model::{
 };
 pub use presets::{from_file, from_toml, list_presets, preset, to_toml};
 
+#[cfg(feature = "windows")]
+pub mod windows;
+
 #[cfg(feature = "portal")]
 pub use gnome::from_gnome;
 #[cfg(feature = "kde")]
 pub use kde::from_kde;
+#[cfg(feature = "windows")]
+pub use windows::from_windows;
 
 /// Convenience Result type alias for this crate.
 pub type Result<T> = std::result::Result<T, Error>;
