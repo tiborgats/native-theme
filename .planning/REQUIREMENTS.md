@@ -40,7 +40,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **PLAT-01**: Linux KDE reader: from_kde() -- sync, parses ~/.config/kdeglobals via configparser (feature "kde")
 - [x] **PLAT-02**: Linux GNOME reader: from_gnome() -- async, reads freedesktop portal via ashpd (feature "portal")
-- [ ] **PLAT-03**: Cross-platform dispatch: from_system() -- auto-detects platform/DE, calls appropriate reader
+- [x] **PLAT-03**: Cross-platform dispatch: from_system() -- auto-detects platform/DE, calls appropriate reader
 - [x] **PLAT-04**: Windows reader: from_windows() -- UISettings + GetSystemMetrics (feature "windows")
 
 ### Documentation
@@ -52,7 +52,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **TEST-01**: Round-trip serde tests for all types
 - [x] **TEST-02**: Preset loading tests (all presets parse correctly)
 - [x] **TEST-03**: Rgba hex parsing edge cases (3/4/6/8 char, with/without #, invalid)
-- [ ] **TEST-04**: Platform reader unit tests with mock data
+- [x] **TEST-04**: Platform reader unit tests with mock data
 
 ## v2 Requirements
 
@@ -110,13 +110,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | ERR-01 | Phase 1 | Complete |
 | PLAT-01 | Phase 3 | Complete |
 | PLAT-02 | Phase 4 | Complete |
-| PLAT-03 | Phase 6 | Pending |
+| PLAT-03 | Phase 6 | Complete |
 | PLAT-04 | Phase 5 | Complete |
 | DOC-01 | Phase 8 | Pending |
 | TEST-01 | Phase 1 | Complete |
 | TEST-02 | Phase 2 | Complete |
 | TEST-03 | Phase 1 | Complete |
-| TEST-04 | Phase 6 | Pending |
+| TEST-04 | Phase 6 | Complete |
 
 **Coverage:**
 - v1 requirements: 26 total
