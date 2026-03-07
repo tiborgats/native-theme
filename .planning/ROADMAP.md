@@ -18,7 +18,7 @@ Decimal phases appear between their surrounding integers in numeric order.
 - [x] **Phase 4: GNOME Portal Reader** - Async Linux GNOME reader via freedesktop portal (feature "portal") _(completed 2026-03-07)_
 - [x] **Phase 5: Windows Reader** - Sync Windows reader via UISettings and system metrics (feature "windows") _(completed 2026-03-07)_
 - [x] **Phase 6: Cross-Platform Dispatch** - from_system() auto-detection and platform reader unit tests _(completed 2026-03-07)_
-- [ ] **Phase 7: Extended Presets** - Platform presets (windows-11, macos-sonoma, material, ios) and community presets
+- [x] **Phase 7: Extended Presets** - Platform presets (windows-11, macos-sonoma, material, ios) and community presets (completed 2026-03-07)
 - [ ] **Phase 8: Documentation** - README with adapter examples for egui, iced, and slint
 
 ## Phase Details
@@ -110,7 +110,7 @@ Plans:
   1. Platform presets (windows-11, macos-sonoma, material, ios) are available via preset() and contain accurate light and dark variants reflecting each platform's design language
   2. Community presets (Catppuccin Latte/Frappe/Macchiato/Mocha, Nord, Dracula, Gruvbox, Solarized, Tokyo Night, One Dark) are available via preset() with correct color mappings
   3. All extended presets pass round-trip TOML serialization and contain non-empty ThemeColors in both variants
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 07-01-PLAN.md -- Platform presets (windows-11, macos-sonoma, material, ios) TOML files and registry wiring
 - [ ] 07-02-PLAN.md -- Community presets (Catppuccin 4 flavors, Nord, Dracula, Gruvbox, Solarized, Tokyo Night, One Dark) and final test updates
@@ -138,5 +138,5 @@ Phases execute in numeric order. Phase 3, 4, 5 can potentially execute in parall
 | 4. GNOME Portal Reader | 2/2 | ✓ Complete | 2026-03-07 |
 | 5. Windows Reader | 1/1 | ✓ Complete | 2026-03-07 |
 | 6. Cross-Platform Dispatch | 1/1 | ✓ Complete | 2026-03-07 |
-| 7. Extended Presets | 0/2 | In progress | - |
+| 7. Extended Presets | 2/2 | Complete   | 2026-03-07 |
 | 8. Documentation | 0/? | Not started | - |
