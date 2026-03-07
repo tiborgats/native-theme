@@ -1,8 +1,10 @@
 //! Bundled theme presets and TOML serialization API.
 //!
-//! Provides seven built-in presets (default, kde-breeze, adwaita, windows-11,
-//! macos-sonoma, material, ios) embedded at compile time, plus functions for
-//! loading themes from TOML strings and files.
+//! Provides 17 built-in presets embedded at compile time: 3 core (default,
+//! kde-breeze, adwaita), 4 platform (windows-11, macos-sonoma, material, ios),
+//! and 10 community (Catppuccin 4 flavors, Nord, Dracula, Gruvbox, Solarized,
+//! Tokyo Night, One Dark), plus functions for loading themes from TOML strings
+//! and files.
 
 use crate::{Error, NativeTheme, Result};
 use std::path::Path;
@@ -15,11 +17,23 @@ const WINDOWS_11_TOML: &str = include_str!("presets/windows-11.toml");
 const MACOS_SONOMA_TOML: &str = include_str!("presets/macos-sonoma.toml");
 const MATERIAL_TOML: &str = include_str!("presets/material.toml");
 const IOS_TOML: &str = include_str!("presets/ios.toml");
+const CATPPUCCIN_LATTE_TOML: &str = include_str!("presets/catppuccin-latte.toml");
+const CATPPUCCIN_FRAPPE_TOML: &str = include_str!("presets/catppuccin-frappe.toml");
+const CATPPUCCIN_MACCHIATO_TOML: &str = include_str!("presets/catppuccin-macchiato.toml");
+const CATPPUCCIN_MOCHA_TOML: &str = include_str!("presets/catppuccin-mocha.toml");
+const NORD_TOML: &str = include_str!("presets/nord.toml");
+const DRACULA_TOML: &str = include_str!("presets/dracula.toml");
+const GRUVBOX_TOML: &str = include_str!("presets/gruvbox.toml");
+const SOLARIZED_TOML: &str = include_str!("presets/solarized.toml");
+const TOKYO_NIGHT_TOML: &str = include_str!("presets/tokyo-night.toml");
+const ONE_DARK_TOML: &str = include_str!("presets/one-dark.toml");
 
 /// All available preset names.
 const PRESET_NAMES: &[&str] = &[
     "default", "kde-breeze", "adwaita",
     "windows-11", "macos-sonoma", "material", "ios",
+    "catppuccin-latte", "catppuccin-frappe", "catppuccin-macchiato", "catppuccin-mocha",
+    "nord", "dracula", "gruvbox", "solarized", "tokyo-night", "one-dark",
 ];
 
 /// Load a bundled theme preset by name.
@@ -47,6 +61,16 @@ pub fn preset(name: &str) -> Result<NativeTheme> {
         "macos-sonoma" => MACOS_SONOMA_TOML,
         "material" => MATERIAL_TOML,
         "ios" => IOS_TOML,
+        "catppuccin-latte" => CATPPUCCIN_LATTE_TOML,
+        "catppuccin-frappe" => CATPPUCCIN_FRAPPE_TOML,
+        "catppuccin-macchiato" => CATPPUCCIN_MACCHIATO_TOML,
+        "catppuccin-mocha" => CATPPUCCIN_MOCHA_TOML,
+        "nord" => NORD_TOML,
+        "dracula" => DRACULA_TOML,
+        "gruvbox" => GRUVBOX_TOML,
+        "solarized" => SOLARIZED_TOML,
+        "tokyo-night" => TOKYO_NIGHT_TOML,
+        "one-dark" => ONE_DARK_TOML,
         _ => return Err(Error::Unavailable(format!("unknown preset: {name}"))),
     };
     from_toml(toml_str)
@@ -58,9 +82,10 @@ pub fn preset(name: &str) -> Result<NativeTheme> {
 ///
 /// ```
 /// let names = native_theme::list_presets();
+/// assert_eq!(names.len(), 17);
 /// assert!(names.contains(&"default"));
-/// assert!(names.contains(&"kde-breeze"));
-/// assert!(names.contains(&"adwaita"));
+/// assert!(names.contains(&"nord"));
+/// assert!(names.contains(&"one-dark"));
 /// ```
 pub fn list_presets() -> &'static [&'static str] {
     PRESET_NAMES
@@ -188,9 +213,9 @@ mod tests {
     }
 
     #[test]
-    fn list_presets_returns_all_seven() {
+    fn list_presets_returns_all_seventeen() {
         let names = list_presets();
-        assert_eq!(names.len(), 7);
+        assert_eq!(names.len(), 17);
         assert!(names.contains(&"default"));
         assert!(names.contains(&"kde-breeze"));
         assert!(names.contains(&"adwaita"));
@@ -198,6 +223,16 @@ mod tests {
         assert!(names.contains(&"macos-sonoma"));
         assert!(names.contains(&"material"));
         assert!(names.contains(&"ios"));
+        assert!(names.contains(&"catppuccin-latte"));
+        assert!(names.contains(&"catppuccin-frappe"));
+        assert!(names.contains(&"catppuccin-macchiato"));
+        assert!(names.contains(&"catppuccin-mocha"));
+        assert!(names.contains(&"nord"));
+        assert!(names.contains(&"dracula"));
+        assert!(names.contains(&"gruvbox"));
+        assert!(names.contains(&"solarized"));
+        assert!(names.contains(&"tokyo-night"));
+        assert!(names.contains(&"one-dark"));
     }
 
     #[test]
@@ -293,6 +328,16 @@ accent = "#00ff00"
         assert_eq!(preset("macos-sonoma").unwrap().name, "macOS Sonoma");
         assert_eq!(preset("material").unwrap().name, "Material");
         assert_eq!(preset("ios").unwrap().name, "iOS");
+        assert_eq!(preset("catppuccin-latte").unwrap().name, "Catppuccin Latte");
+        assert_eq!(preset("catppuccin-frappe").unwrap().name, "Catppuccin Frappe");
+        assert_eq!(preset("catppuccin-macchiato").unwrap().name, "Catppuccin Macchiato");
+        assert_eq!(preset("catppuccin-mocha").unwrap().name, "Catppuccin Mocha");
+        assert_eq!(preset("nord").unwrap().name, "Nord");
+        assert_eq!(preset("dracula").unwrap().name, "Dracula");
+        assert_eq!(preset("gruvbox").unwrap().name, "Gruvbox");
+        assert_eq!(preset("solarized").unwrap().name, "Solarized");
+        assert_eq!(preset("tokyo-night").unwrap().name, "Tokyo Night");
+        assert_eq!(preset("one-dark").unwrap().name, "One Dark");
     }
 
     #[test]

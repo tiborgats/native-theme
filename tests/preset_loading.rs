@@ -231,11 +231,11 @@ fn all_presets_round_trip_toml() {
 }
 
 #[test]
-fn list_presets_returns_three_entries() {
+fn list_presets_returns_seventeen_entries() {
     assert_eq!(
         list_presets().len(),
-        3,
-        "expected 3 presets, got {}",
+        17,
+        "expected 17 presets, got {}",
         list_presets().len()
     );
 }
@@ -286,5 +286,61 @@ fn preset_names_are_correct() {
     assert!(
         names.contains(&"adwaita"),
         "list_presets() missing 'adwaita'"
+    );
+    assert!(
+        names.contains(&"windows-11"),
+        "list_presets() missing 'windows-11'"
+    );
+    assert!(
+        names.contains(&"macos-sonoma"),
+        "list_presets() missing 'macos-sonoma'"
+    );
+    assert!(
+        names.contains(&"material"),
+        "list_presets() missing 'material'"
+    );
+    assert!(
+        names.contains(&"ios"),
+        "list_presets() missing 'ios'"
+    );
+    assert!(
+        names.contains(&"catppuccin-latte"),
+        "list_presets() missing 'catppuccin-latte'"
+    );
+    assert!(
+        names.contains(&"catppuccin-frappe"),
+        "list_presets() missing 'catppuccin-frappe'"
+    );
+    assert!(
+        names.contains(&"catppuccin-macchiato"),
+        "list_presets() missing 'catppuccin-macchiato'"
+    );
+    assert!(
+        names.contains(&"catppuccin-mocha"),
+        "list_presets() missing 'catppuccin-mocha'"
+    );
+    assert!(
+        names.contains(&"nord"),
+        "list_presets() missing 'nord'"
+    );
+    assert!(
+        names.contains(&"dracula"),
+        "list_presets() missing 'dracula'"
+    );
+    assert!(
+        names.contains(&"gruvbox"),
+        "list_presets() missing 'gruvbox'"
+    );
+    assert!(
+        names.contains(&"solarized"),
+        "list_presets() missing 'solarized'"
+    );
+    assert!(
+        names.contains(&"tokyo-night"),
+        "list_presets() missing 'tokyo-night'"
+    );
+    assert!(
+        names.contains(&"one-dark"),
+        "list_presets() missing 'one-dark'"
     );
 }
