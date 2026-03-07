@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v1.0
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-03-07T17:25:27Z"
-last_activity: "2026-03-07 -- Completed 04-01: GNOME portal feature flags and build_theme core with TDD, 10 new tests"
+stopped_at: Completed 04-02-PLAN.md
+last_updated: "2026-03-07T17:29:00Z"
+last_activity: "2026-03-07 -- Completed 04-02: from_gnome() wired to live D-Bus portal via ashpd Settings proxy"
 progress:
   total_phases: 8
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 9
-  completed_plans: 8
-  percent: 89
+  completed_plans: 9
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 4: GNOME Portal Reader (Plan 1 of 2 complete)
+**Current focus:** Phase 4: GNOME Portal Reader (Complete - 2 of 2 plans done)
 
 ## Current Position
 
 Phase: 4 of 8 (GNOME Portal Reader)
-Plan: 1 of 2 in current phase
+Plan: 2 of 2 in current phase (complete)
 Status: Executing
-Last activity: 2026-03-07 -- Completed 04-01: GNOME portal feature flags and build_theme core with TDD, 10 new tests
+Last activity: 2026-03-07 -- Completed 04-02: from_gnome() wired to live D-Bus portal via ashpd Settings proxy
 
-Progress: [████████░░] 89%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -58,6 +58,7 @@ Progress: [████████░░] 89%
 | Phase 03 P01 | 3min | 2 tasks | 5 files |
 | Phase 03 P02 | 3min | 2 tasks | 2 files |
 | Phase 04 P01 | 3min | 1 tasks | 3 files |
+| Phase 04 P02 | 1min | 1 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -90,6 +91,9 @@ Recent decisions affecting current work:
 - [Phase 04]: apply_high_contrast unconditionally sets border_opacity=1.0, disabled_opacity=0.7
 - [Phase 04]: NoPreference defaults to light variant (matching Adwaita default)
 - [Phase 04]: Only the active variant populated in output NativeTheme (matches KDE reader pattern)
+- [Phase 04]: Settings::new() failure returns Adwaita defaults (not Err) for graceful degradation
+- [Phase 04]: accent_color uses .ok() converting Result to Option for portal accent support detection
+- [Phase 04]: color_scheme and contrast use unwrap_or_default (NoPreference) for independent failure tolerance
 
 ### Pending Todos
 
@@ -103,6 +107,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-03-07T17:25:27Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-03-07T17:29:00Z
+Stopped at: Completed 04-02-PLAN.md
 Resume file: None
