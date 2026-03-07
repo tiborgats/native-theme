@@ -110,7 +110,10 @@ Plans:
   1. Platform presets (windows-11, macos-sonoma, material, ios) are available via preset() and contain accurate light and dark variants reflecting each platform's design language
   2. Community presets (Catppuccin Latte/Frappe/Macchiato/Mocha, Nord, Dracula, Gruvbox, Solarized, Tokyo Night, One Dark) are available via preset() with correct color mappings
   3. All extended presets pass round-trip TOML serialization and contain non-empty ThemeColors in both variants
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 07-01-PLAN.md -- Platform presets (windows-11, macos-sonoma, material, ios) TOML files and registry wiring
+- [ ] 07-02-PLAN.md -- Community presets (Catppuccin 4 flavors, Nord, Dracula, Gruvbox, Solarized, Tokyo Night, One Dark) and final test updates
 
 ### Phase 8: Documentation
 **Goal**: Developers can integrate native-theme into any Rust GUI app by following documented examples
@@ -135,5 +138,5 @@ Phases execute in numeric order. Phase 3, 4, 5 can potentially execute in parall
 | 4. GNOME Portal Reader | 2/2 | ✓ Complete | 2026-03-07 |
 | 5. Windows Reader | 1/1 | ✓ Complete | 2026-03-07 |
 | 6. Cross-Platform Dispatch | 1/1 | ✓ Complete | 2026-03-07 |
-| 7. Extended Presets | 0/? | Not started | - |
+| 7. Extended Presets | 0/2 | In progress | - |
 | 8. Documentation | 0/? | Not started | - |
