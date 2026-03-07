@@ -72,6 +72,7 @@ macro_rules! impl_merge {
 pub mod color;
 pub mod error;
 pub mod model;
+pub mod presets;
 
 pub use color::Rgba;
 pub use error::Error;
@@ -79,6 +80,7 @@ pub use model::{
     ActionColors, ComponentColors, CoreColors, InteractiveColors, NativeTheme, PanelColors,
     StatusColors, ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing, ThemeVariant,
 };
+pub use presets::{from_file, from_toml, list_presets, preset, to_toml};
 
 /// Convenience Result type alias for this crate.
 pub type Result<T> = std::result::Result<T, Error>;
