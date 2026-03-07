@@ -7,9 +7,13 @@ description = "Cross-platform native theme detection and loading for Rust GUI ap
 
 [features]
 kde = ["dep:configparser"]
+portal = ["dep:ashpd"]
+portal-tokio = ["portal", "ashpd/tokio"]
+portal-async-io = ["portal", "ashpd/async-io"]
 
 [dependencies]
-configparser = { version = "3.1", optional = true }
+ashpd = { version = "0.13", optional = true, default-features = false, features = ["settings"] }
+configparser = { version = "3.1.0", optional = true }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_with = "3.17.0"
 toml = "1.0.6"

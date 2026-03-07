@@ -71,6 +71,8 @@ macro_rules! impl_merge {
 
 pub mod color;
 pub mod error;
+#[cfg(feature = "portal")]
+pub mod gnome;
 #[cfg(feature = "kde")]
 pub mod kde;
 pub mod model;
@@ -84,6 +86,8 @@ pub use model::{
 };
 pub use presets::{from_file, from_toml, list_presets, preset, to_toml};
 
+#[cfg(feature = "portal")]
+pub use gnome::from_gnome;
 #[cfg(feature = "kde")]
 pub use kde::from_kde;
 
