@@ -9,16 +9,16 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Core Data Model
 
-- [ ] **CORE-01**: Rgba color type with 8-bit-per-channel sRGB + alpha, custom hex serde (#RRGGBB / #RRGGBBAA)
+- [x] **CORE-01**: Rgba color type with 8-bit-per-channel sRGB + alpha, custom hex serde (#RRGGBB / #RRGGBBAA)
 - [ ] **CORE-02**: ThemeColors struct with 36 semantic color roles, all fields Option<Rgba>
 - [ ] **CORE-03**: ThemeFonts struct with family, size, monospace family/size, all Option<T>
 - [ ] **CORE-04**: ThemeGeometry struct with border radius, border width, disabled/border opacity, all Option<f32>
 - [ ] **CORE-05**: ThemeSpacing struct with named spacing scale (xxs through xxl), all Option<f32>
 - [ ] **CORE-06**: ThemeVariant composing ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing
 - [ ] **CORE-07**: NativeTheme with name, light variant, dark variant
-- [ ] **CORE-08**: merge() method on all structs via declarative macro for theme layering
-- [ ] **CORE-09**: All public structs #[non_exhaustive] for forward compatibility
-- [ ] **CORE-10**: All types Send + Sync, Default, Clone, Debug
+- [x] **CORE-08**: merge() method on all structs via declarative macro for theme layering
+- [x] **CORE-09**: All public structs #[non_exhaustive] for forward compatibility
+- [x] **CORE-10**: All types Send + Sync, Default, Clone, Debug
 
 ### Serialization
 
@@ -34,7 +34,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Error Handling
 
-- [ ] **ERR-01**: Error enum with Unsupported, Unavailable, Format, Platform variants + Display + std::error::Error
+- [x] **ERR-01**: Error enum with Unsupported, Unavailable, Format, Platform variants + Display + std::error::Error
 
 ### Platform Readers
 
@@ -51,7 +51,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [ ] **TEST-01**: Round-trip serde tests for all types
 - [ ] **TEST-02**: Preset loading tests (all presets parse correctly)
-- [ ] **TEST-03**: Rgba hex parsing edge cases (3/4/6/8 char, with/without #, invalid)
+- [x] **TEST-03**: Rgba hex parsing edge cases (3/4/6/8 char, with/without #, invalid)
 - [ ] **TEST-04**: Platform reader unit tests with mock data
 
 ## v2 Requirements
@@ -91,23 +91,23 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| CORE-01 | Phase 1 | Pending |
+| CORE-01 | Phase 1 | Complete |
 | CORE-02 | Phase 1 | Pending |
 | CORE-03 | Phase 1 | Pending |
 | CORE-04 | Phase 1 | Pending |
 | CORE-05 | Phase 1 | Pending |
 | CORE-06 | Phase 1 | Pending |
 | CORE-07 | Phase 1 | Pending |
-| CORE-08 | Phase 1 | Pending |
-| CORE-09 | Phase 1 | Pending |
-| CORE-10 | Phase 1 | Pending |
+| CORE-08 | Phase 1 | Complete |
+| CORE-09 | Phase 1 | Complete |
+| CORE-10 | Phase 1 | Complete |
 | SERDE-01 | Phase 1 | Pending |
 | SERDE-02 | Phase 1 | Pending |
 | PRESET-01 | Phase 2 | Pending |
 | PRESET-02 | Phase 2 | Pending |
 | PRESET-03 | Phase 7 | Pending |
 | PRESET-04 | Phase 7 | Pending |
-| ERR-01 | Phase 1 | Pending |
+| ERR-01 | Phase 1 | Complete |
 | PLAT-01 | Phase 3 | Pending |
 | PLAT-02 | Phase 4 | Pending |
 | PLAT-03 | Phase 6 | Pending |
@@ -115,7 +115,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | DOC-01 | Phase 8 | Pending |
 | TEST-01 | Phase 1 | Pending |
 | TEST-02 | Phase 2 | Pending |
-| TEST-03 | Phase 1 | Pending |
+| TEST-03 | Phase 1 | Complete |
 | TEST-04 | Phase 6 | Pending |
 
 **Coverage:**
