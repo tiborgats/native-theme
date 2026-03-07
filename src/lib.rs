@@ -71,6 +71,8 @@ macro_rules! impl_merge {
 
 pub mod color;
 pub mod error;
+#[cfg(feature = "kde")]
+pub mod kde;
 pub mod model;
 pub mod presets;
 
@@ -81,6 +83,9 @@ pub use model::{
     StatusColors, ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing, ThemeVariant,
 };
 pub use presets::{from_file, from_toml, list_presets, preset, to_toml};
+
+#[cfg(feature = "kde")]
+pub use kde::from_kde;
 
 /// Convenience Result type alias for this crate.
 pub type Result<T> = std::result::Result<T, Error>;

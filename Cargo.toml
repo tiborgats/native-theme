@@ -5,10 +5,14 @@ edition = "2024"
 license = "MIT OR Apache-2.0"
 description = "Cross-platform native theme detection and loading for Rust GUI applications"
 
+[features]
+kde = ["dep:configparser"]
+
 [dependencies]
-serde = { version = "1", features = ["derive"] }
-serde_with = "3"
-toml = "1"
+configparser = { version = "3.1", optional = true }
+serde = { version = "1.0.228", features = ["derive"] }
+serde_with = "3.17.0"
+toml = "1.0.6"
 
 [dev-dependencies]
-serde_json = "1"
+serde_json = "1.0.149"
