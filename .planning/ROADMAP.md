@@ -12,7 +12,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 Decimal phases appear between their surrounding integers in numeric order.
 
-- [ ] **Phase 1: Data Model Foundation** - Rgba, all theme structs, merge macro, error type, serde, and validation tests
+- [x] **Phase 1: Data Model Foundation** - Rgba, all theme structs, merge macro, error type, serde, and validation tests _(completed 2026-03-07)_
 - [ ] **Phase 2: Core Presets** - Bundled preset TOML files, preset loading API, and preset tests
 - [ ] **Phase 3: KDE Reader** - Sync Linux KDE reader parsing kdeglobals (feature "kde")
 - [ ] **Phase 4: GNOME Portal Reader** - Async Linux GNOME reader via freedesktop portal (feature "portal")
@@ -116,7 +116,7 @@ Phases execute in numeric order. Phase 3, 4, 5 can potentially execute in parall
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Data Model Foundation | 0/3 | Planning complete | - |
+| 1. Data Model Foundation | 3/3 | ✓ Complete | 2026-03-07 |
 | 2. Core Presets | 0/? | Not started | - |
 | 3. KDE Reader | 0/? | Not started | - |
 | 4. GNOME Portal Reader | 0/? | Not started | - |
