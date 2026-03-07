@@ -54,7 +54,7 @@ The core stack is minimal and stable: serde 1.0 (universal serialization) + toml
 - Community-contributable TOML presets (lower barrier than RON or Rust code)
 - Partial TOML overrides (3-line accent override merged onto full base theme)
 
-**Defer (v1.0+):**
+**Defer (v0.1+):**
 - iOS runtime reader -- small Rust iOS audience, requires device testing
 - Android runtime reader -- immature JNI tooling, 3-5x more code than other platforms
 - Widget-level metrics -- no toolkit consumes these today
@@ -113,7 +113,7 @@ Based on research, suggested phase structure:
 **Uses:** windows 0.62, objc2-app-kit 0.3
 **Avoids:** Pitfall 2 (NSColor crash -- sRGB conversion helper), Windows API presence checks for graceful degradation
 
-### Phase 6: Polish, Documentation, and v1.0
+### Phase 6: Polish, Documentation, and v0.1
 **Rationale:** Stabilize the API, document the adapter pattern for each major toolkit (egui, iced, gpui, slint), document change notification sources, add comprehensive examples. Prepare for crates.io publication.
 **Delivers:** Complete documentation, toolkit adapter examples, cookbook, API stability guarantees, crates.io publication.
 

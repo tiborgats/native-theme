@@ -1,11 +1,11 @@
 ---
 gsd_state_version: 1.0
-milestone: v1.0
+milestone: v0.1
 milestone_name: MVP
 status: milestone_complete
-stopped_at: v1.0 milestone complete
+stopped_at: v0.1 milestone complete
 last_updated: "2026-03-07T23:59:00Z"
-last_activity: "2026-03-07 -- v1.0 MVP milestone completed and archived"
+last_activity: "2026-03-07 -- v0.1 MVP milestone completed and archived"
 progress:
   total_phases: 8
   completed_phases: 8
@@ -21,11 +21,11 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-07)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** v1.0 milestone complete — planning next milestone
+**Current focus:** v0.1 milestone complete — planning next milestone
 
 ## Current Position
 
-Milestone: v1.0 MVP — SHIPPED 2026-03-07
+Milestone: v0.1 MVP — SHIPPED 2026-03-07
 Status: Complete
 Phases: 8/8 | Plans: 14/14
 
@@ -53,7 +53,7 @@ Progress: [██████████] 100%
 ### Decisions
 
 Decisions logged in PROJECT.md Key Decisions table (10 entries with outcomes).
-All v1.0 decisions marked ✓ Good after milestone review.
+All v0.1 decisions marked ✓ Good after milestone review.
 
 ### Pending Todos
 
@@ -61,7 +61,7 @@ None.
 
 ### Blockers/Concerns
 
-All v1.0 blockers resolved:
+All v0.1 blockers resolved:
 - ashpd tokio leak — RESOLVED (default-features=false)
 - configparser case sensitivity — RESOLVED (Ini::new_cs())
 - merge() desynchronization — RESOLVED (impl_merge! macro)
@@ -69,5 +69,5 @@ All v1.0 blockers resolved:
 ## Session Continuity
 
 Last session: 2026-03-07T23:59:00Z
-Stopped at: v1.0 milestone complete
+Stopped at: v0.1 milestone complete
 Resume file: None

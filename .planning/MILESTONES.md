@@ -1,6 +1,6 @@
 # Milestones
 
-## v1.0 MVP (Shipped: 2026-03-07)
+## v0.1 MVP (Shipped: 2026-03-07)
 
 **Phases completed:** 8 phases, 14 plans, 0 tasks
 

@@ -163,7 +163,7 @@ Features to add once core is working and the TOML schema is validated.
 - [ ] Windows UISettings reader (feature `windows`) -- trigger: Windows users request it
 - [ ] macOS NSColor reader (feature `macos`) -- trigger: macOS users request it
 
-### Future Consideration (v1.0+)
+### Future Consideration (v0.1+)
 
 Features to defer until product-market fit is established.
 
@@ -207,7 +207,7 @@ Features to defer until product-market fit is established.
 **Priority key:**
 - P1: Must have for launch (v0.1)
 - P2: Should have, add when possible (v0.2-v0.x)
-- P3: Nice to have, future consideration (v1.0+)
+- P3: Nice to have, future consideration (v0.1+)
 
 ## Competitor Feature Analysis
 

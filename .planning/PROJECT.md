@@ -12,21 +12,21 @@ Any Rust GUI app can look native on any platform by loading a single theme file 
 
 ### Validated
 
-- ✓ Data model with 36 semantic color roles, fonts, geometry, and spacing as plain Rust types — v1.0
-- ✓ Rgba color type with 8-bit-per-channel sRGB + alpha, custom hex serde (#RRGGBB / #RRGGBBAA) — v1.0
-- ✓ All fields Option<T> with #[non_exhaustive] structs for forward compatibility — v1.0
-- ✓ TOML serialization/deserialization mapping 1:1 to struct field names — v1.0
-- ✓ Theme layering via merge() — load base preset, overlay with user overrides — v1.0
-- ✓ Bundled presets: default, kde-breeze, adwaita, windows-11, macos-sonoma, material, ios — v1.0
-- ✓ Preset loading API: preset(), list_presets(), from_toml(), from_file(), to_toml() — v1.0
-- ✓ Error type with Unsupported/Unavailable/Format/Platform variants — v1.0
-- ✓ Linux KDE reader: from_kde() — sync, parses ~/.config/kdeglobals (feature "kde") — v1.0
-- ✓ Linux GNOME reader: from_gnome() — async, ashpd portal + Adwaita defaults (feature "portal") — v1.0
-- ✓ Cross-platform dispatch: from_system() — auto-detects platform/DE — v1.0
-- ✓ Windows reader: from_windows() — UISettings + GetSystemMetrics (feature "windows") — v1.0
-- ✓ Community presets: Catppuccin (4 flavors), Nord, Dracula, Gruvbox, Solarized, Tokyo Night, One Dark — v1.0
-- ✓ Documentation and README with adapter examples for egui/iced/slint — v1.0
-- ✓ Tests: round-trip serde, preset loading, Rgba hex parsing, platform reader unit tests — v1.0
+- ✓ Data model with 36 semantic color roles, fonts, geometry, and spacing as plain Rust types — v0.1
+- ✓ Rgba color type with 8-bit-per-channel sRGB + alpha, custom hex serde (#RRGGBB / #RRGGBBAA) — v0.1
+- ✓ All fields Option<T> with #[non_exhaustive] structs for forward compatibility — v0.1
+- ✓ TOML serialization/deserialization mapping 1:1 to struct field names — v0.1
+- ✓ Theme layering via merge() — load base preset, overlay with user overrides — v0.1
+- ✓ Bundled presets: default, kde-breeze, adwaita, windows-11, macos-sonoma, material, ios — v0.1
+- ✓ Preset loading API: preset(), list_presets(), from_toml(), from_file(), to_toml() — v0.1
+- ✓ Error type with Unsupported/Unavailable/Format/Platform variants — v0.1
+- ✓ Linux KDE reader: from_kde() — sync, parses ~/.config/kdeglobals (feature "kde") — v0.1
+- ✓ Linux GNOME reader: from_gnome() — async, ashpd portal + Adwaita defaults (feature "portal") — v0.1
+- ✓ Cross-platform dispatch: from_system() — auto-detects platform/DE — v0.1
+- ✓ Windows reader: from_windows() — UISettings + GetSystemMetrics (feature "windows") — v0.1
+- ✓ Community presets: Catppuccin (4 flavors), Nord, Dracula, Gruvbox, Solarized, Tokyo Night, One Dark — v0.1
+- ✓ Documentation and README with adapter examples for egui/iced/slint — v0.1
+- ✓ Tests: round-trip serde, preset loading, Rgba hex parsing, platform reader unit tests — v0.1
 
 ### Active
 
@@ -46,7 +46,7 @@ Any Rust GUI app can look native on any platform by loading a single theme file 
 
 ## Context
 
-Shipped v1.0 with ~7,000 LOC (3,349 Rust + 2,566 TOML presets + 1,100 integration tests).
+Shipped v0.1 with ~7,000 LOC (3,349 Rust + 2,566 TOML presets + 1,100 integration tests).
 Tech stack: Rust edition 2024, serde + toml (core), configparser (KDE), ashpd (GNOME portal), windows crate (Windows).
 17 bundled presets, 3 platform readers, 140+ tests with zero failures.
 Prior art: system-theme 0.3.0, cosmic-theme, dark-light 2.0 — native-theme unifies what these do partially.
@@ -77,4 +77,4 @@ Prior art: system-theme 0.3.0, cosmic-theme, dark-light 2.0 — native-theme uni
 | Adwaita as universal fallback | Embedded preset guaranteed available at compile time | ✓ Good — from_system() and from_gnome() both use it reliably |
 
 ---
-*Last updated: 2026-03-07 after v1.0 milestone*
+*Last updated: 2026-03-07 after v0.1 milestone*
