@@ -47,10 +47,10 @@ Requirements for v0.2 release. Each maps to roadmap phases.
 
 ### CI Pipeline
 
-- [ ] **CI-01**: GitHub Actions workflow testing on Linux + Windows + macOS runners
-- [ ] **CI-02**: Feature flag matrix: `--no-default-features`, `--features kde`, `--features portal-tokio`, `--features windows`, `--features macos`
-- [ ] **CI-03**: `cargo semver-checks` integrated for breaking change detection
-- [ ] **CI-04**: `cargo clippy` + `cargo fmt --check` in CI
+- [x] **CI-01**: GitHub Actions workflow testing on Linux + Windows + macOS runners
+- [x] **CI-02**: Feature flag matrix: `--no-default-features`, `--features kde`, `--features portal-tokio`, `--features windows`, `--features macos`
+- [x] **CI-03**: `cargo semver-checks` integrated for breaking change detection
+- [x] **CI-04**: `cargo clippy` + `cargo fmt --check` in CI
 
 ### Toolkit Connectors
 
@@ -142,10 +142,10 @@ Deferred to post-v0.2. Tracked but not in current roadmap.
 | METRIC-06 | Phase 12 | Complete |
 | METRIC-07 | Phase 12 | Complete |
 | METRIC-08 | Phase 12 | Complete |
-| CI-01 | Phase 13 | Pending |
-| CI-02 | Phase 13 | Pending |
-| CI-03 | Phase 13 | Pending |
-| CI-04 | Phase 13 | Pending |
+| CI-01 | Phase 13 | Complete |
+| CI-02 | Phase 13 | Complete |
+| CI-03 | Phase 13 | Complete |
+| CI-04 | Phase 13 | Complete |
 | CONN-01 | Phase 14 | Pending |
 | CONN-02 | Phase 14 | Pending |
 | CONN-03 | Phase 14 | Pending |

@@ -31,7 +31,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 10: API Breaking Changes** — Flatten ThemeColors, move presets to NativeTheme methods, add geometry fields (completed 2026-03-08)
 - [x] **Phase 11: Platform Readers** — macOS reader, Windows enhancements, Linux enhancements (completed 2026-03-08)
 - [x] **Phase 12: Widget Metrics** — Widget metrics data model and platform-specific population (completed 2026-03-08)
-- [ ] **Phase 13: CI Pipeline** — GitHub Actions with cross-platform matrix, semver-checks, linting
+- [x] **Phase 13: CI Pipeline** — GitHub Actions with cross-platform matrix, semver-checks, linting (completed 2026-03-08)
 - [ ] **Phase 14: Toolkit Connectors** — gpui and iced connector crates with examples
 - [ ] **Phase 15: Publishing Prep** — Metadata, licenses, changelog, doc examples, crates.io publish
 
@@ -155,6 +155,6 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 10. API Breaking Changes | v0.2 | 3/3 | ✓ Complete | 2026-03-08 |
 | 11. Platform Readers | v0.2 | 4/4 | ✓ Complete | 2026-03-08 |
 | 12. Widget Metrics | v0.2 | 3/3 | ✓ Complete | 2026-03-08 |
-| 13. CI Pipeline | v0.2 | 0/1 | Not started | - |
+| 13. CI Pipeline | 1/1 | Complete   | 2026-03-08 | - |
 | 14. Toolkit Connectors | v0.2 | 0/0 | Not started | - |
 | 15. Publishing Prep | v0.2 | 0/0 | Not started | - |
