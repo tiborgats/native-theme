@@ -554,13 +554,33 @@ impl Showcase {
             // Button sizes (using secondary for readability)
             .child(section("Button Sizes (Secondary for readability)"))
             .child(
-                h_flex()
-                    .gap_2()
-                    .items_end()
-                    .child(Button::new("s-xs").label("XSmall").with_size(Size::XSmall))
-                    .child(Button::new("s-sm").label("Small").with_size(Size::Small))
-                    .child(Button::new("s-md").label("Medium").with_size(Size::Medium))
-                    .child(Button::new("s-lg").label("Large").with_size(Size::Large)),
+                div()
+                    .id("tt-btn-sizes")
+                    .child(
+                        h_flex()
+                            .gap_2()
+                            .items_end()
+                            .child(Button::new("s-xs").label("XSmall").with_size(Size::XSmall))
+                            .child(Button::new("s-sm").label("Small").with_size(Size::Small))
+                            .child(Button::new("s-md").label("Medium").with_size(Size::Medium))
+                            .child(Button::new("s-lg").label("Large").with_size(Size::Large)),
+                    )
+                    .tooltip(move |window, cx| {
+                        let t = cx.theme();
+                        Tooltip::new(widget_tooltip(
+                            "Button Sizes",
+                            &[
+                                ("bg", "secondary", t.secondary),
+                                ("text", "secondary_foreground", t.secondary_foreground),
+                            ],
+                            &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                            &[
+                                ("size", "XSmall/Small/Medium/Large via Size enum"),
+                                ("padding", "varies per Size"),
+                                ("min-height", "varies per Size"),
+                            ],
+                        )).build(window, cx)
+                    }),
             )
             // Button group
             .child(section("ButtonGroup"))
@@ -590,26 +610,73 @@ impl Showcase {
             // Disabled + loading
             .child(section("Disabled State"))
             .child(
-                h_flex()
-                    .gap_2()
-                    .child(Button::new("d-pri").label("Disabled Primary").primary().disabled(true))
-                    .child(Button::new("d-sec").label("Disabled Secondary").disabled(true))
-                    .child(Button::new("d-dng").label("Disabled Danger").danger().disabled(true)),
+                div()
+                    .id("tt-btn-disabled")
+                    .child(
+                        h_flex()
+                            .gap_2()
+                            .child(Button::new("d-pri").label("Disabled Primary").primary().disabled(true))
+                            .child(Button::new("d-sec").label("Disabled Secondary").disabled(true))
+                            .child(Button::new("d-dng").label("Disabled Danger").danger().disabled(true)),
+                    )
+                    .tooltip(move |window, cx| {
+                        Tooltip::new(widget_tooltip(
+                            "Disabled Buttons",
+                            &[],
+                            &[],
+                            &[
+                                ("opacity", "hardcoded 0.5 when disabled"),
+                                ("cursor", "not-allowed"),
+                                ("theme", "same variant colors at reduced opacity"),
+                            ],
+                        )).build(window, cx)
+                    }),
             )
             .child(section("Loading State"))
             .child(
-                h_flex()
-                    .gap_2()
-                    .child(Button::new("l-pri").label("Loading...").primary().loading(true)),
+                div()
+                    .id("tt-btn-loading")
+                    .child(
+                        h_flex()
+                            .gap_2()
+                            .child(Button::new("l-pri").label("Loading...").primary().loading(true)),
+                    )
+                    .tooltip(move |window, cx| {
+                        Tooltip::new(widget_tooltip(
+                            "Loading Button",
+                            &[],
+                            &[],
+                            &[
+                                ("spinner", "replaces icon when loading"),
+                                ("interaction", "disabled while loading"),
+                            ],
+                        )).build(window, cx)
+                    }),
             )
             // Buttons with icons
             .child(section("Buttons with Icons"))
             .child(
-                h_flex()
-                    .gap_2()
-                    .child(Button::new("bi-save").label("Save").primary().icon(IconName::Check))
-                    .child(Button::new("bi-search").label("Search").icon(IconName::Search))
-                    .child(Button::new("bi-del").label("Delete").danger().icon(IconName::Delete)),
+                div()
+                    .id("tt-btn-icons")
+                    .child(
+                        h_flex()
+                            .gap_2()
+                            .child(Button::new("bi-save").label("Save").primary().icon(IconName::Check))
+                            .child(Button::new("bi-search").label("Search").icon(IconName::Search))
+                            .child(Button::new("bi-del").label("Delete").danger().icon(IconName::Delete)),
+                    )
+                    .tooltip(move |window, cx| {
+                        Tooltip::new(widget_tooltip(
+                            "Buttons with Icons",
+                            &[],
+                            &[],
+                            &[
+                                ("icon color", "inherits button text color"),
+                                ("icon position", "leading (before label)"),
+                                ("icon size", "matches button Size enum"),
+                            ],
+                        )).build(window, cx)
+                    }),
             )
     }
 
@@ -660,10 +727,36 @@ impl Showcase {
             // Number Input
             .child(section("Number Input"))
             .child(
-                NumberInput::new(&self.number_input_state)
-                    .placeholder("Enter a number")
-                    .with_size(Size::Medium)
-                    .w(px(200.0)),
+                div()
+                    .id("tt-number-input")
+                    .child(
+                        NumberInput::new(&self.number_input_state)
+                            .placeholder("Enter a number")
+                            .with_size(Size::Medium)
+                            .w(px(200.0)),
+                    )
+                    .tooltip(move |window, cx| {
+                        let t = cx.theme();
+                        Tooltip::new(widget_tooltip(
+                            "NumberInput",
+                            &[
+                                ("border", "input", t.input),
+                                ("bg", "background", t.background),
+                                ("text", "foreground", t.foreground),
+                                ("placeholder", "muted_foreground", t.muted_foreground),
+                                ("disabled bg", "muted", t.muted),
+                            ],
+                            &[
+                                ("border-radius", format!("radius: {}px", t.radius.as_f32())),
+                                ("shadow", format!("{}", t.shadow)),
+                            ],
+                            &[
+                                ("padding", "set per Size enum"),
+                                ("height", "set per Size enum"),
+                                ("step buttons", "hardcoded +/- icons"),
+                            ],
+                        )).build(window, cx)
+                    }),
             )
             // Checkboxes
             .child(section("Checkboxes"))
@@ -897,30 +990,47 @@ impl Showcase {
             // Collapsible
             .child(section("Collapsible"))
             .child(
-                Collapsible::new()
-                    .open(collapsible_open)
+                div()
+                    .id("tt-collapsible")
                     .child(
-                        Button::new("coll-toggle")
-                            .label(if collapsible_open {
-                                "Click to collapse"
-                            } else {
-                                "Click to expand"
-                            })
-                            .ghost()
-                            .icon(if collapsible_open {
-                                IconName::ChevronDown
-                            } else {
-                                IconName::ChevronRight
-                            })
-                            .on_click(cx.listener(|this, _ev, _w, _cx| {
-                                this.collapsible_open = !this.collapsible_open;
-                            })),
+                        Collapsible::new()
+                            .open(collapsible_open)
+                            .child(
+                                Button::new("coll-toggle")
+                                    .label(if collapsible_open {
+                                        "Click to collapse"
+                                    } else {
+                                        "Click to expand"
+                                    })
+                                    .ghost()
+                                    .icon(if collapsible_open {
+                                        IconName::ChevronDown
+                                    } else {
+                                        IconName::ChevronRight
+                                    })
+                                    .on_click(cx.listener(|this, _ev, _w, _cx| {
+                                        this.collapsible_open = !this.collapsible_open;
+                                    })),
+                            )
+                            .content(
+                                v_flex()
+                                    .p_3()
+                                    .child(Label::new("This content is shown when collapsible is open.").text_sm()),
+                            ),
                     )
-                    .content(
-                        v_flex()
-                            .p_3()
-                            .child(Label::new("This content is shown when collapsible is open.").text_sm()),
-                    ),
+                    .tooltip(move |window, cx| {
+                        let t = cx.theme();
+                        Tooltip::new(widget_tooltip(
+                            "Collapsible",
+                            &[
+                                ("bg", "accordion", t.accordion),
+                                ("hover", "accordion_hover", t.accordion_hover),
+                                ("border", "border", t.border),
+                            ],
+                            &[],
+                            &[("animation", "hardcoded slide")],
+                        )).build(window, cx)
+                    }),
             )
             // GroupBox variants
             .child(section("GroupBox (3 variants)"))
@@ -1468,34 +1578,81 @@ impl Showcase {
                                         .child(Label::new("Bottom Panel").font_semibold()),
                                 ),
                             ),
-                    ),
+                    )
+                    .tooltip(move |window, cx| {
+                        let t = cx.theme();
+                        Tooltip::new(widget_tooltip(
+                            "Resizable (vertical)",
+                            &[
+                                ("dragging border", "drag_border", t.drag_border),
+                                ("idle border", "border", t.border),
+                            ],
+                            &[],
+                            &[("min panel size", "100px hardcoded")],
+                        )).build(window, cx)
+                    }),
             )
             // Dividers
             .child(section("Divider (solid / dashed / labeled)"))
             .child(
-                v_flex()
-                    .gap_3()
-                    .child(Divider::horizontal())
-                    .child(Divider::horizontal().label("Section Break"))
-                    .child(Divider::horizontal_dashed()),
+                div()
+                    .id("tt-layout-divider")
+                    .child(
+                        v_flex()
+                            .gap_3()
+                            .child(Divider::horizontal())
+                            .child(Divider::horizontal().label("Section Break"))
+                            .child(Divider::horizontal_dashed()),
+                    )
+                    .tooltip(move |window, cx| {
+                        let t = cx.theme();
+                        Tooltip::new(widget_tooltip(
+                            "Divider",
+                            &[
+                                ("line", "border", t.border),
+                                ("label bg", "background", t.background),
+                                ("label text", "muted_foreground", t.muted_foreground),
+                            ],
+                            &[],
+                            &[("thickness", "1px hardcoded")],
+                        )).build(window, cx)
+                    }),
             )
             // GroupBox as container
             .child(section("GroupBox as Layout Container"))
             .child(
-                GroupBox::new()
-                    .title("Contained Content")
-                    .fill()
+                div()
+                    .id("tt-layout-groupbox")
                     .child(
-                        v_flex()
-                            .gap_2()
-                            .child(Label::new("GroupBox can wrap any content as a visual container.").text_sm())
+                        GroupBox::new()
+                            .title("Contained Content")
+                            .fill()
                             .child(
-                                h_flex()
+                                v_flex()
                                     .gap_2()
-                                    .child(Button::new("gb-1").label("Action A"))
-                                    .child(Button::new("gb-2").label("Action B").primary()),
+                                    .child(Label::new("GroupBox can wrap any content as a visual container.").text_sm())
+                                    .child(
+                                        h_flex()
+                                            .gap_2()
+                                            .child(Button::new("gb-1").label("Action A"))
+                                            .child(Button::new("gb-2").label("Action B").primary()),
+                                    ),
                             ),
-                    ),
+                    )
+                    .tooltip(move |window, cx| {
+                        let t = cx.theme();
+                        Tooltip::new(widget_tooltip(
+                            "GroupBox (layout)",
+                            &[
+                                ("fill bg", "group_box", t.group_box),
+                                ("text", "group_box_foreground", t.group_box_foreground),
+                                ("border", "border", t.border),
+                                ("title", "muted_foreground", t.muted_foreground),
+                            ],
+                            &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                            &[("padding", "hardcoded")],
+                        )).build(window, cx)
+                    }),
             )
             // Scrollable area demo
             .child(section("Scrollable Area (visible scrollbar)"))
