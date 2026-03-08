@@ -170,6 +170,14 @@ fn all_presets_have_geometry() {
                 variant.geometry.radius.is_some(),
                 "preset '{name}' {label} missing geometry.radius"
             );
+            assert!(
+                variant.geometry.radius_lg.is_some(),
+                "preset '{name}' {label} missing geometry.radius_lg"
+            );
+            assert!(
+                variant.geometry.shadow.is_some(),
+                "preset '{name}' {label} missing geometry.shadow"
+            );
         }
     }
 }

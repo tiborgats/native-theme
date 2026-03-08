@@ -56,10 +56,12 @@ mono_size = 10.0
 
 [light.geometry]
 radius = 8.0
+radius_lg = 12.0
 frame_width = 1.0
 disabled_opacity = 0.5
 border_opacity = 0.15
 scroll_width = 8.0
+shadow = true
 
 [light.spacing]
 xxs = 2.0
@@ -124,10 +126,12 @@ mono_size = 10.0
 
 [dark.geometry]
 radius = 8.0
+radius_lg = 12.0
 frame_width = 1.0
 disabled_opacity = 0.5
 border_opacity = 0.15
 scroll_width = 8.0
+shadow = true
 
 [dark.spacing]
 xxs = 2.0
