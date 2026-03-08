@@ -76,7 +76,11 @@ Plans:
   3. `NativeTheme::from_windows()` returns accent shades (AccentDark1-3, AccentLight1-3), system font, spacing, and DPI-aware geometry; capability checks prevent crashes on older Windows versions
   4. `NativeTheme::from_kde()` with portal overlay merges portal accent onto kdeglobals palette; GNOME reader populates font data; `from_linux()` provides a fallback that tries kdeglobals on non-KDE desktops
   5. D-Bus portal backend detection improves DE heuristic accuracy
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 11-01-PLAN.md — macOS reader with NSColor semantic colors, NSAppearance variants, NSFont, and from_system() dispatch
+- [ ] 11-02-PLAN.md — Windows reader enhancements: accent shades, system font, WinUI3 spacing, DPI-aware geometry
+- [ ] 11-03-PLAN.md — Linux enhancements: GNOME fonts, KDE+portal overlay, D-Bus backend detection, from_linux() fallback
 
 ### Phase 12: Widget Metrics
 **Goal**: Per-widget sizing and spacing data available from all four platforms, enabling toolkit connectors to produce pixel-perfect native layouts
@@ -142,7 +146,7 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 8. Documentation | v0.1 | 1/1 | ✓ Complete | 2026-03-07 |
 | 9. Cargo Workspace | v0.2 | 1/1 | ✓ Complete | 2026-03-08 |
 | 10. API Breaking Changes | v0.2 | 3/3 | ✓ Complete | 2026-03-08 |
-| 11. Platform Readers | v0.2 | 0/0 | Not started | - |
+| 11. Platform Readers | v0.2 | 0/3 | Not started | - |
 | 12. Widget Metrics | v0.2 | 0/0 | Not started | - |
 | 13. CI Pipeline | v0.2 | 0/0 | Not started | - |
 | 14. Toolkit Connectors | v0.2 | 0/0 | Not started | - |
