@@ -20,10 +20,10 @@ Requirements for v0.2 release. Each maps to roadmap phases.
 
 ### Platform Readers
 
-- [ ] **PLAT-01**: macOS reader `from_macos()` reads ~20 NSColor semantic colors with P3-to-sRGB conversion
-- [ ] **PLAT-02**: macOS reader resolves both light and dark variants via NSAppearance
-- [ ] **PLAT-03**: macOS reader reads NSFont system and monospace fonts
-- [ ] **PLAT-04**: macOS reader wired into `from_system()` dispatch
+- [x] **PLAT-01**: macOS reader `from_macos()` reads ~20 NSColor semantic colors with P3-to-sRGB conversion
+- [x] **PLAT-02**: macOS reader resolves both light and dark variants via NSAppearance
+- [x] **PLAT-03**: macOS reader reads NSFont system and monospace fonts
+- [x] **PLAT-04**: macOS reader wired into `from_system()` dispatch
 - [ ] **PLAT-05**: Windows reader adds `ApiInformation::IsMethodPresent` capability checks
 - [ ] **PLAT-06**: Windows reader reads AccentDark1-3 and AccentLight1-3 accent shades
 - [ ] **PLAT-07**: Windows reader reads system font via `SystemParametersInfo(SPI_GETNONCLIENTMETRICS)`
@@ -121,10 +121,10 @@ Deferred to post-v0.2. Tracked but not in current roadmap.
 | API-06 | Phase 10 | Complete |
 | API-07 | Phase 10 | Complete |
 | API-08 | Phase 10 | Complete |
-| PLAT-01 | Phase 11 | Pending |
-| PLAT-02 | Phase 11 | Pending |
-| PLAT-03 | Phase 11 | Pending |
-| PLAT-04 | Phase 11 | Pending |
+| PLAT-01 | Phase 11 | Complete |
+| PLAT-02 | Phase 11 | Complete |
+| PLAT-03 | Phase 11 | Complete |
+| PLAT-04 | Phase 11 | Complete |
 | PLAT-05 | Phase 11 | Pending |
 | PLAT-06 | Phase 11 | Pending |
 | PLAT-07 | Phase 11 | Pending |
