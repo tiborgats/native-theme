@@ -1,59 +1,41 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.1
-milestone_name: MVP
-status: milestone_complete
-stopped_at: v0.1 milestone complete
-last_updated: "2026-03-07T23:59:00Z"
-last_activity: "2026-03-07 -- v0.1 MVP milestone completed and archived"
+milestone: v0.2
+milestone_name: Platform Coverage & Publishing
+status: defining_requirements
+stopped_at: Defining requirements for v0.2
+last_updated: "2026-03-08T00:00:00Z"
+last_activity: "2026-03-08 -- Milestone v0.2 started"
 progress:
-  total_phases: 8
-  completed_phases: 8
-  total_plans: 14
-  completed_plans: 14
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-07)
+See: .planning/PROJECT.md (updated 2026-03-08)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** v0.1 milestone complete — planning next milestone
+**Current focus:** v0.2 — API polish, full desktop platform coverage, widget metrics, toolkit connectors, CI, and publishing prep
 
 ## Current Position
 
-Milestone: v0.1 MVP — SHIPPED 2026-03-07
-Status: Complete
-Phases: 8/8 | Plans: 14/14
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
 
-Progress: [██████████] 100%
-
-## Performance Metrics
-
-| Phase 01 P01 | 3min | 3 tasks | 4 files |
-| Phase 01 P02 | 3min | 2 tasks | 6 files |
-| Phase 01 P03 | 3min | 2 tasks | 2 files |
-| Phase 02 P01 | 2min | 2 tasks | 5 files |
-| Phase 02 P02 | 1min | 1 tasks | 1 files |
-| Phase 03 P01 | 3min | 2 tasks | 5 files |
-| Phase 03 P02 | 3min | 2 tasks | 2 files |
-| Phase 04 P01 | 3min | 1 tasks | 3 files |
-| Phase 04 P02 | 1min | 1 tasks | 1 files |
-| Phase 05 P01 | 2min | 1 tasks | 4 files |
-| Phase 06 P01 | 2min | 1 tasks | 1 files |
-| Phase 07 P01 | 2min | 2 tasks | 5 files |
-| Phase 07 P02 | 4min | 2 tasks | 12 files |
-| Phase 08 P01 | 2min | 2 tasks | 2 files |
+Progress: [░░░░░░░░░░] 0%
 
 ## Accumulated Context
 
 ### Decisions
 
-Decisions logged in PROJECT.md Key Decisions table (10 entries with outcomes).
-All v0.1 decisions marked ✓ Good after milestone review.
+All v0.1 decisions logged in PROJECT.md Key Decisions table (10 entries, all ✓ Good).
 
 ### Pending Todos
 
@@ -61,13 +43,10 @@ None.
 
 ### Blockers/Concerns
 
-All v0.1 blockers resolved:
-- ashpd tokio leak — RESOLVED (default-features=false)
-- configparser case sensitivity — RESOLVED (Ini::new_cs())
-- merge() desynchronization — RESOLVED (impl_merge! macro)
+None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-07T23:59:00Z
-Stopped at: v0.1 milestone complete
+Last session: 2026-03-08T00:00:00Z
+Stopped at: Milestone v0.2 started, defining requirements
 Resume file: None

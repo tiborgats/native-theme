@@ -8,6 +8,22 @@ An independent, toolkit-agnostic Rust crate that provides a unified theme data m
 
 Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
 
+## Current Milestone: v0.2
+
+**Goal:** API polish, full desktop platform coverage, widget metrics, toolkit connectors, CI, and publishing prep — everything needed before broader adoption.
+
+**Target features:**
+- API refactors: flatten ThemeColors, move preset API to NativeTheme methods, add missing ThemeGeometry fields
+- macOS reader via objc2-app-kit
+- Windows reader enhancements (accent shades, fonts, spacing, capability checks)
+- Linux reader enhancements (KDE+portal overlay, D-Bus backend detection, GNOME fonts, from_linux() fallback)
+- Widget metrics data model + platform sources (KDE, GNOME, Windows, macOS)
+- CI pipeline (GitHub Actions, feature flag matrix, semver-checks, clippy/fmt)
+- Cargo workspace restructuring for connector sub-crates
+- native-theme-gpui connector + upstream PR proposals
+- native-theme-iced connector
+- Publishing prep (metadata, licenses, changelog, doc examples, crates.io publish)
+
 ## Requirements
 
 ### Validated
@@ -30,18 +46,27 @@ Any Rust GUI app can look native on any platform by loading a single theme file 
 
 ### Active
 
+- [ ] Flatten ThemeColors to 36 direct fields (remove nested sub-structs)
+- [ ] Move preset functions to impl NativeTheme associated functions
+- [ ] Add ThemeGeometry fields: radius_lg, shadow
 - [ ] macOS reader: from_macos() — NSColor + NSFont via objc2-app-kit (feature "macos")
-- [ ] iOS reader: from_ios() — UIColor + UIFont via objc2-ui-kit (feature "ios")
-- [ ] Android reader: from_android() — JNI + NDK for Material You colors (feature "android")
-- [ ] crates.io publishing with proper metadata and documentation
+- [ ] Windows reader: capability checks, accent shades, system fonts, spacing, primary_foreground derivation
+- [ ] Linux KDE+portal overlay, D-Bus backend detection, GNOME font reading, from_linux() fallback
+- [ ] Widget metrics data model (12 per-widget sub-structs) + platform sources
+- [ ] CI pipeline: GitHub Actions, feature matrix, semver-checks, clippy/fmt
+- [ ] Cargo workspace with native-theme-gpui and native-theme-iced connector crates
+- [ ] gpui connector: color/font/geometry/widget-metrics mapping + upstream PR proposals
+- [ ] iced connector: palette/font/style/widget-metrics mapping
+- [ ] Publishing prep: metadata, licenses, changelog, doc examples, crates.io publish
 
 ### Out of Scope
 
-- Widget metrics — deferred; most toolkits can't consume per-widget metrics today
+- iOS reader (from_ios()) — deferred to post-1.0
+- Android reader (from_android()) — deferred to post-1.0
+- Change notification system — deferred to post-1.0; users can poll or use toolkit observers
 - Named palette colors (platform-specific reds, blues, etc.) — too platform-specific to standardize
-- Toolkit adapters inside the crate — adapters live in consuming app code (~50 lines each)
+- Toolkit adapters inside the core crate — adapters live in connector sub-crates or consuming app code
 - Accessibility flags in the data model — environment signals detected by consuming app
-- Reactive change notification system — complex, opinionated; consuming toolkit provides event loops
 - CSS/SCSS export format — trivially implementable by consumers
 
 ## Context
@@ -50,6 +75,7 @@ Shipped v0.1 with ~7,000 LOC (3,349 Rust + 2,566 TOML presets + 1,100 integratio
 Tech stack: Rust edition 2024, serde + toml (core), configparser (KDE), ashpd (GNOME portal), windows crate (Windows).
 17 bundled presets, 3 platform readers, 140+ tests with zero failures.
 Prior art: system-theme 0.3.0, cosmic-theme, dark-light 2.0 — native-theme unifies what these do partially.
+v0.2 focus: API polish (breaking changes while pre-1.0), macOS reader, enhanced existing readers, widget metrics, CI, toolkit connectors (gpui + iced), and crates.io publishing.
 
 ## Constraints
 
@@ -77,4 +103,4 @@ Prior art: system-theme 0.3.0, cosmic-theme, dark-light 2.0 — native-theme uni
 | Adwaita as universal fallback | Embedded preset guaranteed available at compile time | ✓ Good — from_system() and from_gnome() both use it reliably |
 
 ---
-*Last updated: 2026-03-07 after v0.1 milestone*
+*Last updated: 2026-03-08 after v0.2 milestone start*
