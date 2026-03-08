@@ -29,10 +29,10 @@ Requirements for v0.2 release. Each maps to roadmap phases.
 - [x] **PLAT-07**: Windows reader reads system font via `SystemParametersInfo(SPI_GETNONCLIENTMETRICS)`
 - [x] **PLAT-08**: Windows reader populates spacing from WinUI3 defaults and derives `primary_foreground`
 - [x] **PLAT-09**: Windows reader uses DPI-aware `GetSystemMetricsForDpi` for geometry
-- [ ] **PLAT-10**: Linux `from_kde_with_portal()` async overlay of portal accent on kdeglobals palette
-- [ ] **PLAT-11**: Linux D-Bus portal backend detection for DE heuristic
-- [ ] **PLAT-12**: GNOME font reading from gsettings/dconf (`org.gnome.desktop.interface font-name`)
-- [ ] **PLAT-13**: `from_linux()` fallback: try kdeglobals if file exists on non-KDE desktops
+- [x] **PLAT-10**: Linux `from_kde_with_portal()` async overlay of portal accent on kdeglobals palette
+- [x] **PLAT-11**: Linux D-Bus portal backend detection for DE heuristic
+- [x] **PLAT-12**: GNOME font reading from gsettings/dconf (`org.gnome.desktop.interface font-name`)
+- [x] **PLAT-13**: `from_linux()` fallback: try kdeglobals if file exists on non-KDE desktops
 
 ### Widget Metrics
 
@@ -130,10 +130,10 @@ Deferred to post-v0.2. Tracked but not in current roadmap.
 | PLAT-07 | Phase 11 | Complete |
 | PLAT-08 | Phase 11 | Complete |
 | PLAT-09 | Phase 11 | Complete |
-| PLAT-10 | Phase 11 | Pending |
-| PLAT-11 | Phase 11 | Pending |
-| PLAT-12 | Phase 11 | Pending |
-| PLAT-13 | Phase 11 | Pending |
+| PLAT-10 | Phase 11 | Complete |
+| PLAT-11 | Phase 11 | Complete |
+| PLAT-12 | Phase 11 | Complete |
+| PLAT-13 | Phase 11 | Complete |
 | METRIC-01 | Phase 12 | Pending |
 | METRIC-02 | Phase 12 | Pending |
 | METRIC-03 | Phase 12 | Pending |

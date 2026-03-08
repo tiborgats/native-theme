@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Platform Coverage & Publishing
 status: executing
-stopped_at: Completed 11-02-PLAN.md (Windows reader enhancement)
-last_updated: "2026-03-08T07:03:00Z"
-last_activity: 2026-03-08 — 11-02 complete (Windows reader enhancement)
+stopped_at: Completed 11-03-PLAN.md (Linux reader enhancement)
+last_updated: "2026-03-08T07:08:07Z"
+last_activity: 2026-03-08 — 11-03 complete (Linux reader enhancement)
 progress:
   total_phases: 7
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 7
-  completed_plans: 6
-  percent: 35
+  completed_plans: 7
+  percent: 43
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-08)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 11 — Platform Readers (in progress)
+**Current focus:** Phase 11 — Platform Readers (complete)
 
 ## Current Position
 
-Phase: 11 of 15 (Platform Readers) — in progress
-Plan: 2 of 3 complete
-Status: Executing Phase 11
-Last activity: 2026-03-08 — 11-02 complete (Windows reader enhancement)
+Phase: 11 of 15 (Platform Readers) — complete
+Plan: 3 of 3 complete
+Status: Phase 11 complete
+Last activity: 2026-03-08 — 11-03 complete (Linux reader enhancement)
 
-Progress: [██████████] 95%
+Progress: [████████████████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 20 (14 v0.1 + 6 v0.2)
-- Average duration: ~4min (v0.2)
-- Total execution time: 21min (v0.2)
+- Total plans completed: 21 (14 v0.1 + 7 v0.2)
+- Average duration: ~3min (v0.2)
+- Total execution time: 24min (v0.2)
 
 **By Phase:**
 
@@ -46,10 +46,10 @@ Progress: [██████████] 95%
 | v0.1 phases 1-8 | 14 | -- | -- |
 | 09-cargo-workspace | 1 | 3min | 3min |
 | 10-api-breaking-changes | 3 | 13min | 4.3min |
-| 11-platform-readers | 2/3 | 5min | 2.5min |
+| 11-platform-readers | 3/3 | 8min | 2.7min |
 
 **Recent Trend:**
-- Last 5 plans: 10-01 (8min), 10-02 (3min), 10-03 (2min), 11-01 (3min), 11-02 (2min)
+- Last 5 plans: 10-02 (3min), 10-03 (2min), 11-01 (3min), 11-02 (2min), 11-03 (3min)
 - Trend: v0.2 execution, steady ~3min/plan
 
 ## Accumulated Context
@@ -64,6 +64,7 @@ v0.2 decision: Cargo workspace restructuring (API-01) goes first, before API bre
 10-03: ThemeGeometry extended to 7 fields with radius_lg (Option<f32>) and shadow (Option<bool>). All 17 presets updated. radius_lg values 8.0-16.0 per platform.
 11-01: macOS module unconditionally compiled (not behind cfg(feature)), only OS functions gated. Both light/dark variants always populated (dual-variant pattern). 5 build_theme tests run cross-platform.
 11-02: AccentDark1 maps to light primary_background, AccentLight1 to dark. primary_foreground from system fg. WinUI3 spacing as pure constants. read_geometry_dpi_aware returns (ThemeGeometry, u32) for DPI sharing with font conversion.
+11-03: Used ashpd re-exported zbus for D-Bus access. detect_portal_backend is pub(crate) async for async consumers. Portal overlay pattern: read native config as base, overlay portal accent via merge.
 
 ### Pending Todos
 
@@ -76,5 +77,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-03-08
-Stopped at: Completed 11-02-PLAN.md (Windows reader enhancement)
+Stopped at: Completed 11-03-PLAN.md (Linux reader enhancement)
 Resume file: None
