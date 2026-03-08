@@ -72,6 +72,57 @@ l = 12.0
 xl = 16.0
 xxl = 24.0
 
+[light.widget_metrics.button]
+min_width = 80.0
+padding_horizontal = 6.0
+icon_spacing = 4.0
+
+[light.widget_metrics.checkbox]
+indicator_size = 20.0
+spacing = 4.0
+
+[light.widget_metrics.input]
+padding_horizontal = 6.0
+
+[light.widget_metrics.scrollbar]
+width = 21.0
+min_thumb_height = 20.0
+slider_width = 8.0
+
+[light.widget_metrics.slider]
+track_height = 6.0
+thumb_size = 20.0
+tick_length = 8.0
+
+[light.widget_metrics.progress_bar]
+height = 6.0
+min_width = 14.0
+
+[light.widget_metrics.tab]
+min_width = 80.0
+min_height = 30.0
+padding_horizontal = 8.0
+padding_vertical = 4.0
+
+[light.widget_metrics.menu_item]
+padding_horizontal = 4.0
+padding_vertical = 4.0
+icon_spacing = 8.0
+
+[light.widget_metrics.tooltip]
+padding = 3.0
+
+[light.widget_metrics.list_item]
+padding_horizontal = 2.0
+padding_vertical = 1.0
+
+[light.widget_metrics.toolbar]
+item_spacing = 0.0
+padding = 6.0
+
+[light.widget_metrics.splitter]
+width = 1.0
+
 # === Dark variant (BreezeDark.colors) ===
 
 [dark.colors]
@@ -141,3 +192,54 @@ m = 8.0
 l = 12.0
 xl = 16.0
 xxl = 24.0
+
+[dark.widget_metrics.button]
+min_width = 80.0
+padding_horizontal = 6.0
+icon_spacing = 4.0
+
+[dark.widget_metrics.checkbox]
+indicator_size = 20.0
+spacing = 4.0
+
+[dark.widget_metrics.input]
+padding_horizontal = 6.0
+
+[dark.widget_metrics.scrollbar]
+width = 21.0
+min_thumb_height = 20.0
+slider_width = 8.0
+
+[dark.widget_metrics.slider]
+track_height = 6.0
+thumb_size = 20.0
+tick_length = 8.0
+
+[dark.widget_metrics.progress_bar]
+height = 6.0
+min_width = 14.0
+
+[dark.widget_metrics.tab]
+min_width = 80.0
+min_height = 30.0
+padding_horizontal = 8.0
+padding_vertical = 4.0
+
+[dark.widget_metrics.menu_item]
+padding_horizontal = 4.0
+padding_vertical = 4.0
+icon_spacing = 8.0
+
+[dark.widget_metrics.tooltip]
+padding = 3.0
+
+[dark.widget_metrics.list_item]
+padding_horizontal = 2.0
+padding_vertical = 1.0
+
+[dark.widget_metrics.toolbar]
+item_spacing = 0.0
+padding = 6.0
+
+[dark.widget_metrics.splitter]
+width = 1.0
