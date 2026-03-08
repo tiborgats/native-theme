@@ -27,7 +27,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 ### 🚧 v0.2 Platform Coverage & Publishing (In Progress)
 
-- [ ] **Phase 9: Cargo Workspace** — Restructure repo into a Cargo workspace with core crate in subdirectory
+- [x] **Phase 9: Cargo Workspace** — Restructure repo into a Cargo workspace with core crate in subdirectory — completed 2026-03-08
 - [ ] **Phase 10: API Breaking Changes** — Flatten ThemeColors, move presets to NativeTheme methods, add geometry fields
 - [ ] **Phase 11: Platform Readers** — macOS reader, Windows enhancements, Linux enhancements
 - [ ] **Phase 12: Widget Metrics** — Widget metrics data model and platform-specific population
@@ -48,7 +48,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
   4. A top-level Cargo.toml defines workspace members
 **Plans**: 1 plan
 Plans:
-- [ ] 09-01-PLAN.md — Restructure repo as Cargo virtual workspace with connector stubs
+- [x] 09-01-PLAN.md — Restructure repo as Cargo virtual workspace with connector stubs
 
 ### Phase 10: API Breaking Changes
 **Goal**: Public API refactored to its final v0.2 shape — flat colors, idiomatic methods, extended geometry — before any new features build on it
@@ -136,7 +136,7 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 6. Cross-Platform Dispatch | v0.1 | 1/1 | ✓ Complete | 2026-03-07 |
 | 7. Extended Presets | v0.1 | 2/2 | ✓ Complete | 2026-03-07 |
 | 8. Documentation | v0.1 | 1/1 | ✓ Complete | 2026-03-07 |
-| 9. Cargo Workspace | v0.2 | 0/1 | Planned | - |
+| 9. Cargo Workspace | v0.2 | 1/1 | ✓ Complete | 2026-03-08 |
 | 10. API Breaking Changes | v0.2 | 0/0 | Not started | - |
 | 11. Platform Readers | v0.2 | 0/0 | Not started | - |
 | 12. Widget Metrics | v0.2 | 0/0 | Not started | - |

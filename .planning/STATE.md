@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-08)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 9 — Cargo Workspace restructuring
+**Current focus:** Phase 10 — API Breaking Changes
 
 ## Current Position
 
-Phase: 9 of 15 (Cargo Workspace) — first phase of v0.2
-Plan: 1 of 1 (complete)
-Status: Phase 9 complete
+Phase: 10 of 15 (API Breaking Changes) — second phase of v0.2
+Plan: —
+Status: Ready to plan
 Last activity: 2026-03-08 — Phase 9 Plan 1 executed (workspace restructure)
 
 Progress: [█░░░░░░░░░] 14%
