@@ -43,7 +43,7 @@ Requirements for v0.2 release. Each maps to roadmap phases.
 - [ ] **METRIC-05**: Windows metrics populated via `GetSystemMetricsForDpi` at runtime
 - [ ] **METRIC-06**: macOS metrics populated with hardcoded HIG defaults
 - [ ] **METRIC-07**: GNOME metrics populated from hardcoded libadwaita values
-- [ ] **METRIC-08**: Widget metrics added to preset TOML files
+- [x] **METRIC-08**: Widget metrics added to preset TOML files
 
 ### CI Pipeline
 
@@ -141,7 +141,7 @@ Deferred to post-v0.2. Tracked but not in current roadmap.
 | METRIC-05 | Phase 12 | Pending |
 | METRIC-06 | Phase 12 | Pending |
 | METRIC-07 | Phase 12 | Pending |
-| METRIC-08 | Phase 12 | Pending |
+| METRIC-08 | Phase 12 | Complete |
 | CI-01 | Phase 13 | Pending |
 | CI-02 | Phase 13 | Pending |
 | CI-03 | Phase 13 | Pending |
