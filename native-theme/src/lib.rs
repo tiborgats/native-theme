@@ -88,9 +88,12 @@ pub use model::{
     NativeTheme, ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing, ThemeVariant,
 };
 
+pub mod macos;
 #[cfg(feature = "windows")]
 pub mod windows;
 
+#[cfg(feature = "macos")]
+pub use macos::from_macos;
 #[cfg(feature = "portal")]
 pub use gnome::from_gnome;
 #[cfg(feature = "kde")]
@@ -144,6 +147,8 @@ fn from_linux() -> crate::Result<NativeTheme> {
 ///
 /// # Platform Behavior
 ///
+/// - **macOS:** Calls `from_macos()` when the `macos` feature is enabled.
+///   Reads both light and dark variants via NSAppearance.
 /// - **Linux (KDE):** Calls `from_kde()` when `XDG_CURRENT_DESKTOP` contains
 ///   "KDE" and the `kde` feature is enabled.
 /// - **Linux (other):** Returns the bundled Adwaita preset. For live GNOME
@@ -157,6 +162,15 @@ fn from_linux() -> crate::Result<NativeTheme> {
 ///   is not enabled.
 /// - `Error::Unavailable` if the platform reader cannot access theme data.
 pub fn from_system() -> crate::Result<NativeTheme> {
+    #[cfg(target_os = "macos")]
+    {
+        #[cfg(feature = "macos")]
+        return crate::macos::from_macos();
+
+        #[cfg(not(feature = "macos"))]
+        return Err(crate::Error::Unsupported);
+    }
+
     #[cfg(target_os = "windows")]
     {
         #[cfg(feature = "windows")]
@@ -171,7 +185,7 @@ pub fn from_system() -> crate::Result<NativeTheme> {
         return from_linux();
     }
 
-    #[cfg(not(any(target_os = "linux", target_os = "windows")))]
+    #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
         Err(crate::Error::Unsupported)
     }
