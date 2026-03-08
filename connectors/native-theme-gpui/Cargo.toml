@@ -6,4 +6,6 @@ license.workspace = true
 description = "gpui toolkit connector for native-theme"
 
 [dependencies]
+gpui = "0.2"
+gpui-component = "0.5"
 native-theme.workspace = true
