@@ -265,6 +265,12 @@ pub async fn from_system_async() -> crate::Result<NativeTheme> {
     from_system()
 }
 
+/// Mutex to serialize tests that manipulate environment variables.
+/// Env vars are process-global state, so tests that call set_var/remove_var
+/// must hold this lock to avoid races with parallel test execution.
+#[cfg(test)]
+pub(crate) static ENV_MUTEX: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
 #[cfg(test)]
 mod dispatch_tests {
     use super::*;
@@ -315,8 +321,10 @@ mod dispatch_tests {
 
     #[test]
     fn from_linux_non_kde_returns_adwaita() {
+        let _guard = crate::ENV_MUTEX.lock().unwrap();
         // Temporarily set XDG_CURRENT_DESKTOP to GNOME so from_linux()
         // takes the preset fallback path.
+        // SAFETY: ENV_MUTEX serializes env var access across parallel tests
         unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "GNOME") };
         let result = from_linux();
         unsafe { std::env::remove_var("XDG_CURRENT_DESKTOP") };
@@ -330,6 +338,7 @@ mod dispatch_tests {
     #[test]
     #[cfg(feature = "kde")]
     fn from_linux_unknown_de_with_kdeglobals_fallback() {
+        let _guard = crate::ENV_MUTEX.lock().unwrap();
         use std::io::Write;
 
         // Create a temp dir with a minimal kdeglobals file
@@ -339,7 +348,7 @@ mod dispatch_tests {
         let mut f = std::fs::File::create(&kdeglobals).unwrap();
         writeln!(f, "[General]\nColorScheme=TestTheme\n\n[Colors:Window]\nBackgroundNormal=239,240,241\n").unwrap();
 
-        // SAFETY: test runs single-threaded (--test-threads=1)
+        // SAFETY: ENV_MUTEX serializes env var access across parallel tests
         let orig_xdg = std::env::var("XDG_CONFIG_HOME").ok();
         let orig_desktop = std::env::var("XDG_CURRENT_DESKTOP").ok();
 
@@ -367,7 +376,8 @@ mod dispatch_tests {
 
     #[test]
     fn from_linux_unknown_de_without_kdeglobals_returns_adwaita() {
-        // SAFETY: test runs single-threaded (--test-threads=1)
+        let _guard = crate::ENV_MUTEX.lock().unwrap();
+        // SAFETY: ENV_MUTEX serializes env var access across parallel tests
         let orig_xdg = std::env::var("XDG_CONFIG_HOME").ok();
         let orig_desktop = std::env::var("XDG_CURRENT_DESKTOP").ok();
 
@@ -394,8 +404,10 @@ mod dispatch_tests {
 
     #[test]
     fn from_system_returns_result() {
+        let _guard = crate::ENV_MUTEX.lock().unwrap();
         // On Linux (our test platform), from_system() should return a Result.
         // With GNOME set, it should return the Adwaita preset.
+        // SAFETY: ENV_MUTEX serializes env var access across parallel tests
         unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "GNOME") };
         let result = from_system();
         unsafe { std::env::remove_var("XDG_CURRENT_DESKTOP") };

@@ -169,7 +169,8 @@ mod tests {
 
     #[test]
     fn kdeglobals_path_respects_xdg_config_home() {
-        // SAFETY: test runs single-threaded (--test-threads=1)
+        let _guard = crate::ENV_MUTEX.lock().unwrap();
+        // SAFETY: ENV_MUTEX serializes env var access across parallel tests
         unsafe { std::env::set_var("XDG_CONFIG_HOME", "/tmp/test") };
         let path = kdeglobals_path();
         unsafe { std::env::remove_var("XDG_CONFIG_HOME") };
@@ -178,7 +179,8 @@ mod tests {
 
     #[test]
     fn kdeglobals_path_falls_back_to_home_config() {
-        // SAFETY: test runs single-threaded (--test-threads=1)
+        let _guard = crate::ENV_MUTEX.lock().unwrap();
+        // SAFETY: ENV_MUTEX serializes env var access across parallel tests
         unsafe { std::env::remove_var("XDG_CONFIG_HOME") };
         let path = kdeglobals_path();
         let home = std::env::var("HOME").expect("HOME must be set for this test");
@@ -408,7 +410,8 @@ BackgroundNormal=49,54,59
 
     #[test]
     fn test_missing_file() {
-        // SAFETY: test runs single-threaded (--test-threads=1)
+        let _guard = crate::ENV_MUTEX.lock().unwrap();
+        // SAFETY: ENV_MUTEX serializes env var access across parallel tests
         let original_xdg = std::env::var("XDG_CONFIG_HOME").ok();
         unsafe { std::env::set_var("XDG_CONFIG_HOME", "/tmp/nonexistent_kde_test_dir_12345") };
 
