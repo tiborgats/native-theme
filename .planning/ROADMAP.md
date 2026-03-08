@@ -109,7 +109,7 @@ Plans:
   4. `cargo clippy` and `cargo fmt --check` run in CI and enforce clean code
 **Plans**: 1 plan
 Plans:
-- [ ] 13-01-PLAN.md — Fix lint/format issues, create GitHub Actions CI workflow with test matrix and semver checks
+- [x] 13-01-PLAN.md — Fix lint/format issues, create GitHub Actions CI workflow with test matrix and semver checks
 
 ### Phase 14: Toolkit Connectors
 **Goal**: Developers using gpui or iced can apply native-theme data to their apps with a single connector crate, including working examples
@@ -121,7 +121,12 @@ Plans:
   3. `native-theme-iced` crate maps ThemeColors to iced Palette + Extended palette, implements per-widget Catalog/Style for 8 core widgets, and maps geometry/spacing/widget metrics
   4. `native-theme-iced` includes an `examples/demo.rs` widget gallery that renders with a native theme
   5. Both connectors include a theme selector dropdown (presets + OS theme)
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 14-01-PLAN.md — iced connector core: palette, extended palette, widget metric helpers
+- [ ] 14-02-PLAN.md — iced demo.rs widget gallery with theme selector
+- [ ] 14-03-PLAN.md — gpui connector core: 108-field color mapping, config, shade derivation, upstream proposal
+- [ ] 14-04-PLAN.md — gpui showcase.rs widget gallery with theme selector
 
 ### Phase 15: Publishing Prep
 **Goal**: Crate metadata, documentation, and licensing complete — `native-theme` and `native-theme-iced` published to crates.io
@@ -156,5 +161,5 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 11. Platform Readers | v0.2 | 4/4 | ✓ Complete | 2026-03-08 |
 | 12. Widget Metrics | v0.2 | 3/3 | ✓ Complete | 2026-03-08 |
 | 13. CI Pipeline | v0.2 | 1/1 | ✓ Complete | 2026-03-08 |
-| 14. Toolkit Connectors | v0.2 | 0/0 | Not started | - |
+| 14. Toolkit Connectors | v0.2 | 0/4 | In progress | - |
 | 15. Publishing Prep | v0.2 | 0/0 | Not started | - |
