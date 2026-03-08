@@ -92,7 +92,11 @@ Plans:
   2. `ThemeVariant` has a `widget_metrics: Option<WidgetMetrics>` field accessible after reading any platform theme
   3. KDE reader populates metrics from breezemetrics.h constants; Windows reader populates via `GetSystemMetricsForDpi`; macOS reader populates from HIG defaults; GNOME reader populates from libadwaita values
   4. Preset TOML files include widget metrics data
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [ ] 12-01-PLAN.md — WidgetMetrics data model with 12 sub-structs, ThemeVariant integration
+- [ ] 12-02-PLAN.md — Platform reader metrics population (KDE, Windows, macOS, GNOME)
+- [ ] 12-03-PLAN.md — Widget metrics added to all 17 preset TOML files
 
 ### Phase 13: CI Pipeline
 **Goal**: Automated cross-platform testing catches regressions and API breakage on every push
@@ -148,7 +152,7 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 9. Cargo Workspace | v0.2 | 1/1 | ✓ Complete | 2026-03-08 |
 | 10. API Breaking Changes | v0.2 | 3/3 | ✓ Complete | 2026-03-08 |
 | 11. Platform Readers | 4/4 | Complete   | 2026-03-08 | 2026-03-08 |
-| 12. Widget Metrics | v0.2 | 0/0 | Not started | - |
+| 12. Widget Metrics | v0.2 | 0/3 | Not started | - |
 | 13. CI Pipeline | v0.2 | 0/0 | Not started | - |
 | 14. Toolkit Connectors | v0.2 | 0/0 | Not started | - |
 | 15. Publishing Prep | v0.2 | 0/0 | Not started | - |
