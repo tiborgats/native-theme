@@ -1,0 +1,174 @@
+# Requirements: native-theme
+
+**Defined:** 2026-03-08
+**Core Value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
+
+## v0.2 Requirements
+
+Requirements for v0.2 release. Each maps to roadmap phases.
+
+### API Refactors & Structure
+
+- [ ] **API-01**: Repo converted to Cargo workspace with core crate in `native-theme/` subdirectory
+- [ ] **API-02**: ThemeColors flattened to 36 direct `Option<Rgba>` fields (no nested sub-structs)
+- [ ] **API-03**: All presets updated to flat `[light.colors]` / `[dark.colors]` TOML format
+- [ ] **API-04**: Platform readers updated for flat ThemeColors field access
+- [ ] **API-05**: Preset functions moved to `impl NativeTheme` associated functions (`NativeTheme::preset()`, `::from_toml()`, `::from_file()`, `::list_presets()`, `theme.to_toml()`)
+- [ ] **API-06**: Old free functions removed (no deprecation period, pre-1.0)
+- [ ] **API-07**: `ThemeGeometry` gains `radius_lg: Option<f32>` and `shadow: Option<bool>` fields
+- [ ] **API-08**: Presets updated with radius_lg and shadow data where applicable
+
+### Platform Readers
+
+- [ ] **PLAT-01**: macOS reader `from_macos()` reads ~20 NSColor semantic colors with P3-to-sRGB conversion
+- [ ] **PLAT-02**: macOS reader resolves both light and dark variants via NSAppearance
+- [ ] **PLAT-03**: macOS reader reads NSFont system and monospace fonts
+- [ ] **PLAT-04**: macOS reader wired into `from_system()` dispatch
+- [ ] **PLAT-05**: Windows reader adds `ApiInformation::IsMethodPresent` capability checks
+- [ ] **PLAT-06**: Windows reader reads AccentDark1-3 and AccentLight1-3 accent shades
+- [ ] **PLAT-07**: Windows reader reads system font via `SystemParametersInfo(SPI_GETNONCLIENTMETRICS)`
+- [ ] **PLAT-08**: Windows reader populates spacing from WinUI3 defaults and derives `primary_foreground`
+- [ ] **PLAT-09**: Windows reader uses DPI-aware `GetSystemMetricsForDpi` for geometry
+- [ ] **PLAT-10**: Linux `from_kde_with_portal()` async overlay of portal accent on kdeglobals palette
+- [ ] **PLAT-11**: Linux D-Bus portal backend detection for DE heuristic
+- [ ] **PLAT-12**: GNOME font reading from gsettings/dconf (`org.gnome.desktop.interface font-name`)
+- [ ] **PLAT-13**: `from_linux()` fallback: try kdeglobals if file exists on non-KDE desktops
+
+### Widget Metrics
+
+- [ ] **METRIC-01**: `WidgetMetrics` struct with 12 per-widget sub-structs (Button, Checkbox, Input, Scrollbar, Slider, ProgressBar, Tab, MenuItem, Tooltip, ListItem, Toolbar, Splitter)
+- [ ] **METRIC-02**: Each sub-struct uses `Option<f32>` fields, `#[non_exhaustive]`, serde defaults
+- [ ] **METRIC-03**: `widget_metrics: Option<WidgetMetrics>` added to `ThemeVariant`
+- [ ] **METRIC-04**: KDE metrics populated from breezemetrics.h constants (versioned per Plasma release)
+- [ ] **METRIC-05**: Windows metrics populated via `GetSystemMetricsForDpi` at runtime
+- [ ] **METRIC-06**: macOS metrics populated with hardcoded HIG defaults
+- [ ] **METRIC-07**: GNOME metrics populated from hardcoded libadwaita values
+- [ ] **METRIC-08**: Widget metrics added to preset TOML files
+
+### CI Pipeline
+
+- [ ] **CI-01**: GitHub Actions workflow testing on Linux + Windows + macOS runners
+- [ ] **CI-02**: Feature flag matrix: `--no-default-features`, `--features kde`, `--features portal-tokio`, `--features windows`, `--features macos`
+- [ ] **CI-03**: `cargo semver-checks` integrated for breaking change detection
+- [ ] **CI-04**: `cargo clippy` + `cargo fmt --check` in CI
+
+### Toolkit Connectors
+
+- [ ] **CONN-01**: `native-theme-gpui` crate maps ThemeColors to gpui-component's 108 ThemeColor fields (direct + derived)
+- [ ] **CONN-02**: `native-theme-gpui` maps fonts, geometry, spacing, and widget metrics
+- [ ] **CONN-03**: `native-theme-gpui` includes upstream PR proposal documents for missing gpui-component theming hooks
+- [ ] **CONN-04**: `native-theme-gpui` includes `examples/showcase.rs` widget gallery
+- [ ] **CONN-05**: `native-theme-iced` crate maps ThemeColors to iced Palette + Extended palette
+- [ ] **CONN-06**: `native-theme-iced` implements per-widget Catalog/Style for core widgets (Button, Container, TextInput, Scrollable, Checkbox, Slider, ProgressBar, Tooltip)
+- [ ] **CONN-07**: `native-theme-iced` maps geometry, spacing, and widget metrics to Style fields
+- [ ] **CONN-08**: `native-theme-iced` includes `examples/demo.rs` widget gallery
+- [ ] **CONN-09**: Both connectors include a theme selector (dropdown of presets + OS theme)
+
+### Publishing Prep
+
+- [ ] **PUB-01**: Cargo.toml metadata: `rust-version`, `repository`, `homepage`, `keywords`, `categories`, `readme`
+- [ ] **PUB-02**: LICENSE-MIT, LICENSE-APACHE, LICENSE-0BSD files at repo root
+- [ ] **PUB-03**: CHANGELOG.md following Keep a Changelog format
+- [ ] **PUB-04**: Doc examples (`/// # Examples`) on `NativeTheme`, `Rgba`, `ThemeVariant`
+- [ ] **PUB-05**: IMPLEMENTATION.md spec updated to match actual implementation
+- [ ] **PUB-06**: `docs/new-os-version-guide.md` for maintaining platform constants
+- [ ] **PUB-07**: Core crate published to crates.io
+- [ ] **PUB-08**: `native-theme-iced` published to crates.io
+
+## Future Requirements
+
+Deferred to post-v0.2. Tracked but not in current roadmap.
+
+### Mobile Readers
+
+- **MOBILE-01**: iOS reader `from_ios()` via objc2-ui-kit
+- **MOBILE-02**: Android reader `from_android()` via JNI + NDK for Material You colors
+
+### Change Notification
+
+- **NOTIFY-01**: Linux portal `SettingChanged` D-Bus signal via ashpd stream
+- **NOTIFY-02**: Linux KDE file watching via `notify` crate
+- **NOTIFY-03**: macOS ObjC notification observers
+- **NOTIFY-04**: Windows `UISettings.ColorValuesChanged` event
+
+### Additional Connectors
+
+- **CONN-10**: egui connector crate
+
+## Out of Scope
+
+| Feature | Reason |
+|---------|--------|
+| iOS/Android runtime readers | Small Rust GUI audience on mobile; ship preset TOML files for static theming |
+| Change notification system | Complex, opinionated async runtime choice; users can poll or use toolkit observers |
+| Color manipulation utilities (darken, lighten, contrast) | Out of scope for data crate; use the `palette` crate |
+| egui connector in v0.2 | Least structured theming API; defer to v0.3 or community contribution |
+| Widget-level animation/transitions | Animation is rendering concern; each toolkit has its own animation system |
+| Exhaustive widget metrics (every KDE constant) | Diminishing returns past core measurements; model only what connectors consume |
+| Named palette colors (platform-specific reds, blues) | Too platform-specific to standardize |
+| Accessibility flags in the data model | Environment signals detected by consuming app |
+| CSS/SCSS export format | Trivially implementable by consumers |
+
+## Traceability
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| API-01 | — | Pending |
+| API-02 | — | Pending |
+| API-03 | — | Pending |
+| API-04 | — | Pending |
+| API-05 | — | Pending |
+| API-06 | — | Pending |
+| API-07 | — | Pending |
+| API-08 | — | Pending |
+| PLAT-01 | — | Pending |
+| PLAT-02 | — | Pending |
+| PLAT-03 | — | Pending |
+| PLAT-04 | — | Pending |
+| PLAT-05 | — | Pending |
+| PLAT-06 | — | Pending |
+| PLAT-07 | — | Pending |
+| PLAT-08 | — | Pending |
+| PLAT-09 | — | Pending |
+| PLAT-10 | — | Pending |
+| PLAT-11 | — | Pending |
+| PLAT-12 | — | Pending |
+| PLAT-13 | — | Pending |
+| METRIC-01 | — | Pending |
+| METRIC-02 | — | Pending |
+| METRIC-03 | — | Pending |
+| METRIC-04 | — | Pending |
+| METRIC-05 | — | Pending |
+| METRIC-06 | — | Pending |
+| METRIC-07 | — | Pending |
+| METRIC-08 | — | Pending |
+| CI-01 | — | Pending |
+| CI-02 | — | Pending |
+| CI-03 | — | Pending |
+| CI-04 | — | Pending |
+| CONN-01 | — | Pending |
+| CONN-02 | — | Pending |
+| CONN-03 | — | Pending |
+| CONN-04 | — | Pending |
+| CONN-05 | — | Pending |
+| CONN-06 | — | Pending |
+| CONN-07 | — | Pending |
+| CONN-08 | — | Pending |
+| CONN-09 | — | Pending |
+| PUB-01 | — | Pending |
+| PUB-02 | — | Pending |
+| PUB-03 | — | Pending |
+| PUB-04 | — | Pending |
+| PUB-05 | — | Pending |
+| PUB-06 | — | Pending |
+| PUB-07 | — | Pending |
+| PUB-08 | — | Pending |
+
+**Coverage:**
+- v0.2 requirements: 47 total
+- Mapped to phases: 0
+- Unmapped: 47 (pending roadmap creation)
+
+---
+*Requirements defined: 2026-03-08*
+*Last updated: 2026-03-08 after initial definition*
