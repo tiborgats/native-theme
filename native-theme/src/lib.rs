@@ -203,6 +203,68 @@ pub fn from_system() -> crate::Result<NativeTheme> {
     }
 }
 
+/// Async version of [`from_system()`] that uses D-Bus portal backend
+/// detection to improve desktop environment heuristics on Linux.
+///
+/// When `XDG_CURRENT_DESKTOP` is unset or unrecognized, queries the
+/// D-Bus session bus for portal backend activatable names to determine
+/// whether KDE or GNOME portal is running, then dispatches to the
+/// appropriate reader.
+///
+/// On non-Linux platforms, behaves identically to [`from_system()`].
+#[cfg(target_os = "linux")]
+pub async fn from_system_async() -> crate::Result<NativeTheme> {
+    let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
+    match detect_linux_de(&desktop) {
+        #[cfg(feature = "kde")]
+        LinuxDesktop::Kde => {
+            #[cfg(feature = "portal")]
+            return crate::gnome::from_kde_with_portal().await;
+            #[cfg(not(feature = "portal"))]
+            return crate::kde::from_kde();
+        }
+        #[cfg(not(feature = "kde"))]
+        LinuxDesktop::Kde => NativeTheme::preset("adwaita"),
+        #[cfg(feature = "portal")]
+        LinuxDesktop::Gnome => crate::gnome::from_gnome().await,
+        #[cfg(not(feature = "portal"))]
+        LinuxDesktop::Gnome => NativeTheme::preset("adwaita"),
+        LinuxDesktop::Unknown => {
+            // Use D-Bus portal backend detection to refine heuristic
+            #[cfg(feature = "portal")]
+            {
+                if let Some(detected) = crate::gnome::detect_portal_backend().await {
+                    return match detected {
+                        #[cfg(feature = "kde")]
+                        LinuxDesktop::Kde => crate::gnome::from_kde_with_portal().await,
+                        #[cfg(not(feature = "kde"))]
+                        LinuxDesktop::Kde => NativeTheme::preset("adwaita"),
+                        LinuxDesktop::Gnome => crate::gnome::from_gnome().await,
+                        LinuxDesktop::Unknown => unreachable!("detect_portal_backend only returns Kde or Gnome"),
+                    };
+                }
+            }
+            // Sync fallback: try kdeglobals, then Adwaita
+            #[cfg(feature = "kde")]
+            {
+                let path = crate::kde::kdeglobals_path();
+                if path.exists() {
+                    return crate::kde::from_kde();
+                }
+            }
+            NativeTheme::preset("adwaita")
+        }
+    }
+}
+
+/// Async version of [`from_system()`].
+///
+/// On non-Linux platforms, this is equivalent to calling [`from_system()`].
+#[cfg(not(target_os = "linux"))]
+pub async fn from_system_async() -> crate::Result<NativeTheme> {
+    from_system()
+}
+
 #[cfg(test)]
 mod dispatch_tests {
     use super::*;
