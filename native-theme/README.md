@@ -38,7 +38,7 @@ cargo add native-theme
 Load a preset and access theme fields:
 
 ```rust
-let theme = native_theme::preset("dracula").unwrap();
+let theme = native_theme::NativeTheme::preset("dracula").unwrap();
 let dark = theme.dark.as_ref().unwrap();
 let accent = dark.colors.accent.unwrap();
 let bg = dark.colors.background.unwrap();
@@ -53,9 +53,9 @@ The `merge()` method fills in only the fields present in the overlay,
 leaving everything else from the base preset intact.
 
 ```rust
-use native_theme::{NativeTheme, Rgba, preset, from_toml};
-let mut theme = preset("nord").unwrap();
-let user_overrides = from_toml(r##"
+use native_theme::NativeTheme;
+let mut theme = NativeTheme::preset("nord").unwrap();
+let user_overrides = NativeTheme::from_toml(r##"
 name = "My Custom Nord"
 [light.colors]
 accent = "#ff6600"
@@ -69,8 +69,8 @@ Use `from_system()` to read the current OS theme at runtime, with a preset
 fallback for unsupported platforms:
 
 ```rust
-use native_theme::{from_system, preset};
-let theme = from_system().unwrap_or_else(|_| preset("default").unwrap());
+use native_theme::{from_system, NativeTheme};
+let theme = from_system().unwrap_or_else(|_| NativeTheme::preset("default").unwrap());
 ```
 
 **Platform behavior:**
@@ -193,13 +193,14 @@ fn to_slint(c: &native_theme::Rgba) -> slint::Color {
 | `portal-async-io` | `from_gnome()` with async-io runtime | Linux | Implies `portal`; uses ashpd with async-io backend |
 | `windows` | `from_windows()` Windows reader | Windows | Reads UISettings accent + GetSystemMetrics geometry |
 
-By default, no features are enabled. The preset API (`preset()`, `from_toml()`,
-`from_file()`, `list_presets()`, `to_toml()`) works without any features.
+By default, no features are enabled. The preset API (`NativeTheme::preset()`,
+`NativeTheme::from_toml()`, `NativeTheme::from_file()`, `NativeTheme::list_presets()`,
+`.to_toml()`) works without any features.
 
 ## Available Presets
 
 All presets are embedded at compile time via `include_str!()` and available
-through `preset("name")`. Each provides both light and dark variants.
+through `NativeTheme::preset("name")`. Each provides both light and dark variants.
 
 ### Core
 
@@ -233,7 +234,7 @@ through `preset("name")`. Each provides both light and dark variants.
 | `tokyo-night` | Tokyo Night editor theme |
 | `one-dark` | Atom One Dark colors |
 
-Use `list_presets()` to get all 17 names programmatically.
+Use `NativeTheme::list_presets()` to get all 17 names programmatically.
 
 ## TOML Format Reference
 

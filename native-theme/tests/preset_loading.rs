@@ -4,19 +4,19 @@
 //! populated with non-empty colors, valid font sizes, and survive TOML
 //! round-trip serialization.
 
-use native_theme::{list_presets, preset, from_toml, to_toml};
+use native_theme::NativeTheme;
 
 #[test]
 fn all_presets_parse_without_error() {
-    for name in list_presets() {
-        preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed to parse: {e}"));
+    for name in NativeTheme::list_presets() {
+        NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed to parse: {e}"));
     }
 }
 
 #[test]
 fn all_presets_have_both_variants() {
-    for name in list_presets() {
-        let theme = preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+    for name in NativeTheme::list_presets() {
+        let theme = NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         assert!(
             theme.light.is_some(),
             "preset '{name}' missing light variant"
@@ -30,8 +30,8 @@ fn all_presets_have_both_variants() {
 
 #[test]
 fn all_presets_have_core_colors() {
-    for name in list_presets() {
-        let theme = preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+    for name in NativeTheme::list_presets() {
+        let theme = NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         let light = theme
             .light
             .as_ref()
@@ -71,8 +71,8 @@ fn all_presets_have_core_colors() {
 
 #[test]
 fn all_presets_have_status_colors() {
-    for name in list_presets() {
-        let theme = preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+    for name in NativeTheme::list_presets() {
+        let theme = NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         let light = theme.light.as_ref().unwrap();
         let dark = theme.dark.as_ref().unwrap();
 
@@ -106,8 +106,8 @@ fn all_presets_have_status_colors() {
 
 #[test]
 fn all_presets_have_interactive_colors() {
-    for name in list_presets() {
-        let theme = preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+    for name in NativeTheme::list_presets() {
+        let theme = NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         let light = theme.light.as_ref().unwrap();
         let dark = theme.dark.as_ref().unwrap();
 
@@ -133,8 +133,8 @@ fn all_presets_have_interactive_colors() {
 
 #[test]
 fn all_presets_have_valid_fonts() {
-    for name in list_presets() {
-        let theme = preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+    for name in NativeTheme::list_presets() {
+        let theme = NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         for (label, variant) in [
             ("light", theme.light.as_ref()),
             ("dark", theme.dark.as_ref()),
@@ -158,8 +158,8 @@ fn all_presets_have_valid_fonts() {
 
 #[test]
 fn all_presets_have_geometry() {
-    for name in list_presets() {
-        let theme = preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+    for name in NativeTheme::list_presets() {
+        let theme = NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         for (label, variant) in [
             ("light", theme.light.as_ref()),
             ("dark", theme.dark.as_ref()),
@@ -176,8 +176,8 @@ fn all_presets_have_geometry() {
 
 #[test]
 fn all_presets_have_spacing() {
-    for name in list_presets() {
-        let theme = preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+    for name in NativeTheme::list_presets() {
+        let theme = NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         for (label, variant) in [
             ("light", theme.light.as_ref()),
             ("dark", theme.dark.as_ref()),
@@ -194,11 +194,11 @@ fn all_presets_have_spacing() {
 
 #[test]
 fn all_presets_round_trip_toml() {
-    for name in list_presets() {
-        let theme = preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
-        let toml_str = to_toml(&theme)
+    for name in NativeTheme::list_presets() {
+        let theme = NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+        let toml_str = theme.to_toml()
             .unwrap_or_else(|e| panic!("preset '{name}' to_toml failed: {e}"));
-        let reparsed = from_toml(&toml_str)
+        let reparsed = NativeTheme::from_toml(&toml_str)
             .unwrap_or_else(|e| panic!("preset '{name}' round-trip from_toml failed: {e}"));
 
         // Core accent must survive the round-trip
@@ -233,17 +233,17 @@ fn all_presets_round_trip_toml() {
 #[test]
 fn list_presets_returns_seventeen_entries() {
     assert_eq!(
-        list_presets().len(),
+        NativeTheme::list_presets().len(),
         17,
         "expected 17 presets, got {}",
-        list_presets().len()
+        NativeTheme::list_presets().len()
     );
 }
 
 #[test]
 fn dark_backgrounds_are_darker() {
-    for name in list_presets() {
-        let theme = preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+    for name in NativeTheme::list_presets() {
+        let theme = NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         let light_bg = theme
             .light
             .as_ref()
@@ -272,7 +272,7 @@ fn dark_backgrounds_are_darker() {
 
 #[test]
 fn preset_names_are_correct() {
-    let names = list_presets();
+    let names = NativeTheme::list_presets();
     assert!(
         names.contains(&"default"),
         "list_presets() missing 'default'"
