@@ -126,12 +126,14 @@ fn build_theme(
             fonts: fonts.clone(),
             geometry: Default::default(),
             spacing: Default::default(),
+            widget_metrics: None,
         }),
         dark: Some(crate::ThemeVariant {
             colors: dark_colors,
             fonts,
             geometry: Default::default(),
             spacing: Default::default(),
+            widget_metrics: None,
         }),
     }
 }

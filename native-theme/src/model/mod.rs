@@ -10,6 +10,11 @@ pub use colors::ThemeColors;
 pub use fonts::ThemeFonts;
 pub use geometry::ThemeGeometry;
 pub use spacing::ThemeSpacing;
+pub use widget_metrics::{
+    ButtonMetrics, CheckboxMetrics, InputMetrics, ListItemMetrics, MenuItemMetrics,
+    ProgressBarMetrics, ScrollbarMetrics, SliderMetrics, SplitterMetrics, TabMetrics,
+    ToolbarMetrics, TooltipMetrics, WidgetMetrics,
+};
 
 use serde::{Deserialize, Serialize};
 
@@ -32,11 +37,42 @@ pub struct ThemeVariant {
 
     #[serde(default, skip_serializing_if = "ThemeSpacing::is_empty")]
     pub spacing: ThemeSpacing,
+
+    /// Per-widget sizing and spacing metrics.
+    ///
+    /// Optional because not all themes or presets provide widget metrics.
+    /// When merging, if both base and overlay have widget metrics they are
+    /// merged recursively; if only the overlay has them they are cloned.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub widget_metrics: Option<WidgetMetrics>,
 }
 
-impl_merge!(ThemeVariant {
-    nested { colors, fonts, geometry, spacing }
-});
+impl ThemeVariant {
+    /// Merge an overlay into this value. `Some` fields in the overlay
+    /// replace the corresponding fields in self; `None` fields are
+    /// left unchanged. Nested structs are merged recursively.
+    pub fn merge(&mut self, overlay: &Self) {
+        self.colors.merge(&overlay.colors);
+        self.fonts.merge(&overlay.fonts);
+        self.geometry.merge(&overlay.geometry);
+        self.spacing.merge(&overlay.spacing);
+
+        match (&mut self.widget_metrics, &overlay.widget_metrics) {
+            (Some(base), Some(over)) => base.merge(over),
+            (None, Some(over)) => self.widget_metrics = Some(over.clone()),
+            _ => {}
+        }
+    }
+
+    /// Returns true if all fields are at their default (None/empty) state.
+    pub fn is_empty(&self) -> bool {
+        self.colors.is_empty()
+            && self.fonts.is_empty()
+            && self.geometry.is_empty()
+            && self.spacing.is_empty()
+            && self.widget_metrics.as_ref().map_or(true, |wm| wm.is_empty())
+    }
+}
 
 /// A complete native theme with a name and optional light/dark variants.
 ///

@@ -27,6 +27,7 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::NativeThem
         fonts: theme_fonts,
         geometry: Default::default(),
         spacing: Default::default(),
+        widget_metrics: None,
     };
 
     let theme = if dark {

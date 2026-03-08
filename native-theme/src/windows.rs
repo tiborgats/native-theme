@@ -174,6 +174,7 @@ fn build_theme(
         geometry,
         fonts,
         spacing,
+        widget_metrics: None,
     };
 
     if dark {
