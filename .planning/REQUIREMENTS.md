@@ -9,7 +9,7 @@ Requirements for v0.2 release. Each maps to roadmap phases.
 
 ### API Refactors & Structure
 
-- [ ] **API-01**: Repo converted to Cargo workspace with core crate in `native-theme/` subdirectory
+- [x] **API-01**: Repo converted to Cargo workspace with core crate in `native-theme/` subdirectory
 - [ ] **API-02**: ThemeColors flattened to 36 direct `Option<Rgba>` fields (no nested sub-structs)
 - [ ] **API-03**: All presets updated to flat `[light.colors]` / `[dark.colors]` TOML format
 - [ ] **API-04**: Platform readers updated for flat ThemeColors field access
@@ -113,7 +113,7 @@ Deferred to post-v0.2. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| API-01 | Phase 9 | Pending |
+| API-01 | Phase 9 | Complete |
 | API-02 | Phase 10 | Pending |
 | API-03 | Phase 10 | Pending |
 | API-04 | Phase 10 | Pending |
