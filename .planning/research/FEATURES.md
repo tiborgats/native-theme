@@ -1,260 +1,543 @@
-# Feature Research
+# Feature Landscape: v0.2 New Features
 
-**Domain:** Toolkit-agnostic cross-platform OS theme data crate (Rust)
-**Researched:** 2026-03-07
-**Confidence:** HIGH (based on analysis of prior art crates, platform API docs, downstream toolkit APIs, W3C design token spec, and Electron nativeTheme precedent)
+**Domain:** Toolkit-agnostic cross-platform OS theme data crate (Rust) -- subsequent milestone
+**Researched:** 2026-03-08
+**Overall confidence:** HIGH
 
-## Feature Landscape
+This document covers ONLY the new features planned for v0.2. Existing v0.1 features (36-field color model, TOML serde, presets, KDE/GNOME/Windows readers, merge, Rgba) are already shipped.
 
-### Table Stakes (Users Expect These)
+---
 
-Features users assume exist. Missing these = product feels incomplete.
+## Table Stakes
 
-| Feature | Why Expected | Complexity | Notes |
-|---------|--------------|------------|-------|
-| Semantic color data model (36+ roles) | Every theme system defines named color roles (accent, background, foreground, error, warning, success). Electron's `systemPreferences` exposes ~20, iced's `Extended` palette has 7 role groups, egui's `Visuals` has ~15 color fields, COSMIC's theme covers dozens. Without sufficient semantic coverage, adapters produce "tinted but still generic" results (as seen in `system-theme`'s 6-color palette). | MEDIUM | 36 fields is the sweet spot -- covers the union of platform capabilities without over-specializing. All fields `Option<T>` since no platform fills all roles. The macro-generated struct pattern (from PITFALLS.md) keeps merge() synchronized. |
-| Light and dark variant support | Every OS supports dark/light mode. Every toolkit has `dark()` / `light()` presets. A theme crate that only stores one variant is incomplete. Electron nativeTheme is built around this duality. COSMIC, catppuccin (4 flavors), iced (Theme enum) all expect this. | LOW | `NativeTheme { light: Option<ThemeVariant>, dark: Option<ThemeVariant> }` -- straightforward. Presets define both; runtime readers populate whichever matches current OS mode. |
-| TOML serialization / deserialization | The core value proposition. `system-theme` and catppuccin provide `const` Rust structs -- no serialization, no user-editable themes. `cosmic-theme` uses RON (Rust-specific, not human-friendly outside Rust). TOML is the standard for Rust config and is universally readable/editable. Without serde round-tripping, presets are compile-time-only data and community themes become impossible. | MEDIUM | Custom serde for `Rgba` hex strings (`#rrggbb` / `#rrggbbaa`). All nested structs need `#[serde(default)]` + `skip_serializing_if = "Option::is_none"`. Round-trip testing is critical. |
-| Bundled preset themes | Users need a working theme immediately without enabling platform features or having a specific OS. catppuccin bundles 4 flavors; iced has ~27 built-in themes; COSMIC ships complete Adwaita-like defaults. A theme crate with no built-in themes requires users to write TOML from scratch. | MEDIUM | MVP needs at least 3: `default` (neutral fallback), `kde-breeze`, `adwaita`. Each preset is ~2-4KB TOML embedded via `include_str!()`. Values extracted from authoritative design specs (breezemetrics.h, Adwaita CSS variables, HIG). |
-| Font data (family, size, monospace) | Every desktop environment exposes UI font settings. egui's `Style` has `text_styles` with `FontId` (family + size). iced has font configuration. KDE exposes 4 font properties dynamically. Ignoring fonts means theme-aware apps still use hardcoded fonts. | LOW | `ThemeFonts { family, size, monospace_family, monospace_size }` -- all `Option<String>` / `Option<f32>`. Simple structure. KDE font string parsing has edge cases (Qt 4 vs Qt 6 format) but the data model itself is trivial. |
-| Geometry data (border radius, border width) | Every toolkit has configurable corner radii. egui: `window_corner_radius`, `menu_corner_radius`. iced: corner radius per widget. Slint: border-radius property. Material 3 defines 5 corner radius tiers. Without geometry, theme-aware apps still have hardcoded corners and borders. | LOW | `ThemeGeometry { border_radius, border_radius_large, border_width, ... }` -- all `Option<f32>` in logical pixels. Values are editorial (extracted from design specs), not dynamic from APIs. |
-| Spacing data (default spacing, margins) | egui has a full `Spacing` struct. iced has padding/margin. KDE Breeze defines layout spacing constants. Material 3 uses an 8dp grid. Without spacing, visual integration is incomplete -- colors match but layout feels "off". | LOW | `ThemeSpacing { default_spacing, top_level_margin, child_margin, compact_spacing }` -- all `Option<f32>`. Values come from design specs, not APIs. |
-| Theme merging / layering | Users need to overlay customizations on base themes (e.g., change accent color but keep everything else from Breeze). Theme UI explicitly documents merging. WordPress theme.json has inheritance. COSMIC supports theme hierarchy. Android uses theme overlays. Without merge, any customization requires a complete TOML file with all 36+ color fields. | MEDIUM | Field-by-field `Option` merge: `overlay.field.is_some()` replaces base. The macro-generated struct approach (from PITFALLS.md) guarantees merge covers all fields. This is a critical quality-of-life feature. |
-| Hex color representation with alpha | macOS `NSColor.shadowColor`, GNOME `--border-opacity`, Material 3 disabled states (38% opacity) all use alpha. `system-theme`'s RGB-only `ThemeColor` is a documented limitation. CSS uses `#RRGGBBAA`. Starting without alpha means a painful retrofit later. | LOW | `Rgba { r: u8, g: u8, b: u8, a: u8 }` with `#RRGGBB` (alpha 0xFF implied) and `#RRGGBBAA` serde. `FromStr` + `Display` impls for non-serde contexts. |
-| Load theme from file path | Users need to load custom TOML theme files from disk (not just bundled presets). Without `from_file()`, the only way to use custom themes is embedding TOML strings in code. | LOW | `fs::read_to_string()` + `toml::from_str()`. Simple wrapper, but essential for user workflows. |
-| Typed error handling | Library crates must expose typed errors consumers can match on. `anyhow` is for binaries. `system-theme` has a good error taxonomy (`Unsupported`, `Unavailable`, `Platform`). Without typed errors, consumers cannot distinguish "platform not supported" from "file not found". | LOW | Manual `enum Error { Unsupported, Unavailable(String), Format(String), Platform(Box<dyn Error + Send + Sync>) }` with `Display` + `std::error::Error` impls. ~30 lines, zero additional deps. |
-| `#[non_exhaustive]` on all public structs | Adding fields (new color roles, new geometry properties) must be non-breaking. Downstream consumers already handle `None` for every field. Without `#[non_exhaustive]`, any new field is a semver-major change that forces ecosystem-wide version bumps. | LOW | Applied to all model structs. Prevents exhaustive pattern matches. Constructors via `Default` + serde. |
-| `Send + Sync` guarantee on all types | Theme data is loaded once and shared across threads in GUI apps. egui uses `Arc<Style>`. iced clones themes. Multi-threaded renderers need `Send + Sync` data. Without this guarantee, theme data cannot be safely shared. | LOW | All types are plain data (no `Rc`, no raw pointers, no interior mutability). `Send + Sync` holds automatically. Worth adding `static_assertions` or a compile-test to verify. |
+Features users expect when these capabilities are advertised. Missing any = the feature feels unfinished.
 
-### Differentiators (Competitive Advantage)
+### 1. macOS Reader: NSColor Semantic Color Reading
 
-Features that set the product apart. Not required, but valuable.
+| Aspect | Detail |
+|--------|--------|
+| Why expected | macOS is a primary desktop target. v0.1 already supports KDE, GNOME portal, and Windows. Shipping without macOS means cross-platform coverage has a visible gap. Every competing approach (dark-light, system-theme, Electron nativeTheme) supports macOS. |
+| Complexity | HIGH |
+| Dependencies | New `macos` feature flag, `objc2-app-kit` dependency |
 
-| Feature | Value Proposition | Complexity | Notes |
-|---------|-------------------|------------|-------|
-| Runtime OS theme reading (feature-gated per platform) | No existing toolkit-agnostic crate reads live OS theme data into a common format. `dark-light` detects only dark/light boolean. `system-theme` reads 6 colors but is iced-coupled. This crate reads 36 semantic colors + fonts + geometry from KDE, GNOME portal, Windows, macOS -- populating the same `NativeTheme` struct. This is the primary differentiator. | HIGH | Each platform reader is an independent feature-gated module: `kde` (sync, configparser+dirs), `portal` (async, ashpd), `windows` (sync, windows crate), `macos` (sync, objc2-app-kit). Each has unique API surface, error handling, and color space conversion challenges. |
-| Toolkit-agnostic design (zero GUI deps) | catppuccin depends on bevy/iced/ratatui behind features. `system-theme` depends on iced. `cosmic-theme` depends on iced/libcosmic. This crate has zero toolkit deps -- works equally with egui, iced, gpui, slint, dioxus, tauri, or any future toolkit. The adapter pattern (~50 lines per toolkit) keeps coupling in userland. | LOW | This is an architectural constraint, not a feature to build. Zero additional implementation work -- just discipline about not adding toolkit deps. The value is enormous: one crate serves the entire Rust GUI ecosystem. |
-| Cross-platform `from_system()` dispatch | A single function call that auto-detects the platform and desktop environment, then reads the appropriate theme source. No other crate does this with 36 semantic color roles. The consumer writes `native_theme::platform::from_system()` and gets a populated `NativeTheme` regardless of OS. | MEDIUM | `#[cfg(target_os)]` compile-time dispatch + runtime DE detection on Linux (`XDG_CURRENT_DESKTOP`, D-Bus portal backend sniffing). Sync fallback to bundled presets when async portal is unavailable. |
-| Community-contributable TOML presets | Anyone can contribute a preset (Catppuccin, Dracula, Nord, Solarized, etc.) without writing Rust code -- just TOML. catppuccin has its own crate; integrating its colors into native-theme is a TOML file. COSMIC uses RON (Rust-only). JSON lacks comments. TOML is the ideal format for human-authored theme data. | LOW | Pure data contribution. CI validates TOML against schema (round-trip parse test). No Rust code review needed for pure preset additions. This enables a theme repository ecosystem. |
-| Partial TOML overrides (sparse themes) | A user can write a 3-line TOML file with just `accent = "#ff0000"` and merge it onto any base preset. WordPress theme.json supports this via inheritance. Theme UI supports deep merging. Most theme systems require complete theme definitions -- partial overrides are a significant usability improvement. | LOW | Enabled by `Option<T>` fields + `#[serde(default)]` on all structs + `merge()`. The implementation is already in the data model design. The value comes from documentation and examples making this workflow discoverable. |
-| Disabled opacity / border opacity | Material 3 uses 0.38 opacity for disabled states. GNOME Adwaita defines `--disabled-opacity` and `--border-opacity`. egui has `disabled_alpha`. These values are needed for visually correct disabled UI elements but are missing from simpler theme crates. | LOW | `ThemeGeometry { disabled_opacity, border_opacity }` -- `Option<f32>` values. Simple fields, high visual impact. |
-| Preset listing API | `NativeTheme::list_presets()` returns available preset names without parsing. Enables theme selector UIs. catppuccin provides `FlavorIterator` for enumeration. Without a listing API, consumers must hardcode preset names. | LOW | `&'static [&'static str]` const array. Zero-cost, no TOML parsing. |
-| `to_toml()` serialization | Exporting a runtime-read theme to TOML enables "read from OS, save to file" workflows. Users can snapshot their current OS theme as a portable TOML file, then load it on different machines/platforms. No competing crate supports this export flow. | LOW | `toml::to_string_pretty()` with `skip_serializing_if = "Option::is_none"` for clean output. Important that output is human-readable (pretty-printed, no `None` noise). |
-| KDE kdeglobals reader (60+ color roles) | KDE's kdeglobals is the richest freely-accessible theme data source on any platform (60+ color roles in INI format). No other toolkit-agnostic crate reads it. `system-theme` only uses the portal (4 values). This reader populates most of the 36 semantic roles from a single file. | MEDIUM | `configparser::Ini::new_cs()` for case-sensitive parsing. Qt font string parsing (variable field counts). Dark mode detection via background luminance or `[General] ColorScheme` key. Well-documented format but many edge cases. |
-| Freedesktop portal reader (live accent, scheme, contrast) | Reads accent color, color scheme, and contrast preference from the XDG Desktop Portal D-Bus interface. Works on both GNOME 47+ and KDE Plasma 6. Provides live change notifications via async stream. The only way to get GNOME's accent color dynamically. | MEDIUM | Async-only (ashpd/zbus). Must be a separate feature flag from `kde` to avoid forcing async runtime on sync-only users. Returns only 3-4 values -- best combined with preset or kdeglobals fallback for full theme. |
-| Windows UISettings reader (accent + 8 colors) | Reads accent color + 6 shades + background + foreground from Windows UISettings COM API. This gives Windows apps OS-aware accent colors beyond the hardcoded blue/orange defaults. GetSystemMetrics provides border width and other metrics. | MEDIUM | Sync API via `windows` crate. API presence check (`ApiInformation::IsMethodPresent`) for graceful degradation on older Windows. 8 color types from `UIColorType` enum. |
-| macOS NSColor reader (~20 semantic colors) | Reads ~20 semantic NSColor properties (controlAccentColor, windowBackgroundColor, labelColor, separatorColor, etc.) plus NSFont for system fonts and NSAppearance for dark/light detection. macOS has the richest set of dynamic semantic colors of any platform. | HIGH | Requires P3-to-sRGB color space conversion (crash without it -- see PITFALLS.md). Main thread appearance resolution. objc2-app-kit FFI. The most technically demanding reader due to color space and thread safety requirements. |
+**What users expect from a macOS reader:**
 
-### Anti-Features (Commonly Requested, Often Problematic)
+The macOS reader maps NSColor semantic properties to NativeTheme fields. Based on Apple's AppKit documentation and objc2-app-kit bindings (HIGH confidence), the available semantic colors are:
 
-Features that seem good but create problems.
+**Core colors (map directly to ThemeColors fields):**
+- `controlAccentColor` -> `accent`
+- `windowBackgroundColor` -> `background`
+- `labelColor` -> `foreground`
+- `controlBackgroundColor` -> `surface`
+- `separatorColor` -> `border`
+- `secondaryLabelColor` -> `muted`
+- `shadowColor` -> `shadow`
 
-| Feature | Why Requested | Why Problematic | Alternative |
-|---------|---------------|-----------------|-------------|
-| Built-in toolkit adapters (egui adapter, iced adapter, etc.) | "Just give me one function to apply the theme to my egui app." Reduces boilerplate for consumers. catppuccin provides `catppuccin-egui` with feature-gated iced/bevy/ratatui integration. | Couples the crate to specific toolkit versions. `system-theme` is coupled to iced -- when iced releases a breaking change, system-theme must update or become unusable. With 6+ target toolkits, maintaining adapters becomes a full-time job. egui's `Visuals` struct changes between versions. iced's `Palette` changes. Adapter breakage blocks theme crate releases. | Ship adapters as separate thin crates (`native-theme-egui`, `native-theme-iced`) maintained by the community, or document the ~50-line adapter pattern in examples/docs. The core crate stays toolkit-agnostic forever. |
-| Named palette colors (system red, system blue, etc.) | macOS exposes ~13 named system colors. iOS has similar. GNOME Adwaita defines 9 named color scales. Users want a standard `theme.palette.red` field. | Too platform-specific. KDE has none. Windows has none. Android has none. Including them creates a massively asymmetric model where macOS/iOS have rich data and other platforms have all-`None`. Semantic status colors (error=red, success=green, warning=orange) already cover the practical use cases without platform-specific naming. | Map platform named colors to semantic roles in the reader (macOS `systemRedColor` -> `error`). Document that named palette access is available directly through platform APIs for apps that need it. |
-| Widget-level metrics (button height, checkbox size, scrollbar width, etc.) | KDE breezemetrics.h defines ~80 widget constants. Windows `GetSystemMetrics` provides ~20. Users building toolkit replacements want pixel-perfect widget sizing. | No toolkit currently consumes per-widget metrics (egui hardcodes `.px_N()`; iced has no per-widget size API). KDE is the only rich source; other platforms provide almost nothing, making the model extremely asymmetric. Including 80+ widget fields in the model inflates the data type with fields that are `None` on 5 of 6 platforms. The ROI is near zero in 2026. | Defer to post-1.0. The model uses `#[non_exhaustive]`, so widget metrics can be added later without breaking changes. Document the deferral and the data sources for future implementors. |
-| Color space conversion utilities (sRGB <-> P3, HSL, Oklch, etc.) | W3C design tokens spec supports P3, Oklch. Users want to manipulate theme colors (darken, lighten, generate shades). | Out of scope for a theme data crate. Color math is a separate domain (see `palette` crate, `csscolorparser`). Adding conversion utilities bloats the crate and duplicates well-maintained ecosystem crates. The `Rgba` type is a storage format, not a color manipulation toolkit. | Store everything as sRGB (the universal interchange format). Document that consumers wanting color math should convert `Rgba` to their preferred crate's type (e.g., `palette::Srgba`). Platform readers handle P3-to-sRGB conversion internally. |
-| Reactive change notification system (built-in event bus) | `system-theme` provides change callbacks. Electron nativeTheme emits `'updated'` events. Users want automatic theme updates when the OS theme changes. | Building a general-purpose reactive system (channels, callbacks, subscriptions) is complex, opinionated (which async runtime? channels vs callbacks?), and duplicates what every GUI toolkit already provides (egui: `observe_window_appearance`, iced: subscriptions, gpui: observers). The crate becomes a mini-runtime. | Document the platform-specific change notification sources (KDE: file watcher on kdeglobals, portal: `SettingChanged` D-Bus signal, macOS: `NSSystemColorsDidChangeNotification`, Windows: `ColorValuesChanged`). Provide the optional `watch` feature flag for file watching. Let consumers integrate change detection into their existing event loop. |
-| CSS/SCSS export format | Some users want to generate CSS custom properties from theme data for web-based UIs (tauri, dioxus). | Supporting CSS output adds a dependency on CSS formatting, creates a secondary serialization path to maintain, and is trivially implementable by consumers (`format!("--accent: {};", theme.colors.accent)` is a one-liner per field). The crate's job is data, not rendering. | Document a 10-line CSS export example in the cookbook. If demand grows, publish as a separate `native-theme-css` crate. |
-| Runtime theme interpolation / animation | Animating between theme variants (smooth dark/light transition). Some desktop environments animate theme transitions. | Animation is toolkit-specific behavior. egui, iced, and gpui each have their own animation systems. A data crate cannot own animation timing. Storing interpolation state in the theme struct conflates data with rendering concerns. | Document that consumers can interpolate between two `ThemeVariant` structs using their toolkit's animation system. Provide a `ThemeVariant::lerp()` utility method if demand emerges (it operates on `Option<Rgba>` fields, returning interpolated values). |
-| Design token format (W3C DTCG JSON) | W3C design tokens spec reached stable 2025.10. Some teams want token-format import/export. | W3C tokens are JSON-based with a completely different schema (`$value`, `$type`, token groups with `$extensions`). Supporting both TOML (native-theme format) and W3C JSON adds a parallel serialization layer. The W3C spec is designed for web design systems, not OS-level theme data. The overlap is partial at best. | Document the mapping between native-theme TOML fields and W3C token names. Provide a conversion example in docs. If demand grows, publish as a separate `native-theme-tokens` crate. |
-| Android runtime reader (Material You) | Android has the richest dynamic accent system (65 tonal palette values on API 31+). Users want Android support. | JNI is verbose, error-prone, and requires an Android JNI context. No ergonomic wrapper exists for Material You in Rust. The Rust Android ecosystem is the least mature. Building this before desktop platforms are solid diverts effort from higher-impact work. | Defer to late phase (Phase 7+). Include a Material 3 preset with static values for immediate usability. The reader can be added when the Android Rust tooling matures. |
-| iOS runtime reader | iOS UIColor has ~30 semantic colors. Dynamic Type provides font scaling. | Requires objc2-ui-kit, which is the same ecosystem as macOS (shared objc2 knowledge). But iOS testing requires physical devices or simulators. The audience for Rust iOS GUI apps is small in 2026. | Defer to late phase (Phase 7+). Include an iOS preset with static values. The reader can follow the macOS reader pattern closely since UIKit mirrors AppKit semantics. |
+**Status colors:**
+- `systemRedColor` -> `danger`
+- `systemOrangeColor` -> `warning`
+- `systemGreenColor` -> `success`
+- `systemBlueColor` -> `info`
+
+**Interactive colors:**
+- `selectedContentBackgroundColor` -> `selection`
+- `selectedTextColor` -> `selection_foreground`
+- `linkColor` -> `link`
+- `keyboardFocusIndicatorColor` -> `focus_ring`
+
+**Panel colors:**
+- `underPageBackgroundColor` -> `sidebar`
+- (no sidebar foreground exposed by AppKit)
+
+**Component colors:**
+- `controlColor` -> `button`
+- `controlTextColor` -> `button_foreground`
+- `textColor` -> `input_foreground`
+- `textBackgroundColor` -> `input`
+- `disabledControlTextColor` -> `disabled`
+- `gridColor` -> `separator`
+- `alternatingContentBackgroundColors` (first alternate) -> `alternate_row`
+
+**Total: ~20-22 color mappings** -- the richest semantic color source after KDE.
+
+**Technical requirements (from Apple docs + objc2-app-kit docs, HIGH confidence):**
+
+1. **P3 -> sRGB conversion**: macOS uses Display P3 color space by default since macOS 10.15. Semantic NSColor properties may return P3 colors. Must call `colorUsingColorSpace:` with `NSColorSpace.sRGBColorSpace` before extracting RGBA components. Without this conversion, RGB values will be wrong (clipped or mis-mapped). This is a crash risk -- calling `redComponent` on a catalog color without converting first throws an NSException.
+
+2. **NSAppearance resolution**: Dynamic/semantic colors resolve differently in light vs dark mode. To read both variants, set `NSAppearance.current` to the desired appearance before querying colors:
+   ```
+   let old = NSAppearance.current
+   NSAppearance.current = <light appearance>
+   // read light colors
+   NSAppearance.current = <dark appearance>
+   // read dark colors
+   NSAppearance.current = old
+   ```
+   On macOS 11+, `performAsCurrentDrawingAppearance` wraps this pattern.
+
+3. **NSFont reading**: `NSFont.systemFont(ofSize: 0)` returns the default system font (San Francisco). `NSFont.monospacedSystemFont(ofSize: 0)` returns the monospace variant. The `pointSize` property gives the size. The `familyName` property gives the family (will be ".AppleSystemUIFont" or "SF Pro" depending on context -- use `.displayName` for the user-visible name).
+
+4. **Hardcoded geometry**: AppKit does not expose border radius, spacing, or widget metrics via API. Use hardcoded HIG defaults: ~5px corner radius, ~8pt default spacing. Apple enforces visual consistency through HIG, so these values are stable across macOS versions.
+
+5. **Feature flag**: `macos = ["dep:objc2-app-kit", "dep:objc2-foundation"]` with `target_os = "macos"` cfg gate. Must not compile on non-macOS targets.
+
+### 2. API Methods on NativeTheme (from free functions)
+
+| Aspect | Detail |
+|--------|--------|
+| Why expected | Idiomatic Rust convention (File::open, String::from, HashMap::new). Discoverability via autocomplete on `NativeTheme::`. Currently `preset("name")` gives no hint it returns a `NativeTheme`. |
+| Complexity | LOW |
+| Dependencies | None -- pure refactor of existing code |
+
+Moving these free functions to associated methods:
+- `preset("name")` -> `NativeTheme::preset("name")`
+- `list_presets()` -> `NativeTheme::list_presets()`
+- `from_toml(s)` -> `NativeTheme::from_toml(s)`
+- `from_file(path)` -> `NativeTheme::from_file(path)`
+- `to_toml(&theme)` -> `theme.to_toml()`
+
+Pre-1.0, so no deprecation period needed. Remove old free functions outright.
+
+### 3. Flat ThemeColors (36 direct fields)
+
+| Aspect | Detail |
+|--------|--------|
+| Why expected | The nested sub-struct pattern (`colors.core.accent`, `colors.status.danger`) was an implementation detail that leaked into the TOML format. Users writing TOML presets must learn a taxonomy that has no precedent in CSS, shadcn/ui, Tailwind, or Material Design. Flat `colors.accent` matches every ecosystem convention. |
+| Complexity | MEDIUM |
+| Dependencies | Requires updating all 17 presets, all 3 platform readers, all tests |
+
+This is a breaking API change. The data model flattens from 7 nested sub-structs to 36 direct `Option<Rgba>` fields on `ThemeColors`. The TOML format changes from `[light.colors.core]` with 7 sections to `[light.colors]` with 36 keys.
+
+### 4. ThemeGeometry: radius_lg and shadow fields
+
+| Aspect | Detail |
+|--------|--------|
+| Why expected | The implementation spec defines these. `radius_lg` is needed for window/dialog corners (GNOME `--window-radius` = 15px, Material 3 large = 16dp). `shadow` (bool) indicates whether the platform uses drop shadows (Breeze: yes, Adwaita: yes, some HiDPI setups: no). |
+| Complexity | LOW |
+| Dependencies | `#[non_exhaustive]` makes this non-breaking |
+
+Two new fields on the existing struct:
+- `radius_lg: Option<f32>` -- large element corner radius
+- `shadow: Option<bool>` -- drop shadows enabled
+
+---
+
+## Differentiators
+
+Features that set v0.2 apart. Not strictly expected but create significant value.
+
+### 5. Widget Metrics System
+
+| Aspect | Detail |
+|--------|--------|
+| Value proposition | Enables pixel-perfect native UIs. No other toolkit-agnostic crate provides per-widget sizing data. KDE breezemetrics.h has ~80 constants. Windows GetSystemMetrics has ~20 widget-related values. This is data that toolkit connector authors need to make buttons, checkboxes, and scrollbars match the host platform. |
+| Complexity | HIGH |
+| Dependencies | New `WidgetMetrics` struct, new field on `ThemeVariant`, platform reader updates |
+
+**What widgets need metrics and what measurements matter:**
+
+Based on analysis of KDE breezemetrics.h, Windows GetSystemMetrics, macOS HIG, and libadwaita CSS (HIGH confidence for KDE/Windows, MEDIUM for macOS/GNOME):
+
+| Widget | Measurements | KDE Source | Windows Source | macOS | GNOME |
+|--------|-------------|------------|---------------|-------|-------|
+| **Button** | min_height, padding_h, padding_v, icon_size, spacing | breezemetrics.h: Button_MinWidth, Button_MarginWidth, Button_ItemSpacing | SM_CXSIZE (caption button), SPI_GETNONCLIENTMETRICS | HIG: 20pt min height (hardcoded) | libadwaita SCSS (hardcoded) |
+| **Checkbox** | indicator_size, spacing | CheckBox_Size (~20px), CheckBox_ItemSpacing | SM_CXMENUCHECK, SM_CYMENUCHECK | HIG: 14pt (hardcoded) | ~20px (hardcoded) |
+| **Input** | min_height, padding_h, padding_v | LineEdit_MarginWidth, LineEdit_FrameWidth | SM_CXEDGE | HIG: 22pt (hardcoded) | ~34px (hardcoded) |
+| **Scrollbar** | width, min_slider_height | ScrollBar_Width (~14px), ScrollBar_MinSliderHeight | SM_CXVSCROLL, SM_CYHSCROLL | HIG: overlay ~7px / legacy ~15px | --scrollbar-width (hardcoded) |
+| **Slider** | groove_height, handle_size | Slider_TickLength, Slider_GrooveThickness | SM_CXHTHUMB | HIG: ~22pt (hardcoded) | ~34px (hardcoded) |
+| **ProgressBar** | height | ProgressBar_BusyIndicatorSize, ProgressBar_Thickness | n/a | HIG: ~4pt (hardcoded) | ~10px (hardcoded) |
+| **Tab** | min_height, padding_h, overlap | TabBar_TabMarginWidth, TabBar_TabMinHeight, TabBar_TabOverlap | n/a | HIG: ~28pt (hardcoded) | ~46px (hardcoded) |
+| **MenuItem** | min_height, padding_h, icon_size | MenuItem_MarginWidth, MenuItem_MarginHeight, MenuItem_ItemSpacing | SM_CYMENUSIZE | n/a | ~32px (hardcoded) |
+| **Tooltip** | padding | ToolTip_FrameWidth | n/a | n/a | ~6px (hardcoded) |
+| **ListItem** | min_height, padding_h | n/a | n/a | HIG: ~24pt (hardcoded) | ~34px (hardcoded) |
+| **Toolbar** | height, separator_width | ToolBar_FrameWidth, ToolBar_HandleWidth, ToolBar_SeparatorItemWidth | SM_CXMENUSIZE | HIG: ~38pt (hardcoded) | ~46px (hardcoded) |
+| **Splitter** | handle_width | Splitter_SplitterWidth (~6px) | SM_CXSIZEFRAME | n/a | n/a |
+
+**Key design decisions:**
+- Each widget gets its own sub-struct (e.g., `ButtonMetrics`, `CheckboxMetrics`) with all `Option<f32>` fields, `#[non_exhaustive]`, serde defaults
+- `WidgetMetrics` composes all sub-structs with `skip_serializing_if` for empty ones
+- Add `widget_metrics: Option<WidgetMetrics>` to `ThemeVariant`
+- Platform sourcing: KDE = hardcoded constants from breezemetrics.h (versioned per Plasma release), GNOME = hardcoded from libadwaita SCSS (versioned per libadwaita release), Windows = runtime via GetSystemMetrics (no versioning needed), macOS = hardcoded HIG defaults (stable across versions)
+
+**Recommendation: Start with the 12 widget types listed above.** These cover the widgets that gpui-component and iced both provide. Each sub-struct should have 2-5 fields maximum -- just the measurements that vary across platforms. Do not model every possible dimension; model only what connectors need.
+
+### 6. gpui-component Connector (native-theme-gpui)
+
+| Aspect | Detail |
+|--------|--------|
+| Value proposition | gpui-component has 108 ThemeColor fields (HIGH confidence -- verified from docs.rs). A connector maps native-theme's 36 semantic colors + fonts + geometry + widget metrics to gpui-component's styling system, so gpui users get native-harmonious look with one function call. |
+| Complexity | HIGH |
+| Dependencies | Workspace restructuring, gpui-component git dependency, upstream PRs for missing hooks |
+
+**gpui-component ThemeColor mapping analysis:**
+
+gpui-component's ThemeColor has 108 fields (verified from docs.rs/gpui-component, HIGH confidence). The mapping from native-theme's 36 colors covers the core subset:
+
+| native-theme field | gpui-component field(s) |
+|-------------------|------------------------|
+| accent | accent |
+| background | background |
+| foreground | foreground |
+| surface | (derive from background) |
+| border | border |
+| muted | muted |
+| shadow | (used for shadow opacity) |
+| primary_bg | primary |
+| primary_fg | primary_foreground |
+| secondary_bg | secondary |
+| secondary_fg | secondary_foreground |
+| danger | danger |
+| danger_foreground | danger_foreground |
+| warning | warning |
+| warning_foreground | warning_foreground |
+| success | success |
+| success_foreground | success_foreground |
+| info | info |
+| info_foreground | info_foreground |
+| selection | list_active, table_active |
+| link | link |
+| focus_ring | ring |
+| sidebar | sidebar |
+| sidebar_foreground | sidebar_foreground |
+| tooltip | popover (gpui uses popover for tooltips) |
+| tooltip_foreground | popover_foreground |
+| button | (derive from secondary) |
+| button_foreground | (derive from secondary_foreground) |
+| input | input |
+| disabled | (derive with disabled_opacity) |
+| separator | (derive from border) |
+
+**Fields gpui-component has that native-theme does NOT provide** (must be derived or use defaults):
+- Hover/active variants: `primary_hover`, `primary_active`, `danger_hover`, etc. (18 fields) -- derive by lightening/darkening base color
+- Chart colors: `chart_1` through `chart_5`, `bullish`, `bearish` -- use defaults
+- List/table variants: `list_even`, `list_hover`, `table_even`, etc. -- derive from base colors
+- Tab variants: `tab`, `tab_active`, `tab_foreground`, etc. -- derive from accent/background
+- Scrollbar: `scrollbar`, `scrollbar_thumb`, `scrollbar_thumb_hover` -- derive from muted
+- Switch/slider: `switch`, `switch_thumb`, `slider_bar`, `slider_thumb` -- derive from accent/muted
+- Title bar: `title_bar`, `title_bar_border` -- derive from background
+
+**Per-widget styling gaps in gpui-component:**
+
+gpui-component currently hardcodes many widget dimensions (padding, icon sizes, corner radii). The connector will likely need upstream PRs to expose these as theme tokens. The todo.md correctly identifies the PR strategy: frame as "more theming flexibility," one concern per PR, no breaking changes.
+
+**Cannot publish to crates.io** until gpui-component is published there. Usable via git dependency in the meantime.
+
+### 7. iced Connector (native-theme-iced)
+
+| Aspect | Detail |
+|--------|--------|
+| Value proposition | iced (25k GitHub stars) has the strongest per-widget styling of the pure-Rust toolkits. The Catalog/closure-based system (since iced 0.13) allows complete visual customization. COSMIC desktop proves this approach at scale. |
+| Complexity | MEDIUM |
+| Dependencies | Workspace restructuring, iced crates.io dependency |
+
+**iced Palette and styling analysis:**
+
+iced's theming works at two levels (HIGH confidence -- verified from docs.rs and discourse.iced.rs):
+
+**Level 1: Palette (6 base colors)**
+The `Palette` struct has exactly 6 fields:
+- `background: Color`
+- `text: Color`
+- `primary: Color`
+- `success: Color`
+- `warning: Color`
+- `danger: Color`
+
+From these 6, iced auto-generates an `Extended` palette with derived shades for primary, secondary, success, warning, danger, and background -- each with base/weak/strong variants.
+
+**Mapping from native-theme to iced Palette:**
+- `background` -> `Palette::background`
+- `foreground` -> `Palette::text`
+- `accent` (or `primary_bg`) -> `Palette::primary`
+- `success` -> `Palette::success`
+- `warning` -> `Palette::warning`
+- `danger` -> `Palette::danger`
+
+This covers the Palette level completely.
+
+**Level 2: Per-widget Style structs (closure-based)**
+
+Each styleable widget has a `Style` struct. The connector can provide custom Catalog implementations for deeper customization. Widgets with Style support:
+
+| Widget | Style fields | native-theme source |
+|--------|-------------|-------------------|
+| Button | background, text_color, border, shadow, snap | primary_bg/fg, border, shadow |
+| Container | text_color, background, border, shadow, snap | background, foreground, border |
+| TextInput | background, border, icon, placeholder, value, selection | input, input_fg, muted, selection |
+| Checkbox | background, icon_color, border, text_color | accent, background, border |
+| Radio | background, dot_color, border, text_color | accent, background, border |
+| Toggler | background, foreground, background_border | accent, background |
+| Slider | rail, handle (colors, border, width) | accent, muted, border |
+| ProgressBar | background, bar, border_radius | accent, muted |
+| Scrollable | container, scrollbar (background, border, scroller) | muted, scrollbar metrics |
+| PickList | background, text_color, placeholder_color, handle_color, border | input, foreground, muted, border |
+| Rule | color, width, radius, fill_mode | separator |
+| Tooltip | background, text_color, border | tooltip, tooltip_fg, border |
+
+**Key advantage:** iced is on crates.io, so `native-theme-iced` can be published immediately. No git dependency needed.
+
+**iced also supports:** Border (width, color, radius), Shadow (color, offset, blur_radius), Background (Color or Gradient). The connector can use ThemeGeometry.radius for border radii and ThemeGeometry.shadow for shadow enable/disable.
+
+### 8. Cargo Workspace Restructuring
+
+| Aspect | Detail |
+|--------|--------|
+| Value proposition | Enables separate connector crates while keeping the core crate publishable. Standard Rust ecosystem pattern for core+extension crate families. |
+| Complexity | MEDIUM |
+| Dependencies | Must happen before connector crates |
+
+**Workspace conventions (HIGH confidence -- from Cargo Book):**
+
+Structure:
+```
+native-theme/
+  Cargo.toml              # workspace root (not a package)
+  native-theme/
+    Cargo.toml             # core crate (publishable)
+    src/
+  native-theme-gpui/
+    Cargo.toml             # connector (git dep on gpui-component)
+    src/
+    examples/
+  native-theme-iced/
+    Cargo.toml             # connector (crates.io dep on iced)
+    src/
+    examples/
+```
+
+**Key conventions:**
+- Workspace root Cargo.toml has `[workspace]` section with `members` list
+- Core crate uses `native-theme` as its package name (the crates.io name)
+- Connectors use path dependency for development: `native-theme = { path = "../native-theme" }`
+- For publishing: connectors also need `version` in their native-theme dependency
+- Shared settings (edition, rust-version, license) go in `[workspace.package]` and are inherited via `package.edition.workspace = true`
+- Shared dependencies go in `[workspace.dependencies]` for version consistency
+- Publishing order: core crate first, then connectors (connectors depend on core)
+- Use `cargo publish -p native-theme` to publish specific crate
+
+**Publishing constraint for native-theme-gpui:** gpui-component is not on crates.io (only available as git dependency). Therefore native-theme-gpui CANNOT be published to crates.io until gpui-component is published. It can still exist in the workspace and be used via git dependency.
+
+### 9. CI Pipeline
+
+| Aspect | Detail |
+|--------|--------|
+| Value proposition | Cross-platform testing catches platform-specific compilation errors before release. Feature flag matrix ensures each reader compiles independently. semver-checks prevents accidental API breakage. |
+| Complexity | LOW |
+| Dependencies | GitHub Actions |
+
+Standard GitHub Actions workflow:
+- Test on Linux + Windows + macOS runners
+- Feature flag matrix: `--no-default-features`, individual features (`kde`, `portal-tokio`, `windows`, `macos`)
+- `cargo clippy` + `cargo fmt --check`
+- `cargo semver-checks` to catch accidental breaking changes
+- `#[non_exhaustive]` means new field additions are non-breaking (semver-checks won't flag them)
+
+### 10. Publishing Prep
+
+| Aspect | Detail |
+|--------|--------|
+| Value proposition | Professional crate presence on crates.io and docs.rs. Required metadata for discoverability. Doc examples that compile via `cargo test --doc`. |
+| Complexity | LOW |
+| Dependencies | All other v0.2 work should be complete first |
+
+**Required crates.io metadata (HIGH confidence -- from Cargo Book):**
+
+| Field | Value | Status |
+|-------|-------|--------|
+| `name` | `native-theme` | Already set |
+| `version` | `0.2.0` | Already set |
+| `edition` | `2024` | Already set |
+| `license` | `MIT OR Apache-2.0 OR 0BSD` | Already set |
+| `description` | (current is good) | Already set |
+| `rust-version` | `1.85` | Needs adding |
+| `repository` | `https://github.com/tiborgats/native-theme` | Needs adding |
+| `homepage` | (same as repository or docs.rs link) | Needs adding |
+| `documentation` | (auto-detected by docs.rs if omitted) | Optional |
+| `readme` | `README.md` | Needs adding |
+| `keywords` | `["theme", "native", "gui", "colors", "desktop"]` | Needs adding (max 5) |
+| `categories` | `["gui", "config"]` | Needs adding (must be valid slugs) |
+
+**Documentation expectations:**
+- `/// # Examples` doc comments on `NativeTheme`, `Rgba`, `ThemeVariant` -- these compile via `cargo test --doc` and appear on docs.rs
+- README.md with usage examples, feature flag table, platform support matrix
+- CHANGELOG.md following Keep a Changelog format
+- LICENSE files (MIT, Apache-2.0, 0BSD) at repo root
+
+### 11. Windows Reader Enhancements
+
+| Aspect | Detail |
+|--------|--------|
+| Value proposition | The v0.1 Windows reader reads accent + background + foreground. v0.2 adds accent shades (AccentLight1-3, AccentDark1-3), system font via SystemParametersInfo, and primary_foreground derivation. |
+| Complexity | MEDIUM |
+| Dependencies | Existing `windows` feature flag |
+
+**What's being added:**
+- `ApiInformation::IsMethodPresent` capability check before UISettings calls (graceful degradation on older Windows)
+- 6 accent shade colors: AccentDark1-3 and AccentLight1-3 (useful for hover/active states in connectors)
+- System font: `SystemParametersInfo(SPI_GETNONCLIENTMETRICS)` -> `NONCLIENTMETRICS.lfMessageFont` -> font name and size
+- `primary_foreground` derivation: white or black based on accent luminance contrast
+- WinUI3 default spacing values
+
+### 12. Linux Reader Enhancements
+
+| Aspect | Detail |
+|--------|--------|
+| Value proposition | Fills gaps in the v0.1 Linux readers: KDE async portal overlay for accent on kdeglobals palette, D-Bus portal backend detection (more reliable than XDG_CURRENT_DESKTOP), GNOME font reading from gsettings/dconf, and kdeglobals fallback for non-KDE desktops. |
+| Complexity | MEDIUM |
+| Dependencies | Existing `kde` and `portal` feature flags |
+
+**What's being added:**
+- `from_kde_with_portal()`: async function that overlays portal accent color on top of kdeglobals palette
+- Portal backend detection via D-Bus: check for `org.freedesktop.impl.portal.desktop.gtk`/`kde`/`cosmic` to identify DE without relying on env var
+- GNOME font reading: `org.gnome.desktop.interface font-name` and `monospace-font-name` via gsettings/dconf (currently hardcoded to Adwaita Sans 11pt)
+- kdeglobals fallback: try reading `~/.config/kdeglobals` even on non-KDE desktops (file may exist from KDE apps)
+
+---
+
+## Anti-Features
+
+Features to explicitly NOT build in v0.2.
+
+| Anti-Feature | Why Avoid | What to Do Instead |
+|--------------|-----------|-------------------|
+| Built-in change notification system | Complex, opinionated (which async runtime?), duplicates what every GUI toolkit already provides. Each toolkit has its own event loop. Building a mini-runtime is scope creep. | Document the platform-specific notification sources in a guide. Users can poll `from_system()` or use their toolkit's appearance observer. Defer to post-1.0 when demand is clearer. |
+| Color manipulation utilities (darken, lighten, contrast ratio) | Out of scope for a data crate. The `palette` crate does this comprehensively. Duplicating it adds maintenance burden and bloats the API surface. | Connectors that need derived colors (hover/active variants) can use the `palette` crate or simple arithmetic on Rgba values. Document the conversion pattern. |
+| egui connector in v0.2 | egui has the least structured theming API (single `Visuals` struct, no per-widget styling traits). An egui connector is simpler to build but provides less value than gpui/iced connectors. egui's API also changes frequently between minor versions. | Defer to v0.3 or community contribution. Document the ~50-line adapter pattern in examples. |
+| iOS/Android runtime readers | Small Rust GUI audience on mobile in 2026. Requires device testing infrastructure. | Ship iOS and Material preset TOML files for static theming. Defer runtime readers. |
+| Widget-level animation/transitions | Animation is rendering concern, not data concern. Each toolkit has its own animation system. | Consumers can lerp between ThemeVariant values using their toolkit's animation primitives. |
+| Exhaustive widget metrics (every possible dimension) | KDE has ~80 constants. Modeling all of them creates massive structs that are 95% None on non-KDE platforms. Diminishing returns past the core measurements. | Model only the measurements that connectors actually consume: min_height, padding, indicator_size, width. Start with 12 widget types, 2-5 fields each. Expand based on connector demand. |
+
+---
 
 ## Feature Dependencies
 
 ```
-[Rgba type + custom serde]
-    └──requires──> [serde + toml deps]
+[Flat ThemeColors refactor]
+    blocks -> [All preset updates]
+    blocks -> [All reader updates]
+    blocks -> [macOS reader] (writes to flat fields)
 
-[ThemeColors struct (36 fields)]
-    └──requires──> [Rgba type]
+[API methods refactor (preset -> NativeTheme::preset)]
+    blocks -> [Publishing prep] (API must be stable)
 
-[ThemeFonts / ThemeGeometry / ThemeSpacing structs]
-    └──requires──> [serde]
+[ThemeGeometry: radius_lg, shadow]
+    independent (non-breaking, #[non_exhaustive])
 
-[ThemeVariant struct]
-    └──requires──> [ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing]
+[macOS reader]
+    requires -> [Flat ThemeColors]
+    requires -> [macos feature flag + objc2-app-kit dep]
+    blocks -> [from_system() macOS dispatch]
 
-[NativeTheme struct]
-    └──requires──> [ThemeVariant]
+[Widget Metrics data model]
+    requires -> [Flat ThemeColors] (do breaking changes together)
+    blocks -> [gpui-component connector]
+    blocks -> [iced connector]
 
-[merge() method]
-    └──requires──> [Option-all-fields data model]
-    └──requires──> [macro-generated struct pattern]
+[Workspace restructuring]
+    blocks -> [gpui-component connector]
+    blocks -> [iced connector]
+    blocks -> [Publishing individual crates]
 
-[Preset loading (preset(), from_file(), to_toml())]
-    └──requires──> [NativeTheme + serde round-trip]
+[gpui-component connector]
+    requires -> [Workspace restructuring]
+    requires -> [Widget Metrics] (for per-widget styling)
+    cannot publish until gpui-component is on crates.io
 
-[Bundled TOML presets]
-    └──requires──> [Preset loading API]
-    └──requires──> [Stable data model schema]
+[iced connector]
+    requires -> [Workspace restructuring]
+    requires -> [Widget Metrics] (for per-widget styling)
+    can publish to crates.io immediately
 
-[KDE reader (feature "kde")]
-    └──requires──> [NativeTheme data model]
-    └──requires──> [Error type]
+[Windows reader enhancements]
+    independent (extends existing feature)
 
-[Portal reader (feature "portal")]
-    └──requires──> [NativeTheme data model]
-    └──requires──> [Error type]
-    └──requires──> [async runtime (tokio or async-io)]
+[Linux reader enhancements]
+    independent (extends existing features)
 
-[Windows reader (feature "windows")]
-    └──requires──> [NativeTheme data model]
-    └──requires──> [Error type]
+[CI pipeline]
+    should run after macOS reader (to test on macOS runner)
+    should run after workspace restructuring (to test all crates)
 
-[macOS reader (feature "macos")]
-    └──requires──> [NativeTheme data model]
-    └──requires──> [Error type]
-
-[from_system() dispatch]
-    └──requires──> [At least one platform reader]
-    └──enhances──> [Bundled presets (fallback)]
-
-[Community presets (Catppuccin, Dracula, Nord)]
-    └──requires──> [Stable TOML schema]
-    └──requires──> [Preset loading API]
-
-[to_toml() export]
-    └──enhances──> [Runtime readers (snapshot OS theme to file)]
-
-[Partial TOML overrides]
-    └──requires──> [merge() method]
-    └──requires──> [#[serde(default)] on all structs]
+[Publishing prep]
+    requires -> [All API changes complete]
+    requires -> [CI pipeline green]
+    should be last step
 ```
 
-### Dependency Notes
+**Critical path:** Flat ThemeColors -> Widget Metrics data model -> Workspace restructuring -> Connectors -> Publishing prep.
 
-- **Bundled presets require stable data model:** Preset TOML files are authored against a fixed schema. Changing the schema means updating all presets. Stabilize the model before authoring many presets.
-- **Platform readers are independent:** No reader depends on another reader. They can be built in any order. Each produces the same `NativeTheme` type.
-- **Portal reader requires async runtime:** The `portal` feature pulls in ashpd/zbus (async-only). This must be a separate feature from `kde` (sync) to avoid forcing tokio on sync consumers. Feature flag design must be correct from the start (changing feature structure after publish is breaking).
-- **`from_system()` depends on readers but enhances presets:** The sync `from_system()` dispatcher calls platform-specific readers. On platforms with no enabled reader, it falls back to bundled presets. This means presets must exist before `from_system()` is useful as a fallback.
-- **`merge()` enables partial overrides:** Without merge, users must write complete TOML files. Merge is what makes the "3-line TOML override" workflow possible. Build merge into the model from day one.
+**Parallelizable work:** Windows enhancements, Linux enhancements, and macOS reader can proceed in parallel once ThemeColors is flat. CI pipeline can be set up early and iterated.
 
-## MVP Definition
+---
 
-### Launch With (v0.1)
+## MVP Recommendation for v0.2
 
-Minimum viable product -- what's needed to validate the concept. Delivers the data model + presets + serde. Any Rust GUI app can immediately load a platform-appropriate theme from a TOML file.
+### Must ship (core value of v0.2):
 
-- [x] `Rgba` type with custom hex serde (`#rrggbb` / `#rrggbbaa`) -- the foundational color type
-- [x] `ThemeColors` struct (36 semantic fields, all `Option<Rgba>`) -- core color data model
-- [x] `ThemeFonts`, `ThemeGeometry`, `ThemeSpacing` structs -- complete variant data
-- [x] `ThemeVariant` struct composing all sub-structs -- single variant container
-- [x] `NativeTheme` struct with `name`, `light`, `dark` -- top-level type
-- [x] `merge()` on all sub-structs via declarative macro -- theme layering
-- [x] `#[non_exhaustive]` on all public structs -- forward compatibility
-- [x] `#[serde(default)]` + `skip_serializing_if` on all fields -- sparse TOML support
-- [x] `preset()`, `list_presets()`, `from_file()`, `to_toml()` API -- preset loading/saving
-- [x] 3 bundled presets: `default`, `kde-breeze`, `adwaita` (light + dark each) -- immediate usability
-- [x] Error enum (`Unsupported`, `Unavailable`, `Format`, `Platform`) -- typed errors
-- [x] TOML round-trip tests, minimal TOML tests, Rgba edge case tests -- correctness validation
+1. **Flat ThemeColors** -- breaking change, do first. Simplifies everything downstream.
+2. **API methods on NativeTheme** -- breaking change, do with #1.
+3. **ThemeGeometry additions** -- non-breaking, quick win.
+4. **macOS reader** -- completes the 4-platform coverage story.
+5. **Workspace restructuring** -- enables connectors.
+6. **Publishing prep** -- the entire point is getting on crates.io.
 
-### Add After Validation (v0.2 - v0.4)
+### Should ship (high value, moderate effort):
 
-Features to add once core is working and the TOML schema is validated.
+7. **Widget Metrics data model** -- enables meaningful connector work.
+8. **iced connector** -- can publish immediately, high-star-count audience.
+9. **CI pipeline** -- quality gate for publishing.
+10. **Windows reader enhancements** -- fills visible gaps.
+11. **Linux reader enhancements** -- fills visible gaps.
 
-- [ ] KDE kdeglobals reader (feature `kde`) -- trigger: core model proven stable via preset usage
-- [ ] Freedesktop portal reader (feature `portal`) -- trigger: Linux users want live accent/scheme
-- [ ] `from_system()` Linux dispatch (KDE detection + portal/preset fallback) -- trigger: both Linux readers exist
-- [ ] Additional presets: `windows-11`, `macos-sonoma`, `material` -- trigger: data model validated against real theme data
-- [ ] File watching (feature `watch`, notify crate) for kdeglobals changes -- trigger: users want live updates without portal
-- [ ] Windows UISettings reader (feature `windows`) -- trigger: Windows users request it
-- [ ] macOS NSColor reader (feature `macos`) -- trigger: macOS users request it
+### Stretch (ship if time permits):
 
-### Future Consideration (v0.1+)
+12. **gpui-component connector** -- high value but blocked on upstream availability. Build it, but accept it may be git-dep-only for now.
 
-Features to defer until product-market fit is established.
+---
 
-- [ ] iOS runtime reader (feature `ios`) -- why defer: small Rust iOS GUI audience; requires device testing
-- [ ] Android runtime reader (feature `android`) -- why defer: immature Rust Android tooling; JNI complexity is 3-5x other platforms
-- [ ] Widget-level metrics (button height, scrollbar width, etc.) -- why defer: no toolkit consumes these today; asymmetric platform coverage
-- [ ] Community preset registry / repository -- why defer: needs ecosystem adoption first
-- [ ] W3C design token format import/export -- why defer: different schema, partial overlap, low demand from Rust GUI developers
+## Complexity Assessment Summary
 
-## Feature Prioritization Matrix
+| Feature | Complexity | LOC Estimate | Risk |
+|---------|-----------|-------------|------|
+| Flat ThemeColors | MEDIUM | ~200 (model) + ~500 (preset updates) + ~200 (reader updates) | Low -- mechanical refactor |
+| API methods | LOW | ~50 | Low -- straightforward move |
+| ThemeGeometry additions | LOW | ~10 | None |
+| macOS reader | HIGH | ~300-400 | Medium -- P3 color space conversion, NSAppearance resolution |
+| Widget Metrics | HIGH | ~400 (model) + ~200 (per platform) | Medium -- getting the right abstraction level |
+| Workspace restructuring | MEDIUM | ~100 (config) | Low -- well-documented Cargo pattern |
+| gpui connector | HIGH | ~500-700 | High -- 108 color fields to map, upstream PR dependency |
+| iced connector | MEDIUM | ~300-400 | Low -- well-documented iced API, can publish immediately |
+| CI pipeline | LOW | ~100 (YAML) | None |
+| Publishing prep | LOW | ~100 (metadata + docs) | None |
+| Windows enhancements | MEDIUM | ~150 | Low -- extending existing reader |
+| Linux enhancements | MEDIUM | ~200 | Low -- extending existing readers |
 
-| Feature | User Value | Implementation Cost | Priority |
-|---------|------------|---------------------|----------|
-| Semantic color model (36 roles) | HIGH | MEDIUM | P1 |
-| Light/dark variant support | HIGH | LOW | P1 |
-| TOML serde round-trip | HIGH | MEDIUM | P1 |
-| Bundled presets (3 initial) | HIGH | MEDIUM | P1 |
-| Theme merging / layering | HIGH | LOW | P1 |
-| Rgba type with hex serde | HIGH | LOW | P1 |
-| Font data model | MEDIUM | LOW | P1 |
-| Geometry data model | MEDIUM | LOW | P1 |
-| Spacing data model | MEDIUM | LOW | P1 |
-| Error enum | MEDIUM | LOW | P1 |
-| `#[non_exhaustive]` on all types | MEDIUM | LOW | P1 |
-| `from_file()` / `to_toml()` API | MEDIUM | LOW | P1 |
-| Preset listing API | LOW | LOW | P1 |
-| KDE kdeglobals reader | HIGH | MEDIUM | P2 |
-| Portal reader (GNOME accent) | HIGH | MEDIUM | P2 |
-| `from_system()` dispatch | HIGH | MEDIUM | P2 |
-| Windows UISettings reader | MEDIUM | MEDIUM | P2 |
-| macOS NSColor reader | MEDIUM | HIGH | P2 |
-| Additional presets (Win11, macOS, Material) | MEDIUM | MEDIUM | P2 |
-| File watching (kdeglobals) | LOW | LOW | P2 |
-| Partial TOML override docs | MEDIUM | LOW | P2 |
-| Disabled/border opacity fields | LOW | LOW | P2 |
-| iOS runtime reader | LOW | MEDIUM | P3 |
-| Android runtime reader | LOW | HIGH | P3 |
-| Widget-level metrics | LOW | HIGH | P3 |
-| Community preset registry | MEDIUM | MEDIUM | P3 |
-
-**Priority key:**
-- P1: Must have for launch (v0.1)
-- P2: Should have, add when possible (v0.2-v0.x)
-- P3: Nice to have, future consideration (v0.1+)
-
-## Competitor Feature Analysis
-
-| Feature | dark-light 2.0 | system-theme 0.3 | cosmic-theme | catppuccin 2.x | native-theme (ours) |
-|---------|---------------|------------------|-------------|---------------|-------------------|
-| Dark/light detection | YES (core purpose) | YES | YES | NO (data-only) | YES (via readers) |
-| Accent color | NO | YES (1 color) | YES | NO | YES (+ 6 shades on Windows) |
-| Semantic color roles | NO | 6 roles | 30+ roles | 26 named colors (not semantic) | 36 semantic roles |
-| Font data | NO | NO | YES | NO | YES |
-| Geometry / spacing | NO | NO | YES (corner radii, spacing scale, density) | NO | YES |
-| Serialization format | N/A | None (const structs) | RON | None (const structs) | TOML |
-| User-editable themes | NO | NO | YES (RON files) | NO | YES (TOML files) |
-| Theme merging | NO | NO | Partial | NO | YES (field-by-field Option merge) |
-| Toolkit-agnostic | YES | NO (iced dep) | NO (iced/libcosmic dep) | Partial (feature-gated toolkit deps) | YES (zero GUI deps) |
-| Community presets | NO | NO | YES (cosmic-themes.org) | YES (4 built-in flavors) | YES (TOML contribution) |
-| Platform coverage | Linux, macOS, Windows, BSD, WASM | Linux, macOS, Windows | COSMIC/Linux only | N/A (static data) | Linux, macOS, Windows (+ iOS, Android future) |
-| Runtime readers | N/A (mode only) | YES (thin) | N/A (reads own config) | N/A | YES (rich, feature-gated) |
-| Alpha channel | NO | NO (RGB only) | YES | YES (hex) | YES (#RRGGBBAA) |
-| File I/O (load/save) | NO | NO | YES (RON) | NO | YES (TOML) |
-| Change notifications | NO | YES (callbacks) | N/A | NO | Partial (file watch + docs for platform-specific) |
-
-**Key takeaways from competitor analysis:**
-1. **No competitor is both toolkit-agnostic AND comprehensive.** dark-light is agnostic but minimal. cosmic-theme is comprehensive but COSMIC-locked. system-theme is in between but iced-coupled. native-theme fills the gap.
-2. **Serialization is the biggest gap.** catppuccin and system-theme use const Rust structs. TOML editability is a genuine differentiator.
-3. **Alpha channel is a known gap** in system-theme. Starting with Rgba avoids the same mistake.
-4. **Theme merging is barely supported** anywhere. This is a high-value, low-cost feature.
-5. **Community presets** are proven valuable by catppuccin (widely adopted) and cosmic-themes.org. TOML format lowers the contribution barrier vs RON or Rust code.
+---
 
 ## Sources
 
-- [catppuccin Rust crate](https://docs.rs/catppuccin) -- color palette structure, toolkit integrations via feature flags (HIGH confidence)
-- [dark-light 2.0](https://docs.rs/dark-light/latest/dark_light/) -- dark/light mode detection API, platform support (HIGH confidence)
-- [system-theme 0.3.0](https://crates.io/crates/system-theme) -- prior art for runtime theme reading, 6-color palette limitation (HIGH confidence)
-- [cosmic-theme / COSMIC themes](https://cosmic-themes.org/create/) -- comprehensive RON theme system, community theme repository (MEDIUM confidence)
-- [egui Visuals struct](https://docs.rs/egui/latest/egui/style/struct.Visuals.html) -- 35 visual fields, color/corner/shadow configuration (HIGH confidence)
-- [egui Style struct](https://docs.rs/egui/latest/egui/style/struct.Style.html) -- spacing, text styles, interaction configuration (HIGH confidence)
-- [iced Extended palette](https://docs.iced.rs/iced/theme/palette/struct.Extended.html) -- background/primary/secondary/success/danger color groups (HIGH confidence)
-- [Electron nativeTheme API](https://www.electronjs.org/docs/latest/api/native-theme) -- shouldUseDarkColors, highContrast, reducedTransparency, updated event (HIGH confidence)
-- [Electron systemPreferences API](https://www.electronjs.org/docs/latest/api/system-preferences) -- getAccentColor, getColor, getSystemColor, accent-color-changed event (HIGH confidence)
-- [W3C Design Tokens spec 2025.10](https://www.w3.org/community/design-tokens/2025/10/28/design-tokens-specification-reaches-first-stable-version/) -- stable format for design tokens, theming/multi-brand support (MEDIUM confidence)
-- [Theme UI merging guide](https://theme-ui.com/guides/merging-themes) -- deep merge patterns for theme composition (MEDIUM confidence)
-- [Slint native styling](https://slint.dev/) -- native look via Qt/platform styles, theme integration approach (MEDIUM confidence)
-- [Android Material Theme Overlay](https://developer.android.com/reference/com/google/android/material/theme/overlay/MaterialThemeOverlay) -- theme overlay/merge pattern (MEDIUM confidence)
-- [IMPLEMENTATION.md](../../docs/IMPLEMENTATION.md) -- project specification, platform capabilities matrix, data model design (HIGH confidence)
-- [STACK.md](./STACK.md) -- verified technology stack for all platform readers (HIGH confidence)
-- [PITFALLS.md](./PITFALLS.md) -- domain pitfalls informing feature design (macro-generated merge, serde defaults) (HIGH confidence)
+- [Apple NSColor documentation](https://developer.apple.com/documentation/appkit/nscolor) -- semantic color properties, color space conversion (HIGH confidence)
+- [Apple Standard Colors](https://developer.apple.com/documentation/appkit/standard-colors) -- complete list of system colors (HIGH confidence)
+- [NSColor catalog colors gist (macOS Sonoma 14.4)](https://gist.github.com/martinhoeller/38509f37d42814526a9aecbb24928f46) -- verified color names (HIGH confidence)
+- [objc2-app-kit docs.rs](https://docs.rs/objc2-app-kit/latest/objc2_app_kit/struct.NSColor.html) -- Rust bindings for NSColor, NSFont, NSAppearance (HIGH confidence)
+- [NSAppearance resolution pattern](https://christiantietze.de/posts/2021/10/nscolor-performAsCurrentDrawingAppearance-resolve-current-appearance/) -- how to resolve dynamic colors outside draw context (HIGH confidence)
+- [Apple colorUsingColorSpace docs](https://developer.apple.com/documentation/appkit/nscolor/usingcolorspace(_:)) -- P3 to sRGB conversion method (HIGH confidence)
+- [gpui-component ThemeColor docs.rs](https://docs.rs/gpui-component/latest/gpui_component/theme/struct.ThemeColor.html) -- 108 color fields, complete field list (HIGH confidence)
+- [gpui-component theme documentation](https://longbridge.github.io/gpui-component/docs/theme) -- ActiveTheme trait, ThemeRegistry, theme loading (MEDIUM confidence)
+- [iced Palette struct](https://docs.iced.rs/iced/theme/struct.Palette.html) -- 6 base color fields (HIGH confidence)
+- [iced Extended palette](https://docs.rs/iced/latest/iced/theme/palette/struct.Extended.html) -- auto-generated shade variants (HIGH confidence)
+- [iced button Style](https://docs.iced.rs/iced/widget/button/struct.Style.html) -- background, text_color, border, shadow, snap (HIGH confidence)
+- [iced text_input Style](https://docs.rs/iced/latest/iced/widget/text_input/struct.Style.html) -- background, border, icon, placeholder, value, selection (HIGH confidence)
+- [iced container Style](https://docs.iced.rs/iced/widget/container/struct.Style.html) -- text_color, background, border, shadow, snap (HIGH confidence)
+- [iced widget index](https://docs.rs/iced/latest/iced/widget/index.html) -- complete widget list with Style support (HIGH confidence)
+- [iced discourse on styling](https://discourse.iced.rs/t/changing-the-default-styling-of-widget/775) -- Catalog/closure pattern confirmation (MEDIUM confidence)
+- [KDE breeze repository](https://github.com/KDE/breeze) -- breezemetrics.h widget constants (HIGH confidence)
+- [libadwaita CSS variables](https://gnome.pages.gitlab.gnome.org/libadwaita/doc/main/css-variables.html) -- complete variable list, no widget sizing variables (HIGH confidence)
+- [Windows GetSystemMetrics](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsystemmetrics) -- widget dimension constants (HIGH confidence)
+- [Cargo workspace documentation](https://doc.rust-lang.org/book/ch14-03-cargo-workspaces.html) -- workspace conventions, publishing order (HIGH confidence)
+- [crates.io publishing guide](https://doc.rust-lang.org/cargo/reference/publishing.html) -- required metadata, keyword/category rules (HIGH confidence)
+- [Tweag: Publish all crates at once](https://www.tweag.io/blog/2025-07-10-cargo-package-workspace/) -- workspace publishing improvements (MEDIUM confidence)
 
 ---
-*Feature research for: native-theme (toolkit-agnostic cross-platform OS theme data crate)*
-*Researched: 2026-03-07*
+*Feature research for: native-theme v0.2 (subsequent milestone features)*
+*Researched: 2026-03-08*
