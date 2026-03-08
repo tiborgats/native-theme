@@ -1841,12 +1841,11 @@ would add a proc-macro dependency for a one-time operation. Not worth the comple
 | Phase | Scope | Delivers |
 |---|---|---|
 | **1** | Data model (colors, fonts, geometry, spacing) + TOML serde + Rgba custom serialization + presets (Default, Breeze light/dark, Adwaita light/dark) + preset loading API | Crate MVP, usable in any Rust GUI app |
-| **2** | gsr adapter module + Settings UI (theme selector combobox) | User-facing feature in gsr |
-| **3** | Linux runtime readers: `from_kde()` (sync, `kde` feature), `from_gnome()` (async, `portal` feature), `from_system()` | Live OS theme sync on Linux |
-| **4** | Publish to crates.io, documentation, README with examples for egui/iced/slint | Ecosystem contribution |
-| **5** | Windows + macOS readers + remaining presets (Windows 11, macOS Sonoma, Material, iOS) + community presets (Catppuccin, Nord, Dracula, Gruvbox, Solarized, Tokyo Night, One Dark) | Cross-platform desktop + community |
-| **6** | Widget metrics (Tier 2) if demand exists from adapter authors | Fine-grained control |
-| **7** | iOS + Android readers (when Rust GUI toolkits target mobile) | Mobile runtime readers |
+| **2** | Linux runtime readers: `from_kde()` (sync, `kde` feature), `from_gnome()` (async, `portal` feature), `from_system()` | Live OS theme sync on Linux |
+| **3** | Publish to crates.io, documentation, README with examples for egui/iced/slint | Ecosystem contribution |
+| **4** | Windows + macOS readers + remaining presets (Windows 11, macOS Sonoma, Material, iOS) + community presets (Catppuccin, Nord, Dracula, Gruvbox, Solarized, Tokyo Night, One Dark) | Cross-platform desktop + community |
+| **5** | Widget metrics (Tier 2) if demand exists from adapter authors | Fine-grained control |
+| **6** | iOS + Android readers (when Rust GUI toolkits target mobile) | Mobile runtime readers |
 
 **Phase 1 deliverables in detail:**
 

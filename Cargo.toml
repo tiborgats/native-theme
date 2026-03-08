@@ -2,7 +2,7 @@
 name = "native-theme"
 version = "0.1.0"
 edition = "2024"
-license = "MIT OR Apache-2.0"
+license = "MIT OR Apache-2.0 OR 0BSD"
 description = "Cross-platform native theme detection and loading for Rust GUI applications"
 
 [features]
