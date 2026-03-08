@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Platform Coverage & Publishing
 status: in-progress
-stopped_at: Completed 14-01-PLAN.md
-last_updated: "2026-03-08T09:13:30.000Z"
-last_activity: 2026-03-08 — Phase 14 plan 01 complete (iced connector core: palette, extended, widget metric helpers)
+stopped_at: Completed 14-03-PLAN.md
+last_updated: "2026-03-08T09:16:53.000Z"
+last_activity: 2026-03-08 — Phase 14 plan 03 complete (gpui connector core: 108-field ThemeColor, ThemeConfig, upstream proposal)
 progress:
   total_phases: 7
   completed_phases: 5
   total_plans: 16
-  completed_plans: 13
-  percent: 81
+  completed_plans: 14
+  percent: 87
 ---
 
 # Project State
@@ -26,18 +26,18 @@ See: .planning/PROJECT.md (updated 2026-03-08)
 ## Current Position
 
 Phase: 14 of 15 (Toolkit Connectors) — in progress
-Plan: 1 of 4 complete
+Plan: 2 of 4 complete
 Status: Phase 14 in progress
-Last activity: 2026-03-08 — Phase 14 plan 01 complete (iced connector core: palette, extended, widget metric helpers)
+Last activity: 2026-03-08 — Phase 14 plan 03 complete (gpui connector core: 108-field ThemeColor, ThemeConfig, upstream proposal)
 
-Progress: [████████████████░░░░] 81%
+Progress: [█████████████████░░░] 87%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 27 (14 v0.1 + 13 v0.2)
-- Average duration: ~3.7min (v0.2)
-- Total execution time: 52min (v0.2)
+- Total plans completed: 28 (14 v0.1 + 14 v0.2)
+- Average duration: ~3.8min (v0.2)
+- Total execution time: 61min (v0.2)
 
 **By Phase:**
 
@@ -49,11 +49,11 @@ Progress: [████████████████░░░░] 81%
 | 11-platform-readers | 4/4 | 10min | 2.5min |
 | 12-widget-metrics | 3/3 | 17min | 5.7min |
 | 13-ci-pipeline | 1/1 | 3min | 3min |
-| 14-toolkit-connectors | 1/4 | 6min | 6min |
+| 14-toolkit-connectors | 2/4 | 15min | 7.5min |
 
 **Recent Trend:**
-- Last 5 plans: 12-02 (8min), 12-03 (6min), 13-01 (3min), 14-01 (6min)
-- Trend: v0.2 execution, steady ~3-8min/plan
+- Last 5 plans: 12-03 (6min), 13-01 (3min), 14-01 (6min), 14-03 (9min)
+- Trend: v0.2 execution, steady ~3-9min/plan
 
 ## Accumulated Context
 
@@ -74,6 +74,7 @@ v0.2 decision: Cargo workspace restructuring (API-01) goes first, before API bre
 12-03: Community color themes use generic defaults (not platform-specific values). Light/dark variants get identical widget_metrics since widget sizing is mode-independent.
 13-01: Suppress clippy::self_named_constructors on Rgba::rgba() to preserve public API. CI uses include-only matrix (7 entries) binding features to correct OS runners. semver uses baseline-rev v0.1 (switch to registry auto-detect after publish). fmt gates clippy and test; semver runs independently.
 14-01: Used iced_core 0.14 (not iced 0.14) to avoid winit windowing dependency in library crate. Widget metric helpers as free functions (not Catalog impls) per iced architecture. CONN-06 satisfied via iced built-in Catalog impls over custom palette.
+14-03: Reused gpui-component Colorize trait for lighten/darken (multiplicative lightness). Matched apply_config fallback logic for hover/active derivation. ThemeColor::default() as base with all 108 fields overridden via grouped helper functions. SharedString::from(s.clone()) for ThemeConfig static lifetime.
 
 ### Pending Todos
 
@@ -85,6 +86,6 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-08T09:13:30.000Z
-Stopped at: Completed 14-01-PLAN.md
+Last session: 2026-03-08T09:16:53.000Z
+Stopped at: Completed 14-03-PLAN.md
 Resume file: None

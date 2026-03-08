@@ -161,5 +161,5 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 11. Platform Readers | v0.2 | 4/4 | ✓ Complete | 2026-03-08 |
 | 12. Widget Metrics | v0.2 | 3/3 | ✓ Complete | 2026-03-08 |
 | 13. CI Pipeline | v0.2 | 1/1 | ✓ Complete | 2026-03-08 |
-| 14. Toolkit Connectors | v0.2 | 1/4 | In progress | - |
+| 14. Toolkit Connectors | 2/4 | In Progress|  | - |
 | 15. Publishing Prep | v0.2 | 0/0 | Not started | - |
