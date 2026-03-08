@@ -9,7 +9,7 @@ use crate::Rgba;
 ///
 /// Internal helper that encapsulates all parsing logic for testability
 /// without requiring filesystem access.
-fn from_kde_content(content: &str) -> crate::Result<crate::NativeTheme> {
+pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::NativeTheme> {
     let mut ini = create_kde_parser();
     ini.read(content.to_string())
         .map_err(|e| crate::Error::Format(e))?;

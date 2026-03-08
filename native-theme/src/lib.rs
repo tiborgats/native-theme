@@ -98,6 +98,8 @@ pub use macos::from_macos;
 pub use gnome::from_gnome;
 #[cfg(feature = "kde")]
 pub use kde::from_kde;
+#[cfg(all(feature = "portal", feature = "kde"))]
+pub use gnome::from_kde_with_portal;
 #[cfg(feature = "windows")]
 pub use windows::from_windows;
 
@@ -138,7 +140,17 @@ fn from_linux() -> crate::Result<NativeTheme> {
         LinuxDesktop::Kde => crate::kde::from_kde(),
         #[cfg(not(feature = "kde"))]
         LinuxDesktop::Kde => NativeTheme::preset("adwaita"),
-        LinuxDesktop::Gnome | LinuxDesktop::Unknown => NativeTheme::preset("adwaita"),
+        LinuxDesktop::Gnome => NativeTheme::preset("adwaita"),
+        LinuxDesktop::Unknown => {
+            #[cfg(feature = "kde")]
+            {
+                let path = crate::kde::kdeglobals_path();
+                if path.exists() {
+                    return crate::kde::from_kde();
+                }
+            }
+            NativeTheme::preset("adwaita")
+        }
     }
 }
 
@@ -249,6 +261,71 @@ mod dispatch_tests {
 
         let theme = result.expect("from_linux() should return Ok for non-KDE desktop");
         assert_eq!(theme.name, "Adwaita");
+    }
+
+    // -- from_linux() kdeglobals fallback tests --
+
+    #[test]
+    #[cfg(feature = "kde")]
+    fn from_linux_unknown_de_with_kdeglobals_fallback() {
+        use std::io::Write;
+
+        // Create a temp dir with a minimal kdeglobals file
+        let tmp_dir = std::env::temp_dir().join("native_theme_test_kde_fallback");
+        std::fs::create_dir_all(&tmp_dir).unwrap();
+        let kdeglobals = tmp_dir.join("kdeglobals");
+        let mut f = std::fs::File::create(&kdeglobals).unwrap();
+        writeln!(f, "[General]\nColorScheme=TestTheme\n\n[Colors:Window]\nBackgroundNormal=239,240,241\n").unwrap();
+
+        // SAFETY: test runs single-threaded (--test-threads=1)
+        let orig_xdg = std::env::var("XDG_CONFIG_HOME").ok();
+        let orig_desktop = std::env::var("XDG_CURRENT_DESKTOP").ok();
+
+        unsafe { std::env::set_var("XDG_CONFIG_HOME", &tmp_dir) };
+        unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "XFCE") };
+
+        let result = from_linux();
+
+        // Restore env
+        match orig_xdg {
+            Some(val) => unsafe { std::env::set_var("XDG_CONFIG_HOME", val) },
+            None => unsafe { std::env::remove_var("XDG_CONFIG_HOME") },
+        }
+        match orig_desktop {
+            Some(val) => unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", val) },
+            None => unsafe { std::env::remove_var("XDG_CURRENT_DESKTOP") },
+        }
+
+        // Cleanup
+        let _ = std::fs::remove_dir_all(&tmp_dir);
+
+        let theme = result.expect("from_linux() should return Ok with kdeglobals fallback");
+        assert_eq!(theme.name, "TestTheme", "should use KDE theme name from kdeglobals");
+    }
+
+    #[test]
+    fn from_linux_unknown_de_without_kdeglobals_returns_adwaita() {
+        // SAFETY: test runs single-threaded (--test-threads=1)
+        let orig_xdg = std::env::var("XDG_CONFIG_HOME").ok();
+        let orig_desktop = std::env::var("XDG_CURRENT_DESKTOP").ok();
+
+        unsafe { std::env::set_var("XDG_CONFIG_HOME", "/tmp/nonexistent_native_theme_test_no_kde") };
+        unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "XFCE") };
+
+        let result = from_linux();
+
+        // Restore env
+        match orig_xdg {
+            Some(val) => unsafe { std::env::set_var("XDG_CONFIG_HOME", val) },
+            None => unsafe { std::env::remove_var("XDG_CONFIG_HOME") },
+        }
+        match orig_desktop {
+            Some(val) => unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", val) },
+            None => unsafe { std::env::remove_var("XDG_CURRENT_DESKTOP") },
+        }
+
+        let theme = result.expect("from_linux() should return Ok (adwaita fallback)");
+        assert_eq!(theme.name, "Adwaita", "should fall back to Adwaita without kdeglobals");
     }
 
     // -- from_system() smoke test --

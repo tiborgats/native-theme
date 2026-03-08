@@ -193,6 +193,81 @@ pub async fn from_gnome() -> crate::Result<crate::NativeTheme> {
     Ok(theme)
 }
 
+/// Read KDE theme from kdeglobals, then overlay portal accent color if available.
+///
+/// Reads the KDE kdeglobals file as the base theme via [`crate::kde::from_kde()`],
+/// then attempts to read the accent color from the XDG Desktop Portal. If the
+/// portal provides a valid accent color, it is applied to accent, selection,
+/// focus_ring, and primary_background fields via [`NativeTheme::merge`].
+///
+/// Falls back to the KDE-only base if the portal is unavailable or provides
+/// no accent color.
+///
+/// Requires both `kde` and `portal` features.
+#[cfg(feature = "kde")]
+pub async fn from_kde_with_portal() -> crate::Result<crate::NativeTheme> {
+    let mut base = crate::kde::from_kde()?;
+
+    // Try to get accent color from portal
+    let settings = match ashpd::desktop::settings::Settings::new().await {
+        Ok(s) => s,
+        Err(_) => return Ok(base),
+    };
+
+    let accent = match settings.accent_color().await {
+        Ok(color) => color,
+        Err(_) => return Ok(base),
+    };
+
+    let rgba = match portal_color_to_rgba(&accent) {
+        Some(r) => r,
+        None => return Ok(base),
+    };
+
+    // Build overlay with accent applied to the same variant(s) as base
+    let mut overlay = crate::NativeTheme::new("");
+
+    if base.light.is_some() {
+        let mut variant = crate::ThemeVariant::default();
+        apply_accent(&mut variant, &rgba);
+        overlay.light = Some(variant);
+    }
+    if base.dark.is_some() {
+        let mut variant = crate::ThemeVariant::default();
+        apply_accent(&mut variant, &rgba);
+        overlay.dark = Some(variant);
+    }
+
+    base.merge(&overlay);
+    Ok(base)
+}
+
+/// Detect which desktop portal backend is running via D-Bus activatable names.
+///
+/// Checks the session bus for activatable service names containing
+/// `portal.desktop.kde` or `portal.desktop.gnome` to infer the desktop
+/// environment when `XDG_CURRENT_DESKTOP` is ambiguous or unset.
+///
+/// Returns `None` if D-Bus is unavailable or no recognized portal backend
+/// is found.
+pub(crate) async fn detect_portal_backend() -> Option<super::LinuxDesktop> {
+    let connection = ashpd::zbus::Connection::session().await.ok()?;
+    let proxy = ashpd::zbus::fdo::DBusProxy::new(&connection).await.ok()?;
+    let names = proxy.list_activatable_names().await.ok()?;
+
+    for name in &names {
+        let name_str = name.as_str();
+        if name_str.contains("portal.desktop.kde") {
+            return Some(super::LinuxDesktop::Kde);
+        }
+        if name_str.contains("portal.desktop.gnome") {
+            return Some(super::LinuxDesktop::Gnome);
+        }
+    }
+
+    None
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -277,6 +352,22 @@ mod tests {
     fn portal_color_out_of_range_negative_returns_none() {
         let color = Color::new(-0.1, 0.5, 0.5);
         assert!(portal_color_to_rgba(&color).is_none());
+    }
+
+    #[test]
+    fn portal_color_to_rgba_boundary_zero() {
+        let color = Color::new(0.0, 0.0, 0.0);
+        let result = portal_color_to_rgba(&color);
+        assert!(result.is_some());
+        assert_eq!(result.unwrap(), crate::Rgba::from_f32(0.0, 0.0, 0.0, 1.0));
+    }
+
+    #[test]
+    fn portal_color_to_rgba_boundary_one() {
+        let color = Color::new(1.0, 1.0, 1.0);
+        let result = portal_color_to_rgba(&color);
+        assert!(result.is_some());
+        assert_eq!(result.unwrap(), crate::Rgba::from_f32(1.0, 1.0, 1.0, 1.0));
     }
 
     // === build_theme color scheme tests ===
