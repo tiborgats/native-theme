@@ -64,7 +64,7 @@ Plans:
 Plans:
 - [x] 10-01-PLAN.md — Flatten ThemeColors to 36 direct fields, migrate TOML presets and platform readers
 - [x] 10-02-PLAN.md — Move preset functions to impl NativeTheme, remove old exports, update README
-- [ ] 10-03-PLAN.md — Add radius_lg and shadow to ThemeGeometry, update preset geometry
+- [x] 10-03-PLAN.md — Add radius_lg and shadow to ThemeGeometry, update preset geometry
 
 ### Phase 11: Platform Readers
 **Goal**: Full desktop platform coverage — macOS reader completes the 4th platform, Windows and Linux readers enhanced with richer data
@@ -141,7 +141,7 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 7. Extended Presets | v0.1 | 2/2 | ✓ Complete | 2026-03-07 |
 | 8. Documentation | v0.1 | 1/1 | ✓ Complete | 2026-03-07 |
 | 9. Cargo Workspace | v0.2 | 1/1 | ✓ Complete | 2026-03-08 |
-| 10. API Breaking Changes | 3/3 | Complete   | 2026-03-08 | - |
+| 10. API Breaking Changes | v0.2 | 3/3 | ✓ Complete | 2026-03-08 |
 | 11. Platform Readers | v0.2 | 0/0 | Not started | - |
 | 12. Widget Metrics | v0.2 | 0/0 | Not started | - |
 | 13. CI Pipeline | v0.2 | 0/0 | Not started | - |
