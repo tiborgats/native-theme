@@ -10,5 +10,8 @@ gpui = "0.2"
 gpui-component = "0.5"
 native-theme.workspace = true
 
+[dev-dependencies]
+gpui-component-assets = "0.5"
+
 [[example]]
 name = "showcase"

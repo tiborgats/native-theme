@@ -50,9 +50,13 @@ pub fn to_theme(variant: &ThemeVariant, name: &str, is_dark: bool) -> Theme {
     let mode = if is_dark { ThemeMode::Dark } else { ThemeMode::Light };
     let theme_config = config::to_theme_config(variant, name, mode);
 
-    // Create a base Theme from the ThemeColor, then apply config overrides
+    // Create a base Theme from the ThemeColor, then apply config overrides.
+    // Note: apply_config sets fonts/radius/shadow/mode but also overwrites all
+    // color fields with gpui-component defaults (since ThemeConfig.colors is empty).
+    // We must restore our mapped colors afterwards.
     let mut theme = Theme::from(&theme_color);
     theme.apply_config(&theme_config.into());
+    theme.colors = theme_color;
     theme
 }
 
