@@ -9,3 +9,6 @@ description = "gpui toolkit connector for native-theme"
 gpui = "0.2"
 gpui-component = "0.5"
 native-theme.workspace = true
+
+[[example]]
+name = "showcase"
