@@ -8,3 +8,9 @@ description = "iced toolkit connector for native-theme"
 [dependencies]
 native-theme.workspace = true
 iced_core = "0.14"
+
+[[example]]
+name = "demo"
+
+[dev-dependencies]
+iced = "0.14"
