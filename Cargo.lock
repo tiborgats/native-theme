@@ -641,7 +641,7 @@ dependencies = [
 
 [[package]]
 name = "native-theme"
-version = "0.1.0"
+version = "0.2.0"
 dependencies = [
  "ashpd",
  "configparser",
@@ -650,6 +650,20 @@ dependencies = [
  "serde_with",
  "toml",
  "windows",
+]
+
+[[package]]
+name = "native-theme-gpui"
+version = "0.1.0"
+dependencies = [
+ "native-theme",
+]
+
+[[package]]
+name = "native-theme-iced"
+version = "0.1.0"
+dependencies = [
+ "native-theme",
 ]
 
 [[package]]

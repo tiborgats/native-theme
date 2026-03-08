@@ -1,0 +1,9 @@
+[package]
+name = "native-theme-iced"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+description = "iced toolkit connector for native-theme"
+
+[dependencies]
+native-theme.workspace = true

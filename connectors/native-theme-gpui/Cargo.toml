@@ -1,0 +1,9 @@
+[package]
+name = "native-theme-gpui"
+version = "0.1.0"
+edition.workspace = true
+license.workspace = true
+description = "gpui toolkit connector for native-theme"
+
+[dependencies]
+native-theme.workspace = true
