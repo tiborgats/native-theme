@@ -87,7 +87,6 @@ pub use error::Error;
 pub use model::{
     NativeTheme, ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing, ThemeVariant,
 };
-pub use presets::{from_file, from_toml, list_presets, preset, to_toml};
 
 #[cfg(feature = "windows")]
 pub mod windows;
@@ -135,8 +134,8 @@ fn from_linux() -> crate::Result<NativeTheme> {
         #[cfg(feature = "kde")]
         LinuxDesktop::Kde => crate::kde::from_kde(),
         #[cfg(not(feature = "kde"))]
-        LinuxDesktop::Kde => crate::preset("adwaita"),
-        LinuxDesktop::Gnome | LinuxDesktop::Unknown => crate::preset("adwaita"),
+        LinuxDesktop::Kde => NativeTheme::preset("adwaita"),
+        LinuxDesktop::Gnome | LinuxDesktop::Unknown => NativeTheme::preset("adwaita"),
     }
 }
 

@@ -102,6 +102,81 @@ impl NativeTheme {
     pub fn is_empty(&self) -> bool {
         self.light.is_none() && self.dark.is_none()
     }
+
+    /// Load a bundled theme preset by name.
+    ///
+    /// Returns the preset as a fully populated [`NativeTheme`] with both
+    /// light and dark variants.
+    ///
+    /// # Errors
+    /// Returns [`Error::Unavailable`] if the preset name is not recognized.
+    ///
+    /// # Examples
+    /// ```
+    /// let theme = native_theme::NativeTheme::preset("default").unwrap();
+    /// assert!(theme.light.is_some());
+    /// ```
+    pub fn preset(name: &str) -> crate::Result<Self> {
+        crate::presets::preset(name)
+    }
+
+    /// Parse a TOML string into a [`NativeTheme`].
+    ///
+    /// # Errors
+    /// Returns [`Error::Format`] if the TOML is invalid.
+    ///
+    /// # Examples
+    /// ```
+    /// let toml = r##"
+    /// name = "My Theme"
+    /// [light.colors]
+    /// accent = "#ff0000"
+    /// "##;
+    /// let theme = native_theme::NativeTheme::from_toml(toml).unwrap();
+    /// assert_eq!(theme.name, "My Theme");
+    /// ```
+    pub fn from_toml(toml_str: &str) -> crate::Result<Self> {
+        crate::presets::from_toml(toml_str)
+    }
+
+    /// Load a [`NativeTheme`] from a TOML file.
+    ///
+    /// # Errors
+    /// Returns [`Error::Unavailable`] if the file cannot be read.
+    ///
+    /// # Examples
+    /// ```no_run
+    /// let theme = native_theme::NativeTheme::from_file("my-theme.toml").unwrap();
+    /// ```
+    pub fn from_file(path: impl AsRef<std::path::Path>) -> crate::Result<Self> {
+        crate::presets::from_file(path)
+    }
+
+    /// List all available bundled preset names.
+    ///
+    /// # Examples
+    /// ```
+    /// let names = native_theme::NativeTheme::list_presets();
+    /// assert_eq!(names.len(), 17);
+    /// ```
+    pub fn list_presets() -> &'static [&'static str] {
+        crate::presets::list_presets()
+    }
+
+    /// Serialize this theme to a TOML string.
+    ///
+    /// # Errors
+    /// Returns [`Error::Format`] if serialization fails.
+    ///
+    /// # Examples
+    /// ```
+    /// let theme = native_theme::NativeTheme::preset("default").unwrap();
+    /// let toml_str = theme.to_toml().unwrap();
+    /// assert!(toml_str.contains("name = \"Default\""));
+    /// ```
+    pub fn to_toml(&self) -> crate::Result<String> {
+        crate::presets::to_toml(self)
+    }
 }
 
 #[cfg(test)]

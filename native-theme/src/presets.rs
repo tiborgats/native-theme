@@ -36,23 +36,7 @@ const PRESET_NAMES: &[&str] = &[
     "nord", "dracula", "gruvbox", "solarized", "tokyo-night", "one-dark",
 ];
 
-/// Load a bundled theme preset by name.
-///
-/// Returns the preset as a fully populated [`NativeTheme`] with both
-/// light and dark variants.
-///
-/// # Errors
-///
-/// Returns [`Error::Unavailable`] if the preset name is not recognized.
-///
-/// # Examples
-///
-/// ```
-/// let theme = native_theme::preset("default").unwrap();
-/// assert!(theme.light.is_some());
-/// assert!(theme.dark.is_some());
-/// ```
-pub fn preset(name: &str) -> Result<NativeTheme> {
+pub(crate) fn preset(name: &str) -> Result<NativeTheme> {
     let toml_str = match name {
         "default" => DEFAULT_TOML,
         "kde-breeze" => KDE_BREEZE_TOML,
@@ -76,75 +60,21 @@ pub fn preset(name: &str) -> Result<NativeTheme> {
     from_toml(toml_str)
 }
 
-/// List all available bundled preset names.
-///
-/// # Examples
-///
-/// ```
-/// let names = native_theme::list_presets();
-/// assert_eq!(names.len(), 17);
-/// assert!(names.contains(&"default"));
-/// assert!(names.contains(&"nord"));
-/// assert!(names.contains(&"one-dark"));
-/// ```
-pub fn list_presets() -> &'static [&'static str] {
+pub(crate) fn list_presets() -> &'static [&'static str] {
     PRESET_NAMES
 }
 
-/// Parse a TOML string into a [`NativeTheme`].
-///
-/// # Errors
-///
-/// Returns [`Error::Format`] if the TOML is invalid or doesn't
-/// match the [`NativeTheme`] schema.
-///
-/// # Examples
-///
-/// ```
-/// let toml = r##"
-/// name = "My Theme"
-/// [light.colors]
-/// accent = "#ff0000"
-/// "##;
-/// let theme = native_theme::from_toml(toml).unwrap();
-/// assert_eq!(theme.name, "My Theme");
-/// ```
-pub fn from_toml(toml_str: &str) -> Result<NativeTheme> {
+pub(crate) fn from_toml(toml_str: &str) -> Result<NativeTheme> {
     let theme: NativeTheme = toml::from_str(toml_str)?;
     Ok(theme)
 }
 
-/// Load a [`NativeTheme`] from a TOML file at the given path.
-///
-/// # Errors
-///
-/// Returns [`Error::Unavailable`] if the file cannot be read, or
-/// [`Error::Format`] if the contents are not valid theme TOML.
-///
-/// # Examples
-///
-/// ```no_run
-/// let theme = native_theme::from_file("my-theme.toml").unwrap();
-/// ```
-pub fn from_file(path: impl AsRef<Path>) -> Result<NativeTheme> {
+pub(crate) fn from_file(path: impl AsRef<Path>) -> Result<NativeTheme> {
     let contents = std::fs::read_to_string(path)?;
     from_toml(&contents)
 }
 
-/// Serialize a [`NativeTheme`] to a TOML string.
-///
-/// # Errors
-///
-/// Returns [`Error::Format`] if serialization fails.
-///
-/// # Examples
-///
-/// ```
-/// let theme = native_theme::preset("default").unwrap();
-/// let toml_str = native_theme::to_toml(&theme).unwrap();
-/// assert!(toml_str.contains("name = \"Default\""));
-/// ```
-pub fn to_toml(theme: &NativeTheme) -> Result<String> {
+pub(crate) fn to_toml(theme: &NativeTheme) -> Result<String> {
     let s = toml::to_string_pretty(theme)?;
     Ok(s)
 }

@@ -94,7 +94,7 @@ pub(crate) fn build_theme(
 /// Falls back to bundled Adwaita defaults when the portal is unavailable
 /// (no D-Bus session, sandboxed environment, or old portal version).
 pub async fn from_gnome() -> crate::Result<crate::NativeTheme> {
-    let base = crate::preset("adwaita").expect("adwaita preset must be bundled");
+    let base = crate::NativeTheme::preset("adwaita").expect("adwaita preset must be bundled");
 
     // Try to connect to the portal. If unavailable, return Adwaita defaults.
     let settings = match ashpd::desktop::settings::Settings::new().await {
@@ -147,7 +147,7 @@ mod tests {
     // === build_theme color scheme tests ===
 
     fn adwaita_base() -> crate::NativeTheme {
-        crate::preset("adwaita").unwrap()
+        crate::NativeTheme::preset("adwaita").unwrap()
     }
 
     #[test]
