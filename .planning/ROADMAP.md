@@ -28,7 +28,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 ### 🚧 v0.2 Platform Coverage & Publishing (In Progress)
 
 - [x] **Phase 9: Cargo Workspace** — Restructure repo into a Cargo workspace with core crate in subdirectory — completed 2026-03-08
-- [ ] **Phase 10: API Breaking Changes** — Flatten ThemeColors, move presets to NativeTheme methods, add geometry fields
+- [x] **Phase 10: API Breaking Changes** — Flatten ThemeColors, move presets to NativeTheme methods, add geometry fields (completed 2026-03-08)
 - [ ] **Phase 11: Platform Readers** — macOS reader, Windows enhancements, Linux enhancements
 - [ ] **Phase 12: Widget Metrics** — Widget metrics data model and platform-specific population
 - [ ] **Phase 13: CI Pipeline** — GitHub Actions with cross-platform matrix, semver-checks, linting
@@ -141,7 +141,7 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 7. Extended Presets | v0.1 | 2/2 | ✓ Complete | 2026-03-07 |
 | 8. Documentation | v0.1 | 1/1 | ✓ Complete | 2026-03-07 |
 | 9. Cargo Workspace | v0.2 | 1/1 | ✓ Complete | 2026-03-08 |
-| 10. API Breaking Changes | v0.2 | 2/3 | In Progress | - |
+| 10. API Breaking Changes | 3/3 | Complete   | 2026-03-08 | - |
 | 11. Platform Readers | v0.2 | 0/0 | Not started | - |
 | 12. Widget Metrics | v0.2 | 0/0 | Not started | - |
 | 13. CI Pipeline | v0.2 | 0/0 | Not started | - |

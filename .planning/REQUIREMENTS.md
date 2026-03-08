@@ -15,8 +15,8 @@ Requirements for v0.2 release. Each maps to roadmap phases.
 - [x] **API-04**: Platform readers updated for flat ThemeColors field access
 - [x] **API-05**: Preset functions moved to `impl NativeTheme` associated functions (`NativeTheme::preset()`, `::from_toml()`, `::from_file()`, `::list_presets()`, `theme.to_toml()`)
 - [x] **API-06**: Old free functions removed (no deprecation period, pre-1.0)
-- [ ] **API-07**: `ThemeGeometry` gains `radius_lg: Option<f32>` and `shadow: Option<bool>` fields
-- [ ] **API-08**: Presets updated with radius_lg and shadow data where applicable
+- [x] **API-07**: `ThemeGeometry` gains `radius_lg: Option<f32>` and `shadow: Option<bool>` fields
+- [x] **API-08**: Presets updated with radius_lg and shadow data where applicable
 
 ### Platform Readers
 
@@ -119,8 +119,8 @@ Deferred to post-v0.2. Tracked but not in current roadmap.
 | API-04 | Phase 10 | Complete |
 | API-05 | Phase 10 | Complete |
 | API-06 | Phase 10 | Complete |
-| API-07 | Phase 10 | Pending |
-| API-08 | Phase 10 | Pending |
+| API-07 | Phase 10 | Complete |
+| API-08 | Phase 10 | Complete |
 | PLAT-01 | Phase 11 | Pending |
 | PLAT-02 | Phase 11 | Pending |
 | PLAT-03 | Phase 11 | Pending |
