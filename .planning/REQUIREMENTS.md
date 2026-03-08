@@ -113,62 +113,62 @@ Deferred to post-v0.2. Tracked but not in current roadmap.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| API-01 | — | Pending |
-| API-02 | — | Pending |
-| API-03 | — | Pending |
-| API-04 | — | Pending |
-| API-05 | — | Pending |
-| API-06 | — | Pending |
-| API-07 | — | Pending |
-| API-08 | — | Pending |
-| PLAT-01 | — | Pending |
-| PLAT-02 | — | Pending |
-| PLAT-03 | — | Pending |
-| PLAT-04 | — | Pending |
-| PLAT-05 | — | Pending |
-| PLAT-06 | — | Pending |
-| PLAT-07 | — | Pending |
-| PLAT-08 | — | Pending |
-| PLAT-09 | — | Pending |
-| PLAT-10 | — | Pending |
-| PLAT-11 | — | Pending |
-| PLAT-12 | — | Pending |
-| PLAT-13 | — | Pending |
-| METRIC-01 | — | Pending |
-| METRIC-02 | — | Pending |
-| METRIC-03 | — | Pending |
-| METRIC-04 | — | Pending |
-| METRIC-05 | — | Pending |
-| METRIC-06 | — | Pending |
-| METRIC-07 | — | Pending |
-| METRIC-08 | — | Pending |
-| CI-01 | — | Pending |
-| CI-02 | — | Pending |
-| CI-03 | — | Pending |
-| CI-04 | — | Pending |
-| CONN-01 | — | Pending |
-| CONN-02 | — | Pending |
-| CONN-03 | — | Pending |
-| CONN-04 | — | Pending |
-| CONN-05 | — | Pending |
-| CONN-06 | — | Pending |
-| CONN-07 | — | Pending |
-| CONN-08 | — | Pending |
-| CONN-09 | — | Pending |
-| PUB-01 | — | Pending |
-| PUB-02 | — | Pending |
-| PUB-03 | — | Pending |
-| PUB-04 | — | Pending |
-| PUB-05 | — | Pending |
-| PUB-06 | — | Pending |
-| PUB-07 | — | Pending |
-| PUB-08 | — | Pending |
+| API-01 | Phase 9 | Pending |
+| API-02 | Phase 10 | Pending |
+| API-03 | Phase 10 | Pending |
+| API-04 | Phase 10 | Pending |
+| API-05 | Phase 10 | Pending |
+| API-06 | Phase 10 | Pending |
+| API-07 | Phase 10 | Pending |
+| API-08 | Phase 10 | Pending |
+| PLAT-01 | Phase 11 | Pending |
+| PLAT-02 | Phase 11 | Pending |
+| PLAT-03 | Phase 11 | Pending |
+| PLAT-04 | Phase 11 | Pending |
+| PLAT-05 | Phase 11 | Pending |
+| PLAT-06 | Phase 11 | Pending |
+| PLAT-07 | Phase 11 | Pending |
+| PLAT-08 | Phase 11 | Pending |
+| PLAT-09 | Phase 11 | Pending |
+| PLAT-10 | Phase 11 | Pending |
+| PLAT-11 | Phase 11 | Pending |
+| PLAT-12 | Phase 11 | Pending |
+| PLAT-13 | Phase 11 | Pending |
+| METRIC-01 | Phase 12 | Pending |
+| METRIC-02 | Phase 12 | Pending |
+| METRIC-03 | Phase 12 | Pending |
+| METRIC-04 | Phase 12 | Pending |
+| METRIC-05 | Phase 12 | Pending |
+| METRIC-06 | Phase 12 | Pending |
+| METRIC-07 | Phase 12 | Pending |
+| METRIC-08 | Phase 12 | Pending |
+| CI-01 | Phase 13 | Pending |
+| CI-02 | Phase 13 | Pending |
+| CI-03 | Phase 13 | Pending |
+| CI-04 | Phase 13 | Pending |
+| CONN-01 | Phase 14 | Pending |
+| CONN-02 | Phase 14 | Pending |
+| CONN-03 | Phase 14 | Pending |
+| CONN-04 | Phase 14 | Pending |
+| CONN-05 | Phase 14 | Pending |
+| CONN-06 | Phase 14 | Pending |
+| CONN-07 | Phase 14 | Pending |
+| CONN-08 | Phase 14 | Pending |
+| CONN-09 | Phase 14 | Pending |
+| PUB-01 | Phase 15 | Pending |
+| PUB-02 | Phase 15 | Pending |
+| PUB-03 | Phase 15 | Pending |
+| PUB-04 | Phase 15 | Pending |
+| PUB-05 | Phase 15 | Pending |
+| PUB-06 | Phase 15 | Pending |
+| PUB-07 | Phase 15 | Pending |
+| PUB-08 | Phase 15 | Pending |
 
 **Coverage:**
 - v0.2 requirements: 47 total
-- Mapped to phases: 0
-- Unmapped: 47 (pending roadmap creation)
+- Mapped to phases: 47/47 (100%)
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-08*
-*Last updated: 2026-03-08 after initial definition*
+*Last updated: 2026-03-08 after roadmap creation*
