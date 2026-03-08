@@ -72,6 +72,52 @@ l = 18.0
 xl = 24.0
 xxl = 36.0
 
+[light.widget_metrics.button]
+min_height = 32.0
+padding_horizontal = 12.0
+padding_vertical = 6.0
+
+[light.widget_metrics.checkbox]
+indicator_size = 18.0
+spacing = 6.0
+
+[light.widget_metrics.input]
+min_height = 32.0
+padding_horizontal = 8.0
+
+[light.widget_metrics.scrollbar]
+width = 14.0
+slider_width = 8.0
+
+[light.widget_metrics.slider]
+track_height = 4.0
+thumb_size = 20.0
+
+[light.widget_metrics.progress_bar]
+height = 6.0
+
+[light.widget_metrics.tab]
+min_height = 32.0
+padding_horizontal = 12.0
+
+[light.widget_metrics.menu_item]
+height = 28.0
+padding_horizontal = 8.0
+
+[light.widget_metrics.tooltip]
+padding = 6.0
+
+[light.widget_metrics.list_item]
+height = 28.0
+padding_horizontal = 8.0
+
+[light.widget_metrics.toolbar]
+height = 40.0
+item_spacing = 6.0
+
+[light.widget_metrics.splitter]
+width = 4.0
+
 # === Dark variant (Tokyo Night) ===
 
 [dark.colors]
@@ -141,3 +187,49 @@ m = 12.0
 l = 18.0
 xl = 24.0
 xxl = 36.0
+
+[dark.widget_metrics.button]
+min_height = 32.0
+padding_horizontal = 12.0
+padding_vertical = 6.0
+
+[dark.widget_metrics.checkbox]
+indicator_size = 18.0
+spacing = 6.0
+
+[dark.widget_metrics.input]
+min_height = 32.0
+padding_horizontal = 8.0
+
+[dark.widget_metrics.scrollbar]
+width = 14.0
+slider_width = 8.0
+
+[dark.widget_metrics.slider]
+track_height = 4.0
+thumb_size = 20.0
+
+[dark.widget_metrics.progress_bar]
+height = 6.0
+
+[dark.widget_metrics.tab]
+min_height = 32.0
+padding_horizontal = 12.0
+
+[dark.widget_metrics.menu_item]
+height = 28.0
+padding_horizontal = 8.0
+
+[dark.widget_metrics.tooltip]
+padding = 6.0
+
+[dark.widget_metrics.list_item]
+height = 28.0
+padding_horizontal = 8.0
+
+[dark.widget_metrics.toolbar]
+height = 40.0
+item_spacing = 6.0
+
+[dark.widget_metrics.splitter]
+width = 4.0

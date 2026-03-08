@@ -72,6 +72,51 @@ l = 16.0
 xl = 20.0
 xxl = 32.0
 
+[light.widget_metrics.button]
+min_height = 44.0
+padding_horizontal = 16.0
+
+[light.widget_metrics.checkbox]
+indicator_size = 22.0
+spacing = 8.0
+
+[light.widget_metrics.input]
+min_height = 44.0
+padding_horizontal = 16.0
+
+[light.widget_metrics.scrollbar]
+width = 6.0
+slider_width = 3.0
+
+[light.widget_metrics.slider]
+track_height = 4.0
+thumb_size = 28.0
+
+[light.widget_metrics.progress_bar]
+height = 4.0
+
+[light.widget_metrics.tab]
+min_height = 49.0
+padding_horizontal = 8.0
+
+[light.widget_metrics.menu_item]
+height = 44.0
+padding_horizontal = 16.0
+
+[light.widget_metrics.tooltip]
+padding = 8.0
+
+[light.widget_metrics.list_item]
+height = 44.0
+padding_horizontal = 16.0
+
+[light.widget_metrics.toolbar]
+height = 44.0
+item_spacing = 8.0
+
+[light.widget_metrics.splitter]
+width = 1.0
+
 # === Dark variant ===
 
 [dark.colors]
@@ -141,3 +186,48 @@ m = 12.0
 l = 16.0
 xl = 20.0
 xxl = 32.0
+
+[dark.widget_metrics.button]
+min_height = 44.0
+padding_horizontal = 16.0
+
+[dark.widget_metrics.checkbox]
+indicator_size = 22.0
+spacing = 8.0
+
+[dark.widget_metrics.input]
+min_height = 44.0
+padding_horizontal = 16.0
+
+[dark.widget_metrics.scrollbar]
+width = 6.0
+slider_width = 3.0
+
+[dark.widget_metrics.slider]
+track_height = 4.0
+thumb_size = 28.0
+
+[dark.widget_metrics.progress_bar]
+height = 4.0
+
+[dark.widget_metrics.tab]
+min_height = 49.0
+padding_horizontal = 8.0
+
+[dark.widget_metrics.menu_item]
+height = 44.0
+padding_horizontal = 16.0
+
+[dark.widget_metrics.tooltip]
+padding = 8.0
+
+[dark.widget_metrics.list_item]
+height = 44.0
+padding_horizontal = 16.0
+
+[dark.widget_metrics.toolbar]
+height = 44.0
+item_spacing = 8.0
+
+[dark.widget_metrics.splitter]
+width = 1.0
