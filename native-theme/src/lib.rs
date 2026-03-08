@@ -85,8 +85,7 @@ pub mod presets;
 pub use color::Rgba;
 pub use error::Error;
 pub use model::{
-    ActionColors, ComponentColors, CoreColors, InteractiveColors, NativeTheme, PanelColors,
-    StatusColors, ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing, ThemeVariant,
+    NativeTheme, ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing, ThemeVariant,
 };
 pub use presets::{from_file, from_toml, list_presets, preset, to_toml};
 

@@ -5,7 +5,7 @@ pub mod fonts;
 pub mod geometry;
 pub mod spacing;
 
-pub use colors::*;
+pub use colors::ThemeColors;
 pub use fonts::ThemeFonts;
 pub use geometry::ThemeGeometry;
 pub use spacing::ThemeSpacing;
@@ -119,7 +119,7 @@ mod tests {
     #[test]
     fn theme_variant_not_empty_when_color_set() {
         let mut v = ThemeVariant::default();
-        v.colors.core.accent = Some(Rgba::rgb(0, 120, 215));
+        v.colors.accent = Some(Rgba::rgb(0, 120, 215));
         assert!(!v.is_empty());
     }
 
@@ -133,19 +133,19 @@ mod tests {
     #[test]
     fn theme_variant_merge_recursively() {
         let mut base = ThemeVariant::default();
-        base.colors.core.background = Some(Rgba::rgb(255, 255, 255));
+        base.colors.background = Some(Rgba::rgb(255, 255, 255));
         base.fonts.family = Some("Noto Sans".into());
 
         let mut overlay = ThemeVariant::default();
-        overlay.colors.core.accent = Some(Rgba::rgb(0, 120, 215));
+        overlay.colors.accent = Some(Rgba::rgb(0, 120, 215));
         overlay.spacing.m = Some(12.0);
 
         base.merge(&overlay);
 
         // base background preserved
-        assert_eq!(base.colors.core.background, Some(Rgba::rgb(255, 255, 255)));
+        assert_eq!(base.colors.background, Some(Rgba::rgb(255, 255, 255)));
         // overlay accent applied
-        assert_eq!(base.colors.core.accent, Some(Rgba::rgb(0, 120, 215)));
+        assert_eq!(base.colors.accent, Some(Rgba::rgb(0, 120, 215)));
         // base font preserved
         assert_eq!(base.fonts.family.as_deref(), Some("Noto Sans"));
         // overlay spacing applied
@@ -183,14 +183,14 @@ mod tests {
 
         let mut overlay = NativeTheme::new("Overlay");
         let mut light = ThemeVariant::default();
-        light.colors.core.accent = Some(Rgba::rgb(0, 120, 215));
+        light.colors.accent = Some(Rgba::rgb(0, 120, 215));
         overlay.light = Some(light);
 
         base.merge(&overlay);
 
         assert!(base.light.is_some());
         assert_eq!(
-            base.light.as_ref().unwrap().colors.core.accent,
+            base.light.as_ref().unwrap().colors.accent,
             Some(Rgba::rgb(0, 120, 215))
         );
     }
@@ -199,21 +199,21 @@ mod tests {
     fn native_theme_merge_both_light_variants() {
         let mut base = NativeTheme::new("Theme");
         let mut base_light = ThemeVariant::default();
-        base_light.colors.core.background = Some(Rgba::rgb(255, 255, 255));
+        base_light.colors.background = Some(Rgba::rgb(255, 255, 255));
         base.light = Some(base_light);
 
         let mut overlay = NativeTheme::new("Overlay");
         let mut overlay_light = ThemeVariant::default();
-        overlay_light.colors.core.accent = Some(Rgba::rgb(0, 120, 215));
+        overlay_light.colors.accent = Some(Rgba::rgb(0, 120, 215));
         overlay.light = Some(overlay_light);
 
         base.merge(&overlay);
 
         let light = base.light.as_ref().unwrap();
         // base background preserved
-        assert_eq!(light.colors.core.background, Some(Rgba::rgb(255, 255, 255)));
+        assert_eq!(light.colors.background, Some(Rgba::rgb(255, 255, 255)));
         // overlay accent merged in
-        assert_eq!(light.colors.core.accent, Some(Rgba::rgb(0, 120, 215)));
+        assert_eq!(light.colors.accent, Some(Rgba::rgb(0, 120, 215)));
     }
 
     #[test]
@@ -240,14 +240,14 @@ mod tests {
 
         let mut overlay = NativeTheme::new("Overlay");
         let mut dark = ThemeVariant::default();
-        dark.colors.core.background = Some(Rgba::rgb(30, 30, 30));
+        dark.colors.background = Some(Rgba::rgb(30, 30, 30));
         overlay.dark = Some(dark);
 
         base.merge(&overlay);
 
         assert!(base.dark.is_some());
         assert_eq!(
-            base.dark.as_ref().unwrap().colors.core.background,
+            base.dark.as_ref().unwrap().colors.background,
             Some(Rgba::rgb(30, 30, 30))
         );
     }
@@ -263,7 +263,7 @@ mod tests {
     fn native_theme_serde_toml_round_trip() {
         let mut theme = NativeTheme::new("Test Theme");
         let mut light = ThemeVariant::default();
-        light.colors.core.accent = Some(Rgba::rgb(0, 120, 215));
+        light.colors.accent = Some(Rgba::rgb(0, 120, 215));
         light.fonts.family = Some("Segoe UI".into());
         light.geometry.radius = Some(4.0);
         light.spacing.m = Some(12.0);
@@ -274,7 +274,7 @@ mod tests {
 
         assert_eq!(deserialized.name, "Test Theme");
         let l = deserialized.light.unwrap();
-        assert_eq!(l.colors.core.accent, Some(Rgba::rgb(0, 120, 215)));
+        assert_eq!(l.colors.accent, Some(Rgba::rgb(0, 120, 215)));
         assert_eq!(l.fonts.family.as_deref(), Some("Segoe UI"));
         assert_eq!(l.geometry.radius, Some(4.0));
         assert_eq!(l.spacing.m, Some(12.0));
