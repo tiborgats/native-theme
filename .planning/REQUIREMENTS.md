@@ -10,9 +10,9 @@ Requirements for v0.2 release. Each maps to roadmap phases.
 ### API Refactors & Structure
 
 - [x] **API-01**: Repo converted to Cargo workspace with core crate in `native-theme/` subdirectory
-- [ ] **API-02**: ThemeColors flattened to 36 direct `Option<Rgba>` fields (no nested sub-structs)
-- [ ] **API-03**: All presets updated to flat `[light.colors]` / `[dark.colors]` TOML format
-- [ ] **API-04**: Platform readers updated for flat ThemeColors field access
+- [x] **API-02**: ThemeColors flattened to 36 direct `Option<Rgba>` fields (no nested sub-structs)
+- [x] **API-03**: All presets updated to flat `[light.colors]` / `[dark.colors]` TOML format
+- [x] **API-04**: Platform readers updated for flat ThemeColors field access
 - [ ] **API-05**: Preset functions moved to `impl NativeTheme` associated functions (`NativeTheme::preset()`, `::from_toml()`, `::from_file()`, `::list_presets()`, `theme.to_toml()`)
 - [ ] **API-06**: Old free functions removed (no deprecation period, pre-1.0)
 - [ ] **API-07**: `ThemeGeometry` gains `radius_lg: Option<f32>` and `shadow: Option<bool>` fields
@@ -114,9 +114,9 @@ Deferred to post-v0.2. Tracked but not in current roadmap.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | API-01 | Phase 9 | Complete |
-| API-02 | Phase 10 | Pending |
-| API-03 | Phase 10 | Pending |
-| API-04 | Phase 10 | Pending |
+| API-02 | Phase 10 | Complete |
+| API-03 | Phase 10 | Complete |
+| API-04 | Phase 10 | Complete |
 | API-05 | Phase 10 | Pending |
 | API-06 | Phase 10 | Pending |
 | API-07 | Phase 10 | Pending |
