@@ -107,7 +107,9 @@ Plans:
   2. Feature flag matrix tests `--no-default-features` and each reader feature independently (`kde`, `portal-tokio`, `windows`, `macos`)
   3. `cargo semver-checks` runs in CI and would catch removed or changed public API items
   4. `cargo clippy` and `cargo fmt --check` run in CI and enforce clean code
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 13-01-PLAN.md — Fix lint/format issues, create GitHub Actions CI workflow with test matrix and semver checks
 
 ### Phase 14: Toolkit Connectors
 **Goal**: Developers using gpui or iced can apply native-theme data to their apps with a single connector crate, including working examples
@@ -153,6 +155,6 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 10. API Breaking Changes | v0.2 | 3/3 | ✓ Complete | 2026-03-08 |
 | 11. Platform Readers | v0.2 | 4/4 | ✓ Complete | 2026-03-08 |
 | 12. Widget Metrics | v0.2 | 3/3 | ✓ Complete | 2026-03-08 |
-| 13. CI Pipeline | v0.2 | 0/0 | Not started | - |
+| 13. CI Pipeline | v0.2 | 0/1 | Not started | - |
 | 14. Toolkit Connectors | v0.2 | 0/0 | Not started | - |
 | 15. Publishing Prep | v0.2 | 0/0 | Not started | - |
