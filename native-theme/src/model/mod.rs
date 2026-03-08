@@ -4,6 +4,7 @@ pub mod colors;
 pub mod fonts;
 pub mod geometry;
 pub mod spacing;
+pub mod widget_metrics;
 
 pub use colors::ThemeColors;
 pub use fonts::ThemeFonts;
