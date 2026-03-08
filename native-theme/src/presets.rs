@@ -30,10 +30,23 @@ const ONE_DARK_TOML: &str = include_str!("presets/one-dark.toml");
 
 /// All available preset names.
 const PRESET_NAMES: &[&str] = &[
-    "default", "kde-breeze", "adwaita",
-    "windows-11", "macos-sonoma", "material", "ios",
-    "catppuccin-latte", "catppuccin-frappe", "catppuccin-macchiato", "catppuccin-mocha",
-    "nord", "dracula", "gruvbox", "solarized", "tokyo-night", "one-dark",
+    "default",
+    "kde-breeze",
+    "adwaita",
+    "windows-11",
+    "macos-sonoma",
+    "material",
+    "ios",
+    "catppuccin-latte",
+    "catppuccin-frappe",
+    "catppuccin-macchiato",
+    "catppuccin-mocha",
+    "nord",
+    "dracula",
+    "gruvbox",
+    "solarized",
+    "tokyo-night",
+    "one-dark",
 ];
 
 pub(crate) fn preset(name: &str) -> Result<NativeTheme> {
@@ -86,16 +99,13 @@ mod tests {
     #[test]
     fn all_presets_loadable_via_preset_fn() {
         for name in list_presets() {
-            let theme = preset(name)
-                .unwrap_or_else(|e| panic!("preset '{name}' failed to parse: {e}"));
+            let theme =
+                preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed to parse: {e}"));
             assert!(
                 theme.light.is_some(),
                 "preset '{name}' missing light variant"
             );
-            assert!(
-                theme.dark.is_some(),
-                "preset '{name}' missing dark variant"
-            );
+            assert!(theme.dark.is_some(), "preset '{name}' missing dark variant");
         }
     }
 
@@ -177,10 +187,7 @@ accent = "#ff0000"
         assert_eq!(theme.name, "Minimal");
         assert!(theme.light.is_some());
         let light = theme.light.unwrap();
-        assert_eq!(
-            light.colors.accent,
-            Some(crate::Rgba::rgb(255, 0, 0))
-        );
+        assert_eq!(light.colors.accent, Some(crate::Rgba::rgb(255, 0, 0)));
     }
 
     #[test]
@@ -206,10 +213,7 @@ accent = "#ff0000"
         // Core colors should survive the round-trip
         let orig_light = theme.light.as_ref().unwrap();
         let new_light = reparsed.light.as_ref().unwrap();
-        assert_eq!(
-            orig_light.colors.accent,
-            new_light.colors.accent
-        );
+        assert_eq!(orig_light.colors.accent, new_light.colors.accent);
     }
 
     #[test]
@@ -259,8 +263,14 @@ accent = "#00ff00"
         assert_eq!(preset("material").unwrap().name, "Material");
         assert_eq!(preset("ios").unwrap().name, "iOS");
         assert_eq!(preset("catppuccin-latte").unwrap().name, "Catppuccin Latte");
-        assert_eq!(preset("catppuccin-frappe").unwrap().name, "Catppuccin Frappe");
-        assert_eq!(preset("catppuccin-macchiato").unwrap().name, "Catppuccin Macchiato");
+        assert_eq!(
+            preset("catppuccin-frappe").unwrap().name,
+            "Catppuccin Frappe"
+        );
+        assert_eq!(
+            preset("catppuccin-macchiato").unwrap().name,
+            "Catppuccin Macchiato"
+        );
         assert_eq!(preset("catppuccin-mocha").unwrap().name, "Catppuccin Mocha");
         assert_eq!(preset("nord").unwrap().name, "Nord");
         assert_eq!(preset("dracula").unwrap().name, "Dracula");

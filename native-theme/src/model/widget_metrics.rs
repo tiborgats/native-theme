@@ -430,9 +430,7 @@ mod tests {
                 item_spacing: Some(0.0),
                 padding: Some(6.0),
             },
-            splitter: SplitterMetrics {
-                width: Some(1.0),
-            },
+            splitter: SplitterMetrics { width: Some(1.0) },
         };
 
         let toml_str = toml::to_string(&wm).unwrap();
@@ -542,9 +540,7 @@ mod tests {
         assert!(SplitterMetrics::default().is_empty());
 
         let mut base = SplitterMetrics::default();
-        let overlay = SplitterMetrics {
-            width: Some(1.0),
-        };
+        let overlay = SplitterMetrics { width: Some(1.0) };
         base.merge(&overlay);
         assert_eq!(base.width, Some(1.0));
     }

@@ -83,18 +83,12 @@ mod tests {
 
     #[test]
     fn test_negative_size() {
-        assert_eq!(
-            parse_qt_font("Noto Sans,-1,-1,5,400,0,0,0,0,0"),
-            None
-        );
+        assert_eq!(parse_qt_font("Noto Sans,-1,-1,5,400,0,0,0,0,0"), None);
     }
 
     #[test]
     fn test_zero_size() {
-        assert_eq!(
-            parse_qt_font("Noto Sans,0,-1,5,400,0,0,0,0,0"),
-            None
-        );
+        assert_eq!(parse_qt_font("Noto Sans,0,-1,5,400,0,0,0,0,0"), None);
     }
 
     // === parse_fonts tests ===

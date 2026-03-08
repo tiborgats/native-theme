@@ -85,22 +85,21 @@ pub mod presets;
 pub use color::Rgba;
 pub use error::Error;
 pub use model::{
-    NativeTheme, ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing, ThemeVariant,
-    WidgetMetrics,
+    NativeTheme, ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing, ThemeVariant, WidgetMetrics,
 };
 
 pub mod macos;
 #[cfg(feature = "windows")]
 pub mod windows;
 
-#[cfg(feature = "macos")]
-pub use macos::from_macos;
 #[cfg(feature = "portal")]
 pub use gnome::from_gnome;
-#[cfg(feature = "kde")]
-pub use kde::from_kde;
 #[cfg(all(feature = "portal", feature = "kde"))]
 pub use gnome::from_kde_with_portal;
+#[cfg(feature = "kde")]
+pub use kde::from_kde;
+#[cfg(feature = "macos")]
+pub use macos::from_macos;
 #[cfg(feature = "windows")]
 pub use windows::from_windows;
 
@@ -195,7 +194,7 @@ pub fn from_system() -> crate::Result<NativeTheme> {
 
     #[cfg(target_os = "linux")]
     {
-        return from_linux();
+        from_linux()
     }
 
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
@@ -241,7 +240,9 @@ pub async fn from_system_async() -> crate::Result<NativeTheme> {
                         #[cfg(not(feature = "kde"))]
                         LinuxDesktop::Kde => NativeTheme::preset("adwaita"),
                         LinuxDesktop::Gnome => crate::gnome::from_gnome().await,
-                        LinuxDesktop::Unknown => unreachable!("detect_portal_backend only returns Kde or Gnome"),
+                        LinuxDesktop::Unknown => {
+                            unreachable!("detect_portal_backend only returns Kde or Gnome")
+                        }
                     };
                 }
             }
@@ -347,7 +348,11 @@ mod dispatch_tests {
         std::fs::create_dir_all(&tmp_dir).unwrap();
         let kdeglobals = tmp_dir.join("kdeglobals");
         let mut f = std::fs::File::create(&kdeglobals).unwrap();
-        writeln!(f, "[General]\nColorScheme=TestTheme\n\n[Colors:Window]\nBackgroundNormal=239,240,241\n").unwrap();
+        writeln!(
+            f,
+            "[General]\nColorScheme=TestTheme\n\n[Colors:Window]\nBackgroundNormal=239,240,241\n"
+        )
+        .unwrap();
 
         // SAFETY: ENV_MUTEX serializes env var access across parallel tests
         let orig_xdg = std::env::var("XDG_CONFIG_HOME").ok();
@@ -372,7 +377,10 @@ mod dispatch_tests {
         let _ = std::fs::remove_dir_all(&tmp_dir);
 
         let theme = result.expect("from_linux() should return Ok with kdeglobals fallback");
-        assert_eq!(theme.name, "TestTheme", "should use KDE theme name from kdeglobals");
+        assert_eq!(
+            theme.name, "TestTheme",
+            "should use KDE theme name from kdeglobals"
+        );
     }
 
     #[test]
@@ -382,7 +390,12 @@ mod dispatch_tests {
         let orig_xdg = std::env::var("XDG_CONFIG_HOME").ok();
         let orig_desktop = std::env::var("XDG_CURRENT_DESKTOP").ok();
 
-        unsafe { std::env::set_var("XDG_CONFIG_HOME", "/tmp/nonexistent_native_theme_test_no_kde") };
+        unsafe {
+            std::env::set_var(
+                "XDG_CONFIG_HOME",
+                "/tmp/nonexistent_native_theme_test_no_kde",
+            )
+        };
         unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "XFCE") };
 
         let result = from_linux();
@@ -398,7 +411,10 @@ mod dispatch_tests {
         }
 
         let theme = result.expect("from_linux() should return Ok (adwaita fallback)");
-        assert_eq!(theme.name, "Adwaita", "should fall back to Adwaita without kdeglobals");
+        assert_eq!(
+            theme.name, "Adwaita",
+            "should fall back to Adwaita without kdeglobals"
+        );
     }
 
     // -- from_system() smoke test --

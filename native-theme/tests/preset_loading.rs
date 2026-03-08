@@ -9,29 +9,29 @@ use native_theme::NativeTheme;
 #[test]
 fn all_presets_parse_without_error() {
     for name in NativeTheme::list_presets() {
-        NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed to parse: {e}"));
+        NativeTheme::preset(name)
+            .unwrap_or_else(|e| panic!("preset '{name}' failed to parse: {e}"));
     }
 }
 
 #[test]
 fn all_presets_have_both_variants() {
     for name in NativeTheme::list_presets() {
-        let theme = NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+        let theme =
+            NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         assert!(
             theme.light.is_some(),
             "preset '{name}' missing light variant"
         );
-        assert!(
-            theme.dark.is_some(),
-            "preset '{name}' missing dark variant"
-        );
+        assert!(theme.dark.is_some(), "preset '{name}' missing dark variant");
     }
 }
 
 #[test]
 fn all_presets_have_core_colors() {
     for name in NativeTheme::list_presets() {
-        let theme = NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+        let theme =
+            NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         let light = theme
             .light
             .as_ref()
@@ -72,7 +72,8 @@ fn all_presets_have_core_colors() {
 #[test]
 fn all_presets_have_status_colors() {
     for name in NativeTheme::list_presets() {
-        let theme = NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+        let theme =
+            NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         let light = theme.light.as_ref().unwrap();
         let dark = theme.dark.as_ref().unwrap();
 
@@ -107,7 +108,8 @@ fn all_presets_have_status_colors() {
 #[test]
 fn all_presets_have_interactive_colors() {
     for name in NativeTheme::list_presets() {
-        let theme = NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+        let theme =
+            NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         let light = theme.light.as_ref().unwrap();
         let dark = theme.dark.as_ref().unwrap();
 
@@ -134,7 +136,8 @@ fn all_presets_have_interactive_colors() {
 #[test]
 fn all_presets_have_valid_fonts() {
     for name in NativeTheme::list_presets() {
-        let theme = NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+        let theme =
+            NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         for (label, variant) in [
             ("light", theme.light.as_ref()),
             ("dark", theme.dark.as_ref()),
@@ -145,9 +148,10 @@ fn all_presets_have_valid_fonts() {
                 variant.fonts.family.is_some(),
                 "preset '{name}' {label} missing fonts.family"
             );
-            let size = variant.fonts.size.unwrap_or_else(|| {
-                panic!("preset '{name}' {label} missing fonts.size")
-            });
+            let size = variant
+                .fonts
+                .size
+                .unwrap_or_else(|| panic!("preset '{name}' {label} missing fonts.size"));
             assert!(
                 size > 0.0,
                 "preset '{name}' {label} font size must be > 0, got {size}"
@@ -159,7 +163,8 @@ fn all_presets_have_valid_fonts() {
 #[test]
 fn all_presets_have_geometry() {
     for name in NativeTheme::list_presets() {
-        let theme = NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+        let theme =
+            NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         for (label, variant) in [
             ("light", theme.light.as_ref()),
             ("dark", theme.dark.as_ref()),
@@ -185,7 +190,8 @@ fn all_presets_have_geometry() {
 #[test]
 fn all_presets_have_spacing() {
     for name in NativeTheme::list_presets() {
-        let theme = NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+        let theme =
+            NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         for (label, variant) in [
             ("light", theme.light.as_ref()),
             ("dark", theme.dark.as_ref()),
@@ -203,8 +209,10 @@ fn all_presets_have_spacing() {
 #[test]
 fn all_presets_round_trip_toml() {
     for name in NativeTheme::list_presets() {
-        let theme = NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
-        let toml_str = theme.to_toml()
+        let theme =
+            NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+        let toml_str = theme
+            .to_toml()
             .unwrap_or_else(|e| panic!("preset '{name}' to_toml failed: {e}"));
         let reparsed = NativeTheme::from_toml(&toml_str)
             .unwrap_or_else(|e| panic!("preset '{name}' round-trip from_toml failed: {e}"));
@@ -251,7 +259,8 @@ fn list_presets_returns_seventeen_entries() {
 #[test]
 fn dark_backgrounds_are_darker() {
     for name in NativeTheme::list_presets() {
-        let theme = NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+        let theme =
+            NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         let light_bg = theme
             .light
             .as_ref()
@@ -305,10 +314,7 @@ fn preset_names_are_correct() {
         names.contains(&"material"),
         "list_presets() missing 'material'"
     );
-    assert!(
-        names.contains(&"ios"),
-        "list_presets() missing 'ios'"
-    );
+    assert!(names.contains(&"ios"), "list_presets() missing 'ios'");
     assert!(
         names.contains(&"catppuccin-latte"),
         "list_presets() missing 'catppuccin-latte'"
@@ -325,10 +331,7 @@ fn preset_names_are_correct() {
         names.contains(&"catppuccin-mocha"),
         "list_presets() missing 'catppuccin-mocha'"
     );
-    assert!(
-        names.contains(&"nord"),
-        "list_presets() missing 'nord'"
-    );
+    assert!(names.contains(&"nord"), "list_presets() missing 'nord'");
     assert!(
         names.contains(&"dracula"),
         "list_presets() missing 'dracula'"

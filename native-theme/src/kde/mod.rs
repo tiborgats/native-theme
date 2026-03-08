@@ -54,9 +54,8 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::NativeThem
 /// KDE color groups and font strings to a `NativeTheme`.
 pub fn from_kde() -> crate::Result<crate::NativeTheme> {
     let path = kdeglobals_path();
-    let content = std::fs::read_to_string(&path).map_err(|e| {
-        crate::Error::Unavailable(format!("cannot read {}: {e}", path.display()))
-    })?;
+    let content = std::fs::read_to_string(&path)
+        .map_err(|e| crate::Error::Unavailable(format!("cannot read {}: {e}", path.display())))?;
     from_kde_content(&content)
 }
 
@@ -112,8 +111,7 @@ pub(crate) fn kdeglobals_path() -> std::path::PathBuf {
 pub(crate) fn is_dark_theme(ini: &configparser::ini::Ini) -> bool {
     if let Some(bg_str) = ini.get("Colors:Window", "BackgroundNormal") {
         if let Some(bg) = parse_rgb(&bg_str) {
-            let luma =
-                0.299 * (bg.r as f32) + 0.587 * (bg.g as f32) + 0.114 * (bg.b as f32);
+            let luma = 0.299 * (bg.r as f32) + 0.587 * (bg.g as f32) + 0.114 * (bg.b as f32);
             return luma < 128.0;
         }
     }
@@ -188,7 +186,9 @@ mod tests {
         let home = std::env::var("HOME").expect("HOME must be set for this test");
         assert_eq!(
             path,
-            std::path::PathBuf::from(home).join(".config").join("kdeglobals")
+            std::path::PathBuf::from(home)
+                .join(".config")
+                .join("kdeglobals")
         );
     }
 
@@ -197,20 +197,16 @@ mod tests {
     #[test]
     fn is_dark_theme_detects_breeze_dark() {
         let mut ini = create_kde_parser();
-        ini.read(
-            "[Colors:Window]\nBackgroundNormal=20,22,24\n".to_string(),
-        )
-        .unwrap();
+        ini.read("[Colors:Window]\nBackgroundNormal=20,22,24\n".to_string())
+            .unwrap();
         assert!(is_dark_theme(&ini));
     }
 
     #[test]
     fn is_dark_theme_detects_breeze_light() {
         let mut ini = create_kde_parser();
-        ini.read(
-            "[Colors:Window]\nBackgroundNormal=239,240,241\n".to_string(),
-        )
-        .unwrap();
+        ini.read("[Colors:Window]\nBackgroundNormal=239,240,241\n".to_string())
+            .unwrap();
         assert!(!is_dark_theme(&ini));
     }
 
@@ -225,10 +221,8 @@ mod tests {
     #[test]
     fn create_kde_parser_is_case_sensitive() {
         let mut ini = create_kde_parser();
-        ini.read(
-            "[Colors:View]\nBackgroundNormal=255,255,255\n".to_string(),
-        )
-        .unwrap();
+        ini.read("[Colors:View]\nBackgroundNormal=255,255,255\n".to_string())
+            .unwrap();
         // Case-sensitive: PascalCase key should be retrievable as-is
         assert!(ini.get("Colors:View", "BackgroundNormal").is_some());
     }
@@ -236,10 +230,8 @@ mod tests {
     #[test]
     fn create_kde_parser_preserves_section_colons() {
         let mut ini = create_kde_parser();
-        ini.read(
-            "[Colors:Window]\nForegroundNormal=0,0,0\n".to_string(),
-        )
-        .unwrap();
+        ini.read("[Colors:Window]\nForegroundNormal=0,0,0\n".to_string())
+            .unwrap();
         // Section name with colon must be preserved
         assert!(ini.get("Colors:Window", "ForegroundNormal").is_some());
     }
@@ -350,14 +342,20 @@ BackgroundNormal=49,54,59
     fn test_dark_theme_detection() {
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         assert!(theme.dark.is_some(), "dark variant should be populated");
-        assert!(theme.light.is_none(), "light variant should be None for dark theme");
+        assert!(
+            theme.light.is_none(),
+            "light variant should be None for dark theme"
+        );
     }
 
     #[test]
     fn test_light_theme_detection() {
         let theme = from_kde_content(BREEZE_LIGHT_FULL).unwrap();
         assert!(theme.light.is_some(), "light variant should be populated");
-        assert!(theme.dark.is_none(), "dark variant should be None for light theme");
+        assert!(
+            theme.dark.is_none(),
+            "dark variant should be None for light theme"
+        );
     }
 
     #[test]
@@ -395,7 +393,10 @@ BackgroundNormal=49,54,59
     #[test]
     fn test_minimal_fixture_no_panic() {
         let result = from_kde_content(MINIMAL_FIXTURE);
-        assert!(result.is_ok(), "minimal fixture should not panic: {result:?}");
+        assert!(
+            result.is_ok(),
+            "minimal fixture should not panic: {result:?}"
+        );
         let theme = result.unwrap();
         // Should have a dark variant (49,54,59 is dark)
         assert!(theme.dark.is_some());
@@ -417,7 +418,10 @@ BackgroundNormal=49,54,59
     fn test_empty_content() {
         let result = from_kde_content("");
         // configparser accepts empty input as empty ini
-        assert!(result.is_ok(), "empty content should produce Ok: {result:?}");
+        assert!(
+            result.is_ok(),
+            "empty content should produce Ok: {result:?}"
+        );
         let theme = result.unwrap();
         assert_eq!(theme.name, "KDE"); // fallback name
     }
@@ -433,8 +437,10 @@ BackgroundNormal=49,54,59
         assert!(result.is_err());
         match result.unwrap_err() {
             crate::Error::Unavailable(msg) => {
-                assert!(msg.contains("kdeglobals") || msg.contains("cannot read"),
-                    "unexpected error message: {msg}");
+                assert!(
+                    msg.contains("kdeglobals") || msg.contains("cannot read"),
+                    "unexpected error message: {msg}"
+                );
             }
             other => panic!("expected Error::Unavailable, got: {other:?}"),
         }

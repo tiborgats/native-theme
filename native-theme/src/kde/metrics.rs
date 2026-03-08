@@ -9,14 +9,14 @@ use crate::model::widget_metrics::*;
 pub(crate) fn breeze_widget_metrics() -> WidgetMetrics {
     WidgetMetrics {
         button: ButtonMetrics {
-            min_width: Some(80.0),           // Button_MinWidth
-            padding_horizontal: Some(6.0),   // Button_MarginWidth
-            icon_spacing: Some(4.0),         // Button_ItemSpacing
+            min_width: Some(80.0),         // Button_MinWidth
+            padding_horizontal: Some(6.0), // Button_MarginWidth
+            icon_spacing: Some(4.0),       // Button_ItemSpacing
             ..Default::default()
         },
         checkbox: CheckboxMetrics {
             indicator_size: Some(20.0), // CheckBox_Size
-            spacing: Some(4.0),        // CheckBox_ItemSpacing
+            spacing: Some(4.0),         // CheckBox_ItemSpacing
             ..Default::default()
         },
         input: InputMetrics {
@@ -29,19 +29,19 @@ pub(crate) fn breeze_widget_metrics() -> WidgetMetrics {
             slider_width: Some(8.0),      // ScrollBar_SliderWidth
         },
         slider: SliderMetrics {
-            track_height: Some(6.0),  // Slider_GrooveThickness
-            thumb_size: Some(20.0),   // Slider_ControlThickness
-            tick_length: Some(8.0),   // Slider_TickLength
+            track_height: Some(6.0), // Slider_GrooveThickness
+            thumb_size: Some(20.0),  // Slider_ControlThickness
+            tick_length: Some(8.0),  // Slider_TickLength
         },
         progress_bar: ProgressBarMetrics {
-            height: Some(6.0),      // ProgressBar_Thickness
-            min_width: Some(14.0),  // ProgressBar_BusyIndicatorSize
+            height: Some(6.0),     // ProgressBar_Thickness
+            min_width: Some(14.0), // ProgressBar_BusyIndicatorSize
         },
         tab: TabMetrics {
-            min_width: Some(80.0),           // TabBar_TabMinWidth
-            min_height: Some(30.0),          // TabBar_TabMinHeight
-            padding_horizontal: Some(8.0),   // TabBar_TabMarginWidth
-            padding_vertical: Some(4.0),     // TabBar_TabMarginHeight
+            min_width: Some(80.0),         // TabBar_TabMinWidth
+            min_height: Some(30.0),        // TabBar_TabMinHeight
+            padding_horizontal: Some(8.0), // TabBar_TabMarginWidth
+            padding_vertical: Some(4.0),   // TabBar_TabMarginHeight
         },
         menu_item: MenuItemMetrics {
             padding_horizontal: Some(4.0), // MenuItem_MarginWidth
@@ -60,7 +60,7 @@ pub(crate) fn breeze_widget_metrics() -> WidgetMetrics {
         },
         toolbar: ToolbarMetrics {
             item_spacing: Some(0.0), // ToolBar_ItemSpacing
-            padding: Some(6.0),     // ToolBar_ItemMargin
+            padding: Some(6.0),      // ToolBar_ItemMargin
             ..Default::default()
         },
         splitter: SplitterMetrics {

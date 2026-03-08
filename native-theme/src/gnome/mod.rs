@@ -4,8 +4,8 @@
 //! Uses the bundled Adwaita preset as base, then overlays portal-provided
 //! accent color, color scheme (light/dark), and contrast preference.
 
-use ashpd::desktop::settings::{ColorScheme, Contrast};
 use ashpd::desktop::Color;
+use ashpd::desktop::settings::{ColorScheme, Contrast};
 
 use crate::ThemeFonts;
 
@@ -109,7 +109,7 @@ fn adwaita_widget_metrics() -> crate::model::widget_metrics::WidgetMetrics {
 
     WidgetMetrics {
         button: ButtonMetrics {
-            min_height: Some(34.0),          // libadwaita default button
+            min_height: Some(34.0), // libadwaita default button
             padding_horizontal: Some(12.0),
             padding_vertical: Some(8.0),
             ..Default::default()
@@ -120,17 +120,17 @@ fn adwaita_widget_metrics() -> crate::model::widget_metrics::WidgetMetrics {
             ..Default::default()
         },
         input: InputMetrics {
-            min_height: Some(34.0),          // GtkEntry
+            min_height: Some(34.0), // GtkEntry
             padding_horizontal: Some(12.0),
             ..Default::default()
         },
         scrollbar: ScrollbarMetrics {
-            width: Some(12.0),          // Adwaita overlay scrollbar
+            width: Some(12.0), // Adwaita overlay scrollbar
             slider_width: Some(8.0),
             ..Default::default()
         },
         slider: SliderMetrics {
-            track_height: Some(6.0),    // GtkScale trough
+            track_height: Some(6.0), // GtkScale trough
             thumb_size: Some(20.0),
             ..Default::default()
         },
@@ -139,12 +139,12 @@ fn adwaita_widget_metrics() -> crate::model::widget_metrics::WidgetMetrics {
             ..Default::default()
         },
         tab: TabMetrics {
-            min_height: Some(34.0),          // AdwTabBar
+            min_height: Some(34.0), // AdwTabBar
             padding_horizontal: Some(12.0),
             ..Default::default()
         },
         menu_item: MenuItemMetrics {
-            height: Some(34.0),              // GtkPopoverMenuBar
+            height: Some(34.0), // GtkPopoverMenuBar
             padding_horizontal: Some(8.0),
             padding_vertical: Some(4.0),
             ..Default::default()
@@ -159,7 +159,7 @@ fn adwaita_widget_metrics() -> crate::model::widget_metrics::WidgetMetrics {
             ..Default::default()
         },
         toolbar: ToolbarMetrics {
-            height: Some(46.0),     // AdwHeaderBar default
+            height: Some(46.0), // AdwHeaderBar default
             item_spacing: Some(6.0),
             ..Default::default()
         },
@@ -240,7 +240,7 @@ pub async fn from_gnome() -> crate::Result<crate::NativeTheme> {
                 ColorScheme::NoPreference,
                 None,
                 Contrast::NoPreference,
-            )
+            );
         }
     };
 
@@ -551,8 +551,16 @@ mod tests {
     #[test]
     fn adwaita_widget_metrics_spot_check() {
         let wm = adwaita_widget_metrics();
-        assert_eq!(wm.button.min_height, Some(34.0), "libadwaita default button");
-        assert_eq!(wm.checkbox.indicator_size, Some(20.0), "GtkCheckButton indicator");
+        assert_eq!(
+            wm.button.min_height,
+            Some(34.0),
+            "libadwaita default button"
+        );
+        assert_eq!(
+            wm.checkbox.indicator_size,
+            Some(20.0),
+            "GtkCheckButton indicator"
+        );
         assert_eq!(wm.scrollbar.width, Some(12.0), "Adwaita overlay scrollbar");
     }
 
@@ -567,7 +575,10 @@ mod tests {
         .unwrap();
 
         let variant = theme.light.as_ref().expect("light variant");
-        assert!(variant.widget_metrics.is_some(), "widget_metrics should be Some");
+        assert!(
+            variant.widget_metrics.is_some(),
+            "widget_metrics should be Some"
+        );
     }
 
     // === fallback test ===

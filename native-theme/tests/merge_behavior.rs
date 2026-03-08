@@ -135,7 +135,11 @@ fn merge_fonts_geometry_spacing() {
     let mut overlay_fonts = ThemeFonts::default();
     overlay_fonts.family = Some("Inter".into());
     base_fonts.merge(&overlay_fonts);
-    assert_eq!(base_fonts.family.as_deref(), Some("Inter"), "overlay family replaces");
+    assert_eq!(
+        base_fonts.family.as_deref(),
+        Some("Inter"),
+        "overlay family replaces"
+    );
     assert_eq!(base_fonts.size, Some(12.0), "base size preserved");
 
     // ThemeGeometry
@@ -145,7 +149,11 @@ fn merge_fonts_geometry_spacing() {
     overlay_geom.radius = Some(8.0);
     base_geom.merge(&overlay_geom);
     assert_eq!(base_geom.radius, Some(8.0), "overlay radius replaces");
-    assert_eq!(base_geom.frame_width, Some(1.0), "base frame_width preserved");
+    assert_eq!(
+        base_geom.frame_width,
+        Some(1.0),
+        "base frame_width preserved"
+    );
 
     // ThemeSpacing
     let mut base_spacing = ThemeSpacing::default();
@@ -313,7 +321,13 @@ fn realistic_theme_layering_scenario() {
     // Serialize the merged result to TOML and verify it looks reasonable
     let toml_str = toml::to_string_pretty(&base).unwrap();
     assert!(toml_str.contains("Breeze Light"), "name should be in TOML");
-    assert!(toml_str.contains("#9c27b0"), "purple accent hex should appear");
+    assert!(
+        toml_str.contains("#9c27b0"),
+        "purple accent hex should appear"
+    );
     assert!(toml_str.contains("Inter"), "overridden font should appear");
-    assert!(toml_str.contains("#fcfcfc"), "base background should appear");
+    assert!(
+        toml_str.contains("#fcfcfc"),
+        "base background should appear"
+    );
 }

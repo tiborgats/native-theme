@@ -60,16 +60,10 @@ fn read_semantic_colors() -> crate::ThemeColors {
         info: nscolor_to_rgba(unsafe { &NSColor::systemBlueColor() }, &srgb),
         info_foreground: label,
         // Interactive (4)
-        selection: nscolor_to_rgba(
-            unsafe { &NSColor::selectedContentBackgroundColor() },
-            &srgb,
-        ),
+        selection: nscolor_to_rgba(unsafe { &NSColor::selectedContentBackgroundColor() }, &srgb),
         selection_foreground: nscolor_to_rgba(unsafe { &NSColor::selectedTextColor() }, &srgb),
         link: nscolor_to_rgba(unsafe { &NSColor::linkColor() }, &srgb),
-        focus_ring: nscolor_to_rgba(
-            unsafe { &NSColor::keyboardFocusIndicatorColor() },
-            &srgb,
-        ),
+        focus_ring: nscolor_to_rgba(unsafe { &NSColor::keyboardFocusIndicatorColor() }, &srgb),
         // Panel (6)
         sidebar: nscolor_to_rgba(unsafe { &NSColor::underPageBackgroundColor() }, &srgb),
         sidebar_foreground: label,
@@ -117,7 +111,7 @@ fn macos_widget_metrics() -> crate::model::widget_metrics::WidgetMetrics {
 
     WidgetMetrics {
         button: ButtonMetrics {
-            min_height: Some(22.0),          // NSButton regular control size
+            min_height: Some(22.0), // NSButton regular control size
             padding_horizontal: Some(12.0),
             ..Default::default()
         },
@@ -127,17 +121,17 @@ fn macos_widget_metrics() -> crate::model::widget_metrics::WidgetMetrics {
             ..Default::default()
         },
         input: InputMetrics {
-            min_height: Some(22.0),          // NSTextField regular
+            min_height: Some(22.0), // NSTextField regular
             padding_horizontal: Some(4.0),
             ..Default::default()
         },
         scrollbar: ScrollbarMetrics {
-            width: Some(15.0),          // NSScroller legacy style
-            slider_width: Some(7.0),    // Overlay style
+            width: Some(15.0),       // NSScroller legacy style
+            slider_width: Some(7.0), // Overlay style
             ..Default::default()
         },
         slider: SliderMetrics {
-            track_height: Some(4.0),    // NSSlider circular knob
+            track_height: Some(4.0), // NSSlider circular knob
             thumb_size: Some(21.0),
             ..Default::default()
         },
@@ -146,12 +140,12 @@ fn macos_widget_metrics() -> crate::model::widget_metrics::WidgetMetrics {
             ..Default::default()
         },
         tab: TabMetrics {
-            min_height: Some(24.0),          // NSTabView
+            min_height: Some(24.0), // NSTabView
             padding_horizontal: Some(12.0),
             ..Default::default()
         },
         menu_item: MenuItemMetrics {
-            height: Some(22.0),              // Standard menu item
+            height: Some(22.0), // Standard menu item
             padding_horizontal: Some(12.0),
             ..Default::default()
         },
@@ -160,12 +154,12 @@ fn macos_widget_metrics() -> crate::model::widget_metrics::WidgetMetrics {
             ..Default::default()
         },
         list_item: ListItemMetrics {
-            height: Some(24.0),              // NSTableView row
+            height: Some(24.0), // NSTableView row
             padding_horizontal: Some(4.0),
             ..Default::default()
         },
         toolbar: ToolbarMetrics {
-            height: Some(38.0),     // NSToolbar standard
+            height: Some(38.0), // NSToolbar standard
             item_spacing: Some(8.0),
             ..Default::default()
         },
@@ -324,8 +318,11 @@ mod tests {
             mono_size: Some(13.0),
         };
 
-        let theme =
-            build_theme(crate::ThemeColors::default(), crate::ThemeColors::default(), fonts);
+        let theme = build_theme(
+            crate::ThemeColors::default(),
+            crate::ThemeColors::default(),
+            fonts,
+        );
 
         let light = theme.light.as_ref().unwrap();
         assert_eq!(light.fonts.family.as_deref(), Some("SF Pro"));
@@ -343,7 +340,10 @@ mod tests {
         let theme = build_theme(sample_light_colors(), sample_dark_colors(), sample_fonts());
 
         let light = theme.light.as_ref().unwrap();
-        assert!(light.geometry.is_empty(), "light geometry should be default");
+        assert!(
+            light.geometry.is_empty(),
+            "light geometry should be default"
+        );
         assert!(light.spacing.is_empty(), "light spacing should be default");
 
         let dark = theme.dark.as_ref().unwrap();
@@ -377,9 +377,17 @@ mod tests {
     #[test]
     fn macos_widget_metrics_spot_check() {
         let wm = macos_widget_metrics();
-        assert_eq!(wm.button.min_height, Some(22.0), "NSButton regular control size");
+        assert_eq!(
+            wm.button.min_height,
+            Some(22.0),
+            "NSButton regular control size"
+        );
         assert_eq!(wm.scrollbar.width, Some(15.0), "NSScroller legacy style");
-        assert_eq!(wm.checkbox.indicator_size, Some(14.0), "NSButton switch type");
+        assert_eq!(
+            wm.checkbox.indicator_size,
+            Some(14.0),
+            "NSButton switch type"
+        );
         assert_eq!(wm.slider.thumb_size, Some(21.0), "NSSlider circular knob");
     }
 
@@ -388,9 +396,15 @@ mod tests {
         let theme = build_theme(sample_light_colors(), sample_dark_colors(), sample_fonts());
 
         let light = theme.light.as_ref().unwrap();
-        assert!(light.widget_metrics.is_some(), "light widget_metrics should be Some");
+        assert!(
+            light.widget_metrics.is_some(),
+            "light widget_metrics should be Some"
+        );
 
         let dark = theme.dark.as_ref().unwrap();
-        assert!(dark.widget_metrics.is_some(), "dark widget_metrics should be Some");
+        assert!(
+            dark.widget_metrics.is_some(),
+            "dark widget_metrics should be Some"
+        );
     }
 }

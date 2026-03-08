@@ -97,8 +97,10 @@ mod tests {
 
     #[test]
     fn theme_colors_not_empty_when_field_set() {
-        let mut tc = ThemeColors::default();
-        tc.accent = Some(Rgba::rgb(255, 0, 0));
+        let tc = ThemeColors {
+            accent: Some(Rgba::rgb(255, 0, 0)),
+            ..Default::default()
+        };
         assert!(!tc.is_empty());
     }
 
@@ -142,13 +144,17 @@ mod tests {
 
     #[test]
     fn merge_flat_fields_across_groups() {
-        let mut base = ThemeColors::default();
-        base.background = Some(Rgba::rgb(255, 255, 255));
-        base.danger = Some(Rgba::rgb(200, 0, 0));
+        let mut base = ThemeColors {
+            background: Some(Rgba::rgb(255, 255, 255)),
+            danger: Some(Rgba::rgb(200, 0, 0)),
+            ..Default::default()
+        };
 
-        let mut overlay = ThemeColors::default();
-        overlay.accent = Some(Rgba::rgb(0, 120, 215));
-        overlay.danger = Some(Rgba::rgb(255, 0, 0)); // override
+        let overlay = ThemeColors {
+            accent: Some(Rgba::rgb(0, 120, 215)),
+            danger: Some(Rgba::rgb(255, 0, 0)), // override
+            ..Default::default()
+        };
 
         base.merge(&overlay);
 
@@ -162,11 +168,15 @@ mod tests {
 
     #[test]
     fn merge_primary_and_secondary_fields() {
-        let mut base = ThemeColors::default();
-        base.primary_background = Some(Rgba::rgb(0, 0, 255));
+        let mut base = ThemeColors {
+            primary_background: Some(Rgba::rgb(0, 0, 255)),
+            ..Default::default()
+        };
 
-        let mut overlay = ThemeColors::default();
-        overlay.secondary_foreground = Some(Rgba::rgb(255, 255, 255));
+        let overlay = ThemeColors {
+            secondary_foreground: Some(Rgba::rgb(255, 255, 255)),
+            ..Default::default()
+        };
 
         base.merge(&overlay);
 

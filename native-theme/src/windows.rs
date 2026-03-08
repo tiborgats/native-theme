@@ -5,8 +5,8 @@
 use ::windows::UI::ViewManagement::{UIColorType, UISettings};
 use ::windows::Win32::UI::HiDpi::{GetDpiForSystem, GetSystemMetricsForDpi};
 use ::windows::Win32::UI::WindowsAndMessaging::{
-    SystemParametersInfoW, NONCLIENTMETRICSW, SM_CXBORDER, SM_CXVSCROLL,
-    SPI_GETNONCLIENTMETRICS, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS,
+    NONCLIENTMETRICSW, SM_CXBORDER, SM_CXVSCROLL, SPI_GETNONCLIENTMETRICS,
+    SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS, SystemParametersInfoW,
 };
 
 /// Convert a `windows::UI::Color` to our `Rgba` type.
@@ -162,14 +162,14 @@ fn read_widget_metrics(_dpi: u32) -> crate::model::widget_metrics::WidgetMetrics
 
     #[cfg(not(target_os = "windows"))]
     let menu_item = MenuItemMetrics {
-        height: Some(32.0),           // WinUI3 Fluent default
+        height: Some(32.0), // WinUI3 Fluent default
         padding_horizontal: Some(12.0),
         ..Default::default()
     };
 
     WidgetMetrics {
         button: ButtonMetrics {
-            min_height: Some(32.0),          // WinUI3 default
+            min_height: Some(32.0), // WinUI3 default
             padding_horizontal: Some(12.0),
             ..Default::default()
         },
@@ -179,37 +179,37 @@ fn read_widget_metrics(_dpi: u32) -> crate::model::widget_metrics::WidgetMetrics
             ..Default::default()
         },
         input: InputMetrics {
-            min_height: Some(32.0),          // WinUI3 default
+            min_height: Some(32.0), // WinUI3 default
             padding_horizontal: Some(12.0),
             ..Default::default()
         },
         scrollbar,
         slider: SliderMetrics {
-            track_height: Some(4.0),    // WinUI3 Fluent
-            thumb_size: Some(22.0),     // WinUI3 Fluent
+            track_height: Some(4.0), // WinUI3 Fluent
+            thumb_size: Some(22.0),  // WinUI3 Fluent
             ..Default::default()
         },
         progress_bar: ProgressBarMetrics {
-            height: Some(4.0),  // WinUI3 Fluent
+            height: Some(4.0), // WinUI3 Fluent
             ..Default::default()
         },
         tab: TabMetrics {
-            min_height: Some(32.0),   // WinUI3 Fluent
+            min_height: Some(32.0), // WinUI3 Fluent
             padding_horizontal: Some(12.0),
             ..Default::default()
         },
         menu_item,
         tooltip: TooltipMetrics {
-            padding: Some(8.0),  // WinUI3 Fluent
+            padding: Some(8.0), // WinUI3 Fluent
             ..Default::default()
         },
         list_item: ListItemMetrics {
-            height: Some(40.0),              // WinUI3 Fluent
+            height: Some(40.0), // WinUI3 Fluent
             padding_horizontal: Some(12.0),
             ..Default::default()
         },
         toolbar: ToolbarMetrics {
-            height: Some(48.0),     // WinUI3 Fluent
+            height: Some(48.0), // WinUI3 Fluent
             item_spacing: Some(4.0),
             ..Default::default()
         },
@@ -298,9 +298,8 @@ fn build_theme(
 ///
 /// Returns `Error::Unavailable` if UISettings cannot be created (pre-Windows 10).
 pub fn from_windows() -> crate::Result<crate::NativeTheme> {
-    let settings = UISettings::new().map_err(|e| {
-        crate::Error::Unavailable(format!("UISettings unavailable: {e}"))
-    })?;
+    let settings = UISettings::new()
+        .map_err(|e| crate::Error::Unavailable(format!("UISettings unavailable: {e}")))?;
 
     let accent = settings
         .GetColorValue(UIColorType::Accent)
@@ -321,7 +320,16 @@ pub fn from_windows() -> crate::Result<crate::NativeTheme> {
     let spacing = winui3_spacing();
     let widget_metrics = read_widget_metrics(dpi);
 
-    Ok(build_theme(accent, fg, bg, accent_shades, fonts, spacing, geometry, widget_metrics))
+    Ok(build_theme(
+        accent,
+        fg,
+        bg,
+        accent_shades,
+        fonts,
+        spacing,
+        geometry,
+        widget_metrics,
+    ))
 }
 
 #[cfg(test)]
@@ -362,7 +370,7 @@ mod tests {
     #[test]
     fn build_theme_dark_mode_populates_dark_variant_only() {
         let theme = build_theme(
-            crate::Rgba::rgb(0, 120, 215),  // Windows blue accent
+            crate::Rgba::rgb(0, 120, 215),   // Windows blue accent
             crate::Rgba::rgb(255, 255, 255), // white fg = dark mode
             crate::Rgba::rgb(0, 0, 0),       // black bg
             [None; 6],
@@ -378,7 +386,7 @@ mod tests {
     #[test]
     fn build_theme_light_mode_populates_light_variant_only() {
         let theme = build_theme(
-            crate::Rgba::rgb(0, 120, 215),  // Windows blue accent
+            crate::Rgba::rgb(0, 120, 215),   // Windows blue accent
             crate::Rgba::rgb(0, 0, 0),       // black fg = light mode
             crate::Rgba::rgb(255, 255, 255), // white bg
             [None; 6],
@@ -396,7 +404,7 @@ mod tests {
         let accent = crate::Rgba::rgb(0, 120, 215);
         let theme = build_theme(
             accent,
-            crate::Rgba::rgb(0, 0, 0),       // light mode
+            crate::Rgba::rgb(0, 0, 0), // light mode
             crate::Rgba::rgb(255, 255, 255),
             [None; 6],
             crate::ThemeFonts::default(),
@@ -422,7 +430,7 @@ mod tests {
         };
         let theme = build_theme(
             crate::Rgba::rgb(0, 120, 215),
-            crate::Rgba::rgb(0, 0, 0),       // light mode
+            crate::Rgba::rgb(0, 0, 0), // light mode
             crate::Rgba::rgb(255, 255, 255),
             [None; 6],
             crate::ThemeFonts::default(),
@@ -671,7 +679,10 @@ mod tests {
             default_wm(),
         );
         let variant = theme.light.as_ref().expect("light variant");
-        assert!(variant.colors.border.is_some(), "light mode border should be Some");
+        assert!(
+            variant.colors.border.is_some(),
+            "light mode border should be Some"
+        );
         assert_eq!(variant.colors.border, Some(crate::Rgba::rgb(200, 200, 200)));
 
         // Dark mode
@@ -686,7 +697,10 @@ mod tests {
             default_wm(),
         );
         let variant = theme.dark.as_ref().expect("dark variant");
-        assert!(variant.colors.border.is_some(), "dark mode border should be Some");
+        assert!(
+            variant.colors.border.is_some(),
+            "dark mode border should be Some"
+        );
         assert_eq!(variant.colors.border, Some(crate::Rgba::rgb(60, 60, 60)));
     }
 
@@ -696,11 +710,21 @@ mod tests {
     fn widget_metrics_fluent_defaults() {
         let wm = read_widget_metrics(96);
         assert_eq!(wm.button.min_height, Some(32.0), "WinUI3 button min_height");
-        assert_eq!(wm.checkbox.indicator_size, Some(20.0), "WinUI3 checkbox indicator_size");
+        assert_eq!(
+            wm.checkbox.indicator_size,
+            Some(20.0),
+            "WinUI3 checkbox indicator_size"
+        );
         assert_eq!(wm.input.min_height, Some(32.0), "WinUI3 input min_height");
         assert_eq!(wm.slider.thumb_size, Some(22.0), "WinUI3 slider thumb_size");
-        assert!(wm.scrollbar.width.is_some(), "scrollbar width should be set");
-        assert!(wm.menu_item.height.is_some(), "menu_item height should be set");
+        assert!(
+            wm.scrollbar.width.is_some(),
+            "scrollbar width should be set"
+        );
+        assert!(
+            wm.menu_item.height.is_some(),
+            "menu_item height should be set"
+        );
     }
 
     #[test]
@@ -717,7 +741,10 @@ mod tests {
             wm,
         );
         let variant = theme.dark.as_ref().expect("dark variant");
-        assert!(variant.widget_metrics.is_some(), "widget_metrics should be Some");
+        assert!(
+            variant.widget_metrics.is_some(),
+            "widget_metrics should be Some"
+        );
         let wm = variant.widget_metrics.as_ref().unwrap();
         assert_eq!(wm.button.min_height, Some(32.0));
     }

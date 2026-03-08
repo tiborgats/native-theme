@@ -84,7 +84,7 @@ mod tests {
 
     #[test]
     fn platform_display() {
-        let inner = std::io::Error::new(std::io::ErrorKind::Other, "dbus failure");
+        let inner = std::io::Error::other("dbus failure");
         let err = Error::Platform(Box::new(inner));
         let msg = err.to_string();
         assert!(msg.contains("platform error"), "got: {msg}");
@@ -93,7 +93,7 @@ mod tests {
 
     #[test]
     fn platform_source_returns_inner() {
-        let inner = std::io::Error::new(std::io::ErrorKind::Other, "inner error");
+        let inner = std::io::Error::other("inner error");
         let err = Error::Platform(Box::new(inner));
         let source = std::error::Error::source(&err);
         assert!(source.is_some());

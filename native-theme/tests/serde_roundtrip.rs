@@ -112,8 +112,14 @@ fn round_trip_full_theme() {
     assert_eq!(de_light.colors.accent, orig_light.colors.accent);
     assert_eq!(de_light.colors.background, orig_light.colors.background);
     assert_eq!(de_light.colors.foreground, orig_light.colors.foreground);
-    assert_eq!(de_light.colors.primary_background, orig_light.colors.primary_background);
-    assert_eq!(de_light.colors.secondary_background, orig_light.colors.secondary_background);
+    assert_eq!(
+        de_light.colors.primary_background,
+        orig_light.colors.primary_background
+    );
+    assert_eq!(
+        de_light.colors.secondary_background,
+        orig_light.colors.secondary_background
+    );
     assert_eq!(de_light.colors.danger, orig_light.colors.danger);
     assert_eq!(de_light.colors.success, orig_light.colors.success);
     assert_eq!(de_light.colors.selection, orig_light.colors.selection);
@@ -131,7 +137,10 @@ fn round_trip_full_theme() {
 
     // Geometry
     assert_eq!(de_light.geometry.radius, orig_light.geometry.radius);
-    assert_eq!(de_light.geometry.frame_width, orig_light.geometry.frame_width);
+    assert_eq!(
+        de_light.geometry.frame_width,
+        orig_light.geometry.frame_width
+    );
 
     // Spacing
     assert_eq!(de_light.spacing.m, orig_light.spacing.m);
@@ -218,35 +227,71 @@ fn round_trip_preserves_all_36_color_fields() {
     assert_eq!(de_v.colors.muted, orig_v.colors.muted);
     assert_eq!(de_v.colors.shadow, orig_v.colors.shadow);
 
-    assert_eq!(de_v.colors.primary_background, orig_v.colors.primary_background);
-    assert_eq!(de_v.colors.primary_foreground, orig_v.colors.primary_foreground);
+    assert_eq!(
+        de_v.colors.primary_background,
+        orig_v.colors.primary_background
+    );
+    assert_eq!(
+        de_v.colors.primary_foreground,
+        orig_v.colors.primary_foreground
+    );
 
-    assert_eq!(de_v.colors.secondary_background, orig_v.colors.secondary_background);
-    assert_eq!(de_v.colors.secondary_foreground, orig_v.colors.secondary_foreground);
+    assert_eq!(
+        de_v.colors.secondary_background,
+        orig_v.colors.secondary_background
+    );
+    assert_eq!(
+        de_v.colors.secondary_foreground,
+        orig_v.colors.secondary_foreground
+    );
 
     assert_eq!(de_v.colors.danger, orig_v.colors.danger);
-    assert_eq!(de_v.colors.danger_foreground, orig_v.colors.danger_foreground);
+    assert_eq!(
+        de_v.colors.danger_foreground,
+        orig_v.colors.danger_foreground
+    );
     assert_eq!(de_v.colors.warning, orig_v.colors.warning);
-    assert_eq!(de_v.colors.warning_foreground, orig_v.colors.warning_foreground);
+    assert_eq!(
+        de_v.colors.warning_foreground,
+        orig_v.colors.warning_foreground
+    );
     assert_eq!(de_v.colors.success, orig_v.colors.success);
-    assert_eq!(de_v.colors.success_foreground, orig_v.colors.success_foreground);
+    assert_eq!(
+        de_v.colors.success_foreground,
+        orig_v.colors.success_foreground
+    );
     assert_eq!(de_v.colors.info, orig_v.colors.info);
     assert_eq!(de_v.colors.info_foreground, orig_v.colors.info_foreground);
 
     assert_eq!(de_v.colors.selection, orig_v.colors.selection);
-    assert_eq!(de_v.colors.selection_foreground, orig_v.colors.selection_foreground);
+    assert_eq!(
+        de_v.colors.selection_foreground,
+        orig_v.colors.selection_foreground
+    );
     assert_eq!(de_v.colors.link, orig_v.colors.link);
     assert_eq!(de_v.colors.focus_ring, orig_v.colors.focus_ring);
 
     assert_eq!(de_v.colors.sidebar, orig_v.colors.sidebar);
-    assert_eq!(de_v.colors.sidebar_foreground, orig_v.colors.sidebar_foreground);
+    assert_eq!(
+        de_v.colors.sidebar_foreground,
+        orig_v.colors.sidebar_foreground
+    );
     assert_eq!(de_v.colors.tooltip, orig_v.colors.tooltip);
-    assert_eq!(de_v.colors.tooltip_foreground, orig_v.colors.tooltip_foreground);
+    assert_eq!(
+        de_v.colors.tooltip_foreground,
+        orig_v.colors.tooltip_foreground
+    );
     assert_eq!(de_v.colors.popover, orig_v.colors.popover);
-    assert_eq!(de_v.colors.popover_foreground, orig_v.colors.popover_foreground);
+    assert_eq!(
+        de_v.colors.popover_foreground,
+        orig_v.colors.popover_foreground
+    );
 
     assert_eq!(de_v.colors.button, orig_v.colors.button);
-    assert_eq!(de_v.colors.button_foreground, orig_v.colors.button_foreground);
+    assert_eq!(
+        de_v.colors.button_foreground,
+        orig_v.colors.button_foreground
+    );
     assert_eq!(de_v.colors.input, orig_v.colors.input);
     assert_eq!(de_v.colors.input_foreground, orig_v.colors.input_foreground);
     assert_eq!(de_v.colors.disabled, orig_v.colors.disabled);
@@ -389,16 +434,10 @@ shadow = "#00000040"
     let light = theme.light.as_ref().unwrap();
 
     // accent: #3daee9 -> r=61, g=174, b=233, a=255 (no alpha => opaque)
-    assert_eq!(
-        light.colors.accent,
-        Some(Rgba::rgb(61, 174, 233))
-    );
+    assert_eq!(light.colors.accent, Some(Rgba::rgb(61, 174, 233)));
 
     // shadow: #00000040 -> r=0, g=0, b=0, a=0x40=64
-    assert_eq!(
-        light.colors.shadow,
-        Some(Rgba::rgba(0, 0, 0, 64))
-    );
+    assert_eq!(light.colors.shadow, Some(Rgba::rgba(0, 0, 0, 64)));
 
     // Serialize back and verify hex strings are lowercase
     let re_serialized = toml::to_string_pretty(&theme).unwrap();

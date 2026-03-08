@@ -70,7 +70,7 @@ impl ThemeVariant {
             && self.fonts.is_empty()
             && self.geometry.is_empty()
             && self.spacing.is_empty()
-            && self.widget_metrics.as_ref().map_or(true, |wm| wm.is_empty())
+            && self.widget_metrics.as_ref().is_none_or(|wm| wm.is_empty())
     }
 }
 
@@ -78,7 +78,7 @@ impl ThemeVariant {
 ///
 /// This is the top-level type that theme files deserialize into and that
 /// platform readers produce.
-#[derive(Clone, Debug, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct NativeTheme {
     /// Theme name (e.g., "Breeze", "Adwaita", "Windows 11").
@@ -91,16 +91,6 @@ pub struct NativeTheme {
     /// Dark variant of the theme.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub dark: Option<ThemeVariant>,
-}
-
-impl Default for NativeTheme {
-    fn default() -> Self {
-        Self {
-            name: String::new(),
-            light: None,
-            dark: None,
-        }
-    }
 }
 
 impl NativeTheme {

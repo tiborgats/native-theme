@@ -35,6 +35,7 @@ impl Rgba {
     }
 
     /// Create a color with explicit alpha.
+    #[allow(clippy::self_named_constructors)]
     pub const fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self { r, g, b, a }
     }
@@ -170,13 +171,29 @@ mod tests {
     #[test]
     fn rgb_constructor_sets_alpha_255() {
         let c = Rgba::rgb(61, 174, 233);
-        assert_eq!(c, Rgba { r: 61, g: 174, b: 233, a: 255 });
+        assert_eq!(
+            c,
+            Rgba {
+                r: 61,
+                g: 174,
+                b: 233,
+                a: 255
+            }
+        );
     }
 
     #[test]
     fn rgba_constructor_sets_all_fields() {
         let c = Rgba::rgba(61, 174, 233, 128);
-        assert_eq!(c, Rgba { r: 61, g: 174, b: 233, a: 128 });
+        assert_eq!(
+            c,
+            Rgba {
+                r: 61,
+                g: 174,
+                b: 233,
+                a: 128
+            }
+        );
     }
 
     // === FromStr parsing tests ===
@@ -261,7 +278,9 @@ mod tests {
         struct Wrapper {
             color: Rgba,
         }
-        let w = Wrapper { color: Rgba::rgba(61, 174, 233, 128) };
+        let w = Wrapper {
+            color: Rgba::rgba(61, 174, 233, 128),
+        };
         let toml_str = toml::to_string(&w).unwrap();
         let deserialized: Wrapper = toml::from_str(&toml_str).unwrap();
         assert_eq!(deserialized, w);
@@ -293,7 +312,15 @@ mod tests {
     #[test]
     fn rgba_default_is_transparent_black() {
         let d = Rgba::default();
-        assert_eq!(d, Rgba { r: 0, g: 0, b: 0, a: 0 });
+        assert_eq!(
+            d,
+            Rgba {
+                r: 0,
+                g: 0,
+                b: 0,
+                a: 0
+            }
+        );
     }
 
     #[test]

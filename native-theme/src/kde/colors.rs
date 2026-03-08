@@ -1,8 +1,8 @@
 // KDE color group parsing and mapping to ThemeColors
 // Maps 36 semantic color roles from KDE INI color groups to ThemeColors.
 
-use crate::model::colors::ThemeColors;
 use crate::Rgba;
+use crate::model::colors::ThemeColors;
 
 /// Look up a color key from a KDE INI section and parse it as RGB.
 fn get_color(ini: &configparser::ini::Ini, section: &str, key: &str) -> Option<Rgba> {
@@ -132,36 +132,75 @@ ForegroundNormal=239,240,241
         assert!(colors.muted.is_some(), "muted missing");
         assert!(colors.shadow.is_none(), "shadow should be None");
 
-        assert!(colors.primary_background.is_some(), "primary_background missing");
-        assert!(colors.primary_foreground.is_some(), "primary_foreground missing");
-        assert!(colors.secondary_background.is_some(), "secondary_background missing");
-        assert!(colors.secondary_foreground.is_some(), "secondary_foreground missing");
+        assert!(
+            colors.primary_background.is_some(),
+            "primary_background missing"
+        );
+        assert!(
+            colors.primary_foreground.is_some(),
+            "primary_foreground missing"
+        );
+        assert!(
+            colors.secondary_background.is_some(),
+            "secondary_background missing"
+        );
+        assert!(
+            colors.secondary_foreground.is_some(),
+            "secondary_foreground missing"
+        );
 
         assert!(colors.danger.is_some(), "danger missing");
-        assert!(colors.danger_foreground.is_some(), "danger_foreground missing");
+        assert!(
+            colors.danger_foreground.is_some(),
+            "danger_foreground missing"
+        );
         assert!(colors.warning.is_some(), "warning missing");
-        assert!(colors.warning_foreground.is_some(), "warning_foreground missing");
+        assert!(
+            colors.warning_foreground.is_some(),
+            "warning_foreground missing"
+        );
         assert!(colors.success.is_some(), "success missing");
-        assert!(colors.success_foreground.is_some(), "success_foreground missing");
+        assert!(
+            colors.success_foreground.is_some(),
+            "success_foreground missing"
+        );
         assert!(colors.info.is_some(), "info missing");
         assert!(colors.info_foreground.is_some(), "info_foreground missing");
 
         assert!(colors.selection.is_some(), "selection missing");
-        assert!(colors.selection_foreground.is_some(), "selection_foreground missing");
+        assert!(
+            colors.selection_foreground.is_some(),
+            "selection_foreground missing"
+        );
         assert!(colors.link.is_some(), "link missing");
         assert!(colors.focus_ring.is_some(), "focus_ring missing");
 
         assert!(colors.sidebar.is_some(), "sidebar missing");
-        assert!(colors.sidebar_foreground.is_some(), "sidebar_foreground missing");
+        assert!(
+            colors.sidebar_foreground.is_some(),
+            "sidebar_foreground missing"
+        );
         assert!(colors.tooltip.is_some(), "tooltip missing");
-        assert!(colors.tooltip_foreground.is_some(), "tooltip_foreground missing");
+        assert!(
+            colors.tooltip_foreground.is_some(),
+            "tooltip_foreground missing"
+        );
         assert!(colors.popover.is_some(), "popover missing");
-        assert!(colors.popover_foreground.is_some(), "popover_foreground missing");
+        assert!(
+            colors.popover_foreground.is_some(),
+            "popover_foreground missing"
+        );
 
         assert!(colors.button.is_some(), "button missing");
-        assert!(colors.button_foreground.is_some(), "button_foreground missing");
+        assert!(
+            colors.button_foreground.is_some(),
+            "button_foreground missing"
+        );
         assert!(colors.input.is_some(), "input missing");
-        assert!(colors.input_foreground.is_some(), "input_foreground missing");
+        assert!(
+            colors.input_foreground.is_some(),
+            "input_foreground missing"
+        );
         assert!(colors.disabled.is_some(), "disabled missing");
         assert!(colors.separator.is_some(), "separator missing");
         assert!(colors.alternate_row.is_some(), "alternate_row missing");
