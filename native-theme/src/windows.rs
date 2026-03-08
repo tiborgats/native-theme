@@ -124,8 +124,103 @@ fn read_geometry_dpi_aware() -> (crate::ThemeGeometry, u32) {
     (geometry, dpi)
 }
 
-/// Testable core: given raw color values, accent shades, fonts, spacing, and
-/// geometry, build a `NativeTheme`.
+/// Read widget metrics for Windows, combining WinUI3 Fluent Design defaults
+/// with system metrics for scrollbar and menu dimensions.
+///
+/// On Windows, uses `GetSystemMetricsForDpi` for scrollbar width (SM_CXVSCROLL),
+/// scrollbar thumb height (SM_CYVTHUMB), and menu item height (SM_CYMENU).
+/// On non-Windows platforms (for testability), uses WinUI3 Fluent defaults for all widgets.
+fn read_widget_metrics(_dpi: u32) -> crate::model::widget_metrics::WidgetMetrics {
+    use crate::model::widget_metrics::*;
+
+    #[cfg(target_os = "windows")]
+    let scrollbar = unsafe {
+        use ::windows::Win32::UI::WindowsAndMessaging::*;
+        ScrollbarMetrics {
+            width: Some(GetSystemMetricsForDpi(SM_CXVSCROLL, _dpi) as f32),
+            min_thumb_height: Some(GetSystemMetricsForDpi(SM_CYVTHUMB, _dpi) as f32),
+            ..Default::default()
+        }
+    };
+
+    #[cfg(not(target_os = "windows"))]
+    let scrollbar = ScrollbarMetrics {
+        width: Some(17.0),            // WinUI3 Fluent default
+        min_thumb_height: Some(40.0), // WinUI3 Fluent default
+        ..Default::default()
+    };
+
+    #[cfg(target_os = "windows")]
+    let menu_item = unsafe {
+        use ::windows::Win32::UI::WindowsAndMessaging::*;
+        MenuItemMetrics {
+            height: Some(GetSystemMetricsForDpi(SM_CYMENU, _dpi) as f32),
+            padding_horizontal: Some(12.0),
+            ..Default::default()
+        }
+    };
+
+    #[cfg(not(target_os = "windows"))]
+    let menu_item = MenuItemMetrics {
+        height: Some(32.0),           // WinUI3 Fluent default
+        padding_horizontal: Some(12.0),
+        ..Default::default()
+    };
+
+    WidgetMetrics {
+        button: ButtonMetrics {
+            min_height: Some(32.0),          // WinUI3 default
+            padding_horizontal: Some(12.0),
+            ..Default::default()
+        },
+        checkbox: CheckboxMetrics {
+            indicator_size: Some(20.0), // WinUI3 default
+            spacing: Some(8.0),
+            ..Default::default()
+        },
+        input: InputMetrics {
+            min_height: Some(32.0),          // WinUI3 default
+            padding_horizontal: Some(12.0),
+            ..Default::default()
+        },
+        scrollbar,
+        slider: SliderMetrics {
+            track_height: Some(4.0),    // WinUI3 Fluent
+            thumb_size: Some(22.0),     // WinUI3 Fluent
+            ..Default::default()
+        },
+        progress_bar: ProgressBarMetrics {
+            height: Some(4.0),  // WinUI3 Fluent
+            ..Default::default()
+        },
+        tab: TabMetrics {
+            min_height: Some(32.0),   // WinUI3 Fluent
+            padding_horizontal: Some(12.0),
+            ..Default::default()
+        },
+        menu_item,
+        tooltip: TooltipMetrics {
+            padding: Some(8.0),  // WinUI3 Fluent
+            ..Default::default()
+        },
+        list_item: ListItemMetrics {
+            height: Some(40.0),              // WinUI3 Fluent
+            padding_horizontal: Some(12.0),
+            ..Default::default()
+        },
+        toolbar: ToolbarMetrics {
+            height: Some(48.0),     // WinUI3 Fluent
+            item_spacing: Some(4.0),
+            ..Default::default()
+        },
+        splitter: SplitterMetrics {
+            width: Some(4.0), // WinUI3 Fluent
+        },
+    }
+}
+
+/// Testable core: given raw color values, accent shades, fonts, spacing,
+/// geometry, and widget metrics, build a `NativeTheme`.
 ///
 /// Determines light/dark variant based on foreground luminance, then populates
 /// the appropriate variant with colors and geometry. Only one variant is ever
@@ -138,6 +233,7 @@ fn build_theme(
     fonts: crate::ThemeFonts,
     spacing: crate::ThemeSpacing,
     geometry: crate::ThemeGeometry,
+    widget_metrics: crate::model::widget_metrics::WidgetMetrics,
 ) -> crate::NativeTheme {
     let dark = is_dark_mode(&fg);
 
@@ -174,7 +270,7 @@ fn build_theme(
         geometry,
         fonts,
         spacing,
-        widget_metrics: None,
+        widget_metrics: Some(widget_metrics),
     };
 
     if dark {
@@ -223,13 +319,19 @@ pub fn from_windows() -> crate::Result<crate::NativeTheme> {
     let (geometry, dpi) = read_geometry_dpi_aware();
     let fonts = read_system_font(dpi);
     let spacing = winui3_spacing();
+    let widget_metrics = read_widget_metrics(dpi);
 
-    Ok(build_theme(accent, fg, bg, accent_shades, fonts, spacing, geometry))
+    Ok(build_theme(accent, fg, bg, accent_shades, fonts, spacing, geometry, widget_metrics))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    /// Default widget metrics for tests that don't care about metrics values.
+    fn default_wm() -> crate::model::widget_metrics::WidgetMetrics {
+        crate::model::widget_metrics::WidgetMetrics::default()
+    }
 
     // === is_dark_mode tests ===
 
@@ -255,7 +357,7 @@ mod tests {
         assert!(!is_dark_mode(&fg));
     }
 
-    // === build_theme tests (updated with new signature) ===
+    // === build_theme tests (updated with widget_metrics parameter) ===
 
     #[test]
     fn build_theme_dark_mode_populates_dark_variant_only() {
@@ -267,6 +369,7 @@ mod tests {
             crate::ThemeFonts::default(),
             crate::ThemeSpacing::default(),
             crate::ThemeGeometry::default(),
+            default_wm(),
         );
         assert!(theme.dark.is_some(), "dark variant should be Some");
         assert!(theme.light.is_none(), "light variant should be None");
@@ -282,6 +385,7 @@ mod tests {
             crate::ThemeFonts::default(),
             crate::ThemeSpacing::default(),
             crate::ThemeGeometry::default(),
+            default_wm(),
         );
         assert!(theme.light.is_some(), "light variant should be Some");
         assert!(theme.dark.is_none(), "dark variant should be None");
@@ -298,6 +402,7 @@ mod tests {
             crate::ThemeFonts::default(),
             crate::ThemeSpacing::default(),
             crate::ThemeGeometry::default(),
+            default_wm(),
         );
 
         let variant = theme.light.as_ref().expect("light variant");
@@ -323,6 +428,7 @@ mod tests {
             crate::ThemeFonts::default(),
             crate::ThemeSpacing::default(),
             geometry,
+            default_wm(),
         );
 
         let variant = theme.light.as_ref().expect("light variant");
@@ -340,6 +446,7 @@ mod tests {
             crate::ThemeFonts::default(),
             crate::ThemeSpacing::default(),
             crate::ThemeGeometry::default(),
+            default_wm(),
         );
         assert_eq!(theme.name, "Windows");
     }
@@ -361,6 +468,7 @@ mod tests {
             crate::ThemeFonts::default(),
             crate::ThemeSpacing::default(),
             crate::ThemeGeometry::default(),
+            default_wm(),
         );
 
         let variant = theme.light.as_ref().expect("light variant");
@@ -386,6 +494,7 @@ mod tests {
             crate::ThemeFonts::default(),
             crate::ThemeSpacing::default(),
             crate::ThemeGeometry::default(),
+            default_wm(),
         );
 
         let variant = theme.dark.as_ref().expect("dark variant");
@@ -409,6 +518,7 @@ mod tests {
             crate::ThemeFonts::default(),
             crate::ThemeSpacing::default(),
             crate::ThemeGeometry::default(),
+            default_wm(),
         );
         let variant = theme.light.as_ref().expect("light variant");
         assert_eq!(
@@ -426,6 +536,7 @@ mod tests {
             crate::ThemeFonts::default(),
             crate::ThemeSpacing::default(),
             crate::ThemeGeometry::default(),
+            default_wm(),
         );
         let variant = theme.dark.as_ref().expect("dark variant");
         assert_eq!(
@@ -451,6 +562,7 @@ mod tests {
             crate::ThemeFonts::default(),
             crate::ThemeSpacing::default(),
             crate::ThemeGeometry::default(),
+            default_wm(),
         );
         let variant = theme.light.as_ref().expect("light variant");
         assert_eq!(variant.colors.primary_foreground, Some(fg_light));
@@ -464,6 +576,7 @@ mod tests {
             crate::ThemeFonts::default(),
             crate::ThemeSpacing::default(),
             crate::ThemeGeometry::default(),
+            default_wm(),
         );
         let variant = theme.dark.as_ref().expect("dark variant");
         assert_eq!(variant.colors.primary_foreground, Some(fg_dark));
@@ -502,6 +615,7 @@ mod tests {
             fonts.clone(),
             crate::ThemeSpacing::default(),
             crate::ThemeGeometry::default(),
+            default_wm(),
         );
 
         let variant = theme.light.as_ref().expect("light variant");
@@ -524,6 +638,7 @@ mod tests {
             crate::ThemeFonts::default(),
             crate::ThemeSpacing::default(),
             crate::ThemeGeometry::default(),
+            default_wm(),
         );
 
         let variant = theme.light.as_ref().expect("light variant");
@@ -553,6 +668,7 @@ mod tests {
             crate::ThemeFonts::default(),
             crate::ThemeSpacing::default(),
             crate::ThemeGeometry::default(),
+            default_wm(),
         );
         let variant = theme.light.as_ref().expect("light variant");
         assert!(variant.colors.border.is_some(), "light mode border should be Some");
@@ -567,9 +683,42 @@ mod tests {
             crate::ThemeFonts::default(),
             crate::ThemeSpacing::default(),
             crate::ThemeGeometry::default(),
+            default_wm(),
         );
         let variant = theme.dark.as_ref().expect("dark variant");
         assert!(variant.colors.border.is_some(), "dark mode border should be Some");
         assert_eq!(variant.colors.border, Some(crate::Rgba::rgb(60, 60, 60)));
+    }
+
+    // === widget metrics tests ===
+
+    #[test]
+    fn widget_metrics_fluent_defaults() {
+        let wm = read_widget_metrics(96);
+        assert_eq!(wm.button.min_height, Some(32.0), "WinUI3 button min_height");
+        assert_eq!(wm.checkbox.indicator_size, Some(20.0), "WinUI3 checkbox indicator_size");
+        assert_eq!(wm.input.min_height, Some(32.0), "WinUI3 input min_height");
+        assert_eq!(wm.slider.thumb_size, Some(22.0), "WinUI3 slider thumb_size");
+        assert!(wm.scrollbar.width.is_some(), "scrollbar width should be set");
+        assert!(wm.menu_item.height.is_some(), "menu_item height should be set");
+    }
+
+    #[test]
+    fn build_theme_dark_mode_includes_widget_metrics() {
+        let wm = read_widget_metrics(96);
+        let theme = build_theme(
+            crate::Rgba::rgb(0, 120, 215),
+            crate::Rgba::rgb(255, 255, 255), // dark mode
+            crate::Rgba::rgb(0, 0, 0),
+            [None; 6],
+            crate::ThemeFonts::default(),
+            crate::ThemeSpacing::default(),
+            crate::ThemeGeometry::default(),
+            wm,
+        );
+        let variant = theme.dark.as_ref().expect("dark variant");
+        assert!(variant.widget_metrics.is_some(), "widget_metrics should be Some");
+        let wm = variant.widget_metrics.as_ref().unwrap();
+        assert_eq!(wm.button.min_height, Some(32.0));
     }
 }
