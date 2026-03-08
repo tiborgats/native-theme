@@ -107,6 +107,74 @@ fn read_fonts() -> crate::ThemeFonts {
     }
 }
 
+/// Return widget metrics populated from macOS HIG defaults.
+///
+/// Values based on AppKit intrinsic content sizes and Apple Human Interface
+/// Guidelines for standard control dimensions.
+#[cfg_attr(not(feature = "macos"), allow(dead_code))]
+fn macos_widget_metrics() -> crate::model::widget_metrics::WidgetMetrics {
+    use crate::model::widget_metrics::*;
+
+    WidgetMetrics {
+        button: ButtonMetrics {
+            min_height: Some(22.0),          // NSButton regular control size
+            padding_horizontal: Some(12.0),
+            ..Default::default()
+        },
+        checkbox: CheckboxMetrics {
+            indicator_size: Some(14.0), // NSButton switch type
+            spacing: Some(4.0),
+            ..Default::default()
+        },
+        input: InputMetrics {
+            min_height: Some(22.0),          // NSTextField regular
+            padding_horizontal: Some(4.0),
+            ..Default::default()
+        },
+        scrollbar: ScrollbarMetrics {
+            width: Some(15.0),          // NSScroller legacy style
+            slider_width: Some(7.0),    // Overlay style
+            ..Default::default()
+        },
+        slider: SliderMetrics {
+            track_height: Some(4.0),    // NSSlider circular knob
+            thumb_size: Some(21.0),
+            ..Default::default()
+        },
+        progress_bar: ProgressBarMetrics {
+            height: Some(6.0), // NSProgressIndicator regular
+            ..Default::default()
+        },
+        tab: TabMetrics {
+            min_height: Some(24.0),          // NSTabView
+            padding_horizontal: Some(12.0),
+            ..Default::default()
+        },
+        menu_item: MenuItemMetrics {
+            height: Some(22.0),              // Standard menu item
+            padding_horizontal: Some(12.0),
+            ..Default::default()
+        },
+        tooltip: TooltipMetrics {
+            padding: Some(4.0),
+            ..Default::default()
+        },
+        list_item: ListItemMetrics {
+            height: Some(24.0),              // NSTableView row
+            padding_horizontal: Some(4.0),
+            ..Default::default()
+        },
+        toolbar: ToolbarMetrics {
+            height: Some(38.0),     // NSToolbar standard
+            item_spacing: Some(8.0),
+            ..Default::default()
+        },
+        splitter: SplitterMetrics {
+            width: Some(9.0), // NSSplitView divider
+        },
+    }
+}
+
 /// Testable core: assemble a NativeTheme from pre-read color and font data.
 ///
 /// Takes pre-resolved colors for both light and dark variants and fonts,
@@ -119,6 +187,8 @@ fn build_theme(
     dark_colors: crate::ThemeColors,
     fonts: crate::ThemeFonts,
 ) -> crate::NativeTheme {
+    let wm = macos_widget_metrics();
+
     crate::NativeTheme {
         name: "macOS".to_string(),
         light: Some(crate::ThemeVariant {
@@ -126,14 +196,14 @@ fn build_theme(
             fonts: fonts.clone(),
             geometry: Default::default(),
             spacing: Default::default(),
-            widget_metrics: None,
+            widget_metrics: Some(wm.clone()),
         }),
         dark: Some(crate::ThemeVariant {
             colors: dark_colors,
             fonts,
             geometry: Default::default(),
             spacing: Default::default(),
-            widget_metrics: None,
+            widget_metrics: Some(wm),
         }),
     }
 }
@@ -302,5 +372,25 @@ mod tests {
 
         assert_eq!(light.colors.accent, Some(blue));
         assert_eq!(dark.colors.accent, Some(red));
+    }
+
+    #[test]
+    fn macos_widget_metrics_spot_check() {
+        let wm = macos_widget_metrics();
+        assert_eq!(wm.button.min_height, Some(22.0), "NSButton regular control size");
+        assert_eq!(wm.scrollbar.width, Some(15.0), "NSScroller legacy style");
+        assert_eq!(wm.checkbox.indicator_size, Some(14.0), "NSButton switch type");
+        assert_eq!(wm.slider.thumb_size, Some(21.0), "NSSlider circular knob");
+    }
+
+    #[test]
+    fn build_theme_populates_widget_metrics() {
+        let theme = build_theme(sample_light_colors(), sample_dark_colors(), sample_fonts());
+
+        let light = theme.light.as_ref().unwrap();
+        assert!(light.widget_metrics.is_some(), "light widget_metrics should be Some");
+
+        let dark = theme.dark.as_ref().unwrap();
+        assert!(dark.widget_metrics.is_some(), "dark widget_metrics should be Some");
     }
 }

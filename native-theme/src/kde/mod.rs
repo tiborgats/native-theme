@@ -2,6 +2,7 @@
 
 pub mod colors;
 pub mod fonts;
+pub mod metrics;
 
 use crate::Rgba;
 
@@ -27,7 +28,7 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::NativeThem
         fonts: theme_fonts,
         geometry: Default::default(),
         spacing: Default::default(),
-        widget_metrics: None,
+        widget_metrics: Some(metrics::breeze_widget_metrics()),
     };
 
     let theme = if dark {
@@ -398,6 +399,18 @@ BackgroundNormal=49,54,59
         let theme = result.unwrap();
         // Should have a dark variant (49,54,59 is dark)
         assert!(theme.dark.is_some());
+    }
+
+    #[test]
+    fn test_from_kde_content_populates_widget_metrics() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let variant = theme.dark.as_ref().unwrap();
+        assert!(
+            variant.widget_metrics.is_some(),
+            "widget_metrics should be populated from breeze constants"
+        );
+        let wm = variant.widget_metrics.as_ref().unwrap();
+        assert_eq!(wm.button.min_width, Some(80.0), "Button_MinWidth");
     }
 
     #[test]

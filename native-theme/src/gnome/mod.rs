@@ -100,6 +100,75 @@ pub(crate) fn read_gnome_fonts() -> ThemeFonts {
     fonts
 }
 
+/// Return widget metrics populated from GNOME libadwaita CSS defaults.
+///
+/// Values based on libadwaita CSS defaults and Adwaita theme conventions
+/// for standard GTK4 widget dimensions.
+fn adwaita_widget_metrics() -> crate::model::widget_metrics::WidgetMetrics {
+    use crate::model::widget_metrics::*;
+
+    WidgetMetrics {
+        button: ButtonMetrics {
+            min_height: Some(34.0),          // libadwaita default button
+            padding_horizontal: Some(12.0),
+            padding_vertical: Some(8.0),
+            ..Default::default()
+        },
+        checkbox: CheckboxMetrics {
+            indicator_size: Some(20.0), // GtkCheckButton indicator
+            spacing: Some(8.0),
+            ..Default::default()
+        },
+        input: InputMetrics {
+            min_height: Some(34.0),          // GtkEntry
+            padding_horizontal: Some(12.0),
+            ..Default::default()
+        },
+        scrollbar: ScrollbarMetrics {
+            width: Some(12.0),          // Adwaita overlay scrollbar
+            slider_width: Some(8.0),
+            ..Default::default()
+        },
+        slider: SliderMetrics {
+            track_height: Some(6.0),    // GtkScale trough
+            thumb_size: Some(20.0),
+            ..Default::default()
+        },
+        progress_bar: ProgressBarMetrics {
+            height: Some(6.0), // GtkProgressBar
+            ..Default::default()
+        },
+        tab: TabMetrics {
+            min_height: Some(34.0),          // AdwTabBar
+            padding_horizontal: Some(12.0),
+            ..Default::default()
+        },
+        menu_item: MenuItemMetrics {
+            height: Some(34.0),              // GtkPopoverMenuBar
+            padding_horizontal: Some(8.0),
+            padding_vertical: Some(4.0),
+            ..Default::default()
+        },
+        tooltip: TooltipMetrics {
+            padding: Some(6.0), // GtkTooltip
+            ..Default::default()
+        },
+        list_item: ListItemMetrics {
+            padding_horizontal: Some(12.0),
+            padding_vertical: Some(8.0),
+            ..Default::default()
+        },
+        toolbar: ToolbarMetrics {
+            height: Some(46.0),     // AdwHeaderBar default
+            item_spacing: Some(6.0),
+            ..Default::default()
+        },
+        splitter: SplitterMetrics {
+            width: Some(6.0), // GtkPaned
+        },
+    }
+}
+
 /// Build a NativeTheme from an Adwaita base, applying portal-provided
 /// color scheme, accent color, and contrast settings.
 ///
@@ -118,6 +187,9 @@ pub(crate) fn build_theme(
     } else {
         base.light.unwrap_or_default()
     };
+
+    // Always set adwaita widget metrics on the variant
+    variant.widget_metrics = Some(adwaita_widget_metrics());
 
     // Apply accent color if available and in range
     if let Some(color) = accent {
@@ -472,6 +544,30 @@ mod tests {
 
         let variant = theme.light.as_ref().expect("light variant");
         assert_eq!(variant.geometry, base_light.geometry);
+    }
+
+    // === widget metrics tests ===
+
+    #[test]
+    fn adwaita_widget_metrics_spot_check() {
+        let wm = adwaita_widget_metrics();
+        assert_eq!(wm.button.min_height, Some(34.0), "libadwaita default button");
+        assert_eq!(wm.checkbox.indicator_size, Some(20.0), "GtkCheckButton indicator");
+        assert_eq!(wm.scrollbar.width, Some(12.0), "Adwaita overlay scrollbar");
+    }
+
+    #[test]
+    fn build_theme_includes_widget_metrics() {
+        let theme = build_theme(
+            adwaita_base(),
+            ColorScheme::NoPreference,
+            None,
+            Contrast::NoPreference,
+        )
+        .unwrap();
+
+        let variant = theme.light.as_ref().expect("light variant");
+        assert!(variant.widget_metrics.is_some(), "widget_metrics should be Some");
     }
 
     // === fallback test ===
