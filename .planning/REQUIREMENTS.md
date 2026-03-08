@@ -39,10 +39,10 @@ Requirements for v0.2 release. Each maps to roadmap phases.
 - [x] **METRIC-01**: `WidgetMetrics` struct with 12 per-widget sub-structs (Button, Checkbox, Input, Scrollbar, Slider, ProgressBar, Tab, MenuItem, Tooltip, ListItem, Toolbar, Splitter)
 - [x] **METRIC-02**: Each sub-struct uses `Option<f32>` fields, `#[non_exhaustive]`, serde defaults
 - [x] **METRIC-03**: `widget_metrics: Option<WidgetMetrics>` added to `ThemeVariant`
-- [ ] **METRIC-04**: KDE metrics populated from breezemetrics.h constants (versioned per Plasma release)
-- [ ] **METRIC-05**: Windows metrics populated via `GetSystemMetricsForDpi` at runtime
-- [ ] **METRIC-06**: macOS metrics populated with hardcoded HIG defaults
-- [ ] **METRIC-07**: GNOME metrics populated from hardcoded libadwaita values
+- [x] **METRIC-04**: KDE metrics populated from breezemetrics.h constants (versioned per Plasma release)
+- [x] **METRIC-05**: Windows metrics populated via `GetSystemMetricsForDpi` at runtime
+- [x] **METRIC-06**: macOS metrics populated with hardcoded HIG defaults
+- [x] **METRIC-07**: GNOME metrics populated from hardcoded libadwaita values
 - [x] **METRIC-08**: Widget metrics added to preset TOML files
 
 ### CI Pipeline
@@ -137,10 +137,10 @@ Deferred to post-v0.2. Tracked but not in current roadmap.
 | METRIC-01 | Phase 12 | Complete |
 | METRIC-02 | Phase 12 | Complete |
 | METRIC-03 | Phase 12 | Complete |
-| METRIC-04 | Phase 12 | Pending |
-| METRIC-05 | Phase 12 | Pending |
-| METRIC-06 | Phase 12 | Pending |
-| METRIC-07 | Phase 12 | Pending |
+| METRIC-04 | Phase 12 | Complete |
+| METRIC-05 | Phase 12 | Complete |
+| METRIC-06 | Phase 12 | Complete |
+| METRIC-07 | Phase 12 | Complete |
 | METRIC-08 | Phase 12 | Complete |
 | CI-01 | Phase 13 | Pending |
 | CI-02 | Phase 13 | Pending |

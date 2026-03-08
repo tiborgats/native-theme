@@ -30,7 +30,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 9: Cargo Workspace** — Restructure repo into a Cargo workspace with core crate in subdirectory — completed 2026-03-08
 - [x] **Phase 10: API Breaking Changes** — Flatten ThemeColors, move presets to NativeTheme methods, add geometry fields (completed 2026-03-08)
 - [x] **Phase 11: Platform Readers** — macOS reader, Windows enhancements, Linux enhancements (completed 2026-03-08)
-- [ ] **Phase 12: Widget Metrics** — Widget metrics data model and platform-specific population
+- [x] **Phase 12: Widget Metrics** — Widget metrics data model and platform-specific population (completed 2026-03-08)
 - [ ] **Phase 13: CI Pipeline** — GitHub Actions with cross-platform matrix, semver-checks, linting
 - [ ] **Phase 14: Toolkit Connectors** — gpui and iced connector crates with examples
 - [ ] **Phase 15: Publishing Prep** — Metadata, licenses, changelog, doc examples, crates.io publish
@@ -152,7 +152,7 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 9. Cargo Workspace | v0.2 | 1/1 | ✓ Complete | 2026-03-08 |
 | 10. API Breaking Changes | v0.2 | 3/3 | ✓ Complete | 2026-03-08 |
 | 11. Platform Readers | 4/4 | Complete   | 2026-03-08 | 2026-03-08 |
-| 12. Widget Metrics | 2/3 | In Progress|  | - |
+| 12. Widget Metrics | 3/3 | Complete   | 2026-03-08 | - |
 | 13. CI Pipeline | v0.2 | 0/0 | Not started | - |
 | 14. Toolkit Connectors | v0.2 | 0/0 | Not started | - |
 | 15. Publishing Prep | v0.2 | 0/0 | Not started | - |

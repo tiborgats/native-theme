@@ -26,18 +26,18 @@ See: .planning/PROJECT.md (updated 2026-03-08)
 ## Current Position
 
 Phase: 12 of 15 (Widget Metrics) — in progress
-Plan: 3 of 3 complete
+Plan: 2 of 3 complete
 Status: Executing phase 12
-Last activity: 2026-03-08 — 12-03 complete (preset widget metrics for all 17 TOML files)
+Last activity: 2026-03-08 — 12-02 complete (platform reader widget metrics population)
 
-Progress: [████████████████████] 100%
+Progress: [█████████████████░░░] 87%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 25 (14 v0.1 + 11 v0.2)
-- Average duration: ~3.5min (v0.2)
-- Total execution time: 38min (v0.2)
+- Total plans completed: 24 (14 v0.1 + 10 v0.2)
+- Average duration: ~3.2min (v0.2)
+- Total execution time: 37min (v0.2)
 
 **By Phase:**
 
@@ -47,11 +47,11 @@ Progress: [████████████████████] 100%
 | 09-cargo-workspace | 1 | 3min | 3min |
 | 10-api-breaking-changes | 3 | 13min | 4.3min |
 | 11-platform-readers | 4/4 | 10min | 2.5min |
-| 12-widget-metrics | 3/3 | 12min | 4min |
+| 12-widget-metrics | 2/3 | 11min | 5.5min |
 
 **Recent Trend:**
-- Last 5 plans: 11-03 (3min), 11-04 (2min), 12-01 (3min), 12-02 (3min), 12-03 (6min)
-- Trend: v0.2 execution, steady ~3-6min/plan
+- Last 5 plans: 11-02 (2min), 11-03 (3min), 11-04 (2min), 12-01 (3min), 12-02 (8min)
+- Trend: v0.2 execution, steady ~3-8min/plan
 
 ## Accumulated Context
 
@@ -68,6 +68,7 @@ v0.2 decision: Cargo workspace restructuring (API-01) goes first, before API bre
 11-03: Used ashpd re-exported zbus for D-Bus access. detect_portal_backend is pub(crate) async for async consumers. Portal overlay pattern: read native config as base, overlay portal accent via merge.
 11-04: ENV_MUTEX defined at module level in lib.rs (pub(crate)) for cross-module test access. from_system_async mirrors from_system structure but adds portal detection for Unknown DE.
 12-01: Manual merge/is_empty for ThemeVariant (replacing impl_merge!) to handle Option<WidgetMetrics> recursive merge. WidgetMetrics uses bare sub-structs with skip_serializing_if is_empty; ThemeVariant holds Option<WidgetMetrics> for backward compat.
+12-02: Platform-specific metrics functions (breeze_widget_metrics, macos_widget_metrics, adwaita_widget_metrics) as compile-time constants. Windows build_theme takes explicit widget_metrics param for dpi-dependent construction. Non-Windows fallback uses WinUI3 Fluent defaults.
 12-03: Community color themes use generic defaults (not platform-specific values). Light/dark variants get identical widget_metrics since widget sizing is mode-independent.
 
 ### Pending Todos
@@ -80,6 +81,6 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-08T08:04:23.000Z
-Stopped at: Completed 12-03-PLAN.md
+Last session: 2026-03-08T08:06:10.000Z
+Stopped at: Completed 12-02-PLAN.md
 Resume file: None
