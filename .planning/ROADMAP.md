@@ -46,7 +46,9 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
   2. Running `cargo test` from repo root runs all existing 140+ tests and they pass
   3. Core crate source lives in a `native-theme/` subdirectory with its own Cargo.toml
   4. A top-level Cargo.toml defines workspace members
-**Plans**: TBD
+**Plans**: 1 plan
+Plans:
+- [ ] 09-01-PLAN.md — Restructure repo as Cargo virtual workspace with connector stubs
 
 ### Phase 10: API Breaking Changes
 **Goal**: Public API refactored to its final v0.2 shape — flat colors, idiomatic methods, extended geometry — before any new features build on it
@@ -134,7 +136,7 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 6. Cross-Platform Dispatch | v0.1 | 1/1 | ✓ Complete | 2026-03-07 |
 | 7. Extended Presets | v0.1 | 2/2 | ✓ Complete | 2026-03-07 |
 | 8. Documentation | v0.1 | 1/1 | ✓ Complete | 2026-03-07 |
-| 9. Cargo Workspace | v0.2 | 0/0 | Not started | - |
+| 9. Cargo Workspace | v0.2 | 0/1 | Planned | - |
 | 10. API Breaking Changes | v0.2 | 0/0 | Not started | - |
 | 11. Platform Readers | v0.2 | 0/0 | Not started | - |
 | 12. Widget Metrics | v0.2 | 0/0 | Not started | - |
