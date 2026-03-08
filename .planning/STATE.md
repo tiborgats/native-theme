@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Platform Coverage & Publishing
-status: completed
-stopped_at: Completed 11-04-PLAN.md
-last_updated: "2026-03-08T07:29:35.812Z"
-last_activity: 2026-03-08 — 11-04 complete (verification gap closure)
+status: in-progress
+stopped_at: Completed 12-01-PLAN.md
+last_updated: "2026-03-08T07:55:13.000Z"
+last_activity: 2026-03-08 — 12-01 complete (widget metrics data model)
 progress:
   total_phases: 7
   completed_phases: 3
-  total_plans: 8
-  completed_plans: 8
-  percent: 100
+  total_plans: 11
+  completed_plans: 9
+  percent: 82
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-08)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 11 — Platform Readers (complete)
+**Current focus:** Phase 12 — Widget Metrics (in progress)
 
 ## Current Position
 
-Phase: 11 of 15 (Platform Readers) — complete
-Plan: 4 of 4 complete
-Status: Phase 11 complete
-Last activity: 2026-03-08 — 11-04 complete (verification gap closure)
+Phase: 12 of 15 (Widget Metrics) — in progress
+Plan: 1 of 3 complete
+Status: Executing phase 12
+Last activity: 2026-03-08 — 12-01 complete (widget metrics data model)
 
-Progress: [████████████████████] 100%
+Progress: [████████████████░░░░] 82%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 22 (14 v0.1 + 8 v0.2)
+- Total plans completed: 23 (14 v0.1 + 9 v0.2)
 - Average duration: ~3min (v0.2)
-- Total execution time: 26min (v0.2)
+- Total execution time: 29min (v0.2)
 
 **By Phase:**
 
@@ -47,9 +47,10 @@ Progress: [████████████████████] 100%
 | 09-cargo-workspace | 1 | 3min | 3min |
 | 10-api-breaking-changes | 3 | 13min | 4.3min |
 | 11-platform-readers | 4/4 | 10min | 2.5min |
+| 12-widget-metrics | 1/3 | 3min | 3min |
 
 **Recent Trend:**
-- Last 5 plans: 10-03 (2min), 11-01 (3min), 11-02 (2min), 11-03 (3min), 11-04 (2min)
+- Last 5 plans: 11-01 (3min), 11-02 (2min), 11-03 (3min), 11-04 (2min), 12-01 (3min)
 - Trend: v0.2 execution, steady ~3min/plan
 
 ## Accumulated Context
@@ -66,6 +67,7 @@ v0.2 decision: Cargo workspace restructuring (API-01) goes first, before API bre
 11-02: AccentDark1 maps to light primary_background, AccentLight1 to dark. primary_foreground from system fg. WinUI3 spacing as pure constants. read_geometry_dpi_aware returns (ThemeGeometry, u32) for DPI sharing with font conversion.
 11-03: Used ashpd re-exported zbus for D-Bus access. detect_portal_backend is pub(crate) async for async consumers. Portal overlay pattern: read native config as base, overlay portal accent via merge.
 11-04: ENV_MUTEX defined at module level in lib.rs (pub(crate)) for cross-module test access. from_system_async mirrors from_system structure but adds portal detection for Unknown DE.
+12-01: Manual merge/is_empty for ThemeVariant (replacing impl_merge!) to handle Option<WidgetMetrics> recursive merge. WidgetMetrics uses bare sub-structs with skip_serializing_if is_empty; ThemeVariant holds Option<WidgetMetrics> for backward compat.
 
 ### Pending Todos
 
@@ -77,6 +79,6 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-08T07:29:35.810Z
-Stopped at: Completed 11-04-PLAN.md
+Last session: 2026-03-08T07:55:13.000Z
+Stopped at: Completed 12-01-PLAN.md
 Resume file: None
