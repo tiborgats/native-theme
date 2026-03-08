@@ -123,7 +123,7 @@ Plans:
   5. Both connectors include a theme selector dropdown (presets + OS theme)
 **Plans**: 4 plans
 Plans:
-- [ ] 14-01-PLAN.md — iced connector core: palette, extended palette, widget metric helpers
+- [x] 14-01-PLAN.md — iced connector core: palette, extended palette, widget metric helpers
 - [ ] 14-02-PLAN.md — iced demo.rs widget gallery with theme selector
 - [ ] 14-03-PLAN.md — gpui connector core: 108-field color mapping, config, shade derivation, upstream proposal
 - [ ] 14-04-PLAN.md — gpui showcase.rs widget gallery with theme selector
@@ -161,5 +161,5 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 11. Platform Readers | v0.2 | 4/4 | ✓ Complete | 2026-03-08 |
 | 12. Widget Metrics | v0.2 | 3/3 | ✓ Complete | 2026-03-08 |
 | 13. CI Pipeline | v0.2 | 1/1 | ✓ Complete | 2026-03-08 |
-| 14. Toolkit Connectors | v0.2 | 0/4 | In progress | - |
+| 14. Toolkit Connectors | v0.2 | 1/4 | In progress | - |
 | 15. Publishing Prep | v0.2 | 0/0 | Not started | - |

@@ -58,9 +58,9 @@ Requirements for v0.2 release. Each maps to roadmap phases.
 - [ ] **CONN-02**: `native-theme-gpui` maps fonts, geometry, spacing, and widget metrics
 - [ ] **CONN-03**: `native-theme-gpui` includes upstream PR proposal documents for missing gpui-component theming hooks
 - [ ] **CONN-04**: `native-theme-gpui` includes `examples/showcase.rs` widget gallery
-- [ ] **CONN-05**: `native-theme-iced` crate maps ThemeColors to iced Palette + Extended palette
-- [ ] **CONN-06**: `native-theme-iced` implements per-widget Catalog/Style for core widgets (Button, Container, TextInput, Scrollable, Checkbox, Slider, ProgressBar, Tooltip)
-- [ ] **CONN-07**: `native-theme-iced` maps geometry, spacing, and widget metrics to Style fields
+- [x] **CONN-05**: `native-theme-iced` crate maps ThemeColors to iced Palette + Extended palette
+- [x] **CONN-06**: `native-theme-iced` implements per-widget Catalog/Style for core widgets (Button, Container, TextInput, Scrollable, Checkbox, Slider, ProgressBar, Tooltip)
+- [x] **CONN-07**: `native-theme-iced` maps geometry, spacing, and widget metrics to Style fields
 - [ ] **CONN-08**: `native-theme-iced` includes `examples/demo.rs` widget gallery
 - [ ] **CONN-09**: Both connectors include a theme selector (dropdown of presets + OS theme)
 
@@ -150,9 +150,9 @@ Deferred to post-v0.2. Tracked but not in current roadmap.
 | CONN-02 | Phase 14 | Pending |
 | CONN-03 | Phase 14 | Pending |
 | CONN-04 | Phase 14 | Pending |
-| CONN-05 | Phase 14 | Pending |
-| CONN-06 | Phase 14 | Pending |
-| CONN-07 | Phase 14 | Pending |
+| CONN-05 | Phase 14 | Complete |
+| CONN-06 | Phase 14 | Complete |
+| CONN-07 | Phase 14 | Complete |
 | CONN-08 | Phase 14 | Pending |
 | CONN-09 | Phase 14 | Pending |
 | PUB-01 | Phase 15 | Pending |

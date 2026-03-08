@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Platform Coverage & Publishing
-status: completed
-stopped_at: Completed 13-01-PLAN.md
-last_updated: "2026-03-08T08:34:05.000Z"
-last_activity: 2026-03-08 — Phase 13 plan 01 complete (CI pipeline with cross-platform test matrix)
+status: in-progress
+stopped_at: Completed 14-01-PLAN.md
+last_updated: "2026-03-08T09:13:30.000Z"
+last_activity: 2026-03-08 — Phase 14 plan 01 complete (iced connector core: palette, extended, widget metric helpers)
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 12
-  completed_plans: 12
-  percent: 100
+  total_plans: 16
+  completed_plans: 13
+  percent: 81
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-08)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 13 — CI Pipeline (complete)
+**Current focus:** Phase 14 — Toolkit Connectors (in progress)
 
 ## Current Position
 
-Phase: 13 of 15 (CI Pipeline) — complete
-Plan: 1 of 1 complete
-Status: Phase 13 complete
-Last activity: 2026-03-08 — Phase 13 plan 01 complete (CI pipeline with cross-platform test matrix)
+Phase: 14 of 15 (Toolkit Connectors) — in progress
+Plan: 1 of 4 complete
+Status: Phase 14 in progress
+Last activity: 2026-03-08 — Phase 14 plan 01 complete (iced connector core: palette, extended, widget metric helpers)
 
-Progress: [████████████████████] 100%
+Progress: [████████████████░░░░] 81%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 26 (14 v0.1 + 12 v0.2)
-- Average duration: ~3.5min (v0.2)
-- Total execution time: 46min (v0.2)
+- Total plans completed: 27 (14 v0.1 + 13 v0.2)
+- Average duration: ~3.7min (v0.2)
+- Total execution time: 52min (v0.2)
 
 **By Phase:**
 
@@ -49,9 +49,10 @@ Progress: [████████████████████] 100%
 | 11-platform-readers | 4/4 | 10min | 2.5min |
 | 12-widget-metrics | 3/3 | 17min | 5.7min |
 | 13-ci-pipeline | 1/1 | 3min | 3min |
+| 14-toolkit-connectors | 1/4 | 6min | 6min |
 
 **Recent Trend:**
-- Last 5 plans: 12-01 (3min), 12-02 (8min), 12-03 (6min), 13-01 (3min)
+- Last 5 plans: 12-02 (8min), 12-03 (6min), 13-01 (3min), 14-01 (6min)
 - Trend: v0.2 execution, steady ~3-8min/plan
 
 ## Accumulated Context
@@ -72,6 +73,7 @@ v0.2 decision: Cargo workspace restructuring (API-01) goes first, before API bre
 12-02: Platform-specific metrics functions (breeze_widget_metrics, macos_widget_metrics, adwaita_widget_metrics) as compile-time constants. Windows build_theme takes explicit widget_metrics param for dpi-dependent construction. Non-Windows fallback uses WinUI3 Fluent defaults.
 12-03: Community color themes use generic defaults (not platform-specific values). Light/dark variants get identical widget_metrics since widget sizing is mode-independent.
 13-01: Suppress clippy::self_named_constructors on Rgba::rgba() to preserve public API. CI uses include-only matrix (7 entries) binding features to correct OS runners. semver uses baseline-rev v0.1 (switch to registry auto-detect after publish). fmt gates clippy and test; semver runs independently.
+14-01: Used iced_core 0.14 (not iced 0.14) to avoid winit windowing dependency in library crate. Widget metric helpers as free functions (not Catalog impls) per iced architecture. CONN-06 satisfied via iced built-in Catalog impls over custom palette.
 
 ### Pending Todos
 
@@ -83,6 +85,6 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-08T08:34:05.000Z
-Stopped at: Completed 13-01-PLAN.md
+Last session: 2026-03-08T09:13:30.000Z
+Stopped at: Completed 14-01-PLAN.md
 Resume file: None
