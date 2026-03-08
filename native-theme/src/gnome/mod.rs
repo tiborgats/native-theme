@@ -7,6 +7,8 @@
 use ashpd::desktop::settings::{ColorScheme, Contrast};
 use ashpd::desktop::Color;
 
+use crate::ThemeFonts;
+
 /// Convert an ashpd portal Color to an Rgba, returning None if any
 /// component is outside the [0.0, 1.0] range (per XDG spec: out-of-range
 /// means "unset").
@@ -35,6 +37,67 @@ fn apply_accent(variant: &mut crate::ThemeVariant, accent: &crate::Rgba) {
 fn apply_high_contrast(variant: &mut crate::ThemeVariant) {
     variant.geometry.border_opacity = Some(1.0);
     variant.geometry.disabled_opacity = Some(0.7);
+}
+
+/// Parse a GNOME font string in the format `'Family Name Size'`.
+///
+/// gsettings outputs font names with single quotes (e.g., `'Cantarell 11'`).
+/// The family is everything before the last space; the size is the number after it.
+///
+/// Returns `None` if the string is empty, has no space separator, or the size
+/// is not a valid positive number.
+pub(crate) fn parse_gnome_font_string(s: &str) -> Option<(String, f32)> {
+    let trimmed = s.trim().trim_matches('\'');
+    if trimmed.is_empty() {
+        return None;
+    }
+    let last_space = trimmed.rfind(' ')?;
+    let family = &trimmed[..last_space];
+    let size_str = &trimmed[last_space + 1..];
+    let size: f32 = size_str.parse().ok()?;
+    if family.is_empty() || size <= 0.0 {
+        return None;
+    }
+    Some((family.to_string(), size))
+}
+
+/// Read GNOME system fonts via gsettings.
+///
+/// Calls `gsettings get org.gnome.desktop.interface font-name` and
+/// `gsettings get org.gnome.desktop.interface monospace-font-name` to
+/// read the system UI and monospace fonts respectively.
+///
+/// Returns `ThemeFonts::default()` if gsettings is not available or fails.
+pub(crate) fn read_gnome_fonts() -> ThemeFonts {
+    let mut fonts = ThemeFonts::default();
+
+    if let Ok(output) = std::process::Command::new("gsettings")
+        .args(["get", "org.gnome.desktop.interface", "font-name"])
+        .output()
+    {
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            if let Some((family, size)) = parse_gnome_font_string(stdout.trim()) {
+                fonts.family = Some(family);
+                fonts.size = Some(size);
+            }
+        }
+    }
+
+    if let Ok(output) = std::process::Command::new("gsettings")
+        .args(["get", "org.gnome.desktop.interface", "monospace-font-name"])
+        .output()
+    {
+        if output.status.success() {
+            let stdout = String::from_utf8_lossy(&output.stdout);
+            if let Some((family, size)) = parse_gnome_font_string(stdout.trim()) {
+                fonts.mono_family = Some(family);
+                fonts.mono_size = Some(size);
+            }
+        }
+    }
+
+    fonts
 }
 
 /// Build a NativeTheme from an Adwaita base, applying portal-provided
@@ -114,12 +177,84 @@ pub async fn from_gnome() -> crate::Result<crate::NativeTheme> {
     let accent = settings.accent_color().await.ok();
     let contrast = settings.contrast().await.unwrap_or_default();
 
-    build_theme(base, scheme, accent, contrast)
+    let mut theme = build_theme(base, scheme, accent, contrast)?;
+
+    // Merge GNOME font data from gsettings into the theme variant
+    let fonts = read_gnome_fonts();
+    if !fonts.is_empty() {
+        if let Some(ref mut variant) = theme.light {
+            variant.fonts.merge(&fonts);
+        }
+        if let Some(ref mut variant) = theme.dark {
+            variant.fonts.merge(&fonts);
+        }
+    }
+
+    Ok(theme)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    // === parse_gnome_font_string tests ===
+
+    #[test]
+    fn parse_gnome_font_string_standard() {
+        assert_eq!(
+            parse_gnome_font_string("'Cantarell 11'"),
+            Some(("Cantarell".to_string(), 11.0))
+        );
+    }
+
+    #[test]
+    fn parse_gnome_font_string_multi_word() {
+        assert_eq!(
+            parse_gnome_font_string("'Noto Sans 10'"),
+            Some(("Noto Sans".to_string(), 10.0))
+        );
+    }
+
+    #[test]
+    fn parse_gnome_font_string_no_quotes() {
+        assert_eq!(
+            parse_gnome_font_string("Ubuntu Mono 13"),
+            Some(("Ubuntu Mono".to_string(), 13.0))
+        );
+    }
+
+    #[test]
+    fn parse_gnome_font_string_fractional_size() {
+        assert_eq!(
+            parse_gnome_font_string("'Inter 10.5'"),
+            Some(("Inter".to_string(), 10.5))
+        );
+    }
+
+    #[test]
+    fn parse_gnome_font_string_empty() {
+        assert_eq!(parse_gnome_font_string(""), None);
+    }
+
+    #[test]
+    fn parse_gnome_font_string_only_quotes() {
+        assert_eq!(parse_gnome_font_string("''"), None);
+    }
+
+    #[test]
+    fn parse_gnome_font_string_no_size() {
+        assert_eq!(parse_gnome_font_string("'Cantarell'"), None);
+    }
+
+    #[test]
+    fn parse_gnome_font_string_zero_size() {
+        assert_eq!(parse_gnome_font_string("'Font 0'"), None);
+    }
+
+    #[test]
+    fn parse_gnome_font_string_negative_size() {
+        assert_eq!(parse_gnome_font_string("'Font -1'"), None);
+    }
 
     // === portal_color_to_rgba tests ===
 
