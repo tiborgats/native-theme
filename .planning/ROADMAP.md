@@ -81,7 +81,7 @@ Plans:
 - [x] 11-01-PLAN.md — macOS reader with NSColor semantic colors, NSAppearance variants, NSFont, and from_system() dispatch
 - [x] 11-02-PLAN.md — Windows reader enhancements: accent shades, system font, WinUI3 spacing, DPI-aware geometry
 - [x] 11-03-PLAN.md — Linux enhancements: GNOME fonts, KDE+portal overlay, D-Bus backend detection, from_linux() fallback
-- [ ] 11-04-PLAN.md — Gap closure: wire detect_portal_backend into async dispatch, fix env var test races
+- [x] 11-04-PLAN.md — Gap closure: wire detect_portal_backend into async dispatch, fix env var test races
 
 ### Phase 12: Widget Metrics
 **Goal**: Per-widget sizing and spacing data available from all four platforms, enabling toolkit connectors to produce pixel-perfect native layouts
