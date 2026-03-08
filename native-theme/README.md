@@ -40,8 +40,8 @@ Load a preset and access theme fields:
 ```rust
 let theme = native_theme::preset("dracula").unwrap();
 let dark = theme.dark.as_ref().unwrap();
-let accent = dark.colors.core.accent.unwrap();
-let bg = dark.colors.core.background.unwrap();
+let accent = dark.colors.accent.unwrap();
+let bg = dark.colors.background.unwrap();
 // Convert to f32 for toolkits that use normalized colors
 let [r, g, b, a] = accent.to_f32_array();
 ```
@@ -57,7 +57,7 @@ use native_theme::{NativeTheme, Rgba, preset, from_toml};
 let mut theme = preset("nord").unwrap();
 let user_overrides = from_toml(r##"
 name = "My Custom Nord"
-[light.colors.core]
+[light.colors]
 accent = "#ff6600"
 "##).unwrap();
 theme.merge(&user_overrides);
@@ -104,14 +104,14 @@ fn apply_theme(ctx: &egui::Context, theme: &native_theme::NativeTheme) {
     let c = &variant.colors;
 
     let mut visuals = Visuals::dark();
-    visuals.window_fill = rgba_to_color32(&c.core.background.unwrap());
-    visuals.panel_fill = rgba_to_color32(&c.panel.sidebar.unwrap());
-    visuals.hyperlink_color = rgba_to_color32(&c.interactive.link.unwrap());
-    visuals.error_fg_color = rgba_to_color32(&c.status.danger.unwrap());
-    visuals.warn_fg_color = rgba_to_color32(&c.status.warning.unwrap());
-    visuals.selection.bg_fill = rgba_to_color32(&c.interactive.selection.unwrap());
-    visuals.extreme_bg_color = rgba_to_color32(&c.core.surface.unwrap());
-    visuals.faint_bg_color = rgba_to_color32(&c.component.alternate_row.unwrap());
+    visuals.window_fill = rgba_to_color32(&c.background.unwrap());
+    visuals.panel_fill = rgba_to_color32(&c.sidebar.unwrap());
+    visuals.hyperlink_color = rgba_to_color32(&c.link.unwrap());
+    visuals.error_fg_color = rgba_to_color32(&c.danger.unwrap());
+    visuals.warn_fg_color = rgba_to_color32(&c.warning.unwrap());
+    visuals.selection.bg_fill = rgba_to_color32(&c.selection.unwrap());
+    visuals.extreme_bg_color = rgba_to_color32(&c.surface.unwrap());
+    visuals.faint_bg_color = rgba_to_color32(&c.alternate_row.unwrap());
 
     ctx.set_visuals(visuals);
 }
@@ -132,12 +132,12 @@ fn to_iced_theme(theme: &native_theme::NativeTheme) -> Theme {
     let c = &v.colors;
 
     let palette = Palette {
-        background: rgba_to_iced(&c.core.background.unwrap()),
-        text: rgba_to_iced(&c.core.foreground.unwrap()),
-        primary: rgba_to_iced(&c.core.accent.unwrap()),
-        success: rgba_to_iced(&c.status.success.unwrap()),
-        warning: rgba_to_iced(&c.status.warning.unwrap()),
-        danger: rgba_to_iced(&c.status.danger.unwrap()),
+        background: rgba_to_iced(&c.background.unwrap()),
+        text: rgba_to_iced(&c.foreground.unwrap()),
+        primary: rgba_to_iced(&c.accent.unwrap()),
+        success: rgba_to_iced(&c.success.unwrap()),
+        warning: rgba_to_iced(&c.warning.unwrap()),
+        danger: rgba_to_iced(&c.danger.unwrap()),
     };
     Theme::custom("Native".into(), palette)
 }
@@ -166,12 +166,12 @@ fn apply_theme(app: &App, theme: &native_theme::NativeTheme) {
     let c = &v.colors;
 
     let bridge = app.global::<ThemeBridge>();
-    bridge.set_background(to_slint(&c.core.background.unwrap()));
-    bridge.set_foreground(to_slint(&c.core.foreground.unwrap()));
-    bridge.set_accent(to_slint(&c.core.accent.unwrap()));
-    bridge.set_surface(to_slint(&c.core.surface.unwrap()));
-    bridge.set_danger(to_slint(&c.status.danger.unwrap()));
-    bridge.set_success(to_slint(&c.status.success.unwrap()));
+    bridge.set_background(to_slint(&c.background.unwrap()));
+    bridge.set_foreground(to_slint(&c.foreground.unwrap()));
+    bridge.set_accent(to_slint(&c.accent.unwrap()));
+    bridge.set_surface(to_slint(&c.surface.unwrap()));
+    bridge.set_danger(to_slint(&c.danger.unwrap()));
+    bridge.set_success(to_slint(&c.success.unwrap()));
 }
 
 fn to_slint(c: &native_theme::Rgba) -> slint::Color {
@@ -244,7 +244,7 @@ Hex colors accept `#RRGGBB` or `#RRGGBBAA` format.
 ```toml
 name = "My Theme"
 
-[light.colors.core]
+[light.colors]
 accent = "#4a90d9"
 background = "#fafafa"
 foreground = "#2e3436"
@@ -252,32 +252,20 @@ surface = "#ffffff"
 border = "#c0c0c0"
 muted = "#929292"
 shadow = "#00000018"
-
-[light.colors.primary]
-background = "#4a90d9"
-foreground = "#ffffff"
-
-[light.colors.secondary]
-background = "#6c757d"
-foreground = "#ffffff"
-
-[light.colors.status]
+primary_background = "#4a90d9"
+primary_foreground = "#ffffff"
+secondary_background = "#6c757d"
+secondary_foreground = "#ffffff"
 danger = "#dc3545"
 warning = "#f0ad4e"
 success = "#28a745"
 info = "#4a90d9"
-
-[light.colors.interactive]
 selection = "#4a90d9"
 link = "#2a6cb6"
 focus_ring = "#4a90d9"
-
-[light.colors.panel]
 sidebar = "#f0f0f0"
 tooltip = "#2e3436"
 popover = "#ffffff"
-
-[light.colors.component]
 button = "#e8e8e8"
 input = "#ffffff"
 disabled = "#c0c0c0"
@@ -310,8 +298,9 @@ xxl = 36.0
 ```
 
 Each `[light.*]` section has a corresponding `[dark.*]` section with the
-same field names. Status, panel, and component color groups also support
-`_foreground` suffixed fields (e.g., `danger_foreground`, `sidebar_foreground`).
+same field names. All 36 color fields are flat under `[light.colors]` and
+`[dark.colors]`. Fields with `_foreground` suffixes provide text contrast
+colors (e.g., `danger_foreground`, `sidebar_foreground`).
 
 ## License
 

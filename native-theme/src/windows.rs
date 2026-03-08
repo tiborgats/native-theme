@@ -45,12 +45,12 @@ fn build_theme(
     let dark = is_dark_mode(&fg);
 
     let mut colors = crate::ThemeColors::default();
-    colors.core.accent = Some(accent);
-    colors.core.foreground = Some(fg);
-    colors.core.background = Some(bg);
-    colors.interactive.selection = Some(accent);
-    colors.interactive.focus_ring = Some(accent);
-    colors.primary.background = Some(accent);
+    colors.accent = Some(accent);
+    colors.foreground = Some(fg);
+    colors.background = Some(bg);
+    colors.selection = Some(accent);
+    colors.focus_ring = Some(accent);
+    colors.primary_background = Some(accent);
 
     let variant = crate::ThemeVariant {
         colors,
@@ -168,10 +168,10 @@ mod tests {
         );
 
         let variant = theme.light.as_ref().expect("light variant");
-        assert_eq!(variant.colors.core.accent, Some(accent));
-        assert_eq!(variant.colors.interactive.selection, Some(accent));
-        assert_eq!(variant.colors.interactive.focus_ring, Some(accent));
-        assert_eq!(variant.colors.primary.background, Some(accent));
+        assert_eq!(variant.colors.accent, Some(accent));
+        assert_eq!(variant.colors.selection, Some(accent));
+        assert_eq!(variant.colors.focus_ring, Some(accent));
+        assert_eq!(variant.colors.primary_background, Some(accent));
     }
 
     #[test]

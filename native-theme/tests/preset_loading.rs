@@ -42,29 +42,29 @@ fn all_presets_have_core_colors() {
             .unwrap_or_else(|| panic!("preset '{name}' missing dark variant"));
 
         assert!(
-            light.colors.core.accent.is_some(),
-            "preset '{name}' light missing core.accent"
+            light.colors.accent.is_some(),
+            "preset '{name}' light missing accent"
         );
         assert!(
-            light.colors.core.background.is_some(),
-            "preset '{name}' light missing core.background"
+            light.colors.background.is_some(),
+            "preset '{name}' light missing background"
         );
         assert!(
-            light.colors.core.foreground.is_some(),
-            "preset '{name}' light missing core.foreground"
+            light.colors.foreground.is_some(),
+            "preset '{name}' light missing foreground"
         );
 
         assert!(
-            dark.colors.core.accent.is_some(),
-            "preset '{name}' dark missing core.accent"
+            dark.colors.accent.is_some(),
+            "preset '{name}' dark missing accent"
         );
         assert!(
-            dark.colors.core.background.is_some(),
-            "preset '{name}' dark missing core.background"
+            dark.colors.background.is_some(),
+            "preset '{name}' dark missing background"
         );
         assert!(
-            dark.colors.core.foreground.is_some(),
-            "preset '{name}' dark missing core.foreground"
+            dark.colors.foreground.is_some(),
+            "preset '{name}' dark missing foreground"
         );
     }
 }
@@ -77,29 +77,29 @@ fn all_presets_have_status_colors() {
         let dark = theme.dark.as_ref().unwrap();
 
         assert!(
-            light.colors.status.danger.is_some(),
-            "preset '{name}' light missing status.danger"
+            light.colors.danger.is_some(),
+            "preset '{name}' light missing danger"
         );
         assert!(
-            light.colors.status.warning.is_some(),
-            "preset '{name}' light missing status.warning"
+            light.colors.warning.is_some(),
+            "preset '{name}' light missing warning"
         );
         assert!(
-            light.colors.status.success.is_some(),
-            "preset '{name}' light missing status.success"
+            light.colors.success.is_some(),
+            "preset '{name}' light missing success"
         );
 
         assert!(
-            dark.colors.status.danger.is_some(),
-            "preset '{name}' dark missing status.danger"
+            dark.colors.danger.is_some(),
+            "preset '{name}' dark missing danger"
         );
         assert!(
-            dark.colors.status.warning.is_some(),
-            "preset '{name}' dark missing status.warning"
+            dark.colors.warning.is_some(),
+            "preset '{name}' dark missing warning"
         );
         assert!(
-            dark.colors.status.success.is_some(),
-            "preset '{name}' dark missing status.success"
+            dark.colors.success.is_some(),
+            "preset '{name}' dark missing success"
         );
     }
 }
@@ -112,21 +112,21 @@ fn all_presets_have_interactive_colors() {
         let dark = theme.dark.as_ref().unwrap();
 
         assert!(
-            light.colors.interactive.selection.is_some(),
-            "preset '{name}' light missing interactive.selection"
+            light.colors.selection.is_some(),
+            "preset '{name}' light missing selection"
         );
         assert!(
-            light.colors.interactive.link.is_some(),
-            "preset '{name}' light missing interactive.link"
+            light.colors.link.is_some(),
+            "preset '{name}' light missing link"
         );
 
         assert!(
-            dark.colors.interactive.selection.is_some(),
-            "preset '{name}' dark missing interactive.selection"
+            dark.colors.selection.is_some(),
+            "preset '{name}' dark missing selection"
         );
         assert!(
-            dark.colors.interactive.link.is_some(),
-            "preset '{name}' dark missing interactive.link"
+            dark.colors.link.is_some(),
+            "preset '{name}' dark missing link"
         );
     }
 }
@@ -208,8 +208,8 @@ fn all_presets_round_trip_toml() {
             .as_ref()
             .unwrap_or_else(|| panic!("preset '{name}' round-trip lost light variant"));
         assert_eq!(
-            orig_light.colors.core.accent, new_light.colors.core.accent,
-            "preset '{name}' light core.accent changed after round-trip"
+            orig_light.colors.accent, new_light.colors.accent,
+            "preset '{name}' light accent changed after round-trip"
         );
 
         let orig_dark = theme.dark.as_ref().unwrap();
@@ -218,8 +218,8 @@ fn all_presets_round_trip_toml() {
             .as_ref()
             .unwrap_or_else(|| panic!("preset '{name}' round-trip lost dark variant"));
         assert_eq!(
-            orig_dark.colors.core.accent, new_dark.colors.core.accent,
-            "preset '{name}' dark core.accent changed after round-trip"
+            orig_dark.colors.accent, new_dark.colors.accent,
+            "preset '{name}' dark accent changed after round-trip"
         );
 
         // Name must survive the round-trip
@@ -249,17 +249,15 @@ fn dark_backgrounds_are_darker() {
             .as_ref()
             .unwrap()
             .colors
-            .core
             .background
-            .unwrap_or_else(|| panic!("preset '{name}' light missing core.background"));
+            .unwrap_or_else(|| panic!("preset '{name}' light missing background"));
         let dark_bg = theme
             .dark
             .as_ref()
             .unwrap()
             .colors
-            .core
             .background
-            .unwrap_or_else(|| panic!("preset '{name}' dark missing core.background"));
+            .unwrap_or_else(|| panic!("preset '{name}' dark missing background"));
 
         let light_sum = light_bg.r as u16 + light_bg.g as u16 + light_bg.b as u16;
         let dark_sum = dark_bg.r as u16 + dark_bg.g as u16 + dark_bg.b as u16;

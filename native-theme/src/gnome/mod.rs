@@ -25,10 +25,10 @@ pub(crate) fn portal_color_to_rgba(color: &Color) -> Option<crate::Rgba> {
 
 /// Apply a portal accent color across multiple semantic color roles.
 fn apply_accent(variant: &mut crate::ThemeVariant, accent: &crate::Rgba) {
-    variant.colors.core.accent = Some(*accent);
-    variant.colors.interactive.selection = Some(*accent);
-    variant.colors.interactive.focus_ring = Some(*accent);
-    variant.colors.primary.background = Some(*accent);
+    variant.colors.accent = Some(*accent);
+    variant.colors.selection = Some(*accent);
+    variant.colors.focus_ring = Some(*accent);
+    variant.colors.primary_background = Some(*accent);
 }
 
 /// Adjust theme variant for high contrast preference.
@@ -208,10 +208,10 @@ mod tests {
         let variant = theme.light.as_ref().expect("light variant");
         let expected = crate::Rgba::from_f32(0.2, 0.4, 0.8, 1.0);
 
-        assert_eq!(variant.colors.core.accent, Some(expected));
-        assert_eq!(variant.colors.interactive.selection, Some(expected));
-        assert_eq!(variant.colors.interactive.focus_ring, Some(expected));
-        assert_eq!(variant.colors.primary.background, Some(expected));
+        assert_eq!(variant.colors.accent, Some(expected));
+        assert_eq!(variant.colors.selection, Some(expected));
+        assert_eq!(variant.colors.focus_ring, Some(expected));
+        assert_eq!(variant.colors.primary_background, Some(expected));
     }
 
     // === high contrast tests ===

@@ -4,7 +4,7 @@ name = "iOS"
 
 # === Light variant ===
 
-[light.colors.core]
+[light.colors]
 accent = "#007aff"
 background = "#ffffff"
 foreground = "#000000"
@@ -13,15 +13,12 @@ border = "#c6c6c8"
 muted = "#8e8e93"
 shadow = "#00000018"
 
-[light.colors.primary]
-background = "#007aff"
-foreground = "#ffffff"
+primary_background = "#007aff"
+primary_foreground = "#ffffff"
 
-[light.colors.secondary]
-background = "#e5e5ea"
-foreground = "#000000"
+secondary_background = "#e5e5ea"
+secondary_foreground = "#000000"
 
-[light.colors.status]
 danger = "#ff3b30"
 danger_foreground = "#ffffff"
 warning = "#ff9500"
@@ -31,13 +28,11 @@ success_foreground = "#ffffff"
 info = "#007aff"
 info_foreground = "#ffffff"
 
-[light.colors.interactive]
 selection = "#007aff"
 selection_foreground = "#ffffff"
 link = "#007aff"
 focus_ring = "#007aff"
 
-[light.colors.panel]
 sidebar = "#f2f2f7"
 sidebar_foreground = "#000000"
 tooltip = "#2c2c2e"
@@ -45,7 +40,6 @@ tooltip_foreground = "#ffffff"
 popover = "#ffffff"
 popover_foreground = "#000000"
 
-[light.colors.component]
 button = "#e5e5ea"
 button_foreground = "#000000"
 input = "#ffffff"
@@ -78,7 +72,7 @@ xxl = 32.0
 
 # === Dark variant ===
 
-[dark.colors.core]
+[dark.colors]
 accent = "#0a84ff"
 background = "#000000"
 foreground = "#ffffff"
@@ -87,15 +81,12 @@ border = "#38383a"
 muted = "#8e8e93"
 shadow = "#00000040"
 
-[dark.colors.primary]
-background = "#0a84ff"
-foreground = "#ffffff"
+primary_background = "#0a84ff"
+primary_foreground = "#ffffff"
 
-[dark.colors.secondary]
-background = "#2c2c2e"
-foreground = "#ffffff"
+secondary_background = "#2c2c2e"
+secondary_foreground = "#ffffff"
 
-[dark.colors.status]
 danger = "#ff453a"
 danger_foreground = "#ffffff"
 warning = "#ff9f0a"
@@ -105,13 +96,11 @@ success_foreground = "#ffffff"
 info = "#0a84ff"
 info_foreground = "#ffffff"
 
-[dark.colors.interactive]
 selection = "#0a84ff"
 selection_foreground = "#ffffff"
 link = "#0a84ff"
 focus_ring = "#0a84ff"
 
-[dark.colors.panel]
 sidebar = "#1c1c1e"
 sidebar_foreground = "#ffffff"
 tooltip = "#2c2c2e"
@@ -119,7 +108,6 @@ tooltip_foreground = "#ffffff"
 popover = "#1c1c1e"
 popover_foreground = "#ffffff"
 
-[dark.colors.component]
 button = "#2c2c2e"
 button_foreground = "#ffffff"
 input = "#1c1c1e"

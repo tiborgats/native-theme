@@ -4,7 +4,7 @@ name = "KDE Breeze"
 
 # === Light variant (BreezeLight.colors) ===
 
-[light.colors.core]
+[light.colors]
 accent = "#3daee9"
 background = "#eff0f1"
 foreground = "#232629"
@@ -13,15 +13,12 @@ border = "#bcc0bf"
 muted = "#707d8a"
 shadow = "#00000040"
 
-[light.colors.primary]
-background = "#3daee9"
-foreground = "#fcfcfc"
+primary_background = "#3daee9"
+primary_foreground = "#fcfcfc"
 
-[light.colors.secondary]
-background = "#bcc0bf"
-foreground = "#232629"
+secondary_background = "#bcc0bf"
+secondary_foreground = "#232629"
 
-[light.colors.status]
 danger = "#da4453"
 danger_foreground = "#fcfcfc"
 warning = "#f67400"
@@ -31,13 +28,11 @@ success_foreground = "#fcfcfc"
 info = "#3daee9"
 info_foreground = "#fcfcfc"
 
-[light.colors.interactive]
 selection = "#3daee9"
 selection_foreground = "#fcfcfc"
 link = "#2980b9"
 focus_ring = "#3daee9"
 
-[light.colors.panel]
 sidebar = "#dee0e2"
 sidebar_foreground = "#232629"
 tooltip = "#f7f7f7"
@@ -45,7 +40,6 @@ tooltip_foreground = "#232629"
 popover = "#ffffff"
 popover_foreground = "#232629"
 
-[light.colors.component]
 button = "#fcfcfc"
 button_foreground = "#232629"
 input = "#ffffff"
@@ -78,7 +72,7 @@ xxl = 24.0
 
 # === Dark variant (BreezeDark.colors) ===
 
-[dark.colors.core]
+[dark.colors]
 accent = "#3daee9"
 background = "#232629"
 foreground = "#fcfcfc"
@@ -87,15 +81,12 @@ border = "#4d545b"
 muted = "#a1a9b1"
 shadow = "#00000060"
 
-[dark.colors.primary]
-background = "#3daee9"
-foreground = "#fcfcfc"
+primary_background = "#3daee9"
+primary_foreground = "#fcfcfc"
 
-[dark.colors.secondary]
-background = "#4d545b"
-foreground = "#fcfcfc"
+secondary_background = "#4d545b"
+secondary_foreground = "#fcfcfc"
 
-[dark.colors.status]
 danger = "#da4453"
 danger_foreground = "#fcfcfc"
 warning = "#f67400"
@@ -105,13 +96,11 @@ success_foreground = "#fcfcfc"
 info = "#3daee9"
 info_foreground = "#fcfcfc"
 
-[dark.colors.interactive]
 selection = "#3daee9"
 selection_foreground = "#fcfcfc"
 link = "#1d99f3"
 focus_ring = "#3daee9"
 
-[dark.colors.panel]
 sidebar = "#272c31"
 sidebar_foreground = "#fcfcfc"
 tooltip = "#31363b"
@@ -119,7 +108,6 @@ tooltip_foreground = "#fcfcfc"
 popover = "#31363b"
 popover_foreground = "#fcfcfc"
 
-[dark.colors.component]
 button = "#31363b"
 button_foreground = "#fcfcfc"
 input = "#1b1e20"

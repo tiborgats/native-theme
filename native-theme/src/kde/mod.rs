@@ -373,9 +373,9 @@ BackgroundNormal=49,54,59
     fn test_colors_populated() {
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let variant = theme.dark.as_ref().unwrap();
-        assert!(variant.colors.core.accent.is_some());
-        assert!(variant.colors.core.background.is_some());
-        assert!(variant.colors.core.foreground.is_some());
+        assert!(variant.colors.accent.is_some());
+        assert!(variant.colors.background.is_some());
+        assert!(variant.colors.foreground.is_some());
     }
 
     #[test]

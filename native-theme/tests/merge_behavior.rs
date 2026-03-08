@@ -13,23 +13,23 @@ use native_theme::*;
 #[test]
 fn merge_overlay_replaces_none_with_some() {
     let mut base = ThemeVariant::default();
-    base.colors.core.background = Some(Rgba::rgb(255, 255, 255));
+    base.colors.background = Some(Rgba::rgb(255, 255, 255));
 
     let mut overlay = ThemeVariant::default();
-    overlay.colors.core.accent = Some(Rgba::rgb(61, 174, 233));
+    overlay.colors.accent = Some(Rgba::rgb(61, 174, 233));
     // overlay does NOT set background
 
     base.merge(&overlay);
 
     // accent: was None, replaced by Some from overlay
     assert_eq!(
-        base.colors.core.accent,
+        base.colors.accent,
         Some(Rgba::rgb(61, 174, 233)),
         "overlay should replace None with Some"
     );
     // background: base had Some, overlay had None => preserved
     assert_eq!(
-        base.colors.core.background,
+        base.colors.background,
         Some(Rgba::rgb(255, 255, 255)),
         "base value should be preserved when overlay is None"
     );
@@ -38,15 +38,15 @@ fn merge_overlay_replaces_none_with_some() {
 #[test]
 fn merge_overlay_replaces_some_with_some() {
     let mut base = ThemeVariant::default();
-    base.colors.core.accent = Some(Rgba::rgb(255, 0, 0)); // red
+    base.colors.accent = Some(Rgba::rgb(255, 0, 0)); // red
 
     let mut overlay = ThemeVariant::default();
-    overlay.colors.core.accent = Some(Rgba::rgb(0, 0, 255)); // blue
+    overlay.colors.accent = Some(Rgba::rgb(0, 0, 255)); // blue
 
     base.merge(&overlay);
 
     assert_eq!(
-        base.colors.core.accent,
+        base.colors.accent,
         Some(Rgba::rgb(0, 0, 255)),
         "overlay Some should replace base Some"
     );
@@ -55,8 +55,8 @@ fn merge_overlay_replaces_some_with_some() {
 #[test]
 fn merge_preserves_base_when_overlay_empty() {
     let mut base = ThemeVariant::default();
-    base.colors.core.accent = Some(Rgba::rgb(61, 174, 233));
-    base.colors.core.background = Some(Rgba::rgb(255, 255, 255));
+    base.colors.accent = Some(Rgba::rgb(61, 174, 233));
+    base.colors.background = Some(Rgba::rgb(255, 255, 255));
     base.fonts.family = Some("Noto Sans".into());
     base.geometry.radius = Some(4.0);
     base.spacing.m = Some(12.0);
@@ -65,8 +65,8 @@ fn merge_preserves_base_when_overlay_empty() {
 
     base.merge(&overlay);
 
-    assert_eq!(base.colors.core.accent, Some(Rgba::rgb(61, 174, 233)));
-    assert_eq!(base.colors.core.background, Some(Rgba::rgb(255, 255, 255)));
+    assert_eq!(base.colors.accent, Some(Rgba::rgb(61, 174, 233)));
+    assert_eq!(base.colors.background, Some(Rgba::rgb(255, 255, 255)));
     assert_eq!(base.fonts.family.as_deref(), Some("Noto Sans"));
     assert_eq!(base.geometry.radius, Some(4.0));
     assert_eq!(base.spacing.m, Some(12.0));
@@ -76,13 +76,13 @@ fn merge_preserves_base_when_overlay_empty() {
 fn merge_native_theme_light_dark() {
     let mut base = NativeTheme::new("Base");
     let mut base_light = ThemeVariant::default();
-    base_light.colors.core.background = Some(Rgba::rgb(255, 255, 255));
+    base_light.colors.background = Some(Rgba::rgb(255, 255, 255));
     base.light = Some(base_light);
     // base has no dark
 
     let mut overlay = NativeTheme::new("Overlay");
     let mut overlay_dark = ThemeVariant::default();
-    overlay_dark.colors.core.background = Some(Rgba::rgb(30, 30, 30));
+    overlay_dark.colors.background = Some(Rgba::rgb(30, 30, 30));
     overlay.dark = Some(overlay_dark);
     // overlay has no light
 
@@ -94,14 +94,14 @@ fn merge_native_theme_light_dark() {
     // Light from base is preserved
     assert!(base.light.is_some());
     assert_eq!(
-        base.light.as_ref().unwrap().colors.core.background,
+        base.light.as_ref().unwrap().colors.background,
         Some(Rgba::rgb(255, 255, 255))
     );
 
     // Dark from overlay was adopted
     assert!(base.dark.is_some());
     assert_eq!(
-        base.dark.as_ref().unwrap().colors.core.background,
+        base.dark.as_ref().unwrap().colors.background,
         Some(Rgba::rgb(30, 30, 30))
     );
 }
@@ -110,21 +110,21 @@ fn merge_native_theme_light_dark() {
 fn merge_native_theme_deep_merge_variants() {
     let mut base = NativeTheme::new("Base");
     let mut base_light = ThemeVariant::default();
-    base_light.colors.core.background = Some(Rgba::rgb(255, 255, 255));
+    base_light.colors.background = Some(Rgba::rgb(255, 255, 255));
     base.light = Some(base_light);
 
     let mut overlay = NativeTheme::new("Overlay");
     let mut overlay_light = ThemeVariant::default();
-    overlay_light.colors.core.accent = Some(Rgba::rgb(61, 174, 233));
+    overlay_light.colors.accent = Some(Rgba::rgb(61, 174, 233));
     overlay.light = Some(overlay_light);
 
     base.merge(&overlay);
 
     let light = base.light.as_ref().unwrap();
     // background from base
-    assert_eq!(light.colors.core.background, Some(Rgba::rgb(255, 255, 255)));
+    assert_eq!(light.colors.background, Some(Rgba::rgb(255, 255, 255)));
     // accent from overlay
-    assert_eq!(light.colors.core.accent, Some(Rgba::rgb(61, 174, 233)));
+    assert_eq!(light.colors.accent, Some(Rgba::rgb(61, 174, 233)));
 }
 
 #[test]
@@ -160,23 +160,23 @@ fn merge_fonts_geometry_spacing() {
 #[test]
 fn merge_chained_multiple_overlays() {
     let mut base = ThemeVariant::default();
-    base.colors.core.background = Some(Rgba::rgb(255, 255, 255));
+    base.colors.background = Some(Rgba::rgb(255, 255, 255));
 
     let mut overlay1 = ThemeVariant::default();
-    overlay1.colors.core.accent = Some(Rgba::rgb(255, 0, 0)); // red accent
+    overlay1.colors.accent = Some(Rgba::rgb(255, 0, 0)); // red accent
     overlay1.fonts.family = Some("Noto Sans".into());
 
     let mut overlay2 = ThemeVariant::default();
-    overlay2.colors.core.accent = Some(Rgba::rgb(0, 0, 255)); // blue accent (overwrites)
+    overlay2.colors.accent = Some(Rgba::rgb(0, 0, 255)); // blue accent (overwrites)
     overlay2.geometry.radius = Some(8.0);
 
     base.merge(&overlay1);
     base.merge(&overlay2);
 
     // background from base (neither overlay set it)
-    assert_eq!(base.colors.core.background, Some(Rgba::rgb(255, 255, 255)));
+    assert_eq!(base.colors.background, Some(Rgba::rgb(255, 255, 255)));
     // accent: overlay2 wins (last-wins)
-    assert_eq!(base.colors.core.accent, Some(Rgba::rgb(0, 0, 255)));
+    assert_eq!(base.colors.accent, Some(Rgba::rgb(0, 0, 255)));
     // font from overlay1 (overlay2 didn't set it)
     assert_eq!(base.fonts.family.as_deref(), Some("Noto Sans"));
     // geometry from overlay2
@@ -190,12 +190,6 @@ fn merge_chained_multiple_overlays() {
 #[test]
 fn is_empty_all_structs() {
     assert!(ThemeColors::default().is_empty());
-    assert!(CoreColors::default().is_empty());
-    assert!(ActionColors::default().is_empty());
-    assert!(StatusColors::default().is_empty());
-    assert!(InteractiveColors::default().is_empty());
-    assert!(PanelColors::default().is_empty());
-    assert!(ComponentColors::default().is_empty());
     assert!(ThemeFonts::default().is_empty());
     assert!(ThemeGeometry::default().is_empty());
     assert!(ThemeSpacing::default().is_empty());
@@ -214,12 +208,6 @@ fn trait_assertions_send_sync() {
     assert_send_sync::<NativeTheme>();
     assert_send_sync::<ThemeVariant>();
     assert_send_sync::<ThemeColors>();
-    assert_send_sync::<CoreColors>();
-    assert_send_sync::<ActionColors>();
-    assert_send_sync::<StatusColors>();
-    assert_send_sync::<InteractiveColors>();
-    assert_send_sync::<PanelColors>();
-    assert_send_sync::<ComponentColors>();
     assert_send_sync::<ThemeFonts>();
     assert_send_sync::<ThemeGeometry>();
     assert_send_sync::<ThemeSpacing>();
@@ -234,12 +222,6 @@ fn trait_assertions_default_clone_debug() {
     assert_default_clone_debug::<NativeTheme>();
     assert_default_clone_debug::<ThemeVariant>();
     assert_default_clone_debug::<ThemeColors>();
-    assert_default_clone_debug::<CoreColors>();
-    assert_default_clone_debug::<ActionColors>();
-    assert_default_clone_debug::<StatusColors>();
-    assert_default_clone_debug::<InteractiveColors>();
-    assert_default_clone_debug::<PanelColors>();
-    assert_default_clone_debug::<ComponentColors>();
     assert_default_clone_debug::<ThemeFonts>();
     assert_default_clone_debug::<ThemeGeometry>();
     assert_default_clone_debug::<ThemeSpacing>();
@@ -260,17 +242,17 @@ fn realistic_theme_layering_scenario() {
     let mut light = ThemeVariant::default();
 
     // Populate base colors
-    light.colors.core.accent = Some(Rgba::rgb(61, 174, 233));
-    light.colors.core.background = Some(Rgba::rgb(252, 252, 252));
-    light.colors.core.foreground = Some(Rgba::rgb(35, 38, 41));
-    light.colors.core.surface = Some(Rgba::rgb(239, 240, 241));
-    light.colors.core.border = Some(Rgba::rgb(188, 190, 191));
-    light.colors.status.danger = Some(Rgba::rgb(218, 68, 83));
-    light.colors.status.success = Some(Rgba::rgb(39, 174, 96));
-    light.colors.interactive.selection = Some(Rgba::rgb(61, 174, 233));
-    light.colors.interactive.link = Some(Rgba::rgb(41, 128, 185));
-    light.colors.panel.sidebar = Some(Rgba::rgb(227, 229, 231));
-    light.colors.component.button = Some(Rgba::rgb(239, 240, 241));
+    light.colors.accent = Some(Rgba::rgb(61, 174, 233));
+    light.colors.background = Some(Rgba::rgb(252, 252, 252));
+    light.colors.foreground = Some(Rgba::rgb(35, 38, 41));
+    light.colors.surface = Some(Rgba::rgb(239, 240, 241));
+    light.colors.border = Some(Rgba::rgb(188, 190, 191));
+    light.colors.danger = Some(Rgba::rgb(218, 68, 83));
+    light.colors.success = Some(Rgba::rgb(39, 174, 96));
+    light.colors.selection = Some(Rgba::rgb(61, 174, 233));
+    light.colors.link = Some(Rgba::rgb(41, 128, 185));
+    light.colors.sidebar = Some(Rgba::rgb(227, 229, 231));
+    light.colors.button = Some(Rgba::rgb(239, 240, 241));
 
     // Populate base fonts
     light.fonts.family = Some("Noto Sans".into());
@@ -292,7 +274,7 @@ fn realistic_theme_layering_scenario() {
     // User override: just accent color and font family
     let mut user_override = NativeTheme::new("User Override");
     let mut user_light = ThemeVariant::default();
-    user_light.colors.core.accent = Some(Rgba::rgb(156, 39, 176)); // purple accent
+    user_light.colors.accent = Some(Rgba::rgb(156, 39, 176)); // purple accent
     user_light.fonts.family = Some("Inter".into()); // different font
     user_override.light = Some(user_light);
 
@@ -306,7 +288,7 @@ fn realistic_theme_layering_scenario() {
 
     // Accent changed to purple (from user override)
     assert_eq!(
-        result.colors.core.accent,
+        result.colors.accent,
         Some(Rgba::rgb(156, 39, 176)),
         "accent should be overridden to purple"
     );
@@ -319,10 +301,10 @@ fn realistic_theme_layering_scenario() {
     );
 
     // Everything else from base preserved
-    assert_eq!(result.colors.core.background, Some(Rgba::rgb(252, 252, 252)));
-    assert_eq!(result.colors.core.foreground, Some(Rgba::rgb(35, 38, 41)));
-    assert_eq!(result.colors.status.danger, Some(Rgba::rgb(218, 68, 83)));
-    assert_eq!(result.colors.interactive.link, Some(Rgba::rgb(41, 128, 185)));
+    assert_eq!(result.colors.background, Some(Rgba::rgb(252, 252, 252)));
+    assert_eq!(result.colors.foreground, Some(Rgba::rgb(35, 38, 41)));
+    assert_eq!(result.colors.danger, Some(Rgba::rgb(218, 68, 83)));
+    assert_eq!(result.colors.link, Some(Rgba::rgb(41, 128, 185)));
     assert_eq!(result.fonts.size, Some(10.0));
     assert_eq!(result.fonts.mono_family.as_deref(), Some("Hack"));
     assert_eq!(result.geometry.radius, Some(4.0));

@@ -4,7 +4,7 @@ name = "Nord"
 
 # === Light variant (Snow Storm backgrounds + Frost/Aurora accents) ===
 
-[light.colors.core]
+[light.colors]
 accent = "#5e81ac"
 background = "#eceff4"
 foreground = "#2e3440"
@@ -13,15 +13,12 @@ border = "#d8dee9"
 muted = "#4c566a"
 shadow = "#00000018"
 
-[light.colors.primary]
-background = "#5e81ac"
-foreground = "#ffffff"
+primary_background = "#5e81ac"
+primary_foreground = "#ffffff"
 
-[light.colors.secondary]
-background = "#d8dee9"
-foreground = "#2e3440"
+secondary_background = "#d8dee9"
+secondary_foreground = "#2e3440"
 
-[light.colors.status]
 danger = "#bf616a"
 danger_foreground = "#ffffff"
 warning = "#ebcb8b"
@@ -31,13 +28,11 @@ success_foreground = "#2e3440"
 info = "#88c0d0"
 info_foreground = "#2e3440"
 
-[light.colors.interactive]
 selection = "#5e81ac"
 selection_foreground = "#ffffff"
 link = "#5e81ac"
 focus_ring = "#5e81ac"
 
-[light.colors.panel]
 sidebar = "#e5e9f0"
 sidebar_foreground = "#2e3440"
 tooltip = "#2e3440"
@@ -45,7 +40,6 @@ tooltip_foreground = "#eceff4"
 popover = "#e5e9f0"
 popover_foreground = "#2e3440"
 
-[light.colors.component]
 button = "#e5e9f0"
 button_foreground = "#2e3440"
 input = "#eceff4"
@@ -78,7 +72,7 @@ xxl = 36.0
 
 # === Dark variant (Polar Night backgrounds + Frost/Aurora accents) ===
 
-[dark.colors.core]
+[dark.colors]
 accent = "#88c0d0"
 background = "#2e3440"
 foreground = "#d8dee9"
@@ -87,15 +81,12 @@ border = "#434c5e"
 muted = "#4c566a"
 shadow = "#00000040"
 
-[dark.colors.primary]
-background = "#88c0d0"
-foreground = "#2e3440"
+primary_background = "#88c0d0"
+primary_foreground = "#2e3440"
 
-[dark.colors.secondary]
-background = "#434c5e"
-foreground = "#d8dee9"
+secondary_background = "#434c5e"
+secondary_foreground = "#d8dee9"
 
-[dark.colors.status]
 danger = "#bf616a"
 danger_foreground = "#ffffff"
 warning = "#ebcb8b"
@@ -105,13 +96,11 @@ success_foreground = "#2e3440"
 info = "#88c0d0"
 info_foreground = "#2e3440"
 
-[dark.colors.interactive]
 selection = "#88c0d0"
 selection_foreground = "#2e3440"
 link = "#88c0d0"
 focus_ring = "#88c0d0"
 
-[dark.colors.panel]
 sidebar = "#3b4252"
 sidebar_foreground = "#d8dee9"
 tooltip = "#434c5e"
@@ -119,7 +108,6 @@ tooltip_foreground = "#d8dee9"
 popover = "#3b4252"
 popover_foreground = "#d8dee9"
 
-[dark.colors.component]
 button = "#434c5e"
 button_foreground = "#d8dee9"
 input = "#3b4252"

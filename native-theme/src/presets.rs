@@ -103,7 +103,7 @@ pub fn list_presets() -> &'static [&'static str] {
 /// ```
 /// let toml = r##"
 /// name = "My Theme"
-/// [light.colors.core]
+/// [light.colors]
 /// accent = "#ff0000"
 /// "##;
 /// let theme = native_theme::from_toml(toml).unwrap();
@@ -177,27 +177,27 @@ mod tests {
             let dark = theme.dark.as_ref().unwrap();
 
             assert!(
-                light.colors.core.accent.is_some(),
+                light.colors.accent.is_some(),
                 "preset '{name}' light missing accent"
             );
             assert!(
-                light.colors.core.background.is_some(),
+                light.colors.background.is_some(),
                 "preset '{name}' light missing background"
             );
             assert!(
-                light.colors.core.foreground.is_some(),
+                light.colors.foreground.is_some(),
                 "preset '{name}' light missing foreground"
             );
             assert!(
-                dark.colors.core.accent.is_some(),
+                dark.colors.accent.is_some(),
                 "preset '{name}' dark missing accent"
             );
             assert!(
-                dark.colors.core.background.is_some(),
+                dark.colors.background.is_some(),
                 "preset '{name}' dark missing background"
             );
             assert!(
-                dark.colors.core.foreground.is_some(),
+                dark.colors.foreground.is_some(),
                 "preset '{name}' dark missing foreground"
             );
         }
@@ -240,7 +240,7 @@ mod tests {
         let toml_str = r##"
 name = "Minimal"
 
-[light.colors.core]
+[light.colors]
 accent = "#ff0000"
 "##;
         let theme = from_toml(toml_str).unwrap();
@@ -248,7 +248,7 @@ accent = "#ff0000"
         assert!(theme.light.is_some());
         let light = theme.light.unwrap();
         assert_eq!(
-            light.colors.core.accent,
+            light.colors.accent,
             Some(crate::Rgba::rgb(255, 0, 0))
         );
     }
@@ -277,8 +277,8 @@ accent = "#ff0000"
         let orig_light = theme.light.as_ref().unwrap();
         let new_light = reparsed.light.as_ref().unwrap();
         assert_eq!(
-            orig_light.colors.core.accent,
-            new_light.colors.core.accent
+            orig_light.colors.accent,
+            new_light.colors.accent
         );
     }
 
@@ -289,7 +289,7 @@ accent = "#ff0000"
         let toml_str = r##"
 name = "File Test"
 
-[light.colors.core]
+[light.colors]
 accent = "#00ff00"
 "##;
         std::fs::write(&path, toml_str).unwrap();
