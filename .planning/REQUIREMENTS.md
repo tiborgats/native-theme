@@ -66,8 +66,8 @@ Requirements for v0.2 release. Each maps to roadmap phases.
 
 ### Publishing Prep
 
-- [ ] **PUB-01**: Cargo.toml metadata: `rust-version`, `repository`, `homepage`, `keywords`, `categories`, `readme`
-- [ ] **PUB-02**: LICENSE-MIT, LICENSE-APACHE, LICENSE-0BSD files at repo root
+- [x] **PUB-01**: Cargo.toml metadata: `rust-version`, `repository`, `homepage`, `keywords`, `categories`, `readme`
+- [x] **PUB-02**: LICENSE-MIT, LICENSE-APACHE, LICENSE-0BSD files at repo root
 - [ ] **PUB-03**: CHANGELOG.md following Keep a Changelog format
 - [ ] **PUB-04**: Doc examples (`/// # Examples`) on `NativeTheme`, `Rgba`, `ThemeVariant`
 - [ ] **PUB-05**: IMPLEMENTATION.md spec updated to match actual implementation
@@ -155,8 +155,8 @@ Deferred to post-v0.2. Tracked but not in current roadmap.
 | CONN-07 | Phase 14 | Complete |
 | CONN-08 | Phase 14 | Complete |
 | CONN-09 | Phase 14 | Complete |
-| PUB-01 | Phase 15 | Pending |
-| PUB-02 | Phase 15 | Pending |
+| PUB-01 | Phase 15 | Complete |
+| PUB-02 | Phase 15 | Complete |
 | PUB-03 | Phase 15 | Pending |
 | PUB-04 | Phase 15 | Pending |
 | PUB-05 | Phase 15 | Pending |

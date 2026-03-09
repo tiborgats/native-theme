@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Platform Coverage & Publishing
-status: completed
-stopped_at: Completed 14-05-PLAN.md
-last_updated: "2026-03-09T02:08:45.144Z"
-last_activity: "2026-03-09 — Phase 14 plan 05 complete (iced demo OS Theme option, CONN-09 gap closure)"
+status: executing
+stopped_at: Completed 15-01-PLAN.md
+last_updated: "2026-03-09T02:43:18.311Z"
+last_activity: 2026-03-09 — Phase 15 plan 02 complete (doc examples, doc warnings, CHANGELOG.md)
 progress:
   total_phases: 7
-  completed_phases: 7
-  total_plans: 17
-  completed_plans: 17
-  percent: 100
+  completed_phases: 6
+  total_plans: 21
+  completed_plans: 19
+  percent: 91
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-08)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 14 — Toolkit Connectors (complete)
+**Current focus:** Phase 15 — Publishing Prep (in progress)
 
 ## Current Position
 
-Phase: 14 of 15 (Toolkit Connectors) — complete
-Plan: 5 of 5 complete
-Status: Phase 14 complete (gap closure)
-Last activity: 2026-03-09 — Phase 14 plan 05 complete (iced demo OS Theme option, CONN-09 gap closure)
+Phase: 15 of 15 (Publishing Prep) — in progress
+Plan: 2 of 4 complete
+Status: Executing phase 15 publishing prep plans
+Last activity: 2026-03-09 — Phase 15 plan 02 complete (doc examples, doc warnings, CHANGELOG.md)
 
-Progress: [████████████████████] 100%
+Progress: [█████████░] 91%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 28 (14 v0.1 + 14 v0.2)
-- Average duration: ~3.8min (v0.2)
-- Total execution time: 61min (v0.2)
+- Total plans completed: 30 (14 v0.1 + 16 v0.2)
+- Average duration: ~3.7min (v0.2)
+- Total execution time: 63min (v0.2)
 
 **By Phase:**
 
@@ -50,10 +50,12 @@ Progress: [████████████████████] 100%
 | 12-widget-metrics | 3/3 | 17min | 5.7min |
 | 13-ci-pipeline | 1/1 | 3min | 3min |
 | 14-toolkit-connectors | 5/5 | 51min | 10.2min |
+| 15-publishing-prep | 2/4 | 2min | 1min |
 
 **Recent Trend:**
-- Last 5 plans: 13-01 (3min), 14-01 (6min), 14-03 (9min), 14-04 (35min), 14-05 (1min)
-- Trend: v0.2 execution complete, all phases done (including gap closure)
+- Last 5 plans: 14-01 (6min), 14-03 (9min), 14-04 (35min), 14-05 (1min), 15-02 (2min)
+- Trend: Phase 15 publishing prep underway
+| Phase 15 P01 | 3min | 2 tasks | 8 files |
 
 ## Accumulated Context
 
@@ -77,6 +79,8 @@ v0.2 decision: Cargo workspace restructuring (API-01) goes first, before API bre
 14-03: Reused gpui-component Colorize trait for lighten/darken (multiplicative lightness). Matched apply_config fallback logic for hover/active derivation. ThemeColor::default() as base with all 108 fields overridden via grouped helper functions. SharedString::from(s.clone()) for ThemeConfig static lifetime.
 14-04: NumberInput requires explicit NumberInputEvent::Step subscription for +/- buttons. widget_tooltip_themed wrapper injects font settings into all tooltips. text_sm for readable color swatch labels.
 14-05: OsTheme prepended as first dropdown option; default state stays Preset to avoid from_system() failures on build hosts.
+15-02: crate::Error:: prefix for intra-doc links; from_gnome() link changed to plain code with feature note; r##"..."## for TOML doc examples with hex colors.
+- [Phase 15]: 15-01: Repository URL uses nickelpack org placeholder (no git remote); user updates before publishing. Workspace metadata inheritance for rust-version/repository/homepage. Versioned workspace dep for iced connector.
 
 ### Pending Todos
 
@@ -88,6 +92,6 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-09T02:08:45.142Z
-Stopped at: Completed 14-05-PLAN.md
+Last session: 2026-03-09T02:43:18.309Z
+Stopped at: Completed 15-01-PLAN.md
 Resume file: None
