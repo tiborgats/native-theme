@@ -26,7 +26,7 @@ use gpui_component::{
     divider::Divider,
     group_box::{GroupBox, GroupBoxVariants},
     h_flex,
-    input::{Input, InputState, NumberInput},
+    input::{Input, InputState, NumberInput, NumberInputEvent, StepAction},
     label::Label,
     link::Link,
     progress::Progress,
@@ -112,6 +112,23 @@ fn widget_tooltip(
     s
 }
 
+/// Like [`widget_tooltip`] but appends the active theme font settings.
+fn widget_tooltip_themed(
+    t: &Theme,
+    name: &str,
+    colors: &[(&str, &str, Hsla)],
+    config: &[(&str, String)],
+    not_themeable: &[(&str, &str)],
+) -> String {
+    let mut s = widget_tooltip(name, colors, config, not_themeable);
+    s.push_str("\n\nTheme fonts:");
+    s.push_str(&format!("\n  font_family: {}", t.font_family));
+    s.push_str(&format!("\n  font_size: {}px", t.font_size.as_f32()));
+    s.push_str(&format!("\n  mono_font_family: {}", t.mono_font_family));
+    s.push_str(&format!("\n  mono_font_size: {}px", t.mono_font_size.as_f32()));
+    s
+}
+
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
@@ -144,7 +161,7 @@ fn color_swatch(name: &str, color: Hsla) -> impl IntoElement {
                 .border_1()
                 .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3)),
         )
-        .child(Label::new(label_text).text_xs())
+        .child(Label::new(label_text).text_sm())
 }
 
 // ---------------------------------------------------------------------------
@@ -208,6 +225,29 @@ impl Showcase {
             state.set_placeholder("0", window, cx);
             state
         });
+
+        cx.subscribe_in(
+            &number_input_state,
+            window,
+            |_this: &mut Self, input, event: &NumberInputEvent, window, cx| {
+                let NumberInputEvent::Step(action) = event;
+                input.update(cx, |input, cx| {
+                    let value = input.value();
+                    let num: f64 = value.parse().unwrap_or(0.0);
+                    let new_value = if *action == StepAction::Increment {
+                        num + 1.0
+                    } else {
+                        num - 1.0
+                    };
+                    input.set_value(
+                        SharedString::from(new_value.to_string()),
+                        window,
+                        cx,
+                    );
+                });
+            },
+        )
+        .detach();
 
         let slider_state = cx.new(|_cx| SliderState::new().default_value(65.0));
 
@@ -307,8 +347,8 @@ impl Showcase {
         let value_s: SharedString = value.to_string().into();
         v_flex()
             .gap_0p5()
-            .child(Label::new(label_s).text_xs().font_semibold())
-            .child(Label::new(value_s).text_xs())
+            .child(Label::new(label_s).text_sm().font_semibold())
+            .child(Label::new(value_s).text_sm())
     }
 
     // -----------------------------------------------------------------------
@@ -331,7 +371,7 @@ impl Showcase {
                             .child(Button::new("b-primary").label("Primary").primary())
                             .tooltip(move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip(
+                                Tooltip::new(widget_tooltip_themed(t,
                                     "Button (Primary)",
                                     &[
                                         ("bg", "primary", t.primary),
@@ -357,7 +397,7 @@ impl Showcase {
                             .child(Button::new("b-secondary").label("Secondary"))
                             .tooltip(move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip(
+                                Tooltip::new(widget_tooltip_themed(t,
                                     "Button (Secondary)",
                                     &[
                                         ("bg", "secondary", t.secondary),
@@ -383,7 +423,7 @@ impl Showcase {
                             .child(Button::new("b-danger").label("Danger").danger())
                             .tooltip(move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip(
+                                Tooltip::new(widget_tooltip_themed(t,
                                     "Button (Danger)",
                                     &[
                                         ("bg", "danger", t.danger),
@@ -409,7 +449,7 @@ impl Showcase {
                             .child(Button::new("b-success").label("Success").success())
                             .tooltip(move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip(
+                                Tooltip::new(widget_tooltip_themed(t,
                                     "Button (Success)",
                                     &[
                                         ("bg", "success", t.success),
@@ -435,7 +475,7 @@ impl Showcase {
                             .child(Button::new("b-warning").label("Warning").warning())
                             .tooltip(move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip(
+                                Tooltip::new(widget_tooltip_themed(t,
                                     "Button (Warning)",
                                     &[
                                         ("bg", "warning", t.warning),
@@ -461,7 +501,7 @@ impl Showcase {
                             .child(Button::new("b-info").label("Info").info())
                             .tooltip(move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip(
+                                Tooltip::new(widget_tooltip_themed(t,
                                     "Button (Info)",
                                     &[
                                         ("bg", "info", t.info),
@@ -487,7 +527,7 @@ impl Showcase {
                             .child(Button::new("b-ghost").label("Ghost").ghost())
                             .tooltip(move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip(
+                                Tooltip::new(widget_tooltip_themed(t,
                                     "Button (Ghost)",
                                     &[
                                         ("text", "foreground", t.foreground),
@@ -504,7 +544,7 @@ impl Showcase {
                             .child(Button::new("b-link").label("Link").link())
                             .tooltip(move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip(
+                                Tooltip::new(widget_tooltip_themed(t,
                                     "Button (Link)",
                                     &[
                                         ("text", "foreground", t.foreground),
@@ -521,7 +561,7 @@ impl Showcase {
                             .child(Button::new("b-text").label("Text").text())
                             .tooltip(move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip(
+                                Tooltip::new(widget_tooltip_themed(t,
                                     "Button (Text)",
                                     &[
                                         ("text", "foreground", t.foreground),
@@ -538,7 +578,7 @@ impl Showcase {
                             .child(Button::new("b-outline").label("Outline").primary().outline())
                             .tooltip(move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip(
+                                Tooltip::new(widget_tooltip_themed(t,
                                     "Button (Primary Outline)",
                                     &[
                                         ("border", "primary", t.primary),
@@ -567,7 +607,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Button Sizes",
                             &[
                                 ("bg", "secondary", t.secondary),
@@ -595,7 +635,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "ButtonGroup",
                             &[
                                 ("bg", "secondary", t.secondary),
@@ -620,7 +660,8 @@ impl Showcase {
                             .child(Button::new("d-dng").label("Disabled Danger").danger().disabled(true)),
                     )
                     .tooltip(move |window, cx| {
-                        Tooltip::new(widget_tooltip(
+                        let t = cx.theme();
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Disabled Buttons",
                             &[],
                             &[],
@@ -642,7 +683,8 @@ impl Showcase {
                             .child(Button::new("l-pri").label("Loading...").primary().loading(true)),
                     )
                     .tooltip(move |window, cx| {
-                        Tooltip::new(widget_tooltip(
+                        let t = cx.theme();
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Loading Button",
                             &[],
                             &[],
@@ -666,7 +708,8 @@ impl Showcase {
                             .child(Button::new("bi-del").label("Delete").danger().icon(IconName::Delete)),
                     )
                     .tooltip(move |window, cx| {
-                        Tooltip::new(widget_tooltip(
+                        let t = cx.theme();
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Buttons with Icons",
                             &[],
                             &[],
@@ -707,7 +750,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Input",
                             &[
                                 ("border", "input", t.input),
@@ -737,7 +780,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "NumberInput",
                             &[
                                 ("border", "input", t.input),
@@ -791,7 +834,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Checkbox",
                             &[
                                 ("checked bg", "primary", t.primary),
@@ -824,7 +867,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Radio",
                             &[
                                 ("selected", "primary", t.primary),
@@ -864,7 +907,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Switch",
                             &[
                                 ("on track", "primary", t.primary),
@@ -884,7 +927,7 @@ impl Showcase {
                     .child(Slider::new(&self.slider_state).w(px(360.0)))
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Slider",
                             &[
                                 ("track", "slider_bar", t.slider_bar),
@@ -924,7 +967,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "DescriptionList",
                             &[
                                 ("label bg", "description_list_label", t.description_list_label),
@@ -973,7 +1016,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Accordion",
                             &[
                                 ("bg", "accordion", t.accordion),
@@ -1020,7 +1063,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Collapsible",
                             &[
                                 ("bg", "accordion", t.accordion),
@@ -1063,7 +1106,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "GroupBox",
                             &[
                                 ("fill bg", "group_box", t.group_box),
@@ -1097,7 +1140,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Alert (Info)",
                             &[
                                 ("color", "info", t.info),
@@ -1122,7 +1165,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Alert (Success)",
                             &[
                                 ("color", "success", t.success),
@@ -1146,7 +1189,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Alert (Warning)",
                             &[
                                 ("color", "warning", t.warning),
@@ -1170,7 +1213,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Alert (Error)",
                             &[
                                 ("color", "danger", t.danger),
@@ -1218,7 +1261,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Progress",
                             &[("bar", "progress_bar", t.progress_bar)],
                             &[],
@@ -1257,8 +1300,9 @@ impl Showcase {
                                     .child(Label::new("Large").text_sm()),
                             ),
                     )
-                    .tooltip(|window, cx| {
-                        Tooltip::new(widget_tooltip(
+                    .tooltip(move |window, cx| {
+                        let t = cx.theme();
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Spinner",
                             &[],
                             &[],
@@ -1282,7 +1326,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Skeleton",
                             &[("bg", "skeleton", t.skeleton)],
                             &[],
@@ -1314,7 +1358,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Label",
                             &[
                                 ("text", "foreground", t.foreground),
@@ -1349,7 +1393,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Tag (per variant)",
                             &[
                                 ("bg (primary)", "primary", t.primary),
@@ -1379,7 +1423,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Badge",
                             &[
                                 ("bg", "red", t.red),
@@ -1411,7 +1455,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Link",
                             &[("text+decoration", "link", t.link)],
                             &[],
@@ -1458,7 +1502,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Breadcrumb",
                             &[
                                 ("last item", "foreground", t.foreground),
@@ -1484,7 +1528,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Divider",
                             &[
                                 ("line", "border", t.border),
@@ -1539,7 +1583,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Resizable",
                             &[
                                 ("dragging border", "drag_border", t.drag_border),
@@ -1581,7 +1625,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Resizable (vertical)",
                             &[
                                 ("dragging border", "drag_border", t.drag_border),
@@ -1606,7 +1650,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Divider",
                             &[
                                 ("line", "border", t.border),
@@ -1641,7 +1685,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "GroupBox (layout)",
                             &[
                                 ("fill bg", "group_box", t.group_box),
@@ -1681,7 +1725,7 @@ impl Showcase {
                     )
                     .tooltip(move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip(
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Scrollbar",
                             &[
                                 ("track", "scrollbar", t.scrollbar),
@@ -1830,7 +1874,8 @@ impl Showcase {
                             })),
                     )
                     .tooltip(move |window, cx| {
-                        Tooltip::new(widget_tooltip(
+                        let t = cx.theme();
+                        Tooltip::new(widget_tooltip_themed(t,
                             "Icon",
                             &[],
                             &[],
@@ -2233,7 +2278,7 @@ impl Render for Showcase {
                             )
                             .tooltip(move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip(
+                                Tooltip::new(widget_tooltip_themed(t,
                                     "TabBar",
                                     &[
                                         ("bg", "tab", t.tab),
