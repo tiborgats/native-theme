@@ -585,4 +585,220 @@ mod tests {
         let deserialized: IconSet = serde_json::from_str(&json).unwrap();
         assert_eq!(set, deserialized);
     }
+
+    // === icon_name() tests ===
+
+    #[test]
+    fn icon_name_sf_symbols_action_copy() {
+        assert_eq!(
+            icon_name(IconSet::SfSymbols, IconRole::ActionCopy),
+            Some("doc.on.doc")
+        );
+    }
+
+    #[test]
+    fn icon_name_segoe_action_copy() {
+        assert_eq!(
+            icon_name(IconSet::SegoeIcons, IconRole::ActionCopy),
+            Some("Copy")
+        );
+    }
+
+    #[test]
+    fn icon_name_freedesktop_action_copy() {
+        assert_eq!(
+            icon_name(IconSet::Freedesktop, IconRole::ActionCopy),
+            Some("edit-copy")
+        );
+    }
+
+    #[test]
+    fn icon_name_material_action_copy() {
+        assert_eq!(
+            icon_name(IconSet::Material, IconRole::ActionCopy),
+            Some("content_copy")
+        );
+    }
+
+    #[test]
+    fn icon_name_lucide_action_copy() {
+        assert_eq!(
+            icon_name(IconSet::Lucide, IconRole::ActionCopy),
+            Some("copy")
+        );
+    }
+
+    #[test]
+    fn icon_name_sf_symbols_dialog_warning() {
+        assert_eq!(
+            icon_name(IconSet::SfSymbols, IconRole::DialogWarning),
+            Some("exclamationmark.triangle.fill")
+        );
+    }
+
+    // None cases for known gaps
+    #[test]
+    fn icon_name_sf_symbols_folder_open_is_none() {
+        assert_eq!(icon_name(IconSet::SfSymbols, IconRole::FolderOpen), None);
+    }
+
+    #[test]
+    fn icon_name_sf_symbols_trash_full_is_none() {
+        assert_eq!(icon_name(IconSet::SfSymbols, IconRole::TrashFull), None);
+    }
+
+    #[test]
+    fn icon_name_sf_symbols_status_loading_is_none() {
+        assert_eq!(icon_name(IconSet::SfSymbols, IconRole::StatusLoading), None);
+    }
+
+    #[test]
+    fn icon_name_sf_symbols_window_restore_is_none() {
+        assert_eq!(
+            icon_name(IconSet::SfSymbols, IconRole::WindowRestore),
+            None
+        );
+    }
+
+    #[test]
+    fn icon_name_segoe_dialog_success_is_none() {
+        assert_eq!(
+            icon_name(IconSet::SegoeIcons, IconRole::DialogSuccess),
+            None
+        );
+    }
+
+    #[test]
+    fn icon_name_segoe_status_loading_is_none() {
+        assert_eq!(
+            icon_name(IconSet::SegoeIcons, IconRole::StatusLoading),
+            None
+        );
+    }
+
+    #[test]
+    fn icon_name_freedesktop_notification_is_none() {
+        assert_eq!(
+            icon_name(IconSet::Freedesktop, IconRole::Notification),
+            None
+        );
+    }
+
+    #[test]
+    fn icon_name_material_trash_full_is_none() {
+        assert_eq!(icon_name(IconSet::Material, IconRole::TrashFull), None);
+    }
+
+    #[test]
+    fn icon_name_lucide_trash_full_is_none() {
+        assert_eq!(icon_name(IconSet::Lucide, IconRole::TrashFull), None);
+    }
+
+    // Spot-check across all 5 icon sets for multiple roles
+    #[test]
+    fn icon_name_spot_check_dialog_error() {
+        assert_eq!(
+            icon_name(IconSet::SfSymbols, IconRole::DialogError),
+            Some("xmark.circle.fill")
+        );
+        assert_eq!(
+            icon_name(IconSet::SegoeIcons, IconRole::DialogError),
+            Some("SIID_ERROR")
+        );
+        assert_eq!(
+            icon_name(IconSet::Freedesktop, IconRole::DialogError),
+            Some("dialog-error")
+        );
+        assert_eq!(
+            icon_name(IconSet::Material, IconRole::DialogError),
+            Some("error")
+        );
+        assert_eq!(
+            icon_name(IconSet::Lucide, IconRole::DialogError),
+            Some("circle-x")
+        );
+    }
+
+    #[test]
+    fn icon_name_spot_check_nav_home() {
+        assert_eq!(
+            icon_name(IconSet::SfSymbols, IconRole::NavHome),
+            Some("house")
+        );
+        assert_eq!(
+            icon_name(IconSet::SegoeIcons, IconRole::NavHome),
+            Some("Home")
+        );
+        assert_eq!(
+            icon_name(IconSet::Freedesktop, IconRole::NavHome),
+            Some("go-home")
+        );
+        assert_eq!(
+            icon_name(IconSet::Material, IconRole::NavHome),
+            Some("home")
+        );
+        assert_eq!(
+            icon_name(IconSet::Lucide, IconRole::NavHome),
+            Some("house")
+        );
+    }
+
+    // Count test: verify expected Some/None count for each icon set
+    #[test]
+    fn icon_name_sf_symbols_expected_count() {
+        // SF Symbols: 42 - 4 None (FolderOpen, TrashFull, StatusLoading, WindowRestore) = 38 Some
+        let some_count = IconRole::ALL
+            .iter()
+            .filter(|r| icon_name(IconSet::SfSymbols, **r).is_some())
+            .count();
+        assert_eq!(some_count, 38, "SF Symbols should have 38 mappings");
+    }
+
+    #[test]
+    fn icon_name_segoe_expected_count() {
+        // Segoe: 42 - 2 None (DialogSuccess, StatusLoading) = 40 Some
+        let some_count = IconRole::ALL
+            .iter()
+            .filter(|r| icon_name(IconSet::SegoeIcons, **r).is_some())
+            .count();
+        assert_eq!(some_count, 40, "Segoe Icons should have 40 mappings");
+    }
+
+    #[test]
+    fn icon_name_freedesktop_expected_count() {
+        // Freedesktop: 42 - 1 None (Notification) = 41 Some
+        let some_count = IconRole::ALL
+            .iter()
+            .filter(|r| icon_name(IconSet::Freedesktop, **r).is_some())
+            .count();
+        assert_eq!(some_count, 41, "Freedesktop should have 41 mappings");
+    }
+
+    #[test]
+    fn icon_name_material_expected_count() {
+        // Material: 42 - 1 None (TrashFull) = 41 Some
+        let some_count = IconRole::ALL
+            .iter()
+            .filter(|r| icon_name(IconSet::Material, **r).is_some())
+            .count();
+        assert_eq!(some_count, 41, "Material should have 41 mappings");
+    }
+
+    #[test]
+    fn icon_name_lucide_expected_count() {
+        // Lucide: 42 - 1 None (TrashFull) = 41 Some
+        let some_count = IconRole::ALL
+            .iter()
+            .filter(|r| icon_name(IconSet::Lucide, **r).is_some())
+            .count();
+        assert_eq!(some_count, 41, "Lucide should have 41 mappings");
+    }
+
+    // === system_icon_set() tests ===
+
+    #[test]
+    fn system_icon_set_returns_freedesktop_on_linux() {
+        // This test is only meaningful on Linux (our CI/test platform)
+        assert_eq!(system_icon_set(), IconSet::Freedesktop);
+    }
 }
