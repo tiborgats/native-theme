@@ -44,7 +44,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 **Milestone Goal:** Platform-native icon loading — semantic icon roles mapped to OS-native icon systems (SF Symbols, Segoe Fluent, freedesktop) with bundled cross-platform fallbacks (Material, Lucide).
 
 - [x] **Phase 16: Icon Data Model** — IconRole enum, IconData type, icon name mapping, ThemeVariant integration
-- [ ] **Phase 17: Bundled SVG Icons** — Material Symbols and Lucide SVGs as compile-time fallback icon sets
+- [x] **Phase 17: Bundled SVG Icons** — Material Symbols and Lucide SVGs as compile-time fallback icon sets (completed 2026-03-09)
 - [ ] **Phase 18: Linux Icon Loading** — Freedesktop icon theme lookup via freedesktop-icons crate
 - [ ] **Phase 19: macOS Icon Loading** — SF Symbols via NSImage rasterization to RGBA
 - [ ] **Phase 20: Windows Icon Loading** — SHGetStockIconInfo stock icons and Segoe Fluent font glyphs
@@ -76,7 +76,7 @@ Plans:
   2. With feature `lucide-icons` enabled, every `IconRole` variant resolves to valid SVG bytes via the bundled Lucide set
   3. Without any icon feature flags enabled, attempting to load a bundled icon returns `None` (no compile-time bloat when icons not needed)
   4. Total binary size contribution of each bundled set stays under 200KB (Material) and 100KB (Lucide)
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 17-01-PLAN.md — Download Material Symbols and Lucide SVG assets + licenses
 - [ ] 17-02-PLAN.md — bundled_icon_svg() module, Cargo features, tests
@@ -147,7 +147,7 @@ Phases 16 -> 17 -> 18/19/20 (parallel) -> 21
 | 14. Toolkit Connectors | v0.2 | 5/5 | Complete | 2026-03-09 |
 | 15. Publishing Prep | v0.2 | 3/3 | Complete | 2026-03-09 |
 | 16. Icon Data Model | v0.3 | 2/2 | Complete | 2026-03-09 |
-| 17. Bundled SVG Icons | 1/2 | In Progress|  | - |
+| 17. Bundled SVG Icons | 2/2 | Complete   | 2026-03-09 | - |
 | 18. Linux Icon Loading | v0.3 | 0/? | Not started | - |
 | 19. macOS Icon Loading | v0.3 | 0/? | Not started | - |
 | 20. Windows Icon Loading | v0.3 | 0/? | Not started | - |

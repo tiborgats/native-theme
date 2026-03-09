@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.3
 milestone_name: Icons
 status: executing
-stopped_at: Completed 17-01-PLAN.md
-last_updated: "2026-03-09T07:27:12Z"
-last_activity: 2026-03-09 — Plan 17-01 complete (76 SVGs + 2 licenses downloaded)
+stopped_at: Completed 17-02-PLAN.md
+last_updated: "2026-03-09T07:32:28Z"
+last_activity: 2026-03-09 — Plan 17-02 complete (bundled_icon_svg with feature-gated include_bytes)
 progress:
   total_phases: 6
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 4
-  completed_plans: 3
-  percent: 95
+  completed_plans: 4
+  percent: 100
 ---
 
 # Project State
@@ -26,24 +26,25 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 ## Current Position
 
 Phase: 17 of 21 (Bundled SVG Icons)
-Plan: 1/2 complete
-Status: Plan 17-01 complete, ready for Plan 17-02
-Last activity: 2026-03-09 — Plan 17-01 complete (76 SVGs + 2 licenses downloaded)
+Plan: 2/2 complete
+Status: Phase 17 complete, all plans done
+Last activity: 2026-03-09 — Plan 17-02 complete (bundled_icon_svg with feature-gated include_bytes)
 
-Progress: [██████████] 95%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 37 (14 v0.1 + 20 v0.2 + 3 v0.3)
-- Average duration: ~4.1min (v0.2), 3.7min (v0.3 so far)
-- Total execution time: 70min (v0.2), 11min (v0.3)
+- Total plans completed: 38 (14 v0.1 + 20 v0.2 + 4 v0.3)
+- Average duration: ~4.1min (v0.2), 3.3min (v0.3 so far)
+- Total execution time: 70min (v0.2), 13min (v0.3)
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
 | 16-01 | Icon type definitions | 3min | 4 | 4 |
 | 16-02 | Icon name mapping | 6min | 2 | 12 |
 | 17-01 | Download SVG icons | 2min | 2 | 78 |
+| 17-02 | Bundled icon module | 2min | 2 | 4 |
 
 ## Accumulated Context
 
@@ -60,6 +61,9 @@ v0.3 research recommends: data model first, bundled SVGs second, platform loader
 - 17-01: 38 unique files per icon set (not 32/33 as plan estimated)
 - 17-01: circle-question-mark.svg exists directly in Lucide repo
 - 17-01: Material Symbols: outlined style, weight 400 from marella/material-symbols
+- 17-02: TrashFull/TrashEmpty share same SVG (delete.svg / trash-2.svg) per icon set
+- 17-02: StatusError reuses DialogError SVG, Help reuses DialogQuestion SVG per set
+- 17-02: #[allow(unused_variables)] on bundled_icon_svg for no-feature compilation
 
 ### Pending Todos
 
@@ -72,5 +76,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Completed 17-01-PLAN.md
+Stopped at: Completed 17-02-PLAN.md
 Resume file: None
