@@ -3,6 +3,7 @@
 pub mod colors;
 pub mod fonts;
 pub mod geometry;
+pub mod icons;
 pub mod spacing;
 pub mod widget_metrics;
 
