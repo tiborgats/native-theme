@@ -303,6 +303,387 @@ impl IconSet {
     }
 }
 
+/// Look up the platform-specific icon identifier for a given icon set and role.
+///
+/// Returns `Some(name)` if the icon set has a standard icon for the role,
+/// or `None` if no standard icon exists (e.g., SF Symbols has no open-folder
+/// variant).
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::{IconSet, IconRole, icon_name};
+///
+/// assert_eq!(icon_name(IconSet::SfSymbols, IconRole::ActionCopy), Some("doc.on.doc"));
+/// assert_eq!(icon_name(IconSet::Freedesktop, IconRole::ActionCopy), Some("edit-copy"));
+/// assert_eq!(icon_name(IconSet::SfSymbols, IconRole::FolderOpen), None);
+/// ```
+#[allow(unreachable_patterns)] // wildcard arm kept for #[non_exhaustive] forward compat
+pub fn icon_name(set: IconSet, role: IconRole) -> Option<&'static str> {
+    match set {
+        IconSet::SfSymbols => sf_symbols_name(role),
+        IconSet::SegoeIcons => segoe_name(role),
+        IconSet::Freedesktop => freedesktop_name(role),
+        IconSet::Material => material_name(role),
+        IconSet::Lucide => lucide_name(role),
+        _ => None,
+    }
+}
+
+/// Detect the native icon set for the current operating system.
+///
+/// Returns the platform-appropriate icon set at runtime using `cfg!()` macros:
+/// - macOS / iOS: [`IconSet::SfSymbols`]
+/// - Windows: [`IconSet::SegoeIcons`]
+/// - Linux: [`IconSet::Freedesktop`]
+/// - Other: [`IconSet::Material`] (safe cross-platform fallback)
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::{IconSet, system_icon_set};
+///
+/// let set = system_icon_set();
+/// // On Linux, this returns Freedesktop
+/// ```
+pub fn system_icon_set() -> IconSet {
+    if cfg!(any(target_os = "macos", target_os = "ios")) {
+        IconSet::SfSymbols
+    } else if cfg!(target_os = "windows") {
+        IconSet::SegoeIcons
+    } else if cfg!(target_os = "linux") {
+        IconSet::Freedesktop
+    } else {
+        IconSet::Material
+    }
+}
+
+// --- Private mapping functions ---
+
+#[allow(unreachable_patterns)]
+fn sf_symbols_name(role: IconRole) -> Option<&'static str> {
+    Some(match role {
+        // Dialog / Alert
+        IconRole::DialogWarning => "exclamationmark.triangle.fill",
+        IconRole::DialogError => "xmark.circle.fill",
+        IconRole::DialogInfo => "info.circle.fill",
+        IconRole::DialogQuestion => "questionmark.circle.fill",
+        IconRole::DialogSuccess => "checkmark.circle.fill",
+        IconRole::Shield => "shield.fill",
+
+        // Window Controls
+        IconRole::WindowClose => "xmark",
+        IconRole::WindowMinimize => "minus",
+        IconRole::WindowMaximize => "arrow.up.left.and.arrow.down.right",
+        // WindowRestore: no SF Symbol equivalent
+        IconRole::WindowRestore => return None,
+
+        // Common Actions
+        IconRole::ActionSave => "square.and.arrow.down",
+        IconRole::ActionDelete => "trash",
+        IconRole::ActionCopy => "doc.on.doc",
+        IconRole::ActionPaste => "doc.on.clipboard",
+        IconRole::ActionCut => "scissors",
+        IconRole::ActionUndo => "arrow.uturn.backward",
+        IconRole::ActionRedo => "arrow.uturn.forward",
+        IconRole::ActionSearch => "magnifyingglass",
+        IconRole::ActionSettings => "gearshape",
+        IconRole::ActionEdit => "pencil",
+        IconRole::ActionAdd => "plus",
+        IconRole::ActionRemove => "minus",
+        IconRole::ActionRefresh => "arrow.clockwise",
+        IconRole::ActionPrint => "printer",
+
+        // Navigation
+        IconRole::NavBack => "chevron.backward",
+        IconRole::NavForward => "chevron.forward",
+        IconRole::NavUp => "chevron.up",
+        IconRole::NavDown => "chevron.down",
+        IconRole::NavHome => "house",
+        IconRole::NavMenu => "line.horizontal.3",
+
+        // Files / Places
+        IconRole::FileGeneric => "doc",
+        IconRole::FolderClosed => "folder",
+        // FolderOpen: no SF Symbol equivalent
+        IconRole::FolderOpen => return None,
+        IconRole::TrashEmpty => "trash",
+        // TrashFull: no SF Symbol equivalent
+        IconRole::TrashFull => return None,
+
+        // Status
+        // StatusLoading: no static SF Symbol (loading is animated)
+        IconRole::StatusLoading => return None,
+        IconRole::StatusCheck => "checkmark",
+        IconRole::StatusError => "xmark.circle.fill",
+
+        // System
+        IconRole::UserAccount => "person.fill",
+        IconRole::Notification => "bell.fill",
+        IconRole::Help => "questionmark.circle",
+        IconRole::Lock => "lock.fill",
+
+        _ => return None,
+    })
+}
+
+#[allow(unreachable_patterns)]
+fn segoe_name(role: IconRole) -> Option<&'static str> {
+    Some(match role {
+        // Dialog / Alert (SHSTOCKICONID constants)
+        IconRole::DialogWarning => "SIID_WARNING",
+        IconRole::DialogError => "SIID_ERROR",
+        IconRole::DialogInfo => "SIID_INFO",
+        IconRole::DialogQuestion => "IDI_QUESTION",
+        // DialogSuccess: no Windows stock icon
+        IconRole::DialogSuccess => return None,
+        IconRole::Shield => "SIID_SHIELD",
+
+        // Window Controls (Segoe Fluent Icons glyphs)
+        IconRole::WindowClose => "ChromeClose",
+        IconRole::WindowMinimize => "ChromeMinimize",
+        IconRole::WindowMaximize => "ChromeMaximize",
+        IconRole::WindowRestore => "ChromeRestore",
+
+        // Common Actions (mix of SHSTOCKICONID and Segoe Fluent)
+        IconRole::ActionSave => "Save",
+        IconRole::ActionDelete => "SIID_DELETE",
+        IconRole::ActionCopy => "Copy",
+        IconRole::ActionPaste => "Paste",
+        IconRole::ActionCut => "Cut",
+        IconRole::ActionUndo => "Undo",
+        IconRole::ActionRedo => "Redo",
+        IconRole::ActionSearch => "SIID_FIND",
+        IconRole::ActionSettings => "SIID_SETTINGS",
+        IconRole::ActionEdit => "Edit",
+        IconRole::ActionAdd => "Add",
+        IconRole::ActionRemove => "Remove",
+        IconRole::ActionRefresh => "Refresh",
+        IconRole::ActionPrint => "SIID_PRINTER",
+
+        // Navigation (Segoe Fluent Icons)
+        IconRole::NavBack => "Back",
+        IconRole::NavForward => "Forward",
+        IconRole::NavUp => "Up",
+        IconRole::NavDown => "Down",
+        IconRole::NavHome => "Home",
+        IconRole::NavMenu => "GlobalNavigationButton",
+
+        // Files / Places (SHSTOCKICONID)
+        IconRole::FileGeneric => "SIID_DOCNOASSOC",
+        IconRole::FolderClosed => "SIID_FOLDER",
+        IconRole::FolderOpen => "SIID_FOLDEROPEN",
+        IconRole::TrashEmpty => "SIID_RECYCLER",
+        IconRole::TrashFull => "SIID_RECYCLERFULL",
+
+        // Status
+        // StatusLoading: no static Windows icon (progress ring is animated)
+        IconRole::StatusLoading => return None,
+        IconRole::StatusCheck => "CheckMark",
+        IconRole::StatusError => "SIID_ERROR",
+
+        // System
+        IconRole::UserAccount => "SIID_USERS",
+        IconRole::Notification => "Ringer",
+        IconRole::Help => "SIID_HELP",
+        IconRole::Lock => "SIID_LOCK",
+
+        _ => return None,
+    })
+}
+
+#[allow(unreachable_patterns)]
+fn freedesktop_name(role: IconRole) -> Option<&'static str> {
+    Some(match role {
+        // Dialog / Alert
+        IconRole::DialogWarning => "dialog-warning",
+        IconRole::DialogError => "dialog-error",
+        IconRole::DialogInfo => "dialog-information",
+        IconRole::DialogQuestion => "dialog-question",
+        IconRole::DialogSuccess => "emblem-ok-symbolic",
+        IconRole::Shield => "security-high",
+
+        // Window Controls
+        IconRole::WindowClose => "window-close",
+        IconRole::WindowMinimize => "window-minimize",
+        IconRole::WindowMaximize => "window-maximize",
+        IconRole::WindowRestore => "window-restore",
+
+        // Common Actions
+        IconRole::ActionSave => "document-save",
+        IconRole::ActionDelete => "edit-delete",
+        IconRole::ActionCopy => "edit-copy",
+        IconRole::ActionPaste => "edit-paste",
+        IconRole::ActionCut => "edit-cut",
+        IconRole::ActionUndo => "edit-undo",
+        IconRole::ActionRedo => "edit-redo",
+        IconRole::ActionSearch => "edit-find",
+        IconRole::ActionSettings => "preferences-system",
+        IconRole::ActionEdit => "document-edit",
+        IconRole::ActionAdd => "list-add",
+        IconRole::ActionRemove => "list-remove",
+        IconRole::ActionRefresh => "view-refresh",
+        IconRole::ActionPrint => "document-print",
+
+        // Navigation
+        IconRole::NavBack => "go-previous",
+        IconRole::NavForward => "go-next",
+        IconRole::NavUp => "go-up",
+        IconRole::NavDown => "go-down",
+        IconRole::NavHome => "go-home",
+        IconRole::NavMenu => "open-menu",
+
+        // Files / Places
+        IconRole::FileGeneric => "text-x-generic",
+        IconRole::FolderClosed => "folder",
+        IconRole::FolderOpen => "folder-open",
+        IconRole::TrashEmpty => "user-trash",
+        IconRole::TrashFull => "user-trash-full",
+
+        // Status
+        IconRole::StatusLoading => "process-working",
+        IconRole::StatusCheck => "emblem-default",
+        IconRole::StatusError => "dialog-error",
+
+        // System
+        IconRole::UserAccount => "system-users",
+        // Notification: no freedesktop standard notification bell icon
+        IconRole::Notification => return None,
+        IconRole::Help => "help-browser",
+        IconRole::Lock => "system-lock-screen",
+
+        _ => return None,
+    })
+}
+
+#[allow(unreachable_patterns)]
+fn material_name(role: IconRole) -> Option<&'static str> {
+    Some(match role {
+        // Dialog / Alert
+        IconRole::DialogWarning => "warning",
+        IconRole::DialogError => "error",
+        IconRole::DialogInfo => "info",
+        IconRole::DialogQuestion => "help",
+        IconRole::DialogSuccess => "check_circle",
+        IconRole::Shield => "shield",
+
+        // Window Controls
+        IconRole::WindowClose => "close",
+        IconRole::WindowMinimize => "minimize",
+        IconRole::WindowMaximize => "open_in_full",
+        IconRole::WindowRestore => "close_fullscreen",
+
+        // Common Actions
+        IconRole::ActionSave => "save",
+        IconRole::ActionDelete => "delete",
+        IconRole::ActionCopy => "content_copy",
+        IconRole::ActionPaste => "content_paste",
+        IconRole::ActionCut => "content_cut",
+        IconRole::ActionUndo => "undo",
+        IconRole::ActionRedo => "redo",
+        IconRole::ActionSearch => "search",
+        IconRole::ActionSettings => "settings",
+        IconRole::ActionEdit => "edit",
+        IconRole::ActionAdd => "add",
+        IconRole::ActionRemove => "remove",
+        IconRole::ActionRefresh => "refresh",
+        IconRole::ActionPrint => "print",
+
+        // Navigation
+        IconRole::NavBack => "arrow_back",
+        IconRole::NavForward => "arrow_forward",
+        IconRole::NavUp => "arrow_upward",
+        IconRole::NavDown => "arrow_downward",
+        IconRole::NavHome => "home",
+        IconRole::NavMenu => "menu",
+
+        // Files / Places
+        IconRole::FileGeneric => "description",
+        IconRole::FolderClosed => "folder",
+        IconRole::FolderOpen => "folder_open",
+        IconRole::TrashEmpty => "delete",
+        // TrashFull: Material has no separate full-trash icon
+        IconRole::TrashFull => return None,
+
+        // Status
+        IconRole::StatusLoading => "progress_activity",
+        IconRole::StatusCheck => "check",
+        IconRole::StatusError => "error",
+
+        // System
+        IconRole::UserAccount => "person",
+        IconRole::Notification => "notifications",
+        IconRole::Help => "help",
+        IconRole::Lock => "lock",
+
+        _ => return None,
+    })
+}
+
+#[allow(unreachable_patterns)]
+fn lucide_name(role: IconRole) -> Option<&'static str> {
+    Some(match role {
+        // Dialog / Alert
+        IconRole::DialogWarning => "triangle-alert",
+        IconRole::DialogError => "circle-x",
+        IconRole::DialogInfo => "info",
+        IconRole::DialogQuestion => "circle-question-mark",
+        IconRole::DialogSuccess => "circle-check",
+        IconRole::Shield => "shield",
+
+        // Window Controls
+        IconRole::WindowClose => "x",
+        IconRole::WindowMinimize => "minimize",
+        IconRole::WindowMaximize => "maximize",
+        IconRole::WindowRestore => "minimize-2",
+
+        // Common Actions
+        IconRole::ActionSave => "save",
+        IconRole::ActionDelete => "trash-2",
+        IconRole::ActionCopy => "copy",
+        IconRole::ActionPaste => "clipboard-paste",
+        IconRole::ActionCut => "scissors",
+        IconRole::ActionUndo => "undo-2",
+        IconRole::ActionRedo => "redo-2",
+        IconRole::ActionSearch => "search",
+        IconRole::ActionSettings => "settings",
+        IconRole::ActionEdit => "pencil",
+        IconRole::ActionAdd => "plus",
+        IconRole::ActionRemove => "minus",
+        IconRole::ActionRefresh => "refresh-cw",
+        IconRole::ActionPrint => "printer",
+
+        // Navigation
+        IconRole::NavBack => "chevron-left",
+        IconRole::NavForward => "chevron-right",
+        IconRole::NavUp => "chevron-up",
+        IconRole::NavDown => "chevron-down",
+        IconRole::NavHome => "house",
+        IconRole::NavMenu => "menu",
+
+        // Files / Places
+        IconRole::FileGeneric => "file",
+        IconRole::FolderClosed => "folder-closed",
+        IconRole::FolderOpen => "folder-open",
+        IconRole::TrashEmpty => "trash-2",
+        // TrashFull: Lucide has no separate full-trash icon
+        IconRole::TrashFull => return None,
+
+        // Status
+        IconRole::StatusLoading => "loader",
+        IconRole::StatusCheck => "check",
+        IconRole::StatusError => "circle-x",
+
+        // System
+        IconRole::UserAccount => "user",
+        IconRole::Notification => "bell",
+        IconRole::Help => "circle-question-mark",
+        IconRole::Lock => "lock",
+
+        _ => return None,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

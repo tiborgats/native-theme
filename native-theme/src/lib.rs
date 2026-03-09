@@ -88,6 +88,7 @@ pub use model::{
     IconData, IconRole, IconSet, NativeTheme, ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing,
     ThemeVariant, WidgetMetrics,
 };
+pub use model::icons::{icon_name, system_icon_set};
 
 pub mod macos;
 #[cfg(feature = "windows")]
