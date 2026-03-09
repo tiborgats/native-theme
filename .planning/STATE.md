@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.3
 milestone_name: Icons
-status: verified
+status: executing
 stopped_at: null
-last_updated: "2026-03-09T09:00:00Z"
-last_activity: "2026-03-09 — Phase 19 verified (4/4 must-haves passed)"
+last_updated: "2026-03-09T09:40:56Z"
+last_activity: "2026-03-09 — Phase 20 Plan 01 complete (Windows icon loading)"
 progress:
   total_phases: 6
   completed_phases: 4
-  total_plans: 6
-  completed_plans: 6
-  percent: 67
+  total_plans: 7
+  completed_plans: 7
+  percent: 83
 ---
 
 # Project State
@@ -25,19 +25,19 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 
 ## Current Position
 
-Phase: 19 of 21 (macOS Icon Loading) — verified ✓
+Phase: 20 of 21 (Windows Icon Loading)
 Plan: 1/1 complete
-Status: Phase 19 verified, ready for Phase 20
-Last activity: 2026-03-09 — Phase 19 verified (4/4 must-haves passed)
+Status: Phase 20 Plan 01 complete, awaiting verification
+Last activity: 2026-03-09 — Phase 20 Plan 01 complete (Windows icon loading)
 
-Progress: [######░░░░] 67%
+Progress: [########░░] 83%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 40 (14 v0.1 + 20 v0.2 + 6 v0.3)
-- Average duration: ~4.1min (v0.2), 2.8min (v0.3 so far)
-- Total execution time: 70min (v0.2), 17min (v0.3)
+- Total plans completed: 41 (14 v0.1 + 20 v0.2 + 7 v0.3)
+- Average duration: ~4.1min (v0.2), 3.7min (v0.3 so far)
+- Total execution time: 70min (v0.2), 26min (v0.3)
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
@@ -47,6 +47,7 @@ Progress: [######░░░░] 67%
 | 17-02 | Bundled icon module | 2min | 2 | 4 |
 | 18-01 | Freedesktop icon loader | 2min | 2 | 3 |
 | 19-01 | SF Symbols icon loader | 2min | 2 | 3 |
+| 20-01 | Windows icon loader | 9min | 2 | 3 |
 
 ## Accumulated Context
 
@@ -72,6 +73,11 @@ v0.3 research recommends: data model first, bundled SVGs second, platform loader
 - [Phase 19]: CGBitmapContext rasterization for guaranteed RGBA pixel format normalization
 - [Phase 19]: Post-processing unpremultiply pass converts premultiplied to straight alpha
 - [Phase 19]: Read pixel dimensions from CGImage (not NSImage size) for Retina correctness
+- [Phase 20]: Did not add dep:windows to system-icons (windows-future version conflict on Linux)
+- [Phase 20]: White foreground with grayscale alpha for font glyph icons
+- [Phase 20]: Font fallback: Segoe Fluent Icons -> Segoe MDL2 Assets -> bundled Material SVG
+- [Phase 20]: LoadIconW shared resources (IDI_QUESTION) not destroyed with DestroyIcon
+- [Phase 20]: GetTextFaceW verification to detect GDI silent font substitution
 
 ### Pending Todos
 
@@ -83,6 +89,6 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-09T08:47:18Z
-Stopped at: Completed 19-01-PLAN.md
+Last session: 2026-03-09T09:40:56Z
+Stopped at: Completed 20-01-PLAN.md
 Resume file: None
