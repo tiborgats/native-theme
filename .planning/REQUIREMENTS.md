@@ -3,93 +3,83 @@
 **Defined:** 2026-03-08
 **Core Value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
 
-## v0.2 Requirements
+## v0.3 Requirements
 
-Requirements for v0.2 release. Each maps to roadmap phases.
+Requirements for icon loading milestone. Each maps to roadmap phases.
+
+### Icon Data Model
+
+- [ ] **ICON-01**: IconRole enum with 42 semantic icon roles across 7 categories (dialog, window, action, navigation, file, status, system)
+- [ ] **ICON-02**: IconData enum returning SVG bytes (`Svg(Vec<u8>)`) or rasterized RGBA pixels (`Rgba { width, height, data }`)
+- [ ] **ICON-03**: icon_theme field (`Option<String>`) on ThemeVariant with preset-specific default assignments in TOML
+- [ ] **ICON-04**: `icon_name()` function to look up the platform-specific identifier string for a given icon set and role
+- [ ] **ICON-05**: `system_icon_set()` function to resolve "system" to the OS-native icon set name (macOS→sf-symbols, Windows→segoe-fluent, Linux→freedesktop)
+
+### Platform Loading
+
+- [ ] **PLAT-01**: macOS icon loading via `NSImage(systemSymbolName:)` → rasterized RGBA pixels (feature "system-icons")
+- [ ] **PLAT-02**: Windows stock icon loading via `SHGetStockIconInfo` → RGBA pixels (feature "system-icons")
+- [ ] **PLAT-03**: Windows Segoe Fluent Icons font glyph rendering for action/navigation/window roles (feature "system-icons")
+- [ ] **PLAT-04**: Linux freedesktop icon theme lookup following Icon Theme Specification → SVG file bytes (feature "system-icons")
+
+### Bundled Fallback Icons
+
+- [ ] **BNDL-01**: Material Symbols SVGs (~42 icons covering all IconRole variants) as compile-time fallback (feature "material-icons")
+- [ ] **BNDL-02**: Lucide SVGs (~42 icons) as optional alternative icon set (feature "lucide-icons")
+
+### Integration
+
+- [ ] **INTG-01**: `load_icon()` dispatch function selecting the appropriate loader based on icon_theme string
+- [ ] **INTG-02**: Optional SVG-to-RGBA rasterization via resvg (feature "svg-rasterize")
+- [ ] **INTG-03**: gpui connector: IconData→RenderImage conversion + `icon_name()` Lucide shortcut for gpui-component IconName
+- [ ] **INTG-04**: iced connector: IconData conversion helpers
+- [ ] **INTG-05**: gpui example updated with icon display and icon set selector dropdown
+
+## v0.2 Requirements (Complete)
+
+All v0.2 requirements completed. See MILESTONES.md for details.
 
 ### API Refactors & Structure
 
-- [x] **API-01**: Repo converted to Cargo workspace with core crate in `native-theme/` subdirectory
-- [x] **API-02**: ThemeColors flattened to 36 direct `Option<Rgba>` fields (no nested sub-structs)
-- [x] **API-03**: All presets updated to flat `[light.colors]` / `[dark.colors]` TOML format
-- [x] **API-04**: Platform readers updated for flat ThemeColors field access
-- [x] **API-05**: Preset functions moved to `impl NativeTheme` associated functions (`NativeTheme::preset()`, `::from_toml()`, `::from_file()`, `::list_presets()`, `theme.to_toml()`)
-- [x] **API-06**: Old free functions removed (no deprecation period, pre-1.0)
-- [x] **API-07**: `ThemeGeometry` gains `radius_lg: Option<f32>` and `shadow: Option<bool>` fields
-- [x] **API-08**: Presets updated with radius_lg and shadow data where applicable
+- [x] **API-01** through **API-08**: Cargo workspace, flat ThemeColors, NativeTheme methods, ThemeGeometry extensions
 
 ### Platform Readers
 
-- [x] **PLAT-01**: macOS reader `from_macos()` reads ~20 NSColor semantic colors with P3-to-sRGB conversion
-- [x] **PLAT-02**: macOS reader resolves both light and dark variants via NSAppearance
-- [x] **PLAT-03**: macOS reader reads NSFont system and monospace fonts
-- [x] **PLAT-04**: macOS reader wired into `from_system()` dispatch
-- [x] **PLAT-05**: Windows reader adds `ApiInformation::IsMethodPresent` capability checks
-- [x] **PLAT-06**: Windows reader reads AccentDark1-3 and AccentLight1-3 accent shades
-- [x] **PLAT-07**: Windows reader reads system font via `SystemParametersInfo(SPI_GETNONCLIENTMETRICS)`
-- [x] **PLAT-08**: Windows reader populates spacing from WinUI3 defaults and derives `primary_foreground`
-- [x] **PLAT-09**: Windows reader uses DPI-aware `GetSystemMetricsForDpi` for geometry
-- [x] **PLAT-10**: Linux `from_kde_with_portal()` async overlay of portal accent on kdeglobals palette
-- [x] **PLAT-11**: Linux D-Bus portal backend detection for DE heuristic
-- [x] **PLAT-12**: GNOME font reading from gsettings/dconf (`org.gnome.desktop.interface font-name`)
-- [x] **PLAT-13**: `from_linux()` fallback: try kdeglobals if file exists on non-KDE desktops
+- [x] **PLAT-01** through **PLAT-13**: macOS reader, Windows enhancements, Linux KDE+portal overlay
 
 ### Widget Metrics
 
-- [x] **METRIC-01**: `WidgetMetrics` struct with 12 per-widget sub-structs (Button, Checkbox, Input, Scrollbar, Slider, ProgressBar, Tab, MenuItem, Tooltip, ListItem, Toolbar, Splitter)
-- [x] **METRIC-02**: Each sub-struct uses `Option<f32>` fields, `#[non_exhaustive]`, serde defaults
-- [x] **METRIC-03**: `widget_metrics: Option<WidgetMetrics>` added to `ThemeVariant`
-- [x] **METRIC-04**: KDE metrics populated from breezemetrics.h constants (versioned per Plasma release)
-- [x] **METRIC-05**: Windows metrics populated via `GetSystemMetricsForDpi` at runtime
-- [x] **METRIC-06**: macOS metrics populated with hardcoded HIG defaults
-- [x] **METRIC-07**: GNOME metrics populated from hardcoded libadwaita values
-- [x] **METRIC-08**: Widget metrics added to preset TOML files
+- [x] **METRIC-01** through **METRIC-08**: WidgetMetrics struct, platform sources, preset updates
 
 ### CI Pipeline
 
-- [x] **CI-01**: GitHub Actions workflow testing on Linux + Windows + macOS runners
-- [x] **CI-02**: Feature flag matrix: `--no-default-features`, `--features kde`, `--features portal-tokio`, `--features windows`, `--features macos`
-- [x] **CI-03**: `cargo semver-checks` integrated for breaking change detection
-- [x] **CI-04**: `cargo clippy` + `cargo fmt --check` in CI
+- [x] **CI-01** through **CI-04**: GitHub Actions, feature matrix, semver-checks, clippy/fmt
 
 ### Toolkit Connectors
 
-- [x] **CONN-01**: `native-theme-gpui` crate maps ThemeColors to gpui-component's 108 ThemeColor fields (direct + derived)
-- [x] **CONN-02**: `native-theme-gpui` maps fonts, geometry, spacing, and widget metrics
-- [x] **CONN-03**: `native-theme-gpui` includes upstream PR proposal documents for missing gpui-component theming hooks
-- [x] **CONN-04**: `native-theme-gpui` includes `examples/showcase.rs` widget gallery
-- [x] **CONN-05**: `native-theme-iced` crate maps ThemeColors to iced Palette + Extended palette
-- [x] **CONN-06**: `native-theme-iced` implements per-widget Catalog/Style for core widgets (Button, Container, TextInput, Scrollable, Checkbox, Slider, ProgressBar, Tooltip)
-- [x] **CONN-07**: `native-theme-iced` maps geometry, spacing, and widget metrics to Style fields
-- [x] **CONN-08**: `native-theme-iced` includes `examples/demo.rs` widget gallery
-- [x] **CONN-09**: Both connectors include a theme selector (dropdown of presets + OS theme)
+- [x] **CONN-01** through **CONN-09**: gpui + iced connectors with examples
 
 ### Publishing Prep
 
-- [x] **PUB-01**: Cargo.toml metadata: `rust-version`, `repository`, `homepage`, `keywords`, `categories`, `readme`
-- [x] **PUB-02**: LICENSE-MIT, LICENSE-APACHE, LICENSE-0BSD files at repo root
-- [x] **PUB-03**: CHANGELOG.md following Keep a Changelog format
-- [x] **PUB-04**: Doc examples (`/// # Examples`) on `NativeTheme`, `Rgba`, `ThemeVariant`
-- [x] **PUB-05**: IMPLEMENTATION.md spec updated to match actual implementation
-- [x] **PUB-06**: `docs/new-os-version-guide.md` for maintaining platform constants
-- [ ] **PUB-07**: Core crate published to crates.io
-- [ ] **PUB-08**: `native-theme-iced` published to crates.io
+- [x] **PUB-01** through **PUB-06**: Metadata, licenses, changelog, documentation
+- [ ] **PUB-07**: Core crate published to crates.io (deferred)
+- [ ] **PUB-08**: native-theme-iced published to crates.io (deferred)
 
 ## Future Requirements
 
-Deferred to post-v0.2. Tracked but not in current roadmap.
+### Extended Icon Sets
 
-### Mobile Readers
+- **XICON-01**: Phosphor Icons as additional bundled set (MIT, 9,000+ icons)
+- **XICON-02**: Tabler Icons as additional bundled set (MIT, 5,900+ icons)
 
-- **MOBILE-01**: iOS reader `from_ios()` via objc2-ui-kit
-- **MOBILE-02**: Android reader `from_android()` via JNI + NDK for Material You colors
+### Platform Extensions
+
+- **XPLAT-01**: iOS icon loading via UIImage(systemName:)
+- **XPLAT-02**: Android icon loading
 
 ### Change Notification
 
-- **NOTIFY-01**: Linux portal `SettingChanged` D-Bus signal via ashpd stream
-- **NOTIFY-02**: Linux KDE file watching via `notify` crate
-- **NOTIFY-03**: macOS ObjC notification observers
-- **NOTIFY-04**: Windows `UISettings.ColorValuesChanged` event
+- **NOTIFY-01** through **NOTIFY-04**: Platform-specific change notification streams
 
 ### Additional Connectors
 
@@ -99,76 +89,40 @@ Deferred to post-v0.2. Tracked but not in current roadmap.
 
 | Feature | Reason |
 |---------|--------|
-| iOS/Android runtime readers | Small Rust GUI audience on mobile; ship preset TOML files for static theming |
-| Change notification system | Complex, opinionated async runtime choice; users can poll or use toolkit observers |
-| Color manipulation utilities (darken, lighten, contrast) | Out of scope for data crate; use the `palette` crate |
-| egui connector in v0.2 | Least structured theming API; defer to v0.3 or community contribution |
-| Widget-level animation/transitions | Animation is rendering concern; each toolkit has its own animation system |
-| Exhaustive widget metrics (every KDE constant) | Diminishing returns past core measurements; model only what connectors consume |
-| Named palette colors (platform-specific reds, blues) | Too platform-specific to standardize |
-| Accessibility flags in the data model | Environment signals detected by consuming app |
-| CSS/SCSS export format | Trivially implementable by consumers |
+| Full icon set bundling (3,800+ Material, 1,700+ Lucide) | Binary size — only ~42 IconRole-mapped icons bundled |
+| Icon animation (spinners, loading) | Static icons only — animation is toolkit-specific |
+| Icon tinting/coloring in core crate | Connector responsibility — core returns raw icon data |
+| Custom user icon sets | Users can implement their own load_icon() equivalent |
+| Icon caching | Consumers cache at toolkit level; core crate is stateless |
+| iOS/Android runtime readers | Small Rust GUI audience on mobile; deferred |
+| Change notification system | Complex async runtime choice; users can poll |
 
 ## Traceability
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| API-01 | Phase 9 | Complete |
-| API-02 | Phase 10 | Complete |
-| API-03 | Phase 10 | Complete |
-| API-04 | Phase 10 | Complete |
-| API-05 | Phase 10 | Complete |
-| API-06 | Phase 10 | Complete |
-| API-07 | Phase 10 | Complete |
-| API-08 | Phase 10 | Complete |
-| PLAT-01 | Phase 11 | Complete |
-| PLAT-02 | Phase 11 | Complete |
-| PLAT-03 | Phase 11 | Complete |
-| PLAT-04 | Phase 11 | Complete |
-| PLAT-05 | Phase 11 | Complete |
-| PLAT-06 | Phase 11 | Complete |
-| PLAT-07 | Phase 11 | Complete |
-| PLAT-08 | Phase 11 | Complete |
-| PLAT-09 | Phase 11 | Complete |
-| PLAT-10 | Phase 11 | Complete |
-| PLAT-11 | Phase 11 | Complete |
-| PLAT-12 | Phase 11 | Complete |
-| PLAT-13 | Phase 11 | Complete |
-| METRIC-01 | Phase 12 | Complete |
-| METRIC-02 | Phase 12 | Complete |
-| METRIC-03 | Phase 12 | Complete |
-| METRIC-04 | Phase 12 | Complete |
-| METRIC-05 | Phase 12 | Complete |
-| METRIC-06 | Phase 12 | Complete |
-| METRIC-07 | Phase 12 | Complete |
-| METRIC-08 | Phase 12 | Complete |
-| CI-01 | Phase 13 | Complete |
-| CI-02 | Phase 13 | Complete |
-| CI-03 | Phase 13 | Complete |
-| CI-04 | Phase 13 | Complete |
-| CONN-01 | Phase 14 | Complete |
-| CONN-02 | Phase 14 | Complete |
-| CONN-03 | Phase 14 | Complete |
-| CONN-04 | Phase 14 | Complete |
-| CONN-05 | Phase 14 | Complete |
-| CONN-06 | Phase 14 | Complete |
-| CONN-07 | Phase 14 | Complete |
-| CONN-08 | Phase 14 | Complete |
-| CONN-09 | Phase 14 | Complete |
-| PUB-01 | Phase 15 | Complete |
-| PUB-02 | Phase 15 | Complete |
-| PUB-03 | Phase 15 | Complete |
-| PUB-04 | Phase 15 | Complete |
-| PUB-05 | Phase 15 | Complete |
-| PUB-06 | Phase 15 | Complete |
-| PUB-07 | Phase 15 | Pending |
-| PUB-08 | Phase 15 | Pending |
+| ICON-01 | — | Pending |
+| ICON-02 | — | Pending |
+| ICON-03 | — | Pending |
+| ICON-04 | — | Pending |
+| ICON-05 | — | Pending |
+| PLAT-01 | — | Pending |
+| PLAT-02 | — | Pending |
+| PLAT-03 | — | Pending |
+| PLAT-04 | — | Pending |
+| BNDL-01 | — | Pending |
+| BNDL-02 | — | Pending |
+| INTG-01 | — | Pending |
+| INTG-02 | — | Pending |
+| INTG-03 | — | Pending |
+| INTG-04 | — | Pending |
+| INTG-05 | — | Pending |
 
 **Coverage:**
-- v0.2 requirements: 47 total
-- Mapped to phases: 47/47 (100%)
-- Unmapped: 0
+- v0.3 requirements: 16 total
+- Mapped to phases: 0
+- Unmapped: 16 (pending roadmap)
 
 ---
 *Requirements defined: 2026-03-08*
-*Last updated: 2026-03-08 after roadmap creation*
+*Last updated: 2026-03-09 after v0.3 milestone requirements*
