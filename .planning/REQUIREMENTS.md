@@ -24,8 +24,8 @@ Requirements for icon loading milestone. Each maps to roadmap phases.
 
 ### Bundled Fallback Icons
 
-- [ ] **BNDL-01**: Material Symbols SVGs (~42 icons covering all IconRole variants) as compile-time fallback (feature "material-icons")
-- [ ] **BNDL-02**: Lucide SVGs (~42 icons) as optional alternative icon set (feature "lucide-icons")
+- [x] **BNDL-01**: Material Symbols SVGs (~42 icons covering all IconRole variants) as compile-time fallback (feature "material-icons")
+- [x] **BNDL-02**: Lucide SVGs (~42 icons) as optional alternative icon set (feature "lucide-icons")
 
 ### Integration
 
@@ -110,8 +110,8 @@ All v0.2 requirements completed. See MILESTONES.md for details.
 | PLAT-02 | Phase 20 | Pending |
 | PLAT-03 | Phase 20 | Pending |
 | PLAT-04 | Phase 18 | Pending |
-| BNDL-01 | Phase 17 | Pending |
-| BNDL-02 | Phase 17 | Pending |
+| BNDL-01 | Phase 17 | Complete |
+| BNDL-02 | Phase 17 | Complete |
 | INTG-01 | Phase 21 | Pending |
 | INTG-02 | Phase 21 | Pending |
 | INTG-03 | Phase 21 | Pending |

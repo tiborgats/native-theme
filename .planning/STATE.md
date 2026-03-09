@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.3
 milestone_name: Icons
-status: verified
-stopped_at: null
-last_updated: "2026-03-09T07:10:00Z"
-last_activity: 2026-03-09 — Phase 16 verified (5/5 must-haves passed)
+status: executing
+stopped_at: Completed 17-01-PLAN.md
+last_updated: "2026-03-09T07:27:12Z"
+last_activity: 2026-03-09 — Plan 17-01 complete (76 SVGs + 2 licenses downloaded)
 progress:
   total_phases: 6
   completed_phases: 1
-  total_plans: 2
-  completed_plans: 2
-  percent: 16
+  total_plans: 4
+  completed_plans: 3
+  percent: 95
 ---
 
 # Project State
@@ -25,24 +25,25 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 
 ## Current Position
 
-Phase: 16 of 21 (Icon Data Model) — verified ✓
-Plan: 2/2 complete
-Status: Phase 16 verified, ready for Phase 17
-Last activity: 2026-03-09 — Phase 16 verified (5/5 must-haves passed)
+Phase: 17 of 21 (Bundled SVG Icons)
+Plan: 1/2 complete
+Status: Plan 17-01 complete, ready for Plan 17-02
+Last activity: 2026-03-09 — Plan 17-01 complete (76 SVGs + 2 licenses downloaded)
 
-Progress: [##░░░░░░░░] 16%
+Progress: [██████████] 95%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 36 (14 v0.1 + 20 v0.2 + 2 v0.3)
-- Average duration: ~4.1min (v0.2), 4.5min (v0.3 so far)
-- Total execution time: 70min (v0.2), 9min (v0.3)
+- Total plans completed: 37 (14 v0.1 + 20 v0.2 + 3 v0.3)
+- Average duration: ~4.1min (v0.2), 3.7min (v0.3 so far)
+- Total execution time: 70min (v0.2), 11min (v0.3)
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
 | 16-01 | Icon type definitions | 3min | 4 | 4 |
 | 16-02 | Icon name mapping | 6min | 2 | 12 |
+| 17-01 | Download SVG icons | 2min | 2 | 78 |
 
 ## Accumulated Context
 
@@ -56,6 +57,9 @@ v0.3 research recommends: data model first, bundled SVGs second, platform loader
 - 16-02: Combined macOS+iOS cfg!() branches for clippy compat
 - 16-02: #[allow(unreachable_patterns)] for non_exhaustive forward compat
 - 16-02: icon_theme set on both light and dark variants in native presets
+- 17-01: 38 unique files per icon set (not 32/33 as plan estimated)
+- 17-01: circle-question-mark.svg exists directly in Lucide repo
+- 17-01: Material Symbols: outlined style, weight 400 from marella/material-symbols
 
 ### Pending Todos
 
@@ -68,5 +72,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Completed 16-02-PLAN.md (phase 16 complete)
+Stopped at: Completed 17-01-PLAN.md
 Resume file: None
