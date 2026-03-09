@@ -2,25 +2,15 @@
 
 ## What This Is
 
-An independent, toolkit-agnostic Rust crate that provides a unified theme data model (36 semantic color roles, fonts, geometry, spacing), 17 TOML-serializable preset theme files for major desktop/mobile platforms and popular community color schemes, and optional runtime OS theme reading behind feature flags. It fills a genuine ecosystem gap — no crate currently unifies OS theme data into a common, toolkit-agnostic format that works across egui, iced, gpui, slint, dioxus, and tauri.
+An independent, toolkit-agnostic Rust crate that provides a unified theme data model (36 semantic color roles, fonts, geometry, spacing, icons), 17 TOML-serializable preset theme files for major desktop/mobile platforms and popular community color schemes, optional runtime OS theme reading, and platform-native icon loading — all behind feature flags. It fills a genuine ecosystem gap — no crate currently unifies OS theme data and icons into a common, toolkit-agnostic format that works across egui, iced, gpui, slint, dioxus, and tauri.
 
 ## Core Value
 
 Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
 
-## Current Milestone: v0.3 Icons
+## Current State
 
-**Goal:** Platform-native icon loading — semantic icon roles mapped to OS-native icon systems (SF Symbols, Segoe Fluent, freedesktop) with bundled cross-platform fallbacks (Material, Lucide).
-
-**Target features:**
-- IconRole enum (42 semantic roles: dialog, window, action, navigation, file, status, system)
-- IconData type (SVG bytes or rasterized RGBA pixels)
-- Platform icon loading: macOS (NSImage/SF Symbols), Windows (SHGetStockIconInfo + Segoe Fluent), Linux (freedesktop icon theme spec)
-- Bundled fallback icon sets: Material Symbols (Apache 2.0), Lucide (ISC)
-- icon_theme field on ThemeVariant with preset assignments
-- Public API: load_icon(), icon_name(), system_icon_set()
-- Feature flags: system-icons, material-icons, lucide-icons
-- Connector updates: IconData → gpui/iced image conversion
+v0.3 shipped. Three milestones complete (v0.1 MVP, v0.2 Platform Coverage, v0.3 Icons). No active milestone.
 
 ## Requirements
 
@@ -54,18 +44,20 @@ Any Rust GUI app can look native on any platform by loading a single theme file 
 - ✓ iced connector: palette/font/style/widget-metrics mapping — v0.2
 - ✓ Publishing prep: workspace metadata, licenses, changelog, documentation — v0.2
 
+- ✓ IconRole enum with 42 semantic icon roles across 7 categories — v0.3
+- ✓ IconData enum (Svg bytes, Rgba pixels) as platform-agnostic icon output — v0.3
+- ✓ icon_theme field on ThemeVariant with preset-specific assignments — v0.3
+- ✓ macOS icon loading: SF Symbols via CGBitmapContext rasterization (feature "system-icons") — v0.3
+- ✓ Windows icon loading: SHGetStockIconInfo + Segoe Fluent font glyphs (feature "system-icons") — v0.3
+- ✓ Linux icon loading: freedesktop icon theme spec via freedesktop-icons (feature "system-icons") — v0.3
+- ✓ Bundled Material Symbols SVGs as cross-platform fallback (feature "material-icons") — v0.3
+- ✓ Bundled Lucide SVGs as optional icon set (feature "lucide-icons") — v0.3
+- ✓ Public API: load_icon(), icon_name(), system_icon_set(), rasterize_svg() — v0.3
+- ✓ Connector updates: IconData conversion for gpui (icon_name + to_image_source) and iced (to_image_handle + to_svg_handle) — v0.3
+
 ### Active
 
-- [ ] IconRole enum with 42 semantic icon roles across 7 categories
-- [ ] IconData enum (Svg bytes, Rgba pixels) as platform-agnostic icon output
-- [ ] icon_theme field on ThemeVariant with preset-specific assignments
-- [ ] macOS icon loading: NSImage(systemSymbolName:) → rasterized RGBA (feature "macos")
-- [ ] Windows icon loading: SHGetStockIconInfo + Segoe Fluent Icons font glyphs (feature "windows")
-- [ ] Linux icon loading: freedesktop icon theme spec with index.theme parsing (feature "kde" or "portal")
-- [ ] Bundled Material Symbols SVGs as cross-platform fallback (feature "material-icons")
-- [ ] Bundled Lucide SVGs as optional icon set (feature "lucide-icons")
-- [ ] Public API: load_icon(), icon_name(), system_icon_set()
-- [ ] Connector updates: IconData conversion for gpui and iced
+(No active milestone — start next with `/gsd:new-milestone`)
 
 ### Out of Scope
 
@@ -79,12 +71,11 @@ Any Rust GUI app can look native on any platform by loading a single theme file 
 
 ## Context
 
-Shipped v0.1 with ~7,000 LOC (3,349 Rust + 2,566 TOML presets + 1,100 integration tests).
-Tech stack: Rust edition 2024, serde + toml (core), configparser (KDE), ashpd (GNOME portal), windows crate (Windows).
-17 bundled presets, 3 platform readers, 140+ tests with zero failures.
+Shipped v0.3 with ~13,700 LOC Rust across workspace (core + 2 connectors).
+Tech stack: Rust edition 2024, serde + toml (core), configparser (KDE), ashpd (GNOME portal), windows crate (Windows), objc2 (macOS), freedesktop-icons (Linux icons), resvg (SVG rasterization).
+17 bundled presets, 76 bundled SVG icons, 4 platform readers (KDE, GNOME, Windows, macOS), 3 platform icon loaders, 240+ tests.
 Prior art: system-theme 0.3.0, cosmic-theme, dark-light 2.0 — native-theme unifies what these do partially.
-v0.2 shipped: API polish (flat ThemeColors, NativeTheme methods), macOS reader, enhanced Windows/Linux readers, widget metrics, CI, toolkit connectors (gpui + iced).
-v0.3 focus: Platform-native icon loading with semantic icon roles, OS-native icon systems, and bundled cross-platform fallbacks.
+v0.1: Core data model, presets, readers. v0.2: API polish, widget metrics, CI, toolkit connectors. v0.3: Platform-native icon loading with semantic roles, bundled SVG fallbacks, connector integration.
 
 ## Constraints
 
@@ -110,6 +101,12 @@ v0.3 focus: Platform-native icon loading with semantic icon roles, OS-native ico
 | impl_merge! macro for theme layering | DRY merge across 10+ structs, declarative field categories | ✓ Good — prevented desynchronization across 36 color fields |
 | Single-variant reader output | Readers populate only light or dark based on detection | ✓ Good — consistent pattern across KDE/GNOME/Windows |
 | Adwaita as universal fallback | Embedded preset guaranteed available at compile time | ✓ Good — from_system() and from_gnome() both use it reliably |
+| #[non_exhaustive] IconRole enum | Forward compatibility without breaking matches | ✓ Good — wildcard arms in load_icon() and bundled lookups |
+| Owned Vec\<u8\> in IconData | No lifetime infection across API boundary | ✓ Good — clean return values from all loaders |
+| system-icons implies material-icons | Guaranteed bundled fallback for platform loaders | ✓ Good — Linux/macOS/Windows loaders always have fallback path |
+| Straight alpha output convention | All loaders unpremultiply to consistent straight alpha | ✓ Good — sficons, winicons, rasterize all share this pattern |
+| Inline BMP V4 encoder in gpui connector | RGBA-to-gpui without png crate dependency | ✓ Good — zero extra deps, ~40 lines of code |
+| load_icon() with string-based theme selection | Matches TOML icon_theme field, enables runtime switching | ✓ Good — showcase dropdown demonstrates runtime icon set switching |
 
 ---
-*Last updated: 2026-03-09 after v0.3 milestone start*
+*Last updated: 2026-03-09 after v0.3 milestone completion*

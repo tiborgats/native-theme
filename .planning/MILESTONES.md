@@ -34,3 +34,22 @@
 
 ---
 
+
+## v0.3 Icons (Shipped: 2026-03-09)
+
+**Phases completed:** 6 phases (16–21), 10 plans
+**Timeline:** 3 days (2026-03-07 → 2026-03-09)
+**Stats:** 139 files changed, +11,810 lines
+
+**Key accomplishments:**
+- IconRole enum (42 semantic variants across 7 categories), IconData (SVG/RGBA), IconSet (5 platform sets) with icon_name() mapping (210 match arms)
+- 76 bundled SVG icons (38 Material Symbols + 38 Lucide) as compile-time cross-platform fallbacks, feature-gated
+- Linux freedesktop icon theme loading with two-pass Adwaita-compatible lookup and hicolor→Material fallback
+- macOS SF Symbols rasterization via CGBitmapContext with straight alpha unpremultiply pass
+- Windows icon loading: SHGetStockIconInfo stock icons + Segoe Fluent/MDL2 font glyph rendering with BGRA-to-RGBA conversion
+- load_icon() dispatch API with platform→bundled→None fallback chain, rasterize_svg() via resvg
+- gpui connector: 30-role IconName shortcut, inline BMP V4 encoder for RGBA, showcase icon set selector
+- iced connector: to_image_handle() / to_svg_handle() type-routing helpers
+
+---
+
