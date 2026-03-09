@@ -17,7 +17,7 @@ Requirements for icon loading milestone. Each maps to roadmap phases.
 
 ### Platform Loading
 
-- [ ] **PLAT-01**: macOS icon loading via `NSImage(systemSymbolName:)` -> rasterized RGBA pixels (feature "system-icons")
+- [x] **PLAT-01**: macOS icon loading via `NSImage(systemSymbolName:)` -> rasterized RGBA pixels (feature "system-icons")
 - [ ] **PLAT-02**: Windows stock icon loading via `SHGetStockIconInfo` -> RGBA pixels (feature "system-icons")
 - [ ] **PLAT-03**: Windows Segoe Fluent Icons font glyph rendering for action/navigation/window roles (feature "system-icons")
 - [x] **PLAT-04**: Linux freedesktop icon theme lookup following Icon Theme Specification -> SVG file bytes (feature "system-icons")
@@ -106,7 +106,7 @@ All v0.2 requirements completed. See MILESTONES.md for details.
 | ICON-03 | Phase 16 | Complete |
 | ICON-04 | Phase 16 | Complete |
 | ICON-05 | Phase 16 | Complete |
-| PLAT-01 | Phase 19 | Pending |
+| PLAT-01 | Phase 19 | Complete |
 | PLAT-02 | Phase 20 | Pending |
 | PLAT-03 | Phase 20 | Pending |
 | PLAT-04 | Phase 18 | Complete |

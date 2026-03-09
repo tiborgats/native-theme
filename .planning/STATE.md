@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v0.3
 milestone_name: Icons
-status: verified
+status: executing
 stopped_at: null
-last_updated: "2026-03-09T08:15:00Z"
-last_activity: "2026-03-09 — Phase 18 verified (4/4 must-haves passed)"
+last_updated: "2026-03-09T08:47:18Z"
+last_activity: "2026-03-09 — Phase 19 plan 01 executed (2/2 tasks)"
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 5
-  completed_plans: 5
+  completed_plans: 6
   percent: 98
 ---
 
@@ -25,19 +25,19 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 
 ## Current Position
 
-Phase: 18 of 21 (Linux Icon Loading) — verified ✓
+Phase: 19 of 21 (macOS Icon Loading) — plan 01 complete
 Plan: 1/1 complete
-Status: Phase 18 verified, ready for Phase 19/20 (parallel)
-Last activity: 2026-03-09 — Phase 18 verified (4/4 must-haves passed)
+Status: Phase 19 plan 01 executed, pending verification
+Last activity: 2026-03-09 — Phase 19 plan 01 executed (2/2 tasks)
 
 Progress: [#####░░░░░] 50%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 39 (14 v0.1 + 20 v0.2 + 5 v0.3)
-- Average duration: ~4.1min (v0.2), 3.0min (v0.3 so far)
-- Total execution time: 70min (v0.2), 15min (v0.3)
+- Total plans completed: 40 (14 v0.1 + 20 v0.2 + 6 v0.3)
+- Average duration: ~4.1min (v0.2), 2.8min (v0.3 so far)
+- Total execution time: 70min (v0.2), 17min (v0.3)
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
@@ -46,6 +46,7 @@ Progress: [#####░░░░░] 50%
 | 17-01 | Download SVG icons | 2min | 2 | 78 |
 | 17-02 | Bundled icon module | 2min | 2 | 4 |
 | 18-01 | Freedesktop icon loader | 2min | 2 | 3 |
+| 19-01 | SF Symbols icon loader | 2min | 2 | 3 |
 
 ## Accumulated Context
 
@@ -68,6 +69,9 @@ v0.3 research recommends: data model first, bundled SVGs second, platform loader
 - [Phase 18]: system-icons feature implies material-icons for guaranteed bundled fallback
 - [Phase 18]: Two-pass lookup (plain then -symbolic) for Adwaita compatibility
 - [Phase 18]: No .with_cache() on freedesktop-icons lookup (library crate)
+- [Phase 19]: CGBitmapContext rasterization for guaranteed RGBA pixel format normalization
+- [Phase 19]: Post-processing unpremultiply pass converts premultiplied to straight alpha
+- [Phase 19]: Read pixel dimensions from CGImage (not NSImage size) for Retina correctness
 
 ### Pending Todos
 
@@ -79,6 +83,6 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-09T08:09:57.742Z
-Stopped at: Completed 18-01-PLAN.md
+Last session: 2026-03-09T08:47:18Z
+Stopped at: Completed 19-01-PLAN.md
 Resume file: None
