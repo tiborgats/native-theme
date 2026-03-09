@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Platform Coverage & Publishing
-status: complete
-stopped_at: Completed 14-04-PLAN.md
-last_updated: "2026-03-09T00:08:57Z"
-last_activity: 2026-03-09 — Phase 14 plan 04 complete (gpui showcase: widget gallery with NumberInput fix, font sizes, tooltip font info)
+status: completed
+stopped_at: Completed 14-05-PLAN.md
+last_updated: "2026-03-09T02:08:45.144Z"
+last_activity: "2026-03-09 — Phase 14 plan 05 complete (iced demo OS Theme option, CONN-09 gap closure)"
 progress:
   total_phases: 7
-  completed_phases: 7
-  total_plans: 16
-  completed_plans: 16
+  completed_phases: 6
+  total_plans: 17
+  completed_plans: 17
   percent: 100
 ---
 
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-08)
 ## Current Position
 
 Phase: 14 of 15 (Toolkit Connectors) — complete
-Plan: 4 of 4 complete
-Status: Phase 14 complete
-Last activity: 2026-03-09 — Phase 14 plan 04 complete (gpui showcase: widget gallery with NumberInput fix, font sizes, tooltip font info)
+Plan: 5 of 5 complete
+Status: Phase 14 complete (gap closure)
+Last activity: 2026-03-09 — Phase 14 plan 05 complete (iced demo OS Theme option, CONN-09 gap closure)
 
 Progress: [████████████████████] 100%
 
@@ -49,11 +49,11 @@ Progress: [████████████████████] 100%
 | 11-platform-readers | 4/4 | 10min | 2.5min |
 | 12-widget-metrics | 3/3 | 17min | 5.7min |
 | 13-ci-pipeline | 1/1 | 3min | 3min |
-| 14-toolkit-connectors | 4/4 | 50min | 12.5min |
+| 14-toolkit-connectors | 5/5 | 51min | 10.2min |
 
 **Recent Trend:**
-- Last 5 plans: 13-01 (3min), 14-01 (6min), 14-03 (9min), 14-04 (35min)
-- Trend: v0.2 execution complete, all phases done
+- Last 5 plans: 13-01 (3min), 14-01 (6min), 14-03 (9min), 14-04 (35min), 14-05 (1min)
+- Trend: v0.2 execution complete, all phases done (including gap closure)
 
 ## Accumulated Context
 
@@ -76,6 +76,7 @@ v0.2 decision: Cargo workspace restructuring (API-01) goes first, before API bre
 14-01: Used iced_core 0.14 (not iced 0.14) to avoid winit windowing dependency in library crate. Widget metric helpers as free functions (not Catalog impls) per iced architecture. CONN-06 satisfied via iced built-in Catalog impls over custom palette.
 14-03: Reused gpui-component Colorize trait for lighten/darken (multiplicative lightness). Matched apply_config fallback logic for hover/active derivation. ThemeColor::default() as base with all 108 fields overridden via grouped helper functions. SharedString::from(s.clone()) for ThemeConfig static lifetime.
 14-04: NumberInput requires explicit NumberInputEvent::Step subscription for +/- buttons. widget_tooltip_themed wrapper injects font settings into all tooltips. text_sm for readable color swatch labels.
+14-05: OsTheme prepended as first dropdown option; default state stays Preset to avoid from_system() failures on build hosts.
 
 ### Pending Todos
 
@@ -87,6 +88,6 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-09T01:15:00Z
-Stopped at: Completed 14-02-PLAN.md (retroactive SUMMARY creation)
+Last session: 2026-03-09T02:08:45.142Z
+Stopped at: Completed 14-05-PLAN.md
 Resume file: None
