@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v0.3
 milestone_name: Icons
-status: executing
-stopped_at: "Completed 16-02-PLAN.md"
-last_updated: "2026-03-09T06:48:02Z"
-last_activity: 2026-03-09 — Completed plan 16-02 (icon name mapping)
+status: verified
+stopped_at: null
+last_updated: "2026-03-09T07:10:00Z"
+last_activity: 2026-03-09 — Phase 16 verified (5/5 must-haves passed)
 progress:
   total_phases: 6
   completed_phases: 1
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-09)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 16 — Icon Data Model
+**Current focus:** Phase 17 — Bundled SVG Icons
 
 ## Current Position
 
-Phase: 16 of 21 (Icon Data Model) — first of 6 v0.3 phases
-Plan: 2 of 2 complete (phase done)
-Status: Executing
-Last activity: 2026-03-09 — Completed plan 16-02 (icon name mapping)
+Phase: 16 of 21 (Icon Data Model) — verified ✓
+Plan: 2/2 complete
+Status: Phase 16 verified, ready for Phase 17
+Last activity: 2026-03-09 — Phase 16 verified (5/5 must-haves passed)
 
 Progress: [##░░░░░░░░] 16%
 
