@@ -7,12 +7,13 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 ## Milestones
 
 - ✅ **v0.1 MVP** — Phases 1-8 (shipped 2026-03-07)
-- 🚧 **v0.2 Platform Coverage & Publishing** — Phases 9-15 (in progress)
+- ✅ **v0.2 Platform Coverage & Publishing** — Phases 9-15 (shipped 2026-03-09)
+- 🚧 **v0.3 Icons** — Phases 16-21 (in progress)
 
 ## Phases
 
 <details>
-<summary>✅ v0.1 MVP (Phases 1-8) — SHIPPED 2026-03-07</summary>
+<summary>v0.1 MVP (Phases 1-8) — SHIPPED 2026-03-07</summary>
 
 - [x] Phase 1: Data Model Foundation (3/3 plans) — completed 2026-03-07
 - [x] Phase 2: Core Presets (2/2 plans) — completed 2026-03-07
@@ -25,147 +26,123 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 </details>
 
-### 🚧 v0.2 Platform Coverage & Publishing (In Progress)
+<details>
+<summary>v0.2 Platform Coverage & Publishing (Phases 9-15) — SHIPPED 2026-03-09</summary>
 
-- [x] **Phase 9: Cargo Workspace** — Restructure repo into a Cargo workspace with core crate in subdirectory — completed 2026-03-08
-- [x] **Phase 10: API Breaking Changes** — Flatten ThemeColors, move presets to NativeTheme methods, add geometry fields (completed 2026-03-08)
-- [x] **Phase 11: Platform Readers** — macOS reader, Windows enhancements, Linux enhancements (completed 2026-03-08)
-- [x] **Phase 12: Widget Metrics** — Widget metrics data model and platform-specific population (completed 2026-03-08)
-- [x] **Phase 13: CI Pipeline** — GitHub Actions with cross-platform matrix, semver-checks, linting (completed 2026-03-08)
-- [x] **Phase 14: Toolkit Connectors** — gpui and iced connector crates with examples (completed 2026-03-09)
-- [ ] **Phase 15: Publishing Prep** — Metadata, licenses, changelog, doc examples, crates.io publish
+- [x] Phase 9: Cargo Workspace (1/1 plan) — completed 2026-03-08
+- [x] Phase 10: API Breaking Changes (3/3 plans) — completed 2026-03-08
+- [x] Phase 11: Platform Readers (4/4 plans) — completed 2026-03-08
+- [x] Phase 12: Widget Metrics (3/3 plans) — completed 2026-03-08
+- [x] Phase 13: CI Pipeline (1/1 plan) — completed 2026-03-08
+- [x] Phase 14: Toolkit Connectors (5/5 plans) — completed 2026-03-09
+- [x] Phase 15: Publishing Prep (3/3 plans) — completed 2026-03-09
+
+</details>
+
+### 🚧 v0.3 Icons (In Progress)
+
+**Milestone Goal:** Platform-native icon loading — semantic icon roles mapped to OS-native icon systems (SF Symbols, Segoe Fluent, freedesktop) with bundled cross-platform fallbacks (Material, Lucide).
+
+- [ ] **Phase 16: Icon Data Model** — IconRole enum, IconData type, icon name mapping, ThemeVariant integration
+- [ ] **Phase 17: Bundled SVG Icons** — Material Symbols and Lucide SVGs as compile-time fallback icon sets
+- [ ] **Phase 18: Linux Icon Loading** — Freedesktop icon theme lookup via freedesktop-icons crate
+- [ ] **Phase 19: macOS Icon Loading** — SF Symbols via NSImage rasterization to RGBA
+- [ ] **Phase 20: Windows Icon Loading** — SHGetStockIconInfo stock icons and Segoe Fluent font glyphs
+- [ ] **Phase 21: Integration and Connectors** — load_icon() dispatch, SVG rasterization, gpui/iced connector updates
 
 ## Phase Details
 
-### Phase 9: Cargo Workspace
-**Goal**: Repo restructured as a Cargo workspace so connector crates can be developed alongside the core crate
-**Depends on**: Phase 8 (v0.1 complete)
-**Requirements**: API-01
+### Phase 16: Icon Data Model
+**Goal**: Developers can define semantic icon roles and look up platform-specific icon identifiers without any platform dependencies
+**Depends on**: Phase 15 (v0.2 complete)
+**Requirements**: ICON-01, ICON-02, ICON-03, ICON-04, ICON-05
 **Success Criteria** (what must be TRUE):
-  1. Running `cargo build` from repo root builds the core crate via workspace
-  2. Running `cargo test` from repo root runs all existing 140+ tests and they pass
-  3. Core crate source lives in a `native-theme/` subdirectory with its own Cargo.toml
-  4. A top-level Cargo.toml defines workspace members
-**Plans**: 1 plan
-Plans:
-- [x] 09-01-PLAN.md — Restructure repo as Cargo virtual workspace with connector stubs
+  1. `IconRole::DialogError`, `IconRole::WindowClose`, `IconRole::ActionCopy`, and all 42 variants are accessible and exhaustively matchable
+  2. `IconData::Svg(bytes)` and `IconData::Rgba { width, height, data }` can be constructed and pattern-matched by consuming code
+  3. `icon_name(IconSet::SfSymbols, IconRole::ActionCopy)` returns `"doc.on.doc"` (and analogous lookups for all 5 icon sets return correct platform identifiers)
+  4. `system_icon_set()` returns `IconSet::SfSymbols` on macOS, `IconSet::SegoeIcons` on Windows, `IconSet::Freedesktop` on Linux
+  5. Loading a preset TOML with `icon_theme = "material"` populates `theme.light.icon_theme` as `Some("material")`
+**Plans**: TBD
 
-### Phase 10: API Breaking Changes
-**Goal**: Public API refactored to its final v0.2 shape — flat colors, idiomatic methods, extended geometry — before any new features build on it
-**Depends on**: Phase 9
-**Requirements**: API-02, API-03, API-04, API-05, API-06, API-07, API-08
+### Phase 17: Bundled SVG Icons
+**Goal**: Any platform can render all 42 icon roles using bundled SVG fallbacks without network access or OS-specific APIs
+**Depends on**: Phase 16
+**Requirements**: BNDL-01, BNDL-02
 **Success Criteria** (what must be TRUE):
-  1. `ThemeColors` has 36 direct `Option<Rgba>` fields with no nested sub-structs
-  2. All 17 preset TOML files use flat `[light.colors]` / `[dark.colors]` tables and load correctly
-  3. `NativeTheme::preset("adwaita")`, `NativeTheme::from_toml()`, `NativeTheme::from_file()`, `NativeTheme::list_presets()`, and `theme.to_toml()` work; old free functions are removed
-  4. `ThemeGeometry` has `radius_lg` and `shadow` fields, and presets include values for them
-  5. All existing tests pass against the new API (updated as needed)
-**Plans**: 3 plans
-Plans:
-- [x] 10-01-PLAN.md — Flatten ThemeColors to 36 direct fields, migrate TOML presets and platform readers
-- [x] 10-02-PLAN.md — Move preset functions to impl NativeTheme, remove old exports, update README
-- [x] 10-03-PLAN.md — Add radius_lg and shadow to ThemeGeometry, update preset geometry
+  1. With feature `material-icons` enabled, every `IconRole` variant resolves to valid SVG bytes via the bundled Material Symbols set
+  2. With feature `lucide-icons` enabled, every `IconRole` variant resolves to valid SVG bytes via the bundled Lucide set
+  3. Without any icon feature flags enabled, attempting to load a bundled icon returns `None` (no compile-time bloat when icons not needed)
+  4. Total binary size contribution of each bundled set stays under 200KB (Material) and 100KB (Lucide)
+**Plans**: TBD
 
-### Phase 11: Platform Readers
-**Goal**: Full desktop platform coverage — macOS reader completes the 4th platform, Windows and Linux readers enhanced with richer data
-**Depends on**: Phase 10
-**Requirements**: PLAT-01, PLAT-02, PLAT-03, PLAT-04, PLAT-05, PLAT-06, PLAT-07, PLAT-08, PLAT-09, PLAT-10, PLAT-11, PLAT-12, PLAT-13
+### Phase 18: Linux Icon Loading
+**Goal**: Linux users get icons from their active desktop theme (Adwaita, Breeze, Papirus, etc.) following the freedesktop spec
+**Depends on**: Phase 17
+**Requirements**: PLAT-04
 **Success Criteria** (what must be TRUE):
-  1. `NativeTheme::from_macos()` returns a theme with semantic colors (P3-to-sRGB converted), fonts, and both light/dark variants resolved via NSAppearance
-  2. `NativeTheme::from_system()` dispatches to `from_macos()` on macOS
-  3. `NativeTheme::from_windows()` returns accent shades (AccentDark1-3, AccentLight1-3), system font, spacing, and DPI-aware geometry; capability checks prevent crashes on older Windows versions
-  4. `NativeTheme::from_kde()` with portal overlay merges portal accent onto kdeglobals palette; GNOME reader populates font data; `from_linux()` provides a fallback that tries kdeglobals on non-KDE desktops
-  5. D-Bus portal backend detection improves DE heuristic accuracy
-**Plans**: 4 plans
-Plans:
-- [x] 11-01-PLAN.md — macOS reader with NSColor semantic colors, NSAppearance variants, NSFont, and from_system() dispatch
-- [x] 11-02-PLAN.md — Windows reader enhancements: accent shades, system font, WinUI3 spacing, DPI-aware geometry
-- [x] 11-03-PLAN.md — Linux enhancements: GNOME fonts, KDE+portal overlay, D-Bus backend detection, from_linux() fallback
-- [x] 11-04-PLAN.md — Gap closure: wire detect_portal_backend into async dispatch, fix env var test races
+  1. With feature `system-icons` enabled on Linux, `load_icon(IconRole::DialogError, "freedesktop")` returns SVG bytes from the active icon theme
+  2. When a role has no matching icon in the current theme, the loader falls back to hicolor, then to the bundled Material SVGs
+  3. The loader respects `XDG_DATA_DIRS` and works with Adwaita, Breeze, and hicolor-only environments
+**Plans**: TBD
 
-### Phase 12: Widget Metrics
-**Goal**: Per-widget sizing and spacing data available from all four platforms, enabling toolkit connectors to produce pixel-perfect native layouts
-**Depends on**: Phase 11
-**Requirements**: METRIC-01, METRIC-02, METRIC-03, METRIC-04, METRIC-05, METRIC-06, METRIC-07, METRIC-08
+### Phase 19: macOS Icon Loading
+**Goal**: macOS users get native SF Symbols icons rasterized to RGBA pixels at the requested size
+**Depends on**: Phase 17
+**Requirements**: PLAT-01
 **Success Criteria** (what must be TRUE):
-  1. `WidgetMetrics` struct exists with 12 per-widget sub-structs (Button, Checkbox, Input, Scrollbar, Slider, ProgressBar, Tab, MenuItem, Tooltip, ListItem, Toolbar, Splitter), all using `Option<f32>` fields and `#[non_exhaustive]`
-  2. `ThemeVariant` has a `widget_metrics: Option<WidgetMetrics>` field accessible after reading any platform theme
-  3. KDE reader populates metrics from breezemetrics.h constants; Windows reader populates via `GetSystemMetricsForDpi`; macOS reader populates from HIG defaults; GNOME reader populates from libadwaita values
-  4. Preset TOML files include widget metrics data
-**Plans**: 3 plans
-Plans:
-- [x] 12-01-PLAN.md — WidgetMetrics data model with 12 sub-structs, ThemeVariant integration
-- [x] 12-02-PLAN.md — Platform reader metrics population (KDE, Windows, macOS, GNOME)
-- [x] 12-03-PLAN.md — Widget metrics added to all 17 preset TOML files
+  1. With feature `system-icons` enabled on macOS, `load_icon(IconRole::ActionCopy, "sf-symbols")` returns `IconData::Rgba` with correct pixel dimensions
+  2. Rasterized icons have correct alpha (straight, not premultiplied) and produce visually correct output at both 1x and 2x (Retina) scale
+  3. When an SF Symbols icon is unavailable (older macOS or missing symbol), the loader falls back to bundled SVGs
+**Plans**: TBD
 
-### Phase 13: CI Pipeline
-**Goal**: Automated cross-platform testing catches regressions and API breakage on every push
-**Depends on**: Phase 12
-**Requirements**: CI-01, CI-02, CI-03, CI-04
+### Phase 20: Windows Icon Loading
+**Goal**: Windows users get native stock icons and Segoe Fluent Icons font glyphs as RGBA pixels
+**Depends on**: Phase 17
+**Requirements**: PLAT-02, PLAT-03
 **Success Criteria** (what must be TRUE):
-  1. GitHub Actions workflow runs tests on Linux, Windows, and macOS runners
-  2. Feature flag matrix tests `--no-default-features` and each reader feature independently (`kde`, `portal-tokio`, `windows`, `macos`)
-  3. `cargo semver-checks` runs in CI and would catch removed or changed public API items
-  4. `cargo clippy` and `cargo fmt --check` run in CI and enforce clean code
-**Plans**: 1 plan
-Plans:
-- [x] 13-01-PLAN.md — Fix lint/format issues, create GitHub Actions CI workflow with test matrix and semver checks
+  1. With feature `system-icons` enabled on Windows, stock icon roles (e.g., `IconRole::FileDocument`, `IconRole::DialogWarning`) return RGBA pixels via `SHGetStockIconInfo`
+  2. Action/navigation/window roles (e.g., `IconRole::ActionCopy`, `IconRole::WindowClose`) return RGBA pixels rendered from the Segoe Fluent Icons font
+  3. RGBA output has correct byte order (not BGRA) and straight alpha (not premultiplied)
+  4. When Segoe Fluent font is not present (some Windows 10 installs), the loader falls back to bundled SVGs
+**Plans**: TBD
 
-### Phase 14: Toolkit Connectors
-**Goal**: Developers using gpui or iced can apply native-theme data to their apps with a single connector crate, including working examples
-**Depends on**: Phase 12
-**Requirements**: CONN-01, CONN-02, CONN-03, CONN-04, CONN-05, CONN-06, CONN-07, CONN-08, CONN-09
+### Phase 21: Integration and Connectors
+**Goal**: The full icon pipeline works end-to-end: load_icon() dispatches to the right loader, connectors convert IconData to toolkit image types, and the gpui example showcases icons
+**Depends on**: Phase 18, Phase 19, Phase 20
+**Requirements**: INTG-01, INTG-02, INTG-03, INTG-04, INTG-05
 **Success Criteria** (what must be TRUE):
-  1. `native-theme-gpui` crate maps ThemeColors to gpui-component's 108 ThemeColor fields (direct + derived shade generation), plus fonts, geometry, spacing, and widget metrics
-  2. `native-theme-gpui` includes upstream PR proposal documents and an `examples/showcase.rs` widget gallery that renders with a native theme
-  3. `native-theme-iced` crate maps ThemeColors to iced Palette + Extended palette, implements per-widget Catalog/Style for 8 core widgets, and maps geometry/spacing/widget metrics
-  4. `native-theme-iced` includes an `examples/demo.rs` widget gallery that renders with a native theme
-  5. Both connectors include a theme selector dropdown (presets + OS theme)
-**Plans**: 5 plans
-Plans:
-- [x] 14-01-PLAN.md — iced connector core: palette, extended palette, widget metric helpers
-- [x] 14-02-PLAN.md — iced demo.rs widget gallery with theme selector
-- [x] 14-03-PLAN.md — gpui connector core: 108-field color mapping, config, shade derivation, upstream proposal
-- [x] 14-04-PLAN.md — gpui showcase.rs widget gallery with theme selector
-- [x] 14-05-PLAN.md — Gap closure: add OS Theme option to iced demo theme selector
-
-### Phase 15: Publishing Prep
-**Goal**: Crate metadata, documentation, and licensing complete — `native-theme` and `native-theme-iced` published to crates.io
-**Depends on**: Phase 13, Phase 14
-**Requirements**: PUB-01, PUB-02, PUB-03, PUB-04, PUB-05, PUB-06, PUB-07, PUB-08
-**Success Criteria** (what must be TRUE):
-  1. `cargo publish --dry-run` succeeds for `native-theme` and `native-theme-iced` with all required metadata (rust-version, repository, homepage, keywords, categories, readme)
-  2. LICENSE-MIT, LICENSE-APACHE, and LICENSE-0BSD files exist at repo root
-  3. CHANGELOG.md covers all v0.2 changes in Keep a Changelog format; IMPLEMENTATION.md matches actual implementation; `docs/new-os-version-guide.md` exists
-  4. `NativeTheme`, `Rgba`, and `ThemeVariant` have doc examples (`/// # Examples`) that compile
-  5. `native-theme` and `native-theme-iced` are published to crates.io
-**Plans**: 4 plans
-Plans:
-- [ ] 15-01-PLAN.md — Cargo.toml metadata, license files, dependency versioning for publish dry-run
-- [ ] 15-02-PLAN.md — Doc examples on key types, fix doc warnings, create CHANGELOG.md
-- [ ] 15-03-PLAN.md — Update IMPLEMENTATION.md for v0.2, create new-os-version-guide.md
-- [ ] 15-04-PLAN.md — Publish native-theme and native-theme-iced to crates.io
+  1. `load_icon(role, icon_theme)` dispatches to the correct platform loader based on the icon_theme string and falls back through the chain (platform -> bundled Material -> None)
+  2. With feature `svg-rasterize`, `rasterize_svg(svg_bytes, size)` converts SVG data to `IconData::Rgba` using resvg
+  3. `native-theme-gpui` converts `IconData` to a gpui-compatible image and maps `IconRole` to gpui-component `IconName` for Lucide icons (zero I/O shortcut for 27+ roles)
+  4. `native-theme-iced` converts `IconData` to `iced::widget::image::Handle`
+  5. The gpui example app displays icons with an icon set selector dropdown
+**Plans**: TBD
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
-(Phase 13 and Phase 14 can execute in parallel after Phase 12; Phase 15 depends on both.)
+Phases 16 -> 17 -> 18/19/20 (parallel) -> 21
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 1. Data Model Foundation | v0.1 | 3/3 | ✓ Complete | 2026-03-07 |
-| 2. Core Presets | v0.1 | 2/2 | ✓ Complete | 2026-03-07 |
-| 3. KDE Reader | v0.1 | 2/2 | ✓ Complete | 2026-03-07 |
-| 4. GNOME Portal Reader | v0.1 | 2/2 | ✓ Complete | 2026-03-07 |
-| 5. Windows Reader | v0.1 | 1/1 | ✓ Complete | 2026-03-07 |
-| 6. Cross-Platform Dispatch | v0.1 | 1/1 | ✓ Complete | 2026-03-07 |
-| 7. Extended Presets | v0.1 | 2/2 | ✓ Complete | 2026-03-07 |
-| 8. Documentation | v0.1 | 1/1 | ✓ Complete | 2026-03-07 |
-| 9. Cargo Workspace | v0.2 | 1/1 | ✓ Complete | 2026-03-08 |
-| 10. API Breaking Changes | v0.2 | 3/3 | ✓ Complete | 2026-03-08 |
-| 11. Platform Readers | v0.2 | 4/4 | ✓ Complete | 2026-03-08 |
-| 12. Widget Metrics | v0.2 | 3/3 | ✓ Complete | 2026-03-08 |
-| 13. CI Pipeline | v0.2 | 1/1 | ✓ Complete | 2026-03-08 |
-| 14. Toolkit Connectors | v0.2 | 5/5 | ✓ Complete | 2026-03-09 |
-| 15. Publishing Prep | 3/4 | In Progress|  | - |
+| 1. Data Model Foundation | v0.1 | 3/3 | Complete | 2026-03-07 |
+| 2. Core Presets | v0.1 | 2/2 | Complete | 2026-03-07 |
+| 3. KDE Reader | v0.1 | 2/2 | Complete | 2026-03-07 |
+| 4. GNOME Portal Reader | v0.1 | 2/2 | Complete | 2026-03-07 |
+| 5. Windows Reader | v0.1 | 1/1 | Complete | 2026-03-07 |
+| 6. Cross-Platform Dispatch | v0.1 | 1/1 | Complete | 2026-03-07 |
+| 7. Extended Presets | v0.1 | 2/2 | Complete | 2026-03-07 |
+| 8. Documentation | v0.1 | 1/1 | Complete | 2026-03-07 |
+| 9. Cargo Workspace | v0.2 | 1/1 | Complete | 2026-03-08 |
+| 10. API Breaking Changes | v0.2 | 3/3 | Complete | 2026-03-08 |
+| 11. Platform Readers | v0.2 | 4/4 | Complete | 2026-03-08 |
+| 12. Widget Metrics | v0.2 | 3/3 | Complete | 2026-03-08 |
+| 13. CI Pipeline | v0.2 | 1/1 | Complete | 2026-03-08 |
+| 14. Toolkit Connectors | v0.2 | 5/5 | Complete | 2026-03-09 |
+| 15. Publishing Prep | v0.2 | 3/3 | Complete | 2026-03-09 |
+| 16. Icon Data Model | v0.3 | 0/? | Not started | - |
+| 17. Bundled SVG Icons | v0.3 | 0/? | Not started | - |
+| 18. Linux Icon Loading | v0.3 | 0/? | Not started | - |
+| 19. macOS Icon Loading | v0.3 | 0/? | Not started | - |
+| 20. Windows Icon Loading | v0.3 | 0/? | Not started | - |
+| 21. Integration and Connectors | v0.3 | 0/? | Not started | - |

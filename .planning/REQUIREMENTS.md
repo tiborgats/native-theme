@@ -13,14 +13,14 @@ Requirements for icon loading milestone. Each maps to roadmap phases.
 - [ ] **ICON-02**: IconData enum returning SVG bytes (`Svg(Vec<u8>)`) or rasterized RGBA pixels (`Rgba { width, height, data }`)
 - [ ] **ICON-03**: icon_theme field (`Option<String>`) on ThemeVariant with preset-specific default assignments in TOML
 - [ ] **ICON-04**: `icon_name()` function to look up the platform-specific identifier string for a given icon set and role
-- [ ] **ICON-05**: `system_icon_set()` function to resolve "system" to the OS-native icon set name (macOS→sf-symbols, Windows→segoe-fluent, Linux→freedesktop)
+- [ ] **ICON-05**: `system_icon_set()` function to resolve "system" to the OS-native icon set name (macOS->sf-symbols, Windows->segoe-fluent, Linux->freedesktop)
 
 ### Platform Loading
 
-- [ ] **PLAT-01**: macOS icon loading via `NSImage(systemSymbolName:)` → rasterized RGBA pixels (feature "system-icons")
-- [ ] **PLAT-02**: Windows stock icon loading via `SHGetStockIconInfo` → RGBA pixels (feature "system-icons")
+- [ ] **PLAT-01**: macOS icon loading via `NSImage(systemSymbolName:)` -> rasterized RGBA pixels (feature "system-icons")
+- [ ] **PLAT-02**: Windows stock icon loading via `SHGetStockIconInfo` -> RGBA pixels (feature "system-icons")
 - [ ] **PLAT-03**: Windows Segoe Fluent Icons font glyph rendering for action/navigation/window roles (feature "system-icons")
-- [ ] **PLAT-04**: Linux freedesktop icon theme lookup following Icon Theme Specification → SVG file bytes (feature "system-icons")
+- [ ] **PLAT-04**: Linux freedesktop icon theme lookup following Icon Theme Specification -> SVG file bytes (feature "system-icons")
 
 ### Bundled Fallback Icons
 
@@ -31,7 +31,7 @@ Requirements for icon loading milestone. Each maps to roadmap phases.
 
 - [ ] **INTG-01**: `load_icon()` dispatch function selecting the appropriate loader based on icon_theme string
 - [ ] **INTG-02**: Optional SVG-to-RGBA rasterization via resvg (feature "svg-rasterize")
-- [ ] **INTG-03**: gpui connector: IconData→RenderImage conversion + `icon_name()` Lucide shortcut for gpui-component IconName
+- [ ] **INTG-03**: gpui connector: IconData->RenderImage conversion + `icon_name()` Lucide shortcut for gpui-component IconName
 - [ ] **INTG-04**: iced connector: IconData conversion helpers
 - [ ] **INTG-05**: gpui example updated with icon display and icon set selector dropdown
 
@@ -101,28 +101,28 @@ All v0.2 requirements completed. See MILESTONES.md for details.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ICON-01 | — | Pending |
-| ICON-02 | — | Pending |
-| ICON-03 | — | Pending |
-| ICON-04 | — | Pending |
-| ICON-05 | — | Pending |
-| PLAT-01 | — | Pending |
-| PLAT-02 | — | Pending |
-| PLAT-03 | — | Pending |
-| PLAT-04 | — | Pending |
-| BNDL-01 | — | Pending |
-| BNDL-02 | — | Pending |
-| INTG-01 | — | Pending |
-| INTG-02 | — | Pending |
-| INTG-03 | — | Pending |
-| INTG-04 | — | Pending |
-| INTG-05 | — | Pending |
+| ICON-01 | Phase 16 | Pending |
+| ICON-02 | Phase 16 | Pending |
+| ICON-03 | Phase 16 | Pending |
+| ICON-04 | Phase 16 | Pending |
+| ICON-05 | Phase 16 | Pending |
+| PLAT-01 | Phase 19 | Pending |
+| PLAT-02 | Phase 20 | Pending |
+| PLAT-03 | Phase 20 | Pending |
+| PLAT-04 | Phase 18 | Pending |
+| BNDL-01 | Phase 17 | Pending |
+| BNDL-02 | Phase 17 | Pending |
+| INTG-01 | Phase 21 | Pending |
+| INTG-02 | Phase 21 | Pending |
+| INTG-03 | Phase 21 | Pending |
+| INTG-04 | Phase 21 | Pending |
+| INTG-05 | Phase 21 | Pending |
 
 **Coverage:**
 - v0.3 requirements: 16 total
-- Mapped to phases: 0
-- Unmapped: 16 (pending roadmap)
+- Mapped to phases: 16
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-08*
-*Last updated: 2026-03-09 after v0.3 milestone requirements*
+*Last updated: 2026-03-09 after v0.3 roadmap creation*
