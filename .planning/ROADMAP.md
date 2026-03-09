@@ -127,7 +127,7 @@ Plans:
 - [x] 14-02-PLAN.md — iced demo.rs widget gallery with theme selector
 - [x] 14-03-PLAN.md — gpui connector core: 108-field color mapping, config, shade derivation, upstream proposal
 - [x] 14-04-PLAN.md — gpui showcase.rs widget gallery with theme selector
-- [ ] 14-05-PLAN.md — Gap closure: add OS Theme option to iced demo theme selector
+- [x] 14-05-PLAN.md — Gap closure: add OS Theme option to iced demo theme selector
 
 ### Phase 15: Publishing Prep
 **Goal**: Crate metadata, documentation, and licensing complete — `native-theme` and `native-theme-iced` published to crates.io
@@ -162,5 +162,5 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 11. Platform Readers | v0.2 | 4/4 | ✓ Complete | 2026-03-08 |
 | 12. Widget Metrics | v0.2 | 3/3 | ✓ Complete | 2026-03-08 |
 | 13. CI Pipeline | v0.2 | 1/1 | ✓ Complete | 2026-03-08 |
-| 14. Toolkit Connectors | 5/5 | Complete   | 2026-03-09 | - |
+| 14. Toolkit Connectors | v0.2 | 5/5 | ✓ Complete | 2026-03-09 |
 | 15. Publishing Prep | v0.2 | 0/0 | Not started | - |
