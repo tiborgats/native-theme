@@ -97,6 +97,8 @@ pub mod windows;
 pub mod freedesktop;
 #[cfg(all(target_os = "macos", feature = "system-icons"))]
 pub mod sficons;
+#[cfg(feature = "system-icons")]
+pub mod winicons;
 
 #[cfg(feature = "portal")]
 pub use gnome::from_gnome;
