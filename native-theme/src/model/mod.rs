@@ -22,6 +22,17 @@ use serde::{Deserialize, Serialize};
 ///
 /// Composes colors, fonts, geometry, and spacing into one coherent set.
 /// Empty sub-structs are omitted from serialization to keep TOML files clean.
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::{ThemeVariant, Rgba};
+///
+/// let mut variant = ThemeVariant::default();
+/// variant.colors.accent = Some(Rgba::rgb(0, 120, 215));
+/// variant.fonts.family = Some("Inter".into());
+/// assert!(!variant.is_empty());
+/// ```
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 #[non_exhaustive]
@@ -78,6 +89,30 @@ impl ThemeVariant {
 ///
 /// This is the top-level type that theme files deserialize into and that
 /// platform readers produce.
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::NativeTheme;
+///
+/// // Load a bundled preset
+/// let theme = NativeTheme::preset("dracula").unwrap();
+/// assert_eq!(theme.name, "Dracula");
+///
+/// // Parse from a TOML string
+/// let toml = r##"
+/// name = "Custom"
+/// [light.colors]
+/// accent = "#ff6600"
+/// "##;
+/// let custom = NativeTheme::from_toml(toml).unwrap();
+/// assert_eq!(custom.name, "Custom");
+///
+/// // Merge themes (overlay wins for populated fields)
+/// let mut base = NativeTheme::preset("default").unwrap();
+/// base.merge(&custom);
+/// assert_eq!(base.name, "Default"); // base name is preserved
+/// ```
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[non_exhaustive]
 pub struct NativeTheme {
@@ -136,7 +171,7 @@ impl NativeTheme {
     /// light and dark variants.
     ///
     /// # Errors
-    /// Returns [`Error::Unavailable`] if the preset name is not recognized.
+    /// Returns [`crate::Error::Unavailable`] if the preset name is not recognized.
     ///
     /// # Examples
     /// ```
@@ -150,7 +185,7 @@ impl NativeTheme {
     /// Parse a TOML string into a [`NativeTheme`].
     ///
     /// # Errors
-    /// Returns [`Error::Format`] if the TOML is invalid.
+    /// Returns [`crate::Error::Format`] if the TOML is invalid.
     ///
     /// # Examples
     /// ```
@@ -169,7 +204,7 @@ impl NativeTheme {
     /// Load a [`NativeTheme`] from a TOML file.
     ///
     /// # Errors
-    /// Returns [`Error::Unavailable`] if the file cannot be read.
+    /// Returns [`crate::Error::Unavailable`] if the file cannot be read.
     ///
     /// # Examples
     /// ```no_run
@@ -193,7 +228,7 @@ impl NativeTheme {
     /// Serialize this theme to a TOML string.
     ///
     /// # Errors
-    /// Returns [`Error::Format`] if serialization fails.
+    /// Returns [`crate::Error::Format`] if serialization fails.
     ///
     /// # Examples
     /// ```

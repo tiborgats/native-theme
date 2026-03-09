@@ -20,6 +20,24 @@ use std::str::FromStr;
 ///
 /// Display outputs lowercase hex: `#rrggbb` when alpha is 255,
 /// `#rrggbbaa` otherwise.
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::Rgba;
+///
+/// // Create an opaque color
+/// let blue = Rgba::rgb(0, 120, 215);
+/// assert_eq!(blue.a, 255);
+///
+/// // Parse from a hex string
+/// let parsed: Rgba = "#3daee9".parse().unwrap();
+/// assert_eq!(parsed.r, 61);
+///
+/// // Convert to f32 array for toolkit interop
+/// let arr = Rgba::rgb(255, 0, 0).to_f32_array();
+/// assert_eq!(arr, [1.0, 0.0, 0.0, 1.0]);
+/// ```
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Rgba {
     pub r: u8,

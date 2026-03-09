@@ -164,7 +164,8 @@ fn from_linux() -> crate::Result<NativeTheme> {
 /// - **Linux (KDE):** Calls `from_kde()` when `XDG_CURRENT_DESKTOP` contains
 ///   "KDE" and the `kde` feature is enabled.
 /// - **Linux (other):** Returns the bundled Adwaita preset. For live GNOME
-///   portal data, call [`from_gnome()`] directly.
+///   portal data, call `from_gnome()` directly (requires `portal-tokio` or
+///   `portal-async-io` feature).
 /// - **Windows:** Calls `from_windows()` when the `windows` feature is enabled.
 /// - **Other platforms:** Returns `Error::Unsupported`.
 ///
