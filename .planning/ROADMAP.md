@@ -114,7 +114,9 @@ Plans:
   2. Action/navigation/window roles (e.g., `IconRole::ActionCopy`, `IconRole::WindowClose`) return RGBA pixels rendered from the Segoe Fluent Icons font
   3. RGBA output has correct byte order (not BGRA) and straight alpha (not premultiplied)
   4. When Segoe Fluent font is not present (some Windows 10 installs), the loader falls back to bundled SVGs
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 20-01-PLAN.md — winicons.rs module, SHGetStockIconInfo + GetGlyphOutlineW pipelines, BGRA-to-RGBA conversion, font fallback chain
 
 ### Phase 21: Integration and Connectors
 **Goal**: The full icon pipeline works end-to-end: load_icon() dispatches to the right loader, connectors convert IconData to toolkit image types, and the gpui example showcases icons
@@ -154,5 +156,5 @@ Phases 16 -> 17 -> 18/19/20 (parallel) -> 21
 | 17. Bundled SVG Icons | v0.3 | 2/2 | Complete | 2026-03-09 |
 | 18. Linux Icon Loading | v0.3 | 1/1 | Complete | 2026-03-09 |
 | 19. macOS Icon Loading | v0.3 | 1/1 | Complete | 2026-03-09 |
-| 20. Windows Icon Loading | v0.3 | 0/? | Not started | - |
+| 20. Windows Icon Loading | v0.3 | 0/1 | Planned | - |
 | 21. Integration and Connectors | v0.3 | 0/? | Not started | - |
