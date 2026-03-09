@@ -139,7 +139,12 @@ Plans:
   3. CHANGELOG.md covers all v0.2 changes in Keep a Changelog format; IMPLEMENTATION.md matches actual implementation; `docs/new-os-version-guide.md` exists
   4. `NativeTheme`, `Rgba`, and `ThemeVariant` have doc examples (`/// # Examples`) that compile
   5. `native-theme` and `native-theme-iced` are published to crates.io
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [ ] 15-01-PLAN.md — Cargo.toml metadata, license files, dependency versioning for publish dry-run
+- [ ] 15-02-PLAN.md — Doc examples on key types, fix doc warnings, create CHANGELOG.md
+- [ ] 15-03-PLAN.md — Update IMPLEMENTATION.md for v0.2, create new-os-version-guide.md
+- [ ] 15-04-PLAN.md — Publish native-theme and native-theme-iced to crates.io
 
 ## Progress
 
@@ -163,4 +168,4 @@ Phases execute in numeric order: 9 -> 10 -> 11 -> 12 -> 13 -> 14 -> 15
 | 12. Widget Metrics | v0.2 | 3/3 | ✓ Complete | 2026-03-08 |
 | 13. CI Pipeline | v0.2 | 1/1 | ✓ Complete | 2026-03-08 |
 | 14. Toolkit Connectors | v0.2 | 5/5 | ✓ Complete | 2026-03-09 |
-| 15. Publishing Prep | v0.2 | 0/0 | Not started | - |
+| 15. Publishing Prep | v0.2 | 0/4 | In progress | - |
