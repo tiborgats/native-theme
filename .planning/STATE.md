@@ -4,14 +4,14 @@ milestone: v0.3
 milestone_name: Icons
 status: executing
 stopped_at: null
-last_updated: "2026-03-09T16:14:02Z"
-last_activity: "2026-03-09 — Completed 21-01 (load_icon dispatch + rasterize_svg)"
+last_updated: "2026-03-09T16:19:11Z"
+last_activity: "2026-03-09 — Completed 21-03 (iced icon conversion helpers)"
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 10
-  completed_plans: 8
-  percent: 86
+  completed_plans: 9
+  percent: 90
 ---
 
 # Project State
@@ -26,18 +26,18 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 ## Current Position
 
 Phase: 21 of 21 (Integration and Connectors)
-Plan: 1/3 complete
+Plan: 2/3 complete
 Status: Executing Phase 21
-Last activity: 2026-03-09 — Completed 21-01 (load_icon dispatch + rasterize_svg)
+Last activity: 2026-03-09 — Completed 21-03 (iced icon conversion helpers)
 
-Progress: [########░░] 86%
+Progress: [#########░] 90%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 42 (14 v0.1 + 20 v0.2 + 8 v0.3)
-- Average duration: ~4.1min (v0.2), 3.6min (v0.3 so far)
-- Total execution time: 70min (v0.2), 29min (v0.3)
+- Total plans completed: 43 (14 v0.1 + 20 v0.2 + 9 v0.3)
+- Average duration: ~4.1min (v0.2), 3.4min (v0.3 so far)
+- Total execution time: 70min (v0.2), 31min (v0.3)
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
@@ -49,6 +49,7 @@ Progress: [########░░] 86%
 | 19-01 | SF Symbols icon loader | 2min | 2 | 3 |
 | 20-01 | Windows icon loader | 9min | 2 | 3 |
 | 21-01 | load_icon dispatch + rasterize_svg | 3min | 1 | 4 |
+| 21-03 | Iced icon conversion helpers | 2min | 1 | 2 |
 
 ## Accumulated Context
 
@@ -82,6 +83,7 @@ v0.3 research recommends: data model first, bundled SVGs second, platform loader
 - [Phase 21]: Access usvg/tiny_skia through resvg re-exports (not separate deps)
 - [Phase 21]: Centering offset for non-square SVG aspect ratios in rasterize_svg
 - [Phase 21]: #[allow(clippy::needless_return)] on load_icon for cfg-block early return pattern
+- [Phase 21]: Wildcard arms for non_exhaustive IconData forward compatibility
 
 ### Pending Todos
 
@@ -93,6 +95,6 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-09T16:14:02Z
-Stopped at: Completed 21-01-PLAN.md
+Last session: 2026-03-09T16:19:11Z
+Stopped at: Completed 21-03-PLAN.md
 Resume file: None
