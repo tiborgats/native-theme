@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.3
 milestone_name: Icons
-status: verified
-stopped_at: null
-last_updated: "2026-03-09T07:45:00Z"
-last_activity: 2026-03-09 — Phase 17 verified (4/4 must-haves passed)
+status: completed
+stopped_at: Completed 18-01-PLAN.md
+last_updated: "2026-03-09T08:09:57.744Z"
+last_activity: "2026-03-09 — Completed 18-01: Linux freedesktop icon loading"
 progress:
   total_phases: 6
-  completed_phases: 2
-  total_plans: 4
-  completed_plans: 4
-  percent: 100
+  completed_phases: 3
+  total_plans: 5
+  completed_plans: 5
+  percent: 98
 ---
 
 # Project State
@@ -25,19 +25,19 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 
 ## Current Position
 
-Phase: 17 of 21 (Bundled SVG Icons) — verified ✓
-Plan: 2/2 complete
-Status: Phase 17 verified, ready for Phase 18
-Last activity: 2026-03-09 — Phase 17 verified (4/4 must-haves passed)
+Phase: 18 of 21 (Linux Icon Loading)
+Plan: 1/1 complete
+Status: Phase 18 plan 01 complete
+Last activity: 2026-03-09 — Completed 18-01: Linux freedesktop icon loading
 
-Progress: [###░░░░░░░] 33%
+Progress: [██████████] 98%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 38 (14 v0.1 + 20 v0.2 + 4 v0.3)
-- Average duration: ~4.1min (v0.2), 3.3min (v0.3 so far)
-- Total execution time: 70min (v0.2), 13min (v0.3)
+- Total plans completed: 39 (14 v0.1 + 20 v0.2 + 5 v0.3)
+- Average duration: ~4.1min (v0.2), 3.0min (v0.3 so far)
+- Total execution time: 70min (v0.2), 15min (v0.3)
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
@@ -45,6 +45,7 @@ Progress: [###░░░░░░░] 33%
 | 16-02 | Icon name mapping | 6min | 2 | 12 |
 | 17-01 | Download SVG icons | 2min | 2 | 78 |
 | 17-02 | Bundled icon module | 2min | 2 | 4 |
+| 18-01 | Freedesktop icon loader | 2min | 2 | 3 |
 
 ## Accumulated Context
 
@@ -64,6 +65,9 @@ v0.3 research recommends: data model first, bundled SVGs second, platform loader
 - 17-02: TrashFull/TrashEmpty share same SVG (delete.svg / trash-2.svg) per icon set
 - 17-02: StatusError reuses DialogError SVG, Help reuses DialogQuestion SVG per set
 - 17-02: #[allow(unused_variables)] on bundled_icon_svg for no-feature compilation
+- [Phase 18]: system-icons feature implies material-icons for guaranteed bundled fallback
+- [Phase 18]: Two-pass lookup (plain then -symbolic) for Adwaita compatibility
+- [Phase 18]: No .with_cache() on freedesktop-icons lookup (library crate)
 
 ### Pending Todos
 
@@ -75,6 +79,6 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-09
-Stopped at: Completed 17-02-PLAN.md
+Last session: 2026-03-09T08:09:57.742Z
+Stopped at: Completed 18-01-PLAN.md
 Resume file: None

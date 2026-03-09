@@ -45,7 +45,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 - [x] **Phase 16: Icon Data Model** — IconRole enum, IconData type, icon name mapping, ThemeVariant integration
 - [x] **Phase 17: Bundled SVG Icons** — Material Symbols and Lucide SVGs as compile-time fallback icon sets (completed 2026-03-09)
-- [ ] **Phase 18: Linux Icon Loading** — Freedesktop icon theme lookup via freedesktop-icons crate
+- [x] **Phase 18: Linux Icon Loading** — Freedesktop icon theme lookup via freedesktop-icons crate (completed 2026-03-09)
 - [ ] **Phase 19: macOS Icon Loading** — SF Symbols via NSImage rasterization to RGBA
 - [ ] **Phase 20: Windows Icon Loading** — SHGetStockIconInfo stock icons and Segoe Fluent font glyphs
 - [ ] **Phase 21: Integration and Connectors** — load_icon() dispatch, SVG rasterization, gpui/iced connector updates
@@ -89,7 +89,7 @@ Plans:
   1. With feature `system-icons` enabled on Linux, `load_icon(IconRole::DialogError, "freedesktop")` returns SVG bytes from the active icon theme
   2. When a role has no matching icon in the current theme, the loader falls back to hicolor, then to the bundled Material SVGs
   3. The loader respects `XDG_DATA_DIRS` and works with Adwaita, Breeze, and hicolor-only environments
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
 - [ ] 18-01-PLAN.md — freedesktop.rs module, system-icons feature, two-pass lookup with bundled fallback
 
@@ -150,7 +150,7 @@ Phases 16 -> 17 -> 18/19/20 (parallel) -> 21
 | 15. Publishing Prep | v0.2 | 3/3 | Complete | 2026-03-09 |
 | 16. Icon Data Model | v0.3 | 2/2 | Complete | 2026-03-09 |
 | 17. Bundled SVG Icons | v0.3 | 2/2 | Complete | 2026-03-09 |
-| 18. Linux Icon Loading | v0.3 | 0/1 | Planned | - |
+| 18. Linux Icon Loading | 1/1 | Complete   | 2026-03-09 | - |
 | 19. macOS Icon Loading | v0.3 | 0/? | Not started | - |
 | 20. Windows Icon Loading | v0.3 | 0/? | Not started | - |
 | 21. Integration and Connectors | v0.3 | 0/? | Not started | - |
