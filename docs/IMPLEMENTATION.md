@@ -741,6 +741,11 @@ pub struct ThemeVariant {
     pub fonts: ThemeFonts,
     pub geometry: ThemeGeometry,
     pub spacing: ThemeSpacing,
+    /// Per-widget sizing and spacing metrics (v0.2+).
+    /// Optional because not all themes or presets provide widget metrics.
+    /// When merging, if both base and overlay have widget metrics they are
+    /// merged recursively; if only the overlay has them they are cloned.
+    pub widget_metrics: Option<WidgetMetrics>,
 }
 ```
 
@@ -815,7 +820,11 @@ loss; 256 levels per channel exceeds human perception). The freedesktop portal r
 ### 8.4 Tier 1a: `ThemeColors` (36 semantic roles)
 
 ```rust
-/// Semantic color roles covering the union of what all platforms provide.
+/// All theme colors as a flat set of 36 semantic color roles.
+///
+/// Organized into logical groups (core, primary, secondary, status,
+/// interactive, panel, component) but stored as direct fields for
+/// simpler access and flatter TOML serialization.
 ///
 /// All fields are `Option<T>`:
 /// - Different platforms expose different subsets (see coverage matrix).
@@ -823,20 +832,14 @@ loss; 256 levels per channel exceeds human perception). The freedesktop portal r
 /// - Unspecified values are left to the consuming toolkit's defaults.
 /// - This enables layering: load a base preset, overlay with user overrides.
 ///
-/// Color roles are limited to 36 tokens that every toolkit can map to
-/// something meaningful. Toolkit-specific colors (gpui's `chart_1`,
-/// egui's `hyperlink_color`) are derived by adapters from the closest
-/// semantic role.
-///
-/// All Option fields use `#[serde(skip_serializing_if = "Option::is_none")]`
-/// to produce clean TOML output (only specified values are written).
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+/// Uses `#[serde_with::skip_serializing_none]` to produce clean TOML output
+/// (only specified values are written).
+#[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 #[non_exhaustive]
 pub struct ThemeColors {
-    // -- Core --
-    // Note: all Option fields use #[serde(skip_serializing_if = "Option::is_none")]
-    // (omitted here for brevity; shown on first field as example)
-    #[serde(skip_serializing_if = "Option::is_none")]
+    // Core (7)
     pub accent: Option<Rgba>,
     pub background: Option<Rgba>,       // window/app background
     pub foreground: Option<Rgba>,       // primary text
@@ -845,15 +848,15 @@ pub struct ThemeColors {
     pub muted: Option<Rgba>,            // secondary/inactive text
     pub shadow: Option<Rgba>,           // often has meaningful alpha
 
-    // -- Primary action --
-    pub primary: Option<Rgba>,          // primary button, links
+    // Primary (2) -- v0.2: renamed from primary/primary_foreground
+    pub primary_background: Option<Rgba>,   // primary action background
     pub primary_foreground: Option<Rgba>,
 
-    // -- Secondary action --
-    pub secondary: Option<Rgba>,
+    // Secondary (2) -- v0.2: renamed from secondary/secondary_foreground
+    pub secondary_background: Option<Rgba>, // secondary action background
     pub secondary_foreground: Option<Rgba>,
 
-    // -- Semantic status --
+    // Status (8)
     pub danger: Option<Rgba>,
     pub danger_foreground: Option<Rgba>,
     pub warning: Option<Rgba>,
@@ -863,13 +866,13 @@ pub struct ThemeColors {
     pub info: Option<Rgba>,
     pub info_foreground: Option<Rgba>,
 
-    // -- Interactive --
+    // Interactive (4)
     pub selection: Option<Rgba>,
     pub selection_foreground: Option<Rgba>,
     pub link: Option<Rgba>,
     pub focus_ring: Option<Rgba>,
 
-    // -- Surfaces --
+    // Panel (6)
     pub sidebar: Option<Rgba>,
     pub sidebar_foreground: Option<Rgba>,
     pub tooltip: Option<Rgba>,
@@ -877,7 +880,7 @@ pub struct ThemeColors {
     pub popover: Option<Rgba>,
     pub popover_foreground: Option<Rgba>,
 
-    // -- Component --
+    // Component (7)
     pub button: Option<Rgba>,
     pub button_foreground: Option<Rgba>,
     pub input: Option<Rgba>,
@@ -887,6 +890,10 @@ pub struct ThemeColors {
     pub alternate_row: Option<Rgba>,
 }
 ```
+
+**v0.2 change:** The primary and secondary fields were renamed from `primary`/`secondary`
+to `primary_background`/`secondary_background` for clarity and consistency with the
+`*_foreground` naming pattern throughout the struct.
 
 **Platform mapping for each color role:**
 
@@ -899,9 +906,9 @@ pub struct ThemeColors {
 | `border` | n/s (editorial approximation) | `--border-color` | n/s | `separatorColor` | `separator` | n/s |
 | `muted` | `[Colors:View] ForegroundInactive` | n/s | n/s | `secondaryLabelColor` | `secondaryLabel` | n/s |
 | `shadow` | n/s | n/s | n/s | `shadowColor` | n/s | n/s |
-| `primary` | `[Colors:View] DecorationFocus` | `--accent-bg-color` | `Accent` | `controlAccentColor` | `tintColor` | `?attr/colorPrimary` |
+| `primary_background` | `[Colors:View] DecorationFocus` | `--accent-bg-color` | `Accent` | `controlAccentColor` | `tintColor` | `?attr/colorPrimary` |
 | `primary_foreground` | `[Colors:Selection] ForegroundNormal` | `--accent-fg-color` | derived white/black | derived | n/s | `?attr/colorOnPrimary` |
-| `secondary` | `[Colors:Button] BackgroundNormal` | `--headerbar-bg-color` | n/s | `controlColor` | `systemFill` | `?attr/colorSecondaryContainer` |
+| `secondary_background` | `[Colors:Button] BackgroundNormal` | `--headerbar-bg-color` | n/s | `controlColor` | `systemFill` | `?attr/colorSecondaryContainer` |
 | `secondary_foreground` | `[Colors:Button] ForegroundNormal` | `--headerbar-fg-color` | n/s | `controlTextColor` | n/s | `?attr/colorOnSecondaryContainer` |
 | `danger` | `[Colors:View] ForegroundNegative` | `--error-bg-color` | n/s | `systemRedColor` | `systemRed` | `?attr/colorError` |
 | `warning` | `[Colors:View] ForegroundNeutral` | `--warning-bg-color` | n/s | `systemOrangeColor` | `systemOrange` | n/s |
@@ -940,15 +947,22 @@ pub struct ThemeFonts {
     pub mono_size: Option<f32>,      // Monospace font size in px
 }
 
-/// Geometry settings. Values are in logical pixels.
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+/// Geometric properties for UI elements.
+///
+/// Controls border radius, frame widths, and opacity values
+/// that vary across platform themes.
+#[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
 #[non_exhaustive]
 pub struct ThemeGeometry {
-    pub radius: Option<f32>,            // general border radius (px)
-    pub radius_lg: Option<f32>,         // large elements (dialogs, panels)
-    pub frame_width: Option<f32>,       // border/frame thickness (px)
-    pub shadow: Option<bool>,           // drop shadows enabled
-    pub disabled_opacity: Option<f32>,  // 0.0-1.0
+    pub radius: Option<f32>,            // corner radius for rounded elements (px)
+    pub radius_lg: Option<f32>,         // larger radius for dialogs, cards, panels (px) [v0.2]
+    pub frame_width: Option<f32>,       // window/widget frame border width (px)
+    pub disabled_opacity: Option<f32>,  // opacity for disabled elements (0.0-1.0)
+    pub border_opacity: Option<f32>,    // opacity for borders (0.0-1.0)
+    pub scroll_width: Option<f32>,      // scrollbar track width (px)
+    pub shadow: Option<bool>,           // whether drop shadows are used [v0.2]
 }
 
 /// Named spacing scale in logical pixels.
@@ -980,50 +994,80 @@ pub struct ThemeSpacing {
 }
 ```
 
-### 8.6 Tier 2: Widget Metrics (deferred -- not in MVP)
+### 8.6 `WidgetMetrics` (v0.2)
 
-Widget metrics are deferred to a post-1.0 release. When added, they will follow this
-structure:
+Per-widget sizing and spacing metrics, implemented in v0.2. Contains 12 sub-structs for
+specific widget types. Sub-structs use bare fields (not `Option`-wrapped) with
+`skip_serializing_if = "is_empty"` to omit empty sub-structs from TOML output.
+
+`WidgetMetrics` is held as `Option<WidgetMetrics>` in `ThemeVariant` for backward
+compatibility -- presets without widget metrics simply omit the field.
 
 ```rust
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+#[non_exhaustive]
 pub struct WidgetMetrics {
-    pub button: Option<ButtonMetrics>,
-    pub checkbox: Option<CheckboxMetrics>,
-    pub input: Option<InputMetrics>,
-    pub scrollbar: Option<ScrollbarMetrics>,
-    pub slider: Option<SliderMetrics>,
-    pub progress_bar: Option<ProgressBarMetrics>,
-    pub tab: Option<TabMetrics>,
-    pub menu_item: Option<MenuItemMetrics>,
-    pub tooltip: Option<TooltipMetrics>,
-    pub list_item: Option<ListItemMetrics>,
-    pub toolbar: Option<ToolbarMetrics>,
-    pub splitter: Option<SplitterMetrics>,
+    pub button: ButtonMetrics,
+    pub checkbox: CheckboxMetrics,
+    pub input: InputMetrics,
+    pub scrollbar: ScrollbarMetrics,
+    pub slider: SliderMetrics,
+    pub progress_bar: ProgressBarMetrics,
+    pub tab: TabMetrics,
+    pub menu_item: MenuItemMetrics,
+    pub tooltip: TooltipMetrics,
+    pub list_item: ListItemMetrics,
+    pub toolbar: ToolbarMetrics,
+    pub splitter: SplitterMetrics,
 }
+```
 
+Each sub-struct has all `Option<f32>` fields. Examples:
+
+```rust
 pub struct ButtonMetrics {
-    pub padding_h: Option<f32>,
-    pub padding_v: Option<f32>,
     pub min_width: Option<f32>,
     pub min_height: Option<f32>,
+    pub padding_horizontal: Option<f32>,
+    pub padding_vertical: Option<f32>,
     pub icon_spacing: Option<f32>,
-    pub radius: Option<f32>,        // override global if different
+}
+
+pub struct CheckboxMetrics {
+    pub indicator_size: Option<f32>,
+    pub spacing: Option<f32>,
 }
 
 pub struct ScrollbarMetrics {
     pub width: Option<f32>,
-    pub thumb_width: Option<f32>,
     pub min_thumb_height: Option<f32>,
+    pub slider_width: Option<f32>,
 }
 
-// ... similar for CheckboxMetrics, InputMetrics, SliderMetrics,
-// ProgressBarMetrics, TabMetrics, MenuItemMetrics, TooltipMetrics,
-// ListItemMetrics, ToolbarMetrics, SplitterMetrics
+pub struct SliderMetrics {
+    pub track_height: Option<f32>,
+    pub thumb_size: Option<f32>,
+    pub tick_length: Option<f32>,
+}
 ```
 
-The full widget metrics data (per-widget constants from breezemetrics.h, Adwaita SCSS,
-Windows GetSystemMetrics) is preserved in the platform matrix appendix for when this tier
-is implemented.
+Other sub-structs follow the same pattern: `InputMetrics` (min_height, padding_horizontal,
+padding_vertical), `ProgressBarMetrics` (height, min_width), `TabMetrics` (min_width,
+min_height, padding_horizontal, padding_vertical), `MenuItemMetrics` (height,
+padding_horizontal, padding_vertical, icon_spacing), `TooltipMetrics` (padding, max_width),
+`ListItemMetrics` (height, padding_horizontal, padding_vertical), `ToolbarMetrics` (height,
+item_spacing, padding), `SplitterMetrics` (width).
+
+Platform reader functions populate widget metrics from compile-time constants:
+- KDE: `breeze_widget_metrics()` sourced from `breezemetrics.h`
+- macOS: `macos_widget_metrics()` sourced from Apple HIG
+- GNOME: `adwaita_widget_metrics()` sourced from libadwaita/GTK4
+- Windows: DPI-aware metrics from `GetSystemMetricsForDpi` + WinUI3 Fluent defaults
+
+All 17 bundled presets include widget_metrics data. Community color themes use generic
+defaults (not platform-specific values). Widget sizing is mode-independent, so light and
+dark variants receive identical widget_metrics.
 
 ### 8.7 Tier 3: Platform Readers (feature-gated)
 
@@ -1237,28 +1281,29 @@ Each preset is a single TOML file with `[light]` and `[dark]` sections. The pres
 refers to the whole file (not a single variant). `NativeTheme::preset("kde-breeze")` returns
 a `NativeTheme` with both `light` and `dark` populated.
 
+**17 bundled presets** (as of v0.2), all including widget_metrics data:
+
 | Preset name | TOML file | Source | Completeness |
 |---|---|---|---|
-| `default` | `default.toml` | Neutral defaults (gpui-component-like) | Colors + geometry |
-| `kde-breeze` | `kde-breeze.toml` | kdeglobals defaults + `breezemetrics.h` | Colors + fonts + geometry + spacing |
-| `adwaita` | `adwaita.toml` | Adwaita CSS variables + SCSS source | Colors + fonts + geometry + spacing |
-| `windows-11` | `windows-11.toml` | UISettings defaults + `GetSystemMetrics` defaults | Colors + partial geometry |
-| `macos-sonoma` | `macos-sonoma.toml` | NSColor catalog dumps | Colors + fonts |
-| `material` | `material.toml` | Material Design 3 baseline theme (purple) | Colors + geometry + spacing |
-| `ios` | `ios.toml` | UIColor defaults + HIG measurements | Colors + fonts |
+| `default` | `default.toml` | Neutral defaults (gpui-component-like) | All fields + widget_metrics |
+| `kde-breeze` | `kde-breeze.toml` | kdeglobals defaults + `breezemetrics.h` | All fields + widget_metrics |
+| `adwaita` | `adwaita.toml` | Adwaita CSS variables + SCSS source | All fields + widget_metrics |
+| `windows-11` | `windows-11.toml` | UISettings defaults + WinUI3 Fluent specs | All fields + widget_metrics |
+| `macos-sonoma` | `macos-sonoma.toml` | NSColor catalog dumps + HIG | All fields + widget_metrics |
+| `material` | `material.toml` | Material Design 3 baseline theme (purple) | All fields + widget_metrics |
+| `ios` | `ios.toml` | UIColor defaults + HIG measurements | All fields + widget_metrics |
+| `catppuccin-latte` | `catppuccin-latte.toml` | Catppuccin palette (light) | Colors + widget_metrics |
+| `catppuccin-frappe` | `catppuccin-frappe.toml` | Catppuccin palette | Colors + widget_metrics |
+| `catppuccin-macchiato` | `catppuccin-macchiato.toml` | Catppuccin palette | Colors + widget_metrics |
+| `catppuccin-mocha` | `catppuccin-mocha.toml` | Catppuccin palette (dark) | Colors + widget_metrics |
+| `nord` | `nord.toml` | Nord palette | Colors + widget_metrics |
+| `dracula` | `dracula.toml` | Dracula palette | Colors + widget_metrics |
+| `gruvbox` | `gruvbox.toml` | Gruvbox palette | Colors + widget_metrics |
+| `solarized` | `solarized.toml` | Solarized palette | Colors + widget_metrics |
+| `tokyo-night` | `tokyo-night.toml` | Tokyo Night palette | Colors + widget_metrics |
+| `one-dark` | `one-dark.toml` | One Dark palette | Colors + widget_metrics |
 
-**Phase 1 MVP ships with:** `default`, `kde-breeze`, `adwaita`.
-
-**Later phases add:** Windows 11, macOS Sonoma, Material, iOS presets.
-
-**Future community presets:** Catppuccin (4 flavors), Nord, Dracula, Gruvbox, Solarized,
-Tokyo Night, One Dark, etc. These are color-only presets (no geometry/spacing). The TOML
-format makes contribution trivial -- no Rust code required.
-
-**Note on Material presets:** `material-light`/`material-dark` use the Material 3
-**baseline** palette (purple accent). On devices with Material You (API 31+), the runtime
-reader (`from_android()`) produces a theme with the user's actual dynamic colors. The
-baseline preset is a static fallback.
+Community color themes use generic widget_metrics defaults (not platform-specific values).
 
 ### Preset loading API
 
@@ -1285,38 +1330,61 @@ impl NativeTheme {
 
 ## 11. Crate Structure
 
+The project uses a Cargo workspace with resolver v3:
+
 ```
-native-theme/
-  Cargo.toml
-  src/
-    lib.rs                    # Public API, re-exports
-    model/
-      mod.rs                  # NativeTheme, ThemeVariant
-      colors.rs               # ThemeColors, Rgba (+ custom serde)
-      fonts.rs                # ThemeFonts
-      geometry.rs             # ThemeGeometry
-      spacing.rs              # ThemeSpacing
-    presets/
-      mod.rs                  # preset(), list_presets(), from_toml(), from_file()
-      default.toml
-      kde-breeze.toml         # [light] + [dark] variants
-      adwaita.toml            # [light] + [dark] variants
-      windows-11.toml         # [light] + [dark] variants (Phase 5)
-      macos-sonoma.toml       # [light] + [dark] variants (Phase 5)
-      material.toml           # [light] + [dark] variants (Phase 5)
-      ios.toml                # [light] + [dark] variants (Phase 5)
-    platform/                 # Feature-gated (Phase 3+)
-      mod.rs                  # from_system(), DE detection
-      kde.rs                  # from_kde() -- kdeglobals (sync, feature "kde")
-      portal.rs               # from_gnome(), portal overlay (async, feature "portal")
-      windows.rs              # from_windows() -- windows crate
-      macos.rs                # from_macos() -- objc2-app-kit
-      ios.rs                  # from_ios() -- objc2-ui-kit
-      android.rs              # from_android() -- jni
-    error.rs                  # Error enum
+native-theme/                     (repository root)
+  Cargo.toml                      (workspace definition)
+  Cargo.lock
+  README.md
+
+  native-theme/                   (core crate: native-theme 0.2.0)
+    Cargo.toml
+    README.md
+    src/
+      lib.rs                      # Public API, re-exports, from_system(), from_system_async()
+      color.rs                    # Rgba struct with custom hex serde
+      error.rs                    # Error enum
+      presets.rs                  # preset(), list_presets(), from_toml(), from_file(), to_toml()
+      model/
+        mod.rs                    # NativeTheme, ThemeVariant
+        colors.rs                 # ThemeColors (36 flat fields)
+        fonts.rs                  # ThemeFonts
+        geometry.rs               # ThemeGeometry (7 fields including radius_lg, shadow)
+        spacing.rs                # ThemeSpacing
+        widget_metrics.rs         # WidgetMetrics + 12 per-widget sub-structs
+      kde/                        # Feature: "kde" (sync)
+        mod.rs                    # from_kde() -- kdeglobals parsing
+        colors.rs                 # KDE color section mapping
+        fonts.rs                  # Qt font string parsing
+        metrics.rs                # breeze_widget_metrics()
+      gnome/                      # Feature: "portal" (async)
+        mod.rs                    # from_gnome(), from_kde_with_portal(), adwaita_widget_metrics()
+      macos.rs                    # from_macos(), macos_widget_metrics()
+      windows.rs                  # from_windows(), WinUI3 spacing, DPI-aware metrics
+      presets/                    # 17 TOML preset files
+        default.toml
+        kde-breeze.toml
+        adwaita.toml
+        windows-11.toml
+        macos-sonoma.toml
+        material.toml
+        ios.toml
+        catppuccin-{latte,frappe,macchiato,mocha}.toml
+        nord.toml, dracula.toml, gruvbox.toml
+        solarized.toml, tokyo-night.toml, one-dark.toml
+
+  connectors/
+    native-theme-iced/            (iced connector crate)
+      Cargo.toml
+      src/lib.rs                  # iced_core::theme::Catalog + widget metric helpers
+    native-theme-gpui/            (gpui connector crate)
+      Cargo.toml
+      src/lib.rs                  # gpui-component ThemeColor mapping
 ```
 
-Widget metrics (`model/widgets.rs`) will be added in a future version.
+Workspace dependencies (`serde`, `serde_with`, `toml`) are inherited via
+`[workspace.dependencies]` in the root `Cargo.toml`.
 
 ---
 
@@ -1415,21 +1483,23 @@ MVP configuration.
    background luminance against a threshold).
 3. Populate `ThemeGeometry` and `ThemeSpacing` from breezemetrics.h values (hardcoded
    constants -- these never change at runtime).
+4. Populate `WidgetMetrics` from `breeze_widget_metrics()` -- compile-time constants
+   sourced from `breezemetrics.h`.
 
-When the `portal` feature is also enabled, `from_kde()` can be extended to read portal
-values and overlay them: portal accent-color overrides kdeglobals `DecorationFocus`
-(portal is more current when the user changes accent in System Settings). This extension
-requires async and is implemented as `from_kde_with_portal()` or similar.
+When the `portal` feature is also enabled, `from_kde_with_portal()` reads KDE kdeglobals
+as a base and overlays portal accent-color (portal is more current when the user changes
+accent in System Settings). This extension requires async.
 
 ### 13.2 Linux: `from_gnome()` (async, feature `portal`)
 
-**Strategy:** Portal for accent + mode, hardcoded Adwaita values for everything else.
+**Strategy:** Portal overlay pattern -- read native Adwaita config as base, overlay
+portal accent color.
 
-1. Read portal `accent-color` and `color-scheme` via ashpd (async).
-2. Populate `ThemeColors` from hardcoded Adwaita CSS variable defaults. These are
-   **static** from an external app's perspective -- Adwaita CSS variables are only
-   accessible from inside GTK.
-3. Override `accent`/`primary` from portal if available (GNOME 47+).
+1. Build base theme from hardcoded Adwaita CSS variable defaults (these are **static**
+   from an external app's perspective -- Adwaita CSS variables are only accessible from
+   inside GTK).
+2. Read portal `accent-color` and `color-scheme` via ashpd (async, using re-exported zbus).
+3. Override `accent`/`primary_background` from portal if available (GNOME 47+).
 4. Populate `ThemeGeometry` and `ThemeSpacing` from Adwaita SCSS defaults (hardcoded).
 5. Populate `ThemeFonts` from hardcoded defaults: `"Adwaita Sans"` 11pt (the default
    since GNOME 48; previously `"Cantarell"` through GNOME 47), monospace `"Adwaita Mono"`
@@ -1437,6 +1507,12 @@ requires async and is implemented as `from_kde_with_portal()` or similar.
    (`org.gnome.desktop.interface font-name`), but reading dconf requires either a D-Bus
    call or GIO bindings -- neither is included as a dependency. The hardcoded defaults
    are a reasonable starting point; a future enhancement could add optional dconf reading.
+6. Populate `WidgetMetrics` from `adwaita_widget_metrics()` -- compile-time constants
+   sourced from libadwaita/GTK4 source code.
+
+Also provides `from_kde_with_portal()` which reads KDE kdeglobals as a base and overlays
+portal accent color. The `detect_portal_backend()` function is `pub(crate) async` for
+use by the async `from_system_async()` dispatch.
 
 Note: without the `portal` feature, there is no GNOME reader -- use the `adwaita` preset
 instead. GNOME has no equivalent to `~/.config/kdeglobals` that can be parsed synchronously
@@ -1447,10 +1523,17 @@ are resolved inside GTK's CSS engine. External apps cannot query them. The value
 documented and stable across Adwaita versions, so hardcoding them in the preset/reader
 is equivalent. When Adwaita changes, we update the preset data.
 
-### 13.3 `from_system()` -- cross-platform dispatch
+### 13.3 `from_system()` and `from_system_async()` -- cross-platform dispatch
 
-`from_system()` dispatches to the appropriate platform reader. On Linux, it uses DE
-detection heuristics. On other platforms, it calls the platform-specific reader directly.
+Two dispatch functions are provided:
+
+- **`from_system()`** (sync) -- dispatches to platform-specific sync readers. On Linux
+  GNOME/GTK desktops, falls back to the bundled Adwaita preset since GNOME has no sync
+  reader.
+- **`from_system_async()`** (async) -- mirrors `from_system()` but adds portal detection
+  for Unknown DE on Linux. When the `portal` feature is enabled, it uses
+  `detect_portal_backend()` to determine if GNOME portal is available, enabling live
+  accent color reading for GNOME desktops.
 
 ```rust
 pub fn from_system() -> Result<NativeTheme, Error> {
@@ -1467,46 +1550,34 @@ pub fn from_system() -> Result<NativeTheme, Error> {
     Err(Error::Unsupported)
 }
 
-// Linux-specific DE detection (sync only -- requires `kde` feature for KDE)
-//
-// NOTE: from_system() is always sync. It does NOT call from_gnome() (which is async).
-// For GNOME/GTK desktops, it loads the bundled Adwaita preset. Users who want live
-// portal accent colors should call from_gnome().await directly in their async code.
-#[cfg(target_os = "linux")]
-fn from_linux() -> Result<NativeTheme, Error> {
-    // 1. Check XDG_CURRENT_DESKTOP env var (cheap, reliable)
-    #[cfg(feature = "kde")]
-    if let Ok(de) = std::env::var("XDG_CURRENT_DESKTOP") {
-        if de.contains("KDE") {
-            return from_kde();
-        }
-    }
-
-    // 2. Fall back: try kdeglobals if it exists (even on non-KDE desktops)
-    #[cfg(feature = "kde")]
-    if dirs::config_dir().map(|d| d.join("kdeglobals").exists()).unwrap_or(false) {
-        return from_kde();
-    }
-
-    // 3. Last resort: load bundled Adwaita preset (covers GNOME, Cinnamon, MATE, etc.)
-    NativeTheme::preset("adwaita").ok_or(Error::Unavailable(
-        "no KDE detected and no bundled preset available".into()
-    ))
+pub async fn from_system_async() -> Result<NativeTheme, Error> {
+    // Same as from_system(), but on Linux with portal feature:
+    // detects Unknown DE and tries from_gnome() before falling back.
 }
 ```
 
 ### 13.4 Windows: `from_windows()`
 
-1. Check `ApiInformation::IsMethodPresent` for `UISettings.GetColorValue`.
-2. Read `UISettings.GetColorValue` for: `Accent`, `AccentDark1-3`, `AccentLight1-3`,
+1. Read `UISettings.GetColorValue` for: `Accent`, `AccentDark1-3`, `AccentLight1-3`,
    `Background`, `Foreground`.
-3. Map to `ThemeColors`: accent, primary, background, foreground. Derive dark/light
-   from background color.
-4. Read `SystemParametersInfo(SPI_GETNONCLIENTMETRICS)` for font name and size.
-5. Read `GetSystemMetrics` for: `SM_CXBORDER`, `SM_CXVSCROLL`, etc. (populate geometry).
-6. Populate spacing from WinUI3 defaults (hardcoded).
+2. Map accent shades to colors: `AccentDark1` maps to light variant `primary_background`,
+   `AccentLight1` maps to dark variant `primary_background`. System `Foreground` maps to
+   `primary_foreground`.
+3. Read `SystemParametersInfo(SPI_GETNONCLIENTMETRICS)` for font name and size.
+4. Read `GetSystemMetricsForDpi` for DPI-aware geometry: scrollbar width, border width,
+   etc. The reader uses `read_geometry_dpi_aware()` which returns `(ThemeGeometry, u32)`
+   to share the DPI value with font size conversion.
+5. Populate spacing from WinUI3 Fluent Design constants (hardcoded as pure constants).
+6. Populate `WidgetMetrics` using DPI-aware `GetSystemMetricsForDpi` values for scrollbar,
+   button, and menu metrics; WinUI3 Fluent defaults for remaining widgets. Non-Windows
+   builds use a fallback with WinUI3 Fluent defaults.
+7. Both light and dark variants are always populated (dual-variant pattern).
 
 ### 13.5 macOS: `from_macos()`
+
+The macOS module is unconditionally compiled (not behind `cfg(feature)`) -- only the
+actual OS FFI calls are gated behind `cfg(target_os = "macos")`. This allows tests to
+run cross-platform.
 
 **Thread note:** NSColor component reading is thread-safe, but resolving dynamic/semantic
 colors (like `labelColor`) requires the correct `NSAppearance.current` context. The reader
@@ -1515,7 +1586,7 @@ macOS 11+), then extracts color components to `Rgba` values which are plain data
 
 1. Read `NSAppearance.currentAppearance` to determine light/dark.
 2. Read NSColor semantic colors:
-   - `controlAccentColor` -> accent, primary
+   - `controlAccentColor` -> accent, primary_background
    - `windowBackgroundColor` -> background
    - `labelColor` -> foreground
    - `separatorColor` -> border, separator
@@ -1529,7 +1600,7 @@ macOS 11+), then extracts color components to `Rgba` values which are plain data
    - `selectedContentBackgroundColor` -> selection
    - `selectedTextColor` -> selection_foreground
    - `keyboardFocusIndicatorColor` -> focus_ring
-   - `controlColor` -> button, secondary
+   - `controlColor` -> button, secondary_background
    - `controlTextColor` -> button_foreground
    - `underPageBackgroundColor` -> sidebar
    - `textBackgroundColor` -> input
@@ -1537,12 +1608,11 @@ macOS 11+), then extracts color components to `Rgba` values which are plain data
    - `disabledControlTextColor` -> disabled
    - `alternatingContentBackgroundColors[1]` -> alternate_row
    - `controlBackgroundColor` -> surface
-   - `windowFrameTextColor` -> (unused, no header bar concept)
-   - `findHighlightColor` -> (unused, too specific)
-   - `gridColor` -> (unused, too specific)
 3. Read `NSFont.systemFont` for family and size.
 4. Read `NSFont.monospacedSystemFont` for mono family and size.
 5. Geometry: hardcoded from AppKit (~5px radius). macOS exposes no geometry APIs.
+6. Widget metrics: `macos_widget_metrics()` provides compile-time constants sourced from
+   Apple HIG measurements. Both light and dark variants are always populated.
 
 **Color space:** macOS may return P3 colors. Convert to sRGB via
 `color.colorUsingColorSpace(&NSColorSpace::sRGBColorSpace())` (objc2 Rust) before
@@ -1641,81 +1711,38 @@ and portal change streaming require async.
 
 ---
 
-## 16. Adapter Pattern
+## 16. Connector Crates (v0.2)
 
-Each toolkit writes a thin adapter (~50 lines) in app code. The adapter is NOT part of the
-`native-theme` crate -- this keeps the crate toolkit-agnostic.
+In v0.2, the adapter pattern evolved from code snippets into first-party **connector
+crates** that live in the workspace. Each connector translates `NativeTheme` data into
+toolkit-native types, including widget metric helpers.
 
-### gpui adapter example
+### `native-theme-iced` (connector for iced)
 
-```rust
-use native_theme::{NativeTheme, ThemeVariant, Rgba};
-use gpui::{px, Hsla};
+Crate: `connectors/native-theme-iced/`
 
-fn apply_native_theme(nt: &NativeTheme, is_dark: bool, cx: &mut App) {
-    let variant = if is_dark { &nt.dark } else { &nt.light };
-    let Some(v) = variant else { return };
+Provides `iced_core::theme::Catalog` integration -- the standard iced theming mechanism.
+Widget metric helpers are free functions (not Catalog impls) per iced architecture.
+Uses `iced_core 0.14` (not full `iced`) to avoid winit windowing dependency in the library.
 
-    let theme = gpui_component::theme::Theme::global_mut(cx);
+### `native-theme-gpui` (connector for gpui)
 
-    // Colors
-    if let Some(c) = v.colors.background {
-        theme.background = to_hsla(c);
-    }
-    if let Some(c) = v.colors.foreground {
-        theme.foreground = to_hsla(c);
-    }
-    if let Some(c) = v.colors.primary {
-        theme.primary = to_hsla(c);
-    }
-    // ... ~20 more field mappings
+Crate: `connectors/native-theme-gpui/`
 
-    // Geometry
-    if let Some(r) = v.geometry.radius {
-        theme.radius = px(r);
-    }
+Provides `gpui-component::ThemeColor` mapping from `NativeTheme`. Uses the Colorize trait
+for lighten/darken (multiplicative lightness). Matches `apply_config` fallback logic for
+hover/active state derivation. Maps all 108 `ThemeColor` fields via grouped helper functions.
 
-    // Fonts
-    if let Some(ref family) = v.fonts.family {
-        theme.font_family = family.clone().into();
-    }
-    if let Some(size) = v.fonts.size {
-        theme.font_size = px(size);
-    }
-}
+### Writing a new connector
 
-fn to_hsla(c: Rgba) -> Hsla {
-    // Convert Rgba -> Hsla (standard color space conversion)
-    // gpui provides gpui::hsla() or the app implements the conversion
-    todo!()
-}
-```
+For other toolkits (egui, slint, dioxus), the adapter pattern still applies. A connector
+typically:
 
-### egui adapter example
-
-```rust
-fn apply_native_theme(nt: &NativeTheme, is_dark: bool) -> egui::Visuals {
-    let variant = if is_dark { &nt.dark } else { &nt.light };
-    let Some(v) = variant else { return egui::Visuals::dark() };
-
-    let mut vis = if is_dark { egui::Visuals::dark() } else { egui::Visuals::light() };
-
-    if let Some(r) = v.geometry.radius {
-        vis.window_rounding = egui::Rounding::same(r);
-        vis.widgets.noninteractive.rounding = egui::Rounding::same(r);
-    }
-    if let Some(c) = v.colors.background {
-        vis.panel_fill = to_color32(c);
-    }
-    // ... etc
-
-    vis
-}
-```
-
-**Key insight:** Toolkit-specific color tokens that don't exist in `NativeTheme` (like
-gpui's `chart_1` or egui's `hyperlink_color`) are derived by the adapter from the closest
-semantic role. For example, `hyperlink_color = theme.link.unwrap_or(theme.primary)`.
+1. Takes a `&ThemeVariant` and maps its 36 color roles to toolkit-native color types.
+2. Maps `ThemeGeometry` values (radius, shadow, etc.) to toolkit-native spacing/styling.
+3. Optionally maps `WidgetMetrics` to toolkit-native per-widget sizing.
+4. Derives toolkit-specific tokens from the closest semantic role (e.g.,
+   `hyperlink_color = link.unwrap_or(accent)`).
 
 ---
 
@@ -1829,14 +1856,19 @@ design tokens:
 - iOS HIG: pt (points, equivalent to logical px)
 - Windows: DIP (device-independent pixels, equivalent to logical px)
 
-### 17.10 No derive macro for merge
+### 17.10 `impl_merge!` macro for merge
 
-Theme layering uses a manual `merge()` method (36 field assignments). A derive macro
-would add a proc-macro dependency for a one-time operation. Not worth the complexity.
+Theme layering uses an `impl_merge!` declarative macro that generates `merge()` and
+`is_empty()` methods for all model structs. The macro handles two field types: `option`
+fields (Option values replaced if Some) and `nested` fields (sub-structs merged
+recursively). `ThemeVariant` uses a manual `merge()` implementation to handle the
+`Option<WidgetMetrics>` recursive merge case.
 
 ---
 
 ## 18. Implementation Phases
+
+### v0.1 Phases (1-8)
 
 | Phase | Scope | Delivers |
 |---|---|---|
@@ -1844,28 +1876,19 @@ would add a proc-macro dependency for a one-time operation. Not worth the comple
 | **2** | Linux runtime readers: `from_kde()` (sync, `kde` feature), `from_gnome()` (async, `portal` feature), `from_system()` | Live OS theme sync on Linux |
 | **3** | Publish to crates.io, documentation, README with examples for egui/iced/slint | Ecosystem contribution |
 | **4** | Windows + macOS readers + remaining presets (Windows 11, macOS Sonoma, Material, iOS) + community presets (Catppuccin, Nord, Dracula, Gruvbox, Solarized, Tokyo Night, One Dark) | Cross-platform desktop + community |
-| **5** | Widget metrics (Tier 2) if demand exists from adapter authors | Fine-grained control |
-| **6** | iOS + Android readers (when Rust GUI toolkits target mobile) | Mobile runtime readers |
+| **5-8** | Additional presets, refinements, testing | Pre-v0.2 completion |
 
-**Phase 1 deliverables in detail:**
+### v0.2 Phases (9-15) -- Completed
 
-1. `src/model/colors.rs` -- `Rgba` struct with custom hex serde, `ThemeColors` struct
-2. `src/model/fonts.rs` -- `ThemeFonts` struct
-3. `src/model/geometry.rs` -- `ThemeGeometry` struct
-4. `src/model/spacing.rs` -- `ThemeSpacing` struct
-5. `src/model/mod.rs` -- `NativeTheme`, `ThemeVariant`
-6. `src/presets/mod.rs` -- `preset()`, `list_presets()`, `from_toml()`, `from_file()`,
-   `to_toml()`
-7. `src/presets/default.toml` -- neutral defaults
-8. `src/presets/kde-breeze.toml` -- Breeze light + dark
-9. `src/presets/adwaita.toml` -- Adwaita light + dark
-10. `src/error.rs` -- `Error` enum
-11. `src/lib.rs` -- public API re-exports
-12. `Cargo.toml` -- package metadata, serde + toml deps only
-13. Tests: round-trip serde, preset loading, Rgba hex parsing edge cases
-
-Mobile presets (`material-light/dark`, `ios-light/dark`) are bundled static data from
-Phase 1 if time permits, since they are just TOML files with no code dependency.
+| Phase | Scope | Delivers |
+|---|---|---|
+| **9** | Cargo workspace restructuring: virtual workspace with resolver v3, workspace dep inheritance, connector stubs | Clean multi-crate layout |
+| **10** | API breaking changes: flat ThemeColors (36 direct fields, removed nested sub-structs), NativeTheme associated methods (preset, from_toml, from_file, list_presets, to_toml), ThemeGeometry extended with radius_lg and shadow | v0.2 public API |
+| **11** | Platform readers: macOS reader (from_macos()), Windows accent shades + DPI-aware geometry, Linux portal overlay pattern, from_system_async() | Cross-platform runtime readers |
+| **12** | Widget metrics: WidgetMetrics with 12 per-widget sub-structs, platform-specific metric functions (breeze_widget_metrics, macos_widget_metrics, adwaita_widget_metrics, Windows DPI-aware), all 17 presets updated | Fine-grained per-widget sizing |
+| **13** | CI pipeline: GitHub Actions matrix (7 entries), fmt/clippy/test gates, semver-checks baseline | Automated quality assurance |
+| **14** | Toolkit connectors: native-theme-iced (iced_core Catalog integration), native-theme-gpui (gpui-component ThemeColor mapping), demo apps | First-party toolkit adapters |
+| **15** | Publishing prep: documentation, IMPLEMENTATION.md update, new-OS-version guide | Publication readiness |
 
 ---
 
@@ -1954,10 +1977,10 @@ Phase 1 if time permits, since they are just TOML files with no code dependency.
 
 ---
 
-## Appendix A: Widget Metrics Reference (Deferred)
+## Appendix A: Widget Metrics Platform Reference
 
-The full widget metrics tables from the platform coverage matrix are preserved here for
-future Tier 2 implementation. These cover:
+The full widget metrics tables from the platform coverage matrix. These were used as
+source data when implementing `WidgetMetrics` in v0.2 (Phase 12). They cover:
 
 - **Window / Title Bar:** title bar height, button width/height, small caption, sizing
   frame, fixed frame, padded border (KDE: `TitleBar_MarginWidth` = 4; Windows: ~8 dynamic
@@ -2010,7 +2033,7 @@ The data model covers mobile without mobile-specific extensions:
 | `accent` | `system_accent1_500` | `tintColor` |
 | `background` | `?attr/colorSurface` | `systemBackground` |
 | `foreground` | `?attr/colorOnSurface` | `label` |
-| `primary` | `?attr/colorPrimary` | `tintColor` |
+| `primary_background` | `?attr/colorPrimary` | `tintColor` |
 | `primary_foreground` | `?attr/colorOnPrimary` | derived |
 | `danger` | `?attr/colorError` | `systemRed` |
 | `success` | n/s (not in Material 3) | `systemGreen` |
