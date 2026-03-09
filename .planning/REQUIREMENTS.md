@@ -61,7 +61,7 @@ Requirements for v0.2 release. Each maps to roadmap phases.
 - [x] **CONN-05**: `native-theme-iced` crate maps ThemeColors to iced Palette + Extended palette
 - [x] **CONN-06**: `native-theme-iced` implements per-widget Catalog/Style for core widgets (Button, Container, TextInput, Scrollable, Checkbox, Slider, ProgressBar, Tooltip)
 - [x] **CONN-07**: `native-theme-iced` maps geometry, spacing, and widget metrics to Style fields
-- [ ] **CONN-08**: `native-theme-iced` includes `examples/demo.rs` widget gallery
+- [x] **CONN-08**: `native-theme-iced` includes `examples/demo.rs` widget gallery
 - [x] **CONN-09**: Both connectors include a theme selector (dropdown of presets + OS theme)
 
 ### Publishing Prep
@@ -153,7 +153,7 @@ Deferred to post-v0.2. Tracked but not in current roadmap.
 | CONN-05 | Phase 14 | Complete |
 | CONN-06 | Phase 14 | Complete |
 | CONN-07 | Phase 14 | Complete |
-| CONN-08 | Phase 14 | Pending |
+| CONN-08 | Phase 14 | Complete |
 | CONN-09 | Phase 14 | Complete |
 | PUB-01 | Phase 15 | Pending |
 | PUB-02 | Phase 15 | Pending |
