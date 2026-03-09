@@ -4,6 +4,9 @@ name = "Adwaita"
 
 # === Light variant ===
 
+[light]
+icon_theme = "freedesktop"
+
 [light.colors]
 accent = "#3584e4"
 background = "#fafafb"
@@ -120,6 +123,9 @@ item_spacing = 6.0
 width = 6.0
 
 # === Dark variant ===
+
+[dark]
+icon_theme = "freedesktop"
 
 [dark.colors]
 accent = "#3584e4"

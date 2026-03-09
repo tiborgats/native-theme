@@ -29,6 +29,7 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::NativeThem
         geometry: Default::default(),
         spacing: Default::default(),
         widget_metrics: Some(metrics::breeze_widget_metrics()),
+        icon_theme: None,
     };
 
     let theme = if dark {

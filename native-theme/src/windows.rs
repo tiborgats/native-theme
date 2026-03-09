@@ -271,6 +271,7 @@ fn build_theme(
         fonts,
         spacing,
         widget_metrics: Some(widget_metrics),
+        icon_theme: None,
     };
 
     if dark {

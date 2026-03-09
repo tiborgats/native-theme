@@ -4,6 +4,9 @@ name = "macOS Sonoma"
 
 # === Light variant ===
 
+[light]
+icon_theme = "sf-symbols"
+
 [light.colors]
 accent = "#007aff"
 background = "#f0f0f0"
@@ -118,6 +121,9 @@ item_spacing = 8.0
 width = 9.0
 
 # === Dark variant ===
+
+[dark]
+icon_theme = "sf-symbols"
 
 [dark.colors]
 accent = "#0a84ff"

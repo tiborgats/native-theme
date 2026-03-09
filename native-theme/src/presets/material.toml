@@ -4,6 +4,9 @@ name = "Material"
 
 # === Light variant ===
 
+[light]
+icon_theme = "material"
+
 [light.colors]
 accent = "#6750a4"
 background = "#fffbfe"
@@ -120,6 +123,9 @@ item_spacing = 8.0
 width = 4.0
 
 # === Dark variant ===
+
+[dark]
+icon_theme = "material"
 
 [dark.colors]
 accent = "#d0bcff"

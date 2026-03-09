@@ -4,6 +4,9 @@ name = "Windows 11"
 
 # === Light variant ===
 
+[light]
+icon_theme = "segoe-fluent"
+
 [light.colors]
 accent = "#0078d4"
 background = "#f3f3f3"
@@ -118,6 +121,9 @@ item_spacing = 4.0
 width = 4.0
 
 # === Dark variant ===
+
+[dark]
+icon_theme = "segoe-fluent"
 
 [dark.colors]
 accent = "#0078d4"

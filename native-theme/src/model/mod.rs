@@ -58,6 +58,11 @@ pub struct ThemeVariant {
     /// merged recursively; if only the overlay has them they are cloned.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub widget_metrics: Option<WidgetMetrics>,
+
+    /// Icon set to use for this variant (e.g., "sf-symbols", "material").
+    /// When None, resolved at runtime via system_icon_set().
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon_theme: Option<String>,
 }
 
 impl ThemeVariant {
@@ -75,6 +80,10 @@ impl ThemeVariant {
             (None, Some(over)) => self.widget_metrics = Some(over.clone()),
             _ => {}
         }
+
+        if overlay.icon_theme.is_some() {
+            self.icon_theme.clone_from(&overlay.icon_theme);
+        }
     }
 
     /// Returns true if all fields are at their default (None/empty) state.
@@ -84,6 +93,7 @@ impl ThemeVariant {
             && self.geometry.is_empty()
             && self.spacing.is_empty()
             && self.widget_metrics.as_ref().is_none_or(|wm| wm.is_empty())
+            && self.icon_theme.is_none()
     }
 }
 
@@ -443,10 +453,10 @@ mod tests {
 
     #[test]
     fn icon_theme_toml_absent_deserializes_to_none() {
-        let toml_str = r#"
+        let toml_str = r##"
 [colors]
 accent = "#ff0000"
-"#;
+"##;
         let variant: ThemeVariant = toml::from_str(toml_str).unwrap();
         assert!(variant.icon_theme.is_none());
     }
