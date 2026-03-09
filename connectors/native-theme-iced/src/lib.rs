@@ -27,6 +27,7 @@
 //! ```
 
 pub mod extended;
+pub mod icons;
 pub mod palette;
 
 /// Select light or dark variant from a [`NativeTheme`], with cross-fallback.
