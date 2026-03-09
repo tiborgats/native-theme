@@ -22,9 +22,9 @@ pub fn to_theme_config(variant: &ThemeVariant, name: &str, mode: ThemeMode) -> T
         mode,
 
         font_family: fonts.family.as_ref().map(|s| SharedString::from(s.clone())),
-        font_size: fonts.size,
+        font_size: fonts.size.map(|pt| pt * (96.0 / 72.0)),
         mono_font_family: fonts.mono_family.as_ref().map(|s| SharedString::from(s.clone())),
-        mono_font_size: fonts.mono_size,
+        mono_font_size: fonts.mono_size.map(|pt| pt * (96.0 / 72.0)),
 
         radius: geometry.radius.map(|r| r as usize),
         radius_lg: geometry.radius_lg.map(|r| r as usize),
@@ -53,9 +53,9 @@ mod tests {
 
         assert_eq!(config.name.to_string(), "Test Theme");
         assert_eq!(config.font_family.as_ref().map(|s| s.to_string()), Some("Inter".to_string()));
-        assert_eq!(config.font_size, Some(14.0));
+        assert_eq!(config.font_size, Some(14.0 * (96.0 / 72.0)));
         assert_eq!(config.mono_font_family.as_ref().map(|s| s.to_string()), Some("JetBrains Mono".to_string()));
-        assert_eq!(config.mono_font_size, Some(13.0));
+        assert_eq!(config.mono_font_size, Some(13.0 * (96.0 / 72.0)));
         assert_eq!(config.radius, Some(4));
         assert_eq!(config.radius_lg, Some(8));
         assert_eq!(config.shadow, Some(true));

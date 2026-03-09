@@ -122,7 +122,7 @@ fn widget_tooltip_themed(
 ) -> String {
     let mut s = widget_tooltip(name, colors, config, not_themeable);
     s.push_str(&format!(
-        "\n\nTheme fonts:\n  Font: {} {}px\n  Mono: {} {}px",
+        "\n\nTheme fonts:\n  Font: {} {}pt\n  Mono: {} {}pt",
         t.font_family,
         t.font_size.as_f32(),
         t.mono_font_family,
@@ -323,9 +323,9 @@ impl Showcase {
         let radius_str = format!("{}px", theme.radius.as_f32());
         let radius_lg_str = format!("{}px", theme.radius_lg.as_f32());
         let font_family_str = theme.font_family.to_string();
-        let font_size_str = format!("{}px", theme.font_size.as_f32());
+        let font_size_str = format!("{}pt", theme.font_size.as_f32());
         let mono_family_str = theme.mono_font_family.to_string();
-        let mono_size_str = format!("{}px", theme.mono_font_size.as_f32());
+        let mono_size_str = format!("{}pt", theme.mono_font_size.as_f32());
         let shadow_str = if theme.shadow { "true" } else { "false" };
         let scrollbar_str = format!("{:?}", theme.scrollbar_show);
 
@@ -1369,7 +1369,7 @@ impl Showcase {
                             ],
                             &[
                                 ("font", format!("font_family: {}", t.font_family)),
-                                ("size", format!("font_size: {}px", t.font_size.as_f32())),
+                                ("size", format!("font_size: {}pt", t.font_size.as_f32())),
                             ],
                             &[("font weights", "hardcoded")],
                         )).build(window, cx)
