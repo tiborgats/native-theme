@@ -12,8 +12,19 @@ use native_theme::IconData;
 /// Returns `Some(Handle)` for [`IconData::Rgba`] data, or `None` for
 /// [`IconData::Svg`]. SVG icons should use [`to_svg_handle()`] and
 /// `iced::widget::Svg` instead.
-pub fn to_image_handle(_data: &IconData) -> Option<iced_core::image::Handle> {
-    todo!()
+pub fn to_image_handle(data: &IconData) -> Option<iced_core::image::Handle> {
+    match data {
+        IconData::Rgba {
+            width,
+            height,
+            data,
+        } => Some(iced_core::image::Handle::from_rgba(
+            *width,
+            *height,
+            data.clone(),
+        )),
+        _ => None,
+    }
 }
 
 /// Converts SVG [`IconData`] to an iced [`svg::Handle`].
@@ -21,8 +32,11 @@ pub fn to_image_handle(_data: &IconData) -> Option<iced_core::image::Handle> {
 /// Returns `Some(Handle)` for [`IconData::Svg`] data, or `None` for
 /// [`IconData::Rgba`]. RGBA icons should use [`to_image_handle()`] and
 /// `iced::widget::Image` instead.
-pub fn to_svg_handle(_data: &IconData) -> Option<iced_core::svg::Handle> {
-    todo!()
+pub fn to_svg_handle(data: &IconData) -> Option<iced_core::svg::Handle> {
+    match data {
+        IconData::Svg(bytes) => Some(iced_core::svg::Handle::from_memory(bytes.clone())),
+        _ => None,
+    }
 }
 
 #[cfg(test)]
