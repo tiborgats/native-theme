@@ -112,22 +112,28 @@ fn widget_tooltip(
     s
 }
 
+/// Format original native-theme font settings (in points) for display.
+fn format_font_info(fonts: &native_theme::ThemeFonts) -> String {
+    let family = fonts.family.as_deref().unwrap_or("(default)");
+    let size = fonts.size.map(|s| format!("{}pt", s)).unwrap_or("(default)".into());
+    let mono = fonts.mono_family.as_deref().unwrap_or("(default)");
+    let mono_size = fonts.mono_size.map(|s| format!("{}pt", s)).unwrap_or("(default)".into());
+    format!(
+        "\n\nTheme fonts:\n  Font: {} {}\n  Mono: {} {}",
+        family, size, mono, mono_size,
+    )
+}
+
 /// Like [`widget_tooltip`] but appends the active theme font settings.
 fn widget_tooltip_themed(
-    t: &Theme,
+    font_info: &str,
     name: &str,
     colors: &[(&str, &str, Hsla)],
     config: &[(&str, String)],
     not_themeable: &[(&str, &str)],
 ) -> String {
     let mut s = widget_tooltip(name, colors, config, not_themeable);
-    s.push_str(&format!(
-        "\n\nTheme fonts:\n  Font: {} {}pt\n  Mono: {} {}pt",
-        t.font_family,
-        t.font_size.as_f32(),
-        t.mono_font_family,
-        t.mono_font_size.as_f32(),
-    ));
+    s.push_str(font_info);
     s
 }
 
@@ -174,6 +180,8 @@ struct Showcase {
     theme_select: Entity<SelectState<SearchableVec<SharedString>>>,
     current_theme_name: String,
     is_dark: bool,
+    /// Original native-theme fonts (in points), for display purposes.
+    original_fonts: native_theme::ThemeFonts,
 
     active_tab: usize,
 
@@ -266,6 +274,9 @@ impl Showcase {
         // Apply the initial "default" preset theme.
         let is_dark = cx.theme().is_dark();
         let nt = NativeTheme::preset("default").expect("default preset must exist");
+        let original_fonts = pick_variant(&nt, is_dark)
+            .map(|v| v.fonts.clone())
+            .unwrap_or_default();
         if let Some(variant) = pick_variant(&nt, is_dark) {
             let theme = to_theme(variant, "default", is_dark);
             *Theme::global_mut(cx) = theme;
@@ -276,6 +287,7 @@ impl Showcase {
             theme_select,
             current_theme_name: "default".into(),
             is_dark,
+            original_fonts,
             active_tab: TAB_BUTTONS,
             input_state,
             number_input_state,
@@ -294,6 +306,7 @@ impl Showcase {
         if name == "OS Theme" {
             Theme::sync_system_appearance(Some(window), cx);
             self.is_dark = cx.theme().is_dark();
+            self.original_fonts = native_theme::ThemeFonts::default();
             return;
         }
 
@@ -303,6 +316,7 @@ impl Showcase {
         };
 
         if let Some(variant) = pick_variant(&nt, self.is_dark) {
+            self.original_fonts = variant.fonts.clone();
             let theme = to_theme(variant, name, self.is_dark);
             *Theme::global_mut(cx) = theme;
             window.refresh();
@@ -322,10 +336,10 @@ impl Showcase {
         let theme = cx.theme().clone();
         let radius_str = format!("{}px", theme.radius.as_f32());
         let radius_lg_str = format!("{}px", theme.radius_lg.as_f32());
-        let font_family_str = theme.font_family.to_string();
-        let font_size_str = format!("{}pt", theme.font_size.as_f32());
-        let mono_family_str = theme.mono_font_family.to_string();
-        let mono_size_str = format!("{}pt", theme.mono_font_size.as_f32());
+        let font_family_str = self.original_fonts.family.as_deref().unwrap_or("(default)").to_string();
+        let font_size_str = self.original_fonts.size.map(|s| format!("{}pt", s)).unwrap_or("(default)".into());
+        let mono_family_str = self.original_fonts.mono_family.as_deref().unwrap_or("(default)").to_string();
+        let mono_size_str = self.original_fonts.mono_size.map(|s| format!("{}pt", s)).unwrap_or("(default)".into());
         let shadow_str = if theme.shadow { "true" } else { "false" };
         let scrollbar_str = format!("{:?}", theme.scrollbar_show);
 
@@ -357,6 +371,7 @@ impl Showcase {
     // Tab: Buttons
     // -----------------------------------------------------------------------
     fn render_buttons_tab(&self, _cx: &mut Context<Self>) -> impl IntoElement {
+        let fi = format_font_info(&self.original_fonts);
         v_flex()
             .gap_5()
             .p_4()
@@ -371,9 +386,9 @@ impl Showcase {
                         div()
                             .id("tt-btn-primary")
                             .child(Button::new("b-primary").label("Primary").primary())
-                            .tooltip(move |window, cx| {
+                            .tooltip({ let fi = fi.clone(); move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(t,
+                                Tooltip::new(widget_tooltip_themed(&fi,
                                     "Button (Primary)",
                                     &[
                                         ("bg", "primary", t.primary),
@@ -391,15 +406,15 @@ impl Showcase {
                                         ("min-height", "hardcoded"),
                                     ],
                                 )).build(window, cx)
-                            }),
+                            }}),
                     )
                     .child(
                         div()
                             .id("tt-btn-secondary")
                             .child(Button::new("b-secondary").label("Secondary"))
-                            .tooltip(move |window, cx| {
+                            .tooltip({ let fi = fi.clone(); move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(t,
+                                Tooltip::new(widget_tooltip_themed(&fi,
                                     "Button (Secondary)",
                                     &[
                                         ("bg", "secondary", t.secondary),
@@ -417,15 +432,15 @@ impl Showcase {
                                         ("min-height", "hardcoded"),
                                     ],
                                 )).build(window, cx)
-                            }),
+                            }}),
                     )
                     .child(
                         div()
                             .id("tt-btn-danger")
                             .child(Button::new("b-danger").label("Danger").danger())
-                            .tooltip(move |window, cx| {
+                            .tooltip({ let fi = fi.clone(); move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(t,
+                                Tooltip::new(widget_tooltip_themed(&fi,
                                     "Button (Danger)",
                                     &[
                                         ("bg", "danger", t.danger),
@@ -443,15 +458,15 @@ impl Showcase {
                                         ("min-height", "hardcoded"),
                                     ],
                                 )).build(window, cx)
-                            }),
+                            }}),
                     )
                     .child(
                         div()
                             .id("tt-btn-success")
                             .child(Button::new("b-success").label("Success").success())
-                            .tooltip(move |window, cx| {
+                            .tooltip({ let fi = fi.clone(); move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(t,
+                                Tooltip::new(widget_tooltip_themed(&fi,
                                     "Button (Success)",
                                     &[
                                         ("bg", "success", t.success),
@@ -469,15 +484,15 @@ impl Showcase {
                                         ("min-height", "hardcoded"),
                                     ],
                                 )).build(window, cx)
-                            }),
+                            }}),
                     )
                     .child(
                         div()
                             .id("tt-btn-warning")
                             .child(Button::new("b-warning").label("Warning").warning())
-                            .tooltip(move |window, cx| {
+                            .tooltip({ let fi = fi.clone(); move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(t,
+                                Tooltip::new(widget_tooltip_themed(&fi,
                                     "Button (Warning)",
                                     &[
                                         ("bg", "warning", t.warning),
@@ -495,15 +510,15 @@ impl Showcase {
                                         ("min-height", "hardcoded"),
                                     ],
                                 )).build(window, cx)
-                            }),
+                            }}),
                     )
                     .child(
                         div()
                             .id("tt-btn-info")
                             .child(Button::new("b-info").label("Info").info())
-                            .tooltip(move |window, cx| {
+                            .tooltip({ let fi = fi.clone(); move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(t,
+                                Tooltip::new(widget_tooltip_themed(&fi,
                                     "Button (Info)",
                                     &[
                                         ("bg", "info", t.info),
@@ -521,15 +536,15 @@ impl Showcase {
                                         ("min-height", "hardcoded"),
                                     ],
                                 )).build(window, cx)
-                            }),
+                            }}),
                     )
                     .child(
                         div()
                             .id("tt-btn-ghost")
                             .child(Button::new("b-ghost").label("Ghost").ghost())
-                            .tooltip(move |window, cx| {
+                            .tooltip({ let fi = fi.clone(); move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(t,
+                                Tooltip::new(widget_tooltip_themed(&fi,
                                     "Button (Ghost)",
                                     &[
                                         ("text", "foreground", t.foreground),
@@ -538,15 +553,15 @@ impl Showcase {
                                     &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                                     &[("padding", "set per Size enum"), ("font-weight", "hardcoded")],
                                 )).build(window, cx)
-                            }),
+                            }}),
                     )
                     .child(
                         div()
                             .id("tt-btn-link")
                             .child(Button::new("b-link").label("Link").link())
-                            .tooltip(move |window, cx| {
+                            .tooltip({ let fi = fi.clone(); move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(t,
+                                Tooltip::new(widget_tooltip_themed(&fi,
                                     "Button (Link)",
                                     &[
                                         ("text", "foreground", t.foreground),
@@ -555,15 +570,15 @@ impl Showcase {
                                     &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                                     &[("padding", "set per Size enum"), ("font-weight", "hardcoded")],
                                 )).build(window, cx)
-                            }),
+                            }}),
                     )
                     .child(
                         div()
                             .id("tt-btn-text")
                             .child(Button::new("b-text").label("Text").text())
-                            .tooltip(move |window, cx| {
+                            .tooltip({ let fi = fi.clone(); move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(t,
+                                Tooltip::new(widget_tooltip_themed(&fi,
                                     "Button (Text)",
                                     &[
                                         ("text", "foreground", t.foreground),
@@ -572,15 +587,15 @@ impl Showcase {
                                     &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                                     &[("padding", "set per Size enum"), ("font-weight", "hardcoded")],
                                 )).build(window, cx)
-                            }),
+                            }}),
                     )
                     .child(
                         div()
                             .id("tt-btn-outline")
                             .child(Button::new("b-outline").label("Outline").primary().outline())
-                            .tooltip(move |window, cx| {
+                            .tooltip({ let fi = fi.clone(); move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(t,
+                                Tooltip::new(widget_tooltip_themed(&fi,
                                     "Button (Primary Outline)",
                                     &[
                                         ("border", "primary", t.primary),
@@ -590,7 +605,7 @@ impl Showcase {
                                     &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                                     &[("padding", "set per Size enum"), ("font-weight", "hardcoded")],
                                 )).build(window, cx)
-                            }),
+                            }}),
                     ),
             )
             // Button sizes (using secondary for readability)
@@ -607,9 +622,9 @@ impl Showcase {
                             .child(Button::new("s-md").label("Medium").with_size(Size::Medium))
                             .child(Button::new("s-lg").label("Large").with_size(Size::Large)),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Button Sizes",
                             &[
                                 ("bg", "secondary", t.secondary),
@@ -622,7 +637,7 @@ impl Showcase {
                                 ("min-height", "varies per Size"),
                             ],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Button group
             .child(section("ButtonGroup"))
@@ -635,9 +650,9 @@ impl Showcase {
                             .child(Button::new("bg-b").label("Center"))
                             .child(Button::new("bg-c").label("Right")),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "ButtonGroup",
                             &[
                                 ("bg", "secondary", t.secondary),
@@ -647,7 +662,7 @@ impl Showcase {
                             &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                             &[("gap", "hardcoded (0px, merged borders)")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Disabled + loading
             .child(section("Disabled State"))
@@ -661,9 +676,9 @@ impl Showcase {
                             .child(Button::new("d-sec").label("Disabled Secondary").disabled(true))
                             .child(Button::new("d-dng").label("Disabled Danger").danger().disabled(true)),
                     )
-                    .tooltip(move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
+                        let _t = cx.theme();
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Disabled Buttons",
                             &[],
                             &[],
@@ -673,7 +688,7 @@ impl Showcase {
                                 ("theme", "same variant colors at reduced opacity"),
                             ],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             .child(section("Loading State"))
             .child(
@@ -684,9 +699,9 @@ impl Showcase {
                             .gap_2()
                             .child(Button::new("l-pri").label("Loading...").primary().loading(true)),
                     )
-                    .tooltip(move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
+                        let _t = cx.theme();
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Loading Button",
                             &[],
                             &[],
@@ -695,7 +710,7 @@ impl Showcase {
                                 ("interaction", "disabled while loading"),
                             ],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Buttons with icons
             .child(section("Buttons with Icons"))
@@ -709,9 +724,9 @@ impl Showcase {
                             .child(Button::new("bi-search").label("Search").icon(IconName::Search))
                             .child(Button::new("bi-del").label("Delete").danger().icon(IconName::Delete)),
                     )
-                    .tooltip(move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
+                        let _t = cx.theme();
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Buttons with Icons",
                             &[],
                             &[],
@@ -721,7 +736,7 @@ impl Showcase {
                                 ("icon size", "matches button Size enum"),
                             ],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
     }
 
@@ -729,6 +744,7 @@ impl Showcase {
     // Tab: Inputs
     // -----------------------------------------------------------------------
     fn render_inputs_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let fi = format_font_info(&self.original_fonts);
         let checkbox_a = self.checkbox_a;
         let checkbox_b = self.checkbox_b;
         let checkbox_c = self.checkbox_c;
@@ -750,9 +766,9 @@ impl Showcase {
                             .with_size(Size::Medium)
                             .w(px(360.0)),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Input",
                             &[
                                 ("border", "input", t.input),
@@ -767,7 +783,7 @@ impl Showcase {
                             ],
                             &[("padding", "set per Size enum"), ("height", "set per Size enum")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Number Input
             .child(section("Number Input"))
@@ -780,9 +796,9 @@ impl Showcase {
                             .with_size(Size::Medium)
                             .w(px(200.0)),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "NumberInput",
                             &[
                                 ("border", "input", t.input),
@@ -801,7 +817,7 @@ impl Showcase {
                                 ("step buttons", "hardcoded +/- icons"),
                             ],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Checkboxes
             .child(section("Checkboxes"))
@@ -834,9 +850,9 @@ impl Showcase {
                                     .disabled(true),
                             ),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Checkbox",
                             &[
                                 ("checked bg", "primary", t.primary),
@@ -850,7 +866,7 @@ impl Showcase {
                             ],
                             &[("size", "set per Size enum"), ("indicator size", "hardcoded")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Radio group
             .child(section("Radio Group"))
@@ -867,9 +883,9 @@ impl Showcase {
                                 this.radio_index = Some(*ix);
                             })),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Radio",
                             &[
                                 ("selected", "primary", t.primary),
@@ -882,7 +898,7 @@ impl Showcase {
                             ],
                             &[("size", "hardcoded"), ("indicator size", "hardcoded")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Switch
             .child(section("Switch"))
@@ -907,9 +923,9 @@ impl Showcase {
                                     .disabled(true),
                             ),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Switch",
                             &[
                                 ("on track", "primary", t.primary),
@@ -919,7 +935,7 @@ impl Showcase {
                             &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                             &[("size", "hardcoded"), ("animation timing", "hardcoded")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Slider
             .child(section(format!("Slider (value: {:.0})", slider_value)))
@@ -927,9 +943,9 @@ impl Showcase {
                 div()
                     .id("tt-slider")
                     .child(Slider::new(&self.slider_state).w(px(360.0)))
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Slider",
                             &[
                                 ("track", "slider_bar", t.slider_bar),
@@ -939,7 +955,7 @@ impl Showcase {
                             &[("shadow", format!("{}", t.shadow))],
                             &[("track height", "hardcoded"), ("thumb size", "hardcoded")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
     }
 
@@ -947,6 +963,7 @@ impl Showcase {
     // Tab: Data
     // -----------------------------------------------------------------------
     fn render_data_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let fi = format_font_info(&self.original_fonts);
         let collapsible_open = self.collapsible_open;
 
         v_flex()
@@ -967,9 +984,9 @@ impl Showcase {
                             .item("Platforms", "Linux, macOS, Windows", 1)
                             .item("Description", "Universal theme abstraction layer", 2),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "DescriptionList",
                             &[
                                 ("label bg", "description_list_label", t.description_list_label),
@@ -983,7 +1000,7 @@ impl Showcase {
                             &[],
                             &[("layout spacing", "hardcoded")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Accordion
             .child(section("Accordion"))
@@ -1016,9 +1033,9 @@ impl Showcase {
                                 )
                             }),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Accordion",
                             &[
                                 ("bg", "accordion", t.accordion),
@@ -1030,7 +1047,7 @@ impl Showcase {
                             &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                             &[("padding", "hardcoded"), ("animation", "hardcoded")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Collapsible
             .child(section("Collapsible"))
@@ -1063,9 +1080,9 @@ impl Showcase {
                                     .child(Label::new("This content is shown when collapsible is open.").text_sm()),
                             ),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Collapsible",
                             &[
                                 ("bg", "accordion", t.accordion),
@@ -1075,7 +1092,7 @@ impl Showcase {
                             &[],
                             &[("animation", "hardcoded slide")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // GroupBox variants
             .child(section("GroupBox (3 variants)"))
@@ -1106,9 +1123,9 @@ impl Showcase {
                                     .child(Label::new("Outlined border").text_sm()),
                             ),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "GroupBox",
                             &[
                                 ("fill bg", "group_box", t.group_box),
@@ -1119,7 +1136,7 @@ impl Showcase {
                             &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                             &[("padding", "hardcoded")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
     }
 
@@ -1127,6 +1144,7 @@ impl Showcase {
     // Tab: Feedback
     // -----------------------------------------------------------------------
     fn render_feedback_tab(&self, _cx: &mut Context<Self>) -> impl IntoElement {
+        let fi = format_font_info(&self.original_fonts);
         v_flex()
             .gap_5()
             .p_4()
@@ -1140,9 +1158,9 @@ impl Showcase {
                         Alert::info("alert-info", "This is an informational message.")
                             .title("Info"),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Alert (Info)",
                             &[
                                 ("color", "info", t.info),
@@ -1156,7 +1174,7 @@ impl Showcase {
                                 ("icon size", "hardcoded"),
                             ],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             .child(
                 div()
@@ -1165,9 +1183,9 @@ impl Showcase {
                         Alert::success("alert-ok", "Operation completed successfully.")
                             .title("Success"),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Alert (Success)",
                             &[
                                 ("color", "success", t.success),
@@ -1180,7 +1198,7 @@ impl Showcase {
                                 ("icon", "CircleCheck (hardcoded)"),
                             ],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             .child(
                 div()
@@ -1189,9 +1207,9 @@ impl Showcase {
                         Alert::warning("alert-warn", "Please review before proceeding.")
                             .title("Warning"),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Alert (Warning)",
                             &[
                                 ("color", "warning", t.warning),
@@ -1204,7 +1222,7 @@ impl Showcase {
                                 ("icon", "TriangleAlert (hardcoded)"),
                             ],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             .child(
                 div()
@@ -1213,9 +1231,9 @@ impl Showcase {
                         Alert::error("alert-err", "Something went wrong. Please try again.")
                             .title("Error"),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Alert (Error)",
                             &[
                                 ("color", "danger", t.danger),
@@ -1228,7 +1246,7 @@ impl Showcase {
                                 ("icon", "CircleX (hardcoded)"),
                             ],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Progress
             .child(section("Progress Bars"))
@@ -1261,15 +1279,15 @@ impl Showcase {
                             )
                             .child(Progress::new().value(100.0)),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Progress",
                             &[("bar", "progress_bar", t.progress_bar)],
                             &[],
                             &[("height", "hardcoded"), ("animation", "hardcoded")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Spinners
             .child(section("Spinner (3 sizes)"))
@@ -1302,15 +1320,15 @@ impl Showcase {
                                     .child(Label::new("Large").text_sm()),
                             ),
                     )
-                    .tooltip(move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
+                        let _t = cx.theme();
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Spinner",
                             &[],
                             &[],
                             &[("animation speed", "hardcoded"), ("size", "hardcoded per Size enum")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Skeleton
             .child(section("Skeleton Placeholders"))
@@ -1326,15 +1344,15 @@ impl Showcase {
                             .child(Skeleton::new().h(px(8.0)).w(px(250.0)).rounded(px(4.0)))
                             .child(Skeleton::new().secondary().h(px(60.0)).rounded(px(6.0))),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Skeleton",
                             &[("bg", "skeleton", t.skeleton)],
                             &[],
                             &[("animation", "hardcoded pulse")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
     }
 
@@ -1342,6 +1360,7 @@ impl Showcase {
     // Tab: Typography
     // -----------------------------------------------------------------------
     fn render_typography_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let fi = format_font_info(&self.original_fonts);
         v_flex()
             .gap_5()
             .p_4()
@@ -1358,9 +1377,9 @@ impl Showcase {
                             .child(Label::new("Label with secondary").secondary("(secondary text)"))
                             .child(Label::new("Masked label: secret123").masked(true)),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Label",
                             &[
                                 ("text", "foreground", t.foreground),
@@ -1369,11 +1388,11 @@ impl Showcase {
                             ],
                             &[
                                 ("font", format!("font_family: {}", t.font_family)),
-                                ("size", format!("font_size: {}pt", t.font_size.as_f32())),
+                                ("size", format!("font_size: {}px (renders)", t.font_size.as_f32())),
                             ],
                             &[("font weights", "hardcoded")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Tags
             .child(section("Tags (7 colors + outline)"))
@@ -1393,9 +1412,9 @@ impl Showcase {
                             .child(Tag::primary().outline().child("Primary Outline"))
                             .child(Tag::danger().outline().child("Danger Outline")),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Tag (per variant)",
                             &[
                                 ("bg (primary)", "primary", t.primary),
@@ -1405,7 +1424,7 @@ impl Showcase {
                             &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                             &[("padding", "hardcoded per Size")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Badges
             .child(section("Badge"))
@@ -1423,9 +1442,9 @@ impl Showcase {
                             )
                             .child(Badge::new().dot().child(Button::new("badge-3").label("Updates"))),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Badge",
                             &[
                                 ("bg", "red", t.red),
@@ -1434,7 +1453,7 @@ impl Showcase {
                             &[],
                             &[("size", "hardcoded"), ("padding", "hardcoded")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Link
             .child(section("Link"))
@@ -1455,9 +1474,9 @@ impl Showcase {
                                     .href("https://gpui.rs"),
                             ),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Link",
                             &[("text+decoration", "link", t.link)],
                             &[],
@@ -1467,7 +1486,7 @@ impl Showcase {
                                 ("active opacity", "0.6"),
                             ],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Breadcrumb (with tab navigation)
             .child(section("Breadcrumb (click to navigate tabs)"))
@@ -1502,9 +1521,9 @@ impl Showcase {
                             )
                             .child(BreadcrumbItem::new("Typography")),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Breadcrumb",
                             &[
                                 ("last item", "foreground", t.foreground),
@@ -1513,7 +1532,7 @@ impl Showcase {
                             &[],
                             &[("separator icon", "hardcoded ChevronRight"), ("spacing", "hardcoded")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Divider styles
             .child(section("Divider Styles"))
@@ -1528,9 +1547,9 @@ impl Showcase {
                             .child(Divider::horizontal_dashed())
                             .child(Divider::horizontal_dashed().label("END")),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Divider",
                             &[
                                 ("line", "border", t.border),
@@ -1540,7 +1559,7 @@ impl Showcase {
                             &[],
                             &[("thickness", "1px hardcoded")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
     }
 
@@ -1548,6 +1567,7 @@ impl Showcase {
     // Tab: Layout
     // -----------------------------------------------------------------------
     fn render_layout_tab(&self, _cx: &mut Context<Self>) -> impl IntoElement {
+        let fi = format_font_info(&self.original_fonts);
         v_flex()
             .gap_5()
             .p_4()
@@ -1583,9 +1603,9 @@ impl Showcase {
                                 ),
                             ),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Resizable",
                             &[
                                 ("dragging border", "drag_border", t.drag_border),
@@ -1594,7 +1614,7 @@ impl Showcase {
                             &[],
                             &[("min panel size", "100px hardcoded")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Vertical resizable
             .child(section("Resizable Panels (vertical)"))
@@ -1625,9 +1645,9 @@ impl Showcase {
                                 ),
                             ),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Resizable (vertical)",
                             &[
                                 ("dragging border", "drag_border", t.drag_border),
@@ -1636,7 +1656,7 @@ impl Showcase {
                             &[],
                             &[("min panel size", "100px hardcoded")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Dividers
             .child(section("Divider (solid / dashed / labeled)"))
@@ -1650,9 +1670,9 @@ impl Showcase {
                             .child(Divider::horizontal().label("Section Break"))
                             .child(Divider::horizontal_dashed()),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Divider",
                             &[
                                 ("line", "border", t.border),
@@ -1662,7 +1682,7 @@ impl Showcase {
                             &[],
                             &[("thickness", "1px hardcoded")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // GroupBox as container
             .child(section("GroupBox as Layout Container"))
@@ -1685,9 +1705,9 @@ impl Showcase {
                                     ),
                             ),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "GroupBox (layout)",
                             &[
                                 ("fill bg", "group_box", t.group_box),
@@ -1698,7 +1718,7 @@ impl Showcase {
                             &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                             &[("padding", "hardcoded")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
             // Scrollable area demo
             .child(section("Scrollable Area (visible scrollbar)"))
@@ -1725,9 +1745,9 @@ impl Showcase {
                                 ),
                             ),
                     )
-                    .tooltip(move |window, cx| {
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
                         let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Scrollbar",
                             &[
                                 ("track", "scrollbar", t.scrollbar),
@@ -1741,7 +1761,7 @@ impl Showcase {
                             ],
                             &[("width", "16px hardcoded"), ("min thumb length", "48px hardcoded")],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
     }
 
@@ -1749,6 +1769,7 @@ impl Showcase {
     // Tab: Icons
     // -----------------------------------------------------------------------
     fn render_icons_tab(&self, _cx: &mut Context<Self>) -> impl IntoElement {
+        let fi = format_font_info(&self.original_fonts);
         // All 87 IconName variants
         let icons: Vec<(&str, IconName)> = vec![
             ("ALargeSmall", IconName::ALargeSmall),
@@ -1875,9 +1896,9 @@ impl Showcase {
                                     })
                             })),
                     )
-                    .tooltip(move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(t,
+                    .tooltip({ let fi = fi.clone(); move |window, cx| {
+                        let _t = cx.theme();
+                        Tooltip::new(widget_tooltip_themed(&fi,
                             "Icon",
                             &[],
                             &[],
@@ -1886,7 +1907,7 @@ impl Showcase {
                                 ("SVG shapes", "87 built-in icons"),
                             ],
                         )).build(window, cx)
-                    }),
+                    }}),
             )
     }
 
@@ -1894,6 +1915,7 @@ impl Showcase {
     // Tab: Theme Map
     // -----------------------------------------------------------------------
     fn render_theme_map_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let _fi = format_font_info(&self.original_fonts);
         let t = cx.theme().clone();
 
         v_flex()
@@ -2180,6 +2202,7 @@ impl Showcase {
 
 impl Render for Showcase {
     fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let fi = format_font_info(&self.original_fonts);
         let theme = cx.theme().clone();
         let active_tab = self.active_tab;
         let is_dark = self.is_dark;
@@ -2278,9 +2301,9 @@ impl Render for Showcase {
                                         this.active_tab = *ix;
                                     })),
                             )
-                            .tooltip(move |window, cx| {
+                            .tooltip({ let fi = fi.clone(); move |window, cx| {
                                 let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(t,
+                                Tooltip::new(widget_tooltip_themed(&fi,
                                     "TabBar",
                                     &[
                                         ("bg", "tab", t.tab),
@@ -2294,7 +2317,7 @@ impl Render for Showcase {
                                     &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                                     &[("padding", "set per Size enum")],
                                 )).build(window, cx)
-                            }),
+                            }}),
                     ),
             )
             // Content with scrollbar
