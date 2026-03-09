@@ -45,7 +45,8 @@ use gpui_component::{
     v_flex, ActiveTheme, Disableable, Icon, IconName, PixelsExt, Root, Sizable, Size, StyledExt,
 };
 
-use native_theme::NativeTheme;
+use native_theme::{load_icon, IconData, IconRole, NativeTheme};
+use native_theme_gpui::icons::{icon_name as lucide_icon_name, to_image_source};
 use native_theme_gpui::{pick_variant, to_theme};
 
 // ---------------------------------------------------------------------------
@@ -173,6 +174,29 @@ fn color_swatch(name: &str, color: Hsla) -> impl IntoElement {
 }
 
 // ---------------------------------------------------------------------------
+// Icon loading helper
+// ---------------------------------------------------------------------------
+
+/// Pre-load all 42 icons for the given icon set name.
+fn load_all_icons(icon_set: &str) -> Vec<(IconRole, Option<IconData>)> {
+    IconRole::ALL
+        .iter()
+        .map(|role| (*role, load_icon(*role, icon_set)))
+        .collect()
+}
+
+/// Check if the given icon set name matches the current platform.
+fn is_native_icon_set(name: &str) -> bool {
+    match name {
+        "freedesktop" => cfg!(target_os = "linux"),
+        "sf-symbols" => cfg!(any(target_os = "macos", target_os = "ios")),
+        "segoe-fluent" => cfg!(target_os = "windows"),
+        "material" | "lucide" => true, // bundled, always available
+        _ => false,
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Main view
 // ---------------------------------------------------------------------------
 
@@ -195,6 +219,11 @@ struct Showcase {
     radio_index: Option<usize>,
     slider_value: f32,
     collapsible_open: bool,
+
+    // Icon set selector state
+    icon_set_select: Entity<SelectState<SearchableVec<SharedString>>>,
+    icon_set_name: String,
+    loaded_icons: Vec<(IconRole, Option<IconData>)>,
 }
 
 impl Showcase {
@@ -271,6 +300,40 @@ impl Showcase {
         )
         .detach();
 
+        // Icon set selector
+        let icon_set_names: Vec<SharedString> = vec![
+            "material".into(),
+            "lucide".into(),
+            "sf-symbols".into(),
+            "segoe-fluent".into(),
+            "freedesktop".into(),
+        ];
+        let icon_set_delegate = SearchableVec::new(icon_set_names);
+        let icon_set_select = cx.new(|cx| {
+            SelectState::new(
+                icon_set_delegate,
+                Some(gpui_component::IndexPath::default().row(0)),
+                window,
+                cx,
+            )
+        });
+
+        cx.subscribe_in(
+            &icon_set_select,
+            window,
+            |this: &mut Self, _entity, event: &SelectEvent<SearchableVec<SharedString>>, _window, _cx| {
+                if let SelectEvent::Confirm(Some(value)) = event {
+                    let name = value.to_string();
+                    this.icon_set_name = name.clone();
+                    this.loaded_icons = load_all_icons(&name);
+                }
+            },
+        )
+        .detach();
+
+        let initial_icon_set = "material".to_string();
+        let loaded_icons = load_all_icons(&initial_icon_set);
+
         // Apply the initial "default" preset theme.
         let is_dark = cx.theme().is_dark();
         let nt = NativeTheme::preset("default").expect("default preset must exist");
@@ -299,6 +362,9 @@ impl Showcase {
             radio_index: Some(0),
             slider_value: 65.0,
             collapsible_open: true,
+            icon_set_select,
+            icon_set_name: initial_icon_set,
+            loaded_icons,
         }
     }
 
@@ -1770,7 +1836,76 @@ impl Showcase {
     // -----------------------------------------------------------------------
     fn render_icons_tab(&self, _cx: &mut Context<Self>) -> impl IntoElement {
         let fi = format_font_info(&self.original_fonts);
-        // All 87 IconName variants
+
+        // --- Native Theme Icons section ---
+        let fallback_label = if !is_native_icon_set(&self.icon_set_name) {
+            " (fallback)"
+        } else {
+            ""
+        };
+        let loaded_count = self.loaded_icons.iter().filter(|(_, d)| d.is_some()).count();
+        let native_section_title = format!(
+            "Native Theme Icons: {} [{}/{} loaded]{}",
+            self.icon_set_name,
+            loaded_count,
+            self.loaded_icons.len(),
+            fallback_label,
+        );
+
+        // Build icon cells for loaded native icons
+        let native_icon_cells: Vec<_> = self
+            .loaded_icons
+            .iter()
+            .enumerate()
+            .map(|(i, (role, data))| {
+                let role_name: SharedString = format!("{:?}", role).into();
+                let cell_id = SharedString::from(format!("native-icon-{}", i));
+
+                let icon_element = if let Some(icon_data) = data {
+                    // If this role has a Lucide shortcut, show that icon
+                    // For SVG data, use to_image_source to show the actual loaded icon
+                    if let Some(lucide_name) = lucide_icon_name(*role) {
+                        div().child(Icon::new(lucide_name).with_size(Size::Medium))
+                    } else {
+                        match icon_data {
+                            IconData::Svg(_) | IconData::Rgba { .. } => {
+                                let source = to_image_source(icon_data);
+                                div().child(
+                                    gpui::img(source)
+                                        .w(px(20.0))
+                                        .h(px(20.0)),
+                                )
+                            }
+                            _ => div()
+                                .w(px(20.0))
+                                .h(px(20.0))
+                                .bg(gpui::hsla(0.0, 0.0, 0.5, 0.2))
+                                .rounded(px(2.0)),
+                        }
+                    }
+                } else {
+                    // No icon data -- gray placeholder
+                    div()
+                        .w(px(20.0))
+                        .h(px(20.0))
+                        .bg(gpui::hsla(0.0, 0.0, 0.5, 0.2))
+                        .rounded(px(2.0))
+                };
+
+                div()
+                    .id(cell_id)
+                    .flex()
+                    .flex_col()
+                    .items_center()
+                    .w(px(100.0))
+                    .py_2()
+                    .gap_1()
+                    .child(icon_element)
+                    .child(Label::new(role_name).text_xs())
+            })
+            .collect();
+
+        // --- gpui-component IconName gallery (existing) ---
         let icons: Vec<(&str, IconName)> = vec![
             ("ALargeSmall", IconName::ALargeSmall),
             ("ArrowDown", IconName::ArrowDown),
@@ -1864,7 +1999,33 @@ impl Showcase {
             .gap_3()
             .p_4()
             .flex_1()
-            .child(section(format!("All Icons ({} variants)", icons.len())))
+            // Native Theme Icons section
+            .child(section(native_section_title))
+            .child(
+                h_flex()
+                    .gap_2()
+                    .items_center()
+                    .child(Label::new("Icon Set:").text_sm())
+                    .child(
+                        Select::new(&self.icon_set_select)
+                            .with_size(Size::Small)
+                            .w(px(180.0)),
+                    ),
+            )
+            .child(
+                div()
+                    .id("native-icons-grid")
+                    .child(
+                        div()
+                            .flex()
+                            .flex_wrap()
+                            .gap_1()
+                            .children(native_icon_cells),
+                    ),
+            )
+            .child(Divider::horizontal())
+            // Existing gpui-component IconName gallery
+            .child(section(format!("gpui-component Icons ({} variants)", icons.len())))
             .child(
                 div()
                     .id("tt-icons-grid")
