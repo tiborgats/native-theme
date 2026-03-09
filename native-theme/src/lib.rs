@@ -97,7 +97,7 @@ pub mod windows;
 pub mod freedesktop;
 #[cfg(all(target_os = "macos", feature = "system-icons"))]
 pub mod sficons;
-#[cfg(feature = "system-icons")]
+#[cfg(all(target_os = "windows", feature = "system-icons"))]
 pub mod winicons;
 
 #[cfg(feature = "portal")]
@@ -114,6 +114,8 @@ pub use windows::from_windows;
 pub use freedesktop::load_freedesktop_icon;
 #[cfg(all(target_os = "macos", feature = "system-icons"))]
 pub use sficons::load_sf_icon;
+#[cfg(all(target_os = "windows", feature = "system-icons"))]
+pub use winicons::load_windows_icon;
 
 /// Convenience Result type alias for this crate.
 pub type Result<T> = std::result::Result<T, Error>;
