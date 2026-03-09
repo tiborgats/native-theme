@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.3
 milestone_name: Icons
-status: roadmapped
-stopped_at: null
-last_updated: "2026-03-09T14:00:00Z"
-last_activity: 2026-03-09 — Roadmap created for v0.3 Icons (6 phases, 16 requirements)
+status: executing
+stopped_at: "Completed 16-01-PLAN.md"
+last_updated: "2026-03-09T06:40:00Z"
+last_activity: 2026-03-09 — Completed plan 16-01 (icon type definitions)
 progress:
   total_phases: 6
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 2
+  completed_plans: 1
+  percent: 8
 ---
 
 # Project State
@@ -26,18 +26,22 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 ## Current Position
 
 Phase: 16 of 21 (Icon Data Model) — first of 6 v0.3 phases
-Plan: —
-Status: Ready to plan
-Last activity: 2026-03-09 — Roadmap created for v0.3 Icons
+Plan: 1 of 2 complete
+Status: Executing
+Last activity: 2026-03-09 — Completed plan 16-01 (icon type definitions)
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [#░░░░░░░░░] 8%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 34 (14 v0.1 + 20 v0.2)
-- Average duration: ~4.1min (v0.2)
-- Total execution time: 70min (v0.2)
+- Total plans completed: 35 (14 v0.1 + 20 v0.2 + 1 v0.3)
+- Average duration: ~4.1min (v0.2), 3min (v0.3 so far)
+- Total execution time: 70min (v0.2), 3min (v0.3)
+
+| Phase | Plan | Duration | Tasks | Files |
+|-------|------|----------|-------|-------|
+| 16-01 | Icon type definitions | 3min | 4 | 4 |
 
 ## Accumulated Context
 
@@ -45,6 +49,9 @@ Progress: [░░░░░░░░░░] 0%
 
 All v0.1/v0.2 decisions logged in PROJECT.md Key Decisions table.
 v0.3 research recommends: data model first, bundled SVGs second, platform loaders third (parallel), connectors last.
+- 16-01: No serde on IconRole (runtime enum, not serialized)
+- 16-01: Owned Vec<u8> in IconData (no lifetime infection)
+- 16-01: Fixed workspace version mismatch 0.2.0 -> 0.3.0
 
 ### Pending Todos
 
@@ -57,5 +64,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-03-09
-Stopped at: Roadmap created for v0.3 Icons milestone
+Stopped at: Completed 16-01-PLAN.md
 Resume file: None
