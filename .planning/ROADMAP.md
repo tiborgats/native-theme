@@ -89,7 +89,9 @@ Plans:
   1. With feature `system-icons` enabled on Linux, `load_icon(IconRole::DialogError, "freedesktop")` returns SVG bytes from the active icon theme
   2. When a role has no matching icon in the current theme, the loader falls back to hicolor, then to the bundled Material SVGs
   3. The loader respects `XDG_DATA_DIRS` and works with Adwaita, Breeze, and hicolor-only environments
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 18-01-PLAN.md — freedesktop.rs module, system-icons feature, two-pass lookup with bundled fallback
 
 ### Phase 19: macOS Icon Loading
 **Goal**: macOS users get native SF Symbols icons rasterized to RGBA pixels at the requested size
@@ -148,7 +150,7 @@ Phases 16 -> 17 -> 18/19/20 (parallel) -> 21
 | 15. Publishing Prep | v0.2 | 3/3 | Complete | 2026-03-09 |
 | 16. Icon Data Model | v0.3 | 2/2 | Complete | 2026-03-09 |
 | 17. Bundled SVG Icons | v0.3 | 2/2 | Complete | 2026-03-09 |
-| 18. Linux Icon Loading | v0.3 | 0/? | Not started | - |
+| 18. Linux Icon Loading | v0.3 | 0/1 | Planned | - |
 | 19. macOS Icon Loading | v0.3 | 0/? | Not started | - |
 | 20. Windows Icon Loading | v0.3 | 0/? | Not started | - |
 | 21. Integration and Connectors | v0.3 | 0/? | Not started | - |
