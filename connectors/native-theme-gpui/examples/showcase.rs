@@ -121,11 +121,13 @@ fn widget_tooltip_themed(
     not_themeable: &[(&str, &str)],
 ) -> String {
     let mut s = widget_tooltip(name, colors, config, not_themeable);
-    s.push_str("\n\nTheme fonts:");
-    s.push_str(&format!("\n  font_family: {}", t.font_family));
-    s.push_str(&format!("\n  font_size: {}px", t.font_size.as_f32()));
-    s.push_str(&format!("\n  mono_font_family: {}", t.mono_font_family));
-    s.push_str(&format!("\n  mono_font_size: {}px", t.mono_font_size.as_f32()));
+    s.push_str(&format!(
+        "\n\nTheme fonts:\n  Font: {} {}px\n  Mono: {} {}px",
+        t.font_family,
+        t.font_size.as_f32(),
+        t.mono_font_family,
+        t.mono_font_size.as_f32(),
+    ));
     s
 }
 
