@@ -23,6 +23,7 @@
 pub mod colors;
 pub mod config;
 pub mod derive;
+pub mod icons;
 
 use gpui_component::theme::{Theme, ThemeMode};
 use native_theme::{NativeTheme, ThemeVariant};
