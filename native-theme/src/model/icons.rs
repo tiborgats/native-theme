@@ -1,7 +1,307 @@
 // Icon type definitions: IconRole, IconData, IconSet
 //
 // These are the core icon types for the native-theme icon system.
-// Implementation will follow TDD -- tests first.
+
+use serde::{Deserialize, Serialize};
+
+/// Semantic icon roles for cross-platform icon resolution.
+///
+/// Each variant represents a conceptual icon role (not a specific icon image).
+/// Platform-specific icon identifiers are resolved via
+/// [`icon_name()`](crate::icon_name) using an [`IconSet`].
+///
+/// # Categories
+///
+/// Variants are grouped by prefix into 7 categories:
+/// - **Dialog** (6): Alerts and dialog indicators
+/// - **Window** (4): Window control buttons
+/// - **Action** (14): Common user actions
+/// - **Navigation** (6): Directional and structural navigation
+/// - **Files** (5): File and folder representations
+/// - **Status** (3): State indicators
+/// - **System** (4): System-level UI elements
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::IconRole;
+///
+/// let role = IconRole::ActionSave;
+/// match role {
+///     IconRole::ActionSave => println!("save icon"),
+///     _ => println!("other icon"),
+/// }
+///
+/// // Iterate all roles
+/// assert_eq!(IconRole::ALL.len(), 42);
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum IconRole {
+    // Dialog / Alert (6)
+    /// Warning indicator for dialogs
+    DialogWarning,
+    /// Error indicator for dialogs
+    DialogError,
+    /// Informational indicator for dialogs
+    DialogInfo,
+    /// Question indicator for dialogs
+    DialogQuestion,
+    /// Success/confirmation indicator for dialogs
+    DialogSuccess,
+    /// Security/shield indicator
+    Shield,
+
+    // Window Controls (4)
+    /// Close window button
+    WindowClose,
+    /// Minimize window button
+    WindowMinimize,
+    /// Maximize window button
+    WindowMaximize,
+    /// Restore window button (from maximized state)
+    WindowRestore,
+
+    // Common Actions (14)
+    /// Save action
+    ActionSave,
+    /// Delete action
+    ActionDelete,
+    /// Copy to clipboard
+    ActionCopy,
+    /// Paste from clipboard
+    ActionPaste,
+    /// Cut to clipboard
+    ActionCut,
+    /// Undo last action
+    ActionUndo,
+    /// Redo last undone action
+    ActionRedo,
+    /// Search / find
+    ActionSearch,
+    /// Settings / preferences
+    ActionSettings,
+    /// Edit / modify
+    ActionEdit,
+    /// Add / create new item
+    ActionAdd,
+    /// Remove item
+    ActionRemove,
+    /// Refresh / reload
+    ActionRefresh,
+    /// Print
+    ActionPrint,
+
+    // Navigation (6)
+    /// Navigate backward
+    NavBack,
+    /// Navigate forward
+    NavForward,
+    /// Navigate up in hierarchy
+    NavUp,
+    /// Navigate down in hierarchy
+    NavDown,
+    /// Navigate to home / root
+    NavHome,
+    /// Open menu / hamburger
+    NavMenu,
+
+    // Files / Places (5)
+    /// Generic file icon
+    FileGeneric,
+    /// Closed folder
+    FolderClosed,
+    /// Open folder
+    FolderOpen,
+    /// Empty trash / recycle bin
+    TrashEmpty,
+    /// Full trash / recycle bin
+    TrashFull,
+
+    // Status (3)
+    /// Loading / in-progress indicator
+    StatusLoading,
+    /// Check / success indicator
+    StatusCheck,
+    /// Error state indicator
+    StatusError,
+
+    // System (4)
+    /// User account / profile
+    UserAccount,
+    /// Notification / bell
+    Notification,
+    /// Help / question mark
+    Help,
+    /// Lock / security
+    Lock,
+}
+
+impl IconRole {
+    /// All icon role variants, useful for iteration and exhaustive testing.
+    ///
+    /// Contains exactly 42 variants, one for each role, in declaration order.
+    pub const ALL: [IconRole; 42] = [
+        // Dialog (6)
+        Self::DialogWarning,
+        Self::DialogError,
+        Self::DialogInfo,
+        Self::DialogQuestion,
+        Self::DialogSuccess,
+        Self::Shield,
+        // Window (4)
+        Self::WindowClose,
+        Self::WindowMinimize,
+        Self::WindowMaximize,
+        Self::WindowRestore,
+        // Action (14)
+        Self::ActionSave,
+        Self::ActionDelete,
+        Self::ActionCopy,
+        Self::ActionPaste,
+        Self::ActionCut,
+        Self::ActionUndo,
+        Self::ActionRedo,
+        Self::ActionSearch,
+        Self::ActionSettings,
+        Self::ActionEdit,
+        Self::ActionAdd,
+        Self::ActionRemove,
+        Self::ActionRefresh,
+        Self::ActionPrint,
+        // Navigation (6)
+        Self::NavBack,
+        Self::NavForward,
+        Self::NavUp,
+        Self::NavDown,
+        Self::NavHome,
+        Self::NavMenu,
+        // Files (5)
+        Self::FileGeneric,
+        Self::FolderClosed,
+        Self::FolderOpen,
+        Self::TrashEmpty,
+        Self::TrashFull,
+        // Status (3)
+        Self::StatusLoading,
+        Self::StatusCheck,
+        Self::StatusError,
+        // System (4)
+        Self::UserAccount,
+        Self::Notification,
+        Self::Help,
+        Self::Lock,
+    ];
+}
+
+/// Icon data returned by loading functions.
+///
+/// Represents the actual pixel or vector data for an icon. This type is
+/// produced by platform icon loaders and bundled icon accessors.
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::IconData;
+///
+/// let svg = IconData::Svg(b"<svg></svg>".to_vec());
+/// match svg {
+///     IconData::Svg(bytes) => assert!(!bytes.is_empty()),
+///     _ => unreachable!(),
+/// }
+///
+/// let rgba = IconData::Rgba { width: 16, height: 16, data: vec![0; 16*16*4] };
+/// match rgba {
+///     IconData::Rgba { width, height, .. } => {
+///         assert_eq!(width, 16);
+///         assert_eq!(height, 16);
+///     }
+///     _ => unreachable!(),
+/// }
+/// ```
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum IconData {
+    /// SVG content as raw bytes (from freedesktop themes, bundled icon sets).
+    Svg(Vec<u8>),
+
+    /// Rasterized RGBA pixels (from macOS/Windows system APIs).
+    Rgba {
+        /// Image width in pixels.
+        width: u32,
+        /// Image height in pixels.
+        height: u32,
+        /// Raw RGBA pixel data (4 bytes per pixel, row-major).
+        data: Vec<u8>,
+    },
+}
+
+/// Known icon sets that provide platform-specific icon identifiers.
+///
+/// Each variant corresponds to a well-known icon naming system.
+/// Use [`from_name`](IconSet::from_name) to parse from TOML strings
+/// and [`name`](IconSet::name) to serialize back to kebab-case.
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::IconSet;
+///
+/// let set = IconSet::from_name("sf-symbols").unwrap();
+/// assert_eq!(set, IconSet::SfSymbols);
+/// assert_eq!(set.name(), "sf-symbols");
+///
+/// // Round-trip
+/// let name = IconSet::Material.name();
+/// assert_eq!(IconSet::from_name(name), Some(IconSet::Material));
+///
+/// // Unknown names return None
+/// assert_eq!(IconSet::from_name("unknown"), None);
+/// ```
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[non_exhaustive]
+pub enum IconSet {
+    /// Apple SF Symbols (macOS, iOS).
+    SfSymbols,
+    /// Microsoft Segoe Fluent Icons (Windows).
+    SegoeIcons,
+    /// freedesktop Icon Naming Specification (Linux).
+    Freedesktop,
+    /// Google Material Symbols.
+    Material,
+    /// Lucide Icons (fork of Feather).
+    Lucide,
+}
+
+impl IconSet {
+    /// Parse an icon set from its kebab-case string identifier.
+    ///
+    /// Accepts the names used in TOML configuration:
+    /// `"sf-symbols"`, `"segoe-fluent"`, `"freedesktop"`, `"material"`, `"lucide"`.
+    ///
+    /// Returns `None` for unrecognized names.
+    pub fn from_name(name: &str) -> Option<Self> {
+        match name {
+            "sf-symbols" => Some(Self::SfSymbols),
+            "segoe-fluent" => Some(Self::SegoeIcons),
+            "freedesktop" => Some(Self::Freedesktop),
+            "material" => Some(Self::Material),
+            "lucide" => Some(Self::Lucide),
+            _ => None,
+        }
+    }
+
+    /// The kebab-case string identifier for this icon set, as used in TOML.
+    pub fn name(&self) -> &'static str {
+        match self {
+            Self::SfSymbols => "sf-symbols",
+            Self::SegoeIcons => "segoe-fluent",
+            Self::Freedesktop => "freedesktop",
+            Self::Material => "material",
+            Self::Lucide => "lucide",
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {
