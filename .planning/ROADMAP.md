@@ -43,7 +43,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 **Milestone Goal:** Platform-native icon loading — semantic icon roles mapped to OS-native icon systems (SF Symbols, Segoe Fluent, freedesktop) with bundled cross-platform fallbacks (Material, Lucide).
 
-- [ ] **Phase 16: Icon Data Model** — IconRole enum, IconData type, icon name mapping, ThemeVariant integration
+- [x] **Phase 16: Icon Data Model** — IconRole enum, IconData type, icon name mapping, ThemeVariant integration
 - [ ] **Phase 17: Bundled SVG Icons** — Material Symbols and Lucide SVGs as compile-time fallback icon sets
 - [ ] **Phase 18: Linux Icon Loading** — Freedesktop icon theme lookup via freedesktop-icons crate
 - [ ] **Phase 19: macOS Icon Loading** — SF Symbols via NSImage rasterization to RGBA
@@ -62,10 +62,10 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
   3. `icon_name(IconSet::SfSymbols, IconRole::ActionCopy)` returns `"doc.on.doc"` (and analogous lookups for all 5 icon sets return correct platform identifiers)
   4. `system_icon_set()` returns `IconSet::SfSymbols` on macOS, `IconSet::SegoeIcons` on Windows, `IconSet::Freedesktop` on Linux
   5. Loading a preset TOML with `icon_theme = "material"` populates `theme.light.icon_theme` as `Some("material")`
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans executed (phase complete)
 Plans:
-- [ ] 16-01-PLAN.md — IconRole, IconData, IconSet type definitions (TDD)
-- [ ] 16-02-PLAN.md — icon_name() mapping, system_icon_set(), ThemeVariant integration, preset TOML updates
+- [x] 16-01-PLAN.md — IconRole, IconData, IconSet type definitions (TDD)
+- [x] 16-02-PLAN.md — icon_name() mapping, system_icon_set(), ThemeVariant integration, preset TOML updates
 
 ### Phase 17: Bundled SVG Icons
 **Goal**: Any platform can render all 42 icon roles using bundled SVG fallbacks without network access or OS-specific APIs
@@ -143,7 +143,7 @@ Phases 16 -> 17 -> 18/19/20 (parallel) -> 21
 | 13. CI Pipeline | v0.2 | 1/1 | Complete | 2026-03-08 |
 | 14. Toolkit Connectors | v0.2 | 5/5 | Complete | 2026-03-09 |
 | 15. Publishing Prep | v0.2 | 3/3 | Complete | 2026-03-09 |
-| 16. Icon Data Model | 1/2 | In Progress|  | - |
+| 16. Icon Data Model | v0.3 | 2/2 | Complete | 2026-03-09 |
 | 17. Bundled SVG Icons | v0.3 | 0/? | Not started | - |
 | 18. Linux Icon Loading | v0.3 | 0/? | Not started | - |
 | 19. macOS Icon Loading | v0.3 | 0/? | Not started | - |

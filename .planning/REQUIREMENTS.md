@@ -11,9 +11,9 @@ Requirements for icon loading milestone. Each maps to roadmap phases.
 
 - [x] **ICON-01**: IconRole enum with 42 semantic icon roles across 7 categories (dialog, window, action, navigation, file, status, system)
 - [x] **ICON-02**: IconData enum returning SVG bytes (`Svg(Vec<u8>)`) or rasterized RGBA pixels (`Rgba { width, height, data }`)
-- [ ] **ICON-03**: icon_theme field (`Option<String>`) on ThemeVariant with preset-specific default assignments in TOML
-- [ ] **ICON-04**: `icon_name()` function to look up the platform-specific identifier string for a given icon set and role
-- [ ] **ICON-05**: `system_icon_set()` function to resolve "system" to the OS-native icon set name (macOS->sf-symbols, Windows->segoe-fluent, Linux->freedesktop)
+- [x] **ICON-03**: icon_theme field (`Option<String>`) on ThemeVariant with preset-specific default assignments in TOML
+- [x] **ICON-04**: `icon_name()` function to look up the platform-specific identifier string for a given icon set and role
+- [x] **ICON-05**: `system_icon_set()` function to resolve "system" to the OS-native icon set name (macOS->sf-symbols, Windows->segoe-fluent, Linux->freedesktop)
 
 ### Platform Loading
 
@@ -103,9 +103,9 @@ All v0.2 requirements completed. See MILESTONES.md for details.
 |-------------|-------|--------|
 | ICON-01 | Phase 16 | Complete |
 | ICON-02 | Phase 16 | Complete |
-| ICON-03 | Phase 16 | Pending |
-| ICON-04 | Phase 16 | Pending |
-| ICON-05 | Phase 16 | Pending |
+| ICON-03 | Phase 16 | Complete |
+| ICON-04 | Phase 16 | Complete |
+| ICON-05 | Phase 16 | Complete |
 | PLAT-01 | Phase 19 | Pending |
 | PLAT-02 | Phase 20 | Pending |
 | PLAT-03 | Phase 20 | Pending |
