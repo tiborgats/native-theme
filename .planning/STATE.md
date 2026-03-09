@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.2
 milestone_name: Platform Coverage & Publishing
-status: in-progress
-stopped_at: Completed 14-03-PLAN.md
-last_updated: "2026-03-08T09:16:53.000Z"
-last_activity: 2026-03-08 — Phase 14 plan 03 complete (gpui connector core: 108-field ThemeColor, ThemeConfig, upstream proposal)
+status: complete
+stopped_at: Completed 14-04-PLAN.md
+last_updated: "2026-03-09T00:08:57Z"
+last_activity: 2026-03-09 — Phase 14 plan 04 complete (gpui showcase: widget gallery with NumberInput fix, font sizes, tooltip font info)
 progress:
   total_phases: 7
-  completed_phases: 5
+  completed_phases: 7
   total_plans: 16
-  completed_plans: 14
-  percent: 87
+  completed_plans: 16
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-08)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 14 — Toolkit Connectors (in progress)
+**Current focus:** Phase 14 — Toolkit Connectors (complete)
 
 ## Current Position
 
-Phase: 14 of 15 (Toolkit Connectors) — in progress
-Plan: 2 of 4 complete
-Status: Phase 14 in progress
-Last activity: 2026-03-08 — Phase 14 plan 03 complete (gpui connector core: 108-field ThemeColor, ThemeConfig, upstream proposal)
+Phase: 14 of 15 (Toolkit Connectors) — complete
+Plan: 4 of 4 complete
+Status: Phase 14 complete
+Last activity: 2026-03-09 — Phase 14 plan 04 complete (gpui showcase: widget gallery with NumberInput fix, font sizes, tooltip font info)
 
-Progress: [█████████████████░░░] 87%
+Progress: [████████████████████] 100%
 
 ## Performance Metrics
 
@@ -49,11 +49,11 @@ Progress: [█████████████████░░░] 87%
 | 11-platform-readers | 4/4 | 10min | 2.5min |
 | 12-widget-metrics | 3/3 | 17min | 5.7min |
 | 13-ci-pipeline | 1/1 | 3min | 3min |
-| 14-toolkit-connectors | 2/4 | 15min | 7.5min |
+| 14-toolkit-connectors | 4/4 | 50min | 12.5min |
 
 **Recent Trend:**
-- Last 5 plans: 12-03 (6min), 13-01 (3min), 14-01 (6min), 14-03 (9min)
-- Trend: v0.2 execution, steady ~3-9min/plan
+- Last 5 plans: 13-01 (3min), 14-01 (6min), 14-03 (9min), 14-04 (35min)
+- Trend: v0.2 execution complete, all phases done
 
 ## Accumulated Context
 
@@ -75,6 +75,7 @@ v0.2 decision: Cargo workspace restructuring (API-01) goes first, before API bre
 13-01: Suppress clippy::self_named_constructors on Rgba::rgba() to preserve public API. CI uses include-only matrix (7 entries) binding features to correct OS runners. semver uses baseline-rev v0.1 (switch to registry auto-detect after publish). fmt gates clippy and test; semver runs independently.
 14-01: Used iced_core 0.14 (not iced 0.14) to avoid winit windowing dependency in library crate. Widget metric helpers as free functions (not Catalog impls) per iced architecture. CONN-06 satisfied via iced built-in Catalog impls over custom palette.
 14-03: Reused gpui-component Colorize trait for lighten/darken (multiplicative lightness). Matched apply_config fallback logic for hover/active derivation. ThemeColor::default() as base with all 108 fields overridden via grouped helper functions. SharedString::from(s.clone()) for ThemeConfig static lifetime.
+14-04: NumberInput requires explicit NumberInputEvent::Step subscription for +/- buttons. widget_tooltip_themed wrapper injects font settings into all tooltips. text_sm for readable color swatch labels.
 
 ### Pending Todos
 
@@ -86,6 +87,6 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-08T09:16:53.000Z
-Stopped at: Completed 14-03-PLAN.md
+Last session: 2026-03-09T00:08:57Z
+Stopped at: Completed 14-04-PLAN.md
 Resume file: None
