@@ -63,12 +63,14 @@ impl Page {
 
 #[derive(Debug, Clone)]
 enum ThemeChoice {
+    OsTheme,
     Preset(String),
 }
 
 impl std::fmt::Display for ThemeChoice {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
+            ThemeChoice::OsTheme => write!(f, "OS Theme"),
             ThemeChoice::Preset(name) => write!(f, "{name}"),
         }
     }
@@ -77,7 +79,9 @@ impl std::fmt::Display for ThemeChoice {
 impl PartialEq for ThemeChoice {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
+            (ThemeChoice::OsTheme, ThemeChoice::OsTheme) => true,
             (ThemeChoice::Preset(a), ThemeChoice::Preset(b)) => a == b,
+            _ => false,
         }
     }
 }
@@ -85,10 +89,13 @@ impl PartialEq for ThemeChoice {
 impl Eq for ThemeChoice {}
 
 fn theme_choices() -> Vec<ThemeChoice> {
-    NativeTheme::list_presets()
-        .iter()
-        .map(|name| ThemeChoice::Preset((*name).to_string()))
-        .collect()
+    let mut choices = vec![ThemeChoice::OsTheme];
+    choices.extend(
+        NativeTheme::list_presets()
+            .iter()
+            .map(|name| ThemeChoice::Preset((*name).to_string())),
+    );
+    choices
 }
 
 // ---------------------------------------------------------------------------
@@ -202,10 +209,14 @@ impl Default for State {
 
 impl State {
     fn rebuild_theme(&mut self) {
-        let preset_name = match &self.current_choice {
-            ThemeChoice::Preset(name) => name.clone(),
+        let nt = match &self.current_choice {
+            ThemeChoice::OsTheme => {
+                native_theme::from_system().unwrap_or_else(|_| {
+                    NativeTheme::preset("default").expect("default preset must exist")
+                })
+            }
+            ThemeChoice::Preset(name) => NativeTheme::preset(name).unwrap(),
         };
-        let nt = NativeTheme::preset(&preset_name).unwrap();
         if let Some(variant) = native_theme_iced::pick_variant(&nt, self.is_dark) {
             self.current_variant = variant.clone();
             self.current_theme = native_theme_iced::to_theme(variant, &nt.name);
