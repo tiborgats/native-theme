@@ -29,8 +29,8 @@ Requirements for icon loading milestone. Each maps to roadmap phases.
 
 ### Integration
 
-- [ ] **INTG-01**: `load_icon()` dispatch function selecting the appropriate loader based on icon_theme string
-- [ ] **INTG-02**: Optional SVG-to-RGBA rasterization via resvg (feature "svg-rasterize")
+- [x] **INTG-01**: `load_icon()` dispatch function selecting the appropriate loader based on icon_theme string
+- [x] **INTG-02**: Optional SVG-to-RGBA rasterization via resvg (feature "svg-rasterize")
 - [ ] **INTG-03**: gpui connector: IconData->RenderImage conversion + `icon_name()` Lucide shortcut for gpui-component IconName
 - [ ] **INTG-04**: iced connector: IconData conversion helpers
 - [ ] **INTG-05**: gpui example updated with icon display and icon set selector dropdown
@@ -112,8 +112,8 @@ All v0.2 requirements completed. See MILESTONES.md for details.
 | PLAT-04 | Phase 18 | Complete |
 | BNDL-01 | Phase 17 | Complete |
 | BNDL-02 | Phase 17 | Complete |
-| INTG-01 | Phase 21 | Pending |
-| INTG-02 | Phase 21 | Pending |
+| INTG-01 | Phase 21 | Complete |
+| INTG-02 | Phase 21 | Complete |
 | INTG-03 | Phase 21 | Pending |
 | INTG-04 | Phase 21 | Pending |
 | INTG-05 | Phase 21 | Pending |
