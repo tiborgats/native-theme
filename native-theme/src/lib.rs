@@ -93,6 +93,8 @@ pub use model::icons::{icon_name, system_icon_set};
 pub mod macos;
 #[cfg(feature = "windows")]
 pub mod windows;
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+pub mod freedesktop;
 
 #[cfg(feature = "portal")]
 pub use gnome::from_gnome;
@@ -104,6 +106,8 @@ pub use kde::from_kde;
 pub use macos::from_macos;
 #[cfg(feature = "windows")]
 pub use windows::from_windows;
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+pub use freedesktop::load_freedesktop_icon;
 
 /// Convenience Result type alias for this crate.
 pub type Result<T> = std::result::Result<T, Error>;
