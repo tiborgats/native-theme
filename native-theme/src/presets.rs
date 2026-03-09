@@ -236,6 +236,65 @@ accent = "#00ff00"
         let _ = std::fs::remove_file(&path);
     }
 
+    // === icon_theme preset tests ===
+
+    #[test]
+    fn icon_theme_native_presets_have_correct_values() {
+        let cases: &[(&str, &str)] = &[
+            ("windows-11", "segoe-fluent"),
+            ("macos-sonoma", "sf-symbols"),
+            ("ios", "sf-symbols"),
+            ("adwaita", "freedesktop"),
+            ("kde-breeze", "freedesktop"),
+            ("material", "material"),
+        ];
+        for (name, expected) in cases {
+            let theme = preset(name).unwrap();
+            let light = theme.light.as_ref().unwrap();
+            assert_eq!(
+                light.icon_theme.as_deref(),
+                Some(*expected),
+                "preset '{name}' light.icon_theme should be Some(\"{expected}\")"
+            );
+            let dark = theme.dark.as_ref().unwrap();
+            assert_eq!(
+                dark.icon_theme.as_deref(),
+                Some(*expected),
+                "preset '{name}' dark.icon_theme should be Some(\"{expected}\")"
+            );
+        }
+    }
+
+    #[test]
+    fn icon_theme_community_presets_are_none() {
+        let community = &[
+            "catppuccin-latte",
+            "catppuccin-frappe",
+            "catppuccin-macchiato",
+            "catppuccin-mocha",
+            "nord",
+            "dracula",
+            "gruvbox",
+            "solarized",
+            "tokyo-night",
+            "one-dark",
+            "default",
+        ];
+        for name in community {
+            let theme = preset(name).unwrap();
+            let light = theme.light.as_ref().unwrap();
+            assert!(
+                light.icon_theme.is_none(),
+                "preset '{name}' light.icon_theme should be None"
+            );
+            let dark = theme.dark.as_ref().unwrap();
+            assert!(
+                dark.icon_theme.is_none(),
+                "preset '{name}' dark.icon_theme should be None"
+            );
+        }
+    }
+
     #[test]
     fn from_file_nonexistent_returns_error() {
         let err = from_file("/tmp/nonexistent_theme_file_12345.toml").unwrap_err();

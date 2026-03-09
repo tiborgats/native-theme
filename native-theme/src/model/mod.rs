@@ -398,6 +398,59 @@ mod tests {
         assert!(!theme.is_empty());
     }
 
+    // === icon_theme tests ===
+
+    #[test]
+    fn icon_theme_default_is_none() {
+        assert!(ThemeVariant::default().icon_theme.is_none());
+    }
+
+    #[test]
+    fn icon_theme_merge_overlay() {
+        let mut base = ThemeVariant::default();
+        let mut overlay = ThemeVariant::default();
+        overlay.icon_theme = Some("material".into());
+        base.merge(&overlay);
+        assert_eq!(base.icon_theme.as_deref(), Some("material"));
+    }
+
+    #[test]
+    fn icon_theme_merge_none_preserves() {
+        let mut base = ThemeVariant::default();
+        base.icon_theme = Some("sf-symbols".into());
+        let overlay = ThemeVariant::default(); // icon_theme is None
+        base.merge(&overlay);
+        assert_eq!(base.icon_theme.as_deref(), Some("sf-symbols"));
+    }
+
+    #[test]
+    fn icon_theme_is_empty_when_set() {
+        let mut v = ThemeVariant::default();
+        assert!(v.is_empty());
+        v.icon_theme = Some("material".into());
+        assert!(!v.is_empty());
+    }
+
+    #[test]
+    fn icon_theme_toml_round_trip() {
+        let mut variant = ThemeVariant::default();
+        variant.icon_theme = Some("material".into());
+        let toml_str = toml::to_string(&variant).unwrap();
+        assert!(toml_str.contains("icon_theme"));
+        let deserialized: ThemeVariant = toml::from_str(&toml_str).unwrap();
+        assert_eq!(deserialized.icon_theme.as_deref(), Some("material"));
+    }
+
+    #[test]
+    fn icon_theme_toml_absent_deserializes_to_none() {
+        let toml_str = r#"
+[colors]
+accent = "#ff0000"
+"#;
+        let variant: ThemeVariant = toml::from_str(toml_str).unwrap();
+        assert!(variant.icon_theme.is_none());
+    }
+
     #[test]
     fn native_theme_serde_toml_round_trip() {
         let mut theme = NativeTheme::new("Test Theme");
