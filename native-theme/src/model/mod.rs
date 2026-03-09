@@ -1,5 +1,6 @@
 // Theme model: ThemeVariant and NativeTheme, plus sub-module re-exports
 
+pub mod bundled;
 pub mod colors;
 pub mod fonts;
 pub mod geometry;
@@ -11,6 +12,7 @@ pub use colors::ThemeColors;
 pub use fonts::ThemeFonts;
 pub use geometry::ThemeGeometry;
 pub use spacing::ThemeSpacing;
+pub use bundled::bundled_icon_svg;
 pub use icons::{IconData, IconRole, IconSet, icon_name, system_icon_set};
 pub use widget_metrics::{
     ButtonMetrics, CheckboxMetrics, InputMetrics, ListItemMetrics, MenuItemMetrics,

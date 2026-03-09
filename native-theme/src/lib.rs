@@ -86,7 +86,7 @@ pub use color::Rgba;
 pub use error::Error;
 pub use model::{
     IconData, IconRole, IconSet, NativeTheme, ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing,
-    ThemeVariant, WidgetMetrics,
+    ThemeVariant, WidgetMetrics, bundled_icon_svg,
 };
 pub use model::icons::{icon_name, system_icon_set};
 
