@@ -153,6 +153,6 @@ Phases 16 -> 17 -> 18/19/20 (parallel) -> 21
 | 16. Icon Data Model | v0.3 | 2/2 | Complete | 2026-03-09 |
 | 17. Bundled SVG Icons | v0.3 | 2/2 | Complete | 2026-03-09 |
 | 18. Linux Icon Loading | v0.3 | 1/1 | Complete | 2026-03-09 |
-| 19. macOS Icon Loading | 1/1 | Complete   | 2026-03-09 | - |
+| 19. macOS Icon Loading | v0.3 | 1/1 | Complete | 2026-03-09 |
 | 20. Windows Icon Loading | v0.3 | 0/? | Not started | - |
 | 21. Integration and Connectors | v0.3 | 0/? | Not started | - |
