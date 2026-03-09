@@ -48,12 +48,6 @@ disabled = "#c4c8da"
 separator = "#c4c8da"
 alternate_row = "#d0d5e3"
 
-[light.fonts]
-family = "sans-serif"
-size = 10.0
-mono_family = "monospace"
-mono_size = 10.0
-
 [light.geometry]
 radius = 8.0
 radius_lg = 12.0
@@ -163,12 +157,6 @@ input_foreground = "#a9b1d6"
 disabled = "#292e42"
 separator = "#292e42"
 alternate_row = "#16161e"
-
-[dark.fonts]
-family = "sans-serif"
-size = 10.0
-mono_family = "monospace"
-mono_size = 10.0
 
 [dark.geometry]
 radius = 8.0

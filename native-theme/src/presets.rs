@@ -281,7 +281,7 @@ accent = "#00ff00"
     }
 
     #[test]
-    fn all_presets_have_valid_font_sizes() {
+    fn all_presets_with_fonts_have_valid_sizes() {
         for name in list_presets() {
             let theme = preset(name).unwrap();
             for (label, variant) in [
@@ -289,16 +289,19 @@ accent = "#00ff00"
                 ("dark", theme.dark.as_ref()),
             ] {
                 let variant = variant.unwrap();
-                let size = variant.fonts.size.unwrap();
-                assert!(
-                    size > 0.0,
-                    "preset '{name}' {label} font size must be positive, got {size}"
-                );
-                let mono_size = variant.fonts.mono_size.unwrap();
-                assert!(
-                    mono_size > 0.0,
-                    "preset '{name}' {label} mono font size must be positive, got {mono_size}"
-                );
+                // Community color themes may omit fonts entirely — skip those.
+                if let Some(size) = variant.fonts.size {
+                    assert!(
+                        size > 0.0,
+                        "preset '{name}' {label} font size must be positive, got {size}"
+                    );
+                }
+                if let Some(mono_size) = variant.fonts.mono_size {
+                    assert!(
+                        mono_size > 0.0,
+                        "preset '{name}' {label} mono font size must be positive, got {mono_size}"
+                    );
+                }
             }
         }
     }

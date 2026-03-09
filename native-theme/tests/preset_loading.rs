@@ -133,9 +133,13 @@ fn all_presets_have_interactive_colors() {
     }
 }
 
+/// Platform presets must have fonts; community color themes may omit them.
 #[test]
-fn all_presets_have_valid_fonts() {
-    for name in NativeTheme::list_presets() {
+fn platform_presets_have_valid_fonts() {
+    let platform = [
+        "default", "adwaita", "kde-breeze", "windows-11", "macos-sonoma", "material", "ios",
+    ];
+    for name in platform {
         let theme =
             NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         for (label, variant) in [
@@ -155,6 +159,30 @@ fn all_presets_have_valid_fonts() {
             assert!(
                 size > 0.0,
                 "preset '{name}' {label} font size must be > 0, got {size}"
+            );
+        }
+    }
+}
+
+/// Community color themes should not prescribe fonts (color-only).
+#[test]
+fn community_presets_omit_fonts() {
+    let community = [
+        "catppuccin-frappe", "catppuccin-latte", "catppuccin-macchiato", "catppuccin-mocha",
+        "dracula", "gruvbox", "nord", "one-dark", "solarized", "tokyo-night",
+    ];
+    for name in community {
+        let theme =
+            NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+        for (label, variant) in [
+            ("light", theme.light.as_ref()),
+            ("dark", theme.dark.as_ref()),
+        ] {
+            let variant =
+                variant.unwrap_or_else(|| panic!("preset '{name}' missing {label} variant"));
+            assert!(
+                variant.fonts.family.is_none(),
+                "community preset '{name}' {label} should not set fonts.family"
             );
         }
     }
