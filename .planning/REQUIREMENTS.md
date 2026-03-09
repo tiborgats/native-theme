@@ -70,8 +70,8 @@ Requirements for v0.2 release. Each maps to roadmap phases.
 - [x] **PUB-02**: LICENSE-MIT, LICENSE-APACHE, LICENSE-0BSD files at repo root
 - [x] **PUB-03**: CHANGELOG.md following Keep a Changelog format
 - [x] **PUB-04**: Doc examples (`/// # Examples`) on `NativeTheme`, `Rgba`, `ThemeVariant`
-- [ ] **PUB-05**: IMPLEMENTATION.md spec updated to match actual implementation
-- [ ] **PUB-06**: `docs/new-os-version-guide.md` for maintaining platform constants
+- [x] **PUB-05**: IMPLEMENTATION.md spec updated to match actual implementation
+- [x] **PUB-06**: `docs/new-os-version-guide.md` for maintaining platform constants
 - [ ] **PUB-07**: Core crate published to crates.io
 - [ ] **PUB-08**: `native-theme-iced` published to crates.io
 
@@ -159,8 +159,8 @@ Deferred to post-v0.2. Tracked but not in current roadmap.
 | PUB-02 | Phase 15 | Complete |
 | PUB-03 | Phase 15 | Complete |
 | PUB-04 | Phase 15 | Complete |
-| PUB-05 | Phase 15 | Pending |
-| PUB-06 | Phase 15 | Pending |
+| PUB-05 | Phase 15 | Complete |
+| PUB-06 | Phase 15 | Complete |
 | PUB-07 | Phase 15 | Pending |
 | PUB-08 | Phase 15 | Pending |
 
