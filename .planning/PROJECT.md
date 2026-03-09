@@ -8,21 +8,19 @@ An independent, toolkit-agnostic Rust crate that provides a unified theme data m
 
 Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
 
-## Current Milestone: v0.2
+## Current Milestone: v0.3 Icons
 
-**Goal:** API polish, full desktop platform coverage, widget metrics, toolkit connectors, CI, and publishing prep — everything needed before broader adoption.
+**Goal:** Platform-native icon loading — semantic icon roles mapped to OS-native icon systems (SF Symbols, Segoe Fluent, freedesktop) with bundled cross-platform fallbacks (Material, Lucide).
 
 **Target features:**
-- API refactors: flatten ThemeColors, move preset API to NativeTheme methods, add missing ThemeGeometry fields
-- macOS reader via objc2-app-kit
-- Windows reader enhancements (accent shades, fonts, spacing, capability checks)
-- Linux reader enhancements (KDE+portal overlay, D-Bus backend detection, GNOME fonts, from_linux() fallback)
-- Widget metrics data model + platform sources (KDE, GNOME, Windows, macOS)
-- CI pipeline (GitHub Actions, feature flag matrix, semver-checks, clippy/fmt)
-- Cargo workspace restructuring for connector sub-crates
-- native-theme-gpui connector + upstream PR proposals
-- native-theme-iced connector
-- Publishing prep (metadata, licenses, changelog, doc examples, crates.io publish)
+- IconRole enum (42 semantic roles: dialog, window, action, navigation, file, status, system)
+- IconData type (SVG bytes or rasterized RGBA pixels)
+- Platform icon loading: macOS (NSImage/SF Symbols), Windows (SHGetStockIconInfo + Segoe Fluent), Linux (freedesktop icon theme spec)
+- Bundled fallback icon sets: Material Symbols (Apache 2.0), Lucide (ISC)
+- icon_theme field on ThemeVariant with preset assignments
+- Public API: load_icon(), icon_name(), system_icon_set()
+- Feature flags: system-icons, material-icons, lucide-icons
+- Connector updates: IconData → gpui/iced image conversion
 
 ## Requirements
 
@@ -43,21 +41,31 @@ Any Rust GUI app can look native on any platform by loading a single theme file 
 - ✓ Community presets: Catppuccin (4 flavors), Nord, Dracula, Gruvbox, Solarized, Tokyo Night, One Dark — v0.1
 - ✓ Documentation and README with adapter examples for egui/iced/slint — v0.1
 - ✓ Tests: round-trip serde, preset loading, Rgba hex parsing, platform reader unit tests — v0.1
+- ✓ Flat ThemeColors with 36 direct Option<Rgba> fields — v0.2
+- ✓ NativeTheme associated methods: preset(), from_toml(), from_file(), list_presets(), to_toml() — v0.2
+- ✓ ThemeGeometry extensions: radius_lg, shadow — v0.2
+- ✓ macOS reader: from_macos() via objc2-app-kit with dual-variant support — v0.2
+- ✓ Windows reader: accent shades, system fonts, spacing, DPI-aware geometry — v0.2
+- ✓ Linux readers: KDE+portal overlay, D-Bus detection, GNOME fonts, from_linux() — v0.2
+- ✓ Widget metrics data model (12 per-widget sub-structs) + platform sources — v0.2
+- ✓ CI pipeline: GitHub Actions, feature matrix, semver-checks, clippy/fmt — v0.2
+- ✓ Cargo workspace with native-theme-gpui and native-theme-iced connector crates — v0.2
+- ✓ gpui connector: 108-field ThemeColor mapping, fonts, geometry, widget metrics — v0.2
+- ✓ iced connector: palette/font/style/widget-metrics mapping — v0.2
+- ✓ Publishing prep: workspace metadata, licenses, changelog, documentation — v0.2
 
 ### Active
 
-- [ ] Flatten ThemeColors to 36 direct fields (remove nested sub-structs)
-- [ ] Move preset functions to impl NativeTheme associated functions
-- [ ] Add ThemeGeometry fields: radius_lg, shadow
-- [ ] macOS reader: from_macos() — NSColor + NSFont via objc2-app-kit (feature "macos")
-- [ ] Windows reader: capability checks, accent shades, system fonts, spacing, primary_foreground derivation
-- [ ] Linux KDE+portal overlay, D-Bus backend detection, GNOME font reading, from_linux() fallback
-- [ ] Widget metrics data model (12 per-widget sub-structs) + platform sources
-- [ ] CI pipeline: GitHub Actions, feature matrix, semver-checks, clippy/fmt
-- [ ] Cargo workspace with native-theme-gpui and native-theme-iced connector crates
-- [ ] gpui connector: color/font/geometry/widget-metrics mapping + upstream PR proposals
-- [ ] iced connector: palette/font/style/widget-metrics mapping
-- [ ] Publishing prep: metadata, licenses, changelog, doc examples, crates.io publish
+- [ ] IconRole enum with 42 semantic icon roles across 7 categories
+- [ ] IconData enum (Svg bytes, Rgba pixels) as platform-agnostic icon output
+- [ ] icon_theme field on ThemeVariant with preset-specific assignments
+- [ ] macOS icon loading: NSImage(systemSymbolName:) → rasterized RGBA (feature "macos")
+- [ ] Windows icon loading: SHGetStockIconInfo + Segoe Fluent Icons font glyphs (feature "windows")
+- [ ] Linux icon loading: freedesktop icon theme spec with index.theme parsing (feature "kde" or "portal")
+- [ ] Bundled Material Symbols SVGs as cross-platform fallback (feature "material-icons")
+- [ ] Bundled Lucide SVGs as optional icon set (feature "lucide-icons")
+- [ ] Public API: load_icon(), icon_name(), system_icon_set()
+- [ ] Connector updates: IconData conversion for gpui and iced
 
 ### Out of Scope
 
@@ -75,7 +83,8 @@ Shipped v0.1 with ~7,000 LOC (3,349 Rust + 2,566 TOML presets + 1,100 integratio
 Tech stack: Rust edition 2024, serde + toml (core), configparser (KDE), ashpd (GNOME portal), windows crate (Windows).
 17 bundled presets, 3 platform readers, 140+ tests with zero failures.
 Prior art: system-theme 0.3.0, cosmic-theme, dark-light 2.0 — native-theme unifies what these do partially.
-v0.2 focus: API polish (breaking changes while pre-1.0), macOS reader, enhanced existing readers, widget metrics, CI, toolkit connectors (gpui + iced), and crates.io publishing.
+v0.2 shipped: API polish (flat ThemeColors, NativeTheme methods), macOS reader, enhanced Windows/Linux readers, widget metrics, CI, toolkit connectors (gpui + iced).
+v0.3 focus: Platform-native icon loading with semantic icon roles, OS-native icon systems, and bundled cross-platform fallbacks.
 
 ## Constraints
 
@@ -103,4 +112,4 @@ v0.2 focus: API polish (breaking changes while pre-1.0), macOS reader, enhanced 
 | Adwaita as universal fallback | Embedded preset guaranteed available at compile time | ✓ Good — from_system() and from_gnome() both use it reliably |
 
 ---
-*Last updated: 2026-03-08 after v0.2 milestone start*
+*Last updated: 2026-03-09 after v0.3 milestone start*
