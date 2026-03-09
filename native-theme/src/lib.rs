@@ -85,7 +85,8 @@ pub mod presets;
 pub use color::Rgba;
 pub use error::Error;
 pub use model::{
-    NativeTheme, ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing, ThemeVariant, WidgetMetrics,
+    IconData, IconRole, IconSet, NativeTheme, ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing,
+    ThemeVariant, WidgetMetrics,
 };
 
 pub mod macos;
