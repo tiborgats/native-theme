@@ -20,7 +20,7 @@ windows = ["dep:windows"]
 macos = ["dep:objc2", "dep:objc2-foundation", "dep:objc2-app-kit", "dep:block2"]
 material-icons = []    # Bundle Material Symbols SVGs as cross-platform fallback
 lucide-icons = []      # Bundle Lucide SVGs as optional icon set
-system-icons = ["dep:freedesktop-icons", "material-icons"]  # Linux freedesktop icon theme lookup with bundled fallback
+system-icons = ["dep:freedesktop-icons", "dep:objc2-core-graphics", "material-icons"]  # Platform icon theme lookup with bundled fallback
 
 [dependencies]
 ashpd = { version = "0.13.4", optional = true, default-features = false, features = ["settings"] }
@@ -42,8 +42,13 @@ objc2-foundation = { version = "0.3", optional = true, features = ["NSString"] }
 objc2-app-kit = { version = "0.3", optional = true, features = [
     "NSColor", "NSColorSpace", "NSAppearance", "NSFont", "NSFontDescriptor",
     "objc2-core-foundation",
+    "NSImage", "NSImageRep", "NSGraphicsContext",
+    "objc2-core-graphics",
 ] }
 block2 = { version = ">=0.6.1, <0.8.0", optional = true }
+objc2-core-graphics = { version = "0.3", optional = true, features = [
+    "CGBitmapContext", "CGColorSpace", "CGContext", "CGImage",
+] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
 freedesktop-icons = { version = "0.4", optional = true }
