@@ -9,9 +9,14 @@ resolver = "3"
 [workspace.package]
 edition = "2024"
 license = "MIT OR Apache-2.0 OR 0BSD"
+rust-version = "1.85.0"
+repository = "https://github.com/nickelpack/native-theme"
+homepage = "https://github.com/nickelpack/native-theme"
+keywords = ["theme", "gui", "native", "colors", "desktop"]
+categories = ["gui", "config", "os"]
 
 [workspace.dependencies]
-native-theme = { path = "native-theme" }
+native-theme = { path = "native-theme", version = "0.2.0" }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_with = "3.17.0"
 toml = "1.0.6"
