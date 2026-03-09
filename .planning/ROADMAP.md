@@ -48,7 +48,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 18: Linux Icon Loading** — Freedesktop icon theme lookup via freedesktop-icons crate (completed 2026-03-09)
 - [x] **Phase 19: macOS Icon Loading** — SF Symbols via NSImage rasterization to RGBA (completed 2026-03-09)
 - [x] **Phase 20: Windows Icon Loading** — SHGetStockIconInfo stock icons and Segoe Fluent font glyphs (completed 2026-03-09)
-- [ ] **Phase 21: Integration and Connectors** — load_icon() dispatch, SVG rasterization, gpui/iced connector updates
+- [x] **Phase 21: Integration and Connectors** — load_icon() dispatch, SVG rasterization, gpui/iced connector updates (completed 2026-03-09)
 
 ## Phase Details
 
@@ -128,7 +128,7 @@ Plans:
   3. `native-theme-gpui` converts `IconData` to a gpui-compatible image and maps `IconRole` to gpui-component `IconName` for Lucide icons (zero I/O shortcut for 27+ roles)
   4. `native-theme-iced` converts `IconData` to `iced::widget::image::Handle`
   5. The gpui example app displays icons with an icon set selector dropdown
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 Plans:
 - [ ] 21-01-PLAN.md — load_icon() dispatch + rasterize_svg() module in core crate
 - [ ] 21-02-PLAN.md — gpui connector icons.rs + showcase example update
@@ -161,4 +161,4 @@ Phases 16 -> 17 -> 18/19/20 (parallel) -> 21
 | 18. Linux Icon Loading | v0.3 | 1/1 | Complete | 2026-03-09 |
 | 19. macOS Icon Loading | v0.3 | 1/1 | Complete | 2026-03-09 |
 | 20. Windows Icon Loading | v0.3 | 1/1 | Complete | 2026-03-09 |
-| 21. Integration and Connectors | 2/3 | In Progress|  | - |
+| 21. Integration and Connectors | 3/3 | Complete   | 2026-03-09 | - |

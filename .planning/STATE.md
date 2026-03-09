@@ -4,14 +4,14 @@ milestone: v0.3
 milestone_name: Icons
 status: executing
 stopped_at: null
-last_updated: "2026-03-09T16:19:11Z"
-last_activity: "2026-03-09 — Completed 21-03 (iced icon conversion helpers)"
+last_updated: "2026-03-09T16:24:30Z"
+last_activity: "2026-03-09 — Completed 21-02 (gpui icon_name + to_image_source + showcase icons)"
 progress:
   total_phases: 6
   completed_phases: 5
   total_plans: 10
-  completed_plans: 9
-  percent: 90
+  completed_plans: 10
+  percent: 100
 ---
 
 # Project State
@@ -26,18 +26,18 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 ## Current Position
 
 Phase: 21 of 21 (Integration and Connectors)
-Plan: 2/3 complete
-Status: Executing Phase 21
-Last activity: 2026-03-09 — Completed 21-03 (iced icon conversion helpers)
+Plan: 3/3 complete
+Status: Phase 21 Complete
+Last activity: 2026-03-09 — Completed 21-02 (gpui icon_name + to_image_source + showcase icons)
 
-Progress: [#########░] 90%
+Progress: [##########] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 43 (14 v0.1 + 20 v0.2 + 9 v0.3)
-- Average duration: ~4.1min (v0.2), 3.4min (v0.3 so far)
-- Total execution time: 70min (v0.2), 31min (v0.3)
+- Total plans completed: 44 (14 v0.1 + 20 v0.2 + 10 v0.3)
+- Average duration: ~4.1min (v0.2), 3.7min (v0.3)
+- Total execution time: 70min (v0.2), 37min (v0.3)
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
@@ -49,6 +49,7 @@ Progress: [#########░] 90%
 | 19-01 | SF Symbols icon loader | 2min | 2 | 3 |
 | 20-01 | Windows icon loader | 9min | 2 | 3 |
 | 21-01 | load_icon dispatch + rasterize_svg | 3min | 1 | 4 |
+| 21-02 | gpui icon_name + to_image_source | 6min | 2 | 3 |
 | 21-03 | Iced icon conversion helpers | 2min | 1 | 2 |
 
 ## Accumulated Context
@@ -84,6 +85,10 @@ v0.3 research recommends: data model first, bundled SVGs second, platform loader
 - [Phase 21]: Centering offset for non-square SVG aspect ratios in rasterize_svg
 - [Phase 21]: #[allow(clippy::needless_return)] on load_icon for cfg-block early return pattern
 - [Phase 21]: Wildcard arms for non_exhaustive IconData forward compatibility
+- [Phase 21]: Inline BMP V4 encoder for RGBA-to-gpui (no png crate dependency)
+- [Phase 21]: 30 of 42 roles mapped to gpui-component IconName (not 28 as estimated)
+- [Phase 21]: assert!(matches!()) for IconName tests (no Debug trait on IconName)
+- [Phase 21]: Lucide shortcut prioritized over raw img() in showcase for matched roles
 
 ### Pending Todos
 
@@ -95,6 +100,6 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-09T16:19:11Z
-Stopped at: Completed 21-03-PLAN.md
+Last session: 2026-03-09T16:24:30Z
+Stopped at: Completed 21-02-PLAN.md
 Resume file: None
