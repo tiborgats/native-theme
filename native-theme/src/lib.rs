@@ -88,9 +88,12 @@ pub use model::{
     IconData, IconRole, IconSet, NativeTheme, ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing,
     ThemeVariant, WidgetMetrics, bundled_icon_svg,
 };
+// load_icon re-exported from this module (defined in lib.rs directly)
 pub use model::icons::{icon_name, system_icon_set};
 
 pub mod macos;
+#[cfg(feature = "svg-rasterize")]
+pub mod rasterize;
 #[cfg(feature = "windows")]
 pub mod windows;
 #[cfg(all(target_os = "linux", feature = "system-icons"))]
@@ -112,6 +115,8 @@ pub use macos::from_macos;
 pub use windows::from_windows;
 #[cfg(all(target_os = "linux", feature = "system-icons"))]
 pub use freedesktop::load_freedesktop_icon;
+#[cfg(feature = "svg-rasterize")]
+pub use rasterize::rasterize_svg;
 #[cfg(all(target_os = "macos", feature = "system-icons"))]
 pub use sficons::load_sf_icon;
 #[cfg(all(target_os = "windows", feature = "system-icons"))]
@@ -282,6 +287,71 @@ pub async fn from_system_async() -> crate::Result<NativeTheme> {
     from_system()
 }
 
+/// Load an icon for the given role using the specified icon theme.
+///
+/// Resolves `icon_theme` to an [`IconSet`] via [`IconSet::from_name()`],
+/// falling back to [`system_icon_set()`] if the theme string is not
+/// recognized. Then dispatches to the appropriate platform loader or
+/// bundled icon set.
+///
+/// # Fallback chain
+///
+/// 1. Parse `icon_theme` to `IconSet` (unknown names fall back to system set)
+/// 2. Platform loader (freedesktop/sf-symbols/segoe-fluent) when `system-icons` enabled
+/// 3. Bundled SVGs (material/lucide) when the corresponding feature is enabled
+/// 4. Wildcard: try bundled Material, else `None`
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::{load_icon, IconRole};
+///
+/// // With material-icons feature enabled
+/// # #[cfg(feature = "material-icons")]
+/// # {
+/// let icon = load_icon(IconRole::ActionCopy, "material");
+/// assert!(icon.is_some());
+/// # }
+/// ```
+#[allow(unreachable_patterns, clippy::needless_return, unused_variables)]
+pub fn load_icon(role: IconRole, icon_theme: &str) -> Option<IconData> {
+    let set = IconSet::from_name(icon_theme).unwrap_or_else(system_icon_set);
+
+    match set {
+        #[cfg(all(target_os = "linux", feature = "system-icons"))]
+        IconSet::Freedesktop => freedesktop::load_freedesktop_icon(role),
+
+        #[cfg(all(target_os = "macos", feature = "system-icons"))]
+        IconSet::SfSymbols => sficons::load_sf_icon(role),
+
+        #[cfg(all(target_os = "windows", feature = "system-icons"))]
+        IconSet::SegoeIcons => winicons::load_windows_icon(role),
+
+        #[cfg(feature = "material-icons")]
+        IconSet::Material => {
+            bundled_icon_svg(IconSet::Material, role).map(|b| IconData::Svg(b.to_vec()))
+        }
+
+        #[cfg(feature = "lucide-icons")]
+        IconSet::Lucide => {
+            bundled_icon_svg(IconSet::Lucide, role).map(|b| IconData::Svg(b.to_vec()))
+        }
+
+        // Non-matching platform or unknown set: try bundled fallback
+        _ => {
+            #[cfg(feature = "material-icons")]
+            {
+                return bundled_icon_svg(IconSet::Material, role)
+                    .map(|b| IconData::Svg(b.to_vec()));
+            }
+            #[cfg(not(feature = "material-icons"))]
+            {
+                None
+            }
+        }
+    }
+}
+
 /// Mutex to serialize tests that manipulate environment variables.
 /// Env vars are process-global state, so tests that call set_var/remove_var
 /// must hold this lock to avoid races with parallel test execution.
@@ -446,5 +516,86 @@ mod dispatch_tests {
 
         let theme = result.expect("from_system() should return Ok on Linux");
         assert_eq!(theme.name, "Adwaita");
+    }
+}
+
+#[cfg(test)]
+mod load_icon_tests {
+    use super::*;
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn load_icon_material_returns_svg() {
+        let result = load_icon(IconRole::ActionCopy, "material");
+        assert!(result.is_some(), "material ActionCopy should return Some");
+        match result.unwrap() {
+            IconData::Svg(bytes) => {
+                let content = std::str::from_utf8(&bytes).expect("should be valid UTF-8");
+                assert!(content.contains("<svg"), "should contain SVG data");
+            }
+            _ => panic!("expected IconData::Svg for bundled material icon"),
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "lucide-icons")]
+    fn load_icon_lucide_returns_svg() {
+        let result = load_icon(IconRole::ActionCopy, "lucide");
+        assert!(result.is_some(), "lucide ActionCopy should return Some");
+        match result.unwrap() {
+            IconData::Svg(bytes) => {
+                let content = std::str::from_utf8(&bytes).expect("should be valid UTF-8");
+                assert!(content.contains("<svg"), "should contain SVG data");
+            }
+            _ => panic!("expected IconData::Svg for bundled lucide icon"),
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn load_icon_unknown_theme_falls_back() {
+        // On Linux (test platform), unknown theme resolves to system_icon_set() = Freedesktop.
+        // Without system-icons feature, Freedesktop falls through to wildcard -> Material fallback.
+        let result = load_icon(IconRole::ActionCopy, "unknown-theme");
+        assert!(
+            result.is_some(),
+            "unknown theme should fall back to bundled Material"
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn load_icon_all_roles_material() {
+        // Material has 41 of 42 roles mapped (TrashFull returns None from icon_name,
+        // but bundled_icon_svg maps it to delete.svg, so all 42 return Some)
+        let mut some_count = 0;
+        for role in IconRole::ALL {
+            if load_icon(role, "material").is_some() {
+                some_count += 1;
+            }
+        }
+        // bundled_icon_svg covers all 42 roles for Material
+        assert_eq!(some_count, 42, "Material should cover all 42 roles via bundled SVGs");
+    }
+
+    #[test]
+    #[cfg(feature = "lucide-icons")]
+    fn load_icon_all_roles_lucide() {
+        let mut some_count = 0;
+        for role in IconRole::ALL {
+            if load_icon(role, "lucide").is_some() {
+                some_count += 1;
+            }
+        }
+        // bundled_icon_svg covers all 42 roles for Lucide
+        assert_eq!(some_count, 42, "Lucide should cover all 42 roles via bundled SVGs");
+    }
+
+    #[test]
+    fn load_icon_unrecognized_set_no_features() {
+        // SfSymbols on Linux without system-icons: falls through to wildcard
+        // The wildcard arm behavior depends on material-icons feature
+        let _result = load_icon(IconRole::ActionCopy, "sf-symbols");
+        // Just verifying it doesn't panic
     }
 }

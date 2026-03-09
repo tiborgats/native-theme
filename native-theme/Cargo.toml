@@ -20,6 +20,7 @@ windows = ["dep:windows"]
 macos = ["dep:objc2", "dep:objc2-foundation", "dep:objc2-app-kit", "dep:block2"]
 material-icons = []    # Bundle Material Symbols SVGs as cross-platform fallback
 lucide-icons = []      # Bundle Lucide SVGs as optional icon set
+svg-rasterize = ["dep:resvg"]  # Optional SVG-to-RGBA rasterization via resvg
 system-icons = ["dep:freedesktop-icons", "dep:objc2-core-graphics", "material-icons"]  # Platform icon theme lookup with bundled fallback
 
 [dependencies]
@@ -33,6 +34,7 @@ windows = { version = ">=0.59, <=0.62", optional = true, default-features = fals
     "Win32_UI_Shell",
     "Foundation_Metadata",
 ] }
+resvg = { version = "0.47", optional = true, default-features = false }
 serde.workspace = true
 serde_with.workspace = true
 toml.workspace = true
