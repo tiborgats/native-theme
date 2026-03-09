@@ -1,182 +1,200 @@
 # Project Research Summary
 
-**Project:** native-theme v0.2
-**Domain:** Cross-platform Rust library crate for OS theme data -- subsequent milestone extending v0.1
-**Researched:** 2026-03-08
+**Project:** native-theme v0.3
+**Domain:** Cross-platform native icon loading for a toolkit-agnostic Rust theme crate
+**Researched:** 2026-03-09
 **Confidence:** HIGH
 
 ## Executive Summary
 
-native-theme v0.2 extends a shipping ~7,000 LOC crate (140+ tests, 17 TOML presets, 3 platform readers) with six categories of work: breaking API refactors (flatten ThemeColors from 7 nested sub-structs to 36 direct fields, move free functions to `impl NativeTheme`), a macOS reader via `objc2-app-kit 0.3.2`, a widget metrics data model (12 per-widget sub-structs), Cargo workspace restructuring for connector crates, two toolkit connectors (gpui-component and iced), and CI/publishing infrastructure. The only new runtime dependency is `objc2-app-kit 0.3.2` behind a `macos` feature flag. Connector crates add `gpui-component 0.5.1` / `gpui 0.2.2` and `iced 0.14.0` as their own dependencies, not polluting the core crate.
+native-theme v0.3 adds platform-native icon loading to a shipping theme crate (~7,000 LOC, 17 presets, 4 platform readers, 2 connector crates). The icon system introduces an `IconRole` enum with 42 semantic roles, an `IconData` return type (SVG bytes or RGBA pixels), and three loading pipelines: macOS SF Symbols via `NSImage(systemSymbolName:)` rasterized to RGBA through CGBitmapContext, Windows stock icons via `SHGetStockIconInfo` with HICON-to-RGBA conversion plus Segoe Fluent Icons font glyph rendering, and Linux freedesktop icon theme lookup via the `freedesktop-icons 0.4` crate. Two bundled SVG icon sets (Material Symbols and Lucide, ~42 SVGs each at ~20-40KB total) provide cross-platform fallback when native APIs are unavailable. The only new runtime dependencies are `freedesktop-icons 0.4` (Linux, optional) and `resvg 0.47` (optional SVG rasterization utility); macOS and Windows extend existing `objc2-app-kit` and `windows` crate dependencies with additional feature flags.
 
-The recommended approach is strictly sequenced: do all breaking API changes first while the crate is still single-crate (flattening colors is the largest refactor by diff size, touching all 17 presets, 3 readers, and 140+ tests); then add new data models (widget metrics) and platform support (macOS reader, Windows/Linux enhancements) on the stabilized API; then restructure to a Cargo workspace and build connector crates last, when the core API is frozen for v0.2. This ordering is driven by a key architectural insight: workspace restructuring before API stabilization forces cascading connector fixes on every core change. The build order was independently confirmed by ARCHITECTURE.md and FEATURES.md dependency analysis.
+The recommended approach follows a four-phase build order driven by the dependency graph: (1) data model and name mapping tables first, since every downstream component depends on `IconRole`, `IconData`, and the icon theme integration with `ThemeVariant`; (2) bundled SVG fallback icons next, providing the universal fallback chain that platform loaders need when a native icon is unavailable; (3) platform-native loading pipelines in parallel (macOS, Windows, Linux are independent); (4) connector integration last, once the core icon API is stable. This ordering mirrors v0.2's proven pattern of "data model before consumers, core before connectors."
 
-The primary risks are: (1) macOS NSColor semantic colors returning wrong-mode values without explicit `NSAppearance` context setting -- a silent correctness bug, not a crash; (2) objc2 autorelease pool leaks in non-AppKit contexts causing unbounded memory growth on repeated calls; (3) field name collisions when flattening ThemeColors (`primary.background` and `core.background` both want the name `background`) -- solved by renaming to `primary` / `primary_foreground`; (4) Windows `GetSystemMetrics` returning DPI-virtualized values without `GetSystemMetricsForDpi`; and (5) iced's `Base` trait requiring per-widget `Catalog` implementations, not just a `Palette`. All five have concrete prevention strategies documented in PITFALLS.md.
+The key risks are: (1) macOS NSImage rasterization producing wrong-sized images on Retina displays without explicit pixel-dimension control -- silent correctness bug; (2) Windows HICON-to-RGBA conversion dropping alpha or producing wrong colors due to premultiplied alpha and BGRA byte order; (3) freedesktop icon lookup silently failing on non-Adwaita themes due to incomplete inheritance chain traversal; (4) SF Symbols and Segoe Fluent Icons font files being proprietary and non-redistributable -- the crate must load them at runtime from the OS, never bundle them; (5) NSImage thread safety issues causing crashes under concurrent access. All five have concrete prevention strategies: the `freedesktop-icons` crate handles (3), RAII wrappers and conversion functions handle (2), explicit pixel-dimension bitmap creation handles (1), and project rules established during API design handle (4).
 
 ## Key Findings
 
 ### Recommended Stack
 
-v0.2 adds exactly one new runtime dependency to the core crate: `objc2-app-kit 0.3.2` behind the `macos` feature flag. All other core dependencies (serde, toml, configparser, ashpd, windows) are unchanged from v0.1. Connector crates bring their own toolkit dependencies. CI adds `cargo-semver-checks 0.46.0` and `cargo-hack` as dev tools.
+v0.3 adds minimal new dependencies. The core insight is that macOS and Windows icon loading extend *existing* crate dependencies with new feature flags rather than adding new crates. Only Linux needs a genuinely new dependency (`freedesktop-icons`). An optional SVG rasterization utility adds `resvg` behind a feature flag.
 
-**Core technologies (new in v0.2):**
-- **objc2-app-kit 0.3.2:** macOS AppKit bindings for NSColor, NSFont, NSAppearance -- only actively maintained safe ObjC bindings; needs `NSColor`, `NSFont`, `NSAppearance`, `NSColorSpace` features
-- **gpui-component 0.5.1 + gpui 0.2.2:** Target toolkit for the gpui connector crate -- 108-field ThemeColor with remarkably clean 1:1 mapping to native-theme's 36 colors
-- **iced 0.14.0:** Target toolkit for the iced connector crate -- 6-color Palette + per-widget Catalog system; on crates.io, publishable immediately
-- **cargo-semver-checks 0.46.0:** CI tool for SemVer violation detection -- catches removed public items, changed signatures, type changes
+**Core technologies:**
+- **objc2-app-kit 0.3 (existing dep, new features):** Add `NSImage`, `NSImageRep`, `NSBitmapImageRep`, `NSGraphicsContext`, `objc2-core-graphics` features for SF Symbols loading and CGBitmapContext-based RGBA extraction
+- **windows crate (existing dep, new feature):** Add `Win32_UI_Shell` for `SHGetStockIconInfo`; existing `Win32_Graphics_Gdi` already covers HICON-to-RGBA conversion
+- **freedesktop-icons 0.4.0 (new, optional):** Freedesktop Icon Theme Specification lookup with inheritance, hicolor fallback, size matching, and caching -- small dependency tree (dirs, ini_core, xdg)
+- **resvg 0.47 (new, optional):** Pure Rust SVG-to-RGBA rasterization for consumers without their own SVG renderer -- behind `svg-rasterize` feature, not default
+- **Material Symbols + Lucide SVGs (compile-time, no runtime dep):** ~42 SVGs each bundled via `include_bytes!()`, ~20-40KB per set
 
 **Critical version requirements:**
-- objc2-app-kit 0.3.2 requires objc2 >=0.6.2, <0.8.0 (current latest 0.6.4 is within range)
-- iced 0.14 specifically -- the Base trait and Catalog system changed significantly across 0.12/0.13/0.14
-- gpui-component pinned to >=0.5.1, <0.6 due to pre-1.0 instability risk
-- Windows crate should tighten to 0.62 (no reason to support 0.59-0.61)
+- freedesktop-icons must be 0.4+ (builder API with `.with_cache()`, `.force_svg()`)
+- resvg 0.47 uses usvg 0.47 + tiny-skia 0.12 (latest as of January 2026)
+- objc2-app-kit 0.3.2 unchanged from v0.2; `objc2-core-graphics` is a transitive feature, not a new crate
 
 ### Expected Features
 
-**Must have (table stakes -- the v0.2 release is incomplete without these):**
-- Flat ThemeColors (36 direct `Option<Rgba>` fields) -- eliminates the 7-sub-struct taxonomy that has no precedent in CSS/shadcn/Tailwind
-- `NativeTheme::preset()`, `NativeTheme::from_toml()`, etc. -- idiomatic Rust associated function convention
-- macOS reader -- completes 4-platform coverage (KDE, GNOME portal, Windows, macOS)
-- ThemeGeometry additions: `radius_lg` and `shadow` -- non-breaking, required by connectors
-- Workspace restructuring -- prerequisite for connector crates
-- Publishing prep -- crates.io metadata, license files, CHANGELOG.md
+**Must have (table stakes):**
+- **IconRole enum + icon_name() lookup** -- the foundational abstraction: 42 variants, 5 icon set mapping functions, zero dependencies
+- **IconData return type** -- `Svg(Vec<u8>)` for Linux/bundled icons, `Rgba { width, height, data }` for macOS/Windows rasterized icons
+- **icon_theme field on ThemeVariant** -- connects the icon system to the preset/theme system; `Option<String>` with `skip_serializing_if`
+- **Bundled Material SVGs** -- universal fallback ensuring `load_icon()` never returns `None` for any role on any platform
+- **Freedesktop icon lookup (Linux)** -- easiest platform to implement (file I/O, no FFI), largest Rust GUI audience segment
+- **macOS SF Symbols loading** -- completes the macOS platform story with real Apple icons
+- **Windows icon loading** -- two pipelines: SHGetStockIconInfo for stock icons (~18 roles), Segoe Fluent font for UI actions (~24 roles)
 
-**Should have (differentiators -- high value, moderate effort):**
-- Widget metrics data model (12 per-widget sub-structs) -- enables pixel-perfect native UIs; no competing crate provides this
-- iced connector (`native-theme-iced`) -- can publish to crates.io immediately; iced has 25k GitHub stars
-- CI pipeline -- cross-platform matrix with feature flag testing and semver checks
-- Windows reader enhancements -- accent shades, system font, DPI-aware metrics
-- Linux reader enhancements -- portal accent overlay on kdeglobals, GNOME font reading, D-Bus backend detection
+**Should have (differentiators):**
+- **Bundled Lucide SVGs** -- gpui-component already bundles 87 Lucide icons; the connector can short-circuit to `IconName` for 27 of 42 roles with zero I/O
+- **Connector icon helpers** -- `icon_name_for_role()` (gpui Lucide shortcut) and `load_icon()` wrappers converting `IconData` to toolkit image types
+- **SVG rasterization utility** -- `svg-rasterize` feature wrapping resvg for consumers without SVG support
 
-**Defer (v0.3+):**
-- gpui-component connector publishing (build it, but accept git-dep-only until gpui-component stabilizes)
-- egui connector -- least structured theming API, simpler but less value
-- iOS/Android runtime readers -- small Rust audience on mobile
-- Built-in change notification -- opinionated async runtime choice, scope creep
-- Color manipulation utilities -- out of scope for a data crate; use the `palette` crate
+**Defer (v0.4+):**
+- Animated icon support (spinners, loading indicators) -- each toolkit handles animation differently
+- Multi-color / layered SF Symbol rendering -- requires platform-specific drawing contexts
+- Variable font axis control for Material Symbols -- over-engineering for v0.3
+- Custom icon registration / user-defined roles -- 42 roles cover standard UI needs
+- DirectWrite-based Segoe Fluent rendering -- GDI is adequate for monochrome font glyphs; upgrade if quality complaints arise
+- Icon caching in the core crate -- caching policy is application-specific
 
 ### Architecture Approach
 
-v0.2 follows a strict layered integration into the existing codebase. The `impl_merge!` macro is the single most important integration point -- it generates `merge()` and `is_empty()` for every model struct and must be updated atomically with any struct change. ThemeColors flattening eliminates 6 sub-struct types and their macro invocations (net LOC reduction), while widget metrics adds 12 new sub-structs following the exact same pattern. The macOS reader follows the proven reader pattern: feature-gated module producing a `NativeTheme` from platform APIs, with a testable `build_theme()` core separated from ObjC API calls. Connector crates are thin mapping layers with zero intermediate types -- they map directly from `NativeTheme` fields to toolkit types.
+The icon system integrates as a new `icons/` module in the core crate, following the established pattern of data model types + platform implementations behind `#[cfg]` + fallback assets. `load_icon()` is a free function (not a method on `ThemeVariant`) that dispatches to platform loaders by icon theme string, with a fallback chain to bundled SVGs. Each platform loader is a thin wrapper: call the OS API, convert the result to `IconData`, return. Name mapping uses exhaustive `match` statements (42 arms per icon set) -- no traits, no HashMaps, no phf.
 
-**Major components (changed or new):**
-1. **`model/colors.rs`** -- REWRITE: flatten from 7 nested sub-structs to 36 direct `Option<Rgba>` fields
-2. **`model/metrics.rs`** -- NEW: `WidgetMetrics` + 12 per-widget sub-structs (ButtonMetrics, ScrollbarMetrics, etc.)
-3. **`src/macos.rs`** -- NEW: macOS reader via objc2-app-kit (NSColor semantic colors, NSFont, NSAppearance)
-4. **`native-theme-gpui/`** -- NEW: connector crate mapping 36 colors to 108 gpui-component ThemeColor fields
-5. **`native-theme-iced/`** -- NEW: connector crate mapping to iced Palette + per-widget Catalog implementations
+**Major components:**
+1. **`icons/mod.rs`** -- Public API: `load_icon()`, `icon_name()`, `system_icon_set()`, `IconRole`, `IconData` types
+2. **`icons/names.rs`** -- Five pure functions mapping `IconRole` to platform-specific identifier strings (`sf_symbols_name`, `freedesktop_name`, `segoe_fluent_name`, `material_name`, `lucide_name`)
+3. **`icons/bundled.rs`** -- `include_bytes!()` for 42 Material + 42 Lucide SVGs with `match`-based lookup
+4. **`icons/freedesktop.rs`** -- Linux: `freedesktop-icons` crate lookup, reads SVG bytes from disk
+5. **`icons/macos.rs`** -- macOS: `NSImage(systemSymbolName:)` + CGBitmapContext rasterization to RGBA
+6. **`icons/windows.rs`** -- Windows: `SHGetStockIconInfo` HICON extraction + Segoe Fluent font glyph GDI rendering
+7. **`model/mod.rs`** (modified) -- `icon_theme: Option<String>` added to `ThemeVariant`
 
 ### Critical Pitfalls
 
-1. **NSColor appearance context (macOS reader)** -- Semantic colors resolve to wrong light/dark variant without explicit `NSAppearance::setCurrentAppearance`. Set appearance once at top of `from_macos()`, read all colors, restore. Silent correctness bug, not a crash.
-2. **Autorelease pool leak (macOS reader)** -- Non-AppKit Rust binaries have no run loop to drain autoreleased ObjC objects. Wrap entire `from_macos()` in `objc2::rc::autoreleasepool`. Without this, memory grows unboundedly on repeated calls.
-3. **Field name collision during ThemeColors flattening** -- `primary.background` and `core.background` both want `background`. Rename: `primary.background` becomes `primary`, `primary.foreground` becomes `primary_foreground`. Apply the same pattern to `secondary`, `danger`, `warning`, `success`, `info`, `selection`.
-4. **Windows DPI virtualization** -- `GetSystemMetrics()` returns 96-DPI values for DPI-unaware processes. Use `GetSystemMetricsForDpi()` with `GetDpiForSystem()` (requires `Win32_UI_HiDpi` feature on windows crate).
-5. **iced Base trait requirement** -- Simply providing a `Palette` does not style widgets. Must implement `Base` trait (5 methods) and per-widget `Catalog` entries. Study COSMIC Desktop's `cosmic-theme` as proven reference.
+1. **SF Symbols / Segoe Fluent licensing** -- Name strings are API identifiers and safe to ship. Font files, glyph outlines, and rendered images are proprietary and must never be bundled. Load at runtime from the OS only. Establish this as a project rule before any implementation.
+2. **HICON-to-RGBA conversion** -- Windows GDI returns BGRA with premultiplied alpha. Must swap B/R channels, un-premultiply alpha, and handle the edge case where 32bpp icons have all-zero alpha (use the AND mask instead). Create RAII wrappers for HICON/HBITMAP to prevent GDI handle leaks.
+3. **NSImage rasterization on Retina** -- SF Symbols are resolution-independent. Without explicit pixel-dimension control, a 24-point request produces 48 pixels on 2x displays. Create `NSBitmapImageRep` at exact pixel dimensions. Additionally, NSImage is not thread-safe for mutation -- serialize all icon loading on macOS.
+4. **freedesktop lookup edge cases** -- Theme inheritance chains, hicolor ultimate fallback, three directory types (Fixed/Scalable/Threshold), and XDG_DATA_DIRS compliance. Use the `freedesktop-icons` crate rather than implementing from scratch. Test with Adwaita, Breeze, Papirus, and hicolor-only.
+5. **Feature flag combinations** -- 9+ features create 512 theoretical combinations. Test the important subset: default, each icon flag alone, all flags, no flags. Ensure `load_icon` returns `None` gracefully when no icon features are enabled.
 
 ## Implications for Roadmap
 
-Based on combined research across all four files, the critical path is: **Flat ThemeColors -> API methods -> Widget Metrics -> macOS reader -> Workspace restructuring -> Connectors -> CI -> Publishing**. The ordering is driven by three principles: (1) breaking changes before non-breaking additions, (2) data model before consumers, (3) single-crate development before workspace restructuring.
+Based on the dependency graph across all four research files, the icon system has a clear critical path: `IconRole + IconData` (blocks everything) -> bundled SVGs (provides fallback chain) -> platform loaders (parallel, independent) -> connectors (consumes stable API). This mirrors v0.2's proven "data model before consumers" principle.
 
-### Phase 1: API Breaking Changes
-**Rationale:** All breaking changes must land first while the crate is single-crate and has no downstream workspace consumers. The ThemeColors flattening is the largest refactor by diff size (touches all 17 presets, 3 readers, all tests). Moving free functions to `impl NativeTheme` is smaller and cleaner on the already-flat API. ThemeGeometry additions are non-breaking but logically grouped here.
-**Delivers:** Flat `ThemeColors` with 36 direct fields, `NativeTheme::preset()` / `NativeTheme::from_toml()` / `theme.to_toml()` API, `radius_lg` and `shadow` on `ThemeGeometry`
-**Addresses:** Features 1-4 from FEATURES.md (flat colors, API methods, geometry additions)
-**Avoids:** Pitfall 3 (field name collision -- use `primary`/`primary_foreground` naming), Pitfall about `serde(flatten)` (do a clean break, no backward compat)
+### Phase 1: Data Model and Icon Name Mapping
+**Rationale:** Everything else depends on `IconRole`, `IconData`, and the name mapping tables. This phase has zero new dependencies, zero FFI, and can be fully tested on any platform. It also establishes the licensing boundary (project rule: never bundle proprietary icon assets).
+**Delivers:** `IconRole` enum (42 variants), `IconData` enum, `icon_name()` with 5 mapping functions (210 match arms total), `system_icon_set()`, `icon_theme: Option<String>` on `ThemeVariant` with merge/is_empty/serde support, preset TOML updates for 6 native presets, lib.rs re-exports.
+**Addresses:** Features 1-3, 7 from FEATURES.md (IconRole, IconData, icon_theme, API functions)
+**Avoids:** Pitfall 1 (SF Symbols licensing -- establish project rule), Pitfall 2 (Segoe Fluent licensing), Pitfall 8 (Option vs Result -- decide error strategy), Pitfall 9 (feature flag design)
+**Estimated LOC:** ~400
 
-### Phase 2: Platform Readers
-**Rationale:** macOS reader completes 4-platform coverage, which is the primary v0.2 value proposition. Windows and Linux enhancements fill visible gaps. All three are independent of each other and can be developed in parallel once the data model is stable.
-**Delivers:** `from_macos()` reader (~20 NSColor semantic mappings + fonts + appearance), Windows accent shades and system font, Linux portal overlay and GNOME font reading
-**Uses:** objc2-app-kit 0.3.2 (new), existing windows and ashpd crates (enhanced)
-**Avoids:** Pitfall 1 (NSAppearance context), Pitfall 2 (autorelease pool), Pitfall 6 (Windows DPI)
+### Phase 2: Bundled SVG Icon Sets
+**Rationale:** Bundled icons provide the universal fallback chain. Platform loaders in Phase 3 need this fallback when a native icon is unavailable (e.g., `trash-full` on macOS). Having fallbacks working first means Phase 3 can focus purely on platform FFI. This phase also has no FFI and no platform-specific code.
+**Delivers:** ~42 SVGO-optimized Material Symbols SVGs, ~42 Lucide SVGs, `bundled.rs` with `include_bytes!` + match-based lookup, `material-icons` and `lucide-icons` feature flags, `load_icon()` dispatch function with fallback chain.
+**Addresses:** Features 3, 8 from FEATURES.md (bundled Material, bundled Lucide)
+**Avoids:** Pitfall 4 (SVG bundle size -- budget 200KB max for Material, 100KB for Lucide, verify with `cargo bloat`)
+**Estimated LOC:** ~200 (plus ~84 SVG asset files)
 
-### Phase 3: Widget Metrics
-**Rationale:** Widget metrics must exist before connectors can consume them for per-widget styling. The data model follows the exact same pattern as existing model structs (Option fields, non_exhaustive, impl_merge!). Platform population is independent work per reader.
-**Delivers:** `WidgetMetrics` with 12 sub-structs, KDE breezemetrics.h constants, Windows GetSystemMetricsForDpi values, macOS HIG hardcoded values, GNOME hardcoded values
-**Addresses:** Feature 5 (widget metrics system) from FEATURES.md
-**Avoids:** Pitfall 5 (false precision -- return `None` for values not exposed at runtime, document coverage matrix)
+### Phase 3: Platform-Native Icon Loading
+**Rationale:** All three platform loaders are independent and can be developed in parallel once the data model and fallback chain are stable. Each adds cfg-gated code and extends existing dependencies. This is the highest-risk phase due to unsafe FFI code and platform-specific pixel format handling.
+**Delivers:** Three platform loaders producing `IconData` from native APIs.
 
-### Phase 4: CI Pipeline
-**Rationale:** CI should run after all platform features exist (to test macOS runner) but before workspace restructuring (to catch regressions). Feature flag matrix ensures each reader compiles independently.
-**Delivers:** GitHub Actions workflow with Linux/Windows/macOS matrix, feature flag testing via `cargo hack`, `cargo-semver-checks` integration, `cargo clippy` + `cargo fmt`
-**Addresses:** Feature 9 (CI pipeline) from FEATURES.md
-**Avoids:** Pitfall about cargo-semver-checks first-run baseline (handle no-previous-version case)
+**Sub-phase 3a: Linux/freedesktop**
+- Uses: `freedesktop-icons 0.4` crate (new optional dependency)
+- Implements: `icons/freedesktop.rs` -- lookup by icon name, read SVG file, return `IconData::Svg`
+- Risk: LOW -- the crate handles spec compliance; wrapper is ~50 lines
 
-### Phase 5: Workspace Restructuring and Connectors
-**Rationale:** Workspace restructuring must happen after all core API changes are complete. Connectors are thin mapping layers that depend on the stable core API. The iced connector is lower risk (on crates.io, well-documented API, 6-color Palette) than the gpui connector (108 color fields, upstream instability).
-**Delivers:** Cargo workspace with `native-theme/`, `native-theme-gpui/`, `native-theme-iced/` members. Working connector crates with examples.
-**Uses:** iced 0.14.0 (crates.io), gpui-component 0.5.1 (crates.io)
-**Avoids:** Pitfall 4 (include_str paths -- run `cargo publish --dry-run` immediately), Pitfall 7 (gpui instability -- pin exact version, isolate mapping), Pitfall 8 (iced Base trait -- implement full Catalog, study COSMIC Desktop)
+**Sub-phase 3b: macOS SF Symbols**
+- Uses: `objc2-app-kit` with new `NSImage`, `objc2-core-graphics` features
+- Implements: `icons/macos.rs` -- NSImage(systemSymbolName:) + CGBitmapContext rasterization
+- Risk: MEDIUM -- unsafe ObjC FFI, pixel format control, Retina size handling, thread safety
 
-### Phase 6: Publishing Prep
-**Rationale:** Final step. All API changes complete, CI green, connectors functional. Focus on crates.io metadata, documentation, license files, CHANGELOG.md.
-**Delivers:** Published `native-theme` on crates.io, published `native-theme-iced` on crates.io, `native-theme-gpui` available via git dependency
-**Addresses:** Feature 10 (publishing prep) from FEATURES.md
-**Avoids:** Pitfall about missing presets in package (verify with `cargo package --list`)
+**Sub-phase 3c: Windows stock icons + Segoe Fluent glyphs**
+- Uses: `windows` crate with new `Win32_UI_Shell` feature
+- Implements: `icons/windows.rs` -- SHGetStockIconInfo HICON extraction + GDI font glyph rendering
+- Risk: MEDIUM -- BGRA-to-RGBA conversion, premultiplied alpha, GDI handle cleanup, COM initialization
+
+**Addresses:** Features 4-6 from FEATURES.md (freedesktop, SF Symbols, Windows icons)
+**Avoids:** Pitfall 3 (freedesktop lookup -- use crate), Pitfall 5 (HICON conversion -- RAII wrappers, correct alpha), Pitfall 6 (NSImage Retina -- explicit pixel dimensions), Pitfall 7 (cross-compilation -- multi-target CI), Pitfall 10 (COM init + handle leaks)
+**Estimated LOC:** ~600-900 total across three sub-phases
+
+### Phase 4: Integration and Connectors
+**Rationale:** Connectors consume the stable core API. The gpui connector has a valuable fast path: for `icon_theme = "lucide"`, it maps `IconRole` directly to gpui-component's built-in `IconName` enum (27 of 42 roles) with zero I/O. The iced connector converts `IconData` to `iced::widget::image::Handle`. Optional SVG rasterization utility (`svg-rasterize` feature with resvg) also lands here.
+**Delivers:** `native-theme-gpui` icons module (Lucide shortcut + IconData conversion), `native-theme-iced` icons module, optional `rasterize_svg()` utility, documentation and examples.
+**Addresses:** Features 9-11 from FEATURES.md (connector helpers, SVG rasterization, documentation)
+**Avoids:** Anti-pattern of putting platform logic in connectors -- connectors are pure format converters
+**Estimated LOC:** ~200-300
 
 ### Phase Ordering Rationale
 
-- **Phase 1 before Phase 2:** Flattening colors is a prerequisite for the macOS reader (it writes to flat fields). All readers must be updated to flat field access during flattening, so adding a new reader before flattening means doing the work twice.
-- **Phase 2 before Phase 3:** Widget metrics in platform readers require the reader infrastructure to exist first. The macOS reader is independent data model work, while widget metrics extend all readers.
-- **Phase 3 before Phase 5:** Connectors need widget metrics to provide per-widget styling. Building connectors without metrics means retrofitting them later.
-- **Phase 4 (CI) before Phase 5:** CI catches regressions during workspace restructuring, which is a high-risk operation for build breakage (include_str paths, publish dry-run).
-- **Phase 5 last before publishing:** Workspace restructuring is a repo organization change, not functionality. Doing it last means all code changes happen in the simpler single-crate layout.
+- **Phase 1 before Phase 2:** Bundled SVGs need `IconRole` for match dispatch and `IconData` for return type. The `load_icon()` function needs both plus the fallback chain.
+- **Phase 2 before Phase 3:** Platform loaders fall back to bundled SVGs when a native icon is unavailable. Without the fallback chain, platform loaders would need placeholder logic that gets replaced later.
+- **Phase 3 platforms are independent:** macOS, Windows, and Linux share no code paths. Each adds its own cfg-gated module. Can be developed and CI-tested in any order.
+- **Phase 4 last:** Connectors depend on the complete and stable core icon API. Building them before the API is finalized means rework.
+- **Total estimated LOC:** 1,200-1,700 lines of Rust (excluding SVG asset files), consistent with FEATURES.md complexity assessment.
 
 ### Research Flags
 
 Phases likely needing deeper research during planning:
-- **Phase 2 (macOS reader):** NSAppearance resolution API differences between macOS 11+ and earlier, exact NSColor-to-ThemeColors mapping editorial decisions, NSFont display name vs private name (.AppleSystemUIFont), P3-to-sRGB conversion edge cases (nil return from colorUsingColorSpace on pattern colors)
-- **Phase 3 (Widget Metrics):** Coverage matrix design (which fields to expose per platform), KDE Plasma 5 vs 6 constant differences, libadwaita SCSS source extraction for hardcoded values
-- **Phase 5 (Connectors):** gpui-component shade generation (11-shade scale from single accent color), iced 0.14 Base trait + Catalog implementation patterns, COSMIC Desktop cosmic-theme code study for iced reference
+- **Phase 3b (macOS SF Symbols):** NSImageSymbolConfiguration feature flag availability in objc2-app-kit needs verification. CGBitmapContext approach for controlled RGBA output is documented but not yet prototyped in this codebase. Thread safety constraints may require architectural decisions (serial dispatch queue or main-thread requirement).
+- **Phase 3c (Windows Segoe Fluent):** GDI-based font glyph rendering (CreateFont + TextOut into DIB section) has not been verified with the `windows` crate bindings for this specific use case. If quality is insufficient, DirectWrite fallback adds significant complexity (3 more `windows` crate features). Segoe Fluent font presence on Windows 10 needs graceful detection.
 
 Phases with standard patterns (skip deeper research):
-- **Phase 1 (API refactors):** Mechanical refactor -- search-and-replace field paths, update macro invocations, rewrite preset TOML files
-- **Phase 4 (CI):** Well-documented GitHub Actions patterns, cargo-semver-checks has an official action
-- **Phase 6 (Publishing):** Standard crates.io metadata, `cargo publish --dry-run` catches everything
+- **Phase 1 (Data model):** Pure Rust enums and match tables. Follows exact pattern of existing `ThemeVariant` fields. Mechanical work.
+- **Phase 2 (Bundled SVGs):** Standard `include_bytes!` pattern. Download SVGs, optimize with SVGO, add to source tree. No unknowns.
+- **Phase 3a (Linux/freedesktop):** The `freedesktop-icons` crate provides a clean builder API. The wrapper is ~50 lines. Well-documented spec.
+- **Phase 4 (Connectors):** Thin mapping layers following the established connector pattern from v0.2.
 
 ## Confidence Assessment
 
 | Area | Confidence | Notes |
 |------|------------|-------|
-| Stack | HIGH | All crate versions verified on crates.io/lib.rs with publication dates. objc2-app-kit 0.3.2 (Oct 2025), gpui-component 0.5.1 (Feb 2026), iced 0.14.0 (Dec 2025), cargo-semver-checks 0.46.0. Dependency chains confirmed. |
-| Features | HIGH | Feature landscape mapped against platform API docs (Apple NSColor, KDE breezemetrics.h, libadwaita CSS variables, Windows GetSystemMetrics), toolkit source code (gpui-component ThemeColor 108 fields, iced Palette 6 fields), and existing codebase analysis. Clear dependency graph with critical path identified. |
-| Architecture | HIGH | Based on full source code analysis of existing ~7,000 LOC codebase. Build order independently confirmed by architecture patterns and feature dependencies. Merge macro integration point and workspace restructuring sequence validated. |
-| Pitfalls | HIGH | 8 critical pitfalls identified with verified sources (Apple docs, serde issue tracker, Microsoft DPI docs, objc2 autorelease semantics). All have concrete prevention strategies, phase assignments, and recovery costs assessed. |
+| Stack | HIGH | All crate versions verified on docs.rs/lib.rs with publication dates. Dependency chains confirmed. freedesktop-icons 0.4.0 (April 2025), resvg 0.47.0 (January 2026). Existing deps need only feature flag additions. |
+| Features | HIGH | 42 IconRole variants mapped against 5 icon sets with availability matrix verified. Feature dependency graph has clear critical path. Complexity estimates grounded in existing codebase patterns. |
+| Architecture | HIGH | Based on full source analysis of v0.2 codebase. Build order follows proven v0.2 pattern. Component boundaries map cleanly to the existing module structure. No architectural novelty -- same patterns at work. |
+| Pitfalls | HIGH | 10 pitfalls identified with verified sources (Apple docs, Microsoft Learn, freedesktop spec, Rust community discussions, compiler issue tracker). All have concrete prevention strategies and phase assignments. Recovery costs assessed for each. |
 
 **Overall confidence:** HIGH
 
 ### Gaps to Address
 
-- **gpui-component shade generation:** native-theme provides 36 single colors; gpui-component uses 11-shade scales (50-950) per color family. The algorithm for generating a visually correct gradient from one seed color needs prototyping during Phase 5 connector work. Consider using Oklch color space for perceptual uniformity.
-- **iced Catalog coverage depth:** The number of per-widget Catalog trait implementations needed for a "complete" iced connector is unclear. Start with Button, Container, TextInput, Scrollable (the 4 most common widgets) and expand based on demand. COSMIC Desktop's code is the best reference.
-- **Widget metrics cross-platform coverage honesty:** KDE provides ~80 metrics, Windows ~20, macOS ~10 (hardcoded), GNOME ~4 (CSS variables). The `WidgetMetrics` struct will be mostly `None` on non-KDE platforms. Document this honestly and consider a `coverage()` method.
-- **gpui-component crates.io status:** STACK.md and PITFALLS.md disagree on whether gpui-component is on crates.io. STACK.md says it IS on crates.io (v0.5.1, confirmed). PITFALLS.md initially assumed git-only but corrected itself. Resolution: it IS on crates.io and the connector CAN be published.
-- **macOS testing infrastructure:** The macOS reader can only be integration-tested on macOS CI runners. The testable-core pattern (build_theme with raw values) handles unit tests, but verifying actual NSColor reads requires a macOS environment.
+- **NSImageSymbolConfiguration feature gate:** Whether objc2-app-kit gates this class under the `NSImage` feature or a separate feature flag needs verification during Phase 3b implementation. If separate, one additional feature flag is needed in Cargo.toml.
+- **Windows DirectWrite fallback complexity:** If GDI-based Segoe Fluent glyph rendering produces insufficient quality (fuzzy icons, missing hinting), the DirectWrite path requires 3 additional `windows` crate features (`Win32_Graphics_DirectWrite`, `Win32_Graphics_Direct2D`, `Win32_Graphics_Imaging`) and a significantly more complex COM-based rendering pipeline. Decision can be deferred to after initial GDI prototype.
+- **Segoe Fluent on Windows 10:** The font may not be present on all Windows 10 installations. The fallback chain (stock icons -> bundled Material SVGs) handles this gracefully, but the detection logic needs implementation.
+- **NSImage thread safety:** If `load_icon` must be called from multiple threads on macOS, a serialization mechanism (serial dispatch queue or Mutex around NSImage operations) is needed. This may affect the public API contract (document thread safety requirements).
+- **Premultiplied-to-straight alpha conversion correctness:** The RGBA output from both macOS (CGBitmapContext with premultiplied alpha) and Windows (GDI premultiplied BGRA) must be un-premultiplied. Division-by-alpha with rounding edge cases at very low alpha values needs careful implementation to avoid artifacts.
+- **PNG icons from freedesktop themes:** The research recommends `force_svg()` on freedesktop lookups, but some themes only provide PNG icons for certain roles. The current design returns `None` for PNG-only icons. Consider whether to add a PNG reading path (would require the `image` crate or `png` crate) or document this limitation.
 
 ## Sources
 
 ### Primary (HIGH confidence)
-- [crates.io/objc2-app-kit 0.3.2](https://crates.io/crates/objc2-app-kit) -- published Oct 4 2025, dependency chain verified
-- [docs.rs/gpui-component ThemeColor](https://docs.rs/gpui-component/latest/gpui_component/theme/struct.ThemeColor.html) -- 108 color fields enumerated
-- [docs.rs/iced 0.14 Palette](https://docs.rs/iced/latest/iced/theme/palette/struct.Palette.html) -- 6 fields verified
-- [docs.rs/iced Base trait](https://docs.iced.rs/iced/widget/theme/trait.Base.html) -- 5 required methods for custom themes
-- [Apple NSColor documentation](https://developer.apple.com/documentation/appkit/nscolor) -- semantic color properties, dynamic resolution
-- [KDE breezemetrics.h](https://github.com/KDE/breeze/blob/master/kstyle/breezemetrics.h) -- ~80 widget metric constants
-- [libadwaita CSS variables](https://gnome.pages.gitlab.gnome.org/libadwaita/doc/1-latest/css-variables.html) -- only window-radius and opacity variables exposed
-- [Windows GetSystemMetricsForDpi](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsystemmetricsfordpi) -- DPI-aware metrics API
-- [cargo-semver-checks-action v2](https://github.com/obi1kenobi/cargo-semver-checks-action) -- GitHub Actions integration
-- [serde flatten + TOML issues](https://github.com/serde-rs/serde/issues/1379) -- confirms clean break over serde(flatten) for TOML
+- [docs.rs/objc2-app-kit NSImage](https://docs.rs/objc2-app-kit/latest/objc2_app_kit/struct.NSImage.html) -- imageWithSystemSymbolName, CGImageForProposedRect methods
+- [lib.rs/objc2-app-kit features](https://lib.rs/crates/objc2-app-kit/features) -- NSImage, NSImageRep, NSBitmapImageRep, NSGraphicsContext, objc2-core-graphics feature flags
+- [docs.rs/objc2-core-graphics](https://docs.rs/objc2-core-graphics/latest/objc2_core_graphics/) -- CGImage, CGBitmapContext functions
+- [microsoft.github.io/windows-docs-rs SHGetStockIconInfo](https://microsoft.github.io/windows-docs-rs/doc/windows/Win32/UI/Shell/fn.SHGetStockIconInfo.html) -- Win32::UI::Shell function
+- [microsoft.github.io/windows-docs-rs GetDIBits](https://microsoft.github.io/windows-docs-rs/doc/windows/Win32/Graphics/Gdi/fn.GetDIBits.html) -- Win32::Graphics::Gdi pixel extraction
+- [lib.rs/freedesktop-icons 0.4.0](https://lib.rs/crates/freedesktop-icons) -- builder API with theme/size/scale/cache
+- [docs.rs/freedesktop-icons](https://docs.rs/freedesktop-icons/latest/freedesktop_icons/) -- API: lookup().with_theme().with_size().find()
+- [docs.rs/resvg 0.47](https://docs.rs/resvg/latest/resvg/) -- render() + tiny-skia Pixmap for RGBA output
+- [freedesktop Icon Theme Specification](https://specifications.freedesktop.org/icon-theme/latest/) -- lookup algorithm, inheritance, directory types
+- [Apple SF Symbols](https://developer.apple.com/sf-symbols/) -- licensing, availability (macOS 11+)
+- [Apple NSImage.SymbolConfiguration](https://developer.apple.com/documentation/appkit/nsimage/symbolconfiguration) -- pointSize, weight, scale parameters
+- [SHGetStockIconInfo (Win32)](https://learn.microsoft.com/en-us/windows/win32/api/shellapi/nf-shellapi-shgetstockiconinfo) -- handle ownership, DestroyIcon requirement
+- [Segoe Fluent Icons font](https://learn.microsoft.com/en-us/windows/apps/design/style/segoe-fluent-icons-font) -- codepoints, EULA restrictions
+- [Material Design Icons (GitHub)](https://github.com/google/material-design-icons) -- Apache 2.0 license, SVG source
+- [Lucide Icons](https://lucide.dev/) -- ISC license, 1,700+ icons
 
 ### Secondary (MEDIUM confidence)
-- [gpui-component theme documentation](https://longbridge.github.io/gpui-component/docs/theme) -- ActiveTheme trait, ThemeRegistry, theme loading patterns
-- [iced discourse on styling](https://discourse.iced.rs/t/changing-the-default-styling-of-widget/775) -- Catalog/closure pattern confirmation
-- [NSAppearance resolution pattern](https://christiantietze.de/posts/2021/10/nscolor-performAsCurrentDrawingAppearance-resolve-current-appearance/) -- how to resolve dynamic colors outside drawing context
-- [Existing codebase analysis](file:///home/tibi/Rust/native-theme/src/) -- full source read of 14 .rs files, 17 TOML presets, 140+ tests
+- [docs.rs/swash 0.2.6](https://docs.rs/swash/latest/swash/) -- Content::Mask/Color for glyph images (backup for font rendering)
+- [HICON to PNG in Rust](https://users.rust-lang.org/t/how-to-convert-hicon-to-png/90975) -- BGRA byte order, GetDIBits, alpha handling
+- [NSImage to RGBA pixels (gist)](https://gist.github.com/figgleforth/b5b193c3379b3f048210) -- CGBitmapContext approach
+- [NSImage is dangerous](https://wadetregaskis.com/nsimage-is-dangerous/) -- thread safety analysis
+- [include_bytes! performance (rust-lang/rust#65818)](https://github.com/rust-lang/rust/issues/65818) -- compiler regression with large blobs
+- [Windows Premultiplied Alpha (Win2D)](https://learn.microsoft.com/en-us/windows/apps/develop/win2d/premultiplied-alpha) -- straight vs premultiplied conversion
 
 ### Tertiary (LOW confidence)
-- gpui-component shade generation algorithm -- no documented standard for generating 11-shade scales from single seed colors; needs prototyping
-- iced Catalog implementation depth -- unclear how many widget Catalog impls are needed for "complete" coverage; depends on usage patterns
+- GDI-based Segoe Fluent font glyph rendering quality -- not prototyped; may need DirectWrite upgrade
+- swash 0.2.6 as fallback font renderer -- evaluated but deferred; needs validation if DirectWrite/GDI paths prove inadequate
 
 ---
-*Research completed: 2026-03-08*
+*Research completed: 2026-03-09*
 *Ready for roadmap: yes*

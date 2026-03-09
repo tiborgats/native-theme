@@ -1,480 +1,572 @@
-# Technology Stack: v0.2 Additions
+# Technology Stack: v0.3 Icon Loading Additions
 
-**Project:** native-theme v0.2
-**Researched:** 2026-03-08
-**Scope:** New dependencies and tools for v0.2 features only. Does NOT repeat v0.1 validated stack (serde, toml, configparser, ashpd, windows crate, serde_with).
+**Project:** native-theme v0.3
+**Researched:** 2026-03-09
+**Scope:** New dependencies for icon loading only. Does NOT repeat v0.1/v0.2 validated stack (serde, toml, configparser, ashpd, windows crate, objc2-app-kit existing features, connectors).
 
 ---
 
-## 1. macOS Reader: objc2-app-kit
+## 1. macOS: SF Symbols via objc2-app-kit (existing dep, new features)
 
-### Recommendation
+### No New Crate -- Additional Feature Flags Only
 
-| Technology | Version | Feature Flag | Purpose | Why |
-|------------|---------|-------------|---------|-----|
-| objc2-app-kit | 0.3.2 | `macos` | NSColor, NSFont, NSAppearance bindings | Only actively maintained, safe(r) ObjC bindings for Rust. Generated from Xcode 16.4 SDKs. Provides full access to ~40 NSColor semantic colors including `controlAccentColor` (which `cacao` 0.3.2 is missing). Part of the objc2 ecosystem (objc2 0.6.x). |
+The project already depends on `objc2-app-kit = "0.3"` and `objc2-core-foundation` (transitive). Icon loading requires enabling additional feature flags on the same crate to access `NSImage`, `NSBitmapImageRep`, `NSGraphicsContext`, and the `objc2-core-graphics` bridge for CGImage pixel extraction.
 
-**Confidence: HIGH** -- Version 0.3.2 verified on crates.io (published October 4, 2025). Dependency chain confirmed: objc2-app-kit 0.3.2 requires objc2 >=0.6.2, <0.8.0; objc2-foundation 0.3.2 pulled transitively.
+**Confidence: HIGH** -- objc2-app-kit 0.3.2 already verified in v0.2 research. Feature flags confirmed via lib.rs/crates/objc2-app-kit/features.
 
-### Required Cargo.toml Features
+### SF Symbol Loading Pipeline
+
+```
+NSImage::imageWithSystemSymbolName_accessibilityDescription("exclamationmark.triangle.fill", None)
+  -> NSImage::withSymbolConfiguration(NSImageSymbolConfiguration::configurationWithPointSize_weight_scale(size, ...))
+  -> NSImage::CGImageForProposedRect_context_hints(NULL, NULL, NULL)
+  -> CGImageGetWidth / CGImageGetHeight
+  -> CGBitmapContextCreate (RGBA8, premultiplied alpha)
+  -> CGContextDrawImage (draw CGImage into context)
+  -> CGBitmapContextGetData -> copy to Vec<u8>
+  -> IconData::Rgba { width, height, data }
+```
+
+The CGBitmapContext approach is preferred over NSBitmapImageRep::bitmapData because:
+1. **Guaranteed format**: you specify RGBA8 premultiplied layout when creating the context
+2. **No format guessing**: NSBitmapImageRep can return ARGB, BGRA, different bit depths, or even CMYK
+3. **Standard pattern**: this is Apple's recommended approach for getting controlled pixel output
+
+### Required Cargo.toml Changes
 
 ```toml
 [target.'cfg(target_os = "macos")'.dependencies]
-objc2-app-kit = { version = "0.3", optional = true, default-features = false, features = [
-    "NSColor",
-    "NSFont",
-    "NSAppearance",
-    "NSColorSpace",
+objc2 = { version = "0.6", optional = true }
+objc2-foundation = { version = "0.3", optional = true, features = ["NSString"] }
+objc2-app-kit = { version = "0.3", optional = true, features = [
+    # Existing (colors/fonts)
+    "NSColor", "NSColorSpace", "NSAppearance", "NSFont", "NSFontDescriptor",
+    "objc2-core-foundation",
+    # NEW for icon loading
+    "NSImage",                    # NSImage class, imageWithSystemSymbolName
+    "NSImageRep",                 # NSImage::representations(), CGImageForProposedRect
+    "NSBitmapImageRep",           # Fallback pixel extraction path
+    "NSGraphicsContext",          # Required by CGImageForProposedRect
+    "objc2-core-graphics",        # CGImage, CGBitmapContext, CGDataProvider
 ] }
+block2 = { version = ">=0.6.1, <0.8.0", optional = true }
 ```
 
-**Feature flags explained:**
-- `NSColor` -- semantic color access (`controlAccentColor`, `windowBackgroundColor`, `labelColor`, ~40 semantic colors)
-- `NSFont` -- `systemFont(ofSize:)`, `monospacedSystemFont(ofSize:weight:)`, `systemFontSize`
-- `NSAppearance` -- dark/light detection, `performAsCurrentDrawingAppearance` for resolving dynamic colors
-- `NSColorSpace` -- `colorUsingColorSpace:` for P3-to-sRGB conversion
+**New features explained:**
+- `NSImage` -- `imageWithSystemSymbolName_accessibilityDescription()`, `withSymbolConfiguration()`, `size()`, `CGImageForProposedRect_context_hints()`
+- `NSImageRep` -- required by `CGImageForProposedRect` method signature (returns via `NSImageRep` protocol)
+- `NSBitmapImageRep` -- fallback path: `TIFFRepresentationUsingCompression_factor` requires this
+- `NSGraphicsContext` -- parameter type in `CGImageForProposedRect_context_hints()`
+- `objc2-core-graphics` -- `CGImage`, `CGBitmapContextCreate`, `CGContextDrawImage`, `CGImageGetWidth/Height`, `CGBitmapContextGetData` for controlled RGBA pixel extraction
 
-**Thread safety note:** NSColor is thread-safe for reading components. However, dynamic/semantic colors (e.g., `labelColor`) resolve differently in light vs dark mode based on `NSAppearance.current`. The reader must resolve the appearance context (via `performAsCurrentDrawingAppearance` on macOS 11+) before extracting RGB components. Once resolved to concrete sRGB u8 values, the data is Send+Sync.
+### NSImageSymbolConfiguration
+
+To control SF Symbol rendering size, the approach is:
+1. Create `NSImageSymbolConfiguration` with `configurationWithPointSize_weight_scale(size, .regular, .large)`
+2. Call `image.withSymbolConfiguration(config)` to get sized variant
+3. Rasterize via CGBitmapContext at the configured size
+
+This may require the `NSImageSymbolConfiguration` feature flag on `objc2-app-kit` if it exists as a separate gate. If it is bundled under `NSImage`, no additional flag is needed.
+
+**Confidence: MEDIUM** -- The `NSImageSymbolConfiguration` feature flag presence needs verification during implementation. The class exists in AppKit (macOS 11+); the objc2-app-kit binding likely gates it under the `NSImage` feature, but this should be confirmed.
 
 ### Alternatives Rejected
 
 | Alternative | Why Not |
 |-------------|---------|
-| cacao 0.3.2 | Missing `controlAccentColor` -- the single most important color for theme reading. Wraps 39 NSColor variants but not the one that matters most. |
-| cocoa crate (servo) | Deprecated. Uses legacy `objc` 0.2 runtime. No longer maintained. Superseded by objc2 ecosystem. |
-| core-foundation + raw FFI | Verbose, unsafe, error-prone. objc2-app-kit provides the same access with safer APIs. |
+| core-graphics crate (servo) | Deprecated in favor of objc2-core-graphics. Uses legacy objc 0.2 runtime. |
+| NSBitmapImageRep::bitmapData only | Pixel format varies (ARGB, BGRA, different bit depths). CGBitmapContext gives controlled RGBA8 output. |
+| TIFFRepresentation + image crate decode | Over-engineering. Encodes to TIFF then decodes -- wasteful when direct pixel access is available. |
 
 ---
 
-## 2. Widget Metrics Data Model
+## 2. Windows: SHGetStockIconInfo + Segoe Fluent Icons Font
 
-### No New Dependencies Required
+### 2a. SHGetStockIconInfo: New Feature Flag on Existing Dep
 
-Widget metrics are a data model extension, not a new dependency. The `WidgetMetrics` struct and its 12 sub-structs (`ButtonMetrics`, `CheckboxMetrics`, `InputMetrics`, `ScrollbarMetrics`, `SliderMetrics`, `ProgressBarMetrics`, `TabMetrics`, `MenuItemMetrics`, `TooltipMetrics`, `ListItemMetrics`, `ToolbarMetrics`, `SplitterMetrics`) use the same patterns as existing model types: `Option<f32>` fields, `#[non_exhaustive]`, `#[serde(default)]`, `impl_merge!()`.
+The existing `windows` crate dependency needs one additional feature flag: `Win32_UI_Shell`.
 
-### Platform Source Verification
+**Confidence: HIGH** -- `SHGetStockIconInfo` is under `windows::Win32::UI::Shell`. Feature flag naming convention confirmed: namespace path segments joined by underscores. `SHSTOCKICONINFO` struct requires `Win32_UI_WindowsAndMessaging` (already enabled) for its `Default` impl.
 
-**KDE breezemetrics.h (~80 constants):**
-Source: `https://github.com/KDE/breeze/blob/master/kstyle/breezemetrics.h`. Constants are C++ `constexpr` values like `Frame_FrameRadius = 2.5` (note: multiplied by `smallSpacing` which is 2 on Wayland). These are compile-time constants -- no runtime API needed. Strategy: hardcode per-version constant sets in Rust code.
+### HICON to RGBA Conversion Pipeline
 
-**Confidence: HIGH** -- Source file verified on GitHub. Values are stable within a Plasma release.
+```
+SHGetStockIconInfo(SIID_WARNING, SHGSI_ICON | SHGSI_LARGEICON, &mut info)
+  -> info.hIcon: HICON
+  -> GetIconInfo(hIcon, &mut icon_info)
+  -> icon_info.hbmColor: HBITMAP (color bitmap)
+  -> CreateCompatibleDC(NULL) -> hdc
+  -> GetObject(hbmColor, ...) -> BITMAP (get dimensions)
+  -> Allocate Vec<u8> of width * height * 4
+  -> Setup BITMAPINFOHEADER { biBitCount: 32, biCompression: BI_RGB, biHeight: -height (top-down) }
+  -> GetDIBits(hdc, hbmColor, 0, height, buffer.as_mut_ptr(), &bmi, DIB_RGB_COLORS)
+  -> Result: BGRA bytes in buffer
+  -> Convert BGRA to RGBA (swap R and B channels)
+  -> Apply alpha from icon_info.hbmMask if needed
+  -> DestroyIcon(hIcon), DeleteDC(hdc), DeleteObject(hbmColor), DeleteObject(hbmMask)
+  -> IconData::Rgba { width, height, data }
+```
 
-**libadwaita CSS variables:**
-Source: `https://gnome.pages.gitlab.gnome.org/libadwaita/doc/1-latest/css-variables.html`. Geometry-relevant variables are limited to:
-- `--window-radius` (15px)
-- `--disabled-opacity` (50%, 40% in high contrast)
-- `--dim-opacity` (55%, 90% in high contrast)
-- `--border-opacity` (15%, 50% in high contrast)
+### Required Cargo.toml Changes
 
-libadwaita does NOT expose per-widget sizing/padding/spacing as CSS variables. Widget metrics (button height, checkbox size, input padding) are internal SCSS constants in the libadwaita source, not exposed as public CSS variables. Strategy: hardcode values extracted from libadwaita SCSS source, versioned per libadwaita release.
-
-**Confidence: HIGH** -- Official libadwaita CSS variables documentation verified. The absence of widget-level sizing variables is confirmed (only opacity and window radius).
-
-**Windows GetSystemMetrics (~20 dynamic values):**
-Already available via existing `windows` crate dependency (`Win32_UI_WindowsAndMessaging` feature). `GetSystemMetrics` provides runtime values for `SM_CXBORDER`, `SM_CXEDGE`, `SM_CXFOCUSBORDER`, `SM_CXVSCROLL`, `SM_CXSMICON`, `SM_CYMENU`, `SM_CYSMCAPTION`, etc. No new dependencies needed.
-
-**Confidence: HIGH** -- Already verified in v0.1 research.
-
-**macOS:** No widget metrics API. Hardcode from Apple HIG documentation (~10pt radius, standard margins). Stable across macOS versions.
-
----
-
-## 3. Toolkit Connectors
-
-### 3a. gpui-component Connector (native-theme-gpui)
-
-| Technology | Version | Relationship | Purpose |
-|------------|---------|-------------|---------|
-| gpui-component | 0.5.1 | `[dependencies]` of native-theme-gpui | Target toolkit for theme mapping |
-| gpui | 0.2.2 | Transitive (via gpui-component) | GPUI runtime, `App` context |
-
-**Confidence: HIGH** -- gpui-component 0.5.1 verified on lib.rs (published February 5, 2026). gpui 0.2.2 verified on crates.io.
-
-**gpui-component Theme Architecture:**
-
-The gpui-component theming system consists of:
-- `Theme` struct: 17 fields covering colors (`ThemeColor`), fonts (`font_family`, `font_size`, `mono_font_family`, `mono_font_size`), geometry (`radius`, `radius_lg`, `shadow`), and display options (`scrollbar_show`, `tile_grid_size`)
-- `ThemeColor` struct: **108 color fields** (HSLA format internally) organized into core UI, component-specific, status/semantic, sidebar, chart, and base color groups
-- `ThemeConfig` / `ThemeSet`: JSON-serializable configuration structs. Theme files are JSON with `$schema` validation.
-- `ActiveTheme` trait: implemented for `App`, provides `cx.theme()` access
-- `ThemeRegistry`: watches a directory for JSON theme files, dynamically loads them
-- `Theme::change(mode, theme_name, cx)`: applies a theme globally
-- `Theme::global_mut(cx).apply_config(&config)`: applies a `ThemeConfig`
-
-**native-theme to gpui-component mapping coverage:**
-
-| native-theme field | gpui-component target | Notes |
-|--------------------|----------------------|-------|
-| `colors.accent` | `ThemeColor.accent` | Direct 1:1 |
-| `colors.background` | `ThemeColor.background` | Direct 1:1 |
-| `colors.foreground` | `ThemeColor.foreground` | Direct 1:1 |
-| `colors.border` | `ThemeColor.border` | Direct 1:1 |
-| `colors.primary` | `ThemeColor.primary` | Direct 1:1 |
-| `colors.primary_foreground` | `ThemeColor.primary_foreground` | Direct 1:1 |
-| `colors.secondary` | `ThemeColor.secondary` | Direct 1:1 |
-| `colors.secondary_foreground` | `ThemeColor.secondary_foreground` | Direct 1:1 |
-| `colors.danger` | `ThemeColor.danger` | Direct 1:1 |
-| `colors.danger_foreground` | `ThemeColor.danger_foreground` | Direct 1:1 |
-| `colors.warning` | `ThemeColor.warning` | Direct 1:1 |
-| `colors.success` | `ThemeColor.success` | Direct 1:1 |
-| `colors.info` | `ThemeColor.info` | Direct 1:1 |
-| `colors.muted` | `ThemeColor.muted` | Direct 1:1 |
-| `colors.link` | `ThemeColor.link` | Direct 1:1 |
-| `colors.sidebar` | `ThemeColor.sidebar` | Direct 1:1 |
-| `colors.sidebar_foreground` | `ThemeColor.sidebar_foreground` | Direct 1:1 |
-| `colors.popover` | `ThemeColor.popover` | Direct 1:1 |
-| `colors.popover_foreground` | `ThemeColor.popover_foreground` | Direct 1:1 |
-| `colors.selection` | `ThemeColor.selection` | Direct 1:1 |
-| `colors.tooltip` | (no direct match) | gpui-component uses popover for tooltips |
-| `colors.separator` | (no direct match) | Could derive from border |
-| `fonts.family` | `Theme.font_family` | Direct 1:1 |
-| `fonts.size` | `Theme.font_size` | Direct 1:1 |
-| `fonts.mono_family` | `Theme.mono_font_family` | Direct 1:1 |
-| `fonts.mono_size` | `Theme.mono_font_size` | Direct 1:1 |
-| `geometry.radius` | `Theme.radius` | Direct 1:1 |
-| `geometry.radius_lg` | `Theme.radius_lg` | Direct 1:1 |
-| `geometry.shadow` | `Theme.shadow` | Direct 1:1 |
-
-**Key insight: The mapping is remarkably clean.** gpui-component's `Theme` and `ThemeColor` fields align closely with native-theme's data model -- both use shadcn/ui-inspired naming conventions. The connector's primary job is color space conversion (native-theme `Rgba` u8 sRGB to gpui's `Hsla`) and populating the ~60 gpui-specific fields that native-theme doesn't cover (chart colors, hover/active states, etc.) with sensible derivations.
-
-**Color conversion:** native-theme uses `Rgba { r: u8, g: u8, b: u8, a: u8 }` in sRGB. gpui-component uses `Hsla { h: f32, s: f32, l: f32, a: f32 }`. The connector must implement RGB-to-HSL conversion. This is a ~20-line pure function with no dependencies.
-
-**Cargo.toml for native-theme-gpui:**
 ```toml
-[package]
-name = "native-theme-gpui"
-version = "0.2.0"
-
 [dependencies]
-native-theme = { path = "../native-theme" }
-gpui-component = "0.5"
-gpui = "0.2"
+windows = { version = ">=0.59, <=0.62", optional = true, default-features = false, features = [
+    # Existing
+    "UI_ViewManagement",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_HiDpi",
+    "Win32_Graphics_Gdi",
+    "Foundation_Metadata",
+    # NEW for icon loading
+    "Win32_UI_Shell",             # SHGetStockIconInfo, SHSTOCKICONID, SHGSI_FLAGS
+] }
 ```
 
-**Publishing note:** gpui-component 0.5.1 IS on crates.io. gpui 0.2.2 IS on crates.io. The connector CAN be published to crates.io.
+**New feature explained:**
+- `Win32_UI_Shell` -- `SHGetStockIconInfo()`, `SHSTOCKICONID` enum, `SHGSI_FLAGS` constants
 
-### 3b. iced Connector (native-theme-iced)
+**Already available (no new features needed):**
+- `Win32_UI_WindowsAndMessaging` -- `HICON`, `SHSTOCKICONINFO` struct, `GetIconInfo`, `ICONINFO`, `DestroyIcon`
+- `Win32_Graphics_Gdi` -- `CreateCompatibleDC`, `GetDIBits`, `GetObject`, `BITMAPINFOHEADER`, `BITMAP`, `DeleteDC`, `DeleteObject`, `HBITMAP`, `HDC`
 
-| Technology | Version | Relationship | Purpose |
-|------------|---------|-------------|---------|
-| iced | 0.14.0 | `[dependencies]` of native-theme-iced | Target toolkit for theme mapping |
+### 2b. Segoe Fluent Icons Font Glyph Rendering
 
-**Confidence: HIGH** -- iced 0.14.0 verified on crates.io (published December 7, 2025).
+For icons only available as Segoe Fluent Icons font glyphs (save, copy, paste, undo, redo, nav arrows, window controls), two approaches exist:
 
-**iced Theme Architecture:**
+**Option A: DirectWrite (recommended) -- No new Rust crate dependency**
 
-iced's theming system is simpler than gpui-component's:
-- `Theme` enum: 23 built-in variants (Light, Dark, Catppuccin variants, Nord, Gruvbox, etc.) + `Custom(Arc<Custom>)`
-- `Palette` struct: **6 fields** -- `background`, `text`, `primary`, `success`, `warning`, `danger` (all `Color { r: f32, g: f32, b: f32, a: f32 }` in sRGB)
-- `Extended` struct: generated from `Palette`, adds `secondary` + `is_dark` boolean. Each group (Background, Primary, Secondary, Success, Warning, Danger) has sub-variants (base, weak, strong).
-- `Theme::custom(name, palette)` / `Theme::custom_with_fn(name, palette, generator)`: creates custom themes
-- `theme.palette()` / `theme.extended_palette()`: reads back colors
+Use the `windows` crate's DirectWrite bindings to render individual glyphs:
 
-**native-theme to iced mapping:**
+```
+CreateDWriteFactory() -> IDWriteFactory
+  -> factory.CreateTextFormat("Segoe Fluent Icons", NULL, ..., size, "en-us")
+  -> factory.CreateTextLayout(&[codepoint_char], format, size, size)
+  -> Create ID2D1RenderTarget (WIC bitmap render target)
+  -> layout.Draw(NULL, renderer, 0, 0)
+  -> Extract pixel data from WIC bitmap
+  -> IconData::Rgba { ... }
+```
 
-| native-theme field | iced Palette target | Notes |
-|--------------------|---------------------|-------|
-| `colors.background` | `Palette.background` | Direct, convert u8 to f32 |
-| `colors.foreground` | `Palette.text` | Direct, convert u8 to f32 |
-| `colors.primary` (or `accent`) | `Palette.primary` | Direct |
-| `colors.success` | `Palette.success` | Direct |
-| `colors.warning` | `Palette.warning` | Direct |
-| `colors.danger` | `Palette.danger` | Direct |
-| `colors.secondary` | `Extended.secondary` | Via custom_with_fn generator |
-| `fonts.*` | iced `Font` config | Applied at application level |
-| `geometry.radius` | Per-widget `border_radius` | Applied via StyleSheet impls |
-| `spacing.*` | Per-widget padding/spacing | Applied via StyleSheet impls |
+This requires additional `windows` crate features:
 
-**Key difference from gpui-component:** iced's Palette is much simpler (6 colors). The heavy lifting is in the `Extended` palette generator and per-widget `StyleSheet` trait implementations. The connector needs to:
-1. Map 6 core colors to `Palette` (trivial)
-2. Provide a custom `generate` function for `Extended` that uses native-theme's richer color set
-3. Implement `StyleSheet` traits for widgets that consume geometry/spacing data
-
-**Color conversion:** native-theme `Rgba { r: u8 }` to iced `Color { r: f32 }` is `value as f32 / 255.0`. Trivial.
-
-**Cargo.toml for native-theme-iced:**
 ```toml
-[package]
-name = "native-theme-iced"
-version = "0.2.0"
+# Additional features for Segoe Fluent Icons glyph rendering
+"Win32_Graphics_DirectWrite",     # IDWriteFactory, IDWriteTextFormat, IDWriteTextLayout
+"Win32_Graphics_Direct2D",        # ID2D1Factory, render targets
+"Win32_Graphics_Imaging",         # WIC bitmap for render target backing
+```
 
+**Option B: swash crate -- Pure Rust, cross-platform**
+
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| swash | 0.2.6 | Font introspection and glyph rendering | Pure Rust. Renders font glyphs to alpha masks or color bitmaps. Can load .ttf/.otf from bytes and render individual glyphs by codepoint. |
+
+```
+Load Segoe Fluent Icons font from C:\Windows\Fonts\SegoeIcons.ttf
+  -> FontRef::from_index(font_data, 0)
+  -> context.builder(font).size(size as f32).build() -> Scaler
+  -> font.charmap().map(codepoint) -> GlyphId
+  -> Render::new(&[Source::ColorOutline(0), Source::Outline]).render(&mut scaler, glyph_id)
+  -> Image { data: Vec<u8>, content: Content::Mask (alpha) or Content::Color (RGBA), placement }
+  -> Convert alpha mask to RGBA (apply foreground color) or use RGBA directly
+  -> IconData::Rgba { ... }
+```
+
+**swash Image.content variants:**
+- `Content::Mask` -- 8-bit alpha mask (1 byte per pixel). Caller applies foreground color.
+- `Content::SubpixelMask` -- 32-bit subpixel mask (not useful for icons).
+- `Content::Color` -- 32-bit RGBA bitmap (for color emoji / layered color outlines).
+
+For Segoe Fluent Icons (monochrome outlines), swash produces `Content::Mask`. The caller must composite: for each pixel, `rgba = [fg_r, fg_g, fg_b, alpha]`.
+
+**Recommendation: Option A (DirectWrite) for stock icons, defer swash**
+
+Use DirectWrite for Segoe Fluent Icons rendering because:
+1. The font is system-installed -- no need to bundle or find font files
+2. DirectWrite handles font fallback, hinting, and ClearType natively
+3. No additional crate dependency (just more `windows` features on the existing dep)
+4. swash would require reading the font file from disk (path varies by Windows version)
+
+However, if the DirectWrite pipeline proves too complex, swash 0.2.6 is a clean fallback with a simpler API.
+
+**Confidence: MEDIUM** -- DirectWrite glyph rendering is well-documented in Win32 but the Rust bindings (`windows` crate) for DirectWrite/Direct2D/WIC have not been verified for this specific use case. The general approach is sound. swash 0.2.6 API verified via docs.rs.
+
+### Alternatives Rejected
+
+| Alternative | Why Not |
+|-------------|---------|
+| ab_glyph | Lower-level than swash, no built-in rasterizer output format. Would need manual scanline rendering. |
+| fontdue | Fastest rasterizer but simpler API. Does not support color fonts or layered outlines. Sufficient for Segoe Fluent Icons but swash is more general. |
+| cosmic-text | Full text layout engine -- massive overkill for rendering single glyphs. Depends on swash internally. |
+| rusttype | Deprecated in favor of ab_glyph. |
+
+---
+
+## 3. Linux: freedesktop Icon Theme Lookup
+
+### New Dependency: freedesktop-icons
+
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| freedesktop-icons | 0.4.0 | Freedesktop icon theme spec lookup | Only maintained Rust implementation of the Icon Theme Specification. Handles index.theme parsing, directory traversal, size matching, scale factor support, theme inheritance (e.g., Adwaita inherits hicolor). Builder API with caching. |
+
+**Confidence: HIGH** -- Version 0.4.0 verified on lib.rs (published April 16, 2025). API confirmed: `lookup("dialog-warning").with_theme("Adwaita").with_size(24).with_scale(1).find()` returns `Option<PathBuf>`. The crate handles the full lookup algorithm internally.
+
+### API Usage
+
+```rust
+use freedesktop_icons::lookup;
+
+// Look up an icon in the current theme
+let path: Option<PathBuf> = lookup("dialog-warning")
+    .with_theme("Adwaita")      // or "breeze", "hicolor"
+    .with_size(24)
+    .with_scale(1)
+    .with_cache()               // internal LRU cache
+    .find();
+
+// path is e.g. /usr/share/icons/Adwaita/24x24/status/dialog-warning-symbolic.svg
+```
+
+The returned `PathBuf` points to the actual icon file (SVG or PNG). The native-theme crate then:
+1. Reads the file bytes (`std::fs::read(path)`)
+2. Checks extension: `.svg` -> `IconData::Svg(bytes)`, `.png` -> needs rasterization or pass-through
+
+### Detecting the Active Icon Theme
+
+On GNOME: `gsettings get org.gnome.desktop.interface icon-theme` (or via the existing `ashpd` portal Settings reader which already reads `color-scheme`).
+
+On KDE: read from `~/.config/kdeglobals` under `[Icons]` -> `Theme=breeze` (the existing `configparser` dep handles this).
+
+This does NOT require a new dependency -- the existing platform reader code already accesses these config sources.
+
+### Required Cargo.toml Changes
+
+```toml
 [dependencies]
-native-theme = { path = "../native-theme" }
-iced = "0.14"
+freedesktop-icons = { version = "0.4", optional = true }
 ```
 
-**Publishing note:** iced IS on crates.io. The connector CAN be published immediately.
-
----
-
-## 4. CI Pipeline
-
-### GitHub Actions
-
-No Cargo dependencies. CI tools installed via GitHub Actions marketplace.
-
-| Tool | Installation | Purpose | Why |
-|------|-------------|---------|-----|
-| `dtolnay/rust-toolchain@stable` | GH Action | Install Rust toolchain | De facto standard for Rust CI. Supports target installation, component selection. |
-| `obi1kenobi/cargo-semver-checks-action@v2` | GH Action | SemVer violation detection | Official GH Action for cargo-semver-checks. Installs the tool, caches baseline rustdoc, runs checks. Zero configuration for single-crate repos. |
-| `cargo-semver-checks` | (installed by action above) | CLI tool | Currently at 0.46.0. Requires Rust 1.85+ (within our MSRV). 177+ lints detecting accidental breaking changes. |
-| `cargo hack` | `cargo install cargo-hack` | Feature flag testing | Tests all feature flag combinations compile: `cargo hack check --feature-powerset`. Essential for a crate with 5+ feature flags. |
-
-**Confidence: HIGH** -- cargo-semver-checks-action@v2 verified on GitHub Marketplace. cargo-semver-checks 0.46.0 verified on crates.io docs.rs.
-
-### Workflow Matrix
-
-```yaml
-strategy:
-  matrix:
-    include:
-      - os: ubuntu-latest
-        features: "--no-default-features"
-      - os: ubuntu-latest
-        features: "--features kde"
-      - os: ubuntu-latest
-        features: "--features portal-tokio"
-      - os: windows-latest
-        features: "--features windows"
-      - os: macos-latest
-        features: "--features macos"
-```
-
-**Key consideration:** Feature flags are platform-specific. The `kde` and `portal-*` features only compile on Linux. The `windows` feature only compiles on Windows. The `macos` feature only compiles on macOS. The CI matrix must match features to their target OS.
-
-### cargo-semver-checks Integration
-
-```yaml
-- name: Check semver
-  uses: obi1kenobi/cargo-semver-checks-action@v2
-```
-
-The action compares the current code against the last published version on crates.io. For a workspace, it checks each publishable crate. `#[non_exhaustive]` on structs means new field additions are already non-breaking, so semver-checks will not flag those.
-
-**What it catches:** removed public items, changed function signatures, added required fields to non-`#[non_exhaustive]` structs, trait method additions, type changes.
-
-**What it does NOT catch:** behavioral changes, performance regressions, subtle API misuse patterns.
-
----
-
-## 5. Cargo Workspace Restructuring
-
-### No New Dependencies
-
-Workspace restructuring is a Cargo.toml configuration change, not a dependency addition.
-
-### Target Structure
-
-```
-native-theme/
-  Cargo.toml              # workspace root: [workspace] members = [...]
-  native-theme/
-    Cargo.toml             # core crate (published to crates.io)
-    src/
-    presets/
-    tests/
-  native-theme-gpui/
-    Cargo.toml             # connector (path dep on native-theme, crates.io dep on gpui-component)
-    src/lib.rs
-    examples/showcase.rs
-  native-theme-iced/
-    Cargo.toml             # connector (path dep on native-theme, crates.io dep on iced)
-    src/lib.rs
-    examples/demo.rs
-```
-
-### Workspace Root Cargo.toml
-
-```toml
-[workspace]
-members = [
-    "native-theme",
-    "native-theme-gpui",
-    "native-theme-iced",
-]
-resolver = "3"
-
-[workspace.package]
-edition = "2024"
-license = "MIT OR Apache-2.0 OR 0BSD"
-rust-version = "1.85.0"
-repository = "https://github.com/tiborgats/native-theme"
-```
-
-**Key decisions:**
-- `resolver = "3"` (edition 2024 default, but explicit in workspace root)
-- Shared package metadata via `[workspace.package]` -- each sub-crate inherits with `edition.workspace = true`
-- Core crate uses `path = "../native-theme"` for workspace-internal deps
-- Connectors use path deps for native-theme, crates.io version deps for toolkit crates
-
-### Publishing Order
-
-1. `native-theme` (core, no workspace-internal deps)
-2. `native-theme-iced` (depends on published native-theme + iced from crates.io)
-3. `native-theme-gpui` (depends on published native-theme + gpui-component from crates.io)
-
-Each crate is independently versioned. Connector crate versions can differ from core crate version.
-
----
-
-## 6. Publishing to crates.io
-
-### Required Cargo.toml Fields (core crate)
-
-```toml
-[package]
-name = "native-theme"
-version = "0.2.0"
-edition = "2024"
-rust-version = "1.85.0"
-license = "MIT OR Apache-2.0 OR 0BSD"
-description = "Cross-platform native theme detection and loading for Rust GUI applications"
-repository = "https://github.com/tiborgats/native-theme"
-homepage = "https://github.com/tiborgats/native-theme"
-documentation = "https://docs.rs/native-theme"
-keywords = ["theme", "native", "gui", "colors", "desktop"]
-categories = ["gui", "config"]
-readme = "README.md"
-```
-
-**Required by crates.io:** `name`, `version`, `description`, `license` (or `license-file`).
-**Strongly recommended:** `repository`, `keywords`, `categories`, `readme`, `rust-version`.
-**Must exist in repo:** LICENSE-MIT, LICENSE-APACHE, LICENSE-0BSD files.
-
-### Pre-Publish Checklist (dev tooling, not runtime deps)
-
-| Tool | Command | Purpose |
-|------|---------|---------|
-| cargo publish --dry-run | `cargo publish -p native-theme --dry-run` | Surfaces packaging warnings before upload |
-| cargo doc | `cargo doc --no-deps --all-features` | Verify docs build cleanly |
-| cargo deny | `cargo deny check` | License compatibility, advisory database |
-| cargo hack | `cargo hack check --feature-powerset` | All feature combinations compile |
-
-### What NOT to Publish
-
-The connector crates (`native-theme-gpui`, `native-theme-iced`) can be published, but they are secondary. The core `native-theme` crate should be published first and is the primary deliverable.
-
----
-
-## 7. Updated Feature Flags (v0.2)
+New feature flag:
 
 ```toml
 [features]
-default = []
+freedesktop-icons = ["dep:freedesktop-icons"]
+# Or bundle under a broader "icons" feature, see section 7
+```
+
+### Dependencies of freedesktop-icons 0.4.0
+
+| Dependency | Version | Notes |
+|------------|---------|-------|
+| dirs | 5.0 | XDG directory resolution. Already in the crate ecosystem (configparser uses similar paths). |
+| ini_core | 0.2.0 | Lightweight INI parser for index.theme files. Minimal. |
+| once_cell | 1.19.0 | Lazy initialization for internal caches. Standard. |
+| thiserror | 1.0 | Error derive macro. Widely used. |
+| tracing | 0.1.41 | Structured logging. Does nothing unless a subscriber is installed. Zero overhead. |
+| xdg | 2.5.2 | XDG Base Directory resolution. Standard for Linux desktop apps. |
+
+No heavy or controversial dependencies. Total added dep tree is small.
+
+### Alternatives Rejected
+
+| Alternative | Why Not |
+|-------------|---------|
+| freedesktop-icon 0.0.3 | Different crate, pre-1.0, less maintained (no updates in 2+ years). |
+| freedesktop-icons-greedy 0.2.6 | Fork with greedy matching. Less strict spec compliance. |
+| linicon | Less popular, fewer downloads, less documented. freedesktop-icons is the established choice. |
+| Manual index.theme parsing | The Icon Theme Spec has non-trivial lookup rules (inheritance, directory type matching, closest size). freedesktop-icons handles all of this correctly. Reimplementing would be error-prone and wasteful. |
+
+---
+
+## 4. SVG Handling: resvg for Optional Rasterization
+
+### Recommendation: Return Raw SVG, Offer Optional Rasterization
+
+The core `load_icon` function returns `IconData::Svg(Vec<u8>)` for Linux freedesktop icons and bundled icon sets. This is correct because:
+1. SVG data is small (typically 1-5 KB per icon)
+2. Most GUI toolkits (gpui, iced) have their own SVG renderers
+3. Rasterization parameters (size, color, DPI) are best decided by the consumer
+
+However, provide a **utility function** for consumers that cannot handle SVG:
+
+```rust
+/// Rasterize SVG bytes to RGBA pixels at the given size.
+/// Requires the `svg-rasterize` feature.
+#[cfg(feature = "svg-rasterize")]
+pub fn rasterize_svg(svg_bytes: &[u8], width: u32, height: u32) -> Option<IconData> {
+    let tree = usvg::Tree::from_data(svg_bytes, &usvg::Options::default()).ok()?;
+    let mut pixmap = tiny_skia::Pixmap::new(width, height)?;
+    resvg::render(&tree, /* fit transform */, &mut pixmap.as_mut());
+    // resvg output is premultiplied RGBA -- unpremultiply for IconData
+    Some(IconData::Rgba {
+        width,
+        height,
+        data: pixmap.take(),
+    })
+}
+```
+
+### New Optional Dependency: resvg
+
+| Technology | Version | Purpose | Why |
+|------------|---------|---------|-----|
+| resvg | 0.47 | SVG-to-RGBA rasterization | Pure Rust. Best SVG rendering library in the ecosystem. Uses tiny-skia for rendering. Fast, small binary (~3MB standalone). Supports most of SVG spec. Output is premultiplied RGBA pixels via tiny-skia Pixmap. |
+
+**Confidence: HIGH** -- resvg 0.47.0 verified on docs.rs (released January 2026). API confirmed: `usvg::Tree::from_data()` + `resvg::render()` + `tiny_skia::Pixmap`. Dependencies: usvg 0.47, tiny-skia 0.12.
+
+### Required Cargo.toml Changes
+
+```toml
+[dependencies]
+resvg = { version = "0.47", optional = true, default-features = false }
+```
+
+Feature flag:
+
+```toml
+[features]
+svg-rasterize = ["dep:resvg"]
+```
+
+**This is NOT in default features.** Most consumers will handle SVG themselves. The rasterizer is opt-in.
+
+### Dependencies of resvg 0.47
+
+| Dependency | Version | Notes |
+|------------|---------|-------|
+| usvg | 0.47 | SVG parser + tree builder. Pulled automatically by resvg. |
+| tiny-skia | 0.12 | 2D rendering engine. Pure Rust Skia subset. |
+| svgtypes | 0.16 | SVG type definitions. |
+| rgb | 0.8 | Pixel format types. |
+
+Moderate dep tree size. Default features include PNG support; can be trimmed with `default-features = false` if only SVG rendering is needed.
+
+### Alternatives Rejected
+
+| Alternative | Why Not |
+|-------------|---------|
+| Return SVG always, let consumer rasterize | Good default, but some consumers need RGBA and don't have an SVG renderer. Providing opt-in rasterization covers that gap. |
+| image crate for SVG | The image crate does not render SVG. It handles raster formats only. |
+| cairo-rs | C dependency (libcairo). Not pure Rust. Requires system library installation. |
+| rsvg / librsvg binding | C dependency (librsvg + glib + cairo). Heavy. Not appropriate for a toolkit-agnostic crate. |
+
+---
+
+## 5. Bundled Icon Sets: Material Symbols + Lucide
+
+### Strategy: include_bytes! with Build Script
+
+Bundle SVG icons as compile-time embedded byte slices using `include_bytes!()`. A build script generates a Rust source file mapping icon names to their SVG data.
+
+**Why this approach:**
+- Zero runtime filesystem access
+- Deterministic -- icons are part of the binary
+- No external data files to distribute
+- Compile-time verified (missing icons = build error)
+
+### Build Script Pipeline
+
+```
+build.rs:
+  1. Read icons from icons/material/*.svg and icons/lucide/*.svg
+  2. For each icon role in the mapping table:
+     - Find the corresponding SVG file
+     - Generate: pub const DIALOG_WARNING: &[u8] = include_bytes!("../../icons/material/warning.svg");
+  3. Write generated source to OUT_DIR/material_icons.rs and OUT_DIR/lucide_icons.rs
+
+src/icons/material.rs:
+  include!(concat!(env!("OUT_DIR"), "/material_icons.rs"));
+
+  pub fn lookup(role: IconRole) -> Option<&'static [u8]> {
+      match role {
+          IconRole::DialogWarning => Some(DIALOG_WARNING),
+          ...
+      }
+  }
+```
+
+### Icon File Sources
+
+**Material Symbols (Outlined, 24px SVGs):**
+- Source: https://github.com/google/material-design-icons
+- License: Apache 2.0 (compatible with MIT/Apache-2.0/0BSD)
+- Need only ~35 SVGs (one per IconRole)
+- Files are typically 24x24 viewport, optimized SVGs (~1-3 KB each)
+- Total bundled size: ~50-100 KB for 35 icons
+
+**Lucide (24px SVGs):**
+- Source: https://github.com/lucide-icons/lucide
+- License: ISC (compatible with MIT/Apache-2.0/0BSD)
+- Need only ~35 SVGs (one per IconRole)
+- Files are 24x24 viewport, well-optimized (~500 bytes - 2 KB each)
+- Total bundled size: ~30-60 KB for 35 icons
+
+### Required Feature Flags
+
+```toml
+[features]
+default = ["system-icons", "material-icons"]
+system-icons = []           # Platform-native icon loading (macOS/Windows/Linux APIs)
+material-icons = []         # Bundle Material Symbols SVGs as cross-platform fallback
+lucide-icons = []           # Bundle Lucide SVGs as optional icon set
+svg-rasterize = ["dep:resvg"]  # Optional: rasterize SVG to RGBA
+```
+
+### No New Runtime Dependencies
+
+The bundled icons use `include_bytes!()` -- no runtime file I/O, no parsing libraries, no image decoders. The build script uses only `std::fs` and `std::io` (always available).
+
+### Alternatives Rejected
+
+| Alternative | Why Not |
+|-------------|---------|
+| Separate data crate (e.g., `native-theme-icons`) | Over-engineering for 35 SVGs (~100 KB). A separate crate adds publishing complexity. Feature flags on the main crate are simpler. |
+| Runtime SVG loading from bundled directory | Requires filesystem access. Does not work in all environments (WASM, embedded). compile-time embedding is more robust. |
+| Icon font (TTF) bundling + swash rendering | Converts SVG to font, then renders font to pixels. Two conversion steps when the SVG is already the desired format. Over-engineering. |
+| Embedding as string literals | Binary `include_bytes!` is cleaner, avoids escaping issues, and is what SVG renderers expect (byte slices). |
+
+---
+
+## 6. Windows Feature Flag Summary
+
+The existing `windows` crate dependency needs these additional features for icon loading:
+
+```toml
+windows = { version = ">=0.59, <=0.62", optional = true, default-features = false, features = [
+    # Existing (theme colors, fonts, geometry)
+    "UI_ViewManagement",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_HiDpi",
+    "Win32_Graphics_Gdi",
+    "Foundation_Metadata",
+    # NEW for icon loading (stock icons)
+    "Win32_UI_Shell",
+    # NEW for icon loading (Segoe Fluent Icons glyph rendering) -- optional, see section 2b
+    # "Win32_Graphics_DirectWrite",
+    # "Win32_Graphics_Direct2D",
+    # "Win32_Graphics_Imaging",
+] }
+```
+
+**Phase approach:** Start with `Win32_UI_Shell` for stock icons (covers ~18 of 42 icon roles). Add DirectWrite features later for Segoe Fluent Icons glyph rendering (covers remaining ~24 roles). This reduces initial scope and risk.
+
+---
+
+## 7. Updated Feature Flags (v0.3)
+
+```toml
+[features]
+default = ["system-icons", "material-icons"]
+
+# Platform readers (unchanged from v0.2)
 kde = ["dep:configparser"]
 portal = ["dep:ashpd"]
 portal-tokio = ["portal", "ashpd/tokio"]
 portal-async-io = ["portal", "ashpd/async-io"]
 windows = ["dep:windows"]
-macos = ["dep:objc2-app-kit"]    # NEW in v0.2
+macos = ["dep:objc2", "dep:objc2-foundation", "dep:objc2-app-kit", "dep:block2"]
+
+# NEW in v0.3: Icon loading
+system-icons = []           # Enable platform-native icon loading APIs
+material-icons = []         # Bundle Material Symbols SVGs (~100 KB)
+lucide-icons = []           # Bundle Lucide SVGs (~60 KB)
+svg-rasterize = ["dep:resvg"]  # Optional SVG-to-RGBA rasterization
+freedesktop-icons = ["dep:freedesktop-icons"]  # Linux icon theme lookup
 ```
 
-**New in v0.2:** The `macos` feature flag gating objc2-app-kit. All other feature flags remain unchanged from v0.1.
-
-**Deferred (not in v0.2):** `ios` (objc2-ui-kit), `android` (jni + ndk), `watch` (notify).
+**Feature interaction:**
+- `system-icons` + `macos` = SF Symbols via NSImage APIs
+- `system-icons` + `windows` = SHGetStockIconInfo + Segoe Fluent Icons
+- `system-icons` + `freedesktop-icons` = freedesktop icon theme lookup on Linux
+- `material-icons` = bundled fallback, works on all platforms, no OS deps
+- `lucide-icons` = bundled alternative, works on all platforms
+- `svg-rasterize` = utility function for consumers without SVG rendering
 
 ---
 
-## 8. Version Compatibility Matrix (v0.2)
+## 8. Version Compatibility Matrix (v0.3 additions)
 
 | Package | Version | Compatible With | Notes |
 |---------|---------|-----------------|-------|
-| serde | 1.0.228+ | toml 1.0.6, gpui-component 0.5.1, iced 0.14.0 | Universal. No conflicts possible. |
-| toml | 1.0.6 | serde ^1.0.145 | Stable. |
-| objc2-app-kit | 0.3.2 | objc2 >=0.6.2, <0.8.0 | objc2 0.6.4 is current latest -- within range. |
-| windows | 0.62.2 | Rust 1.61+ | Latest stable. No 0.63 release exists yet. |
-| gpui-component | 0.5.1 | gpui 0.2.2, serde 1.x | On crates.io. |
-| gpui | 0.2.2 | (many deps) | On crates.io. Heavy dep tree. |
-| iced | 0.14.0 | Rust 1.80+ | On crates.io. Stable release. |
-| ashpd | 0.13.4 | zbus ^5.13, tokio ^1.43 | Unchanged from v0.1. |
-| configparser | 3.1.0 | (standalone) | Unchanged from v0.1. |
-| cargo-semver-checks | 0.46.0 | Rust 1.85+ | Dev tool only. Within our MSRV. |
+| freedesktop-icons | 0.4.0 | dirs 5.0, xdg 2.5, thiserror 1.0 | Latest release, April 2025. Stable API. |
+| resvg | 0.47.0 | usvg 0.47, tiny-skia 0.12 | Latest release, January 2026. Active development (linebender org). |
+| objc2-app-kit | 0.3.2 | objc2 >=0.6.2 <0.8.0 | Unchanged from v0.2. Additional features only. |
+| objc2-core-graphics | 0.3.2 | objc2 >=0.6.2 <0.8.0 | Transitive via objc2-app-kit's `objc2-core-graphics` feature. |
+| windows | >=0.59, <=0.62 | Rust 1.61+ | Unchanged from v0.2. Additional features only. |
+| swash | 0.2.6 | (standalone, minimal deps) | Backup for font glyph rendering. Not in initial scope. |
 
 ---
 
-## 9. What NOT to Add in v0.2
+## 9. What NOT to Add in v0.3
 
 | Avoid | Why | Notes |
 |-------|-----|-------|
-| objc2-ui-kit (iOS) | Deferred to post-v0.2. iOS reader is lower priority than macOS. | Same objc2 ecosystem -- trivial to add later. |
-| jni + ndk (Android) | Deferred. Android theme reading from Rust is immature. | Most verbose platform, least ergonomic. |
-| notify (file watching) | Deferred. Change notification is post-v0.2. | Users can poll `from_system()`. |
-| thiserror | Manual Error enum is sufficient with 4-5 variants. | Reconsider if variant count exceeds 10. |
-| anyhow | Library crate must expose typed errors. | Never use in library crates. |
-| serde_json (runtime) | gpui-component themes use JSON, but the connector reads gpui's internal types, not JSON files. | Only needed as dev-dependency for tests. |
-| cssparser / lightningcss | Do NOT try to parse libadwaita CSS at runtime. The values are hardcoded editorial choices from source inspection. | Runtime CSS parsing would be fragile and version-dependent. |
-| dbus / zbus (direct) | Already wrapped by ashpd. Using raw zbus loses type safety. | ashpd is the right abstraction. |
-| dirs crate | Already in v0.1 for KDE path resolution. No changes needed. | Check if macOS reader needs it (it does not -- NSColor APIs don't use file paths). |
+| image crate | Only needed if we decoded PNGs from freedesktop themes. SVG pass-through avoids this. If PNG icons are found, either skip them or defer to consumer. | Massive dependency tree. |
+| svg crate | SVG construction/manipulation library. We only read existing SVGs, not create them. | Wrong tool. |
+| icondata crate | Pre-bundled icon data for web frameworks (Yew, Leptos). Not useful for native desktop icons. | Wrong audience. |
+| embed-bytes | Over-abstraction over `include_bytes!`. The standard macro is sufficient. | Unnecessary dependency. |
+| verglas | Converts SVG icons to icon fonts. We want SVGs, not fonts. | Wrong direction. |
+| Cairo/librsvg bindings | C dependencies. Against project philosophy (pure Rust, toolkit-agnostic). | resvg is the pure Rust alternative. |
+| Full icon font bundling | Bundling Material Symbols as a variable font (.ttf) + using swash to render would give font variation axis control (fill, weight, grade) but adds ~2 MB binary size and rendering complexity. SVG files are simpler and sufficient. | Future consideration for v0.4+. |
+| thiserror (in main crate) | The existing manual Error enum pattern works. freedesktop-icons pulls thiserror transitively but the main crate should not depend on it directly. | Keep error handling consistent with v0.1/v0.2. |
 
 ---
 
-## 10. Dependency Delta Summary (v0.1 to v0.2)
+## 10. Dependency Delta Summary (v0.2 to v0.3)
 
 ### New Runtime Dependencies
 
 | Dependency | Feature Gate | Added For |
 |------------|-------------|-----------|
-| objc2-app-kit 0.3 | `macos` | macOS reader (NSColor, NSFont, NSAppearance) |
+| freedesktop-icons 0.4 | `freedesktop-icons` | Linux icon theme spec lookup |
+| resvg 0.47 | `svg-rasterize` | Optional SVG-to-RGBA rasterization |
 
-### New Workspace Member Dependencies (connector crates only)
+### Extended Feature Flags on Existing Dependencies
 
-| Dependency | Crate | Added For |
-|------------|-------|-----------|
-| gpui-component 0.5 | native-theme-gpui | gpui-component theme mapping |
-| gpui 0.2 | native-theme-gpui | GPUI App context |
-| iced 0.14 | native-theme-iced | iced Theme/Palette mapping |
+| Dependency | New Features | Added For |
+|------------|-------------|-----------|
+| objc2-app-kit 0.3 | `NSImage`, `NSImageRep`, `NSBitmapImageRep`, `NSGraphicsContext`, `objc2-core-graphics` | macOS SF Symbol loading + pixel extraction |
+| windows >=0.59, <=0.62 | `Win32_UI_Shell` | SHGetStockIconInfo for stock icons |
 
-### New Dev/CI Dependencies
+### No New Dependencies (compile-time only)
 
-| Dependency | Type | Added For |
-|------------|------|-----------|
-| cargo-semver-checks 0.46 | CI tool | SemVer violation detection |
-| cargo-hack | CI tool | Feature powerset testing |
+| Mechanism | Purpose |
+|-----------|---------|
+| build.rs + include_bytes! | Embed Material/Lucide SVG icons at compile time |
 
-### Unchanged from v0.1
+### Deferred (not in v0.3)
 
-| Dependency | Version | Notes |
-|------------|---------|-------|
-| serde | 1.0.228 | No change |
-| serde_with | 3.17.0 | No change |
-| toml | 1.0.6 | No change |
-| configparser | 3.1.0 | No change (kde feature) |
-| ashpd | 0.13.4 | No change (portal feature) |
-| windows | >=0.59, <=0.62 | Consider tightening to 0.62 (no reason to support <0.62) |
-| serde_json | 1.0.149 | No change (dev-dependency) |
-
-### Recommended Changes to Existing Dependencies
-
-| Change | Rationale |
-|--------|-----------|
-| Tighten `windows` version to `"0.62"` | No reason to support 0.59-0.61. Simplifies testing. 0.62.2 is latest stable. |
-| Add `dirs` to `kde` feature deps | Already in v0.1 STACK.md but not in actual Cargo.toml. Either add it or confirm manual path resolution is preferred. |
+| Dependency | Why Deferred |
+|------------|-------------|
+| swash 0.2.6 | Backup for font glyph rendering. DirectWrite preferred on Windows. Reconsider if DirectWrite pipeline proves too complex. |
+| windows DirectWrite/Direct2D/WIC features | Segoe Fluent Icons glyph rendering. Can be added incrementally after stock icon pipeline works. |
 
 ---
 
 ## Sources
 
-- [crates.io/objc2-app-kit](https://crates.io/crates/objc2-app-kit) -- version 0.3.2, published Oct 4 2025 (HIGH confidence)
-- [lib.rs/objc2-app-kit](https://lib.rs/crates/objc2-app-kit) -- dependency chain verified: objc2 >=0.6.2, <0.8.0 (HIGH confidence)
-- [docs.rs/gpui-component/theme](https://docs.rs/gpui-component/latest/gpui_component/theme/index.html) -- Theme module API verified (HIGH confidence)
-- [docs.rs/gpui-component/ThemeColor](https://docs.rs/gpui-component/latest/gpui_component/theme/struct.ThemeColor.html) -- 108 color fields enumerated (HIGH confidence)
-- [docs.rs/gpui-component/Theme](https://docs.rs/gpui-component/latest/gpui_component/theme/struct.Theme.html) -- 17 fields verified (HIGH confidence)
-- [docs.rs/gpui-component/ThemeConfig](https://docs.rs/gpui-component/latest/gpui_component/theme/struct.ThemeConfig.html) -- 12 fields verified (HIGH confidence)
-- [lib.rs/gpui-component](https://lib.rs/crates/gpui-component) -- version 0.5.1, published Feb 5 2026 (HIGH confidence)
-- [crates.io/gpui-component](https://crates.io/crates/gpui-component) -- on crates.io, publishable connectors confirmed (HIGH confidence)
-- [docs.rs/iced Theme enum](https://docs.rs/iced/latest/iced/enum.Theme.html) -- version 0.14.0, 23 variants + Custom (HIGH confidence)
-- [docs.rs/iced Palette](https://docs.rs/iced/latest/iced/theme/palette/struct.Palette.html) -- 6 fields (background, text, primary, success, warning, danger) (HIGH confidence)
-- [docs.rs/iced Extended](https://docs.rs/iced/latest/iced/theme/palette/struct.Extended.html) -- 7 fields (6 color groups + is_dark) (HIGH confidence)
-- [docs.rs/iced Color](https://docs.rs/iced/latest/iced/struct.Color.html) -- f32 RGBA (HIGH confidence)
-- [lib.rs/iced](https://lib.rs/crates/iced) -- version 0.14.0, published Dec 7 2025 (HIGH confidence)
-- [github.com/obi1kenobi/cargo-semver-checks-action](https://github.com/obi1kenobi/cargo-semver-checks-action) -- v2 action verified (HIGH confidence)
-- [crates.io/cargo-semver-checks](https://crates.io/crates/cargo-semver-checks) -- version 0.46.0 (HIGH confidence)
-- [gnome.pages.gitlab.gnome.org libadwaita CSS variables](https://gnome.pages.gitlab.gnome.org/libadwaita/doc/1-latest/css-variables.html) -- geometry variables: only --window-radius, opacity vars (HIGH confidence)
-- [github.com/KDE/breeze breezemetrics.h](https://github.com/KDE/breeze/blob/master/kstyle/breezemetrics.h) -- ~80 widget metric constants (HIGH confidence)
-- [lib.rs/windows](https://lib.rs/crates/windows) -- version 0.62.2, published Oct 6 2025 (HIGH confidence)
-- [github.com/microsoft/windows-rs releases](https://github.com/microsoft/windows-rs/releases) -- no 0.63 release exists (HIGH confidence)
-- [github.com/longbridge/gpui-component themes](https://github.com/longbridge/gpui-component/tree/main/themes) -- 21 JSON theme files, hex color format (HIGH confidence)
+- [docs.rs/objc2-app-kit NSImage](https://docs.rs/objc2-app-kit/latest/objc2_app_kit/struct.NSImage.html) -- imageWithSystemSymbolName, CGImageForProposedRect methods verified (HIGH confidence)
+- [lib.rs/objc2-app-kit features](https://lib.rs/crates/objc2-app-kit/features) -- NSImage, NSImageRep, NSBitmapImageRep, NSGraphicsContext, objc2-core-graphics feature flags confirmed (HIGH confidence)
+- [docs.rs/objc2-core-graphics](https://docs.rs/objc2-core-graphics/latest/objc2_core_graphics/) -- v0.3.2, CGImage/CGBitmapContext/CGDataProvider functions available (HIGH confidence)
+- [Apple NSImage.SymbolConfiguration docs](https://developer.apple.com/documentation/appkit/nsimage/symbolconfiguration) -- pointSize:weight:scale: initializer confirmed (HIGH confidence)
+- [Apple NSImage init(systemSymbolName:) docs](https://developer.apple.com/documentation/appkit/nsimage/3622472-init) -- macOS 11+ availability confirmed (HIGH confidence)
+- [microsoft.github.io/windows-docs-rs SHGetStockIconInfo](https://microsoft.github.io/windows-docs-rs/doc/windows/Win32/UI/Shell/fn.SHGetStockIconInfo.html) -- function in Win32::UI::Shell confirmed (HIGH confidence)
+- [microsoft.github.io/windows-docs-rs SHSTOCKICONINFO](https://microsoft.github.io/windows-docs-rs/doc/windows/Win32/UI/Shell/struct.SHSTOCKICONINFO.html) -- requires Win32_UI_WindowsAndMessaging for Default (HIGH confidence)
+- [microsoft.github.io/windows-docs-rs GetDIBits](https://microsoft.github.io/windows-docs-rs/doc/windows/Win32/Graphics/Gdi/fn.GetDIBits.html) -- in Win32::Graphics::Gdi, already enabled (HIGH confidence)
+- [lib.rs/freedesktop-icons](https://lib.rs/crates/freedesktop-icons) -- v0.4.0, April 2025, builder API with theme/size/scale/cache (HIGH confidence)
+- [docs.rs/freedesktop-icons](https://docs.rs/freedesktop-icons/latest/freedesktop_icons/) -- API: lookup().with_theme().with_size().find() -> Option<PathBuf> (HIGH confidence)
+- [docs.rs/resvg](https://docs.rs/resvg/latest/resvg/) -- v0.47.0, render() + tiny-skia Pixmap for RGBA output (HIGH confidence)
+- [github.com/linebender/resvg](https://github.com/linebender/resvg) -- moved to linebender org, actively maintained (HIGH confidence)
+- [docs.rs/swash](https://docs.rs/swash/latest/swash/) -- v0.2.6, Content::Mask/Color/SubpixelMask for glyph images (MEDIUM confidence)
+- [pop-os.github.io/cosmic-text/swash Content enum](https://pop-os.github.io/cosmic-text/swash/scale/image/enum.Content.html) -- Mask (alpha), SubpixelMask, Color (RGBA) variants (MEDIUM confidence)
+- [github.com/google/material-design-icons](https://github.com/google/material-design-icons) -- Apache 2.0, individual SVG files available (HIGH confidence)
+- [github.com/lucide-icons/lucide](https://github.com/lucide-icons/lucide) -- ISC license, individual SVG files in repo (HIGH confidence)
+- [users.rust-lang.org HICON to PNG thread](https://users.rust-lang.org/t/how-to-convert-hicon-to-png/90975) -- HICON->RGBA via GetIconInfo+GetDIBits pattern (MEDIUM confidence)
+- [GitHub gist: NSImage to RGBA pixels](https://gist.github.com/figgleforth/b5b193c3379b3f048210) -- CGBitmapContext recommended over NSBitmapImageRep for controlled format (MEDIUM confidence)
 
 ---
-*Stack research for: native-theme v0.2 (new features)*
-*Researched: 2026-03-08*
+*Stack research for: native-theme v0.3 icon loading*
+*Researched: 2026-03-09*
