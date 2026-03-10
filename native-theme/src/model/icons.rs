@@ -435,17 +435,29 @@ fn detect_linux_icon_theme() -> String {
 }
 
 /// Read icon theme from KDE's kdeglobals INI file.
+///
+/// Checks `~/.config/kdeglobals` first, then `~/.config/kdedefaults/kdeglobals`
+/// (Plasma 6 stores distro defaults there, including the icon theme).
 #[cfg(target_os = "linux")]
 fn detect_kde_icon_theme() -> String {
     #[cfg(feature = "kde")]
     {
-        let path = crate::kde::kdeglobals_path();
-        if let Ok(content) = std::fs::read_to_string(&path) {
-            let mut ini = crate::kde::create_kde_parser();
-            if ini.read(content).is_ok() {
-                if let Some(theme) = ini.get("Icons", "Theme") {
-                    if !theme.is_empty() {
-                        return theme;
+        // Try user kdeglobals first, then kdedefaults (Plasma 6)
+        let primary = crate::kde::kdeglobals_path();
+        let kdedefaults = primary.parent()
+            .map(|p| p.join("kdedefaults").join("kdeglobals"));
+        let paths: Vec<std::path::PathBuf> = std::iter::once(primary)
+            .chain(kdedefaults)
+            .collect();
+
+        for path in paths {
+            if let Ok(content) = std::fs::read_to_string(&path) {
+                let mut ini = crate::kde::create_kde_parser();
+                if ini.read(content).is_ok() {
+                    if let Some(theme) = ini.get("Icons", "Theme") {
+                        if !theme.is_empty() {
+                            return theme;
+                        }
                     }
                 }
             }
