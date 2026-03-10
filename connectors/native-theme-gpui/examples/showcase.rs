@@ -41,12 +41,11 @@ use gpui_component::{
     tab::TabBar,
     tag::Tag,
     theme::Theme,
-    tooltip::Tooltip,
     v_flex, ActiveTheme, Disableable, Icon, IconName, PixelsExt, Root, Sizable, Size, StyledExt,
 };
 
-use native_theme::{load_icon, IconData, IconRole, NativeTheme};
-use native_theme_gpui::icons::{icon_name as lucide_icon_name, to_image_source};
+use native_theme::{icon_name, load_icon, IconData, IconRole, IconSet, NativeTheme};
+use native_theme_gpui::icons::to_image_source;
 use native_theme_gpui::{pick_variant, to_theme};
 
 // ---------------------------------------------------------------------------
@@ -177,11 +176,61 @@ fn color_swatch(name: &str, color: Hsla) -> impl IntoElement {
 // Icon loading helper
 // ---------------------------------------------------------------------------
 
-/// Pre-load all 42 icons for the given icon set name.
-fn load_all_icons(icon_set: &str) -> Vec<(IconRole, Option<IconData>)> {
+/// Where an icon was loaded from.
+#[derive(Clone, Copy, PartialEq)]
+enum IconSource {
+    /// Loaded from the OS/desktop icon theme (e.g. Breeze, Adwaita, SF Symbols).
+    System,
+    /// Bundled icon set (material or lucide) used directly.
+    Bundled,
+    /// System lookup failed; fell back to bundled Material SVGs.
+    Fallback,
+    /// No icon data available at all.
+    NotFound,
+}
+
+/// Pre-load all 42 icons for the given icon set name, tracking source.
+fn load_all_icons(icon_set: &str) -> Vec<(IconRole, Option<IconData>, IconSource)> {
+    // For system icon sets, pre-load the Material set so we can detect fallbacks
+    // by comparing SVG bytes.
+    let is_system_set = matches!(icon_set, "freedesktop" | "sf-symbols" | "segoe-fluent");
+    let material_icons: Vec<Option<IconData>> = if is_system_set {
+        IconRole::ALL
+            .iter()
+            .map(|role| load_icon(*role, "material"))
+            .collect()
+    } else {
+        vec![]
+    };
+
     IconRole::ALL
         .iter()
-        .map(|role| (*role, load_icon(*role, icon_set)))
+        .enumerate()
+        .map(|(i, role)| {
+            let data = load_icon(*role, icon_set);
+            let source = match (&data, is_system_set) {
+                (None, _) => IconSource::NotFound,
+                (Some(_), false) => IconSource::Bundled,
+                (Some(IconData::Svg(loaded)), true) => {
+                    // Compare with Material to detect fallback
+                    if let Some(Some(IconData::Svg(mat))) = material_icons.get(i) {
+                        if loaded == mat {
+                            IconSource::Fallback
+                        } else {
+                            IconSource::System
+                        }
+                    } else {
+                        // Material has no icon for this role, so it must be system
+                        IconSource::System
+                    }
+                }
+                (Some(_), true) => {
+                    // RGBA or other data comes from native APIs, always system
+                    IconSource::System
+                }
+            };
+            (*role, data, source)
+        })
         .collect()
 }
 
@@ -194,6 +243,171 @@ fn is_native_icon_set(name: &str) -> bool {
         "material" | "lucide" => true, // bundled, always available
         _ => false,
     }
+}
+
+/// Reverse lookup: find the IconRole for a gpui-component icon name string.
+///
+/// We match by Lucide icon name string since `IconName` doesn't implement `PartialEq`.
+fn role_for_gpui_icon(gpui_name: &str) -> Option<IconRole> {
+    // Static table mapping gpui-component icon names to IconRole, derived from
+    // the connector's icon_name() mapping.
+    match gpui_name {
+        "TriangleAlert" => Some(IconRole::DialogWarning),
+        "CircleX" => Some(IconRole::DialogError),
+        "Info" => Some(IconRole::DialogInfo),
+        "CircleCheck" => Some(IconRole::DialogSuccess),
+        "WindowClose" => Some(IconRole::WindowClose),
+        "WindowMinimize" => Some(IconRole::WindowMinimize),
+        "WindowMaximize" => Some(IconRole::WindowMaximize),
+        "WindowRestore" => Some(IconRole::WindowRestore),
+        "Delete" => Some(IconRole::ActionDelete),
+        "Copy" => Some(IconRole::ActionCopy),
+        "Undo2" => Some(IconRole::ActionUndo),
+        "Redo2" => Some(IconRole::ActionRedo),
+        "Search" => Some(IconRole::ActionSearch),
+        "Settings" => Some(IconRole::ActionSettings),
+        "Plus" => Some(IconRole::ActionAdd),
+        "Minus" => Some(IconRole::ActionRemove),
+        "ChevronLeft" => Some(IconRole::NavBack),
+        "ChevronRight" => Some(IconRole::NavForward),
+        "ChevronUp" => Some(IconRole::NavUp),
+        "ChevronDown" => Some(IconRole::NavDown),
+        "Menu" => Some(IconRole::NavMenu),
+        "File" => Some(IconRole::FileGeneric),
+        "FolderClosed" => Some(IconRole::FolderClosed),
+        "FolderOpen" => Some(IconRole::FolderOpen),
+        "Loader" => Some(IconRole::StatusLoading),
+        "Check" => Some(IconRole::StatusCheck),
+        "User" => Some(IconRole::UserAccount),
+        "Bell" => Some(IconRole::Notification),
+        _ => None,
+    }
+}
+
+/// The 86 gpui-component IconName variants shown in the gallery.
+const GPUI_ICONS: &[(&str, IconName)] = &[
+    ("ALargeSmall", IconName::ALargeSmall),
+    ("ArrowDown", IconName::ArrowDown),
+    ("ArrowLeft", IconName::ArrowLeft),
+    ("ArrowRight", IconName::ArrowRight),
+    ("ArrowUp", IconName::ArrowUp),
+    ("Asterisk", IconName::Asterisk),
+    ("Bell", IconName::Bell),
+    ("BookOpen", IconName::BookOpen),
+    ("Bot", IconName::Bot),
+    ("Building2", IconName::Building2),
+    ("Calendar", IconName::Calendar),
+    ("CaseSensitive", IconName::CaseSensitive),
+    ("ChartPie", IconName::ChartPie),
+    ("Check", IconName::Check),
+    ("ChevronDown", IconName::ChevronDown),
+    ("ChevronLeft", IconName::ChevronLeft),
+    ("ChevronRight", IconName::ChevronRight),
+    ("ChevronsUpDown", IconName::ChevronsUpDown),
+    ("ChevronUp", IconName::ChevronUp),
+    ("CircleCheck", IconName::CircleCheck),
+    ("CircleUser", IconName::CircleUser),
+    ("CircleX", IconName::CircleX),
+    ("Close", IconName::Close),
+    ("Copy", IconName::Copy),
+    ("Dash", IconName::Dash),
+    ("Delete", IconName::Delete),
+    ("Ellipsis", IconName::Ellipsis),
+    ("EllipsisVertical", IconName::EllipsisVertical),
+    ("ExternalLink", IconName::ExternalLink),
+    ("Eye", IconName::Eye),
+    ("EyeOff", IconName::EyeOff),
+    ("File", IconName::File),
+    ("Folder", IconName::Folder),
+    ("FolderClosed", IconName::FolderClosed),
+    ("FolderOpen", IconName::FolderOpen),
+    ("Frame", IconName::Frame),
+    ("GalleryVerticalEnd", IconName::GalleryVerticalEnd),
+    ("GitHub", IconName::GitHub),
+    ("Globe", IconName::Globe),
+    ("Heart", IconName::Heart),
+    ("HeartOff", IconName::HeartOff),
+    ("Inbox", IconName::Inbox),
+    ("Info", IconName::Info),
+    ("Inspector", IconName::Inspector),
+    ("LayoutDashboard", IconName::LayoutDashboard),
+    ("Loader", IconName::Loader),
+    ("LoaderCircle", IconName::LoaderCircle),
+    ("Map", IconName::Map),
+    ("Maximize", IconName::Maximize),
+    ("Menu", IconName::Menu),
+    ("Minimize", IconName::Minimize),
+    ("Minus", IconName::Minus),
+    ("Moon", IconName::Moon),
+    ("Palette", IconName::Palette),
+    ("PanelBottom", IconName::PanelBottom),
+    ("PanelBottomOpen", IconName::PanelBottomOpen),
+    ("PanelLeft", IconName::PanelLeft),
+    ("PanelLeftClose", IconName::PanelLeftClose),
+    ("PanelLeftOpen", IconName::PanelLeftOpen),
+    ("PanelRight", IconName::PanelRight),
+    ("PanelRightClose", IconName::PanelRightClose),
+    ("PanelRightOpen", IconName::PanelRightOpen),
+    ("Plus", IconName::Plus),
+    ("Redo", IconName::Redo),
+    ("Redo2", IconName::Redo2),
+    ("Replace", IconName::Replace),
+    ("ResizeCorner", IconName::ResizeCorner),
+    ("Search", IconName::Search),
+    ("Settings", IconName::Settings),
+    ("Settings2", IconName::Settings2),
+    ("SortAscending", IconName::SortAscending),
+    ("SortDescending", IconName::SortDescending),
+    ("SquareTerminal", IconName::SquareTerminal),
+    ("Star", IconName::Star),
+    ("StarOff", IconName::StarOff),
+    ("Sun", IconName::Sun),
+    ("ThumbsDown", IconName::ThumbsDown),
+    ("ThumbsUp", IconName::ThumbsUp),
+    ("TriangleAlert", IconName::TriangleAlert),
+    ("Undo", IconName::Undo),
+    ("Undo2", IconName::Undo2),
+    ("User", IconName::User),
+    ("WindowClose", IconName::WindowClose),
+    ("WindowMaximize", IconName::WindowMaximize),
+    ("WindowMinimize", IconName::WindowMinimize),
+    ("WindowRestore", IconName::WindowRestore),
+];
+
+/// Pre-load native-theme icons for gpui-component IconName variants that have a
+/// corresponding IconRole. Returns (name, IconName, Option<role>, Option<data>, source).
+fn load_gpui_icons(
+    icon_set: &str,
+) -> Vec<(&'static str, IconName, Option<IconRole>, Option<IconData>, IconSource)> {
+    let is_system_set = matches!(icon_set, "freedesktop" | "sf-symbols" | "segoe-fluent");
+    GPUI_ICONS
+        .iter()
+        .map(|(name, icon)| {
+            if let Some(role) = role_for_gpui_icon(name) {
+                let data = load_icon(role, icon_set);
+                let source = match &data {
+                    None => IconSource::NotFound,
+                    Some(_) if !is_system_set => IconSource::Bundled,
+                    Some(IconData::Svg(loaded)) => {
+                        let mat = load_icon(role, "material");
+                        if let Some(IconData::Svg(mat_bytes)) = &mat {
+                            if loaded == mat_bytes {
+                                IconSource::Fallback
+                            } else {
+                                IconSource::System
+                            }
+                        } else {
+                            IconSource::System
+                        }
+                    }
+                    Some(_) => IconSource::System,
+                };
+                (*name, icon.clone(), Some(role), data, source)
+            } else {
+                (*name, icon.clone(), None, None, IconSource::Bundled)
+            }
+        })
+        .collect()
 }
 
 // ---------------------------------------------------------------------------
@@ -223,7 +437,10 @@ struct Showcase {
     // Icon set selector state
     icon_set_select: Entity<SelectState<SearchableVec<SharedString>>>,
     icon_set_name: String,
-    loaded_icons: Vec<(IconRole, Option<IconData>)>,
+    loaded_icons: Vec<(IconRole, Option<IconData>, IconSource)>,
+    gpui_icons: Vec<(&'static str, IconName, Option<IconRole>, Option<IconData>, IconSource)>,
+    /// Text shown in the Widget Info sidebar panel (set on hover).
+    widget_info: String,
 }
 
 impl Showcase {
@@ -300,14 +517,17 @@ impl Showcase {
         )
         .detach();
 
-        // Icon set selector
-        let icon_set_names: Vec<SharedString> = vec![
+        // Icon set selector – only show sets relevant to the current platform
+        let mut icon_set_names: Vec<SharedString> = vec![
             "material".into(),
             "lucide".into(),
-            "sf-symbols".into(),
-            "segoe-fluent".into(),
-            "freedesktop".into(),
         ];
+        #[cfg(target_os = "linux")]
+        icon_set_names.push("freedesktop".into());
+        #[cfg(target_os = "macos")]
+        icon_set_names.push("sf-symbols".into());
+        #[cfg(target_os = "windows")]
+        icon_set_names.push("segoe-fluent".into());
         let icon_set_delegate = SearchableVec::new(icon_set_names);
         let icon_set_select = cx.new(|cx| {
             SelectState::new(
@@ -321,11 +541,13 @@ impl Showcase {
         cx.subscribe_in(
             &icon_set_select,
             window,
-            |this: &mut Self, _entity, event: &SelectEvent<SearchableVec<SharedString>>, _window, _cx| {
+            |this: &mut Self, _entity, event: &SelectEvent<SearchableVec<SharedString>>, _window, cx| {
                 if let SelectEvent::Confirm(Some(value)) = event {
                     let name = value.to_string();
                     this.icon_set_name = name.clone();
                     this.loaded_icons = load_all_icons(&name);
+                    this.gpui_icons = load_gpui_icons(&name);
+                    cx.notify();
                 }
             },
         )
@@ -333,6 +555,7 @@ impl Showcase {
 
         let initial_icon_set = "material".to_string();
         let loaded_icons = load_all_icons(&initial_icon_set);
+        let gpui_icons = load_gpui_icons(&initial_icon_set);
 
         // Apply the initial "default" preset theme.
         let is_dark = cx.theme().is_dark();
@@ -365,6 +588,8 @@ impl Showcase {
             icon_set_select,
             icon_set_name: initial_icon_set,
             loaded_icons,
+            gpui_icons,
+            widget_info: String::new(),
         }
     }
 
@@ -395,6 +620,29 @@ impl Showcase {
         self.apply_theme_by_name(&name, window, cx);
     }
 
+    /// Create a hover handler that sets `widget_info` to the given text.
+    fn set_info(cx: &mut Context<Self>, info: String) -> impl Fn(&bool, &mut Window, &mut App) + 'static {
+        cx.listener(move |this, hovered: &bool, _window, cx| {
+            if *hovered && this.widget_info != info {
+                this.widget_info = info.clone();
+                cx.notify();
+            }
+        })
+    }
+
+    /// Create a hover handler using the standard widget_tooltip_themed format.
+    fn hover_info(
+        cx: &mut Context<Self>,
+        fi: &str,
+        name: &str,
+        colors: &[(&str, &str, Hsla)],
+        config: &[(&str, String)],
+        not_themeable: &[(&str, &str)],
+    ) -> impl Fn(&bool, &mut Window, &mut App) + 'static {
+        let info = widget_tooltip_themed(fi, name, colors, config, not_themeable);
+        Self::set_info(cx, info)
+    }
+
     // -----------------------------------------------------------------------
     // Left sidebar: theme config inspector
     // -----------------------------------------------------------------------
@@ -410,7 +658,7 @@ impl Showcase {
         let scrollbar_str = format!("{:?}", theme.scrollbar_show);
 
         v_flex()
-            .gap_3()
+            .gap_0p5()
             .p_3()
             .w_full()
             .child(section("Theme Config Inspector"))
@@ -424,20 +672,37 @@ impl Showcase {
             .child(self.config_row("scrollbar_show", &scrollbar_str))
     }
 
+    fn render_widget_info_panel(&self) -> impl IntoElement {
+        let text = if self.widget_info.is_empty() {
+            "Hover over any widget to see its theme properties.".to_string()
+        } else {
+            self.widget_info.clone()
+        };
+        v_flex()
+            .gap_0p5()
+            .p_3()
+            .w_full()
+            .child(section("Widget Info"))
+            .children(text.lines().map(|line| {
+                Label::new(SharedString::from(line.to_string())).text_xs()
+            }))
+    }
+
     fn config_row(&self, label: &str, value: &str) -> impl IntoElement {
         let label_s: SharedString = label.to_string().into();
         let value_s: SharedString = value.to_string().into();
         v_flex()
             .gap_0p5()
-            .child(Label::new(label_s).text_sm().font_semibold())
-            .child(Label::new(value_s).text_sm())
+            .child(Label::new(label_s).text_xs().font_semibold())
+            .child(Label::new(value_s).text_xs())
     }
 
     // -----------------------------------------------------------------------
     // Tab: Buttons
     // -----------------------------------------------------------------------
-    fn render_buttons_tab(&self, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_buttons_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let fi = format_font_info(&self.original_fonts);
+        let t = cx.theme().clone();
         v_flex()
             .gap_5()
             .p_4()
@@ -452,35 +717,30 @@ impl Showcase {
                         div()
                             .id("tt-btn-primary")
                             .child(Button::new("b-primary").label("Primary").primary())
-                            .tooltip({ let fi = fi.clone(); move |window, cx| {
-                                let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(&fi,
-                                    "Button (Primary)",
-                                    &[
-                                        ("bg", "primary", t.primary),
-                                        ("text", "primary_foreground", t.primary_foreground),
-                                        ("hover", "primary_hover", t.primary_hover),
-                                        ("active", "primary_active", t.primary_active),
-                                    ],
-                                    &[
-                                        ("border-radius", format!("radius: {}px", t.radius.as_f32())),
-                                        ("shadow", format!("{}", t.shadow)),
-                                    ],
-                                    &[
-                                        ("padding", "set per Size enum (XS/S/M/L)"),
-                                        ("font-weight", "hardcoded"),
-                                        ("min-height", "hardcoded"),
-                                    ],
-                                )).build(window, cx)
-                            }}),
+                            .on_hover(Self::hover_info(cx, &fi,
+                                "Button (Primary)",
+                                &[
+                                    ("bg", "primary", t.primary),
+                                    ("text", "primary_foreground", t.primary_foreground),
+                                    ("hover", "primary_hover", t.primary_hover),
+                                    ("active", "primary_active", t.primary_active),
+                                ],
+                                &[
+                                    ("border-radius", format!("radius: {}px", t.radius.as_f32())),
+                                    ("shadow", format!("{}", t.shadow)),
+                                ],
+                                &[
+                                    ("padding", "set per Size enum (XS/S/M/L)"),
+                                    ("font-weight", "hardcoded"),
+                                    ("min-height", "hardcoded"),
+                                ],
+                            )),
                     )
                     .child(
                         div()
                             .id("tt-btn-secondary")
                             .child(Button::new("b-secondary").label("Secondary"))
-                            .tooltip({ let fi = fi.clone(); move |window, cx| {
-                                let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(&fi,
+                            .on_hover(Self::hover_info(cx, &fi,
                                     "Button (Secondary)",
                                     &[
                                         ("bg", "secondary", t.secondary),
@@ -497,16 +757,13 @@ impl Showcase {
                                         ("font-weight", "hardcoded"),
                                         ("min-height", "hardcoded"),
                                     ],
-                                )).build(window, cx)
-                            }}),
+                                        )),
                     )
                     .child(
                         div()
                             .id("tt-btn-danger")
                             .child(Button::new("b-danger").label("Danger").danger())
-                            .tooltip({ let fi = fi.clone(); move |window, cx| {
-                                let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(&fi,
+                            .on_hover(Self::hover_info(cx, &fi,
                                     "Button (Danger)",
                                     &[
                                         ("bg", "danger", t.danger),
@@ -523,16 +780,13 @@ impl Showcase {
                                         ("font-weight", "hardcoded"),
                                         ("min-height", "hardcoded"),
                                     ],
-                                )).build(window, cx)
-                            }}),
+                                        )),
                     )
                     .child(
                         div()
                             .id("tt-btn-success")
                             .child(Button::new("b-success").label("Success").success())
-                            .tooltip({ let fi = fi.clone(); move |window, cx| {
-                                let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(&fi,
+                            .on_hover(Self::hover_info(cx, &fi,
                                     "Button (Success)",
                                     &[
                                         ("bg", "success", t.success),
@@ -549,16 +803,13 @@ impl Showcase {
                                         ("font-weight", "hardcoded"),
                                         ("min-height", "hardcoded"),
                                     ],
-                                )).build(window, cx)
-                            }}),
+                                        )),
                     )
                     .child(
                         div()
                             .id("tt-btn-warning")
                             .child(Button::new("b-warning").label("Warning").warning())
-                            .tooltip({ let fi = fi.clone(); move |window, cx| {
-                                let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(&fi,
+                            .on_hover(Self::hover_info(cx, &fi,
                                     "Button (Warning)",
                                     &[
                                         ("bg", "warning", t.warning),
@@ -575,16 +826,13 @@ impl Showcase {
                                         ("font-weight", "hardcoded"),
                                         ("min-height", "hardcoded"),
                                     ],
-                                )).build(window, cx)
-                            }}),
+                                        )),
                     )
                     .child(
                         div()
                             .id("tt-btn-info")
                             .child(Button::new("b-info").label("Info").info())
-                            .tooltip({ let fi = fi.clone(); move |window, cx| {
-                                let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(&fi,
+                            .on_hover(Self::hover_info(cx, &fi,
                                     "Button (Info)",
                                     &[
                                         ("bg", "info", t.info),
@@ -601,16 +849,13 @@ impl Showcase {
                                         ("font-weight", "hardcoded"),
                                         ("min-height", "hardcoded"),
                                     ],
-                                )).build(window, cx)
-                            }}),
+                                        )),
                     )
                     .child(
                         div()
                             .id("tt-btn-ghost")
                             .child(Button::new("b-ghost").label("Ghost").ghost())
-                            .tooltip({ let fi = fi.clone(); move |window, cx| {
-                                let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(&fi,
+                            .on_hover(Self::hover_info(cx, &fi,
                                     "Button (Ghost)",
                                     &[
                                         ("text", "foreground", t.foreground),
@@ -618,16 +863,13 @@ impl Showcase {
                                     ],
                                     &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                                     &[("padding", "set per Size enum"), ("font-weight", "hardcoded")],
-                                )).build(window, cx)
-                            }}),
+                                        )),
                     )
                     .child(
                         div()
                             .id("tt-btn-link")
                             .child(Button::new("b-link").label("Link").link())
-                            .tooltip({ let fi = fi.clone(); move |window, cx| {
-                                let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(&fi,
+                            .on_hover(Self::hover_info(cx, &fi,
                                     "Button (Link)",
                                     &[
                                         ("text", "foreground", t.foreground),
@@ -635,16 +877,13 @@ impl Showcase {
                                     ],
                                     &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                                     &[("padding", "set per Size enum"), ("font-weight", "hardcoded")],
-                                )).build(window, cx)
-                            }}),
+                                        )),
                     )
                     .child(
                         div()
                             .id("tt-btn-text")
                             .child(Button::new("b-text").label("Text").text())
-                            .tooltip({ let fi = fi.clone(); move |window, cx| {
-                                let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(&fi,
+                            .on_hover(Self::hover_info(cx, &fi,
                                     "Button (Text)",
                                     &[
                                         ("text", "foreground", t.foreground),
@@ -652,16 +891,13 @@ impl Showcase {
                                     ],
                                     &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                                     &[("padding", "set per Size enum"), ("font-weight", "hardcoded")],
-                                )).build(window, cx)
-                            }}),
+                                        )),
                     )
                     .child(
                         div()
                             .id("tt-btn-outline")
                             .child(Button::new("b-outline").label("Outline").primary().outline())
-                            .tooltip({ let fi = fi.clone(); move |window, cx| {
-                                let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(&fi,
+                            .on_hover(Self::hover_info(cx, &fi,
                                     "Button (Primary Outline)",
                                     &[
                                         ("border", "primary", t.primary),
@@ -670,8 +906,7 @@ impl Showcase {
                                     ],
                                     &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                                     &[("padding", "set per Size enum"), ("font-weight", "hardcoded")],
-                                )).build(window, cx)
-                            }}),
+                                        )),
                     ),
             )
             // Button sizes (using secondary for readability)
@@ -688,9 +923,7 @@ impl Showcase {
                             .child(Button::new("s-md").label("Medium").with_size(Size::Medium))
                             .child(Button::new("s-lg").label("Large").with_size(Size::Large)),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Button Sizes",
                             &[
                                 ("bg", "secondary", t.secondary),
@@ -702,8 +935,7 @@ impl Showcase {
                                 ("padding", "varies per Size"),
                                 ("min-height", "varies per Size"),
                             ],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Button group
             .child(section("ButtonGroup"))
@@ -716,9 +948,7 @@ impl Showcase {
                             .child(Button::new("bg-b").label("Center"))
                             .child(Button::new("bg-c").label("Right")),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "ButtonGroup",
                             &[
                                 ("bg", "secondary", t.secondary),
@@ -727,8 +957,7 @@ impl Showcase {
                             ],
                             &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                             &[("gap", "hardcoded (0px, merged borders)")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Disabled + loading
             .child(section("Disabled State"))
@@ -742,9 +971,7 @@ impl Showcase {
                             .child(Button::new("d-sec").label("Disabled Secondary").disabled(true))
                             .child(Button::new("d-dng").label("Disabled Danger").danger().disabled(true)),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let _t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Disabled Buttons",
                             &[],
                             &[],
@@ -753,8 +980,7 @@ impl Showcase {
                                 ("cursor", "not-allowed"),
                                 ("theme", "same variant colors at reduced opacity"),
                             ],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             .child(section("Loading State"))
             .child(
@@ -765,9 +991,7 @@ impl Showcase {
                             .gap_2()
                             .child(Button::new("l-pri").label("Loading...").primary().loading(true)),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let _t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Loading Button",
                             &[],
                             &[],
@@ -775,8 +999,7 @@ impl Showcase {
                                 ("spinner", "replaces icon when loading"),
                                 ("interaction", "disabled while loading"),
                             ],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Buttons with icons
             .child(section("Buttons with Icons"))
@@ -790,9 +1013,7 @@ impl Showcase {
                             .child(Button::new("bi-search").label("Search").icon(IconName::Search))
                             .child(Button::new("bi-del").label("Delete").danger().icon(IconName::Delete)),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let _t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Buttons with Icons",
                             &[],
                             &[],
@@ -801,8 +1022,7 @@ impl Showcase {
                                 ("icon position", "leading (before label)"),
                                 ("icon size", "matches button Size enum"),
                             ],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
     }
 
@@ -811,6 +1031,7 @@ impl Showcase {
     // -----------------------------------------------------------------------
     fn render_inputs_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let fi = format_font_info(&self.original_fonts);
+        let t = cx.theme().clone();
         let checkbox_a = self.checkbox_a;
         let checkbox_b = self.checkbox_b;
         let checkbox_c = self.checkbox_c;
@@ -832,9 +1053,7 @@ impl Showcase {
                             .with_size(Size::Medium)
                             .w(px(360.0)),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Input",
                             &[
                                 ("border", "input", t.input),
@@ -848,8 +1067,7 @@ impl Showcase {
                                 ("shadow", format!("{}", t.shadow)),
                             ],
                             &[("padding", "set per Size enum"), ("height", "set per Size enum")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Number Input
             .child(section("Number Input"))
@@ -862,9 +1080,7 @@ impl Showcase {
                             .with_size(Size::Medium)
                             .w(px(200.0)),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "NumberInput",
                             &[
                                 ("border", "input", t.input),
@@ -882,8 +1098,7 @@ impl Showcase {
                                 ("height", "set per Size enum"),
                                 ("step buttons", "hardcoded +/- icons"),
                             ],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Checkboxes
             .child(section("Checkboxes"))
@@ -916,9 +1131,7 @@ impl Showcase {
                                     .disabled(true),
                             ),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Checkbox",
                             &[
                                 ("checked bg", "primary", t.primary),
@@ -931,8 +1144,7 @@ impl Showcase {
                                 ("shadow", format!("{}", t.shadow)),
                             ],
                             &[("size", "set per Size enum"), ("indicator size", "hardcoded")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Radio group
             .child(section("Radio Group"))
@@ -949,9 +1161,7 @@ impl Showcase {
                                 this.radio_index = Some(*ix);
                             })),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Radio",
                             &[
                                 ("selected", "primary", t.primary),
@@ -963,8 +1173,7 @@ impl Showcase {
                                 ("shadow", format!("{}", t.shadow)),
                             ],
                             &[("size", "hardcoded"), ("indicator size", "hardcoded")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Switch
             .child(section("Switch"))
@@ -989,9 +1198,7 @@ impl Showcase {
                                     .disabled(true),
                             ),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Switch",
                             &[
                                 ("on track", "primary", t.primary),
@@ -1000,8 +1207,7 @@ impl Showcase {
                             ],
                             &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                             &[("size", "hardcoded"), ("animation timing", "hardcoded")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Slider
             .child(section(format!("Slider (value: {:.0})", slider_value)))
@@ -1009,9 +1215,7 @@ impl Showcase {
                 div()
                     .id("tt-slider")
                     .child(Slider::new(&self.slider_state).w(px(360.0)))
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Slider",
                             &[
                                 ("track", "slider_bar", t.slider_bar),
@@ -1020,8 +1224,7 @@ impl Showcase {
                             ],
                             &[("shadow", format!("{}", t.shadow))],
                             &[("track height", "hardcoded"), ("thumb size", "hardcoded")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
     }
 
@@ -1030,6 +1233,7 @@ impl Showcase {
     // -----------------------------------------------------------------------
     fn render_data_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let fi = format_font_info(&self.original_fonts);
+        let t = cx.theme().clone();
         let collapsible_open = self.collapsible_open;
 
         v_flex()
@@ -1050,9 +1254,7 @@ impl Showcase {
                             .item("Platforms", "Linux, macOS, Windows", 1)
                             .item("Description", "Universal theme abstraction layer", 2),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "DescriptionList",
                             &[
                                 ("label bg", "description_list_label", t.description_list_label),
@@ -1065,8 +1267,7 @@ impl Showcase {
                             ],
                             &[],
                             &[("layout spacing", "hardcoded")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Accordion
             .child(section("Accordion"))
@@ -1099,9 +1300,7 @@ impl Showcase {
                                 )
                             }),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Accordion",
                             &[
                                 ("bg", "accordion", t.accordion),
@@ -1112,8 +1311,7 @@ impl Showcase {
                             ],
                             &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                             &[("padding", "hardcoded"), ("animation", "hardcoded")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Collapsible
             .child(section("Collapsible"))
@@ -1146,9 +1344,7 @@ impl Showcase {
                                     .child(Label::new("This content is shown when collapsible is open.").text_sm()),
                             ),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Collapsible",
                             &[
                                 ("bg", "accordion", t.accordion),
@@ -1157,8 +1353,7 @@ impl Showcase {
                             ],
                             &[],
                             &[("animation", "hardcoded slide")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // GroupBox variants
             .child(section("GroupBox (3 variants)"))
@@ -1189,9 +1384,7 @@ impl Showcase {
                                     .child(Label::new("Outlined border").text_sm()),
                             ),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "GroupBox",
                             &[
                                 ("fill bg", "group_box", t.group_box),
@@ -1201,16 +1394,16 @@ impl Showcase {
                             ],
                             &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                             &[("padding", "hardcoded")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
     }
 
     // -----------------------------------------------------------------------
     // Tab: Feedback
     // -----------------------------------------------------------------------
-    fn render_feedback_tab(&self, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_feedback_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let fi = format_font_info(&self.original_fonts);
+        let t = cx.theme().clone();
         v_flex()
             .gap_5()
             .p_4()
@@ -1224,9 +1417,7 @@ impl Showcase {
                         Alert::info("alert-info", "This is an informational message.")
                             .title("Info"),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Alert (Info)",
                             &[
                                 ("color", "info", t.info),
@@ -1239,8 +1430,7 @@ impl Showcase {
                                 ("icon", "Info (hardcoded for variant)"),
                                 ("icon size", "hardcoded"),
                             ],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             .child(
                 div()
@@ -1249,9 +1439,7 @@ impl Showcase {
                         Alert::success("alert-ok", "Operation completed successfully.")
                             .title("Success"),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Alert (Success)",
                             &[
                                 ("color", "success", t.success),
@@ -1263,8 +1451,7 @@ impl Showcase {
                                 ("padding", "hardcoded per Size"),
                                 ("icon", "CircleCheck (hardcoded)"),
                             ],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             .child(
                 div()
@@ -1273,9 +1460,7 @@ impl Showcase {
                         Alert::warning("alert-warn", "Please review before proceeding.")
                             .title("Warning"),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Alert (Warning)",
                             &[
                                 ("color", "warning", t.warning),
@@ -1287,8 +1472,7 @@ impl Showcase {
                                 ("padding", "hardcoded per Size"),
                                 ("icon", "TriangleAlert (hardcoded)"),
                             ],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             .child(
                 div()
@@ -1297,9 +1481,7 @@ impl Showcase {
                         Alert::error("alert-err", "Something went wrong. Please try again.")
                             .title("Error"),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Alert (Error)",
                             &[
                                 ("color", "danger", t.danger),
@@ -1311,8 +1493,7 @@ impl Showcase {
                                 ("padding", "hardcoded per Size"),
                                 ("icon", "CircleX (hardcoded)"),
                             ],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Progress
             .child(section("Progress Bars"))
@@ -1345,15 +1526,12 @@ impl Showcase {
                             )
                             .child(Progress::new().value(100.0)),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Progress",
                             &[("bar", "progress_bar", t.progress_bar)],
                             &[],
                             &[("height", "hardcoded"), ("animation", "hardcoded")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Spinners
             .child(section("Spinner (3 sizes)"))
@@ -1386,15 +1564,12 @@ impl Showcase {
                                     .child(Label::new("Large").text_sm()),
                             ),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let _t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Spinner",
                             &[],
                             &[],
                             &[("animation speed", "hardcoded"), ("size", "hardcoded per Size enum")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Skeleton
             .child(section("Skeleton Placeholders"))
@@ -1410,15 +1585,12 @@ impl Showcase {
                             .child(Skeleton::new().h(px(8.0)).w(px(250.0)).rounded(px(4.0)))
                             .child(Skeleton::new().secondary().h(px(60.0)).rounded(px(6.0))),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Skeleton",
                             &[("bg", "skeleton", t.skeleton)],
                             &[],
                             &[("animation", "hardcoded pulse")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
     }
 
@@ -1427,6 +1599,7 @@ impl Showcase {
     // -----------------------------------------------------------------------
     fn render_typography_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let fi = format_font_info(&self.original_fonts);
+        let t = cx.theme().clone();
         v_flex()
             .gap_5()
             .p_4()
@@ -1443,9 +1616,7 @@ impl Showcase {
                             .child(Label::new("Label with secondary").secondary("(secondary text)"))
                             .child(Label::new("Masked label: secret123").masked(true)),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Label",
                             &[
                                 ("text", "foreground", t.foreground),
@@ -1457,8 +1628,7 @@ impl Showcase {
                                 ("size", format!("font_size: {}px (renders)", t.font_size.as_f32())),
                             ],
                             &[("font weights", "hardcoded")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Tags
             .child(section("Tags (7 colors + outline)"))
@@ -1478,9 +1648,7 @@ impl Showcase {
                             .child(Tag::primary().outline().child("Primary Outline"))
                             .child(Tag::danger().outline().child("Danger Outline")),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Tag (per variant)",
                             &[
                                 ("bg (primary)", "primary", t.primary),
@@ -1489,8 +1657,7 @@ impl Showcase {
                             ],
                             &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                             &[("padding", "hardcoded per Size")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Badges
             .child(section("Badge"))
@@ -1508,9 +1675,7 @@ impl Showcase {
                             )
                             .child(Badge::new().dot().child(Button::new("badge-3").label("Updates"))),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Badge",
                             &[
                                 ("bg", "red", t.red),
@@ -1518,8 +1683,7 @@ impl Showcase {
                             ],
                             &[],
                             &[("size", "hardcoded"), ("padding", "hardcoded")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Link
             .child(section("Link"))
@@ -1540,9 +1704,7 @@ impl Showcase {
                                     .href("https://gpui.rs"),
                             ),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Link",
                             &[("text+decoration", "link", t.link)],
                             &[],
@@ -1551,8 +1713,7 @@ impl Showcase {
                                 ("hover opacity", "0.8"),
                                 ("active opacity", "0.6"),
                             ],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Breadcrumb (with tab navigation)
             .child(section("Breadcrumb (click to navigate tabs)"))
@@ -1587,9 +1748,7 @@ impl Showcase {
                             )
                             .child(BreadcrumbItem::new("Typography")),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Breadcrumb",
                             &[
                                 ("last item", "foreground", t.foreground),
@@ -1597,8 +1756,7 @@ impl Showcase {
                             ],
                             &[],
                             &[("separator icon", "hardcoded ChevronRight"), ("spacing", "hardcoded")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Divider styles
             .child(section("Divider Styles"))
@@ -1613,9 +1771,7 @@ impl Showcase {
                             .child(Divider::horizontal_dashed())
                             .child(Divider::horizontal_dashed().label("END")),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Divider",
                             &[
                                 ("line", "border", t.border),
@@ -1624,16 +1780,16 @@ impl Showcase {
                             ],
                             &[],
                             &[("thickness", "1px hardcoded")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
     }
 
     // -----------------------------------------------------------------------
     // Tab: Layout
     // -----------------------------------------------------------------------
-    fn render_layout_tab(&self, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_layout_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let fi = format_font_info(&self.original_fonts);
+        let t = cx.theme().clone();
         v_flex()
             .gap_5()
             .p_4()
@@ -1669,9 +1825,7 @@ impl Showcase {
                                 ),
                             ),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Resizable",
                             &[
                                 ("dragging border", "drag_border", t.drag_border),
@@ -1679,8 +1833,7 @@ impl Showcase {
                             ],
                             &[],
                             &[("min panel size", "100px hardcoded")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Vertical resizable
             .child(section("Resizable Panels (vertical)"))
@@ -1711,9 +1864,7 @@ impl Showcase {
                                 ),
                             ),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Resizable (vertical)",
                             &[
                                 ("dragging border", "drag_border", t.drag_border),
@@ -1721,8 +1872,7 @@ impl Showcase {
                             ],
                             &[],
                             &[("min panel size", "100px hardcoded")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Dividers
             .child(section("Divider (solid / dashed / labeled)"))
@@ -1736,9 +1886,7 @@ impl Showcase {
                             .child(Divider::horizontal().label("Section Break"))
                             .child(Divider::horizontal_dashed()),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Divider",
                             &[
                                 ("line", "border", t.border),
@@ -1747,8 +1895,7 @@ impl Showcase {
                             ],
                             &[],
                             &[("thickness", "1px hardcoded")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // GroupBox as container
             .child(section("GroupBox as Layout Container"))
@@ -1771,9 +1918,7 @@ impl Showcase {
                                     ),
                             ),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "GroupBox (layout)",
                             &[
                                 ("fill bg", "group_box", t.group_box),
@@ -1783,8 +1928,7 @@ impl Showcase {
                             ],
                             &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
                             &[("padding", "hardcoded")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
             // Scrollable area demo
             .child(section("Scrollable Area (visible scrollbar)"))
@@ -1811,9 +1955,7 @@ impl Showcase {
                                 ),
                             ),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Scrollbar",
                             &[
                                 ("track", "scrollbar", t.scrollbar),
@@ -1826,16 +1968,16 @@ impl Showcase {
                                 ("show mode", format!("scrollbar_show: {:?}", t.scrollbar_show)),
                             ],
                             &[("width", "16px hardcoded"), ("min thumb length", "48px hardcoded")],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
     }
 
     // -----------------------------------------------------------------------
     // Tab: Icons
     // -----------------------------------------------------------------------
-    fn render_icons_tab(&self, _cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_icons_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
         let fi = format_font_info(&self.original_fonts);
+        let _t = cx.theme().clone();
 
         // --- Native Theme Icons section ---
         let fallback_label = if !is_native_icon_set(&self.icon_set_name) {
@@ -1843,46 +1985,57 @@ impl Showcase {
         } else {
             ""
         };
-        let loaded_count = self.loaded_icons.iter().filter(|(_, d)| d.is_some()).count();
-        let native_section_title = format!(
-            "Native Theme Icons: {} [{}/{} loaded]{}",
-            self.icon_set_name,
-            loaded_count,
-            self.loaded_icons.len(),
-            fallback_label,
-        );
+        let loaded_count = self.loaded_icons.iter().filter(|(_, d, _)| d.is_some()).count();
+        let system_count = self.loaded_icons.iter().filter(|(_, _, s)| *s == IconSource::System).count();
+        let fallback_count = self.loaded_icons.iter().filter(|(_, _, s)| *s == IconSource::Fallback).count();
+        let is_system_set = matches!(self.icon_set_name.as_str(), "freedesktop" | "sf-symbols" | "segoe-fluent");
+        let native_section_title = if is_system_set {
+            format!(
+                "Native Theme Icons: {} [{}/{} loaded, {} system, {} fallback]{}",
+                self.icon_set_name,
+                loaded_count,
+                self.loaded_icons.len(),
+                system_count,
+                fallback_count,
+                fallback_label,
+            )
+        } else {
+            format!(
+                "Native Theme Icons: {} [{}/{} loaded]{}",
+                self.icon_set_name,
+                loaded_count,
+                self.loaded_icons.len(),
+                fallback_label,
+            )
+        };
+
+        // Resolve the IconSet for tooltip icon-name lookups
+        let icon_set_enum = match self.icon_set_name.as_str() {
+            "freedesktop" => Some(IconSet::Freedesktop),
+            "material" => Some(IconSet::Material),
+            "lucide" => Some(IconSet::Lucide),
+            "sf-symbols" => Some(IconSet::SfSymbols),
+            "segoe-fluent" => Some(IconSet::SegoeIcons),
+            _ => None,
+        };
+        let icon_set_label = self.icon_set_name.clone();
 
         // Build icon cells for loaded native icons
         let native_icon_cells: Vec<_> = self
             .loaded_icons
             .iter()
             .enumerate()
-            .map(|(i, (role, data))| {
+            .map(|(i, (role, data, source))| {
                 let role_name: SharedString = format!("{:?}", role).into();
-                let cell_id = SharedString::from(format!("native-icon-{}", i));
+                let cell_id = SharedString::from(format!("native-icon-{}-{}", self.icon_set_name, i));
 
                 let icon_element = if let Some(icon_data) = data {
-                    // If this role has a Lucide shortcut, show that icon
-                    // For SVG data, use to_image_source to show the actual loaded icon
-                    if let Some(lucide_name) = lucide_icon_name(*role) {
-                        div().child(Icon::new(lucide_name).with_size(Size::Medium))
-                    } else {
-                        match icon_data {
-                            IconData::Svg(_) | IconData::Rgba { .. } => {
-                                let source = to_image_source(icon_data);
-                                div().child(
-                                    gpui::img(source)
-                                        .w(px(20.0))
-                                        .h(px(20.0)),
-                                )
-                            }
-                            _ => div()
-                                .w(px(20.0))
-                                .h(px(20.0))
-                                .bg(gpui::hsla(0.0, 0.0, 0.5, 0.2))
-                                .rounded(px(2.0)),
-                        }
-                    }
+                    let img_source = to_image_source(icon_data);
+                    div().child(
+                        gpui::img(img_source)
+                            .w(px(20.0))
+                            .h(px(20.0)),
+                    )
                 } else {
                     // No icon data -- gray placeholder
                     div()
@@ -1892,126 +2045,150 @@ impl Showcase {
                         .rounded(px(2.0))
                 };
 
+                // Build tooltip text with origin info
+                let tooltip_role = format!("{:?}", role);
+                let tooltip_set = icon_set_label.clone();
+                let tooltip_icon_name = icon_set_enum
+                    .and_then(|set| icon_name(set, *role))
+                    .unwrap_or("(unmapped)");
+                let tooltip_icon_name = tooltip_icon_name.to_string();
+                let source = *source;
+
                 div()
                     .id(cell_id)
                     .flex()
                     .flex_col()
                     .items_center()
-                    .w(px(100.0))
                     .py_2()
+                    .px_2()
                     .gap_1()
                     .child(icon_element)
                     .child(Label::new(role_name).text_xs())
+                    .on_hover(Self::set_info(cx, {
+                        let mut lines = format!(
+                            "Role: {}\nIcon set: {}\nIcon name: {}",
+                            tooltip_role, tooltip_set, tooltip_icon_name,
+                        );
+                        match source {
+                            IconSource::System => {
+                                lines.push_str("\nOrigin: OS theme");
+                            }
+                            IconSource::Fallback => {
+                                lines.push_str(
+                                    "\nOrigin: Bundled Material fallback.\n\
+                                     The OS icon theme did not provide this icon,\n\
+                                     so the bundled Material SVG is used instead.",
+                                );
+                            }
+                            IconSource::Bundled => {
+                                lines.push_str("\nOrigin: Bundled with native-theme");
+                            }
+                            IconSource::NotFound => {
+                                lines.push_str(
+                                    "\nOrigin: Not found.\n\
+                                     No icon is available for this role in this set\n\
+                                     and no bundled fallback is configured.",
+                                );
+                            }
+                        }
+                        lines
+                    }))
             })
             .collect();
 
-        // --- gpui-component IconName gallery (existing) ---
-        let icons: Vec<(&str, IconName)> = vec![
-            ("ALargeSmall", IconName::ALargeSmall),
-            ("ArrowDown", IconName::ArrowDown),
-            ("ArrowLeft", IconName::ArrowLeft),
-            ("ArrowRight", IconName::ArrowRight),
-            ("ArrowUp", IconName::ArrowUp),
-            ("Asterisk", IconName::Asterisk),
-            ("Bell", IconName::Bell),
-            ("BookOpen", IconName::BookOpen),
-            ("Bot", IconName::Bot),
-            ("Building2", IconName::Building2),
-            ("Calendar", IconName::Calendar),
-            ("CaseSensitive", IconName::CaseSensitive),
-            ("ChartPie", IconName::ChartPie),
-            ("Check", IconName::Check),
-            ("ChevronDown", IconName::ChevronDown),
-            ("ChevronLeft", IconName::ChevronLeft),
-            ("ChevronRight", IconName::ChevronRight),
-            ("ChevronsUpDown", IconName::ChevronsUpDown),
-            ("ChevronUp", IconName::ChevronUp),
-            ("CircleCheck", IconName::CircleCheck),
-            ("CircleUser", IconName::CircleUser),
-            ("CircleX", IconName::CircleX),
-            ("Close", IconName::Close),
-            ("Copy", IconName::Copy),
-            ("Dash", IconName::Dash),
-            ("Delete", IconName::Delete),
-            ("Ellipsis", IconName::Ellipsis),
-            ("EllipsisVertical", IconName::EllipsisVertical),
-            ("ExternalLink", IconName::ExternalLink),
-            ("Eye", IconName::Eye),
-            ("EyeOff", IconName::EyeOff),
-            ("File", IconName::File),
-            ("Folder", IconName::Folder),
-            ("FolderClosed", IconName::FolderClosed),
-            ("FolderOpen", IconName::FolderOpen),
-            ("Frame", IconName::Frame),
-            ("GalleryVerticalEnd", IconName::GalleryVerticalEnd),
-            ("GitHub", IconName::GitHub),
-            ("Globe", IconName::Globe),
-            ("Heart", IconName::Heart),
-            ("HeartOff", IconName::HeartOff),
-            ("Inbox", IconName::Inbox),
-            ("Info", IconName::Info),
-            ("Inspector", IconName::Inspector),
-            ("LayoutDashboard", IconName::LayoutDashboard),
-            ("Loader", IconName::Loader),
-            ("LoaderCircle", IconName::LoaderCircle),
-            ("Map", IconName::Map),
-            ("Maximize", IconName::Maximize),
-            ("Menu", IconName::Menu),
-            ("Minimize", IconName::Minimize),
-            ("Minus", IconName::Minus),
-            ("Moon", IconName::Moon),
-            ("Palette", IconName::Palette),
-            ("PanelBottom", IconName::PanelBottom),
-            ("PanelBottomOpen", IconName::PanelBottomOpen),
-            ("PanelLeft", IconName::PanelLeft),
-            ("PanelLeftClose", IconName::PanelLeftClose),
-            ("PanelLeftOpen", IconName::PanelLeftOpen),
-            ("PanelRight", IconName::PanelRight),
-            ("PanelRightClose", IconName::PanelRightClose),
-            ("PanelRightOpen", IconName::PanelRightOpen),
-            ("Plus", IconName::Plus),
-            ("Redo", IconName::Redo),
-            ("Redo2", IconName::Redo2),
-            ("Replace", IconName::Replace),
-            ("ResizeCorner", IconName::ResizeCorner),
-            ("Search", IconName::Search),
-            ("Settings", IconName::Settings),
-            ("Settings2", IconName::Settings2),
-            ("SortAscending", IconName::SortAscending),
-            ("SortDescending", IconName::SortDescending),
-            ("SquareTerminal", IconName::SquareTerminal),
-            ("Star", IconName::Star),
-            ("StarOff", IconName::StarOff),
-            ("Sun", IconName::Sun),
-            ("ThumbsDown", IconName::ThumbsDown),
-            ("ThumbsUp", IconName::ThumbsUp),
-            ("TriangleAlert", IconName::TriangleAlert),
-            ("Undo", IconName::Undo),
-            ("Undo2", IconName::Undo2),
-            ("User", IconName::User),
-            ("WindowClose", IconName::WindowClose),
-            ("WindowMaximize", IconName::WindowMaximize),
-            ("WindowMinimize", IconName::WindowMinimize),
-            ("WindowRestore", IconName::WindowRestore),
-        ];
+        // --- gpui-component IconName gallery ---
+        let gpui_icon_set_label = self.icon_set_name.clone();
+        let gpui_icon_cells: Vec<_> = self
+            .gpui_icons
+            .iter()
+            .enumerate()
+            .map(|(i, (name, icon, role, data, source))| {
+                let name_s: SharedString = (*name).into();
+                let cell_id = SharedString::from(format!("gpui-icon-{}", i));
+
+                // Render from native-theme data when available, otherwise
+                // fall back to gpui-component's built-in Lucide icon.
+                let icon_element = if let Some(icon_data) = data {
+                    let img_source = to_image_source(icon_data);
+                    div().child(
+                        gpui::img(img_source)
+                            .w(px(20.0))
+                            .h(px(20.0)),
+                    )
+                } else {
+                    div().child(Icon::new(icon.clone()).with_size(Size::Medium))
+                };
+
+                let tooltip_name = name.to_string();
+                let tooltip_set = gpui_icon_set_label.clone();
+                let tooltip_role = role.map(|r| format!("{:?}", r));
+                let source = *source;
+
+                div()
+                    .id(cell_id)
+                    .flex()
+                    .flex_col()
+                    .items_center()
+                    .py_2()
+                    .px_2()
+                    .gap_1()
+                    .child(icon_element)
+                    .child(Label::new(name_s).text_xs())
+                    .on_hover(Self::set_info(cx, {
+                        let mut lines = format!("Icon: {}", tooltip_name);
+                        if let Some(ref role_str) = tooltip_role {
+                            lines.push_str(&format!(
+                                "\nMapped to IconRole: {}\nIcon set: {}",
+                                role_str, tooltip_set,
+                            ));
+                        } else {
+                            lines.push_str(
+                                "\nNo native-theme IconRole mapping.\n\
+                                 Always rendered from gpui-component's built-in Lucide SVG.",
+                            );
+                        }
+                        match source {
+                            IconSource::System => {
+                                lines.push_str("\nOrigin: OS theme");
+                            }
+                            IconSource::Fallback => {
+                                lines.push_str(
+                                    "\nOrigin: Bundled Material fallback.\n\
+                                     The OS icon theme did not provide this icon,\n\
+                                     so the bundled Material SVG is used instead.",
+                                );
+                            }
+                            IconSource::Bundled => {
+                                if tooltip_role.is_some() {
+                                    lines.push_str(&format!(
+                                        "\nOrigin: Bundled {} SVG",
+                                        tooltip_set,
+                                    ));
+                                } else {
+                                    lines.push_str(
+                                        "\nOrigin: gpui-component built-in (Lucide)",
+                                    );
+                                }
+                            }
+                            IconSource::NotFound => {
+                                lines.push_str(
+                                    "\nOrigin: Not found in selected set.\n\
+                                     Showing gpui-component built-in (Lucide) instead.",
+                                );
+                            }
+                        }
+                        lines
+                    }))
+            })
+            .collect();
+
+        let mapped_count = self.gpui_icons.iter().filter(|(_, _, r, _, _)| r.is_some()).count();
 
         v_flex()
             .gap_3()
             .p_4()
-            .flex_1()
             // Native Theme Icons section
             .child(section(native_section_title))
-            .child(
-                h_flex()
-                    .gap_2()
-                    .items_center()
-                    .child(Label::new("Icon Set:").text_sm())
-                    .child(
-                        Select::new(&self.icon_set_select)
-                            .with_size(Size::Small)
-                            .w(px(180.0)),
-                    ),
-            )
             .child(
                 div()
                     .id("native-icons-grid")
@@ -2019,13 +2196,18 @@ impl Showcase {
                         div()
                             .flex()
                             .flex_wrap()
-                            .gap_1()
+                            .gap_2()
                             .children(native_icon_cells),
                     ),
             )
             .child(Divider::horizontal())
-            // Existing gpui-component IconName gallery
-            .child(section(format!("gpui-component Icons ({} variants)", icons.len())))
+            // gpui-component IconName gallery
+            .child(section(format!(
+                "gpui-component Icons ({} variants, {} mapped to {})",
+                self.gpui_icons.len(),
+                mapped_count,
+                self.icon_set_name,
+            )))
             .child(
                 div()
                     .id("tt-icons-grid")
@@ -2033,42 +2215,18 @@ impl Showcase {
                         div()
                             .flex()
                             .flex_wrap()
-                            .gap_1()
-                            .children(icons.into_iter().map(|(name, icon): (&str, IconName)| {
-                                let name_s: SharedString = name.to_string().into();
-                                let tooltip_name = name.to_string();
-                                div()
-                                    .id(SharedString::from(format!("icon-{}", name)))
-                                    .flex()
-                                    .flex_col()
-                                    .items_center()
-                                    .w(px(80.0))
-                                    .py_2()
-                                    .gap_1()
-                                    .child(Icon::new(icon).with_size(Size::Medium))
-                                    .child(Label::new(name_s).text_xs())
-                                    .tooltip(move |window, cx| {
-                                        let t = cx.theme();
-                                        let hex = hsla_to_hex(t.foreground);
-                                        Tooltip::new(format!(
-                                            "Icon: {}\nColor: inherits from foreground ({})\nSizes: XSmall/Small/Medium/Large/custom",
-                                            tooltip_name, hex
-                                        )).build(window, cx)
-                                    })
-                            })),
+                            .gap_2()
+                            .children(gpui_icon_cells),
                     )
-                    .tooltip({ let fi = fi.clone(); move |window, cx| {
-                        let _t = cx.theme();
-                        Tooltip::new(widget_tooltip_themed(&fi,
+                    .on_hover(Self::hover_info(cx, &fi,
                             "Icon",
                             &[],
                             &[],
                             &[
                                 ("color", "inherited from parent foreground, customizable via text_color()"),
-                                ("SVG shapes", "87 built-in icons"),
+                                ("SVG shapes", "86 built-in Lucide icons from gpui-component"),
                             ],
-                        )).build(window, cx)
-                    }}),
+                                )),
             )
     }
 
@@ -2409,7 +2567,21 @@ impl Render for Showcase {
                     )
                     .child(Divider::horizontal()),
             )
-            .child(self.render_sidebar(cx));
+            .child(
+                v_flex()
+                    .p_3()
+                    .gap_3()
+                    .child(Label::new("Icon Set").text_size(px(13.0)).font_semibold())
+                    .child(
+                        Select::new(&self.icon_set_select)
+                            .with_size(Size::Small)
+                            .w_full(),
+                    )
+                    .child(Divider::horizontal()),
+            )
+            .child(self.render_sidebar(cx))
+            .child(Divider::horizontal())
+            .child(self.render_widget_info_panel());
 
         // Build the content area
         let content = v_flex()
@@ -2462,23 +2634,20 @@ impl Render for Showcase {
                                         this.active_tab = *ix;
                                     })),
                             )
-                            .tooltip({ let fi = fi.clone(); move |window, cx| {
-                                let t = cx.theme();
-                                Tooltip::new(widget_tooltip_themed(&fi,
+                            .on_hover(Self::hover_info(cx, &fi,
                                     "TabBar",
                                     &[
-                                        ("bg", "tab", t.tab),
-                                        ("active bg", "tab_active", t.tab_active),
-                                        ("active text", "tab_active_foreground", t.tab_active_foreground),
-                                        ("bar bg", "tab_bar", t.tab_bar),
-                                        ("text", "tab_foreground", t.tab_foreground),
-                                        ("border", "border", t.border),
-                                        ("hover", "secondary_hover", t.secondary_hover),
+                                        ("bg", "tab", theme.tab),
+                                        ("active bg", "tab_active", theme.tab_active),
+                                        ("active text", "tab_active_foreground", theme.tab_active_foreground),
+                                        ("bar bg", "tab_bar", theme.tab_bar),
+                                        ("text", "tab_foreground", theme.tab_foreground),
+                                        ("border", "border", theme.border),
+                                        ("hover", "secondary_hover", theme.secondary_hover),
                                     ],
-                                    &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                                    &[("border-radius", format!("radius: {}px", theme.radius.as_f32()))],
                                     &[("padding", "set per Size enum")],
-                                )).build(window, cx)
-                            }}),
+                                        )),
                     ),
             )
             // Content with scrollbar
@@ -2486,7 +2655,7 @@ impl Render for Showcase {
                 div()
                     .id("content-scroll-outer")
                     .flex_1()
-                    .overflow_y_scrollbar()
+                    .overflow_y_scroll()
                     .child(match active_tab {
                         TAB_BUTTONS => self.render_buttons_tab(cx).into_any_element(),
                         TAB_INPUTS => self.render_inputs_tab(cx).into_any_element(),
@@ -2516,7 +2685,9 @@ impl Render for Showcase {
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 fn main() {
-    Application::new().run(|cx: &mut App| {
+    Application::new()
+        .with_assets(gpui_component_assets::Assets)
+        .run(|cx: &mut App| {
         gpui_component::init(cx);
 
         let bounds = Bounds::centered(None, size(px(1100.), px(850.)), cx);
