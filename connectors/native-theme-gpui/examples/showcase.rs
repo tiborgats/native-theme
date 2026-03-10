@@ -44,8 +44,8 @@ use gpui_component::{
     v_flex, ActiveTheme, Disableable, Icon, IconName, PixelsExt, Root, Sizable, Size, StyledExt,
 };
 
-use native_theme::{icon_name, load_icon, IconData, IconRole, IconSet, NativeTheme};
-use native_theme_gpui::icons::to_image_source;
+use native_theme::{icon_name as native_icon_name, load_icon, IconData, IconRole, IconSet, NativeTheme, system_icon_set, bundled_icon_by_name};
+use native_theme_gpui::icons::{to_image_source, lucide_name_for_gpui_icon, material_name_for_gpui_icon};
 use native_theme_gpui::{pick_variant, to_theme};
 
 // ---------------------------------------------------------------------------
@@ -240,7 +240,7 @@ fn is_native_icon_set(name: &str) -> bool {
         "freedesktop" => cfg!(target_os = "linux"),
         "sf-symbols" => cfg!(any(target_os = "macos", target_os = "ios")),
         "segoe-fluent" => cfg!(target_os = "windows"),
-        "material" | "lucide" => true, // bundled, always available
+        "material" | "lucide" | "gpui-builtin" => true, // bundled, always available
         _ => false,
     }
 }
@@ -379,17 +379,33 @@ const GPUI_ICONS: &[(&str, IconName)] = &[
 fn load_gpui_icons(
     icon_set: &str,
 ) -> Vec<(&'static str, IconName, Option<IconRole>, Option<IconData>, IconSource)> {
+    if icon_set == "gpui-builtin" {
+        // All icons rendered from gpui-component built-in; no native-theme data loaded
+        return GPUI_ICONS
+            .iter()
+            .map(|(name, icon)| {
+                let role = role_for_gpui_icon(name);
+                (*name, icon.clone(), role, None, IconSource::Bundled)
+            })
+            .collect();
+    }
+
     let is_system_set = matches!(icon_set, "freedesktop" | "sf-symbols" | "segoe-fluent");
+    let icon_set_enum = IconSet::from_name(icon_set);
+
     GPUI_ICONS
         .iter()
         .map(|(name, icon)| {
-            if let Some(role) = role_for_gpui_icon(name) {
-                let data = load_icon(role, icon_set);
+            let role = role_for_gpui_icon(name);
+
+            // Try loading by IconRole first (existing path)
+            if let Some(r) = role {
+                let data = load_icon(r, icon_set);
                 let source = match &data {
                     None => IconSource::NotFound,
                     Some(_) if !is_system_set => IconSource::Bundled,
                     Some(IconData::Svg(loaded)) => {
-                        let mat = load_icon(role, "material");
+                        let mat = load_icon(r, "material");
                         if let Some(IconData::Svg(mat_bytes)) = &mat {
                             if loaded == mat_bytes {
                                 IconSource::Fallback
@@ -402,10 +418,26 @@ fn load_gpui_icons(
                     }
                     Some(_) => IconSource::System,
                 };
-                (*name, icon.clone(), Some(role), data, source)
-            } else {
-                (*name, icon.clone(), None, None, IconSource::Bundled)
+                return (*name, icon.clone(), Some(r), data, source);
             }
+
+            // No IconRole mapping — try by-name lookup
+            if let Some(set) = icon_set_enum {
+                let lookup_name = match set {
+                    IconSet::Lucide => lucide_name_for_gpui_icon(name),
+                    IconSet::Material => material_name_for_gpui_icon(name),
+                    _ => None,
+                };
+                if let Some(lname) = lookup_name {
+                    if let Some(svg_bytes) = bundled_icon_by_name(set, lname) {
+                        let data = Some(IconData::Svg(svg_bytes.to_vec()));
+                        return (*name, icon.clone(), None, data, IconSource::Bundled);
+                    }
+                }
+            }
+
+            // Fallback: no icon data
+            (*name, icon.clone(), None, None, IconSource::NotFound)
         })
         .collect()
 }
@@ -439,11 +471,36 @@ struct Showcase {
     icon_set_name: String,
     loaded_icons: Vec<(IconRole, Option<IconData>, IconSource)>,
     gpui_icons: Vec<(&'static str, IconName, Option<IconRole>, Option<IconData>, IconSource)>,
+    /// Whether the icon set follows the theme's default.
+    use_default_icon_set: bool,
+    /// The current theme's variant icon_theme (for reading default).
+    current_variant_icon_theme: Option<String>,
     /// Text shown in the Widget Info sidebar panel (set on hover).
     widget_info: String,
 }
 
 impl Showcase {
+    /// Resolve the effective icon set name for the current theme.
+    fn resolve_default_icon_set(&self) -> String {
+        self.current_variant_icon_theme
+            .as_deref()
+            .unwrap_or(system_icon_set().name())
+            .to_string()
+    }
+
+    /// Convert a display name from the icon set selector to the internal icon set name.
+    fn icon_set_internal_name(display: &str) -> String {
+        if display.starts_with("default (") {
+            "default".to_string()
+        } else if display == "gpui-component built-in (Lucide)" {
+            "gpui-builtin".to_string()
+        } else if display == "Lucide (bundled)" {
+            "lucide".to_string()
+        } else {
+            display.to_string()
+        }
+    }
+
     fn new(window: &mut Window, cx: &mut Context<Self>) -> Self {
         let names = theme_names();
         let delegate = SearchableVec::new(names);
@@ -517,18 +574,44 @@ impl Showcase {
         )
         .detach();
 
-        // Icon set selector – only show sets relevant to the current platform
-        let mut icon_set_names: Vec<SharedString> = vec![
+        // Apply the initial "default" preset theme.
+        let is_dark = cx.theme().is_dark();
+        let nt = NativeTheme::preset("default").expect("default preset must exist");
+        let original_fonts = pick_variant(&nt, is_dark)
+            .map(|v| v.fonts.clone())
+            .unwrap_or_default();
+        let current_variant_icon_theme = pick_variant(&nt, is_dark)
+            .and_then(|v| v.icon_theme.clone());
+        if let Some(variant) = pick_variant(&nt, is_dark) {
+            let theme = to_theme(variant, "default", is_dark);
+            *Theme::global_mut(cx) = theme;
+            window.refresh();
+        }
+
+        // Resolve initial icon set from theme's default
+        let initial_resolved = current_variant_icon_theme
+            .as_deref()
+            .unwrap_or(system_icon_set().name())
+            .to_string();
+        let loaded_icons = load_all_icons(&initial_resolved);
+        let gpui_icons = load_gpui_icons(&initial_resolved);
+
+        // Icon set selector – build with "default (...)" option
+        // We need a temporary Showcase-like context to call icon_set_names, so build inline:
+        let default_label = format!("default ({})", initial_resolved);
+        let mut icon_set_names_vec: Vec<SharedString> = vec![
+            default_label.into(),
+            "gpui-component built-in (Lucide)".into(),
+            "Lucide (bundled)".into(),
             "material".into(),
-            "lucide".into(),
         ];
         #[cfg(target_os = "linux")]
-        icon_set_names.push("freedesktop".into());
+        icon_set_names_vec.push("freedesktop".into());
         #[cfg(target_os = "macos")]
-        icon_set_names.push("sf-symbols".into());
+        icon_set_names_vec.push("sf-symbols".into());
         #[cfg(target_os = "windows")]
-        icon_set_names.push("segoe-fluent".into());
-        let icon_set_delegate = SearchableVec::new(icon_set_names);
+        icon_set_names_vec.push("segoe-fluent".into());
+        let icon_set_delegate = SearchableVec::new(icon_set_names_vec);
         let icon_set_select = cx.new(|cx| {
             SelectState::new(
                 icon_set_delegate,
@@ -543,31 +626,22 @@ impl Showcase {
             window,
             |this: &mut Self, _entity, event: &SelectEvent<SearchableVec<SharedString>>, _window, cx| {
                 if let SelectEvent::Confirm(Some(value)) = event {
-                    let name = value.to_string();
-                    this.icon_set_name = name.clone();
-                    this.loaded_icons = load_all_icons(&name);
-                    this.gpui_icons = load_gpui_icons(&name);
+                    let display = value.to_string();
+                    let internal = Self::icon_set_internal_name(&display);
+                    this.use_default_icon_set = internal == "default";
+                    let effective = if this.use_default_icon_set {
+                        this.resolve_default_icon_set()
+                    } else {
+                        internal
+                    };
+                    this.icon_set_name = effective.clone();
+                    this.loaded_icons = load_all_icons(&effective);
+                    this.gpui_icons = load_gpui_icons(&effective);
                     cx.notify();
                 }
             },
         )
         .detach();
-
-        let initial_icon_set = "material".to_string();
-        let loaded_icons = load_all_icons(&initial_icon_set);
-        let gpui_icons = load_gpui_icons(&initial_icon_set);
-
-        // Apply the initial "default" preset theme.
-        let is_dark = cx.theme().is_dark();
-        let nt = NativeTheme::preset("default").expect("default preset must exist");
-        let original_fonts = pick_variant(&nt, is_dark)
-            .map(|v| v.fonts.clone())
-            .unwrap_or_default();
-        if let Some(variant) = pick_variant(&nt, is_dark) {
-            let theme = to_theme(variant, "default", is_dark);
-            *Theme::global_mut(cx) = theme;
-            window.refresh();
-        }
 
         Self {
             theme_select,
@@ -586,9 +660,11 @@ impl Showcase {
             slider_value: 65.0,
             collapsible_open: true,
             icon_set_select,
-            icon_set_name: initial_icon_set,
+            icon_set_name: initial_resolved,
             loaded_icons,
             gpui_icons,
+            use_default_icon_set: true,
+            current_variant_icon_theme,
             widget_info: String::new(),
         }
     }
@@ -608,9 +684,18 @@ impl Showcase {
 
         if let Some(variant) = pick_variant(&nt, self.is_dark) {
             self.original_fonts = variant.fonts.clone();
+            self.current_variant_icon_theme = variant.icon_theme.clone();
             let theme = to_theme(variant, name, self.is_dark);
             *Theme::global_mut(cx) = theme;
             window.refresh();
+
+            // If using default icon set, reload icons for the new theme's default
+            if self.use_default_icon_set {
+                let effective = self.resolve_default_icon_set();
+                self.icon_set_name = effective.clone();
+                self.loaded_icons = load_all_icons(&effective);
+                self.gpui_icons = load_gpui_icons(&effective);
+            }
         }
     }
 
@@ -2029,7 +2114,18 @@ impl Showcase {
                 let role_name: SharedString = format!("{:?}", role).into();
                 let cell_id = SharedString::from(format!("native-icon-{}-{}", self.icon_set_name, i));
 
-                let icon_element = if let Some(icon_data) = data {
+                let is_gpui_builtin = self.icon_set_name == "gpui-builtin";
+                let icon_element = if is_gpui_builtin {
+                    if let Some(icon_name) = native_theme_gpui::icons::icon_name(*role) {
+                        div().child(Icon::new(icon_name).with_size(Size::Medium))
+                    } else {
+                        div()
+                            .w(px(20.0))
+                            .h(px(20.0))
+                            .bg(gpui::hsla(0.0, 0.0, 0.5, 0.2))
+                            .rounded(px(2.0))
+                    }
+                } else if let Some(icon_data) = data {
                     let img_source = to_image_source(icon_data);
                     div().child(
                         gpui::img(img_source)
@@ -2049,7 +2145,7 @@ impl Showcase {
                 let tooltip_role = format!("{:?}", role);
                 let tooltip_set = icon_set_label.clone();
                 let tooltip_icon_name = icon_set_enum
-                    .and_then(|set| icon_name(set, *role))
+                    .and_then(|set| native_icon_name(set, *role))
                     .unwrap_or("(unmapped)");
                 let tooltip_icon_name = tooltip_icon_name.to_string();
                 let source = *source;
@@ -2108,7 +2204,10 @@ impl Showcase {
 
                 // Render from native-theme data when available, otherwise
                 // fall back to gpui-component's built-in Lucide icon.
-                let icon_element = if let Some(icon_data) = data {
+                let is_gpui_builtin = self.icon_set_name == "gpui-builtin";
+                let icon_element = if is_gpui_builtin {
+                    div().child(Icon::new(icon.clone()).with_size(Size::Medium))
+                } else if let Some(icon_data) = data {
                     let img_source = to_image_source(icon_data);
                     div().child(
                         gpui::img(img_source)
