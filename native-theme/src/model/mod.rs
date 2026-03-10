@@ -61,10 +61,10 @@ pub struct ThemeVariant {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub widget_metrics: Option<WidgetMetrics>,
 
-    /// Icon set to use for this variant (e.g., "sf-symbols", "material").
+    /// Icon set / naming convention for this variant (e.g., "sf-symbols", "freedesktop").
     /// When None, resolved at runtime via system_icon_set().
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub icon_theme: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none", alias = "icon_theme")]
+    pub icon_set: Option<String>,
 }
 
 impl ThemeVariant {
@@ -83,8 +83,8 @@ impl ThemeVariant {
             _ => {}
         }
 
-        if overlay.icon_theme.is_some() {
-            self.icon_theme.clone_from(&overlay.icon_theme);
+        if overlay.icon_set.is_some() {
+            self.icon_set.clone_from(&overlay.icon_set);
         }
     }
 
@@ -95,7 +95,7 @@ impl ThemeVariant {
             && self.geometry.is_empty()
             && self.spacing.is_empty()
             && self.widget_metrics.as_ref().is_none_or(|wm| wm.is_empty())
-            && self.icon_theme.is_none()
+            && self.icon_set.is_none()
     }
 }
 
@@ -410,57 +410,65 @@ mod tests {
         assert!(!theme.is_empty());
     }
 
-    // === icon_theme tests ===
+    // === icon_set tests ===
 
     #[test]
-    fn icon_theme_default_is_none() {
-        assert!(ThemeVariant::default().icon_theme.is_none());
+    fn icon_set_default_is_none() {
+        assert!(ThemeVariant::default().icon_set.is_none());
     }
 
     #[test]
-    fn icon_theme_merge_overlay() {
+    fn icon_set_merge_overlay() {
         let mut base = ThemeVariant::default();
         let mut overlay = ThemeVariant::default();
-        overlay.icon_theme = Some("material".into());
+        overlay.icon_set = Some("material".into());
         base.merge(&overlay);
-        assert_eq!(base.icon_theme.as_deref(), Some("material"));
+        assert_eq!(base.icon_set.as_deref(), Some("material"));
     }
 
     #[test]
-    fn icon_theme_merge_none_preserves() {
+    fn icon_set_merge_none_preserves() {
         let mut base = ThemeVariant::default();
-        base.icon_theme = Some("sf-symbols".into());
-        let overlay = ThemeVariant::default(); // icon_theme is None
+        base.icon_set = Some("sf-symbols".into());
+        let overlay = ThemeVariant::default();
         base.merge(&overlay);
-        assert_eq!(base.icon_theme.as_deref(), Some("sf-symbols"));
+        assert_eq!(base.icon_set.as_deref(), Some("sf-symbols"));
     }
 
     #[test]
-    fn icon_theme_is_empty_when_set() {
+    fn icon_set_is_empty_when_set() {
         let mut v = ThemeVariant::default();
         assert!(v.is_empty());
-        v.icon_theme = Some("material".into());
+        v.icon_set = Some("material".into());
         assert!(!v.is_empty());
     }
 
     #[test]
-    fn icon_theme_toml_round_trip() {
+    fn icon_set_toml_round_trip() {
         let mut variant = ThemeVariant::default();
-        variant.icon_theme = Some("material".into());
+        variant.icon_set = Some("material".into());
         let toml_str = toml::to_string(&variant).unwrap();
-        assert!(toml_str.contains("icon_theme"));
+        assert!(toml_str.contains("icon_set"));
         let deserialized: ThemeVariant = toml::from_str(&toml_str).unwrap();
-        assert_eq!(deserialized.icon_theme.as_deref(), Some("material"));
+        assert_eq!(deserialized.icon_set.as_deref(), Some("material"));
     }
 
     #[test]
-    fn icon_theme_toml_absent_deserializes_to_none() {
+    fn icon_set_toml_alias_backward_compat() {
+        // Old TOML files use "icon_theme" — verify the serde alias works
+        let toml_str = r#"icon_theme = "freedesktop""#;
+        let variant: ThemeVariant = toml::from_str(toml_str).unwrap();
+        assert_eq!(variant.icon_set.as_deref(), Some("freedesktop"));
+    }
+
+    #[test]
+    fn icon_set_toml_absent_deserializes_to_none() {
         let toml_str = r##"
 [colors]
 accent = "#ff0000"
 "##;
         let variant: ThemeVariant = toml::from_str(toml_str).unwrap();
-        assert!(variant.icon_theme.is_none());
+        assert!(variant.icon_set.is_none());
     }
 
     #[test]

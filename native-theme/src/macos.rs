@@ -191,7 +191,7 @@ fn build_theme(
             geometry: Default::default(),
             spacing: Default::default(),
             widget_metrics: Some(wm.clone()),
-            icon_theme: None,
+            icon_set: None,
         }),
         dark: Some(crate::ThemeVariant {
             colors: dark_colors,
@@ -199,7 +199,7 @@ fn build_theme(
             geometry: Default::default(),
             spacing: Default::default(),
             widget_metrics: Some(wm),
-            icon_theme: None,
+            icon_set: None,
         }),
     }
 }

@@ -11,8 +11,9 @@
 //! ```
 
 use gpui::{
-    div, prelude::*, px, size, App, Application, Bounds, Context, Entity, Hsla, IntoElement,
-    ParentElement, Render, SharedString, Styled, Window, WindowBounds, WindowOptions,
+    div, prelude::*, px, rems, size, App, Application, Bounds, Context, Entity, Hsla,
+    ImageSource, IntoElement, ParentElement, Render, SharedString, Styled, Window, WindowBounds,
+    WindowOptions,
 };
 use gpui_component::{
     accordion::Accordion,
@@ -40,12 +41,13 @@ use gpui_component::{
     switch::Switch,
     tab::TabBar,
     tag::Tag,
+    text::{TextView, TextViewStyle},
     theme::Theme,
     v_flex, ActiveTheme, Disableable, Icon, IconName, PixelsExt, Root, Sizable, Size, StyledExt,
 };
 
 use native_theme::{icon_name as native_icon_name, load_icon, IconData, IconRole, IconSet, NativeTheme, system_icon_set, bundled_icon_by_name};
-use native_theme_gpui::icons::{to_image_source, lucide_name_for_gpui_icon, material_name_for_gpui_icon};
+use native_theme_gpui::icons::{to_image_source, to_image_source_colored, lucide_name_for_gpui_icon, material_name_for_gpui_icon};
 use native_theme_gpui::{pick_variant, to_theme};
 
 // ---------------------------------------------------------------------------
@@ -86,26 +88,26 @@ fn widget_tooltip(
     config: &[(&str, String)],
     not_themeable: &[(&str, &str)],
 ) -> String {
-    let mut s = format!("=== {} ===", name);
+    let mut s = format!("{}\n", name);
 
     if !colors.is_empty() {
-        s.push_str("\n\nTheme colors:");
+        s.push_str("\nTheme colors:\n");
         for (role, field, val) in colors {
-            s.push_str(&format!("\n  {} -> {}: {}", role, field, hsla_to_hex(*val)));
+            s.push_str(&format!("  {}: {} {}\n", role, field, hsla_to_hex(*val)));
         }
     }
 
     if !config.is_empty() {
-        s.push_str("\n\nTheme config:");
+        s.push_str("\nTheme config:\n");
         for (what, val) in config {
-            s.push_str(&format!("\n  {} -> {}", what, val));
+            s.push_str(&format!("  {}: {}\n", what, val));
         }
     }
 
     if !not_themeable.is_empty() {
-        s.push_str("\n\nNot themeable:");
+        s.push_str("\nNot themeable:\n");
         for (what, why) in not_themeable {
-            s.push_str(&format!("\n  {}: {}", what, why));
+            s.push_str(&format!("  {}: {}\n", what, why));
         }
     }
 
@@ -119,7 +121,7 @@ fn format_font_info(fonts: &native_theme::ThemeFonts) -> String {
     let mono = fonts.mono_family.as_deref().unwrap_or("(default)");
     let mono_size = fonts.mono_size.map(|s| format!("{}pt", s)).unwrap_or("(default)".into());
     format!(
-        "\n\nTheme fonts:\n  Font: {} {}\n  Mono: {} {}",
+        "\nTheme fonts:\n  Font: {} {}\n  Mono: {} {}",
         family, size, mono, mono_size,
     )
 }
@@ -141,10 +143,36 @@ fn widget_tooltip_themed(
 // Helpers
 // ---------------------------------------------------------------------------
 
+/// Return the preset name that best matches the current platform.
+fn platform_preset_name() -> &'static str {
+    #[cfg(target_os = "macos")]
+    { "macos-sonoma" }
+    #[cfg(target_os = "windows")]
+    { "windows-11" }
+    #[cfg(target_os = "linux")]
+    {
+        let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
+        if desktop.split(':').any(|c| c == "KDE") {
+            "kde-breeze"
+        } else {
+            "adwaita"
+        }
+    }
+    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
+    { "default" }
+}
+
 fn theme_names() -> Vec<SharedString> {
+    let platform = platform_preset_name();
     let mut names: Vec<SharedString> = NativeTheme::list_presets()
         .iter()
-        .map(|s| SharedString::from(s.to_string()))
+        .map(|s| {
+            if *s == "default" {
+                SharedString::from(format!("default ({})", platform))
+            } else {
+                SharedString::from(s.to_string())
+            }
+        })
         .collect();
     names.push("OS Theme".into());
     names
@@ -443,6 +471,54 @@ fn load_gpui_icons(
 }
 
 // ---------------------------------------------------------------------------
+// Widget Info panel – separate Entity so hover updates only re-render this
+// small panel instead of the entire Showcase.
+// ---------------------------------------------------------------------------
+
+struct WidgetInfoPanel {
+    text: String,
+    input_state: Entity<InputState>,
+    /// True when `text` changed and `input_state` needs syncing on next render.
+    needs_sync: bool,
+}
+
+impl WidgetInfoPanel {
+    fn set_text(&mut self, text: String, cx: &mut Context<Self>) {
+        if self.text != text {
+            self.text = text;
+            self.needs_sync = true;
+            cx.notify();
+        }
+    }
+}
+
+impl Render for WidgetInfoPanel {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        if self.needs_sync {
+            self.needs_sync = false;
+            let val = if self.text.is_empty() {
+                SharedString::from("Hover over any widget to see its theme properties.")
+            } else {
+                SharedString::from(self.text.clone())
+            };
+            self.input_state.update(cx, |state, cx| {
+                state.set_value(val, window, cx);
+            });
+        }
+
+        v_flex()
+            .p_3()
+            .w_full()
+            .child(Label::new("Widget Info").text_size(px(13.0)).font_semibold())
+            .child(
+                Input::new(&self.input_state)
+                    .appearance(false)
+                    .text_size(px(11.0)),
+            )
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Main view
 // ---------------------------------------------------------------------------
 
@@ -471,21 +547,72 @@ struct Showcase {
     icon_set_name: String,
     loaded_icons: Vec<(IconRole, Option<IconData>, IconSource)>,
     gpui_icons: Vec<(&'static str, IconName, Option<IconRole>, Option<IconData>, IconSource)>,
+    /// Cached ImageSource per native icon (same indexing as loaded_icons).
+    loaded_icon_sources: Vec<Option<ImageSource>>,
+    /// Cached ImageSource per gpui icon (same indexing as gpui_icons).
+    gpui_icon_sources: Vec<Option<ImageSource>>,
+    /// Foreground color used when building the image source caches.
+    icon_cache_fg: Hsla,
     /// Whether the icon set follows the theme's default.
     use_default_icon_set: bool,
-    /// The current theme's variant icon_theme (for reading default).
-    current_variant_icon_theme: Option<String>,
-    /// Text shown in the Widget Info sidebar panel (set on hover).
-    widget_info: String,
+    /// The current theme's variant icon_set (for reading default).
+    current_variant_icon_set: Option<String>,
+    /// Widget Info sidebar panel (separate Entity for independent re-render).
+    widget_info_panel: Entity<WidgetInfoPanel>,
 }
 
 impl Showcase {
+    /// Rebuild cached `ImageSource` objects for all loaded icons.
+    ///
+    /// Called when icons are loaded or the theme foreground color changes,
+    /// so that `render_icons_tab` can reuse the cached sources instead of
+    /// re-creating `Image` + `Arc` allocations and re-colorizing SVGs on
+    /// every frame.
+    fn rebuild_icon_caches(&mut self, fg: Hsla) {
+        self.icon_cache_fg = fg;
+        self.loaded_icon_sources = self
+            .loaded_icons
+            .iter()
+            .map(|(_, data, source)| {
+                data.as_ref().map(|d| {
+                    if *source == IconSource::System {
+                        to_image_source(d)
+                    } else {
+                        to_image_source_colored(d, fg)
+                    }
+                })
+            })
+            .collect();
+        self.gpui_icon_sources = self
+            .gpui_icons
+            .iter()
+            .map(|(_, _, _, data, source)| {
+                data.as_ref().map(|d| {
+                    if *source == IconSource::System {
+                        to_image_source(d)
+                    } else {
+                        to_image_source_colored(d, fg)
+                    }
+                })
+            })
+            .collect();
+    }
+
     /// Resolve the effective icon set name for the current theme.
     fn resolve_default_icon_set(&self) -> String {
-        self.current_variant_icon_theme
+        self.current_variant_icon_set
             .as_deref()
             .unwrap_or(system_icon_set().name())
             .to_string()
+    }
+
+    /// Convert a display name from the theme selector to the internal theme name.
+    fn theme_internal_name(display: &str) -> String {
+        if display.starts_with("default (") {
+            "default".to_string()
+        } else {
+            display.to_string()
+        }
     }
 
     /// Convert a display name from the icon set selector to the internal icon set name.
@@ -519,7 +646,7 @@ impl Showcase {
             window,
             |this: &mut Self, _entity, event: &SelectEvent<SearchableVec<SharedString>>, window, cx| {
                 if let SelectEvent::Confirm(Some(value)) = event {
-                    let name = value.to_string();
+                    let name = Self::theme_internal_name(&value.to_string());
                     this.current_theme_name = name.clone();
                     this.apply_theme_by_name(&name, window, cx);
                 }
@@ -580,8 +707,8 @@ impl Showcase {
         let original_fonts = pick_variant(&nt, is_dark)
             .map(|v| v.fonts.clone())
             .unwrap_or_default();
-        let current_variant_icon_theme = pick_variant(&nt, is_dark)
-            .and_then(|v| v.icon_theme.clone());
+        let current_variant_icon_set = pick_variant(&nt, is_dark)
+            .and_then(|v| v.icon_set.clone());
         if let Some(variant) = pick_variant(&nt, is_dark) {
             let theme = to_theme(variant, "default", is_dark);
             *Theme::global_mut(cx) = theme;
@@ -589,7 +716,7 @@ impl Showcase {
         }
 
         // Resolve initial icon set from theme's default
-        let initial_resolved = current_variant_icon_theme
+        let initial_resolved = current_variant_icon_set
             .as_deref()
             .unwrap_or(system_icon_set().name())
             .to_string();
@@ -637,13 +764,16 @@ impl Showcase {
                     this.icon_set_name = effective.clone();
                     this.loaded_icons = load_all_icons(&effective);
                     this.gpui_icons = load_gpui_icons(&effective);
+                    let fg = cx.theme().foreground;
+                    this.rebuild_icon_caches(fg);
                     cx.notify();
                 }
             },
         )
         .detach();
 
-        Self {
+        let fg = cx.theme().foreground;
+        let mut showcase = Self {
             theme_select,
             current_theme_name: "default".into(),
             is_dark,
@@ -663,10 +793,26 @@ impl Showcase {
             icon_set_name: initial_resolved,
             loaded_icons,
             gpui_icons,
+            loaded_icon_sources: Vec::new(),
+            gpui_icon_sources: Vec::new(),
+            icon_cache_fg: fg,
             use_default_icon_set: true,
-            current_variant_icon_theme,
-            widget_info: String::new(),
-        }
+            current_variant_icon_set,
+            widget_info_panel: {
+                let info_input = cx.new(|cx| {
+                    let mut state = InputState::new(window, cx).auto_grow(4, 30);
+                    state.set_placeholder("Hover over any widget…", window, cx);
+                    state
+                });
+                cx.new(|_cx| WidgetInfoPanel {
+                    text: String::new(),
+                    input_state: info_input,
+                    needs_sync: false,
+                })
+            },
+        };
+        showcase.rebuild_icon_caches(fg);
+        showcase
     }
 
     fn apply_theme_by_name(&mut self, name: &str, window: &mut Window, cx: &mut Context<Self>) {
@@ -674,6 +820,8 @@ impl Showcase {
             Theme::sync_system_appearance(Some(window), cx);
             self.is_dark = cx.theme().is_dark();
             self.original_fonts = native_theme::ThemeFonts::default();
+            let fg = cx.theme().foreground;
+            self.rebuild_icon_caches(fg);
             return;
         }
 
@@ -684,7 +832,7 @@ impl Showcase {
 
         if let Some(variant) = pick_variant(&nt, self.is_dark) {
             self.original_fonts = variant.fonts.clone();
-            self.current_variant_icon_theme = variant.icon_theme.clone();
+            self.current_variant_icon_set = variant.icon_set.clone();
             let theme = to_theme(variant, name, self.is_dark);
             *Theme::global_mut(cx) = theme;
             window.refresh();
@@ -696,6 +844,9 @@ impl Showcase {
                 self.loaded_icons = load_all_icons(&effective);
                 self.gpui_icons = load_gpui_icons(&effective);
             }
+            // Rebuild image caches for the new theme's foreground color
+            let fg = cx.theme().foreground;
+            self.rebuild_icon_caches(fg);
         }
     }
 
@@ -705,19 +856,25 @@ impl Showcase {
         self.apply_theme_by_name(&name, window, cx);
     }
 
-    /// Create a hover handler that sets `widget_info` to the given text.
-    fn set_info(cx: &mut Context<Self>, info: String) -> impl Fn(&bool, &mut Window, &mut App) + 'static {
-        cx.listener(move |this, hovered: &bool, _window, cx| {
-            if *hovered && this.widget_info != info {
-                this.widget_info = info.clone();
-                cx.notify();
+    /// Create a hover handler that updates the Widget Info panel.
+    ///
+    /// Captures a clone of the `WidgetInfoPanel` entity handle and updates it
+    /// directly — the Showcase entity is never entered so it does **not**
+    /// re-render, keeping hover updates cheap.
+    fn set_info(&self, info: String) -> impl Fn(&bool, &mut Window, &mut App) + 'static {
+        let panel = self.widget_info_panel.clone();
+        move |hovered: &bool, _window: &mut Window, cx: &mut App| {
+            if *hovered {
+                panel.update(cx, |p, cx| {
+                    p.set_text(info.clone(), cx);
+                });
             }
-        })
+        }
     }
 
     /// Create a hover handler using the standard widget_tooltip_themed format.
     fn hover_info(
-        cx: &mut Context<Self>,
+        &self,
         fi: &str,
         name: &str,
         colors: &[(&str, &str, Hsla)],
@@ -725,13 +882,13 @@ impl Showcase {
         not_themeable: &[(&str, &str)],
     ) -> impl Fn(&bool, &mut Window, &mut App) + 'static {
         let info = widget_tooltip_themed(fi, name, colors, config, not_themeable);
-        Self::set_info(cx, info)
+        self.set_info(info)
     }
 
     // -----------------------------------------------------------------------
     // Left sidebar: theme config inspector
     // -----------------------------------------------------------------------
-    fn render_sidebar(&self, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_sidebar(&self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let theme = cx.theme().clone();
         let radius_str = format!("{}px", theme.radius.as_f32());
         let radius_lg_str = format!("{}px", theme.radius_lg.as_f32());
@@ -742,44 +899,33 @@ impl Showcase {
         let shadow_str = if theme.shadow { "true" } else { "false" };
         let scrollbar_str = format!("{:?}", theme.scrollbar_show);
 
+        let md = format!(
+            "### Theme Config Inspector\n\n\
+             **radius:** {}\n\
+             **radius_lg:** {}\n\
+             **font_family:** {}\n\
+             **font_size:** {}\n\
+             **mono_font_family:** {}\n\
+             **mono_font_size:** {}\n\
+             **shadow:** {}\n\
+             **scrollbar_show:** {}",
+            radius_str, radius_lg_str, font_family_str, font_size_str,
+            mono_family_str, mono_size_str, shadow_str, scrollbar_str,
+        );
+
+        let style = TextViewStyle::default()
+            .paragraph_gap(rems(0.3))
+            .heading_font_size(|_level, _base| px(13.0));
+
         v_flex()
-            .gap_0p5()
             .p_3()
             .w_full()
-            .child(section("Theme Config Inspector"))
-            .child(self.config_row("radius", &radius_str))
-            .child(self.config_row("radius_lg", &radius_lg_str))
-            .child(self.config_row("font_family", &font_family_str))
-            .child(self.config_row("font_size", &font_size_str))
-            .child(self.config_row("mono_font_family", &mono_family_str))
-            .child(self.config_row("mono_font_size", &mono_size_str))
-            .child(self.config_row("shadow", shadow_str))
-            .child(self.config_row("scrollbar_show", &scrollbar_str))
-    }
-
-    fn render_widget_info_panel(&self) -> impl IntoElement {
-        let text = if self.widget_info.is_empty() {
-            "Hover over any widget to see its theme properties.".to_string()
-        } else {
-            self.widget_info.clone()
-        };
-        v_flex()
-            .gap_0p5()
-            .p_3()
-            .w_full()
-            .child(section("Widget Info"))
-            .children(text.lines().map(|line| {
-                Label::new(SharedString::from(line.to_string())).text_xs()
-            }))
-    }
-
-    fn config_row(&self, label: &str, value: &str) -> impl IntoElement {
-        let label_s: SharedString = label.to_string().into();
-        let value_s: SharedString = value.to_string().into();
-        v_flex()
-            .gap_0p5()
-            .child(Label::new(label_s).text_xs().font_semibold())
-            .child(Label::new(value_s).text_xs())
+            .child(
+                TextView::markdown("config-inspector", SharedString::from(md), window, cx)
+                    .selectable(true)
+                    .style(style)
+                    .text_xs(),
+            )
     }
 
     // -----------------------------------------------------------------------
@@ -802,7 +948,7 @@ impl Showcase {
                         div()
                             .id("tt-btn-primary")
                             .child(Button::new("b-primary").label("Primary").primary())
-                            .on_hover(Self::hover_info(cx, &fi,
+                            .on_hover(self.hover_info(&fi,
                                 "Button (Primary)",
                                 &[
                                     ("bg", "primary", t.primary),
@@ -825,7 +971,7 @@ impl Showcase {
                         div()
                             .id("tt-btn-secondary")
                             .child(Button::new("b-secondary").label("Secondary"))
-                            .on_hover(Self::hover_info(cx, &fi,
+                            .on_hover(self.hover_info(&fi,
                                     "Button (Secondary)",
                                     &[
                                         ("bg", "secondary", t.secondary),
@@ -848,7 +994,7 @@ impl Showcase {
                         div()
                             .id("tt-btn-danger")
                             .child(Button::new("b-danger").label("Danger").danger())
-                            .on_hover(Self::hover_info(cx, &fi,
+                            .on_hover(self.hover_info(&fi,
                                     "Button (Danger)",
                                     &[
                                         ("bg", "danger", t.danger),
@@ -871,7 +1017,7 @@ impl Showcase {
                         div()
                             .id("tt-btn-success")
                             .child(Button::new("b-success").label("Success").success())
-                            .on_hover(Self::hover_info(cx, &fi,
+                            .on_hover(self.hover_info(&fi,
                                     "Button (Success)",
                                     &[
                                         ("bg", "success", t.success),
@@ -894,7 +1040,7 @@ impl Showcase {
                         div()
                             .id("tt-btn-warning")
                             .child(Button::new("b-warning").label("Warning").warning())
-                            .on_hover(Self::hover_info(cx, &fi,
+                            .on_hover(self.hover_info(&fi,
                                     "Button (Warning)",
                                     &[
                                         ("bg", "warning", t.warning),
@@ -917,7 +1063,7 @@ impl Showcase {
                         div()
                             .id("tt-btn-info")
                             .child(Button::new("b-info").label("Info").info())
-                            .on_hover(Self::hover_info(cx, &fi,
+                            .on_hover(self.hover_info(&fi,
                                     "Button (Info)",
                                     &[
                                         ("bg", "info", t.info),
@@ -940,7 +1086,7 @@ impl Showcase {
                         div()
                             .id("tt-btn-ghost")
                             .child(Button::new("b-ghost").label("Ghost").ghost())
-                            .on_hover(Self::hover_info(cx, &fi,
+                            .on_hover(self.hover_info(&fi,
                                     "Button (Ghost)",
                                     &[
                                         ("text", "foreground", t.foreground),
@@ -954,7 +1100,7 @@ impl Showcase {
                         div()
                             .id("tt-btn-link")
                             .child(Button::new("b-link").label("Link").link())
-                            .on_hover(Self::hover_info(cx, &fi,
+                            .on_hover(self.hover_info(&fi,
                                     "Button (Link)",
                                     &[
                                         ("text", "foreground", t.foreground),
@@ -968,7 +1114,7 @@ impl Showcase {
                         div()
                             .id("tt-btn-text")
                             .child(Button::new("b-text").label("Text").text())
-                            .on_hover(Self::hover_info(cx, &fi,
+                            .on_hover(self.hover_info(&fi,
                                     "Button (Text)",
                                     &[
                                         ("text", "foreground", t.foreground),
@@ -982,7 +1128,7 @@ impl Showcase {
                         div()
                             .id("tt-btn-outline")
                             .child(Button::new("b-outline").label("Outline").primary().outline())
-                            .on_hover(Self::hover_info(cx, &fi,
+                            .on_hover(self.hover_info(&fi,
                                     "Button (Primary Outline)",
                                     &[
                                         ("border", "primary", t.primary),
@@ -1008,7 +1154,7 @@ impl Showcase {
                             .child(Button::new("s-md").label("Medium").with_size(Size::Medium))
                             .child(Button::new("s-lg").label("Large").with_size(Size::Large)),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Button Sizes",
                             &[
                                 ("bg", "secondary", t.secondary),
@@ -1033,7 +1179,7 @@ impl Showcase {
                             .child(Button::new("bg-b").label("Center"))
                             .child(Button::new("bg-c").label("Right")),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "ButtonGroup",
                             &[
                                 ("bg", "secondary", t.secondary),
@@ -1056,7 +1202,7 @@ impl Showcase {
                             .child(Button::new("d-sec").label("Disabled Secondary").disabled(true))
                             .child(Button::new("d-dng").label("Disabled Danger").danger().disabled(true)),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Disabled Buttons",
                             &[],
                             &[],
@@ -1076,7 +1222,7 @@ impl Showcase {
                             .gap_2()
                             .child(Button::new("l-pri").label("Loading...").primary().loading(true)),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Loading Button",
                             &[],
                             &[],
@@ -1098,7 +1244,7 @@ impl Showcase {
                             .child(Button::new("bi-search").label("Search").icon(IconName::Search))
                             .child(Button::new("bi-del").label("Delete").danger().icon(IconName::Delete)),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Buttons with Icons",
                             &[],
                             &[],
@@ -1138,7 +1284,7 @@ impl Showcase {
                             .with_size(Size::Medium)
                             .w(px(360.0)),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Input",
                             &[
                                 ("border", "input", t.input),
@@ -1165,7 +1311,7 @@ impl Showcase {
                             .with_size(Size::Medium)
                             .w(px(200.0)),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "NumberInput",
                             &[
                                 ("border", "input", t.input),
@@ -1216,7 +1362,7 @@ impl Showcase {
                                     .disabled(true),
                             ),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Checkbox",
                             &[
                                 ("checked bg", "primary", t.primary),
@@ -1246,7 +1392,7 @@ impl Showcase {
                                 this.radio_index = Some(*ix);
                             })),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Radio",
                             &[
                                 ("selected", "primary", t.primary),
@@ -1283,7 +1429,7 @@ impl Showcase {
                                     .disabled(true),
                             ),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Switch",
                             &[
                                 ("on track", "primary", t.primary),
@@ -1300,7 +1446,7 @@ impl Showcase {
                 div()
                     .id("tt-slider")
                     .child(Slider::new(&self.slider_state).w(px(360.0)))
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Slider",
                             &[
                                 ("track", "slider_bar", t.slider_bar),
@@ -1339,7 +1485,7 @@ impl Showcase {
                             .item("Platforms", "Linux, macOS, Windows", 1)
                             .item("Description", "Universal theme abstraction layer", 2),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "DescriptionList",
                             &[
                                 ("label bg", "description_list_label", t.description_list_label),
@@ -1385,7 +1531,7 @@ impl Showcase {
                                 )
                             }),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Accordion",
                             &[
                                 ("bg", "accordion", t.accordion),
@@ -1429,7 +1575,7 @@ impl Showcase {
                                     .child(Label::new("This content is shown when collapsible is open.").text_sm()),
                             ),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Collapsible",
                             &[
                                 ("bg", "accordion", t.accordion),
@@ -1469,7 +1615,7 @@ impl Showcase {
                                     .child(Label::new("Outlined border").text_sm()),
                             ),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "GroupBox",
                             &[
                                 ("fill bg", "group_box", t.group_box),
@@ -1502,7 +1648,7 @@ impl Showcase {
                         Alert::info("alert-info", "This is an informational message.")
                             .title("Info"),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Alert (Info)",
                             &[
                                 ("color", "info", t.info),
@@ -1524,7 +1670,7 @@ impl Showcase {
                         Alert::success("alert-ok", "Operation completed successfully.")
                             .title("Success"),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Alert (Success)",
                             &[
                                 ("color", "success", t.success),
@@ -1545,7 +1691,7 @@ impl Showcase {
                         Alert::warning("alert-warn", "Please review before proceeding.")
                             .title("Warning"),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Alert (Warning)",
                             &[
                                 ("color", "warning", t.warning),
@@ -1566,7 +1712,7 @@ impl Showcase {
                         Alert::error("alert-err", "Something went wrong. Please try again.")
                             .title("Error"),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Alert (Error)",
                             &[
                                 ("color", "danger", t.danger),
@@ -1611,7 +1757,7 @@ impl Showcase {
                             )
                             .child(Progress::new().value(100.0)),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Progress",
                             &[("bar", "progress_bar", t.progress_bar)],
                             &[],
@@ -1649,7 +1795,7 @@ impl Showcase {
                                     .child(Label::new("Large").text_sm()),
                             ),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Spinner",
                             &[],
                             &[],
@@ -1670,7 +1816,7 @@ impl Showcase {
                             .child(Skeleton::new().h(px(8.0)).w(px(250.0)).rounded(px(4.0)))
                             .child(Skeleton::new().secondary().h(px(60.0)).rounded(px(6.0))),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Skeleton",
                             &[("bg", "skeleton", t.skeleton)],
                             &[],
@@ -1701,7 +1847,7 @@ impl Showcase {
                             .child(Label::new("Label with secondary").secondary("(secondary text)"))
                             .child(Label::new("Masked label: secret123").masked(true)),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Label",
                             &[
                                 ("text", "foreground", t.foreground),
@@ -1733,7 +1879,7 @@ impl Showcase {
                             .child(Tag::primary().outline().child("Primary Outline"))
                             .child(Tag::danger().outline().child("Danger Outline")),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Tag (per variant)",
                             &[
                                 ("bg (primary)", "primary", t.primary),
@@ -1760,7 +1906,7 @@ impl Showcase {
                             )
                             .child(Badge::new().dot().child(Button::new("badge-3").label("Updates"))),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Badge",
                             &[
                                 ("bg", "red", t.red),
@@ -1789,7 +1935,7 @@ impl Showcase {
                                     .href("https://gpui.rs"),
                             ),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Link",
                             &[("text+decoration", "link", t.link)],
                             &[],
@@ -1833,7 +1979,7 @@ impl Showcase {
                             )
                             .child(BreadcrumbItem::new("Typography")),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Breadcrumb",
                             &[
                                 ("last item", "foreground", t.foreground),
@@ -1856,7 +2002,7 @@ impl Showcase {
                             .child(Divider::horizontal_dashed())
                             .child(Divider::horizontal_dashed().label("END")),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Divider",
                             &[
                                 ("line", "border", t.border),
@@ -1910,7 +2056,7 @@ impl Showcase {
                                 ),
                             ),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Resizable",
                             &[
                                 ("dragging border", "drag_border", t.drag_border),
@@ -1949,7 +2095,7 @@ impl Showcase {
                                 ),
                             ),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Resizable (vertical)",
                             &[
                                 ("dragging border", "drag_border", t.drag_border),
@@ -1971,7 +2117,7 @@ impl Showcase {
                             .child(Divider::horizontal().label("Section Break"))
                             .child(Divider::horizontal_dashed()),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Divider",
                             &[
                                 ("line", "border", t.border),
@@ -2003,7 +2149,7 @@ impl Showcase {
                                     ),
                             ),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "GroupBox (layout)",
                             &[
                                 ("fill bg", "group_box", t.group_box),
@@ -2040,7 +2186,7 @@ impl Showcase {
                                 ),
                             ),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Scrollbar",
                             &[
                                 ("track", "scrollbar", t.scrollbar),
@@ -2060,9 +2206,8 @@ impl Showcase {
     // -----------------------------------------------------------------------
     // Tab: Icons
     // -----------------------------------------------------------------------
-    fn render_icons_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_icons_tab(&self, _cx: &mut Context<Self>) -> impl IntoElement {
         let fi = format_font_info(&self.original_fonts);
-        let _t = cx.theme().clone();
 
         // --- Native Theme Icons section ---
         let fallback_label = if !is_native_icon_set(&self.icon_set_name) {
@@ -2110,7 +2255,7 @@ impl Showcase {
             .loaded_icons
             .iter()
             .enumerate()
-            .map(|(i, (role, data, source))| {
+            .map(|(i, (role, _data, source))| {
                 let role_name: SharedString = format!("{:?}", role).into();
                 let cell_id = SharedString::from(format!("native-icon-{}-{}", self.icon_set_name, i));
 
@@ -2125,8 +2270,7 @@ impl Showcase {
                             .bg(gpui::hsla(0.0, 0.0, 0.5, 0.2))
                             .rounded(px(2.0))
                     }
-                } else if let Some(icon_data) = data {
-                    let img_source = to_image_source(icon_data);
+                } else if let Some(img_source) = self.loaded_icon_sources.get(i).and_then(|s| s.clone()) {
                     div().child(
                         gpui::img(img_source)
                             .w(px(20.0))
@@ -2160,7 +2304,7 @@ impl Showcase {
                     .gap_1()
                     .child(icon_element)
                     .child(Label::new(role_name).text_xs())
-                    .on_hover(Self::set_info(cx, {
+                    .on_hover(self.set_info({
                         let mut lines = format!(
                             "Role: {}\nIcon set: {}\nIcon name: {}",
                             tooltip_role, tooltip_set, tooltip_icon_name,
@@ -2198,17 +2342,16 @@ impl Showcase {
             .gpui_icons
             .iter()
             .enumerate()
-            .map(|(i, (name, icon, role, data, source))| {
+            .map(|(i, (name, icon, role, _data, source))| {
                 let name_s: SharedString = (*name).into();
                 let cell_id = SharedString::from(format!("gpui-icon-{}", i));
 
-                // Render from native-theme data. Bundled sets (material, lucide)
+                // Render from cached image sources. Bundled sets (material, lucide)
                 // cover all 86 icons via by-name lookup — no mixing of sets.
                 let is_gpui_builtin = self.icon_set_name == "gpui-builtin";
                 let icon_element = if is_gpui_builtin {
                     div().child(Icon::new(icon.clone()).with_size(Size::Medium))
-                } else if let Some(icon_data) = data {
-                    let img_source = to_image_source(icon_data);
+                } else if let Some(img_source) = self.gpui_icon_sources.get(i).and_then(|s| s.clone()) {
                     div().child(
                         gpui::img(img_source)
                             .w(px(20.0))
@@ -2238,7 +2381,7 @@ impl Showcase {
                     .gap_1()
                     .child(icon_element)
                     .child(Label::new(name_s).text_xs())
-                    .on_hover(Self::set_info(cx, {
+                    .on_hover(self.set_info({
                         let mut lines = format!("Icon: {}", tooltip_name);
                         if let Some(ref role_str) = tooltip_role {
                             lines.push_str(&format!(
@@ -2263,16 +2406,10 @@ impl Showcase {
                                 );
                             }
                             IconSource::Bundled => {
-                                if tooltip_role.is_some() {
-                                    lines.push_str(&format!(
-                                        "\nOrigin: Bundled {} SVG",
-                                        tooltip_set,
-                                    ));
-                                } else {
-                                    lines.push_str(
-                                        "\nOrigin: gpui-component built-in (Lucide)",
-                                    );
-                                }
+                                lines.push_str(&format!(
+                                    "\nOrigin: Bundled {} SVG",
+                                    tooltip_set,
+                                ));
                             }
                             IconSource::NotFound => {
                                 lines.push_str(
@@ -2322,7 +2459,7 @@ impl Showcase {
                             .gap_2()
                             .children(gpui_icon_cells),
                     )
-                    .on_hover(Self::hover_info(cx, &fi,
+                    .on_hover(self.hover_info(&fi,
                             "Icon",
                             &[],
                             &[],
@@ -2624,9 +2761,15 @@ impl Showcase {
 // ---------------------------------------------------------------------------
 
 impl Render for Showcase {
-    fn render(&mut self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let fi = format_font_info(&self.original_fonts);
         let theme = cx.theme().clone();
+
+        // Ensure icon image caches match the current foreground color
+        if theme.foreground != self.icon_cache_fg {
+            self.rebuild_icon_caches(theme.foreground);
+        }
+
         let active_tab = self.active_tab;
         let is_dark = self.is_dark;
         let theme_name_display: SharedString = if self.current_theme_name == "OS Theme" {
@@ -2683,9 +2826,9 @@ impl Render for Showcase {
                     )
                     .child(Divider::horizontal()),
             )
-            .child(self.render_sidebar(cx))
+            .child(self.render_sidebar(window, cx))
             .child(Divider::horizontal())
-            .child(self.render_widget_info_panel());
+            .child(self.widget_info_panel.clone());
 
         // Build the content area
         let content = v_flex()
@@ -2738,7 +2881,7 @@ impl Render for Showcase {
                                         this.active_tab = *ix;
                                     })),
                             )
-                            .on_hover(Self::hover_info(cx, &fi,
+                            .on_hover(self.hover_info(&fi,
                                     "TabBar",
                                     &[
                                         ("bg", "tab", theme.tab),

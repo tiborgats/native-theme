@@ -236,10 +236,10 @@ accent = "#00ff00"
         let _ = std::fs::remove_file(&path);
     }
 
-    // === icon_theme preset tests ===
+    // === icon_set preset tests ===
 
     #[test]
-    fn icon_theme_native_presets_have_correct_values() {
+    fn icon_set_native_presets_have_correct_values() {
         let cases: &[(&str, &str)] = &[
             ("windows-11", "segoe-fluent"),
             ("macos-sonoma", "sf-symbols"),
@@ -252,21 +252,21 @@ accent = "#00ff00"
             let theme = preset(name).unwrap();
             let light = theme.light.as_ref().unwrap();
             assert_eq!(
-                light.icon_theme.as_deref(),
+                light.icon_set.as_deref(),
                 Some(*expected),
-                "preset '{name}' light.icon_theme should be Some(\"{expected}\")"
+                "preset '{name}' light.icon_set should be Some(\"{expected}\")"
             );
             let dark = theme.dark.as_ref().unwrap();
             assert_eq!(
-                dark.icon_theme.as_deref(),
+                dark.icon_set.as_deref(),
                 Some(*expected),
-                "preset '{name}' dark.icon_theme should be Some(\"{expected}\")"
+                "preset '{name}' dark.icon_set should be Some(\"{expected}\")"
             );
         }
     }
 
     #[test]
-    fn icon_theme_community_presets_are_none() {
+    fn icon_set_community_presets_are_none() {
         let community = &[
             "catppuccin-latte",
             "catppuccin-frappe",
@@ -284,13 +284,13 @@ accent = "#00ff00"
             let theme = preset(name).unwrap();
             let light = theme.light.as_ref().unwrap();
             assert!(
-                light.icon_theme.is_none(),
-                "preset '{name}' light.icon_theme should be None"
+                light.icon_set.is_none(),
+                "preset '{name}' light.icon_set should be None"
             );
             let dark = theme.dark.as_ref().unwrap();
             assert!(
-                dark.icon_theme.is_none(),
-                "preset '{name}' dark.icon_theme should be None"
+                dark.icon_set.is_none(),
+                "preset '{name}' dark.icon_set should be None"
             );
         }
     }

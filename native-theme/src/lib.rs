@@ -287,16 +287,16 @@ pub async fn from_system_async() -> crate::Result<NativeTheme> {
     from_system()
 }
 
-/// Load an icon for the given role using the specified icon theme.
+/// Load an icon for the given role using the specified icon set.
 ///
-/// Resolves `icon_theme` to an [`IconSet`] via [`IconSet::from_name()`],
-/// falling back to [`system_icon_set()`] if the theme string is not
+/// Resolves `icon_set` to an [`IconSet`] via [`IconSet::from_name()`],
+/// falling back to [`system_icon_set()`] if the set string is not
 /// recognized. Then dispatches to the appropriate platform loader or
 /// bundled icon set.
 ///
 /// # Fallback chain
 ///
-/// 1. Parse `icon_theme` to `IconSet` (unknown names fall back to system set)
+/// 1. Parse `icon_set` to `IconSet` (unknown names fall back to system set)
 /// 2. Platform loader (freedesktop/sf-symbols/segoe-fluent) when `system-icons` enabled
 /// 3. Bundled SVGs (material/lucide) when the corresponding feature is enabled
 /// 4. Wildcard: try bundled Material, else `None`
@@ -314,8 +314,8 @@ pub async fn from_system_async() -> crate::Result<NativeTheme> {
 /// # }
 /// ```
 #[allow(unreachable_patterns, clippy::needless_return, unused_variables)]
-pub fn load_icon(role: IconRole, icon_theme: &str) -> Option<IconData> {
-    let set = IconSet::from_name(icon_theme).unwrap_or_else(system_icon_set);
+pub fn load_icon(role: IconRole, icon_set: &str) -> Option<IconData> {
+    let set = IconSet::from_name(icon_set).unwrap_or_else(system_icon_set);
 
     match set {
         #[cfg(all(target_os = "linux", feature = "system-icons"))]
