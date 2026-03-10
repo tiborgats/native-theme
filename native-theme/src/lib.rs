@@ -86,7 +86,7 @@ pub use color::Rgba;
 pub use error::Error;
 pub use model::{
     IconData, IconRole, IconSet, NativeTheme, ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing,
-    ThemeVariant, WidgetMetrics, bundled_icon_svg,
+    ThemeVariant, WidgetMetrics, bundled_icon_svg, bundled_icon_by_name,
 };
 // load_icon re-exported from this module (defined in lib.rs directly)
 pub use model::icons::{icon_name, system_icon_set};

@@ -12,7 +12,7 @@ pub use colors::ThemeColors;
 pub use fonts::ThemeFonts;
 pub use geometry::ThemeGeometry;
 pub use spacing::ThemeSpacing;
-pub use bundled::bundled_icon_svg;
+pub use bundled::{bundled_icon_svg, bundled_icon_by_name};
 pub use icons::{IconData, IconRole, IconSet, icon_name, system_icon_set};
 pub use widget_metrics::{
     ButtonMetrics, CheckboxMetrics, InputMetrics, ListItemMetrics, MenuItemMetrics,
