@@ -128,20 +128,33 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// Desktop environments recognized on Linux.
 #[cfg(target_os = "linux")]
 #[derive(Debug, PartialEq)]
-enum LinuxDesktop {
+pub(crate) enum LinuxDesktop {
     Kde,
     Gnome,
+    Xfce,
+    Cinnamon,
+    Mate,
+    LxQt,
+    Budgie,
     Unknown,
 }
 
 /// Parse `XDG_CURRENT_DESKTOP` (a colon-separated list) and return
 /// the recognized desktop environment.
+///
+/// Checks components in order; first recognized DE wins. Budgie is checked
+/// before GNOME because Budgie sets `Budgie:GNOME`.
 #[cfg(target_os = "linux")]
-fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
+pub(crate) fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
     for component in xdg_current_desktop.split(':') {
         match component {
             "KDE" => return LinuxDesktop::Kde,
+            "Budgie" => return LinuxDesktop::Budgie,
             "GNOME" => return LinuxDesktop::Gnome,
+            "XFCE" => return LinuxDesktop::Xfce,
+            "X-Cinnamon" | "Cinnamon" => return LinuxDesktop::Cinnamon,
+            "MATE" => return LinuxDesktop::Mate,
+            "LXQt" => return LinuxDesktop::LxQt,
             _ => {}
         }
     }
@@ -159,7 +172,9 @@ fn from_linux() -> crate::Result<NativeTheme> {
         LinuxDesktop::Kde => crate::kde::from_kde(),
         #[cfg(not(feature = "kde"))]
         LinuxDesktop::Kde => NativeTheme::preset("adwaita"),
-        LinuxDesktop::Gnome => NativeTheme::preset("adwaita"),
+        LinuxDesktop::Gnome | LinuxDesktop::Budgie => NativeTheme::preset("adwaita"),
+        LinuxDesktop::Xfce | LinuxDesktop::Cinnamon
+        | LinuxDesktop::Mate | LinuxDesktop::LxQt => NativeTheme::preset("adwaita"),
         LinuxDesktop::Unknown => {
             #[cfg(feature = "kde")]
             {
@@ -246,9 +261,13 @@ pub async fn from_system_async() -> crate::Result<NativeTheme> {
         #[cfg(not(feature = "kde"))]
         LinuxDesktop::Kde => NativeTheme::preset("adwaita"),
         #[cfg(feature = "portal")]
-        LinuxDesktop::Gnome => crate::gnome::from_gnome().await,
+        LinuxDesktop::Gnome | LinuxDesktop::Budgie => crate::gnome::from_gnome().await,
         #[cfg(not(feature = "portal"))]
-        LinuxDesktop::Gnome => NativeTheme::preset("adwaita"),
+        LinuxDesktop::Gnome | LinuxDesktop::Budgie => NativeTheme::preset("adwaita"),
+        LinuxDesktop::Xfce | LinuxDesktop::Cinnamon
+        | LinuxDesktop::Mate | LinuxDesktop::LxQt => {
+            return NativeTheme::preset("adwaita");
+        }
         LinuxDesktop::Unknown => {
             // Use D-Bus portal backend detection to refine heuristic
             #[cfg(feature = "portal")]
@@ -260,7 +279,7 @@ pub async fn from_system_async() -> crate::Result<NativeTheme> {
                         #[cfg(not(feature = "kde"))]
                         LinuxDesktop::Kde => NativeTheme::preset("adwaita"),
                         LinuxDesktop::Gnome => crate::gnome::from_gnome().await,
-                        LinuxDesktop::Unknown => {
+                        _ => {
                             unreachable!("detect_portal_backend only returns Kde or Gnome")
                         }
                     };
@@ -390,13 +409,33 @@ mod dispatch_tests {
     }
 
     #[test]
-    fn detect_unknown_xfce() {
-        assert_eq!(detect_linux_de("XFCE"), LinuxDesktop::Unknown);
+    fn detect_xfce() {
+        assert_eq!(detect_linux_de("XFCE"), LinuxDesktop::Xfce);
     }
 
     #[test]
-    fn detect_unknown_cinnamon() {
-        assert_eq!(detect_linux_de("Cinnamon"), LinuxDesktop::Unknown);
+    fn detect_cinnamon() {
+        assert_eq!(detect_linux_de("X-Cinnamon"), LinuxDesktop::Cinnamon);
+    }
+
+    #[test]
+    fn detect_cinnamon_short() {
+        assert_eq!(detect_linux_de("Cinnamon"), LinuxDesktop::Cinnamon);
+    }
+
+    #[test]
+    fn detect_mate() {
+        assert_eq!(detect_linux_de("MATE"), LinuxDesktop::Mate);
+    }
+
+    #[test]
+    fn detect_lxqt() {
+        assert_eq!(detect_linux_de("LXQt"), LinuxDesktop::LxQt);
+    }
+
+    #[test]
+    fn detect_budgie() {
+        assert_eq!(detect_linux_de("Budgie:GNOME"), LinuxDesktop::Budgie);
     }
 
     #[test]
@@ -444,7 +483,7 @@ mod dispatch_tests {
         let orig_desktop = std::env::var("XDG_CURRENT_DESKTOP").ok();
 
         unsafe { std::env::set_var("XDG_CONFIG_HOME", &tmp_dir) };
-        unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "XFCE") };
+        unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "SomeUnknownDE") };
 
         let result = from_linux();
 
@@ -481,7 +520,7 @@ mod dispatch_tests {
                 "/tmp/nonexistent_native_theme_test_no_kde",
             )
         };
-        unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "XFCE") };
+        unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "SomeUnknownDE") };
 
         let result = from_linux();
 
