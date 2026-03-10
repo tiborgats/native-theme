@@ -18,7 +18,7 @@ handling system.
 │                                                     │
 │  ThemeVariant                                       │
 │  ├── colors, fonts, geometry, spacing, ...          │
-│  └── icon_theme: Option<String>  ◄── "sf-symbols"  │
+│  └── icon_set: Option<String>    ◄── "sf-symbols"   │
 │                                                     │
 │  load_icon("sf-symbols", DialogWarning, 24)         │
 │      │                                              │
@@ -125,13 +125,14 @@ pub struct ThemeVariant {
     pub geometry: Geometry,
     pub spacing: Spacing,
     pub widget_metrics: WidgetMetrics,
-    pub icon_theme: Option<String>,  // NEW
+    pub icon_set: Option<String>,    // NEW
 }
 ```
 
-The `icon_theme` field is set in each preset TOML. When `None`, the crate
-resolves it at runtime to the host OS native icon set (see Default
-Assignments below).
+The `icon_set` field is set in each preset TOML (serialized as `icon_set`,
+with `icon_theme` accepted as a backward-compatible serde alias). When
+`None`, the crate resolves it at runtime to the host OS native icon set
+(see Default Assignments below).
 
 ### Public API
 
@@ -142,23 +143,34 @@ Assignments below).
 /// the platform and icon set.  Returns `None` if the icon set does not
 /// cover the requested role.
 ///
-/// `icon_theme` values: "sf-symbols", "segoe-fluent", "freedesktop",
+/// `icon_set` values: "sf-symbols", "segoe-fluent", "freedesktop",
 /// "material", "lucide", "system"
-pub fn load_icon(icon_theme: &str, role: IconRole, size: u32) -> Option<IconData>
+///
+/// `size` is in pixels. On HiDPI displays, callers should multiply the
+/// desired point size by the scale factor (e.g. 24pt × 2 = 48px).
+pub fn load_icon(role: IconRole, icon_set: &str) -> Option<IconData>
 
 /// Look up the identifier string for a given icon set and role.
 ///
 /// Useful when the connector can handle the icon lookup itself
 /// (e.g. gpui-component already has Lucide icons loaded).
-pub fn icon_name(icon_theme: &str, role: IconRole) -> Option<&'static str>
+pub fn icon_name(icon_set: &str, role: IconRole) -> Option<&'static str>
 
 /// Resolve "system" to the actual icon set for the current OS.
 ///
-/// - macOS / iOS  → "sf-symbols"
-/// - Windows      → "segoe-fluent"
-/// - Linux        → "freedesktop"
-/// - other        → "material"
-pub fn system_icon_set() -> &'static str
+/// - macOS / iOS  → IconSet::SfSymbols
+/// - Windows      → IconSet::SegoeFluent
+/// - Linux        → IconSet::Freedesktop
+/// - other        → IconSet::Material
+pub fn system_icon_set() -> IconSet
+
+/// Detect the actual installed icon theme name on the current system.
+///
+/// Returns a theme name like "breeze-dark", "Adwaita", "Papirus", etc.
+/// On non-Linux platforms, returns the canonical icon set name.
+/// Useful when you need the real theme name (e.g. for freedesktop
+/// icon directory lookup) rather than the abstract icon set category.
+pub fn system_icon_theme() -> String
 ```
 
 ### Platform loading
@@ -168,7 +180,7 @@ pub fn system_icon_set() -> &'static str
 | macOS | `NSImage(systemSymbolName:)` → rasterize at requested size → `IconData::Rgba` |
 | iOS | `UIImage(systemName:)` → rasterize → `IconData::Rgba` |
 | Windows | `SHGetStockIconInfo(SIID_*)` for stock icons; load Segoe Fluent Icons font and render glyph for UI icons → `IconData::Rgba` |
-| Linux | Look up SVG in the active icon theme directory following the Icon Theme Specification (`$XDG_DATA_DIRS/icons/{theme}/{size}x{size}/{context}/{name}.svg`); fall back to `hicolor` → `IconData::Svg` |
+| Linux | Look up SVG in the active icon theme following the [Icon Theme Specification](https://specifications.freedesktop.org/icon-theme/latest/); subdirectory layout is defined by each theme's `index.theme` (conventionally `{size}x{size}/{context}/{name}.svg`). Search order: `$HOME/.icons`, `$XDG_DATA_DIRS/icons`, `/usr/share/pixmaps`. Fall back to `hicolor` → `IconData::Svg` |
 | Fallback | Return bundled SVG from the Material or Lucide set (if enabled) → `IconData::Svg` |
 
 Platform-specific code lives behind `#[cfg(target_os = "...")]` in the
@@ -187,7 +199,7 @@ but can be loaded at runtime through OS APIs.
 |----------|----------|---------|-------------|---------------|
 | SF Symbols | macOS, iOS | Apple proprietary | No | `NSImage` / `UIImage` API |
 | Segoe Fluent Icons | Windows | Microsoft proprietary | No | `SHGetStockIconInfo` + system font |
-| freedesktop (Adwaita) | Linux (GNOME) | LGPL-3.0 / CC-BY-SA-3.0 | Yes | SVG file lookup |
+| freedesktop (Adwaita) | Linux (GNOME) | LGPL-3.0-or-later / CC-BY-SA-3.0-US | Yes | SVG file lookup |
 | freedesktop (Breeze) | Linux (KDE) | LGPL-3.0 | Yes | SVG file lookup |
 
 ### Bundled icon sets
@@ -197,15 +209,15 @@ serve as cross-platform fallbacks.
 
 | Icon Set | License | Icons | Notes |
 |----------|---------|-------|-------|
-| Material Symbols | Apache 2.0 | 3,500+ | Recommended cross-platform default. Three styles (Outlined, Rounded, Sharp). |
-| Lucide | ISC | 1,500+ | Lightweight, clean line icons. Already used by gpui-component (87 icon subset). |
+| Material Symbols | Apache 2.0 | 3,800+ | Recommended cross-platform default. Three styles (Outlined, Rounded, Sharp). |
+| Lucide | ISC | 1,700+ | Lightweight, clean line icons. Already used by gpui-component (87 icon subset). |
 
 Future candidates (not in scope for initial implementation):
 
 | Icon Set | License | Icons | Notes |
 |----------|---------|-------|-------|
 | Phosphor | MIT | 9,000+ | Six weights (Thin → Fill). Very comprehensive. |
-| Tabler | MIT | 5,700+ | Consistent stroke width. |
+| Tabler | MIT | 5,900+ | Consistent stroke width. |
 
 ### Feature flags
 
@@ -226,8 +238,8 @@ their platform's icon set. Community themes detect the host OS at runtime.
 
 ### Native theme presets
 
-| Preset | `icon_theme` | Rationale |
-|--------|-------------|-----------|
+| Preset | `icon_set` | Rationale |
+|--------|-----------|-----------|
 | `windows-11` | `"segoe-fluent"` | Windows Fluent Design icons |
 | `macos-sonoma` | `"sf-symbols"` | Apple SF Symbols |
 | `ios` | `"sf-symbols"` | Same SF Symbols as macOS |
@@ -237,8 +249,8 @@ their platform's icon set. Community themes detect the host OS at runtime.
 
 ### Community theme presets
 
-| Preset | `icon_theme` | Resolved at runtime via `system_icon_set()` |
-|--------|-------------|---------------------------------------------|
+| Preset | `icon_set` | Resolved at runtime via `system_icon_set()` |
+|--------|-----------|---------------------------------------------|
 | `catppuccin-latte` | `None` (system) | macOS → SF Symbols, Linux → freedesktop, Windows → Segoe Fluent |
 | `catppuccin-frappe` | `None` (system) | same |
 | `catppuccin-macchiato` | `None` (system) | same |
@@ -253,7 +265,7 @@ their platform's icon set. Community themes detect the host OS at runtime.
 
 Community themes are color-only — they have no opinion on icons. Using the
 host OS native icons makes them feel native on every platform. The user
-can override `icon_theme` to `"material"` or `"lucide"` for a consistent
+can override `icon_set` to `"material"` or `"lucide"` for a consistent
 cross-platform look.
 
 ### Override examples
@@ -261,14 +273,14 @@ cross-platform look.
 ```rust
 // Use native icons (automatic per-OS)
 let variant = pick_variant(&theme, false).unwrap();
-// variant.icon_theme is None → resolved to system_icon_set()
+// variant.icon_set is None → resolved to system_icon_set()
 
 // Force Material icons everywhere
 let mut variant = pick_variant(&theme, false).unwrap().clone();
-variant.icon_theme = Some("material".into());
+variant.icon_set = Some("material".into());
 
 // Force Lucide icons (e.g. for gpui-component consistency)
-variant.icon_theme = Some("lucide".into());
+variant.icon_set = Some("lucide".into());
 ```
 
 ---
@@ -292,8 +304,8 @@ Adwaita and KDE Breeze share freedesktop icon names.
 | `dialog-success` | — | ✓ | ✓ ^2^ | ✓ | ✓ |
 | `shield` | ✓ | ✓ | ✓ | ✓ | ✓ |
 
-^1^ `IDI_QUESTION` is deprecated since Windows Vista. Microsoft recommends
-using `dialog-info` instead.\
+^1^ `MB_ICONQUESTION` / `IDI_QUESTION` is no longer recommended by Microsoft
+UX guidelines. Microsoft recommends using `dialog-info` instead.\
 ^2^ freedesktop spec has no `dialog-success`. Adwaita provides `emblem-ok-symbolic`.
 
 ### Window Controls
@@ -301,9 +313,9 @@ using `dialog-info` instead.\
 | Role | Windows 11 | macOS / iOS | Adwaita / Breeze | Material | Lucide |
 |------|-----------|-------------|-----------------|----------|--------|
 | `window-close` | ✓ ^3^ | ✓ ^4^ | ✓ | ✓ | ✓ |
-| `window-minimize` | ✓ ^3^ | ✓ ^4^ | ✓ | ✓ | ✓ |
-| `window-maximize` | ✓ ^3^ | ✓ ^4^ | ✓ | ✓ | ✓ |
-| `window-restore` | ✓ ^3^ | — | ✓ | ✓ | ✓ |
+| `window-minimize` | ✓ ^3^ | ✓ ^4^ | ✓ ^14^ | ✓ | ✓ |
+| `window-maximize` | ✓ ^3^ | ✓ ^4^ | ✓ ^14^ | ✓ | ✓ |
+| `window-restore` | ✓ ^3^ | — | ✓ ^14^ | ✓ | ✓ |
 
 ^3^ Windows draws title-bar buttons via DWM, not from icons. Segoe Fluent
 Icons provides matching glyphs (`ChromeClose`, `ChromeMinimize`, etc.).\
@@ -368,7 +380,7 @@ serves both roles.
 | Role | Windows 11 | macOS / iOS | Adwaita / Breeze | Material | Lucide |
 |------|-----------|-------------|-----------------|----------|--------|
 | `status-loading` | — ^10^ | — ^10^ | ✓ | ✓ | ✓ |
-| `status-check` | — | ✓ | ✓ ^11^ | ✓ | ✓ |
+| `status-check` | ✓ ^5^ | ✓ | ✓ ^11^ | ✓ | ✓ |
 | `status-error` | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ^10^ Loading is typically an animated widget (progress ring / spinner), not a
@@ -380,14 +392,16 @@ static icon.\
 | Role | Windows 11 | macOS / iOS | Adwaita / Breeze | Material | Lucide |
 |------|-----------|-------------|-----------------|----------|--------|
 | `user-account` | ✓ | ✓ | ✓ ^12^ | ✓ | ✓ |
-| `notification` | — ^13^ | ✓ | — ^13^ | ✓ | ✓ |
+| `notification` | ✓ ^5^ | ✓ | — ^13^ | ✓ | ✓ |
 | `help` | ✓ | ✓ | ✓ | ✓ | ✓ |
 | `lock` | ✓ | ✓ | ✓ | ✓ | ✓ |
 
 ^12^ `system-users` is not in the freedesktop spec but is shipped by Adwaita.\
-^13^ Neither Windows SHSTOCKICONID nor the freedesktop spec define a
-notification bell icon. Both platforms handle notifications through system
-services, not standalone icons.
+^13^ The freedesktop spec does not define a notification bell icon. Linux
+desktops handle notifications through system services, not standalone icons.\
+^14^ `window-minimize`, `window-maximize`, and `window-restore` are not in the
+freedesktop Icon Naming Specification. Both Adwaita and Breeze ship these icons
+as de facto standard names.
 
 ---
 
@@ -405,7 +419,7 @@ Two sources: **SHSTOCKICONID** values retrieved via `SHGetStockIconInfo`, and
 | `dialog-warning` | `SIID_WARNING` | 78 |
 | `dialog-error` | `SIID_ERROR` | 80 |
 | `dialog-info` | `SIID_INFO` | 79 |
-| `dialog-question` | `IDI_QUESTION` | (deprecated) |
+| `dialog-question` | `IDI_QUESTION` | (not recommended) |
 | `shield` | `SIID_SHIELD` | 77 |
 | `file-generic` | `SIID_DOCNOASSOC` | 0 |
 | `folder-closed` | `SIID_FOLDER` | 3 |
@@ -444,6 +458,8 @@ TaskDialog also defines: `TD_WARNING_ICON`, `TD_ERROR_ICON`,
 | `nav-down` | Down | U+E74B |
 | `nav-home` | Home | U+E80F |
 | `nav-menu` | GlobalNavigationButton | U+E700 |
+| `notification` | Ringer | U+EA8F |
+| `status-check` | CheckMark | U+E73E |
 | `window-close` | ChromeClose | U+E8BB |
 | `window-minimize` | ChromeMinimize | U+E921 |
 | `window-maximize` | ChromeMaximize | U+E922 |
@@ -472,7 +488,7 @@ NSImage.Name constants: `NSImageNameCaution` (warning), `NSImageNameInfo` (info)
 
 | Role | SF Symbol |
 |------|----------|
-| `action-save` | `square.and.arrow.down` |
+| `action-save` | `square.and.arrow.down` ^a^ |
 | `action-delete` | `trash` |
 | `action-copy` | `doc.on.doc` |
 | `action-paste` | `doc.on.clipboard` |
@@ -487,6 +503,10 @@ NSImage.Name constants: `NSImageNameCaution` (warning), `NSImageNameInfo` (info)
 | `action-refresh` | `arrow.clockwise` |
 | `action-print` | `printer` |
 
+^a^ `square.and.arrow.down` is Apple's standard download/import icon. SF
+Symbols has no dedicated "save" icon (macOS apps auto-save). This is the
+closest available equivalent.
+
 Note: `gear` (Apple's stylized settings icon) and `gearshape` (conventional
 gear shape) both exist. `gearshape` is the conventional choice.
 
@@ -499,7 +519,7 @@ gear shape) both exist. `gearshape` is the conventional choice.
 | `nav-up` | `chevron.up` |
 | `nav-down` | `chevron.down` |
 | `nav-home` | `house` |
-| `nav-menu` | `line.3.horizontal` |
+| `nav-menu` | `line.horizontal.3` |
 
 #### Window / System
 
@@ -520,7 +540,8 @@ gear shape) both exist. `gearshape` is the conventional choice.
 
 ### Adwaita / KDE Breeze (freedesktop)
 
-Both themes implement the freedesktop Icon Naming Specification. Append
+Both themes implement the freedesktop Icon Naming Specification plus
+additional de facto standard names (noted where applicable). Append
 `-symbolic` for monochrome, recolorable SVG variants.
 
 Breeze provides light and dark icon sets (`breeze/` and `breeze-dark/`).
@@ -572,9 +593,9 @@ Visual style differs but names are the same.
 | Role | Icon name |
 |------|----------|
 | `window-close` | `window-close` |
-| `window-minimize` | `window-minimize` |
-| `window-maximize` | `window-maximize` |
-| `window-restore` | `window-restore` |
+| `window-minimize` | `window-minimize` ^14^ |
+| `window-maximize` | `window-maximize` ^14^ |
+| `window-restore` | `window-restore` ^14^ |
 | `file-generic` | `text-x-generic` |
 | `folder-closed` | `folder` |
 | `folder-open` | `folder-open` |
@@ -655,7 +676,7 @@ optical size are controlled via font variation axes, not icon name suffixes.
 
 ### Lucide
 
-Lucide icons use kebab-case names. The full library has 1,500+ icons. The
+Lucide icons use kebab-case names. The full library has 1,700+ icons. The
 gpui-component crate (v0.5) bundles a curated subset of 87 as the `IconName`
 enum. The table below shows both the full Lucide name and the gpui-component
 `IconName` variant where available.
@@ -667,7 +688,7 @@ enum. The table below shows both the full Lucide name and the gpui-component
 | `dialog-warning` | `triangle-alert` | `TriangleAlert` |
 | `dialog-error` | `circle-x` | `CircleX` |
 | `dialog-info` | `info` | `Info` |
-| `dialog-question` | `circle-help` | — |
+| `dialog-question` | `circle-question-mark` | — |
 | `dialog-success` | `circle-check` | `CircleCheck` |
 | `shield` | `shield` | — |
 
@@ -698,7 +719,7 @@ enum. The table below shows both the full Lucide name and the gpui-component
 | `nav-forward` | `chevron-right` | `ChevronRight` |
 | `nav-up` | `chevron-up` | `ChevronUp` |
 | `nav-down` | `chevron-down` | `ChevronDown` |
-| `nav-home` | `home` | — |
+| `nav-home` | `house` | — |
 | `nav-menu` | `menu` | `Menu` |
 
 #### Window / Files / System
@@ -715,7 +736,7 @@ enum. The table below shows both the full Lucide name and the gpui-component
 | `trash-empty` | `trash-2` | `Delete` |
 | `user-account` | `user` | `User` |
 | `notification` | `bell` | `Bell` |
-| `help` | `help-circle` | — |
+| `help` | `circle-question-mark` | — |
 | `lock` | `lock` | — |
 | `status-loading` | `loader` | `Loader` |
 | `status-check` | `check` | `Check` |
@@ -743,10 +764,10 @@ use native_theme::{IconData, IconRole};
 
 /// Convert native-theme IconData to a gpui-renderable image.
 pub fn load_icon(variant: &ThemeVariant, role: IconRole, size: u32) -> Option<RenderImage> {
-    let icon_theme = variant.icon_theme.as_deref()
-        .unwrap_or_else(|| native_theme::system_icon_set());
+    let icon_set = variant.icon_set.as_deref()
+        .unwrap_or_else(|| native_theme::system_icon_set().name());
 
-    let icon_data = native_theme::load_icon(icon_theme, role, size)?;
+    let icon_data = native_theme::load_icon(role, icon_set)?;
 
     match icon_data {
         IconData::Rgba { width, height, data } => {
@@ -763,7 +784,7 @@ pub fn load_icon(variant: &ThemeVariant, role: IconRole, size: u32) -> Option<Re
 
 ### Lucide shortcut for gpui
 
-When `icon_theme` is `"lucide"`, the gpui connector can skip `load_icon`
+When `icon_set` is `"lucide"`, the gpui connector can skip `load_icon`
 entirely and map `IconRole` directly to gpui-component's `IconName` enum,
 since those icons are already loaded:
 
@@ -788,7 +809,7 @@ pub fn icon_name_for_role(role: IconRole) -> Option<IconName> {
 - [SF Symbols](https://developer.apple.com/sf-symbols/) - Apple icon library
 - [freedesktop Icon Naming Specification](https://specifications.freedesktop.org/icon-naming-spec/latest/) - Linux desktop standard
 - [freedesktop Icon Theme Specification](https://specifications.freedesktop.org/icon-theme/latest/) - Icon theme directory lookup
-- [Adwaita Icon Theme](https://gitlab.gnome.org/GNOME/adwaita-icon-theme) - GNOME icon set (LGPL-3.0 / CC-BY-SA-3.0)
+- [Adwaita Icon Theme](https://gitlab.gnome.org/GNOME/adwaita-icon-theme) - GNOME icon set (LGPL-3.0-or-later / CC-BY-SA-3.0-US)
 - [Breeze Icons](https://invent.kde.org/frameworks/breeze-icons) - KDE icon set (LGPL-3.0)
 - [Material Symbols](https://fonts.google.com/icons) - Google icon library (Apache 2.0)
 - [Lucide Icons](https://lucide.dev/) - Fork of Feather Icons (ISC license)
