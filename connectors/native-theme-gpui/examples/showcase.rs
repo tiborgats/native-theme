@@ -46,7 +46,7 @@ use gpui_component::{
     v_flex, ActiveTheme, Disableable, Icon, IconName, PixelsExt, Root, Sizable, Size, StyledExt,
 };
 
-use native_theme::{icon_name as native_icon_name, load_icon, IconData, IconRole, IconSet, NativeTheme, system_icon_set, bundled_icon_by_name};
+use native_theme::{icon_name as native_icon_name, load_icon, IconData, IconRole, IconSet, NativeTheme, system_icon_set, system_icon_theme, bundled_icon_by_name};
 use native_theme_gpui::icons::{to_image_source, to_image_source_colored, lucide_name_for_gpui_icon, material_name_for_gpui_icon};
 use native_theme_gpui::{pick_variant, to_theme};
 
@@ -2219,10 +2219,12 @@ impl Showcase {
         let system_count = self.loaded_icons.iter().filter(|(_, _, s)| *s == IconSource::System).count();
         let fallback_count = self.loaded_icons.iter().filter(|(_, _, s)| *s == IconSource::Fallback).count();
         let is_system_set = matches!(self.icon_set_name.as_str(), "freedesktop" | "sf-symbols" | "segoe-fluent");
+        let detected_theme = system_icon_theme();
         let native_section_title = if is_system_set {
             format!(
-                "Native Theme Icons: {} [{}/{} loaded, {} system, {} fallback]{}",
+                "Native Theme Icons: {} (theme: {}) [{}/{} loaded, {} system, {} fallback]{}",
                 self.icon_set_name,
+                detected_theme,
                 loaded_count,
                 self.loaded_icons.len(),
                 system_count,
@@ -2818,7 +2820,7 @@ impl Render for Showcase {
                 v_flex()
                     .p_3()
                     .gap_3()
-                    .child(Label::new("Icon Set").text_size(px(13.0)).font_semibold())
+                    .child(Label::new("Icon Theme").text_size(px(13.0)).font_semibold())
                     .child(
                         Select::new(&self.icon_set_select)
                             .with_size(Size::Small)
