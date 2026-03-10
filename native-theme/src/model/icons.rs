@@ -358,6 +358,166 @@ pub fn system_icon_set() -> IconSet {
     }
 }
 
+/// Detect the icon theme name for the current platform.
+///
+/// Returns the name of the icon theme that provides the actual icon files:
+/// - **macOS / iOS:** `"sf-symbols"` (no user-configurable icon theme)
+/// - **Windows:** `"segoe-fluent"` (no user-configurable icon theme)
+/// - **Linux:** DE-specific detection (e.g., `"breeze-dark"`, `"Adwaita"`)
+/// - **Other:** `"material"` (bundled fallback)
+///
+/// On Linux, the detection method depends on the desktop environment:
+/// - KDE: reads `[Icons] Theme` from `kdeglobals`
+/// - GNOME/Budgie: `gsettings get org.gnome.desktop.interface icon-theme`
+/// - Cinnamon: `gsettings get org.cinnamon.desktop.interface icon-theme`
+/// - XFCE: `xfconf-query -c xsettings -p /Net/IconThemeName`
+/// - MATE: `gsettings get org.mate.interface icon-theme`
+/// - LXQt: reads `icon_theme` from `~/.config/lxqt/lxqt.conf`
+/// - Unknown: tries KDE, then GNOME gsettings, then `"hicolor"`
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::system_icon_theme;
+///
+/// let theme = system_icon_theme();
+/// // On a KDE system with Breeze Dark: "breeze-dark"
+/// // On macOS: "sf-symbols"
+/// ```
+pub fn system_icon_theme() -> String {
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    { return "sf-symbols".to_string(); }
+
+    #[cfg(target_os = "windows")]
+    { return "segoe-fluent".to_string(); }
+
+    #[cfg(target_os = "linux")]
+    { return detect_linux_icon_theme(); }
+
+    #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos", target_os = "ios")))]
+    { "material".to_string() }
+}
+
+/// Linux icon theme detection, dispatched by desktop environment.
+#[cfg(target_os = "linux")]
+fn detect_linux_icon_theme() -> String {
+    let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
+    let de = crate::detect_linux_de(&desktop);
+
+    match de {
+        crate::LinuxDesktop::Kde => detect_kde_icon_theme(),
+        crate::LinuxDesktop::Gnome | crate::LinuxDesktop::Budgie => {
+            gsettings_icon_theme("org.gnome.desktop.interface")
+        }
+        crate::LinuxDesktop::Cinnamon => {
+            gsettings_icon_theme("org.cinnamon.desktop.interface")
+        }
+        crate::LinuxDesktop::Xfce => detect_xfce_icon_theme(),
+        crate::LinuxDesktop::Mate => {
+            gsettings_icon_theme("org.mate.interface")
+        }
+        crate::LinuxDesktop::LxQt => detect_lxqt_icon_theme(),
+        crate::LinuxDesktop::Unknown => {
+            #[cfg(feature = "kde")]
+            {
+                let kde = detect_kde_icon_theme();
+                if kde != "hicolor" {
+                    return kde;
+                }
+            }
+            let gnome = gsettings_icon_theme("org.gnome.desktop.interface");
+            if gnome != "hicolor" {
+                return gnome;
+            }
+            "hicolor".to_string()
+        }
+    }
+}
+
+/// Read icon theme from KDE's kdeglobals INI file.
+#[cfg(target_os = "linux")]
+fn detect_kde_icon_theme() -> String {
+    #[cfg(feature = "kde")]
+    {
+        let path = crate::kde::kdeglobals_path();
+        if let Ok(content) = std::fs::read_to_string(&path) {
+            let mut ini = crate::kde::create_kde_parser();
+            if ini.read(content).is_ok() {
+                if let Some(theme) = ini.get("Icons", "Theme") {
+                    if !theme.is_empty() {
+                        return theme;
+                    }
+                }
+            }
+        }
+    }
+    "hicolor".to_string()
+}
+
+/// Query gsettings for icon-theme with the given schema.
+#[cfg(target_os = "linux")]
+fn gsettings_icon_theme(schema: &str) -> String {
+    std::process::Command::new("gsettings")
+        .args(["get", schema, "icon-theme"])
+        .output()
+        .ok()
+        .filter(|o| o.status.success())
+        .and_then(|o| String::from_utf8(o.stdout).ok())
+        .map(|s| s.trim().trim_matches('\'').to_string())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "hicolor".to_string())
+}
+
+/// Read icon theme from XFCE's xfconf-query.
+#[cfg(target_os = "linux")]
+fn detect_xfce_icon_theme() -> String {
+    std::process::Command::new("xfconf-query")
+        .args(["-c", "xsettings", "-p", "/Net/IconThemeName"])
+        .output()
+        .ok()
+        .filter(|o| o.status.success())
+        .and_then(|o| String::from_utf8(o.stdout).ok())
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .unwrap_or_else(|| "hicolor".to_string())
+}
+
+/// Read icon theme from LXQt's config file.
+#[cfg(target_os = "linux")]
+fn detect_lxqt_icon_theme() -> String {
+    let config_dir = if let Ok(config_home) = std::env::var("XDG_CONFIG_HOME") {
+        if !config_home.is_empty() {
+            std::path::PathBuf::from(config_home)
+        } else {
+            dirs_fallback_config()
+        }
+    } else {
+        dirs_fallback_config()
+    };
+    let path = config_dir.join("lxqt").join("lxqt.conf");
+
+    if let Ok(content) = std::fs::read_to_string(&path) {
+        for line in content.lines() {
+            let trimmed = line.trim();
+            if let Some(value) = trimmed.strip_prefix("icon_theme=") {
+                let value = value.trim();
+                if !value.is_empty() {
+                    return value.to_string();
+                }
+            }
+        }
+    }
+    "hicolor".to_string()
+}
+
+#[cfg(target_os = "linux")]
+fn dirs_fallback_config() -> std::path::PathBuf {
+    std::env::var("HOME")
+        .map(std::path::PathBuf::from)
+        .unwrap_or_else(|_| std::path::PathBuf::from("/tmp"))
+        .join(".config")
+}
+
 // --- Private mapping functions ---
 
 #[allow(unreachable_patterns)]
@@ -1181,5 +1341,11 @@ mod tests {
     fn system_icon_set_returns_freedesktop_on_linux() {
         // This test is only meaningful on Linux (our CI/test platform)
         assert_eq!(system_icon_set(), IconSet::Freedesktop);
+    }
+
+    #[test]
+    fn system_icon_theme_returns_non_empty() {
+        let theme = system_icon_theme();
+        assert!(!theme.is_empty(), "system_icon_theme() should return a non-empty string");
     }
 }

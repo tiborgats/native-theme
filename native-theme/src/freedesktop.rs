@@ -8,12 +8,12 @@
 use crate::{bundled_icon_svg, icon_name, IconData, IconRole, IconSet};
 use std::path::PathBuf;
 
-/// Detect the active freedesktop icon theme from GTK settings.
+/// Detect the active freedesktop icon theme.
 ///
-/// Returns the theme name from GTK settings.ini if available,
-/// otherwise falls back to "hicolor" (the universal base theme).
+/// Delegates to `system_icon_theme()` which handles DE-specific detection
+/// (KDE reads kdeglobals, GNOME uses gsettings, etc.).
 fn detect_theme() -> String {
-    freedesktop_icons::default_theme_gtk().unwrap_or_else(|| "hicolor".to_string())
+    crate::system_icon_theme()
 }
 
 /// Look up an icon by freedesktop name using a two-pass strategy.

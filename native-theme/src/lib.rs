@@ -89,7 +89,7 @@ pub use model::{
     ThemeVariant, WidgetMetrics, bundled_icon_svg, bundled_icon_by_name,
 };
 // load_icon re-exported from this module (defined in lib.rs directly)
-pub use model::icons::{icon_name, system_icon_set};
+pub use model::icons::{icon_name, system_icon_set, system_icon_theme};
 
 pub mod macos;
 #[cfg(feature = "svg-rasterize")]
