@@ -2202,8 +2202,8 @@ impl Showcase {
                 let name_s: SharedString = (*name).into();
                 let cell_id = SharedString::from(format!("gpui-icon-{}", i));
 
-                // Render from native-theme data when available, otherwise
-                // fall back to gpui-component's built-in Lucide icon.
+                // Render from native-theme data. Bundled sets (material, lucide)
+                // cover all 86 icons via by-name lookup — no mixing of sets.
                 let is_gpui_builtin = self.icon_set_name == "gpui-builtin";
                 let icon_element = if is_gpui_builtin {
                     div().child(Icon::new(icon.clone()).with_size(Size::Medium))
@@ -2215,7 +2215,12 @@ impl Showcase {
                             .h(px(20.0)),
                     )
                 } else {
-                    div().child(Icon::new(icon.clone()).with_size(Size::Medium))
+                    // Gray placeholder — no fallback to a different icon set
+                    div()
+                        .w(px(20.0))
+                        .h(px(20.0))
+                        .bg(gpui::hsla(0.0, 0.0, 0.5, 0.2))
+                        .rounded(px(2.0))
                 };
 
                 let tooltip_name = name.to_string();
@@ -2243,7 +2248,7 @@ impl Showcase {
                         } else {
                             lines.push_str(
                                 "\nNo native-theme IconRole mapping.\n\
-                                 Always rendered from gpui-component's built-in Lucide SVG.",
+                                 Loaded via by-name lookup from bundled icon set.",
                             );
                         }
                         match source {
@@ -2272,7 +2277,7 @@ impl Showcase {
                             IconSource::NotFound => {
                                 lines.push_str(
                                     "\nOrigin: Not found in selected set.\n\
-                                     Showing gpui-component built-in (Lucide) instead.",
+                                     No icon available for this variant in the selected set.",
                                 );
                             }
                         }
