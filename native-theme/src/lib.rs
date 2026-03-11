@@ -161,6 +161,51 @@ pub fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
     LinuxDesktop::Unknown
 }
 
+/// Detect whether the system is using a dark color scheme.
+///
+/// Uses synchronous, platform-specific checks so the result is available
+/// immediately at window creation time (before any async portal response).
+///
+/// # Fallback chain
+///
+/// 1. `gsettings get org.gnome.desktop.interface color-scheme` — works on
+///    all DEs that implement the freedesktop color-scheme setting (GNOME,
+///    KDE 5.x+, XFCE, etc.).
+/// 2. **(with `kde` feature)** `~/.config/kdeglobals` background luminance.
+/// 3. Returns `false` (light) if neither source is available.
+#[cfg(target_os = "linux")]
+pub fn system_is_dark() -> bool {
+    // gsettings works across all modern DEs (GNOME, KDE, XFCE, …)
+    if let Ok(output) = std::process::Command::new("gsettings")
+        .args(["get", "org.gnome.desktop.interface", "color-scheme"])
+        .output()
+    {
+        if output.status.success() {
+            let val = String::from_utf8_lossy(&output.stdout);
+            if val.contains("prefer-dark") {
+                return true;
+            }
+            if val.contains("prefer-light") || val.contains("default") {
+                return false;
+            }
+        }
+    }
+
+    // Fallback: read KDE's kdeglobals background luminance
+    #[cfg(feature = "kde")]
+    {
+        let path = crate::kde::kdeglobals_path();
+        if let Ok(content) = std::fs::read_to_string(&path) {
+            let mut ini = crate::kde::create_kde_parser();
+            if ini.read(content).is_ok() {
+                return crate::kde::is_dark_theme(&ini);
+            }
+        }
+    }
+
+    false
+}
+
 /// Read the current system theme on Linux by detecting the desktop
 /// environment and calling the appropriate reader or returning a
 /// preset fallback.

@@ -12,8 +12,8 @@
 
 use gpui::{
     div, prelude::*, px, rems, size, App, Application, Bounds, Context, Entity, Hsla,
-    ImageSource, IntoElement, ParentElement, Render, SharedString, Styled, Window, WindowBounds,
-    WindowOptions,
+    ImageSource, IntoElement, ParentElement, Render, SharedString, Styled, Window,
+    WindowBounds, WindowOptions,
 };
 use gpui_component::{
     accordion::Accordion,
@@ -48,7 +48,7 @@ use gpui_component::{
 
 use native_theme::{icon_name as native_icon_name, load_icon, IconData, IconRole, IconSet, NativeTheme, system_icon_set, system_icon_theme, bundled_icon_by_name};
 #[cfg(target_os = "linux")]
-use native_theme::{detect_linux_de, load_freedesktop_icon_by_name};
+use native_theme::{detect_linux_de, load_freedesktop_icon_by_name, system_is_dark};
 use native_theme_gpui::icons::{to_image_source, to_image_source_colored, lucide_name_for_gpui_icon, material_name_for_gpui_icon};
 #[cfg(target_os = "linux")]
 use native_theme_gpui::icons::freedesktop_name_for_gpui_icon;
@@ -557,6 +557,53 @@ impl Render for WidgetInfoPanel {
 }
 
 // ---------------------------------------------------------------------------
+// ---------------------------------------------------------------------------
+// Color mode (light / dark / system)
+// ---------------------------------------------------------------------------
+
+#[derive(Clone, Copy, Debug, PartialEq)]
+enum ColorMode {
+    System,
+    Light,
+    Dark,
+}
+
+impl ColorMode {
+    /// Resolve to a concrete is_dark bool.
+    fn is_dark(self) -> bool {
+        match self {
+            ColorMode::Light => false,
+            ColorMode::Dark => true,
+            ColorMode::System => Self::system_prefers_dark(),
+        }
+    }
+
+    /// Synchronously detect whether the OS prefers dark mode.
+    fn system_prefers_dark() -> bool {
+        #[cfg(target_os = "linux")]
+        {
+            system_is_dark()
+        }
+        #[cfg(not(target_os = "linux"))]
+        {
+            false // TODO: macOS / Windows detection
+        }
+    }
+
+    /// Display label for the combobox, with system preference in parentheses.
+    fn label(self) -> String {
+        match self {
+            ColorMode::System => {
+                let actual = if Self::system_prefers_dark() { "Dark" } else { "Light" };
+                format!("System ({actual})")
+            }
+            ColorMode::Light => "Light".into(),
+            ColorMode::Dark => "Dark".into(),
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Main view
 // ---------------------------------------------------------------------------
 
@@ -564,6 +611,8 @@ struct Showcase {
     theme_select: Entity<SelectState<SearchableVec<SharedString>>>,
     current_theme_name: String,
     is_dark: bool,
+    color_mode: ColorMode,
+    dark_mode_select: Entity<SelectState<SearchableVec<SharedString>>>,
     /// Original native-theme fonts (in points), for display purposes.
     original_fonts: native_theme::ThemeFonts,
 
@@ -700,6 +749,45 @@ impl Showcase {
         )
         .detach();
 
+        // Color mode selector (System / Light / Dark)
+        let color_mode = ColorMode::System;
+        let color_mode_labels: Vec<SharedString> = [
+            ColorMode::System,
+            ColorMode::Light,
+            ColorMode::Dark,
+        ]
+        .iter()
+        .map(|m| SharedString::from(m.label()))
+        .collect();
+        let dark_mode_delegate = SearchableVec::new(color_mode_labels);
+        let dark_mode_select = cx.new(|cx| {
+            SelectState::new(
+                dark_mode_delegate,
+                Some(gpui_component::IndexPath::default().row(0)),
+                window,
+                cx,
+            )
+        });
+
+        cx.subscribe_in(
+            &dark_mode_select,
+            window,
+            |this: &mut Self, _entity, event: &SelectEvent<SearchableVec<SharedString>>, window, cx| {
+                if let SelectEvent::Confirm(Some(value)) = event {
+                    let val = value.to_string();
+                    let mode = if val.starts_with("System") {
+                        ColorMode::System
+                    } else if val == "Light" {
+                        ColorMode::Light
+                    } else {
+                        ColorMode::Dark
+                    };
+                    this.set_color_mode(mode, window, cx);
+                }
+            },
+        )
+        .detach();
+
         let input_state = cx.new(|cx| {
             let mut state = InputState::new(window, cx);
             state.set_placeholder("Type something here...", window, cx);
@@ -748,7 +836,7 @@ impl Showcase {
         .detach();
 
         // Apply the initial "default" preset theme.
-        let is_dark = cx.theme().is_dark();
+        let is_dark = color_mode.is_dark();
         let nt = NativeTheme::preset("default").expect("default preset must exist");
         let original_fonts = pick_variant(&nt, is_dark)
             .map(|v| v.fonts.clone())
@@ -819,6 +907,8 @@ impl Showcase {
             theme_select,
             current_theme_name: "default".into(),
             is_dark,
+            color_mode,
+            dark_mode_select,
             original_fonts,
             active_tab: TAB_BUTTONS,
             input_state,
@@ -892,8 +982,9 @@ impl Showcase {
         }
     }
 
-    fn toggle_dark_mode(&mut self, is_dark: bool, window: &mut Window, cx: &mut Context<Self>) {
-        self.is_dark = is_dark;
+    fn set_color_mode(&mut self, mode: ColorMode, window: &mut Window, cx: &mut Context<Self>) {
+        self.color_mode = mode;
+        self.is_dark = mode.is_dark();
         let name = self.current_theme_name.clone();
         self.apply_theme_by_name(&name, window, cx);
     }
@@ -2847,13 +2938,9 @@ impl Render for Showcase {
                             .w_full(),
                     )
                     .child(
-                        Switch::new("dark-mode")
-                            .label("Dark mode")
+                        Select::new(&self.dark_mode_select)
                             .with_size(Size::Small)
-                            .checked(is_dark)
-                            .on_click(cx.listener(|this, val: &bool, window, cx| {
-                                this.toggle_dark_mode(*val, window, cx);
-                            })),
+                            .w_full(),
                     )
                     .child(Divider::horizontal()),
             )
