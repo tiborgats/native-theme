@@ -128,7 +128,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 /// Desktop environments recognized on Linux.
 #[cfg(target_os = "linux")]
 #[derive(Debug, PartialEq)]
-pub(crate) enum LinuxDesktop {
+pub enum LinuxDesktop {
     Kde,
     Gnome,
     Xfce,
@@ -145,7 +145,7 @@ pub(crate) enum LinuxDesktop {
 /// Checks components in order; first recognized DE wins. Budgie is checked
 /// before GNOME because Budgie sets `Budgie:GNOME`.
 #[cfg(target_os = "linux")]
-pub(crate) fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
+pub fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
     for component in xdg_current_desktop.split(':') {
         match component {
             "KDE" => return LinuxDesktop::Kde,
