@@ -418,12 +418,9 @@ fn detect_linux_icon_theme() -> String {
         }
         crate::LinuxDesktop::LxQt => detect_lxqt_icon_theme(),
         crate::LinuxDesktop::Unknown => {
-            #[cfg(feature = "kde")]
-            {
-                let kde = detect_kde_icon_theme();
-                if kde != "hicolor" {
-                    return kde;
-                }
+            let kde = detect_kde_icon_theme();
+            if kde != "hicolor" {
+                return kde;
             }
             let gnome = gsettings_icon_theme("org.gnome.desktop.interface");
             if gnome != "hicolor" {
@@ -438,29 +435,20 @@ fn detect_linux_icon_theme() -> String {
 ///
 /// Checks `~/.config/kdeglobals` first, then `~/.config/kdedefaults/kdeglobals`
 /// (Plasma 6 stores distro defaults there, including the icon theme).
+///
+/// Uses simple line parsing — no `configparser` dependency required — so this
+/// works without the `kde` feature enabled.
 #[cfg(target_os = "linux")]
 fn detect_kde_icon_theme() -> String {
-    #[cfg(feature = "kde")]
-    {
-        // Try user kdeglobals first, then kdedefaults (Plasma 6)
-        let primary = crate::kde::kdeglobals_path();
-        let kdedefaults = primary.parent()
-            .map(|p| p.join("kdedefaults").join("kdeglobals"));
-        let paths: Vec<std::path::PathBuf> = std::iter::once(primary)
-            .chain(kdedefaults)
-            .collect();
+    let config_dir = xdg_config_dir();
+    let paths = [
+        config_dir.join("kdeglobals"),
+        config_dir.join("kdedefaults").join("kdeglobals"),
+    ];
 
-        for path in paths {
-            if let Ok(content) = std::fs::read_to_string(&path) {
-                let mut ini = crate::kde::create_kde_parser();
-                if ini.read(content).is_ok() {
-                    if let Some(theme) = ini.get("Icons", "Theme") {
-                        if !theme.is_empty() {
-                            return theme;
-                        }
-                    }
-                }
-            }
+    for path in &paths {
+        if let Some(theme) = read_ini_value(path, "Icons", "Theme") {
+            return theme;
         }
     }
     "hicolor".to_string()
@@ -495,18 +483,12 @@ fn detect_xfce_icon_theme() -> String {
 }
 
 /// Read icon theme from LXQt's config file.
+///
+/// LXQt uses a flat `key=value` format (no section headers for the icon_theme
+/// key), so we scan for the bare `icon_theme=` prefix.
 #[cfg(target_os = "linux")]
 fn detect_lxqt_icon_theme() -> String {
-    let config_dir = if let Ok(config_home) = std::env::var("XDG_CONFIG_HOME") {
-        if !config_home.is_empty() {
-            std::path::PathBuf::from(config_home)
-        } else {
-            dirs_fallback_config()
-        }
-    } else {
-        dirs_fallback_config()
-    };
-    let path = config_dir.join("lxqt").join("lxqt.conf");
+    let path = xdg_config_dir().join("lxqt").join("lxqt.conf");
 
     if let Ok(content) = std::fs::read_to_string(&path) {
         for line in content.lines() {
@@ -522,12 +504,54 @@ fn detect_lxqt_icon_theme() -> String {
     "hicolor".to_string()
 }
 
+/// Resolve `$XDG_CONFIG_HOME`, falling back to `$HOME/.config`.
 #[cfg(target_os = "linux")]
-fn dirs_fallback_config() -> std::path::PathBuf {
+fn xdg_config_dir() -> std::path::PathBuf {
+    if let Ok(config_home) = std::env::var("XDG_CONFIG_HOME") {
+        if !config_home.is_empty() {
+            return std::path::PathBuf::from(config_home);
+        }
+    }
     std::env::var("HOME")
         .map(std::path::PathBuf::from)
         .unwrap_or_else(|_| std::path::PathBuf::from("/tmp"))
         .join(".config")
+}
+
+/// Read a value from an INI file by section and key.
+///
+/// Simple line-based parser — no external crate needed. Handles `[Section]`
+/// headers and `Key=Value` lines. Returns `None` if the file doesn't exist,
+/// the section/key is missing, or the value is empty.
+#[cfg(target_os = "linux")]
+fn read_ini_value(
+    path: &std::path::Path,
+    section: &str,
+    key: &str,
+) -> Option<String> {
+    let content = std::fs::read_to_string(path).ok()?;
+    let target_section = format!("[{}]", section);
+    let mut in_section = false;
+
+    for line in content.lines() {
+        let trimmed = line.trim();
+        if trimmed.starts_with('[') {
+            in_section = trimmed == target_section;
+            continue;
+        }
+        if in_section {
+            if let Some(value) = trimmed.strip_prefix(key) {
+                let value = value.trim_start();
+                if let Some(value) = value.strip_prefix('=') {
+                    let value = value.trim();
+                    if !value.is_empty() {
+                        return Some(value.to_string());
+                    }
+                }
+            }
+        }
+    }
+    None
 }
 
 // --- Private mapping functions ---

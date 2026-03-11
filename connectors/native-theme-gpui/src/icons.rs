@@ -5,7 +5,7 @@
 //!   This is a zero-I/O shortcut since gpui-component already bundles Lucide SVGs.
 //! - [`to_image_source`]: Converts [`IconData`] to a gpui [`ImageSource`] for rendering.
 
-use gpui::{Image, ImageFormat, ImageSource};
+use gpui::{Hsla, Image, ImageFormat, ImageSource};
 use gpui_component::IconName;
 use native_theme::{IconData, IconRole};
 use std::sync::Arc;
@@ -318,6 +318,72 @@ pub fn to_image_source(data: &IconData) -> ImageSource {
             ImageSource::Image(Arc::new(image))
         }
     }
+}
+
+/// Convert [`IconData`] to a gpui [`ImageSource`], colorizing SVGs with the
+/// given color.
+///
+/// Intended for **monochrome** bundled icon sets (Material, Lucide) where
+/// SVGs use `currentColor` or implicit black fill. When rendered via
+/// `gpui::img()`, `currentColor` resolves to black and implicit fills stay
+/// black — making icons invisible in dark themes. This function rewrites
+/// SVG bytes so strokes and fills use the provided color instead.
+///
+/// **Do not use for system/OS icons** (freedesktop, SF Symbols, Segoe Fluent)
+/// — those may be multi-colored and should be rendered with [`to_image_source`]
+/// to preserve their native palette.
+///
+/// RGBA icons are passed through unchanged (they carry their own colors).
+pub fn to_image_source_colored(data: &IconData, color: Hsla) -> ImageSource {
+    match data {
+        IconData::Svg(bytes) => {
+            let colored = colorize_svg(bytes, color);
+            let image = Image::from_bytes(ImageFormat::Svg, colored);
+            ImageSource::Image(Arc::new(image))
+        }
+        other => to_image_source(other),
+    }
+}
+
+/// Rewrite SVG bytes to use the given color for strokes and fills.
+///
+/// - Replaces all occurrences of `currentColor` with the hex color.
+/// - If the SVG has no `fill=` attribute in its root `<svg>` tag and didn't
+///   contain `currentColor`, injects `fill="<hex>"` so that paths with
+///   implicit black fill use the theme color instead.
+fn colorize_svg(svg_bytes: &[u8], color: Hsla) -> Vec<u8> {
+    let rgba: gpui::Rgba = color.into();
+    let r = (rgba.r.clamp(0.0, 1.0) * 255.0).round() as u8;
+    let g = (rgba.g.clamp(0.0, 1.0) * 255.0).round() as u8;
+    let b = (rgba.b.clamp(0.0, 1.0) * 255.0).round() as u8;
+    let hex = format!("#{:02x}{:02x}{:02x}", r, g, b);
+
+    let svg_str = String::from_utf8_lossy(svg_bytes);
+
+    // Replace currentColor (handles Lucide-style SVGs)
+    if svg_str.contains("currentColor") {
+        return svg_str.replace("currentColor", &hex).into_bytes();
+    }
+
+    // No currentColor found — inject fill into the root <svg> tag
+    // (handles Material-style SVGs with implicit black fill)
+    if let Some(pos) = svg_str.find("<svg") {
+        if let Some(close) = svg_str[pos..].find('>') {
+            let tag_end = pos + close;
+            // Check if root <svg> already has a fill attribute
+            let tag = &svg_str[pos..tag_end];
+            if !tag.contains("fill=") {
+                let mut result = String::with_capacity(svg_str.len() + 20);
+                result.push_str(&svg_str[..tag_end]);
+                result.push_str(&format!(" fill=\"{}\"", hex));
+                result.push_str(&svg_str[tag_end..]);
+                return result.into_bytes();
+            }
+        }
+    }
+
+    // SVG already has explicit fill and no currentColor — return as-is
+    svg_bytes.to_vec()
 }
 
 /// Encode RGBA pixel data as a BMP with BITMAPV4HEADER.

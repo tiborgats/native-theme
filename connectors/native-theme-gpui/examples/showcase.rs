@@ -598,7 +598,10 @@ impl Showcase {
             .collect();
     }
 
-    /// Resolve the effective icon set name for the current theme.
+    /// Resolve the effective icon set name for the "default" selection.
+    ///
+    /// Uses the theme variant's icon_set if specified, otherwise falls back
+    /// to the platform's system icon set.
     fn resolve_default_icon_set(&self) -> String {
         self.current_variant_icon_set
             .as_deref()
@@ -615,7 +618,7 @@ impl Showcase {
         }
     }
 
-    /// Convert a display name from the icon set selector to the internal icon set name.
+    /// Convert a display name from the icon theme selector to the internal icon set name.
     fn icon_set_internal_name(display: &str) -> String {
         if display.starts_with("default (") {
             "default".to_string()
@@ -623,6 +626,11 @@ impl Showcase {
             "gpui-builtin".to_string()
         } else if display == "Lucide (bundled)" {
             "lucide".to_string()
+        } else if display == "Material (bundled)" {
+            "material".to_string()
+        } else if display.ends_with(" (system)") {
+            // "<ThemeName> (system)" → platform icon set
+            system_icon_set().name().to_string()
         } else {
             display.to_string()
         }
@@ -723,22 +731,18 @@ impl Showcase {
         let loaded_icons = load_all_icons(&initial_resolved);
         let gpui_icons = load_gpui_icons(&initial_resolved);
 
-        // Icon set selector – build with "default (...)" option
-        // We need a temporary Showcase-like context to call icon_set_names, so build inline:
-        let default_label = format!("default ({})", initial_resolved);
-        let mut icon_set_names_vec: Vec<SharedString> = vec![
+        // Icon theme selector – list detected system theme + bundled options
+        let detected_theme = system_icon_theme();
+        let default_label = format!("default ({})", detected_theme);
+        let system_label = format!("{} (system)", detected_theme);
+        let mut icon_theme_names: Vec<SharedString> = vec![
             default_label.into(),
             "gpui-component built-in (Lucide)".into(),
             "Lucide (bundled)".into(),
-            "material".into(),
+            "Material (bundled)".into(),
         ];
-        #[cfg(target_os = "linux")]
-        icon_set_names_vec.push("freedesktop".into());
-        #[cfg(target_os = "macos")]
-        icon_set_names_vec.push("sf-symbols".into());
-        #[cfg(target_os = "windows")]
-        icon_set_names_vec.push("segoe-fluent".into());
-        let icon_set_delegate = SearchableVec::new(icon_set_names_vec);
+        icon_theme_names.push(system_label.into());
+        let icon_set_delegate = SearchableVec::new(icon_theme_names);
         let icon_set_select = cx.new(|cx| {
             SelectState::new(
                 icon_set_delegate,
@@ -2219,11 +2223,10 @@ impl Showcase {
         let system_count = self.loaded_icons.iter().filter(|(_, _, s)| *s == IconSource::System).count();
         let fallback_count = self.loaded_icons.iter().filter(|(_, _, s)| *s == IconSource::Fallback).count();
         let is_system_set = matches!(self.icon_set_name.as_str(), "freedesktop" | "sf-symbols" | "segoe-fluent");
-        let detected_theme = system_icon_theme();
         let native_section_title = if is_system_set {
+            let detected_theme = system_icon_theme();
             format!(
-                "Native Theme Icons: {} (theme: {}) [{}/{} loaded, {} system, {} fallback]{}",
-                self.icon_set_name,
+                "Native Theme Icons: {} [{}/{} loaded, {} system, {} fallback]{}",
                 detected_theme,
                 loaded_count,
                 self.loaded_icons.len(),

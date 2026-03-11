@@ -20,3 +20,10 @@ native-theme = { path = "native-theme", version = "0.3.0" }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_with = "3.17.0"
 toml = "1.0.6"
+
+# Optimize dependencies in dev builds for usable UI performance
+[profile.dev.package."*"]
+opt-level = 2
+
+[profile.dev]
+opt-level = 1
