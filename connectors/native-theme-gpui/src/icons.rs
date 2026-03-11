@@ -290,6 +290,13 @@ pub fn material_name_for_gpui_icon(gpui_name: &str) -> Option<&'static str> {
 /// concept, the DE parameter selects the right one. For freedesktop
 /// standard names (present in all themes), the DE is ignored.
 ///
+/// GTK-based DEs (GNOME, Budgie, Cinnamon, MATE, XFCE) share the
+/// Adwaita/GNOME naming convention. Qt-based DEs (KDE, LxQt) and
+/// Unknown share the Breeze/KDE convention.
+///
+/// Returns `None` when no icon exists in the DE's naming convention,
+/// signaling the caller to fall back to bundled Lucide/Material icons.
+///
 /// ## Confidence levels
 ///
 /// Each mapping is annotated with a confidence level:
@@ -305,9 +312,14 @@ pub fn freedesktop_name_for_gpui_icon(
 ) -> Option<&'static str> {
     use native_theme::LinuxDesktop;
 
-    let is_gnome = matches!(
+    // GTK-based DEs follow GNOME/Adwaita naming; Qt-based follow KDE/Breeze
+    let is_gtk = matches!(
         de,
-        LinuxDesktop::Gnome | LinuxDesktop::Budgie | LinuxDesktop::Cinnamon | LinuxDesktop::Mate
+        LinuxDesktop::Gnome
+            | LinuxDesktop::Budgie
+            | LinuxDesktop::Cinnamon
+            | LinuxDesktop::Mate
+            | LinuxDesktop::Xfce
     );
 
     Some(match gpui_name {
@@ -356,52 +368,52 @@ pub fn freedesktop_name_for_gpui_icon(
         "WindowMinimize"   => "window-minimize",        // exact
         "WindowRestore"    => "window-restore",         // exact
 
-        // --- Icons where KDE and GNOME diverge ---
-        "Ellipsis"         => if is_gnome { "view-more-horizontal" } else { "overflow-menu" },  // exact
-        "EllipsisVertical" => if is_gnome { "view-more" } else { "overflow-menu" },             // close: no vertical variant in KDE
-        "Eye"              => if is_gnome { "view-reveal" } else { "view-visible" },            // exact
-        "EyeOff"           => if is_gnome { "view-conceal" } else { "view-hidden" },            // exact
-        "Heart"            => if is_gnome { "starred" } else { "emblem-favorite" },             // close
-        "PanelLeft"        => if is_gnome { "sidebar-show" } else { "sidebar-expand-left" },    // close
-        "PanelLeftClose"   => if is_gnome { "sidebar-show" } else { "view-left-close" },        // close
-        "PanelLeftOpen"    => if is_gnome { "sidebar-show" } else { "view-left-new" },          // close
-        "PanelRight"       => if is_gnome { "sidebar-show-right" } else { "view-right-new" },   // close
-        "PanelRightClose"  => if is_gnome { "sidebar-show-right" } else { "view-right-close" }, // close
-        "PanelRightOpen"   => if is_gnome { "sidebar-show-right" } else { "view-right-new" },   // close
-        "ResizeCorner"     => if is_gnome { "list-drag-handle" } else { "drag-handle" },        // close
+        // --- Icons where KDE and GNOME both have names but they differ ---
+        "ArrowDown"        => if is_gtk { "go-bottom" } else { "go-down-skip" },                // close
+        "ArrowLeft"        => if is_gtk { "go-first" } else { "go-previous-skip" },             // close
+        "ArrowRight"       => if is_gtk { "go-last" } else { "go-next-skip" },                  // close
+        "ArrowUp"          => if is_gtk { "go-top" } else { "go-up-skip" },                     // close
+        "Calendar"         => if is_gtk { "x-office-calendar" } else { "view-calendar" },       // exact
+        "Check"            => if is_gtk { "object-select" } else { "dialog-ok" },               // close
+        "CircleCheck"      => if is_gtk { "object-select" } else { "emblem-ok-symbolic" },      // close
+        "CircleUser"       => if is_gtk { "avatar-default" } else { "user-identity" },          // close
+        "Close"            => if is_gtk { "window-close" } else { "tab-close" },                // close
+        "Ellipsis"         => if is_gtk { "view-more-horizontal" } else { "overflow-menu" },    // exact
+        "EllipsisVertical" => if is_gtk { "view-more" } else { "overflow-menu" },               // close: no vertical variant in KDE
+        "Eye"              => if is_gtk { "view-reveal" } else { "view-visible" },              // exact
+        "EyeOff"           => if is_gtk { "view-conceal" } else { "view-hidden" },              // exact
+        "Frame"            => if is_gtk { "selection-mode" } else { "select-rectangular" },     // close
+        "Heart"            => if is_gtk { "starred" } else { "emblem-favorite" },               // close
+        "Loader"           => if is_gtk { "content-loading" } else { "process-working" },       // exact
+        "LoaderCircle"     => if is_gtk { "content-loading" } else { "process-working" },       // exact
+        "Palette"          => if is_gtk { "color-select" } else { "palette" },                  // close
+        "PanelLeft"        => if is_gtk { "sidebar-show" } else { "sidebar-expand-left" },      // close
+        "PanelLeftClose"   => if is_gtk { "sidebar-show" } else { "view-left-close" },          // close
+        "PanelLeftOpen"    => if is_gtk { "sidebar-show" } else { "view-left-new" },            // close
+        "PanelRight"       => if is_gtk { "sidebar-show-right" } else { "view-right-new" },     // close
+        "PanelRightClose"  => if is_gtk { "sidebar-show-right" } else { "view-right-close" },   // close
+        "PanelRightOpen"   => if is_gtk { "sidebar-show-right" } else { "view-right-new" },     // close
+        "ResizeCorner"     => if is_gtk { "list-drag-handle" } else { "drag-handle" },          // close
+        "Settings2"        => if is_gtk { "preferences-other" } else { "configure" },           // close
 
-        // --- KDE-only names (no GNOME equivalent — GNOME falls back to bundled) ---
-        "ALargeSmall"      => "format-font-size-more",  // close
-        "ArrowDown"        => "go-down-skip",           // close: full arrow vs nav arrow
-        "ArrowLeft"        => "go-previous-skip",       // close
-        "ArrowRight"       => "go-next-skip",           // close
-        "ArrowUp"          => "go-up-skip",             // close
-        "Asterisk"         => "rating",                 // approximate
-        "Bell"             => "notification-active",    // close
-        "Building2"        => "applications-office",    // approximate
-        "Calendar"         => "view-calendar",          // exact
-        "CaseSensitive"    => "format-text-uppercase",  // close
-        "ChartPie"         => "office-chart-pie",       // exact
-        "Check"            => "dialog-ok",              // close: checkmark vs OK button
-        "ChevronsUpDown"   => "handle-sort",            // close
-        "CircleCheck"      => "emblem-ok-symbolic",     // close
-        "CircleUser"       => "user-identity",          // close
-        "Close"            => "tab-close",              // exact
-        "ExternalLink"     => "external-link",          // exact
-        "Frame"            => "select-rectangular",     // close
-        "GalleryVerticalEnd" => "view-list-icons",      // approximate
-        "GitHub"           => "vcs-branch",             // approximate: VCS branch as substitute
-        "Globe"            => "globe",                  // exact
-        "Inbox"            => "mail-folder-inbox",      // exact
-        "Inspector"        => "code-context",           // close
-        "Loader"           => "process-working",        // exact
-        "LoaderCircle"     => "process-working",        // exact
-        "Palette"          => "palette",                // exact
-        "PanelBottom"      => "view-split-top-bottom",  // close
-        "PanelBottomOpen"  => "view-split-top-bottom",  // close: no separate open variant
-        "Settings2"        => "configure",              // exact
-        "ThumbsDown"       => "rating-unrated",         // approximate
-        "ThumbsUp"         => "approved",               // approximate
+        // --- KDE-only names (no Adwaita equivalent — GTK DEs fall back to bundled) ---
+        "ALargeSmall"        => if is_gtk { return None } else { "format-font-size-more" },  // close
+        "Asterisk"           => if is_gtk { return None } else { "rating" },                 // approximate
+        "Bell"               => if is_gtk { return None } else { "notification-active" },    // close
+        "Building2"          => if is_gtk { return None } else { "applications-office" },    // approximate
+        "CaseSensitive"      => if is_gtk { return None } else { "format-text-uppercase" },  // close
+        "ChartPie"           => if is_gtk { return None } else { "office-chart-pie" },       // exact
+        "ChevronsUpDown"     => if is_gtk { return None } else { "handle-sort" },            // close
+        "ExternalLink"       => if is_gtk { return None } else { "external-link" },          // exact
+        "GalleryVerticalEnd" => if is_gtk { return None } else { "view-list-icons" },        // approximate
+        "GitHub"             => if is_gtk { return None } else { "vcs-branch" },             // approximate
+        "Globe"              => if is_gtk { return None } else { "globe" },                  // exact
+        "Inbox"              => if is_gtk { return None } else { "mail-folder-inbox" },      // exact
+        "Inspector"          => if is_gtk { return None } else { "code-context" },           // close
+        "PanelBottom"        => if is_gtk { return None } else { "view-split-top-bottom" },  // close
+        "PanelBottomOpen"    => if is_gtk { return None } else { "view-split-top-bottom" },  // close
+        "ThumbsDown"         => if is_gtk { return None } else { "rating-unrated" },         // approximate
+        "ThumbsUp"           => if is_gtk { return None } else { "approved" },               // approximate
 
         _ => return None,
     })
@@ -820,6 +832,58 @@ mod freedesktop_mapping_tests {
     }
 
     #[test]
+    fn gnome_returns_none_for_kde_only_icons() {
+        // These icons have no Adwaita equivalent and should return None on GNOME
+        let kde_only = [
+            "ALargeSmall", "Asterisk", "Bell", "Building2", "CaseSensitive",
+            "ChartPie", "ChevronsUpDown", "ExternalLink", "GalleryVerticalEnd",
+            "GitHub", "Globe", "Inbox", "Inspector", "PanelBottom",
+            "PanelBottomOpen", "ThumbsDown", "ThumbsUp",
+        ];
+        for name in &kde_only {
+            assert!(
+                freedesktop_name_for_gpui_icon(name, LinuxDesktop::Gnome).is_none(),
+                "{} should return None for GNOME (no Adwaita equivalent)",
+                name,
+            );
+        }
+    }
+
+    #[test]
+    fn gnome_has_alternatives_for_divergent_icons() {
+        // These icons have GNOME-specific alternatives (not None)
+        let divergent = [
+            "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowUp",
+            "Calendar", "Check", "CircleCheck", "CircleUser", "Close",
+            "Ellipsis", "EllipsisVertical", "Eye", "EyeOff", "Frame",
+            "Heart", "Loader", "LoaderCircle", "Palette",
+            "PanelLeft", "PanelLeftClose", "PanelLeftOpen",
+            "PanelRight", "PanelRightClose", "PanelRightOpen",
+            "ResizeCorner", "Settings2",
+        ];
+        for name in &divergent {
+            assert!(
+                freedesktop_name_for_gpui_icon(name, LinuxDesktop::Gnome).is_some(),
+                "{} should have a GNOME alternative, not None",
+                name,
+            );
+        }
+    }
+
+    #[test]
+    fn xfce_uses_gnome_names() {
+        // XFCE is GTK-based and should use GNOME naming convention
+        assert_eq!(
+            freedesktop_name_for_gpui_icon("Eye", LinuxDesktop::Xfce),
+            Some("view-reveal"),
+        );
+        assert!(
+            freedesktop_name_for_gpui_icon("Bell", LinuxDesktop::Xfce).is_none(),
+            "Bell should return None for XFCE (no Adwaita equivalent)",
+        );
+    }
+
+    #[test]
     fn all_kde_names_resolve_in_breeze() {
         let theme = native_theme::system_icon_theme();
         // Only meaningful on a KDE system with Breeze installed
@@ -860,6 +924,48 @@ mod freedesktop_mapping_tests {
         assert!(
             missing.is_empty(),
             "These gpui icons did not resolve in Breeze:\n  {}",
+            missing.join("\n  "),
+        );
+    }
+
+    #[test]
+    fn gnome_names_resolve_in_adwaita() {
+        // Verify GNOME mappings resolve against installed Adwaita theme.
+        // Only runs when Adwaita is installed (it usually is on any Linux).
+        let all_names = [
+            "ALargeSmall", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowUp",
+            "Asterisk", "Bell", "BookOpen", "Bot", "Building2",
+            "Calendar", "CaseSensitive", "ChartPie", "Check", "ChevronDown",
+            "ChevronLeft", "ChevronRight", "ChevronsUpDown", "ChevronUp",
+            "CircleCheck", "CircleUser", "CircleX", "Close", "Copy",
+            "Dash", "Delete", "Ellipsis", "EllipsisVertical", "ExternalLink",
+            "Eye", "EyeOff", "File", "Folder", "FolderClosed",
+            "FolderOpen", "Frame", "GalleryVerticalEnd", "GitHub", "Globe",
+            "Heart", "HeartOff", "Inbox", "Info", "Inspector",
+            "LayoutDashboard", "Loader", "LoaderCircle", "Map", "Maximize",
+            "Menu", "Minimize", "Minus", "Moon", "Palette",
+            "PanelBottom", "PanelBottomOpen", "PanelLeft", "PanelLeftClose",
+            "PanelLeftOpen", "PanelRight", "PanelRightClose", "PanelRightOpen",
+            "Plus", "Redo", "Redo2", "Replace", "ResizeCorner",
+            "Search", "Settings", "Settings2", "SortAscending", "SortDescending",
+            "SquareTerminal", "Star", "StarOff", "Sun", "ThumbsDown",
+            "ThumbsUp", "TriangleAlert", "Undo", "Undo2", "User",
+            "WindowClose", "WindowMaximize", "WindowMinimize", "WindowRestore",
+        ];
+
+        let mut missing = Vec::new();
+        for name in &all_names {
+            if let Some(fd_name) = freedesktop_name_for_gpui_icon(name, LinuxDesktop::Gnome) {
+                // Has a GNOME mapping — verify it resolves in Adwaita
+                if native_theme::load_freedesktop_icon_by_name(fd_name, "Adwaita").is_none() {
+                    missing.push(format!("{} -> {} (not found)", name, fd_name));
+                }
+            }
+            // None means "fall back to bundled" — that's intentional, not a failure
+        }
+        assert!(
+            missing.is_empty(),
+            "These GNOME mappings did not resolve in Adwaita:\n  {}",
             missing.join("\n  "),
         );
     }
