@@ -18,12 +18,19 @@ fn detect_theme() -> String {
 
 /// Look up an icon by freedesktop name using a two-pass strategy.
 ///
-/// First tries the plain name (works for Breeze, Papirus, most themes),
-/// then tries with `-symbolic` suffix appended (needed for Adwaita which
-/// stores action icons only as symbolic variants).
+/// First tries the `-symbolic` suffix (single-frame static icons), then
+/// falls back to the plain name. This order avoids animation sprite
+/// sheets (e.g. Breeze's `animations/process-working.svg` is a 15-frame
+/// vertical strip) which render incorrectly as static images.
+///
+/// The symbolic-first order also naturally handles Adwaita, which stores
+/// most action icons only as `*-symbolic.svg`.
 fn find_icon(name: &str, theme: &str, size: u16) -> Option<PathBuf> {
-    // First try: plain name (e.g., "edit-copy")
-    if let Some(path) = freedesktop_icons::lookup(name)
+    // First try: symbolic variant (e.g., "edit-copy-symbolic")
+    // Symbolic icons are always single-frame, avoiding sprite sheets
+    // in themes like Breeze that put animation strips under plain names.
+    let symbolic = format!("{name}-symbolic");
+    if let Some(path) = freedesktop_icons::lookup(&symbolic)
         .with_theme(theme)
         .with_size(size)
         .force_svg()
@@ -31,10 +38,8 @@ fn find_icon(name: &str, theme: &str, size: u16) -> Option<PathBuf> {
     {
         return Some(path);
     }
-    // Second try: symbolic variant (e.g., "edit-copy-symbolic")
-    // Needed for Adwaita where actions only exist as *-symbolic.svg
-    let symbolic = format!("{name}-symbolic");
-    freedesktop_icons::lookup(&symbolic)
+    // Second try: plain name (e.g., "edit-copy")
+    freedesktop_icons::lookup(name)
         .with_theme(theme)
         .with_size(size)
         .force_svg()
