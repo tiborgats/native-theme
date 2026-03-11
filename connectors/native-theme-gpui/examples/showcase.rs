@@ -12,38 +12,53 @@
 
 use gpui::{
     div, prelude::*, px, rems, size, App, Application, Bounds, Context, Entity, Hsla,
-    ImageSource, IntoElement, ParentElement, Render, SharedString, Styled, Window,
-    WindowBounds, WindowOptions,
+    ImageSource, IntoElement, Keystroke, Menu, MenuItem, ParentElement, Render, SharedString,
+    Styled, Task, Window, WindowBounds, WindowOptions,
 };
 use gpui_component::{
     accordion::Accordion,
     alert::Alert,
+    avatar::{Avatar, AvatarGroup},
     badge::Badge,
     breadcrumb::{Breadcrumb, BreadcrumbItem},
-    button::{Button, ButtonGroup, ButtonVariants},
+    button::{Button, ButtonGroup, ButtonVariants, DropdownButton, Toggle, ToggleGroup},
+    chart::{AreaChart, BarChart, CandlestickChart, LineChart, PieChart},
     checkbox::Checkbox,
+    clipboard::Clipboard,
     collapsible::Collapsible,
+    color_picker::{ColorPicker, ColorPickerState},
     description_list::DescriptionList,
     divider::Divider,
+    form::{self, Field},
     group_box::{GroupBox, GroupBoxVariants},
     h_flex,
-    input::{Input, InputState, NumberInput, NumberInputEvent, StepAction},
+    input::{Input, InputState, NumberInput, NumberInputEvent, OtpInput, OtpState, StepAction},
+    kbd::Kbd,
     label::Label,
     link::Link,
+    list::{ListDelegate, ListItem, ListState},
+    menu::{AppMenuBar, ContextMenuExt},
+    notification::Notification,
+    popover::Popover,
     progress::Progress,
     radio::RadioGroup,
     resizable::{h_resizable, resizable_panel, v_resizable},
     scroll::ScrollableElement,
     select::{SearchableVec, Select, SelectEvent, SelectState},
+    setting::{SettingField, SettingGroup, SettingItem, SettingPage, Settings},
+    sidebar::{Sidebar, SidebarMenu, SidebarMenuItem},
     skeleton::Skeleton,
     slider::{Slider, SliderEvent, SliderState},
     spinner::Spinner,
     switch::Switch,
     tab::TabBar,
+    table::{Column, Table, TableDelegate, TableState},
     tag::Tag,
     text::{TextView, TextViewStyle},
     theme::Theme,
-    v_flex, ActiveTheme, Disableable, Icon, IconName, PixelsExt, Root, Sizable, Size, StyledExt,
+    tree::{Tree, TreeItem, TreeState},
+    v_flex, ActiveTheme, Disableable, Icon, IconName, Placement, PixelsExt, Root, Sizable, Size,
+    StyledExt, WindowExt,
 };
 
 use native_theme::{icon_name as native_icon_name, load_icon, IconData, IconRole, IconSet, NativeTheme, system_icon_set, system_icon_theme, bundled_icon_by_name};
@@ -63,8 +78,10 @@ const TAB_DATA: usize = 2;
 const TAB_FEEDBACK: usize = 3;
 const TAB_TYPOGRAPHY: usize = 4;
 const TAB_LAYOUT: usize = 5;
-const TAB_ICONS: usize = 6;
-const TAB_THEME_MAP: usize = 7;
+const TAB_OVERLAYS: usize = 6;
+const TAB_CHARTS: usize = 7;
+const TAB_ICONS: usize = 8;
+const TAB_THEME_MAP: usize = 9;
 
 // ---------------------------------------------------------------------------
 // Tooltip helpers
@@ -604,6 +621,88 @@ impl ColorMode {
 }
 
 // ---------------------------------------------------------------------------
+// Sample Table Delegate (for Data tab)
+// ---------------------------------------------------------------------------
+
+struct SampleTableDelegate {
+    columns: Vec<Column>,
+    rows: Vec<[SharedString; 3]>,
+}
+
+impl TableDelegate for SampleTableDelegate {
+    fn columns_count(&self, _cx: &App) -> usize {
+        self.columns.len()
+    }
+
+    fn rows_count(&self, _cx: &App) -> usize {
+        self.rows.len()
+    }
+
+    fn column(&self, col_ix: usize, _cx: &App) -> &Column {
+        &self.columns[col_ix]
+    }
+
+    fn render_td(
+        &mut self,
+        row_ix: usize,
+        col_ix: usize,
+        _window: &mut Window,
+        _cx: &mut Context<TableState<Self>>,
+    ) -> impl IntoElement {
+        Label::new(self.rows[row_ix][col_ix].clone()).text_sm()
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Sample List Delegate (for Data tab)
+// ---------------------------------------------------------------------------
+
+struct SampleListDelegate {
+    items: Vec<SharedString>,
+    selected: Option<usize>,
+}
+
+impl ListDelegate for SampleListDelegate {
+    type Item = ListItem;
+
+    fn items_count(&self, _section: usize, _cx: &App) -> usize {
+        self.items.len()
+    }
+
+    fn render_item(
+        &mut self,
+        ix: gpui_component::IndexPath,
+        _window: &mut Window,
+        _cx: &mut Context<ListState<Self>>,
+    ) -> Option<Self::Item> {
+        let label = self.items.get(ix.row)?.clone();
+        Some(
+            ListItem::new(("list-item", ix.row))
+                .child(Label::new(label).text_sm())
+                .selected(self.selected == Some(ix.row)),
+        )
+    }
+
+    fn set_selected_index(
+        &mut self,
+        ix: Option<gpui_component::IndexPath>,
+        _window: &mut Window,
+        _cx: &mut Context<ListState<Self>>,
+    ) {
+        self.selected = ix.map(|i| i.row);
+    }
+
+    fn perform_search(
+        &mut self,
+        _query: &str,
+        _window: &mut Window,
+        _cx: &mut Context<ListState<Self>>,
+    ) -> Task<()> {
+        Task::ready(())
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Main view
 // ---------------------------------------------------------------------------
 
@@ -618,16 +717,35 @@ struct Showcase {
 
     active_tab: usize,
 
+    // Inputs tab
     input_state: Entity<InputState>,
     number_input_state: Entity<InputState>,
     slider_state: Entity<SliderState>,
+    otp_state: Entity<OtpState>,
+    color_picker_state: Entity<ColorPickerState>,
+    date_picker_state: Entity<gpui_component::date_picker::DatePickerState>,
+    calendar_state: Entity<gpui_component::calendar::CalendarState>,
     checkbox_a: bool,
     checkbox_b: bool,
     checkbox_c: bool,
     switch_on: bool,
     radio_index: Option<usize>,
     slider_value: f32,
+
+    // Layout tab
     collapsible_open: bool,
+
+    // Data tab
+    table_state: Entity<TableState<SampleTableDelegate>>,
+    list_state: Entity<ListState<SampleListDelegate>>,
+    tree_state: Entity<TreeState>,
+
+    // Buttons tab
+    toggle_bold: bool,
+    toggle_italic: bool,
+
+    // Overlays tab
+    app_menu_bar: Entity<AppMenuBar>,
 
     // Icon set selector state
     icon_set_select: Entity<SelectState<SearchableVec<SharedString>>>,
@@ -902,6 +1020,123 @@ impl Showcase {
         )
         .detach();
 
+        // OTP input state (6 digits)
+        let otp_state = cx.new(|cx| OtpState::new(6, window, cx));
+
+        // Color picker state
+        let color_picker_state = cx.new(|cx| {
+            ColorPickerState::new(window, cx)
+                .default_value(gpui::hsla(0.6, 0.8, 0.5, 1.0))
+        });
+
+        // Date picker state
+        let date_picker_state = cx.new(|cx| {
+            gpui_component::date_picker::DatePickerState::new(window, cx)
+        });
+
+        // Calendar state
+        let calendar_state = cx.new(|cx| {
+            gpui_component::calendar::CalendarState::new(window, cx)
+        });
+
+        // Table state with sample data
+        let table_state = cx.new(|cx| {
+            let delegate = SampleTableDelegate {
+                columns: vec![
+                    Column::new("name", "Name"),
+                    Column::new("role", "Role"),
+                    Column::new("status", "Status"),
+                ],
+                rows: vec![
+                    ["Alice".into(), "Engineer".into(), "Active".into()],
+                    ["Bob".into(), "Designer".into(), "Away".into()],
+                    ["Carol".into(), "Manager".into(), "Active".into()],
+                    ["Dave".into(), "Intern".into(), "Offline".into()],
+                    ["Eve".into(), "DevOps".into(), "Active".into()],
+                ],
+            };
+            TableState::new(delegate, window, cx)
+        });
+
+        // List state with sample items
+        let list_state = cx.new(|cx| {
+            let delegate = SampleListDelegate {
+                items: vec![
+                    "Inbox".into(),
+                    "Starred".into(),
+                    "Sent".into(),
+                    "Drafts".into(),
+                    "Trash".into(),
+                    "Archive".into(),
+                ],
+                selected: None,
+            };
+            ListState::new(delegate, window, cx)
+        });
+
+        // Tree state with sample file structure
+        let tree_state = cx.new(|cx| {
+            TreeState::new(cx).items(vec![
+                TreeItem::new("src", "src")
+                    .expanded(true)
+                    .child(TreeItem::new("lib", "lib.rs"))
+                    .child(TreeItem::new("main", "main.rs"))
+                    .child(
+                        TreeItem::new("utils", "utils")
+                            .child(TreeItem::new("helpers", "helpers.rs")),
+                    ),
+                TreeItem::new("cargo", "Cargo.toml"),
+                TreeItem::new("readme", "README.md"),
+            ])
+        });
+
+        // Set up application menus for AppMenuBar
+        cx.set_menus(vec![
+            Menu {
+                name: "File".into(),
+                items: vec![
+                    MenuItem::action("New", gpui::NoAction),
+                    MenuItem::action("Open", gpui::NoAction),
+                    MenuItem::separator(),
+                    MenuItem::action("Save", gpui::NoAction),
+                    MenuItem::action("Save As…", gpui::NoAction),
+                    MenuItem::separator(),
+                    MenuItem::action("Quit", gpui::NoAction),
+                ],
+            },
+            Menu {
+                name: "Edit".into(),
+                items: vec![
+                    MenuItem::action("Undo", gpui::NoAction),
+                    MenuItem::action("Redo", gpui::NoAction),
+                    MenuItem::separator(),
+                    MenuItem::action("Cut", gpui::NoAction),
+                    MenuItem::action("Copy", gpui::NoAction),
+                    MenuItem::action("Paste", gpui::NoAction),
+                    MenuItem::separator(),
+                    MenuItem::action("Select All", gpui::NoAction),
+                ],
+            },
+            Menu {
+                name: "View".into(),
+                items: vec![
+                    MenuItem::action("Zoom In", gpui::NoAction),
+                    MenuItem::action("Zoom Out", gpui::NoAction),
+                    MenuItem::separator(),
+                    MenuItem::action("Toggle Sidebar", gpui::NoAction),
+                    MenuItem::action("Toggle Full Screen", gpui::NoAction),
+                ],
+            },
+            Menu {
+                name: "Help".into(),
+                items: vec![
+                    MenuItem::action("Documentation", gpui::NoAction),
+                    MenuItem::action("About", gpui::NoAction),
+                ],
+            },
+        ]);
+        let app_menu_bar = AppMenuBar::new(window, cx);
+
         let fg = cx.theme().foreground;
         let mut showcase = Self {
             theme_select,
@@ -914,6 +1149,10 @@ impl Showcase {
             input_state,
             number_input_state,
             slider_state,
+            otp_state,
+            color_picker_state,
+            date_picker_state,
+            calendar_state,
             checkbox_a: true,
             checkbox_b: false,
             checkbox_c: false,
@@ -921,6 +1160,12 @@ impl Showcase {
             radio_index: Some(0),
             slider_value: 65.0,
             collapsible_open: true,
+            table_state,
+            list_state,
+            tree_state,
+            toggle_bold: false,
+            toggle_italic: false,
+            app_menu_bar,
             icon_set_select,
             icon_set_name: initial_resolved,
             loaded_icons,
@@ -1064,7 +1309,7 @@ impl Showcase {
     // -----------------------------------------------------------------------
     // Tab: Buttons
     // -----------------------------------------------------------------------
-    fn render_buttons_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_buttons_tab(&self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let fi = format_font_info(&self.original_fonts);
         let t = cx.theme().clone();
         v_flex()
@@ -1388,12 +1633,116 @@ impl Showcase {
                             ],
                                 )),
             )
+            // DropdownButton
+            .child(section("DropdownButton"))
+            .child(
+                div()
+                    .id("tt-dropdown-btn")
+                    .child(
+                        h_flex()
+                            .gap_4()
+                            .child(
+                                DropdownButton::new("dropdown-1")
+                                    .button(Button::new("dropdown-main").label("Save").primary())
+                                    .dropdown_menu(|menu, _w, _cx| {
+                                        menu.menu("Save as Draft", Box::new(gpui::NoAction))
+                                            .separator()
+                                            .menu("Export as PDF", Box::new(gpui::NoAction))
+                                    }),
+                            )
+                            .child(
+                                DropdownButton::new("dropdown-2")
+                                    .button(Button::new("dropdown-sec").label("Actions"))
+                                    .dropdown_menu(|menu, _w, _cx| {
+                                        menu.menu("Cut", Box::new(gpui::NoAction))
+                                            .menu("Copy", Box::new(gpui::NoAction))
+                                            .menu("Paste", Box::new(gpui::NoAction))
+                                    }),
+                            ),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "DropdownButton",
+                            &[
+                                ("bg", "primary/secondary", t.primary),
+                                ("dropdown border", "border", t.border),
+                                ("menu bg", "popover", t.popover),
+                            ],
+                            &[],
+                            &[("dropdown arrow", "hardcoded ChevronDown")],
+                                )),
+            )
+            // Toggle & ToggleGroup
+            .child(section("Toggle & ToggleGroup"))
+            .child(
+                div()
+                    .id("tt-toggle")
+                    .child(
+                        h_flex()
+                            .gap_6()
+                            .items_center()
+                            .child(
+                                Toggle::new("tog-bold")
+                                    .icon(IconName::Star)
+                                    .checked(self.toggle_bold)
+                                    .on_click(cx.listener(|this, checked: &bool, _w, _cx| {
+                                        this.toggle_bold = *checked;
+                                    })),
+                            )
+                            .child(
+                                Toggle::new("tog-italic")
+                                    .icon(IconName::Heart)
+                                    .checked(self.toggle_italic)
+                                    .on_click(cx.listener(|this, checked: &bool, _w, _cx| {
+                                        this.toggle_italic = *checked;
+                                    })),
+                            )
+                            .child(
+                                ToggleGroup::new("tog-group-1")
+                                    .child(Toggle::new("tg-left").label("Left"))
+                                    .child(Toggle::new("tg-center").label("Center"))
+                                    .child(Toggle::new("tg-right").label("Right")),
+                            ),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Toggle / ToggleGroup",
+                            &[
+                                ("checked bg", "secondary_active", t.secondary_active),
+                                ("checked text", "secondary_foreground", t.secondary_foreground),
+                                ("unchecked bg", "secondary", t.secondary),
+                                ("hover", "secondary_hover", t.secondary_hover),
+                            ],
+                            &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                            &[],
+                                )),
+            )
+            // Clipboard
+            .child(section("Clipboard"))
+            .child(
+                div()
+                    .id("tt-clipboard")
+                    .child(
+                        h_flex()
+                            .gap_4()
+                            .child(Clipboard::new("clip-1").value("cargo add native-theme"))
+                            .child(Clipboard::new("clip-2").value("npm install native-theme")),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Clipboard",
+                            &[
+                                ("bg", "secondary", t.secondary),
+                                ("text", "foreground", t.foreground),
+                                ("icon", "muted_foreground", t.muted_foreground),
+                            ],
+                            &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                            &[("copy icon", "hardcoded Clipboard/ClipboardCheck")],
+                                )),
+            )
     }
 
     // -----------------------------------------------------------------------
     // Tab: Inputs
     // -----------------------------------------------------------------------
-    fn render_inputs_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_inputs_tab(&self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let fi = format_font_info(&self.original_fonts);
         let t = cx.theme().clone();
         let checkbox_a = self.checkbox_a;
@@ -1590,16 +1939,93 @@ impl Showcase {
                             &[("track height", "hardcoded"), ("thumb size", "hardcoded")],
                                 )),
             )
+            // OTP Input
+            .child(section("OTP Input (6 digits)"))
+            .child(
+                div()
+                    .id("tt-otp")
+                    .child(OtpInput::new(&self.otp_state).groups(2))
+                    .on_hover(self.hover_info(&fi,
+                            "OtpInput",
+                            &[
+                                ("bg", "input", t.input),
+                                ("border", "border", t.border),
+                                ("focus", "ring", t.ring),
+                                ("text", "foreground", t.foreground),
+                            ],
+                            &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                            &[("digit count", "configurable"), ("groups", "2")],
+                                )),
+            )
+            // Color Picker
+            .child(section("ColorPicker"))
+            .child(
+                div()
+                    .id("tt-colorpicker")
+                    .child(
+                        ColorPicker::new(&self.color_picker_state)
+                            .label("Pick a color"),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "ColorPicker",
+                            &[
+                                ("bg", "input", t.input),
+                                ("border", "border", t.border),
+                                ("popover", "popover", t.popover),
+                            ],
+                            &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                            &[("palette", "hardcoded HSL picker")],
+                                )),
+            )
+            // Date Picker
+            .child(section("DatePicker"))
+            .child(
+                div()
+                    .id("tt-datepicker")
+                    .child(
+                        gpui_component::date_picker::DatePicker::new(&self.date_picker_state)
+                            .placeholder("Select a date"),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "DatePicker",
+                            &[
+                                ("bg", "input", t.input),
+                                ("border", "border", t.border),
+                                ("popover", "popover", t.popover),
+                                ("selected", "primary", t.primary),
+                            ],
+                            &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                            &[("calendar icon", "hardcoded"), ("format", "default YYYY-MM-DD")],
+                                )),
+            )
+            // Calendar
+            .child(section("Calendar"))
+            .child(
+                div()
+                    .id("tt-calendar")
+                    .child(
+                        gpui_component::calendar::Calendar::new(&self.calendar_state),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Calendar",
+                            &[
+                                ("bg", "popover", t.popover),
+                                ("selected day", "primary", t.primary),
+                                ("today", "secondary", t.secondary),
+                                ("text", "foreground", t.foreground),
+                            ],
+                            &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                            &[("month navigation", "hardcoded arrows")],
+                                )),
+            )
     }
 
     // -----------------------------------------------------------------------
     // Tab: Data
     // -----------------------------------------------------------------------
-    fn render_data_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_data_tab(&self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let fi = format_font_info(&self.original_fonts);
         let t = cx.theme().clone();
-        let collapsible_open = self.collapsible_open;
-
         v_flex()
             .gap_5()
             .p_4()
@@ -1633,131 +2059,117 @@ impl Showcase {
                             &[("layout spacing", "hardcoded")],
                                 )),
             )
-            // Accordion
-            .child(section("Accordion"))
+            // Table
+            .child(section("Table (striped, 3 cols × 5 rows)"))
             .child(
                 div()
-                    .id("tt-accordion")
+                    .id("tt-table")
+                    .h(px(220.0))
                     .child(
-                        Accordion::new("acc-1")
-                            .item(|item| {
-                                item.title("What is native-theme?")
-                                    .open(true)
-                                    .child(
-                                        Label::new(
-                                            "A cross-platform theme abstraction that reads OS \
-                                             settings and maps them to toolkit-specific themes.",
-                                        )
-                                        .text_sm(),
-                                    )
-                            })
-                            .item(|item| {
-                                item.title("Supported toolkits").child(
-                                    Label::new("gpui-component, iced, egui, and more planned.")
-                                        .text_sm(),
-                                )
-                            })
-                            .item(|item| {
-                                item.title("How many presets?").child(
-                                    Label::new("17 built-in theme presets covering major OS styles.")
-                                        .text_sm(),
-                                )
-                            }),
+                        Table::new(&self.table_state)
+                            .stripe(true)
+                            .bordered(true),
                     )
                     .on_hover(self.hover_info(&fi,
-                            "Accordion",
+                            "Table",
                             &[
-                                ("bg", "accordion", t.accordion),
-                                ("hover", "accordion_hover", t.accordion_hover),
-                                ("border", "border", t.border),
-                                ("text", "foreground", t.foreground),
-                                ("secondary text", "muted_foreground", t.muted_foreground),
-                            ],
-                            &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
-                            &[("padding", "hardcoded"), ("animation", "hardcoded")],
-                                )),
-            )
-            // Collapsible
-            .child(section("Collapsible"))
-            .child(
-                div()
-                    .id("tt-collapsible")
-                    .child(
-                        Collapsible::new()
-                            .open(collapsible_open)
-                            .child(
-                                Button::new("coll-toggle")
-                                    .label(if collapsible_open {
-                                        "Click to collapse"
-                                    } else {
-                                        "Click to expand"
-                                    })
-                                    .ghost()
-                                    .icon(if collapsible_open {
-                                        IconName::ChevronDown
-                                    } else {
-                                        IconName::ChevronRight
-                                    })
-                                    .on_click(cx.listener(|this, _ev, _w, _cx| {
-                                        this.collapsible_open = !this.collapsible_open;
-                                    })),
-                            )
-                            .content(
-                                v_flex()
-                                    .p_3()
-                                    .child(Label::new("This content is shown when collapsible is open.").text_sm()),
-                            ),
-                    )
-                    .on_hover(self.hover_info(&fi,
-                            "Collapsible",
-                            &[
-                                ("bg", "accordion", t.accordion),
-                                ("hover", "accordion_hover", t.accordion_hover),
-                                ("border", "border", t.border),
+                                ("header bg", "table_head", t.table_head),
+                                ("header text", "table_head_foreground", t.table_head_foreground),
+                                ("row bg", "table", t.table),
+                                ("stripe", "table_even", t.table_even),
+                                ("active row", "table_active", t.table_active),
+                                ("hover", "table_hover", t.table_hover),
+                                ("border", "table_row_border", t.table_row_border),
                             ],
                             &[],
-                            &[("animation", "hardcoded slide")],
+                            &[("row height", "hardcoded per Size")],
                                 )),
             )
-            // GroupBox variants
-            .child(section("GroupBox (3 variants)"))
+            // List
+            .child(section("List (selectable)"))
             .child(
                 div()
-                    .id("tt-groupbox")
+                    .id("tt-list")
+                    .h(px(200.0))
+                    .w(px(260.0))
+                    .border_1()
+                    .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
+                    .child(
+                        gpui_component::list::List::new(&self.list_state),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "List",
+                            &[
+                                ("bg", "list", t.list),
+                                ("active", "list_active", t.list_active),
+                                ("hover", "list_hover", t.list_hover),
+                                ("even", "list_even", t.list_even),
+                            ],
+                            &[],
+                            &[("item height", "hardcoded per Size")],
+                                )),
+            )
+            // Tree
+            .child(section("Tree (file structure)"))
+            .child(
+                div()
+                    .id("tt-tree")
+                    .h(px(200.0))
+                    .w(px(260.0))
+                    .border_1()
+                    .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
+                    .child(
+                        Tree::new(&self.tree_state, |ix, entry, selected, _w, _cx| {
+                            ListItem::new(("tree-item", ix))
+                                .child(Label::new(entry.item().label.clone()).text_sm())
+                                .selected(selected)
+                        }),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Tree",
+                            &[
+                                ("bg", "list", t.list),
+                                ("active", "list_active", t.list_active),
+                                ("hover", "list_hover", t.list_hover),
+                            ],
+                            &[],
+                            &[("indent", "per depth level"), ("expand icon", "hardcoded ChevronRight")],
+                                )),
+            )
+            // Avatar & AvatarGroup
+            .child(section("Avatar & AvatarGroup"))
+            .child(
+                div()
+                    .id("tt-avatar")
                     .child(
                         h_flex()
-                            .gap_4()
+                            .gap_6()
+                            .items_center()
                             .child(
-                                GroupBox::new()
-                                    .title("Default")
-                                    .w(px(180.0))
-                                    .child(Label::new("Default style").text_sm()),
+                                h_flex()
+                                    .gap_2()
+                                    .child(Avatar::new().name("Alice"))
+                                    .child(Avatar::new().name("Bob"))
+                                    .child(Avatar::new().name("Carol")),
                             )
                             .child(
-                                GroupBox::new()
-                                    .title("Filled")
-                                    .fill()
-                                    .w(px(180.0))
-                                    .child(Label::new("Filled background").text_sm()),
-                            )
-                            .child(
-                                GroupBox::new()
-                                    .title("Outline")
-                                    .outline()
-                                    .w(px(180.0))
-                                    .child(Label::new("Outlined border").text_sm()),
+                                AvatarGroup::new()
+                                    .child(Avatar::new().name("D"))
+                                    .child(Avatar::new().name("E"))
+                                    .child(Avatar::new().name("F"))
+                                    .child(Avatar::new().name("G"))
+                                    .limit(3),
                             ),
                     )
                     .on_hover(self.hover_info(&fi,
-                            "GroupBox",
+                            "Avatar / AvatarGroup",
                             &[
-                                ("fill bg", "group_box", t.group_box),
-                                ("text", "group_box_foreground", t.group_box_foreground),
-                                ("border", "border", t.border),
-                                ("title", "muted_foreground", t.muted_foreground),
+                                ("fallback bg", "secondary", t.secondary),
+                                ("fallback text", "secondary_foreground", t.secondary_foreground),
+                                ("border", "background", t.background),
                             ],
-                            &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
-                            &[("padding", "hardcoded")],
+                            &[],
+                            &[("size", "configurable via Size enum"), ("limit overflow", "+N indicator")],
                                 )),
             )
     }
@@ -1765,7 +2177,7 @@ impl Showcase {
     // -----------------------------------------------------------------------
     // Tab: Feedback
     // -----------------------------------------------------------------------
-    fn render_feedback_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_feedback_tab(&self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let fi = format_font_info(&self.original_fonts);
         let t = cx.theme().clone();
         v_flex()
@@ -1956,44 +2368,6 @@ impl Showcase {
                             &[("animation", "hardcoded pulse")],
                                 )),
             )
-    }
-
-    // -----------------------------------------------------------------------
-    // Tab: Typography
-    // -----------------------------------------------------------------------
-    fn render_typography_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
-        let fi = format_font_info(&self.original_fonts);
-        let t = cx.theme().clone();
-        v_flex()
-            .gap_5()
-            .p_4()
-            .flex_1()
-            // Labels
-            .child(section("Label"))
-            .child(
-                div()
-                    .id("tt-label")
-                    .child(
-                        v_flex()
-                            .gap_2()
-                            .child(Label::new("Regular label"))
-                            .child(Label::new("Label with secondary").secondary("(secondary text)"))
-                            .child(Label::new("Masked label: secret123").masked(true)),
-                    )
-                    .on_hover(self.hover_info(&fi,
-                            "Label",
-                            &[
-                                ("text", "foreground", t.foreground),
-                                ("secondary", "muted_foreground", t.muted_foreground),
-                                ("highlights", "blue", t.blue),
-                            ],
-                            &[
-                                ("font", format!("font_family: {}", t.font_family)),
-                                ("size", format!("font_size: {}px (renders)", t.font_size.as_f32())),
-                            ],
-                            &[("font weights", "hardcoded")],
-                                )),
-            )
             // Tags
             .child(section("Tags (7 colors + outline)"))
             .child(
@@ -2049,6 +2423,144 @@ impl Showcase {
                             &[("size", "hardcoded"), ("padding", "hardcoded")],
                                 )),
             )
+            // Tooltip
+            .child(section("Tooltip"))
+            .child(
+                div()
+                    .id("tt-tooltip")
+                    .child(
+                        h_flex()
+                            .gap_4()
+                            .child(
+                                Button::new("tooltip-1")
+                                    .label("Hover me")
+                                    .tooltip("This is a tooltip"),
+                            )
+                            .child(
+                                Button::new("tooltip-2")
+                                    .label("With tooltip")
+                                    .tooltip("Save file (Cmd+S)"),
+                            ),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Tooltip",
+                            &[
+                                ("bg", "popover", t.popover),
+                                ("text", "popover_foreground", t.popover_foreground),
+                            ],
+                            &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                            &[("delay", "hardcoded"), ("position", "auto")],
+                                )),
+            )
+            // Notification
+            .child(section("Notification (push via WindowExt)"))
+            .child(
+                div()
+                    .id("tt-notification")
+                    .child(
+                        h_flex()
+                            .gap_3()
+                            .child(
+                                Button::new("notify-info")
+                                    .label("Info")
+                                    .on_click(cx.listener(|_this, _ev, window, cx| {
+                                        window.push_notification(
+                                            Notification::info("This is an info notification.")
+                                                .title("Info")
+                                                .autohide(true),
+                                            cx,
+                                        );
+                                    })),
+                            )
+                            .child(
+                                Button::new("notify-success")
+                                    .label("Success")
+                                    .on_click(cx.listener(|_this, _ev, window, cx| {
+                                        window.push_notification(
+                                            Notification::success("Operation completed.")
+                                                .title("Success")
+                                                .autohide(true),
+                                            cx,
+                                        );
+                                    })),
+                            )
+                            .child(
+                                Button::new("notify-warning")
+                                    .label("Warning")
+                                    .on_click(cx.listener(|_this, _ev, window, cx| {
+                                        window.push_notification(
+                                            Notification::warning("Careful with this action.")
+                                                .title("Warning")
+                                                .autohide(true),
+                                            cx,
+                                        );
+                                    })),
+                            )
+                            .child(
+                                Button::new("notify-error")
+                                    .label("Error")
+                                    .on_click(cx.listener(|_this, _ev, window, cx| {
+                                        window.push_notification(
+                                            Notification::error("Something went wrong.")
+                                                .title("Error")
+                                                .autohide(true),
+                                            cx,
+                                        );
+                                    })),
+                            ),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Notification",
+                            &[
+                                ("bg", "popover", t.popover),
+                                ("border", "border", t.border),
+                                ("info icon", "info", t.info),
+                                ("success icon", "success", t.success),
+                                ("warning icon", "warning", t.warning),
+                                ("error icon", "danger", t.danger),
+                            ],
+                            &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                            &[("animation", "slide in/out"), ("autohide", "configurable")],
+                                )),
+            )
+    }
+
+    // -----------------------------------------------------------------------
+    // Tab: Typography
+    // -----------------------------------------------------------------------
+    fn render_typography_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let fi = format_font_info(&self.original_fonts);
+        let t = cx.theme().clone();
+        v_flex()
+            .gap_5()
+            .p_4()
+            .flex_1()
+            // Labels
+            .child(section("Label"))
+            .child(
+                div()
+                    .id("tt-label")
+                    .child(
+                        v_flex()
+                            .gap_2()
+                            .child(Label::new("Regular label"))
+                            .child(Label::new("Label with secondary").secondary("(secondary text)"))
+                            .child(Label::new("Masked label: secret123").masked(true)),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Label",
+                            &[
+                                ("text", "foreground", t.foreground),
+                                ("secondary", "muted_foreground", t.muted_foreground),
+                                ("highlights", "blue", t.blue),
+                            ],
+                            &[
+                                ("font", format!("font_family: {}", t.font_family)),
+                                ("size", format!("font_size: {}px (renders)", t.font_size.as_f32())),
+                            ],
+                            &[("font weights", "hardcoded")],
+                                )),
+            )
             // Link
             .child(section("Link"))
             .child(
@@ -2079,71 +2591,146 @@ impl Showcase {
                             ],
                                 )),
             )
-            // Breadcrumb (with tab navigation)
-            .child(section("Breadcrumb (click to navigate tabs)"))
+            // Headings
+            .child(section("Headings (H1–H6)"))
             .child(
                 div()
-                    .id("tt-breadcrumb")
-                    .child(
-                        Breadcrumb::new()
-                            .child(
-                                BreadcrumbItem::new("Buttons")
-                                    .on_click(cx.listener(|this, _ev, _w, _cx| {
-                                        this.active_tab = TAB_BUTTONS;
-                                    })),
-                            )
-                            .child(
-                                BreadcrumbItem::new("Inputs")
-                                    .on_click(cx.listener(|this, _ev, _w, _cx| {
-                                        this.active_tab = TAB_INPUTS;
-                                    })),
-                            )
-                            .child(
-                                BreadcrumbItem::new("Data")
-                                    .on_click(cx.listener(|this, _ev, _w, _cx| {
-                                        this.active_tab = TAB_DATA;
-                                    })),
-                            )
-                            .child(
-                                BreadcrumbItem::new("Feedback")
-                                    .on_click(cx.listener(|this, _ev, _w, _cx| {
-                                        this.active_tab = TAB_FEEDBACK;
-                                    })),
-                            )
-                            .child(BreadcrumbItem::new("Typography")),
-                    )
-                    .on_hover(self.hover_info(&fi,
-                            "Breadcrumb",
-                            &[
-                                ("last item", "foreground", t.foreground),
-                                ("non-last + separators", "muted_foreground", t.muted_foreground),
-                            ],
-                            &[],
-                            &[("separator icon", "hardcoded ChevronRight"), ("spacing", "hardcoded")],
-                                )),
-            )
-            // Divider styles
-            .child(section("Divider Styles"))
-            .child(
-                div()
-                    .id("tt-divider")
+                    .id("tt-headings")
                     .child(
                         v_flex()
-                            .gap_3()
-                            .child(Divider::horizontal())
-                            .child(Divider::horizontal().label("OR"))
-                            .child(Divider::horizontal_dashed())
-                            .child(Divider::horizontal_dashed().label("END")),
+                            .gap_1()
+                            .child(div().text_size(rems(1.875)).font_weight(gpui::FontWeight::BOLD).child("H1 — Page Title"))
+                            .child(div().text_size(rems(1.5)).font_weight(gpui::FontWeight::BOLD).child("H2 — Section"))
+                            .child(div().text_size(rems(1.25)).font_weight(gpui::FontWeight::SEMIBOLD).child("H3 — Subsection"))
+                            .child(div().text_size(rems(1.125)).font_weight(gpui::FontWeight::SEMIBOLD).child("H4 — Group"))
+                            .child(div().text_size(rems(1.0)).font_weight(gpui::FontWeight::MEDIUM).child("H5 — Detail"))
+                            .child(div().text_size(rems(0.875)).font_weight(gpui::FontWeight::MEDIUM).child("H6 — Fine Print")),
                     )
                     .on_hover(self.hover_info(&fi,
-                            "Divider",
-                            &[
-                                ("line", "border", t.border),
-                                ("label bg", "background", t.background),
-                                ("label text", "muted_foreground", t.muted_foreground),
-                            ],
+                            "Headings",
+                            &[("text", "foreground", t.foreground)],
+                            &[("font", format!("font_family: {}", t.font_family))],
+                            &[("sizes", "30px / 24px / 20px / 18px / 16px / 14px")],
+                                )),
+            )
+            // Font weights
+            .child(section("Font Weights (Thin → Black)"))
+            .child(
+                div()
+                    .id("tt-weights")
+                    .child(
+                        v_flex()
+                            .gap_1()
+                            .child(div().font_weight(gpui::FontWeight::THIN).child("Thin (100)"))
+                            .child(div().font_weight(gpui::FontWeight::EXTRA_LIGHT).child("Extra Light (200)"))
+                            .child(div().font_weight(gpui::FontWeight::LIGHT).child("Light (300)"))
+                            .child(div().font_weight(gpui::FontWeight::NORMAL).child("Normal (400)"))
+                            .child(div().font_weight(gpui::FontWeight::MEDIUM).child("Medium (500)"))
+                            .child(div().font_weight(gpui::FontWeight::SEMIBOLD).child("Semibold (600)"))
+                            .child(div().font_weight(gpui::FontWeight::BOLD).child("Bold (700)"))
+                            .child(div().font_weight(gpui::FontWeight::EXTRA_BOLD).child("Extra Bold (800)"))
+                            .child(div().font_weight(gpui::FontWeight::BLACK).child("Black (900)")),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Font Weights",
+                            &[("text", "foreground", t.foreground)],
+                            &[("font", format!("font_family: {}", t.font_family))],
+                            &[("weights", "gpui::FontWeight constants")],
+                                )),
+            )
+            // Font sizes
+            .child(section("Font Sizes (XS → XL)"))
+            .child(
+                div()
+                    .id("tt-sizes")
+                    .child(
+                        v_flex()
+                            .gap_1()
+                            .child(Label::new("text_xs — Extra Small").text_xs())
+                            .child(Label::new("text_sm — Small").text_sm())
+                            .child(Label::new("text_base — Base (default)"))
+                            .child(Label::new("text_lg — Large").text_lg())
+                            .child(Label::new("text_xl — Extra Large").text_xl()),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Font Sizes",
+                            &[("text", "foreground", t.foreground)],
+                            &[("base", format!("font_size: {}px", t.font_size.as_f32()))],
+                            &[("xs", "0.75rem"), ("sm", "0.875rem"), ("base", "1rem"), ("lg", "1.125rem"), ("xl", "1.25rem")],
+                                )),
+            )
+            // Text decorations
+            .child(section("Text Decorations"))
+            .child(
+                div()
+                    .id("tt-decorations")
+                    .child(
+                        v_flex()
+                            .gap_1()
+                            .child(div().font_weight(gpui::FontWeight::BOLD).child("Bold text"))
+                            .child(div().underline().text_decoration_1().child("Underlined text"))
+                            .child(div().line_through().text_decoration_1().child("Strikethrough text"))
+                            .child(div().italic().child("Italic text")),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Text Decorations",
+                            &[("text", "foreground", t.foreground)],
                             &[],
-                            &[("thickness", "1px hardcoded")],
+                            &[("styles", "bold / underline / strikethrough / italic")],
+                                )),
+            )
+            // Kbd
+            .child(section("Kbd (keyboard shortcuts)"))
+            .child(
+                div()
+                    .id("tt-kbd")
+                    .child(
+                        h_flex()
+                            .gap_4()
+                            .items_center()
+                            .child(Kbd::new(Keystroke::parse("cmd-c").unwrap()))
+                            .child(Kbd::new(Keystroke::parse("cmd-v").unwrap()))
+                            .child(Kbd::new(Keystroke::parse("cmd-shift-p").unwrap()))
+                            .child(Kbd::new(Keystroke::parse("ctrl-z").unwrap())),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Kbd",
+                            &[
+                                ("bg", "muted", t.muted),
+                                ("text", "muted_foreground", t.muted_foreground),
+                                ("border", "border", t.border),
+                            ],
+                            &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                            &[("padding", "hardcoded"), ("font", "monospace")],
+                                )),
+            )
+            // Muted / mono text
+            .child(section("Muted & Monospace Text"))
+            .child(
+                div()
+                    .id("tt-muted-mono")
+                    .child(
+                        v_flex()
+                            .gap_2()
+                            .child(
+                                div()
+                                    .text_color(t.muted_foreground)
+                                    .child("Muted text (secondary content)"),
+                            )
+                            .child(
+                                div()
+                                    .font_family(t.mono_font_family.clone())
+                                    .child("Monospace text (code / technical content)"),
+                            ),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Muted & Mono",
+                            &[
+                                ("muted", "muted_foreground", t.muted_foreground),
+                                ("text", "foreground", t.foreground),
+                            ],
+                            &[("mono font", format!("mono_font_family: {}", t.mono_font_family))],
+                            &[],
                                 )),
             )
     }
@@ -2151,9 +2738,10 @@ impl Showcase {
     // -----------------------------------------------------------------------
     // Tab: Layout
     // -----------------------------------------------------------------------
-    fn render_layout_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
+    fn render_layout_tab(&self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
         let fi = format_font_info(&self.original_fonts);
         let t = cx.theme().clone();
+        let collapsible_open = self.collapsible_open;
         v_flex()
             .gap_5()
             .p_4()
@@ -2333,6 +2921,763 @@ impl Showcase {
                             ],
                             &[("width", "16px hardcoded"), ("min thumb length", "48px hardcoded")],
                                 )),
+            )
+            // Accordion
+            .child(section("Accordion"))
+            .child(
+                div()
+                    .id("tt-accordion")
+                    .child(
+                        Accordion::new("acc-1")
+                            .item(|item| {
+                                item.title("What is native-theme?")
+                                    .open(true)
+                                    .child(
+                                        Label::new(
+                                            "A cross-platform theme abstraction that reads OS \
+                                             settings and maps them to toolkit-specific themes.",
+                                        )
+                                        .text_sm(),
+                                    )
+                            })
+                            .item(|item| {
+                                item.title("Supported toolkits").child(
+                                    Label::new("gpui-component, iced, egui, and more planned.")
+                                        .text_sm(),
+                                )
+                            })
+                            .item(|item| {
+                                item.title("How many presets?").child(
+                                    Label::new("17 built-in theme presets covering major OS styles.")
+                                        .text_sm(),
+                                )
+                            }),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Accordion",
+                            &[
+                                ("bg", "accordion", t.accordion),
+                                ("hover", "accordion_hover", t.accordion_hover),
+                                ("border", "border", t.border),
+                                ("text", "foreground", t.foreground),
+                                ("secondary text", "muted_foreground", t.muted_foreground),
+                            ],
+                            &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                            &[("padding", "hardcoded"), ("animation", "hardcoded")],
+                                )),
+            )
+            // Collapsible
+            .child(section("Collapsible"))
+            .child(
+                div()
+                    .id("tt-collapsible")
+                    .child(
+                        Collapsible::new()
+                            .open(collapsible_open)
+                            .child(
+                                Button::new("coll-toggle")
+                                    .label(if collapsible_open {
+                                        "Click to collapse"
+                                    } else {
+                                        "Click to expand"
+                                    })
+                                    .ghost()
+                                    .icon(if collapsible_open {
+                                        IconName::ChevronDown
+                                    } else {
+                                        IconName::ChevronRight
+                                    })
+                                    .on_click(cx.listener(|this, _ev, _w, _cx| {
+                                        this.collapsible_open = !this.collapsible_open;
+                                    })),
+                            )
+                            .content(
+                                v_flex()
+                                    .p_3()
+                                    .child(Label::new("This content is shown when collapsible is open.").text_sm()),
+                            ),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Collapsible",
+                            &[
+                                ("bg", "accordion", t.accordion),
+                                ("hover", "accordion_hover", t.accordion_hover),
+                                ("border", "border", t.border),
+                            ],
+                            &[],
+                            &[("animation", "hardcoded slide")],
+                                )),
+            )
+            // GroupBox variants
+            .child(section("GroupBox (3 variants)"))
+            .child(
+                div()
+                    .id("tt-groupbox")
+                    .child(
+                        h_flex()
+                            .gap_4()
+                            .child(
+                                GroupBox::new()
+                                    .title("Default")
+                                    .w(px(180.0))
+                                    .child(Label::new("Default style").text_sm()),
+                            )
+                            .child(
+                                GroupBox::new()
+                                    .title("Filled")
+                                    .fill()
+                                    .w(px(180.0))
+                                    .child(Label::new("Filled background").text_sm()),
+                            )
+                            .child(
+                                GroupBox::new()
+                                    .title("Outline")
+                                    .outline()
+                                    .w(px(180.0))
+                                    .child(Label::new("Outlined border").text_sm()),
+                            ),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "GroupBox",
+                            &[
+                                ("fill bg", "group_box", t.group_box),
+                                ("text", "group_box_foreground", t.group_box_foreground),
+                                ("border", "border", t.border),
+                                ("title", "muted_foreground", t.muted_foreground),
+                            ],
+                            &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                            &[("padding", "hardcoded")],
+                                )),
+            )
+            // Breadcrumb (with tab navigation)
+            .child(section("Breadcrumb (click to navigate tabs)"))
+            .child(
+                div()
+                    .id("tt-breadcrumb")
+                    .child(
+                        Breadcrumb::new()
+                            .child(
+                                BreadcrumbItem::new("Buttons")
+                                    .on_click(cx.listener(|this, _ev, _w, _cx| {
+                                        this.active_tab = TAB_BUTTONS;
+                                    })),
+                            )
+                            .child(
+                                BreadcrumbItem::new("Inputs")
+                                    .on_click(cx.listener(|this, _ev, _w, _cx| {
+                                        this.active_tab = TAB_INPUTS;
+                                    })),
+                            )
+                            .child(
+                                BreadcrumbItem::new("Data")
+                                    .on_click(cx.listener(|this, _ev, _w, _cx| {
+                                        this.active_tab = TAB_DATA;
+                                    })),
+                            )
+                            .child(
+                                BreadcrumbItem::new("Feedback")
+                                    .on_click(cx.listener(|this, _ev, _w, _cx| {
+                                        this.active_tab = TAB_FEEDBACK;
+                                    })),
+                            )
+                            .child(BreadcrumbItem::new("Layout")),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Breadcrumb",
+                            &[
+                                ("last item", "foreground", t.foreground),
+                                ("non-last + separators", "muted_foreground", t.muted_foreground),
+                            ],
+                            &[],
+                            &[("separator icon", "hardcoded ChevronRight"), ("spacing", "hardcoded")],
+                                )),
+            )
+            // Form / Field
+            .child(section("Form / Field (horizontal layout)"))
+            .child(
+                div()
+                    .id("tt-form")
+                    .child(
+                        form::Form::horizontal()
+                            .label_width(px(100.0))
+                            .child(
+                                Field::new()
+                                    .label("Name")
+                                    .required(true)
+                                    .child(
+                                        Input::new(
+                                            &cx.new(|cx| {
+                                                let mut s = InputState::new(_window, cx);
+                                                s.set_placeholder("Enter your name", _window, cx);
+                                                s
+                                            }),
+                                        ),
+                                    ),
+                            )
+                            .child(
+                                Field::new()
+                                    .label("Email")
+                                    .description("We will never share your email.")
+                                    .child(
+                                        Input::new(
+                                            &cx.new(|cx| {
+                                                let mut s = InputState::new(_window, cx);
+                                                s.set_placeholder("you@example.com", _window, cx);
+                                                s
+                                            }),
+                                        ),
+                                    ),
+                            ),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Form / Field",
+                            &[
+                                ("label", "foreground", t.foreground),
+                                ("description", "muted_foreground", t.muted_foreground),
+                                ("required marker", "danger", t.danger),
+                            ],
+                            &[],
+                            &[("layout", "horizontal/vertical"), ("label width", "configurable")],
+                                )),
+            )
+            // Sidebar
+            .child(section("Sidebar (mini navigation)"))
+            .child(
+                div()
+                    .id("tt-sidebar")
+                    .h(px(240.0))
+                    .w(px(280.0))
+                    .border_1()
+                    .border_color(t.border)
+                    .overflow_hidden()
+                    .child(
+                        Sidebar::left()
+                            .collapsible(false)
+                            .child(
+                                SidebarMenu::new()
+                                    .child(
+                                        SidebarMenuItem::new("Dashboard")
+                                            .icon(IconName::LayoutDashboard)
+                                            .active(true),
+                                    )
+                                    .child(
+                                        SidebarMenuItem::new("Settings")
+                                            .icon(IconName::Settings),
+                                    )
+                                    .child(
+                                        SidebarMenuItem::new("Inbox")
+                                            .icon(IconName::Inbox),
+                                    )
+                                    .child(
+                                        SidebarMenuItem::new("Calendar")
+                                            .icon(IconName::Calendar),
+                                    ),
+                            ),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Sidebar",
+                            &[
+                                ("bg", "sidebar", t.sidebar),
+                                ("text", "sidebar_foreground", t.sidebar_foreground),
+                                ("accent", "sidebar_accent", t.sidebar_accent),
+                                ("border", "sidebar_border", t.sidebar_border),
+                            ],
+                            &[],
+                            &[("width", "255px default, 48px collapsed"), ("children", "must impl Collapsible + IntoElement")],
+                                )),
+            )
+            // Settings
+            .child(section("Settings (page with field types)"))
+            .child(
+                div()
+                    .id("tt-settings")
+                    .h(px(320.0))
+                    .w_full()
+                    .border_1()
+                    .border_color(t.border)
+                    .overflow_y_scroll()
+                    .child(
+                        Settings::new("settings-demo")
+                            .sidebar_width(px(140.0))
+                            .page(
+                                SettingPage::new("Appearance")
+                                    .description("Customize the look and feel")
+                                    .default_open(true)
+                                    .group(
+                                        SettingGroup::new()
+                                            .title("Theme")
+                                            .item(
+                                                SettingItem::new(
+                                                    "Dark Mode",
+                                                    SettingField::switch(
+                                                        |_cx| false,
+                                                        |_val, _cx| {},
+                                                    ),
+                                                )
+                                                .description("Toggle dark appearance"),
+                                            )
+                                            .item(
+                                                SettingItem::new(
+                                                    "Accent Color",
+                                                    SettingField::dropdown(
+                                                        vec![
+                                                            ("blue".into(), "Blue".into()),
+                                                            ("green".into(), "Green".into()),
+                                                            ("red".into(), "Red".into()),
+                                                        ],
+                                                        |_cx| "blue".into(),
+                                                        |_val, _cx| {},
+                                                    ),
+                                                ),
+                                            ),
+                                    )
+                                    .group(
+                                        SettingGroup::new()
+                                            .title("Editor")
+                                            .item(
+                                                SettingItem::new(
+                                                    "Font Size",
+                                                    SettingField::input(
+                                                        |_cx| "14".into(),
+                                                        |_val, _cx| {},
+                                                    ),
+                                                ),
+                                            )
+                                            .item(
+                                                SettingItem::new(
+                                                    "Word Wrap",
+                                                    SettingField::checkbox(
+                                                        |_cx| true,
+                                                        |_val, _cx| {},
+                                                    ),
+                                                ),
+                                            ),
+                                    ),
+                            )
+                            .page(
+                                SettingPage::new("Keyboard")
+                                    .description("Keyboard shortcuts and input")
+                                    .group(
+                                        SettingGroup::new()
+                                            .title("Shortcuts")
+                                            .item(
+                                                SettingItem::new(
+                                                    "Vim Mode",
+                                                    SettingField::switch(
+                                                        |_cx| false,
+                                                        |_val, _cx| {},
+                                                    ),
+                                                ),
+                                            ),
+                                    ),
+                            ),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Settings",
+                            &[
+                                ("bg", "background", t.background),
+                                ("sidebar", "sidebar", t.sidebar),
+                                ("group", "group_box", t.group_box),
+                                ("border", "border", t.border),
+                            ],
+                            &[],
+                            &[("fields", "switch/checkbox/input/dropdown/number_input"), ("layout", "sidebar + pages")],
+                                )),
+            )
+    }
+
+    // -----------------------------------------------------------------------
+    // Tab: Overlays
+    // -----------------------------------------------------------------------
+    fn render_overlays_tab(&self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        let fi = format_font_info(&self.original_fonts);
+        let t = cx.theme().clone();
+        v_flex()
+            .gap_5()
+            .p_4()
+            .flex_1()
+            // AppMenuBar
+            .child(section("AppMenuBar (File / Edit / View / Help)"))
+            .child(
+                div()
+                    .id("tt-app-menu-bar")
+                    .w_full()
+                    .border_1()
+                    .border_color(t.border)
+                    .child(self.app_menu_bar.clone())
+                    .on_hover(self.hover_info(&fi,
+                            "AppMenuBar",
+                            &[
+                                ("bg", "tab_bar", t.tab_bar),
+                                ("text", "foreground", t.foreground),
+                                ("hover", "secondary_hover", t.secondary_hover),
+                                ("menu bg", "popover", t.popover),
+                            ],
+                            &[],
+                            &[("source", "cx.set_menus(Vec<Menu>)"), ("reads", "cx.get_menus()")],
+                                )),
+            )
+            // Dialog
+            .child(section("Dialog (confirm)"))
+            .child(
+                div()
+                    .id("tt-dialog")
+                    .child(
+                        Button::new("open-dialog")
+                            .label("Open Dialog")
+                            .on_click(cx.listener(|_this, _ev, window, cx| {
+                                window.open_dialog(cx, |dialog, _w, _cx| {
+                                    dialog
+                                        .title("Confirm Action")
+                                        .confirm()
+                                        .width(px(400.0))
+                                });
+                            })),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Dialog",
+                            &[
+                                ("bg", "popover", t.popover),
+                                ("text", "popover_foreground", t.popover_foreground),
+                                ("overlay", "overlay", t.overlay),
+                                ("border", "border", t.border),
+                            ],
+                            &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                            &[("animation", "hardcoded scale+fade")],
+                                )),
+            )
+            // Sheet
+            .child(section("Sheet (slide-in panel)"))
+            .child(
+                div()
+                    .id("tt-sheet")
+                    .child(
+                        h_flex()
+                            .gap_3()
+                            .child(
+                                Button::new("open-sheet-right")
+                                    .label("Open Sheet (Right)")
+                                    .on_click(cx.listener(|_this, _ev, window, cx| {
+                                        window.open_sheet(cx, |sheet, _w, _cx| {
+                                            sheet
+                                                .title("Sheet Panel")
+                                                .size(px(320.0))
+                                        });
+                                    })),
+                            )
+                            .child(
+                                Button::new("open-sheet-bottom")
+                                    .label("Open Sheet (Bottom)")
+                                    .on_click(cx.listener(|_this, _ev, window, cx| {
+                                        window.open_sheet_at(Placement::Bottom, cx, |sheet, _w, _cx| {
+                                            sheet
+                                                .title("Bottom Sheet")
+                                                .size(px(200.0))
+                                        });
+                                    })),
+                            ),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Sheet",
+                            &[
+                                ("bg", "popover", t.popover),
+                                ("text", "popover_foreground", t.popover_foreground),
+                                ("overlay", "overlay", t.overlay),
+                                ("border", "border", t.border),
+                            ],
+                            &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                            &[("animation", "slide in/out"), ("placement", "Right / Bottom / Left / Top")],
+                                )),
+            )
+            // Popover
+            .child(section("Popover"))
+            .child(
+                div()
+                    .id("tt-popover")
+                    .child(
+                        Popover::new("popover-1")
+                            .trigger(Button::new("popover-trigger").label("Click for Popover"))
+                            .content(|_state, _w, cx| {
+                                v_flex()
+                                    .p_4()
+                                    .gap_2()
+                                    .w(px(200.0))
+                                    .child(Label::new("Popover Content").font_semibold())
+                                    .child(Label::new("This is a popover panel.").text_sm().text_color(cx.theme().muted_foreground))
+                            }),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "Popover",
+                            &[
+                                ("bg", "popover", t.popover),
+                                ("text", "popover_foreground", t.popover_foreground),
+                                ("border", "border", t.border),
+                            ],
+                            &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                            &[("trigger", "any Selectable element"), ("anchor", "configurable Corner")],
+                                )),
+            )
+            // ContextMenu
+            .child(section("ContextMenu (right-click the area below)"))
+            .child(
+                div()
+                    .id("tt-context-menu")
+                    .child(
+                        div()
+                            .id("ctx-menu-area")
+                            .p_6()
+                            .w_full()
+                            .rounded(px(6.0))
+                            .border_1()
+                            .border_color(t.border)
+                            .bg(t.secondary)
+                            .child(Label::new("Right-click anywhere in this area").text_sm().text_color(t.muted_foreground))
+                            .context_menu(|menu, _w, _cx| {
+                                menu.menu("Cut", Box::new(gpui::NoAction))
+                                    .menu("Copy", Box::new(gpui::NoAction))
+                                    .menu("Paste", Box::new(gpui::NoAction))
+                                    .separator()
+                                    .menu("Select All", Box::new(gpui::NoAction))
+                            }),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "ContextMenu",
+                            &[
+                                ("bg", "popover", t.popover),
+                                ("text", "popover_foreground", t.popover_foreground),
+                                ("hover", "list_hover", t.list_hover),
+                                ("border", "border", t.border),
+                            ],
+                            &[],
+                            &[("trigger", "right-click (MouseButton::Right)"), ("trait", "ContextMenuExt on any ParentElement+Styled")],
+                                )),
+            )
+            // DropdownMenu
+            .child(section("DropdownMenu"))
+            .child(
+                div()
+                    .id("tt-menu")
+                    .child(
+                        DropdownButton::new("menu-demo")
+                            .button(Button::new("menu-trigger").label("Click for Menu"))
+                            .dropdown_menu(|menu, _w, _cx| {
+                                menu.menu("Cut", Box::new(gpui::NoAction))
+                                    .menu("Copy", Box::new(gpui::NoAction))
+                                    .menu("Paste", Box::new(gpui::NoAction))
+                                    .separator()
+                                    .menu("Select All", Box::new(gpui::NoAction))
+                            }),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                            "PopupMenu / DropdownMenu",
+                            &[
+                                ("bg", "popover", t.popover),
+                                ("text", "popover_foreground", t.popover_foreground),
+                                ("hover", "list_hover", t.list_hover),
+                                ("border", "border", t.border),
+                            ],
+                            &[("border-radius", format!("radius: {}px", t.radius.as_f32()))],
+                            &[("separator", "horizontal line"), ("shortcut", "optional Kbd")],
+                                )),
+            )
+    }
+
+    // -----------------------------------------------------------------------
+    // Tab: Charts
+    // -----------------------------------------------------------------------
+    fn render_charts_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
+        let fi = format_font_info(&self.original_fonts);
+        let t = cx.theme().clone();
+
+        // Sample data structs for charts
+        #[derive(Clone)]
+        struct MonthData {
+            month: SharedString,
+            value: f64,
+        }
+
+        #[derive(Clone)]
+        struct OhlcData {
+            date: SharedString,
+            open: f64,
+            high: f64,
+            low: f64,
+            close: f64,
+        }
+
+        #[derive(Clone)]
+        struct PieSlice {
+            _label: SharedString,
+            amount: f32,
+            color: Hsla,
+        }
+
+        let months: Vec<MonthData> = vec![
+            MonthData { month: "Jan".into(), value: 40.0 },
+            MonthData { month: "Feb".into(), value: 65.0 },
+            MonthData { month: "Mar".into(), value: 55.0 },
+            MonthData { month: "Apr".into(), value: 80.0 },
+            MonthData { month: "May".into(), value: 72.0 },
+            MonthData { month: "Jun".into(), value: 90.0 },
+        ];
+
+        let months2: Vec<MonthData> = vec![
+            MonthData { month: "Jan".into(), value: 30.0 },
+            MonthData { month: "Feb".into(), value: 50.0 },
+            MonthData { month: "Mar".into(), value: 45.0 },
+            MonthData { month: "Apr".into(), value: 70.0 },
+            MonthData { month: "May".into(), value: 60.0 },
+            MonthData { month: "Jun".into(), value: 85.0 },
+        ];
+
+        let ohlc_data = vec![
+            OhlcData { date: "Mon".into(), open: 100.0, high: 115.0, low: 95.0, close: 110.0 },
+            OhlcData { date: "Tue".into(), open: 110.0, high: 120.0, low: 105.0, close: 108.0 },
+            OhlcData { date: "Wed".into(), open: 108.0, high: 118.0, low: 100.0, close: 115.0 },
+            OhlcData { date: "Thu".into(), open: 115.0, high: 125.0, low: 110.0, close: 112.0 },
+            OhlcData { date: "Fri".into(), open: 112.0, high: 122.0, low: 108.0, close: 120.0 },
+        ];
+
+        let pie_data = vec![
+            PieSlice { _label: "Desktop".into(), amount: 55.0, color: t.chart_1 },
+            PieSlice { _label: "Mobile".into(), amount: 30.0, color: t.chart_2 },
+            PieSlice { _label: "Tablet".into(), amount: 15.0, color: t.chart_3 },
+        ];
+
+        let bar_fill = t.chart_1;
+        let line_stroke = t.chart_2;
+        let area_stroke = t.chart_3;
+        let area_fill = t.chart_3.opacity(0.3);
+
+        v_flex()
+            .gap_5()
+            .p_4()
+            .flex_1()
+            // Bar chart
+            .child(section("BarChart"))
+            .child(
+                div()
+                    .id("tt-bar-chart")
+                    .h(px(220.0))
+                    .w_full()
+                    .child(
+                        BarChart::new(months.clone())
+                            .x(|d: &MonthData| d.month.clone())
+                            .y(|d: &MonthData| d.value)
+                            .fill(move |_: &MonthData| bar_fill),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                        "BarChart",
+                        &[
+                            ("fill", "chart_1", t.chart_1),
+                            ("axis", "muted_foreground", t.muted_foreground),
+                            ("grid", "border", t.border),
+                        ],
+                        &[],
+                        &[("bar width", "auto-scaled"), ("tick_margin", "configurable")],
+                    )),
+            )
+            // Line chart
+            .child(section("LineChart"))
+            .child(
+                div()
+                    .id("tt-line-chart")
+                    .h(px(220.0))
+                    .w_full()
+                    .child(
+                        LineChart::new(months.clone())
+                            .x(|d: &MonthData| d.month.clone())
+                            .y(|d: &MonthData| d.value)
+                            .stroke(line_stroke)
+                            .dot(),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                        "LineChart",
+                        &[
+                            ("stroke", "chart_2", t.chart_2),
+                            ("axis", "muted_foreground", t.muted_foreground),
+                            ("grid", "border", t.border),
+                        ],
+                        &[],
+                        &[("style", "natural/linear/step_after"), ("dot", "optional")],
+                    )),
+            )
+            // Area chart
+            .child(section("AreaChart"))
+            .child(
+                div()
+                    .id("tt-area-chart")
+                    .h(px(220.0))
+                    .w_full()
+                    .child(
+                        AreaChart::new(months2)
+                            .x(|d: &MonthData| d.month.clone())
+                            .y(|d: &MonthData| d.value)
+                            .stroke(area_stroke)
+                            .fill(area_fill),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                        "AreaChart",
+                        &[
+                            ("stroke", "chart_3", t.chart_3),
+                            ("fill", "chart_3 (0.3 opacity)", t.chart_3),
+                            ("axis", "muted_foreground", t.muted_foreground),
+                        ],
+                        &[],
+                        &[("multiple series", "chain .y()/.stroke()/.fill()")],
+                    )),
+            )
+            // Pie chart
+            .child(section("PieChart (donut)"))
+            .child(
+                div()
+                    .id("tt-pie-chart")
+                    .h(px(250.0))
+                    .w(px(250.0))
+                    .child(
+                        PieChart::new(pie_data)
+                            .value(|d: &PieSlice| d.amount)
+                            .color(|d: &PieSlice| d.color)
+                            .inner_radius(40.0)
+                            .outer_radius(100.0)
+                            .pad_angle(0.03),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                        "PieChart",
+                        &[
+                            ("slice 1", "chart_1", t.chart_1),
+                            ("slice 2", "chart_2", t.chart_2),
+                            ("slice 3", "chart_3", t.chart_3),
+                        ],
+                        &[],
+                        &[("inner_radius", "0=filled, >0=donut"), ("pad_angle", "gap between slices")],
+                    )),
+            )
+            // Candlestick chart
+            .child(section("CandlestickChart"))
+            .child(
+                div()
+                    .id("tt-candlestick-chart")
+                    .h(px(220.0))
+                    .w_full()
+                    .child(
+                        CandlestickChart::new(ohlc_data)
+                            .x(|d: &OhlcData| d.date.clone())
+                            .open(|d: &OhlcData| d.open)
+                            .high(|d: &OhlcData| d.high)
+                            .low(|d: &OhlcData| d.low)
+                            .close(|d: &OhlcData| d.close),
+                    )
+                    .on_hover(self.hover_info(&fi,
+                        "CandlestickChart",
+                        &[
+                            ("bullish", "bullish", t.bullish),
+                            ("bearish", "bearish", t.bearish),
+                            ("axis", "muted_foreground", t.muted_foreground),
+                        ],
+                        &[],
+                        &[("body_width_ratio", "default 0.8"), ("auto-colored", "green=up, red=down")],
+                    )),
             )
     }
 
@@ -3004,6 +4349,8 @@ impl Render for Showcase {
                                     .child("Feedback")
                                     .child("Typography")
                                     .child("Layout")
+                                    .child("Overlays")
+                                    .child("Charts")
                                     .child("Icons")
                                     .child("Theme Map")
                                     .selected_index(active_tab)
@@ -3034,15 +4381,17 @@ impl Render for Showcase {
                     .flex_1()
                     .overflow_y_scroll()
                     .child(match active_tab {
-                        TAB_BUTTONS => self.render_buttons_tab(cx).into_any_element(),
-                        TAB_INPUTS => self.render_inputs_tab(cx).into_any_element(),
-                        TAB_DATA => self.render_data_tab(cx).into_any_element(),
-                        TAB_FEEDBACK => self.render_feedback_tab(cx).into_any_element(),
+                        TAB_BUTTONS => self.render_buttons_tab(window, cx).into_any_element(),
+                        TAB_INPUTS => self.render_inputs_tab(window, cx).into_any_element(),
+                        TAB_DATA => self.render_data_tab(window, cx).into_any_element(),
+                        TAB_FEEDBACK => self.render_feedback_tab(window, cx).into_any_element(),
                         TAB_TYPOGRAPHY => self.render_typography_tab(cx).into_any_element(),
-                        TAB_LAYOUT => self.render_layout_tab(cx).into_any_element(),
+                        TAB_LAYOUT => self.render_layout_tab(window, cx).into_any_element(),
+                        TAB_OVERLAYS => self.render_overlays_tab(window, cx).into_any_element(),
+                        TAB_CHARTS => self.render_charts_tab(cx).into_any_element(),
                         TAB_ICONS => self.render_icons_tab(cx).into_any_element(),
                         TAB_THEME_MAP => self.render_theme_map_tab(cx).into_any_element(),
-                        _ => self.render_buttons_tab(cx).into_any_element(),
+                        _ => self.render_buttons_tab(window, cx).into_any_element(),
                     }),
             );
 
