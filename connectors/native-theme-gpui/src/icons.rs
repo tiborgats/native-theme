@@ -282,6 +282,131 @@ pub fn material_name_for_gpui_icon(gpui_name: &str) -> Option<&'static str> {
     })
 }
 
+/// Map a gpui-component icon name string to its freedesktop icon name for the
+/// given desktop environment.
+///
+/// Returns the best freedesktop name for the detected DE's naming
+/// convention. When KDE and GNOME use different names for the same
+/// concept, the DE parameter selects the right one. For freedesktop
+/// standard names (present in all themes), the DE is ignored.
+///
+/// ## Confidence levels
+///
+/// Each mapping is annotated with a confidence level:
+/// - `exact`: the freedesktop icon is semantically identical
+/// - `close`: same concept, minor visual difference
+/// - `approximate`: best available match, different metaphor
+///
+/// Covers all 86 gpui-component `IconName` variants.
+#[cfg(target_os = "linux")]
+pub fn freedesktop_name_for_gpui_icon(
+    gpui_name: &str,
+    de: native_theme::LinuxDesktop,
+) -> Option<&'static str> {
+    use native_theme::LinuxDesktop;
+
+    let is_gnome = matches!(
+        de,
+        LinuxDesktop::Gnome | LinuxDesktop::Budgie | LinuxDesktop::Cinnamon | LinuxDesktop::Mate
+    );
+
+    Some(match gpui_name {
+        // --- Icons with freedesktop standard names (all DEs) ---
+        "BookOpen"         => "help-contents",          // close
+        "Bot"              => "face-smile",             // approximate
+        "ChevronDown"      => "go-down",                // close: full nav arrow, not disclosure chevron
+        "ChevronLeft"      => "go-previous",            // close
+        "ChevronRight"     => "go-next",                // close
+        "ChevronUp"        => "go-up",                  // close
+        "CircleX"          => "dialog-error",           // close
+        "Copy"             => "edit-copy",              // exact
+        "Dash"             => "list-remove",            // exact
+        "Delete"           => "edit-delete",            // exact
+        "File"             => "text-x-generic",         // exact
+        "Folder"           => "folder",                 // exact
+        "FolderClosed"     => "folder",                 // exact
+        "FolderOpen"       => "folder-open",            // exact
+        "HeartOff"         => "non-starred",            // close: un-favorite semantics
+        "Info"             => "dialog-information",     // exact
+        "LayoutDashboard"  => "view-grid",              // close
+        "Map"              => "find-location",          // close
+        "Maximize"         => "view-fullscreen",        // exact
+        "Menu"             => "open-menu",              // exact
+        "Minimize"         => "window-minimize",        // exact
+        "Minus"            => "list-remove",            // exact
+        "Moon"             => "weather-clear-night",    // close: dark mode toggle
+        "Plus"             => "list-add",               // exact
+        "Redo"             => "edit-redo",              // exact
+        "Redo2"            => "edit-redo",              // exact
+        "Replace"          => "edit-find-replace",      // exact
+        "Search"           => "edit-find",              // exact
+        "Settings"         => "preferences-system",     // exact
+        "SortAscending"    => "view-sort-ascending",    // exact
+        "SortDescending"   => "view-sort-descending",   // exact
+        "SquareTerminal"   => "utilities-terminal",     // close
+        "Star"             => "starred",                // exact
+        "StarOff"          => "non-starred",            // exact
+        "Sun"              => "weather-clear",          // close: light mode toggle
+        "TriangleAlert"    => "dialog-warning",         // exact
+        "Undo"             => "edit-undo",              // exact
+        "Undo2"            => "edit-undo",              // exact
+        "User"             => "system-users",           // exact
+        "WindowClose"      => "window-close",           // exact
+        "WindowMaximize"   => "window-maximize",        // exact
+        "WindowMinimize"   => "window-minimize",        // exact
+        "WindowRestore"    => "window-restore",         // exact
+
+        // --- Icons where KDE and GNOME diverge ---
+        "Ellipsis"         => if is_gnome { "view-more-horizontal" } else { "overflow-menu" },  // exact
+        "EllipsisVertical" => if is_gnome { "view-more" } else { "overflow-menu" },             // close: no vertical variant in KDE
+        "Eye"              => if is_gnome { "view-reveal" } else { "view-visible" },            // exact
+        "EyeOff"           => if is_gnome { "view-conceal" } else { "view-hidden" },            // exact
+        "Heart"            => if is_gnome { "starred" } else { "emblem-favorite" },             // close
+        "PanelLeft"        => if is_gnome { "sidebar-show" } else { "sidebar-expand-left" },    // close
+        "PanelLeftClose"   => if is_gnome { "sidebar-show" } else { "view-left-close" },        // close
+        "PanelLeftOpen"    => if is_gnome { "sidebar-show" } else { "view-left-new" },          // close
+        "PanelRight"       => if is_gnome { "sidebar-show-right" } else { "view-right-new" },   // close
+        "PanelRightClose"  => if is_gnome { "sidebar-show-right" } else { "view-right-close" }, // close
+        "PanelRightOpen"   => if is_gnome { "sidebar-show-right" } else { "view-right-new" },   // close
+        "ResizeCorner"     => if is_gnome { "list-drag-handle" } else { "drag-handle" },        // close
+
+        // --- KDE-only names (no GNOME equivalent — GNOME falls back to bundled) ---
+        "ALargeSmall"      => "format-font-size-more",  // close
+        "ArrowDown"        => "go-down-skip",           // close: full arrow vs nav arrow
+        "ArrowLeft"        => "go-previous-skip",       // close
+        "ArrowRight"       => "go-next-skip",           // close
+        "ArrowUp"          => "go-up-skip",             // close
+        "Asterisk"         => "rating",                 // approximate
+        "Bell"             => "notification-active",    // close
+        "Building2"        => "applications-office",    // approximate
+        "Calendar"         => "view-calendar",          // exact
+        "CaseSensitive"    => "format-text-uppercase",  // close
+        "ChartPie"         => "office-chart-pie",       // exact
+        "Check"            => "dialog-ok",              // close: checkmark vs OK button
+        "ChevronsUpDown"   => "handle-sort",            // close
+        "CircleCheck"      => "emblem-ok-symbolic",     // close
+        "CircleUser"       => "user-identity",          // close
+        "Close"            => "tab-close",              // exact
+        "ExternalLink"     => "external-link",          // exact
+        "Frame"            => "select-rectangular",     // close
+        "GalleryVerticalEnd" => "view-list-icons",      // approximate
+        "GitHub"           => "vcs-branch",             // approximate: VCS branch as substitute
+        "Globe"            => "globe",                  // exact
+        "Inbox"            => "mail-folder-inbox",      // exact
+        "Inspector"        => "code-context",           // close
+        "Loader"           => "process-working",        // exact
+        "LoaderCircle"     => "process-working",        // exact
+        "Palette"          => "palette",                // exact
+        "PanelBottom"      => "view-split-top-bottom",  // close
+        "PanelBottomOpen"  => "view-split-top-bottom",  // close: no separate open variant
+        "Settings2"        => "configure",              // exact
+        "ThumbsDown"       => "rating-unrated",         // approximate
+        "ThumbsUp"         => "approved",               // approximate
+
+        _ => return None,
+    })
+}
+
 /// Convert [`IconData`] to a gpui [`ImageSource`] for rendering.
 ///
 /// - `IconData::Svg`: Wraps the SVG bytes in `Image::from_bytes(ImageFormat::Svg, ...)`.
@@ -624,5 +749,73 @@ mod tests {
         assert_eq!(bmp[pixel_offset + 1], 0xBB); // G
         assert_eq!(bmp[pixel_offset + 2], 0xAA); // R
         assert_eq!(bmp[pixel_offset + 3], 0xDD); // A
+    }
+}
+
+#[cfg(test)]
+#[cfg(target_os = "linux")]
+mod freedesktop_mapping_tests {
+    use super::*;
+    use native_theme::LinuxDesktop;
+
+    #[test]
+    fn all_86_gpui_icons_have_mapping_on_kde() {
+        let all_names = [
+            "ALargeSmall", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowUp",
+            "Asterisk", "Bell", "BookOpen", "Bot", "Building2",
+            "Calendar", "CaseSensitive", "ChartPie", "Check", "ChevronDown",
+            "ChevronLeft", "ChevronRight", "ChevronsUpDown", "ChevronUp",
+            "CircleCheck", "CircleUser", "CircleX", "Close", "Copy",
+            "Dash", "Delete", "Ellipsis", "EllipsisVertical", "ExternalLink",
+            "Eye", "EyeOff", "File", "Folder", "FolderClosed",
+            "FolderOpen", "Frame", "GalleryVerticalEnd", "GitHub", "Globe",
+            "Heart", "HeartOff", "Inbox", "Info", "Inspector",
+            "LayoutDashboard", "Loader", "LoaderCircle", "Map", "Maximize",
+            "Menu", "Minimize", "Minus", "Moon", "Palette",
+            "PanelBottom", "PanelBottomOpen", "PanelLeft", "PanelLeftClose",
+            "PanelLeftOpen", "PanelRight", "PanelRightClose", "PanelRightOpen",
+            "Plus", "Redo", "Redo2", "Replace", "ResizeCorner",
+            "Search", "Settings", "Settings2", "SortAscending", "SortDescending",
+            "SquareTerminal", "Star", "StarOff", "Sun", "ThumbsDown",
+            "ThumbsUp", "TriangleAlert", "Undo", "Undo2", "User",
+            "WindowClose", "WindowMaximize", "WindowMinimize", "WindowRestore",
+        ];
+        let mut missing = Vec::new();
+        for name in &all_names {
+            if freedesktop_name_for_gpui_icon(name, LinuxDesktop::Kde).is_none() {
+                missing.push(*name);
+            }
+        }
+        assert!(
+            missing.is_empty(),
+            "Missing KDE freedesktop mappings for: {:?}",
+            missing,
+        );
+    }
+
+    #[test]
+    fn eye_differs_by_de() {
+        assert_eq!(
+            freedesktop_name_for_gpui_icon("Eye", LinuxDesktop::Kde),
+            Some("view-visible"),
+        );
+        assert_eq!(
+            freedesktop_name_for_gpui_icon("Eye", LinuxDesktop::Gnome),
+            Some("view-reveal"),
+        );
+    }
+
+    #[test]
+    fn freedesktop_standard_ignores_de() {
+        // edit-copy is freedesktop standard — same for all DEs
+        assert_eq!(
+            freedesktop_name_for_gpui_icon("Copy", LinuxDesktop::Kde),
+            freedesktop_name_for_gpui_icon("Copy", LinuxDesktop::Gnome),
+        );
+    }
+
+    #[test]
+    fn unknown_name_returns_none() {
+        assert!(freedesktop_name_for_gpui_icon("NotARealIcon", LinuxDesktop::Kde).is_none());
     }
 }
