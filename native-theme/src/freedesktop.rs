@@ -68,6 +68,24 @@ pub fn load_freedesktop_icon(role: IconRole) -> Option<IconData> {
     bundled_icon_svg(IconSet::Material, role).map(|bytes| IconData::Svg(bytes.to_vec()))
 }
 
+/// Load a freedesktop icon by name from the given theme.
+///
+/// Looks up the name in the specified theme directory (with `-symbolic`
+/// suffix fallback for Adwaita-style themes), reads the SVG file, and
+/// returns it as `IconData::Svg`.
+///
+/// Unlike [`load_freedesktop_icon`] which takes an `IconRole`, this
+/// function takes an arbitrary freedesktop icon name string. This is
+/// used by connectors to load toolkit-specific icons beyond the 42
+/// `IconRole` variants.
+///
+/// Returns `None` if the icon is not found in the theme.
+pub fn load_freedesktop_icon_by_name(name: &str, theme: &str) -> Option<IconData> {
+    let path = find_icon(name, theme, 24)?;
+    let bytes = std::fs::read(&path).ok()?;
+    Some(IconData::Svg(bytes))
+}
+
 #[cfg(test)]
 #[cfg(feature = "system-icons")]
 mod tests {
@@ -129,5 +147,19 @@ mod tests {
     fn find_icon_nonexistent_returns_none() {
         let result = find_icon("totally-nonexistent-icon-xyz", "hicolor", 24);
         assert!(result.is_none(), "Nonexistent icon should return None");
+    }
+
+    #[test]
+    fn load_icon_by_name_finds_edit_copy() {
+        let theme = detect_theme();
+        let result = load_freedesktop_icon_by_name("edit-copy", &theme);
+        assert!(result.is_some(), "edit-copy should be found in system theme");
+        assert!(matches!(result.unwrap(), IconData::Svg(_)));
+    }
+
+    #[test]
+    fn load_icon_by_name_returns_none_for_nonexistent() {
+        let result = load_freedesktop_icon_by_name("zzz-nonexistent-icon", "hicolor");
+        assert!(result.is_none());
     }
 }

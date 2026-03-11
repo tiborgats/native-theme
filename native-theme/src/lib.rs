@@ -114,7 +114,7 @@ pub use macos::from_macos;
 #[cfg(feature = "windows")]
 pub use windows::from_windows;
 #[cfg(all(target_os = "linux", feature = "system-icons"))]
-pub use freedesktop::load_freedesktop_icon;
+pub use freedesktop::{load_freedesktop_icon, load_freedesktop_icon_by_name};
 #[cfg(feature = "svg-rasterize")]
 pub use rasterize::rasterize_svg;
 #[cfg(all(target_os = "macos", feature = "system-icons"))]
