@@ -818,4 +818,49 @@ mod freedesktop_mapping_tests {
     fn unknown_name_returns_none() {
         assert!(freedesktop_name_for_gpui_icon("NotARealIcon", LinuxDesktop::Kde).is_none());
     }
+
+    #[test]
+    fn all_kde_names_resolve_in_breeze() {
+        let theme = native_theme::system_icon_theme();
+        // Only meaningful on a KDE system with Breeze installed
+        if !theme.to_lowercase().contains("breeze") {
+            eprintln!("Skipping: system theme is '{}', not Breeze", theme);
+            return;
+        }
+
+        let all_names = [
+            "ALargeSmall", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowUp",
+            "Asterisk", "Bell", "BookOpen", "Bot", "Building2",
+            "Calendar", "CaseSensitive", "ChartPie", "Check", "ChevronDown",
+            "ChevronLeft", "ChevronRight", "ChevronsUpDown", "ChevronUp",
+            "CircleCheck", "CircleUser", "CircleX", "Close", "Copy",
+            "Dash", "Delete", "Ellipsis", "EllipsisVertical", "ExternalLink",
+            "Eye", "EyeOff", "File", "Folder", "FolderClosed",
+            "FolderOpen", "Frame", "GalleryVerticalEnd", "GitHub", "Globe",
+            "Heart", "HeartOff", "Inbox", "Info", "Inspector",
+            "LayoutDashboard", "Loader", "LoaderCircle", "Map", "Maximize",
+            "Menu", "Minimize", "Minus", "Moon", "Palette",
+            "PanelBottom", "PanelBottomOpen", "PanelLeft", "PanelLeftClose",
+            "PanelLeftOpen", "PanelRight", "PanelRightClose", "PanelRightOpen",
+            "Plus", "Redo", "Redo2", "Replace", "ResizeCorner",
+            "Search", "Settings", "Settings2", "SortAscending", "SortDescending",
+            "SquareTerminal", "Star", "StarOff", "Sun", "ThumbsDown",
+            "ThumbsUp", "TriangleAlert", "Undo", "Undo2", "User",
+            "WindowClose", "WindowMaximize", "WindowMinimize", "WindowRestore",
+        ];
+
+        let mut missing = Vec::new();
+        for name in &all_names {
+            let fd_name = freedesktop_name_for_gpui_icon(name, LinuxDesktop::Kde)
+                .unwrap_or_else(|| panic!("{} has no KDE mapping", name));
+            if native_theme::load_freedesktop_icon_by_name(fd_name, &theme).is_none() {
+                missing.push(format!("{} -> {}", name, fd_name));
+            }
+        }
+        assert!(
+            missing.is_empty(),
+            "These gpui icons did not resolve in Breeze:\n  {}",
+            missing.join("\n  "),
+        );
+    }
 }
