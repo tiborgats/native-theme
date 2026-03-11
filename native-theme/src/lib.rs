@@ -127,7 +127,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Desktop environments recognized on Linux.
 #[cfg(target_os = "linux")]
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum LinuxDesktop {
     Kde,
     Gnome,

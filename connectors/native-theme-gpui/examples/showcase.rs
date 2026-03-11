@@ -47,7 +47,11 @@ use gpui_component::{
 };
 
 use native_theme::{icon_name as native_icon_name, load_icon, IconData, IconRole, IconSet, NativeTheme, system_icon_set, system_icon_theme, bundled_icon_by_name};
+#[cfg(target_os = "linux")]
+use native_theme::{detect_linux_de, load_freedesktop_icon_by_name};
 use native_theme_gpui::icons::{to_image_source, to_image_source_colored, lucide_name_for_gpui_icon, material_name_for_gpui_icon};
+#[cfg(target_os = "linux")]
+use native_theme_gpui::icons::freedesktop_name_for_gpui_icon;
 use native_theme_gpui::{pick_variant, to_theme};
 
 // ---------------------------------------------------------------------------
@@ -421,6 +425,15 @@ fn load_gpui_icons(
     let is_system_set = matches!(icon_set, "freedesktop" | "sf-symbols" | "segoe-fluent");
     let icon_set_enum = IconSet::from_name(icon_set);
 
+    // On Linux with freedesktop, detect DE + theme once for the whole batch
+    #[cfg(target_os = "linux")]
+    let (linux_de, fd_theme) = if is_system_set && matches!(icon_set_enum, Some(IconSet::Freedesktop)) {
+        let de_str = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
+        (Some(detect_linux_de(&de_str)), Some(system_icon_theme()))
+    } else {
+        (None, None)
+    };
+
     GPUI_ICONS
         .iter()
         .map(|(name, icon)| {
@@ -446,10 +459,35 @@ fn load_gpui_icons(
                     }
                     Some(_) => IconSource::System,
                 };
+                // If system set returned a bundled fallback or not found, try
+                // freedesktop_name_for_gpui_icon before giving up (no theme mixing)
+                #[cfg(target_os = "linux")]
+                if matches!(source, IconSource::Fallback | IconSource::NotFound) {
+                    if let (Some(de), Some(theme)) = (&linux_de, &fd_theme) {
+                        if let Some(fd_name) = freedesktop_name_for_gpui_icon(name, *de) {
+                            if let Some(fd_data) = load_freedesktop_icon_by_name(fd_name, theme) {
+                                return (*name, icon.clone(), Some(r), Some(fd_data), IconSource::System);
+                            }
+                        }
+                        // System set but no system icon — mark not found (no bundled fallback)
+                        return (*name, icon.clone(), Some(r), None, IconSource::NotFound);
+                    }
+                }
                 return (*name, icon.clone(), Some(r), data, source);
             }
 
-            // No IconRole mapping — try by-name lookup
+            // No IconRole mapping — try by-name lookup for the active icon set
+            #[cfg(target_os = "linux")]
+            if let (Some(de), Some(theme)) = (&linux_de, &fd_theme) {
+                if let Some(fd_name) = freedesktop_name_for_gpui_icon(name, *de) {
+                    if let Some(data) = load_freedesktop_icon_by_name(fd_name, theme) {
+                        return (*name, icon.clone(), None, Some(data), IconSource::System);
+                    }
+                }
+                // System set but no system icon — do NOT fall back to bundled
+                return (*name, icon.clone(), None, None, IconSource::NotFound);
+            }
+
             if let Some(set) = icon_set_enum {
                 let lookup_name = match set {
                     IconSet::Lucide => lucide_name_for_gpui_icon(name),
