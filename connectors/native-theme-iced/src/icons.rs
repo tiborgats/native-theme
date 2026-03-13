@@ -1,13 +1,13 @@
 //! Icon conversion helpers for iced.
 //!
 //! Converts [`native_theme::IconData`] variants into iced-compatible handles.
-//! Since iced separates raster images ([`iced_core::widget::Image`]) from SVG
-//! images ([`iced_core::widget::Svg`]), this module provides separate conversion
+//! Since iced separates raster images (`iced::widget::Image`) from SVG
+//! images (`iced::widget::Svg`), this module provides separate conversion
 //! functions for each variant.
 
 use native_theme::IconData;
 
-/// Converts RGBA [`IconData`] to an iced [`image::Handle`].
+/// Converts RGBA [`IconData`] to an iced [`iced_core::image::Handle`].
 ///
 /// Returns `Some(Handle)` for [`IconData::Rgba`] data, or `None` for
 /// [`IconData::Svg`]. SVG icons should use [`to_svg_handle()`] and
@@ -27,7 +27,7 @@ pub fn to_image_handle(data: &IconData) -> Option<iced_core::image::Handle> {
     }
 }
 
-/// Converts SVG [`IconData`] to an iced [`svg::Handle`].
+/// Converts SVG [`IconData`] to an iced [`iced_core::svg::Handle`].
 ///
 /// Returns `Some(Handle)` for [`IconData::Svg`] data, or `None` for
 /// [`IconData::Rgba`]. RGBA icons should use [`to_image_handle()`] and

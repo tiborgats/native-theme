@@ -5,7 +5,7 @@
 // crate, with a full fallback chain: active theme -> hicolor -> bundled
 // Material SVGs.
 
-use crate::{bundled_icon_svg, icon_name, IconData, IconRole, IconSet};
+use crate::{IconData, IconRole, IconSet, bundled_icon_svg, icon_name};
 use std::path::PathBuf;
 
 /// Detect the active freedesktop icon theme.
@@ -158,7 +158,10 @@ mod tests {
     fn load_icon_by_name_finds_edit_copy() {
         let theme = detect_theme();
         let result = load_freedesktop_icon_by_name("edit-copy", &theme);
-        assert!(result.is_some(), "edit-copy should be found in system theme");
+        assert!(
+            result.is_some(),
+            "edit-copy should be found in system theme"
+        );
         assert!(matches!(result.unwrap(), IconData::Svg(_)));
     }
 

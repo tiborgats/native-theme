@@ -6,7 +6,7 @@
 //! gpui-component's own `apply_config` derivation.
 
 use gpui::Hsla;
-use gpui_component::{theme::ThemeColor, Colorize};
+use gpui_component::{Colorize, theme::ThemeColor};
 use native_theme::ThemeVariant;
 
 use crate::derive::{active_color, hover_color};
@@ -32,46 +32,92 @@ fn is_dark_background(bg: Hsla) -> bool {
 // -- Defaults (white and black) --
 
 fn white() -> Hsla {
-    Hsla { h: 0.0, s: 0.0, l: 1.0, a: 1.0 }
+    Hsla {
+        h: 0.0,
+        s: 0.0,
+        l: 1.0,
+        a: 1.0,
+    }
 }
 
 fn black() -> Hsla {
-    Hsla { h: 0.0, s: 0.0, l: 0.0, a: 1.0 }
+    Hsla {
+        h: 0.0,
+        s: 0.0,
+        l: 0.0,
+        a: 1.0,
+    }
 }
 
 /// Default accent blue: roughly #0078d7 in HSL.
 fn default_accent() -> Hsla {
-    gpui::Rgba { r: 0.0, g: 0.471, b: 0.843, a: 1.0 }.into()
+    gpui::Rgba {
+        r: 0.0,
+        g: 0.471,
+        b: 0.843,
+        a: 1.0,
+    }
+    .into()
 }
 
 /// Default red for danger/error states.
 fn default_red() -> Hsla {
-    Hsla { h: 0.0, s: 1.0, l: 0.5, a: 1.0 }
+    Hsla {
+        h: 0.0,
+        s: 1.0,
+        l: 0.5,
+        a: 1.0,
+    }
 }
 
 /// Default green for success states.
 fn default_green() -> Hsla {
-    Hsla { h: 0.333, s: 1.0, l: 0.25, a: 1.0 }
+    Hsla {
+        h: 0.333,
+        s: 1.0,
+        l: 0.25,
+        a: 1.0,
+    }
 }
 
 /// Default yellow for warning states.
 fn default_yellow() -> Hsla {
-    Hsla { h: 0.167, s: 1.0, l: 0.5, a: 1.0 }
+    Hsla {
+        h: 0.167,
+        s: 1.0,
+        l: 0.5,
+        a: 1.0,
+    }
 }
 
 /// Default cyan for info states.
 fn default_cyan() -> Hsla {
-    Hsla { h: 0.5, s: 1.0, l: 0.5, a: 1.0 }
+    Hsla {
+        h: 0.5,
+        s: 1.0,
+        l: 0.5,
+        a: 1.0,
+    }
 }
 
 /// Default blue for ring/chart.
 fn default_blue() -> Hsla {
-    Hsla { h: 0.667, s: 1.0, l: 0.5, a: 1.0 }
+    Hsla {
+        h: 0.667,
+        s: 1.0,
+        l: 0.5,
+        a: 1.0,
+    }
 }
 
 /// Default magenta.
 fn default_magenta() -> Hsla {
-    Hsla { h: 0.833, s: 1.0, l: 0.5, a: 1.0 }
+    Hsla {
+        h: 0.833,
+        s: 1.0,
+        l: 0.5,
+        a: 1.0,
+    }
 }
 
 /// Build a complete [`ThemeColor`] from a [`ThemeVariant`].
@@ -86,13 +132,37 @@ pub fn to_theme_color(variant: &ThemeVariant) -> ThemeColor {
     let fg = rgba_to_hsla(colors.foreground, black());
     let is_dark = is_dark_background(bg);
     let accent = rgba_to_hsla(colors.accent, default_accent());
-    let surface = rgba_to_hsla(colors.surface, if is_dark { bg.lighten(0.1) } else { bg.darken(0.05) });
-    let border = rgba_to_hsla(colors.border, if is_dark { fg.opacity(0.2) } else { fg.opacity(0.15) });
-    let muted = rgba_to_hsla(colors.muted, if is_dark { bg.lighten(0.15) } else { bg.darken(0.06) });
+    let surface = rgba_to_hsla(
+        colors.surface,
+        if is_dark {
+            bg.lighten(0.1)
+        } else {
+            bg.darken(0.05)
+        },
+    );
+    let border = rgba_to_hsla(
+        colors.border,
+        if is_dark {
+            fg.opacity(0.2)
+        } else {
+            fg.opacity(0.15)
+        },
+    );
+    let muted = rgba_to_hsla(
+        colors.muted,
+        if is_dark {
+            bg.lighten(0.15)
+        } else {
+            bg.darken(0.06)
+        },
+    );
 
     // -- Resolve semantic colors --
     let primary = rgba_to_hsla(colors.primary_background, accent);
-    let primary_fg = rgba_to_hsla(colors.primary_foreground, if is_dark { black() } else { white() });
+    let primary_fg = rgba_to_hsla(
+        colors.primary_foreground,
+        if is_dark { black() } else { white() },
+    );
     let secondary = rgba_to_hsla(colors.secondary_background, muted);
     let secondary_fg = rgba_to_hsla(colors.secondary_foreground, fg);
     let danger = rgba_to_hsla(colors.danger, default_red());
@@ -119,26 +189,45 @@ pub fn to_theme_color(variant: &ThemeVariant) -> ThemeColor {
     let mut tc = ThemeColor::default();
 
     // Core
-    assign_core(&mut tc, bg, fg, accent, border, muted, muted_fg, input, ring, selection, link);
+    assign_core(
+        &mut tc, bg, fg, accent, border, muted, muted_fg, input, ring, selection, link,
+    );
 
     // Primary/Secondary
     assign_primary(&mut tc, primary, primary_fg, bg, is_dark);
     assign_secondary(&mut tc, secondary, secondary_fg, bg, is_dark);
 
     // Status colors (danger, success, warning, info)
-    assign_status(&mut tc, danger, danger_fg, success, success_fg, warning, warning_fg, info, info_fg, bg, is_dark, primary_fg);
+    assign_status(
+        &mut tc, danger, danger_fg, success, success_fg, warning, warning_fg, info, info_fg, bg,
+        is_dark, primary_fg,
+    );
 
     // List/table
-    assign_list_table(&mut tc, bg, alternate_row, primary, secondary, border, muted_fg);
+    assign_list_table(
+        &mut tc,
+        bg,
+        alternate_row,
+        primary,
+        secondary,
+        border,
+        muted_fg,
+    );
 
     // Tab/sidebar
-    assign_tab_sidebar(&mut tc, bg, fg, surface, secondary, sidebar, sidebar_fg, accent, primary, primary_fg, border);
+    assign_tab_sidebar(
+        &mut tc, bg, fg, surface, secondary, sidebar, sidebar_fg, accent, primary, primary_fg,
+        border,
+    );
 
     // Chart colors
     assign_charts(&mut tc, accent);
 
     // Misc (overlay, scrollbar, slider, switch, etc.)
-    assign_misc(&mut tc, bg, fg, accent, muted, primary, primary_fg, secondary, border, surface, is_dark, link, popover, popover_fg);
+    assign_misc(
+        &mut tc, bg, fg, accent, muted, primary, primary_fg, secondary, border, surface, is_dark,
+        link, popover, popover_fg,
+    );
 
     // Base named colors
     assign_base_colors(&mut tc, danger, success, info, warning, bg);
@@ -148,11 +237,19 @@ pub fn to_theme_color(variant: &ThemeVariant) -> ThemeColor {
 
 // ---------- helper assignment functions ----------
 
+#[allow(clippy::too_many_arguments)]
 fn assign_core(
     tc: &mut ThemeColor,
-    bg: Hsla, fg: Hsla, accent: Hsla, border: Hsla,
-    muted: Hsla, muted_fg: Hsla, input: Hsla, ring: Hsla,
-    selection: Hsla, link: Hsla,
+    bg: Hsla,
+    fg: Hsla,
+    accent: Hsla,
+    border: Hsla,
+    muted: Hsla,
+    muted_fg: Hsla,
+    input: Hsla,
+    ring: Hsla,
+    selection: Hsla,
+    link: Hsla,
 ) {
     tc.background = bg;
     tc.foreground = fg;
@@ -177,20 +274,32 @@ fn assign_primary(tc: &mut ThemeColor, primary: Hsla, primary_fg: Hsla, bg: Hsla
     tc.primary_active = active_color(primary, is_dark);
 }
 
-fn assign_secondary(tc: &mut ThemeColor, secondary: Hsla, secondary_fg: Hsla, bg: Hsla, is_dark: bool) {
+fn assign_secondary(
+    tc: &mut ThemeColor,
+    secondary: Hsla,
+    secondary_fg: Hsla,
+    bg: Hsla,
+    is_dark: bool,
+) {
     tc.secondary = secondary;
     tc.secondary_foreground = secondary_fg;
     tc.secondary_hover = hover_color(secondary, bg);
     tc.secondary_active = active_color(secondary, is_dark);
 }
 
+#[allow(clippy::too_many_arguments)]
 fn assign_status(
     tc: &mut ThemeColor,
-    danger: Hsla, danger_fg: Hsla,
-    success: Hsla, success_fg: Hsla,
-    warning: Hsla, warning_fg: Hsla,
-    info: Hsla, info_fg: Hsla,
-    bg: Hsla, is_dark: bool,
+    danger: Hsla,
+    danger_fg: Hsla,
+    success: Hsla,
+    success_fg: Hsla,
+    warning: Hsla,
+    warning_fg: Hsla,
+    info: Hsla,
+    info_fg: Hsla,
+    bg: Hsla,
+    is_dark: bool,
     _primary_fg: Hsla,
 ) {
     tc.danger = danger;
@@ -219,8 +328,12 @@ fn assign_status(
 
 fn assign_list_table(
     tc: &mut ThemeColor,
-    bg: Hsla, alternate_row: Hsla, primary: Hsla,
-    secondary: Hsla, border: Hsla, muted_fg: Hsla,
+    bg: Hsla,
+    alternate_row: Hsla,
+    primary: Hsla,
+    secondary: Hsla,
+    border: Hsla,
+    muted_fg: Hsla,
 ) {
     tc.list = bg;
     tc.list_hover = hover_color(secondary, bg);
@@ -239,11 +352,19 @@ fn assign_list_table(
     tc.table_row_border = border;
 }
 
+#[allow(clippy::too_many_arguments)]
 fn assign_tab_sidebar(
     tc: &mut ThemeColor,
-    bg: Hsla, fg: Hsla, surface: Hsla, secondary: Hsla,
-    sidebar: Hsla, sidebar_fg: Hsla,
-    accent: Hsla, primary: Hsla, primary_fg: Hsla, border: Hsla,
+    bg: Hsla,
+    fg: Hsla,
+    surface: Hsla,
+    secondary: Hsla,
+    sidebar: Hsla,
+    sidebar_fg: Hsla,
+    accent: Hsla,
+    primary: Hsla,
+    primary_fg: Hsla,
+    border: Hsla,
 ) {
     tc.tab = bg;
     tc.tab_active = bg;
@@ -274,12 +395,22 @@ fn assign_charts(tc: &mut ThemeColor, accent: Hsla) {
     tc.chart_5 = accent.darken(0.4);
 }
 
+#[allow(clippy::too_many_arguments)]
 fn assign_misc(
     tc: &mut ThemeColor,
-    bg: Hsla, fg: Hsla, accent: Hsla, _muted: Hsla,
-    primary: Hsla, primary_fg: Hsla, secondary: Hsla,
-    border: Hsla, _surface: Hsla, is_dark: bool, link: Hsla,
-    popover: Hsla, popover_fg: Hsla,
+    bg: Hsla,
+    fg: Hsla,
+    accent: Hsla,
+    _muted: Hsla,
+    primary: Hsla,
+    primary_fg: Hsla,
+    secondary: Hsla,
+    border: Hsla,
+    _surface: Hsla,
+    is_dark: bool,
+    link: Hsla,
+    popover: Hsla,
+    popover_fg: Hsla,
 ) {
     tc.popover = popover;
     tc.popover_foreground = popover_fg;
@@ -294,9 +425,19 @@ fn assign_misc(
     tc.description_list_label_foreground = tc.muted_foreground;
 
     tc.overlay = if is_dark {
-        Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.5 }
+        Hsla {
+            h: 0.0,
+            s: 0.0,
+            l: 0.0,
+            a: 0.5,
+        }
     } else {
-        Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.4 }
+        Hsla {
+            h: 0.0,
+            s: 0.0,
+            l: 0.0,
+            a: 0.4,
+        }
     };
 
     tc.scrollbar = bg;
@@ -322,7 +463,14 @@ fn assign_misc(
     tc.link_active = link;
 }
 
-fn assign_base_colors(tc: &mut ThemeColor, danger: Hsla, success: Hsla, info: Hsla, warning: Hsla, bg: Hsla) {
+fn assign_base_colors(
+    tc: &mut ThemeColor,
+    danger: Hsla,
+    success: Hsla,
+    info: Hsla,
+    warning: Hsla,
+    bg: Hsla,
+) {
     tc.red = danger;
     tc.red_light = bg.blend(danger.opacity(0.8));
     tc.green = success;
@@ -380,7 +528,11 @@ mod tests {
         let red = Some(Rgba::rgb(255, 0, 0));
         let result = rgba_to_hsla(red, white());
         // Red should have hue ~0 (or near 0/1), high saturation
-        assert!(result.h < 0.05 || result.h > 0.95, "red hue={} should be near 0", result.h);
+        assert!(
+            result.h < 0.05 || result.h > 0.95,
+            "red hue={} should be near 0",
+            result.h
+        );
         assert!(result.s > 0.9, "red saturation={} should be high", result.s);
     }
 
@@ -389,7 +541,11 @@ mod tests {
         let green = Some(Rgba::rgb(0, 255, 0));
         let result = rgba_to_hsla(green, white());
         // Green hue ~0.333
-        assert!((result.h - 0.333).abs() < 0.05, "green hue={} should be near 0.333", result.h);
+        assert!(
+            (result.h - 0.333).abs() < 0.05,
+            "green hue={} should be near 0.333",
+            result.h
+        );
     }
 
     #[test]
@@ -397,12 +553,21 @@ mod tests {
         let blue = Some(Rgba::rgb(0, 0, 255));
         let result = rgba_to_hsla(blue, white());
         // Blue hue ~0.667
-        assert!((result.h - 0.667).abs() < 0.05, "blue hue={} should be near 0.667", result.h);
+        assert!(
+            (result.h - 0.667).abs() < 0.05,
+            "blue hue={} should be near 0.667",
+            result.h
+        );
     }
 
     #[test]
     fn rgba_to_hsla_none_returns_fallback() {
-        let fallback = Hsla { h: 0.5, s: 0.5, l: 0.5, a: 1.0 };
+        let fallback = Hsla {
+            h: 0.5,
+            s: 0.5,
+            l: 0.5,
+            a: 1.0,
+        };
         let result = rgba_to_hsla(None, fallback);
         assert_eq!(result, fallback);
     }
@@ -414,8 +579,14 @@ mod tests {
         let default = ThemeColor::default();
 
         // Direct-mapped fields should differ from default
-        assert_ne!(tc.background, default.background, "background should be set");
-        assert_ne!(tc.foreground, default.foreground, "foreground should be set");
+        assert_ne!(
+            tc.background, default.background,
+            "background should be set"
+        );
+        assert_ne!(
+            tc.foreground, default.foreground,
+            "foreground should be set"
+        );
         assert_ne!(tc.primary, default.primary, "primary should be set");
         assert_ne!(tc.danger, default.danger, "danger should be set");
         assert_ne!(tc.border, default.border, "border should be set");
@@ -427,17 +598,38 @@ mod tests {
         let tc = to_theme_color(&variant);
 
         // Background should be white (default), lightness = 1.0
-        assert!((tc.background.l - 1.0).abs() < 0.01, "default bg l={} should be ~1.0", tc.background.l);
+        assert!(
+            (tc.background.l - 1.0).abs() < 0.01,
+            "default bg l={} should be ~1.0",
+            tc.background.l
+        );
         // Foreground should be black, lightness = 0.0
-        assert!(tc.foreground.l < 0.01, "default fg l={} should be ~0.0", tc.foreground.l);
+        assert!(
+            tc.foreground.l < 0.01,
+            "default fg l={} should be ~0.0",
+            tc.foreground.l
+        );
         // Should have some accent color (not zero lightness black)
-        assert!(tc.accent.s > 0.0 || tc.accent.l > 0.0, "accent should not be all-zero");
+        assert!(
+            tc.accent.s > 0.0 || tc.accent.l > 0.0,
+            "accent should not be all-zero"
+        );
     }
 
     #[test]
     fn is_dark_detects_dark_background() {
-        assert!(is_dark_background(Hsla { h: 0.0, s: 0.0, l: 0.1, a: 1.0 }));
-        assert!(!is_dark_background(Hsla { h: 0.0, s: 0.0, l: 0.9, a: 1.0 }));
+        assert!(is_dark_background(Hsla {
+            h: 0.0,
+            s: 0.0,
+            l: 0.1,
+            a: 1.0
+        }));
+        assert!(!is_dark_background(Hsla {
+            h: 0.0,
+            s: 0.0,
+            l: 0.9,
+            a: 1.0
+        }));
     }
 
     #[test]
@@ -445,7 +637,13 @@ mod tests {
         let variant = populated_variant();
         let tc = to_theme_color(&variant);
 
-        assert_ne!(tc.primary_hover, tc.primary, "primary_hover should differ from primary");
-        assert_ne!(tc.danger_hover, tc.danger, "danger_hover should differ from danger");
+        assert_ne!(
+            tc.primary_hover, tc.primary,
+            "primary_hover should differ from primary"
+        );
+        assert_ne!(
+            tc.danger_hover, tc.danger,
+            "danger_hover should differ from danger"
+        );
     }
 }

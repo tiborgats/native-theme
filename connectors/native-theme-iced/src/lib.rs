@@ -30,7 +30,7 @@ pub mod extended;
 pub mod icons;
 pub mod palette;
 
-/// Select light or dark variant from a [`NativeTheme`], with cross-fallback.
+/// Select light or dark variant from a [`native_theme::NativeTheme`], with cross-fallback.
 ///
 /// When `is_dark` is true, prefers `theme.dark` and falls back to `theme.light`.
 /// When `is_dark` is false, prefers `theme.light` and falls back to `theme.dark`.
@@ -47,7 +47,7 @@ pub fn pick_variant(
     }
 }
 
-/// Create an iced [`Theme`] from a [`ThemeVariant`].
+/// Create an iced [`iced_core::theme::Theme`] from a [`native_theme::ThemeVariant`].
 ///
 /// Builds a custom theme using `Theme::custom_with_fn()`, which:
 /// 1. Maps the 6 Palette fields from native-theme colors via [`palette::to_palette()`]
@@ -59,10 +59,7 @@ pub fn pick_variant(
 /// Container, TextInput, Scrollable, Checkbox, Slider, ProgressBar, Tooltip)
 /// automatically derive their Style structs from this palette. No explicit
 /// Catalog implementations are needed.
-pub fn to_theme(
-    variant: &native_theme::ThemeVariant,
-    name: &str,
-) -> iced_core::theme::Theme {
+pub fn to_theme(variant: &native_theme::ThemeVariant, name: &str) -> iced_core::theme::Theme {
     let pal = palette::to_palette(variant);
 
     // Clone the variant reference data we need into the closure.
@@ -147,10 +144,7 @@ mod tests {
         assert!(result.is_some());
         // Should return the light variant (which is the same as dark here,
         // but logically we check it's the light ref)
-        assert!(std::ptr::eq(
-            result.unwrap(),
-            theme.light.as_ref().unwrap()
-        ));
+        assert!(std::ptr::eq(result.unwrap(), theme.light.as_ref().unwrap()));
     }
 
     #[test]
@@ -161,10 +155,7 @@ mod tests {
 
         let result = pick_variant(&theme, true);
         assert!(result.is_some());
-        assert!(std::ptr::eq(
-            result.unwrap(),
-            theme.dark.as_ref().unwrap()
-        ));
+        assert!(std::ptr::eq(result.unwrap(), theme.dark.as_ref().unwrap()));
     }
 
     #[test]
@@ -175,10 +166,7 @@ mod tests {
 
         let result = pick_variant(&theme, true);
         assert!(result.is_some());
-        assert!(std::ptr::eq(
-            result.unwrap(),
-            theme.light.as_ref().unwrap()
-        ));
+        assert!(std::ptr::eq(result.unwrap(), theme.light.as_ref().unwrap()));
     }
 
     #[test]
@@ -189,10 +177,7 @@ mod tests {
 
         let result = pick_variant(&theme, false);
         assert!(result.is_some());
-        assert!(std::ptr::eq(
-            result.unwrap(),
-            theme.dark.as_ref().unwrap()
-        ));
+        assert!(std::ptr::eq(result.unwrap(), theme.dark.as_ref().unwrap()));
     }
 
     #[test]

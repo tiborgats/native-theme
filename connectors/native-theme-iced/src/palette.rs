@@ -17,7 +17,7 @@ pub(crate) fn to_color(rgba: Option<Rgba>, default: iced_core::Color) -> iced_co
     }
 }
 
-/// Build an iced [`Palette`] from a [`ThemeVariant`].
+/// Build an iced [`iced_core::theme::Palette`] from a [`native_theme::ThemeVariant`].
 ///
 /// Maps the 6 palette fields:
 /// - `background` <- `colors.background` (fallback: white)

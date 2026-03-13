@@ -86,23 +86,25 @@ pub use color::Rgba;
 pub use error::Error;
 pub use model::{
     IconData, IconRole, IconSet, NativeTheme, ThemeColors, ThemeFonts, ThemeGeometry, ThemeSpacing,
-    ThemeVariant, WidgetMetrics, bundled_icon_svg, bundled_icon_by_name,
+    ThemeVariant, WidgetMetrics, bundled_icon_by_name, bundled_icon_svg,
 };
 // load_icon re-exported from this module (defined in lib.rs directly)
 pub use model::icons::{icon_name, system_icon_set, system_icon_theme};
 
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+pub mod freedesktop;
 pub mod macos;
 #[cfg(feature = "svg-rasterize")]
 pub mod rasterize;
-#[cfg(feature = "windows")]
-pub mod windows;
-#[cfg(all(target_os = "linux", feature = "system-icons"))]
-pub mod freedesktop;
 #[cfg(all(target_os = "macos", feature = "system-icons"))]
 pub mod sficons;
+#[cfg(feature = "windows")]
+pub mod windows;
 #[cfg(all(target_os = "windows", feature = "system-icons"))]
 pub mod winicons;
 
+#[cfg(all(target_os = "linux", feature = "system-icons"))]
+pub use freedesktop::{load_freedesktop_icon, load_freedesktop_icon_by_name};
 #[cfg(feature = "portal")]
 pub use gnome::from_gnome;
 #[cfg(all(feature = "portal", feature = "kde"))]
@@ -111,14 +113,12 @@ pub use gnome::from_kde_with_portal;
 pub use kde::from_kde;
 #[cfg(feature = "macos")]
 pub use macos::from_macos;
-#[cfg(feature = "windows")]
-pub use windows::from_windows;
-#[cfg(all(target_os = "linux", feature = "system-icons"))]
-pub use freedesktop::{load_freedesktop_icon, load_freedesktop_icon_by_name};
 #[cfg(feature = "svg-rasterize")]
 pub use rasterize::rasterize_svg;
 #[cfg(all(target_os = "macos", feature = "system-icons"))]
 pub use sficons::load_sf_icon;
+#[cfg(feature = "windows")]
+pub use windows::from_windows;
 #[cfg(all(target_os = "windows", feature = "system-icons"))]
 pub use winicons::load_windows_icon;
 
@@ -218,8 +218,9 @@ fn from_linux() -> crate::Result<NativeTheme> {
         #[cfg(not(feature = "kde"))]
         LinuxDesktop::Kde => NativeTheme::preset("adwaita"),
         LinuxDesktop::Gnome | LinuxDesktop::Budgie => NativeTheme::preset("adwaita"),
-        LinuxDesktop::Xfce | LinuxDesktop::Cinnamon
-        | LinuxDesktop::Mate | LinuxDesktop::LxQt => NativeTheme::preset("adwaita"),
+        LinuxDesktop::Xfce | LinuxDesktop::Cinnamon | LinuxDesktop::Mate | LinuxDesktop::LxQt => {
+            NativeTheme::preset("adwaita")
+        }
         LinuxDesktop::Unknown => {
             #[cfg(feature = "kde")]
             {
@@ -309,9 +310,8 @@ pub async fn from_system_async() -> crate::Result<NativeTheme> {
         LinuxDesktop::Gnome | LinuxDesktop::Budgie => crate::gnome::from_gnome().await,
         #[cfg(not(feature = "portal"))]
         LinuxDesktop::Gnome | LinuxDesktop::Budgie => NativeTheme::preset("adwaita"),
-        LinuxDesktop::Xfce | LinuxDesktop::Cinnamon
-        | LinuxDesktop::Mate | LinuxDesktop::LxQt => {
-            return NativeTheme::preset("adwaita");
+        LinuxDesktop::Xfce | LinuxDesktop::Cinnamon | LinuxDesktop::Mate | LinuxDesktop::LxQt => {
+            NativeTheme::preset("adwaita")
         }
         LinuxDesktop::Unknown => {
             // Use D-Bus portal backend detection to refine heuristic
@@ -659,7 +659,10 @@ mod load_icon_tests {
             }
         }
         // bundled_icon_svg covers all 42 roles for Material
-        assert_eq!(some_count, 42, "Material should cover all 42 roles via bundled SVGs");
+        assert_eq!(
+            some_count, 42,
+            "Material should cover all 42 roles via bundled SVGs"
+        );
     }
 
     #[test]
@@ -672,7 +675,10 @@ mod load_icon_tests {
             }
         }
         // bundled_icon_svg covers all 42 roles for Lucide
-        assert_eq!(some_count, 42, "Lucide should cover all 42 roles via bundled SVGs");
+        assert_eq!(
+            some_count, 42,
+            "Lucide should cover all 42 roles via bundled SVGs"
+        );
     }
 
     #[test]

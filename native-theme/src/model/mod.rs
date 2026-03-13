@@ -8,12 +8,12 @@ pub mod icons;
 pub mod spacing;
 pub mod widget_metrics;
 
+pub use bundled::{bundled_icon_by_name, bundled_icon_svg};
 pub use colors::ThemeColors;
 pub use fonts::ThemeFonts;
 pub use geometry::ThemeGeometry;
-pub use spacing::ThemeSpacing;
-pub use bundled::{bundled_icon_svg, bundled_icon_by_name};
 pub use icons::{IconData, IconRole, IconSet, icon_name, system_icon_set, system_icon_theme};
+pub use spacing::ThemeSpacing;
 pub use widget_metrics::{
     ButtonMetrics, CheckboxMetrics, InputMetrics, ListItemMetrics, MenuItemMetrics,
     ProgressBarMetrics, ScrollbarMetrics, SliderMetrics, SplitterMetrics, TabMetrics,
@@ -197,6 +197,86 @@ impl NativeTheme {
     }
 
     /// Parse a TOML string into a [`NativeTheme`].
+    ///
+    /// # TOML Format
+    ///
+    /// Theme files use the following structure. All fields are `Option<T>` --
+    /// omit any field you don't need. Unknown fields are silently ignored.
+    /// Hex colors accept `#RRGGBB` or `#RRGGBBAA` format.
+    ///
+    /// ```toml
+    /// name = "My Theme"
+    ///
+    /// [light.colors]
+    /// # Core (7)
+    /// accent = "#4a90d9"
+    /// background = "#fafafa"
+    /// foreground = "#2e3436"
+    /// surface = "#ffffff"
+    /// border = "#c0c0c0"
+    /// muted = "#929292"
+    /// shadow = "#00000018"
+    /// # Primary (2)
+    /// primary_background = "#4a90d9"
+    /// primary_foreground = "#ffffff"
+    /// # Secondary (2)
+    /// secondary_background = "#6c757d"
+    /// secondary_foreground = "#ffffff"
+    /// # Status (8) -- each has an optional _foreground variant
+    /// danger = "#dc3545"
+    /// danger_foreground = "#ffffff"
+    /// warning = "#f0ad4e"
+    /// warning_foreground = "#ffffff"
+    /// success = "#28a745"
+    /// success_foreground = "#ffffff"
+    /// info = "#4a90d9"
+    /// info_foreground = "#ffffff"
+    /// # Interactive (4)
+    /// selection = "#4a90d9"
+    /// selection_foreground = "#ffffff"
+    /// link = "#2a6cb6"
+    /// focus_ring = "#4a90d9"
+    /// # Panel (6) -- each has an optional _foreground variant
+    /// sidebar = "#f0f0f0"
+    /// sidebar_foreground = "#2e3436"
+    /// tooltip = "#2e3436"
+    /// tooltip_foreground = "#ffffff"
+    /// popover = "#ffffff"
+    /// popover_foreground = "#2e3436"
+    /// # Component (7) -- button and input have _foreground variants
+    /// button = "#e8e8e8"
+    /// button_foreground = "#2e3436"
+    /// input = "#ffffff"
+    /// input_foreground = "#2e3436"
+    /// disabled = "#c0c0c0"
+    /// separator = "#d0d0d0"
+    /// alternate_row = "#f5f5f5"
+    ///
+    /// [light.fonts]
+    /// family = "sans-serif"
+    /// size = 10.0
+    /// mono_family = "monospace"
+    /// mono_size = 10.0
+    ///
+    /// [light.geometry]
+    /// radius = 6.0
+    /// radius_lg = 12.0
+    /// frame_width = 1.0
+    /// disabled_opacity = 0.5
+    /// border_opacity = 0.15
+    /// scroll_width = 8.0
+    ///
+    /// [light.spacing]
+    /// xxs = 2.0
+    /// xs = 4.0
+    /// s = 6.0
+    /// m = 12.0
+    /// l = 18.0
+    /// xl = 24.0
+    /// xxl = 36.0
+    ///
+    /// # [dark.*] mirrors the same structure as [light.*]
+    /// ```
     ///
     /// # Errors
     /// Returns [`crate::Error::Format`] if the TOML is invalid.
@@ -420,16 +500,20 @@ mod tests {
     #[test]
     fn icon_set_merge_overlay() {
         let mut base = ThemeVariant::default();
-        let mut overlay = ThemeVariant::default();
-        overlay.icon_set = Some("material".into());
+        let overlay = ThemeVariant {
+            icon_set: Some("material".into()),
+            ..Default::default()
+        };
         base.merge(&overlay);
         assert_eq!(base.icon_set.as_deref(), Some("material"));
     }
 
     #[test]
     fn icon_set_merge_none_preserves() {
-        let mut base = ThemeVariant::default();
-        base.icon_set = Some("sf-symbols".into());
+        let mut base = ThemeVariant {
+            icon_set: Some("sf-symbols".into()),
+            ..Default::default()
+        };
         let overlay = ThemeVariant::default();
         base.merge(&overlay);
         assert_eq!(base.icon_set.as_deref(), Some("sf-symbols"));
@@ -437,16 +521,20 @@ mod tests {
 
     #[test]
     fn icon_set_is_empty_when_set() {
-        let mut v = ThemeVariant::default();
-        assert!(v.is_empty());
-        v.icon_set = Some("material".into());
+        assert!(ThemeVariant::default().is_empty());
+        let v = ThemeVariant {
+            icon_set: Some("material".into()),
+            ..Default::default()
+        };
         assert!(!v.is_empty());
     }
 
     #[test]
     fn icon_set_toml_round_trip() {
-        let mut variant = ThemeVariant::default();
-        variant.icon_set = Some("material".into());
+        let variant = ThemeVariant {
+            icon_set: Some("material".into()),
+            ..Default::default()
+        };
         let toml_str = toml::to_string(&variant).unwrap();
         assert!(toml_str.contains("icon_set"));
         let deserialized: ThemeVariant = toml::from_str(&toml_str).unwrap();

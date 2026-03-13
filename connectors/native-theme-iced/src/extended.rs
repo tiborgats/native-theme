@@ -20,20 +20,16 @@ pub fn apply_overrides(
     let c = &variant.colors;
 
     if let Some(secondary_bg) = c.secondary_background {
-        extended.secondary.base.color =
-            to_color(Some(secondary_bg), extended.secondary.base.color);
+        extended.secondary.base.color = to_color(Some(secondary_bg), extended.secondary.base.color);
     }
     if let Some(secondary_fg) = c.secondary_foreground {
-        extended.secondary.base.text =
-            to_color(Some(secondary_fg), extended.secondary.base.text);
+        extended.secondary.base.text = to_color(Some(secondary_fg), extended.secondary.base.text);
     }
     if let Some(surface) = c.surface {
-        extended.background.weak.color =
-            to_color(Some(surface), extended.background.weak.color);
+        extended.background.weak.color = to_color(Some(surface), extended.background.weak.color);
     }
     if let Some(fg) = c.foreground {
-        extended.background.weak.text =
-            to_color(Some(fg), extended.background.weak.text);
+        extended.background.weak.text = to_color(Some(fg), extended.background.weak.text);
     }
 }
 

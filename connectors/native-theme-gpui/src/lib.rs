@@ -48,7 +48,11 @@ pub fn pick_variant(theme: &NativeTheme, is_dark: bool) -> Option<&ThemeVariant>
 /// 3. Constructing the Theme from the ThemeColor and applying the config
 pub fn to_theme(variant: &ThemeVariant, name: &str, is_dark: bool) -> Theme {
     let theme_color = colors::to_theme_color(variant);
-    let mode = if is_dark { ThemeMode::Dark } else { ThemeMode::Light };
+    let mode = if is_dark {
+        ThemeMode::Dark
+    } else {
+        ThemeMode::Light
+    };
     let theme_config = config::to_theme_config(variant, name, mode);
 
     // Create a base Theme from the ThemeColor, then apply config overrides.

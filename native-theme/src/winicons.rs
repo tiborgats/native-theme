@@ -8,7 +8,7 @@
 // straight (non-premultiplied) alpha. When native loading fails, falls back
 // to bundled Material SVGs.
 
-use crate::{bundled_icon_svg, icon_name, IconData, IconRole, IconSet};
+use crate::{IconData, IconRole, IconSet, bundled_icon_svg, icon_name};
 
 #[cfg(target_os = "windows")]
 use std::mem;
@@ -301,22 +301,10 @@ fn load_glyph_icon(codepoint: u32, size: i32) -> Option<IconData> {
 
         // Identity matrix (no transform)
         let mat2 = MAT2 {
-            eM11: FIXED {
-                fract: 0,
-                value: 1,
-            },
-            eM12: FIXED {
-                fract: 0,
-                value: 0,
-            },
-            eM21: FIXED {
-                fract: 0,
-                value: 0,
-            },
-            eM22: FIXED {
-                fract: 0,
-                value: 1,
-            },
+            eM11: FIXED { fract: 0, value: 1 },
+            eM12: FIXED { fract: 0, value: 0 },
+            eM21: FIXED { fract: 0, value: 0 },
+            eM22: FIXED { fract: 0, value: 1 },
         };
 
         let mut gm = GLYPHMETRICS::default();

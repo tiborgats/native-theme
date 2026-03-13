@@ -59,14 +59,24 @@ mod tests {
     fn lighten_increases_lightness() {
         let color = hsla(0.5, 0.5, 0.4, 1.0);
         let result = lighten(color, 0.1);
-        assert!(result.l > color.l, "lightened l={} should be > original l={}", result.l, color.l);
+        assert!(
+            result.l > color.l,
+            "lightened l={} should be > original l={}",
+            result.l,
+            color.l
+        );
     }
 
     #[test]
     fn darken_decreases_lightness() {
         let color = hsla(0.5, 0.5, 0.6, 1.0);
         let result = darken(color, 0.1);
-        assert!(result.l < color.l, "darkened l={} should be < original l={}", result.l, color.l);
+        assert!(
+            result.l < color.l,
+            "darkened l={} should be < original l={}",
+            result.l,
+            color.l
+        );
     }
 
     #[test]
@@ -100,7 +110,12 @@ mod tests {
     fn active_color_light_theme_darkens() {
         let base = hsla(0.6, 0.7, 0.5, 1.0);
         let result = active_color(base, false);
-        assert!(result.l < base.l, "active (light) l={} should be < base l={}", result.l, base.l);
+        assert!(
+            result.l < base.l,
+            "active (light) l={} should be < base l={}",
+            result.l,
+            base.l
+        );
     }
 
     #[test]

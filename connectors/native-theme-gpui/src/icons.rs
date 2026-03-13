@@ -324,96 +324,354 @@ pub fn freedesktop_name_for_gpui_icon(
 
     Some(match gpui_name {
         // --- Icons with freedesktop standard names (all DEs) ---
-        "BookOpen"         => "help-contents",          // close
-        "Bot"              => "face-smile",             // approximate
-        "ChevronDown"      => "go-down",                // close: full nav arrow, not disclosure chevron
-        "ChevronLeft"      => "go-previous",            // close
-        "ChevronRight"     => "go-next",                // close
-        "ChevronUp"        => "go-up",                  // close
-        "CircleX"          => "dialog-error",           // close
-        "Copy"             => "edit-copy",              // exact
-        "Dash"             => "list-remove",            // exact
-        "Delete"           => "edit-delete",            // exact
-        "File"             => "text-x-generic",         // exact
-        "Folder"           => "folder",                 // exact
-        "FolderClosed"     => "folder",                 // exact
-        "FolderOpen"       => "folder-open",            // exact
-        "HeartOff"         => "non-starred",            // close: un-favorite semantics
-        "Info"             => "dialog-information",     // exact
-        "LayoutDashboard"  => "view-grid",              // close
-        "Map"              => "find-location",          // close
-        "Maximize"         => "view-fullscreen",        // exact
-        "Menu"             => "open-menu",              // exact
-        "Minimize"         => "window-minimize",        // exact
-        "Minus"            => "list-remove",            // exact
-        "Moon"             => "weather-clear-night",    // close: dark mode toggle
-        "Plus"             => "list-add",               // exact
-        "Redo"             => "edit-redo",              // exact
-        "Redo2"            => "edit-redo",              // exact
-        "Replace"          => "edit-find-replace",      // exact
-        "Search"           => "edit-find",              // exact
-        "Settings"         => "preferences-system",     // exact
-        "SortAscending"    => "view-sort-ascending",    // exact
-        "SortDescending"   => "view-sort-descending",   // exact
-        "SquareTerminal"   => "utilities-terminal",     // close
-        "Star"             => "starred",                // exact
-        "StarOff"          => "non-starred",            // exact
-        "Sun"              => "weather-clear",          // close: light mode toggle
-        "TriangleAlert"    => "dialog-warning",         // exact
-        "Undo"             => "edit-undo",              // exact
-        "Undo2"            => "edit-undo",              // exact
-        "User"             => "system-users",           // exact
-        "WindowClose"      => "window-close",           // exact
-        "WindowMaximize"   => "window-maximize",        // exact
-        "WindowMinimize"   => "window-minimize",        // exact
-        "WindowRestore"    => "window-restore",         // exact
+        "BookOpen" => "help-contents",              // close
+        "Bot" => "face-smile",                      // approximate
+        "ChevronDown" => "go-down",                 // close: full nav arrow, not disclosure chevron
+        "ChevronLeft" => "go-previous",             // close
+        "ChevronRight" => "go-next",                // close
+        "ChevronUp" => "go-up",                     // close
+        "CircleX" => "dialog-error",                // close
+        "Copy" => "edit-copy",                      // exact
+        "Dash" => "list-remove",                    // exact
+        "Delete" => "edit-delete",                  // exact
+        "File" => "text-x-generic",                 // exact
+        "Folder" => "folder",                       // exact
+        "FolderClosed" => "folder",                 // exact
+        "FolderOpen" => "folder-open",              // exact
+        "HeartOff" => "non-starred",                // close: un-favorite semantics
+        "Info" => "dialog-information",             // exact
+        "LayoutDashboard" => "view-grid",           // close
+        "Map" => "find-location",                   // close
+        "Maximize" => "view-fullscreen",            // exact
+        "Menu" => "open-menu",                      // exact
+        "Minimize" => "window-minimize",            // exact
+        "Minus" => "list-remove",                   // exact
+        "Moon" => "weather-clear-night",            // close: dark mode toggle
+        "Plus" => "list-add",                       // exact
+        "Redo" => "edit-redo",                      // exact
+        "Redo2" => "edit-redo",                     // exact
+        "Replace" => "edit-find-replace",           // exact
+        "Search" => "edit-find",                    // exact
+        "Settings" => "preferences-system",         // exact
+        "SortAscending" => "view-sort-ascending",   // exact
+        "SortDescending" => "view-sort-descending", // exact
+        "SquareTerminal" => "utilities-terminal",   // close
+        "Star" => "starred",                        // exact
+        "StarOff" => "non-starred",                 // exact
+        "Sun" => "weather-clear",                   // close: light mode toggle
+        "TriangleAlert" => "dialog-warning",        // exact
+        "Undo" => "edit-undo",                      // exact
+        "Undo2" => "edit-undo",                     // exact
+        "User" => "system-users",                   // exact
+        "WindowClose" => "window-close",            // exact
+        "WindowMaximize" => "window-maximize",      // exact
+        "WindowMinimize" => "window-minimize",      // exact
+        "WindowRestore" => "window-restore",        // exact
 
         // --- Icons where KDE and GNOME both have names but they differ ---
-        "ArrowDown"        => if is_gtk { "go-bottom" } else { "go-down-skip" },                // close
-        "ArrowLeft"        => if is_gtk { "go-first" } else { "go-previous-skip" },             // close
-        "ArrowRight"       => if is_gtk { "go-last" } else { "go-next-skip" },                  // close
-        "ArrowUp"          => if is_gtk { "go-top" } else { "go-up-skip" },                     // close
-        "Calendar"         => if is_gtk { "x-office-calendar" } else { "view-calendar" },       // exact
-        "Check"            => if is_gtk { "object-select" } else { "dialog-ok" },               // close
-        "CircleCheck"      => if is_gtk { "object-select" } else { "emblem-ok-symbolic" },      // close
-        "CircleUser"       => if is_gtk { "avatar-default" } else { "user-identity" },          // close
-        "Close"            => if is_gtk { "window-close" } else { "tab-close" },                // close
-        "Ellipsis"         => if is_gtk { "view-more-horizontal" } else { "overflow-menu" },    // exact
-        "EllipsisVertical" => if is_gtk { "view-more" } else { "overflow-menu" },               // close: no vertical variant in KDE
-        "Eye"              => if is_gtk { "view-reveal" } else { "view-visible" },              // exact
-        "EyeOff"           => if is_gtk { "view-conceal" } else { "view-hidden" },              // exact
-        "Frame"            => if is_gtk { "selection-mode" } else { "select-rectangular" },     // close
-        "Heart"            => if is_gtk { "starred" } else { "emblem-favorite" },               // close
-        "Loader"           => if is_gtk { "content-loading" } else { "process-working" },       // exact
-        "LoaderCircle"     => if is_gtk { "content-loading" } else { "process-working" },       // exact
-        "Palette"          => if is_gtk { "color-select" } else { "palette" },                  // close
-        "PanelLeft"        => if is_gtk { "sidebar-show" } else { "sidebar-expand-left" },      // close
-        "PanelLeftClose"   => if is_gtk { "sidebar-show" } else { "view-left-close" },          // close
-        "PanelLeftOpen"    => if is_gtk { "sidebar-show" } else { "view-left-new" },            // close
-        "PanelRight"       => if is_gtk { "sidebar-show-right" } else { "view-right-new" },     // close
-        "PanelRightClose"  => if is_gtk { "sidebar-show-right" } else { "view-right-close" },   // close
-        "PanelRightOpen"   => if is_gtk { "sidebar-show-right" } else { "view-right-new" },     // close
-        "ResizeCorner"     => if is_gtk { "list-drag-handle" } else { "drag-handle" },          // close
-        "Settings2"        => if is_gtk { "preferences-other" } else { "configure" },           // close
+        "ArrowDown" => {
+            if is_gtk {
+                "go-bottom"
+            } else {
+                "go-down-skip"
+            }
+        } // close
+        "ArrowLeft" => {
+            if is_gtk {
+                "go-first"
+            } else {
+                "go-previous-skip"
+            }
+        } // close
+        "ArrowRight" => {
+            if is_gtk {
+                "go-last"
+            } else {
+                "go-next-skip"
+            }
+        } // close
+        "ArrowUp" => {
+            if is_gtk {
+                "go-top"
+            } else {
+                "go-up-skip"
+            }
+        } // close
+        "Calendar" => {
+            if is_gtk {
+                "x-office-calendar"
+            } else {
+                "view-calendar"
+            }
+        } // exact
+        "Check" => {
+            if is_gtk {
+                "object-select"
+            } else {
+                "dialog-ok"
+            }
+        } // close
+        "CircleCheck" => {
+            if is_gtk {
+                "object-select"
+            } else {
+                "emblem-ok-symbolic"
+            }
+        } // close
+        "CircleUser" => {
+            if is_gtk {
+                "avatar-default"
+            } else {
+                "user-identity"
+            }
+        } // close
+        "Close" => {
+            if is_gtk {
+                "window-close"
+            } else {
+                "tab-close"
+            }
+        } // close
+        "Ellipsis" => {
+            if is_gtk {
+                "view-more-horizontal"
+            } else {
+                "overflow-menu"
+            }
+        } // exact
+        "EllipsisVertical" => {
+            if is_gtk {
+                "view-more"
+            } else {
+                "overflow-menu"
+            }
+        } // close: no vertical variant in KDE
+        "Eye" => {
+            if is_gtk {
+                "view-reveal"
+            } else {
+                "view-visible"
+            }
+        } // exact
+        "EyeOff" => {
+            if is_gtk {
+                "view-conceal"
+            } else {
+                "view-hidden"
+            }
+        } // exact
+        "Frame" => {
+            if is_gtk {
+                "selection-mode"
+            } else {
+                "select-rectangular"
+            }
+        } // close
+        "Heart" => {
+            if is_gtk {
+                "starred"
+            } else {
+                "emblem-favorite"
+            }
+        } // close
+        "Loader" => {
+            if is_gtk {
+                "content-loading"
+            } else {
+                "process-working"
+            }
+        } // exact
+        "LoaderCircle" => {
+            if is_gtk {
+                "content-loading"
+            } else {
+                "process-working"
+            }
+        } // exact
+        "Palette" => {
+            if is_gtk {
+                "color-select"
+            } else {
+                "palette"
+            }
+        } // close
+        "PanelLeft" => {
+            if is_gtk {
+                "sidebar-show"
+            } else {
+                "sidebar-expand-left"
+            }
+        } // close
+        "PanelLeftClose" => {
+            if is_gtk {
+                "sidebar-show"
+            } else {
+                "view-left-close"
+            }
+        } // close
+        "PanelLeftOpen" => {
+            if is_gtk {
+                "sidebar-show"
+            } else {
+                "view-left-new"
+            }
+        } // close
+        "PanelRight" => {
+            if is_gtk {
+                "sidebar-show-right"
+            } else {
+                "view-right-new"
+            }
+        } // close
+        "PanelRightClose" => {
+            if is_gtk {
+                "sidebar-show-right"
+            } else {
+                "view-right-close"
+            }
+        } // close
+        "PanelRightOpen" => {
+            if is_gtk {
+                "sidebar-show-right"
+            } else {
+                "view-right-new"
+            }
+        } // close
+        "ResizeCorner" => {
+            if is_gtk {
+                "list-drag-handle"
+            } else {
+                "drag-handle"
+            }
+        } // close
+        "Settings2" => {
+            if is_gtk {
+                "preferences-other"
+            } else {
+                "configure"
+            }
+        } // close
 
         // --- Icons where GNOME uses a different (approximate) alternative ---
-        "ALargeSmall"        => if is_gtk { "zoom-in" } else { "format-font-size-more" },              // approximate
-        "Asterisk"           => if is_gtk { "starred" } else { "rating" },                             // approximate
-        "Bell"               => if is_gtk { "alarm" } else { "notification-active" },                  // close
-        "Building2"          => if is_gtk { "network-workgroup" } else { "applications-office" },      // approximate
-        "CaseSensitive"      => if is_gtk { "format-text-rich" } else { "format-text-uppercase" },     // approximate
-        "ChartPie"           => if is_gtk { "x-office-spreadsheet" } else { "office-chart-pie" },      // approximate
-        "ChevronsUpDown"     => if is_gtk { "list-drag-handle" } else { "handle-sort" },               // close
-        "ExternalLink"       => if is_gtk { "insert-link" } else { "external-link" },                  // close
-        "GalleryVerticalEnd" => if is_gtk { "view-paged" } else { "view-list-icons" },                 // approximate
-        "GitHub"             => if is_gtk { "applications-engineering" } else { "vcs-branch" },         // approximate
-        "Globe"              => if is_gtk { "web-browser" } else { "globe" },                          // close
-        "Inbox"              => if is_gtk { "mail-send-receive" } else { "mail-folder-inbox" },        // close
-        "Inspector"          => if is_gtk { "preferences-system-details" } else { "code-context" },    // approximate
-        "PanelBottom"        => if is_gtk { "view-dual" } else { "view-split-top-bottom" },            // close
-        "PanelBottomOpen"    => if is_gtk { "view-dual" } else { "view-split-top-bottom" },            // close
-        "ThumbsDown"         => if is_gtk { "process-stop" } else { "rating-unrated" },                // approximate
-        "ThumbsUp"           => if is_gtk { "checkbox-checked" } else { "approved" },                  // approximate
+        "ALargeSmall" => {
+            if is_gtk {
+                "zoom-in"
+            } else {
+                "format-font-size-more"
+            }
+        } // approximate
+        "Asterisk" => {
+            if is_gtk {
+                "starred"
+            } else {
+                "rating"
+            }
+        } // approximate
+        "Bell" => {
+            if is_gtk {
+                "alarm"
+            } else {
+                "notification-active"
+            }
+        } // close
+        "Building2" => {
+            if is_gtk {
+                "network-workgroup"
+            } else {
+                "applications-office"
+            }
+        } // approximate
+        "CaseSensitive" => {
+            if is_gtk {
+                "format-text-rich"
+            } else {
+                "format-text-uppercase"
+            }
+        } // approximate
+        "ChartPie" => {
+            if is_gtk {
+                "x-office-spreadsheet"
+            } else {
+                "office-chart-pie"
+            }
+        } // approximate
+        "ChevronsUpDown" => {
+            if is_gtk {
+                "list-drag-handle"
+            } else {
+                "handle-sort"
+            }
+        } // close
+        "ExternalLink" => {
+            if is_gtk {
+                "insert-link"
+            } else {
+                "external-link"
+            }
+        } // close
+        "GalleryVerticalEnd" => {
+            if is_gtk {
+                "view-paged"
+            } else {
+                "view-list-icons"
+            }
+        } // approximate
+        "GitHub" => {
+            if is_gtk {
+                "applications-engineering"
+            } else {
+                "vcs-branch"
+            }
+        } // approximate
+        "Globe" => {
+            if is_gtk {
+                "web-browser"
+            } else {
+                "globe"
+            }
+        } // close
+        "Inbox" => {
+            if is_gtk {
+                "mail-send-receive"
+            } else {
+                "mail-folder-inbox"
+            }
+        } // close
+        "Inspector" => {
+            if is_gtk {
+                "preferences-system-details"
+            } else {
+                "code-context"
+            }
+        } // approximate
+        "PanelBottom" => {
+            if is_gtk {
+                "view-dual"
+            } else {
+                "view-split-top-bottom"
+            }
+        } // close
+        "PanelBottomOpen" => {
+            if is_gtk {
+                "view-dual"
+            } else {
+                "view-split-top-bottom"
+            }
+        } // close
+        "ThumbsDown" => {
+            if is_gtk {
+                "process-stop"
+            } else {
+                "rating-unrated"
+            }
+        } // approximate
+        "ThumbsUp" => {
+            if is_gtk {
+                "checkbox-checked"
+            } else {
+                "approved"
+            }
+        } // approximate
 
         _ => return None,
     })
@@ -504,18 +762,18 @@ fn colorize_svg(svg_bytes: &[u8], color: Hsla) -> Vec<u8> {
 
     // No currentColor found — inject fill into the root <svg> tag
     // (handles Material-style SVGs with implicit black fill)
-    if let Some(pos) = svg_str.find("<svg") {
-        if let Some(close) = svg_str[pos..].find('>') {
-            let tag_end = pos + close;
-            // Check if root <svg> already has a fill attribute
-            let tag = &svg_str[pos..tag_end];
-            if !tag.contains("fill=") {
-                let mut result = String::with_capacity(svg_str.len() + 20);
-                result.push_str(&svg_str[..tag_end]);
-                result.push_str(&format!(" fill=\"{}\"", hex));
-                result.push_str(&svg_str[tag_end..]);
-                return result.into_bytes();
-            }
+    if let Some(pos) = svg_str.find("<svg")
+        && let Some(close) = svg_str[pos..].find('>')
+    {
+        let tag_end = pos + close;
+        // Check if root <svg> already has a fill attribute
+        let tag = &svg_str[pos..tag_end];
+        if !tag.contains("fill=") {
+            let mut result = String::with_capacity(svg_str.len() + 20);
+            result.push_str(&svg_str[..tag_end]);
+            result.push_str(&format!(" fill=\"{}\"", hex));
+            result.push_str(&svg_str[tag_end..]);
+            return result.into_bytes();
         }
     }
 
@@ -592,57 +850,90 @@ mod tests {
 
     #[test]
     fn icon_name_dialog_warning_maps_to_triangle_alert() {
-        assert!(matches!(icon_name(IconRole::DialogWarning), Some(IconName::TriangleAlert)));
+        assert!(matches!(
+            icon_name(IconRole::DialogWarning),
+            Some(IconName::TriangleAlert)
+        ));
     }
 
     #[test]
     fn icon_name_dialog_error_maps_to_circle_x() {
-        assert!(matches!(icon_name(IconRole::DialogError), Some(IconName::CircleX)));
+        assert!(matches!(
+            icon_name(IconRole::DialogError),
+            Some(IconName::CircleX)
+        ));
     }
 
     #[test]
     fn icon_name_dialog_info_maps_to_info() {
-        assert!(matches!(icon_name(IconRole::DialogInfo), Some(IconName::Info)));
+        assert!(matches!(
+            icon_name(IconRole::DialogInfo),
+            Some(IconName::Info)
+        ));
     }
 
     #[test]
     fn icon_name_dialog_success_maps_to_circle_check() {
-        assert!(matches!(icon_name(IconRole::DialogSuccess), Some(IconName::CircleCheck)));
+        assert!(matches!(
+            icon_name(IconRole::DialogSuccess),
+            Some(IconName::CircleCheck)
+        ));
     }
 
     #[test]
     fn icon_name_window_close_maps() {
-        assert!(matches!(icon_name(IconRole::WindowClose), Some(IconName::WindowClose)));
+        assert!(matches!(
+            icon_name(IconRole::WindowClose),
+            Some(IconName::WindowClose)
+        ));
     }
 
     #[test]
     fn icon_name_action_copy_maps_to_copy() {
-        assert!(matches!(icon_name(IconRole::ActionCopy), Some(IconName::Copy)));
+        assert!(matches!(
+            icon_name(IconRole::ActionCopy),
+            Some(IconName::Copy)
+        ));
     }
 
     #[test]
     fn icon_name_nav_back_maps_to_chevron_left() {
-        assert!(matches!(icon_name(IconRole::NavBack), Some(IconName::ChevronLeft)));
+        assert!(matches!(
+            icon_name(IconRole::NavBack),
+            Some(IconName::ChevronLeft)
+        ));
     }
 
     #[test]
     fn icon_name_file_generic_maps_to_file() {
-        assert!(matches!(icon_name(IconRole::FileGeneric), Some(IconName::File)));
+        assert!(matches!(
+            icon_name(IconRole::FileGeneric),
+            Some(IconName::File)
+        ));
     }
 
     #[test]
     fn icon_name_status_check_maps_to_check() {
-        assert!(matches!(icon_name(IconRole::StatusCheck), Some(IconName::Check)));
+        assert!(matches!(
+            icon_name(IconRole::StatusCheck),
+            Some(IconName::Check)
+        ));
     }
 
     #[test]
     fn icon_name_user_account_maps_to_user() {
-        assert!(matches!(icon_name(IconRole::UserAccount), Some(IconName::User)));
+        assert!(matches!(
+            icon_name(IconRole::UserAccount),
+            Some(IconName::User)
+        ));
     }
 
     #[test]
     fn icon_name_notification_maps_to_bell() {
-        assert!(matches!(icon_name(IconRole::Notification), Some(IconName::Bell)));
+        assert!(matches!(
+            icon_name(IconRole::Notification),
+            Some(IconName::Bell)
+        ));
     }
 
     // None cases
@@ -691,7 +982,10 @@ mod tests {
             .iter()
             .filter(|r| icon_name(**r).is_some())
             .count();
-        assert_eq!(some_count, 30, "Expected exactly 30 mappings, got {some_count}");
+        assert_eq!(
+            some_count, 30,
+            "Expected exactly 30 mappings, got {some_count}"
+        );
     }
 
     // --- to_image_source tests ---
@@ -773,24 +1067,92 @@ mod freedesktop_mapping_tests {
     #[test]
     fn all_86_gpui_icons_have_mapping_on_kde() {
         let all_names = [
-            "ALargeSmall", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowUp",
-            "Asterisk", "Bell", "BookOpen", "Bot", "Building2",
-            "Calendar", "CaseSensitive", "ChartPie", "Check", "ChevronDown",
-            "ChevronLeft", "ChevronRight", "ChevronsUpDown", "ChevronUp",
-            "CircleCheck", "CircleUser", "CircleX", "Close", "Copy",
-            "Dash", "Delete", "Ellipsis", "EllipsisVertical", "ExternalLink",
-            "Eye", "EyeOff", "File", "Folder", "FolderClosed",
-            "FolderOpen", "Frame", "GalleryVerticalEnd", "GitHub", "Globe",
-            "Heart", "HeartOff", "Inbox", "Info", "Inspector",
-            "LayoutDashboard", "Loader", "LoaderCircle", "Map", "Maximize",
-            "Menu", "Minimize", "Minus", "Moon", "Palette",
-            "PanelBottom", "PanelBottomOpen", "PanelLeft", "PanelLeftClose",
-            "PanelLeftOpen", "PanelRight", "PanelRightClose", "PanelRightOpen",
-            "Plus", "Redo", "Redo2", "Replace", "ResizeCorner",
-            "Search", "Settings", "Settings2", "SortAscending", "SortDescending",
-            "SquareTerminal", "Star", "StarOff", "Sun", "ThumbsDown",
-            "ThumbsUp", "TriangleAlert", "Undo", "Undo2", "User",
-            "WindowClose", "WindowMaximize", "WindowMinimize", "WindowRestore",
+            "ALargeSmall",
+            "ArrowDown",
+            "ArrowLeft",
+            "ArrowRight",
+            "ArrowUp",
+            "Asterisk",
+            "Bell",
+            "BookOpen",
+            "Bot",
+            "Building2",
+            "Calendar",
+            "CaseSensitive",
+            "ChartPie",
+            "Check",
+            "ChevronDown",
+            "ChevronLeft",
+            "ChevronRight",
+            "ChevronsUpDown",
+            "ChevronUp",
+            "CircleCheck",
+            "CircleUser",
+            "CircleX",
+            "Close",
+            "Copy",
+            "Dash",
+            "Delete",
+            "Ellipsis",
+            "EllipsisVertical",
+            "ExternalLink",
+            "Eye",
+            "EyeOff",
+            "File",
+            "Folder",
+            "FolderClosed",
+            "FolderOpen",
+            "Frame",
+            "GalleryVerticalEnd",
+            "GitHub",
+            "Globe",
+            "Heart",
+            "HeartOff",
+            "Inbox",
+            "Info",
+            "Inspector",
+            "LayoutDashboard",
+            "Loader",
+            "LoaderCircle",
+            "Map",
+            "Maximize",
+            "Menu",
+            "Minimize",
+            "Minus",
+            "Moon",
+            "Palette",
+            "PanelBottom",
+            "PanelBottomOpen",
+            "PanelLeft",
+            "PanelLeftClose",
+            "PanelLeftOpen",
+            "PanelRight",
+            "PanelRightClose",
+            "PanelRightOpen",
+            "Plus",
+            "Redo",
+            "Redo2",
+            "Replace",
+            "ResizeCorner",
+            "Search",
+            "Settings",
+            "Settings2",
+            "SortAscending",
+            "SortDescending",
+            "SquareTerminal",
+            "Star",
+            "StarOff",
+            "Sun",
+            "ThumbsDown",
+            "ThumbsUp",
+            "TriangleAlert",
+            "Undo",
+            "Undo2",
+            "User",
+            "WindowClose",
+            "WindowMaximize",
+            "WindowMinimize",
+            "WindowRestore",
         ];
         let mut missing = Vec::new();
         for name in &all_names {
@@ -834,24 +1196,92 @@ mod freedesktop_mapping_tests {
     #[test]
     fn all_86_gpui_icons_have_mapping_on_gnome() {
         let all_names = [
-            "ALargeSmall", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowUp",
-            "Asterisk", "Bell", "BookOpen", "Bot", "Building2",
-            "Calendar", "CaseSensitive", "ChartPie", "Check", "ChevronDown",
-            "ChevronLeft", "ChevronRight", "ChevronsUpDown", "ChevronUp",
-            "CircleCheck", "CircleUser", "CircleX", "Close", "Copy",
-            "Dash", "Delete", "Ellipsis", "EllipsisVertical", "ExternalLink",
-            "Eye", "EyeOff", "File", "Folder", "FolderClosed",
-            "FolderOpen", "Frame", "GalleryVerticalEnd", "GitHub", "Globe",
-            "Heart", "HeartOff", "Inbox", "Info", "Inspector",
-            "LayoutDashboard", "Loader", "LoaderCircle", "Map", "Maximize",
-            "Menu", "Minimize", "Minus", "Moon", "Palette",
-            "PanelBottom", "PanelBottomOpen", "PanelLeft", "PanelLeftClose",
-            "PanelLeftOpen", "PanelRight", "PanelRightClose", "PanelRightOpen",
-            "Plus", "Redo", "Redo2", "Replace", "ResizeCorner",
-            "Search", "Settings", "Settings2", "SortAscending", "SortDescending",
-            "SquareTerminal", "Star", "StarOff", "Sun", "ThumbsDown",
-            "ThumbsUp", "TriangleAlert", "Undo", "Undo2", "User",
-            "WindowClose", "WindowMaximize", "WindowMinimize", "WindowRestore",
+            "ALargeSmall",
+            "ArrowDown",
+            "ArrowLeft",
+            "ArrowRight",
+            "ArrowUp",
+            "Asterisk",
+            "Bell",
+            "BookOpen",
+            "Bot",
+            "Building2",
+            "Calendar",
+            "CaseSensitive",
+            "ChartPie",
+            "Check",
+            "ChevronDown",
+            "ChevronLeft",
+            "ChevronRight",
+            "ChevronsUpDown",
+            "ChevronUp",
+            "CircleCheck",
+            "CircleUser",
+            "CircleX",
+            "Close",
+            "Copy",
+            "Dash",
+            "Delete",
+            "Ellipsis",
+            "EllipsisVertical",
+            "ExternalLink",
+            "Eye",
+            "EyeOff",
+            "File",
+            "Folder",
+            "FolderClosed",
+            "FolderOpen",
+            "Frame",
+            "GalleryVerticalEnd",
+            "GitHub",
+            "Globe",
+            "Heart",
+            "HeartOff",
+            "Inbox",
+            "Info",
+            "Inspector",
+            "LayoutDashboard",
+            "Loader",
+            "LoaderCircle",
+            "Map",
+            "Maximize",
+            "Menu",
+            "Minimize",
+            "Minus",
+            "Moon",
+            "Palette",
+            "PanelBottom",
+            "PanelBottomOpen",
+            "PanelLeft",
+            "PanelLeftClose",
+            "PanelLeftOpen",
+            "PanelRight",
+            "PanelRightClose",
+            "PanelRightOpen",
+            "Plus",
+            "Redo",
+            "Redo2",
+            "Replace",
+            "ResizeCorner",
+            "Search",
+            "Settings",
+            "Settings2",
+            "SortAscending",
+            "SortDescending",
+            "SquareTerminal",
+            "Star",
+            "StarOff",
+            "Sun",
+            "ThumbsDown",
+            "ThumbsUp",
+            "TriangleAlert",
+            "Undo",
+            "Undo2",
+            "User",
+            "WindowClose",
+            "WindowMaximize",
+            "WindowMinimize",
+            "WindowRestore",
         ];
         let mut missing = Vec::new();
         for name in &all_names {
@@ -889,24 +1319,92 @@ mod freedesktop_mapping_tests {
         }
 
         let all_names = [
-            "ALargeSmall", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowUp",
-            "Asterisk", "Bell", "BookOpen", "Bot", "Building2",
-            "Calendar", "CaseSensitive", "ChartPie", "Check", "ChevronDown",
-            "ChevronLeft", "ChevronRight", "ChevronsUpDown", "ChevronUp",
-            "CircleCheck", "CircleUser", "CircleX", "Close", "Copy",
-            "Dash", "Delete", "Ellipsis", "EllipsisVertical", "ExternalLink",
-            "Eye", "EyeOff", "File", "Folder", "FolderClosed",
-            "FolderOpen", "Frame", "GalleryVerticalEnd", "GitHub", "Globe",
-            "Heart", "HeartOff", "Inbox", "Info", "Inspector",
-            "LayoutDashboard", "Loader", "LoaderCircle", "Map", "Maximize",
-            "Menu", "Minimize", "Minus", "Moon", "Palette",
-            "PanelBottom", "PanelBottomOpen", "PanelLeft", "PanelLeftClose",
-            "PanelLeftOpen", "PanelRight", "PanelRightClose", "PanelRightOpen",
-            "Plus", "Redo", "Redo2", "Replace", "ResizeCorner",
-            "Search", "Settings", "Settings2", "SortAscending", "SortDescending",
-            "SquareTerminal", "Star", "StarOff", "Sun", "ThumbsDown",
-            "ThumbsUp", "TriangleAlert", "Undo", "Undo2", "User",
-            "WindowClose", "WindowMaximize", "WindowMinimize", "WindowRestore",
+            "ALargeSmall",
+            "ArrowDown",
+            "ArrowLeft",
+            "ArrowRight",
+            "ArrowUp",
+            "Asterisk",
+            "Bell",
+            "BookOpen",
+            "Bot",
+            "Building2",
+            "Calendar",
+            "CaseSensitive",
+            "ChartPie",
+            "Check",
+            "ChevronDown",
+            "ChevronLeft",
+            "ChevronRight",
+            "ChevronsUpDown",
+            "ChevronUp",
+            "CircleCheck",
+            "CircleUser",
+            "CircleX",
+            "Close",
+            "Copy",
+            "Dash",
+            "Delete",
+            "Ellipsis",
+            "EllipsisVertical",
+            "ExternalLink",
+            "Eye",
+            "EyeOff",
+            "File",
+            "Folder",
+            "FolderClosed",
+            "FolderOpen",
+            "Frame",
+            "GalleryVerticalEnd",
+            "GitHub",
+            "Globe",
+            "Heart",
+            "HeartOff",
+            "Inbox",
+            "Info",
+            "Inspector",
+            "LayoutDashboard",
+            "Loader",
+            "LoaderCircle",
+            "Map",
+            "Maximize",
+            "Menu",
+            "Minimize",
+            "Minus",
+            "Moon",
+            "Palette",
+            "PanelBottom",
+            "PanelBottomOpen",
+            "PanelLeft",
+            "PanelLeftClose",
+            "PanelLeftOpen",
+            "PanelRight",
+            "PanelRightClose",
+            "PanelRightOpen",
+            "Plus",
+            "Redo",
+            "Redo2",
+            "Replace",
+            "ResizeCorner",
+            "Search",
+            "Settings",
+            "Settings2",
+            "SortAscending",
+            "SortDescending",
+            "SquareTerminal",
+            "Star",
+            "StarOff",
+            "Sun",
+            "ThumbsDown",
+            "ThumbsUp",
+            "TriangleAlert",
+            "Undo",
+            "Undo2",
+            "User",
+            "WindowClose",
+            "WindowMaximize",
+            "WindowMinimize",
+            "WindowRestore",
         ];
 
         let mut missing = Vec::new();
@@ -929,24 +1427,92 @@ mod freedesktop_mapping_tests {
         // Verify GNOME mappings resolve against installed Adwaita theme.
         // Only runs when Adwaita is installed (it usually is on any Linux).
         let all_names = [
-            "ALargeSmall", "ArrowDown", "ArrowLeft", "ArrowRight", "ArrowUp",
-            "Asterisk", "Bell", "BookOpen", "Bot", "Building2",
-            "Calendar", "CaseSensitive", "ChartPie", "Check", "ChevronDown",
-            "ChevronLeft", "ChevronRight", "ChevronsUpDown", "ChevronUp",
-            "CircleCheck", "CircleUser", "CircleX", "Close", "Copy",
-            "Dash", "Delete", "Ellipsis", "EllipsisVertical", "ExternalLink",
-            "Eye", "EyeOff", "File", "Folder", "FolderClosed",
-            "FolderOpen", "Frame", "GalleryVerticalEnd", "GitHub", "Globe",
-            "Heart", "HeartOff", "Inbox", "Info", "Inspector",
-            "LayoutDashboard", "Loader", "LoaderCircle", "Map", "Maximize",
-            "Menu", "Minimize", "Minus", "Moon", "Palette",
-            "PanelBottom", "PanelBottomOpen", "PanelLeft", "PanelLeftClose",
-            "PanelLeftOpen", "PanelRight", "PanelRightClose", "PanelRightOpen",
-            "Plus", "Redo", "Redo2", "Replace", "ResizeCorner",
-            "Search", "Settings", "Settings2", "SortAscending", "SortDescending",
-            "SquareTerminal", "Star", "StarOff", "Sun", "ThumbsDown",
-            "ThumbsUp", "TriangleAlert", "Undo", "Undo2", "User",
-            "WindowClose", "WindowMaximize", "WindowMinimize", "WindowRestore",
+            "ALargeSmall",
+            "ArrowDown",
+            "ArrowLeft",
+            "ArrowRight",
+            "ArrowUp",
+            "Asterisk",
+            "Bell",
+            "BookOpen",
+            "Bot",
+            "Building2",
+            "Calendar",
+            "CaseSensitive",
+            "ChartPie",
+            "Check",
+            "ChevronDown",
+            "ChevronLeft",
+            "ChevronRight",
+            "ChevronsUpDown",
+            "ChevronUp",
+            "CircleCheck",
+            "CircleUser",
+            "CircleX",
+            "Close",
+            "Copy",
+            "Dash",
+            "Delete",
+            "Ellipsis",
+            "EllipsisVertical",
+            "ExternalLink",
+            "Eye",
+            "EyeOff",
+            "File",
+            "Folder",
+            "FolderClosed",
+            "FolderOpen",
+            "Frame",
+            "GalleryVerticalEnd",
+            "GitHub",
+            "Globe",
+            "Heart",
+            "HeartOff",
+            "Inbox",
+            "Info",
+            "Inspector",
+            "LayoutDashboard",
+            "Loader",
+            "LoaderCircle",
+            "Map",
+            "Maximize",
+            "Menu",
+            "Minimize",
+            "Minus",
+            "Moon",
+            "Palette",
+            "PanelBottom",
+            "PanelBottomOpen",
+            "PanelLeft",
+            "PanelLeftClose",
+            "PanelLeftOpen",
+            "PanelRight",
+            "PanelRightClose",
+            "PanelRightOpen",
+            "Plus",
+            "Redo",
+            "Redo2",
+            "Replace",
+            "ResizeCorner",
+            "Search",
+            "Settings",
+            "Settings2",
+            "SortAscending",
+            "SortDescending",
+            "SquareTerminal",
+            "Star",
+            "StarOff",
+            "Sun",
+            "ThumbsDown",
+            "ThumbsUp",
+            "TriangleAlert",
+            "Undo",
+            "Undo2",
+            "User",
+            "WindowClose",
+            "WindowMaximize",
+            "WindowMinimize",
+            "WindowRestore",
         ];
 
         let mut missing = Vec::new();

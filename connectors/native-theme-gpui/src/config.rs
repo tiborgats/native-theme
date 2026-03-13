@@ -23,7 +23,10 @@ pub fn to_theme_config(variant: &ThemeVariant, name: &str, mode: ThemeMode) -> T
 
         font_family: fonts.family.as_ref().map(|s| SharedString::from(s.clone())),
         font_size: fonts.size.map(|pt| pt * (96.0 / 72.0)),
-        mono_font_family: fonts.mono_family.as_ref().map(|s| SharedString::from(s.clone())),
+        mono_font_family: fonts
+            .mono_family
+            .as_ref()
+            .map(|s| SharedString::from(s.clone())),
         mono_font_size: fonts.mono_size.map(|pt| pt * (96.0 / 72.0)),
 
         radius: geometry.radius.map(|r| r as usize),
@@ -52,9 +55,15 @@ mod tests {
         let config = to_theme_config(&variant, "Test Theme", ThemeMode::Light);
 
         assert_eq!(config.name.to_string(), "Test Theme");
-        assert_eq!(config.font_family.as_ref().map(|s| s.to_string()), Some("Inter".to_string()));
+        assert_eq!(
+            config.font_family.as_ref().map(|s| s.to_string()),
+            Some("Inter".to_string())
+        );
         assert_eq!(config.font_size, Some(14.0 * (96.0 / 72.0)));
-        assert_eq!(config.mono_font_family.as_ref().map(|s| s.to_string()), Some("JetBrains Mono".to_string()));
+        assert_eq!(
+            config.mono_font_family.as_ref().map(|s| s.to_string()),
+            Some("JetBrains Mono".to_string())
+        );
         assert_eq!(config.mono_font_size, Some(13.0 * (96.0 / 72.0)));
         assert_eq!(config.radius, Some(4));
         assert_eq!(config.radius_lg, Some(8));
@@ -85,7 +94,10 @@ mod tests {
 
         let config = to_theme_config(&variant, "Partial", ThemeMode::Light);
 
-        assert_eq!(config.font_family.as_ref().map(|s| s.to_string()), Some("Segoe UI".to_string()));
+        assert_eq!(
+            config.font_family.as_ref().map(|s| s.to_string()),
+            Some("Segoe UI".to_string())
+        );
         assert!(config.font_size.is_none());
         assert!(config.mono_font_family.is_none());
     }

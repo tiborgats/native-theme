@@ -4,7 +4,7 @@
 // via NSImage and rasterizing through CGBitmapContext, with fallback
 // to bundled Material SVGs when symbols are unavailable.
 
-use crate::{bundled_icon_svg, icon_name, IconData, IconRole, IconSet};
+use crate::{IconData, IconRole, IconSet, bundled_icon_svg, icon_name};
 use objc2::rc::Retained;
 use objc2_app_kit::{NSFontWeight, NSImage, NSImageSymbolConfiguration, NSImageSymbolScale};
 use objc2_core_graphics::{
@@ -25,8 +25,7 @@ const DEFAULT_ICON_SIZE: u32 = 24;
 /// and medium scale.
 fn load_symbol(name: &str, point_size: f64) -> Option<Retained<NSImage>> {
     let ns_name = NSString::from_str(name);
-    let image =
-        NSImage::imageWithSystemSymbolName_accessibilityDescription(&ns_name, None)?;
+    let image = NSImage::imageWithSystemSymbolName_accessibilityDescription(&ns_name, None)?;
     let config = NSImageSymbolConfiguration::configurationWithPointSize_weight_scale(
         point_size,
         NSFontWeight::Regular,

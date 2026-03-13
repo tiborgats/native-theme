@@ -210,11 +210,9 @@ impl Default for State {
 impl State {
     fn rebuild_theme(&mut self) {
         let nt = match &self.current_choice {
-            ThemeChoice::OsTheme => {
-                native_theme::from_system().unwrap_or_else(|_| {
-                    NativeTheme::preset("default").expect("default preset must exist")
-                })
-            }
+            ThemeChoice::OsTheme => native_theme::from_system().unwrap_or_else(|_| {
+                NativeTheme::preset("default").expect("default preset must exist")
+            }),
             ThemeChoice::Preset(name) => NativeTheme::preset(name).unwrap(),
         };
         if let Some(variant) = native_theme_iced::pick_variant(&nt, self.is_dark) {
@@ -403,7 +401,9 @@ fn view(state: &State) -> Element<'_, Message> {
                 .width(Fill),
         )
         .direction(scrollable::Direction::Vertical(
-            scrollable::Scrollbar::new().width(sb_width).scroller_width(sb_width),
+            scrollable::Scrollbar::new()
+                .width(sb_width)
+                .scroller_width(sb_width),
         ))
         .height(Fill),
     )
@@ -425,16 +425,39 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Option<[f32; 2]>) -> Element<'a, 
         }
     };
 
-    let header = section_header("Buttons", "Interactive button styles from the theme palette");
+    let header = section_header(
+        "Buttons",
+        "Interactive button styles from the theme palette",
+    );
 
     let primary_row = column![
         text("Primary Actions").size(16),
         row![
-            apply_pad(button("Primary").on_press(Message::ButtonPressed).style(button::primary)),
-            apply_pad(button("Secondary").on_press(Message::ButtonPressed).style(button::secondary)),
-            apply_pad(button("Success").on_press(Message::ButtonPressed).style(button::success)),
-            apply_pad(button("Danger").on_press(Message::ButtonPressed).style(button::danger)),
-            apply_pad(button("Text Style").on_press(Message::ButtonPressed).style(button::text)),
+            apply_pad(
+                button("Primary")
+                    .on_press(Message::ButtonPressed)
+                    .style(button::primary)
+            ),
+            apply_pad(
+                button("Secondary")
+                    .on_press(Message::ButtonPressed)
+                    .style(button::secondary)
+            ),
+            apply_pad(
+                button("Success")
+                    .on_press(Message::ButtonPressed)
+                    .style(button::success)
+            ),
+            apply_pad(
+                button("Danger")
+                    .on_press(Message::ButtonPressed)
+                    .style(button::danger)
+            ),
+            apply_pad(
+                button("Text Style")
+                    .on_press(Message::ButtonPressed)
+                    .style(button::text)
+            ),
         ]
         .spacing(8),
     ]
@@ -452,10 +475,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Option<[f32; 2]>) -> Element<'a, 
     ]
     .spacing(8);
 
-    let counter_text = format!(
-        "Button presses this session: {}",
-        state.button_press_count
-    );
+    let counter_text = format!("Button presses this session: {}", state.button_press_count);
 
     let interactive = column![
         text("Interactive Demo").size(16),
@@ -526,11 +546,7 @@ fn view_text_inputs<'a>(
             input = input.padding(Padding::from([v, h]));
         }
 
-        column![
-            text("TextInput (secure / password)").size(16),
-            input,
-        ]
-        .spacing(8)
+        column![text("TextInput (secure / password)").size(16), input,].spacing(8)
     };
 
     let multi_line = column![
@@ -595,9 +611,24 @@ fn view_selection(state: &State) -> Element<'_, Message> {
 
     let radios = column![
         text("Radio Buttons").size(16),
-        radio("Apple", Fruit::Apple, state.selected_fruit, Message::FruitSelected),
-        radio("Banana", Fruit::Banana, state.selected_fruit, Message::FruitSelected),
-        radio("Cherry", Fruit::Cherry, state.selected_fruit, Message::FruitSelected),
+        radio(
+            "Apple",
+            Fruit::Apple,
+            state.selected_fruit,
+            Message::FruitSelected
+        ),
+        radio(
+            "Banana",
+            Fruit::Banana,
+            state.selected_fruit,
+            Message::FruitSelected
+        ),
+        radio(
+            "Cherry",
+            Fruit::Cherry,
+            state.selected_fruit,
+            Message::FruitSelected
+        ),
         text(format!(
             "Selected: {}",
             state
@@ -623,7 +654,14 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     .spacing(8);
 
     let languages: Vec<String> = vec![
-        "Rust", "Python", "JavaScript", "TypeScript", "Go", "C++", "Java", "Swift",
+        "Rust",
+        "Python",
+        "JavaScript",
+        "TypeScript",
+        "Go",
+        "C++",
+        "Java",
+        "Swift",
     ]
     .into_iter()
     .map(String::from)
@@ -639,10 +677,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
         .width(Length::Fixed(250.0)),
         text(format!(
             "Selected: {}",
-            state
-                .pick_list_selected
-                .as_deref()
-                .unwrap_or("None")
+            state.pick_list_selected.as_deref().unwrap_or("None")
         ))
         .size(12),
     ]
@@ -668,9 +703,19 @@ fn view_selection(state: &State) -> Element<'_, Message> {
     column![
         header,
         row![
-            column![checkboxes, rule::horizontal(1), togglers,].spacing(20).width(Fill),
+            column![checkboxes, rule::horizontal(1), togglers,]
+                .spacing(20)
+                .width(Fill),
             rule::vertical(1),
-            column![radios, rule::horizontal(1), pickers, rule::horizontal(1), combos,].spacing(20).width(Fill),
+            column![
+                radios,
+                rule::horizontal(1),
+                pickers,
+                rule::horizontal(1),
+                combos,
+            ]
+            .spacing(20)
+            .width(Fill),
         ]
         .spacing(20),
     ]
@@ -684,16 +729,15 @@ fn view_selection(state: &State) -> Element<'_, Message> {
 // ---------------------------------------------------------------------------
 
 fn view_range(state: &State) -> Element<'_, Message> {
-    let header = section_header(
-        "Range Widgets",
-        "Slider, VerticalSlider, and ProgressBar",
-    );
+    let header = section_header("Range Widgets", "Slider, VerticalSlider, and ProgressBar");
 
     let horiz_slider = column![
         text("Horizontal Slider").size(16),
         row![
             slider(0.0..=100.0, state.slider_value, Message::SliderChanged).width(Fill),
-            text(format!("{:.1}", state.slider_value)).size(14).width(Length::Fixed(50.0)),
+            text(format!("{:.1}", state.slider_value))
+                .size(14)
+                .width(Length::Fixed(50.0)),
         ]
         .spacing(12)
         .align_y(iced::Center),
@@ -707,7 +751,9 @@ fn view_range(state: &State) -> Element<'_, Message> {
             slider(0.0..=100.0, state.slider_step, Message::StepSliderChanged)
                 .step(5.0)
                 .width(Fill),
-            text(format!("{:.0}", state.slider_step)).size(14).width(Length::Fixed(50.0)),
+            text(format!("{:.0}", state.slider_step))
+                .size(14)
+                .width(Length::Fixed(50.0)),
         ]
         .spacing(12)
         .align_y(iced::Center),
@@ -725,7 +771,8 @@ fn view_range(state: &State) -> Element<'_, Message> {
             column![
                 text(format!("Value: {:.1}", state.vslider_value)).size(14),
                 space().height(Length::Fixed(8.0)),
-                text("Vertical sliders are useful\nfor volume controls,\nequalizers, etc.").size(12),
+                text("Vertical sliders are useful\nfor volume controls,\nequalizers, etc.")
+                    .size(12),
             ]
             .spacing(4),
         ]
@@ -741,7 +788,9 @@ fn view_range(state: &State) -> Element<'_, Message> {
         text("Separate progress control:").size(13),
         row![
             slider(0.0..=100.0, state.progress_value, Message::ProgressChanged).width(Fill),
-            text(format!("{:.0}%", state.progress_value)).size(14).width(Length::Fixed(50.0)),
+            text(format!("{:.0}%", state.progress_value))
+                .size(14)
+                .width(Length::Fixed(50.0)),
         ]
         .spacing(12)
         .align_y(iced::Center),
@@ -791,9 +840,11 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
         .style(container::rounded_box)
         .width(Fill),
         container(
-            text("A secondary container with different padding. Containers adapt their \
-                  background and border colors from the active theme palette.")
-                .size(12),
+            text(
+                "A secondary container with different padding. Containers adapt their \
+                  background and border colors from the active theme palette."
+            )
+            .size(12),
         )
         .padding(Padding::from([12, 20]))
         .style(container::rounded_box)
@@ -858,7 +909,7 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
 
     let theme_info_text = format!(
         "Active theme: {}  |  Mode: {}",
-        state.current_theme.to_string(),
+        state.current_theme,
         if state.is_dark { "Dark" } else { "Light" },
     );
 

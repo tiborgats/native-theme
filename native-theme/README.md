@@ -2,7 +2,7 @@
 
 Cross-platform native theme detection and loading for Rust GUI applications.
 
-[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%20OR%20Apache--2.0-blue.svg)](#license)
+[![License: MIT OR Apache-2.0 OR 0BSD](https://img.shields.io/badge/license-MIT%20%7C%20Apache--2.0%20%7C%200BSD-blue.svg)](#license)
 
 ## Overview
 
@@ -10,22 +10,6 @@ Cross-platform native theme detection and loading for Rust GUI applications.
 color roles, bundled TOML presets, and optional OS theme reading. It gives your
 Rust GUI application access to consistent, structured theme data regardless of
 which toolkit you use.
-
-What native-theme **is:**
-
-- A data model for theme colors, fonts, geometry, and spacing
-- A library of 17 bundled presets (platform and community themes)
-- Optional readers for live OS theme data (KDE, GNOME, Windows)
-- A TOML-based format for user-customizable themes with deep merge support
-
-What native-theme **is not:**
-
-- Not a GUI toolkit -- it produces data, not widgets
-- Not a widget styling library -- it does not render anything
-- Toolkit adapters live in **your** application code, not in this crate
-
-Works with **egui**, **iced**, **slint**, and any Rust GUI toolkit that accepts
-color, font, or spacing values.
 
 ## Quick Start
 
@@ -80,118 +64,44 @@ let theme = from_system().unwrap_or_else(|_| NativeTheme::preset("default").unwr
   portal data (accent color, dark mode preference, contrast setting), call
   `from_gnome().await` directly -- this requires the `portal-tokio` or
   `portal-async-io` feature.
+- **macOS:** Reads system appearance via NSAppearance (requires `macos` feature).
 - **Windows:** Reads accent colors and system metrics (requires `windows` feature).
 - **Other platforms:** Returns `Error::Unsupported`; use the preset fallback.
 
-## Toolkit Adapter Examples
+## Toolkit Connectors
 
-Each example below shows a standalone mapping function that converts
-`NativeTheme` fields into the toolkit's styling types. This code lives in
-**your** application, not in native-theme.
+Official connector crates handle the full mapping from `NativeTheme` to
+toolkit-specific theme types:
 
-### egui
+- [`native-theme-iced`](https://crates.io/crates/native-theme-iced) -- iced
+  toolkit connector with Catalog support for all built-in widget styles
+- `native-theme-gpui` -- gpui + gpui-component toolkit connector
 
-```rust,ignore
-use egui::{Color32, style::Visuals};
-use native_theme::Rgba;
-
-fn rgba_to_color32(c: &Rgba) -> Color32 {
-    Color32::from_rgba_unmultiplied(c.r, c.g, c.b, c.a)
-}
-
-fn apply_theme(ctx: &egui::Context, theme: &native_theme::NativeTheme) {
-    let variant = theme.dark.as_ref().unwrap();
-    let c = &variant.colors;
-
-    let mut visuals = Visuals::dark();
-    visuals.window_fill = rgba_to_color32(&c.background.unwrap());
-    visuals.panel_fill = rgba_to_color32(&c.sidebar.unwrap());
-    visuals.hyperlink_color = rgba_to_color32(&c.link.unwrap());
-    visuals.error_fg_color = rgba_to_color32(&c.danger.unwrap());
-    visuals.warn_fg_color = rgba_to_color32(&c.warning.unwrap());
-    visuals.selection.bg_fill = rgba_to_color32(&c.selection.unwrap());
-    visuals.extreme_bg_color = rgba_to_color32(&c.surface.unwrap());
-    visuals.faint_bg_color = rgba_to_color32(&c.alternate_row.unwrap());
-
-    ctx.set_visuals(visuals);
-}
-```
-
-### iced
+For other toolkits, map `NativeTheme` fields directly. All color, font,
+geometry, and spacing fields are public `Option<T>` values:
 
 ```rust,ignore
-use iced::{Color, Theme};
-use iced::theme::Palette;
-
-fn rgba_to_iced(c: &native_theme::Rgba) -> Color {
-    Color::from_rgb8(c.r, c.g, c.b)
-}
-
-fn to_iced_theme(theme: &native_theme::NativeTheme) -> Theme {
-    let v = theme.dark.as_ref().unwrap();
-    let c = &v.colors;
-
-    let palette = Palette {
-        background: rgba_to_iced(&c.background.unwrap()),
-        text: rgba_to_iced(&c.foreground.unwrap()),
-        primary: rgba_to_iced(&c.accent.unwrap()),
-        success: rgba_to_iced(&c.success.unwrap()),
-        warning: rgba_to_iced(&c.warning.unwrap()),
-        danger: rgba_to_iced(&c.danger.unwrap()),
-    };
-    Theme::custom("Native".into(), palette)
-}
+let variant = theme.dark.as_ref().unwrap();
+let bg = variant.colors.background.unwrap();
+let accent = variant.colors.accent.unwrap();
+let font = variant.fonts.family.as_deref().unwrap_or("sans-serif");
+let radius = variant.geometry.radius.unwrap_or(4.0);
 ```
-
-### slint
-
-Define a global singleton in your `.slint` file:
-
-```text
-export global ThemeBridge {
-    in-out property <color> background;
-    in-out property <color> foreground;
-    in-out property <color> accent;
-    in-out property <color> surface;
-    in-out property <color> danger;
-    in-out property <color> success;
-}
-```
-
-Then set it from Rust:
-
-```rust,ignore
-fn apply_theme(app: &App, theme: &native_theme::NativeTheme) {
-    let v = theme.light.as_ref().unwrap();
-    let c = &v.colors;
-
-    let bridge = app.global::<ThemeBridge>();
-    bridge.set_background(to_slint(&c.background.unwrap()));
-    bridge.set_foreground(to_slint(&c.foreground.unwrap()));
-    bridge.set_accent(to_slint(&c.accent.unwrap()));
-    bridge.set_surface(to_slint(&c.surface.unwrap()));
-    bridge.set_danger(to_slint(&c.danger.unwrap()));
-    bridge.set_success(to_slint(&c.success.unwrap()));
-}
-
-fn to_slint(c: &native_theme::Rgba) -> slint::Color {
-    slint::Color::from_argb_u8(c.a, c.r, c.g, c.b)
-}
-```
-
-> **Production note:** The adapter examples above use `unwrap()` for brevity.
-> Production code should handle `None` fields with fallback defaults rather
-> than `unwrap()`.
 
 ## Feature Flags
 
-| Feature | Enables | Platform | Notes |
-|---------|---------|----------|-------|
-| `kde` | `from_kde()` sync KDE reader | Linux | Parses `~/.config/kdeglobals` via configparser |
-| `portal` | Base for GNOME portal reader | Linux | Not useful alone -- must also enable `portal-tokio` or `portal-async-io` |
-| `portal-tokio` | `from_gnome()` with tokio runtime | Linux | Implies `portal`; uses ashpd with tokio backend |
-| `portal-async-io` | `from_gnome()` with async-io runtime | Linux | Implies `portal`; uses ashpd with async-io backend |
-| `windows` | `from_windows()` Windows reader | Windows | Reads UISettings accent + GetSystemMetrics geometry |
+| Feature | Enables | Platform |
+|---------|---------|----------|
+| `kde` | `from_kde()` sync KDE reader | Linux |
+| `portal` | Base for GNOME portal reader | Linux |
+| `portal-tokio` | `from_gnome()` with tokio runtime | Linux |
+| `portal-async-io` | `from_gnome()` with async-io runtime | Linux |
+| `windows` | `from_windows()` Windows reader | Windows |
+| `macos` | `from_macos()` macOS reader | macOS |
+| `system-icons` | Platform icon theme lookup with bundled fallback | All |
+| `material-icons` | Bundle Material Symbols SVGs | All |
+| `lucide-icons` | Bundle Lucide SVGs | All |
+| `svg-rasterize` | SVG-to-RGBA rasterization via resvg | All |
 
 By default, no features are enabled. The preset API (`NativeTheme::preset()`,
 `NativeTheme::from_toml()`, `NativeTheme::from_file()`, `NativeTheme::list_presets()`,
@@ -202,106 +112,21 @@ By default, no features are enabled. The preset API (`NativeTheme::preset()`,
 All presets are embedded at compile time via `include_str!()` and available
 through `NativeTheme::preset("name")`. Each provides both light and dark variants.
 
-### Core
+**Core:** `default`, `adwaita`, `kde-breeze`
 
-| Name | Description |
-|------|-------------|
-| `default` | Neutral toolkit-agnostic theme with balanced colors |
-| `kde-breeze` | KDE Breeze theme colors and spacing |
-| `adwaita` | GNOME Adwaita theme colors |
+**Platform:** `windows-11`, `macos-sonoma`, `material`, `ios`
 
-### Platform
-
-| Name | Description |
-|------|-------------|
-| `windows-11` | Windows 11 design language with Segoe UI |
-| `macos-sonoma` | macOS Sonoma system appearance |
-| `material` | Material Design 3 baseline colors |
-| `ios` | iOS system appearance with SF Pro |
-
-### Community
-
-| Name | Description |
-|------|-------------|
-| `catppuccin-latte` | Catppuccin Latte (light pastel) |
-| `catppuccin-frappe` | Catppuccin Frappe (mid-tone pastel) |
-| `catppuccin-macchiato` | Catppuccin Macchiato (dark pastel) |
-| `catppuccin-mocha` | Catppuccin Mocha (deep pastel) |
-| `nord` | Nord arctic color palette |
-| `dracula` | Dracula dark theme |
-| `gruvbox` | Gruvbox retro groove colors |
-| `solarized` | Solarized precision colors |
-| `tokyo-night` | Tokyo Night editor theme |
-| `one-dark` | Atom One Dark colors |
+**Community:** `catppuccin-latte`, `catppuccin-frappe`, `catppuccin-macchiato`,
+`catppuccin-mocha`, `nord`, `dracula`, `gruvbox`, `solarized`, `tokyo-night`,
+`one-dark`
 
 Use `NativeTheme::list_presets()` to get all 17 names programmatically.
 
-## TOML Format Reference
+## TOML Format
 
-Theme files use TOML with the following structure. All fields are
-`Option<T>` -- omit any field you do not need. Unknown fields are ignored.
-Hex colors accept `#RRGGBB` or `#RRGGBBAA` format.
-
-```toml
-name = "My Theme"
-
-[light.colors]
-accent = "#4a90d9"
-background = "#fafafa"
-foreground = "#2e3436"
-surface = "#ffffff"
-border = "#c0c0c0"
-muted = "#929292"
-shadow = "#00000018"
-primary_background = "#4a90d9"
-primary_foreground = "#ffffff"
-secondary_background = "#6c757d"
-secondary_foreground = "#ffffff"
-danger = "#dc3545"
-warning = "#f0ad4e"
-success = "#28a745"
-info = "#4a90d9"
-selection = "#4a90d9"
-link = "#2a6cb6"
-focus_ring = "#4a90d9"
-sidebar = "#f0f0f0"
-tooltip = "#2e3436"
-popover = "#ffffff"
-button = "#e8e8e8"
-input = "#ffffff"
-disabled = "#c0c0c0"
-separator = "#d0d0d0"
-alternate_row = "#f5f5f5"
-
-[light.fonts]
-family = "sans-serif"
-size = 10.0
-mono_family = "monospace"
-mono_size = 10.0
-
-[light.geometry]
-radius = 6.0
-frame_width = 1.0
-disabled_opacity = 0.5
-border_opacity = 0.15
-scroll_width = 8.0
-
-[light.spacing]
-xxs = 2.0
-xs = 4.0
-s = 6.0
-m = 12.0
-l = 18.0
-xl = 24.0
-xxl = 36.0
-
-# [dark.*] mirrors the same structure as [light.*]
-```
-
-Each `[light.*]` section has a corresponding `[dark.*]` section with the
-same field names. All 36 color fields are flat under `[light.colors]` and
-`[dark.colors]`. Fields with `_foreground` suffixes provide text contrast
-colors (e.g., `danger_foreground`, `sidebar_foreground`).
+Theme files use TOML. All fields are optional -- omit any you don't need.
+See the [`NativeTheme::from_toml()`](https://docs.rs/native-theme/latest/native_theme/struct.NativeTheme.html#method.from_toml)
+documentation for the full format reference.
 
 ## License
 
@@ -309,6 +134,7 @@ Licensed under either of
 
 - [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
 - [MIT License](http://opensource.org/licenses/MIT)
+- [0BSD License](https://opensource.org/license/0bsd)
 
 at your option.
 

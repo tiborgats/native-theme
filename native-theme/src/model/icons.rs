@@ -386,16 +386,29 @@ pub fn system_icon_set() -> IconSet {
 /// ```
 pub fn system_icon_theme() -> String {
     #[cfg(any(target_os = "macos", target_os = "ios"))]
-    { return "sf-symbols".to_string(); }
+    {
+        return "sf-symbols".to_string();
+    }
 
     #[cfg(target_os = "windows")]
-    { return "segoe-fluent".to_string(); }
+    {
+        return "segoe-fluent".to_string();
+    }
 
     #[cfg(target_os = "linux")]
-    { return detect_linux_icon_theme(); }
+    {
+        detect_linux_icon_theme()
+    }
 
-    #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos", target_os = "ios")))]
-    { "material".to_string() }
+    #[cfg(not(any(
+        target_os = "linux",
+        target_os = "windows",
+        target_os = "macos",
+        target_os = "ios"
+    )))]
+    {
+        "material".to_string()
+    }
 }
 
 /// Linux icon theme detection, dispatched by desktop environment.
@@ -409,13 +422,9 @@ fn detect_linux_icon_theme() -> String {
         crate::LinuxDesktop::Gnome | crate::LinuxDesktop::Budgie => {
             gsettings_icon_theme("org.gnome.desktop.interface")
         }
-        crate::LinuxDesktop::Cinnamon => {
-            gsettings_icon_theme("org.cinnamon.desktop.interface")
-        }
+        crate::LinuxDesktop::Cinnamon => gsettings_icon_theme("org.cinnamon.desktop.interface"),
         crate::LinuxDesktop::Xfce => detect_xfce_icon_theme(),
-        crate::LinuxDesktop::Mate => {
-            gsettings_icon_theme("org.mate.interface")
-        }
+        crate::LinuxDesktop::Mate => gsettings_icon_theme("org.mate.interface"),
         crate::LinuxDesktop::LxQt => detect_lxqt_icon_theme(),
         crate::LinuxDesktop::Unknown => {
             let kde = detect_kde_icon_theme();
@@ -524,11 +533,7 @@ fn xdg_config_dir() -> std::path::PathBuf {
 /// headers and `Key=Value` lines. Returns `None` if the file doesn't exist,
 /// the section/key is missing, or the value is empty.
 #[cfg(target_os = "linux")]
-fn read_ini_value(
-    path: &std::path::Path,
-    section: &str,
-    key: &str,
-) -> Option<String> {
+fn read_ini_value(path: &std::path::Path, section: &str, key: &str) -> Option<String> {
     let content = std::fs::read_to_string(path).ok()?;
     let target_section = format!("[{}]", section);
     let mut in_section = false;
@@ -968,10 +973,10 @@ mod tests {
     #[test]
     fn icon_role_derives_copy_clone() {
         let role = IconRole::ActionCopy;
-        let cloned = role.clone();
-        let copied = role;
-        assert_eq!(role, cloned);
-        assert_eq!(role, copied);
+        let copied1 = role;
+        let copied2 = role;
+        assert_eq!(role, copied1);
+        assert_eq!(role, copied2);
     }
 
     #[test]
@@ -1134,10 +1139,10 @@ mod tests {
     #[test]
     fn icon_set_derives_copy_clone() {
         let set = IconSet::Material;
-        let cloned = set.clone();
-        let copied = set;
-        assert_eq!(set, cloned);
-        assert_eq!(set, copied);
+        let copied1 = set;
+        let copied2 = set;
+        assert_eq!(set, copied1);
+        assert_eq!(set, copied2);
     }
 
     #[test]
@@ -1231,10 +1236,7 @@ mod tests {
 
     #[test]
     fn icon_name_sf_symbols_window_restore_is_none() {
-        assert_eq!(
-            icon_name(IconSet::SfSymbols, IconRole::WindowRestore),
-            None
-        );
+        assert_eq!(icon_name(IconSet::SfSymbols, IconRole::WindowRestore), None);
     }
 
     #[test]
@@ -1314,10 +1316,7 @@ mod tests {
             icon_name(IconSet::Material, IconRole::NavHome),
             Some("home")
         );
-        assert_eq!(
-            icon_name(IconSet::Lucide, IconRole::NavHome),
-            Some("house")
-        );
+        assert_eq!(icon_name(IconSet::Lucide, IconRole::NavHome), Some("house"));
     }
 
     // Count test: verify expected Some/None count for each icon set
@@ -1382,6 +1381,9 @@ mod tests {
     #[test]
     fn system_icon_theme_returns_non_empty() {
         let theme = system_icon_theme();
-        assert!(!theme.is_empty(), "system_icon_theme() should return a non-empty string");
+        assert!(
+            !theme.is_empty(),
+            "system_icon_theme() should return a non-empty string"
+        );
     }
 }

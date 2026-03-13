@@ -137,7 +137,13 @@ fn all_presets_have_interactive_colors() {
 #[test]
 fn platform_presets_have_valid_fonts() {
     let platform = [
-        "default", "adwaita", "kde-breeze", "windows-11", "macos-sonoma", "material", "ios",
+        "default",
+        "adwaita",
+        "kde-breeze",
+        "windows-11",
+        "macos-sonoma",
+        "material",
+        "ios",
     ];
     for name in platform {
         let theme =
@@ -168,8 +174,16 @@ fn platform_presets_have_valid_fonts() {
 #[test]
 fn community_presets_omit_fonts() {
     let community = [
-        "catppuccin-frappe", "catppuccin-latte", "catppuccin-macchiato", "catppuccin-mocha",
-        "dracula", "gruvbox", "nord", "one-dark", "solarized", "tokyo-night",
+        "catppuccin-frappe",
+        "catppuccin-latte",
+        "catppuccin-macchiato",
+        "catppuccin-mocha",
+        "dracula",
+        "gruvbox",
+        "nord",
+        "one-dark",
+        "solarized",
+        "tokyo-night",
     ];
     for name in community {
         let theme =

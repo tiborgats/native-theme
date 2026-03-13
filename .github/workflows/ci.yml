@@ -2,7 +2,7 @@ name: CI
 
 on:
   push:
-    branches: [main, master]
+    branches: [main]
   pull_request:
 
 env:
@@ -17,12 +17,19 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
         with:
           components: rustfmt
-      - run: cargo fmt --all -- --check
+      - run: cargo fmt --all --check
 
   clippy:
-    name: Clippy
+    name: Clippy ${{ matrix.name }}
     runs-on: ubuntu-latest
     needs: fmt
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "native-theme", package: "native-theme" }
+          - { name: "gpui connector", package: "native-theme-gpui" }
+          - { name: "iced connector", package: "native-theme-iced" }
     env:
       RUSTFLAGS: -Dwarnings
     steps:
@@ -31,7 +38,7 @@ jobs:
         with:
           components: clippy
       - uses: Swatinem/rust-cache@v2
-      - run: cargo clippy --workspace --all-targets
+      - run: cargo clippy -p ${{ matrix.package }} --all-targets
 
   test:
     name: Test ${{ matrix.name }}
@@ -44,6 +51,7 @@ jobs:
           - { name: "Linux (no features)", os: ubuntu-latest, flags: "--no-default-features" }
           - { name: "Linux (kde)", os: ubuntu-latest, flags: "--features kde" }
           - { name: "Linux (portal-tokio)", os: ubuntu-latest, flags: "--features portal-tokio" }
+          - { name: "Linux (icons)", os: ubuntu-latest, flags: "--features material-icons,lucide-icons,system-icons,svg-rasterize" }
           - { name: "Windows (no features)", os: windows-latest, flags: "--no-default-features" }
           - { name: "Windows (windows)", os: windows-latest, flags: "--features windows" }
           - { name: "macOS (no features)", os: macos-latest, flags: "--no-default-features" }
@@ -54,10 +62,46 @@ jobs:
       - uses: Swatinem/rust-cache@v2
       - run: cargo test -p native-theme ${{ matrix.flags }}
 
+  test-connectors:
+    name: Test ${{ matrix.name }}
+    needs: fmt
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - { name: "iced connector", package: "native-theme-iced" }
+          - { name: "gpui connector", package: "native-theme-gpui" }
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test -p ${{ matrix.package }}
+
+  doc:
+    name: Documentation
+    runs-on: ubuntu-latest
+    needs: fmt
+    env:
+      RUSTDOCFLAGS: -Dwarnings
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo doc --workspace --no-deps
+
+  audit:
+    name: Security audit
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: rustsec/audit-check@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
   semver:
     name: Semver
     runs-on: ubuntu-latest
-    # After publishing to crates.io, remove baseline-rev to auto-detect from registry
     steps:
       - uses: actions/checkout@v4
         with:
