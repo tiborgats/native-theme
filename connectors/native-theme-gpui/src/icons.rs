@@ -677,11 +677,19 @@ pub fn freedesktop_name_for_gpui_icon(
     })
 }
 
+/// Default rasterization size for SVG icons.
+///
+/// SVGs are rasterized at 2x the typical display size (24px) to look sharp
+/// on HiDPI screens. gpui uses the same 2x scale factor internally.
+const SVG_RASTERIZE_SIZE: u32 = 48;
+
 /// Convert [`IconData`] to a gpui [`ImageSource`] for rendering.
 ///
-/// - `IconData::Svg`: Wraps the SVG bytes in `Image::from_bytes(ImageFormat::Svg, ...)`.
+/// - `IconData::Svg`: Rasterized to RGBA pixels via resvg, then encoded as
+///   BMP. This works around a gpui bug where `ImageFormat::Svg` skips the
+///   RGBA→BGRA conversion, causing red/blue channel swap.
 /// - `IconData::Rgba`: Encodes as BMP with a BITMAPV4HEADER and wraps in
-///   `Image::from_bytes(ImageFormat::Bmp, ...)`. This avoids needing the `png` crate.
+///   `Image::from_bytes(ImageFormat::Bmp, ...)`.
 ///
 /// # Examples
 ///
@@ -694,10 +702,7 @@ pub fn freedesktop_name_for_gpui_icon(
 /// ```
 pub fn to_image_source(data: &IconData) -> ImageSource {
     match data {
-        IconData::Svg(bytes) => {
-            let image = Image::from_bytes(ImageFormat::Svg, bytes.clone());
-            ImageSource::Image(Arc::new(image))
-        }
+        IconData::Svg(bytes) => svg_to_bmp_source(bytes),
         IconData::Rgba {
             width,
             height,
@@ -709,7 +714,7 @@ pub fn to_image_source(data: &IconData) -> ImageSource {
         }
         // Forward-compatible: treat unknown variants as empty SVG
         _ => {
-            let image = Image::from_bytes(ImageFormat::Svg, Vec::new());
+            let image = Image::from_bytes(ImageFormat::Bmp, Vec::new());
             ImageSource::Image(Arc::new(image))
         }
     }
@@ -733,10 +738,31 @@ pub fn to_image_source_colored(data: &IconData, color: Hsla) -> ImageSource {
     match data {
         IconData::Svg(bytes) => {
             let colored = colorize_svg(bytes, color);
-            let image = Image::from_bytes(ImageFormat::Svg, colored);
-            ImageSource::Image(Arc::new(image))
+            svg_to_bmp_source(&colored)
         }
         other => to_image_source(other),
+    }
+}
+
+/// Rasterize SVG bytes and return as a BMP-backed [`ImageSource`].
+///
+/// Works around a gpui bug where `ImageFormat::Svg` in `Image::to_image_data`
+/// skips the RGBA→BGRA pixel conversion that all other formats perform,
+/// causing red and blue channels to be swapped.
+fn svg_to_bmp_source(svg_bytes: &[u8]) -> ImageSource {
+    if let Some(IconData::Rgba {
+        width,
+        height,
+        data,
+    }) = native_theme::rasterize::rasterize_svg(svg_bytes, SVG_RASTERIZE_SIZE)
+    {
+        let bmp = encode_rgba_as_bmp(width, height, &data);
+        let image = Image::from_bytes(ImageFormat::Bmp, bmp);
+        ImageSource::Image(Arc::new(image))
+    } else {
+        // Rasterization failed — return empty image
+        let image = Image::from_bytes(ImageFormat::Bmp, Vec::new());
+        ImageSource::Image(Arc::new(image))
     }
 }
 
@@ -991,14 +1017,17 @@ mod tests {
     // --- to_image_source tests ---
 
     #[test]
-    fn to_image_source_svg_returns_image_source() {
-        let svg = IconData::Svg(b"<svg></svg>".to_vec());
+    fn to_image_source_svg_returns_bmp_rasterized() {
+        // Valid SVG that resvg can parse
+        let svg = IconData::Svg(
+            b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>".to_vec(),
+        );
         let source = to_image_source(&svg);
-        // Verify it's an ImageSource::Image variant
+        // SVGs are rasterized to BMP to work around gpui's RGBA/BGRA bug
         match source {
             ImageSource::Image(arc) => {
-                assert_eq!(arc.format, ImageFormat::Svg);
-                assert_eq!(arc.bytes, b"<svg></svg>");
+                assert_eq!(arc.format, ImageFormat::Bmp);
+                assert!(arc.bytes.starts_with(b"BM"), "BMP should start with 'BM'");
             }
             _ => panic!("Expected ImageSource::Image for SVG data"),
         }
