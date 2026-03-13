@@ -4,8 +4,8 @@ milestone: v0.3
 milestone_name: Icons
 status: verified
 stopped_at: null
-last_updated: "2026-03-09T17:00:00Z"
-last_activity: "2026-03-09 — Phase 21 verified (5/5 must-haves passed), milestone v0.3 complete"
+last_updated: "2026-03-13T11:39:45Z"
+last_activity: "2026-03-13 — Quick task 1 complete: v0.3.1 feature flag simplification"
 progress:
   total_phases: 6
   completed_phases: 6
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 Phase: 21 of 21 (Integration and Connectors) — verified ✓
 Plan: 3/3 complete
 Status: Phase 21 verified, milestone v0.3 complete
-Last activity: 2026-03-09 — Phase 21 verified (5/5 must-haves passed)
+Last activity: 2026-03-13 — Quick task 1: v0.3.1 feature flag simplification
 
 Progress: [##########] 100%
 
@@ -51,12 +51,14 @@ Progress: [##########] 100%
 | 21-01 | load_icon dispatch + rasterize_svg | 3min | 1 | 4 |
 | 21-02 | gpui icon_name + to_image_source | 6min | 2 | 3 |
 | 21-03 | Iced icon conversion helpers | 2min | 1 | 2 |
+| quick-01 | v0.3.1 feature flag simplification | 5min | 2 | 4 |
 
 ## Accumulated Context
 
 ### Decisions
 
 All v0.1/v0.2/v0.3 decisions logged in PROJECT.md Key Decisions table.
+- Quick-01: Combine target_os + feature in cfg gates so meta-features compile on all platforms
 
 ### Pending Todos
 
@@ -68,6 +70,6 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-09T17:00:00Z
-Stopped at: Phase 21 verified, milestone v0.3 complete
+Last session: 2026-03-13T11:39:45Z
+Stopped at: Completed quick task 1 (v0.3.1 feature flag simplification)
 Resume file: None
