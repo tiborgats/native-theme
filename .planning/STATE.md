@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 Phase: 21 of 21 (Integration and Connectors) — verified ✓
 Plan: 3/3 complete
 Status: Phase 21 verified, milestone v0.3 complete
-Last activity: 2026-03-13 — Quick task 1: v0.3.1 feature flag simplification
+Last activity: 2026-03-13 — Completed quick task 1: Implement docs/v0.3.1-feature-simplification.md
 
 Progress: [##########] 100%
 
@@ -67,6 +67,12 @@ None.
 ### Blockers/Concerns
 
 None currently.
+
+### Quick Tasks Completed
+
+| # | Description | Date | Commit | Directory |
+|---|-------------|------|--------|-----------|
+| 1 | Implement docs/v0.3.1-feature-simplification.md | 2026-03-13 | c78e8a3 | [1-implement-docs-v0-3-1-feature-simplifica](./quick/1-implement-docs-v0-3-1-feature-simplifica/) |
 
 ## Session Continuity
 
