@@ -98,20 +98,48 @@ falling back to bundled presets when a platform reader is unavailable.
 
 ## Feature Flags
 
+**Recommended:** Most apps just need one feature:
+
+```toml
+[dependencies]
+native-theme = { version = "0.3", features = ["native"] }
+```
+
+### Meta-features
+
+| Feature | What it enables |
+|---------|-----------------|
+| `native` | Full native support on all platforms (tokio async runtime) |
+| `native-async-io` | Same, but uses async-io instead of tokio |
+| `linux` | Full Linux support: KDE + GNOME portal (tokio) |
+| `linux-async-io` | Full Linux support: KDE + GNOME portal (async-io) |
+
+All OS-specific dependencies are target-gated, so enabling `native` on macOS
+only compiles macOS deps, not Linux or Windows deps.
+
+### Individual features
+
 | Feature | Description | Platform |
 |---------|-------------|----------|
 | `kde` | Sync KDE theme reader (`~/.config/kdeglobals`) | Linux |
-| `portal` | Base for GNOME portal reader | Linux |
-| `portal-tokio` | `from_gnome()` with tokio backend | Linux |
-| `portal-async-io` | `from_gnome()` with async-io backend | Linux |
-| `windows` | Windows theme reader (UISettings + system metrics) | Windows |
+| `portal-tokio` | GNOME portal reader with tokio backend | Linux |
+| `portal-async-io` | GNOME portal reader with async-io backend | Linux |
 | `macos` | macOS theme reader (NSAppearance) | macOS |
+| `windows` | Windows theme reader (UISettings + system metrics) | Windows |
 | `system-icons` | Platform icon theme lookup with bundled fallback | All |
 | `material-icons` | Bundle Material Symbols SVGs | All |
 | `lucide-icons` | Bundle Lucide SVGs | All |
 | `svg-rasterize` | SVG-to-RGBA rasterization via resvg | All |
 
 No features are enabled by default. The preset API works without any features.
+
+### Which Linux DEs are supported?
+
+`from_system()` auto-detects the desktop environment via `XDG_CURRENT_DESKTOP`.
+GNOME, XFCE, Cinnamon, MATE, Budgie, and LXQt all use GTK themes and are
+handled by the Adwaita preset (sync) or the portal reader (async). Only KDE
+needs a separate reader because it uses INI-style config files. You do not need
+a separate feature flag per desktop environment.
 
 ## Available Presets
 
