@@ -2,9 +2,9 @@
 //! resolves both light and dark appearance variants via NSAppearance, and reads
 //! system and monospace fonts via NSFont.
 
-#[cfg(feature = "macos")]
+#[cfg(all(target_os = "macos", feature = "macos"))]
 use objc2_app_kit::{NSAppearance, NSColor, NSColorSpace, NSFont, NSFontWeight};
-#[cfg(feature = "macos")]
+#[cfg(all(target_os = "macos", feature = "macos"))]
 use objc2_foundation::NSString;
 
 /// Convert an NSColor to sRGB and extract RGBA components.
@@ -12,7 +12,7 @@ use objc2_foundation::NSString;
 /// Converts the color to the sRGB color space via `colorUsingColorSpace`,
 /// handling P3-to-sRGB conversion automatically. Returns `None` if the
 /// color cannot be converted (e.g., pattern colors).
-#[cfg(feature = "macos")]
+#[cfg(all(target_os = "macos", feature = "macos"))]
 fn nscolor_to_rgba(color: &NSColor, srgb: &NSColorSpace) -> Option<crate::Rgba> {
     let srgb_color = unsafe { color.colorUsingColorSpace(srgb) }?;
     let r = unsafe { srgb_color.redComponent() } as f32;
@@ -26,7 +26,7 @@ fn nscolor_to_rgba(color: &NSColor, srgb: &NSColorSpace) -> Option<crate::Rgba> 
 ///
 /// Must be called within an `NSAppearance::performAsCurrentDrawingAppearance`
 /// block so that dynamic colors resolve to the correct appearance.
-#[cfg(feature = "macos")]
+#[cfg(all(target_os = "macos", feature = "macos"))]
 fn read_semantic_colors() -> crate::ThemeColors {
     let srgb = unsafe { NSColorSpace::sRGBColorSpace() };
 
@@ -86,7 +86,7 @@ fn read_semantic_colors() -> crate::ThemeColors {
 ///
 /// Fonts are appearance-independent, so this only needs to be called once
 /// (not per-appearance).
-#[cfg(feature = "macos")]
+#[cfg(all(target_os = "macos", feature = "macos"))]
 fn read_fonts() -> crate::ThemeFonts {
     let system_size = unsafe { NSFont::systemFontSize() };
     let system_font = unsafe { NSFont::systemFontOfSize(system_size) };
@@ -105,7 +105,7 @@ fn read_fonts() -> crate::ThemeFonts {
 ///
 /// Values based on AppKit intrinsic content sizes and Apple Human Interface
 /// Guidelines for standard control dimensions.
-#[cfg_attr(not(feature = "macos"), allow(dead_code))]
+#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
 fn macos_widget_metrics() -> crate::model::widget_metrics::WidgetMetrics {
     use crate::model::widget_metrics::*;
 
@@ -175,7 +175,7 @@ fn macos_widget_metrics() -> crate::model::widget_metrics::WidgetMetrics {
 /// then constructs the complete NativeTheme. Both variants are always
 /// populated (unlike KDE/GNOME/Windows which populate only the active one),
 /// since macOS can resolve colors for both appearances.
-#[cfg_attr(not(feature = "macos"), allow(dead_code))]
+#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
 fn build_theme(
     light_colors: crate::ThemeColors,
     dark_colors: crate::ThemeColors,
@@ -214,7 +214,7 @@ fn build_theme(
 ///
 /// Returns `Error::Unavailable` if neither light nor dark appearance can be created
 /// (extremely unlikely on any macOS version that supports these APIs).
-#[cfg(feature = "macos")]
+#[cfg(all(target_os = "macos", feature = "macos"))]
 pub fn from_macos() -> crate::Result<crate::NativeTheme> {
     let light_name = NSString::from_str("NSAppearanceNameAqua");
     let dark_name = NSString::from_str("NSAppearanceNameDarkAqua");

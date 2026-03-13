@@ -75,9 +75,9 @@ macro_rules! impl_merge {
 
 pub mod color;
 pub mod error;
-#[cfg(feature = "portal")]
+#[cfg(all(target_os = "linux", feature = "portal"))]
 pub mod gnome;
-#[cfg(feature = "kde")]
+#[cfg(all(target_os = "linux", feature = "kde"))]
 pub mod kde;
 pub mod model;
 pub mod presets;
@@ -98,26 +98,26 @@ pub mod macos;
 pub mod rasterize;
 #[cfg(all(target_os = "macos", feature = "system-icons"))]
 pub mod sficons;
-#[cfg(feature = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows"))]
 pub mod windows;
 #[cfg(all(target_os = "windows", feature = "system-icons"))]
 pub mod winicons;
 
 #[cfg(all(target_os = "linux", feature = "system-icons"))]
 pub use freedesktop::{load_freedesktop_icon, load_freedesktop_icon_by_name};
-#[cfg(feature = "portal")]
+#[cfg(all(target_os = "linux", feature = "portal"))]
 pub use gnome::from_gnome;
-#[cfg(all(feature = "portal", feature = "kde"))]
+#[cfg(all(target_os = "linux", feature = "portal", feature = "kde"))]
 pub use gnome::from_kde_with_portal;
-#[cfg(feature = "kde")]
+#[cfg(all(target_os = "linux", feature = "kde"))]
 pub use kde::from_kde;
-#[cfg(feature = "macos")]
+#[cfg(all(target_os = "macos", feature = "macos"))]
 pub use macos::from_macos;
 #[cfg(feature = "svg-rasterize")]
 pub use rasterize::rasterize_svg;
 #[cfg(all(target_os = "macos", feature = "system-icons"))]
 pub use sficons::load_sf_icon;
-#[cfg(feature = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows"))]
 pub use windows::from_windows;
 #[cfg(all(target_os = "windows", feature = "system-icons"))]
 pub use winicons::load_windows_icon;

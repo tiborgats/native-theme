@@ -18,22 +18,16 @@ portal-tokio = ["portal", "ashpd/tokio"]
 portal-async-io = ["portal", "ashpd/async-io"]
 windows = ["dep:windows"]
 macos = ["dep:objc2", "dep:objc2-foundation", "dep:objc2-app-kit", "dep:block2"]
+linux = ["kde", "portal-tokio"]
+linux-async-io = ["kde", "portal-async-io"]
+native = ["linux", "macos", "windows"]
+native-async-io = ["linux-async-io", "macos", "windows"]
 material-icons = []    # Bundle Material Symbols SVGs as cross-platform fallback
 lucide-icons = []      # Bundle Lucide SVGs as optional icon set
 svg-rasterize = ["dep:resvg"]  # Optional SVG-to-RGBA rasterization via resvg
 system-icons = ["dep:freedesktop-icons", "dep:objc2-core-graphics", "material-icons"]  # Platform icon theme lookup with bundled fallback
 
 [dependencies]
-ashpd = { version = "0.13.5", optional = true, default-features = false, features = ["settings"] }
-configparser = { version = "3.1.0", optional = true }
-windows = { version = ">=0.59, <=0.62", optional = true, default-features = false, features = [
-    "UI_ViewManagement",
-    "Win32_UI_WindowsAndMessaging",
-    "Win32_UI_HiDpi",
-    "Win32_Graphics_Gdi",
-    "Win32_UI_Shell",
-    "Foundation_Metadata",
-] }
 resvg = { version = "0.47", optional = true, default-features = false }
 serde.workspace = true
 serde_with.workspace = true
@@ -54,7 +48,19 @@ objc2-core-graphics = { version = "0.3", optional = true, features = [
 ] }
 
 [target.'cfg(target_os = "linux")'.dependencies]
+ashpd = { version = "0.13.5", optional = true, default-features = false, features = ["settings"] }
+configparser = { version = "3.1.0", optional = true }
 freedesktop-icons = { version = "0.4", optional = true }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows = { version = ">=0.59, <=0.62", optional = true, default-features = false, features = [
+    "UI_ViewManagement",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_UI_HiDpi",
+    "Win32_Graphics_Gdi",
+    "Win32_UI_Shell",
+    "Foundation_Metadata",
+] }
 
 [dev-dependencies]
 serde_json = "1.0.149"
