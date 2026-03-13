@@ -4,8 +4,8 @@ milestone: v0.3
 milestone_name: Icons
 status: verified
 stopped_at: null
-last_updated: "2026-03-13T11:39:45Z"
-last_activity: "2026-03-13 — Quick task 1 complete: v0.3.1 feature flag simplification"
+last_updated: "2026-03-13T16:14:43Z"
+last_activity: "2026-03-13 — Completed quick task 2: Fix gpui icon color swap (red/blue) for colored SVG themes"
 progress:
   total_phases: 6
   completed_phases: 6
@@ -28,7 +28,7 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 Phase: 21 of 21 (Integration and Connectors) — verified ✓
 Plan: 3/3 complete
 Status: Phase 21 verified, milestone v0.3 complete
-Last activity: 2026-03-13 — Completed quick task 1: Implement docs/v0.3.1-feature-simplification.md
+Last activity: 2026-03-13 — Completed quick task 2: Fix gpui icon color swap (red/blue) for colored SVG themes
 
 Progress: [##########] 100%
 
@@ -73,6 +73,7 @@ None currently.
 | # | Description | Date | Commit | Directory |
 |---|-------------|------|--------|-----------|
 | 1 | Implement docs/v0.3.1-feature-simplification.md | 2026-03-13 | c78e8a3 | [1-implement-docs-v0-3-1-feature-simplifica](./quick/1-implement-docs-v0-3-1-feature-simplifica/) |
+| 2 | Fix gpui icon color swap (red/blue) for colored SVG themes | 2026-03-13 | 075de28 | [2-fix-gpui-icon-color-swap-red-blue-for-co](./quick/2-fix-gpui-icon-color-swap-red-blue-for-co/) |
 
 ## Session Continuity
 
