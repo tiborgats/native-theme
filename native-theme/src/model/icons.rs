@@ -403,7 +403,7 @@ pub fn system_icon_theme() -> String {
     #[cfg(target_os = "linux")]
     {
         CACHED_ICON_THEME
-            .get_or_init(|| detect_linux_icon_theme())
+            .get_or_init(detect_linux_icon_theme)
             .clone()
     }
 
