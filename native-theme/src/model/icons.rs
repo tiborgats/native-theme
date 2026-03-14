@@ -2,6 +2,8 @@
 //
 // These are the core icon types for the native-theme icon system.
 
+use std::sync::OnceLock;
+
 use serde::{Deserialize, Serialize};
 
 /// Semantic icon roles for cross-platform icon resolution.
@@ -385,6 +387,9 @@ pub fn system_icon_set() -> IconSet {
 /// // On macOS: "sf-symbols"
 /// ```
 pub fn system_icon_theme() -> String {
+    #[cfg(target_os = "linux")]
+    static CACHED_ICON_THEME: OnceLock<String> = OnceLock::new();
+
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     {
         return "sf-symbols".to_string();
@@ -397,7 +402,9 @@ pub fn system_icon_theme() -> String {
 
     #[cfg(target_os = "linux")]
     {
-        detect_linux_icon_theme()
+        CACHED_ICON_THEME
+            .get_or_init(|| detect_linux_icon_theme())
+            .clone()
     }
 
     #[cfg(not(any(

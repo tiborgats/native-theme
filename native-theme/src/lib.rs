@@ -165,6 +165,7 @@ pub fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
 ///
 /// Uses synchronous, platform-specific checks so the result is available
 /// immediately at window creation time (before any async portal response).
+/// The result is cached after the first call using `OnceLock`.
 ///
 /// # Fallback chain
 ///
@@ -175,6 +176,15 @@ pub fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
 /// 3. Returns `false` (light) if neither source is available.
 #[cfg(target_os = "linux")]
 pub fn system_is_dark() -> bool {
+    static CACHED_IS_DARK: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *CACHED_IS_DARK.get_or_init(detect_is_dark_inner)
+}
+
+/// Inner detection logic for [`system_is_dark()`].
+///
+/// Separated from the public function to allow caching via `OnceLock`.
+#[cfg(target_os = "linux")]
+fn detect_is_dark_inner() -> bool {
     // gsettings works across all modern DEs (GNOME, KDE, XFCE, …)
     if let Ok(output) = std::process::Command::new("gsettings")
         .args(["get", "org.gnome.desktop.interface", "color-scheme"])
