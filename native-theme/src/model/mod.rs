@@ -129,6 +129,7 @@ impl ThemeVariant {
 /// ```
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
 #[non_exhaustive]
+#[must_use = "constructing a theme without using it is likely a bug"]
 pub struct NativeTheme {
     /// Theme name (e.g., "Breeze", "Adwaita", "Windows 11").
     pub name: String,
@@ -179,6 +180,7 @@ impl NativeTheme {
     /// When `is_dark` is true, prefers `dark` and falls back to `light`.
     /// When `is_dark` is false, prefers `light` and falls back to `dark`.
     /// Returns `None` only if the theme has no variants at all.
+    #[must_use = "this returns the selected variant; it does not apply it"]
     pub fn pick_variant(&self, is_dark: bool) -> Option<&ThemeVariant> {
         if is_dark {
             self.dark.as_ref().or(self.light.as_ref())
@@ -205,6 +207,7 @@ impl NativeTheme {
     /// let theme = native_theme::NativeTheme::preset("default").unwrap();
     /// assert!(theme.light.is_some());
     /// ```
+    #[must_use = "this returns a theme preset; it does not apply it"]
     pub fn preset(name: &str) -> crate::Result<Self> {
         crate::presets::preset(name)
     }
@@ -304,6 +307,7 @@ impl NativeTheme {
     /// let theme = native_theme::NativeTheme::from_toml(toml).unwrap();
     /// assert_eq!(theme.name, "My Theme");
     /// ```
+    #[must_use = "this parses a TOML string into a theme; it does not apply it"]
     pub fn from_toml(toml_str: &str) -> crate::Result<Self> {
         crate::presets::from_toml(toml_str)
     }
@@ -317,6 +321,7 @@ impl NativeTheme {
     /// ```no_run
     /// let theme = native_theme::NativeTheme::from_file("my-theme.toml").unwrap();
     /// ```
+    #[must_use = "this loads a theme from a file; it does not apply it"]
     pub fn from_file(path: impl AsRef<std::path::Path>) -> crate::Result<Self> {
         crate::presets::from_file(path)
     }
@@ -328,6 +333,7 @@ impl NativeTheme {
     /// let names = native_theme::NativeTheme::list_presets();
     /// assert_eq!(names.len(), 17);
     /// ```
+    #[must_use = "this returns the list of preset names"]
     pub fn list_presets() -> &'static [&'static str] {
         crate::presets::list_presets()
     }
@@ -343,6 +349,7 @@ impl NativeTheme {
     /// let toml_str = theme.to_toml().unwrap();
     /// assert!(toml_str.contains("name = \"Default\""));
     /// ```
+    #[must_use = "this serializes the theme to TOML; it does not write to a file"]
     pub fn to_toml(&self) -> crate::Result<String> {
         crate::presets::to_toml(self)
     }

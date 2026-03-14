@@ -223,6 +223,7 @@ impl IconRole {
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
+#[must_use = "loading icon data without using it is likely a bug"]
 pub enum IconData {
     /// SVG content as raw bytes (from freedesktop themes, bundled icon sets).
     Svg(Vec<u8>),
@@ -348,6 +349,7 @@ pub fn icon_name(set: IconSet, role: IconRole) -> Option<&'static str> {
 /// let set = system_icon_set();
 /// // On Linux, this returns Freedesktop
 /// ```
+#[must_use = "this returns the current icon set for the platform"]
 pub fn system_icon_set() -> IconSet {
     if cfg!(any(target_os = "macos", target_os = "ios")) {
         IconSet::SfSymbols
@@ -386,6 +388,7 @@ pub fn system_icon_set() -> IconSet {
 /// // On a KDE system with Breeze Dark: "breeze-dark"
 /// // On macOS: "sf-symbols"
 /// ```
+#[must_use = "this returns the current icon theme name"]
 pub fn system_icon_theme() -> String {
     #[cfg(target_os = "linux")]
     static CACHED_ICON_THEME: OnceLock<String> = OnceLock::new();

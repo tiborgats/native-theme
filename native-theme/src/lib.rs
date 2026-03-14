@@ -175,6 +175,7 @@ pub fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
 /// 2. **(with `kde` feature)** `~/.config/kdeglobals` background luminance.
 /// 3. Returns `false` (light) if neither source is available.
 #[cfg(target_os = "linux")]
+#[must_use = "this returns whether the system uses dark mode"]
 pub fn system_is_dark() -> bool {
     static CACHED_IS_DARK: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     *CACHED_IS_DARK.get_or_init(detect_is_dark_inner)
@@ -263,6 +264,7 @@ fn from_linux() -> crate::Result<NativeTheme> {
 /// - `Error::Unsupported` if the platform has no reader or the required feature
 ///   is not enabled.
 /// - `Error::Unavailable` if the platform reader cannot access theme data.
+#[must_use = "this returns the detected theme; it does not apply it"]
 pub fn from_system() -> crate::Result<NativeTheme> {
     #[cfg(target_os = "macos")]
     {
@@ -303,6 +305,7 @@ pub fn from_system() -> crate::Result<NativeTheme> {
 ///
 /// On non-Linux platforms, behaves identically to [`from_system()`].
 #[cfg(target_os = "linux")]
+#[must_use = "this returns the detected theme; it does not apply it"]
 pub async fn from_system_async() -> crate::Result<NativeTheme> {
     let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
     match detect_linux_de(&desktop) {
@@ -356,6 +359,7 @@ pub async fn from_system_async() -> crate::Result<NativeTheme> {
 ///
 /// On non-Linux platforms, this is equivalent to calling [`from_system()`].
 #[cfg(not(target_os = "linux"))]
+#[must_use = "this returns the detected theme; it does not apply it"]
 pub async fn from_system_async() -> crate::Result<NativeTheme> {
     from_system()
 }
@@ -386,6 +390,7 @@ pub async fn from_system_async() -> crate::Result<NativeTheme> {
 /// assert!(icon.is_some());
 /// # }
 /// ```
+#[must_use = "this returns the loaded icon data; it does not display it"]
 #[allow(unreachable_patterns, clippy::needless_return, unused_variables)]
 pub fn load_icon(role: IconRole, icon_set: &str) -> Option<IconData> {
     let set = IconSet::from_name(icon_set).unwrap_or_else(system_icon_set);
