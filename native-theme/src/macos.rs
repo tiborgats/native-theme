@@ -117,7 +117,7 @@ fn read_fonts() -> crate::ThemeFonts {
     let system_size = unsafe { NSFont::systemFontSize() };
     let system_font = unsafe { NSFont::systemFontOfSize(system_size) };
     let mono_font =
-        unsafe { NSFont::monospacedSystemFontOfSize_weight(system_size, *NSFontWeightRegular) };
+        unsafe { NSFont::monospacedSystemFontOfSize_weight(system_size, NSFontWeightRegular) };
 
     crate::ThemeFonts {
         family: system_font.familyName().map(|n| n.to_string()),
@@ -256,10 +256,12 @@ pub fn from_macos() -> crate::Result<crate::NativeTheme> {
 
     let light_colors = if let Some(app) = &light_appearance {
         let colors = std::cell::RefCell::new(crate::ThemeColors::default());
-        let block = RcBlock::new(|| {
-            *colors.borrow_mut() = read_semantic_colors();
-        });
-        app.performAsCurrentDrawingAppearance(&block);
+        {
+            let block = RcBlock::new(|| {
+                *colors.borrow_mut() = read_semantic_colors();
+            });
+            app.performAsCurrentDrawingAppearance(&block);
+        }
         colors.into_inner()
     } else {
         crate::ThemeColors::default()
@@ -267,10 +269,12 @@ pub fn from_macos() -> crate::Result<crate::NativeTheme> {
 
     let dark_colors = if let Some(app) = &dark_appearance {
         let colors = std::cell::RefCell::new(crate::ThemeColors::default());
-        let block = RcBlock::new(|| {
-            *colors.borrow_mut() = read_semantic_colors();
-        });
-        app.performAsCurrentDrawingAppearance(&block);
+        {
+            let block = RcBlock::new(|| {
+                *colors.borrow_mut() = read_semantic_colors();
+            });
+            app.performAsCurrentDrawingAppearance(&block);
+        }
         colors.into_inner()
     } else {
         crate::ThemeColors::default()
