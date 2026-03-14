@@ -1381,8 +1381,8 @@ mod tests {
     // === system_icon_set() tests ===
 
     #[test]
+    #[cfg(target_os = "linux")]
     fn system_icon_set_returns_freedesktop_on_linux() {
-        // This test is only meaningful on Linux (our CI/test platform)
         assert_eq!(system_icon_set(), IconSet::Freedesktop);
     }
 

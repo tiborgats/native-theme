@@ -74,6 +74,9 @@ jobs:
           - { name: "gpui connector", package: "native-theme-gpui" }
     steps:
       - uses: actions/checkout@v4
+      - name: Install system dependencies (gpui)
+        if: matrix.package == 'native-theme-gpui'
+        run: sudo apt-get update && sudo apt-get install -y libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test -p ${{ matrix.package }}
@@ -95,6 +98,7 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       issues: write
+      checks: write
     steps:
       - uses: actions/checkout@v4
       - uses: rustsec/audit-check@v2

@@ -71,8 +71,6 @@ pub(crate) fn breeze_widget_metrics() -> WidgetMetrics {
 
 #[cfg(test)]
 mod tests {
-    use crate::model::widget_metrics::*;
-
     #[test]
     fn breeze_metrics_not_empty() {
         let wm = super::breeze_widget_metrics();
