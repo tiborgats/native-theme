@@ -17,6 +17,13 @@
 .syncthing*
 ~syncthing~*
 
+# AI/tool configuration
+.claude/
+.codex/
+.gemini/
+.opencode/
+.planning/
+
 # OS generated files
 .DS_Store
 .DS_Store?
