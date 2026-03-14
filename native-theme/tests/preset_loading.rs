@@ -9,7 +9,7 @@ use native_theme::NativeTheme;
 #[test]
 fn all_presets_parse_without_error() {
     for name in NativeTheme::list_presets() {
-        NativeTheme::preset(name)
+        let _theme = NativeTheme::preset(name)
             .unwrap_or_else(|e| panic!("preset '{name}' failed to parse: {e}"));
     }
 }
