@@ -1,17 +1,17 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.3
-milestone_name: Icons
+milestone: v0.1
+milestone_name: milestone
 status: executing
-stopped_at: null
-last_updated: "2026-03-14T03:56:16Z"
-last_activity: "2026-03-14 — Completed 01-01: OnceLock caching and pick_variant API consolidation"
+stopped_at: Completed 01-03-PLAN.md (Docs and script improvements)
+last_updated: "2026-03-14T04:01:39Z"
+last_activity: "2026-03-14 — Completed 01-03: Documentation and script improvements"
 progress:
-  total_phases: 6
-  completed_phases: 6
-  total_plans: 11
-  completed_plans: 11
-  percent: 100
+  total_phases: 2
+  completed_phases: 1
+  total_plans: 6
+  completed_plans: 5
+  percent: 33
 ---
 
 # Project State
@@ -26,18 +26,18 @@ See: .planning/PROJECT.md (updated 2026-03-09)
 ## Current Position
 
 Phase: 01-v0-3-2-quality-improvements
-Plan: 1/3 complete
-Status: Executing phase 01 quality improvements
-Last activity: 2026-03-14 — Completed 01-01: OnceLock caching and pick_variant API consolidation
+Plan: 3/3 complete
+Status: Phase 01 complete
+Last activity: 2026-03-14 — Completed 01-03: Documentation and script improvements
 
-Progress: [###-------] 33%
+Progress: [##########] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 45 (14 v0.1 + 20 v0.2 + 10 v0.3 + 1 v0.3.2)
+- Total plans completed: 47 (14 v0.1 + 20 v0.2 + 10 v0.3 + 3 v0.3.2)
 - Average duration: ~4.1min (v0.2), 3.7min (v0.3)
-- Total execution time: 70min (v0.2), 37min (v0.3), 4min (v0.3.2)
+- Total execution time: 70min (v0.2), 37min (v0.3), 10min (v0.3.2)
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
@@ -53,6 +53,7 @@ Progress: [###-------] 33%
 | 21-03 | Iced icon conversion helpers | 2min | 1 | 2 |
 | quick-01 | v0.3.1 feature flag simplification | 5min | 2 | 4 |
 | 01-01 | OnceLock caching + pick_variant API | 4min | 2 | 5 |
+| 01-03 | Docs and script improvements | 2min | 2 | 2 |
 
 ## Accumulated Context
 
@@ -62,6 +63,7 @@ All v0.1/v0.2/v0.3 decisions logged in PROJECT.md Key Decisions table.
 - Quick-01: Combine target_os + feature in cfg gates so meta-features compile on all platforms
 - 01-01: Used static OnceLock inside function body for Linux-only caching to keep cfg gating clean
 - 01-01: Extracted detect_is_dark_inner as private helper to separate caching from detection
+- 01-03: Used double dashes in Rust comments for ASCII compatibility
 
 ### Pending Todos
 
@@ -84,6 +86,6 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-14T03:56:16Z
-Stopped at: Completed 01-01-PLAN.md (OnceLock caching + pick_variant)
+Last session: 2026-03-14T04:01:39Z
+Stopped at: Completed 01-03-PLAN.md (Docs and script improvements)
 Resume file: None
