@@ -13,11 +13,11 @@
 //!
 //! ```ignore
 //! use native_theme::NativeTheme;
-//! use native_theme_gpui::{pick_variant, to_theme};
+//! use native_theme_gpui::to_theme;
 //!
 //! let nt = NativeTheme::preset("default").unwrap();
-//! let variant = pick_variant(&nt, false).unwrap();
-//! let theme = to_theme(variant, "Default");
+//! let variant = nt.pick_variant(false).unwrap();
+//! let theme = to_theme(variant, "Default", false);
 //! ```
 
 pub mod colors;
@@ -32,12 +32,10 @@ use native_theme::{NativeTheme, ThemeVariant};
 ///
 /// If `is_dark` is true, returns the dark variant (falling back to light).
 /// If `is_dark` is false, returns the light variant (falling back to dark).
+#[deprecated(since = "0.3.2", note = "Use NativeTheme::pick_variant() instead")]
+#[allow(deprecated)]
 pub fn pick_variant(theme: &NativeTheme, is_dark: bool) -> Option<&ThemeVariant> {
-    if is_dark {
-        theme.dark.as_ref().or(theme.light.as_ref())
-    } else {
-        theme.light.as_ref().or(theme.dark.as_ref())
-    }
+    theme.pick_variant(is_dark)
 }
 
 /// Convert a [`ThemeVariant`] into a gpui-component [`Theme`].
@@ -66,6 +64,7 @@ pub fn to_theme(variant: &ThemeVariant, name: &str, is_dark: bool) -> Theme {
 }
 
 #[cfg(test)]
+#[allow(deprecated)]
 mod tests {
     use super::*;
     use native_theme::Rgba;

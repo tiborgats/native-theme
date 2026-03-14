@@ -174,6 +174,19 @@ impl NativeTheme {
         }
     }
 
+    /// Pick the appropriate variant for the given mode, with cross-fallback.
+    ///
+    /// When `is_dark` is true, prefers `dark` and falls back to `light`.
+    /// When `is_dark` is false, prefers `light` and falls back to `dark`.
+    /// Returns `None` only if the theme has no variants at all.
+    pub fn pick_variant(&self, is_dark: bool) -> Option<&ThemeVariant> {
+        if is_dark {
+            self.dark.as_ref().or(self.light.as_ref())
+        } else {
+            self.light.as_ref().or(self.dark.as_ref())
+        }
+    }
+
     /// Returns true if the theme has no variants set.
     pub fn is_empty(&self) -> bool {
         self.light.is_none() && self.dark.is_none()

@@ -17,10 +17,10 @@
 //!
 //! ```rust
 //! use native_theme::NativeTheme;
-//! use native_theme_iced::{pick_variant, to_theme};
+//! use native_theme_iced::to_theme;
 //!
 //! let nt = NativeTheme::preset("default").unwrap();
-//! if let Some(variant) = pick_variant(&nt, false) {
+//! if let Some(variant) = nt.pick_variant(false) {
 //!     let theme = to_theme(variant, "My App");
 //!     // Use `theme` as your iced application theme
 //! }
@@ -36,15 +36,13 @@ pub mod palette;
 /// When `is_dark` is false, prefers `theme.light` and falls back to `theme.dark`.
 ///
 /// Returns `None` only if the theme has no variants at all.
+#[deprecated(since = "0.3.2", note = "Use NativeTheme::pick_variant() instead")]
+#[allow(deprecated)]
 pub fn pick_variant(
     theme: &native_theme::NativeTheme,
     is_dark: bool,
 ) -> Option<&native_theme::ThemeVariant> {
-    if is_dark {
-        theme.dark.as_ref().or(theme.light.as_ref())
-    } else {
-        theme.light.as_ref().or(theme.dark.as_ref())
-    }
+    theme.pick_variant(is_dark)
 }
 
 /// Create an iced [`iced_core::theme::Theme`] from a [`native_theme::ThemeVariant`].
@@ -154,6 +152,7 @@ pub fn mono_font_size(variant: &native_theme::ThemeVariant) -> Option<f32> {
 }
 
 #[cfg(test)]
+#[allow(deprecated)]
 mod tests {
     use super::*;
     use native_theme::{NativeTheme, Rgba, ThemeVariant};
