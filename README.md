@@ -2,28 +2,30 @@
 
 Cross-platform native theme detection and loading for Rust GUI applications.
 
+[![Crates.io](https://img.shields.io/crates/v/native-theme.svg)](https://crates.io/crates/native-theme)
 [![License: MIT OR Apache-2.0 OR 0BSD](https://img.shields.io/badge/license-MIT%20%7C%20Apache--2.0%20%7C%200BSD-blue.svg)](#license)
+[![MSRV: 1.85.0](https://img.shields.io/badge/MSRV-1.85.0-blue.svg)](https://blog.rust-lang.org/2025/02/20/Rust-1.85.0.html)
 
-## Overview
-
-**native-theme** provides a toolkit-agnostic theme data model with 36 semantic
-color roles, bundled TOML presets, and optional OS theme reading.
+A toolkit-agnostic theme data model with 36 semantic color roles, 17 bundled
+TOML presets (light + dark), and optional OS theme readers for Linux, macOS,
+and Windows.
 
 | Crate | Description |
 |-------|-------------|
 | [`native-theme`](native-theme/) | Core theme model, presets, and platform readers |
-| [`native-theme-iced`](connectors/native-theme-iced/) | [iced](https://iced.rs) toolkit connector |
-| [`native-theme-gpui`](connectors/native-theme-gpui/) | [gpui](https://gpui.rs) + gpui-component toolkit connector |
+| [`native-theme-gpui`](connectors/native-theme-gpui/) | [gpui](https://gpui.rs) + [gpui-component](https://crates.io/crates/gpui-component) connector |
+| [`native-theme-iced`](connectors/native-theme-iced/) | [iced](https://iced.rs) connector |
 
 ## Quick Start
 
-```sh
-cargo add native-theme
+```toml
+[dependencies]
+native-theme = "0.3.1"
 ```
 
 Load a bundled preset:
 
-```rust,ignore
+```rust
 use native_theme::NativeTheme;
 
 let theme = NativeTheme::preset("dracula").unwrap();
@@ -32,17 +34,18 @@ let accent = dark.colors.accent.unwrap();
 let [r, g, b, a] = accent.to_f32_array();
 ```
 
-Read the current OS theme at runtime:
+Read the OS theme at runtime:
 
-```rust,ignore
+```rust
 use native_theme::{from_system, NativeTheme};
 
-let theme = from_system().unwrap_or_else(|_| NativeTheme::preset("default").unwrap());
+let theme = from_system()
+    .unwrap_or_else(|_| NativeTheme::preset("default").unwrap());
 ```
 
 Layer user overrides on top of a preset:
 
-```rust,ignore
+```rust
 use native_theme::NativeTheme;
 
 let mut theme = NativeTheme::preset("nord").unwrap();
@@ -56,13 +59,41 @@ theme.merge(&overrides);
 
 ## Toolkit Connectors
 
-### iced
+### gpui
 
-```sh
-cargo add native-theme-iced
+```toml
+[dependencies]
+native-theme = "0.3"
+native-theme-gpui = "0.3"
 ```
 
-```rust,ignore
+```rust
+use native_theme::NativeTheme;
+use native_theme_gpui::{pick_variant, to_theme};
+
+let nt = NativeTheme::preset("dracula").unwrap();
+let is_dark = true;
+if let Some(variant) = pick_variant(&nt, is_dark) {
+    let theme = to_theme(variant, "My App", is_dark);
+    // Use as your gpui-component theme
+}
+```
+
+Run the gpui showcase (full widget gallery with color map inspector):
+
+```sh
+cargo run -p native-theme-gpui --example showcase
+```
+
+### iced
+
+```toml
+[dependencies]
+native-theme = "0.3"
+native-theme-iced = "0.3"
+```
+
+```rust
 use native_theme::NativeTheme;
 use native_theme_iced::{pick_variant, to_theme};
 
@@ -73,32 +104,37 @@ if let Some(variant) = pick_variant(&nt, true) {
 }
 ```
 
-### gpui
+Run the iced demo (sidebar widget gallery with live theme switching):
 
-The `native-theme-gpui` connector maps to gpui-component's `Theme` type.
-See [connectors/native-theme-gpui](connectors/native-theme-gpui/) for details.
+```sh
+cargo run -p native-theme-iced --example demo
+```
 
 ### Other toolkits
 
 Map `NativeTheme` fields to your toolkit's types directly. All color, font,
 geometry, and spacing fields are public `Option<T>` values. See the
-[crate documentation](https://docs.rs/native-theme) for the full API.
+[API docs](https://docs.rs/native-theme) for details.
 
 ## Platform Support
 
 | Platform | Reader | Feature |
 |----------|--------|---------|
 | Linux (KDE) | `from_kde()` | `kde` |
-| Linux (GNOME) | `from_gnome()` | `portal-tokio` or `portal-async-io` |
+| Linux (GNOME/GTK) | `from_gnome()` | `portal-tokio` or `portal-async-io` |
 | macOS | `from_macos()` | `macos` |
 | Windows | `from_windows()` | `windows` |
 
-`from_system()` auto-detects the platform and returns the appropriate theme,
-falling back to bundled presets when a platform reader is unavailable.
+`from_system()` auto-detects the platform and desktop environment via
+`XDG_CURRENT_DESKTOP`, falling back to bundled presets when a reader is
+unavailable. GTK-based desktops (GNOME, XFCE, Cinnamon, MATE, Budgie, LXQt)
+are all handled by the portal reader.
 
 ## Feature Flags
 
-**Recommended:** Most apps just need one feature:
+No features are enabled by default. The preset API works without any features.
+
+**Most apps just need one feature:**
 
 ```toml
 [dependencies]
@@ -107,51 +143,39 @@ native-theme = { version = "0.3", features = ["native"] }
 
 ### Meta-features
 
-| Feature | What it enables |
-|---------|-----------------|
-| `native` | Full native support on all platforms (tokio async runtime) |
-| `native-async-io` | Same, but uses async-io instead of tokio |
-| `linux` | Full Linux support: KDE + GNOME portal (tokio) |
-| `linux-async-io` | Full Linux support: KDE + GNOME portal (async-io) |
+| Feature | Enables |
+|---------|---------|
+| `native` | All platform readers (tokio async runtime) |
+| `native-async-io` | All platform readers (async-io runtime) |
+| `linux` | KDE + GNOME portal (tokio) |
+| `linux-async-io` | KDE + GNOME portal (async-io) |
 
-All OS-specific dependencies are target-gated, so enabling `native` on macOS
-only compiles macOS deps, not Linux or Windows deps.
+OS-specific dependencies are target-gated, so `native` on macOS only compiles
+macOS deps.
 
 ### Individual features
 
-| Feature | Description | Platform |
-|---------|-------------|----------|
-| `kde` | Sync KDE theme reader (`~/.config/kdeglobals`) | Linux |
-| `portal-tokio` | GNOME portal reader with tokio backend | Linux |
-| `portal-async-io` | GNOME portal reader with async-io backend | Linux |
-| `macos` | macOS theme reader (NSAppearance) | macOS |
-| `windows` | Windows theme reader (UISettings + system metrics) | Windows |
-| `system-icons` | Platform icon theme lookup with bundled fallback | All |
-| `material-icons` | Bundle Material Symbols SVGs | All |
-| `lucide-icons` | Bundle Lucide SVGs | All |
-| `svg-rasterize` | SVG-to-RGBA rasterization via resvg | All |
+| Feature | Description |
+|---------|-------------|
+| `kde` | KDE theme reader (`~/.config/kdeglobals`) |
+| `portal-tokio` | GNOME portal reader (tokio) |
+| `portal-async-io` | GNOME portal reader (async-io) |
+| `macos` | macOS reader (NSAppearance) |
+| `windows` | Windows reader (UISettings) |
+| `system-icons` | Platform icon theme lookup with bundled fallback |
+| `material-icons` | Bundle Material Symbols SVGs |
+| `lucide-icons` | Bundle Lucide SVGs |
+| `svg-rasterize` | SVG-to-RGBA rasterization via resvg |
 
-No features are enabled by default. The preset API works without any features.
-
-### Which Linux DEs are supported?
-
-`from_system()` auto-detects the desktop environment via `XDG_CURRENT_DESKTOP`.
-GNOME, XFCE, Cinnamon, MATE, Budgie, and LXQt all use GTK themes and are
-handled by the Adwaita preset (sync) or the portal reader (async). Only KDE
-needs a separate reader because it uses INI-style config files. You do not need
-a separate feature flag per desktop environment.
-
-## Available Presets
+## Presets
 
 17 bundled presets, each with light and dark variants:
 
-**Core:** `default`, `adwaita`, `kde-breeze`
-
-**Platform:** `windows-11`, `macos-sonoma`, `material`, `ios`
-
-**Community:** `catppuccin-latte`, `catppuccin-frappe`, `catppuccin-macchiato`,
-`catppuccin-mocha`, `nord`, `dracula`, `gruvbox`, `solarized`, `tokyo-night`,
-`one-dark`
+| Category | Presets |
+|----------|--------|
+| Core | `default`, `adwaita`, `kde-breeze` |
+| Platform | `windows-11`, `macos-sonoma`, `material`, `ios` |
+| Community | `catppuccin-latte`, `catppuccin-frappe`, `catppuccin-macchiato`, `catppuccin-mocha`, `nord`, `dracula`, `gruvbox`, `solarized`, `tokyo-night`, `one-dark` |
 
 ## License
 
@@ -165,4 +189,4 @@ at your option.
 
 Unless you explicitly state otherwise, any contribution intentionally submitted
 for inclusion in the work by you, as defined in the Apache-2.0 license, shall
-be dual licensed as above, without any additional terms or conditions.
+be triple licensed as above, without any additional terms or conditions.

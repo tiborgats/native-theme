@@ -179,15 +179,14 @@ pub fn system_is_dark() -> bool {
     if let Ok(output) = std::process::Command::new("gsettings")
         .args(["get", "org.gnome.desktop.interface", "color-scheme"])
         .output()
+        && output.status.success()
     {
-        if output.status.success() {
-            let val = String::from_utf8_lossy(&output.stdout);
-            if val.contains("prefer-dark") {
-                return true;
-            }
-            if val.contains("prefer-light") || val.contains("default") {
-                return false;
-            }
+        let val = String::from_utf8_lossy(&output.stdout);
+        if val.contains("prefer-dark") {
+            return true;
+        }
+        if val.contains("prefer-light") || val.contains("default") {
+            return false;
         }
     }
 

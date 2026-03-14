@@ -61,12 +61,11 @@ fn find_icon(name: &str, theme: &str, size: u16) -> Option<PathBuf> {
 pub fn load_freedesktop_icon(role: IconRole) -> Option<IconData> {
     let theme = detect_theme();
 
-    if let Some(name) = icon_name(IconSet::Freedesktop, role) {
-        if let Some(path) = find_icon(name, &theme, 24) {
-            if let Ok(bytes) = std::fs::read(&path) {
-                return Some(IconData::Svg(bytes));
-            }
-        }
+    if let Some(name) = icon_name(IconSet::Freedesktop, role)
+        && let Some(path) = find_icon(name, &theme, 24)
+        && let Ok(bytes) = std::fs::read(&path)
+    {
+        return Some(IconData::Svg(bytes));
     }
 
     // Bundled Material SVG fallback

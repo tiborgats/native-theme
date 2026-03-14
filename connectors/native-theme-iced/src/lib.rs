@@ -127,6 +127,32 @@ pub fn scrollbar_width(variant: &native_theme::ThemeVariant) -> f32 {
         .unwrap_or(10.0)
 }
 
+/// Returns the primary UI font family name from the theme variant.
+pub fn font_family(variant: &native_theme::ThemeVariant) -> Option<&str> {
+    variant.fonts.family.as_deref()
+}
+
+/// Returns the primary UI font size in pixels from the theme variant.
+///
+/// Native-theme stores font sizes in points; this converts to pixels
+/// using the standard 96 DPI factor (`pt * 96.0 / 72.0`).
+pub fn font_size(variant: &native_theme::ThemeVariant) -> Option<f32> {
+    variant.fonts.size.map(|pt| pt * (96.0 / 72.0))
+}
+
+/// Returns the monospace font family name from the theme variant.
+pub fn mono_font_family(variant: &native_theme::ThemeVariant) -> Option<&str> {
+    variant.fonts.mono_family.as_deref()
+}
+
+/// Returns the monospace font size in pixels from the theme variant.
+///
+/// Native-theme stores font sizes in points; this converts to pixels
+/// using the standard 96 DPI factor (`pt * 96.0 / 72.0`).
+pub fn mono_font_size(variant: &native_theme::ThemeVariant) -> Option<f32> {
+    variant.fonts.mono_size.map(|pt| pt * (96.0 / 72.0))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -311,5 +337,53 @@ mod tests {
     fn input_padding_returns_none_without_metrics() {
         let variant = ThemeVariant::default();
         assert!(input_padding(&variant).is_none());
+    }
+
+    // === Font helper tests ===
+
+    #[test]
+    fn font_family_returns_value() {
+        let mut variant = ThemeVariant::default();
+        variant.fonts.family = Some("Inter".into());
+        assert_eq!(font_family(&variant), Some("Inter"));
+    }
+
+    #[test]
+    fn font_family_returns_none_when_unset() {
+        let variant = ThemeVariant::default();
+        assert!(font_family(&variant).is_none());
+    }
+
+    #[test]
+    fn font_size_converts_points_to_pixels() {
+        let mut variant = ThemeVariant::default();
+        variant.fonts.size = Some(12.0);
+        let px = font_size(&variant).unwrap();
+        assert!((px - 16.0).abs() < 0.01, "12pt should be 16px, got {px}");
+    }
+
+    #[test]
+    fn font_size_returns_none_when_unset() {
+        let variant = ThemeVariant::default();
+        assert!(font_size(&variant).is_none());
+    }
+
+    #[test]
+    fn mono_font_family_returns_value() {
+        let mut variant = ThemeVariant::default();
+        variant.fonts.mono_family = Some("JetBrains Mono".into());
+        assert_eq!(mono_font_family(&variant), Some("JetBrains Mono"));
+    }
+
+    #[test]
+    fn mono_font_size_converts_points_to_pixels() {
+        let mut variant = ThemeVariant::default();
+        variant.fonts.mono_size = Some(10.0);
+        let px = mono_font_size(&variant).unwrap();
+        let expected = 10.0 * (96.0 / 72.0);
+        assert!(
+            (px - expected).abs() < 0.01,
+            "10pt should be {expected}px, got {px}"
+        );
     }
 }

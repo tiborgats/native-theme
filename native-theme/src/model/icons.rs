@@ -516,10 +516,10 @@ fn detect_lxqt_icon_theme() -> String {
 /// Resolve `$XDG_CONFIG_HOME`, falling back to `$HOME/.config`.
 #[cfg(target_os = "linux")]
 fn xdg_config_dir() -> std::path::PathBuf {
-    if let Ok(config_home) = std::env::var("XDG_CONFIG_HOME") {
-        if !config_home.is_empty() {
-            return std::path::PathBuf::from(config_home);
-        }
+    if let Ok(config_home) = std::env::var("XDG_CONFIG_HOME")
+        && !config_home.is_empty()
+    {
+        return std::path::PathBuf::from(config_home);
     }
     std::env::var("HOME")
         .map(std::path::PathBuf::from)
@@ -544,14 +544,12 @@ fn read_ini_value(path: &std::path::Path, section: &str, key: &str) -> Option<St
             in_section = trimmed == target_section;
             continue;
         }
-        if in_section {
-            if let Some(value) = trimmed.strip_prefix(key) {
-                let value = value.trim_start();
-                if let Some(value) = value.strip_prefix('=') {
-                    let value = value.trim();
-                    if !value.is_empty() {
-                        return Some(value.to_string());
-                    }
+        if in_section && let Some(value) = trimmed.strip_prefix(key) {
+            let value = value.trim_start();
+            if let Some(value) = value.strip_prefix('=') {
+                let value = value.trim();
+                if !value.is_empty() {
+                    return Some(value.to_string());
                 }
             }
         }
