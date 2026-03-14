@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v0.3
 milestone_name: Icons
-status: verified
+status: executing
 stopped_at: null
-last_updated: "2026-03-13T16:14:43Z"
-last_activity: "2026-03-13 — Completed quick task 2: Fix gpui icon color swap (red/blue) for colored SVG themes"
+last_updated: "2026-03-14T03:56:16Z"
+last_activity: "2026-03-14 — Completed 01-01: OnceLock caching and pick_variant API consolidation"
 progress:
   total_phases: 6
   completed_phases: 6
-  total_plans: 10
-  completed_plans: 10
+  total_plans: 11
+  completed_plans: 11
   percent: 100
 ---
 
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-09)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** No active milestone — start next with /gsd:new-milestone
+**Current focus:** v0.3.2 quality improvements
 
 ## Current Position
 
-Phase: 21 of 21 (Integration and Connectors) — verified ✓
-Plan: 3/3 complete
-Status: Phase 21 verified, milestone v0.3 complete
-Last activity: 2026-03-13 — Completed quick task 2: Fix gpui icon color swap (red/blue) for colored SVG themes
+Phase: 01-v0-3-2-quality-improvements
+Plan: 1/3 complete
+Status: Executing phase 01 quality improvements
+Last activity: 2026-03-14 — Completed 01-01: OnceLock caching and pick_variant API consolidation
 
-Progress: [##########] 100%
+Progress: [###-------] 33%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 44 (14 v0.1 + 20 v0.2 + 10 v0.3)
+- Total plans completed: 45 (14 v0.1 + 20 v0.2 + 10 v0.3 + 1 v0.3.2)
 - Average duration: ~4.1min (v0.2), 3.7min (v0.3)
-- Total execution time: 70min (v0.2), 37min (v0.3)
+- Total execution time: 70min (v0.2), 37min (v0.3), 4min (v0.3.2)
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
@@ -52,6 +52,7 @@ Progress: [##########] 100%
 | 21-02 | gpui icon_name + to_image_source | 6min | 2 | 3 |
 | 21-03 | Iced icon conversion helpers | 2min | 1 | 2 |
 | quick-01 | v0.3.1 feature flag simplification | 5min | 2 | 4 |
+| 01-01 | OnceLock caching + pick_variant API | 4min | 2 | 5 |
 
 ## Accumulated Context
 
@@ -59,6 +60,8 @@ Progress: [##########] 100%
 
 All v0.1/v0.2/v0.3 decisions logged in PROJECT.md Key Decisions table.
 - Quick-01: Combine target_os + feature in cfg gates so meta-features compile on all platforms
+- 01-01: Used static OnceLock inside function body for Linux-only caching to keep cfg gating clean
+- 01-01: Extracted detect_is_dark_inner as private helper to separate caching from detection
 
 ### Pending Todos
 
@@ -81,6 +84,6 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-13T11:39:45Z
-Stopped at: Completed quick task 1 (v0.3.1 feature flag simplification)
+Last session: 2026-03-14T03:56:16Z
+Stopped at: Completed 01-01-PLAN.md (OnceLock caching + pick_variant)
 Resume file: None
