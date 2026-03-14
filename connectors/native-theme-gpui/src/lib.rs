@@ -53,10 +53,12 @@ pub fn to_theme(variant: &ThemeVariant, name: &str, is_dark: bool) -> Theme {
     };
     let theme_config = config::to_theme_config(variant, name, mode);
 
-    // Create a base Theme from the ThemeColor, then apply config overrides.
-    // Note: apply_config sets fonts/radius/shadow/mode but also overwrites all
-    // color fields with gpui-component defaults (since ThemeConfig.colors is empty).
-    // We must restore our mapped colors afterwards.
+    // gpui-component's `apply_config` sets non-color fields we need: font_family,
+    // font_size, radius, shadow, mode, light_theme/dark_theme Rc, and highlight_theme.
+    // However, `ThemeColor::apply_config` (called internally) overwrites ALL color
+    // fields with defaults, since our ThemeConfig has no explicit color overrides.
+    // We restore our carefully-mapped colors after. This is a known gpui-component
+    // API limitation -- there is no way to apply only non-color config fields.
     let mut theme = Theme::from(&theme_color);
     theme.apply_config(&theme_config.into());
     theme.colors = theme_color;
