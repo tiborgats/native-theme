@@ -54,3 +54,14 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 ## Phase Details
 
 Phase details for completed milestones are archived in `.planning/milestones/`.
+
+### Phase 1: v0.3.2 quality improvements
+
+**Goal:** Code quality, performance, and API hygiene improvements -- OnceLock caching, #[must_use] annotations, pick_variant consolidation, dead code removal, documentation, and tooling fixes
+**Depends on:** Phase 0
+**Plans:** 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — OnceLock caching for system detection + pick_variant method consolidation
+- [ ] 01-02-PLAN.md — #[must_use] annotations, dead wrapper removal, colorize_svg docs
+- [ ] 01-03-PLAN.md — to_theme round-trip comment + pre-release-check.sh jq migration
