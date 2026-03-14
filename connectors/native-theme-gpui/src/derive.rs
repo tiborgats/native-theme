@@ -67,5 +67,4 @@ mod tests {
             light_result.l
         );
     }
-
 }

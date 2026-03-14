@@ -352,7 +352,8 @@ impl Default for State {
         let nt = NativeTheme::preset(preset_name).expect("default preset must exist");
         let color_mode = ColorMode::System;
         let is_dark = color_mode.is_dark();
-        let variant = native_theme_iced::pick_variant(&nt, is_dark)
+        let variant = nt
+            .pick_variant(is_dark)
             .expect("must have a variant")
             .clone();
         let theme = native_theme_iced::to_theme(&variant, &nt.name);
@@ -413,7 +414,7 @@ impl State {
             ThemeChoice::Preset(name) => NativeTheme::preset(name).unwrap(),
         };
         self.is_dark = self.color_mode.is_dark();
-        if let Some(variant) = native_theme_iced::pick_variant(&nt, self.is_dark) {
+        if let Some(variant) = nt.pick_variant(self.is_dark) {
             self.current_variant = variant.clone();
             self.current_theme = native_theme_iced::to_theme(variant, &nt.name);
         }

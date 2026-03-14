@@ -128,9 +128,9 @@ if command -v jq &>/dev/null; then
     WORKSPACE_CRATES=$(cargo metadata --no-deps --format-version 1 2>/dev/null \
         | jq -r '.packages[].name')
 else
-    # Pure-bash fallback: cargo metadata outputs compact JSON (no spaces around colons)
+    # Fallback: extract crate names from workspace_members package IDs (format: path+file:///.../name#version)
     WORKSPACE_CRATES=$(cargo metadata --no-deps --format-version 1 2>/dev/null \
-        | grep -o '"name":"[^"]*"' | sed 's/"name":"//;s/"//')
+        | grep -oP '"workspace_members":\[[^\]]*\]' | grep -oP '[^/]+(?=#)')
 fi
 
 # Run cargo check on each crate individually (avoids cross-crate feature unification bugs)

@@ -74,7 +74,7 @@ use native_theme_gpui::icons::{
     lucide_name_for_gpui_icon, material_name_for_gpui_icon, to_image_source,
     to_image_source_colored,
 };
-use native_theme_gpui::{pick_variant, to_theme};
+use native_theme_gpui::to_theme;
 
 // ---------------------------------------------------------------------------
 // Tab indices
@@ -997,11 +997,12 @@ impl Showcase {
         // Apply the initial "default" preset theme.
         let is_dark = color_mode.is_dark();
         let nt = NativeTheme::preset("default").expect("default preset must exist");
-        let original_fonts = pick_variant(&nt, is_dark)
+        let original_fonts = nt
+            .pick_variant(is_dark)
             .map(|v| v.fonts.clone())
             .unwrap_or_default();
-        let current_variant_icon_set = pick_variant(&nt, is_dark).and_then(|v| v.icon_set.clone());
-        if let Some(variant) = pick_variant(&nt, is_dark) {
+        let current_variant_icon_set = nt.pick_variant(is_dark).and_then(|v| v.icon_set.clone());
+        if let Some(variant) = nt.pick_variant(is_dark) {
             let theme = to_theme(variant, "default", is_dark);
             *Theme::global_mut(cx) = theme;
             window.refresh();
@@ -1247,7 +1248,7 @@ impl Showcase {
             Err(_) => return,
         };
 
-        if let Some(variant) = pick_variant(&nt, self.is_dark) {
+        if let Some(variant) = nt.pick_variant(self.is_dark) {
             self.original_fonts = variant.fonts.clone();
             self.current_variant_icon_set = variant.icon_set.clone();
             let theme = to_theme(variant, name, self.is_dark);

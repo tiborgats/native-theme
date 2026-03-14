@@ -34,7 +34,7 @@ key-files:
     - connectors/native-theme-gpui/Cargo.toml
 
 key-decisions:
-  - "Repository URL uses nickelpack org placeholder (no git remote configured); user should update before publishing"
+  - "Repository URL uses tiborgats org placeholder (no git remote configured); user should update before publishing"
   - "native-theme-iced dry-run fails because native-theme is not on crates.io yet; expected, resolves after native-theme is published first"
 
 patterns-established:
@@ -84,7 +84,7 @@ Each task was committed atomically:
 - `LICENSE-0BSD` - Zero-Clause BSD license text
 
 ## Decisions Made
-- Repository URL uses "nickelpack" as a placeholder organization (no git remote configured). User should update `repository` and `homepage` in workspace Cargo.toml before actual publishing.
+- Repository URL uses "tiborgats" as a placeholder organization (no git remote configured). User should update `repository` and `homepage` in workspace Cargo.toml before actual publishing.
 - native-theme-iced `cargo publish --dry-run` fails because native-theme is not yet on crates.io. This is expected behavior for workspace dependencies -- it will resolve once native-theme is published first. The versioned dependency (`^0.2.0`) is correctly configured.
 
 ## Deviations from Plan

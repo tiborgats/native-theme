@@ -34,7 +34,7 @@ serde_with.workspace = true
 toml.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
-objc2 = { version = "0.6", optional = true }
+objc2 = { version = "0.6.4", optional = true }
 objc2-foundation = { version = "0.3", optional = true, features = ["NSString"] }
 objc2-app-kit = { version = "0.3", optional = true, features = [
     "NSColor", "NSColorSpace", "NSAppearance", "NSFont", "NSFontDescriptor",

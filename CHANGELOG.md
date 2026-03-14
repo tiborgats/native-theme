@@ -5,6 +5,67 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.2] - 2026-03-14
+
+### Added
+
+- `NativeTheme::pick_variant()` method for selecting the appropriate theme variant with cross-fallback
+- `#[must_use]` annotations on all public API functions and key types (`NativeTheme`, `IconData`)
+
+### Changed
+
+- `system_icon_theme()` and `system_is_dark()` now cache results with `OnceLock` (eliminates redundant subprocess spawns)
+- `colorize_svg` renamed to `colorize_monochrome_svg` in iced connector with documentation clarifying monochrome-only contract
+- Improved `to_theme` comment in gpui connector explaining the `apply_config`/restore pattern
+- `pre-release-check.sh` uses `jq` instead of `python3` for JSON parsing (with bash fallback)
+
+### Deprecated
+
+- `pick_variant()` free functions in gpui and iced connectors (use `NativeTheme::pick_variant()` instead)
+
+### Removed
+
+- Dead `lighten`, `darken`, and `with_alpha` wrapper functions from gpui `derive` module
+
+## [0.3.1] - 2026-03-13
+
+### Added
+
+- Meta-features (`linux-full`, `macos-full`, `windows-full`) for simplified feature gate configuration
+- `system_icon_theme()` with DE-aware detection (KDE, GNOME, Xfce, Cinnamon, Mate, LxQt, Budgie)
+- `bundled_icon_by_name()` for string-based icon lookup
+- `load_freedesktop_icon_by_name()` for arbitrary freedesktop icon lookups
+- `LinuxDesktop` enum expanded with Xfce, Cinnamon, Mate, LxQt, Budgie variants
+- `LinuxDesktop` and `detect_linux_de()` made public
+- Freedesktop icon name mapping for all 86 gpui-component icons
+- SVG colorization support in iced connector (`to_svg_handle_colored`)
+
+### Changed
+
+- Target-gated OS dependencies so meta-features compile on all platforms
+- Renamed `icon_theme` field to `icon_set` (with serde alias for backward compatibility)
+- Updated bundled Material and Lucide SVGs to latest releases (86+ icons each)
+
+### Fixed
+
+- BMP rasterization in gpui connector (red/blue channel swap for colored SVG themes)
+- Plasma 6 icon theme detection via `kdedefaults/kdeglobals` fallback
+- Symbolic icon preference to avoid animation sprite sheets from freedesktop themes
+
+## [0.3.0] - 2026-03-09
+
+### Added
+
+- Icon system: `IconRole` enum (42 semantic icon roles), `IconSet` enum, `IconData` type
+- Bundled SVG icon sets: Material Design and Lucide (86+ icons each, ~300KB total)
+- Linux freedesktop icon loading via `freedesktop-icons` crate
+- macOS SF Symbols icon loading (compile-time stub with bundled fallback)
+- Windows Segoe Fluent Icons loading (compile-time stub with bundled fallback)
+- `load_icon()` cross-platform dispatch function
+- `rasterize_svg()` for SVG-to-bitmap conversion via `resvg`
+- gpui connector: `icon_name()` mapping, `to_image_source()` conversion
+- iced connector: `to_svg_handle()` for SVG icon display
+
 ## [0.2.0] - 2026-03-09
 
 ### Added
@@ -50,5 +111,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `impl_merge!` macro for recursive Option-based theme merging
 - Deep merge support across all theme types
 
-[0.2.0]: https://github.com/nickelpack/native-theme/compare/v0.1.0...v0.2.0
-[0.1.0]: https://github.com/nickelpack/native-theme/releases/tag/v0.1.0
+[0.3.2]: https://github.com/tiborgats/native-theme/compare/v0.3.1...v0.3.2
+[0.3.1]: https://github.com/tiborgats/native-theme/compare/v0.3...v0.3.1
+[0.3.0]: https://github.com/tiborgats/native-theme/compare/v0.2.0...v0.3
+[0.2.0]: https://github.com/tiborgats/native-theme/compare/v0.1.0...v0.2.0
+[0.1.0]: https://github.com/tiborgats/native-theme/releases/tag/v0.1.0

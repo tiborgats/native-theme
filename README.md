@@ -20,7 +20,7 @@ and Windows.
 
 ```toml
 [dependencies]
-native-theme = "0.3.1"
+native-theme = "0.3.2"
 ```
 
 Load a bundled preset:
@@ -69,11 +69,11 @@ native-theme-gpui = "0.3"
 
 ```rust
 use native_theme::NativeTheme;
-use native_theme_gpui::{pick_variant, to_theme};
+use native_theme_gpui::to_theme;
 
 let nt = NativeTheme::preset("dracula").unwrap();
 let is_dark = true;
-if let Some(variant) = pick_variant(&nt, is_dark) {
+if let Some(variant) = nt.pick_variant(is_dark) {
     let theme = to_theme(variant, "My App", is_dark);
     // Use as your gpui-component theme
 }
@@ -95,10 +95,10 @@ native-theme-iced = "0.3"
 
 ```rust
 use native_theme::NativeTheme;
-use native_theme_iced::{pick_variant, to_theme};
+use native_theme_iced::to_theme;
 
 let nt = NativeTheme::preset("dracula").unwrap();
-if let Some(variant) = pick_variant(&nt, true) {
+if let Some(variant) = nt.pick_variant(true) {
     let theme = to_theme(variant, "My App");
     // Use as your iced application theme
 }
