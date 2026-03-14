@@ -124,8 +124,14 @@ fi
 echo
 
 # Get all workspace crate names
-WORKSPACE_CRATES=$(cargo metadata --no-deps --format-version 1 2>/dev/null \
-    | python3 -c "import sys,json; [print(p['name']) for p in json.load(sys.stdin)['packages']]")
+if command -v jq &>/dev/null; then
+    WORKSPACE_CRATES=$(cargo metadata --no-deps --format-version 1 2>/dev/null \
+        | jq -r '.packages[].name')
+else
+    # Pure-bash fallback: cargo metadata outputs compact JSON (no spaces around colons)
+    WORKSPACE_CRATES=$(cargo metadata --no-deps --format-version 1 2>/dev/null \
+        | grep -o '"name":"[^"]*"' | sed 's/"name":"//;s/"//')
+fi
 
 # Run cargo check on each crate individually (avoids cross-crate feature unification bugs)
 for crate in $WORKSPACE_CRATES; do
