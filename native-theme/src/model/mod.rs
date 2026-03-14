@@ -490,6 +490,65 @@ mod tests {
         assert!(!theme.is_empty());
     }
 
+    // === pick_variant tests ===
+
+    #[test]
+    fn pick_variant_dark_with_both_variants_returns_dark() {
+        let mut theme = NativeTheme::new("Test");
+        let mut light = ThemeVariant::default();
+        light.colors.background = Some(Rgba::rgb(255, 255, 255));
+        theme.light = Some(light);
+        let mut dark = ThemeVariant::default();
+        dark.colors.background = Some(Rgba::rgb(30, 30, 30));
+        theme.dark = Some(dark);
+
+        let picked = theme.pick_variant(true).unwrap();
+        assert_eq!(picked.colors.background, Some(Rgba::rgb(30, 30, 30)));
+    }
+
+    #[test]
+    fn pick_variant_light_with_both_variants_returns_light() {
+        let mut theme = NativeTheme::new("Test");
+        let mut light = ThemeVariant::default();
+        light.colors.background = Some(Rgba::rgb(255, 255, 255));
+        theme.light = Some(light);
+        let mut dark = ThemeVariant::default();
+        dark.colors.background = Some(Rgba::rgb(30, 30, 30));
+        theme.dark = Some(dark);
+
+        let picked = theme.pick_variant(false).unwrap();
+        assert_eq!(picked.colors.background, Some(Rgba::rgb(255, 255, 255)));
+    }
+
+    #[test]
+    fn pick_variant_dark_with_only_light_falls_back() {
+        let mut theme = NativeTheme::new("Test");
+        let mut light = ThemeVariant::default();
+        light.colors.background = Some(Rgba::rgb(255, 255, 255));
+        theme.light = Some(light);
+
+        let picked = theme.pick_variant(true).unwrap();
+        assert_eq!(picked.colors.background, Some(Rgba::rgb(255, 255, 255)));
+    }
+
+    #[test]
+    fn pick_variant_light_with_only_dark_falls_back() {
+        let mut theme = NativeTheme::new("Test");
+        let mut dark = ThemeVariant::default();
+        dark.colors.background = Some(Rgba::rgb(30, 30, 30));
+        theme.dark = Some(dark);
+
+        let picked = theme.pick_variant(false).unwrap();
+        assert_eq!(picked.colors.background, Some(Rgba::rgb(30, 30, 30)));
+    }
+
+    #[test]
+    fn pick_variant_with_no_variants_returns_none() {
+        let theme = NativeTheme::new("Empty");
+        assert!(theme.pick_variant(true).is_none());
+        assert!(theme.pick_variant(false).is_none());
+    }
+
     // === icon_set tests ===
 
     #[test]
