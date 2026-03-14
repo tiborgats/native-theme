@@ -39,34 +39,30 @@ pub fn to_svg_handle(data: &IconData) -> Option<iced_core::svg::Handle> {
     }
 }
 
-/// Converts SVG [`IconData`] to an iced [`iced_core::svg::Handle`], colorized
-/// with the given color.
+/// Convert icon SVG data to an iced SVG handle, colorized with the given color.
 ///
-/// For monochrome icon sets (Material, Lucide) whose SVGs use `currentColor`
-/// or implicit black, this replaces colors with the specified theme color.
-/// Returns `None` for [`IconData::Rgba`] data.
-///
-/// This is the iced equivalent of the gpui connector's `to_image_source_colored`.
+/// Best suited for monochrome icons (bundled Material/Lucide sets).
+/// For multi-color freedesktop theme icons, prefer [`to_svg_handle()`].
 pub fn to_svg_handle_colored(
     data: &IconData,
     color: iced_core::Color,
 ) -> Option<iced_core::svg::Handle> {
     match data {
         IconData::Svg(bytes) => {
-            let colored = colorize_svg(bytes, color);
+            let colored = colorize_monochrome_svg(bytes, color);
             Some(iced_core::svg::Handle::from_memory(colored))
         }
         _ => None,
     }
 }
 
-/// Rewrite SVG bytes to use the given color for strokes and fills.
+/// Colorize a **monochrome** SVG icon with the given color.
 ///
-/// - Replaces all occurrences of `currentColor` with the hex color.
-/// - If the SVG has no `fill=` attribute in its root `<svg>` tag and didn't
-///   contain `currentColor`, injects `fill="<hex>"` so that paths with
-///   implicit black fill use the theme color instead.
-fn colorize_svg(svg_bytes: &[u8], color: iced_core::Color) -> Vec<u8> {
+/// Works correctly for bundled icon sets (Material, Lucide) which use
+/// `currentColor` or implicit black fills. For multi-color SVGs from
+/// freedesktop system themes, use [`to_svg_handle()`] instead to
+/// preserve the original icon colors.
+fn colorize_monochrome_svg(svg_bytes: &[u8], color: iced_core::Color) -> Vec<u8> {
     let r = (color.r.clamp(0.0, 1.0) * 255.0).round() as u8;
     let g = (color.g.clamp(0.0, 1.0) * 255.0).round() as u8;
     let b = (color.b.clamp(0.0, 1.0) * 255.0).round() as u8;
@@ -145,7 +141,7 @@ mod tests {
         assert!(handle.is_some());
 
         // Verify the colorization happened by checking the internal SVG
-        let colored = colorize_svg(
+        let colored = colorize_monochrome_svg(
             b"<svg><path stroke=\"currentColor\" fill=\"currentColor\"/></svg>",
             color,
         );
@@ -159,7 +155,7 @@ mod tests {
         let svg = b"<svg xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M0 0\"/></svg>".to_vec();
         let color = iced_core::Color::from_rgb(0.0, 0.5, 1.0);
 
-        let colored = colorize_svg(&svg, color);
+        let colored = colorize_monochrome_svg(&svg, color);
         let result = String::from_utf8(colored).unwrap();
         assert!(result.contains("fill=\"#0080ff\""));
     }
@@ -180,7 +176,7 @@ mod tests {
         let svg = b"<svg fill=\"red\"><path d=\"M0 0\"/></svg>";
         let color = iced_core::Color::from_rgb(0.0, 1.0, 0.0);
 
-        let colored = colorize_svg(svg, color);
+        let colored = colorize_monochrome_svg(svg, color);
         let result = String::from_utf8(colored).unwrap();
         // Should not inject a second fill since one already exists
         assert!(result.contains("fill=\"red\""));
