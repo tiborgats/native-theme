@@ -3,7 +3,12 @@ name = "native-theme-gpui"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-publish = false
+rust-version.workspace = true
+repository.workspace = true
+homepage.workspace = true
+keywords = ["theme", "gpui", "gui", "native", "colors"]
+categories = ["gui", "config"]
+readme = "README.md"
 description = "gpui toolkit connector for native-theme"
 
 [dependencies]
