@@ -64,6 +64,10 @@ All v0.1/v0.2/v0.3 decisions logged in PROJECT.md Key Decisions table.
 
 None.
 
+### Roadmap Evolution
+
+- Phase 1 added: v0.3.2 quality improvements
+
 ### Blockers/Concerns
 
 None currently.
