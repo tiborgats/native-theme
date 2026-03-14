@@ -30,55 +30,79 @@ fn nscolor_to_rgba(color: &NSColor, srgb: &NSColorSpace) -> Option<crate::Rgba> 
 fn read_semantic_colors() -> crate::ThemeColors {
     let srgb = unsafe { NSColorSpace::sRGBColorSpace() };
 
-    let label = nscolor_to_rgba(unsafe { &NSColor::labelColor() }, &srgb);
+    // Bind all NSColor temporaries before borrowing them.
+    // Rust 2024 edition drops temporaries inside `unsafe {}` blocks at the
+    // end of the block, so `nscolor_to_rgba(unsafe { &NSColor::foo() }, …)`
+    // would reference a dropped value.
+    let label_c = unsafe { NSColor::labelColor() };
+    let control_accent = unsafe { NSColor::controlAccentColor() };
+    let window_bg = unsafe { NSColor::windowBackgroundColor() };
+    let control_bg = unsafe { NSColor::controlBackgroundColor() };
+    let separator_c = unsafe { NSColor::separatorColor() };
+    let secondary_label = unsafe { NSColor::secondaryLabelColor() };
+    let shadow_c = unsafe { NSColor::shadowColor() };
+    let alt_sel_text = unsafe { NSColor::alternateSelectedControlTextColor() };
+    let control_c = unsafe { NSColor::controlColor() };
+    let control_text = unsafe { NSColor::controlTextColor() };
+    let system_red = unsafe { NSColor::systemRedColor() };
+    let system_orange = unsafe { NSColor::systemOrangeColor() };
+    let system_green = unsafe { NSColor::systemGreenColor() };
+    let system_blue = unsafe { NSColor::systemBlueColor() };
+    let sel_content_bg = unsafe { NSColor::selectedContentBackgroundColor() };
+    let sel_text = unsafe { NSColor::selectedTextColor() };
+    let link_c = unsafe { NSColor::linkColor() };
+    let focus_c = unsafe { NSColor::keyboardFocusIndicatorColor() };
+    let under_page_bg = unsafe { NSColor::underPageBackgroundColor() };
+    let text_bg = unsafe { NSColor::textBackgroundColor() };
+    let text_c = unsafe { NSColor::textColor() };
+    let disabled_text = unsafe { NSColor::disabledControlTextColor() };
+
+    let label = nscolor_to_rgba(&label_c, &srgb);
 
     crate::ThemeColors {
         // Core (7)
-        accent: nscolor_to_rgba(unsafe { &NSColor::controlAccentColor() }, &srgb),
-        background: nscolor_to_rgba(unsafe { &NSColor::windowBackgroundColor() }, &srgb),
+        accent: nscolor_to_rgba(&control_accent, &srgb),
+        background: nscolor_to_rgba(&window_bg, &srgb),
         foreground: label,
-        surface: nscolor_to_rgba(unsafe { &NSColor::controlBackgroundColor() }, &srgb),
-        border: nscolor_to_rgba(unsafe { &NSColor::separatorColor() }, &srgb),
-        muted: nscolor_to_rgba(unsafe { &NSColor::secondaryLabelColor() }, &srgb),
-        shadow: nscolor_to_rgba(unsafe { &NSColor::shadowColor() }, &srgb),
+        surface: nscolor_to_rgba(&control_bg, &srgb),
+        border: nscolor_to_rgba(&separator_c, &srgb),
+        muted: nscolor_to_rgba(&secondary_label, &srgb),
+        shadow: nscolor_to_rgba(&shadow_c, &srgb),
         // Primary (2)
-        primary_background: nscolor_to_rgba(unsafe { &NSColor::controlAccentColor() }, &srgb),
-        primary_foreground: nscolor_to_rgba(
-            unsafe { &NSColor::alternateSelectedControlTextColor() },
-            &srgb,
-        ),
+        primary_background: nscolor_to_rgba(&control_accent, &srgb),
+        primary_foreground: nscolor_to_rgba(&alt_sel_text, &srgb),
         // Secondary (2)
-        secondary_background: nscolor_to_rgba(unsafe { &NSColor::controlColor() }, &srgb),
-        secondary_foreground: nscolor_to_rgba(unsafe { &NSColor::controlTextColor() }, &srgb),
+        secondary_background: nscolor_to_rgba(&control_c, &srgb),
+        secondary_foreground: nscolor_to_rgba(&control_text, &srgb),
         // Status (8)
-        danger: nscolor_to_rgba(unsafe { &NSColor::systemRedColor() }, &srgb),
+        danger: nscolor_to_rgba(&system_red, &srgb),
         danger_foreground: label,
-        warning: nscolor_to_rgba(unsafe { &NSColor::systemOrangeColor() }, &srgb),
+        warning: nscolor_to_rgba(&system_orange, &srgb),
         warning_foreground: label,
-        success: nscolor_to_rgba(unsafe { &NSColor::systemGreenColor() }, &srgb),
+        success: nscolor_to_rgba(&system_green, &srgb),
         success_foreground: label,
-        info: nscolor_to_rgba(unsafe { &NSColor::systemBlueColor() }, &srgb),
+        info: nscolor_to_rgba(&system_blue, &srgb),
         info_foreground: label,
         // Interactive (4)
-        selection: nscolor_to_rgba(unsafe { &NSColor::selectedContentBackgroundColor() }, &srgb),
-        selection_foreground: nscolor_to_rgba(unsafe { &NSColor::selectedTextColor() }, &srgb),
-        link: nscolor_to_rgba(unsafe { &NSColor::linkColor() }, &srgb),
-        focus_ring: nscolor_to_rgba(unsafe { &NSColor::keyboardFocusIndicatorColor() }, &srgb),
+        selection: nscolor_to_rgba(&sel_content_bg, &srgb),
+        selection_foreground: nscolor_to_rgba(&sel_text, &srgb),
+        link: nscolor_to_rgba(&link_c, &srgb),
+        focus_ring: nscolor_to_rgba(&focus_c, &srgb),
         // Panel (6)
-        sidebar: nscolor_to_rgba(unsafe { &NSColor::underPageBackgroundColor() }, &srgb),
+        sidebar: nscolor_to_rgba(&under_page_bg, &srgb),
         sidebar_foreground: label,
-        tooltip: nscolor_to_rgba(unsafe { &NSColor::windowBackgroundColor() }, &srgb),
+        tooltip: nscolor_to_rgba(&window_bg, &srgb),
         tooltip_foreground: label,
-        popover: nscolor_to_rgba(unsafe { &NSColor::windowBackgroundColor() }, &srgb),
+        popover: nscolor_to_rgba(&window_bg, &srgb),
         popover_foreground: label,
         // Component (7)
-        button: nscolor_to_rgba(unsafe { &NSColor::controlColor() }, &srgb),
-        button_foreground: nscolor_to_rgba(unsafe { &NSColor::controlTextColor() }, &srgb),
-        input: nscolor_to_rgba(unsafe { &NSColor::textBackgroundColor() }, &srgb),
-        input_foreground: nscolor_to_rgba(unsafe { &NSColor::textColor() }, &srgb),
-        disabled: nscolor_to_rgba(unsafe { &NSColor::disabledControlTextColor() }, &srgb),
-        separator: nscolor_to_rgba(unsafe { &NSColor::separatorColor() }, &srgb),
-        alternate_row: nscolor_to_rgba(unsafe { &NSColor::controlBackgroundColor() }, &srgb),
+        button: nscolor_to_rgba(&control_c, &srgb),
+        button_foreground: nscolor_to_rgba(&control_text, &srgb),
+        input: nscolor_to_rgba(&text_bg, &srgb),
+        input_foreground: nscolor_to_rgba(&text_c, &srgb),
+        disabled: nscolor_to_rgba(&disabled_text, &srgb),
+        separator: nscolor_to_rgba(&separator_c, &srgb),
+        alternate_row: nscolor_to_rgba(&control_bg, &srgb),
     }
 }
 

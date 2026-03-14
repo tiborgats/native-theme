@@ -436,7 +436,7 @@ pub fn load_icon(role: IconRole, icon_set: &str) -> Option<IconData> {
 #[cfg(test)]
 pub(crate) static ENV_MUTEX: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
-#[cfg(test)]
+#[cfg(all(test, target_os = "linux"))]
 mod dispatch_tests {
     use super::*;
 

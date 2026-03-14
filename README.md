@@ -6,7 +6,7 @@ Cross-platform native theme detection and loading for Rust GUI applications.
 [![docs.rs](https://img.shields.io/docsrs/native-theme)](https://docs.rs/native-theme)
 [![CI](https://github.com/tiborgats/native-theme/actions/workflows/ci.yml/badge.svg)](https://github.com/tiborgats/native-theme/actions/workflows/ci.yml)
 [![License: MIT OR Apache-2.0 OR 0BSD](https://img.shields.io/badge/license-MIT%20%7C%20Apache--2.0%20%7C%200BSD-blue.svg)](#license)
-[![MSRV: 1.85.0](https://img.shields.io/badge/MSRV-1.85.0-blue.svg)](https://blog.rust-lang.org/2025/02/20/Rust-1.85.0.html)
+[![MSRV: 1.94.0](https://img.shields.io/badge/MSRV-1.94.0-blue.svg)](https://blog.rust-lang.org/2026/03/05/Rust-1.94.0.html)
 
 A toolkit-agnostic theme data model with 36 semantic color roles, 17 bundled
 TOML presets (light + dark), and optional OS theme readers for Linux, macOS,
@@ -106,10 +106,10 @@ if let Some(variant) = nt.pick_variant(true) {
 }
 ```
 
-Run the iced demo (sidebar widget gallery with live theme switching):
+Run the iced showcase (full widget gallery with live theme switching):
 
 ```sh
-cargo run -p native-theme-iced --example demo
+cargo run -p native-theme-iced --example showcase
 ```
 
 ### Other toolkits
