@@ -63,5 +63,5 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 
 Plans:
 - [x] 01-01-PLAN.md — OnceLock caching for system detection + pick_variant method consolidation
-- [ ] 01-02-PLAN.md — #[must_use] annotations, dead wrapper removal, colorize_svg docs
-- [ ] 01-03-PLAN.md — to_theme round-trip comment + pre-release-check.sh jq migration
+- [x] 01-02-PLAN.md — #[must_use] annotations, dead wrapper removal, colorize_svg docs
+- [x] 01-03-PLAN.md — to_theme round-trip comment + pre-release-check.sh jq migration
