@@ -348,6 +348,16 @@ pub trait IconProvider: std::fmt::Debug {
     fn icon_svg(&self, set: IconSet) -> Option<&'static [u8]>;
 }
 
+impl IconProvider for IconRole {
+    fn icon_name(&self, set: IconSet) -> Option<&str> {
+        icon_name(set, *self)
+    }
+
+    fn icon_svg(&self, set: IconSet) -> Option<&'static [u8]> {
+        crate::model::bundled::bundled_icon_svg(set, *self)
+    }
+}
+
 /// Look up the platform-specific icon identifier for a given icon set and role.
 ///
 /// Returns `Some(name)` if the icon set has a standard icon for the role,
