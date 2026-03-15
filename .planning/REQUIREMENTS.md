@@ -38,12 +38,12 @@ Requirements for v0.3.3 release. Each maps to roadmap phases.
 
 ### Build-Time Validation
 
-- [ ] **VAL-01**: Missing role in any theme's mapping.toml produces a build error with role name and file path
-- [ ] **VAL-02**: Missing SVG file for a bundled theme mapping produces a build error with file path
-- [ ] **VAL-03**: Unknown role in a mapping (not declared in master TOML) produces a build error
-- [ ] **VAL-04**: Missing `default` key in DE-aware inline table produces a build error
-- [ ] **VAL-05**: Orphan SVG files (present in directory but unreferenced) produce a build warning
-- [ ] **VAL-06**: Role name conflicts across multiple TOML files (builder API) produce a build error
+- [x] **VAL-01**: Missing role in any theme's mapping.toml produces a build error with role name and file path
+- [x] **VAL-02**: Missing SVG file for a bundled theme mapping produces a build error with file path
+- [x] **VAL-03**: Unknown role in a mapping (not declared in master TOML) produces a build error
+- [x] **VAL-04**: Missing `default` key in DE-aware inline table produces a build error
+- [x] **VAL-05**: Orphan SVG files (present in directory but unreferenced) produce a build warning
+- [x] **VAL-06**: Role name conflicts across multiple TOML files (builder API) produce a build error
 
 ### Freedesktop DE-Aware Mapping
 
@@ -137,12 +137,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | BUILD-08 | Phase 23 | Complete |
 | BUILD-09 | Phase 23 | Pending |
 | BUILD-10 | Phase 23 | Pending |
-| VAL-01 | Phase 23 | Pending |
-| VAL-02 | Phase 23 | Pending |
-| VAL-03 | Phase 23 | Pending |
-| VAL-04 | Phase 23 | Pending |
-| VAL-05 | Phase 23 | Pending |
-| VAL-06 | Phase 23 | Pending |
+| VAL-01 | Phase 23 | Complete |
+| VAL-02 | Phase 23 | Complete |
+| VAL-03 | Phase 23 | Complete |
+| VAL-04 | Phase 23 | Complete |
+| VAL-05 | Phase 23 | Complete |
+| VAL-06 | Phase 23 | Complete |
 | FDES-01 | Phase 24 | Pending |
 | FDES-02 | Phase 24 | Pending |
 | FDES-03 | Phase 24 | Pending |

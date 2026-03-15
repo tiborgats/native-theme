@@ -21,7 +21,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-15)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 23 Plan 03 complete, continuing with Plan 04
+**Current focus:** Phase 23 Plans 02+03 complete, continuing with Plan 04
 
 ## Current Position
 
@@ -30,7 +30,7 @@ Current Plan: 3 of 4 in Phase 23
 Status: Executing Phase 23
 Last activity: 2026-03-15 — Completed Plan 03 (Code Generation)
 
-Progress: [####......] 40%
+Progress: [#####.....] 50%
 
 ## Performance Metrics
 
@@ -44,6 +44,7 @@ Progress: [####......] 40%
 | 22    | 01   | 2min     | 1     | 3     |
 | 22    | 02   | 5min     | 2     | 3     |
 | 23    | 01   | 2min     | 1     | 5     |
+| 23    | 02   | 3min     | 1     | 2     |
 | 23    | 03   | 3min     | 1     | 2     |
 
 ## Accumulated Context
@@ -73,6 +74,11 @@ v0.3.3 Phase 23 Plan 01 decisions:
 - MappingValue::default_name returns Option for graceful missing-default handling
 - generate_icons and IconGenerator are placeholder stubs for Plan 04
 
+v0.3.3 Phase 23 Plan 02 decisions:
+- All validation functions are pure: take data, return errors/warnings, no side effects
+- check_orphan_svgs returns Vec<String> warnings (not BuildErrors) since orphans are non-fatal
+- validate_svgs uses default_name() to resolve SVG path for both Simple and DeAware values
+
 v0.3.3 Phase 23 Plan 03 decisions:
 - generate_code returns String (not writes to file) for testability; Plan 04 writes to OUT_DIR
 - DE-aware values use default_name() in Phase 23; KDE/GNOME-specific arms deferred to Phase 24
@@ -89,5 +95,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-03-15
-Stopped at: Completed 23-03-PLAN.md
+Stopped at: Completed 23-02-PLAN.md and 23-03-PLAN.md
 Resume file: None
