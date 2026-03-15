@@ -97,6 +97,34 @@ fn unpremultiply_alpha(buffer: &mut [u8]) {
     }
 }
 
+/// Load an SF Symbol by its name string as RGBA pixel data.
+///
+/// This is the low-level loader for arbitrary SF Symbol names beyond
+/// the built-in [`IconRole`] mappings. Use this when you know the
+/// exact SF Symbol name (e.g., from a custom icon mapping).
+///
+/// Returns `None` if the symbol name doesn't exist on this macOS version.
+///
+/// # Examples
+///
+/// ```ignore
+/// let icon = load_sf_icon_by_name("arrow.right");
+/// ```
+pub fn load_sf_icon_by_name(name: &str) -> Option<IconData> {
+    let size = DEFAULT_ICON_SIZE;
+    let image = load_symbol(name, size as f64)?;
+    let cg_image = extract_cgimage(&image)?;
+    let w = CGImage::width(&cg_image) as u32;
+    let h = CGImage::height(&cg_image) as u32;
+    let mut data = rasterize(&cg_image, w, h)?;
+    unpremultiply_alpha(&mut data);
+    Some(IconData::Rgba {
+        width: w,
+        height: h,
+        data,
+    })
+}
+
 /// Load an SF Symbols icon for the given role as RGBA pixel data.
 ///
 /// # Fallback chain
@@ -187,5 +215,28 @@ mod tests {
             );
         }
         // If it returns SVG fallback, that's also acceptable
+    }
+
+    // === load_sf_icon_by_name tests ===
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn load_sf_icon_by_name_returns_some() {
+        // "doc.on.doc" is the SF Symbol for copy
+        let result = load_sf_icon_by_name("doc.on.doc");
+        assert!(
+            result.is_some(),
+            "doc.on.doc should resolve to an SF Symbol"
+        );
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn load_sf_icon_by_name_nonexistent_returns_none() {
+        let result = load_sf_icon_by_name("zzz.nonexistent.symbol");
+        assert!(
+            result.is_none(),
+            "nonexistent symbol should return None"
+        );
     }
 }

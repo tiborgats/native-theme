@@ -8,7 +8,9 @@
 // straight (non-premultiplied) alpha. When native loading fails, falls back
 // to bundled Material SVGs.
 
-use crate::{IconData, IconRole, IconSet, bundled_icon_svg, icon_name};
+use crate::{IconData, IconRole, IconSet, bundled_icon_svg};
+#[cfg(target_os = "windows")]
+use crate::icon_name;
 
 #[cfg(target_os = "windows")]
 use std::mem;
@@ -22,6 +24,7 @@ use windows::Win32::UI::WindowsAndMessaging::*;
 use windows::core::PCWSTR;
 
 /// Default icon size in pixels for font glyph rendering.
+#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
 const DEFAULT_ICON_SIZE: i32 = 32;
 
 /// Map a Segoe Fluent Icons glyph name to its Unicode PUA codepoint.
@@ -399,6 +402,57 @@ pub fn load_windows_icon(role: IconRole) -> Option<IconData> {
     bundled_icon_svg(IconSet::Material, role).map(|bytes| IconData::Svg(bytes.to_vec()))
 }
 
+/// Parse a hex codepoint string like "0xE8BB" or "0xe8bb" to a u32.
+///
+/// Requires the `0x` or `0X` prefix to avoid ambiguity with named glyphs
+/// (e.g., "Add" is both a valid glyph name and valid hex).
+///
+/// Returns `None` for non-hex strings or strings without the 0x prefix.
+fn parse_hex_codepoint(name: &str) -> Option<u32> {
+    let hex = name.strip_prefix("0x").or_else(|| name.strip_prefix("0X"))?;
+    if hex.is_empty() {
+        return None;
+    }
+    u32::from_str_radix(hex, 16).ok()
+}
+
+/// Load a Windows icon by its name string.
+///
+/// Accepts multiple name formats:
+/// - `"SIID_*"` -- stock system icon via SHGetStockIconInfo
+/// - `"IDI_QUESTION"` -- system dialog icon via LoadIconW
+/// - `"0xE8BB"` -- hex codepoint for Segoe Fluent Icons glyph
+/// - `"ChromeClose"` -- named Segoe Fluent Icons glyph
+///
+/// Returns `None` if the name doesn't match any known format or
+/// the icon cannot be loaded on this system.
+pub fn load_windows_icon_by_name(name: &str) -> Option<IconData> {
+    #[cfg(target_os = "windows")]
+    {
+        if name.starts_with("SIID_") {
+            return load_stock_icon(name);
+        }
+        if name == "IDI_QUESTION" {
+            return load_idi_icon();
+        }
+        // Try hex codepoint (e.g., "0xE8BB")
+        if let Some(cp) = parse_hex_codepoint(name) {
+            return load_glyph_icon(cp, DEFAULT_ICON_SIZE);
+        }
+        // Try named glyph (e.g., "ChromeClose")
+        if let Some(cp) = glyph_codepoint(name) {
+            return load_glyph_icon(cp, DEFAULT_ICON_SIZE);
+        }
+        None
+    }
+
+    #[cfg(not(target_os = "windows"))]
+    {
+        let _ = name;
+        None
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -514,5 +568,73 @@ mod tests {
             result.is_some(),
             "DialogQuestion should return an icon via LoadIconW"
         );
+    }
+
+    // === parse_hex_codepoint tests ===
+
+    #[test]
+    fn parse_hex_codepoint_with_prefix() {
+        assert_eq!(parse_hex_codepoint("0xE8BB"), Some(0xE8BB));
+    }
+
+    #[test]
+    fn parse_hex_codepoint_lowercase() {
+        assert_eq!(parse_hex_codepoint("0xe8bb"), Some(0xE8BB));
+    }
+
+    #[test]
+    fn parse_hex_codepoint_no_prefix_returns_none() {
+        // "E8BB" is valid hex but without 0x prefix, requires prefix per design
+        assert_eq!(parse_hex_codepoint("E8BB"), None);
+    }
+
+    #[test]
+    fn parse_hex_codepoint_named_glyph_not_hex() {
+        assert_eq!(parse_hex_codepoint("ChromeClose"), None);
+    }
+
+    #[test]
+    fn parse_hex_codepoint_add_not_hex() {
+        // "Add" is both a valid glyph name and valid hex -- 0x prefix disambiguates
+        assert_eq!(parse_hex_codepoint("Add"), None);
+    }
+
+    #[test]
+    fn parse_hex_codepoint_invalid() {
+        assert_eq!(parse_hex_codepoint("0xZZZZ"), None);
+    }
+
+    #[test]
+    fn parse_hex_codepoint_empty() {
+        assert_eq!(parse_hex_codepoint(""), None);
+    }
+
+    #[test]
+    fn parse_hex_codepoint_bare_0x() {
+        assert_eq!(parse_hex_codepoint("0x"), None);
+    }
+
+    // === Windows-only load_windows_icon_by_name tests ===
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn load_by_name_hex_codepoint() {
+        // 0xE8C8 is the Copy glyph
+        let result = load_windows_icon_by_name("0xE8C8");
+        assert!(result.is_some(), "hex codepoint 0xE8C8 should load Copy glyph");
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn load_by_name_named_glyph() {
+        let result = load_windows_icon_by_name("Copy");
+        assert!(result.is_some(), "named glyph Copy should load");
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn load_by_name_stock_icon() {
+        let result = load_windows_icon_by_name("SIID_WARNING");
+        assert!(result.is_some(), "SIID_WARNING stock icon should load");
     }
 }

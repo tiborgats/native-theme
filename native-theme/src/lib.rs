@@ -100,7 +100,7 @@ pub mod rasterize;
 pub mod sficons;
 #[cfg(all(target_os = "windows", feature = "windows"))]
 pub mod windows;
-#[cfg(all(target_os = "windows", feature = "system-icons"))]
+#[cfg(feature = "system-icons")]
 pub mod winicons;
 
 #[cfg(all(target_os = "linux", feature = "system-icons"))]
