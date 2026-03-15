@@ -1,4 +1,7 @@
+#[cfg(test)]
 use std::collections::BTreeMap;
+use std::collections::{BTreeSet, HashMap};
+use std::fs;
 use std::path::Path;
 
 use crate::error::BuildError;
@@ -9,7 +12,15 @@ use crate::schema::{MappingValue, MasterConfig, ThemeMapping, KNOWN_THEMES};
 /// Checks both `bundled_themes` and `system_themes` against `KNOWN_THEMES`.
 /// Returns a `BuildError::UnknownTheme` for each unrecognized theme name.
 pub(crate) fn validate_themes(config: &MasterConfig) -> Vec<BuildError> {
-    todo!("RED phase: implement in GREEN")
+    config
+        .bundled_themes
+        .iter()
+        .chain(config.system_themes.iter())
+        .filter(|theme| !KNOWN_THEMES.contains(&theme.as_str()))
+        .map(|theme| BuildError::UnknownTheme {
+            theme: theme.clone(),
+        })
+        .collect()
 }
 
 /// Validate a theme mapping against the master role list.
@@ -23,7 +34,41 @@ pub(crate) fn validate_mapping(
     mapping: &ThemeMapping,
     mapping_path: &str,
 ) -> Vec<BuildError> {
-    todo!("RED phase: implement in GREEN")
+    let mut errors = Vec::new();
+
+    // VAL-01: Check every master role is present in the mapping
+    for role in master_roles {
+        if !mapping.contains_key(role) {
+            errors.push(BuildError::MissingRole {
+                role: role.clone(),
+                mapping_file: mapping_path.to_string(),
+            });
+        }
+    }
+
+    let master_set: BTreeSet<&str> = master_roles.iter().map(|s| s.as_str()).collect();
+
+    for (key, value) in mapping {
+        // VAL-03: Check every mapping key is a known master role
+        if !master_set.contains(key.as_str()) {
+            errors.push(BuildError::UnknownRole {
+                role: key.clone(),
+                mapping_file: mapping_path.to_string(),
+            });
+        }
+
+        // VAL-04: Check DE-aware values have a "default" key
+        if let MappingValue::DeAware(m) = value {
+            if !m.contains_key("default") {
+                errors.push(BuildError::MissingDefault {
+                    role: key.clone(),
+                    mapping_file: mapping_path.to_string(),
+                });
+            }
+        }
+    }
+
+    errors
 }
 
 /// Validate that SVG files exist for all entries in a bundled theme mapping.
@@ -34,9 +79,22 @@ pub(crate) fn validate_mapping(
 pub(crate) fn validate_svgs(
     mapping: &ThemeMapping,
     theme_dir: &Path,
-    mapping_path: &str,
+    _mapping_path: &str,
 ) -> Vec<BuildError> {
-    todo!("RED phase: implement in GREEN")
+    let mut errors = Vec::new();
+
+    for (_role, value) in mapping {
+        if let Some(name) = value.default_name() {
+            let svg_path = theme_dir.join(format!("{name}.svg"));
+            if !svg_path.exists() {
+                errors.push(BuildError::MissingSvg {
+                    path: svg_path.to_string_lossy().into_owned(),
+                });
+            }
+        }
+    }
+
+    errors
 }
 
 /// Find orphan SVG files not referenced by any mapping entry.
@@ -48,7 +106,37 @@ pub(crate) fn check_orphan_svgs(
     theme_dir: &Path,
     theme_name: &str,
 ) -> Vec<String> {
-    todo!("RED phase: implement in GREEN")
+    // Collect all referenced SVG stems from the mapping
+    let referenced: BTreeSet<String> = mapping
+        .values()
+        .filter_map(|v| v.default_name().map(|s| s.to_string()))
+        .collect();
+
+    // List all .svg files in the theme directory
+    let entries = match fs::read_dir(theme_dir) {
+        Ok(entries) => entries,
+        Err(_) => return Vec::new(),
+    };
+
+    let mut warnings = Vec::new();
+    for entry in entries.flatten() {
+        let path = entry.path();
+        if path.extension().and_then(|e| e.to_str()) == Some("svg") {
+            if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
+                if !referenced.contains(stem) {
+                    let file_name = path
+                        .file_name()
+                        .and_then(|n| n.to_str())
+                        .unwrap_or("unknown");
+                    warnings.push(format!(
+                        "orphan SVG in {theme_name}: {file_name} is not referenced by any mapping"
+                    ));
+                }
+            }
+        }
+    }
+
+    warnings
 }
 
 /// Validate that no role name appears in multiple config files.
@@ -59,7 +147,25 @@ pub(crate) fn check_orphan_svgs(
 pub(crate) fn validate_no_duplicate_roles(
     configs: &[(String, MasterConfig)],
 ) -> Vec<BuildError> {
-    todo!("RED phase: implement in GREEN")
+    // Map from role name to the file that first declared it
+    let mut seen: HashMap<&str, &str> = HashMap::new();
+    let mut errors = Vec::new();
+
+    for (file_path, config) in configs {
+        for role in &config.roles {
+            if let Some(&first_file) = seen.get(role.as_str()) {
+                errors.push(BuildError::DuplicateRole {
+                    role: role.clone(),
+                    file_a: first_file.to_string(),
+                    file_b: file_path.clone(),
+                });
+            } else {
+                seen.insert(role.as_str(), file_path.as_str());
+            }
+        }
+    }
+
+    errors
 }
 
 #[cfg(test)]
