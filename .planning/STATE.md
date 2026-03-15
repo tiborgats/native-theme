@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.3.3
 milestone_name: Custom Icon Roles
 status: executing
-stopped_at: "Completed 23-03-PLAN.md"
-last_updated: "2026-03-15T22:06:37Z"
-last_activity: "2026-03-15 — Completed Phase 23 Plan 03 (Code Generation)"
+stopped_at: "Completed 23-04-PLAN.md"
+last_updated: "2026-03-15T22:20:02Z"
+last_activity: "2026-03-15 — Completed Phase 23 Plan 04 (Public API Pipeline)"
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
-  completed_plans: 5
-  percent: 50
+  completed_plans: 6
+  percent: 60
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-15)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 23 Plans 02+03 complete, continuing with Plan 04
+**Current focus:** Phase 23 complete, ready for Phase 24 (DE-Aware Codegen)
 
 ## Current Position
 
 Phase: 23 (second of 5 in v0.3.3) — Build Crate and Code Generation
-Current Plan: 3 of 4 in Phase 23
-Status: Executing Phase 23
-Last activity: 2026-03-15 — Completed Plan 03 (Code Generation)
+Current Plan: 4 of 4 in Phase 23 (COMPLETE)
+Status: Phase 23 Complete
+Last activity: 2026-03-15 — Completed Plan 04 (Public API Pipeline)
 
-Progress: [#####.....] 50%
+Progress: [######....] 60%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 53 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 5 v0.3.3)
+- Total plans completed: 54 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 6 v0.3.3)
 - Average duration: ~4.1min (v0.2), 3.7min (v0.3)
-- Total execution time: 70min (v0.2), 37min (v0.3), 15min (v0.3.2), 9min (v0.3.3)
+- Total execution time: 70min (v0.2), 37min (v0.3), 15min (v0.3.2), 17min (v0.3.3)
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
@@ -46,6 +46,7 @@ Progress: [#####.....] 50%
 | 23    | 01   | 2min     | 1     | 5     |
 | 23    | 02   | 3min     | 1     | 2     |
 | 23    | 03   | 3min     | 1     | 2     |
+| 23    | 04   | 8min     | 2     | 8     |
 
 ## Accumulated Context
 
@@ -84,6 +85,11 @@ v0.3.3 Phase 23 Plan 03 decisions:
 - DE-aware values use default_name() in Phase 23; KDE/GNOME-specific arms deferred to Phase 24
 - Private helper functions (generate_icon_name, generate_icon_svg) keep generate_code readable
 
+v0.3.3 Phase 23 Plan 04 decisions:
+- Pure pipeline core: run_pipeline() returns PipelineResult (code/errors/warnings/rerun_paths/size_report), no I/O
+- Merge-then-validate: builder API merges configs before validation so shared mappings validate against full merged role set
+- doc(hidden) pub for test access: MasterConfig, PipelineResult, SizeReport, run_pipeline exposed for integration tests
+
 ### Pending Todos
 
 None.
@@ -95,5 +101,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-03-15
-Stopped at: Completed 23-02-PLAN.md and 23-03-PLAN.md
+Stopped at: Completed 23-04-PLAN.md (Phase 23 complete)
 Resume file: None

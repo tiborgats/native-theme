@@ -26,15 +26,15 @@ Requirements for v0.3.3 release. Each maps to roadmap phases.
 ### Build-Time Code Generation
 
 - [x] **BUILD-01**: `native-theme-build` crate exists as a workspace member with `generate_icons(toml_path)` public API
-- [ ] **BUILD-02**: Builder API exists: `IconGenerator::new().add(path).generate()` for composing multiple TOML files
+- [x] **BUILD-02**: Builder API exists: `IconGenerator::new().add(path).generate()` for composing multiple TOML files
 - [x] **BUILD-03**: Master TOML schema supports role names, bundled-themes list, and system-themes list
 - [x] **BUILD-04**: Per-theme mapping TOML maps every role to a theme-specific icon name
 - [x] **BUILD-05**: Bundled theme mappings reference SVG files that are embedded via `include_bytes!` in generated code
 - [x] **BUILD-06**: Generated enum derives `Debug, Clone, Copy, PartialEq, Eq, Hash`, is `#[non_exhaustive]`, and includes `const ALL: &[Self]`
 - [x] **BUILD-07**: Generated `IconProvider` impl produces `icon_name()` and `icon_svg()` match arms for all roles and themes
 - [x] **BUILD-08**: Generated `include_bytes!` uses `CARGO_MANIFEST_DIR` for correct path resolution from `OUT_DIR`
-- [ ] **BUILD-09**: Build emits `cargo:rerun-if-changed` for every TOML file and SVG file
-- [ ] **BUILD-10**: Build emits a size report summarizing role count, theme count, and total SVG bytes
+- [x] **BUILD-09**: Build emits `cargo:rerun-if-changed` for every TOML file and SVG file
+- [x] **BUILD-10**: Build emits a size report summarizing role count, theme count, and total SVG bytes
 
 ### Build-Time Validation
 
@@ -128,15 +128,15 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LOAD-04 | Phase 22 | Complete |
 | LOAD-05 | Phase 22 | Complete |
 | BUILD-01 | Phase 23 | Complete |
-| BUILD-02 | Phase 23 | Pending |
+| BUILD-02 | Phase 23 | Complete |
 | BUILD-03 | Phase 23 | Complete |
 | BUILD-04 | Phase 23 | Complete |
 | BUILD-05 | Phase 23 | Complete |
 | BUILD-06 | Phase 23 | Complete |
 | BUILD-07 | Phase 23 | Complete |
 | BUILD-08 | Phase 23 | Complete |
-| BUILD-09 | Phase 23 | Pending |
-| BUILD-10 | Phase 23 | Pending |
+| BUILD-09 | Phase 23 | Complete |
+| BUILD-10 | Phase 23 | Complete |
 | VAL-01 | Phase 23 | Complete |
 | VAL-02 | Phase 23 | Complete |
 | VAL-03 | Phase 23 | Complete |
