@@ -306,6 +306,48 @@ impl IconSet {
     }
 }
 
+/// Trait for types that map icon identifiers to platform-specific names and SVG data.
+///
+/// Implement this trait on an enum to make its variants loadable via
+/// [`load_custom_icon()`](crate::load_custom_icon). The typical pattern is
+/// for each enum variant to represent an icon role, with `icon_name()` returning
+/// the platform-specific identifier and `icon_svg()` returning embedded SVG bytes.
+///
+/// # Object Safety
+///
+/// This trait is object-safe. `Box<dyn IconProvider>` works for dynamic dispatch.
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::{IconProvider, IconSet};
+///
+/// #[derive(Debug)]
+/// enum MyIcon { Play, Pause }
+///
+/// impl IconProvider for MyIcon {
+///     fn icon_name(&self, set: IconSet) -> Option<&str> {
+///         match (self, set) {
+///             (MyIcon::Play, IconSet::SfSymbols) => Some("play.fill"),
+///             (MyIcon::Play, IconSet::Material) => Some("play_arrow"),
+///             (MyIcon::Pause, IconSet::SfSymbols) => Some("pause.fill"),
+///             (MyIcon::Pause, IconSet::Material) => Some("pause"),
+///             _ => None,
+///         }
+///     }
+///     fn icon_svg(&self, _set: IconSet) -> Option<&'static [u8]> {
+///         None // No bundled SVGs in this example
+///     }
+/// }
+/// ```
+pub trait IconProvider: std::fmt::Debug {
+    /// Return the platform/theme-specific icon name for this icon in the given set.
+    fn icon_name(&self, set: IconSet) -> Option<&str>;
+
+    /// Return bundled SVG bytes for this icon in the given set.
+    fn icon_svg(&self, set: IconSet) -> Option<&'static [u8]>;
+}
+
 /// Look up the platform-specific icon identifier for a given icon set and role.
 ///
 /// Returns `Some(name)` if the icon set has a standard icon for the role,
@@ -1393,5 +1435,72 @@ mod tests {
             !theme.is_empty(),
             "system_icon_theme() should return a non-empty string"
         );
+    }
+
+    // === IconProvider trait tests ===
+
+    #[test]
+    fn icon_provider_is_object_safe() {
+        // Box<dyn IconProvider> must compile and be usable
+        let provider: Box<dyn IconProvider> = Box::new(IconRole::ActionCopy);
+        let debug_str = format!("{:?}", provider);
+        assert!(
+            debug_str.contains("ActionCopy"),
+            "Debug should print variant name"
+        );
+    }
+
+    #[test]
+    fn icon_role_provider_icon_name() {
+        // IconRole::ActionCopy should return "content_copy" for Material via IconProvider
+        let role = IconRole::ActionCopy;
+        let name = IconProvider::icon_name(&role, IconSet::Material);
+        assert_eq!(name, Some("content_copy"));
+    }
+
+    #[test]
+    fn icon_role_provider_icon_name_sf_symbols() {
+        let role = IconRole::ActionCopy;
+        let name = IconProvider::icon_name(&role, IconSet::SfSymbols);
+        assert_eq!(name, Some("doc.on.doc"));
+    }
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn icon_role_provider_icon_svg_material() {
+        let role = IconRole::ActionCopy;
+        let svg = IconProvider::icon_svg(&role, IconSet::Material);
+        assert!(svg.is_some(), "Material SVG should be Some");
+        let content = std::str::from_utf8(svg.unwrap()).expect("valid UTF-8");
+        assert!(content.contains("<svg"), "should contain <svg tag");
+    }
+
+    #[test]
+    fn icon_role_provider_icon_svg_non_bundled() {
+        // SfSymbols is not a bundled set, so icon_svg should return None
+        let role = IconRole::ActionCopy;
+        let svg = IconProvider::icon_svg(&role, IconSet::SfSymbols);
+        assert!(svg.is_none(), "SfSymbols should not have bundled SVGs");
+    }
+
+    #[test]
+    fn icon_role_provider_all_roles() {
+        // All 42 IconRole variants implement IconProvider -- iterate and call icon_name
+        for role in IconRole::ALL {
+            // Material has 41 of 42 mapped (TrashFull is None)
+            let _name = IconProvider::icon_name(&role, IconSet::Material);
+            // Just verifying it doesn't panic
+        }
+    }
+
+    #[test]
+    fn icon_provider_dyn_dispatch() {
+        // Call icon_name and icon_svg through &dyn IconProvider
+        let role = IconRole::ActionCopy;
+        let provider: &dyn IconProvider = &role;
+        let name = provider.icon_name(IconSet::Material);
+        assert_eq!(name, Some("content_copy"));
+        let svg = provider.icon_svg(IconSet::SfSymbols);
+        assert!(svg.is_none(), "SfSymbols should not have bundled SVGs");
     }
 }
