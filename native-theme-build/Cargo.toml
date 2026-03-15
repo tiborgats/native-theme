@@ -1,0 +1,12 @@
+[package]
+name = "native-theme-build"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+description = "Build-time code generation for native-theme custom icon roles"
+
+[dependencies]
+toml = "1.0.6"
+serde = { version = "1.0", features = ["derive"] }
+heck = "0.5"
