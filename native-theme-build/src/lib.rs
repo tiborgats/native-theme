@@ -3,8 +3,8 @@ mod schema;
 
 use std::path::Path;
 
-pub use error::BuildError;
-pub use schema::{MappingValue, MasterConfig, ThemeMapping, KNOWN_THEMES};
+pub(crate) use error::BuildError;
+pub(crate) use schema::{MappingValue, MasterConfig, ThemeMapping, KNOWN_THEMES};
 
 /// Simple API: generate icon code from a single TOML file.
 ///
