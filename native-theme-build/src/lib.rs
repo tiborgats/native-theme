@@ -10,18 +10,41 @@ use heck::ToSnakeCase;
 
 use schema::{MasterConfig, ThemeMapping};
 
-// Re-exported for tests via `use super::*`
+// Re-exported for unit tests via `use super::*`
 #[cfg(test)]
 use error::BuildError;
 #[cfg(test)]
 use schema::{MappingValue, KNOWN_THEMES};
+
+/// Load a TOML file and run the pipeline on it. For integration testing only.
+#[doc(hidden)]
+pub fn __run_pipeline_on_files(
+    toml_paths: &[&Path],
+    enum_name_override: Option<&str>,
+) -> PipelineResult {
+    let mut configs = Vec::new();
+    let mut base_dirs = Vec::new();
+
+    for path in toml_paths {
+        let content = std::fs::read_to_string(path)
+            .unwrap_or_else(|e| panic!("failed to read {}: {e}", path.display()));
+        let config: MasterConfig = toml::from_str(&content)
+            .unwrap_or_else(|e| panic!("failed to parse {}: {e}", path.display()));
+        let base_dir = path.parent().expect("TOML path has no parent").to_path_buf();
+        configs.push((path.to_string_lossy().to_string(), config));
+        base_dirs.push(base_dir);
+    }
+
+    run_pipeline(&configs, &base_dirs, enum_name_override)
+}
 
 /// Result of running the pure pipeline core.
 ///
 /// Contains the generated code, collected errors, and collected warnings.
 /// The thin outer layer (generate_icons / IconGenerator::generate) handles
 /// printing cargo directives, writing files, and calling process::exit.
-pub(crate) struct PipelineResult {
+#[doc(hidden)]
+pub struct PipelineResult {
     /// Generated Rust source code (empty if errors were found).
     pub code: String,
     /// Build errors found during validation.
@@ -37,7 +60,8 @@ pub(crate) struct PipelineResult {
 }
 
 /// Size report for cargo::warning output.
-pub(crate) struct SizeReport {
+#[doc(hidden)]
+pub struct SizeReport {
     pub role_count: usize,
     pub bundled_theme_count: usize,
     pub total_svg_bytes: u64,
@@ -48,7 +72,8 @@ pub(crate) struct SizeReport {
 ///
 /// This is the pure core: it takes parsed configs, validates, generates code,
 /// and returns everything as data. No I/O, no process::exit.
-pub(crate) fn run_pipeline(
+#[doc(hidden)]
+pub fn run_pipeline(
     configs: &[(String, MasterConfig)],
     base_dirs: &[PathBuf],
     enum_name_override: Option<&str>,

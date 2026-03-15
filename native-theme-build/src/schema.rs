@@ -21,7 +21,8 @@ pub(crate) const KNOWN_THEMES: [&str; 5] = [
 /// ```
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-pub(crate) struct MasterConfig {
+#[doc(hidden)]
+pub struct MasterConfig {
     /// Name for the generated enum (kebab-case, converted to PascalCase).
     pub name: String,
     /// List of role names (kebab-case).

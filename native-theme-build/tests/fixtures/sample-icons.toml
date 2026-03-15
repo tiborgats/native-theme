@@ -1,0 +1,4 @@
+name = "sample-icon"
+roles = ["play-pause", "skip-forward"]
+bundled-themes = ["material"]
+system-themes = ["sf-symbols"]
