@@ -101,6 +101,7 @@ pub mod sficons;
 #[cfg(all(target_os = "windows", feature = "windows"))]
 pub mod windows;
 #[cfg(feature = "system-icons")]
+#[cfg_attr(not(target_os = "windows"), allow(dead_code, unused_imports))]
 pub mod winicons;
 
 #[cfg(all(target_os = "linux", feature = "system-icons"))]
@@ -117,10 +118,14 @@ pub use macos::from_macos;
 pub use rasterize::rasterize_svg;
 #[cfg(all(target_os = "macos", feature = "system-icons"))]
 pub use sficons::load_sf_icon;
+#[cfg(all(target_os = "macos", feature = "system-icons"))]
+pub use sficons::load_sf_icon_by_name;
 #[cfg(all(target_os = "windows", feature = "windows"))]
 pub use windows::from_windows;
 #[cfg(all(target_os = "windows", feature = "system-icons"))]
 pub use winicons::load_windows_icon;
+#[cfg(all(target_os = "windows", feature = "system-icons"))]
+pub use winicons::load_windows_icon_by_name;
 
 /// Convenience Result type alias for this crate.
 pub type Result<T> = std::result::Result<T, Error>;
@@ -430,6 +435,103 @@ pub fn load_icon(role: IconRole, icon_set: &str) -> Option<IconData> {
     }
 }
 
+/// Load a system icon by its platform-specific name string.
+///
+/// Dispatches to the appropriate platform loader based on the icon set:
+/// - [`IconSet::Freedesktop`] -- freedesktop icon theme lookup (auto-detects theme)
+/// - [`IconSet::SfSymbols`] -- macOS SF Symbols
+/// - [`IconSet::SegoeIcons`] -- Windows Segoe Fluent / stock icons
+/// - [`IconSet::Material`] / [`IconSet::Lucide`] -- bundled SVG lookup by name
+///
+/// Returns `None` if the icon is not found on the current platform or
+/// the icon set is not available.
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::{load_system_icon_by_name, IconSet};
+///
+/// # #[cfg(feature = "material-icons")]
+/// # {
+/// let icon = load_system_icon_by_name("content_copy", IconSet::Material);
+/// assert!(icon.is_some());
+/// # }
+/// ```
+#[must_use = "this returns the loaded icon data; it does not display it"]
+#[allow(unreachable_patterns, unused_variables)]
+pub fn load_system_icon_by_name(name: &str, set: IconSet) -> Option<IconData> {
+    match set {
+        #[cfg(all(target_os = "linux", feature = "system-icons"))]
+        IconSet::Freedesktop => {
+            let theme = system_icon_theme();
+            freedesktop::load_freedesktop_icon_by_name(name, &theme)
+        }
+
+        #[cfg(all(target_os = "macos", feature = "system-icons"))]
+        IconSet::SfSymbols => sficons::load_sf_icon_by_name(name),
+
+        #[cfg(all(target_os = "windows", feature = "system-icons"))]
+        IconSet::SegoeIcons => winicons::load_windows_icon_by_name(name),
+
+        #[cfg(feature = "material-icons")]
+        IconSet::Material => {
+            bundled_icon_by_name(IconSet::Material, name).map(|b| IconData::Svg(b.to_vec()))
+        }
+
+        #[cfg(feature = "lucide-icons")]
+        IconSet::Lucide => {
+            bundled_icon_by_name(IconSet::Lucide, name).map(|b| IconData::Svg(b.to_vec()))
+        }
+
+        _ => None,
+    }
+}
+
+/// Load an icon from any [`IconProvider`], dispatching through the standard
+/// platform loading chain.
+///
+/// # Fallback chain
+///
+/// 1. Provider's [`icon_name()`](IconProvider::icon_name) -- passed to platform
+///    system loader via [`load_system_icon_by_name()`]
+/// 2. Provider's [`icon_svg()`](IconProvider::icon_svg) -- bundled SVG data
+/// 3. `None` -- **no cross-set fallback** (mixing icon sets is forbidden)
+///
+/// The `icon_set` string is parsed via [`IconSet::from_name()`], falling back
+/// to [`system_icon_set()`] for unrecognized names.
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::{load_custom_icon, IconRole};
+///
+/// // IconRole implements IconProvider, so it works with load_custom_icon
+/// # #[cfg(feature = "material-icons")]
+/// # {
+/// let icon = load_custom_icon(&IconRole::ActionCopy, "material");
+/// assert!(icon.is_some());
+/// # }
+/// ```
+#[must_use = "this returns the loaded icon data; it does not display it"]
+pub fn load_custom_icon(provider: &(impl IconProvider + ?Sized), icon_set: &str) -> Option<IconData> {
+    let set = IconSet::from_name(icon_set).unwrap_or_else(system_icon_set);
+
+    // Step 1: Try system loader with provider's name mapping
+    if let Some(name) = provider.icon_name(set) {
+        if let Some(data) = load_system_icon_by_name(name, set) {
+            return Some(data);
+        }
+    }
+
+    // Step 2: Try bundled SVG from provider
+    if let Some(svg) = provider.icon_svg(set) {
+        return Some(IconData::Svg(svg.to_vec()));
+    }
+
+    // No cross-set fallback -- return None
+    None
+}
+
 /// Mutex to serialize tests that manipulate environment variables.
 /// Env vars are process-global state, so tests that call set_var/remove_var
 /// must hold this lock to avoid races with parallel test execution.
@@ -701,5 +803,131 @@ mod load_icon_tests {
         // The wildcard arm behavior depends on material-icons feature
         let _result = load_icon(IconRole::ActionCopy, "sf-symbols");
         // Just verifying it doesn't panic
+    }
+}
+
+#[cfg(test)]
+mod load_system_icon_by_name_tests {
+    use super::*;
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn system_icon_by_name_material() {
+        let result = load_system_icon_by_name("content_copy", IconSet::Material);
+        assert!(result.is_some(), "content_copy should be found in Material set");
+        assert!(matches!(result.unwrap(), IconData::Svg(_)));
+    }
+
+    #[test]
+    #[cfg(feature = "lucide-icons")]
+    fn system_icon_by_name_lucide() {
+        let result = load_system_icon_by_name("copy", IconSet::Lucide);
+        assert!(result.is_some(), "copy should be found in Lucide set");
+        assert!(matches!(result.unwrap(), IconData::Svg(_)));
+    }
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn system_icon_by_name_unknown_returns_none() {
+        let result = load_system_icon_by_name("nonexistent_xyz", IconSet::Material);
+        assert!(result.is_none(), "nonexistent name should return None");
+    }
+
+    #[test]
+    fn system_icon_by_name_sf_on_linux_returns_none() {
+        // On Linux, SfSymbols set is not available (cfg-gated to macOS)
+        #[cfg(not(target_os = "macos"))]
+        {
+            let result = load_system_icon_by_name("doc.on.doc", IconSet::SfSymbols);
+            assert!(result.is_none(), "SF Symbols should return None on non-macOS");
+        }
+    }
+}
+
+#[cfg(test)]
+mod load_custom_icon_tests {
+    use super::*;
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn custom_icon_with_icon_role_material() {
+        let result = load_custom_icon(&IconRole::ActionCopy, "material");
+        assert!(result.is_some(), "IconRole::ActionCopy should load via material");
+    }
+
+    #[test]
+    #[cfg(feature = "lucide-icons")]
+    fn custom_icon_with_icon_role_lucide() {
+        let result = load_custom_icon(&IconRole::ActionCopy, "lucide");
+        assert!(result.is_some(), "IconRole::ActionCopy should load via lucide");
+    }
+
+    #[test]
+    fn custom_icon_no_cross_set_fallback() {
+        // Provider that returns None for all sets -- should NOT fall back
+        #[derive(Debug)]
+        struct NullProvider;
+        impl IconProvider for NullProvider {
+            fn icon_name(&self, _set: IconSet) -> Option<&str> {
+                None
+            }
+            fn icon_svg(&self, _set: IconSet) -> Option<&'static [u8]> {
+                None
+            }
+        }
+
+        let result = load_custom_icon(&NullProvider, "material");
+        assert!(result.is_none(), "NullProvider should return None (no cross-set fallback)");
+    }
+
+    #[test]
+    fn custom_icon_unknown_set_uses_system() {
+        // "unknown-set" is not a known IconSet name, falls through to system_icon_set()
+        #[derive(Debug)]
+        struct NullProvider;
+        impl IconProvider for NullProvider {
+            fn icon_name(&self, _set: IconSet) -> Option<&str> {
+                None
+            }
+            fn icon_svg(&self, _set: IconSet) -> Option<&'static [u8]> {
+                None
+            }
+        }
+
+        // Just verify it doesn't panic -- the actual set chosen depends on platform
+        let _result = load_custom_icon(&NullProvider, "unknown-set");
+    }
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn custom_icon_via_dyn_dispatch() {
+        let boxed: Box<dyn IconProvider> = Box::new(IconRole::ActionCopy);
+        let result = load_custom_icon(&*boxed, "material");
+        assert!(result.is_some(), "dyn dispatch through Box<dyn IconProvider> should work");
+    }
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn custom_icon_bundled_svg_fallback() {
+        // Provider that returns None from icon_name but Some from icon_svg
+        #[derive(Debug)]
+        struct SvgOnlyProvider;
+        impl IconProvider for SvgOnlyProvider {
+            fn icon_name(&self, _set: IconSet) -> Option<&str> {
+                None
+            }
+            fn icon_svg(&self, _set: IconSet) -> Option<&'static [u8]> {
+                Some(b"<svg>test</svg>")
+            }
+        }
+
+        let result = load_custom_icon(&SvgOnlyProvider, "material");
+        assert!(result.is_some(), "provider with icon_svg should return Some");
+        match result.unwrap() {
+            IconData::Svg(bytes) => {
+                assert_eq!(bytes, b"<svg>test</svg>");
+            }
+            _ => panic!("expected IconData::Svg"),
+        }
     }
 }

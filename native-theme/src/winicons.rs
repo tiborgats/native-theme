@@ -7,10 +7,11 @@
 // Both pipelines produce IconData::Rgba with correct RGBA byte order and
 // straight (non-premultiplied) alpha. When native loading fails, falls back
 // to bundled Material SVGs.
-
-use crate::{IconData, IconRole, IconSet, bundled_icon_svg};
-#[cfg(target_os = "windows")]
-use crate::icon_name;
+//
+// This module is compiled on all platforms (gated by feature = "system-icons")
+// so that platform-independent logic like `parse_hex_codepoint` can be tested
+// everywhere. Windows-specific code is behind `#[cfg(target_os = "windows")]`.
+use crate::{IconData, IconRole, IconSet, bundled_icon_svg, icon_name};
 
 #[cfg(target_os = "windows")]
 use std::mem;
@@ -24,7 +25,6 @@ use windows::Win32::UI::WindowsAndMessaging::*;
 use windows::core::PCWSTR;
 
 /// Default icon size in pixels for font glyph rendering.
-#[cfg_attr(not(target_os = "windows"), allow(dead_code))]
 const DEFAULT_ICON_SIZE: i32 = 32;
 
 /// Map a Segoe Fluent Icons glyph name to its Unicode PUA codepoint.
