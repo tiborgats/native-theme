@@ -1,6 +1,6 @@
+mod codegen;
 mod error;
 mod schema;
-mod validate;
 
 use std::path::Path;
 
