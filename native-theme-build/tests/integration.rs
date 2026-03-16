@@ -347,6 +347,119 @@ bundled-themes = ["material"]
     let _ = fs::remove_dir_all(&dir);
 }
 
+// =============================================================================
+// DE-aware codegen integration tests
+// =============================================================================
+
+#[test]
+fn de_aware_mapping_generates_de_dispatch_code() {
+    let dir = create_temp_dir("de_aware");
+    write_file(
+        &dir,
+        "icons.toml",
+        r#"
+name = "de-test"
+roles = ["reveal"]
+system-themes = ["freedesktop"]
+"#,
+    );
+    write_file(
+        &dir,
+        "freedesktop/mapping.toml",
+        r#"
+reveal = { kde = "view-visible", default = "view-reveal" }
+"#,
+    );
+
+    let toml_path = dir.join("icons.toml");
+    let result = __run_pipeline_on_files(&[toml_path.as_path()], None);
+
+    assert!(
+        result.errors.is_empty(),
+        "expected no errors: {:?}",
+        result.errors
+    );
+    assert!(!result.code.is_empty(), "expected generated code");
+
+    // Verify cfg-gated DE dispatch
+    assert!(
+        result.code.contains("#[cfg(target_os = \"linux\")]"),
+        "should have cfg linux gate. code:\n{}",
+        result.code
+    );
+    assert!(
+        result.code.contains("native_theme::detect_linux_de("),
+        "should call detect_linux_de. code:\n{}",
+        result.code
+    );
+    assert!(
+        result.code.contains("native_theme::LinuxDesktop::Kde => Some(\"view-visible\")"),
+        "should have KDE-specific arm. code:\n{}",
+        result.code
+    );
+    assert!(
+        result.code.contains("_ => Some(\"view-reveal\")"),
+        "should have default wildcard arm. code:\n{}",
+        result.code
+    );
+    assert!(
+        result.code.contains("#[cfg(not(target_os = \"linux\"))]"),
+        "should have cfg not-linux gate. code:\n{}",
+        result.code
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
+#[test]
+fn de_aware_unknown_key_produces_warning() {
+    let dir = create_temp_dir("de_unknown_key");
+    write_file(
+        &dir,
+        "icons.toml",
+        r#"
+name = "de-test"
+roles = ["reveal"]
+system-themes = ["freedesktop"]
+"#,
+    );
+    write_file(
+        &dir,
+        "freedesktop/mapping.toml",
+        r#"
+reveal = { cosmic = "cosmic-reveal", default = "view-reveal" }
+"#,
+    );
+
+    let toml_path = dir.join("icons.toml");
+    let result = __run_pipeline_on_files(&[toml_path.as_path()], None);
+
+    // Warnings should mention cosmic and unrecognized
+    assert!(
+        result.warnings.iter().any(|w| w.contains("cosmic") && w.contains("unrecognized DE key")),
+        "should warn about unrecognized 'cosmic' DE key: {:?}",
+        result.warnings
+    );
+
+    // Code should still be generated (warnings are non-fatal)
+    assert!(
+        result.errors.is_empty(),
+        "warnings are not errors: {:?}",
+        result.errors
+    );
+    assert!(!result.code.is_empty(), "code should still be generated");
+
+    // Since "cosmic" maps to None in de_key_to_variant, no DE-specific arms generated,
+    // so the DeAware value collapses to a simple arm using the default
+    assert!(
+        result.code.contains("Some(\"view-reveal\")"),
+        "should use default value. code:\n{}",
+        result.code
+    );
+
+    let _ = fs::remove_dir_all(&dir);
+}
+
 #[test]
 fn builder_detects_duplicate_roles() {
     let dir = create_temp_dir("builder_dup");

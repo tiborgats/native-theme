@@ -151,6 +151,10 @@ pub fn run_pipeline(
                         errors.push(e.to_string());
                     }
 
+                    // Warn about unrecognized DE keys in DeAware values
+                    let de_warnings = validate::validate_de_keys(&mapping, &mapping_path_str);
+                    warnings.extend(de_warnings);
+
                     // Check orphan SVGs (warnings, not errors)
                     let orphan_warnings =
                         check_orphan_svgs_and_collect_paths(&mapping, &theme_dir, theme_name, &mut svg_paths, &mut rerun_paths);
@@ -185,6 +189,11 @@ pub fn run_pipeline(
                     for e in map_errors {
                         errors.push(e.to_string());
                     }
+
+                    // Warn about unrecognized DE keys in DeAware values
+                    let de_warnings = validate::validate_de_keys(&mapping, &mapping_path_str);
+                    warnings.extend(de_warnings);
+
                     all_mappings.insert(theme_name.clone(), mapping);
                 }
                 Err(e) => {
