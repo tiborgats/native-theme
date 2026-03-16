@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.3.3
 milestone_name: Custom Icon Roles
 status: executing
-stopped_at: "Completed 23-04-PLAN.md"
-last_updated: "2026-03-15T22:20:02Z"
-last_activity: "2026-03-15 — Completed Phase 23 Plan 04 (Public API Pipeline)"
+stopped_at: "Completed 23-05-PLAN.md"
+last_updated: "2026-03-16T00:26:27Z"
+last_activity: "2026-03-16 — Completed Phase 23 Plan 05 (Gap closure: relative include_bytes! paths)"
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 6
-  completed_plans: 6
+  total_plans: 7
+  completed_plans: 7
   percent: 60
 ---
 
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-15)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 23 complete, ready for Phase 24 (DE-Aware Codegen)
+**Current focus:** Phase 23 complete (including gap closure), ready for Phase 24 (DE-Aware Codegen)
 
 ## Current Position
 
 Phase: 23 (second of 5 in v0.3.3) — Build Crate and Code Generation
-Current Plan: 4 of 4 in Phase 23 (COMPLETE)
-Status: Phase 23 Complete
-Last activity: 2026-03-15 — Completed Plan 04 (Public API Pipeline)
+Current Plan: 5 of 5 in Phase 23 (COMPLETE)
+Status: Phase 23 Complete (gap closure done)
+Last activity: 2026-03-16 — Completed Plan 05 (Gap closure: relative include_bytes! paths)
 
 Progress: [######....] 60%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 54 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 6 v0.3.3)
+- Total plans completed: 55 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 7 v0.3.3)
 - Average duration: ~4.1min (v0.2), 3.7min (v0.3)
-- Total execution time: 70min (v0.2), 37min (v0.3), 15min (v0.3.2), 17min (v0.3.3)
+- Total execution time: 70min (v0.2), 37min (v0.3), 15min (v0.3.2), 21min (v0.3.3)
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
@@ -47,6 +47,7 @@ Progress: [######....] 60%
 | 23    | 02   | 3min     | 1     | 2     |
 | 23    | 03   | 3min     | 1     | 2     |
 | 23    | 04   | 8min     | 2     | 8     |
+| 23    | 05   | 4min     | 1     | 1     |
 
 ## Accumulated Context
 
@@ -90,6 +91,10 @@ v0.3.3 Phase 23 Plan 04 decisions:
 - Merge-then-validate: builder API merges configs before validation so shared mappings validate against full merged role set
 - doc(hidden) pub for test access: MasterConfig, PipelineResult, SizeReport, run_pipeline exposed for integration tests
 
+v0.3.3 Phase 23 Plan 05 decisions (gap closure):
+- manifest_dir as parameter to run_pipeline (not env var read) to preserve pure pipeline core design
+- strip_prefix applied only in codegen path; file I/O continues using absolute base_dir
+
 ### Pending Todos
 
 None.
@@ -100,6 +105,6 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-15
-Stopped at: Completed 23-04-PLAN.md (Phase 23 complete)
+Last session: 2026-03-16
+Stopped at: Completed 23-05-PLAN.md (Phase 23 gap closure complete)
 Resume file: None
