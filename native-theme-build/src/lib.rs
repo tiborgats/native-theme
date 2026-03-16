@@ -209,8 +209,18 @@ pub fn run_pipeline(
         };
     }
 
-    // Compute base_dir for codegen
-    let base_dir_str = base_dir.to_string_lossy().to_string();
+    // Compute base_dir for codegen -- strip manifest_dir prefix when available
+    // so include_bytes! paths are relative (e.g., "icons/material/play.svg")
+    // instead of absolute (e.g., "/home/user/project/icons/material/play.svg")
+    let base_dir_str = if let Some(mdir) = manifest_dir {
+        base_dir
+            .strip_prefix(mdir)
+            .unwrap_or(base_dir)
+            .to_string_lossy()
+            .to_string()
+    } else {
+        base_dir.to_string_lossy().to_string()
+    };
 
     // Step 4: Generate code
     let code = codegen::generate_code(&merged, &all_mappings, &base_dir_str);
@@ -326,7 +336,7 @@ pub fn generate_icons(toml_path: impl AsRef<Path>) {
         &[(file_path_str, config)],
         &[base_dir],
         None,
-        None,
+        Some(&manifest_dir),
     );
 
     emit_result(result);
@@ -393,7 +403,7 @@ impl IconGenerator {
             &configs,
             &base_dirs,
             self.enum_name_override.as_deref(),
-            None,
+            Some(&manifest_dir),
         );
 
         emit_result(result);
