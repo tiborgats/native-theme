@@ -73,6 +73,9 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
   - [x] 24-01-PLAN.md -- DE-aware code generation (TDD): de_key_to_variant + cfg-gated DE dispatch in generate_icon_name
   - [x] 24-02-PLAN.md -- LNXDE audit tests + DE key validation + pipeline integration wiring
 - [ ] **Phase 25: Connector Integration** - Generic IconProvider-aware helpers for gpui and iced connectors
+  **Plans:** 1 plan
+  Plans:
+  - [ ] 25-01-PLAN.md -- Custom icon helpers for gpui (custom_icon_to_image_source) and iced (custom_icon_to_image_handle, custom_icon_to_svg_handle) connectors
 - [ ] **Phase 26: Documentation and Release** - Complete docs for all new APIs + README updates + version bumps + changelog + release checks
 
 ## Phase Details
@@ -121,7 +124,7 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
   1. gpui connector exposes custom_icon_to_image_source<P: IconProvider>() that returns an ImageSource from any custom icon provider
   2. iced connector exposes custom_icon_to_image_handle<P: IconProvider>() and custom_icon_to_svg_handle<P: IconProvider>() with the same return types as the existing IconRole helpers
   3. Connector helpers follow the same code pattern and error handling as existing to_image_source() / to_image_handle() for built-in IconRole
-**Plans**: TBD
+**Plans**: 1 plan
 
 ### Phase 26: Documentation and Release
 **Goal**: The custom icon roles feature is fully documented, all tests pass, and the crate is ready for release
@@ -142,5 +145,5 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 | 22. Core Trait and Loading Functions | v0.3.3 | 2/2 | ✓ Complete | 2026-03-15 |
 | 23. Build Crate and Code Generation | v0.3.3 | 5/5 | ✓ Complete | 2026-03-16 |
 | 24. Linux DE Audit and Freedesktop DE-Aware Mapping | v0.3.3 | 2/2 | ✓ Complete | 2026-03-16 |
-| 25. Connector Integration | v0.3.3 | 0/TBD | Not started | - |
+| 25. Connector Integration | v0.3.3 | 0/1 | Not started | - |
 | 26. Documentation and Release | v0.3.3 | 0/TBD | Not started | - |

@@ -7,7 +7,7 @@
 
 use gpui::{Hsla, Image, ImageFormat, ImageSource};
 use gpui_component::IconName;
-use native_theme::{IconData, IconRole};
+use native_theme::{IconData, IconProvider, IconRole, load_custom_icon};
 use std::sync::Arc;
 
 /// Map an [`IconRole`] to a gpui-component [`IconName`] for the Lucide icon set.
@@ -744,6 +744,35 @@ pub fn to_image_source_colored(data: &IconData, color: Hsla) -> ImageSource {
     }
 }
 
+/// Load a custom icon from an [`IconProvider`] and convert to a gpui [`ImageSource`].
+///
+/// Equivalent to calling [`load_custom_icon()`](native_theme::load_custom_icon)
+/// followed by [`to_image_source()`], composing the loading and conversion steps.
+///
+/// Returns `None` if the provider has no icon for the given set (no system icon
+/// found and no bundled SVG available).
+pub fn custom_icon_to_image_source(
+    provider: &(impl IconProvider + ?Sized),
+    icon_set: &str,
+) -> Option<ImageSource> {
+    let data = load_custom_icon(provider, icon_set)?;
+    Some(to_image_source(&data))
+}
+
+/// Load a custom icon from an [`IconProvider`] and convert to a colorized gpui [`ImageSource`].
+///
+/// Like [`custom_icon_to_image_source()`] but colorizes monochrome SVG icons with the
+/// given color. Best for bundled icon sets (Material, Lucide). For multi-color system
+/// icons, prefer [`custom_icon_to_image_source()`].
+pub fn custom_icon_to_image_source_colored(
+    provider: &(impl IconProvider + ?Sized),
+    icon_set: &str,
+    color: Hsla,
+) -> Option<ImageSource> {
+    let data = load_custom_icon(provider, icon_set)?;
+    Some(to_image_source_colored(&data, color))
+}
+
 /// Rasterize SVG bytes and return as a BMP-backed [`ImageSource`].
 ///
 /// Works around a gpui bug where `ImageFormat::Svg` in `Image::to_image_data`
@@ -1084,6 +1113,64 @@ mod tests {
         assert_eq!(bmp[pixel_offset + 1], 0xBB); // G
         assert_eq!(bmp[pixel_offset + 2], 0xAA); // R
         assert_eq!(bmp[pixel_offset + 3], 0xDD); // A
+    }
+    // --- custom_icon tests ---
+
+    // Test helper: minimal IconProvider that returns a bundled SVG
+    #[derive(Debug)]
+    struct TestCustomIcon;
+
+    impl native_theme::IconProvider for TestCustomIcon {
+        fn icon_name(&self, _set: native_theme::IconSet) -> Option<&str> {
+            None // No system name -- forces bundled SVG path
+        }
+        fn icon_svg(&self, _set: native_theme::IconSet) -> Option<&'static [u8]> {
+            Some(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10'/></svg>")
+        }
+    }
+
+    // Provider with no mappings at all
+    #[derive(Debug)]
+    struct EmptyProvider;
+
+    impl native_theme::IconProvider for EmptyProvider {
+        fn icon_name(&self, _set: native_theme::IconSet) -> Option<&str> {
+            None
+        }
+        fn icon_svg(&self, _set: native_theme::IconSet) -> Option<&'static [u8]> {
+            None
+        }
+    }
+
+    #[test]
+    fn custom_icon_to_image_source_with_svg_provider_returns_some() {
+        let result = custom_icon_to_image_source(&TestCustomIcon, "material");
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn custom_icon_to_image_source_with_empty_provider_returns_none() {
+        let result = custom_icon_to_image_source(&EmptyProvider, "material");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn custom_icon_to_image_source_colored_returns_some() {
+        let color = Hsla {
+            h: 0.0,
+            s: 1.0,
+            l: 0.5,
+            a: 1.0,
+        };
+        let result = custom_icon_to_image_source_colored(&TestCustomIcon, "material", color);
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn custom_icon_to_image_source_accepts_dyn_provider() {
+        let boxed: Box<dyn native_theme::IconProvider> = Box::new(TestCustomIcon);
+        let result = custom_icon_to_image_source(&*boxed, "material");
+        assert!(result.is_some());
     }
 }
 
