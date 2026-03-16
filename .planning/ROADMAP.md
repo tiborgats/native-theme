@@ -141,6 +141,6 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 |-------|-----------|----------------|--------|-----------|
 | 22. Core Trait and Loading Functions | v0.3.3 | 2/2 | ✓ Complete | 2026-03-15 |
 | 23. Build Crate and Code Generation | v0.3.3 | 5/5 | ✓ Complete | 2026-03-16 |
-| 24. Linux DE Audit and Freedesktop DE-Aware Mapping | v0.3.3 | 0/2 | Not started | - |
+| 24. Linux DE Audit and Freedesktop DE-Aware Mapping | 1/2 | In Progress|  | - |
 | 25. Connector Integration | v0.3.3 | 0/TBD | Not started | - |
 | 26. Documentation and Release | v0.3.3 | 0/TBD | Not started | - |

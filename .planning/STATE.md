@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.3.3
 milestone_name: Custom Icon Roles
 status: executing
-stopped_at: "Completed 23-05-PLAN.md"
-last_updated: "2026-03-16T00:26:27Z"
-last_activity: "2026-03-16 — Completed Phase 23 Plan 05 (Gap closure: relative include_bytes! paths)"
+stopped_at: "Completed 24-01-PLAN.md"
+last_updated: "2026-03-16T00:54:57Z"
+last_activity: "2026-03-16 — Completed Phase 24 Plan 01 (DE-Aware Code Generation)"
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 7
-  completed_plans: 7
-  percent: 60
+  total_plans: 9
+  completed_plans: 8
+  percent: 70
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-15)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 23 complete (including gap closure), ready for Phase 24 (DE-Aware Codegen)
+**Current focus:** Phase 24 in progress (DE-Aware Codegen), Plan 01 complete
 
 ## Current Position
 
-Phase: 23 (second of 5 in v0.3.3) — Build Crate and Code Generation
-Current Plan: 5 of 5 in Phase 23 (COMPLETE)
-Status: Phase 23 Complete (gap closure done)
-Last activity: 2026-03-16 — Completed Plan 05 (Gap closure: relative include_bytes! paths)
+Phase: 24 (third of 5 in v0.3.3) — Linux DE Audit and Freedesktop DE-Aware Mapping
+Current Plan: 1 of 2 in Phase 24
+Status: Executing Phase 24
+Last activity: 2026-03-16 — Completed Plan 01 (DE-Aware Code Generation)
 
-Progress: [######....] 60%
+Progress: [#######...] 70%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 55 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 7 v0.3.3)
+- Total plans completed: 56 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 8 v0.3.3)
 - Average duration: ~4.1min (v0.2), 3.7min (v0.3)
-- Total execution time: 70min (v0.2), 37min (v0.3), 15min (v0.3.2), 21min (v0.3.3)
+- Total execution time: 70min (v0.2), 37min (v0.3), 15min (v0.3.2), 23min (v0.3.3)
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
@@ -48,6 +48,7 @@ Progress: [######....] 60%
 | 23    | 03   | 3min     | 1     | 2     |
 | 23    | 04   | 8min     | 2     | 8     |
 | 23    | 05   | 4min     | 1     | 1     |
+| 24    | 01   | 2min     | 2     | 1     |
 
 ## Accumulated Context
 
@@ -95,6 +96,12 @@ v0.3.3 Phase 23 Plan 05 decisions (gap closure):
 - manifest_dir as parameter to run_pipeline (not env var read) to preserve pure pipeline core design
 - strip_prefix applied only in codegen path; file I/O continues using absolute base_dir
 
+v0.3.3 Phase 24 Plan 01 decisions:
+- DE dispatch inside match arm (lazy detection), not outside (eager)
+- Fully-qualified paths: native_theme::detect_linux_de, native_theme::LinuxDesktop::* in generated code
+- DeAware with only default key optimizes to simple arm (no unnecessary cfg blocks)
+- Unknown DE keys return None from de_key_to_variant (silent, default covers them)
+
 ### Pending Todos
 
 None.
@@ -106,5 +113,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-03-16
-Stopped at: Completed 23-05-PLAN.md (Phase 23 gap closure complete)
+Stopped at: Completed 24-01-PLAN.md
 Resume file: None

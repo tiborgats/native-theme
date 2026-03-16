@@ -47,9 +47,9 @@ Requirements for v0.3.3 release. Each maps to roadmap phases.
 
 ### Freedesktop DE-Aware Mapping
 
-- [ ] **FDES-01**: Per-theme freedesktop mapping supports DE-aware inline tables: `{ kde = "view-visible", default = "view-reveal" }`
-- [ ] **FDES-02**: Generated code dispatches to correct icon name based on detected Linux desktop environment
-- [ ] **FDES-03**: Mandatory `default` key covers all unrecognized DEs (XFCE, Cinnamon, MATE, LXQt, Budgie, and future DEs)
+- [x] **FDES-01**: Per-theme freedesktop mapping supports DE-aware inline tables: `{ kde = "view-visible", default = "view-reveal" }`
+- [x] **FDES-02**: Generated code dispatches to correct icon name based on detected Linux desktop environment
+- [x] **FDES-03**: Mandatory `default` key covers all unrecognized DEs (XFCE, Cinnamon, MATE, LXQt, Budgie, and future DEs)
 
 ### Linux DE Coverage Audit
 
@@ -143,9 +143,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | VAL-04 | Phase 23 | Complete |
 | VAL-05 | Phase 23 | Complete |
 | VAL-06 | Phase 23 | Complete |
-| FDES-01 | Phase 24 | Pending |
-| FDES-02 | Phase 24 | Pending |
-| FDES-03 | Phase 24 | Pending |
+| FDES-01 | Phase 24 | Complete |
+| FDES-02 | Phase 24 | Complete |
+| FDES-03 | Phase 24 | Complete |
 | LNXDE-01 | Phase 24 | Pending |
 | LNXDE-02 | Phase 24 | Pending |
 | LNXDE-03 | Phase 24 | Pending |
