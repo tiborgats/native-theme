@@ -66,8 +66,12 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
   - [x] 23-02-PLAN.md -- Validation logic (missing roles, SVGs, unknown roles, defaults, orphans, duplicates)
   - [x] 23-03-PLAN.md -- Code generation (enum, IconProvider impl, include_bytes! embedding)
   - [x] 23-04-PLAN.md -- Public API wiring (generate_icons, IconGenerator builder, rerun-if-changed, size report)
-  - [ ] 23-05-PLAN.md -- Gap closure: fix include_bytes! path to use relative base_dir
+  - [x] 23-05-PLAN.md -- Gap closure: fix include_bytes! path to use relative base_dir
 - [ ] **Phase 24: Linux DE Audit and Freedesktop DE-Aware Mapping** - Verify DE detection coverage + DE-aware inline tables in mapping TOML + generated per-DE icon name dispatch
+  **Plans:** 2 plans
+  Plans:
+  - [ ] 24-01-PLAN.md -- DE-aware code generation (TDD): de_key_to_variant + cfg-gated DE dispatch in generate_icon_name
+  - [ ] 24-02-PLAN.md -- LNXDE audit tests + DE key validation + pipeline integration wiring
 - [ ] **Phase 25: Connector Integration** - Generic IconProvider-aware helpers for gpui and iced connectors
 - [ ] **Phase 26: Documentation and Release** - Complete docs for all new APIs + README updates + version bumps + changelog + release checks
 
@@ -107,7 +111,7 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
   1. A mapping TOML entry like `{ kde = "view-visible", default = "view-reveal" }` generates code that returns "view-visible" on KDE and "view-reveal" on GNOME, XFCE, and all other DEs
   2. Omitting the `default` key in a DE-aware inline table causes a build error
   3. detect_linux_de() / LinuxDesktop enum handles KDE, GNOME, XFCE, Cinnamon, MATE, LXQt, Budgie, and falls back to a default for Hyprland, Sway, COSMIC, and any unknown DE
-**Plans**: TBD
+**Plans**: 2 plans
 
 ### Phase 25: Connector Integration
 **Goal**: Both gpui and iced connector crates can load and display custom icons with the same ergonomics as built-in IconRole icons
@@ -137,6 +141,6 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 |-------|-----------|----------------|--------|-----------|
 | 22. Core Trait and Loading Functions | v0.3.3 | 2/2 | ✓ Complete | 2026-03-15 |
 | 23. Build Crate and Code Generation | v0.3.3 | 5/5 | ✓ Complete | 2026-03-16 |
-| 24. Linux DE Audit and Freedesktop DE-Aware Mapping | v0.3.3 | 0/TBD | Not started | - |
+| 24. Linux DE Audit and Freedesktop DE-Aware Mapping | v0.3.3 | 0/2 | Not started | - |
 | 25. Connector Integration | v0.3.3 | 0/TBD | Not started | - |
 | 26. Documentation and Release | v0.3.3 | 0/TBD | Not started | - |
