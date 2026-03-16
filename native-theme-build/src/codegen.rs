@@ -445,30 +445,208 @@ play-pause = { kde = "media-playback-start", default = "play" }
         );
     }
 
-    // === generate_code: DE-aware value tests ===
+    // === de_key_to_variant tests ===
 
     #[test]
-    fn generated_code_de_aware_uses_default_value() {
-        let (config, mappings) = de_aware_config_and_mappings();
-        let output = generate_code(&config, &mappings, "icons");
-        // The DE-aware freedesktop mapping has { kde = "media-playback-start", default = "play" }
-        // In Phase 23, codegen should use the default value "play"
-        assert!(
-            output.contains(
-                "(Self::PlayPause, native_theme::IconSet::Freedesktop) => Some(\"play\")"
-            ),
-            "DE-aware icon_name should use default value 'play'. output:\n{output}"
+    fn de_key_to_variant_maps_kde() {
+        assert_eq!(
+            de_key_to_variant("kde"),
+            Some("native_theme::LinuxDesktop::Kde")
         );
     }
 
     #[test]
-    fn generated_code_de_aware_no_kde_specific_arm() {
+    fn de_key_to_variant_maps_gnome() {
+        assert_eq!(
+            de_key_to_variant("gnome"),
+            Some("native_theme::LinuxDesktop::Gnome")
+        );
+    }
+
+    #[test]
+    fn de_key_to_variant_maps_xfce() {
+        assert_eq!(
+            de_key_to_variant("xfce"),
+            Some("native_theme::LinuxDesktop::Xfce")
+        );
+    }
+
+    #[test]
+    fn de_key_to_variant_maps_cinnamon() {
+        assert_eq!(
+            de_key_to_variant("cinnamon"),
+            Some("native_theme::LinuxDesktop::Cinnamon")
+        );
+    }
+
+    #[test]
+    fn de_key_to_variant_maps_mate() {
+        assert_eq!(
+            de_key_to_variant("mate"),
+            Some("native_theme::LinuxDesktop::Mate")
+        );
+    }
+
+    #[test]
+    fn de_key_to_variant_maps_lxqt() {
+        assert_eq!(
+            de_key_to_variant("lxqt"),
+            Some("native_theme::LinuxDesktop::LxQt")
+        );
+    }
+
+    #[test]
+    fn de_key_to_variant_maps_budgie() {
+        assert_eq!(
+            de_key_to_variant("budgie"),
+            Some("native_theme::LinuxDesktop::Budgie")
+        );
+    }
+
+    #[test]
+    fn de_key_to_variant_default_returns_none() {
+        assert_eq!(de_key_to_variant("default"), None);
+    }
+
+    #[test]
+    fn de_key_to_variant_unknown_returns_none() {
+        assert_eq!(de_key_to_variant("cosmic"), None);
+    }
+
+    // === generate_code: DE-aware value tests (updated from Phase 23) ===
+
+    #[test]
+    fn generated_code_de_aware_default_in_wildcard_arm() {
         let (config, mappings) = de_aware_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons");
-        // In Phase 23, there should be no KDE-specific arm -- just the default
+        // Phase 24: The default value "play" should appear inside a wildcard `_ =>` arm
+        // within a `match de` block, NOT as a standalone simple arm
         assert!(
-            !output.contains("media-playback-start"),
-            "Phase 23 codegen should not generate KDE-specific arms"
+            output.contains("_ => Some(\"play\")"),
+            "DE-aware default value 'play' should be in a wildcard arm. output:\n{output}"
+        );
+    }
+
+    #[test]
+    fn generated_code_de_aware_has_kde_specific_arm() {
+        let (config, mappings) = de_aware_config_and_mappings();
+        let output = generate_code(&config, &mappings, "icons");
+        // Phase 24: KDE-specific arm "media-playback-start" SHOULD now appear
+        assert!(
+            output.contains("native_theme::LinuxDesktop::Kde => Some(\"media-playback-start\")"),
+            "DE-aware codegen should generate KDE-specific arm. output:\n{output}"
+        );
+    }
+
+    // === generate_code: new DE dispatch tests ===
+
+    #[test]
+    fn generated_code_de_aware_has_cfg_linux() {
+        let (config, mappings) = de_aware_config_and_mappings();
+        let output = generate_code(&config, &mappings, "icons");
+        assert!(
+            output.contains("#[cfg(target_os = \"linux\")]"),
+            "DE-aware codegen should contain cfg linux gate. output:\n{output}"
+        );
+    }
+
+    #[test]
+    fn generated_code_de_aware_has_cfg_not_linux() {
+        let (config, mappings) = de_aware_config_and_mappings();
+        let output = generate_code(&config, &mappings, "icons");
+        assert!(
+            output.contains("#[cfg(not(target_os = \"linux\"))]"),
+            "DE-aware codegen should contain cfg not-linux gate. output:\n{output}"
+        );
+    }
+
+    #[test]
+    fn generated_code_de_aware_calls_detect_linux_de() {
+        let (config, mappings) = de_aware_config_and_mappings();
+        let output = generate_code(&config, &mappings, "icons");
+        assert!(
+            output.contains("native_theme::detect_linux_de("),
+            "DE-aware codegen should call detect_linux_de. output:\n{output}"
+        );
+    }
+
+    #[test]
+    fn generated_code_de_aware_not_linux_uses_default() {
+        let (config, mappings) = de_aware_config_and_mappings();
+        let output = generate_code(&config, &mappings, "icons");
+        // The non-Linux cfg block should contain the default value
+        // Check that there's a Some("play") within the non-linux block
+        let cfg_not_linux_pos = output.find("#[cfg(not(target_os = \"linux\"))]");
+        assert!(cfg_not_linux_pos.is_some(), "missing cfg not-linux block");
+        let after_cfg = &output[cfg_not_linux_pos.unwrap()..];
+        assert!(
+            after_cfg.contains("Some(\"play\")"),
+            "non-Linux block should use default value 'play'. output:\n{output}"
+        );
+    }
+
+    /// Build a config with a DE-aware mapping that has ONLY a default key (no DE overrides).
+    fn de_aware_default_only_config_and_mappings() -> (MasterConfig, BTreeMap<String, ThemeMapping>)
+    {
+        let config: MasterConfig = toml::from_str(
+            r#"
+name = "app-icon"
+roles = ["play-pause"]
+bundled-themes = ["material"]
+system-themes = ["freedesktop"]
+"#,
+        )
+        .unwrap();
+
+        let material_mapping: ThemeMapping = toml::from_str(
+            r#"
+play-pause = "play_pause"
+"#,
+        )
+        .unwrap();
+
+        let freedesktop_mapping: ThemeMapping = toml::from_str(
+            r#"
+play-pause = { default = "play" }
+"#,
+        )
+        .unwrap();
+
+        let mut mappings = BTreeMap::new();
+        mappings.insert("material".to_string(), material_mapping);
+        mappings.insert("freedesktop".to_string(), freedesktop_mapping);
+
+        (config, mappings)
+    }
+
+    #[test]
+    fn generated_code_de_aware_default_only_produces_simple_arm() {
+        let (config, mappings) = de_aware_default_only_config_and_mappings();
+        let output = generate_code(&config, &mappings, "icons");
+        // DeAware with only a default key (no DE overrides) should optimize to a simple arm
+        assert!(
+            output.contains(
+                "(Self::PlayPause, native_theme::IconSet::Freedesktop) => Some(\"play\"),"
+            ),
+            "DE-aware with only default should produce simple arm. output:\n{output}"
+        );
+        // Should NOT contain cfg gating or detect_linux_de for this mapping
+        assert!(
+            !output.contains("detect_linux_de"),
+            "DE-aware with only default should not use detect_linux_de. output:\n{output}"
+        );
+    }
+
+    #[test]
+    fn generated_code_simple_value_unchanged() {
+        let (config, mappings) = de_aware_config_and_mappings();
+        let output = generate_code(&config, &mappings, "icons");
+        // The material theme has Simple("play_pause") -- should still produce a simple arm
+        assert!(
+            output.contains(
+                "(Self::PlayPause, native_theme::IconSet::Material) => Some(\"play_pause\"),"
+            ),
+            "Simple mapping values should produce simple arms (no regression). output:\n{output}"
         );
     }
 }
