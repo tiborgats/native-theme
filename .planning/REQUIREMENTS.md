@@ -59,9 +59,9 @@ Requirements for v0.3.3 release. Each maps to roadmap phases.
 
 ### Connector Integration
 
-- [ ] **CONN-01**: gpui connector provides generic `custom_icon_to_image_source<P: IconProvider>()` helper
-- [ ] **CONN-02**: iced connector provides generic `custom_icon_to_image_handle<P: IconProvider>()` and `custom_icon_to_svg_handle<P: IconProvider>()` helpers
-- [ ] **CONN-03**: Connector helpers follow the same pattern as existing `to_image_source()` / `to_image_handle()` for built-in `IconRole`
+- [x] **CONN-01**: gpui connector provides generic `custom_icon_to_image_source<P: IconProvider>()` helper
+- [x] **CONN-02**: iced connector provides generic `custom_icon_to_image_handle<P: IconProvider>()` and `custom_icon_to_svg_handle<P: IconProvider>()` helpers
+- [x] **CONN-03**: Connector helpers follow the same pattern as existing `to_image_source()` / `to_image_handle()` for built-in `IconRole`
 
 ### Documentation
 
@@ -149,9 +149,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | LNXDE-01 | Phase 24 | Complete |
 | LNXDE-02 | Phase 24 | Complete |
 | LNXDE-03 | Phase 24 | Complete |
-| CONN-01 | Phase 25 | Pending |
-| CONN-02 | Phase 25 | Pending |
-| CONN-03 | Phase 25 | Pending |
+| CONN-01 | Phase 25 | Complete |
+| CONN-02 | Phase 25 | Complete |
+| CONN-03 | Phase 25 | Complete |
 | DOC-01 | Phase 26 | Pending |
 | DOC-02 | Phase 26 | Pending |
 | DOC-03 | Phase 26 | Pending |
