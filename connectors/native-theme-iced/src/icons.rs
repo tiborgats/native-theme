@@ -5,7 +5,7 @@
 //! images (`iced::widget::Svg`), this module provides separate conversion
 //! functions for each variant.
 
-use native_theme::IconData;
+use native_theme::{IconData, IconProvider, load_custom_icon};
 
 /// Converts RGBA [`IconData`] to an iced [`iced_core::image::Handle`].
 ///
@@ -54,6 +54,44 @@ pub fn to_svg_handle_colored(
         }
         _ => None,
     }
+}
+
+/// Load a custom RGBA icon from an [`IconProvider`] and convert to an iced image handle.
+///
+/// Returns `None` if the provider has no icon for the given set, or if the loaded
+/// icon is SVG (use [`custom_icon_to_svg_handle()`] for SVG icons).
+pub fn custom_icon_to_image_handle(
+    provider: &(impl IconProvider + ?Sized),
+    icon_set: &str,
+) -> Option<iced_core::image::Handle> {
+    let data = load_custom_icon(provider, icon_set)?;
+    to_image_handle(&data)
+}
+
+/// Load a custom SVG icon from an [`IconProvider`] and convert to an iced SVG handle.
+///
+/// Returns `None` if the provider has no icon for the given set, or if the loaded
+/// icon is RGBA (use [`custom_icon_to_image_handle()`] for RGBA icons).
+pub fn custom_icon_to_svg_handle(
+    provider: &(impl IconProvider + ?Sized),
+    icon_set: &str,
+) -> Option<iced_core::svg::Handle> {
+    let data = load_custom_icon(provider, icon_set)?;
+    to_svg_handle(&data)
+}
+
+/// Load a custom SVG icon from an [`IconProvider`] and convert to a colorized iced SVG handle.
+///
+/// Like [`custom_icon_to_svg_handle()`] but colorizes monochrome SVG icons with the
+/// given color. Best for bundled icon sets. For multi-color system icons, prefer
+/// [`custom_icon_to_svg_handle()`].
+pub fn custom_icon_to_svg_handle_colored(
+    provider: &(impl IconProvider + ?Sized),
+    icon_set: &str,
+    color: iced_core::Color,
+) -> Option<iced_core::svg::Handle> {
+    let data = load_custom_icon(provider, icon_set)?;
+    to_svg_handle_colored(&data, color)
 }
 
 /// Colorize a **monochrome** SVG icon with the given color.
@@ -169,6 +207,71 @@ mod tests {
         };
         let color = iced_core::Color::WHITE;
         assert!(to_svg_handle_colored(&data, color).is_none());
+    }
+
+    // --- custom_icon tests ---
+
+    #[derive(Debug)]
+    struct TestSvgProvider;
+
+    impl native_theme::IconProvider for TestSvgProvider {
+        fn icon_name(&self, _set: native_theme::IconSet) -> Option<&str> {
+            None
+        }
+        fn icon_svg(&self, _set: native_theme::IconSet) -> Option<&'static [u8]> {
+            Some(b"<svg xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='12' r='10'/></svg>")
+        }
+    }
+
+    #[derive(Debug)]
+    struct EmptyProvider;
+
+    impl native_theme::IconProvider for EmptyProvider {
+        fn icon_name(&self, _set: native_theme::IconSet) -> Option<&str> {
+            None
+        }
+        fn icon_svg(&self, _set: native_theme::IconSet) -> Option<&'static [u8]> {
+            None
+        }
+    }
+
+    #[test]
+    fn custom_icon_to_image_handle_with_svg_provider_returns_none() {
+        // SVG data is not RGBA, so to_image_handle returns None
+        let result = custom_icon_to_image_handle(&TestSvgProvider, "material");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn custom_icon_to_svg_handle_with_svg_provider_returns_some() {
+        let result = custom_icon_to_svg_handle(&TestSvgProvider, "material");
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn custom_icon_to_svg_handle_colored_with_svg_provider_returns_some() {
+        let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
+        let result = custom_icon_to_svg_handle_colored(&TestSvgProvider, "material", color);
+        assert!(result.is_some());
+    }
+
+    #[test]
+    fn custom_icon_to_image_handle_with_empty_provider_returns_none() {
+        let result = custom_icon_to_image_handle(&EmptyProvider, "material");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn custom_icon_to_svg_handle_with_empty_provider_returns_none() {
+        let result = custom_icon_to_svg_handle(&EmptyProvider, "material");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn custom_icon_helpers_accept_dyn_provider() {
+        let boxed: Box<dyn native_theme::IconProvider> = Box::new(TestSvgProvider);
+        let result = custom_icon_to_svg_handle(&*boxed, "material");
+        assert!(result.is_some());
     }
 
     #[test]
