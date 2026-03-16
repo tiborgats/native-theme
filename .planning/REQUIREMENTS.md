@@ -53,9 +53,9 @@ Requirements for v0.3.3 release. Each maps to roadmap phases.
 
 ### Linux DE Coverage Audit
 
-- [ ] **LNXDE-01**: Existing `detect_linux_de()` / `LinuxDesktop` enum covers KDE, GNOME, XFCE, Cinnamon, MATE, LXQt, Budgie
-- [ ] **LNXDE-02**: Existing code has a `default` / `Unknown` / wildcard fallback for unrecognized desktop environments
-- [ ] **LNXDE-03**: Hyprland/Sway (wlroots) and COSMIC detection is considered and handled (either explicitly or via default path)
+- [x] **LNXDE-01**: Existing `detect_linux_de()` / `LinuxDesktop` enum covers KDE, GNOME, XFCE, Cinnamon, MATE, LXQt, Budgie
+- [x] **LNXDE-02**: Existing code has a `default` / `Unknown` / wildcard fallback for unrecognized desktop environments
+- [x] **LNXDE-03**: Hyprland/Sway (wlroots) and COSMIC detection is considered and handled (either explicitly or via default path)
 
 ### Connector Integration
 
@@ -146,9 +146,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 | FDES-01 | Phase 24 | Complete |
 | FDES-02 | Phase 24 | Complete |
 | FDES-03 | Phase 24 | Complete |
-| LNXDE-01 | Phase 24 | Pending |
-| LNXDE-02 | Phase 24 | Pending |
-| LNXDE-03 | Phase 24 | Pending |
+| LNXDE-01 | Phase 24 | Complete |
+| LNXDE-02 | Phase 24 | Complete |
+| LNXDE-03 | Phase 24 | Complete |
 | CONN-01 | Phase 25 | Pending |
 | CONN-02 | Phase 25 | Pending |
 | CONN-03 | Phase 25 | Pending |

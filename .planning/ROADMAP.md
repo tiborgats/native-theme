@@ -67,7 +67,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
   - [x] 23-03-PLAN.md -- Code generation (enum, IconProvider impl, include_bytes! embedding)
   - [x] 23-04-PLAN.md -- Public API wiring (generate_icons, IconGenerator builder, rerun-if-changed, size report)
   - [x] 23-05-PLAN.md -- Gap closure: fix include_bytes! path to use relative base_dir
-- [ ] **Phase 24: Linux DE Audit and Freedesktop DE-Aware Mapping** - Verify DE detection coverage + DE-aware inline tables in mapping TOML + generated per-DE icon name dispatch
+- [x] **Phase 24: Linux DE Audit and Freedesktop DE-Aware Mapping** - Verify DE detection coverage + DE-aware inline tables in mapping TOML + generated per-DE icon name dispatch (completed 2026-03-16)
   **Plans:** 2 plans
   Plans:
   - [ ] 24-01-PLAN.md -- DE-aware code generation (TDD): de_key_to_variant + cfg-gated DE dispatch in generate_icon_name
@@ -141,6 +141,6 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 |-------|-----------|----------------|--------|-----------|
 | 22. Core Trait and Loading Functions | v0.3.3 | 2/2 | ✓ Complete | 2026-03-15 |
 | 23. Build Crate and Code Generation | v0.3.3 | 5/5 | ✓ Complete | 2026-03-16 |
-| 24. Linux DE Audit and Freedesktop DE-Aware Mapping | 1/2 | In Progress|  | - |
+| 24. Linux DE Audit and Freedesktop DE-Aware Mapping | 2/2 | Complete   | 2026-03-16 | - |
 | 25. Connector Integration | v0.3.3 | 0/TBD | Not started | - |
 | 26. Documentation and Release | v0.3.3 | 0/TBD | Not started | - |
