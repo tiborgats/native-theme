@@ -35,7 +35,7 @@ pub fn __run_pipeline_on_files(
         base_dirs.push(base_dir);
     }
 
-    run_pipeline(&configs, &base_dirs, enum_name_override)
+    run_pipeline(&configs, &base_dirs, enum_name_override, None)
 }
 
 /// Result of running the pure pipeline core.
@@ -72,11 +72,17 @@ pub struct SizeReport {
 ///
 /// This is the pure core: it takes parsed configs, validates, generates code,
 /// and returns everything as data. No I/O, no process::exit.
+///
+/// When `manifest_dir` is `Some`, `base_dir` paths are stripped of the
+/// manifest prefix before being embedded in `include_bytes!` codegen,
+/// producing portable relative paths like `"/icons/material/play.svg"`
+/// instead of absolute filesystem paths.
 #[doc(hidden)]
 pub fn run_pipeline(
     configs: &[(String, MasterConfig)],
     base_dirs: &[PathBuf],
     enum_name_override: Option<&str>,
+    manifest_dir: Option<&Path>,
 ) -> PipelineResult {
     assert_eq!(configs.len(), base_dirs.len());
 
@@ -320,6 +326,7 @@ pub fn generate_icons(toml_path: impl AsRef<Path>) {
         &[(file_path_str, config)],
         &[base_dir],
         None,
+        None,
     );
 
     emit_result(result);
@@ -386,6 +393,7 @@ impl IconGenerator {
             &configs,
             &base_dirs,
             self.enum_name_override.as_deref(),
+            None,
         );
 
         emit_result(result);
@@ -685,6 +693,7 @@ system-themes = ["sf-symbols"]
             &[("sample-icons.toml".to_string(), config)],
             &[dir.clone()],
             None,
+            None,
         );
 
         assert!(result.errors.is_empty(), "expected no errors: {:?}", result.errors);
@@ -712,6 +721,7 @@ bundled-themes = ["material"]
             &[("app.toml".to_string(), config)],
             &[dir.clone()],
             None,
+            None,
         );
 
         assert_eq!(result.output_filename, "app_icon.rs");
@@ -736,6 +746,7 @@ bundled-themes = ["material"]
         let result = run_pipeline(
             &[("test.toml".to_string(), config)],
             &[dir.clone()],
+            None,
             None,
         );
 
@@ -767,6 +778,7 @@ bundled-themes = ["material"]
             &[("test.toml".to_string(), config)],
             &[dir.clone()],
             None,
+            None,
         );
 
         assert!(result.errors.is_empty());
@@ -795,6 +807,7 @@ bundled-themes = ["material"]
         let result = run_pipeline(
             &[("test.toml".to_string(), config)],
             &[dir.clone()],
+            None,
             None,
         );
 
@@ -825,6 +838,7 @@ bundled-themes = ["material"]
             &[("test.toml".to_string(), config)],
             &[dir.clone()],
             None,
+            None,
         );
 
         assert!(!result.errors.is_empty(), "should have errors");
@@ -849,6 +863,7 @@ bundled-themes = ["material"]
         let result = run_pipeline(
             &[("test.toml".to_string(), config)],
             &[dir.clone()],
+            None,
             None,
         );
 
@@ -930,6 +945,7 @@ bundled-themes = ["material"]
             ],
             &[dir.clone(), dir.clone()],
             Some("AllIcons"),
+            None,
         );
 
         assert!(result.errors.is_empty(), "expected no errors: {:?}", result.errors);
@@ -965,12 +981,56 @@ bundled-themes = ["material"]
             ],
             &[dir.clone(), dir.clone()],
             None,
+            None,
         );
 
         assert!(!result.errors.is_empty(), "should detect duplicate roles");
         assert!(result.errors.iter().any(|e| e.contains("play-pause")));
 
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn pipeline_generates_relative_include_bytes_paths() {
+        // Simulate what generate_icons does: manifest_dir + "icons/icons.toml"
+        // The tmpdir acts as CARGO_MANIFEST_DIR.
+        // base_dir is absolute (tmpdir/icons), but run_pipeline should strip
+        // the manifest_dir prefix for codegen, producing relative paths.
+        let tmpdir = create_fixture_dir("rel_paths");
+        write_fixture(&tmpdir, "icons/material/mapping.toml", "play-pause = \"play_pause\"\n");
+        write_fixture(&tmpdir, "icons/material/play_pause.svg", SVG_STUB);
+
+        let config: MasterConfig = toml::from_str(r#"
+name = "test"
+roles = ["play-pause"]
+bundled-themes = ["material"]
+"#).unwrap();
+
+        // base_dir is absolute (as generate_icons would compute)
+        let abs_base_dir = tmpdir.join("icons");
+
+        let result = run_pipeline(
+            &[("icons/icons.toml".to_string(), config)],
+            &[abs_base_dir],
+            None,
+            Some(&tmpdir), // manifest_dir for stripping prefix
+        );
+
+        assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
+        // The include_bytes path should contain "/icons/material/play_pause.svg"
+        assert!(
+            result.code.contains("\"/icons/material/play_pause.svg\""),
+            "include_bytes path should use relative base_dir 'icons'. code:\n{}",
+            result.code,
+        );
+        // The include_bytes path should NOT contain the absolute tmpdir
+        let tmpdir_str = tmpdir.to_string_lossy();
+        assert!(
+            !result.code.contains(&*tmpdir_str),
+            "include_bytes path should NOT contain absolute tmpdir path",
+        );
+
+        let _ = fs::remove_dir_all(&tmpdir);
     }
 
     #[test]
@@ -991,6 +1051,7 @@ system-themes = ["sf-symbols"]
         let result = run_pipeline(
             &[("test.toml".to_string(), config)],
             &[dir.clone()],
+            None,
             None,
         );
 

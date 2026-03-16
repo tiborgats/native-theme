@@ -59,13 +59,14 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
   Plans:
   - [x] 22-01-PLAN.md -- IconProvider trait definition + IconRole impl + object safety tests
   - [x] 22-02-PLAN.md -- Platform _by_name loaders + load_system_icon_by_name + load_custom_icon
-- [x] **Phase 23: Build Crate and Code Generation** - native-theme-build workspace crate with TOML parsing, enum codegen, IconProvider impl generation, include_bytes! SVG embedding, and build-time validation (completed 2026-03-15)
-  **Plans:** 4 plans
+- [ ] **Phase 23: Build Crate and Code Generation** - native-theme-build workspace crate with TOML parsing, enum codegen, IconProvider impl generation, include_bytes! SVG embedding, and build-time validation
+  **Plans:** 5 plans
   Plans:
-  - [ ] 23-01-PLAN.md -- Crate skeleton with TOML schema structs and error types
-  - [ ] 23-02-PLAN.md -- Validation logic (missing roles, SVGs, unknown roles, defaults, orphans, duplicates)
-  - [ ] 23-03-PLAN.md -- Code generation (enum, IconProvider impl, include_bytes! embedding)
-  - [ ] 23-04-PLAN.md -- Public API wiring (generate_icons, IconGenerator builder, rerun-if-changed, size report)
+  - [x] 23-01-PLAN.md -- Crate skeleton with TOML schema structs and error types
+  - [x] 23-02-PLAN.md -- Validation logic (missing roles, SVGs, unknown roles, defaults, orphans, duplicates)
+  - [x] 23-03-PLAN.md -- Code generation (enum, IconProvider impl, include_bytes! embedding)
+  - [x] 23-04-PLAN.md -- Public API wiring (generate_icons, IconGenerator builder, rerun-if-changed, size report)
+  - [ ] 23-05-PLAN.md -- Gap closure: fix include_bytes! path to use relative base_dir
 - [ ] **Phase 24: Linux DE Audit and Freedesktop DE-Aware Mapping** - Verify DE detection coverage + DE-aware inline tables in mapping TOML + generated per-DE icon name dispatch
 - [ ] **Phase 25: Connector Integration** - Generic IconProvider-aware helpers for gpui and iced connectors
 - [ ] **Phase 26: Documentation and Release** - Complete docs for all new APIs + README updates + version bumps + changelog + release checks
@@ -96,7 +97,7 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
   3. Referencing a nonexistent SVG file in a bundled theme mapping causes a build error with the file path
   4. The builder API (IconGenerator::new().add(path).generate()) composes multiple TOML files, with duplicate role names across files producing a build error
   5. Generated include_bytes! paths resolve correctly when the consuming crate is in any directory (uses CARGO_MANIFEST_DIR, not relative paths)
-**Plans**: 4 plans
+**Plans**: 5 plans
 
 ### Phase 24: Linux DE Audit and Freedesktop DE-Aware Mapping
 **Goal**: Custom icon mappings can specify different freedesktop icon names per Linux desktop environment, and all major DEs are detected correctly
@@ -135,7 +136,7 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 22. Core Trait and Loading Functions | v0.3.3 | 2/2 | ✓ Complete | 2026-03-15 |
-| 23. Build Crate and Code Generation | 4/4 | Complete   | 2026-03-15 | - |
+| 23. Build Crate and Code Generation | v0.3.3 | 4/5 | Gap closure | - |
 | 24. Linux DE Audit and Freedesktop DE-Aware Mapping | v0.3.3 | 0/TBD | Not started | - |
 | 25. Connector Integration | v0.3.3 | 0/TBD | Not started | - |
 | 26. Documentation and Release | v0.3.3 | 0/TBD | Not started | - |
