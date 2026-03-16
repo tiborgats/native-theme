@@ -636,8 +636,7 @@ fn sf_symbols_name(role: IconRole) -> Option<&'static str> {
         IconRole::WindowClose => "xmark",
         IconRole::WindowMinimize => "minus",
         IconRole::WindowMaximize => "arrow.up.left.and.arrow.down.right",
-        // WindowRestore: no SF Symbol equivalent
-        IconRole::WindowRestore => return None,
+        IconRole::WindowRestore => "arrow.down.right.and.arrow.up.left",
 
         // Common Actions
         IconRole::ActionSave => "square.and.arrow.down",
@@ -669,8 +668,7 @@ fn sf_symbols_name(role: IconRole) -> Option<&'static str> {
         // FolderOpen: no SF Symbol equivalent
         IconRole::FolderOpen => return None,
         IconRole::TrashEmpty => "trash",
-        // TrashFull: no SF Symbol equivalent
-        IconRole::TrashFull => return None,
+        IconRole::TrashFull => "trash.fill",
 
         // Status
         // StatusLoading: no static SF Symbol (loading is animated)
@@ -696,8 +694,7 @@ fn segoe_name(role: IconRole) -> Option<&'static str> {
         IconRole::DialogError => "SIID_ERROR",
         IconRole::DialogInfo => "SIID_INFO",
         IconRole::DialogQuestion => "IDI_QUESTION",
-        // DialogSuccess: no Windows stock icon
-        IconRole::DialogSuccess => return None,
+        IconRole::DialogSuccess => "CheckMark",
         IconRole::Shield => "SIID_SHIELD",
 
         // Window Controls (Segoe Fluent Icons glyphs)
@@ -1285,8 +1282,11 @@ mod tests {
     }
 
     #[test]
-    fn icon_name_sf_symbols_trash_full_is_none() {
-        assert_eq!(icon_name(IconSet::SfSymbols, IconRole::TrashFull), None);
+    fn icon_name_sf_symbols_trash_full() {
+        assert_eq!(
+            icon_name(IconSet::SfSymbols, IconRole::TrashFull),
+            Some("trash.fill")
+        );
     }
 
     #[test]
@@ -1295,15 +1295,18 @@ mod tests {
     }
 
     #[test]
-    fn icon_name_sf_symbols_window_restore_is_none() {
-        assert_eq!(icon_name(IconSet::SfSymbols, IconRole::WindowRestore), None);
+    fn icon_name_sf_symbols_window_restore() {
+        assert_eq!(
+            icon_name(IconSet::SfSymbols, IconRole::WindowRestore),
+            Some("arrow.down.right.and.arrow.up.left")
+        );
     }
 
     #[test]
-    fn icon_name_segoe_dialog_success_is_none() {
+    fn icon_name_segoe_dialog_success() {
         assert_eq!(
             icon_name(IconSet::SegoeIcons, IconRole::DialogSuccess),
-            None
+            Some("CheckMark")
         );
     }
 
@@ -1382,22 +1385,22 @@ mod tests {
     // Count test: verify expected Some/None count for each icon set
     #[test]
     fn icon_name_sf_symbols_expected_count() {
-        // SF Symbols: 42 - 4 None (FolderOpen, TrashFull, StatusLoading, WindowRestore) = 38 Some
+        // SF Symbols: 42 - 2 None (FolderOpen, StatusLoading) = 40 Some
         let some_count = IconRole::ALL
             .iter()
             .filter(|r| icon_name(IconSet::SfSymbols, **r).is_some())
             .count();
-        assert_eq!(some_count, 38, "SF Symbols should have 38 mappings");
+        assert_eq!(some_count, 40, "SF Symbols should have 40 mappings");
     }
 
     #[test]
     fn icon_name_segoe_expected_count() {
-        // Segoe: 42 - 2 None (DialogSuccess, StatusLoading) = 40 Some
+        // Segoe: 42 - 1 None (StatusLoading) = 41 Some
         let some_count = IconRole::ALL
             .iter()
             .filter(|r| icon_name(IconSet::SegoeIcons, **r).is_some())
             .count();
-        assert_eq!(some_count, 40, "Segoe Icons should have 40 mappings");
+        assert_eq!(some_count, 41, "Segoe Icons should have 41 mappings");
     }
 
     #[test]
