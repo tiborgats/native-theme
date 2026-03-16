@@ -70,8 +70,8 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 24: Linux DE Audit and Freedesktop DE-Aware Mapping** - Verify DE detection coverage + DE-aware inline tables in mapping TOML + generated per-DE icon name dispatch (completed 2026-03-16)
   **Plans:** 2 plans
   Plans:
-  - [ ] 24-01-PLAN.md -- DE-aware code generation (TDD): de_key_to_variant + cfg-gated DE dispatch in generate_icon_name
-  - [ ] 24-02-PLAN.md -- LNXDE audit tests + DE key validation + pipeline integration wiring
+  - [x] 24-01-PLAN.md -- DE-aware code generation (TDD): de_key_to_variant + cfg-gated DE dispatch in generate_icon_name
+  - [x] 24-02-PLAN.md -- LNXDE audit tests + DE key validation + pipeline integration wiring
 - [ ] **Phase 25: Connector Integration** - Generic IconProvider-aware helpers for gpui and iced connectors
 - [ ] **Phase 26: Documentation and Release** - Complete docs for all new APIs + README updates + version bumps + changelog + release checks
 
@@ -141,6 +141,6 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 |-------|-----------|----------------|--------|-----------|
 | 22. Core Trait and Loading Functions | v0.3.3 | 2/2 | ✓ Complete | 2026-03-15 |
 | 23. Build Crate and Code Generation | v0.3.3 | 5/5 | ✓ Complete | 2026-03-16 |
-| 24. Linux DE Audit and Freedesktop DE-Aware Mapping | 2/2 | Complete   | 2026-03-16 | - |
+| 24. Linux DE Audit and Freedesktop DE-Aware Mapping | v0.3.3 | 2/2 | ✓ Complete | 2026-03-16 |
 | 25. Connector Integration | v0.3.3 | 0/TBD | Not started | - |
 | 26. Documentation and Release | v0.3.3 | 0/TBD | Not started | - |
