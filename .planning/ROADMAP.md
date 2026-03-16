@@ -75,7 +75,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 25: Connector Integration** - Generic IconProvider-aware helpers for gpui and iced connectors (completed 2026-03-16)
   **Plans:** 1 plan
   Plans:
-  - [ ] 25-01-PLAN.md -- Custom icon helpers for gpui (custom_icon_to_image_source) and iced (custom_icon_to_image_handle, custom_icon_to_svg_handle) connectors
+  - [x] 25-01-PLAN.md -- Custom icon helpers for gpui (custom_icon_to_image_source) and iced (custom_icon_to_image_handle, custom_icon_to_svg_handle) connectors
 - [ ] **Phase 26: Documentation and Release** - Complete docs for all new APIs + README updates + version bumps + changelog + release checks
 
 ## Phase Details
@@ -145,5 +145,5 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 | 22. Core Trait and Loading Functions | v0.3.3 | 2/2 | ✓ Complete | 2026-03-15 |
 | 23. Build Crate and Code Generation | v0.3.3 | 5/5 | ✓ Complete | 2026-03-16 |
 | 24. Linux DE Audit and Freedesktop DE-Aware Mapping | v0.3.3 | 2/2 | ✓ Complete | 2026-03-16 |
-| 25. Connector Integration | 1/1 | Complete   | 2026-03-16 | - |
+| 25. Connector Integration | v0.3.3 | 1/1 | ✓ Complete | 2026-03-16 |
 | 26. Documentation and Release | v0.3.3 | 0/TBD | Not started | - |
