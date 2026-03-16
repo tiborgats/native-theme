@@ -3,7 +3,7 @@ use std::fmt::Write;
 
 use heck::ToUpperCamelCase;
 
-use crate::schema::{MasterConfig, ThemeMapping};
+use crate::schema::{MappingValue, MasterConfig, ThemeMapping};
 
 /// Maps a known theme name string to its fully-qualified `native_theme::IconSet::` variant path.
 ///
@@ -19,6 +19,23 @@ pub(crate) fn theme_name_to_icon_set(name: &str) -> &'static str {
     }
 }
 
+/// Maps a lowercase TOML DE key to its fully-qualified `native_theme::LinuxDesktop::` variant path.
+///
+/// Returns `None` for `"default"` (handled as the wildcard arm) and unknown keys.
+pub(crate) fn de_key_to_variant(key: &str) -> Option<&'static str> {
+    match key {
+        "kde" => Some("native_theme::LinuxDesktop::Kde"),
+        "gnome" => Some("native_theme::LinuxDesktop::Gnome"),
+        "xfce" => Some("native_theme::LinuxDesktop::Xfce"),
+        "cinnamon" => Some("native_theme::LinuxDesktop::Cinnamon"),
+        "mate" => Some("native_theme::LinuxDesktop::Mate"),
+        "lxqt" => Some("native_theme::LinuxDesktop::LxQt"),
+        "budgie" => Some("native_theme::LinuxDesktop::Budgie"),
+        "default" => None,
+        _ => None,
+    }
+}
+
 /// Generates a complete Rust source file implementing a custom icon enum with `IconProvider`.
 ///
 /// The generated code includes:
@@ -27,8 +44,8 @@ pub(crate) fn theme_name_to_icon_set(name: &str) -> &'static str {
 /// - `impl` block with `const ALL`
 /// - `impl native_theme::IconProvider` with `icon_name()` and `icon_svg()` match arms
 ///
-/// For DE-aware mapping values, only the `"default"` value is used in Phase 23.
-/// Phase 24 will add desktop-environment dispatch codegen.
+/// For DE-aware mapping values, `icon_name()` emits cfg-gated runtime dispatch
+/// using `native_theme::detect_linux_de()`. On non-Linux, the default value is used.
 pub(crate) fn generate_code(
     config: &MasterConfig,
     mappings: &BTreeMap<String, ThemeMapping>,
@@ -107,13 +124,88 @@ fn generate_icon_name(
         if let Some(mapping) = mappings.get(theme_name) {
             for role in &config.roles {
                 if let Some(mv) = mapping.get(role) {
-                    if let Some(icon_name) = mv.default_name() {
-                        let variant = role.to_upper_camel_case();
-                        writeln!(
-                            out,
-                            "            (Self::{variant}, {icon_set}) => Some(\"{icon_name}\"),"
-                        )
-                        .unwrap();
+                    let variant = role.to_upper_camel_case();
+                    match mv {
+                        MappingValue::Simple(name) => {
+                            writeln!(
+                                out,
+                                "            (Self::{variant}, {icon_set}) => Some(\"{name}\"),"
+                            )
+                            .unwrap();
+                        }
+                        MappingValue::DeAware(de_map) => {
+                            let default_name = de_map.get("default").expect("validated by VAL-04");
+                            // Collect DE-specific entries (non-default keys)
+                            let de_entries: Vec<_> = de_map
+                                .iter()
+                                .filter(|(k, _)| k.as_str() != "default")
+                                .filter_map(|(k, v)| {
+                                    de_key_to_variant(k)
+                                        .map(|variant_path| (variant_path, v.as_str()))
+                                })
+                                .collect();
+
+                            if de_entries.is_empty() {
+                                // No DE-specific overrides, collapse to simple arm
+                                writeln!(
+                                    out,
+                                    "            (Self::{variant}, {icon_set}) => Some(\"{default_name}\"),"
+                                )
+                                .unwrap();
+                            } else {
+                                // Emit cfg-gated DE-aware dispatch block
+                                writeln!(
+                                    out,
+                                    "            (Self::{variant}, {icon_set}) => {{"
+                                )
+                                .unwrap();
+                                writeln!(
+                                    out,
+                                    "                #[cfg(target_os = \"linux\")]"
+                                )
+                                .unwrap();
+                                writeln!(out, "                {{").unwrap();
+                                writeln!(
+                                    out,
+                                    "                    let de = native_theme::detect_linux_de("
+                                )
+                                .unwrap();
+                                writeln!(
+                                    out,
+                                    "                        &std::env::var(\"XDG_CURRENT_DESKTOP\").unwrap_or_default()"
+                                )
+                                .unwrap();
+                                writeln!(out, "                    );").unwrap();
+                                writeln!(out, "                    match de {{").unwrap();
+                                for (variant_path, name) in &de_entries {
+                                    writeln!(
+                                        out,
+                                        "                        {variant_path} => Some(\"{name}\"),"
+                                    )
+                                    .unwrap();
+                                }
+                                writeln!(
+                                    out,
+                                    "                        _ => Some(\"{default_name}\"),"
+                                )
+                                .unwrap();
+                                writeln!(out, "                    }}").unwrap();
+                                writeln!(out, "                }}").unwrap();
+                                writeln!(
+                                    out,
+                                    "                #[cfg(not(target_os = \"linux\"))]"
+                                )
+                                .unwrap();
+                                writeln!(out, "                {{").unwrap();
+                                writeln!(
+                                    out,
+                                    "                    Some(\"{default_name}\")"
+                                )
+                                .unwrap();
+                                writeln!(out, "                }}").unwrap();
+                                writeln!(out, "            }},").unwrap();
+                            }
+                        }
                     }
                 }
             }
