@@ -702,6 +702,23 @@ mod dispatch_tests {
         );
     }
 
+    // -- LNXDE-03: Hyprland, Sway, COSMIC map to Unknown --
+
+    #[test]
+    fn detect_hyprland_returns_unknown() {
+        assert_eq!(detect_linux_de("Hyprland"), LinuxDesktop::Unknown);
+    }
+
+    #[test]
+    fn detect_sway_returns_unknown() {
+        assert_eq!(detect_linux_de("sway"), LinuxDesktop::Unknown);
+    }
+
+    #[test]
+    fn detect_cosmic_returns_unknown() {
+        assert_eq!(detect_linux_de("COSMIC"), LinuxDesktop::Unknown);
+    }
+
     // -- from_system() smoke test --
 
     #[test]

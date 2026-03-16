@@ -139,6 +139,37 @@ pub(crate) fn check_orphan_svgs(
     warnings
 }
 
+/// Known DE keys that map to LinuxDesktop variants in generated code.
+const KNOWN_DE_KEYS: [&str; 8] = [
+    "kde", "gnome", "xfce", "cinnamon", "mate", "lxqt", "budgie", "default",
+];
+
+/// Validate DE keys in DeAware mapping values.
+///
+/// Returns warnings (not errors) for unrecognized DE keys, since the
+/// mandatory `default` key ensures correctness. Unknown keys produce
+/// unreachable match arms in generated code but are not harmful.
+pub(crate) fn validate_de_keys(
+    mapping: &ThemeMapping,
+    mapping_path: &str,
+) -> Vec<String> {
+    let mut warnings = Vec::new();
+    for (role, value) in mapping {
+        if let MappingValue::DeAware(de_map) = value {
+            for key in de_map.keys() {
+                if !KNOWN_DE_KEYS.contains(&key.as_str()) {
+                    warnings.push(format!(
+                        "unrecognized DE key \"{key}\" for role \"{role}\" in {mapping_path} \
+                         (recognized: kde, gnome, xfce, cinnamon, mate, lxqt, budgie). \
+                         This icon name will never be used at runtime."
+                    ));
+                }
+            }
+        }
+    }
+    warnings
+}
+
 /// Validate that no role name appears in multiple config files.
 ///
 /// Given a list of `(file_path, MasterConfig)` pairs, checks for role name
@@ -432,6 +463,60 @@ mod tests {
         ];
         let errors = validate_no_duplicate_roles(&configs);
         assert!(errors.is_empty(), "no duplicates expected");
+    }
+
+    // === validate_de_keys tests ===
+
+    #[test]
+    fn de_keys_all_recognized() {
+        let mut de_map = BTreeMap::new();
+        de_map.insert("kde".to_string(), "media-playback-start".to_string());
+        de_map.insert("default".to_string(), "play".to_string());
+        let mapping = make_mapping(vec![("play-pause", MappingValue::DeAware(de_map))]);
+        let warnings = validate_de_keys(&mapping, "mapping.toml");
+        assert!(warnings.is_empty(), "all DE keys recognized, no warnings expected");
+    }
+
+    #[test]
+    fn de_keys_unrecognized_cosmic() {
+        let mut de_map = BTreeMap::new();
+        de_map.insert("cosmic".to_string(), "cosmic-play".to_string());
+        de_map.insert("default".to_string(), "play".to_string());
+        let mapping = make_mapping(vec![("play-pause", MappingValue::DeAware(de_map))]);
+        let warnings = validate_de_keys(&mapping, "mapping.toml");
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("cosmic"), "should mention the unrecognized key");
+        assert!(warnings[0].contains("kde"), "should list valid keys");
+    }
+
+    #[test]
+    fn de_keys_mixed_recognized_and_unrecognized() {
+        let mut de_map = BTreeMap::new();
+        de_map.insert("kde".to_string(), "media-playback-start".to_string());
+        de_map.insert("cosmic".to_string(), "cosmic-play".to_string());
+        de_map.insert("default".to_string(), "play".to_string());
+        let mapping = make_mapping(vec![("play-pause", MappingValue::DeAware(de_map))]);
+        let warnings = validate_de_keys(&mapping, "mapping.toml");
+        assert_eq!(warnings.len(), 1, "only cosmic is unrecognized");
+        assert!(warnings[0].contains("cosmic"));
+    }
+
+    #[test]
+    fn de_keys_default_only_no_warnings() {
+        let mut de_map = BTreeMap::new();
+        de_map.insert("default".to_string(), "play".to_string());
+        let mapping = make_mapping(vec![("play-pause", MappingValue::DeAware(de_map))]);
+        let warnings = validate_de_keys(&mapping, "mapping.toml");
+        assert!(warnings.is_empty(), "default-only is fine");
+    }
+
+    #[test]
+    fn de_keys_simple_value_ignored() {
+        let mapping = make_mapping(vec![
+            ("play-pause", MappingValue::Simple("play_pause".into())),
+        ]);
+        let warnings = validate_de_keys(&mapping, "mapping.toml");
+        assert!(warnings.is_empty(), "Simple values should be ignored");
     }
 
     #[test]
