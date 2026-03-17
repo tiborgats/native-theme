@@ -76,6 +76,11 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
   **Plans:** 1 plan
   Plans:
   - [x] 25-01-PLAN.md -- Custom icon helpers for gpui (custom_icon_to_image_source) and iced (custom_icon_to_image_handle, custom_icon_to_svg_handle) connectors
+- [ ] **Phase 25.1: Icon Gaps and Fallback Removal** (INSERTED) - Fill remaining icon mapping gaps + remove cross-set Material fallback + add coverage tests
+  **Plans:** 2 plans
+  Plans:
+  - [ ] 25.1-01-PLAN.md -- Fill 3 icon mapping gaps + add coverage tests (known-gaps + bundled SVG completeness)
+  - [ ] 25.1-02-PLAN.md -- Remove cross-set Material SVG fallback from platform loaders and load_icon
 - [ ] **Phase 26: Documentation and Release** - Complete docs for all new APIs + README updates + version bumps + changelog + release checks
 
 ## Phase Details
@@ -126,6 +131,19 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
   3. Connector helpers follow the same code pattern and error handling as existing to_image_source() / to_image_handle() for built-in IconRole
 **Plans**: 1 plan
 
+### Phase 25.1: Icon Gaps and Fallback Removal (INSERTED)
+**Goal**: All icon mapping gaps are filled (or explicitly documented as known gaps), cross-set Material fallback is removed from all platform loaders, and coverage tests prevent future regressions
+**Depends on**: Phase 25
+**Requirements**: GAP-01, GAP-02, GAP-03, COV-01, COV-02, FB-01, FB-02, FB-03, FB-04
+**Success Criteria** (what must be TRUE):
+  1. Freedesktop Notification maps to "notification-active", Material TrashFull maps to "delete", Lucide TrashFull maps to "trash-2"
+  2. SF Symbols FolderOpen/StatusLoading and Segoe StatusLoading remain as explicitly documented known gaps (None)
+  3. No platform loader (freedesktop.rs, sficons.rs, winicons.rs) imports or calls bundled_icon_svg -- they return None when the icon is not found
+  4. load_icon() wildcard branch returns None instead of falling back to Material
+  5. no_unexpected_icon_gaps test catches any new IconRole variant that lacks mappings
+  6. all_roles_have_bundled_svg test verifies Material and Lucide cover all 42 roles
+**Plans**: 2 plans
+
 ### Phase 26: Documentation and Release
 **Goal**: The custom icon roles feature is fully documented, all tests pass, and the crate is ready for release
 **Depends on**: Phase 23, Phase 24, Phase 25
@@ -146,4 +164,5 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 | 23. Build Crate and Code Generation | v0.3.3 | 5/5 | ✓ Complete | 2026-03-16 |
 | 24. Linux DE Audit and Freedesktop DE-Aware Mapping | v0.3.3 | 2/2 | ✓ Complete | 2026-03-16 |
 | 25. Connector Integration | v0.3.3 | 1/1 | ✓ Complete | 2026-03-16 |
+| 25.1. Icon Gaps and Fallback Removal | v0.3.3 | 0/2 | In progress | - |
 | 26. Documentation and Release | v0.3.3 | 0/TBD | Not started | - |
