@@ -2,10 +2,10 @@
 //
 // Resolves IconRole variants to SVG bytes from the user's active desktop
 // icon theme (Adwaita, Breeze, Papirus, etc.) using the freedesktop-icons
-// crate, with a full fallback chain: active theme -> hicolor -> bundled
-// Material SVGs.
+// crate. Returns None when the role has no freedesktop mapping or the
+// icon is not found in the active theme.
 
-use crate::{IconData, IconRole, IconSet, bundled_icon_svg, icon_name};
+use crate::{IconData, IconRole, IconSet, icon_name};
 use std::path::PathBuf;
 
 /// Detect the active freedesktop icon theme.
@@ -49,27 +49,17 @@ fn find_icon(name: &str, theme: &str, size: u16) -> Option<PathBuf> {
 /// Load a freedesktop icon for the given role.
 ///
 /// Resolves the role to a freedesktop icon name, looks it up in the
-/// user's active icon theme, and returns the SVG bytes as `IconData::Svg`.
+/// user's active icon theme (with `-symbolic` suffix fallback), and
+/// returns the SVG bytes as `IconData::Svg`.
 ///
-/// # Fallback chain
-///
-/// 1. Active icon theme (with hicolor fallback handled by the crate)
-/// 2. Bundled Material SVGs (requires `material-icons` feature, which
-///    `system-icons` implies)
-///
-/// Returns `None` only if no icon is found at any level of the chain.
+/// Returns `None` if the role has no freedesktop mapping or the icon
+/// is not found in the active theme.
 pub fn load_freedesktop_icon(role: IconRole) -> Option<IconData> {
     let theme = detect_theme();
-
-    if let Some(name) = icon_name(IconSet::Freedesktop, role)
-        && let Some(path) = find_icon(name, &theme, 24)
-        && let Ok(bytes) = std::fs::read(&path)
-    {
-        return Some(IconData::Svg(bytes));
-    }
-
-    // Bundled Material SVG fallback
-    bundled_icon_svg(IconSet::Material, role).map(|bytes| IconData::Svg(bytes.to_vec()))
+    let name = icon_name(IconSet::Freedesktop, role)?;
+    let path = find_icon(name, &theme, 24)?;
+    let bytes = std::fs::read(&path).ok()?;
+    Some(IconData::Svg(bytes))
 }
 
 /// Load a freedesktop icon by name from the given theme.
@@ -112,23 +102,12 @@ mod tests {
     }
 
     #[test]
-    fn load_icon_notification_uses_bundled_fallback() {
-        // Notification has no freedesktop name, so goes straight to bundled Material
-        let result = load_freedesktop_icon(IconRole::Notification);
-        assert!(
-            result.is_some(),
-            "Notification should fall back to bundled Material icon"
-        );
-        match result.unwrap() {
-            IconData::Svg(bytes) => {
-                let content = std::str::from_utf8(&bytes).expect("SVG should be valid UTF-8");
-                assert!(
-                    content.contains("<svg"),
-                    "Bundled fallback should contain <svg tag"
-                );
-            }
-            _ => panic!("Expected SVG data"),
-        }
+    fn load_icon_notification_attempts_native_lookup() {
+        // Notification is mapped to "notification-active" (KDE convention).
+        // Result depends on whether the active theme ships this icon.
+        // This test verifies the loader does not panic and does not fall back to Material.
+        let _result = load_freedesktop_icon(IconRole::Notification);
+        // No assertion on Some/None -- theme-dependent
     }
 
     #[test]

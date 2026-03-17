@@ -1,10 +1,10 @@
 // macOS SF Symbols icon loader
 //
 // Resolves IconRole variants to RGBA pixel data by loading SF Symbols
-// via NSImage and rasterizing through CGBitmapContext, with fallback
-// to bundled Material SVGs when symbols are unavailable.
+// via NSImage and rasterizing through CGBitmapContext. Returns None
+// when the role has no SF Symbols mapping or the symbol cannot be loaded.
 
-use crate::{IconData, IconRole, IconSet, bundled_icon_svg, icon_name};
+use crate::{IconData, IconRole, IconSet, icon_name};
 use objc2::rc::Retained;
 use objc2_app_kit::{NSFontWeight, NSImage, NSImageSymbolConfiguration, NSImageSymbolScale};
 use objc2_core_graphics::{
@@ -127,36 +127,24 @@ pub fn load_sf_icon_by_name(name: &str) -> Option<IconData> {
 
 /// Load an SF Symbols icon for the given role as RGBA pixel data.
 ///
-/// # Fallback chain
+/// Resolves the role to an SF Symbol name and renders it via NSImage.
 ///
-/// 1. SF Symbols via NSImage (macOS 11+, 38 of 42 roles have mappings)
-/// 2. Bundled Material SVGs (requires `material-icons` feature, which
-///    `system-icons` implies)
-///
-/// Returns `None` only if no icon is found at any level of the chain.
+/// Returns `None` if the role has no SF Symbols mapping or the symbol
+/// cannot be loaded on this macOS version.
 pub fn load_sf_icon(role: IconRole) -> Option<IconData> {
-    if let Some(name) = icon_name(IconSet::SfSymbols, role) {
-        let size = DEFAULT_ICON_SIZE;
-        if let Some(image) = load_symbol(name, size as f64) {
-            if let Some(cg_image) = extract_cgimage(&image) {
-                // Read actual pixel dimensions from CGImage (not NSImage size)
-                // to get correct Retina pixel counts
-                let w = CGImage::width(&cg_image) as u32;
-                let h = CGImage::height(&cg_image) as u32;
-                if let Some(mut data) = rasterize(&cg_image, w, h) {
-                    unpremultiply_alpha(&mut data);
-                    return Some(IconData::Rgba {
-                        width: w,
-                        height: h,
-                        data,
-                    });
-                }
-            }
-        }
-    }
-
-    // Bundled Material SVG fallback
-    bundled_icon_svg(IconSet::Material, role).map(|bytes| IconData::Svg(bytes.to_vec()))
+    let name = icon_name(IconSet::SfSymbols, role)?;
+    let size = DEFAULT_ICON_SIZE;
+    let image = load_symbol(name, size as f64)?;
+    let cg_image = extract_cgimage(&image)?;
+    let w = CGImage::width(&cg_image) as u32;
+    let h = CGImage::height(&cg_image) as u32;
+    let mut data = rasterize(&cg_image, w, h)?;
+    unpremultiply_alpha(&mut data);
+    Some(IconData::Rgba {
+        width: w,
+        height: h,
+        data,
+    })
 }
 
 #[cfg(test)]
@@ -190,12 +178,12 @@ mod tests {
 
     #[cfg(target_os = "macos")]
     #[test]
-    fn fallback_for_unmapped_role() {
-        // WindowRestore has no SF Symbols name, should fall back to bundled
-        let result = load_sf_icon(IconRole::WindowRestore);
+    fn unmapped_role_returns_none() {
+        // FolderOpen has no SF Symbols mapping (known gap), should return None
+        let result = load_sf_icon(IconRole::FolderOpen);
         assert!(
-            result.is_some(),
-            "WindowRestore should fall back to bundled Material icon"
+            result.is_none(),
+            "FolderOpen should return None (no SF Symbol, no fallback)"
         );
     }
 

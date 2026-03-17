@@ -5,13 +5,13 @@
 // 2. Font glyphs via GetGlyphOutlineW from Segoe Fluent Icons (22 glyph roles)
 //
 // Both pipelines produce IconData::Rgba with correct RGBA byte order and
-// straight (non-premultiplied) alpha. When native loading fails, falls back
-// to bundled Material SVGs.
+// straight (non-premultiplied) alpha. Returns None when the role has no
+// Segoe mapping or the icon cannot be loaded on this system.
 //
 // This module is compiled on all platforms (gated by feature = "system-icons")
 // so that platform-independent logic like `parse_hex_codepoint` can be tested
 // everywhere. Windows-specific code is behind `#[cfg(target_os = "windows")]`.
-use crate::{IconData, IconRole, IconSet, bundled_icon_svg, icon_name};
+use crate::{IconData, IconRole, IconSet, icon_name};
 
 #[cfg(target_os = "windows")]
 use std::mem;
@@ -373,13 +373,8 @@ fn load_glyph_icon(codepoint: u32, size: i32) -> Option<IconData> {
 /// - `IDI_QUESTION`: system dialog icon via LoadIconW
 /// - Other names: font glyph via GetGlyphOutlineW (Segoe Fluent/MDL2)
 ///
-/// # Fallback chain
-///
-/// 1. Native Windows icon (stock or font glyph)
-/// 2. Bundled Material SVGs (requires `material-icons` feature, which
-///    `system-icons` implies)
-///
-/// Returns `None` only if no icon is found at any level of the chain.
+/// Returns `None` if the role has no Segoe mapping or the icon cannot
+/// be loaded on this system.
 pub fn load_windows_icon(role: IconRole) -> Option<IconData> {
     #[cfg(target_os = "windows")]
     if let Some(name) = icon_name(IconSet::SegoeIcons, role) {
@@ -398,8 +393,10 @@ pub fn load_windows_icon(role: IconRole) -> Option<IconData> {
         }
     }
 
-    // Bundled Material SVG fallback
-    bundled_icon_svg(IconSet::Material, role).map(|bytes| IconData::Svg(bytes.to_vec()))
+    #[cfg(not(target_os = "windows"))]
+    let _ = role;
+
+    None
 }
 
 /// Parse a hex codepoint string like "0xE8BB" or "0xe8bb" to a u32.
@@ -509,13 +506,12 @@ mod tests {
     }
 
     #[test]
-    #[cfg(feature = "material-icons")]
-    fn fallback_for_unmapped_role() {
-        // DialogSuccess has no Segoe mapping, should fall back to bundled Material
-        let result = load_windows_icon(IconRole::DialogSuccess);
+    fn unmapped_role_returns_none() {
+        // StatusLoading has no Segoe mapping (known gap), should return None
+        let result = load_windows_icon(IconRole::StatusLoading);
         assert!(
-            result.is_some(),
-            "DialogSuccess should fall back to bundled Material icon"
+            result.is_none(),
+            "StatusLoading should return None (no Segoe mapping, no fallback)"
         );
     }
 
