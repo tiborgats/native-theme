@@ -9,7 +9,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - ✅ **v0.1 MVP** — Phases 1-8 (shipped 2026-03-07)
 - ✅ **v0.2 Platform Coverage & Publishing** — Phases 9-15 (shipped 2026-03-09)
 - ✅ **v0.3 Icons** — Phases 16-21 (shipped 2026-03-09)
-- **v0.3.3 Custom Icon Roles** — Phases 22-26
+- ✅ **v0.3.3 Custom Icon Roles** — Phases 22-26 (shipped 2026-03-17)
 
 ## Phases
 
@@ -84,8 +84,8 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 26: Documentation and Release** - Complete docs for all new APIs + README updates + version bumps + changelog + release checks (completed 2026-03-17)
   **Plans:** 2 plans
   Plans:
-  - [ ] 26-01-PLAN.md -- Rustdoc for native-theme-build + IconProvider trait docs + build crate metadata
-  - [ ] 26-02-PLAN.md -- READMEs + CHANGELOG v0.3.3 + design doc fixes + pre-release script
+  - [x] 26-01-PLAN.md -- Rustdoc for native-theme-build + IconProvider trait docs + build crate metadata
+  - [x] 26-02-PLAN.md -- READMEs + CHANGELOG v0.3.3 + design doc fixes + pre-release script
 
 ## Phase Details
 
@@ -169,4 +169,4 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 | 24. Linux DE Audit and Freedesktop DE-Aware Mapping | v0.3.3 | 2/2 | ✓ Complete | 2026-03-16 |
 | 25. Connector Integration | v0.3.3 | 1/1 | ✓ Complete | 2026-03-16 |
 | 25.1. Icon Gaps and Fallback Removal | v0.3.3 | 2/2 | ✓ Complete | 2026-03-17 |
-| 26. Documentation and Release | 2/2 | Complete   | 2026-03-17 | - |
+| 26. Documentation and Release | v0.3.3 | 2/2 | ✓ Complete | 2026-03-17 |
