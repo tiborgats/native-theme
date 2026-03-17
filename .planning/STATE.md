@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.3.3
 milestone_name: Custom Icon Roles
-status: executing
-stopped_at: "Completed 25.1-01-PLAN.md"
-last_updated: "2026-03-17T09:43:06Z"
-last_activity: "2026-03-17 — Completed Phase 25.1 Plan 01 (Icon Mapping Gaps)"
+status: phase-complete
+stopped_at: "Completed 25.1-02-PLAN.md — Phase 25.1 complete"
+last_updated: "2026-03-17T09:49:49Z"
+last_activity: "2026-03-17 — Completed Phase 25.1 Plan 02 (Fallback Removal)"
 progress:
   total_phases: 6
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 12
-  completed_plans: 11
-  percent: 92
+  completed_plans: 12
+  percent: 100
 ---
 
 # Project State
@@ -21,21 +21,21 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-15)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 25.1 Plan 01 complete, Plan 02 (fallback removal) next
+**Current focus:** Phase 25.1 complete (all icon gaps filled, all cross-set fallback removed)
 
 ## Current Position
 
 Phase: 25.1 (inserted after Phase 25) — Icon Gaps and Fallback Removal
-Current Plan: 1 of 2 in Phase 25.1 (Plan 01 COMPLETE)
-Status: Executing Phase 25.1
-Last activity: 2026-03-17 — Completed Plan 01 (Icon Mapping Gaps)
+Current Plan: 2 of 2 in Phase 25.1 (PHASE COMPLETE)
+Status: Phase 25.1 Complete
+Last activity: 2026-03-17 — Completed Plan 02 (Fallback Removal)
 
-Progress: [#########.] 92%
+Progress: [##########] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 59 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 11 v0.3.3)
+- Total plans completed: 60 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 12 v0.3.3)
 - Average duration: ~4.1min (v0.2), 3.7min (v0.3)
 - Total execution time: 70min (v0.2), 37min (v0.3), 15min (v0.3.2), 30min (v0.3.3)
 
@@ -52,6 +52,7 @@ Progress: [#########.] 92%
 | 24    | 02   | 2min     | 2     | 4     |
 | 25    | 01   | 3min     | 2     | 2     |
 | 25.1  | 01   | 2min     | 2     | 1     |
+| 25.1  | 02   | 3min     | 2     | 4     |
 
 ## Accumulated Context
 
@@ -115,6 +116,11 @@ v0.3.3 Phase 25.1 Plan 01 decisions:
 - Material/Lucide TrashFull reuse same icon as TrashEmpty (no full-trash variant in either set)
 - known_gaps list: SF FolderOpen, SF StatusLoading, Segoe StatusLoading (3 genuine platform gaps)
 
+v0.3.3 Phase 25.1 Plan 02 decisions:
+- Platform loaders use ? chains for clean None propagation instead of if-let with Material fallback
+- winicons uses #[cfg(not(target_os = "windows"))] let _ = role; None pattern for cross-platform compilation
+- Tests for unmapped roles use genuinely unmapped roles (FolderOpen for SF, StatusLoading for Segoe)
+
 ### Roadmap Evolution
 
 - Phase 25.1 inserted after Phase 25: Icon Gaps and Fallback Removal (URGENT)
@@ -130,5 +136,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-03-17
-Stopped at: Completed 25.1-01-PLAN.md
+Stopped at: Completed 25.1-02-PLAN.md — Phase 25.1 complete
 Resume file: None

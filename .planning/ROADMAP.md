@@ -76,7 +76,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
   **Plans:** 1 plan
   Plans:
   - [x] 25-01-PLAN.md -- Custom icon helpers for gpui (custom_icon_to_image_source) and iced (custom_icon_to_image_handle, custom_icon_to_svg_handle) connectors
-- [ ] **Phase 25.1: Icon Gaps and Fallback Removal** (INSERTED) - Fill remaining icon mapping gaps + remove cross-set Material fallback + add coverage tests
+- [x] **Phase 25.1: Icon Gaps and Fallback Removal** (INSERTED) - Fill remaining icon mapping gaps + remove cross-set Material fallback + add coverage tests (completed 2026-03-17)
   **Plans:** 2 plans
   Plans:
   - [x] 25.1-01-PLAN.md -- Fill 3 icon mapping gaps + add coverage tests (known-gaps + bundled SVG completeness)
@@ -164,5 +164,5 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 | 23. Build Crate and Code Generation | v0.3.3 | 5/5 | ✓ Complete | 2026-03-16 |
 | 24. Linux DE Audit and Freedesktop DE-Aware Mapping | v0.3.3 | 2/2 | ✓ Complete | 2026-03-16 |
 | 25. Connector Integration | v0.3.3 | 1/1 | ✓ Complete | 2026-03-16 |
-| 25.1. Icon Gaps and Fallback Removal | v0.3.3 | 1/2 | In progress | - |
+| 25.1. Icon Gaps and Fallback Removal | 2/2 | Complete   | 2026-03-17 | - |
 | 26. Documentation and Release | v0.3.3 | 0/TBD | Not started | - |
