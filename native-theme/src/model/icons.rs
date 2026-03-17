@@ -1522,4 +1522,46 @@ mod tests {
         let svg = provider.icon_svg(IconSet::SfSymbols);
         assert!(svg.is_none(), "SfSymbols should not have bundled SVGs");
     }
+
+    // === Coverage tests ===
+
+    fn known_gaps() -> &'static [(IconSet, IconRole)] {
+        &[
+            (IconSet::SfSymbols, IconRole::FolderOpen),
+            (IconSet::SfSymbols, IconRole::StatusLoading),
+            (IconSet::SegoeIcons, IconRole::StatusLoading),
+        ]
+    }
+
+    #[test]
+    fn no_unexpected_icon_gaps() {
+        let gaps = known_gaps();
+        let system_sets = [IconSet::SfSymbols, IconSet::SegoeIcons, IconSet::Freedesktop];
+        for &set in &system_sets {
+            for role in IconRole::ALL {
+                let is_known_gap = gaps.contains(&(set, role));
+                let is_mapped = icon_name(set, role).is_some();
+                if !is_known_gap {
+                    assert!(
+                        is_mapped,
+                        "{role:?} has no mapping for {set:?} and is not in known_gaps()"
+                    );
+                }
+            }
+        }
+    }
+
+    #[test]
+    #[cfg(all(feature = "material-icons", feature = "lucide-icons"))]
+    fn all_roles_have_bundled_svg() {
+        use crate::bundled_icon_svg;
+        for set in [IconSet::Material, IconSet::Lucide] {
+            for role in IconRole::ALL {
+                assert!(
+                    bundled_icon_svg(set, role).is_some(),
+                    "{role:?} has no bundled SVG for {set:?}"
+                );
+            }
+        }
+    }
 }
