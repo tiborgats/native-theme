@@ -3,6 +3,7 @@ name: CI
 on:
   push:
     branches: [main]
+    tags: ["v*"]
   pull_request:
 
 env:
@@ -28,6 +29,7 @@ jobs:
       matrix:
         include:
           - { name: "native-theme", package: "native-theme" }
+          - { name: "native-theme-build", package: "native-theme-build" }
           - { name: "gpui connector", package: "native-theme-gpui" }
           - { name: "iced connector", package: "native-theme-iced" }
     env:
@@ -61,6 +63,16 @@ jobs:
       - uses: dtolnay/rust-toolchain@stable
       - uses: Swatinem/rust-cache@v2
       - run: cargo test -p native-theme ${{ matrix.flags }}
+
+  test-build-crate:
+    name: Test native-theme-build
+    needs: fmt
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - run: cargo test -p native-theme-build
 
   test-connectors:
     name: Test ${{ matrix.name }}

@@ -86,6 +86,7 @@ mod tests {
     use super::*;
 
     #[test]
+    #[ignore = "requires a freedesktop icon theme installed (not available on CI)"]
     fn load_icon_returns_some_for_dialog_error() {
         let result = load_freedesktop_icon(IconRole::DialogError);
         assert!(result.is_some(), "DialogError should resolve to an icon");
@@ -111,6 +112,7 @@ mod tests {
     }
 
     #[test]
+    #[ignore = "requires a freedesktop icon theme installed (not available on CI)"]
     fn load_icon_returns_svg_variant() {
         let result = load_freedesktop_icon(IconRole::ActionCopy);
         assert!(result.is_some(), "ActionCopy should resolve to an icon");
