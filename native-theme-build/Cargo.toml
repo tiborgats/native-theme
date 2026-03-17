@@ -12,5 +12,5 @@ categories = ["development-tools::build-utils", "gui"]
 
 [dependencies]
 toml = "1.0.6"
-serde = { version = "1.0", features = ["derive"] }
+serde = { version = "1.0.228", features = ["derive"] }
 heck = "0.5"

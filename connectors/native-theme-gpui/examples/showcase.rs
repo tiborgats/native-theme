@@ -800,8 +800,6 @@ struct Showcase {
     icon_cache_fg: Hsla,
     /// Whether the icon set follows the theme's default.
     use_default_icon_set: bool,
-    /// The current theme's variant icon_set (for reading default).
-    current_variant_icon_set: Option<String>,
     /// Widget Info sidebar panel (separate Entity for independent re-render).
     widget_info_panel: Entity<WidgetInfoPanel>,
 }
@@ -845,13 +843,13 @@ impl Showcase {
 
     /// Resolve the effective icon set name for the "default" selection.
     ///
-    /// Uses the theme variant's icon_set if specified, otherwise falls back
-    /// to the platform's system icon set.
+    /// Always returns the platform's system icon set (e.g. "freedesktop" on
+    /// Linux, "sf-symbols" on macOS).  The theme variant's `icon_set` field
+    /// is intentionally ignored here: a cross-platform theme like Windows-11
+    /// sets `icon_set = "segoe-fluent"`, which is unavailable on non-Windows
+    /// hosts.  "Default" in the UI means "use whatever my OS provides".
     fn resolve_default_icon_set(&self) -> String {
-        self.current_variant_icon_set
-            .as_deref()
-            .unwrap_or(system_icon_set().name())
-            .to_string()
+        system_icon_set().name().to_string()
     }
 
     /// Convert a display name from the theme selector to the internal theme name.
@@ -1001,18 +999,14 @@ impl Showcase {
             .pick_variant(is_dark)
             .map(|v| v.fonts.clone())
             .unwrap_or_default();
-        let current_variant_icon_set = nt.pick_variant(is_dark).and_then(|v| v.icon_set.clone());
         if let Some(variant) = nt.pick_variant(is_dark) {
             let theme = to_theme(variant, "default", is_dark);
             *Theme::global_mut(cx) = theme;
             window.refresh();
         }
 
-        // Resolve initial icon set from theme's default
-        let initial_resolved = current_variant_icon_set
-            .as_deref()
-            .unwrap_or(system_icon_set().name())
-            .to_string();
+        // Resolve initial icon set from system (default = system's native set)
+        let initial_resolved = system_icon_set().name().to_string();
         let loaded_icons = load_all_icons(&initial_resolved);
         let gpui_icons = load_gpui_icons(&initial_resolved);
 
@@ -1215,7 +1209,6 @@ impl Showcase {
             gpui_icon_sources: Vec::new(),
             icon_cache_fg: fg,
             use_default_icon_set: true,
-            current_variant_icon_set,
             widget_info_panel: {
                 let info_input = cx.new(|cx| {
                     let mut state = InputState::new(window, cx).auto_grow(4, 30);
@@ -1250,7 +1243,6 @@ impl Showcase {
 
         if let Some(variant) = nt.pick_variant(self.is_dark) {
             self.original_fonts = variant.fonts.clone();
-            self.current_variant_icon_set = variant.icon_set.clone();
             let theme = to_theme(variant, name, self.is_dark);
             *Theme::global_mut(cx) = theme;
             window.refresh();

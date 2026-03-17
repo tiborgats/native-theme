@@ -1543,7 +1543,11 @@ mod tests {
     #[test]
     fn no_unexpected_icon_gaps() {
         let gaps = known_gaps();
-        let system_sets = [IconSet::SfSymbols, IconSet::SegoeIcons, IconSet::Freedesktop];
+        let system_sets = [
+            IconSet::SfSymbols,
+            IconSet::SegoeIcons,
+            IconSet::Freedesktop,
+        ];
         for &set in &system_sets {
             for role in IconRole::ALL {
                 let is_known_gap = gaps.contains(&(set, role));

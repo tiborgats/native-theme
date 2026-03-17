@@ -110,8 +110,8 @@ native_theme_build::generate_icons("icons/icons.toml");
 // src/lib.rs
 include!(concat!(env!("OUT_DIR"), "/app_icon.rs"));
 
-use native_theme::{load_custom_icon, IconSet};
-let icon = load_custom_icon(&AppIcon::PlayPause, IconSet::Material);
+use native_theme::load_custom_icon;
+let icon = load_custom_icon(&AppIcon::PlayPause, "material");
 ```
 
 See the [`native-theme-build` docs](https://docs.rs/native-theme-build) for the

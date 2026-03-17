@@ -8,7 +8,7 @@ native-theme's purpose is to make apps look native on every platform. Loading sp
 - **Windows 11**: Arc/stroke that expands and contracts while rotating (Lottie-driven)
 - **GNOME (libadwaita 1.6+)**: Programmatically drawn arcs (`AdwSpinnerPaintable`)
 - **GNOME (older GTK)**: Symbolic SVG + CSS rotation (`GtkSpinner`)
-- **KDE/Breeze**: 15-frame vertical sprite sheet SVG (`process-working.svg`)
+- **KDE/Breeze**: Single gear icon with continuous rotation (modern KF6); legacy apps use 15-frame vertical sprite sheet SVG (`process-working.svg`)
 
 Currently `StatusLoading` returns `None` on macOS, Windows, and Segoe because the icon model (`IconData`) only supports static images. A static icon cannot represent a loading state — animation IS the semantic.
 
@@ -33,9 +33,10 @@ pub enum IconData {
 | macOS | `NSProgressIndicator` (spinning style) | Private AppKit rendering: fins with opacity gradient, timer-driven | No public API for frame capture |
 | macOS 14+ | SF Symbols + `symbolEffect` on `NSImageView` | AppKit-native, but tied to view hierarchy | Cannot render to raw pixels |
 | Windows 11 | `ProgressRing` via `AnimatedVisualPlayer` | Lottie animation compiled to composition visual | Could recreate the Lottie JSON |
-| GNOME (new) | `AdwSpinnerPaintable` | Custom `GdkPaintable`, draws arcs procedurally | Source-readable but not themed |
-| GNOME (old) | `GtkSpinner` | `process-working-symbolic` SVG + CSS `@keyframes spin` | SVG extractable, rotation is trivial |
-| KDE | `KBusyIndicatorWidget` | Animates Breeze `process-working.svg` sprite sheet | Yes — 15-frame sprite sheet at `/usr/share/icons/breeze/animations/` |
+| GNOME (libadwaita 1.6+) | `AdwSpinnerPaintable` | Custom `GdkPaintable`, draws arcs procedurally via GSK path primitives (`GskPathBuilder`/`GskStroke`/`GskPathMeasure`). Rotation is linear (`ADW_LINEAR`); arc breathing (extend/contract) uses sinusoidal easing (`ADW_EASE_IN_OUT_SINE`). 1200 ms per cycle. | Source-readable but not themed |
+| GNOME (GTK3/4) | `GtkSpinner` | CSS `rotate(1turn)` on `process-working-symbolic` SVG; GTK3 has procedural 12-spoke Cairo fallback (`gtk_css_image_builtin_draw_spinner`, `num_steps = 12`, linearly fading alpha per spoke). Note: `process-working-symbolic` removed from Adwaita icon theme v48 | SVG extractable, rotation is trivial |
+| KDE (modern, KF6) | QML `BusyIndicator` / `KBusyIndicatorWidget` | Loads `process-working-symbolic` (single gear SVG) and applies continuous rotation via `RotationAnimator` (QML) or `QVariantAnimation` (C++), 2000 ms/rev. `KIconLoader::loadAnimated()` deprecated since KF 6.5 | Single-frame SVG extractable |
+| KDE (legacy) | `KPixmapSequenceWidget` | Frame-by-frame playback of Breeze `process-working.svg` sprite sheet (200 ms/frame default). Used by Gwenview, Akonadi, DrKonqi | Yes — 15-frame sprite sheet at `/usr/share/icons/breeze/animations/` |
 | Freedesktop general | `process-working` in `animations/` context | Vertical sprite sheet SVG (theme-dependent) | Standard format, parseable |
 
 ### Renderer capabilities
@@ -104,7 +105,7 @@ pub struct FrameAtlas {
 
 Each platform produces its own atlas:
 - macOS: 12 frames of the spinning fins (programmatically generated to match `NSProgressIndicator`)
-- Windows: 30 frames of the arc/stroke animation (matching `ProgressRing` style)
+- Windows: 60 frames of the arc/stroke animation (matching `ProgressRing` 2-second cycle at 30 fps)
 - KDE: Parse the Breeze `process-working.svg` sprite sheet, rasterize each of the 15 frames via resvg
 - GNOME: Generate arc frames matching `AdwSpinner` style
 - Bundled: Ship pre-rendered atlas matching Material/Lucide spinner style
@@ -117,7 +118,7 @@ Each platform produces its own atlas:
 - Freedesktop sprite sheets map naturally to this model
 
 **Cons:**
-- Memory cost: 12 frames x 48x48 x 4 = ~111 KB per spinner (acceptable), 30 frames x 48x48 x 4 = ~277 KB (heavier)
+- Memory cost: 12 frames x 48x48 x 4 = ~111 KB per spinner (acceptable), 60 frames x 48x48 x 4 = ~553 KB (heavier)
 - Raster-only: no vector scaling. Fixed to one resolution (or need multiple atlas sizes)
 - Capturing native macOS/Windows frames at runtime is impractical — need to draw them ourselves
 - Pre-rendered frames are an approximation, not the actual platform animation
@@ -152,7 +153,7 @@ Ship platform-specific Lottie files:
 - Lottie has massive ecosystem support and tooling
 
 **Cons:**
-- Adds `rlottie` dependency (C++ FFI via `rlottie-sys`) or `dotlottie-rs` (ThorVG C++ FFI)
+- Adds `rlottie` dependency (C++ FFI via `rlottie-sys`) or `dotlottie-rs` (C++ FFI — ThorVG or rlottie backend)
 - Neither is pure Rust — adds build complexity (C++ compiler required)
 - Connectors must integrate a Lottie renderer into their frame loop
 - Creating platform-faithful Lottie files requires design work (or finding existing ones)
@@ -229,9 +230,9 @@ This is how freedesktop `process-working` already works. Extend the pattern to o
 **Cons:**
 - Creating macOS/Windows-style sprite sheet SVGs is manual design work
 - SVG sprite sheets are larger than Lottie (15 frames of SVG paths vs one animation description)
-- Connector must implement viewBox slicing logic (non-trivial for vertical/horizontal sheets)
+- Connector must implement viewBox slicing logic (straightforward arithmetic, but new code per connector)
 - Not a standard format outside freedesktop — invented convention for macOS/Windows styles
-- Only works for SVG-renderable spinners — macOS's RGBA rasterized spinner doesn't fit
+- Requires all spinner styles to be expressible as SVG paths — platform effects (macOS spoke anti-aliasing subtleties, Windows arc easing) may not reproduce faithfully in static SVG
 
 ---
 
@@ -247,9 +248,9 @@ pub struct AnimatedIcon {
     pub repeat: Repeat,
 }
 
+#[non_exhaustive]
 pub enum Repeat {
     Infinite,
-    Count(u32),
 }
 
 /// Load the platform-native loading indicator.
@@ -275,6 +276,7 @@ The `AnimatedIcon` holds a sequence of `IconData` frames (each can be SVG or RGB
 - SVG frames still need rasterization per-frame (though can be cached)
 - Connector must implement frame cycling logic
 - Generating platform-native frames still requires platform-specific code
+- If each frame is an independent `IconData::Svg(Vec<u8>)`, SVG boilerplate (XML headers, namespace declarations) is duplicated per frame — less memory-efficient than a single sprite sheet SVG
 
 ---
 
@@ -370,7 +372,7 @@ The connector uses its toolkit's built-in capabilities:
 - native-theme's value proposition weakens — the core crate can't help here
 - Apps that don't use gpui or iced get nothing
 - Duplication: if we add a third connector, it needs its own spinner implementation
-- Hard to keep all connector spinners visually consistent with their respective platforms
+- Hard to verify each connector's spinner accurately matches its target platform's native animation
 
 ---
 
@@ -410,10 +412,10 @@ impl SpinnerAnimation {
 
 | Criterion | A: Hint | B: Atlas | C: Lottie | D: Procedural | E: Sprite | F: AnimatedIcon | G: Capture | H: Bundled | I: Widget | J: Delegate |
 |-----------|---------|----------|-----------|---------------|-----------|----------------|------------|------------|-----------|-------------|
-| Native fidelity | Low | Medium | Medium | High | Medium | Medium-High | Highest | High | High | Medium-High |
+| Native fidelity | Low | Medium | Medium | Medium-High | Medium | Medium-High | Highest | High | High | Medium-High |
 | Impl complexity | Low | Medium | High | High | Medium | Medium | Very High | Medium | High | High |
 | New dependencies | None | None | C++ FFI | None | None | None | Platform FFI | png/webp | None | None |
-| Binary size impact | None | ~100-300 KB | ~3-5 KB + rlottie | None | ~50-150 KB | ~100-300 KB | None | ~20-80 KB | None | None |
+| Binary size impact | None | ~100-550 KB | ~3-5 KB JSON + ~1-2 MB rlottie lib | None | ~50-150 KB | ~100-550 KB | None | ~20-80 KB | None | None |
 | Resolution scaling | Via SVG | Fixed | Vector | Vector | Via SVG | Mixed | Fixed | Fixed | Vector | Mixed |
 | Connector effort | Low | Low | High | Very High | Medium | Low | N/A | Low | Very High | Medium |
 | API cleanliness | Poor (mixed) | Medium | Medium | Medium | Medium | Good | Good | Medium | Good | Poor |
@@ -425,7 +427,7 @@ impl SpinnerAnimation {
 
 The options above aren't mutually exclusive. The best solution may combine multiple approaches, selected per context.
 
-### Combo 1: F + B (Recommended)
+### Combo 1: F + B
 
 **`AnimatedIcon` API (Option F) backed by frame atlas data (Option B).**
 
@@ -446,7 +448,7 @@ pub fn loading_indicator_sized(icon_set: &str, size: u32) -> Option<AnimatedIcon
 
 **Why this works:**
 - Clean API (Option F) with practical implementation (Option B)
-- Connectors need zero new rendering code — just cycle `IconData` frames
+- Connectors need minimal new rendering code — just a timer cycling `IconData` frames
 - SVG frames = resolution independent on renderers that support it
 - RGBA frames = universal compatibility
 - Freedesktop themes get parsed at runtime (truly native)
@@ -475,70 +477,148 @@ The widget internally uses the `AnimatedIcon` data but renders with smooth inter
 - Most complex to implement — widget code is per-connector
 - Two parallel APIs to maintain
 
-### Combo 3: F + A (Pragmatic minimum)
+### Combo 3: Unified F + A (Platform-adaptive) (Recommended)
 
-**`AnimatedIcon` API for true animated content, plus animation hints for "close enough" cases.**
+**Single `AnimatedIcon` enum with both frame sequences and simple transforms as variants.**
 
-`StatusLoading` gets a proper `AnimatedIcon` via `loading_indicator()`. But for icons that just need a simple effect (e.g., a notification bell that should "ring" when active), use `AnimationHint::Pulse` or `AnimationHint::Wiggle` on the static icon.
+Instead of two parallel systems (AnimatedIcon + AnimationHint), unify them into one type. Each platform uses whichever variant best matches its native animation model.
 
 ```rust
-// For the spinner — full animation
-let spinner = loading_indicator("material"); // -> AnimatedIcon with frames
+#[non_exhaustive]
+pub enum AnimatedIcon {
+    /// Frame sequence — for complex animations (macOS spokes, Windows arc, KDE sprite sheet)
+    Frames {
+        frames: Vec<IconData>,
+        frame_duration_ms: u32,
+        repeat: Repeat,
+    },
+    /// Simple transform on a static icon — for continuous rotation animations
+    Transform {
+        icon: IconData,
+        animation: TransformAnimation,
+    },
+}
 
-// For a bell shake — just a hint on a static icon
-let hint = IconRole::Notification.animation_hint(); // -> AnimationHint::None normally
+#[non_exhaustive]
+pub enum TransformAnimation {
+    /// Continuous rotation (e.g., GNOME GtkSpinner, Lucide loader)
+    Spin { duration_ms: u32 },
+}
+```
+
+Each platform uses the variant that matches its native animation:
+
+| Platform | Variant | Implementation |
+|----------|---------|----------------|
+| KDE/Breeze | `Frames` | Parse native 15-frame sprite sheet at runtime |
+| macOS | `Frames` | 12 SVG frames with spoke opacity steps |
+| Windows | `Frames` | ~60 SVG arc frames (30 fps over 2-second cycle) with easing baked into frame content |
+| GNOME (libadwaita 1.6+) | `Frames` | Generated arc frames matching `AdwSpinnerPaintable` style |
+| GNOME (GTK3/4) | `Transform::Spin` | Static `process-working-symbolic` SVG + rotation |
+| Bundled Material | `Frames` | Generated circular stroke arc frames |
+| Bundled Lucide | `Transform::Spin` | `loader` icon is designed for rotation |
+
+```rust
+// Public API — same as Combo 1
+pub fn loading_indicator(icon_set: &str) -> Option<AnimatedIcon>
 ```
 
 **Why this works:**
-- Separates the two concerns: complex animations (spinner) vs simple effects (shake, pulse)
-- Animation hints are nearly free to implement
-- Full `AnimatedIcon` only needed for the spinner case
+- **One type, not two systems**: `AnimatedIcon` is a single `#[non_exhaustive]` enum that connectors match on. No parallel `AnimationHint` API.
+- **Platform-native strategy per platform**: GNOME's CSS rotation becomes `Transform::Spin` (smooth 60fps continuous rotation) instead of 12 redundant copies of the same SVG at different angles (jerky 30° steps). macOS/Windows/KDE use `Frames` because their native animations are inherently multi-frame.
+- **Memory-efficient for simple cases**: `Transform::Spin` stores one SVG, not 12 copies.
+- **Smooth rotation where appropriate**: Connectors apply continuous rotation transforms for `Spin` icons, matching the native GTK behavior exactly. Frame-cycling the same SVG at 12 discrete rotation steps would be visibly jerkier.
+- **Trivial connector implementation**: Two match arms — cycle frames on timer, or apply rotation transform. Both are ~10 lines per connector.
 
 **Weaknesses:**
-- Two animation systems in one crate
-- Animation hints are still "generic, not native"
+- Connectors must handle two variants (though both are simple)
+- Transform animations are inherently "generic" — they work but don't capture platform-specific easing
+- GNOME (GTK3/4) case is becoming less relevant as `process-working-symbolic` was removed from Adwaita icon theme v48
 
 ---
 
 ## Proposal
 
-**Combo 1 (F + B)** — `AnimatedIcon` API backed by frame data.
+**Combo 3 (Unified F + A)** — single `AnimatedIcon` enum with platform-adaptive strategy.
+
+### Why not Combo 1 (F + B)?
+
+Combo 1 uses frame sequences for all platforms uniformly. This is suboptimal for one specific case and slightly inefficient for another:
+
+1. **GNOME (GTK3/4)**: The native `GtkSpinner` animation IS CSS rotation of a static SVG (`process-working-symbolic`). Creating 12 copies of the same SVG at 30° intervals is wasteful (12x the memory) and produces visibly jerky 30°-step rotation instead of smooth continuous rotation. A `Transform::Spin` variant matches the native behavior exactly.
+
+2. **Lucide bundled**: The `loader` icon is explicitly designed for rotation — spinning it continuously is the intended use. Frame-cycling 12 rotated copies works but is unnecessary overhead when the connector can just rotate the single icon smoothly.
+
+For macOS (12 discrete spoke opacity steps), Windows (arc expansion/contraction), and KDE (15-frame sprite sheet), frame sequences are the natural fit. The unified approach uses each strategy where it fits best, rather than forcing frame sequences everywhere.
+
+Note on Windows easing: the native `ProgressRing` has a 2-second cycle (120 Lottie frames at 60 fps, source: `ProgressRingIndeterminate.h` in microsoft-ui-xaml). The animation has two symmetric 1-second phases — arc grows (TrimEnd 0→0.5) then arc shrinks (TrimStart 0→0.5) — with near-linear cubic bezier easing ((0.167, 0.167) to (0.833, 0.833)) and a step crossfade between two overlapping ellipse shapes at the midpoint. Total rotation is 900° (2.5 turns) per cycle. With frame-based animation, the easing is baked into each frame's SVG geometry (the arc angle at that time step reflects the eased value). ~60 uniformly-timed frames (30 fps) captures the 2-second cycle faithfully. 40 frames at 50 ms (20 fps) is the minimum for visually smooth arc motion. Variable per-frame timing could allow fewer frames, but is not needed for visual correctness — this is deferred to a future enhancement if needed.
 
 ### Rationale
 
 1. **Clean separation**: `StatusLoading` is removed from `IconRole`. Loading indicators get their own API (`loading_indicator()`). Static icons stay static.
 
-2. **Zero connector rework**: `AnimatedIcon` holds `Vec<IconData>`. Connectors already render `IconData`. The only new connector code is a timer that advances the frame index — trivial in both gpui and iced.
+2. **Minimal connector work**: Connectors match on two enum variants — frame cycling or rotation transform. Both are trivial. Existing `IconData` rendering code works for each frame.
 
-3. **Truly native on freedesktop**: Parse the actual theme's `process-working` sprite sheet at runtime. KDE/Breeze users see Breeze's cogwheel animation. Adwaita users see whatever their theme provides.
+3. **Truly native on freedesktop**: KDE/Breeze sprite sheets are parsed at runtime — users see their actual theme's animation. GNOME's `process-working-symbolic` SVG gets proper continuous rotation matching native `GtkSpinner` behavior.
 
-4. **Faithful approximation elsewhere**: For macOS/Windows, ship SVG frame sets that faithfully reproduce the native spinner style. These are static assets, hand-crafted once, compiled in via `include_bytes!()`. Not pixel-identical to the OS, but visually consistent.
+4. **Faithful approximation on macOS/Windows**: Ship SVG frame sets that reproduce the native spinner style. Hand-crafted once, compiled in via `include_bytes!()`. For Windows, ~60 frames at uniform timing (30 fps over the native 2-second cycle) with easing baked into arc geometry. Not pixel-identical to the OS, but visually consistent.
 
-5. **No heavy dependencies**: No Lottie runtime, no C++ FFI, no platform-specific capture code. Just SVG frames rendered through the existing resvg pipeline.
+5. **No heavy dependencies**: No Lottie runtime, no C++ FFI, no platform-specific capture code. SVG frames through the existing resvg pipeline, rotation transforms through the toolkit's built-in transform support.
 
-6. **Future-proof**: If we later want Lottie support (Option C) or connector widgets (Option I), the `AnimatedIcon` API doesn't need to change — those become alternative ways to produce or consume the same animation data.
+6. **Future-proof**: The enum is `#[non_exhaustive]`. If we later want Lottie support (add a `Lottie` variant), connector widgets (Option I), or variable frame timing, the API extends naturally without breaking changes.
+
+### Platform strategy summary
+
+| Platform | Variant | Why this fits | Native fidelity |
+|----------|---------|---------------|-----------------|
+| KDE/Breeze | `Frames` (15 frames) | Legacy sprite sheet format IS a frame sequence; modern KDE uses rotation but sprite sheet is still shipped | High — theme's own sprite sheet frames |
+| macOS | `Frames` (12 frames) | Native IS ~12 discrete opacity steps | High — matches real `NSProgressIndicator` |
+| Windows | `Frames` (~60 frames) | Arc expansion/contraction over 2-second cycle with easing baked into frame geometry | Good — 30 fps matches native 2-second cycle smoothly |
+| GNOME (libadwaita 1.6+) | `Frames` (~20 frames) | Procedural arcs, no extractable format | Good — generated frames approximate `AdwSpinner` |
+| GNOME (GTK3/4) | `Transform::Spin` | Native IS CSS rotation of static SVG | Exact match — continuous rotation |
+| Bundled Material | `Frames` (~12 frames) | Circular stroke animation has varying arc length | Good — matches Material Design style |
+| Bundled Lucide | `Transform::Spin` | Icon is designed for rotation | Exact match — smooth continuous spin |
 
 ### What needs to be built
 
 | Component | Work |
 |-----------|------|
-| `AnimatedIcon` struct + `Repeat` enum | New types in `model/icons.rs` |
+| `AnimatedIcon` enum + `TransformAnimation` + `Repeat` | New types in `model/icons.rs` |
 | `loading_indicator(icon_set: &str)` | New public function in `lib.rs` |
 | Freedesktop sprite sheet parser | Parse `animations/*/process-working.svg`, slice into frames |
+| Freedesktop symbolic rotation detection | Detect `process-working-symbolic` (non-sprite-sheet), return `Transform::Spin` |
 | macOS spinner SVG frames | Design 12 SVGs matching the spoke/fin style |
-| Windows spinner SVG frames | Design ~20 SVGs matching the arc/stroke style |
+| Windows spinner SVG frames | Design ~60 SVGs matching the arc/stroke 2-second cycle (two phases: arc grow then shrink, 900° total rotation) with easing in geometry |
 | Material spinner SVG frames | Design ~12 SVGs of the circular stroke animation |
 | Bundled frame sets | `include_bytes!()` for non-freedesktop platforms |
-| gpui connector `to_animated_image_sources()` | Convert `AnimatedIcon` to `Vec<ImageSource>` + timing |
-| iced connector `to_animated_handles()` | Convert `AnimatedIcon` to `Vec<svg::Handle>` + timing |
-| Remove `StatusLoading` from `IconRole` | Breaking change (major version) or deprecation |
+| gpui connector: frame cycling | Handle `Frames` → `Vec<ImageSource>` + timer |
+| gpui connector: rotation support | Handle `Transform::Spin` → animated rotation transform |
+| iced connector: frame cycling | Handle `Frames` → `Vec<svg::Handle>` + timer |
+| iced connector: rotation support | Handle `Transform::Spin` → animated rotation transform |
+| Remove `StatusLoading` from `IconRole` | Remove the variant; bump minor version (pre-1.0) |
+| `prefers_reduced_motion() -> bool` | New public function in `lib.rs`, per-platform OS query |
 
-### Open questions
+### Resolved questions
 
-1. **Should `StatusLoading` be removed from `IconRole` or deprecated?** Removing is cleaner but a breaking change. Deprecating keeps compat but leaves a confusing variant that always returns `None`.
+1. **`StatusLoading` removal: remove, don't deprecate.** The crate is pre-1.0 (v0.3.3), so breaking changes are expected on minor version bumps. Deprecation would leave a confusing variant that returns `None` on 2 of 3 platform icon sets (SF Symbols, Segoe) with no path to recovery. The `loading_indicator()` API is the proper replacement for the animated use case. For the rare case where an app wants a static loading icon (e.g., next to a "Loading..." label), `bundled_icon_by_name("progress_activity")` or `bundled_icon_by_name("loader")` provides that without `IconRole` involvement.
 
-2. **Should `AnimatedIcon` support variable frame durations?** The current proposal uses a single `frame_duration_ms`. Platform spinners use constant frame rates, so this is fine for now. But `Vec<(IconData, u32)>` (frame + duration) would be more flexible.
+2. **Feature gating: yes, aligned with existing icon set features — no new features needed.** Bundled spinner frames follow the same gating as their parent icon set:
+   - Material spinner frames → `material-icons` feature
+   - Lucide spinner → `lucide-icons` feature
+   - macOS/Windows/GNOME approximation frames → `system-icons` feature (these are bundled platform-native approximations, used when the native API can't provide animation data)
+   - Freedesktop sprite sheet parsing → `system-icons` feature (runtime parsing, no bundled data)
 
-3. **Should the bundled spinner SVG frames be feature-gated?** Like `material-icons` gates bundled SVGs. A `spinner-animations` feature could gate the ~50-100 KB of bundled frame data.
+   This mirrors the existing pattern exactly — `load_icon("material", ...)` requires `material-icons`, so `loading_indicator("material")` requires the same feature. Zero new feature flags.
 
-4. **What size should bundled frames target?** 24px (standard icon size) or 48px (gpui's rasterize size)? SVG frames are resolution-independent, so this only matters for the viewBox.
+3. **ViewBox coordinate space: 24×24 for all bundled spinner frames.** The viewBox is not a display resolution — it defines the internal coordinate system in which SVG paths are authored. An SVG with `viewBox="0 0 24 24"` renders at any pixel size the connector requests (48px, 96px, etc.) because SVG is vector. The actual rendered size is always determined at display time by the connector based on screen resolution, DPI, and icon size — this is inherent to SVG and requires no special handling. The 24×24 coordinate space is chosen because it's the most widely used icon viewBox convention (matches Lucide, most icon libraries), provides sufficient precision for spinner geometry (arcs, strokes, lines), and keeps path coordinates simple. All spinner frames are new assets authored by the project — even Material-style spinners use 24×24 rather than Material's 960×960, because they're a distinct asset category from the static icons and consistency across all spinner frames simplifies authoring and testing.
+
+4. **Easing: not now, extensible later.** Both current `TransformAnimation::Spin` use cases (GtkSpinner CSS `animation: spin 1s linear infinite`, Lucide's symmetric loader icon) use linear rotation. Neither gpui nor iced expose built-in easing primitives, so connectors would need to implement easing from scratch with no current benefit. `TransformAnimation` is marked `#[non_exhaustive]`, so a future `SpinEased { duration_ms, easing: Easing }` variant can be added without breaking changes when a concrete use case arises.
+
+5. **Reduced motion: always return `AnimatedIcon`, connectors decide presentation policy.** `loading_indicator()` always returns the animation data regardless of OS accessibility settings. This cleanly separates concerns:
+   - **native-theme core**: provides animation data (what to show) via `loading_indicator()`
+   - **native-theme core**: exposes OS preference via a new `prefers_reduced_motion() -> bool` function, analogous to the existing `system_is_dark() -> bool`
+   - **Connector/app**: decides whether to animate based on the preference (show `frames[0]` as static image, or stop rotation)
+
+   This matches how web browsers handle `prefers-reduced-motion` — the CSS animation data exists unconditionally; the browser decides whether to play it. Option (a) (returning static fallback) would conflate data loading with accessibility policy, and option (c) (parameter) would push the OS query to the caller and cache a preference that can change at runtime.
+
+6. **No `loading_indicator_sized` variant.** All bundled spinner frames use SVG (`IconData::Svg`), which is resolution-independent — connectors rasterize at whatever pixel size they need. Freedesktop sprite sheet frames are also extracted as individual SVG slices (via viewBox manipulation), not as pre-rasterized RGBA. A sized variant would only be needed if we returned pre-rasterized `IconData::Rgba` frames, which we don't for any current platform. If a future platform requires RGBA frames, a `loading_indicator_sized(icon_set: &str, size: u32)` can be added without breaking changes.
