@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.3.3
 milestone_name: Custom Icon Roles
 status: executing
-stopped_at: "Completed 25-01-PLAN.md"
-last_updated: "2026-03-16T01:59:25Z"
-last_activity: "2026-03-16 — Completed Phase 25 Plan 01 (Connector Integration)"
+stopped_at: "Completed 25.1-01-PLAN.md"
+last_updated: "2026-03-17T09:43:06Z"
+last_activity: "2026-03-17 — Completed Phase 25.1 Plan 01 (Icon Mapping Gaps)"
 progress:
-  total_phases: 5
+  total_phases: 6
   completed_phases: 4
-  total_plans: 10
-  completed_plans: 10
-  percent: 90
+  total_plans: 12
+  completed_plans: 11
+  percent: 92
 ---
 
 # Project State
@@ -21,23 +21,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-15)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 25 complete, ready for Phase 26
+**Current focus:** Phase 25.1 Plan 01 complete, Plan 02 (fallback removal) next
 
 ## Current Position
 
-Phase: 25 (fourth of 5 in v0.3.3) — Connector Integration
-Current Plan: 1 of 1 in Phase 25 (COMPLETE)
-Status: Phase 25 Complete
-Last activity: 2026-03-16 — Completed Plan 01 (Connector Integration)
+Phase: 25.1 (inserted after Phase 25) — Icon Gaps and Fallback Removal
+Current Plan: 1 of 2 in Phase 25.1 (Plan 01 COMPLETE)
+Status: Executing Phase 25.1
+Last activity: 2026-03-17 — Completed Plan 01 (Icon Mapping Gaps)
 
-Progress: [#########.] 90%
+Progress: [#########.] 92%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 58 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 10 v0.3.3)
+- Total plans completed: 59 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 11 v0.3.3)
 - Average duration: ~4.1min (v0.2), 3.7min (v0.3)
-- Total execution time: 70min (v0.2), 37min (v0.3), 15min (v0.3.2), 28min (v0.3.3)
+- Total execution time: 70min (v0.2), 37min (v0.3), 15min (v0.3.2), 30min (v0.3.3)
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
@@ -51,6 +51,7 @@ Progress: [#########.] 90%
 | 24    | 01   | 2min     | 2     | 1     |
 | 24    | 02   | 2min     | 2     | 4     |
 | 25    | 01   | 3min     | 2     | 2     |
+| 25.1  | 01   | 2min     | 2     | 1     |
 
 ## Accumulated Context
 
@@ -109,6 +110,15 @@ v0.3.3 Phase 24 Plan 02 decisions:
 - KNOWN_DE_KEYS constant mirrors de_key_to_variant keys for consistency
 - Unknown DE key with only default collapses to simple arm in generated code
 
+v0.3.3 Phase 25.1 Plan 01 decisions:
+- Freedesktop Notification mapped to "notification-active" (KDE convention; GNOME themes return None from lookup)
+- Material/Lucide TrashFull reuse same icon as TrashEmpty (no full-trash variant in either set)
+- known_gaps list: SF FolderOpen, SF StatusLoading, Segoe StatusLoading (3 genuine platform gaps)
+
+### Roadmap Evolution
+
+- Phase 25.1 inserted after Phase 25: Icon Gaps and Fallback Removal (URGENT)
+
 ### Pending Todos
 
 None.
@@ -119,6 +129,6 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-16
-Stopped at: Completed 25-01-PLAN.md
+Last session: 2026-03-17
+Stopped at: Completed 25.1-01-PLAN.md
 Resume file: None
