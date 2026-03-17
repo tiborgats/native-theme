@@ -805,8 +805,8 @@ fn freedesktop_name(role: IconRole) -> Option<&'static str> {
 
         // System
         IconRole::UserAccount => "system-users",
-        // Notification: no freedesktop standard notification bell icon
-        IconRole::Notification => return None,
+        // KDE convention (Breeze, Oxygen); GNOME themes return None from lookup
+        IconRole::Notification => "notification-active",
         IconRole::Help => "help-browser",
         IconRole::Lock => "system-lock-screen",
 
@@ -860,8 +860,8 @@ fn material_name(role: IconRole) -> Option<&'static str> {
         IconRole::FolderClosed => "folder",
         IconRole::FolderOpen => "folder_open",
         IconRole::TrashEmpty => "delete",
-        // TrashFull: Material has no separate full-trash icon
-        IconRole::TrashFull => return None,
+        // same as TrashEmpty -- Material has no full-trash variant
+        IconRole::TrashFull => "delete",
 
         // Status
         IconRole::StatusLoading => "progress_activity",
@@ -924,8 +924,8 @@ fn lucide_name(role: IconRole) -> Option<&'static str> {
         IconRole::FolderClosed => "folder-closed",
         IconRole::FolderOpen => "folder-open",
         IconRole::TrashEmpty => "trash-2",
-        // TrashFull: Lucide has no separate full-trash icon
-        IconRole::TrashFull => return None,
+        // same as TrashEmpty -- Lucide has no full-trash variant
+        IconRole::TrashFull => "trash-2",
 
         // Status
         IconRole::StatusLoading => "loader",
