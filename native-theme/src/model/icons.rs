@@ -1319,21 +1319,27 @@ mod tests {
     }
 
     #[test]
-    fn icon_name_freedesktop_notification_is_none() {
+    fn icon_name_freedesktop_notification() {
         assert_eq!(
             icon_name(IconSet::Freedesktop, IconRole::Notification),
-            None
+            Some("notification-active")
         );
     }
 
     #[test]
-    fn icon_name_material_trash_full_is_none() {
-        assert_eq!(icon_name(IconSet::Material, IconRole::TrashFull), None);
+    fn icon_name_material_trash_full() {
+        assert_eq!(
+            icon_name(IconSet::Material, IconRole::TrashFull),
+            Some("delete")
+        );
     }
 
     #[test]
-    fn icon_name_lucide_trash_full_is_none() {
-        assert_eq!(icon_name(IconSet::Lucide, IconRole::TrashFull), None);
+    fn icon_name_lucide_trash_full() {
+        assert_eq!(
+            icon_name(IconSet::Lucide, IconRole::TrashFull),
+            Some("trash-2")
+        );
     }
 
     // Spot-check across all 5 icon sets for multiple roles
@@ -1405,32 +1411,32 @@ mod tests {
 
     #[test]
     fn icon_name_freedesktop_expected_count() {
-        // Freedesktop: 42 - 1 None (Notification) = 41 Some
+        // Freedesktop: all 42 roles mapped
         let some_count = IconRole::ALL
             .iter()
             .filter(|r| icon_name(IconSet::Freedesktop, **r).is_some())
             .count();
-        assert_eq!(some_count, 41, "Freedesktop should have 41 mappings");
+        assert_eq!(some_count, 42, "Freedesktop should have 42 mappings");
     }
 
     #[test]
     fn icon_name_material_expected_count() {
-        // Material: 42 - 1 None (TrashFull) = 41 Some
+        // Material: all 42 roles mapped
         let some_count = IconRole::ALL
             .iter()
             .filter(|r| icon_name(IconSet::Material, **r).is_some())
             .count();
-        assert_eq!(some_count, 41, "Material should have 41 mappings");
+        assert_eq!(some_count, 42, "Material should have 42 mappings");
     }
 
     #[test]
     fn icon_name_lucide_expected_count() {
-        // Lucide: 42 - 1 None (TrashFull) = 41 Some
+        // Lucide: all 42 roles mapped
         let some_count = IconRole::ALL
             .iter()
             .filter(|r| icon_name(IconSet::Lucide, **r).is_some())
             .count();
-        assert_eq!(some_count, 41, "Lucide should have 41 mappings");
+        assert_eq!(some_count, 42, "Lucide should have 42 mappings");
     }
 
     // === system_icon_set() tests ===
@@ -1500,7 +1506,7 @@ mod tests {
     fn icon_role_provider_all_roles() {
         // All 42 IconRole variants implement IconProvider -- iterate and call icon_name
         for role in IconRole::ALL {
-            // Material has 41 of 42 mapped (TrashFull is None)
+            // All 42 roles are mapped for Material
             let _name = IconProvider::icon_name(&role, IconSet::Material);
             // Just verifying it doesn't panic
         }
