@@ -17,12 +17,13 @@ and Windows.
 | [`native-theme`](native-theme/) | Core theme model, presets, and platform readers |
 | [`native-theme-gpui`](connectors/native-theme-gpui/) | [gpui](https://gpui.rs) + [gpui-component](https://crates.io/crates/gpui-component) connector |
 | [`native-theme-iced`](connectors/native-theme-iced/) | [iced](https://iced.rs) connector |
+| [`native-theme-build`](native-theme-build/) | Build-time code generation for custom icon roles |
 
 ## Quick Start
 
 ```toml
 [dependencies]
-native-theme = "0.3.2"
+native-theme = "0.3.3"
 ```
 
 Load a bundled preset:

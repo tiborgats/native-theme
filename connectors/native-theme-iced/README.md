@@ -70,6 +70,16 @@ per-widget rather than through the Catalog:
 | `extended` | Overrides iced's Extended palette for secondary and background.weak |
 | `icons` | Icon role mapping for iced SVG widgets |
 
+## Custom Icons
+
+For app-specific icons defined via `native-theme-build`, the connector provides:
+
+- `custom_icon_to_image_handle(provider, icon_set)` -- load a custom icon as an iced image handle
+- `custom_icon_to_svg_handle(provider, icon_set)` -- load as an SVG handle
+- `custom_icon_to_svg_handle_colored(provider, icon_set, color)` -- load with color tinting
+
+These work with any type implementing `IconProvider`.
+
 ## Example
 
 Run the showcase widget gallery to explore all 17 presets interactively:

@@ -75,6 +75,15 @@ native-theme's icon bundles:
 - `freedesktop_name_for_gpui_icon()` -- maps to FreeDesktop icon names (Linux)
 - `to_image_source()` -- converts native-theme `IconData` to gpui `ImageSource`
 
+### Custom Icons
+
+For app-specific icons defined via `native-theme-build`, the connector provides:
+
+- `custom_icon_to_image_source(provider, icon_set)` -- load a custom icon as a gpui `ImageSource`
+- `custom_icon_to_image_source_colored(provider, icon_set, color)` -- load with color tinting
+
+These work with any type implementing `IconProvider`.
+
 ## Modules
 
 | Module | Purpose |

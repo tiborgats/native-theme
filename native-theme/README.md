@@ -88,6 +88,35 @@ let font = variant.fonts.family.as_deref().unwrap_or("sans-serif");
 let radius = variant.geometry.radius.unwrap_or(4.0);
 ```
 
+## Custom Icon Roles
+
+Apps can define domain-specific icons (e.g., play/pause, git-branch, thermometer)
+via TOML definitions and the [`native-theme-build`](https://docs.rs/native-theme-build)
+crate. Generated icons integrate with the same loading pipeline as built-in
+`IconRole` variants, so they work across all icon sets (Material, Lucide,
+freedesktop, SF Symbols, Segoe Fluent).
+
+**Workflow:**
+
+1. Define icons in a TOML file with per-set name mappings and bundled SVGs
+2. Add `native-theme-build` as a build dependency
+3. Call `generate_icons()` in `build.rs` to generate a Rust enum implementing `IconProvider`
+4. Include the generated code and use `load_custom_icon()` to load icons at runtime
+
+```rust,ignore
+// build.rs
+native_theme_build::generate_icons("icons/icons.toml");
+
+// src/lib.rs
+include!(concat!(env!("OUT_DIR"), "/app_icon.rs"));
+
+use native_theme::{load_custom_icon, IconSet};
+let icon = load_custom_icon(&AppIcon::PlayPause, IconSet::Material);
+```
+
+See the [`native-theme-build` docs](https://docs.rs/native-theme-build) for the
+full TOML schema, builder API, and DE-aware mapping support.
+
 ## Feature Flags
 
 | Feature | Enables | Platform |
