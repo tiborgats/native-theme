@@ -313,9 +313,16 @@ impl IconSet {
 /// for each enum variant to represent an icon role, with `icon_name()` returning
 /// the platform-specific identifier and `icon_svg()` returning embedded SVG bytes.
 ///
+/// The `native-theme-build` crate can auto-generate implementations from TOML
+/// definitions at build time, so manual implementation is only needed for
+/// special cases.
+///
+/// [`IconRole`] implements this trait, delegating to the built-in icon mappings.
+///
 /// # Object Safety
 ///
-/// This trait is object-safe. `Box<dyn IconProvider>` works for dynamic dispatch.
+/// This trait is object-safe (only requires [`Debug`] as a supertrait).
+/// `Box<dyn IconProvider>` works for dynamic dispatch.
 ///
 /// # Examples
 ///

@@ -1,3 +1,114 @@
+//! Build-time code generation for native-theme custom icon roles.
+//!
+//! This crate reads TOML icon definitions at build time and generates a Rust
+//! enum that implements `native_theme::IconProvider`. The generated enum maps
+//! each icon role to platform-specific identifiers (SF Symbols, Segoe Fluent,
+//! freedesktop, Material, Lucide) and optionally embeds bundled SVG data via
+//! `include_bytes!`.
+//!
+//! # TOML Schema
+//!
+//! The master TOML file declares the icon set name, roles, and which themes to
+//! support:
+//!
+//! ```toml
+//! name = "app-icon"
+//! roles = ["play-pause", "skip-forward", "volume-up"]
+//! bundled-themes = ["material"]
+//! system-themes = ["sf-symbols", "segoe-fluent", "freedesktop"]
+//! ```
+//!
+//! - **`name`** -- used to derive the generated enum name (`AppIcon`).
+//! - **`roles`** -- kebab-case role names; each becomes a PascalCase enum variant.
+//! - **`bundled-themes`** -- themes whose SVGs are embedded via `include_bytes!`.
+//! - **`system-themes`** -- themes resolved at runtime by the OS (no embedded SVGs).
+//!
+//! # Directory Layout
+//!
+//! ```text
+//! icons/
+//!   icons.toml           # Master TOML (the file passed to generate_icons)
+//!   material/
+//!     mapping.toml       # Role -> SVG filename mappings
+//!     play_pause.svg
+//!     skip_next.svg
+//!     volume_up.svg
+//!   sf-symbols/
+//!     mapping.toml       # Role -> SF Symbol name mappings
+//!   segoe-fluent/
+//!     mapping.toml       # Role -> Segoe codepoint mappings
+//!   freedesktop/
+//!     mapping.toml       # Role -> freedesktop icon name mappings
+//! ```
+//!
+//! # Mapping TOML
+//!
+//! Each theme directory contains a `mapping.toml` that maps roles to
+//! theme-specific identifiers. Simple form:
+//!
+//! ```toml
+//! play-pause = "play_pause"
+//! skip-forward = "skip_next"
+//! volume-up = "volume_up"
+//! ```
+//!
+//! DE-aware form (for freedesktop themes that vary by desktop environment):
+//!
+//! ```toml
+//! play-pause = { kde = "media-playback-start", default = "media-play" }
+//! ```
+//!
+//! A `default` key is required for every DE-aware entry.
+//!
+//! # build.rs Setup
+//!
+//! ```rust,ignore
+//! // Simple API (single TOML file):
+//! native_theme_build::generate_icons("icons/icons.toml");
+//!
+//! // Builder API (multiple TOML files, custom enum name):
+//! native_theme_build::IconGenerator::new()
+//!     .add("icons/media.toml")
+//!     .add("icons/navigation.toml")
+//!     .enum_name("AppIcon")
+//!     .generate();
+//! ```
+//!
+//! Both APIs resolve paths relative to `CARGO_MANIFEST_DIR`, emit
+//! `cargo::rerun-if-changed` directives for all referenced files, and write
+//! the generated code to `OUT_DIR`.
+//!
+//! # Using the Generated Code
+//!
+//! ```rust,ignore
+//! // In your lib.rs or main.rs:
+//! include!(concat!(env!("OUT_DIR"), "/app_icon.rs"));
+//!
+//! // The generated enum implements IconProvider:
+//! use native_theme::{load_custom_icon, IconSet};
+//! let icon_data = load_custom_icon(&AppIcon::PlayPause, IconSet::Material);
+//! ```
+//!
+//! # What Gets Generated
+//!
+//! The output is a single `.rs` file containing:
+//!
+//! - A `#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]` enum with one
+//!   variant per role.
+//! - An `IconProvider` implementation with `icon_name()` returning the
+//!   platform-specific identifier and `icon_svg()` returning
+//!   `include_bytes!(...)` data for bundled themes.
+//!
+//! # Validation
+//!
+//! Build errors are emitted at compile time for:
+//!
+//! - Missing roles in mapping files (every role must be present in every theme).
+//! - Missing SVG files for bundled themes.
+//! - Unknown role names in mapping files (not declared in the master TOML).
+//! - Duplicate roles across multiple TOML files (builder API).
+//! - Missing `default` key in DE-aware mapping entries.
+
 mod codegen;
 mod error;
 mod schema;
