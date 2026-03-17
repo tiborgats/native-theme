@@ -82,6 +82,10 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
   - [x] 25.1-01-PLAN.md -- Fill 3 icon mapping gaps + add coverage tests (known-gaps + bundled SVG completeness)
   - [x] 25.1-02-PLAN.md -- Remove cross-set Material SVG fallback from platform loaders and load_icon
 - [ ] **Phase 26: Documentation and Release** - Complete docs for all new APIs + README updates + version bumps + changelog + release checks
+  **Plans:** 2 plans
+  Plans:
+  - [ ] 26-01-PLAN.md -- Rustdoc for native-theme-build + IconProvider trait docs + build crate metadata
+  - [ ] 26-02-PLAN.md -- READMEs + CHANGELOG v0.3.3 + design doc fixes + pre-release script
 
 ## Phase Details
 
@@ -154,7 +158,7 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
   3. pre-release-check.sh passes cleanly (tests, clippy, fmt, semver-checks)
   4. Core crate README documents the custom icon roles workflow end-to-end
   5. CHANGELOG.md covers all v0.3.3 additions with links to relevant types and functions
-**Plans**: TBD
+**Plans**: 2 plans
 
 ## Progress
 
@@ -165,4 +169,4 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 | 24. Linux DE Audit and Freedesktop DE-Aware Mapping | v0.3.3 | 2/2 | ✓ Complete | 2026-03-16 |
 | 25. Connector Integration | v0.3.3 | 1/1 | ✓ Complete | 2026-03-16 |
 | 25.1. Icon Gaps and Fallback Removal | v0.3.3 | 2/2 | ✓ Complete | 2026-03-17 |
-| 26. Documentation and Release | v0.3.3 | 0/TBD | Not started | - |
+| 26. Documentation and Release | v0.3.3 | 0/2 | Not started | - |
