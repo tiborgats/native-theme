@@ -81,11 +81,7 @@ pub(crate) fn generate_code(
     writeln!(out).unwrap();
 
     // IconProvider impl
-    writeln!(
-        out,
-        "impl native_theme::IconProvider for {enum_name} {{"
-    )
-    .unwrap();
+    writeln!(out, "impl native_theme::IconProvider for {enum_name} {{").unwrap();
 
     // icon_name()
     generate_icon_name(&mut out, config, mappings);
@@ -154,16 +150,10 @@ fn generate_icon_name(
                                 .unwrap();
                             } else {
                                 // Emit cfg-gated DE-aware dispatch block
-                                writeln!(
-                                    out,
-                                    "            (Self::{variant}, {icon_set}) => {{"
-                                )
-                                .unwrap();
-                                writeln!(
-                                    out,
-                                    "                #[cfg(target_os = \"linux\")]"
-                                )
-                                .unwrap();
+                                writeln!(out, "            (Self::{variant}, {icon_set}) => {{")
+                                    .unwrap();
+                                writeln!(out, "                #[cfg(target_os = \"linux\")]")
+                                    .unwrap();
                                 writeln!(out, "                {{").unwrap();
                                 writeln!(
                                     out,
@@ -191,17 +181,11 @@ fn generate_icon_name(
                                 .unwrap();
                                 writeln!(out, "                    }}").unwrap();
                                 writeln!(out, "                }}").unwrap();
-                                writeln!(
-                                    out,
-                                    "                #[cfg(not(target_os = \"linux\"))]"
-                                )
-                                .unwrap();
+                                writeln!(out, "                #[cfg(not(target_os = \"linux\"))]")
+                                    .unwrap();
                                 writeln!(out, "                {{").unwrap();
-                                writeln!(
-                                    out,
-                                    "                    Some(\"{default_name}\")"
-                                )
-                                .unwrap();
+                                writeln!(out, "                    Some(\"{default_name}\")")
+                                    .unwrap();
                                 writeln!(out, "                }}").unwrap();
                                 writeln!(out, "            }},").unwrap();
                             }
@@ -236,15 +220,15 @@ fn generate_icon_svg(
         let icon_set = theme_name_to_icon_set(theme_name);
         if let Some(mapping) = mappings.get(theme_name) {
             for role in &config.roles {
-                if let Some(mv) = mapping.get(role) {
-                    if let Some(icon_name) = mv.default_name() {
-                        let variant = role.to_upper_camel_case();
-                        writeln!(
-                            out,
-                            "            (Self::{variant}, {icon_set}) => Some(include_bytes!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/{base_dir}/{theme_name}/{icon_name}.svg\"))),"
-                        )
-                        .unwrap();
-                    }
+                if let Some(mv) = mapping.get(role)
+                    && let Some(icon_name) = mv.default_name()
+                {
+                    let variant = role.to_upper_camel_case();
+                    writeln!(
+                        out,
+                        "            (Self::{variant}, {icon_set}) => Some(include_bytes!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/{base_dir}/{theme_name}/{icon_name}.svg\"))),"
+                    )
+                    .unwrap();
                 }
             }
         }

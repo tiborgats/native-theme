@@ -409,7 +409,9 @@ pub fn load_windows_icon(role: IconRole) -> Option<IconData> {
 ///
 /// Returns `None` for non-hex strings or strings without the 0x prefix.
 fn parse_hex_codepoint(name: &str) -> Option<u32> {
-    let hex = name.strip_prefix("0x").or_else(|| name.strip_prefix("0X"))?;
+    let hex = name
+        .strip_prefix("0x")
+        .or_else(|| name.strip_prefix("0X"))?;
     if hex.is_empty() {
         return None;
     }
@@ -621,7 +623,10 @@ mod tests {
     fn load_by_name_hex_codepoint() {
         // 0xE8C8 is the Copy glyph
         let result = load_windows_icon_by_name("0xE8C8");
-        assert!(result.is_some(), "hex codepoint 0xE8C8 should load Copy glyph");
+        assert!(
+            result.is_some(),
+            "hex codepoint 0xE8C8 should load Copy glyph"
+        );
     }
 
     #[cfg(target_os = "windows")]

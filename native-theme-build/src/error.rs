@@ -6,28 +6,15 @@ use std::fmt;
 /// suitable for `cargo::error=` output.
 pub(crate) enum BuildError {
     /// A role declared in the master TOML is missing from a theme mapping file.
-    MissingRole {
-        role: String,
-        mapping_file: String,
-    },
+    MissingRole { role: String, mapping_file: String },
     /// An SVG file referenced by a bundled theme mapping does not exist.
-    MissingSvg {
-        path: String,
-    },
+    MissingSvg { path: String },
     /// A role in a mapping file is not declared in the master TOML.
-    UnknownRole {
-        role: String,
-        mapping_file: String,
-    },
+    UnknownRole { role: String, mapping_file: String },
     /// A theme name does not match any known `IconSet` variant.
-    UnknownTheme {
-        theme: String,
-    },
+    UnknownTheme { theme: String },
     /// A DE-aware mapping value is missing the required `default` key.
-    MissingDefault {
-        role: String,
-        mapping_file: String,
-    },
+    MissingDefault { role: String, mapping_file: String },
     /// A role name appears in multiple TOML files.
     DuplicateRole {
         role: String,
@@ -68,10 +55,7 @@ impl fmt::Display for BuildError {
                 file_a,
                 file_b,
             } => {
-                write!(
-                    f,
-                    "role \"{role}\" defined in both {file_a} and {file_b}"
-                )
+                write!(f, "role \"{role}\" defined in both {file_a} and {file_b}")
             }
         }
     }

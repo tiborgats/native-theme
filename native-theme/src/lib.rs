@@ -513,14 +513,17 @@ pub fn load_system_icon_by_name(name: &str, set: IconSet) -> Option<IconData> {
 /// # }
 /// ```
 #[must_use = "this returns the loaded icon data; it does not display it"]
-pub fn load_custom_icon(provider: &(impl IconProvider + ?Sized), icon_set: &str) -> Option<IconData> {
+pub fn load_custom_icon(
+    provider: &(impl IconProvider + ?Sized),
+    icon_set: &str,
+) -> Option<IconData> {
     let set = IconSet::from_name(icon_set).unwrap_or_else(system_icon_set);
 
     // Step 1: Try system loader with provider's name mapping
-    if let Some(name) = provider.icon_name(set) {
-        if let Some(data) = load_system_icon_by_name(name, set) {
-            return Some(data);
-        }
+    if let Some(name) = provider.icon_name(set)
+        && let Some(data) = load_system_icon_by_name(name, set)
+    {
+        return Some(data);
     }
 
     // Step 2: Try bundled SVG from provider
@@ -831,7 +834,10 @@ mod load_system_icon_by_name_tests {
     #[cfg(feature = "material-icons")]
     fn system_icon_by_name_material() {
         let result = load_system_icon_by_name("content_copy", IconSet::Material);
-        assert!(result.is_some(), "content_copy should be found in Material set");
+        assert!(
+            result.is_some(),
+            "content_copy should be found in Material set"
+        );
         assert!(matches!(result.unwrap(), IconData::Svg(_)));
     }
 
@@ -856,7 +862,10 @@ mod load_system_icon_by_name_tests {
         #[cfg(not(target_os = "macos"))]
         {
             let result = load_system_icon_by_name("doc.on.doc", IconSet::SfSymbols);
-            assert!(result.is_none(), "SF Symbols should return None on non-macOS");
+            assert!(
+                result.is_none(),
+                "SF Symbols should return None on non-macOS"
+            );
         }
     }
 }
@@ -869,14 +878,20 @@ mod load_custom_icon_tests {
     #[cfg(feature = "material-icons")]
     fn custom_icon_with_icon_role_material() {
         let result = load_custom_icon(&IconRole::ActionCopy, "material");
-        assert!(result.is_some(), "IconRole::ActionCopy should load via material");
+        assert!(
+            result.is_some(),
+            "IconRole::ActionCopy should load via material"
+        );
     }
 
     #[test]
     #[cfg(feature = "lucide-icons")]
     fn custom_icon_with_icon_role_lucide() {
         let result = load_custom_icon(&IconRole::ActionCopy, "lucide");
-        assert!(result.is_some(), "IconRole::ActionCopy should load via lucide");
+        assert!(
+            result.is_some(),
+            "IconRole::ActionCopy should load via lucide"
+        );
     }
 
     #[test]
@@ -894,7 +909,10 @@ mod load_custom_icon_tests {
         }
 
         let result = load_custom_icon(&NullProvider, "material");
-        assert!(result.is_none(), "NullProvider should return None (no cross-set fallback)");
+        assert!(
+            result.is_none(),
+            "NullProvider should return None (no cross-set fallback)"
+        );
     }
 
     #[test]
@@ -920,7 +938,10 @@ mod load_custom_icon_tests {
     fn custom_icon_via_dyn_dispatch() {
         let boxed: Box<dyn IconProvider> = Box::new(IconRole::ActionCopy);
         let result = load_custom_icon(&*boxed, "material");
-        assert!(result.is_some(), "dyn dispatch through Box<dyn IconProvider> should work");
+        assert!(
+            result.is_some(),
+            "dyn dispatch through Box<dyn IconProvider> should work"
+        );
     }
 
     #[test]
@@ -939,7 +960,10 @@ mod load_custom_icon_tests {
         }
 
         let result = load_custom_icon(&SvgOnlyProvider, "material");
-        assert!(result.is_some(), "provider with icon_svg should return Some");
+        assert!(
+            result.is_some(),
+            "provider with icon_svg should return Some"
+        );
         match result.unwrap() {
             IconData::Svg(bytes) => {
                 assert_eq!(bytes, b"<svg>test</svg>");

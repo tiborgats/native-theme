@@ -91,9 +91,9 @@ fn happy_path_icon_name_material() {
         "should have Material icon_name arm for PlayPause"
     );
     assert!(
-        result
-            .code
-            .contains("(Self::SkipForward, native_theme::IconSet::Material) => Some(\"skip_next\")"),
+        result.code.contains(
+            "(Self::SkipForward, native_theme::IconSet::Material) => Some(\"skip_next\")"
+        ),
         "should have Material icon_name arm for SkipForward"
     );
 }
@@ -113,9 +113,9 @@ fn happy_path_icon_name_sf_symbols() {
         "should have SfSymbols icon_name arm for PlayPause"
     );
     assert!(
-        result
-            .code
-            .contains("(Self::SkipForward, native_theme::IconSet::SfSymbols) => Some(\"forward.fill\")"),
+        result.code.contains(
+            "(Self::SkipForward, native_theme::IconSet::SfSymbols) => Some(\"forward.fill\")"
+        ),
         "should have SfSymbols icon_name arm for SkipForward"
     );
 }
@@ -178,7 +178,10 @@ fn happy_path_size_report() {
     let result = __run_pipeline_on_files(&[toml_path.as_path()], None);
 
     assert!(result.errors.is_empty());
-    let report = result.size_report.as_ref().expect("should have size report");
+    let report = result
+        .size_report
+        .as_ref()
+        .expect("should have size report");
     assert_eq!(report.role_count, 2);
     assert_eq!(report.bundled_theme_count, 1);
     assert_eq!(report.svg_count, 2);
@@ -202,7 +205,11 @@ bundled-themes = ["material"]
 "#,
     );
     // Mapping is missing skip-forward
-    write_file(&dir, "material/mapping.toml", "play-pause = \"play_pause\"\n");
+    write_file(
+        &dir,
+        "material/mapping.toml",
+        "play-pause = \"play_pause\"\n",
+    );
     write_file(&dir, "material/play_pause.svg", SVG_STUB);
 
     let toml_path = dir.join("icons.toml");
@@ -276,10 +283,7 @@ bundled-themes = ["material"]
 
     assert!(!result.errors.is_empty(), "should have errors");
     assert!(
-        result
-            .errors
-            .iter()
-            .any(|e| e.contains("skip_next.svg")),
+        result.errors.iter().any(|e| e.contains("skip_next.svg")),
         "should mention missing SVG path: {:?}",
         result.errors
     );
@@ -322,8 +326,7 @@ bundled-themes = ["material"]
 
     let path_a = dir.join("icons-a.toml");
     let path_b = dir.join("icons-b.toml");
-    let result =
-        __run_pipeline_on_files(&[path_a.as_path(), path_b.as_path()], Some("AllIcons"));
+    let result = __run_pipeline_on_files(&[path_a.as_path(), path_b.as_path()], Some("AllIcons"));
 
     assert!(
         result.errors.is_empty(),
@@ -393,7 +396,9 @@ reveal = { kde = "view-visible", default = "view-reveal" }
         result.code
     );
     assert!(
-        result.code.contains("native_theme::LinuxDesktop::Kde => Some(\"view-visible\")"),
+        result
+            .code
+            .contains("native_theme::LinuxDesktop::Kde => Some(\"view-visible\")"),
         "should have KDE-specific arm. code:\n{}",
         result.code
     );
@@ -436,7 +441,10 @@ reveal = { cosmic = "cosmic-reveal", default = "view-reveal" }
 
     // Warnings should mention cosmic and unrecognized
     assert!(
-        result.warnings.iter().any(|w| w.contains("cosmic") && w.contains("unrecognized DE key")),
+        result
+            .warnings
+            .iter()
+            .any(|w| w.contains("cosmic") && w.contains("unrecognized DE key")),
         "should warn about unrecognized 'cosmic' DE key: {:?}",
         result.warnings
     );
@@ -481,7 +489,11 @@ roles = ["play-pause"]
 bundled-themes = ["material"]
 "#,
     );
-    write_file(&dir, "material/mapping.toml", "play-pause = \"play_pause\"\n");
+    write_file(
+        &dir,
+        "material/mapping.toml",
+        "play-pause = \"play_pause\"\n",
+    );
     write_file(&dir, "material/play_pause.svg", SVG_STUB);
 
     let path_a = dir.join("icons-a.toml");

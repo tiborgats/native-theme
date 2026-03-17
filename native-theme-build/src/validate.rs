@@ -5,7 +5,7 @@ use std::fs;
 use std::path::Path;
 
 use crate::error::BuildError;
-use crate::schema::{MappingValue, MasterConfig, ThemeMapping, KNOWN_THEMES};
+use crate::schema::{KNOWN_THEMES, MappingValue, MasterConfig, ThemeMapping};
 
 /// Validate that all theme names in the config are known.
 ///
@@ -58,13 +58,13 @@ pub(crate) fn validate_mapping(
         }
 
         // VAL-04: Check DE-aware values have a "default" key
-        if let MappingValue::DeAware(m) = value {
-            if !m.contains_key("default") {
-                errors.push(BuildError::MissingDefault {
-                    role: key.clone(),
-                    mapping_file: mapping_path.to_string(),
-                });
-            }
+        if let MappingValue::DeAware(m) = value
+            && !m.contains_key("default")
+        {
+            errors.push(BuildError::MissingDefault {
+                role: key.clone(),
+                mapping_file: mapping_path.to_string(),
+            });
         }
     }
 
@@ -83,7 +83,7 @@ pub(crate) fn validate_svgs(
 ) -> Vec<BuildError> {
     let mut errors = Vec::new();
 
-    for (_role, value) in mapping {
+    for value in mapping.values() {
         if let Some(name) = value.default_name() {
             let svg_path = theme_dir.join(format!("{name}.svg"));
             if !svg_path.exists() {
@@ -121,18 +121,17 @@ pub(crate) fn check_orphan_svgs(
     let mut warnings = Vec::new();
     for entry in entries.flatten() {
         let path = entry.path();
-        if path.extension().and_then(|e| e.to_str()) == Some("svg") {
-            if let Some(stem) = path.file_stem().and_then(|s| s.to_str()) {
-                if !referenced.contains(stem) {
-                    let file_name = path
-                        .file_name()
-                        .and_then(|n| n.to_str())
-                        .unwrap_or("unknown");
-                    warnings.push(format!(
-                        "orphan SVG in {theme_name}: {file_name} is not referenced by any mapping"
-                    ));
-                }
-            }
+        if path.extension().and_then(|e| e.to_str()) == Some("svg")
+            && let Some(stem) = path.file_stem().and_then(|s| s.to_str())
+            && !referenced.contains(stem)
+        {
+            let file_name = path
+                .file_name()
+                .and_then(|n| n.to_str())
+                .unwrap_or("unknown");
+            warnings.push(format!(
+                "orphan SVG in {theme_name}: {file_name} is not referenced by any mapping"
+            ));
         }
     }
 
@@ -149,10 +148,7 @@ const KNOWN_DE_KEYS: [&str; 8] = [
 /// Returns warnings (not errors) for unrecognized DE keys, since the
 /// mandatory `default` key ensures correctness. Unknown keys produce
 /// unreachable match arms in generated code but are not harmful.
-pub(crate) fn validate_de_keys(
-    mapping: &ThemeMapping,
-    mapping_path: &str,
-) -> Vec<String> {
+pub(crate) fn validate_de_keys(mapping: &ThemeMapping, mapping_path: &str) -> Vec<String> {
     let mut warnings = Vec::new();
     for (role, value) in mapping {
         if let MappingValue::DeAware(de_map) = value {
@@ -175,9 +171,7 @@ pub(crate) fn validate_de_keys(
 /// Given a list of `(file_path, MasterConfig)` pairs, checks for role name
 /// collisions across files. Returns `BuildError::DuplicateRole` for each
 /// collision found.
-pub(crate) fn validate_no_duplicate_roles(
-    configs: &[(String, MasterConfig)],
-) -> Vec<BuildError> {
+pub(crate) fn validate_no_duplicate_roles(configs: &[(String, MasterConfig)]) -> Vec<BuildError> {
     // Map from role name to the file that first declared it
     let mut seen: HashMap<&str, &str> = HashMap::new();
     let mut errors = Vec::new();
@@ -205,12 +199,7 @@ mod tests {
     use std::fs;
 
     // Helper to build a MasterConfig for testing
-    fn make_config(
-        name: &str,
-        roles: &[&str],
-        bundled: &[&str],
-        system: &[&str],
-    ) -> MasterConfig {
+    fn make_config(name: &str, roles: &[&str], bundled: &[&str], system: &[&str]) -> MasterConfig {
         MasterConfig {
             name: name.to_string(),
             roles: roles.iter().map(|s| s.to_string()).collect(),
@@ -233,7 +222,10 @@ mod tests {
     fn validate_themes_all_known() {
         let config = make_config("x", &["a"], &["material"], &["sf-symbols"]);
         let errors = validate_themes(&config);
-        assert!(errors.is_empty(), "all themes are known, no errors expected");
+        assert!(
+            errors.is_empty(),
+            "all themes are known, no errors expected"
+        );
     }
 
     #[test]
@@ -242,7 +234,10 @@ mod tests {
         let errors = validate_themes(&config);
         assert_eq!(errors.len(), 1);
         let msg = errors[0].to_string();
-        assert!(msg.contains("typo-theme"), "should mention the unknown theme");
+        assert!(
+            msg.contains("typo-theme"),
+            "should mention the unknown theme"
+        );
     }
 
     #[test]
@@ -273,7 +268,10 @@ mod tests {
         let errors = validate_mapping(&roles, &mapping, "icons/material/mapping.toml");
         assert_eq!(errors.len(), 1);
         let msg = errors[0].to_string();
-        assert!(msg.contains("skip-forward"), "should mention the missing role");
+        assert!(
+            msg.contains("skip-forward"),
+            "should mention the missing role"
+        );
         assert!(
             msg.contains("icons/material/mapping.toml"),
             "should mention the mapping file"
@@ -356,7 +354,10 @@ mod tests {
         let errors = validate_svgs(&mapping, &dir, "icons/material/mapping.toml");
         assert_eq!(errors.len(), 1);
         let msg = errors[0].to_string();
-        assert!(msg.contains("skip_next.svg"), "should mention the missing SVG file");
+        assert!(
+            msg.contains("skip_next.svg"),
+            "should mention the missing SVG file"
+        );
 
         // Cleanup
         let _ = fs::remove_dir_all(&dir);
@@ -448,7 +449,10 @@ mod tests {
         let errors = validate_no_duplicate_roles(&configs);
         assert_eq!(errors.len(), 1);
         let msg = errors[0].to_string();
-        assert!(msg.contains("play-pause"), "should mention the duplicate role");
+        assert!(
+            msg.contains("play-pause"),
+            "should mention the duplicate role"
+        );
         assert!(msg.contains("icons/a.toml"), "should mention first file");
         assert!(msg.contains("icons/b.toml"), "should mention second file");
     }
@@ -474,7 +478,10 @@ mod tests {
         de_map.insert("default".to_string(), "play".to_string());
         let mapping = make_mapping(vec![("play-pause", MappingValue::DeAware(de_map))]);
         let warnings = validate_de_keys(&mapping, "mapping.toml");
-        assert!(warnings.is_empty(), "all DE keys recognized, no warnings expected");
+        assert!(
+            warnings.is_empty(),
+            "all DE keys recognized, no warnings expected"
+        );
     }
 
     #[test]
@@ -485,7 +492,10 @@ mod tests {
         let mapping = make_mapping(vec![("play-pause", MappingValue::DeAware(de_map))]);
         let warnings = validate_de_keys(&mapping, "mapping.toml");
         assert_eq!(warnings.len(), 1);
-        assert!(warnings[0].contains("cosmic"), "should mention the unrecognized key");
+        assert!(
+            warnings[0].contains("cosmic"),
+            "should mention the unrecognized key"
+        );
         assert!(warnings[0].contains("kde"), "should list valid keys");
     }
 
@@ -512,9 +522,10 @@ mod tests {
 
     #[test]
     fn de_keys_simple_value_ignored() {
-        let mapping = make_mapping(vec![
-            ("play-pause", MappingValue::Simple("play_pause".into())),
-        ]);
+        let mapping = make_mapping(vec![(
+            "play-pause",
+            MappingValue::Simple("play_pause".into()),
+        )]);
         let warnings = validate_de_keys(&mapping, "mapping.toml");
         assert!(warnings.is_empty(), "Simple values should be ignored");
     }

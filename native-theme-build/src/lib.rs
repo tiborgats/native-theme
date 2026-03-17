@@ -14,7 +14,7 @@ use schema::{MasterConfig, ThemeMapping};
 #[cfg(test)]
 use error::BuildError;
 #[cfg(test)]
-use schema::{MappingValue, KNOWN_THEMES};
+use schema::{KNOWN_THEMES, MappingValue};
 
 /// Load a TOML file and run the pipeline on it. For integration testing only.
 #[doc(hidden)]
@@ -30,7 +30,10 @@ pub fn __run_pipeline_on_files(
             .unwrap_or_else(|e| panic!("failed to read {}: {e}", path.display()));
         let config: MasterConfig = toml::from_str(&content)
             .unwrap_or_else(|e| panic!("failed to parse {}: {e}", path.display()));
-        let base_dir = path.parent().expect("TOML path has no parent").to_path_buf();
+        let base_dir = path
+            .parent()
+            .expect("TOML path has no parent")
+            .to_path_buf();
         configs.push((path.to_string_lossy().to_string(), config));
         base_dirs.push(base_dir);
     }
@@ -156,8 +159,13 @@ pub fn run_pipeline(
                     warnings.extend(de_warnings);
 
                     // Check orphan SVGs (warnings, not errors)
-                    let orphan_warnings =
-                        check_orphan_svgs_and_collect_paths(&mapping, &theme_dir, theme_name, &mut svg_paths, &mut rerun_paths);
+                    let orphan_warnings = check_orphan_svgs_and_collect_paths(
+                        &mapping,
+                        &theme_dir,
+                        theme_name,
+                        &mut svg_paths,
+                        &mut rerun_paths,
+                    );
                     warnings.extend(orphan_warnings);
 
                     all_mappings.insert(theme_name.clone(), mapping);
@@ -281,7 +289,10 @@ fn check_orphan_svgs_and_collect_paths(
 }
 
 /// Merge multiple configs into a single MasterConfig for code generation.
-fn merge_configs(configs: &[(String, MasterConfig)], enum_name_override: Option<&str>) -> MasterConfig {
+fn merge_configs(
+    configs: &[(String, MasterConfig)],
+    enum_name_override: Option<&str>,
+) -> MasterConfig {
     let name = enum_name_override
         .map(|s| s.to_string())
         .unwrap_or_else(|| configs[0].1.name.clone());
@@ -325,9 +336,8 @@ fn merge_configs(configs: &[(String, MasterConfig)], enum_name_override: Option<
 /// Calls `process::exit(1)` if validation errors are found.
 pub fn generate_icons(toml_path: impl AsRef<Path>) {
     let toml_path = toml_path.as_ref();
-    let manifest_dir = PathBuf::from(
-        std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set"),
-    );
+    let manifest_dir =
+        PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set"));
     let resolved = manifest_dir.join(toml_path);
 
     let content = std::fs::read_to_string(&resolved)
@@ -357,6 +367,12 @@ pub struct IconGenerator {
     enum_name_override: Option<String>,
 }
 
+impl Default for IconGenerator {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl IconGenerator {
     /// Create a new builder.
     pub fn new() -> Self {
@@ -367,6 +383,7 @@ impl IconGenerator {
     }
 
     /// Add a TOML icon definition file.
+    #[allow(clippy::should_implement_trait)]
     pub fn add(mut self, path: impl AsRef<Path>) -> Self {
         self.sources.push(path.as_ref().to_path_buf());
         self
@@ -384,9 +401,8 @@ impl IconGenerator {
     ///
     /// Calls `process::exit(1)` if validation errors are found.
     pub fn generate(self) {
-        let manifest_dir = PathBuf::from(
-            std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set"),
-        );
+        let manifest_dir =
+            PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set"));
 
         let mut configs = Vec::new();
         let mut base_dirs = Vec::new();
@@ -516,8 +532,7 @@ bogus = "nope"
 
     #[test]
     fn mapping_value_de_aware() {
-        let toml_str =
-            r#"play-pause = { kde = "media-playback-start", default = "play" }"#;
+        let toml_str = r#"play-pause = { kde = "media-playback-start", default = "play" }"#;
         let mapping: BTreeMap<String, MappingValue> = toml::from_str(toml_str).unwrap();
         match &mapping["play-pause"] {
             MappingValue::DeAware(m) => {
@@ -615,10 +630,7 @@ skip-forward = "skip_next"
             theme: "nonexistent".into(),
         };
         let msg = err.to_string();
-        assert!(
-            msg.contains("nonexistent"),
-            "should contain theme name"
-        );
+        assert!(msg.contains("nonexistent"), "should contain theme name");
     }
 
     #[test]
@@ -690,32 +702,47 @@ skip-forward = "skip_next"
     #[test]
     fn pipeline_happy_path_generates_code() {
         let dir = create_fixture_dir("happy");
-        write_fixture(&dir, "material/mapping.toml", r#"
+        write_fixture(
+            &dir,
+            "material/mapping.toml",
+            r#"
 play-pause = "play_pause"
 skip-forward = "skip_next"
-"#);
-        write_fixture(&dir, "sf-symbols/mapping.toml", r#"
+"#,
+        );
+        write_fixture(
+            &dir,
+            "sf-symbols/mapping.toml",
+            r#"
 play-pause = "play.fill"
 skip-forward = "forward.fill"
-"#);
+"#,
+        );
         write_fixture(&dir, "material/play_pause.svg", SVG_STUB);
         write_fixture(&dir, "material/skip_next.svg", SVG_STUB);
 
-        let config: MasterConfig = toml::from_str(r#"
+        let config: MasterConfig = toml::from_str(
+            r#"
 name = "sample-icon"
 roles = ["play-pause", "skip-forward"]
 bundled-themes = ["material"]
 system-themes = ["sf-symbols"]
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let result = run_pipeline(
             &[("sample-icons.toml".to_string(), config)],
-            &[dir.clone()],
+            std::slice::from_ref(&dir),
             None,
             None,
         );
 
-        assert!(result.errors.is_empty(), "expected no errors: {:?}", result.errors);
+        assert!(
+            result.errors.is_empty(),
+            "expected no errors: {:?}",
+            result.errors
+        );
         assert!(!result.code.is_empty(), "expected generated code");
         assert!(result.code.contains("pub enum SampleIcon"));
         assert!(result.code.contains("PlayPause"));
@@ -727,18 +754,25 @@ system-themes = ["sf-symbols"]
     #[test]
     fn pipeline_output_filename_uses_snake_case() {
         let dir = create_fixture_dir("filename");
-        write_fixture(&dir, "material/mapping.toml", "play-pause = \"play_pause\"\n");
+        write_fixture(
+            &dir,
+            "material/mapping.toml",
+            "play-pause = \"play_pause\"\n",
+        );
         write_fixture(&dir, "material/play_pause.svg", SVG_STUB);
 
-        let config: MasterConfig = toml::from_str(r#"
+        let config: MasterConfig = toml::from_str(
+            r#"
 name = "app-icon"
 roles = ["play-pause"]
 bundled-themes = ["material"]
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let result = run_pipeline(
             &[("app.toml".to_string(), config)],
-            &[dir.clone()],
+            std::slice::from_ref(&dir),
             None,
             None,
         );
@@ -751,32 +785,50 @@ bundled-themes = ["material"]
     #[test]
     fn pipeline_collects_rerun_paths() {
         let dir = create_fixture_dir("rerun");
-        write_fixture(&dir, "material/mapping.toml", r#"
+        write_fixture(
+            &dir,
+            "material/mapping.toml",
+            r#"
 play-pause = "play_pause"
-"#);
+"#,
+        );
         write_fixture(&dir, "material/play_pause.svg", SVG_STUB);
 
-        let config: MasterConfig = toml::from_str(r#"
+        let config: MasterConfig = toml::from_str(
+            r#"
 name = "test"
 roles = ["play-pause"]
 bundled-themes = ["material"]
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let result = run_pipeline(
             &[("test.toml".to_string(), config)],
-            &[dir.clone()],
+            std::slice::from_ref(&dir),
             None,
             None,
         );
 
         assert!(result.errors.is_empty());
         // Should include: master TOML, mapping TOML, theme dir, SVG files
-        let path_strs: Vec<String> = result.rerun_paths.iter()
+        let path_strs: Vec<String> = result
+            .rerun_paths
+            .iter()
             .map(|p| p.to_string_lossy().to_string())
             .collect();
-        assert!(path_strs.iter().any(|p| p.contains("test.toml")), "should track master TOML");
-        assert!(path_strs.iter().any(|p| p.contains("mapping.toml")), "should track mapping TOML");
-        assert!(path_strs.iter().any(|p| p.contains("play_pause.svg")), "should track SVG files");
+        assert!(
+            path_strs.iter().any(|p| p.contains("test.toml")),
+            "should track master TOML"
+        );
+        assert!(
+            path_strs.iter().any(|p| p.contains("mapping.toml")),
+            "should track mapping TOML"
+        );
+        assert!(
+            path_strs.iter().any(|p| p.contains("play_pause.svg")),
+            "should track SVG files"
+        );
 
         let _ = fs::remove_dir_all(&dir);
     }
@@ -784,24 +836,34 @@ bundled-themes = ["material"]
     #[test]
     fn pipeline_emits_size_report() {
         let dir = create_fixture_dir("size");
-        write_fixture(&dir, "material/mapping.toml", "play-pause = \"play_pause\"\n");
+        write_fixture(
+            &dir,
+            "material/mapping.toml",
+            "play-pause = \"play_pause\"\n",
+        );
         write_fixture(&dir, "material/play_pause.svg", SVG_STUB);
 
-        let config: MasterConfig = toml::from_str(r#"
+        let config: MasterConfig = toml::from_str(
+            r#"
 name = "test"
 roles = ["play-pause"]
 bundled-themes = ["material"]
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let result = run_pipeline(
             &[("test.toml".to_string(), config)],
-            &[dir.clone()],
+            std::slice::from_ref(&dir),
             None,
             None,
         );
 
         assert!(result.errors.is_empty());
-        let report = result.size_report.as_ref().expect("should have size report");
+        let report = result
+            .size_report
+            .as_ref()
+            .expect("should have size report");
         assert_eq!(report.role_count, 1);
         assert_eq!(report.bundled_theme_count, 1);
         assert_eq!(report.svg_count, 1);
@@ -814,24 +876,34 @@ bundled-themes = ["material"]
     fn pipeline_returns_errors_on_missing_role() {
         let dir = create_fixture_dir("missing_role");
         // Mapping is missing "skip-forward"
-        write_fixture(&dir, "material/mapping.toml", "play-pause = \"play_pause\"\n");
+        write_fixture(
+            &dir,
+            "material/mapping.toml",
+            "play-pause = \"play_pause\"\n",
+        );
         write_fixture(&dir, "material/play_pause.svg", SVG_STUB);
 
-        let config: MasterConfig = toml::from_str(r#"
+        let config: MasterConfig = toml::from_str(
+            r#"
 name = "test"
 roles = ["play-pause", "skip-forward"]
 bundled-themes = ["material"]
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let result = run_pipeline(
             &[("test.toml".to_string(), config)],
-            &[dir.clone()],
+            std::slice::from_ref(&dir),
             None,
             None,
         );
 
         assert!(!result.errors.is_empty(), "should have errors");
-        assert!(result.errors.iter().any(|e| e.contains("skip-forward")), "should mention missing role");
+        assert!(
+            result.errors.iter().any(|e| e.contains("skip-forward")),
+            "should mention missing role"
+        );
         assert!(result.code.is_empty(), "no code on errors");
 
         let _ = fs::remove_dir_all(&dir);
@@ -840,28 +912,38 @@ bundled-themes = ["material"]
     #[test]
     fn pipeline_returns_errors_on_missing_svg() {
         let dir = create_fixture_dir("missing_svg");
-        write_fixture(&dir, "material/mapping.toml", r#"
+        write_fixture(
+            &dir,
+            "material/mapping.toml",
+            r#"
 play-pause = "play_pause"
 skip-forward = "skip_next"
-"#);
+"#,
+        );
         // Only create one SVG, leave skip_next.svg missing
         write_fixture(&dir, "material/play_pause.svg", SVG_STUB);
 
-        let config: MasterConfig = toml::from_str(r#"
+        let config: MasterConfig = toml::from_str(
+            r#"
 name = "test"
 roles = ["play-pause", "skip-forward"]
 bundled-themes = ["material"]
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let result = run_pipeline(
             &[("test.toml".to_string(), config)],
-            &[dir.clone()],
+            std::slice::from_ref(&dir),
             None,
             None,
         );
 
         assert!(!result.errors.is_empty(), "should have errors");
-        assert!(result.errors.iter().any(|e| e.contains("skip_next.svg")), "should mention missing SVG");
+        assert!(
+            result.errors.iter().any(|e| e.contains("skip_next.svg")),
+            "should mention missing SVG"
+        );
 
         let _ = fs::remove_dir_all(&dir);
     }
@@ -869,19 +951,26 @@ bundled-themes = ["material"]
     #[test]
     fn pipeline_orphan_svgs_are_warnings() {
         let dir = create_fixture_dir("orphan_warn");
-        write_fixture(&dir, "material/mapping.toml", "play-pause = \"play_pause\"\n");
+        write_fixture(
+            &dir,
+            "material/mapping.toml",
+            "play-pause = \"play_pause\"\n",
+        );
         write_fixture(&dir, "material/play_pause.svg", SVG_STUB);
         write_fixture(&dir, "material/unused.svg", SVG_STUB);
 
-        let config: MasterConfig = toml::from_str(r#"
+        let config: MasterConfig = toml::from_str(
+            r#"
 name = "test"
 roles = ["play-pause"]
 bundled-themes = ["material"]
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let result = run_pipeline(
             &[("test.toml".to_string(), config)],
-            &[dir.clone()],
+            std::slice::from_ref(&dir),
             None,
             None,
         );
@@ -897,17 +986,23 @@ bundled-themes = ["material"]
 
     #[test]
     fn merge_configs_combines_roles() {
-        let config_a: MasterConfig = toml::from_str(r#"
+        let config_a: MasterConfig = toml::from_str(
+            r#"
 name = "a"
 roles = ["play-pause"]
 bundled-themes = ["material"]
-"#).unwrap();
-        let config_b: MasterConfig = toml::from_str(r#"
+"#,
+        )
+        .unwrap();
+        let config_b: MasterConfig = toml::from_str(
+            r#"
 name = "b"
 roles = ["skip-forward"]
 bundled-themes = ["material"]
 system-themes = ["sf-symbols"]
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let configs = vec![
             ("a.toml".to_string(), config_a),
@@ -923,10 +1018,13 @@ system-themes = ["sf-symbols"]
 
     #[test]
     fn merge_configs_uses_enum_name_override() {
-        let config: MasterConfig = toml::from_str(r#"
+        let config: MasterConfig = toml::from_str(
+            r#"
 name = "original"
 roles = ["x"]
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let configs = vec![("a.toml".to_string(), config)];
         let merged = merge_configs(&configs, Some("MyIcons"));
@@ -939,23 +1037,33 @@ roles = ["x"]
     #[test]
     fn pipeline_builder_merges_two_files() {
         let dir = create_fixture_dir("builder_merge");
-        write_fixture(&dir, "material/mapping.toml", r#"
+        write_fixture(
+            &dir,
+            "material/mapping.toml",
+            r#"
 play-pause = "play_pause"
 skip-forward = "skip_next"
-"#);
+"#,
+        );
         write_fixture(&dir, "material/play_pause.svg", SVG_STUB);
         write_fixture(&dir, "material/skip_next.svg", SVG_STUB);
 
-        let config_a: MasterConfig = toml::from_str(r#"
+        let config_a: MasterConfig = toml::from_str(
+            r#"
 name = "icons-a"
 roles = ["play-pause"]
 bundled-themes = ["material"]
-"#).unwrap();
-        let config_b: MasterConfig = toml::from_str(r#"
+"#,
+        )
+        .unwrap();
+        let config_b: MasterConfig = toml::from_str(
+            r#"
 name = "icons-b"
 roles = ["skip-forward"]
 bundled-themes = ["material"]
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let result = run_pipeline(
             &[
@@ -967,8 +1075,15 @@ bundled-themes = ["material"]
             None,
         );
 
-        assert!(result.errors.is_empty(), "expected no errors: {:?}", result.errors);
-        assert!(result.code.contains("pub enum AllIcons"), "should use override name");
+        assert!(
+            result.errors.is_empty(),
+            "expected no errors: {:?}",
+            result.errors
+        );
+        assert!(
+            result.code.contains("pub enum AllIcons"),
+            "should use override name"
+        );
         assert!(result.code.contains("PlayPause"));
         assert!(result.code.contains("SkipForward"));
         assert_eq!(result.output_filename, "all_icons.rs");
@@ -979,19 +1094,29 @@ bundled-themes = ["material"]
     #[test]
     fn pipeline_builder_detects_duplicate_roles() {
         let dir = create_fixture_dir("builder_dup");
-        write_fixture(&dir, "material/mapping.toml", "play-pause = \"play_pause\"\n");
+        write_fixture(
+            &dir,
+            "material/mapping.toml",
+            "play-pause = \"play_pause\"\n",
+        );
         write_fixture(&dir, "material/play_pause.svg", SVG_STUB);
 
-        let config_a: MasterConfig = toml::from_str(r#"
+        let config_a: MasterConfig = toml::from_str(
+            r#"
 name = "a"
 roles = ["play-pause"]
 bundled-themes = ["material"]
-"#).unwrap();
-        let config_b: MasterConfig = toml::from_str(r#"
+"#,
+        )
+        .unwrap();
+        let config_b: MasterConfig = toml::from_str(
+            r#"
 name = "b"
 roles = ["play-pause"]
 bundled-themes = ["material"]
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let result = run_pipeline(
             &[
@@ -1016,14 +1141,21 @@ bundled-themes = ["material"]
         // base_dir is absolute (tmpdir/icons), but run_pipeline should strip
         // the manifest_dir prefix for codegen, producing relative paths.
         let tmpdir = create_fixture_dir("rel_paths");
-        write_fixture(&tmpdir, "icons/material/mapping.toml", "play-pause = \"play_pause\"\n");
+        write_fixture(
+            &tmpdir,
+            "icons/material/mapping.toml",
+            "play-pause = \"play_pause\"\n",
+        );
         write_fixture(&tmpdir, "icons/material/play_pause.svg", SVG_STUB);
 
-        let config: MasterConfig = toml::from_str(r#"
+        let config: MasterConfig = toml::from_str(
+            r#"
 name = "test"
 roles = ["play-pause"]
 bundled-themes = ["material"]
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         // base_dir is absolute (as generate_icons would compute)
         let abs_base_dir = tmpdir.join("icons");
@@ -1057,24 +1189,35 @@ bundled-themes = ["material"]
         // System themes should NOT validate SVGs
         let dir = create_fixture_dir("no_sys_svg");
         // sf-symbols has mapping but NO SVG files -- should be fine
-        write_fixture(&dir, "sf-symbols/mapping.toml", r#"
+        write_fixture(
+            &dir,
+            "sf-symbols/mapping.toml",
+            r#"
 play-pause = "play.fill"
-"#);
+"#,
+        );
 
-        let config: MasterConfig = toml::from_str(r#"
+        let config: MasterConfig = toml::from_str(
+            r#"
 name = "test"
 roles = ["play-pause"]
 system-themes = ["sf-symbols"]
-"#).unwrap();
+"#,
+        )
+        .unwrap();
 
         let result = run_pipeline(
             &[("test.toml".to_string(), config)],
-            &[dir.clone()],
+            std::slice::from_ref(&dir),
             None,
             None,
         );
 
-        assert!(result.errors.is_empty(), "system themes should not require SVGs: {:?}", result.errors);
+        assert!(
+            result.errors.is_empty(),
+            "system themes should not require SVGs: {:?}",
+            result.errors
+        );
 
         let _ = fs::remove_dir_all(&dir);
     }

@@ -234,9 +234,6 @@ mod tests {
     #[test]
     fn load_sf_icon_by_name_nonexistent_returns_none() {
         let result = load_sf_icon_by_name("zzz.nonexistent.symbol");
-        assert!(
-            result.is_none(),
-            "nonexistent symbol should return None"
-        );
+        assert!(result.is_none(), "nonexistent symbol should return None");
     }
 }
