@@ -65,22 +65,22 @@ Requirements for v0.3.3 release. Each maps to roadmap phases.
 
 ### Documentation
 
-- [ ] **DOC-01**: `native-theme-build` has complete crate-level docs with usage example (build.rs + TOML + SVG layout)
-- [ ] **DOC-02**: `IconProvider` trait has rustdoc with examples showing manual implementation and generated usage
-- [ ] **DOC-03**: `load_custom_icon` and `load_system_icon_by_name` have rustdoc with usage examples
-- [ ] **DOC-04**: All public types and functions added in v0.3.3 have standard Rust doc comments
-- [ ] **DOC-05**: Core crate README updated to cover custom icon roles workflow
-- [ ] **DOC-06**: No contradictions between inline docs, READMEs, and design document
-- [ ] **DOC-07**: Connector crate READMEs updated with custom icon usage examples
+- [x] **DOC-01**: `native-theme-build` has complete crate-level docs with usage example (build.rs + TOML + SVG layout)
+- [x] **DOC-02**: `IconProvider` trait has rustdoc with examples showing manual implementation and generated usage
+- [x] **DOC-03**: `load_custom_icon` and `load_system_icon_by_name` have rustdoc with usage examples
+- [x] **DOC-04**: All public types and functions added in v0.3.3 have standard Rust doc comments
+- [x] **DOC-05**: Core crate README updated to cover custom icon roles workflow
+- [x] **DOC-06**: No contradictions between inline docs, READMEs, and design document
+- [x] **DOC-07**: Connector crate READMEs updated with custom icon usage examples
 
 ### Release Preparation
 
-- [ ] **REL-01**: Version bumped to 0.3.3 across all workspace crates
-- [ ] **REL-02**: CHANGELOG.md updated with v0.3.3 changes
-- [ ] **REL-03**: `pre-release-check.sh` passes cleanly
-- [ ] **REL-04**: All tests pass (existing + new)
-- [ ] **REL-05**: Clippy clean with no warnings
-- [ ] **REL-06**: `native-theme-build` has correct crates.io metadata (description, license, repository, categories)
+- [x] **REL-01**: Version bumped to 0.3.3 across all workspace crates
+- [x] **REL-02**: CHANGELOG.md updated with v0.3.3 changes
+- [x] **REL-03**: `pre-release-check.sh` passes cleanly
+- [x] **REL-04**: All tests pass (existing + new)
+- [x] **REL-05**: Clippy clean with no warnings
+- [x] **REL-06**: `native-theme-build` has correct crates.io metadata (description, license, repository, categories)
 
 ## Future Requirements
 
@@ -152,19 +152,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CONN-01 | Phase 25 | Complete |
 | CONN-02 | Phase 25 | Complete |
 | CONN-03 | Phase 25 | Complete |
-| DOC-01 | Phase 26 | Pending |
-| DOC-02 | Phase 26 | Pending |
-| DOC-03 | Phase 26 | Pending |
-| DOC-04 | Phase 26 | Pending |
-| DOC-05 | Phase 26 | Pending |
-| DOC-06 | Phase 26 | Pending |
-| DOC-07 | Phase 26 | Pending |
-| REL-01 | Phase 26 | Pending |
-| REL-02 | Phase 26 | Pending |
-| REL-03 | Phase 26 | Pending |
-| REL-04 | Phase 26 | Pending |
-| REL-05 | Phase 26 | Pending |
-| REL-06 | Phase 26 | Pending |
+| DOC-01 | Phase 26 | Complete |
+| DOC-02 | Phase 26 | Complete |
+| DOC-03 | Phase 26 | Complete |
+| DOC-04 | Phase 26 | Complete |
+| DOC-05 | Phase 26 | Complete |
+| DOC-06 | Phase 26 | Complete |
+| DOC-07 | Phase 26 | Complete |
+| REL-01 | Phase 26 | Complete |
+| REL-02 | Phase 26 | Complete |
+| REL-03 | Phase 26 | Complete |
+| REL-04 | Phase 26 | Complete |
+| REL-05 | Phase 26 | Complete |
+| REL-06 | Phase 26 | Complete |
 
 **Coverage:**
 - v0.3.3 requirements: 48 total

@@ -2,15 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.3.3
 milestone_name: Custom Icon Roles
+current_plan: 2 of 2 in Phase 26 (PHASE COMPLETE)
 status: phase-complete
-stopped_at: "Completed 25.1-02-PLAN.md — Phase 25.1 complete"
-last_updated: "2026-03-17T09:49:49Z"
-last_activity: "2026-03-17 — Completed Phase 25.1 Plan 02 (Fallback Removal)"
+stopped_at: "Completed 26-02-PLAN.md — Phase 26 complete"
+last_updated: "2026-03-17T10:22:50Z"
+last_activity: "2026-03-17 — Completed Plan 02 (READMEs, CHANGELOG, Design Doc)"
 progress:
-  total_phases: 6
-  completed_phases: 5
-  total_plans: 12
-  completed_plans: 12
+  total_phases: 7
+  completed_phases: 7
+  total_plans: 14
+  completed_plans: 14
   percent: 100
 ---
 
@@ -21,23 +22,23 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-15)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 25.1 complete (all icon gaps filled, all cross-set fallback removed)
+**Current focus:** Phase 26 complete (all documentation and release preparation done)
 
 ## Current Position
 
-Phase: 25.1 (inserted after Phase 25) — Icon Gaps and Fallback Removal
-Current Plan: 2 of 2 in Phase 25.1 (PHASE COMPLETE)
-Status: Phase 25.1 Complete
-Last activity: 2026-03-17 — Completed Plan 02 (Fallback Removal)
+Phase: 26 — Documentation and Release
+Current Plan: 2 of 2 in Phase 26 (PHASE COMPLETE)
+Status: Phase 26 Complete
+Last activity: 2026-03-17 — Completed Plan 02 (READMEs, CHANGELOG, Design Doc)
 
 Progress: [##########] 100%
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 60 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 12 v0.3.3)
+- Total plans completed: 62 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 14 v0.3.3)
 - Average duration: ~4.1min (v0.2), 3.7min (v0.3)
-- Total execution time: 70min (v0.2), 37min (v0.3), 15min (v0.3.2), 30min (v0.3.3)
+- Total execution time: 70min (v0.2), 37min (v0.3), 15min (v0.3.2), 35min (v0.3.3)
 
 | Phase | Plan | Duration | Tasks | Files |
 |-------|------|----------|-------|-------|
@@ -53,6 +54,8 @@ Progress: [##########] 100%
 | 25    | 01   | 3min     | 2     | 2     |
 | 25.1  | 01   | 2min     | 2     | 1     |
 | 25.1  | 02   | 3min     | 2     | 4     |
+| 26    | 01   | 2min     | 2     | 3     |
+| 26    | 02   | 3min     | 2     | 7     |
 
 ## Accumulated Context
 
@@ -121,6 +124,13 @@ v0.3.3 Phase 25.1 Plan 02 decisions:
 - winicons uses #[cfg(not(target_os = "windows"))] let _ = role; None pattern for cross-platform compilation
 - Tests for unmapped roles use genuinely unmapped roles (FolderOpen for SF, StatusLoading for Segoe)
 
+v0.3.3 Phase 26 Plan 01 decisions:
+- Plain text `native_theme::IconProvider` (not doc link) in build crate docs -- cross-crate intra-doc links not resolvable for build dependencies
+
+v0.3.3 Phase 26 Plan 02 decisions:
+- Design doc preserved as historical rationale with Implementation Notes section (not rewritten)
+- pre-release-check.sh uses run_check_soft for all gpui-related loops (check/clippy/test/examples/docs)
+
 ### Roadmap Evolution
 
 - Phase 25.1 inserted after Phase 25: Icon Gaps and Fallback Removal (URGENT)
@@ -136,5 +146,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-03-17
-Stopped at: Completed 25.1-02-PLAN.md — Phase 25.1 complete
+Stopped at: Completed 26-02-PLAN.md — Phase 26 complete
 Resume file: None
