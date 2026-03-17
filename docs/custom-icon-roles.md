@@ -41,6 +41,23 @@ package manager).
 **Build-time downloads are a different question** — see the dedicated section
 below.
 
+## Implementation Notes
+
+> **Note:** The implementation simplified Approach F during phases 22-25.
+> Key differences from the original design below:
+>
+> 1. **Object-safe trait**: `IconProvider` has only a `Debug` supertrait (no associated
+>    `IconId` type). Each enum variant IS the provider -- methods take `&self` directly,
+>    not `&Self::IconId`.
+> 2. **No `fallback_set()` method**: Cross-set fallback was explicitly removed per project
+>    rules. Icons not found in the requested set return `None`.
+> 3. **Simpler codegen**: The generated code produces `impl IconProvider for EnumName`
+>    directly on the enum (no separate provider struct).
+> 4. **DE key validation**: Unrecognized desktop environment keys in mapping TOML produce
+>    warnings (not errors), since the mandatory `default` key ensures correctness.
+>
+> The design analysis below remains useful as architectural rationale for Approach F.
+
 ## Anatomy of the Problem
 
 An application icon that works across themes has **three layers** of data, each
@@ -586,7 +603,7 @@ The app adds a build dependency:
 ```toml
 # Cargo.toml
 [build-dependencies]
-native-theme-build = "0.1"
+native-theme-build = "0.3"
 ```
 
 ```rust

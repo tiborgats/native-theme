@@ -5,6 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.3.3] - 2026-03-17
+
+### Added
+
+- `IconProvider` trait for defining custom icon types that integrate with native-theme's loading system
+- `load_custom_icon()` function dispatching custom icons through the same platform loader chain as built-in icons
+- `load_system_icon_by_name()` function for loading platform icons by arbitrary name string
+- `native-theme-build` crate: TOML-driven code generation for custom icon roles with `generate_icons()` and `IconGenerator` builder API
+- DE-aware code generation: freedesktop mapping TOML entries can specify per-desktop-environment icon names (e.g., `{ kde = "view-visible", default = "view-reveal" }`)
+- gpui connector: `custom_icon_to_image_source()` and `custom_icon_to_image_source_colored()` for loading custom icons
+- iced connector: `custom_icon_to_image_handle()`, `custom_icon_to_svg_handle()`, and `custom_icon_to_svg_handle_colored()` for loading custom icons
+- Icon mapping gap fills: Freedesktop `Notification` -> "notification-active", Material/Lucide `TrashFull` mappings
+- Coverage tests: `no_unexpected_icon_gaps` and `all_roles_have_bundled_svg` prevent future mapping regressions
+
+### Changed
+
+- `IconRole` now implements `IconProvider`, delegating to built-in mapping functions
+- Platform icon loaders (freedesktop, SF Symbols, Segoe Fluent) return `None` for unmapped roles instead of falling back to Material SVGs
+
+### Removed
+
+- Wildcard Material SVG fallback from `load_icon()` and all platform loaders (icons not found in the requested set now return `None`)
+
 ## [0.3.2] - 2026-03-14
 
 ### Added
@@ -111,6 +134,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `impl_merge!` macro for recursive Option-based theme merging
 - Deep merge support across all theme types
 
+[0.3.3]: https://github.com/tiborgats/native-theme/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/tiborgats/native-theme/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/tiborgats/native-theme/compare/v0.3...v0.3.1
 [0.3.0]: https://github.com/tiborgats/native-theme/compare/v0.2.0...v0.3
