@@ -5,6 +5,10 @@ edition.workspace = true
 license.workspace = true
 rust-version.workspace = true
 description = "Build-time code generation for native-theme custom icon roles"
+repository.workspace = true
+homepage.workspace = true
+keywords = ["theme", "icons", "codegen", "build", "gui"]
+categories = ["development-tools::build-utils", "gui"]
 
 [dependencies]
 toml = "1.0.6"
