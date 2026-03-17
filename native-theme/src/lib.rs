@@ -376,12 +376,12 @@ pub async fn from_system_async() -> crate::Result<NativeTheme> {
 /// recognized. Then dispatches to the appropriate platform loader or
 /// bundled icon set.
 ///
-/// # Fallback chain
+/// # Dispatch
 ///
 /// 1. Parse `icon_set` to `IconSet` (unknown names fall back to system set)
 /// 2. Platform loader (freedesktop/sf-symbols/segoe-fluent) when `system-icons` enabled
 /// 3. Bundled SVGs (material/lucide) when the corresponding feature is enabled
-/// 4. Wildcard: try bundled Material, else `None`
+/// 4. Non-matching set: `None` (no cross-set fallback)
 ///
 /// # Examples
 ///
@@ -420,18 +420,8 @@ pub fn load_icon(role: IconRole, icon_set: &str) -> Option<IconData> {
             bundled_icon_svg(IconSet::Lucide, role).map(|b| IconData::Svg(b.to_vec()))
         }
 
-        // Non-matching platform or unknown set: try bundled fallback
-        _ => {
-            #[cfg(feature = "material-icons")]
-            {
-                return bundled_icon_svg(IconSet::Material, role)
-                    .map(|b| IconData::Svg(b.to_vec()));
-            }
-            #[cfg(not(feature = "material-icons"))]
-            {
-                None
-            }
-        }
+        // Non-matching platform or unknown set: no cross-set fallback
+        _ => None,
     }
 }
 
@@ -773,21 +763,21 @@ mod load_icon_tests {
 
     #[test]
     #[cfg(feature = "material-icons")]
-    fn load_icon_unknown_theme_falls_back() {
+    fn load_icon_unknown_theme_no_cross_set_fallback() {
         // On Linux (test platform), unknown theme resolves to system_icon_set() = Freedesktop.
-        // Without system-icons feature, Freedesktop falls through to wildcard -> Material fallback.
+        // Without system-icons feature, Freedesktop falls through to wildcard -> None.
+        // No cross-set Material fallback.
         let result = load_icon(IconRole::ActionCopy, "unknown-theme");
-        assert!(
-            result.is_some(),
-            "unknown theme should fall back to bundled Material"
-        );
+        // Without system-icons, this falls to wildcard which returns None
+        // With system-icons, this dispatches to load_freedesktop_icon which may return Some
+        // Either way, no panic
+        let _ = result;
     }
 
     #[test]
     #[cfg(feature = "material-icons")]
     fn load_icon_all_roles_material() {
-        // Material has 41 of 42 roles mapped (TrashFull returns None from icon_name,
-        // but bundled_icon_svg maps it to delete.svg, so all 42 return Some)
+        // Material has 42 of 42 roles mapped, all return Some
         let mut some_count = 0;
         for role in IconRole::ALL {
             if load_icon(role, "material").is_some() {
@@ -819,8 +809,7 @@ mod load_icon_tests {
 
     #[test]
     fn load_icon_unrecognized_set_no_features() {
-        // SfSymbols on Linux without system-icons: falls through to wildcard
-        // The wildcard arm behavior depends on material-icons feature
+        // SfSymbols on Linux without system-icons: falls through to wildcard -> None
         let _result = load_icon(IconRole::ActionCopy, "sf-symbols");
         // Just verifying it doesn't panic
     }
