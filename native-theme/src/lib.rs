@@ -240,6 +240,15 @@ fn detect_is_dark_inner() -> bool {
 ///   (requires `macos` feature).
 /// - **Windows:** Queries `UISettings.AnimationsEnabled()` (requires `windows` feature).
 /// - **Other platforms:** Returns `false`.
+///
+/// # Examples
+///
+/// ```
+/// let reduced = native_theme::prefers_reduced_motion();
+/// // On this platform, the result depends on OS accessibility settings.
+/// // The function always returns a bool (false on unsupported platforms).
+/// assert!(reduced == true || reduced == false);
+/// ```
 #[must_use = "this returns whether reduced motion is preferred"]
 pub fn prefers_reduced_motion() -> bool {
     static CACHED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
@@ -263,7 +272,7 @@ fn detect_reduced_motion_inner() -> bool {
             let val = String::from_utf8_lossy(&output.stdout);
             return val.trim() == "false";
         }
-        return false;
+        false
     }
 
     #[cfg(target_os = "macos")]
