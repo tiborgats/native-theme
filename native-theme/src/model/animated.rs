@@ -7,6 +7,14 @@
 use super::icons::IconData;
 
 /// How an animation repeats after playing through once.
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::Repeat;
+///
+/// let repeat = Repeat::Infinite;
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum Repeat {
@@ -15,6 +23,14 @@ pub enum Repeat {
 }
 
 /// A CSS-like transform animation applied to a single icon.
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::TransformAnimation;
+///
+/// let spin = TransformAnimation::Spin { duration_ms: 1000 };
+/// ```
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[non_exhaustive]
 pub enum TransformAnimation {
@@ -29,6 +45,28 @@ pub enum TransformAnimation {
 ///
 /// `Frames` carries pre-rendered frames with uniform timing.
 /// `Transform` carries a single icon and a description of the motion.
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::{AnimatedIcon, IconData, Repeat, TransformAnimation};
+///
+/// // Frame-based animation (e.g., sprite sheet)
+/// let frames_anim = AnimatedIcon::Frames {
+///     frames: vec![
+///         IconData::Svg(b"<svg>frame1</svg>".to_vec()),
+///         IconData::Svg(b"<svg>frame2</svg>".to_vec()),
+///     ],
+///     frame_duration_ms: 83,
+///     repeat: Repeat::Infinite,
+/// };
+///
+/// // Transform-based animation (e.g., spinning icon)
+/// let spin_anim = AnimatedIcon::Transform {
+///     icon: IconData::Svg(b"<svg>spinner</svg>".to_vec()),
+///     animation: TransformAnimation::Spin { duration_ms: 1000 },
+/// };
+/// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum AnimatedIcon {
@@ -55,6 +93,25 @@ impl AnimatedIcon {
     ///
     /// For `Frames`, returns the first element (or `None` if empty).
     /// For `Transform`, returns the underlying icon.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use native_theme::{AnimatedIcon, IconData, Repeat, TransformAnimation};
+    ///
+    /// let frames = AnimatedIcon::Frames {
+    ///     frames: vec![IconData::Svg(b"<svg>f1</svg>".to_vec())],
+    ///     frame_duration_ms: 83,
+    ///     repeat: Repeat::Infinite,
+    /// };
+    /// assert!(frames.first_frame().is_some());
+    ///
+    /// let transform = AnimatedIcon::Transform {
+    ///     icon: IconData::Svg(b"<svg>spinner</svg>".to_vec()),
+    ///     animation: TransformAnimation::Spin { duration_ms: 1000 },
+    /// };
+    /// assert!(transform.first_frame().is_some());
+    /// ```
     #[must_use]
     pub fn first_frame(&self) -> Option<&IconData> {
         match self {
