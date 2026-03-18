@@ -224,6 +224,83 @@ fn detect_is_dark_inner() -> bool {
     false
 }
 
+/// Query whether the user prefers reduced motion.
+///
+/// Returns `true` when the OS accessibility setting indicates animations
+/// should be reduced or disabled. Returns `false` (allow animations) on
+/// unsupported platforms or when the query fails.
+///
+/// The result is cached after the first call using `OnceLock`.
+///
+/// # Platform Behavior
+///
+/// - **Linux:** Queries `gsettings get org.gnome.desktop.interface enable-animations`.
+///   Returns `true` when animations are disabled (`enable-animations` is `false`).
+/// - **macOS:** Queries `NSWorkspace.accessibilityDisplayShouldReduceMotion`
+///   (requires `macos` feature).
+/// - **Windows:** Queries `UISettings.AnimationsEnabled()` (requires `windows` feature).
+/// - **Other platforms:** Returns `false`.
+#[must_use = "this returns whether reduced motion is preferred"]
+pub fn prefers_reduced_motion() -> bool {
+    static CACHED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *CACHED.get_or_init(detect_reduced_motion_inner)
+}
+
+/// Inner detection logic for [`prefers_reduced_motion()`].
+///
+/// Separated from the public function to allow caching via `OnceLock`.
+#[allow(unreachable_code)]
+fn detect_reduced_motion_inner() -> bool {
+    #[cfg(target_os = "linux")]
+    {
+        // gsettings boolean output is bare "true\n" or "false\n" (no quotes)
+        // enable-animations has INVERTED semantics: false => reduced motion preferred
+        if let Ok(output) = std::process::Command::new("gsettings")
+            .args(["get", "org.gnome.desktop.interface", "enable-animations"])
+            .output()
+            && output.status.success()
+        {
+            let val = String::from_utf8_lossy(&output.stdout);
+            return val.trim() == "false";
+        }
+        return false;
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        #[cfg(feature = "macos")]
+        {
+            let workspace = objc2_app_kit::NSWorkspace::sharedWorkspace();
+            // Direct semantics: true = reduce motion preferred (no inversion needed)
+            return workspace.accessibilityDisplayShouldReduceMotion();
+        }
+        #[cfg(not(feature = "macos"))]
+        return false;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        #[cfg(feature = "windows")]
+        {
+            let Ok(settings) = ::windows::UI::ViewManagement::UISettings::new() else {
+                return false;
+            };
+            // AnimationsEnabled has INVERTED semantics: false => reduced motion preferred
+            return match settings.AnimationsEnabled() {
+                Ok(enabled) => !enabled,
+                Err(_) => false,
+            };
+        }
+        #[cfg(not(feature = "windows"))]
+        return false;
+    }
+
+    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+    {
+        false
+    }
+}
+
 /// Read the current system theme on Linux by detecting the desktop
 /// environment and calling the appropriate reader or returning a
 /// preset fallback.
