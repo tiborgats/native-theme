@@ -1,5 +1,6 @@
 // Theme model: ThemeVariant and NativeTheme, plus sub-module re-exports
 
+pub mod animated;
 pub mod bundled;
 pub mod colors;
 pub mod fonts;
@@ -8,6 +9,7 @@ pub mod icons;
 pub mod spacing;
 pub mod widget_metrics;
 
+pub use animated::{AnimatedIcon, Repeat, TransformAnimation};
 pub use bundled::{bundled_icon_by_name, bundled_icon_svg};
 pub use colors::ThemeColors;
 pub use fonts::ThemeFonts;

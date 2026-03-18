@@ -85,8 +85,9 @@ pub mod presets;
 pub use color::Rgba;
 pub use error::Error;
 pub use model::{
-    IconData, IconProvider, IconRole, IconSet, NativeTheme, ThemeColors, ThemeFonts, ThemeGeometry,
-    ThemeSpacing, ThemeVariant, WidgetMetrics, bundled_icon_by_name, bundled_icon_svg,
+    AnimatedIcon, IconData, IconProvider, IconRole, IconSet, NativeTheme, Repeat, ThemeColors,
+    ThemeFonts, ThemeGeometry, ThemeSpacing, ThemeVariant, TransformAnimation, WidgetMetrics,
+    bundled_icon_by_name, bundled_icon_svg,
 };
 // load_icon re-exported from this module (defined in lib.rs directly)
 pub use model::icons::{icon_name, system_icon_set, system_icon_theme};
@@ -525,6 +526,48 @@ pub fn load_custom_icon(
     None
 }
 
+/// Return the loading/spinner animation for the given icon set.
+///
+/// This is the animated-icon counterpart of [`load_icon()`]. It resolves
+/// `icon_set` to an [`IconSet`] via [`IconSet::from_name()`], falling back
+/// to [`system_icon_set()`] for unrecognized names, then dispatches to the
+/// appropriate loader.
+///
+/// # Phase 27 stub
+///
+/// Currently returns `None` for every icon set. Actual frame data will be
+/// wired in Phase 28.
+///
+/// # Examples
+///
+/// ```
+/// let anim = native_theme::loading_indicator("material");
+/// assert!(anim.is_none()); // Phase 27: stub
+/// ```
+#[must_use = "this returns animation data; it does not display anything"]
+#[allow(unused_variables)]
+pub fn loading_indicator(icon_set: &str) -> Option<AnimatedIcon> {
+    let set = IconSet::from_name(icon_set).unwrap_or_else(system_icon_set);
+    match set {
+        #[cfg(all(target_os = "linux", feature = "system-icons"))]
+        IconSet::Freedesktop => None,
+
+        #[cfg(all(target_os = "macos", feature = "system-icons"))]
+        IconSet::SfSymbols => None,
+
+        #[cfg(all(target_os = "windows", feature = "system-icons"))]
+        IconSet::SegoeIcons => None,
+
+        #[cfg(feature = "material-icons")]
+        IconSet::Material => None,
+
+        #[cfg(feature = "lucide-icons")]
+        IconSet::Lucide => None,
+
+        _ => None,
+    }
+}
+
 /// Mutex to serialize tests that manipulate environment variables.
 /// Env vars are process-global state, so tests that call set_var/remove_var
 /// must hold this lock to avoid races with parallel test execution.
@@ -959,5 +1002,47 @@ mod load_custom_icon_tests {
             }
             _ => panic!("expected IconData::Svg"),
         }
+    }
+}
+
+#[cfg(test)]
+mod loading_indicator_tests {
+    use super::*;
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn loading_indicator_material_returns_none() {
+        assert!(loading_indicator("material").is_none());
+    }
+
+    #[test]
+    #[cfg(feature = "lucide-icons")]
+    fn loading_indicator_lucide_returns_none() {
+        assert!(loading_indicator("lucide").is_none());
+    }
+
+    #[test]
+    fn loading_indicator_freedesktop_returns_none() {
+        assert!(loading_indicator("freedesktop").is_none());
+    }
+
+    #[test]
+    fn loading_indicator_sf_symbols_returns_none() {
+        assert!(loading_indicator("sf-symbols").is_none());
+    }
+
+    #[test]
+    fn loading_indicator_segoe_returns_none() {
+        assert!(loading_indicator("segoe-fluent").is_none());
+    }
+
+    #[test]
+    fn loading_indicator_unknown_returns_none() {
+        assert!(loading_indicator("unknown").is_none());
+    }
+
+    #[test]
+    fn loading_indicator_empty_string_returns_none() {
+        assert!(loading_indicator("").is_none());
     }
 }
