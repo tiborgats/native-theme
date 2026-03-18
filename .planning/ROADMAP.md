@@ -88,7 +88,10 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
   3. calling first_frame() on either variant returns the expected IconData reference
   4. loading_indicator("material") compiles and returns Option<AnimatedIcon> (None until Phase 28 wires it)
   5. StatusLoading no longer exists in the IconRole enum and all existing code compiles without it
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 27-01-PLAN.md — AnimatedIcon/TransformAnimation/Repeat types with TDD, first_frame(), loading_indicator()
+- [ ] 27-02-PLAN.md — StatusLoading to StatusBusy rename across workspace
 
 ### Phase 28: Bundled SVG Spinner Frames
 **Goal**: loading_indicator() returns platform-appropriate bundled SVG animation data for all five icon sets (Material, Lucide, macOS, Windows, GNOME)
@@ -154,7 +157,7 @@ Note: Phase 29 and Phase 30 can execute in parallel (both depend on 27/28, neith
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 27. Animation Data Model and Breaking Changes | v0.4.0 | 0/? | Not started | - |
+| 27. Animation Data Model and Breaking Changes | v0.4.0 | 0/2 | In progress | - |
 | 28. Bundled SVG Spinner Frames | v0.4.0 | 0/? | Not started | - |
 | 29. Freedesktop Sprite Sheet Parser | v0.4.0 | 0/? | Not started | - |
 | 30. Reduced Motion Accessibility | v0.4.0 | 0/? | Not started | - |
