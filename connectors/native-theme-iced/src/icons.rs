@@ -94,6 +94,83 @@ pub fn custom_icon_to_svg_handle_colored(
     to_svg_handle_colored(&data, color)
 }
 
+/// Convert all frames of an [`AnimatedIcon::Frames`] to iced SVG handles.
+///
+/// Returns `Some(Vec<svg::Handle>)` when the icon is the `Frames` variant and
+/// at least one frame is SVG. Non-SVG (RGBA) frames are filtered out. Returns
+/// `None` for `Transform` variants, empty frame sets, or if all frames are RGBA.
+///
+/// **Call this once and cache the result.** Do not call on every frame tick.
+/// Index into the cached `Vec` using an [`iced::time::every()`] subscription
+/// that increments a frame counter.
+///
+/// Callers should check [`native_theme::prefers_reduced_motion()`] and fall
+/// back to [`AnimatedIcon::first_frame()`] for a static display when the user
+/// has requested reduced motion.
+///
+/// # Examples
+///
+/// ```ignore
+/// use native_theme_iced::icons::animated_frames_to_svg_handles;
+///
+/// let anim = native_theme::loading_indicator();
+/// if let Some(handles) = animated_frames_to_svg_handles(&anim) {
+///     // Cache `handles`, then in subscription():
+///     // iced::time::every(Duration::from_millis(frame_duration_ms as u64))
+///     //     .map(|_| Message::AnimationTick)
+///     // In update(): frame_index = (frame_index + 1) % handles.len();
+///     // In view(): Svg::new(handles[frame_index].clone())
+/// }
+/// ```
+pub fn animated_frames_to_svg_handles(
+    anim: &AnimatedIcon,
+) -> Option<Vec<iced_core::svg::Handle>> {
+    match anim {
+        AnimatedIcon::Frames { frames, .. } => {
+            let handles: Vec<_> = frames.iter().filter_map(|f| to_svg_handle(f)).collect();
+            if handles.is_empty() {
+                None
+            } else {
+                Some(handles)
+            }
+        }
+        _ => None,
+    }
+}
+
+/// Compute the current rotation angle for a spin animation.
+///
+/// Returns a [`Radians`](iced_core::Radians) value representing the current
+/// rotation based on `elapsed` time and `duration_ms` (the full rotation
+/// period from [`native_theme::TransformAnimation::Spin`]).
+///
+/// The angle wraps around via modulo, so values of `elapsed` greater than
+/// `duration_ms` cycle correctly.
+///
+/// Use the result with `Svg::rotation(Rotation::Floating(angle))` -- use
+/// `Rotation::Floating` (not `Rotation::Solid`) to avoid layout jitter
+/// during rotation.
+///
+/// Callers should check [`native_theme::prefers_reduced_motion()`] and
+/// skip animation when the user has requested reduced motion.
+///
+/// # Examples
+///
+/// ```ignore
+/// use native_theme_iced::icons::spin_rotation_radians;
+/// use iced_core::Rotation;
+///
+/// let angle = spin_rotation_radians(self.elapsed, 1000);
+/// Svg::new(handle).rotation(Rotation::Floating(angle))
+/// ```
+pub fn spin_rotation_radians(
+    elapsed: std::time::Duration,
+    duration_ms: u32,
+) -> iced_core::Radians {
+    let progress = (elapsed.as_millis() as f32 % duration_ms as f32) / duration_ms as f32;
+    iced_core::Radians(progress * std::f32::consts::TAU)
+}
+
 /// Colorize a **monochrome** SVG icon with the given color.
 ///
 /// Works correctly for bundled icon sets (Material, Lucide) which use
