@@ -81,6 +81,8 @@ pub mod gnome;
 pub mod kde;
 pub mod model;
 pub mod presets;
+#[cfg(any(feature = "material-icons", feature = "lucide-icons", feature = "system-icons"))]
+mod spinners;
 
 pub use color::Rgba;
 pub use error::Error;
