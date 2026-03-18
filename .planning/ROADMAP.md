@@ -68,7 +68,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 ### v0.4.0 Animated Icons (In Progress)
 
 - [x] **Phase 27: Animation Data Model and Breaking Changes** - AnimatedIcon/TransformAnimation types, loading_indicator() API, StatusLoading removal (completed 2026-03-18)
-- [ ] **Phase 28: Bundled SVG Spinner Frames** - Programmatic SVG frame generation for Material, Lucide, macOS, Windows, and GNOME spinners
+- [x] **Phase 28: Bundled SVG Spinner Frames** - Programmatic SVG frame generation for Material, Lucide, macOS, Windows, and GNOME spinners (completed 2026-03-18)
 - [ ] **Phase 29: Freedesktop Sprite Sheet Parser** - Runtime parsing of freedesktop process-working sprite sheets into animation frames
 - [ ] **Phase 30: Reduced Motion Accessibility** - prefers_reduced_motion() OS query across Linux, macOS, and Windows
 - [ ] **Phase 31: Connector Integration** - AnimatedIcon playback support in gpui and iced connectors
@@ -103,7 +103,7 @@ Plans:
   3. loading_indicator("macos") returns Frames with 12 radial spoke SVG frames, loading_indicator("windows") returns Frames with arc expansion frames, loading_indicator("adwaita") returns Frames with overlapping arc frames
   4. Every bundled SVG frame rasterizes successfully through resvg in tests
   5. All bundled frame sets are embedded via include_bytes!() and gated on their respective feature flags
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 28-01-PLAN.md — Generate SVG spinner frames and create spinners.rs embedding module
 - [ ] 28-02-PLAN.md — Wire loading_indicator() to spinners, update tests, add resvg validation
@@ -161,7 +161,7 @@ Note: Phase 29 and Phase 30 can execute in parallel (both depend on 27/28, neith
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 27. Animation Data Model and Breaking Changes | v0.4.0 | 2/2 | Complete | 2026-03-18 |
-| 28. Bundled SVG Spinner Frames | 1/2 | In Progress|  | - |
+| 28. Bundled SVG Spinner Frames | 2/2 | Complete   | 2026-03-18 | - |
 | 29. Freedesktop Sprite Sheet Parser | v0.4.0 | 0/? | Not started | - |
 | 30. Reduced Motion Accessibility | v0.4.0 | 0/? | Not started | - |
 | 31. Connector Integration | v0.4.0 | 0/? | Not started | - |

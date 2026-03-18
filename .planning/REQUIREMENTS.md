@@ -24,7 +24,7 @@ Requirements for animated loading indicator support. Each maps to roadmap phases
 - [x] **SPIN-04**: Windows-style spinner as ~60 SVG frames of arc expansion/contraction over 2-second cycle with easing baked into geometry, gated on system-icons feature
 - [x] **SPIN-05**: GNOME Adwaita-style spinner as ~20 SVG frames of overlapping arcs with sinusoidal breathing, gated on system-icons feature
 - [x] **SPIN-06**: All bundled SVG frames use 24x24 viewBox coordinate space and are embedded via include_bytes!()
-- [ ] **SPIN-07**: Each bundled frame set validates through resvg rasterization in tests
+- [x] **SPIN-07**: Each bundled frame set validates through resvg rasterization in tests
 
 ### Freedesktop Integration
 
@@ -104,7 +104,7 @@ Deferred to future releases.
 | SPIN-04 | Phase 28 | Complete |
 | SPIN-05 | Phase 28 | Complete |
 | SPIN-06 | Phase 28 | Complete |
-| SPIN-07 | Phase 28 | Pending |
+| SPIN-07 | Phase 28 | Complete |
 | FD-01 | Phase 29 | Pending |
 | FD-02 | Phase 29 | Pending |
 | FD-03 | Phase 29 | Pending |
