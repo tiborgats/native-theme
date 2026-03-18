@@ -509,7 +509,10 @@ pub fn loading_indicator(icon_set: &str) -> Option<AnimatedIcon> {
     let set = IconSet::from_name(icon_set).unwrap_or_else(system_icon_set);
     match set {
         #[cfg(all(target_os = "linux", feature = "system-icons"))]
-        IconSet::Freedesktop => Some(spinners::adwaita_spinner()),
+        IconSet::Freedesktop => {
+            freedesktop::load_freedesktop_spinner()
+                .or_else(|| Some(spinners::adwaita_spinner()))
+        }
 
         #[cfg(all(target_os = "macos", feature = "system-icons"))]
         IconSet::SfSymbols => Some(spinners::macos_spinner()),
@@ -1093,25 +1096,37 @@ mod loading_indicator_tests {
         }
     }
 
+    /// Freedesktop loading_indicator returns Some -- either theme-native
+    /// sprite sheet frames (e.g. Breeze 15 frames) or bundled Adwaita (20 frames).
+    /// The result is theme-dependent so we only assert Some + AnimatedIcon variant.
     #[test]
     #[cfg(all(target_os = "linux", feature = "system-icons"))]
-    fn loading_indicator_freedesktop_returns_adwaita_fallback() {
+    fn loading_indicator_freedesktop_returns_some() {
         let anim = loading_indicator("freedesktop");
         assert!(
             anim.is_some(),
-            "freedesktop should return Some (adwaita fallback) on Linux"
+            "freedesktop should return Some (theme-native or adwaita fallback) on Linux"
         );
-        if let AnimatedIcon::Frames {
-            frames,
-            frame_duration_ms,
-            ..
-        } = anim.unwrap()
-        {
-            assert_eq!(frames.len(), 20, "adwaita has 20 frames");
-            assert_eq!(frame_duration_ms, 60);
-        } else {
-            panic!("freedesktop should be AnimatedIcon::Frames (adwaita)");
+        // Accept either Frames (sprite sheet or bundled Adwaita) or Transform (single-frame spin)
+        match anim.unwrap() {
+            AnimatedIcon::Frames { frames, .. } => {
+                assert!(!frames.is_empty(), "Frames variant should have at least one frame");
+            }
+            AnimatedIcon::Transform { .. } => {
+                // Single-frame theme icon with Spin -- valid result
+            }
         }
+    }
+
+    /// The or_else fallback guarantees loading_indicator("freedesktop") never returns None.
+    #[test]
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    fn loading_indicator_freedesktop_always_returns_some() {
+        let result = loading_indicator("freedesktop");
+        assert!(
+            result.is_some(),
+            "freedesktop should always return Some due to or_else adwaita fallback"
+        );
     }
 
     #[test]
