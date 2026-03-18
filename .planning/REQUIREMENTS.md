@@ -35,11 +35,11 @@ Requirements for animated loading indicator support. Each maps to roadmap phases
 
 ### Accessibility
 
-- [ ] **A11Y-01**: prefers_reduced_motion() -> bool queries OS accessibility setting, sync with OnceLock caching
-- [ ] **A11Y-02**: Linux: query via gsettings org.gnome.desktop.interface enable-animations (sync subprocess fallback)
-- [ ] **A11Y-03**: macOS: query NSWorkspace.accessibilityDisplayShouldReduceMotion
-- [ ] **A11Y-04**: Windows: query UISettings.AnimationsEnabled()
-- [ ] **A11Y-05**: Returns false (allow animations) on unsupported platforms or query failure
+- [x] **A11Y-01**: prefers_reduced_motion() -> bool queries OS accessibility setting, sync with OnceLock caching
+- [x] **A11Y-02**: Linux: query via gsettings org.gnome.desktop.interface enable-animations (sync subprocess fallback)
+- [x] **A11Y-03**: macOS: query NSWorkspace.accessibilityDisplayShouldReduceMotion
+- [x] **A11Y-04**: Windows: query UISettings.AnimationsEnabled()
+- [x] **A11Y-05**: Returns false (allow animations) on unsupported platforms or query failure
 
 ### Breaking Changes
 
@@ -109,11 +109,11 @@ Deferred to future releases.
 | FD-02 | Phase 29 | Complete |
 | FD-03 | Phase 29 | Complete |
 | FD-04 | Phase 29 | Complete |
-| A11Y-01 | Phase 30 | Pending |
-| A11Y-02 | Phase 30 | Pending |
-| A11Y-03 | Phase 30 | Pending |
-| A11Y-04 | Phase 30 | Pending |
-| A11Y-05 | Phase 30 | Pending |
+| A11Y-01 | Phase 30 | Complete |
+| A11Y-02 | Phase 30 | Complete |
+| A11Y-03 | Phase 30 | Complete |
+| A11Y-04 | Phase 30 | Complete |
+| A11Y-05 | Phase 30 | Complete |
 | BREAK-01 | Phase 27 | Complete |
 | BREAK-02 | Phase 27 | Complete |
 | CONN-01 | Phase 31 | Pending |
