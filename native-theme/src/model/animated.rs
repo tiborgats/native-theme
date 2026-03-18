@@ -120,7 +120,7 @@ mod tests {
         let a2 = a; // Copy
         let a3 = a.clone(); // Clone
         assert_eq!(a2, a3); // PartialEq + Eq
-        use std::hash::{Hash, Hasher};
+        use std::hash::Hash;
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
         a.hash(&mut hasher);
         let _ = format!("{a:?}"); // Debug
