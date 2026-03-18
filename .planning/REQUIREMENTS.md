@@ -48,10 +48,10 @@ Requirements for animated loading indicator support. Each maps to roadmap phases
 
 ### Connector Integration
 
-- [ ] **CONN-01**: gpui connector: AnimatedIcon::Frames → frame cycling with timer-driven index selection
-- [ ] **CONN-02**: gpui connector: AnimatedIcon::Transform::Spin → AnimationExt with Transformation::rotate()
-- [ ] **CONN-03**: iced connector: AnimatedIcon::Frames → frame cycling with time::every() subscription
-- [ ] **CONN-04**: iced connector: AnimatedIcon::Transform::Spin → Svg::rotation() with timer
+- [x] **CONN-01**: gpui connector: AnimatedIcon::Frames → frame cycling with timer-driven index selection
+- [x] **CONN-02**: gpui connector: AnimatedIcon::Transform::Spin → AnimationExt with Transformation::rotate()
+- [x] **CONN-03**: iced connector: AnimatedIcon::Frames → frame cycling with time::every() subscription
+- [x] **CONN-04**: iced connector: AnimatedIcon::Transform::Spin → Svg::rotation() with timer
 
 ### Documentation
 
@@ -116,10 +116,10 @@ Deferred to future releases.
 | A11Y-05 | Phase 30 | Complete |
 | BREAK-01 | Phase 27 | Complete |
 | BREAK-02 | Phase 27 | Complete |
-| CONN-01 | Phase 31 | Pending |
-| CONN-02 | Phase 31 | Pending |
-| CONN-03 | Phase 31 | Pending |
-| CONN-04 | Phase 31 | Pending |
+| CONN-01 | Phase 31 | Complete |
+| CONN-02 | Phase 31 | Complete |
+| CONN-03 | Phase 31 | Complete |
+| CONN-04 | Phase 31 | Complete |
 | DOC-01 | Phase 32 | Pending |
 | DOC-02 | Phase 32 | Pending |
 | DOC-03 | Phase 32 | Pending |

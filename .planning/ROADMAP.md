@@ -72,7 +72,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 - [x] **Phase 29: Freedesktop Sprite Sheet Parser** - Runtime parsing of freedesktop process-working sprite sheets into animation frames (completed 2026-03-18)
 - [x] **Phase 30: Reduced Motion Accessibility** - prefers_reduced_motion() OS query across Linux, macOS, and Windows (completed 2026-03-18)
-- [ ] **Phase 31: Connector Integration** - AnimatedIcon playback support in gpui and iced connectors
+- [x] **Phase 31: Connector Integration** - AnimatedIcon playback support in gpui and iced connectors (completed 2026-03-18)
 - [ ] **Phase 32: Documentation and Release** - API docs, CHANGELOG, migration guide for StatusLoading removal
 
 ## Phase Details
@@ -145,7 +145,7 @@ Plans:
   2. gpui connector converts AnimatedIcon::Transform::Spin into continuous rotation via AnimationExt with Transformation::rotate()
   3. iced connector converts AnimatedIcon::Frames into frame cycling driven by time::every() subscription
   4. iced connector converts AnimatedIcon::Transform::Spin into Svg::rotation() with a timer-based angle
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
 - [ ] 31-01-PLAN.md — AnimatedIcon helpers for gpui (frame conversion + spin wrapper) and iced (SVG handles + rotation radians)
 
@@ -171,5 +171,5 @@ Note: Phase 29 and Phase 30 can execute in parallel (both depend on 27/28, neith
 | 28. Bundled SVG Spinner Frames | v0.4.0 | 2/2 | Complete | 2026-03-18 |
 | 29. Freedesktop Sprite Sheet Parser | v0.4.0 | 1/1 | Complete | 2026-03-18 |
 | 30. Reduced Motion Accessibility | v0.4.0 | 1/1 | Complete | 2026-03-18 |
-| 31. Connector Integration | v0.4.0 | 0/1 | In progress | - |
+| 31. Connector Integration | 1/1 | Complete   | 2026-03-18 | - |
 | 32. Documentation and Release | v0.4.0 | 0/? | Not started | - |
