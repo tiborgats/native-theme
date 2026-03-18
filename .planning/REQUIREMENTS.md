@@ -9,12 +9,12 @@ Requirements for animated loading indicator support. Each maps to roadmap phases
 
 ### Core Animation API
 
-- [ ] **ANIM-01**: AnimatedIcon enum with Frames and Transform variants, both #[non_exhaustive]
-- [ ] **ANIM-02**: Frames variant holds Vec<IconData> frames, frame_duration_ms (u32), and Repeat enum
-- [ ] **ANIM-03**: Transform variant holds IconData and TransformAnimation enum
-- [ ] **ANIM-04**: TransformAnimation::Spin variant with duration_ms field for continuous rotation
-- [ ] **ANIM-05**: loading_indicator(icon_set: &str) dispatches to platform/bundled loaders and returns Option<AnimatedIcon>
-- [ ] **ANIM-06**: AnimatedIcon provides first_frame() -> Option<&IconData> helper for static fallback
+- [x] **ANIM-01**: AnimatedIcon enum with Frames and Transform variants, both #[non_exhaustive]
+- [x] **ANIM-02**: Frames variant holds Vec<IconData> frames, frame_duration_ms (u32), and Repeat enum
+- [x] **ANIM-03**: Transform variant holds IconData and TransformAnimation enum
+- [x] **ANIM-04**: TransformAnimation::Spin variant with duration_ms field for continuous rotation
+- [x] **ANIM-05**: loading_indicator(icon_set: &str) dispatches to platform/bundled loaders and returns Option<AnimatedIcon>
+- [x] **ANIM-06**: AnimatedIcon provides first_frame() -> Option<&IconData> helper for static fallback
 
 ### Bundled Spinner Frames
 
@@ -92,12 +92,12 @@ Deferred to future releases.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| ANIM-01 | Phase 27 | Pending |
-| ANIM-02 | Phase 27 | Pending |
-| ANIM-03 | Phase 27 | Pending |
-| ANIM-04 | Phase 27 | Pending |
-| ANIM-05 | Phase 27 | Pending |
-| ANIM-06 | Phase 27 | Pending |
+| ANIM-01 | Phase 27 | Complete |
+| ANIM-02 | Phase 27 | Complete |
+| ANIM-03 | Phase 27 | Complete |
+| ANIM-04 | Phase 27 | Complete |
+| ANIM-05 | Phase 27 | Complete |
+| ANIM-06 | Phase 27 | Complete |
 | SPIN-01 | Phase 28 | Pending |
 | SPIN-02 | Phase 28 | Pending |
 | SPIN-03 | Phase 28 | Pending |
