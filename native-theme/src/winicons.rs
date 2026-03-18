@@ -507,11 +507,11 @@ mod tests {
 
     #[test]
     fn unmapped_role_returns_none() {
-        // StatusLoading has no Segoe mapping (known gap), should return None
-        let result = load_windows_icon(IconRole::StatusLoading);
+        // StatusBusy has no Segoe mapping (known gap), should return None
+        let result = load_windows_icon(IconRole::StatusBusy);
         assert!(
             result.is_none(),
-            "StatusLoading should return None (no Segoe mapping, no fallback)"
+            "StatusBusy should return None (no Segoe mapping, no fallback)"
         );
     }
 

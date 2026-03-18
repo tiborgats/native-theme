@@ -89,7 +89,7 @@ fn material_svg(role: IconRole) -> Option<&'static [u8]> {
         IconRole::TrashFull => include_bytes!("../../icons/material/delete.svg"), // reuse delete
 
         // Status (3)
-        IconRole::StatusLoading => include_bytes!("../../icons/material/progress_activity.svg"),
+        IconRole::StatusBusy => include_bytes!("../../icons/material/progress_activity.svg"),
         IconRole::StatusCheck => include_bytes!("../../icons/material/check.svg"),
         IconRole::StatusError => include_bytes!("../../icons/material/error.svg"), // reuse error
 
@@ -153,7 +153,7 @@ fn lucide_svg(role: IconRole) -> Option<&'static [u8]> {
         IconRole::TrashFull => include_bytes!("../../icons/lucide/trash-2.svg"), // reuse trash-2
 
         // Status (3)
-        IconRole::StatusLoading => include_bytes!("../../icons/lucide/loader.svg"),
+        IconRole::StatusBusy => include_bytes!("../../icons/lucide/loader.svg"),
         IconRole::StatusCheck => include_bytes!("../../icons/lucide/check.svg"),
         IconRole::StatusError => include_bytes!("../../icons/lucide/circle-x.svg"), // reuse circle-x
 

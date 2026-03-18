@@ -121,8 +121,8 @@ pub enum IconRole {
     TrashFull,
 
     // Status (3)
-    /// Loading / in-progress indicator
-    StatusLoading,
+    /// Busy / working state indicator
+    StatusBusy,
     /// Check / success indicator
     StatusCheck,
     /// Error state indicator
@@ -185,7 +185,7 @@ impl IconRole {
         Self::TrashEmpty,
         Self::TrashFull,
         // Status (3)
-        Self::StatusLoading,
+        Self::StatusBusy,
         Self::StatusCheck,
         Self::StatusError,
         // System (4)
@@ -678,8 +678,8 @@ fn sf_symbols_name(role: IconRole) -> Option<&'static str> {
         IconRole::TrashFull => "trash.fill",
 
         // Status
-        // StatusLoading: no static SF Symbol (loading is animated)
-        IconRole::StatusLoading => return None,
+        // StatusBusy: no static SF Symbol (no static busy equivalent)
+        IconRole::StatusBusy => return None,
         IconRole::StatusCheck => "checkmark",
         IconRole::StatusError => "xmark.circle.fill",
 
@@ -742,8 +742,8 @@ fn segoe_name(role: IconRole) -> Option<&'static str> {
         IconRole::TrashFull => "SIID_RECYCLERFULL",
 
         // Status
-        // StatusLoading: no static Windows icon (progress ring is animated)
-        IconRole::StatusLoading => return None,
+        // StatusBusy: no static Windows icon (no static busy equivalent)
+        IconRole::StatusBusy => return None,
         IconRole::StatusCheck => "CheckMark",
         IconRole::StatusError => "SIID_ERROR",
 
@@ -806,7 +806,7 @@ fn freedesktop_name(role: IconRole) -> Option<&'static str> {
         IconRole::TrashFull => "user-trash-full",
 
         // Status
-        IconRole::StatusLoading => "process-working",
+        IconRole::StatusBusy => "process-working",
         IconRole::StatusCheck => "emblem-default",
         IconRole::StatusError => "dialog-error",
 
@@ -871,7 +871,7 @@ fn material_name(role: IconRole) -> Option<&'static str> {
         IconRole::TrashFull => "delete",
 
         // Status
-        IconRole::StatusLoading => "progress_activity",
+        IconRole::StatusBusy => "progress_activity",
         IconRole::StatusCheck => "check",
         IconRole::StatusError => "error",
 
@@ -935,7 +935,7 @@ fn lucide_name(role: IconRole) -> Option<&'static str> {
         IconRole::TrashFull => "trash-2",
 
         // Status
-        IconRole::StatusLoading => "loader",
+        IconRole::StatusBusy => "loader",
         IconRole::StatusCheck => "check",
         IconRole::StatusError => "circle-x",
 
@@ -1011,7 +1011,7 @@ mod tests {
         assert!(all.contains(&IconRole::TrashFull));
 
         // Status (3)
-        assert!(all.contains(&IconRole::StatusLoading));
+        assert!(all.contains(&IconRole::StatusBusy));
         assert!(all.contains(&IconRole::StatusCheck));
         assert!(all.contains(&IconRole::StatusError));
 
@@ -1297,8 +1297,8 @@ mod tests {
     }
 
     #[test]
-    fn icon_name_sf_symbols_status_loading_is_none() {
-        assert_eq!(icon_name(IconSet::SfSymbols, IconRole::StatusLoading), None);
+    fn icon_name_sf_symbols_status_busy_is_none() {
+        assert_eq!(icon_name(IconSet::SfSymbols, IconRole::StatusBusy), None);
     }
 
     #[test]
@@ -1318,9 +1318,9 @@ mod tests {
     }
 
     #[test]
-    fn icon_name_segoe_status_loading_is_none() {
+    fn icon_name_segoe_status_busy_is_none() {
         assert_eq!(
-            icon_name(IconSet::SegoeIcons, IconRole::StatusLoading),
+            icon_name(IconSet::SegoeIcons, IconRole::StatusBusy),
             None
         );
     }
@@ -1398,7 +1398,7 @@ mod tests {
     // Count test: verify expected Some/None count for each icon set
     #[test]
     fn icon_name_sf_symbols_expected_count() {
-        // SF Symbols: 42 - 2 None (FolderOpen, StatusLoading) = 40 Some
+        // SF Symbols: 42 - 2 None (FolderOpen, StatusBusy) = 40 Some
         let some_count = IconRole::ALL
             .iter()
             .filter(|r| icon_name(IconSet::SfSymbols, **r).is_some())
@@ -1408,7 +1408,7 @@ mod tests {
 
     #[test]
     fn icon_name_segoe_expected_count() {
-        // Segoe: 42 - 1 None (StatusLoading) = 41 Some
+        // Segoe: 42 - 1 None (StatusBusy) = 41 Some
         let some_count = IconRole::ALL
             .iter()
             .filter(|r| icon_name(IconSet::SegoeIcons, **r).is_some())
@@ -1535,8 +1535,8 @@ mod tests {
     fn known_gaps() -> &'static [(IconSet, IconRole)] {
         &[
             (IconSet::SfSymbols, IconRole::FolderOpen),
-            (IconSet::SfSymbols, IconRole::StatusLoading),
-            (IconSet::SegoeIcons, IconRole::StatusLoading),
+            (IconSet::SfSymbols, IconRole::StatusBusy),
+            (IconSet::SegoeIcons, IconRole::StatusBusy),
         ]
     }
 
