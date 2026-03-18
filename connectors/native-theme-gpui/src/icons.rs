@@ -776,6 +776,77 @@ pub fn custom_icon_to_image_source_colored(
     Some(to_image_source_colored(&data, color))
 }
 
+/// Convert all frames of an [`AnimatedIcon::Frames`] to gpui [`ImageSource`]s.
+///
+/// Returns `Some(Vec<ImageSource>)` when the icon is the `Frames` variant,
+/// with one `ImageSource` per frame. Returns `None` for `Transform` variants.
+///
+/// **Call this once and cache the result.** Do not call on every frame tick --
+/// SVG rasterization is expensive. Index into the cached `Vec` using a
+/// timer-driven frame counter.
+///
+/// Callers should check [`native_theme::prefers_reduced_motion()`] and fall
+/// back to [`AnimatedIcon::first_frame()`] for a static display when the user
+/// has requested reduced motion.
+///
+/// # Examples
+///
+/// ```ignore
+/// use native_theme_gpui::icons::animated_frames_to_image_sources;
+///
+/// let anim = native_theme::loading_indicator();
+/// if let Some(sources) = animated_frames_to_image_sources(&anim) {
+///     // Cache `sources`, then on each timer tick:
+///     // frame_index = (frame_index + 1) % sources.len();
+///     // gpui::img(sources[frame_index].clone())
+/// }
+/// ```
+pub fn animated_frames_to_image_sources(anim: &AnimatedIcon) -> Option<Vec<ImageSource>> {
+    match anim {
+        AnimatedIcon::Frames { frames, .. } => {
+            Some(frames.iter().map(|f| to_image_source(f)).collect())
+        }
+        _ => None,
+    }
+}
+
+/// Wrap a gpui [`Svg`] element with continuous rotation animation.
+///
+/// Returns an animated element that spins 360 degrees over `duration_ms`
+/// milliseconds, repeating infinitely. Uses linear easing for constant-speed
+/// rotation suitable for loading spinners.
+///
+/// `duration_ms` comes from [`native_theme::TransformAnimation::Spin`].
+/// `animation_id` must be unique among sibling animated elements (accepts
+/// `&'static str`, integer IDs, or any `impl Into<ElementId>`).
+///
+/// This is pure data construction -- no gpui render context is needed to call
+/// this function. Only `paint()` on the resulting element requires a window.
+///
+/// Callers should check [`native_theme::prefers_reduced_motion()`] and fall
+/// back to a static icon when the user has requested reduced motion.
+///
+/// # Examples
+///
+/// ```ignore
+/// use native_theme_gpui::icons::with_spin_animation;
+///
+/// let spinner = gpui::svg().path("spinner.svg").size_6();
+/// let animated = with_spin_animation(spinner, "my-spinner", 1000);
+/// // Use `animated` as a child element in your gpui view
+/// ```
+pub fn with_spin_animation(
+    element: Svg,
+    animation_id: impl Into<gpui::ElementId>,
+    duration_ms: u32,
+) -> impl gpui::IntoElement {
+    element.with_animation(
+        animation_id,
+        Animation::new(Duration::from_millis(duration_ms as u64)).repeat(),
+        |el, delta| el.with_transformation(Transformation::rotate(percentage(delta))),
+    )
+}
+
 /// Rasterize SVG bytes and return as a BMP-backed [`ImageSource`].
 ///
 /// Works around a gpui bug where `ImageFormat::Svg` in `Image::to_image_data`
