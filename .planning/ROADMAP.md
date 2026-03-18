@@ -69,6 +69,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 - [x] **Phase 27: Animation Data Model and Breaking Changes** - AnimatedIcon/TransformAnimation types, loading_indicator() API, StatusLoading removal (completed 2026-03-18)
 - [x] **Phase 28: Bundled SVG Spinner Frames** - Programmatic SVG frame generation for Material, Lucide, macOS, Windows, and GNOME spinners (completed 2026-03-18)
+
 - [ ] **Phase 29: Freedesktop Sprite Sheet Parser** - Runtime parsing of freedesktop process-working sprite sheets into animation frames
 - [ ] **Phase 30: Reduced Motion Accessibility** - prefers_reduced_motion() OS query across Linux, macOS, and Windows
 - [ ] **Phase 31: Connector Integration** - AnimatedIcon playback support in gpui and iced connectors
@@ -105,8 +106,8 @@ Plans:
   5. All bundled frame sets are embedded via include_bytes!() and gated on their respective feature flags
 **Plans:** 2/2 plans complete
 Plans:
-- [ ] 28-01-PLAN.md — Generate SVG spinner frames and create spinners.rs embedding module
-- [ ] 28-02-PLAN.md — Wire loading_indicator() to spinners, update tests, add resvg validation
+- [x] 28-01-PLAN.md — Generate SVG spinner frames and create spinners.rs embedding module
+- [x] 28-02-PLAN.md — Wire loading_indicator() to spinners, update tests, add resvg validation
 
 ### Phase 29: Freedesktop Sprite Sheet Parser
 **Goal**: Linux users with freedesktop-compliant icon themes get theme-native loading animations parsed from their installed theme's process-working icon
@@ -161,7 +162,7 @@ Note: Phase 29 and Phase 30 can execute in parallel (both depend on 27/28, neith
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 27. Animation Data Model and Breaking Changes | v0.4.0 | 2/2 | Complete | 2026-03-18 |
-| 28. Bundled SVG Spinner Frames | 2/2 | Complete   | 2026-03-18 | - |
+| 28. Bundled SVG Spinner Frames | v0.4.0 | 2/2 | Complete | 2026-03-18 |
 | 29. Freedesktop Sprite Sheet Parser | v0.4.0 | 0/? | Not started | - |
 | 30. Reduced Motion Accessibility | v0.4.0 | 0/? | Not started | - |
 | 31. Connector Integration | v0.4.0 | 0/? | Not started | - |
