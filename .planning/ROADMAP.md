@@ -67,7 +67,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 ### v0.4.0 Animated Icons (In Progress)
 
-- [ ] **Phase 27: Animation Data Model and Breaking Changes** - AnimatedIcon/TransformAnimation types, loading_indicator() API, StatusLoading removal
+- [x] **Phase 27: Animation Data Model and Breaking Changes** - AnimatedIcon/TransformAnimation types, loading_indicator() API, StatusLoading removal (completed 2026-03-18)
 - [ ] **Phase 28: Bundled SVG Spinner Frames** - Programmatic SVG frame generation for Material, Lucide, macOS, Windows, and GNOME spinners
 - [ ] **Phase 29: Freedesktop Sprite Sheet Parser** - Runtime parsing of freedesktop process-working sprite sheets into animation frames
 - [ ] **Phase 30: Reduced Motion Accessibility** - prefers_reduced_motion() OS query across Linux, macOS, and Windows
@@ -88,7 +88,7 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
   3. calling first_frame() on either variant returns the expected IconData reference
   4. loading_indicator("material") compiles and returns Option<AnimatedIcon> (None until Phase 28 wires it)
   5. StatusLoading no longer exists in the IconRole enum and all existing code compiles without it
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 Plans:
 - [ ] 27-01-PLAN.md — AnimatedIcon/TransformAnimation/Repeat types with TDD, first_frame(), loading_indicator()
 - [ ] 27-02-PLAN.md — StatusLoading to StatusBusy rename across workspace
@@ -157,7 +157,7 @@ Note: Phase 29 and Phase 30 can execute in parallel (both depend on 27/28, neith
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
-| 27. Animation Data Model and Breaking Changes | v0.4.0 | 0/2 | In progress | - |
+| 27. Animation Data Model and Breaking Changes | 2/2 | Complete   | 2026-03-18 | - |
 | 28. Bundled SVG Spinner Frames | v0.4.0 | 0/? | Not started | - |
 | 29. Freedesktop Sprite Sheet Parser | v0.4.0 | 0/? | Not started | - |
 | 30. Reduced Motion Accessibility | v0.4.0 | 0/? | Not started | - |
