@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v0.4.0
 milestone_name: Animated Icons
 current_plan: null
-status: defining-requirements
+status: ready-to-plan
 stopped_at: null
 last_updated: "2026-03-18T00:00:00Z"
-last_activity: "2026-03-18 — Milestone v0.4.0 started"
+last_activity: "2026-03-18 — Roadmap created for v0.4.0 (6 phases, 31 requirements)"
 progress:
-  total_phases: 0
+  total_phases: 6
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -22,14 +22,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** v0.4.0 Animated Icons — defining requirements
+**Current focus:** v0.4.0 Animated Icons — Phase 27 ready to plan
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 27 of 32 (Animation Data Model and Breaking Changes)
 Plan: —
-Status: Defining requirements
-Last activity: 2026-03-18 — Milestone v0.4.0 started
+Status: Ready to plan
+Last activity: 2026-03-18 — Roadmap created for v0.4.0 (6 phases, 31 requirements)
+
+Progress: [░░░░░░░░░░] 0%
 
 ## Performance Metrics
 
@@ -59,5 +61,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-03-18
-Stopped at: Milestone v0.4.0 started, defining requirements
+Stopped at: Roadmap created for v0.4.0, Phase 27 ready to plan
 Resume file: None
