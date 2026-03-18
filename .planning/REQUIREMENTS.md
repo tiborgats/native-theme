@@ -18,12 +18,12 @@ Requirements for animated loading indicator support. Each maps to roadmap phases
 
 ### Bundled Spinner Frames
 
-- [ ] **SPIN-01**: Material spinner as ~12 SVG frames of circular stroke arc animation (24x24 viewBox), gated on material-icons feature
-- [ ] **SPIN-02**: Lucide spinner as Transform::Spin on the loader icon SVG, gated on lucide-icons feature
-- [ ] **SPIN-03**: macOS-style spinner as 12 SVG frames with radial spokes at sequential opacity steps, gated on system-icons feature
-- [ ] **SPIN-04**: Windows-style spinner as ~60 SVG frames of arc expansion/contraction over 2-second cycle with easing baked into geometry, gated on system-icons feature
-- [ ] **SPIN-05**: GNOME Adwaita-style spinner as ~20 SVG frames of overlapping arcs with sinusoidal breathing, gated on system-icons feature
-- [ ] **SPIN-06**: All bundled SVG frames use 24x24 viewBox coordinate space and are embedded via include_bytes!()
+- [x] **SPIN-01**: Material spinner as ~12 SVG frames of circular stroke arc animation (24x24 viewBox), gated on material-icons feature
+- [x] **SPIN-02**: Lucide spinner as Transform::Spin on the loader icon SVG, gated on lucide-icons feature
+- [x] **SPIN-03**: macOS-style spinner as 12 SVG frames with radial spokes at sequential opacity steps, gated on system-icons feature
+- [x] **SPIN-04**: Windows-style spinner as ~60 SVG frames of arc expansion/contraction over 2-second cycle with easing baked into geometry, gated on system-icons feature
+- [x] **SPIN-05**: GNOME Adwaita-style spinner as ~20 SVG frames of overlapping arcs with sinusoidal breathing, gated on system-icons feature
+- [x] **SPIN-06**: All bundled SVG frames use 24x24 viewBox coordinate space and are embedded via include_bytes!()
 - [ ] **SPIN-07**: Each bundled frame set validates through resvg rasterization in tests
 
 ### Freedesktop Integration
@@ -98,12 +98,12 @@ Deferred to future releases.
 | ANIM-04 | Phase 27 | Complete |
 | ANIM-05 | Phase 27 | Complete |
 | ANIM-06 | Phase 27 | Complete |
-| SPIN-01 | Phase 28 | Pending |
-| SPIN-02 | Phase 28 | Pending |
-| SPIN-03 | Phase 28 | Pending |
-| SPIN-04 | Phase 28 | Pending |
-| SPIN-05 | Phase 28 | Pending |
-| SPIN-06 | Phase 28 | Pending |
+| SPIN-01 | Phase 28 | Complete |
+| SPIN-02 | Phase 28 | Complete |
+| SPIN-03 | Phase 28 | Complete |
+| SPIN-04 | Phase 28 | Complete |
+| SPIN-05 | Phase 28 | Complete |
+| SPIN-06 | Phase 28 | Complete |
 | SPIN-07 | Phase 28 | Pending |
 | FD-01 | Phase 29 | Pending |
 | FD-02 | Phase 29 | Pending |
