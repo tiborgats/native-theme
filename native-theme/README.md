@@ -117,6 +117,38 @@ let icon = load_custom_icon(&AppIcon::PlayPause, "material");
 See the [`native-theme-build` docs](https://docs.rs/native-theme-build) for the
 full TOML schema, builder API, and DE-aware mapping support.
 
+## Animated Icons
+
+`loading_indicator()` returns a platform-native loading spinner animation
+matching the requested icon set (Material, Lucide, macOS, Windows, Adwaita,
+or a freedesktop theme's `process-working` animation):
+
+```rust,ignore
+use native_theme::{loading_indicator, prefers_reduced_motion, AnimatedIcon};
+
+if let Some(anim) = loading_indicator("material") {
+    if prefers_reduced_motion() {
+        // Respect OS accessibility settings with a static fallback
+        let static_icon = anim.first_frame();
+    } else {
+        match &anim {
+            AnimatedIcon::Frames { frames, frame_duration_ms, .. } => {
+                // Cycle through pre-rendered frames on a timer
+            }
+            AnimatedIcon::Transform { icon, animation } => {
+                // Apply continuous rotation to the icon
+            }
+        }
+    }
+}
+```
+
+Toolkit connectors provide playback helpers:
+[`animated_frames_to_image_sources()`](https://docs.rs/native-theme-gpui) and
+[`with_spin_animation()`](https://docs.rs/native-theme-gpui) for gpui,
+[`animated_frames_to_svg_handles()`](https://docs.rs/native-theme-iced) and
+[`spin_rotation_radians()`](https://docs.rs/native-theme-iced) for iced.
+
 ## Feature Flags
 
 | Feature | Enables | Platform |

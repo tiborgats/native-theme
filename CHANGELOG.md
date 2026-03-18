@@ -5,6 +5,68 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.0] - 2026-03-18
+
+### Added
+
+- `AnimatedIcon` enum with `Frames` and `Transform` variants for animated icon data
+- `TransformAnimation` enum with `Spin` variant for continuous rotation
+- `Repeat` enum controlling animation looping behavior
+- `AnimatedIcon::first_frame()` method returning a static fallback frame
+- `loading_indicator(icon_set)` function dispatching to platform-appropriate spinner animations
+- `prefers_reduced_motion()` function querying OS accessibility settings (Linux gsettings, macOS NSWorkspace, Windows UISettings)
+- Bundled spinner animations for Material (12 arc frames), Lucide (spin transform), macOS (12 spoke frames), Windows (60 arc frames), and GNOME Adwaita (20 arc frames) styles
+- Freedesktop sprite sheet parser for runtime `process-working.svg` animation loading
+- gpui connector: `animated_frames_to_image_sources()` and `with_spin_animation()` for animation playback
+- iced connector: `animated_frames_to_svg_handles()` and `spin_rotation_radians()` for animation playback
+
+### Changed
+
+- `IconRole::StatusLoading` renamed to `IconRole::StatusBusy` (static icon for busy state)
+
+### Removed
+
+- `IconRole::StatusLoading` variant (use `loading_indicator()` for animated loading indicators, or `IconRole::StatusBusy` for a static busy icon)
+
+### Migration from v0.3.x
+
+**Before (v0.3.x):**
+
+```rust,ignore
+use native_theme::{load_icon, IconRole};
+
+// Static loading icon
+let icon = load_icon(IconRole::StatusLoading, "material");
+```
+
+**After (v0.4.0):**
+
+```rust,ignore
+use native_theme::{loading_indicator, prefers_reduced_motion, AnimatedIcon};
+
+// Animated loading indicator with platform-native style
+if let Some(anim) = loading_indicator("material") {
+    // Check accessibility preference first
+    if prefers_reduced_motion() {
+        let static_icon = anim.first_frame();
+        // Render a single static frame
+    } else {
+        match &anim {
+            AnimatedIcon::Frames { frames, frame_duration_ms, .. } => {
+                // Cycle through frames on a timer
+            }
+            AnimatedIcon::Transform { icon, animation } => {
+                // Apply continuous rotation to the icon
+            }
+        }
+    }
+}
+
+// If you just need a static busy icon (not animated):
+use native_theme::{load_icon, IconRole};
+let busy = load_icon(IconRole::StatusBusy, "material");
+```
+
 ## [0.3.3] - 2026-03-17
 
 ### Added
@@ -134,6 +196,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `impl_merge!` macro for recursive Option-based theme merging
 - Deep merge support across all theme types
 
+[0.4.0]: https://github.com/tiborgats/native-theme/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/tiborgats/native-theme/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/tiborgats/native-theme/compare/v0.3.1...v0.3.2
 [0.3.1]: https://github.com/tiborgats/native-theme/compare/v0.3...v0.3.1
