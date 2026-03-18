@@ -55,9 +55,9 @@ Requirements for animated loading indicator support. Each maps to roadmap phases
 
 ### Documentation
 
-- [ ] **DOC-01**: API documentation for all new public types and functions
-- [ ] **DOC-02**: CHANGELOG entry documenting new features and StatusLoading removal migration
-- [ ] **DOC-03**: Migration guide: StatusLoading → loading_indicator() with code examples
+- [x] **DOC-01**: API documentation for all new public types and functions
+- [x] **DOC-02**: CHANGELOG entry documenting new features and StatusLoading removal migration
+- [x] **DOC-03**: Migration guide: StatusLoading → loading_indicator() with code examples
 
 ## v0.5+ Requirements
 
@@ -120,9 +120,9 @@ Deferred to future releases.
 | CONN-02 | Phase 31 | Complete |
 | CONN-03 | Phase 31 | Complete |
 | CONN-04 | Phase 31 | Complete |
-| DOC-01 | Phase 32 | Pending |
-| DOC-02 | Phase 32 | Pending |
-| DOC-03 | Phase 32 | Pending |
+| DOC-01 | Phase 32 | Complete |
+| DOC-02 | Phase 32 | Complete |
+| DOC-03 | Phase 32 | Complete |
 
 **Coverage:**
 - v0.4 requirements: 31 total

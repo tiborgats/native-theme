@@ -10,7 +10,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - ✅ **v0.2 Platform Coverage & Publishing** — Phases 9-15 (shipped 2026-03-09)
 - ✅ **v0.3 Icons** — Phases 16-21 (shipped 2026-03-09)
 - ✅ **v0.3.3 Custom Icon Roles** — Phases 22-26 (shipped 2026-03-17)
-- 🚧 **v0.4.0 Animated Icons** — Phases 27-32 (in progress)
+- ✅ **v0.4.0 Animated Icons** — Phases 27-32 (shipped 2026-03-18)
 
 ## Phases
 
@@ -73,7 +73,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 29: Freedesktop Sprite Sheet Parser** - Runtime parsing of freedesktop process-working sprite sheets into animation frames (completed 2026-03-18)
 - [x] **Phase 30: Reduced Motion Accessibility** - prefers_reduced_motion() OS query across Linux, macOS, and Windows (completed 2026-03-18)
 - [x] **Phase 31: Connector Integration** - AnimatedIcon playback support in gpui and iced connectors (completed 2026-03-18)
-- [ ] **Phase 32: Documentation and Release** - API docs, CHANGELOG, migration guide for StatusLoading removal
+- [x] **Phase 32: Documentation and Release** - API docs, CHANGELOG, migration guide for StatusLoading removal (completed 2026-03-18)
 
 ## Phase Details
 
@@ -157,9 +157,9 @@ Plans:
   1. All public types (AnimatedIcon, TransformAnimation, Repeat) and functions (loading_indicator, prefers_reduced_motion, first_frame) have rustdoc with examples
   2. CHANGELOG entry documents new features and lists StatusLoading removal as a breaking change with migration steps
   3. A migration guide section shows before/after code for replacing StatusLoading with loading_indicator()
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
-- [ ] 32-01-PLAN.md — Rustdoc examples for animated types, CHANGELOG v0.4.0 entry with migration guide, README update
+- [x] 32-01-PLAN.md — Rustdoc examples for animated types, CHANGELOG v0.4.0 entry with migration guide, README update
 
 ## Progress
 
@@ -174,4 +174,4 @@ Note: Phase 29 and Phase 30 can execute in parallel (both depend on 27/28, neith
 | 29. Freedesktop Sprite Sheet Parser | v0.4.0 | 1/1 | Complete | 2026-03-18 |
 | 30. Reduced Motion Accessibility | v0.4.0 | 1/1 | Complete | 2026-03-18 |
 | 31. Connector Integration | v0.4.0 | 1/1 | Complete | 2026-03-18 |
-| 32. Documentation and Release | v0.4.0 | 0/1 | Not started | - |
+| 32. Documentation and Release | v0.4.0 | 1/1 | Complete | 2026-03-18 |
