@@ -22,7 +22,7 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** v0.4.0 Animated Icons — Phase 27 complete
+**Current focus:** v0.4.0 Animated Icons — Phase 27 complete, Phase 28 next
 
 ## Current Position
 
