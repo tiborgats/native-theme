@@ -57,8 +57,10 @@ impl AnimatedIcon {
     /// For `Transform`, returns the underlying icon.
     #[must_use]
     pub fn first_frame(&self) -> Option<&IconData> {
-        // Stub: always returns None (will be fixed in GREEN phase)
-        None
+        match self {
+            AnimatedIcon::Frames { frames, .. } => frames.first(),
+            AnimatedIcon::Transform { icon, .. } => Some(icon),
+        }
     }
 }
 
