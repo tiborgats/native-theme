@@ -499,8 +499,10 @@ pub fn load_system_icon_by_name(name: &str, set: IconSet) -> Option<IconData> {
 /// # Examples
 ///
 /// ```
-/// let anim = native_theme::loading_indicator("nonexistent");
-/// assert!(anim.is_none());
+/// // Result depends on enabled features and platform
+/// let anim = native_theme::loading_indicator("material");
+/// # #[cfg(feature = "material-icons")]
+/// # assert!(anim.is_some());
 /// ```
 #[must_use = "this returns animation data; it does not display anything"]
 pub fn loading_indicator(icon_set: &str) -> Option<AnimatedIcon> {
@@ -1015,40 +1017,313 @@ mod load_custom_icon_tests {
 mod loading_indicator_tests {
     use super::*;
 
+    // === Dispatch tests (through loading_indicator public API) ===
+
     #[test]
     #[cfg(feature = "material-icons")]
-    fn loading_indicator_material_returns_none() {
-        assert!(loading_indicator("material").is_none());
+    fn loading_indicator_material_returns_frames() {
+        let anim = loading_indicator("material");
+        assert!(anim.is_some(), "material should return Some");
+        let anim = anim.unwrap();
+        match &anim {
+            AnimatedIcon::Frames {
+                frames,
+                frame_duration_ms,
+                repeat,
+            } => {
+                assert_eq!(frames.len(), 12, "material has 12 frames");
+                assert_eq!(*frame_duration_ms, 83);
+                assert_eq!(*repeat, Repeat::Infinite);
+            }
+            _ => panic!("material should be AnimatedIcon::Frames"),
+        }
     }
 
     #[test]
     #[cfg(feature = "lucide-icons")]
-    fn loading_indicator_lucide_returns_none() {
-        assert!(loading_indicator("lucide").is_none());
+    fn loading_indicator_lucide_returns_transform_spin() {
+        let anim = loading_indicator("lucide");
+        assert!(anim.is_some(), "lucide should return Some");
+        let anim = anim.unwrap();
+        assert!(
+            matches!(
+                anim,
+                AnimatedIcon::Transform {
+                    animation: TransformAnimation::Spin { duration_ms: 1000 },
+                    ..
+                }
+            ),
+            "lucide should be Transform::Spin at 1000ms"
+        );
     }
 
     #[test]
-    fn loading_indicator_freedesktop_returns_none() {
-        assert!(loading_indicator("freedesktop").is_none());
+    #[cfg(all(target_os = "macos", feature = "system-icons"))]
+    fn loading_indicator_macos_returns_frames() {
+        let anim = loading_indicator("macos");
+        assert!(anim.is_some(), "macos should return Some on macOS");
+        if let AnimatedIcon::Frames {
+            frames,
+            frame_duration_ms,
+            ..
+        } = anim.unwrap()
+        {
+            assert_eq!(frames.len(), 12);
+            assert_eq!(frame_duration_ms, 83);
+        } else {
+            panic!("macos should be AnimatedIcon::Frames");
+        }
     }
 
     #[test]
-    fn loading_indicator_sf_symbols_returns_none() {
-        assert!(loading_indicator("sf-symbols").is_none());
+    #[cfg(all(target_os = "windows", feature = "system-icons"))]
+    fn loading_indicator_windows_returns_frames() {
+        let anim = loading_indicator("windows");
+        assert!(anim.is_some(), "windows should return Some on Windows");
+        if let AnimatedIcon::Frames {
+            frames,
+            frame_duration_ms,
+            ..
+        } = anim.unwrap()
+        {
+            assert_eq!(frames.len(), 60);
+            assert_eq!(frame_duration_ms, 33);
+        } else {
+            panic!("windows should be AnimatedIcon::Frames");
+        }
     }
 
     #[test]
-    fn loading_indicator_segoe_returns_none() {
-        assert!(loading_indicator("segoe-fluent").is_none());
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    fn loading_indicator_freedesktop_returns_adwaita_fallback() {
+        let anim = loading_indicator("freedesktop");
+        assert!(
+            anim.is_some(),
+            "freedesktop should return Some (adwaita fallback) on Linux"
+        );
+        if let AnimatedIcon::Frames {
+            frames,
+            frame_duration_ms,
+            ..
+        } = anim.unwrap()
+        {
+            assert_eq!(frames.len(), 20, "adwaita has 20 frames");
+            assert_eq!(frame_duration_ms, 60);
+        } else {
+            panic!("freedesktop should be AnimatedIcon::Frames (adwaita)");
+        }
     }
 
     #[test]
-    fn loading_indicator_unknown_returns_none() {
-        assert!(loading_indicator("unknown").is_none());
+    #[cfg(all(target_os = "macos", feature = "system-icons"))]
+    fn loading_indicator_sf_symbols_returns_frames() {
+        let anim = loading_indicator("sf-symbols");
+        assert!(anim.is_some(), "sf-symbols should return Some on macOS");
+        if let AnimatedIcon::Frames {
+            frames,
+            frame_duration_ms,
+            ..
+        } = anim.unwrap()
+        {
+            assert_eq!(frames.len(), 12);
+            assert_eq!(frame_duration_ms, 83);
+        } else {
+            panic!("sf-symbols should be AnimatedIcon::Frames");
+        }
     }
 
     #[test]
-    fn loading_indicator_empty_string_returns_none() {
-        assert!(loading_indicator("").is_none());
+    #[cfg(all(target_os = "windows", feature = "system-icons"))]
+    fn loading_indicator_segoe_returns_frames() {
+        let anim = loading_indicator("segoe-fluent");
+        assert!(
+            anim.is_some(),
+            "segoe-fluent should return Some on Windows"
+        );
+        if let AnimatedIcon::Frames {
+            frames,
+            frame_duration_ms,
+            ..
+        } = anim.unwrap()
+        {
+            assert_eq!(frames.len(), 60);
+            assert_eq!(frame_duration_ms, 33);
+        } else {
+            panic!("segoe-fluent should be AnimatedIcon::Frames");
+        }
+    }
+
+    /// Unknown icon set name falls back to system_icon_set().
+    /// On Linux with system-icons, that's Freedesktop (returns adwaita spinner).
+    /// Without system-icons, it falls through to None.
+    #[test]
+    fn loading_indicator_unknown_falls_back_to_system() {
+        let result = loading_indicator("unknown");
+        #[cfg(all(target_os = "linux", feature = "system-icons"))]
+        assert!(result.is_some(), "on Linux+system-icons, unknown -> Freedesktop -> Some");
+        #[cfg(not(all(target_os = "linux", feature = "system-icons")))]
+        {
+            // On non-Linux or without system-icons, depends on platform.
+            // Without any matching feature, falls to wildcard -> None.
+            let _ = result;
+        }
+    }
+
+    #[test]
+    fn loading_indicator_empty_string_falls_back_to_system() {
+        let result = loading_indicator("");
+        #[cfg(all(target_os = "linux", feature = "system-icons"))]
+        assert!(result.is_some(), "on Linux+system-icons, empty -> Freedesktop -> Some");
+        #[cfg(not(all(target_os = "linux", feature = "system-icons")))]
+        {
+            let _ = result;
+        }
+    }
+
+    // === Direct spinner construction tests (any platform) ===
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn material_spinner_frame_count() {
+        let anim = spinners::material_spinner();
+        if let AnimatedIcon::Frames { frames, .. } = &anim {
+            assert_eq!(frames.len(), 12);
+            for frame in frames {
+                assert!(matches!(frame, IconData::Svg(_)), "each frame should be Svg");
+            }
+        } else {
+            panic!("material_spinner should be Frames");
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "lucide-icons")]
+    fn lucide_spinner_is_transform() {
+        let anim = spinners::lucide_spinner();
+        assert!(matches!(
+            anim,
+            AnimatedIcon::Transform {
+                animation: TransformAnimation::Spin { duration_ms: 1000 },
+                ..
+            }
+        ));
+    }
+
+    #[test]
+    #[cfg(feature = "system-icons")]
+    fn macos_spinner_frame_count() {
+        let anim = spinners::macos_spinner();
+        if let AnimatedIcon::Frames { frames, .. } = &anim {
+            assert_eq!(frames.len(), 12);
+        } else {
+            panic!("macos_spinner should be Frames");
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "system-icons")]
+    fn windows_spinner_frame_count() {
+        let anim = spinners::windows_spinner();
+        if let AnimatedIcon::Frames { frames, .. } = &anim {
+            assert_eq!(frames.len(), 60);
+        } else {
+            panic!("windows_spinner should be Frames");
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "system-icons")]
+    fn adwaita_spinner_frame_count() {
+        let anim = spinners::adwaita_spinner();
+        if let AnimatedIcon::Frames {
+            frames,
+            frame_duration_ms,
+            ..
+        } = &anim
+        {
+            assert_eq!(frames.len(), 20);
+            assert_eq!(*frame_duration_ms, 60);
+        } else {
+            panic!("adwaita_spinner should be Frames");
+        }
+    }
+}
+
+#[cfg(all(test, feature = "svg-rasterize"))]
+mod spinner_rasterize_tests {
+    use super::*;
+
+    fn assert_frames_rasterize(spinner: &AnimatedIcon, set_name: &str) {
+        if let AnimatedIcon::Frames { frames, .. } = spinner {
+            for (i, frame) in frames.iter().enumerate() {
+                if let IconData::Svg(bytes) = frame {
+                    let result = crate::rasterize::rasterize_svg(bytes, 24);
+                    assert!(
+                        result.is_some(),
+                        "{set_name} frame {i} failed to rasterize"
+                    );
+                    if let Some(IconData::Rgba { data, .. }) = &result {
+                        assert!(
+                            data.iter().any(|&b| b != 0),
+                            "{set_name} frame {i} rasterized to empty image"
+                        );
+                    }
+                } else {
+                    panic!("{set_name} frame {i} should be IconData::Svg");
+                }
+            }
+        } else {
+            panic!("{set_name} should be AnimatedIcon::Frames");
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn material_spinner_frames_rasterize() {
+        let anim = spinners::material_spinner();
+        assert_frames_rasterize(&anim, "material");
+    }
+
+    #[test]
+    #[cfg(feature = "lucide-icons")]
+    fn lucide_spinner_icon_rasterizes() {
+        let anim = spinners::lucide_spinner();
+        if let AnimatedIcon::Transform { icon, .. } = &anim {
+            if let IconData::Svg(bytes) = icon {
+                let result = crate::rasterize::rasterize_svg(bytes, 24);
+                assert!(result.is_some(), "lucide loader should rasterize");
+                if let Some(IconData::Rgba { data, .. }) = &result {
+                    assert!(
+                        data.iter().any(|&b| b != 0),
+                        "lucide loader rasterized to empty image"
+                    );
+                }
+            } else {
+                panic!("lucide spinner icon should be Svg");
+            }
+        } else {
+            panic!("lucide spinner should be Transform");
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "system-icons")]
+    fn macos_spinner_frames_rasterize() {
+        let anim = spinners::macos_spinner();
+        assert_frames_rasterize(&anim, "macos");
+    }
+
+    #[test]
+    #[cfg(feature = "system-icons")]
+    fn windows_spinner_frames_rasterize() {
+        let anim = spinners::windows_spinner();
+        assert_frames_rasterize(&anim, "windows");
+    }
+
+    #[test]
+    #[cfg(feature = "system-icons")]
+    fn adwaita_spinner_frames_rasterize() {
+        let anim = spinners::adwaita_spinner();
+        assert_frames_rasterize(&anim, "adwaita");
     }
 }
