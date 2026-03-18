@@ -71,7 +71,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 28: Bundled SVG Spinner Frames** - Programmatic SVG frame generation for Material, Lucide, macOS, Windows, and GNOME spinners (completed 2026-03-18)
 
 - [x] **Phase 29: Freedesktop Sprite Sheet Parser** - Runtime parsing of freedesktop process-working sprite sheets into animation frames (completed 2026-03-18)
-- [ ] **Phase 30: Reduced Motion Accessibility** - prefers_reduced_motion() OS query across Linux, macOS, and Windows
+- [x] **Phase 30: Reduced Motion Accessibility** - prefers_reduced_motion() OS query across Linux, macOS, and Windows (completed 2026-03-18)
 - [ ] **Phase 31: Connector Integration** - AnimatedIcon playback support in gpui and iced connectors
 - [ ] **Phase 32: Documentation and Release** - API docs, CHANGELOG, migration guide for StatusLoading removal
 
