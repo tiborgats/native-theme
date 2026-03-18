@@ -81,7 +81,11 @@ pub mod gnome;
 pub mod kde;
 pub mod model;
 pub mod presets;
-#[cfg(any(feature = "material-icons", feature = "lucide-icons", feature = "system-icons"))]
+#[cfg(any(
+    feature = "material-icons",
+    feature = "lucide-icons",
+    feature = "system-icons"
+))]
 mod spinners;
 
 pub use color::Rgba;
@@ -596,8 +600,7 @@ pub fn loading_indicator(icon_set: &str) -> Option<AnimatedIcon> {
     match set {
         #[cfg(all(target_os = "linux", feature = "system-icons"))]
         IconSet::Freedesktop => {
-            freedesktop::load_freedesktop_spinner()
-                .or_else(|| Some(spinners::adwaita_spinner()))
+            freedesktop::load_freedesktop_spinner().or_else(|| Some(spinners::adwaita_spinner()))
         }
 
         #[cfg(all(target_os = "macos", feature = "system-icons"))]
@@ -663,7 +666,6 @@ pub fn load_custom_icon(
     // No cross-set fallback -- return None
     None
 }
-
 
 /// Mutex to serialize tests that manipulate environment variables.
 /// Env vars are process-global state, so tests that call set_var/remove_var
@@ -1196,7 +1198,10 @@ mod loading_indicator_tests {
         // Accept either Frames (sprite sheet or bundled Adwaita) or Transform (single-frame spin)
         match anim.unwrap() {
             AnimatedIcon::Frames { frames, .. } => {
-                assert!(!frames.is_empty(), "Frames variant should have at least one frame");
+                assert!(
+                    !frames.is_empty(),
+                    "Frames variant should have at least one frame"
+                );
             }
             AnimatedIcon::Transform { .. } => {
                 // Single-frame theme icon with Spin -- valid result
@@ -1237,10 +1242,7 @@ mod loading_indicator_tests {
     #[cfg(all(target_os = "windows", feature = "system-icons"))]
     fn loading_indicator_segoe_returns_frames() {
         let anim = loading_indicator("segoe-fluent");
-        assert!(
-            anim.is_some(),
-            "segoe-fluent should return Some on Windows"
-        );
+        assert!(anim.is_some(), "segoe-fluent should return Some on Windows");
         if let AnimatedIcon::Frames {
             frames,
             frame_duration_ms,
@@ -1261,7 +1263,10 @@ mod loading_indicator_tests {
     fn loading_indicator_unknown_falls_back_to_system() {
         let result = loading_indicator("unknown");
         #[cfg(all(target_os = "linux", feature = "system-icons"))]
-        assert!(result.is_some(), "on Linux+system-icons, unknown -> Freedesktop -> Some");
+        assert!(
+            result.is_some(),
+            "on Linux+system-icons, unknown -> Freedesktop -> Some"
+        );
         #[cfg(not(all(target_os = "linux", feature = "system-icons")))]
         {
             // On non-Linux or without system-icons, depends on platform.
@@ -1274,7 +1279,10 @@ mod loading_indicator_tests {
     fn loading_indicator_empty_string_falls_back_to_system() {
         let result = loading_indicator("");
         #[cfg(all(target_os = "linux", feature = "system-icons"))]
-        assert!(result.is_some(), "on Linux+system-icons, empty -> Freedesktop -> Some");
+        assert!(
+            result.is_some(),
+            "on Linux+system-icons, empty -> Freedesktop -> Some"
+        );
         #[cfg(not(all(target_os = "linux", feature = "system-icons")))]
         {
             let _ = result;
@@ -1290,7 +1298,10 @@ mod loading_indicator_tests {
         if let AnimatedIcon::Frames { frames, .. } = &anim {
             assert_eq!(frames.len(), 12);
             for frame in frames {
-                assert!(matches!(frame, IconData::Svg(_)), "each frame should be Svg");
+                assert!(
+                    matches!(frame, IconData::Svg(_)),
+                    "each frame should be Svg"
+                );
             }
         } else {
             panic!("material_spinner should be Frames");
@@ -1359,10 +1370,7 @@ mod spinner_rasterize_tests {
             for (i, frame) in frames.iter().enumerate() {
                 if let IconData::Svg(bytes) = frame {
                     let result = crate::rasterize::rasterize_svg(bytes, 24);
-                    assert!(
-                        result.is_some(),
-                        "{set_name} frame {i} failed to rasterize"
-                    );
+                    assert!(result.is_some(), "{set_name} frame {i} failed to rasterize");
                     if let Some(IconData::Rgba { data, .. }) = &result {
                         assert!(
                             data.iter().any(|&b| b != 0),

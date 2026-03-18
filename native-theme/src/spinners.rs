@@ -41,6 +41,7 @@ pub(crate) fn lucide_spinner() -> AnimatedIcon {
 
 /// macOS-style radial spoke spinner (12 frames, 83ms per frame).
 #[cfg(feature = "system-icons")]
+#[allow(dead_code)] // Called only on macOS, but compiled & tested on all platforms
 pub(crate) fn macos_spinner() -> AnimatedIcon {
     let frames = vec![
         IconData::Svg(include_bytes!("../animations/macos/frame_00.svg").to_vec()),
@@ -65,6 +66,7 @@ pub(crate) fn macos_spinner() -> AnimatedIcon {
 
 /// Windows-style arc expansion/contraction spinner (60 frames, 33ms per frame).
 #[cfg(feature = "system-icons")]
+#[allow(dead_code)] // Called only on Windows, but compiled & tested on all platforms
 pub(crate) fn windows_spinner() -> AnimatedIcon {
     let frames = vec![
         IconData::Svg(include_bytes!("../animations/windows/frame_00.svg").to_vec()),

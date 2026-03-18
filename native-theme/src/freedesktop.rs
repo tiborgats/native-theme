@@ -94,14 +94,13 @@ fn parse_sprite_sheet(svg_bytes: &[u8]) -> Option<Vec<Vec<u8>>> {
     let svg_str = std::str::from_utf8(svg_bytes).ok()?;
 
     // Find viewBox attribute (handle both double and single quotes)
-    let (vb_attr_start, vb_val_start, quote) =
-        if let Some(i) = svg_str.find("viewBox=\"") {
-            (i, i + 9, '"')
-        } else if let Some(i) = svg_str.find("viewBox='") {
-            (i, i + 9, '\'')
-        } else {
-            return None;
-        };
+    let (vb_attr_start, vb_val_start, quote) = if let Some(i) = svg_str.find("viewBox=\"") {
+        (i, i + 9, '"')
+    } else if let Some(i) = svg_str.find("viewBox='") {
+        (i, i + 9, '\'')
+    } else {
+        return None;
+    };
 
     let vb_val_end = svg_str[vb_val_start..].find(quote)? + vb_val_start;
     let vb_value = &svg_str[vb_val_start..vb_val_end];
@@ -281,10 +280,16 @@ mod tests {
         assert_eq!(frames.len(), 2);
 
         let frame0 = std::str::from_utf8(&frames[0]).unwrap();
-        assert!(frame0.contains(r#"viewBox="0 0 10 10""#), "frame 0 viewBox: {frame0}");
+        assert!(
+            frame0.contains(r#"viewBox="0 0 10 10""#),
+            "frame 0 viewBox: {frame0}"
+        );
 
         let frame1 = std::str::from_utf8(&frames[1]).unwrap();
-        assert!(frame1.contains(r#"viewBox="0 10 10 10""#), "frame 1 viewBox: {frame1}");
+        assert!(
+            frame1.contains(r#"viewBox="0 10 10 10""#),
+            "frame 1 viewBox: {frame1}"
+        );
     }
 
     #[test]
@@ -353,7 +358,10 @@ mod tests {
         // Both frames should preserve the full SVG content
         for frame in &frames {
             let s = std::str::from_utf8(frame).unwrap();
-            assert!(s.contains("unique-marker"), "SVG content should be preserved in all frames");
+            assert!(
+                s.contains("unique-marker"),
+                "SVG content should be preserved in all frames"
+            );
             assert!(s.contains("<rect"), "rect elements should be preserved");
             assert!(s.contains("xmlns="), "namespace should be preserved");
         }

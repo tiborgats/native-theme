@@ -159,6 +159,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::clone_on_copy)]
     fn repeat_is_copy_clone_debug_eq_hash() {
         let r = Repeat::Infinite;
         let r2 = r; // Copy
@@ -172,6 +173,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(clippy::clone_on_copy)]
     fn transform_animation_is_copy_clone_debug_eq_hash() {
         let a = TransformAnimation::Spin { duration_ms: 500 };
         let a2 = a; // Copy

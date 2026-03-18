@@ -803,9 +803,7 @@ pub fn custom_icon_to_image_source_colored(
 /// ```
 pub fn animated_frames_to_image_sources(anim: &AnimatedIcon) -> Option<Vec<ImageSource>> {
     match anim {
-        AnimatedIcon::Frames { frames, .. } => {
-            Some(frames.iter().map(to_image_source).collect())
-        }
+        AnimatedIcon::Frames { frames, .. } => Some(frames.iter().map(to_image_source).collect()),
         _ => None,
     }
 }
@@ -1268,7 +1266,10 @@ mod tests {
     #[test]
     fn animated_frames_transform_returns_none() {
         let anim = AnimatedIcon::Transform {
-            icon: IconData::Svg(b"<svg xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='12' r='10'/></svg>".to_vec()),
+            icon: IconData::Svg(
+                b"<svg xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='12' r='10'/></svg>"
+                    .to_vec(),
+            ),
             animation: native_theme::TransformAnimation::Spin { duration_ms: 1000 },
         };
         let result = animated_frames_to_image_sources(&anim);

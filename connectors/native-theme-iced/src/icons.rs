@@ -122,12 +122,10 @@ pub fn custom_icon_to_svg_handle_colored(
 ///     // In view(): Svg::new(handles[frame_index].clone())
 /// }
 /// ```
-pub fn animated_frames_to_svg_handles(
-    anim: &AnimatedIcon,
-) -> Option<Vec<iced_core::svg::Handle>> {
+pub fn animated_frames_to_svg_handles(anim: &AnimatedIcon) -> Option<Vec<iced_core::svg::Handle>> {
     match anim {
         AnimatedIcon::Frames { frames, .. } => {
-            let handles: Vec<_> = frames.iter().filter_map(|f| to_svg_handle(f)).collect();
+            let handles: Vec<_> = frames.iter().filter_map(to_svg_handle).collect();
             if handles.is_empty() {
                 None
             } else {
@@ -163,10 +161,7 @@ pub fn animated_frames_to_svg_handles(
 /// let angle = spin_rotation_radians(self.elapsed, 1000);
 /// Svg::new(handle).rotation(Rotation::Floating(angle))
 /// ```
-pub fn spin_rotation_radians(
-    elapsed: std::time::Duration,
-    duration_ms: u32,
-) -> iced_core::Radians {
+pub fn spin_rotation_radians(elapsed: std::time::Duration, duration_ms: u32) -> iced_core::Radians {
     let progress = (elapsed.as_millis() as f32 % duration_ms as f32) / duration_ms as f32;
     iced_core::Radians(progress * std::f32::consts::TAU)
 }
@@ -406,13 +401,11 @@ mod tests {
     #[test]
     fn animated_frames_rgba_only_returns_none() {
         let anim = AnimatedIcon::Frames {
-            frames: vec![
-                IconData::Rgba {
-                    width: 16,
-                    height: 16,
-                    data: vec![0u8; 16 * 16 * 4],
-                },
-            ],
+            frames: vec![IconData::Rgba {
+                width: 16,
+                height: 16,
+                data: vec![0u8; 16 * 16 * 4],
+            }],
             frame_duration_ms: 80,
             repeat: native_theme::Repeat::Infinite,
         };

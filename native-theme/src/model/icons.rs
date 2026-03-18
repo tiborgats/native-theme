@@ -1319,10 +1319,7 @@ mod tests {
 
     #[test]
     fn icon_name_segoe_status_busy_is_none() {
-        assert_eq!(
-            icon_name(IconSet::SegoeIcons, IconRole::StatusBusy),
-            None
-        );
+        assert_eq!(icon_name(IconSet::SegoeIcons, IconRole::StatusBusy), None);
     }
 
     #[test]
