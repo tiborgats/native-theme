@@ -73,7 +73,7 @@ pub fn icon_name(role: IconRole) -> Option<IconName> {
         IconRole::TrashEmpty => IconName::Delete,
 
         // Status
-        IconRole::StatusLoading => IconName::Loader,
+        IconRole::StatusBusy => IconName::Loader,
         IconRole::StatusCheck => IconName::Check,
         IconRole::StatusError => IconName::CircleX,
 

@@ -344,7 +344,7 @@ fn role_for_gpui_icon(gpui_name: &str) -> Option<IconRole> {
         "File" => Some(IconRole::FileGeneric),
         "FolderClosed" => Some(IconRole::FolderClosed),
         "FolderOpen" => Some(IconRole::FolderOpen),
-        "Loader" => Some(IconRole::StatusLoading),
+        "Loader" => Some(IconRole::StatusBusy),
         "Check" => Some(IconRole::StatusCheck),
         "User" => Some(IconRole::UserAccount),
         "Bell" => Some(IconRole::Notification),
