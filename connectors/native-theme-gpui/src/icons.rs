@@ -5,10 +5,13 @@
 //!   This is a zero-I/O shortcut since gpui-component already bundles Lucide SVGs.
 //! - [`to_image_source`]: Converts [`IconData`] to a gpui [`ImageSource`] for rendering.
 
-use gpui::{Hsla, Image, ImageFormat, ImageSource};
+use gpui::{
+    Animation, AnimationExt, Hsla, Image, ImageFormat, ImageSource, Svg, Transformation, percentage,
+};
 use gpui_component::IconName;
-use native_theme::{IconData, IconProvider, IconRole, load_custom_icon};
+use native_theme::{AnimatedIcon, IconData, IconProvider, IconRole, load_custom_icon};
 use std::sync::Arc;
+use std::time::Duration;
 
 /// Map an [`IconRole`] to a gpui-component [`IconName`] for the Lucide icon set.
 ///
@@ -1171,6 +1174,54 @@ mod tests {
         let boxed: Box<dyn native_theme::IconProvider> = Box::new(TestCustomIcon);
         let result = custom_icon_to_image_source(&*boxed, "material");
         assert!(result.is_some());
+    }
+
+    // --- animated icon tests ---
+
+    #[test]
+    fn animated_frames_returns_sources() {
+        let anim = AnimatedIcon::Frames {
+            frames: vec![
+                IconData::Svg(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>".to_vec()),
+                IconData::Svg(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='8' fill='blue'/></svg>".to_vec()),
+                IconData::Svg(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='6' fill='green'/></svg>".to_vec()),
+            ],
+            frame_duration_ms: 80,
+            repeat: native_theme::Repeat::Infinite,
+        };
+        let result = animated_frames_to_image_sources(&anim);
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().len(), 3);
+    }
+
+    #[test]
+    fn animated_frames_transform_returns_none() {
+        let anim = AnimatedIcon::Transform {
+            icon: IconData::Svg(b"<svg xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='12' r='10'/></svg>".to_vec()),
+            animation: native_theme::TransformAnimation::Spin { duration_ms: 1000 },
+        };
+        let result = animated_frames_to_image_sources(&anim);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn animated_frames_empty_returns_empty_vec() {
+        let anim = AnimatedIcon::Frames {
+            frames: vec![],
+            frame_duration_ms: 80,
+            repeat: native_theme::Repeat::Infinite,
+        };
+        let result = animated_frames_to_image_sources(&anim);
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().len(), 0);
+    }
+
+    #[test]
+    fn spin_animation_constructs_without_context() {
+        let svg_element = gpui::svg();
+        // with_spin_animation wraps an Svg element with continuous rotation.
+        // This is pure construction -- no gpui render context needed.
+        let _animated = with_spin_animation(svg_element, "test-spin", 1000);
     }
 }
 
