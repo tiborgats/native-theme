@@ -5,7 +5,7 @@
 //! images (`iced::widget::Svg`), this module provides separate conversion
 //! functions for each variant.
 
-use native_theme::{IconData, IconProvider, load_custom_icon};
+use native_theme::{AnimatedIcon, IconData, IconProvider, load_custom_icon};
 
 /// Converts RGBA [`IconData`] to an iced [`iced_core::image::Handle`].
 ///
@@ -284,5 +284,90 @@ mod tests {
         // Should not inject a second fill since one already exists
         assert!(result.contains("fill=\"red\""));
         assert!(!result.contains("#00ff00"));
+    }
+
+    // --- animated icon tests ---
+
+    use std::time::Duration;
+
+    #[test]
+    fn animated_frames_returns_handles() {
+        let anim = AnimatedIcon::Frames {
+            frames: vec![
+                IconData::Svg(b"<svg></svg>".to_vec()),
+                IconData::Svg(b"<svg></svg>".to_vec()),
+            ],
+            frame_duration_ms: 80,
+            repeat: native_theme::Repeat::Infinite,
+        };
+        let result = animated_frames_to_svg_handles(&anim);
+        assert!(result.is_some());
+        assert_eq!(result.unwrap().len(), 2);
+    }
+
+    #[test]
+    fn animated_frames_transform_returns_none() {
+        let anim = AnimatedIcon::Transform {
+            icon: IconData::Svg(b"<svg></svg>".to_vec()),
+            animation: native_theme::TransformAnimation::Spin { duration_ms: 1000 },
+        };
+        let result = animated_frames_to_svg_handles(&anim);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn animated_frames_empty_returns_none() {
+        let anim = AnimatedIcon::Frames {
+            frames: vec![],
+            frame_duration_ms: 80,
+            repeat: native_theme::Repeat::Infinite,
+        };
+        let result = animated_frames_to_svg_handles(&anim);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn animated_frames_rgba_only_returns_none() {
+        let anim = AnimatedIcon::Frames {
+            frames: vec![
+                IconData::Rgba {
+                    width: 16,
+                    height: 16,
+                    data: vec![0u8; 16 * 16 * 4],
+                },
+            ],
+            frame_duration_ms: 80,
+            repeat: native_theme::Repeat::Infinite,
+        };
+        let result = animated_frames_to_svg_handles(&anim);
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn spin_rotation_zero_elapsed() {
+        let radians = spin_rotation_radians(Duration::ZERO, 1000);
+        assert_eq!(radians, iced_core::Radians(0.0));
+    }
+
+    #[test]
+    fn spin_rotation_half() {
+        let radians = spin_rotation_radians(Duration::from_millis(500), 1000);
+        let expected = std::f32::consts::PI;
+        assert!(
+            (radians.0 - expected).abs() < 0.001,
+            "Expected ~{}, got {}",
+            expected,
+            radians.0
+        );
+    }
+
+    #[test]
+    fn spin_rotation_full_wraps() {
+        let radians = spin_rotation_radians(Duration::from_millis(1000), 1000);
+        assert!(
+            radians.0.abs() < 0.001,
+            "Expected ~0.0 (wrapped), got {}",
+            radians.0
+        );
     }
 }
