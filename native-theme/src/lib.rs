@@ -480,6 +480,51 @@ pub fn load_system_icon_by_name(name: &str, set: IconSet) -> Option<IconData> {
     }
 }
 
+/// Return the loading/spinner animation for the given icon set.
+///
+/// This is the animated-icon counterpart of [`load_icon()`]. It resolves
+/// `icon_set` to an [`IconSet`] via [`IconSet::from_name()`], falling back
+/// to [`system_icon_set()`] for unrecognized names, then dispatches to the
+/// appropriate bundled spinner data.
+///
+/// # Dispatch
+///
+/// - `"material"` -- 12-frame circular arc spinner (83ms per frame)
+/// - `"lucide"` -- single loader icon with continuous spin transform (1000ms)
+/// - `"freedesktop"` -- bundled Adwaita-style spinner (20 frames, 60ms)
+/// - `"sf-symbols"` (macOS) -- macOS-style radial spoke spinner (12 frames)
+/// - `"segoe-fluent"` (Windows) -- Windows-style arc spinner (60 frames)
+/// - Unknown set -- `None`
+///
+/// # Examples
+///
+/// ```
+/// let anim = native_theme::loading_indicator("nonexistent");
+/// assert!(anim.is_none());
+/// ```
+#[must_use = "this returns animation data; it does not display anything"]
+pub fn loading_indicator(icon_set: &str) -> Option<AnimatedIcon> {
+    let set = IconSet::from_name(icon_set).unwrap_or_else(system_icon_set);
+    match set {
+        #[cfg(all(target_os = "linux", feature = "system-icons"))]
+        IconSet::Freedesktop => Some(spinners::adwaita_spinner()),
+
+        #[cfg(all(target_os = "macos", feature = "system-icons"))]
+        IconSet::SfSymbols => Some(spinners::macos_spinner()),
+
+        #[cfg(all(target_os = "windows", feature = "system-icons"))]
+        IconSet::SegoeIcons => Some(spinners::windows_spinner()),
+
+        #[cfg(feature = "material-icons")]
+        IconSet::Material => Some(spinners::material_spinner()),
+
+        #[cfg(feature = "lucide-icons")]
+        IconSet::Lucide => Some(spinners::lucide_spinner()),
+
+        _ => None,
+    }
+}
+
 /// Load an icon from any [`IconProvider`], dispatching through the standard
 /// platform loading chain.
 ///
@@ -528,47 +573,6 @@ pub fn load_custom_icon(
     None
 }
 
-/// Return the loading/spinner animation for the given icon set.
-///
-/// This is the animated-icon counterpart of [`load_icon()`]. It resolves
-/// `icon_set` to an [`IconSet`] via [`IconSet::from_name()`], falling back
-/// to [`system_icon_set()`] for unrecognized names, then dispatches to the
-/// appropriate loader.
-///
-/// # Phase 27 stub
-///
-/// Currently returns `None` for every icon set. Actual frame data will be
-/// wired in Phase 28.
-///
-/// # Examples
-///
-/// ```
-/// let anim = native_theme::loading_indicator("material");
-/// assert!(anim.is_none()); // Phase 27: stub
-/// ```
-#[must_use = "this returns animation data; it does not display anything"]
-#[allow(unused_variables)]
-pub fn loading_indicator(icon_set: &str) -> Option<AnimatedIcon> {
-    let set = IconSet::from_name(icon_set).unwrap_or_else(system_icon_set);
-    match set {
-        #[cfg(all(target_os = "linux", feature = "system-icons"))]
-        IconSet::Freedesktop => None,
-
-        #[cfg(all(target_os = "macos", feature = "system-icons"))]
-        IconSet::SfSymbols => None,
-
-        #[cfg(all(target_os = "windows", feature = "system-icons"))]
-        IconSet::SegoeIcons => None,
-
-        #[cfg(feature = "material-icons")]
-        IconSet::Material => None,
-
-        #[cfg(feature = "lucide-icons")]
-        IconSet::Lucide => None,
-
-        _ => None,
-    }
-}
 
 /// Mutex to serialize tests that manipulate environment variables.
 /// Env vars are process-global state, so tests that call set_var/remove_var
