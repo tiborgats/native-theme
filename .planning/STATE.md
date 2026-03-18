@@ -1,36 +1,35 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.3.3
-milestone_name: Custom Icon Roles
+milestone: v0.4.0
+milestone_name: Animated Icons
 current_plan: null
-status: milestone-complete
-stopped_at: "v0.3.3 milestone completed and archived"
-last_updated: "2026-03-17T18:00:00Z"
-last_activity: "2026-03-17 — Completed v0.3.3 milestone (audit passed, archived)"
+status: defining-requirements
+stopped_at: null
+last_updated: "2026-03-18T00:00:00Z"
+last_activity: "2026-03-18 — Milestone v0.4.0 started"
 progress:
-  total_phases: 7
-  completed_phases: 7
-  total_plans: 14
-  completed_plans: 14
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-17)
+See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** v0.3.3 shipped — planning next milestone
+**Current focus:** v0.4.0 Animated Icons — defining requirements
 
 ## Current Position
 
-Milestone: v0.3.3 Custom Icon Roles — COMPLETE
-Status: Milestone archived
-Last activity: 2026-03-17 — Milestone completion (audit, archive, tag)
-
-Progress: [##########] 100%
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-18 — Milestone v0.4.0 started
 
 ## Performance Metrics
 
@@ -59,6 +58,6 @@ None currently.
 
 ## Session Continuity
 
-Last session: 2026-03-17
-Stopped at: v0.3.3 milestone completed and archived
+Last session: 2026-03-18
+Stopped at: Milestone v0.4.0 started, defining requirements
 Resume file: None
