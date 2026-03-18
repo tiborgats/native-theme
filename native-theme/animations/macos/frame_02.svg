@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">
+  <line x1="12.00" y1="6.00" x2="12.00" y2="2.50" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.23"/>
+  <line x1="15.00" y1="6.80" x2="16.75" y2="3.77" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.15"/>
+  <line x1="17.20" y1="9.00" x2="20.23" y2="7.25" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="1.00"/>
+  <line x1="18.00" y1="12.00" x2="21.50" y2="12.00" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.92"/>
+  <line x1="17.20" y1="15.00" x2="20.23" y2="16.75" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.85"/>
+  <line x1="15.00" y1="17.20" x2="16.75" y2="20.23" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.77"/>
+  <line x1="12.00" y1="18.00" x2="12.00" y2="21.50" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.69"/>
+  <line x1="9.00" y1="17.20" x2="7.25" y2="20.23" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.61"/>
+  <line x1="6.80" y1="15.00" x2="3.77" y2="16.75" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.54"/>
+  <line x1="6.00" y1="12.00" x2="2.50" y2="12.00" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.46"/>
+  <line x1="6.80" y1="9.00" x2="3.77" y2="7.25" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.38"/>
+  <line x1="9.00" y1="6.80" x2="7.25" y2="3.77" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity="0.31"/>
+</svg>
