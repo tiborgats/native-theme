@@ -804,7 +804,7 @@ pub fn custom_icon_to_image_source_colored(
 pub fn animated_frames_to_image_sources(anim: &AnimatedIcon) -> Option<Vec<ImageSource>> {
     match anim {
         AnimatedIcon::Frames { frames, .. } => {
-            Some(frames.iter().map(|f| to_image_source(f)).collect())
+            Some(frames.iter().map(to_image_source).collect())
         }
         _ => None,
     }
