@@ -28,10 +28,10 @@ Requirements for animated loading indicator support. Each maps to roadmap phases
 
 ### Freedesktop Integration
 
-- [ ] **FD-01**: Parse freedesktop vertical SVG sprite sheets (process-working.svg) into individual SVG frames via viewBox string rewriting
-- [ ] **FD-02**: Detect single-frame process-working-symbolic icons and return Transform::Spin instead of Frames
-- [ ] **FD-03**: loading_indicator("freedesktop") returns theme-native animation data at runtime, gated on system-icons feature
-- [ ] **FD-04**: Graceful fallback to bundled frames when no freedesktop sprite sheet is found in the active theme
+- [x] **FD-01**: Parse freedesktop vertical SVG sprite sheets (process-working.svg) into individual SVG frames via viewBox string rewriting
+- [x] **FD-02**: Detect single-frame process-working-symbolic icons and return Transform::Spin instead of Frames
+- [x] **FD-03**: loading_indicator("freedesktop") returns theme-native animation data at runtime, gated on system-icons feature
+- [x] **FD-04**: Graceful fallback to bundled frames when no freedesktop sprite sheet is found in the active theme
 
 ### Accessibility
 
@@ -105,10 +105,10 @@ Deferred to future releases.
 | SPIN-05 | Phase 28 | Complete |
 | SPIN-06 | Phase 28 | Complete |
 | SPIN-07 | Phase 28 | Complete |
-| FD-01 | Phase 29 | Pending |
-| FD-02 | Phase 29 | Pending |
-| FD-03 | Phase 29 | Pending |
-| FD-04 | Phase 29 | Pending |
+| FD-01 | Phase 29 | Complete |
+| FD-02 | Phase 29 | Complete |
+| FD-03 | Phase 29 | Complete |
+| FD-04 | Phase 29 | Complete |
 | A11Y-01 | Phase 30 | Pending |
 | A11Y-02 | Phase 30 | Pending |
 | A11Y-03 | Phase 30 | Pending |
