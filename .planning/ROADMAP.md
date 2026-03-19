@@ -103,7 +103,7 @@ Plans:
 **Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 34-01-PLAN.md — Add Animated Icons sections to root, gpui, and iced READMEs
+- [x] 34-01-PLAN.md — Add Animated Icons sections to root, gpui, and iced READMEs (completed 2026-03-19)
 
 ### Phase 35: Animated Icon Showcase Examples
 
