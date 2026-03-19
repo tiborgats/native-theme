@@ -81,7 +81,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 ### v0.4.1 Release Prep (Phases 33-38)
 
 - [x] Phase 33: Quick Fixes and Version Consistency (completed 2026-03-19)
-- [ ] Phase 34: Animated Icon Documentation
+- [x] Phase 34: Animated Icon Documentation (completed 2026-03-19)
 - [ ] Phase 35: Animated Icon Showcase Examples
 - [ ] Phase 36: Screenshot and GIF Generation
 - [ ] Phase 37: Community Files and GitHub Templates
@@ -100,7 +100,7 @@ Plans:
 
 **Goal:** Add animated icon sections to connector READMEs and root README documenting the v0.4.0 headline feature
 **Depends on:** Phase 33
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
 - [ ] 34-01-PLAN.md — Add Animated Icons sections to root, gpui, and iced READMEs
