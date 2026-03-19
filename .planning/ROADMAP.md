@@ -11,6 +11,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - ✅ **v0.3 Icons** — Phases 16-21 (shipped 2026-03-09)
 - ✅ **v0.3.3 Custom Icon Roles** — Phases 22-26 (shipped 2026-03-17)
 - ✅ **v0.4.0 Animated Icons** — Phases 27-32 (shipped 2026-03-18)
+- 🔄 **v0.4.1 Release Prep** — Phases 33-38
 
 ## Phases
 
@@ -77,6 +78,69 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 </details>
 
+### v0.4.1 Release Prep (Phases 33-38)
+
+- [ ] Phase 33: Quick Fixes and Version Consistency
+- [ ] Phase 34: Animated Icon Documentation
+- [ ] Phase 35: Animated Icon Showcase Examples
+- [ ] Phase 36: Screenshot and GIF Generation
+- [ ] Phase 37: Community Files and GitHub Templates
+- [ ] Phase 38: CI, Smoke Tests, and Release
+
+### Phase 33: Quick Fixes and Version Consistency
+
+**Goal:** Fix version references (0.3→0.4), license text, lint attributes, crate version consistency, and archive design docs
+**Depends on:** Phase 32
+**Plans:** 1 plan
+
+Plans:
+- [ ] 33-01-PLAN.md — Fix version refs, license text, lint attributes, verify versions, archive design docs
+
+### Phase 34: Animated Icon Documentation
+
+**Goal:** Add animated icon sections to connector READMEs and root README documenting the v0.4.0 headline feature
+**Depends on:** Phase 33
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 34 to break down)
+
+### Phase 35: Animated Icon Showcase Examples
+
+**Goal:** Add animated icon demonstrations to both gpui and iced showcase examples
+**Depends on:** Phase 33
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 35 to break down)
+
+### Phase 36: Screenshot and GIF Generation
+
+**Goal:** Create visual assets (showcase screenshots, spinner GIFs) and automation tooling for generating them
+**Depends on:** Phase 35
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 36 to break down)
+
+### Phase 37: Community Files and GitHub Templates
+
+**Goal:** Add CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, and issue/PR templates
+**Depends on:** Phase 33
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 37 to break down)
+
+### Phase 38: CI, Smoke Tests, and Release
+
+**Goal:** Verify CI coverage for animated icons, run pre-release smoke tests, tag v0.4.1, and publish to crates.io
+**Depends on:** Phase 34, 35, 36, 37
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 38 to break down)
+
 ## Phase Details
 
 Phase details for completed milestones are archived in `.planning/milestones/`.
@@ -90,3 +154,4 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 | 16-21 | v0.3 | 10/10 | Complete | 2026-03-09 |
 | 22-26 | v0.3.3 | 14/14 | Complete | 2026-03-17 |
 | 27-32 | v0.4.0 | 8/8 | Complete | 2026-03-18 |
+| 33-38 | v0.4.1 | 0/? | In Progress | — |
