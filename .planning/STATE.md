@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: "Phase 34 complete, verified"
-last_updated: "2026-03-19T12:30:00Z"
-last_activity: "2026-03-19 — Phase 34 complete (1/1 plans, 5/5 must-haves verified)"
+stopped_at: "Phase 35, Plan 02 complete"
+last_updated: "2026-03-19T13:07:00Z"
+last_activity: "2026-03-19 — Phase 35 Plan 02 complete (animated icons in iced showcase)"
 progress:
   total_phases: 6
   completed_phases: 2
-  total_plans: 2
-  completed_plans: 2
+  total_plans: 4
+  completed_plans: 3
 ---
 
 # Project State
@@ -24,13 +24,13 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 
 ## Current Position
 
-Status: Phase 34 complete, verified
-Last activity: 2026-03-19 — Phase 34 complete (1/1 plans, 5/5 must-haves verified)
+Status: Phase 35, Plan 02 complete
+Last activity: 2026-03-19 — Phase 35 Plan 02 complete (animated icons in iced showcase)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 72 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 14 v0.3.3 + 8 v0.4.0 + 2 v0.4.1)
+- Total plans completed: 73 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 14 v0.3.3 + 8 v0.4.0 + 3 v0.4.1)
 - Average duration: ~4.1min (v0.2), 3.7min (v0.3)
 - Total execution time: 70min (v0.2), 37min (v0.3), 15min (v0.3.2), 35min (v0.3.3), 35min (v0.4.0)
 
@@ -40,6 +40,7 @@ Last activity: 2026-03-19 — Phase 34 complete (1/1 plans, 5/5 must-haves verif
 
 All decisions logged in PROJECT.md Key Decisions table.
 - [Phase 34]: Kept root README animated section shorter than core crate README since it is a workspace overview
+- [Phase 35-02]: Used 50ms tick interval with per-animation frame duration tracking; subscription gated to Icons tab
 
 ### Roadmap Evolution
 
@@ -57,5 +58,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-03-19
-Stopped at: Phase 34 complete, verified
+Stopped at: Phase 35, Plan 02 complete
 Resume file: None
