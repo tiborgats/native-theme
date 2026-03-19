@@ -109,10 +109,11 @@ Plans:
 
 **Goal:** Add animated icon demonstrations to both gpui and iced showcase examples
 **Depends on:** Phase 33
-**Plans:** 0 plans
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 35 to break down)
+- [ ] 35-01-PLAN.md — Add animated icon section to gpui showcase Icons tab
+- [ ] 35-02-PLAN.md — Add animated icon section to iced showcase Icons tab
 
 ### Phase 36: Screenshot and GIF Generation
 

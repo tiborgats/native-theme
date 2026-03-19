@@ -19,5 +19,5 @@ iced_core = "0.14"
 name = "showcase"
 
 [dev-dependencies]
-iced = { version = "0.14", features = ["svg", "image"] }
+iced = { version = "0.14", features = ["svg", "image", "tokio"] }
 native-theme = { workspace = true, features = ["material-icons", "lucide-icons", "system-icons"] }

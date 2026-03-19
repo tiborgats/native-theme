@@ -16,7 +16,13 @@ use iced::widget::{
 };
 use iced::{Color, Element, Fill, Length, Padding, Theme};
 
-use native_theme::{IconData, IconRole, IconSet, NativeTheme};
+use native_theme::{
+    AnimatedIcon, IconData, IconRole, IconSet, NativeTheme, TransformAnimation,
+    loading_indicator, prefers_reduced_motion,
+};
+use native_theme_iced::icons::{animated_frames_to_svg_handles, spin_rotation_radians, to_svg_handle};
+use iced::Subscription;
+use std::time::{Duration, Instant};
 
 // ---------------------------------------------------------------------------
 // Tab identifiers (right panel)
@@ -301,6 +307,84 @@ fn load_all_icons(icon_set_name: &str) -> Vec<LoadedIcon> {
 }
 
 // ---------------------------------------------------------------------------
+// Animated icon cache builder
+// ---------------------------------------------------------------------------
+
+/// Build animation caches for all known icon sets.
+///
+/// Returns the full set of animation state fields that go into `State`.
+#[allow(clippy::type_complexity)]
+fn build_animation_caches() -> (
+    Vec<(String, Vec<iced_core::svg::Handle>, u32)>, // animated_frames
+    Vec<usize>,                                       // animated_frame_indices
+    Vec<Duration>,                                    // animated_frame_elapsed
+    Vec<(String, iced_core::svg::Handle, u32)>,       // animated_spins
+    Instant,                                          // animation_start
+    bool,                                             // reduced_motion
+    Vec<(String, iced_core::svg::Handle)>,            // animated_static
+) {
+    let mut animated_frames = Vec::new();
+    let mut animated_spins = Vec::new();
+    let mut animated_static = Vec::new();
+
+    // Icon sets to try: always material + lucide, plus system set on Linux
+    let mut sets: Vec<String> = vec!["material".into(), "lucide".into()];
+    #[cfg(target_os = "linux")]
+    {
+        let sys_name = native_theme::system_icon_set().name().to_string();
+        if sys_name != "material" && sys_name != "lucide" {
+            sets.push(sys_name);
+        }
+    }
+
+    for set_name in &sets {
+        if let Some(anim) = loading_indicator(set_name) {
+            // Cache static first-frame for reduced motion
+            if let Some(frame_data) = anim.first_frame() {
+                if let Some(handle) = to_svg_handle(frame_data) {
+                    animated_static.push((set_name.clone(), handle));
+                }
+            }
+
+            match &anim {
+                AnimatedIcon::Frames {
+                    frame_duration_ms, ..
+                } => {
+                    if let Some(handles) = animated_frames_to_svg_handles(&anim) {
+                        animated_frames.push((set_name.clone(), handles, *frame_duration_ms));
+                    }
+                }
+                AnimatedIcon::Transform {
+                    icon,
+                    animation: TransformAnimation::Spin { duration_ms },
+                    ..
+                } => {
+                    if let Some(handle) = to_svg_handle(icon) {
+                        animated_spins.push((set_name.clone(), handle, *duration_ms));
+                    }
+                }
+                _ => {} // Future AnimatedIcon variants
+            }
+        }
+    }
+
+    let animated_frame_indices = vec![0; animated_frames.len()];
+    let animated_frame_elapsed = vec![Duration::ZERO; animated_frames.len()];
+    let animation_start = Instant::now();
+    let reduced_motion = prefers_reduced_motion();
+
+    (
+        animated_frames,
+        animated_frame_indices,
+        animated_frame_elapsed,
+        animated_spins,
+        animation_start,
+        reduced_motion,
+        animated_static,
+    )
+}
+
+// ---------------------------------------------------------------------------
 // Application state
 // ---------------------------------------------------------------------------
 
@@ -344,6 +428,22 @@ struct State {
     // Icons tab
     icon_set_choice: IconSetChoice,
     loaded_icons: Vec<LoadedIcon>,
+
+    // Animated Icons state
+    /// Cached SVG handles for frame-based animations: (set_name, handles, frame_duration_ms).
+    animated_frames: Vec<(String, Vec<iced_core::svg::Handle>, u32)>,
+    /// Current frame index per frame-based animation.
+    animated_frame_indices: Vec<usize>,
+    /// Elapsed time tracker per frame-based animation (for correct per-animation timing).
+    animated_frame_elapsed: Vec<Duration>,
+    /// Cached SVG handle + duration for transform (spin) animations: (set_name, handle, duration_ms).
+    animated_spins: Vec<(String, iced_core::svg::Handle, u32)>,
+    /// Start time for spin animations (used with spin_rotation_radians).
+    animation_start: Instant,
+    /// Whether reduced motion is active (cached at init).
+    reduced_motion: bool,
+    /// Static first-frame SVG handles for reduced motion: (set_name, handle).
+    animated_static: Vec<(String, iced_core::svg::Handle)>,
 }
 
 impl Default for State {
@@ -374,6 +474,16 @@ impl Default for State {
         let icon_set_choice = IconSetChoice::Lucide;
         let loaded_icons = load_all_icons(icon_set_choice.icon_set_name());
 
+        let (
+            animated_frames,
+            animated_frame_indices,
+            animated_frame_elapsed,
+            animated_spins,
+            animation_start,
+            reduced_motion,
+            animated_static,
+        ) = build_animation_caches();
+
         Self {
             current_choice: ThemeChoice::Preset(preset_name.to_string()),
             current_theme: theme,
@@ -401,6 +511,13 @@ impl Default for State {
             progress_value: 72.0,
             icon_set_choice,
             loaded_icons,
+            animated_frames,
+            animated_frame_indices,
+            animated_frame_elapsed,
+            animated_spins,
+            animation_start,
+            reduced_motion,
+            animated_static,
         }
     }
 }
@@ -462,6 +579,9 @@ enum Message {
 
     // Icons tab
     IconSetSelected(IconSetChoice),
+
+    // Animated Icons
+    AnimationTick,
 }
 
 // ---------------------------------------------------------------------------
@@ -510,6 +630,28 @@ fn update(state: &mut State, message: Message) {
         Message::IconSetSelected(choice) => {
             state.loaded_icons = load_all_icons(choice.icon_set_name());
             state.icon_set_choice = choice;
+
+            // Rebuild animation caches when icon set changes
+            let (af, afi, afe, asp, astart, rm, ast) = build_animation_caches();
+            state.animated_frames = af;
+            state.animated_frame_indices = afi;
+            state.animated_frame_elapsed = afe;
+            state.animated_spins = asp;
+            state.animation_start = astart;
+            state.reduced_motion = rm;
+            state.animated_static = ast;
+        }
+        Message::AnimationTick => {
+            let tick_duration = Duration::from_millis(50);
+            for (i, (_, handles, frame_duration_ms)) in state.animated_frames.iter().enumerate() {
+                state.animated_frame_elapsed[i] += tick_duration;
+                let frame_dur = Duration::from_millis(*frame_duration_ms as u64);
+                if state.animated_frame_elapsed[i] >= frame_dur {
+                    state.animated_frame_elapsed[i] -= frame_dur;
+                    state.animated_frame_indices[i] =
+                        (state.animated_frame_indices[i] + 1) % handles.len();
+                }
+            }
         }
     }
 }
@@ -2137,6 +2279,21 @@ fn theme(state: &State) -> Theme {
 }
 
 // ---------------------------------------------------------------------------
+// Subscription (animation tick)
+// ---------------------------------------------------------------------------
+
+fn subscription(state: &State) -> Subscription<Message> {
+    if state.active_tab == Tab::Icons
+        && !state.reduced_motion
+        && (!state.animated_frames.is_empty() || !state.animated_spins.is_empty())
+    {
+        iced::time::every(Duration::from_millis(50)).map(|_| Message::AnimationTick)
+    } else {
+        Subscription::none()
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -2144,6 +2301,7 @@ fn main() -> iced::Result {
     iced::application(State::default, update, view)
         .title("native-theme-iced Showcase")
         .theme(theme)
+        .subscription(subscription)
         .window_size((1060.0, 750.0))
         .centered()
         .run()
