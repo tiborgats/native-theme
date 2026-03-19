@@ -155,4 +155,4 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 | 16-21 | v0.3 | 10/10 | Complete | 2026-03-09 |
 | 22-26 | v0.3.3 | 14/14 | Complete | 2026-03-17 |
 | 27-32 | v0.4.0 | 8/8 | Complete | 2026-03-18 |
-| 33-38 | v0.4.1 | 0/? | In Progress | — |
+| 33-38 | v0.4.1 | 4/? | In Progress | — |
