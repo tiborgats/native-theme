@@ -1863,12 +1863,100 @@ fn view_icons(state: &State) -> Element<'_, Message> {
         idx = end;
     }
 
-    let mut content = column![header, icon_set_info, rule::horizontal(1),].spacing(16);
+    let animated_section = view_animated_icons(state, fg_color);
+    let mut content =
+        column![header, icon_set_info, rule::horizontal(1), animated_section, rule::horizontal(1)]
+            .spacing(16);
     for r in grid_rows {
         content = content.push(r);
     }
 
     content.width(Fill).into()
+}
+
+fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Message> {
+    let section_title = text("Animated Icons").size(20);
+    let divider = rule::horizontal(2);
+
+    // Collect spinner columns into a row
+    let mut spinners: Vec<Element<'a, Message>> = Vec::new();
+
+    if state.reduced_motion {
+        // Reduced motion: show static first-frame for each animated icon
+        for (set_name, handle) in &state.animated_static {
+            let icon = svg(handle.clone())
+                .width(Length::Fixed(32.0))
+                .height(Length::Fixed(32.0))
+                .style(move |_theme, _status| iced::widget::svg::Style {
+                    color: Some(fg_color),
+                });
+            let label = text(format!("{} - Static (reduced motion)", set_name)).size(11);
+            spinners.push(
+                column![icon, label]
+                    .spacing(4)
+                    .align_x(iced::Center)
+                    .into(),
+            );
+        }
+    } else {
+        // Frame-based animations
+        for (i, (set_name, handles, _frame_duration_ms)) in state.animated_frames.iter().enumerate()
+        {
+            let frame_idx = state.animated_frame_indices[i];
+            let icon = svg(handles[frame_idx].clone())
+                .width(Length::Fixed(32.0))
+                .height(Length::Fixed(32.0))
+                .style(move |_theme, _status| iced::widget::svg::Style {
+                    color: Some(fg_color),
+                });
+            let label = text(format!(
+                "{} - Frames ({}/{})",
+                set_name,
+                frame_idx + 1,
+                handles.len()
+            ))
+            .size(11);
+            spinners.push(
+                column![icon, label]
+                    .spacing(4)
+                    .align_x(iced::Center)
+                    .into(),
+            );
+        }
+
+        // Spin-based animations
+        for (set_name, handle, duration_ms) in &state.animated_spins {
+            let angle = spin_rotation_radians(state.animation_start.elapsed(), *duration_ms);
+            let icon = svg(handle.clone())
+                .width(Length::Fixed(32.0))
+                .height(Length::Fixed(32.0))
+                .rotation(iced::Rotation::Floating(angle))
+                .style(move |_theme, _status| iced::widget::svg::Style {
+                    color: Some(fg_color),
+                });
+            let label = text(format!("{} - Spin ({}ms)", set_name, duration_ms)).size(11);
+            spinners.push(
+                column![icon, label]
+                    .spacing(4)
+                    .align_x(iced::Center)
+                    .into(),
+            );
+        }
+    }
+
+    let mut content = column![section_title, divider].spacing(8);
+
+    if state.reduced_motion {
+        content = content.push(text("prefers-reduced-motion: showing static frames").size(11));
+    }
+
+    if spinners.is_empty() {
+        content = content.push(text("No animated icons available for this configuration.").size(11));
+    } else {
+        content = content.push(row(spinners).spacing(24));
+    }
+
+    content.into()
 }
 
 fn build_icon_cell<'a>(loaded: &LoadedIcon, fg_color: Color) -> Element<'a, Message> {

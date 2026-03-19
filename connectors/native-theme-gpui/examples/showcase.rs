@@ -12,9 +12,10 @@
 
 use gpui::{
     App, Application, Bounds, Context, Entity, Hsla, ImageSource, IntoElement, Keystroke, Menu,
-    MenuItem, ParentElement, Render, SharedString, Styled, Task, Window, WindowBounds,
+    MenuItem, ParentElement, Render, SharedString, Styled, Task, Timer, Window, WindowBounds,
     WindowOptions, div, prelude::*, px, rems, size,
 };
+use std::time::Duration;
 use gpui_component::{
     ActiveTheme, Disableable, Icon, IconName, PixelsExt, Placement, Root, Sizable, Size, StyledExt,
     WindowExt,
@@ -63,16 +64,17 @@ use gpui_component::{
 };
 
 use native_theme::{
-    IconData, IconRole, IconSet, NativeTheme, bundled_icon_by_name, icon_name as native_icon_name,
-    load_icon, system_icon_set, system_icon_theme,
+    AnimatedIcon, IconData, IconRole, IconSet, NativeTheme, TransformAnimation,
+    bundled_icon_by_name, icon_name as native_icon_name, load_icon, loading_indicator,
+    prefers_reduced_motion, system_icon_set, system_icon_theme,
 };
 #[cfg(target_os = "linux")]
 use native_theme::{detect_linux_de, load_freedesktop_icon_by_name, system_is_dark};
 #[cfg(target_os = "linux")]
 use native_theme_gpui::icons::freedesktop_name_for_gpui_icon;
 use native_theme_gpui::icons::{
-    lucide_name_for_gpui_icon, material_name_for_gpui_icon, to_image_source,
-    to_image_source_colored,
+    animated_frames_to_image_sources, lucide_name_for_gpui_icon, material_name_for_gpui_icon,
+    to_image_source, to_image_source_colored,
 };
 use native_theme_gpui::to_theme;
 
@@ -800,6 +802,23 @@ struct Showcase {
     icon_cache_fg: Hsla,
     /// Whether the icon set follows the theme's default.
     use_default_icon_set: bool,
+
+    // Animated Icons state
+    /// Cached frame ImageSources for frame-based animations (set name, frames).
+    animated_frame_sources: Vec<(String, Vec<ImageSource>)>,
+    /// Frame duration in ms for each frame-based animation (parallel to animated_frame_sources).
+    animated_frame_durations: Vec<u32>,
+    /// Current frame index for each frame-based animation.
+    animated_frame_indices: Vec<usize>,
+    /// Cached ImageSource for transform-based (spin) animations (set name, source, duration_ms).
+    animated_spin_sources: Vec<(String, ImageSource, u32)>,
+    /// Timer task handle for frame cycling (dropped to cancel).
+    animation_timer: Option<Task<()>>,
+    /// Whether reduced motion is active.
+    reduced_motion: bool,
+    /// Static first-frame ImageSources for reduced motion display (set name, source, anim type label).
+    animated_static_sources: Vec<(String, ImageSource, &'static str)>,
+
     /// Widget Info sidebar panel (separate Entity for independent re-render).
     widget_info_panel: Entity<WidgetInfoPanel>,
 }
@@ -839,6 +858,104 @@ impl Showcase {
                 })
             })
             .collect();
+    }
+
+    /// Rebuild cached animated icon data from `loading_indicator()`.
+    ///
+    /// Called at init and whenever the icon set changes so that animated icon
+    /// rendering can use pre-built `ImageSource` objects without re-rasterizing
+    /// SVGs on every frame tick.
+    fn rebuild_animation_caches(&mut self) {
+        self.animated_frame_sources.clear();
+        self.animated_frame_durations.clear();
+        self.animated_spin_sources.clear();
+        self.animated_static_sources.clear();
+
+        let mut sets: Vec<&str> = vec!["material", "lucide"];
+        let sys = system_icon_set().name().to_string();
+        if sys != "material" && sys != "lucide" {
+            sets.push(&sys);
+        }
+
+        for set_name in &sets {
+            if let Some(anim) = loading_indicator(set_name) {
+                match &anim {
+                    AnimatedIcon::Frames {
+                        frame_duration_ms, ..
+                    } => {
+                        if let Some(sources) = animated_frames_to_image_sources(&anim) {
+                            if let Some(first) = anim.first_frame() {
+                                self.animated_static_sources.push((
+                                    set_name.to_string(),
+                                    to_image_source(first),
+                                    "Frames",
+                                ));
+                            }
+                            self.animated_frame_durations.push(*frame_duration_ms);
+                            self.animated_frame_sources
+                                .push((set_name.to_string(), sources));
+                        }
+                    }
+                    AnimatedIcon::Transform { icon, animation } => {
+                        let source = to_image_source(icon);
+                        self.animated_static_sources.push((
+                            set_name.to_string(),
+                            source.clone(),
+                            "Transform",
+                        ));
+                        if let TransformAnimation::Spin { duration_ms } = animation {
+                            self.animated_spin_sources.push((
+                                set_name.to_string(),
+                                source,
+                                *duration_ms,
+                            ));
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+
+        self.animated_frame_indices = vec![0; self.animated_frame_sources.len()];
+        self.reduced_motion = prefers_reduced_motion();
+    }
+
+    /// Start (or restart) the frame-cycling timer for animated icons.
+    ///
+    /// Cancels any previous timer. Does nothing when `reduced_motion` is true
+    /// or there are no frame-based animations cached.
+    fn start_animation_timer(&mut self, cx: &mut Context<Self>) {
+        // Drop old timer (cancels the task)
+        self.animation_timer = None;
+
+        if self.reduced_motion || self.animated_frame_sources.is_empty() {
+            return;
+        }
+
+        let min_duration = self
+            .animated_frame_durations
+            .iter()
+            .copied()
+            .min()
+            .unwrap_or(83) as u64;
+
+        let task = cx.spawn(async move |this, cx| {
+            loop {
+                Timer::after(Duration::from_millis(min_duration)).await;
+                let Ok(()) = this.update(cx, |this, cx| {
+                    for (i, (_name, frames)) in this.animated_frame_sources.iter().enumerate() {
+                        if let Some(idx) = this.animated_frame_indices.get_mut(i) {
+                            *idx = (*idx + 1) % frames.len();
+                        }
+                    }
+                    cx.notify();
+                }) else {
+                    break;
+                };
+            }
+        });
+
+        self.animation_timer = Some(task);
     }
 
     /// Resolve the effective icon set name for the "default" selection.
@@ -1053,6 +1170,8 @@ impl Showcase {
                     this.gpui_icons = load_gpui_icons(&effective);
                     let fg = cx.theme().foreground;
                     this.rebuild_icon_caches(fg);
+                    this.rebuild_animation_caches();
+                    this.start_animation_timer(cx);
                     cx.notify();
                 }
             },
@@ -1209,6 +1328,13 @@ impl Showcase {
             gpui_icon_sources: Vec::new(),
             icon_cache_fg: fg,
             use_default_icon_set: true,
+            animated_frame_sources: Vec::new(),
+            animated_frame_durations: Vec::new(),
+            animated_frame_indices: Vec::new(),
+            animated_spin_sources: Vec::new(),
+            animation_timer: None,
+            reduced_motion: false,
+            animated_static_sources: Vec::new(),
             widget_info_panel: {
                 let info_input = cx.new(|cx| {
                     let mut state = InputState::new(window, cx).auto_grow(4, 30);
@@ -1223,6 +1349,8 @@ impl Showcase {
             },
         };
         showcase.rebuild_icon_caches(fg);
+        showcase.rebuild_animation_caches();
+        showcase.start_animation_timer(cx);
         showcase
     }
 
