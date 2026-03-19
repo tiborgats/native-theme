@@ -109,6 +109,9 @@
 //! - Duplicate roles across multiple TOML files (builder API).
 //! - Missing `default` key in DE-aware mapping entries.
 
+#![warn(missing_docs)]
+#![forbid(unsafe_code)]
+
 mod codegen;
 mod error;
 mod schema;

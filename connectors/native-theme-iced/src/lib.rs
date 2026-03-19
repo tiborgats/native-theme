@@ -26,6 +26,9 @@
 //! }
 //! ```
 
+#![warn(missing_docs)]
+#![forbid(unsafe_code)]
+
 pub mod extended;
 pub mod icons;
 pub mod palette;

@@ -20,6 +20,9 @@
 //! let theme = to_theme(variant, "Default", false);
 //! ```
 
+#![warn(missing_docs)]
+#![forbid(unsafe_code)]
+
 pub mod colors;
 pub mod config;
 pub mod derive;

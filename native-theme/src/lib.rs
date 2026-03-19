@@ -5,6 +5,8 @@
 //! Any Rust GUI app can look native on any platform by loading a single theme
 //! file or reading live OS settings, without coupling to any specific toolkit.
 
+#![warn(missing_docs)]
+
 #[doc = include_str!("../README.md")]
 #[cfg(doctest)]
 pub struct ReadmeDoctests;

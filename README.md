@@ -23,7 +23,7 @@ and Windows.
 
 ```toml
 [dependencies]
-native-theme = "0.3.3"
+native-theme = "0.4.0"
 ```
 
 Load a bundled preset:
@@ -66,8 +66,8 @@ theme.merge(&overrides);
 
 ```toml
 [dependencies]
-native-theme = "0.3"
-native-theme-gpui = "0.3"
+native-theme = "0.4"
+native-theme-gpui = "0.4"
 ```
 
 ```rust
@@ -92,8 +92,8 @@ cargo run -p native-theme-gpui --example showcase
 
 ```toml
 [dependencies]
-native-theme = "0.3"
-native-theme-iced = "0.3"
+native-theme = "0.4"
+native-theme-iced = "0.4"
 ```
 
 ```rust
@@ -141,7 +141,7 @@ No features are enabled by default. The preset API works without any features.
 
 ```toml
 [dependencies]
-native-theme = { version = "0.3", features = ["native"] }
+native-theme = { version = "0.4", features = ["native"] }
 ```
 
 ### Meta-features
