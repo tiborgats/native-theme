@@ -11,9 +11,9 @@
 //! ```
 
 use gpui::{
-    App, Application, Bounds, Context, Entity, Hsla, ImageSource, IntoElement, Keystroke, Menu,
-    MenuItem, ParentElement, Render, SharedString, Styled, Task, Timer, Window, WindowBounds,
-    WindowOptions, div, prelude::*, px, rems, size,
+    Animation, AnimationExt, AnyElement, App, Application, Bounds, Context, Entity, Hsla,
+    ImageSource, IntoElement, Keystroke, Menu, MenuItem, ParentElement, Render, SharedString,
+    Styled, Task, Timer, Window, WindowBounds, WindowOptions, div, prelude::*, px, rems, size,
 };
 use std::time::Duration;
 use gpui_component::{
@@ -4196,6 +4196,124 @@ impl Showcase {
             )
     }
 
+    /// Build the "Animated Icons" section for the Icons tab.
+    fn render_animated_icons_section(&self) -> impl IntoElement {
+        let mut cards: Vec<AnyElement> = Vec::new();
+
+        if self.reduced_motion {
+            // Show static first frames with reduced-motion label
+            for (set_name, source, anim_type) in &self.animated_static_sources {
+                let label_text: SharedString =
+                    format!("{} - {} (reduced motion)", set_name, anim_type).into();
+                cards.push(
+                    v_flex()
+                        .items_center()
+                        .gap_2()
+                        .p_4()
+                        .rounded_md()
+                        .border_1()
+                        .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
+                        .child(gpui::img(source.clone()).size(px(32.)))
+                        .child(Label::new(label_text).text_xs())
+                        .into_any_element(),
+                );
+            }
+        } else {
+            // Frame-based animations
+            for (i, (set_name, frames)) in self.animated_frame_sources.iter().enumerate() {
+                let frame_idx = self
+                    .animated_frame_indices
+                    .get(i)
+                    .copied()
+                    .unwrap_or(0);
+                let total = frames.len();
+                let duration = self.animated_frame_durations.get(i).copied().unwrap_or(83);
+                if let Some(source) = frames.get(frame_idx) {
+                    let label_text: SharedString = format!(
+                        "{} - Frames ({}/{}, {}ms)",
+                        set_name,
+                        frame_idx + 1,
+                        total,
+                        duration
+                    )
+                    .into();
+                    cards.push(
+                        v_flex()
+                            .items_center()
+                            .gap_2()
+                            .p_4()
+                            .rounded_md()
+                            .border_1()
+                            .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
+                            .child(gpui::img(source.clone()).size(px(32.)))
+                            .child(Label::new(label_text).text_xs())
+                            .into_any_element(),
+                    );
+                }
+            }
+
+            // Transform (spin) animations -- shown with opacity pulse since gpui
+            // Div lacks with_transformation (only Svg has it). In real usage,
+            // callers use with_spin_animation() on an Svg element.
+            for (set_name, source, duration_ms) in &self.animated_spin_sources {
+                let label_text: SharedString =
+                    format!("{} - Spin ({}ms)", set_name, duration_ms).into();
+                let spin_id = SharedString::from(format!("spinner-{}", set_name));
+                let dur = Duration::from_millis(*duration_ms as u64);
+                cards.push(
+                    v_flex()
+                        .items_center()
+                        .gap_2()
+                        .p_4()
+                        .rounded_md()
+                        .border_1()
+                        .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
+                        .child(
+                            div()
+                                .size(px(32.))
+                                .child(gpui::img(source.clone()).size(px(32.)))
+                                .with_animation(
+                                    spin_id,
+                                    Animation::new(dur).repeat(),
+                                    |el: gpui::Div, delta| {
+                                        // Pulse opacity 0.3..1.0 to indicate animation
+                                        let opacity = 0.3 + 0.7 * (1.0 - (delta * 2.0 - 1.0).abs());
+                                        el.opacity(opacity)
+                                    },
+                                ),
+                        )
+                        .child(Label::new(label_text).text_xs())
+                        .into_any_element(),
+                );
+            }
+        }
+
+        let has_items = !cards.is_empty();
+
+        let mut section_el = v_flex().gap_2();
+        section_el = section_el.child(section("Animated Icons"));
+
+        if self.reduced_motion {
+            section_el = section_el.child(
+                Label::new("(prefers-reduced-motion: showing static frames)")
+                    .text_xs()
+                    .text_color(gpui::hsla(0.0, 0.0, 0.5, 1.0)),
+            );
+        }
+
+        if has_items {
+            section_el = section_el.child(h_flex().gap_6().flex_wrap().children(cards));
+        } else {
+            section_el = section_el.child(
+                Label::new("No animated icons available for current icon sets")
+                    .text_xs()
+                    .text_color(gpui::hsla(0.0, 0.0, 0.5, 1.0)),
+            );
+        }
+
+        section_el
+    }
+
     // -----------------------------------------------------------------------
     // Tab: Icons
     // -----------------------------------------------------------------------
@@ -4435,6 +4553,9 @@ impl Showcase {
         v_flex()
             .gap_3()
             .p_4()
+            // Animated Icons section
+            .child(self.render_animated_icons_section())
+            .child(Divider::horizontal())
             // Native Theme Icons section
             .child(section(native_section_title))
             .child(
