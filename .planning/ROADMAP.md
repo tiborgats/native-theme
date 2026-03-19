@@ -100,10 +100,10 @@ Plans:
 
 **Goal:** Add animated icon sections to connector READMEs and root README documenting the v0.4.0 headline feature
 **Depends on:** Phase 33
-**Plans:** 0 plans
+**Plans:** 1 plan
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 34 to break down)
+- [ ] 34-01-PLAN.md — Add Animated Icons sections to root, gpui, and iced READMEs
 
 ### Phase 35: Animated Icon Showcase Examples
 
