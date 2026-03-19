@@ -119,6 +119,38 @@ Map `NativeTheme` fields to your toolkit's types directly. All color, font,
 geometry, and spacing fields are public `Option<T>` values. See the
 [API docs](https://docs.rs/native-theme) for details.
 
+## Animated Icons
+
+Platform-native loading spinners with accessibility support:
+
+```rust,ignore
+use native_theme::{loading_indicator, prefers_reduced_motion, AnimatedIcon};
+
+if let Some(anim) = loading_indicator("material") {
+    if prefers_reduced_motion() {
+        // Respect OS accessibility settings with a static fallback
+        let static_icon = anim.first_frame();
+    } else {
+        match &anim {
+            AnimatedIcon::Frames { frames, frame_duration_ms, .. } => {
+                // Cycle through pre-rendered frames on a timer
+            }
+            AnimatedIcon::Transform { icon, animation } => {
+                // Apply continuous rotation to the icon
+            }
+        }
+    }
+}
+```
+
+Bundled spinner styles: Material (arc), Lucide (spin), macOS (spoke),
+Windows (arc), Adwaita (arc). On Linux, freedesktop `process-working`
+sprite sheets are loaded at runtime from the active icon theme.
+
+See the [gpui](connectors/native-theme-gpui/) and
+[iced](connectors/native-theme-iced/) connector READMEs for
+toolkit-specific playback helpers.
+
 ## Platform Support
 
 | Platform | Reader | Feature |
