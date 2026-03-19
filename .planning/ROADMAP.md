@@ -82,7 +82,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 - [x] Phase 33: Quick Fixes and Version Consistency (completed 2026-03-19)
 - [x] Phase 34: Animated Icon Documentation (completed 2026-03-19)
-- [ ] Phase 35: Animated Icon Showcase Examples
+- [x] Phase 35: Animated Icon Showcase Examples (completed 2026-03-19)
 - [ ] Phase 36: Screenshot and GIF Generation
 - [ ] Phase 37: Community Files and GitHub Templates
 - [ ] Phase 38: CI, Smoke Tests, and Release
@@ -109,11 +109,11 @@ Plans:
 
 **Goal:** Add animated icon demonstrations to both gpui and iced showcase examples
 **Depends on:** Phase 33
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 35-01-PLAN.md — Add animated icon section to gpui showcase Icons tab
-- [x] 35-02-PLAN.md — Add animated icon section to iced showcase Icons tab
+- [x] 35-01-PLAN.md — Add animated icon section to gpui showcase Icons tab (completed 2026-03-19)
+- [x] 35-02-PLAN.md — Add animated icon section to iced showcase Icons tab (completed 2026-03-19)
 
 ### Phase 36: Screenshot and GIF Generation
 
