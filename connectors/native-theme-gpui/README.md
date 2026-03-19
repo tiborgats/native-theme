@@ -84,6 +84,40 @@ For app-specific icons defined via `native-theme-build`, the connector provides:
 
 These work with any type implementing `IconProvider`.
 
+## Animated Icons
+
+The connector provides helpers for displaying animated icons from
+[`loading_indicator()`](https://docs.rs/native-theme/latest/native_theme/fn.loading_indicator.html):
+
+- `animated_frames_to_image_sources()` -- converts `AnimatedIcon::Frames` to a `Vec<ImageSource>` for frame-based playback
+- `with_spin_animation()` -- wraps an `Svg` element with continuous rotation for `AnimatedIcon::Transform` playback
+
+```rust,ignore
+use native_theme::{loading_indicator, prefers_reduced_motion, AnimatedIcon};
+use native_theme_gpui::icons::{animated_frames_to_image_sources, with_spin_animation, to_image_source};
+
+if let Some(anim) = loading_indicator("material") {
+    if prefers_reduced_motion() {
+        // Static fallback for accessibility
+        let static_icon = anim.first_frame().map(|f| to_image_source(&f));
+    } else {
+        match &anim {
+            AnimatedIcon::Frames { .. } => {
+                // Cache this -- do not call on every frame tick
+                let sources = animated_frames_to_image_sources(&anim);
+            }
+            AnimatedIcon::Transform { icon, .. } => {
+                let spinner = Svg::new("spinner.svg");
+                let element = with_spin_animation(spinner, "loading", 1000);
+            }
+        }
+    }
+}
+```
+
+Cache the `Vec<ImageSource>` from `animated_frames_to_image_sources()` -- do not
+call it on every frame tick.
+
 ## Modules
 
 | Module | Purpose |
@@ -91,7 +125,7 @@ These work with any type implementing `IconProvider`.
 | `colors` | Maps 36 semantic colors to 108 ThemeColor fields |
 | `config` | Maps fonts and geometry to ThemeConfig |
 | `derive` | Hover/active state color derivation helpers |
-| `icons` | Icon role mapping and image source conversion |
+| `icons` | Icon role mapping, image source conversion, and animated icon playback |
 
 ## Example
 
