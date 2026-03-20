@@ -1,8 +1,11 @@
 #!/usr/bin/env python3
-"""Generate looping GIF animation from the bundled Lucide spinner.
+"""Generate looping GIF animations from bundled spinner icons.
 
-Produces a GIF file in docs/assets/ showing the Lucide loader icon
-spinning inside a styled card background.
+Produces GIF files in docs/assets/ for genuine bundled spinners:
+  - material   (progress_activity.svg, 24 rotation frames, 42ms/frame)
+  - lucide     (loader.svg, 24 rotation frames, 42ms/frame)
+
+Each GIF shows the spinner centered inside a styled card background.
 
 Requirements:
   - ImageMagick 7 (magick command) for SVG rasterization
@@ -24,6 +27,12 @@ ICONS_DIR = os.path.join(PROJECT_ROOT, "native-theme", "icons")
 
 # Spinner configuration
 SPINNERS = {
+    "material": {
+        "source": "rotation",
+        "svg": os.path.join(ICONS_DIR, "material", "progress_activity.svg"),
+        "frame_count": 24,
+        "duration_ms": 42,
+    },
     "lucide": {
         "source": "rotation",
         "svg": os.path.join(ICONS_DIR, "lucide", "loader.svg"),
@@ -43,6 +52,7 @@ LABEL_COLOR = (100, 100, 100)  # #646464
 
 # Display names for spinner labels
 SPINNER_LABELS = {
+    "material": "Material",
     "lucide": "Lucide",
 }
 
@@ -84,38 +94,46 @@ def rasterize_svg(svg_path, output_png, size, tmpdir=None):
     return True
 
 
-def generate_lucide_rotated_frames(svg_path, frame_count, tmpdir):
-    """Generate rotated SVG frame files for the lucide loader spinner.
+def generate_rotated_frames(svg_path, frame_count, tmpdir, name):
+    """Generate rotated SVG frame files for a spinner icon.
 
-    The lucide loader is a single SVG that should be rotated through 360
-    degrees. We wrap its content in a <g transform="rotate(...)"> element
+    Reads the SVG, extracts its viewBox to find the rotation center,
+    then wraps the content in a <g transform="rotate(...)"> element
     to produce each frame.
     """
     with open(svg_path) as f:
         svg_content = f.read()
 
-    # Extract the inner content (paths) between the <svg ...> and </svg> tags
-    # The lucide SVG has attributes on the <svg> tag we need to preserve
-    inner_match = re.search(r"<svg[^>]*>(.*?)</svg>", svg_content, re.DOTALL)
-    if not inner_match:
-        print("  ERROR: Could not parse lucide loader SVG")
+    # Extract the SVG tag attributes and inner content
+    svg_match = re.search(r"<svg([^>]*)>(.*?)</svg>", svg_content, re.DOTALL)
+    if not svg_match:
+        print(f"  ERROR: Could not parse {name} SVG")
         return []
 
-    inner_content = inner_match.group(1)
+    svg_attrs = svg_match.group(1)
+    inner_content = svg_match.group(2)
+
+    # Extract viewBox to compute rotation center
+    vb_match = re.search(r'viewBox="([^"]*)"', svg_attrs)
+    if vb_match:
+        parts = vb_match.group(1).split()
+        vb_x, vb_y, vb_w, vb_h = float(parts[0]), float(parts[1]), float(parts[2]), float(parts[3])
+        cx = vb_x + vb_w / 2
+        cy = vb_y + vb_h / 2
+    else:
+        cx, cy = 12, 12  # fallback for 24x24 icons
 
     frame_paths = []
     for i in range(frame_count):
         angle = i * (360.0 / frame_count)
         rotated_svg = (
-            '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none"'
-            ' stroke="currentColor" stroke-width="2"'
-            ' stroke-linecap="round" stroke-linejoin="round">\n'
-            f'  <g transform="rotate({angle:.1f} 12 12)">'
+            f'<svg{svg_attrs}>\n'
+            f'  <g transform="rotate({angle:.1f} {cx:.1f} {cy:.1f})">'
             f"{inner_content}"
             "  </g>\n"
             "</svg>\n"
         )
-        frame_path = os.path.join(tmpdir, f"lucide_frame_{i:02d}.svg")
+        frame_path = os.path.join(tmpdir, f"{name}_frame_{i:02d}.svg")
         with open(frame_path, "w") as f:
             f.write(rotated_svg)
         frame_paths.append(frame_path)
@@ -185,9 +203,9 @@ def generate_spinner_gif(spinner_name, config, output_dir, tmpdir):
     frame_pngs = []
 
     if config["source"] == "rotation":
-        # Generate rotated frames for lucide spinner
-        svg_frames = generate_lucide_rotated_frames(
-            config["svg"], config["frame_count"], tmpdir
+        # Generate rotated frames from the icon SVG
+        svg_frames = generate_rotated_frames(
+            config["svg"], config["frame_count"], tmpdir, spinner_name
         )
         if not svg_frames:
             return False
@@ -257,7 +275,7 @@ def main():
     fail_count = 0
 
     with tempfile.TemporaryDirectory(prefix="spinner_gifs_") as tmpdir:
-        for name in ["lucide"]:
+        for name in ["material", "lucide"]:
             config = SPINNERS[name]
             if generate_spinner_gif(name, config, output_dir, tmpdir):
                 success_count += 1
@@ -273,7 +291,7 @@ def main():
     # List all generated files
     print()
     print("Generated files:")
-    for name in ["lucide"]:
+    for name in ["material", "lucide"]:
         path = os.path.join(output_dir, f"spinner-{name}.gif")
         if os.path.exists(path):
             size = os.path.getsize(path)
