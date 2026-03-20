@@ -871,49 +871,46 @@ impl Showcase {
         self.animated_spin_sources.clear();
         self.animated_static_sources.clear();
 
-        let mut sets: Vec<&str> = vec!["material", "lucide"];
-        let sys = system_icon_set().name().to_string();
-        if sys != "material" && sys != "lucide" {
-            sets.push(&sys);
-        }
-
-        for set_name in &sets {
-            if let Some(anim) = loading_indicator(set_name) {
-                match &anim {
-                    AnimatedIcon::Frames {
-                        frame_duration_ms, ..
-                    } => {
-                        if let Some(sources) = animated_frames_to_image_sources(&anim) {
-                            if let Some(first) = anim.first_frame() {
-                                self.animated_static_sources.push((
-                                    set_name.to_string(),
-                                    to_image_source(first),
-                                    "Frames",
-                                ));
-                            }
-                            self.animated_frame_durations.push(*frame_duration_ms);
-                            self.animated_frame_sources
-                                .push((set_name.to_string(), sources));
-                        }
-                    }
-                    AnimatedIcon::Transform { icon, animation } => {
-                        let source = to_image_source(icon);
-                        self.animated_static_sources.push((
-                            set_name.to_string(),
-                            source.clone(),
-                            "Transform",
-                        ));
-                        if let TransformAnimation::Spin { duration_ms } = animation {
-                            self.animated_spin_sources.push((
+        let set_name = &self.icon_set_name;
+        // gpui-builtin is not a native-theme icon set; loading_indicator would
+        // fall back to the system set, showing the wrong spinner.
+        if set_name != "gpui-builtin" {
+        if let Some(anim) = loading_indicator(set_name) {
+            match &anim {
+                AnimatedIcon::Frames {
+                    frame_duration_ms, ..
+                } => {
+                    if let Some(sources) = animated_frames_to_image_sources(&anim) {
+                        if let Some(first) = anim.first_frame() {
+                            self.animated_static_sources.push((
                                 set_name.to_string(),
-                                source,
-                                *duration_ms,
+                                to_image_source(first),
+                                "Frames",
                             ));
                         }
+                        self.animated_frame_durations.push(*frame_duration_ms);
+                        self.animated_frame_sources
+                            .push((set_name.to_string(), sources));
                     }
-                    _ => {}
                 }
+                AnimatedIcon::Transform { icon, animation } => {
+                    let source = to_image_source(icon);
+                    self.animated_static_sources.push((
+                        set_name.to_string(),
+                        source.clone(),
+                        "Transform",
+                    ));
+                    if let TransformAnimation::Spin { duration_ms } = animation {
+                        self.animated_spin_sources.push((
+                            set_name.to_string(),
+                            source,
+                            *duration_ms,
+                        ));
+                    }
+                }
+                _ => {}
             }
+        }
         }
 
         self.animated_frame_indices = vec![0; self.animated_frame_sources.len()];
@@ -4229,14 +4226,8 @@ impl Showcase {
                 let total = frames.len();
                 let duration = self.animated_frame_durations.get(i).copied().unwrap_or(83);
                 if let Some(source) = frames.get(frame_idx) {
-                    let label_text: SharedString = format!(
-                        "{} - Frames ({}/{}, {}ms)",
-                        set_name,
-                        frame_idx + 1,
-                        total,
-                        duration
-                    )
-                    .into();
+                    let label_text: SharedString =
+                        format!("{} - Frames: {} ({}ms)", set_name, total, duration).into();
                     cards.push(
                         v_flex()
                             .items_center()
@@ -5068,15 +5059,93 @@ impl Render for Showcase {
 }
 
 // ---------------------------------------------------------------------------
+// CLI argument parsing
+// ---------------------------------------------------------------------------
+
+/// Optional CLI arguments for launching the showcase in a specific state.
+///
+/// Parsed from `std::env::args()` — no external crate dependency.
+/// When no arguments are provided the showcase behaves identically to before.
+#[derive(Default)]
+struct CliArgs {
+    theme: Option<String>,
+    variant: Option<String>,
+    tab: Option<String>,
+    icon_set: Option<String>,
+}
+
+impl CliArgs {
+    fn parse() -> Self {
+        let mut args = Self::default();
+        let argv: Vec<String> = std::env::args().collect();
+        let mut i = 1; // skip binary name
+        while i < argv.len() {
+            match argv[i].as_str() {
+                "--theme" => {
+                    i += 1;
+                    if i < argv.len() {
+                        args.theme = Some(argv[i].clone());
+                    }
+                }
+                "--variant" => {
+                    i += 1;
+                    if i < argv.len() {
+                        args.variant = Some(argv[i].to_lowercase());
+                    }
+                }
+                "--tab" => {
+                    i += 1;
+                    if i < argv.len() {
+                        args.tab = Some(argv[i].to_lowercase());
+                    }
+                }
+                "--icon-set" => {
+                    i += 1;
+                    if i < argv.len() {
+                        args.icon_set = Some(argv[i].clone());
+                    }
+                }
+                _ => {} // ignore unknown args
+            }
+            i += 1;
+        }
+        args
+    }
+
+    /// Map a tab name string to the corresponding tab index constant.
+    fn tab_index(name: &str) -> Option<usize> {
+        match name {
+            "buttons" => Some(TAB_BUTTONS),
+            "inputs" | "text-inputs" => Some(TAB_INPUTS),
+            "data" => Some(TAB_DATA),
+            "feedback" => Some(TAB_FEEDBACK),
+            "typography" => Some(TAB_TYPOGRAPHY),
+            "layout" => Some(TAB_LAYOUT),
+            "overlays" => Some(TAB_OVERLAYS),
+            "charts" => Some(TAB_CHARTS),
+            "icons" => Some(TAB_ICONS),
+            "theme-map" => Some(TAB_THEME_MAP),
+            _ => None,
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 fn main() {
+    let cli_args = CliArgs::parse();
+
     Application::new()
         .with_assets(gpui_component_assets::Assets)
-        .run(|cx: &mut App| {
+        .run(move |cx: &mut App| {
             gpui_component::init(cx);
+
+            // Apply CLI variant override before window opens so the initial
+            // theme is resolved with the correct light/dark setting.
+            let variant_override = cli_args.variant.as_deref().map(|v| v == "dark");
 
             let bounds = Bounds::centered(None, size(px(1100.), px(850.)), cx);
             cx.open_window(
@@ -5085,7 +5154,47 @@ fn main() {
                     ..Default::default()
                 },
                 |window, cx| {
-                    let showcase = cx.new(|cx| Showcase::new(window, cx));
+                    let showcase = cx.new(|cx| {
+                        let mut s = Showcase::new(window, cx);
+
+                        // Override color mode if --variant was specified
+                        if let Some(is_dark) = variant_override {
+                            let mode = if is_dark {
+                                ColorMode::Dark
+                            } else {
+                                ColorMode::Light
+                            };
+                            s.color_mode = mode;
+                            s.is_dark = is_dark;
+                        }
+
+                        // Override theme if --theme was specified
+                        if let Some(ref theme_name) = cli_args.theme {
+                            s.current_theme_name = theme_name.clone();
+                            s.apply_theme_by_name(theme_name, window, cx);
+                        }
+
+                        // Override tab if --tab was specified
+                        if let Some(ref tab_name) = cli_args.tab {
+                            if let Some(idx) = CliArgs::tab_index(tab_name) {
+                                s.active_tab = idx;
+                            }
+                        }
+
+                        // Override icon set if --icon-set was specified
+                        if let Some(ref set_name) = cli_args.icon_set {
+                            s.use_default_icon_set = false;
+                            s.icon_set_name = set_name.clone();
+                            s.loaded_icons = load_all_icons(set_name);
+                            s.gpui_icons = load_gpui_icons(set_name);
+                            let fg = cx.theme().foreground;
+                            s.rebuild_icon_caches(fg);
+                            s.rebuild_animation_caches();
+                            s.start_animation_timer(cx);
+                        }
+
+                        s
+                    });
                     cx.new(|cx| Root::new(showcase, window, cx))
                 },
             )

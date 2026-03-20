@@ -119,10 +119,12 @@ Plans:
 
 **Goal:** Create visual assets (showcase screenshots, spinner GIFs) and automation tooling for generating them
 **Depends on:** Phase 35
-**Plans:** 0 plans
+**Plans:** 3 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 36 to break down)
+- [ ] 36-01-PLAN.md — Add CLI argument support to both showcase examples
+- [ ] 36-02-PLAN.md — Create GIF generation script from SVG spinner frames
+- [ ] 36-03-PLAN.md — Create screenshot automation and master orchestration scripts
 
 ### Phase 37: Community Files and GitHub Templates
 
