@@ -41,6 +41,7 @@ struct CliArgs {
     variant: Option<String>,
     tab: Option<String>,
     icon_set: Option<String>,
+    screenshot: Option<String>,
 }
 
 /// Global CLI args, set once in `main()` before the iced application starts.
@@ -75,6 +76,12 @@ impl CliArgs {
                     i += 1;
                     if i < argv.len() {
                         args.icon_set = Some(argv[i].clone());
+                    }
+                }
+                "--screenshot" => {
+                    i += 1;
+                    if i < argv.len() {
+                        args.screenshot = Some(argv[i].clone());
                     }
                 }
                 _ => {} // ignore unknown args
@@ -512,6 +519,10 @@ struct State {
     reduced_motion: bool,
     /// Static first-frame SVG handles for reduced motion: (set_name, handle).
     animated_static: Vec<(String, iced_core::svg::Handle)>,
+
+    // Screenshot mode
+    screenshot_path: Option<String>,
+    screenshot_countdown: u8,
 }
 
 impl Default for State {
@@ -586,6 +597,8 @@ impl Default for State {
             animation_start,
             reduced_motion,
             animated_static,
+            screenshot_path: None,
+            screenshot_countdown: 0,
         };
 
         // Apply CLI overrides (if any)
@@ -634,6 +647,12 @@ impl Default for State {
                 state.animation_start = start;
                 state.reduced_motion = rm;
                 state.animated_static = statics;
+            }
+
+            // Apply screenshot settings
+            if let Some(ref path) = cli.screenshot {
+                state.screenshot_path = Some(path.clone());
+                state.screenshot_countdown = 30; // 30 ticks × 50ms = 1.5s render delay
             }
         }
 
@@ -701,13 +720,58 @@ enum Message {
 
     // Animated Icons
     AnimationTick,
+
+    // Screenshot
+    ScreenshotTick,
+    ScreenshotCaptured(Vec<u8>, u32, u32),
 }
 
 // ---------------------------------------------------------------------------
 // Update
 // ---------------------------------------------------------------------------
 
-fn update(state: &mut State, message: Message) {
+fn update(state: &mut State, message: Message) -> iced::Task<Message> {
+    match message {
+        Message::ScreenshotTick => {
+            if state.screenshot_countdown > 0 {
+                state.screenshot_countdown -= 1;
+                if state.screenshot_countdown == 0 {
+                    return iced::window::latest().then(|opt_id| {
+                        if let Some(id) = opt_id {
+                            iced::window::screenshot(id).map(|s| {
+                                let bytes = s.rgba.to_vec();
+                                let w = s.size.width;
+                                let h = s.size.height;
+                                Message::ScreenshotCaptured(bytes, w, h)
+                            })
+                        } else {
+                            iced::Task::none()
+                        }
+                    });
+                }
+            }
+        }
+        Message::ScreenshotCaptured(bytes, width, height) => {
+            if let Some(ref path) = state.screenshot_path {
+                let _ = image::save_buffer(
+                    path,
+                    &bytes,
+                    width,
+                    height,
+                    image::ColorType::Rgba8,
+                );
+                eprintln!("Screenshot saved to {path}");
+            }
+            return iced::exit();
+        }
+        other => {
+            update_inner(state, other);
+        }
+    }
+    iced::Task::none()
+}
+
+fn update_inner(state: &mut State, message: Message) {
     match message {
         Message::TabSelected(tab) => {
             state.active_tab = tab;
@@ -773,6 +837,7 @@ fn update(state: &mut State, message: Message) {
                 }
             }
         }
+        _ => {} // Screenshot messages handled by update()
     }
 }
 
@@ -2482,14 +2547,22 @@ fn theme(state: &State) -> Theme {
 // ---------------------------------------------------------------------------
 
 fn subscription(state: &State) -> Subscription<Message> {
+    let mut subs = vec![];
+
+    // Animation tick (existing logic)
     if state.active_tab == Tab::Icons
         && !state.reduced_motion
         && (!state.animated_frames.is_empty() || !state.animated_spins.is_empty())
     {
-        iced::time::every(Duration::from_millis(50)).map(|_| Message::AnimationTick)
-    } else {
-        Subscription::none()
+        subs.push(iced::time::every(Duration::from_millis(50)).map(|_| Message::AnimationTick));
     }
+
+    // Screenshot countdown timer
+    if state.screenshot_path.is_some() && state.screenshot_countdown > 0 {
+        subs.push(iced::time::every(Duration::from_millis(50)).map(|_| Message::ScreenshotTick));
+    }
+
+    Subscription::batch(subs)
 }
 
 // ---------------------------------------------------------------------------
