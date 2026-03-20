@@ -86,7 +86,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] Phase 36: Screenshot and GIF Generation (completed 2026-03-20)
 - [x] Phase 37: Community Files and GitHub Templates (completed 2026-03-20)
 - [x] Phase 38: CI, Smoke Tests, and Release (completed 2026-03-20)
-- [ ] Phase 39: Code Quality and Housekeeping
+- [x] Phase 39: Code Quality and Housekeeping (completed 2026-03-20)
 - [ ] Phase 40: Iced Theme Preset Screenshots and CI
 - [ ] Phase 41: gpui Theme Preset Screenshots
 - [ ] Phase 42: Theme-Switching GIF and Core README Images
@@ -165,7 +165,7 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 | 22-26 | v0.3.3 | 14/14 | Complete | 2026-03-17 |
 | 27-32 | v0.4.0 | 8/8 | Complete | 2026-03-18 |
 | 33-38 | v0.4.1 | 13/13 | Complete | 2026-03-20 |
-| 39-42 | v0.4.1 | 2/? | In Progress | — |
+| 39-42 | v0.4.1 | 4/? | In Progress | — |
 
 ### Phase 39: Code Quality and Housekeeping
 
@@ -181,10 +181,11 @@ Plans:
 
 **Goal:** Redo iced showcase screenshots using real theme presets (Dracula dark, Nord light, Catppuccin Mocha, macOS Sonoma) instead of default theme, capture across all 3 OSes via CI, and update READMEs
 **Depends on:** Phase 39
-**Plans:** 0 plans
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 40 to break down)
+- [ ] 40-01-PLAN.md — Update CI workflow and local script for theme preset captures
+- [ ] 40-02-PLAN.md — Remove old screenshots and update both READMEs for theme presets
 
 ### Phase 41: gpui Theme Preset Screenshots
 
