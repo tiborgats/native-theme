@@ -11,7 +11,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - ✅ **v0.3 Icons** — Phases 16-21 (shipped 2026-03-09)
 - ✅ **v0.3.3 Custom Icon Roles** — Phases 22-26 (shipped 2026-03-17)
 - ✅ **v0.4.0 Animated Icons** — Phases 27-32 (shipped 2026-03-18)
-- 🔄 **v0.4.1 Release Prep** — Phases 33-38
+- **v0.4.1 Release Prep** — Phases 33-42 (in progress)
 
 ## Phases
 
@@ -78,14 +78,18 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 </details>
 
-### v0.4.1 Release Prep (Phases 33-38)
+### v0.4.1 Release Prep (Phases 33-42)
 
 - [x] Phase 33: Quick Fixes and Version Consistency (completed 2026-03-19)
 - [x] Phase 34: Animated Icon Documentation (completed 2026-03-19)
 - [x] Phase 35: Animated Icon Showcase Examples (completed 2026-03-19)
 - [x] Phase 36: Screenshot and GIF Generation (completed 2026-03-20)
 - [x] Phase 37: Community Files and GitHub Templates (completed 2026-03-20)
-- [ ] Phase 38: CI, Smoke Tests, and Release
+- [x] Phase 38: CI, Smoke Tests, and Release (completed 2026-03-20)
+- [ ] Phase 39: Code Quality and Housekeeping
+- [ ] Phase 40: Iced Theme Preset Screenshots and CI
+- [ ] Phase 41: gpui Theme Preset Screenshots
+- [ ] Phase 42: Theme-Switching GIF and Core README Images
 
 ### Phase 33: Quick Fixes and Version Consistency
 
@@ -140,12 +144,12 @@ Plans:
 
 **Goal:** Verify CI coverage for animated icons, run pre-release smoke tests, tag v0.4.1, and publish to crates.io
 **Depends on:** Phase 34, 35, 36, 37
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 38-01-PLAN.md — Fix CI blockers (missing docs, formatting, broken doc link) (completed 2026-03-20)
-- [ ] 38-02-PLAN.md — Version bump to 0.4.1, CHANGELOG, and pre-release smoke tests
-- [ ] 38-03-PLAN.md — Push, verify CI, tag v0.4.1, publish to crates.io
+- [x] 38-02-PLAN.md — Version bump to 0.4.1, CHANGELOG, and pre-release smoke tests (completed 2026-03-20)
+- [x] 38-03-PLAN.md — Push, verify CI, tag v0.4.1, publish to crates.io (completed 2026-03-20)
 
 ## Phase Details
 
@@ -160,4 +164,42 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 | 16-21 | v0.3 | 10/10 | Complete | 2026-03-09 |
 | 22-26 | v0.3.3 | 14/14 | Complete | 2026-03-17 |
 | 27-32 | v0.4.0 | 8/8 | Complete | 2026-03-18 |
-| 33-38 | v0.4.1 | 8/13 | In Progress | — |
+| 33-38 | v0.4.1 | 13/13 | Complete | 2026-03-20 |
+| 39-42 | v0.4.1 | 0/? | In Progress | — |
+
+### Phase 39: Code Quality and Housekeeping
+
+**Goal:** Add `#![deny(unsafe_code)]` to core crate (with surgical `#[allow(unsafe_code)]` on FFI modules), write tests for `prefers_reduced_motion()` across all platforms, and archive completed design docs to `docs/archive/`
+**Depends on:** Phase 38
+**Plans:** 2 plans
+
+Plans:
+- [ ] 39-01-PLAN.md — Add deny(unsafe_code) lint with allow annotations, write reduced motion smoke tests
+- [ ] 39-02-PLAN.md — Archive 8 completed milestone docs to docs/archive/
+
+### Phase 40: Iced Theme Preset Screenshots and CI
+
+**Goal:** Redo iced showcase screenshots using real theme presets (Dracula dark, Nord light, Catppuccin Mocha, macOS Sonoma) instead of default theme, capture across all 3 OSes via CI, and update READMEs
+**Depends on:** Phase 39
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 40 to break down)
+
+### Phase 41: gpui Theme Preset Screenshots
+
+**Goal:** Capture gpui showcase screenshots with theme presets (Dracula dark, Nord light, Catppuccin Mocha, macOS Sonoma) and embed in `connectors/native-theme-gpui/README.md`
+**Depends on:** Phase 40
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 41 to break down)
+
+### Phase 42: Theme-Switching GIF and Core README Images
+
+**Goal:** Create animated GIF showing live theme switching in a showcase, embed spinner GIF in core crate README (`native-theme/README.md`), and embed theme-switching GIF in root README hero section
+**Depends on:** Phase 40, 41
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 42 to break down)
