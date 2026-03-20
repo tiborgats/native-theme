@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: "Completed 36-03-PLAN.md"
-last_updated: "2026-03-20T00:00:00Z"
-last_activity: "2026-03-20 — Phase 36 plan 03 complete (screenshot automation + master orchestration scripts)"
+stopped_at: "Completed 37-02-PLAN.md"
+last_updated: "2026-03-20T12:42:00Z"
+last_activity: "2026-03-20 — Phase 37 plan 02 complete (issue templates + PR template)"
 progress:
   total_phases: 6
-  completed_phases: 3
-  total_plans: 7
-  completed_plans: 7
+  completed_phases: 4
+  total_plans: 9
+  completed_plans: 9
 ---
 
 # Project State
@@ -24,13 +24,13 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 
 ## Current Position
 
-Status: Executing phase 36 (screenshot and GIF generation)
-Last activity: 2026-03-20 — Phase 36 complete (CLI args + GIF generation + screenshot automation)
+Status: Executing phase 37 (community files and GitHub templates)
+Last activity: 2026-03-20 — Phase 37 plan 02 complete (issue templates + PR template)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 76 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 14 v0.3.3 + 8 v0.4.0 + 6 v0.4.1)
+- Total plans completed: 78 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 14 v0.3.3 + 8 v0.4.0 + 8 v0.4.1)
 - Average duration: ~4.1min (v0.2), 3.7min (v0.3)
 - Total execution time: 70min (v0.2), 37min (v0.3), 15min (v0.3.2), 35min (v0.3.3), 35min (v0.4.0)
 
@@ -45,6 +45,7 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [Phase 36-02]: RGB GIF frames on white background (no GIF transparency); single GIF set since SVGs are toolkit-agnostic
 - [Phase 36-03]: Pre-build release binaries before capture loop; spectacle -a requires showcase window focus on KDE Wayland
 - [Phase 36-01]: Used std::env::args() only (no clap); OnceLock for iced State::default() CLI arg passing
+- [Phase 37-02]: Used YAML issue forms (not Markdown templates) for validated dropdowns and required fields
 
 ### Roadmap Evolution
 
@@ -62,5 +63,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-03-20
-Stopped at: Completed 36-03-PLAN.md
+Stopped at: Completed 37-02-PLAN.md
 Resume file: None

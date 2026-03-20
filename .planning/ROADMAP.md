@@ -134,7 +134,7 @@ Plans:
 
 Plans:
 - [ ] 37-01-PLAN.md — Create CONTRIBUTING.md, CODE_OF_CONDUCT.md, and SECURITY.md
-- [ ] 37-02-PLAN.md — Create issue templates (YAML forms), config, and PR template
+- [x] 37-02-PLAN.md — Create issue templates (YAML forms), config, and PR template (completed 2026-03-20)
 
 ### Phase 38: CI, Smoke Tests, and Release
 
