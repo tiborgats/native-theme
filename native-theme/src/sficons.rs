@@ -4,6 +4,9 @@
 // via NSImage and rasterizing through CGBitmapContext. Returns None
 // when the role has no SF Symbols mapping or the symbol cannot be loaded.
 
+// CoreGraphics FFI -- no safe alternative
+#![allow(unsafe_code)]
+
 use crate::{IconData, IconRole, IconSet, icon_name};
 use objc2::rc::Retained;
 use objc2_app_kit::{NSFontWeight, NSImage, NSImageSymbolConfiguration, NSImageSymbolScale};

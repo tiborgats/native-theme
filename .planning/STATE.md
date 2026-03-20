@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: executing
-stopped_at: "Completed 38-02-PLAN.md"
-last_updated: "2026-03-20T14:56:02Z"
-last_activity: "2026-03-20 — Phase 38 plan 02 complete (version bump 0.4.1, changelog, pre-release validation)"
+status: completed
+stopped_at: Completed 39-02-PLAN.md
+last_updated: "2026-03-20T21:04:19.218Z"
+last_activity: 2026-03-20 — Added phases 39-42 (code quality, iced screenshots, gpui screenshots, theme-switching GIF)
 progress:
-  total_phases: 6
-  completed_phases: 5
-  total_plans: 12
-  completed_plans: 12
+  total_phases: 10
+  completed_phases: 6
+  total_plans: 14
+  completed_plans: 13
 ---
 
 # Project State
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** v0.4.1 Release Prep — documentation, examples, visual assets, community files, and publishing
+**Current focus:** v0.4.1 Release Prep — finishing incomplete work (theme preset screenshots, code quality, visual assets)
 
 ## Current Position
 
-Status: Phase 38 executing, plan 02 complete (1 of 3 plans remaining)
-Last activity: 2026-03-20 — Phase 38 plan 02 complete (version bump 0.4.1, changelog, pre-release validation)
+Status: Phases 39-42 added to complete remaining v0.4.1 work
+Last activity: 2026-03-20 — Added phases 39-42 (code quality, iced screenshots, gpui screenshots, theme-switching GIF)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 82 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 14 v0.3.3 + 8 v0.4.0 + 12 v0.4.1)
+- Total plans completed: 83 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 14 v0.3.3 + 8 v0.4.0 + 13 v0.4.1)
 - Average duration: ~4.1min (v0.2), 3.7min (v0.3)
 - Total execution time: 70min (v0.2), 37min (v0.3), 15min (v0.3.2), 35min (v0.3.3), 35min (v0.4.0)
 
@@ -48,11 +48,14 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [Phase 37-02]: Used YAML issue forms (not Markdown templates) for validated dropdowns and required fields
 - [Phase 38-01]: Used real doc comments (not blanket allow) for all 67 undocumented public items
 - [Phase 38-02]: Connector crate dry-runs use run_check_soft since they depend on core crate being published first
+- [Phase 38-03]: Enhanced release notes to include screenshot automation and visual asset CI additions beyond original template
+- [Phase 39]: Archive completed milestone docs to docs/archive/ using git mv for history preservation
 
 ### Roadmap Evolution
 
 Phase history archived in .planning/milestones/.
 - Phase 33-38 added: v0.4.1 Release Prep milestone (quick fixes, docs, examples, screenshots, community files, release)
+- Phases 39-42 added: Finish incomplete v0.4.1 work (code quality, theme preset screenshots, GIF assets)
 
 ### Pending Todos
 
@@ -60,10 +63,11 @@ None.
 
 ### Blockers/Concerns
 
-None currently.
+- v0.4.1 was published prematurely — screenshots show wrong content (icon sets, not theme presets), gpui screenshots missing, theme-switching GIF never created, core README has no images, forbid(unsafe_code) missing from core, prefers_reduced_motion() untested, design docs not archived
+- Manual visual verification required before milestone completion (item 8 from docs/todo_v0.4.1.md)
 
 ## Session Continuity
 
-Last session: 2026-03-20
-Stopped at: Completed 38-02-PLAN.md
+Last session: 2026-03-20T21:04:19.216Z
+Stopped at: Completed 39-02-PLAN.md
 Resume file: None

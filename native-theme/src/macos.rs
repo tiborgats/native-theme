@@ -2,6 +2,9 @@
 //! resolves both light and dark appearance variants via NSAppearance, and reads
 //! system and monospace fonts via NSFont.
 
+// Objective-C FFI via objc2 -- no safe alternative
+#![allow(unsafe_code)]
+
 #[cfg(all(target_os = "macos", feature = "macos"))]
 use block2::RcBlock;
 #[cfg(all(target_os = "macos", feature = "macos"))]

@@ -48,6 +48,7 @@ fn read_accent_shades(settings: &UISettings) -> [Option<crate::Rgba>; 6] {
 ///
 /// Converts `lfHeight` to points using `points = abs(lfHeight) * 72 / dpi`.
 /// Returns `ThemeFonts::default()` if the system call fails.
+#[allow(unsafe_code)]
 fn read_system_font(dpi: u32) -> crate::ThemeFonts {
     let mut ncm = NONCLIENTMETRICSW::default();
     ncm.cbSize = std::mem::size_of::<NONCLIENTMETRICSW>() as u32;
@@ -104,6 +105,7 @@ fn winui3_spacing() -> crate::ThemeSpacing {
 /// corner radius values (4.0 / 8.0) and shadow setting.
 ///
 /// Returns `(ThemeGeometry, dpi)` -- the DPI value is also needed for font conversion.
+#[allow(unsafe_code)]
 fn read_geometry_dpi_aware() -> (crate::ThemeGeometry, u32) {
     // SAFETY: GetDpiForSystem and GetSystemMetricsForDpi are always safe to call.
     // GetDpiForSystem returns 96 on failure (standard DPI).
@@ -130,6 +132,7 @@ fn read_geometry_dpi_aware() -> (crate::ThemeGeometry, u32) {
 /// On Windows, uses `GetSystemMetricsForDpi` for scrollbar width (SM_CXVSCROLL),
 /// scrollbar thumb height (SM_CYVTHUMB), and menu item height (SM_CYMENU).
 /// On non-Windows platforms (for testability), uses WinUI3 Fluent defaults for all widgets.
+#[allow(unsafe_code)]
 fn read_widget_metrics(_dpi: u32) -> crate::model::widget_metrics::WidgetMetrics {
     use crate::model::widget_metrics::*;
 

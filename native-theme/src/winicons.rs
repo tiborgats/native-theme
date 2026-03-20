@@ -11,6 +11,9 @@
 // This module is compiled on all platforms (gated by feature = "system-icons")
 // so that platform-independent logic like `parse_hex_codepoint` can be tested
 // everywhere. Windows-specific code is behind `#[cfg(target_os = "windows")]`.
+
+// Win32 GDI FFI -- no safe alternative
+#![allow(unsafe_code)]
 use crate::{IconData, IconRole, IconSet, icon_name};
 
 #[cfg(target_os = "windows")]

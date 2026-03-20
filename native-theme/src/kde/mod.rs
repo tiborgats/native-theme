@@ -169,6 +169,7 @@ mod tests {
     // === kdeglobals_path tests ===
 
     #[test]
+    #[allow(unsafe_code)]
     fn kdeglobals_path_respects_xdg_config_home() {
         let _guard = crate::ENV_MUTEX.lock().unwrap();
         // SAFETY: ENV_MUTEX serializes env var access across parallel tests
@@ -179,6 +180,7 @@ mod tests {
     }
 
     #[test]
+    #[allow(unsafe_code)]
     fn kdeglobals_path_falls_back_to_home_config() {
         let _guard = crate::ENV_MUTEX.lock().unwrap();
         // SAFETY: ENV_MUTEX serializes env var access across parallel tests
@@ -428,6 +430,7 @@ BackgroundNormal=49,54,59
     }
 
     #[test]
+    #[allow(unsafe_code)]
     fn test_missing_file() {
         let _guard = crate::ENV_MUTEX.lock().unwrap();
         // SAFETY: ENV_MUTEX serializes env var access across parallel tests

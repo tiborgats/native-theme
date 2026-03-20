@@ -171,7 +171,7 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 
 **Goal:** Add `#![deny(unsafe_code)]` to core crate (with surgical `#[allow(unsafe_code)]` on FFI modules), write tests for `prefers_reduced_motion()` across all platforms, and archive completed design docs to `docs/archive/`
 **Depends on:** Phase 38
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 39-01-PLAN.md — Add deny(unsafe_code) lint with allow annotations, write reduced motion smoke tests

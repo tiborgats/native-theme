@@ -6,6 +6,7 @@
 //! file or reading live OS settings, without coupling to any specific toolkit.
 
 #![warn(missing_docs)]
+#![deny(unsafe_code)]
 
 #[doc = include_str!("../README.md")]
 #[cfg(doctest)]
@@ -754,6 +755,7 @@ mod dispatch_tests {
     // -- from_linux() fallback test --
 
     #[test]
+    #[allow(unsafe_code)]
     fn from_linux_non_kde_returns_adwaita() {
         let _guard = crate::ENV_MUTEX.lock().unwrap();
         // Temporarily set XDG_CURRENT_DESKTOP to GNOME so from_linux()
@@ -771,6 +773,7 @@ mod dispatch_tests {
 
     #[test]
     #[cfg(feature = "kde")]
+    #[allow(unsafe_code)]
     fn from_linux_unknown_de_with_kdeglobals_fallback() {
         let _guard = crate::ENV_MUTEX.lock().unwrap();
         use std::io::Write;
@@ -816,6 +819,7 @@ mod dispatch_tests {
     }
 
     #[test]
+    #[allow(unsafe_code)]
     fn from_linux_unknown_de_without_kdeglobals_returns_adwaita() {
         let _guard = crate::ENV_MUTEX.lock().unwrap();
         // SAFETY: ENV_MUTEX serializes env var access across parallel tests
@@ -869,6 +873,7 @@ mod dispatch_tests {
     // -- from_system() smoke test --
 
     #[test]
+    #[allow(unsafe_code)]
     fn from_system_returns_result() {
         let _guard = crate::ENV_MUTEX.lock().unwrap();
         // On Linux (our test platform), from_system() should return a Result.
