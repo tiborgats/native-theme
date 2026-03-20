@@ -84,7 +84,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] Phase 34: Animated Icon Documentation (completed 2026-03-19)
 - [x] Phase 35: Animated Icon Showcase Examples (completed 2026-03-19)
 - [x] Phase 36: Screenshot and GIF Generation (completed 2026-03-20)
-- [ ] Phase 37: Community Files and GitHub Templates
+- [x] Phase 37: Community Files and GitHub Templates (completed 2026-03-20)
 - [ ] Phase 38: CI, Smoke Tests, and Release
 
 ### Phase 33: Quick Fixes and Version Consistency
@@ -130,10 +130,10 @@ Plans:
 
 **Goal:** Add CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, and issue/PR templates
 **Depends on:** Phase 33
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 37-01-PLAN.md — Create CONTRIBUTING.md, CODE_OF_CONDUCT.md, and SECURITY.md
+- [x] 37-01-PLAN.md — Create CONTRIBUTING.md, CODE_OF_CONDUCT.md, and SECURITY.md (completed 2026-03-20)
 - [x] 37-02-PLAN.md — Create issue templates (YAML forms), config, and PR template (completed 2026-03-20)
 
 ### Phase 38: CI, Smoke Tests, and Release
