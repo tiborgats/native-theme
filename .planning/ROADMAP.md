@@ -119,7 +119,7 @@ Plans:
 
 **Goal:** Create visual assets (showcase screenshots, spinner GIFs) and automation tooling for generating them
 **Depends on:** Phase 35
-**Plans:** 3 plans
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 36-01-PLAN.md — Add CLI argument support to both showcase examples
