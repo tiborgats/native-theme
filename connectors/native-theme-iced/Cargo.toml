@@ -20,11 +20,8 @@ name = "showcase"
 
 [dev-dependencies]
 iced = { version = "0.14", features = ["svg", "image", "tokio"] }
-native-theme = { workspace = true, features = ["material-icons", "lucide-icons", "system-icons"] }
+native-theme = { workspace = true, features = ["material-icons", "lucide-icons"] }
 image = { version = "0.25", default-features = false, features = ["png"] }
 
-[target.'cfg(target_os = "windows")'.dev-dependencies]
-native-theme = { workspace = true, features = ["windows"] }
-
-[target.'cfg(target_os = "macos")'.dev-dependencies]
-native-theme = { workspace = true, features = ["macos"] }
+[target.'cfg(target_os = "linux")'.dev-dependencies]
+native-theme = { workspace = true, features = ["system-icons"] }
