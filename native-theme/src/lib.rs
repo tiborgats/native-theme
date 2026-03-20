@@ -1221,3 +1221,41 @@ mod spinner_rasterize_tests {
         }
     }
 }
+
+#[cfg(test)]
+mod reduced_motion_tests {
+    use super::*;
+
+    #[test]
+    fn prefers_reduced_motion_smoke_test() {
+        // Smoke test: function should not panic on any platform.
+        // Cannot assert a specific value because OnceLock caches the first call
+        // and CI environments have varying accessibility settings.
+        let _result = prefers_reduced_motion();
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn detect_reduced_motion_inner_linux() {
+        // Bypass OnceLock to test actual detection logic.
+        // On CI without gsettings, returns false (animations enabled).
+        // On developer machines, depends on accessibility settings.
+        let result = detect_reduced_motion_inner();
+        // Just verify it returns a bool without panicking.
+        let _ = result;
+    }
+
+    #[cfg(target_os = "macos")]
+    #[test]
+    fn detect_reduced_motion_inner_macos() {
+        let result = detect_reduced_motion_inner();
+        let _ = result;
+    }
+
+    #[cfg(target_os = "windows")]
+    #[test]
+    fn detect_reduced_motion_inner_windows() {
+        let result = detect_reduced_motion_inner();
+        let _ = result;
+    }
+}
