@@ -44,27 +44,29 @@ jobs:
       - name: Capture screenshots (Linux)
         if: runner.os == 'Linux'
         run: |
-          for icon_set in material lucide; do
-            for variant in light dark; do
-              echo "Capturing: $icon_set $variant"
-              xvfb-run -a --server-args="-screen 0 1920x1080x24" \
-                cargo run -p native-theme-iced --example showcase --release -- \
-                  --icon-set $icon_set --variant $variant --tab icons \
-                  --screenshot "docs/assets/iced-${{ matrix.os_name }}-${icon_set}-${variant}.png"
-            done
+          themes=("dracula:dark" "nord:light" "catppuccin-mocha:dark" "macos-sonoma:light")
+          for entry in "${themes[@]}"; do
+            theme="${entry%%:*}"
+            variant="${entry##*:}"
+            echo "Capturing: $theme $variant"
+            xvfb-run -a --server-args="-screen 0 1920x1080x24" \
+              cargo run -p native-theme-iced --example showcase --release -- \
+                --theme $theme --variant $variant --tab buttons \
+                --screenshot "docs/assets/iced-${{ matrix.os_name }}-${theme}-${variant}.png"
           done
 
       - name: Capture screenshots (macOS/Windows)
         if: runner.os != 'Linux'
         shell: bash
         run: |
-          for icon_set in material lucide; do
-            for variant in light dark; do
-              echo "Capturing: $icon_set $variant"
-              cargo run -p native-theme-iced --example showcase --release -- \
-                --icon-set $icon_set --variant $variant --tab icons \
-                --screenshot "docs/assets/iced-${{ matrix.os_name }}-${icon_set}-${variant}.png"
-            done
+          themes=("dracula:dark" "nord:light" "catppuccin-mocha:dark" "macos-sonoma:light")
+          for entry in "${themes[@]}"; do
+            theme="${entry%%:*}"
+            variant="${entry##*:}"
+            echo "Capturing: $theme $variant"
+            cargo run -p native-theme-iced --example showcase --release -- \
+              --theme $theme --variant $variant --tab buttons \
+              --screenshot "docs/assets/iced-${{ matrix.os_name }}-${theme}-${variant}.png"
           done
 
       - name: Upload screenshots
