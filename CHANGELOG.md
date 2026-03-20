@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-03-20
+
+### Added
+
+- `CONTRIBUTING.md` with development workflow and testing guide
+- `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1)
+- `SECURITY.md` with responsible disclosure policy
+- GitHub issue templates (bug report, feature request) using YAML forms
+- Pull request template with CI checklist
+- Animated icon sections in gpui and iced connector READMEs
+- Animated icon showcase demonstrations in both gpui and iced examples
+- CLI argument support (`--tab`, `--preset`) for showcase examples
+- GIF generation script for bundled spinner animations
+- Screenshot automation scripts for showcase examples
+- `#![warn(missing_docs)]` crate-level lint attribute in all workspace crates
+- Doc comments for all public API items in native-theme core crate
+
+### Changed
+
+- Root README updated with animated icons section
+- Version references updated from 0.3.x to 0.4.x across all documentation
+
+### Fixed
+
+- Broken intra-doc link for `iced::time::every()` in native-theme-iced
+- Missing documentation warnings that caused CI failures under `-Dwarnings`
+- Formatting violations in gpui showcase example
+
 ## [0.4.0] - 2026-03-18
 
 ### Added
@@ -196,6 +224,7 @@ let busy = load_icon(IconRole::StatusBusy, "material");
 - `impl_merge!` macro for recursive Option-based theme merging
 - Deep merge support across all theme types
 
+[0.4.1]: https://github.com/tiborgats/native-theme/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/tiborgats/native-theme/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/tiborgats/native-theme/compare/v0.3.2...v0.3.3
 [0.3.2]: https://github.com/tiborgats/native-theme/compare/v0.3.1...v0.3.2

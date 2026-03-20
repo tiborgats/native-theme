@@ -23,7 +23,7 @@ and Windows.
 
 ```toml
 [dependencies]
-native-theme = "0.4.0"
+native-theme = "0.4.1"
 ```
 
 Load a bundled preset:
