@@ -130,10 +130,11 @@ Plans:
 
 **Goal:** Add CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, and issue/PR templates
 **Depends on:** Phase 33
-**Plans:** 0 plans
+**Plans:** 2 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 37 to break down)
+- [ ] 37-01-PLAN.md — Create CONTRIBUTING.md, CODE_OF_CONDUCT.md, and SECURITY.md
+- [ ] 37-02-PLAN.md — Create issue templates (YAML forms), config, and PR template
 
 ### Phase 38: CI, Smoke Tests, and Release
 
