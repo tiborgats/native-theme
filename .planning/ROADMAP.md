@@ -87,7 +87,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] Phase 37: Community Files and GitHub Templates (completed 2026-03-20)
 - [x] Phase 38: CI, Smoke Tests, and Release (completed 2026-03-20)
 - [x] Phase 39: Code Quality and Housekeeping (completed 2026-03-20)
-- [ ] Phase 40: Iced Theme Preset Screenshots and CI
+- [x] Phase 40: Iced Theme Preset Screenshots and CI (completed 2026-03-20)
 - [ ] Phase 41: gpui Theme Preset Screenshots
 - [ ] Phase 42: Theme-Switching GIF and Core README Images
 
@@ -181,7 +181,7 @@ Plans:
 
 **Goal:** Redo iced showcase screenshots using real theme presets (Dracula dark, Nord light, Catppuccin Mocha, macOS Sonoma) instead of default theme, capture across all 3 OSes via CI, and update READMEs
 **Depends on:** Phase 39
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 - [ ] 40-01-PLAN.md — Update CI workflow and local script for theme preset captures
