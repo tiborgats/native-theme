@@ -874,42 +874,42 @@ impl Showcase {
         let set_name = &self.icon_set_name;
         // gpui-builtin is not a native-theme icon set; loading_indicator would
         // fall back to the system set, showing the wrong spinner.
-        if set_name != "gpui-builtin" {
-            if let Some(anim) = loading_indicator(set_name) {
-                match &anim {
-                    AnimatedIcon::Frames {
-                        frame_duration_ms, ..
-                    } => {
-                        if let Some(sources) = animated_frames_to_image_sources(&anim) {
-                            if let Some(first) = anim.first_frame() {
-                                self.animated_static_sources.push((
-                                    set_name.to_string(),
-                                    to_image_source(first),
-                                    "Frames",
-                                ));
-                            }
-                            self.animated_frame_durations.push(*frame_duration_ms);
-                            self.animated_frame_sources
-                                .push((set_name.to_string(), sources));
-                        }
-                    }
-                    AnimatedIcon::Transform { icon, animation } => {
-                        let source = to_image_source(icon);
-                        self.animated_static_sources.push((
-                            set_name.to_string(),
-                            source.clone(),
-                            "Transform",
-                        ));
-                        if let TransformAnimation::Spin { duration_ms } = animation {
-                            self.animated_spin_sources.push((
+        if set_name != "gpui-builtin"
+            && let Some(anim) = loading_indicator(set_name)
+        {
+            match &anim {
+                AnimatedIcon::Frames {
+                    frame_duration_ms, ..
+                } => {
+                    if let Some(sources) = animated_frames_to_image_sources(&anim) {
+                        if let Some(first) = anim.first_frame() {
+                            self.animated_static_sources.push((
                                 set_name.to_string(),
-                                source,
-                                *duration_ms,
+                                to_image_source(first),
+                                "Frames",
                             ));
                         }
+                        self.animated_frame_durations.push(*frame_duration_ms);
+                        self.animated_frame_sources
+                            .push((set_name.to_string(), sources));
                     }
-                    _ => {}
                 }
+                AnimatedIcon::Transform { icon, animation } => {
+                    let source = to_image_source(icon);
+                    self.animated_static_sources.push((
+                        set_name.to_string(),
+                        source.clone(),
+                        "Transform",
+                    ));
+                    if let TransformAnimation::Spin { duration_ms } = animation {
+                        self.animated_spin_sources.push((
+                            set_name.to_string(),
+                            source,
+                            *duration_ms,
+                        ));
+                    }
+                }
+                _ => {}
             }
         }
 
@@ -5171,10 +5171,10 @@ fn main() {
                         }
 
                         // Override tab if --tab was specified
-                        if let Some(ref tab_name) = cli_args.tab {
-                            if let Some(idx) = CliArgs::tab_index(tab_name) {
-                                s.active_tab = idx;
-                            }
+                        if let Some(ref tab_name) = cli_args.tab
+                            && let Some(idx) = CliArgs::tab_index(tab_name)
+                        {
+                            s.active_tab = idx;
                         }
 
                         // Override icon set if --icon-set was specified
