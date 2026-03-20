@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
-"""Generate looping GIF animations from bundled SVG spinner frames.
+"""Generate looping GIF animation from the bundled Lucide spinner.
 
-Produces GIF files in docs/assets/ for all 3 bundled spinner types:
-  - material   (12 frames, 83ms/frame, ~1s cycle)
-  - adwaita    (20 frames, 60ms/frame, 1.2s cycle)
-  - lucide     (24 generated rotation frames, 42ms/frame, ~1s cycle)
-
-Each GIF shows the spinner centered inside a styled card background
-with a label, simulating the showcase context.
+Produces a GIF file in docs/assets/ showing the Lucide loader icon
+spinning inside a styled card background.
 
 Requirements:
   - ImageMagick 7 (magick command) for SVG rasterization
@@ -25,23 +20,10 @@ from PIL import Image, ImageDraw, ImageFont
 
 SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
-ANIMATIONS_DIR = os.path.join(PROJECT_ROOT, "native-theme", "animations")
 ICONS_DIR = os.path.join(PROJECT_ROOT, "native-theme", "icons")
 
 # Spinner configuration
 SPINNERS = {
-    "material": {
-        "source": "frames",
-        "dir": os.path.join(ANIMATIONS_DIR, "material"),
-        "frame_count": 12,
-        "duration_ms": 83,
-    },
-    "adwaita": {
-        "source": "frames",
-        "dir": os.path.join(ANIMATIONS_DIR, "adwaita"),
-        "frame_count": 20,
-        "duration_ms": 60,
-    },
     "lucide": {
         "source": "rotation",
         "svg": os.path.join(ICONS_DIR, "lucide", "loader.svg"),
@@ -61,8 +43,6 @@ LABEL_COLOR = (100, 100, 100)  # #646464
 
 # Display names for spinner labels
 SPINNER_LABELS = {
-    "material": "Material",
-    "adwaita": "Adwaita",
     "lucide": "Lucide",
 }
 
@@ -100,29 +80,6 @@ def rasterize_svg(svg_path, output_png, size, tmpdir=None):
     result = subprocess.run(cmd, capture_output=True, text=True)
     if result.returncode != 0:
         print(f"  WARNING: magick failed for {svg_path}: {result.stderr.strip()}")
-        return False
-    return True
-
-
-def rasterize_svg_content(svg_content, output_png, size, tmpdir):
-    """Render SVG content string to a PNG using ImageMagick."""
-    svg_content = replace_current_color(svg_content)
-
-    tmp_svg = os.path.join(tmpdir, "tmp_render.svg")
-    with open(tmp_svg, "w") as f:
-        f.write(svg_content)
-
-    cmd = [
-        "magick",
-        "-background", "none",
-        "-density", "192",
-        tmp_svg,
-        "-resize", f"{size}x{size}",
-        output_png,
-    ]
-    result = subprocess.run(cmd, capture_output=True, text=True)
-    if result.returncode != 0:
-        print(f"  WARNING: magick failed: {result.stderr.strip()}")
         return False
     return True
 
@@ -227,20 +184,7 @@ def generate_spinner_gif(spinner_name, config, output_dir, tmpdir):
     # Get frame PNG paths
     frame_pngs = []
 
-    if config["source"] == "frames":
-        # Render existing SVG frame files to PNG
-        for i in range(config["frame_count"]):
-            svg_path = os.path.join(config["dir"], f"frame_{i:02d}.svg")
-            if not os.path.exists(svg_path):
-                print(f"    ERROR: Missing frame {svg_path}")
-                return False
-
-            png_path = os.path.join(tmpdir, f"{spinner_name}_frame_{i:02d}.png")
-            if not rasterize_svg(svg_path, png_path, SPINNER_RENDER_SIZE, tmpdir):
-                return False
-            frame_pngs.append(png_path)
-
-    elif config["source"] == "rotation":
+    if config["source"] == "rotation":
         # Generate rotated frames for lucide spinner
         svg_frames = generate_lucide_rotated_frames(
             config["svg"], config["frame_count"], tmpdir
@@ -313,7 +257,7 @@ def main():
     fail_count = 0
 
     with tempfile.TemporaryDirectory(prefix="spinner_gifs_") as tmpdir:
-        for name in ["material", "adwaita", "lucide"]:
+        for name in ["lucide"]:
             config = SPINNERS[name]
             if generate_spinner_gif(name, config, output_dir, tmpdir):
                 success_count += 1
@@ -329,7 +273,7 @@ def main():
     # List all generated files
     print()
     print("Generated files:")
-    for name in ["material", "adwaita", "lucide"]:
+    for name in ["lucide"]:
         path = os.path.join(output_dir, f"spinner-{name}.gif")
         if os.path.exists(path):
             size = os.path.getsize(path)
