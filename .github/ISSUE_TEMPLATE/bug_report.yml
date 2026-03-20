@@ -1,0 +1,78 @@
+name: Bug Report
+description: Report a bug or unexpected behavior
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill in the sections below so we can reproduce and fix the issue.
+
+  - type: dropdown
+    id: crate
+    attributes:
+      label: Crate
+      description: Which crate is affected?
+      options:
+        - native-theme
+        - native-theme-build
+        - native-theme-gpui
+        - native-theme-iced
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: "Crate version (run: `cargo tree | grep native-theme`)"
+      placeholder: "0.4.1"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating System
+      options:
+        - Linux
+        - macOS
+        - Windows
+        - Other
+    validations:
+      required: true
+
+  - type: input
+    id: rust-version
+    attributes:
+      label: Rust Version
+      description: "Output of `rustc --version`"
+      placeholder: "rustc 1.94.0 (date hash)"
+    validations:
+      required: false
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: What happened? What did you expect?
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduction
+    attributes:
+      label: Steps to Reproduce
+      description: Minimal code or steps to reproduce the issue
+      render: rust
+    validations:
+      required: false
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Relevant Log Output
+      description: Paste any error messages or logs
+      render: shell
+    validations:
+      required: false
