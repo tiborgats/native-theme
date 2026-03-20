@@ -12,6 +12,16 @@ A toolkit-agnostic theme data model with 36 semantic color roles, 17 bundled
 TOML presets (light + dark), and optional OS theme readers for Linux, macOS,
 and Windows.
 
+<p align="center">
+  <img src="docs/assets/iced-linux-material-light.png" width="49%" alt="Material Light theme">
+  <img src="docs/assets/iced-linux-material-dark.png" width="49%" alt="Material Dark theme">
+</p>
+<p align="center">
+  <img src="docs/assets/iced-linux-lucide-light.png" width="49%" alt="Lucide Light theme">
+  <img src="docs/assets/iced-linux-lucide-dark.png" width="49%" alt="Lucide Dark theme">
+</p>
+<p align="center"><em>iced showcase — Material and Lucide icon sets, light and dark variants</em></p>
+
 | Crate | Description |
 |-------|-------------|
 | [`native-theme`](native-theme/) | Core theme model, presets, and platform readers |
@@ -120,6 +130,12 @@ geometry, and spacing fields are public `Option<T>` values. See the
 [API docs](https://docs.rs/native-theme) for details.
 
 ## Animated Icons
+
+<p align="center">
+  <img src="docs/assets/spinner-material.gif" alt="Material spinner" height="80">
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="docs/assets/spinner-lucide.gif" alt="Lucide spinner" height="80">
+</p>
 
 Platform-native loading spinners with accessibility support:
 

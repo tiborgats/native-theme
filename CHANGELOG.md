@@ -18,7 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Animated icon showcase demonstrations in both gpui and iced examples
 - CLI argument support (`--tab`, `--preset`) for showcase examples
 - GIF generation script for bundled spinner animations
-- Screenshot automation scripts for showcase examples
+- Screenshot automation (`--screenshot` flag) for iced showcase example
+- CI workflow for automated screenshot generation on Linux, macOS, and Windows
+- Showcase screenshots embedded in root, iced, and gpui READMEs
+- Spinner GIFs embedded in root README
 - `#![warn(missing_docs)]` crate-level lint attribute in all workspace crates
 - Doc comments for all public API items in native-theme core crate
 

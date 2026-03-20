@@ -753,13 +753,7 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
         }
         Message::ScreenshotCaptured(bytes, width, height) => {
             if let Some(ref path) = state.screenshot_path {
-                let _ = image::save_buffer(
-                    path,
-                    &bytes,
-                    width,
-                    height,
-                    image::ColorType::Rgba8,
-                );
+                let _ = image::save_buffer(path, &bytes, width, height, image::ColorType::Rgba8);
                 eprintln!("Screenshot saved to {path}");
             }
             return iced::exit();

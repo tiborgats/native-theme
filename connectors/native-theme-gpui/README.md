@@ -132,12 +132,18 @@ call it on every frame tick.
 Run the showcase widget gallery to explore all 17 presets interactively:
 
 ```sh
-cargo run --example showcase
+cargo run -p native-theme-gpui --example showcase
 ```
 
 The showcase displays all gpui-component widgets (buttons, inputs, tables,
 charts, overlays, etc.) themed with native-theme presets, with live theme
 switching and a color map inspector.
+
+Generate screenshots (requires a display server):
+
+```sh
+bash scripts/generate_screenshots.sh
+```
 
 ## License
 

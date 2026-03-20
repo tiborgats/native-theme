@@ -1,0 +1,74 @@
+name: Screenshots
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  screenshots:
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: ubuntu-latest
+            os_name: linux
+          - os: macos-latest
+            os_name: macos
+          - os: windows-latest
+            os_name: windows
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Install system dependencies (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y xvfb libxkbcommon-dev libvulkan-dev mesa-vulkan-drivers
+
+      - name: Build showcase (release)
+        run: cargo build -p native-theme-iced --example showcase --release
+
+      - name: Create output directory
+        run: mkdir -p docs/assets
+        shell: bash
+
+      - name: Capture screenshots (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          for icon_set in material lucide; do
+            for variant in light dark; do
+              echo "Capturing: $icon_set $variant"
+              xvfb-run -a --server-args="-screen 0 1920x1080x24" \
+                cargo run -p native-theme-iced --example showcase --release -- \
+                  --icon-set $icon_set --variant $variant --tab icons \
+                  --screenshot "docs/assets/iced-${{ matrix.os_name }}-${icon_set}-${variant}.png"
+            done
+          done
+
+      - name: Capture screenshots (macOS/Windows)
+        if: runner.os != 'Linux'
+        shell: bash
+        run: |
+          for icon_set in material lucide; do
+            for variant in light dark; do
+              echo "Capturing: $icon_set $variant"
+              cargo run -p native-theme-iced --example showcase --release -- \
+                --icon-set $icon_set --variant $variant --tab icons \
+                --screenshot "docs/assets/iced-${{ matrix.os_name }}-${icon_set}-${variant}.png"
+            done
+          done
+
+      - name: Upload screenshots
+        uses: actions/upload-artifact@v4
+        with:
+          name: screenshots-${{ matrix.os_name }}
+          path: docs/assets/iced-*.png
