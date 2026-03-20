@@ -581,7 +581,8 @@ pub fn load_system_icon_by_name(name: &str, set: IconSet) -> Option<IconData> {
 ///
 /// # Dispatch
 ///
-/// - `"lucide"` -- single loader icon with continuous spin transform (1000ms)
+/// - `"material"` -- `progress_activity.svg` with continuous spin transform (1000ms)
+/// - `"lucide"` -- `loader.svg` with continuous spin transform (1000ms)
 /// - `"freedesktop"` -- loads `process-working` sprite sheet from active icon theme
 /// - Unknown set -- `None`
 ///
@@ -599,6 +600,9 @@ pub fn loading_indicator(icon_set: &str) -> Option<AnimatedIcon> {
     match set {
         #[cfg(all(target_os = "linux", feature = "system-icons"))]
         IconSet::Freedesktop => freedesktop::load_freedesktop_spinner(),
+
+        #[cfg(feature = "material-icons")]
+        IconSet::Material => Some(spinners::material_spinner()),
 
         #[cfg(feature = "lucide-icons")]
         IconSet::Lucide => Some(spinners::lucide_spinner()),

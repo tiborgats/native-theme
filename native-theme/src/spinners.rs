@@ -1,10 +1,19 @@
 // Feature-gated bundled spinner construction.
 //
-// Only genuinely sourced assets: real icon files from open-source icon sets,
-// or runtime-loaded platform sprite sheets. No fabricated approximations.
+// Uses genuine icon files from their respective open-source icon sets,
+// the same SVGs used for static icons. No fabricated approximations.
 
 use crate::model::animated::{AnimatedIcon, TransformAnimation};
 use crate::model::icons::IconData;
+
+/// Material Design progress_activity icon with continuous spin transform.
+#[cfg(feature = "material-icons")]
+pub(crate) fn material_spinner() -> AnimatedIcon {
+    AnimatedIcon::Transform {
+        icon: IconData::Svg(include_bytes!("../icons/material/progress_activity.svg").to_vec()),
+        animation: TransformAnimation::Spin { duration_ms: 1000 },
+    }
+}
 
 /// Lucide loader icon with continuous spin transform.
 #[cfg(feature = "lucide-icons")]
