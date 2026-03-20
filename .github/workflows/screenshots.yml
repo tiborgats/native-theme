@@ -32,7 +32,7 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
-          sudo apt-get install -y xvfb libxkbcommon-dev libvulkan-dev mesa-vulkan-drivers
+          sudo apt-get install -y xvfb libxkbcommon-dev libxkbcommon-x11-dev libvulkan-dev mesa-vulkan-drivers
 
       - name: Build showcase (release)
         run: cargo build -p native-theme-iced --example showcase --release
