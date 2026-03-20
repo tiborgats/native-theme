@@ -165,7 +165,7 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 | 22-26 | v0.3.3 | 14/14 | Complete | 2026-03-17 |
 | 27-32 | v0.4.0 | 8/8 | Complete | 2026-03-18 |
 | 33-38 | v0.4.1 | 13/13 | Complete | 2026-03-20 |
-| 39-42 | v0.4.1 | 4/? | In Progress | — |
+| 39-42 | v0.4.1 | 6/? | In Progress | — |
 
 ### Phase 39: Code Quality and Housekeeping
 
@@ -184,8 +184,8 @@ Plans:
 **Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 40-01-PLAN.md — Update CI workflow and local script for theme preset captures
-- [ ] 40-02-PLAN.md — Remove old screenshots and update both READMEs for theme presets
+- [x] 40-01-PLAN.md — Update CI workflow and local script for theme preset captures (completed 2026-03-20)
+- [x] 40-02-PLAN.md — Remove old screenshots and update both READMEs for theme presets (completed 2026-03-20)
 
 ### Phase 41: gpui Theme Preset Screenshots
 

@@ -24,13 +24,13 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 
 ## Current Position
 
-Status: Phase 39 complete, phases 40-42 remaining
-Last activity: 2026-03-20 — Completed phase 39 (deny(unsafe_code) lint, reduced motion tests, doc archival)
+Status: Phase 40 complete, phases 41-42 remaining
+Last activity: 2026-03-20 — Completed phase 40 (iced theme preset screenshots CI, README updates)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 87 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 14 v0.3.3 + 8 v0.4.0 + 17 v0.4.1)
+- Total plans completed: 89 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 14 v0.3.3 + 8 v0.4.0 + 19 v0.4.1)
 - Average duration: ~4.1min (v0.2), 3.7min (v0.3)
 - Total execution time: 70min (v0.2), 37min (v0.3), 15min (v0.3.2), 35min (v0.3.3), 35min (v0.4.0)
 
