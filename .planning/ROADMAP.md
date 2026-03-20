@@ -140,10 +140,12 @@ Plans:
 
 **Goal:** Verify CI coverage for animated icons, run pre-release smoke tests, tag v0.4.1, and publish to crates.io
 **Depends on:** Phase 34, 35, 36, 37
-**Plans:** 0 plans
+**Plans:** 1/3 plans complete
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 38 to break down)
+- [x] 38-01-PLAN.md — Fix CI blockers (missing docs, formatting, broken doc link) (completed 2026-03-20)
+- [ ] 38-02-PLAN.md — Version bump to 0.4.1, CHANGELOG, and pre-release smoke tests
+- [ ] 38-03-PLAN.md — Push, verify CI, tag v0.4.1, publish to crates.io
 
 ## Phase Details
 
@@ -158,4 +160,4 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 | 16-21 | v0.3 | 10/10 | Complete | 2026-03-09 |
 | 22-26 | v0.3.3 | 14/14 | Complete | 2026-03-17 |
 | 27-32 | v0.4.0 | 8/8 | Complete | 2026-03-18 |
-| 33-38 | v0.4.1 | 7/? | In Progress | — |
+| 33-38 | v0.4.1 | 8/13 | In Progress | — |
