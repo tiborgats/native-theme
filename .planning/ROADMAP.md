@@ -140,7 +140,7 @@ Plans:
 
 **Goal:** Verify CI coverage for animated icons, run pre-release smoke tests, tag v0.4.1, and publish to crates.io
 **Depends on:** Phase 34, 35, 36, 37
-**Plans:** 1/3 plans complete
+**Plans:** 2/3 plans executed
 
 Plans:
 - [x] 38-01-PLAN.md — Fix CI blockers (missing docs, formatting, broken doc link) (completed 2026-03-20)
