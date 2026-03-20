@@ -143,9 +143,9 @@ if let Some(anim) = loading_indicator("material") {
 }
 ```
 
-Bundled spinner styles: Material (arc), Lucide (spin), macOS (spoke),
-Windows (arc), Adwaita (arc). On Linux, freedesktop `process-working`
-sprite sheets are loaded at runtime from the active icon theme.
+Bundled spinner styles: Material (arc), Lucide (spin), Adwaita (arc).
+On Linux, freedesktop `process-working` sprite sheets are loaded at
+runtime from the active icon theme.
 
 See the [gpui](connectors/native-theme-gpui/) and
 [iced](connectors/native-theme-iced/) connector READMEs for

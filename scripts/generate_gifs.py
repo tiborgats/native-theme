@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 """Generate looping GIF animations from bundled SVG spinner frames.
 
-Produces GIF files in docs/assets/ for all 5 bundled spinner types:
+Produces GIF files in docs/assets/ for all 3 bundled spinner types:
   - material   (12 frames, 83ms/frame, ~1s cycle)
   - adwaita    (20 frames, 60ms/frame, 1.2s cycle)
   - lucide     (24 generated rotation frames, 42ms/frame, ~1s cycle)
-  - macos      (12 frames, 83ms/frame, ~1s cycle)
-  - windows    (60 frames, 33ms/frame, ~2s cycle)
 
 Each GIF shows the spinner centered inside a styled card background
 with a label, simulating the showcase context.
@@ -50,18 +48,6 @@ SPINNERS = {
         "frame_count": 24,
         "duration_ms": 42,
     },
-    "macos": {
-        "source": "frames",
-        "dir": os.path.join(ANIMATIONS_DIR, "macos"),
-        "frame_count": 12,
-        "duration_ms": 83,
-    },
-    "windows": {
-        "source": "frames",
-        "dir": os.path.join(ANIMATIONS_DIR, "windows"),
-        "frame_count": 60,
-        "duration_ms": 33,
-    },
 }
 
 # Card styling
@@ -78,8 +64,6 @@ SPINNER_LABELS = {
     "material": "Material",
     "adwaita": "Adwaita",
     "lucide": "Lucide",
-    "macos": "macOS",
-    "windows": "Windows",
 }
 
 
@@ -329,7 +313,7 @@ def main():
     fail_count = 0
 
     with tempfile.TemporaryDirectory(prefix="spinner_gifs_") as tmpdir:
-        for name in ["material", "adwaita", "lucide", "macos", "windows"]:
+        for name in ["material", "adwaita", "lucide"]:
             config = SPINNERS[name]
             if generate_spinner_gif(name, config, output_dir, tmpdir):
                 success_count += 1
@@ -345,7 +329,7 @@ def main():
     # List all generated files
     print()
     print("Generated files:")
-    for name in ["material", "adwaita", "lucide", "macos", "windows"]:
+    for name in ["material", "adwaita", "lucide"]:
         path = os.path.join(output_dir, f"spinner-{name}.gif")
         if os.path.exists(path):
             size = os.path.getsize(path)

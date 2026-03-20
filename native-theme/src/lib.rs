@@ -605,12 +605,6 @@ pub fn loading_indicator(icon_set: &str) -> Option<AnimatedIcon> {
             freedesktop::load_freedesktop_spinner().or_else(|| Some(spinners::adwaita_spinner()))
         }
 
-        #[cfg(all(target_os = "macos", feature = "system-icons"))]
-        IconSet::SfSymbols => Some(spinners::macos_spinner()),
-
-        #[cfg(all(target_os = "windows", feature = "system-icons"))]
-        IconSet::SegoeIcons => Some(spinners::windows_spinner()),
-
         #[cfg(feature = "material-icons")]
         IconSet::Material => Some(spinners::material_spinner()),
 
@@ -1325,28 +1319,6 @@ mod loading_indicator_tests {
 
     #[test]
     #[cfg(feature = "system-icons")]
-    fn macos_spinner_frame_count() {
-        let anim = spinners::macos_spinner();
-        if let AnimatedIcon::Frames { frames, .. } = &anim {
-            assert_eq!(frames.len(), 12);
-        } else {
-            panic!("macos_spinner should be Frames");
-        }
-    }
-
-    #[test]
-    #[cfg(feature = "system-icons")]
-    fn windows_spinner_frame_count() {
-        let anim = spinners::windows_spinner();
-        if let AnimatedIcon::Frames { frames, .. } = &anim {
-            assert_eq!(frames.len(), 60);
-        } else {
-            panic!("windows_spinner should be Frames");
-        }
-    }
-
-    #[test]
-    #[cfg(feature = "system-icons")]
     fn adwaita_spinner_frame_count() {
         let anim = spinners::adwaita_spinner();
         if let AnimatedIcon::Frames {
@@ -1415,20 +1387,6 @@ mod spinner_rasterize_tests {
         } else {
             panic!("lucide spinner should be Transform");
         }
-    }
-
-    #[test]
-    #[cfg(feature = "system-icons")]
-    fn macos_spinner_frames_rasterize() {
-        let anim = spinners::macos_spinner();
-        assert_frames_rasterize(&anim, "macos");
-    }
-
-    #[test]
-    #[cfg(feature = "system-icons")]
-    fn windows_spinner_frames_rasterize() {
-        let anim = spinners::windows_spinner();
-        assert_frames_rasterize(&anim, "windows");
     }
 
     #[test]

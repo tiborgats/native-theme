@@ -15,7 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `AnimatedIcon::first_frame()` method returning a static fallback frame
 - `loading_indicator(icon_set)` function dispatching to platform-appropriate spinner animations
 - `prefers_reduced_motion()` function querying OS accessibility settings (Linux gsettings, macOS NSWorkspace, Windows UISettings)
-- Bundled spinner animations for Material (12 arc frames), Lucide (spin transform), macOS (12 spoke frames), Windows (60 arc frames), and GNOME Adwaita (20 arc frames) styles
+- Bundled spinner animations for Material (12 arc frames), Lucide (spin transform), and GNOME Adwaita (20 arc frames) styles
 - Freedesktop sprite sheet parser for runtime `process-working.svg` animation loading
 - gpui connector: `animated_frames_to_image_sources()` and `with_spin_animation()` for animation playback
 - iced connector: `animated_frames_to_svg_handles()` and `spin_rotation_radians()` for animation playback
