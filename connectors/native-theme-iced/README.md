@@ -127,27 +127,27 @@ cargo run -p native-theme-iced --example showcase
 ```
 
 <table>
-<tr><th></th><th>Material Light</th><th>Material Dark</th><th>Lucide Light</th><th>Lucide Dark</th></tr>
+<tr><th></th><th>Dracula Dark</th><th>Nord Light</th><th>Catppuccin Mocha</th><th>macOS Sonoma</th></tr>
 <tr>
 <td><strong>Linux</strong></td>
-<td><img src="../../docs/assets/iced-linux-material-light.png" width="200" alt="Linux Material Light"></td>
-<td><img src="../../docs/assets/iced-linux-material-dark.png" width="200" alt="Linux Material Dark"></td>
-<td><img src="../../docs/assets/iced-linux-lucide-light.png" width="200" alt="Linux Lucide Light"></td>
-<td><img src="../../docs/assets/iced-linux-lucide-dark.png" width="200" alt="Linux Lucide Dark"></td>
+<td><img src="../../docs/assets/iced-linux-dracula-dark.png" width="200" alt="Linux Dracula Dark"></td>
+<td><img src="../../docs/assets/iced-linux-nord-light.png" width="200" alt="Linux Nord Light"></td>
+<td><img src="../../docs/assets/iced-linux-catppuccin-mocha-dark.png" width="200" alt="Linux Catppuccin Mocha"></td>
+<td><img src="../../docs/assets/iced-linux-macos-sonoma-light.png" width="200" alt="Linux macOS Sonoma"></td>
 </tr>
 <tr>
 <td><strong>macOS</strong></td>
-<td><img src="../../docs/assets/iced-macos-material-light.png" width="200" alt="macOS Material Light"></td>
-<td><img src="../../docs/assets/iced-macos-material-dark.png" width="200" alt="macOS Material Dark"></td>
-<td><img src="../../docs/assets/iced-macos-lucide-light.png" width="200" alt="macOS Lucide Light"></td>
-<td><img src="../../docs/assets/iced-macos-lucide-dark.png" width="200" alt="macOS Lucide Dark"></td>
+<td><img src="../../docs/assets/iced-macos-dracula-dark.png" width="200" alt="macOS Dracula Dark"></td>
+<td><img src="../../docs/assets/iced-macos-nord-light.png" width="200" alt="macOS Nord Light"></td>
+<td><img src="../../docs/assets/iced-macos-catppuccin-mocha-dark.png" width="200" alt="macOS Catppuccin Mocha"></td>
+<td><img src="../../docs/assets/iced-macos-macos-sonoma-light.png" width="200" alt="macOS macOS Sonoma"></td>
 </tr>
 <tr>
 <td><strong>Windows</strong></td>
-<td><img src="../../docs/assets/iced-windows-material-light.png" width="200" alt="Windows Material Light"></td>
-<td><img src="../../docs/assets/iced-windows-material-dark.png" width="200" alt="Windows Material Dark"></td>
-<td><img src="../../docs/assets/iced-windows-lucide-light.png" width="200" alt="Windows Lucide Light"></td>
-<td><img src="../../docs/assets/iced-windows-lucide-dark.png" width="200" alt="Windows Lucide Dark"></td>
+<td><img src="../../docs/assets/iced-windows-dracula-dark.png" width="200" alt="Windows Dracula Dark"></td>
+<td><img src="../../docs/assets/iced-windows-nord-light.png" width="200" alt="Windows Nord Light"></td>
+<td><img src="../../docs/assets/iced-windows-catppuccin-mocha-dark.png" width="200" alt="Windows Catppuccin Mocha"></td>
+<td><img src="../../docs/assets/iced-windows-macos-sonoma-light.png" width="200" alt="Windows macOS Sonoma"></td>
 </tr>
 </table>
 
@@ -159,8 +159,8 @@ Generate screenshots automatically:
 
 ```sh
 cargo run -p native-theme-iced --example showcase --release -- \
-  --icon-set material --variant dark --tab icons \
-  --screenshot docs/assets/iced-linux-material-dark.png
+  --theme dracula --variant dark --tab buttons \
+  --screenshot docs/assets/iced-linux-dracula-dark.png
 ```
 
 ## License
