@@ -16,12 +16,14 @@ use iced::widget::{
 };
 use iced::{Color, Element, Fill, Length, Padding, Theme};
 
-use native_theme::{
-    AnimatedIcon, IconData, IconRole, IconSet, NativeTheme, TransformAnimation,
-    loading_indicator, prefers_reduced_motion,
-};
-use native_theme_iced::icons::{animated_frames_to_svg_handles, spin_rotation_radians, to_svg_handle};
 use iced::Subscription;
+use native_theme::{
+    AnimatedIcon, IconData, IconRole, IconSet, NativeTheme, TransformAnimation, loading_indicator,
+    prefers_reduced_motion,
+};
+use native_theme_iced::icons::{
+    animated_frames_to_svg_handles, spin_rotation_radians, to_svg_handle,
+};
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 
@@ -387,14 +389,16 @@ fn load_all_icons(icon_set_name: &str) -> Vec<LoadedIcon> {
 ///
 /// Returns the full set of animation state fields that go into `State`.
 #[allow(clippy::type_complexity)]
-fn build_animation_caches(icon_set: &str) -> (
+fn build_animation_caches(
+    icon_set: &str,
+) -> (
     Vec<(String, Vec<iced_core::svg::Handle>, u32)>, // animated_frames
-    Vec<usize>,                                       // animated_frame_indices
-    Vec<Duration>,                                    // animated_frame_elapsed
-    Vec<(String, iced_core::svg::Handle, u32)>,       // animated_spins
-    Instant,                                          // animation_start
-    bool,                                             // reduced_motion
-    Vec<(String, iced_core::svg::Handle)>,            // animated_static
+    Vec<usize>,                                      // animated_frame_indices
+    Vec<Duration>,                                   // animated_frame_elapsed
+    Vec<(String, iced_core::svg::Handle, u32)>,      // animated_spins
+    Instant,                                         // animation_start
+    bool,                                            // reduced_motion
+    Vec<(String, iced_core::svg::Handle)>,           // animated_static
 ) {
     let mut animated_frames = Vec::new();
     let mut animated_spins = Vec::new();
@@ -404,10 +408,10 @@ fn build_animation_caches(icon_set: &str) -> (
     {
         if let Some(anim) = loading_indicator(&set_name) {
             // Cache static first-frame for reduced motion
-            if let Some(frame_data) = anim.first_frame() {
-                if let Some(handle) = to_svg_handle(frame_data) {
-                    animated_static.push((set_name.clone(), handle));
-                }
+            if let Some(frame_data) = anim.first_frame()
+                && let Some(handle) = to_svg_handle(frame_data)
+            {
+                animated_static.push((set_name.clone(), handle));
             }
 
             match &anim {
@@ -606,10 +610,10 @@ impl Default for State {
             }
 
             // Override tab
-            if let Some(ref tab_name) = cli.tab {
-                if let Some(tab) = CliArgs::parse_tab(tab_name) {
-                    state.active_tab = tab;
-                }
+            if let Some(ref tab_name) = cli.tab
+                && let Some(tab) = CliArgs::parse_tab(tab_name)
+            {
+                state.active_tab = tab;
             }
 
             // Override icon set
@@ -746,7 +750,8 @@ fn update(state: &mut State, message: Message) {
             state.loaded_icons = load_all_icons(choice.icon_set_name());
 
             // Rebuild animation caches when icon set changes
-            let (af, afi, afe, asp, astart, rm, ast) = build_animation_caches(choice.icon_set_name());
+            let (af, afi, afe, asp, astart, rm, ast) =
+                build_animation_caches(choice.icon_set_name());
             state.icon_set_choice = choice;
             state.animated_frames = af;
             state.animated_frame_indices = afi;
@@ -1979,9 +1984,14 @@ fn view_icons(state: &State) -> Element<'_, Message> {
     }
 
     let animated_section = view_animated_icons(state, fg_color);
-    let mut content =
-        column![header, icon_set_info, rule::horizontal(1), animated_section, rule::horizontal(1)]
-            .spacing(16);
+    let mut content = column![
+        header,
+        icon_set_info,
+        rule::horizontal(1),
+        animated_section,
+        rule::horizontal(1)
+    ]
+    .spacing(16);
     for r in grid_rows {
         content = content.push(r);
     }
@@ -2006,12 +2016,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
                     color: Some(fg_color),
                 });
             let label = text(format!("{} - Static (reduced motion)", set_name)).size(11);
-            spinners.push(
-                column![icon, label]
-                    .spacing(4)
-                    .align_x(iced::Center)
-                    .into(),
-            );
+            spinners.push(column![icon, label].spacing(4).align_x(iced::Center).into());
         }
     } else {
         // Frame-based animations
@@ -2031,12 +2036,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
                 frame_duration_ms,
             ))
             .size(11);
-            spinners.push(
-                column![icon, label]
-                    .spacing(4)
-                    .align_x(iced::Center)
-                    .into(),
-            );
+            spinners.push(column![icon, label].spacing(4).align_x(iced::Center).into());
         }
 
         // Spin-based animations
@@ -2050,12 +2050,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
                     color: Some(fg_color),
                 });
             let label = text(format!("{} - Spin ({}ms)", set_name, duration_ms)).size(11);
-            spinners.push(
-                column![icon, label]
-                    .spacing(4)
-                    .align_x(iced::Center)
-                    .into(),
-            );
+            spinners.push(column![icon, label].spacing(4).align_x(iced::Center).into());
         }
     }
 
@@ -2066,7 +2061,8 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
     }
 
     if spinners.is_empty() {
-        content = content.push(text("No animated icons available for this configuration.").size(11));
+        content =
+            content.push(text("No animated icons available for this configuration.").size(11));
     } else {
         content = content.push(row(spinners).spacing(24));
     }

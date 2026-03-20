@@ -15,7 +15,6 @@ use gpui::{
     ImageSource, IntoElement, Keystroke, Menu, MenuItem, ParentElement, Render, SharedString,
     Styled, Task, Timer, Window, WindowBounds, WindowOptions, div, prelude::*, px, rems, size,
 };
-use std::time::Duration;
 use gpui_component::{
     ActiveTheme, Disableable, Icon, IconName, PixelsExt, Placement, Root, Sizable, Size, StyledExt,
     WindowExt,
@@ -62,6 +61,7 @@ use gpui_component::{
     tree::{Tree, TreeItem, TreeState},
     v_flex,
 };
+use std::time::Duration;
 
 use native_theme::{
     AnimatedIcon, IconData, IconRole, IconSet, NativeTheme, TransformAnimation,
@@ -875,42 +875,42 @@ impl Showcase {
         // gpui-builtin is not a native-theme icon set; loading_indicator would
         // fall back to the system set, showing the wrong spinner.
         if set_name != "gpui-builtin" {
-        if let Some(anim) = loading_indicator(set_name) {
-            match &anim {
-                AnimatedIcon::Frames {
-                    frame_duration_ms, ..
-                } => {
-                    if let Some(sources) = animated_frames_to_image_sources(&anim) {
-                        if let Some(first) = anim.first_frame() {
-                            self.animated_static_sources.push((
+            if let Some(anim) = loading_indicator(set_name) {
+                match &anim {
+                    AnimatedIcon::Frames {
+                        frame_duration_ms, ..
+                    } => {
+                        if let Some(sources) = animated_frames_to_image_sources(&anim) {
+                            if let Some(first) = anim.first_frame() {
+                                self.animated_static_sources.push((
+                                    set_name.to_string(),
+                                    to_image_source(first),
+                                    "Frames",
+                                ));
+                            }
+                            self.animated_frame_durations.push(*frame_duration_ms);
+                            self.animated_frame_sources
+                                .push((set_name.to_string(), sources));
+                        }
+                    }
+                    AnimatedIcon::Transform { icon, animation } => {
+                        let source = to_image_source(icon);
+                        self.animated_static_sources.push((
+                            set_name.to_string(),
+                            source.clone(),
+                            "Transform",
+                        ));
+                        if let TransformAnimation::Spin { duration_ms } = animation {
+                            self.animated_spin_sources.push((
                                 set_name.to_string(),
-                                to_image_source(first),
-                                "Frames",
+                                source,
+                                *duration_ms,
                             ));
                         }
-                        self.animated_frame_durations.push(*frame_duration_ms);
-                        self.animated_frame_sources
-                            .push((set_name.to_string(), sources));
                     }
+                    _ => {}
                 }
-                AnimatedIcon::Transform { icon, animation } => {
-                    let source = to_image_source(icon);
-                    self.animated_static_sources.push((
-                        set_name.to_string(),
-                        source.clone(),
-                        "Transform",
-                    ));
-                    if let TransformAnimation::Spin { duration_ms } = animation {
-                        self.animated_spin_sources.push((
-                            set_name.to_string(),
-                            source,
-                            *duration_ms,
-                        ));
-                    }
-                }
-                _ => {}
             }
-        }
         }
 
         self.animated_frame_indices = vec![0; self.animated_frame_sources.len()];
@@ -4218,11 +4218,7 @@ impl Showcase {
         } else {
             // Frame-based animations
             for (i, (set_name, frames)) in self.animated_frame_sources.iter().enumerate() {
-                let frame_idx = self
-                    .animated_frame_indices
-                    .get(i)
-                    .copied()
-                    .unwrap_or(0);
+                let frame_idx = self.animated_frame_indices.get(i).copied().unwrap_or(0);
                 let total = frames.len();
                 let duration = self.animated_frame_durations.get(i).copied().unwrap_or(83);
                 if let Some(source) = frames.get(frame_idx) {

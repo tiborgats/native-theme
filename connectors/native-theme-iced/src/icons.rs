@@ -101,7 +101,7 @@ pub fn custom_icon_to_svg_handle_colored(
 /// `None` for `Transform` variants, empty frame sets, or if all frames are RGBA.
 ///
 /// **Call this once and cache the result.** Do not call on every frame tick.
-/// Index into the cached `Vec` using an [`iced::time::every()`] subscription
+/// Index into the cached `Vec` using an `iced::time::every()` subscription
 /// that increments a frame counter.
 ///
 /// Callers should check [`native_theme::prefers_reduced_motion()`] and fall
