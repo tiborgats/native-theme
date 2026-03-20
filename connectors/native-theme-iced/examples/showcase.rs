@@ -22,7 +22,80 @@ use native_theme::{
 };
 use native_theme_iced::icons::{animated_frames_to_svg_handles, spin_rotation_radians, to_svg_handle};
 use iced::Subscription;
+use std::sync::OnceLock;
 use std::time::{Duration, Instant};
+
+// ---------------------------------------------------------------------------
+// CLI argument parsing
+// ---------------------------------------------------------------------------
+
+/// Optional CLI arguments for launching the showcase in a specific state.
+///
+/// Parsed from `std::env::args()` -- no external crate dependency.
+/// When no arguments are provided the showcase behaves identically to before.
+#[derive(Default)]
+struct CliArgs {
+    theme: Option<String>,
+    variant: Option<String>,
+    tab: Option<String>,
+    icon_set: Option<String>,
+}
+
+/// Global CLI args, set once in `main()` before the iced application starts.
+static CLI_ARGS: OnceLock<CliArgs> = OnceLock::new();
+
+impl CliArgs {
+    fn parse() -> Self {
+        let mut args = Self::default();
+        let argv: Vec<String> = std::env::args().collect();
+        let mut i = 1; // skip binary name
+        while i < argv.len() {
+            match argv[i].as_str() {
+                "--theme" => {
+                    i += 1;
+                    if i < argv.len() {
+                        args.theme = Some(argv[i].clone());
+                    }
+                }
+                "--variant" => {
+                    i += 1;
+                    if i < argv.len() {
+                        args.variant = Some(argv[i].to_lowercase());
+                    }
+                }
+                "--tab" => {
+                    i += 1;
+                    if i < argv.len() {
+                        args.tab = Some(argv[i].to_lowercase());
+                    }
+                }
+                "--icon-set" => {
+                    i += 1;
+                    if i < argv.len() {
+                        args.icon_set = Some(argv[i].clone());
+                    }
+                }
+                _ => {} // ignore unknown args
+            }
+            i += 1;
+        }
+        args
+    }
+
+    /// Map a tab name string to the corresponding `Tab` variant.
+    fn parse_tab(name: &str) -> Option<Tab> {
+        match name {
+            "buttons" => Some(Tab::Buttons),
+            "text-inputs" | "textinputs" => Some(Tab::TextInputs),
+            "selection" => Some(Tab::Selection),
+            "range" => Some(Tab::Range),
+            "display" => Some(Tab::Display),
+            "icons" => Some(Tab::Icons),
+            "theme-map" | "thememap" => Some(Tab::ThemeMap),
+            _ => None,
+        }
+    }
+}
 
 // ---------------------------------------------------------------------------
 // Tab identifiers (right panel)
@@ -314,7 +387,7 @@ fn load_all_icons(icon_set_name: &str) -> Vec<LoadedIcon> {
 ///
 /// Returns the full set of animation state fields that go into `State`.
 #[allow(clippy::type_complexity)]
-fn build_animation_caches() -> (
+fn build_animation_caches(icon_set: &str) -> (
     Vec<(String, Vec<iced_core::svg::Handle>, u32)>, // animated_frames
     Vec<usize>,                                       // animated_frame_indices
     Vec<Duration>,                                    // animated_frame_elapsed
@@ -327,18 +400,9 @@ fn build_animation_caches() -> (
     let mut animated_spins = Vec::new();
     let mut animated_static = Vec::new();
 
-    // Icon sets to try: always material + lucide, plus system set on Linux
-    let mut sets: Vec<String> = vec!["material".into(), "lucide".into()];
-    #[cfg(target_os = "linux")]
+    let set_name = icon_set.to_string();
     {
-        let sys_name = native_theme::system_icon_set().name().to_string();
-        if sys_name != "material" && sys_name != "lucide" {
-            sets.push(sys_name);
-        }
-    }
-
-    for set_name in &sets {
-        if let Some(anim) = loading_indicator(set_name) {
+        if let Some(anim) = loading_indicator(&set_name) {
             // Cache static first-frame for reduced motion
             if let Some(frame_data) = anim.first_frame() {
                 if let Some(handle) = to_svg_handle(frame_data) {
@@ -482,9 +546,9 @@ impl Default for State {
             animation_start,
             reduced_motion,
             animated_static,
-        ) = build_animation_caches();
+        ) = build_animation_caches(icon_set_choice.icon_set_name());
 
-        Self {
+        let mut state = Self {
             current_choice: ThemeChoice::Preset(preset_name.to_string()),
             current_theme: theme,
             color_mode,
@@ -518,7 +582,58 @@ impl Default for State {
             animation_start,
             reduced_motion,
             animated_static,
+        };
+
+        // Apply CLI overrides (if any)
+        if let Some(cli) = CLI_ARGS.get() {
+            // Override color mode first so theme resolution uses the right variant
+            if let Some(ref v) = cli.variant {
+                state.color_mode = if v == "dark" {
+                    ColorMode::Dark
+                } else {
+                    ColorMode::Light
+                };
+                state.is_dark = state.color_mode.is_dark();
+            }
+
+            // Override theme
+            if let Some(ref theme_name) = cli.theme {
+                state.current_choice = ThemeChoice::Preset(theme_name.clone());
+                state.rebuild_theme();
+            } else if cli.variant.is_some() {
+                // Re-apply the default theme with the new variant
+                state.rebuild_theme();
+            }
+
+            // Override tab
+            if let Some(ref tab_name) = cli.tab {
+                if let Some(tab) = CliArgs::parse_tab(tab_name) {
+                    state.active_tab = tab;
+                }
+            }
+
+            // Override icon set
+            if let Some(ref set_name) = cli.icon_set {
+                let choice = match set_name.as_str() {
+                    "material" => IconSetChoice::Material,
+                    "lucide" => IconSetChoice::Lucide,
+                    _ => IconSetChoice::System,
+                };
+                state.icon_set_choice = choice;
+                state.loaded_icons = load_all_icons(set_name);
+                let (frames, indices, elapsed, spins, start, rm, statics) =
+                    build_animation_caches(set_name);
+                state.animated_frames = frames;
+                state.animated_frame_indices = indices;
+                state.animated_frame_elapsed = elapsed;
+                state.animated_spins = spins;
+                state.animation_start = start;
+                state.reduced_motion = rm;
+                state.animated_static = statics;
+            }
         }
+
+        state
     }
 }
 
@@ -629,10 +744,10 @@ fn update(state: &mut State, message: Message) {
         Message::ProgressChanged(v) => state.progress_value = v,
         Message::IconSetSelected(choice) => {
             state.loaded_icons = load_all_icons(choice.icon_set_name());
-            state.icon_set_choice = choice;
 
             // Rebuild animation caches when icon set changes
-            let (af, afi, afe, asp, astart, rm, ast) = build_animation_caches();
+            let (af, afi, afe, asp, astart, rm, ast) = build_animation_caches(choice.icon_set_name());
+            state.icon_set_choice = choice;
             state.animated_frames = af;
             state.animated_frame_indices = afi;
             state.animated_frame_elapsed = afe;
@@ -1900,7 +2015,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
         }
     } else {
         // Frame-based animations
-        for (i, (set_name, handles, _frame_duration_ms)) in state.animated_frames.iter().enumerate()
+        for (i, (set_name, handles, frame_duration_ms)) in state.animated_frames.iter().enumerate()
         {
             let frame_idx = state.animated_frame_indices[i];
             let icon = svg(handles[frame_idx].clone())
@@ -1910,10 +2025,10 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
                     color: Some(fg_color),
                 });
             let label = text(format!(
-                "{} - Frames ({}/{})",
+                "{} - Frames: {} ({}ms)",
                 set_name,
-                frame_idx + 1,
-                handles.len()
+                handles.len(),
+                frame_duration_ms,
             ))
             .size(11);
             spinners.push(
@@ -2386,6 +2501,10 @@ fn subscription(state: &State) -> Subscription<Message> {
 // ---------------------------------------------------------------------------
 
 fn main() -> iced::Result {
+    // Parse CLI args and store globally before the iced application starts.
+    // State::default() reads from CLI_ARGS to apply overrides.
+    let _ = CLI_ARGS.set(CliArgs::parse());
+
     iced::application(State::default, update, view)
         .title("native-theme-iced Showcase")
         .theme(theme)
