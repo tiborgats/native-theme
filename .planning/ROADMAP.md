@@ -165,17 +165,17 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 | 22-26 | v0.3.3 | 14/14 | Complete | 2026-03-17 |
 | 27-32 | v0.4.0 | 8/8 | Complete | 2026-03-18 |
 | 33-38 | v0.4.1 | 13/13 | Complete | 2026-03-20 |
-| 39-42 | v0.4.1 | 0/? | In Progress | — |
+| 39-42 | v0.4.1 | 2/? | In Progress | — |
 
 ### Phase 39: Code Quality and Housekeeping
 
 **Goal:** Add `#![deny(unsafe_code)]` to core crate (with surgical `#[allow(unsafe_code)]` on FFI modules), write tests for `prefers_reduced_motion()` across all platforms, and archive completed design docs to `docs/archive/`
 **Depends on:** Phase 38
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 39-01-PLAN.md — Add deny(unsafe_code) lint with allow annotations, write reduced motion smoke tests
-- [ ] 39-02-PLAN.md — Archive 8 completed milestone docs to docs/archive/
+- [x] 39-01-PLAN.md — Add deny(unsafe_code) lint with allow annotations, write reduced motion smoke tests (completed 2026-03-20)
+- [x] 39-02-PLAN.md — Archive 8 completed milestone docs to docs/archive/ (completed 2026-03-20)
 
 ### Phase 40: Iced Theme Preset Screenshots and CI
 

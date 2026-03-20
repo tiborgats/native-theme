@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: Completed 39-02-PLAN.md
-last_updated: "2026-03-20T21:04:19.218Z"
-last_activity: 2026-03-20 — Added phases 39-42 (code quality, iced screenshots, gpui screenshots, theme-switching GIF)
+stopped_at: Completed 39-01-PLAN.md
+last_updated: "2026-03-20T21:06:39Z"
+last_activity: 2026-03-20 — Completed 39-01 (deny(unsafe_code) lint + reduced motion tests)
 progress:
   total_phases: 10
   completed_phases: 6
   total_plans: 14
-  completed_plans: 13
+  completed_plans: 14
 ---
 
 # Project State
@@ -24,13 +24,13 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 
 ## Current Position
 
-Status: Phases 39-42 added to complete remaining v0.4.1 work
-Last activity: 2026-03-20 — Added phases 39-42 (code quality, iced screenshots, gpui screenshots, theme-switching GIF)
+Status: Executing phase 39 (code quality and housekeeping)
+Last activity: 2026-03-20 — Completed 39-01 (deny(unsafe_code) lint + reduced motion tests)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 83 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 14 v0.3.3 + 8 v0.4.0 + 13 v0.4.1)
+- Total plans completed: 85 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 14 v0.3.3 + 8 v0.4.0 + 15 v0.4.1)
 - Average duration: ~4.1min (v0.2), 3.7min (v0.3)
 - Total execution time: 70min (v0.2), 37min (v0.3), 15min (v0.3.2), 35min (v0.3.3), 35min (v0.4.0)
 
@@ -49,7 +49,8 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [Phase 38-01]: Used real doc comments (not blanket allow) for all 67 undocumented public items
 - [Phase 38-02]: Connector crate dry-runs use run_check_soft since they depend on core crate being published first
 - [Phase 38-03]: Enhanced release notes to include screenshot automation and visual asset CI additions beyond original template
-- [Phase 39]: Archive completed milestone docs to docs/archive/ using git mv for history preservation
+- [Phase 39-02]: Archive completed milestone docs to docs/archive/ using git mv for history preservation
+- [Phase 39-01]: Used deny(unsafe_code) instead of forbid(unsafe_code) because forbid cannot be overridden by allow in inner scopes
 
 ### Roadmap Evolution
 
@@ -68,6 +69,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-20T21:04:19.216Z
-Stopped at: Completed 39-02-PLAN.md
+Last session: 2026-03-20T21:06:39Z
+Stopped at: Completed 39-01-PLAN.md
 Resume file: None
