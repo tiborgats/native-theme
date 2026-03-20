@@ -12,15 +12,31 @@ A toolkit-agnostic theme data model with 36 semantic color roles, 17 bundled
 TOML presets (light + dark), and optional OS theme readers for Linux, macOS,
 and Windows.
 
-<p align="center">
-  <img src="docs/assets/iced-linux-material-light.png" width="49%" alt="Material Light theme">
-  <img src="docs/assets/iced-linux-material-dark.png" width="49%" alt="Material Dark theme">
-</p>
-<p align="center">
-  <img src="docs/assets/iced-linux-lucide-light.png" width="49%" alt="Lucide Light theme">
-  <img src="docs/assets/iced-linux-lucide-dark.png" width="49%" alt="Lucide Dark theme">
-</p>
-<p align="center"><em>iced showcase — Material and Lucide icon sets, light and dark variants</em></p>
+<table>
+<tr><th></th><th>Material Light</th><th>Material Dark</th><th>Lucide Light</th><th>Lucide Dark</th></tr>
+<tr>
+<td><strong>Linux</strong></td>
+<td><img src="docs/assets/iced-linux-material-light.png" width="200" alt="Linux Material Light"></td>
+<td><img src="docs/assets/iced-linux-material-dark.png" width="200" alt="Linux Material Dark"></td>
+<td><img src="docs/assets/iced-linux-lucide-light.png" width="200" alt="Linux Lucide Light"></td>
+<td><img src="docs/assets/iced-linux-lucide-dark.png" width="200" alt="Linux Lucide Dark"></td>
+</tr>
+<tr>
+<td><strong>macOS</strong></td>
+<td><img src="docs/assets/iced-macos-material-light.png" width="200" alt="macOS Material Light"></td>
+<td><img src="docs/assets/iced-macos-material-dark.png" width="200" alt="macOS Material Dark"></td>
+<td><img src="docs/assets/iced-macos-lucide-light.png" width="200" alt="macOS Lucide Light"></td>
+<td><img src="docs/assets/iced-macos-lucide-dark.png" width="200" alt="macOS Lucide Dark"></td>
+</tr>
+<tr>
+<td><strong>Windows</strong></td>
+<td><img src="docs/assets/iced-windows-material-light.png" width="200" alt="Windows Material Light"></td>
+<td><img src="docs/assets/iced-windows-material-dark.png" width="200" alt="Windows Material Dark"></td>
+<td><img src="docs/assets/iced-windows-lucide-light.png" width="200" alt="Windows Lucide Light"></td>
+<td><img src="docs/assets/iced-windows-lucide-dark.png" width="200" alt="Windows Lucide Dark"></td>
+</tr>
+</table>
+<p align="center"><em>iced showcase — Material and Lucide icon sets across Linux, macOS, and Windows</em></p>
 
 | Crate | Description |
 |-------|-------------|

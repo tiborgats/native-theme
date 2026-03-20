@@ -126,14 +126,30 @@ Run the showcase widget gallery to explore all 17 presets interactively:
 cargo run -p native-theme-iced --example showcase
 ```
 
-<p align="center">
-  <img src="../../docs/assets/iced-linux-material-light.png" width="49%" alt="Material Light">
-  <img src="../../docs/assets/iced-linux-material-dark.png" width="49%" alt="Material Dark">
-</p>
-<p align="center">
-  <img src="../../docs/assets/iced-linux-lucide-light.png" width="49%" alt="Lucide Light">
-  <img src="../../docs/assets/iced-linux-lucide-dark.png" width="49%" alt="Lucide Dark">
-</p>
+<table>
+<tr><th></th><th>Material Light</th><th>Material Dark</th><th>Lucide Light</th><th>Lucide Dark</th></tr>
+<tr>
+<td><strong>Linux</strong></td>
+<td><img src="../../docs/assets/iced-linux-material-light.png" width="200" alt="Linux Material Light"></td>
+<td><img src="../../docs/assets/iced-linux-material-dark.png" width="200" alt="Linux Material Dark"></td>
+<td><img src="../../docs/assets/iced-linux-lucide-light.png" width="200" alt="Linux Lucide Light"></td>
+<td><img src="../../docs/assets/iced-linux-lucide-dark.png" width="200" alt="Linux Lucide Dark"></td>
+</tr>
+<tr>
+<td><strong>macOS</strong></td>
+<td><img src="../../docs/assets/iced-macos-material-light.png" width="200" alt="macOS Material Light"></td>
+<td><img src="../../docs/assets/iced-macos-material-dark.png" width="200" alt="macOS Material Dark"></td>
+<td><img src="../../docs/assets/iced-macos-lucide-light.png" width="200" alt="macOS Lucide Light"></td>
+<td><img src="../../docs/assets/iced-macos-lucide-dark.png" width="200" alt="macOS Lucide Dark"></td>
+</tr>
+<tr>
+<td><strong>Windows</strong></td>
+<td><img src="../../docs/assets/iced-windows-material-light.png" width="200" alt="Windows Material Light"></td>
+<td><img src="../../docs/assets/iced-windows-material-dark.png" width="200" alt="Windows Material Dark"></td>
+<td><img src="../../docs/assets/iced-windows-lucide-light.png" width="200" alt="Windows Lucide Light"></td>
+<td><img src="../../docs/assets/iced-windows-lucide-dark.png" width="200" alt="Windows Lucide Dark"></td>
+</tr>
+</table>
 
 The showcase displays all iced widgets (buttons, inputs, sliders, checkboxes,
 togglers, etc.) themed with native-theme presets, with live theme switching
