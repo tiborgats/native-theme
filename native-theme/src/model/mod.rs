@@ -1,12 +1,20 @@
 // Theme model: ThemeVariant and NativeTheme, plus sub-module re-exports
 
+/// Animated icon types (frame sequences and transforms).
 pub mod animated;
+/// Bundled SVG icon lookup tables.
 pub mod bundled;
+/// Semantic theme color roles.
 pub mod colors;
+/// Font family and size configuration.
 pub mod fonts;
+/// Corner radius, border, and scroll geometry.
 pub mod geometry;
+/// Icon roles, sets, and provider trait.
 pub mod icons;
+/// Logical spacing scale (xxs through xxl).
 pub mod spacing;
+/// Per-widget sizing and spacing metrics.
 pub mod widget_metrics;
 
 pub use animated::{AnimatedIcon, Repeat, TransformAnimation};
@@ -45,15 +53,19 @@ use serde::{Deserialize, Serialize};
 #[serde(default)]
 #[non_exhaustive]
 pub struct ThemeVariant {
+    /// Semantic color roles (accent, background, status, etc.).
     #[serde(default, skip_serializing_if = "ThemeColors::is_empty")]
     pub colors: ThemeColors,
 
+    /// Font family and size settings.
     #[serde(default, skip_serializing_if = "ThemeFonts::is_empty")]
     pub fonts: ThemeFonts,
 
+    /// Corner radius, border width, and scroll geometry.
     #[serde(default, skip_serializing_if = "ThemeGeometry::is_empty")]
     pub geometry: ThemeGeometry,
 
+    /// Logical spacing scale.
     #[serde(default, skip_serializing_if = "ThemeSpacing::is_empty")]
     pub spacing: ThemeSpacing,
 

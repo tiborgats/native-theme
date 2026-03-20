@@ -75,13 +75,19 @@ macro_rules! impl_merge {
     };
 }
 
+/// Color types and sRGB utilities.
 pub mod color;
+/// Error types for theme operations.
 pub mod error;
+/// GNOME portal theme reader.
 #[cfg(all(target_os = "linux", feature = "portal"))]
 pub mod gnome;
+/// KDE theme reader.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 pub mod kde;
+/// Theme data model types.
 pub mod model;
+/// Bundled theme presets.
 pub mod presets;
 #[cfg(any(
     feature = "material-icons",
@@ -100,15 +106,21 @@ pub use model::{
 // load_icon re-exported from this module (defined in lib.rs directly)
 pub use model::icons::{icon_name, system_icon_set, system_icon_theme};
 
+/// Freedesktop icon theme lookup (Linux).
 #[cfg(all(target_os = "linux", feature = "system-icons"))]
 pub mod freedesktop;
+/// macOS platform helpers.
 pub mod macos;
+/// SVG-to-RGBA rasterization utilities.
 #[cfg(feature = "svg-rasterize")]
 pub mod rasterize;
+/// SF Symbols icon loader (macOS).
 #[cfg(all(target_os = "macos", feature = "system-icons"))]
 pub mod sficons;
+/// Windows platform theme reader.
 #[cfg(all(target_os = "windows", feature = "windows"))]
 pub mod windows;
+/// Windows Segoe Fluent / stock icon loader.
 #[cfg(feature = "system-icons")]
 #[cfg_attr(not(target_os = "windows"), allow(dead_code, unused_imports))]
 pub mod winicons;
@@ -143,13 +155,21 @@ pub type Result<T> = std::result::Result<T, Error>;
 #[cfg(target_os = "linux")]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum LinuxDesktop {
+    /// KDE Plasma desktop.
     Kde,
+    /// GNOME desktop.
     Gnome,
+    /// Xfce desktop.
     Xfce,
+    /// Cinnamon desktop (Linux Mint).
     Cinnamon,
+    /// MATE desktop.
     Mate,
+    /// LXQt desktop.
     LxQt,
+    /// Budgie desktop.
     Budgie,
+    /// Unrecognized or unset desktop environment.
     Unknown,
 }
 

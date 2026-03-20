@@ -40,9 +40,13 @@ use std::str::FromStr;
 /// ```
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Rgba {
+    /// Red component (0-255).
     pub r: u8,
+    /// Green component (0-255).
     pub g: u8,
+    /// Blue component (0-255).
     pub b: u8,
+    /// Alpha component (0-255, where 255 is fully opaque).
     pub a: u8,
 }
 

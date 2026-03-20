@@ -15,47 +15,83 @@ use crate::Rgba;
 #[non_exhaustive]
 pub struct ThemeColors {
     // Core (7)
+    /// Brand or accent color for interactive elements.
     pub accent: Option<Rgba>,
+    /// Main application background color.
     pub background: Option<Rgba>,
+    /// Main text color on the application background.
     pub foreground: Option<Rgba>,
+    /// Elevated surface color (cards, dialogs).
     pub surface: Option<Rgba>,
+    /// Default border color.
     pub border: Option<Rgba>,
+    /// Muted/subdued text color for secondary content.
     pub muted: Option<Rgba>,
+    /// Shadow or elevation color.
     pub shadow: Option<Rgba>,
     // Primary (2)
+    /// Primary action background color.
     pub primary_background: Option<Rgba>,
+    /// Text color on primary background.
     pub primary_foreground: Option<Rgba>,
     // Secondary (2)
+    /// Secondary action background color.
     pub secondary_background: Option<Rgba>,
+    /// Text color on secondary background.
     pub secondary_foreground: Option<Rgba>,
     // Status (8)
+    /// Error or danger status color.
     pub danger: Option<Rgba>,
+    /// Text color on danger background.
     pub danger_foreground: Option<Rgba>,
+    /// Warning status color.
     pub warning: Option<Rgba>,
+    /// Text color on warning background.
     pub warning_foreground: Option<Rgba>,
+    /// Success or positive status color.
     pub success: Option<Rgba>,
+    /// Text color on success background.
     pub success_foreground: Option<Rgba>,
+    /// Informational status color.
     pub info: Option<Rgba>,
+    /// Text color on info background.
     pub info_foreground: Option<Rgba>,
     // Interactive (4)
+    /// Background color for selected items.
     pub selection: Option<Rgba>,
+    /// Text color on selected background.
     pub selection_foreground: Option<Rgba>,
+    /// Hyperlink text color.
     pub link: Option<Rgba>,
+    /// Color of keyboard focus indicators.
     pub focus_ring: Option<Rgba>,
     // Panel (6)
+    /// Sidebar background color.
     pub sidebar: Option<Rgba>,
+    /// Text color on sidebar background.
     pub sidebar_foreground: Option<Rgba>,
+    /// Tooltip background color.
     pub tooltip: Option<Rgba>,
+    /// Text color on tooltip background.
     pub tooltip_foreground: Option<Rgba>,
+    /// Popover/dropdown background color.
     pub popover: Option<Rgba>,
+    /// Text color on popover background.
     pub popover_foreground: Option<Rgba>,
     // Component (7)
+    /// Button background color.
     pub button: Option<Rgba>,
+    /// Text color on button background.
     pub button_foreground: Option<Rgba>,
+    /// Text input field background color.
     pub input: Option<Rgba>,
+    /// Text color inside input fields.
     pub input_foreground: Option<Rgba>,
+    /// Color for disabled UI elements.
     pub disabled: Option<Rgba>,
+    /// Separator/divider line color.
     pub separator: Option<Rgba>,
+    /// Alternating row background for lists and tables.
     pub alternate_row: Option<Rgba>,
 }
 
