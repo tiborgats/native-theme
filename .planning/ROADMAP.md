@@ -83,7 +83,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] Phase 33: Quick Fixes and Version Consistency (completed 2026-03-19)
 - [x] Phase 34: Animated Icon Documentation (completed 2026-03-19)
 - [x] Phase 35: Animated Icon Showcase Examples (completed 2026-03-19)
-- [ ] Phase 36: Screenshot and GIF Generation
+- [x] Phase 36: Screenshot and GIF Generation (completed 2026-03-20)
 - [ ] Phase 37: Community Files and GitHub Templates
 - [ ] Phase 38: CI, Smoke Tests, and Release
 
@@ -119,12 +119,12 @@ Plans:
 
 **Goal:** Create visual assets (showcase screenshots, spinner GIFs) and automation tooling for generating them
 **Depends on:** Phase 35
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
-- [ ] 36-01-PLAN.md — Add CLI argument support to both showcase examples
-- [ ] 36-02-PLAN.md — Create GIF generation script from SVG spinner frames
-- [ ] 36-03-PLAN.md — Create screenshot automation and master orchestration scripts
+- [x] 36-01-PLAN.md — Add CLI argument support to both showcase examples (completed 2026-03-20)
+- [x] 36-02-PLAN.md — Create GIF generation script from SVG spinner frames (completed 2026-03-20)
+- [x] 36-03-PLAN.md — Create screenshot automation and master orchestration scripts (completed 2026-03-20)
 
 ### Phase 37: Community Files and GitHub Templates
 
@@ -157,4 +157,4 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 | 16-21 | v0.3 | 10/10 | Complete | 2026-03-09 |
 | 22-26 | v0.3.3 | 14/14 | Complete | 2026-03-17 |
 | 27-32 | v0.4.0 | 8/8 | Complete | 2026-03-18 |
-| 33-38 | v0.4.1 | 4/? | In Progress | — |
+| 33-38 | v0.4.1 | 7/? | In Progress | — |

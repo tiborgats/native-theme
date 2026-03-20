@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: "Completed 36-02-PLAN.md"
-last_updated: "2026-03-20T08:12:00Z"
-last_activity: "2026-03-20 — Phase 36 plans 01+02 complete (CLI args + GIF generation)"
+stopped_at: "Completed 36-03-PLAN.md"
+last_updated: "2026-03-20T00:00:00Z"
+last_activity: "2026-03-20 — Phase 36 plan 03 complete (screenshot automation + master orchestration scripts)"
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 7
-  completed_plans: 6
+  completed_plans: 7
 ---
 
 # Project State
@@ -25,7 +25,7 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 ## Current Position
 
 Status: Executing phase 36 (screenshot and GIF generation)
-Last activity: 2026-03-20 — Phase 36 plans 01+02 complete (CLI args + GIF generation)
+Last activity: 2026-03-20 — Phase 36 complete (CLI args + GIF generation + screenshot automation)
 
 ## Performance Metrics
 
@@ -43,6 +43,7 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [Phase 35-02]: Used 50ms tick interval with per-animation frame duration tracking; subscription gated to Icons tab
 - [Phase 35-01]: Used opacity pulse for spin animations since gpui Div lacks rotation; AnyElement for heterogeneous cards
 - [Phase 36-02]: RGB GIF frames on white background (no GIF transparency); single GIF set since SVGs are toolkit-agnostic
+- [Phase 36-03]: Pre-build release binaries before capture loop; spectacle -a requires showcase window focus on KDE Wayland
 - [Phase 36-01]: Used std::env::args() only (no clap); OnceLock for iced State::default() CLI arg passing
 
 ### Roadmap Evolution
@@ -61,5 +62,5 @@ None currently.
 ## Session Continuity
 
 Last session: 2026-03-20
-Stopped at: Completed 36-01-PLAN.md
+Stopped at: Completed 36-03-PLAN.md
 Resume file: None
