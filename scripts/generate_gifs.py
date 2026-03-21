@@ -7,12 +7,16 @@ Produces GIF files in docs/assets/ for genuine bundled spinners:
 
 Each GIF shows the spinner centered inside a styled card background.
 
+Also supports --theme-switching mode: assembles pre-captured PNG frames
+into an animated theme-switching GIF for the root README hero section.
+
 Requirements:
   - ImageMagick 7 (magick command) for SVG rasterization
   - Python 3 + Pillow for card compositing and GIF assembly
 """
 
 import argparse
+import glob
 import os
 import re
 import subprocess
@@ -253,6 +257,55 @@ def generate_spinner_gif(spinner_name, config, output_dir, tmpdir):
     return True
 
 
+def assemble_theme_switching_gif(frame_dir, output_path, width=600, hold_ms=2000):
+    """Assemble pre-captured PNG frames into an animated theme-switching GIF.
+
+    Reads all frame-*.png files from the frame directory (sorted),
+    resizes each to the target width maintaining aspect ratio,
+    converts to RGB with white background, and saves as a looping GIF.
+    """
+    frame_paths = sorted(glob.glob(os.path.join(frame_dir, "frame-*.png")))
+    if not frame_paths:
+        print(f"  ERROR: No frame-*.png files found in {frame_dir}")
+        return False
+
+    print(f"  Found {len(frame_paths)} frames in {frame_dir}")
+
+    gif_frames = []
+    for path in frame_paths:
+        img = Image.open(path).convert("RGBA")
+        # Resize to target width, maintaining aspect ratio
+        ratio = width / img.width
+        new_size = (width, int(img.height * ratio))
+        img = img.resize(new_size, Image.Resampling.LANCZOS)
+        # Convert to RGB with white background (no GIF transparency,
+        # per Phase 36-02 decision)
+        rgb_frame = Image.new("RGB", img.size, (255, 255, 255))
+        rgb_frame.paste(img, mask=img.split()[3])
+        gif_frames.append(rgb_frame)
+        print(f"    {os.path.basename(path)}: {img.size[0]}x{img.size[1]}")
+
+    if not gif_frames:
+        print("  ERROR: No frames processed")
+        return False
+
+    os.makedirs(os.path.dirname(output_path), exist_ok=True)
+
+    gif_frames[0].save(
+        output_path,
+        save_all=True,
+        append_images=gif_frames[1:],
+        duration=hold_ms,
+        loop=0,
+        disposal=2,
+    )
+
+    file_size = os.path.getsize(output_path)
+    print(f"  -> {output_path} ({file_size:,} bytes, "
+          f"{len(gif_frames)} frames, {hold_ms}ms/frame)")
+    return True
+
+
 def main():
     parser = argparse.ArgumentParser(
         description="Generate looping GIF animations from SVG spinner frames."
@@ -262,8 +315,31 @@ def main():
         default=os.path.join(PROJECT_ROOT, "docs", "assets"),
         help="Output directory for GIF files (default: docs/assets/)",
     )
+    parser.add_argument(
+        "--theme-switching",
+        metavar="FRAME_DIR",
+        help="Assemble a theme-switching GIF from PNG frames in the given directory",
+    )
+    parser.add_argument(
+        "--theme-switching-output",
+        default=os.path.join(PROJECT_ROOT, "docs", "assets", "theme-switching.gif"),
+        help="Output path for the theme-switching GIF (default: docs/assets/theme-switching.gif)",
+    )
     args = parser.parse_args()
 
+    # Theme-switching mode: assemble frames into GIF and exit
+    if args.theme_switching:
+        print("Assembling theme-switching GIF...")
+        if assemble_theme_switching_gif(
+            args.theme_switching, args.theme_switching_output
+        ):
+            print("Done.")
+            sys.exit(0)
+        else:
+            print("FAILED.")
+            sys.exit(1)
+
+    # Default mode: generate spinner GIFs
     output_dir = args.output_dir
     os.makedirs(output_dir, exist_ok=True)
 

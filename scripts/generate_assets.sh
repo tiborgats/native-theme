@@ -21,6 +21,10 @@ echo "--- Step 3: Generating gpui showcase screenshots ---"
 bash "$SCRIPT_DIR/generate_gpui_screenshots.sh"
 echo ""
 
+echo "--- Step 4: Generating theme-switching GIF ---"
+bash "$SCRIPT_DIR/generate_theme_switching_gif.sh"
+echo ""
+
 echo "=== All visual assets generated ==="
 echo "Output directory: $(dirname "$SCRIPT_DIR")/docs/assets/"
 ls -la "$(dirname "$SCRIPT_DIR")/docs/assets/" | head -20
