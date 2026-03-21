@@ -63,7 +63,7 @@ for i in "${!THEMES[@]}"; do
 
     sleep "$DELAY"
 
-    spectacle -i -a -b -n -e -o "$frame_file"
+    spectacle -a -b -n -o "$frame_file"
     sleep 1
 
     kill "$PID" 2>/dev/null || true
@@ -105,7 +105,7 @@ for i in "${!THEMES[@]}"; do
 
     sleep "$DELAY"
 
-    spectacle -i -a -b -n -e -o "$frame_file"
+    spectacle -a -b -n -o "$frame_file"
     sleep 1
 
     kill "$PID" 2>/dev/null || true

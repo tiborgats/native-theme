@@ -63,7 +63,7 @@ for entry in "${THEMES[@]}"; do
 
     sleep "$DELAY"
 
-    spectacle -i -a -b -n -e -o "$output_file"
+    spectacle -a -b -n -o "$output_file"
     sleep 1
 
     kill "$PID" 2>/dev/null || true
