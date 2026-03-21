@@ -126,42 +126,26 @@ Run the showcase widget gallery to explore all 17 presets interactively:
 cargo run -p native-theme-iced --example showcase
 ```
 
-<table>
-<tr><th></th><th>Dracula Dark</th><th>Nord Light</th><th>Catppuccin Mocha</th><th>macOS Sonoma</th></tr>
-<tr>
-<td><strong>Linux</strong></td>
-<td><img src="../../docs/assets/iced-linux-dracula-dark.png" width="200" alt="Linux Dracula Dark"></td>
-<td><img src="../../docs/assets/iced-linux-nord-light.png" width="200" alt="Linux Nord Light"></td>
-<td><img src="../../docs/assets/iced-linux-catppuccin-mocha-dark.png" width="200" alt="Linux Catppuccin Mocha"></td>
-<td><img src="../../docs/assets/iced-linux-macos-sonoma-light.png" width="200" alt="Linux macOS Sonoma"></td>
-</tr>
-<tr>
-<td><strong>macOS</strong></td>
-<td><img src="../../docs/assets/iced-macos-dracula-dark.png" width="200" alt="macOS Dracula Dark"></td>
-<td><img src="../../docs/assets/iced-macos-nord-light.png" width="200" alt="macOS Nord Light"></td>
-<td><img src="../../docs/assets/iced-macos-catppuccin-mocha-dark.png" width="200" alt="macOS Catppuccin Mocha"></td>
-<td><img src="../../docs/assets/iced-macos-macos-sonoma-light.png" width="200" alt="macOS macOS Sonoma"></td>
-</tr>
-<tr>
-<td><strong>Windows</strong></td>
-<td><img src="../../docs/assets/iced-windows-dracula-dark.png" width="200" alt="Windows Dracula Dark"></td>
-<td><img src="../../docs/assets/iced-windows-nord-light.png" width="200" alt="Windows Nord Light"></td>
-<td><img src="../../docs/assets/iced-windows-catppuccin-mocha-dark.png" width="200" alt="Windows Catppuccin Mocha"></td>
-<td><img src="../../docs/assets/iced-windows-macos-sonoma-light.png" width="200" alt="Windows macOS Sonoma"></td>
-</tr>
-</table>
+### Linux
+
+![KDE Breeze Dark](../../docs/assets/iced-linux-kde-breeze-dark.png)
+![Material Light](../../docs/assets/iced-linux-material-light.png)
+![Catppuccin Mocha Dark](../../docs/assets/iced-linux-catppuccin-mocha-dark.png)
+![KDE Breeze Light](../../docs/assets/iced-linux-kde-breeze-light.png)
+
+### macOS
+
+![macOS Sonoma Light](../../docs/assets/iced-macos-macos-sonoma-light.png)
+![macOS Sonoma Dark](../../docs/assets/iced-macos-macos-sonoma-dark.png)
+
+### Windows
+
+![Windows 11 Light](../../docs/assets/iced-windows-windows-11-light.png)
+![Windows 11 Dark](../../docs/assets/iced-windows-windows-11-dark.png)
 
 The showcase displays all iced widgets (buttons, inputs, sliders, checkboxes,
 togglers, etc.) themed with native-theme presets, with live theme switching
 and a color map inspector.
-
-Generate screenshots automatically:
-
-```sh
-cargo run -p native-theme-iced --example showcase --release -- \
-  --theme dracula --variant dark --tab buttons \
-  --screenshot docs/assets/iced-linux-dracula-dark.png
-```
 
 ## License
 

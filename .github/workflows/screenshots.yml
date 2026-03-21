@@ -65,12 +65,11 @@ jobs:
       - name: Capture screenshots (macOS)
         if: runner.os == 'macOS'
         run: |
-          # macOS-native + community presets, all using OS icon set (SF Symbols)
+          # macOS-native preset only (community themes already captured on Linux)
+          # OS icon set (SF Symbols) via --icon-set system
           themes=(
             "macos-sonoma:light:system"
             "macos-sonoma:dark:system"
-            "catppuccin-mocha:dark:system"
-            "material:light:system"
           )
           for entry in "${themes[@]}"; do
             IFS=':' read -r theme variant icon_set <<< "$entry"
@@ -85,12 +84,11 @@ jobs:
         if: runner.os == 'Windows'
         shell: bash
         run: |
-          # Windows-native + community presets, all using OS icon set (Segoe Fluent)
+          # Windows-native preset only (community themes already captured on Linux)
+          # OS icon set (Segoe Fluent) via --icon-set system
           themes=(
             "windows-11:light:system"
             "windows-11:dark:system"
-            "catppuccin-mocha:dark:system"
-            "material:light:system"
           )
           for entry in "${themes[@]}"; do
             IFS=':' read -r theme variant icon_set <<< "$entry"
