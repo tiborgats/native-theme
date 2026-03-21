@@ -166,7 +166,7 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 | 27-32 | v0.4.0 | 8/8 | Complete | 2026-03-18 |
 | 33-38 | v0.4.1 | 13/13 | Complete | 2026-03-20 |
 | 39-42 | v0.4.1 | 9/9 | Complete | 2026-03-21 |
-| 43 | v0.4.2 | 2/3 | In Progress | — |
+| 43 | 3/3 | Complete   | 2026-03-21 | — |
 
 ### Phase 39: Code Quality and Housekeeping
 
@@ -211,7 +211,7 @@ Plans:
 
 **Goal:** Add self-capture screenshot capability to gpui and iced showcases using OS compositor APIs (macOS screencapture -l, Windows BitBlt) so --screenshot produces PNGs with window decorations; update CI workflow with TCC.db permission for macOS
 **Depends on:** Phase 42
-**Plans:** 3 plans (2 complete, 1 gap closure)
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 43-01-PLAN.md — Add --screenshot self-capture to gpui (macOS) and iced (macOS + Windows) showcases (completed 2026-03-21)

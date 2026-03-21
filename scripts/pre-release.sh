@@ -148,10 +148,10 @@ echo "Linux screenshots:"
 ls -1 "$OUTPUT_DIR"/iced-linux-*.png "$OUTPUT_DIR"/gpui-linux-*.png 2>/dev/null | while read -r f; do echo "  $(basename "$f")"; done
 echo ""
 echo "macOS screenshots:"
-ls -1 "$OUTPUT_DIR"/iced-macos-*.png 2>/dev/null | while read -r f; do echo "  $(basename "$f")"; done
+ls -1 "$OUTPUT_DIR"/iced-macos-*.png "$OUTPUT_DIR"/gpui-macos-*.png 2>/dev/null | while read -r f; do echo "  $(basename "$f")"; done
 echo ""
 echo "Windows screenshots:"
-ls -1 "$OUTPUT_DIR"/iced-windows-*.png 2>/dev/null | while read -r f; do echo "  $(basename "$f")"; done
+ls -1 "$OUTPUT_DIR"/iced-windows-*.png "$OUTPUT_DIR"/gpui-windows-*.png 2>/dev/null | while read -r f; do echo "  $(basename "$f")"; done
 echo ""
 echo "GIFs:"
 ls -1 "$OUTPUT_DIR"/*.gif 2>/dev/null | while read -r f; do echo "  $(basename "$f")"; done
