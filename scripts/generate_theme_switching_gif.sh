@@ -1,45 +1,48 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Capture individual theme frames from the iced showcase and assemble
-# them into an animated theme-switching GIF for the root README hero section.
+# Capture theme-switching GIFs for both iced and gpui showcases.
 #
-# Uses the iced showcase's --screenshot flag to capture one frame per
-# theme preset, then calls generate_gifs.py --theme-switching for GIF assembly.
+# Produces two GIFs:
+#   docs/assets/iced-theme-switching.gif  (via iced's --screenshot flag)
+#   docs/assets/gpui-theme-switching.gif  (via spectacle on KDE Wayland)
+#
+# Each GIF cycles through 4 Linux-native presets with matching icon sets.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 OUTPUT_DIR="$PROJECT_ROOT/docs/assets"
-FRAME_DIR="$(mktemp -d)"
+ICED_FRAME_DIR="$(mktemp -d)"
+GPUI_FRAME_DIR="$(mktemp -d)"
+DELAY=3
 
 # 4 visually distinct Linux-native presets with matching icon sets
-# Format: theme:variant:icon-set (icon theme must match UI theme)
+# Format: theme:variant:icon-set:icon-theme
+# Icon theme must match the UI theme.
 THEMES=(
-    "kde-breeze:dark:freedesktop"
-    "material:light:material"
-    "catppuccin-mocha:dark:lucide"
-    "kde-breeze:light:freedesktop"
+    "kde-breeze:dark:freedesktop:breeze-dark"
+    "material:light:material:"
+    "catppuccin-mocha:dark:lucide:"
+    "kde-breeze:light:freedesktop:breeze"
 )
 
-echo "=== Generating theme-switching GIF ==="
-echo "Presets: ${#THEMES[@]}"
-echo "Frame dir: $FRAME_DIR"
+mkdir -p "$OUTPUT_DIR"
+cd "$PROJECT_ROOT"
+
+# ── Iced GIF ──────────────────────────────────────────────────────────
+
+echo "=== Generating iced theme-switching GIF ==="
 echo ""
 
-# Pre-build showcase binary to avoid compile delays during capture loop
-echo "--- Building showcase binary (release mode) ---"
-cd "$PROJECT_ROOT"
+echo "--- Building iced showcase binary (release mode) ---"
 cargo build -p native-theme-iced --example showcase --release
 echo ""
 
-# Ensure output directory exists
-mkdir -p "$OUTPUT_DIR"
-
-echo "--- Capturing theme frames ---"
+echo "--- Capturing iced frames ---"
 for i in "${!THEMES[@]}"; do
-    IFS=':' read -r theme variant icon_set <<< "${THEMES[$i]}"
-    frame_file="$FRAME_DIR/frame-$(printf '%02d' "$i").png"
-    echo "[$((i + 1))/${#THEMES[@]}] Capturing: $theme $variant (icons: $icon_set) -> $(basename "$frame_file")"
+    IFS=':' read -r theme variant icon_set icon_theme <<< "${THEMES[$i]}"
+    frame_file="$ICED_FRAME_DIR/frame-$(printf '%02d' "$i").png"
+    echo "[$((i + 1))/${#THEMES[@]}] $theme $variant (icons: $icon_set${icon_theme:+/$icon_theme})"
 
     cargo run -p native-theme-iced --example showcase --release -- \
         --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
@@ -47,14 +50,67 @@ for i in "${!THEMES[@]}"; do
 done
 
 echo ""
-echo "--- Assembling GIF ---"
+echo "--- Assembling iced GIF ---"
 python3 "$SCRIPT_DIR/generate_gifs.py" \
-    --theme-switching "$FRAME_DIR" \
-    --theme-switching-output "$OUTPUT_DIR/theme-switching.gif"
+    --theme-switching "$ICED_FRAME_DIR" \
+    --theme-switching-output "$OUTPUT_DIR/iced-theme-switching.gif"
+echo ""
+ls -lh "$OUTPUT_DIR/iced-theme-switching.gif"
+
+# ── gpui GIF ──────────────────────────────────────────────────────────
 
 echo ""
-echo "=== Theme-switching GIF generation complete ==="
-ls -lh "$OUTPUT_DIR/theme-switching.gif"
+echo "=== Generating gpui theme-switching GIF ==="
+echo ""
 
-# Clean up temp frames
-rm -rf "$FRAME_DIR"
+echo "--- Building gpui showcase binary (release mode) ---"
+cargo build -p native-theme-gpui --example showcase --release
+echo ""
+
+# Kill any stale spectacle instances to avoid D-Bus singleton conflicts
+pkill spectacle 2>/dev/null || true
+
+# Clean up showcase process on exit
+trap 'kill "$PID" 2>/dev/null || true' EXIT
+
+echo "--- Capturing gpui frames ---"
+echo "WARNING: Do not interact with the desktop during capture."
+echo ""
+
+for i in "${!THEMES[@]}"; do
+    IFS=':' read -r theme variant icon_set icon_theme <<< "${THEMES[$i]}"
+    frame_file="$GPUI_FRAME_DIR/frame-$(printf '%02d' "$i").png"
+    echo "[$((i + 1))/${#THEMES[@]}] $theme $variant (icons: $icon_set${icon_theme:+/$icon_theme})"
+
+    # Build CLI args
+    cli_args=(--theme "$theme" --variant "$variant" --tab buttons --icon-set "$icon_set")
+    if [ -n "$icon_theme" ]; then
+        cli_args+=(--icon-theme "$icon_theme")
+    fi
+
+    cargo run -p native-theme-gpui --example showcase --release -- "${cli_args[@]}" &
+    PID=$!
+
+    sleep "$DELAY"
+
+    spectacle -i -a -b -n -e -o "$frame_file"
+    sleep 1
+
+    kill "$PID" 2>/dev/null || true
+    wait "$PID" 2>/dev/null || true
+done
+
+echo ""
+echo "--- Assembling gpui GIF ---"
+python3 "$SCRIPT_DIR/generate_gifs.py" \
+    --theme-switching "$GPUI_FRAME_DIR" \
+    --theme-switching-output "$OUTPUT_DIR/gpui-theme-switching.gif"
+echo ""
+ls -lh "$OUTPUT_DIR/gpui-theme-switching.gif"
+
+# ── Cleanup ───────────────────────────────────────────────────────────
+
+rm -rf "$ICED_FRAME_DIR" "$GPUI_FRAME_DIR"
+
+echo ""
+echo "=== Done: both theme-switching GIFs generated ==="

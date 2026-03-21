@@ -13,7 +13,9 @@ TOML presets (light + dark), and optional OS theme readers for Linux, macOS,
 and Windows.
 
 <p align="center">
-  <img src="docs/assets/theme-switching.gif" alt="Live theme switching across presets" width="600">
+  <img src="docs/assets/iced-theme-switching.gif" alt="Iced theme switching across presets" width="480">
+  &nbsp;&nbsp;
+  <img src="docs/assets/gpui-theme-switching.gif" alt="gpui theme switching across presets" width="480">
 </p>
 
 <table>

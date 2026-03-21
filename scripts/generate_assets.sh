@@ -21,7 +21,7 @@ echo "--- Step 3: Generating gpui showcase screenshots ---"
 bash "$SCRIPT_DIR/generate_gpui_screenshots.sh"
 echo ""
 
-echo "--- Step 4: Generating theme-switching GIF ---"
+echo "--- Step 4: Generating theme-switching GIFs (iced + gpui) ---"
 bash "$SCRIPT_DIR/generate_theme_switching_gif.sh"
 echo ""
 
