@@ -3,12 +3,12 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: Completed phase 41
-last_updated: "2026-03-21T08:35:00.000Z"
-last_activity: 2026-03-21 — Completed phase 41 (gpui theme preset screenshots)
+stopped_at: Completed phase 42
+last_updated: "2026-03-21T11:30:00.000Z"
+last_activity: 2026-03-21 — Completed phase 42 (theme-switching GIFs and core README images)
 progress:
   total_phases: 10
-  completed_phases: 9
+  completed_phases: 10
   total_plans: 18
   completed_plans: 18
 ---
@@ -20,17 +20,17 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** v0.4.1 Release Prep — finishing incomplete work (theme preset screenshots, code quality, visual assets)
+**Current focus:** v0.4.1 Release Prep — all phases complete
 
 ## Current Position
 
-Status: Phase 41 complete, phase 42 remaining
-Last activity: 2026-03-21 — Completed phase 41 (gpui theme preset screenshots)
+Status: All 10 phases (33-42) complete
+Last activity: 2026-03-21 — Completed phase 42 (theme-switching GIFs and core README images)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 91 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 14 v0.3.3 + 8 v0.4.0 + 21 v0.4.1)
+- Total plans completed: 92 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 14 v0.3.3 + 8 v0.4.0 + 22 v0.4.1)
 - Average duration: ~4.1min (v0.2), 3.7min (v0.3)
 - Total execution time: 70min (v0.2), 37min (v0.3), 15min (v0.3.2), 35min (v0.3.3), 35min (v0.4.0)
 
@@ -57,6 +57,9 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [Phase 41]: Added --icon-theme CLI arg to gpui showcase for explicit freedesktop icon theme selection
 - [Phase 41]: Used 3 Linux-native presets (KDE Breeze, Material, Catppuccin Mocha) × dark+light with matching icon themes
 - [Phase 41]: Adwaita needs GNOME, macOS Sonoma/Windows 11 need CI on native runners
+- [Phase 42]: Split theme-switching GIF into per-toolkit (iced + gpui) instead of single combined
+- [Phase 42]: Used same 4 Linux-native presets as Phase 41 with matching icon sets
+- [Phase 42]: Standard markdown for GIF embedding (not HTML)
 
 ### Roadmap Evolution
 
@@ -75,6 +78,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-21T08:35:00.000Z
-Stopped at: Completed phase 41
+Last session: 2026-03-21T11:30:00.000Z
+Stopped at: Completed phase 42 — all v0.4.1 phases done
 Resume file: None

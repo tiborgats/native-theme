@@ -89,7 +89,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] Phase 39: Code Quality and Housekeeping (completed 2026-03-20)
 - [x] Phase 40: Iced Theme Preset Screenshots and CI (completed 2026-03-20)
 - [x] Phase 41: gpui Theme Preset Screenshots (completed 2026-03-21)
-- [ ] Phase 42: Theme-Switching GIF and Core README Images
+- [x] Phase 42: Theme-Switching GIF and Core README Images (completed 2026-03-21)
 
 ### Phase 33: Quick Fixes and Version Consistency
 
@@ -165,7 +165,7 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 | 22-26 | v0.3.3 | 14/14 | Complete | 2026-03-17 |
 | 27-32 | v0.4.0 | 8/8 | Complete | 2026-03-18 |
 | 33-38 | v0.4.1 | 13/13 | Complete | 2026-03-20 |
-| 39-42 | v0.4.1 | 8/? | In Progress | — |
+| 39-42 | v0.4.1 | 9/9 | Complete | 2026-03-21 |
 
 ### Phase 39: Code Quality and Housekeeping
 
@@ -201,7 +201,7 @@ Plans:
 
 **Goal:** Create animated GIF showing live theme switching in a showcase, embed spinner GIF in core crate README (`native-theme/README.md`), and embed theme-switching GIF in root README hero section
 **Depends on:** Phase 40, 41
-**Plans:** 0 plans
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 42 to break down)
+- [x] 42-01-PLAN.md — Generate theme-switching GIFs (iced + gpui) and embed visual assets in READMEs (completed 2026-03-21)
