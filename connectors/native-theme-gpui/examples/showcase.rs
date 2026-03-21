@@ -283,8 +283,7 @@ fn load_all_icons(
             // When an icon theme override is specified and we're using freedesktop,
             // load from that specific theme instead of the system default.
             #[cfg(target_os = "linux")]
-            let data = if icon_set == "freedesktop" && icon_theme.is_some() {
-                let theme = icon_theme.unwrap();
+            let data = if let Some(theme) = icon_theme.filter(|_| icon_set == "freedesktop") {
                 native_icon_name(IconSet::Freedesktop, *role)
                     .and_then(|name| load_freedesktop_icon_by_name(name, theme))
             } else {
@@ -508,8 +507,7 @@ fn load_gpui_icons(icon_set: &str, icon_theme: Option<&str>) -> Vec<IconEntry> {
                 // When an icon theme override is specified and we're using freedesktop,
                 // load from that specific theme instead of the system default.
                 #[cfg(target_os = "linux")]
-                let data = if icon_set == "freedesktop" && icon_theme.is_some() {
-                    let theme = icon_theme.unwrap();
+                let data = if let Some(theme) = icon_theme.filter(|_| icon_set == "freedesktop") {
                     native_icon_name(IconSet::Freedesktop, r)
                         .and_then(|n| load_freedesktop_icon_by_name(n, theme))
                 } else {
