@@ -5247,10 +5247,8 @@ fn main() {
                                 "material" => "Material (bundled)".into(),
                                 "lucide" => "Lucide (bundled)".into(),
                                 "freedesktop" => {
-                                    let theme = cli_args
-                                        .icon_theme
-                                        .as_deref()
-                                        .unwrap_or(&sys_theme);
+                                    let theme =
+                                        cli_args.icon_theme.as_deref().unwrap_or(&sys_theme);
                                     format!("{} (system)", theme).into()
                                 }
                                 _ => format!("default ({})", sys_theme).into(),
@@ -5258,10 +5256,8 @@ fn main() {
                             // Add the display name to the selector if not already present,
                             // then select it.
                             let detected_theme = system_icon_theme();
-                            let default_label =
-                                format!("default ({})", detected_theme);
-                            let system_label =
-                                format!("{} (system)", detected_theme);
+                            let default_label = format!("default ({})", detected_theme);
+                            let system_label = format!("{} (system)", detected_theme);
                             let mut icon_names: Vec<SharedString> = vec![
                                 default_label.into(),
                                 "gpui-component built-in (Lucide)".into(),
@@ -5276,11 +5272,7 @@ fn main() {
                             let new_delegate = SearchableVec::new(icon_names);
                             s.icon_set_select.update(cx, |select, cx| {
                                 select.set_items(new_delegate, window, cx);
-                                select.set_selected_value(
-                                    &icon_display,
-                                    window,
-                                    cx,
-                                );
+                                select.set_selected_value(&icon_display, window, cx);
                             });
                         }
 
