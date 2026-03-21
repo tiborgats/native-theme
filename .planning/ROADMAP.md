@@ -88,7 +88,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] Phase 38: CI, Smoke Tests, and Release (completed 2026-03-20)
 - [x] Phase 39: Code Quality and Housekeeping (completed 2026-03-20)
 - [x] Phase 40: Iced Theme Preset Screenshots and CI (completed 2026-03-20)
-- [ ] Phase 41: gpui Theme Preset Screenshots
+- [x] Phase 41: gpui Theme Preset Screenshots (completed 2026-03-21)
 - [ ] Phase 42: Theme-Switching GIF and Core README Images
 
 ### Phase 33: Quick Fixes and Version Consistency
@@ -165,7 +165,7 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 | 22-26 | v0.3.3 | 14/14 | Complete | 2026-03-17 |
 | 27-32 | v0.4.0 | 8/8 | Complete | 2026-03-18 |
 | 33-38 | v0.4.1 | 13/13 | Complete | 2026-03-20 |
-| 39-42 | v0.4.1 | 6/? | In Progress | — |
+| 39-42 | v0.4.1 | 8/? | In Progress | — |
 
 ### Phase 39: Code Quality and Housekeeping
 
@@ -189,13 +189,13 @@ Plans:
 
 ### Phase 41: gpui Theme Preset Screenshots
 
-**Goal:** Capture gpui showcase screenshots with theme presets (Dracula dark, Nord light, Catppuccin Mocha, macOS Sonoma) and embed in `connectors/native-theme-gpui/README.md`
+**Goal:** Capture gpui showcase screenshots with theme presets (KDE Breeze, Material, Catppuccin Mocha + Lucide) and embed in `connectors/native-theme-gpui/README.md`
 **Depends on:** Phase 40
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
-- [ ] 41-01-PLAN.md — Create gpui screenshot script, update orchestration, update gpui README
-- [ ] 41-02-PLAN.md — Run screenshot capture and verify visual quality
+- [x] 41-01-PLAN.md — Create gpui screenshot script, update orchestration, update gpui README (completed 2026-03-21)
+- [x] 41-02-PLAN.md — Run screenshot capture and verify visual quality (completed 2026-03-21)
 
 ### Phase 42: Theme-Switching GIF and Core README Images
 
