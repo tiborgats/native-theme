@@ -1,0 +1,5 @@
+[advisories]
+ignore = [
+    # rustls-webpki CRL matching bug — transitive dep from gpui, awaiting upstream fix
+    "RUSTSEC-2026-0049",
+]
