@@ -17,6 +17,10 @@ echo "--- Step 2: Generating showcase screenshots ---"
 bash "$SCRIPT_DIR/generate_screenshots.sh"
 echo ""
 
+echo "--- Step 3: Generating gpui showcase screenshots ---"
+bash "$SCRIPT_DIR/generate_gpui_screenshots.sh"
+echo ""
+
 echo "=== All visual assets generated ==="
 echo "Output directory: $(dirname "$SCRIPT_DIR")/docs/assets/"
 ls -la "$(dirname "$SCRIPT_DIR")/docs/assets/" | head -20
