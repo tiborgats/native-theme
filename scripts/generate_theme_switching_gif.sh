@@ -4,8 +4,11 @@ set -euo pipefail
 # Capture theme-switching GIFs for both iced and gpui showcases.
 #
 # Produces two GIFs:
-#   docs/assets/iced-theme-switching.gif  (via iced's --screenshot flag)
+#   docs/assets/iced-theme-switching.gif  (via spectacle on KDE Wayland)
 #   docs/assets/gpui-theme-switching.gif  (via spectacle on KDE Wayland)
+#
+# Both use spectacle for external window capture to include window
+# decorations (title bar, buttons, borders) in the frames.
 #
 # Each GIF cycles through 4 Linux-native presets with matching icon sets.
 
@@ -29,6 +32,12 @@ THEMES=(
 mkdir -p "$OUTPUT_DIR"
 cd "$PROJECT_ROOT"
 
+# Kill any stale spectacle instances to avoid D-Bus singleton conflicts
+pkill spectacle 2>/dev/null || true
+
+echo "WARNING: Do not interact with the desktop during capture."
+echo ""
+
 # ── Iced GIF ──────────────────────────────────────────────────────────
 
 echo "=== Generating iced theme-switching GIF ==="
@@ -38,6 +47,9 @@ echo "--- Building iced showcase binary (release mode) ---"
 cargo build -p native-theme-iced --example showcase --release
 echo ""
 
+# Clean up showcase process on exit
+trap 'kill "$PID" 2>/dev/null || true' EXIT
+
 echo "--- Capturing iced frames ---"
 for i in "${!THEMES[@]}"; do
     IFS=':' read -r theme variant icon_set icon_theme <<< "${THEMES[$i]}"
@@ -46,7 +58,16 @@ for i in "${!THEMES[@]}"; do
 
     cargo run -p native-theme-iced --example showcase --release -- \
         --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
-        --tab buttons --screenshot "$frame_file"
+        --tab buttons &
+    PID=$!
+
+    sleep "$DELAY"
+
+    spectacle -i -a -b -n -e -o "$frame_file"
+    sleep 1
+
+    kill "$PID" 2>/dev/null || true
+    wait "$PID" 2>/dev/null || true
 done
 
 echo ""
@@ -67,16 +88,7 @@ echo "--- Building gpui showcase binary (release mode) ---"
 cargo build -p native-theme-gpui --example showcase --release
 echo ""
 
-# Kill any stale spectacle instances to avoid D-Bus singleton conflicts
-pkill spectacle 2>/dev/null || true
-
-# Clean up showcase process on exit
-trap 'kill "$PID" 2>/dev/null || true' EXIT
-
 echo "--- Capturing gpui frames ---"
-echo "WARNING: Do not interact with the desktop during capture."
-echo ""
-
 for i in "${!THEMES[@]}"; do
     IFS=':' read -r theme variant icon_set icon_theme <<< "${THEMES[$i]}"
     frame_file="$GPUI_FRAME_DIR/frame-$(printf '%02d' "$i").png"
