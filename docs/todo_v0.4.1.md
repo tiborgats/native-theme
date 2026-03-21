@@ -155,7 +155,7 @@ to capturing OTHER applications' windows).
 | Platform | API | Input | Decorations | Permission |
 |----------|-----|-------|-------------|------------|
 | macOS | `CGWindowListCreateImage` | Own `NSWindow.windowNumber` | Yes | None (own window) |
-| Windows | `PrintWindow` | Own `HWND` | Yes | None |
+| Windows | `BitBlt` from screen DC | Own `HWND` rect | Yes | None |
 | Linux | spectacle / Wayland protocol | Own window | Yes | None |
 
 **Native handle access:**
@@ -170,18 +170,26 @@ to capturing OTHER applications' windows).
 
 Add a `--screenshot <path>` flag to both showcases that:
 1. Renders the first frame normally
-2. Waits a short delay for the compositor to draw decorations
+2. Waits ~500ms for the compositor to draw decorations
 3. Calls the platform capture API on the app's own window handle
 4. Saves as PNG and exits
 
+**Why `BitBlt` on Windows (not `PrintWindow`):** Both gpui (blade-graphics)
+and iced (wgpu) render via Vulkan/OpenGL. `PrintWindow` sends GDI messages
+that GPU-rendered windows don't handle — the client area comes back black.
+`BitBlt` from the screen DC (`GetDC(NULL)`) reads the compositor's final
+output, which includes both DWM decorations and GPU-rendered content
+regardless of rendering backend. The window just needs to be visible and
+unoccluded (fine for CI). Use `DwmGetWindowAttribute(DWMWA_EXTENDED_FRAME_BOUNDS)`
+to get the exact rect including decorations.
+
 This would replace:
 - iced's current internal `--screenshot` (client-area only)
-- spectacle-based capture on Linux (external tool dependency)
 - The need for any external capture tool on macOS/Windows CI
 
 **TODO:**
 - [ ] Implement self-capture helper (macOS: `CGWindowListCreateImage`,
-      Windows: `PrintWindow`)
+      Windows: `BitBlt` from screen DC)
 - [ ] Add `--screenshot` flag to gpui showcase using self-capture
 - [ ] Update iced showcase `--screenshot` to use self-capture (with
       decorations) instead of internal framebuffer dump

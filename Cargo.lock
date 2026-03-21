@@ -4314,6 +4314,7 @@ dependencies = [
  "iced_core",
  "image",
  "native-theme",
+ "windows 0.61.3",
 ]
 
 [[package]]
