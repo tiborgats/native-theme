@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: completed
-stopped_at: Completed 40-01-PLAN.md
-last_updated: "2026-03-20T21:35:48.078Z"
-last_activity: 2026-03-20 — Completed phase 39 (deny(unsafe_code) lint, reduced motion tests, doc archival)
+stopped_at: Completed 41-01-PLAN.md
+last_updated: "2026-03-21T06:47:33.234Z"
+last_activity: 2026-03-20 — Completed phase 40 (iced theme preset screenshots CI, README updates)
 progress:
   total_phases: 10
   completed_phases: 8
-  total_plans: 16
-  completed_plans: 16
+  total_plans: 18
+  completed_plans: 17
 ---
 
 # Project State
@@ -53,6 +53,7 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [Phase 39-01]: Used deny(unsafe_code) instead of forbid(unsafe_code) because forbid cannot be overridden by allow in inner scopes
 - [Phase 40]: Used 4 specific theme+variant pairings (dracula/dark, nord/light, catppuccin-mocha/dark, macos-sonoma/light) for CI and local screenshots
 - [Phase 40]: Old icon-set screenshots already removed by plan 40-01; README tables updated to reference 4 theme presets
+- [Phase 41]: Used spectacle external capture since gpui has no window::screenshot() API
 
 ### Roadmap Evolution
 
@@ -71,6 +72,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-20T21:35:48.076Z
-Stopped at: Completed 40-02-PLAN.md
+Last session: 2026-03-21T06:47:33.231Z
+Stopped at: Completed 41-01-PLAN.md
 Resume file: None

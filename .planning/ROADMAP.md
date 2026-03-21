@@ -191,7 +191,7 @@ Plans:
 
 **Goal:** Capture gpui showcase screenshots with theme presets (Dracula dark, Nord light, Catppuccin Mocha, macOS Sonoma) and embed in `connectors/native-theme-gpui/README.md`
 **Depends on:** Phase 40
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 41-01-PLAN.md — Create gpui screenshot script, update orchestration, update gpui README
