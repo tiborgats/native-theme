@@ -727,6 +727,44 @@ enum Message {
 }
 
 // ---------------------------------------------------------------------------
+// Self-capture screenshot (macOS only)
+// ---------------------------------------------------------------------------
+
+/// Capture the iced window including decorations using macOS `screencapture -l`.
+///
+/// Uses `[NSApplication sharedApplication] -> mainWindow -> windowNumber` to get
+/// the CGWindowID, then shells out to `screencapture -l <id> -o <path>`. This
+/// avoids the deprecated `CGWindowListCreateImage` and produces a PNG with full
+/// title bar and window chrome.
+#[cfg(target_os = "macos")]
+fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
+    use std::process::Command;
+
+    let window_id: i64 = unsafe {
+        // Get NSApplication shared instance
+        let ns_app: *mut objc2::runtime::AnyObject = objc2::msg_send![
+            objc2::runtime::AnyClass::get("NSApplication").unwrap(),
+            sharedApplication
+        ];
+        let main_window: *mut objc2::runtime::AnyObject =
+            objc2::msg_send![ns_app, mainWindow];
+        if main_window.is_null() {
+            return Err("No main window found".into());
+        }
+        objc2::msg_send![main_window, windowNumber]
+    };
+    let status = Command::new("screencapture")
+        .args(["-l", &format!("{}", window_id), "-o", output_path])
+        .status()
+        .map_err(|e| format!("Failed to run screencapture: {e}"))?;
+    if status.success() {
+        Ok(())
+    } else {
+        Err(format!("screencapture exited with {status}"))
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Update
 // ---------------------------------------------------------------------------
 
@@ -736,18 +774,31 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
             if state.screenshot_countdown > 0 {
                 state.screenshot_countdown -= 1;
                 if state.screenshot_countdown == 0 {
-                    return iced::window::latest().then(|opt_id| {
-                        if let Some(id) = opt_id {
-                            iced::window::screenshot(id).map(|s| {
-                                let bytes = s.rgba.to_vec();
-                                let w = s.size.width;
-                                let h = s.size.height;
-                                Message::ScreenshotCaptured(bytes, w, h)
-                            })
-                        } else {
-                            iced::Task::none()
+                    // Platform-dispatched self-capture (includes window decorations)
+                    #[cfg(target_os = "macos")]
+                    if let Some(ref path) = state.screenshot_path {
+                        match capture_own_window_macos(path) {
+                            Ok(()) => eprintln!("Screenshot saved to {path}"),
+                            Err(e) => eprintln!("macOS self-capture failed: {e}"),
                         }
-                    });
+                        return iced::exit();
+                    }
+                    // On Linux (and other platforms), use existing iced internal screenshot
+                    #[cfg(not(target_os = "macos"))]
+                    {
+                        return iced::window::latest().then(|opt_id| {
+                            if let Some(id) = opt_id {
+                                iced::window::screenshot(id).map(|s| {
+                                    let bytes = s.rgba.to_vec();
+                                    let w = s.size.width;
+                                    let h = s.size.height;
+                                    Message::ScreenshotCaptured(bytes, w, h)
+                                })
+                            } else {
+                                iced::Task::none()
+                            }
+                        });
+                    }
                 }
             }
         }
