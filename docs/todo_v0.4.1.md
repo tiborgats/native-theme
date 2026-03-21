@@ -185,8 +185,8 @@ This would replace:
 - [ ] Add `--screenshot` flag to gpui showcase using self-capture
 - [ ] Update iced showcase `--screenshot` to use self-capture (with
       decorations) instead of internal framebuffer dump
-- [ ] Update CI screenshots workflow to use self-capture on all platforms
-- [ ] Remove spectacle dependency from local Linux scripts
+- [ ] Update CI screenshots workflow to use self-capture on macOS/Windows
+- [ ] Linux keeps spectacle for local captures (works reliably on KDE Wayland)
 
 ---
 
