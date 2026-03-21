@@ -139,10 +139,22 @@ The showcase displays all gpui-component widgets (buttons, inputs, tables,
 charts, overlays, etc.) themed with native-theme presets, with live theme
 switching and a color map inspector.
 
+### Theme Presets
+
+<table>
+<tr><th>Dracula Dark</th><th>Nord Light</th><th>Catppuccin Mocha</th><th>macOS Sonoma</th></tr>
+<tr>
+<td><img src="../../docs/assets/gpui-linux-dracula-dark.png" width="200" alt="Dracula Dark"></td>
+<td><img src="../../docs/assets/gpui-linux-nord-light.png" width="200" alt="Nord Light"></td>
+<td><img src="../../docs/assets/gpui-linux-catppuccin-mocha-dark.png" width="200" alt="Catppuccin Mocha"></td>
+<td><img src="../../docs/assets/gpui-linux-macos-sonoma-light.png" width="200" alt="macOS Sonoma"></td>
+</tr>
+</table>
+
 Generate screenshots (requires a display server):
 
 ```sh
-bash scripts/generate_screenshots.sh
+bash scripts/generate_gpui_screenshots.sh
 ```
 
 ## License
