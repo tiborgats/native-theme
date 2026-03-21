@@ -48,9 +48,11 @@ jobs:
           # Format: theme:variant:icon-set
           themes=(
             "kde-breeze:dark:freedesktop"
+            "kde-breeze:light:freedesktop"
+            "material:dark:material"
             "material:light:material"
             "catppuccin-mocha:dark:lucide"
-            "kde-breeze:light:freedesktop"
+            "catppuccin-mocha:light:lucide"
           )
           for entry in "${themes[@]}"; do
             IFS=':' read -r theme variant icon_set <<< "$entry"

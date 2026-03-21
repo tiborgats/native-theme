@@ -129,9 +129,11 @@ cargo run -p native-theme-iced --example showcase
 ### Linux
 
 ![KDE Breeze Dark](../../docs/assets/iced-linux-kde-breeze-dark.png)
+![KDE Breeze Light](../../docs/assets/iced-linux-kde-breeze-light.png)
+![Material Dark](../../docs/assets/iced-linux-material-dark.png)
 ![Material Light](../../docs/assets/iced-linux-material-light.png)
 ![Catppuccin Mocha Dark](../../docs/assets/iced-linux-catppuccin-mocha-dark.png)
-![KDE Breeze Light](../../docs/assets/iced-linux-kde-breeze-light.png)
+![Catppuccin Mocha Light](../../docs/assets/iced-linux-catppuccin-mocha-light.png)
 
 ### macOS
 

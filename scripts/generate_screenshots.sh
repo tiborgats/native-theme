@@ -8,13 +8,15 @@ SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 OUTPUT_DIR="$PROJECT_ROOT/docs/assets"
 
-# Linux-native presets with matching icon sets
+# Linux-native presets with matching icon sets (3 themes × dark+light)
 # Format: theme:variant:icon-set
 THEMES=(
     "kde-breeze:dark:freedesktop"
+    "kde-breeze:light:freedesktop"
+    "material:dark:material"
     "material:light:material"
     "catppuccin-mocha:dark:lucide"
-    "kde-breeze:light:freedesktop"
+    "catppuccin-mocha:light:lucide"
 )
 
 echo "=== Generating iced showcase screenshots ==="
