@@ -139,28 +139,14 @@ The showcase displays all gpui-component widgets (buttons, inputs, tables,
 charts, overlays, etc.) themed with native-theme presets, with live theme
 switching and a color map inspector.
 
-### Theme Presets
+### Linux
 
-<table>
-<tr><th>KDE Breeze Dark</th><th>KDE Breeze Light</th><th>Material Dark</th></tr>
-<tr>
-<td><img src="../../docs/assets/gpui-linux-kde-breeze-dark.png" width="200" alt="KDE Breeze Dark"></td>
-<td><img src="../../docs/assets/gpui-linux-kde-breeze-light.png" width="200" alt="KDE Breeze Light"></td>
-<td><img src="../../docs/assets/gpui-linux-material-dark.png" width="200" alt="Material Dark"></td>
-</tr>
-<tr><th>Material Light</th><th>Catppuccin Mocha Dark</th><th>Catppuccin Mocha Light</th></tr>
-<tr>
-<td><img src="../../docs/assets/gpui-linux-material-light.png" width="200" alt="Material Light"></td>
-<td><img src="../../docs/assets/gpui-linux-catppuccin-mocha-dark.png" width="200" alt="Catppuccin Mocha Dark"></td>
-<td><img src="../../docs/assets/gpui-linux-catppuccin-mocha-light.png" width="200" alt="Catppuccin Mocha Light"></td>
-</tr>
-</table>
-
-Generate screenshots (requires a display server):
-
-```sh
-bash scripts/generate_gpui_screenshots.sh
-```
+![KDE Breeze Dark](../../docs/assets/gpui-linux-kde-breeze-dark.png)
+![KDE Breeze Light](../../docs/assets/gpui-linux-kde-breeze-light.png)
+![Material Dark](../../docs/assets/gpui-linux-material-dark.png)
+![Material Light](../../docs/assets/gpui-linux-material-light.png)
+![Catppuccin Mocha Dark](../../docs/assets/gpui-linux-catppuccin-mocha-dark.png)
+![Catppuccin Mocha Light](../../docs/assets/gpui-linux-catppuccin-mocha-light.png)
 
 ## License
 
