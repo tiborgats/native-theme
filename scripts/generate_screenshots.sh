@@ -2,18 +2,23 @@
 set -euo pipefail
 
 # Screenshot automation for native-theme iced showcase
-# Captures 4 theme presets on the Buttons tab using iced's built-in --screenshot flag
+# Captures Linux-native theme presets on the Buttons tab using iced's --screenshot flag
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 OUTPUT_DIR="$PROJECT_ROOT/docs/assets"
 
-# Theme preset + variant pairings (matches CI workflow)
-THEMES=("dracula:dark" "nord:light" "catppuccin-mocha:dark" "macos-sonoma:light")
+# Linux-native presets with matching icon sets
+# Format: theme:variant:icon-set
+THEMES=(
+    "kde-breeze:dark:freedesktop"
+    "material:light:material"
+    "catppuccin-mocha:dark:lucide"
+    "kde-breeze:light:freedesktop"
+)
 
 echo "=== Generating iced showcase screenshots ==="
 echo "Presets: ${#THEMES[@]}"
-echo "Total screenshots: ${#THEMES[@]}"
 echo ""
 
 # Pre-build showcase binary to avoid compile delays during capture loop
@@ -30,15 +35,14 @@ count=0
 total=${#THEMES[@]}
 
 for entry in "${THEMES[@]}"; do
-    theme="${entry%%:*}"
-    variant="${entry##*:}"
+    IFS=':' read -r theme variant icon_set <<< "$entry"
     output_file="$OUTPUT_DIR/iced-linux-${theme}-${variant}.png"
     count=$((count + 1))
-    echo "[$count/$total] Capturing: $theme $variant -> $(basename "$output_file")"
+    echo "[$count/$total] Capturing: $theme $variant (icons: $icon_set) -> $(basename "$output_file")"
 
     cargo run -p native-theme-iced --example showcase --release -- \
-        --theme "$theme" --variant "$variant" --tab buttons \
-        --screenshot "$output_file"
+        --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
+        --tab buttons --screenshot "$output_file"
 done
 
 echo ""
