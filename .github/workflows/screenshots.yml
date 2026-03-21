@@ -34,8 +34,24 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb libxkbcommon-dev libxkbcommon-x11-dev libvulkan-dev mesa-vulkan-drivers
 
-      - name: Build showcase (release)
+      - name: Grant screen recording permission (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          # screencapture -l needs kTCCServiceScreenCapture on macOS 14+
+          # Grant to the shell process so the showcase can invoke screencapture
+          sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
+            "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) \
+             VALUES ('kTCCServiceScreenCapture', '/bin/bash', 1, 2, 4, 1);"
+          sudo sqlite3 "/Library/Application Support/com.apple.TCC/TCC.db" \
+            "INSERT OR REPLACE INTO access (service, client, client_type, auth_value, auth_reason, auth_version) \
+             VALUES ('kTCCServiceScreenCapture', '/bin/zsh', 1, 2, 4, 1);"
+
+      - name: Build iced showcase (release)
         run: cargo build -p native-theme-iced --example showcase --release
+
+      - name: Build gpui showcase (macOS only)
+        if: runner.os == 'macOS'
+        run: cargo build -p native-theme-gpui --example showcase --release
 
       - name: Create output directory
         run: mkdir -p docs/assets
@@ -101,8 +117,27 @@ jobs:
               --screenshot "docs/assets/iced-${{ matrix.os_name }}-${theme}-${variant}.png"
           done
 
+      - name: Capture gpui screenshots (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          # gpui showcase self-captures with window decorations via screencapture -l
+          themes=(
+            "macos-sonoma:light:system:"
+            "macos-sonoma:dark:system:"
+          )
+          for entry in "${themes[@]}"; do
+            IFS=':' read -r theme variant icon_set icon_theme <<< "$entry"
+            echo "Capturing gpui: $theme $variant"
+            cargo run -p native-theme-gpui --example showcase --release -- \
+              --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
+              --tab buttons \
+              --screenshot "docs/assets/gpui-${{ matrix.os_name }}-${theme}-${variant}.png"
+          done
+
       - name: Upload screenshots
         uses: actions/upload-artifact@v4
         with:
           name: screenshots-${{ matrix.os_name }}
-          path: docs/assets/iced-*.png
+          path: |
+            docs/assets/iced-*.png
+            docs/assets/gpui-*.png

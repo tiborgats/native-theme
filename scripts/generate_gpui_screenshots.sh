@@ -4,9 +4,14 @@ set -euo pipefail
 # Screenshot automation for native-theme gpui showcase
 # Captures Linux-native theme presets on the Buttons tab using spectacle on KDE Wayland
 #
-# Unlike iced (which has a built-in --screenshot flag), gpui has no
-# programmatic screenshot API, so this script uses spectacle for external
-# window capture.
+# Both gpui and iced now support built-in --screenshot self-capture on macOS
+# (via screencapture -l). This script uses spectacle for Linux (KDE Wayland)
+# local captures where self-capture is not available.
+#
+# NOTE: On macOS, you can use the showcase's built-in self-capture:
+#   cargo run -p native-theme-gpui --example showcase --release -- \
+#     --theme macos-sonoma --variant light --icon-set system \
+#     --screenshot docs/assets/gpui-macos-macos-sonoma-light.png
 #
 # Adwaita needs a GNOME environment (requires adwaita icon theme).
 # macOS Sonoma and Windows 11 are captured by CI on their native runners.

@@ -6,6 +6,12 @@ set -euo pipefail
 #
 # Uses spectacle for external window capture (same as gpui) to include
 # window decorations (title bar, buttons, borders) in screenshots.
+#
+# NOTE: On macOS/Windows, you can use the showcase's built-in self-capture:
+#   cargo run -p native-theme-iced --example showcase --release -- \
+#     --theme material --variant dark --icon-set material \
+#     --screenshot docs/assets/iced-macos-material-dark.png
+# This script uses spectacle for Linux (KDE Wayland) local captures.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
