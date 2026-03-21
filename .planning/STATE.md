@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: completed
-stopped_at: Completed phase 42
-last_updated: "2026-03-21T11:30:00.000Z"
-last_activity: 2026-03-21 — Completed phase 42 (theme-switching GIFs and core README images)
+status: in-progress
+stopped_at: Completed 43-01-PLAN.md
+last_updated: "2026-03-21T21:02:16.000Z"
+last_activity: 2026-03-21 — Completed phase 43 plan 01 (macOS self-capture for gpui and iced showcases)
 progress:
   total_phases: 10
   completed_phases: 10
@@ -20,17 +20,18 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-18)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** v0.4.1 Release Prep — all phases complete
+**Current focus:** Phase 43 — Self-Capture Screenshots with Window Decorations
 
 ## Current Position
 
-Status: All 10 phases (33-42) complete
-Last activity: 2026-03-21 — Completed phase 42 (theme-switching GIFs and core README images)
+Phase: 43-self-capture-screenshots-with-window-decorations
+Current Plan: 2 of 2
+Last activity: 2026-03-21 — Completed plan 43-01 (macOS self-capture for gpui and iced showcases)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 92 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 14 v0.3.3 + 8 v0.4.0 + 22 v0.4.1)
+- Total plans completed: 93 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 14 v0.3.3 + 8 v0.4.0 + 22 v0.4.1 + 1 v0.4.2)
 - Average duration: ~4.1min (v0.2), 3.7min (v0.3)
 - Total execution time: 70min (v0.2), 37min (v0.3), 15min (v0.3.2), 35min (v0.3.3), 35min (v0.4.0)
 
@@ -60,12 +61,16 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [Phase 42]: Split theme-switching GIF into per-toolkit (iced + gpui) instead of single combined
 - [Phase 42]: Used same 4 Linux-native presets as Phase 41 with matching icon sets
 - [Phase 42]: Standard markdown for GIF embedding (not HTML)
+- [Phase 43-01]: Used screencapture CLI (not CGWindowListCreateImage) to avoid macOS 15 deprecation
+- [Phase 43-01]: gpui uses raw-window-handle HasWindowHandle; iced uses NSApplication mainWindow for CGWindowID
+- [Phase 43-01]: Linux gpui prints message and continues; Linux iced preserves existing framebuffer capture
 
 ### Roadmap Evolution
 
 Phase history archived in .planning/milestones/.
 - Phase 33-38 added: v0.4.1 Release Prep milestone (quick fixes, docs, examples, screenshots, community files, release)
 - Phases 39-42 added: Finish incomplete v0.4.1 work (code quality, theme preset screenshots, GIF assets)
+- Phase 43 added: Self-Capture Screenshots with Window Decorations
 
 ### Pending Todos
 
@@ -78,6 +83,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-21T11:30:00.000Z
-Stopped at: Completed phase 42 — all v0.4.1 phases done
+Last session: 2026-03-21T21:02:16Z
+Stopped at: Completed 43-01-PLAN.md
 Resume file: None
