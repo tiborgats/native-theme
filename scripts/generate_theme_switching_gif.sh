@@ -12,8 +12,14 @@ PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 OUTPUT_DIR="$PROJECT_ROOT/docs/assets"
 FRAME_DIR="$(mktemp -d)"
 
-# 4 visually distinct presets for maximum demo impact
-THEMES=("dracula:dark" "nord:light" "catppuccin-mocha:dark" "macos-sonoma:light")
+# 4 visually distinct Linux-native presets with matching icon sets
+# Format: theme:variant:icon-set (icon theme must match UI theme)
+THEMES=(
+    "kde-breeze:dark:freedesktop"
+    "material:light:material"
+    "catppuccin-mocha:dark:lucide"
+    "kde-breeze:light:freedesktop"
+)
 
 echo "=== Generating theme-switching GIF ==="
 echo "Presets: ${#THEMES[@]}"
@@ -31,13 +37,13 @@ mkdir -p "$OUTPUT_DIR"
 
 echo "--- Capturing theme frames ---"
 for i in "${!THEMES[@]}"; do
-    IFS=':' read -r theme variant <<< "${THEMES[$i]}"
+    IFS=':' read -r theme variant icon_set <<< "${THEMES[$i]}"
     frame_file="$FRAME_DIR/frame-$(printf '%02d' "$i").png"
-    echo "[$((i + 1))/${#THEMES[@]}] Capturing: $theme $variant -> $(basename "$frame_file")"
+    echo "[$((i + 1))/${#THEMES[@]}] Capturing: $theme $variant (icons: $icon_set) -> $(basename "$frame_file")"
 
     cargo run -p native-theme-iced --example showcase --release -- \
-        --theme "$theme" --variant "$variant" --tab buttons \
-        --screenshot "$frame_file"
+        --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
+        --tab buttons --screenshot "$frame_file"
 done
 
 echo ""
