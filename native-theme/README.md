@@ -119,6 +119,12 @@ full TOML schema, builder API, and DE-aware mapping support.
 
 ## Animated Icons
 
+<p align="center">
+  <img src="https://raw.githubusercontent.com/tiborgats/native-theme/main/docs/assets/spinner-material.gif" alt="Material spinner" height="80">
+  &nbsp;&nbsp;&nbsp;&nbsp;
+  <img src="https://raw.githubusercontent.com/tiborgats/native-theme/main/docs/assets/spinner-lucide.gif" alt="Lucide spinner" height="80">
+</p>
+
 `loading_indicator()` returns a platform-native loading spinner animation
 matching the requested icon set (Material, Lucide, macOS, Windows, Adwaita,
 or a freedesktop theme's `process-working` animation):

@@ -12,6 +12,10 @@ A toolkit-agnostic theme data model with 36 semantic color roles, 17 bundled
 TOML presets (light + dark), and optional OS theme readers for Linux, macOS,
 and Windows.
 
+<p align="center">
+  <img src="docs/assets/theme-switching.gif" alt="Live theme switching across presets" width="600">
+</p>
+
 <table>
 <tr><th></th><th>Dracula Dark</th><th>Nord Light</th><th>Catppuccin Mocha</th><th>macOS Sonoma</th></tr>
 <tr>
