@@ -5102,6 +5102,7 @@ struct CliArgs {
     tab: Option<String>,
     icon_set: Option<String>,
     icon_theme: Option<String>,
+    screenshot: Option<String>,
 }
 
 impl CliArgs {
@@ -5141,6 +5142,12 @@ impl CliArgs {
                         args.icon_theme = Some(argv[i].clone());
                     }
                 }
+                "--screenshot" => {
+                    i += 1;
+                    if i < argv.len() {
+                        args.screenshot = Some(argv[i].clone());
+                    }
+                }
                 _ => {} // ignore unknown args
             }
             i += 1;
@@ -5167,6 +5174,47 @@ impl CliArgs {
 }
 
 // ---------------------------------------------------------------------------
+// Self-capture screenshot (macOS only)
+// ---------------------------------------------------------------------------
+
+/// Capture the gpui window including decorations using macOS `screencapture -l`.
+///
+/// Gets the CGWindowID from the NSView -> NSWindow -> windowNumber chain, then
+/// shells out to `screencapture -l <id> -o <path>`. This avoids the deprecated
+/// `CGWindowListCreateImage` API and produces a PNG with full title bar and
+/// window chrome.
+#[cfg(target_os = "macos")]
+fn capture_own_window_macos(window: &mut Window, output_path: &str) {
+    use raw_window_handle::HasWindowHandle;
+
+    let handle = match window.window_handle() {
+        Ok(h) => h,
+        Err(e) => {
+            eprintln!("Failed to get window handle: {e}");
+            return;
+        }
+    };
+    let raw = handle.as_raw();
+    if let raw_window_handle::RawWindowHandle::AppKit(appkit) = raw {
+        let ns_view = appkit.ns_view.as_ptr();
+        // Get NSWindow from NSView, then windowNumber (CGWindowID)
+        let window_id: i64 = unsafe {
+            let ns_window: *mut std::ffi::c_void =
+                objc2::msg_send![ns_view as *mut objc2::runtime::AnyObject, window];
+            objc2::msg_send![ns_window as *mut objc2::runtime::AnyObject, windowNumber]
+        };
+        let status = std::process::Command::new("screencapture")
+            .args(["-l", &format!("{}", window_id), "-o", output_path])
+            .status();
+        match status {
+            Ok(s) if s.success() => eprintln!("Screenshot saved to {output_path}"),
+            Ok(s) => eprintln!("screencapture exited with {s}"),
+            Err(e) => eprintln!("Failed to run screencapture: {e}"),
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
@@ -5184,7 +5232,7 @@ fn main() {
             let variant_override = cli_args.variant.as_deref().map(|v| v == "dark");
 
             let bounds = Bounds::centered(None, size(px(1100.), px(850.)), cx);
-            cx.open_window(
+            let window_handle = cx.open_window(
                 WindowOptions {
                     window_bounds: Some(WindowBounds::Windowed(bounds)),
                     ..Default::default()
@@ -5281,6 +5329,32 @@ fn main() {
             )
             .unwrap();
             cx.activate(true);
+
+            // Schedule delayed self-capture if --screenshot was provided
+            if cli_args.screenshot.is_some() {
+                #[cfg(target_os = "macos")]
+                {
+                    let path = cli_args.screenshot.as_ref().unwrap().clone();
+                    let any_handle = window_handle.any_handle;
+                    cx.spawn(async move |cx| {
+                        Timer::after(Duration::from_millis(1500)).await;
+                        let _ = cx.update_window(any_handle, |_view, window, _cx| {
+                            capture_own_window_macos(window, &path);
+                        });
+                        let _ = cx.update(|cx| cx.quit());
+                    })
+                    .detach();
+                }
+                #[cfg(not(target_os = "macos"))]
+                {
+                    eprintln!(
+                        "Self-capture not supported on this platform. \
+                         Use spectacle or generate_gpui_screenshots.sh instead."
+                    );
+                    // Continue running -- let the user capture manually
+                }
+            }
+            let _ = &window_handle; // suppress unused warning on non-macOS
         });
 }
 

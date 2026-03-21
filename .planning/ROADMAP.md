@@ -205,3 +205,13 @@ Plans:
 
 Plans:
 - [x] 42-01-PLAN.md — Generate theme-switching GIFs (iced + gpui) and embed visual assets in READMEs (completed 2026-03-21)
+
+### Phase 43: Self-Capture Screenshots with Window Decorations
+
+**Goal:** Add self-capture screenshot capability to gpui and iced showcases using OS compositor APIs (macOS screencapture -l, Windows BitBlt) so --screenshot produces PNGs with window decorations; update CI workflow with TCC.db permission for macOS
+**Depends on:** Phase 42
+**Plans:** 2 plans
+
+Plans:
+- [ ] 43-01-PLAN.md — Add --screenshot self-capture to gpui (macOS) and iced (macOS + Windows) showcases
+- [ ] 43-02-PLAN.md — Update CI workflow with TCC.db permission and gpui macOS captures; verify locally
