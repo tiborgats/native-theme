@@ -765,6 +765,121 @@ fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
 }
 
 // ---------------------------------------------------------------------------
+// Self-capture screenshot (Windows only)
+// ---------------------------------------------------------------------------
+
+/// Capture the iced window including decorations using Windows BitBlt.
+///
+/// Uses `GetForegroundWindow` to obtain the HWND, `DwmGetWindowAttribute` with
+/// `DWMWA_EXTENDED_FRAME_BOUNDS` for decoration-inclusive bounds (excluding drop
+/// shadow), then `BitBlt` + `GetDIBits` to extract pixel data as a PNG.
+#[cfg(target_os = "windows")]
+fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
+    use windows::Win32::Foundation::*;
+    use windows::Win32::Graphics::Dwm::*;
+    use windows::Win32::Graphics::Gdi::*;
+    use windows::Win32::UI::WindowsAndMessaging::*;
+
+    unsafe {
+        // Find the iced window (the foreground window is ours since we just rendered)
+        let hwnd = GetForegroundWindow();
+        if hwnd.0.is_null() {
+            return Err("No foreground window found".into());
+        }
+
+        // Get window rect including decorations but excluding drop shadow
+        let mut rect = RECT::default();
+        DwmGetWindowAttribute(
+            hwnd,
+            DWMWA_EXTENDED_FRAME_BOUNDS,
+            &mut rect as *mut _ as *mut std::ffi::c_void,
+            std::mem::size_of::<RECT>() as u32,
+        )
+        .map_err(|e| format!("DwmGetWindowAttribute failed: {e}"))?;
+
+        let width = rect.right - rect.left;
+        let height = rect.bottom - rect.top;
+        if width <= 0 || height <= 0 {
+            return Err(format!("Invalid window dimensions: {width}x{height}"));
+        }
+
+        // BitBlt from screen DC to memory DC
+        let screen_dc = GetDC(None);
+        let mem_dc = CreateCompatibleDC(screen_dc);
+        let bitmap = CreateCompatibleBitmap(screen_dc, width, height);
+        let old_obj = SelectObject(mem_dc, bitmap);
+
+        let blt_result = BitBlt(
+            mem_dc,
+            0,
+            0,
+            width,
+            height,
+            screen_dc,
+            rect.left,
+            rect.top,
+            SRCCOPY | CAPTUREBLT,
+        );
+
+        if blt_result.is_err() {
+            SelectObject(mem_dc, old_obj);
+            let _ = DeleteObject(bitmap);
+            let _ = DeleteDC(mem_dc);
+            ReleaseDC(None, screen_dc);
+            return Err("BitBlt failed".into());
+        }
+
+        // Extract pixel data via GetDIBits
+        let mut bmi = BITMAPINFO {
+            bmiHeader: BITMAPINFOHEADER {
+                biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
+                biWidth: width,
+                biHeight: -height, // negative = top-down
+                biPlanes: 1,
+                biBitCount: 32,
+                biCompression: BI_RGB.0 as u32,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
+        let mut pixels = vec![0u8; (width * height * 4) as usize];
+        let lines = GetDIBits(
+            mem_dc,
+            bitmap,
+            0,
+            height as u32,
+            Some(pixels.as_mut_ptr() as *mut std::ffi::c_void),
+            &mut bmi,
+            DIB_RGB_COLORS,
+        );
+
+        SelectObject(mem_dc, old_obj);
+        let _ = DeleteObject(bitmap);
+        let _ = DeleteDC(mem_dc);
+        ReleaseDC(None, screen_dc);
+
+        if lines == 0 {
+            return Err("GetDIBits returned 0 lines".into());
+        }
+
+        // GetDIBits returns BGRA; convert to RGBA for image crate
+        for chunk in pixels.chunks_exact_mut(4) {
+            chunk.swap(0, 2); // B <-> R
+        }
+
+        image::save_buffer(
+            output_path,
+            &pixels,
+            width as u32,
+            height as u32,
+            image::ColorType::Rgba8,
+        )
+        .map_err(|e| format!("Failed to save PNG: {e}"))
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Update
 // ---------------------------------------------------------------------------
 
@@ -775,6 +890,7 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
                 state.screenshot_countdown -= 1;
                 if state.screenshot_countdown == 0 {
                     // Platform-dispatched self-capture (includes window decorations)
+                    // macOS: screencapture -l
                     #[cfg(target_os = "macos")]
                     if let Some(ref path) = state.screenshot_path {
                         match capture_own_window_macos(path) {
@@ -783,8 +899,17 @@ fn update(state: &mut State, message: Message) -> iced::Task<Message> {
                         }
                         return iced::exit();
                     }
-                    // On Linux (and other platforms), use existing iced internal screenshot
-                    #[cfg(not(target_os = "macos"))]
+                    // Windows: BitBlt self-capture
+                    #[cfg(target_os = "windows")]
+                    if let Some(ref path) = state.screenshot_path {
+                        match capture_own_window_windows(path) {
+                            Ok(()) => eprintln!("Screenshot saved to {path}"),
+                            Err(e) => eprintln!("Windows self-capture failed: {e}"),
+                        }
+                        return iced::exit();
+                    }
+                    // Linux (and other platforms): iced internal framebuffer
+                    #[cfg(not(any(target_os = "macos", target_os = "windows")))]
                     {
                         return iced::window::latest().then(|opt_id| {
                             if let Some(id) = opt_id {

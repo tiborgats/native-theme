@@ -2,15 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: in-progress
-stopped_at: Completed 43-01-PLAN.md
-last_updated: "2026-03-21T21:02:16.000Z"
-last_activity: 2026-03-21 — Completed phase 43 plan 01 (macOS self-capture for gpui and iced showcases)
+current_plan: 2 of 2
+status: phase-complete
+stopped_at: Completed 43-02-PLAN.md
+last_updated: "2026-03-21T22:10:00.000Z"
+last_activity: 2026-03-21 — Completed plan 43-02 (CI and scripts update for self-capture)
 progress:
-  total_phases: 10
-  completed_phases: 10
-  total_plans: 18
-  completed_plans: 18
+  total_phases: 11
+  completed_phases: 11
+  total_plans: 21
+  completed_plans: 21
 ---
 
 # Project State
@@ -25,13 +26,13 @@ See: .planning/PROJECT.md (updated 2026-03-18)
 ## Current Position
 
 Phase: 43-self-capture-screenshots-with-window-decorations
-Current Plan: 2 of 2
-Last activity: 2026-03-21 — Completed plan 43-01 (macOS self-capture for gpui and iced showcases)
+Current Plan: 2 of 2 (phase complete)
+Last activity: 2026-03-21 — Completed plan 43-02 (CI and scripts update for self-capture)
 
 ## Performance Metrics
 
 **Velocity:**
-- Total plans completed: 93 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 14 v0.3.3 + 8 v0.4.0 + 22 v0.4.1 + 1 v0.4.2)
+- Total plans completed: 95 (14 v0.1 + 20 v0.2 + 10 v0.3 + 4 v0.3.2 + 14 v0.3.3 + 8 v0.4.0 + 22 v0.4.1 + 3 v0.4.2)
 - Average duration: ~4.1min (v0.2), 3.7min (v0.3)
 - Total execution time: 70min (v0.2), 37min (v0.3), 15min (v0.3.2), 35min (v0.3.3), 35min (v0.4.0)
 
@@ -64,6 +65,8 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [Phase 43-01]: Used screencapture CLI (not CGWindowListCreateImage) to avoid macOS 15 deprecation
 - [Phase 43-01]: gpui uses raw-window-handle HasWindowHandle; iced uses NSApplication mainWindow for CGWindowID
 - [Phase 43-01]: Linux gpui prints message and continues; Linux iced preserves existing framebuffer capture
+- [Phase 43-02]: TCC.db grants both /bin/bash and /bin/zsh for macOS CI screen recording permission
+- [Phase 43-02]: gpui CI screenshots only on macOS; local Linux scripts unchanged (spectacle)
 
 ### Roadmap Evolution
 
@@ -83,6 +86,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-21T21:02:16Z
-Stopped at: Completed 43-01-PLAN.md
+Last session: 2026-03-21T22:10:00Z
+Stopped at: Completed 43-02-PLAN.md (Phase 43 complete)
 Resume file: None
