@@ -44,28 +44,60 @@ jobs:
       - name: Capture screenshots (Linux)
         if: runner.os == 'Linux'
         run: |
-          themes=("dracula:dark" "nord:light" "catppuccin-mocha:dark" "macos-sonoma:light")
+          # Linux-native presets with matching icon sets
+          # Format: theme:variant:icon-set
+          themes=(
+            "kde-breeze:dark:freedesktop"
+            "material:light:material"
+            "catppuccin-mocha:dark:lucide"
+            "kde-breeze:light:freedesktop"
+          )
           for entry in "${themes[@]}"; do
-            theme="${entry%%:*}"
-            variant="${entry##*:}"
-            echo "Capturing: $theme $variant"
+            IFS=':' read -r theme variant icon_set <<< "$entry"
+            echo "Capturing: $theme $variant (icons: $icon_set)"
             xvfb-run -a --server-args="-screen 0 1920x1080x24" \
               cargo run -p native-theme-iced --example showcase --release -- \
-                --theme $theme --variant $variant --tab buttons \
+                --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
+                --tab buttons \
                 --screenshot "docs/assets/iced-${{ matrix.os_name }}-${theme}-${variant}.png"
           done
 
-      - name: Capture screenshots (macOS/Windows)
-        if: runner.os != 'Linux'
+      - name: Capture screenshots (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          # macOS-native + community presets, all using OS icon set (SF Symbols)
+          themes=(
+            "macos-sonoma:light:system"
+            "macos-sonoma:dark:system"
+            "catppuccin-mocha:dark:system"
+            "material:light:system"
+          )
+          for entry in "${themes[@]}"; do
+            IFS=':' read -r theme variant icon_set <<< "$entry"
+            echo "Capturing: $theme $variant (icons: $icon_set)"
+            cargo run -p native-theme-iced --example showcase --release -- \
+              --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
+              --tab buttons \
+              --screenshot "docs/assets/iced-${{ matrix.os_name }}-${theme}-${variant}.png"
+          done
+
+      - name: Capture screenshots (Windows)
+        if: runner.os == 'Windows'
         shell: bash
         run: |
-          themes=("dracula:dark" "nord:light" "catppuccin-mocha:dark" "macos-sonoma:light")
+          # Windows-native + community presets, all using OS icon set (Segoe Fluent)
+          themes=(
+            "windows-11:light:system"
+            "windows-11:dark:system"
+            "catppuccin-mocha:dark:system"
+            "material:light:system"
+          )
           for entry in "${themes[@]}"; do
-            theme="${entry%%:*}"
-            variant="${entry##*:}"
-            echo "Capturing: $theme $variant"
+            IFS=':' read -r theme variant icon_set <<< "$entry"
+            echo "Capturing: $theme $variant (icons: $icon_set)"
             cargo run -p native-theme-iced --example showcase --release -- \
-              --theme $theme --variant $variant --tab buttons \
+              --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
+              --tab buttons \
               --screenshot "docs/assets/iced-${{ matrix.os_name }}-${theme}-${variant}.png"
           done
 
