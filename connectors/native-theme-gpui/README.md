@@ -142,12 +142,17 @@ switching and a color map inspector.
 ### Theme Presets
 
 <table>
-<tr><th>Dracula Dark</th><th>Nord Light</th><th>Catppuccin Mocha</th><th>macOS Sonoma</th></tr>
+<tr><th>KDE Breeze Dark</th><th>KDE Breeze Light</th><th>Material Dark</th></tr>
 <tr>
-<td><img src="../../docs/assets/gpui-linux-dracula-dark.png" width="200" alt="Dracula Dark"></td>
-<td><img src="../../docs/assets/gpui-linux-nord-light.png" width="200" alt="Nord Light"></td>
-<td><img src="../../docs/assets/gpui-linux-catppuccin-mocha-dark.png" width="200" alt="Catppuccin Mocha"></td>
-<td><img src="../../docs/assets/gpui-linux-macos-sonoma-light.png" width="200" alt="macOS Sonoma"></td>
+<td><img src="../../docs/assets/gpui-linux-kde-breeze-dark.png" width="200" alt="KDE Breeze Dark"></td>
+<td><img src="../../docs/assets/gpui-linux-kde-breeze-light.png" width="200" alt="KDE Breeze Light"></td>
+<td><img src="../../docs/assets/gpui-linux-material-dark.png" width="200" alt="Material Dark"></td>
+</tr>
+<tr><th>Material Light</th><th>Catppuccin Mocha Dark</th><th>Catppuccin Mocha Light</th></tr>
+<tr>
+<td><img src="../../docs/assets/gpui-linux-material-light.png" width="200" alt="Material Light"></td>
+<td><img src="../../docs/assets/gpui-linux-catppuccin-mocha-dark.png" width="200" alt="Catppuccin Mocha Dark"></td>
+<td><img src="../../docs/assets/gpui-linux-catppuccin-mocha-light.png" width="200" alt="Catppuccin Mocha Light"></td>
 </tr>
 </table>
 

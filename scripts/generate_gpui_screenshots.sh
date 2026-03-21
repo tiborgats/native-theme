@@ -2,22 +2,34 @@
 set -euo pipefail
 
 # Screenshot automation for native-theme gpui showcase
-# Captures 4 theme presets on the Buttons tab using spectacle on KDE Wayland
+# Captures Linux-native theme presets on the Buttons tab using spectacle on KDE Wayland
 #
 # Unlike iced (which has a built-in --screenshot flag), gpui has no
 # programmatic screenshot API, so this script uses spectacle for external
 # window capture.
+#
+# Adwaita needs a GNOME environment (requires adwaita icon theme).
+# macOS Sonoma and Windows 11 are captured by CI on their native runners.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
 OUTPUT_DIR="$PROJECT_ROOT/docs/assets"
 DELAY=3
 
-# Theme preset + variant pairings (matches iced screenshot set)
-THEMES=("dracula:dark" "nord:light" "catppuccin-mocha:dark" "macos-sonoma:light")
+# Theme preset + variant + icon-set + icon-theme pairings
+# Format: theme:variant:icon-set:icon-theme
+# Icon theme must match the UI theme.
+THEMES=(
+    "kde-breeze:dark:freedesktop:breeze-dark"
+    "kde-breeze:light:freedesktop:breeze"
+    "material:dark:material:"
+    "material:light:material:"
+    "catppuccin-mocha:dark:lucide:"
+    "catppuccin-mocha:light:lucide:"
+)
 
 echo "=== Generating gpui showcase screenshots ==="
-echo "Presets: ${#THEMES[@]}"
+echo "Presets: 3 (dark + light each)"
 echo "Total screenshots: ${#THEMES[@]}"
 echo ""
 
@@ -44,14 +56,18 @@ count=0
 total=${#THEMES[@]}
 
 for entry in "${THEMES[@]}"; do
-    theme="${entry%%:*}"
-    variant="${entry##*:}"
+    IFS=':' read -r theme variant icon_set icon_theme <<< "$entry"
     output_file="$OUTPUT_DIR/gpui-linux-${theme}-${variant}.png"
     count=$((count + 1))
-    echo "[$count/$total] Capturing: $theme $variant -> $(basename "$output_file")"
+    echo "[$count/$total] Capturing: $theme $variant (icons: $icon_set${icon_theme:+/$icon_theme}) -> $(basename "$output_file")"
 
-    cargo run -p native-theme-gpui --example showcase --release -- \
-        --theme "$theme" --variant "$variant" --tab buttons &
+    # Build CLI args
+    cli_args=(--theme "$theme" --variant "$variant" --tab buttons --icon-set "$icon_set")
+    if [ -n "$icon_theme" ]; then
+        cli_args+=(--icon-theme "$icon_theme")
+    fi
+
+    cargo run -p native-theme-gpui --example showcase --release -- "${cli_args[@]}" &
     PID=$!
 
     sleep "$DELAY"
