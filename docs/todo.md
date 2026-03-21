@@ -8,6 +8,15 @@
 
 - [ ] Map `WidgetMetrics` → gpui-component per-widget styling
 
+#### Upstream PR to gpui
+
+- [ ] PR: add `Window::screenshot()` API to gpui — gpui has no public way to
+      capture the rendered framebuffer. The underlying blade-graphics backend
+      has `copy_texture_to_buffer()` but gpui doesn't expose it. A public
+      `screenshot()` method would enable headless CI screenshot capture on all
+      platforms (like iced's `--screenshot` flag). Without this, gpui showcase
+      screenshots are Linux-only (via external spectacle capture).
+
 #### Upstream PRs to gpui-component
 
 Where the connector needs customization hooks that gpui-component doesn't
