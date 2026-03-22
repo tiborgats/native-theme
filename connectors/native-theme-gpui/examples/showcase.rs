@@ -5033,7 +5033,7 @@ impl Render for Showcase {
                 div()
                     .id("content-scroll-outer")
                     .flex_1()
-                    .overflow_y_scroll()
+                    .overflow_y_scrollbar()
                     .child(match active_tab {
                         TAB_BUTTONS => self.render_buttons_tab(window, cx).into_any_element(),
                         TAB_INPUTS => self.render_inputs_tab(window, cx).into_any_element(),
