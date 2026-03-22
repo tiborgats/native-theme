@@ -5232,102 +5232,103 @@ fn main() {
             let variant_override = cli_args.variant.as_deref().map(|v| v == "dark");
 
             let bounds = Bounds::centered(None, size(px(1100.), px(850.)), cx);
-            let window_handle = cx.open_window(
-                WindowOptions {
-                    window_bounds: Some(WindowBounds::Windowed(bounds)),
-                    ..Default::default()
-                },
-                |window, cx| {
-                    let showcase = cx.new(|cx| {
-                        let mut s = Showcase::new(window, cx);
+            let window_handle = cx
+                .open_window(
+                    WindowOptions {
+                        window_bounds: Some(WindowBounds::Windowed(bounds)),
+                        ..Default::default()
+                    },
+                    |window, cx| {
+                        let showcase = cx.new(|cx| {
+                            let mut s = Showcase::new(window, cx);
 
-                        // Override color mode if --variant was specified
-                        if let Some(is_dark) = variant_override {
-                            let mode = if is_dark {
-                                ColorMode::Dark
-                            } else {
-                                ColorMode::Light
-                            };
-                            s.color_mode = mode;
-                            s.is_dark = is_dark;
-                        }
-
-                        // Override theme if --theme was specified
-                        if let Some(ref theme_name) = cli_args.theme {
-                            s.current_theme_name = theme_name.clone();
-                            s.apply_theme_by_name(theme_name, window, cx);
-                            // Update the theme selector dropdown to show the overridden theme
-                            let display = SharedString::from(theme_name.clone());
-                            s.theme_select.update(cx, |select, cx| {
-                                select.set_selected_value(&display, window, cx);
-                            });
-                        }
-
-                        // Override tab if --tab was specified
-                        if let Some(ref tab_name) = cli_args.tab
-                            && let Some(idx) = CliArgs::tab_index(tab_name)
-                        {
-                            s.active_tab = idx;
-                        }
-
-                        // Override icon theme if --icon-theme was specified
-                        if let Some(ref theme_name) = cli_args.icon_theme {
-                            s.icon_theme_override = Some(theme_name.clone());
-                        }
-
-                        // Override icon set if --icon-set was specified
-                        if let Some(ref set_name) = cli_args.icon_set {
-                            s.use_default_icon_set = false;
-                            s.icon_set_name = set_name.clone();
-                            let theme_ref = s.icon_theme_override.as_deref();
-                            s.loaded_icons = load_all_icons(set_name, theme_ref);
-                            s.gpui_icons = load_gpui_icons(set_name, theme_ref);
-                            let fg = cx.theme().foreground;
-                            s.rebuild_icon_caches(fg);
-                            s.rebuild_animation_caches();
-                            s.start_animation_timer(cx);
-
-                            // Update the icon theme selector dropdown
-                            let sys_theme = system_icon_theme();
-                            let icon_display: SharedString = match set_name.as_str() {
-                                "material" => "Material (bundled)".into(),
-                                "lucide" => "Lucide (bundled)".into(),
-                                "freedesktop" => {
-                                    let theme =
-                                        cli_args.icon_theme.as_deref().unwrap_or(&sys_theme);
-                                    format!("{} (system)", theme).into()
-                                }
-                                _ => format!("default ({})", sys_theme).into(),
-                            };
-                            // Add the display name to the selector if not already present,
-                            // then select it.
-                            let detected_theme = system_icon_theme();
-                            let default_label = format!("default ({})", detected_theme);
-                            let system_label = format!("{} (system)", detected_theme);
-                            let mut icon_names: Vec<SharedString> = vec![
-                                default_label.into(),
-                                "gpui-component built-in (Lucide)".into(),
-                                "Lucide (bundled)".into(),
-                                "Material (bundled)".into(),
-                            ];
-                            icon_names.push(system_label.into());
-                            // Add the override display name if not already in list
-                            if !icon_names.contains(&icon_display) {
-                                icon_names.push(icon_display.clone());
+                            // Override color mode if --variant was specified
+                            if let Some(is_dark) = variant_override {
+                                let mode = if is_dark {
+                                    ColorMode::Dark
+                                } else {
+                                    ColorMode::Light
+                                };
+                                s.color_mode = mode;
+                                s.is_dark = is_dark;
                             }
-                            let new_delegate = SearchableVec::new(icon_names);
-                            s.icon_set_select.update(cx, |select, cx| {
-                                select.set_items(new_delegate, window, cx);
-                                select.set_selected_value(&icon_display, window, cx);
-                            });
-                        }
 
-                        s
-                    });
-                    cx.new(|cx| Root::new(showcase, window, cx))
-                },
-            )
-            .unwrap();
+                            // Override theme if --theme was specified
+                            if let Some(ref theme_name) = cli_args.theme {
+                                s.current_theme_name = theme_name.clone();
+                                s.apply_theme_by_name(theme_name, window, cx);
+                                // Update the theme selector dropdown to show the overridden theme
+                                let display = SharedString::from(theme_name.clone());
+                                s.theme_select.update(cx, |select, cx| {
+                                    select.set_selected_value(&display, window, cx);
+                                });
+                            }
+
+                            // Override tab if --tab was specified
+                            if let Some(ref tab_name) = cli_args.tab
+                                && let Some(idx) = CliArgs::tab_index(tab_name)
+                            {
+                                s.active_tab = idx;
+                            }
+
+                            // Override icon theme if --icon-theme was specified
+                            if let Some(ref theme_name) = cli_args.icon_theme {
+                                s.icon_theme_override = Some(theme_name.clone());
+                            }
+
+                            // Override icon set if --icon-set was specified
+                            if let Some(ref set_name) = cli_args.icon_set {
+                                s.use_default_icon_set = false;
+                                s.icon_set_name = set_name.clone();
+                                let theme_ref = s.icon_theme_override.as_deref();
+                                s.loaded_icons = load_all_icons(set_name, theme_ref);
+                                s.gpui_icons = load_gpui_icons(set_name, theme_ref);
+                                let fg = cx.theme().foreground;
+                                s.rebuild_icon_caches(fg);
+                                s.rebuild_animation_caches();
+                                s.start_animation_timer(cx);
+
+                                // Update the icon theme selector dropdown
+                                let sys_theme = system_icon_theme();
+                                let icon_display: SharedString = match set_name.as_str() {
+                                    "material" => "Material (bundled)".into(),
+                                    "lucide" => "Lucide (bundled)".into(),
+                                    "freedesktop" => {
+                                        let theme =
+                                            cli_args.icon_theme.as_deref().unwrap_or(&sys_theme);
+                                        format!("{} (system)", theme).into()
+                                    }
+                                    _ => format!("default ({})", sys_theme).into(),
+                                };
+                                // Add the display name to the selector if not already present,
+                                // then select it.
+                                let detected_theme = system_icon_theme();
+                                let default_label = format!("default ({})", detected_theme);
+                                let system_label = format!("{} (system)", detected_theme);
+                                let mut icon_names: Vec<SharedString> = vec![
+                                    default_label.into(),
+                                    "gpui-component built-in (Lucide)".into(),
+                                    "Lucide (bundled)".into(),
+                                    "Material (bundled)".into(),
+                                ];
+                                icon_names.push(system_label.into());
+                                // Add the override display name if not already in list
+                                if !icon_names.contains(&icon_display) {
+                                    icon_names.push(icon_display.clone());
+                                }
+                                let new_delegate = SearchableVec::new(icon_names);
+                                s.icon_set_select.update(cx, |select, cx| {
+                                    select.set_items(new_delegate, window, cx);
+                                    select.set_selected_value(&icon_display, window, cx);
+                                });
+                            }
+
+                            s
+                        });
+                        cx.new(|cx| Root::new(showcase, window, cx))
+                    },
+                )
+                .unwrap();
             cx.activate(true);
 
             // Schedule delayed self-capture if --screenshot was provided

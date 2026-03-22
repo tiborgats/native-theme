@@ -746,8 +746,7 @@ fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
             objc2::runtime::AnyClass::get("NSApplication").unwrap(),
             sharedApplication
         ];
-        let main_window: *mut objc2::runtime::AnyObject =
-            objc2::msg_send![ns_app, mainWindow];
+        let main_window: *mut objc2::runtime::AnyObject = objc2::msg_send![ns_app, mainWindow];
         if main_window.is_null() {
             return Err("No main window found".into());
         }
