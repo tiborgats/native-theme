@@ -1169,20 +1169,8 @@ fn view(state: &State) -> Element<'_, Message> {
         Tab::ThemeMap => view_theme_map(state),
     };
 
-    // ---- Right panel (header + tabs + content) ----
-    let theme_label = format!(
-        "{} ({})",
-        state.current_choice,
-        if state.is_dark { "dark" } else { "light" },
-    );
+    // ---- Right panel (tabs + content) ----
     let right_panel = column![
-        // Header
-        column![
-            text("native-theme-iced Reference").size(18),
-            text(theme_label).size(11),
-        ]
-        .spacing(2)
-        .padding(Padding::from([10, 16])),
         // Tab bar
         container(tab_bar).padding(Padding::from([0, 16])),
         rule::horizontal(1),

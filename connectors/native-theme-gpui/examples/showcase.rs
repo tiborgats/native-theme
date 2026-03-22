@@ -4923,17 +4923,6 @@ impl Render for Showcase {
         }
 
         let active_tab = self.active_tab;
-        let is_dark = self.is_dark;
-        let theme_name_display: SharedString = if self.current_theme_name == "OS Theme" {
-            "OS Theme".into()
-        } else {
-            format!(
-                "{} ({})",
-                self.current_theme_name,
-                if is_dark { "dark" } else { "light" }
-            )
-            .into()
-        };
 
         // Build the sidebar content
         let sidebar = v_flex()
@@ -4987,29 +4976,12 @@ impl Render for Showcase {
             .flex_1()
             .h_full()
             .overflow_hidden()
-            // Header
+            // Tab bar
             .child(
                 v_flex()
                     .px_4()
                     .pt_3()
                     .pb_2()
-                    .gap_2()
-                    .child(
-                        h_flex().justify_between().items_center().child(
-                            v_flex()
-                                .child(
-                                    Label::new("native-theme-gpui Reference")
-                                        .text_size(px(18.0))
-                                        .font_semibold(),
-                                )
-                                .child(
-                                    Label::new(theme_name_display)
-                                        .text_size(px(11.0))
-                                        .text_color(theme.muted_foreground),
-                                ),
-                        ),
-                    )
-                    // Tab bar
                     .child(
                         div()
                             .id("tt-tabbar")
