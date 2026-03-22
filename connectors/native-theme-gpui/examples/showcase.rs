@@ -5213,40 +5213,30 @@ fn capture_own_window_macos(_window: &mut Window, output_path: &str) {
 
 /// Capture the gpui window including decorations using Windows BitBlt.
 ///
-/// Uses `GetForegroundWindow` to obtain the HWND, `DwmGetWindowAttribute` with
-/// `DWMWA_EXTENDED_FRAME_BOUNDS` for decoration-inclusive bounds (excluding drop
-/// shadow), then `BitBlt` + `GetDIBits` to extract pixel data as a PNG.
-///
-/// `SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)` ensures the screen DC
-/// coordinates match the physical-pixel rect from `DWMWA_EXTENDED_FRAME_BOUNDS`.
+/// Uses `GetForegroundWindow` to obtain the HWND, `GetWindowRect` for the
+/// window bounds (always in the same coordinate system as the screen DC,
+/// regardless of DPI scaling), then `BitBlt` + `GetDIBits` to extract pixel
+/// data as a PNG. The capture includes the Win10+ invisible resize border
+/// (~7px) which is acceptable for documentation screenshots.
 #[cfg(target_os = "windows")]
 fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
     use windows::Win32::Foundation::*;
-    use windows::Win32::Graphics::Dwm::*;
     use windows::Win32::Graphics::Gdi::*;
-    use windows::Win32::UI::HiDpi::*;
     use windows::Win32::UI::WindowsAndMessaging::*;
 
     unsafe {
-        // Ensure per-monitor DPI awareness so the screen DC uses physical pixels,
-        // matching DWMWA_EXTENDED_FRAME_BOUNDS coordinates.
-        SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
-
         let hwnd = GetForegroundWindow();
         if hwnd.0.is_null() {
             eprintln!("No foreground window found");
             return;
         }
 
-        // Get window rect including decorations but excluding drop shadow
+        // GetWindowRect returns coordinates in the same space as the screen DC
+        // (both use the process/thread DPI context), so they always match.
+        // Includes the invisible resize border on Win10+ (~7px each side).
         let mut rect = RECT::default();
-        if let Err(e) = DwmGetWindowAttribute(
-            hwnd,
-            DWMWA_EXTENDED_FRAME_BOUNDS,
-            &mut rect as *mut _ as *mut std::ffi::c_void,
-            std::mem::size_of::<RECT>() as u32,
-        ) {
-            eprintln!("DwmGetWindowAttribute failed: {e}");
+        if let Err(e) = GetWindowRect(hwnd, &mut rect) {
+            eprintln!("GetWindowRect failed: {e}");
             return;
         }
 
