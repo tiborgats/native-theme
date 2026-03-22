@@ -49,8 +49,8 @@ jobs:
       - name: Build iced showcase (release)
         run: cargo build -p native-theme-iced --example showcase --release
 
-      - name: Build gpui showcase (macOS only)
-        if: runner.os == 'macOS'
+      - name: Build gpui showcase (macOS and Windows)
+        if: runner.os == 'macOS' || runner.os == 'Windows'
         run: cargo build -p native-theme-gpui --example showcase --release
 
       - name: Create output directory
@@ -124,6 +124,24 @@ jobs:
           themes=(
             "macos-sonoma:light:system:"
             "macos-sonoma:dark:system:"
+          )
+          for entry in "${themes[@]}"; do
+            IFS=':' read -r theme variant icon_set icon_theme <<< "$entry"
+            echo "Capturing gpui: $theme $variant"
+            cargo run -p native-theme-gpui --example showcase --release -- \
+              --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
+              --tab buttons \
+              --screenshot "docs/assets/gpui-${{ matrix.os_name }}-${theme}-${variant}.png"
+          done
+
+      - name: Capture gpui screenshots (Windows)
+        if: runner.os == 'Windows'
+        shell: bash
+        run: |
+          # gpui showcase self-captures with window decorations via BitBlt
+          themes=(
+            "windows-11:light:system:"
+            "windows-11:dark:system:"
           )
           for entry in "${themes[@]}"; do
             IFS=':' read -r theme variant icon_set icon_theme <<< "$entry"

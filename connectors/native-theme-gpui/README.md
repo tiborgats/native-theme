@@ -141,12 +141,29 @@ switching and a color map inspector.
 
 ### Linux
 
-![KDE Breeze Dark](../../docs/assets/gpui-linux-kde-breeze-dark.png)
 ![KDE Breeze Light](../../docs/assets/gpui-linux-kde-breeze-light.png)
-![Material Dark](../../docs/assets/gpui-linux-material-dark.png)
+
+![KDE Breeze Dark](../../docs/assets/gpui-linux-kde-breeze-dark.png)
+
 ![Material Light](../../docs/assets/gpui-linux-material-light.png)
-![Catppuccin Mocha Dark](../../docs/assets/gpui-linux-catppuccin-mocha-dark.png)
+
+![Material Dark](../../docs/assets/gpui-linux-material-dark.png)
+
 ![Catppuccin Mocha Light](../../docs/assets/gpui-linux-catppuccin-mocha-light.png)
+
+![Catppuccin Mocha Dark](../../docs/assets/gpui-linux-catppuccin-mocha-dark.png)
+
+### macOS
+
+![macOS Sonoma Light](../../docs/assets/gpui-macos-macos-sonoma-light.png)
+
+![macOS Sonoma Dark](../../docs/assets/gpui-macos-macos-sonoma-dark.png)
+
+### Windows
+
+![Windows 11 Light](../../docs/assets/gpui-windows-windows-11-light.png)
+
+![Windows 11 Dark](../../docs/assets/gpui-windows-windows-11-dark.png)
 
 ## License
 

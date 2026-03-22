@@ -3,9 +3,9 @@ set -euo pipefail
 
 # Pre-release visual asset pipeline
 #
-# Regenerates all screenshots and GIFs, then triggers CI to capture
-# macOS and Windows screenshots, waits for completion, and downloads
-# the results into docs/assets/.
+# Triggers CI for macOS/Windows screenshots first, then generates local
+# Linux assets in parallel while CI runs, and finally downloads the
+# CI results into docs/assets/.
 #
 # Prerequisites: gh CLI authenticated, spectacle installed (KDE Wayland)
 #
@@ -40,31 +40,9 @@ gh auth status >/dev/null 2>&1 || fail "gh CLI not authenticated"
 ok "Prerequisites OK"
 echo ""
 
-# ── Step 1: Local Linux assets ───────────────────────────────────────
+# ── Step 1: Trigger CI early (runs in parallel with local work) ──────
 
-echo "=== Step 1/5: Spinner GIFs ==="
-python3 "$SCRIPT_DIR/generate_gifs.py"
-ok "Spinner GIFs generated"
-echo ""
-
-echo "=== Step 2/5: Iced Linux screenshots ==="
-bash "$SCRIPT_DIR/generate_screenshots.sh"
-ok "Iced Linux screenshots generated"
-echo ""
-
-echo "=== Step 3/5: gpui Linux screenshots ==="
-bash "$SCRIPT_DIR/generate_gpui_screenshots.sh"
-ok "gpui Linux screenshots generated"
-echo ""
-
-echo "=== Step 4/5: Theme-switching GIFs (iced + gpui) ==="
-bash "$SCRIPT_DIR/generate_theme_switching_gif.sh"
-ok "Theme-switching GIFs generated"
-echo ""
-
-# ── Step 2: Trigger CI for macOS/Windows screenshots ─────────────────
-
-echo "=== Step 5/5: macOS & Windows screenshots via CI ==="
+echo "=== Step 1/5: Trigger macOS & Windows screenshots via CI ==="
 echo ""
 
 # Ensure local changes are pushed so CI uses the latest code
@@ -92,25 +70,60 @@ if [ -z "$RUN_ID" ]; then
 fi
 
 info "Workflow run: https://github.com/$(gh repo view --json nameWithOwner --jq '.nameWithOwner')/actions/runs/$RUN_ID"
-info "Waiting for CI to complete (this takes ~2-4 minutes)..."
+ok "CI workflow triggered (running in background while we generate local assets)"
+echo ""
 
-# Poll for completion
-while true; do
-    STATUS=$(gh run view "$RUN_ID" --json status,conclusion --jq '"\(.status) \(.conclusion)"')
-    read -r status conclusion <<< "$STATUS"
+# ── Step 2: Local Linux assets (while CI runs) ──────────────────────
 
-    if [ "$status" = "completed" ]; then
-        if [ "$conclusion" = "success" ]; then
-            ok "CI screenshots workflow succeeded"
-            break
-        else
-            echo ""
-            fail "CI screenshots workflow failed (conclusion: $conclusion). Check: gh run view $RUN_ID --log-failed"
-        fi
+echo "=== Step 2/5: Spinner GIFs ==="
+python3 "$SCRIPT_DIR/generate_gifs.py"
+ok "Spinner GIFs generated"
+echo ""
+
+echo "=== Step 3/5: Iced Linux screenshots ==="
+bash "$SCRIPT_DIR/generate_screenshots.sh"
+ok "Iced Linux screenshots generated"
+echo ""
+
+echo "=== Step 4/5: gpui Linux screenshots ==="
+bash "$SCRIPT_DIR/generate_gpui_screenshots.sh"
+ok "gpui Linux screenshots generated"
+echo ""
+
+echo "=== Step 5/5: Theme-switching GIFs (iced + gpui) ==="
+bash "$SCRIPT_DIR/generate_theme_switching_gif.sh"
+ok "Theme-switching GIFs generated"
+echo ""
+
+# ── Step 3: Wait for CI to complete ─────────────────────────────────
+
+STATUS=$(gh run view "$RUN_ID" --json status,conclusion --jq '"\(.status) \(.conclusion)"')
+read -r status conclusion <<< "$STATUS"
+
+if [ "$status" = "completed" ]; then
+    if [ "$conclusion" = "success" ]; then
+        ok "CI screenshots workflow succeeded"
+    else
+        fail "CI screenshots workflow failed (conclusion: $conclusion). Check: gh run view $RUN_ID --log-failed"
     fi
+else
+    info "Waiting for CI to complete..."
+    while true; do
+        sleep 10
+        STATUS=$(gh run view "$RUN_ID" --json status,conclusion --jq '"\(.status) \(.conclusion)"')
+        read -r status conclusion <<< "$STATUS"
 
-    sleep 10
-done
+        if [ "$status" = "completed" ]; then
+            if [ "$conclusion" = "success" ]; then
+                ok "CI screenshots workflow succeeded"
+                break
+            else
+                echo ""
+                fail "CI screenshots workflow failed (conclusion: $conclusion). Check: gh run view $RUN_ID --log-failed"
+            fi
+        fi
+    done
+fi
 
 # Download macOS and Windows screenshots
 info "Downloading macOS and Windows screenshots..."

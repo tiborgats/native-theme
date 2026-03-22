@@ -4277,6 +4277,7 @@ dependencies = [
  "freedesktop-icons",
  "objc2 0.6.4",
  "objc2-app-kit 0.3.2",
+ "objc2-core-foundation",
  "objc2-core-graphics",
  "objc2-foundation 0.3.2",
  "resvg 0.47.0",
@@ -4303,7 +4304,10 @@ dependencies = [
  "gpui",
  "gpui-component",
  "gpui-component-assets",
+ "image",
  "native-theme",
+ "objc2 0.5.2",
+ "windows 0.61.3",
 ]
 
 [[package]]
@@ -4314,6 +4318,7 @@ dependencies = [
  "iced_core",
  "image",
  "native-theme",
+ "objc2 0.5.2",
  "windows 0.61.3",
 ]
 
@@ -4736,7 +4741,9 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2a180dd8642fa45cdb7dd721cd4c11b1cadd4929ce112ebd8b9f5803cc79d536"
 dependencies = [
  "bitflags 2.11.0",
+ "block2 0.6.2",
  "dispatch2",
+ "libc",
  "objc2 0.6.4",
 ]
 

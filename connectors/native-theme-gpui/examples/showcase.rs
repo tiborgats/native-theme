@@ -5208,10 +5208,129 @@ fn capture_own_window_macos(_window: &mut Window, output_path: &str) {
 }
 
 // ---------------------------------------------------------------------------
+// Self-capture screenshot (Windows only)
+// ---------------------------------------------------------------------------
+
+/// Capture the gpui window including decorations using Windows BitBlt.
+///
+/// Uses `GetForegroundWindow` to obtain the HWND, `DwmGetWindowAttribute` with
+/// `DWMWA_EXTENDED_FRAME_BOUNDS` for decoration-inclusive bounds (excluding drop
+/// shadow), then `BitBlt` + `GetDIBits` to extract pixel data as a PNG.
+#[cfg(target_os = "windows")]
+fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
+    use windows::Win32::Foundation::*;
+    use windows::Win32::Graphics::Dwm::*;
+    use windows::Win32::Graphics::Gdi::*;
+    use windows::Win32::UI::WindowsAndMessaging::*;
+
+    unsafe {
+        let hwnd = GetForegroundWindow();
+        if hwnd.0.is_null() {
+            eprintln!("No foreground window found");
+            return;
+        }
+
+        let mut rect = RECT::default();
+        if let Err(e) = DwmGetWindowAttribute(
+            hwnd,
+            DWMWA_EXTENDED_FRAME_BOUNDS,
+            &mut rect as *mut _ as *mut std::ffi::c_void,
+            std::mem::size_of::<RECT>() as u32,
+        ) {
+            eprintln!("DwmGetWindowAttribute failed: {e}");
+            return;
+        }
+
+        let width = rect.right - rect.left;
+        let height = rect.bottom - rect.top;
+        if width <= 0 || height <= 0 {
+            eprintln!("Invalid window dimensions: {width}x{height}");
+            return;
+        }
+
+        let screen_dc = GetDC(None);
+        let mem_dc = CreateCompatibleDC(Some(screen_dc));
+        let bitmap = CreateCompatibleBitmap(screen_dc, width, height);
+        let old_obj = SelectObject(mem_dc, bitmap.into());
+
+        let blt_result = BitBlt(
+            mem_dc,
+            0,
+            0,
+            width,
+            height,
+            Some(screen_dc),
+            rect.left,
+            rect.top,
+            SRCCOPY | CAPTUREBLT,
+        );
+
+        if blt_result.is_err() {
+            SelectObject(mem_dc, old_obj);
+            let _ = DeleteObject(bitmap.into());
+            let _ = DeleteDC(mem_dc);
+            ReleaseDC(None, screen_dc);
+            eprintln!("BitBlt failed");
+            return;
+        }
+
+        let mut bmi = BITMAPINFO {
+            bmiHeader: BITMAPINFOHEADER {
+                biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
+                biWidth: width,
+                biHeight: -height, // negative = top-down
+                biPlanes: 1,
+                biBitCount: 32,
+                biCompression: BI_RGB.0 as u32,
+                ..Default::default()
+            },
+            ..Default::default()
+        };
+
+        let mut pixels = vec![0u8; (width * height * 4) as usize];
+        let lines = GetDIBits(
+            mem_dc,
+            bitmap,
+            0,
+            height as u32,
+            Some(pixels.as_mut_ptr() as *mut std::ffi::c_void),
+            &mut bmi,
+            DIB_RGB_COLORS,
+        );
+
+        SelectObject(mem_dc, old_obj);
+        let _ = DeleteObject(bitmap.into());
+        let _ = DeleteDC(mem_dc);
+        ReleaseDC(None, screen_dc);
+
+        if lines == 0 {
+            eprintln!("GetDIBits returned 0 lines");
+            return;
+        }
+
+        // GetDIBits returns BGRA; convert to RGBA for image crate
+        for chunk in pixels.chunks_exact_mut(4) {
+            chunk.swap(0, 2); // B <-> R
+        }
+
+        match image::save_buffer(
+            output_path,
+            &pixels,
+            width as u32,
+            height as u32,
+            image::ColorType::Rgba8,
+        ) {
+            Ok(()) => eprintln!("Screenshot saved to {output_path}"),
+            Err(e) => eprintln!("Failed to save PNG: {e}"),
+        }
+    }
+}
+
+// ---------------------------------------------------------------------------
 // Main
 // ---------------------------------------------------------------------------
 
-#[cfg(any(target_os = "macos", target_os = "linux"))]
+#[cfg(any(target_os = "macos", target_os = "linux", target_os = "windows"))]
 fn main() {
     let cli_args = CliArgs::parse();
 
@@ -5339,7 +5458,20 @@ fn main() {
                     })
                     .detach();
                 }
-                #[cfg(not(target_os = "macos"))]
+                #[cfg(target_os = "windows")]
+                {
+                    let path = cli_args.screenshot.as_ref().unwrap().clone();
+                    let any_handle = *window_handle;
+                    cx.spawn(async move |cx| {
+                        Timer::after(Duration::from_millis(1500)).await;
+                        let _ = cx.update_window(any_handle, |_view, window, _cx| {
+                            capture_own_window_windows(window, &path);
+                        });
+                        let _ = cx.update(|cx| cx.quit());
+                    })
+                    .detach();
+                }
+                #[cfg(not(any(target_os = "macos", target_os = "windows")))]
                 {
                     eprintln!(
                         "Self-capture not supported on this platform. \
@@ -5348,11 +5480,11 @@ fn main() {
                     // Continue running -- let the user capture manually
                 }
             }
-            let _ = &window_handle; // suppress unused warning on non-macOS
+            let _ = &window_handle; // suppress unused warning when not used for capture
         });
 }
 
-#[cfg(not(any(target_os = "macos", target_os = "linux")))]
+#[cfg(not(any(target_os = "macos", target_os = "linux", target_os = "windows")))]
 fn main() {
-    eprintln!("gpui showcase requires macOS or Linux");
+    eprintln!("gpui showcase is not supported on this platform");
 }

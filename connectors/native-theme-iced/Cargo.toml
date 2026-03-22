@@ -28,8 +28,10 @@ native-theme = { workspace = true, features = ["system-icons"] }
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 objc2 = "0.5"
+native-theme = { workspace = true, features = ["system-icons", "macos"] }
 
 [target.'cfg(target_os = "windows")'.dev-dependencies]
+native-theme = { workspace = true, features = ["system-icons", "windows"] }
 windows = { version = ">=0.59, <=0.62", default-features = false, features = [
     "Win32_Foundation",
     "Win32_Graphics_Gdi",
