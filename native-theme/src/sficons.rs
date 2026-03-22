@@ -9,7 +9,7 @@
 
 use crate::{IconData, IconRole, IconSet, icon_name};
 use objc2::rc::Retained;
-use objc2_app_kit::{NSFontWeight, NSImage, NSImageSymbolConfiguration, NSImageSymbolScale};
+use objc2_app_kit::{NSFontWeightRegular, NSImage, NSImageSymbolConfiguration, NSImageSymbolScale};
 use objc2_core_graphics::{
     CGBitmapContextCreate, CGColorSpace, CGContext, CGImage, CGImageAlphaInfo, CGPoint, CGRect,
     CGSize,
@@ -31,7 +31,7 @@ fn load_symbol(name: &str, point_size: f64) -> Option<Retained<NSImage>> {
     let image = NSImage::imageWithSystemSymbolName_accessibilityDescription(&ns_name, None)?;
     let config = NSImageSymbolConfiguration::configurationWithPointSize_weight_scale(
         point_size,
-        NSFontWeight::Regular,
+        NSFontWeightRegular,
         NSImageSymbolScale::Medium,
     );
     image.imageWithSymbolConfiguration(&config)
@@ -117,8 +117,8 @@ pub fn load_sf_icon_by_name(name: &str) -> Option<IconData> {
     let size = DEFAULT_ICON_SIZE;
     let image = load_symbol(name, size as f64)?;
     let cg_image = extract_cgimage(&image)?;
-    let w = CGImage::width(&cg_image) as u32;
-    let h = CGImage::height(&cg_image) as u32;
+    let w = CGImage::width(Some(&cg_image)) as u32;
+    let h = CGImage::height(Some(&cg_image)) as u32;
     let mut data = rasterize(&cg_image, w, h)?;
     unpremultiply_alpha(&mut data);
     Some(IconData::Rgba {
@@ -139,8 +139,8 @@ pub fn load_sf_icon(role: IconRole) -> Option<IconData> {
     let size = DEFAULT_ICON_SIZE;
     let image = load_symbol(name, size as f64)?;
     let cg_image = extract_cgimage(&image)?;
-    let w = CGImage::width(&cg_image) as u32;
-    let h = CGImage::height(&cg_image) as u32;
+    let w = CGImage::width(Some(&cg_image)) as u32;
+    let h = CGImage::height(Some(&cg_image)) as u32;
     let mut data = rasterize(&cg_image, w, h)?;
     unpremultiply_alpha(&mut data);
     Some(IconData::Rgba {

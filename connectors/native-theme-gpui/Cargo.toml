@@ -14,7 +14,7 @@ description = "gpui toolkit connector for native-theme"
 [dependencies]
 gpui = "0.2.2"
 gpui-component = "0.5.1"
-native-theme = { workspace = true, features = ["material-icons", "lucide-icons", "system-icons", "svg-rasterize"] }
+native-theme = { workspace = true, features = ["material-icons", "lucide-icons", "system-icons", "svg-rasterize", "macos"] }
 
 [dev-dependencies]
 gpui-component-assets = "0.5.1"
