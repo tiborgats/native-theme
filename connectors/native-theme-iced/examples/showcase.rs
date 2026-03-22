@@ -1172,7 +1172,9 @@ fn view(state: &State) -> Element<'_, Message> {
     // ---- Right panel (tabs + content) ----
     let right_panel = column![
         // Tab bar
-        container(tab_bar).padding(Padding::from([0, 16]).top(8)),
+        container(tab_bar).padding(
+            Padding::from([0, 16]).top(state.current_variant.spacing.s.unwrap_or(8.0)),
+        ),
         rule::horizontal(1),
         // Scrollable content
         scrollable(
