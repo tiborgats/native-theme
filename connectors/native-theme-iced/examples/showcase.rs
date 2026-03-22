@@ -804,9 +804,9 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
 
         // BitBlt from screen DC to memory DC
         let screen_dc = GetDC(None);
-        let mem_dc = CreateCompatibleDC(screen_dc);
+        let mem_dc = CreateCompatibleDC(Some(screen_dc));
         let bitmap = CreateCompatibleBitmap(screen_dc, width, height);
-        let old_obj = SelectObject(mem_dc, bitmap);
+        let old_obj = SelectObject(mem_dc, bitmap.into());
 
         let blt_result = BitBlt(
             mem_dc,
@@ -814,7 +814,7 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
             0,
             width,
             height,
-            screen_dc,
+            Some(screen_dc),
             rect.left,
             rect.top,
             SRCCOPY | CAPTUREBLT,
@@ -822,7 +822,7 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
 
         if blt_result.is_err() {
             SelectObject(mem_dc, old_obj);
-            let _ = DeleteObject(bitmap);
+            let _ = DeleteObject(bitmap.into());
             let _ = DeleteDC(mem_dc);
             ReleaseDC(None, screen_dc);
             return Err("BitBlt failed".into());
@@ -854,7 +854,7 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
         );
 
         SelectObject(mem_dc, old_obj);
-        let _ = DeleteObject(bitmap);
+        let _ = DeleteObject(bitmap.into());
         let _ = DeleteDC(mem_dc);
         ReleaseDC(None, screen_dc);
 
