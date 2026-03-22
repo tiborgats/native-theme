@@ -147,8 +147,8 @@ unsafe fn hicon_to_rgba(hicon: HICON) -> Option<IconData> {
     let height = bmp.bmHeight as u32;
 
     if width == 0 || height == 0 {
-        DeleteObject(icon_info.hbmColor);
-        DeleteObject(icon_info.hbmMask);
+        DeleteObject(icon_info.hbmColor.into());
+        DeleteObject(icon_info.hbmMask.into());
         return None;
     }
 
@@ -176,8 +176,8 @@ unsafe fn hicon_to_rgba(hicon: HICON) -> Option<IconData> {
     let _ = DeleteDC(hdc);
 
     // Cleanup bitmaps
-    DeleteObject(icon_info.hbmColor);
-    DeleteObject(icon_info.hbmMask);
+    DeleteObject(icon_info.hbmColor.into());
+    DeleteObject(icon_info.hbmMask.into());
 
     // Convert BGRA to RGBA and fix premultiplied alpha
     bgra_to_rgba(&mut pixels);
@@ -265,14 +265,14 @@ unsafe fn try_create_font(hdc: HDC, face_name: &str, size: i32) -> Option<HFONT>
     SelectObject(hdc, old);
 
     if len == 0 {
-        DeleteObject(font);
+        DeleteObject(font.into());
         return None;
     }
 
     let actual = String::from_utf16_lossy(&actual_name[..len as usize]);
     if actual.trim_end_matches('\0') != face_name {
         // Font was substituted -- not actually available
-        DeleteObject(font);
+        DeleteObject(font.into());
         return None;
     }
 
@@ -320,7 +320,7 @@ fn load_glyph_icon(codepoint: u32, size: i32) -> Option<IconData> {
 
         if buf_size == GDI_ERROR as u32 || buf_size == 0 {
             SelectObject(hdc, old_font);
-            DeleteObject(font);
+            DeleteObject(font.into());
             let _ = DeleteDC(hdc);
             return None;
         }
@@ -338,7 +338,7 @@ fn load_glyph_icon(codepoint: u32, size: i32) -> Option<IconData> {
         );
 
         SelectObject(hdc, old_font);
-        DeleteObject(font);
+        DeleteObject(font.into());
         let _ = DeleteDC(hdc);
 
         let glyph_w = gm.gmBlackBoxX;

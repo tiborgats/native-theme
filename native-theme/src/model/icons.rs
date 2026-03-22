@@ -2,6 +2,7 @@
 //
 // These are the core icon types for the native-theme icon system.
 
+#[cfg(target_os = "linux")]
 use std::sync::OnceLock;
 
 use serde::{Deserialize, Serialize};
