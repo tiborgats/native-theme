@@ -5452,6 +5452,14 @@ fn main() {
                     },
                 )
                 .unwrap();
+            window_handle
+                .update(cx, |_, window, _| {
+                    window.set_window_title(&format!(
+                        "Native Theme – GPUI Showcase, v{}",
+                        env!("CARGO_PKG_VERSION")
+                    ));
+                })
+                .ok();
             cx.activate(true);
 
             // Schedule delayed self-capture if --screenshot was provided

@@ -1030,7 +1030,7 @@ fn view(state: &State) -> Element<'_, Message> {
     // ---- Left sidebar ----
     let sidebar = {
         let title = text("native-theme").size(18);
-        let subtitle = text("iced showcase").size(12);
+        let subtitle = text(format!("iced showcase v{}", env!("CARGO_PKG_VERSION"))).size(12);
 
         // Theme selector
         let theme_section = column![
@@ -2751,7 +2751,12 @@ fn main() -> iced::Result {
     let _ = CLI_ARGS.set(CliArgs::parse());
 
     iced::application(State::default, update, view)
-        .title("native-theme-iced Showcase")
+        .title(|_: &State| {
+            format!(
+                "Native Theme – Iced Showcase, v{}",
+                env!("CARGO_PKG_VERSION")
+            )
+        })
         .theme(theme)
         .subscription(subscription)
         .window_size((1060.0, 750.0))
