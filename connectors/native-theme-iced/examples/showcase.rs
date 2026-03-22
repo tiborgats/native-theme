@@ -772,15 +772,22 @@ fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
 /// Uses `GetForegroundWindow` to obtain the HWND, `DwmGetWindowAttribute` with
 /// `DWMWA_EXTENDED_FRAME_BOUNDS` for decoration-inclusive bounds (excluding drop
 /// shadow), then `BitBlt` + `GetDIBits` to extract pixel data as a PNG.
+///
+/// `SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)` ensures the screen DC
+/// coordinates match the physical-pixel rect from `DWMWA_EXTENDED_FRAME_BOUNDS`.
 #[cfg(target_os = "windows")]
 fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
     use windows::Win32::Foundation::*;
     use windows::Win32::Graphics::Dwm::*;
     use windows::Win32::Graphics::Gdi::*;
+    use windows::Win32::UI::HiDpi::*;
     use windows::Win32::UI::WindowsAndMessaging::*;
 
     unsafe {
-        // Find the iced window (the foreground window is ours since we just rendered)
+        // Ensure per-monitor DPI awareness so the screen DC uses physical pixels,
+        // matching DWMWA_EXTENDED_FRAME_BOUNDS coordinates.
+        SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
         let hwnd = GetForegroundWindow();
         if hwnd.0.is_null() {
             return Err("No foreground window found".into());

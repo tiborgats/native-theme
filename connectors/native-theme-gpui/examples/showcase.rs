@@ -5216,20 +5216,29 @@ fn capture_own_window_macos(_window: &mut Window, output_path: &str) {
 /// Uses `GetForegroundWindow` to obtain the HWND, `DwmGetWindowAttribute` with
 /// `DWMWA_EXTENDED_FRAME_BOUNDS` for decoration-inclusive bounds (excluding drop
 /// shadow), then `BitBlt` + `GetDIBits` to extract pixel data as a PNG.
+///
+/// `SetThreadDpiAwarenessContext(PER_MONITOR_AWARE_V2)` ensures the screen DC
+/// coordinates match the physical-pixel rect from `DWMWA_EXTENDED_FRAME_BOUNDS`.
 #[cfg(target_os = "windows")]
 fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
     use windows::Win32::Foundation::*;
     use windows::Win32::Graphics::Dwm::*;
     use windows::Win32::Graphics::Gdi::*;
+    use windows::Win32::UI::HiDpi::*;
     use windows::Win32::UI::WindowsAndMessaging::*;
 
     unsafe {
+        // Ensure per-monitor DPI awareness so the screen DC uses physical pixels,
+        // matching DWMWA_EXTENDED_FRAME_BOUNDS coordinates.
+        SetThreadDpiAwarenessContext(DPI_AWARENESS_CONTEXT_PER_MONITOR_AWARE_V2);
+
         let hwnd = GetForegroundWindow();
         if hwnd.0.is_null() {
             eprintln!("No foreground window found");
             return;
         }
 
+        // Get window rect including decorations but excluding drop shadow
         let mut rect = RECT::default();
         if let Err(e) = DwmGetWindowAttribute(
             hwnd,
@@ -5248,6 +5257,7 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
             return;
         }
 
+        // BitBlt from screen DC to memory DC
         let screen_dc = GetDC(None);
         let mem_dc = CreateCompatibleDC(Some(screen_dc));
         let bitmap = CreateCompatibleBitmap(screen_dc, width, height);
@@ -5274,6 +5284,7 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
             return;
         }
 
+        // Extract pixel data via GetDIBits
         let mut bmi = BITMAPINFO {
             bmiHeader: BITMAPINFOHEADER {
                 biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
