@@ -5179,38 +5179,31 @@ impl CliArgs {
 
 /// Capture the gpui window including decorations using macOS `screencapture -l`.
 ///
-/// Gets the CGWindowID from the NSView -> NSWindow -> windowNumber chain, then
+/// Gets the CGWindowID via NSApplication -> mainWindow -> windowNumber, then
 /// shells out to `screencapture -l <id> -o <path>`. This avoids the deprecated
 /// `CGWindowListCreateImage` API and produces a PNG with full title bar and
 /// window chrome.
 #[cfg(target_os = "macos")]
-fn capture_own_window_macos(window: &mut Window, output_path: &str) {
-    use raw_window_handle::HasWindowHandle;
-
-    let handle = match window.window_handle() {
-        Ok(h) => h,
-        Err(e) => {
-            eprintln!("Failed to get window handle: {e}");
+fn capture_own_window_macos(_window: &mut Window, output_path: &str) {
+    let window_id: i64 = unsafe {
+        let ns_app: *mut objc2::runtime::AnyObject = objc2::msg_send![
+            objc2::runtime::AnyClass::get("NSApplication").unwrap(),
+            sharedApplication
+        ];
+        let main_window: *mut objc2::runtime::AnyObject = objc2::msg_send![ns_app, mainWindow];
+        if main_window.is_null() {
+            eprintln!("No main window found");
             return;
         }
+        objc2::msg_send![main_window, windowNumber]
     };
-    let raw = handle.as_raw();
-    if let raw_window_handle::RawWindowHandle::AppKit(appkit) = raw {
-        let ns_view = appkit.ns_view.as_ptr();
-        // Get NSWindow from NSView, then windowNumber (CGWindowID)
-        let window_id: i64 = unsafe {
-            let ns_window: *mut std::ffi::c_void =
-                objc2::msg_send![ns_view as *mut objc2::runtime::AnyObject, window];
-            objc2::msg_send![ns_window as *mut objc2::runtime::AnyObject, windowNumber]
-        };
-        let status = std::process::Command::new("screencapture")
-            .args(["-l", &format!("{}", window_id), "-o", output_path])
-            .status();
-        match status {
-            Ok(s) if s.success() => eprintln!("Screenshot saved to {output_path}"),
-            Ok(s) => eprintln!("screencapture exited with {s}"),
-            Err(e) => eprintln!("Failed to run screencapture: {e}"),
-        }
+    let status = std::process::Command::new("screencapture")
+        .args(["-l", &format!("{}", window_id), "-o", output_path])
+        .status();
+    match status {
+        Ok(s) if s.success() => eprintln!("Screenshot saved to {output_path}"),
+        Ok(s) => eprintln!("screencapture exited with {s}"),
+        Err(e) => eprintln!("Failed to run screencapture: {e}"),
     }
 }
 
@@ -5336,7 +5329,7 @@ fn main() {
                 #[cfg(target_os = "macos")]
                 {
                     let path = cli_args.screenshot.as_ref().unwrap().clone();
-                    let any_handle = window_handle.any_handle;
+                    let any_handle = *window_handle;
                     cx.spawn(async move |cx| {
                         Timer::after(Duration::from_millis(1500)).await;
                         let _ = cx.update_window(any_handle, |_view, window, _cx| {
