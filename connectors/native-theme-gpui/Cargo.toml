@@ -19,5 +19,8 @@ native-theme = { workspace = true, features = ["material-icons", "lucide-icons",
 [dev-dependencies]
 gpui-component-assets = "0.5.1"
 
+[target.'cfg(target_os = "macos")'.dev-dependencies]
+objc2 = "0.5"
+
 [[example]]
 name = "showcase"
