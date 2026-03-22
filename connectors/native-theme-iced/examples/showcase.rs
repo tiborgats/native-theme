@@ -1170,16 +1170,18 @@ fn view(state: &State) -> Element<'_, Message> {
     };
 
     // ---- Right panel (tabs + content) ----
+    let sp = &state.current_variant.spacing;
+    let pad_s = sp.s.unwrap_or(8.0);
+    let pad_l = sp.l.unwrap_or(16.0);
+    let gap_xs = sp.xs.unwrap_or(4.0);
     let right_panel = column![
         // Tab bar
-        container(tab_bar).padding(
-            Padding::from([0, 16]).top(state.current_variant.spacing.s.unwrap_or(8.0)),
-        ),
+        container(tab_bar).padding(Padding::from([0.0, pad_l]).top(pad_s)),
         rule::horizontal(1),
         // Scrollable content
         scrollable(
             container(tab_content)
-                .padding(Padding::from(16))
+                .padding(Padding::from(pad_l))
                 .width(Fill),
         )
         .direction(scrollable::Direction::Vertical(
@@ -1189,7 +1191,7 @@ fn view(state: &State) -> Element<'_, Message> {
         ))
         .height(Fill),
     ]
-    .spacing(4)
+    .spacing(gap_xs)
     .width(Fill)
     .height(Fill);
 
