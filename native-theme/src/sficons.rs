@@ -10,9 +10,9 @@
 use crate::{IconData, IconRole, IconSet, icon_name};
 use objc2::rc::Retained;
 use objc2_app_kit::{NSFontWeightRegular, NSImage, NSImageSymbolConfiguration, NSImageSymbolScale};
+use objc2_core_foundation::{CGPoint, CGRect, CGSize};
 use objc2_core_graphics::{
-    CGBitmapContextCreate, CGColorSpace, CGContext, CGImage, CGImageAlphaInfo, CGPoint, CGRect,
-    CGSize,
+    CGBitmapContextCreate, CGColorSpace, CGContext, CGImage, CGImageAlphaInfo,
 };
 use objc2_foundation::NSString;
 use std::ffi::c_void;
@@ -29,9 +29,10 @@ const DEFAULT_ICON_SIZE: u32 = 24;
 fn load_symbol(name: &str, point_size: f64) -> Option<Retained<NSImage>> {
     let ns_name = NSString::from_str(name);
     let image = NSImage::imageWithSystemSymbolName_accessibilityDescription(&ns_name, None)?;
+    let weight = unsafe { NSFontWeightRegular };
     let config = NSImageSymbolConfiguration::configurationWithPointSize_weight_scale(
         point_size,
-        NSFontWeightRegular,
+        weight,
         NSImageSymbolScale::Medium,
     );
     image.imageWithSymbolConfiguration(&config)

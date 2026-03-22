@@ -25,7 +25,7 @@ native-async-io = ["linux-async-io", "macos", "windows"]
 material-icons = []    # Bundle Material Symbols SVGs as cross-platform fallback
 lucide-icons = []      # Bundle Lucide SVGs as optional icon set
 svg-rasterize = ["dep:resvg"]  # Optional SVG-to-RGBA rasterization via resvg
-system-icons = ["dep:freedesktop-icons", "dep:objc2-core-graphics", "material-icons"]  # Platform icon theme lookup with bundled fallback
+system-icons = ["dep:freedesktop-icons", "dep:objc2-core-foundation", "dep:objc2-core-graphics", "material-icons"]  # Platform icon theme lookup with bundled fallback
 
 [dependencies]
 resvg = { version = "0.47", optional = true, default-features = false }
@@ -44,6 +44,7 @@ objc2-app-kit = { version = "0.3", optional = true, features = [
     "NSWorkspace", "NSAccessibility",
 ] }
 block2 = { version = ">=0.6.1, <0.8.0", optional = true }
+objc2-core-foundation = { version = "0.3.2", optional = true, features = ["CFCGTypes"] }
 objc2-core-graphics = { version = "0.3.2", optional = true, features = [
     "CGBitmapContext", "CGColorSpace", "CGContext", "CGGeometry", "CGImage",
 ] }
