@@ -24,6 +24,7 @@ native = ["linux", "macos", "windows"]
 native-async-io = ["linux-async-io", "macos", "windows"]
 material-icons = []    # Bundle Material Symbols SVGs as cross-platform fallback
 lucide-icons = []      # Bundle Lucide SVGs as optional icon set
+phosphor-icons = []    # Bundle Phosphor Icons SVGs as optional icon set
 svg-rasterize = ["dep:resvg"]  # Optional SVG-to-RGBA rasterization via resvg
 system-icons = ["dep:freedesktop-icons", "dep:objc2-core-foundation", "dep:objc2-core-graphics", "material-icons"]  # Platform icon theme lookup with bundled fallback
 

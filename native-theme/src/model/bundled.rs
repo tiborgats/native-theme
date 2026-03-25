@@ -10,7 +10,7 @@ use super::icons::{IconRole, IconSet};
 /// feature flag is enabled.
 ///
 /// Returns `None` when:
-/// - The requested `IconSet` is not `Material` or `Lucide`
+/// - The requested `IconSet` is not `Material`, `Lucide`, or `Phosphor`
 /// - The feature flag for the requested set is not enabled
 ///
 /// Returns `Some(&[u8])` containing valid SVG bytes when the feature
@@ -34,6 +34,9 @@ pub fn bundled_icon_svg(set: IconSet, role: IconRole) -> Option<&'static [u8]> {
 
         #[cfg(feature = "lucide-icons")]
         IconSet::Lucide => lucide_svg(role),
+
+        #[cfg(feature = "phosphor-icons")]
+        IconSet::Phosphor => phosphor_svg(role),
 
         _ => None,
     }
@@ -173,6 +176,7 @@ fn lucide_svg(role: IconRole) -> Option<&'static [u8]> {
 /// Names use each set's canonical format:
 /// - Lucide: kebab-case (e.g., `"arrow-down"`, `"circle-check"`)
 /// - Material: snake_case (e.g., `"arrow_downward"`, `"check_circle"`)
+/// - Phosphor: kebab-case (e.g., `"arrows-out"`, `"check-circle"`)
 ///
 /// Returns `None` for non-bundled sets, disabled features, or unknown names.
 ///
@@ -194,6 +198,9 @@ pub fn bundled_icon_by_name(set: IconSet, name: &str) -> Option<&'static [u8]> {
 
         #[cfg(feature = "lucide-icons")]
         IconSet::Lucide => lucide_svg_by_name(name),
+
+        #[cfg(feature = "phosphor-icons")]
+        IconSet::Phosphor => phosphor_svg_by_name(name),
 
         _ => None,
     }
@@ -390,6 +397,115 @@ fn material_svg_by_name(name: &str) -> Option<&'static [u8]> {
     })
 }
 
+#[cfg(feature = "phosphor-icons")]
+#[allow(unreachable_patterns)]
+fn phosphor_svg(role: IconRole) -> Option<&'static [u8]> {
+    Some(match role {
+        // Dialog / Alert (6)
+        IconRole::DialogWarning => include_bytes!("../../icons/phosphor/warning.svg"),
+        IconRole::DialogError => include_bytes!("../../icons/phosphor/x-circle.svg"),
+        IconRole::DialogInfo => include_bytes!("../../icons/phosphor/info.svg"),
+        IconRole::DialogQuestion => include_bytes!("../../icons/phosphor/question.svg"),
+        IconRole::DialogSuccess => include_bytes!("../../icons/phosphor/check-circle.svg"),
+        IconRole::Shield => include_bytes!("../../icons/phosphor/shield.svg"),
+
+        // Window Controls (4)
+        IconRole::WindowClose => include_bytes!("../../icons/phosphor/x.svg"),
+        IconRole::WindowMinimize => include_bytes!("../../icons/phosphor/minus.svg"),
+        IconRole::WindowMaximize => include_bytes!("../../icons/phosphor/arrows-out.svg"),
+        IconRole::WindowRestore => include_bytes!("../../icons/phosphor/arrows-in.svg"),
+
+        // Common Actions (14)
+        IconRole::ActionSave => include_bytes!("../../icons/phosphor/floppy-disk.svg"),
+        IconRole::ActionDelete => include_bytes!("../../icons/phosphor/trash.svg"),
+        IconRole::ActionCopy => include_bytes!("../../icons/phosphor/copy.svg"),
+        IconRole::ActionPaste => include_bytes!("../../icons/phosphor/clipboard-text.svg"),
+        IconRole::ActionCut => include_bytes!("../../icons/phosphor/scissors.svg"),
+        IconRole::ActionUndo => include_bytes!("../../icons/phosphor/arrow-u-up-left.svg"),
+        IconRole::ActionRedo => include_bytes!("../../icons/phosphor/arrow-u-up-right.svg"),
+        IconRole::ActionSearch => include_bytes!("../../icons/phosphor/magnifying-glass.svg"),
+        IconRole::ActionSettings => include_bytes!("../../icons/phosphor/gear.svg"),
+        IconRole::ActionEdit => include_bytes!("../../icons/phosphor/pencil-simple.svg"),
+        IconRole::ActionAdd => include_bytes!("../../icons/phosphor/plus.svg"),
+        IconRole::ActionRemove => include_bytes!("../../icons/phosphor/minus.svg"),
+        IconRole::ActionRefresh => include_bytes!("../../icons/phosphor/arrows-clockwise.svg"),
+        IconRole::ActionPrint => include_bytes!("../../icons/phosphor/printer.svg"),
+
+        // Navigation (6)
+        IconRole::NavBack => include_bytes!("../../icons/phosphor/caret-left.svg"),
+        IconRole::NavForward => include_bytes!("../../icons/phosphor/caret-right.svg"),
+        IconRole::NavUp => include_bytes!("../../icons/phosphor/caret-up.svg"),
+        IconRole::NavDown => include_bytes!("../../icons/phosphor/caret-down.svg"),
+        IconRole::NavHome => include_bytes!("../../icons/phosphor/house.svg"),
+        IconRole::NavMenu => include_bytes!("../../icons/phosphor/list.svg"),
+
+        // Files / Places (5)
+        IconRole::FileGeneric => include_bytes!("../../icons/phosphor/file.svg"),
+        IconRole::FolderClosed => include_bytes!("../../icons/phosphor/folder.svg"),
+        IconRole::FolderOpen => include_bytes!("../../icons/phosphor/folder-open.svg"),
+        IconRole::TrashEmpty => include_bytes!("../../icons/phosphor/trash.svg"),
+        IconRole::TrashFull => include_bytes!("../../icons/phosphor/trash.svg"), // reuse trash
+
+        // Status (3)
+        IconRole::StatusBusy => include_bytes!("../../icons/phosphor/spinner.svg"),
+        IconRole::StatusCheck => include_bytes!("../../icons/phosphor/check.svg"),
+        IconRole::StatusError => include_bytes!("../../icons/phosphor/x-circle.svg"), // reuse x-circle
+
+        // System (4)
+        IconRole::UserAccount => include_bytes!("../../icons/phosphor/user.svg"),
+        IconRole::Notification => include_bytes!("../../icons/phosphor/bell.svg"),
+        IconRole::Help => include_bytes!("../../icons/phosphor/question.svg"), // reuse question
+        IconRole::Lock => include_bytes!("../../icons/phosphor/lock.svg"),
+
+        _ => return None, // #[non_exhaustive] forward compat
+    })
+}
+
+#[cfg(feature = "phosphor-icons")]
+#[allow(unreachable_patterns)]
+fn phosphor_svg_by_name(name: &str) -> Option<&'static [u8]> {
+    Some(match name {
+        "arrow-u-up-left" => include_bytes!("../../icons/phosphor/arrow-u-up-left.svg"),
+        "arrow-u-up-right" => include_bytes!("../../icons/phosphor/arrow-u-up-right.svg"),
+        "arrows-clockwise" => include_bytes!("../../icons/phosphor/arrows-clockwise.svg"),
+        "arrows-in" => include_bytes!("../../icons/phosphor/arrows-in.svg"),
+        "arrows-out" => include_bytes!("../../icons/phosphor/arrows-out.svg"),
+        "bell" => include_bytes!("../../icons/phosphor/bell.svg"),
+        "caret-down" => include_bytes!("../../icons/phosphor/caret-down.svg"),
+        "caret-left" => include_bytes!("../../icons/phosphor/caret-left.svg"),
+        "caret-right" => include_bytes!("../../icons/phosphor/caret-right.svg"),
+        "caret-up" => include_bytes!("../../icons/phosphor/caret-up.svg"),
+        "check" => include_bytes!("../../icons/phosphor/check.svg"),
+        "check-circle" => include_bytes!("../../icons/phosphor/check-circle.svg"),
+        "clipboard-text" => include_bytes!("../../icons/phosphor/clipboard-text.svg"),
+        "copy" => include_bytes!("../../icons/phosphor/copy.svg"),
+        "file" => include_bytes!("../../icons/phosphor/file.svg"),
+        "floppy-disk" => include_bytes!("../../icons/phosphor/floppy-disk.svg"),
+        "folder" => include_bytes!("../../icons/phosphor/folder.svg"),
+        "folder-open" => include_bytes!("../../icons/phosphor/folder-open.svg"),
+        "gear" => include_bytes!("../../icons/phosphor/gear.svg"),
+        "house" => include_bytes!("../../icons/phosphor/house.svg"),
+        "info" => include_bytes!("../../icons/phosphor/info.svg"),
+        "list" => include_bytes!("../../icons/phosphor/list.svg"),
+        "lock" => include_bytes!("../../icons/phosphor/lock.svg"),
+        "magnifying-glass" => include_bytes!("../../icons/phosphor/magnifying-glass.svg"),
+        "minus" => include_bytes!("../../icons/phosphor/minus.svg"),
+        "pencil-simple" => include_bytes!("../../icons/phosphor/pencil-simple.svg"),
+        "plus" => include_bytes!("../../icons/phosphor/plus.svg"),
+        "printer" => include_bytes!("../../icons/phosphor/printer.svg"),
+        "question" => include_bytes!("../../icons/phosphor/question.svg"),
+        "scissors" => include_bytes!("../../icons/phosphor/scissors.svg"),
+        "shield" => include_bytes!("../../icons/phosphor/shield.svg"),
+        "spinner" => include_bytes!("../../icons/phosphor/spinner.svg"),
+        "trash" => include_bytes!("../../icons/phosphor/trash.svg"),
+        "user" => include_bytes!("../../icons/phosphor/user.svg"),
+        "warning" => include_bytes!("../../icons/phosphor/warning.svg"),
+        "x" => include_bytes!("../../icons/phosphor/x.svg"),
+        "x-circle" => include_bytes!("../../icons/phosphor/x-circle.svg"),
+        _ => return None,
+    })
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -458,6 +574,94 @@ mod tests {
             "Lucide icons total size {} bytes exceeds 200KB budget",
             total
         );
+    }
+
+    // === Feature-gated tests: Phosphor ===
+
+    #[test]
+    #[cfg(feature = "phosphor-icons")]
+    fn phosphor_icons_cover_all_roles() {
+        for role in IconRole::ALL {
+            let svg = bundled_icon_svg(IconSet::Phosphor, role);
+            assert!(svg.is_some(), "Phosphor icons missing SVG for {:?}", role);
+            let bytes = svg.unwrap();
+            let content = std::str::from_utf8(bytes).expect("SVG should be valid UTF-8");
+            assert!(
+                content.contains("<svg"),
+                "Phosphor {:?} does not contain <svg tag",
+                role
+            );
+        }
+    }
+
+    #[test]
+    #[cfg(feature = "phosphor-icons")]
+    fn phosphor_icons_total_size_under_200kb() {
+        let total: usize = IconRole::ALL
+            .iter()
+            .filter_map(|role| bundled_icon_svg(IconSet::Phosphor, *role))
+            .map(|svg| svg.len())
+            .sum();
+        assert!(
+            total < 200 * 1024,
+            "Phosphor icons total size {} bytes exceeds 200KB budget",
+            total
+        );
+    }
+
+    #[test]
+    #[cfg(feature = "phosphor-icons")]
+    fn phosphor_by_name_covers_role_icons() {
+        let names = [
+            "arrow-u-up-left",
+            "arrow-u-up-right",
+            "arrows-clockwise",
+            "arrows-in",
+            "arrows-out",
+            "bell",
+            "caret-down",
+            "caret-left",
+            "caret-right",
+            "caret-up",
+            "check",
+            "check-circle",
+            "clipboard-text",
+            "copy",
+            "file",
+            "floppy-disk",
+            "folder",
+            "folder-open",
+            "gear",
+            "house",
+            "info",
+            "list",
+            "lock",
+            "magnifying-glass",
+            "minus",
+            "pencil-simple",
+            "plus",
+            "printer",
+            "question",
+            "scissors",
+            "shield",
+            "spinner",
+            "trash",
+            "user",
+            "warning",
+            "x",
+            "x-circle",
+        ];
+        for name in names {
+            let svg = bundled_icon_by_name(IconSet::Phosphor, name);
+            assert!(svg.is_some(), "Phosphor by-name missing: {}", name);
+            let bytes = svg.unwrap();
+            let content = std::str::from_utf8(bytes).expect("SVG should be valid UTF-8");
+            assert!(
+                content.contains("<svg"),
+                "Phosphor {} does not contain <svg tag",
+                name
+            );
+        }
     }
 
     // === Non-feature-gated tests ===
