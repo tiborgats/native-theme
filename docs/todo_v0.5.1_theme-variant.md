@@ -1,0 +1,855 @@
+# ThemeVariant Design
+
+Based on [platform-facts.md](platform-facts.md) which documents OS facts (Chapter 1) and cross-platform property mapping (Chapter 2). This document defines our data structures informed by those facts.
+
+Where we introduce abstractions, they are clearly labeled.
+
+---
+
+### 1 Design Principles
+
+1. **Each widget has its own struct** containing all visual properties for that widget: colors, font, sizing, geometry.
+
+2. **Global defaults** exist for properties shared across many widgets.
+
+3. **Inheritance**: Widget fields are `Option`. `None` means "inherit from the global default." Resolution fills in all `None`s.
+
+4. **If an OS allows per-widget customization, we allow it too.**
+
+5. **Abstractions we introduce** (not directly from any OS):
+   - `ThemeSpacing` (xxs–xxl scale): a convenience abstraction for layout spacing. OSes provide specific per-context spacing values, not an abstract scale. We map OS layout spacing values into this scale for portability across toolkits.
+   - `TextScale` entries: maps platform type ramp entries (macOS TextStyles, Fluent type ramp, libadwaita CSS classes) into named content roles.
+
+6. **Accent-derived state colors** (primary button, checked indicator, slider/progress fill) are explicit `Option` fields on the relevant widget structs. On all four platforms these default to `defaults.accent` / `defaults.accent_foreground`, but explicit fields allow per-widget override.
+
+7. **Uncertain values are still captured.** Properties marked ❓ in platform-facts (measured, no authoritative source) get the same `Option` fields as verified properties. The uncertainty is about the *value*, not the existence of the property. Presets populate these from the best available data, and the ❓ annotation in platform-facts tracks confidence for future correction.
+
+### 2 FontSpec
+
+```rust
+/// A font specification: family, size in points, weight (CSS 100–900).
+#[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct FontSpec {
+    pub family: Option<String>,
+    pub size: Option<f32>,
+    pub weight: Option<u16>,
+}
+```
+
+### 3 TextScaleEntry
+
+```rust
+/// A text scale level: size in points, weight, and line height.
+/// None fields inherit from defaults.font.
+#[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+pub struct TextScaleEntry {
+    pub size: Option<f32>,
+    pub weight: Option<u16>,
+    /// Absolute line height in points. macOS and Windows Fluent specify
+    /// per-style line heights (e.g. .largeTitle 26pt/32pt, Display 68epx/92epx).
+    /// None = use defaults.line_height multiplier × size.
+    pub line_height: Option<f32>,
+}
+```
+
+### 4 ThemeSpacing
+
+An abstraction. OSes provide specific per-context spacing values (see
+platform-facts §1.1.5, §1.2.5, §1.3.5, §1.4.5 and the cross-platform
+mapping in platform-facts §2.20). We map them into a 7-step scale for
+portable use by layout code:
+
+```rust
+#[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+#[non_exhaustive]
+pub struct ThemeSpacing {
+    pub xxs: Option<f32>,
+    pub xs: Option<f32>,
+    pub s: Option<f32>,
+    pub m: Option<f32>,
+    pub l: Option<f32>,
+    pub xl: Option<f32>,
+    pub xxl: Option<f32>,
+}
+```
+
+This scale is populated per-preset from measured platform values.
+There is no 1:1 OS API mapping — see platform-facts §2.20 for what
+each platform actually provides. Preset authors assign
+platform-appropriate values to each step based on the platform's
+design language.
+
+### 5 IconSizes
+
+Per-context icon sizes. See platform-facts §2.1.8.
+
+```rust
+/// Icon sizes for different UI contexts (in logical pixels).
+/// Values come from OS metrics, icon theme defaults, or design guidelines.
+#[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+#[non_exhaustive]
+pub struct IconSizes {
+    /// Toolbar icons.
+    /// macOS: 32 (reg) / 24 (small) | Windows Fluent: 20 | KDE: 22 | GNOME: 16
+    pub toolbar: Option<f32>,
+
+    /// Small icons (sidebar items, navigation).
+    /// macOS: 16–20 | Windows: SM_CXSMICON=16 | KDE: Small=16 | GNOME: 16
+    pub small: Option<f32>,
+
+    /// Large icons (desktop, file manager).
+    /// macOS: (none) | Windows: SM_CXICON=32 | KDE: Desktop=48 | GNOME: 32
+    pub large: Option<f32>,
+
+    /// Dialog icons (e.g. message box icon).
+    /// macOS: (none) | Windows: (none) | KDE: Dialog=32 | GNOME: (none)
+    pub dialog: Option<f32>,
+
+    /// Panel / dock icons.
+    /// macOS: (none) | Windows: (none) | KDE: Panel=48 | GNOME: (none)
+    pub panel: Option<f32>,
+}
+```
+
+### 6 DialogButtonOrder
+
+See platform-facts §2.22. Button order convention differs across platforms:
+
+```rust
+/// Dialog button layout order.
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+pub enum DialogButtonOrder {
+    /// Primary/affirmative action on the trailing (right in LTR) side.
+    /// macOS: Cancel ← OK (grouped right). GNOME: Cancel ··· OK (spaced apart).
+    TrailingAffirmative,
+    /// Primary/affirmative action on the leading (left in LTR) side.
+    /// Windows: OK → Cancel. KDE: OK → Apply → Cancel.
+    LeadingAffirmative,
+}
+```
+
+### 7 ThemeDefaults
+
+Global properties shared across widgets. Per-field OS sources are in
+platform-facts §2.1. Raw OS APIs are in platform-facts Chapter 1.
+
+```rust
+#[serde_with::skip_serializing_none]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+#[non_exhaustive]
+pub struct ThemeDefaults {
+    // ---- Base font ----
+    // macOS: systemFontOfSize: | Windows: lfMessageFont
+    // KDE: [General] font | GNOME: font-name gsetting
+    pub font: FontSpec,
+
+    /// Line height multiplier (e.g. 1.4 = 140% of font size).
+    /// macOS: 1.19 (SF Pro metrics) | Windows: 1.43 (Fluent Body 20/14)
+    /// KDE: 1.36 (Noto Sans metrics) | GNOME: 1.2 (Cantarell) / 1.21 (Adwaita Sans)
+    pub line_height: Option<f32>,
+
+    // macOS: monospacedSystemFont | KDE: [General] fixed
+    // GNOME: monospace-font-name | Windows: none — preset supplies default
+    pub mono_font: FontSpec,
+
+    // ---- Base colors ----
+    pub background: Option<Rgba>,
+    pub foreground: Option<Rgba>,
+    pub accent: Option<Rgba>,
+    pub accent_foreground: Option<Rgba>,   // text on accent-colored backgrounds
+    pub surface: Option<Rgba>,             // elevated surface (cards, dialogs)
+    pub border: Option<Rgba>,
+    pub muted: Option<Rgba>,               // secondary/subdued text
+    pub shadow: Option<Rgba>,
+    pub link: Option<Rgba>,
+    pub selection: Option<Rgba>,           // selection highlight background
+    pub selection_foreground: Option<Rgba>,
+
+    /// Selection background when window is unfocused / not key.
+    /// macOS: unemphasizedSelectedContentBackgroundColor (§1.1.2)
+    /// Windows: (none) — uses reduced emphasis or COLOR_BTNFACE
+    /// KDE: (none) — selection bg does not change on focus loss
+    /// GNOME: (none) — :backdrop CSS state handles this
+    pub selection_inactive: Option<Rgba>,
+
+    pub disabled_foreground: Option<Rgba>, // macOS: disabledControlTextColor
+
+    // ---- Status colors ----
+    pub danger: Option<Rgba>,
+    pub danger_foreground: Option<Rgba>,
+    pub warning: Option<Rgba>,
+    pub warning_foreground: Option<Rgba>,
+    pub success: Option<Rgba>,
+    pub success_foreground: Option<Rgba>,
+    pub info: Option<Rgba>,
+    pub info_foreground: Option<Rgba>,
+
+    // ---- Global geometry ----
+    pub radius: Option<f32>,
+    pub radius_lg: Option<f32>,
+    pub frame_width: Option<f32>,
+    pub disabled_opacity: Option<f32>,
+    pub border_opacity: Option<f32>,
+    pub shadow_enabled: Option<bool>,
+
+    // ---- Focus ring ----
+    pub focus_ring_color: Option<Rgba>,
+    pub focus_ring_width: Option<f32>,
+    pub focus_ring_offset: Option<f32>,
+
+    // ---- Spacing (abstraction — see §4) ----
+    pub spacing: ThemeSpacing,
+
+    // ---- Icon sizes (see §5) ----
+    pub icon_sizes: IconSizes,
+
+    // ---- Accessibility ----
+    // See platform-facts §2.1.7.
+    // These are runtime system state, not preset-authored values.
+    // They are queried from the OS and applied to the resolved theme.
+
+    /// Text scaling factor (1.0 = no scaling).
+    /// macOS: Accessibility text size pref | Windows: UISettings.TextScaleFactor (1.0–2.25)
+    /// KDE: forceFontDPI / 96 | GNOME: text-scaling-factor gsetting
+    pub text_scaling_factor: Option<f32>,
+
+    /// Whether the user has requested reduced motion / disabled animations.
+    /// macOS: accessibilityDisplayShouldReduceMotion
+    /// Windows: SPI_GETCLIENTAREAANIMATION (inverted — false = reduce)
+    /// KDE: AnimationDurationFactor = 0
+    /// GNOME: enable-animations (inverted) / Portal reduced-motion
+    pub reduce_motion: Option<bool>,
+
+    /// Whether a high-contrast mode is active.
+    /// macOS: accessibilityDisplayShouldIncreaseContrast
+    /// Windows: SPI_GETHIGHCONTRAST
+    /// KDE: (none) | GNOME: a11y.interface high-contrast / Portal contrast
+    pub high_contrast: Option<bool>,
+
+    /// Whether the user has requested reduced transparency.
+    /// macOS: accessibilityDisplayShouldReduceTransparency
+    /// Windows: (none — high contrast disables it)
+    /// KDE: (none) | GNOME: (none)
+    pub reduce_transparency: Option<bool>,
+}
+```
+
+### 8 Per-Widget Structs
+
+Each field is `Option`. `None` = inherit from `ThemeDefaults`.
+Per-field OS sources are in platform-facts Chapter 2. Raw OS APIs are
+in platform-facts Chapter 1.
+
+```rust
+// ── §2.2 Window / Application Chrome ────────────────────────────
+
+pub struct WindowTheme {
+    pub background: Option<Rgba>,
+    pub foreground: Option<Rgba>,
+    pub border: Option<Rgba>,
+    pub title_bar_background: Option<Rgba>,
+    pub title_bar_foreground: Option<Rgba>,
+
+    /// Title bar background when window is inactive / unfocused.
+    /// macOS: (none) — system-managed dimming, no API
+    /// Windows: COLOR_INACTIVECAPTION (§1.2.2)
+    /// KDE: [WM] inactiveBackground (§1.3.2)
+    /// GNOME: (none) — :backdrop CSS state, no separate color
+    pub inactive_title_bar_background: Option<Rgba>,
+
+    /// Title bar foreground when window is inactive / unfocused.
+    /// macOS: (none) — system-managed
+    /// Windows: COLOR_INACTIVECAPTIONTEXT (§1.2.2)
+    /// KDE: [WM] inactiveForeground (§1.3.2)
+    /// GNOME: (none) — :backdrop CSS state
+    pub inactive_title_bar_foreground: Option<Rgba>,
+
+    pub title_bar_font: Option<FontSpec>,
+    pub radius: Option<f32>,
+    pub shadow: Option<bool>,
+}
+
+// ── §2.3 Button ─────────────────────────────────────────────────
+
+pub struct ButtonTheme {
+    pub background: Option<Rgba>,
+    pub foreground: Option<Rgba>,
+    pub border: Option<Rgba>,
+    pub font: Option<FontSpec>,
+    pub min_width: Option<f32>,
+    pub min_height: Option<f32>,
+    pub padding_horizontal: Option<f32>,
+    pub padding_vertical: Option<f32>,
+    pub radius: Option<f32>,
+    pub icon_spacing: Option<f32>,
+    pub disabled_opacity: Option<f32>,
+    pub shadow: Option<bool>,
+
+    /// Primary/accent button background (e.g. "OK", "Save").
+    /// All platforms: ← defaults.accent
+    pub primary_bg: Option<Rgba>,
+
+    /// Primary/accent button text color.
+    /// All platforms: ← defaults.accent_foreground
+    pub primary_fg: Option<Rgba>,
+}
+
+// ── §2.4 Text Input ─────────────────────────────────────────────
+
+pub struct InputTheme {
+    pub background: Option<Rgba>,
+    pub foreground: Option<Rgba>,
+    pub border: Option<Rgba>,
+    pub placeholder: Option<Rgba>,
+    pub caret: Option<Rgba>,
+    pub selection: Option<Rgba>,
+    pub selection_foreground: Option<Rgba>,
+    pub font: Option<FontSpec>,
+    pub min_height: Option<f32>,
+    pub padding_horizontal: Option<f32>,
+    pub padding_vertical: Option<f32>,
+    pub radius: Option<f32>,
+    pub border_width: Option<f32>,
+}
+
+// ── §2.5 Checkbox / Radio Button ────────────────────────────────
+
+pub struct CheckboxTheme {
+    pub indicator_size: Option<f32>,
+    pub spacing: Option<f32>,
+    pub radius: Option<f32>,
+    pub border_width: Option<f32>,
+
+    /// Checked indicator fill color.
+    /// All platforms: ← defaults.accent
+    pub checked_bg: Option<Rgba>,
+}
+
+// ── §2.6 Menu ───────────────────────────────────────────────────
+
+pub struct MenuTheme {
+    pub background: Option<Rgba>,
+    pub foreground: Option<Rgba>,
+    pub separator: Option<Rgba>,
+    pub font: Option<FontSpec>,
+    pub item_height: Option<f32>,
+    pub padding_horizontal: Option<f32>,
+    pub padding_vertical: Option<f32>,
+    pub icon_spacing: Option<f32>,
+}
+
+// ── §2.7 Tooltip ────────────────────────────────────────────────
+
+pub struct TooltipTheme {
+    pub background: Option<Rgba>,
+    pub foreground: Option<Rgba>,
+    pub font: Option<FontSpec>,
+
+    /// Horizontal (left/right) padding.
+    /// macOS: 4 | Windows: 9 | KDE: 3 | GNOME: 10
+    pub padding_horizontal: Option<f32>,
+
+    /// Vertical (top/bottom) padding.
+    /// macOS: 4 | Windows: 6–8 | KDE: 3 | GNOME: 6
+    pub padding_vertical: Option<f32>,
+
+    pub max_width: Option<f32>,
+    pub radius: Option<f32>,
+}
+
+// ── §2.8 Scrollbar ──────────────────────────────────────────────
+
+pub struct ScrollbarTheme {
+    pub track: Option<Rgba>,
+    pub thumb: Option<Rgba>,
+    pub thumb_hover: Option<Rgba>,
+    pub width: Option<f32>,
+    pub min_thumb_height: Option<f32>,
+    pub slider_width: Option<f32>,
+
+    /// Whether to use overlay (auto-hiding) scrollbars.
+    /// macOS: NSScroller.preferredScrollerStyle (.overlay/.legacy)
+    /// Windows: (none — always persistent)
+    /// KDE: (none — always persistent)
+    /// GNOME: gsettings overlay-scrolling / gtk-overlay-scrolling
+    pub overlay_mode: Option<bool>,
+}
+
+// ── §2.9 Slider ─────────────────────────────────────────────────
+
+pub struct SliderTheme {
+    /// Active/filled portion of the track.
+    /// All platforms: ← defaults.accent
+    pub fill: Option<Rgba>,
+
+    /// Inactive/unfilled portion of the track.
+    /// All platforms: ← defaults.muted
+    pub track: Option<Rgba>,
+
+    /// Thumb/knob color.
+    /// All platforms: ← defaults.surface
+    pub thumb: Option<Rgba>,
+
+    pub track_height: Option<f32>,
+    pub thumb_size: Option<f32>,
+    pub tick_length: Option<f32>,
+}
+
+// ── §2.10 Progress Bar ──────────────────────────────────────────
+
+pub struct ProgressBarTheme {
+    /// Filled/determinate portion of the bar.
+    /// All platforms: ← defaults.accent
+    pub fill: Option<Rgba>,
+
+    /// Unfilled/track portion of the bar.
+    /// All platforms: ← defaults.muted
+    pub track: Option<Rgba>,
+
+    pub height: Option<f32>,
+    pub min_width: Option<f32>,
+    pub radius: Option<f32>,
+}
+
+// ── §2.11 Tab Bar ───────────────────────────────────────────────
+
+pub struct TabTheme {
+    pub background: Option<Rgba>,
+    pub foreground: Option<Rgba>,
+    pub active_background: Option<Rgba>,
+    pub active_foreground: Option<Rgba>,
+    pub bar_background: Option<Rgba>,
+    pub min_width: Option<f32>,
+    pub min_height: Option<f32>,
+    pub padding_horizontal: Option<f32>,
+    pub padding_vertical: Option<f32>,
+}
+
+// ── §2.12 Sidebar ───────────────────────────────────────────────
+
+pub struct SidebarTheme {
+    pub background: Option<Rgba>,
+    pub foreground: Option<Rgba>,
+}
+
+// ── §2.13 Toolbar ───────────────────────────────────────────────
+
+pub struct ToolbarTheme {
+    pub font: Option<FontSpec>,
+    pub height: Option<f32>,
+    pub item_spacing: Option<f32>,
+    pub padding: Option<f32>,
+}
+
+// ── §2.14 Status Bar ────────────────────────────────────────────
+
+pub struct StatusBarTheme {
+    pub font: Option<FontSpec>,
+}
+
+// ── §2.15 List / Table ──────────────────────────────────────────
+
+pub struct ListTheme {
+    pub background: Option<Rgba>,
+    pub foreground: Option<Rgba>,
+    pub alternate_row: Option<Rgba>,
+    pub selection: Option<Rgba>,
+    pub selection_foreground: Option<Rgba>,
+    pub header_background: Option<Rgba>,
+    pub header_foreground: Option<Rgba>,
+
+    /// Table/list grid line color (between columns/rows).
+    /// macOS: gridColor (§1.1.2) — distinct from separatorColor
+    /// Windows: (none) — uses border color
+    /// KDE: (none) — Qt views use palette pen
+    /// GNOME: (none) — columnview uses CSS separator
+    pub grid_color: Option<Rgba>,
+
+    pub item_height: Option<f32>,
+    pub padding_horizontal: Option<f32>,
+    pub padding_vertical: Option<f32>,
+}
+
+// ── §2.16 Popover / Dropdown ────────────────────────────────────
+
+pub struct PopoverTheme {
+    pub background: Option<Rgba>,
+    pub foreground: Option<Rgba>,
+    pub border: Option<Rgba>,
+    pub radius: Option<f32>,
+}
+
+// ── §2.17 Splitter ──────────────────────────────────────────────
+
+pub struct SplitterTheme {
+    pub width: Option<f32>,
+}
+
+// ── §2.18 Separator ─────────────────────────────────────────────
+
+pub struct SeparatorTheme {
+    pub color: Option<Rgba>,
+}
+
+// ── §2.21 Switch / Toggle ───────────────────────────────────────
+
+pub struct SwitchTheme {
+    /// Track (groove) width.
+    /// macOS: 38 | Windows: 40 | KDE: ~36 (font-derived) | GNOME: ~46 (derived)
+    pub track_width: Option<f32>,
+
+    /// Track (groove) height.
+    /// macOS: 22 | Windows: 20 | KDE: ~18 (font-derived) | GNOME: ~26
+    pub track_height: Option<f32>,
+
+    /// Thumb (knob) diameter.
+    /// macOS: ~18 ❓ | Windows: 12 (rest) / 14 (hover) | KDE: ~18 | GNOME: 20
+    pub thumb_size: Option<f32>,
+
+    /// Track corner radius. All platforms use pill (half height).
+    /// macOS: half height | Windows: 10 | KDE: half height | GNOME: 14
+    pub track_radius: Option<f32>,
+
+    /// Track color when switch is ON.
+    /// All platforms: ← defaults.accent
+    pub checked_bg: Option<Rgba>,
+
+    /// Track color when switch is OFF.
+    /// macOS: (measured) | Windows: (Fluent) ToggleSwitchFillOff
+    /// KDE: (preset) | GNOME: Adwaita $trough_color
+    pub unchecked_bg: Option<Rgba>,
+
+    /// Thumb (knob) color.
+    /// macOS: (measured) white | Windows: (Fluent) ToggleSwitchKnob
+    /// KDE: (preset) | GNOME: Adwaita $slider_color
+    pub thumb_bg: Option<Rgba>,
+}
+
+// ── §2.22 Dialog ────────────────────────────────────────────────
+
+pub struct DialogTheme {
+    /// Minimum dialog width.
+    /// macOS: (none — AppKit-managed) | Windows: 320 | KDE: (none) | GNOME: 300sp
+    pub min_width: Option<f32>,
+
+    /// Maximum dialog width.
+    /// macOS: (none) | Windows: 548 | KDE: (none) | GNOME: 372sp (wide: 600sp)
+    pub max_width: Option<f32>,
+
+    /// Minimum dialog height.
+    /// macOS: (none) — AppKit-managed | Windows: 184 (§1.2.4)
+    /// KDE: (none) | GNOME: (none)
+    pub min_height: Option<f32>,
+
+    /// Maximum dialog height.
+    /// macOS: (none) | Windows: 756 (§1.2.4)
+    /// KDE: (none) | GNOME: (none)
+    pub max_height: Option<f32>,
+
+    /// Content area padding.
+    /// macOS: ~20 ❓ | Windows: 24 | KDE: 10 | GNOME: 24 sides / 32 top
+    pub content_padding: Option<f32>,
+
+    /// Spacing between dialog action buttons.
+    /// macOS: ~12 ❓ | Windows: 8 | KDE: 6 | GNOME: 12
+    pub button_spacing: Option<f32>,
+
+    /// Button layout order.
+    /// macOS/GNOME: TrailingAffirmative | Windows/KDE: LeadingAffirmative
+    pub button_order: Option<DialogButtonOrder>,
+
+    /// Dialog title font.
+    /// macOS: system alert heading | Windows: 20px SemiBold (600)
+    /// KDE: ← defaults.font | GNOME: .title-2 (136%, 800)
+    pub title_font: Option<FontSpec>,
+
+    /// Dialog corner radius.
+    /// macOS: ← defaults.radius_lg | Windows: 8 (OverlayCornerRadius)
+    /// KDE: ← defaults.radius_lg | GNOME: 18 ($alert_radius — distinct from window 15px)
+    pub radius: Option<f32>,
+
+    /// Icon size in the dialog (e.g. app icon in a macOS alert).
+    /// macOS: 64 (app icon) | Windows: (none) | KDE: (none) | GNOME: (none)
+    pub icon_size: Option<f32>,
+}
+
+// ── §2.23 Spinner / Progress Ring ───────────────────────────────
+
+pub struct SpinnerTheme {
+    /// Default spinner diameter.
+    /// macOS: 32 (regular) / 16 (small) | Windows: 32 | KDE: 36 | GNOME: 16
+    pub diameter: Option<f32>,
+
+    /// Minimum spinner size.
+    /// macOS: 10 (mini) | Windows: 16 | KDE: (none) | GNOME: (none)
+    pub min_size: Option<f32>,
+
+    /// Ring stroke width (for ring-style spinners).
+    /// macOS: (none — fin-based) | Windows: 4 | KDE: (none — icon) | GNOME: (none — icon)
+    pub stroke_width: Option<f32>,
+
+    /// Spinner fill / indicator color.
+    /// macOS: system gray | Windows: ← defaults.accent
+    /// KDE: ← defaults.foreground | GNOME: ← defaults.foreground
+    pub fill: Option<Rgba>,
+}
+
+// ── §2.24 ComboBox / Dropdown Trigger ───────────────────────────
+
+pub struct ComboBoxTheme {
+    /// Minimum height of the closed combo box.
+    /// macOS: NSPopUpButton=21 | Windows: 32 | KDE: (none) | GNOME: ← button height
+    pub min_height: Option<f32>,
+
+    /// Minimum width.
+    /// macOS: (none) | Windows: 64 | KDE: (none) | GNOME: (none)
+    pub min_width: Option<f32>,
+
+    /// Horizontal content padding.
+    /// macOS: ~8–10 ❓ | Windows: 12 | KDE: ComboBox_FrameWidth=6 | GNOME: ← button padding
+    pub padding_horizontal: Option<f32>,
+
+    /// Size of the dropdown arrow indicator.
+    /// macOS: ~16–18 ❓ | Windows: glyph=12 | KDE: MenuButton_IndicatorWidth=20 | GNOME: 16
+    pub arrow_size: Option<f32>,
+
+    /// Width of the reserved arrow area (including padding around arrow).
+    /// macOS: ~16–18 ❓ | Windows: 38 | KDE: 20 | GNOME: (none — inline icon)
+    pub arrow_area_width: Option<f32>,
+
+    pub radius: Option<f32>,
+}
+
+// ── §2.25 Segmented Control ─────────────────────────────────────
+// macOS is the only platform with a first-class segmented control.
+// KDE uses tab bar metrics as proxy; Windows and GNOME have no equivalent.
+
+pub struct SegmentedControlTheme {
+    /// Segment height.
+    /// macOS: NSSegmentedControl=24 | Windows: (none) | KDE: TabBar_TabMinHeight=30 | GNOME: (none)
+    pub segment_height: Option<f32>,
+
+    /// Separator width between segments.
+    /// macOS: 1 | KDE: TabBar_TabOverlap=1
+    pub separator_width: Option<f32>,
+
+    /// Horizontal padding within each segment.
+    /// macOS: ~8–10 ❓ | KDE: TabBar_TabMarginWidth=8
+    pub padding_horizontal: Option<f32>,
+
+    pub radius: Option<f32>,
+}
+
+// ── §2.26 Card / Container ──────────────────────────────────────
+// macOS and KDE have no native card component.
+// Windows has card color resources but no Card control.
+// GNOME defines .card CSS class used by list.boxed-list.
+
+pub struct CardTheme {
+    /// Card surface color.
+    /// Windows: (Fluent) CardBackgroundFillColorDefault | GNOME: var(--card-bg-color)
+    pub background: Option<Rgba>,
+
+    /// Card border color.
+    /// Windows: (Fluent) CardStrokeColorDefault | GNOME: var(--card-shade-color)
+    pub border: Option<Rgba>,
+
+    /// Card corner radius.
+    /// Windows: 8 (OverlayCornerRadius) | GNOME: $card_radius=12
+    pub radius: Option<f32>,
+
+    /// Whether the card has a drop shadow.
+    /// Windows: (none — border only) | GNOME: Adwaita box-shadow
+    pub shadow: Option<bool>,
+
+    /// Inner content padding.
+    /// Windows: 12 (convention) | GNOME: (none — app-defined)
+    pub padding: Option<f32>,
+}
+
+// ── §2.27 Expander / Disclosure ─────────────────────────────────
+
+pub struct ExpanderTheme {
+    /// Header row minimum height.
+    /// macOS: (none — content-sized) | Windows: Expander=48 | KDE: (none) | GNOME: AdwExpanderRow=50
+    pub header_height: Option<f32>,
+
+    /// Disclosure arrow / chevron size.
+    /// macOS: ~13 ❓ | Windows: chevron glyph=12 | KDE: ItemView_ArrowSize=10 | GNOME: 16
+    pub arrow_size: Option<f32>,
+
+    /// Padding around the expanded content.
+    /// macOS: (none — app-defined) | Windows: 16 | KDE: (none) | GNOME: (Adwaita CSS) row padding
+    pub content_padding: Option<f32>,
+
+    /// Expander header corner radius.
+    /// macOS: (none) | Windows: ← defaults.radius | KDE: Frame_FrameRadius=5 | GNOME: 6
+    pub radius: Option<f32>,
+}
+
+// ── §2.28 Link ──────────────────────────────────────────────────
+
+pub struct LinkTheme {
+    /// Link text color.
+    /// macOS: linkColor | Windows: (Fluent) AccentTextFillColor
+    /// KDE: ForegroundLink | GNOME: var(--accent-color)
+    pub color: Option<Rgba>,
+
+    /// Visited link color.
+    /// macOS: (none — same as link) | Windows: (none — same as link)
+    /// KDE: ForegroundVisited | GNOME: 80% mix accent+fg
+    pub visited: Option<Rgba>,
+
+    /// Whether links are underlined.
+    /// macOS: yes | Windows: no (HyperlinkButton has no underline)
+    /// KDE: yes (Kirigami LinkButton) | GNOME: yes
+    pub underline: Option<bool>,
+
+    /// Link background (for button-style links).
+    /// macOS: (none — inline) | Windows: transparent (HyperlinkButton)
+    /// KDE: (none — inline) | GNOME: (none — inline)
+    pub background: Option<Rgba>,
+
+    /// Link hover background (for button-style links).
+    /// macOS: (none) | Windows: (Fluent) SubtleFillColorSecondary
+    /// KDE: (none) | GNOME: (none)
+    pub hover_bg: Option<Rgba>,
+}
+```
+
+### 9 TextScale
+
+Maps platform type ramp entries into named content roles. This is an
+abstraction — OSes provide type ramps with different names and
+granularity (see platform-facts §1.1.1, §1.2.1, §1.4.1).
+
+Each entry has size, weight, and optional line height. `None` inherits
+from `defaults.font`.
+
+```rust
+pub struct TextScale {
+    /// Smallest readable text (footnotes, timestamps, image captions).
+    /// macOS: .caption1 (10pt, 400, 13pt line) | Windows: Caption (12epx=9pt, 400, 16epx line)
+    /// KDE: smallestReadableFont | GNOME: .caption (≈9pt, 400)
+    pub caption: Option<TextScaleEntry>,
+
+    /// Section divider headings (settings group header, sidebar section).
+    /// macOS: .headline (13pt, 700, 16pt line) | Windows: Subtitle (20epx=15pt, 600, 28epx line)
+    /// KDE: Level 2 (body × 1.2) | GNOME: .heading (11pt, 700)
+    pub section_heading: Option<TextScaleEntry>,
+
+    /// Dialog/page title (sheet header, wizard title, page heading).
+    /// macOS: .title1 (22pt, 400, 26pt line) | Windows: Title (28epx=21pt, 600, 36epx line)
+    /// KDE: Level 1 (body × 1.35) | GNOME: .title-2 (≈15pt, 800)
+    pub dialog_title: Option<TextScaleEntry>,
+
+    /// Large hero text (onboarding screens, marketing banners).
+    /// macOS: .largeTitle (26pt, 400, 32pt line) | Windows: Display (68epx=51pt, 600, 92epx line)
+    /// KDE: (none — no equivalent) | GNOME: .title-1 (≈20pt, 800)
+    pub display: Option<TextScaleEntry>,
+}
+```
+
+**Unmapped platform entries:** These type scale entries exist on individual
+platforms (platform-facts §1.1.1, §1.4.1) but have no cross-platform
+equivalent and are not mapped into `TextScale`:
+
+- macOS: `.title2` (17pt), `.title3` (15pt), `.callout` (12pt), `.subheadline` (11pt), `.footnote` (10pt), `.caption2` (10pt, Medium 500)
+- Windows: BodyStrong (14px, 600), BodyLarge/BodyLargeStrong (18px), TitleLarge (40px)
+- GNOME: `.caption-heading` (82%, 700), `.title-4` (118%, 700), `.title-3` (136%, 700)
+- KDE: additional heading levels (Level 3 = body × 1.1, Level 4 = body × 1.0)
+
+The 4-entry mapping captures the roles most commonly needed by UI toolkits.
+If finer granularity is needed, presets can add entries via `#[non_exhaustive]`.
+
+### 10 ThemeVariant (top-level)
+
+```rust
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[serde(default)]
+#[non_exhaustive]
+pub struct ThemeVariant {
+    pub defaults: ThemeDefaults,
+    pub text_scale: TextScale,
+
+    // Widgets from platform-facts §2.2–§2.18
+    pub window: WindowTheme,
+    pub button: ButtonTheme,
+    pub input: InputTheme,
+    pub checkbox: CheckboxTheme,
+    pub menu: MenuTheme,
+    pub tooltip: TooltipTheme,
+    pub scrollbar: ScrollbarTheme,
+    pub slider: SliderTheme,
+    pub progress_bar: ProgressBarTheme,
+    pub tab: TabTheme,
+    pub sidebar: SidebarTheme,
+    pub toolbar: ToolbarTheme,
+    pub status_bar: StatusBarTheme,
+    pub list: ListTheme,
+    pub popover: PopoverTheme,
+    pub splitter: SplitterTheme,
+    pub separator: SeparatorTheme,
+
+    // Widgets from platform-facts §2.21–§2.28
+    pub switch: SwitchTheme,
+    pub dialog: DialogTheme,
+    pub spinner: SpinnerTheme,
+    pub combo_box: ComboBoxTheme,
+    pub segmented_control: SegmentedControlTheme,
+    pub card: CardTheme,
+    pub expander: ExpanderTheme,
+    pub link: LinkTheme,
+
+    pub icon_set: Option<String>,
+}
+```
+
+### 11 Inheritance Rules
+
+Moved to [todo_v0.5.1_inheritance-rules.md](todo_v0.5.1_inheritance-rules.md).
+
+### 12 Coverage Notes
+
+#### Properties in Ch.1 with no ThemeVariant field
+
+These properties are documented in platform-facts Chapter 1 (raw platform
+APIs) but deliberately excluded from the cross-platform struct because
+they are platform-specific with no portable equivalent:
+
+| Property | Platform | Why excluded |
+|----------|----------|--------------|
+| `findHighlightColor` | macOS | Search match highlighting — no cross-platform API |
+| `highlightColor` | macOS | Highlight overlay — no cross-platform equivalent |
+| `AccentDark1/2/3`, `AccentLight1/2/3` | Windows | Accent shade ramp — only Windows provides these |
+| `DecorationHover` | KDE | Hover decoration color — KDE-specific |
+| `paletteFontOfSize:` | macOS | Tool palette font — macOS-specific role |
+| `taskbarFont` | KDE | Panel/taskbar font — desktop shell, not app UI |
+| `gridColor` | macOS | Now mapped → `list.grid_color` |
+
+If any of these gain cross-platform relevance (e.g., if Fluent accent
+shades become useful for derived states), they can be added via
+`#[non_exhaustive]`.
+
+#### Widgets with sparse structs
+
+`ToolbarTheme` and `StatusBarTheme` have no background/foreground fields.
+This is intentional: platform-facts §2.13 and §2.14 only map font,
+height, spacing, and padding — the bg/fg inherit from the window. If
+toolkit implementations need distinct toolbar/status bar colors (e.g.
+GNOME headerbar), they use `window.title_bar_background` or
+`defaults.background`.
+
+`SidebarTheme` has only background and foreground. KDE provides a full
+`[Colors:Complementary]` color group (12 keys) for sidebar contexts,
+but widgets rendered inside a sidebar use the main widget structs
+(ListTheme, LinkTheme, etc.), so only the container bg/fg are needed.
