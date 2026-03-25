@@ -324,7 +324,7 @@ fn is_native_icon_set(name: &str) -> bool {
         "freedesktop" => cfg!(target_os = "linux"),
         "sf-symbols" => cfg!(any(target_os = "macos", target_os = "ios")),
         "segoe-fluent" => cfg!(target_os = "windows"),
-        "material" | "lucide" | "gpui-builtin" => true, // bundled, always available
+        "material" | "lucide" | "phosphor" | "gpui-builtin" => true, // bundled, always available
         _ => false,
     }
 }
@@ -1015,6 +1015,8 @@ impl Showcase {
             "lucide".to_string()
         } else if display == "Material (bundled)" {
             "material".to_string()
+        } else if display == "Phosphor (bundled)" {
+            "phosphor".to_string()
         } else if display.ends_with(" (system)") {
             // "<ThemeName> (system)" → platform icon set
             system_icon_set().name().to_string()
@@ -1163,6 +1165,7 @@ impl Showcase {
             "gpui-component built-in (Lucide)".into(),
             "Lucide (bundled)".into(),
             "Material (bundled)".into(),
+            "Phosphor (bundled)".into(),
         ];
         icon_theme_names.push(system_label.into());
         let icon_set_delegate = SearchableVec::new(icon_theme_names);
@@ -4391,6 +4394,7 @@ impl Showcase {
             "freedesktop" => Some(IconSet::Freedesktop),
             "material" => Some(IconSet::Material),
             "lucide" => Some(IconSet::Lucide),
+            "phosphor" => Some(IconSet::Phosphor),
             "sf-symbols" => Some(IconSet::SfSymbols),
             "segoe-fluent" => Some(IconSet::SegoeIcons),
             _ => None,
@@ -5185,21 +5189,37 @@ fn capture_own_window_macos(_window: &mut Window, output_path: &str) {
 
 /// Capture the gpui window including decorations using Windows BitBlt.
 ///
-/// Uses `GetForegroundWindow` to obtain the HWND, `GetWindowRect` for the
-/// window bounds (always in the same coordinate system as the screen DC,
-/// regardless of DPI scaling), then `BitBlt` + `GetDIBits` to extract pixel
-/// data as a PNG. The capture includes the Win10+ invisible resize border
-/// (~7px) which is acceptable for documentation screenshots.
+/// Finds the showcase window by enumerating top-level windows belonging to
+/// this process (skipping the console window), then uses `GetWindowRect` +
+/// `BitBlt` + `GetDIBits` to extract pixel data as a PNG.
+///
+/// `GetForegroundWindow` is not used because on CI the console window that
+/// launched `cargo run` may remain foreground, causing capture of the wrong
+/// window's screen region.
 #[cfg(target_os = "windows")]
 fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
     use windows::Win32::Foundation::*;
     use windows::Win32::Graphics::Gdi::*;
+    use windows::Win32::System::Console::GetConsoleWindow;
     use windows::Win32::UI::WindowsAndMessaging::*;
 
     unsafe {
-        let hwnd = GetForegroundWindow();
+        // Find our GUI window by process ID, skipping the console window.
+        let our_pid = std::process::id();
+        let console = GetConsoleWindow();
+        let mut hwnd = HWND::default();
+        let mut candidate = FindWindowExW(HWND::default(), HWND::default(), None, None);
+        while !candidate.0.is_null() {
+            let mut pid = 0u32;
+            GetWindowThreadProcessId(candidate, Some(&mut pid));
+            if pid == our_pid && candidate != console && IsWindowVisible(candidate).as_bool() {
+                hwnd = candidate;
+                break;
+            }
+            candidate = FindWindowExW(HWND::default(), candidate, None, None);
+        }
         if hwnd.0.is_null() {
-            eprintln!("No foreground window found");
+            eprintln!("No showcase window found");
             return;
         }
 
