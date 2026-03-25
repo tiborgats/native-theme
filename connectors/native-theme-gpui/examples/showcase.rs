@@ -74,7 +74,7 @@ use native_theme::{detect_linux_de, load_freedesktop_icon_by_name, system_is_dar
 use native_theme_gpui::icons::freedesktop_name_for_gpui_icon;
 use native_theme_gpui::icons::{
     animated_frames_to_image_sources, lucide_name_for_gpui_icon, material_name_for_gpui_icon,
-    to_image_source, to_image_source_colored,
+    phosphor_name_for_gpui_icon, to_image_source, to_image_source_colored,
 };
 use native_theme_gpui::to_theme;
 
@@ -571,6 +571,7 @@ fn load_gpui_icons(icon_set: &str, icon_theme: Option<&str>) -> Vec<IconEntry> {
                 let lookup_name = match set {
                     IconSet::Lucide => lucide_name_for_gpui_icon(name),
                     IconSet::Material => material_name_for_gpui_icon(name),
+                    IconSet::Phosphor => phosphor_name_for_gpui_icon(name),
                     _ => None,
                 };
                 if let Some(lname) = lookup_name
