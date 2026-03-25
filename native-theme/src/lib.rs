@@ -93,7 +93,6 @@ pub mod presets;
 #[cfg(any(
     feature = "material-icons",
     feature = "lucide-icons",
-    feature = "phosphor-icons",
     feature = "system-icons"
 ))]
 mod spinners;
@@ -537,11 +536,6 @@ pub fn load_icon(role: IconRole, icon_set: &str) -> Option<IconData> {
             bundled_icon_svg(IconSet::Lucide, role).map(|b| IconData::Svg(b.to_vec()))
         }
 
-        #[cfg(feature = "phosphor-icons")]
-        IconSet::Phosphor => {
-            bundled_icon_svg(IconSet::Phosphor, role).map(|b| IconData::Svg(b.to_vec()))
-        }
-
         // Non-matching platform or unknown set: no cross-set fallback
         _ => None,
     }
@@ -553,7 +547,7 @@ pub fn load_icon(role: IconRole, icon_set: &str) -> Option<IconData> {
 /// - [`IconSet::Freedesktop`] -- freedesktop icon theme lookup (auto-detects theme)
 /// - [`IconSet::SfSymbols`] -- macOS SF Symbols
 /// - [`IconSet::SegoeIcons`] -- Windows Segoe Fluent / stock icons
-/// - [`IconSet::Material`] / [`IconSet::Lucide`] / [`IconSet::Phosphor`] -- bundled SVG lookup by name
+/// - [`IconSet::Material`] / [`IconSet::Lucide`] -- bundled SVG lookup by name
 ///
 /// Returns `None` if the icon is not found on the current platform or
 /// the icon set is not available.
@@ -595,11 +589,6 @@ pub fn load_system_icon_by_name(name: &str, set: IconSet) -> Option<IconData> {
             bundled_icon_by_name(IconSet::Lucide, name).map(|b| IconData::Svg(b.to_vec()))
         }
 
-        #[cfg(feature = "phosphor-icons")]
-        IconSet::Phosphor => {
-            bundled_icon_by_name(IconSet::Phosphor, name).map(|b| IconData::Svg(b.to_vec()))
-        }
-
         _ => None,
     }
 }
@@ -615,7 +604,6 @@ pub fn load_system_icon_by_name(name: &str, set: IconSet) -> Option<IconData> {
 ///
 /// - `"material"` -- `progress_activity.svg` with continuous spin transform (1000ms)
 /// - `"lucide"` -- `loader.svg` with continuous spin transform (1000ms)
-/// - `"phosphor"` -- `spinner.svg` with continuous spin transform (1000ms)
 /// - `"freedesktop"` -- loads `process-working` sprite sheet from active icon theme
 /// - Unknown set -- `None`
 ///
@@ -639,9 +627,6 @@ pub fn loading_indicator(icon_set: &str) -> Option<AnimatedIcon> {
 
         #[cfg(feature = "lucide-icons")]
         IconSet::Lucide => Some(spinners::lucide_spinner()),
-
-        #[cfg(feature = "phosphor-icons")]
-        IconSet::Phosphor => Some(spinners::phosphor_spinner()),
 
         _ => None,
     }

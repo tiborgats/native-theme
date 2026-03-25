@@ -783,14 +783,13 @@ skip-forward = "skip_next"
     // === KNOWN_THEMES tests ===
 
     #[test]
-    fn known_themes_has_all_six() {
-        assert_eq!(KNOWN_THEMES.len(), 6);
+    fn known_themes_has_all_five() {
+        assert_eq!(KNOWN_THEMES.len(), 5);
         assert!(KNOWN_THEMES.contains(&"sf-symbols"));
         assert!(KNOWN_THEMES.contains(&"segoe-fluent"));
         assert!(KNOWN_THEMES.contains(&"freedesktop"));
         assert!(KNOWN_THEMES.contains(&"material"));
         assert!(KNOWN_THEMES.contains(&"lucide"));
-        assert!(KNOWN_THEMES.contains(&"phosphor"));
     }
 
     // === Helper to create test fixture directories ===

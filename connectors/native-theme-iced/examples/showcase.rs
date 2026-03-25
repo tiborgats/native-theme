@@ -239,7 +239,6 @@ impl std::fmt::Display for ColorMode {
 enum IconSetChoice {
     Material,
     Lucide,
-    Phosphor,
     System,
 }
 
@@ -248,7 +247,6 @@ impl std::fmt::Display for IconSetChoice {
         match self {
             IconSetChoice::Material => write!(f, "Material"),
             IconSetChoice::Lucide => write!(f, "Lucide"),
-            IconSetChoice::Phosphor => write!(f, "Phosphor"),
             IconSetChoice::System => {
                 let name = native_theme::system_icon_theme();
                 write!(f, "System ({name})")
@@ -261,7 +259,6 @@ impl IconSetChoice {
     const ALL: &[IconSetChoice] = &[
         IconSetChoice::Material,
         IconSetChoice::Lucide,
-        IconSetChoice::Phosphor,
         IconSetChoice::System,
     ];
 
@@ -269,7 +266,6 @@ impl IconSetChoice {
         match self {
             IconSetChoice::Material => "material",
             IconSetChoice::Lucide => "lucide",
-            IconSetChoice::Phosphor => "phosphor",
             IconSetChoice::System => {
                 if cfg!(target_os = "linux") {
                     "freedesktop"
@@ -638,7 +634,6 @@ impl Default for State {
                 let choice = match set_name.as_str() {
                     "material" => IconSetChoice::Material,
                     "lucide" => IconSetChoice::Lucide,
-                    "phosphor" => IconSetChoice::Phosphor,
                     _ => IconSetChoice::System,
                 };
                 state.icon_set_choice = choice;
@@ -774,37 +769,21 @@ fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
 
 /// Capture the iced window including decorations using Windows BitBlt.
 ///
-/// Finds the showcase window by enumerating top-level windows belonging to
-/// this process (skipping the console window), then uses `GetWindowRect` +
-/// `BitBlt` + `GetDIBits` to extract pixel data as a PNG.
-///
-/// `GetForegroundWindow` is not used because on CI the console window that
-/// launched `cargo run` may remain foreground, causing capture of the wrong
-/// window's screen region.
+/// Uses `GetForegroundWindow` to obtain the HWND, `GetWindowRect` for the
+/// window bounds (always in the same coordinate system as the screen DC,
+/// regardless of DPI scaling), then `BitBlt` + `GetDIBits` to extract pixel
+/// data as a PNG. The capture includes the Win10+ invisible resize border
+/// (~7px) which is acceptable for documentation screenshots.
 #[cfg(target_os = "windows")]
 fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
     use windows::Win32::Foundation::*;
     use windows::Win32::Graphics::Gdi::*;
-    use windows::Win32::System::Console::GetConsoleWindow;
     use windows::Win32::UI::WindowsAndMessaging::*;
 
     unsafe {
-        // Find our GUI window by process ID, skipping the console window.
-        let our_pid = std::process::id();
-        let console = GetConsoleWindow();
-        let mut hwnd = HWND::default();
-        let mut candidate = FindWindowExW(HWND::default(), HWND::default(), None, None);
-        while !candidate.0.is_null() {
-            let mut pid = 0u32;
-            GetWindowThreadProcessId(candidate, Some(&mut pid));
-            if pid == our_pid && candidate != console && IsWindowVisible(candidate).as_bool() {
-                hwnd = candidate;
-                break;
-            }
-            candidate = FindWindowExW(HWND::default(), candidate, None, None);
-        }
+        let hwnd = GetForegroundWindow();
         if hwnd.0.is_null() {
-            return Err("No showcase window found".into());
+            return Err("No foreground window found".into());
         }
 
         // GetWindowRect returns coordinates in the same space as the screen DC
@@ -1192,17 +1171,23 @@ fn view(state: &State) -> Element<'_, Message> {
 
     // ---- Right panel (tabs + content) ----
     let sp = &state.current_variant.spacing;
-    let sp_xs = sp.xs.expect("theme must provide spacing.xs");
-    let sp_s = sp.s.expect("theme must provide spacing.s");
-    let sp_l = sp.l.expect("theme must provide spacing.l");
+    let mut tab_padding = Padding::ZERO;
+    if let Some(l) = sp.l {
+        tab_padding = tab_padding.left(l).right(l);
+    }
+    if let Some(s) = sp.s {
+        tab_padding = tab_padding.top(s);
+    }
+    let content_padding = sp.l.map(Padding::from).unwrap_or(Padding::ZERO);
+    let panel_spacing = sp.xs.unwrap_or(0.0);
     let right_panel = column![
         // Tab bar
-        container(tab_bar).padding(Padding::from([0.0, sp_l]).top(sp_s)),
+        container(tab_bar).padding(tab_padding),
         rule::horizontal(1),
         // Scrollable content
         scrollable(
             container(tab_content)
-                .padding(Padding::from(sp_l))
+                .padding(content_padding)
                 .width(Fill),
         )
         .direction(scrollable::Direction::Vertical(
@@ -1212,7 +1197,7 @@ fn view(state: &State) -> Element<'_, Message> {
         ))
         .height(Fill),
     ]
-    .spacing(sp_xs)
+    .spacing(panel_spacing)
     .width(Fill)
     .height(Fill);
 

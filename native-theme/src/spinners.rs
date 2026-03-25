@@ -23,12 +23,3 @@ pub(crate) fn lucide_spinner() -> AnimatedIcon {
         animation: TransformAnimation::Spin { duration_ms: 1000 },
     }
 }
-
-/// Phosphor spinner icon with continuous spin transform.
-#[cfg(feature = "phosphor-icons")]
-pub(crate) fn phosphor_spinner() -> AnimatedIcon {
-    AnimatedIcon::Transform {
-        icon: IconData::Svg(include_bytes!("../icons/phosphor/spinner.svg").to_vec()),
-        animation: TransformAnimation::Spin { duration_ms: 1000 },
-    }
-}

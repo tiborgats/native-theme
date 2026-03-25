@@ -275,8 +275,6 @@ pub enum IconSet {
     Material,
     /// Lucide Icons (fork of Feather).
     Lucide,
-    /// Phosphor Icons.
-    Phosphor,
 }
 
 impl IconSet {
@@ -293,7 +291,6 @@ impl IconSet {
             "freedesktop" => Some(Self::Freedesktop),
             "material" => Some(Self::Material),
             "lucide" => Some(Self::Lucide),
-            "phosphor" => Some(Self::Phosphor),
             _ => None,
         }
     }
@@ -306,7 +303,6 @@ impl IconSet {
             Self::Freedesktop => "freedesktop",
             Self::Material => "material",
             Self::Lucide => "lucide",
-            Self::Phosphor => "phosphor",
         }
     }
 }
@@ -393,7 +389,6 @@ pub fn icon_name(set: IconSet, role: IconRole) -> Option<&'static str> {
         IconSet::Freedesktop => freedesktop_name(role),
         IconSet::Material => material_name(role),
         IconSet::Lucide => lucide_name(role),
-        IconSet::Phosphor => phosphor_name(role),
         _ => None,
     }
 }
@@ -955,70 +950,6 @@ fn lucide_name(role: IconRole) -> Option<&'static str> {
     })
 }
 
-#[allow(unreachable_patterns)]
-fn phosphor_name(role: IconRole) -> Option<&'static str> {
-    Some(match role {
-        // Dialog / Alert
-        IconRole::DialogWarning => "warning",
-        IconRole::DialogError => "x-circle",
-        IconRole::DialogInfo => "info",
-        IconRole::DialogQuestion => "question",
-        IconRole::DialogSuccess => "check-circle",
-        IconRole::Shield => "shield",
-
-        // Window Controls
-        IconRole::WindowClose => "x",
-        IconRole::WindowMinimize => "minus",
-        IconRole::WindowMaximize => "arrows-out",
-        IconRole::WindowRestore => "arrows-in",
-
-        // Common Actions
-        IconRole::ActionSave => "floppy-disk",
-        IconRole::ActionDelete => "trash",
-        IconRole::ActionCopy => "copy",
-        IconRole::ActionPaste => "clipboard-text",
-        IconRole::ActionCut => "scissors",
-        IconRole::ActionUndo => "arrow-u-up-left",
-        IconRole::ActionRedo => "arrow-u-up-right",
-        IconRole::ActionSearch => "magnifying-glass",
-        IconRole::ActionSettings => "gear",
-        IconRole::ActionEdit => "pencil-simple",
-        IconRole::ActionAdd => "plus",
-        IconRole::ActionRemove => "minus",
-        IconRole::ActionRefresh => "arrows-clockwise",
-        IconRole::ActionPrint => "printer",
-
-        // Navigation
-        IconRole::NavBack => "caret-left",
-        IconRole::NavForward => "caret-right",
-        IconRole::NavUp => "caret-up",
-        IconRole::NavDown => "caret-down",
-        IconRole::NavHome => "house",
-        IconRole::NavMenu => "list",
-
-        // Files / Places
-        IconRole::FileGeneric => "file",
-        IconRole::FolderClosed => "folder",
-        IconRole::FolderOpen => "folder-open",
-        IconRole::TrashEmpty => "trash",
-        // same as TrashEmpty -- Phosphor has no full-trash variant
-        IconRole::TrashFull => "trash",
-
-        // Status
-        IconRole::StatusBusy => "spinner",
-        IconRole::StatusCheck => "check",
-        IconRole::StatusError => "x-circle",
-
-        // System
-        IconRole::UserAccount => "user",
-        IconRole::Notification => "bell",
-        IconRole::Help => "question",
-        IconRole::Lock => "lock",
-
-        _ => return None,
-    })
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1225,11 +1156,6 @@ mod tests {
     }
 
     #[test]
-    fn icon_set_from_name_phosphor() {
-        assert_eq!(IconSet::from_name("phosphor"), Some(IconSet::Phosphor));
-    }
-
-    #[test]
     fn icon_set_from_name_unknown() {
         assert_eq!(IconSet::from_name("unknown"), None);
     }
@@ -1260,11 +1186,6 @@ mod tests {
     }
 
     #[test]
-    fn icon_set_name_phosphor() {
-        assert_eq!(IconSet::Phosphor.name(), "phosphor");
-    }
-
-    #[test]
     fn icon_set_from_name_name_round_trip() {
         let sets = [
             IconSet::SfSymbols,
@@ -1272,7 +1193,6 @@ mod tests {
             IconSet::Freedesktop,
             IconSet::Material,
             IconSet::Lucide,
-            IconSet::Phosphor,
         ];
         for set in &sets {
             let name = set.name();
@@ -1450,10 +1370,6 @@ mod tests {
             icon_name(IconSet::Lucide, IconRole::DialogError),
             Some("circle-x")
         );
-        assert_eq!(
-            icon_name(IconSet::Phosphor, IconRole::DialogError),
-            Some("x-circle")
-        );
     }
 
     #[test]
@@ -1475,10 +1391,6 @@ mod tests {
             Some("home")
         );
         assert_eq!(icon_name(IconSet::Lucide, IconRole::NavHome), Some("house"));
-        assert_eq!(
-            icon_name(IconSet::Phosphor, IconRole::NavHome),
-            Some("house")
-        );
     }
 
     // Count test: verify expected Some/None count for each icon set
@@ -1530,24 +1442,6 @@ mod tests {
             .filter(|r| icon_name(IconSet::Lucide, **r).is_some())
             .count();
         assert_eq!(some_count, 42, "Lucide should have 42 mappings");
-    }
-
-    #[test]
-    fn icon_name_phosphor_expected_count() {
-        // Phosphor: all 42 roles mapped
-        let some_count = IconRole::ALL
-            .iter()
-            .filter(|r| icon_name(IconSet::Phosphor, **r).is_some())
-            .count();
-        assert_eq!(some_count, 42, "Phosphor should have 42 mappings");
-    }
-
-    #[test]
-    fn icon_name_phosphor_action_copy() {
-        assert_eq!(
-            icon_name(IconSet::Phosphor, IconRole::ActionCopy),
-            Some("copy")
-        );
     }
 
     // === system_icon_set() tests ===

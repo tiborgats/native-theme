@@ -1,14 +1,13 @@
 use serde::Deserialize;
 use std::collections::BTreeMap;
 
-/// The 6 known theme name strings matching `IconSet` kebab-case identifiers.
-pub(crate) const KNOWN_THEMES: [&str; 6] = [
+/// The 5 known theme name strings matching `IconSet` kebab-case identifiers.
+pub(crate) const KNOWN_THEMES: [&str; 5] = [
     "sf-symbols",
     "segoe-fluent",
     "freedesktop",
     "material",
     "lucide",
-    "phosphor",
 ];
 
 /// Master TOML schema: the top-level icon definition file.
