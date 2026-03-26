@@ -1,33 +1,34 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.1
-milestone_name: milestone
-current_plan: 3 of 3 (phase complete)
-status: phase-complete
-stopped_at: Completed 43-03-PLAN.md (Phase 43 complete)
-last_updated: "2026-03-21T21:30:00.000Z"
-last_activity: 2026-03-21 — Completed plan 43-03 (Windows BitBlt self-capture for iced)
+milestone: v0.5.0
+milestone_name: Per-Widget Architecture & Resolution Pipeline
+current_plan: —
+status: defining-requirements
+stopped_at: —
+last_updated: "2026-03-27T00:00:00.000Z"
+last_activity: 2026-03-27 — Milestone v0.5.0 started
 progress:
-  total_phases: 11
-  completed_phases: 11
-  total_plans: 22
-  completed_plans: 22
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-03-18)
+See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 43 — Self-Capture Screenshots with Window Decorations
+**Current focus:** Defining requirements for v0.5.0
 
 ## Current Position
 
-Phase: 43-self-capture-screenshots-with-window-decorations
-Current Plan: 3 of 3 (phase complete)
-Last activity: 2026-03-21 — Completed plan 43-03 (Windows BitBlt self-capture for iced)
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-03-27 — Milestone v0.5.0 started
 
 ## Performance Metrics
 
