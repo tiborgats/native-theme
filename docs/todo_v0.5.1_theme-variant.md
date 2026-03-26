@@ -766,7 +766,7 @@ equivalent and are not mapped into `TextScale`:
 - macOS: `.title2` (17pt), `.title3` (15pt), `.callout` (12pt), `.subheadline` (11pt), `.footnote` (10pt), `.caption2` (10pt, Medium 500)
 - Windows: BodyStrong (14px, 600), BodyLarge/BodyLargeStrong (18px), TitleLarge (40px)
 - GNOME: `.caption-heading` (82%, 700), `.title-4` (118%, 700), `.title-3` (136%, 700)
-- KDE: additional heading levels (Level 3 = body × 1.1, Level 4 = body × 1.0)
+- KDE: additional heading levels (Level 3 = body × 1.15, Level 4 = body × 1.0)
 
 The 4-entry mapping captures the roles most commonly needed by UI toolkits.
 If finer granularity is needed, presets can add entries via `#[non_exhaustive]`.
@@ -834,7 +834,6 @@ they are platform-specific with no portable equivalent:
 | `DecorationHover` | KDE | Hover decoration color — KDE-specific |
 | `paletteFontOfSize:` | macOS | Tool palette font — macOS-specific role |
 | `taskbarFont` | KDE | Panel/taskbar font — desktop shell, not app UI |
-| `gridColor` | macOS | Now mapped → `list.grid_color` |
 
 If any of these gain cross-platform relevance (e.g., if Fluent accent
 shades become useful for derived states), they can be added via

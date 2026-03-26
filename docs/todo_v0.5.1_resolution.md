@@ -86,7 +86,7 @@ macOS detects both. After the pipeline:
 - The detected variant = OS reader + platform TOML + resolve() (complete, live)
 - The other variant = platform TOML only (design constants, no live OS data)
 
-For platforms where the TOML is minimal (KDE — no colors/fonts in TOML),
+For platforms where the TOML is minimal (KDE — few non-⚙ colors, no fonts in TOML),
 the inactive variant will be incomplete. Options:
 - Platform TOMLs include static colors/fonts for the inactive variant only
 - The inactive variant is simply unavailable until the user switches
@@ -207,10 +207,13 @@ Theme resolution failed: 3 missing field(s):
 ### 3.1 macOS (`from_macos`)
 
 Currently reads: `systemFontOfSize:`, `monospacedSystemFont...`,
-~20 NSColors.
+~22 NSColors (base defaults + button + input + sidebar + status + focus ring).
 
 Add:
 - `NSFont.TextStyle.caption1` → `text_scale.caption` (10pt, 400, 13pt line)
+- `NSFont.TextStyle.headline` → `text_scale.section_heading` (13pt, 700, 16pt line)
+- `NSFont.TextStyle.title1` → `text_scale.dialog_title` (22pt, 400, 26pt line)
+- `NSFont.TextStyle.largeTitle` → `text_scale.display` (26pt, 400, 32pt line)
 - `+titleBarFontOfSize:` → `window.title_bar_font` FontSpec
 - `+menuFontOfSize:` → `menu.font` FontSpec
 - `+toolTipsFontOfSize:` → `tooltip.font` FontSpec
@@ -219,6 +222,15 @@ Add:
 - `NSColor.windowFrameTextColor` → `window.title_bar_foreground`
 - `NSColor.textInsertionPointColor` (macOS 14+) → `input.caret`
 - Title bar background ≈ `controlBackgroundColor` (§2.2: ≈ `defaults.surface`)
+- `NSColor.unemphasizedSelectedContentBackgroundColor` → `defaults.selection_inactive`
+- `alternatingContentBackgroundColors[1]` → `list.alternate_row`
+- `NSColor.headerTextColor` → `list.header_foreground`
+- `NSColor.gridColor` → `list.grid_color`
+- `NSScroller.preferredScrollerStyle` → `scrollbar.overlay_mode`
+- Accessibility text size pref (macOS 14+) → `text_scaling_factor`
+- `accessibilityDisplayShouldReduceMotion` → `reduce_motion`
+- `accessibilityDisplayShouldIncreaseContrast` → `high_contrast`
+- `accessibilityDisplayShouldReduceTransparency` → `reduce_transparency`
 
 ### 3.2 Windows (`from_windows`)
 
@@ -231,7 +243,27 @@ Add:
 - `lfStatusFont` → `status_bar.font` FontSpec
 - `lfMessageFont` weight → `defaults.font.weight`
 - `DwmGetColorizationColor` → `window.title_bar_background`
+- `COLOR_CAPTIONTEXT` → `window.title_bar_foreground`
+- `COLOR_INACTIVECAPTION` → `window.inactive_title_bar_background`
+- `COLOR_INACTIVECAPTIONTEXT` → `window.inactive_title_bar_foreground`
 - SM_CXFOCUSBORDER / SM_CYFOCUSBORDER → `focus_ring_width`
+- `GetSysColor` widget colors (⚙ values the OS reader must provide —
+  the TOML should NOT include these):
+  - `COLOR_BTNFACE` → `button.background`
+  - `COLOR_BTNTEXT` → `button.foreground`
+  - `COLOR_MENU` → `menu.background`
+  - `COLOR_MENUTEXT` → `menu.foreground`
+  - `COLOR_INFOBK` → `tooltip.background`
+  - `COLOR_INFOTEXT` → `tooltip.foreground`
+  - `COLOR_WINDOW` → `input.background`
+  - `COLOR_WINDOWTEXT` → `input.foreground`
+  - `COLOR_HIGHLIGHT` → `defaults.selection`
+  - `COLOR_HIGHLIGHTTEXT` → `defaults.selection_foreground`
+- `UISettings.TextScaleFactor` → `text_scaling_factor`
+- `SPI_GETCLIENTAREAANIMATION` → `reduce_motion`
+- `SPI_GETHIGHCONTRAST` → `high_contrast`
+- ↕ `SM_CXSMICON` → `defaults.icon_sizes.small`
+- ↕ `SM_CXICON` → `defaults.icon_sizes.large`
 
 ### 3.3 KDE (`from_kde`)
 
@@ -240,14 +272,31 @@ sections.
 
 Add:
 - `smallestReadableFont` → `text_scale.caption` (parse field 1 for size)
+- `text_scale.section_heading`: compute `size = font.size × 1.20`
+  (Kirigami Heading Level 2)
+- `text_scale.dialog_title`: compute `size = font.size × 1.35`
+  (Kirigami Heading Level 1)
 - `toolBarFont` → `toolbar.font` FontSpec
 - `menuFont` → `menu.font` FontSpec
 - `activeFont` → `window.title_bar_font` FontSpec
 - Qt font field 4 → `weight` for all font keys
 - `[WM] activeBackground` → `window.title_bar_background`
 - `[WM] activeForeground` → `window.title_bar_foreground`
+- `[WM] inactiveBackground` → `window.inactive_title_bar_background`
+- `[WM] inactiveForeground` → `window.inactive_title_bar_foreground`
 - `[WM]` decoration theme colors → `window.border`
 - `[Colors:View] ForegroundInactive` → `input.placeholder`
+- `[Colors:View] BackgroundAlternate` → `list.alternate_row`
+- `[Colors:View] ForegroundVisited` → `link.visited`
+- `[Colors:Header] BackgroundNormal` → `list.header_background` (KF 5.71+)
+- `[Colors:Header] ForegroundNormal` → `list.header_foreground` (KF 5.71+)
+- `[Colors:Complementary] BackgroundNormal` → `sidebar.background`
+- `[Colors:Complementary] ForegroundNormal` → `sidebar.foreground`
+- `[Icons] Theme` from kdeglobals → `icon_set` (§1.3.6; default: `breeze`)
+- Icon sizes from icon theme's `index.theme`: `MainToolbar`, `Small`,
+  `Desktop`, `Dialog`, `Panel` → `defaults.icon_sizes` (§2.1.8)
+- `forceFontDPI` / 96 → `text_scaling_factor`
+- `AnimationDurationFactor` = 0 → `reduce_motion`
 
 ### 3.4 GNOME
 
@@ -264,8 +313,21 @@ Add:
 - `font-name` gsetting → `defaults.font` FontSpec (family, size, weight)
 - `monospace-font-name` gsetting → `defaults.mono_font` FontSpec
 - `titlebar-font` gsetting → `window.title_bar_font` FontSpec
+- `text_scale.caption`: compute `size = font.size × 0.82`
+  (libadwaita `.caption` = 82%; weight 400 = default, inherits)
+- `text_scale.dialog_title`: compute `size = font.size × 1.36`
+  (libadwaita `.title-2` = 136%; weight 800 → `adwaita.toml`)
+- `text_scale.display`: compute `size = font.size × 1.81`
+  (libadwaita `.title-1` = 181%; weight 800 → `adwaita.toml`)
+- Note: `text_scale.section_heading` needs no OS reader computation —
+  `.heading` uses inherited (= base) font size, so `size ← defaults.font.size`
+  via resolve(). Only `weight = 700` is needed (→ `adwaita.toml`).
 - `text-scaling-factor` gsetting → `text_scaling_factor`
 - `document-font-name` gsetting → (informational, not mapped currently)
+- `overlay-scrolling` / `gtk-overlay-scrolling` gsetting → `scrollbar.overlay_mode`
+- `enable-animations` gsetting / Portal `reduced-motion` → `reduce_motion`
+- `a11y.interface high-contrast` / Portal `contrast` → `high_contrast`
+- `icon-theme` gsetting → `icon_set` (§1.4.6; default: `Adwaita`)
 - Portal accent color already handled
 
 ---
@@ -298,12 +360,24 @@ Add `resolved.rs` with all Resolved* structs. Add
 Location: `native-theme/src/model/resolved.rs`,
 `native-theme/src/error.rs`
 
-### Step 3: Slim Down Platform Presets
+### Step 3: Update OS Readers
+
+Extend macOS, Windows, KDE, GNOME readers to populate all ⚙ fields
+(see §3 above). Readers should return sparse ThemeVariants — only
+fields they read from the OS. No embedded presets, no hardcoded
+fallbacks.
+
+### Step 4: Slim Down Platform Presets
 
 Remove ⚙ fields (colors, fonts) from platform default TOMLs. Keep
 only design constants (geometry, spacing, widget metrics, non-⚙
 colors). See `todo_v0.5.1_inheritance-rules.md` §"What Platform
 Default TOMLs Should Contain" for the field-by-field guide.
+
+**Depends on Step 3:** ⚙ values can only be removed from TOMLs after
+the OS readers provide them. Removing TOML values before OS readers
+supply replacements would leave gaps that neither `resolve()` nor the
+TOML can fill.
 
 Note: `adwaita.toml` stays larger than others because GNOME exposes
 few values via APIs — most Adwaita CSS colors are design constants.
@@ -312,13 +386,6 @@ Cross-platform presets (catppuccin, nord, etc.) keep all fields —
 they have no OS reader.
 
 Location: `native-theme/src/presets/*.toml`
-
-### Step 4: Update OS Readers
-
-Extend macOS, Windows, KDE, GNOME readers to populate all ⚙ fields
-(see §3 above). Readers should return sparse ThemeVariants — only
-fields they read from the OS. No embedded presets, no hardcoded
-fallbacks.
 
 ### Step 5: Implement `from_system()` Pipeline
 
@@ -347,6 +414,9 @@ Change connectors to accept `&ResolvedTheme`. Remove all Option handling.
 - **Unit**: App TOML overlay after resolve() overrides resolved values
 - **Unit**: Font inheritance — FontSpec with partial fields inherits
   from base correctly
+- **Unit**: TextScaleEntry inheritance — `size` ← `defaults.font.size`,
+  `weight` ← `defaults.font.weight`, `line_height` ← computed from
+  `defaults.line_height` multiplier × resolved size
 - **Integration**: OS reader + platform TOML + resolve() → `validate()`
   succeeds on each platform
 - **Integration**: Cross-platform preset + resolve() → `validate()`

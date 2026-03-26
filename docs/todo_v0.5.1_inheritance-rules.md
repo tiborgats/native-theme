@@ -12,7 +12,7 @@ readers and platform TOMLs, which populate different fields on each
 platform. The universal `resolve()` rule only fires for fields that
 both the OS reader and platform TOML left as `None`.
 
-However, **7 fields** have `←` targets that genuinely differ depending
+However, **5 fields** have `←` targets that genuinely differ depending
 on the OS. In the OS-first model, these fields are typically provided
 directly by the OS reader or the platform TOML — so the `←` targets
 below serve as last-resort safety-net fallbacks in `resolve()`. The
@@ -22,7 +22,7 @@ both the OS reader and the platform TOML fail to provide the value.
 
 ### Platform-divergent inheritance
 
-These 7 fields have platform-dependent sources — a mix of ⚙ values,
+These 5 fields have platform-dependent sources — a mix of ⚙ values,
 `←` arrows, and design constants (verified against platform-facts §2).
 The `defaults.X` entries show what `resolve()` falls back to; "preset¹"
 means the OS reader or TOML provides the value and no fallback is needed:
@@ -32,10 +32,8 @@ means the OS reader or TOML provides the value and no fallback is needed:
 | `input.caret` (§2.4) | preset¹ | `defaults.foreground` | `defaults.focus_ring_color` | `defaults.accent` |
 | `scrollbar.track` (§2.8) | preset¹ | preset¹ | `defaults.background` | preset¹ |
 | `spinner.fill` (§2.23) | preset¹ | `defaults.accent` | `defaults.foreground` | `defaults.foreground` |
-| `popover.background` (§2.16) | `defaults.background` | `defaults.surface` | `defaults.background` | preset¹ |
-| `list.background` (§2.15) | `defaults.background` | `defaults.background` | `defaults.surface` | preset¹ |
-| `list.header_background` (§2.15) | `defaults.surface` | `defaults.background` | preset¹ | preset¹ |
-| `input.background` (§2.4) | preset¹ | preset¹ | `defaults.surface` | preset¹ |
+| `popover.background` (§2.16) | `defaults.background` | preset¹ | `defaults.background` | preset¹ |
+| `list.background` (§2.15) | `defaults.background` | `defaults.background` | preset¹ | preset¹ |
 
 ¹ "preset" = this platform provides the value directly — either via a
 widget-specific OS API (⚙) or as a platform-specific design constant
@@ -48,18 +46,18 @@ fallback only fires if both the OS reader and TOML leave it `None`.
   decoration, GNOME from accent — three different design philosophies
   for caret visibility.
 - `scrollbar.track`: macOS/Windows use transparent tracks (thumbs float);
-  KDE draws a visible groove matching the background.
-- `spinner.fill`: Windows spins in accent color; KDE/GNOME use foreground
-  because their spinners are icon-based (process-working-symbolic).
-- `popover.background`: Windows Fluent Flyout uses elevated surface;
-  macOS/KDE use window background.
-- `list.background`: KDE uses `[Colors:View]` group (= `defaults.surface`)
-  for editable content areas including lists; macOS/Windows inherit
-  window background.
-- `list.header_background`: macOS headers are slightly elevated (≈ surface);
-  Windows headers match window background.
-- `input.background`: KDE's `[Colors:View] BackgroundNormal` is exactly
-  `defaults.surface`; other platforms have distinct APIs.
+  KDE draws a visible groove matching the background; GNOME has its
+  own Adwaita CSS scrollbar track color.
+- `spinner.fill`: macOS uses system gray for its fin-based spinner;
+  Windows spins in accent color; KDE/GNOME use foreground because
+  their spinners are icon-based (process-working-symbolic).
+- `popover.background`: Windows Fluent Flyout uses elevated surface
+  (design token in TOML); macOS/KDE use window background; GNOME has
+  its own libadwaita popover background.
+- `list.background`: KDE uses `[Colors:View]` group (= `defaults.surface`,
+  ⚙ OS reader provides) for editable content areas including lists;
+  macOS/Windows inherit window background; GNOME has its own
+  libadwaita list background.
 
 ### Fields that cannot be universally derived
 
@@ -79,12 +77,15 @@ will look wrong. The actual value must come from either:
 | `sidebar.background` | `defaults.background` | All platforms have distinct sidebar bg (§2.12) |
 | `list.alternate_row` | `defaults.background` | Alternate rows are always a tinted variant (§2.15) |
 | `window.title_bar_background` | `defaults.surface` | Only macOS ≈ surface; Win/KDE/GNOME use distinct colors (§2.2) |
+| `list.header_background` | `defaults.surface` | macOS ≈ surface, Win ≈ background, KDE/GNOME have distinct values (§2.15) |
+| `input.background` | `defaults.background` | KDE uses surface (= View bg); all platforms have distinct APIs (§2.4) |
 
 Most are ⚙ on macOS/Windows/KDE, but all are non-⚙ on GNOME
 (Adwaita CSS values → must be in `adwaita.toml`). Exceptions:
 macOS `tooltip.background` and `tooltip.foreground` are design-constant
-presets (not ⚙); Windows `sidebar.background` and `list.alternate_row`
-are Fluent design tokens (not ⚙) — both cases require TOML.
+presets (not ⚙); Windows `sidebar.background`, `list.alternate_row`,
+and `list.header_background` are Fluent design tokens (not ⚙) — all
+require TOML.
 
 ### Uniform inheritance table
 
@@ -118,10 +119,10 @@ actual value.
 | `button.primary_bg` | `defaults.accent` | ✅ all `←` |
 | `button.primary_fg` | `defaults.accent_foreground` | ✅ all `←` |
 | **input** (§2.4) | | |
-| `input.background` | **per-platform** (see above) | |
+| `input.background` | `defaults.background` | no universal `←` (see above) |
 | `input.foreground` | `defaults.foreground` | all ⚙ / TOML |
 | `input.border` | `defaults.border` | ✅ all `←` |
-| `input.placeholder` | `defaults.muted` | approximately ✅ |
+| `input.placeholder` | `defaults.muted` | all ⚙ / TOML |
 | `input.caret` | **per-platform** (see above) | |
 | `input.selection` | `defaults.selection` | ✅ all `←` |
 | `input.selection_foreground` | `defaults.selection_foreground` | ✅ all `←` |
@@ -173,9 +174,9 @@ actual value.
 | `list.alternate_row` | `defaults.background` | no universal `←` (see above) |
 | `list.selection` | `defaults.selection` | ✅ all `←` |
 | `list.selection_foreground` | `defaults.selection_foreground` | ✅ all `←` |
-| `list.header_background` | **per-platform** (see above) | |
+| `list.header_background` | `defaults.surface` | no universal `←` (see above) |
 | `list.header_foreground` | `defaults.foreground` | Win `←`, others preset |
-| `list.grid_color` | `defaults.border` | macOS preset, others ≈`←` |
+| `list.grid_color` | `defaults.border` | macOS ⚙, Win/KDE/GNOME (none) |
 | **popover** (§2.16) | | |
 | `popover.background` | **per-platform** (see above) | |
 | `popover.foreground` | `defaults.foreground` | macOS/Win/KDE `←`, GNOME preset |
@@ -208,8 +209,8 @@ actual value.
 | `link.color` | `defaults.link` | all ⚙ / TOML (≈ link); Win token differs² |
 | `link.visited` | `defaults.link` | KDE/GNOME preset, macOS/Win = link |
 | **defaults** (global) | | |
-| `defaults.selection` | `defaults.accent` | safety net (see runtime flow §2) |
-| `defaults.focus_ring_color` | `defaults.accent` | safety net (see runtime flow §2) |
+| `defaults.selection` | `defaults.accent` | safety net (see resolve() step 3 in runtime flow) |
+| `defaults.focus_ring_color` | `defaults.accent` | safety net (see resolve() step 3 in runtime flow) |
 | `defaults.selection_inactive` | `defaults.selection` | — |
 
 ² Windows `link.color` = (Fluent) AccentTextFillColor, but `defaults.link` =
@@ -220,8 +221,30 @@ accent-derived, so the fallback is reasonable but not exact.
 
 Sizing properties (`min_width`, `min_height`, `max_width`, `max_height`,
 `padding_*`, `height`, `width`, `diameter`, etc.) have **no inheritance** —
-they are non-⚙ design constants and must be set in the platform TOML.
-Missing sizing values cause validation errors.
+one sizing field never derives from another. Most are non-⚙ design
+constants set in the platform TOML, but some are ↕ DPI-aware system
+metrics (e.g. Windows `SM_CXVSCROLL` via `GetSystemMetricsForDpi`) or
+⚙ user-configurable (e.g. KDE icon sizes from the icon theme). These
+are provided by the OS reader, not the TOML. Missing sizing values
+cause validation errors.
+
+### FontSpec inheritance
+
+Per-widget `font: Option<FontSpec>` fields (menu, tooltip, toolbar,
+status_bar, window title bar, button, input, dialog title) inherit
+from `defaults.font`. Two cases:
+
+- **font is `None`**: entire FontSpec inherits from `defaults.font`
+  (all sub-fields).
+- **font is `Some(FontSpec)` with `None` sub-fields**: each `None`
+  sub-field inherits independently:
+  - `family` ← `defaults.font.family`
+  - `size` ← `defaults.font.size`
+  - `weight` ← `defaults.font.weight`
+
+This allows partial overrides — e.g. an app TOML that sets only
+`menu.font.size = 12.0` inherits family and weight from the system
+font.
 
 ### TextScale inheritance
 
@@ -375,7 +398,11 @@ Example minimal `kde-breeze.toml`:
 ```toml
 name = "KDE Breeze"
 
-[light.geometry]
+[light.defaults]
+# Non-⚙ colors — only border and shadow need TOML on KDE
+# (all other colors come from the OS reader via kdeglobals)
+border = "#bdc3c7"   # (preset) derived from background
+shadow = "#00000040" # (none) — no KDE API; preset value
 radius = 5.0
 radius_lg = 8.0
 frame_width = 1.0
@@ -383,7 +410,7 @@ disabled_opacity = 0.5
 border_opacity = 0.2
 shadow_enabled = true
 
-[light.spacing]
+[light.defaults.spacing]
 xxs = 2.0
 xs = 4.0
 s = 6.0
@@ -392,28 +419,33 @@ l = 12.0
 xl = 16.0
 xxl = 24.0
 
-[light.widget_metrics.button]
+[light.button]
 min_width = 80.0
 padding_horizontal = 6.0
 icon_spacing = 4.0
 
-[light.widget_metrics.checkbox]
+[light.checkbox]
 indicator_size = 20.0
 spacing = 4.0
 
-[light.widget_metrics.scrollbar]
+[light.scrollbar]
 width = 21.0
 
-# ... remaining widget_metrics sections ...
+# ... remaining widget sections ...
 
-[light.widget_metrics.splitter]
+[light.splitter]
 width = 1.0
 ```
 
-Note what is **absent**: no `[light.colors]`, no `[light.fonts]`.
-KDE's OS reader reads nearly all color roles (~29 unique keys across
-7 color groups + [WM] + [General]) and 6 font entries from kdeglobals,
-so the TOML only needs design constants.
+Note what is **nearly absent**: only two color fields in
+`[light.defaults]` — `border` (§2.1.3: "(preset) — derived from
+background") and `shadow` (§2.1.3: "(none) — preset"). No font
+fields (`[light.defaults.font]` or `[light.defaults.mono_font]`).
+KDE's OS reader reads nearly all color roles (~29 unique ⚙ keys
+across 7 color groups + [WM] + [General]) and 6 font entries from
+kdeglobals — `border` and `shadow` are the only ThemeDefaults
+colors that need a TOML entry on KDE (`selection_inactive` also
+has no OS API, but resolve() derives it from `defaults.selection`).
 
 **This is KDE-specific.** GNOME's `adwaita.toml` is much larger
 because GNOME only exposes accent + color-scheme + fonts via APIs.
@@ -433,7 +465,12 @@ on GNOME it's only the portal accent.
 **⚙ fonts** — read from OS:
 The OS reader provides body font, mono font, and per-widget fonts
 where the platform has separate settings. `resolve()` fills the
-rest via inheritance. No font fields in any platform TOML.
+rest via inheritance. Exception: Windows has no mono font API
+(§2.1.2: `(none) — preset: Cascadia Mono`), so `defaults.mono_font`
+must be in `windows-11.toml`. Non-⚙ per-widget font overrides
+(e.g. `dialog.title_font` — Fluent design constant on Windows,
+system alert heading on macOS, Adwaita `.title-2` on GNOME) are
+design constants that also belong in the platform TOML.
 
 **Derived fields** — filled by `resolve()`:
 All `←` fields from the uniform inheritance table (above).
@@ -459,24 +496,25 @@ Any field set in the app TOML wins. Examples:
 
 ```toml
 # App wants a custom accent regardless of OS setting
-[light.colors]
+[light.defaults]
 accent = "#e63946"
 
 # App wants larger buttons than the platform default
-[light.widget_metrics.button]
+[light.button]
 min_height = 40.0
 padding_horizontal = 16.0
 
 # App wants tighter spacing
-[light.spacing]
+[light.defaults.spacing]
 s = 4.0
 m = 6.0
 ```
 
-If the app sets `accent` here, the second `resolve()` pass
-(step 4 in the runtime flow) propagates to accent-derived fields
-(`primary_bg`, `slider.fill`, etc.). Setting only `accent` is
-sufficient — the app does not need to override every derived field.
+If the app sets `accent` here (under `[light.defaults]`), the second
+`resolve()` pass (step 4 in the runtime flow) propagates to
+accent-derived fields (`primary_bg`, `slider.fill`, etc.). Setting
+only `accent` is sufficient — the app does not need to override every
+derived field.
 
 ---
 
@@ -489,16 +527,29 @@ spacing, everything:
 ```toml
 name = "Catppuccin Mocha"
 
-[dark.colors]
+[dark.defaults]
 accent = "#cba6f7"
 background = "#1e1e2e"
 foreground = "#cdd6f4"
 surface = "#313244"
-# ... remaining ThemeDefaults color fields
+radius = 8.0
+# ... remaining ThemeDefaults color + geometry fields
+
+[dark.defaults.font]
+family = "Inter"
+size = 14.0
+
+[dark.defaults.mono_font]
+family = "JetBrains Mono"
+size = 14.0
+
+[dark.defaults.spacing]
+# ... full spacing scale
 
 [dark.button]
 background = "#45475a"
 foreground = "#cdd6f4"
+# ... full button properties (sizing, padding, etc.)
 
 [dark.tooltip]
 background = "#313244"
@@ -507,25 +558,7 @@ foreground = "#cdd6f4"
 [dark.sidebar]
 background = "#181825"
 foreground = "#cdd6f4"
-# ... remaining non-derived widget colors
-
-[dark.fonts]
-family = "Inter"
-size = 14.0
-
-[dark.mono_font]
-family = "JetBrains Mono"
-size = 14.0
-
-[dark.geometry]
-radius = 8.0
-# ... all geometry
-
-[dark.spacing]
-# ... full spacing scale
-
-[dark.widget_metrics.button]
-# ... full widget metrics
+# ... remaining non-derived widget sections
 ```
 
 Derived fields (`primary_bg`, `slider.fill`, `menu.font`, etc.)
