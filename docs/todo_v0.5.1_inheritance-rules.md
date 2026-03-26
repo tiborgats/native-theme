@@ -8,9 +8,9 @@ Based on [todo_v0.5.1_theme-variant.md](todo_v0.5.1_theme-variant.md) struct def
 
 **The `resolve()` function is universal** — it uses the same derivation
 rules on every platform. Platform differences are handled by the OS
-readers, which populate different fields on each platform. The
-universal `resolve()` rule only fires for fields the OS reader left
-as `None`.
+readers and platform TOMLs, which populate different fields on each
+platform. The universal `resolve()` rule only fires for fields that
+both the OS reader and platform TOML left as `None`.
 
 However, **7 fields** have `←` targets that genuinely differ depending
 on the OS. In the OS-first model, these fields are typically provided
@@ -22,24 +22,26 @@ both the OS reader and the platform TOML fail to provide the value.
 
 ### Platform-divergent inheritance
 
-These 7 fields have different `←` targets depending on the OS
-(verified against platform-facts §2 per-platform `←` arrows):
+These 7 fields have platform-dependent sources — a mix of ⚙ values,
+`←` arrows, and design constants (verified against platform-facts §2).
+The `defaults.X` entries show what `resolve()` falls back to; "preset¹"
+means the OS reader or TOML provides the value and no fallback is needed:
 
 | Field | macOS | Windows | KDE | GNOME |
 |-------|-------|---------|-----|-------|
 | `input.caret` (§2.4) | preset¹ | `defaults.foreground` | `defaults.focus_ring_color` | `defaults.accent` |
-| `scrollbar.track` (§2.8) | transparent | transparent | `defaults.background` | preset¹ |
+| `scrollbar.track` (§2.8) | preset¹ | preset¹ | `defaults.background` | preset¹ |
 | `spinner.fill` (§2.23) | preset¹ | `defaults.accent` | `defaults.foreground` | `defaults.foreground` |
 | `popover.background` (§2.16) | `defaults.background` | `defaults.surface` | `defaults.background` | preset¹ |
 | `list.background` (§2.15) | `defaults.background` | `defaults.background` | `defaults.surface` | preset¹ |
 | `list.header_background` (§2.15) | `defaults.surface` | `defaults.background` | preset¹ | preset¹ |
 | `input.background` (§2.4) | preset¹ | preset¹ | `defaults.surface` | preset¹ |
 
-¹ "preset" = this platform uses a widget-specific API (⚙) for this value,
-no `←` arrow in platform-facts. The OS reader provides it directly. The
-platform TOML may also provide it as a non-⚙ design constant (e.g.,
-GNOME's Adwaita CSS values). The `resolve()` fallback only fires if both
-the OS reader and TOML leave it `None`.
+¹ "preset" = this platform provides the value directly — either via a
+widget-specific OS API (⚙) or as a platform-specific design constant
+(non-⚙, e.g. GNOME Adwaita CSS values, macOS/Windows transparent
+scrollbar tracks). No `←` arrow in platform-facts. The `resolve()`
+fallback only fires if both the OS reader and TOML leave it `None`.
 
 **Why these differ:**
 - `input.caret`: Windows derives from text color, KDE from focus
@@ -78,8 +80,11 @@ will look wrong. The actual value must come from either:
 | `list.alternate_row` | `defaults.background` | Alternate rows are always a tinted variant (§2.15) |
 | `window.title_bar_background` | `defaults.surface` | Only macOS ≈ surface; Win/KDE/GNOME use distinct colors (§2.2) |
 
-These are all ⚙ on macOS/Windows/KDE (OS reader provides them), but
-non-⚙ on GNOME (Adwaita CSS values → must be in `adwaita.toml`).
+Most are ⚙ on macOS/Windows/KDE, but all are non-⚙ on GNOME
+(Adwaita CSS values → must be in `adwaita.toml`). Exceptions:
+macOS `tooltip.background` and `tooltip.foreground` are design-constant
+presets (not ⚙); Windows `sidebar.background` and `list.alternate_row`
+are Fluent design tokens (not ⚙) — both cases require TOML.
 
 ### Uniform inheritance table
 
@@ -130,7 +135,7 @@ actual value.
 | **menu** (§2.6) | | |
 | `menu.background` | `defaults.background` | macOS/KDE ≈`←`, Win/GNOME preset |
 | `menu.foreground` | `defaults.foreground` | macOS/KDE ≈`←`, Win/GNOME preset |
-| `menu.separator` | `defaults.border` | macOS/Win/KDE `←`, GNOME preset |
+| `menu.separator` | `defaults.border` | Win/KDE `←`, macOS ⚙ (= border), GNOME preset |
 | `menu.font` | `defaults.font` | GNOME `←`, macOS/Win/KDE widget-specific |
 | **tooltip** (§2.7) | | |
 | `tooltip.background` | `defaults.background` | no universal `←` (see above) |
@@ -139,8 +144,8 @@ actual value.
 | `tooltip.radius` | `defaults.radius` | ✅ all `←` |
 | **scrollbar** (§2.8) | | |
 | `scrollbar.track` | **per-platform** (see above) | |
-| `scrollbar.thumb` | `defaults.muted` | all ⚙ / TOML |
-| `scrollbar.thumb_hover` | `defaults.muted` (darker) | all ⚙ / TOML |
+| `scrollbar.thumb` | `defaults.muted` | all non-⚙ / TOML |
+| `scrollbar.thumb_hover` | `defaults.muted` (darker) | all non-⚙ / TOML |
 | **slider** (§2.9) | | |
 | `slider.fill` | `defaults.accent` | ✅ all `←` |
 | `slider.track` | `defaults.muted` | ✅ all `←` |
@@ -179,10 +184,10 @@ actual value.
 | **splitter** (§2.17) | | |
 | (sizing only — no inheritable fields) | | |
 | **separator** (§2.18) | | |
-| `separator.color` | `defaults.border` | macOS/Win/KDE `←`, GNOME preset |
+| `separator.color` | `defaults.border` | Win/KDE `←`, macOS ⚙ (= border), GNOME preset |
 | **switch** (§2.21) | | |
 | `switch.checked_bg` | `defaults.accent` | ✅ all `←` |
-| `switch.thumb_bg` | `defaults.surface` | all ⚙ / TOML |
+| `switch.thumb_bg` | `defaults.surface` | all non-⚙ / TOML |
 | **dialog** (§2.22) | | |
 | `dialog.title_font` | `defaults.font` | KDE `←`, others preset |
 | `dialog.radius` | `defaults.radius_lg` | macOS/KDE `←`, Win/GNOME preset |
@@ -191,17 +196,25 @@ actual value.
 | **combo_box** (§2.24) | | |
 | `combo_box.radius` | `defaults.radius` | ✅ all `←` |
 | **segmented_control** (§2.25) | | |
-| `segmented_control.radius` | `defaults.radius` | ✅ all `←` |
+| `segmented_control.radius` | `defaults.radius` | macOS/KDE `←`, Win/GNOME (none) |
 | **card** (§2.26) | | |
 | `card.background` | `defaults.surface` | Win/GNOME preset |
 | `card.border` | `defaults.border` | Win/GNOME preset |
 | `card.radius` | `defaults.radius_lg` | Win/GNOME preset |
+| `card.shadow` | `defaults.shadow_enabled` | Win/GNOME preset |
 | **expander** (§2.27) | | |
 | `expander.radius` | `defaults.radius` | mixed |
 | **link** (§2.28) | | |
-| `link.color` | `defaults.link` | ✅ all `←` |
+| `link.color` | `defaults.link` | all ⚙ / TOML (≈ link); Win token differs² |
+| `link.visited` | `defaults.link` | KDE/GNOME preset, macOS/Win = link |
 | **defaults** (global) | | |
+| `defaults.selection` | `defaults.accent` | safety net (see runtime flow §2) |
+| `defaults.focus_ring_color` | `defaults.accent` | safety net (see runtime flow §2) |
 | `defaults.selection_inactive` | `defaults.selection` | — |
+
+² Windows `link.color` = (Fluent) AccentTextFillColor, but `defaults.link` =
+(Fluent) HyperlinkForeground — different tokens. In practice both are
+accent-derived, so the fallback is reasonable but not exact.
 
 ### Sizing: no inheritance
 
@@ -210,11 +223,33 @@ Sizing properties (`min_width`, `min_height`, `max_width`, `max_height`,
 they are non-⚙ design constants and must be set in the platform TOML.
 Missing sizing values cause validation errors.
 
+### TextScale inheritance
+
+`TextScaleEntry` sub-fields inherit individually when `None`
+(see theme-variant §3):
+
+- `size` ← `defaults.font.size`
+- `weight` ← `defaults.font.weight`
+- `line_height` ← computed: `defaults.line_height` multiplier × entry's
+  resolved `size` (NOT from `defaults.font`; see theme-variant §3 comment:
+  "None = use defaults.line_height multiplier × size")
+
 ### Fields with no default inheritance
 
-The `switch.unchecked_bg` has **no default inheritance** — it must
-come from the OS reader (⚙) or the platform TOML (non-⚙). It varies
-too much across platforms to derive from a global default.
+These non-sizing `Option` fields have **no default inheritance** — they
+must come from the OS reader (⚙) or the platform TOML (non-⚙). They
+vary too much across platforms or have no `ThemeDefaults` analog.
+
+| Field | Why no inheritance |
+|-------|-------------------|
+| `switch.unchecked_bg` | Each platform has a distinct off-track color (§2.21) |
+| `switch.track_radius` | Derived from half track height (pill shape), not `defaults.radius` (§2.21) |
+| `link.underline` | Boolean convention — macOS/KDE/GNOME: yes, Windows: no (§2.28) |
+| `link.background` | Only Windows (HyperlinkButton) has a value (§2.28) |
+| `link.hover_bg` | Only Windows (SubtleFillColorSecondary) has a value (§2.28) |
+| `scrollbar.overlay_mode` | Boolean platform convention — macOS/GNOME: overlay, Win/KDE: persistent (§2.8) |
+| `dialog.button_order` | Enum convention — macOS/GNOME: trailing, Win/KDE: leading (§2.22) |
+| `icon_set` | String identifier for the icon set — OS reader detects or TOML specifies (ThemeVariant top-level) |
 
 ---
 
@@ -256,31 +291,34 @@ in the platform default TOML.
    → Returns partial ThemeVariant (None for fields
      OS does not provide)
 
-2. resolve() — universal, shared Rust function
-   → Fills remaining None fields from inheritance sources
-   → accent → primary_bg, selection, focus_ring, checked_bg, fill
-   → defaults.font → menu.font, tooltip.font, etc.
-   → defaults.radius → button.radius, input.radius, etc.
-   → Result: ThemeVariant with all OS-derivable fields populated,
-     design constants still None
-
-3. Platform default TOML — overlay on top
+2. Platform default TOML — overlay on top
    → Fills the design-constant gaps (geometry, spacing, widget metrics)
    → Also fills non-⚙ colors the OS doesn't expose (e.g., Adwaita CSS
      colors on GNOME, Fluent design tokens on Windows)
    → Does NOT duplicate ⚙ values the OS reader already provided
 
+3. resolve() — universal, shared Rust function
+   → Fills remaining None fields from inheritance sources
+   → accent → primary_bg, selection, focus_ring, checked_bg, fill
+   → defaults.font → menu.font, tooltip.font, etc.
+   → defaults.radius → button.radius, input.radius, etc.
+   → Result: all inheritable fields populated (both OS-sourced
+     and TOML-sourced inheritance chains complete)
+
 4. App TOML (optional) — overlay on top
    → App developer overrides whatever they want
    → e.g., custom accent, larger buttons, tighter spacing
+   → After overlay: a second resolve() pass propagates any
+     changed source fields (e.g. custom accent → primary_bg)
 
 5. Final validate → ResolvedTheme (no Option fields)
    → If any field is still None: error listing missing fields
 ```
 
-The merge direction is: **OS + inheritance form the base; TOML
-overlays on top.** `Some` values in the TOML always win over the
-base. This lets app developers override any native property.
+The merge direction is: **OS + TOML form the base; `resolve()`
+fills inheritance on top.** `Some` values in the TOML always win
+over OS-provided values. This lets app developers override any
+native property.
 
 ### Where inheritance rules live
 
@@ -292,8 +330,9 @@ base. This lets app developers override any native property.
 
 ### Why universal `resolve()` works
 
-The OS reader determines which fields are populated before `resolve()`
-runs. Different readers populate different fields. The universal rule
+The OS reader and platform TOML determine which fields are populated
+before `resolve()` runs. Different readers populate different fields.
+The universal rule
 `tooltip.font ← defaults.font` fires on GNOME (no tooltip font
 setting) but not on macOS (where the reader provided it from
 `+toolTipsFontOfSize:`). Same rule, different outcome — because the
@@ -305,7 +344,7 @@ OS readers differ, not the rule.
 | `menu.font` | Yes (`[General] menuFont`) | No (GNOME has no such setting) | KDE: no. GNOME: yes (← defaults.font) |
 | `toolbar.font` | Yes (`[General] toolBarFont`) | No | KDE: no. GNOME: yes (← defaults.font) |
 | `tooltip.font` | No (KDE has no tooltipFont) | No | Both: yes (← defaults.font) |
-| `titlebar.font` | Yes (`[General] activeFont`) | Yes (`titlebar-font` gsetting) | No — already set |
+| `window.title_bar_font` | Yes (`[WM] activeFont`) | Yes (`titlebar-font` gsetting) | No — already set |
 | `status_bar.font` | No (KDE has no statusFont) | No | Both: yes (← defaults.font) |
 
 ---
@@ -337,13 +376,12 @@ Example minimal `kde-breeze.toml`:
 name = "KDE Breeze"
 
 [light.geometry]
-radius = 4.0
+radius = 5.0
 radius_lg = 8.0
 frame_width = 1.0
 disabled_opacity = 0.5
 border_opacity = 0.2
-scroll_width = 10.0
-shadow = true
+shadow_enabled = true
 
 [light.spacing]
 xxs = 2.0
@@ -363,6 +401,9 @@ icon_spacing = 4.0
 indicator_size = 20.0
 spacing = 4.0
 
+[light.widget_metrics.scrollbar]
+width = 21.0
+
 # ... remaining widget_metrics sections ...
 
 [light.widget_metrics.splitter]
@@ -370,8 +411,9 @@ width = 1.0
 ```
 
 Note what is **absent**: no `[light.colors]`, no `[light.fonts]`.
-KDE's OS reader reads all 35 color roles and 6 font entries from
-kdeglobals, so the TOML only needs design constants.
+KDE's OS reader reads nearly all color roles (~29 unique keys across
+7 color groups + [WM] + [General]) and 6 font entries from kdeglobals,
+so the TOML only needs design constants.
 
 **This is KDE-specific.** GNOME's `adwaita.toml` is much larger
 because GNOME only exposes accent + color-scheme + fonts via APIs.
@@ -384,8 +426,9 @@ Windows OS reader does not read.
 
 **⚙ colors** — read from OS, not in platform TOML:
 Don't include colors that the OS reader provides. On KDE this is
-nearly all colors; on macOS it's all 36; on Windows it's UISettings
-+ GetSysColor values; on GNOME it's only the portal accent.
+nearly all colors; on macOS it's ~38 (nearly all ThemeDefaults +
+most widget colors); on Windows it's UISettings + GetSysColor values;
+on GNOME it's only the portal accent.
 
 **⚙ fonts** — read from OS:
 The OS reader provides body font, mono font, and per-widget fonts
@@ -394,7 +437,8 @@ rest via inheritance. No font fields in any platform TOML.
 
 **Derived fields** — filled by `resolve()`:
 All `←` fields from the uniform inheritance table (above).
-`resolve()` fills them from OS-provided sources. No derived fields
+`resolve()` fills them from both OS-reader and TOML-provided
+sources (runs after step 2 TOML overlay). No derived fields
 in any platform TOML.
 
 **Non-⚙ colors** — these ARE in the platform TOML:
@@ -429,12 +473,10 @@ s = 4.0
 m = 6.0
 ```
 
-If the app sets `accent` here, the accent-derived fields
-(`primary_bg`, `slider.fill`, etc.) still hold the OS-resolved
-values unless the app also overrides those. If the app wants
-full accent propagation from a custom accent, it sets only
-`accent` and relies on a second `resolve()` pass to propagate.
-(Pipeline detail TBD in implementation.)
+If the app sets `accent` here, the second `resolve()` pass
+(step 4 in the runtime flow) propagates to accent-derived fields
+(`primary_bg`, `slider.fill`, etc.). Setting only `accent` is
+sufficient — the app does not need to override every derived field.
 
 ---
 
@@ -451,19 +493,29 @@ name = "Catppuccin Mocha"
 accent = "#cba6f7"
 background = "#1e1e2e"
 foreground = "#cdd6f4"
-button = "#45475a"
-button_foreground = "#cdd6f4"
-tooltip = "#313244"
-tooltip_foreground = "#cdd6f4"
-sidebar = "#181825"
-sidebar_foreground = "#cdd6f4"
-# ... all direct color roles
+surface = "#313244"
+# ... remaining ThemeDefaults color fields
+
+[dark.button]
+background = "#45475a"
+foreground = "#cdd6f4"
+
+[dark.tooltip]
+background = "#313244"
+foreground = "#cdd6f4"
+
+[dark.sidebar]
+background = "#181825"
+foreground = "#cdd6f4"
+# ... remaining non-derived widget colors
 
 [dark.fonts]
 family = "Inter"
 size = 14.0
-mono_family = "JetBrains Mono"
-mono_size = 14.0
+
+[dark.mono_font]
+family = "JetBrains Mono"
+size = 14.0
 
 [dark.geometry]
 radius = 8.0

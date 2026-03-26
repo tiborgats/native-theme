@@ -866,6 +866,7 @@ named.
 | `link`                | ⚙ `linkColor`                      | **(Fluent)** HyperlinkForeground                     | ⚙ `[Colors:View] ForegroundLink`      | **(Adwaita CSS)**          |
 | `selection`           | ⚙ `selectedContentBackgroundColor` | ⚙ `COLOR_HIGHLIGHT`                                 | ⚙ `[Colors:Selection] BackgroundNormal`| **(Adwaita CSS)**         |
 | `selection_foreground`| ⚙ `selectedTextColor`              | ⚙ `COLOR_HIGHLIGHTTEXT`                             | ⚙ `[Colors:Selection] ForegroundNormal`| **(Adwaita CSS)**         |
+| `selection_inactive`  | ⚙ `unemphasizedSelectedContentBackgroundColor` | **(none)** — reduced emphasis / `COLOR_BTNFACE` | **(none)** — selection bg unchanged on focus loss | **(none)** — `:backdrop` CSS state handles this |
 | `disabled_foreground` | ⚙ `disabledControlTextColor`       | **(Fluent)** TextFillColorDisabled                   | ⚙ `[Colors:View] ForegroundInactive`  | **(Adwaita CSS)**          |
 
 #### 2.1.4 Status Colors
@@ -930,6 +931,8 @@ named.
 | `border`                 | ← `defaults.border`                           | ← `defaults.border` (Win10+: `COLOR_ACTIVEBORDER` unsupported) | ⚙ `[WM]` decoration theme colors | **(Adwaita CSS)** window border                 |
 | `title_bar_background`   | ⚙ **(measured)** ≈ `defaults.surface`         | ⚙ `DwmGetColorizationColor`                     | ⚙ `[WM] activeBackground`       | libadwaita `headerbar` bg                        |
 | `title_bar_foreground`   | ⚙ `windowFrameTextColor`                      | ⚙ `COLOR_CAPTIONTEXT`                           | ⚙ `[WM] activeForeground`       | libadwaita `headerbar` fg                        |
+| `inactive_title_bar_bg`  | **(none)** — system-managed dimming            | ⚙ `COLOR_INACTIVECAPTION`                       | ⚙ `[WM] inactiveBackground`     | **(none)** — `:backdrop` CSS state               |
+| `inactive_title_bar_fg`  | **(none)** — system-managed                    | ⚙ `COLOR_INACTIVECAPTIONTEXT`                   | ⚙ `[WM] inactiveForeground`     | **(none)** — `:backdrop` CSS state               |
 | `title_bar_font.family`  | `+titleBarFontOfSize:` → family               | ⚙ `lfCaptionFont.lfFaceName`                    | ⚙ `[WM] activeFont` field 0     | ⚙ `titlebar-font` gsetting → family             |
 | `title_bar_font.size`    | `+titleBarFontOfSize:` → pointSize            | ⚙ ↕ `abs(lfCaptionFont.lfHeight)*72/dpi`        | ⚙ `[WM] activeFont` field 1     | ⚙ `titlebar-font` gsetting → size               |
 | `title_bar_font.weight`  | `+titleBarFontOfSize:` → Bold (700)            | ⚙ `lfCaptionFont.lfWeight` (varies; see §1.2.1) | ⚙ `[WM] activeFont` field 4     | ⚙ `titlebar-font` gsetting → weight (typically 700)|
@@ -1009,7 +1012,8 @@ Radio buttons use the same colors but with circular `radius`.
 | `font.family` | `+toolTipsFontOfSize:` → family        | ← `defaults.font`  | ← `defaults.font`                   | ← `defaults.font`      |
 | `font.size`   | `+toolTipsFontOfSize:` → ptSize        | ← `defaults.font`  | ← `defaults.font`                   | ← `defaults.font`      |
 | `font.weight` | `+toolTipsFontOfSize:` → weight        | ← `defaults.font`  | ← `defaults.font`                   | ← `defaults.font`      |
-| `padding`     | NSToolTipManager: 4                     | WinUI3: 9h / 6–8v   | `ToolTip_FrameWidth` = 3            | **(Adwaita CSS)**: 6v / 10h |
+| `padding_horizontal` | NSToolTipManager: 4               | WinUI3: 9            | `ToolTip_FrameWidth` = 3            | **(Adwaita CSS)**: 10       |
+| `padding_vertical`   | NSToolTipManager: 4               | WinUI3: 6–8          | `ToolTip_FrameWidth` = 3            | **(Adwaita CSS)**: 6        |
 | `max_width`   | 300 **(measured)** macOS Sonoma         | WinUI3: 320         | **(none)** — preset: 300             | **(none)** — preset: 360 |
 | `radius`      | ← `defaults.radius`                    | ← `defaults.radius`| ← `defaults.radius`                  | ← `defaults.radius`    |
 
@@ -1097,6 +1101,7 @@ Radio buttons use the same colors but with circular `radius`.
 | `selection_foreground`| ← `defaults.selection_foreground`      | ← `defaults.selection_foreground`| ← `defaults.selection_foreground`| ← `defaults.selection_foreground`|
 | `header_background`   | ⚙ **(measured)** ≈ `defaults.surface`  | **(Fluent)** ≈ `defaults.background` | ⚙ `[Colors:Header] BackgroundNormal` | **(Adwaita CSS)** columnview header|
 | `header_foreground`   | ⚙ `headerTextColor`                   | ← `defaults.foreground`| ⚙ `[Colors:Header] ForegroundNormal` | **(Adwaita CSS)** columnview header|
+| `grid_color`          | ⚙ `gridColor` (§1.1.2)               | **(none)** — uses border color | **(none)** — Qt views use palette pen | **(none)** — columnview uses CSS separator |
 | `item_height`         | NSTableView row: 24                    | WinUI3 ListView: 40    | **(none)** — sizes to content          | **(Adwaita CSS)**: `.rich-list` row min-height: 32px; plain row: content-driven (no min-height) |
 | `padding_horizontal`  | NSTableView: 4                         | WinUI3: 12             | 2                                      | **(Adwaita CSS)**: 12 (`.rich-list`); 2 (plain row) |
 | `padding_vertical`    | 4 **(measured)** (24−16)/2             | WinUI3: 0 (height from MinHeight=40)  | 1                                      | **(Adwaita CSS)**: 8 (`.rich-list` `padding: 8px 12px`); 2 (plain row `padding: 2px`) |
@@ -1163,10 +1168,12 @@ QQC2/Kirigami `Switch` with font-metric-derived sizing.
 |-----------------------|-------------------------------|-----------------------------------|------------------------------------|-------------------------------------|
 | `min_width`           | **(none)** — AppKit-managed   | WinUI3 ContentDialog: 320         | **(none)** — sizes to content      | AdwAlertDialog: 300sp              |
 | `max_width`           | **(none)** — AppKit-managed   | WinUI3 ContentDialog: 548         | **(none)** — sizes to content      | AdwAlertDialog: 372sp (wide: 600sp)|
+| `min_height`          | **(none)** — AppKit-managed   | WinUI3 ContentDialog: 184         | **(none)** — sizes to content      | **(none)**                         |
+| `max_height`          | **(none)** — AppKit-managed   | WinUI3 ContentDialog: 756         | **(none)** — sizes to content      | **(none)**                         |
 | `content_padding`     | ~20px **(measured)**          | WinUI3: 24                        | `Layout_TopLevelMarginWidth` = 10  | 24px sides, 32px top               |
 | `button_spacing`      | ~12px **(measured)**          | WinUI3: 8                         | `Layout_DefaultSpacing` = 6        | 12px                               |
 | `button_order`        | primary rightmost             | primary leftmost                  | OK leftmost, Cancel rightmost      | cancel left, affirmative right     |
-| `title_style`         | system alert heading          | 20px SemiBold                     | ← `defaults.font`                 | `.title-2` (136%, 800)             |
+| `title_font`          | system alert heading          | 20px SemiBold                     | ← `defaults.font`                 | `.title-2` (136%, 800)             |
 | `radius`              | ← `defaults.radius_lg`       | 8px (OverlayCornerRadius) ✅      | ← `defaults.radius_lg`            | 18px (`$alert_radius`) — distinct from window radius (15px) |
 | `icon_size`           | 64px (app icon)               | **(none)** — no default icon      | **(none)** — per-dialog            | **(none)** — no default icon       |
 

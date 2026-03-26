@@ -15,7 +15,7 @@ a theme error that must be reported, not hidden.
 
 ---
 
-## 1. Pipeline: OS Reader → resolve() → TOML overlay
+## 1. Pipeline: OS Reader → TOML overlay → resolve()
 
 ### Current Behavior
 
@@ -30,33 +30,41 @@ The OS is the primary source. The TOML is an overlay that fills
 design-constant gaps and lets app developers customize native values.
 
 ```
-  OS Reader            resolve()           Platform TOML    App TOML
-  (live ⚙ values)      (inheritance)        (design consts)  (overrides)
-        │                     │                   │               │
-        └─────────────────────┘                   │               │
-                  │                               │               │
-                  ▼                               │               │
-           ThemeVariant                           │               │
-           (OS + derived)                         │               │
-                  │                               │               │
-                  └──── merge(platform TOML) ─────┘               │
-                                │                                 │
-                                └──── merge(app TOML) ────────────┘
-                                                │
-                                                ▼
-                                         validate()
-                                                │
-                                                ▼
-                                         ResolvedTheme
+  OS Reader          Platform TOML     resolve()      App TOML     resolve()
+  (live ⚙ values)    (design consts)   (inheritance)  (overrides)  (re-derive)
+        │                  │                │              │             │
+        └──── merge ───────┘                │              │             │
+                  │                         │              │             │
+                  ▼                         │              │             │
+           ThemeVariant                     │              │             │
+           (OS + design consts)             │              │             │
+                  │                         │              │             │
+                  └─────────────────────────┘              │             │
+                                │                         │             │
+                                ▼                         │             │
+                         ThemeVariant                     │             │
+                         (all derivable fields filled)    │             │
+                                │                         │             │
+                                └──── merge(app TOML) ────┘             │
+                                                │                       │
+                                                └───────────────────────┘
+                                                          │
+                                                       validate()
+                                                          │
+                                                          ▼
+                                                    ResolvedTheme
 ```
 
-Merge order: **OS + inheritance form the base; TOMLs overlay on top.**
+Merge order: **OS + TOML form the base; `resolve()` fills inheritance on top.**
 - OS reader provides live colors, fonts, DPI-scaled metrics (⚙ values)
-- `resolve()` fills derived fields from OS-provided sources
-  (accent → primary_bg, defaults.font → menu.font, etc.)
 - Platform default TOML fills design-constant gaps (geometry, spacing,
   widget metrics, non-⚙ colors like Adwaita CSS values on GNOME)
+- `resolve()` fills derived fields from both OS and TOML sources
+  (accent → primary_bg, defaults.font → menu.font,
+  defaults.radius → button.radius, etc.)
 - App TOML (optional) overrides any value the app developer wants
+- A second `resolve()` pass after app TOML propagates any changed
+  source fields (e.g. custom accent → primary_bg)
 - `Some` values in any TOML always win over the base — this is how
   app developers customize the native look
 
@@ -75,7 +83,7 @@ Merge order: **OS + inheritance form the base; TOMLs overlay on top.**
 Windows, KDE, and GNOME only detect the active variant (light or dark).
 macOS detects both. After the pipeline:
 
-- The detected variant = OS reader + resolve() + platform TOML (complete, live)
+- The detected variant = OS reader + platform TOML + resolve() (complete, live)
 - The other variant = platform TOML only (design constants, no live OS data)
 
 For platforms where the TOML is minimal (KDE — no colors/fonts in TOML),
@@ -88,7 +96,7 @@ the inactive variant will be incomplete. Options:
 
 ## 2. ResolvedTheme — Non-Optional Output
 
-After the full pipeline (OS reader → resolve → TOML overlays),
+After the full pipeline (OS reader → TOML overlay → resolve → app TOML → resolve),
 convert `ThemeVariant` (with `Option` fields) into a `ResolvedTheme`
 (with direct values). The conversion validates that every required
 field is `Some`. If any field is still `None`, return an error
@@ -97,11 +105,13 @@ listing all missing fields — not a panic.
 ```
   OS Reader ──────────▶ ThemeVariant (sparse)
                               │
-                       resolve() — fills derived Nones
-                              │
   Platform TOML ──────▶ merge() — fills design constants
                               │
+                       resolve() — fills derived Nones
+                              │
   App TOML (opt) ─────▶ merge() — app overrides
+                              │
+                       resolve() — re-derive from overrides
                               │
                        validate()
                               │
@@ -116,12 +126,37 @@ listing all missing fields — not a panic.
 
 ```rust
 pub struct ResolvedTheme {
-    pub colors:         ResolvedColors,
-    pub fonts:          ResolvedFonts,
-    pub geometry:       ResolvedGeometry,
-    pub spacing:        ResolvedSpacing,
-    pub widget_metrics: ResolvedWidgetMetrics,
-    pub icon_set:       String,
+    pub defaults: ResolvedDefaults,
+    pub text_scale: ResolvedTextScale,
+
+    pub window: ResolvedWindow,
+    pub button: ResolvedButton,
+    pub input: ResolvedInput,
+    pub checkbox: ResolvedCheckbox,
+    pub menu: ResolvedMenu,
+    pub tooltip: ResolvedTooltip,
+    pub scrollbar: ResolvedScrollbar,
+    pub slider: ResolvedSlider,
+    pub progress_bar: ResolvedProgressBar,
+    pub tab: ResolvedTab,
+    pub sidebar: ResolvedSidebar,
+    pub toolbar: ResolvedToolbar,
+    pub status_bar: ResolvedStatusBar,
+    pub list: ResolvedList,
+    pub popover: ResolvedPopover,
+    pub splitter: ResolvedSplitter,
+    pub separator: ResolvedSeparator,
+
+    pub switch: ResolvedSwitch,
+    pub dialog: ResolvedDialog,
+    pub spinner: ResolvedSpinner,
+    pub combo_box: ResolvedComboBox,
+    pub segmented_control: ResolvedSegmentedControl,
+    pub card: ResolvedCard,
+    pub expander: ResolvedExpander,
+    pub link: ResolvedLink,
+
+    pub icon_set: String,
 }
 ```
 
@@ -129,7 +164,7 @@ The ResolvedTheme mirrors the per-widget architecture from the
 theme-variant spec. Each widget's Resolved struct contains plain values
 (no `Option`) — all inheritance from `ThemeDefaults` has been applied.
 
-See `todo_v0.4.2_theme-variant.md` for the full per-widget struct
+See `todo_v0.5.1_theme-variant.md` for the full per-widget struct
 definitions. Each `Option` field becomes a concrete value in the
 resolved counterpart.
 
@@ -137,13 +172,14 @@ resolved counterpart.
 
 `resolve()` and `validate()` are separate steps:
 
-- **`resolve()`** runs after the OS reader. It fills `None` fields
-  from inheritance sources (accent → primary_bg, font → menu.font,
-  radius → button.radius, etc.). See `todo_v0.5.1_inheritance-rules.md`
-  for the full inheritance table. This is a best-effort step — some
-  fields may remain `None` if their source is also `None`.
+- **`resolve()`** runs after the OS reader and platform TOML overlay.
+  It fills `None` fields from inheritance sources (accent → primary_bg,
+  font → menu.font, radius → button.radius, etc.). See
+  `todo_v0.5.1_inheritance-rules.md` for the full inheritance table.
+  Since both OS and TOML sources are available at this point, all
+  derivable fields should be populated.
 
-- **`validate()`** runs after all TOML overlays. It converts
+- **`validate()`** runs after all TOML overlays and resolve passes. It converts
   `ThemeVariant` → `ResolvedTheme`, checking that every required
   field is `Some`. If any field is still `None`, it returns an error.
 
@@ -159,9 +195,9 @@ pub struct ThemeResolutionError {
 Example output:
 ```
 Theme resolution failed: 3 missing field(s):
-  - spacing.xs
-  - colors.danger
-  - fonts.tooltip.size
+  - defaults.spacing.xs
+  - defaults.danger
+  - tooltip.font.size
 ```
 
 ---
@@ -174,16 +210,15 @@ Currently reads: `systemFontOfSize:`, `monospacedSystemFont...`,
 ~20 NSColors.
 
 Add:
-- `NSFont.smallSystemFontSize` → `caption_size`
-- `NSFont.labelFontSize` → `small_size`
-- `NSFont.titleBarFontOfSize:` → `title_bar` FontOverride
-- `NSFont.menuFontOfSize:` → `menu` FontOverride
-- `NSFont.toolTipsFontOfSize:` → `tooltip` FontOverride
+- `NSFont.TextStyle.caption1` → `text_scale.caption` (10pt, 400, 13pt line)
+- `+titleBarFontOfSize:` → `window.title_bar_font` FontSpec
+- `+menuFontOfSize:` → `menu.font` FontSpec
+- `+toolTipsFontOfSize:` → `tooltip.font` FontSpec
 - Font weight from `NSFontDescriptor` traits
-- `NSColor.placeholderTextColor` → `placeholder`
-- `NSColor.windowFrameTextColor` → `title_bar_foreground`
-- `NSColor.insertionPointColor` → `caret`
-- Title bar background from `windowBackgroundColor` or visual effect material
+- `NSColor.placeholderTextColor` → `input.placeholder`
+- `NSColor.windowFrameTextColor` → `window.title_bar_foreground`
+- `NSColor.textInsertionPointColor` (macOS 14+) → `input.caret`
+- Title bar background ≈ `controlBackgroundColor` (§2.2: ≈ `defaults.surface`)
 
 ### 3.2 Windows (`from_windows`)
 
@@ -191,11 +226,11 @@ Currently reads: `lfMessageFont`, UISettings colors, geometry via
 `GetSystemMetricsForDpi`, `winui3_spacing()`.
 
 Add:
-- `lfCaptionFont` → `title_bar` FontOverride (family, size, weight)
-- `lfMenuFont` → `menu` FontOverride
-- `lfStatusFont` → `status_bar` FontOverride
-- `lfMessageFont` weight → base `weight`
-- `DwmGetColorizationColor` → `title_bar` color
+- `lfCaptionFont` → `window.title_bar_font` FontSpec (family, size, weight)
+- `lfMenuFont` → `menu.font` FontSpec
+- `lfStatusFont` → `status_bar.font` FontSpec
+- `lfMessageFont` weight → `defaults.font.weight`
+- `DwmGetColorizationColor` → `window.title_bar_background`
 - SM_CXFOCUSBORDER / SM_CYFOCUSBORDER → `focus_ring_width`
 
 ### 3.3 KDE (`from_kde`)
@@ -204,15 +239,15 @@ Currently reads: `font`, `fixed` from [General], colors from Colors:*
 sections.
 
 Add:
-- `smallestReadableFont` → `caption_size` (parse field 1)
-- `toolBarFont` → `toolbar` FontOverride
-- `menuFont` → `menu` FontOverride
-- `activeFont` → `title_bar` FontOverride
+- `smallestReadableFont` → `text_scale.caption` (parse field 1 for size)
+- `toolBarFont` → `toolbar.font` FontSpec
+- `menuFont` → `menu.font` FontSpec
+- `activeFont` → `window.title_bar_font` FontSpec
 - Qt font field 4 → `weight` for all font keys
-- `[WM] activeBackground` → `title_bar`
-- `[WM] activeForeground` → `title_bar_foreground`
-- `[WM] frame` or `[WM] inactiveBackground` → `window_border`
-- `ForegroundInactive` from Colors:View → `placeholder`
+- `[WM] activeBackground` → `window.title_bar_background`
+- `[WM] activeForeground` → `window.title_bar_foreground`
+- `[WM]` decoration theme colors → `window.border`
+- `[Colors:View] ForegroundInactive` → `input.placeholder`
 
 ### 3.4 GNOME
 
@@ -226,7 +261,9 @@ than other platform TOMLs (it has all CSS-derived colors), which is
 correct — GNOME exposes fewer values via APIs than KDE or macOS.
 
 Add:
-- `titlebar-font` gsetting → `title_bar` FontOverride
+- `font-name` gsetting → `defaults.font` FontSpec (family, size, weight)
+- `monospace-font-name` gsetting → `defaults.mono_font` FontSpec
+- `titlebar-font` gsetting → `window.title_bar_font` FontSpec
 - `text-scaling-factor` gsetting → `text_scaling_factor`
 - `document-font-name` gsetting → (informational, not mapped currently)
 - Portal accent color already handled
@@ -247,7 +284,7 @@ constants from connector code. Every value is guaranteed present.
 ### Step 1: Restructure ThemeVariant
 
 Replace the flat ThemeColors/ThemeFonts/ThemeGeometry/WidgetMetrics
-layout with the per-widget architecture from `todo_v0.4.2_theme-variant.md`.
+layout with the per-widget architecture from `todo_v0.5.1_theme-variant.md`.
 Each widget gets its own struct with colors, font, sizing, and geometry.
 Add `ThemeDefaults` for shared base properties. Update `impl_merge!` for
 nested per-widget structs.
@@ -287,8 +324,8 @@ fallbacks.
 
 Change `from_system()` to run the full pipeline:
 1. OS reader → sparse ThemeVariant
-2. `resolve()` → fill derived Nones from inheritance rules
-3. Load matching platform TOML → merge on top (design constants)
+2. Load matching platform TOML → merge on top (design constants)
+3. `resolve()` → fill derived Nones from inheritance rules
 4. Return ThemeVariant ready for app TOML overlay + validate
 
 Location: `native-theme/src/lib.rs`
@@ -307,14 +344,14 @@ Change connectors to accept `&ResolvedTheme`. Remove all Option handling.
 - **Unit**: `resolve()` leaves field `None` if its source is also `None`
 - **Unit**: `validate()` with all fields `Some` → `Ok(ResolvedTheme)`
 - **Unit**: `validate()` with `None` fields → error listing each one
-- **Unit**: TOML overlay after resolve() overrides resolved values
-- **Unit**: Font inheritance — FontOverride with partial fields inherits
+- **Unit**: App TOML overlay after resolve() overrides resolved values
+- **Unit**: Font inheritance — FontSpec with partial fields inherits
   from base correctly
-- **Integration**: OS reader + resolve() + platform TOML → `validate()`
+- **Integration**: OS reader + platform TOML + resolve() → `validate()`
   succeeds on each platform
 - **Integration**: Cross-platform preset + resolve() → `validate()`
   succeeds (preset provides all non-derived fields)
 - **Integration**: App TOML overrides work — accent override in app
   TOML wins over OS-provided accent
-- **Serde**: New ThemeFonts fields round-trip through TOML correctly
+- **Serde**: Per-widget FontSpec fields round-trip through TOML correctly
 - **Serde**: ResolvedTheme does NOT implement Deserialize (output only)
