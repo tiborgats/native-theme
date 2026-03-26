@@ -346,6 +346,7 @@ choose their own (typically Consolas or Cascadia Mono).
 | `COLOR_INACTIVECAPTIONTEXT`| Inactive title bar text        | ✅ |
 | `COLOR_3DSHADOW`     | 3D shadow edge                      | ✅ |
 | `COLOR_3DHIGHLIGHT`  | 3D highlight edge                   | ✅ |
+| `COLOR_HOTLIGHT`     | Hot-tracked / hyperlink color       | ✅ |
 
 On Windows 10+, only `COLOR_WINDOW`, `COLOR_WINDOWTEXT`, `COLOR_HIGHLIGHT`,
 `COLOR_HIGHLIGHTTEXT`, `COLOR_3DFACE`, `COLOR_GRAYTEXT`, `COLOR_BTNTEXT`,
@@ -411,8 +412,10 @@ WinUI3 focus visual primary border is 2px ✅ (differs from Win32
 | TextBox         | min height          | WinUI3 default                | 32px     | ✅ `TextControlThemeMinHeight=32` in generic.xaml |
 | TextBox         | horizontal padding  | WinUI3 default                | 10px left, 6px right | ✅ TextControlThemePadding=10,5,6,6 (asymmetric: right is smaller due to delete button column) |
 | TextBox         | vertical padding    | WinUI3 default                | 5px top, 6px bottom | ✅ TextControlThemePadding=10,5,6,6 |
-| Scrollbar       | width               | `SM_CXVSCROLL` (DPI-aware)    | ↕ 17px   | ✅ see §1.2.3 |
-| Scrollbar       | thumb height        | `SM_CYVTHUMB` (DPI-aware)     | ↕ 17px   | ❓ see §1.2.3 |
+| Scrollbar (Win32) | width             | `SM_CXVSCROLL` (DPI-aware)    | ↕ 17px   | ✅ see §1.2.3 |
+| Scrollbar (Win32) | thumb height     | `SM_CYVTHUMB` (DPI-aware)     | ↕ 17px   | ❓ see §1.2.3 |
+| Scrollbar (WinUI3)| collapsed width  | ScrollBar template (inline)   | ~2px     | ❓ XAML template inline value; expands on pointer proximity |
+| Scrollbar (WinUI3)| expanded width   | ScrollBar template (inline)   | ~6px     | ❓ XAML template inline value; no named theme resource |
 | Slider          | track height        | WinUI3 default                | 4px      | ✅ SliderTrackThemeHeight=4 |
 | Slider          | thumb size          | WinUI3 default                | 18px     | ✅ SliderHorizontalThumbWidth/Height=18 |
 | Slider          | tick length         | WinUI3 default                | 4px      | ✅ `SliderOutsideTickBarThemeHeight=4` |
@@ -666,6 +669,9 @@ layout constants. ✅
 
 #### 1.3.6 Icon Sizes
 
+The active icon theme name is read from `kdeglobals [Icons] Theme`
+(default: `breeze`). ✅
+
 **`KIconLoader` groups** — sizes come from the icon theme's own
 `index.theme` (`DesktopDefault`, `ToolbarDefault`, etc. in `[Icon Theme]`
 section), **not** from `kdeglobals`. C++ fallbacks in `kicontheme.cpp`
@@ -802,6 +808,9 @@ is **no abstract spacing scale**. Specific values are set per CSS class.
 
 #### 1.4.6 Icon Sizes
 
+The active icon theme name is read from `org.gnome.desktop.interface
+icon-theme` (default: `Adwaita`). ✅
+
 GTK4 has **three** `GtkIconSize` enum values. Actual pixel sizes
 come from theme CSS via `-gtk-icon-size`:
 
@@ -841,7 +850,7 @@ named.
 | `family`       | `+systemFontOfSize:` → family       | ⚙ `lfMessageFont.lfFaceName`          | ⚙ `[General] font` field 0 | ⚙ `font-name` gsetting      |
 | `size`         | `+systemFontOfSize:` → pointSize    | ⚙ ↕ `abs(lfMessageFont.lfHeight)*72/dpi` | ⚙ `[General] font` field 1 | ⚙ `font-name` gsetting → size |
 | `weight`       | `NSFontDescriptor` traits           | ⚙ `lfMessageFont.lfWeight`            | ⚙ `[General] font` field 4 | ⚙ `font-name` gsetting → wt |
-| `line_height`  | 1.19 **(font metrics)** SF Pro sTypo (ascender+\|descender\|+lineGap)/UPM=(1950+494+0)/2048; macOS HIG specifies per-style line heights (e.g. body 13/16=1.23, headline 13/16=1.23) but these are design guidelines, not API values — the font metrics yield 1.19 | 1.43 **(Fluent)** Body 20px/14px      | 1.36 **(font metrics)** Noto Sans sTypo (ascender+\|descender\|+lineGap)/UPM=(1069+293+0)/1000 (Roboto-compatible metrics; lineGap=0) | 1.2 **(font metrics)** Cantarell sTypo (ascender+\|descender\|+lineGap)/UPM=(739+217+244)/1000; Adwaita Sans (GNOME 48+)=1.21 (from Inter metrics: (1984+494+0)/2048, lineGap=0) |
+| `line_height`  | 1.19 **(font metrics)** SF Pro sTypo (ascender+\|descender\|+lineGap)/UPM=(1950+494+0)/2048; macOS HIG specifies per-style line heights (e.g. body 13/16=1.23, headline 13/16=1.23) but these are design guidelines, not API values — the font metrics yield 1.19 | 1.43 **(Fluent)** Body 20px/14px      | 1.36 **(font metrics)** Noto Sans sTypo (ascender+\|descender\|+lineGap)/UPM=(1069+293+0)/1000 (Roboto-compatible metrics; lineGap=0) | ✅ Cantarell (pre-48): 1.2 **(font metrics)** — `USE_TYPO_METRICS` (fsSelection bit 7) is **not set**, so HarfBuzz/Pango uses hhea metrics: hheaAscender=983 (=739+244, lineGap folded into ascender), hheaDescender=−217, hheaLineGap=0 → (983+217)/1000=1.2 (same total as sTypo: (739+217+244)/1000=1.2); Adwaita Sans (GNOME 48+)=1.21 **(font metrics)** from Inter metrics: (1984+494+0)/2048 (`USE_TYPO_METRICS` IS set, lineGap=0) |
 
 #### 2.1.2 Monospace Font
 
@@ -874,13 +883,24 @@ named.
 | Property              | macOS                | Windows                                                | KDE                                     | GNOME              |
 |-----------------------|----------------------|--------------------------------------------------------|-----------------------------------------|--------------------|
 | `danger`              | ⚙ `systemRedColor`  | ✅ **(Fluent)** SystemFillColorCritical L #c42b1c D #ff99a4 | ⚙ `[Colors:View] ForegroundNegative`   | **(Adwaita CSS)**  |
-| `danger_foreground`   | ⚙ `labelColor`      | **(Fluent)** L #ffffff D #1a1a1a — no dedicated WinUI3 resource | ⚙ `[Colors:Window] ForegroundNormal`   | **(Adwaita CSS)**  |
+| `danger_foreground`   | ⚙ `labelColor` ¹    | **(Fluent)** L #ffffff D #1a1a1a ² — no dedicated WinUI3 resource | ⚙ `[Colors:Window] ForegroundNormal` ¹ | **(Adwaita CSS)** ¹ |
 | `warning`             | ⚙ `systemOrangeColor` | ✅ **(Fluent)** SystemFillColorCaution L #9d5d00 D #fce100 | ⚙ `[Colors:View] ForegroundNeutral`  | **(Adwaita CSS)**  |
-| `warning_foreground`  | ⚙ `labelColor`      | **(Fluent)** L #1a1a1a D #1a1a1a — no dedicated WinUI3 resource | ⚙ `[Colors:Window] ForegroundNormal`   | **(Adwaita CSS)**  |
+| `warning_foreground`  | ⚙ `labelColor` ¹    | **(Fluent)** L #1a1a1a D #1a1a1a ² — no dedicated WinUI3 resource | ⚙ `[Colors:Window] ForegroundNormal` ¹ | **(Adwaita CSS)** ¹ |
 | `success`             | ⚙ `systemGreenColor` | ✅ **(Fluent)** SystemFillColorSuccess L #0f7b0f D #6ccb5f | ⚙ `[Colors:View] ForegroundPositive`  | **(Adwaita CSS)**  |
-| `success_foreground`  | ⚙ `labelColor`      | **(Fluent)** L #ffffff D #1a1a1a — no dedicated WinUI3 resource | ⚙ `[Colors:Window] ForegroundNormal`   | **(Adwaita CSS)**  |
+| `success_foreground`  | ⚙ `labelColor` ¹    | **(Fluent)** L #ffffff D #1a1a1a ² — no dedicated WinUI3 resource | ⚙ `[Colors:Window] ForegroundNormal` ¹ | **(Adwaita CSS)** ¹ |
 | `info`                | ⚙ `systemBlueColor` | **(Fluent)** SystemFillColorAttention (accent-derived)    | ⚙ `[Colors:View] ForegroundActive`     | **(Adwaita CSS)**  |
-| `info_foreground`     | ⚙ `labelColor`      | **(Fluent)** L #ffffff D #1a1a1a — no dedicated WinUI3 resource | ⚙ `[Colors:Window] ForegroundNormal`   | **(Adwaita CSS)**  |
+| `info_foreground`     | ⚙ `labelColor` ¹    | **(Fluent)** L #ffffff D #1a1a1a ² — no dedicated WinUI3 resource | ⚙ `[Colors:Window] ForegroundNormal` ¹ | **(Adwaita CSS)** ¹ |
+
+**Status foreground semantic mismatch:** The `*_foreground` rows mix two
+different concepts across platforms. ¹ macOS, KDE, and GNOME provide the
+**normal body foreground** — suitable as text color *alongside* a status
+indicator (e.g. error-message text next to a red icon), **not** as text
+*on* a status-colored background. ² Windows provides a **contrast
+foreground for text on the status background** (white-on-dark-red in light
+mode, near-black-on-light-pink in dark mode). No platform has a dedicated
+"text-on-status-background" API; consumers must pick the interpretation
+that matches their use case and derive the other (e.g. ensure contrast
+against the `danger` color if using it as a fill).
 
 #### 2.1.5 Focus Ring
 
@@ -905,7 +925,7 @@ named.
 
 | Property              | macOS                                                    | Windows                                  | KDE                          | GNOME                           |
 |-----------------------|----------------------------------------------------------|------------------------------------------|------------------------------|----------------------------------|
-| `text_scaling_factor` | ⚙ Accessibility text size pref                           | ⚙ `UISettings.TextScaleFactor` (text-only) + DPI / 96 (display) | ⚙ `forceFontDPI` / 96       | ⚙ `text-scaling-factor` gsetting |
+| `text_scaling_factor` | ⚙ Accessibility text size pref (macOS 14+; **very limited** — affects only a few Apple apps; `preferredFont(forTextStyle:)` still returns fixed sizes; not comparable to other platforms' system-wide text scaling) | ⚙ `UISettings.TextScaleFactor` (text-only) + DPI / 96 (display) | ⚙ `forceFontDPI` / 96       | ⚙ `text-scaling-factor` gsetting |
 | `reduce_motion`       | `accessibilityDisplayShouldReduceMotion`                  | `SPI_GETCLIENTAREAANIMATION` (Bool)      | `AnimationDurationFactor` = 0 | gsettings `enable-animations` (Bool)  |
 | `high_contrast`       | `accessibilityDisplayShouldIncreaseContrast`              | `SPI_GETHIGHCONTRAST` (struct w/ flags)  | **(none)**                   | `a11y.interface high-contrast`   |
 | `reduce_transparency` | `accessibilityDisplayShouldReduceTransparency`            | **(none)** — high contrast disables it   | **(none)**                   | **(none)**                       |
@@ -1134,8 +1154,8 @@ Maps platform type ramp entries into unified content roles.
 | Role              | What it is                               | macOS                   | Windows Fluent      | KDE (Kirigami heading)        | GNOME libadwaita     |
 |-------------------|------------------------------------------|-------------------------|---------------------|-------------------------------|----------------------|
 | `caption`         | Smallest readable (footnotes, timestamps)| ⚙ `.caption1`: 10pt, 400 | Caption: 12epx, 400 (=9pt @96dpi) | ⚙ `smallestReadableFont` field 1| `.caption`: ≈9pt, 400 |
-| `section_heading` | Section divider (settings group header)  | ⚙ `.headline`: 13pt, **700** | Subtitle: 20epx, **600** (=15pt @96dpi) | ⚙ Level 2: body × 1.2  | `.heading`: 11pt, **700**|
-| `dialog_title`    | Dialog/page title (sheet header)         | ⚙ `.title1`: 22pt, 400 | Title: 28epx, **600** (=21pt @96dpi) | ⚙ Level 1: body × 1.35        | `.title-2`: ≈15pt, **800**|
+| `section_heading` | Section divider (settings group header)  | ⚙ `.headline`: 13pt, **700** | Subtitle: 20epx, **600** (=15pt @96dpi) | ⚙ Level 2: body × 1.20 ([Heading.qml](https://invent.kde.org/frameworks/kirigami/-/blob/master/src/controls/Heading.qml))  | `.heading`: 11pt, **700**|
+| `dialog_title`    | Dialog/page title (sheet header)         | ⚙ `.title1`: 22pt, 400 | Title: 28epx, **600** (=21pt @96dpi) | ⚙ Level 1: body × 1.35 ([Heading.qml](https://invent.kde.org/frameworks/kirigami/-/blob/master/src/controls/Heading.qml))        | `.title-2`: ≈15pt, **800**|
 | `display`         | Large hero text (onboarding, banners)    | ⚙ `.largeTitle`: 26pt, 400| Display: 68epx, **600** (=51pt @96dpi) | **(none)** — no equivalent | `.title-1`: ≈20pt, **800**|
 
 ### 2.20 Layout Spacing
@@ -1172,14 +1192,15 @@ QQC2/Kirigami `Switch` with font-metric-derived sizing.
 | `max_height`          | **(none)** — AppKit-managed   | WinUI3 ContentDialog: 756         | **(none)** — sizes to content      | **(none)**                         |
 | `content_padding`     | ~20px **(measured)**          | WinUI3: 24                        | `Layout_TopLevelMarginWidth` = 10  | 24px sides, 32px top               |
 | `button_spacing`      | ~12px **(measured)**          | WinUI3: 8                         | `Layout_DefaultSpacing` = 6        | 12px                               |
-| `button_order`        | primary rightmost             | primary leftmost                  | OK leftmost, Cancel rightmost      | cancel left, affirmative right     |
+| `button_order`        | primary rightmost             | primary leftmost                  | OK left of Cancel (right-aligned group; Help/Reset left-aligned) | cancel left, affirmative right     |
 | `title_font`          | system alert heading          | 20px SemiBold                     | ← `defaults.font`                 | `.title-2` (136%, 800)             |
 | `radius`              | ← `defaults.radius_lg`       | 8px (OverlayCornerRadius) ✅      | ← `defaults.radius_lg`            | 18px (`$alert_radius`) — distinct from window radius (15px) |
 | `icon_size`           | 64px (app icon)               | **(none)** — no default icon      | **(none)** — per-dialog            | **(none)** — no default icon       |
 
 Button order convention differs significantly across platforms.
-macOS primary action = rightmost. Windows primary = leftmost. KDE: OK
-leftmost, Apply middle, Cancel rightmost. GNOME: cancel left, affirmative right.
+macOS primary action = rightmost. Windows primary = leftmost. KDE:
+Help/Reset left-aligned, then stretch, then OK/Apply/Cancel right-aligned
+(OK left of Cancel). GNOME: cancel left, affirmative right.
 
 ### 2.23 Spinner / Progress Ring
 
@@ -1437,7 +1458,7 @@ Below are the authoritative sources used, organized by platform.
 |---|---|
 | macOS text style sizes and weights (all 11 styles) | [Apple HIG Typography JSON](https://developer.apple.com/tutorials/data/design/human-interface-guidelines/typography.json) — macOS built-in text styles table. Key confirmations: `.headline`=13pt **Bold**, `.caption1`=10pt Regular, `.caption2`=10pt **Medium (500)**. Per-style line heights also documented (e.g. body 13/16, headline 13/16). |
 | Noto Sans sTypo metrics: ascender=1069, descender=293, UPM=1000 | [Google Fonts Noto contribution guidelines](https://github.com/notofonts/noto-source/blob/main/FONT_CONTRIBUTION.md) — fully shaped text must fit within (1069, -293). Confirmed Roboto-compatible metrics. |
-| Cantarell metrics: ascender=739, descender=217, lineGap=244, UPM=1000 | [Cantarell-Regular.ufo/fontinfo.plist](https://gitlab.gnome.org/GNOME/cantarell-fonts/-/blob/master/src/Cantarell-Regular.ufo/fontinfo.plist) — ascender/descender/UPM from UFO source; sTypoLineGap=244 confirmed from compiled font binary (`Cantarell-VF.otf`) via fontTools inspection. Note: `USE_TYPO_METRICS` (fsSelection bit 7) is NOT set in Cantarell; hhea lineGap=0 while OS/2 sTypoLineGap=244. |
+| Cantarell metrics: ascender=739, descender=217, lineGap=244, UPM=1000; hhea: 983/−217/0 | [Cantarell-Regular.ufo/fontinfo.plist](https://gitlab.gnome.org/GNOME/cantarell-fonts/-/blob/master/src/Cantarell-Regular.ufo/fontinfo.plist) — ascender/descender/UPM from UFO source; sTypoLineGap=244 confirmed from compiled font binary (`Cantarell-VF.otf` v0.311) via fontTools inspection. `USE_TYPO_METRICS` (fsSelection bit 7) is NOT set (`fsSelection=0x0040`); hhea table: hheaAscender=983 (=739+244, lineGap folded into ascender), hheaDescender=−217, hheaLineGap=0. Both metric sets yield the same 1.2 total: sTypo (739+217+244)/1000=1.2, hhea (983+217)/1000=1.2. Win metrics (usWinAscent=983, usWinDescent=217) also match. |
 | Inter (Adwaita Sans basis) metrics: typoAscender=1984, typoDescender=-494, lineGap=0, UPM=2048 | [Inter fontinfo.json](https://github.com/rsms/inter/blob/master/docs/_data/fontinfo.json) — yields (1984+494)/2048=1.2099≈1.21. `USE_TYPO_METRICS` IS set in Inter/Adwaita Sans (fsSelection bit 7). |
 | SF Pro metrics: ascender=1950, descender=494, lineGap=0, UPM=2048 | SF Pro is proprietary (not on GitHub); values confirmed by font file inspection with fontTools/FontForge from [Apple's download](https://developer.apple.com/fonts/). Ratio (1950+494)/2048=1.19. |
 | GetSysColor Win10+ supported constants (8 total) | [MSDN GetSysColor](https://learn.microsoft.com/en-us/windows/win32/api/winuser/nf-winuser-getsyscolor) — confirmed: COLOR_WINDOW, COLOR_WINDOWTEXT, COLOR_HIGHLIGHT, COLOR_HIGHLIGHTTEXT, COLOR_3DFACE, COLOR_GRAYTEXT, COLOR_BTNTEXT, COLOR_HOTLIGHT. COLOR_3DFACE (value 15) is not marked "not supported" but its alias COLOR_BTNFACE (same value 15) is — confirmed documentation inconsistency. |
