@@ -1025,9 +1025,9 @@ Name=whatever
 
     #[test]
     fn test_kde_resolve_validate() {
-        // Load the default preset as a base (provides geometry, spacing, icon sizes,
+        // Load the KDE Breeze preset as a base (provides geometry, spacing, icon sizes,
         // and other fields that KDE's kdeglobals doesn't carry).
-        let mut base = crate::NativeTheme::preset("default").unwrap();
+        let mut base = crate::NativeTheme::preset("kde-breeze").unwrap();
         let kde_theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
 
         // Merge KDE reader output on top of the base preset.

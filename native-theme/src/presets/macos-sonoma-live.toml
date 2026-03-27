@@ -1,0 +1,271 @@
+# macOS Sonoma live preset - geometry/metrics only (no colors, fonts, or icons)
+# Used by the OS-first pipeline as merge base; OS reader provides colors/fonts.
+name = "macOS Sonoma"
+
+# === Light variant ===
+
+[light.defaults]
+radius = 6.0
+radius_lg = 10.0
+frame_width = 1.0
+disabled_opacity = 0.5
+border_opacity = 0.2
+shadow_enabled = true
+line_height = 1.4
+focus_ring_width = 2.0
+focus_ring_offset = 1.0
+
+[light.defaults.spacing]
+xxs = 2.0
+xs = 4.0
+s = 6.0
+m = 10.0
+l = 16.0
+xl = 20.0
+xxl = 32.0
+
+[light.defaults.icon_sizes]
+toolbar = 24.0
+small = 16.0
+large = 32.0
+dialog = 22.0
+panel = 20.0
+
+[light.button]
+min_width = 64.0
+min_height = 22.0
+padding_horizontal = 12.0
+padding_vertical = 4.0
+icon_spacing = 6.0
+
+[light.input]
+min_height = 22.0
+padding_horizontal = 4.0
+padding_vertical = 4.0
+
+[light.checkbox]
+indicator_size = 14.0
+spacing = 4.0
+
+[light.tooltip]
+padding_horizontal = 4.0
+padding_vertical = 4.0
+max_width = 300.0
+
+[light.scrollbar]
+width = 15.0
+slider_width = 7.0
+overlay_mode = true
+min_thumb_height = 30.0
+
+[light.slider]
+track_height = 4.0
+thumb_size = 21.0
+tick_length = 4.0
+
+[light.progress_bar]
+height = 6.0
+min_width = 100.0
+
+[light.tab]
+min_width = 64.0
+min_height = 24.0
+padding_horizontal = 12.0
+padding_vertical = 4.0
+
+[light.menu]
+item_height = 22.0
+padding_horizontal = 12.0
+padding_vertical = 4.0
+icon_spacing = 8.0
+
+[light.list]
+item_height = 24.0
+padding_horizontal = 4.0
+padding_vertical = 2.0
+
+[light.toolbar]
+height = 38.0
+item_spacing = 8.0
+padding = 4.0
+
+[light.splitter]
+width = 9.0
+
+[light.switch]
+track_width = 40.0
+track_height = 20.0
+thumb_size = 16.0
+track_radius = 10.0
+
+[light.dialog]
+button_order = "leading_affirmative"
+min_width = 320.0
+max_width = 560.0
+min_height = 140.0
+max_height = 600.0
+content_padding = 24.0
+button_spacing = 8.0
+icon_size = 32.0
+
+[light.link]
+underline = true
+
+[light.spinner]
+diameter = 24.0
+min_size = 16.0
+stroke_width = 2.0
+
+[light.combo_box]
+min_height = 22.0
+min_width = 120.0
+padding_horizontal = 12.0
+arrow_size = 12.0
+arrow_area_width = 28.0
+
+[light.segmented_control]
+segment_height = 24.0
+separator_width = 1.0
+padding_horizontal = 12.0
+
+[light.card]
+padding = 16.0
+
+[light.expander]
+header_height = 40.0
+arrow_size = 12.0
+content_padding = 16.0
+
+# === Dark variant ===
+
+[dark.defaults]
+radius = 6.0
+radius_lg = 10.0
+frame_width = 1.0
+disabled_opacity = 0.5
+border_opacity = 0.2
+shadow_enabled = true
+line_height = 1.4
+focus_ring_width = 2.0
+focus_ring_offset = 1.0
+
+[dark.defaults.spacing]
+xxs = 2.0
+xs = 4.0
+s = 6.0
+m = 10.0
+l = 16.0
+xl = 20.0
+xxl = 32.0
+
+[dark.defaults.icon_sizes]
+toolbar = 24.0
+small = 16.0
+large = 32.0
+dialog = 22.0
+panel = 20.0
+
+[dark.button]
+min_width = 64.0
+min_height = 22.0
+padding_horizontal = 12.0
+padding_vertical = 4.0
+icon_spacing = 6.0
+
+[dark.input]
+min_height = 22.0
+padding_horizontal = 4.0
+padding_vertical = 4.0
+
+[dark.checkbox]
+indicator_size = 14.0
+spacing = 4.0
+
+[dark.tooltip]
+padding_horizontal = 4.0
+padding_vertical = 4.0
+max_width = 300.0
+
+[dark.scrollbar]
+width = 15.0
+slider_width = 7.0
+overlay_mode = true
+min_thumb_height = 30.0
+
+[dark.slider]
+track_height = 4.0
+thumb_size = 21.0
+tick_length = 4.0
+
+[dark.progress_bar]
+height = 6.0
+min_width = 100.0
+
+[dark.tab]
+min_width = 64.0
+min_height = 24.0
+padding_horizontal = 12.0
+padding_vertical = 4.0
+
+[dark.menu]
+item_height = 22.0
+padding_horizontal = 12.0
+padding_vertical = 4.0
+icon_spacing = 8.0
+
+[dark.list]
+item_height = 24.0
+padding_horizontal = 4.0
+padding_vertical = 2.0
+
+[dark.toolbar]
+height = 38.0
+item_spacing = 8.0
+padding = 4.0
+
+[dark.splitter]
+width = 9.0
+
+[dark.switch]
+track_width = 40.0
+track_height = 20.0
+thumb_size = 16.0
+track_radius = 10.0
+
+[dark.dialog]
+button_order = "leading_affirmative"
+min_width = 320.0
+max_width = 560.0
+min_height = 140.0
+max_height = 600.0
+content_padding = 24.0
+button_spacing = 8.0
+icon_size = 32.0
+
+[dark.link]
+underline = true
+
+[dark.spinner]
+diameter = 24.0
+min_size = 16.0
+stroke_width = 2.0
+
+[dark.combo_box]
+min_height = 22.0
+min_width = 120.0
+padding_horizontal = 12.0
+arrow_size = 12.0
+arrow_area_width = 28.0
+
+[dark.segmented_control]
+segment_height = 24.0
+separator_width = 1.0
+padding_horizontal = 12.0
+
+[dark.card]
+padding = 16.0
+
+[dark.expander]
+header_height = 40.0
+arrow_size = 12.0
+content_padding = 16.0

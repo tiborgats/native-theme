@@ -1,38 +1,12 @@
-# Default neutral theme - toolkit-agnostic with balanced colors
-name = "Default"
+# Adwaita live preset - geometry/metrics only (no colors, fonts, or icons)
+# Used by the OS-first pipeline as merge base; OS reader provides colors/fonts.
+name = "Adwaita"
 
 # === Light variant ===
 
-[light]
-icon_set = "freedesktop"
-
 [light.defaults]
-accent = "#4a90d9"
-background = "#fafafa"
-foreground = "#2e3436"
-surface = "#ffffff"
-border = "#c0c0c0"
-muted = "#929292"
-shadow = "#00000018"
-
-danger = "#dc3545"
-danger_foreground = "#ffffff"
-warning = "#f0ad4e"
-warning_foreground = "#2e3436"
-success = "#28a745"
-success_foreground = "#ffffff"
-info = "#4a90d9"
-info_foreground = "#ffffff"
-
-selection = "#4a90d9"
-selection_foreground = "#ffffff"
-link = "#2a6cb6"
-focus_ring_color = "#4a90d9"
-disabled_foreground = "#c0c0c0"
-accent_foreground = "#ffffff"
-
-radius = 6.0
-radius_lg = 12.0
+radius = 12.0
+radius_lg = 14.0
 frame_width = 1.0
 disabled_opacity = 0.5
 border_opacity = 0.15
@@ -40,20 +14,6 @@ shadow_enabled = true
 line_height = 1.4
 focus_ring_width = 2.0
 focus_ring_offset = 1.0
-text_scaling_factor = 1.0
-reduce_motion = false
-high_contrast = false
-reduce_transparency = false
-
-[light.defaults.font]
-family = "sans-serif"
-size = 10.0
-weight = 400
-
-[light.defaults.mono_font]
-family = "monospace"
-size = 10.0
-weight = 400
 
 [light.defaults.spacing]
 xxs = 2.0
@@ -72,40 +32,34 @@ dialog = 22.0
 panel = 20.0
 
 [light.button]
-background = "#e8e8e8"
-foreground = "#2e3436"
 min_width = 64.0
-min_height = 32.0
+min_height = 34.0
 padding_horizontal = 12.0
-padding_vertical = 6.0
+padding_vertical = 8.0
 icon_spacing = 6.0
 
 [light.input]
-background = "#ffffff"
-foreground = "#2e3436"
-min_height = 32.0
-padding_horizontal = 8.0
-padding_vertical = 6.0
+min_height = 34.0
+padding_horizontal = 12.0
+padding_vertical = 8.0
 
 [light.checkbox]
-indicator_size = 18.0
-spacing = 6.0
+indicator_size = 20.0
+spacing = 8.0
 
 [light.tooltip]
-background = "#2e3436"
-foreground = "#f0f0f0"
 padding_horizontal = 6.0
 padding_vertical = 6.0
 max_width = 300.0
 
 [light.scrollbar]
-width = 14.0
+width = 12.0
 slider_width = 8.0
 overlay_mode = false
 min_thumb_height = 30.0
 
 [light.slider]
-track_height = 4.0
+track_height = 6.0
 thumb_size = 20.0
 tick_length = 4.0
 
@@ -115,44 +69,30 @@ min_width = 100.0
 
 [light.tab]
 min_width = 64.0
-min_height = 32.0
+min_height = 34.0
 padding_horizontal = 12.0
 padding_vertical = 4.0
 
 [light.menu]
-item_height = 28.0
+item_height = 34.0
 padding_horizontal = 8.0
 padding_vertical = 4.0
 icon_spacing = 8.0
 
 [light.list]
-alternate_row = "#f5f5f5"
-item_height = 28.0
-padding_horizontal = 8.0
-padding_vertical = 2.0
+item_height = 34.0
+padding_horizontal = 12.0
+padding_vertical = 8.0
 
 [light.toolbar]
-height = 40.0
+height = 46.0
 item_spacing = 6.0
-padding = 4.0
-
-[light.sidebar]
-background = "#f0f0f0"
-foreground = "#2e3436"
-
-[light.popover]
-background = "#ffffff"
-foreground = "#2e3436"
-
-[light.separator]
-color = "#d0d0d0"
+padding = 6.0
 
 [light.splitter]
-width = 4.0
+width = 6.0
 
 [light.switch]
-unchecked_bg = "#c0c0c0"
-thumb_bg = "#ffffff"
 track_width = 40.0
 track_height = 20.0
 thumb_size = 16.0
@@ -170,8 +110,6 @@ icon_size = 32.0
 
 [light.link]
 underline = true
-background = "#00000000"
-hover_bg = "#4a90d918"
 
 [light.spinner]
 diameter = 24.0
@@ -179,7 +117,7 @@ min_size = 16.0
 stroke_width = 2.0
 
 [light.combo_box]
-min_height = 32.0
+min_height = 34.0
 min_width = 120.0
 padding_horizontal = 12.0
 arrow_size = 12.0
@@ -200,36 +138,9 @@ content_padding = 16.0
 
 # === Dark variant ===
 
-[dark]
-icon_set = "freedesktop"
-
 [dark.defaults]
-accent = "#4a90d9"
-background = "#1e1e1e"
-foreground = "#f0f0f0"
-surface = "#2d2d2d"
-border = "#555555"
-muted = "#888888"
-shadow = "#00000040"
-
-danger = "#e05260"
-danger_foreground = "#ffffff"
-warning = "#f0ad4e"
-warning_foreground = "#1e1e1e"
-success = "#3dbe5c"
-success_foreground = "#ffffff"
-info = "#5a9ee0"
-info_foreground = "#ffffff"
-
-selection = "#4a90d9"
-selection_foreground = "#ffffff"
-link = "#6aafe6"
-focus_ring_color = "#4a90d9"
-disabled_foreground = "#555555"
-accent_foreground = "#ffffff"
-
-radius = 6.0
-radius_lg = 12.0
+radius = 12.0
+radius_lg = 14.0
 frame_width = 1.0
 disabled_opacity = 0.5
 border_opacity = 0.15
@@ -237,20 +148,6 @@ shadow_enabled = true
 line_height = 1.4
 focus_ring_width = 2.0
 focus_ring_offset = 1.0
-text_scaling_factor = 1.0
-reduce_motion = false
-high_contrast = false
-reduce_transparency = false
-
-[dark.defaults.font]
-family = "sans-serif"
-size = 10.0
-weight = 400
-
-[dark.defaults.mono_font]
-family = "monospace"
-size = 10.0
-weight = 400
 
 [dark.defaults.spacing]
 xxs = 2.0
@@ -269,40 +166,34 @@ dialog = 22.0
 panel = 20.0
 
 [dark.button]
-background = "#3a3a3a"
-foreground = "#f0f0f0"
 min_width = 64.0
-min_height = 32.0
+min_height = 34.0
 padding_horizontal = 12.0
-padding_vertical = 6.0
+padding_vertical = 8.0
 icon_spacing = 6.0
 
 [dark.input]
-background = "#2d2d2d"
-foreground = "#f0f0f0"
-min_height = 32.0
-padding_horizontal = 8.0
-padding_vertical = 6.0
+min_height = 34.0
+padding_horizontal = 12.0
+padding_vertical = 8.0
 
 [dark.checkbox]
-indicator_size = 18.0
-spacing = 6.0
+indicator_size = 20.0
+spacing = 8.0
 
 [dark.tooltip]
-background = "#3a3a3a"
-foreground = "#f0f0f0"
 padding_horizontal = 6.0
 padding_vertical = 6.0
 max_width = 300.0
 
 [dark.scrollbar]
-width = 14.0
+width = 12.0
 slider_width = 8.0
 overlay_mode = false
 min_thumb_height = 30.0
 
 [dark.slider]
-track_height = 4.0
+track_height = 6.0
 thumb_size = 20.0
 tick_length = 4.0
 
@@ -312,44 +203,30 @@ min_width = 100.0
 
 [dark.tab]
 min_width = 64.0
-min_height = 32.0
+min_height = 34.0
 padding_horizontal = 12.0
 padding_vertical = 4.0
 
 [dark.menu]
-item_height = 28.0
+item_height = 34.0
 padding_horizontal = 8.0
 padding_vertical = 4.0
 icon_spacing = 8.0
 
 [dark.list]
-alternate_row = "#252525"
-item_height = 28.0
-padding_horizontal = 8.0
-padding_vertical = 2.0
+item_height = 34.0
+padding_horizontal = 12.0
+padding_vertical = 8.0
 
 [dark.toolbar]
-height = 40.0
+height = 46.0
 item_spacing = 6.0
-padding = 4.0
-
-[dark.sidebar]
-background = "#252525"
-foreground = "#f0f0f0"
-
-[dark.popover]
-background = "#333333"
-foreground = "#f0f0f0"
-
-[dark.separator]
-color = "#444444"
+padding = 6.0
 
 [dark.splitter]
-width = 4.0
+width = 6.0
 
 [dark.switch]
-unchecked_bg = "#555555"
-thumb_bg = "#f0f0f0"
 track_width = 40.0
 track_height = 20.0
 thumb_size = 16.0
@@ -367,8 +244,6 @@ icon_size = 32.0
 
 [dark.link]
 underline = true
-background = "#00000000"
-hover_bg = "#4a90d918"
 
 [dark.spinner]
 diameter = 24.0
@@ -376,7 +251,7 @@ min_size = 16.0
 stroke_width = 2.0
 
 [dark.combo_box]
-min_height = 32.0
+min_height = 34.0
 min_width = 120.0
 padding_horizontal = 12.0
 arrow_size = 12.0

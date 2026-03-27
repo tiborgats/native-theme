@@ -207,9 +207,9 @@ impl_merge!(ThemeVariant {
 /// assert_eq!(custom.name, "Custom");
 ///
 /// // Merge themes (overlay wins for populated fields)
-/// let mut base = NativeTheme::preset("default").unwrap();
+/// let mut base = NativeTheme::preset("catppuccin-mocha").unwrap();
 /// base.merge(&custom);
-/// assert_eq!(base.name, "Default"); // base name is preserved
+/// assert_eq!(base.name, "Catppuccin Mocha"); // base name is preserved
 /// ```
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
@@ -288,7 +288,7 @@ impl NativeTheme {
     ///
     /// # Examples
     /// ```
-    /// let theme = native_theme::NativeTheme::preset("default").unwrap();
+    /// let theme = native_theme::NativeTheme::preset("catppuccin-mocha").unwrap();
     /// assert!(theme.light.is_some());
     /// ```
     #[must_use = "this returns a theme preset; it does not apply it"]
@@ -415,9 +415,9 @@ impl NativeTheme {
     ///
     /// # Examples
     /// ```
-    /// let theme = native_theme::NativeTheme::preset("default").unwrap();
+    /// let theme = native_theme::NativeTheme::preset("catppuccin-mocha").unwrap();
     /// let toml_str = theme.to_toml().unwrap();
-    /// assert!(toml_str.contains("name = \"Default\""));
+    /// assert!(toml_str.contains("name = \"Catppuccin Mocha\""));
     /// ```
     #[must_use = "this serializes the theme to TOML; it does not write to a file"]
     pub fn to_toml(&self) -> crate::Result<String> {

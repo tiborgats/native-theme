@@ -1,16 +1,16 @@
 //! Bundled theme presets and TOML serialization API.
 //!
-//! Provides 17 built-in presets embedded at compile time: 3 core (default,
-//! kde-breeze, adwaita), 4 platform (windows-11, macos-sonoma, material, ios),
-//! and 10 community (Catppuccin 4 flavors, Nord, Dracula, Gruvbox, Solarized,
-//! Tokyo Night, One Dark), plus functions for loading themes from TOML strings
-//! and files.
+//! Provides 16 user-facing built-in presets embedded at compile time:
+//! 2 core platform (kde-breeze, adwaita), 4 platform (windows-11,
+//! macos-sonoma, material, ios), and 10 community (Catppuccin 4 flavors,
+//! Nord, Dracula, Gruvbox, Solarized, Tokyo Night, One Dark), plus
+//! 4 internal live presets (geometry-only, used by the OS-first pipeline)
+//! and functions for loading themes from TOML strings and files.
 
 use crate::{Error, NativeTheme, Result};
 use std::path::Path;
 
 // Embed preset TOML files at compile time
-const DEFAULT_TOML: &str = include_str!("presets/default.toml");
 const KDE_BREEZE_TOML: &str = include_str!("presets/kde-breeze.toml");
 const ADWAITA_TOML: &str = include_str!("presets/adwaita.toml");
 const WINDOWS_11_TOML: &str = include_str!("presets/windows-11.toml");
@@ -28,9 +28,14 @@ const SOLARIZED_TOML: &str = include_str!("presets/solarized.toml");
 const TOKYO_NIGHT_TOML: &str = include_str!("presets/tokyo-night.toml");
 const ONE_DARK_TOML: &str = include_str!("presets/one-dark.toml");
 
-/// All available preset names.
+// Live presets: geometry/metrics only (internal, not user-selectable)
+const KDE_BREEZE_LIVE_TOML: &str = include_str!("presets/kde-breeze-live.toml");
+const ADWAITA_LIVE_TOML: &str = include_str!("presets/adwaita-live.toml");
+const MACOS_SONOMA_LIVE_TOML: &str = include_str!("presets/macos-sonoma-live.toml");
+const WINDOWS_11_LIVE_TOML: &str = include_str!("presets/windows-11-live.toml");
+
+/// All available user-facing preset names (excludes internal live presets).
 const PRESET_NAMES: &[&str] = &[
-    "default",
     "kde-breeze",
     "adwaita",
     "windows-11",
@@ -51,7 +56,6 @@ const PRESET_NAMES: &[&str] = &[
 
 pub(crate) fn preset(name: &str) -> Result<NativeTheme> {
     let toml_str = match name {
-        "default" => DEFAULT_TOML,
         "kde-breeze" => KDE_BREEZE_TOML,
         "adwaita" => ADWAITA_TOML,
         "windows-11" => WINDOWS_11_TOML,
@@ -68,6 +72,11 @@ pub(crate) fn preset(name: &str) -> Result<NativeTheme> {
         "solarized" => SOLARIZED_TOML,
         "tokyo-night" => TOKYO_NIGHT_TOML,
         "one-dark" => ONE_DARK_TOML,
+        // Internal live presets (not in PRESET_NAMES but loadable)
+        "kde-breeze-live" => KDE_BREEZE_LIVE_TOML,
+        "adwaita-live" => ADWAITA_LIVE_TOML,
+        "macos-sonoma-live" => MACOS_SONOMA_LIVE_TOML,
+        "windows-11-live" => WINDOWS_11_LIVE_TOML,
         _ => return Err(Error::Unavailable(format!("unknown preset: {name}"))),
     };
     from_toml(toml_str)
@@ -153,10 +162,9 @@ mod tests {
     }
 
     #[test]
-    fn list_presets_returns_all_seventeen() {
+    fn list_presets_returns_all_sixteen() {
         let names = list_presets();
-        assert_eq!(names.len(), 17);
-        assert!(names.contains(&"default"));
+        assert_eq!(names.len(), 16);
         assert!(names.contains(&"kde-breeze"));
         assert!(names.contains(&"adwaita"));
         assert!(names.contains(&"windows-11"));
@@ -201,7 +209,7 @@ accent = "#ff0000"
 
     #[test]
     fn to_toml_produces_valid_round_trip() {
-        let theme = preset("default").unwrap();
+        let theme = preset("catppuccin-mocha").unwrap();
         let toml_str = to_toml(&theme).unwrap();
 
         // Must be parseable back into a NativeTheme
@@ -266,8 +274,8 @@ accent = "#00ff00"
     }
 
     #[test]
-    fn icon_set_community_and_default_presets_are_freedesktop() {
-        let community_and_default = &[
+    fn icon_set_community_presets_are_freedesktop() {
+        let community = &[
             "catppuccin-latte",
             "catppuccin-frappe",
             "catppuccin-macchiato",
@@ -278,9 +286,8 @@ accent = "#00ff00"
             "solarized",
             "tokyo-night",
             "one-dark",
-            "default",
         ];
-        for name in community_and_default {
+        for name in community {
             let theme = preset(name).unwrap();
             let light = theme.light.as_ref().unwrap();
             assert_eq!(
@@ -316,7 +323,6 @@ accent = "#00ff00"
 
     #[test]
     fn presets_have_correct_names() {
-        assert_eq!(preset("default").unwrap().name, "Default");
         assert_eq!(preset("kde-breeze").unwrap().name, "KDE Breeze");
         assert_eq!(preset("adwaita").unwrap().name, "Adwaita");
         assert_eq!(preset("windows-11").unwrap().name, "Windows 11");
@@ -432,7 +438,7 @@ accent = "#00ff00"
     fn resolve_fills_accent_derived_fields() {
         // Load a preset that only has accent set (not explicit widget accent-derived fields).
         // After resolve(), the accent-derived fields should be populated.
-        let theme = preset("default").unwrap();
+        let theme = preset("catppuccin-mocha").unwrap();
         let mut light = theme.light.clone().unwrap();
 
         // Before resolve: accent-derived fields should be None (not in preset TOML)
@@ -455,17 +461,16 @@ accent = "#00ff00"
 
     #[test]
     fn resolve_then_validate_produces_complete_theme() {
-        // Load "default" preset, resolve+validate, verify specific fields.
-        let theme = preset("default").unwrap();
+        let theme = preset("catppuccin-mocha").unwrap();
         let mut light = theme.light.clone().unwrap();
         light.resolve();
         let resolved = light.validate().unwrap();
 
-        assert_eq!(resolved.defaults.font.family, "sans-serif");
-        assert_eq!(resolved.defaults.font.size, 10.0);
+        assert_eq!(resolved.defaults.font.family, "Inter");
+        assert_eq!(resolved.defaults.font.size, 14.0);
         assert_eq!(resolved.defaults.font.weight, 400);
         assert_eq!(resolved.defaults.line_height, 1.4);
-        assert_eq!(resolved.defaults.radius, 6.0);
+        assert_eq!(resolved.defaults.radius, 8.0);
         assert_eq!(resolved.defaults.focus_ring_width, 2.0);
         assert_eq!(resolved.defaults.icon_sizes.toolbar, 24.0);
         assert_eq!(resolved.defaults.text_scaling_factor, 1.0);
@@ -480,7 +485,7 @@ accent = "#00ff00"
     fn font_subfield_inheritance_integration() {
         // Load a preset, set menu.font to only have size=12.0 (clear family/weight),
         // resolve, and verify family/weight are inherited from defaults.
-        let theme = preset("default").unwrap();
+        let theme = preset("catppuccin-mocha").unwrap();
         let mut light = theme.light.clone().unwrap();
 
         // Set partial font on menu
@@ -495,7 +500,7 @@ accent = "#00ff00"
         let resolved = light.validate().unwrap();
 
         // menu font should have inherited family/weight from defaults
-        assert_eq!(resolved.menu.font.family, "sans-serif", "menu font family should inherit from defaults");
+        assert_eq!(resolved.menu.font.family, "Inter", "menu font family should inherit from defaults");
         assert_eq!(resolved.menu.font.size, 12.0, "menu font size should be the explicit value");
         assert_eq!(resolved.menu.font.weight, 400, "menu font weight should inherit from defaults");
     }
@@ -503,7 +508,7 @@ accent = "#00ff00"
     #[test]
     fn text_scale_inheritance_integration() {
         // Load a preset, ensure text_scale.caption gets populated from defaults.
-        let theme = preset("default").unwrap();
+        let theme = preset("catppuccin-mocha").unwrap();
         let mut light = theme.light.clone().unwrap();
 
         // Clear caption to test inheritance
@@ -513,17 +518,17 @@ accent = "#00ff00"
         let resolved = light.validate().unwrap();
 
         // caption should have been populated from defaults.font
-        assert_eq!(resolved.text_scale.caption.size, 10.0, "caption size from defaults.font.size");
+        assert_eq!(resolved.text_scale.caption.size, 14.0, "caption size from defaults.font.size");
         assert_eq!(resolved.text_scale.caption.weight, 400, "caption weight from defaults.font.weight");
-        // line_height = defaults.line_height * size = 1.4 * 10.0 = 14.0
-        assert!((resolved.text_scale.caption.line_height - 14.0).abs() < 0.01,
-            "caption line_height should be line_height_multiplier * size = 14.0, got {}",
+        // line_height = defaults.line_height * size = 1.4 * 14.0 = 19.6
+        assert!((resolved.text_scale.caption.line_height - 19.6).abs() < 0.01,
+            "caption line_height should be line_height_multiplier * size = 19.6, got {}",
             resolved.text_scale.caption.line_height);
     }
 
     #[test]
     fn all_presets_round_trip_exact() {
-        // PRESET-01: all 17 presets must survive a serde round-trip
+        // All 16 presets must survive a serde round-trip
         for name in list_presets() {
             let theme1 = preset(name)
                 .unwrap_or_else(|e| panic!("preset '{name}' failed to parse: {e}"));
@@ -534,6 +539,79 @@ accent = "#00ff00"
             assert_eq!(
                 theme1, theme2,
                 "preset '{name}' round-trip produced different value"
+            );
+        }
+    }
+
+    // === Live preset tests ===
+
+    #[test]
+    fn live_presets_loadable() {
+        let live_names = &[
+            "kde-breeze-live",
+            "adwaita-live",
+            "macos-sonoma-live",
+            "windows-11-live",
+        ];
+        for name in live_names {
+            let theme = preset(name)
+                .unwrap_or_else(|e| panic!("live preset '{name}' failed to parse: {e}"));
+
+            // Both variants must exist
+            assert!(
+                theme.light.is_some(),
+                "live preset '{name}' missing light variant"
+            );
+            assert!(
+                theme.dark.is_some(),
+                "live preset '{name}' missing dark variant"
+            );
+
+            let light = theme.light.as_ref().unwrap();
+            let dark = theme.dark.as_ref().unwrap();
+
+            // No colors
+            assert!(light.defaults.accent.is_none(), "live preset '{name}' light should have no accent");
+            assert!(light.defaults.background.is_none(), "live preset '{name}' light should have no background");
+            assert!(light.defaults.foreground.is_none(), "live preset '{name}' light should have no foreground");
+            assert!(dark.defaults.accent.is_none(), "live preset '{name}' dark should have no accent");
+            assert!(dark.defaults.background.is_none(), "live preset '{name}' dark should have no background");
+            assert!(dark.defaults.foreground.is_none(), "live preset '{name}' dark should have no foreground");
+
+            // No fonts
+            assert!(light.defaults.font.family.is_none(), "live preset '{name}' light should have no font family");
+            assert!(light.defaults.font.size.is_none(), "live preset '{name}' light should have no font size");
+            assert!(light.defaults.font.weight.is_none(), "live preset '{name}' light should have no font weight");
+            assert!(dark.defaults.font.family.is_none(), "live preset '{name}' dark should have no font family");
+            assert!(dark.defaults.font.size.is_none(), "live preset '{name}' dark should have no font size");
+            assert!(dark.defaults.font.weight.is_none(), "live preset '{name}' dark should have no font weight");
+        }
+    }
+
+    #[test]
+    fn live_presets_fail_validate_standalone() {
+        let live_names = &[
+            "kde-breeze-live",
+            "adwaita-live",
+            "macos-sonoma-live",
+            "windows-11-live",
+        ];
+        for name in live_names {
+            let theme = preset(name).unwrap();
+            let mut light = theme.light.clone().unwrap();
+            light.resolve();
+            let result = light.validate();
+            assert!(
+                result.is_err(),
+                "live preset '{name}' light should fail validation standalone (missing colors/fonts)"
+            );
+
+            let mut dark = theme.dark.clone().unwrap();
+            dark.resolve();
+            let result = dark.validate();
+            assert!(
+                result.is_err(),
+                "live preset '{name}' dark should fail validation standalone (missing colors/fonts)"
             );
         }
     }
