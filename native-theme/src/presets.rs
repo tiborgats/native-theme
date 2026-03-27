@@ -86,6 +86,64 @@ pub(crate) fn list_presets() -> &'static [&'static str] {
     PRESET_NAMES
 }
 
+/// Platform-specific preset names that should only appear on their native platform.
+const PLATFORM_SPECIFIC: &[(&str, &[&str])] = &[
+    ("kde-breeze", &["linux-kde"]),
+    ("adwaita", &["linux"]),
+    ("windows-11", &["windows"]),
+    ("macos-sonoma", &["macos"]),
+    ("ios", &["macos", "ios"]),
+];
+
+/// Detect the current platform tag for preset filtering.
+///
+/// Returns a string like "linux-kde", "linux", "windows", or "macos".
+#[allow(unreachable_code)]
+fn detect_platform() -> &'static str {
+    #[cfg(target_os = "macos")]
+    {
+        return "macos";
+    }
+    #[cfg(target_os = "windows")]
+    {
+        return "windows";
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
+        for component in desktop.split(':') {
+            if component == "KDE" {
+                return "linux-kde";
+            }
+        }
+        return "linux";
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
+    {
+        "linux"
+    }
+}
+
+/// Returns preset names appropriate for the current platform.
+///
+/// Platform-specific presets (kde-breeze, adwaita, windows-11, macos-sonoma, ios)
+/// are only included on their native platform. Community themes are always included.
+pub(crate) fn list_presets_for_platform() -> Vec<&'static str> {
+    let platform = detect_platform();
+
+    PRESET_NAMES
+        .iter()
+        .filter(|name| {
+            if let Some((_, platforms)) = PLATFORM_SPECIFIC.iter().find(|(n, _)| n == *name) {
+                platforms.iter().any(|p| platform.starts_with(p))
+            } else {
+                true // Community themes always visible
+            }
+        })
+        .copied()
+        .collect()
+}
+
 pub(crate) fn from_toml(toml_str: &str) -> Result<NativeTheme> {
     let theme: NativeTheme = toml::from_str(toml_str)?;
     Ok(theme)
@@ -586,6 +644,43 @@ accent = "#00ff00"
             assert!(dark.defaults.font.size.is_none(), "live preset '{name}' dark should have no font size");
             assert!(dark.defaults.font.weight.is_none(), "live preset '{name}' dark should have no font weight");
         }
+    }
+
+    #[test]
+    fn list_presets_for_platform_returns_subset() {
+        let all = list_presets();
+        let filtered = list_presets_for_platform();
+        // Filtered list should be a subset of all presets
+        for name in &filtered {
+            assert!(
+                all.contains(name),
+                "filtered preset '{name}' not in full list"
+            );
+        }
+        // Community themes should always be present
+        let community = &[
+            "catppuccin-latte",
+            "catppuccin-frappe",
+            "catppuccin-macchiato",
+            "catppuccin-mocha",
+            "nord",
+            "dracula",
+            "gruvbox",
+            "solarized",
+            "tokyo-night",
+            "one-dark",
+        ];
+        for name in community {
+            assert!(
+                filtered.contains(name),
+                "community preset '{name}' should always be in filtered list"
+            );
+        }
+        // material is cross-platform, always present
+        assert!(
+            filtered.contains(&"material"),
+            "material should always be in filtered list"
+        );
     }
 
     #[test]

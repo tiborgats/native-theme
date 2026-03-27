@@ -408,6 +408,23 @@ impl NativeTheme {
         crate::presets::list_presets()
     }
 
+    /// List preset names appropriate for the current platform.
+    ///
+    /// Platform-specific presets (kde-breeze, adwaita, windows-11, macos-sonoma, ios)
+    /// are only included on their native platform. Community themes are always included.
+    ///
+    /// # Examples
+    /// ```
+    /// let names = native_theme::NativeTheme::list_presets_for_platform();
+    /// // On Linux KDE: includes kde-breeze, adwaita, plus all community themes
+    /// // On Windows: includes windows-11 plus all community themes
+    /// assert!(!names.is_empty());
+    /// ```
+    #[must_use = "this returns the filtered list of preset names for this platform"]
+    pub fn list_presets_for_platform() -> Vec<&'static str> {
+        crate::presets::list_presets_for_platform()
+    }
+
     /// Serialize this theme to a TOML string.
     ///
     /// # Errors
