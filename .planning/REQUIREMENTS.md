@@ -1,0 +1,174 @@
+# Requirements: native-theme
+
+**Defined:** 2026-03-27
+**Core Value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
+
+## v0.5.0 Requirements
+
+Requirements for per-widget architecture and resolution pipeline. Each maps to roadmap phases.
+
+### Data Model
+
+- [ ] **MODEL-01**: ThemeVariant has per-widget structs (24 widgets) with colors, font, sizing, and geometry fields per widget
+- [ ] **MODEL-02**: ThemeDefaults struct provides shared base properties (colors, font, mono_font, spacing, icon_sizes, accessibility)
+- [ ] **MODEL-03**: FontSpec struct with family, size, weight fields for per-widget font specification
+- [ ] **MODEL-04**: TextScale with 4 entries (caption, section_heading, dialog_title, display) using TextScaleEntry (size, weight, line_height)
+- [ ] **MODEL-05**: DialogButtonOrder enum (TrailingAffirmative / LeadingAffirmative) on DialogTheme
+- [ ] **MODEL-06**: IconSizes struct with toolbar, small, large, dialog, panel fields on ThemeDefaults
+- [ ] **MODEL-07**: WindowTheme with title bar colors, inactive states, title bar font, radius, shadow
+- [ ] **MODEL-08**: define_widget_pair! macro generates paired Option and Resolved structs from single definition
+- [ ] **MODEL-09**: impl_merge! supports nested per-widget struct merge on ThemeVariant
+
+### Resolution
+
+- [ ] **RESOLVE-01**: resolve() fills ~90 inheritance rules (accent→primary_bg, font→menu.font, radius→button.radius, etc.)
+- [ ] **RESOLVE-02**: ResolvedTheme with non-optional fields mirrors ThemeVariant per-widget structure
+- [ ] **RESOLVE-03**: validate() converts ThemeVariant→ResolvedTheme, returns ThemeResolutionError listing all missing fields
+- [ ] **RESOLVE-04**: FontSpec sub-field inheritance (None family/size/weight individually inherit from defaults.font)
+- [ ] **RESOLVE-05**: TextScaleEntry inheritance (size←font.size, weight←font.weight, line_height←line_height multiplier × resolved size)
+- [ ] **RESOLVE-06**: Accent-derived propagation (accent→primary_bg, checked_bg, slider.fill, progress_bar.fill, switch.checked_bg)
+
+### macOS Reader
+
+- [ ] **MACOS-01**: NSFont.TextStyle entries populate text_scale (caption, section_heading, dialog_title, display)
+- [ ] **MACOS-02**: Per-widget fonts from +menuFontOfSize:, +toolTipsFontOfSize:, +titleBarFontOfSize: with weight extraction
+- [ ] **MACOS-03**: Additional NSColor values (placeholder, caret, selection_inactive, alternate_row, header_foreground, grid_color)
+- [ ] **MACOS-04**: NSScroller.preferredScrollerStyle → scrollbar.overlay_mode
+- [ ] **MACOS-05**: Accessibility queries (reduce_motion, high_contrast, reduce_transparency, text_scaling_factor)
+
+### Windows Reader
+
+- [ ] **WIN-01**: NONCLIENTMETRICSW fonts (lfCaptionFont, lfMenuFont, lfStatusFont) → per-widget FontSpec
+- [ ] **WIN-02**: DwmGetColorizationColor → window.title_bar_background; COLOR_CAPTION/INACTIVECAPTION colors
+- [ ] **WIN-03**: GetSysColor widget colors (BTNFACE, BTNTEXT, MENU, MENUTEXT, INFOBK, INFOTEXT, WINDOW, WINDOWTEXT, HIGHLIGHT, HIGHLIGHTTEXT)
+- [ ] **WIN-04**: UISettings.TextScaleFactor, SPI_GETHIGHCONTRAST, SPI_GETCLIENTAREAANIMATION → accessibility fields
+- [ ] **WIN-05**: SM_CXSMICON, SM_CXICON → defaults.icon_sizes.small, defaults.icon_sizes.large
+
+### KDE Reader
+
+- [ ] **KDE-01**: [WM] section → title bar colors (active/inactive bg/fg) + activeFont → title bar font
+- [ ] **KDE-02**: [Colors:Header], [Colors:Complementary], [Colors:View] extras → list header, sidebar, placeholder, alternate_row, visited
+- [ ] **KDE-03**: Per-widget fonts (menuFont, toolBarFont) with Qt5/Qt6 weight scale detection
+- [ ] **KDE-04**: Text scale computation from smallestReadableFont + font.size × Kirigami multipliers
+- [ ] **KDE-05**: Icon sizes from icon theme index.theme; [Icons] Theme → icon_set
+- [ ] **KDE-06**: AnimationDurationFactor → reduce_motion; forceFontDPI → text_scaling_factor
+
+### GNOME Reader
+
+- [ ] **GNOME-01**: font-name, monospace-font-name, titlebar-font gsettings → FontSpec fields
+- [ ] **GNOME-02**: Text scale computation from font.size × CSS percentages (caption 82%, title-2 136%, title-1 181%)
+- [ ] **GNOME-03**: text-scaling-factor, enable-animations, overlay-scrolling gsettings → accessibility + scrollbar fields
+- [ ] **GNOME-04**: icon-theme gsetting → icon_set; portal accent already handled
+- [ ] **GNOME-05**: Portal reduced_motion + contrast with gsettings fallback
+
+### Pipeline
+
+- [ ] **PIPE-01**: from_system() runs full pipeline: OS reader → platform TOML overlay → resolve() → ResolvedTheme
+- [ ] **PIPE-02**: Platform-to-preset mapping (macOS→macos-sonoma, Windows→windows-11, KDE→kde-breeze, GNOME→adwaita)
+- [ ] **PIPE-03**: App TOML overlay support with second resolve() pass propagating changed source fields
+
+### Presets
+
+- [ ] **PRESET-01**: All 17 preset TOMLs rewritten for new per-widget structure with serde round-trip tests
+- [ ] **PRESET-02**: Platform preset TOMLs slimmed (⚙ values removed, only design constants remain)
+- [ ] **PRESET-03**: Cross-platform presets (catppuccin, nord, etc.) provide all non-derived fields for new structure
+
+### Connectors
+
+- [ ] **CONN-01**: gpui connector accepts &ResolvedTheme, removes all Option handling
+- [ ] **CONN-02**: iced connector accepts &ResolvedTheme, removes all Option handling
+- [ ] **CONN-03**: Showcase examples updated for new API (both gpui and iced)
+
+## Future Requirements
+
+Deferred to post-v0.5.0. Tracked but not in current roadmap.
+
+### Iced Geometry
+
+- **ICED-01**: Custom style functions for all iced widgets using theme geometry (radius, frame_width, shadow)
+- **ICED-02**: Widget metrics helpers for iced (checkbox_size, slider_track_height, progress_bar_height, etc.)
+
+### Additional Platforms
+
+- **PLAT-01**: iOS reader (from_ios())
+- **PLAT-02**: Android reader (from_android())
+
+### Runtime
+
+- **RT-01**: Change notification system for live theme updates
+
+## Out of Scope
+
+Explicitly excluded. Documented to prevent scope creep.
+
+| Feature | Reason |
+|---------|--------|
+| Per-widget style class system (.primary, .flat variants) | Multiplicative struct explosion; use button.primary_bg instead |
+| CSS cascade with selectors | Runtime evaluation engine, not a data structure library |
+| Runtime theme change watchers | Couples to async runtimes; document re-calling from_system() |
+| Computed color algebra (darken/lighten/mix) | Rendering concern, not theme data |
+| Per-widget interaction state colors (hover/pressed/focus) | Multiplies fields 4-5x; use disabled_opacity + toolkit color ops |
+| Animation/transition tokens (duration, easing) | Not standardized across platforms; reduce_motion bool is sufficient |
+| Font fallback chains | Text shaping concern handled by layout engine |
+| crates.io publishing | Publish on GitHub only for this milestone |
+
+## Traceability
+
+Which phases cover which requirements. Updated during roadmap creation.
+
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| MODEL-01 | — | Pending |
+| MODEL-02 | — | Pending |
+| MODEL-03 | — | Pending |
+| MODEL-04 | — | Pending |
+| MODEL-05 | — | Pending |
+| MODEL-06 | — | Pending |
+| MODEL-07 | — | Pending |
+| MODEL-08 | — | Pending |
+| MODEL-09 | — | Pending |
+| RESOLVE-01 | — | Pending |
+| RESOLVE-02 | — | Pending |
+| RESOLVE-03 | — | Pending |
+| RESOLVE-04 | — | Pending |
+| RESOLVE-05 | — | Pending |
+| RESOLVE-06 | — | Pending |
+| MACOS-01 | — | Pending |
+| MACOS-02 | — | Pending |
+| MACOS-03 | — | Pending |
+| MACOS-04 | — | Pending |
+| MACOS-05 | — | Pending |
+| WIN-01 | — | Pending |
+| WIN-02 | — | Pending |
+| WIN-03 | — | Pending |
+| WIN-04 | — | Pending |
+| WIN-05 | — | Pending |
+| KDE-01 | — | Pending |
+| KDE-02 | — | Pending |
+| KDE-03 | — | Pending |
+| KDE-04 | — | Pending |
+| KDE-05 | — | Pending |
+| KDE-06 | — | Pending |
+| GNOME-01 | — | Pending |
+| GNOME-02 | — | Pending |
+| GNOME-03 | — | Pending |
+| GNOME-04 | — | Pending |
+| GNOME-05 | — | Pending |
+| PIPE-01 | — | Pending |
+| PIPE-02 | — | Pending |
+| PIPE-03 | — | Pending |
+| PRESET-01 | — | Pending |
+| PRESET-02 | — | Pending |
+| PRESET-03 | — | Pending |
+| CONN-01 | — | Pending |
+| CONN-02 | — | Pending |
+| CONN-03 | — | Pending |
+
+**Coverage:**
+- v0.5.0 requirements: 45 total
+- Mapped to phases: 0
+- Unmapped: 45 ⚠️
+
+---
+*Requirements defined: 2026-03-27*
+*Last updated: 2026-03-27 after initial definition*
