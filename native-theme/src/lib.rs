@@ -497,30 +497,51 @@ fn platform_preset_name() -> &'static str {
     }
 }
 
+/// Infer dark-mode preference from the reader's output.
+///
+/// Returns `true` if the reader populated only the dark variant,
+/// `false` if it populated only light or both variants.
+/// On platforms that produce both variants (macOS), this defaults to
+/// `false` (light); callers can use [`SystemTheme::pick()`] for
+/// explicit variant selection regardless of this default.
+fn reader_is_dark(reader: &NativeTheme) -> bool {
+    reader.dark.is_some() && reader.light.is_none()
+}
+
 /// Read the current system theme on Linux by detecting the desktop
 /// environment and calling the appropriate reader or returning a
 /// preset fallback.
+///
+/// Runs the full OS-first pipeline: reader -> preset merge -> resolve -> validate.
 #[cfg(target_os = "linux")]
-fn from_linux() -> crate::Result<NativeTheme> {
+fn from_linux() -> crate::Result<SystemTheme> {
+    let is_dark = system_is_dark();
     let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
     match detect_linux_de(&desktop) {
         #[cfg(feature = "kde")]
-        LinuxDesktop::Kde => crate::kde::from_kde(),
+        LinuxDesktop::Kde => {
+            let reader = crate::kde::from_kde()?;
+            run_pipeline(reader, "kde-breeze", is_dark)
+        }
         #[cfg(not(feature = "kde"))]
-        LinuxDesktop::Kde => NativeTheme::preset("adwaita"),
-        LinuxDesktop::Gnome | LinuxDesktop::Budgie => NativeTheme::preset("adwaita"),
+        LinuxDesktop::Kde => run_pipeline(NativeTheme::preset("adwaita")?, "adwaita", is_dark),
+        LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
+            // GNOME sync path: no portal, just adwaita preset
+            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita", is_dark)
+        }
         LinuxDesktop::Xfce | LinuxDesktop::Cinnamon | LinuxDesktop::Mate | LinuxDesktop::LxQt => {
-            NativeTheme::preset("adwaita")
+            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita", is_dark)
         }
         LinuxDesktop::Unknown => {
             #[cfg(feature = "kde")]
             {
                 let path = crate::kde::kdeglobals_path();
                 if path.exists() {
-                    return crate::kde::from_kde();
+                    let reader = crate::kde::from_kde()?;
+                    return run_pipeline(reader, "kde-breeze", is_dark);
                 }
             }
-            NativeTheme::preset("adwaita")
+            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita", is_dark)
         }
     }
 }
@@ -528,16 +549,22 @@ fn from_linux() -> crate::Result<NativeTheme> {
 /// Read the current system theme, auto-detecting the platform and
 /// desktop environment.
 ///
+/// Runs the full OS-first pipeline: OS reader -> platform preset merge ->
+/// resolve -> validate -> [`SystemTheme`] with both light and dark
+/// [`ResolvedTheme`] variants.
+///
 /// # Platform Behavior
 ///
 /// - **macOS:** Calls `from_macos()` when the `macos` feature is enabled.
-///   Reads both light and dark variants via NSAppearance.
+///   Reads both light and dark variants via NSAppearance, merges with
+///   `macos-sonoma` preset.
 /// - **Linux (KDE):** Calls `from_kde()` when `XDG_CURRENT_DESKTOP` contains
-///   "KDE" and the `kde` feature is enabled.
-/// - **Linux (other):** Returns the bundled Adwaita preset. For live GNOME
-///   portal data, call `from_gnome()` directly (requires `portal-tokio` or
+///   "KDE" and the `kde` feature is enabled, merges with `kde-breeze` preset.
+/// - **Linux (other):** Uses the `adwaita` preset. For live GNOME portal
+///   data, use [`from_system_async()`] (requires `portal-tokio` or
 ///   `portal-async-io` feature).
-/// - **Windows:** Calls `from_windows()` when the `windows` feature is enabled.
+/// - **Windows:** Calls `from_windows()` when the `windows` feature is enabled,
+///   merges with `windows-11` preset.
 /// - **Other platforms:** Returns `Error::Unsupported`.
 ///
 /// # Errors
@@ -546,11 +573,15 @@ fn from_linux() -> crate::Result<NativeTheme> {
 ///   is not enabled.
 /// - `Error::Unavailable` if the platform reader cannot access theme data.
 #[must_use = "this returns the detected theme; it does not apply it"]
-pub fn from_system() -> crate::Result<NativeTheme> {
+pub fn from_system() -> crate::Result<SystemTheme> {
     #[cfg(target_os = "macos")]
     {
         #[cfg(feature = "macos")]
-        return crate::macos::from_macos();
+        {
+            let reader = crate::macos::from_macos()?;
+            let is_dark = reader_is_dark(&reader);
+            return run_pipeline(reader, "macos-sonoma", is_dark);
+        }
 
         #[cfg(not(feature = "macos"))]
         return Err(crate::Error::Unsupported);
@@ -559,7 +590,11 @@ pub fn from_system() -> crate::Result<NativeTheme> {
     #[cfg(target_os = "windows")]
     {
         #[cfg(feature = "windows")]
-        return crate::windows::from_windows();
+        {
+            let reader = crate::windows::from_windows()?;
+            let is_dark = reader_is_dark(&reader);
+            return run_pipeline(reader, "windows-11", is_dark);
+        }
 
         #[cfg(not(feature = "windows"))]
         return Err(crate::Error::Unsupported);
@@ -584,27 +619,42 @@ pub fn from_system() -> crate::Result<NativeTheme> {
 /// whether KDE or GNOME portal is running, then dispatches to the
 /// appropriate reader.
 ///
+/// Returns a [`SystemTheme`] with both resolved light and dark variants,
+/// same as [`from_system()`].
+///
 /// On non-Linux platforms, behaves identically to [`from_system()`].
 #[cfg(target_os = "linux")]
 #[must_use = "this returns the detected theme; it does not apply it"]
-pub async fn from_system_async() -> crate::Result<NativeTheme> {
+pub async fn from_system_async() -> crate::Result<SystemTheme> {
+    let is_dark = system_is_dark();
     let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
     match detect_linux_de(&desktop) {
         #[cfg(feature = "kde")]
         LinuxDesktop::Kde => {
             #[cfg(feature = "portal")]
-            return crate::gnome::from_kde_with_portal().await;
+            {
+                let reader = crate::gnome::from_kde_with_portal().await?;
+                return run_pipeline(reader, "kde-breeze", is_dark);
+            }
             #[cfg(not(feature = "portal"))]
-            return crate::kde::from_kde();
+            {
+                let reader = crate::kde::from_kde()?;
+                return run_pipeline(reader, "kde-breeze", is_dark);
+            }
         }
         #[cfg(not(feature = "kde"))]
-        LinuxDesktop::Kde => NativeTheme::preset("adwaita"),
+        LinuxDesktop::Kde => run_pipeline(NativeTheme::preset("adwaita")?, "adwaita", is_dark),
         #[cfg(feature = "portal")]
-        LinuxDesktop::Gnome | LinuxDesktop::Budgie => crate::gnome::from_gnome().await,
+        LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
+            let reader = crate::gnome::from_gnome().await?;
+            run_pipeline(reader, "adwaita", is_dark)
+        }
         #[cfg(not(feature = "portal"))]
-        LinuxDesktop::Gnome | LinuxDesktop::Budgie => NativeTheme::preset("adwaita"),
+        LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
+            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita", is_dark)
+        }
         LinuxDesktop::Xfce | LinuxDesktop::Cinnamon | LinuxDesktop::Mate | LinuxDesktop::LxQt => {
-            NativeTheme::preset("adwaita")
+            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita", is_dark)
         }
         LinuxDesktop::Unknown => {
             // Use D-Bus portal backend detection to refine heuristic
@@ -613,10 +663,18 @@ pub async fn from_system_async() -> crate::Result<NativeTheme> {
                 if let Some(detected) = crate::gnome::detect_portal_backend().await {
                     return match detected {
                         #[cfg(feature = "kde")]
-                        LinuxDesktop::Kde => crate::gnome::from_kde_with_portal().await,
+                        LinuxDesktop::Kde => {
+                            let reader = crate::gnome::from_kde_with_portal().await?;
+                            run_pipeline(reader, "kde-breeze", is_dark)
+                        }
                         #[cfg(not(feature = "kde"))]
-                        LinuxDesktop::Kde => NativeTheme::preset("adwaita"),
-                        LinuxDesktop::Gnome => crate::gnome::from_gnome().await,
+                        LinuxDesktop::Kde => {
+                            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita", is_dark)
+                        }
+                        LinuxDesktop::Gnome => {
+                            let reader = crate::gnome::from_gnome().await?;
+                            run_pipeline(reader, "adwaita", is_dark)
+                        }
                         _ => {
                             unreachable!("detect_portal_backend only returns Kde or Gnome")
                         }
@@ -628,10 +686,11 @@ pub async fn from_system_async() -> crate::Result<NativeTheme> {
             {
                 let path = crate::kde::kdeglobals_path();
                 if path.exists() {
-                    return crate::kde::from_kde();
+                    let reader = crate::kde::from_kde()?;
+                    return run_pipeline(reader, "kde-breeze", is_dark);
                 }
             }
-            NativeTheme::preset("adwaita")
+            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita", is_dark)
         }
     }
 }
@@ -641,7 +700,7 @@ pub async fn from_system_async() -> crate::Result<NativeTheme> {
 /// On non-Linux platforms, this is equivalent to calling [`from_system()`].
 #[cfg(not(target_os = "linux"))]
 #[must_use = "this returns the detected theme; it does not apply it"]
-pub async fn from_system_async() -> crate::Result<NativeTheme> {
+pub async fn from_system_async() -> crate::Result<SystemTheme> {
     from_system()
 }
 
@@ -1540,6 +1599,66 @@ mod system_theme_tests {
         );
         // Light should still exist (from preset only)
         // If we get here, both validated successfully
+    }
+
+    // --- run_pipeline with preset-as-reader (GNOME double-merge test) ---
+
+    #[test]
+    fn test_run_pipeline_with_preset_as_reader() {
+        // Simulates GNOME sync fallback: adwaita used as both reader and preset.
+        // Double-merge is harmless: merge is idempotent for matching values.
+        let reader = NativeTheme::preset("adwaita").unwrap();
+        let result = run_pipeline(reader, "adwaita", false);
+        assert!(
+            result.is_ok(),
+            "double-merge with same preset should succeed"
+        );
+        let st = result.unwrap();
+        assert_eq!(st.name, "Adwaita");
+    }
+
+    // --- reader_is_dark() tests ---
+
+    #[test]
+    fn test_reader_is_dark_only_dark() {
+        let mut theme = NativeTheme::default();
+        theme.dark = Some(ThemeVariant::default());
+        theme.light = None;
+        assert!(
+            reader_is_dark(&theme),
+            "should be true when only dark is set"
+        );
+    }
+
+    #[test]
+    fn test_reader_is_dark_only_light() {
+        let mut theme = NativeTheme::default();
+        theme.light = Some(ThemeVariant::default());
+        theme.dark = None;
+        assert!(
+            !reader_is_dark(&theme),
+            "should be false when only light is set"
+        );
+    }
+
+    #[test]
+    fn test_reader_is_dark_both() {
+        let mut theme = NativeTheme::default();
+        theme.light = Some(ThemeVariant::default());
+        theme.dark = Some(ThemeVariant::default());
+        assert!(
+            !reader_is_dark(&theme),
+            "should be false when both are set (macOS case)"
+        );
+    }
+
+    #[test]
+    fn test_reader_is_dark_neither() {
+        let theme = NativeTheme::default();
+        assert!(
+            !reader_is_dark(&theme),
+            "should be false when neither is set"
+        );
     }
 }
 
