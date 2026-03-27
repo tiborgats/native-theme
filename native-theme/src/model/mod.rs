@@ -40,7 +40,21 @@ pub use icons::{
     IconData, IconProvider, IconRole, IconSet, icon_name, system_icon_set, system_icon_theme,
 };
 pub use spacing::ThemeSpacing;
-pub use widgets::ResolvedFontSpec;
+pub use widgets::{
+    ResolvedFontSpec,
+    // 25 XxxTheme types
+    WindowTheme, ButtonTheme, InputTheme, CheckboxTheme, MenuTheme,
+    TooltipTheme, ScrollbarTheme, SliderTheme, ProgressBarTheme, TabTheme,
+    SidebarTheme, ToolbarTheme, StatusBarTheme, ListTheme, PopoverTheme,
+    SplitterTheme, SeparatorTheme, SwitchTheme, DialogTheme, SpinnerTheme,
+    ComboBoxTheme, SegmentedControlTheme, CardTheme, ExpanderTheme, LinkTheme,
+    // 25 ResolvedXxx types
+    ResolvedWindow, ResolvedButton, ResolvedInput, ResolvedCheckbox, ResolvedMenu,
+    ResolvedTooltip, ResolvedScrollbar, ResolvedSlider, ResolvedProgressBar, ResolvedTab,
+    ResolvedSidebar, ResolvedToolbar, ResolvedStatusBar, ResolvedList, ResolvedPopover,
+    ResolvedSplitter, ResolvedSeparator, ResolvedSwitch, ResolvedDialog, ResolvedSpinner,
+    ResolvedComboBox, ResolvedSegmentedControl, ResolvedCard, ResolvedExpander, ResolvedLink,
+};
 pub use widget_metrics::{
     ButtonMetrics, CheckboxMetrics, InputMetrics, ListItemMetrics, MenuItemMetrics,
     ProgressBarMetrics, ScrollbarMetrics, SliderMetrics, SplitterMetrics, TabMetrics,
