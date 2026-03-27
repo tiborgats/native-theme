@@ -6,26 +6,38 @@ pub mod animated;
 pub mod bundled;
 /// Semantic theme color roles.
 pub mod colors;
+/// Dialog button ordering convention.
+pub mod dialog_order;
 /// Font family and size configuration.
 pub mod fonts;
+/// Per-widget font specification and text scale.
+pub mod font;
 /// Corner radius, border, and scroll geometry.
 pub mod geometry;
 /// Icon roles, sets, and provider trait.
 pub mod icons;
+/// Per-context icon sizes.
+pub mod icon_sizes;
 /// Logical spacing scale (xxs through xxl).
 pub mod spacing;
 /// Per-widget sizing and spacing metrics.
 pub mod widget_metrics;
+/// Per-widget struct pairs and macros.
+pub mod widgets;
 
 pub use animated::{AnimatedIcon, Repeat, TransformAnimation};
 pub use bundled::{bundled_icon_by_name, bundled_icon_svg};
 pub use colors::ThemeColors;
+pub use dialog_order::DialogButtonOrder;
+pub use font::{FontSpec, TextScale, TextScaleEntry};
 pub use fonts::ThemeFonts;
 pub use geometry::ThemeGeometry;
+pub use icon_sizes::IconSizes;
 pub use icons::{
     IconData, IconProvider, IconRole, IconSet, icon_name, system_icon_set, system_icon_theme,
 };
 pub use spacing::ThemeSpacing;
+pub use widgets::ResolvedFontSpec;
 pub use widget_metrics::{
     ButtonMetrics, CheckboxMetrics, InputMetrics, ListItemMetrics, MenuItemMetrics,
     ProgressBarMetrics, ScrollbarMetrics, SliderMetrics, SplitterMetrics, TabMetrics,
