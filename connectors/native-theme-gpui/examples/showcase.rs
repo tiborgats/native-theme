@@ -816,6 +816,9 @@ struct Showcase {
 
     /// Widget Info sidebar panel (separate Entity for independent re-render).
     widget_info_panel: Entity<WidgetInfoPanel>,
+
+    /// Error message from theme loading, displayed as a banner in the UI.
+    error_message: Option<String>,
 }
 
 impl Showcase {
@@ -1101,11 +1104,46 @@ impl Showcase {
         )
         .detach();
 
-        // Apply the initial OS Theme via sync_system_appearance.
+        // Apply the initial OS Theme via native-theme pipeline.
         let is_dark = color_mode.is_dark();
-        Theme::sync_system_appearance(Some(window), cx);
-        let original_font = native_theme::ResolvedFontSpec { family: "(default)".into(), size: 0.0, weight: 400 };
-        let original_mono_font = native_theme::ResolvedFontSpec { family: "(default)".into(), size: 0.0, weight: 400 };
+        let (original_font, original_mono_font, initial_default_label, initial_error) =
+            match native_theme::from_system() {
+                Ok(system) => {
+                    let resolved = system.pick(is_dark);
+                    let font = resolved.defaults.font.clone();
+                    let mono_font = resolved.defaults.mono_font.clone();
+                    let theme = to_theme(resolved, &system.name, is_dark);
+                    *Theme::global_mut(cx) = theme;
+                    window.refresh();
+                    let label = if system.is_dark == is_dark {
+                        format!("default ({})", system.live_preset)
+                    } else {
+                        format!("default ({})", system.full_preset)
+                    };
+                    (font, mono_font, label, None)
+                }
+                Err(e) => {
+                    // Fall back to gpui-component built-in theme so the window still renders
+                    Theme::sync_system_appearance(Some(window), cx);
+                    let font = native_theme::ResolvedFontSpec {
+                        family: "(default)".into(),
+                        size: 0.0,
+                        weight: 400,
+                    };
+                    let mono_font = native_theme::ResolvedFontSpec {
+                        family: "(default)".into(),
+                        size: 0.0,
+                        weight: 400,
+                    };
+                    let label = format!("default ({})", platform_preset_name());
+                    (
+                        font,
+                        mono_font,
+                        label,
+                        Some(format!("Failed to load OS theme: {e}")),
+                    )
+                }
+            };
 
         // Resolve initial icon set from system (default = system's native set)
         let initial_resolved = system_icon_set().name().to_string();
@@ -1281,7 +1319,7 @@ impl Showcase {
         let mut showcase = Self {
             theme_select,
             current_theme_name: "default".into(),
-            default_label: format!("default ({})", platform_preset_name()),
+            default_label: initial_default_label,
             is_dark,
             color_mode,
             dark_mode_select,
@@ -1336,6 +1374,7 @@ impl Showcase {
                     needs_sync: false,
                 })
             },
+            error_message: initial_error,
         };
         showcase.rebuild_icon_caches(fg);
         showcase.rebuild_animation_caches();
@@ -1343,20 +1382,40 @@ impl Showcase {
         showcase
     }
 
+    fn show_theme_error(&mut self, msg: &str) {
+        self.error_message = Some(msg.to_string());
+    }
+
     fn apply_theme_by_name(&mut self, name: &str, window: &mut Window, cx: &mut Context<Self>) {
         if name == "default" {
-            Theme::sync_system_appearance(Some(window), cx);
-            self.is_dark = cx.theme().is_dark();
-            // Update default label based on which variant is active
-            if let Ok(system) = native_theme::from_system() {
-                if system.is_dark == self.is_dark {
-                    self.default_label = format!("default ({})", system.live_preset);
-                } else {
-                    self.default_label = format!("default ({})", system.full_preset);
+            match native_theme::from_system() {
+                Ok(system) => {
+                    let resolved = system.pick(self.is_dark);
+                    self.original_font = resolved.defaults.font.clone();
+                    self.original_mono_font = resolved.defaults.mono_font.clone();
+                    let theme = to_theme(resolved, &system.name, self.is_dark);
+                    *Theme::global_mut(cx) = theme;
+                    window.refresh();
+                    // Update default label based on which variant is active
+                    if system.is_dark == self.is_dark {
+                        self.default_label = format!("default ({})", system.live_preset);
+                    } else {
+                        self.default_label = format!("default ({})", system.full_preset);
+                    }
+                    self.error_message = None;
+                }
+                Err(e) => {
+                    self.show_theme_error(&format!("Failed to load OS theme: {e}"));
                 }
             }
-            self.original_font = native_theme::ResolvedFontSpec { family: "(default)".into(), size: 0.0, weight: 400 };
-            self.original_mono_font = native_theme::ResolvedFontSpec { family: "(default)".into(), size: 0.0, weight: 400 };
+            // If using default icon set, reload icons for the new theme's default
+            if self.use_default_icon_set {
+                let effective = self.resolve_default_icon_set();
+                self.icon_set_name = effective.clone();
+                let theme_ref = self.icon_theme_override.as_deref();
+                self.loaded_icons = load_all_icons(&effective, theme_ref);
+                self.gpui_icons = load_gpui_icons(&effective, theme_ref);
+            }
             let fg = cx.theme().foreground;
             self.rebuild_icon_caches(fg);
             return;
@@ -1364,7 +1423,10 @@ impl Showcase {
 
         let nt = match NativeTheme::preset(name) {
             Ok(t) => t,
-            Err(_) => return,
+            Err(e) => {
+                self.show_theme_error(&format!("Failed to load preset '{name}': {e}"));
+                return;
+            }
         };
 
         if let Some(variant) = nt.pick_variant(self.is_dark) {
@@ -1372,13 +1434,17 @@ impl Showcase {
             v.resolve();
             let resolved = match v.validate() {
                 Ok(r) => r,
-                Err(_) => return,
+                Err(e) => {
+                    self.show_theme_error(&format!("Theme '{name}' validation failed: {e}"));
+                    return;
+                }
             };
             self.original_font = resolved.defaults.font.clone();
             self.original_mono_font = resolved.defaults.mono_font.clone();
             let theme = to_theme(&resolved, name, self.is_dark);
             *Theme::global_mut(cx) = theme;
             window.refresh();
+            self.error_message = None;
 
             // If using default icon set, reload icons for the new theme's default
             if self.use_default_icon_set {
@@ -4930,12 +4996,26 @@ impl Render for Showcase {
             .child(self.widget_info_panel.clone());
 
         // Build the content area
-        let content = v_flex()
+        let mut content = v_flex()
             .flex_1()
             .h_full()
-            .overflow_hidden()
-            // Tab bar
-            .child(
+            .overflow_hidden();
+
+        // Error banner (if any)
+        if let Some(ref msg) = self.error_message {
+            content = content.child(
+                div()
+                    .id("error-banner")
+                    .px_4()
+                    .py_2()
+                    .bg(gpui::hsla(0.0, 0.7, 0.2, 1.0))
+                    .text_color(gpui::hsla(0.0, 0.0, 1.0, 1.0))
+                    .child(Label::new(msg.clone()).text_size(px(12.0))),
+            );
+        }
+
+        // Tab bar
+        let content = content.child(
                 v_flex().px_4().pt_3().pb_2().child(
                     div()
                         .id("tt-tabbar")
