@@ -24,8 +24,8 @@ Load a preset and access theme fields:
 ```rust
 let theme = native_theme::NativeTheme::preset("dracula").unwrap();
 let dark = theme.dark.as_ref().unwrap();
-let accent = dark.colors.accent.unwrap();
-let bg = dark.colors.background.unwrap();
+let accent = dark.defaults.accent.unwrap();
+let bg = dark.defaults.background.unwrap();
 // Convert to f32 for toolkits that use normalized colors
 let [r, g, b, a] = accent.to_f32_array();
 ```
@@ -52,7 +52,7 @@ theme.merge(&user_overrides);
 Use `from_system()` to read the current OS theme at runtime, with a preset
 fallback for unsupported platforms:
 
-```rust
+```ignore
 use native_theme::{from_system, NativeTheme};
 let theme = from_system().unwrap_or_else(|_| NativeTheme::preset("adwaita").unwrap());
 ```

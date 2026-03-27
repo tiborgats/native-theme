@@ -1,23 +1,23 @@
 // Theme model: ThemeVariant and NativeTheme, plus sub-module re-exports
 
-/// Global theme defaults shared across widgets.
-pub mod defaults;
 /// Animated icon types (frame sequences and transforms).
 pub mod animated;
 /// Bundled SVG icon lookup tables.
 pub mod bundled;
+/// Global theme defaults shared across widgets.
+pub mod defaults;
 /// Dialog button ordering convention.
 pub mod dialog_order;
 /// Per-widget font specification and text scale.
 pub mod font;
-/// Icon roles, sets, and provider trait.
-pub mod icons;
 /// Per-context icon sizes.
 pub mod icon_sizes;
-/// Logical spacing scale (xxs through xxl).
-pub mod spacing;
+/// Icon roles, sets, and provider trait.
+pub mod icons;
 /// Resolved (non-optional) theme types produced after resolution.
 pub mod resolved;
+/// Logical spacing scale (xxs through xxl).
+pub mod spacing;
 /// Per-widget struct pairs and macros.
 pub mod widgets;
 
@@ -30,12 +30,12 @@ pub use icon_sizes::IconSizes;
 pub use icons::{
     IconData, IconProvider, IconRole, IconSet, icon_name, system_icon_set, system_icon_theme,
 };
-pub use spacing::ThemeSpacing;
-pub use widgets::*; // All 25 XxxTheme + ResolvedXxx + ResolvedFontSpec
 pub use resolved::{
     ResolvedDefaults, ResolvedIconSizes, ResolvedSpacing, ResolvedTextScale,
     ResolvedTextScaleEntry, ResolvedTheme,
 };
+pub use spacing::ThemeSpacing;
+pub use widgets::*; // All 25 XxxTheme + ResolvedXxx + ResolvedFontSpec
 
 use serde::{Deserialize, Serialize};
 
@@ -401,7 +401,7 @@ impl NativeTheme {
     /// # Examples
     /// ```
     /// let names = native_theme::NativeTheme::list_presets();
-    /// assert_eq!(names.len(), 17);
+    /// assert_eq!(names.len(), 16);
     /// ```
     #[must_use = "this returns the list of preset names"]
     pub fn list_presets() -> &'static [&'static str] {

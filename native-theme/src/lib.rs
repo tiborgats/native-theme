@@ -117,17 +117,14 @@ mod spinners;
 pub use color::Rgba;
 pub use error::{Error, ThemeResolutionError};
 pub use model::{
-    AnimatedIcon, ButtonTheme, CardTheme, CheckboxTheme, ComboBoxTheme,
-    DialogButtonOrder, DialogTheme, ExpanderTheme, FontSpec, IconData,
-    IconProvider, IconRole, IconSet, IconSizes, InputTheme, LinkTheme,
-    ListTheme, MenuTheme, NativeTheme, PopoverTheme, ProgressBarTheme,
-    Repeat, ResolvedDefaults, ResolvedFontSpec, ResolvedIconSizes,
-    ResolvedSpacing, ResolvedTextScale, ResolvedTextScaleEntry,
-    ResolvedTheme, ScrollbarTheme, SegmentedControlTheme,
-    SeparatorTheme, SidebarTheme, SliderTheme, SpinnerTheme, SplitterTheme, StatusBarTheme,
-    SwitchTheme, TabTheme, TextScale, TextScaleEntry, ThemeDefaults,
-    ThemeSpacing, ThemeVariant, ToolbarTheme, TooltipTheme,
-    TransformAnimation, WindowTheme,
+    AnimatedIcon, ButtonTheme, CardTheme, CheckboxTheme, ComboBoxTheme, DialogButtonOrder,
+    DialogTheme, ExpanderTheme, FontSpec, IconData, IconProvider, IconRole, IconSet, IconSizes,
+    InputTheme, LinkTheme, ListTheme, MenuTheme, NativeTheme, PopoverTheme, ProgressBarTheme,
+    Repeat, ResolvedDefaults, ResolvedFontSpec, ResolvedIconSizes, ResolvedSpacing,
+    ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme, ScrollbarTheme,
+    SegmentedControlTheme, SeparatorTheme, SidebarTheme, SliderTheme, SpinnerTheme, SplitterTheme,
+    StatusBarTheme, SwitchTheme, TabTheme, TextScale, TextScaleEntry, ThemeDefaults, ThemeSpacing,
+    ThemeVariant, ToolbarTheme, TooltipTheme, TransformAnimation, WindowTheme,
     bundled_icon_by_name, bundled_icon_svg,
 };
 // icon helper functions re-exported from this module
@@ -396,7 +393,11 @@ impl SystemTheme {
     ///
     /// If `is_dark` is true, returns `&self.dark`; otherwise `&self.light`.
     pub fn active(&self) -> &ResolvedTheme {
-        if self.is_dark { &self.dark } else { &self.light }
+        if self.is_dark {
+            &self.dark
+        } else {
+            &self.light
+        }
     }
 
     /// Pick a resolved variant by explicit preference.
@@ -419,12 +420,12 @@ impl SystemTheme {
     ///
     /// ```no_run
     /// let system = native_theme::from_system().unwrap();
-    /// let overlay = native_theme::NativeTheme::from_toml(r#"
+    /// let overlay = native_theme::NativeTheme::from_toml(r##"
     ///     [light.defaults]
     ///     accent = "#ff6600"
     ///     [dark.defaults]
     ///     accent = "#ff6600"
-    /// "#).unwrap();
+    /// "##).unwrap();
     /// let customized = system.with_overlay(&overlay).unwrap();
     /// // customized.active().defaults.accent is now #ff6600
     /// // and all accent-derived fields are updated
@@ -1528,7 +1529,11 @@ mod spinner_rasterize_tests {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used, clippy::field_reassign_with_default)]
+#[allow(
+    clippy::unwrap_used,
+    clippy::expect_used,
+    clippy::field_reassign_with_default
+)]
 mod system_theme_tests {
     use super::*;
 
@@ -1686,7 +1691,10 @@ mod system_theme_tests {
         reader.light = None;
 
         let result = run_pipeline(reader, "kde-breeze-live", true);
-        assert!(result.is_ok(), "run_pipeline should succeed with single variant");
+        assert!(
+            result.is_ok(),
+            "run_pipeline should succeed with single variant"
+        );
         let st = result.unwrap();
         // Dark should have the reader's overridden accent
         assert_eq!(
@@ -1931,11 +1939,15 @@ mod overlay_tests {
     #[test]
     fn test_overlay_toml_convenience() {
         let st = default_system_theme();
-        let result = st.with_overlay_toml(r##"
+        let result = st
+            .with_overlay_toml(
+                r##"
             name = "overlay"
             [light.defaults]
             accent = "#ff0000"
-        "##).unwrap();
+        "##,
+            )
+            .unwrap();
         assert_eq!(result.light.defaults.accent, Rgba::rgb(255, 0, 0));
     }
 }
