@@ -38,11 +38,11 @@ Requirements for per-widget architecture and resolution pipeline. Each maps to r
 
 ### Windows Reader
 
-- [ ] **WIN-01**: NONCLIENTMETRICSW fonts (lfCaptionFont, lfMenuFont, lfStatusFont) -> per-widget FontSpec
-- [ ] **WIN-02**: DwmGetColorizationColor -> window.title_bar_background; COLOR_CAPTION/INACTIVECAPTION colors
-- [ ] **WIN-03**: GetSysColor widget colors (BTNFACE, BTNTEXT, MENU, MENUTEXT, INFOBK, INFOTEXT, WINDOW, WINDOWTEXT, HIGHLIGHT, HIGHLIGHTTEXT)
-- [ ] **WIN-04**: UISettings.TextScaleFactor, SPI_GETHIGHCONTRAST, SPI_GETCLIENTAREAANIMATION -> accessibility fields
-- [ ] **WIN-05**: SM_CXSMICON, SM_CXICON -> defaults.icon_sizes.small, defaults.icon_sizes.large
+- [x] **WIN-01**: NONCLIENTMETRICSW fonts (lfCaptionFont, lfMenuFont, lfStatusFont) -> per-widget FontSpec
+- [x] **WIN-02**: DwmGetColorizationColor -> window.title_bar_background; COLOR_CAPTION/INACTIVECAPTION colors
+- [x] **WIN-03**: GetSysColor widget colors (BTNFACE, BTNTEXT, MENU, MENUTEXT, INFOBK, INFOTEXT, WINDOW, WINDOWTEXT, HIGHLIGHT, HIGHLIGHTTEXT)
+- [x] **WIN-04**: UISettings.TextScaleFactor, SPI_GETHIGHCONTRAST, SPI_GETCLIENTAREAANIMATION -> accessibility fields
+- [x] **WIN-05**: SM_CXSMICON, SM_CXICON -> defaults.icon_sizes.small, defaults.icon_sizes.large
 
 ### KDE Reader
 
@@ -55,11 +55,11 @@ Requirements for per-widget architecture and resolution pipeline. Each maps to r
 
 ### GNOME Reader
 
-- [ ] **GNOME-01**: font-name, monospace-font-name, titlebar-font gsettings -> FontSpec fields
-- [ ] **GNOME-02**: Text scale computation from font.size x CSS percentages (caption 82%, title-2 136%, title-1 181%)
-- [ ] **GNOME-03**: text-scaling-factor, enable-animations, overlay-scrolling gsettings -> accessibility + scrollbar fields
-- [ ] **GNOME-04**: icon-theme gsetting -> icon_set; portal accent already handled
-- [ ] **GNOME-05**: Portal reduced_motion + contrast with gsettings fallback
+- [x] **GNOME-01**: font-name, monospace-font-name, titlebar-font gsettings -> FontSpec fields
+- [x] **GNOME-02**: Text scale computation from font.size x CSS percentages (caption 82%, title-2 136%, title-1 181%)
+- [x] **GNOME-03**: text-scaling-factor, enable-animations, overlay-scrolling gsettings -> accessibility + scrollbar fields
+- [x] **GNOME-04**: icon-theme gsetting -> icon_set; portal accent already handled
+- [x] **GNOME-05**: Portal reduced_motion + contrast with gsettings fallback
 
 ### Pipeline
 
@@ -138,22 +138,22 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MACOS-03 | Phase 46 | Pending |
 | MACOS-04 | Phase 46 | Pending |
 | MACOS-05 | Phase 46 | Pending |
-| WIN-01 | Phase 46 | Pending |
-| WIN-02 | Phase 46 | Pending |
-| WIN-03 | Phase 46 | Pending |
-| WIN-04 | Phase 46 | Pending |
-| WIN-05 | Phase 46 | Pending |
+| WIN-01 | Phase 46 | Complete |
+| WIN-02 | Phase 46 | Complete |
+| WIN-03 | Phase 46 | Complete |
+| WIN-04 | Phase 46 | Complete |
+| WIN-05 | Phase 46 | Complete |
 | KDE-01 | Phase 46 | Pending |
 | KDE-02 | Phase 46 | Pending |
 | KDE-03 | Phase 46 | Pending |
 | KDE-04 | Phase 46 | Pending |
 | KDE-05 | Phase 46 | Pending |
 | KDE-06 | Phase 46 | Pending |
-| GNOME-01 | Phase 46 | Pending |
-| GNOME-02 | Phase 46 | Pending |
-| GNOME-03 | Phase 46 | Pending |
-| GNOME-04 | Phase 46 | Pending |
-| GNOME-05 | Phase 46 | Pending |
+| GNOME-01 | Phase 46 | Complete |
+| GNOME-02 | Phase 46 | Complete |
+| GNOME-03 | Phase 46 | Complete |
+| GNOME-04 | Phase 46 | Complete |
+| GNOME-05 | Phase 46 | Complete |
 | PIPE-01 | Phase 47 | Pending |
 | PIPE-02 | Phase 47 | Pending |
 | PIPE-03 | Phase 47 | Pending |

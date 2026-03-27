@@ -11,7 +11,7 @@ use block2::RcBlock;
 #[cfg(all(target_os = "macos", feature = "macos"))]
 use objc2_app_kit::{
     NSAppearance, NSColor, NSColorSpace, NSFont, NSFontWeightRegular, NSFontWeightTrait,
-    NSFontTraitsAttribute,
+    NSFontTraitsAttribute, NSScroller, NSScrollerStyle, NSWorkspace,
 };
 #[cfg(all(target_os = "macos", feature = "macos"))]
 use objc2_foundation::{NSDictionary, NSNumber, NSString};
@@ -31,12 +31,24 @@ fn nscolor_to_rgba(color: &NSColor, srgb: &NSColorSpace) -> Option<crate::Rgba> 
     Some(crate::Rgba::from_f32(r, g, b, a))
 }
 
-/// Read all semantic NSColor values for the current appearance context into ThemeDefaults.
-///
-/// Must be called within an `NSAppearance::performAsCurrentDrawingAppearance`
-/// block so that dynamic colors resolve to the correct appearance.
+/// Per-widget colors read from appearance-dependent NSColor APIs.
 #[cfg(all(target_os = "macos", feature = "macos"))]
-fn read_semantic_colors() -> crate::ThemeDefaults {
+#[derive(Default)]
+struct PerWidgetColors {
+    placeholder: Option<crate::Rgba>,
+    selection_inactive: Option<crate::Rgba>,
+    alternate_row: Option<crate::Rgba>,
+    header_foreground: Option<crate::Rgba>,
+    grid_color: Option<crate::Rgba>,
+}
+
+/// Read all semantic NSColor values for the current appearance context.
+///
+/// Returns both the ThemeDefaults and per-widget color data. Must be called
+/// within an `NSAppearance::performAsCurrentDrawingAppearance` block so that
+/// dynamic colors resolve to the correct appearance.
+#[cfg(all(target_os = "macos", feature = "macos"))]
+fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
     let srgb = unsafe { NSColorSpace::sRGBColorSpace() };
 
     // Bind all NSColor temporaries before borrowing them.
@@ -48,7 +60,6 @@ fn read_semantic_colors() -> crate::ThemeDefaults {
     let secondary_label = unsafe { NSColor::secondaryLabelColor() };
     let shadow_c = unsafe { NSColor::shadowColor() };
     let alt_sel_text = unsafe { NSColor::alternateSelectedControlTextColor() };
-    let control_c = unsafe { NSColor::controlColor() };
     let system_red = unsafe { NSColor::systemRedColor() };
     let system_orange = unsafe { NSColor::systemOrangeColor() };
     let system_green = unsafe { NSColor::systemGreenColor() };
@@ -57,13 +68,18 @@ fn read_semantic_colors() -> crate::ThemeDefaults {
     let sel_text = unsafe { NSColor::selectedTextColor() };
     let link_c = unsafe { NSColor::linkColor() };
     let focus_c = unsafe { NSColor::keyboardFocusIndicatorColor() };
-    let text_bg = unsafe { NSColor::textBackgroundColor() };
-    let text_c = unsafe { NSColor::textColor() };
     let disabled_text = unsafe { NSColor::disabledControlTextColor() };
+
+    // Additional per-widget color bindings (MACOS-03).
+    let placeholder_c = unsafe { NSColor::placeholderTextColor() };
+    let unemph_sel_bg = unsafe { NSColor::unemphasizedSelectedContentBackgroundColor() };
+    let alt_bg_colors = unsafe { NSColor::alternatingContentBackgroundColors() };
+    let header_text_c = unsafe { NSColor::headerTextColor() };
+    let grid_c = unsafe { NSColor::gridColor() };
 
     let label = nscolor_to_rgba(&label_c, &srgb);
 
-    crate::ThemeDefaults {
+    let defaults = crate::ThemeDefaults {
         accent: nscolor_to_rgba(&control_accent, &srgb),
         accent_foreground: nscolor_to_rgba(&alt_sel_text, &srgb),
         background: nscolor_to_rgba(&window_bg, &srgb),
@@ -82,11 +98,60 @@ fn read_semantic_colors() -> crate::ThemeDefaults {
         info_foreground: label,
         selection: nscolor_to_rgba(&sel_content_bg, &srgb),
         selection_foreground: nscolor_to_rgba(&sel_text, &srgb),
+        selection_inactive: nscolor_to_rgba(&unemph_sel_bg, &srgb),
         link: nscolor_to_rgba(&link_c, &srgb),
         focus_ring_color: nscolor_to_rgba(&focus_c, &srgb),
         disabled_foreground: nscolor_to_rgba(&disabled_text, &srgb),
         ..Default::default()
-    }
+    };
+
+    // Alternate row: index 1 of alternatingContentBackgroundColors (index 0 is normal).
+    let alternate_row = if alt_bg_colors.count() >= 2 {
+        nscolor_to_rgba(&alt_bg_colors.objectAtIndex(1), &srgb)
+    } else {
+        None
+    };
+
+    let per_widget = PerWidgetColors {
+        placeholder: nscolor_to_rgba(&placeholder_c, &srgb),
+        selection_inactive: nscolor_to_rgba(&unemph_sel_bg, &srgb),
+        alternate_row,
+        header_foreground: nscolor_to_rgba(&header_text_c, &srgb),
+        grid_color: nscolor_to_rgba(&grid_c, &srgb),
+    };
+
+    (defaults, per_widget)
+}
+
+/// Read scrollbar overlay mode from NSScroller.preferredScrollerStyle.
+///
+/// Returns `true` if the preferred scroller style is overlay, `false` for legacy.
+/// Requires main thread (MainThreadMarker).
+#[cfg(all(target_os = "macos", feature = "macos"))]
+fn read_scrollbar_style(mtm: objc2::MainThreadMarker) -> Option<bool> {
+    Some(NSScroller::preferredScrollerStyle(mtm) == NSScrollerStyle::Overlay)
+}
+
+/// Read accessibility flags from NSWorkspace.
+///
+/// Returns (reduce_motion, high_contrast, reduce_transparency, text_scaling_factor).
+/// text_scaling_factor is derived by comparing the system font size to the default (13pt).
+#[cfg(all(target_os = "macos", feature = "macos"))]
+fn read_accessibility() -> (Option<bool>, Option<bool>, Option<bool>, Option<f32>) {
+    let workspace = unsafe { NSWorkspace::sharedWorkspace() };
+    let reduce_motion = Some(workspace.accessibilityDisplayShouldReduceMotion());
+    let high_contrast = Some(workspace.accessibilityDisplayShouldIncreaseContrast());
+    let reduce_transparency = Some(workspace.accessibilityDisplayShouldReduceTransparency());
+
+    // Derive text scaling factor from system font size vs default 13pt.
+    let system_size = unsafe { NSFont::systemFontSize() } as f32;
+    let text_scaling_factor = if (system_size - 13.0).abs() > 0.01 {
+        Some(system_size / 13.0)
+    } else {
+        None
+    };
+
+    (reduce_motion, high_contrast, reduce_transparency, text_scaling_factor)
 }
 
 /// Map an AppKit font weight (-1.0..1.0) to the nearest CSS weight (100..900).
@@ -106,7 +171,7 @@ fn nsfont_weight_to_css(font: &NSFont) -> Option<u16> {
     let weight_obj = traits_dict.objectForKey(weight_key)?;
     // Safety: the weight trait value is an NSNumber wrapping a CGFloat.
     let weight_num: &NSNumber = unsafe { &*(weight_obj as *const _ as *const NSNumber) };
-    let w = weight_num.as_f64();
+    let w = unsafe { weight_num.doubleValue() };
 
     // Map AppKit weight range to CSS weight buckets.
     let css = if w <= -0.75 {
@@ -336,8 +401,9 @@ fn build_theme(
 /// Read the current macOS theme, resolving both light and dark appearance variants.
 ///
 /// Uses `NSAppearance::performAsCurrentDrawingAppearance` (macOS 11+) to scope
-/// semantic color resolution to each appearance. Reads ~20 NSColor semantic
-/// colors per variant with P3-to-sRGB conversion, plus system and monospace fonts.
+/// semantic color resolution to each appearance. Reads ~25 NSColor semantic
+/// colors per variant with P3-to-sRGB conversion, per-widget fonts with weight,
+/// text scale entries, scrollbar overlay mode, and accessibility flags.
 ///
 /// # Errors
 ///
@@ -368,39 +434,83 @@ pub fn from_macos() -> crate::Result<crate::NativeTheme> {
         text_scale,
     };
 
-    let light_defaults = if let Some(app) = &light_appearance {
-        let defaults = std::cell::RefCell::new(crate::ThemeDefaults::default());
+    // Type alias for the appearance-block data.
+    type AppearanceData = (crate::ThemeDefaults, PerWidgetColors);
+
+    let (light_defaults, light_pw) = if let Some(app) = &light_appearance {
+        let data = std::cell::RefCell::new(None::<AppearanceData>);
         {
             let block = RcBlock::new(|| {
-                *defaults.borrow_mut() = read_semantic_colors();
+                *data.borrow_mut() = Some(read_appearance_colors());
             });
             app.performAsCurrentDrawingAppearance(&block);
         }
-        let mut d = defaults.into_inner();
+        let (mut d, pw) = data.into_inner().unwrap_or_default();
         d.font = font.clone();
         d.mono_font = mono_font.clone();
-        d
+        (d, Some(pw))
     } else {
-        crate::ThemeDefaults::default()
+        (crate::ThemeDefaults::default(), None)
     };
 
-    let dark_defaults = if let Some(app) = &dark_appearance {
-        let defaults = std::cell::RefCell::new(crate::ThemeDefaults::default());
+    let (dark_defaults, dark_pw) = if let Some(app) = &dark_appearance {
+        let data = std::cell::RefCell::new(None::<AppearanceData>);
         {
             let block = RcBlock::new(|| {
-                *defaults.borrow_mut() = read_semantic_colors();
+                *data.borrow_mut() = Some(read_appearance_colors());
             });
             app.performAsCurrentDrawingAppearance(&block);
         }
-        let mut d = defaults.into_inner();
+        let (mut d, pw) = data.into_inner().unwrap_or_default();
         d.font = font;
         d.mono_font = mono_font;
-        d
+        (d, Some(pw))
     } else {
-        crate::ThemeDefaults::default()
+        (crate::ThemeDefaults::default(), None)
     };
 
-    Ok(build_theme(light_defaults, dark_defaults, &widget_fonts))
+    let mut theme = build_theme(light_defaults, dark_defaults, &widget_fonts);
+
+    // Apply per-widget colors (appearance-dependent, per variant).
+    if let (Some(v), Some(pw)) = (&mut theme.light, light_pw) {
+        v.input.placeholder = pw.placeholder;
+        v.input.selection = pw.selection_inactive;
+        v.list.alternate_row = pw.alternate_row;
+        v.list.header_foreground = pw.header_foreground;
+        v.list.grid_color = pw.grid_color;
+    }
+    if let (Some(v), Some(pw)) = (&mut theme.dark, dark_pw) {
+        v.input.placeholder = pw.placeholder;
+        v.input.selection = pw.selection_inactive;
+        v.list.alternate_row = pw.alternate_row;
+        v.list.header_foreground = pw.header_foreground;
+        v.list.grid_color = pw.grid_color;
+    }
+
+    // Scrollbar overlay mode (appearance-independent, requires main thread).
+    let overlay_mode = objc2::MainThreadMarker::new().and_then(read_scrollbar_style);
+    if let Some(v) = &mut theme.light {
+        v.scrollbar.overlay_mode = overlay_mode;
+    }
+    if let Some(v) = &mut theme.dark {
+        v.scrollbar.overlay_mode = overlay_mode;
+    }
+
+    // Accessibility flags (appearance-independent).
+    let (reduce_motion, high_contrast, reduce_transparency, text_scaling_factor) =
+        read_accessibility();
+    for variant in [&mut theme.light, &mut theme.dark] {
+        if let Some(v) = variant {
+            v.defaults.reduce_motion = reduce_motion;
+            v.defaults.high_contrast = high_contrast;
+            v.defaults.reduce_transparency = reduce_transparency;
+            v.defaults.text_scaling_factor = text_scaling_factor;
+            // macOS uses leading affirmative (OK/Cancel) dialog button order.
+            v.dialog.button_order = Some(crate::DialogButtonOrder::LeadingAffirmative);
+        }
+    }
+
+    Ok(theme)
 }
 
 #[cfg(test)]
@@ -685,5 +795,78 @@ mod tests {
         assert_eq!(ts.section_heading.as_ref().unwrap().weight, Some(700));
         assert_eq!(ts.dialog_title.as_ref().unwrap().weight, Some(700));
         assert_eq!(ts.display.as_ref().unwrap().weight, Some(700));
+    }
+
+    #[test]
+    fn build_theme_per_widget_colors_not_populated_by_build() {
+        // build_theme does not populate per-widget colors -- that's done by
+        // from_macos() after build_theme returns. Verify they start as None.
+        let theme = build_theme(
+            sample_light_defaults(),
+            sample_dark_defaults(),
+            &sample_widget_fonts(),
+        );
+        let light = theme.light.as_ref().unwrap();
+        assert!(
+            light.input.placeholder.is_none(),
+            "placeholder starts None (set by from_macos)"
+        );
+        assert!(
+            light.list.alternate_row.is_none(),
+            "alternate_row starts None"
+        );
+        assert!(
+            light.list.header_foreground.is_none(),
+            "header_foreground starts None"
+        );
+        assert!(
+            light.list.grid_color.is_none(),
+            "grid_color starts None"
+        );
+    }
+
+    #[test]
+    fn build_theme_scrollbar_overlay_not_set_by_build() {
+        // Scrollbar overlay mode is set after build_theme by from_macos().
+        let theme = build_theme(
+            sample_light_defaults(),
+            sample_dark_defaults(),
+            &sample_widget_fonts(),
+        );
+        let light = theme.light.as_ref().unwrap();
+        assert!(
+            light.scrollbar.overlay_mode.is_none(),
+            "overlay_mode starts None (set by from_macos)"
+        );
+    }
+
+    #[test]
+    fn build_theme_dialog_button_order_not_set_by_build() {
+        // Dialog button order is set after build_theme by from_macos().
+        let theme = build_theme(
+            sample_light_defaults(),
+            sample_dark_defaults(),
+            &sample_widget_fonts(),
+        );
+        let light = theme.light.as_ref().unwrap();
+        assert!(
+            light.dialog.button_order.is_none(),
+            "button_order starts None (set by from_macos)"
+        );
+    }
+
+    #[test]
+    fn build_theme_accessibility_not_set_by_build() {
+        // Accessibility flags are set after build_theme by from_macos().
+        let theme = build_theme(
+            sample_light_defaults(),
+            sample_dark_defaults(),
+            &sample_widget_fonts(),
+        );
+        let light = theme.light.as_ref().unwrap();
+        assert!(light.defaults.reduce_motion.is_none());
+        assert!(light.defaults.high_contrast.is_none());
+        assert!(light.defaults.reduce_transparency.is_none());
+        assert!(light.defaults.text_scaling_factor.is_none());
     }
 }

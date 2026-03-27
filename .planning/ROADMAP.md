@@ -152,7 +152,13 @@ Plans:
   3. On macOS, from_macos() populates text_scale entries from NSFont.TextStyle, per-widget fonts (menu, tooltip, title bar) with weight extraction, additional NSColor values (placeholder, caret, selection_inactive), scrollbar overlay mode, and all accessibility flags
   4. On Windows, from_windows() populates per-widget fonts from NONCLIENTMETRICSW, title bar colors from DwmGetColorizationColor, widget colors from GetSysColor (BTNFACE, MENU, HIGHLIGHT, etc.), icon sizes from SM_CXSMICON/SM_CXICON, and accessibility from UISettings.TextScaleFactor and SPI_GETHIGHCONTRAST
   5. The output of every OS reader, when passed through resolve() then validate(), produces a valid ResolvedTheme without error
-**Plans**: TBD
+**Plans:** 2/4 plans executed
+
+Plans:
+- [ ] 46-01-PLAN.md — KDE reader rewrite: per-widget ThemeVariant + title bar + fonts + text_scale + accessibility + icons
+- [x] 46-02-PLAN.md — GNOME reader rewrite: sparse ThemeVariant + fonts + text_scale + accessibility + icon_set
+- [ ] 46-03-PLAN.md — macOS reader extension: per-widget fonts + text_scale + NSColor extras + scrollbar + accessibility
+- [x] 46-04-PLAN.md — Windows reader rewrite: per-widget ThemeVariant + fonts + DWM + GetSysColor + accessibility + icons
 
 ### Phase 47: OS-First Pipeline
 **Goal**: from_system() runs the complete OS-first pipeline producing a guaranteed-complete ResolvedTheme, and app developers can apply TOML overrides that propagate through a second resolve() pass
@@ -190,6 +196,6 @@ Phases execute in numeric order: 44 -> 45 -> 46 -> 47 -> 48
 | 33-43 | v0.4.1 | 22/22 | Complete | 2026-03-21 |
 | 44. Per-Widget Data Model and Preset Migration | v0.5.0 | 3/3 | Complete   | 2026-03-27 |
 | 45. Resolution Engine | v0.5.0 | 3/3 | Complete   | 2026-03-27 |
-| 46. OS Reader Extensions | v0.5.0 | 0/? | Not started | - |
+| 46. OS Reader Extensions | v0.5.0 | 2/4 | In Progress|  |
 | 47. OS-First Pipeline | v0.5.0 | 0/? | Not started | - |
 | 48. Connector Migration | v0.5.0 | 0/? | Not started | - |
