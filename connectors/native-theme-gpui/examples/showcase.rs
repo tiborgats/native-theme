@@ -169,44 +169,13 @@ fn widget_tooltip_themed(
 // Helpers
 // ---------------------------------------------------------------------------
 
-/// Return the preset name that best matches the current platform.
-fn platform_preset_name() -> &'static str {
-    #[cfg(target_os = "macos")]
-    {
-        "macos-sonoma"
-    }
-    #[cfg(target_os = "windows")]
-    {
-        "windows-11"
-    }
-    #[cfg(target_os = "linux")]
-    {
-        let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
-        if desktop.split(':').any(|c| c == "KDE") {
-            "kde-breeze"
-        } else {
-            "adwaita"
-        }
-    }
-    #[cfg(not(any(target_os = "macos", target_os = "windows", target_os = "linux")))]
-    {
-        "default"
-    }
-}
-
 fn theme_names() -> Vec<SharedString> {
-    let platform = platform_preset_name();
-    let mut names: Vec<SharedString> = NativeTheme::list_presets()
-        .iter()
-        .map(|s| {
-            if *s == "default" {
-                SharedString::from(format!("default ({})", platform))
-            } else {
-                SharedString::from(s.to_string())
-            }
-        })
-        .collect();
-    names.push("OS Theme".into());
+    let mut names: Vec<SharedString> = vec!["OS Theme".into()];
+    names.extend(
+        NativeTheme::list_presets()
+            .iter()
+            .map(|s| SharedString::from(s.to_string())),
+    );
     names
 }
 
@@ -990,11 +959,7 @@ impl Showcase {
 
     /// Convert a display name from the theme selector to the internal theme name.
     fn theme_internal_name(display: &str) -> String {
-        if display.starts_with("default (") {
-            "default".to_string()
-        } else {
-            display.to_string()
-        }
+        display.to_string()
     }
 
     /// Convert a display name from the icon theme selector to the internal icon set name.
@@ -1128,21 +1093,11 @@ impl Showcase {
         )
         .detach();
 
-        // Apply the initial "default" preset theme via resolve+validate pipeline.
+        // Apply the initial OS Theme via sync_system_appearance.
         let is_dark = color_mode.is_dark();
-        let nt = NativeTheme::preset("default").expect("default preset must exist");
-        let (original_font, original_mono_font) = {
-            let mut v = nt
-                .pick_variant(is_dark)
-                .expect("default preset must have variant")
-                .clone();
-            v.resolve();
-            let resolved = v.validate().expect("resolved default preset must validate");
-            let theme = to_theme(&resolved, "default", is_dark);
-            *Theme::global_mut(cx) = theme;
-            window.refresh();
-            (resolved.defaults.font, resolved.defaults.mono_font)
-        };
+        Theme::sync_system_appearance(Some(window), cx);
+        let original_font = native_theme::ResolvedFontSpec { family: "(default)".into(), size: 0.0, weight: 400 };
+        let original_mono_font = native_theme::ResolvedFontSpec { family: "(default)".into(), size: 0.0, weight: 400 };
 
         // Resolve initial icon set from system (default = system's native set)
         let initial_resolved = system_icon_set().name().to_string();
@@ -1317,7 +1272,7 @@ impl Showcase {
         let fg = cx.theme().foreground;
         let mut showcase = Self {
             theme_select,
-            current_theme_name: "default".into(),
+            current_theme_name: "OS Theme".into(),
             is_dark,
             color_mode,
             dark_mode_select,

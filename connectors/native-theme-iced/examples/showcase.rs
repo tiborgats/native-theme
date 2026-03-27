@@ -527,17 +527,24 @@ struct State {
 
 impl Default for State {
     fn default() -> Self {
-        let preset_name = "default";
-        let nt = NativeTheme::preset(preset_name).expect("default preset must exist");
         let color_mode = ColorMode::System;
         let is_dark = color_mode.is_dark();
-        let mut variant = nt
-            .pick_variant(is_dark)
-            .expect("must have a variant")
-            .clone();
-        variant.resolve();
-        let resolved = variant.validate().expect("default preset must validate");
-        let theme = native_theme_iced::to_theme(&resolved, &nt.name);
+        let (resolved, theme) = match native_theme::from_system() {
+            Ok(system) => {
+                let r = system.pick(is_dark).clone();
+                let t = native_theme_iced::to_theme(&r, &system.name);
+                (r, t)
+            }
+            Err(_) => {
+                // Fallback: load adwaita preset through resolve pipeline
+                let nt = NativeTheme::preset("adwaita").expect("adwaita preset must exist");
+                let mut variant = nt.pick_variant(is_dark).unwrap().clone();
+                variant.resolve();
+                let r = variant.validate().expect("adwaita preset must validate");
+                let t = native_theme_iced::to_theme(&r, &nt.name);
+                (r, t)
+            }
+        };
 
         let languages = vec![
             "Rust".to_string(),
@@ -566,7 +573,7 @@ impl Default for State {
         ) = build_animation_caches(icon_set_choice.icon_set_name());
 
         let mut state = Self {
-            current_choice: ThemeChoice::Preset(preset_name.to_string()),
+            current_choice: ThemeChoice::OsTheme,
             current_theme: theme,
             color_mode,
             is_dark,
@@ -674,9 +681,9 @@ impl State {
                             native_theme_iced::to_theme(&self.current_resolved, &system.name);
                     }
                     Err(_) => {
-                        // Fallback: load default preset through resolve pipeline
-                        let nt = NativeTheme::preset("default")
-                            .expect("default preset must exist");
+                        // Fallback: load adwaita preset through resolve pipeline
+                        let nt = NativeTheme::preset("adwaita")
+                            .expect("adwaita preset must exist");
                         let mut variant = nt.pick_variant(self.is_dark).unwrap().clone();
                         variant.resolve();
                         let resolved = variant.validate().unwrap();
