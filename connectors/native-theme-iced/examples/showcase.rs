@@ -525,26 +525,29 @@ struct State {
     // Screenshot mode
     screenshot_path: Option<String>,
     screenshot_countdown: u8,
+
+    /// Error message from theme loading, displayed as a banner in the UI.
+    error_message: Option<String>,
 }
 
 impl Default for State {
     fn default() -> Self {
         let color_mode = ColorMode::System;
         let is_dark = color_mode.is_dark();
-        let (resolved, theme) = match native_theme::from_system() {
+        let (resolved, theme, initial_error) = match native_theme::from_system() {
             Ok(system) => {
                 let r = system.pick(is_dark).clone();
                 let t = native_theme_iced::to_theme(&r, &system.name);
-                (r, t)
+                (r, t, None)
             }
-            Err(_) => {
+            Err(e) => {
                 // Fallback: load adwaita preset through resolve pipeline
                 let nt = NativeTheme::preset("adwaita").expect("adwaita preset must exist");
                 let mut variant = nt.pick_variant(is_dark).unwrap().clone();
                 variant.resolve();
                 let r = variant.validate().expect("adwaita preset must validate");
                 let t = native_theme_iced::to_theme(&r, &nt.name);
-                (r, t)
+                (r, t, Some(format!("OS theme failed: {e}. Using adwaita fallback.")))
             }
         };
 
@@ -613,6 +616,7 @@ impl Default for State {
             animated_static,
             screenshot_path: None,
             screenshot_countdown: 0,
+            error_message: initial_error,
         };
 
         // Apply CLI overrides (if any)
@@ -691,8 +695,11 @@ impl State {
                         } else {
                             self.default_label = format!("default ({})", system.full_preset);
                         }
+                        self.error_message = None;
                     }
-                    Err(_) => {
+                    Err(e) => {
+                        self.error_message =
+                            Some(format!("OS theme failed: {e}. Using adwaita fallback."));
                         // Fallback: load adwaita preset through resolve pipeline
                         let nt = NativeTheme::preset("adwaita")
                             .expect("adwaita preset must exist");
@@ -706,13 +713,40 @@ impl State {
                 }
             }
             ThemeChoice::Preset(name) => {
-                let nt = NativeTheme::preset(name).unwrap();
-                let mut variant = nt.pick_variant(self.is_dark).unwrap().clone();
-                variant.resolve();
-                let resolved = variant.validate().unwrap();
-                self.current_resolved = resolved;
-                self.current_theme =
-                    native_theme_iced::to_theme(&self.current_resolved, &nt.name);
+                let name = name.clone();
+                match NativeTheme::preset(&name) {
+                    Ok(nt) => {
+                        match nt.pick_variant(self.is_dark) {
+                            Some(variant) => {
+                                let mut v = variant.clone();
+                                v.resolve();
+                                match v.validate() {
+                                    Ok(resolved) => {
+                                        self.current_resolved = resolved;
+                                        self.current_theme =
+                                            native_theme_iced::to_theme(&self.current_resolved, &nt.name);
+                                        self.error_message = None;
+                                    }
+                                    Err(e) => {
+                                        self.error_message = Some(format!(
+                                            "Theme '{name}' validation failed: {e}"
+                                        ));
+                                    }
+                                }
+                            }
+                            None => {
+                                self.error_message = Some(format!(
+                                    "Theme '{name}' has no {} variant",
+                                    if self.is_dark { "dark" } else { "light" }
+                                ));
+                            }
+                        }
+                    }
+                    Err(e) => {
+                        self.error_message =
+                            Some(format!("Failed to load preset '{name}': {e}"));
+                    }
+                }
             }
         }
         // Keep the OsTheme choice label in sync
@@ -1215,22 +1249,40 @@ fn view(state: &State) -> Element<'_, Message> {
     let tab_padding = Padding::ZERO.left(sp.l).right(sp.l).top(sp.s);
     let content_padding = Padding::from(sp.l);
     let panel_spacing = sp.xs;
-    let right_panel = column![
-        // Tab bar
-        container(tab_bar).padding(tab_padding),
-        rule::horizontal(1),
-        // Scrollable content
-        scrollable(container(tab_content).padding(content_padding).width(Fill),)
-            .direction(scrollable::Direction::Vertical(
-                scrollable::Scrollbar::new()
-                    .width(sb_width)
-                    .scroller_width(sb_width),
-            ))
-            .height(Fill),
-    ]
-    .spacing(panel_spacing)
-    .width(Fill)
-    .height(Fill);
+    let mut right_panel = column![]
+        .spacing(panel_spacing)
+        .width(Fill)
+        .height(Fill);
+
+    // Error banner (if any)
+    if let Some(ref msg) = state.error_message {
+        right_panel = right_panel.push(
+            container(
+                text(msg.as_str())
+                    .color(Color::from_rgb(0.9, 0.1, 0.1))
+                    .size(12),
+            )
+            .padding(Padding::from([4, 8]))
+            .width(Fill),
+        );
+    }
+
+    let right_panel = right_panel
+        .push(
+            // Tab bar
+            container(tab_bar).padding(tab_padding),
+        )
+        .push(rule::horizontal(1))
+        .push(
+            // Scrollable content
+            scrollable(container(tab_content).padding(content_padding).width(Fill))
+                .direction(scrollable::Direction::Vertical(
+                    scrollable::Scrollbar::new()
+                        .width(sb_width)
+                        .scroller_width(sb_width),
+                ))
+                .height(Fill),
+        );
 
     row![sidebar, right_panel].into()
 }
