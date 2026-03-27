@@ -19,7 +19,7 @@
 //! use native_theme::NativeTheme;
 //! use native_theme_iced::to_theme;
 //!
-//! let nt = NativeTheme::preset("default").unwrap();
+//! let nt = NativeTheme::preset("catppuccin-mocha").unwrap();
 //! let mut variant = nt.pick_variant(false).unwrap().clone();
 //! variant.resolve();
 //! let resolved = variant.validate().unwrap();
@@ -140,7 +140,7 @@ mod tests {
     use native_theme::{NativeTheme, ThemeVariant};
 
     fn make_resolved(is_dark: bool) -> native_theme::ResolvedTheme {
-        let nt = NativeTheme::preset("default").unwrap();
+        let nt = NativeTheme::preset("catppuccin-mocha").unwrap();
         let mut variant = nt.pick_variant(is_dark).unwrap().clone();
         variant.resolve();
         variant.validate().unwrap()

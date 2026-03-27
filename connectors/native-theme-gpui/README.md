@@ -40,7 +40,7 @@ Or read the OS theme at runtime:
 use native_theme::{from_system, NativeTheme};
 use native_theme_gpui::{pick_variant, to_theme};
 
-let nt = from_system().unwrap_or_else(|_| NativeTheme::preset("default").unwrap());
+let nt = from_system().unwrap_or_else(|_| NativeTheme::preset("adwaita").unwrap());
 let is_dark = true;
 if let Some(variant) = pick_variant(&nt, is_dark) {
     let theme = to_theme(variant, "System Theme", is_dark);

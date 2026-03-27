@@ -15,11 +15,11 @@
 //! use native_theme::NativeTheme;
 //! use native_theme_gpui::to_theme;
 //!
-//! let nt = NativeTheme::preset("default").unwrap();
+//! let nt = NativeTheme::preset("catppuccin-mocha").unwrap();
 //! let mut variant = nt.pick_variant(false).unwrap().clone();
 //! variant.resolve();
 //! let resolved = variant.validate().unwrap();
-//! let theme = to_theme(&resolved, "Default", false);
+//! let theme = to_theme(&resolved, "Catppuccin Mocha", false);
 //! ```
 
 #![warn(missing_docs)]
@@ -76,10 +76,10 @@ mod tests {
     use super::*;
 
     fn test_resolved() -> ResolvedTheme {
-        let nt = NativeTheme::preset("default").expect("default preset must exist");
+        let nt = NativeTheme::preset("catppuccin-mocha").expect("preset must exist");
         let mut v = nt
             .pick_variant(false)
-            .expect("default preset must have light variant")
+            .expect("preset must have light variant")
             .clone();
         v.resolve();
         v.validate().expect("resolved preset must validate")
@@ -87,14 +87,14 @@ mod tests {
 
     #[test]
     fn pick_variant_light_first() {
-        let nt = NativeTheme::preset("default").expect("default preset must exist");
+        let nt = NativeTheme::preset("catppuccin-mocha").expect("preset must exist");
         let picked = pick_variant(&nt, false);
         assert!(picked.is_some());
     }
 
     #[test]
     fn pick_variant_dark_first() {
-        let nt = NativeTheme::preset("default").expect("default preset must exist");
+        let nt = NativeTheme::preset("catppuccin-mocha").expect("preset must exist");
         let picked = pick_variant(&nt, true);
         assert!(picked.is_some());
     }
@@ -117,10 +117,10 @@ mod tests {
 
     #[test]
     fn to_theme_dark_mode() {
-        let nt = NativeTheme::preset("default").expect("default preset must exist");
+        let nt = NativeTheme::preset("catppuccin-mocha").expect("preset must exist");
         let mut v = nt
             .pick_variant(true)
-            .expect("default preset must have dark variant")
+            .expect("preset must have dark variant")
             .clone();
         v.resolve();
         let resolved = v.validate().expect("resolved preset must validate");

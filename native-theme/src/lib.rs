@@ -522,34 +522,37 @@ fn run_pipeline(
     })
 }
 
-/// Map the current platform to its matching preset name.
+/// Map the current platform to its matching live preset name.
 ///
-/// - macOS -> `"macos-sonoma"`
-/// - Windows -> `"windows-11"`
-/// - Linux KDE -> `"kde-breeze"`
-/// - Linux other/GNOME -> `"adwaita"`
-/// - Unknown platform -> `"default"`
+/// Live presets contain only geometry/metrics (no colors, fonts, or icons)
+/// and are used as the merge base in the OS-first pipeline.
+///
+/// - macOS -> `"macos-sonoma-live"`
+/// - Windows -> `"windows-11-live"`
+/// - Linux KDE -> `"kde-breeze-live"`
+/// - Linux other/GNOME -> `"adwaita-live"`
+/// - Unknown platform -> `"adwaita-live"`
 #[allow(unreachable_code, dead_code)]
 fn platform_preset_name() -> &'static str {
     #[cfg(target_os = "macos")]
     {
-        return "macos-sonoma";
+        return "macos-sonoma-live";
     }
     #[cfg(target_os = "windows")]
     {
-        return "windows-11";
+        return "windows-11-live";
     }
     #[cfg(target_os = "linux")]
     {
         let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
         match detect_linux_de(&desktop) {
-            LinuxDesktop::Kde => "kde-breeze",
-            _ => "adwaita",
+            LinuxDesktop::Kde => "kde-breeze-live",
+            _ => "adwaita-live",
         }
     }
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
-        "default"
+        "adwaita-live"
     }
 }
 
@@ -578,16 +581,16 @@ fn from_linux() -> crate::Result<SystemTheme> {
         #[cfg(feature = "kde")]
         LinuxDesktop::Kde => {
             let reader = crate::kde::from_kde()?;
-            run_pipeline(reader, "kde-breeze", is_dark)
+            run_pipeline(reader, "kde-breeze-live", is_dark)
         }
         #[cfg(not(feature = "kde"))]
-        LinuxDesktop::Kde => run_pipeline(NativeTheme::preset("adwaita")?, "adwaita", is_dark),
+        LinuxDesktop::Kde => run_pipeline(NativeTheme::preset("adwaita")?, "adwaita-live", is_dark),
         LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
             // GNOME sync path: no portal, just adwaita preset
-            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita", is_dark)
+            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita-live", is_dark)
         }
         LinuxDesktop::Xfce | LinuxDesktop::Cinnamon | LinuxDesktop::Mate | LinuxDesktop::LxQt => {
-            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita", is_dark)
+            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita-live", is_dark)
         }
         LinuxDesktop::Unknown => {
             #[cfg(feature = "kde")]
@@ -595,10 +598,10 @@ fn from_linux() -> crate::Result<SystemTheme> {
                 let path = crate::kde::kdeglobals_path();
                 if path.exists() {
                     let reader = crate::kde::from_kde()?;
-                    return run_pipeline(reader, "kde-breeze", is_dark);
+                    return run_pipeline(reader, "kde-breeze-live", is_dark);
                 }
             }
-            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita", is_dark)
+            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita-live", is_dark)
         }
     }
 }
@@ -637,7 +640,7 @@ pub fn from_system() -> crate::Result<SystemTheme> {
         {
             let reader = crate::macos::from_macos()?;
             let is_dark = reader_is_dark(&reader);
-            return run_pipeline(reader, "macos-sonoma", is_dark);
+            return run_pipeline(reader, "macos-sonoma-live", is_dark);
         }
 
         #[cfg(not(feature = "macos"))]
@@ -650,7 +653,7 @@ pub fn from_system() -> crate::Result<SystemTheme> {
         {
             let reader = crate::windows::from_windows()?;
             let is_dark = reader_is_dark(&reader);
-            return run_pipeline(reader, "windows-11", is_dark);
+            return run_pipeline(reader, "windows-11-live", is_dark);
         }
 
         #[cfg(not(feature = "windows"))]
@@ -691,27 +694,27 @@ pub async fn from_system_async() -> crate::Result<SystemTheme> {
             #[cfg(feature = "portal")]
             {
                 let reader = crate::gnome::from_kde_with_portal().await?;
-                return run_pipeline(reader, "kde-breeze", is_dark);
+                return run_pipeline(reader, "kde-breeze-live", is_dark);
             }
             #[cfg(not(feature = "portal"))]
             {
                 let reader = crate::kde::from_kde()?;
-                return run_pipeline(reader, "kde-breeze", is_dark);
+                return run_pipeline(reader, "kde-breeze-live", is_dark);
             }
         }
         #[cfg(not(feature = "kde"))]
-        LinuxDesktop::Kde => run_pipeline(NativeTheme::preset("adwaita")?, "adwaita", is_dark),
+        LinuxDesktop::Kde => run_pipeline(NativeTheme::preset("adwaita")?, "adwaita-live", is_dark),
         #[cfg(feature = "portal")]
         LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
             let reader = crate::gnome::from_gnome().await?;
-            run_pipeline(reader, "adwaita", is_dark)
+            run_pipeline(reader, "adwaita-live", is_dark)
         }
         #[cfg(not(feature = "portal"))]
         LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
-            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita", is_dark)
+            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita-live", is_dark)
         }
         LinuxDesktop::Xfce | LinuxDesktop::Cinnamon | LinuxDesktop::Mate | LinuxDesktop::LxQt => {
-            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita", is_dark)
+            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita-live", is_dark)
         }
         LinuxDesktop::Unknown => {
             // Use D-Bus portal backend detection to refine heuristic
@@ -722,15 +725,15 @@ pub async fn from_system_async() -> crate::Result<SystemTheme> {
                         #[cfg(feature = "kde")]
                         LinuxDesktop::Kde => {
                             let reader = crate::gnome::from_kde_with_portal().await?;
-                            run_pipeline(reader, "kde-breeze", is_dark)
+                            run_pipeline(reader, "kde-breeze-live", is_dark)
                         }
                         #[cfg(not(feature = "kde"))]
                         LinuxDesktop::Kde => {
-                            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita", is_dark)
+                            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita-live", is_dark)
                         }
                         LinuxDesktop::Gnome => {
                             let reader = crate::gnome::from_gnome().await?;
-                            run_pipeline(reader, "adwaita", is_dark)
+                            run_pipeline(reader, "adwaita-live", is_dark)
                         }
                         _ => {
                             unreachable!("detect_portal_backend only returns Kde or Gnome")
@@ -744,10 +747,10 @@ pub async fn from_system_async() -> crate::Result<SystemTheme> {
                 let path = crate::kde::kdeglobals_path();
                 if path.exists() {
                     let reader = crate::kde::from_kde()?;
-                    return run_pipeline(reader, "kde-breeze", is_dark);
+                    return run_pipeline(reader, "kde-breeze-live", is_dark);
                 }
             }
-            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita", is_dark)
+            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita-live", is_dark)
         }
     }
 }
@@ -1506,7 +1509,7 @@ mod system_theme_tests {
 
     #[test]
     fn test_system_theme_active_dark() {
-        let preset = NativeTheme::preset("default").unwrap();
+        let preset = NativeTheme::preset("catppuccin-mocha").unwrap();
         let mut light_v = preset.light.clone().unwrap();
         let mut dark_v = preset.dark.clone().unwrap();
         // Give them distinct accents so we can tell them apart
@@ -1530,7 +1533,7 @@ mod system_theme_tests {
 
     #[test]
     fn test_system_theme_active_light() {
-        let preset = NativeTheme::preset("default").unwrap();
+        let preset = NativeTheme::preset("catppuccin-mocha").unwrap();
         let mut light_v = preset.light.clone().unwrap();
         let mut dark_v = preset.dark.clone().unwrap();
         light_v.defaults.accent = Some(Rgba::rgb(0, 0, 255));
@@ -1553,7 +1556,7 @@ mod system_theme_tests {
 
     #[test]
     fn test_system_theme_pick() {
-        let preset = NativeTheme::preset("default").unwrap();
+        let preset = NativeTheme::preset("catppuccin-mocha").unwrap();
         let mut light_v = preset.light.clone().unwrap();
         let mut dark_v = preset.dark.clone().unwrap();
         light_v.defaults.accent = Some(Rgba::rgb(0, 0, 255));
@@ -1588,7 +1591,7 @@ mod system_theme_tests {
         unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "KDE") };
         let name = platform_preset_name();
         unsafe { std::env::remove_var("XDG_CURRENT_DESKTOP") };
-        assert_eq!(name, "kde-breeze");
+        assert_eq!(name, "kde-breeze-live");
     }
 
     #[test]
@@ -1599,15 +1602,15 @@ mod system_theme_tests {
         unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "GNOME") };
         let name = platform_preset_name();
         unsafe { std::env::remove_var("XDG_CURRENT_DESKTOP") };
-        assert_eq!(name, "adwaita");
+        assert_eq!(name, "adwaita-live");
     }
 
     // --- run_pipeline() tests ---
 
     #[test]
     fn test_run_pipeline_produces_both_variants() {
-        let reader = NativeTheme::preset("default").unwrap();
-        let result = run_pipeline(reader, "default", false);
+        let reader = NativeTheme::preset("catppuccin-mocha").unwrap();
+        let result = run_pipeline(reader, "catppuccin-mocha", false);
         assert!(result.is_ok(), "run_pipeline should succeed");
         let st = result.unwrap();
         // Both light and dark exist as ResolvedTheme (non-Option)
@@ -1625,7 +1628,7 @@ mod system_theme_tests {
         variant.defaults.accent = Some(custom_accent);
         reader.light = Some(variant);
 
-        let result = run_pipeline(reader, "default", false);
+        let result = run_pipeline(reader, "catppuccin-mocha", false);
         assert!(result.is_ok(), "run_pipeline should succeed");
         let st = result.unwrap();
         // The reader's accent should win over the preset's accent
@@ -1645,7 +1648,7 @@ mod system_theme_tests {
         reader.dark = Some(dark_v);
         reader.light = None;
 
-        let result = run_pipeline(reader, "default", true);
+        let result = run_pipeline(reader, "catppuccin-mocha", true);
         assert!(result.is_ok(), "run_pipeline should succeed with single variant");
         let st = result.unwrap();
         // Dark should have the reader's accent
@@ -1761,10 +1764,10 @@ mod reduced_motion_tests {
 mod overlay_tests {
     use super::*;
 
-    /// Helper: build a SystemTheme from the "default" preset via run_pipeline.
+    /// Helper: build a SystemTheme from a preset via run_pipeline.
     fn default_system_theme() -> SystemTheme {
-        let reader = NativeTheme::preset("default").unwrap();
-        run_pipeline(reader, "default", false).unwrap()
+        let reader = NativeTheme::preset("catppuccin-mocha").unwrap();
+        run_pipeline(reader, "catppuccin-mocha", false).unwrap()
     }
 
     #[test]

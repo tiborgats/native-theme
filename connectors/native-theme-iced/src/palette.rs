@@ -67,7 +67,7 @@ mod tests {
 
     #[test]
     fn to_palette_maps_all_fields_from_resolved() {
-        let nt = NativeTheme::preset("default").unwrap();
+        let nt = NativeTheme::preset("catppuccin-mocha").unwrap();
         let mut variant = nt.pick_variant(false).unwrap().clone();
         variant.resolve();
         let resolved = variant.validate().unwrap();
@@ -75,7 +75,7 @@ mod tests {
         let palette = to_palette(&resolved);
 
         // All fields should be populated (non-zero)
-        // Default preset light has a white-ish background
+        // Catppuccin Mocha light has a white-ish background
         assert!(palette.background.r > 0.9, "background should be light");
         // Text should be dark
         assert!(palette.text.r < 0.3, "text should be dark");
@@ -88,7 +88,7 @@ mod tests {
 
     #[test]
     fn to_palette_dark_variant_has_dark_background() {
-        let nt = NativeTheme::preset("default").unwrap();
+        let nt = NativeTheme::preset("catppuccin-mocha").unwrap();
         let mut variant = nt.pick_variant(true).unwrap().clone();
         variant.resolve();
         let resolved = variant.validate().unwrap();

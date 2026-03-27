@@ -47,7 +47,7 @@ Read the OS theme at runtime:
 use native_theme::{from_system, NativeTheme};
 
 let theme = from_system()
-    .unwrap_or_else(|_| NativeTheme::preset("default").unwrap());
+    .unwrap_or_else(|_| NativeTheme::preset("adwaita").unwrap());
 ```
 
 Layer user overrides on top of a preset:

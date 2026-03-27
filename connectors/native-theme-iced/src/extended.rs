@@ -43,7 +43,7 @@ mod tests {
     }
 
     fn make_resolved() -> native_theme::ResolvedTheme {
-        let nt = NativeTheme::preset("default").unwrap();
+        let nt = NativeTheme::preset("catppuccin-mocha").unwrap();
         let mut variant = nt.pick_variant(false).unwrap().clone();
         variant.resolve();
         variant.validate().unwrap()

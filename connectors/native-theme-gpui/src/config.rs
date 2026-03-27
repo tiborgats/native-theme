@@ -41,10 +41,10 @@ mod tests {
 
     /// Create a ResolvedTheme via the preset resolve+validate pipeline.
     fn test_resolved() -> native_theme::ResolvedTheme {
-        let nt = NativeTheme::preset("default").expect("default preset must exist");
+        let nt = NativeTheme::preset("catppuccin-mocha").expect("preset must exist");
         let mut v = nt
             .pick_variant(false)
-            .expect("default preset must have light variant")
+            .expect("preset must have light variant")
             .clone();
         v.resolve();
         v.validate().expect("resolved preset must validate")

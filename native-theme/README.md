@@ -54,7 +54,7 @@ fallback for unsupported platforms:
 
 ```rust
 use native_theme::{from_system, NativeTheme};
-let theme = from_system().unwrap_or_else(|_| NativeTheme::preset("default").unwrap());
+let theme = from_system().unwrap_or_else(|_| NativeTheme::preset("adwaita").unwrap());
 ```
 
 **Platform behavior:**
