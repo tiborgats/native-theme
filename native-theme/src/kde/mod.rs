@@ -15,22 +15,20 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::NativeThem
     ini.read(content.to_string())
         .map_err(|e| crate::Error::Format(e))?;
 
-    let theme_colors = colors::parse_colors(&ini);
-    let theme_fonts = fonts::parse_fonts(&ini);
+    let mut variant = crate::ThemeVariant::default();
+
+    // Populate colors, fonts, and widget sizing on the variant
+    colors::populate_colors(&ini, &mut variant);
+    fonts::populate_fonts(&ini, &mut variant);
+    metrics::populate_widget_sizing(&mut variant);
+
+    // TODO: Task 2 will add text_scale, accessibility, icons, dialog button_order
+
     let dark = is_dark_theme(&ini);
 
     let name = ini
         .get("General", "ColorScheme")
         .unwrap_or_else(|| "KDE".to_string());
-
-    let variant = crate::ThemeVariant {
-        colors: theme_colors,
-        fonts: theme_fonts,
-        geometry: Default::default(),
-        spacing: Default::default(),
-        widget_metrics: Some(metrics::breeze_widget_metrics()),
-        icon_set: None,
-    };
 
     let theme = if dark {
         crate::NativeTheme {
@@ -226,7 +224,6 @@ mod tests {
         let mut ini = create_kde_parser();
         ini.read("[Colors:View]\nBackgroundNormal=255,255,255\n".to_string())
             .unwrap();
-        // Case-sensitive: PascalCase key should be retrievable as-is
         assert!(ini.get("Colors:View", "BackgroundNormal").is_some());
     }
 
@@ -235,18 +232,13 @@ mod tests {
         let mut ini = create_kde_parser();
         ini.read("[Colors:Window]\nForegroundNormal=0,0,0\n".to_string())
             .unwrap();
-        // Section name with colon must be preserved
         assert!(ini.get("Colors:Window", "ForegroundNormal").is_some());
     }
 
     #[test]
     fn create_kde_parser_equals_only_delimiter() {
         let mut ini = create_kde_parser();
-        // ':' should NOT be a delimiter -- this line should be parsed
-        // as section [Test] with no key-value pairs containing ':'
         ini.read("[Test]\nsome:value=actual\n".to_string()).unwrap();
-        // If ':' were a delimiter, 'some' would be a key with value 'value=actual'
-        // With '=' only, 'some:value' is the key and 'actual' is the value
         assert_eq!(ini.get("Test", "some:value"), Some("actual".to_string()));
     }
 
@@ -269,6 +261,7 @@ ForegroundLink=29,153,243
 ForegroundNegative=218,68,83
 ForegroundNeutral=246,116,0
 ForegroundPositive=39,174,96
+ForegroundVisited=155,89,182
 DecorationFocus=61,174,233
 DecorationHover=29,153,243
 
@@ -304,6 +297,16 @@ ForegroundNormal=252,252,252
 [Colors:Complementary]
 BackgroundNormal=42,46,50
 ForegroundNormal=239,240,241
+
+[Colors:Header]
+BackgroundNormal=35,38,41
+ForegroundNormal=252,252,252
+
+[WM]
+activeBackground=49,54,59
+activeForeground=239,240,241
+inactiveBackground=42,46,50
+inactiveForeground=161,169,177
 ";
 
     /// Light theme fixture with light background colors.
@@ -378,19 +381,19 @@ BackgroundNormal=49,54,59
     fn test_colors_populated() {
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let variant = theme.dark.as_ref().unwrap();
-        assert!(variant.colors.accent.is_some());
-        assert!(variant.colors.background.is_some());
-        assert!(variant.colors.foreground.is_some());
+        assert!(variant.defaults.accent.is_some());
+        assert!(variant.defaults.background.is_some());
+        assert!(variant.defaults.foreground.is_some());
     }
 
     #[test]
     fn test_fonts_populated() {
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let variant = theme.dark.as_ref().unwrap();
-        assert_eq!(variant.fonts.family.as_deref(), Some("Noto Sans"));
-        assert_eq!(variant.fonts.size, Some(10.0));
-        assert_eq!(variant.fonts.mono_family.as_deref(), Some("Hack"));
-        assert_eq!(variant.fonts.mono_size, Some(10.0));
+        assert_eq!(variant.defaults.font.family.as_deref(), Some("Noto Sans"));
+        assert_eq!(variant.defaults.font.size, Some(10.0));
+        assert_eq!(variant.defaults.mono_font.family.as_deref(), Some("Hack"));
+        assert_eq!(variant.defaults.mono_font.size, Some(10.0));
     }
 
     #[test]
@@ -401,32 +404,26 @@ BackgroundNormal=49,54,59
             "minimal fixture should not panic: {result:?}"
         );
         let theme = result.unwrap();
-        // Should have a dark variant (49,54,59 is dark)
         assert!(theme.dark.is_some());
     }
 
     #[test]
-    fn test_from_kde_content_populates_widget_metrics() {
+    fn test_from_kde_content_populates_widget_sizing() {
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let variant = theme.dark.as_ref().unwrap();
-        assert!(
-            variant.widget_metrics.is_some(),
-            "widget_metrics should be populated from breeze constants"
-        );
-        let wm = variant.widget_metrics.as_ref().unwrap();
-        assert_eq!(wm.button.min_width, Some(80.0), "Button_MinWidth");
+        assert_eq!(variant.button.min_width, Some(80.0), "Button_MinWidth");
+        assert_eq!(variant.scrollbar.width, Some(21.0), "ScrollBar_Extend");
     }
 
     #[test]
     fn test_empty_content() {
         let result = from_kde_content("");
-        // configparser accepts empty input as empty ini
         assert!(
             result.is_ok(),
             "empty content should produce Ok: {result:?}"
         );
         let theme = result.unwrap();
-        assert_eq!(theme.name, "KDE"); // fallback name
+        assert_eq!(theme.name, "KDE");
     }
 
     #[test]
@@ -454,5 +451,56 @@ BackgroundNormal=49,54,59
             Some(val) => unsafe { std::env::set_var("XDG_CONFIG_HOME", val) },
             None => unsafe { std::env::remove_var("XDG_CONFIG_HOME") },
         }
+    }
+
+    // === Per-widget color tests ===
+
+    #[test]
+    fn test_button_colors_populated() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        assert_eq!(v.button.background, Some(Rgba::rgb(49, 54, 59)));
+        assert_eq!(v.button.foreground, Some(Rgba::rgb(239, 240, 241)));
+    }
+
+    #[test]
+    fn test_tooltip_colors_populated() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        assert_eq!(v.tooltip.background, Some(Rgba::rgb(49, 54, 59)));
+        assert_eq!(v.tooltip.foreground, Some(Rgba::rgb(252, 252, 252)));
+    }
+
+    #[test]
+    fn test_sidebar_colors_populated() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        assert_eq!(v.sidebar.background, Some(Rgba::rgb(42, 46, 50)));
+        assert_eq!(v.sidebar.foreground, Some(Rgba::rgb(239, 240, 241)));
+    }
+
+    #[test]
+    fn test_wm_title_bar_colors() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        assert_eq!(v.window.title_bar_background, Some(Rgba::rgb(49, 54, 59)));
+        assert_eq!(v.window.title_bar_foreground, Some(Rgba::rgb(239, 240, 241)));
+        assert_eq!(v.window.inactive_title_bar_background, Some(Rgba::rgb(42, 46, 50)));
+        assert_eq!(v.window.inactive_title_bar_foreground, Some(Rgba::rgb(161, 169, 177)));
+    }
+
+    #[test]
+    fn test_list_header_colors() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        assert_eq!(v.list.header_background, Some(Rgba::rgb(35, 38, 41)));
+        assert_eq!(v.list.header_foreground, Some(Rgba::rgb(252, 252, 252)));
+    }
+
+    #[test]
+    fn test_link_visited() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        assert_eq!(v.link.visited, Some(Rgba::rgb(155, 89, 182)));
     }
 }
