@@ -529,7 +529,7 @@ fn run_pipeline(
 /// - Linux KDE -> `"kde-breeze"`
 /// - Linux other/GNOME -> `"adwaita"`
 /// - Unknown platform -> `"default"`
-#[allow(unreachable_code)]
+#[allow(unreachable_code, dead_code)]
 fn platform_preset_name() -> &'static str {
     #[cfg(target_os = "macos")]
     {
@@ -542,10 +542,10 @@ fn platform_preset_name() -> &'static str {
     #[cfg(target_os = "linux")]
     {
         let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
-        return match detect_linux_de(&desktop) {
+        match detect_linux_de(&desktop) {
             LinuxDesktop::Kde => "kde-breeze",
             _ => "adwaita",
-        };
+        }
     }
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
@@ -560,6 +560,7 @@ fn platform_preset_name() -> &'static str {
 /// On platforms that produce both variants (macOS), this defaults to
 /// `false` (light); callers can use [`SystemTheme::pick()`] for
 /// explicit variant selection regardless of this default.
+#[allow(dead_code)]
 fn reader_is_dark(reader: &NativeTheme) -> bool {
     reader.dark.is_some() && reader.light.is_none()
 }
