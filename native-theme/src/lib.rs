@@ -14,13 +14,17 @@ pub struct ReadmeDoctests;
 
 /// Generates `merge()` and `is_empty()` methods for theme structs.
 ///
-/// Two field categories:
+/// Three field categories:
 /// - `option { field1, field2, ... }` -- `Option<T>` leaf fields
 /// - `nested { field1, field2, ... }` -- nested struct fields with their own `merge()`
+/// - `optional_nested { field1, field2, ... }` -- `Option<T>` where T has its own `merge()`
 ///
 /// For `option` fields, `Some` values in the overlay replace the corresponding
 /// fields in self; `None` fields are left unchanged.
 /// For `nested` fields, merge is called recursively.
+/// For `optional_nested` fields: if both base and overlay are `Some`, the inner values
+/// are merged recursively. If base is `None` and overlay is `Some`, overlay is cloned.
+/// If overlay is `None`, the base field is preserved unchanged.
 ///
 /// # Examples
 ///
@@ -49,6 +53,7 @@ macro_rules! impl_merge {
         $struct_name:ident {
             $(option { $($opt_field:ident),* $(,)? })?
             $(nested { $($nest_field:ident),* $(,)? })?
+            $(optional_nested { $($on_field:ident),* $(,)? })?
         }
     ) => {
         impl $struct_name {
@@ -64,6 +69,13 @@ macro_rules! impl_merge {
                 $($(
                     self.$nest_field.merge(&overlay.$nest_field);
                 )*)?
+                $($(
+                    match (&mut self.$on_field, &overlay.$on_field) {
+                        (Some(base), Some(over)) => base.merge(over),
+                        (None, Some(over)) => self.$on_field = Some(over.clone()),
+                        _ => {}
+                    }
+                )*)?
             }
 
             /// Returns true if all fields are at their default (None/empty) state.
@@ -71,6 +83,7 @@ macro_rules! impl_merge {
                 true
                 $($(&& self.$opt_field.is_none())*)?
                 $($(&& self.$nest_field.is_empty())*)?
+                $($(&& self.$on_field.is_none())*)?
             }
         }
     };

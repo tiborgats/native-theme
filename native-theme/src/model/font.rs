@@ -60,44 +60,9 @@ pub struct TextScale {
     pub display: Option<TextScaleEntry>,
 }
 
-// Manual merge/is_empty for TextScale matching the optional_nested pattern.
-// Will be converted to impl_merge!(TextScale { optional_nested { ... } }) in Task 2.
-impl TextScale {
-    /// Merge an overlay into this value. For each entry field:
-    /// - If overlay is Some and base is Some, merge the inner TextScaleEntry.
-    /// - If overlay is Some and base is None, clone the overlay entry.
-    /// - Otherwise, leave base unchanged.
-    pub fn merge(&mut self, overlay: &Self) {
-        match (&mut self.caption, &overlay.caption) {
-            (Some(base), Some(over)) => base.merge(over),
-            (None, Some(over)) => self.caption = Some(over.clone()),
-            _ => {}
-        }
-        match (&mut self.section_heading, &overlay.section_heading) {
-            (Some(base), Some(over)) => base.merge(over),
-            (None, Some(over)) => self.section_heading = Some(over.clone()),
-            _ => {}
-        }
-        match (&mut self.dialog_title, &overlay.dialog_title) {
-            (Some(base), Some(over)) => base.merge(over),
-            (None, Some(over)) => self.dialog_title = Some(over.clone()),
-            _ => {}
-        }
-        match (&mut self.display, &overlay.display) {
-            (Some(base), Some(over)) => base.merge(over),
-            (None, Some(over)) => self.display = Some(over.clone()),
-            _ => {}
-        }
-    }
-
-    /// Returns true if all entry fields are None.
-    pub fn is_empty(&self) -> bool {
-        self.caption.is_none()
-            && self.section_heading.is_none()
-            && self.dialog_title.is_none()
-            && self.display.is_none()
-    }
-}
+impl_merge!(TextScale {
+    optional_nested { caption, section_heading, dialog_title, display }
+});
 
 #[cfg(test)]
 mod tests {
