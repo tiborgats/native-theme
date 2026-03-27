@@ -103,6 +103,8 @@ pub mod kde;
 pub mod model;
 /// Bundled theme presets.
 pub mod presets;
+/// Theme resolution engine (inheritance + validation).
+mod resolve;
 #[cfg(any(
     feature = "material-icons",
     feature = "lucide-icons",
