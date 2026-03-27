@@ -75,7 +75,7 @@ Requirements for per-widget architecture and resolution pipeline. Each maps to r
 
 ### Connectors
 
-- [ ] **CONN-01**: gpui connector accepts &ResolvedTheme, removes all Option handling
+- [x] **CONN-01**: gpui connector accepts &ResolvedTheme, removes all Option handling
 - [x] **CONN-02**: iced connector accepts &ResolvedTheme, removes all Option handling
 - [x] **CONN-03**: Showcase examples updated for new API (both gpui and iced)
 
@@ -160,7 +160,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PRESET-01 | Phase 44 | Complete |
 | PRESET-02 | Phase 44 | Complete |
 | PRESET-03 | Phase 45 | Complete |
-| CONN-01 | Phase 48 | Pending |
+| CONN-01 | Phase 48 | Complete |
 | CONN-02 | Phase 48 | Complete |
 | CONN-03 | Phase 48 | Complete |
 

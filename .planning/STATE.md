@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v0.5.0
 milestone_name: Per-Widget Architecture & Resolution Pipeline
-status: verifying
-stopped_at: Completed 48-02-PLAN.md (iced connector ResolvedTheme migration)
-last_updated: "2026-03-27T14:58:35.399Z"
+status: executing
+stopped_at: Completed 48-01-PLAN.md (gpui connector ResolvedTheme migration)
+last_updated: "2026-03-27T14:58:55.783Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 5
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 47 complete — next: Phase 48
+**Current focus:** Phase 48 — connector migration to ResolvedTheme
 
 ## Current Position
 
-Phase: 47 (4 of 5 in v0.5.0) — OS-First Pipeline
-Plan: 2 of 2 complete
-Status: Phase complete — ready for verification
+Phase: 48 (5 of 5 in v0.5.0) — Connector Migration
+Plan: 1 of 3 complete
+Status: Executing
 Last activity: 2026-03-27
 
 Progress: [████████░░] 80%
@@ -79,6 +79,8 @@ Decisions from 44-01 and 44-02:
 - [Phase 47]: SystemTheme in lib.rs (not separate module), pre-resolve variants retained for overlay, reader_is_dark for cross-platform is_dark inference
 - [Phase 47]: Overlay merges onto pre-resolve ThemeVariant (not ResolvedTheme) to avoid double-resolve idempotency issue
 - [Phase 48-connector-migration]: iced connector to_color() takes concrete Rgba, no fallback; font sizes already in logical pixels (no pt-to-px); OS theme uses SystemTheme.pick()
+- [Phase 48]: ResolvedFontSpec sizes used directly (no pt-to-px conversion) -- sizes already logical pixels
+- [Phase 48]: Per-widget resolved fields used for scrollbar, slider, switch, progress_bar, title_bar, caret, tab colors in gpui connector
 
 ### Roadmap Evolution
 
@@ -97,6 +99,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-27T14:58:16.088Z
-Stopped at: Completed 48-02-PLAN.md (iced connector ResolvedTheme migration)
+Last session: 2026-03-27T14:58:55.781Z
+Stopped at: Completed 48-01-PLAN.md (gpui connector ResolvedTheme migration)
 Resume file: None
