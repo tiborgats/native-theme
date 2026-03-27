@@ -1250,6 +1250,167 @@ mod spinner_rasterize_tests {
 }
 
 #[cfg(test)]
+mod system_theme_tests {
+    use super::*;
+
+    // --- SystemTheme::active() / pick() tests ---
+
+    #[test]
+    fn test_system_theme_active_dark() {
+        let preset = NativeTheme::preset("default").unwrap();
+        let mut light_v = preset.light.clone().unwrap();
+        let mut dark_v = preset.dark.clone().unwrap();
+        // Give them distinct accents so we can tell them apart
+        light_v.defaults.accent = Some(Rgba::rgb(0, 0, 255));
+        dark_v.defaults.accent = Some(Rgba::rgb(255, 0, 0));
+        light_v.resolve();
+        dark_v.resolve();
+        let light_resolved = light_v.validate().unwrap();
+        let dark_resolved = dark_v.validate().unwrap();
+
+        let st = SystemTheme {
+            name: "test".into(),
+            is_dark: true,
+            light: light_resolved.clone(),
+            dark: dark_resolved.clone(),
+            light_variant: preset.light.unwrap(),
+            dark_variant: preset.dark.unwrap(),
+        };
+        assert_eq!(st.active().defaults.accent, dark_resolved.defaults.accent);
+    }
+
+    #[test]
+    fn test_system_theme_active_light() {
+        let preset = NativeTheme::preset("default").unwrap();
+        let mut light_v = preset.light.clone().unwrap();
+        let mut dark_v = preset.dark.clone().unwrap();
+        light_v.defaults.accent = Some(Rgba::rgb(0, 0, 255));
+        dark_v.defaults.accent = Some(Rgba::rgb(255, 0, 0));
+        light_v.resolve();
+        dark_v.resolve();
+        let light_resolved = light_v.validate().unwrap();
+        let dark_resolved = dark_v.validate().unwrap();
+
+        let st = SystemTheme {
+            name: "test".into(),
+            is_dark: false,
+            light: light_resolved.clone(),
+            dark: dark_resolved.clone(),
+            light_variant: preset.light.unwrap(),
+            dark_variant: preset.dark.unwrap(),
+        };
+        assert_eq!(st.active().defaults.accent, light_resolved.defaults.accent);
+    }
+
+    #[test]
+    fn test_system_theme_pick() {
+        let preset = NativeTheme::preset("default").unwrap();
+        let mut light_v = preset.light.clone().unwrap();
+        let mut dark_v = preset.dark.clone().unwrap();
+        light_v.defaults.accent = Some(Rgba::rgb(0, 0, 255));
+        dark_v.defaults.accent = Some(Rgba::rgb(255, 0, 0));
+        light_v.resolve();
+        dark_v.resolve();
+        let light_resolved = light_v.validate().unwrap();
+        let dark_resolved = dark_v.validate().unwrap();
+
+        let st = SystemTheme {
+            name: "test".into(),
+            is_dark: false,
+            light: light_resolved.clone(),
+            dark: dark_resolved.clone(),
+            light_variant: preset.light.unwrap(),
+            dark_variant: preset.dark.unwrap(),
+        };
+        assert_eq!(st.pick(true).defaults.accent, dark_resolved.defaults.accent);
+        assert_eq!(
+            st.pick(false).defaults.accent,
+            light_resolved.defaults.accent
+        );
+    }
+
+    // --- platform_preset_name() tests ---
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    #[allow(unsafe_code)]
+    fn test_platform_preset_name_kde() {
+        let _guard = crate::ENV_MUTEX.lock().unwrap();
+        unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "KDE") };
+        let name = platform_preset_name();
+        unsafe { std::env::remove_var("XDG_CURRENT_DESKTOP") };
+        assert_eq!(name, "kde-breeze");
+    }
+
+    #[test]
+    #[cfg(target_os = "linux")]
+    #[allow(unsafe_code)]
+    fn test_platform_preset_name_gnome() {
+        let _guard = crate::ENV_MUTEX.lock().unwrap();
+        unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "GNOME") };
+        let name = platform_preset_name();
+        unsafe { std::env::remove_var("XDG_CURRENT_DESKTOP") };
+        assert_eq!(name, "adwaita");
+    }
+
+    // --- run_pipeline() tests ---
+
+    #[test]
+    fn test_run_pipeline_produces_both_variants() {
+        let reader = NativeTheme::preset("default").unwrap();
+        let result = run_pipeline(reader, "default", false);
+        assert!(result.is_ok(), "run_pipeline should succeed");
+        let st = result.unwrap();
+        // Both light and dark exist as ResolvedTheme (non-Option)
+        assert!(!st.name.is_empty(), "name should be populated");
+        // If we get here, both variants validated successfully
+    }
+
+    #[test]
+    fn test_run_pipeline_reader_values_win() {
+        // Create a reader with a custom accent color
+        let custom_accent = Rgba::rgb(42, 100, 200);
+        let mut reader = NativeTheme::default();
+        reader.name = "CustomTheme".into();
+        let mut variant = ThemeVariant::default();
+        variant.defaults.accent = Some(custom_accent);
+        reader.light = Some(variant);
+
+        let result = run_pipeline(reader, "default", false);
+        assert!(result.is_ok(), "run_pipeline should succeed");
+        let st = result.unwrap();
+        // The reader's accent should win over the preset's accent
+        assert_eq!(
+            st.light.defaults.accent, custom_accent,
+            "reader accent should win over preset accent"
+        );
+        assert_eq!(st.name, "CustomTheme", "reader name should win");
+    }
+
+    #[test]
+    fn test_run_pipeline_single_variant() {
+        // Create reader with only dark variant (simulates KDE/Windows)
+        let mut reader = NativeTheme::default();
+        let mut dark_v = ThemeVariant::default();
+        dark_v.defaults.accent = Some(Rgba::rgb(200, 50, 50));
+        reader.dark = Some(dark_v);
+        reader.light = None;
+
+        let result = run_pipeline(reader, "default", true);
+        assert!(result.is_ok(), "run_pipeline should succeed with single variant");
+        let st = result.unwrap();
+        // Dark should have the reader's accent
+        assert_eq!(
+            st.dark.defaults.accent,
+            Rgba::rgb(200, 50, 50),
+            "dark variant should have reader accent"
+        );
+        // Light should still exist (from preset only)
+        // If we get here, both validated successfully
+    }
+}
+
+#[cfg(test)]
 mod reduced_motion_tests {
     use super::*;
 
