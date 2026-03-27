@@ -170,7 +170,11 @@ Plans:
   1. from_system() returns a ResolvedTheme (not a ThemeVariant) after running: OS reader -> platform TOML overlay -> resolve() -> validate()
   2. Platform-to-preset mapping works correctly: macOS uses macos-sonoma, Windows uses windows-11, KDE uses kde-breeze, GNOME uses adwaita as the platform TOML overlay
   3. App TOML overlay with a second resolve() pass works: changing accent in an app override causes all accent-derived fields to re-propagate through resolve()
-**Plans**: TBD
+**Plans:** 1/2 plans executed
+
+Plans:
+- [x] 47-01-PLAN.md — SystemTheme type + pipeline core + platform preset mapping + from_system() rewiring
+- [ ] 47-02-PLAN.md — App TOML overlay support via with_overlay() with accent propagation tests
 
 ### Phase 48: Connector Migration
 **Goal**: Both toolkit connectors (gpui and iced) consume &ResolvedTheme with zero Option handling, and showcase examples demonstrate the new API
@@ -199,5 +203,5 @@ Phases execute in numeric order: 44 -> 45 -> 46 -> 47 -> 48
 | 44. Per-Widget Data Model and Preset Migration | v0.5.0 | 3/3 | Complete   | 2026-03-27 |
 | 45. Resolution Engine | v0.5.0 | 3/3 | Complete   | 2026-03-27 |
 | 46. OS Reader Extensions | v0.5.0 | 6/6 | Complete   | 2026-03-27 |
-| 47. OS-First Pipeline | v0.5.0 | 0/? | Not started | - |
+| 47. OS-First Pipeline | v0.5.0 | 1/2 | In Progress|  |
 | 48. Connector Migration | v0.5.0 | 0/? | Not started | - |
