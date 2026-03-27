@@ -383,6 +383,10 @@ pub struct SystemTheme {
     pub(crate) light_variant: ThemeVariant,
     /// Pre-resolve dark variant (retained for overlay support).
     pub(crate) dark_variant: ThemeVariant,
+    /// The live preset name used for the OS-active variant (e.g., "kde-breeze-live").
+    pub live_preset: String,
+    /// The full preset name used for the inactive variant (e.g., "kde-breeze").
+    pub full_preset: String,
 }
 
 impl SystemTheme {
@@ -447,6 +451,8 @@ impl SystemTheme {
             dark: resolved_dark,
             light_variant: light,
             dark_variant: dark,
+            live_preset: self.live_preset,
+            full_preset: self.full_preset,
         })
     }
 
@@ -471,18 +477,22 @@ fn resolve_variant(mut variant: ThemeVariant) -> crate::Result<ResolvedTheme> {
 /// Run the OS-first pipeline: merge reader output onto a platform
 /// preset, resolve both light and dark variants, validate.
 ///
-/// For the variant the reader supplied, the merged (reader + preset) version
-/// is used. For the variant the reader did NOT supply, the preset-only
-/// version is used.
+/// For the variant the reader supplied, the merged (reader + live preset)
+/// version is used. For the variant the reader did NOT supply, the full
+/// platform preset (with colors/fonts) is used as fallback.
 fn run_pipeline(
     reader_output: NativeTheme,
     preset_name: &str,
     is_dark: bool,
 ) -> crate::Result<SystemTheme> {
-    let preset = NativeTheme::preset(preset_name)?;
+    let live_preset = NativeTheme::preset(preset_name)?;
 
-    // Merge: preset is base, reader output is overlay (reader wins)
-    let mut merged = preset.clone();
+    // For the inactive variant, load the full preset (with colors)
+    let full_preset_name = preset_name.strip_suffix("-live").unwrap_or(preset_name);
+    let full_preset = NativeTheme::preset(full_preset_name)?;
+
+    // Merge: live preset is base for geometry, reader output provides colors
+    let mut merged = live_preset.clone();
     merged.merge(&reader_output);
 
     // Keep reader name if non-empty, else use preset name
@@ -492,17 +502,18 @@ fn run_pipeline(
         reader_output.name.clone()
     };
 
-    // For the variant the reader provided, use merged; for the other, use preset-only.
+    // For the variant the reader provided: use merged (live geometry + reader colors)
+    // For the variant the reader didn't provide: use FULL preset (has colors)
     let light_variant = if reader_output.light.is_some() {
         merged.light.unwrap_or_default()
     } else {
-        preset.light.unwrap_or_default()
+        full_preset.light.unwrap_or_default()
     };
 
     let dark_variant = if reader_output.dark.is_some() {
         merged.dark.unwrap_or_default()
     } else {
-        preset.dark.unwrap_or_default()
+        full_preset.dark.unwrap_or_default()
     };
 
     // Clone pre-resolve variants for overlay support (Plan 02)
@@ -519,6 +530,8 @@ fn run_pipeline(
         dark,
         light_variant: light_variant_pre,
         dark_variant: dark_variant_pre,
+        live_preset: preset_name.to_string(),
+        full_preset: full_preset_name.to_string(),
     })
 }
 
@@ -532,8 +545,12 @@ fn run_pipeline(
 /// - Linux KDE -> `"kde-breeze-live"`
 /// - Linux other/GNOME -> `"adwaita-live"`
 /// - Unknown platform -> `"adwaita-live"`
-#[allow(unreachable_code, dead_code)]
-fn platform_preset_name() -> &'static str {
+/// Returns the live preset name for the current platform.
+///
+/// This is the public API for what [`from_system()`] uses internally.
+/// Showcase UIs use this to build the "default (...)" label.
+#[allow(unreachable_code)]
+pub fn platform_preset_name() -> &'static str {
     #[cfg(target_os = "macos")]
     {
         return "macos-sonoma-live";
@@ -1527,6 +1544,8 @@ mod system_theme_tests {
             dark: dark_resolved.clone(),
             light_variant: preset.light.unwrap(),
             dark_variant: preset.dark.unwrap(),
+            live_preset: "catppuccin-mocha".into(),
+            full_preset: "catppuccin-mocha".into(),
         };
         assert_eq!(st.active().defaults.accent, dark_resolved.defaults.accent);
     }
@@ -1550,6 +1569,8 @@ mod system_theme_tests {
             dark: dark_resolved.clone(),
             light_variant: preset.light.unwrap(),
             dark_variant: preset.dark.unwrap(),
+            live_preset: "catppuccin-mocha".into(),
+            full_preset: "catppuccin-mocha".into(),
         };
         assert_eq!(st.active().defaults.accent, light_resolved.defaults.accent);
     }
@@ -1573,6 +1594,8 @@ mod system_theme_tests {
             dark: dark_resolved.clone(),
             light_variant: preset.light.unwrap(),
             dark_variant: preset.dark.unwrap(),
+            live_preset: "catppuccin-mocha".into(),
+            full_preset: "catppuccin-mocha".into(),
         };
         assert_eq!(st.pick(true).defaults.accent, dark_resolved.defaults.accent);
         assert_eq!(
@@ -1641,24 +1664,55 @@ mod system_theme_tests {
 
     #[test]
     fn test_run_pipeline_single_variant() {
-        // Create reader with only dark variant (simulates KDE/Windows)
+        // Simulate a real OS reader that provides a complete dark variant
+        // (like KDE's from_kde() would) but no light variant.
+        // Use a live preset so the inactive light variant gets the full preset.
+        let full = NativeTheme::preset("kde-breeze").unwrap();
         let mut reader = NativeTheme::default();
-        let mut dark_v = ThemeVariant::default();
+        let mut dark_v = full.dark.clone().unwrap();
+        // Override accent to prove reader values win
         dark_v.defaults.accent = Some(Rgba::rgb(200, 50, 50));
         reader.dark = Some(dark_v);
         reader.light = None;
 
-        let result = run_pipeline(reader, "catppuccin-mocha", true);
+        let result = run_pipeline(reader, "kde-breeze-live", true);
         assert!(result.is_ok(), "run_pipeline should succeed with single variant");
         let st = result.unwrap();
-        // Dark should have the reader's accent
+        // Dark should have the reader's overridden accent
         assert_eq!(
             st.dark.defaults.accent,
             Rgba::rgb(200, 50, 50),
             "dark variant should have reader accent"
         );
-        // Light should still exist (from preset only)
-        // If we get here, both validated successfully
+        // Light should still exist (from full preset, which has colors)
+        // If we get here, both variants validated successfully
+        assert_eq!(st.live_preset, "kde-breeze-live");
+        assert_eq!(st.full_preset, "kde-breeze");
+    }
+
+    #[test]
+    fn test_run_pipeline_inactive_variant_from_full_preset() {
+        // When reader provides only dark, light must come from the full preset
+        // (not the live preset, which has no colors and would fail validation).
+        let full = NativeTheme::preset("kde-breeze").unwrap();
+        let mut reader = NativeTheme::default();
+        reader.dark = Some(full.dark.clone().unwrap());
+        reader.light = None;
+
+        let st = run_pipeline(reader, "kde-breeze-live", true).unwrap();
+
+        // The light variant should have colors from the full "kde-breeze" preset
+        let full_light = full.light.unwrap();
+        assert_eq!(
+            st.light.defaults.accent,
+            full_light.defaults.accent.unwrap(),
+            "inactive light variant should get accent from full preset"
+        );
+        assert_eq!(
+            st.light.defaults.background,
+            full_light.defaults.background.unwrap(),
+            "inactive light variant should get background from full preset"
+        );
     }
 
     // --- run_pipeline with preset-as-reader (GNOME double-merge test) ---
