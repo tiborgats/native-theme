@@ -9,13 +9,13 @@ Requirements for per-widget architecture and resolution pipeline. Each maps to r
 
 ### Data Model
 
-- [ ] **MODEL-01**: ThemeVariant has per-widget structs (24 widgets) with colors, font, sizing, and geometry fields per widget
-- [ ] **MODEL-02**: ThemeDefaults struct provides shared base properties (colors, font, mono_font, spacing, icon_sizes, accessibility)
+- [x] **MODEL-01**: ThemeVariant has per-widget structs (24 widgets) with colors, font, sizing, and geometry fields per widget
+- [x] **MODEL-02**: ThemeDefaults struct provides shared base properties (colors, font, mono_font, spacing, icon_sizes, accessibility)
 - [x] **MODEL-03**: FontSpec struct with family, size, weight fields for per-widget font specification
 - [x] **MODEL-04**: TextScale with 4 entries (caption, section_heading, dialog_title, display) using TextScaleEntry (size, weight, line_height)
 - [x] **MODEL-05**: DialogButtonOrder enum (TrailingAffirmative / LeadingAffirmative) on DialogTheme
 - [x] **MODEL-06**: IconSizes struct with toolbar, small, large, dialog, panel fields on ThemeDefaults
-- [ ] **MODEL-07**: WindowTheme with title bar colors, inactive states, title bar font, radius, shadow
+- [x] **MODEL-07**: WindowTheme with title bar colors, inactive states, title bar font, radius, shadow
 - [x] **MODEL-08**: define_widget_pair! macro generates paired Option and Resolved structs from single definition
 - [x] **MODEL-09**: impl_merge! supports nested per-widget struct merge on ThemeVariant
 
@@ -118,13 +118,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| MODEL-01 | Phase 44 | Pending |
-| MODEL-02 | Phase 44 | Pending |
+| MODEL-01 | Phase 44 | Complete |
+| MODEL-02 | Phase 44 | Complete |
 | MODEL-03 | Phase 44 | Complete |
 | MODEL-04 | Phase 44 | Complete |
 | MODEL-05 | Phase 44 | Complete |
 | MODEL-06 | Phase 44 | Complete |
-| MODEL-07 | Phase 44 | Pending |
+| MODEL-07 | Phase 44 | Complete |
 | MODEL-08 | Phase 44 | Complete |
 | MODEL-09 | Phase 44 | Complete |
 | RESOLVE-01 | Phase 45 | Pending |
