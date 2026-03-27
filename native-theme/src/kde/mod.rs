@@ -742,4 +742,78 @@ BackgroundNormal=49,54,59
         assert_eq!(tbf.size, Some(10.0));
         assert_eq!(tbf.weight, Some(700)); // Qt5 75 -> CSS 700
     }
+
+    // === Integration test: resolve() + validate() pipeline ===
+
+    #[test]
+    fn test_kde_resolve_validate() {
+        // Load the default preset as a base (provides geometry, spacing, icon sizes,
+        // and other fields that KDE's kdeglobals doesn't carry).
+        let mut base = crate::NativeTheme::preset("default").unwrap();
+        let kde_theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+
+        // Merge KDE reader output on top of the base preset.
+        // The KDE variant is dark-only; merge will clone it into the base.
+        base.merge(&kde_theme);
+
+        // Extract the dark variant (KDE's output merged on top of default dark).
+        let mut dark = base.dark.clone().expect("dark variant should exist after merge");
+
+        // Run the resolution pipeline.
+        dark.resolve();
+
+        // Validate should produce Ok(ResolvedTheme) with all fields filled.
+        let resolved = dark.validate().unwrap_or_else(|e| {
+            panic!("KDE resolve/validate pipeline failed: {e}");
+        });
+
+        // Spot-check: KDE-sourced fields should be present.
+        // accent from Colors:View/DecorationFocus = 61,174,233
+        assert_eq!(
+            resolved.defaults.accent,
+            crate::Rgba::rgb(61, 174, 233),
+            "accent should be from KDE reader"
+        );
+
+        // font.family from [General] font
+        assert_eq!(
+            resolved.defaults.font.family, "Noto Sans",
+            "font family should be from KDE reader"
+        );
+
+        // button.background from Colors:Button/BackgroundNormal = 49,54,59
+        assert_eq!(
+            resolved.button.background,
+            crate::Rgba::rgb(49, 54, 59),
+            "button bg should be from KDE reader"
+        );
+
+        // window.title_bar_background from WM/activeBackground = 49,54,59
+        assert_eq!(
+            resolved.window.title_bar_background,
+            crate::Rgba::rgb(49, 54, 59),
+            "title bar bg should be from KDE reader"
+        );
+
+        // Safety-net-derived field: input.caret from defaults.foreground
+        // defaults.foreground = 239,240,241 (from Colors:Window)
+        assert_eq!(
+            resolved.input.caret,
+            crate::Rgba::rgb(239, 240, 241),
+            "input.caret should be resolve() safety net from defaults.foreground"
+        );
+
+        // icon_set should be from KDE reader (breeze-dark)
+        assert_eq!(
+            resolved.icon_set, "breeze-dark",
+            "icon_set should be from KDE reader"
+        );
+
+        // dialog.button_order should be from KDE reader
+        assert_eq!(
+            resolved.dialog.button_order,
+            crate::DialogButtonOrder::LeadingAffirmative,
+            "dialog button order should be leading affirmative for KDE"
+        );
+    }
 }

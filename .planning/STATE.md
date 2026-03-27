@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.0
 milestone_name: Per-Widget Architecture & Resolution Pipeline
-status: phase-complete
-stopped_at: —
-last_updated: "2026-03-27T00:00:00.000Z"
-last_activity: "2026-03-27 — Phase 45 complete: resolution engine verified"
+status: verifying
+stopped_at: Completed 46-04-PLAN.md
+last_updated: "2026-03-27T12:00:52.402Z"
+last_activity: 2026-03-27
 progress:
   total_phases: 5
   completed_phases: 2
-  total_plans: 6
-  completed_plans: 6
-  percent: 40
+  total_plans: 10
+  completed_plans: 8
+  percent: 46
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 ## Current Position
 
 Phase: 46 (3 of 5 in v0.5.0) — OS Reader Extensions
-Plan: —
-Status: Ready to plan
-Last activity: 2026-03-27 — Phase 45 complete (3/3 plans, verified)
+Plan: 4 of 4 complete
+Status: Phase complete — ready for verification
+Last activity: 2026-03-27
 
-Progress: [████░░░░░░] 40%
+Progress: [████▌░░░░░] 46%
 
 ## Performance Metrics
 
@@ -68,6 +68,9 @@ Decisions from 44-01 and 44-02:
 - [Phase 45-resolution-engine]: [Phase 45-02]: resolve() uses 4-phase mutation on ThemeVariant; validate() collects all missing fields before returning error
 - [Phase 45]: icon_set = freedesktop added to community/default presets for validate() pipeline
 - [Phase 45]: Platform dialog button_order: KDE/macOS leading_affirmative, GNOME/Windows trailing_affirmative
+- [Phase 46-04]: Windows module always compiled (cfg_attr dead_code on non-Windows) enabling 31 unit tests on Linux
+- [Phase 46-04]: AllFonts struct collects NONCLIENTMETRICSW fonts before build_theme distributes to per-widget structs
+- [Phase 46]: GNOME apply_accent targets 3 fields (accent, selection, focus_ring_color); weight extraction uses longest-match-first suffix matching
 
 ### Roadmap Evolution
 
@@ -81,11 +84,11 @@ None.
 
 ### Blockers/Concerns
 
-- macOS and Windows reader extensions cannot be tested on Linux dev machine; KDE and GNOME can be tested locally
+- macOS reader extensions cannot be fully tested on Linux dev machine (Windows reader now testable via module cfg change)
 - gpui connector field mapping not yet documented in research (read source during Phase 48 planning)
 
 ## Session Continuity
 
-Last session: 2026-03-27T10:17:52.519Z
-Stopped at: Completed 45-03-PLAN.md
+Last session: 2026-03-27T11:59:53.105Z
+Stopped at: Completed 46-04-PLAN.md
 Resume file: None
