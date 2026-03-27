@@ -21,12 +21,12 @@ Requirements for per-widget architecture and resolution pipeline. Each maps to r
 
 ### Resolution
 
-- [ ] **RESOLVE-01**: resolve() fills ~90 inheritance rules (accent->primary_bg, font->menu.font, radius->button.radius, etc.)
+- [x] **RESOLVE-01**: resolve() fills ~90 inheritance rules (accent->primary_bg, font->menu.font, radius->button.radius, etc.)
 - [x] **RESOLVE-02**: ResolvedTheme with non-optional fields mirrors ThemeVariant per-widget structure
 - [x] **RESOLVE-03**: validate() converts ThemeVariant->ResolvedTheme, returns ThemeResolutionError listing all missing fields
-- [ ] **RESOLVE-04**: FontSpec sub-field inheritance (None family/size/weight individually inherit from defaults.font)
-- [ ] **RESOLVE-05**: TextScaleEntry inheritance (size<-font.size, weight<-font.weight, line_height<-line_height multiplier x resolved size)
-- [ ] **RESOLVE-06**: Accent-derived propagation (accent->primary_bg, checked_bg, slider.fill, progress_bar.fill, switch.checked_bg)
+- [x] **RESOLVE-04**: FontSpec sub-field inheritance (None family/size/weight individually inherit from defaults.font)
+- [x] **RESOLVE-05**: TextScaleEntry inheritance (size<-font.size, weight<-font.weight, line_height<-line_height multiplier x resolved size)
+- [x] **RESOLVE-06**: Accent-derived propagation (accent->primary_bg, checked_bg, slider.fill, progress_bar.fill, switch.checked_bg)
 
 ### macOS Reader
 
@@ -127,12 +127,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | MODEL-07 | Phase 44 | Complete |
 | MODEL-08 | Phase 44 | Complete |
 | MODEL-09 | Phase 44 | Complete |
-| RESOLVE-01 | Phase 45 | Pending |
+| RESOLVE-01 | Phase 45 | Complete |
 | RESOLVE-02 | Phase 45 | Complete |
 | RESOLVE-03 | Phase 45 | Complete |
-| RESOLVE-04 | Phase 45 | Pending |
-| RESOLVE-05 | Phase 45 | Pending |
-| RESOLVE-06 | Phase 45 | Pending |
+| RESOLVE-04 | Phase 45 | Complete |
+| RESOLVE-05 | Phase 45 | Complete |
+| RESOLVE-06 | Phase 45 | Complete |
 | MACOS-01 | Phase 46 | Pending |
 | MACOS-02 | Phase 46 | Pending |
 | MACOS-03 | Phase 46 | Pending |

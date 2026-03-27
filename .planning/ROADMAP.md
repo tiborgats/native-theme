@@ -135,11 +135,11 @@ Plans:
   3. validate() converts a resolved ThemeVariant into a ResolvedTheme with zero Option fields, or returns a ThemeResolutionError listing every missing field path
   4. Every one of the 17 bundled presets (both light and dark variants) passes the full resolve() then validate() pipeline without error
   5. TextScaleEntry inheritance produces correct sizes: caption/section_heading/dialog_title/display entries inherit from defaults.font when their own size/weight are None
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [x] 45-01-PLAN.md — ResolvedDefaults, ResolvedTextScale, ResolvedTheme type system + ThemeResolutionError
-- [ ] 45-02-PLAN.md — resolve() 4-phase inheritance engine (~90 rules) + validate() function
+- [x] 45-02-PLAN.md — resolve() 4-phase inheritance engine (~90 rules) + validate() function
 - [ ] 45-03-PLAN.md — Enrich all 17 presets with non-derived fields + integration tests
 
 ### Phase 46: OS Reader Extensions
@@ -189,7 +189,7 @@ Phases execute in numeric order: 44 -> 45 -> 46 -> 47 -> 48
 | 27-32 | v0.4.0 | 8/8 | Complete | 2026-03-18 |
 | 33-43 | v0.4.1 | 22/22 | Complete | 2026-03-21 |
 | 44. Per-Widget Data Model and Preset Migration | v0.5.0 | 3/3 | Complete   | 2026-03-27 |
-| 45. Resolution Engine | v0.5.0 | 1/3 | In Progress|  |
+| 45. Resolution Engine | v0.5.0 | 2/3 | In Progress|  |
 | 46. OS Reader Extensions | v0.5.0 | 0/? | Not started | - |
 | 47. OS-First Pipeline | v0.5.0 | 0/? | Not started | - |
 | 48. Connector Migration | v0.5.0 | 0/? | Not started | - |
