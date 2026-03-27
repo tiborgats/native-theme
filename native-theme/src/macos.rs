@@ -869,4 +869,52 @@ mod tests {
         assert!(light.defaults.reduce_transparency.is_none());
         assert!(light.defaults.text_scaling_factor.is_none());
     }
+
+    #[test]
+    fn test_macos_resolve_validate() {
+        // Load macOS-sonoma preset as base (provides full color/geometry/spacing).
+        let mut base = crate::NativeTheme::preset("macos-sonoma").unwrap();
+        // Build reader output with sample data (simulates from_macos() on real hardware).
+        let reader_output = build_theme(
+            sample_light_defaults(),
+            sample_dark_defaults(),
+            &sample_widget_fonts(),
+        );
+        // Merge reader output on top of preset.
+        base.merge(&reader_output);
+
+        // Test light variant.
+        let mut light = base.light.clone().expect("light variant should exist after merge");
+        light.resolve();
+        let resolved = light.validate().unwrap_or_else(|e| {
+            panic!("macOS resolve/validate pipeline failed (light): {e}");
+        });
+
+        // Spot-check: reader-sourced fields present.
+        assert_eq!(
+            resolved.defaults.accent,
+            crate::Rgba::rgb(0, 122, 255),
+            "accent should be from macOS reader"
+        );
+        assert_eq!(
+            resolved.defaults.font.family, "SF Pro",
+            "font family should be from macOS reader"
+        );
+        assert_eq!(
+            resolved.icon_set, "sf-symbols",
+            "icon_set should be sf-symbols from macOS reader"
+        );
+
+        // Test dark variant too.
+        let mut dark = base.dark.clone().expect("dark variant should exist after merge");
+        dark.resolve();
+        let resolved_dark = dark.validate().unwrap_or_else(|e| {
+            panic!("macOS resolve/validate pipeline failed (dark): {e}");
+        });
+        assert_eq!(
+            resolved_dark.defaults.accent,
+            crate::Rgba::rgb(10, 132, 255),
+            "dark accent should be from macOS reader"
+        );
+    }
 }

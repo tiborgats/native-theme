@@ -1063,4 +1063,41 @@ mod tests {
         let _ = variant.defaults.reduce_motion;
         let _ = variant.dialog.button_order;
     }
+
+    #[test]
+    fn test_windows_resolve_validate() {
+        // Load windows-11 preset as base (provides full color/geometry/spacing).
+        let mut base = crate::NativeTheme::preset("windows-11").unwrap();
+        // Build reader output (light mode, sample data).
+        let reader_output = light_theme();
+        // Merge reader output on top of preset.
+        base.merge(&reader_output);
+
+        // Extract light variant.
+        let mut light = base.light.clone().expect("light variant should exist after merge");
+        light.resolve();
+        let resolved = light.validate().unwrap_or_else(|e| {
+            panic!("Windows resolve/validate pipeline failed: {e}");
+        });
+
+        // Spot-check: reader-sourced fields present.
+        assert_eq!(
+            resolved.defaults.accent,
+            crate::Rgba::rgb(0, 120, 215),
+            "accent should be from Windows reader"
+        );
+        assert_eq!(
+            resolved.defaults.font.family, "Segoe UI",
+            "font family should be from Windows reader"
+        );
+        assert_eq!(
+            resolved.dialog.button_order,
+            crate::DialogButtonOrder::TrailingAffirmative,
+            "dialog button order should be trailing affirmative for Windows"
+        );
+        assert_eq!(
+            resolved.icon_set, "segoe-fluent",
+            "icon_set should be segoe-fluent from Windows preset"
+        );
+    }
 }
