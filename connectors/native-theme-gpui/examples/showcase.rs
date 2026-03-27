@@ -144,21 +144,11 @@ fn widget_tooltip(
     s
 }
 
-/// Format original native-theme font settings (in points) for display.
-fn format_font_info(fonts: &native_theme::ThemeFonts) -> String {
-    let family = fonts.family.as_deref().unwrap_or("(default)");
-    let size = fonts
-        .size
-        .map(|s| format!("{}pt", s))
-        .unwrap_or("(default)".into());
-    let mono = fonts.mono_family.as_deref().unwrap_or("(default)");
-    let mono_size = fonts
-        .mono_size
-        .map(|s| format!("{}pt", s))
-        .unwrap_or("(default)".into());
+/// Format original native-theme font settings (in logical pixels) for display.
+fn format_font_info(font: &native_theme::ResolvedFontSpec, mono_font: &native_theme::ResolvedFontSpec) -> String {
     format!(
-        "\nTheme fonts:\n  Font: {} {}\n  Mono: {} {}",
-        family, size, mono, mono_size,
+        "\nTheme fonts:\n  Font: {} {}px\n  Mono: {} {}px",
+        font.family, font.size, mono_font.family, mono_font.size,
     )
 }
 
@@ -782,8 +772,10 @@ struct Showcase {
     is_dark: bool,
     color_mode: ColorMode,
     dark_mode_select: Entity<SelectState<SearchableVec<SharedString>>>,
-    /// Original native-theme fonts (in points), for display purposes.
-    original_fonts: native_theme::ThemeFonts,
+    /// Original native-theme font spec, for display purposes.
+    original_font: native_theme::ResolvedFontSpec,
+    /// Original native-theme mono font spec, for display purposes.
+    original_mono_font: native_theme::ResolvedFontSpec,
 
     active_tab: usize,
 
@@ -1136,18 +1128,21 @@ impl Showcase {
         )
         .detach();
 
-        // Apply the initial "default" preset theme.
+        // Apply the initial "default" preset theme via resolve+validate pipeline.
         let is_dark = color_mode.is_dark();
         let nt = NativeTheme::preset("default").expect("default preset must exist");
-        let original_fonts = nt
-            .pick_variant(is_dark)
-            .map(|v| v.fonts.clone())
-            .unwrap_or_default();
-        if let Some(variant) = nt.pick_variant(is_dark) {
-            let theme = to_theme(variant, "default", is_dark);
+        let (original_font, original_mono_font) = {
+            let mut v = nt
+                .pick_variant(is_dark)
+                .expect("default preset must have variant")
+                .clone();
+            v.resolve();
+            let resolved = v.validate().expect("resolved default preset must validate");
+            let theme = to_theme(&resolved, "default", is_dark);
             *Theme::global_mut(cx) = theme;
             window.refresh();
-        }
+            (resolved.defaults.font, resolved.defaults.mono_font)
+        };
 
         // Resolve initial icon set from system (default = system's native set)
         let initial_resolved = system_icon_set().name().to_string();
@@ -1326,7 +1321,8 @@ impl Showcase {
             is_dark,
             color_mode,
             dark_mode_select,
-            original_fonts,
+            original_font,
+            original_mono_font,
             active_tab: TAB_BUTTONS,
             input_state,
             number_input_state,
@@ -1387,7 +1383,8 @@ impl Showcase {
         if name == "OS Theme" {
             Theme::sync_system_appearance(Some(window), cx);
             self.is_dark = cx.theme().is_dark();
-            self.original_fonts = native_theme::ThemeFonts::default();
+            self.original_font = native_theme::ResolvedFontSpec { family: "(default)".into(), size: 0.0, weight: 400 };
+            self.original_mono_font = native_theme::ResolvedFontSpec { family: "(default)".into(), size: 0.0, weight: 400 };
             let fg = cx.theme().foreground;
             self.rebuild_icon_caches(fg);
             return;
@@ -1399,8 +1396,15 @@ impl Showcase {
         };
 
         if let Some(variant) = nt.pick_variant(self.is_dark) {
-            self.original_fonts = variant.fonts.clone();
-            let theme = to_theme(variant, name, self.is_dark);
+            let mut v = variant.clone();
+            v.resolve();
+            let resolved = match v.validate() {
+                Ok(r) => r,
+                Err(_) => return,
+            };
+            self.original_font = resolved.defaults.font.clone();
+            self.original_mono_font = resolved.defaults.mono_font.clone();
+            let theme = to_theme(&resolved, name, self.is_dark);
             *Theme::global_mut(cx) = theme;
             window.refresh();
 
@@ -1461,28 +1465,10 @@ impl Showcase {
         let theme = cx.theme().clone();
         let radius_str = format!("{}px", theme.radius.as_f32());
         let radius_lg_str = format!("{}px", theme.radius_lg.as_f32());
-        let font_family_str = self
-            .original_fonts
-            .family
-            .as_deref()
-            .unwrap_or("(default)")
-            .to_string();
-        let font_size_str = self
-            .original_fonts
-            .size
-            .map(|s| format!("{}pt", s))
-            .unwrap_or("(default)".into());
-        let mono_family_str = self
-            .original_fonts
-            .mono_family
-            .as_deref()
-            .unwrap_or("(default)")
-            .to_string();
-        let mono_size_str = self
-            .original_fonts
-            .mono_size
-            .map(|s| format!("{}pt", s))
-            .unwrap_or("(default)".into());
+        let font_family_str = self.original_font.family.clone();
+        let font_size_str = format!("{}px", self.original_font.size);
+        let mono_family_str = self.original_mono_font.family.clone();
+        let mono_size_str = format!("{}px", self.original_mono_font.size);
         let shadow_str = if theme.shadow { "true" } else { "false" };
         let scrollbar_str = format!("{:?}", theme.scrollbar_show);
 
@@ -1522,7 +1508,7 @@ impl Showcase {
     // Tab: Buttons
     // -----------------------------------------------------------------------
     fn render_buttons_tab(&self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let fi = format_font_info(&self.original_fonts);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         v_flex()
             .gap_5()
@@ -2025,7 +2011,7 @@ impl Showcase {
     // Tab: Inputs
     // -----------------------------------------------------------------------
     fn render_inputs_tab(&self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let fi = format_font_info(&self.original_fonts);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         let checkbox_a = self.checkbox_a;
         let checkbox_b = self.checkbox_b;
@@ -2322,7 +2308,7 @@ impl Showcase {
     // Tab: Data
     // -----------------------------------------------------------------------
     fn render_data_tab(&self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let fi = format_font_info(&self.original_fonts);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         v_flex()
             .gap_5()
@@ -2498,7 +2484,7 @@ impl Showcase {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
-        let fi = format_font_info(&self.original_fonts);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         v_flex()
             .gap_5()
@@ -2862,7 +2848,7 @@ impl Showcase {
     // Tab: Typography
     // -----------------------------------------------------------------------
     fn render_typography_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
-        let fi = format_font_info(&self.original_fonts);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         v_flex()
             .gap_5()
@@ -3168,7 +3154,7 @@ impl Showcase {
     // Tab: Layout
     // -----------------------------------------------------------------------
     fn render_layout_tab(&self, _window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let fi = format_font_info(&self.original_fonts);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         let collapsible_open = self.collapsible_open;
         v_flex()
@@ -3717,7 +3703,7 @@ impl Showcase {
         _window: &mut Window,
         cx: &mut Context<Self>,
     ) -> impl IntoElement {
-        let fi = format_font_info(&self.original_fonts);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
         v_flex()
             .gap_5()
@@ -3939,7 +3925,7 @@ impl Showcase {
     // Tab: Charts
     // -----------------------------------------------------------------------
     fn render_charts_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
-        let fi = format_font_info(&self.original_fonts);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
 
         // Sample data structs for charts
@@ -4338,7 +4324,7 @@ impl Showcase {
     // Tab: Icons
     // -----------------------------------------------------------------------
     fn render_icons_tab(&self, _cx: &mut Context<Self>) -> impl IntoElement {
-        let fi = format_font_info(&self.original_fonts);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
 
         // --- Native Theme Icons section ---
         let fallback_label = if !is_native_icon_set(&self.icon_set_name) {
@@ -4615,7 +4601,7 @@ impl Showcase {
     // Tab: Theme Map
     // -----------------------------------------------------------------------
     fn render_theme_map_tab(&self, cx: &mut Context<Self>) -> impl IntoElement {
-        let _fi = format_font_info(&self.original_fonts);
+        let _fi = format_font_info(&self.original_font, &self.original_mono_font);
         let t = cx.theme().clone();
 
         v_flex()
@@ -4914,7 +4900,7 @@ impl Showcase {
 
 impl Render for Showcase {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
-        let fi = format_font_info(&self.original_fonts);
+        let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let theme = cx.theme().clone();
 
         // Ensure icon image caches match the current foreground color
@@ -4978,55 +4964,51 @@ impl Render for Showcase {
             .overflow_hidden()
             // Tab bar
             .child(
-                v_flex()
-                    .px_4()
-                    .pt_3()
-                    .pb_2()
-                    .child(
-                        div()
-                            .id("tt-tabbar")
-                            .child(
-                                TabBar::new("nav")
-                                    .underline()
-                                    .with_size(Size::Small)
-                                    .child("Buttons")
-                                    .child("Inputs")
-                                    .child("Data")
-                                    .child("Feedback")
-                                    .child("Typography")
-                                    .child("Layout")
-                                    .child("Overlays")
-                                    .child("Charts")
-                                    .child("Icons")
-                                    .child("Theme Map")
-                                    .selected_index(active_tab)
-                                    .on_click(cx.listener(|this, ix: &usize, _window, _cx| {
-                                        this.active_tab = *ix;
-                                    })),
-                            )
-                            .on_hover(self.hover_info(
-                                &fi,
-                                "TabBar",
-                                &[
-                                    ("bg", "tab", theme.tab),
-                                    ("active bg", "tab_active", theme.tab_active),
-                                    (
-                                        "active text",
-                                        "tab_active_foreground",
-                                        theme.tab_active_foreground,
-                                    ),
-                                    ("bar bg", "tab_bar", theme.tab_bar),
-                                    ("text", "tab_foreground", theme.tab_foreground),
-                                    ("border", "border", theme.border),
-                                    ("hover", "secondary_hover", theme.secondary_hover),
-                                ],
-                                &[(
-                                    "border-radius",
-                                    format!("radius: {}px", theme.radius.as_f32()),
-                                )],
-                                &[("padding", "set per Size enum")],
-                            )),
-                    ),
+                v_flex().px_4().pt_3().pb_2().child(
+                    div()
+                        .id("tt-tabbar")
+                        .child(
+                            TabBar::new("nav")
+                                .underline()
+                                .with_size(Size::Small)
+                                .child("Buttons")
+                                .child("Inputs")
+                                .child("Data")
+                                .child("Feedback")
+                                .child("Typography")
+                                .child("Layout")
+                                .child("Overlays")
+                                .child("Charts")
+                                .child("Icons")
+                                .child("Theme Map")
+                                .selected_index(active_tab)
+                                .on_click(cx.listener(|this, ix: &usize, _window, _cx| {
+                                    this.active_tab = *ix;
+                                })),
+                        )
+                        .on_hover(self.hover_info(
+                            &fi,
+                            "TabBar",
+                            &[
+                                ("bg", "tab", theme.tab),
+                                ("active bg", "tab_active", theme.tab_active),
+                                (
+                                    "active text",
+                                    "tab_active_foreground",
+                                    theme.tab_active_foreground,
+                                ),
+                                ("bar bg", "tab_bar", theme.tab_bar),
+                                ("text", "tab_foreground", theme.tab_foreground),
+                                ("border", "border", theme.border),
+                                ("hover", "secondary_hover", theme.secondary_hover),
+                            ],
+                            &[(
+                                "border-radius",
+                                format!("radius: {}px", theme.radius.as_f32()),
+                            )],
+                            &[("padding", "set per Size enum")],
+                        )),
+                ),
             )
             // Content with scrollbar
             .child(

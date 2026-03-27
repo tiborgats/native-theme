@@ -235,7 +235,7 @@ fn assign_list_table(
 fn assign_tab_sidebar(
     tc: &mut ThemeColor,
     resolved: &ResolvedTheme,
-    bg: Hsla,
+    _bg: Hsla,
     fg: Hsla,
     _surface: Hsla,
     secondary: Hsla,
