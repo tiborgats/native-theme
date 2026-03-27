@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.5.0
 milestone_name: Per-Widget Architecture & Resolution Pipeline
 status: verifying
-stopped_at: Completed 46-02-PLAN.md
-last_updated: "2026-03-27T12:01:01.856Z"
+stopped_at: Completed 46-01-PLAN.md
+last_updated: "2026-03-27T12:06:39.521Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 5
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 10
-  completed_plans: 8
+  completed_plans: 10
   percent: 46
 ---
 
@@ -71,6 +71,9 @@ Decisions from 44-01 and 44-02:
 - [Phase 46-04]: Windows module always compiled (cfg_attr dead_code on non-Windows) enabling 31 unit tests on Linux
 - [Phase 46-04]: AllFonts struct collects NONCLIENTMETRICSW fonts before build_theme distributes to per-widget structs
 - [Phase 46]: GNOME apply_accent targets 3 fields (accent, selection, focus_ring_color); weight extraction uses longest-match-first suffix matching
+- [Phase 46]: input.caret intentionally not read from macOS (textInsertionPointColor requires macOS 14+); resolve() safety net fills from defaults.foreground
+- [Phase 46]: macOS text scale uses proportional computation from system font size (Apple's known ratios) rather than NSFontTextStyle API
+- [Phase 46]: KDE reader merges with default preset before resolve/validate (sparse reader + preset = complete theme)
 
 ### Roadmap Evolution
 
@@ -89,6 +92,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-27T12:01:01.854Z
-Stopped at: Completed 46-02-PLAN.md
+Last session: 2026-03-27T12:06:39.519Z
+Stopped at: Completed 46-01-PLAN.md
 Resume file: None

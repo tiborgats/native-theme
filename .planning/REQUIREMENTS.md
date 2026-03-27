@@ -30,11 +30,11 @@ Requirements for per-widget architecture and resolution pipeline. Each maps to r
 
 ### macOS Reader
 
-- [ ] **MACOS-01**: NSFont.TextStyle entries populate text_scale (caption, section_heading, dialog_title, display)
-- [ ] **MACOS-02**: Per-widget fonts from +menuFontOfSize:, +toolTipsFontOfSize:, +titleBarFontOfSize: with weight extraction
-- [ ] **MACOS-03**: Additional NSColor values (placeholder, caret, selection_inactive, alternate_row, header_foreground, grid_color)
-- [ ] **MACOS-04**: NSScroller.preferredScrollerStyle -> scrollbar.overlay_mode
-- [ ] **MACOS-05**: Accessibility queries (reduce_motion, high_contrast, reduce_transparency, text_scaling_factor)
+- [x] **MACOS-01**: NSFont.TextStyle entries populate text_scale (caption, section_heading, dialog_title, display)
+- [x] **MACOS-02**: Per-widget fonts from +menuFontOfSize:, +toolTipsFontOfSize:, +titleBarFontOfSize: with weight extraction
+- [x] **MACOS-03**: Additional NSColor values (placeholder, caret, selection_inactive, alternate_row, header_foreground, grid_color)
+- [x] **MACOS-04**: NSScroller.preferredScrollerStyle -> scrollbar.overlay_mode
+- [x] **MACOS-05**: Accessibility queries (reduce_motion, high_contrast, reduce_transparency, text_scaling_factor)
 
 ### Windows Reader
 
@@ -133,11 +133,11 @@ Which phases cover which requirements. Updated during roadmap creation.
 | RESOLVE-04 | Phase 45 | Complete |
 | RESOLVE-05 | Phase 45 | Complete |
 | RESOLVE-06 | Phase 45 | Complete |
-| MACOS-01 | Phase 46 | Pending |
-| MACOS-02 | Phase 46 | Pending |
-| MACOS-03 | Phase 46 | Pending |
-| MACOS-04 | Phase 46 | Pending |
-| MACOS-05 | Phase 46 | Pending |
+| MACOS-01 | Phase 46 | Complete |
+| MACOS-02 | Phase 46 | Complete |
+| MACOS-03 | Phase 46 | Complete |
+| MACOS-04 | Phase 46 | Complete |
+| MACOS-05 | Phase 46 | Complete |
 | WIN-01 | Phase 46 | Complete |
 | WIN-02 | Phase 46 | Complete |
 | WIN-03 | Phase 46 | Complete |
