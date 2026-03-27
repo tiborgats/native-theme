@@ -1,13 +1,39 @@
-//! GNOME portal reader: reads accent color, color scheme, and contrast
-//! from the XDG Desktop Portal Settings interface via ashpd.
+//! GNOME portal reader: reads accent color, color scheme, contrast,
+//! fonts, text scale, accessibility flags, and icon_set from the
+//! XDG Desktop Portal Settings interface (via ashpd) and gsettings.
 //!
 //! Uses the bundled Adwaita preset as base, then overlays portal-provided
-//! accent color, color scheme (light/dark), and contrast preference.
+//! accent color, color scheme (light/dark), and contrast preference,
+//! along with OS-readable font, accessibility, and icon settings.
 
 use ashpd::desktop::Color;
 use ashpd::desktop::settings::{ColorScheme, Contrast};
 
-use crate::ThemeFonts;
+use crate::model::{DialogButtonOrder, FontSpec, TextScale, TextScaleEntry};
+
+/// Known GNOME/Pango font weight modifiers mapped to CSS weight values.
+const WEIGHT_MODIFIERS: &[(&str, u16)] = &[
+    ("Ultra-Bold", 800),
+    ("UltraBold", 800),
+    ("Extra-Bold", 800),
+    ("ExtraBold", 800),
+    ("Semi-Bold", 600),
+    ("SemiBold", 600),
+    ("Demi-Bold", 600),
+    ("DemiBold", 600),
+    ("Ultra-Light", 200),
+    ("UltraLight", 200),
+    ("Extra-Light", 200),
+    ("ExtraLight", 200),
+    ("Thin", 100),
+    ("Light", 300),
+    ("Regular", 400),
+    ("Normal", 400),
+    ("Medium", 500),
+    ("Bold", 700),
+    ("Black", 900),
+    ("Heavy", 900),
+];
 
 /// Convert an ashpd portal Color to an Rgba, returning None if any
 /// component is outside the [0.0, 1.0] range (per XDG spec: out-of-range
@@ -27,16 +53,9 @@ pub(crate) fn portal_color_to_rgba(color: &Color) -> Option<crate::Rgba> {
 
 /// Apply a portal accent color across multiple semantic color roles.
 fn apply_accent(variant: &mut crate::ThemeVariant, accent: &crate::Rgba) {
-    variant.colors.accent = Some(*accent);
-    variant.colors.selection = Some(*accent);
-    variant.colors.focus_ring = Some(*accent);
-    variant.colors.primary_background = Some(*accent);
-}
-
-/// Adjust theme variant for high contrast preference.
-fn apply_high_contrast(variant: &mut crate::ThemeVariant) {
-    variant.geometry.border_opacity = Some(1.0);
-    variant.geometry.disabled_opacity = Some(0.7);
+    variant.defaults.accent = Some(*accent);
+    variant.defaults.selection = Some(*accent);
+    variant.defaults.focus_ring_color = Some(*accent);
 }
 
 /// Parse a GNOME font string in the format `'Family Name Size'`.
@@ -61,116 +80,202 @@ pub(crate) fn parse_gnome_font_string(s: &str) -> Option<(String, f32)> {
     Some((family.to_string(), size))
 }
 
-/// Read GNOME system fonts via gsettings.
+/// Parse a GNOME/Pango font string into a full FontSpec with weight extraction.
 ///
-/// Calls `gsettings get org.gnome.desktop.interface font-name` and
-/// `gsettings get org.gnome.desktop.interface monospace-font-name` to
-/// read the system UI and monospace fonts respectively.
+/// GNOME font strings can have weight words between the family name and size:
+/// `'Cantarell Bold 11'`, `'Inter Light 10.5'`, `'Noto Sans Semi-Bold 12'`.
 ///
-/// Returns `ThemeFonts::default()` if gsettings is not available or fails.
-pub(crate) fn read_gnome_fonts() -> ThemeFonts {
-    let mut fonts = ThemeFonts::default();
-
-    if let Ok(output) = std::process::Command::new("gsettings")
-        .args(["get", "org.gnome.desktop.interface", "font-name"])
-        .output()
-    {
-        if output.status.success() {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            if let Some((family, size)) = parse_gnome_font_string(stdout.trim()) {
-                fonts.family = Some(family);
-                fonts.size = Some(size);
-            }
-        }
+/// The parser:
+/// 1. Strips quotes, parses the size number from the end
+/// 2. Checks the remaining text for known weight modifiers
+/// 3. Family = everything before the weight modifier (or before the size if none)
+/// 4. Default weight = 400 (Regular) if no modifier found
+///
+/// Returns `None` if the string is empty or cannot be parsed.
+pub(crate) fn parse_gnome_font_to_fontspec(s: &str) -> Option<FontSpec> {
+    let trimmed = s.trim().trim_matches('\'');
+    if trimmed.is_empty() {
+        return None;
     }
 
-    if let Ok(output) = std::process::Command::new("gsettings")
-        .args(["get", "org.gnome.desktop.interface", "monospace-font-name"])
-        .output()
-    {
-        if output.status.success() {
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            if let Some((family, size)) = parse_gnome_font_string(stdout.trim()) {
-                fonts.mono_family = Some(family);
-                fonts.mono_size = Some(size);
-            }
-        }
+    // Parse size from the end
+    let last_space = trimmed.rfind(' ')?;
+    let before_size = trimmed[..last_space].trim();
+    let size_str = &trimmed[last_space + 1..];
+    let size: f32 = size_str.parse().ok()?;
+    if before_size.is_empty() || size <= 0.0 {
+        return None;
     }
 
-    fonts
+    // Check for weight modifiers at the end of the family string
+    let (family, weight) = extract_weight_from_family(before_size);
+
+    if family.is_empty() {
+        return None;
+    }
+
+    Some(FontSpec {
+        family: Some(family.to_string()),
+        size: Some(size),
+        weight: Some(weight),
+    })
 }
 
-/// Return widget metrics populated from GNOME libadwaita CSS defaults.
+/// Extract a weight modifier from the end of a family string.
 ///
-/// Values based on libadwaita CSS defaults and Adwaita theme conventions
-/// for standard GTK4 widget dimensions.
-fn adwaita_widget_metrics() -> crate::model::widget_metrics::WidgetMetrics {
-    use crate::model::widget_metrics::*;
+/// Returns (family_without_modifier, css_weight). If no modifier is found,
+/// returns the full string as family with weight 400.
+fn extract_weight_from_family(s: &str) -> (&str, u16) {
+    for &(modifier, weight) in WEIGHT_MODIFIERS {
+        if let Some(prefix) = s.strip_suffix(modifier) {
+            let family = prefix.trim_end();
+            if !family.is_empty() {
+                return (family, weight);
+            }
+        }
+    }
+    // No recognized modifier -- treat as Regular
+    (s, 400)
+}
 
-    WidgetMetrics {
-        button: ButtonMetrics {
-            min_height: Some(34.0), // libadwaita default button
-            padding_horizontal: Some(12.0),
-            padding_vertical: Some(8.0),
-            ..Default::default()
-        },
-        checkbox: CheckboxMetrics {
-            indicator_size: Some(20.0), // GtkCheckButton indicator
-            spacing: Some(8.0),
-            ..Default::default()
-        },
-        input: InputMetrics {
-            min_height: Some(34.0), // GtkEntry
-            padding_horizontal: Some(12.0),
-            ..Default::default()
-        },
-        scrollbar: ScrollbarMetrics {
-            width: Some(12.0), // Adwaita overlay scrollbar
-            slider_width: Some(8.0),
-            ..Default::default()
-        },
-        slider: SliderMetrics {
-            track_height: Some(6.0), // GtkScale trough
-            thumb_size: Some(20.0),
-            ..Default::default()
-        },
-        progress_bar: ProgressBarMetrics {
-            height: Some(6.0), // GtkProgressBar
-            ..Default::default()
-        },
-        tab: TabMetrics {
-            min_height: Some(34.0), // AdwTabBar
-            padding_horizontal: Some(12.0),
-            ..Default::default()
-        },
-        menu_item: MenuItemMetrics {
-            height: Some(34.0), // GtkPopoverMenuBar
-            padding_horizontal: Some(8.0),
-            padding_vertical: Some(4.0),
-            ..Default::default()
-        },
-        tooltip: TooltipMetrics {
-            padding: Some(6.0), // GtkTooltip
-            ..Default::default()
-        },
-        list_item: ListItemMetrics {
-            padding_horizontal: Some(12.0),
-            padding_vertical: Some(8.0),
-            ..Default::default()
-        },
-        toolbar: ToolbarMetrics {
-            height: Some(46.0), // AdwHeaderBar default
-            item_spacing: Some(6.0),
-            ..Default::default()
-        },
-        splitter: SplitterMetrics {
-            width: Some(6.0), // GtkPaned
-        },
+/// Read a single gsettings value, returning None if gsettings is unavailable or fails.
+fn read_gsetting(schema: &str, key: &str) -> Option<String> {
+    let output = std::process::Command::new("gsettings")
+        .args(["get", schema, key])
+        .output()
+        .ok()?;
+    if !output.status.success() {
+        return None;
+    }
+    let stdout = String::from_utf8_lossy(&output.stdout);
+    let trimmed = stdout.trim().trim_matches('\'').to_string();
+    if trimmed.is_empty() {
+        return None;
+    }
+    Some(trimmed)
+}
+
+/// Build a sparse ThemeVariant populated only with OS-readable fields.
+///
+/// This function does NOT embed any Adwaita preset data -- it only sets
+/// fields that the GNOME desktop provides via gsettings and portal data.
+/// The caller merges this sparse variant onto an Adwaita base.
+pub(crate) fn build_gnome_variant(
+    scheme: ColorScheme,
+    accent: Option<Color>,
+    contrast: Contrast,
+) -> crate::ThemeVariant {
+    let mut variant = crate::ThemeVariant::default();
+
+    // Apply accent color from portal if valid
+    if let Some(color) = accent {
+        if let Some(rgba) = portal_color_to_rgba(&color) {
+            apply_accent(&mut variant, &rgba);
+        }
+    }
+
+    // High contrast from portal (GNOME-05)
+    if matches!(contrast, Contrast::High) {
+        variant.defaults.high_contrast = Some(true);
+    }
+
+    // ── Fonts (GNOME-01) ────────────────────────────────────────────────
+    // Primary UI font
+    if let Some(font_str) = read_gsetting("org.gnome.desktop.interface", "font-name") {
+        if let Some(fs) = parse_gnome_font_to_fontspec(&font_str) {
+            variant.defaults.font = fs;
+        }
+    }
+
+    // Monospace font
+    if let Some(mono_str) = read_gsetting("org.gnome.desktop.interface", "monospace-font-name") {
+        if let Some(fs) = parse_gnome_font_to_fontspec(&mono_str) {
+            variant.defaults.mono_font = fs;
+        }
+    }
+
+    // Titlebar font (GNOME-01 extension)
+    if let Some(tb_str) = read_gsetting("org.gnome.desktop.wm.preferences", "titlebar-font") {
+        if let Some(fs) = parse_gnome_font_to_fontspec(&tb_str) {
+            variant.window.title_bar_font = Some(fs);
+        }
+    }
+
+    // ── Text scale (GNOME-02) ──────────────────────────────────────────
+    // Compute text scale entries from the base font size using CSS percentage multipliers
+    if let Some(base_size) = variant.defaults.font.size {
+        variant.text_scale = compute_text_scale(base_size);
+    }
+
+    // ── Accessibility (GNOME-03 / GNOME-05) ─────────────────────────────
+    // Text scaling factor
+    if let Some(factor_str) = read_gsetting("org.gnome.desktop.interface", "text-scaling-factor") {
+        if let Ok(factor) = factor_str.parse::<f32>() {
+            variant.defaults.text_scaling_factor = Some(factor);
+        }
+    }
+
+    // enable-animations -> reduce_motion (GNOME-05 gsettings fallback)
+    if let Some(anim_str) = read_gsetting("org.gnome.desktop.interface", "enable-animations") {
+        match anim_str.as_str() {
+            "false" => variant.defaults.reduce_motion = Some(true),
+            "true" => variant.defaults.reduce_motion = Some(false),
+            _ => {}
+        }
+    }
+
+    // overlay-scrolling -> scrollbar.overlay_mode (GNOME-03)
+    if let Some(overlay_str) = read_gsetting("org.gnome.desktop.interface", "overlay-scrolling") {
+        match overlay_str.as_str() {
+            "true" => variant.scrollbar.overlay_mode = Some(true),
+            "false" => variant.scrollbar.overlay_mode = Some(false),
+            _ => {}
+        }
+    }
+
+    // ── Icon set (GNOME-04) ─────────────────────────────────────────────
+    if let Some(icon_theme) = read_gsetting("org.gnome.desktop.interface", "icon-theme") {
+        variant.icon_set = Some(icon_theme);
+    }
+
+    // ── Dialog button order (project decision) ──────────────────────────
+    variant.dialog.button_order = Some(DialogButtonOrder::TrailingAffirmative);
+
+    // Color scheme tag for the variant (not a field, but used for merge decision)
+    let _ = scheme; // consumed by caller for light/dark selection
+
+    variant
+}
+
+/// Compute text scale entries from a base font size using CSS percentage multipliers.
+///
+/// GNOME/Adwaita CSS type scale:
+/// - caption: 82% of base
+/// - dialog_title: 136% of base
+/// - display: 181% of base
+fn compute_text_scale(base_size: f32) -> TextScale {
+    TextScale {
+        caption: Some(TextScaleEntry {
+            size: Some(base_size * 0.82),
+            weight: Some(400),
+            line_height: None,
+        }),
+        section_heading: None,
+        dialog_title: Some(TextScaleEntry {
+            size: Some(base_size * 1.36),
+            weight: None, // comes from adwaita.toml
+            line_height: None,
+        }),
+        display: Some(TextScaleEntry {
+            size: Some(base_size * 1.81),
+            weight: None, // comes from adwaita.toml
+            line_height: None,
+        }),
     }
 }
 
 /// Build a NativeTheme from an Adwaita base, applying portal-provided
-/// color scheme, accent color, and contrast settings.
+/// color scheme, accent color, and contrast settings plus OS-readable fields.
 ///
 /// This is the testable core -- no D-Bus required.
 pub(crate) fn build_theme(
@@ -188,20 +293,9 @@ pub(crate) fn build_theme(
         base.light.unwrap_or_default()
     };
 
-    // Always set adwaita widget metrics on the variant
-    variant.widget_metrics = Some(adwaita_widget_metrics());
-
-    // Apply accent color if available and in range
-    if let Some(color) = accent {
-        if let Some(rgba) = portal_color_to_rgba(&color) {
-            apply_accent(&mut variant, &rgba);
-        }
-    }
-
-    // Apply high contrast adjustments
-    if matches!(contrast, Contrast::High) {
-        apply_high_contrast(&mut variant);
-    }
+    // Build sparse OS variant and merge onto Adwaita base
+    let os_variant = build_gnome_variant(scheme, accent, contrast);
+    variant.merge(&os_variant);
 
     // Build NativeTheme with only the selected variant populated
     let theme = if is_dark {
@@ -249,20 +343,7 @@ pub async fn from_gnome() -> crate::Result<crate::NativeTheme> {
     let accent = settings.accent_color().await.ok();
     let contrast = settings.contrast().await.unwrap_or_default();
 
-    let mut theme = build_theme(base, scheme, accent, contrast)?;
-
-    // Merge GNOME font data from gsettings into the theme variant
-    let fonts = read_gnome_fonts();
-    if !fonts.is_empty() {
-        if let Some(ref mut variant) = theme.light {
-            variant.fonts.merge(&fonts);
-        }
-        if let Some(ref mut variant) = theme.dark {
-            variant.fonts.merge(&fonts);
-        }
-    }
-
-    Ok(theme)
+    build_theme(base, scheme, accent, contrast)
 }
 
 /// Read KDE theme from kdeglobals, then overlay portal accent color if available.
@@ -270,7 +351,7 @@ pub async fn from_gnome() -> crate::Result<crate::NativeTheme> {
 /// Reads the KDE kdeglobals file as the base theme via [`crate::kde::from_kde()`],
 /// then attempts to read the accent color from the XDG Desktop Portal. If the
 /// portal provides a valid accent color, it is applied to accent, selection,
-/// focus_ring, and primary_background fields via [`NativeTheme::merge`].
+/// and focus_ring_color fields via [`NativeTheme::merge`].
 ///
 /// Falls back to the KDE-only base if the portal is unavailable or provides
 /// no accent color.
@@ -344,7 +425,7 @@ pub(crate) async fn detect_portal_backend() -> Option<super::LinuxDesktop> {
 mod tests {
     use super::*;
 
-    // === parse_gnome_font_string tests ===
+    // === parse_gnome_font_string tests (backward compat) ===
 
     #[test]
     fn parse_gnome_font_string_standard() {
@@ -403,6 +484,92 @@ mod tests {
         assert_eq!(parse_gnome_font_string("'Font -1'"), None);
     }
 
+    // === parse_gnome_font_to_fontspec with weight extraction ===
+
+    #[test]
+    fn fontspec_bold_weight() {
+        let fs = parse_gnome_font_to_fontspec("Cantarell Bold 11").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("Cantarell"));
+        assert_eq!(fs.size, Some(11.0));
+        assert_eq!(fs.weight, Some(700));
+    }
+
+    #[test]
+    fn fontspec_light_weight() {
+        let fs = parse_gnome_font_to_fontspec("Inter Light 10").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("Inter"));
+        assert_eq!(fs.size, Some(10.0));
+        assert_eq!(fs.weight, Some(300));
+    }
+
+    #[test]
+    fn fontspec_semi_bold_weight() {
+        let fs = parse_gnome_font_to_fontspec("Noto Sans Semi-Bold 12").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("Noto Sans"));
+        assert_eq!(fs.size, Some(12.0));
+        assert_eq!(fs.weight, Some(600));
+    }
+
+    #[test]
+    fn fontspec_no_modifier_defaults_to_regular() {
+        let fs = parse_gnome_font_to_fontspec("Cantarell 11").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("Cantarell"));
+        assert_eq!(fs.size, Some(11.0));
+        assert_eq!(fs.weight, Some(400));
+    }
+
+    #[test]
+    fn fontspec_medium_weight() {
+        let fs = parse_gnome_font_to_fontspec("Inter Medium 10.5").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("Inter"));
+        assert_eq!(fs.size, Some(10.5));
+        assert_eq!(fs.weight, Some(500));
+    }
+
+    #[test]
+    fn fontspec_heavy_weight() {
+        let fs = parse_gnome_font_to_fontspec("'Fira Sans Heavy 14'").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("Fira Sans"));
+        assert_eq!(fs.size, Some(14.0));
+        assert_eq!(fs.weight, Some(900));
+    }
+
+    #[test]
+    fn fontspec_thin_weight() {
+        let fs = parse_gnome_font_to_fontspec("Roboto Thin 12").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("Roboto"));
+        assert_eq!(fs.size, Some(12.0));
+        assert_eq!(fs.weight, Some(100));
+    }
+
+    #[test]
+    fn fontspec_extra_bold_weight() {
+        let fs = parse_gnome_font_to_fontspec("Source Sans Extra-Bold 11").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("Source Sans"));
+        assert_eq!(fs.size, Some(11.0));
+        assert_eq!(fs.weight, Some(800));
+    }
+
+    #[test]
+    fn fontspec_ultra_light_weight() {
+        let fs = parse_gnome_font_to_fontspec("Noto Sans Ultra-Light 10").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("Noto Sans"));
+        assert_eq!(fs.size, Some(10.0));
+        assert_eq!(fs.weight, Some(200));
+    }
+
+    #[test]
+    fn fontspec_empty_returns_none() {
+        assert!(parse_gnome_font_to_fontspec("").is_none());
+    }
+
+    #[test]
+    fn fontspec_with_quotes() {
+        let fs = parse_gnome_font_to_fontspec("'Cantarell Bold 11'").unwrap();
+        assert_eq!(fs.family.as_deref(), Some("Cantarell"));
+        assert_eq!(fs.weight, Some(700));
+    }
+
     // === portal_color_to_rgba tests ===
 
     #[test]
@@ -442,7 +609,115 @@ mod tests {
         assert_eq!(result.unwrap(), crate::Rgba::from_f32(1.0, 1.0, 1.0, 1.0));
     }
 
-    // === build_theme color scheme tests ===
+    // === build_gnome_variant tests ===
+
+    #[test]
+    fn build_gnome_variant_default_has_dialog_button_order() {
+        let v = build_gnome_variant(
+            ColorScheme::NoPreference,
+            None,
+            Contrast::NoPreference,
+        );
+        assert_eq!(
+            v.dialog.button_order,
+            Some(DialogButtonOrder::TrailingAffirmative),
+        );
+    }
+
+    #[test]
+    fn build_gnome_variant_high_contrast_sets_flag() {
+        let v = build_gnome_variant(
+            ColorScheme::NoPreference,
+            None,
+            Contrast::High,
+        );
+        assert_eq!(v.defaults.high_contrast, Some(true));
+    }
+
+    #[test]
+    fn build_gnome_variant_normal_contrast_no_flag() {
+        let v = build_gnome_variant(
+            ColorScheme::NoPreference,
+            None,
+            Contrast::NoPreference,
+        );
+        assert!(v.defaults.high_contrast.is_none());
+    }
+
+    #[test]
+    fn build_gnome_variant_accent_sets_defaults() {
+        let accent = Color::new(0.2, 0.4, 0.8);
+        let v = build_gnome_variant(
+            ColorScheme::NoPreference,
+            Some(accent),
+            Contrast::NoPreference,
+        );
+        let expected = crate::Rgba::from_f32(0.2, 0.4, 0.8, 1.0);
+        assert_eq!(v.defaults.accent, Some(expected));
+        assert_eq!(v.defaults.selection, Some(expected));
+        assert_eq!(v.defaults.focus_ring_color, Some(expected));
+    }
+
+    #[test]
+    fn build_gnome_variant_invalid_accent_stays_none() {
+        let accent = Color::new(1.5, 0.0, 0.0); // out of range
+        let v = build_gnome_variant(
+            ColorScheme::NoPreference,
+            Some(accent),
+            Contrast::NoPreference,
+        );
+        assert!(v.defaults.accent.is_none());
+    }
+
+    // === compute_text_scale tests ===
+
+    #[test]
+    fn text_scale_caption_from_base() {
+        let ts = compute_text_scale(11.0);
+        let cap = ts.caption.as_ref().unwrap();
+        let expected = 11.0 * 0.82;
+        assert!(
+            (cap.size.unwrap() - expected).abs() < 0.01,
+            "caption size: expected {expected}, got {:?}",
+            cap.size
+        );
+        assert_eq!(cap.weight, Some(400));
+        assert!(cap.line_height.is_none());
+    }
+
+    #[test]
+    fn text_scale_dialog_title_from_base() {
+        let ts = compute_text_scale(11.0);
+        let dt = ts.dialog_title.as_ref().unwrap();
+        let expected = 11.0 * 1.36;
+        assert!(
+            (dt.size.unwrap() - expected).abs() < 0.01,
+            "dialog_title size: expected {expected}, got {:?}",
+            dt.size
+        );
+        assert!(dt.weight.is_none()); // comes from adwaita.toml
+    }
+
+    #[test]
+    fn text_scale_display_from_base() {
+        let ts = compute_text_scale(11.0);
+        let d = ts.display.as_ref().unwrap();
+        let expected = 11.0 * 1.81;
+        assert!(
+            (d.size.unwrap() - expected).abs() < 0.01,
+            "display size: expected {expected}, got {:?}",
+            d.size
+        );
+        assert!(d.weight.is_none()); // comes from adwaita.toml
+    }
+
+    #[test]
+    fn text_scale_section_heading_is_none() {
+        let ts = compute_text_scale(11.0);
+        assert!(ts.section_heading.is_none());
+    }
+
+    // === build_theme tests ===
 
     fn adwaita_base() -> crate::NativeTheme {
         crate::NativeTheme::preset("adwaita").unwrap()
@@ -493,7 +768,7 @@ mod tests {
     // === accent color tests ===
 
     #[test]
-    fn valid_accent_propagates_to_four_fields() {
+    fn valid_accent_propagates_to_three_fields() {
         let accent = Color::new(0.2, 0.4, 0.8);
         let theme = build_theme(
             adwaita_base(),
@@ -506,16 +781,15 @@ mod tests {
         let variant = theme.light.as_ref().expect("light variant");
         let expected = crate::Rgba::from_f32(0.2, 0.4, 0.8, 1.0);
 
-        assert_eq!(variant.colors.accent, Some(expected));
-        assert_eq!(variant.colors.selection, Some(expected));
-        assert_eq!(variant.colors.focus_ring, Some(expected));
-        assert_eq!(variant.colors.primary_background, Some(expected));
+        assert_eq!(variant.defaults.accent, Some(expected));
+        assert_eq!(variant.defaults.selection, Some(expected));
+        assert_eq!(variant.defaults.focus_ring_color, Some(expected));
     }
 
     // === high contrast tests ===
 
     #[test]
-    fn high_contrast_sets_border_and_disabled_opacity() {
+    fn high_contrast_sets_flag_on_theme_variant() {
         let theme = build_theme(
             adwaita_base(),
             ColorScheme::NoPreference,
@@ -525,12 +799,28 @@ mod tests {
         .unwrap();
 
         let variant = theme.light.as_ref().expect("light variant");
-        assert_eq!(variant.geometry.border_opacity, Some(1.0));
-        assert_eq!(variant.geometry.disabled_opacity, Some(0.7));
+        assert_eq!(variant.defaults.high_contrast, Some(true));
     }
 
     #[test]
-    fn normal_contrast_preserves_adwaita_geometry() {
+    fn normal_contrast_preserves_adwaita_default() {
+        let theme = build_theme(
+            adwaita_base(),
+            ColorScheme::NoPreference,
+            None,
+            Contrast::NoPreference,
+        )
+        .unwrap();
+
+        let variant = theme.light.as_ref().expect("light variant");
+        // Adwaita preset sets high_contrast = false; OS variant doesn't override it
+        assert_eq!(variant.defaults.high_contrast, Some(false));
+    }
+
+    // === build_theme merge correctness ===
+
+    #[test]
+    fn build_theme_preserves_adwaita_colors_when_no_overrides() {
         let base = adwaita_base();
         let base_light = base.light.as_ref().unwrap().clone();
 
@@ -543,29 +833,13 @@ mod tests {
         .unwrap();
 
         let variant = theme.light.as_ref().expect("light variant");
-        assert_eq!(variant.geometry, base_light.geometry);
-    }
-
-    // === widget metrics tests ===
-
-    #[test]
-    fn adwaita_widget_metrics_spot_check() {
-        let wm = adwaita_widget_metrics();
-        assert_eq!(
-            wm.button.min_height,
-            Some(34.0),
-            "libadwaita default button"
-        );
-        assert_eq!(
-            wm.checkbox.indicator_size,
-            Some(20.0),
-            "GtkCheckButton indicator"
-        );
-        assert_eq!(wm.scrollbar.width, Some(12.0), "Adwaita overlay scrollbar");
+        // Adwaita colors should be preserved since OS variant doesn't set colors
+        assert_eq!(variant.defaults.background, base_light.defaults.background);
+        assert_eq!(variant.defaults.foreground, base_light.defaults.foreground);
     }
 
     #[test]
-    fn build_theme_includes_widget_metrics() {
+    fn build_theme_dialog_order_set() {
         let theme = build_theme(
             adwaita_base(),
             ColorScheme::NoPreference,
@@ -575,33 +849,39 @@ mod tests {
         .unwrap();
 
         let variant = theme.light.as_ref().expect("light variant");
-        assert!(
-            variant.widget_metrics.is_some(),
-            "widget_metrics should be Some"
+        assert_eq!(
+            variant.dialog.button_order,
+            Some(DialogButtonOrder::TrailingAffirmative),
         );
     }
 
-    // === fallback test ===
+    // === extract_weight_from_family tests ===
 
     #[test]
-    fn no_accent_no_preference_no_contrast_returns_adwaita_light() {
-        let base = adwaita_base();
-        let base_light = base.light.as_ref().unwrap().clone();
+    fn extract_weight_bold() {
+        let (family, weight) = extract_weight_from_family("Cantarell Bold");
+        assert_eq!(family, "Cantarell");
+        assert_eq!(weight, 700);
+    }
 
-        let theme = build_theme(
-            adwaita_base(),
-            ColorScheme::NoPreference,
-            None,
-            Contrast::NoPreference,
-        )
-        .unwrap();
+    #[test]
+    fn extract_weight_no_modifier() {
+        let (family, weight) = extract_weight_from_family("Cantarell");
+        assert_eq!(family, "Cantarell");
+        assert_eq!(weight, 400);
+    }
 
-        assert_eq!(theme.name, "GNOME");
-        let variant = theme.light.as_ref().expect("light variant");
-        // Colors should match Adwaita light defaults exactly
-        assert_eq!(variant.colors, base_light.colors);
-        assert_eq!(variant.fonts, base_light.fonts);
-        assert_eq!(variant.geometry, base_light.geometry);
-        assert_eq!(variant.spacing, base_light.spacing);
+    #[test]
+    fn extract_weight_demi_bold() {
+        let (family, weight) = extract_weight_from_family("Source Sans Demi-Bold");
+        assert_eq!(family, "Source Sans");
+        assert_eq!(weight, 600);
+    }
+
+    #[test]
+    fn extract_weight_black() {
+        let (family, weight) = extract_weight_from_family("Inter Black");
+        assert_eq!(family, "Inter");
+        assert_eq!(weight, 900);
     }
 }
