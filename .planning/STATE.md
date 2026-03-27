@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.0
 milestone_name: Per-Widget Architecture & Resolution Pipeline
-current_plan: —
-status: ready-to-plan
-stopped_at: —
+current_plan: "44-02"
+status: in-progress
+stopped_at: "Completed 44-01-PLAN.md"
 last_updated: "2026-03-27T00:00:00.000Z"
-last_activity: 2026-03-27 — Roadmap created for v0.5.0
+last_activity: "2026-03-27 — Completed 44-01: Foundation types and macros"
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 0
-  completed_plans: 0
+  completed_plans: 1
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 ## Current Position
 
 Phase: 44 (1 of 5 in v0.5.0) — Per-Widget Data Model and Preset Migration
-Plan: —
-Status: Ready to plan
-Last activity: 2026-03-27 — Roadmap created for v0.5.0 (phases 44-48)
+Plan: 44-02 (next)
+Status: In progress — 44-01 complete
+Last activity: 2026-03-27 — Completed 44-01: Foundation types and macros
 
-Progress: [░░░░░░░░░░] 0%
+Progress: [█░░░░░░░░░] ~5%
 
 ## Performance Metrics
 
@@ -52,6 +52,10 @@ Recent decisions from research:
 - Qt5/Qt6 font weight detection via field count (<=16 fields = Qt5, 17+ = Qt6)
 - Zero new crate dependencies for v0.5.0; only 2 new windows crate feature flags
 
+Decisions from 44-01:
+- define_widget_pair! optional_nested uses [OptType, ResType] bracket syntax (Rust ty/path fragments cannot precede / token)
+- DialogButtonOrder serde tests require wrapper struct (TOML cannot serialize bare enum as top-level value)
+
 ### Roadmap Evolution
 
 Phase history archived in .planning/milestones/.
@@ -69,5 +73,5 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-27
-Stopped at: Roadmap created for v0.5.0, ready to plan Phase 44
+Stopped at: Completed 44-01-PLAN.md
 Resume file: None

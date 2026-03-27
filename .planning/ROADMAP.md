@@ -118,7 +118,12 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
   3. All 17 preset TOML files round-trip through serde (deserialize then serialize produces equivalent output) using the new per-widget structure
   4. Platform preset TOMLs contain only design constants (no OS-readable values), while cross-platform presets provide all non-derived color and geometry fields
   5. The define_widget_pair! macro generates both Option and Resolved struct variants from a single definition, and impl_merge! supports nested per-widget struct merging
-**Plans**: TBD
+**Plans:** 1/3 plans executed
+
+Plans:
+- [x] 44-01-PLAN.md — Foundation types (FontSpec, TextScale, IconSizes, DialogButtonOrder) + macros (define_widget_pair!, impl_merge! extension)
+- [ ] 44-02-PLAN.md — ThemeDefaults struct + all 25 per-widget XxxTheme structs via define_widget_pair!
+- [ ] 44-03-PLAN.md — Atomic ThemeVariant restructure + rewrite all 17 preset TOMLs + test updates
 
 ### Phase 45: Resolution Engine
 **Goal**: Any sparse ThemeVariant (from an OS reader or partial TOML) can be resolved into a complete ResolvedTheme where every field is guaranteed populated, with clear error reporting for unresolvable gaps
@@ -178,7 +183,7 @@ Phases execute in numeric order: 44 -> 45 -> 46 -> 47 -> 48
 | 22-26 | v0.3.3 | 14/14 | Complete | 2026-03-17 |
 | 27-32 | v0.4.0 | 8/8 | Complete | 2026-03-18 |
 | 33-43 | v0.4.1 | 22/22 | Complete | 2026-03-21 |
-| 44. Per-Widget Data Model and Preset Migration | v0.5.0 | 0/? | Not started | - |
+| 44. Per-Widget Data Model and Preset Migration | v0.5.0 | 1/3 | In Progress|  |
 | 45. Resolution Engine | v0.5.0 | 0/? | Not started | - |
 | 46. OS Reader Extensions | v0.5.0 | 0/? | Not started | - |
 | 47. OS-First Pipeline | v0.5.0 | 0/? | Not started | - |
