@@ -1699,3 +1699,116 @@ mod reduced_motion_tests {
         let _ = result;
     }
 }
+
+#[cfg(test)]
+mod overlay_tests {
+    use super::*;
+
+    /// Helper: build a SystemTheme from the "default" preset via run_pipeline.
+    fn default_system_theme() -> SystemTheme {
+        let reader = NativeTheme::preset("default").unwrap();
+        run_pipeline(reader, "default", false).unwrap()
+    }
+
+    #[test]
+    fn test_overlay_accent_propagates() {
+        let st = default_system_theme();
+        let new_accent = Rgba::rgb(255, 0, 0);
+
+        // Build overlay with accent on both light and dark
+        let mut overlay = NativeTheme::default();
+        let mut light_v = ThemeVariant::default();
+        light_v.defaults.accent = Some(new_accent);
+        let mut dark_v = ThemeVariant::default();
+        dark_v.defaults.accent = Some(new_accent);
+        overlay.light = Some(light_v);
+        overlay.dark = Some(dark_v);
+
+        let result = st.with_overlay(&overlay).unwrap();
+
+        // Accent itself
+        assert_eq!(result.light.defaults.accent, new_accent);
+        // Accent-derived widget fields
+        assert_eq!(result.light.button.primary_bg, new_accent);
+        assert_eq!(result.light.checkbox.checked_bg, new_accent);
+        assert_eq!(result.light.slider.fill, new_accent);
+        assert_eq!(result.light.progress_bar.fill, new_accent);
+        assert_eq!(result.light.switch.checked_bg, new_accent);
+    }
+
+    #[test]
+    fn test_overlay_preserves_unrelated_fields() {
+        let st = default_system_theme();
+        let original_bg = st.light.defaults.background;
+
+        // Apply overlay changing only accent
+        let mut overlay = NativeTheme::default();
+        let mut light_v = ThemeVariant::default();
+        light_v.defaults.accent = Some(Rgba::rgb(255, 0, 0));
+        overlay.light = Some(light_v);
+
+        let result = st.with_overlay(&overlay).unwrap();
+        assert_eq!(
+            result.light.defaults.background, original_bg,
+            "background should be unchanged"
+        );
+    }
+
+    #[test]
+    fn test_overlay_empty_noop() {
+        let st = default_system_theme();
+        let original_light_accent = st.light.defaults.accent;
+        let original_dark_accent = st.dark.defaults.accent;
+        let original_light_bg = st.light.defaults.background;
+
+        // Empty overlay
+        let overlay = NativeTheme::default();
+        let result = st.with_overlay(&overlay).unwrap();
+
+        assert_eq!(result.light.defaults.accent, original_light_accent);
+        assert_eq!(result.dark.defaults.accent, original_dark_accent);
+        assert_eq!(result.light.defaults.background, original_light_bg);
+    }
+
+    #[test]
+    fn test_overlay_both_variants() {
+        let st = default_system_theme();
+        let red = Rgba::rgb(255, 0, 0);
+        let green = Rgba::rgb(0, 255, 0);
+
+        let mut overlay = NativeTheme::default();
+        let mut light_v = ThemeVariant::default();
+        light_v.defaults.accent = Some(red);
+        let mut dark_v = ThemeVariant::default();
+        dark_v.defaults.accent = Some(green);
+        overlay.light = Some(light_v);
+        overlay.dark = Some(dark_v);
+
+        let result = st.with_overlay(&overlay).unwrap();
+        assert_eq!(result.light.defaults.accent, red, "light accent = red");
+        assert_eq!(result.dark.defaults.accent, green, "dark accent = green");
+    }
+
+    #[test]
+    fn test_overlay_font_family() {
+        let st = default_system_theme();
+
+        let mut overlay = NativeTheme::default();
+        let mut light_v = ThemeVariant::default();
+        light_v.defaults.font.family = Some("Comic Sans".into());
+        overlay.light = Some(light_v);
+
+        let result = st.with_overlay(&overlay).unwrap();
+        assert_eq!(result.light.defaults.font.family, "Comic Sans");
+    }
+
+    #[test]
+    fn test_overlay_toml_convenience() {
+        let st = default_system_theme();
+        let result = st.with_overlay_toml(r#"
+            [light.defaults]
+            accent = "#ff0000"
+        "#).unwrap();
+        assert_eq!(result.light.defaults.accent, Rgba::rgb(255, 0, 0));
+    }
+}
