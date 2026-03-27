@@ -3,13 +3,13 @@ gsd_state_version: 1.0
 milestone: v0.5.0
 milestone_name: Per-Widget Architecture & Resolution Pipeline
 status: executing
-stopped_at: Completed 46-05-PLAN.md
-last_updated: "2026-03-27T13:06:29.614Z"
+stopped_at: Completed 46-06-PLAN.md
+last_updated: "2026-03-27T13:09:53.849Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 5
-  completed_phases: 2
-  total_plans: 14
+  completed_phases: 3
+  total_plans: 12
   completed_plans: 12
   percent: 46
 ---
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 ## Current Position
 
 Phase: 46 (3 of 5 in v0.5.0) — OS Reader Extensions
-Plan: 5 of 6 complete
-Status: Executing gap closure plans
+Plan: 6 of 6 complete
+Status: Ready to execute
 Last activity: 2026-03-27
 
 Progress: [████▌░░░░░] 46%
@@ -75,6 +75,7 @@ Decisions from 44-01 and 44-02:
 - [Phase 46]: macOS text scale uses proportional computation from system font size (Apple's known ratios) rather than NSFontTextStyle API
 - [Phase 46]: KDE reader merges with default preset before resolve/validate (sparse reader + preset = complete theme)
 - [Phase 46-05]: Icon sizes derived from index.theme Context+Size: small=smallest Actions/Status, toolbar=closest-to-22 Actions, large=smallest Applications>=32
+- [Phase 46]: GNOME integration test placed in resolve.rs (not gnome/mod.rs) due to portal feature gate compilation issue
 
 ### Roadmap Evolution
 
@@ -93,6 +94,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-27T13:05:36Z
-Stopped at: Completed 46-05-PLAN.md
+Last session: 2026-03-27T13:09:53.847Z
+Stopped at: Completed 46-06-PLAN.md
 Resume file: None
