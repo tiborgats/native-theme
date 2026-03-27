@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.0
 milestone_name: Per-Widget Architecture & Resolution Pipeline
 status: executing
-stopped_at: Completed 44-02-PLAN.md
-last_updated: "2026-03-27T07:15:53.094Z"
+stopped_at: Completed 44-03-PLAN.md
+last_updated: "2026-03-27T00:00:00.000Z"
 last_activity: "2026-03-27 — Completed 44-01: Foundation types and macros"
 progress:
   total_phases: 5
   completed_phases: 0
   total_plans: 3
-  completed_plans: 2
-  percent: 5
+  completed_plans: 3
+  percent: 10
 ---
 
 # Project State
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 ## Current Position
 
 Phase: 44 (1 of 5 in v0.5.0) — Per-Widget Data Model and Preset Migration
-Plan: 44-03 (next)
-Status: In progress — 44-02 complete
-Last activity: 2026-03-27 — Completed 44-02: ThemeDefaults and 25 widget struct pairs
+Plan: 44-04 (next)
+Status: In progress — 44-03 complete
+Last activity: 2026-03-27 — Completed 44-03: ThemeVariant per-widget restructure and 17 TOML preset migration
 
 Progress: [███████░░░] 67%
 
@@ -60,6 +60,9 @@ Decisions from 44-01 and 44-02:
 - DialogButtonOrder serde tests require wrapper struct (TOML cannot serialize bare enum as top-level value)
 - [Phase 44]: ThemeDefaults non-Option nested structs use skip_serializing_if per-field to suppress empty TOML sections
 - [Phase 44]: ResolvedXxx types named without Theme suffix (ResolvedWindow not ResolvedWindowTheme) to avoid double suffix
+- [Phase 44-03]: impl_merge! nested clause auto-generates is_empty() — no manual impl needed on ThemeVariant
+- [Phase 44-03]: NativeTheme needs PartialEq derive for round-trip equality tests; SplitterTheme must be in pub use exports
+- [Phase 44-03]: TOML preset icon_set stored at [light]/[dark] level (not inside [defaults]); widget colors in their own [v.widget] tables
 
 ### Roadmap Evolution
 

@@ -98,7 +98,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 ### v0.5.0 Per-Widget Architecture & Resolution Pipeline (Phases 44-48)
 
-- [ ] **Phase 44: Per-Widget Data Model and Preset Migration** - Restructure ThemeVariant to per-widget structs with ThemeDefaults, FontSpec, TextScale, and atomically rewrite all 17 preset TOMLs
+- [x] **Phase 44: Per-Widget Data Model and Preset Migration** - Restructure ThemeVariant to per-widget structs with ThemeDefaults, FontSpec, TextScale, and atomically rewrite all 17 preset TOMLs (completed 2026-03-27)
 - [ ] **Phase 45: Resolution Engine** - Implement resolve() inheritance, ResolvedTheme with validate(), and update cross-platform presets for new structure
 - [ ] **Phase 46: OS Reader Extensions** - Extend all four platform readers (macOS, Windows, KDE, GNOME) with per-widget fields, text scale, fonts, and accessibility
 - [ ] **Phase 47: OS-First Pipeline** - Wire from_system() to run OS reader, platform TOML overlay, resolve(), app TOML overlay, second resolve(), and validate()
@@ -118,12 +118,12 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
   3. All 17 preset TOML files round-trip through serde (deserialize then serialize produces equivalent output) using the new per-widget structure
   4. Platform preset TOMLs contain only design constants (no OS-readable values), while cross-platform presets provide all non-derived color and geometry fields
   5. The define_widget_pair! macro generates both Option and Resolved struct variants from a single definition, and impl_merge! supports nested per-widget struct merging
-**Plans:** 2/3 plans executed
+**Plans:** 3/3 plans complete
 
 Plans:
 - [x] 44-01-PLAN.md — Foundation types (FontSpec, TextScale, IconSizes, DialogButtonOrder) + macros (define_widget_pair!, impl_merge! extension)
 - [x] 44-02-PLAN.md — ThemeDefaults struct + all 25 per-widget XxxTheme structs via define_widget_pair!
-- [ ] 44-03-PLAN.md — Atomic ThemeVariant restructure + rewrite all 17 preset TOMLs + test updates
+- [x] 44-03-PLAN.md — Atomic ThemeVariant restructure + rewrite all 17 preset TOMLs + test updates
 
 ### Phase 45: Resolution Engine
 **Goal**: Any sparse ThemeVariant (from an OS reader or partial TOML) can be resolved into a complete ResolvedTheme where every field is guaranteed populated, with clear error reporting for unresolvable gaps
@@ -183,7 +183,7 @@ Phases execute in numeric order: 44 -> 45 -> 46 -> 47 -> 48
 | 22-26 | v0.3.3 | 14/14 | Complete | 2026-03-17 |
 | 27-32 | v0.4.0 | 8/8 | Complete | 2026-03-18 |
 | 33-43 | v0.4.1 | 22/22 | Complete | 2026-03-21 |
-| 44. Per-Widget Data Model and Preset Migration | v0.5.0 | 2/3 | In Progress|  |
+| 44. Per-Widget Data Model and Preset Migration | v0.5.0 | 3/3 | Complete   | 2026-03-27 |
 | 45. Resolution Engine | v0.5.0 | 0/? | Not started | - |
 | 46. OS Reader Extensions | v0.5.0 | 0/? | Not started | - |
 | 47. OS-First Pipeline | v0.5.0 | 0/? | Not started | - |
