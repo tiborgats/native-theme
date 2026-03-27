@@ -101,7 +101,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 44: Per-Widget Data Model and Preset Migration** - Restructure ThemeVariant to per-widget structs with ThemeDefaults, FontSpec, TextScale, and atomically rewrite all 17 preset TOMLs (completed 2026-03-27)
 - [x] **Phase 45: Resolution Engine** - Implement resolve() inheritance, ResolvedTheme with validate(), and update cross-platform presets for new structure (completed 2026-03-27)
 - [x] **Phase 46: OS Reader Extensions** - Extend all four platform readers (macOS, Windows, KDE, GNOME) with per-widget fields, text scale, fonts, and accessibility (completed 2026-03-27)
-- [ ] **Phase 47: OS-First Pipeline** - Wire from_system() to run OS reader, platform TOML overlay, resolve(), app TOML overlay, second resolve(), and validate()
+- [x] **Phase 47: OS-First Pipeline** - Wire from_system() to run OS reader, platform TOML overlay, resolve(), app TOML overlay, second resolve(), and validate() (completed 2026-03-27)
 - [ ] **Phase 48: Connector Migration** - Update gpui and iced connectors to accept &ResolvedTheme and update showcase examples
 
 ## Phase Details
@@ -170,11 +170,11 @@ Plans:
   1. from_system() returns a ResolvedTheme (not a ThemeVariant) after running: OS reader -> platform TOML overlay -> resolve() -> validate()
   2. Platform-to-preset mapping works correctly: macOS uses macos-sonoma, Windows uses windows-11, KDE uses kde-breeze, GNOME uses adwaita as the platform TOML overlay
   3. App TOML overlay with a second resolve() pass works: changing accent in an app override causes all accent-derived fields to re-propagate through resolve()
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 
 Plans:
 - [x] 47-01-PLAN.md — SystemTheme type + pipeline core + platform preset mapping + from_system() rewiring
-- [ ] 47-02-PLAN.md — App TOML overlay support via with_overlay() with accent propagation tests
+- [x] 47-02-PLAN.md — App TOML overlay support via with_overlay() with accent propagation tests
 
 ### Phase 48: Connector Migration
 **Goal**: Both toolkit connectors (gpui and iced) consume &ResolvedTheme with zero Option handling, and showcase examples demonstrate the new API
@@ -203,5 +203,5 @@ Phases execute in numeric order: 44 -> 45 -> 46 -> 47 -> 48
 | 44. Per-Widget Data Model and Preset Migration | v0.5.0 | 3/3 | Complete   | 2026-03-27 |
 | 45. Resolution Engine | v0.5.0 | 3/3 | Complete   | 2026-03-27 |
 | 46. OS Reader Extensions | v0.5.0 | 6/6 | Complete   | 2026-03-27 |
-| 47. OS-First Pipeline | v0.5.0 | 1/2 | In Progress|  |
+| 47. OS-First Pipeline | v0.5.0 | 2/2 | Complete   | 2026-03-27 |
 | 48. Connector Migration | v0.5.0 | 0/? | Not started | - |

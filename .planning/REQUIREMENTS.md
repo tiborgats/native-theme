@@ -65,7 +65,7 @@ Requirements for per-widget architecture and resolution pipeline. Each maps to r
 
 - [x] **PIPE-01**: from_system() runs full pipeline: OS reader -> platform TOML overlay -> resolve() -> ResolvedTheme
 - [x] **PIPE-02**: Platform-to-preset mapping (macOS->macos-sonoma, Windows->windows-11, KDE->kde-breeze, GNOME->adwaita)
-- [ ] **PIPE-03**: App TOML overlay support with second resolve() pass propagating changed source fields
+- [x] **PIPE-03**: App TOML overlay support with second resolve() pass propagating changed source fields
 
 ### Presets
 
@@ -156,7 +156,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | GNOME-05 | Phase 46 | Complete |
 | PIPE-01 | Phase 47 | Complete |
 | PIPE-02 | Phase 47 | Complete |
-| PIPE-03 | Phase 47 | Pending |
+| PIPE-03 | Phase 47 | Complete |
 | PRESET-01 | Phase 44 | Complete |
 | PRESET-02 | Phase 44 | Complete |
 | PRESET-03 | Phase 45 | Complete |
