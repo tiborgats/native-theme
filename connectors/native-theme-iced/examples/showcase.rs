@@ -469,7 +469,7 @@ struct State {
     current_theme: Theme,
     color_mode: ColorMode,
     is_dark: bool,
-    current_variant: native_theme::ThemeVariant,
+    current_resolved: native_theme::ResolvedTheme,
 
     // Navigation
     active_tab: Tab,
@@ -531,11 +531,13 @@ impl Default for State {
         let nt = NativeTheme::preset(preset_name).expect("default preset must exist");
         let color_mode = ColorMode::System;
         let is_dark = color_mode.is_dark();
-        let variant = nt
+        let mut variant = nt
             .pick_variant(is_dark)
             .expect("must have a variant")
             .clone();
-        let theme = native_theme_iced::to_theme(&variant, &nt.name);
+        variant.resolve();
+        let resolved = variant.validate().expect("default preset must validate");
+        let theme = native_theme_iced::to_theme(&resolved, &nt.name);
 
         let languages = vec![
             "Rust".to_string(),
@@ -568,7 +570,7 @@ impl Default for State {
             current_theme: theme,
             color_mode,
             is_dark,
-            current_variant: variant,
+            current_resolved: resolved,
             active_tab: Tab::Buttons,
             widget_info: String::new(),
             button_press_count: 0,
@@ -662,16 +664,37 @@ impl Default for State {
 
 impl State {
     fn rebuild_theme(&mut self) {
-        let nt = match &self.current_choice {
-            ThemeChoice::OsTheme => native_theme::from_system().unwrap_or_else(|_| {
-                NativeTheme::preset("default").expect("default preset must exist")
-            }),
-            ThemeChoice::Preset(name) => NativeTheme::preset(name).unwrap(),
-        };
         self.is_dark = self.color_mode.is_dark();
-        if let Some(variant) = nt.pick_variant(self.is_dark) {
-            self.current_variant = variant.clone();
-            self.current_theme = native_theme_iced::to_theme(variant, &nt.name);
+        match &self.current_choice {
+            ThemeChoice::OsTheme => {
+                match native_theme::from_system() {
+                    Ok(system) => {
+                        self.current_resolved = system.pick(self.is_dark).clone();
+                        self.current_theme =
+                            native_theme_iced::to_theme(&self.current_resolved, &system.name);
+                    }
+                    Err(_) => {
+                        // Fallback: load default preset through resolve pipeline
+                        let nt = NativeTheme::preset("default")
+                            .expect("default preset must exist");
+                        let mut variant = nt.pick_variant(self.is_dark).unwrap().clone();
+                        variant.resolve();
+                        let resolved = variant.validate().unwrap();
+                        self.current_resolved = resolved;
+                        self.current_theme =
+                            native_theme_iced::to_theme(&self.current_resolved, &nt.name);
+                    }
+                }
+            }
+            ThemeChoice::Preset(name) => {
+                let nt = NativeTheme::preset(name).unwrap();
+                let mut variant = nt.pick_variant(self.is_dark).unwrap().clone();
+                variant.resolve();
+                let resolved = variant.validate().unwrap();
+                self.current_resolved = resolved;
+                self.current_theme =
+                    native_theme_iced::to_theme(&self.current_resolved, &nt.name);
+            }
         }
     }
 }
@@ -790,8 +813,7 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
         // (both use the process/thread DPI context), so they always match.
         // Includes the invisible resize border on Win10+ (~7px each side).
         let mut rect = RECT::default();
-        GetWindowRect(hwnd, &mut rect)
-            .map_err(|e| format!("GetWindowRect failed: {e}"))?;
+        GetWindowRect(hwnd, &mut rect).map_err(|e| format!("GetWindowRect failed: {e}"))?;
 
         let width = rect.right - rect.left;
         let height = rect.bottom - rect.top;
@@ -1012,10 +1034,10 @@ fn update_inner(state: &mut State, message: Message) {
 // ---------------------------------------------------------------------------
 
 fn view(state: &State) -> Element<'_, Message> {
-    let radius = native_theme_iced::border_radius(&state.current_variant);
-    let sb_width = native_theme_iced::scrollbar_width(&state.current_variant);
-    let btn_pad = native_theme_iced::button_padding(&state.current_variant);
-    let inp_pad = native_theme_iced::input_padding(&state.current_variant);
+    let radius = native_theme_iced::border_radius(&state.current_resolved);
+    let sb_width = native_theme_iced::scrollbar_width(&state.current_resolved);
+    let btn_pad = native_theme_iced::button_padding(&state.current_resolved);
+    let inp_pad = native_theme_iced::input_padding(&state.current_resolved);
 
     // ---- Left sidebar ----
     let sidebar = {
@@ -1060,22 +1082,18 @@ fn view(state: &State) -> Element<'_, Message> {
         .spacing(4);
 
         // Theme config inspector (matches gpui sidebar)
-        let fi = format_font_info(&state.current_variant);
+        let fi = format_font_info(&state.current_resolved);
         let metrics_info = {
             let r = format!("radius: {radius:.0}px");
             let rlg = format!(
                 "radius_lg: {:.0}px",
-                native_theme_iced::border_radius_lg(&state.current_variant)
+                native_theme_iced::border_radius_lg(&state.current_resolved)
             );
             let sw = format!("scrollbar: {sb_width:.0}px");
-            let bp = match btn_pad {
-                Some([h, v]) => format!("btn pad: {h:.0}×{v:.0}"),
-                None => "btn pad: default".to_string(),
-            };
-            let ip = match inp_pad {
-                Some([h, v]) => format!("input pad: {h:.0}×{v:.0}"),
-                None => "input pad: default".to_string(),
-            };
+            let [bh, bv] = btn_pad;
+            let bp = format!("btn pad: {bh:.0}\u{00d7}{bv:.0}");
+            let [ih, iv] = inp_pad;
+            let ip = format!("input pad: {ih:.0}\u{00d7}{iv:.0}");
             column![
                 text("Theme Config Inspector").size(12),
                 text(r).size(10),
@@ -1170,32 +1188,22 @@ fn view(state: &State) -> Element<'_, Message> {
     };
 
     // ---- Right panel (tabs + content) ----
-    let sp = &state.current_variant.spacing;
-    let mut tab_padding = Padding::ZERO;
-    if let Some(l) = sp.l {
-        tab_padding = tab_padding.left(l).right(l);
-    }
-    if let Some(s) = sp.s {
-        tab_padding = tab_padding.top(s);
-    }
-    let content_padding = sp.l.map(Padding::from).unwrap_or(Padding::ZERO);
-    let panel_spacing = sp.xs.unwrap_or(0.0);
+    let sp = &state.current_resolved.defaults.spacing;
+    let tab_padding = Padding::ZERO.left(sp.l).right(sp.l).top(sp.s);
+    let content_padding = Padding::from(sp.l);
+    let panel_spacing = sp.xs;
     let right_panel = column![
         // Tab bar
         container(tab_bar).padding(tab_padding),
         rule::horizontal(1),
         // Scrollable content
-        scrollable(
-            container(tab_content)
-                .padding(content_padding)
-                .width(Fill),
-        )
-        .direction(scrollable::Direction::Vertical(
-            scrollable::Scrollbar::new()
-                .width(sb_width)
-                .scroller_width(sb_width),
-        ))
-        .height(Fill),
+        scrollable(container(tab_content).padding(content_padding).width(Fill),)
+            .direction(scrollable::Direction::Vertical(
+                scrollable::Scrollbar::new()
+                    .width(sb_width)
+                    .scroller_width(sb_width),
+            ))
+            .height(Fill),
     ]
     .spacing(panel_spacing)
     .width(Fill)
@@ -1257,20 +1265,12 @@ fn widget_tooltip(
     s
 }
 
-/// Format the original native-theme font settings (in points) for display.
-fn format_font_info(variant: &native_theme::ThemeVariant) -> String {
-    let ff = variant.fonts.family.as_deref().unwrap_or("(default)");
-    let fs = variant
-        .fonts
-        .size
-        .map(|s| format!("{}pt", s))
-        .unwrap_or("(default)".into());
-    let mf = variant.fonts.mono_family.as_deref().unwrap_or("(default)");
-    let ms = variant
-        .fonts
-        .mono_size
-        .map(|s| format!("{}pt", s))
-        .unwrap_or("(default)".into());
+/// Format the resolved theme font settings for display.
+fn format_font_info(resolved: &native_theme::ResolvedTheme) -> String {
+    let ff = &resolved.defaults.font.family;
+    let fs = format!("{:.0}px", resolved.defaults.font.size);
+    let mf = &resolved.defaults.mono_font.family;
+    let ms = format!("{:.0}px", resolved.defaults.mono_font.size);
     format!("Font: {ff} {fs}  Mono: {mf} {ms}")
 }
 
@@ -1283,30 +1283,10 @@ fn widget_tooltip_themed(
     not_themeable: &[(&str, &str)],
 ) -> String {
     let mut s = widget_tooltip(name, colors, config, not_themeable);
-    let ff = state
-        .current_variant
-        .fonts
-        .family
-        .as_deref()
-        .unwrap_or("(default)");
-    let fs = state
-        .current_variant
-        .fonts
-        .size
-        .map(|s| format!("{}pt", s))
-        .unwrap_or("(default)".into());
-    let mf = state
-        .current_variant
-        .fonts
-        .mono_family
-        .as_deref()
-        .unwrap_or("(default)");
-    let ms = state
-        .current_variant
-        .fonts
-        .mono_size
-        .map(|s| format!("{}pt", s))
-        .unwrap_or("(default)".into());
+    let ff = &state.current_resolved.defaults.font.family;
+    let fs = format!("{:.0}px", state.current_resolved.defaults.font.size);
+    let mf = &state.current_resolved.defaults.mono_font.family;
+    let ms = format!("{:.0}px", state.current_resolved.defaults.mono_font.size);
     s.push_str(&format!(
         "\nTheme fonts:\n  Font: {ff} {fs}\n  Mono: {mf} {ms}\n"
     ));
@@ -1317,17 +1297,15 @@ fn widget_tooltip_themed(
 // Tab: Buttons
 // ---------------------------------------------------------------------------
 
-fn view_buttons<'a>(state: &'a State, btn_pad: Option<[f32; 2]>) -> Element<'a, Message> {
+fn view_buttons<'a>(state: &'a State, btn_pad: [f32; 2]) -> Element<'a, Message> {
     let palette = state.current_theme.palette();
     let ext = state.current_theme.extended_palette();
-    let radius = native_theme_iced::border_radius(&state.current_variant);
+    let radius = native_theme_iced::border_radius(&state.current_resolved);
     let radius_s = format!("{radius:.0}px");
 
     let apply_pad = |b: button::Button<'a, Message>| -> button::Button<'a, Message> {
-        match btn_pad {
-            Some([h, v]) => b.padding(Padding::from([v, h])),
-            None => b,
-        }
+        let [h, v] = btn_pad;
+        b.padding(Padding::from([v, h]))
     };
 
     let header = section_header(
@@ -1451,7 +1429,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Option<[f32; 2]>) -> Element<'a, 
 fn view_text_inputs<'a>(
     state: &'a State,
     radius: f32,
-    inp_pad: Option<[f32; 2]>,
+    inp_pad: [f32; 2],
 ) -> Element<'a, Message> {
     let palette = state.current_theme.palette();
     let ext = state.current_theme.extended_palette();
@@ -1465,7 +1443,8 @@ fn view_text_inputs<'a>(
     let single_line = {
         let mut input = text_input("Type something here...", &state.text_input_value)
             .on_input(Message::TextInputChanged);
-        if let Some([h, v]) = inp_pad {
+        {
+            let [h, v] = inp_pad;
             input = input.padding(Padding::from([v, h]));
         }
 
@@ -1507,7 +1486,8 @@ fn view_text_inputs<'a>(
         let mut input = text_input("Password field...", &state.text_input_value)
             .on_input(Message::TextInputChanged)
             .secure(true);
-        if let Some([h, v]) = inp_pad {
+        {
+            let [h, v] = inp_pad;
             input = input.padding(Padding::from([v, h]));
         }
 
@@ -1573,7 +1553,7 @@ fn view_text_inputs<'a>(
 fn view_selection(state: &State) -> Element<'_, Message> {
     let palette = state.current_theme.palette();
     let ext = state.current_theme.extended_palette();
-    let radius = native_theme_iced::border_radius(&state.current_variant);
+    let radius = native_theme_iced::border_radius(&state.current_resolved);
     let radius_s = format!("{radius:.0}px");
 
     let header = section_header(
@@ -2075,18 +2055,10 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
     );
 
     let font_info = {
-        let ff = native_theme_iced::font_family(&state.current_variant)
-            .unwrap_or("(default)")
-            .to_string();
-        let fs = native_theme_iced::font_size(&state.current_variant)
-            .map(|s| format!("{s:.1}px"))
-            .unwrap_or_else(|| "(default)".to_string());
-        let mf = native_theme_iced::mono_font_family(&state.current_variant)
-            .unwrap_or("(default)")
-            .to_string();
-        let ms = native_theme_iced::mono_font_size(&state.current_variant)
-            .map(|s| format!("{s:.1}px"))
-            .unwrap_or_else(|| "(default)".to_string());
+        let ff = native_theme_iced::font_family(&state.current_resolved);
+        let fs = format!("{:.1}px", native_theme_iced::font_size(&state.current_resolved));
+        let mf = native_theme_iced::mono_font_family(&state.current_resolved);
+        let ms = format!("{:.1}px", native_theme_iced::mono_font_size(&state.current_resolved));
         format!("Font: {ff} @ {fs}  |  Mono: {mf} @ {ms}")
     };
 
@@ -2547,46 +2519,47 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
     ]
     .spacing(8);
 
-    // Native-theme source colors (36 fields)
+    // Resolved theme colors (defaults + selected per-widget)
     let native_colors = {
-        let c = &state.current_variant.colors;
-        let pairs: Vec<(&str, Option<native_theme::Rgba>)> = vec![
-            ("accent", c.accent),
-            ("background", c.background),
-            ("foreground", c.foreground),
-            ("surface", c.surface),
-            ("border", c.border),
-            ("muted", c.muted),
-            ("shadow", c.shadow),
-            ("primary_bg", c.primary_background),
-            ("primary_fg", c.primary_foreground),
-            ("secondary_bg", c.secondary_background),
-            ("secondary_fg", c.secondary_foreground),
-            ("danger", c.danger),
-            ("danger_fg", c.danger_foreground),
-            ("warning", c.warning),
-            ("warning_fg", c.warning_foreground),
-            ("success", c.success),
-            ("success_fg", c.success_foreground),
-            ("info", c.info),
-            ("info_fg", c.info_foreground),
-            ("selection", c.selection),
-            ("selection_fg", c.selection_foreground),
-            ("link", c.link),
-            ("focus_ring", c.focus_ring),
-            ("sidebar", c.sidebar),
-            ("sidebar_fg", c.sidebar_foreground),
-            ("tooltip", c.tooltip),
-            ("tooltip_fg", c.tooltip_foreground),
-            ("popover", c.popover),
-            ("popover_fg", c.popover_foreground),
-            ("button", c.button),
-            ("button_fg", c.button_foreground),
-            ("input", c.input),
-            ("input_fg", c.input_foreground),
-            ("disabled", c.disabled),
-            ("separator", c.separator),
-            ("alt_row", c.alternate_row),
+        let d = &state.current_resolved.defaults;
+        let r = &state.current_resolved;
+        let pairs: Vec<(&str, native_theme::Rgba)> = vec![
+            ("accent", d.accent),
+            ("background", d.background),
+            ("foreground", d.foreground),
+            ("surface", d.surface),
+            ("border", d.border),
+            ("muted", d.muted),
+            ("shadow", d.shadow),
+            ("accent_fg", d.accent_foreground),
+            ("btn_bg", r.button.background),
+            ("btn_fg", r.button.foreground),
+            ("btn_primary", r.button.primary_bg),
+            ("danger", d.danger),
+            ("danger_fg", d.danger_foreground),
+            ("warning", d.warning),
+            ("warning_fg", d.warning_foreground),
+            ("success", d.success),
+            ("success_fg", d.success_foreground),
+            ("info", d.info),
+            ("info_fg", d.info_foreground),
+            ("selection", d.selection),
+            ("selection_fg", d.selection_foreground),
+            ("link", d.link),
+            ("focus_ring", d.focus_ring_color),
+            ("sidebar_bg", r.sidebar.background),
+            ("sidebar_fg", r.sidebar.foreground),
+            ("tooltip_bg", r.tooltip.background),
+            ("tooltip_fg", r.tooltip.foreground),
+            ("popover_bg", r.popover.background),
+            ("popover_fg", r.popover.foreground),
+            ("input_bg", r.input.background),
+            ("input_fg", r.input.foreground),
+            ("disabled_fg", d.disabled_foreground),
+            ("separator", r.separator.color),
+            ("alt_row", r.list.alternate_row),
+            ("sel_inactive", d.selection_inactive),
+            ("card_bg", r.card.background),
         ];
 
         // Wrap into rows of 6
@@ -2596,27 +2569,17 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
             let end = (idx + 6).min(pairs.len());
             let row_items: Vec<Element<'_, Message>> = pairs[idx..end]
                 .iter()
-                .map(|(name, rgba)| match rgba {
-                    Some(c) => {
-                        let [r, g, b, _a] = c.to_f32_array();
-                        color_swatch(name, Color::from_rgb(r, g, b))
-                    }
-                    None => column![
-                        container(text("--").size(10))
-                            .center_x(Length::Fixed(32.0))
-                            .center_y(Length::Fixed(32.0)),
-                        text(*name).size(9),
-                    ]
-                    .spacing(2)
-                    .align_x(iced::Center)
-                    .into(),
+                .map(|(name, rgba)| {
+                    let [cr, cg, cb, _a] = rgba.to_f32_array();
+                    color_swatch(name, Color::from_rgb(cr, cg, cb))
                 })
                 .collect();
             rows.push(row(row_items).spacing(12).into());
             idx = end;
         }
 
-        let mut col = column![text("Native Theme Source Colors (36 fields)").size(16),].spacing(8);
+        let mut col =
+            column![text("Resolved Theme Colors (defaults + per-widget)").size(16),].spacing(8);
         for r in rows {
             col = col.push(r);
         }
