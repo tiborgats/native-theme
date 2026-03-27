@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.0
 milestone_name: Per-Widget Architecture & Resolution Pipeline
-status: phase-complete
-stopped_at: —
-last_updated: "2026-03-27T00:00:00.000Z"
-last_activity: "2026-03-27 — Phase 44 complete: per-widget data model and preset migration verified"
+status: executing
+stopped_at: Completed 45-01-PLAN.md
+last_updated: "2026-03-27T09:19:49.046Z"
+last_activity: "2026-03-27 — Plan 45-01 complete: ResolvedTheme types and ThemeResolutionError"
 progress:
   total_phases: 5
   completed_phases: 1
-  total_plans: 3
-  completed_plans: 3
-  percent: 20
+  total_plans: 6
+  completed_plans: 4
+  percent: 67
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 ## Current Position
 
 Phase: 45 (2 of 5 in v0.5.0) — Resolution Engine
-Plan: —
-Status: Ready to plan
-Last activity: 2026-03-27 — Phase 44 complete (3/3 plans, verified)
+Plan: 01 of 3 complete
+Status: Executing
+Last activity: 2026-03-27 — Plan 45-01 complete: ResolvedTheme types and ThemeResolutionError
 
-Progress: [██░░░░░░░░] 20%
+Progress: [███████░░░] 67%
 
 ## Performance Metrics
 
@@ -63,6 +63,8 @@ Decisions from 44-01 and 44-02:
 - [Phase 44-03]: impl_merge! nested clause auto-generates is_empty() — no manual impl needed on ThemeVariant
 - [Phase 44-03]: NativeTheme needs PartialEq derive for round-trip equality tests; SplitterTheme must be in pub use exports
 - [Phase 44-03]: TOML preset icon_set stored at [light]/[dark] level (not inside [defaults]); widget colors in their own [v.widget] tables
+- [Phase 45]: [Phase 45-01]: ResolvedTheme uses explicit per-widget fields (not HashMap) matching ThemeVariant for type safety
+- [Phase 45]: [Phase 45-01]: No serde derives on Resolved types -- output-only consumed by connectors
 
 ### Roadmap Evolution
 
@@ -81,6 +83,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-27T07:15:53.091Z
-Stopped at: Completed 44-02-PLAN.md
+Last session: 2026-03-27T09:19:49.043Z
+Stopped at: Completed 45-01-PLAN.md
 Resume file: None
