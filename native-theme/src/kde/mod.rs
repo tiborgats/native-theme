@@ -8,7 +8,7 @@ pub mod fonts;
 pub mod metrics;
 
 use crate::Rgba;
-use crate::model::{DialogButtonOrder, TextScaleEntry};
+use crate::model::{DialogButtonOrder, IconSizes, TextScaleEntry};
 
 /// Parse a KDE kdeglobals content string into a NativeTheme.
 ///
@@ -38,6 +38,12 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::NativeThem
         if !theme_name.is_empty() {
             variant.icon_set = Some(theme_name);
         }
+    }
+
+    // KDE-05: Icon sizes from index.theme
+    if let Some(ref theme_name) = variant.icon_set {
+        let sizes = parse_icon_sizes_from_index_theme(theme_name);
+        variant.defaults.icon_sizes = sizes;
     }
 
     // Dialog button order: KDE uses leading affirmative (per project decision)
@@ -120,6 +126,148 @@ fn populate_accessibility(ini: &configparser::ini::Ini, variant: &mut crate::The
             }
         }
     }
+}
+
+/// Parse icon sizes from a freedesktop index.theme INI already loaded into a parser.
+///
+/// Reads the `[Icon Theme]` section's `Directories` key, then for each listed
+/// directory reads `Size` and `Context`. Derives:
+/// - `small`: smallest Size where Context is "Actions" or "Status"
+/// - `toolbar`: Size closest to 22 from "Actions" entries
+/// - `large`: smallest Size >= 32 from "Applications" entries
+///
+/// Fields without matching entries remain None.
+pub(crate) fn parse_icon_sizes_from_content(ini: &configparser::ini::Ini) -> IconSizes {
+    let dirs_str = match ini.get("Icon Theme", "Directories") {
+        Some(s) if !s.trim().is_empty() => s,
+        _ => return IconSizes::default(),
+    };
+
+    // Collect (size, context) pairs from each directory section
+    let mut entries: Vec<(u32, String)> = Vec::new();
+    for dir_name in dirs_str.split(',') {
+        let dir_name = dir_name.trim();
+        if dir_name.is_empty() {
+            continue;
+        }
+        let size = ini
+            .get(dir_name, "Size")
+            .and_then(|s| s.trim().parse::<u32>().ok());
+        let context = ini.get(dir_name, "Context");
+        if let (Some(sz), Some(ctx)) = (size, context) {
+            entries.push((sz, ctx));
+        }
+    }
+
+    if entries.is_empty() {
+        return IconSizes::default();
+    }
+
+    // small: smallest Size from Actions or Status context
+    let small = entries
+        .iter()
+        .filter(|(_, ctx)| ctx == "Actions" || ctx == "Status")
+        .map(|(sz, _)| *sz)
+        .min()
+        .map(|sz| sz as f32);
+
+    // toolbar: Actions entry closest to 22
+    let toolbar = entries
+        .iter()
+        .filter(|(_, ctx)| ctx == "Actions")
+        .map(|(sz, _)| *sz)
+        .min_by_key(|sz| (*sz as i32 - 22).unsigned_abs())
+        .map(|sz| sz as f32);
+
+    // large: smallest Applications entry >= 32 (or largest if none >= 32)
+    let large = {
+        let app_sizes: Vec<u32> = entries
+            .iter()
+            .filter(|(_, ctx)| ctx == "Applications")
+            .map(|(sz, _)| *sz)
+            .collect();
+        if app_sizes.is_empty() {
+            None
+        } else {
+            let ge32: Vec<u32> = app_sizes.iter().copied().filter(|&s| s >= 32).collect();
+            if ge32.is_empty() {
+                app_sizes.iter().copied().max().map(|sz| sz as f32)
+            } else {
+                ge32.iter().copied().min().map(|sz| sz as f32)
+            }
+        }
+    };
+
+    IconSizes {
+        small,
+        toolbar,
+        large,
+        dialog: None,
+        panel: None,
+    }
+}
+
+/// Parse icon sizes from the active icon theme's index.theme file.
+///
+/// Searches XDG icon theme directories for `{theme_name}/index.theme`:
+/// 1. `$HOME/.local/share/icons/{theme_name}/index.theme`
+/// 2. Each directory in `$XDG_DATA_DIRS` (default `/usr/local/share:/usr/share`)
+///    appended with `/icons/{theme_name}/index.theme`
+///
+/// Returns `IconSizes::default()` (all None) if no index.theme is found or
+/// the file cannot be parsed.
+pub(crate) fn parse_icon_sizes_from_index_theme(theme_name: &str) -> IconSizes {
+    let path = match find_index_theme_path(theme_name) {
+        Some(p) => p,
+        None => return IconSizes::default(),
+    };
+
+    let content = match std::fs::read_to_string(&path) {
+        Ok(c) => c,
+        Err(_) => return IconSizes::default(),
+    };
+
+    let mut ini = create_kde_parser();
+    if ini.read(content).is_err() {
+        return IconSizes::default();
+    }
+
+    parse_icon_sizes_from_content(&ini)
+}
+
+/// Locate the index.theme file for a given icon theme name.
+///
+/// Searches in XDG standard order: user local first, then system dirs.
+fn find_index_theme_path(theme_name: &str) -> Option<std::path::PathBuf> {
+    // 1. $HOME/.local/share/icons/{theme_name}/index.theme
+    if let Ok(home) = std::env::var("HOME") {
+        let p = std::path::PathBuf::from(home)
+            .join(".local/share/icons")
+            .join(theme_name)
+            .join("index.theme");
+        if p.exists() {
+            return Some(p);
+        }
+    }
+
+    // 2. XDG_DATA_DIRS entries + /icons/{theme_name}/index.theme
+    let data_dirs = std::env::var("XDG_DATA_DIRS")
+        .unwrap_or_else(|_| "/usr/local/share:/usr/share".to_string());
+    for dir in data_dirs.split(':') {
+        let dir = dir.trim();
+        if dir.is_empty() {
+            continue;
+        }
+        let p = std::path::PathBuf::from(dir)
+            .join("icons")
+            .join(theme_name)
+            .join("index.theme");
+        if p.exists() {
+            return Some(p);
+        }
+    }
+
+    None
 }
 
 /// Read the current KDE theme from kdeglobals.
