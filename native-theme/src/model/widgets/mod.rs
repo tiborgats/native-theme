@@ -7,7 +7,7 @@ use crate::model::{DialogButtonOrder, FontSpec};
 ///
 /// Unlike [`crate::model::FontSpec`], all fields are required (non-optional)
 /// because resolution has already filled in all defaults.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct ResolvedFontSpec {
     /// Font family name.
     pub family: String,

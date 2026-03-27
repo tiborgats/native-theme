@@ -48,7 +48,7 @@ pub struct ResolvedIconSizes {
 // --- ResolvedTextScaleEntry ---
 
 /// A single resolved text scale entry with guaranteed size, weight, and line height.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq)]
 pub struct ResolvedTextScaleEntry {
     /// Font size in logical pixels.
     pub size: f32,

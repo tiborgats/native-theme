@@ -55,44 +55,42 @@ fn resolve_text_scale_entry(
 // --- validate() helpers ---
 
 /// Extract a required field, recording the path if missing.
-fn require<T: Clone>(field: &Option<T>, path: &str, missing: &mut Vec<String>) -> Option<T> {
+///
+/// Returns the value if present, or `T::default()` as a placeholder if missing.
+/// The placeholder is never used: `validate()` returns `Err` before constructing
+/// `ResolvedTheme` when any field was recorded as missing.
+fn require<T: Clone + Default>(field: &Option<T>, path: &str, missing: &mut Vec<String>) -> T {
     match field {
-        Some(val) => Some(val.clone()),
+        Some(val) => val.clone(),
         None => {
             missing.push(path.to_string());
-            None
+            T::default()
         }
     }
 }
 
 /// Validate a FontSpec that is stored directly (not wrapped in Option).
 /// Checks each sub-field individually.
-fn require_font(font: &FontSpec, prefix: &str, missing: &mut Vec<String>) -> Option<ResolvedFontSpec> {
+fn require_font(font: &FontSpec, prefix: &str, missing: &mut Vec<String>) -> ResolvedFontSpec {
     let family = require(&font.family, &format!("{prefix}.family"), missing);
     let size = require(&font.size, &format!("{prefix}.size"), missing);
     let weight = require(&font.weight, &format!("{prefix}.weight"), missing);
-    match (family, size, weight) {
-        (Some(fam), Some(s), Some(w)) => Some(ResolvedFontSpec { family: fam, size: s, weight: w }),
-        _ => None,
-    }
+    ResolvedFontSpec { family, size, weight }
 }
 
 /// Validate an `Option<FontSpec>` (widget font fields).
 /// If None, records the path as missing.
-fn require_font_opt(font: &Option<FontSpec>, prefix: &str, missing: &mut Vec<String>) -> Option<ResolvedFontSpec> {
+fn require_font_opt(font: &Option<FontSpec>, prefix: &str, missing: &mut Vec<String>) -> ResolvedFontSpec {
     match font {
         None => {
             missing.push(prefix.to_string());
-            None
+            ResolvedFontSpec::default()
         }
         Some(f) => {
             let family = require(&f.family, &format!("{prefix}.family"), missing);
             let size = require(&f.size, &format!("{prefix}.size"), missing);
             let weight = require(&f.weight, &format!("{prefix}.weight"), missing);
-            match (family, size, weight) {
-                (Some(fam), Some(s), Some(w)) => Some(ResolvedFontSpec { family: fam, size: s, weight: w }),
-                _ => None,
-            }
+            ResolvedFontSpec { family, size, weight }
         }
     }
 }
@@ -102,20 +100,17 @@ fn require_text_scale_entry(
     entry: &Option<TextScaleEntry>,
     prefix: &str,
     missing: &mut Vec<String>,
-) -> Option<ResolvedTextScaleEntry> {
+) -> ResolvedTextScaleEntry {
     match entry {
         None => {
             missing.push(prefix.to_string());
-            None
+            ResolvedTextScaleEntry::default()
         }
         Some(e) => {
             let size = require(&e.size, &format!("{prefix}.size"), missing);
             let weight = require(&e.weight, &format!("{prefix}.weight"), missing);
             let line_height = require(&e.line_height, &format!("{prefix}.line_height"), missing);
-            match (size, weight, line_height) {
-                (Some(s), Some(w), Some(lh)) => Some(ResolvedTextScaleEntry { size: s, weight: w, line_height: lh }),
-                _ => None,
-            }
+            ResolvedTextScaleEntry { size, weight, line_height }
         }
     }
 }
@@ -355,11 +350,6 @@ impl ThemeVariant {
     ///
     /// Returns [`crate::Error::Resolution`] containing a [`ThemeResolutionError`]
     /// with all missing field paths if any fields remain None.
-    // SAFETY: All `.unwrap()` calls below are safe because `require()` / `require_font()`
-    // record every `None` field into `missing`, and we return `Err` if `missing` is non-empty.
-    // By the time execution reaches the `Ok(ResolvedTheme { ... })` constructor, every
-    // value returned by `require()` is guaranteed to be `Some`.
-    #[allow(clippy::unwrap_used)]
     pub fn validate(&self) -> crate::Result<ResolvedTheme> {
         let mut missing = Vec::new();
 
@@ -670,273 +660,274 @@ impl ThemeVariant {
         }
 
         // All fields present -- construct ResolvedTheme.
-        // unwrap() is safe because we checked that missing is empty above.
+        // require() returns T directly (using T::default() as placeholder for missing),
+        // so no unwrap() is needed. The defaults are never used: we returned Err above.
         Ok(ResolvedTheme {
             defaults: ResolvedDefaults {
-                font: defaults_font.unwrap(),
-                line_height: defaults_line_height.unwrap(),
-                mono_font: defaults_mono_font.unwrap(),
-                background: defaults_background.unwrap(),
-                foreground: defaults_foreground.unwrap(),
-                accent: defaults_accent.unwrap(),
-                accent_foreground: defaults_accent_foreground.unwrap(),
-                surface: defaults_surface.unwrap(),
-                border: defaults_border.unwrap(),
-                muted: defaults_muted.unwrap(),
-                shadow: defaults_shadow.unwrap(),
-                link: defaults_link.unwrap(),
-                selection: defaults_selection.unwrap(),
-                selection_foreground: defaults_selection_foreground.unwrap(),
-                selection_inactive: defaults_selection_inactive.unwrap(),
-                disabled_foreground: defaults_disabled_foreground.unwrap(),
-                danger: defaults_danger.unwrap(),
-                danger_foreground: defaults_danger_foreground.unwrap(),
-                warning: defaults_warning.unwrap(),
-                warning_foreground: defaults_warning_foreground.unwrap(),
-                success: defaults_success.unwrap(),
-                success_foreground: defaults_success_foreground.unwrap(),
-                info: defaults_info.unwrap(),
-                info_foreground: defaults_info_foreground.unwrap(),
-                radius: defaults_radius.unwrap(),
-                radius_lg: defaults_radius_lg.unwrap(),
-                frame_width: defaults_frame_width.unwrap(),
-                disabled_opacity: defaults_disabled_opacity.unwrap(),
-                border_opacity: defaults_border_opacity.unwrap(),
-                shadow_enabled: defaults_shadow_enabled.unwrap(),
-                focus_ring_color: defaults_focus_ring_color.unwrap(),
-                focus_ring_width: defaults_focus_ring_width.unwrap(),
-                focus_ring_offset: defaults_focus_ring_offset.unwrap(),
+                font: defaults_font,
+                line_height: defaults_line_height,
+                mono_font: defaults_mono_font,
+                background: defaults_background,
+                foreground: defaults_foreground,
+                accent: defaults_accent,
+                accent_foreground: defaults_accent_foreground,
+                surface: defaults_surface,
+                border: defaults_border,
+                muted: defaults_muted,
+                shadow: defaults_shadow,
+                link: defaults_link,
+                selection: defaults_selection,
+                selection_foreground: defaults_selection_foreground,
+                selection_inactive: defaults_selection_inactive,
+                disabled_foreground: defaults_disabled_foreground,
+                danger: defaults_danger,
+                danger_foreground: defaults_danger_foreground,
+                warning: defaults_warning,
+                warning_foreground: defaults_warning_foreground,
+                success: defaults_success,
+                success_foreground: defaults_success_foreground,
+                info: defaults_info,
+                info_foreground: defaults_info_foreground,
+                radius: defaults_radius,
+                radius_lg: defaults_radius_lg,
+                frame_width: defaults_frame_width,
+                disabled_opacity: defaults_disabled_opacity,
+                border_opacity: defaults_border_opacity,
+                shadow_enabled: defaults_shadow_enabled,
+                focus_ring_color: defaults_focus_ring_color,
+                focus_ring_width: defaults_focus_ring_width,
+                focus_ring_offset: defaults_focus_ring_offset,
                 spacing: ResolvedSpacing {
-                    xxs: defaults_spacing_xxs.unwrap(),
-                    xs: defaults_spacing_xs.unwrap(),
-                    s: defaults_spacing_s.unwrap(),
-                    m: defaults_spacing_m.unwrap(),
-                    l: defaults_spacing_l.unwrap(),
-                    xl: defaults_spacing_xl.unwrap(),
-                    xxl: defaults_spacing_xxl.unwrap(),
+                    xxs: defaults_spacing_xxs,
+                    xs: defaults_spacing_xs,
+                    s: defaults_spacing_s,
+                    m: defaults_spacing_m,
+                    l: defaults_spacing_l,
+                    xl: defaults_spacing_xl,
+                    xxl: defaults_spacing_xxl,
                 },
                 icon_sizes: ResolvedIconSizes {
-                    toolbar: defaults_icon_sizes_toolbar.unwrap(),
-                    small: defaults_icon_sizes_small.unwrap(),
-                    large: defaults_icon_sizes_large.unwrap(),
-                    dialog: defaults_icon_sizes_dialog.unwrap(),
-                    panel: defaults_icon_sizes_panel.unwrap(),
+                    toolbar: defaults_icon_sizes_toolbar,
+                    small: defaults_icon_sizes_small,
+                    large: defaults_icon_sizes_large,
+                    dialog: defaults_icon_sizes_dialog,
+                    panel: defaults_icon_sizes_panel,
                 },
-                text_scaling_factor: defaults_text_scaling_factor.unwrap(),
-                reduce_motion: defaults_reduce_motion.unwrap(),
-                high_contrast: defaults_high_contrast.unwrap(),
-                reduce_transparency: defaults_reduce_transparency.unwrap(),
+                text_scaling_factor: defaults_text_scaling_factor,
+                reduce_motion: defaults_reduce_motion,
+                high_contrast: defaults_high_contrast,
+                reduce_transparency: defaults_reduce_transparency,
             },
             text_scale: ResolvedTextScale {
-                caption: ts_caption.unwrap(),
-                section_heading: ts_section_heading.unwrap(),
-                dialog_title: ts_dialog_title.unwrap(),
-                display: ts_display.unwrap(),
+                caption: ts_caption,
+                section_heading: ts_section_heading,
+                dialog_title: ts_dialog_title,
+                display: ts_display,
             },
             window: crate::model::widgets::ResolvedWindow {
-                background: window_background.unwrap(),
-                foreground: window_foreground.unwrap(),
-                border: window_border.unwrap(),
-                title_bar_background: window_title_bar_background.unwrap(),
-                title_bar_foreground: window_title_bar_foreground.unwrap(),
-                inactive_title_bar_background: window_inactive_title_bar_background.unwrap(),
-                inactive_title_bar_foreground: window_inactive_title_bar_foreground.unwrap(),
-                radius: window_radius.unwrap(),
-                shadow: window_shadow.unwrap(),
-                title_bar_font: window_title_bar_font.unwrap(),
+                background: window_background,
+                foreground: window_foreground,
+                border: window_border,
+                title_bar_background: window_title_bar_background,
+                title_bar_foreground: window_title_bar_foreground,
+                inactive_title_bar_background: window_inactive_title_bar_background,
+                inactive_title_bar_foreground: window_inactive_title_bar_foreground,
+                radius: window_radius,
+                shadow: window_shadow,
+                title_bar_font: window_title_bar_font,
             },
             button: crate::model::widgets::ResolvedButton {
-                background: button_background.unwrap(),
-                foreground: button_foreground.unwrap(),
-                border: button_border.unwrap(),
-                primary_bg: button_primary_bg.unwrap(),
-                primary_fg: button_primary_fg.unwrap(),
-                min_width: button_min_width.unwrap(),
-                min_height: button_min_height.unwrap(),
-                padding_horizontal: button_padding_horizontal.unwrap(),
-                padding_vertical: button_padding_vertical.unwrap(),
-                radius: button_radius.unwrap(),
-                icon_spacing: button_icon_spacing.unwrap(),
-                disabled_opacity: button_disabled_opacity.unwrap(),
-                shadow: button_shadow.unwrap(),
-                font: button_font.unwrap(),
+                background: button_background,
+                foreground: button_foreground,
+                border: button_border,
+                primary_bg: button_primary_bg,
+                primary_fg: button_primary_fg,
+                min_width: button_min_width,
+                min_height: button_min_height,
+                padding_horizontal: button_padding_horizontal,
+                padding_vertical: button_padding_vertical,
+                radius: button_radius,
+                icon_spacing: button_icon_spacing,
+                disabled_opacity: button_disabled_opacity,
+                shadow: button_shadow,
+                font: button_font,
             },
             input: crate::model::widgets::ResolvedInput {
-                background: input_background.unwrap(),
-                foreground: input_foreground.unwrap(),
-                border: input_border.unwrap(),
-                placeholder: input_placeholder.unwrap(),
-                caret: input_caret.unwrap(),
-                selection: input_selection.unwrap(),
-                selection_foreground: input_selection_foreground.unwrap(),
-                min_height: input_min_height.unwrap(),
-                padding_horizontal: input_padding_horizontal.unwrap(),
-                padding_vertical: input_padding_vertical.unwrap(),
-                radius: input_radius.unwrap(),
-                border_width: input_border_width.unwrap(),
-                font: input_font.unwrap(),
+                background: input_background,
+                foreground: input_foreground,
+                border: input_border,
+                placeholder: input_placeholder,
+                caret: input_caret,
+                selection: input_selection,
+                selection_foreground: input_selection_foreground,
+                min_height: input_min_height,
+                padding_horizontal: input_padding_horizontal,
+                padding_vertical: input_padding_vertical,
+                radius: input_radius,
+                border_width: input_border_width,
+                font: input_font,
             },
             checkbox: crate::model::widgets::ResolvedCheckbox {
-                checked_bg: checkbox_checked_bg.unwrap(),
-                indicator_size: checkbox_indicator_size.unwrap(),
-                spacing: checkbox_spacing.unwrap(),
-                radius: checkbox_radius.unwrap(),
-                border_width: checkbox_border_width.unwrap(),
+                checked_bg: checkbox_checked_bg,
+                indicator_size: checkbox_indicator_size,
+                spacing: checkbox_spacing,
+                radius: checkbox_radius,
+                border_width: checkbox_border_width,
             },
             menu: crate::model::widgets::ResolvedMenu {
-                background: menu_background.unwrap(),
-                foreground: menu_foreground.unwrap(),
-                separator: menu_separator.unwrap(),
-                item_height: menu_item_height.unwrap(),
-                padding_horizontal: menu_padding_horizontal.unwrap(),
-                padding_vertical: menu_padding_vertical.unwrap(),
-                icon_spacing: menu_icon_spacing.unwrap(),
-                font: menu_font.unwrap(),
+                background: menu_background,
+                foreground: menu_foreground,
+                separator: menu_separator,
+                item_height: menu_item_height,
+                padding_horizontal: menu_padding_horizontal,
+                padding_vertical: menu_padding_vertical,
+                icon_spacing: menu_icon_spacing,
+                font: menu_font,
             },
             tooltip: crate::model::widgets::ResolvedTooltip {
-                background: tooltip_background.unwrap(),
-                foreground: tooltip_foreground.unwrap(),
-                padding_horizontal: tooltip_padding_horizontal.unwrap(),
-                padding_vertical: tooltip_padding_vertical.unwrap(),
-                max_width: tooltip_max_width.unwrap(),
-                radius: tooltip_radius.unwrap(),
-                font: tooltip_font.unwrap(),
+                background: tooltip_background,
+                foreground: tooltip_foreground,
+                padding_horizontal: tooltip_padding_horizontal,
+                padding_vertical: tooltip_padding_vertical,
+                max_width: tooltip_max_width,
+                radius: tooltip_radius,
+                font: tooltip_font,
             },
             scrollbar: crate::model::widgets::ResolvedScrollbar {
-                track: scrollbar_track.unwrap(),
-                thumb: scrollbar_thumb.unwrap(),
-                thumb_hover: scrollbar_thumb_hover.unwrap(),
-                width: scrollbar_width.unwrap(),
-                min_thumb_height: scrollbar_min_thumb_height.unwrap(),
-                slider_width: scrollbar_slider_width.unwrap(),
-                overlay_mode: scrollbar_overlay_mode.unwrap(),
+                track: scrollbar_track,
+                thumb: scrollbar_thumb,
+                thumb_hover: scrollbar_thumb_hover,
+                width: scrollbar_width,
+                min_thumb_height: scrollbar_min_thumb_height,
+                slider_width: scrollbar_slider_width,
+                overlay_mode: scrollbar_overlay_mode,
             },
             slider: crate::model::widgets::ResolvedSlider {
-                fill: slider_fill.unwrap(),
-                track: slider_track.unwrap(),
-                thumb: slider_thumb.unwrap(),
-                track_height: slider_track_height.unwrap(),
-                thumb_size: slider_thumb_size.unwrap(),
-                tick_length: slider_tick_length.unwrap(),
+                fill: slider_fill,
+                track: slider_track,
+                thumb: slider_thumb,
+                track_height: slider_track_height,
+                thumb_size: slider_thumb_size,
+                tick_length: slider_tick_length,
             },
             progress_bar: crate::model::widgets::ResolvedProgressBar {
-                fill: progress_bar_fill.unwrap(),
-                track: progress_bar_track.unwrap(),
-                height: progress_bar_height.unwrap(),
-                min_width: progress_bar_min_width.unwrap(),
-                radius: progress_bar_radius.unwrap(),
+                fill: progress_bar_fill,
+                track: progress_bar_track,
+                height: progress_bar_height,
+                min_width: progress_bar_min_width,
+                radius: progress_bar_radius,
             },
             tab: crate::model::widgets::ResolvedTab {
-                background: tab_background.unwrap(),
-                foreground: tab_foreground.unwrap(),
-                active_background: tab_active_background.unwrap(),
-                active_foreground: tab_active_foreground.unwrap(),
-                bar_background: tab_bar_background.unwrap(),
-                min_width: tab_min_width.unwrap(),
-                min_height: tab_min_height.unwrap(),
-                padding_horizontal: tab_padding_horizontal.unwrap(),
-                padding_vertical: tab_padding_vertical.unwrap(),
+                background: tab_background,
+                foreground: tab_foreground,
+                active_background: tab_active_background,
+                active_foreground: tab_active_foreground,
+                bar_background: tab_bar_background,
+                min_width: tab_min_width,
+                min_height: tab_min_height,
+                padding_horizontal: tab_padding_horizontal,
+                padding_vertical: tab_padding_vertical,
             },
             sidebar: crate::model::widgets::ResolvedSidebar {
-                background: sidebar_background.unwrap(),
-                foreground: sidebar_foreground.unwrap(),
+                background: sidebar_background,
+                foreground: sidebar_foreground,
             },
             toolbar: crate::model::widgets::ResolvedToolbar {
-                height: toolbar_height.unwrap(),
-                item_spacing: toolbar_item_spacing.unwrap(),
-                padding: toolbar_padding.unwrap(),
-                font: toolbar_font.unwrap(),
+                height: toolbar_height,
+                item_spacing: toolbar_item_spacing,
+                padding: toolbar_padding,
+                font: toolbar_font,
             },
             status_bar: crate::model::widgets::ResolvedStatusBar {
-                font: status_bar_font.unwrap(),
+                font: status_bar_font,
             },
             list: crate::model::widgets::ResolvedList {
-                background: list_background.unwrap(),
-                foreground: list_foreground.unwrap(),
-                alternate_row: list_alternate_row.unwrap(),
-                selection: list_selection.unwrap(),
-                selection_foreground: list_selection_foreground.unwrap(),
-                header_background: list_header_background.unwrap(),
-                header_foreground: list_header_foreground.unwrap(),
-                grid_color: list_grid_color.unwrap(),
-                item_height: list_item_height.unwrap(),
-                padding_horizontal: list_padding_horizontal.unwrap(),
-                padding_vertical: list_padding_vertical.unwrap(),
+                background: list_background,
+                foreground: list_foreground,
+                alternate_row: list_alternate_row,
+                selection: list_selection,
+                selection_foreground: list_selection_foreground,
+                header_background: list_header_background,
+                header_foreground: list_header_foreground,
+                grid_color: list_grid_color,
+                item_height: list_item_height,
+                padding_horizontal: list_padding_horizontal,
+                padding_vertical: list_padding_vertical,
             },
             popover: crate::model::widgets::ResolvedPopover {
-                background: popover_background.unwrap(),
-                foreground: popover_foreground.unwrap(),
-                border: popover_border.unwrap(),
-                radius: popover_radius.unwrap(),
+                background: popover_background,
+                foreground: popover_foreground,
+                border: popover_border,
+                radius: popover_radius,
             },
             splitter: crate::model::widgets::ResolvedSplitter {
-                width: splitter_width.unwrap(),
+                width: splitter_width,
             },
             separator: crate::model::widgets::ResolvedSeparator {
-                color: separator_color.unwrap(),
+                color: separator_color,
             },
             switch: crate::model::widgets::ResolvedSwitch {
-                checked_bg: switch_checked_bg.unwrap(),
-                unchecked_bg: switch_unchecked_bg.unwrap(),
-                thumb_bg: switch_thumb_bg.unwrap(),
-                track_width: switch_track_width.unwrap(),
-                track_height: switch_track_height.unwrap(),
-                thumb_size: switch_thumb_size.unwrap(),
-                track_radius: switch_track_radius.unwrap(),
+                checked_bg: switch_checked_bg,
+                unchecked_bg: switch_unchecked_bg,
+                thumb_bg: switch_thumb_bg,
+                track_width: switch_track_width,
+                track_height: switch_track_height,
+                thumb_size: switch_thumb_size,
+                track_radius: switch_track_radius,
             },
             dialog: crate::model::widgets::ResolvedDialog {
-                min_width: dialog_min_width.unwrap(),
-                max_width: dialog_max_width.unwrap(),
-                min_height: dialog_min_height.unwrap(),
-                max_height: dialog_max_height.unwrap(),
-                content_padding: dialog_content_padding.unwrap(),
-                button_spacing: dialog_button_spacing.unwrap(),
-                radius: dialog_radius.unwrap(),
-                icon_size: dialog_icon_size.unwrap(),
-                button_order: dialog_button_order.unwrap(),
-                title_font: dialog_title_font.unwrap(),
+                min_width: dialog_min_width,
+                max_width: dialog_max_width,
+                min_height: dialog_min_height,
+                max_height: dialog_max_height,
+                content_padding: dialog_content_padding,
+                button_spacing: dialog_button_spacing,
+                radius: dialog_radius,
+                icon_size: dialog_icon_size,
+                button_order: dialog_button_order,
+                title_font: dialog_title_font,
             },
             spinner: crate::model::widgets::ResolvedSpinner {
-                fill: spinner_fill.unwrap(),
-                diameter: spinner_diameter.unwrap(),
-                min_size: spinner_min_size.unwrap(),
-                stroke_width: spinner_stroke_width.unwrap(),
+                fill: spinner_fill,
+                diameter: spinner_diameter,
+                min_size: spinner_min_size,
+                stroke_width: spinner_stroke_width,
             },
             combo_box: crate::model::widgets::ResolvedComboBox {
-                min_height: combo_box_min_height.unwrap(),
-                min_width: combo_box_min_width.unwrap(),
-                padding_horizontal: combo_box_padding_horizontal.unwrap(),
-                arrow_size: combo_box_arrow_size.unwrap(),
-                arrow_area_width: combo_box_arrow_area_width.unwrap(),
-                radius: combo_box_radius.unwrap(),
+                min_height: combo_box_min_height,
+                min_width: combo_box_min_width,
+                padding_horizontal: combo_box_padding_horizontal,
+                arrow_size: combo_box_arrow_size,
+                arrow_area_width: combo_box_arrow_area_width,
+                radius: combo_box_radius,
             },
             segmented_control: crate::model::widgets::ResolvedSegmentedControl {
-                segment_height: segmented_control_segment_height.unwrap(),
-                separator_width: segmented_control_separator_width.unwrap(),
-                padding_horizontal: segmented_control_padding_horizontal.unwrap(),
-                radius: segmented_control_radius.unwrap(),
+                segment_height: segmented_control_segment_height,
+                separator_width: segmented_control_separator_width,
+                padding_horizontal: segmented_control_padding_horizontal,
+                radius: segmented_control_radius,
             },
             card: crate::model::widgets::ResolvedCard {
-                background: card_background.unwrap(),
-                border: card_border.unwrap(),
-                radius: card_radius.unwrap(),
-                padding: card_padding.unwrap(),
-                shadow: card_shadow.unwrap(),
+                background: card_background,
+                border: card_border,
+                radius: card_radius,
+                padding: card_padding,
+                shadow: card_shadow,
             },
             expander: crate::model::widgets::ResolvedExpander {
-                header_height: expander_header_height.unwrap(),
-                arrow_size: expander_arrow_size.unwrap(),
-                content_padding: expander_content_padding.unwrap(),
-                radius: expander_radius.unwrap(),
+                header_height: expander_header_height,
+                arrow_size: expander_arrow_size,
+                content_padding: expander_content_padding,
+                radius: expander_radius,
             },
             link: crate::model::widgets::ResolvedLink {
-                color: link_color.unwrap(),
-                visited: link_visited.unwrap(),
-                background: link_background.unwrap(),
-                hover_bg: link_hover_bg.unwrap(),
-                underline: link_underline.unwrap(),
+                color: link_color,
+                visited: link_visited,
+                background: link_background,
+                hover_bg: link_hover_bg,
+                underline: link_underline,
             },
-            icon_set: icon_set.unwrap(),
+            icon_set,
         })
     }
 }

@@ -6,10 +6,11 @@ use serde::{Deserialize, Serialize};
 ///
 /// Different desktop environments place the confirmation button at
 /// different ends of the button row.
-#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DialogButtonOrder {
     /// Affirmative button at the trailing (right) end — Windows, GNOME style.
+    #[default]
     TrailingAffirmative,
     /// Affirmative button at the leading (left) end — macOS, KDE style.
     LeadingAffirmative,
