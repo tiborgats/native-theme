@@ -19,7 +19,7 @@ use iced::{Color, Element, Fill, Length, Padding, Theme};
 use iced::Subscription;
 use native_theme::{
     AnimatedIcon, IconData, IconRole, IconSet, NativeTheme, TransformAnimation, loading_indicator,
-    prefers_reduced_motion,
+    platform_preset_name, prefers_reduced_motion,
 };
 use native_theme_iced::icons::{
     animated_frames_to_svg_handles, spin_rotation_radians, to_svg_handle,
@@ -151,14 +151,14 @@ impl Tab {
 
 #[derive(Debug, Clone)]
 enum ThemeChoice {
-    OsTheme,
+    OsTheme(String),
     Preset(String),
 }
 
 impl std::fmt::Display for ThemeChoice {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ThemeChoice::OsTheme => write!(f, "OS Theme"),
+            ThemeChoice::OsTheme(label) => write!(f, "{label}"),
             ThemeChoice::Preset(name) => write!(f, "{name}"),
         }
     }
@@ -167,7 +167,7 @@ impl std::fmt::Display for ThemeChoice {
 impl PartialEq for ThemeChoice {
     fn eq(&self, other: &Self) -> bool {
         match (self, other) {
-            (ThemeChoice::OsTheme, ThemeChoice::OsTheme) => true,
+            (ThemeChoice::OsTheme(_), ThemeChoice::OsTheme(_)) => true,
             (ThemeChoice::Preset(a), ThemeChoice::Preset(b)) => a == b,
             _ => false,
         }
@@ -176,10 +176,10 @@ impl PartialEq for ThemeChoice {
 
 impl Eq for ThemeChoice {}
 
-fn theme_choices() -> Vec<ThemeChoice> {
-    let mut choices = vec![ThemeChoice::OsTheme];
+fn theme_choices(default_label: &str) -> Vec<ThemeChoice> {
+    let mut choices = vec![ThemeChoice::OsTheme(default_label.to_string())];
     choices.extend(
-        NativeTheme::list_presets()
+        NativeTheme::list_presets_for_platform()
             .iter()
             .map(|name| ThemeChoice::Preset((*name).to_string())),
     );
@@ -470,6 +470,8 @@ struct State {
     color_mode: ColorMode,
     is_dark: bool,
     current_resolved: native_theme::ResolvedTheme,
+    /// Dynamic label for the default theme entry, updated on color mode change.
+    default_label: String,
 
     // Navigation
     active_tab: Tab,
@@ -572,12 +574,15 @@ impl Default for State {
             animated_static,
         ) = build_animation_caches(icon_set_choice.icon_set_name());
 
+        let default_label = format!("default ({})", platform_preset_name());
+
         let mut state = Self {
-            current_choice: ThemeChoice::OsTheme,
+            current_choice: ThemeChoice::OsTheme(default_label.clone()),
             current_theme: theme,
             color_mode,
             is_dark,
             current_resolved: resolved,
+            default_label,
             active_tab: Tab::Buttons,
             widget_info: String::new(),
             button_press_count: 0,
@@ -672,13 +677,20 @@ impl Default for State {
 impl State {
     fn rebuild_theme(&mut self) {
         self.is_dark = self.color_mode.is_dark();
+        let is_default = matches!(self.current_choice, ThemeChoice::OsTheme(_));
         match &self.current_choice {
-            ThemeChoice::OsTheme => {
+            ThemeChoice::OsTheme(_) => {
                 match native_theme::from_system() {
                     Ok(system) => {
                         self.current_resolved = system.pick(self.is_dark).clone();
                         self.current_theme =
                             native_theme_iced::to_theme(&self.current_resolved, &system.name);
+                        // Update default label based on which variant is active
+                        if system.is_dark == self.is_dark {
+                            self.default_label = format!("default ({})", system.live_preset);
+                        } else {
+                            self.default_label = format!("default ({})", system.full_preset);
+                        }
                     }
                     Err(_) => {
                         // Fallback: load adwaita preset through resolve pipeline
@@ -702,6 +714,10 @@ impl State {
                 self.current_theme =
                     native_theme_iced::to_theme(&self.current_resolved, &nt.name);
             }
+        }
+        // Keep the OsTheme choice label in sync
+        if is_default {
+            self.current_choice = ThemeChoice::OsTheme(self.default_label.clone());
         }
     }
 }
@@ -1055,7 +1071,7 @@ fn view(state: &State) -> Element<'_, Message> {
         let theme_section = column![
             text("Theme Selector").size(12),
             pick_list(
-                theme_choices(),
+                theme_choices(&state.default_label),
                 Some(&state.current_choice),
                 Message::ThemeSelected,
             )

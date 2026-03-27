@@ -66,7 +66,7 @@ use std::time::Duration;
 use native_theme::{
     AnimatedIcon, IconData, IconRole, IconSet, NativeTheme, TransformAnimation,
     bundled_icon_by_name, icon_name as native_icon_name, load_icon, loading_indicator,
-    prefers_reduced_motion, system_icon_set, system_icon_theme,
+    platform_preset_name, prefers_reduced_motion, system_icon_set, system_icon_theme,
 };
 #[cfg(target_os = "linux")]
 use native_theme::{detect_linux_de, load_freedesktop_icon_by_name, system_is_dark};
@@ -170,9 +170,11 @@ fn widget_tooltip_themed(
 // ---------------------------------------------------------------------------
 
 fn theme_names() -> Vec<SharedString> {
-    let mut names: Vec<SharedString> = vec!["OS Theme".into()];
+    let platform_live = platform_preset_name();
+    let default_label = format!("default ({})", platform_live);
+    let mut names: Vec<SharedString> = vec![default_label.into()];
     names.extend(
-        NativeTheme::list_presets()
+        NativeTheme::list_presets_for_platform()
             .iter()
             .map(|s| SharedString::from(s.to_string())),
     );
@@ -738,6 +740,8 @@ impl ListDelegate for SampleListDelegate {
 struct Showcase {
     theme_select: Entity<SelectState<SearchableVec<SharedString>>>,
     current_theme_name: String,
+    /// Dynamic label for the "default" theme entry, updated on color mode change.
+    default_label: String,
     is_dark: bool,
     color_mode: ColorMode,
     dark_mode_select: Entity<SelectState<SearchableVec<SharedString>>>,
@@ -959,7 +963,11 @@ impl Showcase {
 
     /// Convert a display name from the theme selector to the internal theme name.
     fn theme_internal_name(display: &str) -> String {
-        display.to_string()
+        if display.starts_with("default (") {
+            "default".to_string()
+        } else {
+            display.to_string()
+        }
     }
 
     /// Convert a display name from the icon theme selector to the internal icon set name.
@@ -1272,7 +1280,8 @@ impl Showcase {
         let fg = cx.theme().foreground;
         let mut showcase = Self {
             theme_select,
-            current_theme_name: "OS Theme".into(),
+            current_theme_name: "default".into(),
+            default_label: format!("default ({})", platform_preset_name()),
             is_dark,
             color_mode,
             dark_mode_select,
@@ -1335,9 +1344,17 @@ impl Showcase {
     }
 
     fn apply_theme_by_name(&mut self, name: &str, window: &mut Window, cx: &mut Context<Self>) {
-        if name == "OS Theme" {
+        if name == "default" {
             Theme::sync_system_appearance(Some(window), cx);
             self.is_dark = cx.theme().is_dark();
+            // Update default label based on which variant is active
+            if let Ok(system) = native_theme::from_system() {
+                if system.is_dark == self.is_dark {
+                    self.default_label = format!("default ({})", system.live_preset);
+                } else {
+                    self.default_label = format!("default ({})", system.full_preset);
+                }
+            }
             self.original_font = native_theme::ResolvedFontSpec { family: "(default)".into(), size: 0.0, weight: 400 };
             self.original_mono_font = native_theme::ResolvedFontSpec { family: "(default)".into(), size: 0.0, weight: 400 };
             let fg = cx.theme().foreground;
