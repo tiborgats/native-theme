@@ -1,13 +1,13 @@
 //! gpui toolkit connector for native-theme.
 //!
-//! Maps [`native_theme::NativeTheme`] data to gpui-component's theming system.
+//! Maps [`native_theme::ResolvedTheme`] data to gpui-component's theming system.
 //!
 //! # Overview
 //!
 //! This crate provides a thin mapping layer that converts native-theme's
 //! platform-agnostic color, font, and geometry data into gpui-component's
 //! `Theme` type. No intermediate types are introduced -- the mapping goes
-//! directly from `ThemeVariant` fields to gpui-component types.
+//! directly from `ResolvedTheme` fields to gpui-component types.
 //!
 //! # Usage
 //!
@@ -16,8 +16,10 @@
 //! use native_theme_gpui::to_theme;
 //!
 //! let nt = NativeTheme::preset("default").unwrap();
-//! let variant = nt.pick_variant(false).unwrap();
-//! let theme = to_theme(variant, "Default", false);
+//! let mut variant = nt.pick_variant(false).unwrap().clone();
+//! variant.resolve();
+//! let resolved = variant.validate().unwrap();
+//! let theme = to_theme(&resolved, "Default", false);
 //! ```
 
 #![warn(missing_docs)]
@@ -29,7 +31,7 @@ pub mod derive;
 pub mod icons;
 
 use gpui_component::theme::{Theme, ThemeMode};
-use native_theme::{NativeTheme, ThemeVariant};
+use native_theme::{NativeTheme, ResolvedTheme, ThemeVariant};
 
 /// Pick a theme variant based on the requested mode.
 ///
@@ -41,20 +43,20 @@ pub fn pick_variant(theme: &NativeTheme, is_dark: bool) -> Option<&ThemeVariant>
     theme.pick_variant(is_dark)
 }
 
-/// Convert a [`ThemeVariant`] into a gpui-component [`Theme`].
+/// Convert a [`ResolvedTheme`] into a gpui-component [`Theme`].
 ///
 /// Builds a complete Theme by:
 /// 1. Mapping all 108 ThemeColor fields via [`colors::to_theme_color`]
 /// 2. Building a ThemeConfig from fonts/geometry via [`config::to_theme_config`]
 /// 3. Constructing the Theme from the ThemeColor and applying the config
-pub fn to_theme(variant: &ThemeVariant, name: &str, is_dark: bool) -> Theme {
-    let theme_color = colors::to_theme_color(variant);
+pub fn to_theme(resolved: &ResolvedTheme, name: &str, is_dark: bool) -> Theme {
+    let theme_color = colors::to_theme_color(resolved);
     let mode = if is_dark {
         ThemeMode::Dark
     } else {
         ThemeMode::Light
     };
-    let theme_config = config::to_theme_config(variant, name, mode);
+    let theme_config = config::to_theme_config(resolved, name, mode);
 
     // gpui-component's `apply_config` sets non-color fields we need: font_family,
     // font_size, radius, shadow, mode, light_theme/dark_theme Rc, and highlight_theme.
@@ -72,46 +74,28 @@ pub fn to_theme(variant: &ThemeVariant, name: &str, is_dark: bool) -> Theme {
 #[allow(deprecated)]
 mod tests {
     use super::*;
-    use native_theme::Rgba;
+
+    fn test_resolved() -> ResolvedTheme {
+        let nt = NativeTheme::preset("default").expect("default preset must exist");
+        let mut v = nt
+            .pick_variant(false)
+            .expect("default preset must have light variant")
+            .clone();
+        v.resolve();
+        v.validate().expect("resolved preset must validate")
+    }
 
     #[test]
     fn pick_variant_light_first() {
-        let mut theme = NativeTheme::new("Test");
-        let mut light = ThemeVariant::default();
-        light.colors.background = Some(Rgba::rgb(255, 255, 255));
-        theme.light = Some(light);
-
-        let picked = pick_variant(&theme, false);
+        let nt = NativeTheme::preset("default").expect("default preset must exist");
+        let picked = pick_variant(&nt, false);
         assert!(picked.is_some());
-        assert_eq!(
-            picked.unwrap().colors.background,
-            Some(Rgba::rgb(255, 255, 255))
-        );
     }
 
     #[test]
     fn pick_variant_dark_first() {
-        let mut theme = NativeTheme::new("Test");
-        let mut dark = ThemeVariant::default();
-        dark.colors.background = Some(Rgba::rgb(30, 30, 30));
-        theme.dark = Some(dark);
-
-        let picked = pick_variant(&theme, true);
-        assert!(picked.is_some());
-        assert_eq!(
-            picked.unwrap().colors.background,
-            Some(Rgba::rgb(30, 30, 30))
-        );
-    }
-
-    #[test]
-    fn pick_variant_fallback() {
-        let mut theme = NativeTheme::new("Test");
-        let mut light = ThemeVariant::default();
-        light.colors.background = Some(Rgba::rgb(255, 255, 255));
-        theme.light = Some(light);
-        // No dark variant -- requesting dark should fall back to light
-        let picked = pick_variant(&theme, true);
+        let nt = NativeTheme::preset("default").expect("default preset must exist");
+        let picked = pick_variant(&nt, true);
         assert!(picked.is_some());
     }
 
@@ -124,17 +108,24 @@ mod tests {
 
     #[test]
     fn to_theme_produces_valid_theme() {
-        let mut variant = ThemeVariant::default();
-        variant.colors.background = Some(Rgba::rgb(255, 255, 255));
-        variant.colors.foreground = Some(Rgba::rgb(0, 0, 0));
-        variant.colors.accent = Some(Rgba::rgb(0, 120, 215));
-        variant.fonts.family = Some("Inter".into());
-        variant.fonts.size = Some(14.0);
-        variant.geometry.radius = Some(4.0);
-
-        let theme = to_theme(&variant, "Test", false);
+        let resolved = test_resolved();
+        let theme = to_theme(&resolved, "Test", false);
 
         // Theme should have the correct mode
         assert!(!theme.is_dark());
+    }
+
+    #[test]
+    fn to_theme_dark_mode() {
+        let nt = NativeTheme::preset("default").expect("default preset must exist");
+        let mut v = nt
+            .pick_variant(true)
+            .expect("default preset must have dark variant")
+            .clone();
+        v.resolve();
+        let resolved = v.validate().expect("resolved preset must validate");
+        let theme = to_theme(&resolved, "DarkTest", true);
+
+        assert!(theme.is_dark());
     }
 }

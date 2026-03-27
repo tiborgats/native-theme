@@ -1,27 +1,21 @@
-//! ThemeColors -> gpui_component::theme::ThemeColor mapping (108 fields).
+//! ResolvedTheme -> gpui_component::theme::ThemeColor mapping (108 fields).
 //!
-//! Maps native-theme's 36 semantic color fields to gpui-component's 108-field
-//! ThemeColor struct. Direct mappings cover ~30 fields; the remaining ~78 are
+//! Maps native-theme's per-widget resolved fields to gpui-component's 108-field
+//! ThemeColor struct. Direct mappings cover ~40 fields; the remaining ~68 are
 //! derived via shade generation, blending, or fallback logic that mirrors
 //! gpui-component's own `apply_config` derivation.
 
 use gpui::Hsla;
 use gpui_component::{Colorize, theme::ThemeColor};
-use native_theme::ThemeVariant;
+use native_theme::ResolvedTheme;
 
 use crate::derive::{active_color, hover_color};
 
-/// Convert an `Option<native_theme::Rgba>` to `gpui::Hsla`, falling back to
-/// `fallback` when `None`.
-fn rgba_to_hsla(rgba: Option<native_theme::Rgba>, fallback: Hsla) -> Hsla {
-    match rgba {
-        Some(c) => {
-            let [r, g, b, a] = c.to_f32_array();
-            let gpui_rgba = gpui::Rgba { r, g, b, a };
-            gpui_rgba.into()
-        }
-        None => fallback,
-    }
+/// Convert a `native_theme::Rgba` to `gpui::Hsla`.
+fn rgba_to_hsla(rgba: native_theme::Rgba) -> Hsla {
+    let [r, g, b, a] = rgba.to_f32_array();
+    let gpui_rgba = gpui::Rgba { r, g, b, a };
+    gpui_rgba.into()
 }
 
 /// Returns true if the background color indicates a dark theme (lightness < 0.5).
@@ -29,161 +23,47 @@ fn is_dark_background(bg: Hsla) -> bool {
     bg.l < 0.5
 }
 
-// -- Defaults (white and black) --
-
-fn white() -> Hsla {
-    Hsla {
-        h: 0.0,
-        s: 0.0,
-        l: 1.0,
-        a: 1.0,
-    }
-}
-
-fn black() -> Hsla {
-    Hsla {
-        h: 0.0,
-        s: 0.0,
-        l: 0.0,
-        a: 1.0,
-    }
-}
-
-/// Default accent blue: roughly #0078d7 in HSL.
-fn default_accent() -> Hsla {
-    gpui::Rgba {
-        r: 0.0,
-        g: 0.471,
-        b: 0.843,
-        a: 1.0,
-    }
-    .into()
-}
-
-/// Default red for danger/error states.
-fn default_red() -> Hsla {
-    Hsla {
-        h: 0.0,
-        s: 1.0,
-        l: 0.5,
-        a: 1.0,
-    }
-}
-
-/// Default green for success states.
-fn default_green() -> Hsla {
-    Hsla {
-        h: 0.333,
-        s: 1.0,
-        l: 0.25,
-        a: 1.0,
-    }
-}
-
-/// Default yellow for warning states.
-fn default_yellow() -> Hsla {
-    Hsla {
-        h: 0.167,
-        s: 1.0,
-        l: 0.5,
-        a: 1.0,
-    }
-}
-
-/// Default cyan for info states.
-fn default_cyan() -> Hsla {
-    Hsla {
-        h: 0.5,
-        s: 1.0,
-        l: 0.5,
-        a: 1.0,
-    }
-}
-
-/// Default blue for ring/chart.
-fn default_blue() -> Hsla {
-    Hsla {
-        h: 0.667,
-        s: 1.0,
-        l: 0.5,
-        a: 1.0,
-    }
-}
-
-/// Default magenta.
-fn default_magenta() -> Hsla {
-    Hsla {
-        h: 0.833,
-        s: 1.0,
-        l: 0.5,
-        a: 1.0,
-    }
-}
-
-/// Build a complete [`ThemeColor`] from a [`ThemeVariant`].
+/// Build a complete [`ThemeColor`] from a [`ResolvedTheme`].
 ///
-/// Maps all 108 fields: ~30 directly from ThemeColors, the rest derived
-/// via shade generation following gpui-component's own fallback logic.
-pub fn to_theme_color(variant: &ThemeVariant) -> ThemeColor {
-    let colors = &variant.colors;
+/// Maps all 108 fields: ~40 directly from ResolvedTheme per-widget structs,
+/// the rest derived via shade generation following gpui-component's own
+/// fallback logic.
+pub fn to_theme_color(resolved: &ResolvedTheme) -> ThemeColor {
+    let d = &resolved.defaults;
 
-    // -- Resolve core colors with defaults --
-    let bg = rgba_to_hsla(colors.background, white());
-    let fg = rgba_to_hsla(colors.foreground, black());
+    // -- Resolve core colors from defaults --
+    let bg = rgba_to_hsla(d.background);
+    let fg = rgba_to_hsla(d.foreground);
     let is_dark = is_dark_background(bg);
-    let accent = rgba_to_hsla(colors.accent, default_accent());
-    let surface = rgba_to_hsla(
-        colors.surface,
-        if is_dark {
-            bg.lighten(0.1)
-        } else {
-            bg.darken(0.05)
-        },
-    );
-    let border = rgba_to_hsla(
-        colors.border,
-        if is_dark {
-            fg.opacity(0.2)
-        } else {
-            fg.opacity(0.15)
-        },
-    );
-    let muted = rgba_to_hsla(
-        colors.muted,
-        if is_dark {
-            bg.lighten(0.15)
-        } else {
-            bg.darken(0.06)
-        },
-    );
+    let accent = rgba_to_hsla(d.accent);
+    let surface = rgba_to_hsla(d.surface);
+    let border = rgba_to_hsla(d.border);
+    let muted = rgba_to_hsla(d.muted);
 
-    // -- Resolve semantic colors --
-    let primary = rgba_to_hsla(colors.primary_background, accent);
-    let primary_fg = rgba_to_hsla(
-        colors.primary_foreground,
-        if is_dark { black() } else { white() },
-    );
-    let secondary = rgba_to_hsla(colors.secondary_background, muted);
-    let secondary_fg = rgba_to_hsla(colors.secondary_foreground, fg);
-    let danger = rgba_to_hsla(colors.danger, default_red());
-    let danger_fg = rgba_to_hsla(colors.danger_foreground, primary_fg);
-    let success = rgba_to_hsla(colors.success, default_green());
-    let success_fg = rgba_to_hsla(colors.success_foreground, primary_fg);
-    let warning = rgba_to_hsla(colors.warning, default_yellow());
-    let warning_fg = rgba_to_hsla(colors.warning_foreground, primary_fg);
-    let info = rgba_to_hsla(colors.info, default_cyan());
-    let info_fg = rgba_to_hsla(colors.info_foreground, primary_fg);
-    let selection = rgba_to_hsla(colors.selection, primary);
-    let link = rgba_to_hsla(colors.link, primary);
-    let ring = rgba_to_hsla(colors.focus_ring, default_blue());
-    let input = rgba_to_hsla(colors.input, border);
+    // -- Semantic colors from defaults and per-widget structs --
+    let primary = rgba_to_hsla(resolved.button.primary_bg);
+    let primary_fg = rgba_to_hsla(resolved.button.primary_fg);
+    let secondary = rgba_to_hsla(resolved.button.background);
+    let secondary_fg = rgba_to_hsla(resolved.button.foreground);
+    let danger = rgba_to_hsla(d.danger);
+    let danger_fg = rgba_to_hsla(d.danger_foreground);
+    let success = rgba_to_hsla(d.success);
+    let success_fg = rgba_to_hsla(d.success_foreground);
+    let warning = rgba_to_hsla(d.warning);
+    let warning_fg = rgba_to_hsla(d.warning_foreground);
+    let info = rgba_to_hsla(d.info);
+    let info_fg = rgba_to_hsla(d.info_foreground);
+    let selection = rgba_to_hsla(d.selection);
+    let link = rgba_to_hsla(d.link);
+    let ring = rgba_to_hsla(d.focus_ring_color);
+    let input = rgba_to_hsla(resolved.input.border);
 
-    let sidebar = rgba_to_hsla(colors.sidebar, bg);
-    let sidebar_fg = rgba_to_hsla(colors.sidebar_foreground, fg);
-    let popover = rgba_to_hsla(colors.popover, bg);
-    let popover_fg = rgba_to_hsla(colors.popover_foreground, fg);
-    let muted_fg = rgba_to_hsla(colors.muted, muted).blend(fg.opacity(0.7));
-    let alternate_row = rgba_to_hsla(colors.alternate_row, bg);
+    let sidebar = rgba_to_hsla(resolved.sidebar.background);
+    let sidebar_fg = rgba_to_hsla(resolved.sidebar.foreground);
+    let popover = rgba_to_hsla(resolved.popover.background);
+    let popover_fg = rgba_to_hsla(resolved.popover.foreground);
+    let muted_fg = rgba_to_hsla(d.muted).blend(fg.opacity(0.7));
+    let alternate_row = rgba_to_hsla(resolved.list.alternate_row);
 
     // -- Build ThemeColor from defaults and override everything --
     let mut tc = ThemeColor::default();
@@ -216,8 +96,8 @@ pub fn to_theme_color(variant: &ThemeVariant) -> ThemeColor {
 
     // Tab/sidebar
     assign_tab_sidebar(
-        &mut tc, bg, fg, surface, secondary, sidebar, sidebar_fg, accent, primary, primary_fg,
-        border,
+        &mut tc, resolved, bg, fg, surface, secondary, sidebar, sidebar_fg, accent, primary,
+        primary_fg, border,
     );
 
     // Chart colors
@@ -225,8 +105,8 @@ pub fn to_theme_color(variant: &ThemeVariant) -> ThemeColor {
 
     // Misc (overlay, scrollbar, slider, switch, etc.)
     assign_misc(
-        &mut tc, bg, fg, accent, muted, primary, primary_fg, secondary, border, surface, is_dark,
-        link, popover, popover_fg,
+        &mut tc, resolved, bg, fg, accent, muted, primary, primary_fg, secondary, border, surface,
+        is_dark, link, popover, popover_fg,
     );
 
     // Base named colors
@@ -264,7 +144,6 @@ fn assign_core(
     tc.link = link;
     tc.link_hover = link;
     tc.link_active = link;
-    tc.caret = fg;
 }
 
 fn assign_primary(tc: &mut ThemeColor, primary: Hsla, primary_fg: Hsla, bg: Hsla, is_dark: bool) {
@@ -355,9 +234,10 @@ fn assign_list_table(
 #[allow(clippy::too_many_arguments)]
 fn assign_tab_sidebar(
     tc: &mut ThemeColor,
+    resolved: &ResolvedTheme,
     bg: Hsla,
     fg: Hsla,
-    surface: Hsla,
+    _surface: Hsla,
     secondary: Hsla,
     sidebar: Hsla,
     sidebar_fg: Hsla,
@@ -366,12 +246,13 @@ fn assign_tab_sidebar(
     primary_fg: Hsla,
     border: Hsla,
 ) {
-    tc.tab = bg;
-    tc.tab_active = bg;
-    tc.tab_active_foreground = fg;
-    tc.tab_bar = bg;
+    // Tab: use per-widget resolved tab colors
+    tc.tab = rgba_to_hsla(resolved.tab.background);
+    tc.tab_active = rgba_to_hsla(resolved.tab.active_background);
+    tc.tab_active_foreground = rgba_to_hsla(resolved.tab.active_foreground);
+    tc.tab_bar = rgba_to_hsla(resolved.tab.bar_background);
     tc.tab_bar_segmented = secondary;
-    tc.tab_foreground = fg;
+    tc.tab_foreground = rgba_to_hsla(resolved.tab.foreground);
 
     tc.sidebar = sidebar;
     tc.sidebar_foreground = sidebar_fg;
@@ -381,9 +262,10 @@ fn assign_tab_sidebar(
     tc.sidebar_primary = primary;
     tc.sidebar_primary_foreground = primary_fg;
 
-    tc.title_bar = surface;
-    tc.title_bar_border = border;
-    tc.window_border = border;
+    // Title bar: use per-widget resolved window colors
+    tc.title_bar = rgba_to_hsla(resolved.window.title_bar_background);
+    tc.title_bar_border = rgba_to_hsla(resolved.window.border);
+    tc.window_border = rgba_to_hsla(resolved.window.border);
 }
 
 fn assign_charts(tc: &mut ThemeColor, accent: Hsla) {
@@ -398,12 +280,13 @@ fn assign_charts(tc: &mut ThemeColor, accent: Hsla) {
 #[allow(clippy::too_many_arguments)]
 fn assign_misc(
     tc: &mut ThemeColor,
+    resolved: &ResolvedTheme,
     bg: Hsla,
     fg: Hsla,
     accent: Hsla,
     _muted: Hsla,
     primary: Hsla,
-    primary_fg: Hsla,
+    _primary_fg: Hsla,
     secondary: Hsla,
     border: Hsla,
     _surface: Hsla,
@@ -440,17 +323,24 @@ fn assign_misc(
         }
     };
 
+    // Per-widget resolved scrollbar colors
     tc.scrollbar = bg;
-    tc.scrollbar_thumb = accent;
-    tc.scrollbar_thumb_hover = accent;
+    tc.scrollbar_thumb = rgba_to_hsla(resolved.scrollbar.thumb);
+    tc.scrollbar_thumb_hover = rgba_to_hsla(resolved.scrollbar.thumb_hover);
 
-    tc.slider_bar = primary;
-    tc.slider_thumb = primary_fg;
+    // Per-widget resolved slider colors
+    tc.slider_bar = rgba_to_hsla(resolved.slider.fill);
+    tc.slider_thumb = rgba_to_hsla(resolved.slider.thumb);
 
-    tc.switch = secondary;
-    tc.switch_thumb = bg;
+    // Per-widget resolved switch colors
+    tc.switch = rgba_to_hsla(resolved.switch.unchecked_bg);
+    tc.switch_thumb = rgba_to_hsla(resolved.switch.thumb_bg);
 
-    tc.progress_bar = primary;
+    // Per-widget resolved progress bar color
+    tc.progress_bar = rgba_to_hsla(resolved.progress_bar.fill);
+
+    // Per-widget resolved caret from input
+    tc.caret = rgba_to_hsla(resolved.input.caret);
 
     tc.skeleton = secondary;
 
@@ -479,8 +369,15 @@ fn assign_base_colors(
     tc.blue_light = bg.blend(info.opacity(0.8));
     tc.yellow = warning;
     tc.yellow_light = bg.blend(warning.opacity(0.8));
-    tc.magenta = default_magenta();
-    tc.magenta_light = bg.blend(default_magenta().opacity(0.8));
+    // Magenta: derive from accent hue-shifted
+    let magenta = Hsla {
+        h: 0.833,
+        s: 1.0,
+        l: 0.5,
+        a: 1.0,
+    };
+    tc.magenta = magenta;
+    tc.magenta_light = bg.blend(magenta.opacity(0.8));
     tc.cyan = info;
     tc.cyan_light = bg.blend(info.opacity(0.8));
 }
@@ -488,45 +385,23 @@ fn assign_base_colors(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use native_theme::Rgba;
+    use native_theme::NativeTheme;
 
-    /// Create a ThemeVariant with fully populated colors for testing.
-    fn populated_variant() -> ThemeVariant {
-        let mut v = ThemeVariant::default();
-        v.colors.background = Some(Rgba::rgb(255, 255, 255));
-        v.colors.foreground = Some(Rgba::rgb(0, 0, 0));
-        v.colors.accent = Some(Rgba::rgb(0, 120, 215));
-        v.colors.surface = Some(Rgba::rgb(240, 240, 240));
-        v.colors.border = Some(Rgba::rgb(200, 200, 200));
-        v.colors.muted = Some(Rgba::rgb(150, 150, 150));
-        v.colors.primary_background = Some(Rgba::rgb(0, 120, 215));
-        v.colors.primary_foreground = Some(Rgba::rgb(255, 255, 255));
-        v.colors.secondary_background = Some(Rgba::rgb(230, 230, 230));
-        v.colors.secondary_foreground = Some(Rgba::rgb(50, 50, 50));
-        v.colors.danger = Some(Rgba::rgb(209, 52, 56));
-        v.colors.danger_foreground = Some(Rgba::rgb(255, 255, 255));
-        v.colors.warning = Some(Rgba::rgb(255, 140, 0));
-        v.colors.warning_foreground = Some(Rgba::rgb(0, 0, 0));
-        v.colors.success = Some(Rgba::rgb(16, 124, 16));
-        v.colors.success_foreground = Some(Rgba::rgb(255, 255, 255));
-        v.colors.info = Some(Rgba::rgb(0, 120, 212));
-        v.colors.info_foreground = Some(Rgba::rgb(255, 255, 255));
-        v.colors.selection = Some(Rgba::rgb(0, 120, 215));
-        v.colors.link = Some(Rgba::rgb(0, 100, 200));
-        v.colors.focus_ring = Some(Rgba::rgb(0, 90, 200));
-        v.colors.input = Some(Rgba::rgb(220, 220, 220));
-        v.colors.sidebar = Some(Rgba::rgb(245, 245, 245));
-        v.colors.sidebar_foreground = Some(Rgba::rgb(30, 30, 30));
-        v.colors.popover = Some(Rgba::rgb(255, 255, 255));
-        v.colors.popover_foreground = Some(Rgba::rgb(0, 0, 0));
-        v.colors.alternate_row = Some(Rgba::rgb(248, 248, 248));
-        v
+    /// Create a ResolvedTheme via the preset resolve+validate pipeline.
+    fn test_resolved() -> ResolvedTheme {
+        let nt = NativeTheme::preset("default").expect("default preset must exist");
+        let mut v = nt
+            .pick_variant(false)
+            .expect("default preset must have light variant")
+            .clone();
+        v.resolve();
+        v.validate().expect("resolved preset must validate")
     }
 
     #[test]
     fn rgba_to_hsla_converts_red() {
-        let red = Some(Rgba::rgb(255, 0, 0));
-        let result = rgba_to_hsla(red, white());
+        let red = native_theme::Rgba::rgb(255, 0, 0);
+        let result = rgba_to_hsla(red);
         // Red should have hue ~0 (or near 0/1), high saturation
         assert!(
             result.h < 0.05 || result.h > 0.95,
@@ -538,8 +413,8 @@ mod tests {
 
     #[test]
     fn rgba_to_hsla_converts_green() {
-        let green = Some(Rgba::rgb(0, 255, 0));
-        let result = rgba_to_hsla(green, white());
+        let green = native_theme::Rgba::rgb(0, 255, 0);
+        let result = rgba_to_hsla(green);
         // Green hue ~0.333
         assert!(
             (result.h - 0.333).abs() < 0.05,
@@ -550,8 +425,8 @@ mod tests {
 
     #[test]
     fn rgba_to_hsla_converts_blue() {
-        let blue = Some(Rgba::rgb(0, 0, 255));
-        let result = rgba_to_hsla(blue, white());
+        let blue = native_theme::Rgba::rgb(0, 0, 255);
+        let result = rgba_to_hsla(blue);
         // Blue hue ~0.667
         assert!(
             (result.h - 0.667).abs() < 0.05,
@@ -561,21 +436,9 @@ mod tests {
     }
 
     #[test]
-    fn rgba_to_hsla_none_returns_fallback() {
-        let fallback = Hsla {
-            h: 0.5,
-            s: 0.5,
-            l: 0.5,
-            a: 1.0,
-        };
-        let result = rgba_to_hsla(None, fallback);
-        assert_eq!(result, fallback);
-    }
-
-    #[test]
-    fn to_theme_color_populated_produces_nondefault() {
-        let variant = populated_variant();
-        let tc = to_theme_color(&variant);
+    fn to_theme_color_produces_nondefault() {
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved);
         let default = ThemeColor::default();
 
         // Direct-mapped fields should differ from default
@@ -590,30 +453,6 @@ mod tests {
         assert_ne!(tc.primary, default.primary, "primary should be set");
         assert_ne!(tc.danger, default.danger, "danger should be set");
         assert_ne!(tc.border, default.border, "border should be set");
-    }
-
-    #[test]
-    fn to_theme_color_empty_produces_reasonable_defaults() {
-        let variant = ThemeVariant::default();
-        let tc = to_theme_color(&variant);
-
-        // Background should be white (default), lightness = 1.0
-        assert!(
-            (tc.background.l - 1.0).abs() < 0.01,
-            "default bg l={} should be ~1.0",
-            tc.background.l
-        );
-        // Foreground should be black, lightness = 0.0
-        assert!(
-            tc.foreground.l < 0.01,
-            "default fg l={} should be ~0.0",
-            tc.foreground.l
-        );
-        // Should have some accent color (not zero lightness black)
-        assert!(
-            tc.accent.s > 0.0 || tc.accent.l > 0.0,
-            "accent should not be all-zero"
-        );
     }
 
     #[test]
@@ -634,8 +473,8 @@ mod tests {
 
     #[test]
     fn hover_states_differ_from_base() {
-        let variant = populated_variant();
-        let tc = to_theme_color(&variant);
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved);
 
         assert_ne!(
             tc.primary_hover, tc.primary,
@@ -645,5 +484,35 @@ mod tests {
             tc.danger_hover, tc.danger,
             "danger_hover should differ from danger"
         );
+    }
+
+    #[test]
+    fn per_widget_fields_used() {
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved);
+
+        // Scrollbar thumb should match resolved scrollbar
+        let expected_thumb = rgba_to_hsla(resolved.scrollbar.thumb);
+        assert_eq!(tc.scrollbar_thumb, expected_thumb, "scrollbar thumb should come from resolved.scrollbar.thumb");
+
+        // Slider bar should match resolved slider fill
+        let expected_slider = rgba_to_hsla(resolved.slider.fill);
+        assert_eq!(tc.slider_bar, expected_slider, "slider bar should come from resolved.slider.fill");
+
+        // Progress bar should match resolved progress_bar fill
+        let expected_progress = rgba_to_hsla(resolved.progress_bar.fill);
+        assert_eq!(tc.progress_bar, expected_progress, "progress bar should come from resolved.progress_bar.fill");
+
+        // Title bar should match resolved window title_bar_background
+        let expected_title = rgba_to_hsla(resolved.window.title_bar_background);
+        assert_eq!(tc.title_bar, expected_title, "title bar should come from resolved.window.title_bar_background");
+
+        // Switch should match resolved switch unchecked_bg
+        let expected_switch = rgba_to_hsla(resolved.switch.unchecked_bg);
+        assert_eq!(tc.switch, expected_switch, "switch should come from resolved.switch.unchecked_bg");
+
+        // Caret should match resolved input caret
+        let expected_caret = rgba_to_hsla(resolved.input.caret);
+        assert_eq!(tc.caret, expected_caret, "caret should come from resolved.input.caret");
     }
 }
