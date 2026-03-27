@@ -71,7 +71,7 @@ Requirements for per-widget architecture and resolution pipeline. Each maps to r
 
 - [x] **PRESET-01**: All 17 preset TOMLs rewritten for new per-widget structure with serde round-trip tests
 - [x] **PRESET-02**: Platform preset TOMLs slimmed (OS-readable values removed, only design constants remain)
-- [ ] **PRESET-03**: Cross-platform presets (catppuccin, nord, etc.) provide all non-derived fields for new structure
+- [x] **PRESET-03**: Cross-platform presets (catppuccin, nord, etc.) provide all non-derived fields for new structure
 
 ### Connectors
 
@@ -159,7 +159,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | PIPE-03 | Phase 47 | Pending |
 | PRESET-01 | Phase 44 | Complete |
 | PRESET-02 | Phase 44 | Complete |
-| PRESET-03 | Phase 45 | Pending |
+| PRESET-03 | Phase 45 | Complete |
 | CONN-01 | Phase 48 | Pending |
 | CONN-02 | Phase 48 | Pending |
 | CONN-03 | Phase 48 | Pending |

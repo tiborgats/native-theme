@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.5.0
 milestone_name: Per-Widget Architecture & Resolution Pipeline
 status: executing
-stopped_at: Completed 45-02-PLAN.md
-last_updated: "2026-03-27T09:46:32.643Z"
+stopped_at: Completed 45-03-PLAN.md
+last_updated: "2026-03-27T10:17:52.522Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 5
-  completed_phases: 1
+  completed_phases: 2
   total_plans: 6
-  completed_plans: 5
+  completed_plans: 6
   percent: 67
 ---
 
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 ## Current Position
 
 Phase: 45 (2 of 5 in v0.5.0) — Resolution Engine
-Plan: 2 of 3 complete
+Plan: 3 of 3 complete
 Status: Ready to execute
 Last activity: 2026-03-27
 
@@ -66,6 +66,8 @@ Decisions from 44-01 and 44-02:
 - [Phase 45]: [Phase 45-01]: ResolvedTheme uses explicit per-widget fields (not HashMap) matching ThemeVariant for type safety
 - [Phase 45]: [Phase 45-01]: No serde derives on Resolved types -- output-only consumed by connectors
 - [Phase 45-resolution-engine]: [Phase 45-02]: resolve() uses 4-phase mutation on ThemeVariant; validate() collects all missing fields before returning error
+- [Phase 45]: icon_set = freedesktop added to community/default presets for validate() pipeline
+- [Phase 45]: Platform dialog button_order: KDE/macOS leading_affirmative, GNOME/Windows trailing_affirmative
 
 ### Roadmap Evolution
 
@@ -84,6 +86,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-27T09:46:32.641Z
-Stopped at: Completed 45-02-PLAN.md
+Last session: 2026-03-27T10:17:52.519Z
+Stopped at: Completed 45-03-PLAN.md
 Resume file: None
