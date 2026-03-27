@@ -11,12 +11,13 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - ✅ **v0.3 Icons** — Phases 16-21 (shipped 2026-03-09)
 - ✅ **v0.3.3 Custom Icon Roles** — Phases 22-26 (shipped 2026-03-17)
 - ✅ **v0.4.0 Animated Icons** — Phases 27-32 (shipped 2026-03-18)
-- **v0.4.1 Release Prep** — Phases 33-42 (in progress)
+- ✅ **v0.4.1 Release Prep** — Phases 33-43 (shipped 2026-03-21)
+- **v0.5.0 Per-Widget Architecture & Resolution Pipeline** — Phases 44-48 (in progress)
 
 ## Phases
 
 <details>
-<summary>✅ v0.1 MVP (Phases 1-8) — SHIPPED 2026-03-07</summary>
+<summary>v0.1 MVP (Phases 1-8) — SHIPPED 2026-03-07</summary>
 
 - [x] Phase 1: Data Model Foundation (3/3 plans) — completed 2026-03-07
 - [x] Phase 2: Core Presets (2/2 plans) — completed 2026-03-07
@@ -30,7 +31,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 </details>
 
 <details>
-<summary>✅ v0.2 Platform Coverage & Publishing (Phases 9-15) — SHIPPED 2026-03-09</summary>
+<summary>v0.2 Platform Coverage & Publishing (Phases 9-15) — SHIPPED 2026-03-09</summary>
 
 - [x] Phase 9: Cargo Workspace (1/1 plan) — completed 2026-03-08
 - [x] Phase 10: API Breaking Changes (3/3 plans) — completed 2026-03-08
@@ -43,7 +44,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 </details>
 
 <details>
-<summary>✅ v0.3 Icons (Phases 16-21) — SHIPPED 2026-03-09</summary>
+<summary>v0.3 Icons (Phases 16-21) — SHIPPED 2026-03-09</summary>
 
 - [x] Phase 16: Icon Data Model (2/2 plans) — completed 2026-03-09
 - [x] Phase 17: Bundled SVG Icons (2/2 plans) — completed 2026-03-09
@@ -55,7 +56,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 </details>
 
 <details>
-<summary>✅ v0.3.3 Custom Icon Roles (Phases 22-26) — SHIPPED 2026-03-17</summary>
+<summary>v0.3.3 Custom Icon Roles (Phases 22-26) — SHIPPED 2026-03-17</summary>
 
 - [x] Phase 22: Core Trait and Loading Functions (2/2 plans) — completed 2026-03-15
 - [x] Phase 23: Build Crate and Code Generation (5/5 plans) — completed 2026-03-16
@@ -67,7 +68,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 </details>
 
 <details>
-<summary>✅ v0.4.0 Animated Icons (Phases 27-32) — SHIPPED 2026-03-18</summary>
+<summary>v0.4.0 Animated Icons (Phases 27-32) — SHIPPED 2026-03-18</summary>
 
 - [x] Phase 27: Animation Data Model and Breaking Changes (2/2 plans) — completed 2026-03-18
 - [x] Phase 28: Bundled SVG Spinner Frames (2/2 plans) — completed 2026-03-18
@@ -78,84 +79,96 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 </details>
 
-### v0.4.1 Release Prep (Phases 33-42)
+<details>
+<summary>v0.4.1 Release Prep (Phases 33-43) — SHIPPED 2026-03-21</summary>
 
-- [x] Phase 33: Quick Fixes and Version Consistency (completed 2026-03-19)
-- [x] Phase 34: Animated Icon Documentation (completed 2026-03-19)
-- [x] Phase 35: Animated Icon Showcase Examples (completed 2026-03-19)
-- [x] Phase 36: Screenshot and GIF Generation (completed 2026-03-20)
-- [x] Phase 37: Community Files and GitHub Templates (completed 2026-03-20)
-- [x] Phase 38: CI, Smoke Tests, and Release (completed 2026-03-20)
-- [x] Phase 39: Code Quality and Housekeeping (completed 2026-03-20)
-- [x] Phase 40: Iced Theme Preset Screenshots and CI (completed 2026-03-20)
-- [x] Phase 41: gpui Theme Preset Screenshots (completed 2026-03-21)
-- [x] Phase 42: Theme-Switching GIF and Core README Images (completed 2026-03-21)
+- [x] Phase 33: Quick Fixes and Version Consistency (1/1 plan) — completed 2026-03-19
+- [x] Phase 34: Animated Icon Documentation (1/1 plan) — completed 2026-03-19
+- [x] Phase 35: Animated Icon Showcase Examples (2/2 plans) — completed 2026-03-19
+- [x] Phase 36: Screenshot and GIF Generation (3/3 plans) — completed 2026-03-20
+- [x] Phase 37: Community Files and GitHub Templates (2/2 plans) — completed 2026-03-20
+- [x] Phase 38: CI, Smoke Tests, and Release (3/3 plans) — completed 2026-03-20
+- [x] Phase 39: Code Quality and Housekeeping (2/2 plans) — completed 2026-03-20
+- [x] Phase 40: Iced Theme Preset Screenshots and CI (2/2 plans) — completed 2026-03-20
+- [x] Phase 41: gpui Theme Preset Screenshots (2/2 plans) — completed 2026-03-21
+- [x] Phase 42: Theme-Switching GIF and Core README Images (1/1 plan) — completed 2026-03-21
+- [x] Phase 43: Self-Capture Screenshots with Window Decorations (3/3 plans) — completed 2026-03-21
 
-### Phase 33: Quick Fixes and Version Consistency
+</details>
 
-**Goal:** Fix version references (0.3→0.4), license text, lint attributes, crate version consistency, and archive design docs
-**Depends on:** Phase 32
-**Plans:** 1/1 plans complete
+### v0.5.0 Per-Widget Architecture & Resolution Pipeline (Phases 44-48)
 
-Plans:
-- [x] 33-01-PLAN.md — Fix version refs, license text, lint attributes, verify versions, archive design docs (completed 2026-03-19)
-
-### Phase 34: Animated Icon Documentation
-
-**Goal:** Add animated icon sections to connector READMEs and root README documenting the v0.4.0 headline feature
-**Depends on:** Phase 33
-**Plans:** 1/1 plans complete
-
-Plans:
-- [x] 34-01-PLAN.md — Add Animated Icons sections to root, gpui, and iced READMEs (completed 2026-03-19)
-
-### Phase 35: Animated Icon Showcase Examples
-
-**Goal:** Add animated icon demonstrations to both gpui and iced showcase examples
-**Depends on:** Phase 33
-**Plans:** 2/2 plans complete
-
-Plans:
-- [x] 35-01-PLAN.md — Add animated icon section to gpui showcase Icons tab (completed 2026-03-19)
-- [x] 35-02-PLAN.md — Add animated icon section to iced showcase Icons tab (completed 2026-03-19)
-
-### Phase 36: Screenshot and GIF Generation
-
-**Goal:** Create visual assets (showcase screenshots, spinner GIFs) and automation tooling for generating them
-**Depends on:** Phase 35
-**Plans:** 3/3 plans complete
-
-Plans:
-- [x] 36-01-PLAN.md — Add CLI argument support to both showcase examples (completed 2026-03-20)
-- [x] 36-02-PLAN.md — Create GIF generation script from SVG spinner frames (completed 2026-03-20)
-- [x] 36-03-PLAN.md — Create screenshot automation and master orchestration scripts (completed 2026-03-20)
-
-### Phase 37: Community Files and GitHub Templates
-
-**Goal:** Add CONTRIBUTING.md, CODE_OF_CONDUCT.md, SECURITY.md, and issue/PR templates
-**Depends on:** Phase 33
-**Plans:** 2/2 plans complete
-
-Plans:
-- [x] 37-01-PLAN.md — Create CONTRIBUTING.md, CODE_OF_CONDUCT.md, and SECURITY.md (completed 2026-03-20)
-- [x] 37-02-PLAN.md — Create issue templates (YAML forms), config, and PR template (completed 2026-03-20)
-
-### Phase 38: CI, Smoke Tests, and Release
-
-**Goal:** Verify CI coverage for animated icons, run pre-release smoke tests, tag v0.4.1, and publish to crates.io
-**Depends on:** Phase 34, 35, 36, 37
-**Plans:** 3/3 plans complete
-
-Plans:
-- [x] 38-01-PLAN.md — Fix CI blockers (missing docs, formatting, broken doc link) (completed 2026-03-20)
-- [x] 38-02-PLAN.md — Version bump to 0.4.1, CHANGELOG, and pre-release smoke tests (completed 2026-03-20)
-- [x] 38-03-PLAN.md — Push, verify CI, tag v0.4.1, publish to crates.io (completed 2026-03-20)
+- [ ] **Phase 44: Per-Widget Data Model and Preset Migration** - Restructure ThemeVariant to per-widget structs with ThemeDefaults, FontSpec, TextScale, and atomically rewrite all 17 preset TOMLs
+- [ ] **Phase 45: Resolution Engine** - Implement resolve() inheritance, ResolvedTheme with validate(), and update cross-platform presets for new structure
+- [ ] **Phase 46: OS Reader Extensions** - Extend all four platform readers (macOS, Windows, KDE, GNOME) with per-widget fields, text scale, fonts, and accessibility
+- [ ] **Phase 47: OS-First Pipeline** - Wire from_system() to run OS reader, platform TOML overlay, resolve(), app TOML overlay, second resolve(), and validate()
+- [ ] **Phase 48: Connector Migration** - Update gpui and iced connectors to accept &ResolvedTheme and update showcase examples
 
 ## Phase Details
 
 Phase details for completed milestones are archived in `.planning/milestones/`.
 
+### Phase 44: Per-Widget Data Model and Preset Migration
+**Goal**: Consumers can define and serialize per-widget theme properties using 24 widget structs, ThemeDefaults, FontSpec, TextScale, IconSizes, and DialogButtonOrder -- and all 17 bundled presets load/save correctly in the new format
+**Depends on**: Phase 43
+**Requirements**: MODEL-01, MODEL-02, MODEL-03, MODEL-04, MODEL-05, MODEL-06, MODEL-07, MODEL-08, MODEL-09, PRESET-01, PRESET-02
+**Success Criteria** (what must be TRUE):
+  1. A ThemeVariant can be constructed with per-widget structs (e.g., `theme.light.button.background`, `theme.light.menu.font.family`) and all 24 widget types are addressable
+  2. ThemeDefaults holds shared base properties (colors, font, mono_font, spacing, icon_sizes, accessibility flags) and every widget struct can reference them conceptually
+  3. All 17 preset TOML files round-trip through serde (deserialize then serialize produces equivalent output) using the new per-widget structure
+  4. Platform preset TOMLs contain only design constants (no OS-readable values), while cross-platform presets provide all non-derived color and geometry fields
+  5. The define_widget_pair! macro generates both Option and Resolved struct variants from a single definition, and impl_merge! supports nested per-widget struct merging
+**Plans**: TBD
+
+### Phase 45: Resolution Engine
+**Goal**: Any sparse ThemeVariant (from an OS reader or partial TOML) can be resolved into a complete ResolvedTheme where every field is guaranteed populated, with clear error reporting for unresolvable gaps
+**Depends on**: Phase 44
+**Requirements**: RESOLVE-01, RESOLVE-02, RESOLVE-03, RESOLVE-04, RESOLVE-05, RESOLVE-06, PRESET-03
+**Success Criteria** (what must be TRUE):
+  1. Calling resolve() on a ThemeVariant with only ThemeDefaults.accent set produces a variant where all accent-derived fields (primary_bg, checked_bg, slider.fill, progress_bar.fill, switch.checked_bg) are populated
+  2. FontSpec sub-field inheritance works: setting only `menu.font.size` still inherits `family` and `weight` from `defaults.font`
+  3. validate() converts a resolved ThemeVariant into a ResolvedTheme with zero Option fields, or returns a ThemeResolutionError listing every missing field path
+  4. Every one of the 17 bundled presets (both light and dark variants) passes the full resolve() then validate() pipeline without error
+  5. TextScaleEntry inheritance produces correct sizes: caption/section_heading/dialog_title/display entries inherit from defaults.font when their own size/weight are None
+**Plans**: TBD
+
+### Phase 46: OS Reader Extensions
+**Goal**: All four platform readers (macOS, Windows, KDE, GNOME) populate per-widget fields, text scale, per-widget fonts, and accessibility flags in the new ThemeVariant structure
+**Depends on**: Phase 45
+**Requirements**: MACOS-01, MACOS-02, MACOS-03, MACOS-04, MACOS-05, WIN-01, WIN-02, WIN-03, WIN-04, WIN-05, KDE-01, KDE-02, KDE-03, KDE-04, KDE-05, KDE-06, GNOME-01, GNOME-02, GNOME-03, GNOME-04, GNOME-05
+**Success Criteria** (what must be TRUE):
+  1. On KDE, from_kde() populates title bar colors from [WM], per-widget fonts (menuFont, toolBarFont) with correct Qt5/Qt6 weight conversion, text scale from Kirigami multipliers, icon sizes from index.theme, and reduce_motion from AnimationDurationFactor
+  2. On GNOME, from_gnome() populates fonts (font-name, monospace-font-name, titlebar-font), text scale from CSS percentage multipliers, accessibility flags (text-scaling-factor, enable-animations, overlay-scrolling), and icon_set from icon-theme gsetting
+  3. On macOS, from_macos() populates text_scale entries from NSFont.TextStyle, per-widget fonts (menu, tooltip, title bar) with weight extraction, additional NSColor values (placeholder, caret, selection_inactive), scrollbar overlay mode, and all accessibility flags
+  4. On Windows, from_windows() populates per-widget fonts from NONCLIENTMETRICSW, title bar colors from DwmGetColorizationColor, widget colors from GetSysColor (BTNFACE, MENU, HIGHLIGHT, etc.), icon sizes from SM_CXSMICON/SM_CXICON, and accessibility from UISettings.TextScaleFactor and SPI_GETHIGHCONTRAST
+  5. The output of every OS reader, when passed through resolve() then validate(), produces a valid ResolvedTheme without error
+**Plans**: TBD
+
+### Phase 47: OS-First Pipeline
+**Goal**: from_system() runs the complete OS-first pipeline producing a guaranteed-complete ResolvedTheme, and app developers can apply TOML overrides that propagate through a second resolve() pass
+**Depends on**: Phase 46
+**Requirements**: PIPE-01, PIPE-02, PIPE-03
+**Success Criteria** (what must be TRUE):
+  1. from_system() returns a ResolvedTheme (not a ThemeVariant) after running: OS reader -> platform TOML overlay -> resolve() -> validate()
+  2. Platform-to-preset mapping works correctly: macOS uses macos-sonoma, Windows uses windows-11, KDE uses kde-breeze, GNOME uses adwaita as the platform TOML overlay
+  3. App TOML overlay with a second resolve() pass works: changing accent in an app override causes all accent-derived fields to re-propagate through resolve()
+**Plans**: TBD
+
+### Phase 48: Connector Migration
+**Goal**: Both toolkit connectors (gpui and iced) consume &ResolvedTheme with zero Option handling, and showcase examples demonstrate the new API
+**Depends on**: Phase 47
+**Requirements**: CONN-01, CONN-02, CONN-03
+**Success Criteria** (what must be TRUE):
+  1. The gpui connector's theme conversion function accepts &ResolvedTheme and contains zero unwrap_or() or .unwrap_or_default() calls for theme fields
+  2. The iced connector's theme conversion function accepts &ResolvedTheme and contains zero unwrap_or() or .unwrap_or_default() calls for theme fields
+  3. Both showcase examples (gpui and iced) compile and run using the new ResolvedTheme-based API with visible per-widget theming
+**Plans**: TBD
+**UI hint**: yes
+
 ## Progress
+
+**Execution Order:**
+Phases execute in numeric order: 44 -> 45 -> 46 -> 47 -> 48
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -164,56 +177,9 @@ Phase details for completed milestones are archived in `.planning/milestones/`.
 | 16-21 | v0.3 | 10/10 | Complete | 2026-03-09 |
 | 22-26 | v0.3.3 | 14/14 | Complete | 2026-03-17 |
 | 27-32 | v0.4.0 | 8/8 | Complete | 2026-03-18 |
-| 33-38 | v0.4.1 | 13/13 | Complete | 2026-03-20 |
-| 39-42 | v0.4.1 | 9/9 | Complete | 2026-03-21 |
-| 43 | 3/3 | Complete   | 2026-03-21 | — |
-
-### Phase 39: Code Quality and Housekeeping
-
-**Goal:** Add `#![deny(unsafe_code)]` to core crate (with surgical `#[allow(unsafe_code)]` on FFI modules), write tests for `prefers_reduced_motion()` across all platforms, and archive completed design docs to `docs/archive/`
-**Depends on:** Phase 38
-**Plans:** 2/2 plans complete
-
-Plans:
-- [x] 39-01-PLAN.md — Add deny(unsafe_code) lint with allow annotations, write reduced motion smoke tests (completed 2026-03-20)
-- [x] 39-02-PLAN.md — Archive 8 completed milestone docs to docs/archive/ (completed 2026-03-20)
-
-### Phase 40: Iced Theme Preset Screenshots and CI
-
-**Goal:** Redo iced showcase screenshots using real theme presets (Dracula dark, Nord light, Catppuccin Mocha, macOS Sonoma) instead of default theme, capture across all 3 OSes via CI, and update READMEs
-**Depends on:** Phase 39
-**Plans:** 2/2 plans complete
-
-Plans:
-- [x] 40-01-PLAN.md — Update CI workflow and local script for theme preset captures (completed 2026-03-20)
-- [x] 40-02-PLAN.md — Remove old screenshots and update both READMEs for theme presets (completed 2026-03-20)
-
-### Phase 41: gpui Theme Preset Screenshots
-
-**Goal:** Capture gpui showcase screenshots with theme presets (KDE Breeze, Material, Catppuccin Mocha + Lucide) and embed in `connectors/native-theme-gpui/README.md`
-**Depends on:** Phase 40
-**Plans:** 2/2 plans complete
-
-Plans:
-- [x] 41-01-PLAN.md — Create gpui screenshot script, update orchestration, update gpui README (completed 2026-03-21)
-- [x] 41-02-PLAN.md — Run screenshot capture and verify visual quality (completed 2026-03-21)
-
-### Phase 42: Theme-Switching GIF and Core README Images
-
-**Goal:** Create animated GIF showing live theme switching in a showcase, embed spinner GIF in core crate README (`native-theme/README.md`), and embed theme-switching GIF in root README hero section
-**Depends on:** Phase 40, 41
-**Plans:** 1/1 plans complete
-
-Plans:
-- [x] 42-01-PLAN.md — Generate theme-switching GIFs (iced + gpui) and embed visual assets in READMEs (completed 2026-03-21)
-
-### Phase 43: Self-Capture Screenshots with Window Decorations
-
-**Goal:** Add self-capture screenshot capability to gpui and iced showcases using OS compositor APIs (macOS screencapture -l, Windows BitBlt) so --screenshot produces PNGs with window decorations; update CI workflow with TCC.db permission for macOS
-**Depends on:** Phase 42
-**Plans:** 3/3 plans complete
-
-Plans:
-- [x] 43-01-PLAN.md — Add --screenshot self-capture to gpui (macOS) and iced (macOS + Windows) showcases (completed 2026-03-21)
-- [x] 43-02-PLAN.md — Update CI workflow with TCC.db permission and gpui macOS captures; verify locally (completed 2026-03-21)
-- [ ] 43-03-PLAN.md — Implement Windows BitBlt self-capture for iced showcase (gap closure)
+| 33-43 | v0.4.1 | 22/22 | Complete | 2026-03-21 |
+| 44. Per-Widget Data Model and Preset Migration | v0.5.0 | 0/? | Not started | - |
+| 45. Resolution Engine | v0.5.0 | 0/? | Not started | - |
+| 46. OS Reader Extensions | v0.5.0 | 0/? | Not started | - |
+| 47. OS-First Pipeline | v0.5.0 | 0/? | Not started | - |
+| 48. Connector Migration | v0.5.0 | 0/? | Not started | - |

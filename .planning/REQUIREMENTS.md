@@ -21,56 +21,56 @@ Requirements for per-widget architecture and resolution pipeline. Each maps to r
 
 ### Resolution
 
-- [ ] **RESOLVE-01**: resolve() fills ~90 inheritance rules (accent→primary_bg, font→menu.font, radius→button.radius, etc.)
+- [ ] **RESOLVE-01**: resolve() fills ~90 inheritance rules (accent->primary_bg, font->menu.font, radius->button.radius, etc.)
 - [ ] **RESOLVE-02**: ResolvedTheme with non-optional fields mirrors ThemeVariant per-widget structure
-- [ ] **RESOLVE-03**: validate() converts ThemeVariant→ResolvedTheme, returns ThemeResolutionError listing all missing fields
+- [ ] **RESOLVE-03**: validate() converts ThemeVariant->ResolvedTheme, returns ThemeResolutionError listing all missing fields
 - [ ] **RESOLVE-04**: FontSpec sub-field inheritance (None family/size/weight individually inherit from defaults.font)
-- [ ] **RESOLVE-05**: TextScaleEntry inheritance (size←font.size, weight←font.weight, line_height←line_height multiplier × resolved size)
-- [ ] **RESOLVE-06**: Accent-derived propagation (accent→primary_bg, checked_bg, slider.fill, progress_bar.fill, switch.checked_bg)
+- [ ] **RESOLVE-05**: TextScaleEntry inheritance (size<-font.size, weight<-font.weight, line_height<-line_height multiplier x resolved size)
+- [ ] **RESOLVE-06**: Accent-derived propagation (accent->primary_bg, checked_bg, slider.fill, progress_bar.fill, switch.checked_bg)
 
 ### macOS Reader
 
 - [ ] **MACOS-01**: NSFont.TextStyle entries populate text_scale (caption, section_heading, dialog_title, display)
 - [ ] **MACOS-02**: Per-widget fonts from +menuFontOfSize:, +toolTipsFontOfSize:, +titleBarFontOfSize: with weight extraction
 - [ ] **MACOS-03**: Additional NSColor values (placeholder, caret, selection_inactive, alternate_row, header_foreground, grid_color)
-- [ ] **MACOS-04**: NSScroller.preferredScrollerStyle → scrollbar.overlay_mode
+- [ ] **MACOS-04**: NSScroller.preferredScrollerStyle -> scrollbar.overlay_mode
 - [ ] **MACOS-05**: Accessibility queries (reduce_motion, high_contrast, reduce_transparency, text_scaling_factor)
 
 ### Windows Reader
 
-- [ ] **WIN-01**: NONCLIENTMETRICSW fonts (lfCaptionFont, lfMenuFont, lfStatusFont) → per-widget FontSpec
-- [ ] **WIN-02**: DwmGetColorizationColor → window.title_bar_background; COLOR_CAPTION/INACTIVECAPTION colors
+- [ ] **WIN-01**: NONCLIENTMETRICSW fonts (lfCaptionFont, lfMenuFont, lfStatusFont) -> per-widget FontSpec
+- [ ] **WIN-02**: DwmGetColorizationColor -> window.title_bar_background; COLOR_CAPTION/INACTIVECAPTION colors
 - [ ] **WIN-03**: GetSysColor widget colors (BTNFACE, BTNTEXT, MENU, MENUTEXT, INFOBK, INFOTEXT, WINDOW, WINDOWTEXT, HIGHLIGHT, HIGHLIGHTTEXT)
-- [ ] **WIN-04**: UISettings.TextScaleFactor, SPI_GETHIGHCONTRAST, SPI_GETCLIENTAREAANIMATION → accessibility fields
-- [ ] **WIN-05**: SM_CXSMICON, SM_CXICON → defaults.icon_sizes.small, defaults.icon_sizes.large
+- [ ] **WIN-04**: UISettings.TextScaleFactor, SPI_GETHIGHCONTRAST, SPI_GETCLIENTAREAANIMATION -> accessibility fields
+- [ ] **WIN-05**: SM_CXSMICON, SM_CXICON -> defaults.icon_sizes.small, defaults.icon_sizes.large
 
 ### KDE Reader
 
-- [ ] **KDE-01**: [WM] section → title bar colors (active/inactive bg/fg) + activeFont → title bar font
-- [ ] **KDE-02**: [Colors:Header], [Colors:Complementary], [Colors:View] extras → list header, sidebar, placeholder, alternate_row, visited
+- [ ] **KDE-01**: [WM] section -> title bar colors (active/inactive bg/fg) + activeFont -> title bar font
+- [ ] **KDE-02**: [Colors:Header], [Colors:Complementary], [Colors:View] extras -> list header, sidebar, placeholder, alternate_row, visited
 - [ ] **KDE-03**: Per-widget fonts (menuFont, toolBarFont) with Qt5/Qt6 weight scale detection
-- [ ] **KDE-04**: Text scale computation from smallestReadableFont + font.size × Kirigami multipliers
-- [ ] **KDE-05**: Icon sizes from icon theme index.theme; [Icons] Theme → icon_set
-- [ ] **KDE-06**: AnimationDurationFactor → reduce_motion; forceFontDPI → text_scaling_factor
+- [ ] **KDE-04**: Text scale computation from smallestReadableFont + font.size x Kirigami multipliers
+- [ ] **KDE-05**: Icon sizes from icon theme index.theme; [Icons] Theme -> icon_set
+- [ ] **KDE-06**: AnimationDurationFactor -> reduce_motion; forceFontDPI -> text_scaling_factor
 
 ### GNOME Reader
 
-- [ ] **GNOME-01**: font-name, monospace-font-name, titlebar-font gsettings → FontSpec fields
-- [ ] **GNOME-02**: Text scale computation from font.size × CSS percentages (caption 82%, title-2 136%, title-1 181%)
-- [ ] **GNOME-03**: text-scaling-factor, enable-animations, overlay-scrolling gsettings → accessibility + scrollbar fields
-- [ ] **GNOME-04**: icon-theme gsetting → icon_set; portal accent already handled
+- [ ] **GNOME-01**: font-name, monospace-font-name, titlebar-font gsettings -> FontSpec fields
+- [ ] **GNOME-02**: Text scale computation from font.size x CSS percentages (caption 82%, title-2 136%, title-1 181%)
+- [ ] **GNOME-03**: text-scaling-factor, enable-animations, overlay-scrolling gsettings -> accessibility + scrollbar fields
+- [ ] **GNOME-04**: icon-theme gsetting -> icon_set; portal accent already handled
 - [ ] **GNOME-05**: Portal reduced_motion + contrast with gsettings fallback
 
 ### Pipeline
 
-- [ ] **PIPE-01**: from_system() runs full pipeline: OS reader → platform TOML overlay → resolve() → ResolvedTheme
-- [ ] **PIPE-02**: Platform-to-preset mapping (macOS→macos-sonoma, Windows→windows-11, KDE→kde-breeze, GNOME→adwaita)
+- [ ] **PIPE-01**: from_system() runs full pipeline: OS reader -> platform TOML overlay -> resolve() -> ResolvedTheme
+- [ ] **PIPE-02**: Platform-to-preset mapping (macOS->macos-sonoma, Windows->windows-11, KDE->kde-breeze, GNOME->adwaita)
 - [ ] **PIPE-03**: App TOML overlay support with second resolve() pass propagating changed source fields
 
 ### Presets
 
 - [ ] **PRESET-01**: All 17 preset TOMLs rewritten for new per-widget structure with serde round-trip tests
-- [ ] **PRESET-02**: Platform preset TOMLs slimmed (⚙ values removed, only design constants remain)
+- [ ] **PRESET-02**: Platform preset TOMLs slimmed (OS-readable values removed, only design constants remain)
 - [ ] **PRESET-03**: Cross-platform presets (catppuccin, nord, etc.) provide all non-derived fields for new structure
 
 ### Connectors
@@ -118,57 +118,57 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| MODEL-01 | — | Pending |
-| MODEL-02 | — | Pending |
-| MODEL-03 | — | Pending |
-| MODEL-04 | — | Pending |
-| MODEL-05 | — | Pending |
-| MODEL-06 | — | Pending |
-| MODEL-07 | — | Pending |
-| MODEL-08 | — | Pending |
-| MODEL-09 | — | Pending |
-| RESOLVE-01 | — | Pending |
-| RESOLVE-02 | — | Pending |
-| RESOLVE-03 | — | Pending |
-| RESOLVE-04 | — | Pending |
-| RESOLVE-05 | — | Pending |
-| RESOLVE-06 | — | Pending |
-| MACOS-01 | — | Pending |
-| MACOS-02 | — | Pending |
-| MACOS-03 | — | Pending |
-| MACOS-04 | — | Pending |
-| MACOS-05 | — | Pending |
-| WIN-01 | — | Pending |
-| WIN-02 | — | Pending |
-| WIN-03 | — | Pending |
-| WIN-04 | — | Pending |
-| WIN-05 | — | Pending |
-| KDE-01 | — | Pending |
-| KDE-02 | — | Pending |
-| KDE-03 | — | Pending |
-| KDE-04 | — | Pending |
-| KDE-05 | — | Pending |
-| KDE-06 | — | Pending |
-| GNOME-01 | — | Pending |
-| GNOME-02 | — | Pending |
-| GNOME-03 | — | Pending |
-| GNOME-04 | — | Pending |
-| GNOME-05 | — | Pending |
-| PIPE-01 | — | Pending |
-| PIPE-02 | — | Pending |
-| PIPE-03 | — | Pending |
-| PRESET-01 | — | Pending |
-| PRESET-02 | — | Pending |
-| PRESET-03 | — | Pending |
-| CONN-01 | — | Pending |
-| CONN-02 | — | Pending |
-| CONN-03 | — | Pending |
+| MODEL-01 | Phase 44 | Pending |
+| MODEL-02 | Phase 44 | Pending |
+| MODEL-03 | Phase 44 | Pending |
+| MODEL-04 | Phase 44 | Pending |
+| MODEL-05 | Phase 44 | Pending |
+| MODEL-06 | Phase 44 | Pending |
+| MODEL-07 | Phase 44 | Pending |
+| MODEL-08 | Phase 44 | Pending |
+| MODEL-09 | Phase 44 | Pending |
+| RESOLVE-01 | Phase 45 | Pending |
+| RESOLVE-02 | Phase 45 | Pending |
+| RESOLVE-03 | Phase 45 | Pending |
+| RESOLVE-04 | Phase 45 | Pending |
+| RESOLVE-05 | Phase 45 | Pending |
+| RESOLVE-06 | Phase 45 | Pending |
+| MACOS-01 | Phase 46 | Pending |
+| MACOS-02 | Phase 46 | Pending |
+| MACOS-03 | Phase 46 | Pending |
+| MACOS-04 | Phase 46 | Pending |
+| MACOS-05 | Phase 46 | Pending |
+| WIN-01 | Phase 46 | Pending |
+| WIN-02 | Phase 46 | Pending |
+| WIN-03 | Phase 46 | Pending |
+| WIN-04 | Phase 46 | Pending |
+| WIN-05 | Phase 46 | Pending |
+| KDE-01 | Phase 46 | Pending |
+| KDE-02 | Phase 46 | Pending |
+| KDE-03 | Phase 46 | Pending |
+| KDE-04 | Phase 46 | Pending |
+| KDE-05 | Phase 46 | Pending |
+| KDE-06 | Phase 46 | Pending |
+| GNOME-01 | Phase 46 | Pending |
+| GNOME-02 | Phase 46 | Pending |
+| GNOME-03 | Phase 46 | Pending |
+| GNOME-04 | Phase 46 | Pending |
+| GNOME-05 | Phase 46 | Pending |
+| PIPE-01 | Phase 47 | Pending |
+| PIPE-02 | Phase 47 | Pending |
+| PIPE-03 | Phase 47 | Pending |
+| PRESET-01 | Phase 44 | Pending |
+| PRESET-02 | Phase 44 | Pending |
+| PRESET-03 | Phase 45 | Pending |
+| CONN-01 | Phase 48 | Pending |
+| CONN-02 | Phase 48 | Pending |
+| CONN-03 | Phase 48 | Pending |
 
 **Coverage:**
 - v0.5.0 requirements: 45 total
-- Mapped to phases: 0
-- Unmapped: 45 ⚠️
+- Mapped to phases: 45
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-03-27*
-*Last updated: 2026-03-27 after initial definition*
+*Last updated: 2026-03-27 after roadmap creation*
