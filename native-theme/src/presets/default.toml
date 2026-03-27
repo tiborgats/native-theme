@@ -3,7 +3,7 @@ name = "Default"
 
 # === Light variant ===
 
-[light.colors]
+[light.defaults]
 accent = "#4a90d9"
 background = "#fafafa"
 foreground = "#2e3436"
@@ -11,12 +11,6 @@ surface = "#ffffff"
 border = "#c0c0c0"
 muted = "#929292"
 shadow = "#00000018"
-
-primary_background = "#4a90d9"
-primary_foreground = "#ffffff"
-
-secondary_background = "#6c757d"
-secondary_foreground = "#ffffff"
 
 danger = "#dc3545"
 danger_foreground = "#ffffff"
@@ -30,39 +24,25 @@ info_foreground = "#ffffff"
 selection = "#4a90d9"
 selection_foreground = "#ffffff"
 link = "#2a6cb6"
-focus_ring = "#4a90d9"
+focus_ring_color = "#4a90d9"
+disabled_foreground = "#c0c0c0"
 
-sidebar = "#f0f0f0"
-sidebar_foreground = "#2e3436"
-tooltip = "#2e3436"
-tooltip_foreground = "#f0f0f0"
-popover = "#ffffff"
-popover_foreground = "#2e3436"
-
-button = "#e8e8e8"
-button_foreground = "#2e3436"
-input = "#ffffff"
-input_foreground = "#2e3436"
-disabled = "#c0c0c0"
-separator = "#d0d0d0"
-alternate_row = "#f5f5f5"
-
-[light.fonts]
-family = "sans-serif"
-size = 10.0
-mono_family = "monospace"
-mono_size = 10.0
-
-[light.geometry]
 radius = 6.0
 radius_lg = 12.0
 frame_width = 1.0
 disabled_opacity = 0.5
 border_opacity = 0.15
-scroll_width = 8.0
-shadow = true
+shadow_enabled = true
 
-[light.spacing]
+[light.defaults.font]
+family = "sans-serif"
+size = 10.0
+
+[light.defaults.mono_font]
+family = "monospace"
+size = 10.0
+
+[light.defaults.spacing]
 xxs = 2.0
 xs = 4.0
 s = 6.0
@@ -71,55 +51,74 @@ l = 18.0
 xl = 24.0
 xxl = 36.0
 
-[light.widget_metrics.button]
+[light.button]
+background = "#e8e8e8"
+foreground = "#2e3436"
 min_height = 32.0
 padding_horizontal = 12.0
 padding_vertical = 6.0
 
-[light.widget_metrics.checkbox]
+[light.input]
+background = "#ffffff"
+foreground = "#2e3436"
+min_height = 32.0
+padding_horizontal = 8.0
+
+[light.checkbox]
 indicator_size = 18.0
 spacing = 6.0
 
-[light.widget_metrics.input]
-min_height = 32.0
-padding_horizontal = 8.0
+[light.tooltip]
+background = "#2e3436"
+foreground = "#f0f0f0"
+padding_horizontal = 6.0
+padding_vertical = 6.0
 
-[light.widget_metrics.scrollbar]
+[light.scrollbar]
 width = 14.0
 slider_width = 8.0
 
-[light.widget_metrics.slider]
+[light.slider]
 track_height = 4.0
 thumb_size = 20.0
 
-[light.widget_metrics.progress_bar]
+[light.progress_bar]
 height = 6.0
 
-[light.widget_metrics.tab]
+[light.tab]
 min_height = 32.0
 padding_horizontal = 12.0
 
-[light.widget_metrics.menu_item]
-height = 28.0
+[light.menu]
+item_height = 28.0
 padding_horizontal = 8.0
 
-[light.widget_metrics.tooltip]
-padding = 6.0
-
-[light.widget_metrics.list_item]
-height = 28.0
+[light.list]
+alternate_row = "#f5f5f5"
+item_height = 28.0
 padding_horizontal = 8.0
 
-[light.widget_metrics.toolbar]
+[light.toolbar]
 height = 40.0
 item_spacing = 6.0
 
-[light.widget_metrics.splitter]
+[light.sidebar]
+background = "#f0f0f0"
+foreground = "#2e3436"
+
+[light.popover]
+background = "#ffffff"
+foreground = "#2e3436"
+
+[light.separator]
+color = "#d0d0d0"
+
+[light.splitter]
 width = 4.0
 
 # === Dark variant ===
 
-[dark.colors]
+[dark.defaults]
 accent = "#4a90d9"
 background = "#1e1e1e"
 foreground = "#f0f0f0"
@@ -127,12 +126,6 @@ surface = "#2d2d2d"
 border = "#555555"
 muted = "#888888"
 shadow = "#00000040"
-
-primary_background = "#4a90d9"
-primary_foreground = "#ffffff"
-
-secondary_background = "#6c757d"
-secondary_foreground = "#ffffff"
 
 danger = "#e05260"
 danger_foreground = "#ffffff"
@@ -146,39 +139,25 @@ info_foreground = "#ffffff"
 selection = "#4a90d9"
 selection_foreground = "#ffffff"
 link = "#6aafe6"
-focus_ring = "#4a90d9"
+focus_ring_color = "#4a90d9"
+disabled_foreground = "#555555"
 
-sidebar = "#252525"
-sidebar_foreground = "#f0f0f0"
-tooltip = "#3a3a3a"
-tooltip_foreground = "#f0f0f0"
-popover = "#333333"
-popover_foreground = "#f0f0f0"
-
-button = "#3a3a3a"
-button_foreground = "#f0f0f0"
-input = "#2d2d2d"
-input_foreground = "#f0f0f0"
-disabled = "#555555"
-separator = "#444444"
-alternate_row = "#252525"
-
-[dark.fonts]
-family = "sans-serif"
-size = 10.0
-mono_family = "monospace"
-mono_size = 10.0
-
-[dark.geometry]
 radius = 6.0
 radius_lg = 12.0
 frame_width = 1.0
 disabled_opacity = 0.5
 border_opacity = 0.15
-scroll_width = 8.0
-shadow = true
+shadow_enabled = true
 
-[dark.spacing]
+[dark.defaults.font]
+family = "sans-serif"
+size = 10.0
+
+[dark.defaults.mono_font]
+family = "monospace"
+size = 10.0
+
+[dark.defaults.spacing]
 xxs = 2.0
 xs = 4.0
 s = 6.0
@@ -187,48 +166,67 @@ l = 18.0
 xl = 24.0
 xxl = 36.0
 
-[dark.widget_metrics.button]
+[dark.button]
+background = "#3a3a3a"
+foreground = "#f0f0f0"
 min_height = 32.0
 padding_horizontal = 12.0
 padding_vertical = 6.0
 
-[dark.widget_metrics.checkbox]
+[dark.input]
+background = "#2d2d2d"
+foreground = "#f0f0f0"
+min_height = 32.0
+padding_horizontal = 8.0
+
+[dark.checkbox]
 indicator_size = 18.0
 spacing = 6.0
 
-[dark.widget_metrics.input]
-min_height = 32.0
-padding_horizontal = 8.0
+[dark.tooltip]
+background = "#3a3a3a"
+foreground = "#f0f0f0"
+padding_horizontal = 6.0
+padding_vertical = 6.0
 
-[dark.widget_metrics.scrollbar]
+[dark.scrollbar]
 width = 14.0
 slider_width = 8.0
 
-[dark.widget_metrics.slider]
+[dark.slider]
 track_height = 4.0
 thumb_size = 20.0
 
-[dark.widget_metrics.progress_bar]
+[dark.progress_bar]
 height = 6.0
 
-[dark.widget_metrics.tab]
+[dark.tab]
 min_height = 32.0
 padding_horizontal = 12.0
 
-[dark.widget_metrics.menu_item]
-height = 28.0
+[dark.menu]
+item_height = 28.0
 padding_horizontal = 8.0
 
-[dark.widget_metrics.tooltip]
-padding = 6.0
-
-[dark.widget_metrics.list_item]
-height = 28.0
+[dark.list]
+alternate_row = "#252525"
+item_height = 28.0
 padding_horizontal = 8.0
 
-[dark.widget_metrics.toolbar]
+[dark.toolbar]
 height = 40.0
 item_spacing = 6.0
 
-[dark.widget_metrics.splitter]
+[dark.sidebar]
+background = "#252525"
+foreground = "#f0f0f0"
+
+[dark.popover]
+background = "#333333"
+foreground = "#f0f0f0"
+
+[dark.separator]
+color = "#444444"
+
+[dark.splitter]
 width = 4.0

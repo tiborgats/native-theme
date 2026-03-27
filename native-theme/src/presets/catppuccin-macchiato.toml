@@ -4,7 +4,7 @@ name = "Catppuccin Macchiato"
 
 # === Light variant (derived - Latte base with Macchiato accents) ===
 
-[light.colors]
+[light.defaults]
 accent = "#8aadf4"
 background = "#eff1f5"
 foreground = "#4c4f69"
@@ -12,12 +12,6 @@ surface = "#e6e9ef"
 border = "#bcc0cc"
 muted = "#6c6f85"
 shadow = "#00000018"
-
-primary_background = "#8aadf4"
-primary_foreground = "#ffffff"
-
-secondary_background = "#ccd0da"
-secondary_foreground = "#4c4f69"
 
 danger = "#ed8796"
 danger_foreground = "#4c4f69"
@@ -31,33 +25,17 @@ info_foreground = "#4c4f69"
 selection = "#8aadf4"
 selection_foreground = "#ffffff"
 link = "#8aadf4"
-focus_ring = "#8aadf4"
+focus_ring_color = "#8aadf4"
+disabled_foreground = "#bcc0cc"
 
-sidebar = "#e6e9ef"
-sidebar_foreground = "#4c4f69"
-tooltip = "#4c4f69"
-tooltip_foreground = "#eff1f5"
-popover = "#e6e9ef"
-popover_foreground = "#4c4f69"
-
-button = "#e6e9ef"
-button_foreground = "#4c4f69"
-input = "#eff1f5"
-input_foreground = "#4c4f69"
-disabled = "#bcc0cc"
-separator = "#bcc0cc"
-alternate_row = "#e6e9ef"
-
-[light.geometry]
 radius = 8.0
 radius_lg = 12.0
 frame_width = 1.0
 disabled_opacity = 0.5
 border_opacity = 0.15
-scroll_width = 8.0
-shadow = true
+shadow_enabled = true
 
-[light.spacing]
+[light.defaults.spacing]
 xxs = 2.0
 xs = 4.0
 s = 6.0
@@ -66,55 +44,74 @@ l = 18.0
 xl = 24.0
 xxl = 36.0
 
-[light.widget_metrics.button]
+[light.button]
+background = "#e6e9ef"
+foreground = "#4c4f69"
 min_height = 32.0
 padding_horizontal = 12.0
 padding_vertical = 6.0
 
-[light.widget_metrics.checkbox]
+[light.input]
+background = "#eff1f5"
+foreground = "#4c4f69"
+min_height = 32.0
+padding_horizontal = 8.0
+
+[light.checkbox]
 indicator_size = 18.0
 spacing = 6.0
 
-[light.widget_metrics.input]
-min_height = 32.0
-padding_horizontal = 8.0
+[light.tooltip]
+background = "#4c4f69"
+foreground = "#eff1f5"
+padding_horizontal = 6.0
+padding_vertical = 6.0
 
-[light.widget_metrics.scrollbar]
+[light.scrollbar]
 width = 14.0
 slider_width = 8.0
 
-[light.widget_metrics.slider]
+[light.slider]
 track_height = 4.0
 thumb_size = 20.0
 
-[light.widget_metrics.progress_bar]
+[light.progress_bar]
 height = 6.0
 
-[light.widget_metrics.tab]
+[light.tab]
 min_height = 32.0
 padding_horizontal = 12.0
 
-[light.widget_metrics.menu_item]
-height = 28.0
+[light.menu]
+item_height = 28.0
 padding_horizontal = 8.0
 
-[light.widget_metrics.tooltip]
-padding = 6.0
-
-[light.widget_metrics.list_item]
-height = 28.0
+[light.list]
+alternate_row = "#e6e9ef"
+item_height = 28.0
 padding_horizontal = 8.0
 
-[light.widget_metrics.toolbar]
+[light.toolbar]
 height = 40.0
 item_spacing = 6.0
 
-[light.widget_metrics.splitter]
+[light.sidebar]
+background = "#e6e9ef"
+foreground = "#4c4f69"
+
+[light.popover]
+background = "#e6e9ef"
+foreground = "#4c4f69"
+
+[light.separator]
+color = "#bcc0cc"
+
+[light.splitter]
 width = 4.0
 
 # === Dark variant (Macchiato palette - primary) ===
 
-[dark.colors]
+[dark.defaults]
 accent = "#8aadf4"
 background = "#24273a"
 foreground = "#cad3f5"
@@ -122,12 +119,6 @@ surface = "#1e2030"
 border = "#494d64"
 muted = "#a5adcb"
 shadow = "#00000040"
-
-primary_background = "#8aadf4"
-primary_foreground = "#24273a"
-
-secondary_background = "#363a4f"
-secondary_foreground = "#cad3f5"
 
 danger = "#ed8796"
 danger_foreground = "#24273a"
@@ -141,33 +132,17 @@ info_foreground = "#24273a"
 selection = "#8aadf4"
 selection_foreground = "#24273a"
 link = "#8aadf4"
-focus_ring = "#8aadf4"
+focus_ring_color = "#8aadf4"
+disabled_foreground = "#494d64"
 
-sidebar = "#1e2030"
-sidebar_foreground = "#cad3f5"
-tooltip = "#181926"
-tooltip_foreground = "#cad3f5"
-popover = "#363a4f"
-popover_foreground = "#cad3f5"
-
-button = "#363a4f"
-button_foreground = "#cad3f5"
-input = "#1e2030"
-input_foreground = "#cad3f5"
-disabled = "#494d64"
-separator = "#494d64"
-alternate_row = "#1e2030"
-
-[dark.geometry]
 radius = 8.0
 radius_lg = 12.0
 frame_width = 1.0
 disabled_opacity = 0.5
 border_opacity = 0.15
-scroll_width = 8.0
-shadow = true
+shadow_enabled = true
 
-[dark.spacing]
+[dark.defaults.spacing]
 xxs = 2.0
 xs = 4.0
 s = 6.0
@@ -176,48 +151,67 @@ l = 18.0
 xl = 24.0
 xxl = 36.0
 
-[dark.widget_metrics.button]
+[dark.button]
+background = "#363a4f"
+foreground = "#cad3f5"
 min_height = 32.0
 padding_horizontal = 12.0
 padding_vertical = 6.0
 
-[dark.widget_metrics.checkbox]
+[dark.input]
+background = "#1e2030"
+foreground = "#cad3f5"
+min_height = 32.0
+padding_horizontal = 8.0
+
+[dark.checkbox]
 indicator_size = 18.0
 spacing = 6.0
 
-[dark.widget_metrics.input]
-min_height = 32.0
-padding_horizontal = 8.0
+[dark.tooltip]
+background = "#181926"
+foreground = "#cad3f5"
+padding_horizontal = 6.0
+padding_vertical = 6.0
 
-[dark.widget_metrics.scrollbar]
+[dark.scrollbar]
 width = 14.0
 slider_width = 8.0
 
-[dark.widget_metrics.slider]
+[dark.slider]
 track_height = 4.0
 thumb_size = 20.0
 
-[dark.widget_metrics.progress_bar]
+[dark.progress_bar]
 height = 6.0
 
-[dark.widget_metrics.tab]
+[dark.tab]
 min_height = 32.0
 padding_horizontal = 12.0
 
-[dark.widget_metrics.menu_item]
-height = 28.0
+[dark.menu]
+item_height = 28.0
 padding_horizontal = 8.0
 
-[dark.widget_metrics.tooltip]
-padding = 6.0
-
-[dark.widget_metrics.list_item]
-height = 28.0
+[dark.list]
+alternate_row = "#1e2030"
+item_height = 28.0
 padding_horizontal = 8.0
 
-[dark.widget_metrics.toolbar]
+[dark.toolbar]
 height = 40.0
 item_spacing = 6.0
 
-[dark.widget_metrics.splitter]
+[dark.sidebar]
+background = "#1e2030"
+foreground = "#cad3f5"
+
+[dark.popover]
+background = "#363a4f"
+foreground = "#cad3f5"
+
+[dark.separator]
+color = "#494d64"
+
+[dark.splitter]
 width = 4.0

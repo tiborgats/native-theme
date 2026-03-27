@@ -113,11 +113,18 @@ mod spinners;
 pub use color::Rgba;
 pub use error::Error;
 pub use model::{
-    AnimatedIcon, IconData, IconProvider, IconRole, IconSet, NativeTheme, Repeat, ThemeColors,
-    ThemeFonts, ThemeGeometry, ThemeSpacing, ThemeVariant, TransformAnimation, WidgetMetrics,
+    AnimatedIcon, ButtonTheme, CardTheme, CheckboxTheme, ComboBoxTheme,
+    DialogButtonOrder, DialogTheme, ExpanderTheme, FontSpec, IconData,
+    IconProvider, IconRole, IconSet, IconSizes, InputTheme, LinkTheme,
+    ListTheme, MenuTheme, NativeTheme, PopoverTheme, ProgressBarTheme,
+    Repeat, ResolvedFontSpec, ScrollbarTheme, SegmentedControlTheme,
+    SeparatorTheme, SidebarTheme, SliderTheme, SpinnerTheme, SplitterTheme, StatusBarTheme,
+    SwitchTheme, TabTheme, TextScale, TextScaleEntry, ThemeDefaults,
+    ThemeSpacing, ThemeVariant, ToolbarTheme, TooltipTheme,
+    TransformAnimation, WindowTheme,
     bundled_icon_by_name, bundled_icon_svg,
 };
-// load_icon re-exported from this module (defined in lib.rs directly)
+// icon helper functions re-exported from this module
 pub use model::icons::{icon_name, system_icon_set, system_icon_theme};
 
 /// Freedesktop icon theme lookup (Linux).

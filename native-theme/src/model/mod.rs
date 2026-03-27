@@ -6,66 +6,36 @@ pub mod defaults;
 pub mod animated;
 /// Bundled SVG icon lookup tables.
 pub mod bundled;
-/// Semantic theme color roles.
-pub mod colors;
 /// Dialog button ordering convention.
 pub mod dialog_order;
-/// Font family and size configuration.
-pub mod fonts;
 /// Per-widget font specification and text scale.
 pub mod font;
-/// Corner radius, border, and scroll geometry.
-pub mod geometry;
 /// Icon roles, sets, and provider trait.
 pub mod icons;
 /// Per-context icon sizes.
 pub mod icon_sizes;
 /// Logical spacing scale (xxs through xxl).
 pub mod spacing;
-/// Per-widget sizing and spacing metrics.
-pub mod widget_metrics;
 /// Per-widget struct pairs and macros.
 pub mod widgets;
 
-pub use defaults::ThemeDefaults;
 pub use animated::{AnimatedIcon, Repeat, TransformAnimation};
 pub use bundled::{bundled_icon_by_name, bundled_icon_svg};
-pub use colors::ThemeColors;
+pub use defaults::ThemeDefaults;
 pub use dialog_order::DialogButtonOrder;
 pub use font::{FontSpec, TextScale, TextScaleEntry};
-pub use fonts::ThemeFonts;
-pub use geometry::ThemeGeometry;
 pub use icon_sizes::IconSizes;
 pub use icons::{
     IconData, IconProvider, IconRole, IconSet, icon_name, system_icon_set, system_icon_theme,
 };
 pub use spacing::ThemeSpacing;
-pub use widgets::{
-    ResolvedFontSpec,
-    // 25 XxxTheme types
-    WindowTheme, ButtonTheme, InputTheme, CheckboxTheme, MenuTheme,
-    TooltipTheme, ScrollbarTheme, SliderTheme, ProgressBarTheme, TabTheme,
-    SidebarTheme, ToolbarTheme, StatusBarTheme, ListTheme, PopoverTheme,
-    SplitterTheme, SeparatorTheme, SwitchTheme, DialogTheme, SpinnerTheme,
-    ComboBoxTheme, SegmentedControlTheme, CardTheme, ExpanderTheme, LinkTheme,
-    // 25 ResolvedXxx types
-    ResolvedWindow, ResolvedButton, ResolvedInput, ResolvedCheckbox, ResolvedMenu,
-    ResolvedTooltip, ResolvedScrollbar, ResolvedSlider, ResolvedProgressBar, ResolvedTab,
-    ResolvedSidebar, ResolvedToolbar, ResolvedStatusBar, ResolvedList, ResolvedPopover,
-    ResolvedSplitter, ResolvedSeparator, ResolvedSwitch, ResolvedDialog, ResolvedSpinner,
-    ResolvedComboBox, ResolvedSegmentedControl, ResolvedCard, ResolvedExpander, ResolvedLink,
-};
-pub use widget_metrics::{
-    ButtonMetrics, CheckboxMetrics, InputMetrics, ListItemMetrics, MenuItemMetrics,
-    ProgressBarMetrics, ScrollbarMetrics, SliderMetrics, SplitterMetrics, TabMetrics,
-    ToolbarMetrics, TooltipMetrics, WidgetMetrics,
-};
+pub use widgets::*; // All 25 XxxTheme + ResolvedXxx + ResolvedFontSpec
 
 use serde::{Deserialize, Serialize};
 
 /// A single light or dark theme variant containing all visual properties.
 ///
-/// Composes colors, fonts, geometry, and spacing into one coherent set.
+/// Composes defaults, per-widget structs, and optional text scale into one coherent set.
 /// Empty sub-structs are omitted from serialization to keep TOML files clean.
 ///
 /// # Examples
@@ -74,75 +44,138 @@ use serde::{Deserialize, Serialize};
 /// use native_theme::{ThemeVariant, Rgba};
 ///
 /// let mut variant = ThemeVariant::default();
-/// variant.colors.accent = Some(Rgba::rgb(0, 120, 215));
-/// variant.fonts.family = Some("Inter".into());
+/// variant.defaults.accent = Some(Rgba::rgb(0, 120, 215));
+/// variant.defaults.font.family = Some("Inter".into());
 /// assert!(!variant.is_empty());
 /// ```
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 #[non_exhaustive]
 pub struct ThemeVariant {
-    /// Semantic color roles (accent, background, status, etc.).
-    #[serde(default, skip_serializing_if = "ThemeColors::is_empty")]
-    pub colors: ThemeColors,
+    /// Global defaults inherited by all widgets.
+    #[serde(default, skip_serializing_if = "ThemeDefaults::is_empty")]
+    pub defaults: ThemeDefaults,
 
-    /// Font family and size settings.
-    #[serde(default, skip_serializing_if = "ThemeFonts::is_empty")]
-    pub fonts: ThemeFonts,
+    /// Per-role text scale overrides.
+    #[serde(default, skip_serializing_if = "TextScale::is_empty")]
+    pub text_scale: TextScale,
 
-    /// Corner radius, border width, and scroll geometry.
-    #[serde(default, skip_serializing_if = "ThemeGeometry::is_empty")]
-    pub geometry: ThemeGeometry,
+    /// Window chrome: background, title bar, radius, shadow.
+    #[serde(default, skip_serializing_if = "WindowTheme::is_empty")]
+    pub window: WindowTheme,
 
-    /// Logical spacing scale.
-    #[serde(default, skip_serializing_if = "ThemeSpacing::is_empty")]
-    pub spacing: ThemeSpacing,
+    /// Push button: colors, sizing, spacing, geometry.
+    #[serde(default, skip_serializing_if = "ButtonTheme::is_empty")]
+    pub button: ButtonTheme,
 
-    /// Per-widget sizing and spacing metrics.
-    ///
-    /// Optional because not all themes or presets provide widget metrics.
-    /// When merging, if both base and overlay have widget metrics they are
-    /// merged recursively; if only the overlay has them they are cloned.
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub widget_metrics: Option<WidgetMetrics>,
+    /// Single-line and multi-line text input fields.
+    #[serde(default, skip_serializing_if = "InputTheme::is_empty")]
+    pub input: InputTheme,
+
+    /// Checkbox and radio button indicator geometry.
+    #[serde(default, skip_serializing_if = "CheckboxTheme::is_empty")]
+    pub checkbox: CheckboxTheme,
+
+    /// Popup and context menu appearance.
+    #[serde(default, skip_serializing_if = "MenuTheme::is_empty")]
+    pub menu: MenuTheme,
+
+    /// Tooltip popup appearance.
+    #[serde(default, skip_serializing_if = "TooltipTheme::is_empty")]
+    pub tooltip: TooltipTheme,
+
+    /// Scrollbar colors and geometry.
+    #[serde(default, skip_serializing_if = "ScrollbarTheme::is_empty")]
+    pub scrollbar: ScrollbarTheme,
+
+    /// Slider control colors and geometry.
+    #[serde(default, skip_serializing_if = "SliderTheme::is_empty")]
+    pub slider: SliderTheme,
+
+    /// Progress bar colors and geometry.
+    #[serde(default, skip_serializing_if = "ProgressBarTheme::is_empty")]
+    pub progress_bar: ProgressBarTheme,
+
+    /// Tab bar colors and sizing.
+    #[serde(default, skip_serializing_if = "TabTheme::is_empty")]
+    pub tab: TabTheme,
+
+    /// Sidebar panel background and foreground colors.
+    #[serde(default, skip_serializing_if = "SidebarTheme::is_empty")]
+    pub sidebar: SidebarTheme,
+
+    /// Toolbar sizing, spacing, and font.
+    #[serde(default, skip_serializing_if = "ToolbarTheme::is_empty")]
+    pub toolbar: ToolbarTheme,
+
+    /// Status bar font.
+    #[serde(default, skip_serializing_if = "StatusBarTheme::is_empty")]
+    pub status_bar: StatusBarTheme,
+
+    /// List and table colors and row geometry.
+    #[serde(default, skip_serializing_if = "ListTheme::is_empty")]
+    pub list: ListTheme,
+
+    /// Popover / dropdown panel appearance.
+    #[serde(default, skip_serializing_if = "PopoverTheme::is_empty")]
+    pub popover: PopoverTheme,
+
+    /// Splitter handle width.
+    #[serde(default, skip_serializing_if = "SplitterTheme::is_empty")]
+    pub splitter: SplitterTheme,
+
+    /// Separator line color.
+    #[serde(default, skip_serializing_if = "SeparatorTheme::is_empty")]
+    pub separator: SeparatorTheme,
+
+    /// Toggle switch track, thumb, and geometry.
+    #[serde(default, skip_serializing_if = "SwitchTheme::is_empty")]
+    pub switch: SwitchTheme,
+
+    /// Dialog sizing, spacing, button order, and title font.
+    #[serde(default, skip_serializing_if = "DialogTheme::is_empty")]
+    pub dialog: DialogTheme,
+
+    /// Spinner / indeterminate progress indicator.
+    #[serde(default, skip_serializing_if = "SpinnerTheme::is_empty")]
+    pub spinner: SpinnerTheme,
+
+    /// ComboBox / dropdown trigger sizing.
+    #[serde(default, skip_serializing_if = "ComboBoxTheme::is_empty")]
+    pub combo_box: ComboBoxTheme,
+
+    /// Segmented control sizing.
+    #[serde(default, skip_serializing_if = "SegmentedControlTheme::is_empty")]
+    pub segmented_control: SegmentedControlTheme,
+
+    /// Card / container colors and geometry.
+    #[serde(default, skip_serializing_if = "CardTheme::is_empty")]
+    pub card: CardTheme,
+
+    /// Expander / disclosure row geometry.
+    #[serde(default, skip_serializing_if = "ExpanderTheme::is_empty")]
+    pub expander: ExpanderTheme,
+
+    /// Hyperlink colors and underline setting.
+    #[serde(default, skip_serializing_if = "LinkTheme::is_empty")]
+    pub link: LinkTheme,
 
     /// Icon set / naming convention for this variant (e.g., "sf-symbols", "freedesktop").
     /// When None, resolved at runtime via system_icon_set().
-    #[serde(default, skip_serializing_if = "Option::is_none", alias = "icon_theme")]
+    #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon_set: Option<String>,
 }
 
-impl ThemeVariant {
-    /// Merge an overlay into this value. `Some` fields in the overlay
-    /// replace the corresponding fields in self; `None` fields are
-    /// left unchanged. Nested structs are merged recursively.
-    pub fn merge(&mut self, overlay: &Self) {
-        self.colors.merge(&overlay.colors);
-        self.fonts.merge(&overlay.fonts);
-        self.geometry.merge(&overlay.geometry);
-        self.spacing.merge(&overlay.spacing);
-
-        match (&mut self.widget_metrics, &overlay.widget_metrics) {
-            (Some(base), Some(over)) => base.merge(over),
-            (None, Some(over)) => self.widget_metrics = Some(over.clone()),
-            _ => {}
-        }
-
-        if overlay.icon_set.is_some() {
-            self.icon_set.clone_from(&overlay.icon_set);
-        }
+impl_merge!(ThemeVariant {
+    option { icon_set }
+    nested {
+        defaults, text_scale, window, button, input, checkbox, menu,
+        tooltip, scrollbar, slider, progress_bar, tab, sidebar,
+        toolbar, status_bar, list, popover, splitter, separator,
+        switch, dialog, spinner, combo_box, segmented_control,
+        card, expander, link
     }
-
-    /// Returns true if all fields are at their default (None/empty) state.
-    pub fn is_empty(&self) -> bool {
-        self.colors.is_empty()
-            && self.fonts.is_empty()
-            && self.geometry.is_empty()
-            && self.spacing.is_empty()
-            && self.widget_metrics.as_ref().is_none_or(|wm| wm.is_empty())
-            && self.icon_set.is_none()
-    }
-}
+});
 
 /// A complete native theme with a name and optional light/dark variants.
 ///
@@ -161,7 +194,7 @@ impl ThemeVariant {
 /// // Parse from a TOML string
 /// let toml = r##"
 /// name = "Custom"
-/// [light.colors]
+/// [light.defaults]
 /// accent = "#ff6600"
 /// "##;
 /// let custom = NativeTheme::from_toml(toml).unwrap();
@@ -172,7 +205,7 @@ impl ThemeVariant {
 /// base.merge(&custom);
 /// assert_eq!(base.name, "Default"); // base name is preserved
 /// ```
-#[derive(Clone, Debug, Default, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[non_exhaustive]
 #[must_use = "constructing a theme without using it is likely a bug"]
 pub struct NativeTheme {
@@ -268,8 +301,7 @@ impl NativeTheme {
     /// ```toml
     /// name = "My Theme"
     ///
-    /// [light.colors]
-    /// # Core (7)
+    /// [light.defaults]
     /// accent = "#4a90d9"
     /// background = "#fafafa"
     /// foreground = "#2e3436"
@@ -277,57 +309,31 @@ impl NativeTheme {
     /// border = "#c0c0c0"
     /// muted = "#929292"
     /// shadow = "#00000018"
-    /// # Primary (2)
-    /// primary_background = "#4a90d9"
-    /// primary_foreground = "#ffffff"
-    /// # Secondary (2)
-    /// secondary_background = "#6c757d"
-    /// secondary_foreground = "#ffffff"
-    /// # Status (8) -- each has an optional _foreground variant
     /// danger = "#dc3545"
-    /// danger_foreground = "#ffffff"
     /// warning = "#f0ad4e"
-    /// warning_foreground = "#ffffff"
     /// success = "#28a745"
-    /// success_foreground = "#ffffff"
     /// info = "#4a90d9"
-    /// info_foreground = "#ffffff"
-    /// # Interactive (4)
     /// selection = "#4a90d9"
     /// selection_foreground = "#ffffff"
     /// link = "#2a6cb6"
-    /// focus_ring = "#4a90d9"
-    /// # Panel (6) -- each has an optional _foreground variant
-    /// sidebar = "#f0f0f0"
-    /// sidebar_foreground = "#2e3436"
-    /// tooltip = "#2e3436"
-    /// tooltip_foreground = "#ffffff"
-    /// popover = "#ffffff"
-    /// popover_foreground = "#2e3436"
-    /// # Component (7) -- button and input have _foreground variants
-    /// button = "#e8e8e8"
-    /// button_foreground = "#2e3436"
-    /// input = "#ffffff"
-    /// input_foreground = "#2e3436"
-    /// disabled = "#c0c0c0"
-    /// separator = "#d0d0d0"
-    /// alternate_row = "#f5f5f5"
-    ///
-    /// [light.fonts]
-    /// family = "sans-serif"
-    /// size = 10.0
-    /// mono_family = "monospace"
-    /// mono_size = 10.0
-    ///
-    /// [light.geometry]
+    /// focus_ring_color = "#4a90d9"
+    /// disabled_foreground = "#c0c0c0"
     /// radius = 6.0
     /// radius_lg = 12.0
     /// frame_width = 1.0
     /// disabled_opacity = 0.5
     /// border_opacity = 0.15
-    /// scroll_width = 8.0
+    /// shadow_enabled = true
     ///
-    /// [light.spacing]
+    /// [light.defaults.font]
+    /// family = "sans-serif"
+    /// size = 10.0
+    ///
+    /// [light.defaults.mono_font]
+    /// family = "monospace"
+    /// size = 10.0
+    ///
+    /// [light.defaults.spacing]
     /// xxs = 2.0
     /// xs = 4.0
     /// s = 6.0
@@ -335,6 +341,19 @@ impl NativeTheme {
     /// l = 18.0
     /// xl = 24.0
     /// xxl = 36.0
+    ///
+    /// [light.button]
+    /// background = "#e8e8e8"
+    /// foreground = "#2e3436"
+    /// min_height = 32.0
+    /// padding_horizontal = 12.0
+    /// padding_vertical = 6.0
+    ///
+    /// [light.tooltip]
+    /// background = "#2e3436"
+    /// foreground = "#f0f0f0"
+    /// padding_horizontal = 6.0
+    /// padding_vertical = 6.0
     ///
     /// # [dark.*] mirrors the same structure as [light.*]
     /// ```
@@ -346,7 +365,7 @@ impl NativeTheme {
     /// ```
     /// let toml = r##"
     /// name = "My Theme"
-    /// [light.colors]
+    /// [light.defaults]
     /// accent = "#ff0000"
     /// "##;
     /// let theme = native_theme::NativeTheme::from_toml(toml).unwrap();
@@ -415,37 +434,118 @@ mod tests {
     #[test]
     fn theme_variant_not_empty_when_color_set() {
         let mut v = ThemeVariant::default();
-        v.colors.accent = Some(Rgba::rgb(0, 120, 215));
+        v.defaults.accent = Some(Rgba::rgb(0, 120, 215));
         assert!(!v.is_empty());
     }
 
     #[test]
     fn theme_variant_not_empty_when_font_set() {
         let mut v = ThemeVariant::default();
-        v.fonts.family = Some("Inter".into());
+        v.defaults.font.family = Some("Inter".into());
         assert!(!v.is_empty());
     }
 
     #[test]
     fn theme_variant_merge_recursively() {
         let mut base = ThemeVariant::default();
-        base.colors.background = Some(Rgba::rgb(255, 255, 255));
-        base.fonts.family = Some("Noto Sans".into());
+        base.defaults.background = Some(Rgba::rgb(255, 255, 255));
+        base.defaults.font.family = Some("Noto Sans".into());
 
         let mut overlay = ThemeVariant::default();
-        overlay.colors.accent = Some(Rgba::rgb(0, 120, 215));
-        overlay.spacing.m = Some(12.0);
+        overlay.defaults.accent = Some(Rgba::rgb(0, 120, 215));
+        overlay.defaults.spacing.m = Some(12.0);
 
         base.merge(&overlay);
 
         // base background preserved
-        assert_eq!(base.colors.background, Some(Rgba::rgb(255, 255, 255)));
+        assert_eq!(base.defaults.background, Some(Rgba::rgb(255, 255, 255)));
         // overlay accent applied
-        assert_eq!(base.colors.accent, Some(Rgba::rgb(0, 120, 215)));
+        assert_eq!(base.defaults.accent, Some(Rgba::rgb(0, 120, 215)));
         // base font preserved
-        assert_eq!(base.fonts.family.as_deref(), Some("Noto Sans"));
+        assert_eq!(base.defaults.font.family.as_deref(), Some("Noto Sans"));
         // overlay spacing applied
-        assert_eq!(base.spacing.m, Some(12.0));
+        assert_eq!(base.defaults.spacing.m, Some(12.0));
+    }
+
+    #[test]
+    fn theme_variant_has_all_widgets() {
+        let mut v = ThemeVariant::default();
+        // Set a field on each of the 25 widgets
+        v.window.radius = Some(4.0);
+        v.button.min_height = Some(32.0);
+        v.input.min_height = Some(32.0);
+        v.checkbox.indicator_size = Some(18.0);
+        v.menu.item_height = Some(28.0);
+        v.tooltip.padding_horizontal = Some(6.0);
+        v.scrollbar.width = Some(14.0);
+        v.slider.track_height = Some(4.0);
+        v.progress_bar.height = Some(6.0);
+        v.tab.min_height = Some(32.0);
+        v.sidebar.background = Some(Rgba::rgb(240, 240, 240));
+        v.toolbar.height = Some(40.0);
+        v.status_bar.font = Some(crate::model::FontSpec::default());
+        v.list.item_height = Some(28.0);
+        v.popover.radius = Some(6.0);
+        v.splitter.width = Some(4.0);
+        v.separator.color = Some(Rgba::rgb(200, 200, 200));
+        v.switch.track_width = Some(32.0);
+        v.dialog.min_width = Some(320.0);
+        v.spinner.diameter = Some(24.0);
+        v.combo_box.min_height = Some(32.0);
+        v.segmented_control.segment_height = Some(28.0);
+        v.card.radius = Some(8.0);
+        v.expander.header_height = Some(32.0);
+        v.link.underline = Some(true);
+
+        assert!(!v.is_empty());
+        assert!(!v.window.is_empty());
+        assert!(!v.button.is_empty());
+        assert!(!v.input.is_empty());
+        assert!(!v.checkbox.is_empty());
+        assert!(!v.menu.is_empty());
+        assert!(!v.tooltip.is_empty());
+        assert!(!v.scrollbar.is_empty());
+        assert!(!v.slider.is_empty());
+        assert!(!v.progress_bar.is_empty());
+        assert!(!v.tab.is_empty());
+        assert!(!v.sidebar.is_empty());
+        assert!(!v.toolbar.is_empty());
+        assert!(!v.status_bar.is_empty());
+        assert!(!v.list.is_empty());
+        assert!(!v.popover.is_empty());
+        assert!(!v.splitter.is_empty());
+        assert!(!v.separator.is_empty());
+        assert!(!v.switch.is_empty());
+        assert!(!v.dialog.is_empty());
+        assert!(!v.spinner.is_empty());
+        assert!(!v.combo_box.is_empty());
+        assert!(!v.segmented_control.is_empty());
+        assert!(!v.card.is_empty());
+        assert!(!v.expander.is_empty());
+        assert!(!v.link.is_empty());
+    }
+
+    #[test]
+    fn theme_variant_merge_per_widget() {
+        let mut base = ThemeVariant::default();
+        base.button.background = Some(Rgba::rgb(200, 200, 200));
+        base.button.foreground = Some(Rgba::rgb(0, 0, 0));
+        base.tooltip.background = Some(Rgba::rgb(50, 50, 50));
+
+        let mut overlay = ThemeVariant::default();
+        overlay.button.background = Some(Rgba::rgb(255, 255, 255));
+        overlay.button.min_height = Some(32.0);
+
+        base.merge(&overlay);
+
+        // overlay background wins
+        assert_eq!(base.button.background, Some(Rgba::rgb(255, 255, 255)));
+        // overlay min_height added
+        assert_eq!(base.button.min_height, Some(32.0));
+        // base foreground preserved
+        assert_eq!(base.button.foreground, Some(Rgba::rgb(0, 0, 0)));
+        // tooltip from base preserved
+        assert_eq!(base.tooltip.background, Some(Rgba::rgb(50, 50, 50)));
     }
 
     // === NativeTheme tests ===
@@ -479,14 +579,14 @@ mod tests {
 
         let mut overlay = NativeTheme::new("Overlay");
         let mut light = ThemeVariant::default();
-        light.colors.accent = Some(Rgba::rgb(0, 120, 215));
+        light.defaults.accent = Some(Rgba::rgb(0, 120, 215));
         overlay.light = Some(light);
 
         base.merge(&overlay);
 
         assert!(base.light.is_some());
         assert_eq!(
-            base.light.as_ref().unwrap().colors.accent,
+            base.light.as_ref().unwrap().defaults.accent,
             Some(Rgba::rgb(0, 120, 215))
         );
     }
@@ -495,28 +595,28 @@ mod tests {
     fn native_theme_merge_both_light_variants() {
         let mut base = NativeTheme::new("Theme");
         let mut base_light = ThemeVariant::default();
-        base_light.colors.background = Some(Rgba::rgb(255, 255, 255));
+        base_light.defaults.background = Some(Rgba::rgb(255, 255, 255));
         base.light = Some(base_light);
 
         let mut overlay = NativeTheme::new("Overlay");
         let mut overlay_light = ThemeVariant::default();
-        overlay_light.colors.accent = Some(Rgba::rgb(0, 120, 215));
+        overlay_light.defaults.accent = Some(Rgba::rgb(0, 120, 215));
         overlay.light = Some(overlay_light);
 
         base.merge(&overlay);
 
         let light = base.light.as_ref().unwrap();
         // base background preserved
-        assert_eq!(light.colors.background, Some(Rgba::rgb(255, 255, 255)));
+        assert_eq!(light.defaults.background, Some(Rgba::rgb(255, 255, 255)));
         // overlay accent merged in
-        assert_eq!(light.colors.accent, Some(Rgba::rgb(0, 120, 215)));
+        assert_eq!(light.defaults.accent, Some(Rgba::rgb(0, 120, 215)));
     }
 
     #[test]
     fn native_theme_merge_base_light_only_preserved() {
         let mut base = NativeTheme::new("Theme");
         let mut base_light = ThemeVariant::default();
-        base_light.fonts.family = Some("Inter".into());
+        base_light.defaults.font.family = Some("Inter".into());
         base.light = Some(base_light);
 
         let overlay = NativeTheme::new("Overlay"); // no light
@@ -525,7 +625,7 @@ mod tests {
 
         assert!(base.light.is_some());
         assert_eq!(
-            base.light.as_ref().unwrap().fonts.family.as_deref(),
+            base.light.as_ref().unwrap().defaults.font.family.as_deref(),
             Some("Inter")
         );
     }
@@ -536,14 +636,14 @@ mod tests {
 
         let mut overlay = NativeTheme::new("Overlay");
         let mut dark = ThemeVariant::default();
-        dark.colors.background = Some(Rgba::rgb(30, 30, 30));
+        dark.defaults.background = Some(Rgba::rgb(30, 30, 30));
         overlay.dark = Some(dark);
 
         base.merge(&overlay);
 
         assert!(base.dark.is_some());
         assert_eq!(
-            base.dark.as_ref().unwrap().colors.background,
+            base.dark.as_ref().unwrap().defaults.background,
             Some(Rgba::rgb(30, 30, 30))
         );
     }
@@ -561,50 +661,50 @@ mod tests {
     fn pick_variant_dark_with_both_variants_returns_dark() {
         let mut theme = NativeTheme::new("Test");
         let mut light = ThemeVariant::default();
-        light.colors.background = Some(Rgba::rgb(255, 255, 255));
+        light.defaults.background = Some(Rgba::rgb(255, 255, 255));
         theme.light = Some(light);
         let mut dark = ThemeVariant::default();
-        dark.colors.background = Some(Rgba::rgb(30, 30, 30));
+        dark.defaults.background = Some(Rgba::rgb(30, 30, 30));
         theme.dark = Some(dark);
 
         let picked = theme.pick_variant(true).unwrap();
-        assert_eq!(picked.colors.background, Some(Rgba::rgb(30, 30, 30)));
+        assert_eq!(picked.defaults.background, Some(Rgba::rgb(30, 30, 30)));
     }
 
     #[test]
     fn pick_variant_light_with_both_variants_returns_light() {
         let mut theme = NativeTheme::new("Test");
         let mut light = ThemeVariant::default();
-        light.colors.background = Some(Rgba::rgb(255, 255, 255));
+        light.defaults.background = Some(Rgba::rgb(255, 255, 255));
         theme.light = Some(light);
         let mut dark = ThemeVariant::default();
-        dark.colors.background = Some(Rgba::rgb(30, 30, 30));
+        dark.defaults.background = Some(Rgba::rgb(30, 30, 30));
         theme.dark = Some(dark);
 
         let picked = theme.pick_variant(false).unwrap();
-        assert_eq!(picked.colors.background, Some(Rgba::rgb(255, 255, 255)));
+        assert_eq!(picked.defaults.background, Some(Rgba::rgb(255, 255, 255)));
     }
 
     #[test]
     fn pick_variant_dark_with_only_light_falls_back() {
         let mut theme = NativeTheme::new("Test");
         let mut light = ThemeVariant::default();
-        light.colors.background = Some(Rgba::rgb(255, 255, 255));
+        light.defaults.background = Some(Rgba::rgb(255, 255, 255));
         theme.light = Some(light);
 
         let picked = theme.pick_variant(true).unwrap();
-        assert_eq!(picked.colors.background, Some(Rgba::rgb(255, 255, 255)));
+        assert_eq!(picked.defaults.background, Some(Rgba::rgb(255, 255, 255)));
     }
 
     #[test]
     fn pick_variant_light_with_only_dark_falls_back() {
         let mut theme = NativeTheme::new("Test");
         let mut dark = ThemeVariant::default();
-        dark.colors.background = Some(Rgba::rgb(30, 30, 30));
+        dark.defaults.background = Some(Rgba::rgb(30, 30, 30));
         theme.dark = Some(dark);
 
         let picked = theme.pick_variant(false).unwrap();
-        assert_eq!(picked.colors.background, Some(Rgba::rgb(30, 30, 30)));
+        assert_eq!(picked.defaults.background, Some(Rgba::rgb(30, 30, 30)));
     }
 
     #[test]
@@ -666,17 +766,9 @@ mod tests {
     }
 
     #[test]
-    fn icon_set_toml_alias_backward_compat() {
-        // Old TOML files use "icon_theme" — verify the serde alias works
-        let toml_str = r#"icon_theme = "freedesktop""#;
-        let variant: ThemeVariant = toml::from_str(toml_str).unwrap();
-        assert_eq!(variant.icon_set.as_deref(), Some("freedesktop"));
-    }
-
-    #[test]
     fn icon_set_toml_absent_deserializes_to_none() {
         let toml_str = r##"
-[colors]
+[defaults]
 accent = "#ff0000"
 "##;
         let variant: ThemeVariant = toml::from_str(toml_str).unwrap();
@@ -687,10 +779,10 @@ accent = "#ff0000"
     fn native_theme_serde_toml_round_trip() {
         let mut theme = NativeTheme::new("Test Theme");
         let mut light = ThemeVariant::default();
-        light.colors.accent = Some(Rgba::rgb(0, 120, 215));
-        light.fonts.family = Some("Segoe UI".into());
-        light.geometry.radius = Some(4.0);
-        light.spacing.m = Some(12.0);
+        light.defaults.accent = Some(Rgba::rgb(0, 120, 215));
+        light.defaults.font.family = Some("Segoe UI".into());
+        light.defaults.radius = Some(4.0);
+        light.defaults.spacing.m = Some(12.0);
         theme.light = Some(light);
 
         let toml_str = toml::to_string(&theme).unwrap();
@@ -698,9 +790,9 @@ accent = "#ff0000"
 
         assert_eq!(deserialized.name, "Test Theme");
         let l = deserialized.light.unwrap();
-        assert_eq!(l.colors.accent, Some(Rgba::rgb(0, 120, 215)));
-        assert_eq!(l.fonts.family.as_deref(), Some("Segoe UI"));
-        assert_eq!(l.geometry.radius, Some(4.0));
-        assert_eq!(l.spacing.m, Some(12.0));
+        assert_eq!(l.defaults.accent, Some(Rgba::rgb(0, 120, 215)));
+        assert_eq!(l.defaults.font.family.as_deref(), Some("Segoe UI"));
+        assert_eq!(l.defaults.radius, Some(4.0));
+        assert_eq!(l.defaults.spacing.m, Some(12.0));
     }
 }

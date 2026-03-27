@@ -5,9 +5,9 @@ name = "Adwaita"
 # === Light variant ===
 
 [light]
-icon_theme = "freedesktop"
+icon_set = "freedesktop"
 
-[light.colors]
+[light.defaults]
 accent = "#3584e4"
 background = "#fafafb"
 foreground = "#2e3436"
@@ -15,12 +15,6 @@ surface = "#ffffff"
 border = "#d5d5d5"
 muted = "#929292"
 shadow = "#00000018"
-
-primary_background = "#3584e4"
-primary_foreground = "#ffffff"
-
-secondary_background = "#e0e0e0"
-secondary_foreground = "#2e3436"
 
 danger = "#e01b24"
 danger_foreground = "#ffffff"
@@ -34,39 +28,25 @@ info_foreground = "#ffffff"
 selection = "#3584e4"
 selection_foreground = "#ffffff"
 link = "#1b6acb"
-focus_ring = "#3584e4"
+focus_ring_color = "#3584e4"
+disabled_foreground = "#cccccc"
 
-sidebar = "#ebebed"
-sidebar_foreground = "#2e3436"
-tooltip = "#2e3436"
-tooltip_foreground = "#ffffff"
-popover = "#ffffff"
-popover_foreground = "#2e3436"
-
-button = "#e8e8e8"
-button_foreground = "#2e3436"
-input = "#ffffff"
-input_foreground = "#2e3436"
-disabled = "#cccccc"
-separator = "#d5d5d5"
-alternate_row = "#f5f5f5"
-
-[light.fonts]
-family = "Adwaita Sans"
-size = 11.0
-mono_family = "Adwaita Mono"
-mono_size = 11.0
-
-[light.geometry]
 radius = 12.0
 radius_lg = 14.0
 frame_width = 1.0
 disabled_opacity = 0.5
 border_opacity = 0.15
-scroll_width = 8.0
-shadow = true
+shadow_enabled = true
 
-[light.spacing]
+[light.defaults.font]
+family = "Adwaita Sans"
+size = 11.0
+
+[light.defaults.mono_font]
+family = "Adwaita Mono"
+size = 11.0
+
+[light.defaults.spacing]
 xxs = 2.0
 xs = 4.0
 s = 6.0
@@ -75,59 +55,79 @@ l = 18.0
 xl = 24.0
 xxl = 36.0
 
-[light.widget_metrics.button]
+[light.button]
+background = "#e8e8e8"
+foreground = "#2e3436"
 min_height = 34.0
 padding_horizontal = 12.0
 padding_vertical = 8.0
 
-[light.widget_metrics.checkbox]
+[light.input]
+background = "#ffffff"
+foreground = "#2e3436"
+min_height = 34.0
+padding_horizontal = 12.0
+
+[light.checkbox]
 indicator_size = 20.0
 spacing = 8.0
 
-[light.widget_metrics.input]
-min_height = 34.0
-padding_horizontal = 12.0
+[light.tooltip]
+background = "#2e3436"
+foreground = "#ffffff"
+padding_horizontal = 6.0
+padding_vertical = 6.0
 
-[light.widget_metrics.scrollbar]
+[light.scrollbar]
 width = 12.0
 slider_width = 8.0
 
-[light.widget_metrics.slider]
+[light.slider]
 track_height = 6.0
 thumb_size = 20.0
 
-[light.widget_metrics.progress_bar]
+[light.progress_bar]
 height = 6.0
 
-[light.widget_metrics.tab]
+[light.tab]
 min_height = 34.0
 padding_horizontal = 12.0
 
-[light.widget_metrics.menu_item]
-height = 34.0
+[light.menu]
+item_height = 34.0
 padding_horizontal = 8.0
 padding_vertical = 4.0
 
-[light.widget_metrics.tooltip]
-padding = 6.0
-
-[light.widget_metrics.list_item]
+[light.list]
+alternate_row = "#f5f5f5"
+item_height = 34.0
 padding_horizontal = 12.0
 padding_vertical = 8.0
 
-[light.widget_metrics.toolbar]
+[light.toolbar]
 height = 46.0
 item_spacing = 6.0
 
-[light.widget_metrics.splitter]
+[light.sidebar]
+background = "#ebebed"
+foreground = "#2e3436"
+
+[light.popover]
+background = "#ffffff"
+foreground = "#2e3436"
+
+[light.separator]
+color = "#d5d5d5"
+
+[light.splitter]
 width = 6.0
 
 # === Dark variant ===
 
 [dark]
-icon_theme = "freedesktop"
+icon_set = "freedesktop"
 
-[dark.colors]
+[dark.defaults]
 accent = "#3584e4"
 background = "#222226"
 foreground = "#ffffff"
@@ -135,12 +135,6 @@ surface = "#303034"
 border = "#4a4a4e"
 muted = "#929292"
 shadow = "#00000040"
-
-primary_background = "#3584e4"
-primary_foreground = "#ffffff"
-
-secondary_background = "#4a4a4e"
-secondary_foreground = "#ffffff"
 
 danger = "#c01c28"
 danger_foreground = "#ffffff"
@@ -154,39 +148,25 @@ info_foreground = "#ffffff"
 selection = "#3584e4"
 selection_foreground = "#ffffff"
 link = "#5b9bf8"
-focus_ring = "#3584e4"
+focus_ring_color = "#3584e4"
+disabled_foreground = "#4a4a4e"
 
-sidebar = "#2e2e32"
-sidebar_foreground = "#ffffff"
-tooltip = "#3a3a3e"
-tooltip_foreground = "#ffffff"
-popover = "#36363a"
-popover_foreground = "#ffffff"
-
-button = "#3a3a3e"
-button_foreground = "#ffffff"
-input = "#303034"
-input_foreground = "#ffffff"
-disabled = "#4a4a4e"
-separator = "#4a4a4e"
-alternate_row = "#2a2a2e"
-
-[dark.fonts]
-family = "Adwaita Sans"
-size = 11.0
-mono_family = "Adwaita Mono"
-mono_size = 11.0
-
-[dark.geometry]
 radius = 12.0
 radius_lg = 14.0
 frame_width = 1.0
 disabled_opacity = 0.5
 border_opacity = 0.15
-scroll_width = 8.0
-shadow = true
+shadow_enabled = true
 
-[dark.spacing]
+[dark.defaults.font]
+family = "Adwaita Sans"
+size = 11.0
+
+[dark.defaults.mono_font]
+family = "Adwaita Mono"
+size = 11.0
+
+[dark.defaults.spacing]
 xxs = 2.0
 xs = 4.0
 s = 6.0
@@ -195,49 +175,69 @@ l = 18.0
 xl = 24.0
 xxl = 36.0
 
-[dark.widget_metrics.button]
+[dark.button]
+background = "#3a3a3e"
+foreground = "#ffffff"
 min_height = 34.0
 padding_horizontal = 12.0
 padding_vertical = 8.0
 
-[dark.widget_metrics.checkbox]
+[dark.input]
+background = "#303034"
+foreground = "#ffffff"
+min_height = 34.0
+padding_horizontal = 12.0
+
+[dark.checkbox]
 indicator_size = 20.0
 spacing = 8.0
 
-[dark.widget_metrics.input]
-min_height = 34.0
-padding_horizontal = 12.0
+[dark.tooltip]
+background = "#3a3a3e"
+foreground = "#ffffff"
+padding_horizontal = 6.0
+padding_vertical = 6.0
 
-[dark.widget_metrics.scrollbar]
+[dark.scrollbar]
 width = 12.0
 slider_width = 8.0
 
-[dark.widget_metrics.slider]
+[dark.slider]
 track_height = 6.0
 thumb_size = 20.0
 
-[dark.widget_metrics.progress_bar]
+[dark.progress_bar]
 height = 6.0
 
-[dark.widget_metrics.tab]
+[dark.tab]
 min_height = 34.0
 padding_horizontal = 12.0
 
-[dark.widget_metrics.menu_item]
-height = 34.0
+[dark.menu]
+item_height = 34.0
 padding_horizontal = 8.0
 padding_vertical = 4.0
 
-[dark.widget_metrics.tooltip]
-padding = 6.0
-
-[dark.widget_metrics.list_item]
+[dark.list]
+alternate_row = "#2a2a2e"
+item_height = 34.0
 padding_horizontal = 12.0
 padding_vertical = 8.0
 
-[dark.widget_metrics.toolbar]
+[dark.toolbar]
 height = 46.0
 item_spacing = 6.0
 
-[dark.widget_metrics.splitter]
+[dark.sidebar]
+background = "#2e2e32"
+foreground = "#ffffff"
+
+[dark.popover]
+background = "#36363a"
+foreground = "#ffffff"
+
+[dark.separator]
+color = "#4a4a4e"
+
+[dark.splitter]
 width = 6.0

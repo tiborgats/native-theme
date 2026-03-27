@@ -5,9 +5,9 @@ name = "KDE Breeze"
 # === Light variant (BreezeLight.colors) ===
 
 [light]
-icon_theme = "freedesktop"
+icon_set = "freedesktop"
 
-[light.colors]
+[light.defaults]
 accent = "#3daee9"
 background = "#eff0f1"
 foreground = "#232629"
@@ -15,12 +15,6 @@ surface = "#ffffff"
 border = "#bcc0bf"
 muted = "#707d8a"
 shadow = "#00000040"
-
-primary_background = "#3daee9"
-primary_foreground = "#fcfcfc"
-
-secondary_background = "#bcc0bf"
-secondary_foreground = "#232629"
 
 danger = "#da4453"
 danger_foreground = "#fcfcfc"
@@ -34,39 +28,25 @@ info_foreground = "#fcfcfc"
 selection = "#3daee9"
 selection_foreground = "#fcfcfc"
 link = "#2980b9"
-focus_ring = "#3daee9"
+focus_ring_color = "#3daee9"
+disabled_foreground = "#bcc0bf"
 
-sidebar = "#dee0e2"
-sidebar_foreground = "#232629"
-tooltip = "#f7f7f7"
-tooltip_foreground = "#232629"
-popover = "#ffffff"
-popover_foreground = "#232629"
-
-button = "#fcfcfc"
-button_foreground = "#232629"
-input = "#ffffff"
-input_foreground = "#232629"
-disabled = "#bcc0bf"
-separator = "#c4c8c6"
-alternate_row = "#f5f6f7"
-
-[light.fonts]
-family = "Noto Sans"
-size = 10.0
-mono_family = "Hack"
-mono_size = 10.0
-
-[light.geometry]
 radius = 4.0
 radius_lg = 8.0
 frame_width = 1.0
 disabled_opacity = 0.5
 border_opacity = 0.2
-scroll_width = 10.0
-shadow = true
+shadow_enabled = true
 
-[light.spacing]
+[light.defaults.font]
+family = "Noto Sans"
+size = 10.0
+
+[light.defaults.mono_font]
+family = "Hack"
+size = 10.0
+
+[light.defaults.spacing]
 xxs = 2.0
 xs = 4.0
 s = 6.0
@@ -75,63 +55,85 @@ l = 12.0
 xl = 16.0
 xxl = 24.0
 
-[light.widget_metrics.button]
+[light.button]
+background = "#fcfcfc"
+foreground = "#232629"
 min_width = 80.0
 padding_horizontal = 6.0
 icon_spacing = 4.0
 
-[light.widget_metrics.checkbox]
+[light.input]
+background = "#ffffff"
+foreground = "#232629"
+padding_horizontal = 6.0
+
+[light.checkbox]
 indicator_size = 20.0
 spacing = 4.0
 
-[light.widget_metrics.input]
-padding_horizontal = 6.0
+[light.tooltip]
+background = "#f7f7f7"
+foreground = "#232629"
+padding_horizontal = 3.0
+padding_vertical = 3.0
 
-[light.widget_metrics.scrollbar]
+[light.scrollbar]
 width = 21.0
 min_thumb_height = 20.0
 slider_width = 8.0
 
-[light.widget_metrics.slider]
+[light.slider]
 track_height = 6.0
 thumb_size = 20.0
 tick_length = 8.0
 
-[light.widget_metrics.progress_bar]
+[light.progress_bar]
 height = 6.0
 min_width = 14.0
 
-[light.widget_metrics.tab]
+[light.tab]
 min_width = 80.0
 min_height = 30.0
 padding_horizontal = 8.0
 padding_vertical = 4.0
 
-[light.widget_metrics.menu_item]
+[light.menu]
+item_height = 28.0
 padding_horizontal = 4.0
 padding_vertical = 4.0
 icon_spacing = 8.0
 
-[light.widget_metrics.tooltip]
-padding = 3.0
-
-[light.widget_metrics.list_item]
+[light.list]
+alternate_row = "#f5f6f7"
+item_height = 28.0
 padding_horizontal = 2.0
 padding_vertical = 1.0
 
-[light.widget_metrics.toolbar]
+[light.toolbar]
+height = 40.0
 item_spacing = 0.0
 padding = 6.0
 
-[light.widget_metrics.splitter]
+[light.sidebar]
+background = "#dee0e2"
+foreground = "#232629"
+
+[light.popover]
+background = "#ffffff"
+foreground = "#232629"
+
+[light.separator]
+color = "#c4c8c6"
+
+[light.splitter]
 width = 1.0
 
 # === Dark variant (BreezeDark.colors) ===
 
 [dark]
-icon_theme = "freedesktop"
+icon_set = "freedesktop"
 
-[dark.colors]
+[dark.defaults]
 accent = "#3daee9"
 background = "#232629"
 foreground = "#fcfcfc"
@@ -139,12 +141,6 @@ surface = "#1b1e20"
 border = "#4d545b"
 muted = "#a1a9b1"
 shadow = "#00000060"
-
-primary_background = "#3daee9"
-primary_foreground = "#fcfcfc"
-
-secondary_background = "#4d545b"
-secondary_foreground = "#fcfcfc"
 
 danger = "#da4453"
 danger_foreground = "#fcfcfc"
@@ -158,39 +154,25 @@ info_foreground = "#fcfcfc"
 selection = "#3daee9"
 selection_foreground = "#fcfcfc"
 link = "#1d99f3"
-focus_ring = "#3daee9"
+focus_ring_color = "#3daee9"
+disabled_foreground = "#4d545b"
 
-sidebar = "#272c31"
-sidebar_foreground = "#fcfcfc"
-tooltip = "#31363b"
-tooltip_foreground = "#fcfcfc"
-popover = "#31363b"
-popover_foreground = "#fcfcfc"
-
-button = "#31363b"
-button_foreground = "#fcfcfc"
-input = "#1b1e20"
-input_foreground = "#fcfcfc"
-disabled = "#4d545b"
-separator = "#3e4550"
-alternate_row = "#2a2e32"
-
-[dark.fonts]
-family = "Noto Sans"
-size = 10.0
-mono_family = "Hack"
-mono_size = 10.0
-
-[dark.geometry]
 radius = 4.0
 radius_lg = 8.0
 frame_width = 1.0
 disabled_opacity = 0.5
 border_opacity = 0.2
-scroll_width = 10.0
-shadow = true
+shadow_enabled = true
 
-[dark.spacing]
+[dark.defaults.font]
+family = "Noto Sans"
+size = 10.0
+
+[dark.defaults.mono_font]
+family = "Hack"
+size = 10.0
+
+[dark.defaults.spacing]
 xxs = 2.0
 xs = 4.0
 s = 6.0
@@ -199,53 +181,75 @@ l = 12.0
 xl = 16.0
 xxl = 24.0
 
-[dark.widget_metrics.button]
+[dark.button]
+background = "#31363b"
+foreground = "#fcfcfc"
 min_width = 80.0
 padding_horizontal = 6.0
 icon_spacing = 4.0
 
-[dark.widget_metrics.checkbox]
+[dark.input]
+background = "#1b1e20"
+foreground = "#fcfcfc"
+padding_horizontal = 6.0
+
+[dark.checkbox]
 indicator_size = 20.0
 spacing = 4.0
 
-[dark.widget_metrics.input]
-padding_horizontal = 6.0
+[dark.tooltip]
+background = "#31363b"
+foreground = "#fcfcfc"
+padding_horizontal = 3.0
+padding_vertical = 3.0
 
-[dark.widget_metrics.scrollbar]
+[dark.scrollbar]
 width = 21.0
 min_thumb_height = 20.0
 slider_width = 8.0
 
-[dark.widget_metrics.slider]
+[dark.slider]
 track_height = 6.0
 thumb_size = 20.0
 tick_length = 8.0
 
-[dark.widget_metrics.progress_bar]
+[dark.progress_bar]
 height = 6.0
 min_width = 14.0
 
-[dark.widget_metrics.tab]
+[dark.tab]
 min_width = 80.0
 min_height = 30.0
 padding_horizontal = 8.0
 padding_vertical = 4.0
 
-[dark.widget_metrics.menu_item]
+[dark.menu]
+item_height = 28.0
 padding_horizontal = 4.0
 padding_vertical = 4.0
 icon_spacing = 8.0
 
-[dark.widget_metrics.tooltip]
-padding = 3.0
-
-[dark.widget_metrics.list_item]
+[dark.list]
+alternate_row = "#2a2e32"
+item_height = 28.0
 padding_horizontal = 2.0
 padding_vertical = 1.0
 
-[dark.widget_metrics.toolbar]
+[dark.toolbar]
+height = 40.0
 item_spacing = 0.0
 padding = 6.0
 
-[dark.widget_metrics.splitter]
+[dark.sidebar]
+background = "#272c31"
+foreground = "#fcfcfc"
+
+[dark.popover]
+background = "#31363b"
+foreground = "#fcfcfc"
+
+[dark.separator]
+color = "#3e4550"
+
+[dark.splitter]
 width = 1.0

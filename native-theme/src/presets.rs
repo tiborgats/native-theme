@@ -117,27 +117,27 @@ mod tests {
             let dark = theme.dark.as_ref().unwrap();
 
             assert!(
-                light.colors.accent.is_some(),
+                light.defaults.accent.is_some(),
                 "preset '{name}' light missing accent"
             );
             assert!(
-                light.colors.background.is_some(),
+                light.defaults.background.is_some(),
                 "preset '{name}' light missing background"
             );
             assert!(
-                light.colors.foreground.is_some(),
+                light.defaults.foreground.is_some(),
                 "preset '{name}' light missing foreground"
             );
             assert!(
-                dark.colors.accent.is_some(),
+                dark.defaults.accent.is_some(),
                 "preset '{name}' dark missing accent"
             );
             assert!(
-                dark.colors.background.is_some(),
+                dark.defaults.background.is_some(),
                 "preset '{name}' dark missing background"
             );
             assert!(
-                dark.colors.foreground.is_some(),
+                dark.defaults.foreground.is_some(),
                 "preset '{name}' dark missing foreground"
             );
         }
@@ -180,14 +180,14 @@ mod tests {
         let toml_str = r##"
 name = "Minimal"
 
-[light.colors]
+[light.defaults]
 accent = "#ff0000"
 "##;
         let theme = from_toml(toml_str).unwrap();
         assert_eq!(theme.name, "Minimal");
         assert!(theme.light.is_some());
         let light = theme.light.unwrap();
-        assert_eq!(light.colors.accent, Some(crate::Rgba::rgb(255, 0, 0)));
+        assert_eq!(light.defaults.accent, Some(crate::Rgba::rgb(255, 0, 0)));
     }
 
     #[test]
@@ -213,7 +213,7 @@ accent = "#ff0000"
         // Core colors should survive the round-trip
         let orig_light = theme.light.as_ref().unwrap();
         let new_light = reparsed.light.as_ref().unwrap();
-        assert_eq!(orig_light.colors.accent, new_light.colors.accent);
+        assert_eq!(orig_light.defaults.accent, new_light.defaults.accent);
     }
 
     #[test]
@@ -223,7 +223,7 @@ accent = "#ff0000"
         let toml_str = r##"
 name = "File Test"
 
-[light.colors]
+[light.defaults]
 accent = "#00ff00"
 "##;
         std::fs::write(&path, toml_str).unwrap();
@@ -349,19 +349,76 @@ accent = "#00ff00"
             ] {
                 let variant = variant.unwrap();
                 // Community color themes may omit fonts entirely — skip those.
-                if let Some(size) = variant.fonts.size {
+                if let Some(size) = variant.defaults.font.size {
                     assert!(
                         size > 0.0,
                         "preset '{name}' {label} font size must be positive, got {size}"
                     );
                 }
-                if let Some(mono_size) = variant.fonts.mono_size {
+                if let Some(mono_size) = variant.defaults.mono_font.size {
                     assert!(
                         mono_size > 0.0,
                         "preset '{name}' {label} mono font size must be positive, got {mono_size}"
                     );
                 }
             }
+        }
+    }
+
+    #[test]
+    fn platform_presets_no_derived_fields() {
+        // Platform presets must not contain fields that are derived by resolve()
+        let platform_presets = &["kde-breeze", "adwaita", "windows-11", "macos-sonoma"];
+        for name in platform_presets {
+            let theme = preset(name).unwrap();
+            for (label, variant_opt) in [
+                ("light", theme.light.as_ref()),
+                ("dark", theme.dark.as_ref()),
+            ] {
+                let variant = variant_opt.unwrap();
+                // button.primary_bg is derived from accent - should not be in presets
+                assert!(
+                    variant.button.primary_bg.is_none(),
+                    "preset '{name}' {label}.button.primary_bg should be None (derived)"
+                );
+                // checkbox.checked_bg is derived from accent
+                assert!(
+                    variant.checkbox.checked_bg.is_none(),
+                    "preset '{name}' {label}.checkbox.checked_bg should be None (derived)"
+                );
+                // slider.fill is derived from accent
+                assert!(
+                    variant.slider.fill.is_none(),
+                    "preset '{name}' {label}.slider.fill should be None (derived)"
+                );
+                // progress_bar.fill is derived from accent
+                assert!(
+                    variant.progress_bar.fill.is_none(),
+                    "preset '{name}' {label}.progress_bar.fill should be None (derived)"
+                );
+                // switch.checked_bg is derived from accent
+                assert!(
+                    variant.switch.checked_bg.is_none(),
+                    "preset '{name}' {label}.switch.checked_bg should be None (derived)"
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn all_presets_round_trip_exact() {
+        // PRESET-01: all 17 presets must survive a serde round-trip
+        for name in list_presets() {
+            let theme1 = preset(name)
+                .unwrap_or_else(|e| panic!("preset '{name}' failed to parse: {e}"));
+            let toml_str = to_toml(&theme1)
+                .unwrap_or_else(|e| panic!("preset '{name}' failed to serialize: {e}"));
+            let theme2 = from_toml(&toml_str)
+                .unwrap_or_else(|e| panic!("preset '{name}' failed to re-parse: {e}"));
+            assert_eq!(
+                theme1, theme2,
+                "preset '{name}' round-trip produced different value"
+            );
         }
     }
 }
