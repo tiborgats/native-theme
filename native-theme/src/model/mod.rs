@@ -16,6 +16,8 @@ pub mod icons;
 pub mod icon_sizes;
 /// Logical spacing scale (xxs through xxl).
 pub mod spacing;
+/// Resolved (non-optional) theme types produced after resolution.
+pub mod resolved;
 /// Per-widget struct pairs and macros.
 pub mod widgets;
 
@@ -30,6 +32,10 @@ pub use icons::{
 };
 pub use spacing::ThemeSpacing;
 pub use widgets::*; // All 25 XxxTheme + ResolvedXxx + ResolvedFontSpec
+pub use resolved::{
+    ResolvedDefaults, ResolvedIconSizes, ResolvedSpacing, ResolvedTextScale,
+    ResolvedTextScaleEntry, ResolvedTheme,
+};
 
 use serde::{Deserialize, Serialize};
 
