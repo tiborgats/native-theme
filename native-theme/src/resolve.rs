@@ -1748,4 +1748,53 @@ mod tests {
         let result = v.validate();
         assert!(result.is_ok(), "validate() should succeed after resolve() with all non-derivable fields set, got: {:?}", result.err());
     }
+
+    #[test]
+    fn test_gnome_resolve_validate() {
+        // Simulate GNOME reader pipeline: adwaita base + GNOME reader overlay.
+        // On a non-GNOME system, build_gnome_variant() only sets dialog.button_order
+        // and icon_set (gsettings calls return None). We simulate the full merge.
+        let adwaita = crate::NativeTheme::preset("adwaita").unwrap();
+
+        // Pick dark variant from adwaita (matches GNOME PreferDark path).
+        let mut variant = adwaita.dark.clone().expect("adwaita should have dark variant");
+
+        // Apply what build_gnome_variant() would set.
+        variant.dialog.button_order = Some(DialogButtonOrder::TrailingAffirmative);
+        // icon_set comes from gsettings icon-theme; simulate typical GNOME value.
+        variant.icon_set = Some("Adwaita".to_string());
+
+        // Simulate GNOME reader font output (gsettings font-name on a GNOME system).
+        variant.defaults.font = FontSpec {
+            family: Some("Cantarell".to_string()),
+            size: Some(11.0),
+            weight: Some(400),
+        };
+
+        variant.resolve();
+        let resolved = variant.validate().unwrap_or_else(|e| {
+            panic!("GNOME resolve/validate pipeline failed: {e}");
+        });
+
+        // Spot-check: adwaita-base fields present.
+        // Adwaita dark accent is #3584e4 = rgb(53, 132, 228)
+        assert_eq!(
+            resolved.defaults.accent,
+            Rgba::rgb(53, 132, 228),
+            "accent should be from adwaita preset"
+        );
+        assert_eq!(
+            resolved.defaults.font.family, "Cantarell",
+            "font family should be from GNOME reader overlay"
+        );
+        assert_eq!(
+            resolved.dialog.button_order,
+            DialogButtonOrder::TrailingAffirmative,
+            "dialog button order should be trailing affirmative for GNOME"
+        );
+        assert_eq!(
+            resolved.icon_set, "Adwaita",
+            "icon_set should be from GNOME reader"
+        );
+    }
 }
