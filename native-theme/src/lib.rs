@@ -380,10 +380,8 @@ pub struct SystemTheme {
     /// Resolved dark variant (always populated).
     pub dark: ResolvedTheme,
     /// Pre-resolve light variant (retained for overlay support).
-    #[allow(dead_code)]
     pub(crate) light_variant: ThemeVariant,
     /// Pre-resolve dark variant (retained for overlay support).
-    #[allow(dead_code)]
     pub(crate) dark_variant: ThemeVariant,
 }
 
@@ -400,6 +398,64 @@ impl SystemTheme {
     /// `pick(true)` returns `&self.dark`, `pick(false)` returns `&self.light`.
     pub fn pick(&self, is_dark: bool) -> &ResolvedTheme {
         if is_dark { &self.dark } else { &self.light }
+    }
+
+    /// Apply an app-level TOML overlay and re-resolve.
+    ///
+    /// Merges the overlay onto the pre-resolve [`ThemeVariant`] (not the
+    /// already-resolved [`ResolvedTheme`]) so that changed source fields
+    /// propagate correctly through `resolve()`. For example, changing
+    /// `defaults.accent` in the overlay will cause `button.primary_bg`,
+    /// `checkbox.checked_bg`, `slider.fill`, etc. to be re-derived from
+    /// the new accent color.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let system = native_theme::from_system().unwrap();
+    /// let overlay = native_theme::NativeTheme::from_toml(r#"
+    ///     [light.defaults]
+    ///     accent = "#ff6600"
+    ///     [dark.defaults]
+    ///     accent = "#ff6600"
+    /// "#).unwrap();
+    /// let customized = system.with_overlay(&overlay).unwrap();
+    /// // customized.active().defaults.accent is now #ff6600
+    /// // and all accent-derived fields are updated
+    /// ```
+    pub fn with_overlay(self, overlay: &NativeTheme) -> crate::Result<Self> {
+        // Start from pre-resolve variants (avoids double-resolve idempotency issue)
+        let mut light = self.light_variant.clone();
+        let mut dark = self.dark_variant.clone();
+
+        // Merge overlay onto pre-resolve variants (overlay values win)
+        if let Some(over) = &overlay.light {
+            light.merge(over);
+        }
+        if let Some(over) = &overlay.dark {
+            dark.merge(over);
+        }
+
+        // Resolve and validate both
+        let resolved_light = resolve_variant(light.clone())?;
+        let resolved_dark = resolve_variant(dark.clone())?;
+
+        Ok(SystemTheme {
+            name: self.name,
+            is_dark: self.is_dark,
+            light: resolved_light,
+            dark: resolved_dark,
+            light_variant: light,
+            dark_variant: dark,
+        })
+    }
+
+    /// Apply an app overlay from a TOML string.
+    ///
+    /// Parses the TOML as a [`NativeTheme`] and calls [`with_overlay`](Self::with_overlay).
+    pub fn with_overlay_toml(self, toml: &str) -> crate::Result<Self> {
+        let overlay = NativeTheme::from_toml(toml)?;
+        self.with_overlay(&overlay)
     }
 }
 
@@ -1805,10 +1861,11 @@ mod overlay_tests {
     #[test]
     fn test_overlay_toml_convenience() {
         let st = default_system_theme();
-        let result = st.with_overlay_toml(r#"
+        let result = st.with_overlay_toml(r##"
+            name = "overlay"
             [light.defaults]
             accent = "#ff0000"
-        "#).unwrap();
+        "##).unwrap();
         assert_eq!(result.light.defaults.accent, Rgba::rgb(255, 0, 0));
     }
 }
