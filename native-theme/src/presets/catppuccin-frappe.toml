@@ -4,6 +4,9 @@ name = "Catppuccin Frappe"
 
 # === Light variant (derived - Latte base with Frappe accents) ===
 
+[light]
+icon_set = "freedesktop"
+
 [light.defaults]
 accent = "#8caaee"
 background = "#eff1f5"
@@ -27,6 +30,7 @@ selection_foreground = "#ffffff"
 link = "#8caaee"
 focus_ring_color = "#8caaee"
 disabled_foreground = "#bcc0cc"
+accent_foreground = "#ffffff"
 
 radius = 8.0
 radius_lg = 12.0
@@ -34,6 +38,23 @@ frame_width = 1.0
 disabled_opacity = 0.5
 border_opacity = 0.15
 shadow_enabled = true
+line_height = 1.4
+focus_ring_width = 2.0
+focus_ring_offset = 1.0
+text_scaling_factor = 1.0
+reduce_motion = false
+high_contrast = false
+reduce_transparency = false
+
+[light.defaults.font]
+family = "Inter"
+size = 14.0
+weight = 400
+
+[light.defaults.mono_font]
+family = "JetBrains Mono"
+size = 14.0
+weight = 400
 
 [light.defaults.spacing]
 xxs = 2.0
@@ -44,18 +65,28 @@ l = 18.0
 xl = 24.0
 xxl = 36.0
 
+[light.defaults.icon_sizes]
+toolbar = 24.0
+small = 16.0
+large = 32.0
+dialog = 22.0
+panel = 20.0
+
 [light.button]
 background = "#e6e9ef"
 foreground = "#4c4f69"
+min_width = 64.0
 min_height = 32.0
 padding_horizontal = 12.0
 padding_vertical = 6.0
+icon_spacing = 6.0
 
 [light.input]
 background = "#eff1f5"
 foreground = "#4c4f69"
 min_height = 32.0
 padding_horizontal = 8.0
+padding_vertical = 6.0
 
 [light.checkbox]
 indicator_size = 18.0
@@ -66,34 +97,45 @@ background = "#4c4f69"
 foreground = "#eff1f5"
 padding_horizontal = 6.0
 padding_vertical = 6.0
+max_width = 300.0
 
 [light.scrollbar]
 width = 14.0
 slider_width = 8.0
+overlay_mode = false
+min_thumb_height = 30.0
 
 [light.slider]
 track_height = 4.0
 thumb_size = 20.0
+tick_length = 4.0
 
 [light.progress_bar]
 height = 6.0
+min_width = 100.0
 
 [light.tab]
+min_width = 64.0
 min_height = 32.0
 padding_horizontal = 12.0
+padding_vertical = 4.0
 
 [light.menu]
 item_height = 28.0
 padding_horizontal = 8.0
+padding_vertical = 4.0
+icon_spacing = 8.0
 
 [light.list]
 alternate_row = "#e6e9ef"
 item_height = 28.0
 padding_horizontal = 8.0
+padding_vertical = 2.0
 
 [light.toolbar]
 height = 40.0
 item_spacing = 6.0
+padding = 4.0
 
 [light.sidebar]
 background = "#e6e9ef"
@@ -109,7 +151,58 @@ color = "#bcc0cc"
 [light.splitter]
 width = 4.0
 
+[light.switch]
+unchecked_bg = "#bcc0cc"
+thumb_bg = "#eff1f5"
+track_width = 40.0
+track_height = 20.0
+thumb_size = 16.0
+track_radius = 10.0
+
+[light.dialog]
+button_order = "trailing_affirmative"
+min_width = 320.0
+max_width = 560.0
+min_height = 140.0
+max_height = 600.0
+content_padding = 24.0
+button_spacing = 8.0
+icon_size = 32.0
+
+[light.link]
+underline = true
+background = "#00000000"
+hover_bg = "#8caaee18"
+
+[light.spinner]
+diameter = 24.0
+min_size = 16.0
+stroke_width = 2.0
+
+[light.combo_box]
+min_height = 32.0
+min_width = 120.0
+padding_horizontal = 12.0
+arrow_size = 12.0
+arrow_area_width = 28.0
+
+[light.segmented_control]
+segment_height = 28.0
+separator_width = 1.0
+padding_horizontal = 12.0
+
+[light.card]
+padding = 16.0
+
+[light.expander]
+header_height = 40.0
+arrow_size = 12.0
+content_padding = 16.0
+
 # === Dark variant (Frappe palette - primary) ===
+
+[dark]
+icon_set = "freedesktop"
 
 [dark.defaults]
 accent = "#8caaee"
@@ -134,6 +227,7 @@ selection_foreground = "#303446"
 link = "#8caaee"
 focus_ring_color = "#8caaee"
 disabled_foreground = "#51576d"
+accent_foreground = "#303446"
 
 radius = 8.0
 radius_lg = 12.0
@@ -141,6 +235,23 @@ frame_width = 1.0
 disabled_opacity = 0.5
 border_opacity = 0.15
 shadow_enabled = true
+line_height = 1.4
+focus_ring_width = 2.0
+focus_ring_offset = 1.0
+text_scaling_factor = 1.0
+reduce_motion = false
+high_contrast = false
+reduce_transparency = false
+
+[dark.defaults.font]
+family = "Inter"
+size = 14.0
+weight = 400
+
+[dark.defaults.mono_font]
+family = "JetBrains Mono"
+size = 14.0
+weight = 400
 
 [dark.defaults.spacing]
 xxs = 2.0
@@ -151,18 +262,28 @@ l = 18.0
 xl = 24.0
 xxl = 36.0
 
+[dark.defaults.icon_sizes]
+toolbar = 24.0
+small = 16.0
+large = 32.0
+dialog = 22.0
+panel = 20.0
+
 [dark.button]
 background = "#414559"
 foreground = "#c6d0f5"
+min_width = 64.0
 min_height = 32.0
 padding_horizontal = 12.0
 padding_vertical = 6.0
+icon_spacing = 6.0
 
 [dark.input]
 background = "#292c3c"
 foreground = "#c6d0f5"
 min_height = 32.0
 padding_horizontal = 8.0
+padding_vertical = 6.0
 
 [dark.checkbox]
 indicator_size = 18.0
@@ -173,34 +294,45 @@ background = "#232634"
 foreground = "#c6d0f5"
 padding_horizontal = 6.0
 padding_vertical = 6.0
+max_width = 300.0
 
 [dark.scrollbar]
 width = 14.0
 slider_width = 8.0
+overlay_mode = false
+min_thumb_height = 30.0
 
 [dark.slider]
 track_height = 4.0
 thumb_size = 20.0
+tick_length = 4.0
 
 [dark.progress_bar]
 height = 6.0
+min_width = 100.0
 
 [dark.tab]
+min_width = 64.0
 min_height = 32.0
 padding_horizontal = 12.0
+padding_vertical = 4.0
 
 [dark.menu]
 item_height = 28.0
 padding_horizontal = 8.0
+padding_vertical = 4.0
+icon_spacing = 8.0
 
 [dark.list]
 alternate_row = "#292c3c"
 item_height = 28.0
 padding_horizontal = 8.0
+padding_vertical = 2.0
 
 [dark.toolbar]
 height = 40.0
 item_spacing = 6.0
+padding = 4.0
 
 [dark.sidebar]
 background = "#292c3c"
@@ -215,3 +347,51 @@ color = "#51576d"
 
 [dark.splitter]
 width = 4.0
+
+[dark.switch]
+unchecked_bg = "#51576d"
+thumb_bg = "#c6d0f5"
+track_width = 40.0
+track_height = 20.0
+thumb_size = 16.0
+track_radius = 10.0
+
+[dark.dialog]
+button_order = "trailing_affirmative"
+min_width = 320.0
+max_width = 560.0
+min_height = 140.0
+max_height = 600.0
+content_padding = 24.0
+button_spacing = 8.0
+icon_size = 32.0
+
+[dark.link]
+underline = true
+background = "#00000000"
+hover_bg = "#8caaee18"
+
+[dark.spinner]
+diameter = 24.0
+min_size = 16.0
+stroke_width = 2.0
+
+[dark.combo_box]
+min_height = 32.0
+min_width = 120.0
+padding_horizontal = 12.0
+arrow_size = 12.0
+arrow_area_width = 28.0
+
+[dark.segmented_control]
+segment_height = 28.0
+separator_width = 1.0
+padding_horizontal = 12.0
+
+[dark.card]
+padding = 16.0
+
+[dark.expander]
+header_height = 40.0
+arrow_size = 12.0
+content_padding = 16.0

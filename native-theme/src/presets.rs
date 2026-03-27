@@ -266,8 +266,8 @@ accent = "#00ff00"
     }
 
     #[test]
-    fn icon_set_community_presets_are_none() {
-        let community = &[
+    fn icon_set_community_and_default_presets_are_freedesktop() {
+        let community_and_default = &[
             "catppuccin-latte",
             "catppuccin-frappe",
             "catppuccin-macchiato",
@@ -280,17 +280,19 @@ accent = "#00ff00"
             "one-dark",
             "default",
         ];
-        for name in community {
+        for name in community_and_default {
             let theme = preset(name).unwrap();
             let light = theme.light.as_ref().unwrap();
-            assert!(
-                light.icon_set.is_none(),
-                "preset '{name}' light.icon_set should be None"
+            assert_eq!(
+                light.icon_set.as_deref(),
+                Some("freedesktop"),
+                "preset '{name}' light.icon_set should be Some(\"freedesktop\")"
             );
             let dark = theme.dark.as_ref().unwrap();
-            assert!(
-                dark.icon_set.is_none(),
-                "preset '{name}' dark.icon_set should be None"
+            assert_eq!(
+                dark.icon_set.as_deref(),
+                Some("freedesktop"),
+                "preset '{name}' dark.icon_set should be Some(\"freedesktop\")"
             );
         }
     }
