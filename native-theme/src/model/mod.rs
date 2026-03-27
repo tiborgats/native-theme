@@ -1,5 +1,7 @@
 // Theme model: ThemeVariant and NativeTheme, plus sub-module re-exports
 
+/// Global theme defaults shared across widgets.
+pub mod defaults;
 /// Animated icon types (frame sequences and transforms).
 pub mod animated;
 /// Bundled SVG icon lookup tables.
@@ -25,6 +27,7 @@ pub mod widget_metrics;
 /// Per-widget struct pairs and macros.
 pub mod widgets;
 
+pub use defaults::ThemeDefaults;
 pub use animated::{AnimatedIcon, Repeat, TransformAnimation};
 pub use bundled::{bundled_icon_by_name, bundled_icon_svg};
 pub use colors::ThemeColors;
