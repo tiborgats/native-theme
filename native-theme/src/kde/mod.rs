@@ -1,15 +1,20 @@
 // KDE theme reader -- reads kdeglobals INI file and maps to NativeTheme
 
+/// KDE color group parsing and mapping.
 pub mod colors;
+/// Qt font string parsing with weight extraction.
 pub mod fonts;
+/// Breeze widget sizing constants.
 pub mod metrics;
 
 use crate::Rgba;
+use crate::model::{DialogButtonOrder, TextScaleEntry};
 
 /// Parse a KDE kdeglobals content string into a NativeTheme.
 ///
-/// Internal helper that encapsulates all parsing logic for testability
-/// without requiring filesystem access.
+/// Builds a sparse ThemeVariant with per-widget colors, fonts with Qt5/Qt6
+/// weight conversion, text scale from Kirigami multipliers, accessibility
+/// flags, icon set, and Breeze widget sizing constants.
 pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::NativeTheme> {
     let mut ini = create_kde_parser();
     ini.read(content.to_string())
@@ -22,7 +27,21 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::NativeThem
     fonts::populate_fonts(&ini, &mut variant);
     metrics::populate_widget_sizing(&mut variant);
 
-    // TODO: Task 2 will add text_scale, accessibility, icons, dialog button_order
+    // KDE-04: Text scale from smallestReadableFont + Kirigami multipliers
+    populate_text_scale(&ini, &mut variant);
+
+    // KDE-06: Accessibility flags
+    populate_accessibility(&ini, &mut variant);
+
+    // KDE-05: Icon set from [Icons] Theme
+    if let Some(theme_name) = ini.get("Icons", "Theme") {
+        if !theme_name.is_empty() {
+            variant.icon_set = Some(theme_name);
+        }
+    }
+
+    // Dialog button order: KDE uses leading affirmative (per project decision)
+    variant.dialog.button_order = Some(DialogButtonOrder::LeadingAffirmative);
 
     let dark = is_dark_theme(&ini);
 
@@ -45,6 +64,62 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::NativeThem
     };
 
     Ok(theme)
+}
+
+/// Populate text_scale from smallestReadableFont and Kirigami multipliers.
+///
+/// - caption: size and weight from smallestReadableFont
+/// - section_heading: base_size * 1.20
+/// - dialog_title: base_size * 1.35
+///
+/// If defaults.font.size is None, heading/title entries are not set.
+fn populate_text_scale(ini: &configparser::ini::Ini, variant: &mut crate::ThemeVariant) {
+    // caption from smallestReadableFont
+    if let Some(smallest_str) = ini.get("General", "smallestReadableFont") {
+        if let Some(spec) = fonts::parse_qt_font_with_weight(&smallest_str) {
+            variant.text_scale.caption = Some(TextScaleEntry {
+                size: spec.size,
+                weight: spec.weight,
+                line_height: None,
+            });
+        }
+    }
+
+    // section_heading and dialog_title from Kirigami multipliers on base font size
+    if let Some(base_size) = variant.defaults.font.size {
+        variant.text_scale.section_heading = Some(TextScaleEntry {
+            size: Some(base_size * 1.20),
+            weight: variant.defaults.font.weight,
+            line_height: None,
+        });
+        variant.text_scale.dialog_title = Some(TextScaleEntry {
+            size: Some(base_size * 1.35),
+            weight: variant.defaults.font.weight,
+            line_height: None,
+        });
+    }
+}
+
+/// Populate accessibility fields from KDE settings.
+///
+/// - AnimationDurationFactor=0 -> reduce_motion=true; >0 -> false; missing -> None
+/// - forceFontDPI -> text_scaling_factor = value / 96.0; missing -> None
+fn populate_accessibility(ini: &configparser::ini::Ini, variant: &mut crate::ThemeVariant) {
+    // KDE-06: AnimationDurationFactor from [KDE]
+    if let Some(anim_str) = ini.get("KDE", "AnimationDurationFactor") {
+        if let Ok(value) = anim_str.trim().parse::<f32>() {
+            variant.defaults.reduce_motion = Some(value == 0.0);
+        }
+    }
+
+    // KDE-06: forceFontDPI from [General]
+    if let Some(dpi_str) = ini.get("General", "forceFontDPI") {
+        if let Ok(dpi) = dpi_str.trim().parse::<f32>() {
+            if dpi > 0.0 {
+                variant.defaults.text_scaling_factor = Some(dpi / 96.0);
+            }
+        }
+    }
 }
 
 /// Read the current KDE theme from kdeglobals.
@@ -244,12 +319,23 @@ mod tests {
 
     // === from_kde_content / from_kde integration tests ===
 
-    /// Full Breeze Dark kdeglobals fixture with all sections.
+    /// Full Breeze Dark kdeglobals fixture with all sections including
+    /// KDE-01 through KDE-06 fields.
     const BREEZE_DARK_FULL: &str = "\
 [General]
 ColorScheme=BreezeDark
 font=Noto Sans,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
 fixed=Hack,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
+menuFont=Noto Sans,9,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
+toolBarFont=Noto Sans,8,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
+smallestReadableFont=Noto Sans,7,-1,5,400,0,0,0,0,0,0,0,0,0,0,1
+forceFontDPI=120
+
+[KDE]
+AnimationDurationFactor=0
+
+[Icons]
+Theme=breeze-dark
 
 [Colors:View]
 BackgroundNormal=35,38,41
@@ -307,6 +393,7 @@ activeBackground=49,54,59
 activeForeground=239,240,241
 inactiveBackground=42,46,50
 inactiveForeground=161,169,177
+activeFont=Noto Sans,10,-1,5,75,0,0,0,0,0
 ";
 
     /// Light theme fixture with light background colors.
@@ -502,5 +589,157 @@ BackgroundNormal=49,54,59
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
         assert_eq!(v.link.visited, Some(Rgba::rgb(155, 89, 182)));
+    }
+
+    // === KDE-04: Text scale ===
+
+    #[test]
+    fn test_text_scale_caption_from_smallest_readable_font() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        let caption = v.text_scale.caption.as_ref().expect("caption should be set");
+        assert_eq!(caption.size, Some(7.0), "caption size from smallestReadableFont");
+        assert_eq!(caption.weight, Some(400));
+        assert!(caption.line_height.is_none(), "line_height filled by resolve()");
+    }
+
+    #[test]
+    fn test_text_scale_section_heading_kirigami_multiplier() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        let heading = v.text_scale.section_heading.as_ref().expect("section_heading should be set");
+        // base_size = 10.0, multiplier = 1.20, expected = 12.0
+        assert!((heading.size.unwrap() - 12.0).abs() < 0.01);
+        assert_eq!(heading.weight, Some(400));
+    }
+
+    #[test]
+    fn test_text_scale_dialog_title_kirigami_multiplier() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        let title = v.text_scale.dialog_title.as_ref().expect("dialog_title should be set");
+        // base_size = 10.0, multiplier = 1.35, expected = 13.5
+        assert!((title.size.unwrap() - 13.5).abs() < 0.01);
+    }
+
+    // === KDE-06: Accessibility ===
+
+    #[test]
+    fn test_animation_duration_factor_zero_sets_reduce_motion_true() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        assert_eq!(v.defaults.reduce_motion, Some(true));
+    }
+
+    #[test]
+    fn test_animation_duration_factor_nonzero_sets_reduce_motion_false() {
+        let content = "\
+[Colors:Window]
+BackgroundNormal=49,54,59
+
+[KDE]
+AnimationDurationFactor=1.0
+";
+        let theme = from_kde_content(content).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        assert_eq!(v.defaults.reduce_motion, Some(false));
+    }
+
+    #[test]
+    fn test_force_font_dpi_sets_text_scaling_factor() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        // forceFontDPI=120, expected: 120/96 = 1.25
+        assert!((v.defaults.text_scaling_factor.unwrap() - 1.25).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_missing_accessibility_leaves_none() {
+        let content = "\
+[Colors:Window]
+BackgroundNormal=49,54,59
+";
+        let theme = from_kde_content(content).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        assert!(v.defaults.reduce_motion.is_none());
+        assert!(v.defaults.text_scaling_factor.is_none());
+    }
+
+    // === KDE-05: Icon set ===
+
+    #[test]
+    fn test_icon_set_from_icons_theme() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        assert_eq!(v.icon_set.as_deref(), Some("breeze-dark"));
+    }
+
+    #[test]
+    fn test_icon_set_none_when_missing() {
+        let content = "\
+[Colors:Window]
+BackgroundNormal=49,54,59
+";
+        let theme = from_kde_content(content).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        assert!(v.icon_set.is_none());
+    }
+
+    // === Dialog button order ===
+
+    #[test]
+    fn test_dialog_button_order_leading_affirmative() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        assert_eq!(
+            v.dialog.button_order,
+            Some(crate::DialogButtonOrder::LeadingAffirmative)
+        );
+    }
+
+    // === Widget sizing from Breeze metrics ===
+
+    #[test]
+    fn test_widget_sizing_checkbox_indicator() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        assert_eq!(v.checkbox.indicator_size, Some(20.0));
+    }
+
+    #[test]
+    fn test_widget_sizing_splitter() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        assert_eq!(v.splitter.width, Some(1.0));
+    }
+
+    // === Per-widget fonts (KDE-03) ===
+
+    #[test]
+    fn test_menu_font_from_menufont() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        let mf = v.menu.font.as_ref().expect("menu.font should be set");
+        assert_eq!(mf.family.as_deref(), Some("Noto Sans"));
+        assert_eq!(mf.size, Some(9.0));
+    }
+
+    #[test]
+    fn test_toolbar_font_from_toolbarfont() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        let tf = v.toolbar.font.as_ref().expect("toolbar.font should be set");
+        assert_eq!(tf.family.as_deref(), Some("Noto Sans"));
+        assert_eq!(tf.size, Some(8.0));
+    }
+
+    #[test]
+    fn test_title_bar_font_from_wm_activefont() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        let tbf = v.window.title_bar_font.as_ref().expect("title_bar_font should be set");
+        assert_eq!(tbf.family.as_deref(), Some("Noto Sans"));
+        assert_eq!(tbf.size, Some(10.0));
+        assert_eq!(tbf.weight, Some(700)); // Qt5 75 -> CSS 700
     }
 }
