@@ -45,10 +45,10 @@ fn resolve_text_scale_entry(
     if entry.weight.is_none() {
         entry.weight = defaults_font.weight;
     }
-    if entry.line_height.is_none() {
-        if let (Some(lh_mult), Some(size)) = (defaults_line_height, entry.size) {
-            entry.line_height = Some(lh_mult * size);
-        }
+    if entry.line_height.is_none()
+        && let (Some(lh_mult), Some(size)) = (defaults_line_height, entry.size)
+    {
+        entry.line_height = Some(lh_mult * size);
     }
 }
 
@@ -355,6 +355,11 @@ impl ThemeVariant {
     ///
     /// Returns [`crate::Error::Resolution`] containing a [`ThemeResolutionError`]
     /// with all missing field paths if any fields remain None.
+    // SAFETY: All `.unwrap()` calls below are safe because `require()` / `require_font()`
+    // record every `None` field into `missing`, and we return `Err` if `missing` is non-empty.
+    // By the time execution reaches the `Ok(ResolvedTheme { ... })` constructor, every
+    // value returned by `require()` is guaranteed to be `Some`.
+    #[allow(clippy::unwrap_used)]
     pub fn validate(&self) -> crate::Result<ResolvedTheme> {
         let mut missing = Vec::new();
 
@@ -937,6 +942,7 @@ impl ThemeVariant {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::Rgba;

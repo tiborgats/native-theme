@@ -25,6 +25,7 @@ pub fn apply_overrides(
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use iced_core::theme::palette::Extended;

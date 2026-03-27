@@ -247,6 +247,7 @@ pub struct ResolvedTheme {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used, clippy::bool_assert_comparison)]
 mod tests {
     use super::*;
     use crate::Rgba;

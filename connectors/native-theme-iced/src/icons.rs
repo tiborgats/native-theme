@@ -205,6 +205,7 @@ fn colorize_monochrome_svg(svg_bytes: &[u8], color: iced_core::Color) -> Vec<u8>
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use native_theme::IconData;

@@ -60,6 +60,7 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeVariant) {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use crate::ThemeVariant;
 

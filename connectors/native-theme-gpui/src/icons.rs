@@ -970,6 +970,7 @@ fn encode_rgba_as_bmp(width: u32, height: u32, rgba: &[u8]) -> Vec<u8> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
@@ -1299,6 +1300,7 @@ mod tests {
 
 #[cfg(test)]
 #[cfg(target_os = "linux")]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod freedesktop_mapping_tests {
     use super::*;
     use native_theme::LinuxDesktop;

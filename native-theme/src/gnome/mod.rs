@@ -323,7 +323,7 @@ pub(crate) fn build_theme(
 /// Falls back to bundled Adwaita defaults when the portal is unavailable
 /// (no D-Bus session, sandboxed environment, or old portal version).
 pub async fn from_gnome() -> crate::Result<crate::NativeTheme> {
-    let base = crate::NativeTheme::preset("adwaita").expect("adwaita preset must be bundled");
+    let base = crate::NativeTheme::preset("adwaita")?;
 
     // Try to connect to the portal. If unavailable, return Adwaita defaults.
     let settings = match ashpd::desktop::settings::Settings::new().await {
@@ -422,6 +422,7 @@ pub(crate) async fn detect_portal_backend() -> Option<super::LinuxDesktop> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

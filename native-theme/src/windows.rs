@@ -399,6 +399,7 @@ fn read_icon_sizes(dpi: u32) -> (f32, f32) {
 /// the appropriate variant with defaults-level colors, per-widget fonts, spacing,
 /// geometry, and sizing. Only one variant is ever populated (matching KDE/GNOME
 /// reader pattern).
+#[allow(clippy::too_many_arguments)]
 fn build_theme(
     accent: crate::Rgba,
     fg: crate::Rgba,
@@ -555,6 +556,7 @@ pub fn from_windows() -> crate::Result<crate::NativeTheme> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

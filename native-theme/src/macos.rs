@@ -514,6 +514,7 @@ pub fn from_macos() -> crate::Result<crate::NativeTheme> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

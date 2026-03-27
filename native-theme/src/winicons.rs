@@ -456,6 +456,7 @@ pub fn load_windows_icon_by_name(name: &str) -> Option<IconData> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

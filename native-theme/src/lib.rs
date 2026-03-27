@@ -7,6 +7,8 @@
 
 #![warn(missing_docs)]
 #![deny(unsafe_code)]
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
 
 #[doc = include_str!("../README.md")]
 #[cfg(doctest)]
@@ -545,6 +547,7 @@ fn run_pipeline(
 /// - Linux KDE -> `"kde-breeze-live"`
 /// - Linux other/GNOME -> `"adwaita-live"`
 /// - Unknown platform -> `"adwaita-live"`
+///
 /// Returns the live preset name for the current platform.
 ///
 /// This is the public API for what [`from_system()`] uses internally.
@@ -983,6 +986,7 @@ pub fn load_custom_icon(
 pub(crate) static ENV_MUTEX: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
 #[cfg(all(test, target_os = "linux"))]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod dispatch_tests {
     use super::*;
 
@@ -1185,6 +1189,7 @@ mod dispatch_tests {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod load_icon_tests {
     use super::*;
 
@@ -1271,6 +1276,7 @@ mod load_icon_tests {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod load_system_icon_by_name_tests {
     use super::*;
 
@@ -1315,6 +1321,7 @@ mod load_system_icon_by_name_tests {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod load_custom_icon_tests {
     use super::*;
 
@@ -1418,6 +1425,7 @@ mod load_custom_icon_tests {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod loading_indicator_tests {
     use super::*;
 
@@ -1492,6 +1500,7 @@ mod loading_indicator_tests {
 }
 
 #[cfg(all(test, feature = "svg-rasterize"))]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod spinner_rasterize_tests {
     use super::*;
 
@@ -1519,6 +1528,7 @@ mod spinner_rasterize_tests {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used, clippy::field_reassign_with_default)]
 mod system_theme_tests {
     use super::*;
 
@@ -1777,6 +1787,7 @@ mod system_theme_tests {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod reduced_motion_tests {
     use super::*;
 
@@ -1815,6 +1826,7 @@ mod reduced_motion_tests {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod overlay_tests {
     use super::*;
 

@@ -35,6 +35,7 @@ pub fn to_theme_config(resolved: &ResolvedTheme, name: &str, mode: ThemeMode) ->
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use native_theme::NativeTheme;

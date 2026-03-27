@@ -116,7 +116,7 @@ fn detect_platform() -> &'static str {
                 return "linux-kde";
             }
         }
-        return "linux";
+        "linux"
     }
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
@@ -160,6 +160,7 @@ pub(crate) fn to_toml(theme: &NativeTheme) -> Result<String> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

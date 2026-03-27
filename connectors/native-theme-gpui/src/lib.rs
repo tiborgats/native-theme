@@ -24,6 +24,8 @@
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
+#![deny(clippy::unwrap_used)]
+#![deny(clippy::expect_used)]
 
 pub mod colors;
 pub mod config;
@@ -72,6 +74,7 @@ pub fn to_theme(resolved: &ResolvedTheme, name: &str, is_dark: bool) -> Theme {
 
 #[cfg(test)]
 #[allow(deprecated)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

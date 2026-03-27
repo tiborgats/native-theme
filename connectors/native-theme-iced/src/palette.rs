@@ -35,6 +35,7 @@ pub fn to_palette(resolved: &native_theme::ResolvedTheme) -> iced_core::theme::P
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use native_theme::NativeTheme;

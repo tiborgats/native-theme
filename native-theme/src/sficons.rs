@@ -152,6 +152,7 @@ pub fn load_sf_icon(role: IconRole) -> Option<IconData> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

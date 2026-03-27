@@ -391,6 +391,7 @@ fn material_svg_by_name(name: &str) -> Option<&'static [u8]> {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 

@@ -59,6 +59,7 @@ macro_rules! define_widget_pair {
         #[serde_with::skip_serializing_none]
         #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
         #[serde(default)]
+        #[allow(missing_docs)]
         pub struct $opt_name {
             $($(pub $opt_field: Option<$opt_type>,)*)?
             $($(pub $on_field: Option<$on_opt_type>,)*)?
@@ -66,6 +67,7 @@ macro_rules! define_widget_pair {
 
         $(#[$attr])*
         #[derive(Clone, Debug, PartialEq)]
+        #[allow(missing_docs)]
         pub struct $resolved_name {
             $($(pub $opt_field: $opt_type,)*)?
             $($(pub $on_field: $on_res_type,)*)?
@@ -496,6 +498,7 @@ define_widget_pair! {
 }
 
 #[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
     use crate::model::{DialogButtonOrder, FontSpec};

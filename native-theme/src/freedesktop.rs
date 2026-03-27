@@ -196,6 +196,7 @@ pub(crate) fn load_freedesktop_spinner() -> Option<AnimatedIcon> {
 
 #[cfg(test)]
 #[cfg(feature = "system-icons")]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
