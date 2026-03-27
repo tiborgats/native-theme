@@ -184,8 +184,13 @@ Plans:
   1. The gpui connector's theme conversion function accepts &ResolvedTheme and contains zero unwrap_or() or .unwrap_or_default() calls for theme fields
   2. The iced connector's theme conversion function accepts &ResolvedTheme and contains zero unwrap_or() or .unwrap_or_default() calls for theme fields
   3. Both showcase examples (gpui and iced) compile and run using the new ResolvedTheme-based API with visible per-widget theming
-**Plans**: TBD
+**Plans:** 3 plans
 **UI hint**: yes
+
+Plans:
+- [ ] 48-01-PLAN.md — gpui connector migration (lib.rs, colors.rs, config.rs) + gpui showcase update
+- [ ] 48-02-PLAN.md — iced connector migration (lib.rs, palette.rs, extended.rs) + iced showcase update
+- [ ] 48-03-PLAN.md — Visual verification checkpoint for both showcases
 
 ## Progress
 
@@ -204,4 +209,4 @@ Phases execute in numeric order: 44 -> 45 -> 46 -> 47 -> 48
 | 45. Resolution Engine | v0.5.0 | 3/3 | Complete   | 2026-03-27 |
 | 46. OS Reader Extensions | v0.5.0 | 6/6 | Complete   | 2026-03-27 |
 | 47. OS-First Pipeline | v0.5.0 | 2/2 | Complete   | 2026-03-27 |
-| 48. Connector Migration | v0.5.0 | 0/? | Not started | - |
+| 48. Connector Migration | v0.5.0 | 0/3 | Not started | - |

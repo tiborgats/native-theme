@@ -1,43 +1,34 @@
-//! Extended palette overrides from [`native_theme::ThemeVariant`] colors.
+//! Extended palette overrides from [`native_theme::ResolvedTheme`] fields.
 //!
 //! After iced generates an `Extended` palette from the base `Palette`,
 //! this module overrides specific sub-palette entries with native-theme
-//! values where available.
+//! values. All fields are guaranteed populated in ResolvedTheme, so
+//! overrides are always applied unconditionally.
 
 use crate::palette::to_color;
 
-/// Override auto-generated Extended palette entries with native-theme colors.
+/// Override auto-generated Extended palette entries with resolved theme fields.
 ///
-/// Applies these overrides when the corresponding native-theme field is `Some`:
-/// - `secondary.base.color` <- `colors.secondary_background`
-/// - `secondary.base.text` <- `colors.secondary_foreground`
-/// - `background.weak.color` <- `colors.surface`
-/// - `background.weak.text` <- `colors.foreground`
+/// Always applies these overrides (all fields guaranteed populated):
+/// - `secondary.base.color` <- `resolved.button.background`
+/// - `secondary.base.text` <- `resolved.button.foreground`
+/// - `background.weak.color` <- `resolved.defaults.surface`
+/// - `background.weak.text` <- `resolved.defaults.foreground`
 pub fn apply_overrides(
     extended: &mut iced_core::theme::palette::Extended,
-    variant: &native_theme::ThemeVariant,
+    resolved: &native_theme::ResolvedTheme,
 ) {
-    let c = &variant.colors;
-
-    if let Some(secondary_bg) = c.secondary_background {
-        extended.secondary.base.color = to_color(Some(secondary_bg), extended.secondary.base.color);
-    }
-    if let Some(secondary_fg) = c.secondary_foreground {
-        extended.secondary.base.text = to_color(Some(secondary_fg), extended.secondary.base.text);
-    }
-    if let Some(surface) = c.surface {
-        extended.background.weak.color = to_color(Some(surface), extended.background.weak.color);
-    }
-    if let Some(fg) = c.foreground {
-        extended.background.weak.text = to_color(Some(fg), extended.background.weak.text);
-    }
+    extended.secondary.base.color = to_color(resolved.button.background);
+    extended.secondary.base.text = to_color(resolved.button.foreground);
+    extended.background.weak.color = to_color(resolved.defaults.surface);
+    extended.background.weak.text = to_color(resolved.defaults.foreground);
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use iced_core::theme::palette::Extended;
-    use native_theme::{Rgba, ThemeVariant};
+    use native_theme::NativeTheme;
 
     fn color_approx_eq(a: iced_core::Color, b: iced_core::Color) -> bool {
         (a.r - b.r).abs() < 0.01
@@ -51,77 +42,73 @@ mod tests {
         Extended::generate(palette)
     }
 
+    fn make_resolved() -> native_theme::ResolvedTheme {
+        let nt = NativeTheme::preset("default").unwrap();
+        let mut variant = nt.pick_variant(false).unwrap().clone();
+        variant.resolve();
+        variant.validate().unwrap()
+    }
+
     #[test]
     fn apply_overrides_sets_secondary_base_color() {
         let mut extended = make_extended();
-        let mut variant = ThemeVariant::default();
-        variant.colors.secondary_background = Some(Rgba::rgb(100, 150, 200));
+        let resolved = make_resolved();
+        let original = extended.secondary.base.color;
 
-        apply_overrides(&mut extended, &variant);
+        apply_overrides(&mut extended, &resolved);
 
-        assert!(color_approx_eq(
-            extended.secondary.base.color,
-            iced_core::Color::from_rgba(100.0 / 255.0, 150.0 / 255.0, 200.0 / 255.0, 1.0)
-        ));
+        // Should have been overridden (button.background from resolved)
+        let expected = to_color(resolved.button.background);
+        assert!(
+            color_approx_eq(extended.secondary.base.color, expected),
+            "secondary.base.color should match resolved.button.background"
+        );
+        // Should differ from original (DARK palette)
+        assert_ne!(
+            extended.secondary.base.color, original,
+            "should have changed from original"
+        );
     }
 
     #[test]
     fn apply_overrides_sets_secondary_base_text() {
         let mut extended = make_extended();
-        let mut variant = ThemeVariant::default();
-        variant.colors.secondary_foreground = Some(Rgba::rgb(240, 240, 240));
+        let resolved = make_resolved();
 
-        apply_overrides(&mut extended, &variant);
+        apply_overrides(&mut extended, &resolved);
 
-        assert!(color_approx_eq(
-            extended.secondary.base.text,
-            iced_core::Color::from_rgba(240.0 / 255.0, 240.0 / 255.0, 240.0 / 255.0, 1.0)
-        ));
+        let expected = to_color(resolved.button.foreground);
+        assert!(
+            color_approx_eq(extended.secondary.base.text, expected),
+            "secondary.base.text should match resolved.button.foreground"
+        );
     }
 
     #[test]
     fn apply_overrides_sets_background_weak_color() {
         let mut extended = make_extended();
-        let mut variant = ThemeVariant::default();
-        variant.colors.surface = Some(Rgba::rgb(50, 50, 50));
+        let resolved = make_resolved();
 
-        apply_overrides(&mut extended, &variant);
+        apply_overrides(&mut extended, &resolved);
 
-        assert!(color_approx_eq(
-            extended.background.weak.color,
-            iced_core::Color::from_rgba(50.0 / 255.0, 50.0 / 255.0, 50.0 / 255.0, 1.0)
-        ));
+        let expected = to_color(resolved.defaults.surface);
+        assert!(
+            color_approx_eq(extended.background.weak.color, expected),
+            "background.weak.color should match resolved.defaults.surface"
+        );
     }
 
     #[test]
     fn apply_overrides_sets_background_weak_text() {
         let mut extended = make_extended();
-        let mut variant = ThemeVariant::default();
-        variant.colors.foreground = Some(Rgba::rgb(200, 200, 200));
+        let resolved = make_resolved();
 
-        apply_overrides(&mut extended, &variant);
+        apply_overrides(&mut extended, &resolved);
 
-        assert!(color_approx_eq(
-            extended.background.weak.text,
-            iced_core::Color::from_rgba(200.0 / 255.0, 200.0 / 255.0, 200.0 / 255.0, 1.0)
-        ));
-    }
-
-    #[test]
-    fn apply_overrides_leaves_unchanged_when_all_none() {
-        let mut extended = make_extended();
-        let original_secondary_color = extended.secondary.base.color;
-        let original_secondary_text = extended.secondary.base.text;
-        let original_bg_weak_color = extended.background.weak.color;
-        let original_bg_weak_text = extended.background.weak.text;
-
-        let variant = ThemeVariant::default(); // all None
-
-        apply_overrides(&mut extended, &variant);
-
-        assert_eq!(extended.secondary.base.color, original_secondary_color);
-        assert_eq!(extended.secondary.base.text, original_secondary_text);
-        assert_eq!(extended.background.weak.color, original_bg_weak_color);
-        assert_eq!(extended.background.weak.text, original_bg_weak_text);
+        let expected = to_color(resolved.defaults.foreground);
+        assert!(
+            color_approx_eq(extended.background.weak.text, expected),
+            "background.weak.text should match resolved.defaults.foreground"
+        );
     }
 }
