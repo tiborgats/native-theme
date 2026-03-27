@@ -407,6 +407,120 @@ accent = "#00ff00"
         }
     }
 
+    // === resolve()/validate() integration tests (PRESET-03) ===
+
+    #[test]
+    fn all_presets_resolve_validate() {
+        for name in list_presets() {
+            let theme = preset(name).unwrap();
+            if let Some(mut light) = theme.light.clone() {
+                light.resolve();
+                light.validate().unwrap_or_else(|e| {
+                    panic!("preset {name} light variant failed validation: {e}");
+                });
+            }
+            if let Some(mut dark) = theme.dark.clone() {
+                dark.resolve();
+                dark.validate().unwrap_or_else(|e| {
+                    panic!("preset {name} dark variant failed validation: {e}");
+                });
+            }
+        }
+    }
+
+    #[test]
+    fn resolve_fills_accent_derived_fields() {
+        // Load a preset that only has accent set (not explicit widget accent-derived fields).
+        // After resolve(), the accent-derived fields should be populated.
+        let theme = preset("default").unwrap();
+        let mut light = theme.light.clone().unwrap();
+
+        // Before resolve: accent-derived fields should be None (not in preset TOML)
+        assert!(light.button.primary_bg.is_none(), "primary_bg should be None pre-resolve");
+        assert!(light.checkbox.checked_bg.is_none(), "checkbox.checked_bg should be None pre-resolve");
+        assert!(light.slider.fill.is_none(), "slider.fill should be None pre-resolve");
+        assert!(light.progress_bar.fill.is_none(), "progress_bar.fill should be None pre-resolve");
+        assert!(light.switch.checked_bg.is_none(), "switch.checked_bg should be None pre-resolve");
+
+        light.resolve();
+
+        // After resolve: all accent-derived fields should equal accent
+        let accent = light.defaults.accent.unwrap();
+        assert_eq!(light.button.primary_bg, Some(accent), "button.primary_bg should match accent");
+        assert_eq!(light.checkbox.checked_bg, Some(accent), "checkbox.checked_bg should match accent");
+        assert_eq!(light.slider.fill, Some(accent), "slider.fill should match accent");
+        assert_eq!(light.progress_bar.fill, Some(accent), "progress_bar.fill should match accent");
+        assert_eq!(light.switch.checked_bg, Some(accent), "switch.checked_bg should match accent");
+    }
+
+    #[test]
+    fn resolve_then_validate_produces_complete_theme() {
+        // Load "default" preset, resolve+validate, verify specific fields.
+        let theme = preset("default").unwrap();
+        let mut light = theme.light.clone().unwrap();
+        light.resolve();
+        let resolved = light.validate().unwrap();
+
+        assert_eq!(resolved.defaults.font.family, "sans-serif");
+        assert_eq!(resolved.defaults.font.size, 10.0);
+        assert_eq!(resolved.defaults.font.weight, 400);
+        assert_eq!(resolved.defaults.line_height, 1.4);
+        assert_eq!(resolved.defaults.radius, 6.0);
+        assert_eq!(resolved.defaults.focus_ring_width, 2.0);
+        assert_eq!(resolved.defaults.icon_sizes.toolbar, 24.0);
+        assert_eq!(resolved.defaults.text_scaling_factor, 1.0);
+        assert!(!resolved.defaults.reduce_motion);
+        // Window inherits from defaults
+        assert_eq!(resolved.window.background, resolved.defaults.background);
+        // icon_set should be populated
+        assert_eq!(resolved.icon_set, "freedesktop");
+    }
+
+    #[test]
+    fn font_subfield_inheritance_integration() {
+        // Load a preset, set menu.font to only have size=12.0 (clear family/weight),
+        // resolve, and verify family/weight are inherited from defaults.
+        let theme = preset("default").unwrap();
+        let mut light = theme.light.clone().unwrap();
+
+        // Set partial font on menu
+        use crate::model::FontSpec;
+        light.menu.font = Some(FontSpec {
+            family: None,
+            size: Some(12.0),
+            weight: None,
+        });
+
+        light.resolve();
+        let resolved = light.validate().unwrap();
+
+        // menu font should have inherited family/weight from defaults
+        assert_eq!(resolved.menu.font.family, "sans-serif", "menu font family should inherit from defaults");
+        assert_eq!(resolved.menu.font.size, 12.0, "menu font size should be the explicit value");
+        assert_eq!(resolved.menu.font.weight, 400, "menu font weight should inherit from defaults");
+    }
+
+    #[test]
+    fn text_scale_inheritance_integration() {
+        // Load a preset, ensure text_scale.caption gets populated from defaults.
+        let theme = preset("default").unwrap();
+        let mut light = theme.light.clone().unwrap();
+
+        // Clear caption to test inheritance
+        light.text_scale.caption = None;
+
+        light.resolve();
+        let resolved = light.validate().unwrap();
+
+        // caption should have been populated from defaults.font
+        assert_eq!(resolved.text_scale.caption.size, 10.0, "caption size from defaults.font.size");
+        assert_eq!(resolved.text_scale.caption.weight, 400, "caption weight from defaults.font.weight");
+        // line_height = defaults.line_height * size = 1.4 * 10.0 = 14.0
+        assert!((resolved.text_scale.caption.line_height - 14.0).abs() < 0.01,
+            "caption line_height should be line_height_multiplier * size = 14.0, got {}",
+            resolved.text_scale.caption.line_height);
+    }
+
     #[test]
     fn all_presets_round_trip_exact() {
         // PRESET-01: all 17 presets must survive a serde round-trip
