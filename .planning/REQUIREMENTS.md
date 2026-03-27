@@ -46,12 +46,12 @@ Requirements for per-widget architecture and resolution pipeline. Each maps to r
 
 ### KDE Reader
 
-- [ ] **KDE-01**: [WM] section -> title bar colors (active/inactive bg/fg) + activeFont -> title bar font
-- [ ] **KDE-02**: [Colors:Header], [Colors:Complementary], [Colors:View] extras -> list header, sidebar, placeholder, alternate_row, visited
-- [ ] **KDE-03**: Per-widget fonts (menuFont, toolBarFont) with Qt5/Qt6 weight scale detection
-- [ ] **KDE-04**: Text scale computation from smallestReadableFont + font.size x Kirigami multipliers
-- [ ] **KDE-05**: Icon sizes from icon theme index.theme; [Icons] Theme -> icon_set
-- [ ] **KDE-06**: AnimationDurationFactor -> reduce_motion; forceFontDPI -> text_scaling_factor
+- [x] **KDE-01**: [WM] section -> title bar colors (active/inactive bg/fg) + activeFont -> title bar font
+- [x] **KDE-02**: [Colors:Header], [Colors:Complementary], [Colors:View] extras -> list header, sidebar, placeholder, alternate_row, visited
+- [x] **KDE-03**: Per-widget fonts (menuFont, toolBarFont) with Qt5/Qt6 weight scale detection
+- [x] **KDE-04**: Text scale computation from smallestReadableFont + font.size x Kirigami multipliers
+- [x] **KDE-05**: Icon sizes from icon theme index.theme; [Icons] Theme -> icon_set
+- [x] **KDE-06**: AnimationDurationFactor -> reduce_motion; forceFontDPI -> text_scaling_factor
 
 ### GNOME Reader
 
@@ -143,12 +143,12 @@ Which phases cover which requirements. Updated during roadmap creation.
 | WIN-03 | Phase 46 | Complete |
 | WIN-04 | Phase 46 | Complete |
 | WIN-05 | Phase 46 | Complete |
-| KDE-01 | Phase 46 | Pending |
-| KDE-02 | Phase 46 | Pending |
-| KDE-03 | Phase 46 | Pending |
-| KDE-04 | Phase 46 | Pending |
-| KDE-05 | Phase 46 | Pending |
-| KDE-06 | Phase 46 | Pending |
+| KDE-01 | Phase 46 | Complete |
+| KDE-02 | Phase 46 | Complete |
+| KDE-03 | Phase 46 | Complete |
+| KDE-04 | Phase 46 | Complete |
+| KDE-05 | Phase 46 | Complete |
+| KDE-06 | Phase 46 | Complete |
 | GNOME-01 | Phase 46 | Complete |
 | GNOME-02 | Phase 46 | Complete |
 | GNOME-03 | Phase 46 | Complete |
