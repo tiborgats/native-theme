@@ -38,6 +38,7 @@ objc2 = { version = "0.6.4", optional = true }
 objc2-foundation = { version = "0.3", optional = true, features = ["NSString"] }
 objc2-app-kit = { version = "0.3", optional = true, features = [
     "NSColor", "NSColorSpace", "NSAppearance", "NSFont", "NSFontDescriptor",
+    "NSScroller",
     "objc2-core-foundation",
     "NSImage", "NSImageRep", "NSGraphicsContext",
     "objc2-core-graphics",
@@ -60,6 +61,7 @@ windows = { version = ">=0.59, <=0.62", optional = true, default-features = fals
     "Win32_UI_WindowsAndMessaging",
     "Win32_UI_HiDpi",
     "Win32_Graphics_Gdi",
+    "Win32_Graphics_Dwm",
     "Win32_UI_Shell",
     "Foundation_Metadata",
 ] }

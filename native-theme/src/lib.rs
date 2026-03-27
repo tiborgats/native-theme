@@ -143,7 +143,10 @@ pub mod rasterize;
 #[cfg(all(target_os = "macos", feature = "system-icons"))]
 pub mod sficons;
 /// Windows platform theme reader.
-#[cfg(all(target_os = "windows", feature = "windows"))]
+///
+/// On non-Windows hosts the module is compiled (for testing), but the
+/// public `from_windows()` entry point is only available on Windows.
+#[cfg_attr(not(target_os = "windows"), allow(dead_code, unused_variables))]
 pub mod windows;
 /// Windows Segoe Fluent / stock icon loader.
 #[cfg(feature = "system-icons")]
