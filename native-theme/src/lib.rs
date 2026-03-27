@@ -364,6 +364,139 @@ fn detect_reduced_motion_inner() -> bool {
     }
 }
 
+/// Result of the OS-first pipeline. Holds both resolved variants.
+///
+/// Produced by [`from_system()`] and [`from_system_async()`].
+/// Both light and dark are always populated: the OS-active variant
+/// comes from the reader + preset + resolve, the inactive variant
+/// comes from the preset + resolve.
+pub struct SystemTheme {
+    /// Theme name (from reader or preset).
+    pub name: String,
+    /// Whether the OS is currently in dark mode.
+    pub is_dark: bool,
+    /// Resolved light variant (always populated).
+    pub light: ResolvedTheme,
+    /// Resolved dark variant (always populated).
+    pub dark: ResolvedTheme,
+    /// Pre-resolve light variant (retained for overlay support).
+    #[allow(dead_code)]
+    pub(crate) light_variant: ThemeVariant,
+    /// Pre-resolve dark variant (retained for overlay support).
+    #[allow(dead_code)]
+    pub(crate) dark_variant: ThemeVariant,
+}
+
+impl SystemTheme {
+    /// Returns the OS-active resolved variant.
+    ///
+    /// If `is_dark` is true, returns `&self.dark`; otherwise `&self.light`.
+    pub fn active(&self) -> &ResolvedTheme {
+        if self.is_dark { &self.dark } else { &self.light }
+    }
+
+    /// Pick a resolved variant by explicit preference.
+    ///
+    /// `pick(true)` returns `&self.dark`, `pick(false)` returns `&self.light`.
+    pub fn pick(&self, is_dark: bool) -> &ResolvedTheme {
+        if is_dark { &self.dark } else { &self.light }
+    }
+}
+
+/// Resolve a single `ThemeVariant` into a `ResolvedTheme`.
+///
+/// Calls `resolve()` to fill inheritance chains, then `validate()`
+/// to convert all `Option` fields to their non-optional counterparts.
+fn resolve_variant(mut variant: ThemeVariant) -> crate::Result<ResolvedTheme> {
+    variant.resolve();
+    variant.validate()
+}
+
+/// Run the OS-first pipeline: merge reader output onto a platform
+/// preset, resolve both light and dark variants, validate.
+///
+/// For the variant the reader supplied, the merged (reader + preset) version
+/// is used. For the variant the reader did NOT supply, the preset-only
+/// version is used.
+fn run_pipeline(
+    reader_output: NativeTheme,
+    preset_name: &str,
+    is_dark: bool,
+) -> crate::Result<SystemTheme> {
+    let preset = NativeTheme::preset(preset_name)?;
+
+    // Merge: preset is base, reader output is overlay (reader wins)
+    let mut merged = preset.clone();
+    merged.merge(&reader_output);
+
+    // Keep reader name if non-empty, else use preset name
+    let name = if reader_output.name.is_empty() {
+        merged.name.clone()
+    } else {
+        reader_output.name.clone()
+    };
+
+    // For the variant the reader provided, use merged; for the other, use preset-only.
+    let light_variant = if reader_output.light.is_some() {
+        merged.light.unwrap_or_default()
+    } else {
+        preset.light.unwrap_or_default()
+    };
+
+    let dark_variant = if reader_output.dark.is_some() {
+        merged.dark.unwrap_or_default()
+    } else {
+        preset.dark.unwrap_or_default()
+    };
+
+    // Clone pre-resolve variants for overlay support (Plan 02)
+    let light_variant_pre = light_variant.clone();
+    let dark_variant_pre = dark_variant.clone();
+
+    let light = resolve_variant(light_variant)?;
+    let dark = resolve_variant(dark_variant)?;
+
+    Ok(SystemTheme {
+        name,
+        is_dark,
+        light,
+        dark,
+        light_variant: light_variant_pre,
+        dark_variant: dark_variant_pre,
+    })
+}
+
+/// Map the current platform to its matching preset name.
+///
+/// - macOS -> `"macos-sonoma"`
+/// - Windows -> `"windows-11"`
+/// - Linux KDE -> `"kde-breeze"`
+/// - Linux other/GNOME -> `"adwaita"`
+/// - Unknown platform -> `"default"`
+#[allow(unreachable_code)]
+fn platform_preset_name() -> &'static str {
+    #[cfg(target_os = "macos")]
+    {
+        return "macos-sonoma";
+    }
+    #[cfg(target_os = "windows")]
+    {
+        return "windows-11";
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
+        return match detect_linux_de(&desktop) {
+            LinuxDesktop::Kde => "kde-breeze",
+            _ => "adwaita",
+        };
+    }
+    #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
+    {
+        "default"
+    }
+}
+
 /// Read the current system theme on Linux by detecting the desktop
 /// environment and calling the appropriate reader or returning a
 /// preset fallback.
