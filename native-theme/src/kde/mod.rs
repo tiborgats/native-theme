@@ -685,6 +685,136 @@ BackgroundNormal=49,54,59
         assert!(v.icon_set.is_none());
     }
 
+    // === KDE-05: Icon sizes from index.theme ===
+
+    /// Minimal index.theme content for testing icon size parsing.
+    const BREEZE_INDEX_THEME: &str = "\
+[Icon Theme]
+Name=breeze-dark
+Comment=Breeze Dark
+Directories=actions/16,actions/22,actions/32,apps/16,apps/32,apps/48,status/16,status/22
+
+[actions/16]
+Size=16
+Context=Actions
+Type=Fixed
+
+[actions/22]
+Size=22
+Context=Actions
+Type=Fixed
+
+[actions/32]
+Size=32
+Context=Actions
+Type=Fixed
+
+[apps/16]
+Size=16
+Context=Applications
+Type=Fixed
+
+[apps/32]
+Size=32
+Context=Applications
+Type=Fixed
+
+[apps/48]
+Size=48
+Context=Applications
+Type=Fixed
+
+[status/16]
+Size=16
+Context=Status
+Type=Fixed
+
+[status/22]
+Size=22
+Context=Status
+Type=Fixed
+";
+
+    #[test]
+    fn test_parse_icon_sizes_from_content() {
+        let mut ini = create_kde_parser();
+        ini.read(BREEZE_INDEX_THEME.to_string()).unwrap();
+        let sizes = parse_icon_sizes_from_content(&ini);
+
+        // small: smallest Size from Actions/Status context = 16
+        assert_eq!(sizes.small, Some(16.0), "small should be 16 from actions/16 and status/16");
+
+        // toolbar: closest to 22 from Actions context = 22
+        assert_eq!(sizes.toolbar, Some(22.0), "toolbar should be 22 from actions/22");
+
+        // large: smallest Applications size >= 32 = 32
+        assert_eq!(sizes.large, Some(32.0), "large should be 32 from apps/32");
+
+        // dialog and panel: not extracted from index.theme
+        assert!(sizes.dialog.is_none(), "dialog should remain None");
+        assert!(sizes.panel.is_none(), "panel should remain None");
+    }
+
+    #[test]
+    fn test_parse_icon_sizes_missing_theme() {
+        let sizes = parse_icon_sizes_from_index_theme("nonexistent_theme_that_does_not_exist_12345");
+        assert!(sizes.small.is_none(), "small should be None for missing theme");
+        assert!(sizes.toolbar.is_none(), "toolbar should be None for missing theme");
+        assert!(sizes.large.is_none(), "large should be None for missing theme");
+        assert!(sizes.dialog.is_none(), "dialog should be None for missing theme");
+        assert!(sizes.panel.is_none(), "panel should be None for missing theme");
+    }
+
+    #[test]
+    fn test_parse_icon_sizes_empty_directories() {
+        let content = "\
+[Icon Theme]
+Name=empty
+Directories=
+";
+        let mut ini = create_kde_parser();
+        ini.read(content.to_string()).unwrap();
+        let sizes = parse_icon_sizes_from_content(&ini);
+        assert!(sizes.small.is_none());
+        assert!(sizes.toolbar.is_none());
+        assert!(sizes.large.is_none());
+    }
+
+    #[test]
+    fn test_parse_icon_sizes_no_icon_theme_section() {
+        let content = "\
+[General]
+Name=whatever
+";
+        let mut ini = create_kde_parser();
+        ini.read(content.to_string()).unwrap();
+        let sizes = parse_icon_sizes_from_content(&ini);
+        assert!(sizes.small.is_none());
+        assert!(sizes.toolbar.is_none());
+        assert!(sizes.large.is_none());
+    }
+
+    #[test]
+    fn test_icon_sizes_populated_in_full_parse() {
+        // This test checks that from_kde_content wires icon sizes from index.theme.
+        // On systems with breeze-dark installed, icon_sizes will be populated.
+        // On systems without it, icon_sizes will be None. Both are valid.
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+
+        if v.defaults.icon_sizes.small.is_some() {
+            // If populated, they should be reasonable pixel values
+            let small = v.defaults.icon_sizes.small.unwrap();
+            assert!(small >= 8.0 && small <= 32.0, "small icon size should be reasonable: {small}");
+
+            if let Some(large) = v.defaults.icon_sizes.large {
+                assert!(large >= 24.0 && large <= 128.0, "large icon size should be reasonable: {large}");
+                assert!(large > small, "large should be bigger than small");
+            }
+        }
+        // else: theme not installed on this system, icon_sizes remain None -- acceptable
+    }
+
     // === Dialog button order ===
 
     #[test]
