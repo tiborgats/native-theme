@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v0.5.0
 milestone_name: Per-Widget Architecture & Resolution Pipeline
-status: verifying
-stopped_at: Completed 46-01-PLAN.md
-last_updated: "2026-03-27T12:06:39.521Z"
+status: executing
+stopped_at: Completed 46-05-PLAN.md
+last_updated: "2026-03-27T13:06:29.614Z"
 last_activity: 2026-03-27
 progress:
   total_phases: 5
-  completed_phases: 3
-  total_plans: 10
-  completed_plans: 10
+  completed_phases: 2
+  total_plans: 14
+  completed_plans: 12
   percent: 46
 ---
 
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-03-27)
 ## Current Position
 
 Phase: 46 (3 of 5 in v0.5.0) — OS Reader Extensions
-Plan: 4 of 4 complete
-Status: Phase complete — ready for verification
+Plan: 5 of 6 complete
+Status: Executing gap closure plans
 Last activity: 2026-03-27
 
 Progress: [████▌░░░░░] 46%
@@ -74,6 +74,7 @@ Decisions from 44-01 and 44-02:
 - [Phase 46]: input.caret intentionally not read from macOS (textInsertionPointColor requires macOS 14+); resolve() safety net fills from defaults.foreground
 - [Phase 46]: macOS text scale uses proportional computation from system font size (Apple's known ratios) rather than NSFontTextStyle API
 - [Phase 46]: KDE reader merges with default preset before resolve/validate (sparse reader + preset = complete theme)
+- [Phase 46-05]: Icon sizes derived from index.theme Context+Size: small=smallest Actions/Status, toolbar=closest-to-22 Actions, large=smallest Applications>=32
 
 ### Roadmap Evolution
 
@@ -92,6 +93,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-27T12:06:39.519Z
-Stopped at: Completed 46-01-PLAN.md
+Last session: 2026-03-27T13:05:36Z
+Stopped at: Completed 46-05-PLAN.md
 Resume file: None

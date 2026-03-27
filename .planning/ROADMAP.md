@@ -100,7 +100,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 - [x] **Phase 44: Per-Widget Data Model and Preset Migration** - Restructure ThemeVariant to per-widget structs with ThemeDefaults, FontSpec, TextScale, and atomically rewrite all 17 preset TOMLs (completed 2026-03-27)
 - [x] **Phase 45: Resolution Engine** - Implement resolve() inheritance, ResolvedTheme with validate(), and update cross-platform presets for new structure (completed 2026-03-27)
-- [x] **Phase 46: OS Reader Extensions** - Extend all four platform readers (macOS, Windows, KDE, GNOME) with per-widget fields, text scale, fonts, and accessibility (completed 2026-03-27)
+- [ ] **Phase 46: OS Reader Extensions** - Extend all four platform readers (macOS, Windows, KDE, GNOME) with per-widget fields, text scale, fonts, and accessibility
 - [ ] **Phase 47: OS-First Pipeline** - Wire from_system() to run OS reader, platform TOML overlay, resolve(), app TOML overlay, second resolve(), and validate()
 - [ ] **Phase 48: Connector Migration** - Update gpui and iced connectors to accept &ResolvedTheme and update showcase examples
 
@@ -152,13 +152,15 @@ Plans:
   3. On macOS, from_macos() populates text_scale entries from NSFont.TextStyle, per-widget fonts (menu, tooltip, title bar) with weight extraction, additional NSColor values (placeholder, caret, selection_inactive), scrollbar overlay mode, and all accessibility flags
   4. On Windows, from_windows() populates per-widget fonts from NONCLIENTMETRICSW, title bar colors from DwmGetColorizationColor, widget colors from GetSysColor (BTNFACE, MENU, HIGHLIGHT, etc.), icon sizes from SM_CXSMICON/SM_CXICON, and accessibility from UISettings.TextScaleFactor and SPI_GETHIGHCONTRAST
   5. The output of every OS reader, when passed through resolve() then validate(), produces a valid ResolvedTheme without error
-**Plans:** 4/4 plans complete
+**Plans:** 6 plans (5 complete + 1 gap closure)
 
 Plans:
 - [x] 46-01-PLAN.md — KDE reader rewrite: per-widget ThemeVariant + title bar + fonts + text_scale + accessibility + icons
 - [x] 46-02-PLAN.md — GNOME reader rewrite: sparse ThemeVariant + fonts + text_scale + accessibility + icon_set
 - [x] 46-03-PLAN.md — macOS reader extension: per-widget fonts + text_scale + NSColor extras + scrollbar + accessibility
 - [x] 46-04-PLAN.md — Windows reader rewrite: per-widget ThemeVariant + fonts + DWM + GetSysColor + accessibility + icons
+- [x] 46-05-PLAN.md — Gap closure: KDE icon sizes from index.theme parsing
+- [ ] 46-06-PLAN.md — Gap closure: resolve/validate integration tests for macOS, Windows, GNOME
 
 ### Phase 47: OS-First Pipeline
 **Goal**: from_system() runs the complete OS-first pipeline producing a guaranteed-complete ResolvedTheme, and app developers can apply TOML overrides that propagate through a second resolve() pass
@@ -196,6 +198,6 @@ Phases execute in numeric order: 44 -> 45 -> 46 -> 47 -> 48
 | 33-43 | v0.4.1 | 22/22 | Complete | 2026-03-21 |
 | 44. Per-Widget Data Model and Preset Migration | v0.5.0 | 3/3 | Complete   | 2026-03-27 |
 | 45. Resolution Engine | v0.5.0 | 3/3 | Complete   | 2026-03-27 |
-| 46. OS Reader Extensions | v0.5.0 | 4/4 | Complete   | 2026-03-27 |
+| 46. OS Reader Extensions | v0.5.0 | 4/6 | Gap closure | - |
 | 47. OS-First Pipeline | v0.5.0 | 0/? | Not started | - |
 | 48. Connector Migration | v0.5.0 | 0/? | Not started | - |
