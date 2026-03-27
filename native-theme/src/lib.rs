@@ -111,13 +111,15 @@ pub mod presets;
 mod spinners;
 
 pub use color::Rgba;
-pub use error::Error;
+pub use error::{Error, ThemeResolutionError};
 pub use model::{
     AnimatedIcon, ButtonTheme, CardTheme, CheckboxTheme, ComboBoxTheme,
     DialogButtonOrder, DialogTheme, ExpanderTheme, FontSpec, IconData,
     IconProvider, IconRole, IconSet, IconSizes, InputTheme, LinkTheme,
     ListTheme, MenuTheme, NativeTheme, PopoverTheme, ProgressBarTheme,
-    Repeat, ResolvedFontSpec, ScrollbarTheme, SegmentedControlTheme,
+    Repeat, ResolvedDefaults, ResolvedFontSpec, ResolvedIconSizes,
+    ResolvedSpacing, ResolvedTextScale, ResolvedTextScaleEntry,
+    ResolvedTheme, ScrollbarTheme, SegmentedControlTheme,
     SeparatorTheme, SidebarTheme, SliderTheme, SpinnerTheme, SplitterTheme, StatusBarTheme,
     SwitchTheme, TabTheme, TextScale, TextScaleEntry, ThemeDefaults,
     ThemeSpacing, ThemeVariant, ToolbarTheme, TooltipTheme,

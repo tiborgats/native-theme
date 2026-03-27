@@ -1,5 +1,32 @@
 // Error enum with Display, std::error::Error, and From conversions
 
+/// Error returned when theme resolution finds missing fields.
+///
+/// Contains a list of field paths (e.g., `"defaults.accent"`, `"button.font.family"`)
+/// that were still `None` after resolution. Used by `validate()` to report exactly
+/// which fields need to be supplied before a [`crate::model::ResolvedTheme`] can be built.
+#[derive(Debug, Clone)]
+pub struct ThemeResolutionError {
+    /// Dot-separated paths of fields that remained `None` after resolution.
+    pub missing_fields: Vec<String>,
+}
+
+impl std::fmt::Display for ThemeResolutionError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(
+            f,
+            "theme resolution failed: {} missing field(s):",
+            self.missing_fields.len()
+        )?;
+        for field in &self.missing_fields {
+            write!(f, "\n  - {field}")?;
+        }
+        Ok(())
+    }
+}
+
+impl std::error::Error for ThemeResolutionError {}
+
 /// Errors that can occur when reading or processing theme data.
 #[derive(Debug)]
 #[non_exhaustive]
@@ -15,6 +42,9 @@ pub enum Error {
 
     /// Wrapped platform-specific error.
     Platform(Box<dyn std::error::Error + Send + Sync>),
+
+    /// Theme resolution/validation found missing fields.
+    Resolution(ThemeResolutionError),
 }
 
 impl std::fmt::Display for Error {
@@ -24,6 +54,7 @@ impl std::fmt::Display for Error {
             Error::Unavailable(msg) => write!(f, "theme data unavailable: {msg}"),
             Error::Format(msg) => write!(f, "theme format error: {msg}"),
             Error::Platform(err) => write!(f, "platform error: {err}"),
+            Error::Resolution(e) => write!(f, "{e}"),
         }
     }
 }
@@ -32,6 +63,7 @@ impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Error::Platform(err) => Some(&**err),
+            Error::Resolution(e) => Some(e),
             _ => None,
         }
     }
@@ -132,5 +164,92 @@ mod tests {
             Error::Unavailable(msg) => assert!(msg.contains("missing file")),
             other => panic!("expected Unavailable variant, got: {other:?}"),
         }
+    }
+
+    // === ThemeResolutionError tests ===
+
+    #[test]
+    fn theme_resolution_error_construction() {
+        let e = ThemeResolutionError {
+            missing_fields: vec![
+                "defaults.accent".into(),
+                "button.font.family".into(),
+            ],
+        };
+        assert_eq!(e.missing_fields.len(), 2);
+        assert_eq!(e.missing_fields[0], "defaults.accent");
+        assert_eq!(e.missing_fields[1], "button.font.family");
+    }
+
+    #[test]
+    fn theme_resolution_error_display_lists_count_and_fields() {
+        let e = ThemeResolutionError {
+            missing_fields: vec![
+                "defaults.accent".into(),
+                "button.foreground".into(),
+                "window.radius".into(),
+            ],
+        };
+        let msg = e.to_string();
+        assert!(msg.contains("3 missing field(s)"), "got: {msg}");
+        assert!(msg.contains("defaults.accent"), "got: {msg}");
+        assert!(msg.contains("button.foreground"), "got: {msg}");
+        assert!(msg.contains("window.radius"), "got: {msg}");
+    }
+
+    #[test]
+    fn theme_resolution_error_implements_std_error() {
+        let e = ThemeResolutionError {
+            missing_fields: vec!["defaults.accent".into()],
+        };
+        // This compiles only if ThemeResolutionError: std::error::Error
+        let _: &dyn std::error::Error = &e;
+    }
+
+    #[test]
+    fn theme_resolution_error_is_clone() {
+        let e = ThemeResolutionError {
+            missing_fields: vec!["defaults.accent".into()],
+        };
+        let e2 = e.clone();
+        assert_eq!(e.missing_fields, e2.missing_fields);
+    }
+
+    // === Error::Resolution variant tests ===
+
+    #[test]
+    fn error_resolution_variant_wraps_theme_resolution_error() {
+        let inner = ThemeResolutionError {
+            missing_fields: vec!["defaults.accent".into()],
+        };
+        let err = Error::Resolution(inner);
+        match &err {
+            Error::Resolution(e) => assert_eq!(e.missing_fields.len(), 1),
+            other => panic!("expected Resolution variant, got: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn error_resolution_display_delegates_to_inner() {
+        let inner = ThemeResolutionError {
+            missing_fields: vec!["defaults.accent".into(), "window.radius".into()],
+        };
+        let err = Error::Resolution(inner);
+        let msg = err.to_string();
+        assert!(msg.contains("2 missing field(s)"), "got: {msg}");
+        assert!(msg.contains("defaults.accent"), "got: {msg}");
+        assert!(msg.contains("window.radius"), "got: {msg}");
+    }
+
+    #[test]
+    fn error_resolution_source_returns_inner() {
+        let inner = ThemeResolutionError {
+            missing_fields: vec!["defaults.accent".into()],
+        };
+        let err = Error::Resolution(inner);
+        let source = std::error::Error::source(&err);
+        assert!(source.is_some(), "source() should return Some for Resolution variant");
+        let source_msg = source.unwrap().to_string();
+        assert!(source_msg.contains("1 missing field(s)"), "got: {source_msg}");
     }
 }
