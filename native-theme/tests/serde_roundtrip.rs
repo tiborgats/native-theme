@@ -4,6 +4,8 @@
 //! These tests exercise the public API exactly as downstream consumers will use
 //! it: `use native_theme::*` plus `toml` for (de)serialization.
 
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use native_theme::*;
 
 // ---------------------------------------------------------------------------
@@ -15,77 +17,85 @@ fn fully_populated_variant(offset: u8) -> ThemeVariant {
 
     let mut v = ThemeVariant::default();
 
-    // core (7 fields)
-    v.colors.accent = Some(c(61, 174, 233));
-    v.colors.background = Some(c(255, 255, 255));
-    v.colors.foreground = Some(c(35, 38, 41));
-    v.colors.surface = Some(c(239, 240, 241));
-    v.colors.border = Some(c(188, 190, 191));
-    v.colors.muted = Some(c(127, 140, 141));
-    v.colors.shadow = Some(Rgba::rgba(0u8.wrapping_add(offset), 0, 0, 64));
+    // Core defaults (colors)
+    v.defaults.accent = Some(c(61, 174, 233));
+    v.defaults.background = Some(c(255, 255, 255));
+    v.defaults.foreground = Some(c(35, 38, 41));
+    v.defaults.surface = Some(c(239, 240, 241));
+    v.defaults.border = Some(c(188, 190, 191));
+    v.defaults.muted = Some(c(127, 140, 141));
+    v.defaults.shadow = Some(Rgba::rgba(0u8.wrapping_add(offset), 0, 0, 64));
 
-    // primary (2 fields)
-    v.colors.primary_background = Some(c(61, 174, 233));
-    v.colors.primary_foreground = Some(c(252, 252, 252));
+    // Status colors
+    v.defaults.danger = Some(c(218, 68, 83));
+    v.defaults.danger_foreground = Some(c(252, 252, 252));
+    v.defaults.warning = Some(c(246, 116, 0));
+    v.defaults.warning_foreground = Some(c(35, 38, 41));
+    v.defaults.success = Some(c(39, 174, 96));
+    v.defaults.success_foreground = Some(c(252, 252, 252));
+    v.defaults.info = Some(c(61, 174, 233));
+    v.defaults.info_foreground = Some(c(252, 252, 252));
 
-    // secondary (2 fields)
-    v.colors.secondary_background = Some(c(189, 195, 199));
-    v.colors.secondary_foreground = Some(c(49, 54, 59));
+    // Interactive
+    v.defaults.selection = Some(c(61, 174, 233));
+    v.defaults.selection_foreground = Some(c(252, 252, 252));
+    v.defaults.link = Some(c(41, 128, 185));
+    v.defaults.focus_ring_color = Some(c(61, 174, 233));
 
-    // status (8 fields)
-    v.colors.danger = Some(c(218, 68, 83));
-    v.colors.danger_foreground = Some(c(252, 252, 252));
-    v.colors.warning = Some(c(246, 116, 0));
-    v.colors.warning_foreground = Some(c(35, 38, 41));
-    v.colors.success = Some(c(39, 174, 96));
-    v.colors.success_foreground = Some(c(252, 252, 252));
-    v.colors.info = Some(c(61, 174, 233));
-    v.colors.info_foreground = Some(c(252, 252, 252));
+    // Per-widget: button (primary/secondary)
+    v.button.primary_bg = Some(c(61, 174, 233));
+    v.button.primary_fg = Some(c(252, 252, 252));
+    v.button.background = Some(c(189, 195, 199));
+    v.button.foreground = Some(c(49, 54, 59));
 
-    // interactive (4 fields)
-    v.colors.selection = Some(c(61, 174, 233));
-    v.colors.selection_foreground = Some(c(252, 252, 252));
-    v.colors.link = Some(c(41, 128, 185));
-    v.colors.focus_ring = Some(c(61, 174, 233));
+    // Per-widget: sidebar
+    v.sidebar.background = Some(c(227, 229, 231));
+    v.sidebar.foreground = Some(c(35, 38, 41));
 
-    // panel (6 fields)
-    v.colors.sidebar = Some(c(227, 229, 231));
-    v.colors.sidebar_foreground = Some(c(35, 38, 41));
-    v.colors.tooltip = Some(c(35, 38, 41));
-    v.colors.tooltip_foreground = Some(c(252, 252, 252));
-    v.colors.popover = Some(c(255, 255, 255));
-    v.colors.popover_foreground = Some(c(35, 38, 41));
+    // Per-widget: tooltip
+    v.tooltip.background = Some(c(35, 38, 41));
+    v.tooltip.foreground = Some(c(252, 252, 252));
 
-    // component (7 fields)
-    v.colors.button = Some(c(239, 240, 241));
-    v.colors.button_foreground = Some(c(35, 38, 41));
-    v.colors.input = Some(c(252, 252, 252));
-    v.colors.input_foreground = Some(c(35, 38, 41));
-    v.colors.disabled = Some(c(189, 195, 199));
-    v.colors.separator = Some(c(188, 190, 191));
-    v.colors.alternate_row = Some(c(239, 240, 241));
+    // Per-widget: popover
+    v.popover.background = Some(c(255, 255, 255));
+    v.popover.foreground = Some(c(35, 38, 41));
 
-    // fonts
-    v.fonts.family = Some("Noto Sans".into());
-    v.fonts.size = Some(10.0);
-    v.fonts.mono_family = Some("Hack".into());
-    v.fonts.mono_size = Some(10.0);
+    // Per-widget: input
+    v.input.background = Some(c(252, 252, 252));
+    v.input.foreground = Some(c(35, 38, 41));
 
-    // geometry
-    v.geometry.radius = Some(4.0);
-    v.geometry.frame_width = Some(1.0);
-    v.geometry.disabled_opacity = Some(0.4);
-    v.geometry.border_opacity = Some(0.6);
-    v.geometry.scroll_width = Some(12.0);
+    // Per-widget: list
+    v.list.alternate_row = Some(c(239, 240, 241));
 
-    // spacing
-    v.spacing.xxs = Some(2.0);
-    v.spacing.xs = Some(4.0);
-    v.spacing.s = Some(8.0);
-    v.spacing.m = Some(12.0);
-    v.spacing.l = Some(16.0);
-    v.spacing.xl = Some(24.0);
-    v.spacing.xxl = Some(32.0);
+    // Per-widget: separator
+    v.separator.color = Some(c(188, 190, 191));
+
+    // Disabled foreground
+    v.defaults.disabled_foreground = Some(c(189, 195, 199));
+
+    // Fonts (via FontSpec on defaults)
+    v.defaults.font.family = Some("Noto Sans".into());
+    v.defaults.font.size = Some(10.0);
+    v.defaults.mono_font.family = Some("Hack".into());
+    v.defaults.mono_font.size = Some(10.0);
+
+    // Geometry (on defaults)
+    v.defaults.radius = Some(4.0);
+    v.defaults.frame_width = Some(1.0);
+    v.defaults.disabled_opacity = Some(0.4);
+    v.defaults.border_opacity = Some(0.6);
+
+    // Scrollbar width (per-widget)
+    v.scrollbar.width = Some(12.0);
+
+    // Spacing (on defaults)
+    v.defaults.spacing.xxs = Some(2.0);
+    v.defaults.spacing.xs = Some(4.0);
+    v.defaults.spacing.s = Some(8.0);
+    v.defaults.spacing.m = Some(12.0);
+    v.defaults.spacing.l = Some(16.0);
+    v.defaults.spacing.xl = Some(24.0);
+    v.defaults.spacing.xxl = Some(32.0);
 
     v
 }
@@ -108,109 +118,150 @@ fn round_trip_full_theme() {
     let orig_light = theme.light.as_ref().unwrap();
     let de_light = deserialized.light.as_ref().unwrap();
 
-    // Colors
-    assert_eq!(de_light.colors.accent, orig_light.colors.accent);
-    assert_eq!(de_light.colors.background, orig_light.colors.background);
-    assert_eq!(de_light.colors.foreground, orig_light.colors.foreground);
+    // Defaults colors
+    assert_eq!(de_light.defaults.accent, orig_light.defaults.accent);
     assert_eq!(
-        de_light.colors.primary_background,
-        orig_light.colors.primary_background
+        de_light.defaults.background,
+        orig_light.defaults.background
     );
     assert_eq!(
-        de_light.colors.secondary_background,
-        orig_light.colors.secondary_background
+        de_light.defaults.foreground,
+        orig_light.defaults.foreground
     );
-    assert_eq!(de_light.colors.danger, orig_light.colors.danger);
-    assert_eq!(de_light.colors.success, orig_light.colors.success);
-    assert_eq!(de_light.colors.selection, orig_light.colors.selection);
-    assert_eq!(de_light.colors.link, orig_light.colors.link);
-    assert_eq!(de_light.colors.sidebar, orig_light.colors.sidebar);
-    assert_eq!(de_light.colors.tooltip, orig_light.colors.tooltip);
-    assert_eq!(de_light.colors.button, orig_light.colors.button);
-    assert_eq!(de_light.colors.input, orig_light.colors.input);
+    assert_eq!(de_light.defaults.danger, orig_light.defaults.danger);
+    assert_eq!(de_light.defaults.success, orig_light.defaults.success);
+    assert_eq!(de_light.defaults.selection, orig_light.defaults.selection);
+    assert_eq!(de_light.defaults.link, orig_light.defaults.link);
+
+    // Per-widget colors
+    assert_eq!(
+        de_light.button.primary_bg,
+        orig_light.button.primary_bg
+    );
+    assert_eq!(
+        de_light.button.background,
+        orig_light.button.background
+    );
+    assert_eq!(
+        de_light.sidebar.background,
+        orig_light.sidebar.background
+    );
+    assert_eq!(
+        de_light.tooltip.background,
+        orig_light.tooltip.background
+    );
+    assert_eq!(
+        de_light.input.background,
+        orig_light.input.background
+    );
 
     // Fonts
-    assert_eq!(de_light.fonts.family, orig_light.fonts.family);
-    assert_eq!(de_light.fonts.size, orig_light.fonts.size);
-    assert_eq!(de_light.fonts.mono_family, orig_light.fonts.mono_family);
-    assert_eq!(de_light.fonts.mono_size, orig_light.fonts.mono_size);
+    assert_eq!(
+        de_light.defaults.font.family,
+        orig_light.defaults.font.family
+    );
+    assert_eq!(de_light.defaults.font.size, orig_light.defaults.font.size);
+    assert_eq!(
+        de_light.defaults.mono_font.family,
+        orig_light.defaults.mono_font.family
+    );
+    assert_eq!(
+        de_light.defaults.mono_font.size,
+        orig_light.defaults.mono_font.size
+    );
 
     // Geometry
-    assert_eq!(de_light.geometry.radius, orig_light.geometry.radius);
+    assert_eq!(de_light.defaults.radius, orig_light.defaults.radius);
     assert_eq!(
-        de_light.geometry.frame_width,
-        orig_light.geometry.frame_width
+        de_light.defaults.frame_width,
+        orig_light.defaults.frame_width
     );
 
     // Spacing
-    assert_eq!(de_light.spacing.m, orig_light.spacing.m);
-    assert_eq!(de_light.spacing.l, orig_light.spacing.l);
+    assert_eq!(
+        de_light.defaults.spacing.m,
+        orig_light.defaults.spacing.m
+    );
+    assert_eq!(
+        de_light.defaults.spacing.l,
+        orig_light.defaults.spacing.l
+    );
 
     // Dark variant spot-checks
     let orig_dark = theme.dark.as_ref().unwrap();
     let de_dark = deserialized.dark.as_ref().unwrap();
-    assert_eq!(de_dark.colors.accent, orig_dark.colors.accent);
-    assert_eq!(de_dark.fonts.family, orig_dark.fonts.family);
-    assert_eq!(de_dark.geometry.radius, orig_dark.geometry.radius);
-    assert_eq!(de_dark.spacing.xxl, orig_dark.spacing.xxl);
+    assert_eq!(de_dark.defaults.accent, orig_dark.defaults.accent);
+    assert_eq!(
+        de_dark.defaults.font.family,
+        orig_dark.defaults.font.family
+    );
+    assert_eq!(de_dark.defaults.radius, orig_dark.defaults.radius);
+    assert_eq!(
+        de_dark.defaults.spacing.xxl,
+        orig_dark.defaults.spacing.xxl
+    );
 }
 
 #[test]
-fn round_trip_preserves_all_36_color_fields() {
-    // Construct a variant with ALL 36 color fields set to unique values
+fn round_trip_preserves_all_color_fields() {
+    // Construct a variant with many color fields set to unique values
     let mut v = ThemeVariant::default();
 
-    // Core (7)
-    v.colors.accent = Some(Rgba::rgb(1, 0, 0));
-    v.colors.background = Some(Rgba::rgb(2, 0, 0));
-    v.colors.foreground = Some(Rgba::rgb(3, 0, 0));
-    v.colors.surface = Some(Rgba::rgb(4, 0, 0));
-    v.colors.border = Some(Rgba::rgb(5, 0, 0));
-    v.colors.muted = Some(Rgba::rgb(6, 0, 0));
-    v.colors.shadow = Some(Rgba::rgb(7, 0, 0));
+    // Defaults core colors
+    v.defaults.accent = Some(Rgba::rgb(1, 0, 0));
+    v.defaults.background = Some(Rgba::rgb(2, 0, 0));
+    v.defaults.foreground = Some(Rgba::rgb(3, 0, 0));
+    v.defaults.surface = Some(Rgba::rgb(4, 0, 0));
+    v.defaults.border = Some(Rgba::rgb(5, 0, 0));
+    v.defaults.muted = Some(Rgba::rgb(6, 0, 0));
+    v.defaults.shadow = Some(Rgba::rgb(7, 0, 0));
 
-    // Primary (2)
-    v.colors.primary_background = Some(Rgba::rgb(8, 0, 0));
-    v.colors.primary_foreground = Some(Rgba::rgb(9, 0, 0));
+    // Defaults status colors
+    v.defaults.danger = Some(Rgba::rgb(12, 0, 0));
+    v.defaults.danger_foreground = Some(Rgba::rgb(13, 0, 0));
+    v.defaults.warning = Some(Rgba::rgb(14, 0, 0));
+    v.defaults.warning_foreground = Some(Rgba::rgb(15, 0, 0));
+    v.defaults.success = Some(Rgba::rgb(16, 0, 0));
+    v.defaults.success_foreground = Some(Rgba::rgb(17, 0, 0));
+    v.defaults.info = Some(Rgba::rgb(18, 0, 0));
+    v.defaults.info_foreground = Some(Rgba::rgb(19, 0, 0));
 
-    // Secondary (2)
-    v.colors.secondary_background = Some(Rgba::rgb(10, 0, 0));
-    v.colors.secondary_foreground = Some(Rgba::rgb(11, 0, 0));
+    // Defaults interactive colors
+    v.defaults.selection = Some(Rgba::rgb(20, 0, 0));
+    v.defaults.selection_foreground = Some(Rgba::rgb(21, 0, 0));
+    v.defaults.link = Some(Rgba::rgb(22, 0, 0));
+    v.defaults.focus_ring_color = Some(Rgba::rgb(23, 0, 0));
+    v.defaults.disabled_foreground = Some(Rgba::rgb(34, 0, 0));
 
-    // Status (8)
-    v.colors.danger = Some(Rgba::rgb(12, 0, 0));
-    v.colors.danger_foreground = Some(Rgba::rgb(13, 0, 0));
-    v.colors.warning = Some(Rgba::rgb(14, 0, 0));
-    v.colors.warning_foreground = Some(Rgba::rgb(15, 0, 0));
-    v.colors.success = Some(Rgba::rgb(16, 0, 0));
-    v.colors.success_foreground = Some(Rgba::rgb(17, 0, 0));
-    v.colors.info = Some(Rgba::rgb(18, 0, 0));
-    v.colors.info_foreground = Some(Rgba::rgb(19, 0, 0));
+    // Per-widget: button
+    v.button.primary_bg = Some(Rgba::rgb(8, 0, 0));
+    v.button.primary_fg = Some(Rgba::rgb(9, 0, 0));
+    v.button.background = Some(Rgba::rgb(10, 0, 0));
+    v.button.foreground = Some(Rgba::rgb(11, 0, 0));
 
-    // Interactive (4)
-    v.colors.selection = Some(Rgba::rgb(20, 0, 0));
-    v.colors.selection_foreground = Some(Rgba::rgb(21, 0, 0));
-    v.colors.link = Some(Rgba::rgb(22, 0, 0));
-    v.colors.focus_ring = Some(Rgba::rgb(23, 0, 0));
+    // Per-widget: sidebar
+    v.sidebar.background = Some(Rgba::rgb(24, 0, 0));
+    v.sidebar.foreground = Some(Rgba::rgb(25, 0, 0));
 
-    // Panel (6)
-    v.colors.sidebar = Some(Rgba::rgb(24, 0, 0));
-    v.colors.sidebar_foreground = Some(Rgba::rgb(25, 0, 0));
-    v.colors.tooltip = Some(Rgba::rgb(26, 0, 0));
-    v.colors.tooltip_foreground = Some(Rgba::rgb(27, 0, 0));
-    v.colors.popover = Some(Rgba::rgb(28, 0, 0));
-    v.colors.popover_foreground = Some(Rgba::rgb(29, 0, 0));
+    // Per-widget: tooltip
+    v.tooltip.background = Some(Rgba::rgb(26, 0, 0));
+    v.tooltip.foreground = Some(Rgba::rgb(27, 0, 0));
 
-    // Component (7)
-    v.colors.button = Some(Rgba::rgb(30, 0, 0));
-    v.colors.button_foreground = Some(Rgba::rgb(31, 0, 0));
-    v.colors.input = Some(Rgba::rgb(32, 0, 0));
-    v.colors.input_foreground = Some(Rgba::rgb(33, 0, 0));
-    v.colors.disabled = Some(Rgba::rgb(34, 0, 0));
-    v.colors.separator = Some(Rgba::rgb(35, 0, 0));
-    v.colors.alternate_row = Some(Rgba::rgb(36, 0, 0));
+    // Per-widget: popover
+    v.popover.background = Some(Rgba::rgb(28, 0, 0));
+    v.popover.foreground = Some(Rgba::rgb(29, 0, 0));
 
-    let mut theme = NativeTheme::new("36 Colors");
+    // Per-widget: input
+    v.input.background = Some(Rgba::rgb(30, 0, 0));
+    v.input.foreground = Some(Rgba::rgb(31, 0, 0));
+
+    // Per-widget: list
+    v.list.alternate_row = Some(Rgba::rgb(32, 0, 0));
+
+    // Per-widget: separator
+    v.separator.color = Some(Rgba::rgb(33, 0, 0));
+
+    let mut theme = NativeTheme::new("All Colors");
     theme.light = Some(v);
 
     let toml_str = toml::to_string_pretty(&theme).unwrap();
@@ -218,85 +269,71 @@ fn round_trip_preserves_all_36_color_fields() {
     let de_v = de.light.as_ref().unwrap();
     let orig_v = theme.light.as_ref().unwrap();
 
-    // Verify every single one of the 36 color fields
-    assert_eq!(de_v.colors.accent, orig_v.colors.accent);
-    assert_eq!(de_v.colors.background, orig_v.colors.background);
-    assert_eq!(de_v.colors.foreground, orig_v.colors.foreground);
-    assert_eq!(de_v.colors.surface, orig_v.colors.surface);
-    assert_eq!(de_v.colors.border, orig_v.colors.border);
-    assert_eq!(de_v.colors.muted, orig_v.colors.muted);
-    assert_eq!(de_v.colors.shadow, orig_v.colors.shadow);
+    // Defaults colors
+    assert_eq!(de_v.defaults.accent, orig_v.defaults.accent);
+    assert_eq!(de_v.defaults.background, orig_v.defaults.background);
+    assert_eq!(de_v.defaults.foreground, orig_v.defaults.foreground);
+    assert_eq!(de_v.defaults.surface, orig_v.defaults.surface);
+    assert_eq!(de_v.defaults.border, orig_v.defaults.border);
+    assert_eq!(de_v.defaults.muted, orig_v.defaults.muted);
+    assert_eq!(de_v.defaults.shadow, orig_v.defaults.shadow);
 
+    assert_eq!(de_v.defaults.danger, orig_v.defaults.danger);
     assert_eq!(
-        de_v.colors.primary_background,
-        orig_v.colors.primary_background
+        de_v.defaults.danger_foreground,
+        orig_v.defaults.danger_foreground
     );
+    assert_eq!(de_v.defaults.warning, orig_v.defaults.warning);
     assert_eq!(
-        de_v.colors.primary_foreground,
-        orig_v.colors.primary_foreground
+        de_v.defaults.warning_foreground,
+        orig_v.defaults.warning_foreground
     );
-
+    assert_eq!(de_v.defaults.success, orig_v.defaults.success);
     assert_eq!(
-        de_v.colors.secondary_background,
-        orig_v.colors.secondary_background
+        de_v.defaults.success_foreground,
+        orig_v.defaults.success_foreground
     );
+    assert_eq!(de_v.defaults.info, orig_v.defaults.info);
     assert_eq!(
-        de_v.colors.secondary_foreground,
-        orig_v.colors.secondary_foreground
-    );
-
-    assert_eq!(de_v.colors.danger, orig_v.colors.danger);
-    assert_eq!(
-        de_v.colors.danger_foreground,
-        orig_v.colors.danger_foreground
-    );
-    assert_eq!(de_v.colors.warning, orig_v.colors.warning);
-    assert_eq!(
-        de_v.colors.warning_foreground,
-        orig_v.colors.warning_foreground
-    );
-    assert_eq!(de_v.colors.success, orig_v.colors.success);
-    assert_eq!(
-        de_v.colors.success_foreground,
-        orig_v.colors.success_foreground
-    );
-    assert_eq!(de_v.colors.info, orig_v.colors.info);
-    assert_eq!(de_v.colors.info_foreground, orig_v.colors.info_foreground);
-
-    assert_eq!(de_v.colors.selection, orig_v.colors.selection);
-    assert_eq!(
-        de_v.colors.selection_foreground,
-        orig_v.colors.selection_foreground
-    );
-    assert_eq!(de_v.colors.link, orig_v.colors.link);
-    assert_eq!(de_v.colors.focus_ring, orig_v.colors.focus_ring);
-
-    assert_eq!(de_v.colors.sidebar, orig_v.colors.sidebar);
-    assert_eq!(
-        de_v.colors.sidebar_foreground,
-        orig_v.colors.sidebar_foreground
-    );
-    assert_eq!(de_v.colors.tooltip, orig_v.colors.tooltip);
-    assert_eq!(
-        de_v.colors.tooltip_foreground,
-        orig_v.colors.tooltip_foreground
-    );
-    assert_eq!(de_v.colors.popover, orig_v.colors.popover);
-    assert_eq!(
-        de_v.colors.popover_foreground,
-        orig_v.colors.popover_foreground
+        de_v.defaults.info_foreground,
+        orig_v.defaults.info_foreground
     );
 
-    assert_eq!(de_v.colors.button, orig_v.colors.button);
+    assert_eq!(de_v.defaults.selection, orig_v.defaults.selection);
     assert_eq!(
-        de_v.colors.button_foreground,
-        orig_v.colors.button_foreground
+        de_v.defaults.selection_foreground,
+        orig_v.defaults.selection_foreground
     );
-    assert_eq!(de_v.colors.input, orig_v.colors.input);
-    assert_eq!(de_v.colors.input_foreground, orig_v.colors.input_foreground);
-    assert_eq!(de_v.colors.disabled, orig_v.colors.disabled);
-    assert_eq!(de_v.colors.separator, orig_v.colors.separator);
-    assert_eq!(de_v.colors.alternate_row, orig_v.colors.alternate_row);
+    assert_eq!(de_v.defaults.link, orig_v.defaults.link);
+    assert_eq!(
+        de_v.defaults.focus_ring_color,
+        orig_v.defaults.focus_ring_color
+    );
+    assert_eq!(
+        de_v.defaults.disabled_foreground,
+        orig_v.defaults.disabled_foreground
+    );
+
+    // Per-widget colors
+    assert_eq!(de_v.button.primary_bg, orig_v.button.primary_bg);
+    assert_eq!(de_v.button.primary_fg, orig_v.button.primary_fg);
+    assert_eq!(de_v.button.background, orig_v.button.background);
+    assert_eq!(de_v.button.foreground, orig_v.button.foreground);
+
+    assert_eq!(de_v.sidebar.background, orig_v.sidebar.background);
+    assert_eq!(de_v.sidebar.foreground, orig_v.sidebar.foreground);
+
+    assert_eq!(de_v.tooltip.background, orig_v.tooltip.background);
+    assert_eq!(de_v.tooltip.foreground, orig_v.tooltip.foreground);
+
+    assert_eq!(de_v.popover.background, orig_v.popover.background);
+    assert_eq!(de_v.popover.foreground, orig_v.popover.foreground);
+
+    assert_eq!(de_v.input.background, orig_v.input.background);
+    assert_eq!(de_v.input.foreground, orig_v.input.foreground);
+
+    assert_eq!(de_v.list.alternate_row, orig_v.list.alternate_row);
+    assert_eq!(de_v.separator.color, orig_v.separator.color);
 }
 
 // ---------------------------------------------------------------------------
@@ -308,7 +345,7 @@ fn sparse_toml_deserializes() {
     let toml_str = r##"
 name = "Minimal"
 
-[light.colors]
+[light.defaults]
 accent = "#3daee9"
 "##;
 
@@ -316,13 +353,26 @@ accent = "#3daee9"
 
     assert_eq!(theme.name, "Minimal");
     assert_eq!(
-        theme.light.as_ref().unwrap().colors.accent,
+        theme.light.as_ref().unwrap().defaults.accent,
         Some(Rgba::rgb(61, 174, 233))
     );
     // All other fields are None/default
-    assert!(theme.light.as_ref().unwrap().colors.background.is_none());
-    assert!(theme.light.as_ref().unwrap().colors.danger.is_none());
-    assert!(theme.light.as_ref().unwrap().fonts.family.is_none());
+    assert!(theme
+        .light
+        .as_ref()
+        .unwrap()
+        .defaults
+        .background
+        .is_none());
+    assert!(theme.light.as_ref().unwrap().defaults.danger.is_none());
+    assert!(theme
+        .light
+        .as_ref()
+        .unwrap()
+        .defaults
+        .font
+        .family
+        .is_none());
     assert!(theme.dark.is_none());
 }
 
@@ -345,7 +395,7 @@ fn very_sparse_toml_name_only() {
 fn serialization_skips_none_fields() {
     let mut theme = NativeTheme::new("Skip Test");
     let mut light = ThemeVariant::default();
-    light.colors.accent = Some(Rgba::rgb(61, 174, 233));
+    light.defaults.accent = Some(Rgba::rgb(61, 174, 233));
     theme.light = Some(light);
 
     let toml_str = toml::to_string_pretty(&theme).unwrap();
@@ -361,16 +411,12 @@ fn serialization_skips_none_fields() {
 
     // Empty sub-structs omitted
     assert!(
-        !toml_str.contains("[light.fonts]"),
-        "TOML should NOT contain '[light.fonts]' (empty)"
+        !toml_str.contains("[light.button]"),
+        "TOML should NOT contain '[light.button]' (empty)"
     );
     assert!(
-        !toml_str.contains("[light.geometry]"),
-        "TOML should NOT contain '[light.geometry]' (empty)"
-    );
-    assert!(
-        !toml_str.contains("[light.spacing]"),
-        "TOML should NOT contain '[light.spacing]' (empty)"
+        !toml_str.contains("[light.sidebar]"),
+        "TOML should NOT contain '[light.sidebar]' (empty)"
     );
 }
 
@@ -382,10 +428,10 @@ fn serialization_skips_none_fields() {
 fn toml_structure_is_human_readable() {
     let mut theme = NativeTheme::new("Readable");
     let mut light = ThemeVariant::default();
-    light.colors.accent = Some(Rgba::rgb(61, 174, 233));
-    light.colors.background = Some(Rgba::rgb(255, 255, 255));
-    light.fonts.family = Some("Noto Sans".into());
-    light.geometry.radius = Some(4.0);
+    light.defaults.accent = Some(Rgba::rgb(61, 174, 233));
+    light.defaults.background = Some(Rgba::rgb(255, 255, 255));
+    light.defaults.font.family = Some("Noto Sans".into());
+    light.defaults.radius = Some(4.0);
     theme.light = Some(light);
 
     let toml_str = toml::to_string_pretty(&theme).unwrap();
@@ -393,26 +439,24 @@ fn toml_structure_is_human_readable() {
     // Print for manual inspection during development
     println!("--- Human-readable TOML ---\n{toml_str}---");
 
-    // Verify section headers
+    // Verify section header for defaults (where colors, fonts, geometry now live)
     assert!(
-        toml_str.contains("[light.colors]"),
-        "expected [light.colors] section header"
-    );
-    assert!(
-        toml_str.contains("[light.fonts]"),
-        "expected [light.fonts] section header"
-    );
-    assert!(
-        toml_str.contains("[light.geometry]"),
-        "expected [light.geometry] section header"
+        toml_str.contains("[light.defaults]"),
+        "expected [light.defaults] section header"
     );
 
-    // Fields appear under correct sections (accent under colors, not elsewhere)
-    let colors_section_start = toml_str.find("[light.colors]").unwrap();
+    // Font sub-section under defaults
+    assert!(
+        toml_str.contains("[light.defaults.font]"),
+        "expected [light.defaults.font] section header"
+    );
+
+    // Fields appear under correct section (accent under defaults)
+    let defaults_section_start = toml_str.find("[light.defaults]").unwrap();
     let accent_pos = toml_str.find("accent").unwrap();
     assert!(
-        accent_pos > colors_section_start,
-        "accent should appear after [light.colors]"
+        accent_pos > defaults_section_start,
+        "accent should appear after [light.defaults]"
     );
 }
 
@@ -425,7 +469,7 @@ fn rgba_hex_in_toml() {
     let toml_str = r##"
 name = "Hex Test"
 
-[light.colors]
+[light.defaults]
 accent = "#3daee9"
 shadow = "#00000040"
 "##;
@@ -434,10 +478,10 @@ shadow = "#00000040"
     let light = theme.light.as_ref().unwrap();
 
     // accent: #3daee9 -> r=61, g=174, b=233, a=255 (no alpha => opaque)
-    assert_eq!(light.colors.accent, Some(Rgba::rgb(61, 174, 233)));
+    assert_eq!(light.defaults.accent, Some(Rgba::rgb(61, 174, 233)));
 
     // shadow: #00000040 -> r=0, g=0, b=0, a=0x40=64
-    assert_eq!(light.colors.shadow, Some(Rgba::rgba(0, 0, 0, 64)));
+    assert_eq!(light.defaults.shadow, Some(Rgba::rgba(0, 0, 0, 64)));
 
     // Serialize back and verify hex strings are lowercase
     let re_serialized = toml::to_string_pretty(&theme).unwrap();

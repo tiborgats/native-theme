@@ -4,6 +4,8 @@
 //! populated with non-empty colors, valid font sizes, and survive TOML
 //! round-trip serialization.
 
+#![allow(clippy::unwrap_used, clippy::expect_used)]
+
 use native_theme::NativeTheme;
 
 #[test]
@@ -42,28 +44,28 @@ fn all_presets_have_core_colors() {
             .unwrap_or_else(|| panic!("preset '{name}' missing dark variant"));
 
         assert!(
-            light.colors.accent.is_some(),
+            light.defaults.accent.is_some(),
             "preset '{name}' light missing accent"
         );
         assert!(
-            light.colors.background.is_some(),
+            light.defaults.background.is_some(),
             "preset '{name}' light missing background"
         );
         assert!(
-            light.colors.foreground.is_some(),
+            light.defaults.foreground.is_some(),
             "preset '{name}' light missing foreground"
         );
 
         assert!(
-            dark.colors.accent.is_some(),
+            dark.defaults.accent.is_some(),
             "preset '{name}' dark missing accent"
         );
         assert!(
-            dark.colors.background.is_some(),
+            dark.defaults.background.is_some(),
             "preset '{name}' dark missing background"
         );
         assert!(
-            dark.colors.foreground.is_some(),
+            dark.defaults.foreground.is_some(),
             "preset '{name}' dark missing foreground"
         );
     }
@@ -78,28 +80,28 @@ fn all_presets_have_status_colors() {
         let dark = theme.dark.as_ref().unwrap();
 
         assert!(
-            light.colors.danger.is_some(),
+            light.defaults.danger.is_some(),
             "preset '{name}' light missing danger"
         );
         assert!(
-            light.colors.warning.is_some(),
+            light.defaults.warning.is_some(),
             "preset '{name}' light missing warning"
         );
         assert!(
-            light.colors.success.is_some(),
+            light.defaults.success.is_some(),
             "preset '{name}' light missing success"
         );
 
         assert!(
-            dark.colors.danger.is_some(),
+            dark.defaults.danger.is_some(),
             "preset '{name}' dark missing danger"
         );
         assert!(
-            dark.colors.warning.is_some(),
+            dark.defaults.warning.is_some(),
             "preset '{name}' dark missing warning"
         );
         assert!(
-            dark.colors.success.is_some(),
+            dark.defaults.success.is_some(),
             "preset '{name}' dark missing success"
         );
     }
@@ -114,38 +116,28 @@ fn all_presets_have_interactive_colors() {
         let dark = theme.dark.as_ref().unwrap();
 
         assert!(
-            light.colors.selection.is_some(),
+            light.defaults.selection.is_some(),
             "preset '{name}' light missing selection"
         );
         assert!(
-            light.colors.link.is_some(),
+            light.defaults.link.is_some(),
             "preset '{name}' light missing link"
         );
 
         assert!(
-            dark.colors.selection.is_some(),
+            dark.defaults.selection.is_some(),
             "preset '{name}' dark missing selection"
         );
         assert!(
-            dark.colors.link.is_some(),
+            dark.defaults.link.is_some(),
             "preset '{name}' dark missing link"
         );
     }
 }
 
-/// Platform presets must have fonts; community color themes may omit them.
 #[test]
-fn platform_presets_have_valid_fonts() {
-    let platform = [
-        "default",
-        "adwaita",
-        "kde-breeze",
-        "windows-11",
-        "macos-sonoma",
-        "material",
-        "ios",
-    ];
-    for name in platform {
+fn all_presets_have_valid_fonts() {
+    for name in NativeTheme::list_presets() {
         let theme =
             NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         for (label, variant) in [
@@ -155,48 +147,17 @@ fn platform_presets_have_valid_fonts() {
             let variant =
                 variant.unwrap_or_else(|| panic!("preset '{name}' missing {label} variant"));
             assert!(
-                variant.fonts.family.is_some(),
-                "preset '{name}' {label} missing fonts.family"
+                variant.defaults.font.family.is_some(),
+                "preset '{name}' {label} missing defaults.font.family"
             );
             let size = variant
-                .fonts
+                .defaults
+                .font
                 .size
-                .unwrap_or_else(|| panic!("preset '{name}' {label} missing fonts.size"));
+                .unwrap_or_else(|| panic!("preset '{name}' {label} missing defaults.font.size"));
             assert!(
                 size > 0.0,
                 "preset '{name}' {label} font size must be > 0, got {size}"
-            );
-        }
-    }
-}
-
-/// Community color themes should not prescribe fonts (color-only).
-#[test]
-fn community_presets_omit_fonts() {
-    let community = [
-        "catppuccin-frappe",
-        "catppuccin-latte",
-        "catppuccin-macchiato",
-        "catppuccin-mocha",
-        "dracula",
-        "gruvbox",
-        "nord",
-        "one-dark",
-        "solarized",
-        "tokyo-night",
-    ];
-    for name in community {
-        let theme =
-            NativeTheme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
-        for (label, variant) in [
-            ("light", theme.light.as_ref()),
-            ("dark", theme.dark.as_ref()),
-        ] {
-            let variant =
-                variant.unwrap_or_else(|| panic!("preset '{name}' missing {label} variant"));
-            assert!(
-                variant.fonts.family.is_none(),
-                "community preset '{name}' {label} should not set fonts.family"
             );
         }
     }
@@ -214,16 +175,16 @@ fn all_presets_have_geometry() {
             let variant =
                 variant.unwrap_or_else(|| panic!("preset '{name}' missing {label} variant"));
             assert!(
-                variant.geometry.radius.is_some(),
-                "preset '{name}' {label} missing geometry.radius"
+                variant.defaults.radius.is_some(),
+                "preset '{name}' {label} missing defaults.radius"
             );
             assert!(
-                variant.geometry.radius_lg.is_some(),
-                "preset '{name}' {label} missing geometry.radius_lg"
+                variant.defaults.radius_lg.is_some(),
+                "preset '{name}' {label} missing defaults.radius_lg"
             );
             assert!(
-                variant.geometry.shadow.is_some(),
-                "preset '{name}' {label} missing geometry.shadow"
+                variant.defaults.shadow_enabled.is_some(),
+                "preset '{name}' {label} missing defaults.shadow_enabled"
             );
         }
     }
@@ -241,8 +202,8 @@ fn all_presets_have_spacing() {
             let variant =
                 variant.unwrap_or_else(|| panic!("preset '{name}' missing {label} variant"));
             assert!(
-                variant.spacing.m.is_some(),
-                "preset '{name}' {label} missing spacing.m"
+                variant.defaults.spacing.m.is_some(),
+                "preset '{name}' {label} missing defaults.spacing.m"
             );
         }
     }
@@ -266,7 +227,7 @@ fn all_presets_round_trip_toml() {
             .as_ref()
             .unwrap_or_else(|| panic!("preset '{name}' round-trip lost light variant"));
         assert_eq!(
-            orig_light.colors.accent, new_light.colors.accent,
+            orig_light.defaults.accent, new_light.defaults.accent,
             "preset '{name}' light accent changed after round-trip"
         );
 
@@ -276,7 +237,7 @@ fn all_presets_round_trip_toml() {
             .as_ref()
             .unwrap_or_else(|| panic!("preset '{name}' round-trip lost dark variant"));
         assert_eq!(
-            orig_dark.colors.accent, new_dark.colors.accent,
+            orig_dark.defaults.accent, new_dark.defaults.accent,
             "preset '{name}' dark accent changed after round-trip"
         );
 
@@ -289,11 +250,11 @@ fn all_presets_round_trip_toml() {
 }
 
 #[test]
-fn list_presets_returns_seventeen_entries() {
+fn list_presets_returns_sixteen_entries() {
     assert_eq!(
         NativeTheme::list_presets().len(),
-        17,
-        "expected 17 presets, got {}",
+        16,
+        "expected 16 presets, got {}",
         NativeTheme::list_presets().len()
     );
 }
@@ -307,14 +268,14 @@ fn dark_backgrounds_are_darker() {
             .light
             .as_ref()
             .unwrap()
-            .colors
+            .defaults
             .background
             .unwrap_or_else(|| panic!("preset '{name}' light missing background"));
         let dark_bg = theme
             .dark
             .as_ref()
             .unwrap()
-            .colors
+            .defaults
             .background
             .unwrap_or_else(|| panic!("preset '{name}' dark missing background"));
 
@@ -332,10 +293,6 @@ fn dark_backgrounds_are_darker() {
 #[test]
 fn preset_names_are_correct() {
     let names = NativeTheme::list_presets();
-    assert!(
-        names.contains(&"default"),
-        "list_presets() missing 'default'"
-    );
     assert!(
         names.contains(&"kde-breeze"),
         "list_presets() missing 'kde-breeze'"
