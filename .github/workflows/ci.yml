@@ -108,11 +108,7 @@ jobs:
   audit:
     name: Security audit
     runs-on: ubuntu-latest
-    permissions:
-      issues: write
-      checks: write
     steps:
       - uses: actions/checkout@v6
-      - uses: rustsec/audit-check@v2
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+      - run: cargo install cargo-audit
+      - run: cargo audit
