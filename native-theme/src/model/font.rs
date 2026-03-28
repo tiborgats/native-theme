@@ -34,7 +34,8 @@ pub struct TextScaleEntry {
     pub size: Option<f32>,
     /// CSS font weight (100–900).
     pub weight: Option<u16>,
-    /// Line height as a multiplier (e.g., 1.4).
+    /// Line height in logical pixels. When `None`, `resolve()` computes it
+    /// as `defaults.line_height × size`.
     pub line_height: Option<f32>,
 }
 

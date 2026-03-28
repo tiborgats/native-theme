@@ -54,7 +54,7 @@ pub struct ResolvedTextScaleEntry {
     pub size: f32,
     /// CSS font weight (100-900).
     pub weight: u16,
-    /// Line height as a multiplier.
+    /// Line height in logical pixels (computed as `defaults.line_height × size`).
     pub line_height: f32,
 }
 

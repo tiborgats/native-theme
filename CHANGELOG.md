@@ -5,6 +5,82 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-03-28
+
+### Added
+
+- Per-widget data model: 25 `XxxTheme` / `ResolvedXxx` struct pairs (Window, Button, Input, Checkbox, Menu, Tooltip, Scrollbar, Slider, ProgressBar, Tab, Sidebar, Toolbar, StatusBar, List, Popover, Splitter, Separator, Switch, Dialog, Spinner, ComboBox, SegmentedControl, Card, Expander, Link)
+- `ThemeDefaults` struct with ~40 global properties (colors, fonts, spacing, icon sizes, accessibility)
+- `FontSpec` for per-widget font specification (family, size, weight)
+- `TextScale` with 4 typographic roles (caption, section_heading, dialog_title, display)
+- `IconSizes` struct (toolbar, small, large, dialog, panel)
+- `DialogButtonOrder` enum (TrailingAffirmative / LeadingAffirmative)
+- `ThemeSpacing` struct (xxs through xxl)
+- `define_widget_pair!` macro generating paired Option/Resolved structs from a single definition
+- `ResolvedTheme` type where all fields are guaranteed populated (non-optional)
+- `ResolvedDefaults`, `ResolvedFontSpec`, `ResolvedSpacing`, `ResolvedIconSizes`, `ResolvedTextScale`, `ResolvedTextScaleEntry` types
+- `ThemeResolutionError` listing missing field paths; `Error::Resolution` variant
+- `ThemeVariant::resolve()` with ~90 inheritance rules in 4 phases (defaults-internal, safety-nets, widget-from-defaults, widget-to-widget)
+- `ThemeVariant::validate()` producing `ResolvedTheme` or listing all missing fields
+- `SystemTheme` type returned by `from_system()` with `active()`, `pick()`, `with_overlay()`, `with_overlay_toml()`
+- Live platform presets (geometry-only, internal): `kde-breeze-live`, `adwaita-live`, `macos-sonoma-live`, `windows-11-live`
+- `platform_preset_name()` mapping the current OS to its live preset
+- `list_presets_for_platform()` filtering presets by current OS
+- `system_is_dark()` cross-platform cached dark-mode detection (Linux gsettings/kdeglobals, macOS AppleInterfaceStyle, Windows UISettings)
+- KDE reader: per-widget fonts (menuFont, toolBarFont), WM title bar colors, text scale via Kirigami multipliers, icon sizes from index.theme, accessibility (AnimationDurationFactor, forceFontDPI)
+- GNOME reader: gsettings fonts (font-name, monospace-font-name, titlebar-font), text scale via CSS percentages, accessibility (text-scaling-factor, enable-animations, overlay-scrolling), icon-theme
+- macOS reader: per-widget fonts (+menuFontOfSize:, +toolTipsFontOfSize:, +titleBarFontOfSize:), NSFont.TextStyle text scale, additional NSColor values, scrollbar overlay mode, accessibility (reduce_motion, high_contrast, reduce_transparency, text_scaling_factor)
+- Windows reader: NONCLIENTMETRICSW per-widget fonts, DwmGetColorizationColor title bar, GetSysColor widget colors, text scale factor, high contrast, icon sizes via GetSystemMetrics
+
+### Changed
+
+- `ThemeVariant` composes `ThemeDefaults` + 25 per-widget structs instead of flat `ThemeColors`/`ThemeFonts`/`ThemeGeometry`
+- `from_system()` and `from_system_async()` return `SystemTheme` instead of `NativeTheme`
+- gpui and iced connector `to_theme()` accept `&ResolvedTheme` instead of `&ThemeVariant`
+- All 16 preset TOMLs rewritten for per-widget structure; platform presets slimmed to design constants only
+- `impl_merge!` macro extended with `optional_nested` category for per-widget font fields
+- Both gpui and iced showcase examples updated for `SystemTheme` / `ResolvedTheme` API
+
+### Removed
+
+- `ThemeColors` flat struct (replaced by `ThemeDefaults` base colors + per-widget color fields)
+- `ThemeFonts` struct (replaced by `FontSpec` on `ThemeDefaults` + per-widget font fields)
+- `ThemeGeometry` struct (replaced by per-widget geometry fields)
+- `WidgetMetrics` and its 12 sub-structs (replaced by per-widget sizing fields on each `XxxTheme`)
+- `default` preset (replaced by platform detection via `platform_preset_name()` and live presets)
+
+### Migration from v0.4.x
+
+**Data model:** `variant.colors.accent` -> `variant.defaults.accent`, `variant.fonts.family` -> `variant.defaults.font.family`, `variant.geometry.radius` -> `variant.defaults.radius`. Per-widget fields like `variant.button.min_height` replace `variant.widget_metrics.button.min_height`.
+
+**from_system():**
+
+```rust,ignore
+// Before (v0.4.x)
+let nt: NativeTheme = from_system().unwrap_or_else(|_| NativeTheme::preset("adwaita").unwrap());
+let variant = nt.pick_variant(true).unwrap();
+
+// After (v0.5.0)
+let system: SystemTheme = from_system().unwrap();
+let resolved: &ResolvedTheme = system.active(); // all fields guaranteed
+```
+
+**Connectors:**
+
+```rust,ignore
+// Before (v0.4.x)
+let theme = to_theme(variant, "My App", is_dark);
+
+// After (v0.5.0)
+let mut v = variant.clone();
+v.resolve();
+let resolved = v.validate().unwrap();
+let theme = to_theme(&resolved, "My App", is_dark);
+
+// Or from SystemTheme (already resolved):
+let theme = to_theme(system.active(), "My App", system.is_dark);
+```
+
 ## [0.4.1] - 2026-03-20
 
 ### Added
@@ -227,6 +303,7 @@ let busy = load_icon(IconRole::StatusBusy, "material");
 - `impl_merge!` macro for recursive Option-based theme merging
 - Deep merge support across all theme types
 
+[0.5.0]: https://github.com/tiborgats/native-theme/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/tiborgats/native-theme/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/tiborgats/native-theme/compare/v0.3.3...v0.4.0
 [0.3.3]: https://github.com/tiborgats/native-theme/compare/v0.3.2...v0.3.3
