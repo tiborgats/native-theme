@@ -857,8 +857,7 @@ fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
 
         // NSWindow.frame includes the title bar decoration area.
         let frame: CGRect = objc2::msg_send![main_window, frame];
-        let screen: *mut objc2::runtime::AnyObject =
-            objc2::msg_send![main_window, screen];
+        let screen: *mut objc2::runtime::AnyObject = objc2::msg_send![main_window, screen];
         let screen_frame: CGRect = objc2::msg_send![screen, frame];
 
         // macOS uses bottom-left origin; screencapture -R uses top-left.
@@ -1019,10 +1018,7 @@ unsafe fn find_own_window() -> Option<HWND> {
         target_pid: std::process::id(),
         found: HWND::default(),
     };
-    let _ = EnumWindows(
-        Some(callback),
-        LPARAM(&mut data as *mut EnumData as isize),
-    );
+    let _ = EnumWindows(Some(callback), LPARAM(&mut data as *mut EnumData as isize));
     if data.found.0.is_null() {
         None
     } else {
