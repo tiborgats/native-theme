@@ -10,7 +10,7 @@ Master orchestration script. Runs all four asset generators in sequence:
 spinner GIFs, iced screenshots, gpui screenshots, and theme-switching GIFs.
 
 ```sh
-bash scripts/generate_assets.sh
+./scripts/generate_assets.sh
 ```
 
 ## generate_gifs.py
@@ -44,7 +44,7 @@ On macOS/Windows, use the showcase's built-in `--screenshot` flag instead.
 Requires: spectacle (KDE)
 
 ```sh
-bash scripts/generate_screenshots.sh
+./scripts/generate_screenshots.sh
 ```
 
 ## generate_gpui_screenshots.sh
@@ -55,7 +55,7 @@ Same as `generate_screenshots.sh` but for the gpui showcase. Includes
 Requires: spectacle (KDE)
 
 ```sh
-bash scripts/generate_gpui_screenshots.sh
+./scripts/generate_gpui_screenshots.sh
 ```
 
 ## generate_theme_switching_gif.sh
@@ -68,7 +68,7 @@ Produces: `iced-theme-switching.gif` and `gpui-theme-switching.gif`.
 Requires: spectacle (KDE), Python 3, Pillow
 
 ```sh
-bash scripts/generate_theme_switching_gif.sh
+./scripts/generate_theme_switching_gif.sh
 ```
 
 ## pre-release.sh
@@ -80,5 +80,5 @@ the CI artifacts into `docs/assets/`.
 Requires: gh CLI (authenticated), spectacle, Python 3, Pillow, ImageMagick 7
 
 ```sh
-bash scripts/pre-release.sh
+./scripts/pre-release.sh
 ```

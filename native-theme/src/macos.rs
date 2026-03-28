@@ -23,11 +23,11 @@ use objc2_foundation::{NSDictionary, NSNumber, NSString};
 /// color cannot be converted (e.g., pattern colors).
 #[cfg(all(target_os = "macos", feature = "macos"))]
 fn nscolor_to_rgba(color: &NSColor, srgb: &NSColorSpace) -> Option<crate::Rgba> {
-    let srgb_color = unsafe { color.colorUsingColorSpace(srgb) }?;
-    let r = unsafe { srgb_color.redComponent() } as f32;
-    let g = unsafe { srgb_color.greenComponent() } as f32;
-    let b = unsafe { srgb_color.blueComponent() } as f32;
-    let a = unsafe { srgb_color.alphaComponent() } as f32;
+    let srgb_color = color.colorUsingColorSpace(srgb)?;
+    let r = srgb_color.redComponent() as f32;
+    let g = srgb_color.greenComponent() as f32;
+    let b = srgb_color.blueComponent() as f32;
+    let a = srgb_color.alphaComponent() as f32;
     Some(crate::Rgba::from_f32(r, g, b, a))
 }
 
@@ -50,34 +50,34 @@ struct PerWidgetColors {
 /// dynamic colors resolve to the correct appearance.
 #[cfg(all(target_os = "macos", feature = "macos"))]
 fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
-    let srgb = unsafe { NSColorSpace::sRGBColorSpace() };
+    let srgb = NSColorSpace::sRGBColorSpace();
 
     // Bind all NSColor temporaries before borrowing them.
-    let label_c = unsafe { NSColor::labelColor() };
-    let control_accent = unsafe { NSColor::controlAccentColor() };
-    let window_bg = unsafe { NSColor::windowBackgroundColor() };
-    let control_bg = unsafe { NSColor::controlBackgroundColor() };
-    let separator_c = unsafe { NSColor::separatorColor() };
-    let secondary_label = unsafe { NSColor::secondaryLabelColor() };
-    let shadow_c = unsafe { NSColor::shadowColor() };
-    let alt_sel_text = unsafe { NSColor::alternateSelectedControlTextColor() };
-    let system_red = unsafe { NSColor::systemRedColor() };
-    let system_orange = unsafe { NSColor::systemOrangeColor() };
-    let system_green = unsafe { NSColor::systemGreenColor() };
-    let system_blue = unsafe { NSColor::systemBlueColor() };
-    let sel_content_bg = unsafe { NSColor::selectedContentBackgroundColor() };
-    let sel_text = unsafe { NSColor::selectedTextColor() };
-    let link_c = unsafe { NSColor::linkColor() };
-    let focus_c = unsafe { NSColor::keyboardFocusIndicatorColor() };
-    let disabled_text = unsafe { NSColor::disabledControlTextColor() };
+    let label_c = NSColor::labelColor();
+    let control_accent = NSColor::controlAccentColor();
+    let window_bg = NSColor::windowBackgroundColor();
+    let control_bg = NSColor::controlBackgroundColor();
+    let separator_c = NSColor::separatorColor();
+    let secondary_label = NSColor::secondaryLabelColor();
+    let shadow_c = NSColor::shadowColor();
+    let alt_sel_text = NSColor::alternateSelectedControlTextColor();
+    let system_red = NSColor::systemRedColor();
+    let system_orange = NSColor::systemOrangeColor();
+    let system_green = NSColor::systemGreenColor();
+    let system_blue = NSColor::systemBlueColor();
+    let sel_content_bg = NSColor::selectedContentBackgroundColor();
+    let sel_text = NSColor::selectedTextColor();
+    let link_c = NSColor::linkColor();
+    let focus_c = NSColor::keyboardFocusIndicatorColor();
+    let disabled_text = NSColor::disabledControlTextColor();
 
     // Additional per-widget color bindings (MACOS-03).
-    let placeholder_c = unsafe { NSColor::placeholderTextColor() };
-    let unemph_sel_bg = unsafe { NSColor::unemphasizedSelectedContentBackgroundColor() };
-    let alt_bg_colors = unsafe { NSColor::alternatingContentBackgroundColors() };
-    let header_text_c = unsafe { NSColor::headerTextColor() };
-    let grid_c = unsafe { NSColor::gridColor() };
-    let frame_text_c = unsafe { NSColor::windowFrameTextColor() };
+    let placeholder_c = NSColor::placeholderTextColor();
+    let unemph_sel_bg = NSColor::unemphasizedSelectedContentBackgroundColor();
+    let alt_bg_colors = NSColor::alternatingContentBackgroundColors();
+    let header_text_c = NSColor::headerTextColor();
+    let grid_c = NSColor::gridColor();
+    let frame_text_c = NSColor::windowFrameTextColor();
 
     let label = nscolor_to_rgba(&label_c, &srgb);
 
@@ -141,13 +141,13 @@ fn read_scrollbar_style(mtm: objc2::MainThreadMarker) -> Option<bool> {
 /// text_scaling_factor is derived by comparing the system font size to the default (13pt).
 #[cfg(all(target_os = "macos", feature = "macos"))]
 fn read_accessibility() -> (Option<bool>, Option<bool>, Option<bool>, Option<f32>) {
-    let workspace = unsafe { NSWorkspace::sharedWorkspace() };
+    let workspace = NSWorkspace::sharedWorkspace();
     let reduce_motion = Some(workspace.accessibilityDisplayShouldReduceMotion());
     let high_contrast = Some(workspace.accessibilityDisplayShouldIncreaseContrast());
     let reduce_transparency = Some(workspace.accessibilityDisplayShouldReduceTransparency());
 
     // Derive text scaling factor from system font size vs default 13pt.
-    let system_size = unsafe { NSFont::systemFontSize() } as f32;
+    let system_size = NSFont::systemFontSize() as f32;
     let text_scaling_factor = if (system_size - 13.0).abs() > 0.01 {
         Some(system_size / 13.0)
     } else {
@@ -178,7 +178,7 @@ fn nsfont_weight_to_css(font: &NSFont) -> Option<u16> {
     let weight_key: &NSString = unsafe { NSFontWeightTrait };
     let weight_obj = traits_dict.objectForKey(weight_key)?;
     // Safety: the weight trait value is an NSNumber wrapping a CGFloat.
-    let weight_num: &NSNumber = unsafe { &*(weight_obj as *const _ as *const NSNumber) };
+    let weight_num: &NSNumber = unsafe { &*(&*weight_obj as *const _ as *const NSNumber) };
     let w = unsafe { weight_num.doubleValue() };
 
     // Map AppKit weight range to CSS weight buckets.
@@ -209,7 +209,7 @@ fn nsfont_weight_to_css(font: &NSFont) -> Option<u16> {
 fn fontspec_from_nsfont(font: &NSFont) -> crate::FontSpec {
     crate::FontSpec {
         family: font.familyName().map(|n| n.to_string()),
-        size: Some(unsafe { font.pointSize() } as f32),
+        size: Some(font.pointSize() as f32),
         weight: nsfont_weight_to_css(font),
     }
 }
@@ -220,8 +220,8 @@ fn fontspec_from_nsfont(font: &NSFont) -> crate::FontSpec {
 /// (not per-appearance). Includes CSS weight extraction from the font descriptor.
 #[cfg(all(target_os = "macos", feature = "macos"))]
 fn read_fonts() -> (crate::FontSpec, crate::FontSpec) {
-    let system_size = unsafe { NSFont::systemFontSize() };
-    let system_font = unsafe { NSFont::systemFontOfSize(system_size) };
+    let system_size = NSFont::systemFontSize();
+    let system_font = NSFont::systemFontOfSize(system_size);
     let mono_font =
         unsafe { NSFont::monospacedSystemFontOfSize_weight(system_size, NSFontWeightRegular) };
 
@@ -236,9 +236,9 @@ fn read_fonts() -> (crate::FontSpec, crate::FontSpec) {
 /// Appearance-independent -- called once. Returns (menu, tooltip, title_bar).
 #[cfg(all(target_os = "macos", feature = "macos"))]
 fn read_per_widget_fonts() -> (crate::FontSpec, crate::FontSpec, crate::FontSpec) {
-    let menu_font = unsafe { NSFont::menuFontOfSize(0.0) };
-    let tooltip_font = unsafe { NSFont::toolTipsFontOfSize(0.0) };
-    let title_bar_font = unsafe { NSFont::titleBarFontOfSize(0.0) };
+    let menu_font = NSFont::menuFontOfSize(0.0);
+    let tooltip_font = NSFont::toolTipsFontOfSize(0.0);
+    let title_bar_font = NSFont::titleBarFontOfSize(0.0);
 
     (
         fontspec_from_nsfont(&menu_font),
@@ -289,7 +289,7 @@ fn compute_text_scale(system_size: f32) -> crate::TextScale {
 /// computation from the system font size.
 #[cfg(all(target_os = "macos", feature = "macos"))]
 fn read_text_scale() -> crate::TextScale {
-    let system_size = unsafe { NSFont::systemFontSize() } as f32;
+    let system_size = NSFont::systemFontSize() as f32;
     compute_text_scale(system_size)
 }
 
@@ -425,8 +425,8 @@ pub fn from_macos() -> crate::Result<crate::NativeTheme> {
     let light_name = NSString::from_str("NSAppearanceNameAqua");
     let dark_name = NSString::from_str("NSAppearanceNameDarkAqua");
 
-    let light_appearance = unsafe { NSAppearance::appearanceNamed(&light_name) };
-    let dark_appearance = unsafe { NSAppearance::appearanceNamed(&dark_name) };
+    let light_appearance = NSAppearance::appearanceNamed(&light_name);
+    let dark_appearance = NSAppearance::appearanceNamed(&dark_name);
 
     if light_appearance.is_none() && dark_appearance.is_none() {
         return Err(crate::Error::Unavailable(

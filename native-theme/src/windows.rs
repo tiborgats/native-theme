@@ -249,7 +249,7 @@ fn read_widget_sizing(dpi: u32, variant: &mut crate::ThemeVariant) {
 }
 
 /// Apply WinUI3 Fluent Design widget sizing constants (non-Windows testable version).
-#[cfg(not(target_os = "windows"))]
+#[cfg(not(all(target_os = "windows", feature = "windows")))]
 fn read_widget_sizing(_dpi: u32, variant: &mut crate::ThemeVariant) {
     variant.scrollbar.width = Some(17.0);
     variant.scrollbar.min_thumb_height = Some(40.0);
