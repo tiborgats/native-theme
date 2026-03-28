@@ -883,22 +883,51 @@ fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
 // Self-capture screenshot (Windows only)
 // ---------------------------------------------------------------------------
 
-/// Capture the iced window including decorations using Windows `PrintWindow`.
+/// Capture the iced window including decorations using Windows BitBlt.
 ///
 /// Uses `EnumWindows` to find the correct HWND by process ID (more reliable
 /// than `GetForegroundWindow` which may return a console or other window on CI),
-/// then `PrintWindow` with `PW_RENDERFULLCONTENT` to capture the window content
-/// directly — independent of screen position, DPI scaling, or overlapping
-/// windows.
+/// then `BitBlt` + `GetDIBits` to extract pixel data as a PNG.
 #[cfg(target_os = "windows")]
 fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
     use windows::Win32::Foundation::*;
     use windows::Win32::Graphics::Gdi::*;
     use windows::Win32::UI::WindowsAndMessaging::*;
 
+    // Find our GUI window by process ID instead of GetForegroundWindow
+    // (which may return the console window on CI).
+    struct EnumData {
+        target_pid: u32,
+        found: HWND,
+    }
+    unsafe extern "system" fn enum_cb(hwnd: HWND, lparam: LPARAM) -> BOOL {
+        let data = &mut *(lparam.0 as *mut EnumData);
+        let mut pid: u32 = 0;
+        GetWindowThreadProcessId(hwnd, Some(&mut pid));
+        if pid == data.target_pid && IsWindowVisible(hwnd).as_bool() {
+            let mut rect = RECT::default();
+            if GetWindowRect(hwnd, &mut rect).is_ok() {
+                let w = rect.right - rect.left;
+                let h = rect.bottom - rect.top;
+                if w > 100 && h > 100 {
+                    data.found = hwnd;
+                    return FALSE;
+                }
+            }
+        }
+        TRUE
+    }
+
     unsafe {
-        let hwnd =
-            find_own_window().ok_or("Could not find window for current process".to_string())?;
+        let mut data = EnumData {
+            target_pid: std::process::id(),
+            found: HWND::default(),
+        };
+        let _ = EnumWindows(Some(enum_cb), LPARAM(&mut data as *mut EnumData as isize));
+        let hwnd = data.found;
+        if hwnd.0.is_null() {
+            return Err("Could not find window for current process".into());
+        }
 
         let mut rect = RECT::default();
         GetWindowRect(hwnd, &mut rect).map_err(|e| format!("GetWindowRect failed: {e}"))?;
@@ -914,22 +943,24 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
         let bitmap = CreateCompatibleBitmap(screen_dc, width, height);
         let old_obj = SelectObject(mem_dc, bitmap.into());
 
-        // PrintWindow captures the window directly, including decorations,
-        // independent of screen position or DPI scaling.
-        // Flag 2 = PW_RENDERFULLCONTENT: DWM-based capture for GPU content.
-        if !PrintWindow(hwnd, mem_dc, PRINT_WINDOW_FLAGS(2)).as_bool() {
-            // Fallback to BitBlt from screen DC
-            let _ = BitBlt(
-                mem_dc,
-                0,
-                0,
-                width,
-                height,
-                Some(screen_dc),
-                rect.left,
-                rect.top,
-                SRCCOPY | CAPTUREBLT,
-            );
+        let blt_result = BitBlt(
+            mem_dc,
+            0,
+            0,
+            width,
+            height,
+            Some(screen_dc),
+            rect.left,
+            rect.top,
+            SRCCOPY | CAPTUREBLT,
+        );
+
+        if blt_result.is_err() {
+            SelectObject(mem_dc, old_obj);
+            let _ = DeleteObject(bitmap.into());
+            let _ = DeleteDC(mem_dc);
+            ReleaseDC(None, screen_dc);
+            return Err("BitBlt failed".into());
         }
 
         let mut bmi = BITMAPINFO {
@@ -977,52 +1008,6 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
             image::ColorType::Rgba8,
         )
         .map_err(|e| format!("Failed to save PNG: {e}"))
-    }
-}
-
-/// Find the GUI window belonging to the current process.
-///
-/// Uses `EnumWindows` to find a visible top-level window matching our PID,
-/// which is more reliable than `GetForegroundWindow` (which may return a
-/// console window or another process's window on CI).
-#[cfg(target_os = "windows")]
-unsafe fn find_own_window() -> Option<HWND> {
-    use windows::Win32::Foundation::*;
-    use windows::Win32::UI::WindowsAndMessaging::*;
-
-    struct EnumData {
-        target_pid: u32,
-        found: HWND,
-    }
-
-    unsafe extern "system" fn callback(hwnd: HWND, lparam: LPARAM) -> BOOL {
-        let data = &mut *(lparam.0 as *mut EnumData);
-        let mut pid: u32 = 0;
-        GetWindowThreadProcessId(hwnd, Some(&mut pid));
-        if pid == data.target_pid && IsWindowVisible(hwnd).as_bool() {
-            let mut rect = RECT::default();
-            if GetWindowRect(hwnd, &mut rect).is_ok() {
-                let w = rect.right - rect.left;
-                let h = rect.bottom - rect.top;
-                // Skip tiny windows (tooltips, system tray icons, etc.)
-                if w > 100 && h > 100 {
-                    data.found = hwnd;
-                    return FALSE; // stop enumeration
-                }
-            }
-        }
-        TRUE
-    }
-
-    let mut data = EnumData {
-        target_pid: std::process::id(),
-        found: HWND::default(),
-    };
-    let _ = EnumWindows(Some(callback), LPARAM(&mut data as *mut EnumData as isize));
-    if data.found.0.is_null() {
-        None
-    } else {
-        Some(data.found)
     }
 }
 
