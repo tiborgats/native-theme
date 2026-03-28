@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.0
 milestone_name: Per-Widget Architecture & Resolution Pipeline
-status: executing
-stopped_at: Completed 48-01-PLAN.md (gpui connector ResolvedTheme migration)
-last_updated: "2026-03-27T14:58:55.783Z"
-last_activity: 2026-03-27
+status: milestone-complete
+stopped_at: Completed 48-03-PLAN.md (connector verification - phase 48 complete, v0.5.0 milestone complete)
+last_updated: "2026-03-28T01:13:55.575Z"
+last_activity: 2026-03-28
 progress:
   total_phases: 5
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 17
-  completed_plans: 16
-  percent: 80
+  completed_plans: 17
+  percent: 100
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-03-27)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 48 — connector migration to ResolvedTheme
+**Current focus:** v0.5.0 milestone complete -- all 5 phases (44-48) done
 
 ## Current Position
 
 Phase: 48 (5 of 5 in v0.5.0) — Connector Migration
-Plan: 1 of 3 complete
-Status: Executing
-Last activity: 2026-03-27
+Plan: 3 of 3 complete
+Status: Milestone complete
+Last activity: 2026-03-28
 
-Progress: [████████░░] 80%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -81,6 +81,7 @@ Decisions from 44-01 and 44-02:
 - [Phase 48-connector-migration]: iced connector to_color() takes concrete Rgba, no fallback; font sizes already in logical pixels (no pt-to-px); OS theme uses SystemTheme.pick()
 - [Phase 48]: ResolvedFontSpec sizes used directly (no pt-to-px conversion) -- sizes already logical pixels
 - [Phase 48]: Per-widget resolved fields used for scrollbar, slider, switch, progress_bar, title_bar, caret, tab colors in gpui connector
+- [Phase 48-connector-migration]: No code changes needed for 48-03 -- migration verified clean across both connectors (101 tests, zero clippy warnings, visual approval)
 
 ### Roadmap Evolution
 
@@ -99,6 +100,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-03-27T14:58:55.781Z
-Stopped at: Completed 48-01-PLAN.md (gpui connector ResolvedTheme migration)
+Last session: 2026-03-28T01:13:55.573Z
+Stopped at: Completed 48-03-PLAN.md (connector verification - phase 48 complete, v0.5.0 milestone complete)
 Resume file: None
