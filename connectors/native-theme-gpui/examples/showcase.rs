@@ -67,9 +67,10 @@ use native_theme::{
     AnimatedIcon, IconData, IconRole, IconSet, NativeTheme, TransformAnimation,
     bundled_icon_by_name, icon_name as native_icon_name, load_icon, loading_indicator,
     platform_preset_name, prefers_reduced_motion, system_icon_set, system_icon_theme,
+    system_is_dark,
 };
 #[cfg(target_os = "linux")]
-use native_theme::{detect_linux_de, load_freedesktop_icon_by_name, system_is_dark};
+use native_theme::{detect_linux_de, load_freedesktop_icon_by_name};
 #[cfg(target_os = "linux")]
 use native_theme_gpui::icons::freedesktop_name_for_gpui_icon;
 use native_theme_gpui::icons::{
