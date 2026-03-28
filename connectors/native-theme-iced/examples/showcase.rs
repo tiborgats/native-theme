@@ -802,18 +802,19 @@ enum Message {
 // Self-capture screenshot (macOS only)
 // ---------------------------------------------------------------------------
 
-/// Capture the iced window including decorations using macOS `screencapture -l`.
+/// Capture the iced window including decorations using macOS `screencapture -R`.
 ///
-/// Uses `[NSApplication sharedApplication] -> mainWindow -> windowNumber` to get
-/// the CGWindowID, then shells out to `screencapture -l <id> -o <path>`. This
-/// avoids the deprecated `CGWindowListCreateImage` and produces a PNG with full
-/// title bar and window chrome.
+/// Uses `[NSApplication sharedApplication] -> mainWindow -> frame` to get the
+/// window bounds (including title bar), converts from macOS bottom-left origin
+/// to top-left for screencapture, then captures the screen region.
+///
+/// `screencapture -R` (region capture) is used instead of `-l` (window ID)
+/// because winit/iced windows may not include title bar decorations with `-l`.
 #[cfg(target_os = "macos")]
 fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
     use std::process::Command;
 
-    let window_id: i64 = unsafe {
-        // Get NSApplication shared instance
+    let region = unsafe {
         let ns_app: *mut objc2::runtime::AnyObject = objc2::msg_send![
             objc2::runtime::AnyClass::get(c"NSApplication").unwrap(),
             sharedApplication
@@ -822,10 +823,54 @@ fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
         if main_window.is_null() {
             return Err("No main window found".into());
         }
-        objc2::msg_send![main_window, windowNumber]
+
+        // CGRect layout: {{x, y}, {width, height}}
+        #[repr(C)]
+        #[derive(Copy, Clone)]
+        struct CGRect {
+            x: f64,
+            y: f64,
+            w: f64,
+            h: f64,
+        }
+        unsafe impl objc2::encode::Encode for CGRect {
+            const ENCODING: objc2::encode::Encoding = objc2::encode::Encoding::Struct(
+                "CGRect",
+                &[
+                    objc2::encode::Encoding::Struct(
+                        "CGPoint",
+                        &[
+                            objc2::encode::Encoding::Double,
+                            objc2::encode::Encoding::Double,
+                        ],
+                    ),
+                    objc2::encode::Encoding::Struct(
+                        "CGSize",
+                        &[
+                            objc2::encode::Encoding::Double,
+                            objc2::encode::Encoding::Double,
+                        ],
+                    ),
+                ],
+            );
+        }
+
+        // NSWindow.frame includes the title bar decoration area.
+        let frame: CGRect = objc2::msg_send![main_window, frame];
+        let screen: *mut objc2::runtime::AnyObject =
+            objc2::msg_send![main_window, screen];
+        let screen_frame: CGRect = objc2::msg_send![screen, frame];
+
+        // macOS uses bottom-left origin; screencapture -R uses top-left.
+        let y = screen_frame.h - frame.y - frame.h;
+        format!(
+            "{},{},{},{}",
+            frame.x as i32, y as i32, frame.w as i32, frame.h as i32
+        )
     };
+
     let status = Command::new("screencapture")
-        .args(["-l", &format!("{}", window_id), "-o", output_path])
+        .args(["-R", &region, "-x", output_path])
         .status()
         .map_err(|e| format!("Failed to run screencapture: {e}"))?;
     if status.success() {
@@ -839,13 +884,13 @@ fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
 // Self-capture screenshot (Windows only)
 // ---------------------------------------------------------------------------
 
-/// Capture the iced window including decorations using Windows BitBlt.
+/// Capture the iced window including decorations using Windows `PrintWindow`.
 ///
-/// Uses `GetForegroundWindow` to obtain the HWND, `GetWindowRect` for the
-/// window bounds (always in the same coordinate system as the screen DC,
-/// regardless of DPI scaling), then `BitBlt` + `GetDIBits` to extract pixel
-/// data as a PNG. The capture includes the Win10+ invisible resize border
-/// (~7px) which is acceptable for documentation screenshots.
+/// Uses `EnumWindows` to find the correct HWND by process ID (more reliable
+/// than `GetForegroundWindow` which may return a console or other window on CI),
+/// then `PrintWindow` with `PW_RENDERFULLCONTENT` to capture the window content
+/// directly — independent of screen position, DPI scaling, or overlapping
+/// windows.
 #[cfg(target_os = "windows")]
 fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
     use windows::Win32::Foundation::*;
@@ -853,14 +898,9 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
     use windows::Win32::UI::WindowsAndMessaging::*;
 
     unsafe {
-        let hwnd = GetForegroundWindow();
-        if hwnd.0.is_null() {
-            return Err("No foreground window found".into());
-        }
+        let hwnd =
+            find_own_window().ok_or("Could not find window for current process".to_string())?;
 
-        // GetWindowRect returns coordinates in the same space as the screen DC
-        // (both use the process/thread DPI context), so they always match.
-        // Includes the invisible resize border on Win10+ (~7px each side).
         let mut rect = RECT::default();
         GetWindowRect(hwnd, &mut rect).map_err(|e| format!("GetWindowRect failed: {e}"))?;
 
@@ -870,33 +910,29 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
             return Err(format!("Invalid window dimensions: {width}x{height}"));
         }
 
-        // BitBlt from screen DC to memory DC
         let screen_dc = GetDC(None);
         let mem_dc = CreateCompatibleDC(Some(screen_dc));
         let bitmap = CreateCompatibleBitmap(screen_dc, width, height);
         let old_obj = SelectObject(mem_dc, bitmap.into());
 
-        let blt_result = BitBlt(
-            mem_dc,
-            0,
-            0,
-            width,
-            height,
-            Some(screen_dc),
-            rect.left,
-            rect.top,
-            SRCCOPY | CAPTUREBLT,
-        );
-
-        if blt_result.is_err() {
-            SelectObject(mem_dc, old_obj);
-            let _ = DeleteObject(bitmap.into());
-            let _ = DeleteDC(mem_dc);
-            ReleaseDC(None, screen_dc);
-            return Err("BitBlt failed".into());
+        // PrintWindow captures the window directly, including decorations,
+        // independent of screen position or DPI scaling.
+        // Flag 2 = PW_RENDERFULLCONTENT: DWM-based capture for GPU content.
+        if !PrintWindow(hwnd, mem_dc, PRINT_WINDOW_FLAGS(2)).as_bool() {
+            // Fallback to BitBlt from screen DC
+            let _ = BitBlt(
+                mem_dc,
+                0,
+                0,
+                width,
+                height,
+                Some(screen_dc),
+                rect.left,
+                rect.top,
+                SRCCOPY | CAPTUREBLT,
+            );
         }
 
-        // Extract pixel data via GetDIBits
         let mut bmi = BITMAPINFO {
             bmiHeader: BITMAPINFOHEADER {
                 biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
@@ -930,9 +966,8 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
             return Err("GetDIBits returned 0 lines".into());
         }
 
-        // GetDIBits returns BGRA; convert to RGBA for image crate
         for chunk in pixels.chunks_exact_mut(4) {
-            chunk.swap(0, 2); // B <-> R
+            chunk.swap(0, 2); // BGRA -> RGBA
         }
 
         image::save_buffer(
@@ -943,6 +978,55 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
             image::ColorType::Rgba8,
         )
         .map_err(|e| format!("Failed to save PNG: {e}"))
+    }
+}
+
+/// Find the GUI window belonging to the current process.
+///
+/// Uses `EnumWindows` to find a visible top-level window matching our PID,
+/// which is more reliable than `GetForegroundWindow` (which may return a
+/// console window or another process's window on CI).
+#[cfg(target_os = "windows")]
+unsafe fn find_own_window() -> Option<HWND> {
+    use windows::Win32::Foundation::*;
+    use windows::Win32::UI::WindowsAndMessaging::*;
+
+    struct EnumData {
+        target_pid: u32,
+        found: HWND,
+    }
+
+    unsafe extern "system" fn callback(hwnd: HWND, lparam: LPARAM) -> BOOL {
+        let data = &mut *(lparam.0 as *mut EnumData);
+        let mut pid: u32 = 0;
+        GetWindowThreadProcessId(hwnd, Some(&mut pid));
+        if pid == data.target_pid && IsWindowVisible(hwnd).as_bool() {
+            let mut rect = RECT::default();
+            if GetWindowRect(hwnd, &mut rect).is_ok() {
+                let w = rect.right - rect.left;
+                let h = rect.bottom - rect.top;
+                // Skip tiny windows (tooltips, system tray icons, etc.)
+                if w > 100 && h > 100 {
+                    data.found = hwnd;
+                    return FALSE; // stop enumeration
+                }
+            }
+        }
+        TRUE
+    }
+
+    let mut data = EnumData {
+        target_pid: std::process::id(),
+        found: HWND::default(),
+    };
+    let _ = EnumWindows(
+        Some(callback),
+        LPARAM(&mut data as *mut EnumData as isize),
+    );
+    if data.found.0.is_null() {
+        None
+    } else {
+        Some(data.found)
     }
 }
 
