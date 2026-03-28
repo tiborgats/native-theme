@@ -61,11 +61,17 @@ mod tests {
 
         // Font family should be populated
         assert!(config.font_family.is_some(), "font_family should be set");
-        assert!(config.mono_font_family.is_some(), "mono_font_family should be set");
+        assert!(
+            config.mono_font_family.is_some(),
+            "mono_font_family should be set"
+        );
 
         // Font size should be directly from resolved (no pt-to-px conversion)
         assert_eq!(config.font_size, Some(resolved.defaults.font.size));
-        assert_eq!(config.mono_font_size, Some(resolved.defaults.mono_font.size));
+        assert_eq!(
+            config.mono_font_size,
+            Some(resolved.defaults.mono_font.size)
+        );
 
         // Geometry
         assert_eq!(config.radius, Some(resolved.defaults.radius as usize));

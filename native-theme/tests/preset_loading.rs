@@ -150,11 +150,10 @@ fn all_presets_have_valid_fonts() {
                 variant.defaults.font.family.is_some(),
                 "preset '{name}' {label} missing defaults.font.family"
             );
-            let size = variant
-                .defaults
-                .font
-                .size
-                .unwrap_or_else(|| panic!("preset '{name}' {label} missing defaults.font.size"));
+            let size =
+                variant.defaults.font.size.unwrap_or_else(|| {
+                    panic!("preset '{name}' {label} missing defaults.font.size")
+                });
             assert!(
                 size > 0.0,
                 "preset '{name}' {label} font size must be > 0, got {size}"

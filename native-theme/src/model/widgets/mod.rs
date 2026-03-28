@@ -501,8 +501,8 @@ define_widget_pair! {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use crate::model::{DialogButtonOrder, FontSpec};
     use crate::Rgba;
+    use crate::model::{DialogButtonOrder, FontSpec};
 
     // Define a test widget pair using the macro (validates macro itself still works)
     define_widget_pair! {
@@ -632,8 +632,8 @@ mod tests {
         base.merge(&overlay);
         let font = base.font.as_ref().unwrap();
         assert_eq!(font.family.as_deref(), Some("Noto Sans")); // preserved
-        assert_eq!(font.size, Some(12.0));                     // preserved
-        assert_eq!(font.weight, Some(700));                    // overlay sets
+        assert_eq!(font.size, Some(12.0)); // preserved
+        assert_eq!(font.weight, Some(700)); // overlay sets
     }
 
     #[test]
@@ -725,10 +725,7 @@ mod tests {
             ..Default::default()
         };
         base.merge(&overlay);
-        assert_eq!(
-            base.font.as_ref().unwrap().family.as_deref(),
-            Some("Inter")
-        );
+        assert_eq!(base.font.as_ref().unwrap().family.as_deref(), Some("Inter"));
     }
 
     #[test]
@@ -752,8 +749,8 @@ mod tests {
         base.merge(&overlay);
         let f = base.font.as_ref().unwrap();
         assert_eq!(f.family.as_deref(), Some("Noto")); // preserved
-        assert_eq!(f.size, Some(14.0));                 // overlay wins
-        assert_eq!(f.weight, Some(400));                // overlay sets
+        assert_eq!(f.size, Some(14.0)); // overlay wins
+        assert_eq!(f.weight, Some(400)); // overlay sets
     }
 
     #[test]
@@ -826,7 +823,7 @@ mod tests {
         base.merge(&overlay);
         let f = base.font.as_ref().unwrap();
         assert_eq!(f.family.as_deref(), Some("Noto Sans")); // preserved
-        assert_eq!(f.weight, Some(700));                    // overlay
+        assert_eq!(f.weight, Some(700)); // overlay
     }
 
     #[test]
@@ -905,9 +902,7 @@ mod tests {
 
     #[test]
     fn splitter_theme_single_field_merge() {
-        let mut base = SplitterTheme {
-            width: Some(4.0),
-        };
+        let mut base = SplitterTheme { width: Some(4.0) };
         let overlay = SplitterTheme { width: Some(6.0) };
         base.merge(&overlay);
         assert_eq!(base.width, Some(6.0));

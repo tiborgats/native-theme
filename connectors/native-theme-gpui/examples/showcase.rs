@@ -145,7 +145,10 @@ fn widget_tooltip(
 }
 
 /// Format original native-theme font settings (in logical pixels) for display.
-fn format_font_info(font: &native_theme::ResolvedFontSpec, mono_font: &native_theme::ResolvedFontSpec) -> String {
+fn format_font_info(
+    font: &native_theme::ResolvedFontSpec,
+    mono_font: &native_theme::ResolvedFontSpec,
+) -> String {
     format!(
         "\nTheme fonts:\n  Font: {} {}px\n  Mono: {} {}px",
         font.family, font.size, mono_font.family, mono_font.size,
@@ -4996,10 +4999,7 @@ impl Render for Showcase {
             .child(self.widget_info_panel.clone());
 
         // Build the content area
-        let mut content = v_flex()
-            .flex_1()
-            .h_full()
-            .overflow_hidden();
+        let mut content = v_flex().flex_1().h_full().overflow_hidden();
 
         // Error banner (if any)
         if let Some(ref msg) = self.error_message {
@@ -5015,7 +5015,8 @@ impl Render for Showcase {
         }
 
         // Tab bar
-        let content = content.child(
+        let content = content
+            .child(
                 v_flex().px_4().pt_3().pb_2().child(
                     div()
                         .id("tt-tabbar")

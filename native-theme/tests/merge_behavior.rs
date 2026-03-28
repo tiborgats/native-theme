@@ -68,10 +68,7 @@ fn merge_preserves_base_when_overlay_empty() {
     base.merge(&overlay);
 
     assert_eq!(base.defaults.accent, Some(Rgba::rgb(61, 174, 233)));
-    assert_eq!(
-        base.defaults.background,
-        Some(Rgba::rgb(255, 255, 255))
-    );
+    assert_eq!(base.defaults.background, Some(Rgba::rgb(255, 255, 255)));
     assert_eq!(base.defaults.font.family.as_deref(), Some("Noto Sans"));
     assert_eq!(base.defaults.radius, Some(4.0));
     assert_eq!(base.defaults.spacing.m, Some(12.0));
@@ -127,10 +124,7 @@ fn merge_native_theme_deep_merge_variants() {
 
     let light = base.light.as_ref().unwrap();
     // background from base
-    assert_eq!(
-        light.defaults.background,
-        Some(Rgba::rgb(255, 255, 255))
-    );
+    assert_eq!(light.defaults.background, Some(Rgba::rgb(255, 255, 255)));
     // accent from overlay
     assert_eq!(light.defaults.accent, Some(Rgba::rgb(61, 174, 233)));
 }
@@ -160,11 +154,7 @@ fn merge_fonts_defaults_spacing() {
     let mut overlay_defaults = ThemeDefaults::default();
     overlay_defaults.radius = Some(8.0);
     base_defaults.merge(&overlay_defaults);
-    assert_eq!(
-        base_defaults.radius,
-        Some(8.0),
-        "overlay radius replaces"
-    );
+    assert_eq!(base_defaults.radius, Some(8.0), "overlay radius replaces");
     assert_eq!(
         base_defaults.frame_width,
         Some(1.0),
@@ -198,17 +188,11 @@ fn merge_chained_multiple_overlays() {
     base.merge(&overlay2);
 
     // background from base (neither overlay set it)
-    assert_eq!(
-        base.defaults.background,
-        Some(Rgba::rgb(255, 255, 255))
-    );
+    assert_eq!(base.defaults.background, Some(Rgba::rgb(255, 255, 255)));
     // accent: overlay2 wins (last-wins)
     assert_eq!(base.defaults.accent, Some(Rgba::rgb(0, 0, 255)));
     // font from overlay1 (overlay2 didn't set it)
-    assert_eq!(
-        base.defaults.font.family.as_deref(),
-        Some("Noto Sans")
-    );
+    assert_eq!(base.defaults.font.family.as_deref(), Some("Noto Sans"));
     // geometry from overlay2
     assert_eq!(base.defaults.radius, Some(8.0));
 }
@@ -330,21 +314,12 @@ fn realistic_theme_layering_scenario() {
     );
 
     // Everything else from base preserved
-    assert_eq!(
-        result.defaults.background,
-        Some(Rgba::rgb(252, 252, 252))
-    );
-    assert_eq!(
-        result.defaults.foreground,
-        Some(Rgba::rgb(35, 38, 41))
-    );
+    assert_eq!(result.defaults.background, Some(Rgba::rgb(252, 252, 252)));
+    assert_eq!(result.defaults.foreground, Some(Rgba::rgb(35, 38, 41)));
     assert_eq!(result.defaults.danger, Some(Rgba::rgb(218, 68, 83)));
     assert_eq!(result.defaults.link, Some(Rgba::rgb(41, 128, 185)));
     assert_eq!(result.defaults.font.size, Some(10.0));
-    assert_eq!(
-        result.defaults.mono_font.family.as_deref(),
-        Some("Hack")
-    );
+    assert_eq!(result.defaults.mono_font.family.as_deref(), Some("Hack"));
     assert_eq!(result.defaults.radius, Some(4.0));
     assert_eq!(result.defaults.spacing.m, Some(12.0));
 

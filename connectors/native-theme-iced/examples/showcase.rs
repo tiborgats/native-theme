@@ -547,7 +547,11 @@ impl Default for State {
                 variant.resolve();
                 let r = variant.validate().expect("adwaita preset must validate");
                 let t = native_theme_iced::to_theme(&r, &nt.name);
-                (r, t, Some(format!("OS theme failed: {e}. Using adwaita fallback.")))
+                (
+                    r,
+                    t,
+                    Some(format!("OS theme failed: {e}. Using adwaita fallback.")),
+                )
             }
         };
 
@@ -701,8 +705,7 @@ impl State {
                         self.error_message =
                             Some(format!("OS theme failed: {e}. Using adwaita fallback."));
                         // Fallback: load adwaita preset through resolve pipeline
-                        let nt = NativeTheme::preset("adwaita")
-                            .expect("adwaita preset must exist");
+                        let nt = NativeTheme::preset("adwaita").expect("adwaita preset must exist");
                         let mut variant = nt.pick_variant(self.is_dark).unwrap().clone();
                         variant.resolve();
                         let resolved = variant.validate().unwrap();
@@ -715,36 +718,34 @@ impl State {
             ThemeChoice::Preset(name) => {
                 let name = name.clone();
                 match NativeTheme::preset(&name) {
-                    Ok(nt) => {
-                        match nt.pick_variant(self.is_dark) {
-                            Some(variant) => {
-                                let mut v = variant.clone();
-                                v.resolve();
-                                match v.validate() {
-                                    Ok(resolved) => {
-                                        self.current_resolved = resolved;
-                                        self.current_theme =
-                                            native_theme_iced::to_theme(&self.current_resolved, &nt.name);
-                                        self.error_message = None;
-                                    }
-                                    Err(e) => {
-                                        self.error_message = Some(format!(
-                                            "Theme '{name}' validation failed: {e}"
-                                        ));
-                                    }
+                    Ok(nt) => match nt.pick_variant(self.is_dark) {
+                        Some(variant) => {
+                            let mut v = variant.clone();
+                            v.resolve();
+                            match v.validate() {
+                                Ok(resolved) => {
+                                    self.current_resolved = resolved;
+                                    self.current_theme = native_theme_iced::to_theme(
+                                        &self.current_resolved,
+                                        &nt.name,
+                                    );
+                                    self.error_message = None;
+                                }
+                                Err(e) => {
+                                    self.error_message =
+                                        Some(format!("Theme '{name}' validation failed: {e}"));
                                 }
                             }
-                            None => {
-                                self.error_message = Some(format!(
-                                    "Theme '{name}' has no {} variant",
-                                    if self.is_dark { "dark" } else { "light" }
-                                ));
-                            }
                         }
-                    }
+                        None => {
+                            self.error_message = Some(format!(
+                                "Theme '{name}' has no {} variant",
+                                if self.is_dark { "dark" } else { "light" }
+                            ));
+                        }
+                    },
                     Err(e) => {
-                        self.error_message =
-                            Some(format!("Failed to load preset '{name}': {e}"));
+                        self.error_message = Some(format!("Failed to load preset '{name}': {e}"));
                     }
                 }
             }
@@ -1249,10 +1250,7 @@ fn view(state: &State) -> Element<'_, Message> {
     let tab_padding = Padding::ZERO.left(sp.l).right(sp.l).top(sp.s);
     let content_padding = Padding::from(sp.l);
     let panel_spacing = sp.xs;
-    let mut right_panel = column![]
-        .spacing(panel_spacing)
-        .width(Fill)
-        .height(Fill);
+    let mut right_panel = column![].spacing(panel_spacing).width(Fill).height(Fill);
 
     // Error banner (if any)
     if let Some(ref msg) = state.error_message {
@@ -1501,11 +1499,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: [f32; 2]) -> Element<'a, Message>
 // Tab: Text Inputs
 // ---------------------------------------------------------------------------
 
-fn view_text_inputs<'a>(
-    state: &'a State,
-    radius: f32,
-    inp_pad: [f32; 2],
-) -> Element<'a, Message> {
+fn view_text_inputs<'a>(state: &'a State, radius: f32, inp_pad: [f32; 2]) -> Element<'a, Message> {
     let palette = state.current_theme.palette();
     let ext = state.current_theme.extended_palette();
     let radius_s = format!("{radius:.0}px");
@@ -2131,9 +2125,15 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
 
     let font_info = {
         let ff = native_theme_iced::font_family(&state.current_resolved);
-        let fs = format!("{:.1}px", native_theme_iced::font_size(&state.current_resolved));
+        let fs = format!(
+            "{:.1}px",
+            native_theme_iced::font_size(&state.current_resolved)
+        );
         let mf = native_theme_iced::mono_font_family(&state.current_resolved);
-        let ms = format!("{:.1}px", native_theme_iced::mono_font_size(&state.current_resolved));
+        let ms = format!(
+            "{:.1}px",
+            native_theme_iced::mono_font_size(&state.current_resolved)
+        );
         format!("Font: {ff} @ {fs}  |  Mono: {mf} @ {ms}")
     };
 

@@ -86,12 +86,18 @@ pub fn to_theme(resolved: &native_theme::ResolvedTheme, name: &str) -> iced_core
 
 /// Returns button padding as `[horizontal, vertical]` from the resolved theme.
 pub fn button_padding(resolved: &native_theme::ResolvedTheme) -> [f32; 2] {
-    [resolved.button.padding_horizontal, resolved.button.padding_vertical]
+    [
+        resolved.button.padding_horizontal,
+        resolved.button.padding_vertical,
+    ]
 }
 
 /// Returns text input padding as `[horizontal, vertical]` from the resolved theme.
 pub fn input_padding(resolved: &native_theme::ResolvedTheme) -> [f32; 2] {
-    [resolved.input.padding_horizontal, resolved.input.padding_vertical]
+    [
+        resolved.input.padding_horizontal,
+        resolved.input.padding_vertical,
+    ]
 }
 
 /// Returns the standard border radius from the resolved theme.
@@ -242,7 +248,10 @@ mod tests {
         let resolved = make_resolved(false);
         let r = border_radius_lg(&resolved);
         assert!(r > 0.0, "resolved radius_lg should be > 0");
-        assert!(r >= border_radius(&resolved), "radius_lg should be >= radius");
+        assert!(
+            r >= border_radius(&resolved),
+            "radius_lg should be >= radius"
+        );
     }
 
     #[test]

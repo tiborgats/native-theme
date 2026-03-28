@@ -172,10 +172,7 @@ mod tests {
     #[test]
     fn theme_resolution_error_construction() {
         let e = ThemeResolutionError {
-            missing_fields: vec![
-                "defaults.accent".into(),
-                "button.font.family".into(),
-            ],
+            missing_fields: vec!["defaults.accent".into(), "button.font.family".into()],
         };
         assert_eq!(e.missing_fields.len(), 2);
         assert_eq!(e.missing_fields[0], "defaults.accent");
@@ -249,8 +246,14 @@ mod tests {
         };
         let err = Error::Resolution(inner);
         let source = std::error::Error::source(&err);
-        assert!(source.is_some(), "source() should return Some for Resolution variant");
+        assert!(
+            source.is_some(),
+            "source() should return Some for Resolution variant"
+        );
         let source_msg = source.unwrap().to_string();
-        assert!(source_msg.contains("1 missing field(s)"), "got: {source_msg}");
+        assert!(
+            source_msg.contains("1 missing field(s)"),
+            "got: {source_msg}"
+        );
     }
 }

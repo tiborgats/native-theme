@@ -131,10 +131,94 @@ check_and_install_tool "cargo-outdated" "cargo-outdated" "Tool to check for outd
 
 # Check for TODO/FIXME comments in source code
 print_step "Checking for TODO/FIXME comments"
-if grep -rn --include="*.rs" "TODO\|FIXME" native-theme/src/ connectors/; then
+if grep -rn --include="*.rs" --exclude-dir=target "TODO\|FIXME" .; then
     print_warning "Found TODO/FIXME comments in source code. Consider addressing them before release."
 else
     print_success "No TODO/FIXME comments found in source code"
+fi
+echo
+
+# Check for .unwrap() / .expect() in non-test production source code
+# This is a BLOCKING check — runtime panics are forbidden in production code.
+print_step "Checking for .unwrap()/.expect() in production code"
+PANIC_FOUND=0
+
+# Scan each source directory (excluding test files, examples, build scripts, and test modules)
+for src_dir in native-theme/src connectors/native-theme-gpui/src connectors/native-theme-iced/src; do
+    if [ -d "$src_dir" ]; then
+        # Use a Python script to accurately detect unwrap/expect outside #[cfg(test)] blocks
+        HITS=$(python3 -c "
+import sys, re
+
+def scan_file(path):
+    issues = []
+    try:
+        with open(path) as f:
+            lines = f.readlines()
+    except:
+        return issues
+
+    in_test = 0  # brace depth when test module started, 0 = not in test
+    brace_depth = 0
+    test_active = False
+
+    for i, line in enumerate(lines, 1):
+        s = line.strip()
+
+        # Track test module entry
+        if '#[cfg(test)]' in s:
+            test_active = True
+            continue
+
+        # Count braces (rough but effective for Rust source)
+        opens = line.count('{')
+        closes = line.count('}')
+
+        if test_active and opens > 0:
+            in_test = brace_depth + 1
+            test_active = False
+
+        brace_depth += opens - closes
+
+        if in_test > 0 and brace_depth < in_test:
+            in_test = 0
+
+        if in_test > 0:
+            continue
+
+        # Skip comments
+        if s.startswith('//'):
+            continue
+
+        # Check for panic-inducing patterns
+        if '.unwrap()' in line or re.search(r'\.expect\s*\(', line):
+            issues.append(f'{path}:{i}: {s}')
+
+    return issues
+
+import glob
+issues = []
+for f in glob.glob('${src_dir}/**/*.rs', recursive=True):
+    issues.extend(scan_file(f))
+
+for issue in issues:
+    print(issue)
+sys.exit(0 if not issues else 1)
+" 2>&1)
+        if [ $? -ne 0 ]; then
+            echo "$HITS"
+            PANIC_FOUND=1
+        fi
+    fi
+done
+
+if [ "$PANIC_FOUND" -eq 1 ]; then
+    print_error "Found .unwrap()/.expect() in production code! Runtime panics are FORBIDDEN."
+    print_error "Replace with proper error handling (Result/Option propagation)."
+    print_error "Note: .unwrap() in #[cfg(test)] modules is acceptable."
+    exit 1
+else
+    print_success "No .unwrap()/.expect() found in production source code"
 fi
 echo
 
@@ -226,7 +310,11 @@ echo "2. Update CHANGELOG.md if needed"
 echo "3. Commit any final changes"
 echo "4. Tag the release: git tag v${CURRENT_VERSION}"
 echo "5. Push tags: git push --tags"
-echo "6. Publish to crates.io: cargo publish -p native-theme"
+echo "6. Publish to crates.io (in dependency order):"
+echo "   cargo publish -p native-theme"
+echo "   cargo publish -p native-theme-build"
+echo "   cargo publish -p native-theme-iced"
+echo "   cargo publish -p native-theme-gpui"
 echo
 
 exit 0

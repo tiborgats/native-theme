@@ -49,11 +49,26 @@ mod tests {
     #[test]
     fn icon_sizes_not_empty_when_any_field_set() {
         for sizes in [
-            IconSizes { toolbar: Some(24.0), ..Default::default() },
-            IconSizes { small: Some(16.0), ..Default::default() },
-            IconSizes { large: Some(32.0), ..Default::default() },
-            IconSizes { dialog: Some(22.0), ..Default::default() },
-            IconSizes { panel: Some(20.0), ..Default::default() },
+            IconSizes {
+                toolbar: Some(24.0),
+                ..Default::default()
+            },
+            IconSizes {
+                small: Some(16.0),
+                ..Default::default()
+            },
+            IconSizes {
+                large: Some(32.0),
+                ..Default::default()
+            },
+            IconSizes {
+                dialog: Some(22.0),
+                ..Default::default()
+            },
+            IconSizes {
+                panel: Some(20.0),
+                ..Default::default()
+            },
         ] {
             assert!(!sizes.is_empty());
         }
@@ -77,8 +92,8 @@ mod tests {
         };
         base.merge(&overlay);
         assert_eq!(base.toolbar, Some(24.0)); // preserved
-        assert_eq!(base.small, Some(18.0));   // overlay wins
-        assert_eq!(base.large, Some(32.0));   // overlay sets
+        assert_eq!(base.small, Some(18.0)); // overlay wins
+        assert_eq!(base.large, Some(32.0)); // overlay sets
         assert_eq!(base.dialog, None);
         assert_eq!(base.panel, None);
     }

@@ -494,26 +494,44 @@ mod tests {
 
         // Scrollbar thumb should match resolved scrollbar
         let expected_thumb = rgba_to_hsla(resolved.scrollbar.thumb);
-        assert_eq!(tc.scrollbar_thumb, expected_thumb, "scrollbar thumb should come from resolved.scrollbar.thumb");
+        assert_eq!(
+            tc.scrollbar_thumb, expected_thumb,
+            "scrollbar thumb should come from resolved.scrollbar.thumb"
+        );
 
         // Slider bar should match resolved slider fill
         let expected_slider = rgba_to_hsla(resolved.slider.fill);
-        assert_eq!(tc.slider_bar, expected_slider, "slider bar should come from resolved.slider.fill");
+        assert_eq!(
+            tc.slider_bar, expected_slider,
+            "slider bar should come from resolved.slider.fill"
+        );
 
         // Progress bar should match resolved progress_bar fill
         let expected_progress = rgba_to_hsla(resolved.progress_bar.fill);
-        assert_eq!(tc.progress_bar, expected_progress, "progress bar should come from resolved.progress_bar.fill");
+        assert_eq!(
+            tc.progress_bar, expected_progress,
+            "progress bar should come from resolved.progress_bar.fill"
+        );
 
         // Title bar should match resolved window title_bar_background
         let expected_title = rgba_to_hsla(resolved.window.title_bar_background);
-        assert_eq!(tc.title_bar, expected_title, "title bar should come from resolved.window.title_bar_background");
+        assert_eq!(
+            tc.title_bar, expected_title,
+            "title bar should come from resolved.window.title_bar_background"
+        );
 
         // Switch should match resolved switch unchecked_bg
         let expected_switch = rgba_to_hsla(resolved.switch.unchecked_bg);
-        assert_eq!(tc.switch, expected_switch, "switch should come from resolved.switch.unchecked_bg");
+        assert_eq!(
+            tc.switch, expected_switch,
+            "switch should come from resolved.switch.unchecked_bg"
+        );
 
         // Caret should match resolved input caret
         let expected_caret = rgba_to_hsla(resolved.input.caret);
-        assert_eq!(tc.caret, expected_caret, "caret should come from resolved.input.caret");
+        assert_eq!(
+            tc.caret, expected_caret,
+            "caret should come from resolved.input.caret"
+        );
     }
 }

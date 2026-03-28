@@ -4319,7 +4319,7 @@ dependencies = [
 
 [[package]]
 name = "native-theme"
-version = "0.4.1"
+version = "0.5.0"
 dependencies = [
  "ashpd 0.13.9",
  "block2 0.6.2",
@@ -4335,12 +4335,12 @@ dependencies = [
  "serde_json",
  "serde_with",
  "toml 1.1.0+spec-1.1.0",
- "windows 0.62.2",
+ "windows 0.61.3",
 ]
 
 [[package]]
 name = "native-theme-build"
-version = "0.4.1"
+version = "0.5.0"
 dependencies = [
  "heck 0.5.0",
  "serde",
@@ -4349,7 +4349,7 @@ dependencies = [
 
 [[package]]
 name = "native-theme-gpui"
-version = "0.4.1"
+version = "0.5.0"
 dependencies = [
  "gpui",
  "gpui-component",
@@ -4357,19 +4357,19 @@ dependencies = [
  "image",
  "native-theme",
  "objc2 0.5.2",
- "windows 0.62.2",
+ "windows 0.61.3",
 ]
 
 [[package]]
 name = "native-theme-iced"
-version = "0.4.1"
+version = "0.5.0"
 dependencies = [
  "iced",
  "iced_core",
  "image",
  "native-theme",
  "objc2 0.5.2",
- "windows 0.62.2",
+ "windows 0.61.3",
 ]
 
 [[package]]

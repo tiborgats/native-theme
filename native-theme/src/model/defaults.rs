@@ -1,8 +1,8 @@
 // ThemeDefaults: global properties shared across widgets
 
 use crate::Rgba;
-use crate::model::{FontSpec, IconSizes};
 use crate::model::spacing::ThemeSpacing;
+use crate::model::{FontSpec, IconSizes};
 use serde::{Deserialize, Serialize};
 
 /// Global theme defaults shared across all widgets.
@@ -139,8 +139,8 @@ impl_merge!(ThemeDefaults {
 mod tests {
     use super::*;
     use crate::Rgba;
-    use crate::model::{FontSpec, IconSizes};
     use crate::model::spacing::ThemeSpacing;
+    use crate::model::{FontSpec, IconSizes};
 
     // === default / is_empty ===
 
@@ -295,8 +295,8 @@ mod tests {
         };
         base.merge(&overlay);
         assert_eq!(base.font.family.as_deref(), Some("Noto Sans")); // preserved
-        assert_eq!(base.font.size, Some(11.0));                     // preserved
-        assert_eq!(base.font.weight, Some(700));                    // overlay wins
+        assert_eq!(base.font.size, Some(11.0)); // preserved
+        assert_eq!(base.font.weight, Some(700)); // overlay wins
     }
 
     #[test]
@@ -317,7 +317,7 @@ mod tests {
         };
         base.merge(&overlay);
         assert_eq!(base.spacing.m, Some(12.0)); // preserved
-        assert_eq!(base.spacing.s, Some(6.0));  // overlay wins
+        assert_eq!(base.spacing.s, Some(6.0)); // overlay wins
     }
 
     #[test]
@@ -338,7 +338,7 @@ mod tests {
         };
         base.merge(&overlay);
         assert_eq!(base.icon_sizes.toolbar, Some(22.0)); // preserved
-        assert_eq!(base.icon_sizes.small, Some(16.0));   // overlay wins
+        assert_eq!(base.icon_sizes.small, Some(16.0)); // overlay wins
     }
 
     // === TOML round-trip ===
@@ -355,9 +355,15 @@ mod tests {
         };
         let toml_str = toml::to_string(&d).unwrap();
         // Font section should appear
-        assert!(toml_str.contains("[font]"), "Expected [font] section, got: {toml_str}");
+        assert!(
+            toml_str.contains("[font]"),
+            "Expected [font] section, got: {toml_str}"
+        );
         // accent should appear as hex
-        assert!(toml_str.contains("accent"), "Expected accent field, got: {toml_str}");
+        assert!(
+            toml_str.contains("accent"),
+            "Expected accent field, got: {toml_str}"
+        );
         // Round-trip
         let d2: ThemeDefaults = toml::from_str(&toml_str).unwrap();
         assert_eq!(d, d2);
@@ -369,10 +375,22 @@ mod tests {
         let d = ThemeDefaults::default();
         let toml_str = toml::to_string(&d).unwrap();
         // No sub-tables should appear for empty nested structs
-        assert!(!toml_str.contains("[font]"), "Empty font should be suppressed: {toml_str}");
-        assert!(!toml_str.contains("[mono_font]"), "Empty mono_font should be suppressed: {toml_str}");
-        assert!(!toml_str.contains("[spacing]"), "Empty spacing should be suppressed: {toml_str}");
-        assert!(!toml_str.contains("[icon_sizes]"), "Empty icon_sizes should be suppressed: {toml_str}");
+        assert!(
+            !toml_str.contains("[font]"),
+            "Empty font should be suppressed: {toml_str}"
+        );
+        assert!(
+            !toml_str.contains("[mono_font]"),
+            "Empty mono_font should be suppressed: {toml_str}"
+        );
+        assert!(
+            !toml_str.contains("[spacing]"),
+            "Empty spacing should be suppressed: {toml_str}"
+        );
+        assert!(
+            !toml_str.contains("[icon_sizes]"),
+            "Empty icon_sizes should be suppressed: {toml_str}"
+        );
     }
 
     #[test]
@@ -386,7 +404,10 @@ mod tests {
             ..Default::default()
         };
         let toml_str = toml::to_string(&d).unwrap();
-        assert!(toml_str.contains("[mono_font]"), "Expected [mono_font] section, got: {toml_str}");
+        assert!(
+            toml_str.contains("[mono_font]"),
+            "Expected [mono_font] section, got: {toml_str}"
+        );
         let d2: ThemeDefaults = toml::from_str(&toml_str).unwrap();
         assert_eq!(d, d2);
     }
@@ -402,7 +423,10 @@ mod tests {
             ..Default::default()
         };
         let toml_str = toml::to_string(&d).unwrap();
-        assert!(toml_str.contains("[spacing]"), "Expected [spacing] section, got: {toml_str}");
+        assert!(
+            toml_str.contains("[spacing]"),
+            "Expected [spacing] section, got: {toml_str}"
+        );
         let d2: ThemeDefaults = toml::from_str(&toml_str).unwrap();
         assert_eq!(d, d2);
     }

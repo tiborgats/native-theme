@@ -18,11 +18,15 @@
 ~syncthing~*
 
 # AI/tool configuration
+.agent/
 .claude/
 .codex/
+.cursor/
 .gemini/
+.github/
 .opencode/
 .planning/
+.windsurf/
 
 # OS generated files
 .DS_Store

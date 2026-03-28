@@ -163,9 +163,7 @@ mod tests {
     #[test]
     fn parse_qt6_format_weight_stays_400() {
         // Qt6 format: 16 fields, field[4]=400 stays 400
-        let result = parse_qt_font_with_weight(
-            "Noto Sans,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1"
-        );
+        let result = parse_qt_font_with_weight("Noto Sans,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1");
         let spec = result.unwrap();
         assert_eq!(spec.weight, Some(400));
     }
@@ -179,9 +177,7 @@ mod tests {
 
     #[test]
     fn parse_qt6_weight_700_stays_700() {
-        let result = parse_qt_font_with_weight(
-            "Noto Sans,10,-1,5,700,0,0,0,0,0,0,0,0,0,0,1"
-        );
+        let result = parse_qt_font_with_weight("Noto Sans,10,-1,5,700,0,0,0,0,0,0,0,0,0,0,1");
         let spec = result.unwrap();
         assert_eq!(spec.weight, Some(700));
     }
@@ -216,9 +212,8 @@ mod tests {
     #[test]
     fn populate_fonts_sets_defaults_font_from_general() {
         let mut ini = super::super::create_kde_parser();
-        ini.read(
-            "[General]\nfont=Noto Sans,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\n".to_string(),
-        ).unwrap();
+        ini.read("[General]\nfont=Noto Sans,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\n".to_string())
+            .unwrap();
         let mut variant = ThemeVariant::default();
         populate_fonts(&ini, &mut variant);
         assert_eq!(variant.defaults.font.family.as_deref(), Some("Noto Sans"));
@@ -229,9 +224,8 @@ mod tests {
     #[test]
     fn populate_fonts_sets_mono_font_from_fixed() {
         let mut ini = super::super::create_kde_parser();
-        ini.read(
-            "[General]\nfixed=Hack,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\n".to_string(),
-        ).unwrap();
+        ini.read("[General]\nfixed=Hack,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\n".to_string())
+            .unwrap();
         let mut variant = ThemeVariant::default();
         populate_fonts(&ini, &mut variant);
         assert_eq!(variant.defaults.mono_font.family.as_deref(), Some("Hack"));
@@ -241,9 +235,8 @@ mod tests {
     #[test]
     fn populate_fonts_sets_menu_font_from_menufont_key() {
         let mut ini = super::super::create_kde_parser();
-        ini.read(
-            "[General]\nmenuFont=Noto Sans,9,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\n".to_string(),
-        ).unwrap();
+        ini.read("[General]\nmenuFont=Noto Sans,9,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\n".to_string())
+            .unwrap();
         let mut variant = ThemeVariant::default();
         populate_fonts(&ini, &mut variant);
         let menu_font = variant.menu.font.unwrap();
@@ -254,9 +247,8 @@ mod tests {
     #[test]
     fn populate_fonts_sets_toolbar_font_from_toolbarfont_key() {
         let mut ini = super::super::create_kde_parser();
-        ini.read(
-            "[General]\ntoolBarFont=Noto Sans,9,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\n".to_string(),
-        ).unwrap();
+        ini.read("[General]\ntoolBarFont=Noto Sans,9,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\n".to_string())
+            .unwrap();
         let mut variant = ThemeVariant::default();
         populate_fonts(&ini, &mut variant);
         let toolbar_font = variant.toolbar.font.unwrap();
@@ -267,9 +259,8 @@ mod tests {
     #[test]
     fn populate_fonts_sets_title_bar_font_from_wm_activefont() {
         let mut ini = super::super::create_kde_parser();
-        ini.read(
-            "[WM]\nactiveFont=Noto Sans,10,-1,5,75,0,0,0,0,0\n".to_string(),
-        ).unwrap();
+        ini.read("[WM]\nactiveFont=Noto Sans,10,-1,5,75,0,0,0,0,0\n".to_string())
+            .unwrap();
         let mut variant = ThemeVariant::default();
         populate_fonts(&ini, &mut variant);
         let tbf = variant.window.title_bar_font.unwrap();
@@ -303,16 +294,23 @@ mod tests {
              [WM]\n\
              activeFont=Noto Sans,10,-1,5,700,0,0,0,0,0,0,0,0,0,0,1\n"
                 .to_string(),
-        ).unwrap();
+        )
+        .unwrap();
         let mut variant = ThemeVariant::default();
         populate_fonts(&ini, &mut variant);
 
         assert_eq!(variant.defaults.font.family.as_deref(), Some("Noto Sans"));
         assert_eq!(variant.defaults.font.size, Some(10.0));
         assert_eq!(variant.defaults.mono_font.family.as_deref(), Some("Hack"));
-        assert_eq!(variant.menu.font.as_ref().unwrap().family.as_deref(), Some("Noto Sans"));
+        assert_eq!(
+            variant.menu.font.as_ref().unwrap().family.as_deref(),
+            Some("Noto Sans")
+        );
         assert_eq!(variant.menu.font.as_ref().unwrap().size, Some(9.0));
         assert_eq!(variant.toolbar.font.as_ref().unwrap().size, Some(8.0));
-        assert_eq!(variant.window.title_bar_font.as_ref().unwrap().weight, Some(700));
+        assert_eq!(
+            variant.window.title_bar_font.as_ref().unwrap().weight,
+            Some(700)
+        );
     }
 }

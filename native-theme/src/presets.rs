@@ -501,21 +501,56 @@ accent = "#00ff00"
         let mut light = theme.light.clone().unwrap();
 
         // Before resolve: accent-derived fields should be None (not in preset TOML)
-        assert!(light.button.primary_bg.is_none(), "primary_bg should be None pre-resolve");
-        assert!(light.checkbox.checked_bg.is_none(), "checkbox.checked_bg should be None pre-resolve");
-        assert!(light.slider.fill.is_none(), "slider.fill should be None pre-resolve");
-        assert!(light.progress_bar.fill.is_none(), "progress_bar.fill should be None pre-resolve");
-        assert!(light.switch.checked_bg.is_none(), "switch.checked_bg should be None pre-resolve");
+        assert!(
+            light.button.primary_bg.is_none(),
+            "primary_bg should be None pre-resolve"
+        );
+        assert!(
+            light.checkbox.checked_bg.is_none(),
+            "checkbox.checked_bg should be None pre-resolve"
+        );
+        assert!(
+            light.slider.fill.is_none(),
+            "slider.fill should be None pre-resolve"
+        );
+        assert!(
+            light.progress_bar.fill.is_none(),
+            "progress_bar.fill should be None pre-resolve"
+        );
+        assert!(
+            light.switch.checked_bg.is_none(),
+            "switch.checked_bg should be None pre-resolve"
+        );
 
         light.resolve();
 
         // After resolve: all accent-derived fields should equal accent
         let accent = light.defaults.accent.unwrap();
-        assert_eq!(light.button.primary_bg, Some(accent), "button.primary_bg should match accent");
-        assert_eq!(light.checkbox.checked_bg, Some(accent), "checkbox.checked_bg should match accent");
-        assert_eq!(light.slider.fill, Some(accent), "slider.fill should match accent");
-        assert_eq!(light.progress_bar.fill, Some(accent), "progress_bar.fill should match accent");
-        assert_eq!(light.switch.checked_bg, Some(accent), "switch.checked_bg should match accent");
+        assert_eq!(
+            light.button.primary_bg,
+            Some(accent),
+            "button.primary_bg should match accent"
+        );
+        assert_eq!(
+            light.checkbox.checked_bg,
+            Some(accent),
+            "checkbox.checked_bg should match accent"
+        );
+        assert_eq!(
+            light.slider.fill,
+            Some(accent),
+            "slider.fill should match accent"
+        );
+        assert_eq!(
+            light.progress_bar.fill,
+            Some(accent),
+            "progress_bar.fill should match accent"
+        );
+        assert_eq!(
+            light.switch.checked_bg,
+            Some(accent),
+            "switch.checked_bg should match accent"
+        );
     }
 
     #[test]
@@ -559,9 +594,18 @@ accent = "#00ff00"
         let resolved = light.validate().unwrap();
 
         // menu font should have inherited family/weight from defaults
-        assert_eq!(resolved.menu.font.family, "Inter", "menu font family should inherit from defaults");
-        assert_eq!(resolved.menu.font.size, 12.0, "menu font size should be the explicit value");
-        assert_eq!(resolved.menu.font.weight, 400, "menu font weight should inherit from defaults");
+        assert_eq!(
+            resolved.menu.font.family, "Inter",
+            "menu font family should inherit from defaults"
+        );
+        assert_eq!(
+            resolved.menu.font.size, 12.0,
+            "menu font size should be the explicit value"
+        );
+        assert_eq!(
+            resolved.menu.font.weight, 400,
+            "menu font weight should inherit from defaults"
+        );
     }
 
     #[test]
@@ -577,20 +621,28 @@ accent = "#00ff00"
         let resolved = light.validate().unwrap();
 
         // caption should have been populated from defaults.font
-        assert_eq!(resolved.text_scale.caption.size, 14.0, "caption size from defaults.font.size");
-        assert_eq!(resolved.text_scale.caption.weight, 400, "caption weight from defaults.font.weight");
+        assert_eq!(
+            resolved.text_scale.caption.size, 14.0,
+            "caption size from defaults.font.size"
+        );
+        assert_eq!(
+            resolved.text_scale.caption.weight, 400,
+            "caption weight from defaults.font.weight"
+        );
         // line_height = defaults.line_height * size = 1.4 * 14.0 = 19.6
-        assert!((resolved.text_scale.caption.line_height - 19.6).abs() < 0.01,
+        assert!(
+            (resolved.text_scale.caption.line_height - 19.6).abs() < 0.01,
             "caption line_height should be line_height_multiplier * size = 19.6, got {}",
-            resolved.text_scale.caption.line_height);
+            resolved.text_scale.caption.line_height
+        );
     }
 
     #[test]
     fn all_presets_round_trip_exact() {
         // All 16 presets must survive a serde round-trip
         for name in list_presets() {
-            let theme1 = preset(name)
-                .unwrap_or_else(|e| panic!("preset '{name}' failed to parse: {e}"));
+            let theme1 =
+                preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed to parse: {e}"));
             let toml_str = to_toml(&theme1)
                 .unwrap_or_else(|e| panic!("preset '{name}' failed to serialize: {e}"));
             let theme2 = from_toml(&toml_str)
@@ -630,20 +682,56 @@ accent = "#00ff00"
             let dark = theme.dark.as_ref().unwrap();
 
             // No colors
-            assert!(light.defaults.accent.is_none(), "live preset '{name}' light should have no accent");
-            assert!(light.defaults.background.is_none(), "live preset '{name}' light should have no background");
-            assert!(light.defaults.foreground.is_none(), "live preset '{name}' light should have no foreground");
-            assert!(dark.defaults.accent.is_none(), "live preset '{name}' dark should have no accent");
-            assert!(dark.defaults.background.is_none(), "live preset '{name}' dark should have no background");
-            assert!(dark.defaults.foreground.is_none(), "live preset '{name}' dark should have no foreground");
+            assert!(
+                light.defaults.accent.is_none(),
+                "live preset '{name}' light should have no accent"
+            );
+            assert!(
+                light.defaults.background.is_none(),
+                "live preset '{name}' light should have no background"
+            );
+            assert!(
+                light.defaults.foreground.is_none(),
+                "live preset '{name}' light should have no foreground"
+            );
+            assert!(
+                dark.defaults.accent.is_none(),
+                "live preset '{name}' dark should have no accent"
+            );
+            assert!(
+                dark.defaults.background.is_none(),
+                "live preset '{name}' dark should have no background"
+            );
+            assert!(
+                dark.defaults.foreground.is_none(),
+                "live preset '{name}' dark should have no foreground"
+            );
 
             // No fonts
-            assert!(light.defaults.font.family.is_none(), "live preset '{name}' light should have no font family");
-            assert!(light.defaults.font.size.is_none(), "live preset '{name}' light should have no font size");
-            assert!(light.defaults.font.weight.is_none(), "live preset '{name}' light should have no font weight");
-            assert!(dark.defaults.font.family.is_none(), "live preset '{name}' dark should have no font family");
-            assert!(dark.defaults.font.size.is_none(), "live preset '{name}' dark should have no font size");
-            assert!(dark.defaults.font.weight.is_none(), "live preset '{name}' dark should have no font weight");
+            assert!(
+                light.defaults.font.family.is_none(),
+                "live preset '{name}' light should have no font family"
+            );
+            assert!(
+                light.defaults.font.size.is_none(),
+                "live preset '{name}' light should have no font size"
+            );
+            assert!(
+                light.defaults.font.weight.is_none(),
+                "live preset '{name}' light should have no font weight"
+            );
+            assert!(
+                dark.defaults.font.family.is_none(),
+                "live preset '{name}' dark should have no font family"
+            );
+            assert!(
+                dark.defaults.font.size.is_none(),
+                "live preset '{name}' dark should have no font size"
+            );
+            assert!(
+                dark.defaults.font.weight.is_none(),
+                "live preset '{name}' dark should have no font weight"
+            );
         }
     }
 

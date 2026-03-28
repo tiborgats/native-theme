@@ -120,40 +120,19 @@ fn round_trip_full_theme() {
 
     // Defaults colors
     assert_eq!(de_light.defaults.accent, orig_light.defaults.accent);
-    assert_eq!(
-        de_light.defaults.background,
-        orig_light.defaults.background
-    );
-    assert_eq!(
-        de_light.defaults.foreground,
-        orig_light.defaults.foreground
-    );
+    assert_eq!(de_light.defaults.background, orig_light.defaults.background);
+    assert_eq!(de_light.defaults.foreground, orig_light.defaults.foreground);
     assert_eq!(de_light.defaults.danger, orig_light.defaults.danger);
     assert_eq!(de_light.defaults.success, orig_light.defaults.success);
     assert_eq!(de_light.defaults.selection, orig_light.defaults.selection);
     assert_eq!(de_light.defaults.link, orig_light.defaults.link);
 
     // Per-widget colors
-    assert_eq!(
-        de_light.button.primary_bg,
-        orig_light.button.primary_bg
-    );
-    assert_eq!(
-        de_light.button.background,
-        orig_light.button.background
-    );
-    assert_eq!(
-        de_light.sidebar.background,
-        orig_light.sidebar.background
-    );
-    assert_eq!(
-        de_light.tooltip.background,
-        orig_light.tooltip.background
-    );
-    assert_eq!(
-        de_light.input.background,
-        orig_light.input.background
-    );
+    assert_eq!(de_light.button.primary_bg, orig_light.button.primary_bg);
+    assert_eq!(de_light.button.background, orig_light.button.background);
+    assert_eq!(de_light.sidebar.background, orig_light.sidebar.background);
+    assert_eq!(de_light.tooltip.background, orig_light.tooltip.background);
+    assert_eq!(de_light.input.background, orig_light.input.background);
 
     // Fonts
     assert_eq!(
@@ -178,28 +157,16 @@ fn round_trip_full_theme() {
     );
 
     // Spacing
-    assert_eq!(
-        de_light.defaults.spacing.m,
-        orig_light.defaults.spacing.m
-    );
-    assert_eq!(
-        de_light.defaults.spacing.l,
-        orig_light.defaults.spacing.l
-    );
+    assert_eq!(de_light.defaults.spacing.m, orig_light.defaults.spacing.m);
+    assert_eq!(de_light.defaults.spacing.l, orig_light.defaults.spacing.l);
 
     // Dark variant spot-checks
     let orig_dark = theme.dark.as_ref().unwrap();
     let de_dark = deserialized.dark.as_ref().unwrap();
     assert_eq!(de_dark.defaults.accent, orig_dark.defaults.accent);
-    assert_eq!(
-        de_dark.defaults.font.family,
-        orig_dark.defaults.font.family
-    );
+    assert_eq!(de_dark.defaults.font.family, orig_dark.defaults.font.family);
     assert_eq!(de_dark.defaults.radius, orig_dark.defaults.radius);
-    assert_eq!(
-        de_dark.defaults.spacing.xxl,
-        orig_dark.defaults.spacing.xxl
-    );
+    assert_eq!(de_dark.defaults.spacing.xxl, orig_dark.defaults.spacing.xxl);
 }
 
 #[test]
@@ -357,22 +324,9 @@ accent = "#3daee9"
         Some(Rgba::rgb(61, 174, 233))
     );
     // All other fields are None/default
-    assert!(theme
-        .light
-        .as_ref()
-        .unwrap()
-        .defaults
-        .background
-        .is_none());
+    assert!(theme.light.as_ref().unwrap().defaults.background.is_none());
     assert!(theme.light.as_ref().unwrap().defaults.danger.is_none());
-    assert!(theme
-        .light
-        .as_ref()
-        .unwrap()
-        .defaults
-        .font
-        .family
-        .is_none());
+    assert!(theme.light.as_ref().unwrap().defaults.font.family.is_none());
     assert!(theme.dark.is_none());
 }
 

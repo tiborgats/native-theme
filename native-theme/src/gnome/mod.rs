@@ -614,11 +614,7 @@ mod tests {
 
     #[test]
     fn build_gnome_variant_default_has_dialog_button_order() {
-        let v = build_gnome_variant(
-            ColorScheme::NoPreference,
-            None,
-            Contrast::NoPreference,
-        );
+        let v = build_gnome_variant(ColorScheme::NoPreference, None, Contrast::NoPreference);
         assert_eq!(
             v.dialog.button_order,
             Some(DialogButtonOrder::TrailingAffirmative),
@@ -627,21 +623,13 @@ mod tests {
 
     #[test]
     fn build_gnome_variant_high_contrast_sets_flag() {
-        let v = build_gnome_variant(
-            ColorScheme::NoPreference,
-            None,
-            Contrast::High,
-        );
+        let v = build_gnome_variant(ColorScheme::NoPreference, None, Contrast::High);
         assert_eq!(v.defaults.high_contrast, Some(true));
     }
 
     #[test]
     fn build_gnome_variant_normal_contrast_no_flag() {
-        let v = build_gnome_variant(
-            ColorScheme::NoPreference,
-            None,
-            Contrast::NoPreference,
-        );
+        let v = build_gnome_variant(ColorScheme::NoPreference, None, Contrast::NoPreference);
         assert!(v.defaults.high_contrast.is_none());
     }
 
