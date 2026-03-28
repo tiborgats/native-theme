@@ -5179,7 +5179,7 @@ impl CliArgs {
 fn capture_own_window_macos(_window: &mut Window, output_path: &str) {
     let window_id: i64 = unsafe {
         let ns_app: *mut objc2::runtime::AnyObject = objc2::msg_send![
-            objc2::runtime::AnyClass::get("NSApplication").unwrap(),
+            objc2::runtime::AnyClass::get(c"NSApplication").unwrap(),
             sharedApplication
         ];
         let main_window: *mut objc2::runtime::AnyObject = objc2::msg_send![ns_app, mainWindow];

@@ -171,7 +171,7 @@ fn nsfont_weight_to_css(font: &NSFont) -> Option<u16> {
     let descriptor = font.fontDescriptor();
     // Get the traits dictionary from the font descriptor.
     let traits_key: &NSString = unsafe { NSFontTraitsAttribute };
-    let traits_obj = unsafe { descriptor.objectForKey(traits_key) }?;
+    let traits_obj = descriptor.objectForKey(traits_key)?;
     // Safety: the traits attribute is an NSDictionary<NSFontDescriptorTraitKey, id>
     let traits_dict: &NSDictionary<NSString, objc2::runtime::AnyObject> =
         unsafe { &*(&*traits_obj as *const _ as *const _) };
@@ -179,7 +179,7 @@ fn nsfont_weight_to_css(font: &NSFont) -> Option<u16> {
     let weight_obj = traits_dict.objectForKey(weight_key)?;
     // Safety: the weight trait value is an NSNumber wrapping a CGFloat.
     let weight_num: &NSNumber = unsafe { &*(&*weight_obj as *const _ as *const NSNumber) };
-    let w = unsafe { weight_num.doubleValue() };
+    let w = weight_num.doubleValue();
 
     // Map AppKit weight range to CSS weight buckets.
     let css = if w <= -0.75 {
