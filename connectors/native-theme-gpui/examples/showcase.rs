@@ -5319,6 +5319,7 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
 
         for chunk in pixels.chunks_exact_mut(4) {
             chunk.swap(0, 2); // BGRA -> RGBA
+            chunk[3] = 255; // force opaque (DWM alpha may be 0 in border area)
         }
 
         match image::save_buffer(
@@ -5476,7 +5477,21 @@ fn main() {
                     let path = cli_args.screenshot.as_ref().unwrap().clone();
                     let any_handle = *window_handle;
                     cx.spawn(async move |cx| {
-                        Timer::after(Duration::from_millis(1500)).await;
+                        // Force Metal drawable update on Retina displays by
+                        // resizing the window in two separate event-loop
+                        // iterations (the synchronous nudge-and-restore in
+                        // the window-open callback is coalesced into a single
+                        // resize event, leaving the drawable at 1×).
+                        let _ = cx.update_window(any_handle, |_view, window, _cx| {
+                            let cur = window.bounds().size;
+                            window.resize(size(cur.width - px(1.), cur.height));
+                        });
+                        Timer::after(Duration::from_millis(200)).await;
+                        let _ = cx.update_window(any_handle, |_view, window, _cx| {
+                            let cur = window.bounds().size;
+                            window.resize(size(cur.width + px(1.), cur.height));
+                        });
+                        Timer::after(Duration::from_millis(1300)).await;
                         let _ = cx.update_window(any_handle, |_view, window, _cx| {
                             capture_own_window_macos(window, &path);
                         });

@@ -802,16 +802,18 @@ enum Message {
 // Self-capture screenshot (macOS only)
 // ---------------------------------------------------------------------------
 
-/// Capture the iced window including decorations using macOS `screencapture -l`.
+/// Capture the iced window including decorations using macOS `screencapture -R`.
 ///
-/// Gets the CGWindowID via NSApplication -> mainWindow -> windowNumber, then
-/// shells out to `screencapture -l <id> -o -x <path>`. The `-l` flag captures
-/// the window by ID including its title bar and decorations.
+/// `screencapture -l` (window-ID capture) does not include the title bar for
+/// winit/iced windows, so we use `-R` (region capture) instead.  winit reports
+/// `NSWindow.frame` as the content rect (no title bar), so we compute the
+/// full frame via `[NSWindow frameRectForContentRect:styleMask:]` to obtain
+/// the capture region that includes the title bar.
 #[cfg(target_os = "macos")]
 fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
     use std::process::Command;
 
-    let window_id: i64 = unsafe {
+    let region = unsafe {
         let ns_app: *mut objc2::runtime::AnyObject = objc2::msg_send![
             objc2::runtime::AnyClass::get(c"NSApplication").unwrap(),
             sharedApplication
@@ -820,11 +822,64 @@ fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
         if main_window.is_null() {
             return Err("No main window found".into());
         }
-        objc2::msg_send![main_window, windowNumber]
+
+        // CGRect layout: {{x, y}, {width, height}}
+        #[repr(C)]
+        #[derive(Copy, Clone)]
+        struct CGRect {
+            x: f64,
+            y: f64,
+            w: f64,
+            h: f64,
+        }
+        unsafe impl objc2::encode::Encode for CGRect {
+            const ENCODING: objc2::encode::Encoding = objc2::encode::Encoding::Struct(
+                "CGRect",
+                &[
+                    objc2::encode::Encoding::Struct(
+                        "CGPoint",
+                        &[
+                            objc2::encode::Encoding::Double,
+                            objc2::encode::Encoding::Double,
+                        ],
+                    ),
+                    objc2::encode::Encoding::Struct(
+                        "CGSize",
+                        &[
+                            objc2::encode::Encoding::Double,
+                            objc2::encode::Encoding::Double,
+                        ],
+                    ),
+                ],
+            );
+        }
+
+        // NSWindow.frame for winit windows is the content rect (no title bar).
+        let frame: CGRect = objc2::msg_send![main_window, frame];
+
+        // Compute the full frame that includes the title bar by treating the
+        // current frame as a content rect and asking NSWindow for the
+        // decoration-inclusive frame.
+        let style: usize = objc2::msg_send![main_window, styleMask];
+        let full_frame: CGRect = objc2::msg_send![
+            objc2::runtime::AnyClass::get(c"NSWindow").unwrap(),
+            frameRectForContentRect: frame,
+            styleMask: style
+        ];
+
+        let screen: *mut objc2::runtime::AnyObject = objc2::msg_send![main_window, screen];
+        let screen_frame: CGRect = objc2::msg_send![screen, frame];
+
+        // macOS uses bottom-left origin; screencapture -R uses top-left.
+        let y = screen_frame.h - full_frame.y - full_frame.h;
+        format!(
+            "{},{},{},{}",
+            full_frame.x as i32, y as i32, full_frame.w as i32, full_frame.h as i32
+        )
     };
 
     let status = Command::new("screencapture")
-        .args(["-l", &format!("{window_id}"), "-o", "-x", output_path])
+        .args(["-R", &region, "-x", output_path])
         .status()
         .map_err(|e| format!("Failed to run screencapture: {e}"))?;
     if status.success() {
@@ -943,6 +998,7 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
 
         for chunk in pixels.chunks_exact_mut(4) {
             chunk.swap(0, 2); // BGRA -> RGBA
+            chunk[3] = 255; // force opaque (DWM alpha may be 0 in border area)
         }
 
         image::save_buffer(
