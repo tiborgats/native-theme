@@ -538,8 +538,10 @@ fn run_pipeline(
     let full_preset_name = preset_name.strip_suffix("-live").unwrap_or(preset_name);
     let full_preset = NativeTheme::preset(full_preset_name)?;
 
-    // Merge: live preset is base for geometry, reader output provides colors
-    let mut merged = live_preset.clone();
+    // Merge: full preset provides color/font defaults, live preset overrides
+    // geometry, reader output provides live OS data on top.
+    let mut merged = full_preset.clone();
+    merged.merge(&live_preset);
     merged.merge(&reader_output);
 
     // Keep reader name if non-empty, else use preset name

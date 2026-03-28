@@ -4,11 +4,11 @@
 //! icon sizes from GetSystemMetricsForDpi, WinUI3 spacing defaults, and DPI-aware
 //! geometry metrics from UISettings (WinRT) and Win32 APIs.
 
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows"))]
 use ::windows::UI::ViewManagement::{UIColorType, UISettings};
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows"))]
 use ::windows::Win32::UI::HiDpi::{GetDpiForSystem, GetSystemMetricsForDpi};
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows"))]
 use ::windows::Win32::UI::WindowsAndMessaging::{
     NONCLIENTMETRICSW, SM_CXBORDER, SM_CXFOCUSBORDER, SM_CXICON, SM_CXSMICON, SM_CXVSCROLL,
     SM_CYMENU, SM_CYVTHUMB, SPI_GETNONCLIENTMETRICS, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS,
@@ -58,7 +58,7 @@ struct AccessibilityData {
 }
 
 /// Convert a `windows::UI::Color` to our `Rgba` type.
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows"))]
 fn win_color_to_rgba(c: ::windows::UI::Color) -> crate::Rgba {
     crate::Rgba::rgba(c.R, c.G, c.B, c.A)
 }
@@ -77,7 +77,7 @@ fn is_dark_mode(fg: &crate::Rgba) -> bool {
 /// Returns `[AccentDark1, AccentDark2, AccentDark3, AccentLight1, AccentLight2, AccentLight3]`.
 /// Each shade is individually wrapped in `.ok()` so a failure on one shade does not
 /// prevent reading the others (PLAT-05 graceful fallback).
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows"))]
 fn read_accent_shades(settings: &UISettings) -> [Option<crate::Rgba>; 6] {
     let variants = [
         UIColorType::AccentDark1,
@@ -95,7 +95,7 @@ fn read_accent_shades(settings: &UISettings) -> [Option<crate::Rgba>; 6] {
 /// Extracts font family from `lfFaceName` (null-terminated UTF-16),
 /// size in points from `abs(lfHeight) * 72 / dpi`, and weight from `lfWeight`
 /// (already CSS 100-900 scale, clamped).
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows"))]
 fn logfont_to_fontspec(lf: &::windows::Win32::Graphics::Gdi::LOGFONTW, dpi: u32) -> FontSpec {
     logfont_to_fontspec_raw(&lf.lfFaceName, lf.lfHeight, lf.lfWeight, dpi)
 }
@@ -122,7 +122,7 @@ fn logfont_to_fontspec_raw(
 ///
 /// Extracts lfMessageFont, lfCaptionFont, lfMenuFont, and lfStatusFont
 /// as FontSpec values. Returns default fonts if the system call fails.
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows"))]
 #[allow(unsafe_code)]
 fn read_all_system_fonts(dpi: u32) -> AllFonts {
     let mut ncm = NONCLIENTMETRICSW::default();
@@ -202,21 +202,21 @@ fn winui3_spacing() -> crate::ThemeSpacing {
 /// Read DPI-aware system DPI value.
 ///
 /// Returns the system DPI (96 = standard 100% scaling).
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows"))]
 #[allow(unsafe_code)]
 fn read_dpi() -> u32 {
     unsafe { GetDpiForSystem() }
 }
 
 /// Read DPI-aware frame width.
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows"))]
 #[allow(unsafe_code)]
 fn read_frame_width(dpi: u32) -> f32 {
     unsafe { GetSystemMetricsForDpi(SM_CXBORDER, dpi) as f32 }
 }
 
 /// Read DPI-aware scrollbar and widget metrics.
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows"))]
 #[allow(unsafe_code)]
 fn read_widget_sizing(dpi: u32, variant: &mut crate::ThemeVariant) {
     unsafe {
@@ -288,11 +288,10 @@ pub(crate) fn colorref_to_rgba(c: u32) -> crate::Rgba {
 }
 
 /// Read GetSysColor widget colors (WIN-03).
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows"))]
 #[allow(unsafe_code)]
 fn read_sys_colors() -> SysColors {
-    use ::windows::Win32::Graphics::Gdi::GetSysColor;
-    use ::windows::Win32::UI::WindowsAndMessaging::*;
+    use ::windows::Win32::Graphics::Gdi::*;
 
     fn sys_color(index: SYS_COLOR_INDEX) -> crate::Rgba {
         let c = unsafe { GetSysColor(index) };
@@ -334,12 +333,12 @@ fn apply_sys_colors(variant: &mut crate::ThemeVariant, colors: &SysColors) {
 }
 
 /// Read DwmGetColorizationColor for title bar background (WIN-02).
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows"))]
 #[allow(unsafe_code)]
 fn read_dwm_colorization() -> Option<crate::Rgba> {
     use ::windows::Win32::Graphics::Dwm::DwmGetColorizationColor;
     let mut colorization: u32 = 0;
-    let mut opaque_blend = ::windows::Win32::Foundation::BOOL::default();
+    let mut opaque_blend = ::windows::core::BOOL::default();
     unsafe { DwmGetColorizationColor(&mut colorization, &mut opaque_blend) }.ok()?;
     // DWM colorization is 0xAARRGGBB (NOT COLORREF format)
     let a = ((colorization >> 24) & 0xFF) as u8;
@@ -359,17 +358,16 @@ fn dwm_color_to_rgba(c: u32) -> crate::Rgba {
 }
 
 /// Read inactive title bar colors from GetSysColor.
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows"))]
 #[allow(unsafe_code)]
 fn read_inactive_caption_color() -> crate::Rgba {
-    use ::windows::Win32::Graphics::Gdi::GetSysColor;
-    use ::windows::Win32::UI::WindowsAndMessaging::COLOR_INACTIVECAPTION;
+    use ::windows::Win32::Graphics::Gdi::{COLOR_INACTIVECAPTION, GetSysColor};
     let c = unsafe { GetSysColor(COLOR_INACTIVECAPTION) };
     colorref_to_rgba(c)
 }
 
 /// Read accessibility settings (WIN-04).
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows"))]
 #[allow(unsafe_code)]
 fn read_accessibility(settings: &UISettings) -> AccessibilityData {
     // TextScaleFactor from UISettings
@@ -377,6 +375,7 @@ fn read_accessibility(settings: &UISettings) -> AccessibilityData {
 
     // SPI_GETHIGHCONTRAST
     let high_contrast = {
+        use ::windows::Win32::UI::Accessibility::{HCF_HIGHCONTRASTON, HIGHCONTRASTW};
         use ::windows::Win32::UI::WindowsAndMessaging::*;
         let mut hc = HIGHCONTRASTW::default();
         hc.cbSize = std::mem::size_of::<HIGHCONTRASTW>() as u32;
@@ -397,8 +396,7 @@ fn read_accessibility(settings: &UISettings) -> AccessibilityData {
 
     // SPI_GETCLIENTAREAANIMATION
     let reduce_motion = {
-        let mut animation_enabled: ::windows::Win32::Foundation::BOOL =
-            ::windows::Win32::Foundation::BOOL(1);
+        let mut animation_enabled = ::windows::core::BOOL(1);
         let success = unsafe {
             SystemParametersInfoW(
                 ::windows::Win32::UI::WindowsAndMessaging::SPI_GETCLIENTAREAANIMATION,
@@ -423,7 +421,7 @@ fn read_accessibility(settings: &UISettings) -> AccessibilityData {
 }
 
 /// Read icon sizes from GetSystemMetricsForDpi (WIN-05).
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows"))]
 #[allow(unsafe_code)]
 fn read_icon_sizes(dpi: u32) -> (f32, f32) {
     let small = unsafe { GetSystemMetricsForDpi(SM_CXSMICON, dpi) } as f32;
@@ -558,7 +556,7 @@ fn build_theme(
 /// settings, and icon sizes.
 ///
 /// Returns `Error::Unavailable` if UISettings cannot be created (pre-Windows 10).
-#[cfg(target_os = "windows")]
+#[cfg(all(target_os = "windows", feature = "windows"))]
 pub fn from_windows() -> crate::Result<crate::NativeTheme> {
     let settings = UISettings::new()
         .map_err(|e| crate::Error::Unavailable(format!("UISettings unavailable: {e}")))?;

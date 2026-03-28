@@ -174,7 +174,7 @@ fn nsfont_weight_to_css(font: &NSFont) -> Option<u16> {
     let traits_obj = unsafe { descriptor.objectForKey(traits_key) }?;
     // Safety: the traits attribute is an NSDictionary<NSFontDescriptorTraitKey, id>
     let traits_dict: &NSDictionary<NSString, objc2::runtime::AnyObject> =
-        unsafe { &*(traits_obj.as_ref() as *const _ as *const _) };
+        unsafe { &*(&*traits_obj as *const _ as *const _) };
     let weight_key: &NSString = unsafe { NSFontWeightTrait };
     let weight_obj = traits_dict.objectForKey(weight_key)?;
     // Safety: the weight trait value is an NSNumber wrapping a CGFloat.
