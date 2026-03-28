@@ -5205,48 +5205,26 @@ fn capture_own_window_macos(_window: &mut Window, output_path: &str) {
 
 /// Capture the gpui window including decorations using Windows BitBlt.
 ///
-/// Uses `EnumWindows` to find the correct HWND by process ID (more reliable
-/// than `GetForegroundWindow` which may return a console or other window on CI),
-/// then `BitBlt` + `GetDIBits` to extract pixel data as a PNG.
+/// Uses `FindWindowW` with the known window title to locate the correct HWND
+/// (more reliable than `GetForegroundWindow` which may return a console or
+/// other window on CI), then `BitBlt` + `GetDIBits` to extract pixel data.
 #[cfg(target_os = "windows")]
 fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
     use windows::Win32::Foundation::*;
     use windows::Win32::Graphics::Gdi::*;
     use windows::Win32::UI::WindowsAndMessaging::*;
 
-    // Find our GUI window by process ID instead of GetForegroundWindow
-    // (which may return the console window on CI).
-    struct EnumData {
-        target_pid: u32,
-        found: HWND,
-    }
-    unsafe extern "system" fn enum_cb(hwnd: HWND, lparam: LPARAM) -> BOOL {
-        let data = &mut *(lparam.0 as *mut EnumData);
-        let mut pid: u32 = 0;
-        GetWindowThreadProcessId(hwnd, Some(&mut pid));
-        if pid == data.target_pid && IsWindowVisible(hwnd).as_bool() {
-            let mut rect = RECT::default();
-            if GetWindowRect(hwnd, &mut rect).is_ok() {
-                let w = rect.right - rect.left;
-                let h = rect.bottom - rect.top;
-                if w > 100 && h > 100 {
-                    data.found = hwnd;
-                    return BOOL(0); // stop enumeration
-                }
-            }
-        }
-        BOOL(1) // continue
-    }
-
     unsafe {
-        let mut data = EnumData {
-            target_pid: std::process::id(),
-            found: HWND::default(),
-        };
-        let _ = EnumWindows(Some(enum_cb), LPARAM(&mut data as *mut EnumData as isize));
-        let hwnd = data.found;
+        // Find our window by its known title instead of GetForegroundWindow
+        // (which may return the console window on CI).
+        let title = format!(
+            "Native Theme \u{2013} GPUI Showcase, v{}",
+            env!("CARGO_PKG_VERSION")
+        );
+        let title_w: Vec<u16> = title.encode_utf16().chain(std::iter::once(0)).collect();
+        let hwnd = FindWindowW(PCWSTR::null(), PCWSTR(title_w.as_ptr()));
         if hwnd.0.is_null() {
-            eprintln!("Could not find window for current process");
+            eprintln!("Could not find window with title: {title}");
             return;
         }
 
