@@ -621,19 +621,7 @@ impl ColorMode {
         match self {
             ColorMode::Light => false,
             ColorMode::Dark => true,
-            ColorMode::System => Self::system_prefers_dark(),
-        }
-    }
-
-    /// Synchronously detect whether the OS prefers dark mode.
-    fn system_prefers_dark() -> bool {
-        #[cfg(target_os = "linux")]
-        {
-            system_is_dark()
-        }
-        #[cfg(not(target_os = "linux"))]
-        {
-            false // TODO: macOS / Windows detection
+            ColorMode::System => system_is_dark(),
         }
     }
 
@@ -641,11 +629,7 @@ impl ColorMode {
     fn label(self) -> String {
         match self {
             ColorMode::System => {
-                let actual = if Self::system_prefers_dark() {
-                    "Dark"
-                } else {
-                    "Light"
-                };
+                let actual = if system_is_dark() { "Dark" } else { "Light" };
                 format!("System ({actual})")
             }
             ColorMode::Light => "Light".into(),

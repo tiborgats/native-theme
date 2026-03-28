@@ -228,14 +228,15 @@ pub fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
 /// immediately at window creation time (before any async portal response).
 /// The result is cached after the first call using `OnceLock`.
 ///
-/// # Fallback chain
+/// # Platform Behavior
 ///
-/// 1. `gsettings get org.gnome.desktop.interface color-scheme` — works on
-///    all DEs that implement the freedesktop color-scheme setting (GNOME,
-///    KDE 5.x+, XFCE, etc.).
-/// 2. **(with `kde` feature)** `~/.config/kdeglobals` background luminance.
-/// 3. Returns `false` (light) if neither source is available.
-#[cfg(target_os = "linux")]
+/// - **Linux:** Queries `gsettings` for `color-scheme`; falls back to KDE
+///   `kdeglobals` background luminance (with `kde` feature).
+/// - **macOS:** Reads `AppleInterfaceStyle` from global user defaults; returns
+///   `true` when the value is `"Dark"` (key absent in light mode).
+/// - **Windows:** Checks foreground color luminance from `UISettings` via
+///   BT.601 coefficients (requires `windows` feature).
+/// - **Other platforms / missing features:** Returns `false` (light).
 #[must_use = "this returns whether the system uses dark mode"]
 pub fn system_is_dark() -> bool {
     static CACHED_IS_DARK: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
@@ -245,36 +246,79 @@ pub fn system_is_dark() -> bool {
 /// Inner detection logic for [`system_is_dark()`].
 ///
 /// Separated from the public function to allow caching via `OnceLock`.
-#[cfg(target_os = "linux")]
+#[allow(unreachable_code)]
 fn detect_is_dark_inner() -> bool {
-    // gsettings works across all modern DEs (GNOME, KDE, XFCE, …)
-    if let Ok(output) = std::process::Command::new("gsettings")
-        .args(["get", "org.gnome.desktop.interface", "color-scheme"])
-        .output()
-        && output.status.success()
+    #[cfg(target_os = "linux")]
     {
-        let val = String::from_utf8_lossy(&output.stdout);
-        if val.contains("prefer-dark") {
-            return true;
-        }
-        if val.contains("prefer-light") || val.contains("default") {
-            return false;
-        }
-    }
-
-    // Fallback: read KDE's kdeglobals background luminance
-    #[cfg(feature = "kde")]
-    {
-        let path = crate::kde::kdeglobals_path();
-        if let Ok(content) = std::fs::read_to_string(&path) {
-            let mut ini = crate::kde::create_kde_parser();
-            if ini.read(content).is_ok() {
-                return crate::kde::is_dark_theme(&ini);
+        // gsettings works across all modern DEs (GNOME, KDE, XFCE, …)
+        if let Ok(output) = std::process::Command::new("gsettings")
+            .args(["get", "org.gnome.desktop.interface", "color-scheme"])
+            .output()
+            && output.status.success()
+        {
+            let val = String::from_utf8_lossy(&output.stdout);
+            if val.contains("prefer-dark") {
+                return true;
+            }
+            if val.contains("prefer-light") || val.contains("default") {
+                return false;
             }
         }
+
+        // Fallback: read KDE's kdeglobals background luminance
+        #[cfg(feature = "kde")]
+        {
+            let path = crate::kde::kdeglobals_path();
+            if let Ok(content) = std::fs::read_to_string(&path) {
+                let mut ini = crate::kde::create_kde_parser();
+                if ini.read(content).is_ok() {
+                    return crate::kde::is_dark_theme(&ini);
+                }
+            }
+        }
+
+        false
     }
 
-    false
+    #[cfg(target_os = "macos")]
+    {
+        // AppleInterfaceStyle is "Dark" when dark mode is active.
+        // The key is absent in light mode, so any failure means light.
+        if let Ok(output) = std::process::Command::new("defaults")
+            .args(["read", "-g", "AppleInterfaceStyle"])
+            .output()
+            && output.status.success()
+        {
+            let val = String::from_utf8_lossy(&output.stdout);
+            return val.trim().eq_ignore_ascii_case("dark");
+        }
+        return false;
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        #[cfg(feature = "windows")]
+        {
+            // BT.601 luminance: light foreground indicates dark background.
+            let Ok(settings) = ::windows::UI::ViewManagement::UISettings::new() else {
+                return false;
+            };
+            let Ok(fg) =
+                settings.GetColorValue(::windows::UI::ViewManagement::UIColorType::Foreground)
+            else {
+                return false;
+            };
+            let luma = 0.299 * (fg.R as f32) + 0.587 * (fg.G as f32) + 0.114 * (fg.B as f32);
+            return luma > 128.0;
+        }
+        #[cfg(not(feature = "windows"))]
+        return false;
+    }
+
+    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+    {
+        false
+    }
 }
 
 /// Query whether the user prefers reduced motion.

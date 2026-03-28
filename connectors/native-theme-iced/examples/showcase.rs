@@ -204,16 +204,7 @@ impl ColorMode {
         match self {
             ColorMode::Light => false,
             ColorMode::Dark => true,
-            ColorMode::System => {
-                #[cfg(target_os = "linux")]
-                {
-                    native_theme::system_is_dark()
-                }
-                #[cfg(not(target_os = "linux"))]
-                {
-                    false
-                }
-            }
+            ColorMode::System => native_theme::system_is_dark(),
         }
     }
 }

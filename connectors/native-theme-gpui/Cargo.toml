@@ -14,13 +14,20 @@ description = "gpui toolkit connector for native-theme"
 [dependencies]
 gpui = "0.2.2"
 gpui-component = "0.5.1"
-native-theme = { workspace = true, features = ["material-icons", "lucide-icons", "system-icons", "svg-rasterize", "macos", "windows"] }
+native-theme = { workspace = true, features = [
+    "material-icons",
+    "lucide-icons",
+    "system-icons",
+    "svg-rasterize",
+    "macos",
+    "windows",
+] }
 
 [dev-dependencies]
 gpui-component-assets = "0.5.1"
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
-objc2 = "0.5"
+objc2 = "0.6.4"
 
 [target.'cfg(target_os = "windows")'.dev-dependencies]
 image = { version = "0.25", default-features = false, features = ["png"] }
