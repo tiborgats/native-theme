@@ -242,7 +242,7 @@ for crate in $WORKSPACE_CRATES; do
 done
 
 # Check code formatting
-run_check "Checking code formatting" cargo fmt --all
+run_check "Checking code formatting" cargo fmt --all --check
 
 # Run clippy on each crate individually
 for crate in $WORKSPACE_CRATES; do
