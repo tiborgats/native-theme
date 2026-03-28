@@ -3,9 +3,9 @@
 [gpui](https://gpui.rs/) + [gpui-component](https://crates.io/crates/gpui-component)
 toolkit connector for [native-theme](https://crates.io/crates/native-theme).
 
-Maps `native_theme::NativeTheme` data to gpui-component's theming system,
-producing a fully configured `Theme` with correct colors, fonts, geometry,
-and icons for all gpui-component widgets.
+Maps [`native_theme::ResolvedTheme`](https://docs.rs/native-theme) data to
+gpui-component's theming system, producing a fully configured `Theme` with
+correct colors, fonts, geometry, and icons for all gpui-component widgets.
 
 ## Usage
 
@@ -13,38 +13,37 @@ Add both crates to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-native-theme = "0.4"
-native-theme-gpui = "0.4"
+native-theme = "0.5"
+native-theme-gpui = "0.5"
 ```
 
-Then create a gpui-component theme from any native-theme preset or OS theme:
+Then create a gpui-component theme from any native-theme preset:
 
-```rust
+```rust,ignore
 use native_theme::NativeTheme;
-use native_theme_gpui::{pick_variant, to_theme};
+use native_theme_gpui::to_theme;
 
-// Load a preset
+// Load a preset and resolve it
 let nt = NativeTheme::preset("dracula").unwrap();
-
-// Pick light or dark variant (with cross-fallback)
 let is_dark = true;
-if let Some(variant) = pick_variant(&nt, is_dark) {
-    let theme = to_theme(variant, "My App", is_dark);
+if let Some(variant) = nt.pick_variant(is_dark) {
+    let mut v = variant.clone();
+    v.resolve();
+    let resolved = v.validate().unwrap();
+    let theme = to_theme(&resolved, "My App", is_dark);
     // Use `theme` in your gpui-component application
 }
 ```
 
 Or read the OS theme at runtime:
 
-```rust
-use native_theme::{from_system, NativeTheme};
-use native_theme_gpui::{pick_variant, to_theme};
+```rust,ignore
+use native_theme::from_system;
+use native_theme_gpui::to_theme;
 
-let nt = from_system().unwrap_or_else(|_| NativeTheme::preset("adwaita").unwrap());
-let is_dark = true;
-if let Some(variant) = pick_variant(&nt, is_dark) {
-    let theme = to_theme(variant, "System Theme", is_dark);
-}
+let system = from_system().unwrap();
+let is_dark = system.is_dark;
+let theme = to_theme(system.active(), "System Theme", is_dark);
 ```
 
 ## What Gets Mapped
@@ -129,7 +128,7 @@ call it on every frame tick.
 
 ## Example
 
-Run the showcase widget gallery to explore all 17 presets interactively:
+Run the showcase widget gallery to explore all 16 presets interactively:
 
 ```sh
 cargo run -p native-theme-gpui --example showcase

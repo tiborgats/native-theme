@@ -14,7 +14,7 @@ Add the build dependency:
 
 ```toml
 [build-dependencies]
-native-theme-build = "0.4"
+native-theme-build = "0.5"
 ```
 
 Create an icon definition TOML:

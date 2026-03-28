@@ -7,9 +7,9 @@ Cross-platform native theme detection and loading for Rust GUI applications.
 ## Overview
 
 **native-theme** provides a toolkit-agnostic theme data model with 36 semantic
-color roles, bundled TOML presets, and optional OS theme reading. It gives your
-Rust GUI application access to consistent, structured theme data regardless of
-which toolkit you use.
+color roles, 25 per-widget resolved themes, bundled TOML presets, and optional
+OS theme reading. It gives your Rust GUI application access to consistent,
+structured theme data regardless of which toolkit you use.
 
 ## Quick Start
 
@@ -24,10 +24,20 @@ Load a preset and access theme fields:
 ```rust
 let theme = native_theme::NativeTheme::preset("dracula").unwrap();
 let dark = theme.dark.as_ref().unwrap();
-let accent = dark.defaults.accent.unwrap();
-let bg = dark.defaults.background.unwrap();
+let accent = dark.defaults.accent.unwrap();   // Option<Rgba>
+let bg = dark.defaults.background.unwrap();   // Option<Rgba>
 // Convert to f32 for toolkits that use normalized colors
 let [r, g, b, a] = accent.to_f32_array();
+```
+
+For fully resolved themes (all fields guaranteed populated), use the
+resolve + validate pipeline:
+
+```rust,ignore
+let mut variant = theme.pick_variant(true).unwrap().clone();
+variant.resolve();               // Apply inheritance rules
+let resolved = variant.validate().unwrap(); // -> ResolvedTheme
+let accent = resolved.defaults.accent;      // Rgba (not Option)
 ```
 
 ## Preset Workflow
@@ -41,7 +51,7 @@ use native_theme::NativeTheme;
 let mut theme = NativeTheme::preset("nord").unwrap();
 let user_overrides = NativeTheme::from_toml(r##"
 name = "My Custom Nord"
-[light.colors]
+[light.defaults]
 accent = "#ff6600"
 "##).unwrap();
 theme.merge(&user_overrides);
@@ -49,12 +59,24 @@ theme.merge(&user_overrides);
 
 ## Runtime Workflow
 
-Use `from_system()` to read the current OS theme at runtime, with a preset
-fallback for unsupported platforms:
+Use `from_system()` to read the current OS theme at runtime. It returns a
+`SystemTheme` with both light and dark `ResolvedTheme` variants:
 
 ```ignore
-use native_theme::{from_system, NativeTheme};
-let theme = from_system().unwrap_or_else(|_| NativeTheme::preset("adwaita").unwrap());
+use native_theme::from_system;
+let system = from_system().unwrap();
+let active = system.active();            // &ResolvedTheme for current OS mode
+let light = system.pick(false);          // Explicit variant selection
+let is_dark = system.is_dark;            // OS dark mode state
+```
+
+Apply user overrides on top of the OS theme:
+
+```ignore
+let customized = system.with_overlay_toml(r#"
+    [light.defaults]
+    accent = "#ff6600"
+"#).unwrap();
 ```
 
 **Platform behavior:**
@@ -66,7 +88,11 @@ let theme = from_system().unwrap_or_else(|_| NativeTheme::preset("adwaita").unwr
   `portal-async-io` feature.
 - **macOS:** Reads system appearance via NSAppearance (requires `macos` feature).
 - **Windows:** Reads accent colors and system metrics (requires `windows` feature).
-- **Other platforms:** Returns `Error::Unsupported`; use the preset fallback.
+- **Other platforms:** Returns `Error::Unsupported`.
+
+`system_is_dark()` provides a lightweight cached check for the OS dark mode
+preference on all platforms (Linux, macOS, and Windows), without running the
+full theme reader pipeline.
 
 ## Toolkit Connectors
 
@@ -77,15 +103,15 @@ toolkit-specific theme types:
   toolkit connector with Catalog support for all built-in widget styles
 - `native-theme-gpui` -- gpui + gpui-component toolkit connector
 
-For other toolkits, map `NativeTheme` fields directly. All color, font,
-geometry, and spacing fields are public `Option<T>` values:
+For other toolkits, map `ResolvedTheme` fields directly. After
+resolve + validate, all fields are guaranteed populated:
 
 ```rust,ignore
-let variant = theme.dark.as_ref().unwrap();
-let bg = variant.colors.background.unwrap();
-let accent = variant.colors.accent.unwrap();
-let font = variant.fonts.family.as_deref().unwrap_or("sans-serif");
-let radius = variant.geometry.radius.unwrap_or(4.0);
+let resolved = variant.validate().unwrap(); // ResolvedTheme
+let bg = resolved.defaults.background;      // Rgba
+let accent = resolved.defaults.accent;      // Rgba
+let font = &resolved.defaults.font.family;  // &String
+let radius = resolved.defaults.radius;      // f32
 ```
 
 ## Custom Icon Roles
@@ -179,15 +205,14 @@ By default, no features are enabled. The preset API (`NativeTheme::preset()`,
 All presets are embedded at compile time via `include_str!()` and available
 through `NativeTheme::preset("name")`. Each provides both light and dark variants.
 
-**Core:** `default`, `adwaita`, `kde-breeze`
-
-**Platform:** `windows-11`, `macos-sonoma`, `material`, `ios`
+**Platform:** `kde-breeze`, `adwaita`, `windows-11`, `macos-sonoma`, `material`, `ios`
 
 **Community:** `catppuccin-latte`, `catppuccin-frappe`, `catppuccin-macchiato`,
 `catppuccin-mocha`, `nord`, `dracula`, `gruvbox`, `solarized`, `tokyo-night`,
 `one-dark`
 
-Use `NativeTheme::list_presets()` to get all 17 names programmatically.
+Use `NativeTheme::list_presets()` to get all 16 names programmatically, or
+`list_presets_for_platform()` for only those appropriate on the current OS.
 
 ## TOML Format
 

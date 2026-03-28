@@ -8,9 +8,9 @@ Cross-platform native theme detection and loading for Rust GUI applications.
 [![License: MIT OR Apache-2.0 OR 0BSD](https://img.shields.io/badge/license-MIT%20%7C%20Apache--2.0%20%7C%200BSD-blue.svg)](#license)
 [![MSRV: 1.94.0](https://img.shields.io/badge/MSRV-1.94.0-blue.svg)](https://blog.rust-lang.org/2026/03/05/Rust-1.94.0.html)
 
-A toolkit-agnostic theme data model with 36 semantic color roles, 17 bundled
-TOML presets (light + dark), and optional OS theme readers for Linux, macOS,
-and Windows.
+A toolkit-agnostic theme data model with 36 semantic color roles, 16 bundled
+TOML presets (light + dark), per-widget resolved themes, and optional OS theme
+readers for Linux, macOS, and Windows.
 
 ![gpui theme switching](docs/assets/gpui-theme-switching.gif)
 
@@ -27,7 +27,7 @@ and Windows.
 
 ```toml
 [dependencies]
-native-theme = "0.4.1"
+native-theme = "0.5"
 ```
 
 Load a bundled preset:
@@ -37,17 +37,18 @@ use native_theme::NativeTheme;
 
 let theme = NativeTheme::preset("dracula").unwrap();
 let dark = theme.dark.as_ref().unwrap();
-let accent = dark.colors.accent.unwrap();
+let accent = dark.defaults.accent.unwrap();
 let [r, g, b, a] = accent.to_f32_array();
 ```
 
-Read the OS theme at runtime:
+Read the OS theme at runtime (returns a fully resolved `SystemTheme`):
 
-```rust
-use native_theme::{from_system, NativeTheme};
+```rust,ignore
+use native_theme::from_system;
 
-let theme = from_system()
-    .unwrap_or_else(|_| NativeTheme::preset("adwaita").unwrap());
+let system = from_system().unwrap();
+let active = system.active(); // &ResolvedTheme for current OS mode
+let accent = active.defaults.accent;  // Rgba (not Option)
 ```
 
 Layer user overrides on top of a preset:
@@ -58,7 +59,7 @@ use native_theme::NativeTheme;
 let mut theme = NativeTheme::preset("nord").unwrap();
 let overrides = NativeTheme::from_toml(r#"
 name = "My Nord"
-[light.colors]
+[light.defaults]
 accent = "#ff6600"
 "#).unwrap();
 theme.merge(&overrides);
@@ -70,18 +71,21 @@ theme.merge(&overrides);
 
 ```toml
 [dependencies]
-native-theme = "0.4"
-native-theme-gpui = "0.4"
+native-theme = "0.5"
+native-theme-gpui = "0.5"
 ```
 
-```rust
+```rust,ignore
 use native_theme::NativeTheme;
 use native_theme_gpui::to_theme;
 
 let nt = NativeTheme::preset("dracula").unwrap();
 let is_dark = true;
 if let Some(variant) = nt.pick_variant(is_dark) {
-    let theme = to_theme(variant, "My App", is_dark);
+    let mut v = variant.clone();
+    v.resolve();
+    let resolved = v.validate().unwrap();
+    let theme = to_theme(&resolved, "My App", is_dark);
     // Use as your gpui-component theme
 }
 ```
@@ -96,17 +100,20 @@ cargo run -p native-theme-gpui --example showcase
 
 ```toml
 [dependencies]
-native-theme = "0.4"
-native-theme-iced = "0.4"
+native-theme = "0.5"
+native-theme-iced = "0.5"
 ```
 
-```rust
+```rust,ignore
 use native_theme::NativeTheme;
 use native_theme_iced::to_theme;
 
 let nt = NativeTheme::preset("dracula").unwrap();
 if let Some(variant) = nt.pick_variant(true) {
-    let theme = to_theme(variant, "My App");
+    let mut v = variant.clone();
+    v.resolve();
+    let resolved = v.validate().unwrap();
+    let theme = to_theme(&resolved, "My App");
     // Use as your iced application theme
 }
 ```
@@ -119,8 +126,8 @@ cargo run -p native-theme-iced --example showcase
 
 ### Other toolkits
 
-Map `NativeTheme` fields to your toolkit's types directly. All color, font,
-geometry, and spacing fields are public `Option<T>` values. See the
+Map `ResolvedTheme` fields to your toolkit's types directly. After resolving,
+all color, font, geometry, and spacing fields are guaranteed populated. See the
 [API docs](https://docs.rs/native-theme) for details.
 
 ## Animated Icons
@@ -171,9 +178,13 @@ toolkit-specific playback helpers.
 | Windows | `from_windows()` | `windows` |
 
 `from_system()` auto-detects the platform and desktop environment via
-`XDG_CURRENT_DESKTOP`, falling back to bundled presets when a reader is
+`XDG_CURRENT_DESKTOP`, returning a `SystemTheme` with both light and dark
+`ResolvedTheme` variants. Falls back to bundled presets when a reader is
 unavailable. GTK-based desktops (GNOME, XFCE, Cinnamon, MATE, Budgie, LXQt)
 are all handled by the portal reader.
+
+`system_is_dark()` provides a lightweight cached check for the OS dark mode
+preference on all platforms (Linux, macOS, and Windows).
 
 ## Feature Flags
 
@@ -183,7 +194,7 @@ No features are enabled by default. The preset API works without any features.
 
 ```toml
 [dependencies]
-native-theme = { version = "0.4", features = ["native"] }
+native-theme = { version = "0.5", features = ["native"] }
 ```
 
 ### Meta-features
@@ -214,13 +225,15 @@ macOS deps.
 
 ## Presets
 
-17 bundled presets, each with light and dark variants:
+16 bundled presets, each with light and dark variants:
 
 | Category | Presets |
 |----------|--------|
-| Core | `default`, `adwaita`, `kde-breeze` |
-| Platform | `windows-11`, `macos-sonoma`, `material`, `ios` |
+| Platform | `kde-breeze`, `adwaita`, `windows-11`, `macos-sonoma`, `material`, `ios` |
 | Community | `catppuccin-latte`, `catppuccin-frappe`, `catppuccin-macchiato`, `catppuccin-mocha`, `nord`, `dracula`, `gruvbox`, `solarized`, `tokyo-night`, `one-dark` |
+
+Use `NativeTheme::list_presets_for_platform()` to get only the presets
+appropriate for the current OS.
 
 ## License
 
