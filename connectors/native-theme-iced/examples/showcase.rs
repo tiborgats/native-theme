@@ -900,7 +900,7 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
         target_pid: u32,
         found: HWND,
     }
-    unsafe extern "system" fn enum_cb(hwnd: HWND, lparam: LPARAM) -> BOOL {
+    unsafe extern "system" fn enum_cb(hwnd: HWND, lparam: LPARAM) -> bool {
         let data = &mut *(lparam.0 as *mut EnumData);
         let mut pid: u32 = 0;
         GetWindowThreadProcessId(hwnd, Some(&mut pid));
@@ -911,11 +911,11 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
                 let h = rect.bottom - rect.top;
                 if w > 100 && h > 100 {
                     data.found = hwnd;
-                    return FALSE;
+                    return false; // stop enumeration
                 }
             }
         }
-        TRUE
+        true // continue
     }
 
     unsafe {
