@@ -802,19 +802,16 @@ enum Message {
 // Self-capture screenshot (macOS only)
 // ---------------------------------------------------------------------------
 
-/// Capture the iced window including decorations using macOS `screencapture -R`.
+/// Capture the iced window including decorations using macOS `screencapture -l`.
 ///
-/// Uses `[NSApplication sharedApplication] -> mainWindow -> frame` to get the
-/// window bounds (including title bar), converts from macOS bottom-left origin
-/// to top-left for screencapture, then captures the screen region.
-///
-/// `screencapture -R` (region capture) is used instead of `-l` (window ID)
-/// because winit/iced windows may not include title bar decorations with `-l`.
+/// Gets the CGWindowID via NSApplication -> mainWindow -> windowNumber, then
+/// shells out to `screencapture -l <id> -o -x <path>`. The `-l` flag captures
+/// the window by ID including its title bar and decorations.
 #[cfg(target_os = "macos")]
 fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
     use std::process::Command;
 
-    let region = unsafe {
+    let window_id: i64 = unsafe {
         let ns_app: *mut objc2::runtime::AnyObject = objc2::msg_send![
             objc2::runtime::AnyClass::get(c"NSApplication").unwrap(),
             sharedApplication
@@ -823,53 +820,11 @@ fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
         if main_window.is_null() {
             return Err("No main window found".into());
         }
-
-        // CGRect layout: {{x, y}, {width, height}}
-        #[repr(C)]
-        #[derive(Copy, Clone)]
-        struct CGRect {
-            x: f64,
-            y: f64,
-            w: f64,
-            h: f64,
-        }
-        unsafe impl objc2::encode::Encode for CGRect {
-            const ENCODING: objc2::encode::Encoding = objc2::encode::Encoding::Struct(
-                "CGRect",
-                &[
-                    objc2::encode::Encoding::Struct(
-                        "CGPoint",
-                        &[
-                            objc2::encode::Encoding::Double,
-                            objc2::encode::Encoding::Double,
-                        ],
-                    ),
-                    objc2::encode::Encoding::Struct(
-                        "CGSize",
-                        &[
-                            objc2::encode::Encoding::Double,
-                            objc2::encode::Encoding::Double,
-                        ],
-                    ),
-                ],
-            );
-        }
-
-        // NSWindow.frame includes the title bar decoration area.
-        let frame: CGRect = objc2::msg_send![main_window, frame];
-        let screen: *mut objc2::runtime::AnyObject = objc2::msg_send![main_window, screen];
-        let screen_frame: CGRect = objc2::msg_send![screen, frame];
-
-        // macOS uses bottom-left origin; screencapture -R uses top-left.
-        let y = screen_frame.h - frame.y - frame.h;
-        format!(
-            "{},{},{},{}",
-            frame.x as i32, y as i32, frame.w as i32, frame.h as i32
-        )
+        objc2::msg_send![main_window, windowNumber]
     };
 
     let status = Command::new("screencapture")
-        .args(["-R", &region, "-x", output_path])
+        .args(["-l", &format!("{window_id}"), "-o", "-x", output_path])
         .status()
         .map_err(|e| format!("Failed to run screencapture: {e}"))?;
     if status.success() {
@@ -891,6 +846,7 @@ fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
 #[cfg(target_os = "windows")]
 fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
     use windows::Win32::Foundation::*;
+    use windows::Win32::Graphics::Dwm::*;
     use windows::Win32::Graphics::Gdi::*;
     use windows::Win32::UI::WindowsAndMessaging::*;
     use windows::core::PCWSTR;
@@ -906,8 +862,20 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
         let hwnd = FindWindowW(None, PCWSTR(title_w.as_ptr()))
             .map_err(|e| format!("FindWindowW failed: {e}"))?;
 
+        // Use DWMWA_EXTENDED_FRAME_BOUNDS to get the visible window bounds.
+        // GetWindowRect includes the invisible DWM border/shadow area which
+        // captures desktop background instead of actual window content.
         let mut rect = RECT::default();
-        GetWindowRect(hwnd, &mut rect).map_err(|e| format!("GetWindowRect failed: {e}"))?;
+        if DwmGetWindowAttribute(
+            hwnd,
+            DWMWA_EXTENDED_FRAME_BOUNDS,
+            &mut rect as *mut _ as *mut std::ffi::c_void,
+            std::mem::size_of::<RECT>() as u32,
+        )
+        .is_err()
+        {
+            GetWindowRect(hwnd, &mut rect).map_err(|e| format!("GetWindowRect failed: {e}"))?;
+        }
 
         let width = rect.right - rect.left;
         let height = rect.bottom - rect.top;

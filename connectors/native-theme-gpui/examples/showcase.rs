@@ -5211,6 +5211,7 @@ fn capture_own_window_macos(_window: &mut Window, output_path: &str) {
 #[cfg(target_os = "windows")]
 fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
     use windows::Win32::Foundation::*;
+    use windows::Win32::Graphics::Dwm::*;
     use windows::Win32::Graphics::Gdi::*;
     use windows::Win32::UI::WindowsAndMessaging::*;
     use windows::core::PCWSTR;
@@ -5231,10 +5232,22 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
             }
         };
 
+        // Use DWMWA_EXTENDED_FRAME_BOUNDS to get the visible window bounds.
+        // GetWindowRect includes the invisible DWM border/shadow area which
+        // captures desktop background instead of actual window content.
         let mut rect = RECT::default();
-        if let Err(e) = GetWindowRect(hwnd, &mut rect) {
-            eprintln!("GetWindowRect failed: {e}");
-            return;
+        if DwmGetWindowAttribute(
+            hwnd,
+            DWMWA_EXTENDED_FRAME_BOUNDS,
+            &mut rect as *mut _ as *mut std::ffi::c_void,
+            std::mem::size_of::<RECT>() as u32,
+        )
+        .is_err()
+        {
+            if let Err(e) = GetWindowRect(hwnd, &mut rect) {
+                eprintln!("GetWindowRect failed: {e}");
+                return;
+            }
         }
 
         let width = rect.right - rect.left;
