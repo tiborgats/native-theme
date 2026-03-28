@@ -5213,6 +5213,7 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
     use windows::Win32::Foundation::*;
     use windows::Win32::Graphics::Gdi::*;
     use windows::Win32::UI::WindowsAndMessaging::*;
+    use windows::core::PCWSTR;
 
     unsafe {
         // Find our window by its known title instead of GetForegroundWindow
@@ -5222,11 +5223,13 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
             env!("CARGO_PKG_VERSION")
         );
         let title_w: Vec<u16> = title.encode_utf16().chain(std::iter::once(0)).collect();
-        let hwnd = FindWindowW(PCWSTR::null(), PCWSTR(title_w.as_ptr()));
-        if hwnd.0.is_null() {
-            eprintln!("Could not find window with title: {title}");
-            return;
-        }
+        let hwnd = match FindWindowW(None, PCWSTR(title_w.as_ptr())) {
+            Ok(h) => h,
+            Err(e) => {
+                eprintln!("FindWindowW failed: {e}");
+                return;
+            }
+        };
 
         let mut rect = RECT::default();
         if let Err(e) = GetWindowRect(hwnd, &mut rect) {
