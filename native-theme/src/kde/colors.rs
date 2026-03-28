@@ -64,6 +64,8 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     variant.input.foreground = get_color(ini, "Colors:View", "ForegroundNormal");
     // KDE-02: placeholder from View/ForegroundInactive
     variant.input.placeholder = get_color(ini, "Colors:View", "ForegroundInactive");
+    // input.caret from View/DecorationFocus (the focus decoration color)
+    variant.input.caret = get_color(ini, "Colors:View", "DecorationFocus");
 
     // Popover (from View)
     variant.popover.background = get_color(ini, "Colors:View", "BackgroundNormal");
@@ -218,7 +220,10 @@ inactiveForeground=161,169,177
     fn test_selection_colors() {
         let v = populate_fixture(BREEZE_DARK);
         assert_eq!(v.defaults.selection, Some(Rgba::rgb(61, 174, 233)));
-        assert_eq!(v.defaults.selection_foreground, Some(Rgba::rgb(252, 252, 252)));
+        assert_eq!(
+            v.defaults.selection_foreground,
+            Some(Rgba::rgb(252, 252, 252))
+        );
     }
 
     // === Per-widget: Button ===
@@ -274,27 +279,42 @@ inactiveForeground=161,169,177
     #[test]
     fn test_title_bar_foreground_from_wm_active() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.window.title_bar_foreground, Some(Rgba::rgb(239, 240, 241)));
+        assert_eq!(
+            v.window.title_bar_foreground,
+            Some(Rgba::rgb(239, 240, 241))
+        );
     }
 
     #[test]
     fn test_inactive_title_bar_background_from_wm() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.window.inactive_title_bar_background, Some(Rgba::rgb(42, 46, 50)));
+        assert_eq!(
+            v.window.inactive_title_bar_background,
+            Some(Rgba::rgb(42, 46, 50))
+        );
     }
 
     #[test]
     fn test_inactive_title_bar_foreground_from_wm() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.window.inactive_title_bar_foreground, Some(Rgba::rgb(161, 169, 177)));
+        assert_eq!(
+            v.window.inactive_title_bar_foreground,
+            Some(Rgba::rgb(161, 169, 177))
+        );
     }
 
-    // === KDE-02: Input placeholder ===
+    // === KDE-02: Input placeholder and caret ===
 
     #[test]
     fn test_input_placeholder_from_view_foreground_inactive() {
         let v = populate_fixture(BREEZE_DARK);
         assert_eq!(v.input.placeholder, Some(Rgba::rgb(161, 169, 177)));
+    }
+
+    #[test]
+    fn test_input_caret_from_view_decoration_focus() {
+        let v = populate_fixture(BREEZE_DARK);
+        assert_eq!(v.input.caret, Some(Rgba::rgb(61, 174, 233)));
     }
 
     // === KDE-02: List alternate_row ===
@@ -405,7 +425,10 @@ DecorationFocus=61,174,233
         assert!(v.defaults.muted.is_some(), "muted missing");
         assert!(v.defaults.link.is_some(), "link missing");
         assert!(v.defaults.selection.is_some(), "selection missing");
-        assert!(v.defaults.selection_foreground.is_some(), "selection_foreground missing");
+        assert!(
+            v.defaults.selection_foreground.is_some(),
+            "selection_foreground missing"
+        );
         assert!(v.defaults.danger.is_some(), "danger missing");
         assert!(v.defaults.warning.is_some(), "warning missing");
         assert!(v.defaults.success.is_some(), "success missing");
@@ -421,16 +444,35 @@ DecorationFocus=61,174,233
         assert!(v.input.background.is_some(), "input.background missing");
         assert!(v.input.foreground.is_some(), "input.foreground missing");
         assert!(v.input.placeholder.is_some(), "input.placeholder missing");
+        assert!(v.input.caret.is_some(), "input.caret missing");
         assert!(v.separator.color.is_some(), "separator.color missing");
         assert!(v.list.alternate_row.is_some(), "list.alternate_row missing");
-        assert!(v.list.header_background.is_some(), "list.header_background missing");
-        assert!(v.list.header_foreground.is_some(), "list.header_foreground missing");
+        assert!(
+            v.list.header_background.is_some(),
+            "list.header_background missing"
+        );
+        assert!(
+            v.list.header_foreground.is_some(),
+            "list.header_foreground missing"
+        );
         assert!(v.link.visited.is_some(), "link.visited missing");
 
         // WM title bar
-        assert!(v.window.title_bar_background.is_some(), "window.title_bar_background missing");
-        assert!(v.window.title_bar_foreground.is_some(), "window.title_bar_foreground missing");
-        assert!(v.window.inactive_title_bar_background.is_some(), "window.inactive_title_bar_background missing");
-        assert!(v.window.inactive_title_bar_foreground.is_some(), "window.inactive_title_bar_foreground missing");
+        assert!(
+            v.window.title_bar_background.is_some(),
+            "window.title_bar_background missing"
+        );
+        assert!(
+            v.window.title_bar_foreground.is_some(),
+            "window.title_bar_foreground missing"
+        );
+        assert!(
+            v.window.inactive_title_bar_background.is_some(),
+            "window.inactive_title_bar_background missing"
+        );
+        assert!(
+            v.window.inactive_title_bar_foreground.is_some(),
+            "window.inactive_title_bar_foreground missing"
+        );
     }
 }

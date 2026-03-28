@@ -75,10 +75,11 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::NativeThem
 /// Populate text_scale from smallestReadableFont and Kirigami multipliers.
 ///
 /// - caption: size and weight from smallestReadableFont
-/// - section_heading: base_size * 1.20
-/// - dialog_title: base_size * 1.35
+/// - section_heading: base_size * 1.20 (Kirigami Heading Level 2)
+/// - dialog_title: base_size * 1.35 (Kirigami Heading Level 1)
+/// - display: base_size * 1.80 (Kirigami Title), weight 300
 ///
-/// If defaults.font.size is None, heading/title entries are not set.
+/// If defaults.font.size is None, heading/title/display entries are not set.
 fn populate_text_scale(ini: &configparser::ini::Ini, variant: &mut crate::ThemeVariant) {
     // caption from smallestReadableFont
     if let Some(smallest_str) = ini.get("General", "smallestReadableFont") {
@@ -91,7 +92,7 @@ fn populate_text_scale(ini: &configparser::ini::Ini, variant: &mut crate::ThemeV
         }
     }
 
-    // section_heading and dialog_title from Kirigami multipliers on base font size
+    // section_heading, dialog_title, and display from Kirigami multipliers on base font size
     if let Some(base_size) = variant.defaults.font.size {
         variant.text_scale.section_heading = Some(TextScaleEntry {
             size: Some(base_size * 1.20),
@@ -101,6 +102,11 @@ fn populate_text_scale(ini: &configparser::ini::Ini, variant: &mut crate::ThemeV
         variant.text_scale.dialog_title = Some(TextScaleEntry {
             size: Some(base_size * 1.35),
             weight: variant.defaults.font.weight,
+            line_height: None,
+        });
+        variant.text_scale.display = Some(TextScaleEntry {
+            size: Some(base_size * 1.80),
+            weight: Some(300),
             line_height: None,
         });
     }
@@ -720,9 +726,18 @@ BackgroundNormal=49,54,59
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
         assert_eq!(v.window.title_bar_background, Some(Rgba::rgb(49, 54, 59)));
-        assert_eq!(v.window.title_bar_foreground, Some(Rgba::rgb(239, 240, 241)));
-        assert_eq!(v.window.inactive_title_bar_background, Some(Rgba::rgb(42, 46, 50)));
-        assert_eq!(v.window.inactive_title_bar_foreground, Some(Rgba::rgb(161, 169, 177)));
+        assert_eq!(
+            v.window.title_bar_foreground,
+            Some(Rgba::rgb(239, 240, 241))
+        );
+        assert_eq!(
+            v.window.inactive_title_bar_background,
+            Some(Rgba::rgb(42, 46, 50))
+        );
+        assert_eq!(
+            v.window.inactive_title_bar_foreground,
+            Some(Rgba::rgb(161, 169, 177))
+        );
     }
 
     #[test]
@@ -746,17 +761,32 @@ BackgroundNormal=49,54,59
     fn test_text_scale_caption_from_smallest_readable_font() {
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
-        let caption = v.text_scale.caption.as_ref().expect("caption should be set");
-        assert_eq!(caption.size, Some(7.0), "caption size from smallestReadableFont");
+        let caption = v
+            .text_scale
+            .caption
+            .as_ref()
+            .expect("caption should be set");
+        assert_eq!(
+            caption.size,
+            Some(7.0),
+            "caption size from smallestReadableFont"
+        );
         assert_eq!(caption.weight, Some(400));
-        assert!(caption.line_height.is_none(), "line_height filled by resolve()");
+        assert!(
+            caption.line_height.is_none(),
+            "line_height filled by resolve()"
+        );
     }
 
     #[test]
     fn test_text_scale_section_heading_kirigami_multiplier() {
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
-        let heading = v.text_scale.section_heading.as_ref().expect("section_heading should be set");
+        let heading = v
+            .text_scale
+            .section_heading
+            .as_ref()
+            .expect("section_heading should be set");
         // base_size = 10.0, multiplier = 1.20, expected = 12.0
         assert!((heading.size.unwrap() - 12.0).abs() < 0.01);
         assert_eq!(heading.weight, Some(400));
@@ -766,9 +796,31 @@ BackgroundNormal=49,54,59
     fn test_text_scale_dialog_title_kirigami_multiplier() {
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
-        let title = v.text_scale.dialog_title.as_ref().expect("dialog_title should be set");
+        let title = v
+            .text_scale
+            .dialog_title
+            .as_ref()
+            .expect("dialog_title should be set");
         // base_size = 10.0, multiplier = 1.35, expected = 13.5
         assert!((title.size.unwrap() - 13.5).abs() < 0.01);
+    }
+
+    #[test]
+    fn test_text_scale_display_kirigami_multiplier() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let v = theme.dark.as_ref().unwrap();
+        let display = v
+            .text_scale
+            .display
+            .as_ref()
+            .expect("display should be set");
+        // base_size = 10.0, multiplier = 1.80, expected = 18.0
+        assert!((display.size.unwrap() - 18.0).abs() < 0.01);
+        assert_eq!(display.weight, Some(300), "display weight should be 300");
+        assert!(
+            display.line_height.is_none(),
+            "line_height filled by resolve()"
+        );
     }
 
     // === KDE-06: Accessibility ===
@@ -891,10 +943,18 @@ Type=Fixed
         let sizes = parse_icon_sizes_from_content(&ini);
 
         // small: smallest Size from Actions/Status context = 16
-        assert_eq!(sizes.small, Some(16.0), "small should be 16 from actions/16 and status/16");
+        assert_eq!(
+            sizes.small,
+            Some(16.0),
+            "small should be 16 from actions/16 and status/16"
+        );
 
         // toolbar: closest to 22 from Actions context = 22
-        assert_eq!(sizes.toolbar, Some(22.0), "toolbar should be 22 from actions/22");
+        assert_eq!(
+            sizes.toolbar,
+            Some(22.0),
+            "toolbar should be 22 from actions/22"
+        );
 
         // large: smallest Applications size >= 32 = 32
         assert_eq!(sizes.large, Some(32.0), "large should be 32 from apps/32");
@@ -906,12 +966,28 @@ Type=Fixed
 
     #[test]
     fn test_parse_icon_sizes_missing_theme() {
-        let sizes = parse_icon_sizes_from_index_theme("nonexistent_theme_that_does_not_exist_12345");
-        assert!(sizes.small.is_none(), "small should be None for missing theme");
-        assert!(sizes.toolbar.is_none(), "toolbar should be None for missing theme");
-        assert!(sizes.large.is_none(), "large should be None for missing theme");
-        assert!(sizes.dialog.is_none(), "dialog should be None for missing theme");
-        assert!(sizes.panel.is_none(), "panel should be None for missing theme");
+        let sizes =
+            parse_icon_sizes_from_index_theme("nonexistent_theme_that_does_not_exist_12345");
+        assert!(
+            sizes.small.is_none(),
+            "small should be None for missing theme"
+        );
+        assert!(
+            sizes.toolbar.is_none(),
+            "toolbar should be None for missing theme"
+        );
+        assert!(
+            sizes.large.is_none(),
+            "large should be None for missing theme"
+        );
+        assert!(
+            sizes.dialog.is_none(),
+            "dialog should be None for missing theme"
+        );
+        assert!(
+            sizes.panel.is_none(),
+            "panel should be None for missing theme"
+        );
     }
 
     #[test]
@@ -954,10 +1030,16 @@ Name=whatever
         if v.defaults.icon_sizes.small.is_some() {
             // If populated, they should be reasonable pixel values
             let small = v.defaults.icon_sizes.small.unwrap();
-            assert!(small >= 8.0 && small <= 32.0, "small icon size should be reasonable: {small}");
+            assert!(
+                small >= 8.0 && small <= 32.0,
+                "small icon size should be reasonable: {small}"
+            );
 
             if let Some(large) = v.defaults.icon_sizes.large {
-                assert!(large >= 24.0 && large <= 128.0, "large icon size should be reasonable: {large}");
+                assert!(
+                    large >= 24.0 && large <= 128.0,
+                    "large icon size should be reasonable: {large}"
+                );
                 assert!(large > small, "large should be bigger than small");
             }
         }
@@ -1016,7 +1098,11 @@ Name=whatever
     fn test_title_bar_font_from_wm_activefont() {
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
-        let tbf = v.window.title_bar_font.as_ref().expect("title_bar_font should be set");
+        let tbf = v
+            .window
+            .title_bar_font
+            .as_ref()
+            .expect("title_bar_font should be set");
         assert_eq!(tbf.family.as_deref(), Some("Noto Sans"));
         assert_eq!(tbf.size, Some(10.0));
         assert_eq!(tbf.weight, Some(700)); // Qt5 75 -> CSS 700
@@ -1036,7 +1122,10 @@ Name=whatever
         base.merge(&kde_theme);
 
         // Extract the dark variant (KDE's output merged on top of default dark).
-        let mut dark = base.dark.clone().expect("dark variant should exist after merge");
+        let mut dark = base
+            .dark
+            .clone()
+            .expect("dark variant should exist after merge");
 
         // Run the resolution pipeline.
         dark.resolve();
@@ -1074,12 +1163,11 @@ Name=whatever
             "title bar bg should be from KDE reader"
         );
 
-        // Safety-net-derived field: input.caret from defaults.foreground
-        // defaults.foreground = 239,240,241 (from Colors:Window)
+        // input.caret from Colors:View/DecorationFocus = 61,174,233
         assert_eq!(
             resolved.input.caret,
-            crate::Rgba::rgb(239, 240, 241),
-            "input.caret should be resolve() safety net from defaults.foreground"
+            crate::Rgba::rgb(61, 174, 233),
+            "input.caret should be from KDE reader (DecorationFocus)"
         );
 
         // icon_set should be from KDE reader (breeze-dark)
