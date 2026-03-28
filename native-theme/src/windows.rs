@@ -10,8 +10,9 @@ use ::windows::UI::ViewManagement::{UIColorType, UISettings};
 use ::windows::Win32::UI::HiDpi::{GetDpiForSystem, GetSystemMetricsForDpi};
 #[cfg(target_os = "windows")]
 use ::windows::Win32::UI::WindowsAndMessaging::{
-    NONCLIENTMETRICSW, SM_CXBORDER, SM_CXICON, SM_CXSMICON, SM_CXVSCROLL, SM_CYMENU, SM_CYVTHUMB,
-    SPI_GETNONCLIENTMETRICS, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS, SystemParametersInfoW,
+    NONCLIENTMETRICSW, SM_CXBORDER, SM_CXFOCUSBORDER, SM_CXICON, SM_CXSMICON, SM_CXVSCROLL,
+    SM_CYMENU, SM_CYVTHUMB, SPI_GETNONCLIENTMETRICS, SYSTEM_PARAMETERS_INFO_UPDATE_FLAGS,
+    SystemParametersInfoW,
 };
 
 use crate::model::FontSpec;
@@ -44,6 +45,9 @@ struct SysColors {
     window_text: crate::Rgba,
     highlight: crate::Rgba,
     highlight_text: crate::Rgba,
+    caption_text: crate::Rgba,
+    inactive_caption_text: crate::Rgba,
+    gray_text: crate::Rgba,
 }
 
 /// Accessibility data from UISettings and SystemParametersInfoW.
@@ -92,10 +96,7 @@ fn read_accent_shades(settings: &UISettings) -> [Option<crate::Rgba>; 6] {
 /// size in points from `abs(lfHeight) * 72 / dpi`, and weight from `lfWeight`
 /// (already CSS 100-900 scale, clamped).
 #[cfg(target_os = "windows")]
-fn logfont_to_fontspec(
-    lf: &::windows::Win32::Graphics::Gdi::LOGFONTW,
-    dpi: u32,
-) -> FontSpec {
+fn logfont_to_fontspec(lf: &::windows::Win32::Graphics::Gdi::LOGFONTW, dpi: u32) -> FontSpec {
     logfont_to_fontspec_raw(&lf.lfFaceName, lf.lfHeight, lf.lfWeight, dpi)
 }
 
@@ -153,6 +154,35 @@ fn read_all_system_fonts(dpi: u32) -> AllFonts {
     }
 }
 
+/// Compute text scale entries from the system default font size.
+///
+/// Derives caption, section heading, dialog title, and display sizes
+/// using Fluent Design type scale ratios relative to the base font.
+fn compute_text_scale(base_size: f32) -> crate::TextScale {
+    crate::TextScale {
+        caption: Some(crate::TextScaleEntry {
+            size: Some(base_size * 0.85),
+            weight: Some(400),
+            line_height: None,
+        }),
+        section_heading: Some(crate::TextScaleEntry {
+            size: Some(base_size * 1.15),
+            weight: Some(600),
+            line_height: None,
+        }),
+        dialog_title: Some(crate::TextScaleEntry {
+            size: Some(base_size * 1.35),
+            weight: Some(600),
+            line_height: None,
+        }),
+        display: Some(crate::TextScaleEntry {
+            size: Some(base_size * 1.80),
+            weight: Some(300),
+            line_height: None,
+        }),
+    }
+}
+
 /// Return the WinUI3 Fluent Design spacing scale.
 ///
 /// These are the standard spacing values from Microsoft Fluent Design guidelines,
@@ -193,6 +223,8 @@ fn read_widget_sizing(dpi: u32, variant: &mut crate::ThemeVariant) {
         variant.scrollbar.width = Some(GetSystemMetricsForDpi(SM_CXVSCROLL, dpi) as f32);
         variant.scrollbar.min_thumb_height = Some(GetSystemMetricsForDpi(SM_CYVTHUMB, dpi) as f32);
         variant.menu.item_height = Some(GetSystemMetricsForDpi(SM_CYMENU, dpi) as f32);
+        variant.defaults.focus_ring_width =
+            Some(GetSystemMetricsForDpi(SM_CXFOCUSBORDER, dpi) as f32);
     }
     // WinUI3 Fluent Design constants (not from OS APIs)
     variant.button.min_height = Some(32.0);
@@ -222,6 +254,7 @@ fn read_widget_sizing(_dpi: u32, variant: &mut crate::ThemeVariant) {
     variant.scrollbar.width = Some(17.0);
     variant.scrollbar.min_thumb_height = Some(40.0);
     variant.menu.item_height = Some(32.0);
+    variant.defaults.focus_ring_width = Some(1.0); // SM_CXFOCUSBORDER typical value
     variant.button.min_height = Some(32.0);
     variant.button.padding_horizontal = Some(12.0);
     variant.checkbox.indicator_size = Some(20.0);
@@ -277,6 +310,9 @@ fn read_sys_colors() -> SysColors {
         window_text: sys_color(COLOR_WINDOWTEXT),
         highlight: sys_color(COLOR_HIGHLIGHT),
         highlight_text: sys_color(COLOR_HIGHLIGHTTEXT),
+        caption_text: sys_color(COLOR_CAPTIONTEXT),
+        inactive_caption_text: sys_color(COLOR_INACTIVECAPTIONTEXT),
+        gray_text: sys_color(COLOR_GRAYTEXT),
     }
 }
 
@@ -290,8 +326,11 @@ fn apply_sys_colors(variant: &mut crate::ThemeVariant, colors: &SysColors) {
     variant.tooltip.foreground = Some(colors.info_text);
     variant.input.background = Some(colors.window_bg);
     variant.input.foreground = Some(colors.window_text);
+    variant.input.placeholder = Some(colors.gray_text);
     variant.list.selection = Some(colors.highlight);
     variant.list.selection_foreground = Some(colors.highlight_text);
+    variant.window.title_bar_foreground = Some(colors.caption_text);
+    variant.window.inactive_title_bar_foreground = Some(colors.inactive_caption_text);
 }
 
 /// Read DwmGetColorizationColor for title bar background (WIN-02).
@@ -439,7 +478,8 @@ fn build_theme(
     let disabled_r = ((fg.r as u16 + bg.r as u16) / 2) as u8;
     let disabled_g = ((fg.g as u16 + bg.g as u16) / 2) as u8;
     let disabled_b = ((fg.b as u16 + bg.b as u16) / 2) as u8;
-    variant.defaults.disabled_foreground = Some(crate::Rgba::rgb(disabled_r, disabled_g, disabled_b));
+    variant.defaults.disabled_foreground =
+        Some(crate::Rgba::rgb(disabled_r, disabled_g, disabled_b));
 
     // --- Defaults-level font (message font) ---
     variant.defaults.font = fonts.msg;
@@ -448,6 +488,11 @@ fn build_theme(
     variant.window.title_bar_font = Some(fonts.caption);
     variant.menu.font = Some(fonts.menu);
     variant.status_bar.font = Some(fonts.status);
+
+    // --- Text scale (derived from defaults.font.size) ---
+    if let Some(base_size) = variant.defaults.font.size {
+        variant.text_scale = compute_text_scale(base_size);
+    }
 
     // --- Spacing (WinUI3 Fluent) ---
     variant.defaults.spacing = winui3_spacing();
@@ -600,11 +645,15 @@ mod tests {
     fn light_theme() -> crate::NativeTheme {
         build_theme(
             crate::Rgba::rgb(0, 120, 215),
-            crate::Rgba::rgb(0, 0, 0),       // black fg = light mode
+            crate::Rgba::rgb(0, 0, 0), // black fg = light mode
             crate::Rgba::rgb(255, 255, 255),
             [None; 6],
             default_fonts(),
-            None, None, None, None, None,
+            None,
+            None,
+            None,
+            None,
+            None,
             96,
         )
     }
@@ -617,7 +666,11 @@ mod tests {
             crate::Rgba::rgb(0, 0, 0),
             [None; 6],
             default_fonts(),
-            None, None, None, None, None,
+            None,
+            None,
+            None,
+            None,
+            None,
             96,
         )
     }
@@ -733,9 +786,17 @@ mod tests {
         let fg = crate::Rgba::rgb(0, 0, 0);
         let bg = crate::Rgba::rgb(255, 255, 255);
         let theme = build_theme(
-            accent, fg, bg, [None; 6],
+            accent,
+            fg,
+            bg,
+            [None; 6],
             default_fonts(),
-            None, None, None, None, None, 96,
+            None,
+            None,
+            None,
+            None,
+            None,
+            96,
         );
         let variant = theme.light.as_ref().expect("light variant");
         assert_eq!(variant.defaults.accent, Some(accent));
@@ -762,7 +823,12 @@ mod tests {
             crate::Rgba::rgb(255, 255, 255),
             shades,
             default_fonts(),
-            None, None, None, None, None, 96,
+            None,
+            None,
+            None,
+            None,
+            None,
+            96,
         );
         // In light mode, AccentDark1 is not directly used in ThemeVariant (old primary_background
         // is no longer a field). But the logic still selects primary_bg -- which is not set on the
@@ -784,7 +850,12 @@ mod tests {
             crate::Rgba::rgb(0, 0, 0),
             shades,
             default_fonts(),
-            None, None, None, None, None, 96,
+            None,
+            None,
+            None,
+            None,
+            None,
+            96,
         );
         let variant = theme.dark.as_ref().expect("dark variant");
         assert_eq!(variant.defaults.accent, Some(accent));
@@ -801,10 +872,19 @@ mod tests {
             crate::Rgba::rgb(255, 255, 255),
             [None; 6],
             fonts,
-            None, None, None, None, None, 96,
+            None,
+            None,
+            None,
+            None,
+            None,
+            96,
         );
         let variant = theme.light.as_ref().expect("light variant");
-        let title_font = variant.window.title_bar_font.as_ref().expect("title_bar_font");
+        let title_font = variant
+            .window
+            .title_bar_font
+            .as_ref()
+            .expect("title_bar_font");
         assert_eq!(title_font.family.as_deref(), Some("Segoe UI"));
         assert_eq!(title_font.weight, Some(700));
     }
@@ -818,7 +898,12 @@ mod tests {
             crate::Rgba::rgb(255, 255, 255),
             [None; 6],
             fonts,
-            None, None, None, None, None, 96,
+            None,
+            None,
+            None,
+            None,
+            None,
+            96,
         );
         let variant = theme.light.as_ref().expect("light variant");
         let menu_font = variant.menu.font.as_ref().expect("menu.font");
@@ -836,7 +921,12 @@ mod tests {
             crate::Rgba::rgb(255, 255, 255),
             [None; 6],
             fonts,
-            None, None, None, None, None, 96,
+            None,
+            None,
+            None,
+            None,
+            None,
+            96,
         );
         let variant = theme.light.as_ref().expect("light variant");
         assert_eq!(variant.defaults.font.family.as_deref(), Some("Segoe UI"));
@@ -845,9 +935,9 @@ mod tests {
 
     // === SysColors per-widget tests (WIN-03) ===
 
-    #[test]
-    fn build_theme_with_sys_colors_populates_widgets() {
-        let colors = SysColors {
+    /// Helper: create sample SysColors for tests.
+    fn sample_sys_colors() -> SysColors {
+        SysColors {
             btn_face: crate::Rgba::rgb(240, 240, 240),
             btn_text: crate::Rgba::rgb(0, 0, 0),
             menu_bg: crate::Rgba::rgb(255, 255, 255),
@@ -858,7 +948,15 @@ mod tests {
             window_text: crate::Rgba::rgb(0, 0, 0),
             highlight: crate::Rgba::rgb(0, 120, 215),
             highlight_text: crate::Rgba::rgb(255, 255, 255),
-        };
+            caption_text: crate::Rgba::rgb(0, 0, 0),
+            inactive_caption_text: crate::Rgba::rgb(128, 128, 128),
+            gray_text: crate::Rgba::rgb(109, 109, 109),
+        }
+    }
+
+    #[test]
+    fn build_theme_with_sys_colors_populates_widgets() {
+        let colors = sample_sys_colors();
         let theme = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),
@@ -866,19 +964,130 @@ mod tests {
             [None; 6],
             default_fonts(),
             Some(&colors),
-            None, None, None, None, 96,
+            None,
+            None,
+            None,
+            None,
+            96,
         );
         let variant = theme.light.as_ref().expect("light variant");
-        assert_eq!(variant.button.background, Some(crate::Rgba::rgb(240, 240, 240)));
+        assert_eq!(
+            variant.button.background,
+            Some(crate::Rgba::rgb(240, 240, 240))
+        );
         assert_eq!(variant.button.foreground, Some(crate::Rgba::rgb(0, 0, 0)));
-        assert_eq!(variant.menu.background, Some(crate::Rgba::rgb(255, 255, 255)));
+        assert_eq!(
+            variant.menu.background,
+            Some(crate::Rgba::rgb(255, 255, 255))
+        );
         assert_eq!(variant.menu.foreground, Some(crate::Rgba::rgb(0, 0, 0)));
-        assert_eq!(variant.tooltip.background, Some(crate::Rgba::rgb(255, 255, 225)));
+        assert_eq!(
+            variant.tooltip.background,
+            Some(crate::Rgba::rgb(255, 255, 225))
+        );
         assert_eq!(variant.tooltip.foreground, Some(crate::Rgba::rgb(0, 0, 0)));
-        assert_eq!(variant.input.background, Some(crate::Rgba::rgb(255, 255, 255)));
+        assert_eq!(
+            variant.input.background,
+            Some(crate::Rgba::rgb(255, 255, 255))
+        );
         assert_eq!(variant.input.foreground, Some(crate::Rgba::rgb(0, 0, 0)));
         assert_eq!(variant.list.selection, Some(crate::Rgba::rgb(0, 120, 215)));
-        assert_eq!(variant.list.selection_foreground, Some(crate::Rgba::rgb(255, 255, 255)));
+        assert_eq!(
+            variant.list.selection_foreground,
+            Some(crate::Rgba::rgb(255, 255, 255))
+        );
+        assert_eq!(
+            variant.window.title_bar_foreground,
+            Some(crate::Rgba::rgb(0, 0, 0)),
+            "caption_text -> window.title_bar_foreground"
+        );
+        assert_eq!(
+            variant.window.inactive_title_bar_foreground,
+            Some(crate::Rgba::rgb(128, 128, 128)),
+            "inactive_caption_text -> window.inactive_title_bar_foreground"
+        );
+        assert_eq!(
+            variant.input.placeholder,
+            Some(crate::Rgba::rgb(109, 109, 109)),
+            "gray_text -> input.placeholder"
+        );
+    }
+
+    // === Focus ring width test ===
+
+    #[test]
+    fn build_theme_sets_focus_ring_width() {
+        let theme = light_theme();
+        let variant = theme.light.as_ref().expect("light variant");
+        assert!(
+            variant.defaults.focus_ring_width.is_some(),
+            "focus_ring_width should be set from SM_CXFOCUSBORDER"
+        );
+    }
+
+    // === Text scale tests ===
+
+    #[test]
+    fn build_theme_text_scale_from_font_size() {
+        let fonts = named_fonts(); // msg font size = 9.0
+        let theme = build_theme(
+            crate::Rgba::rgb(0, 120, 215),
+            crate::Rgba::rgb(0, 0, 0),
+            crate::Rgba::rgb(255, 255, 255),
+            [None; 6],
+            fonts,
+            None,
+            None,
+            None,
+            None,
+            None,
+            96,
+        );
+        let variant = theme.light.as_ref().expect("light variant");
+        let caption = variant.text_scale.caption.as_ref().expect("caption");
+        assert!((caption.size.unwrap_or(0.0) - 9.0 * 0.85).abs() < 0.01);
+        assert_eq!(caption.weight, Some(400));
+
+        let heading = variant
+            .text_scale
+            .section_heading
+            .as_ref()
+            .expect("section_heading");
+        assert!((heading.size.unwrap_or(0.0) - 9.0 * 1.15).abs() < 0.01);
+        assert_eq!(heading.weight, Some(600));
+
+        let title = variant
+            .text_scale
+            .dialog_title
+            .as_ref()
+            .expect("dialog_title");
+        assert!((title.size.unwrap_or(0.0) - 9.0 * 1.35).abs() < 0.01);
+        assert_eq!(title.weight, Some(600));
+
+        let display = variant.text_scale.display.as_ref().expect("display");
+        assert!((display.size.unwrap_or(0.0) - 9.0 * 1.80).abs() < 0.01);
+        assert_eq!(display.weight, Some(300));
+    }
+
+    #[test]
+    fn compute_text_scale_values() {
+        let ts = compute_text_scale(10.0);
+        let cap = ts.caption.as_ref().unwrap();
+        assert!((cap.size.unwrap() - 8.5).abs() < 0.01);
+        assert_eq!(cap.weight, Some(400));
+        assert!(cap.line_height.is_none());
+
+        let sh = ts.section_heading.as_ref().unwrap();
+        assert!((sh.size.unwrap() - 11.5).abs() < 0.01);
+        assert_eq!(sh.weight, Some(600));
+
+        let dt = ts.dialog_title.as_ref().unwrap();
+        assert!((dt.size.unwrap() - 13.5).abs() < 0.01);
+        assert_eq!(dt.weight, Some(600));
+
+        let d = ts.display.as_ref().unwrap();
+        assert!((d.size.unwrap() - 18.0).abs() < 0.01);
+        assert_eq!(d.weight, Some(300));
     }
 
     // === DWM title bar color test (WIN-02) ===
@@ -894,7 +1103,10 @@ mod tests {
             default_fonts(),
             None,
             Some(dwm_color),
-            None, None, None, 96,
+            None,
+            None,
+            None,
+            96,
         );
         let variant = theme.light.as_ref().expect("light variant");
         assert_eq!(variant.window.title_bar_background, Some(dwm_color));
@@ -909,9 +1121,12 @@ mod tests {
             crate::Rgba::rgb(255, 255, 255),
             [None; 6],
             default_fonts(),
-            None, None,
+            None,
+            None,
             Some(inactive),
-            None, None, 96,
+            None,
+            None,
+            96,
         );
         let variant = theme.light.as_ref().expect("light variant");
         assert_eq!(variant.window.inactive_title_bar_background, Some(inactive));
@@ -927,9 +1142,12 @@ mod tests {
             crate::Rgba::rgb(255, 255, 255),
             [None; 6],
             default_fonts(),
-            None, None, None,
+            None,
+            None,
+            None,
             Some((16.0, 32.0)),
-            None, 96,
+            None,
+            96,
         );
         let variant = theme.light.as_ref().expect("light variant");
         assert_eq!(variant.defaults.icon_sizes.small, Some(16.0));
@@ -951,7 +1169,10 @@ mod tests {
             crate::Rgba::rgb(255, 255, 255),
             [None; 6],
             default_fonts(),
-            None, None, None, None,
+            None,
+            None,
+            None,
+            None,
             Some(&accessibility),
             96,
         );
@@ -1024,7 +1245,12 @@ mod tests {
             bg,
             [None; 6],
             default_fonts(),
-            None, None, None, None, None, 96,
+            None,
+            None,
+            None,
+            None,
+            None,
+            96,
         );
         let variant = theme.light.as_ref().expect("light variant");
         assert_eq!(variant.defaults.surface, Some(bg));
@@ -1035,10 +1261,15 @@ mod tests {
         let theme = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),       // fg
-            crate::Rgba::rgb(255, 255, 255),  // bg
+            crate::Rgba::rgb(255, 255, 255), // bg
             [None; 6],
             default_fonts(),
-            None, None, None, None, None, 96,
+            None,
+            None,
+            None,
+            None,
+            None,
+            96,
         );
         let variant = theme.light.as_ref().expect("light variant");
         // midpoint of (0,0,0) and (255,255,255) = (127,127,127)
@@ -1076,7 +1307,10 @@ mod tests {
         base.merge(&reader_output);
 
         // Extract light variant.
-        let mut light = base.light.clone().expect("light variant should exist after merge");
+        let mut light = base
+            .light
+            .clone()
+            .expect("light variant should exist after merge");
         light.resolve();
         let resolved = light.validate().unwrap_or_else(|e| {
             panic!("Windows resolve/validate pipeline failed: {e}");
