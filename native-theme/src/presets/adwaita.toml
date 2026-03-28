@@ -72,6 +72,9 @@ large = 32.0
 dialog = 22.0
 panel = 20.0
 
+[light.window]
+title_bar_foreground = "#2e3436"
+
 [light.button]
 background = "#e8e8e8"
 foreground = "#2e3436"
@@ -84,6 +87,7 @@ icon_spacing = 6.0
 [light.input]
 background = "#ffffff"
 foreground = "#2e3436"
+placeholder = "#929595"
 min_height = 34.0
 padding_horizontal = 12.0
 padding_vertical = 8.0
@@ -269,6 +273,9 @@ large = 32.0
 dialog = 22.0
 panel = 20.0
 
+[dark.window]
+title_bar_foreground = "#ffffff"
+
 [dark.button]
 background = "#3a3a3e"
 foreground = "#ffffff"
@@ -281,6 +288,7 @@ icon_spacing = 6.0
 [dark.input]
 background = "#303034"
 foreground = "#ffffff"
+placeholder = "#8b8b8b"
 min_height = 34.0
 padding_horizontal = 12.0
 padding_vertical = 8.0
