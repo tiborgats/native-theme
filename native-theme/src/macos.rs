@@ -10,8 +10,8 @@
 use block2::RcBlock;
 #[cfg(all(target_os = "macos", feature = "macos"))]
 use objc2_app_kit::{
-    NSAppearance, NSColor, NSColorSpace, NSFont, NSFontWeightRegular, NSFontWeightTrait,
-    NSFontTraitsAttribute, NSScroller, NSScrollerStyle, NSWorkspace,
+    NSAppearance, NSColor, NSColorSpace, NSFont, NSFontTraitsAttribute, NSFontWeightRegular,
+    NSFontWeightTrait, NSScroller, NSScrollerStyle, NSWorkspace,
 };
 #[cfg(all(target_os = "macos", feature = "macos"))]
 use objc2_foundation::{NSDictionary, NSNumber, NSString};
@@ -40,6 +40,7 @@ struct PerWidgetColors {
     alternate_row: Option<crate::Rgba>,
     header_foreground: Option<crate::Rgba>,
     grid_color: Option<crate::Rgba>,
+    title_bar_foreground: Option<crate::Rgba>,
 }
 
 /// Read all semantic NSColor values for the current appearance context.
@@ -76,6 +77,7 @@ fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
     let alt_bg_colors = unsafe { NSColor::alternatingContentBackgroundColors() };
     let header_text_c = unsafe { NSColor::headerTextColor() };
     let grid_c = unsafe { NSColor::gridColor() };
+    let frame_text_c = unsafe { NSColor::windowFrameTextColor() };
 
     let label = nscolor_to_rgba(&label_c, &srgb);
 
@@ -118,6 +120,7 @@ fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
         alternate_row,
         header_foreground: nscolor_to_rgba(&header_text_c, &srgb),
         grid_color: nscolor_to_rgba(&grid_c, &srgb),
+        title_bar_foreground: nscolor_to_rgba(&frame_text_c, &srgb),
     };
 
     (defaults, per_widget)
@@ -151,7 +154,12 @@ fn read_accessibility() -> (Option<bool>, Option<bool>, Option<bool>, Option<f32
         None
     };
 
-    (reduce_motion, high_contrast, reduce_transparency, text_scaling_factor)
+    (
+        reduce_motion,
+        high_contrast,
+        reduce_transparency,
+        text_scaling_factor,
+    )
 }
 
 /// Map an AppKit font weight (-1.0..1.0) to the nearest CSS weight (100..900).
@@ -217,7 +225,10 @@ fn read_fonts() -> (crate::FontSpec, crate::FontSpec) {
     let mono_font =
         unsafe { NSFont::monospacedSystemFontOfSize_weight(system_size, NSFontWeightRegular) };
 
-    (fontspec_from_nsfont(&system_font), fontspec_from_nsfont(&mono_font))
+    (
+        fontspec_from_nsfont(&system_font),
+        fontspec_from_nsfont(&mono_font),
+    )
 }
 
 /// Read per-widget fonts: menu, tooltip, and title bar.
@@ -478,6 +489,7 @@ pub fn from_macos() -> crate::Result<crate::NativeTheme> {
         v.list.alternate_row = pw.alternate_row;
         v.list.header_foreground = pw.header_foreground;
         v.list.grid_color = pw.grid_color;
+        v.window.title_bar_foreground = pw.title_bar_foreground;
     }
     if let (Some(v), Some(pw)) = (&mut theme.dark, dark_pw) {
         v.input.placeholder = pw.placeholder;
@@ -485,6 +497,7 @@ pub fn from_macos() -> crate::Result<crate::NativeTheme> {
         v.list.alternate_row = pw.alternate_row;
         v.list.header_foreground = pw.header_foreground;
         v.list.grid_color = pw.grid_color;
+        v.window.title_bar_foreground = pw.title_bar_foreground;
     }
 
     // Scrollbar overlay mode (appearance-independent, requires main thread).
@@ -651,7 +664,10 @@ mod tests {
 
         let light = theme.light.as_ref().unwrap();
         // Variant should not be empty because widget defaults are populated
-        assert!(!light.is_empty(), "light variant should have widget defaults");
+        assert!(
+            !light.is_empty(),
+            "light variant should have widget defaults"
+        );
 
         let dark = theme.dark.as_ref().unwrap();
         assert!(!dark.is_empty(), "dark variant should have widget defaults");
@@ -715,11 +731,7 @@ mod tests {
     #[test]
     fn build_theme_per_widget_fonts_populated() {
         let wf = sample_widget_fonts();
-        let theme = build_theme(
-            sample_light_defaults(),
-            sample_dark_defaults(),
-            &wf,
-        );
+        let theme = build_theme(sample_light_defaults(), sample_dark_defaults(), &wf);
 
         let light = theme.light.as_ref().unwrap();
         assert_eq!(
@@ -820,10 +832,7 @@ mod tests {
             light.list.header_foreground.is_none(),
             "header_foreground starts None"
         );
-        assert!(
-            light.list.grid_color.is_none(),
-            "grid_color starts None"
-        );
+        assert!(light.list.grid_color.is_none(), "grid_color starts None");
     }
 
     #[test]
@@ -885,7 +894,10 @@ mod tests {
         base.merge(&reader_output);
 
         // Test light variant.
-        let mut light = base.light.clone().expect("light variant should exist after merge");
+        let mut light = base
+            .light
+            .clone()
+            .expect("light variant should exist after merge");
         light.resolve();
         let resolved = light.validate().unwrap_or_else(|e| {
             panic!("macOS resolve/validate pipeline failed (light): {e}");
@@ -907,7 +919,10 @@ mod tests {
         );
 
         // Test dark variant too.
-        let mut dark = base.dark.clone().expect("dark variant should exist after merge");
+        let mut dark = base
+            .dark
+            .clone()
+            .expect("dark variant should exist after merge");
         dark.resolve();
         let resolved_dark = dark.validate().unwrap_or_else(|e| {
             panic!("macOS resolve/validate pipeline failed (dark): {e}");
