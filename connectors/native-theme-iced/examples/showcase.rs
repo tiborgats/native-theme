@@ -806,9 +806,8 @@ enum Message {
 ///
 /// `screencapture -l` (window-ID capture) does not include the title bar for
 /// winit/iced windows, so we use `-R` (region capture) instead.  winit reports
-/// `NSWindow.frame` as the content rect (no title bar), so we compute the
-/// full frame via `[NSWindow frameRectForContentRect:styleMask:]` to obtain
-/// the capture region that includes the title bar.
+/// `NSWindow.frame` as the content rect (no title bar), so we expand the
+/// capture region upward by the standard macOS title bar height (28 points).
 #[cfg(target_os = "macos")]
 fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
     use std::process::Command;
@@ -857,24 +856,31 @@ fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
         // NSWindow.frame for winit windows is the content rect (no title bar).
         let frame: CGRect = objc2::msg_send![main_window, frame];
 
-        // Compute the full frame that includes the title bar by treating the
-        // current frame as a content rect and asking NSWindow for the
-        // decoration-inclusive frame.
-        let style: usize = objc2::msg_send![main_window, styleMask];
-        let full_frame: CGRect = objc2::msg_send![
-            objc2::runtime::AnyClass::get(c"NSWindow").unwrap(),
-            frameRectForContentRect: frame,
-            styleMask: style
-        ];
-
         let screen: *mut objc2::runtime::AnyObject = objc2::msg_send![main_window, screen];
         let screen_frame: CGRect = objc2::msg_send![screen, frame];
 
+        // Expand the capture region upward by the macOS title bar height
+        // (28 points, standard for titled windows without a toolbar).
+        let title_bar_h = 28.0_f64;
+        let capture_h = frame.h + title_bar_h;
+
         // macOS uses bottom-left origin; screencapture -R uses top-left.
-        let y = screen_frame.h - full_frame.y - full_frame.h;
+        let y = (screen_frame.h - frame.y - capture_h).max(0.0);
+        eprintln!(
+            "iced-macos capture: frame=({},{},{},{}), screen_h={}, region=({},{},{},{})",
+            frame.x,
+            frame.y,
+            frame.w,
+            frame.h,
+            screen_frame.h,
+            frame.x as i32,
+            y as i32,
+            frame.w as i32,
+            capture_h as i32,
+        );
         format!(
             "{},{},{},{}",
-            full_frame.x as i32, y as i32, full_frame.w as i32, full_frame.h as i32
+            frame.x as i32, y as i32, frame.w as i32, capture_h as i32
         )
     };
 
@@ -901,7 +907,6 @@ fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
 #[cfg(target_os = "windows")]
 fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
     use windows::Win32::Foundation::*;
-    use windows::Win32::Graphics::Dwm::*;
     use windows::Win32::Graphics::Gdi::*;
     use windows::Win32::UI::WindowsAndMessaging::*;
     use windows::core::PCWSTR;
@@ -917,20 +922,8 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
         let hwnd = FindWindowW(None, PCWSTR(title_w.as_ptr()))
             .map_err(|e| format!("FindWindowW failed: {e}"))?;
 
-        // Use DWMWA_EXTENDED_FRAME_BOUNDS to get the visible window bounds.
-        // GetWindowRect includes the invisible DWM border/shadow area which
-        // captures desktop background instead of actual window content.
         let mut rect = RECT::default();
-        if DwmGetWindowAttribute(
-            hwnd,
-            DWMWA_EXTENDED_FRAME_BOUNDS,
-            &mut rect as *mut _ as *mut std::ffi::c_void,
-            std::mem::size_of::<RECT>() as u32,
-        )
-        .is_err()
-        {
-            GetWindowRect(hwnd, &mut rect).map_err(|e| format!("GetWindowRect failed: {e}"))?;
-        }
+        GetWindowRect(hwnd, &mut rect).map_err(|e| format!("GetWindowRect failed: {e}"))?;
 
         let width = rect.right - rect.left;
         let height = rect.bottom - rect.top;
@@ -996,16 +989,74 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
             return Err("GetDIBits returned 0 lines".into());
         }
 
+        // BGRA → RGBA with forced opaque alpha
         for chunk in pixels.chunks_exact_mut(4) {
-            chunk.swap(0, 2); // BGRA -> RGBA
-            chunk[3] = 255; // force opaque (DWM alpha may be 0 in border area)
+            chunk.swap(0, 2);
+            chunk[3] = 255;
+        }
+
+        // Auto-crop the black border caused by DPI-coordinate mismatch
+        // between GetWindowRect (logical) and the screen DC (physical).
+        // Scan from each edge to find where actual window content begins.
+        let px = |x: i32, y: i32| -> bool {
+            let i = (y * width + x) as usize * 4;
+            pixels[i] > 2 || pixels[i + 1] > 2 || pixels[i + 2] > 2
+        };
+        let mut y0 = 0i32;
+        'top: for y in 0..height {
+            for x in 0..width {
+                if px(x, y) {
+                    y0 = y;
+                    break 'top;
+                }
+            }
+        }
+        let mut x0 = 0i32;
+        'left: for x in 0..width {
+            for y in y0..height {
+                if px(x, y) {
+                    x0 = x;
+                    break 'left;
+                }
+            }
+        }
+        let mut y1 = height;
+        'bot: for y in (0..height).rev() {
+            for x in 0..width {
+                if px(x, y) {
+                    y1 = y + 1;
+                    break 'bot;
+                }
+            }
+        }
+        let mut x1 = width;
+        'right: for x in (0..width).rev() {
+            for y in 0..height {
+                if px(x, y) {
+                    x1 = x + 1;
+                    break 'right;
+                }
+            }
+        }
+        let cw = x1 - x0;
+        let ch = y1 - y0;
+        eprintln!(
+            "windows crop: full={}x{}, content=({},{})..({},{}) = {}x{}",
+            width, height, x0, y0, x1, y1, cw, ch
+        );
+
+        let mut cropped = Vec::with_capacity((cw * ch * 4) as usize);
+        for y in y0..y1 {
+            let s = (y * width + x0) as usize * 4;
+            let e = s + cw as usize * 4;
+            cropped.extend_from_slice(&pixels[s..e]);
         }
 
         image::save_buffer(
             output_path,
-            &pixels,
-            width as u32,
-            height as u32,
+            &cropped,
+            cw as u32,
+            ch as u32,
             image::ColorType::Rgba8,
         )
         .map_err(|e| format!("Failed to save PNG: {e}"))

@@ -5211,7 +5211,6 @@ fn capture_own_window_macos(_window: &mut Window, output_path: &str) {
 #[cfg(target_os = "windows")]
 fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
     use windows::Win32::Foundation::*;
-    use windows::Win32::Graphics::Dwm::*;
     use windows::Win32::Graphics::Gdi::*;
     use windows::Win32::UI::WindowsAndMessaging::*;
     use windows::core::PCWSTR;
@@ -5232,22 +5231,10 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
             }
         };
 
-        // Use DWMWA_EXTENDED_FRAME_BOUNDS to get the visible window bounds.
-        // GetWindowRect includes the invisible DWM border/shadow area which
-        // captures desktop background instead of actual window content.
         let mut rect = RECT::default();
-        if DwmGetWindowAttribute(
-            hwnd,
-            DWMWA_EXTENDED_FRAME_BOUNDS,
-            &mut rect as *mut _ as *mut std::ffi::c_void,
-            std::mem::size_of::<RECT>() as u32,
-        )
-        .is_err()
-        {
-            if let Err(e) = GetWindowRect(hwnd, &mut rect) {
-                eprintln!("GetWindowRect failed: {e}");
-                return;
-            }
+        if let Err(e) = GetWindowRect(hwnd, &mut rect) {
+            eprintln!("GetWindowRect failed: {e}");
+            return;
         }
 
         let width = rect.right - rect.left;
@@ -5317,16 +5304,73 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
             return;
         }
 
+        // BGRA → RGBA with forced opaque alpha
         for chunk in pixels.chunks_exact_mut(4) {
-            chunk.swap(0, 2); // BGRA -> RGBA
-            chunk[3] = 255; // force opaque (DWM alpha may be 0 in border area)
+            chunk.swap(0, 2);
+            chunk[3] = 255;
+        }
+
+        // Auto-crop the black border caused by DPI-coordinate mismatch
+        // between GetWindowRect (logical) and the screen DC (physical).
+        let px = |x: i32, y: i32| -> bool {
+            let i = (y * width + x) as usize * 4;
+            pixels[i] > 2 || pixels[i + 1] > 2 || pixels[i + 2] > 2
+        };
+        let mut y0 = 0i32;
+        'top: for y in 0..height {
+            for x in 0..width {
+                if px(x, y) {
+                    y0 = y;
+                    break 'top;
+                }
+            }
+        }
+        let mut x0 = 0i32;
+        'left: for x in 0..width {
+            for y in y0..height {
+                if px(x, y) {
+                    x0 = x;
+                    break 'left;
+                }
+            }
+        }
+        let mut y1 = height;
+        'bot: for y in (0..height).rev() {
+            for x in 0..width {
+                if px(x, y) {
+                    y1 = y + 1;
+                    break 'bot;
+                }
+            }
+        }
+        let mut x1 = width;
+        'right: for x in (0..width).rev() {
+            for y in 0..height {
+                if px(x, y) {
+                    x1 = x + 1;
+                    break 'right;
+                }
+            }
+        }
+        let cw = x1 - x0;
+        let ch = y1 - y0;
+        eprintln!(
+            "windows crop: full={}x{}, content=({},{})..({},{}) = {}x{}",
+            width, height, x0, y0, x1, y1, cw, ch
+        );
+
+        let mut cropped = Vec::with_capacity((cw * ch * 4) as usize);
+        for y in y0..y1 {
+            let s = (y * width + x0) as usize * 4;
+            let e = s + cw as usize * 4;
+            cropped.extend_from_slice(&pixels[s..e]);
         }
 
         match image::save_buffer(
             output_path,
-            &pixels,
-            width as u32,
-            height as u32,
+            &cropped,
+            cw as u32,
+            ch as u32,
             image::ColorType::Rgba8,
         ) {
             Ok(()) => eprintln!("Screenshot saved to {output_path}"),

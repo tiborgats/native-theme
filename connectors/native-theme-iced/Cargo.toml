@@ -37,7 +37,6 @@ native-theme = { workspace = true, features = ["system-icons", "macos"] }
 native-theme = { workspace = true, features = ["system-icons", "windows"] }
 windows = { version = "0.62.2", default-features = false, features = [
     "Win32_Foundation",
-    "Win32_Graphics_Dwm",
     "Win32_Graphics_Gdi",
     "Win32_UI_WindowsAndMessaging",
 ] }
