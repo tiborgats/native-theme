@@ -5199,27 +5199,44 @@ fn get_main_window_ptr() -> Option<*mut objc2::runtime::AnyObject> {
 /// the screenshot capture.  Must be called **outside** `cx.update_window` to
 /// avoid deadlocking the window-state mutex (since `setFrameSize:` acquires
 /// it internally).
-/// Minimal Core Graphics types for ObjC interop (repr(C) matches ABI).
+/// Minimal Core Graphics types for ObjC interop.
+/// Based on objc2's encode_core_graphics example.
 #[cfg(target_os = "macos")]
-#[repr(C)]
-#[derive(Clone, Copy)]
-struct CGSize {
-    width: f64,
-    height: f64,
-}
-#[cfg(target_os = "macos")]
-#[repr(C)]
-#[derive(Clone, Copy)]
-struct CGRect {
-    origin: CGPoint,
-    size: CGSize,
-}
-#[cfg(target_os = "macos")]
-#[repr(C)]
-#[derive(Clone, Copy)]
-struct CGPoint {
-    x: f64,
-    y: f64,
+mod cg_types {
+    use objc2::encode::{Encode, Encoding};
+
+    #[repr(C)]
+    pub struct CGPoint {
+        pub x: f64,
+        pub y: f64,
+    }
+    // SAFETY: repr(C) struct with correct encoding.
+    unsafe impl Encode for CGPoint {
+        const ENCODING: Encoding =
+            Encoding::Struct("CGPoint", &[f64::ENCODING, f64::ENCODING]);
+    }
+
+    #[repr(C)]
+    pub struct CGSize {
+        pub width: f64,
+        pub height: f64,
+    }
+    // SAFETY: repr(C) struct with correct encoding.
+    unsafe impl Encode for CGSize {
+        const ENCODING: Encoding =
+            Encoding::Struct("CGSize", &[f64::ENCODING, f64::ENCODING]);
+    }
+
+    #[repr(C)]
+    pub struct CGRect {
+        pub origin: CGPoint,
+        pub size: CGSize,
+    }
+    // SAFETY: repr(C) struct with correct encoding.
+    unsafe impl Encode for CGRect {
+        const ENCODING: Encoding =
+            Encoding::Struct("CGRect", &[CGPoint::ENCODING, CGSize::ENCODING]);
+    }
 }
 
 #[cfg(target_os = "macos")]
@@ -5228,8 +5245,8 @@ fn nudge_content_size(delta_w: f64, delta_h: f64) {
         unsafe {
             let content_view: *mut objc2::runtime::AnyObject =
                 objc2::msg_send![main_window, contentView];
-            let frame: CGRect = objc2::msg_send![content_view, frame];
-            let new_size = CGSize {
+            let frame: cg_types::CGRect = objc2::msg_send![content_view, frame];
+            let new_size = cg_types::CGSize {
                 width: frame.size.width + delta_w,
                 height: frame.size.height + delta_h,
             };
