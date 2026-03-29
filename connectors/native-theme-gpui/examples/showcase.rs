@@ -5314,7 +5314,7 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
         // between GetWindowRect (logical) and the screen DC (physical).
         let px = |x: i32, y: i32| -> bool {
             let i = (y * width + x) as usize * 4;
-            pixels[i] > 2 || pixels[i + 1] > 2 || pixels[i + 2] > 2
+            pixels[i] > 12 || pixels[i + 1] > 12 || pixels[i + 2] > 12
         };
         let mut y0 = 0i32;
         'top: for y in 0..height {

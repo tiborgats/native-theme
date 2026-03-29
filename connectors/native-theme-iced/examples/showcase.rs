@@ -802,17 +802,16 @@ enum Message {
 // Self-capture screenshot (macOS only)
 // ---------------------------------------------------------------------------
 
-/// Capture the iced window including decorations using macOS `screencapture -R`.
+/// Capture the iced window including decorations using macOS `screencapture -l`.
 ///
-/// `screencapture -l` (window-ID capture) does not include the title bar for
-/// winit/iced windows, so we use `-R` (region capture) instead.  winit reports
-/// `NSWindow.frame` as the content rect (no title bar), so we expand the
-/// capture region upward by the standard macOS title bar height (28 points).
+/// Gets the CGWindowID via NSApplication -> mainWindow -> windowNumber, then
+/// shells out to `screencapture -l <id> -o <path>`.  This is the same approach
+/// used by the gpui showcase capture.
 #[cfg(target_os = "macos")]
 fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
     use std::process::Command;
 
-    let region = unsafe {
+    let window_id: i64 = unsafe {
         let ns_app: *mut objc2::runtime::AnyObject = objc2::msg_send![
             objc2::runtime::AnyClass::get(c"NSApplication").unwrap(),
             sharedApplication
@@ -821,71 +820,11 @@ fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
         if main_window.is_null() {
             return Err("No main window found".into());
         }
-
-        // CGRect layout: {{x, y}, {width, height}}
-        #[repr(C)]
-        #[derive(Copy, Clone)]
-        struct CGRect {
-            x: f64,
-            y: f64,
-            w: f64,
-            h: f64,
-        }
-        unsafe impl objc2::encode::Encode for CGRect {
-            const ENCODING: objc2::encode::Encoding = objc2::encode::Encoding::Struct(
-                "CGRect",
-                &[
-                    objc2::encode::Encoding::Struct(
-                        "CGPoint",
-                        &[
-                            objc2::encode::Encoding::Double,
-                            objc2::encode::Encoding::Double,
-                        ],
-                    ),
-                    objc2::encode::Encoding::Struct(
-                        "CGSize",
-                        &[
-                            objc2::encode::Encoding::Double,
-                            objc2::encode::Encoding::Double,
-                        ],
-                    ),
-                ],
-            );
-        }
-
-        // NSWindow.frame for winit windows is the content rect (no title bar).
-        let frame: CGRect = objc2::msg_send![main_window, frame];
-
-        let screen: *mut objc2::runtime::AnyObject = objc2::msg_send![main_window, screen];
-        let screen_frame: CGRect = objc2::msg_send![screen, frame];
-
-        // Expand the capture region upward by the macOS title bar height
-        // (28 points, standard for titled windows without a toolbar).
-        let title_bar_h = 28.0_f64;
-        let capture_h = frame.h + title_bar_h;
-
-        // macOS uses bottom-left origin; screencapture -R uses top-left.
-        let y = (screen_frame.h - frame.y - capture_h).max(0.0);
-        eprintln!(
-            "iced-macos capture: frame=({},{},{},{}), screen_h={}, region=({},{},{},{})",
-            frame.x,
-            frame.y,
-            frame.w,
-            frame.h,
-            screen_frame.h,
-            frame.x as i32,
-            y as i32,
-            frame.w as i32,
-            capture_h as i32,
-        );
-        format!(
-            "{},{},{},{}",
-            frame.x as i32, y as i32, frame.w as i32, capture_h as i32
-        )
+        objc2::msg_send![main_window, windowNumber]
     };
 
     let status = Command::new("screencapture")
-        .args(["-R", &region, "-x", output_path])
+        .args(["-l", &format!("{window_id}"), "-o", output_path])
         .status()
         .map_err(|e| format!("Failed to run screencapture: {e}"))?;
     if status.success() {
@@ -1000,7 +939,7 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
         // Scan from each edge to find where actual window content begins.
         let px = |x: i32, y: i32| -> bool {
             let i = (y * width + x) as usize * 4;
-            pixels[i] > 2 || pixels[i + 1] > 2 || pixels[i + 2] > 2
+            pixels[i] > 12 || pixels[i + 1] > 12 || pixels[i + 2] > 12
         };
         let mut y0 = 0i32;
         'top: for y in 0..height {

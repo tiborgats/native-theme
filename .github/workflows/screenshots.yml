@@ -157,5 +157,5 @@ jobs:
         with:
           name: screenshots-${{ matrix.os_name }}
           path: |
-            docs/assets/iced-*.png
-            docs/assets/gpui-*.png
+            docs/assets/iced-${{ matrix.os_name }}-*.png
+            docs/assets/gpui-${{ matrix.os_name }}-*.png
