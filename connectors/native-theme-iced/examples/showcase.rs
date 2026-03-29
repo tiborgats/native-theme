@@ -816,14 +816,27 @@ fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
             objc2::runtime::AnyClass::get(c"NSApplication").unwrap(),
             sharedApplication
         ];
-        // Ensure the app is front-most so mainWindow is set (the second
-        // invocation on CI may launch behind the terminal).
+        // Ensure the app is front-most (the second invocation on CI may
+        // launch behind the terminal).
         let _: () = objc2::msg_send![ns_app, activateIgnoringOtherApps: true];
-        let main_window: *mut objc2::runtime::AnyObject = objc2::msg_send![ns_app, mainWindow];
-        if main_window.is_null() {
-            return Err("No main window found".into());
+
+        // Try mainWindow first, then keyWindow, then the first window in
+        // the windows array.  On CI the second run may not become main.
+        let mut win: *mut objc2::runtime::AnyObject = objc2::msg_send![ns_app, mainWindow];
+        if win.is_null() {
+            win = objc2::msg_send![ns_app, keyWindow];
         }
-        objc2::msg_send![main_window, windowNumber]
+        if win.is_null() {
+            let windows: *mut objc2::runtime::AnyObject = objc2::msg_send![ns_app, windows];
+            let count: usize = objc2::msg_send![windows, count];
+            if count > 0 {
+                win = objc2::msg_send![windows, objectAtIndex: 0usize];
+            }
+        }
+        if win.is_null() {
+            return Err("No window found".into());
+        }
+        objc2::msg_send![win, windowNumber]
     };
 
     let status = Command::new("screencapture")
@@ -863,13 +876,9 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
         let hwnd = FindWindowW(None, PCWSTR(title_w.as_ptr()))
             .map_err(|e| format!("FindWindowW failed: {e}"))?;
 
-        // Move to top-left so the DPI coordinate offset (proportional to
-        // the window position) becomes ≈0.
-        let _ = SetWindowPos(hwnd, None, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
-        std::thread::sleep(std::time::Duration::from_millis(200));
-
-        // DWMWA_EXTENDED_FRAME_BOUNDS returns the visible bounds without
-        // the invisible DWM border.  Fall back to GetWindowRect.
+        // DWMWA_EXTENDED_FRAME_BOUNDS gives visible bounds in physical
+        // screen pixels (excluding the invisible DWM border), matching
+        // the screen DC coordinate space.  Fall back to GetWindowRect.
         let mut rect = RECT::default();
         if DwmGetWindowAttribute(
             hwnd,

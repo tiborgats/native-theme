@@ -34,6 +34,11 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y xvfb libxkbcommon-dev libxkbcommon-x11-dev libvulkan-dev mesa-vulkan-drivers
 
+      - name: Set display resolution (Windows)
+        if: runner.os == 'Windows'
+        shell: powershell
+        run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
+
       - name: Grant screen recording permission (macOS)
         if: runner.os == 'macOS'
         run: |

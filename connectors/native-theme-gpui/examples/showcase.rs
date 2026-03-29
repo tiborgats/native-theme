@@ -5230,12 +5230,9 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
             }
         };
 
-        // Move to top-left so the DPI coordinate offset becomes ≈0.
-        let _ = SetWindowPos(hwnd, None, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
-        std::thread::sleep(std::time::Duration::from_millis(200));
-
-        // DWMWA_EXTENDED_FRAME_BOUNDS gives visible bounds without the
-        // invisible DWM border.  Fall back to GetWindowRect.
+        // DWMWA_EXTENDED_FRAME_BOUNDS gives visible bounds in physical
+        // screen pixels (excluding the invisible DWM border), matching
+        // the screen DC coordinate space.  Fall back to GetWindowRect.
         let mut rect = RECT::default();
         if DwmGetWindowAttribute(
             hwnd,
