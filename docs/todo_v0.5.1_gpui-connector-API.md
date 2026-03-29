@@ -1,0 +1,2456 @@
+# v0.5.1 API Improvements -- native-theme-gpui (connector crate)
+
+Analysis of API critique, verified against actual code (2026-03-29).
+Each chapter covers one problem, lists all resolution options with pro/contra,
+and proposes the best solution.
+
+**Companion document**: [todo_v0.5.1_native-theme-API.md](todo_v0.5.1_native-theme-API.md)
+covers the native-theme core crate. Cross-references to it are marked with
+**[CORE-N]** (where N is the section number in the companion doc).
+
+**Assumed core renames**: Proposed code in this document uses post-rename names
+from the core crate per **[CORE-1]** (`ResolvedTheme` → `ResolvedThemeVariant`)
+and **[CORE-2]** (`NativeTheme` → `ThemeSpec`). Current-code examples retain
+the pre-rename names.
+
+---
+
+## Table of Contents
+
+1. [Excessive ceremony for the primary use case](#1-excessive-ceremony-for-the-primary-use-case)
+2. [is_dark threaded redundantly (with split-brain bug)](#2-is_dark-threaded-redundantly-with-split-brain-bug)
+3. [name: &str mandatory in to_theme()](#3-name-str-mandatory-in-to_theme)
+4. [Stringly-typed parameters where enums exist](#4-stringly-typed-parameters-where-enums-exist)
+5. [Inconsistent naming across icon functions](#5-inconsistent-naming-across-icon-functions)
+6. [Suffix explosion instead of optional parameters](#6-suffix-explosion-instead-of-optional-parameters)
+7. [with_spin_animation mixes data with rendering](#7-with_spin_animation-mixes-data-with-rendering)
+8. [animated_frames_to_image_sources misuses Option](#8-animated_frames_to_image_sources-misuses-option)
+9. [All internal modules are pub](#9-all-internal-modules-are-pub)
+10. [too_many_arguments on private helpers](#10-too_many_arguments-on-private-helpers)
+11. [No convenience constructors on SystemTheme](#11-no-convenience-constructors-on-systemtheme)
+12. [Chart colors are monochromatic](#12-chart-colors-are-monochromatic)
+13. [Massive silent data loss](#13-massive-silent-data-loss)
+14. [Hardcoded magenta and overlay values](#14-hardcoded-magenta-and-overlay-values)
+15. [Links have zero hover/active feedback](#15-links-have-zero-hoveractive-feedback)
+16. [Selection alpha silently clamped](#16-selection-alpha-silently-clamped)
+17. [No re-exports of API-surface types](#17-no-re-exports-of-api-surface-types)
+18. [Dead parameters in assign helpers](#18-dead-parameters-in-assign-helpers)
+19. [accent_foreground mapped to wrong source](#19-accent_foreground-mapped-to-wrong-source)
+20. [radius truncated instead of rounded](#20-radius-truncated-instead-of-rounded)
+21. [to_image_source silently produces broken images](#21-to_image_source-silently-produces-broken-images)
+22. [animated_frames_to_image_sources discards timing data](#22-animated_frames_to_image_sources-discards-timing-data)
+23. [SVG rasterize size hardcoded at 48px](#23-svg-rasterize-size-hardcoded-at-48px)
+24. [Icon mapping tables have no coverage tests](#24-icon-mapping-tables-have-no-coverage-tests)
+25. [ThemeColor field coverage not enforced at compile time](#25-themecolor-field-coverage-not-enforced-at-compile-time)
+26. [hover_color doc comment is a copy-paste error](#26-hover_color-doc-comment-is-a-copy-paste-error)
+27. [colorize_svg misses explicit black fills](#27-colorize_svg-misses-explicit-black-fills)
+
+---
+
+## 1. Excessive ceremony for the primary use case
+
+**Verdict: VALID -- high priority**
+
+**Depends on [CORE-3]**: `ThemeVariant::into_resolved()` must land in native-theme
+first. The convenience functions proposed here call `into_resolved()` internally.
+
+**Also absorbs**: Sections 2 (redundant is_dark) and 3 (mandatory name) for the
+common case. **[CORE-10]** (forced clone) is also absorbed -- the convenience
+function clones internally.
+
+The most common operation today requires 6 steps:
+
+```rust
+let nt = NativeTheme::preset("dracula")?;
+if let Some(variant) = nt.pick_variant(is_dark) {
+    let mut v = variant.clone();
+    v.resolve();
+    let resolved = v.validate()?;
+    let theme = to_theme(&resolved, "My App", is_dark);
+}
+```
+
+The internal `resolve_variant()` in native-theme/src/lib.rs already does the
+resolve+validate chain but is private (`fn`, not `pub`). The internal API is
+better than the public one.
+
+### Option A: Add `native_theme_gpui::from_preset(name, is_dark) -> Result<Theme>`
+
+**Pro:**
+- One-liner for the most common use case
+- Hides the resolve/validate/convert pipeline completely
+- The preset name doubles as the theme display name (no extra `&str`)
+- Can detect is_dark from the resolved colors internally
+- Easy to document as THE entry point
+
+**Contra:**
+- Adds another free function to the crate root
+- Couples preset loading and gpui conversion (less composable)
+- Callers who need the intermediate `ResolvedTheme` still need the manual path
+
+### Option B: Add `NativeTheme::into_gpui_theme(self, is_dark) -> Result<Theme>` via extension trait
+
+**Pro:**
+- Method syntax on the type users already have
+- Composable: users can still use `NativeTheme` for other things first
+- Extension trait pattern is idiomatic Rust
+
+**Contra:**
+- Extension traits require importing the trait (extra `use`)
+- Method on a type from another crate -- harder to discover
+- Still two steps: `preset()` then `.into_gpui_theme()`
+
+### Option C: Make `resolve_variant()` public in native-theme and add a thin wrapper in native-theme-gpui
+
+**Pro:**
+- Exposes a useful building block without coupling to gpui
+- Both crates benefit: native-theme gets a better API too (see **[CORE-3]**)
+- Keeps native-theme-gpui as a pure mapper
+
+**Contra:**
+- Still 3 steps: `preset()` -> `pick_variant()` -> `resolve_variant()` -> `to_theme()`
+- Doesn't solve the ceremony problem for gpui users, just shortens it slightly
+
+### Option D: Combine A + C -- public `resolve_variant()` AND convenience `from_preset()`
+
+**Pro:**
+- One-liner for common case (from_preset)
+- Power users can still compose intermediate steps
+- Both crates get better APIs
+
+**Contra:**
+- More API surface area
+- Two ways to do the same thing (but targeting different needs)
+
+### PROPOSED: Option D
+
+Add `from_preset(name, is_dark) -> Result<Theme>` as the primary entry point in
+native-theme-gpui. This depends on **[CORE-3]** (`into_resolved()`) landing first
+in native-theme. The convenience function covers 90% of use cases; the composable
+path via `into_resolved()` + `to_theme()` covers the rest.
+
+---
+
+## 2. is_dark threaded redundantly (with split-brain bug)
+
+**Verdict: VALID -- high priority (correctness bug)**
+
+**Partially solved by section 1**: The `from_preset()` convenience passes `is_dark`
+once for the common path. But the **split-brain bug** below exists inside
+`to_theme()` itself and affects ALL callers, including `from_preset()`.
+
+```rust
+nt.pick_variant(is_dark)           // is_dark selects the variant
+// ...
+to_theme(&resolved, name, is_dark) // is_dark passed AGAIN
+```
+
+By the time you have a `ResolvedTheme`, the darkness is baked into the color
+values. The `is_dark` in `to_theme()` is only used to set `ThemeMode::Dark` vs
+`ThemeMode::Light`. Meanwhile, `colors.rs` already has a private
+`is_dark_background(bg)` that checks `bg.l < 0.5`.
+
+**Split-brain bug**: `to_theme()` passes `is_dark` only to set `ThemeMode`.
+But `colors::to_theme_color()` (line 37) independently re-derives `is_dark`
+via `is_dark_background(bg)` and uses THAT value for `active_color()` darkening
+amounts. These two signals can disagree: a caller might pass `is_dark=false`
+with a dark `ResolvedTheme` variant, causing `ThemeMode` to say Light while
+active-state colors darken by 20% (dark-mode path). This is not just redundancy
+-- it is a correctness bug where two systems within the same `to_theme()` call
+have different answers to "is this theme dark?".
+
+### Option A: Add `is_dark` field to `ResolvedTheme` (native-theme core change)
+
+**Pro:**
+- Single source of truth -- set during resolve, carried through
+- Eliminates the redundant parameter in `to_theme()`
+- `to_theme()` becomes `to_theme(resolved, name)` -- cleaner
+
+**Contra:**
+- Changes a core type in native-theme (semver: minor bump needed)
+- `ResolvedTheme` is currently pure visual data; adding metadata is a design shift
+- Who sets it? The caller of `validate()`? Automatic from background lightness?
+- If auto-detected, edge-case themes (very dark "light" themes) could be misclassified
+
+### Option B: Auto-detect in `to_theme()` using `is_dark_background()`
+
+**Pro:**
+- Zero API changes to native-theme
+- Removes `is_dark` from `to_theme()` signature
+- Already implemented (private fn in colors.rs)
+
+**Contra:**
+- Heuristic (l < 0.5) can be wrong for themes with mid-range backgrounds
+- User loses explicit control over light/dark mode
+- Theme mode affects more than colors (e.g., gpui-component may adjust shadows/contrast)
+- A theme could have a dark background but intend to be "light mode" aesthetically
+
+### Option C: Make `to_theme()` accept `ThemeMode` instead of `bool`
+
+**Pro:**
+- More type-safe than a bare `bool` (what does `true` mean?)
+- Still explicit -- user controls mode
+- No changes to native-theme core
+
+**Contra:**
+- Still redundant with `pick_variant(is_dark)` -- user passes mode info twice
+- Requires importing `ThemeMode` from gpui-component
+
+### Option D: `from_preset()` (section 1) handles this internally
+
+**Pro:**
+- The convenience function picks variant AND converts, so `is_dark` is passed once
+- Manual path users who need fine control can still pass it explicitly
+- No breaking changes needed
+
+**Contra:**
+- Doesn't fix the manual path
+- Users of `to_theme()` directly still have the redundancy
+
+### Option E: Pass caller-supplied `is_dark` into `to_theme_color()` (fix the split-brain)
+
+```rust
+// to_theme_color() currently derives is_dark internally from bg.l < 0.5.
+// Instead, accept it as a parameter from to_theme().
+pub fn to_theme_color(resolved: &ResolvedTheme, is_dark: bool) -> ThemeColor
+```
+
+**Pro:**
+- Fixes the split-brain: one `is_dark` value flows through ThemeMode AND color derivation
+- Minimal change -- adds one parameter to one internal function
+- `to_theme()` already has `is_dark`, just needs to forward it
+- Removes the heuristic that can misclassify mid-range backgrounds
+
+**Contra:**
+- `to_theme_color()` is currently a standalone function; adding `is_dark` makes it
+  less self-contained
+- Users who call `to_theme_color()` directly (if module stays pub) must supply `is_dark`
+
+### PROPOSED: Option E + Option D
+
+**Must fix the split-brain** by passing `is_dark` from `to_theme()` into
+`to_theme_color()` so that ThemeMode and active-state derivation agree.
+This is a correctness fix, not optional.
+
+The `from_preset()` convenience (section 1) absorbs `is_dark` for the common
+path. The manual `to_theme()` path keeps its `is_dark` parameter but now
+forwards it consistently. If `colors`/`config`/`derive` become `pub(crate)`
+(section 9), `to_theme_color()`'s signature change is non-breaking.
+
+---
+
+## 3. name: &str mandatory in to_theme()
+
+**Verdict: VALID -- low priority**
+
+**Largely solved by section 1**: `from_preset()` derives the name from the preset
+name. This section covers the residual issue for manual-path users.
+
+```rust
+pub fn to_theme(resolved: &ResolvedTheme, name: &str, is_dark: bool) -> Theme
+```
+
+`name` sets `ThemeConfig.name` -- a display string with no functional effect.
+Every caller must invent a string.
+
+### Option A: Default to empty string / "Custom" if not provided
+
+Change signature to `to_theme(resolved, name: Option<&str>, is_dark)` or use
+`impl Into<Option<&str>>`.
+
+**Pro:**
+- Callers who don't care can pass `None`
+- No breaking change if using `impl Into<Option<&str>>` (bare `&str` still works)
+
+**Contra:**
+- `impl Into<Option<&str>>` is unusual and may confuse
+- Empty/default name is technically "wrong" -- better to have a meaningful name
+- Doesn't solve the problem, just makes it optional to be wrong
+
+### Option B: `from_preset()` uses preset name, `to_theme()` keeps `name` parameter
+
+**Pro:**
+- The convenience function (section 1) has a natural name (the preset name)
+- `to_theme()` stays explicit for power users building from non-preset sources
+- No breaking changes
+
+**Contra:**
+- Power users still need to pass a name
+- SystemTheme users have a name field they could use
+
+### Option C: Add `name` field to `ResolvedTheme`
+
+**Pro:**
+- Carried through the pipeline automatically
+- `to_theme()` can read it from resolved
+- Single source of truth
+
+**Contra:**
+- Changes a core type for a purely cosmetic field
+- `ResolvedTheme` is visual data; a display name doesn't belong there
+- Who populates it? Presets have names, system themes have names, but custom themes?
+
+### Option D: Provide a `to_theme_named()` and `to_theme()` (name defaults to "Native Theme")
+
+**Pro:**
+- Simple -- callers who care use `to_theme_named()`, others use `to_theme()`
+- No core type changes
+- Backward compatible if old `to_theme()` is kept as `to_theme_named()`
+
+**Contra:**
+- API surface bloat
+- Naming confusion between the two functions
+
+### PROPOSED: Option B
+
+The `from_preset()` convenience (section 1) derives the name from the preset
+name. The `SystemThemeExt` trait (section 11) derives it from `SystemTheme.name`.
+The manual `to_theme()` keeps its `name` parameter -- power users who call it
+directly have a specific context where they know what name to use.
+This is a non-issue once the convenience functions exist.
+
+---
+
+## 4. Stringly-typed parameters where enums exist
+
+**Verdict: PARTIALLY VALID**
+
+The critique claims these functions use `&str` where enums exist:
+
+| Function | Parameter | Actual type | Enum exists? |
+|---|---|---|---|
+| `lucide_name_for_gpui_icon` | `gpui_name` | `&str` | Yes: `gpui_component::IconName` |
+| `material_name_for_gpui_icon` | `gpui_name` | `&str` | Yes: `gpui_component::IconName` |
+| `freedesktop_name_for_gpui_icon` | `de` | `LinuxDesktop` | **Already uses enum** |
+| `custom_icon_to_image_source` | `icon_set` | `&str` | Yes: `native_theme::IconSet` |
+
+**Correction**: The critique is **wrong** about `freedesktop_name_for_gpui_icon` --
+it already takes `native_theme::LinuxDesktop`, not `&str`.
+
+For the others:
+
+### Option A: Accept `IconName` enum instead of `&str` for gpui icon mapping functions
+
+**Pro:**
+- Exhaustive matching -- compiler catches missing variants when gpui-component updates
+- No typos possible
+- IDE autocompletion works
+
+**Contra:**
+- gpui-component's `IconName` may not implement `Display`/`AsRef<str>` -- need to
+  match on variants directly (large match arm)
+- Tight coupling to gpui-component's enum -- if they rename a variant, it's a breaking change
+- The current string-based approach is more resilient to upstream changes (returns None
+  for unknown strings gracefully)
+- `IconName` has 86 variants -- the match already covers all 86 as strings
+
+### Option B: Accept `IconName` and convert to `&str` internally (if `IconName: Display`)
+
+**Pro:**
+- Type-safe at the call site
+- Single conversion point inside the function
+
+**Contra:**
+- Depends on `IconName` implementing a string conversion with the exact variant names
+- If the conversion format changes, the mapping breaks silently
+
+### Option C: Accept `IconSet` enum instead of `&str` for `custom_icon_to_image_source`
+
+**Pro:**
+- `IconSet` is in native-theme (our own crate) -- we control it
+- Only 5 variants -- trivial match
+- Prevents typos in icon set names
+
+**Contra:**
+- The `icon_set` parameter is passed to `IconProvider::custom_icon()` which takes `&str`
+  (the provider is user-implemented, expects arbitrary set names)
+- An enum would limit custom icon sets to only the 5 known ones
+- Users with custom icon sets (not in the enum) couldn't use this function
+
+### Option D: Keep `&str` but add `IconName`-accepting wrappers
+
+**Pro:**
+- No breaking changes
+- Both APIs available
+- Users can choose type safety or flexibility
+
+**Contra:**
+- API surface doubles for icon functions
+- Two ways to do the same thing
+
+### PROPOSED: Option A for gpui icon functions, keep `&str` for `custom_icon_to_image_source`
+
+Accept `IconName` in `lucide_name_for_gpui_icon()` and
+`material_name_for_gpui_icon()`. These functions exist specifically to map
+gpui-component icons, so coupling to `IconName` is appropriate. The match
+already covers all 86 variants.
+
+Keep `&str` for `custom_icon_to_image_source()` because `IconProvider::custom_icon()`
+is user-implemented and may support arbitrary icon set names beyond the 5 known ones.
+
+**Note**: `freedesktop_name_for_gpui_icon` should also accept `IconName` for its
+first parameter -- it currently takes `gpui_name: &str` for the icon name (the
+`de` parameter is already `LinuxDesktop`, which is correct).
+
+---
+
+## 5. Inconsistent naming across icon functions
+
+**Verdict: PARTIALLY VALID -- low priority**
+
+The critique identifies 6 naming patterns across 11 functions. Actual inventory:
+
+| Function | Pattern | Purpose |
+|---|---|---|
+| `icon_name(role)` | bare noun | IconRole -> IconName (Lucide) |
+| `lucide_name_for_gpui_icon(name)` | `{source}_name_for_gpui_icon` | IconName -> Lucide name |
+| `material_name_for_gpui_icon(name)` | `{source}_name_for_gpui_icon` | IconName -> Material name |
+| `freedesktop_name_for_gpui_icon(name, de)` | `{source}_name_for_gpui_icon` | IconName -> freedesktop name |
+| `to_image_source(data)` | `to_{target}` | IconData -> ImageSource |
+| `to_image_source_colored(data, color)` | `to_{target}_colored` | IconData -> colored ImageSource |
+| `custom_icon_to_image_source(p, set)` | `custom_{source}_to_{target}` | Provider -> ImageSource |
+| `custom_icon_to_image_source_colored(...)` | `custom_{source}_to_{target}_colored` | Provider -> colored ImageSource |
+| `animated_frames_to_image_sources(anim)` | `{source}_to_{targets}` | AnimatedIcon -> Vec\<ImageSource\> |
+| `with_spin_animation(svg, id, ms)` | `with_{modifier}` | Svg -> animated element |
+
+The naming reflects different operations: name mapping, data conversion, loading+
+conversion, and element wrapping. The inconsistency is real but the functions
+serve genuinely different purposes.
+
+### Option A: Rename all to consistent `{source}_to_{target}` pattern
+
+```
+icon_role_to_name()
+gpui_icon_to_lucide_name()
+gpui_icon_to_material_name()
+gpui_icon_to_freedesktop_name()
+icon_data_to_image_source()
+icon_data_to_image_source_colored()
+custom_icon_to_image_source()           -- already fits
+animated_frames_to_image_sources()      -- already fits
+with_spin_animation()                   -- different category, keep as-is
+```
+
+**Pro:**
+- Consistent pattern across all name-mapping and conversion functions
+- Direction of conversion is clear from the name
+- `gpui_icon_to_X` clearly communicates "from gpui icon name to X"
+
+**Contra:**
+- Breaking change for all existing consumers
+- `icon_role_to_name` is less clear than `icon_name` for the simple case
+- `icon_data_to_image_source` is verbose for the most common conversion
+- Bikeshed risk: any naming convention will have trade-offs
+
+### Option B: Group under a namespace/trait instead of renaming
+
+```rust
+icons::name::from_role(role) -> IconName
+icons::name::to_lucide(icon) -> &str
+icons::name::to_material(icon) -> &str
+icons::name::to_freedesktop(icon, de) -> &str
+icons::source::from_data(data) -> ImageSource
+icons::source::from_data_colored(data, color) -> ImageSource
+icons::source::from_custom(provider, set) -> ImageSource
+```
+
+**Pro:**
+- Logical grouping
+- Short function names within namespace
+- IDE autocomplete works well within a module
+
+**Contra:**
+- Major restructuring
+- Deeply nested modules may be awkward: `icons::name::to_lucide()`
+- Breaking change
+
+### Option C: Keep current names, improve documentation only
+
+**Pro:**
+- No breaking changes
+- Current names are discoverable and descriptive individually
+- The "inconsistency" matters less than each name being clear on its own
+
+**Contra:**
+- The critique has a point that naming is ad-hoc
+- New contributors may be confused by the different patterns
+
+### PROPOSED: Option C (for v0.5.1), consider Option A for v0.6.0
+
+The naming is ad-hoc but each function name is individually clear. A rename
+is a breaking change that should be batched with other breaking changes in a
+future minor version. For now, improve documentation with a function overview
+table in the module docs.
+
+---
+
+## 6. Suffix explosion instead of optional parameters
+
+**Verdict: VALID -- low priority**
+
+Four functions where two with `Option<Hsla>` would suffice:
+
+```rust
+to_image_source(data)                           -> ImageSource
+to_image_source_colored(data, color)            -> ImageSource
+custom_icon_to_image_source(provider, set)      -> Option<ImageSource>
+custom_icon_to_image_source_colored(p, set, c)  -> Option<ImageSource>
+```
+
+### Option A: Merge pairs using `Option<Hsla>`
+
+```rust
+to_image_source(data, color: Option<Hsla>) -> ImageSource
+custom_icon_to_image_source(p, set, color: Option<Hsla>) -> Option<ImageSource>
+```
+
+**Pro:**
+- Halves the function count (4 -> 2)
+- Cleaner API surface
+- `None` clearly means "no colorization"
+
+**Contra:**
+- Callers who never colorize must write `None` every time
+- Less discoverable: the colorization feature is hidden behind an Option parameter
+- Semantically different operations (raw conversion vs. SVG rewrite) behind one function
+
+### Option B: Builder pattern / options struct
+
+```rust
+ImageSourceOptions { color: Option<Hsla>, ... }
+to_image_source(data, &ImageSourceOptions) -> ImageSource
+```
+
+**Pro:**
+- Extensible: future parameters (size, DPI) slot in without signature changes
+- Clear separation of required and optional arguments
+
+**Contra:**
+- Over-engineered for a single optional parameter
+- More ceremony than the current suffix approach
+- No other parameters are anticipated
+
+### Option C: Keep separate functions, deprecate `_colored` variants later
+
+**Pro:**
+- No breaking change now
+- Separate functions communicate intent clearly in docs
+- The "colored" functions have important caveats (monochrome SVGs only) that
+  benefit from dedicated doc comments
+
+**Contra:**
+- 4 functions instead of 2
+- Suffix pattern doesn't scale if more variants appear
+
+### PROPOSED: Option A
+
+Merge to `Option<Hsla>`. The colorization caveat (monochrome SVGs only) belongs
+in the function docs regardless of how many functions there are. Callers who
+don't colorize write `to_image_source(data, None)` -- minimal overhead.
+
+Deprecate the `_colored` variants pointing to the unified function.
+
+---
+
+## 7. with_spin_animation mixes data with rendering
+
+**Verdict: PARTIALLY VALID -- low priority**
+
+```rust
+pub fn with_spin_animation(element: Svg, animation_id: impl Into<ElementId>, duration_ms: u32) -> impl IntoElement
+```
+
+This constructs a gpui DOM element -- it's rendering logic in a mapping layer.
+
+### Option A: Move to a separate `helpers` or `anim` submodule
+
+**Pro:**
+- Clear separation: `icons` module does data mapping, `anim` does rendering
+- Users who don't need animation don't even see it
+
+**Contra:**
+- It's 5 lines of code -- a separate module is overkill
+- Users of spin animation also use icon functions (they go together)
+- Moving it is a breaking change (different import path)
+
+### Option B: Remove from the crate, make it an example / docs snippet
+
+**Pro:**
+- Pure: the connector only provides data, applications do rendering
+- Reduces API surface
+
+**Contra:**
+- Every consumer would copy-paste the same 5 lines
+- The animation parameters come from native-theme's `TransformAnimation::Spin` --
+  the connector is the natural place to bridge this
+- Removing useful code to satisfy architectural purity isn't user-friendly
+
+### Option C: Keep as-is, improve documentation to clarify it's a rendering helper
+
+**Pro:**
+- No breaking change
+- The function is useful and only 5 lines
+- Already well-documented with examples
+- The `icons` module logically handles "getting icons displayed" which includes animation
+
+**Contra:**
+- Mixes abstraction levels in one module
+- Purists will continue to object
+
+### PROPOSED: Option C
+
+Keep it. The function is 5 lines, well-documented, and directly bridges
+`TransformAnimation::Spin` data to gpui rendering. Moving or removing it
+serves architectural aesthetics at the cost of user convenience. If the module
+grows more rendering helpers in the future, refactor then.
+
+---
+
+## 8. animated_frames_to_image_sources misuses Option
+
+**Verdict: PARTIALLY VALID -- low priority**
+
+```rust
+pub fn animated_frames_to_image_sources(anim: &AnimatedIcon) -> Option<Vec<ImageSource>>
+```
+
+Returns `None` for `AnimatedIcon::Transform` variants. The critique argues this is
+"wrong variant passed" not "maybe absent".
+
+### Option A: Accept `&AnimatedFrames` directly (extract the inner data)
+
+**Pro:**
+- Type-correct: only accepts what it can process
+- No Option in return type needed
+- Caller must pattern-match first (correct by construction)
+
+**Contra:**
+- `AnimatedIcon::Frames` is a struct variant, not a separate type -- there is
+  no `AnimatedFrames` type to accept
+- Would require adding a new type or extracting the struct variant into a named struct
+- Overkill for a two-variant enum
+
+### Option B: Return `Result<Vec<ImageSource>, UnsupportedAnimationType>`
+
+**Pro:**
+- Communicates "wrong variant" rather than "absent"
+- Caller can distinguish errors
+
+**Contra:**
+- Adds a new error type for a single function
+- The caller already knows which variant they have (they can match first)
+- `Result` implies something went wrong, but passing Transform isn't an error --
+  it just needs different handling (`with_spin_animation`)
+
+### Option C: Keep `Option`, document the semantics clearly
+
+**Pro:**
+- No API changes
+- `Option` is pragmatic: "this function may or may not produce frames for a given icon"
+- Callers use `if let Some(frames) = ...` which is natural
+- The docs already explain when None is returned
+
+**Contra:**
+- Technically less precise than a type-level solution
+- Returning None for a known reason feels like misuse of Option
+
+### Option D: Take `&[IconData]` (the frames slice) instead of `&AnimatedIcon`
+
+**Pro:**
+- Operates on exactly what it needs
+- No variant checking needed
+- Caller extracts frames, function converts them
+
+**Contra:**
+- Loses the connection to `AnimatedIcon` in the API
+- Caller must pattern-match to get the frames slice
+- Less discoverable from the type signature
+
+### PROPOSED: Option C
+
+Keep `Option`. The function is designed to be called optimistically:
+"if this animated icon has frames, give me ImageSources". The `None` case isn't
+an error -- it means "use `with_spin_animation()` instead". Adding a custom error
+type for one function is not justified. The docs already explain the semantics.
+
+---
+
+## 9. All internal modules are pub
+
+**Verdict: VALID -- medium priority**
+
+```rust
+pub mod colors;   // exposes to_theme_color()
+pub mod config;   // exposes to_theme_config()
+pub mod derive;   // exposes hover_color(), active_color()
+pub mod icons;    // exposes 11 functions
+```
+
+The main entry point is `to_theme()`. Most consumers need exactly 1 function.
+The ~16 public functions are internal implementation details used by `to_theme()`.
+
+### Option A: Make all modules `pub(crate)`, re-export only what's needed at crate root
+
+**Pro:**
+- Clean API: `use native_theme_gpui::{to_theme, from_preset}` covers most users
+- Implementation details hidden
+- Free to refactor internals without breaking changes
+
+**Contra:**
+- Breaking change for anyone importing sub-module functions directly
+- Power users who need `hover_color()` or `to_theme_color()` lose access
+- Icon functions are genuinely needed by consumers (not just internal)
+
+### Option B: Make `colors`, `config`, `derive` `pub(crate)`; keep `icons` pub
+
+**Pro:**
+- Icons module has legitimate public use (mapping icon names, converting icon data)
+- Colors/config/derive are implementation details of `to_theme()`
+- Reduces public API surface from 16 to ~12 functions
+
+**Contra:**
+- `derive::hover_color()` and `derive::active_color()` could be useful for
+  consumers building custom UI states
+- `colors::to_theme_color()` could be useful for consumers who want ThemeColor
+  without the full Theme
+
+### Option C: Keep modules pub, document the layered API
+
+Add module-level docs explaining the layers:
+- **Quick API**: `from_preset()`, `to_theme()` -- most users stop here
+- **Icon API**: `icons::*` -- for custom icon rendering
+- **Power API**: `colors::*`, `config::*`, `derive::*` -- for custom theme assembly
+
+**Pro:**
+- No breaking changes
+- Power users keep access
+- Clear documentation helps users find the right level
+
+**Contra:**
+- Still exposes internal details as public API
+- Commits to supporting sub-module functions across versions
+
+### PROPOSED: Option B + selective re-exports
+
+Make `colors`, `config`, `derive` pub(crate). Keep `icons` pub. Re-export
+`derive::hover_color` and `derive::active_color` at the crate root if there's
+demonstrated demand. This hides the implementation while keeping genuinely
+useful functions accessible.
+
+---
+
+## 10. too_many_arguments on private helpers
+
+**Verdict: VALID -- low priority (internal only)**
+
+Four private functions suppress `clippy::too_many_arguments`:
+- `assign_core` (11 params)
+- `assign_status` (12 params)
+- `assign_tab_sidebar` (12 params)
+- `assign_misc` (15 params)
+
+### Option A: Extract a `ResolvedColors` struct, pass by reference
+
+```rust
+struct ResolvedColors {
+    bg: Hsla, fg: Hsla, accent: Hsla, border: Hsla,
+    muted: Hsla, muted_fg: Hsla, primary: Hsla, primary_fg: Hsla,
+    secondary: Hsla, surface: Hsla, // ...
+}
+```
+
+**Pro:**
+- Eliminates all `#[allow(clippy::too_many_arguments)]`
+- Single extraction point in `to_theme_color()`
+- Each assign function takes `&ResolvedColors` instead of 10+ params
+- Clearer: named fields vs. positional arguments
+
+**Contra:**
+- Adds a new internal struct
+- Some assign functions use different subsets -- the struct has fields
+  some functions don't need (harmless but slightly wasteful)
+- Refactoring effort for purely internal improvement
+
+### Option B: Pass `(&ResolvedTheme, &mut ThemeColor)` and let each function extract what it needs
+
+**Pro:**
+- No new struct needed
+- Each function reads exactly what it needs from ResolvedTheme
+- Simpler signatures: `fn assign_core(tc: &mut ThemeColor, resolved: &ResolvedTheme)`
+
+**Contra:**
+- Functions do redundant `rgba_to_hsla()` conversions
+- The `ResolvedTheme` -> `Hsla` conversion logic is spread across 4 functions
+  instead of centralized
+- Harder to see the full mapping at a glance
+
+### Option C: Keep as-is (private functions, no external impact)
+
+**Pro:**
+- Zero risk -- these are internal functions
+- The `#[allow]` pragmas are honest about the trade-off
+- Refactoring has no user-visible benefit
+
+**Contra:**
+- Technical debt that makes the code harder to maintain
+- Each new color field adds another parameter
+- Clippy's warning exists for a reason (cognitive load)
+
+### PROPOSED: Option A
+
+Extract a `ResolvedColors` struct. The conversion from `ResolvedTheme` fields to
+`Hsla` values happens once in `to_theme_color()`, and the struct is passed by
+reference to each assign function. This is a pure internal refactor with no API
+impact, and it eliminates 4 clippy suppressions while improving readability.
+
+---
+
+## 11. No convenience constructors on SystemTheme
+
+**Verdict: VALID -- medium priority**
+
+**Related to section 1**: Just as `from_preset()` is the one-liner for presets,
+`SystemTheme` needs its own one-liner for the system-detected theme.
+
+```rust
+let system = from_system()?;
+let theme = to_theme(system.active(), "My App", system.is_dark);
+```
+
+Users must call a free function from native-theme-gpui, passing fields from
+`SystemTheme` back in. The connector doesn't extend the type it maps from.
+
+### Option A: Extension trait on SystemTheme
+
+```rust
+pub trait SystemThemeExt {
+    fn to_gpui_theme(&self) -> Theme;
+    fn to_gpui_theme_named(&self, name: &str) -> Theme;
+}
+impl SystemThemeExt for native_theme::SystemTheme { ... }
+```
+
+**Pro:**
+- Natural method syntax: `system.to_gpui_theme()`
+- `is_dark` and `name` derived from SystemTheme fields
+- Idiomatic Rust for cross-crate extension
+- Discoverable via IDE autocompletion on SystemTheme
+
+**Contra:**
+- Requires importing the trait: `use native_theme_gpui::SystemThemeExt;`
+- Extension traits are less discoverable than free functions for new Rust users
+- Adds a trait to the API surface
+
+### Option B: Free function `from_system() -> Result<Theme>` in native-theme-gpui
+
+```rust
+pub fn from_system() -> native_theme::Result<Theme> {
+    let sys = native_theme::from_system()?;
+    Ok(to_theme(sys.active(), &sys.name, sys.is_dark))
+}
+```
+
+**Pro:**
+- One-liner for the "give me the system theme as gpui" use case
+- No trait imports needed
+- Pairs with `from_preset()` for a consistent API
+
+**Contra:**
+- Hides the `SystemTheme` -- callers who need both light and dark variants
+  or the overlay mechanism lose access
+- Name collision: `native_theme::from_system` vs `native_theme_gpui::from_system`
+  (different return types)
+
+### Option C: Both -- extension trait AND free function
+
+**Pro:**
+- `from_system()` for the quick path
+- Extension trait for users who already have a `SystemTheme`
+- Maximum convenience
+
+**Contra:**
+- Three ways to do the same thing (free fn, extension trait, manual)
+- API surface growth
+
+### PROPOSED: Option A + free function from_system()
+
+Add an extension trait `SystemThemeExt` with `to_gpui_theme()` for users who
+have a `SystemTheme`. Also add `from_system() -> Result<Theme>` as a one-liner
+convenience. **[CORE-11]** moves `native_theme::from_system()` to
+`SystemTheme::from_system()`, eliminating the name collision -- so
+`native_theme_gpui::from_system()` is unambiguous. This gives method syntax
+for composition and a free function for the quick path.
+
+---
+
+## 12. Chart colors are monochromatic
+
+**Verdict: VALID -- medium priority**
+
+```rust
+fn assign_charts(tc: &mut ThemeColor, accent: Hsla) {
+    tc.chart_1 = accent.lighten(0.4);
+    tc.chart_2 = accent.lighten(0.2);
+    tc.chart_3 = accent;
+    tc.chart_4 = accent.darken(0.2);
+    tc.chart_5 = accent.darken(0.4);
+}
+```
+
+Five chart colors are lightness variations of one hue. This produces a
+monochromatic palette where chart segments are indistinguishable to users with
+reduced color perception. Data visualization needs hue separation.
+
+### Option A: Distribute chart colors around the hue wheel
+
+```rust
+fn assign_charts(tc: &mut ThemeColor, accent: Hsla) {
+    tc.chart_1 = accent;
+    tc.chart_2 = Hsla { h: (accent.h + 0.15) % 1.0, ..accent };  // +54deg
+    tc.chart_3 = Hsla { h: (accent.h + 0.30) % 1.0, ..accent };  // +108deg
+    tc.chart_4 = Hsla { h: (accent.h + 0.50) % 1.0, ..accent };  // +180deg
+    tc.chart_5 = Hsla { h: (accent.h + 0.70) % 1.0, ..accent };  // +252deg
+}
+```
+
+**Pro:**
+- Hue separation makes chart segments distinguishable
+- Accessible to color-blind users (different hues, not just lightness)
+- Still anchored to the theme's accent color
+
+**Contra:**
+- Generated hues may clash with the theme's overall palette
+- Complementary colors can look jarring in some themes
+- Fixed offsets may land on perceptually similar hues for certain accent colors
+  (e.g., blue accent -> blue-shifted colors that are still hard to distinguish)
+
+### Option B: Use a perceptually uniform palette (OKLab/OKLCH)
+
+**Pro:**
+- Perceptually equidistant colors
+- Better accessibility than HSL hue rotation
+- Modern color science
+
+**Contra:**
+- Requires OKLab/OKLCH conversion (not available in gpui's Hsla)
+- Added dependency or manual conversion code
+- Complexity increase for 5 color values
+
+### Option C: Hardcode a known-good 5-color categorical palette
+
+Use a research-backed palette like Tableau 10 (subset) or ColorBrewer,
+adjusted to match the theme's lightness/saturation.
+
+**Pro:**
+- Proven accessibility and distinguishability
+- No per-theme generation artifacts
+
+**Contra:**
+- Ignores the theme's accent color entirely
+- Charts look the same regardless of theme (jarring in a themed UI)
+- Hardcoded values conflict with the project's "no hardcoded theme values" principle
+
+### Option D: Hue rotation + lightness variation for maximum separation
+
+```rust
+fn assign_charts(tc: &mut ThemeColor, accent: Hsla, is_dark: bool) {
+    let base_l = if is_dark { 0.65 } else { 0.45 };
+    for (i, slot) in [&mut tc.chart_1, ...].iter_mut().enumerate() {
+        let hue = (accent.h + i as f32 * 0.2) % 1.0;  // 72deg steps
+        let lightness = base_l + (i as f32 - 2.0) * 0.08;
+        **slot = Hsla { h: hue, s: accent.s.max(0.5), l: lightness, a: 1.0 };
+    }
+}
+```
+
+**Pro:**
+- Both hue AND lightness vary -- maximum distinguishability
+- Adapts to dark/light themes
+- Ensures minimum saturation for visibility
+
+**Contra:**
+- More complex logic
+- Generated colors may not harmonize with the theme
+- Lightness variation means some colors may be hard to read on the background
+
+### PROPOSED: Option A (simple hue rotation)
+
+Distribute chart colors around the hue wheel with roughly equal angular spacing
+(~72 degrees apart for 5 colors). Keep the accent's saturation and lightness.
+This is the simplest fix that provides genuine hue separation while staying
+anchored to the theme. If specific themes produce poor results, we can refine
+the offsets or add theme-level chart color overrides later.
+
+---
+
+## 13. Massive silent data loss
+
+**Verdict: VALID -- high priority (documentation / design)**
+
+`ResolvedTheme` has 25 per-widget structs with ~150+ fields of carefully resolved
+geometry (padding, min-width, min-height, radius, font, border-width, spacing,
+disabled-opacity, etc.). The connector silently discards the vast majority:
+
+**Fully used** (all fields consumed):
+- `sidebar` (2/2 fields)
+
+**Partially used** (colors only, geometry discarded):
+- `button`: 4 of 14 fields (primary_bg, primary_fg, background, foreground)
+- `input`: 2 of 12 fields (border, caret)
+- `tab`: 5 of 9 fields (5 colors, all sizing dropped)
+- `window`: 2 of 10 fields (title_bar_background, border)
+- `scrollbar`: 2 of 7 (thumb, thumb_hover)
+- `slider`: 2 of 6 (fill, thumb)
+- `switch`: 2 of 7 (unchecked_bg, thumb_bg)
+- `progress_bar`: 1 of 5 (fill)
+- `list`: 1 of 11 (alternate_row)
+- `popover`: 2 of 4 (background, foreground)
+
+**Completely unused** (0 fields consumed, 14 widget structs):
+- `checkbox` (5), `menu` (8), `tooltip` (7), `toolbar` (4), `status_bar` (1),
+  `splitter` (1), `separator` (1), `dialog` (10), `spinner` (4), `combo_box` (6),
+  `segmented_control` (4), `card` (5), `expander` (4), `link` (5)
+
+**Also unused**: `text_scale` (all 4 entries), `icon_set`, and most of
+`defaults` geometry (frame_width, disabled_opacity, border_opacity, spacing,
+icon_sizes, accessibility flags).
+
+**Root cause**: gpui-component's `ThemeColor` is a flat color bag with no per-widget
+geometry. `ThemeConfig` has limited geometry (font, radius, shadow). The connector
+*cannot* map most data because the target types have no corresponding fields.
+
+A user who sets `resolved.dialog.radius = 12.0` or `resolved.button.padding_horizontal = 16.0`
+gets zero feedback that those values go nowhere.
+
+### Option A: Document the coverage gap explicitly
+
+Add a "Coverage" section to the crate-level and `to_theme()` docs listing
+exactly which fields are consumed and which are discarded.
+
+**Pro:**
+- Zero code change -- pure documentation
+- Honest with users about what the connector does and doesn't do
+- Users of the manual path can use discarded fields themselves (e.g., setting
+  gpui element padding from `resolved.button.padding_horizontal`)
+- The limitation is in gpui-component, not in native-theme-gpui
+
+**Contra:**
+- Documentation doesn't fix the gap, just makes it visible
+- Large doc section that may become stale as ThemeColor evolves
+- Doesn't help users who expect "apply theme" to be complete
+
+### Option B: Return a richer `GpuiTheme` struct that carries the Theme + remaining data
+
+```rust
+pub struct GpuiTheme {
+    pub theme: Theme,
+    pub resolved: ResolvedTheme,  // retained for caller access to geometry
+}
+```
+
+**Pro:**
+- Users get both the gpui Theme AND the full ResolvedTheme
+- Application code can read `gpui_theme.resolved.button.padding_horizontal`
+  when building UI elements
+- No data is lost
+
+**Contra:**
+- Breaks the current return type
+- Awkward: users must destructure or access `.theme` everywhere
+- `ResolvedTheme` is large -- carrying it increases memory usage
+- The caller already has the `ResolvedTheme` they passed in (they can keep it)
+
+### Option C: Provide per-widget accessor helpers
+
+```rust
+pub fn button_style(resolved: &ResolvedTheme) -> ButtonStyle { ... }
+pub fn dialog_style(resolved: &ResolvedTheme) -> DialogStyle { ... }
+```
+
+Where `ButtonStyle`/`DialogStyle` are gpui-native style structs containing
+padding, radius, font, etc. that the caller can apply to gpui elements.
+
+**Pro:**
+- Bridges the geometry gap with typed helpers
+- Users can apply per-widget geometry alongside the theme colors
+- Composable: use only the helpers you need
+
+**Contra:**
+- Large API surface: one struct + function per widget (25 widgets = 25 functions)
+- gpui layout uses inline styles, not style objects -- these structs
+  don't map 1:1 to how gpui styling works
+- Maintenance burden: must track both ResolvedTheme and gpui layout APIs
+- Speculative: unclear if users actually need this (gpui-component widgets
+  have their own internal sizing)
+
+### Option D: Add coverage constants and a `unused_fields()` diagnostic
+
+```rust
+pub const CONSUMED_FIELDS: &[&str] = &["defaults.background", "button.primary_bg", ...];
+pub fn coverage_report(resolved: &ResolvedTheme) -> CoverageReport { ... }
+```
+
+**Pro:**
+- Programmatic way to see what's mapped and what's not
+- Useful for testing and debugging
+
+**Contra:**
+- Over-engineered for a documentation problem
+- String-based field references are fragile
+- Nobody will call this at runtime
+
+### PROPOSED: Option A
+
+Document the coverage gap explicitly in the crate docs and `to_theme()` docs.
+The limitation is architectural (gpui-component's ThemeColor has no geometry
+slots). Users who need per-widget geometry can read it directly from the
+`ResolvedTheme` they already have. A coverage table in the docs is the honest,
+low-effort solution. If demand for geometry bridging emerges, Option C can be
+revisited.
+
+---
+
+## 14. Hardcoded magenta and overlay values
+
+**Verdict: VALID -- medium priority**
+
+Two values in `colors.rs` ignore the theme palette entirely:
+
+```rust
+// assign_base_colors() -- magenta is fully saturated, theme-independent
+let magenta = Hsla { h: 0.833, s: 1.0, l: 0.5, a: 1.0 };
+tc.magenta = magenta;
+tc.magenta_light = bg.blend(magenta.opacity(0.8));
+
+// cyan is aliased to info with no rationale
+tc.cyan = info;
+tc.cyan_light = bg.blend(info.opacity(0.8));
+```
+
+```rust
+// assign_misc() -- overlay is always black regardless of theme
+tc.overlay = if is_dark {
+    Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.5 }
+} else {
+    Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.4 }
+};
+```
+
+In a low-saturation theme (Catppuccin Latte, a muted brand palette, or a
+high-contrast accessibility theme), the pure magenta stands out jarringly.
+The overlay ignores the theme's shadow color.
+
+### Option A: Derive magenta from accent hue-shifted, overlay from shadow color
+
+```rust
+// Magenta: shift accent hue toward magenta region, match theme saturation
+let magenta = Hsla {
+    h: 0.833,
+    s: accent.s.min(0.85),
+    l: accent.l,
+    a: 1.0,
+};
+
+// Overlay: use theme shadow color with appropriate alpha
+tc.overlay = Hsla {
+    h: shadow.h,
+    s: shadow.s,
+    l: shadow.l,
+    a: if is_dark { 0.5 } else { 0.4 },
+};
+```
+
+**Pro:**
+- Magenta respects the theme's saturation and lightness range
+- Overlay uses the theme's own shadow color
+- Still reads as "magenta" and "overlay" but fits the palette
+- No new fields needed in ResolvedTheme
+
+**Contra:**
+- A low-saturation accent (s=0.1) produces a washed-out magenta that may not
+  read as "magenta" at all
+- Shadow color may have unexpected hue (e.g., blue-tinted shadows)
+- More complex derivation logic
+
+### Option B: Add explicit base color slots to ResolvedTheme (core change)
+
+Add `magenta`, `cyan`, `overlay` fields to `ResolvedDefaults`.
+
+**Pro:**
+- Theme authors control every color explicitly
+- No derivation heuristics
+- Clean data flow from theme file to gpui
+
+**Contra:**
+- Changes a core type -- semver impact
+- Most theme files won't set these -- need sensible defaults anyway
+- Adds more fields to an already large defaults struct
+- Over-engineers the problem for gpui-component's chart/base color slots that
+  are rarely used
+
+### Option C: Derive from the closest semantic color
+
+```rust
+// Magenta: derive from danger (typically red/pink family)
+tc.magenta = Hsla { h: 0.833, s: danger.s, l: danger.l, a: 1.0 };
+
+// Cyan: derive from info (typically blue/teal family)
+tc.cyan = Hsla { h: 0.5, s: info.s, l: info.l, a: 1.0 };
+
+// Overlay: derive from bg darkened
+tc.overlay = bg.darken(if is_dark { 0.3 } else { 0.4 }).alpha(0.5);
+```
+
+**Pro:**
+- Semantically related: magenta is "danger-adjacent", cyan is "info-adjacent"
+- Saturation and lightness match the theme's existing palette
+- Overlay derives from background, ensuring coherent dimming
+
+**Contra:**
+- Danger might not be red (some themes use orange for danger)
+- Fixed hue values (0.833, 0.5) still partially hardcoded
+- Relationship between magenta/danger and cyan/info is arbitrary
+
+### Option D: Keep hardcoded but document as intentional
+
+**Pro:**
+- No code change
+- These are rarely-used base color slots (mostly for syntax highlighting
+  or charts where a specific hue is needed)
+
+**Contra:**
+- Contradicts the project's "no hardcoded theme values" principle
+- Looks like an oversight to anyone reviewing the code
+- Breaks visual coherence in carefully crafted themes
+
+### PROPOSED: Option A
+
+Derive magenta/cyan from the theme's accent (hue-shifted, matching saturation
+and lightness) and overlay from the theme's shadow color. This keeps the values
+anchored to the palette without hardcoding. The accent's saturation provides a
+natural ceiling that prevents garish colors in subdued themes.
+
+---
+
+## 15. Links have zero hover/active feedback
+
+**Verdict: VALID -- medium priority**
+
+```rust
+// assign_core() -- link hover and active are identical to base link color
+tc.link_hover = link;
+tc.link_active = link;
+```
+
+```rust
+// assign_misc() -- set AGAIN, identically, redundantly
+tc.link_hover = link;
+tc.link_active = link;
+```
+
+Every other interactive element in the connector gets `hover_color()` and
+`active_color()` variants (primary, secondary, danger, success, warning, info).
+Links are the only interactive element with zero visual state change. The
+redundant assignment in two locations suggests a copy-paste oversight.
+
+### Option A: Apply hover_color/active_color like all other interactive elements
+
+```rust
+tc.link_hover = hover_color(link, bg);
+tc.link_active = active_color(link, is_dark);
+```
+
+**Pro:**
+- Consistent with every other interactive element in the mapping
+- Standard UX expectation: links should look different on hover/press
+- One-line fix in assign_core(), remove the redundant assignment in assign_misc()
+
+**Contra:**
+- Some design systems intentionally have no hover state on inline links
+  (relying on underline + cursor change instead)
+- Could clash with themes where the link color was chosen for minimal contrast
+  change (hover/active derivation might produce unreadable colors)
+
+### Option B: Derive from ResolvedTheme's link widget data
+
+```rust
+tc.link_hover = rgba_to_hsla(resolved.link.hover_bg);
+```
+
+**Pro:**
+- Uses the theme's own link hover color
+- Most accurate to the theme author's intent
+
+**Contra:**
+- `resolved.link.hover_bg` is a background color for hovered link text,
+  not a text color -- semantics don't match `tc.link_hover` which is a
+  foreground color in gpui-component
+- `resolved.link` also has `visited`, `background` etc. which would
+  need mapping too
+
+### Option C: Remove the redundant assignment, keep hover = base
+
+Remove the duplicate in `assign_misc()`. Keep hover/active identical to base
+but add a code comment explaining the intentional choice.
+
+**Pro:**
+- Cleans up the redundancy without changing behavior
+- If the no-hover behavior is intentional, documents it
+
+**Contra:**
+- Still no hover/active feedback on links
+- Doesn't fix the UX issue, just documents it
+
+### PROPOSED: Option A
+
+Apply `hover_color()` and `active_color()` to links, consistent with all other
+interactive elements. Remove the redundant assignment in `assign_misc()`.
+Links without hover feedback are a UX regression that users of themed apps
+will notice. If a specific theme needs flat links, that can be handled by
+setting `link_hover = link` explicitly in a future theme override mechanism.
+
+---
+
+## 16. Selection alpha silently clamped
+
+**Verdict: VALID -- medium priority**
+
+```rust
+tc.selection = selection.alpha(selection.a.min(0.3));
+```
+
+This forces the selection background to a maximum of 30% opacity, regardless
+of what the theme specified. If a theme intentionally sets selection to an
+opaque color (because its `selection_foreground` was designed for contrast
+against an opaque background), the clamp makes the foreground unreadable.
+
+### Option A: Remove the clamp, trust the theme
+
+```rust
+tc.selection = selection;
+```
+
+**Pro:**
+- Respects the theme author's intent
+- If the theme chose opaque selection, the selection_foreground should
+  match -- the pair is designed together
+- Simplest change
+
+**Contra:**
+- gpui-component may expect selection to be translucent (content shows through)
+- Some themes set selection to opaque solid colors that cover underlying text
+  awkwardly in multi-cursor or code editor contexts
+- gpui-component's own `apply_config` also clamps selection alpha
+
+### Option B: Clamp only if the source theme doesn't have an explicit selection color
+
+Check if `resolved.defaults.selection` was explicitly set (non-default) before
+clamping.
+
+**Pro:**
+- Respects explicit theme choices while protecting against inherited defaults
+  that may be too opaque
+
+**Contra:**
+- `ResolvedTheme` has no way to distinguish "explicitly set" from "resolved from
+  default" -- all fields are populated after resolution
+- Cannot be implemented without core changes
+
+### Option C: Match gpui-component's own clamping behavior exactly
+
+Check what `ThemeColor::apply_config()` does and replicate it.
+
+**Pro:**
+- Consistent with gpui-component's expectations
+- If gpui-component expects clamped selection, we should match that
+
+**Contra:**
+- Ties behavior to gpui-component's implementation detail which may change
+- Still overrides theme intent
+
+### Option D: Use a higher cap (e.g., 0.5) to preserve more theme intent
+
+```rust
+tc.selection = selection.alpha(selection.a.min(0.5));
+```
+
+**Pro:**
+- Less aggressive than 0.3 -- preserves more of the theme's original alpha
+- Still prevents fully opaque selection in contexts where translucency is needed
+
+**Contra:**
+- Still overrides theme intent
+- Arbitrary threshold (why 0.5 instead of 0.4 or 0.6?)
+- Half-measure that satisfies neither camp
+
+### PROPOSED: Option A
+
+Remove the clamp and trust the theme. The selection color and selection
+foreground are designed as a pair in the theme. If a theme sets opaque
+selection, its foreground contrast was chosen to match. gpui-component's own
+clamping in `apply_config()` is already worked around (colors are restored
+after apply_config), so there's no reason to replicate that clamping here.
+
+---
+
+## 17. No re-exports of API-surface types
+
+**Verdict: VALID -- low priority**
+
+Users must depend on three crates and import types from each:
+
+```rust
+use native_theme::{ResolvedTheme, IconRole, IconData, AnimatedIcon, IconProvider};
+use gpui_component::theme::Theme;
+use gpui::Hsla;
+use native_theme_gpui::{to_theme, icons::to_image_source};
+```
+
+A connector crate should re-export types that appear in its public function
+signatures so consumers don't need to know the internal dependency graph.
+
+### Option A: Re-export all types appearing in public signatures
+
+```rust
+// lib.rs
+pub use native_theme::{
+    ResolvedThemeVariant, ThemeSpec, SystemTheme, ThemeVariant,
+    IconRole, IconData, IconProvider, AnimatedIcon, TransformAnimation,
+};
+pub use gpui_component::theme::{Theme, ThemeMode, ThemeColor, ThemeConfig};
+pub use gpui_component::IconName;
+pub use gpui::{Hsla, ImageSource, Svg, ElementId};
+```
+
+**Pro:**
+- One `use native_theme_gpui::*` covers everything
+- Users don't need to know that `Hsla` comes from `gpui` or that `Theme`
+  comes from `gpui_component`
+- Standard practice for connector/bridge crates
+
+**Contra:**
+- Large re-export surface (~20 types)
+- Version coupling: if native-theme renames a type, the re-export breaks
+  even though native-theme-gpui's own code is unchanged
+- Users who already depend on `gpui` get duplicate type paths
+- Re-exporting `gpui::Hsla` might conflict with users' existing `use gpui::*`
+
+### Option B: Re-export only types unique to native-theme
+
+```rust
+pub use native_theme::{
+    ResolvedThemeVariant, ThemeSpec, SystemTheme,
+    IconRole, IconData, IconProvider, AnimatedIcon,
+};
+```
+
+**Pro:**
+- Re-exports only what users can't get elsewhere easily
+- Users already depend on `gpui` and `gpui_component` for their app, so
+  those types are already available
+- Smaller re-export surface
+
+**Contra:**
+- Users still need three imports for full usage
+- `native_theme` types are the ones that appear most in native-theme-gpui's API
+  (parameters), so this covers the main friction
+
+### Option C: Keep as-is, document the required dependencies
+
+Add a "Required Dependencies" section to the README listing the Cargo.toml
+entries and common imports.
+
+**Pro:**
+- No code change
+- Users know what to add upfront
+- Avoids version-coupling issues
+
+**Contra:**
+- Doesn't fix the ergonomic gap
+- Every new user hits the same friction
+- Documentation is not enforced by the compiler
+
+### PROPOSED: Option B
+
+Re-export `native_theme` types that appear in public signatures. These are the
+types users must interact with and would otherwise require adding `native-theme`
+as a direct dependency. Don't re-export `gpui` or `gpui_component` types --
+users building gpui apps already have those dependencies. This covers the
+primary friction (needing `native-theme` as a dep just to get
+`ResolvedThemeVariant` and `IconRole`) without over-exporting.
+
+---
+
+## 18. Dead parameters in assign helpers
+
+**Verdict: VALID -- low priority (internal only)**
+
+**Related to section 10**: The dead parameters are visible alongside the
+`too_many_arguments` problem. This section focuses on the dead code aspect.
+
+Six `_prefixed` parameters across three private helpers are explicitly unused:
+
+```rust
+fn assign_status(..., _primary_fg: Hsla) { ... }
+
+fn assign_tab_sidebar(
+    ..., _bg: Hsla, ..., _surface: Hsla, ...
+) { ... }
+
+fn assign_misc(
+    ..., _muted: Hsla, ..., _primary_fg: Hsla, ..., _surface: Hsla, ...
+) { ... }
+```
+
+These suggest either incomplete mappings that were planned but not implemented,
+or a refactoring that forgot to clean up.
+
+### Option A: Remove unused parameters
+
+Delete the `_prefixed` params from each function signature and the corresponding
+arguments from call sites.
+
+**Pro:**
+- Cleaner signatures -- reduces parameter count (helps section 10 too)
+- Removes dead code
+- If the mappings were planned, they can be re-added when implemented
+
+**Contra:**
+- If these were placeholders for future mappings, removing them loses the hint
+  of what was intended (but that intent should be in comments or issues, not
+  dead parameters)
+- Minor churn for internal-only code
+
+### Option B: Implement the missing mappings that the parameters were intended for
+
+Investigate what `_surface`, `_muted`, `_bg`, `_primary_fg` were meant to map
+and add the missing `ThemeColor` field assignments.
+
+**Pro:**
+- Completes the intended mapping
+- May fix subtle color issues where ThemeColor fields default to wrong values
+
+**Contra:**
+- Unknown intent -- the original mapping plan is not documented
+- May introduce regressions if the defaults were actually correct
+- Speculative without knowing which ThemeColor fields these were meant to populate
+
+### Option C: Absorbed by section 10 (ResolvedColors struct)
+
+If a `ResolvedColors` struct is introduced (section 10), the dead parameters
+disappear naturally -- each function takes `&ResolvedColors` and reads only
+what it needs. Unused fields in the struct are harmless (no per-parameter
+overhead).
+
+**Pro:**
+- Solved automatically by the section 10 refactor
+- No separate work needed
+- Struct fields don't carry the "why is this here?" confusion that dead
+  parameters do
+
+**Contra:**
+- Depends on section 10 landing
+- If section 10 is deferred, the dead params linger
+
+### PROPOSED: Option C (absorbed by section 10)
+
+Let the `ResolvedColors` struct refactor (section 10) resolve this naturally.
+Dead struct fields don't raise the same red flags as dead function parameters.
+If section 10 is deferred, fall back to Option A (remove the params).
+
+---
+
+## 19. accent_foreground mapped to wrong source
+
+**Verdict: VALID -- high priority (correctness bug)**
+
+`colors.rs` line 137:
+
+```rust
+tc.accent_foreground = fg;
+```
+
+`ResolvedDefaults` has an explicit `accent_foreground: Rgba` field
+(`resolved.rs:100`), but the connector ignores it and substitutes plain `fg`
+(the default text foreground). `accent_foreground` is the text color intended
+for use *on top of accent-colored backgrounds*. If a theme sets accent to dark
+blue (`#1a73e8`) and `accent_foreground` to white for contrast, the connector
+replaces white with the main foreground (often dark gray/black), making text on
+accent backgrounds unreadable.
+
+The same pattern appears for `sidebar_accent_foreground` (`colors.rs:260`):
+
+```rust
+tc.sidebar_accent_foreground = fg;
+```
+
+### Option A: Map from `d.accent_foreground` directly
+
+```rust
+tc.accent_foreground = rgba_to_hsla(d.accent_foreground);
+```
+
+**Pro:**
+- One-line fix
+- Uses the value the theme author explicitly set
+- Guarantees contrast -- the theme designed the pair (accent, accent_foreground) together
+- Consistent with how every other `*_foreground` field is mapped (primary_fg, danger_fg, etc.)
+
+**Contra:**
+- None -- this is a straightforward bug fix
+
+### Option B: Derive from accent color (e.g., white if accent is dark, black if accent is light)
+
+```rust
+tc.accent_foreground = if is_dark_background(accent) {
+    Hsla { h: 0.0, s: 0.0, l: 1.0, a: 1.0 } // white
+} else {
+    Hsla { h: 0.0, s: 0.0, l: 0.0, a: 1.0 } // black
+};
+```
+
+**Pro:**
+- Guarantees contrast without relying on the theme data
+- Works even if the theme's `accent_foreground` is poorly chosen
+
+**Contra:**
+- Ignores the theme author's explicit choice
+- Only two possible values (black/white) -- can't express tinted foregrounds
+- `d.accent_foreground` already exists; deriving is pointless duplication of logic
+  that native-theme's resolution pipeline already handles
+
+### Option C: Keep `fg` but document as intentional
+
+**Pro:**
+- No code change
+
+**Contra:**
+- The current behavior is wrong -- `fg` is designed for use on `background`,
+  not on `accent`. There is no design rationale for ignoring a field that exists
+  specifically for this purpose
+
+### PROPOSED: Option A
+
+Map `tc.accent_foreground = rgba_to_hsla(d.accent_foreground)`. This is a
+clear bug -- the field exists in `ResolvedDefaults`, is set by the resolution
+pipeline, and is ignored for no discernible reason. Also fix
+`sidebar_accent_foreground` the same way.
+
+---
+
+## 20. radius truncated instead of rounded
+
+**Verdict: VALID -- medium priority**
+
+`config.rs` lines 29-30:
+
+```rust
+radius: Some(d.radius as usize),
+radius_lg: Some(d.radius_lg as usize),
+```
+
+`ResolvedDefaults.radius` is `f32` (logical pixels). `ThemeConfig.radius` is
+`Option<usize>`. The `as usize` cast truncates toward zero: `radius = 5.9`
+becomes `5`, not `6`. For themes that derive radius from OS metrics (e.g.,
+KDE's `FrameRadius` which can be non-integer after DPI scaling), this
+consistently rounds down by up to 1px.
+
+Edge case: if `radius` is negative (shouldn't happen but `f32` allows it),
+`as usize` wraps to `usize::MAX` on most platforms. The cast is unchecked.
+
+### Option A: Round before casting
+
+```rust
+radius: Some(d.radius.round() as usize),
+radius_lg: Some(d.radius_lg.round() as usize),
+```
+
+**Pro:**
+- One-character fix (`.round()`)
+- Nearest-integer rounding is correct for subpixel values
+- Standard practice for f32-to-integer conversion
+
+**Contra:**
+- Rounding up by 1px in edge cases (e.g., `5.5` -> `6` instead of `5`)
+  could change the visual appearance slightly for some themes
+- Still wraps on negative input
+
+### Option B: Round and clamp
+
+```rust
+radius: Some(d.radius.round().max(0.0) as usize),
+radius_lg: Some(d.radius_lg.round().max(0.0) as usize),
+```
+
+**Pro:**
+- Handles negative edge case safely
+- Correct rounding
+
+**Contra:**
+- Slightly more verbose
+- Negative radius shouldn't occur (validation should prevent it upstream)
+
+### Option C: Keep truncation, document as intentional
+
+**Pro:**
+- No behavior change
+- Truncation toward zero is arguably more conservative (never larger than intended)
+
+**Contra:**
+- `5.9` -> `5` is a 15% error -- not "conservative", just wrong
+- Inconsistent with how most systems handle subpixel rounding
+
+### PROPOSED: Option A
+
+Use `.round() as usize`. Negative radius is already prevented by the resolution
+pipeline (it clamps to `>= 0`), so `max(0.0)` is unnecessary. The one-line fix
+gives correct nearest-integer rounding.
+
+---
+
+## 21. to_image_source silently produces broken images
+
+**Verdict: VALID -- medium priority**
+
+`to_image_source()` returns `ImageSource` (infallible). Two failure paths
+silently produce empty BMP data that will fail at render time:
+
+```rust
+// svg_to_bmp_source() line 864 -- rasterization failure
+} else {
+    let image = Image::from_bytes(ImageFormat::Bmp, Vec::new());
+    ImageSource::Image(Arc::new(image))
+}
+
+// to_image_source() line 719 -- unknown IconData variant
+_ => {
+    let image = Image::from_bytes(ImageFormat::Bmp, Vec::new());
+    ImageSource::Image(Arc::new(image))
+}
+```
+
+Empty BMP bytes (`Vec::new()`) will fail to decode when gpui tries to render
+the image. The user sees a broken/missing icon with no indication of what
+went wrong. Callers cannot detect the failure because the return type is
+`ImageSource`, not `Result<ImageSource, _>` or `Option<ImageSource>`.
+
+**Distinct from section 8**: Section 8 covers `animated_frames_to_image_sources`
+returning `Option` for a wrong-variant case. This section covers the primary
+icon conversion path where genuine errors (corrupt SVG, unknown variant) are
+swallowed.
+
+### Option A: Return `Option<ImageSource>`
+
+```rust
+pub fn to_image_source(data: &IconData) -> Option<ImageSource>
+```
+
+**Pro:**
+- Callers can detect and handle failure (fallback icon, log warning, skip)
+- Honest API -- rasterization can fail
+- `Option` is idiomatic for "might not produce a result"
+
+**Contra:**
+- Breaking change to the most commonly called function
+- Every call site must handle `None` (adds `?` or `.unwrap_or(...)` everywhere)
+- For the `_ =>` wildcard, `None` is correct; for SVG rasterization failure,
+  `None` loses the error reason
+
+### Option B: Return `Result<ImageSource, IconError>`
+
+```rust
+pub fn to_image_source(data: &IconData) -> Result<ImageSource, IconConvertError>
+```
+
+**Pro:**
+- Distinguishes error causes (rasterize failure, unknown variant)
+- Callers can log the specific error
+- Most informative API
+
+**Contra:**
+- Adds a new error type to the crate
+- Heaviest change for callers -- must handle `Result` at every call site
+- Over-engineered if callers always just want a fallback
+
+### Option C: Return `ImageSource` but use a visible 1x1 fallback instead of empty BMP
+
+```rust
+// Produce a 1x1 magenta pixel as a "missing texture" indicator
+fn broken_image_source() -> ImageSource {
+    let bmp = encode_rgba_as_bmp(1, 1, &[255, 0, 255, 255]);
+    ImageSource::Image(Arc::new(Image::from_bytes(ImageFormat::Bmp, bmp)))
+}
+```
+
+**Pro:**
+- No signature change -- backwards compatible
+- Broken icons are visibly wrong (magenta pixel) rather than silently invisible
+- Same pattern used by game engines for missing textures
+- Callers don't need to change
+
+**Contra:**
+- Still infallible -- callers can't programmatically detect failure
+- Visible error state may look ugly in production UIs
+- Hardcoded magenta may not be appropriate for all themes
+
+### Option D: `Option<ImageSource>` for the public API, magenta fallback as a helper
+
+```rust
+pub fn to_image_source(data: &IconData) -> Option<ImageSource>
+
+// Convenience: returns a visible broken-image indicator on failure
+pub fn to_image_source_or_fallback(data: &IconData) -> ImageSource {
+    to_image_source(data).unwrap_or_else(broken_image_fallback)
+}
+```
+
+**Pro:**
+- Callers choose: handle failure explicitly or get a visible fallback
+- Clean separation of concerns
+- Power users get `Option`, quick users get infallible fallback
+
+**Contra:**
+- Two functions for one operation (see section 6 on suffix explosion)
+- `_or_fallback` suffix is awkward
+
+### PROPOSED: Option A
+
+Return `Option<ImageSource>`. The function's purpose is conversion, and
+conversion can fail. `None` signals "this icon data couldn't be converted" --
+callers can fall back to a bundled Lucide `IconName` or skip the icon. The
+`_ =>` catch-all for unknown `IconData` variants also maps naturally to `None`.
+Since we're pre-1.0, the signature change is acceptable.
+
+The `_colored` variant and `custom_icon_to_image_source` (which already return
+`Option`) are unaffected since they delegate to `to_image_source`.
+
+---
+
+## 22. animated_frames_to_image_sources discards timing data
+
+**Verdict: VALID -- medium priority**
+
+**Supersedes section 8** (which concluded "keep Option, improve docs"). This is
+a deeper problem: the function's return type loses essential information.
+
+```rust
+pub fn animated_frames_to_image_sources(anim: &AnimatedIcon) -> Option<Vec<ImageSource>>
+```
+
+Returns `Vec<ImageSource>` but discards `frame_duration_ms` and `repeat`.
+Every caller who needs to actually *animate* the frames (i.e., every caller)
+must destructure `AnimatedIcon::Frames` a second time to recover the timing:
+
+```rust
+// With the function -- forced double pattern match:
+if let Some(sources) = animated_frames_to_image_sources(&anim) {
+    let AnimatedIcon::Frames { frame_duration_ms, repeat, .. } = &anim else { unreachable!() };
+    // Now have sources + timing
+}
+
+// Without the function -- one pattern match, less code:
+if let AnimatedIcon::Frames { frames, frame_duration_ms, repeat } = &anim {
+    let sources: Vec<_> = frames.iter().map(to_image_source).collect();
+    // Have everything
+}
+```
+
+The function is strictly worse than not using it.
+
+### Option A: Return a struct that includes timing
+
+```rust
+pub struct AnimatedImageSources {
+    pub sources: Vec<ImageSource>,
+    pub frame_duration_ms: u32,
+}
+
+pub fn animated_frames_to_image_sources(anim: &AnimatedIcon) -> Option<AnimatedImageSources>
+```
+
+**Pro:**
+- Callers get everything in one call
+- No redundant pattern matching
+- The struct name makes the return type self-documenting
+- `Option` still signals "wrong variant" (section 8's concern)
+
+**Contra:**
+- Adds a new type to the API
+- Minor: struct may feel over-engineered for three fields
+
+### Option B: Return a tuple `Option<(Vec<ImageSource>, u32)>`
+
+**Pro:**
+- No new type needed
+- All data returned
+
+**Contra:**
+- Unnamed tuple fields are unclear at the call site
+- Hard to remember which `u32` is which
+- Not idiomatic Rust for a public API
+
+### Option C: Remove the function entirely
+
+Callers pattern-match `AnimatedIcon::Frames` and call `to_image_source` per
+frame themselves. The function adds no value.
+
+**Pro:**
+- Eliminates a function that makes things worse
+- One fewer public API surface to maintain
+- Callers write the same amount of code (one pattern match + one map)
+
+**Contra:**
+- Breaking change for any existing consumers
+- The "cache this, don't call per-frame" guidance is valuable and would need
+  to move to module-level docs
+- Less discoverable: users must know to iterate frames manually
+
+### Option D: Accept `&[IconData]` (the frames slice) directly
+
+```rust
+pub fn icon_data_to_image_sources(frames: &[IconData]) -> Vec<ImageSource>
+```
+
+**Pro:**
+- Operates on exactly what it needs
+- No Option return -- always produces a Vec (even if empty)
+- Caller extracts frames + timing in one pattern match, passes frames here
+
+**Contra:**
+- Loses the conceptual link to `AnimatedIcon`
+- The "don't call per-frame, cache this" guidance is less prominent
+- Naming now doesn't mention "animated" which reduces discoverability
+
+### PROPOSED: Option A
+
+**Depends on [CORE-18]**: `Repeat` is removed from native-theme; the struct
+drops the `repeat` field accordingly.
+
+Return `AnimatedImageSources` struct. This fixes the information loss while
+preserving the function's role as a "convert + cache" entry point. The struct
+is small (2 fields), justified, and eliminates the forced double pattern match.
+The `Option` return for wrong-variant is retained (addressing section 8's
+concern without a separate section).
+
+**Section 8 is now absorbed by this section.**
+
+---
+
+## 23. SVG rasterize size hardcoded at 48px
+
+**Verdict: VALID -- medium priority**
+
+`icons.rs` line 687:
+
+```rust
+const SVG_RASTERIZE_SIZE: u32 = 48;
+```
+
+All SVG-to-BMP conversions use this single size. The value assumes 2x HiDPI
+at 24px logical size. This is wrong for:
+
+- **1x displays**: over-rasterized (48px for 24px logical = wasted memory,
+  minor blur from downscaling)
+- **3x displays**: under-rasterized (48px for 24px logical at 3x = only 1.33x
+  raster, visibly fuzzy)
+- **Non-24px icon contexts**: `ResolvedIconSizes` defines per-context sizes
+  (`toolbar: 24`, `small: 16`, `large: 32`, `dialog: 22`, `panel: 20`).
+  A 16px toolbar icon rasterized at 48px wastes 9x the pixels; a 32px dialog
+  icon rasterized at 48px is only 1.5x (not enough for HiDPI).
+
+The rasterize size cannot be overridden per-call.
+
+### Option A: Add an optional `size` parameter to conversion functions
+
+```rust
+pub fn to_image_source(data: &IconData, size: Option<u32>) -> Option<ImageSource>
+```
+
+Where `None` defaults to the current 48px behavior.
+
+**Pro:**
+- Callers can rasterize at the correct size for their context
+- Backward compatible (existing callers pass `None`)
+- Simple change
+
+**Contra:**
+- Every call site gains a parameter (even if `None`)
+- Callers must know what size to request (not always obvious)
+- If merging with section 6 (`Option<Hsla>` for color), the function now has
+  two optional parameters: `to_image_source(data, color, size)` -- getting busy
+
+### Option B: Accept a scale factor instead of absolute size
+
+```rust
+pub fn to_image_source_scaled(data: &IconData, scale: f32) -> Option<ImageSource>
+```
+
+Where `scale = 2.0` means 2x HiDPI (current behavior for 24px icons).
+
+**Pro:**
+- DPI-aware: callers pass the window's scale factor
+- Works correctly for any logical icon size (the SVG's viewBox determines
+  the logical size, scale determines the raster size)
+
+**Contra:**
+- Callers must know their window's scale factor (gpui provides this but it
+  requires a window context)
+- Scale factor alone isn't enough -- need logical size too for non-square SVGs
+- Adds complexity
+
+### Option C: Make the constant `pub` and let callers override before calling
+
+```rust
+pub const DEFAULT_SVG_RASTERIZE_SIZE: u32 = 48;
+```
+
+**Pro:**
+- Minimal change
+
+**Contra:**
+- Constants are immutable -- callers can't actually override them
+- Useless as a `pub const`; would need to be a `static` or thread-local
+
+### Option D: Derive rasterize size from the icon's SVG viewBox and a scale factor
+
+Internally parse the SVG viewBox to determine logical size, then multiply by
+the scale factor.
+
+**Pro:**
+- Fully automatic -- no caller input needed
+- Always correct for any SVG size and any DPI
+
+**Contra:**
+- Requires parsing the SVG viewBox (additional complexity and potential failure)
+- resvg already handles this internally -- we'd be duplicating logic
+- SVGs without viewBox would need a fallback size anyway
+
+### Option E: Keep 48px default, document the limitation
+
+**Pro:**
+- No code change
+- 48px works acceptably for the most common case (24px icons at 2x)
+- gpui internally handles image scaling -- the rasterized image is stretched
+  to fit the element's layout size regardless
+
+**Contra:**
+- Fuzzy on 3x displays
+- Wasteful on 1x displays
+- Ignores per-context sizes from ResolvedIconSizes
+
+### PROPOSED: Option A (merged with section 6)
+
+Add `size: Option<u32>` to `to_image_source`. When combined with section 6's
+`color: Option<Hsla>`, the unified signature becomes:
+
+```rust
+pub fn to_image_source(data: &IconData, color: Option<Hsla>, size: Option<u32>) -> Option<ImageSource>
+```
+
+`None` for size defaults to `48`. Callers who need DPI-correct icons can compute
+`logical_size * scale_factor` and pass it. This covers all cases without
+over-engineering (no viewBox parsing, no implicit scale factor detection).
+The `u32` type matches the `size` parameter proposed for freedesktop icon
+lookup in **[CORE-31]**.
+
+---
+
+## 24. Icon mapping tables have no coverage tests
+
+**Verdict: VALID -- medium priority**
+
+`lucide_name_for_gpui_icon` and `material_name_for_gpui_icon` each have 86
+match arms but **zero** tests verifying completeness. Only
+`freedesktop_name_for_gpui_icon` has exhaustive tests
+(`all_86_gpui_icons_have_mapping_on_kde`, `all_86_gpui_icons_have_mapping_on_gnome`).
+
+Three independent 86-entry tables (258 match arms total) with no shared
+infrastructure. If gpui-component adds an 87th `IconName` variant, only the
+freedesktop table gets caught by tests.
+
+### Option A: Add exhaustive coverage tests for all three tables
+
+Duplicate the `all_86_gpui_icons_have_mapping_on_kde` pattern for Lucide
+and Material:
+
+```rust
+#[test]
+fn all_86_gpui_icons_have_lucide_mapping() {
+    for name in &ALL_ICON_NAMES {
+        assert!(lucide_name_for_gpui_icon(name).is_some(), "Missing: {}", name);
+    }
+}
+```
+
+**Pro:**
+- Catches missing entries immediately
+- Low effort -- the test pattern already exists, just copy and adapt
+- Shared `ALL_ICON_NAMES` constant eliminates the repeated 86-element array
+
+**Contra:**
+- Still three independent match tables to maintain manually
+- Tests catch missing entries but don't catch wrong mappings (e.g., mapping
+  "Copy" to "content_paste" in Material)
+
+### Option B: Generate all three tables from a single source-of-truth data structure
+
+```rust
+struct IconMapping {
+    gpui: &'static str,
+    lucide: &'static str,
+    material: &'static str,
+    freedesktop_gtk: Option<&'static str>,
+    freedesktop_qt: Option<&'static str>,
+}
+
+const MAPPINGS: &[IconMapping] = &[
+    IconMapping { gpui: "ALargeSmall", lucide: "a-large-small", material: "font_size", ... },
+    // ...
+];
+```
+
+**Pro:**
+- Single source of truth -- add one row for a new icon, all tables update
+- Impossible to have a Lucide entry without a Material entry (or vice versa)
+- Cross-table consistency is structural, not test-dependent
+- Easier to review: one table instead of three
+
+**Contra:**
+- Large refactor of `icons.rs`
+- The freedesktop table has a DE-dependent branch (`is_gtk`) that doesn't
+  fit cleanly into a flat struct -- needs `Option` fields or nested structure
+- Changes internal representation, though the public API stays the same
+- Potential compile-time impact of a large const array (though minimal)
+
+### Option C: Extract a shared `ALL_ICON_NAMES` constant and add tests (minimal version of A)
+
+```rust
+#[cfg(test)]
+const ALL_ICON_NAMES: &[&str] = &[
+    "ALargeSmall", "ArrowDown", /* ... all 86 ... */ "WindowRestore",
+];
+```
+
+**Pro:**
+- The 86-element array exists only once (currently duplicated 3x in freedesktop tests)
+- Tests for all three tables with one shared constant
+- Smallest change that catches missing entries
+
+**Contra:**
+- Still three manual match tables
+- Only catches missing entries, not wrong mappings
+
+### PROPOSED: Option C (for v0.5.1), consider Option B for v0.6.0
+
+Extract `ALL_ICON_NAMES` as a shared test constant and add coverage tests
+for `lucide_name_for_gpui_icon` and `material_name_for_gpui_icon`. This is
+the minimal fix that provides safety. The table-driven refactor (Option B)
+is a larger change better suited for a future version where the icon functions
+are also being updated (section 4: accepting `IconName` enum).
+
+---
+
+## 25. ThemeColor field coverage not enforced at compile time
+
+**Verdict: VALID -- low priority**
+
+`colors.rs` line 69:
+
+```rust
+let mut tc = ThemeColor::default();
+assign_core(&mut tc, ...);
+assign_primary(&mut tc, ...);
+// ... mutation of 108 fields across 6 helper functions
+```
+
+`ThemeColor::default()` followed by field mutation means if gpui-component
+adds a 109th field in a future version, it silently gets the default value.
+No compiler warning. Struct literal syntax (`ThemeColor { field1: ..., .. }`)
+would produce a compile error on missing fields.
+
+### Option A: Use struct literal syntax for ThemeColor construction
+
+```rust
+let tc = ThemeColor {
+    background: bg,
+    foreground: fg,
+    accent: accent,
+    // ... all 108 fields ...
+};
+```
+
+**Pro:**
+- Compile-time guarantee: new upstream fields cause an error, forcing an update
+- No mutation -- the value is built in one expression
+- Impossible to forget a field
+
+**Contra:**
+- A single 108-field struct literal is unreadable
+- Cannot use helper functions to group related assignments (the entire struct
+  must be in one expression)
+- Any refactoring to the grouping requires rewriting the whole literal
+- `ThemeColor` may not allow exhaustive construction if it has private fields
+  (needs verification)
+
+### Option B: Use struct literal with `..ThemeColor::default()` as a base
+
+```rust
+let tc = ThemeColor {
+    background: bg,
+    foreground: fg,
+    // ... explicit fields ...
+    ..ThemeColor::default()
+};
+```
+
+**Pro:**
+- New fields get defaults without compile error (same as current behavior)
+- Documents which fields are explicitly set vs. defaulted
+- One expression, no mutation
+
+**Contra:**
+- Does NOT catch missing fields -- `..Default` fills them silently
+- Exactly the same coverage guarantee as the current approach (none)
+- Worse readability than the current helper-function approach
+
+### Option C: Add a test that counts ThemeColor fields via `std::mem::size_of`
+
+```rust
+#[test]
+fn theme_color_field_count_matches_mapping() {
+    // ThemeColor has 108 Hsla fields. Each Hsla is 16 bytes.
+    // If this fails, gpui-component added/removed fields.
+    assert_eq!(std::mem::size_of::<ThemeColor>(), 108 * 16);
+}
+```
+
+**Pro:**
+- Catches field additions/removals at test time
+- No code structure change
+- Easy to update when gpui-component bumps
+
+**Contra:**
+- Fragile -- breaks if Hsla's size changes or ThemeColor gains non-Hsla fields
+- Only detects the change, doesn't tell you which field was added
+- Test-time detection, not compile-time
+
+### Option D: Keep current approach, accept the trade-off
+
+**Pro:**
+- The helper function structure (`assign_core`, `assign_primary`, etc.) is
+  readable and maintainable
+- gpui-component's default values are reasonable for new fields
+- Manual review of gpui-component changelogs before version bumps catches this
+- No code change
+
+**Contra:**
+- Silent regression risk on dependency updates
+
+### PROPOSED: Option C + Option D
+
+Add a field-count test as a tripwire. Keep the current mutation approach for
+readability. When the test breaks after a gpui-component update, review the
+new field and add an explicit mapping. This balances compile-time safety with
+code maintainability.
+
+---
+
+## 26. hover_color doc comment is a copy-paste error
+
+**Verdict: VALID -- low priority (documentation bug)**
+
+`derive.rs` lines 10-13:
+
+```rust
+/// Derive a hover state from a base color.
+///
+/// For light themes (is_dark=false): blends the background with base at 90% opacity.
+/// For dark themes (is_dark=true): blends the background with base at 90% opacity.
+```
+
+Both lines are identical. The function doesn't take `is_dark` -- it always
+does the same blend:
+
+```rust
+pub fn hover_color(base: Hsla, bg: Hsla) -> Hsla {
+    bg.blend(base.opacity(0.9))
+}
+```
+
+The doc implies two different behaviors that don't exist. The repeated
+"For light themes / For dark themes" structure was likely copied from
+`active_color()` (which does branch on `is_dark`) without editing.
+
+### Option A: Fix the doc comment
+
+```rust
+/// Derive a hover state from a base color.
+///
+/// Blends the background with base at 90% opacity. The result is slightly
+/// closer to the background than the base, giving a subtle hover effect.
+/// Works identically for light and dark themes.
+```
+
+**Pro:**
+- Accurate documentation
+- Zero code change
+- Removes the false implication of mode-dependent behavior
+
+**Contra:**
+- None
+
+### PROPOSED: Option A
+
+Fix the doc comment. No other options needed for a documentation typo.
+
+---
+
+## 27. colorize_svg misses explicit black fills
+
+**Verdict: VALID -- low priority**
+
+`colorize_svg()` handles two SVG patterns:
+
+1. `currentColor` occurrences are replaced with the hex color (Lucide-style)
+2. If the root `<svg>` has no `fill=` attribute, `fill="hex"` is injected
+   (Material-style implicit black)
+
+But SVGs with explicit `fill="black"`, `fill="#000"`, `fill="#000000"`, or
+`fill="rgb(0,0,0)"` on the root tag or on child elements pass through
+unchanged. `tag.contains("fill=")` returns true, so the injection is skipped,
+and `currentColor` is not present, so the replacement is skipped. These icons
+remain black in dark themes despite the caller requesting colorization.
+
+In practice, Material icons use implicit black (no fill attribute) and Lucide
+icons use `currentColor`, so the two handled patterns cover the bundled icon
+sets. The issue only affects third-party SVGs that use explicit black.
+
+### Option A: Replace common black color values
+
+```rust
+let svg_str = svg_str
+    .replace("currentColor", &hex)
+    .replace("fill=\"black\"", &format!("fill=\"{}\"", hex))
+    .replace("fill=\"#000\"", &format!("fill=\"{}\"", hex))
+    .replace("fill=\"#000000\"", &format!("fill=\"{}\"", hex));
+```
+
+**Pro:**
+- Covers the most common explicit-black patterns
+- Simple string replacement
+- Handles the fill variants most SVG tools produce
+
+**Contra:**
+- Doesn't cover `fill="#00000000"` (with alpha), `fill="rgb(0,0,0)"`,
+  CSS `style="fill:black"`, or `stroke="black"`
+- Replaces ALL occurrences, not just the root element -- could recolor
+  intentionally black sub-elements in multi-color SVGs
+- The function is documented as "for monochrome bundled icon sets" --
+  multi-color SVGs should use `to_image_source` without colorization
+- Fragile: whitespace variations like `fill = "black"` won't match
+
+### Option B: Parse the SVG properly and rewrite fills/strokes
+
+Use a lightweight XML parser (or regex with `<path` element detection) to
+replace fill/stroke attributes on all elements.
+
+**Pro:**
+- Handles all color representations
+- Handles whitespace variations
+- Can distinguish root element from child elements
+
+**Contra:**
+- Significant complexity increase for an edge case
+- Adding an XML parser dependency for SVG colorization is heavy
+- resvg already parses SVGs -- could rasterize with a color override instead
+  (but resvg doesn't support this directly)
+- Over-engineered for the documented use case (monochrome bundled icons)
+
+### Option C: Document the limitation
+
+Add a doc comment noting which SVG patterns are handled and which are not.
+
+**Pro:**
+- No code change
+- Sets expectations for callers with custom SVGs
+- The two handled patterns cover all bundled icon sets
+
+**Contra:**
+- Third-party SVGs with explicit black remain broken
+- Documentation doesn't fix the problem
+
+### Option D: Add `fill="black"` and `fill="#000000"` to the replacement list, ignore exotic forms
+
+A pragmatic middle ground: handle the two most common explicit-black forms
+without trying to cover every CSS color representation.
+
+**Pro:**
+- Covers 95%+ of real-world SVGs that use explicit black
+- Two extra string replacements -- minimal complexity
+- Doesn't try to be a full SVG rewriter
+
+**Contra:**
+- Still doesn't handle stroke, CSS style attributes, or rgb() notation
+- Replaces all occurrences (not just root) -- same risk as Option A
+- Partial fix that may create false confidence
+
+### PROPOSED: Option D + Option C
+
+Add replacements for `fill="black"` and `fill="#000000"` (the two most
+common patterns), and document that exotic color representations and
+multi-color SVGs are not supported. The function is explicitly for
+monochrome bundled icon sets -- comprehensive SVG rewriting is out of scope.
+
+---
+
+## Priority Summary
+
+| Priority | Problem | Proposed Fix | Dependency |
+|---|---|---|---|
+| **HIGH** | 1. Excessive ceremony | Add `from_preset()` convenience | **[CORE-3]** must land first |
+| **HIGH** | 2. is_dark split-brain bug | Pass `is_dark` into `to_theme_color()` | -- |
+| **HIGH** | 13. Silent data loss | Document coverage gap in crate docs | -- |
+| **HIGH** | 19. accent_foreground bug | Map from `d.accent_foreground` | -- |
+| **MEDIUM** | 9. Over-exposed modules | Make `colors`/`config`/`derive` pub(crate) | -- |
+| **MEDIUM** | 11. SystemTheme convenience | Add extension trait + `from_system()` | -- |
+| **MEDIUM** | 12. Monochromatic charts | Simple hue rotation for chart colors | -- |
+| **MEDIUM** | 14. Hardcoded magenta/overlay | Derive from accent/shadow | -- |
+| **MEDIUM** | 15. No link hover/active | Apply hover_color/active_color to links | -- |
+| **MEDIUM** | 16. Selection alpha clamped | Remove clamp, trust the theme | -- |
+| **MEDIUM** | 20. Radius truncation | Use `.round()` before `as usize` | -- |
+| **MEDIUM** | 21. Silent broken images | Return `Option<ImageSource>` from `to_image_source` | -- |
+| **MEDIUM** | 22. Animated timing lost | Return `AnimatedImageSources` struct (absorbs section 8) | -- |
+| **MEDIUM** | 23. Hardcoded rasterize size | Add optional `size` param (merge with section 6) | Section 6 |
+| **MEDIUM** | 24. No Lucide/Material coverage tests | Extract shared `ALL_ICON_NAMES`, add tests | -- |
+| **LOW** | 3. Mandatory name | Absorbed by sections 1 and 11 | Sections 1, 11 |
+| **LOW** | 4. Stringly-typed | Accept `IconName` in gpui icon mappers | -- |
+| **LOW** | 5. Naming inconsistency | Document current names; rename in v0.6.0 | -- |
+| **LOW** | 6. Suffix explosion | Merge to `Option<Hsla>` + `Option<u32>` params | Section 23 |
+| **LOW** | 7. Rendering in mapping layer | Keep as-is, it's 5 useful lines | -- |
+| **LOW** | 8. Option misuse | Absorbed by section 22 | Section 22 |
+| **LOW** | 10. Too many arguments | Extract ResolvedColors struct (internal) | -- |
+| **LOW** | 17. No re-exports | Re-export native_theme types used in signatures | -- |
+| **LOW** | 18. Dead parameters | Absorbed by section 10 (ResolvedColors) | Section 10 |
+| **LOW** | 25. ThemeColor field coverage | Add field-count tripwire test | -- |
+| **LOW** | 26. hover_color doc typo | Fix copy-paste doc comment | -- |
+| **LOW** | 27. colorize_svg black fills | Add `fill="black"` + `fill="#000000"` replacements | -- |
+
+## Implementation Order
+
+1. **Section 19**: Fix accent_foreground mapping (one-line bug fix)
+2. **Section 2**: Fix split-brain bug (pass `is_dark` into `to_theme_color()`)
+3. **Sections 15, 16, 20, 26**: One-line fixes (link hover, selection clamp, radius rounding, doc typo)
+4. **Wait for [CORE-3]**: `ThemeVariant::into_resolved()` in native-theme
+5. **Section 1**: Add `from_preset()` (also resolves sections 2-redundancy and 3)
+6. **Section 14 + 27**: Derive magenta/overlay from theme + fix colorize_svg
+7. **Section 21**: Return `Option<ImageSource>` from `to_image_source`
+8. **Section 22**: Return `AnimatedImageSources` struct (absorbs section 8)
+9. **Sections 6 + 23**: Merge `_colored` variants + add optional `size` param
+10. **Section 11**: Add `SystemThemeExt` trait + `from_system()`
+11. **Section 9**: Restrict module visibility
+12. **Section 12**: Fix chart colors
+13. **Section 10 + 18**: Internal ResolvedColors refactor (absorbs dead params)
+14. **Sections 4, 24**: Accept `IconName` enum + add coverage tests (batch icon work)
+15. **Section 25**: Add ThemeColor field-count tripwire test
+16. **Section 13**: Write coverage documentation
+17. **Sections 5, 17**: Documentation + re-exports

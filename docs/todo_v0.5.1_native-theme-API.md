@@ -1,0 +1,3174 @@
+# v0.5.1 API Improvements -- native-theme (core crate)
+
+Analysis of API critique, verified against actual code (2026-03-29).
+Each chapter covers one problem, lists all resolution options with pro/contra,
+and proposes the best solution. Pre-1.0 -- backward compatibility is not a
+constraint.
+
+**Companion document**: [todo_v0.5.1_gpui-connector-API.md](todo_v0.5.1_gpui-connector-API.md)
+covers the native-theme-gpui connector crate. Cross-references between the two
+documents are marked with **[GPUI-N]** (where N is the section number in the
+companion doc).
+
+---
+
+## Table of Contents
+
+**Design (hard to fix later)**
+
+1. [Option/Resolved duality creates massive API surface](#1-optionresolved-duality-creates-massive-api-surface)
+2. [NativeTheme vs SystemTheme naming confusion](#2-nativetheme-vs-systemtheme-naming-confusion)
+3. [resolve() and validate() unsafely separate](#3-resolve-and-validate-unsafely-separate)
+4. [with_overlay() consumes self -- destroys base on failure](#4-with_overlay-consumes-self----destroys-base-on-failure)
+5. [system_is_dark() cached forever with OnceLock](#5-system_is_dark-cached-forever-with-oncelock)
+6. [system_is_dark() shells out to CLI tools](#6-system_is_dark-shells-out-to-cli-tools)
+
+**Correctness risk**
+
+7. [Inconsistent icon-set parameter types across loading functions](#7-inconsistent-icon-set-parameter-types-across-loading-functions)
+8. [load_icon() silently falls back on bad input](#8-load_icon-silently-falls-back-on-bad-input)
+9. [IconRole::ALL is manually maintained](#9-iconroleall-is-manually-maintained)
+
+**Ergonomics**
+
+10. [Forced clone from borrowing mismatch](#10-forced-clone-from-borrowing-mismatch)
+11. [Constructor placement inconsistency -- free functions vs associated functions](#11-constructor-placement-inconsistency----free-functions-vs-associated-functions)
+12. [Resolved types lack Serialize and Default](#12-resolved-types-lack-serialize-and-default)
+13. [SystemTheme exposes pipeline internals](#13-systemtheme-exposes-pipeline-internals)
+
+**API hygiene**
+
+14. [impl_merge! macro publicly exported](#14-impl_merge-macro-publicly-exported)
+15. [Module visibility inconsistent with platform gating](#15-module-visibility-inconsistent-with-platform-gating)
+16. [ThemeDefaults has inconsistent field structure](#16-themedefaults-has-inconsistent-field-structure)
+17. [DialogButtonOrder leaks layout policy into visual theme](#17-dialogbuttonorder-leaks-layout-policy-into-visual-theme)
+18. [Repeat enum with single variant](#18-repeat-enum-with-single-variant)
+19. [Rgba has no color space annotation in the type name](#19-rgba-has-no-color-space-annotation-in-the-type-name)
+
+**Error handling & type safety**
+
+20. [Rgba::FromStr error type is String](#20-rgbafromstr-error-type-is-string)
+21. [From&lt;io::Error&gt; loses original error](#21-fromioerror-loses-original-error)
+22. [#[non_exhaustive] inconsistently applied across theme structs](#22-non_exhaustive-inconsistently-applied-across-theme-structs)
+
+**Performance**
+
+23. [system_icon_theme() allocates for constant values](#23-system_icon_theme-allocates-for-constant-values)
+24. [Preset TOML re-parsed on every preset() call](#24-preset-toml-re-parsed-on-every-preset-call)
+
+**Documentation & discoverability**
+
+25. [Widget struct fields lack doc comments](#25-widget-struct-fields-lack-doc-comments)
+26. [Icon function parameter order inconsistent](#26-icon-function-parameter-order-inconsistent)
+27. [rasterize_svg is square-only and swallows errors](#27-rasterize_svg-is-square-only-and-swallows-errors)
+
+**Missing traits & resolution gaps**
+
+28. [SystemTheme derives no traits](#28-systemtheme-derives-no-traits)
+29. [icon_set required by validate() but never auto-resolved](#29-icon_set-required-by-validate-but-never-auto-resolved)
+30. [Unknown TOML keys silently ignored](#30-unknown-toml-keys-silently-ignored)
+31. [Freedesktop icon size hardcoded to 24](#31-freedesktop-icon-size-hardcoded-to-24)
+
+---
+
+## 1. Option/Resolved duality creates massive API surface
+
+**Verdict: VALID -- high priority**
+
+25 widget types x 2 (Option-based + Resolved) = 50 structs, plus defaults,
+font, spacing, icon sizes, text scale all doubled. ~60 public structs, all
+re-exported at the crate root. Consumers only ever *read* from `Resolved*`
+types -- the Option-based types exist for serialization and merging but are
+equally prominent in the public namespace.
+
+The naming convention across the pairs is also inconsistent:
+
+| Option-based | Resolved | Convention |
+|---|---|---|
+| `ButtonTheme` | `ResolvedButton` | Drops `Theme` |
+| `ThemeVariant` | `ResolvedTheme` | Changes word entirely |
+| `FontSpec` | `ResolvedFontSpec` | Keeps `Spec` |
+| `ThemeDefaults` | `ResolvedDefaults` | Drops `Theme` |
+
+Seeing `ResolvedButton` in isolation gives no indication it is a theme type --
+it reads like a UI widget struct.
+
+Additionally, `ResolvedFontSpec` lives in `model::widgets` rather than in
+`model::font` where its partner `FontSpec` lives.
+
+### Option A: Consistent `Theme` suffix on resolved types
+
+Rename all resolved types to keep the `Theme` suffix:
+
+```
+ResolvedButton     -> ResolvedButtonTheme
+ResolvedWindow     -> ResolvedWindowTheme
+ResolvedDefaults   -> ResolvedThemeDefaults
+ResolvedTheme      -> ResolvedThemeVariant
+```
+
+**Pro:**
+- Parallel naming: `ButtonTheme` / `ResolvedButtonTheme`
+- Resolved types are clearly theme-related in isolation
+- Mechanical rename, low design risk
+- `define_widget_pair!` macro already controls both names -- single-site change
+
+**Contra:**
+- Longer names (`ResolvedButtonTheme` vs `ResolvedButton`)
+- Every downstream consumer updates every resolved type reference
+- `ResolvedThemeVariant` is verbose
+
+### Option B: Drop `Theme` from the Option-based types instead
+
+Rename Option-based types to be shorter:
+
+```
+ButtonTheme     -> Button
+WindowTheme     -> Window
+ThemeDefaults   -> Defaults
+ThemeVariant    -> Variant
+```
+
+**Pro:**
+- Shorter names everywhere
+- `Button` / `ResolvedButton` is parallel
+- Cleaner for the common case (Option types appear more in TOML schema docs)
+
+**Contra:**
+- `Button`, `Window`, `Slider` etc. clash with common widget type names
+  in UI frameworks -- near-guaranteed naming conflicts for consumers
+- `Variant` and `Defaults` are too generic without a `Theme` qualifier
+- Massive breaking rename
+
+### Option C: Namespace resolved types under a `resolved` module -- do not re-export at root
+
+Keep all names as-is but stop re-exporting `Resolved*` types at the crate
+root. Users access resolved types via `native_theme::resolved::Button` (or
+`native_theme::model::resolved::*`).
+
+```rust
+// Consumer code:
+use native_theme::resolved;
+let bg: Rgba = resolved.button.background;
+```
+
+**Pro:**
+- No renaming -- zero breakage to type names themselves
+- Cleans up crate root namespace significantly (halves the re-exports)
+- Resolved types are already in `model::resolved` -- just stop pulling them up
+- IDE autocomplete becomes cleaner
+
+**Contra:**
+- `ResolvedTheme` is the most-used type (returned by `SystemTheme::active()`)
+  -- hiding it behind a submodule adds an import
+- Users must import from two places: root for `SystemTheme`, submodule for
+  `ResolvedTheme`
+- Doesn't fix the naming inconsistency itself
+
+### Option D: Re-export resolved types at root but not Option-based widget types
+
+The inverse of Option C. Only preset authors and TOML deserializers need the
+Option-based types. Most consumers only interact with resolved types.
+
+```rust
+// Root re-exports: ResolvedButton, ResolvedWindow, etc.
+// Option types: native_theme::model::ButtonTheme, etc.
+```
+
+**Pro:**
+- Root namespace contains only what consumers use daily
+- Option types remain accessible for power users / preset authors
+- Reflects actual usage patterns
+
+**Contra:**
+- `NativeTheme` (which contains `ThemeVariant` which contains `ButtonTheme`)
+  is a root type -- its fields reference types not re-exported at root
+- TOML deserialize examples become awkward with submodule imports
+- Breaks existing code that uses root re-exports of Option types
+
+### Option E: Consistent suffix + move `ResolvedFontSpec` to `model::font`
+
+Apply Option A naming + fix the module placement issue.
+
+**Pro:**
+- Fixes both the naming inconsistency and the module location anomaly
+- `define_widget_pair!` change + one `pub use` move
+
+**Contra:**
+- Same verbosity concern as Option A
+- Two changes bundled together
+
+### PROPOSED: Option A (consistent naming) + fix `ResolvedFontSpec` location
+
+Rename all resolved types to keep their `Theme`/`Spec` suffix consistently:
+`ResolvedButtonTheme`, `ResolvedWindowTheme`, `ResolvedThemeDefaults`, etc.
+`ResolvedTheme` becomes `ResolvedThemeVariant` for parallelism with
+`ThemeVariant`. Move `ResolvedFontSpec` from `model::widgets` to `model::font`.
+
+This is a pure rename -- the `define_widget_pair!` macro already controls both
+names, so it is a single-site change in the macro invocations. Pre-1.0, breaking
+renames are expected. Option B is rejected due to namespace clashes. Options C/D
+are rejected because they complicate imports without fixing the naming problem.
+
+---
+
+## 2. NativeTheme vs SystemTheme naming confusion
+
+**Verdict: VALID -- high priority**
+
+The crate is `native-theme`. The unresolved Option-based top-level type is
+`NativeTheme`. The resolved-from-OS result is `SystemTheme`. A new user
+expects `NativeTheme` to be the "native (OS) theme" -- but it is the portable
+serializable form. `SystemTheme` is the one that comes from the system, yet is
+not called `NativeTheme`. The naming inverts the intuition.
+
+```rust
+// What users expect:
+let native = NativeTheme::from_system()?;  // "native theme from system"
+
+// What they get:
+let native = NativeTheme::preset("dracula")?;  // a preset, not "native"
+let system = from_system()?;                    // returns SystemTheme
+```
+
+### Option A: Rename `NativeTheme` to `ThemeSource` or `ThemeSpec`
+
+```rust
+pub struct ThemeSpec { ... }   // unresolved, serializable, mergeable
+pub struct SystemTheme { ... } // resolved, from OS
+```
+
+**Pro:**
+- `ThemeSpec` communicates "specification/template" vs. "live result"
+- No clash with the crate name -- `native_theme::ThemeSpec` reads naturally
+- `Spec` mirrors the existing `FontSpec` naming convention
+
+**Contra:**
+- Breaking rename of the most central type in the crate
+- `ThemeSpec` might suggest "specification" in a CSS-spec sense
+
+### Option B: Rename `SystemTheme` to `DetectedTheme` or `LiveTheme`
+
+**Pro:**
+- Keeps the crate-name-matching `NativeTheme` as the star type
+- `DetectedTheme` / `LiveTheme` communicates it came from OS detection
+
+**Contra:**
+- `NativeTheme::preset("dracula")` still feels wrong -- "native" preset?
+- The core confusion (NativeTheme not being native) persists
+
+### Option C: Rename `NativeTheme` -> `Theme`, `SystemTheme` -> `NativeTheme`
+
+```rust
+pub struct Theme { ... }       // generic, serializable
+pub struct NativeTheme { ... } // from OS -- the actual "native" theme
+```
+
+**Pro:**
+- `NativeTheme` now means what users expect: the OS-native theme
+- `Theme` is simple and generic for the serializable form
+- `native_theme::Theme` and `native_theme::NativeTheme` both read naturally
+
+**Contra:**
+- `Theme` is extremely generic -- likely to clash with consumer types
+- Two renames at once -- maximum breakage
+- `from_system() -> NativeTheme` still doesn't quite communicate the pipeline
+
+### Option D: Merge `SystemTheme` into `NativeTheme` with a `resolved` field
+
+```rust
+pub struct NativeTheme {
+    pub name: String,
+    pub light: Option<ThemeVariant>,     // unresolved
+    pub dark: Option<ThemeVariant>,      // unresolved
+    pub resolved: Option<ResolvedPair>,  // populated after from_system()
+}
+```
+
+**Pro:**
+- Single type eliminates the naming confusion entirely
+- Users only learn one type name
+- `from_system()` and `preset()` return the same type
+
+**Contra:**
+- Muddles the clean separation between unresolved and resolved data
+- `resolved` is `Option` -- users must check if it's populated
+- The type becomes responsible for two different lifecycle phases
+- Fields like `is_dark`, `live_preset` don't belong on a generic theme struct
+- Loses the type-level guarantee that `SystemTheme` always has resolved data
+
+### Option E: Keep both types, rename `NativeTheme` -> `ThemeBundle`
+
+```rust
+pub struct ThemeBundle { ... }  // unresolved, serializable
+pub struct SystemTheme { ... }  // resolved, from OS
+```
+
+**Pro:**
+- `ThemeBundle` communicates "collection of variants that can be merged"
+- `SystemTheme` keeps its clear meaning
+- No clash with common type names
+
+**Contra:**
+- `Bundle` is unusual in Rust theming APIs
+- `native_theme::ThemeBundle` doesn't roll off the tongue
+
+### PROPOSED: Option A -- rename `NativeTheme` to `ThemeSpec`
+
+`ThemeSpec` communicates its role: a serializable specification that can be
+loaded from TOML, merged, and resolved into a live theme. It parallels the
+existing `FontSpec` convention in the crate. `SystemTheme` keeps its name
+since it is accurate. Pre-1.0, this rename is acceptable. Option C is rejected
+because `Theme` is too generic. Option D is rejected because merging the two
+types destroys the type-level resolved/unresolved distinction.
+
+---
+
+## 3. resolve() and validate() unsafely separate
+
+**Verdict: VALID -- medium priority**
+
+**Downstream impact**: This is a prerequisite for **[GPUI-1]** (excessive ceremony).
+Adding `into_resolved()` here enables the gpui connector to build its convenience
+functions on top.
+
+```rust
+v.resolve();                  // forgot this? silent garbage
+let resolved = v.validate()?; // confusing "missing field" errors
+```
+
+Nothing prevents calling `validate()` without `resolve()`. The private
+`resolve_variant()` in lib.rs already combines both:
+
+```rust
+fn resolve_variant(mut variant: ThemeVariant) -> crate::Result<ResolvedTheme> {
+    variant.resolve();
+    variant.validate()
+}
+```
+
+### Option A: Add `ThemeVariant::into_resolved(self) -> Result<ResolvedTheme>`
+
+**Pro:**
+- Single call replaces two -- impossible to forget resolve
+- Consuming `self` prevents reuse of unresolved variant
+- Name clearly communicates the transformation
+- Mirrors the private `resolve_variant()` that already exists
+
+**Contra:**
+- Consumes the variant (can't inspect fields after)
+- Some users may want to resolve without validating (inspect partial state)
+
+### Option B: Make `resolve()` return `&mut Self` for chaining, keep `validate()` separate
+
+```rust
+let resolved = v.resolve().validate()?;
+```
+
+**Pro:**
+- Chaining makes the correct order natural
+- Users can still call resolve/validate separately for debugging
+
+**Contra:**
+- Still possible to call `validate()` without `resolve()`
+- Chaining doesn't enforce correctness, just makes it convenient
+
+### Option C: Type-state pattern (`ThemeVariant` -> `ResolvedVariant` -> `ResolvedTheme`)
+
+**Pro:**
+- Compile-time enforcement: you literally cannot call validate on an unresolved type
+- Most "correct" solution from a type-safety perspective
+
+**Contra:**
+- Heavy API change
+- Adds a new intermediate type (`ResolvedVariant`) that may confuse users
+- Over-engineered for a two-step pipeline
+- Significant refactoring
+
+### Option D: `validate()` calls `resolve()` internally if not already resolved
+
+**Pro:**
+- Impossible to forget resolve -- validate does it for you
+- No API changes needed
+
+**Contra:**
+- Silent mutation inside a method named `validate` violates least surprise
+- Need a way to detect "already resolved" (add a flag field?)
+- Hides the resolve cost -- users may not realize validate is doing extra work
+
+### PROPOSED: Option A + keep existing methods
+
+Add `ThemeVariant::into_resolved(self) -> Result<ResolvedTheme>` as the
+recommended path. Keep `resolve()` and `validate()` as they are for debugging
+and advanced use. Document `into_resolved()` as the primary API. This enables
+the gpui connector's `from_preset()` convenience function (**[GPUI-1]**).
+
+---
+
+## 4. with_overlay() consumes self -- destroys base on failure
+
+**Verdict: VALID -- medium priority**
+
+```rust
+pub fn with_overlay(self, overlay: &NativeTheme) -> Result<Self>
+```
+
+If the overlay merges cleanly but validation fails (returns `Err`), the
+original `SystemTheme` is consumed and lost. The caller must pre-clone to
+keep the original. An overlay operation should not destroy its base on failure.
+
+```rust
+// Current -- footgun:
+let customized = system.with_overlay(&overlay)?;
+// if Err: `system` is gone
+
+// Defensive workaround:
+let backup = system.clone(); // wasteful
+let customized = system.with_overlay(&overlay)?;
+```
+
+### Option A: Take `&self` instead of `self`, return a new `SystemTheme`
+
+```rust
+pub fn with_overlay(&self, overlay: &NativeTheme) -> Result<SystemTheme>
+```
+
+**Pro:**
+- Base is preserved regardless of success or failure
+- Idiomatic: overlay is a projection, not a mutation
+- Caller can apply multiple overlays to the same base
+- No footgun
+
+**Contra:**
+- Always clones the pre-resolve variants internally (two `ThemeVariant` clones)
+- If the caller was going to discard the original anyway, the clone is wasted
+
+### Option B: Keep consuming `self`, return `Result<Self, (Self, Error)>`
+
+```rust
+pub fn with_overlay(self, overlay: &NativeTheme) -> Result<Self, (Self, Error)>
+```
+
+**Pro:**
+- On failure, the original is returned alongside the error
+- No clone on the success path
+- Caller can recover from errors
+
+**Contra:**
+- Unusual error type -- `Result<T, (T, E)>` is non-standard
+- Awkward to pattern-match
+- Callers using `?` operator can't recover easily
+
+### Option C: Provide both `with_overlay` (by value) and `overlay_onto` (by ref)
+
+**Pro:**
+- Users choose: zero-cost consuming or safe borrowing
+- Both patterns are available
+
+**Contra:**
+- Two methods for the same operation -- API bloat
+- Users must decide which to use
+- `overlay_onto` naming is confusing (sounds like mutation)
+
+### Option D: Take `&self`, but also keep `into_with_overlay(self)` for zero-clone
+
+**Pro:**
+- Default path (`with_overlay(&self)`) is safe
+- Power users get `into_with_overlay(self)` for performance
+- Clear naming distinguishes the two
+
+**Contra:**
+- Two methods
+- `into_with_overlay` is unusual naming
+
+### PROPOSED: Option A -- take `&self`
+
+The clone is two `ThemeVariant` structs (flat data, no heap allocations except
+string fields). This is negligible compared to the theme resolution cost.
+Taking `&self` eliminates the footgun entirely. The consuming variant can be
+added later if profiling shows it matters, but it is extremely unlikely to be
+a bottleneck.
+
+Also apply the same fix to `with_overlay_toml`:
+```rust
+pub fn with_overlay_toml(&self, toml: &str) -> Result<SystemTheme>
+```
+
+---
+
+## 5. system_is_dark() cached forever with OnceLock
+
+**Verdict: VALID but nuanced -- medium priority**
+
+```rust
+pub fn system_is_dark() -> bool {
+    static CACHED_IS_DARK: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
+    *CACHED_IS_DARK.get_or_init(detect_is_dark_inner)
+}
+```
+
+Same pattern for `prefers_reduced_motion()`. Value is cached on first call and
+never refreshed. If the user toggles dark mode while the app is running, the
+function returns stale data.
+
+### Option A: Rename to `system_was_dark_at_startup()` / `startup_is_dark()`
+
+**Pro:**
+- Honest name -- communicates the caching behavior
+- No behavior change, just documentation via naming
+- Zero implementation effort
+
+**Contra:**
+- Ugly/unusual function name
+- Name says "startup" but caching happens on first call, which may not be startup
+- Doesn't solve the stale data problem
+
+### Option B: Provide both cached and live versions
+
+```rust
+pub fn system_is_dark() -> bool           // live query, no cache
+pub fn system_is_dark_cached() -> bool    // cached, fast
+```
+
+**Pro:**
+- Users choose their trade-off (latency vs. freshness)
+- Live version gives current state on each call
+- Cached version is fast for startup paths
+
+**Contra:**
+- Live version spawns a subprocess (`gsettings`) on every call -- expensive
+  on Linux, cheap on macOS/Windows with native APIs
+- Two functions for what should be one concern
+
+### Option C: Add a `force_refresh: bool` parameter
+
+```rust
+pub fn system_is_dark(force_refresh: bool) -> bool
+```
+
+**Pro:**
+- Single function, caller controls caching
+- `system_is_dark(false)` for fast path, `system_is_dark(true)` for refresh
+
+**Contra:**
+- Breaking change (signature change)
+- `bool` parameter is not self-documenting
+
+### Option D: Cache with TTL (e.g., re-check every 30 seconds)
+
+**Pro:**
+- Automatic refresh without manual intervention
+- Amortizes the subprocess cost
+
+**Contra:**
+- Complex implementation (timer thread or check on each call)
+- Surprising behavior: some calls are fast, some are slow
+- OS dark mode changes are infrequent -- polling is wasteful
+- Different cost profile per platform
+
+### Option E: Keep current behavior, document it clearly
+
+**Pro:**
+- The caching is intentional and documented
+- Desktop apps typically check dark mode at startup and react to OS notifications
+  for changes (which is outside native-theme's scope -- it's the app's job to
+  subscribe to appearance-change events)
+- Live querying on every call is wasteful when the app has event-driven updates
+
+**Contra:**
+- Function name is misleading as "system IS dark" (present tense)
+- New users will be surprised by stale results
+
+### PROPOSED: Option E + doc improvement
+
+Keep the caching. The function is correct for its purpose: initial detection.
+Apps that need live updates should subscribe to OS appearance-change notifications
+(D-Bus on Linux, NSAppearance KVO on macOS) -- that's application logic, not
+library scope. Improve the doc comment to clearly state: "Cached on first call.
+For live dark-mode tracking, subscribe to OS appearance-change events and call
+`from_system()` to get fresh data."
+
+---
+
+## 6. system_is_dark() shells out to CLI tools
+
+**Verdict: VALID -- medium priority**
+
+`detect_is_dark_inner()` runs subprocesses for theme detection:
+
+```rust
+// Linux:
+std::process::Command::new("gsettings")
+    .args(["get", "org.gnome.desktop.interface", "color-scheme"])
+
+// macOS:
+std::process::Command::new("defaults")
+    .args(["read", "-g", "AppleInterfaceStyle"])
+```
+
+Spawning subprocesses is fragile: the binary might not be installed, PATH might
+be wrong, sandboxed environments (Flatpak, App Sandbox) might block it. The
+crate already has D-Bus portal code (Linux) and uses objc2 for
+`prefers_reduced_motion()` (macOS) -- these are the proper mechanisms.
+
+### Option A: Replace with D-Bus call on Linux, NSUserDefaults via objc2 on macOS
+
+**Linux:** Use `zbus` (already a dependency for the portal feature) to call
+`org.freedesktop.portal.Settings.Read` synchronously, or read the GSettings
+DConf database file directly.
+
+**macOS:** Use `objc2_foundation::NSUserDefaults` (already a transitive
+dependency via objc2) to read `AppleInterfaceStyle`.
+
+**Pro:**
+- No subprocess spawn -- faster, more reliable
+- Works in sandboxed environments (Flatpak, macOS App Sandbox)
+- Consistent with how `prefers_reduced_motion()` already works on macOS
+- No PATH dependency
+
+**Contra:**
+- `zbus` synchronous calls require a runtime; the portal feature already
+  depends on async -- using it in a sync function needs `block_on` or
+  a sync D-Bus library
+- Reading DConf database directly is fragile (binary format, path varies)
+- Adds dependency weight if `zbus` is pulled in for a non-portal build
+
+### Option B: Read gsettings DConf database file directly (Linux), keep objc2 (macOS)
+
+**Linux:** Parse `~/.config/dconf/user` or use `gio` crate for GSettings
+without subprocess.
+
+**Pro:**
+- No subprocess on Linux
+- No async runtime needed
+- `gio` crate provides safe bindings
+
+**Contra:**
+- `gio` pulls in GTK/GLib dependency -- heavyweight for a toolkit-agnostic crate
+- DConf file path varies by distribution and user config
+- DConf binary format is not stable API
+
+### Option C: Use `gsettings` subprocess as fallback, prefer D-Bus when portal feature enabled
+
+```rust
+#[cfg(feature = "portal")]
+{ /* D-Bus portal query */ }
+#[cfg(not(feature = "portal"))]
+{ /* gsettings subprocess fallback */ }
+```
+
+**Pro:**
+- Best-effort: native API when available, subprocess when not
+- No new dependencies for the minimal feature set
+- Portal users get the fast path automatically
+
+**Contra:**
+- Two code paths to maintain
+- Non-portal users still get the fragile subprocess path
+- `system_is_dark()` is sync but portal is async -- needs `block_on`
+
+### Option D: Keep subprocess approach, document the dependency
+
+**Pro:**
+- Already works on all major distributions
+- `gsettings` is installed by default on GNOME/KDE/XFCE/Cinnamon systems
+- `defaults` is always available on macOS
+- Zero additional dependencies
+
+**Contra:**
+- Fails silently in Flatpak/Snap sandboxes without `--talk-name` permissions
+- Process spawn has ~5-10ms latency
+- PATH issues in non-standard environments (Nix, Guix)
+
+### Option E: Provide a `set_is_dark()` injection point, keep detection as default
+
+```rust
+pub fn set_is_dark(value: bool) { ... }  // override the cached value
+pub fn system_is_dark() -> bool { ... }  // returns override or detected
+```
+
+**Pro:**
+- Apps that know their dark-mode state can bypass detection entirely
+- Useful for testing
+- Detection mechanism becomes a fallback, not the only path
+
+**Contra:**
+- Global mutable state (`OnceLock` -> `AtomicBool` or similar)
+- Doesn't fix the underlying detection fragility
+- Thread-safety implications
+
+### PROPOSED: Option C -- D-Bus when portal feature enabled, subprocess fallback otherwise
+
+On macOS, replace `defaults` subprocess with `objc2_foundation::NSUserDefaults`
+unconditionally (the dependency is already present when `macos` feature is
+enabled). On Linux, use the D-Bus portal path when the `portal` feature is
+enabled, keep `gsettings` subprocess as fallback for minimal builds. This
+improves the common case (most Linux apps enable `portal`) without adding
+dependencies for minimal builds.
+
+For the macOS non-`macos`-feature case (cross-compilation testing), keep the
+subprocess as the only option since objc2 is not available.
+
+---
+
+## 7. Inconsistent icon-set parameter types across loading functions
+
+**Verdict: VALID -- medium priority**
+
+Four icon loading functions use two different types for the same concept:
+
+| Function | Icon set parameter |
+|---|---|
+| `load_icon(role, icon_set: &str)` | `&str` |
+| `load_system_icon_by_name(name, set: IconSet)` | `IconSet` |
+| `load_custom_icon(provider, icon_set: &str)` | `&str` |
+| `loading_indicator(icon_set: &str)` | `&str` |
+
+Three use `&str` with silent fallback to `system_icon_set()` for unrecognized
+strings. One uses the typed `IconSet` enum. Users must remember which function
+takes which type.
+
+Additionally, `ThemeVariant::icon_set` is `Option<String>` rather than
+`Option<IconSet>`, discarding compile-time safety despite `IconSet` being
+serde-derivable.
+
+### Option A: Standardize all functions on `IconSet` enum
+
+```rust
+pub fn load_icon(role: IconRole, set: IconSet) -> Option<IconData>
+pub fn load_custom_icon(provider: &impl IconProvider, set: IconSet) -> Option<IconData>
+pub fn loading_indicator(set: IconSet) -> Option<AnimatedIcon>
+```
+
+Change `ThemeVariant::icon_set` to `Option<IconSet>`.
+
+**Pro:**
+- Compile-time safety -- typos are caught at build time
+- Consistent parameter type across all icon functions
+- `IconSet` already derives `Serialize + Deserialize`
+- No silent fallback needed -- the type is always valid
+
+**Contra:**
+- TOML deserialization of `ThemeVariant::icon_set` needs serde enum support
+  (the `IconSet` serde impl must match the existing kebab-case strings)
+- Callers who have a string from config must call `IconSet::from_name()` first
+- Users who want "use system default" must pass `system_icon_set()` explicitly
+
+### Option B: Standardize on `&str` everywhere
+
+Change `load_system_icon_by_name` to take `&str`:
+```rust
+pub fn load_system_icon_by_name(name: &str, icon_set: &str) -> Option<IconData>
+```
+
+**Pro:**
+- Consistent -- all functions use `&str`
+- Easy interop with TOML strings and config values
+- No conversion step for callers
+
+**Contra:**
+- Throws away type safety -- no compile-time checking
+- All functions do runtime string parsing internally
+- The silent-fallback problem (see [section 8](#8-load_icon-silently-falls-back-on-bad-input)) persists
+
+### Option C: Use `impl Into<IconSet>` for flexibility
+
+Implement `TryFrom<&str> for IconSet` and accept `impl Into<IconSet>`:
+
+```rust
+pub fn load_icon(role: IconRole, set: impl Into<IconSet>) -> Option<IconData>
+```
+
+**Pro:**
+- Callers can pass either `IconSet::Material` or `"material"`
+- Flexible without losing type safety for enum users
+
+**Contra:**
+- `impl Into<IconSet>` from `&str` must panic or return `Result` on bad input
+  -- `Into` can't fail, so this would need `TryInto` instead
+- `TryInto` makes the function signature return `Result<Option<IconData>>` or
+  requires internal handling -- ugly
+
+### Option D: Add `Option<IconSet>` parameter with `None` = system default
+
+```rust
+pub fn load_icon(role: IconRole, set: Option<IconSet>) -> Option<IconData>
+```
+
+**Pro:**
+- Explicit "use default" via `None`
+- No silent fallback on typos
+- Type-safe
+
+**Contra:**
+- More verbose at call sites: `load_icon(role, Some(IconSet::Material))`
+- Callers with config strings must handle `IconSet::from_name()` returning
+  `None` -- which is now indistinguishable from "use default"
+
+### PROPOSED: Option A -- standardize on `IconSet`
+
+All icon functions take `IconSet`. `ThemeVariant::icon_set` becomes
+`Option<IconSet>`. Callers with config strings use `IconSet::from_name()`
+(which already exists) at the boundary. The `IconSet` serde impl must use
+`#[serde(rename_all = "kebab-case")]` or a custom impl to match the existing
+TOML string format. This eliminates silent fallback and gives compile-time
+safety.
+
+---
+
+## 8. load_icon() silently falls back on bad input
+
+**Verdict: VALID -- medium priority**
+
+```rust
+let set = IconSet::from_name(icon_set).unwrap_or_else(system_icon_set);
+```
+
+Passing `"matreial"` (typo) silently resolves to the system icon set instead of
+returning `None` or an error. The caller cannot distinguish "icon not found in
+the requested set" from "set name was wrong so a different set was used."
+
+### Option A: Return `None` for unrecognized set names
+
+```rust
+let set = IconSet::from_name(icon_set)?;
+// ... proceed with `set`
+```
+
+`load_icon` returns `None` if the set name is not recognized.
+
+**Pro:**
+- Typos surface as missing icons -- debuggable
+- Explicit: caller knows what they asked for was not available
+- Consistent with the "return None if icon not found" contract
+
+**Contra:**
+- Breaking change in behavior (not API signature)
+- Callers who relied on "pass any string, get something back" will break
+
+### Option B: Return a dedicated `IconError` with context
+
+```rust
+pub fn load_icon(role: IconRole, icon_set: &str) -> Result<IconData, IconError>
+```
+
+**Pro:**
+- Distinguishes "unknown set" from "icon not found in known set"
+- Callers get a clear error message
+
+**Contra:**
+- Changes return type from `Option<IconData>` to `Result` -- breaking
+- Over-engineered for a lookup function
+- Callers must handle `Result` where `Option` was sufficient
+
+### Option C: Accept `IconSet` instead of `&str` (same as section 7 proposed)
+
+If the function takes `IconSet`, the problem disappears -- there is no string
+to typo.
+
+**Pro:**
+- Eliminates the entire class of bug
+- Type safety at compile time
+- No fallback logic needed
+
+**Contra:**
+- Same as section 7 Option A contra
+
+### PROPOSED: Option C -- accept `IconSet` (subsumed by section 7)
+
+This issue is fully resolved by section 7's proposed change. Once all icon
+functions take `IconSet`, there is no string-based fallback to be silent about.
+
+---
+
+## 9. IconRole::ALL is manually maintained
+
+**Verdict: VALID -- low-medium priority**
+
+```rust
+pub const ALL: [IconRole; 42] = [
+    Self::DialogWarning,
+    Self::DialogError,
+    // ... 40 more entries
+];
+```
+
+The 42-element array is hand-maintained in sync with the enum declaration.
+Adding a variant without updating `ALL` (or the count `42`) is a silent bug.
+The `#[non_exhaustive]` attribute means external code can't exhaustively match,
+making `ALL` the only way to iterate -- so correctness is critical.
+
+### Option A: Derive with `strum::EnumIter` or `strum::EnumCount`
+
+```rust
+#[derive(strum::EnumIter, strum::EnumCount)]
+pub enum IconRole { ... }
+
+// Usage:
+for role in IconRole::iter() { ... }
+assert_eq!(IconRole::COUNT, 42);
+```
+
+**Pro:**
+- Compile-time correct -- adding a variant auto-updates iteration
+- `EnumCount::COUNT` replaces the magic `42` in the array length
+- Widely used crate with zero runtime overhead (proc macro)
+- `ALL` can be removed or derived from `iter()`
+
+**Contra:**
+- Adds `strum` as a dependency (proc macro + traits crate)
+- Proc macros increase compile time
+- `strum` dependency may be unwanted for a minimal-dependency crate
+
+### Option B: Build-script or proc macro generating `ALL`
+
+Custom build script reads the enum definition and generates the array.
+
+**Pro:**
+- No external dependency
+- Full control over the output
+
+**Contra:**
+- Build scripts parsing Rust source are fragile
+- Significant implementation effort for a simple pattern
+- Maintenance burden of the build script itself
+
+### Option C: Add a compile-time test asserting count equals enum variant count
+
+```rust
+#[cfg(test)]
+const _: () = {
+    // If this doesn't compile, ALL is out of sync
+    let _: [(); std::mem::variant_count::<IconRole>()] =
+        [(); IconRole::ALL.len()];
+};
+```
+
+Note: `std::mem::variant_count` is nightly-only. Alternative: use a match
+block in a test that covers all variants.
+
+**Pro:**
+- No new dependency
+- Catches the bug at test time, not silently at runtime
+- Zero cost
+
+**Contra:**
+- `variant_count` is unstable -- can't use on stable Rust
+- Match-based test is still manual, just in a different place
+- Doesn't help with ordering -- only checks count
+- A test, not compile-time enforcement
+
+### Option D: Exhaustive match test
+
+```rust
+#[test]
+fn all_array_covers_every_variant() {
+    let all_set: HashSet<IconRole> = IconRole::ALL.iter().copied().collect();
+    // This match block must be kept exhaustive (no wildcard):
+    let check = |role: IconRole| { assert!(all_set.contains(&role)); };
+    // The compiler forces you to handle every variant:
+    match IconRole::DialogWarning {
+        IconRole::DialogWarning => {},
+        IconRole::DialogError => {},
+        // ...all variants listed...
+    }
+}
+```
+
+**Pro:**
+- No dependencies
+- Compiler enforces exhaustiveness on the match (if no wildcard)
+- Works on stable Rust
+
+**Contra:**
+- Still manual -- but the compiler catches missing match arms
+- Doesn't verify ordering
+- Match arms are redundant boilerplate (but serve as a safety net)
+- The `#[non_exhaustive]` attribute on `IconRole` requires a wildcard arm in
+  external crates, but within the defining crate it can be exhaustive
+
+### PROPOSED: Option D -- exhaustive match test
+
+Add a test in `icons.rs` with an exhaustive match (no wildcard, which is valid
+within the defining crate despite `#[non_exhaustive]`). This catches added
+variants at compile time with zero new dependencies. If `strum` is ever adopted
+crate-wide for other enums, revisit Option A.
+
+---
+
+## 10. Forced clone from borrowing mismatch
+
+**Verdict: VALID -- medium priority**
+
+**Downstream impact**: The gpui connector's convenience functions (**[GPUI-1]**)
+absorb the clone for 90% of users, but the core API mismatch remains for power
+users who compose manually.
+
+`pick_variant()` returns `&ThemeVariant`, but `resolve()` requires `&mut self`:
+
+```rust
+let mut v = variant.clone(); // unavoidable allocation
+v.resolve();
+```
+
+### Option A: Add `pick_variant_owned()` returning `ThemeVariant` (clone inside)
+
+**Pro:**
+- Explicit about the allocation
+- Existing `pick_variant()` still available for read-only inspection
+- Simple to implement
+
+**Contra:**
+- Two methods for variant selection -- API bloat
+- The clone still happens, just hidden inside
+
+### Option B: Add `into_variant(is_dark) -> Option<ThemeVariant>` (consuming)
+
+**Pro:**
+- No clone needed if `NativeTheme` is owned
+- Zero-cost for the common path where you don't need `NativeTheme` afterward
+
+**Contra:**
+- Consumes `self` -- can't use the `NativeTheme` afterward
+- If you need both light and dark, you'd have to clone the `NativeTheme` first
+
+### Option C: Make `resolve()` take `self` by value, return `ResolvedTheme`
+
+**Pro:**
+- Eliminates the separate `validate()` call too (see section 3)
+- Consuming `self` enforces correct usage: can't call resolve on a borrowed variant
+- Most idiomatic Rust pattern for transformations
+
+**Contra:**
+- Breaking change to ThemeVariant API
+- Users doing read-only inspection of ThemeVariant fields lose access after resolve
+
+### Option D: Convenience function absorbs the clone (**[GPUI-1]**)
+
+**Pro:**
+- Users of `from_preset()` never see the clone
+- No API changes to existing types
+- Power users can still clone manually if needed
+
+**Contra:**
+- Doesn't fix the underlying API mismatch in native-theme
+- Users who compose manually still pay the ergonomic cost
+
+### PROPOSED: Option B + Option D
+
+Add `into_variant(is_dark) -> Option<ThemeVariant>` as the consuming path for
+callers who own a `NativeTheme` and are done with it. The gpui connector's
+convenience function (**[GPUI-1]**) uses this internally. Keep `pick_variant()`
+for read-only inspection. Pre-1.0, adding a consuming method is safe. Option C
+is subsumed by section 3's `into_resolved()`.
+
+---
+
+## 11. Constructor placement inconsistency -- free functions vs associated functions
+
+**Verdict: VALID -- medium priority**
+
+Theme loading is split inconsistently:
+
+| Constructor | Location |
+|---|---|
+| `from_system()` | Free function at crate root |
+| `from_system_async()` | Free function at crate root |
+| `NativeTheme::preset()` | Associated function on `NativeTheme` |
+| `NativeTheme::from_toml()` | Associated function on `NativeTheme` |
+| `NativeTheme::from_file()` | Associated function on `NativeTheme` |
+
+Why isn't `from_system()` on `SystemTheme`? The user must guess whether to look
+for `native_theme::from_system()` or `SystemTheme::from_system()`.
+
+Similarly, all icon loading is free functions (`load_icon`, `load_custom_icon`,
+`load_system_icon_by_name`, `loading_indicator`). No methods on `IconRole` or
+`IconSet`.
+
+### Option A: Move `from_system()` to `SystemTheme::from_system()`
+
+```rust
+let theme = SystemTheme::from_system()?;
+let theme = SystemTheme::from_system_async().await?;
+```
+
+**Pro:**
+- Idiomatic Rust: constructor is an associated function on the type it returns
+- Discoverable via IDE autocomplete on `SystemTheme::`
+- Consistent with `NativeTheme::preset()` / `NativeTheme::from_toml()` pattern
+
+**Contra:**
+- Breaking change -- callers update `native_theme::from_system()` ->
+  `SystemTheme::from_system()`
+- Shorter import path lost: `use native_theme::from_system` no longer works
+
+### Option B: Move `NativeTheme::preset()` etc. to free functions instead
+
+```rust
+let theme = native_theme::preset("dracula")?;
+let theme = native_theme::from_toml(toml)?;
+```
+
+**Pro:**
+- All constructors at crate root -- consistent
+- Shorter call syntax for the common case
+
+**Contra:**
+- Pollutes the crate root namespace with many free functions
+- Less discoverable -- no type to autocomplete on
+- Doesn't follow Rust conventions (`Type::from_x()`)
+
+### Option C: Add icon loading methods to `IconRole` / `IconSet`
+
+```rust
+let icon = IconRole::ActionCopy.load(IconSet::Material)?;
+let spinner = IconSet::Material.loading_indicator()?;
+```
+
+**Pro:**
+- Discoverable via method autocomplete
+- Reads naturally: "load this icon role from this set"
+- Groups related functionality on the types that represent the concepts
+
+**Contra:**
+- `IconRole` and `IconSet` are data types -- adding I/O methods to them
+  muddies their role
+- Platform-specific dispatch logic would be on a platform-agnostic type
+- May need `#[cfg]` on methods, which is messy
+
+### Option D: Mixed approach -- constructors on their return types, icon loading stays free
+
+Move `from_system` / `from_system_async` to `SystemTheme`. Keep icon loading
+as free functions (they dispatch across types and features, so no single type
+owns them).
+
+**Pro:**
+- Constructors on types (idiomatic for type constructors)
+- Icon functions stay free (appropriate since they dispatch across platform code)
+- Pragmatic -- changes only what benefits from being moved
+
+**Contra:**
+- Still two conventions in the crate (associated functions + free functions)
+- Users must know which pattern applies where
+
+### PROPOSED: Option D -- move `from_system` to `SystemTheme`, keep icon loading free
+
+`SystemTheme::from_system()` and `SystemTheme::from_system_async()` follow
+Rust convention. Icon loading functions remain free because they dispatch
+across platform modules and feature flags -- no single type owns them. This
+gives idiomatic constructors without forcing I/O methods onto data types.
+
+---
+
+## 12. Resolved types lack Serialize and Default
+
+**Verdict: VALID -- low-medium priority**
+
+Option-based types derive `Serialize + Deserialize + Default`. Resolved types
+derive neither. This means:
+
+- You can't serialize a `ResolvedTheme` to TOML/JSON for debugging, export,
+  or snapshotting
+- You can't construct test fixtures without filling in every field manually
+
+### Option A: Derive `Serialize` on all resolved types
+
+**Pro:**
+- Enables serializing the final computed theme for debugging or export
+- Presets could be exported from live OS themes
+- Useful for diffing resolved themes
+
+**Contra:**
+- Serialized output may confuse users who expect it to be re-loadable as a
+  `NativeTheme` (different structure, different field names in some cases)
+- Adds serde trait bounds to resolved types
+
+### Option B: Derive `Serialize + Default` on all resolved types
+
+**Pro:**
+- `Default` enables easy test fixture construction
+- Both traits are commonly expected in Rust ecosystems
+
+**Contra:**
+- A `Default` resolved theme has meaningless zero/empty values (black
+  background, empty font family, zero spacing)
+- Users might accidentally use `Default` values in production, masking bugs
+- `Default` on resolved types is arguably semantically wrong -- resolved types
+  should always come from resolution, not from default construction
+
+### Option C: Derive `Serialize` only, add a `test_fixture()` constructor
+
+```rust
+impl ResolvedTheme {
+    #[cfg(test)]
+    pub fn test_fixture() -> Self { ... }
+}
+```
+
+**Pro:**
+- `Serialize` for debugging/export
+- `test_fixture()` clearly communicates "this is for tests, not production"
+- No `Default` footgun
+
+**Contra:**
+- `#[cfg(test)]` constructor is not available to downstream test code
+- Would need to be `#[cfg(any(test, feature = "test-utils"))]` to be useful
+
+### Option D: Add `Serialize` + `Deserialize` so resolved themes round-trip
+
+**Pro:**
+- Full round-trip: resolve -> serialize -> deserialize -> use
+- Useful for caching resolved themes to disk
+
+**Contra:**
+- Serialized `ResolvedTheme` format differs from `ThemeVariant` -- loading
+  a serialized resolved theme as a `NativeTheme` would fail or produce
+  garbage
+- Two different TOML formats for "theme data" is confusing
+
+### PROPOSED: Option A -- derive `Serialize` only
+
+Add `Serialize` to all resolved types. Skip `Default` -- resolved types should
+come from the resolution pipeline, not from default construction. `Serialize`
+enables debugging and export without creating a footgun. If test fixture
+ergonomics become painful, add a `test_fixture()` behind a `test-utils`
+feature flag later.
+
+---
+
+## 13. SystemTheme exposes pipeline internals
+
+**Verdict: VALID -- low priority**
+
+```rust
+pub struct SystemTheme {
+    pub name: String,
+    pub is_dark: bool,
+    pub light: ResolvedTheme,
+    pub dark: ResolvedTheme,
+    pub(crate) light_variant: ThemeVariant,
+    pub(crate) dark_variant: ThemeVariant,
+    pub live_preset: String,      // <-- internal
+    pub full_preset: String,      // <-- internal
+}
+```
+
+`live_preset` and `full_preset` expose the internal resolution pipeline's
+preset names (e.g., `"kde-breeze-live"`, `"kde-breeze"`). Downstream consumers
+have no use for the live-vs-full distinction.
+
+### Option A: Make `live_preset` and `full_preset` `pub(crate)`
+
+**Pro:**
+- Removes internal details from the public API
+- Still accessible within native-theme for the resolution pipeline
+- Simple change
+
+**Contra:**
+- Showcase/debug tools that display "using preset: kde-breeze" lose access
+- Users who want to know which preset was selected can't query it
+
+### Option B: Replace both with a single `pub preset: String` (the full name)
+
+```rust
+pub struct SystemTheme {
+    pub name: String,
+    pub is_dark: bool,
+    pub light: ResolvedTheme,
+    pub dark: ResolvedTheme,
+    pub preset: String,           // "kde-breeze", "adwaita", etc.
+    pub(crate) live_preset: String,
+    // ... internal fields
+}
+```
+
+**Pro:**
+- Single public field with the user-facing preset name
+- Internal details stay `pub(crate)`
+- Showcase tools can display "using preset: kde-breeze"
+
+**Contra:**
+- Minor: adds a redundant string alongside the internal `live_preset`
+
+### Option C: Expose via methods instead of fields
+
+```rust
+impl SystemTheme {
+    pub fn preset_name(&self) -> &str { ... }  // "kde-breeze"
+}
+```
+
+**Pro:**
+- Methods can compute / transform (e.g., strip "-live" suffix)
+- No redundant fields
+- Future-proof: can change internals without API breakage
+
+**Contra:**
+- Slightly less ergonomic than field access
+- Adds a method where a field would suffice
+
+### PROPOSED: Option B -- single `pub preset: String`
+
+Expose one clean field with the user-facing preset name (e.g., `"kde-breeze"`,
+`"adwaita"`). Keep `live_preset` as `pub(crate)` for the resolution pipeline.
+Remove `full_preset` (redundant with the new `preset` field).
+
+---
+
+## 14. impl_merge! macro publicly exported
+
+**Verdict: VALID -- low priority**
+
+```rust
+#[macro_export]
+macro_rules! impl_merge { ... }
+```
+
+`#[macro_export]` puts the macro at the crate root, polluting consumer namespaces.
+The macro is a generic merge utility unrelated to theming.
+
+### Option A: Remove `#[macro_export]`, keep as crate-internal
+
+**Pro:**
+- No longer pollutes consumer namespace
+- Macro is only used within native-theme for ThemeVariant and its nested types
+- In Rust 2018+, `macro_rules!` without `#[macro_export]` is accessible within
+  the crate via textual ordering
+
+**Contra:**
+- `macro_rules!` scoping without `#[macro_export]` requires the macro to be defined
+  before use (textual order matters)
+- If the macro is in lib.rs and used in model/mod.rs, it needs to appear before
+  the `mod model` declaration
+- Technically a breaking change if anyone uses `native_theme::impl_merge!`
+
+### Option B: Move to a `#[doc(hidden)]` module
+
+**Pro:**
+- Still works with `#[macro_export]` but hidden from docs
+- Users won't discover it accidentally
+
+**Contra:**
+- Still technically public and in the namespace
+- `#[doc(hidden)]` is a convention, not enforcement
+
+### Option C: Replace macro with a derive macro or trait
+
+**Pro:**
+- Proper proc-macro would be more idiomatic
+- No namespace pollution
+
+**Contra:**
+- Proc macros require a separate crate
+- Significant effort for a simple code-generation pattern
+- Over-engineered: the macro generates 2 methods for ~30 structs
+
+### PROPOSED: Option A
+
+Remove `#[macro_export]`. The macro is only used within native-theme. Define it
+in lib.rs before the `mod model` declaration so it's available via textual
+ordering. Pre-1.0, this breaking change is acceptable.
+
+---
+
+## 15. Module visibility inconsistent with platform gating
+
+**Verdict: VALID -- low priority**
+
+Three inconsistencies:
+
+1. `pub mod macos` is unconditionally public. On Linux, the module is visible
+   but `from_macos()` inside is cfg-gated -- nothing useful is callable.
+2. `pub mod windows` is compiled everywhere "for testing" with
+   `#[allow(dead_code)]`. On Linux, the module is visible but empty of
+   callable functions.
+3. `pub mod winicons` is gated on `feature = "system-icons"` but NOT on
+   `target_os = "windows"`. On Linux with `system-icons`, the module is
+   visible but useless.
+
+IDE autocomplete shows these phantom modules, confusing users.
+
+### Option A: Gate all platform modules on their target OS
+
+```rust
+#[cfg(target_os = "macos")]
+pub mod macos;
+#[cfg(target_os = "windows")]
+pub mod windows;
+#[cfg(all(target_os = "windows", feature = "system-icons"))]
+pub mod winicons;
+```
+
+**Pro:**
+- Modules only appear on platforms where they work
+- Clean IDE autocomplete
+- No phantom modules
+
+**Contra:**
+- Cross-platform CI can't compile-check macOS/Windows modules on Linux
+- Test coverage for platform modules drops on non-native CI runners
+- The current approach of compiling everywhere catches syntax/type errors early
+
+### Option B: Compile everywhere, but make `pub(crate)` on wrong platforms
+
+```rust
+#[cfg(target_os = "macos")]
+pub mod macos;
+#[cfg(not(target_os = "macos"))]
+pub(crate) mod macos;
+```
+
+**Pro:**
+- Modules are still compile-checked on all platforms
+- Not visible in public API on wrong platforms
+- Best of both worlds
+
+**Contra:**
+- Duplication: each module has two `mod` declarations
+- Slightly unusual pattern
+
+### Option C: Keep current approach, add `#[doc(hidden)]` on wrong platforms
+
+```rust
+#[cfg_attr(not(target_os = "macos"), doc(hidden))]
+pub mod macos;
+```
+
+**Pro:**
+- Hidden from docs on wrong platforms
+- Still compile-checked everywhere
+- Minimal change
+
+**Contra:**
+- `#[doc(hidden)]` only affects documentation, not IDE autocomplete
+- Module is still technically public
+
+### Option D: Move platform code to internal modules, expose only via re-exports
+
+```rust
+// All platform modules are pub(crate)
+pub(crate) mod macos_impl;
+pub(crate) mod windows_impl;
+
+// Only re-export the entry points that work on this platform
+#[cfg(all(target_os = "macos", feature = "macos"))]
+pub use macos_impl::from_macos;
+```
+
+**Pro:**
+- Clean public API: only working functions are visible
+- Compile-checked everywhere (internal modules are always built)
+- No phantom modules in autocomplete
+
+**Contra:**
+- Renames modules (breaking, but pre-1.0)
+- Users who imported `native_theme::macos::from_macos` must change to
+  `native_theme::from_macos` (already re-exported at root)
+
+### PROPOSED: Option B -- `pub(crate)` on wrong platforms
+
+Use conditional visibility: `pub` on the target platform, `pub(crate)` on
+others. This preserves cross-platform compile-checking while keeping the
+public API clean. The duplication is mechanical and low-maintenance.
+
+---
+
+## 16. ThemeDefaults has inconsistent field structure
+
+**Verdict: VALID -- low priority**
+
+`ThemeDefaults` mixes two structural patterns:
+
+| Pattern | Fields | Check | Merge |
+|---|---|---|---|
+| `Option<T>` leaf | `accent`, `radius`, ... | `.is_some()` | Replace if `Some` |
+| Non-Option nested | `font`, `mono_font`, `spacing`, `icon_sizes` | `.family.is_some()` (deeper) | Recursive merge |
+
+This asymmetry means:
+- Checking "is accent set?" is `defaults.accent.is_some()`
+- Checking "is font set?" is `defaults.font.family.is_some()` (one level deeper)
+- Merge behavior differs: `font` merges field-by-field, `accent` replaces wholesale
+
+### Option A: Make nested structs `Option<FontSpec>`, `Option<ThemeSpacing>`, etc.
+
+```rust
+pub struct ThemeDefaults {
+    pub font: Option<FontSpec>,          // was: FontSpec
+    pub spacing: Option<ThemeSpacing>,   // was: ThemeSpacing
+    // ...
+}
+```
+
+**Pro:**
+- Consistent: all fields are `Option<T>`
+- "Is font set?" becomes `defaults.font.is_some()`
+- Merge behavior is uniform: `Some` replaces
+
+**Contra:**
+- Loses the ability to merge font fields independently (e.g., override just
+  `font.size` while keeping the preset's `font.family`)
+- Changes the TOML structure: `[light.defaults.font]` must be present as a
+  unit or not at all
+- Breaks the partial-override pattern that makes theme merging useful
+
+### Option B: Make leaf fields non-Option nested types with `is_empty()`
+
+Wrap each color/geometry group in its own struct:
+
+```rust
+pub struct ThemeColors {
+    pub background: Option<Rgba>,
+    pub foreground: Option<Rgba>,
+    // ...
+}
+pub struct ThemeDefaults {
+    pub colors: ThemeColors,
+    pub font: FontSpec,
+    // ...
+}
+```
+
+**Pro:**
+- Consistent structure: all fields are nested structs with `is_empty()`
+- Groups related fields logically
+
+**Contra:**
+- Massive restructuring of the most central type
+- Changes TOML path: `defaults.background` -> `defaults.colors.background`
+- Breaking change to every preset file and every consumer
+- Over-engineered grouping for fields that are naturally flat
+
+### Option C: Document the asymmetry, keep current structure
+
+**Pro:**
+- No breaking changes
+- The asymmetry exists for a good reason: nested structs enable partial
+  override (e.g., override font size but inherit font family)
+- The TOML experience is better with flat nested structs than with
+  all-or-nothing `Option<FontSpec>`
+
+**Contra:**
+- The inconsistency remains in the API
+- New users will stumble on the different patterns
+
+### PROPOSED: Option C -- document, keep current structure
+
+The asymmetry is intentional: nested structs (`FontSpec`, `ThemeSpacing`)
+support partial field-by-field override, which is critical for the theme
+merging workflow. Making them `Option<T>` (Option A) would break the partial
+override pattern. Grouping leaves into more nested structs (Option B) is
+over-engineered. Document the two patterns clearly in `ThemeDefaults` doc
+comments and in the TOML format guide.
+
+---
+
+## 17. DialogButtonOrder leaks layout policy into visual theme
+
+**Verdict: VALID but nuanced -- low priority**
+
+```rust
+pub enum DialogButtonOrder {
+    TrailingAffirmative,    // Windows, GNOME
+    LeadingAffirmative,     // macOS, KDE
+}
+```
+
+This describes UI layout convention, not visual styling. A theme library should
+describe how things *look* (colors, fonts, geometry), not how they are
+*arranged*.
+
+However, button ordering is platform-dependent and strongly associated with the
+platform's visual identity. KDE/macOS users expect OK on the left; Windows/GNOME
+users expect it on the right. This is as much a "native feel" concern as colors.
+
+### Option A: Remove from theme model, make it a standalone function
+
+```rust
+pub fn dialog_button_order() -> DialogButtonOrder
+```
+
+**Pro:**
+- Theme model stays purely visual
+- Function queries the platform independently
+- Clear separation of concerns
+
+**Contra:**
+- The ordering is currently part of presets (KDE-breeze has
+  `LeadingAffirmative`). Removing it means presets can no longer specify it.
+- App themes that want a specific ordering (e.g., "always macOS-style") lose
+  the ability to set it via TOML
+
+### Option B: Keep in theme model, rename field for clarity
+
+Rename from `button_order` to `platform_button_order` or
+`dialog_affirmative_position` in the theme struct:
+
+```rust
+pub dialog_affirmative_position: Option<DialogButtonOrder>,
+```
+
+**Pro:**
+- Name communicates it's a platform convention, not visual styling
+- Stays in the preset system (overridable per theme)
+- Minimal change
+
+**Contra:**
+- Still mixing layout with visual data
+- Renaming doesn't change the conceptual problem
+
+### Option C: Move to a separate `PlatformConventions` struct inside the theme
+
+```rust
+pub struct PlatformConventions {
+    pub dialog_button_order: Option<DialogButtonOrder>,
+    // future: scroll direction, context menu behavior, etc.
+}
+pub struct ThemeVariant {
+    // ... visual fields
+    pub conventions: PlatformConventions,
+}
+```
+
+**Pro:**
+- Clean separation within the theme: visual vs. behavioral
+- Extensible for future platform conventions
+- Presets can still override it
+
+**Contra:**
+- Over-engineering for a single field
+- Changes TOML path: `dialog.button_order` -> `conventions.dialog_button_order`
+- The struct will likely never grow beyond 1-2 fields
+
+### Option D: Keep as-is, document that it's a platform convention not visual styling
+
+**Pro:**
+- No changes
+- The field is useful where it is (presets can override it)
+- Native feel includes layout conventions, not just colors
+
+**Contra:**
+- Conceptual purity of "theme = visual only" is violated
+
+### PROPOSED: Option D -- keep as-is, document
+
+Button ordering is a legitimate part of "native feel" that varies by platform
+and should be overridable in theme presets. The conceptual objection (layout vs.
+visual) is valid in theory but unhelpful in practice. Document it clearly as a
+platform convention field. If more convention fields accumulate in the future,
+revisit Option C.
+
+---
+
+## 18. Repeat enum with single variant
+
+**Verdict: VALID -- low priority**
+
+```rust
+#[non_exhaustive]
+pub enum Repeat {
+    Infinite,
+}
+```
+
+Single-variant enum forces users to write `Repeat::Infinite` in every animation
+construction. The `#[non_exhaustive]` attribute signals future expansion, but
+there is no concrete plan for additional variants.
+
+### Option A: Remove `Repeat`, make all animations implicitly infinite
+
+```rust
+pub enum AnimatedIcon {
+    Frames {
+        frames: Vec<IconData>,
+        frame_duration_ms: u32,
+        // repeat field removed -- always infinite
+    },
+    // ...
+}
+```
+
+**Pro:**
+- Simplest API -- no boilerplate
+- All current animations are infinite
+- If finite repetition is needed later, add it then (YAGNI)
+
+**Contra:**
+- If finite repetition is added later, it's an API change (adding a field)
+- Loss of expressiveness
+
+### Option B: Replace with `repeat_count: Option<u32>` where `None` = infinite
+
+```rust
+pub enum AnimatedIcon {
+    Frames {
+        frames: Vec<IconData>,
+        frame_duration_ms: u32,
+        repeat_count: Option<u32>,   // None = infinite, Some(3) = 3 times
+    },
+}
+```
+
+**Pro:**
+- Covers finite and infinite without a separate type
+- `None` is a natural default for infinite
+- No enum boilerplate
+
+**Contra:**
+- `Option<u32>` semantics must be documented ("None means infinite")
+- Less self-documenting than an enum
+
+### Option C: Keep the enum, add `Count(u32)` variant now
+
+```rust
+pub enum Repeat {
+    Infinite,
+    Count(u32),
+}
+```
+
+**Pro:**
+- Anticipates finite repetition
+- Self-documenting via variant names
+- `#[non_exhaustive]` was designed for this
+
+**Contra:**
+- Adding a variant nobody uses yet is speculative
+- Still requires `Repeat::Infinite` boilerplate
+
+### Option D: Keep as-is
+
+**Pro:**
+- `#[non_exhaustive]` allows adding variants later without breaking
+- The enum is self-documenting
+- It's a minor ergonomic cost (one extra field in construction)
+
+**Contra:**
+- Single-variant enum is unusual and looks like pre-engineering
+- Users must import `Repeat` for a construct that carries no information
+
+### PROPOSED: Option A -- remove `Repeat`, all animations infinite
+
+All current animations are infinite. Remove the `Repeat` enum and the
+`repeat` field from `AnimatedIcon::Frames`. If finite repetition becomes
+needed, add `repeat_count: Option<u32>` at that point. This follows YAGNI
+and simplifies the API. The `#[non_exhaustive]` on `AnimatedIcon` itself
+allows adding fields via new variants.
+
+---
+
+## 19. Rgba has no color space annotation in the type name
+
+**Verdict: INVALID -- not actionable**
+
+The original critique noted that `Rgba` carries no color space indication in
+its type name, and consumers might pass sRGB values to frameworks expecting
+linear-light.
+
+However, the doc comment on `Rgba` already states:
+
+```rust
+/// An sRGB color with alpha, stored as four u8 components.
+///
+/// All values are in the sRGB color space.
+```
+
+The color space is documented. Renaming to `Srgba` would be unusual -- no
+major Rust crate uses that convention (`bevy_color::Srgba` is an exception in
+a crate that has multiple color space types). `Rgba` with u8 components is
+universally understood as sRGB in practice.
+
+### Option A: Rename to `Srgba`
+
+**Pro:**
+- Explicit color space in the type name
+- Prevents misuse with linear-light frameworks
+
+**Contra:**
+- Non-standard naming -- most Rust crates use `Rgba` for sRGB u8
+- Verbose for no practical benefit
+- Breaks every downstream consumer
+
+### Option B: Keep `Rgba`, add `to_linear()` conversion method
+
+**Pro:**
+- Explicit conversion path for linear-light frameworks
+- Doesn't rename the type
+
+**Contra:**
+- `to_linear()` returns `[f32; 4]` which is a different representation
+- Adds scope to a color type that is intentionally minimal
+- Framework connectors should handle this conversion, not the theme crate
+
+### Option C: Keep as-is -- doc comment is sufficient
+
+**Pro:**
+- Already documented as sRGB
+- Universal convention: u8 `Rgba` = sRGB
+- Framework connectors (like native-theme-gpui) handle conversion
+
+**Contra:**
+- None significant
+
+### PROPOSED: Option C -- keep as-is
+
+The doc comment already says "sRGB color space." The type name `Rgba` with u8
+components is universally understood as sRGB. Renaming adds verbosity without
+practical benefit. Color space conversion belongs in framework connectors, not
+in the theme crate.
+
+---
+
+## 20. Rgba::FromStr error type is String
+
+**Verdict: VALID -- low-medium priority**
+
+```rust
+impl FromStr for Rgba {
+    type Err = String;  // untyped
+```
+
+`String` as a `FromStr` error type prevents callers from programmatically
+distinguishing parse failure causes (bad length vs. invalid hex digit vs. empty
+input). It does not implement `std::error::Error`, so it cannot be used with `?`
+in functions returning `Box<dyn Error>` without wrapping. Every other error path
+in the crate uses typed errors (`Error`, `ThemeResolutionError`). This is the
+one place that uses a bare `String`.
+
+The error surfaces during TOML deserialization (via serde's `Deserialize` impl)
+where it is converted to a serde error with `.map_err(de::Error::custom)` --
+the original string is readable but unstructured.
+
+### Option A: Create a `ParseColorError` struct
+
+```rust
+#[derive(Debug, Clone)]
+pub struct ParseColorError {
+    pub kind: ColorErrorKind,
+    pub input: String,
+}
+
+pub enum ColorErrorKind {
+    Empty,
+    InvalidLength(usize),
+    InvalidHexDigit { component: &'static str },
+}
+
+impl std::error::Error for ParseColorError {}
+impl std::fmt::Display for ParseColorError { ... }
+
+impl FromStr for Rgba {
+    type Err = ParseColorError;
+}
+```
+
+**Pro:**
+- Implements `std::error::Error` -- works with `Box<dyn Error>` and `?`
+- Callers can match on error kind for diagnostics
+- Consistent with Rust standard library conventions (`ParseIntError`, etc.)
+- The `input` field aids debugging
+
+**Contra:**
+- Adds two new public types for a relatively simple parse function
+- Over-engineered if no caller ever matches on the error kind
+
+### Option B: Use the crate's existing `Error` enum
+
+```rust
+impl FromStr for Rgba {
+    type Err = crate::Error;
+}
+```
+
+Map parse failures to `Error::Format(...)`.
+
+**Pro:**
+- Reuses existing error type -- no new types
+- `Error` already implements `std::error::Error`
+- Consistent with how TOML errors are reported
+
+**Contra:**
+- `Error` is a crate-level error with platform, resolution, and format
+  variants -- using it for color parsing pulls in irrelevant variants
+- `Error::Format` is semantically "TOML parse error," not "hex color error"
+- `FromStr` errors should be specific to the type being parsed
+
+### Option C: Use a simple struct with a message
+
+```rust
+#[derive(Debug, Clone)]
+pub struct ParseColorError(String);
+
+impl std::error::Error for ParseColorError {}
+impl std::fmt::Display for ParseColorError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        write!(f, "{}", self.0)
+    }
+}
+```
+
+**Pro:**
+- Minimal: one new type
+- Implements `std::error::Error`
+- Same diagnostic messages as the current `String` errors
+- Works with `Box<dyn Error>` and `?`
+- Matches the pattern of `std::num::ParseIntError` (opaque, Display-able)
+
+**Contra:**
+- No structured error kind -- callers can only read the message string
+- Slightly more complex than raw `String`
+
+### Option D: Keep `String`
+
+**Pro:**
+- Already works
+- Serde's `de::Error::custom` accepts any `Display` -- the `String` is fine
+- No one is likely pattern-matching on color parse errors
+
+**Contra:**
+- Not `std::error::Error` -- breaks `?` in `Box<dyn Error>` return types
+- Inconsistent with the rest of the crate
+
+### PROPOSED: Option C -- simple `ParseColorError` struct
+
+A single opaque struct wrapping a message string. Implements `Display` +
+`std::error::Error`. This is the minimum change that fixes the `?` ergonomics
+and error trait compliance. A full `ColorErrorKind` enum (Option A) is
+over-engineered -- nobody pattern-matches on color parse errors. Using the
+crate-level `Error` (Option B) is semantically wrong for a `FromStr` impl.
+
+---
+
+## 21. From<io::Error> loses original error
+
+**Verdict: VALID -- low-medium priority**
+
+```rust
+impl From<std::io::Error> for Error {
+    fn from(err: std::io::Error) -> Self {
+        Error::Unavailable(err.to_string())  // original io::Error gone
+    }
+}
+```
+
+The `io::Error` is stringified and wrapped in `Unavailable`. The caller loses:
+- `io::ErrorKind` (can't distinguish `NotFound` from `PermissionDenied`)
+- The source error chain (`Error::source()` returns `None` for `Unavailable`)
+- Structured error handling (can't downcast back to `io::Error`)
+
+`Unavailable` semantically means "data source exists but cannot be read right
+now" -- but `io::ErrorKind::NotFound` means the source doesn't exist at all.
+These are conflated.
+
+### Option A: Add a dedicated `Io` variant to `Error`
+
+```rust
+pub enum Error {
+    // ...existing...
+    Io(std::io::Error),
+}
+```
+
+**Pro:**
+- Preserves the full `io::Error` including `ErrorKind` and source chain
+- `Error::source()` returns the inner `io::Error`
+- Callers can match on `Error::Io(e)` and inspect `e.kind()`
+- Clean `From<io::Error>` impl: `Error::Io(err)`
+
+**Contra:**
+- Adds a new variant to the `Error` enum (but it's `#[non_exhaustive]`)
+- Some `io::Error` uses genuinely are "unavailable" (e.g., `EACCES` on
+  kdeglobals) -- the semantic distinction is imperfect
+
+### Option B: Change `Unavailable` to hold a boxed error instead of String
+
+```rust
+pub enum Error {
+    Unavailable(Box<dyn std::error::Error + Send + Sync>),
+    // ... rest unchanged
+}
+```
+
+**Pro:**
+- All "unavailable" errors preserve their source chain
+- `Error::source()` works for `Unavailable`
+- Backward-compatible variant name (pre-1.0, payload change is fine)
+- Handles both `io::Error` and any future unavailability cause
+
+**Contra:**
+- Callers must downcast to get `io::ErrorKind` (less ergonomic)
+- Loses the simple `String` message for quick formatting
+- `Error::Unavailable` currently takes a `String` for non-io error messages
+  (e.g., `"unknown preset: foo"`) -- these would need to become boxed too
+
+### Option C: Keep `Unavailable(String)` but add a separate `Io` variant
+
+Same as Option A but explicitly keep `Unavailable(String)` for non-io cases.
+
+```rust
+pub enum Error {
+    Unsupported,
+    Unavailable(String),        // non-io unavailability
+    Io(std::io::Error),         // file I/O errors
+    Format(String),
+    Platform(Box<dyn std::error::Error + Send + Sync>),
+    Resolution(ThemeResolutionError),
+}
+```
+
+**Pro:**
+- Clear separation: `Io` for file errors, `Unavailable` for other causes
+- `From<io::Error>` maps to `Error::Io` -- no information loss
+- `Unavailable` keeps its `String` payload for simple error messages
+
+**Contra:**
+- Two variants where one previously sufficed
+- Callers matching on "file-related errors" must match both `Io` and `Unavailable`
+
+### Option D: Keep current behavior
+
+**Pro:**
+- Simple
+- The string message includes the io error's `Display` output
+- In practice, callers log the error or propagate it -- they rarely
+  inspect `ErrorKind`
+
+**Contra:**
+- Breaks `Error::source()` chain -- downstream `anyhow` / `eyre` users
+  get truncated error chains
+- Loses structured error information unnecessarily
+
+### PROPOSED: Option C -- add `Io` variant, keep `Unavailable(String)`
+
+Add `Error::Io(std::io::Error)` for file-related errors. Change `From<io::Error>`
+to map to `Io` instead of `Unavailable`. Keep `Unavailable(String)` for non-io
+cases like `"unknown preset: foo"`. The `Error` enum is `#[non_exhaustive]`, so
+adding a variant is non-breaking for match-with-wildcard consumers.
+
+---
+
+## 22. #[non_exhaustive] inconsistently applied across theme structs
+
+**Verdict: VALID -- low-medium priority**
+
+`ThemeVariant`, `NativeTheme`, `ThemeDefaults`, `ThemeSpacing`, and `IconSizes`
+are `#[non_exhaustive]`. The 25 widget structs generated by `define_widget_pair!`
+are NOT `#[non_exhaustive]`.
+
+This means external code CAN construct:
+```rust
+let button = ButtonTheme { background: Some(c), ..Default::default() };
+```
+
+But CANNOT construct:
+```rust
+// ERROR: cannot construct `ThemeVariant` using struct literal syntax
+// because it has a #[non_exhaustive] attribute
+let variant = ThemeVariant { defaults: d, button: b, .. };
+
+// Must use:
+let mut variant = ThemeVariant::default();
+variant.defaults = d;
+variant.button = b;
+```
+
+For types that users actively construct (like `ThemeVariant` for overlays),
+`#[non_exhaustive]` forces verbose field-by-field mutation instead of struct
+literal syntax. The inconsistency between widget types (constructible) and their
+container `ThemeVariant` (not constructible) is surprising.
+
+### Option A: Remove `#[non_exhaustive]` from data structs, keep on enums
+
+Remove from `ThemeVariant`, `NativeTheme`, `ThemeDefaults`, `ThemeSpacing`,
+`IconSizes`. Keep on `Error`, `IconRole`, `IconSet`, `AnimatedIcon`, etc.
+
+**Pro:**
+- External code can use struct literal syntax with `..Default::default()`
+  for all theme types
+- Consistent with widget types that are already constructible
+- Adding a field to a data struct is a minor version bump anyway pre-1.0
+
+**Contra:**
+- After 1.0, adding a field to any of these structs becomes a breaking change
+- `#[non_exhaustive]` was placed deliberately to allow field additions
+
+### Option B: Add `#[non_exhaustive]` to widget types too (via `define_widget_pair!`)
+
+Make everything consistently non-exhaustive.
+
+**Pro:**
+- Consistent: all theme data structs are `#[non_exhaustive]`
+- Maximum forward compatibility for field additions
+
+**Contra:**
+- Widget types like `ButtonTheme { background: Some(c), ..Default::default() }`
+  stop working from external crates
+- Forces verbose field-by-field mutation everywhere
+- Hurts test fixture ergonomics in downstream code
+
+### Option C: Remove from `ThemeVariant` and `NativeTheme`, keep on smaller structs
+
+The most-constructed types lose `#[non_exhaustive]`; leaf types keep it.
+
+**Pro:**
+- `ThemeVariant` and `NativeTheme` become constructible (the main pain point)
+- `ThemeDefaults`, `ThemeSpacing`, `IconSizes` stay extensible (new fields likely)
+- Targeted fix for the biggest ergonomic issue
+
+**Contra:**
+- Still inconsistent (just a different split)
+- Adding a field to `ThemeVariant` post-1.0 would break consumers
+
+### Option D: Add builder methods to `#[non_exhaustive]` types
+
+```rust
+impl ThemeVariant {
+    pub fn with_defaults(mut self, d: ThemeDefaults) -> Self { self.defaults = d; self }
+    pub fn with_button(mut self, b: ButtonTheme) -> Self { self.button = b; self }
+    // ...
+}
+```
+
+**Pro:**
+- Keeps `#[non_exhaustive]` for forward compatibility
+- Builder pattern is fluent and readable
+- Each method is a one-liner -- low maintenance
+
+**Contra:**
+- 25+ builder methods on `ThemeVariant` alone
+- Builder pattern is verbose: `ThemeVariant::default().with_defaults(d).with_button(b)`
+- Must be maintained in sync with fields (but not checked at compile time)
+
+### PROPOSED: Option A -- remove `#[non_exhaustive]` from data structs
+
+Pre-1.0, backward compatibility is not a constraint. Remove `#[non_exhaustive]`
+from `ThemeVariant`, `NativeTheme`, `ThemeDefaults`, `ThemeSpacing`, `IconSizes`.
+Keep it on all enums (`Error`, `IconRole`, `IconSet`, `IconData`, `AnimatedIcon`,
+`TransformAnimation`). `Repeat` is excluded -- removed by section 18. This matches Rust convention: enums are
+commonly non-exhaustive (new variants), structs rarely are (new fields are rare
+and usually require a major version bump regardless). Before the 1.0 release,
+re-evaluate whether `#[non_exhaustive]` should be re-added to structs that are
+likely to gain fields.
+
+---
+
+## 23. system_icon_theme() allocates for constant values
+
+**Verdict: VALID -- low priority**
+
+```rust
+pub fn system_icon_theme() -> String {
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    { return "sf-symbols".to_string(); }     // heap alloc
+
+    #[cfg(target_os = "windows")]
+    { return "segoe-fluent".to_string(); }   // heap alloc
+
+    #[cfg(target_os = "linux")]
+    {
+        CACHED_ICON_THEME
+            .get_or_init(detect_linux_icon_theme)
+            .clone()                          // clones cached String
+    }
+}
+```
+
+On macOS and Windows, the return value is always a known constant. Allocating
+a `String` on every call is needless. On Linux, the value is dynamic (detected
+from the DE) and cached via `OnceLock`, but `.clone()` still allocates on
+every call.
+
+### Option A: Return `Cow<'static, str>`
+
+```rust
+pub fn system_icon_theme() -> Cow<'static, str> {
+    #[cfg(target_os = "macos")]
+    { Cow::Borrowed("sf-symbols") }
+
+    #[cfg(target_os = "linux")]
+    { Cow::Borrowed(CACHED_ICON_THEME.get_or_init(detect_linux_icon_theme)) }
+}
+```
+
+**Pro:**
+- Zero allocation on macOS/Windows (static borrow)
+- Zero allocation on Linux after first call (borrows from `OnceLock`)
+- Callers can still use `.as_ref()` / `.into_owned()` as needed
+- `Cow<str>` dereferences to `&str` for most use cases
+
+**Contra:**
+- `Cow<'static, str>` is a less familiar return type than `String`
+- Callers who need `String` must call `.into_owned()`
+
+### Option B: Return `&'static str` with `OnceLock<String>` leak on Linux
+
+```rust
+pub fn system_icon_theme() -> &'static str {
+    #[cfg(target_os = "linux")]
+    {
+        CACHED_ICON_THEME
+            .get_or_init(|| Box::leak(detect_linux_icon_theme().into_boxed_str()))
+    }
+}
+```
+
+**Pro:**
+- Simplest return type (`&str`)
+- Zero allocation after first call on all platforms
+- No `Cow` complexity
+
+**Contra:**
+- `Box::leak` intentionally leaks memory (one small string, once)
+- Unusual pattern that may concern code reviewers
+- Cannot be reclaimed if the cache is ever invalidated
+
+### Option C: Return `&str` borrowing from `OnceLock`
+
+```rust
+pub fn system_icon_theme() -> &'static str {
+    #[cfg(target_os = "linux")]
+    { CACHED_ICON_THEME.get_or_init(detect_linux_icon_theme).as_str() }
+}
+```
+
+Note: this works because `OnceLock<String>` has `'static` lifetime,
+so `.as_str()` returns `&'static str`.
+
+**Pro:**
+- Simplest return type
+- No allocation after first call
+- No `Box::leak` -- borrows from the `OnceLock` directly
+- `OnceLock` lives for `'static`, so the borrow is `'static`
+
+**Contra:**
+- Relies on `OnceLock` being `'static` (which it is, as a `static` variable)
+- Subtle lifetime reasoning that might confuse future maintainers
+
+### Option D: Keep `String`, document the allocation
+
+**Pro:**
+- No change
+- Allocation is trivial (one short string per call)
+- Nobody is calling this in a hot loop
+
+**Contra:**
+- Unnecessarily wasteful for what is always a short static string
+
+### PROPOSED: Option C -- return `&'static str`
+
+The `OnceLock<String>` is a `static` variable, so borrowing from it yields
+`&'static str`. On macOS/Windows, return a string literal directly. This
+eliminates all allocations with the simplest possible return type. No `Cow`,
+no `Box::leak`.
+
+---
+
+## 24. Preset TOML re-parsed on every preset() call
+
+**Verdict: VALID -- medium priority**
+
+```rust
+pub(crate) fn preset(name: &str) -> Result<NativeTheme> {
+    let toml_str = match name { ... };
+    from_toml(toml_str)  // toml::from_str() every time
+}
+```
+
+The embedded TOML strings are `&'static str` constants. Every call to
+`NativeTheme::preset("dracula")` re-parses the same TOML. More critically,
+`from_system()` calls `preset()` twice internally (once for the live preset,
+once for the full preset), so system theme detection does two redundant TOML
+parses on every invocation.
+
+### Option A: Cache each preset in an individual `OnceLock<NativeTheme>`
+
+```rust
+fn preset(name: &str) -> Result<NativeTheme> {
+    static KDE_BREEZE: OnceLock<NativeTheme> = OnceLock::new();
+    static ADWAITA: OnceLock<NativeTheme> = OnceLock::new();
+    // ... one per preset
+
+    let cached = match name {
+        "kde-breeze" => KDE_BREEZE.get_or_init(|| from_toml(KDE_BREEZE_TOML).unwrap()),
+        "adwaita" => ADWAITA.get_or_init(|| from_toml(ADWAITA_TOML).unwrap()),
+        // ...
+    };
+    Ok(cached.clone())
+}
+```
+
+**Pro:**
+- Each preset parsed at most once for the process lifetime
+- `from_system()` goes from 2 TOML parses to 0 on subsequent calls
+- Deterministic: embedded TOML never changes, so caching is always valid
+- `OnceLock` is thread-safe
+
+**Contra:**
+- Returns a clone of the cached `NativeTheme` (but this is cheap -- flat data)
+- 20 `OnceLock` statics (16 presets + 4 live) -- verbose but mechanical
+- `get_or_init` callback can't return `Result`, so parse errors are unwrapped
+  (but embedded presets are tested and always valid)
+
+### Option B: Cache in a `HashMap<&str, NativeTheme>` behind a single `OnceLock`
+
+```rust
+static CACHE: OnceLock<HashMap<&str, NativeTheme>> = OnceLock::new();
+```
+
+**Pro:**
+- Single cache for all presets
+- Less verbose than per-preset `OnceLock`s
+
+**Contra:**
+- All presets parsed on first access, even if only one is needed
+- `HashMap` lookup for each call (minor but unnecessary)
+- Still returns clones
+
+### Option C: Lazy-parse on first access per preset using `LazyLock`
+
+```rust
+static KDE_BREEZE: LazyLock<NativeTheme> =
+    LazyLock::new(|| from_toml(KDE_BREEZE_TOML).unwrap());
+```
+
+**Pro:**
+- Clean syntax with `LazyLock` (stable since Rust 1.80)
+- Parsed exactly once, lazily
+- No `get_or_init` ceremony
+
+**Contra:**
+- `LazyLock` is `Sync` -- same thread-safety as `OnceLock`
+- Still 20 statics
+- Still returns clones
+- `LazyLock` requires a closure that doesn't capture (fine for static strings)
+
+### Option D: Keep current behavior, optimize `from_system()` to avoid double-parse
+
+Instead of caching all presets, optimize the hot path: `from_system()` and
+`run_pipeline()` currently call `preset()` twice. Refactor to parse each
+preset once in `run_pipeline()`.
+
+**Pro:**
+- Fixes the main performance issue without global caching
+- No global state
+- Other `preset()` calls (user-initiated) are typically one-shot
+
+**Contra:**
+- Only fixes `from_system()`, not repeated `preset()` calls
+- Doesn't help apps that call `preset()` in a loop (e.g., showcase UIs)
+
+### PROPOSED: Option C -- `LazyLock` per preset
+
+Use `LazyLock` for each preset. The closure calls `from_toml()` on the embedded
+constant. This is the most idiomatic Rust pattern for lazily-initialized
+statics. Each preset is parsed at most once. `from_system()` benefits
+automatically (its two `preset()` calls hit the cache). The `.unwrap()` in the
+`LazyLock` closure is safe because embedded presets are compile-time constants
+tested in CI. Return `.clone()` since `NativeTheme` is cheaply cloneable.
+
+---
+
+## 25. Widget struct fields lack doc comments
+
+**Verdict: VALID -- low priority**
+
+The `define_widget_pair!` macro applies `#[allow(missing_docs)]` to all
+generated structs:
+
+```rust
+#[allow(missing_docs)]
+pub struct $opt_name {
+    $($(pub $opt_field: Option<$opt_type>,)*)?
+    $($(pub $on_field: Option<$on_opt_type>,)*)?
+}
+
+#[allow(missing_docs)]
+pub struct $resolved_name {
+    $($(pub $opt_field: $opt_type,)*)?
+    $($(pub $on_field: $on_res_type,)*)?
+}
+```
+
+This suppresses `#![warn(missing_docs)]` on ~200 public fields across 50
+structs. Fields like `ButtonTheme::primary_bg`, `ScrollbarTheme::overlay_mode`,
+and `SwitchTheme::track_radius` are undocumented in rustdoc. These are the
+most user-facing types in the crate.
+
+### Option A: Add per-field doc comments to macro invocations
+
+Extend `define_widget_pair!` to accept doc comments per field:
+
+```rust
+define_widget_pair! {
+    /// Push button.
+    ButtonTheme / ResolvedButton {
+        option {
+            /// Normal state background color.
+            background: Rgba,
+            /// Normal state foreground (text) color.
+            foreground: Rgba,
+            // ...
+        }
+    }
+}
+```
+
+**Pro:**
+- Each of ~200 fields gets a doc comment in rustdoc
+- Documentation is co-located with the field definition
+- Maximum value for API consumers
+
+**Contra:**
+- Requires extending the macro to pass through per-field attributes
+- ~200 doc comments to write
+- Macro becomes more complex
+
+### Option B: Add per-field doc comments directly, don't use the macro
+
+Replace `define_widget_pair!` with hand-written structs for the few widgets
+that need rich documentation, keep the macro for the rest.
+
+**Pro:**
+- Full control over doc comments without macro complexity
+- Some widgets (e.g., `ButtonTheme` with 14 fields) benefit more than others
+  (e.g., `SeparatorTheme` with 1 field)
+
+**Contra:**
+- Defeats the purpose of the macro (DRY for parallel struct pairs)
+- Maintaining parallel Option/Resolved structs by hand is error-prone
+
+### Option C: Remove `#[allow(missing_docs)]`, add minimal doc comments
+
+Remove the allow attribute from the macro. Add short doc comments inline:
+
+```rust
+/// Background color.
+pub $opt_field: Option<$opt_type>,
+```
+
+But since macro_rules can't generate per-field docs from field names, this
+would require adding doc support to the macro.
+
+**Pro:**
+- Compiler warns on undocumented fields (catches future additions)
+- Forces documentation discipline
+
+**Contra:**
+- Same macro extension as Option A
+
+### Option D: Keep `#[allow(missing_docs)]`, rely on field names being self-documenting
+
+**Pro:**
+- No change
+- Most field names are descriptive (`background`, `foreground`, `min_height`, etc.)
+- The struct-level doc comment provides context ("Push button: colors, sizing,
+  spacing, geometry")
+
+**Contra:**
+- Some fields are ambiguous (`primary_bg` -- primary what? background of what?)
+- `overlay_mode` on `ScrollbarTheme` is unclear without documentation
+- Not discoverable via rustdoc
+
+### PROPOSED: Option A -- extend macro to support per-field doc comments
+
+Extend `define_widget_pair!` to pass through `#[doc = "..."]` attributes on
+fields. Remove `#[allow(missing_docs)]`. Write doc comments for all ~200
+fields. This is a large but mechanical documentation task. Priority is low --
+do it incrementally, starting with the most-used widgets (`ButtonTheme`,
+`InputTheme`, `WindowTheme`, `ListTheme`).
+
+---
+
+## 26. Icon function parameter order inconsistent
+
+**Verdict: VALID -- medium priority**
+
+Beyond the type inconsistency (section 7), the parameter ORDER is inconsistent:
+
+| Function | Order |
+|---|---|
+| `icon_name(set, role)` | Set first |
+| `bundled_icon_svg(set, role)` | Set first |
+| `bundled_icon_by_name(set, name)` | Set first |
+| `load_icon(role, icon_set)` | **Role first** |
+| `load_system_icon_by_name(name, set)` | **Name first** |
+| `load_custom_icon(provider, icon_set)` | **Provider first** |
+
+Lower-level functions (`icon_name`, `bundled_*`) put the icon set first.
+Higher-level functions (`load_*`) put the icon/role first. Switching from
+`bundled_icon_svg(set, role)` to `load_icon(role, set)` requires swapping
+arguments. Even after standardizing types (section 7), the positional
+inconsistency remains.
+
+### Option A: Standardize on "what first, where second" -- `(role/name, set)`
+
+```rust
+pub fn icon_name(role: IconRole, set: IconSet) -> Option<&'static str>
+pub fn bundled_icon_svg(role: IconRole, set: IconSet) -> Option<&'static [u8]>
+pub fn bundled_icon_by_name(name: &str, set: IconSet) -> Option<&'static [u8]>
+pub fn load_icon(role: IconRole, set: IconSet) -> Option<IconData>
+pub fn load_system_icon_by_name(name: &str, set: IconSet) -> Option<IconData>
+pub fn load_custom_icon(provider: &impl IconProvider, set: IconSet) -> Option<IconData>
+```
+
+**Pro:**
+- Consistent order: "what to load" is always the first argument
+- Natural English reading: "icon name for ActionCopy in Material"
+- Matches the `load_*` functions which already use this order
+- The "what" argument varies (role, name, provider); the "where" (set) is
+  always the same type, so putting it last is a natural convention
+
+**Contra:**
+- Breaks `icon_name`, `bundled_icon_svg`, `bundled_icon_by_name` signatures
+- Muscle memory for anyone using the current lower-level API
+
+### Option B: Standardize on "where first, what second" -- `(set, role/name)`
+
+```rust
+pub fn load_icon(set: IconSet, role: IconRole) -> Option<IconData>
+pub fn load_system_icon_by_name(set: IconSet, name: &str) -> Option<IconData>
+pub fn load_custom_icon(set: IconSet, provider: &impl IconProvider) -> Option<IconData>
+```
+
+**Pro:**
+- Matches `bundled_*` and `icon_name` which already use this order
+- "In Material, load ActionCopy" -- set provides context for the lookup
+
+**Contra:**
+- Breaks `load_icon`, `load_system_icon_by_name`, `load_custom_icon` signatures
+- `load_custom_icon(set, provider)` reads oddly -- the provider is the "main"
+  argument
+
+### Option C: Standardize as part of section 7 (subsumed)
+
+When section 7 standardizes on `IconSet` as the type, also standardize the
+parameter order at the same time.
+
+**Pro:**
+- Single breaking change wave instead of two
+- Both issues are resolved together
+
+**Contra:**
+- Must decide which order to use (same as Options A/B)
+
+### PROPOSED: Option A (via Option C) -- "what, where" order, done with section 7
+
+Standardize on `(role/name/provider, set)` order. The "what to load" argument
+comes first; the `IconSet` (where to look) comes second. This matches the
+English reading order and the fact that the "what" argument varies across
+functions while `IconSet` is always the same type. Implement this alongside
+section 7's type standardization to minimize churn.
+
+---
+
+## 27. rasterize_svg is square-only and swallows errors
+
+**Verdict: VALID -- low priority**
+
+```rust
+pub fn rasterize_svg(svg_bytes: &[u8], size: u32) -> Option<IconData>
+```
+
+Two issues:
+1. Takes a single `size: u32` for a square output, but `IconData::Rgba` has
+   separate `width` and `height` fields. Non-square rasterization is impossible.
+2. Returns `Option`, so SVG parse errors, invalid dimensions (size = 0), and
+   pixmap allocation failures are all indistinguishable from "icon not available."
+
+### Option A: Add `width`/`height` parameters, return `Result`
+
+```rust
+pub fn rasterize_svg(svg_bytes: &[u8], width: u32, height: u32) -> Result<IconData>
+```
+
+**Pro:**
+- Supports non-square rasterization
+- Errors are surfaced with context (parse failure vs. allocation failure)
+- More general API
+
+**Contra:**
+- Most icon rasterization IS square -- `(width, height)` adds verbosity
+  at every call site for the common case
+- `Result` requires callers to handle or propagate errors where `Option`
+  sufficed
+- Changes both signature and return type
+
+### Option B: Keep square `size`, return `Result`
+
+```rust
+pub fn rasterize_svg(svg_bytes: &[u8], size: u32) -> Result<IconData>
+```
+
+**Pro:**
+- Errors are surfaced
+- Square is the common case for icons -- keeps the API simple
+- Signature change is minimal (only return type)
+
+**Contra:**
+- Non-square rasterization still impossible
+- Breaking return type change
+
+### Option C: Add a separate `rasterize_svg_rect` for non-square, keep `rasterize_svg` square
+
+```rust
+pub fn rasterize_svg(svg_bytes: &[u8], size: u32) -> Option<IconData>
+pub fn rasterize_svg_rect(svg_bytes: &[u8], width: u32, height: u32) -> Option<IconData>
+```
+
+**Pro:**
+- No breaking change to existing function
+- Non-square available when needed
+- Common case stays simple
+
+**Contra:**
+- Two functions for the same operation
+- Neither returns `Result` (error swallowing persists)
+
+### Option D: Keep current API
+
+**Pro:**
+- All current icon use cases are square
+- `Option` is consistent with other icon loading functions
+- The function is behind a feature gate (`svg-rasterize`) -- not a primary API
+
+**Contra:**
+- Error swallowing makes debugging SVG parse failures hard
+- Non-square use case is blocked
+
+### PROPOSED: Option B -- keep square, return `Result`
+
+Icons are square. Keep `size: u32`. Change the return type to
+`Result<IconData, Error>` so SVG parse failures are surfaced (currently they
+silently become `None`). If non-square rasterization is needed in the future,
+add `rasterize_svg_rect` then. The `svg-rasterize` feature is opt-in, so the
+API surface is small and the break is limited.
+
+---
+
+## 28. SystemTheme derives no traits
+
+**Verdict: VALID -- high priority**
+
+`SystemTheme` is a bare `pub struct` with no `derive` attributes:
+
+```rust
+pub struct SystemTheme {
+    pub name: String,
+    pub is_dark: bool,
+    pub light: ResolvedTheme,
+    pub dark: ResolvedTheme,
+    pub(crate) light_variant: ThemeVariant,
+    pub(crate) dark_variant: ThemeVariant,
+    pub live_preset: String,
+    pub full_preset: String,
+}
+```
+
+No `Clone`, `Debug`, or `PartialEq`. This is the primary user-facing type
+returned by `from_system()` -- the entry point most users call first.
+
+- **No `Debug`**: `println!("{:?}", system_theme)` fails. Users can't inspect
+  the theme in a debugger or log output.
+- **No `Clone`**: The section 4 workaround (pre-clone before `with_overlay`)
+  is impossible. `with_overlay` consumes the `SystemTheme` with no way to
+  back it up.
+- **No `PartialEq`**: Can't compare two system themes to detect changes.
+
+For contrast, `NativeTheme` derives `Clone, Debug, Default, PartialEq,
+Serialize, Deserialize`. The resolved types (`ResolvedTheme`, `ResolvedButton`,
+etc.) derive `Clone, Debug, PartialEq`. All field types inside `SystemTheme`
+already implement `Clone + Debug + PartialEq`.
+
+### Option A: Derive `Clone + Debug`
+
+```rust
+#[derive(Clone, Debug)]
+pub struct SystemTheme { ... }
+```
+
+**Pro:**
+- Fixes the two most impactful missing traits
+- All fields already implement both traits
+- Enables the section 4 pre-clone workaround
+- Enables debug logging
+
+**Contra:**
+- `Clone` clones 2x `ResolvedTheme` + 2x `ThemeVariant` -- potentially
+  expensive (though all data is flat/owned)
+- No `PartialEq` (but `f32` fields in resolved types make equality
+  comparison unreliable anyway)
+
+### Option B: Derive `Clone + Debug + PartialEq`
+
+```rust
+#[derive(Clone, Debug, PartialEq)]
+pub struct SystemTheme { ... }
+```
+
+**Pro:**
+- Maximum trait coverage
+- Enables change detection (compare old vs new system theme)
+- All fields implement `PartialEq`
+
+**Contra:**
+- `PartialEq` on types with `f32` fields is fragile (floating-point
+  equality) -- two "equal" themes might differ in the last bit of a
+  spacing value
+- May create a false sense that equality comparison is reliable
+
+### Option C: Derive `Debug` only, add `Clone` manually with a doc warning
+
+```rust
+#[derive(Debug)]
+impl Clone for SystemTheme {
+    /// Clones the system theme including both resolved and pre-resolve
+    /// variants. This allocates all string fields and copies all color/
+    /// geometry data. Prefer borrowing via `active()` or `pick()` when
+    /// possible.
+    fn clone(&self) -> Self { ... }
+}
+```
+
+**Pro:**
+- `Debug` is trivial and uncontroversial
+- Custom `Clone` impl can include documentation about the cost
+- No accidental `PartialEq` on floats
+
+**Contra:**
+- Manual `Clone` impl is boilerplate when derive would work
+- Over-cautious about clone cost for a theme object
+
+### PROPOSED: Option A -- derive `Clone + Debug`
+
+`Clone` and `Debug` are the essential missing traits. All fields already
+implement both. `PartialEq` is omitted because floating-point equality on
+theme values is unreliable and would create a false sense of safety. If
+theme change detection is needed, compare `name` + `is_dark` instead.
+
+---
+
+## 29. icon_set required by validate() but never auto-resolved
+
+**Verdict: VALID -- medium priority**
+
+The resolution engine applies ~90 inheritance rules in `resolve()` but does
+NOT resolve `icon_set`. It stays `None` unless explicitly set by a platform
+reader or preset. Then `validate()` requires it:
+
+```rust
+let icon_set = require(&self.icon_set, "icon_set", &mut missing);
+```
+
+A user writing a minimal custom theme:
+
+```toml
+name = "My Theme"
+[light.defaults]
+accent = "#ff6600"
+```
+
+...who tries to resolve it will get `Error::Resolution` with
+`"missing field: icon_set"`. The fix requires knowing to add
+`icon_set = "freedesktop"`, which is non-obvious since every other field is
+auto-resolved from defaults.
+
+Meanwhile, `system_icon_set()` exists and returns a platform-appropriate
+default (`Freedesktop` on Linux, `SfSymbols` on macOS, etc.). The resolution
+engine could use this as a fallback.
+
+### Option A: Auto-resolve `icon_set` from `system_icon_set()` in `resolve()`
+
+```rust
+fn resolve(&mut self) {
+    // ... existing resolve phases ...
+
+    // Phase 5: icon_set fallback
+    if self.icon_set.is_none() {
+        self.icon_set = Some(system_icon_set().name().to_string());
+    }
+}
+```
+
+**Pro:**
+- Custom themes "just work" without specifying `icon_set`
+- Consistent with how all other fields are auto-resolved
+- `system_icon_set()` already provides the right value per platform
+- Eliminates a common "missing field" error for new users
+
+**Contra:**
+- `icon_set` was deliberately left out of resolve -- perhaps to force
+  explicit choice?
+- `system_icon_set()` is a runtime query; all other resolve inputs come
+  from the theme data itself (defaults -> widgets)
+- If `icon_set` uses `Option<IconSet>` (section 7), the fallback
+  becomes `Some(system_icon_set())` -- even cleaner
+
+### Option B: Make `icon_set` optional in `validate()` -- use runtime fallback in `ResolvedTheme`
+
+Don't require `icon_set` in `validate()`. Instead, `ResolvedTheme::icon_set`
+becomes `Option<String>` (or `Option<IconSet>`), and consumers call
+`system_icon_set()` when it's `None`.
+
+**Pro:**
+- No resolution change needed
+- Explicit about "theme didn't specify an icon set"
+
+**Contra:**
+- Pushes the fallback to every consumer (worse ergonomics)
+- `ResolvedTheme` is supposed to have all fields guaranteed -- adding
+  an `Option` breaks that contract
+- Every icon-loading call site needs `.unwrap_or_else(system_icon_set)`
+
+### Option C: Remove `icon_set` from `ThemeVariant` / `ResolvedTheme` entirely
+
+Make icon set a runtime-only concept, not part of the theme data model.
+
+**Pro:**
+- Eliminates the field and the resolution requirement
+- Icon set is arguably a platform property, not a theme property
+
+**Contra:**
+- Presets currently specify `icon_set` (e.g., `"freedesktop"` for Adwaita,
+  `"sf-symbols"` for macOS) -- this becomes impossible
+- Removes the ability for themes to override the icon set
+- The `icon_set` field on presets is useful and well-established
+
+### Option D: Keep current behavior, improve error message
+
+**Pro:**
+- No behavior change
+- Forces theme authors to be explicit about icon set
+
+**Contra:**
+- New users hit a confusing error on their first custom theme
+- The error doesn't suggest the fix ("try adding `icon_set = ...`")
+
+### PROPOSED: Option A -- auto-resolve from `system_icon_set()`
+
+Add a Phase 5 to `resolve()` that fills `icon_set` from
+`system_icon_set().name()` when it's `None`. This is consistent with the
+resolution philosophy ("fill reasonable defaults so themes just work") and
+eliminates the most common stumbling block for custom themes. Presets that
+explicitly set `icon_set` are unaffected (their value is already `Some`).
+
+---
+
+## 30. Unknown TOML keys silently ignored
+
+**Verdict: VALID -- medium priority**
+
+All theme structs use `#[serde(default)]` but none use
+`#[serde(deny_unknown_fields)]`. Typos in theme files are silently discarded:
+
+```toml
+[light.defaults]
+acccent = "#ff6600"    # typo: three c's -- silently ignored
+backgroud = "#ffffff"  # typo: missing 'n' -- silently ignored
+```
+
+No error is raised. The misspelled fields remain `None` and the theme resolves
+with unexpected defaults (or fails validation with a confusing "missing field:
+accent" error that doesn't mention the typo).
+
+### Option A: Add `#[serde(deny_unknown_fields)]` to all theme structs
+
+**Pro:**
+- Typos are caught immediately at parse time
+- Clear error message: `"unknown field 'acccent', expected one of ..."`
+- Strong validation for theme files
+
+**Contra:**
+- Breaks forward compatibility: a theme file written for v0.6 with new
+  fields would fail to parse on v0.5 (which doesn't know those fields)
+- TOML presets from newer versions become incompatible with older code
+- The current "silently ignore unknown fields" behavior is intentional
+  for forward compatibility -- theme files should be tolerant of extra keys
+- `#[serde(default)]` + `deny_unknown_fields` are commonly combined, but
+  the deny breaks cross-version TOML files
+
+### Option B: Add an optional strict-parsing mode
+
+```rust
+impl NativeTheme {
+    pub fn from_toml_strict(toml_str: &str) -> Result<Self> { ... }
+}
+```
+
+Use a wrapper struct with `#[serde(deny_unknown_fields)]` for strict mode.
+
+**Pro:**
+- Default `from_toml()` remains lenient (forward compatible)
+- Strict mode catches typos when desired (e.g., during theme development)
+- Users opt into strictness explicitly
+
+**Contra:**
+- Two parsing functions for the same format
+- The strict wrapper struct must mirror the main struct exactly
+- Serde doesn't easily support "same struct, different strictness" --
+  would need a separate type or runtime deserialization
+
+### Option C: Post-parse validation with known field list
+
+After parsing, compare the raw TOML keys against a known-fields set.
+Report unknown keys as warnings (not errors).
+
+```rust
+pub fn from_toml_with_warnings(toml: &str) -> Result<(NativeTheme, Vec<String>)>
+```
+
+**Pro:**
+- Catches typos without breaking forward compatibility
+- Warnings are informational, not fatal
+- No serde attribute changes needed
+
+**Contra:**
+- Requires a separate TOML parse pass (parse to `toml::Value` first,
+  then walk keys)
+- Maintaining a known-fields list is error-prone (must stay in sync
+  with struct definitions)
+- Return type becomes more complex (`Result<(T, Vec<Warning>)>`)
+- Significant implementation effort for a nice-to-have
+
+### Option D: Provide a CLI/library validation tool
+
+A separate `native-theme-lint` tool or a `validate_toml()` function that
+checks for unknown keys, missing required fields, and value ranges.
+
+**Pro:**
+- Clean separation: parser is lenient, linter is strict
+- Can check more than just unknown keys (value ranges, color contrast, etc.)
+- No changes to the core parsing code
+
+**Contra:**
+- Separate tool that users must know to run
+- Not integrated into the normal workflow
+- Significant effort for a standalone tool
+
+### Option E: Keep current behavior, document that unknown keys are ignored
+
+**Pro:**
+- Forward-compatible theme files (newer fields ignored by older versions)
+- Intentional lenient design
+- No implementation effort
+
+**Contra:**
+- Typos remain undetected
+- Users waste time debugging "why isn't my accent color working"
+
+### PROPOSED: Option B -- optional strict-parsing mode
+
+Add `NativeTheme::from_toml_strict()` that uses `#[serde(deny_unknown_fields)]`
+via a parallel wrapper struct. Keep `from_toml()` lenient for production use
+(forward compatibility). Theme authors use `from_toml_strict()` during
+development to catch typos. The implementation uses a `#[serde(deny_unknown_fields)]`
+wrapper that deserializes then converts to the standard type, so the wrapper
+stays in sync via a single `From` impl.
+
+---
+
+## 31. Freedesktop icon size hardcoded to 24
+
+**Verdict: VALID -- low-medium priority**
+
+Both `load_freedesktop_icon()` and `load_freedesktop_icon_by_name()` hardcode
+the icon size passed to the freedesktop-icons lookup:
+
+```rust
+pub fn load_freedesktop_icon(role: IconRole) -> Option<IconData> {
+    let path = find_icon(name, &theme, 24)?;  // always 24
+    ...
+}
+
+pub fn load_freedesktop_icon_by_name(name: &str, theme: &str) -> Option<IconData> {
+    let path = find_icon(name, theme, 24)?;   // always 24
+    ...
+}
+```
+
+The theme model defines per-context icon sizes via `IconSizes` (toolbar: 24,
+small: 16, large: 32, dialog: 22, panel: 20), but the loading functions always
+request 24. A caller loading an icon for the "small" context (16px) gets a
+24px-targeted SVG. While SVGs scale, some themes provide different detail
+levels at different sizes (e.g., Breeze has simplified 16px variants vs
+detailed 32px variants). The hardcoded size defeats this.
+
+### Option A: Add a `size` parameter to loading functions
+
+```rust
+pub fn load_freedesktop_icon(role: IconRole, size: u16) -> Option<IconData>
+pub fn load_freedesktop_icon_by_name(name: &str, theme: &str, size: u16) -> Option<IconData>
+```
+
+**Pro:**
+- Callers request the size they need
+- Freedesktop icon themes can serve the right detail level
+- Consistent with how the underlying `freedesktop_icons::lookup` API works
+
+**Contra:**
+- Breaking signature change
+- Every call site must provide a size
+- Most callers will just pass 24 anyway
+
+### Option B: Accept `Option<u16>` with 24 as default
+
+```rust
+pub fn load_freedesktop_icon(role: IconRole, size: Option<u16>) -> Option<IconData>
+```
+
+Where `None` means "use default (24)".
+
+**Pro:**
+- Non-breaking for callers who pass `None`
+- Callers who care about size can pass `Some(16)`
+
+**Contra:**
+- `Option<u16>` for an icon size is odd ergonomically
+- Callers must write `Some(16)` instead of just `16`
+
+### Option C: Add sized variants, keep existing functions as default-size
+
+```rust
+pub fn load_freedesktop_icon(role: IconRole) -> Option<IconData>  // 24px (unchanged)
+pub fn load_freedesktop_icon_sized(role: IconRole, size: u16) -> Option<IconData>
+pub fn load_freedesktop_icon_by_name(name: &str, theme: &str) -> Option<IconData>  // 24px
+pub fn load_freedesktop_icon_by_name_sized(name: &str, theme: &str, size: u16) -> Option<IconData>
+```
+
+**Pro:**
+- No breaking change to existing functions
+- Sized variants available for callers who need them
+
+**Contra:**
+- Four functions instead of two
+- `_sized` suffix is awkward
+- API bloat
+
+### Option D: Use `ResolvedIconSizes` to determine the size automatically
+
+Modify `load_icon()` (the top-level dispatcher) to accept an icon size context:
+
+```rust
+pub enum IconContext { Toolbar, Small, Large, Dialog, Panel }
+
+pub fn load_icon(role: IconRole, set: IconSet, context: IconContext) -> Option<IconData>
+```
+
+The function looks up the size from the resolved theme's `IconSizes` struct.
+
+**Pro:**
+- Semantic: caller specifies "I need a toolbar icon" not "I need 24px"
+- Automatically adapts to the theme's configured sizes
+- Clean API
+
+**Contra:**
+- `load_icon` doesn't have access to `ResolvedTheme` (it's a free function)
+- Would need to either take `&ResolvedIconSizes` as a parameter or become
+  a method on `ResolvedTheme`
+- Significant design change to the icon loading API
+
+### Option E: Keep hardcoded 24, document the limitation
+
+**Pro:**
+- SVGs scale -- the loaded SVG will render at any size
+- The size parameter in `freedesktop_icons::lookup` is a hint for selecting
+  the best source file, not a rendering constraint
+- For most themes, the 24px variant works fine at all sizes
+- No API change
+
+**Contra:**
+- Themes with size-specific detail levels (Breeze) serve suboptimal variants
+- The `IconSizes` model is unused by the actual loading code
+
+### PROPOSED: Option A -- add `size` parameter
+
+Add `size: u32` to both functions. Pre-1.0, the breaking change is acceptable.
+Callers pass the size they need (typically from `resolved.defaults.icon_sizes.toolbar`
+or similar). The top-level `load_icon()` dispatcher can pass a reasonable
+default (24) since it doesn't have access to `ResolvedIconSizes`. This brings
+the loading functions in line with the `IconSizes` model. Use `u32` to match
+the downstream rasterization type in the gpui connector (**[GPUI-23]**).
+
+---
+
+## Priority Summary
+
+| Priority | # | Problem | Proposed Fix |
+|---|---|---|---|
+| **HIGH** | 1 | Option/Resolved naming inconsistency | Consistent `Theme`/`Spec` suffix on all resolved types |
+| **HIGH** | 2 | NativeTheme vs SystemTheme confusion | Rename `NativeTheme` -> `ThemeSpec` |
+| **HIGH** | 28 | SystemTheme derives no traits | Derive `Clone + Debug` |
+| **HIGH** | 3 | Unsafe resolve/validate separation | Add `into_resolved()` combining both steps (prerequisite for **[GPUI-1]**) |
+| **MEDIUM** | 4 | with_overlay consumes self | Take `&self`, return new `SystemTheme` |
+| **MEDIUM** | 5 | Stale OnceLock caching | Document caching behavior clearly |
+| **MEDIUM** | 6 | CLI subprocess for detection | D-Bus when portal enabled, subprocess fallback |
+| **MEDIUM** | 7 | Inconsistent icon-set types | Standardize on `IconSet` enum |
+| **MEDIUM** | 8 | Silent fallback on bad input | Subsumed by section 7 (use `IconSet`) |
+| **MEDIUM** | 10 | Forced clone from borrow mismatch | Add `into_variant()`, gpui absorbs clone |
+| **MEDIUM** | 11 | Constructor placement | Move `from_system` to `SystemTheme` |
+| **MEDIUM** | 24 | Preset TOML re-parsed every call | `LazyLock` per preset |
+| **MEDIUM** | 26 | Icon param order inconsistent | Standardize "what, where" order with section 7 |
+| **MEDIUM** | 29 | icon_set not auto-resolved | Auto-resolve from `system_icon_set()` |
+| **MEDIUM** | 30 | Unknown TOML keys silent | Add optional `from_toml_strict()` |
+| **LOW-MED** | 9 | Manual IconRole::ALL array | Exhaustive match test |
+| **LOW-MED** | 12 | Resolved types lack Serialize | Derive `Serialize` on resolved types |
+| **LOW-MED** | 20 | Rgba::FromStr error is String | Add `ParseColorError` struct |
+| **LOW-MED** | 21 | From<io::Error> loses original | Add `Io` variant to `Error` |
+| **LOW-MED** | 22 | Inconsistent #[non_exhaustive] | Remove from data structs, keep on enums |
+| **LOW-MED** | 31 | Freedesktop icon size hardcoded | Add `size` parameter |
+| **LOW** | 13 | Exposed pipeline internals | Single `pub preset: String` field |
+| **LOW** | 14 | impl_merge! exported | Remove `#[macro_export]` |
+| **LOW** | 15 | Phantom platform modules | `pub(crate)` on wrong platforms |
+| **LOW** | 16 | ThemeDefaults field structure | Document the asymmetry |
+| **LOW** | 17 | DialogButtonOrder in theme | Document as platform convention |
+| **LOW** | 18 | Single-variant Repeat enum | Remove enum, animations always infinite |
+| **LOW** | 23 | system_icon_theme() allocates | Return `&'static str` |
+| **LOW** | 25 | Widget fields undocumented | Extend macro for per-field docs |
+| **LOW** | 27 | rasterize_svg square-only | Keep square, return `Result` |
+| **N/A** | 19 | Rgba color space naming | Already documented -- no action needed |
+
+## Implementation Order
+
+### Wave 1: Naming & type-level changes (do together to minimize churn)
+1. **Section 1**: Rename resolved types for consistency
+2. **Section 2**: Rename `NativeTheme` -> `ThemeSpec`
+3. **Section 28**: Derive `Clone + Debug` on `SystemTheme`
+4. **Section 11**: Move `from_system()` to `SystemTheme::from_system()`
+5. **Section 13**: Collapse `live_preset`/`full_preset` into single `preset`
+6. **Section 22**: Remove `#[non_exhaustive]` from data structs
+
+### Wave 2: API safety improvements
+7. **Section 3**: Add `ThemeVariant::into_resolved()`
+8. **Section 4**: Change `with_overlay` to take `&self`
+9. **Section 7+8+26**: Standardize icon functions on `IconSet` enum + consistent parameter order
+10. **Section 29**: Auto-resolve `icon_set` from `system_icon_set()`
+11. **Section 10**: Add `into_variant()` on `NativeTheme`
+12. **Section 14**: Remove `#[macro_export]` from `impl_merge!`
+13. **Section 21**: Add `Error::Io` variant, fix `From<io::Error>`
+14. **Section 20**: Add `ParseColorError`, fix `Rgba::FromStr`
+
+### Wave 3: Quality & performance improvements
+15. **Section 24**: `LazyLock` per preset (eliminates redundant TOML parsing)
+16. **Section 9**: Add exhaustive match test for `IconRole::ALL`
+17. **Section 12**: Derive `Serialize` on resolved types
+18. **Section 18**: Remove `Repeat` enum
+19. **Section 15**: Conditional module visibility
+20. **Section 23**: Return `&'static str` from `system_icon_theme()`
+21. **Section 27**: Change `rasterize_svg` return to `Result`
+22. **Section 31**: Add `size` parameter to freedesktop icon loading
+23. **Section 30**: Add `from_toml_strict()` for typo detection
+
+### Wave 4: Documentation
+24. **Section 5**: Improve `system_is_dark()` docs
+25. **Section 6**: D-Bus detection (can ship independently)
+26. **Section 16**: Document `ThemeDefaults` field structure
+27. **Section 17**: Document `DialogButtonOrder` as platform convention
+28. **Section 25**: Extend macro for per-field doc comments (incremental)
+
+Wave 1 must land first since all subsequent waves reference the renamed types.
+Section 28 (`SystemTheme` traits) is trivial and should land in Wave 1 since
+`Clone` is a prerequisite for fixing section 4 (`with_overlay` by ref) in Wave 2.
+Section 3 (into_resolved) must land before the gpui connector can build its
+convenience functions (**[GPUI-1]**).
+Section 29 (icon_set auto-resolve) should land alongside section 7 (icon type
+standardization) in Wave 2 since both touch `icon_set`.
+Section 24 (preset caching) should land early in Wave 3 since it improves
+`from_system()` performance which is the most common entry point.
