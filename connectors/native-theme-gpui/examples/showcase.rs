@@ -5199,14 +5199,37 @@ fn get_main_window_ptr() -> Option<*mut objc2::runtime::AnyObject> {
 /// the screenshot capture.  Must be called **outside** `cx.update_window` to
 /// avoid deadlocking the window-state mutex (since `setFrameSize:` acquires
 /// it internally).
+/// Minimal Core Graphics types for ObjC interop (repr(C) matches ABI).
+#[cfg(target_os = "macos")]
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct CGSize {
+    width: f64,
+    height: f64,
+}
+#[cfg(target_os = "macos")]
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct CGRect {
+    origin: CGPoint,
+    size: CGSize,
+}
+#[cfg(target_os = "macos")]
+#[repr(C)]
+#[derive(Clone, Copy)]
+struct CGPoint {
+    x: f64,
+    y: f64,
+}
+
 #[cfg(target_os = "macos")]
 fn nudge_content_size(delta_w: f64, delta_h: f64) {
     if let Some(main_window) = get_main_window_ptr() {
         unsafe {
             let content_view: *mut objc2::runtime::AnyObject =
                 objc2::msg_send![main_window, contentView];
-            let frame: objc2::ffi::CGRect = objc2::msg_send![content_view, frame];
-            let new_size = objc2::ffi::CGSize {
+            let frame: CGRect = objc2::msg_send![content_view, frame];
+            let new_size = CGSize {
                 width: frame.size.width + delta_w,
                 height: frame.size.height + delta_h,
             };
