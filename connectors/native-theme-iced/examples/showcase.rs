@@ -849,13 +849,12 @@ fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
 #[cfg(target_os = "windows")]
 fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
     use windows::Win32::Foundation::*;
+    use windows::Win32::Graphics::Dwm::*;
     use windows::Win32::Graphics::Gdi::*;
     use windows::Win32::UI::WindowsAndMessaging::*;
     use windows::core::PCWSTR;
 
     unsafe {
-        // Find our window by its known title instead of GetForegroundWindow
-        // (which may return the console window on CI).
         let title = format!(
             "Native Theme \u{2013} Iced Showcase, v{}",
             env!("CARGO_PKG_VERSION")
@@ -864,21 +863,34 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
         let hwnd = FindWindowW(None, PCWSTR(title_w.as_ptr()))
             .map_err(|e| format!("FindWindowW failed: {e}"))?;
 
-        // Move the window to the top-left corner to minimise the
-        // DPI-coordinate offset between GetWindowRect (logical coords)
-        // and the screen DC (physical coords).  Position (0,0) makes
-        // the offset ≈0 instead of proportional to the window position.
+        // Move to top-left so the DPI coordinate offset (proportional to
+        // the window position) becomes ≈0.
         let _ = SetWindowPos(hwnd, None, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
         std::thread::sleep(std::time::Duration::from_millis(200));
 
+        // DWMWA_EXTENDED_FRAME_BOUNDS returns the visible bounds without
+        // the invisible DWM border.  Fall back to GetWindowRect.
         let mut rect = RECT::default();
-        GetWindowRect(hwnd, &mut rect).map_err(|e| format!("GetWindowRect failed: {e}"))?;
+        if DwmGetWindowAttribute(
+            hwnd,
+            DWMWA_EXTENDED_FRAME_BOUNDS,
+            &mut rect as *mut _ as *mut std::ffi::c_void,
+            std::mem::size_of::<RECT>() as u32,
+        )
+        .is_err()
+        {
+            GetWindowRect(hwnd, &mut rect).map_err(|e| format!("GetWindowRect failed: {e}"))?;
+        }
 
         let width = rect.right - rect.left;
         let height = rect.bottom - rect.top;
         if width <= 0 || height <= 0 {
             return Err(format!("Invalid window dimensions: {width}x{height}"));
         }
+        eprintln!(
+            "windows capture: rect=({},{},{},{}), size={}x{}",
+            rect.left, rect.top, rect.right, rect.bottom, width, height
+        );
 
         let screen_dc = GetDC(None);
         let mem_dc = CreateCompatibleDC(Some(screen_dc));
@@ -909,7 +921,7 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
             bmiHeader: BITMAPINFOHEADER {
                 biSize: std::mem::size_of::<BITMAPINFOHEADER>() as u32,
                 biWidth: width,
-                biHeight: -height, // negative = top-down
+                biHeight: -height,
                 biPlanes: 1,
                 biBitCount: 32,
                 biCompression: BI_RGB.0 as u32,
@@ -938,60 +950,16 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
             return Err("GetDIBits returned 0 lines".into());
         }
 
-        // BGRA → RGBA with forced opaque alpha
         for chunk in pixels.chunks_exact_mut(4) {
-            chunk.swap(0, 2);
-            chunk[3] = 255;
-        }
-
-        // Auto-crop black border from DPI-coordinate mismatch.
-        // Detect the left and top black border, then mirror those
-        // offsets to the right and bottom edges (the offset is
-        // symmetric around the window centre in the capture).
-        let px = |x: i32, y: i32| -> bool {
-            let i = (y * width + x) as usize * 4;
-            pixels[i] > 12 || pixels[i + 1] > 12 || pixels[i + 2] > 12
-        };
-        let mut y0 = 0i32;
-        'top: for y in 0..height {
-            for x in 0..width {
-                if px(x, y) {
-                    y0 = y;
-                    break 'top;
-                }
-            }
-        }
-        let mut x0 = 0i32;
-        'left: for x in 0..width {
-            for y in y0..height {
-                if px(x, y) {
-                    x0 = x;
-                    break 'left;
-                }
-            }
-        }
-        // Mirror: trim the same amount from the right/bottom edges
-        let x1 = (width - x0).max(x0 + 1);
-        let y1 = (height - y0).max(y0 + 1);
-        let cw = x1 - x0;
-        let ch = y1 - y0;
-        eprintln!(
-            "windows crop: full={}x{}, offset=({},{}), cropped={}x{}",
-            width, height, x0, y0, cw, ch
-        );
-
-        let mut cropped = Vec::with_capacity((cw * ch * 4) as usize);
-        for y in y0..y1 {
-            let s = (y * width + x0) as usize * 4;
-            let e = s + cw as usize * 4;
-            cropped.extend_from_slice(&pixels[s..e]);
+            chunk.swap(0, 2); // BGRA -> RGBA
+            chunk[3] = 255; // force opaque
         }
 
         image::save_buffer(
             output_path,
-            &cropped,
-            cw as u32,
-            ch as u32,
+            &pixels,
+            width as u32,
+            height as u32,
             image::ColorType::Rgba8,
         )
         .map_err(|e| format!("Failed to save PNG: {e}"))
