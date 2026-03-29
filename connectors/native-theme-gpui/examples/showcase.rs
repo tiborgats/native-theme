@@ -5465,7 +5465,7 @@ fn main() {
                     // early-returns when old_size == new_size.  A 1 px nudge-and-restore
                     // forces two real resize events so `update_drawable_size` runs with
                     // `to_device_pixels(scale_factor)`.
-                    let cur = window.bounds().size;
+                    let cur = window.viewport_size();
                     window.resize(size(cur.width - px(1.), cur.height));
                     window.resize(cur);
                 })
@@ -5485,12 +5485,12 @@ fn main() {
                         // the window-open callback is coalesced into a single
                         // resize event, leaving the drawable at 1×).
                         let _ = cx.update_window(any_handle, |_view, window, _cx| {
-                            let cur = window.bounds().size;
+                            let cur = window.viewport_size();
                             window.resize(size(cur.width - px(1.), cur.height));
                         });
                         Timer::after(Duration::from_millis(200)).await;
                         let _ = cx.update_window(any_handle, |_view, window, _cx| {
-                            let cur = window.bounds().size;
+                            let cur = window.viewport_size();
                             window.resize(size(cur.width + px(1.), cur.height));
                         });
                         Timer::after(Duration::from_millis(1300)).await;
