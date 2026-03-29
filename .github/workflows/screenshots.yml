@@ -37,7 +37,7 @@ jobs:
       - name: Set display resolution (Windows)
         if: runner.os == 'Windows'
         shell: powershell
-        run: Set-DisplayResolution -Width 3840 -Height 2160 -Force
+        run: Set-DisplayResolution -Width 1920 -Height 1080 -Force
 
       - name: Grant screen recording permission (macOS)
         if: runner.os == 'macOS'
