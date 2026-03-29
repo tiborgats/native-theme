@@ -5231,6 +5231,11 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
             }
         };
 
+        // Move the window to the top-left corner to minimise the
+        // DPI-coordinate offset between GetWindowRect and the screen DC.
+        let _ = SetWindowPos(hwnd, None, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+        std::thread::sleep(std::time::Duration::from_millis(200));
+
         let mut rect = RECT::default();
         if let Err(e) = GetWindowRect(hwnd, &mut rect) {
             eprintln!("GetWindowRect failed: {e}");
@@ -5310,8 +5315,8 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
             chunk[3] = 255;
         }
 
-        // Auto-crop the black border caused by DPI-coordinate mismatch
-        // between GetWindowRect (logical) and the screen DC (physical).
+        // Auto-crop black border from DPI-coordinate mismatch.
+        // Detect left/top black border, then mirror to right/bottom.
         let px = |x: i32, y: i32| -> bool {
             let i = (y * width + x) as usize * 4;
             pixels[i] > 12 || pixels[i + 1] > 12 || pixels[i + 2] > 12
@@ -5334,29 +5339,15 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
                 }
             }
         }
-        let mut y1 = height;
-        'bot: for y in (0..height).rev() {
-            for x in 0..width {
-                if px(x, y) {
-                    y1 = y + 1;
-                    break 'bot;
-                }
-            }
-        }
-        let mut x1 = width;
-        'right: for x in (0..width).rev() {
-            for y in 0..height {
-                if px(x, y) {
-                    x1 = x + 1;
-                    break 'right;
-                }
-            }
-        }
+        let x1 = (width - x0).max(x0 + 1);
+        let y1 = (height - y0).max(y0 + 1);
+        let cw = x1 - x0;
+        let ch = y1 - y0;
         let cw = x1 - x0;
         let ch = y1 - y0;
         eprintln!(
-            "windows crop: full={}x{}, content=({},{})..({},{}) = {}x{}",
-            width, height, x0, y0, x1, y1, cw, ch
+            "windows crop: full={}x{}, offset=({},{}), cropped={}x{}",
+            width, height, x0, y0, cw, ch
         );
 
         let mut cropped = Vec::with_capacity((cw * ch * 4) as usize);

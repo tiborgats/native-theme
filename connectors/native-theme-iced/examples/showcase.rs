@@ -816,6 +816,9 @@ fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
             objc2::runtime::AnyClass::get(c"NSApplication").unwrap(),
             sharedApplication
         ];
+        // Ensure the app is front-most so mainWindow is set (the second
+        // invocation on CI may launch behind the terminal).
+        let _: () = objc2::msg_send![ns_app, activateIgnoringOtherApps: true];
         let main_window: *mut objc2::runtime::AnyObject = objc2::msg_send![ns_app, mainWindow];
         if main_window.is_null() {
             return Err("No main window found".into());
@@ -860,6 +863,13 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
         let title_w: Vec<u16> = title.encode_utf16().chain(std::iter::once(0)).collect();
         let hwnd = FindWindowW(None, PCWSTR(title_w.as_ptr()))
             .map_err(|e| format!("FindWindowW failed: {e}"))?;
+
+        // Move the window to the top-left corner to minimise the
+        // DPI-coordinate offset between GetWindowRect (logical coords)
+        // and the screen DC (physical coords).  Position (0,0) makes
+        // the offset ≈0 instead of proportional to the window position.
+        let _ = SetWindowPos(hwnd, None, 0, 0, 0, 0, SWP_NOSIZE | SWP_NOZORDER);
+        std::thread::sleep(std::time::Duration::from_millis(200));
 
         let mut rect = RECT::default();
         GetWindowRect(hwnd, &mut rect).map_err(|e| format!("GetWindowRect failed: {e}"))?;
@@ -934,9 +944,10 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
             chunk[3] = 255;
         }
 
-        // Auto-crop the black border caused by DPI-coordinate mismatch
-        // between GetWindowRect (logical) and the screen DC (physical).
-        // Scan from each edge to find where actual window content begins.
+        // Auto-crop black border from DPI-coordinate mismatch.
+        // Detect the left and top black border, then mirror those
+        // offsets to the right and bottom edges (the offset is
+        // symmetric around the window centre in the capture).
         let px = |x: i32, y: i32| -> bool {
             let i = (y * width + x) as usize * 4;
             pixels[i] > 12 || pixels[i + 1] > 12 || pixels[i + 2] > 12
@@ -959,29 +970,14 @@ fn capture_own_window_windows(output_path: &str) -> Result<(), String> {
                 }
             }
         }
-        let mut y1 = height;
-        'bot: for y in (0..height).rev() {
-            for x in 0..width {
-                if px(x, y) {
-                    y1 = y + 1;
-                    break 'bot;
-                }
-            }
-        }
-        let mut x1 = width;
-        'right: for x in (0..width).rev() {
-            for y in 0..height {
-                if px(x, y) {
-                    x1 = x + 1;
-                    break 'right;
-                }
-            }
-        }
+        // Mirror: trim the same amount from the right/bottom edges
+        let x1 = (width - x0).max(x0 + 1);
+        let y1 = (height - y0).max(y0 + 1);
         let cw = x1 - x0;
         let ch = y1 - y0;
         eprintln!(
-            "windows crop: full={}x{}, content=({},{})..({},{}) = {}x{}",
-            width, height, x0, y0, x1, y1, cw, ch
+            "windows crop: full={}x{}, offset=({},{}), cropped={}x{}",
+            width, height, x0, y0, cw, ch
         );
 
         let mut cropped = Vec::with_capacity((cw * ch * 4) as usize);
