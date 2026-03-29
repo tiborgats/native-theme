@@ -5169,6 +5169,52 @@ impl CliArgs {
 // Self-capture screenshot (macOS only)
 // ---------------------------------------------------------------------------
 
+/// Get the NSWindow pointer for the main window via NSApplication.
+#[cfg(target_os = "macos")]
+fn get_main_window_ptr() -> Option<*mut objc2::runtime::AnyObject> {
+    unsafe {
+        let ns_app: *mut objc2::runtime::AnyObject = objc2::msg_send![
+            objc2::runtime::AnyClass::get(c"NSApplication").unwrap(),
+            sharedApplication
+        ];
+        let main_window: *mut objc2::runtime::AnyObject = objc2::msg_send![ns_app, mainWindow];
+        if main_window.is_null() {
+            None
+        } else {
+            Some(main_window)
+        }
+    }
+}
+
+/// Force the Metal drawable to update by nudging the window content size.
+///
+/// gpui initialises the Metal drawable at logical-pixel dimensions, ignoring
+/// the Retina backing scale factor.  The correct device-pixel size is only
+/// set inside the `setFrameSize:` callback, which early-returns when the
+/// old size equals the new size.  A 1 px nudge-and-restore forces two real
+/// resize events so `update_drawable_size` runs with the correct scale.
+///
+/// IMPORTANT: calls `[NSWindow setContentSize:]` directly via ObjC because
+/// gpui's `window.resize()` spawns an async task that may not execute before
+/// the screenshot capture.  Must be called **outside** `cx.update_window` to
+/// avoid deadlocking the window-state mutex (since `setFrameSize:` acquires
+/// it internally).
+#[cfg(target_os = "macos")]
+fn nudge_content_size(delta_w: f64, delta_h: f64) {
+    if let Some(main_window) = get_main_window_ptr() {
+        unsafe {
+            let content_view: *mut objc2::runtime::AnyObject =
+                objc2::msg_send![main_window, contentView];
+            let frame: objc2::ffi::CGRect = objc2::msg_send![content_view, frame];
+            let new_size = objc2::ffi::CGSize {
+                width: frame.size.width + delta_w,
+                height: frame.size.height + delta_h,
+            };
+            let _: () = objc2::msg_send![main_window, setContentSize: new_size];
+        }
+    }
+}
+
 /// Capture the gpui window including decorations using macOS `screencapture -l`.
 ///
 /// Gets the CGWindowID via NSApplication -> mainWindow -> windowNumber, then
@@ -5177,18 +5223,11 @@ impl CliArgs {
 /// window chrome.
 #[cfg(target_os = "macos")]
 fn capture_own_window_macos(_window: &mut Window, output_path: &str) {
-    let window_id: i64 = unsafe {
-        let ns_app: *mut objc2::runtime::AnyObject = objc2::msg_send![
-            objc2::runtime::AnyClass::get(c"NSApplication").unwrap(),
-            sharedApplication
-        ];
-        let main_window: *mut objc2::runtime::AnyObject = objc2::msg_send![ns_app, mainWindow];
-        if main_window.is_null() {
-            eprintln!("No main window found");
-            return;
-        }
-        objc2::msg_send![main_window, windowNumber]
+    let Some(main_window) = get_main_window_ptr() else {
+        eprintln!("No main window found");
+        return;
     };
+    let window_id: i64 = unsafe { objc2::msg_send![main_window, windowNumber] };
     let status = std::process::Command::new("screencapture")
         .args(["-l", &format!("{}", window_id), "-o", output_path])
         .status();
@@ -5458,18 +5497,17 @@ fn main() {
                         "Native Theme – GPUI Showcase, v{}",
                         env!("CARGO_PKG_VERSION")
                     ));
-
-                    // Workaround: gpui initializes the Metal renderer with logical pixel
-                    // dimensions (ignoring the Retina backing scale factor).  The correct
-                    // device-pixel drawable size is only set inside `set_frame_size`, which
-                    // early-returns when old_size == new_size.  A 1 px nudge-and-restore
-                    // forces two real resize events so `update_drawable_size` runs with
-                    // `to_device_pixels(scale_factor)`.
-                    let cur = window.viewport_size();
-                    window.resize(size(cur.width - px(1.), cur.height));
-                    window.resize(cur);
                 })
                 .ok();
+
+            // Force Metal drawable to adopt the Retina scale factor by
+            // nudging the content size synchronously via ObjC.  Must happen
+            // outside update() to avoid deadlocking the window-state mutex.
+            #[cfg(target_os = "macos")]
+            {
+                nudge_content_size(-1.0, 0.0);
+                nudge_content_size(1.0, 0.0);
+            }
             cx.activate(true);
 
             // Schedule delayed self-capture if --screenshot was provided
@@ -5479,20 +5517,13 @@ fn main() {
                     let path = cli_args.screenshot.as_ref().unwrap().clone();
                     let any_handle = *window_handle;
                     cx.spawn(async move |cx| {
-                        // Force Metal drawable update on Retina displays by
-                        // resizing the window in two separate event-loop
-                        // iterations (the synchronous nudge-and-restore in
-                        // the window-open callback is coalesced into a single
-                        // resize event, leaving the drawable at 1×).
-                        let _ = cx.update_window(any_handle, |_view, window, _cx| {
-                            let cur = window.viewport_size();
-                            window.resize(size(cur.width - px(1.), cur.height));
-                        });
+                        // Force Metal drawable to update on Retina displays.
+                        // Calls [NSWindow setContentSize:] directly (synchronous)
+                        // rather than gpui's window.resize() which is async and
+                        // may not execute before the capture.
+                        nudge_content_size(-1.0, 0.0);
                         Timer::after(Duration::from_millis(200)).await;
-                        let _ = cx.update_window(any_handle, |_view, window, _cx| {
-                            let cur = window.viewport_size();
-                            window.resize(size(cur.width + px(1.), cur.height));
-                        });
+                        nudge_content_size(1.0, 0.0);
                         Timer::after(Duration::from_millis(1300)).await;
                         let _ = cx.update_window(any_handle, |_view, window, _cx| {
                             capture_own_window_macos(window, &path);
