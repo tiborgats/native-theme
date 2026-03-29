@@ -5212,8 +5212,7 @@ mod cg_types {
     }
     // SAFETY: repr(C) struct with correct encoding.
     unsafe impl Encode for CGPoint {
-        const ENCODING: Encoding =
-            Encoding::Struct("CGPoint", &[f64::ENCODING, f64::ENCODING]);
+        const ENCODING: Encoding = Encoding::Struct("CGPoint", &[f64::ENCODING, f64::ENCODING]);
     }
 
     #[repr(C)]
@@ -5223,8 +5222,7 @@ mod cg_types {
     }
     // SAFETY: repr(C) struct with correct encoding.
     unsafe impl Encode for CGSize {
-        const ENCODING: Encoding =
-            Encoding::Struct("CGSize", &[f64::ENCODING, f64::ENCODING]);
+        const ENCODING: Encoding = Encoding::Struct("CGSize", &[f64::ENCODING, f64::ENCODING]);
     }
 
     #[repr(C)]
