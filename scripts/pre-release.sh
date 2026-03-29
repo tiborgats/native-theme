@@ -131,9 +131,9 @@ TMPDIR=$(mktemp -d)
 gh run download "$RUN_ID" --dir "$TMPDIR"
 
 DOWNLOADED=0
-for platform_dir in "$TMPDIR"/screenshots-macos "$TMPDIR"/screenshots-windows; do
-    if [ -d "$platform_dir" ]; then
-        for f in "$platform_dir"/*.png; do
+for artifact_dir in "$TMPDIR"/screenshots-iced-macos "$TMPDIR"/screenshots-gpui-macos "$TMPDIR"/screenshots-iced-windows "$TMPDIR"/screenshots-gpui-windows; do
+    if [ -d "$artifact_dir" ]; then
+        for f in "$artifact_dir"/*.png; do
             [ -f "$f" ] || continue
             cp "$f" "$OUTPUT_DIR/"
             DOWNLOADED=$((DOWNLOADED + 1))
