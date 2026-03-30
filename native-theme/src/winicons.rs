@@ -132,62 +132,64 @@ fn gray8_to_rgba(gray: u8) -> [u8; 4] {
 /// to RGBA and applies unpremultiply.
 #[cfg(target_os = "windows")]
 unsafe fn hicon_to_rgba(hicon: HICON) -> Option<IconData> {
-    let mut icon_info = ICONINFO::default();
-    GetIconInfo(hicon, &mut icon_info).ok()?;
+    unsafe {
+        let mut icon_info = ICONINFO::default();
+        GetIconInfo(hicon, &mut icon_info).ok()?;
 
-    // Get bitmap dimensions
-    let mut bmp = BITMAP::default();
-    GetObjectW(
-        icon_info.hbmColor.into(),
-        mem::size_of::<BITMAP>() as i32,
-        Some(&mut bmp as *mut _ as *mut _),
-    );
+        // Get bitmap dimensions
+        let mut bmp = BITMAP::default();
+        GetObjectW(
+            icon_info.hbmColor.into(),
+            mem::size_of::<BITMAP>() as i32,
+            Some(&mut bmp as *mut _ as *mut _),
+        );
 
-    let width = bmp.bmWidth as u32;
-    let height = bmp.bmHeight as u32;
+        let width = bmp.bmWidth as u32;
+        let height = bmp.bmHeight as u32;
 
-    if width == 0 || height == 0 {
+        if width == 0 || height == 0 {
+            DeleteObject(icon_info.hbmColor.into());
+            DeleteObject(icon_info.hbmMask.into());
+            return None;
+        }
+
+        // Set up BITMAPINFOHEADER for 32-bit top-down BGRA
+        let mut bmi = BITMAPINFO::default();
+        bmi.bmiHeader.biSize = mem::size_of::<BITMAPINFOHEADER>() as u32;
+        bmi.bmiHeader.biWidth = width as i32;
+        bmi.bmiHeader.biHeight = -(height as i32); // negative = top-down
+        bmi.bmiHeader.biPlanes = 1;
+        bmi.bmiHeader.biBitCount = 32;
+        bmi.bmiHeader.biCompression = BI_RGB.0;
+
+        let mut pixels = vec![0u8; (width * height * 4) as usize];
+
+        let hdc = CreateCompatibleDC(None);
+        GetDIBits(
+            hdc,
+            icon_info.hbmColor,
+            0,
+            height,
+            Some(pixels.as_mut_ptr() as *mut _),
+            &mut bmi,
+            DIB_RGB_COLORS,
+        );
+        let _ = DeleteDC(hdc);
+
+        // Cleanup bitmaps
         DeleteObject(icon_info.hbmColor.into());
         DeleteObject(icon_info.hbmMask.into());
-        return None;
+
+        // Convert BGRA to RGBA and fix premultiplied alpha
+        bgra_to_rgba(&mut pixels);
+        unpremultiply_alpha(&mut pixels);
+
+        Some(IconData::Rgba {
+            width,
+            height,
+            data: pixels,
+        })
     }
-
-    // Set up BITMAPINFOHEADER for 32-bit top-down BGRA
-    let mut bmi = BITMAPINFO::default();
-    bmi.bmiHeader.biSize = mem::size_of::<BITMAPINFOHEADER>() as u32;
-    bmi.bmiHeader.biWidth = width as i32;
-    bmi.bmiHeader.biHeight = -(height as i32); // negative = top-down
-    bmi.bmiHeader.biPlanes = 1;
-    bmi.bmiHeader.biBitCount = 32;
-    bmi.bmiHeader.biCompression = BI_RGB.0;
-
-    let mut pixels = vec![0u8; (width * height * 4) as usize];
-
-    let hdc = CreateCompatibleDC(None);
-    GetDIBits(
-        hdc,
-        icon_info.hbmColor,
-        0,
-        height,
-        Some(pixels.as_mut_ptr() as *mut _),
-        &mut bmi,
-        DIB_RGB_COLORS,
-    );
-    let _ = DeleteDC(hdc);
-
-    // Cleanup bitmaps
-    DeleteObject(icon_info.hbmColor.into());
-    DeleteObject(icon_info.hbmMask.into());
-
-    // Convert BGRA to RGBA and fix premultiplied alpha
-    bgra_to_rgba(&mut pixels);
-    unpremultiply_alpha(&mut pixels);
-
-    Some(IconData::Rgba {
-        width,
-        height,
-        data: pixels,
-    })
 }
 
 /// Load a stock system icon by its SIID_ name.
@@ -235,48 +237,50 @@ fn load_idi_icon() -> Option<IconData> {
 /// requested name.
 #[cfg(target_os = "windows")]
 unsafe fn try_create_font(hdc: HDC, face_name: &str, size: i32) -> Option<HFONT> {
-    let wide_name: Vec<u16> = face_name.encode_utf16().chain(std::iter::once(0)).collect();
+    unsafe {
+        let wide_name: Vec<u16> = face_name.encode_utf16().chain(std::iter::once(0)).collect();
 
-    let font = CreateFontW(
-        size,
-        0,
-        0,
-        0,
-        FW_NORMAL.0 as i32,
-        0,
-        0,
-        0,
-        DEFAULT_CHARSET,
-        OUT_TT_PRECIS,
-        CLIP_DEFAULT_PRECIS,
-        CLEARTYPE_QUALITY,
-        (FF_DONTCARE.0 | DEFAULT_PITCH.0) as u32,
-        PCWSTR(wide_name.as_ptr()),
-    );
+        let font = CreateFontW(
+            size,
+            0,
+            0,
+            0,
+            FW_NORMAL.0 as i32,
+            0,
+            0,
+            0,
+            DEFAULT_CHARSET,
+            OUT_TT_PRECIS,
+            CLIP_DEFAULT_PRECIS,
+            CLEARTYPE_QUALITY,
+            (FF_DONTCARE.0 | DEFAULT_PITCH.0) as u32,
+            PCWSTR(wide_name.as_ptr()),
+        );
 
-    if font.is_invalid() {
-        return None;
+        if font.is_invalid() {
+            return None;
+        }
+
+        // Verify the actual loaded font matches what we requested
+        let old = SelectObject(hdc, font.into());
+        let mut actual_name = [0u16; 64];
+        let len = GetTextFaceW(hdc, Some(&mut actual_name));
+        SelectObject(hdc, old);
+
+        if len == 0 {
+            let _ = DeleteObject(font.into());
+            return None;
+        }
+
+        let actual = String::from_utf16_lossy(&actual_name[..len as usize]);
+        if actual.trim_end_matches('\0') != face_name {
+            // Font was substituted -- not actually available
+            let _ = DeleteObject(font.into());
+            return None;
+        }
+
+        Some(font)
     }
-
-    // Verify the actual loaded font matches what we requested
-    let old = SelectObject(hdc, font.into());
-    let mut actual_name = [0u16; 64];
-    let len = GetTextFaceW(hdc, Some(&mut actual_name));
-    SelectObject(hdc, old);
-
-    if len == 0 {
-        let _ = DeleteObject(font.into());
-        return None;
-    }
-
-    let actual = String::from_utf16_lossy(&actual_name[..len as usize]);
-    if actual.trim_end_matches('\0') != face_name {
-        // Font was substituted -- not actually available
-        let _ = DeleteObject(font.into());
-        return None;
-    }
-
-    Some(font)
 }
 
 /// Render a font glyph to RGBA pixels via GetGlyphOutlineW.
@@ -380,7 +384,7 @@ fn load_glyph_icon(codepoint: u32, size: i32) -> Option<IconData> {
 /// be loaded on this system.
 pub fn load_windows_icon(role: IconRole) -> Option<IconData> {
     #[cfg(target_os = "windows")]
-    if let Some(name) = icon_name(IconSet::SegoeIcons, role) {
+    if let Some(name) = icon_name(role, IconSet::SegoeIcons) {
         if name.starts_with("SIID_") {
             if let Some(data) = load_stock_icon(name) {
                 return Some(data);
