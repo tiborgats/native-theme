@@ -58,15 +58,24 @@ ok "Branch is up to date with remote"
 
 info "Triggering screenshots workflow..."
 BRANCH=$(git branch --show-current)
+EXPECTED_SHA="$LOCAL"
+
 gh workflow run screenshots.yml --ref "$BRANCH"
 
-# Wait a moment for the run to register
-sleep 5
+# Poll until the new run appears (the fixed-sleep approach races with GitHub's queue)
+info "Waiting for workflow run to register..."
+RUN_ID=""
+for i in $(seq 1 30); do
+    RUN_ID=$(gh run list --workflow=screenshots.yml --branch="$BRANCH" --limit 1 \
+        --json databaseId,headSha --jq ".[] | select(.headSha == \"$EXPECTED_SHA\") | .databaseId")
+    if [ -n "$RUN_ID" ]; then
+        break
+    fi
+    sleep 2
+done
 
-# Get the run ID of the just-triggered workflow
-RUN_ID=$(gh run list --workflow=screenshots.yml --branch="$BRANCH" --limit 1 --json databaseId --jq '.[0].databaseId')
 if [ -z "$RUN_ID" ]; then
-    fail "Could not find the triggered workflow run"
+    fail "Timed out waiting for workflow run at $EXPECTED_SHA to appear"
 fi
 
 info "Workflow run: https://github.com/$(gh repo view --json nameWithOwner --jq '.nameWithOwner')/actions/runs/$RUN_ID"
@@ -123,6 +132,12 @@ else
             fi
         fi
     done
+fi
+
+# Verify the completed run matches our commit before downloading
+RUN_SHA=$(gh run view "$RUN_ID" --json headSha --jq '.headSha')
+if [ "$RUN_SHA" != "$EXPECTED_SHA" ]; then
+    fail "CI run built $RUN_SHA but expected $EXPECTED_SHA — refusing to download stale screenshots"
 fi
 
 # Download macOS and Windows screenshots

@@ -290,7 +290,7 @@ fn detect_is_dark_inner() -> bool {
             use objc2_foundation::NSUserDefaults;
             let defaults = NSUserDefaults::standardUserDefaults();
             let key = objc2_foundation::ns_string!("AppleInterfaceStyle");
-            if let Some(value) = unsafe { defaults.stringForKey(key) } {
+            if let Some(value) = defaults.stringForKey(key) {
                 return value.to_string().eq_ignore_ascii_case("dark");
             }
             return false;
