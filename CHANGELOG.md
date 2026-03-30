@@ -5,6 +5,23 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.1] - 2026-03-30
+
+### Changed
+
+- Renamed types and tightened visibility across core and build crates
+- Build crate Result-based API for validation diagnostics
+- Simplified GNOME/KDE readers and polished connector APIs
+- Expanded widget resolved types and cleaned up build crate tests
+
+### Fixed
+
+- Windows compilation — swapped `icon_name` args, Rust 2024 unsafe blocks
+- macOS compilation errors
+- Test compilation — stale call sites after API changes
+- iced screenshot delay to avoid blank capture on Windows
+- CI: removed tag trigger from docs workflow
+
 ## [0.5.0] - 2026-03-28
 
 ### Added
@@ -303,6 +320,7 @@ let busy = load_icon(IconRole::StatusBusy, "material");
 - `impl_merge!` macro for recursive Option-based theme merging
 - Deep merge support across all theme types
 
+[0.5.1]: https://github.com/tiborgats/native-theme/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/tiborgats/native-theme/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/tiborgats/native-theme/compare/v0.4.0...v0.4.1
 [0.4.0]: https://github.com/tiborgats/native-theme/compare/v0.3.3...v0.4.0
