@@ -667,7 +667,7 @@ impl Default for State {
             // Apply screenshot settings
             if let Some(ref path) = cli.screenshot {
                 state.screenshot_path = Some(path.clone());
-                state.screenshot_countdown = 30; // 30 ticks × 50ms = 1.5s render delay
+                state.screenshot_countdown = 60; // 60 ticks × 50ms = 3s render delay
             }
         }
 
