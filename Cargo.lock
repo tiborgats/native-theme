@@ -4330,7 +4330,7 @@ dependencies = [
 
 [[package]]
 name = "native-theme"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "ashpd 0.13.9",
  "block2 0.6.2",
@@ -4351,7 +4351,7 @@ dependencies = [
 
 [[package]]
 name = "native-theme-build"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "heck 0.5.0",
  "serde",
@@ -4360,7 +4360,7 @@ dependencies = [
 
 [[package]]
 name = "native-theme-gpui"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "gpui",
  "gpui-component",
@@ -4373,7 +4373,7 @@ dependencies = [
 
 [[package]]
 name = "native-theme-iced"
-version = "0.5.1"
+version = "0.5.2"
 dependencies = [
  "iced",
  "iced_core",

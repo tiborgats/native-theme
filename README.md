@@ -27,7 +27,7 @@ readers for Linux, macOS, and Windows.
 
 ```toml
 [dependencies]
-native-theme = "0.5"
+native-theme = "0.5.2"
 ```
 
 Load a bundled preset:
@@ -71,8 +71,8 @@ theme.merge(&overrides);
 
 ```toml
 [dependencies]
-native-theme = "0.5"
-native-theme-gpui = "0.5"
+native-theme = "0.5.2"
+native-theme-gpui = "0.5.2"
 ```
 
 ```rust,ignore
@@ -98,8 +98,8 @@ cargo run -p native-theme-gpui --example showcase
 
 ```toml
 [dependencies]
-native-theme = "0.5"
-native-theme-iced = "0.5"
+native-theme = "0.5.2"
+native-theme-iced = "0.5.2"
 ```
 
 ```rust,ignore

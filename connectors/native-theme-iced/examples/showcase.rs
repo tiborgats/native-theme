@@ -534,10 +534,16 @@ impl Default for State {
                 }
                 Err(e) => {
                     // Fallback: load adwaita preset through resolve pipeline
-                    let nt = ThemeSpec::preset("adwaita").expect("adwaita preset must exist");
-                    let mut variant = nt.pick_variant(is_dark).unwrap().clone();
+                    let nt = ThemeSpec::preset("adwaita")
+                        .expect("bundled adwaita preset is guaranteed to exist");
+                    let mut variant = nt
+                        .pick_variant(is_dark)
+                        .expect("bundled adwaita preset is guaranteed to have both variants")
+                        .clone();
                     variant.resolve();
-                    let r = variant.validate().expect("adwaita preset must validate");
+                    let r = variant
+                        .validate()
+                        .expect("bundled adwaita preset is guaranteed to validate");
                     let t = native_theme_iced::to_theme(&r, &nt.name);
                     (
                         r,
@@ -693,10 +699,16 @@ impl State {
                         self.error_message =
                             Some(format!("OS theme failed: {e}. Using adwaita fallback."));
                         // Fallback: load adwaita preset through resolve pipeline
-                        let nt = ThemeSpec::preset("adwaita").expect("adwaita preset must exist");
-                        let mut variant = nt.pick_variant(self.is_dark).unwrap().clone();
+                        let nt = ThemeSpec::preset("adwaita")
+                            .expect("bundled adwaita preset is guaranteed to exist");
+                        let mut variant = nt
+                            .pick_variant(self.is_dark)
+                            .expect("bundled adwaita preset is guaranteed to have both variants")
+                            .clone();
                         variant.resolve();
-                        let resolved = variant.validate().unwrap();
+                        let resolved = variant
+                            .validate()
+                            .expect("bundled adwaita preset is guaranteed to validate");
                         self.current_resolved = resolved;
                         self.current_theme =
                             native_theme_iced::to_theme(&self.current_resolved, &nt.name);
@@ -826,7 +838,8 @@ fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
 
     let window_id: i64 = unsafe {
         let ns_app: *mut objc2::runtime::AnyObject = objc2::msg_send![
-            objc2::runtime::AnyClass::get(c"NSApplication").unwrap(),
+            objc2::runtime::AnyClass::get(c"NSApplication")
+                .expect("NSApplication class is guaranteed to exist on macOS"),
             sharedApplication
         ];
         // Ensure the app is front-most (the second invocation on CI may

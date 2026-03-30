@@ -844,7 +844,9 @@ async fn from_system_async_inner() -> crate::Result<SystemTheme> {
                             run_pipeline(reader, "adwaita-live", is_dark)
                         }
                         _ => {
-                            unreachable!("detect_portal_backend only returns Kde or Gnome")
+                            // detect_portal_backend only returns Kde or Gnome;
+                            // fall back to Adwaita if the set ever grows.
+                            run_pipeline(ThemeSpec::preset("adwaita")?, "adwaita-live", is_dark)
                         }
                     };
                 }

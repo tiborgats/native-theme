@@ -3166,10 +3166,22 @@ impl Showcase {
                         h_flex()
                             .gap_4()
                             .items_center()
-                            .child(Kbd::new(Keystroke::parse("cmd-c").unwrap()))
-                            .child(Kbd::new(Keystroke::parse("cmd-v").unwrap()))
-                            .child(Kbd::new(Keystroke::parse("cmd-shift-p").unwrap()))
-                            .child(Kbd::new(Keystroke::parse("ctrl-z").unwrap())),
+                            .child(Kbd::new(
+                                Keystroke::parse("cmd-c")
+                                    .expect("static keystroke literal is valid"),
+                            ))
+                            .child(Kbd::new(
+                                Keystroke::parse("cmd-v")
+                                    .expect("static keystroke literal is valid"),
+                            ))
+                            .child(Kbd::new(
+                                Keystroke::parse("cmd-shift-p")
+                                    .expect("static keystroke literal is valid"),
+                            ))
+                            .child(Kbd::new(
+                                Keystroke::parse("ctrl-z")
+                                    .expect("static keystroke literal is valid"),
+                            )),
                     )
                     .on_hover(self.hover_info(
                         &fi,
@@ -5209,7 +5221,8 @@ impl CliArgs {
 fn get_main_window_ptr() -> Option<*mut objc2::runtime::AnyObject> {
     unsafe {
         let ns_app: *mut objc2::runtime::AnyObject = objc2::msg_send![
-            objc2::runtime::AnyClass::get(c"NSApplication").unwrap(),
+            objc2::runtime::AnyClass::get(c"NSApplication")
+                .expect("NSApplication class is guaranteed to exist on macOS"),
             sharedApplication
         ];
         let main_window: *mut objc2::runtime::AnyObject = objc2::msg_send![ns_app, mainWindow];
@@ -5567,7 +5580,7 @@ fn main() {
                         cx.new(|cx| Root::new(showcase, window, cx))
                     },
                 )
-                .unwrap();
+                .expect("failed to open main application window");
             window_handle
                 .update(cx, |_, window, _| {
                     window.set_window_title(&format!(
@@ -5588,10 +5601,10 @@ fn main() {
             cx.activate(true);
 
             // Schedule delayed self-capture if --screenshot was provided
-            if cli_args.screenshot.is_some() {
+            if let Some(screenshot_path) = cli_args.screenshot.as_ref() {
                 #[cfg(target_os = "macos")]
                 {
-                    let path = cli_args.screenshot.as_ref().unwrap().clone();
+                    let path = screenshot_path.clone();
                     let any_handle = *window_handle;
                     cx.spawn(async move |cx| {
                         // Force Metal drawable to update on Retina displays.
@@ -5611,7 +5624,7 @@ fn main() {
                 }
                 #[cfg(target_os = "windows")]
                 {
-                    let path = cli_args.screenshot.as_ref().unwrap().clone();
+                    let path = screenshot_path.clone();
                     let any_handle = *window_handle;
                     cx.spawn(async move |cx| {
                         Timer::after(Duration::from_millis(1500)).await;
