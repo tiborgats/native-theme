@@ -1,9 +1,17 @@
 //! Icon conversion functions for the gpui connector.
 //!
-//! Provides two main functions:
-//! - [`icon_name`]: Maps [`IconRole`] to gpui-component's [`IconName`] for the Lucide icon set.
-//!   This is a zero-I/O shortcut since gpui-component already bundles Lucide SVGs.
-//! - [`to_image_source`]: Converts [`IconData`] to a gpui [`ImageSource`] for rendering.
+//! # Function Overview
+//!
+//! | Function | Purpose |
+//! |----------|---------|
+//! | [`icon_name`] | Map [`IconRole`] → [`IconName`] (Lucide, zero-I/O) |
+//! | [`lucide_name_for_gpui_icon`] | Map [`IconName`] → Lucide name (`&str`) |
+//! | [`material_name_for_gpui_icon`] | Map [`IconName`] → Material name (`&str`) |
+//! | [`freedesktop_name_for_gpui_icon`] | Map [`IconName`] → freedesktop name (Linux only) |
+//! | [`to_image_source`] | Convert [`IconData`] → [`ImageSource`] with optional color/size |
+//! | [`custom_icon_to_image_source`] | Load + convert via [`IconProvider`] |
+//! | [`animated_frames_to_image_sources`] | Convert animation frames → [`AnimatedImageSources`] |
+//! | [`with_spin_animation`] | Wrap an SVG element with spin animation |
 
 use gpui::{
     Animation, AnimationExt, Hsla, Image, ImageFormat, ImageSource, Svg, Transformation, percentage,
@@ -12,6 +20,17 @@ use gpui_component::IconName;
 use native_theme::{AnimatedIcon, IconData, IconProvider, IconRole, load_custom_icon};
 use std::sync::Arc;
 use std::time::Duration;
+
+/// Converted animation frames with timing metadata.
+///
+/// Returned by [`animated_frames_to_image_sources`]. Contains the
+/// rasterized frames and the per-frame duration needed to drive playback.
+pub struct AnimatedImageSources {
+    /// Rasterized frames ready for gpui rendering.
+    pub sources: Vec<ImageSource>,
+    /// Duration of each frame in milliseconds.
+    pub frame_duration_ms: u32,
+}
 
 /// Map an [`IconRole`] to a gpui-component [`IconName`] for the Lucide icon set.
 ///
@@ -89,203 +108,201 @@ pub fn icon_name(role: IconRole) -> Option<IconName> {
     })
 }
 
-/// Map a gpui-component icon name string to its canonical Lucide icon name.
+/// Map a gpui-component [`IconName`] to its canonical Lucide icon name.
 ///
 /// Returns the kebab-case Lucide name for use with
 /// [`native_theme::bundled_icon_by_name`].
 ///
 /// Covers all 86 gpui-component `IconName` variants.
-pub fn lucide_name_for_gpui_icon(gpui_name: &str) -> Option<&'static str> {
-    Some(match gpui_name {
-        "ALargeSmall" => "a-large-small",
-        "ArrowDown" => "arrow-down",
-        "ArrowLeft" => "arrow-left",
-        "ArrowRight" => "arrow-right",
-        "ArrowUp" => "arrow-up",
-        "Asterisk" => "asterisk",
-        "Bell" => "bell",
-        "BookOpen" => "book-open",
-        "Bot" => "bot",
-        "Building2" => "building-2",
-        "Calendar" => "calendar",
-        "CaseSensitive" => "case-sensitive",
-        "ChartPie" => "chart-pie",
-        "Check" => "check",
-        "ChevronDown" => "chevron-down",
-        "ChevronLeft" => "chevron-left",
-        "ChevronRight" => "chevron-right",
-        "ChevronsUpDown" => "chevrons-up-down",
-        "ChevronUp" => "chevron-up",
-        "CircleCheck" => "circle-check",
-        "CircleUser" => "circle-user",
-        "CircleX" => "circle-x",
-        "Close" => "close",
-        "Copy" => "copy",
-        "Dash" => "dash",
-        "Delete" => "delete",
-        "Ellipsis" => "ellipsis",
-        "EllipsisVertical" => "ellipsis-vertical",
-        "ExternalLink" => "external-link",
-        "Eye" => "eye",
-        "EyeOff" => "eye-off",
-        "File" => "file",
-        "Folder" => "folder",
-        "FolderClosed" => "folder-closed",
-        "FolderOpen" => "folder-open",
-        "Frame" => "frame",
-        "GalleryVerticalEnd" => "gallery-vertical-end",
-        "GitHub" => "github",
-        "Globe" => "globe",
-        "Heart" => "heart",
-        "HeartOff" => "heart-off",
-        "Inbox" => "inbox",
-        "Info" => "info",
-        "Inspector" => "inspect",
-        "LayoutDashboard" => "layout-dashboard",
-        "Loader" => "loader",
-        "LoaderCircle" => "loader-circle",
-        "Map" => "map",
-        "Maximize" => "maximize",
-        "Menu" => "menu",
-        "Minimize" => "minimize",
-        "Minus" => "minus",
-        "Moon" => "moon",
-        "Palette" => "palette",
-        "PanelBottom" => "panel-bottom",
-        "PanelBottomOpen" => "panel-bottom-open",
-        "PanelLeft" => "panel-left",
-        "PanelLeftClose" => "panel-left-close",
-        "PanelLeftOpen" => "panel-left-open",
-        "PanelRight" => "panel-right",
-        "PanelRightClose" => "panel-right-close",
-        "PanelRightOpen" => "panel-right-open",
-        "Plus" => "plus",
-        "Redo" => "redo",
-        "Redo2" => "redo-2",
-        "Replace" => "replace",
-        "ResizeCorner" => "resize-corner",
-        "Search" => "search",
-        "Settings" => "settings",
-        "Settings2" => "settings-2",
-        "SortAscending" => "sort-ascending",
-        "SortDescending" => "sort-descending",
-        "SquareTerminal" => "square-terminal",
-        "Star" => "star",
-        "StarOff" => "star-off",
-        "Sun" => "sun",
-        "ThumbsDown" => "thumbs-down",
-        "ThumbsUp" => "thumbs-up",
-        "TriangleAlert" => "triangle-alert",
-        "Undo" => "undo",
-        "Undo2" => "undo-2",
-        "User" => "user",
-        "WindowClose" => "window-close",
-        "WindowMaximize" => "window-maximize",
-        "WindowMinimize" => "window-minimize",
-        "WindowRestore" => "window-restore",
-        _ => return None,
+pub fn lucide_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
+    Some(match icon {
+        IconName::ALargeSmall => "a-large-small",
+        IconName::ArrowDown => "arrow-down",
+        IconName::ArrowLeft => "arrow-left",
+        IconName::ArrowRight => "arrow-right",
+        IconName::ArrowUp => "arrow-up",
+        IconName::Asterisk => "asterisk",
+        IconName::Bell => "bell",
+        IconName::BookOpen => "book-open",
+        IconName::Bot => "bot",
+        IconName::Building2 => "building-2",
+        IconName::Calendar => "calendar",
+        IconName::CaseSensitive => "case-sensitive",
+        IconName::ChartPie => "chart-pie",
+        IconName::Check => "check",
+        IconName::ChevronDown => "chevron-down",
+        IconName::ChevronLeft => "chevron-left",
+        IconName::ChevronRight => "chevron-right",
+        IconName::ChevronsUpDown => "chevrons-up-down",
+        IconName::ChevronUp => "chevron-up",
+        IconName::CircleCheck => "circle-check",
+        IconName::CircleUser => "circle-user",
+        IconName::CircleX => "circle-x",
+        IconName::Close => "close",
+        IconName::Copy => "copy",
+        IconName::Dash => "dash",
+        IconName::Delete => "delete",
+        IconName::Ellipsis => "ellipsis",
+        IconName::EllipsisVertical => "ellipsis-vertical",
+        IconName::ExternalLink => "external-link",
+        IconName::Eye => "eye",
+        IconName::EyeOff => "eye-off",
+        IconName::File => "file",
+        IconName::Folder => "folder",
+        IconName::FolderClosed => "folder-closed",
+        IconName::FolderOpen => "folder-open",
+        IconName::Frame => "frame",
+        IconName::GalleryVerticalEnd => "gallery-vertical-end",
+        IconName::GitHub => "github",
+        IconName::Globe => "globe",
+        IconName::Heart => "heart",
+        IconName::HeartOff => "heart-off",
+        IconName::Inbox => "inbox",
+        IconName::Info => "info",
+        IconName::Inspector => "inspect",
+        IconName::LayoutDashboard => "layout-dashboard",
+        IconName::Loader => "loader",
+        IconName::LoaderCircle => "loader-circle",
+        IconName::Map => "map",
+        IconName::Maximize => "maximize",
+        IconName::Menu => "menu",
+        IconName::Minimize => "minimize",
+        IconName::Minus => "minus",
+        IconName::Moon => "moon",
+        IconName::Palette => "palette",
+        IconName::PanelBottom => "panel-bottom",
+        IconName::PanelBottomOpen => "panel-bottom-open",
+        IconName::PanelLeft => "panel-left",
+        IconName::PanelLeftClose => "panel-left-close",
+        IconName::PanelLeftOpen => "panel-left-open",
+        IconName::PanelRight => "panel-right",
+        IconName::PanelRightClose => "panel-right-close",
+        IconName::PanelRightOpen => "panel-right-open",
+        IconName::Plus => "plus",
+        IconName::Redo => "redo",
+        IconName::Redo2 => "redo-2",
+        IconName::Replace => "replace",
+        IconName::ResizeCorner => "resize-corner",
+        IconName::Search => "search",
+        IconName::Settings => "settings",
+        IconName::Settings2 => "settings-2",
+        IconName::SortAscending => "sort-ascending",
+        IconName::SortDescending => "sort-descending",
+        IconName::SquareTerminal => "square-terminal",
+        IconName::Star => "star",
+        IconName::StarOff => "star-off",
+        IconName::Sun => "sun",
+        IconName::ThumbsDown => "thumbs-down",
+        IconName::ThumbsUp => "thumbs-up",
+        IconName::TriangleAlert => "triangle-alert",
+        IconName::Undo => "undo",
+        IconName::Undo2 => "undo-2",
+        IconName::User => "user",
+        IconName::WindowClose => "window-close",
+        IconName::WindowMaximize => "window-maximize",
+        IconName::WindowMinimize => "window-minimize",
+        IconName::WindowRestore => "window-restore",
     })
 }
 
-/// Map a gpui-component icon name string to its canonical Material icon name.
+/// Map a gpui-component [`IconName`] to its canonical Material icon name.
 ///
 /// Returns the snake_case Material Symbols name for use with
 /// [`native_theme::bundled_icon_by_name`].
 ///
 /// Covers all 86 gpui-component `IconName` variants.
-pub fn material_name_for_gpui_icon(gpui_name: &str) -> Option<&'static str> {
-    Some(match gpui_name {
-        "ALargeSmall" => "font_size",
-        "ArrowDown" => "arrow_downward",
-        "ArrowLeft" => "arrow_back",
-        "ArrowRight" => "arrow_forward",
-        "ArrowUp" => "arrow_upward",
-        "Asterisk" => "emergency",
-        "Bell" => "notifications",
-        "BookOpen" => "menu_book",
-        "Bot" => "smart_toy",
-        "Building2" => "apartment",
-        "Calendar" => "calendar_today",
-        "CaseSensitive" => "match_case",
-        "ChartPie" => "pie_chart",
-        "Check" => "check",
-        "ChevronDown" => "expand_more",
-        "ChevronLeft" => "chevron_left",
-        "ChevronRight" => "chevron_right",
-        "ChevronsUpDown" => "unfold_more",
-        "ChevronUp" => "expand_less",
-        "CircleCheck" => "check_circle",
-        "CircleUser" => "account_circle",
-        "CircleX" => "cancel",
-        "Close" => "close",
-        "Copy" => "content_copy",
-        "Dash" => "remove",
-        "Delete" => "delete",
-        "Ellipsis" => "more_horiz",
-        "EllipsisVertical" => "more_vert",
-        "ExternalLink" => "open_in_new",
-        "Eye" => "visibility",
-        "EyeOff" => "visibility_off",
-        "File" => "description",
-        "Folder" => "folder",
-        "FolderClosed" => "folder",
-        "FolderOpen" => "folder_open",
-        "Frame" => "crop_free",
-        "GalleryVerticalEnd" => "view_carousel",
-        "GitHub" => "code",
-        "Globe" => "language",
-        "Heart" => "favorite",
-        "HeartOff" => "heart_broken",
-        "Inbox" => "inbox",
-        "Info" => "info",
-        "Inspector" => "developer_mode",
-        "LayoutDashboard" => "dashboard",
-        "Loader" => "progress_activity",
-        "LoaderCircle" => "autorenew",
-        "Map" => "map",
-        "Maximize" => "open_in_full",
-        "Menu" => "menu",
-        "Minimize" => "minimize",
-        "Minus" => "remove",
-        "Moon" => "dark_mode",
-        "Palette" => "palette",
-        "PanelBottom" => "dock_to_bottom",
-        "PanelBottomOpen" => "web_asset",
-        "PanelLeft" => "side_navigation",
-        "PanelLeftClose" => "left_panel_close",
-        "PanelLeftOpen" => "left_panel_open",
-        "PanelRight" => "right_panel_close",
-        "PanelRightClose" => "right_panel_close",
-        "PanelRightOpen" => "right_panel_open",
-        "Plus" => "add",
-        "Redo" => "redo",
-        "Redo2" => "redo",
-        "Replace" => "find_replace",
-        "ResizeCorner" => "drag_indicator",
-        "Search" => "search",
-        "Settings" => "settings",
-        "Settings2" => "tune",
-        "SortAscending" => "arrow_upward",
-        "SortDescending" => "arrow_downward",
-        "SquareTerminal" => "terminal",
-        "Star" => "star",
-        "StarOff" => "star_border",
-        "Sun" => "light_mode",
-        "ThumbsDown" => "thumb_down",
-        "ThumbsUp" => "thumb_up",
-        "TriangleAlert" => "warning",
-        "Undo" => "undo",
-        "Undo2" => "undo",
-        "User" => "person",
-        "WindowClose" => "close",
-        "WindowMaximize" => "open_in_full",
-        "WindowMinimize" => "minimize",
-        "WindowRestore" => "close_fullscreen",
-        _ => return None,
+pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
+    Some(match icon {
+        IconName::ALargeSmall => "font_size",
+        IconName::ArrowDown => "arrow_downward",
+        IconName::ArrowLeft => "arrow_back",
+        IconName::ArrowRight => "arrow_forward",
+        IconName::ArrowUp => "arrow_upward",
+        IconName::Asterisk => "emergency",
+        IconName::Bell => "notifications",
+        IconName::BookOpen => "menu_book",
+        IconName::Bot => "smart_toy",
+        IconName::Building2 => "apartment",
+        IconName::Calendar => "calendar_today",
+        IconName::CaseSensitive => "match_case",
+        IconName::ChartPie => "pie_chart",
+        IconName::Check => "check",
+        IconName::ChevronDown => "expand_more",
+        IconName::ChevronLeft => "chevron_left",
+        IconName::ChevronRight => "chevron_right",
+        IconName::ChevronsUpDown => "unfold_more",
+        IconName::ChevronUp => "expand_less",
+        IconName::CircleCheck => "check_circle",
+        IconName::CircleUser => "account_circle",
+        IconName::CircleX => "cancel",
+        IconName::Close => "close",
+        IconName::Copy => "content_copy",
+        IconName::Dash => "remove",
+        IconName::Delete => "delete",
+        IconName::Ellipsis => "more_horiz",
+        IconName::EllipsisVertical => "more_vert",
+        IconName::ExternalLink => "open_in_new",
+        IconName::Eye => "visibility",
+        IconName::EyeOff => "visibility_off",
+        IconName::File => "description",
+        IconName::Folder => "folder",
+        IconName::FolderClosed => "folder",
+        IconName::FolderOpen => "folder_open",
+        IconName::Frame => "crop_free",
+        IconName::GalleryVerticalEnd => "view_carousel",
+        IconName::GitHub => "code",
+        IconName::Globe => "language",
+        IconName::Heart => "favorite",
+        IconName::HeartOff => "heart_broken",
+        IconName::Inbox => "inbox",
+        IconName::Info => "info",
+        IconName::Inspector => "developer_mode",
+        IconName::LayoutDashboard => "dashboard",
+        IconName::Loader => "progress_activity",
+        IconName::LoaderCircle => "autorenew",
+        IconName::Map => "map",
+        IconName::Maximize => "open_in_full",
+        IconName::Menu => "menu",
+        IconName::Minimize => "minimize",
+        IconName::Minus => "remove",
+        IconName::Moon => "dark_mode",
+        IconName::Palette => "palette",
+        IconName::PanelBottom => "dock_to_bottom",
+        IconName::PanelBottomOpen => "web_asset",
+        IconName::PanelLeft => "side_navigation",
+        IconName::PanelLeftClose => "left_panel_close",
+        IconName::PanelLeftOpen => "left_panel_open",
+        IconName::PanelRight => "right_panel_close",
+        IconName::PanelRightClose => "right_panel_close",
+        IconName::PanelRightOpen => "right_panel_open",
+        IconName::Plus => "add",
+        IconName::Redo => "redo",
+        IconName::Redo2 => "redo",
+        IconName::Replace => "find_replace",
+        IconName::ResizeCorner => "drag_indicator",
+        IconName::Search => "search",
+        IconName::Settings => "settings",
+        IconName::Settings2 => "tune",
+        IconName::SortAscending => "arrow_upward",
+        IconName::SortDescending => "arrow_downward",
+        IconName::SquareTerminal => "terminal",
+        IconName::Star => "star",
+        IconName::StarOff => "star_border",
+        IconName::Sun => "light_mode",
+        IconName::ThumbsDown => "thumb_down",
+        IconName::ThumbsUp => "thumb_up",
+        IconName::TriangleAlert => "warning",
+        IconName::Undo => "undo",
+        IconName::Undo2 => "undo",
+        IconName::User => "person",
+        IconName::WindowClose => "close",
+        IconName::WindowMaximize => "open_in_full",
+        IconName::WindowMinimize => "minimize",
+        IconName::WindowRestore => "close_fullscreen",
     })
 }
 
-/// Map a gpui-component icon name string to its freedesktop icon name for the
+/// Map a gpui-component [`IconName`] to its freedesktop icon name for the
 /// given desktop environment.
 ///
 /// Returns the best freedesktop name for the detected DE's naming
@@ -310,7 +327,7 @@ pub fn material_name_for_gpui_icon(gpui_name: &str) -> Option<&'static str> {
 /// Covers all 86 gpui-component `IconName` variants.
 #[cfg(target_os = "linux")]
 pub fn freedesktop_name_for_gpui_icon(
-    gpui_name: &str,
+    icon: IconName,
     de: native_theme::LinuxDesktop,
 ) -> Option<&'static str> {
     use native_theme::LinuxDesktop;
@@ -325,229 +342,229 @@ pub fn freedesktop_name_for_gpui_icon(
             | LinuxDesktop::Xfce
     );
 
-    Some(match gpui_name {
+    Some(match icon {
         // --- Icons with freedesktop standard names (all DEs) ---
-        "BookOpen" => "help-contents",              // close
-        "Bot" => "face-smile",                      // approximate
-        "ChevronDown" => "go-down",                 // close: full nav arrow, not disclosure chevron
-        "ChevronLeft" => "go-previous",             // close
-        "ChevronRight" => "go-next",                // close
-        "ChevronUp" => "go-up",                     // close
-        "CircleX" => "dialog-error",                // close
-        "Copy" => "edit-copy",                      // exact
-        "Dash" => "list-remove",                    // exact
-        "Delete" => "edit-delete",                  // exact
-        "File" => "text-x-generic",                 // exact
-        "Folder" => "folder",                       // exact
-        "FolderClosed" => "folder",                 // exact
-        "FolderOpen" => "folder-open",              // exact
-        "HeartOff" => "non-starred",                // close: un-favorite semantics
-        "Info" => "dialog-information",             // exact
-        "LayoutDashboard" => "view-grid",           // close
-        "Map" => "find-location",                   // close
-        "Maximize" => "view-fullscreen",            // exact
-        "Menu" => "open-menu",                      // exact
-        "Minimize" => "window-minimize",            // exact
-        "Minus" => "list-remove",                   // exact
-        "Moon" => "weather-clear-night",            // close: dark mode toggle
-        "Plus" => "list-add",                       // exact
-        "Redo" => "edit-redo",                      // exact
-        "Redo2" => "edit-redo",                     // exact
-        "Replace" => "edit-find-replace",           // exact
-        "Search" => "edit-find",                    // exact
-        "Settings" => "preferences-system",         // exact
-        "SortAscending" => "view-sort-ascending",   // exact
-        "SortDescending" => "view-sort-descending", // exact
-        "SquareTerminal" => "utilities-terminal",   // close
-        "Star" => "starred",                        // exact
-        "StarOff" => "non-starred",                 // exact
-        "Sun" => "weather-clear",                   // close: light mode toggle
-        "TriangleAlert" => "dialog-warning",        // exact
-        "Undo" => "edit-undo",                      // exact
-        "Undo2" => "edit-undo",                     // exact
-        "User" => "system-users",                   // exact
-        "WindowClose" => "window-close",            // exact
-        "WindowMaximize" => "window-maximize",      // exact
-        "WindowMinimize" => "window-minimize",      // exact
-        "WindowRestore" => "window-restore",        // exact
+        IconName::BookOpen => "help-contents",              // close
+        IconName::Bot => "face-smile",                      // approximate
+        IconName::ChevronDown => "go-down",                 // close: full nav arrow, not disclosure chevron
+        IconName::ChevronLeft => "go-previous",             // close
+        IconName::ChevronRight => "go-next",                // close
+        IconName::ChevronUp => "go-up",                     // close
+        IconName::CircleX => "dialog-error",                // close
+        IconName::Copy => "edit-copy",                      // exact
+        IconName::Dash => "list-remove",                    // exact
+        IconName::Delete => "edit-delete",                  // exact
+        IconName::File => "text-x-generic",                 // exact
+        IconName::Folder => "folder",                       // exact
+        IconName::FolderClosed => "folder",                 // exact
+        IconName::FolderOpen => "folder-open",              // exact
+        IconName::HeartOff => "non-starred",                // close: un-favorite semantics
+        IconName::Info => "dialog-information",             // exact
+        IconName::LayoutDashboard => "view-grid",           // close
+        IconName::Map => "find-location",                   // close
+        IconName::Maximize => "view-fullscreen",            // exact
+        IconName::Menu => "open-menu",                      // exact
+        IconName::Minimize => "window-minimize",            // exact
+        IconName::Minus => "list-remove",                   // exact
+        IconName::Moon => "weather-clear-night",            // close: dark mode toggle
+        IconName::Plus => "list-add",                       // exact
+        IconName::Redo => "edit-redo",                      // exact
+        IconName::Redo2 => "edit-redo",                     // exact
+        IconName::Replace => "edit-find-replace",           // exact
+        IconName::Search => "edit-find",                    // exact
+        IconName::Settings => "preferences-system",         // exact
+        IconName::SortAscending => "view-sort-ascending",   // exact
+        IconName::SortDescending => "view-sort-descending", // exact
+        IconName::SquareTerminal => "utilities-terminal",   // close
+        IconName::Star => "starred",                        // exact
+        IconName::StarOff => "non-starred",                 // exact
+        IconName::Sun => "weather-clear",                   // close: light mode toggle
+        IconName::TriangleAlert => "dialog-warning",        // exact
+        IconName::Undo => "edit-undo",                      // exact
+        IconName::Undo2 => "edit-undo",                     // exact
+        IconName::User => "system-users",                   // exact
+        IconName::WindowClose => "window-close",            // exact
+        IconName::WindowMaximize => "window-maximize",      // exact
+        IconName::WindowMinimize => "window-minimize",      // exact
+        IconName::WindowRestore => "window-restore",        // exact
 
         // --- Icons where KDE and GNOME both have names but they differ ---
-        "ArrowDown" => {
+        IconName::ArrowDown => {
             if is_gtk {
                 "go-bottom"
             } else {
                 "go-down-skip"
             }
         } // close
-        "ArrowLeft" => {
+        IconName::ArrowLeft => {
             if is_gtk {
                 "go-first"
             } else {
                 "go-previous-skip"
             }
         } // close
-        "ArrowRight" => {
+        IconName::ArrowRight => {
             if is_gtk {
                 "go-last"
             } else {
                 "go-next-skip"
             }
         } // close
-        "ArrowUp" => {
+        IconName::ArrowUp => {
             if is_gtk {
                 "go-top"
             } else {
                 "go-up-skip"
             }
         } // close
-        "Calendar" => {
+        IconName::Calendar => {
             if is_gtk {
                 "x-office-calendar"
             } else {
                 "view-calendar"
             }
         } // exact
-        "Check" => {
+        IconName::Check => {
             if is_gtk {
                 "object-select"
             } else {
                 "dialog-ok"
             }
         } // close
-        "CircleCheck" => {
+        IconName::CircleCheck => {
             if is_gtk {
                 "object-select"
             } else {
                 "emblem-ok-symbolic"
             }
         } // close
-        "CircleUser" => {
+        IconName::CircleUser => {
             if is_gtk {
                 "avatar-default"
             } else {
                 "user-identity"
             }
         } // close
-        "Close" => {
+        IconName::Close => {
             if is_gtk {
                 "window-close"
             } else {
                 "tab-close"
             }
         } // close
-        "Ellipsis" => {
+        IconName::Ellipsis => {
             if is_gtk {
                 "view-more-horizontal"
             } else {
                 "overflow-menu"
             }
         } // exact
-        "EllipsisVertical" => {
+        IconName::EllipsisVertical => {
             if is_gtk {
                 "view-more"
             } else {
                 "overflow-menu"
             }
         } // close: no vertical variant in KDE
-        "Eye" => {
+        IconName::Eye => {
             if is_gtk {
                 "view-reveal"
             } else {
                 "view-visible"
             }
         } // exact
-        "EyeOff" => {
+        IconName::EyeOff => {
             if is_gtk {
                 "view-conceal"
             } else {
                 "view-hidden"
             }
         } // exact
-        "Frame" => {
+        IconName::Frame => {
             if is_gtk {
                 "selection-mode"
             } else {
                 "select-rectangular"
             }
         } // close
-        "Heart" => {
+        IconName::Heart => {
             if is_gtk {
                 "starred"
             } else {
                 "emblem-favorite"
             }
         } // close
-        "Loader" => {
+        IconName::Loader => {
             if is_gtk {
                 "content-loading"
             } else {
                 "process-working"
             }
         } // exact
-        "LoaderCircle" => {
+        IconName::LoaderCircle => {
             if is_gtk {
                 "content-loading"
             } else {
                 "process-working"
             }
         } // exact
-        "Palette" => {
+        IconName::Palette => {
             if is_gtk {
                 "color-select"
             } else {
                 "palette"
             }
         } // close
-        "PanelLeft" => {
+        IconName::PanelLeft => {
             if is_gtk {
                 "sidebar-show"
             } else {
                 "sidebar-expand-left"
             }
         } // close
-        "PanelLeftClose" => {
+        IconName::PanelLeftClose => {
             if is_gtk {
                 "sidebar-show"
             } else {
                 "view-left-close"
             }
         } // close
-        "PanelLeftOpen" => {
+        IconName::PanelLeftOpen => {
             if is_gtk {
                 "sidebar-show"
             } else {
                 "view-left-new"
             }
         } // close
-        "PanelRight" => {
+        IconName::PanelRight => {
             if is_gtk {
                 "sidebar-show-right"
             } else {
                 "view-right-new"
             }
         } // close
-        "PanelRightClose" => {
+        IconName::PanelRightClose => {
             if is_gtk {
                 "sidebar-show-right"
             } else {
                 "view-right-close"
             }
         } // close
-        "PanelRightOpen" => {
+        IconName::PanelRightOpen => {
             if is_gtk {
                 "sidebar-show-right"
             } else {
                 "view-right-new"
             }
         } // close
-        "ResizeCorner" => {
+        IconName::ResizeCorner => {
             if is_gtk {
                 "list-drag-handle"
             } else {
                 "drag-handle"
             }
         } // close
-        "Settings2" => {
+        IconName::Settings2 => {
             if is_gtk {
                 "preferences-other"
             } else {
@@ -556,127 +573,125 @@ pub fn freedesktop_name_for_gpui_icon(
         } // close
 
         // --- Icons where GNOME uses a different (approximate) alternative ---
-        "ALargeSmall" => {
+        IconName::ALargeSmall => {
             if is_gtk {
                 "zoom-in"
             } else {
                 "format-font-size-more"
             }
         } // approximate
-        "Asterisk" => {
+        IconName::Asterisk => {
             if is_gtk {
                 "starred"
             } else {
                 "rating"
             }
         } // approximate
-        "Bell" => {
+        IconName::Bell => {
             if is_gtk {
                 "alarm"
             } else {
                 "notification-active"
             }
         } // close
-        "Building2" => {
+        IconName::Building2 => {
             if is_gtk {
                 "network-workgroup"
             } else {
                 "applications-office"
             }
         } // approximate
-        "CaseSensitive" => {
+        IconName::CaseSensitive => {
             if is_gtk {
                 "format-text-rich"
             } else {
                 "format-text-uppercase"
             }
         } // approximate
-        "ChartPie" => {
+        IconName::ChartPie => {
             if is_gtk {
                 "x-office-spreadsheet"
             } else {
                 "office-chart-pie"
             }
         } // approximate
-        "ChevronsUpDown" => {
+        IconName::ChevronsUpDown => {
             if is_gtk {
                 "list-drag-handle"
             } else {
                 "handle-sort"
             }
         } // close
-        "ExternalLink" => {
+        IconName::ExternalLink => {
             if is_gtk {
                 "insert-link"
             } else {
                 "external-link"
             }
         } // close
-        "GalleryVerticalEnd" => {
+        IconName::GalleryVerticalEnd => {
             if is_gtk {
                 "view-paged"
             } else {
                 "view-list-icons"
             }
         } // approximate
-        "GitHub" => {
+        IconName::GitHub => {
             if is_gtk {
                 "applications-engineering"
             } else {
                 "vcs-branch"
             }
         } // approximate
-        "Globe" => {
+        IconName::Globe => {
             if is_gtk {
                 "web-browser"
             } else {
                 "globe"
             }
         } // close
-        "Inbox" => {
+        IconName::Inbox => {
             if is_gtk {
                 "mail-send-receive"
             } else {
                 "mail-folder-inbox"
             }
         } // close
-        "Inspector" => {
+        IconName::Inspector => {
             if is_gtk {
                 "preferences-system-details"
             } else {
                 "code-context"
             }
         } // approximate
-        "PanelBottom" => {
+        IconName::PanelBottom => {
             if is_gtk {
                 "view-dual"
             } else {
                 "view-split-top-bottom"
             }
         } // close
-        "PanelBottomOpen" => {
+        IconName::PanelBottomOpen => {
             if is_gtk {
                 "view-dual"
             } else {
                 "view-split-top-bottom"
             }
         } // close
-        "ThumbsDown" => {
+        IconName::ThumbsDown => {
             if is_gtk {
                 "process-stop"
             } else {
                 "rating-unrated"
             }
         } // approximate
-        "ThumbsUp" => {
+        IconName::ThumbsUp => {
             if is_gtk {
                 "checkbox-checked"
             } else {
                 "approved"
             }
         } // approximate
-
-        _ => return None,
     })
 }
 
@@ -688,11 +703,19 @@ const SVG_RASTERIZE_SIZE: u32 = 48;
 
 /// Convert [`IconData`] to a gpui [`ImageSource`] for rendering.
 ///
-/// - `IconData::Svg`: Rasterized to RGBA pixels via resvg, then encoded as
-///   BMP. This works around a gpui bug where `ImageFormat::Svg` skips the
-///   RGBA→BGRA conversion, causing red/blue channel swap.
-/// - `IconData::Rgba`: Encodes as BMP with a BITMAPV4HEADER and wraps in
-///   `Image::from_bytes(ImageFormat::Bmp, ...)`.
+/// Returns `None` if the icon data cannot be converted (corrupt SVG,
+/// unknown variant).
+///
+/// # Parameters
+///
+/// - `color`: If `Some`, colorizes monochrome SVGs with the given color
+///   (replaces `currentColor`, explicit black fills, or injects a fill
+///   attribute). Best for bundled icon sets (Material, Lucide). Pass `None`
+///   for system/OS icons to preserve their native palette.
+///   RGBA icons are passed through unchanged regardless of this parameter.
+/// - `size`: Rasterize size in pixels for SVG icons. `None` defaults to 48px
+///   (2x HiDPI at 24px logical). Pass `logical_size * scale_factor` for
+///   DPI-correct rendering.
 ///
 /// # Examples
 ///
@@ -701,11 +724,25 @@ const SVG_RASTERIZE_SIZE: u32 = 48;
 /// use native_theme_gpui::icons::to_image_source;
 ///
 /// let svg = IconData::Svg(b"<svg></svg>".to_vec());
-/// let source = to_image_source(&svg);
+/// let source = to_image_source(&svg, None, None);        // uncolorized, 48px
+/// let colored = to_image_source(&svg, Some(color), None); // colorized, 48px
+/// let sized = to_image_source(&svg, None, Some(96));      // uncolorized, 96px
 /// ```
-pub fn to_image_source(data: &IconData) -> ImageSource {
+pub fn to_image_source(
+    data: &IconData,
+    color: Option<Hsla>,
+    size: Option<u32>,
+) -> Option<ImageSource> {
+    let raster_size = size.unwrap_or(SVG_RASTERIZE_SIZE);
     match data {
-        IconData::Svg(bytes) => svg_to_bmp_source(bytes),
+        IconData::Svg(bytes) => {
+            if let Some(c) = color {
+                let colored = colorize_svg(bytes, c);
+                svg_to_bmp_source(&colored, raster_size)
+            } else {
+                svg_to_bmp_source(bytes, raster_size)
+            }
+        }
         IconData::Rgba {
             width,
             height,
@@ -713,37 +750,9 @@ pub fn to_image_source(data: &IconData) -> ImageSource {
         } => {
             let bmp = encode_rgba_as_bmp(*width, *height, data);
             let image = Image::from_bytes(ImageFormat::Bmp, bmp);
-            ImageSource::Image(Arc::new(image))
+            Some(ImageSource::Image(Arc::new(image)))
         }
-        // Forward-compatible: treat unknown variants as empty SVG
-        _ => {
-            let image = Image::from_bytes(ImageFormat::Bmp, Vec::new());
-            ImageSource::Image(Arc::new(image))
-        }
-    }
-}
-
-/// Convert [`IconData`] to a gpui [`ImageSource`], colorizing SVGs with the
-/// given color.
-///
-/// Intended for **monochrome** bundled icon sets (Material, Lucide) where
-/// SVGs use `currentColor` or implicit black fill. When rendered via
-/// `gpui::img()`, `currentColor` resolves to black and implicit fills stay
-/// black — making icons invisible in dark themes. This function rewrites
-/// SVG bytes so strokes and fills use the provided color instead.
-///
-/// **Do not use for system/OS icons** (freedesktop, SF Symbols, Segoe Fluent)
-/// — those may be multi-colored and should be rendered with [`to_image_source`]
-/// to preserve their native palette.
-///
-/// RGBA icons are passed through unchanged (they carry their own colors).
-pub fn to_image_source_colored(data: &IconData, color: Hsla) -> ImageSource {
-    match data {
-        IconData::Svg(bytes) => {
-            let colored = colorize_svg(bytes, color);
-            svg_to_bmp_source(&colored)
-        }
-        other => to_image_source(other),
+        _ => None,
     }
 }
 
@@ -752,28 +761,18 @@ pub fn to_image_source_colored(data: &IconData, color: Hsla) -> ImageSource {
 /// Equivalent to calling [`load_custom_icon()`](native_theme::load_custom_icon)
 /// followed by [`to_image_source()`], composing the loading and conversion steps.
 ///
-/// Returns `None` if the provider has no icon for the given set (no system icon
-/// found and no bundled SVG available).
+/// Returns `None` if the provider has no icon for the given set or if
+/// conversion fails.
+///
+/// See [`to_image_source()`] for details on the `color` and `size` parameters.
 pub fn custom_icon_to_image_source(
     provider: &(impl IconProvider + ?Sized),
     icon_set: native_theme::IconSet,
+    color: Option<Hsla>,
+    size: Option<u32>,
 ) -> Option<ImageSource> {
     let data = load_custom_icon(provider, icon_set)?;
-    Some(to_image_source(&data))
-}
-
-/// Load a custom icon from an [`IconProvider`] and convert to a colorized gpui [`ImageSource`].
-///
-/// Like [`custom_icon_to_image_source()`] but colorizes monochrome SVG icons with the
-/// given color. Best for bundled icon sets (Material, Lucide). For multi-color system
-/// icons, prefer [`custom_icon_to_image_source()`].
-pub fn custom_icon_to_image_source_colored(
-    provider: &(impl IconProvider + ?Sized),
-    icon_set: native_theme::IconSet,
-    color: Hsla,
-) -> Option<ImageSource> {
-    let data = load_custom_icon(provider, icon_set)?;
-    Some(to_image_source_colored(&data, color))
+    to_image_source(&data, color, size)
 }
 
 /// Convert all frames of an [`AnimatedIcon::Frames`] to gpui [`ImageSource`]s.
@@ -792,18 +791,30 @@ pub fn custom_icon_to_image_source_colored(
 /// # Examples
 ///
 /// ```ignore
-/// use native_theme_gpui::icons::animated_frames_to_image_sources;
+/// use native_theme_gpui::icons::{animated_frames_to_image_sources, AnimatedImageSources};
 ///
 /// let anim = native_theme::loading_indicator();
-/// if let Some(sources) = animated_frames_to_image_sources(&anim) {
-///     // Cache `sources`, then on each timer tick:
+/// if let Some(AnimatedImageSources { sources, frame_duration_ms }) =
+///     animated_frames_to_image_sources(&anim)
+/// {
+///     // Cache `sources`, then on each timer tick (every `frame_duration_ms` ms):
 ///     // frame_index = (frame_index + 1) % sources.len();
 ///     // gpui::img(sources[frame_index].clone())
 /// }
 /// ```
-pub fn animated_frames_to_image_sources(anim: &AnimatedIcon) -> Option<Vec<ImageSource>> {
+pub fn animated_frames_to_image_sources(anim: &AnimatedIcon) -> Option<AnimatedImageSources> {
     match anim {
-        AnimatedIcon::Frames { frames, .. } => Some(frames.iter().map(to_image_source).collect()),
+        AnimatedIcon::Frames {
+            frames,
+            frame_duration_ms,
+        } => {
+            let sources: Vec<ImageSource> =
+                frames.iter().filter_map(|f| to_image_source(f, None, None)).collect();
+            Some(AnimatedImageSources {
+                sources,
+                frame_duration_ms: *frame_duration_ms,
+            })
+        }
         _ => None,
     }
 }
@@ -847,32 +858,38 @@ pub fn with_spin_animation(
 
 /// Rasterize SVG bytes and return as a BMP-backed [`ImageSource`].
 ///
+/// Returns `None` if rasterization fails (corrupt SVG, empty data).
+///
 /// Works around a gpui bug where `ImageFormat::Svg` in `Image::to_image_data`
 /// skips the RGBA→BGRA pixel conversion that all other formats perform,
 /// causing red and blue channels to be swapped.
-fn svg_to_bmp_source(svg_bytes: &[u8]) -> ImageSource {
-    if let Ok(IconData::Rgba {
+fn svg_to_bmp_source(svg_bytes: &[u8], size: u32) -> Option<ImageSource> {
+    let Ok(IconData::Rgba {
         width,
         height,
         data,
-    }) = native_theme::rasterize::rasterize_svg(svg_bytes, SVG_RASTERIZE_SIZE)
-    {
-        let bmp = encode_rgba_as_bmp(width, height, &data);
-        let image = Image::from_bytes(ImageFormat::Bmp, bmp);
-        ImageSource::Image(Arc::new(image))
-    } else {
-        // Rasterization failed — return empty image
-        let image = Image::from_bytes(ImageFormat::Bmp, Vec::new());
-        ImageSource::Image(Arc::new(image))
-    }
+    }) = native_theme::rasterize::rasterize_svg(svg_bytes, size)
+    else {
+        return None;
+    };
+    let bmp = encode_rgba_as_bmp(width, height, &data);
+    let image = Image::from_bytes(ImageFormat::Bmp, bmp);
+    Some(ImageSource::Image(Arc::new(image)))
 }
 
 /// Rewrite SVG bytes to use the given color for strokes and fills.
 ///
-/// - Replaces all occurrences of `currentColor` with the hex color.
-/// - If the SVG has no `fill=` attribute in its root `<svg>` tag and didn't
-///   contain `currentColor`, injects `fill="<hex>"` so that paths with
-///   implicit black fill use the theme color instead.
+/// Handles three SVG color patterns (in order):
+/// 1. **`currentColor`** — replaced with the hex color (Lucide-style SVGs).
+/// 2. **Explicit black fills** — `fill="black"`, `fill="#000000"`, `fill="#000"`
+///    are replaced with the hex color (third-party SVGs with hardcoded black).
+/// 3. **Implicit black** — if the root `<svg>` tag has no `fill=` attribute,
+///    injects `fill="<hex>"` (Material-style SVGs).
+///
+/// Not handled: `stroke="black"`, CSS `style="fill:black"`, `fill="rgb(0,0,0)"`,
+/// or explicit black on child elements when the root tag has a different fill.
+/// This function is designed for monochrome icon sets; multi-color SVGs should
+/// not be colorized.
 fn colorize_svg(svg_bytes: &[u8], color: Hsla) -> Vec<u8> {
     let rgba: gpui::Rgba = color.into();
     let r = (rgba.r.clamp(0.0, 1.0) * 255.0).round() as u8;
@@ -882,18 +899,27 @@ fn colorize_svg(svg_bytes: &[u8], color: Hsla) -> Vec<u8> {
 
     let svg_str = String::from_utf8_lossy(svg_bytes);
 
-    // Replace currentColor (handles Lucide-style SVGs)
+    // 1. Replace currentColor (handles Lucide-style SVGs)
     if svg_str.contains("currentColor") {
         return svg_str.replace("currentColor", &hex).into_bytes();
     }
 
-    // No currentColor found — inject fill into the root <svg> tag
+    // 2. Replace explicit black fills (handles third-party SVGs)
+    let fill_hex = format!("fill=\"{}\"", hex);
+    let replaced = svg_str
+        .replace("fill=\"black\"", &fill_hex)
+        .replace("fill=\"#000000\"", &fill_hex)
+        .replace("fill=\"#000\"", &fill_hex);
+    if replaced != svg_str {
+        return replaced.into_bytes();
+    }
+
+    // 3. No currentColor or explicit black — inject fill into root <svg> tag
     // (handles Material-style SVGs with implicit black fill)
     if let Some(pos) = svg_str.find("<svg")
         && let Some(close) = svg_str[pos..].find('>')
     {
         let tag_end = pos + close;
-        // Check if root <svg> already has a fill attribute
         let tag = &svg_str[pos..tag_end];
         if !tag.contains("fill=") {
             let mut result = String::with_capacity(svg_str.len() + 20);
@@ -904,7 +930,7 @@ fn colorize_svg(svg_bytes: &[u8], color: Hsla) -> Vec<u8> {
         }
     }
 
-    // SVG already has explicit fill and no currentColor — return as-is
+    // SVG already has non-black fill and no currentColor — return as-is
     svg_bytes.to_vec()
 }
 
@@ -973,6 +999,115 @@ fn encode_rgba_as_bmp(width: u32, height: u32, rgba: &[u8]) -> Vec<u8> {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+
+    pub(super) const ALL_ICON_NAMES: &[IconName] = &[
+        IconName::ALargeSmall,
+        IconName::ArrowDown,
+        IconName::ArrowLeft,
+        IconName::ArrowRight,
+        IconName::ArrowUp,
+        IconName::Asterisk,
+        IconName::Bell,
+        IconName::BookOpen,
+        IconName::Bot,
+        IconName::Building2,
+        IconName::Calendar,
+        IconName::CaseSensitive,
+        IconName::ChartPie,
+        IconName::Check,
+        IconName::ChevronDown,
+        IconName::ChevronLeft,
+        IconName::ChevronRight,
+        IconName::ChevronsUpDown,
+        IconName::ChevronUp,
+        IconName::CircleCheck,
+        IconName::CircleUser,
+        IconName::CircleX,
+        IconName::Close,
+        IconName::Copy,
+        IconName::Dash,
+        IconName::Delete,
+        IconName::Ellipsis,
+        IconName::EllipsisVertical,
+        IconName::ExternalLink,
+        IconName::Eye,
+        IconName::EyeOff,
+        IconName::File,
+        IconName::Folder,
+        IconName::FolderClosed,
+        IconName::FolderOpen,
+        IconName::Frame,
+        IconName::GalleryVerticalEnd,
+        IconName::GitHub,
+        IconName::Globe,
+        IconName::Heart,
+        IconName::HeartOff,
+        IconName::Inbox,
+        IconName::Info,
+        IconName::Inspector,
+        IconName::LayoutDashboard,
+        IconName::Loader,
+        IconName::LoaderCircle,
+        IconName::Map,
+        IconName::Maximize,
+        IconName::Menu,
+        IconName::Minimize,
+        IconName::Minus,
+        IconName::Moon,
+        IconName::Palette,
+        IconName::PanelBottom,
+        IconName::PanelBottomOpen,
+        IconName::PanelLeft,
+        IconName::PanelLeftClose,
+        IconName::PanelLeftOpen,
+        IconName::PanelRight,
+        IconName::PanelRightClose,
+        IconName::PanelRightOpen,
+        IconName::Plus,
+        IconName::Redo,
+        IconName::Redo2,
+        IconName::Replace,
+        IconName::ResizeCorner,
+        IconName::Search,
+        IconName::Settings,
+        IconName::Settings2,
+        IconName::SortAscending,
+        IconName::SortDescending,
+        IconName::SquareTerminal,
+        IconName::Star,
+        IconName::StarOff,
+        IconName::Sun,
+        IconName::ThumbsDown,
+        IconName::ThumbsUp,
+        IconName::TriangleAlert,
+        IconName::Undo,
+        IconName::Undo2,
+        IconName::User,
+        IconName::WindowClose,
+        IconName::WindowMaximize,
+        IconName::WindowMinimize,
+        IconName::WindowRestore,
+    ];
+
+    #[test]
+    fn all_icons_have_lucide_mapping() {
+        for icon in ALL_ICON_NAMES {
+            assert!(
+                lucide_name_for_gpui_icon(icon.clone()).is_some(),
+                "Missing Lucide mapping for an IconName variant",
+            );
+        }
+    }
+
+    #[test]
+    fn all_icons_have_material_mapping() {
+        for icon in ALL_ICON_NAMES {
+            assert!(
+                material_name_for_gpui_icon(icon.clone()).is_some(),
+                "Missing Material mapping for an IconName variant",
+            );
+        }
+    }
 
     // --- icon_name tests ---
 
@@ -1124,7 +1259,7 @@ mod tests {
         let svg = IconData::Svg(
             b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>".to_vec(),
         );
-        let source = to_image_source(&svg);
+        let source = to_image_source(&svg, None, None).expect("valid SVG should convert");
         // SVGs are rasterized to BMP to work around gpui's RGBA/BGRA bug
         match source {
             ImageSource::Image(arc) => {
@@ -1147,7 +1282,7 @@ mod tests {
                 255, 255, 0, 255, // yellow
             ],
         };
-        let source = to_image_source(&rgba);
+        let source = to_image_source(&rgba, None, None).expect("RGBA should convert");
         match source {
             ImageSource::Image(arc) => {
                 assert_eq!(arc.format, ImageFormat::Bmp);
@@ -1156,6 +1291,25 @@ mod tests {
             }
             _ => panic!("Expected ImageSource::Image for RGBA data"),
         }
+    }
+
+    #[test]
+    fn to_image_source_with_color() {
+        let svg = IconData::Svg(
+            b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M0 0' stroke='currentColor'/></svg>".to_vec(),
+        );
+        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+        let result = to_image_source(&svg, Some(color), None);
+        assert!(result.is_some(), "colorized SVG should convert");
+    }
+
+    #[test]
+    fn to_image_source_with_custom_size() {
+        let svg = IconData::Svg(
+            b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>".to_vec(),
+        );
+        let result = to_image_source(&svg, None, Some(32));
+        assert!(result.is_some(), "custom size SVG should convert");
     }
 
     // --- BMP encoding tests ---
@@ -1187,6 +1341,82 @@ mod tests {
         assert_eq!(bmp[pixel_offset + 2], 0xAA); // R
         assert_eq!(bmp[pixel_offset + 3], 0xDD); // A
     }
+    // --- colorize_svg tests ---
+
+    #[test]
+    fn colorize_svg_replaces_fill_black() {
+        let svg = b"<svg><path fill=\"black\" d=\"M0 0h24v24H0z\"/></svg>";
+        let color = gpui::hsla(0.6, 0.7, 0.5, 1.0); // a blue-ish color
+        let result = colorize_svg(svg, color);
+        let result_str = String::from_utf8(result).unwrap();
+        assert!(
+            !result_str.contains("fill=\"black\""),
+            "fill=\"black\" should be replaced, got: {}",
+            result_str
+        );
+        assert!(
+            result_str.contains("fill=\"#"),
+            "should contain hex fill, got: {}",
+            result_str
+        );
+    }
+
+    #[test]
+    fn colorize_svg_replaces_fill_hex_black() {
+        let svg = b"<svg><rect fill=\"#000000\" width=\"24\" height=\"24\"/></svg>";
+        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0); // red
+        let result = colorize_svg(svg, color);
+        let result_str = String::from_utf8(result).unwrap();
+        assert!(
+            !result_str.contains("#000000"),
+            "fill=\"#000000\" should be replaced, got: {}",
+            result_str
+        );
+    }
+
+    #[test]
+    fn colorize_svg_replaces_fill_short_hex_black() {
+        let svg = b"<svg><rect fill=\"#000\" width=\"24\" height=\"24\"/></svg>";
+        let color = gpui::hsla(0.3, 0.8, 0.4, 1.0); // green
+        let result = colorize_svg(svg, color);
+        let result_str = String::from_utf8(result).unwrap();
+        assert!(
+            !result_str.contains("fill=\"#000\""),
+            "fill=\"#000\" should be replaced, got: {}",
+            result_str
+        );
+    }
+
+    #[test]
+    fn colorize_svg_current_color_still_works() {
+        let svg = b"<svg><path stroke=\"currentColor\" d=\"M0 0\"/></svg>";
+        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+        let result = colorize_svg(svg, color);
+        let result_str = String::from_utf8(result).unwrap();
+        assert!(
+            !result_str.contains("currentColor"),
+            "currentColor should be replaced"
+        );
+        assert!(
+            result_str.contains('#'),
+            "should contain hex color"
+        );
+    }
+
+    #[test]
+    fn colorize_svg_implicit_black_still_works() {
+        // SVG with no fill attribute at all (Material-style)
+        let svg = b"<svg xmlns=\"http://www.w3.org/2000/svg\"><path d=\"M0 0\"/></svg>";
+        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+        let result = colorize_svg(svg, color);
+        let result_str = String::from_utf8(result).unwrap();
+        assert!(
+            result_str.contains("fill=\"#"),
+            "should inject fill into root svg tag, got: {}",
+            result_str
+        );
+    }
+
     // --- custom_icon tests ---
 
     // Test helper: minimal IconProvider that returns a bundled SVG
@@ -1217,32 +1447,40 @@ mod tests {
 
     #[test]
     fn custom_icon_to_image_source_with_svg_provider_returns_some() {
-        let result = custom_icon_to_image_source(&TestCustomIcon, native_theme::IconSet::Material);
+        let result =
+            custom_icon_to_image_source(&TestCustomIcon, native_theme::IconSet::Material, None, None);
         assert!(result.is_some());
     }
 
     #[test]
     fn custom_icon_to_image_source_with_empty_provider_returns_none() {
-        let result = custom_icon_to_image_source(&EmptyProvider, native_theme::IconSet::Material);
+        let result =
+            custom_icon_to_image_source(&EmptyProvider, native_theme::IconSet::Material, None, None);
         assert!(result.is_none());
     }
 
     #[test]
-    fn custom_icon_to_image_source_colored_returns_some() {
+    fn custom_icon_to_image_source_with_color() {
         let color = Hsla {
             h: 0.0,
             s: 1.0,
             l: 0.5,
             a: 1.0,
         };
-        let result = custom_icon_to_image_source_colored(&TestCustomIcon, native_theme::IconSet::Material, color);
+        let result = custom_icon_to_image_source(
+            &TestCustomIcon,
+            native_theme::IconSet::Material,
+            Some(color),
+            None,
+        );
         assert!(result.is_some());
     }
 
     #[test]
     fn custom_icon_to_image_source_accepts_dyn_provider() {
         let boxed: Box<dyn native_theme::IconProvider> = Box::new(TestCustomIcon);
-        let result = custom_icon_to_image_source(&*boxed, native_theme::IconSet::Material);
+        let result =
+            custom_icon_to_image_source(&*boxed, native_theme::IconSet::Material, None, None);
         assert!(result.is_some());
     }
 
@@ -1259,8 +1497,9 @@ mod tests {
             frame_duration_ms: 80,
         };
         let result = animated_frames_to_image_sources(&anim);
-        assert!(result.is_some());
-        assert_eq!(result.unwrap().len(), 3);
+        let ais = result.expect("Frames variant should return Some");
+        assert_eq!(ais.sources.len(), 3);
+        assert_eq!(ais.frame_duration_ms, 80);
     }
 
     #[test]
@@ -1283,8 +1522,9 @@ mod tests {
             frame_duration_ms: 80,
         };
         let result = animated_frames_to_image_sources(&anim);
-        assert!(result.is_some());
-        assert_eq!(result.unwrap().len(), 0);
+        let ais = result.expect("Frames variant should return Some even if empty");
+        assert_eq!(ais.sources.len(), 0);
+        assert_eq!(ais.frame_duration_ms, 80);
     }
 
     #[test]
@@ -1301,119 +1541,32 @@ mod tests {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod freedesktop_mapping_tests {
     use super::*;
+    use super::tests::ALL_ICON_NAMES;
     use native_theme::LinuxDesktop;
 
     #[test]
     fn all_86_gpui_icons_have_mapping_on_kde() {
-        let all_names = [
-            "ALargeSmall",
-            "ArrowDown",
-            "ArrowLeft",
-            "ArrowRight",
-            "ArrowUp",
-            "Asterisk",
-            "Bell",
-            "BookOpen",
-            "Bot",
-            "Building2",
-            "Calendar",
-            "CaseSensitive",
-            "ChartPie",
-            "Check",
-            "ChevronDown",
-            "ChevronLeft",
-            "ChevronRight",
-            "ChevronsUpDown",
-            "ChevronUp",
-            "CircleCheck",
-            "CircleUser",
-            "CircleX",
-            "Close",
-            "Copy",
-            "Dash",
-            "Delete",
-            "Ellipsis",
-            "EllipsisVertical",
-            "ExternalLink",
-            "Eye",
-            "EyeOff",
-            "File",
-            "Folder",
-            "FolderClosed",
-            "FolderOpen",
-            "Frame",
-            "GalleryVerticalEnd",
-            "GitHub",
-            "Globe",
-            "Heart",
-            "HeartOff",
-            "Inbox",
-            "Info",
-            "Inspector",
-            "LayoutDashboard",
-            "Loader",
-            "LoaderCircle",
-            "Map",
-            "Maximize",
-            "Menu",
-            "Minimize",
-            "Minus",
-            "Moon",
-            "Palette",
-            "PanelBottom",
-            "PanelBottomOpen",
-            "PanelLeft",
-            "PanelLeftClose",
-            "PanelLeftOpen",
-            "PanelRight",
-            "PanelRightClose",
-            "PanelRightOpen",
-            "Plus",
-            "Redo",
-            "Redo2",
-            "Replace",
-            "ResizeCorner",
-            "Search",
-            "Settings",
-            "Settings2",
-            "SortAscending",
-            "SortDescending",
-            "SquareTerminal",
-            "Star",
-            "StarOff",
-            "Sun",
-            "ThumbsDown",
-            "ThumbsUp",
-            "TriangleAlert",
-            "Undo",
-            "Undo2",
-            "User",
-            "WindowClose",
-            "WindowMaximize",
-            "WindowMinimize",
-            "WindowRestore",
-        ];
-        let mut missing = Vec::new();
-        for name in &all_names {
-            if freedesktop_name_for_gpui_icon(name, LinuxDesktop::Kde).is_none() {
-                missing.push(*name);
+        let mut missing_count = 0;
+        for name in ALL_ICON_NAMES {
+            if freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Kde).is_none() {
+                missing_count += 1;
             }
         }
         assert!(
-            missing.is_empty(),
-            "Missing KDE freedesktop mappings for: {:?}",
-            missing,
+            missing_count == 0,
+            "Missing KDE freedesktop mappings for {} icon(s)",
+            missing_count,
         );
     }
 
     #[test]
     fn eye_differs_by_de() {
         assert_eq!(
-            freedesktop_name_for_gpui_icon("Eye", LinuxDesktop::Kde),
+            freedesktop_name_for_gpui_icon(IconName::Eye, LinuxDesktop::Kde),
             Some("view-visible"),
         );
         assert_eq!(
-            freedesktop_name_for_gpui_icon("Eye", LinuxDesktop::Gnome),
+            freedesktop_name_for_gpui_icon(IconName::Eye, LinuxDesktop::Gnome),
             Some("view-reveal"),
         );
     }
@@ -1422,116 +1575,23 @@ mod freedesktop_mapping_tests {
     fn freedesktop_standard_ignores_de() {
         // edit-copy is freedesktop standard — same for all DEs
         assert_eq!(
-            freedesktop_name_for_gpui_icon("Copy", LinuxDesktop::Kde),
-            freedesktop_name_for_gpui_icon("Copy", LinuxDesktop::Gnome),
+            freedesktop_name_for_gpui_icon(IconName::Copy, LinuxDesktop::Kde),
+            freedesktop_name_for_gpui_icon(IconName::Copy, LinuxDesktop::Gnome),
         );
     }
 
     #[test]
-    fn unknown_name_returns_none() {
-        assert!(freedesktop_name_for_gpui_icon("NotARealIcon", LinuxDesktop::Kde).is_none());
-    }
-
-    #[test]
     fn all_86_gpui_icons_have_mapping_on_gnome() {
-        let all_names = [
-            "ALargeSmall",
-            "ArrowDown",
-            "ArrowLeft",
-            "ArrowRight",
-            "ArrowUp",
-            "Asterisk",
-            "Bell",
-            "BookOpen",
-            "Bot",
-            "Building2",
-            "Calendar",
-            "CaseSensitive",
-            "ChartPie",
-            "Check",
-            "ChevronDown",
-            "ChevronLeft",
-            "ChevronRight",
-            "ChevronsUpDown",
-            "ChevronUp",
-            "CircleCheck",
-            "CircleUser",
-            "CircleX",
-            "Close",
-            "Copy",
-            "Dash",
-            "Delete",
-            "Ellipsis",
-            "EllipsisVertical",
-            "ExternalLink",
-            "Eye",
-            "EyeOff",
-            "File",
-            "Folder",
-            "FolderClosed",
-            "FolderOpen",
-            "Frame",
-            "GalleryVerticalEnd",
-            "GitHub",
-            "Globe",
-            "Heart",
-            "HeartOff",
-            "Inbox",
-            "Info",
-            "Inspector",
-            "LayoutDashboard",
-            "Loader",
-            "LoaderCircle",
-            "Map",
-            "Maximize",
-            "Menu",
-            "Minimize",
-            "Minus",
-            "Moon",
-            "Palette",
-            "PanelBottom",
-            "PanelBottomOpen",
-            "PanelLeft",
-            "PanelLeftClose",
-            "PanelLeftOpen",
-            "PanelRight",
-            "PanelRightClose",
-            "PanelRightOpen",
-            "Plus",
-            "Redo",
-            "Redo2",
-            "Replace",
-            "ResizeCorner",
-            "Search",
-            "Settings",
-            "Settings2",
-            "SortAscending",
-            "SortDescending",
-            "SquareTerminal",
-            "Star",
-            "StarOff",
-            "Sun",
-            "ThumbsDown",
-            "ThumbsUp",
-            "TriangleAlert",
-            "Undo",
-            "Undo2",
-            "User",
-            "WindowClose",
-            "WindowMaximize",
-            "WindowMinimize",
-            "WindowRestore",
-        ];
-        let mut missing = Vec::new();
-        for name in &all_names {
-            if freedesktop_name_for_gpui_icon(name, LinuxDesktop::Gnome).is_none() {
-                missing.push(*name);
+        let mut missing_count = 0;
+        for name in ALL_ICON_NAMES {
+            if freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Gnome).is_none() {
+                missing_count += 1;
             }
         }
         assert!(
-            missing.is_empty(),
-            "Missing GNOME freedesktop mappings for: {:?}",
-            missing,
+            missing_count == 0,
+            "Missing GNOME freedesktop mappings for {} icon(s)",
+            missing_count,
         );
     }
 
@@ -1539,11 +1599,11 @@ mod freedesktop_mapping_tests {
     fn xfce_uses_gnome_names() {
         // XFCE is GTK-based and should use GNOME naming convention
         assert_eq!(
-            freedesktop_name_for_gpui_icon("Eye", LinuxDesktop::Xfce),
+            freedesktop_name_for_gpui_icon(IconName::Eye, LinuxDesktop::Xfce),
             Some("view-reveal"),
         );
         assert_eq!(
-            freedesktop_name_for_gpui_icon("Bell", LinuxDesktop::Xfce),
+            freedesktop_name_for_gpui_icon(IconName::Bell, LinuxDesktop::Xfce),
             Some("alarm"),
         );
     }
@@ -1557,101 +1617,12 @@ mod freedesktop_mapping_tests {
             return;
         }
 
-        let all_names = [
-            "ALargeSmall",
-            "ArrowDown",
-            "ArrowLeft",
-            "ArrowRight",
-            "ArrowUp",
-            "Asterisk",
-            "Bell",
-            "BookOpen",
-            "Bot",
-            "Building2",
-            "Calendar",
-            "CaseSensitive",
-            "ChartPie",
-            "Check",
-            "ChevronDown",
-            "ChevronLeft",
-            "ChevronRight",
-            "ChevronsUpDown",
-            "ChevronUp",
-            "CircleCheck",
-            "CircleUser",
-            "CircleX",
-            "Close",
-            "Copy",
-            "Dash",
-            "Delete",
-            "Ellipsis",
-            "EllipsisVertical",
-            "ExternalLink",
-            "Eye",
-            "EyeOff",
-            "File",
-            "Folder",
-            "FolderClosed",
-            "FolderOpen",
-            "Frame",
-            "GalleryVerticalEnd",
-            "GitHub",
-            "Globe",
-            "Heart",
-            "HeartOff",
-            "Inbox",
-            "Info",
-            "Inspector",
-            "LayoutDashboard",
-            "Loader",
-            "LoaderCircle",
-            "Map",
-            "Maximize",
-            "Menu",
-            "Minimize",
-            "Minus",
-            "Moon",
-            "Palette",
-            "PanelBottom",
-            "PanelBottomOpen",
-            "PanelLeft",
-            "PanelLeftClose",
-            "PanelLeftOpen",
-            "PanelRight",
-            "PanelRightClose",
-            "PanelRightOpen",
-            "Plus",
-            "Redo",
-            "Redo2",
-            "Replace",
-            "ResizeCorner",
-            "Search",
-            "Settings",
-            "Settings2",
-            "SortAscending",
-            "SortDescending",
-            "SquareTerminal",
-            "Star",
-            "StarOff",
-            "Sun",
-            "ThumbsDown",
-            "ThumbsUp",
-            "TriangleAlert",
-            "Undo",
-            "Undo2",
-            "User",
-            "WindowClose",
-            "WindowMaximize",
-            "WindowMinimize",
-            "WindowRestore",
-        ];
-
         let mut missing = Vec::new();
-        for name in &all_names {
-            let fd_name = freedesktop_name_for_gpui_icon(name, LinuxDesktop::Kde)
-                .unwrap_or_else(|| panic!("{} has no KDE mapping", name));
-            if native_theme::load_freedesktop_icon_by_name(fd_name, &theme).is_none() {
-                missing.push(format!("{} -> {}", name, fd_name));
+        for name in ALL_ICON_NAMES {
+            let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Kde)
+                .expect("icon has no KDE mapping");
+            if native_theme::load_freedesktop_icon_by_name(fd_name, &theme, 24).is_none() {
+                missing.push(format!("{} (not found)", fd_name));
             }
         }
         assert!(
@@ -1665,101 +1636,12 @@ mod freedesktop_mapping_tests {
     fn gnome_names_resolve_in_adwaita() {
         // Verify GNOME mappings resolve against installed Adwaita theme.
         // Only runs when Adwaita is installed (it usually is on any Linux).
-        let all_names = [
-            "ALargeSmall",
-            "ArrowDown",
-            "ArrowLeft",
-            "ArrowRight",
-            "ArrowUp",
-            "Asterisk",
-            "Bell",
-            "BookOpen",
-            "Bot",
-            "Building2",
-            "Calendar",
-            "CaseSensitive",
-            "ChartPie",
-            "Check",
-            "ChevronDown",
-            "ChevronLeft",
-            "ChevronRight",
-            "ChevronsUpDown",
-            "ChevronUp",
-            "CircleCheck",
-            "CircleUser",
-            "CircleX",
-            "Close",
-            "Copy",
-            "Dash",
-            "Delete",
-            "Ellipsis",
-            "EllipsisVertical",
-            "ExternalLink",
-            "Eye",
-            "EyeOff",
-            "File",
-            "Folder",
-            "FolderClosed",
-            "FolderOpen",
-            "Frame",
-            "GalleryVerticalEnd",
-            "GitHub",
-            "Globe",
-            "Heart",
-            "HeartOff",
-            "Inbox",
-            "Info",
-            "Inspector",
-            "LayoutDashboard",
-            "Loader",
-            "LoaderCircle",
-            "Map",
-            "Maximize",
-            "Menu",
-            "Minimize",
-            "Minus",
-            "Moon",
-            "Palette",
-            "PanelBottom",
-            "PanelBottomOpen",
-            "PanelLeft",
-            "PanelLeftClose",
-            "PanelLeftOpen",
-            "PanelRight",
-            "PanelRightClose",
-            "PanelRightOpen",
-            "Plus",
-            "Redo",
-            "Redo2",
-            "Replace",
-            "ResizeCorner",
-            "Search",
-            "Settings",
-            "Settings2",
-            "SortAscending",
-            "SortDescending",
-            "SquareTerminal",
-            "Star",
-            "StarOff",
-            "Sun",
-            "ThumbsDown",
-            "ThumbsUp",
-            "TriangleAlert",
-            "Undo",
-            "Undo2",
-            "User",
-            "WindowClose",
-            "WindowMaximize",
-            "WindowMinimize",
-            "WindowRestore",
-        ];
-
         let mut missing = Vec::new();
-        for name in &all_names {
-            if let Some(fd_name) = freedesktop_name_for_gpui_icon(name, LinuxDesktop::Gnome) {
+        for name in ALL_ICON_NAMES {
+            if let Some(fd_name) = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Gnome) {
                 // Has a GNOME mapping — verify it resolves in Adwaita
-                if native_theme::load_freedesktop_icon_by_name(fd_name, "Adwaita").is_none() {
-                    missing.push(format!("{} -> {} (not found)", name, fd_name));
+                if native_theme::load_freedesktop_icon_by_name(fd_name, "Adwaita", 24).is_none() {
+                    missing.push(format!("{} (not found)", fd_name));
                 }
             }
             // None means "fall back to bundled" — that's intentional, not a failure

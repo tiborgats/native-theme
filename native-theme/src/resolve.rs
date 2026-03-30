@@ -159,6 +159,13 @@ impl ThemeVariant {
                     .to_string(),
             );
         }
+
+        // Phase 6: icon_theme fallback — fill from system icon theme if not set
+        if self.icon_theme.is_none() {
+            self.icon_theme = Some(
+                crate::model::icons::system_icon_theme().to_string(),
+            );
+        }
     }
 
     /// Resolve all inheritance rules and validate in one step.
@@ -1225,9 +1232,10 @@ impl ThemeVariant {
         let link_hover_bg = require(&self.link.hover_bg, "link.hover_bg", &mut missing);
         let link_underline = require(&self.link.underline, "link.underline", &mut missing);
 
-        // --- icon_set ---
+        // --- icon_set / icon_theme ---
 
         let icon_set = require(&self.icon_set, "icon_set", &mut missing);
+        let icon_theme = require(&self.icon_theme, "icon_theme", &mut missing);
 
         // --- check for missing fields ---
 
@@ -1506,6 +1514,7 @@ impl ThemeVariant {
                 underline: link_underline,
             },
             icon_set,
+            icon_theme,
         })
     }
 }
@@ -1905,8 +1914,9 @@ mod tests {
         v.defaults.selection_inactive = Some(Rgba::rgb(0, 120, 215));
         v.defaults.focus_ring_color = Some(Rgba::rgb(0, 120, 215));
 
-        // icon_set
+        // icon_set / icon_theme
         v.icon_set = Some("freedesktop".into());
+        v.icon_theme = Some("breeze".into());
 
         // window
         v.window.background = Some(c);

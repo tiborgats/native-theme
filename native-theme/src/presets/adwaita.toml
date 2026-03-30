@@ -6,6 +6,7 @@ name = "Adwaita"
 
 [light]
 icon_set = "freedesktop"
+icon_theme = "Adwaita"
 
 [light.defaults]
 accent = "#3584e4"
@@ -207,6 +208,7 @@ content_padding = 16.0
 
 [dark]
 icon_set = "freedesktop"
+icon_theme = "Adwaita"
 
 [dark.defaults]
 accent = "#3584e4"

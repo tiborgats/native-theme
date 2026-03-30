@@ -6,6 +6,7 @@ name = "iOS"
 
 [light]
 icon_set = "sf-symbols"
+icon_theme = "sf-symbols"
 
 [light.defaults]
 accent = "#007aff"
@@ -203,6 +204,7 @@ content_padding = 16.0
 
 [dark]
 icon_set = "sf-symbols"
+icon_theme = "sf-symbols"
 
 [dark.defaults]
 accent = "#0a84ff"

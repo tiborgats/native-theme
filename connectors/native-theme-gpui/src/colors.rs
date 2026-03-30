@@ -6,7 +6,7 @@
 //! gpui-component's own `apply_config` derivation.
 
 use gpui::Hsla;
-use gpui_component::{Colorize, theme::ThemeColor};
+use gpui_component::theme::ThemeColor;
 use native_theme::ResolvedThemeVariant;
 
 use crate::derive::{active_color, hover_color};
@@ -19,156 +19,32 @@ fn rgba_to_hsla(rgba: native_theme::Rgba) -> Hsla {
 }
 
 /// Returns true if the background color indicates a dark theme (lightness < 0.5).
+#[cfg(test)]
 fn is_dark_background(bg: Hsla) -> bool {
     bg.l < 0.5
 }
 
-/// Build a complete [`ThemeColor`] from a [`ResolvedThemeVariant`].
+/// Pre-converted HSLA colors extracted from a [`ResolvedThemeVariant`].
 ///
-/// Maps all 108 fields: ~40 directly from ResolvedThemeVariant per-widget structs,
-/// the rest derived via shade generation following gpui-component's own
-/// fallback logic.
-pub fn to_theme_color(resolved: &ResolvedThemeVariant) -> ThemeColor {
-    let d = &resolved.defaults;
-
-    // -- Resolve core colors from defaults --
-    let bg = rgba_to_hsla(d.background);
-    let fg = rgba_to_hsla(d.foreground);
-    let is_dark = is_dark_background(bg);
-    let accent = rgba_to_hsla(d.accent);
-    let surface = rgba_to_hsla(d.surface);
-    let border = rgba_to_hsla(d.border);
-    let muted = rgba_to_hsla(d.muted);
-
-    // -- Semantic colors from defaults and per-widget structs --
-    let primary = rgba_to_hsla(resolved.button.primary_bg);
-    let primary_fg = rgba_to_hsla(resolved.button.primary_fg);
-    let secondary = rgba_to_hsla(resolved.button.background);
-    let secondary_fg = rgba_to_hsla(resolved.button.foreground);
-    let danger = rgba_to_hsla(d.danger);
-    let danger_fg = rgba_to_hsla(d.danger_foreground);
-    let success = rgba_to_hsla(d.success);
-    let success_fg = rgba_to_hsla(d.success_foreground);
-    let warning = rgba_to_hsla(d.warning);
-    let warning_fg = rgba_to_hsla(d.warning_foreground);
-    let info = rgba_to_hsla(d.info);
-    let info_fg = rgba_to_hsla(d.info_foreground);
-    let selection = rgba_to_hsla(d.selection);
-    let link = rgba_to_hsla(d.link);
-    let ring = rgba_to_hsla(d.focus_ring_color);
-    let input = rgba_to_hsla(resolved.input.border);
-
-    let sidebar = rgba_to_hsla(resolved.sidebar.background);
-    let sidebar_fg = rgba_to_hsla(resolved.sidebar.foreground);
-    let popover = rgba_to_hsla(resolved.popover.background);
-    let popover_fg = rgba_to_hsla(resolved.popover.foreground);
-    let muted_fg = rgba_to_hsla(d.muted).blend(fg.opacity(0.7));
-    let alternate_row = rgba_to_hsla(resolved.list.alternate_row);
-
-    // -- Build ThemeColor from defaults and override everything --
-    let mut tc = ThemeColor::default();
-
-    // Core
-    assign_core(
-        &mut tc, bg, fg, accent, border, muted, muted_fg, input, ring, selection, link,
-    );
-
-    // Primary/Secondary
-    assign_primary(&mut tc, primary, primary_fg, bg, is_dark);
-    assign_secondary(&mut tc, secondary, secondary_fg, bg, is_dark);
-
-    // Status colors (danger, success, warning, info)
-    assign_status(
-        &mut tc, danger, danger_fg, success, success_fg, warning, warning_fg, info, info_fg, bg,
-        is_dark, primary_fg,
-    );
-
-    // List/table
-    assign_list_table(
-        &mut tc,
-        bg,
-        alternate_row,
-        primary,
-        secondary,
-        border,
-        muted_fg,
-    );
-
-    // Tab/sidebar
-    assign_tab_sidebar(
-        &mut tc, resolved, bg, fg, surface, secondary, sidebar, sidebar_fg, accent, primary,
-        primary_fg, border,
-    );
-
-    // Chart colors
-    assign_charts(&mut tc, accent);
-
-    // Misc (overlay, scrollbar, slider, switch, etc.)
-    assign_misc(
-        &mut tc, resolved, bg, fg, accent, muted, primary, primary_fg, secondary, border, surface,
-        is_dark, link, popover, popover_fg,
-    );
-
-    // Base named colors
-    assign_base_colors(&mut tc, danger, success, info, warning, bg);
-
-    tc
-}
-
-// ---------- helper assignment functions ----------
-
-#[allow(clippy::too_many_arguments)]
-fn assign_core(
-    tc: &mut ThemeColor,
+/// Built once in [`to_theme_color()`] and passed by reference to all
+/// assign helper functions, replacing 10-15 parameter signatures.
+///
+/// Some fields (e.g. `surface`) are not currently consumed by any assign
+/// function but are retained for future mapping completeness.
+#[allow(dead_code)]
+struct ResolvedColors {
     bg: Hsla,
     fg: Hsla,
     accent: Hsla,
+    accent_fg: Hsla,
+    surface: Hsla,
     border: Hsla,
     muted: Hsla,
     muted_fg: Hsla,
-    input: Hsla,
-    ring: Hsla,
-    selection: Hsla,
-    link: Hsla,
-) {
-    tc.background = bg;
-    tc.foreground = fg;
-    tc.accent = accent;
-    tc.accent_foreground = fg;
-    tc.border = border;
-    tc.muted = muted;
-    tc.muted_foreground = muted_fg;
-    tc.input = input;
-    tc.ring = ring;
-    tc.selection = selection.alpha(selection.a.min(0.3));
-    tc.link = link;
-    tc.link_hover = link;
-    tc.link_active = link;
-}
-
-fn assign_primary(tc: &mut ThemeColor, primary: Hsla, primary_fg: Hsla, bg: Hsla, is_dark: bool) {
-    tc.primary = primary;
-    tc.primary_foreground = primary_fg;
-    tc.primary_hover = hover_color(primary, bg);
-    tc.primary_active = active_color(primary, is_dark);
-}
-
-fn assign_secondary(
-    tc: &mut ThemeColor,
+    primary: Hsla,
+    primary_fg: Hsla,
     secondary: Hsla,
     secondary_fg: Hsla,
-    bg: Hsla,
-    is_dark: bool,
-) {
-    tc.secondary = secondary;
-    tc.secondary_foreground = secondary_fg;
-    tc.secondary_hover = hover_color(secondary, bg);
-    tc.secondary_active = active_color(secondary, is_dark);
-}
-
-#[allow(clippy::too_many_arguments)]
-fn assign_status(
-    tc: &mut ThemeColor,
     danger: Hsla,
     danger_fg: Hsla,
     success: Hsla,
@@ -177,90 +53,168 @@ fn assign_status(
     warning_fg: Hsla,
     info: Hsla,
     info_fg: Hsla,
-    bg: Hsla,
-    is_dark: bool,
-    _primary_fg: Hsla,
-) {
-    tc.danger = danger;
-    tc.danger_foreground = danger_fg;
-    tc.danger_hover = hover_color(danger, bg);
-    tc.danger_active = active_color(danger, is_dark);
-
-    tc.success = success;
-    tc.success_foreground = success_fg;
-    tc.success_hover = hover_color(success, bg);
-    tc.success_active = active_color(success, is_dark);
-
-    tc.warning = warning;
-    tc.warning_foreground = warning_fg;
-    tc.warning_hover = hover_color(warning, bg);
-    tc.warning_active = active_color(warning, is_dark);
-
-    tc.info = info;
-    tc.info_foreground = info_fg;
-    tc.info_hover = hover_color(info, bg);
-    tc.info_active = active_color(info, is_dark);
-
-    tc.bullish = success;
-    tc.bearish = danger;
+    selection: Hsla,
+    link: Hsla,
+    ring: Hsla,
+    input: Hsla,
+    sidebar: Hsla,
+    sidebar_fg: Hsla,
+    popover: Hsla,
+    popover_fg: Hsla,
+    alternate_row: Hsla,
 }
 
-fn assign_list_table(
-    tc: &mut ThemeColor,
-    bg: Hsla,
-    alternate_row: Hsla,
-    primary: Hsla,
-    secondary: Hsla,
-    border: Hsla,
-    muted_fg: Hsla,
-) {
-    tc.list = bg;
-    tc.list_hover = hover_color(secondary, bg);
-    tc.list_active = bg.blend(primary.opacity(0.1)).alpha(0.2);
-    tc.list_active_border = bg.blend(primary.opacity(0.6));
-    tc.list_even = alternate_row;
-    tc.list_head = bg;
+/// Build a complete [`ThemeColor`] from a [`ResolvedThemeVariant`].
+///
+/// Maps all 108 fields: ~40 directly from ResolvedThemeVariant per-widget structs,
+/// the rest derived via shade generation following gpui-component's own
+/// fallback logic.
+///
+/// The `is_dark` parameter controls both `ThemeMode` (set in [`crate::to_theme`])
+/// and active-state darkening amounts — a single source of truth that prevents
+/// the split-brain bug where `ThemeMode` and color derivation could disagree.
+pub fn to_theme_color(resolved: &ResolvedThemeVariant, is_dark: bool) -> ThemeColor {
+    let d = &resolved.defaults;
+    let fg = rgba_to_hsla(d.foreground);
 
-    tc.table = bg;
+    let c = ResolvedColors {
+        bg: rgba_to_hsla(d.background),
+        fg,
+        accent: rgba_to_hsla(d.accent),
+        accent_fg: rgba_to_hsla(d.accent_foreground),
+        surface: rgba_to_hsla(d.surface),
+        border: rgba_to_hsla(d.border),
+        muted: rgba_to_hsla(d.muted),
+        muted_fg: rgba_to_hsla(d.muted).blend(fg.opacity(0.7)),
+        primary: rgba_to_hsla(resolved.button.primary_bg),
+        primary_fg: rgba_to_hsla(resolved.button.primary_fg),
+        secondary: rgba_to_hsla(resolved.button.background),
+        secondary_fg: rgba_to_hsla(resolved.button.foreground),
+        danger: rgba_to_hsla(d.danger),
+        danger_fg: rgba_to_hsla(d.danger_foreground),
+        success: rgba_to_hsla(d.success),
+        success_fg: rgba_to_hsla(d.success_foreground),
+        warning: rgba_to_hsla(d.warning),
+        warning_fg: rgba_to_hsla(d.warning_foreground),
+        info: rgba_to_hsla(d.info),
+        info_fg: rgba_to_hsla(d.info_foreground),
+        selection: rgba_to_hsla(d.selection),
+        link: rgba_to_hsla(d.link),
+        ring: rgba_to_hsla(d.focus_ring_color),
+        input: rgba_to_hsla(resolved.input.border),
+        sidebar: rgba_to_hsla(resolved.sidebar.background),
+        sidebar_fg: rgba_to_hsla(resolved.sidebar.foreground),
+        popover: rgba_to_hsla(resolved.popover.background),
+        popover_fg: rgba_to_hsla(resolved.popover.foreground),
+        alternate_row: rgba_to_hsla(resolved.list.alternate_row),
+    };
+
+    let mut tc = ThemeColor::default();
+
+    assign_core(&mut tc, &c, is_dark);
+    assign_primary(&mut tc, &c, is_dark);
+    assign_secondary(&mut tc, &c, is_dark);
+    assign_status(&mut tc, &c, is_dark);
+    assign_list_table(&mut tc, &c);
+    assign_tab_sidebar(&mut tc, &c, resolved);
+    assign_charts(&mut tc, &c);
+    assign_misc(&mut tc, &c, resolved, is_dark);
+    assign_base_colors(&mut tc, &c);
+
+    tc
+}
+
+// ---------- helper assignment functions ----------
+
+fn assign_core(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
+    tc.background = c.bg;
+    tc.foreground = c.fg;
+    tc.accent = c.accent;
+    tc.accent_foreground = c.accent_fg;
+    tc.border = c.border;
+    tc.muted = c.muted;
+    tc.muted_foreground = c.muted_fg;
+    tc.input = c.input;
+    tc.ring = c.ring;
+    tc.selection = c.selection;
+    tc.link = c.link;
+    tc.link_hover = hover_color(c.link, c.bg);
+    tc.link_active = active_color(c.link, is_dark);
+}
+
+fn assign_primary(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
+    tc.primary = c.primary;
+    tc.primary_foreground = c.primary_fg;
+    tc.primary_hover = hover_color(c.primary, c.bg);
+    tc.primary_active = active_color(c.primary, is_dark);
+}
+
+fn assign_secondary(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
+    tc.secondary = c.secondary;
+    tc.secondary_foreground = c.secondary_fg;
+    tc.secondary_hover = hover_color(c.secondary, c.bg);
+    tc.secondary_active = active_color(c.secondary, is_dark);
+}
+
+fn assign_status(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
+    tc.danger = c.danger;
+    tc.danger_foreground = c.danger_fg;
+    tc.danger_hover = hover_color(c.danger, c.bg);
+    tc.danger_active = active_color(c.danger, is_dark);
+
+    tc.success = c.success;
+    tc.success_foreground = c.success_fg;
+    tc.success_hover = hover_color(c.success, c.bg);
+    tc.success_active = active_color(c.success, is_dark);
+
+    tc.warning = c.warning;
+    tc.warning_foreground = c.warning_fg;
+    tc.warning_hover = hover_color(c.warning, c.bg);
+    tc.warning_active = active_color(c.warning, is_dark);
+
+    tc.info = c.info;
+    tc.info_foreground = c.info_fg;
+    tc.info_hover = hover_color(c.info, c.bg);
+    tc.info_active = active_color(c.info, is_dark);
+
+    tc.bullish = c.success;
+    tc.bearish = c.danger;
+}
+
+fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors) {
+    tc.list = c.bg;
+    tc.list_hover = hover_color(c.secondary, c.bg);
+    tc.list_active = c.bg.blend(c.primary.opacity(0.1)).alpha(0.2);
+    tc.list_active_border = c.bg.blend(c.primary.opacity(0.6));
+    tc.list_even = c.alternate_row;
+    tc.list_head = c.bg;
+
+    tc.table = c.bg;
     tc.table_hover = tc.list_hover;
     tc.table_active = tc.list_active;
     tc.table_active_border = tc.list_active_border;
     tc.table_even = tc.list_even;
-    tc.table_head = bg;
-    tc.table_head_foreground = muted_fg;
-    tc.table_row_border = border;
+    tc.table_head = c.bg;
+    tc.table_head_foreground = c.muted_fg;
+    tc.table_row_border = c.border;
 }
 
-#[allow(clippy::too_many_arguments)]
-fn assign_tab_sidebar(
-    tc: &mut ThemeColor,
-    resolved: &ResolvedThemeVariant,
-    _bg: Hsla,
-    fg: Hsla,
-    _surface: Hsla,
-    secondary: Hsla,
-    sidebar: Hsla,
-    sidebar_fg: Hsla,
-    accent: Hsla,
-    primary: Hsla,
-    primary_fg: Hsla,
-    border: Hsla,
-) {
+fn assign_tab_sidebar(tc: &mut ThemeColor, c: &ResolvedColors, resolved: &ResolvedThemeVariant) {
     // Tab: use per-widget resolved tab colors
     tc.tab = rgba_to_hsla(resolved.tab.background);
     tc.tab_active = rgba_to_hsla(resolved.tab.active_background);
     tc.tab_active_foreground = rgba_to_hsla(resolved.tab.active_foreground);
     tc.tab_bar = rgba_to_hsla(resolved.tab.bar_background);
-    tc.tab_bar_segmented = secondary;
+    tc.tab_bar_segmented = c.secondary;
     tc.tab_foreground = rgba_to_hsla(resolved.tab.foreground);
 
-    tc.sidebar = sidebar;
-    tc.sidebar_foreground = sidebar_fg;
-    tc.sidebar_accent = accent;
-    tc.sidebar_accent_foreground = fg;
-    tc.sidebar_border = border;
-    tc.sidebar_primary = primary;
-    tc.sidebar_primary_foreground = primary_fg;
+    tc.sidebar = c.sidebar;
+    tc.sidebar_foreground = c.sidebar_fg;
+    tc.sidebar_accent = c.accent;
+    tc.sidebar_accent_foreground = c.accent_fg;
+    tc.sidebar_border = c.border;
+    tc.sidebar_primary = c.primary;
+    tc.sidebar_primary_foreground = c.primary_fg;
 
     // Title bar: use per-widget resolved window colors
     tc.title_bar = rgba_to_hsla(resolved.window.title_bar_background);
@@ -268,63 +222,45 @@ fn assign_tab_sidebar(
     tc.window_border = rgba_to_hsla(resolved.window.border);
 }
 
-fn assign_charts(tc: &mut ThemeColor, accent: Hsla) {
-    // Distribute chart colors around the hue wheel from the accent
-    tc.chart_1 = accent.lighten(0.4);
-    tc.chart_2 = accent.lighten(0.2);
-    tc.chart_3 = accent;
-    tc.chart_4 = accent.darken(0.2);
-    tc.chart_5 = accent.darken(0.4);
+fn assign_charts(tc: &mut ThemeColor, c: &ResolvedColors) {
+    // Distribute 5 chart colors evenly around the hue wheel (~72° apart).
+    // Preserves accent's saturation and lightness for palette coherence.
+    tc.chart_1 = c.accent;
+    tc.chart_2 = Hsla { h: (c.accent.h + 0.2) % 1.0, ..c.accent };
+    tc.chart_3 = Hsla { h: (c.accent.h + 0.4) % 1.0, ..c.accent };
+    tc.chart_4 = Hsla { h: (c.accent.h + 0.6) % 1.0, ..c.accent };
+    tc.chart_5 = Hsla { h: (c.accent.h + 0.8) % 1.0, ..c.accent };
 }
 
-#[allow(clippy::too_many_arguments)]
 fn assign_misc(
     tc: &mut ThemeColor,
+    c: &ResolvedColors,
     resolved: &ResolvedThemeVariant,
-    bg: Hsla,
-    fg: Hsla,
-    accent: Hsla,
-    _muted: Hsla,
-    primary: Hsla,
-    _primary_fg: Hsla,
-    secondary: Hsla,
-    border: Hsla,
-    _surface: Hsla,
     is_dark: bool,
-    link: Hsla,
-    popover: Hsla,
-    popover_fg: Hsla,
 ) {
-    tc.popover = popover;
-    tc.popover_foreground = popover_fg;
+    tc.popover = c.popover;
+    tc.popover_foreground = c.popover_fg;
 
-    tc.accordion = bg;
-    tc.accordion_hover = accent.opacity(0.8);
+    tc.accordion = c.bg;
+    tc.accordion_hover = c.accent.opacity(0.8);
 
-    tc.group_box = bg.blend(secondary.opacity(if is_dark { 0.3 } else { 0.4 }));
-    tc.group_box_foreground = fg;
+    tc.group_box = c.bg.blend(c.secondary.opacity(if is_dark { 0.3 } else { 0.4 }));
+    tc.group_box_foreground = c.fg;
 
-    tc.description_list_label = bg.blend(border.opacity(0.2));
+    tc.description_list_label = c.bg.blend(c.border.opacity(0.2));
     tc.description_list_label_foreground = tc.muted_foreground;
 
-    tc.overlay = if is_dark {
-        Hsla {
-            h: 0.0,
-            s: 0.0,
-            l: 0.0,
-            a: 0.5,
-        }
-    } else {
-        Hsla {
-            h: 0.0,
-            s: 0.0,
-            l: 0.0,
-            a: 0.4,
-        }
+    // Derive overlay from the theme's shadow color instead of hardcoded black
+    let shadow = rgba_to_hsla(resolved.defaults.shadow);
+    tc.overlay = Hsla {
+        h: shadow.h,
+        s: shadow.s,
+        l: shadow.l,
+        a: if is_dark { 0.5 } else { 0.4 },
     };
 
     // Per-widget resolved scrollbar colors
-    tc.scrollbar = bg;
+    tc.scrollbar = c.bg;
     tc.scrollbar_thumb = rgba_to_hsla(resolved.scrollbar.thumb);
     tc.scrollbar_thumb_hover = rgba_to_hsla(resolved.scrollbar.thumb_hover);
 
@@ -342,44 +278,41 @@ fn assign_misc(
     // Per-widget resolved caret from input
     tc.caret = rgba_to_hsla(resolved.input.caret);
 
-    tc.skeleton = secondary;
+    tc.skeleton = c.secondary;
 
-    tc.tiles = bg;
+    tc.tiles = c.bg;
 
-    tc.drag_border = primary.opacity(0.65);
-    tc.drop_target = primary.opacity(0.2);
-
-    tc.link_hover = link;
-    tc.link_active = link;
+    tc.drag_border = c.primary.opacity(0.65);
+    tc.drop_target = c.primary.opacity(0.2);
 }
 
-fn assign_base_colors(
-    tc: &mut ThemeColor,
-    danger: Hsla,
-    success: Hsla,
-    info: Hsla,
-    warning: Hsla,
-    bg: Hsla,
-) {
-    tc.red = danger;
-    tc.red_light = bg.blend(danger.opacity(0.8));
-    tc.green = success;
-    tc.green_light = bg.blend(success.opacity(0.8));
-    tc.blue = info;
-    tc.blue_light = bg.blend(info.opacity(0.8));
-    tc.yellow = warning;
-    tc.yellow_light = bg.blend(warning.opacity(0.8));
-    // Magenta: derive from accent hue-shifted
+fn assign_base_colors(tc: &mut ThemeColor, c: &ResolvedColors) {
+    tc.red = c.danger;
+    tc.red_light = c.bg.blend(c.danger.opacity(0.8));
+    tc.green = c.success;
+    tc.green_light = c.bg.blend(c.success.opacity(0.8));
+    tc.blue = c.info;
+    tc.blue_light = c.bg.blend(c.info.opacity(0.8));
+    tc.yellow = c.warning;
+    tc.yellow_light = c.bg.blend(c.warning.opacity(0.8));
+    // Magenta: fixed hue, but saturation and lightness from accent
     let magenta = Hsla {
         h: 0.833,
-        s: 1.0,
-        l: 0.5,
+        s: c.accent.s.min(0.85),
+        l: c.accent.l,
         a: 1.0,
     };
     tc.magenta = magenta;
-    tc.magenta_light = bg.blend(magenta.opacity(0.8));
-    tc.cyan = info;
-    tc.cyan_light = bg.blend(info.opacity(0.8));
+    tc.magenta_light = c.bg.blend(magenta.opacity(0.8));
+    // Cyan: fixed hue, but saturation and lightness from info
+    let cyan = Hsla {
+        h: 0.5,
+        s: c.info.s.min(0.85),
+        l: c.info.l,
+        a: 1.0,
+    };
+    tc.cyan = cyan;
+    tc.cyan_light = c.bg.blend(cyan.opacity(0.8));
 }
 
 #[cfg(test)]
@@ -439,7 +372,7 @@ mod tests {
     #[test]
     fn to_theme_color_produces_nondefault() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved);
+        let tc = to_theme_color(&resolved, false);
         let default = ThemeColor::default();
 
         // Direct-mapped fields should differ from default
@@ -475,7 +408,7 @@ mod tests {
     #[test]
     fn hover_states_differ_from_base() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved);
+        let tc = to_theme_color(&resolved, false);
 
         assert_ne!(
             tc.primary_hover, tc.primary,
@@ -490,7 +423,7 @@ mod tests {
     #[test]
     fn per_widget_fields_used() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved);
+        let tc = to_theme_color(&resolved, false);
 
         // Scrollbar thumb should match resolved scrollbar
         let expected_thumb = rgba_to_hsla(resolved.scrollbar.thumb);
@@ -532,6 +465,141 @@ mod tests {
         assert_eq!(
             tc.caret, expected_caret,
             "caret should come from resolved.input.caret"
+        );
+    }
+
+    #[test]
+    fn accent_foreground_uses_theme_value() {
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved, false);
+
+        // accent_foreground should come from d.accent_foreground, not from fg
+        let expected = rgba_to_hsla(resolved.defaults.accent_foreground);
+        assert_eq!(
+            tc.accent_foreground, expected,
+            "accent_foreground should map from d.accent_foreground"
+        );
+        // Verify it's also used for sidebar_accent_foreground
+        assert_eq!(
+            tc.sidebar_accent_foreground, expected,
+            "sidebar_accent_foreground should map from d.accent_foreground"
+        );
+    }
+
+    #[test]
+    fn is_dark_passed_not_derived() {
+        let resolved = test_resolved();
+        let tc_light = to_theme_color(&resolved, false);
+        let tc_dark = to_theme_color(&resolved, true);
+
+        // active_color uses different darkening for light vs dark:
+        // light darkens by 10%, dark darkens by 20%.
+        // So primary_active should differ between the two.
+        assert_ne!(
+            tc_light.primary_active, tc_dark.primary_active,
+            "primary_active should differ between is_dark=false and is_dark=true"
+        );
+    }
+
+    #[test]
+    fn link_hover_differs_from_link() {
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved, false);
+
+        assert_ne!(
+            tc.link_hover, tc.link,
+            "link_hover should differ from link (uses hover_color)"
+        );
+        assert_ne!(
+            tc.link_active, tc.link,
+            "link_active should differ from link (uses active_color)"
+        );
+    }
+
+    #[test]
+    fn selection_not_clamped() {
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved, false);
+
+        // The theme's selection color should be used as-is, not alpha-clamped to 0.3
+        let expected = rgba_to_hsla(resolved.defaults.selection);
+        assert_eq!(
+            tc.selection, expected,
+            "selection should use theme value without alpha clamping"
+        );
+    }
+
+    #[test]
+    fn chart_colors_have_hue_separation() {
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved, false);
+
+        let hues = [tc.chart_1.h, tc.chart_2.h, tc.chart_3.h, tc.chart_4.h, tc.chart_5.h];
+        // All 5 hues should be distinct
+        for i in 0..5 {
+            for j in (i + 1)..5 {
+                assert!(
+                    (hues[i] - hues[j]).abs() > 0.05,
+                    "chart_{} (h={:.3}) and chart_{} (h={:.3}) should have distinct hues",
+                    i + 1, hues[i], j + 1, hues[j]
+                );
+            }
+        }
+        // chart_1 should be the accent color itself
+        let accent = rgba_to_hsla(resolved.defaults.accent);
+        assert!(
+            (tc.chart_1.h - accent.h).abs() < 0.001,
+            "chart_1 hue should match accent hue"
+        );
+    }
+
+    #[test]
+    fn magenta_uses_theme_saturation() {
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved, false);
+
+        let accent = rgba_to_hsla(resolved.defaults.accent);
+        let expected_s = accent.s.min(0.85);
+        assert!(
+            (tc.magenta.s - expected_s).abs() < 0.001,
+            "magenta saturation {:.3} should be min(accent.s, 0.85) = {:.3}",
+            tc.magenta.s, expected_s
+        );
+        assert!(
+            (tc.magenta.l - accent.l).abs() < 0.001,
+            "magenta lightness {:.3} should match accent lightness {:.3}",
+            tc.magenta.l, accent.l
+        );
+    }
+
+    #[test]
+    fn overlay_uses_shadow_color() {
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved, false);
+
+        let shadow = rgba_to_hsla(resolved.defaults.shadow);
+        assert!(
+            (tc.overlay.h - shadow.h).abs() < 0.001,
+            "overlay hue {:.3} should match shadow hue {:.3}",
+            tc.overlay.h, shadow.h
+        );
+        assert!(
+            (tc.overlay.s - shadow.s).abs() < 0.001,
+            "overlay saturation {:.3} should match shadow saturation {:.3}",
+            tc.overlay.s, shadow.s
+        );
+    }
+
+    #[test]
+    fn theme_color_field_count_tripwire() {
+        // ThemeColor has N Hsla fields (each 16 bytes = 4x f32).
+        // If this fails, gpui-component added/removed fields — update the color mapping.
+        let size = std::mem::size_of::<ThemeColor>();
+        let hsla_size = std::mem::size_of::<Hsla>();
+        let field_count = size / hsla_size;
+        assert_eq!(
+            field_count, 108,
+            "ThemeColor field count changed (got {field_count}) — update color mapping in to_theme_color()"
         );
     }
 }

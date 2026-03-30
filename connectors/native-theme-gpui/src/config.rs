@@ -26,8 +26,8 @@ pub fn to_theme_config(resolved: &ResolvedThemeVariant, name: &str, mode: ThemeM
         mono_font_family: Some(SharedString::from(d.mono_font.family.clone())),
         mono_font_size: Some(d.mono_font.size),
 
-        radius: Some(d.radius as usize),
-        radius_lg: Some(d.radius_lg as usize),
+        radius: Some(d.radius.round() as usize),
+        radius_lg: Some(d.radius_lg.round() as usize),
         shadow: Some(d.shadow_enabled),
 
         ..ThemeConfig::default()
@@ -74,8 +74,8 @@ mod tests {
         );
 
         // Geometry
-        assert_eq!(config.radius, Some(resolved.defaults.radius as usize));
-        assert_eq!(config.radius_lg, Some(resolved.defaults.radius_lg as usize));
+        assert_eq!(config.radius, Some(resolved.defaults.radius.round() as usize));
+        assert_eq!(config.radius_lg, Some(resolved.defaults.radius_lg.round() as usize));
         assert_eq!(config.shadow, Some(resolved.defaults.shadow_enabled));
     }
 

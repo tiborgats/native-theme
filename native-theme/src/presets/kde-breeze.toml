@@ -6,6 +6,7 @@ name = "KDE Breeze"
 
 [light]
 icon_set = "freedesktop"
+icon_theme = "breeze"
 
 [light.defaults]
 accent = "#3daee9"
@@ -203,6 +204,7 @@ content_padding = 16.0
 
 [dark]
 icon_set = "freedesktop"
+icon_theme = "breeze"
 
 [dark.defaults]
 accent = "#3daee9"

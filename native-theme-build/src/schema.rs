@@ -1,14 +1,37 @@
 use serde::Deserialize;
 use std::collections::BTreeMap;
 
-/// The 5 known theme name strings matching `IconSet` kebab-case identifiers.
-pub(crate) const KNOWN_THEMES: [&str; 5] = [
-    "sf-symbols",
-    "segoe-fluent",
-    "freedesktop",
-    "material",
-    "lucide",
+/// Single-source table mapping theme TOML names to `IconSet` variant paths.
+///
+/// Every entry is `(toml_name, "IconSet::Variant")`.
+/// All other modules derive their theme lists from this table.
+pub(crate) const THEME_TABLE: &[(&str, &str)] = &[
+    ("sf-symbols", "IconSet::SfSymbols"),
+    ("segoe-fluent", "IconSet::SegoeIcons"),
+    ("freedesktop", "IconSet::Freedesktop"),
+    ("material", "IconSet::Material"),
+    ("lucide", "IconSet::Lucide"),
 ];
+
+/// Single-source table mapping lowercase DE keys to `LinuxDesktop` variant paths.
+///
+/// Every entry is `(toml_key, "LinuxDesktop::Variant")`.
+/// The special `"default"` key is deliberately absent -- it is handled as a
+/// wildcard in codegen and validation.
+pub(crate) const DE_TABLE: &[(&str, &str)] = &[
+    ("kde", "LinuxDesktop::Kde"),
+    ("gnome", "LinuxDesktop::Gnome"),
+    ("xfce", "LinuxDesktop::Xfce"),
+    ("cinnamon", "LinuxDesktop::Cinnamon"),
+    ("mate", "LinuxDesktop::Mate"),
+    ("lxqt", "LinuxDesktop::LxQt"),
+    ("budgie", "LinuxDesktop::Budgie"),
+];
+
+/// Check whether `name` is a known theme name (appears in `THEME_TABLE`).
+pub(crate) fn is_known_theme(name: &str) -> bool {
+    THEME_TABLE.iter().any(|(k, _)| *k == name)
+}
 
 /// Master TOML schema: the top-level icon definition file.
 ///
@@ -68,5 +91,118 @@ impl MappingValue {
             Self::Simple(s) => Some(s),
             Self::DeAware(m) => m.get("default").map(|s| s.as_str()),
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashSet;
+
+    // === THEME_TABLE consistency tests ===
+
+    #[test]
+    fn theme_table_no_duplicate_keys() {
+        let mut seen = HashSet::new();
+        for (key, _) in THEME_TABLE {
+            assert!(
+                seen.insert(*key),
+                "duplicate theme key in THEME_TABLE: {key}"
+            );
+        }
+    }
+
+    #[test]
+    fn theme_table_no_duplicate_variants() {
+        let mut seen = HashSet::new();
+        for (_, variant) in THEME_TABLE {
+            assert!(
+                seen.insert(*variant),
+                "duplicate variant in THEME_TABLE: {variant}"
+            );
+        }
+    }
+
+    #[test]
+    fn theme_table_variants_start_with_icon_set() {
+        for (key, variant) in THEME_TABLE {
+            assert!(
+                variant.starts_with("IconSet::"),
+                "THEME_TABLE entry for \"{key}\" should start with \"IconSet::\", got \"{variant}\""
+            );
+        }
+    }
+
+    #[test]
+    fn theme_table_keys_are_nonempty() {
+        for (key, _) in THEME_TABLE {
+            assert!(!key.is_empty(), "THEME_TABLE has an empty key");
+        }
+    }
+
+    // === DE_TABLE consistency tests ===
+
+    #[test]
+    fn de_table_no_duplicate_keys() {
+        let mut seen = HashSet::new();
+        for (key, _) in DE_TABLE {
+            assert!(
+                seen.insert(*key),
+                "duplicate DE key in DE_TABLE: {key}"
+            );
+        }
+    }
+
+    #[test]
+    fn de_table_no_duplicate_variants() {
+        let mut seen = HashSet::new();
+        for (_, variant) in DE_TABLE {
+            assert!(
+                seen.insert(*variant),
+                "duplicate variant in DE_TABLE: {variant}"
+            );
+        }
+    }
+
+    #[test]
+    fn de_table_variants_start_with_linux_desktop() {
+        for (key, variant) in DE_TABLE {
+            assert!(
+                variant.starts_with("LinuxDesktop::"),
+                "DE_TABLE entry for \"{key}\" should start with \"LinuxDesktop::\", got \"{variant}\""
+            );
+        }
+    }
+
+    #[test]
+    fn de_table_does_not_contain_default() {
+        // "default" is handled specially, not in the table
+        for (key, _) in DE_TABLE {
+            assert_ne!(
+                *key, "default",
+                "DE_TABLE must not contain \"default\" -- it is handled as a wildcard"
+            );
+        }
+    }
+
+    #[test]
+    fn de_table_keys_are_nonempty() {
+        for (key, _) in DE_TABLE {
+            assert!(!key.is_empty(), "DE_TABLE has an empty key");
+        }
+    }
+
+    // === is_known_theme tests ===
+
+    #[test]
+    fn is_known_theme_returns_true_for_known() {
+        assert!(is_known_theme("material"));
+        assert!(is_known_theme("sf-symbols"));
+    }
+
+    #[test]
+    fn is_known_theme_returns_false_for_unknown() {
+        assert!(!is_known_theme("nonexistent"));
+        assert!(!is_known_theme(""));
     }
 }

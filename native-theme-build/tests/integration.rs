@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::{Path, PathBuf};
 
-use native_theme_build::__run_pipeline_on_files;
+use native_theme_build::run_pipeline_on_files;
 
 const SVG_STUB: &str = r#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"></svg>"#;
 
@@ -33,7 +33,7 @@ fn happy_path_generates_correct_enum() {
     let fixtures = fixtures_dir();
     let toml_path = fixtures.join("sample-icons.toml");
 
-    let result = __run_pipeline_on_files(&[toml_path.as_path()], None);
+    let result = run_pipeline_on_files(&[toml_path.as_path()], None);
 
     assert!(
         result.errors.is_empty(),
@@ -65,7 +65,7 @@ fn happy_path_has_icon_provider_impl() {
     let fixtures = fixtures_dir();
     let toml_path = fixtures.join("sample-icons.toml");
 
-    let result = __run_pipeline_on_files(&[toml_path.as_path()], None);
+    let result = run_pipeline_on_files(&[toml_path.as_path()], None);
 
     assert!(result.errors.is_empty());
     assert!(
@@ -81,7 +81,7 @@ fn happy_path_icon_name_material() {
     let fixtures = fixtures_dir();
     let toml_path = fixtures.join("sample-icons.toml");
 
-    let result = __run_pipeline_on_files(&[toml_path.as_path()], None);
+    let result = run_pipeline_on_files(&[toml_path.as_path()], None);
 
     assert!(result.errors.is_empty());
     assert!(
@@ -103,7 +103,7 @@ fn happy_path_icon_name_sf_symbols() {
     let fixtures = fixtures_dir();
     let toml_path = fixtures.join("sample-icons.toml");
 
-    let result = __run_pipeline_on_files(&[toml_path.as_path()], None);
+    let result = run_pipeline_on_files(&[toml_path.as_path()], None);
 
     assert!(result.errors.is_empty());
     assert!(
@@ -125,7 +125,7 @@ fn happy_path_icon_svg_bundled_only() {
     let fixtures = fixtures_dir();
     let toml_path = fixtures.join("sample-icons.toml");
 
-    let result = __run_pipeline_on_files(&[toml_path.as_path()], None);
+    let result = run_pipeline_on_files(&[toml_path.as_path()], None);
 
     assert!(result.errors.is_empty());
 
@@ -147,7 +147,7 @@ fn happy_path_has_const_all() {
     let fixtures = fixtures_dir();
     let toml_path = fixtures.join("sample-icons.toml");
 
-    let result = __run_pipeline_on_files(&[toml_path.as_path()], None);
+    let result = run_pipeline_on_files(&[toml_path.as_path()], None);
 
     assert!(result.errors.is_empty());
     assert!(
@@ -165,7 +165,7 @@ fn happy_path_output_filename() {
     let fixtures = fixtures_dir();
     let toml_path = fixtures.join("sample-icons.toml");
 
-    let result = __run_pipeline_on_files(&[toml_path.as_path()], None);
+    let result = run_pipeline_on_files(&[toml_path.as_path()], None);
 
     assert_eq!(result.output_filename, "sample_icon.rs");
 }
@@ -175,7 +175,7 @@ fn happy_path_size_report() {
     let fixtures = fixtures_dir();
     let toml_path = fixtures.join("sample-icons.toml");
 
-    let result = __run_pipeline_on_files(&[toml_path.as_path()], None);
+    let result = run_pipeline_on_files(&[toml_path.as_path()], None);
 
     assert!(result.errors.is_empty());
     let report = result
@@ -213,11 +213,14 @@ bundled-themes = ["material"]
     write_file(&dir, "material/play_pause.svg", SVG_STUB);
 
     let toml_path = dir.join("icons.toml");
-    let result = __run_pipeline_on_files(&[toml_path.as_path()], None);
+    let result = run_pipeline_on_files(&[toml_path.as_path()], None);
 
     assert!(!result.errors.is_empty(), "should have errors");
     assert!(
-        result.errors.iter().any(|e| e.contains("skip-forward")),
+        result
+            .errors
+            .iter()
+            .any(|e| e.to_string().contains("skip-forward")),
         "should mention missing role 'skip-forward': {:?}",
         result.errors
     );
@@ -246,11 +249,14 @@ bundled-themes = ["material"]
     write_file(&dir, "material/play_pause.svg", SVG_STUB);
 
     let toml_path = dir.join("icons.toml");
-    let result = __run_pipeline_on_files(&[toml_path.as_path()], None);
+    let result = run_pipeline_on_files(&[toml_path.as_path()], None);
 
     assert!(!result.errors.is_empty(), "should have errors");
     assert!(
-        result.errors.iter().any(|e| e.contains("bluetooth")),
+        result
+            .errors
+            .iter()
+            .any(|e| e.to_string().contains("bluetooth")),
         "should mention unknown role 'bluetooth': {:?}",
         result.errors
     );
@@ -279,11 +285,14 @@ bundled-themes = ["material"]
     write_file(&dir, "material/play_pause.svg", SVG_STUB);
 
     let toml_path = dir.join("icons.toml");
-    let result = __run_pipeline_on_files(&[toml_path.as_path()], None);
+    let result = run_pipeline_on_files(&[toml_path.as_path()], None);
 
     assert!(!result.errors.is_empty(), "should have errors");
     assert!(
-        result.errors.iter().any(|e| e.contains("skip_next.svg")),
+        result
+            .errors
+            .iter()
+            .any(|e| e.to_string().contains("skip_next.svg")),
         "should mention missing SVG path: {:?}",
         result.errors
     );
@@ -326,7 +335,7 @@ bundled-themes = ["material"]
 
     let path_a = dir.join("icons-a.toml");
     let path_b = dir.join("icons-b.toml");
-    let result = __run_pipeline_on_files(&[path_a.as_path(), path_b.as_path()], Some("AllIcons"));
+    let result = run_pipeline_on_files(&[path_a.as_path(), path_b.as_path()], Some("AllIcons"));
 
     assert!(
         result.errors.is_empty(),
@@ -375,7 +384,7 @@ reveal = { kde = "view-visible", default = "view-reveal" }
     );
 
     let toml_path = dir.join("icons.toml");
-    let result = __run_pipeline_on_files(&[toml_path.as_path()], None);
+    let result = run_pipeline_on_files(&[toml_path.as_path()], None);
 
     assert!(
         result.errors.is_empty(),
@@ -437,7 +446,7 @@ reveal = { cosmic = "cosmic-reveal", default = "view-reveal" }
     );
 
     let toml_path = dir.join("icons.toml");
-    let result = __run_pipeline_on_files(&[toml_path.as_path()], None);
+    let result = run_pipeline_on_files(&[toml_path.as_path()], None);
 
     // Warnings should mention cosmic and unrecognized
     assert!(
@@ -498,11 +507,14 @@ bundled-themes = ["material"]
 
     let path_a = dir.join("icons-a.toml");
     let path_b = dir.join("icons-b.toml");
-    let result = __run_pipeline_on_files(&[path_a.as_path(), path_b.as_path()], None);
+    let result = run_pipeline_on_files(&[path_a.as_path(), path_b.as_path()], None);
 
     assert!(!result.errors.is_empty(), "should detect duplicate roles");
     assert!(
-        result.errors.iter().any(|e| e.contains("play-pause")),
+        result
+            .errors
+            .iter()
+            .any(|e| e.to_string().contains("play-pause")),
         "should mention duplicate role: {:?}",
         result.errors
     );

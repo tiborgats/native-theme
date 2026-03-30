@@ -27,7 +27,7 @@ native-theme = { workspace = true, features = [
 image = { version = "0.25", default-features = false, features = ["png"] }
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
-native-theme = { workspace = true, features = ["system-icons"] }
+native-theme = { workspace = true, features = ["system-icons", "linux"] }
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 objc2 = "0.6.4"

@@ -56,7 +56,7 @@ per-widget rather than through the Catalog:
 - `border_radius_lg(resolved)` -- large corner radius (e.g., dialogs)
 - `scrollbar_width(resolved)` -- scrollbar track width
 - `font_family(resolved)` -- primary UI font family name
-- `font_size(resolved)` -- primary UI font size in pixels (converted from points)
+- `font_size(resolved)` -- primary UI font size in logical pixels
 - `mono_font_family(resolved)` -- monospace font family name
 - `mono_font_size(resolved)` -- monospace font size in pixels
 

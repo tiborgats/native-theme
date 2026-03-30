@@ -19,10 +19,10 @@ use iced::{Color, Element, Fill, Length, Padding, Theme};
 use iced::Subscription;
 use native_theme::{
     AnimatedIcon, IconData, IconRole, IconSet, ThemeSpec, TransformAnimation, loading_indicator,
-    platform_preset_name, prefers_reduced_motion,
+    prefers_reduced_motion,
 };
 use native_theme_iced::icons::{
-    animated_frames_to_svg_handles, spin_rotation_radians, to_svg_handle,
+    animated_frames_to_svg_handles, spin_rotation_radians, to_svg_handle, AnimatedSvgHandles,
 };
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
@@ -260,6 +260,15 @@ impl IconSetChoice {
             IconSetChoice::System => native_theme::system_icon_set(),
         }
     }
+
+    /// Map from a resolved theme's `icon_theme` name to the matching choice.
+    fn from_icon_theme(name: &str) -> Self {
+        match name {
+            "material" => IconSetChoice::Material,
+            "lucide" => IconSetChoice::Lucide,
+            _ => IconSetChoice::System,
+        }
+    }
 }
 
 // ---------------------------------------------------------------------------
@@ -382,7 +391,7 @@ fn load_all_icons(set: IconSet) -> Vec<LoadedIcon> {
 fn build_animation_caches(
     icon_set: native_theme::IconSet,
 ) -> (
-    Vec<(String, Vec<iced_core::svg::Handle>, u32)>, // animated_frames
+    Vec<(String, AnimatedSvgHandles)>, // animated_frames
     Vec<usize>,                                      // animated_frame_indices
     Vec<Duration>,                                   // animated_frame_elapsed
     Vec<(String, iced_core::svg::Handle, u32)>,      // animated_spins
@@ -399,17 +408,15 @@ fn build_animation_caches(
         if let Some(anim) = loading_indicator(icon_set) {
             // Cache static first-frame for reduced motion
             if let Some(frame_data) = anim.first_frame()
-                && let Some(handle) = to_svg_handle(frame_data)
+                && let Some(handle) = to_svg_handle(frame_data, None)
             {
                 animated_static.push((set_name.clone(), handle));
             }
 
             match &anim {
-                AnimatedIcon::Frames {
-                    frame_duration_ms, ..
-                } => {
-                    if let Some(handles) = animated_frames_to_svg_handles(&anim) {
-                        animated_frames.push((set_name.clone(), handles, *frame_duration_ms));
+                AnimatedIcon::Frames { .. } => {
+                    if let Some(anim_handles) = animated_frames_to_svg_handles(&anim) {
+                        animated_frames.push((set_name.clone(), anim_handles));
                     }
                 }
                 AnimatedIcon::Transform {
@@ -417,7 +424,7 @@ fn build_animation_caches(
                     animation: TransformAnimation::Spin { duration_ms },
                     ..
                 } => {
-                    if let Some(handle) = to_svg_handle(icon) {
+                    if let Some(handle) = to_svg_handle(icon, None) {
                         animated_spins.push((set_name.clone(), handle, *duration_ms));
                     }
                 }
@@ -490,8 +497,8 @@ struct State {
     loaded_icons: Vec<LoadedIcon>,
 
     // Animated Icons state
-    /// Cached SVG handles for frame-based animations: (set_name, handles, frame_duration_ms).
-    animated_frames: Vec<(String, Vec<iced_core::svg::Handle>, u32)>,
+    /// Cached SVG handles for frame-based animations: (set_name, AnimatedSvgHandles).
+    animated_frames: Vec<(String, AnimatedSvgHandles)>,
     /// Current frame index per frame-based animation.
     animated_frame_indices: Vec<usize>,
     /// Elapsed time tracker per frame-based animation (for correct per-animation timing).
@@ -517,26 +524,29 @@ impl Default for State {
     fn default() -> Self {
         let color_mode = ColorMode::System;
         let is_dark = color_mode.is_dark();
-        let (resolved, theme, initial_error) = match native_theme::SystemTheme::from_system() {
-            Ok(system) => {
-                let r = system.pick(is_dark).clone();
-                let t = native_theme_iced::to_theme(&r, &system.name);
-                (r, t, None)
-            }
-            Err(e) => {
-                // Fallback: load adwaita preset through resolve pipeline
-                let nt = ThemeSpec::preset("adwaita").expect("adwaita preset must exist");
-                let mut variant = nt.pick_variant(is_dark).unwrap().clone();
-                variant.resolve();
-                let r = variant.validate().expect("adwaita preset must validate");
-                let t = native_theme_iced::to_theme(&r, &nt.name);
-                (
-                    r,
-                    t,
-                    Some(format!("OS theme failed: {e}. Using adwaita fallback.")),
-                )
-            }
-        };
+        let (resolved, theme, initial_error, system_preset) =
+            match native_theme::SystemTheme::from_system() {
+                Ok(system) => {
+                    let r = system.pick(is_dark).clone();
+                    let t = native_theme_iced::to_theme(&r, &system.name);
+                    let preset = system.preset.clone();
+                    (r, t, None, preset)
+                }
+                Err(e) => {
+                    // Fallback: load adwaita preset through resolve pipeline
+                    let nt = ThemeSpec::preset("adwaita").expect("adwaita preset must exist");
+                    let mut variant = nt.pick_variant(is_dark).unwrap().clone();
+                    variant.resolve();
+                    let r = variant.validate().expect("adwaita preset must validate");
+                    let t = native_theme_iced::to_theme(&r, &nt.name);
+                    (
+                        r,
+                        t,
+                        Some(format!("OS theme failed: {e}. Using adwaita fallback.")),
+                        "adwaita".to_string(),
+                    )
+                }
+            };
 
         let languages = vec![
             "Rust".to_string(),
@@ -551,7 +561,7 @@ impl Default for State {
             "Zig".to_string(),
         ];
 
-        let icon_set_choice = IconSetChoice::Lucide;
+        let icon_set_choice = IconSetChoice::from_icon_theme(&resolved.icon_theme);
         let loaded_icons = load_all_icons(icon_set_choice.icon_set());
 
         let (
@@ -564,7 +574,7 @@ impl Default for State {
             animated_static,
         ) = build_animation_caches(icon_set_choice.icon_set());
 
-        let default_label = format!("default ({})", platform_preset_name());
+        let default_label = format!("default ({})", system_preset);
 
         let mut state = Self {
             current_choice: ThemeChoice::OsTheme(default_label.clone()),
@@ -676,12 +686,7 @@ impl State {
                         self.current_resolved = system.pick(self.is_dark).clone();
                         self.current_theme =
                             native_theme_iced::to_theme(&self.current_resolved, &system.name);
-                        // Update default label based on which variant is active
-                        if system.is_dark == self.is_dark {
-                            self.default_label = format!("default ({})", system.preset);
-                        } else {
-                            self.default_label = format!("default ({})", system.preset);
-                        }
+                        self.default_label = format!("default ({})", system.preset);
                         self.error_message = None;
                     }
                     Err(e) => {
@@ -736,6 +741,23 @@ impl State {
         // Keep the OsTheme choice label in sync
         if is_default {
             self.current_choice = ThemeChoice::OsTheme(self.default_label.clone());
+        }
+
+        // Sync icon set to the theme's preferred icon theme
+        let new_icon_choice =
+            IconSetChoice::from_icon_theme(&self.current_resolved.icon_theme);
+        if new_icon_choice != self.icon_set_choice {
+            self.loaded_icons = load_all_icons(new_icon_choice.icon_set());
+            let (af, afi, afe, asp, astart, rm, ast) =
+                build_animation_caches(new_icon_choice.icon_set());
+            self.icon_set_choice = new_icon_choice;
+            self.animated_frames = af;
+            self.animated_frame_indices = afi;
+            self.animated_frame_elapsed = afe;
+            self.animated_spins = asp;
+            self.animation_start = astart;
+            self.reduced_motion = rm;
+            self.animated_static = ast;
         }
     }
 }
@@ -1085,13 +1107,13 @@ fn update_inner(state: &mut State, message: Message) {
         }
         Message::AnimationTick => {
             let tick_duration = Duration::from_millis(50);
-            for (i, (_, handles, frame_duration_ms)) in state.animated_frames.iter().enumerate() {
+            for (i, (_, anim_handles)) in state.animated_frames.iter().enumerate() {
                 state.animated_frame_elapsed[i] += tick_duration;
-                let frame_dur = Duration::from_millis(*frame_duration_ms as u64);
+                let frame_dur = Duration::from_millis(anim_handles.frame_duration_ms as u64);
                 if state.animated_frame_elapsed[i] >= frame_dur {
                     state.animated_frame_elapsed[i] -= frame_dur;
                     state.animated_frame_indices[i] =
-                        (state.animated_frame_indices[i] + 1) % handles.len();
+                        (state.animated_frame_indices[i] + 1) % anim_handles.handles.len();
                 }
             }
         }
@@ -1160,10 +1182,8 @@ fn view(state: &State) -> Element<'_, Message> {
                 native_theme_iced::border_radius_lg(&state.current_resolved)
             );
             let sw = format!("scrollbar: {sb_width:.0}px");
-            let [bh, bv] = btn_pad;
-            let bp = format!("btn pad: {bh:.0}\u{00d7}{bv:.0}");
-            let [ih, iv] = inp_pad;
-            let ip = format!("input pad: {ih:.0}\u{00d7}{iv:.0}");
+            let bp = format!("btn pad: {:.0}\u{00d7}{:.0}", btn_pad.left, btn_pad.top);
+            let ip = format!("input pad: {:.0}\u{00d7}{:.0}", inp_pad.left, inp_pad.top);
             column![
                 text("Theme Config Inspector").size(12),
                 text(r).size(10),
@@ -1382,15 +1402,14 @@ fn widget_tooltip_themed(
 // Tab: Buttons
 // ---------------------------------------------------------------------------
 
-fn view_buttons<'a>(state: &'a State, btn_pad: [f32; 2]) -> Element<'a, Message> {
+fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> {
     let palette = state.current_theme.palette();
     let ext = state.current_theme.extended_palette();
     let radius = native_theme_iced::border_radius(&state.current_resolved);
     let radius_s = format!("{radius:.0}px");
 
     let apply_pad = |b: button::Button<'a, Message>| -> button::Button<'a, Message> {
-        let [h, v] = btn_pad;
-        b.padding(Padding::from([v, h]))
+        b.padding(btn_pad)
     };
 
     let header = section_header(
@@ -1511,7 +1530,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: [f32; 2]) -> Element<'a, Message>
 // Tab: Text Inputs
 // ---------------------------------------------------------------------------
 
-fn view_text_inputs<'a>(state: &'a State, radius: f32, inp_pad: [f32; 2]) -> Element<'a, Message> {
+fn view_text_inputs<'a>(state: &'a State, radius: f32, inp_pad: Padding) -> Element<'a, Message> {
     let palette = state.current_theme.palette();
     let ext = state.current_theme.extended_palette();
     let radius_s = format!("{radius:.0}px");
@@ -1525,8 +1544,7 @@ fn view_text_inputs<'a>(state: &'a State, radius: f32, inp_pad: [f32; 2]) -> Ele
         let mut input = text_input("Type something here...", &state.text_input_value)
             .on_input(Message::TextInputChanged);
         {
-            let [h, v] = inp_pad;
-            input = input.padding(Padding::from([v, h]));
+            input = input.padding(inp_pad);
         }
 
         hoverable(
@@ -1568,8 +1586,7 @@ fn view_text_inputs<'a>(state: &'a State, radius: f32, inp_pad: [f32; 2]) -> Ele
             .on_input(Message::TextInputChanged)
             .secure(true);
         {
-            let [h, v] = inp_pad;
-            input = input.padding(Padding::from([v, h]));
+            input = input.padding(inp_pad);
         }
 
         hoverable(
@@ -2308,10 +2325,10 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
         }
     } else {
         // Frame-based animations
-        for (i, (set_name, handles, frame_duration_ms)) in state.animated_frames.iter().enumerate()
+        for (i, (set_name, anim_handles)) in state.animated_frames.iter().enumerate()
         {
             let frame_idx = state.animated_frame_indices[i];
-            let icon = svg(handles[frame_idx].clone())
+            let icon = svg(anim_handles.handles[frame_idx].clone())
                 .width(Length::Fixed(32.0))
                 .height(Length::Fixed(32.0))
                 .style(move |_theme, _status| iced::widget::svg::Style {
@@ -2320,8 +2337,8 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
             let label = text(format!(
                 "{} - Frames: {} ({}ms)",
                 set_name,
-                handles.len(),
-                frame_duration_ms,
+                anim_handles.handles.len(),
+                anim_handles.frame_duration_ms,
             ))
             .size(11);
             spinners.push(column![icon, label].spacing(4).align_x(iced::Center).into());
@@ -2367,7 +2384,7 @@ fn build_icon_cell<'a>(loaded: &LoadedIcon, fg_color: Color) -> Element<'a, Mess
         Some(data @ IconData::Svg(_)) => {
             if loaded.source == IconSource::System {
                 // System icons: render as-is without colorization
-                match native_theme_iced::icons::to_svg_handle(data) {
+                match native_theme_iced::icons::to_svg_handle(data, None) {
                     Some(handle) => svg(handle)
                         .width(Length::Fixed(24.0))
                         .height(Length::Fixed(24.0))
@@ -2376,7 +2393,7 @@ fn build_icon_cell<'a>(loaded: &LoadedIcon, fg_color: Color) -> Element<'a, Mess
                 }
             } else {
                 // Bundled/fallback: colorize with theme foreground
-                match native_theme_iced::icons::to_svg_handle_colored(data, fg_color) {
+                match native_theme_iced::icons::to_svg_handle(data, Some(fg_color)) {
                     Some(handle) => svg(handle)
                         .width(Length::Fixed(24.0))
                         .height(Length::Fixed(24.0))

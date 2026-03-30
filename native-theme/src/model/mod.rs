@@ -169,10 +169,16 @@ pub struct ThemeVariant {
     /// When None, resolved at runtime via system_icon_set().
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon_set: Option<String>,
+
+    /// Icon theme name for this variant (e.g., "breeze", "Adwaita", "material").
+    /// This is the visual icon theme, distinct from the naming convention in `icon_set`.
+    /// When None, resolved at runtime via system_icon_theme().
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon_theme: Option<String>,
 }
 
 impl_merge!(ThemeVariant {
-    option { icon_set }
+    option { icon_set, icon_theme }
     nested {
         defaults, text_scale, window, button, input, checkbox, menu,
         tooltip, scrollbar, slider, progress_bar, tab, sidebar,

@@ -6,6 +6,7 @@ name = "Windows 11"
 
 [light]
 icon_set = "segoe-fluent"
+icon_theme = "segoe-fluent"
 
 [light.defaults]
 accent = "#0078d4"
@@ -203,6 +204,7 @@ content_padding = 16.0
 
 [dark]
 icon_set = "segoe-fluent"
+icon_theme = "segoe-fluent"
 
 [dark.defaults]
 accent = "#0078d4"

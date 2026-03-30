@@ -244,6 +244,9 @@ pub struct ResolvedThemeVariant {
 
     /// Icon set / naming convention (e.g., "sf-symbols", "freedesktop").
     pub icon_set: String,
+
+    /// Icon theme name (e.g., "breeze", "Adwaita", "material").
+    pub icon_theme: String,
 }
 
 #[cfg(test)]
@@ -711,6 +714,7 @@ mod tests {
                 underline: true,
             },
             icon_set: "freedesktop".into(),
+            icon_theme: "breeze".into(),
         };
 
         // Verify key fields
@@ -718,6 +722,7 @@ mod tests {
         assert_eq!(theme.window.radius, 4.0);
         assert_eq!(theme.button.min_height, 28.0);
         assert_eq!(theme.icon_set, "freedesktop");
+        assert_eq!(theme.icon_theme, "breeze");
         assert_eq!(theme.text_scale.caption.size, 12.0);
     }
 
@@ -933,6 +938,7 @@ mod tests {
                 underline: true,
             },
             icon_set: "freedesktop".into(),
+            icon_theme: "breeze".into(),
         };
 
         let theme2 = theme.clone();

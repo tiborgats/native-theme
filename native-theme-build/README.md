@@ -97,8 +97,8 @@ For projects with multiple TOML files or custom enum names:
 ```rust,ignore
 fn main() {
     native_theme_build::IconGenerator::new()
-        .add("icons/media.toml")
-        .add("icons/navigation.toml")
+        .source("icons/media.toml")
+        .source("icons/navigation.toml")
         .enum_name("AppIcon")
         .generate();
 }

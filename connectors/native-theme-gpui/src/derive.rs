@@ -9,8 +9,8 @@ use gpui_component::Colorize;
 
 /// Derive a hover state from a base color.
 ///
-/// For light themes (is_dark=false): blends the background with base at 90% opacity.
-/// For dark themes (is_dark=true): blends the background with base at 90% opacity.
+/// Blends the background with the base at 90% opacity, producing a color
+/// slightly closer to the background. Works identically for light and dark themes.
 ///
 /// This matches gpui-component's internal `apply_config` hover derivation:
 /// `background.blend(base.opacity(0.9))`.

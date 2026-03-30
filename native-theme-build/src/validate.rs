@@ -4,19 +4,29 @@ use std::collections::{BTreeSet, HashMap};
 use std::fs;
 use std::path::Path;
 
+use heck::ToUpperCamelCase;
+
 use crate::error::BuildError;
-use crate::schema::{KNOWN_THEMES, MappingValue, MasterConfig, ThemeMapping};
+use crate::schema::{DE_TABLE, MappingValue, MasterConfig, ThemeMapping};
+
+/// Rust keywords that cannot be used as identifiers (including contextual keywords).
+const RUST_KEYWORDS: [&str; 38] = [
+    "Self", "self", "super", "crate", "fn", "mod", "pub", "use", "let", "mut", "const", "static",
+    "struct", "enum", "trait", "impl", "type", "where", "for", "loop", "while", "if", "else",
+    "match", "return", "break", "continue", "as", "in", "ref", "move", "async", "await", "dyn",
+    "unsafe", "extern", "true", "false",
+];
 
 /// Validate that all theme names in the config are known.
 ///
-/// Checks both `bundled_themes` and `system_themes` against `KNOWN_THEMES`.
+/// Checks both `bundled_themes` and `system_themes` against [`THEME_TABLE`](crate::schema::THEME_TABLE).
 /// Returns a `BuildError::UnknownTheme` for each unrecognized theme name.
 pub(crate) fn validate_themes(config: &MasterConfig) -> Vec<BuildError> {
     config
         .bundled_themes
         .iter()
         .chain(config.system_themes.iter())
-        .filter(|theme| !KNOWN_THEMES.contains(&theme.as_str()))
+        .filter(|theme| !crate::schema::is_known_theme(theme))
         .map(|theme| BuildError::UnknownTheme {
             theme: theme.clone(),
         })
@@ -138,10 +148,10 @@ pub(crate) fn check_orphan_svgs(
     warnings
 }
 
-/// Known DE keys that map to LinuxDesktop variants in generated code.
-const KNOWN_DE_KEYS: [&str; 8] = [
-    "kde", "gnome", "xfce", "cinnamon", "mate", "lxqt", "budgie", "default",
-];
+/// Check whether `key` is a known DE key (appears in `DE_TABLE` or is `"default"`).
+fn is_known_de_key(key: &str) -> bool {
+    key == "default" || DE_TABLE.iter().any(|(k, _)| *k == key)
+}
 
 /// Validate DE keys in DeAware mapping values.
 ///
@@ -149,14 +159,18 @@ const KNOWN_DE_KEYS: [&str; 8] = [
 /// mandatory `default` key ensures correctness. Unknown keys produce
 /// unreachable match arms in generated code but are not harmful.
 pub(crate) fn validate_de_keys(mapping: &ThemeMapping, mapping_path: &str) -> Vec<String> {
+    // Build the recognised list from DE_TABLE for the warning message
+    let recognised: Vec<&str> = DE_TABLE.iter().map(|(k, _)| *k).collect();
+    let recognised_list = recognised.join(", ");
+
     let mut warnings = Vec::new();
     for (role, value) in mapping {
         if let MappingValue::DeAware(de_map) = value {
             for key in de_map.keys() {
-                if !KNOWN_DE_KEYS.contains(&key.as_str()) {
+                if !is_known_de_key(key) {
                     warnings.push(format!(
                         "unrecognized DE key \"{key}\" for role \"{role}\" in {mapping_path} \
-                         (recognized: kde, gnome, xfce, cinnamon, mate, lxqt, budgie). \
+                         (recognized: {recognised_list}). \
                          This icon name will never be used at runtime."
                     ));
                 }
@@ -164,6 +178,101 @@ pub(crate) fn validate_de_keys(mapping: &ThemeMapping, mapping_path: &str) -> Ve
         }
     }
     warnings
+}
+
+/// Validate that no theme appears in both `bundled_themes` and `system_themes`.
+///
+/// Returns `BuildError::ThemeOverlap` for each theme that is in both lists.
+pub(crate) fn validate_theme_overlap(config: &MasterConfig) -> Vec<BuildError> {
+    let bundled: BTreeSet<&str> = config.bundled_themes.iter().map(|s| s.as_str()).collect();
+    config
+        .system_themes
+        .iter()
+        .filter(|t| bundled.contains(t.as_str()))
+        .map(|t| BuildError::ThemeOverlap {
+            theme: t.clone(),
+        })
+        .collect()
+}
+
+/// Validate identifiers produced from role names and the enum name.
+///
+/// Checks:
+/// - PascalCase conversion produces a non-empty result.
+/// - Result is not a Rust keyword.
+/// - No two roles produce the same PascalCase variant (collision).
+pub(crate) fn validate_identifiers(config: &MasterConfig) -> Vec<BuildError> {
+    let mut errors = Vec::new();
+
+    // Check enum name
+    let enum_pascal = config.name.to_upper_camel_case();
+    if enum_pascal.is_empty() {
+        errors.push(BuildError::InvalidIdentifier {
+            name: config.name.clone(),
+            reason: "PascalCase conversion produces an empty string".to_string(),
+        });
+    } else if RUST_KEYWORDS.contains(&enum_pascal.as_str()) {
+        errors.push(BuildError::InvalidIdentifier {
+            name: config.name.clone(),
+            reason: format!("\"{enum_pascal}\" is a Rust keyword"),
+        });
+    }
+
+    // Check role names + collision detection
+    let mut seen: HashMap<String, &str> = HashMap::new();
+
+    for role in &config.roles {
+        let pascal = role.to_upper_camel_case();
+        if pascal.is_empty() {
+            errors.push(BuildError::InvalidIdentifier {
+                name: role.clone(),
+                reason: "PascalCase conversion produces an empty string".to_string(),
+            });
+            continue;
+        }
+        if RUST_KEYWORDS.contains(&pascal.as_str()) {
+            errors.push(BuildError::InvalidIdentifier {
+                name: role.clone(),
+                reason: format!("\"{pascal}\" is a Rust keyword"),
+            });
+        }
+        if let Some(&first_role) = seen.get(&pascal) {
+            errors.push(BuildError::IdentifierCollision {
+                role_a: first_role.to_string(),
+                role_b: role.clone(),
+                pascal,
+            });
+        } else {
+            seen.insert(pascal, role.as_str());
+        }
+    }
+
+    errors
+}
+
+/// Validate that no role name is duplicated within a single config file's roles array.
+///
+/// Checks both case-sensitive exact duplicates and PascalCase conversion collisions.
+/// Returns `BuildError::DuplicateRoleInFile` for each duplicate found.
+pub(crate) fn validate_no_duplicate_roles_in_file(
+    config: &MasterConfig,
+    file_path: &str,
+) -> Vec<BuildError> {
+    let mut errors = Vec::new();
+    let mut seen_exact: HashMap<&str, bool> = HashMap::new();
+
+    for role in &config.roles {
+        if let Some(_already) = seen_exact.get(role.as_str()) {
+            errors.push(BuildError::DuplicateRoleInFile {
+                role: role.clone(),
+                file: file_path.to_string(),
+            });
+        } else {
+            seen_exact.insert(role.as_str(), true);
+        }
+    }
+
+    errors
 }
 
 /// Validate that no role name appears in multiple config files.
@@ -544,5 +653,154 @@ mod tests {
         assert_eq!(errors.len(), 1);
         let msg = errors[0].to_string();
         assert!(msg.contains("play-pause"));
+    }
+
+    // === validate_theme_overlap tests ===
+
+    #[test]
+    fn theme_overlap_detected() {
+        let config = make_config("x", &["a"], &["material"], &["material"]);
+        let errors = validate_theme_overlap(&config);
+        assert_eq!(errors.len(), 1);
+        let msg = errors[0].to_string();
+        assert!(msg.contains("material"), "should mention the overlapping theme");
+        assert!(
+            msg.contains("bundled-themes") && msg.contains("system-themes"),
+            "should mention both lists"
+        );
+    }
+
+    #[test]
+    fn theme_overlap_none() {
+        let config = make_config("x", &["a"], &["material"], &["sf-symbols"]);
+        let errors = validate_theme_overlap(&config);
+        assert!(errors.is_empty(), "no overlap expected");
+    }
+
+    #[test]
+    fn theme_overlap_multiple() {
+        let config = make_config(
+            "x",
+            &["a"],
+            &["material", "lucide"],
+            &["material", "lucide"],
+        );
+        let errors = validate_theme_overlap(&config);
+        assert_eq!(errors.len(), 2);
+    }
+
+    // === validate_identifiers tests ===
+
+    #[test]
+    fn identifiers_valid() {
+        let config = make_config("app-icon", &["play-pause", "skip-forward"], &[], &[]);
+        let errors = validate_identifiers(&config);
+        assert!(errors.is_empty(), "valid identifiers should produce no errors");
+    }
+
+    #[test]
+    fn identifier_enum_name_empty_pascal() {
+        // A name of only dashes produces empty PascalCase
+        let config = make_config("---", &["play-pause"], &[], &[]);
+        let errors = validate_identifiers(&config);
+        assert!(
+            errors.iter().any(|e| {
+                matches!(e, BuildError::InvalidIdentifier { name, reason }
+                    if name == "---" && reason.contains("empty"))
+            }),
+            "should detect empty PascalCase for enum name: {errors:?}"
+        );
+    }
+
+    #[test]
+    fn identifier_role_is_keyword() {
+        // "r#self" -> PascalCase "Self" which is a keyword
+        let config = make_config("app-icon", &["self"], &[], &[]);
+        let errors = validate_identifiers(&config);
+        assert!(
+            errors
+                .iter()
+                .any(|e| matches!(e, BuildError::InvalidIdentifier { name, reason }
+                    if name == "self" && reason.contains("keyword"))),
+            "should detect keyword: {errors:?}"
+        );
+    }
+
+    #[test]
+    fn identifier_enum_name_is_keyword() {
+        // "self" -> PascalCase "Self" which is a Rust keyword
+        let config = make_config("self", &["play-pause"], &[], &[]);
+        let errors = validate_identifiers(&config);
+        assert!(
+            errors
+                .iter()
+                .any(|e| matches!(e, BuildError::InvalidIdentifier { name, reason }
+                    if name == "self" && reason.contains("keyword"))),
+            "should detect keyword for enum name: {errors:?}"
+        );
+    }
+
+    #[test]
+    fn identifier_collision_detected() {
+        // "play_pause" and "play-pause" both become "PlayPause"
+        let config = make_config("app-icon", &["play_pause", "play-pause"], &[], &[]);
+        let errors = validate_identifiers(&config);
+        assert!(
+            errors
+                .iter()
+                .any(|e| matches!(e, BuildError::IdentifierCollision { pascal, .. }
+                    if pascal == "PlayPause")),
+            "should detect PascalCase collision: {errors:?}"
+        );
+    }
+
+    #[test]
+    fn identifier_no_collision_different_variants() {
+        let config = make_config("app-icon", &["play-pause", "skip-forward"], &[], &[]);
+        let errors = validate_identifiers(&config);
+        assert!(
+            !errors
+                .iter()
+                .any(|e| matches!(e, BuildError::IdentifierCollision { .. })),
+            "should not detect collision for distinct roles"
+        );
+    }
+
+    // === validate_no_duplicate_roles_in_file tests ===
+
+    #[test]
+    fn duplicate_role_in_file_detected() {
+        let config = make_config("x", &["play-pause", "skip-forward", "play-pause"], &[], &[]);
+        let errors = validate_no_duplicate_roles_in_file(&config, "icons.toml");
+        assert_eq!(errors.len(), 1);
+        let msg = errors[0].to_string();
+        assert!(msg.contains("play-pause"), "should mention the duplicate role");
+        assert!(msg.contains("icons.toml"), "should mention the file");
+    }
+
+    #[test]
+    fn duplicate_role_in_file_none() {
+        let config = make_config("x", &["play-pause", "skip-forward"], &[], &[]);
+        let errors = validate_no_duplicate_roles_in_file(&config, "icons.toml");
+        assert!(errors.is_empty(), "no duplicates expected");
+    }
+
+    #[test]
+    fn duplicate_role_in_file_multiple() {
+        let config =
+            make_config("x", &["a", "b", "a", "b", "c"], &[], &[]);
+        let errors = validate_no_duplicate_roles_in_file(&config, "test.toml");
+        assert_eq!(errors.len(), 2, "should detect both duplicates");
+    }
+
+    #[test]
+    fn duplicate_role_in_file_case_sensitive() {
+        // "Play-Pause" and "play-pause" are different strings (case-sensitive)
+        let config = make_config("x", &["Play-Pause", "play-pause"], &[], &[]);
+        let errors = validate_no_duplicate_roles_in_file(&config, "icons.toml");
+        assert!(
+            errors.is_empty(),
+            "case-different roles are not exact duplicates"
+        );
     }
 }

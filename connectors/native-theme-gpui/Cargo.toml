@@ -19,6 +19,7 @@ native-theme = { workspace = true, features = [
     "lucide-icons",
     "system-icons",
     "svg-rasterize",
+    "linux",
     "macos",
     "windows",
 ] }

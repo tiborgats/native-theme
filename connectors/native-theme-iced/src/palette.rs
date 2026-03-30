@@ -6,8 +6,12 @@
 
 use native_theme::Rgba;
 
-/// Convert an `Rgba` to `iced_core::Color`.
-pub(crate) fn to_color(rgba: Rgba) -> iced_core::Color {
+/// Convert a [`native_theme::Rgba`] to [`iced_core::Color`].
+///
+/// Useful for power users who need to map arbitrary `ResolvedThemeVariant`
+/// fields to iced colors beyond what [`to_palette()`] covers.
+#[must_use]
+pub fn to_color(rgba: Rgba) -> iced_core::Color {
     let [r, g, b, a] = rgba.to_f32_array();
     iced_core::Color { r, g, b, a }
 }
@@ -21,6 +25,7 @@ pub(crate) fn to_color(rgba: Rgba) -> iced_core::Color {
 /// - `success` <- `resolved.defaults.success`
 /// - `warning` <- `resolved.defaults.warning`
 /// - `danger` <- `resolved.defaults.danger`
+#[must_use]
 pub fn to_palette(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::theme::Palette {
     let d = &resolved.defaults;
 

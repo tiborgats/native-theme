@@ -6,6 +6,7 @@ name = "Material"
 
 [light]
 icon_set = "material"
+icon_theme = "material"
 
 [light.defaults]
 accent = "#6750a4"
@@ -203,6 +204,7 @@ content_padding = 16.0
 
 [dark]
 icon_set = "material"
+icon_theme = "material"
 
 [dark.defaults]
 accent = "#d0bcff"
