@@ -252,7 +252,7 @@ mod tests {
     #[ignore = "requires a freedesktop icon theme installed (not available on CI)"]
     fn load_icon_by_name_finds_edit_copy() {
         let theme = detect_theme();
-        let result = load_freedesktop_icon_by_name("edit-copy", &theme);
+        let result = load_freedesktop_icon_by_name("edit-copy", &theme, 24);
         assert!(
             result.is_some(),
             "edit-copy should be found in system theme"

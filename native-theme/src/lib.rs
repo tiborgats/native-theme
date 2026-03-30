@@ -1572,8 +1572,8 @@ mod spinner_rasterize_tests {
         if let AnimatedIcon::Transform { icon, .. } = &anim {
             if let IconData::Svg(bytes) = icon {
                 let result = crate::rasterize::rasterize_svg(bytes, 24);
-                assert!(result.is_some(), "lucide loader should rasterize");
-                if let Some(IconData::Rgba { data, .. }) = &result {
+                assert!(result.is_ok(), "lucide loader should rasterize");
+                if let Ok(IconData::Rgba { data, .. }) = &result {
                     assert!(
                         data.iter().any(|&b| b != 0),
                         "lucide loader rasterized to empty image"

@@ -119,7 +119,7 @@ mod tests {
     fn rasterize_output_length_matches_size() {
         for size in [16, 24, 32, 48, 64] {
             let result = rasterize_svg(VALID_SVG, size);
-            let icon = result.unwrap_or_else(|| panic!("should produce output for size {size}"));
+            let icon = result.unwrap_or_else(|_| panic!("should produce output for size {size}"));
             if let IconData::Rgba { data, .. } = icon {
                 assert_eq!(
                     data.len(),

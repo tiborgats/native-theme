@@ -1615,7 +1615,7 @@ mod tests {
         for set in [IconSet::Material, IconSet::Lucide] {
             for role in IconRole::ALL {
                 assert!(
-                    bundled_icon_svg(set, role).is_some(),
+                    bundled_icon_svg(role, set).is_some(),
                     "{role:?} has no bundled SVG for {set:?}"
                 );
             }

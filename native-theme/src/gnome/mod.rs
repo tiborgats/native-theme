@@ -329,7 +329,7 @@ pub async fn from_gnome() -> crate::Result<crate::ThemeSpec> {
 /// Reads the KDE kdeglobals file as the base theme via [`crate::kde::from_kde()`],
 /// then attempts to read the accent color from the XDG Desktop Portal. If the
 /// portal provides a valid accent color, it is applied to accent, selection,
-/// and focus_ring_color fields via [`ThemeSpec::merge`].
+/// and focus_ring_color fields via [`crate::ThemeSpec::merge`].
 ///
 /// Falls back to the KDE-only base if the portal is unavailable or provides
 /// no accent color.
