@@ -167,18 +167,18 @@ impl GenerateOutput {
     /// This prints `cargo::rerun-if-changed` for all tracked paths, writes the
     /// generated code to [`output_path`](Self::output_path), and prints warnings.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if the output file cannot be written.
-    pub fn emit_cargo_directives(&self) {
+    /// Returns an I/O error if the output file cannot be written.
+    pub fn emit_cargo_directives(&self) -> std::io::Result<()> {
         for path in &self.rerun_paths {
             println!("cargo::rerun-if-changed={}", path.display());
         }
-        std::fs::write(&self.output_path, &self.code)
-            .unwrap_or_else(|e| panic!("failed to write {}: {e}", self.output_path.display()));
+        std::fs::write(&self.output_path, &self.code)?;
         for w in &self.warnings {
             println!("cargo::warning={w}");
         }
+        Ok(())
     }
 }
 
@@ -226,25 +226,43 @@ impl UnwrapOrExit<GenerateOutput> for Result<GenerateOutput, BuildErrors> {
 /// Call [`GenerateOutput::emit_cargo_directives()`] on the result to write
 /// the generated file and emit cargo directives.
 ///
-/// # Panics
+/// # Errors
 ///
-/// Panics if `CARGO_MANIFEST_DIR` or `OUT_DIR` environment variables are
-/// not set (they are always set by cargo during a build).
+/// Returns [`BuildErrors`] if `CARGO_MANIFEST_DIR` or `OUT_DIR` environment
+/// variables are not set, if the TOML file cannot be read or parsed, or if
+/// the icon pipeline detects missing roles, SVGs, or invalid mappings.
 pub fn generate_icons(toml_path: impl AsRef<Path>) -> Result<GenerateOutput, BuildErrors> {
     let toml_path = toml_path.as_ref();
-    let manifest_dir =
-        PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set"));
-    let out_dir = PathBuf::from(std::env::var("OUT_DIR").expect("OUT_DIR not set"));
+    let manifest_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").map_err(|e| {
+        BuildErrors(vec![BuildError::Io {
+            message: format!("CARGO_MANIFEST_DIR not set: {e}"),
+        }])
+    })?);
+    let out_dir = PathBuf::from(std::env::var("OUT_DIR").map_err(|e| {
+        BuildErrors(vec![BuildError::Io {
+            message: format!("OUT_DIR not set: {e}"),
+        }])
+    })?);
     let resolved = manifest_dir.join(toml_path);
 
-    let content = std::fs::read_to_string(&resolved)
-        .unwrap_or_else(|e| panic!("failed to read {}: {e}", resolved.display()));
-    let config: MasterConfig = toml::from_str(&content)
-        .unwrap_or_else(|e| panic!("failed to parse {}: {e}", resolved.display()));
+    let content = std::fs::read_to_string(&resolved).map_err(|e| {
+        BuildErrors(vec![BuildError::Io {
+            message: format!("failed to read {}: {e}", resolved.display()),
+        }])
+    })?;
+    let config: MasterConfig = toml::from_str(&content).map_err(|e| {
+        BuildErrors(vec![BuildError::Io {
+            message: format!("failed to parse {}: {e}", resolved.display()),
+        }])
+    })?;
 
     let base_dir = resolved
         .parent()
-        .expect("TOML path has no parent")
+        .ok_or_else(|| {
+            BuildErrors(vec![BuildError::Io {
+                message: format!("{} has no parent directory", resolved.display()),
+            }])
+        })?
         .to_path_buf();
     let file_path_str = resolved.to_string_lossy().to_string();
 
@@ -364,11 +382,11 @@ impl IconGenerator {
     /// against `CARGO_MANIFEST_DIR`. When all source paths are absolute,
     /// `CARGO_MANIFEST_DIR` is not required.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if `CARGO_MANIFEST_DIR` is not set and a relative source path
-    /// is used. Panics if neither [`output_dir()`](Self::output_dir) nor
-    /// `OUT_DIR` is set.
+    /// Returns [`BuildErrors`] if `CARGO_MANIFEST_DIR` is not set and a
+    /// relative source path is used, or if neither
+    /// [`output_dir()`](Self::output_dir) nor `OUT_DIR` is set.
     pub fn generate(self) -> Result<GenerateOutput, BuildErrors> {
         if self.sources.is_empty() {
             return Err(BuildErrors(vec![BuildError::Io {
@@ -381,16 +399,25 @@ impl IconGenerator {
         let needs_manifest_dir = self.sources.iter().any(|s| !s.is_absolute())
             || self.base_dir.as_ref().is_some_and(|b| !b.is_absolute());
         let manifest_dir = if needs_manifest_dir {
-            Some(PathBuf::from(
-                std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set"),
-            ))
+            Some(PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").map_err(
+                |e| {
+                    BuildErrors(vec![BuildError::Io {
+                        message: format!("CARGO_MANIFEST_DIR not set: {e}"),
+                    }])
+                },
+            )?))
         } else {
             std::env::var("CARGO_MANIFEST_DIR").ok().map(PathBuf::from)
         };
 
-        let out_dir = self
-            .output_dir
-            .unwrap_or_else(|| PathBuf::from(std::env::var("OUT_DIR").expect("OUT_DIR not set")));
+        let out_dir = match self.output_dir {
+            Some(dir) => dir,
+            None => PathBuf::from(std::env::var("OUT_DIR").map_err(|e| {
+                BuildErrors(vec![BuildError::Io {
+                    message: format!("OUT_DIR not set: {e}"),
+                }])
+            })?),
+        };
 
         let mut configs = Vec::new();
         let mut base_dirs = Vec::new();
@@ -399,12 +426,28 @@ impl IconGenerator {
             let resolved = if source.is_absolute() {
                 source.clone()
             } else {
-                manifest_dir.as_ref().unwrap().join(source)
+                manifest_dir
+                    .as_ref()
+                    .ok_or_else(|| {
+                        BuildErrors(vec![BuildError::Io {
+                            message: format!(
+                                "CARGO_MANIFEST_DIR required for relative path {}",
+                                source.display()
+                            ),
+                        }])
+                    })?
+                    .join(source)
             };
-            let content = std::fs::read_to_string(&resolved)
-                .unwrap_or_else(|e| panic!("failed to read {}: {e}", resolved.display()));
-            let config: MasterConfig = toml::from_str(&content)
-                .unwrap_or_else(|e| panic!("failed to parse {}: {e}", resolved.display()));
+            let content = std::fs::read_to_string(&resolved).map_err(|e| {
+                BuildErrors(vec![BuildError::Io {
+                    message: format!("failed to read {}: {e}", resolved.display()),
+                }])
+            })?;
+            let config: MasterConfig = toml::from_str(&content).map_err(|e| {
+                BuildErrors(vec![BuildError::Io {
+                    message: format!("failed to parse {}: {e}", resolved.display()),
+                }])
+            })?;
 
             let file_path_str = resolved.to_string_lossy().to_string();
 
@@ -412,13 +455,27 @@ impl IconGenerator {
                 let base = if explicit_base.is_absolute() {
                     explicit_base.clone()
                 } else {
-                    manifest_dir.as_ref().unwrap().join(explicit_base)
+                    manifest_dir
+                        .as_ref()
+                        .ok_or_else(|| {
+                            BuildErrors(vec![BuildError::Io {
+                                message: format!(
+                                    "CARGO_MANIFEST_DIR required for relative base_dir {}",
+                                    explicit_base.display()
+                                ),
+                            }])
+                        })?
+                        .join(explicit_base)
                 };
                 base_dirs.push(base);
             } else {
                 let parent = resolved
                     .parent()
-                    .expect("TOML path has no parent")
+                    .ok_or_else(|| {
+                        BuildErrors(vec![BuildError::Io {
+                            message: format!("{} has no parent directory", resolved.display()),
+                        }])
+                    })?
                     .to_path_buf();
                 base_dirs.push(parent);
             }

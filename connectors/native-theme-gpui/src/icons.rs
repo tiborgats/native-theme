@@ -812,10 +812,14 @@ pub fn animated_frames_to_image_sources(anim: &AnimatedIcon) -> Option<AnimatedI
                 .iter()
                 .filter_map(|f| to_image_source(f, None, None))
                 .collect();
-            Some(AnimatedImageSources {
-                sources,
-                frame_duration_ms: *frame_duration_ms,
-            })
+            if sources.is_empty() {
+                None
+            } else {
+                Some(AnimatedImageSources {
+                    sources,
+                    frame_duration_ms: *frame_duration_ms,
+                })
+            }
         }
         _ => None,
     }
@@ -1523,15 +1527,13 @@ mod tests {
     }
 
     #[test]
-    fn animated_frames_empty_returns_empty_vec() {
+    fn animated_frames_empty_returns_none() {
         let anim = AnimatedIcon::Frames {
             frames: vec![],
             frame_duration_ms: 80,
         };
         let result = animated_frames_to_image_sources(&anim);
-        let ais = result.expect("Frames variant should return Some even if empty");
-        assert_eq!(ais.sources.len(), 0);
-        assert_eq!(ais.frame_duration_ms, 80);
+        assert!(result.is_none());
     }
 
     #[test]

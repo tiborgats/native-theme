@@ -51,6 +51,9 @@ fn extract_cgimage(image: &NSImage) -> Option<Retained<CGImage>> {
 /// Creates a bitmap context with PremultipliedLast alpha format,
 /// draws the image into it, and returns the raw RGBA pixel buffer.
 fn rasterize(cg_image: &CGImage, width: u32, height: u32) -> Option<Vec<u8>> {
+    if width == 0 || height == 0 {
+        return None;
+    }
     let color_space = CGColorSpace::new_device_rgb()?;
     let bytes_per_row = (width as usize) * 4;
     let buf_size = bytes_per_row * (height as usize);

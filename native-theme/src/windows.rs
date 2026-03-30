@@ -109,7 +109,11 @@ fn logfont_to_fontspec_raw(
 ) -> FontSpec {
     let face_end = face_name.iter().position(|&c| c == 0).unwrap_or(32);
     let family = String::from_utf16_lossy(&face_name[..face_end]);
-    let points = (lf_height.unsigned_abs() * 72) / dpi;
+    let points = if dpi == 0 {
+        0
+    } else {
+        (lf_height.unsigned_abs() * 72) / dpi
+    };
     let weight = (lf_weight.clamp(100, 900)) as u16;
     FontSpec {
         family: Some(family),

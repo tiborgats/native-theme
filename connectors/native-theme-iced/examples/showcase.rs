@@ -176,6 +176,19 @@ impl PartialEq for ThemeChoice {
 
 impl Eq for ThemeChoice {}
 
+/// Load the bundled adwaita preset as a last-resort fallback.
+///
+/// Returns `None` if any step fails (should not happen for bundled data,
+/// but we never panic).
+fn load_adwaita_fallback(is_dark: bool) -> Option<(native_theme::ResolvedThemeVariant, Theme)> {
+    let nt = ThemeSpec::preset("adwaita").ok()?;
+    let mut variant = nt.pick_variant(is_dark)?.clone();
+    variant.resolve();
+    let r = variant.validate().ok()?;
+    let t = native_theme_iced::to_theme(&r, &nt.name);
+    Some((r, t))
+}
+
 fn theme_choices(default_label: &str) -> Vec<ThemeChoice> {
     let mut choices = vec![ThemeChoice::OsTheme(default_label.to_string())];
     choices.extend(
@@ -534,23 +547,21 @@ impl Default for State {
                 }
                 Err(e) => {
                     // Fallback: load adwaita preset through resolve pipeline
-                    let nt = ThemeSpec::preset("adwaita")
-                        .expect("bundled adwaita preset is guaranteed to exist");
-                    let mut variant = nt
-                        .pick_variant(is_dark)
-                        .expect("bundled adwaita preset is guaranteed to have both variants")
-                        .clone();
-                    variant.resolve();
-                    let r = variant
-                        .validate()
-                        .expect("bundled adwaita preset is guaranteed to validate");
-                    let t = native_theme_iced::to_theme(&r, &nt.name);
-                    (
-                        r,
-                        t,
-                        Some(format!("OS theme failed: {e}. Using adwaita fallback.")),
-                        "adwaita".to_string(),
-                    )
+                    match load_adwaita_fallback(is_dark) {
+                        Some((r, t)) => (
+                            r,
+                            t,
+                            Some(format!("OS theme failed: {e}. Using adwaita fallback.")),
+                            "adwaita".to_string(),
+                        ),
+                        None => {
+                            eprintln!(
+                                "Fatal: OS theme failed ({e}) and adwaita fallback \
+                                 also failed. Cannot start."
+                            );
+                            std::process::exit(1);
+                        }
+                    }
                 }
             };
 
@@ -698,20 +709,11 @@ impl State {
                     Err(e) => {
                         self.error_message =
                             Some(format!("OS theme failed: {e}. Using adwaita fallback."));
-                        // Fallback: load adwaita preset through resolve pipeline
-                        let nt = ThemeSpec::preset("adwaita")
-                            .expect("bundled adwaita preset is guaranteed to exist");
-                        let mut variant = nt
-                            .pick_variant(self.is_dark)
-                            .expect("bundled adwaita preset is guaranteed to have both variants")
-                            .clone();
-                        variant.resolve();
-                        let resolved = variant
-                            .validate()
-                            .expect("bundled adwaita preset is guaranteed to validate");
-                        self.current_resolved = resolved;
-                        self.current_theme =
-                            native_theme_iced::to_theme(&self.current_resolved, &nt.name);
+                        if let Some((r, t)) = load_adwaita_fallback(self.is_dark) {
+                            self.current_resolved = r;
+                            self.current_theme = t;
+                        }
+                        // If adwaita also fails, keep the previous theme unchanged
                     }
                 }
             }
@@ -836,12 +838,12 @@ enum Message {
 fn capture_own_window_macos(output_path: &str) -> Result<(), String> {
     use std::process::Command;
 
+    let Some(ns_app_class) = objc2::runtime::AnyClass::get(c"NSApplication") else {
+        return Err("NSApplication class not found".into());
+    };
     let window_id: i64 = unsafe {
-        let ns_app: *mut objc2::runtime::AnyObject = objc2::msg_send![
-            objc2::runtime::AnyClass::get(c"NSApplication")
-                .expect("NSApplication class is guaranteed to exist on macOS"),
-            sharedApplication
-        ];
+        let ns_app: *mut objc2::runtime::AnyObject =
+            objc2::msg_send![ns_app_class, sharedApplication];
         // Ensure the app is front-most (the second invocation on CI may
         // launch behind the terminal).
         let _: () = objc2::msg_send![ns_app, activateIgnoringOtherApps: true];

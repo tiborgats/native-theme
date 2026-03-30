@@ -190,7 +190,7 @@ No features are enabled by default. The preset API works without any features.
 
 ```toml
 [dependencies]
-native-theme = { version = "0.5", features = ["native"] }
+native-theme = { version = "0.5.2", features = ["native"] }
 ```
 
 ### Meta-features

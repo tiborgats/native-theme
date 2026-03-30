@@ -3163,25 +3163,12 @@ impl Showcase {
                 div()
                     .id("tt-kbd")
                     .child(
-                        h_flex()
-                            .gap_4()
-                            .items_center()
-                            .child(Kbd::new(
-                                Keystroke::parse("cmd-c")
-                                    .expect("static keystroke literal is valid"),
-                            ))
-                            .child(Kbd::new(
-                                Keystroke::parse("cmd-v")
-                                    .expect("static keystroke literal is valid"),
-                            ))
-                            .child(Kbd::new(
-                                Keystroke::parse("cmd-shift-p")
-                                    .expect("static keystroke literal is valid"),
-                            ))
-                            .child(Kbd::new(
-                                Keystroke::parse("ctrl-z")
-                                    .expect("static keystroke literal is valid"),
-                            )),
+                        h_flex().gap_4().items_center().children(
+                            ["cmd-c", "cmd-v", "cmd-shift-p", "ctrl-z"]
+                                .iter()
+                                .filter_map(|k| Keystroke::parse(k).ok())
+                                .map(Kbd::new),
+                        ),
                     )
                     .on_hover(self.hover_info(
                         &fi,
@@ -5219,12 +5206,10 @@ impl CliArgs {
 /// Get the NSWindow pointer for the main window via NSApplication.
 #[cfg(target_os = "macos")]
 fn get_main_window_ptr() -> Option<*mut objc2::runtime::AnyObject> {
+    let ns_app_class = objc2::runtime::AnyClass::get(c"NSApplication")?;
     unsafe {
-        let ns_app: *mut objc2::runtime::AnyObject = objc2::msg_send![
-            objc2::runtime::AnyClass::get(c"NSApplication")
-                .expect("NSApplication class is guaranteed to exist on macOS"),
-            sharedApplication
-        ];
+        let ns_app: *mut objc2::runtime::AnyObject =
+            objc2::msg_send![ns_app_class, sharedApplication];
         let main_window: *mut objc2::runtime::AnyObject = objc2::msg_send![ns_app, mainWindow];
         if main_window.is_null() {
             None
@@ -5480,107 +5465,109 @@ fn main() {
             let variant_override = cli_args.variant.as_deref().map(|v| v == "dark");
 
             let bounds = Bounds::centered(None, size(px(1100.), px(850.)), cx);
-            let window_handle = cx
-                .open_window(
-                    WindowOptions {
-                        window_bounds: Some(WindowBounds::Windowed(bounds)),
-                        ..Default::default()
-                    },
-                    |window, cx| {
-                        let showcase = cx.new(|cx| {
-                            let mut s = Showcase::new(window, cx);
+            let window_handle = cx.open_window(
+                WindowOptions {
+                    window_bounds: Some(WindowBounds::Windowed(bounds)),
+                    ..Default::default()
+                },
+                |window, cx| {
+                    let showcase = cx.new(|cx| {
+                        let mut s = Showcase::new(window, cx);
 
-                            // Override color mode if --variant was specified
-                            if let Some(is_dark) = variant_override {
-                                let mode = if is_dark {
-                                    ColorMode::Dark
-                                } else {
-                                    ColorMode::Light
-                                };
-                                s.color_mode = mode;
-                                s.is_dark = is_dark;
+                        // Override color mode if --variant was specified
+                        if let Some(is_dark) = variant_override {
+                            let mode = if is_dark {
+                                ColorMode::Dark
+                            } else {
+                                ColorMode::Light
+                            };
+                            s.color_mode = mode;
+                            s.is_dark = is_dark;
+                        }
+
+                        // Override theme if --theme was specified
+                        if let Some(ref theme_name) = cli_args.theme {
+                            s.current_theme_name = theme_name.clone();
+                            s.apply_theme_by_name(theme_name, window, cx);
+                            // Update the theme selector dropdown to show the overridden theme
+                            let display = SharedString::from(theme_name.clone());
+                            s.theme_select.update(cx, |select, cx| {
+                                select.set_selected_value(&display, window, cx);
+                            });
+                        }
+
+                        // Override tab if --tab was specified
+                        if let Some(ref tab_name) = cli_args.tab
+                            && let Some(idx) = CliArgs::tab_index(tab_name)
+                        {
+                            s.active_tab = idx;
+                        }
+
+                        // Override icon theme if --icon-theme was specified
+                        if let Some(ref theme_name) = cli_args.icon_theme {
+                            s.icon_theme_override = Some(theme_name.clone());
+                        }
+
+                        // Override icon set if --icon-set was specified
+                        if let Some(ref set_name) = cli_args.icon_set {
+                            s.use_default_icon_set = false;
+                            let set_enum = IconSet::from_name(set_name);
+                            s.icon_set_name = set_name.clone();
+                            s.icon_set_enum = set_enum;
+                            let theme_ref = s.icon_theme_override.as_deref();
+                            if let Some(set) = set_enum {
+                                s.loaded_icons = load_all_icons(set, theme_ref);
                             }
+                            s.gpui_icons = load_gpui_icons(set_enum, theme_ref);
+                            let fg = cx.theme().foreground;
+                            s.rebuild_icon_caches(fg);
+                            s.rebuild_animation_caches();
+                            s.start_animation_timer(cx);
 
-                            // Override theme if --theme was specified
-                            if let Some(ref theme_name) = cli_args.theme {
-                                s.current_theme_name = theme_name.clone();
-                                s.apply_theme_by_name(theme_name, window, cx);
-                                // Update the theme selector dropdown to show the overridden theme
-                                let display = SharedString::from(theme_name.clone());
-                                s.theme_select.update(cx, |select, cx| {
-                                    select.set_selected_value(&display, window, cx);
-                                });
-                            }
-
-                            // Override tab if --tab was specified
-                            if let Some(ref tab_name) = cli_args.tab
-                                && let Some(idx) = CliArgs::tab_index(tab_name)
-                            {
-                                s.active_tab = idx;
-                            }
-
-                            // Override icon theme if --icon-theme was specified
-                            if let Some(ref theme_name) = cli_args.icon_theme {
-                                s.icon_theme_override = Some(theme_name.clone());
-                            }
-
-                            // Override icon set if --icon-set was specified
-                            if let Some(ref set_name) = cli_args.icon_set {
-                                s.use_default_icon_set = false;
-                                let set_enum = IconSet::from_name(set_name);
-                                s.icon_set_name = set_name.clone();
-                                s.icon_set_enum = set_enum;
-                                let theme_ref = s.icon_theme_override.as_deref();
-                                if let Some(set) = set_enum {
-                                    s.loaded_icons = load_all_icons(set, theme_ref);
+                            // Update the icon theme selector dropdown
+                            let sys_theme = system_icon_theme();
+                            let icon_display: SharedString = match set_name.as_str() {
+                                "material" => "Material (bundled)".into(),
+                                "lucide" => "Lucide (bundled)".into(),
+                                "freedesktop" => {
+                                    let theme = cli_args.icon_theme.as_deref().unwrap_or(sys_theme);
+                                    format!("{} (system)", theme).into()
                                 }
-                                s.gpui_icons = load_gpui_icons(set_enum, theme_ref);
-                                let fg = cx.theme().foreground;
-                                s.rebuild_icon_caches(fg);
-                                s.rebuild_animation_caches();
-                                s.start_animation_timer(cx);
-
-                                // Update the icon theme selector dropdown
-                                let sys_theme = system_icon_theme();
-                                let icon_display: SharedString = match set_name.as_str() {
-                                    "material" => "Material (bundled)".into(),
-                                    "lucide" => "Lucide (bundled)".into(),
-                                    "freedesktop" => {
-                                        let theme =
-                                            cli_args.icon_theme.as_deref().unwrap_or(sys_theme);
-                                        format!("{} (system)", theme).into()
-                                    }
-                                    _ => format!("default ({})", sys_theme).into(),
-                                };
-                                // Add the display name to the selector if not already present,
-                                // then select it.
-                                let detected_theme = system_icon_theme();
-                                let default_label = format!("default ({})", detected_theme);
-                                let system_label = format!("{} (system)", detected_theme);
-                                let mut icon_names: Vec<SharedString> = vec![
-                                    default_label.into(),
-                                    "gpui-component built-in (Lucide)".into(),
-                                    "Lucide (bundled)".into(),
-                                    "Material (bundled)".into(),
-                                ];
-                                icon_names.push(system_label.into());
-                                // Add the override display name if not already in list
-                                if !icon_names.contains(&icon_display) {
-                                    icon_names.push(icon_display.clone());
-                                }
-                                let new_delegate = SearchableVec::new(icon_names);
-                                s.icon_set_select.update(cx, |select, cx| {
-                                    select.set_items(new_delegate, window, cx);
-                                    select.set_selected_value(&icon_display, window, cx);
-                                });
+                                _ => format!("default ({})", sys_theme).into(),
+                            };
+                            // Add the display name to the selector if not already present,
+                            // then select it.
+                            let detected_theme = system_icon_theme();
+                            let default_label = format!("default ({})", detected_theme);
+                            let system_label = format!("{} (system)", detected_theme);
+                            let mut icon_names: Vec<SharedString> = vec![
+                                default_label.into(),
+                                "gpui-component built-in (Lucide)".into(),
+                                "Lucide (bundled)".into(),
+                                "Material (bundled)".into(),
+                            ];
+                            icon_names.push(system_label.into());
+                            // Add the override display name if not already in list
+                            if !icon_names.contains(&icon_display) {
+                                icon_names.push(icon_display.clone());
                             }
+                            let new_delegate = SearchableVec::new(icon_names);
+                            s.icon_set_select.update(cx, |select, cx| {
+                                select.set_items(new_delegate, window, cx);
+                                select.set_selected_value(&icon_display, window, cx);
+                            });
+                        }
 
-                            s
-                        });
-                        cx.new(|cx| Root::new(showcase, window, cx))
-                    },
-                )
-                .expect("failed to open main application window");
+                        s
+                    });
+                    cx.new(|cx| Root::new(showcase, window, cx))
+                },
+            );
+            let Ok(window_handle) = window_handle else {
+                eprintln!("Fatal: failed to open main application window");
+                cx.quit();
+                return;
+            };
             window_handle
                 .update(cx, |_, window, _| {
                     window.set_window_title(&format!(
@@ -5637,6 +5624,7 @@ fn main() {
                 }
                 #[cfg(not(any(target_os = "macos", target_os = "windows")))]
                 {
+                    let _ = &screenshot_path;
                     eprintln!(
                         "Self-capture not supported on this platform. \
                          Use spectacle or generate_gpui_screenshots.sh instead."
