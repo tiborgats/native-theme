@@ -4,7 +4,7 @@
 ///
 /// Contains a list of field paths (e.g., `"defaults.accent"`, `"button.font.family"`)
 /// that were still `None` after resolution. Used by `validate()` to report exactly
-/// which fields need to be supplied before a [`crate::model::ResolvedTheme`] can be built.
+/// which fields need to be supplied before a [`crate::model::ResolvedThemeVariant`] can be built.
 #[derive(Debug, Clone)]
 pub struct ThemeResolutionError {
     /// Dot-separated paths of fields that remained `None` after resolution.
@@ -43,6 +43,9 @@ pub enum Error {
     /// Wrapped platform-specific error.
     Platform(Box<dyn std::error::Error + Send + Sync>),
 
+    /// File I/O error (preserves the original `std::io::Error`).
+    Io(std::io::Error),
+
     /// Theme resolution/validation found missing fields.
     Resolution(ThemeResolutionError),
 }
@@ -54,6 +57,7 @@ impl std::fmt::Display for Error {
             Error::Unavailable(msg) => write!(f, "theme data unavailable: {msg}"),
             Error::Format(msg) => write!(f, "theme format error: {msg}"),
             Error::Platform(err) => write!(f, "platform error: {err}"),
+            Error::Io(err) => write!(f, "I/O error: {err}"),
             Error::Resolution(e) => write!(f, "{e}"),
         }
     }
@@ -63,6 +67,7 @@ impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Error::Platform(err) => Some(&**err),
+            Error::Io(err) => Some(err),
             Error::Resolution(e) => Some(e),
             _ => None,
         }
@@ -83,7 +88,7 @@ impl From<toml::ser::Error> for Error {
 
 impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Self {
-        Error::Unavailable(err.to_string())
+        Error::Io(err)
     }
 }
 
@@ -162,8 +167,11 @@ mod tests {
         let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "missing file");
         let err: Error = io_err.into();
         match &err {
-            Error::Unavailable(msg) => assert!(msg.contains("missing file")),
-            other => panic!("expected Unavailable variant, got: {other:?}"),
+            Error::Io(e) => {
+                assert_eq!(e.kind(), std::io::ErrorKind::NotFound);
+                assert!(e.to_string().contains("missing file"));
+            }
+            other => panic!("expected Io variant, got: {other:?}"),
         }
     }
 

@@ -17,7 +17,7 @@ companion doc).
 **Design (hard to fix later)**
 
 1. [Option/Resolved duality creates massive API surface](#1-optionresolved-duality-creates-massive-api-surface)
-2. [NativeTheme vs SystemTheme naming confusion](#2-nativetheme-vs-systemtheme-naming-confusion)
+2. [ThemeSpec vs SystemTheme naming confusion](#2-nativetheme-vs-systemtheme-naming-confusion)
 3. [resolve() and validate() unsafely separate](#3-resolve-and-validate-unsafely-separate)
 4. [with_overlay() consumes self -- destroys base on failure](#4-with_overlay-consumes-self----destroys-base-on-failure)
 5. [system_is_dark() cached forever with OnceLock](#5-system_is_dark-cached-forever-with-oncelock)
@@ -85,12 +85,12 @@ The naming convention across the pairs is also inconsistent:
 
 | Option-based | Resolved | Convention |
 |---|---|---|
-| `ButtonTheme` | `ResolvedButton` | Drops `Theme` |
-| `ThemeVariant` | `ResolvedTheme` | Changes word entirely |
+| `ButtonTheme` | `ResolvedButtonTheme` | Drops `Theme` |
+| `ThemeVariant` | `ResolvedThemeVariant` | Changes word entirely |
 | `FontSpec` | `ResolvedFontSpec` | Keeps `Spec` |
-| `ThemeDefaults` | `ResolvedDefaults` | Drops `Theme` |
+| `ThemeDefaults` | `ResolvedThemeDefaults` | Drops `Theme` |
 
-Seeing `ResolvedButton` in isolation gives no indication it is a theme type --
+Seeing `ResolvedButtonTheme` in isolation gives no indication it is a theme type --
 it reads like a UI widget struct.
 
 Additionally, `ResolvedFontSpec` lives in `model::widgets` rather than in
@@ -101,10 +101,10 @@ Additionally, `ResolvedFontSpec` lives in `model::widgets` rather than in
 Rename all resolved types to keep the `Theme` suffix:
 
 ```
-ResolvedButton     -> ResolvedButtonTheme
-ResolvedWindow     -> ResolvedWindowTheme
-ResolvedDefaults   -> ResolvedThemeDefaults
-ResolvedTheme      -> ResolvedThemeVariant
+ResolvedButtonTheme     -> ResolvedButtonTheme
+ResolvedWindowTheme     -> ResolvedWindowTheme
+ResolvedThemeDefaults   -> ResolvedThemeDefaults
+ResolvedThemeVariant      -> ResolvedThemeVariant
 ```
 
 **Pro:**
@@ -114,7 +114,7 @@ ResolvedTheme      -> ResolvedThemeVariant
 - `define_widget_pair!` macro already controls both names -- single-site change
 
 **Contra:**
-- Longer names (`ResolvedButtonTheme` vs `ResolvedButton`)
+- Longer names (`ResolvedButtonTheme` vs `ResolvedButtonTheme`)
 - Every downstream consumer updates every resolved type reference
 - `ResolvedThemeVariant` is verbose
 
@@ -131,7 +131,7 @@ ThemeVariant    -> Variant
 
 **Pro:**
 - Shorter names everywhere
-- `Button` / `ResolvedButton` is parallel
+- `Button` / `ResolvedButtonTheme` is parallel
 - Cleaner for the common case (Option types appear more in TOML schema docs)
 
 **Contra:**
@@ -159,10 +159,10 @@ let bg: Rgba = resolved.button.background;
 - IDE autocomplete becomes cleaner
 
 **Contra:**
-- `ResolvedTheme` is the most-used type (returned by `SystemTheme::active()`)
+- `ResolvedThemeVariant` is the most-used type (returned by `SystemTheme::active()`)
   -- hiding it behind a submodule adds an import
 - Users must import from two places: root for `SystemTheme`, submodule for
-  `ResolvedTheme`
+  `ResolvedThemeVariant`
 - Doesn't fix the naming inconsistency itself
 
 ### Option D: Re-export resolved types at root but not Option-based widget types
@@ -171,7 +171,7 @@ The inverse of Option C. Only preset authors and TOML deserializers need the
 Option-based types. Most consumers only interact with resolved types.
 
 ```rust
-// Root re-exports: ResolvedButton, ResolvedWindow, etc.
+// Root re-exports: ResolvedButtonTheme, ResolvedWindowTheme, etc.
 // Option types: native_theme::model::ButtonTheme, etc.
 ```
 
@@ -181,7 +181,7 @@ Option-based types. Most consumers only interact with resolved types.
 - Reflects actual usage patterns
 
 **Contra:**
-- `NativeTheme` (which contains `ThemeVariant` which contains `ButtonTheme`)
+- `ThemeSpec` (which contains `ThemeVariant` which contains `ButtonTheme`)
   is a root type -- its fields reference types not re-exported at root
 - TOML deserialize examples become awkward with submodule imports
 - Breaks existing code that uses root re-exports of Option types
@@ -202,7 +202,7 @@ Apply Option A naming + fix the module placement issue.
 
 Rename all resolved types to keep their `Theme`/`Spec` suffix consistently:
 `ResolvedButtonTheme`, `ResolvedWindowTheme`, `ResolvedThemeDefaults`, etc.
-`ResolvedTheme` becomes `ResolvedThemeVariant` for parallelism with
+`ResolvedThemeVariant` becomes `ResolvedThemeVariant` for parallelism with
 `ThemeVariant`. Move `ResolvedFontSpec` from `model::widgets` to `model::font`.
 
 This is a pure rename -- the `define_widget_pair!` macro already controls both
@@ -212,26 +212,26 @@ are rejected because they complicate imports without fixing the naming problem.
 
 ---
 
-## 2. NativeTheme vs SystemTheme naming confusion
+## 2. ThemeSpec vs SystemTheme naming confusion
 
 **Verdict: VALID -- high priority**
 
 The crate is `native-theme`. The unresolved Option-based top-level type is
-`NativeTheme`. The resolved-from-OS result is `SystemTheme`. A new user
-expects `NativeTheme` to be the "native (OS) theme" -- but it is the portable
+`ThemeSpec`. The resolved-from-OS result is `SystemTheme`. A new user
+expects `ThemeSpec` to be the "native (OS) theme" -- but it is the portable
 serializable form. `SystemTheme` is the one that comes from the system, yet is
-not called `NativeTheme`. The naming inverts the intuition.
+not called `ThemeSpec`. The naming inverts the intuition.
 
 ```rust
 // What users expect:
-let native = NativeTheme::from_system()?;  // "native theme from system"
+let native = ThemeSpec::from_system()?;  // "native theme from system"
 
 // What they get:
-let native = NativeTheme::preset("dracula")?;  // a preset, not "native"
+let native = ThemeSpec::preset("dracula")?;  // a preset, not "native"
 let system = from_system()?;                    // returns SystemTheme
 ```
 
-### Option A: Rename `NativeTheme` to `ThemeSource` or `ThemeSpec`
+### Option A: Rename `ThemeSpec` to `ThemeSource` or `ThemeSpec`
 
 ```rust
 pub struct ThemeSpec { ... }   // unresolved, serializable, mergeable
@@ -250,34 +250,34 @@ pub struct SystemTheme { ... } // resolved, from OS
 ### Option B: Rename `SystemTheme` to `DetectedTheme` or `LiveTheme`
 
 **Pro:**
-- Keeps the crate-name-matching `NativeTheme` as the star type
+- Keeps the crate-name-matching `ThemeSpec` as the star type
 - `DetectedTheme` / `LiveTheme` communicates it came from OS detection
 
 **Contra:**
-- `NativeTheme::preset("dracula")` still feels wrong -- "native" preset?
-- The core confusion (NativeTheme not being native) persists
+- `ThemeSpec::preset("dracula")` still feels wrong -- "native" preset?
+- The core confusion (ThemeSpec not being native) persists
 
-### Option C: Rename `NativeTheme` -> `Theme`, `SystemTheme` -> `NativeTheme`
+### Option C: Rename `ThemeSpec` -> `Theme`, `SystemTheme` -> `ThemeSpec`
 
 ```rust
 pub struct Theme { ... }       // generic, serializable
-pub struct NativeTheme { ... } // from OS -- the actual "native" theme
+pub struct ThemeSpec { ... } // from OS -- the actual "native" theme
 ```
 
 **Pro:**
-- `NativeTheme` now means what users expect: the OS-native theme
+- `ThemeSpec` now means what users expect: the OS-native theme
 - `Theme` is simple and generic for the serializable form
-- `native_theme::Theme` and `native_theme::NativeTheme` both read naturally
+- `native_theme::Theme` and `native_theme::ThemeSpec` both read naturally
 
 **Contra:**
 - `Theme` is extremely generic -- likely to clash with consumer types
 - Two renames at once -- maximum breakage
-- `from_system() -> NativeTheme` still doesn't quite communicate the pipeline
+- `from_system() -> ThemeSpec` still doesn't quite communicate the pipeline
 
-### Option D: Merge `SystemTheme` into `NativeTheme` with a `resolved` field
+### Option D: Merge `SystemTheme` into `ThemeSpec` with a `resolved` field
 
 ```rust
-pub struct NativeTheme {
+pub struct ThemeSpec {
     pub name: String,
     pub light: Option<ThemeVariant>,     // unresolved
     pub dark: Option<ThemeVariant>,      // unresolved
@@ -297,7 +297,7 @@ pub struct NativeTheme {
 - Fields like `is_dark`, `live_preset` don't belong on a generic theme struct
 - Loses the type-level guarantee that `SystemTheme` always has resolved data
 
-### Option E: Keep both types, rename `NativeTheme` -> `ThemeBundle`
+### Option E: Keep both types, rename `ThemeSpec` -> `ThemeBundle`
 
 ```rust
 pub struct ThemeBundle { ... }  // unresolved, serializable
@@ -313,7 +313,7 @@ pub struct SystemTheme { ... }  // resolved, from OS
 - `Bundle` is unusual in Rust theming APIs
 - `native_theme::ThemeBundle` doesn't roll off the tongue
 
-### PROPOSED: Option A -- rename `NativeTheme` to `ThemeSpec`
+### PROPOSED: Option A -- rename `ThemeSpec` to `ThemeSpec`
 
 `ThemeSpec` communicates its role: a serializable specification that can be
 loaded from TOML, merged, and resolved into a live theme. It parallels the
@@ -341,13 +341,13 @@ Nothing prevents calling `validate()` without `resolve()`. The private
 `resolve_variant()` in lib.rs already combines both:
 
 ```rust
-fn resolve_variant(mut variant: ThemeVariant) -> crate::Result<ResolvedTheme> {
+fn resolve_variant(mut variant: ThemeVariant) -> crate::Result<ResolvedThemeVariant> {
     variant.resolve();
     variant.validate()
 }
 ```
 
-### Option A: Add `ThemeVariant::into_resolved(self) -> Result<ResolvedTheme>`
+### Option A: Add `ThemeVariant::into_resolved(self) -> Result<ResolvedThemeVariant>`
 
 **Pro:**
 - Single call replaces two -- impossible to forget resolve
@@ -373,7 +373,7 @@ let resolved = v.resolve().validate()?;
 - Still possible to call `validate()` without `resolve()`
 - Chaining doesn't enforce correctness, just makes it convenient
 
-### Option C: Type-state pattern (`ThemeVariant` -> `ResolvedVariant` -> `ResolvedTheme`)
+### Option C: Type-state pattern (`ThemeVariant` -> `ResolvedVariant` -> `ResolvedThemeVariant`)
 
 **Pro:**
 - Compile-time enforcement: you literally cannot call validate on an unresolved type
@@ -398,7 +398,7 @@ let resolved = v.resolve().validate()?;
 
 ### PROPOSED: Option A + keep existing methods
 
-Add `ThemeVariant::into_resolved(self) -> Result<ResolvedTheme>` as the
+Add `ThemeVariant::into_resolved(self) -> Result<ResolvedThemeVariant>` as the
 recommended path. Keep `resolve()` and `validate()` as they are for debugging
 and advanced use. Document `into_resolved()` as the primary API. This enables
 the gpui connector's `from_preset()` convenience function (**[GPUI-1]**).
@@ -410,7 +410,7 @@ the gpui connector's `from_preset()` convenience function (**[GPUI-1]**).
 **Verdict: VALID -- medium priority**
 
 ```rust
-pub fn with_overlay(self, overlay: &NativeTheme) -> Result<Self>
+pub fn with_overlay(self, overlay: &ThemeSpec) -> Result<Self>
 ```
 
 If the overlay merges cleanly but validation fails (returns `Err`), the
@@ -430,7 +430,7 @@ let customized = system.with_overlay(&overlay)?;
 ### Option A: Take `&self` instead of `self`, return a new `SystemTheme`
 
 ```rust
-pub fn with_overlay(&self, overlay: &NativeTheme) -> Result<SystemTheme>
+pub fn with_overlay(&self, overlay: &ThemeSpec) -> Result<SystemTheme>
 ```
 
 **Pro:**
@@ -446,7 +446,7 @@ pub fn with_overlay(&self, overlay: &NativeTheme) -> Result<SystemTheme>
 ### Option B: Keep consuming `self`, return `Result<Self, (Self, Error)>`
 
 ```rust
-pub fn with_overlay(self, overlay: &NativeTheme) -> Result<Self, (Self, Error)>
+pub fn with_overlay(self, overlay: &ThemeSpec) -> Result<Self, (Self, Error)>
 ```
 
 **Pro:**
@@ -1025,14 +1025,14 @@ v.resolve();
 ### Option B: Add `into_variant(is_dark) -> Option<ThemeVariant>` (consuming)
 
 **Pro:**
-- No clone needed if `NativeTheme` is owned
-- Zero-cost for the common path where you don't need `NativeTheme` afterward
+- No clone needed if `ThemeSpec` is owned
+- Zero-cost for the common path where you don't need `ThemeSpec` afterward
 
 **Contra:**
-- Consumes `self` -- can't use the `NativeTheme` afterward
-- If you need both light and dark, you'd have to clone the `NativeTheme` first
+- Consumes `self` -- can't use the `ThemeSpec` afterward
+- If you need both light and dark, you'd have to clone the `ThemeSpec` first
 
-### Option C: Make `resolve()` take `self` by value, return `ResolvedTheme`
+### Option C: Make `resolve()` take `self` by value, return `ResolvedThemeVariant`
 
 **Pro:**
 - Eliminates the separate `validate()` call too (see section 3)
@@ -1057,7 +1057,7 @@ v.resolve();
 ### PROPOSED: Option B + Option D
 
 Add `into_variant(is_dark) -> Option<ThemeVariant>` as the consuming path for
-callers who own a `NativeTheme` and are done with it. The gpui connector's
+callers who own a `ThemeSpec` and are done with it. The gpui connector's
 convenience function (**[GPUI-1]**) uses this internally. Keep `pick_variant()`
 for read-only inspection. Pre-1.0, adding a consuming method is safe. Option C
 is subsumed by section 3's `into_resolved()`.
@@ -1074,9 +1074,9 @@ Theme loading is split inconsistently:
 |---|---|
 | `from_system()` | Free function at crate root |
 | `from_system_async()` | Free function at crate root |
-| `NativeTheme::preset()` | Associated function on `NativeTheme` |
-| `NativeTheme::from_toml()` | Associated function on `NativeTheme` |
-| `NativeTheme::from_file()` | Associated function on `NativeTheme` |
+| `ThemeSpec::preset()` | Associated function on `ThemeSpec` |
+| `ThemeSpec::from_toml()` | Associated function on `ThemeSpec` |
+| `ThemeSpec::from_file()` | Associated function on `ThemeSpec` |
 
 Why isn't `from_system()` on `SystemTheme`? The user must guess whether to look
 for `native_theme::from_system()` or `SystemTheme::from_system()`.
@@ -1095,14 +1095,14 @@ let theme = SystemTheme::from_system_async().await?;
 **Pro:**
 - Idiomatic Rust: constructor is an associated function on the type it returns
 - Discoverable via IDE autocomplete on `SystemTheme::`
-- Consistent with `NativeTheme::preset()` / `NativeTheme::from_toml()` pattern
+- Consistent with `ThemeSpec::preset()` / `ThemeSpec::from_toml()` pattern
 
 **Contra:**
 - Breaking change -- callers update `native_theme::from_system()` ->
   `SystemTheme::from_system()`
 - Shorter import path lost: `use native_theme::from_system` no longer works
 
-### Option B: Move `NativeTheme::preset()` etc. to free functions instead
+### Option B: Move `ThemeSpec::preset()` etc. to free functions instead
 
 ```rust
 let theme = native_theme::preset("dracula")?;
@@ -1167,7 +1167,7 @@ gives idiomatic constructors without forcing I/O methods onto data types.
 Option-based types derive `Serialize + Deserialize + Default`. Resolved types
 derive neither. This means:
 
-- You can't serialize a `ResolvedTheme` to TOML/JSON for debugging, export,
+- You can't serialize a `ResolvedThemeVariant` to TOML/JSON for debugging, export,
   or snapshotting
 - You can't construct test fixtures without filling in every field manually
 
@@ -1180,7 +1180,7 @@ derive neither. This means:
 
 **Contra:**
 - Serialized output may confuse users who expect it to be re-loadable as a
-  `NativeTheme` (different structure, different field names in some cases)
+  `ThemeSpec` (different structure, different field names in some cases)
 - Adds serde trait bounds to resolved types
 
 ### Option B: Derive `Serialize + Default` on all resolved types
@@ -1199,7 +1199,7 @@ derive neither. This means:
 ### Option C: Derive `Serialize` only, add a `test_fixture()` constructor
 
 ```rust
-impl ResolvedTheme {
+impl ResolvedThemeVariant {
     #[cfg(test)]
     pub fn test_fixture() -> Self { ... }
 }
@@ -1221,8 +1221,8 @@ impl ResolvedTheme {
 - Useful for caching resolved themes to disk
 
 **Contra:**
-- Serialized `ResolvedTheme` format differs from `ThemeVariant` -- loading
-  a serialized resolved theme as a `NativeTheme` would fail or produce
+- Serialized `ResolvedThemeVariant` format differs from `ThemeVariant` -- loading
+  a serialized resolved theme as a `ThemeSpec` would fail or produce
   garbage
 - Two different TOML formats for "theme data" is confusing
 
@@ -1244,8 +1244,8 @@ feature flag later.
 pub struct SystemTheme {
     pub name: String,
     pub is_dark: bool,
-    pub light: ResolvedTheme,
-    pub dark: ResolvedTheme,
+    pub light: ResolvedThemeVariant,
+    pub dark: ResolvedThemeVariant,
     pub(crate) light_variant: ThemeVariant,
     pub(crate) dark_variant: ThemeVariant,
     pub live_preset: String,      // <-- internal
@@ -1274,8 +1274,8 @@ have no use for the live-vs-full distinction.
 pub struct SystemTheme {
     pub name: String,
     pub is_dark: bool,
-    pub light: ResolvedTheme,
-    pub dark: ResolvedTheme,
+    pub light: ResolvedThemeVariant,
+    pub dark: ResolvedThemeVariant,
     pub preset: String,           // "kde-breeze", "adwaita", etc.
     pub(crate) live_preset: String,
     // ... internal fields
@@ -2050,7 +2050,7 @@ adding a variant is non-breaking for match-with-wildcard consumers.
 
 **Verdict: VALID -- low-medium priority**
 
-`ThemeVariant`, `NativeTheme`, `ThemeDefaults`, `ThemeSpacing`, and `IconSizes`
+`ThemeVariant`, `ThemeSpec`, `ThemeDefaults`, `ThemeSpacing`, and `IconSizes`
 are `#[non_exhaustive]`. The 25 widget structs generated by `define_widget_pair!`
 are NOT `#[non_exhaustive]`.
 
@@ -2078,7 +2078,7 @@ container `ThemeVariant` (not constructible) is surprising.
 
 ### Option A: Remove `#[non_exhaustive]` from data structs, keep on enums
 
-Remove from `ThemeVariant`, `NativeTheme`, `ThemeDefaults`, `ThemeSpacing`,
+Remove from `ThemeVariant`, `ThemeSpec`, `ThemeDefaults`, `ThemeSpacing`,
 `IconSizes`. Keep on `Error`, `IconRole`, `IconSet`, `AnimatedIcon`, etc.
 
 **Pro:**
@@ -2105,12 +2105,12 @@ Make everything consistently non-exhaustive.
 - Forces verbose field-by-field mutation everywhere
 - Hurts test fixture ergonomics in downstream code
 
-### Option C: Remove from `ThemeVariant` and `NativeTheme`, keep on smaller structs
+### Option C: Remove from `ThemeVariant` and `ThemeSpec`, keep on smaller structs
 
 The most-constructed types lose `#[non_exhaustive]`; leaf types keep it.
 
 **Pro:**
-- `ThemeVariant` and `NativeTheme` become constructible (the main pain point)
+- `ThemeVariant` and `ThemeSpec` become constructible (the main pain point)
 - `ThemeDefaults`, `ThemeSpacing`, `IconSizes` stay extensible (new fields likely)
 - Targeted fix for the biggest ergonomic issue
 
@@ -2141,7 +2141,7 @@ impl ThemeVariant {
 ### PROPOSED: Option A -- remove `#[non_exhaustive]` from data structs
 
 Pre-1.0, backward compatibility is not a constraint. Remove `#[non_exhaustive]`
-from `ThemeVariant`, `NativeTheme`, `ThemeDefaults`, `ThemeSpacing`, `IconSizes`.
+from `ThemeVariant`, `ThemeSpec`, `ThemeDefaults`, `ThemeSpacing`, `IconSizes`.
 Keep it on all enums (`Error`, `IconRole`, `IconSet`, `IconData`, `AnimatedIcon`,
 `TransformAnimation`). `Repeat` is excluded -- removed by section 18. This matches Rust convention: enums are
 commonly non-exhaustive (new variants), structs rarely are (new fields are rare
@@ -2267,24 +2267,24 @@ no `Box::leak`.
 **Verdict: VALID -- medium priority**
 
 ```rust
-pub(crate) fn preset(name: &str) -> Result<NativeTheme> {
+pub(crate) fn preset(name: &str) -> Result<ThemeSpec> {
     let toml_str = match name { ... };
     from_toml(toml_str)  // toml::from_str() every time
 }
 ```
 
 The embedded TOML strings are `&'static str` constants. Every call to
-`NativeTheme::preset("dracula")` re-parses the same TOML. More critically,
+`ThemeSpec::preset("dracula")` re-parses the same TOML. More critically,
 `from_system()` calls `preset()` twice internally (once for the live preset,
 once for the full preset), so system theme detection does two redundant TOML
 parses on every invocation.
 
-### Option A: Cache each preset in an individual `OnceLock<NativeTheme>`
+### Option A: Cache each preset in an individual `OnceLock<ThemeSpec>`
 
 ```rust
-fn preset(name: &str) -> Result<NativeTheme> {
-    static KDE_BREEZE: OnceLock<NativeTheme> = OnceLock::new();
-    static ADWAITA: OnceLock<NativeTheme> = OnceLock::new();
+fn preset(name: &str) -> Result<ThemeSpec> {
+    static KDE_BREEZE: OnceLock<ThemeSpec> = OnceLock::new();
+    static ADWAITA: OnceLock<ThemeSpec> = OnceLock::new();
     // ... one per preset
 
     let cached = match name {
@@ -2303,15 +2303,15 @@ fn preset(name: &str) -> Result<NativeTheme> {
 - `OnceLock` is thread-safe
 
 **Contra:**
-- Returns a clone of the cached `NativeTheme` (but this is cheap -- flat data)
+- Returns a clone of the cached `ThemeSpec` (but this is cheap -- flat data)
 - 20 `OnceLock` statics (16 presets + 4 live) -- verbose but mechanical
 - `get_or_init` callback can't return `Result`, so parse errors are unwrapped
   (but embedded presets are tested and always valid)
 
-### Option B: Cache in a `HashMap<&str, NativeTheme>` behind a single `OnceLock`
+### Option B: Cache in a `HashMap<&str, ThemeSpec>` behind a single `OnceLock`
 
 ```rust
-static CACHE: OnceLock<HashMap<&str, NativeTheme>> = OnceLock::new();
+static CACHE: OnceLock<HashMap<&str, ThemeSpec>> = OnceLock::new();
 ```
 
 **Pro:**
@@ -2326,7 +2326,7 @@ static CACHE: OnceLock<HashMap<&str, NativeTheme>> = OnceLock::new();
 ### Option C: Lazy-parse on first access per preset using `LazyLock`
 
 ```rust
-static KDE_BREEZE: LazyLock<NativeTheme> =
+static KDE_BREEZE: LazyLock<ThemeSpec> =
     LazyLock::new(|| from_toml(KDE_BREEZE_TOML).unwrap());
 ```
 
@@ -2363,7 +2363,7 @@ constant. This is the most idiomatic Rust pattern for lazily-initialized
 statics. Each preset is parsed at most once. `from_system()` benefits
 automatically (its two `preset()` calls hit the cache). The `.unwrap()` in the
 `LazyLock` closure is safe because embedded presets are compile-time constants
-tested in CI. Return `.clone()` since `NativeTheme` is cheaply cloneable.
+tested in CI. Return `.clone()` since `ThemeSpec` is cheaply cloneable.
 
 ---
 
@@ -2400,7 +2400,7 @@ Extend `define_widget_pair!` to accept doc comments per field:
 ```rust
 define_widget_pair! {
     /// Push button.
-    ButtonTheme / ResolvedButton {
+    ButtonTheme / ResolvedButtonTheme {
         option {
             /// Normal state background color.
             background: Rgba,
@@ -2654,8 +2654,8 @@ API surface is small and the break is limited.
 pub struct SystemTheme {
     pub name: String,
     pub is_dark: bool,
-    pub light: ResolvedTheme,
-    pub dark: ResolvedTheme,
+    pub light: ResolvedThemeVariant,
+    pub dark: ResolvedThemeVariant,
     pub(crate) light_variant: ThemeVariant,
     pub(crate) dark_variant: ThemeVariant,
     pub live_preset: String,
@@ -2673,8 +2673,8 @@ returned by `from_system()` -- the entry point most users call first.
   back it up.
 - **No `PartialEq`**: Can't compare two system themes to detect changes.
 
-For contrast, `NativeTheme` derives `Clone, Debug, Default, PartialEq,
-Serialize, Deserialize`. The resolved types (`ResolvedTheme`, `ResolvedButton`,
+For contrast, `ThemeSpec` derives `Clone, Debug, Default, PartialEq,
+Serialize, Deserialize`. The resolved types (`ResolvedThemeVariant`, `ResolvedButtonTheme`,
 etc.) derive `Clone, Debug, PartialEq`. All field types inside `SystemTheme`
 already implement `Clone + Debug + PartialEq`.
 
@@ -2692,7 +2692,7 @@ pub struct SystemTheme { ... }
 - Enables debug logging
 
 **Contra:**
-- `Clone` clones 2x `ResolvedTheme` + 2x `ThemeVariant` -- potentially
+- `Clone` clones 2x `ResolvedThemeVariant` + 2x `ThemeVariant` -- potentially
   expensive (though all data is flat/owned)
 - No `PartialEq` (but `f32` fields in resolved types make equality
   comparison unreliable anyway)
@@ -2802,9 +2802,9 @@ fn resolve(&mut self) {
 - If `icon_set` uses `Option<IconSet>` (section 7), the fallback
   becomes `Some(system_icon_set())` -- even cleaner
 
-### Option B: Make `icon_set` optional in `validate()` -- use runtime fallback in `ResolvedTheme`
+### Option B: Make `icon_set` optional in `validate()` -- use runtime fallback in `ResolvedThemeVariant`
 
-Don't require `icon_set` in `validate()`. Instead, `ResolvedTheme::icon_set`
+Don't require `icon_set` in `validate()`. Instead, `ResolvedThemeVariant::icon_set`
 becomes `Option<String>` (or `Option<IconSet>`), and consumers call
 `system_icon_set()` when it's `None`.
 
@@ -2814,11 +2814,11 @@ becomes `Option<String>` (or `Option<IconSet>`), and consumers call
 
 **Contra:**
 - Pushes the fallback to every consumer (worse ergonomics)
-- `ResolvedTheme` is supposed to have all fields guaranteed -- adding
+- `ResolvedThemeVariant` is supposed to have all fields guaranteed -- adding
   an `Option` breaks that contract
 - Every icon-loading call site needs `.unwrap_or_else(system_icon_set)`
 
-### Option C: Remove `icon_set` from `ThemeVariant` / `ResolvedTheme` entirely
+### Option C: Remove `icon_set` from `ThemeVariant` / `ResolvedThemeVariant` entirely
 
 Make icon set a runtime-only concept, not part of the theme data model.
 
@@ -2888,7 +2888,7 @@ accent" error that doesn't mention the typo).
 ### Option B: Add an optional strict-parsing mode
 
 ```rust
-impl NativeTheme {
+impl ThemeSpec {
     pub fn from_toml_strict(toml_str: &str) -> Result<Self> { ... }
 }
 ```
@@ -2912,7 +2912,7 @@ After parsing, compare the raw TOML keys against a known-fields set.
 Report unknown keys as warnings (not errors).
 
 ```rust
-pub fn from_toml_with_warnings(toml: &str) -> Result<(NativeTheme, Vec<String>)>
+pub fn from_toml_with_warnings(toml: &str) -> Result<(ThemeSpec, Vec<String>)>
 ```
 
 **Pro:**
@@ -2956,7 +2956,7 @@ checks for unknown keys, missing required fields, and value ranges.
 
 ### PROPOSED: Option B -- optional strict-parsing mode
 
-Add `NativeTheme::from_toml_strict()` that uses `#[serde(deny_unknown_fields)]`
+Add `ThemeSpec::from_toml_strict()` that uses `#[serde(deny_unknown_fields)]`
 via a parallel wrapper struct. Keep `from_toml()` lenient for production use
 (forward compatibility). Theme authors use `from_toml_strict()` during
 development to catch typos. The implementation uses a `#[serde(deny_unknown_fields)]`
@@ -3060,9 +3060,9 @@ The function looks up the size from the resolved theme's `IconSizes` struct.
 - Clean API
 
 **Contra:**
-- `load_icon` doesn't have access to `ResolvedTheme` (it's a free function)
+- `load_icon` doesn't have access to `ResolvedThemeVariant` (it's a free function)
 - Would need to either take `&ResolvedIconSizes` as a parameter or become
-  a method on `ResolvedTheme`
+  a method on `ResolvedThemeVariant`
 - Significant design change to the icon loading API
 
 ### Option E: Keep hardcoded 24, document the limitation
@@ -3094,7 +3094,7 @@ the downstream rasterization type in the gpui connector (**[GPUI-23]**).
 | Priority | # | Problem | Proposed Fix |
 |---|---|---|---|
 | **HIGH** | 1 | Option/Resolved naming inconsistency | Consistent `Theme`/`Spec` suffix on all resolved types |
-| **HIGH** | 2 | NativeTheme vs SystemTheme confusion | Rename `NativeTheme` -> `ThemeSpec` |
+| **HIGH** | 2 | ThemeSpec vs SystemTheme confusion | Rename `ThemeSpec` -> `ThemeSpec` |
 | **HIGH** | 28 | SystemTheme derives no traits | Derive `Clone + Debug` |
 | **HIGH** | 3 | Unsafe resolve/validate separation | Add `into_resolved()` combining both steps (prerequisite for **[GPUI-1]**) |
 | **MEDIUM** | 4 | with_overlay consumes self | Take `&self`, return new `SystemTheme` |
@@ -3129,7 +3129,7 @@ the downstream rasterization type in the gpui connector (**[GPUI-23]**).
 
 ### Wave 1: Naming & type-level changes (do together to minimize churn)
 1. **Section 1**: Rename resolved types for consistency
-2. **Section 2**: Rename `NativeTheme` -> `ThemeSpec`
+2. **Section 2**: Rename `ThemeSpec` -> `ThemeSpec`
 3. **Section 28**: Derive `Clone + Debug` on `SystemTheme`
 4. **Section 11**: Move `from_system()` to `SystemTheme::from_system()`
 5. **Section 13**: Collapse `live_preset`/`full_preset` into single `preset`
@@ -3140,7 +3140,7 @@ the downstream rasterization type in the gpui connector (**[GPUI-23]**).
 8. **Section 4**: Change `with_overlay` to take `&self`
 9. **Section 7+8+26**: Standardize icon functions on `IconSet` enum + consistent parameter order
 10. **Section 29**: Auto-resolve `icon_set` from `system_icon_set()`
-11. **Section 10**: Add `into_variant()` on `NativeTheme`
+11. **Section 10**: Add `into_variant()` on `ThemeSpec`
 12. **Section 14**: Remove `#[macro_export]` from `impl_merge!`
 13. **Section 21**: Add `Error::Io` variant, fix `From<io::Error>`
 14. **Section 20**: Add `ParseColorError`, fix `Rgba::FromStr`

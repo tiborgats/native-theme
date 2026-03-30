@@ -64,7 +64,7 @@ use gpui_component::{
 use std::time::Duration;
 
 use native_theme::{
-    AnimatedIcon, IconData, IconRole, IconSet, NativeTheme, TransformAnimation,
+    AnimatedIcon, IconData, IconRole, IconSet, ThemeSpec, TransformAnimation,
     bundled_icon_by_name, icon_name as native_icon_name, load_icon, loading_indicator,
     platform_preset_name, prefers_reduced_motion, system_icon_set, system_icon_theme,
     system_is_dark,
@@ -178,7 +178,7 @@ fn theme_names() -> Vec<SharedString> {
     let default_label = format!("default ({})", platform_live);
     let mut names: Vec<SharedString> = vec![default_label.into()];
     names.extend(
-        NativeTheme::list_presets_for_platform()
+        ThemeSpec::list_presets_for_platform()
             .iter()
             .map(|s| SharedString::from(s.to_string())),
     );
@@ -224,18 +224,21 @@ enum IconSource {
     NotFound,
 }
 
-/// Pre-load all 42 icons for the given icon set name, tracking source.
+/// Pre-load all 42 icons for the given icon set, tracking source.
 fn load_all_icons(
-    icon_set: &str,
+    icon_set: IconSet,
     icon_theme: Option<&str>,
 ) -> Vec<(IconRole, Option<IconData>, IconSource)> {
     // For system icon sets, pre-load the Material set so we can detect fallbacks
     // by comparing SVG bytes.
-    let is_system_set = matches!(icon_set, "freedesktop" | "sf-symbols" | "segoe-fluent");
+    let is_system_set = matches!(
+        icon_set,
+        IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeIcons
+    );
     let material_icons: Vec<Option<IconData>> = if is_system_set {
         IconRole::ALL
             .iter()
-            .map(|role| load_icon(*role, "material"))
+            .map(|role| load_icon(*role, IconSet::Material))
             .collect()
     } else {
         vec![]
@@ -248,8 +251,10 @@ fn load_all_icons(
             // When an icon theme override is specified and we're using freedesktop,
             // load from that specific theme instead of the system default.
             #[cfg(target_os = "linux")]
-            let data = if let Some(theme) = icon_theme.filter(|_| icon_set == "freedesktop") {
-                native_icon_name(IconSet::Freedesktop, *role)
+            let data = if let Some(theme) =
+                icon_theme.filter(|_| icon_set == IconSet::Freedesktop)
+            {
+                native_icon_name(*role, IconSet::Freedesktop)
                     .and_then(|name| load_freedesktop_icon_by_name(name, theme))
             } else {
                 load_icon(*role, icon_set)
@@ -433,26 +438,31 @@ type IconEntry = (
     IconSource,
 );
 
-fn load_gpui_icons(icon_set: &str, icon_theme: Option<&str>) -> Vec<IconEntry> {
-    if icon_set == "gpui-builtin" {
-        // All icons rendered from gpui-component built-in; no native-theme data loaded
-        return GPUI_ICONS
-            .iter()
-            .map(|(name, icon)| {
-                let role = role_for_gpui_icon(name);
-                (*name, icon.clone(), role, None, IconSource::Bundled)
-            })
-            .collect();
-    }
+fn load_gpui_icons(icon_set: Option<IconSet>, icon_theme: Option<&str>) -> Vec<IconEntry> {
+    let icon_set = match icon_set {
+        Some(set) => set,
+        None => {
+            // "gpui-builtin" — no native-theme data loaded
+            return GPUI_ICONS
+                .iter()
+                .map(|(name, icon)| {
+                    let role = role_for_gpui_icon(name);
+                    (*name, icon.clone(), role, None, IconSource::Bundled)
+                })
+                .collect();
+        }
+    };
 
-    let is_system_set = matches!(icon_set, "freedesktop" | "sf-symbols" | "segoe-fluent");
-    let icon_set_enum = IconSet::from_name(icon_set);
+    let is_system_set = matches!(
+        icon_set,
+        IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeIcons
+    );
 
     // On Linux with freedesktop, detect DE + theme once for the whole batch.
     // Use the icon_theme override if provided, otherwise detect from system.
     #[cfg(target_os = "linux")]
     let (linux_de, fd_theme) =
-        if is_system_set && matches!(icon_set_enum, Some(IconSet::Freedesktop)) {
+        if is_system_set && icon_set == IconSet::Freedesktop {
             let de_str = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
             let theme = icon_theme
                 .map(|s| s.to_string())
@@ -472,8 +482,10 @@ fn load_gpui_icons(icon_set: &str, icon_theme: Option<&str>) -> Vec<IconEntry> {
                 // When an icon theme override is specified and we're using freedesktop,
                 // load from that specific theme instead of the system default.
                 #[cfg(target_os = "linux")]
-                let data = if let Some(theme) = icon_theme.filter(|_| icon_set == "freedesktop") {
-                    native_icon_name(IconSet::Freedesktop, r)
+                let data = if let Some(theme) =
+                    icon_theme.filter(|_| icon_set == IconSet::Freedesktop)
+                {
+                    native_icon_name(r, IconSet::Freedesktop)
                         .and_then(|n| load_freedesktop_icon_by_name(n, theme))
                 } else {
                     load_icon(r, icon_set)
@@ -484,7 +496,7 @@ fn load_gpui_icons(icon_set: &str, icon_theme: Option<&str>) -> Vec<IconEntry> {
                     None => IconSource::NotFound,
                     Some(_) if !is_system_set => IconSource::Bundled,
                     Some(IconData::Svg(loaded)) => {
-                        let mat = load_icon(r, "material");
+                        let mat = load_icon(r, IconSet::Material);
                         if let Some(IconData::Svg(mat_bytes)) = &mat {
                             if loaded == mat_bytes {
                                 IconSource::Fallback
@@ -532,14 +544,14 @@ fn load_gpui_icons(icon_set: &str, icon_theme: Option<&str>) -> Vec<IconEntry> {
                 return (*name, icon.clone(), None, None, IconSource::NotFound);
             }
 
-            if let Some(set) = icon_set_enum {
-                let lookup_name = match set {
+            {
+                let lookup_name = match icon_set {
                     IconSet::Lucide => lucide_name_for_gpui_icon(name),
                     IconSet::Material => material_name_for_gpui_icon(name),
                     _ => None,
                 };
                 if let Some(lname) = lookup_name
-                    && let Some(svg_bytes) = bundled_icon_by_name(set, lname)
+                    && let Some(svg_bytes) = bundled_icon_by_name(icon_set, lname)
                 {
                     let data = Some(IconData::Svg(svg_bytes.to_vec()));
                     return (*name, icon.clone(), None, data, IconSource::Bundled);
@@ -773,6 +785,8 @@ struct Showcase {
     // Icon set selector state
     icon_set_select: Entity<SelectState<SearchableVec<SharedString>>>,
     icon_set_name: String,
+    /// Parsed `IconSet` for the current selection (`None` for "gpui-builtin").
+    icon_set_enum: Option<IconSet>,
     loaded_icons: Vec<(IconRole, Option<IconData>, IconSource)>,
     gpui_icons: Vec<IconEntry>,
     /// Cached ImageSource per native icon (same indexing as loaded_icons).
@@ -860,8 +874,8 @@ impl Showcase {
         let set_name = &self.icon_set_name;
         // gpui-builtin is not a native-theme icon set; loading_indicator would
         // fall back to the system set, showing the wrong spinner.
-        if set_name != "gpui-builtin"
-            && let Some(anim) = loading_indicator(set_name)
+        if let Some(icon_set) = self.icon_set_enum
+            && let Some(anim) = loading_indicator(icon_set)
         {
             match &anim {
                 AnimatedIcon::Frames {
@@ -948,8 +962,8 @@ impl Showcase {
     /// is intentionally ignored here: a cross-platform theme like Windows-11
     /// sets `icon_set = "segoe-fluent"`, which is unavailable on non-Windows
     /// hosts.  "Default" in the UI means "use whatever my OS provides".
-    fn resolve_default_icon_set(&self) -> String {
-        system_icon_set().name().to_string()
+    fn resolve_default_icon_set(&self) -> IconSet {
+        system_icon_set()
     }
 
     /// Convert a display name from the theme selector to the internal theme name.
@@ -1095,7 +1109,7 @@ impl Showcase {
         // Apply the initial OS Theme via native-theme pipeline.
         let is_dark = color_mode.is_dark();
         let (original_font, original_mono_font, initial_default_label, initial_error) =
-            match native_theme::from_system() {
+            match native_theme::SystemTheme::from_system() {
                 Ok(system) => {
                     let resolved = system.pick(is_dark);
                     let font = resolved.defaults.font.clone();
@@ -1104,9 +1118,9 @@ impl Showcase {
                     *Theme::global_mut(cx) = theme;
                     window.refresh();
                     let label = if system.is_dark == is_dark {
-                        format!("default ({})", system.live_preset)
+                        format!("default ({})", system.preset)
                     } else {
-                        format!("default ({})", system.full_preset)
+                        format!("default ({})", system.preset)
                     };
                     (font, mono_font, label, None)
                 }
@@ -1134,9 +1148,10 @@ impl Showcase {
             };
 
         // Resolve initial icon set from system (default = system's native set)
-        let initial_resolved = system_icon_set().name().to_string();
-        let loaded_icons = load_all_icons(&initial_resolved, None);
-        let gpui_icons = load_gpui_icons(&initial_resolved, None);
+        let initial_icon_set = system_icon_set();
+        let initial_resolved = initial_icon_set.name().to_string();
+        let loaded_icons = load_all_icons(initial_icon_set, None);
+        let gpui_icons = load_gpui_icons(Some(initial_icon_set), None);
 
         // Icon theme selector – list detected system theme + bundled options
         let detected_theme = system_icon_theme();
@@ -1171,15 +1186,20 @@ impl Showcase {
                     let display = value.to_string();
                     let internal = Self::icon_set_internal_name(&display);
                     this.use_default_icon_set = internal == "default";
-                    let effective = if this.use_default_icon_set {
-                        this.resolve_default_icon_set()
+                    let (effective_name, effective_enum) = if this.use_default_icon_set {
+                        let set = this.resolve_default_icon_set();
+                        (set.name().to_string(), Some(set))
                     } else {
-                        internal
+                        let set = IconSet::from_name(&internal);
+                        (internal, set)
                     };
-                    this.icon_set_name = effective.clone();
+                    this.icon_set_name = effective_name;
+                    this.icon_set_enum = effective_enum;
                     let theme_ref = this.icon_theme_override.as_deref();
-                    this.loaded_icons = load_all_icons(&effective, theme_ref);
-                    this.gpui_icons = load_gpui_icons(&effective, theme_ref);
+                    if let Some(set) = effective_enum {
+                        this.loaded_icons = load_all_icons(set, theme_ref);
+                    }
+                    this.gpui_icons = load_gpui_icons(effective_enum, theme_ref);
                     let fg = cx.theme().foreground;
                     this.rebuild_icon_caches(fg);
                     this.rebuild_animation_caches();
@@ -1336,6 +1356,7 @@ impl Showcase {
             app_menu_bar,
             icon_set_select,
             icon_set_name: initial_resolved,
+            icon_set_enum: Some(initial_icon_set),
             loaded_icons,
             gpui_icons,
             loaded_icon_sources: Vec::new(),
@@ -1376,7 +1397,7 @@ impl Showcase {
 
     fn apply_theme_by_name(&mut self, name: &str, window: &mut Window, cx: &mut Context<Self>) {
         if name == "default" {
-            match native_theme::from_system() {
+            match native_theme::SystemTheme::from_system() {
                 Ok(system) => {
                     let resolved = system.pick(self.is_dark);
                     self.original_font = resolved.defaults.font.clone();
@@ -1386,9 +1407,9 @@ impl Showcase {
                     window.refresh();
                     // Update default label based on which variant is active
                     if system.is_dark == self.is_dark {
-                        self.default_label = format!("default ({})", system.live_preset);
+                        self.default_label = format!("default ({})", system.preset);
                     } else {
-                        self.default_label = format!("default ({})", system.full_preset);
+                        self.default_label = format!("default ({})", system.preset);
                     }
                     self.error_message = None;
                 }
@@ -1399,17 +1420,18 @@ impl Showcase {
             // If using default icon set, reload icons for the new theme's default
             if self.use_default_icon_set {
                 let effective = self.resolve_default_icon_set();
-                self.icon_set_name = effective.clone();
+                self.icon_set_name = effective.name().to_string();
+                self.icon_set_enum = Some(effective);
                 let theme_ref = self.icon_theme_override.as_deref();
-                self.loaded_icons = load_all_icons(&effective, theme_ref);
-                self.gpui_icons = load_gpui_icons(&effective, theme_ref);
+                self.loaded_icons = load_all_icons(effective, theme_ref);
+                self.gpui_icons = load_gpui_icons(Some(effective), theme_ref);
             }
             let fg = cx.theme().foreground;
             self.rebuild_icon_caches(fg);
             return;
         }
 
-        let nt = match NativeTheme::preset(name) {
+        let nt = match ThemeSpec::preset(name) {
             Ok(t) => t,
             Err(e) => {
                 self.show_theme_error(&format!("Failed to load preset '{name}': {e}"));
@@ -1437,10 +1459,11 @@ impl Showcase {
             // If using default icon set, reload icons for the new theme's default
             if self.use_default_icon_set {
                 let effective = self.resolve_default_icon_set();
-                self.icon_set_name = effective.clone();
+                self.icon_set_name = effective.name().to_string();
+                self.icon_set_enum = Some(effective);
                 let theme_ref = self.icon_theme_override.as_deref();
-                self.loaded_icons = load_all_icons(&effective, theme_ref);
-                self.gpui_icons = load_gpui_icons(&effective, theme_ref);
+                self.loaded_icons = load_all_icons(effective, theme_ref);
+                self.gpui_icons = load_gpui_icons(Some(effective), theme_ref);
             }
             // Rebuild image caches for the new theme's foreground color
             let fg = cx.theme().foreground;
@@ -4398,15 +4421,8 @@ impl Showcase {
             )
         };
 
-        // Resolve the IconSet for tooltip icon-name lookups
-        let icon_set_enum = match self.icon_set_name.as_str() {
-            "freedesktop" => Some(IconSet::Freedesktop),
-            "material" => Some(IconSet::Material),
-            "lucide" => Some(IconSet::Lucide),
-            "sf-symbols" => Some(IconSet::SfSymbols),
-            "segoe-fluent" => Some(IconSet::SegoeIcons),
-            _ => None,
-        };
+        // Use the stored IconSet for tooltip icon-name lookups
+        let icon_set_enum = self.icon_set_enum;
         let icon_set_label = self.icon_set_name.clone();
 
         // Build icon cells for loaded native icons
@@ -5479,10 +5495,14 @@ fn main() {
                             // Override icon set if --icon-set was specified
                             if let Some(ref set_name) = cli_args.icon_set {
                                 s.use_default_icon_set = false;
+                                let set_enum = IconSet::from_name(set_name);
                                 s.icon_set_name = set_name.clone();
+                                s.icon_set_enum = set_enum;
                                 let theme_ref = s.icon_theme_override.as_deref();
-                                s.loaded_icons = load_all_icons(set_name, theme_ref);
-                                s.gpui_icons = load_gpui_icons(set_name, theme_ref);
+                                if let Some(set) = set_enum {
+                                    s.loaded_icons = load_all_icons(set, theme_ref);
+                                }
+                                s.gpui_icons = load_gpui_icons(set_enum, theme_ref);
                                 let fg = cx.theme().foreground;
                                 s.rebuild_icon_caches(fg);
                                 s.rebuild_animation_caches();

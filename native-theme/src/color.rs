@@ -109,64 +109,80 @@ impl fmt::Display for Rgba {
     }
 }
 
+/// Error returned when parsing a hex color string fails.
+///
+/// Wraps a human-readable message describing the failure cause.
+/// Implements [`std::error::Error`] so it works with `?` in functions
+/// returning `Box<dyn Error>`.
+#[derive(Debug, Clone)]
+pub struct ParseColorError(String);
+
+impl fmt::Display for ParseColorError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(&self.0)
+    }
+}
+
+impl std::error::Error for ParseColorError {}
+
 impl FromStr for Rgba {
-    type Err = String;
+    type Err = ParseColorError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         let hex = s.strip_prefix('#').unwrap_or(s);
 
         if hex.is_empty() {
-            return Err("empty hex color string".to_string());
+            return Err(ParseColorError("empty hex color string".into()));
         }
 
         match hex.len() {
             // #RGB shorthand: each digit doubled (e.g., 'a' -> 0xaa = a * 17)
             3 => {
                 let r = u8::from_str_radix(&hex[0..1], 16)
-                    .map_err(|e| format!("invalid red component: {e}"))?;
+                    .map_err(|e| ParseColorError(format!("invalid red component: {e}")))?;
                 let g = u8::from_str_radix(&hex[1..2], 16)
-                    .map_err(|e| format!("invalid green component: {e}"))?;
+                    .map_err(|e| ParseColorError(format!("invalid green component: {e}")))?;
                 let b = u8::from_str_radix(&hex[2..3], 16)
-                    .map_err(|e| format!("invalid blue component: {e}"))?;
+                    .map_err(|e| ParseColorError(format!("invalid blue component: {e}")))?;
                 Ok(Rgba::rgb(r * 17, g * 17, b * 17))
             }
             // #RGBA shorthand
             4 => {
                 let r = u8::from_str_radix(&hex[0..1], 16)
-                    .map_err(|e| format!("invalid red component: {e}"))?;
+                    .map_err(|e| ParseColorError(format!("invalid red component: {e}")))?;
                 let g = u8::from_str_radix(&hex[1..2], 16)
-                    .map_err(|e| format!("invalid green component: {e}"))?;
+                    .map_err(|e| ParseColorError(format!("invalid green component: {e}")))?;
                 let b = u8::from_str_radix(&hex[2..3], 16)
-                    .map_err(|e| format!("invalid blue component: {e}"))?;
+                    .map_err(|e| ParseColorError(format!("invalid blue component: {e}")))?;
                 let a = u8::from_str_radix(&hex[3..4], 16)
-                    .map_err(|e| format!("invalid alpha component: {e}"))?;
+                    .map_err(|e| ParseColorError(format!("invalid alpha component: {e}")))?;
                 Ok(Rgba::rgba(r * 17, g * 17, b * 17, a * 17))
             }
             // #RRGGBB
             6 => {
                 let r = u8::from_str_radix(&hex[0..2], 16)
-                    .map_err(|e| format!("invalid red component: {e}"))?;
+                    .map_err(|e| ParseColorError(format!("invalid red component: {e}")))?;
                 let g = u8::from_str_radix(&hex[2..4], 16)
-                    .map_err(|e| format!("invalid green component: {e}"))?;
+                    .map_err(|e| ParseColorError(format!("invalid green component: {e}")))?;
                 let b = u8::from_str_radix(&hex[4..6], 16)
-                    .map_err(|e| format!("invalid blue component: {e}"))?;
+                    .map_err(|e| ParseColorError(format!("invalid blue component: {e}")))?;
                 Ok(Rgba::rgb(r, g, b))
             }
             // #RRGGBBAA
             8 => {
                 let r = u8::from_str_radix(&hex[0..2], 16)
-                    .map_err(|e| format!("invalid red component: {e}"))?;
+                    .map_err(|e| ParseColorError(format!("invalid red component: {e}")))?;
                 let g = u8::from_str_radix(&hex[2..4], 16)
-                    .map_err(|e| format!("invalid green component: {e}"))?;
+                    .map_err(|e| ParseColorError(format!("invalid green component: {e}")))?;
                 let b = u8::from_str_radix(&hex[4..6], 16)
-                    .map_err(|e| format!("invalid blue component: {e}"))?;
+                    .map_err(|e| ParseColorError(format!("invalid blue component: {e}")))?;
                 let a = u8::from_str_radix(&hex[6..8], 16)
-                    .map_err(|e| format!("invalid alpha component: {e}"))?;
+                    .map_err(|e| ParseColorError(format!("invalid alpha component: {e}")))?;
                 Ok(Rgba::rgba(r, g, b, a))
             }
-            other => Err(format!(
+            other => Err(ParseColorError(format!(
                 "invalid hex color length {other}: expected 3, 4, 6, or 8 hex digits"
-            )),
+            ))),
         }
     }
 }

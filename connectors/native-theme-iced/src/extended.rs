@@ -1,8 +1,8 @@
-//! Extended palette overrides from [`native_theme::ResolvedTheme`] fields.
+//! Extended palette overrides from [`native_theme::ResolvedThemeVariant`] fields.
 //!
 //! After iced generates an `Extended` palette from the base `Palette`,
 //! this module overrides specific sub-palette entries with native-theme
-//! values. All fields are guaranteed populated in ResolvedTheme, so
+//! values. All fields are guaranteed populated in ResolvedThemeVariant, so
 //! overrides are always applied unconditionally.
 
 use crate::palette::to_color;
@@ -16,7 +16,7 @@ use crate::palette::to_color;
 /// - `background.weak.text` <- `resolved.defaults.foreground`
 pub fn apply_overrides(
     extended: &mut iced_core::theme::palette::Extended,
-    resolved: &native_theme::ResolvedTheme,
+    resolved: &native_theme::ResolvedThemeVariant,
 ) {
     extended.secondary.base.color = to_color(resolved.button.background);
     extended.secondary.base.text = to_color(resolved.button.foreground);
@@ -29,7 +29,7 @@ pub fn apply_overrides(
 mod tests {
     use super::*;
     use iced_core::theme::palette::Extended;
-    use native_theme::NativeTheme;
+    use native_theme::ThemeSpec;
 
     fn color_approx_eq(a: iced_core::Color, b: iced_core::Color) -> bool {
         (a.r - b.r).abs() < 0.01
@@ -43,8 +43,8 @@ mod tests {
         Extended::generate(palette)
     }
 
-    fn make_resolved() -> native_theme::ResolvedTheme {
-        let nt = NativeTheme::preset("catppuccin-mocha").unwrap();
+    fn make_resolved() -> native_theme::ResolvedThemeVariant {
+        let nt = ThemeSpec::preset("catppuccin-mocha").unwrap();
         let mut variant = nt.pick_variant(false).unwrap().clone();
         variant.resolve();
         variant.validate().unwrap()

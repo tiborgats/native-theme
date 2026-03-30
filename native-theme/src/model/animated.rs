@@ -1,26 +1,10 @@
-// Animated icon types: AnimatedIcon, TransformAnimation, Repeat
+// Animated icon types: AnimatedIcon, TransformAnimation
 //
 // These types define the data model for animated icons in the native-theme
 // icon system. Frame-based animations supply pre-rendered frames with timing;
 // transform-based animations describe a CSS-like transform on a single icon.
 
 use super::icons::IconData;
-
-/// How an animation repeats after playing through once.
-///
-/// # Examples
-///
-/// ```
-/// use native_theme::Repeat;
-///
-/// let repeat = Repeat::Infinite;
-/// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[non_exhaustive]
-pub enum Repeat {
-    /// Loop forever.
-    Infinite,
-}
 
 /// A CSS-like transform animation applied to a single icon.
 ///
@@ -43,13 +27,13 @@ pub enum TransformAnimation {
 
 /// An animated icon, either frame-based or transform-based.
 ///
-/// `Frames` carries pre-rendered frames with uniform timing.
+/// `Frames` carries pre-rendered frames with uniform timing (loops infinitely).
 /// `Transform` carries a single icon and a description of the motion.
 ///
 /// # Examples
 ///
 /// ```
-/// use native_theme::{AnimatedIcon, IconData, Repeat, TransformAnimation};
+/// use native_theme::{AnimatedIcon, IconData, TransformAnimation};
 ///
 /// // Frame-based animation (e.g., sprite sheet)
 /// let frames_anim = AnimatedIcon::Frames {
@@ -58,7 +42,6 @@ pub enum TransformAnimation {
 ///         IconData::Svg(b"<svg>frame2</svg>".to_vec()),
 ///     ],
 ///     frame_duration_ms: 83,
-///     repeat: Repeat::Infinite,
 /// };
 ///
 /// // Transform-based animation (e.g., spinning icon)
@@ -70,14 +53,12 @@ pub enum TransformAnimation {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum AnimatedIcon {
-    /// A sequence of pre-rendered frames played at a fixed interval.
+    /// A sequence of pre-rendered frames played at a fixed interval (loops infinitely).
     Frames {
         /// The individual frames, each a complete icon image.
         frames: Vec<IconData>,
         /// Duration of each frame in milliseconds.
         frame_duration_ms: u32,
-        /// How the animation repeats.
-        repeat: Repeat,
     },
     /// A single icon with a continuous transform animation.
     Transform {
@@ -97,12 +78,11 @@ impl AnimatedIcon {
     /// # Examples
     ///
     /// ```
-    /// use native_theme::{AnimatedIcon, IconData, Repeat, TransformAnimation};
+    /// use native_theme::{AnimatedIcon, IconData, TransformAnimation};
     ///
     /// let frames = AnimatedIcon::Frames {
     ///     frames: vec![IconData::Svg(b"<svg>f1</svg>".to_vec())],
     ///     frame_duration_ms: 83,
-    ///     repeat: Repeat::Infinite,
     /// };
     /// assert!(frames.first_frame().is_some());
     ///
@@ -133,7 +113,6 @@ mod tests {
         let icon = AnimatedIcon::Frames {
             frames: vec![IconData::Svg(b"<svg>f1</svg>".to_vec())],
             frame_duration_ms: 83,
-            repeat: Repeat::Infinite,
         };
         assert!(matches!(
             icon,
@@ -161,20 +140,6 @@ mod tests {
 
     #[test]
     #[allow(clippy::clone_on_copy)]
-    fn repeat_is_copy_clone_debug_eq_hash() {
-        let r = Repeat::Infinite;
-        let r2 = r; // Copy
-        let r3 = r.clone(); // Clone
-        assert_eq!(r2, r3); // PartialEq + Eq
-        // Hash: just verify it compiles
-        use std::hash::Hash;
-        let mut hasher = std::collections::hash_map::DefaultHasher::new();
-        r.hash(&mut hasher);
-        let _ = format!("{r:?}"); // Debug
-    }
-
-    #[test]
-    #[allow(clippy::clone_on_copy)]
     fn transform_animation_is_copy_clone_debug_eq_hash() {
         let a = TransformAnimation::Spin { duration_ms: 500 };
         let a2 = a; // Copy
@@ -191,7 +156,6 @@ mod tests {
         let icon = AnimatedIcon::Frames {
             frames: vec![IconData::Svg(b"<svg/>".to_vec())],
             frame_duration_ms: 100,
-            repeat: Repeat::Infinite,
         };
         let cloned = icon.clone(); // Clone
         assert_eq!(icon, cloned); // PartialEq + Eq
@@ -208,7 +172,6 @@ mod tests {
         let icon = AnimatedIcon::Frames {
             frames: vec![f0.clone(), f1],
             frame_duration_ms: 100,
-            repeat: Repeat::Infinite,
         };
         assert_eq!(icon.first_frame(), Some(&f0));
     }
@@ -218,7 +181,6 @@ mod tests {
         let icon = AnimatedIcon::Frames {
             frames: vec![],
             frame_duration_ms: 100,
-            repeat: Repeat::Infinite,
         };
         assert_eq!(icon.first_frame(), None);
     }

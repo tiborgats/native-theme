@@ -7,8 +7,9 @@
 //! 4 internal live presets (geometry-only, used by the OS-first pipeline)
 //! and functions for loading themes from TOML strings and files.
 
-use crate::{Error, NativeTheme, Result};
+use crate::{Error, ThemeSpec, Result};
 use std::path::Path;
+use std::sync::LazyLock;
 
 // Embed preset TOML files at compile time
 const KDE_BREEZE_TOML: &str = include_str!("presets/kde-breeze.toml");
@@ -54,32 +55,65 @@ const PRESET_NAMES: &[&str] = &[
     "one-dark",
 ];
 
-pub(crate) fn preset(name: &str) -> Result<NativeTheme> {
-    let toml_str = match name {
-        "kde-breeze" => KDE_BREEZE_TOML,
-        "adwaita" => ADWAITA_TOML,
-        "windows-11" => WINDOWS_11_TOML,
-        "macos-sonoma" => MACOS_SONOMA_TOML,
-        "material" => MATERIAL_TOML,
-        "ios" => IOS_TOML,
-        "catppuccin-latte" => CATPPUCCIN_LATTE_TOML,
-        "catppuccin-frappe" => CATPPUCCIN_FRAPPE_TOML,
-        "catppuccin-macchiato" => CATPPUCCIN_MACCHIATO_TOML,
-        "catppuccin-mocha" => CATPPUCCIN_MOCHA_TOML,
-        "nord" => NORD_TOML,
-        "dracula" => DRACULA_TOML,
-        "gruvbox" => GRUVBOX_TOML,
-        "solarized" => SOLARIZED_TOML,
-        "tokyo-night" => TOKYO_NIGHT_TOML,
-        "one-dark" => ONE_DARK_TOML,
-        // Internal live presets (not in PRESET_NAMES but loadable)
-        "kde-breeze-live" => KDE_BREEZE_LIVE_TOML,
-        "adwaita-live" => ADWAITA_LIVE_TOML,
-        "macos-sonoma-live" => MACOS_SONOMA_LIVE_TOML,
-        "windows-11-live" => WINDOWS_11_LIVE_TOML,
-        _ => return Err(Error::Unavailable(format!("unknown preset: {name}"))),
-    };
-    from_toml(toml_str)
+// Cached presets: each parsed at most once for the process lifetime.
+// The unwrap() calls are safe because embedded TOML is compile-time constant
+// and tested in CI.
+#[allow(clippy::unwrap_used)]
+mod cached {
+    use super::*;
+    static KDE_BREEZE: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(KDE_BREEZE_TOML).unwrap());
+    static ADWAITA: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(ADWAITA_TOML).unwrap());
+    static WINDOWS_11: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(WINDOWS_11_TOML).unwrap());
+    static MACOS_SONOMA: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(MACOS_SONOMA_TOML).unwrap());
+    static MATERIAL: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(MATERIAL_TOML).unwrap());
+    static IOS: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(IOS_TOML).unwrap());
+    static CATPPUCCIN_LATTE: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(CATPPUCCIN_LATTE_TOML).unwrap());
+    static CATPPUCCIN_FRAPPE: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(CATPPUCCIN_FRAPPE_TOML).unwrap());
+    static CATPPUCCIN_MACCHIATO: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(CATPPUCCIN_MACCHIATO_TOML).unwrap());
+    static CATPPUCCIN_MOCHA: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(CATPPUCCIN_MOCHA_TOML).unwrap());
+    static NORD: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(NORD_TOML).unwrap());
+    static DRACULA: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(DRACULA_TOML).unwrap());
+    static GRUVBOX: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(GRUVBOX_TOML).unwrap());
+    static SOLARIZED: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(SOLARIZED_TOML).unwrap());
+    static TOKYO_NIGHT: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(TOKYO_NIGHT_TOML).unwrap());
+    static ONE_DARK: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(ONE_DARK_TOML).unwrap());
+    // Internal live presets
+    static KDE_BREEZE_LIVE: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(KDE_BREEZE_LIVE_TOML).unwrap());
+    static ADWAITA_LIVE: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(ADWAITA_LIVE_TOML).unwrap());
+    static MACOS_SONOMA_LIVE: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(MACOS_SONOMA_LIVE_TOML).unwrap());
+    static WINDOWS_11_LIVE: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(WINDOWS_11_LIVE_TOML).unwrap());
+
+    pub(crate) fn get(name: &str) -> Option<&'static ThemeSpec> {
+        match name {
+            "kde-breeze" => Some(&KDE_BREEZE),
+            "adwaita" => Some(&ADWAITA),
+            "windows-11" => Some(&WINDOWS_11),
+            "macos-sonoma" => Some(&MACOS_SONOMA),
+            "material" => Some(&MATERIAL),
+            "ios" => Some(&IOS),
+            "catppuccin-latte" => Some(&CATPPUCCIN_LATTE),
+            "catppuccin-frappe" => Some(&CATPPUCCIN_FRAPPE),
+            "catppuccin-macchiato" => Some(&CATPPUCCIN_MACCHIATO),
+            "catppuccin-mocha" => Some(&CATPPUCCIN_MOCHA),
+            "nord" => Some(&NORD),
+            "dracula" => Some(&DRACULA),
+            "gruvbox" => Some(&GRUVBOX),
+            "solarized" => Some(&SOLARIZED),
+            "tokyo-night" => Some(&TOKYO_NIGHT),
+            "one-dark" => Some(&ONE_DARK),
+            "kde-breeze-live" => Some(&KDE_BREEZE_LIVE),
+            "adwaita-live" => Some(&ADWAITA_LIVE),
+            "macos-sonoma-live" => Some(&MACOS_SONOMA_LIVE),
+            "windows-11-live" => Some(&WINDOWS_11_LIVE),
+            _ => None,
+        }
+    }
+}
+
+pub(crate) fn preset(name: &str) -> Result<ThemeSpec> {
+    cached::get(name)
+        .cloned()
+        .ok_or_else(|| Error::Unavailable(format!("unknown preset: {name}")))
 }
 
 pub(crate) fn list_presets() -> &'static [&'static str] {
@@ -144,17 +178,17 @@ pub(crate) fn list_presets_for_platform() -> Vec<&'static str> {
         .collect()
 }
 
-pub(crate) fn from_toml(toml_str: &str) -> Result<NativeTheme> {
-    let theme: NativeTheme = toml::from_str(toml_str)?;
+pub(crate) fn from_toml(toml_str: &str) -> Result<ThemeSpec> {
+    let theme: ThemeSpec = toml::from_str(toml_str)?;
     Ok(theme)
 }
 
-pub(crate) fn from_file(path: impl AsRef<Path>) -> Result<NativeTheme> {
+pub(crate) fn from_file(path: impl AsRef<Path>) -> Result<ThemeSpec> {
     let contents = std::fs::read_to_string(path)?;
     from_toml(&contents)
 }
 
-pub(crate) fn to_toml(theme: &NativeTheme) -> Result<String> {
+pub(crate) fn to_toml(theme: &ThemeSpec) -> Result<String> {
     let s = toml::to_string_pretty(theme)?;
     Ok(s)
 }
@@ -271,7 +305,7 @@ accent = "#ff0000"
         let theme = preset("catppuccin-mocha").unwrap();
         let toml_str = to_toml(&theme).unwrap();
 
-        // Must be parseable back into a NativeTheme
+        // Must be parseable back into a ThemeSpec
         let reparsed = from_toml(&toml_str).unwrap();
         assert_eq!(reparsed.name, theme.name);
         assert!(reparsed.light.is_some());
@@ -367,8 +401,8 @@ accent = "#00ff00"
     fn from_file_nonexistent_returns_error() {
         let err = from_file("/tmp/nonexistent_theme_file_12345.toml").unwrap_err();
         match err {
-            Error::Unavailable(_) => {}
-            other => panic!("expected Unavailable, got: {other:?}"),
+            Error::Io(e) => assert_eq!(e.kind(), std::io::ErrorKind::NotFound),
+            other => panic!("expected Io, got: {other:?}"),
         }
     }
 

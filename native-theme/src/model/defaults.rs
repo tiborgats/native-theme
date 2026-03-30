@@ -7,16 +7,30 @@ use serde::{Deserialize, Serialize};
 
 /// Global theme defaults shared across all widgets.
 ///
-/// All `Option<T>` fields default to `None`. Plain nested structs
-/// (`font`, `mono_font`, `spacing`, `icon_sizes`) default to their
-/// all-None state and are suppressed in serialization when empty.
+/// # Field structure
+///
+/// This struct uses two patterns for its fields:
+///
+/// - **`Option<T>` leaf fields** (`accent`, `radius`, `line_height`, etc.) —
+///   `None` means "not set." During merge, an overlay's `Some` value replaces
+///   the base wholesale.
+///
+/// - **Non-Option nested struct fields** (`font`, `mono_font`, `spacing`,
+///   `icon_sizes`) — these support partial field-by-field override during
+///   merge. For example, an overlay that sets only `font.size` will inherit
+///   the base's `font.family` and `font.weight`. This makes theme merging
+///   more flexible: you can fine-tune individual properties without replacing
+///   the entire sub-struct.
+///
+/// This asymmetry is intentional. Checking "is accent set?" is
+/// `defaults.accent.is_some()`, while checking "is font set?" requires
+/// inspecting individual fields like `defaults.font.family.is_some()`.
 ///
 /// When resolving a widget's properties, `None` on the widget struct
 /// means "inherit from `ThemeDefaults`".
 #[serde_with::skip_serializing_none]
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
-#[non_exhaustive]
 pub struct ThemeDefaults {
     // ---- Base font ----
     /// Primary UI font (family, size, weight).

@@ -430,7 +430,7 @@ fn read_icon_sizes(dpi: u32) -> (f32, f32) {
 }
 
 /// Testable core: given raw color values, accent shades, fonts, and sizing data,
-/// build a `NativeTheme` with a sparse `ThemeVariant`.
+/// build a `ThemeSpec` with a sparse `ThemeVariant`.
 ///
 /// Determines light/dark variant based on foreground luminance, then populates
 /// the appropriate variant with defaults-level colors, per-widget fonts, spacing,
@@ -449,7 +449,7 @@ fn build_theme(
     icon_sizes: Option<(f32, f32)>,
     accessibility: Option<&AccessibilityData>,
     dpi: u32,
-) -> crate::NativeTheme {
+) -> crate::ThemeSpec {
     let dark = is_dark_mode(&fg);
 
     // Primary button background: In light mode use AccentDark1 (shades[0]), in dark mode
@@ -533,13 +533,13 @@ fn build_theme(
     }
 
     if dark {
-        crate::NativeTheme {
+        crate::ThemeSpec {
             name: "Windows".to_string(),
             light: None,
             dark: Some(variant),
         }
     } else {
-        crate::NativeTheme {
+        crate::ThemeSpec {
             name: "Windows".to_string(),
             light: Some(variant),
             dark: None,
@@ -557,7 +557,7 @@ fn build_theme(
 ///
 /// Returns `Error::Unavailable` if UISettings cannot be created (pre-Windows 10).
 #[cfg(all(target_os = "windows", feature = "windows"))]
-pub fn from_windows() -> crate::Result<crate::NativeTheme> {
+pub fn from_windows() -> crate::Result<crate::ThemeSpec> {
     let settings = UISettings::new()
         .map_err(|e| crate::Error::Unavailable(format!("UISettings unavailable: {e}")))?;
 
@@ -640,7 +640,7 @@ mod tests {
     }
 
     /// Helper: build a theme in light mode with minimal args.
-    fn light_theme() -> crate::NativeTheme {
+    fn light_theme() -> crate::ThemeSpec {
         build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0), // black fg = light mode
@@ -657,7 +657,7 @@ mod tests {
     }
 
     /// Helper: build a theme in dark mode with minimal args.
-    fn dark_theme() -> crate::NativeTheme {
+    fn dark_theme() -> crate::ThemeSpec {
         build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(255, 255, 255), // white fg = dark mode
@@ -1281,7 +1281,7 @@ mod tests {
 
     #[test]
     fn build_theme_returns_native_theme_with_theme_variant() {
-        // Verify the output type is correct (NativeTheme with ThemeVariant, not old types)
+        // Verify the output type is correct (ThemeSpec with ThemeVariant, not old types)
         let theme = light_theme();
         let variant: &crate::ThemeVariant = theme.light.as_ref().unwrap();
         // Access new per-widget fields to prove they exist
@@ -1298,7 +1298,7 @@ mod tests {
     #[test]
     fn test_windows_resolve_validate() {
         // Load windows-11 preset as base (provides full color/geometry/spacing).
-        let mut base = crate::NativeTheme::preset("windows-11").unwrap();
+        let mut base = crate::ThemeSpec::preset("windows-11").unwrap();
         // Build reader output (light mode, sample data).
         let reader_output = light_theme();
         // Merge reader output on top of preset.

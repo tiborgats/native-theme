@@ -4,13 +4,13 @@
 // spacing.rs, icon_sizes.rs, and mod.rs (ThemeVariant), but with all fields
 // guaranteed populated. Produced by validate() after resolve().
 
-use super::widgets::ResolvedFontSpec;
+use super::font::ResolvedFontSpec;
 use crate::Rgba;
 
 // --- ResolvedSpacing ---
 
 /// A fully resolved spacing scale where every tier is guaranteed populated.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
 pub struct ResolvedSpacing {
     /// Extra-extra-small spacing in logical pixels.
     pub xxs: f32,
@@ -31,7 +31,7 @@ pub struct ResolvedSpacing {
 // --- ResolvedIconSizes ---
 
 /// Fully resolved per-context icon sizes where every context is guaranteed populated.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
 pub struct ResolvedIconSizes {
     /// Icon size for toolbar buttons.
     pub toolbar: f32,
@@ -48,7 +48,7 @@ pub struct ResolvedIconSizes {
 // --- ResolvedTextScaleEntry ---
 
 /// A single resolved text scale entry with guaranteed size, weight, and line height.
-#[derive(Clone, Debug, Default, PartialEq)]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize)]
 pub struct ResolvedTextScaleEntry {
     /// Font size in logical pixels.
     pub size: f32,
@@ -61,7 +61,7 @@ pub struct ResolvedTextScaleEntry {
 // --- ResolvedTextScale ---
 
 /// A fully resolved text scale with all four typographic roles populated.
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
 pub struct ResolvedTextScale {
     /// Caption / small label text.
     pub caption: ResolvedTextScaleEntry,
@@ -73,14 +73,14 @@ pub struct ResolvedTextScale {
     pub display: ResolvedTextScaleEntry,
 }
 
-// --- ResolvedDefaults ---
+// --- ResolvedThemeDefaults ---
 
 /// Fully resolved global theme defaults where every field is guaranteed populated.
 ///
 /// Mirrors [`crate::model::ThemeDefaults`] but with concrete (non-Option) types.
 /// Produced by the resolution/validation pipeline.
-#[derive(Clone, Debug, PartialEq)]
-pub struct ResolvedDefaults {
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
+pub struct ResolvedThemeDefaults {
     // ---- Base font ----
     /// Primary UI font.
     pub font: ResolvedFontSpec,
@@ -176,71 +176,71 @@ pub struct ResolvedDefaults {
     pub reduce_transparency: bool,
 }
 
-// --- ResolvedTheme ---
+// --- ResolvedThemeVariant ---
 
 /// A fully resolved theme where every field is guaranteed populated.
 ///
 /// Produced by `validate()` after `resolve()`. Consumed by toolkit connectors.
 /// Mirrors [`crate::model::ThemeVariant`] but with concrete (non-Option) types
 /// for all 25 per-widget structs plus defaults and text scale.
-#[derive(Clone, Debug, PartialEq)]
-pub struct ResolvedTheme {
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
+pub struct ResolvedThemeVariant {
     /// Global defaults.
-    pub defaults: ResolvedDefaults,
+    pub defaults: ResolvedThemeDefaults,
     /// Per-role text scale.
     pub text_scale: ResolvedTextScale,
 
     // ---- Per-widget resolved structs ----
     /// Window chrome.
-    pub window: super::widgets::ResolvedWindow,
+    pub window: super::widgets::ResolvedWindowTheme,
     /// Push button.
-    pub button: super::widgets::ResolvedButton,
+    pub button: super::widgets::ResolvedButtonTheme,
     /// Text input.
-    pub input: super::widgets::ResolvedInput,
+    pub input: super::widgets::ResolvedInputTheme,
     /// Checkbox / radio button.
-    pub checkbox: super::widgets::ResolvedCheckbox,
+    pub checkbox: super::widgets::ResolvedCheckboxTheme,
     /// Popup / context menu.
-    pub menu: super::widgets::ResolvedMenu,
+    pub menu: super::widgets::ResolvedMenuTheme,
     /// Tooltip.
-    pub tooltip: super::widgets::ResolvedTooltip,
+    pub tooltip: super::widgets::ResolvedTooltipTheme,
     /// Scrollbar.
-    pub scrollbar: super::widgets::ResolvedScrollbar,
+    pub scrollbar: super::widgets::ResolvedScrollbarTheme,
     /// Slider.
-    pub slider: super::widgets::ResolvedSlider,
+    pub slider: super::widgets::ResolvedSliderTheme,
     /// Progress bar.
-    pub progress_bar: super::widgets::ResolvedProgressBar,
+    pub progress_bar: super::widgets::ResolvedProgressBarTheme,
     /// Tab bar.
-    pub tab: super::widgets::ResolvedTab,
+    pub tab: super::widgets::ResolvedTabTheme,
     /// Sidebar panel.
-    pub sidebar: super::widgets::ResolvedSidebar,
+    pub sidebar: super::widgets::ResolvedSidebarTheme,
     /// Toolbar.
-    pub toolbar: super::widgets::ResolvedToolbar,
+    pub toolbar: super::widgets::ResolvedToolbarTheme,
     /// Status bar.
-    pub status_bar: super::widgets::ResolvedStatusBar,
+    pub status_bar: super::widgets::ResolvedStatusBarTheme,
     /// List / table.
-    pub list: super::widgets::ResolvedList,
+    pub list: super::widgets::ResolvedListTheme,
     /// Popover / dropdown.
-    pub popover: super::widgets::ResolvedPopover,
+    pub popover: super::widgets::ResolvedPopoverTheme,
     /// Splitter handle.
-    pub splitter: super::widgets::ResolvedSplitter,
+    pub splitter: super::widgets::ResolvedSplitterTheme,
     /// Separator line.
-    pub separator: super::widgets::ResolvedSeparator,
+    pub separator: super::widgets::ResolvedSeparatorTheme,
     /// Toggle switch.
-    pub switch: super::widgets::ResolvedSwitch,
+    pub switch: super::widgets::ResolvedSwitchTheme,
     /// Dialog.
-    pub dialog: super::widgets::ResolvedDialog,
+    pub dialog: super::widgets::ResolvedDialogTheme,
     /// Spinner / progress ring.
-    pub spinner: super::widgets::ResolvedSpinner,
+    pub spinner: super::widgets::ResolvedSpinnerTheme,
     /// ComboBox / dropdown trigger.
-    pub combo_box: super::widgets::ResolvedComboBox,
+    pub combo_box: super::widgets::ResolvedComboBoxTheme,
     /// Segmented control.
-    pub segmented_control: super::widgets::ResolvedSegmentedControl,
+    pub segmented_control: super::widgets::ResolvedSegmentedControlTheme,
     /// Card / container.
-    pub card: super::widgets::ResolvedCard,
+    pub card: super::widgets::ResolvedCardTheme,
     /// Expander / disclosure.
-    pub expander: super::widgets::ResolvedExpander,
+    pub expander: super::widgets::ResolvedExpanderTheme,
     /// Hyperlink.
-    pub link: super::widgets::ResolvedLink,
+    pub link: super::widgets::ResolvedLinkTheme,
 
     /// Icon set / naming convention (e.g., "sf-symbols", "freedesktop").
     pub icon_set: String,
@@ -256,13 +256,14 @@ mod tests {
     use super::*;
     use crate::Rgba;
     use crate::model::DialogButtonOrder;
+    use crate::model::ResolvedFontSpec;
     use crate::model::widgets::{
-        ResolvedButton, ResolvedCard, ResolvedCheckbox, ResolvedComboBox, ResolvedDialog,
-        ResolvedExpander, ResolvedFontSpec, ResolvedInput, ResolvedLink, ResolvedList,
-        ResolvedMenu, ResolvedPopover, ResolvedProgressBar, ResolvedScrollbar,
-        ResolvedSegmentedControl, ResolvedSeparator, ResolvedSidebar, ResolvedSlider,
-        ResolvedSpinner, ResolvedSplitter, ResolvedStatusBar, ResolvedSwitch, ResolvedTab,
-        ResolvedToolbar, ResolvedTooltip, ResolvedWindow,
+        ResolvedButtonTheme, ResolvedCardTheme, ResolvedCheckboxTheme, ResolvedComboBoxTheme, ResolvedDialogTheme,
+        ResolvedExpanderTheme, ResolvedInputTheme, ResolvedLinkTheme, ResolvedListTheme,
+        ResolvedMenuTheme, ResolvedPopoverTheme, ResolvedProgressBarTheme, ResolvedScrollbarTheme,
+        ResolvedSegmentedControlTheme, ResolvedSeparatorTheme, ResolvedSidebarTheme, ResolvedSliderTheme,
+        ResolvedSpinnerTheme, ResolvedSplitterTheme, ResolvedStatusBarTheme, ResolvedSwitchTheme, ResolvedTabTheme,
+        ResolvedToolbarTheme, ResolvedTooltipTheme, ResolvedWindowTheme,
     };
 
     fn sample_font() -> ResolvedFontSpec {
@@ -303,9 +304,9 @@ mod tests {
         }
     }
 
-    fn sample_defaults() -> ResolvedDefaults {
+    fn sample_defaults() -> ResolvedThemeDefaults {
         let c = Rgba::rgb(128, 128, 128);
-        ResolvedDefaults {
+        ResolvedThemeDefaults {
             font: sample_font(),
             line_height: 1.4,
             mono_font: ResolvedFontSpec {
@@ -462,7 +463,7 @@ mod tests {
         assert!(dbg.contains("ResolvedTextScale"));
     }
 
-    // --- ResolvedDefaults tests ---
+    // --- ResolvedThemeDefaults tests ---
 
     #[test]
     fn resolved_defaults_all_fields_concrete() {
@@ -493,10 +494,10 @@ mod tests {
         let d2 = d.clone();
         assert_eq!(d, d2);
         let dbg = format!("{d:?}");
-        assert!(dbg.contains("ResolvedDefaults"));
+        assert!(dbg.contains("ResolvedThemeDefaults"));
     }
 
-    // --- ResolvedTheme tests ---
+    // --- ResolvedThemeVariant tests ---
 
     #[test]
     fn resolved_theme_construction_with_all_widgets() {
@@ -504,7 +505,7 @@ mod tests {
         let f = sample_font();
         let e = sample_text_scale_entry();
 
-        let theme = ResolvedTheme {
+        let theme = ResolvedThemeVariant {
             defaults: sample_defaults(),
             text_scale: ResolvedTextScale {
                 caption: e.clone(),
@@ -512,7 +513,7 @@ mod tests {
                 dialog_title: e.clone(),
                 display: e,
             },
-            window: ResolvedWindow {
+            window: ResolvedWindowTheme {
                 background: c,
                 foreground: c,
                 border: c,
@@ -524,7 +525,7 @@ mod tests {
                 shadow: true,
                 title_bar_font: f.clone(),
             },
-            button: ResolvedButton {
+            button: ResolvedButtonTheme {
                 background: c,
                 foreground: c,
                 border: c,
@@ -540,7 +541,7 @@ mod tests {
                 shadow: false,
                 font: f.clone(),
             },
-            input: ResolvedInput {
+            input: ResolvedInputTheme {
                 background: c,
                 foreground: c,
                 border: c,
@@ -555,14 +556,14 @@ mod tests {
                 border_width: 1.0,
                 font: f.clone(),
             },
-            checkbox: ResolvedCheckbox {
+            checkbox: ResolvedCheckboxTheme {
                 checked_bg: c,
                 indicator_size: 18.0,
                 spacing: 6.0,
                 radius: 2.0,
                 border_width: 1.0,
             },
-            menu: ResolvedMenu {
+            menu: ResolvedMenuTheme {
                 background: c,
                 foreground: c,
                 separator: c,
@@ -572,7 +573,7 @@ mod tests {
                 icon_spacing: 6.0,
                 font: f.clone(),
             },
-            tooltip: ResolvedTooltip {
+            tooltip: ResolvedTooltipTheme {
                 background: c,
                 foreground: c,
                 padding_horizontal: 6.0,
@@ -581,7 +582,7 @@ mod tests {
                 radius: 4.0,
                 font: f.clone(),
             },
-            scrollbar: ResolvedScrollbar {
+            scrollbar: ResolvedScrollbarTheme {
                 track: c,
                 thumb: c,
                 thumb_hover: c,
@@ -590,7 +591,7 @@ mod tests {
                 slider_width: 8.0,
                 overlay_mode: false,
             },
-            slider: ResolvedSlider {
+            slider: ResolvedSliderTheme {
                 fill: c,
                 track: c,
                 thumb: c,
@@ -598,14 +599,14 @@ mod tests {
                 thumb_size: 16.0,
                 tick_length: 6.0,
             },
-            progress_bar: ResolvedProgressBar {
+            progress_bar: ResolvedProgressBarTheme {
                 fill: c,
                 track: c,
                 height: 6.0,
                 min_width: 100.0,
                 radius: 3.0,
             },
-            tab: ResolvedTab {
+            tab: ResolvedTabTheme {
                 background: c,
                 foreground: c,
                 active_background: c,
@@ -616,18 +617,18 @@ mod tests {
                 padding_horizontal: 12.0,
                 padding_vertical: 6.0,
             },
-            sidebar: ResolvedSidebar {
+            sidebar: ResolvedSidebarTheme {
                 background: c,
                 foreground: c,
             },
-            toolbar: ResolvedToolbar {
+            toolbar: ResolvedToolbarTheme {
                 height: 40.0,
                 item_spacing: 4.0,
                 padding: 4.0,
                 font: f.clone(),
             },
-            status_bar: ResolvedStatusBar { font: f.clone() },
-            list: ResolvedList {
+            status_bar: ResolvedStatusBarTheme { font: f.clone() },
+            list: ResolvedListTheme {
                 background: c,
                 foreground: c,
                 alternate_row: c,
@@ -640,15 +641,15 @@ mod tests {
                 padding_horizontal: 8.0,
                 padding_vertical: 4.0,
             },
-            popover: ResolvedPopover {
+            popover: ResolvedPopoverTheme {
                 background: c,
                 foreground: c,
                 border: c,
                 radius: 6.0,
             },
-            splitter: ResolvedSplitter { width: 4.0 },
-            separator: ResolvedSeparator { color: c },
-            switch: ResolvedSwitch {
+            splitter: ResolvedSplitterTheme { width: 4.0 },
+            separator: ResolvedSeparatorTheme { color: c },
+            switch: ResolvedSwitchTheme {
                 checked_bg: c,
                 unchecked_bg: c,
                 thumb_bg: c,
@@ -657,7 +658,7 @@ mod tests {
                 thumb_size: 14.0,
                 track_radius: 10.0,
             },
-            dialog: ResolvedDialog {
+            dialog: ResolvedDialogTheme {
                 min_width: 320.0,
                 max_width: 600.0,
                 min_height: 200.0,
@@ -669,13 +670,13 @@ mod tests {
                 button_order: DialogButtonOrder::TrailingAffirmative,
                 title_font: f.clone(),
             },
-            spinner: ResolvedSpinner {
+            spinner: ResolvedSpinnerTheme {
                 fill: c,
                 diameter: 24.0,
                 min_size: 16.0,
                 stroke_width: 2.0,
             },
-            combo_box: ResolvedComboBox {
+            combo_box: ResolvedComboBoxTheme {
                 min_height: 28.0,
                 min_width: 80.0,
                 padding_horizontal: 8.0,
@@ -683,26 +684,26 @@ mod tests {
                 arrow_area_width: 20.0,
                 radius: 4.0,
             },
-            segmented_control: ResolvedSegmentedControl {
+            segmented_control: ResolvedSegmentedControlTheme {
                 segment_height: 28.0,
                 separator_width: 1.0,
                 padding_horizontal: 12.0,
                 radius: 4.0,
             },
-            card: ResolvedCard {
+            card: ResolvedCardTheme {
                 background: c,
                 border: c,
                 radius: 8.0,
                 padding: 12.0,
                 shadow: true,
             },
-            expander: ResolvedExpander {
+            expander: ResolvedExpanderTheme {
                 header_height: 32.0,
                 arrow_size: 12.0,
                 content_padding: 8.0,
                 radius: 4.0,
             },
-            link: ResolvedLink {
+            link: ResolvedLinkTheme {
                 color: c,
                 visited: c,
                 background: c,
@@ -726,7 +727,7 @@ mod tests {
         let f = sample_font();
         let e = sample_text_scale_entry();
 
-        let theme = ResolvedTheme {
+        let theme = ResolvedThemeVariant {
             defaults: sample_defaults(),
             text_scale: ResolvedTextScale {
                 caption: e.clone(),
@@ -734,7 +735,7 @@ mod tests {
                 dialog_title: e.clone(),
                 display: e,
             },
-            window: ResolvedWindow {
+            window: ResolvedWindowTheme {
                 background: c,
                 foreground: c,
                 border: c,
@@ -746,7 +747,7 @@ mod tests {
                 shadow: true,
                 title_bar_font: f.clone(),
             },
-            button: ResolvedButton {
+            button: ResolvedButtonTheme {
                 background: c,
                 foreground: c,
                 border: c,
@@ -762,7 +763,7 @@ mod tests {
                 shadow: false,
                 font: f.clone(),
             },
-            input: ResolvedInput {
+            input: ResolvedInputTheme {
                 background: c,
                 foreground: c,
                 border: c,
@@ -777,14 +778,14 @@ mod tests {
                 border_width: 1.0,
                 font: f.clone(),
             },
-            checkbox: ResolvedCheckbox {
+            checkbox: ResolvedCheckboxTheme {
                 checked_bg: c,
                 indicator_size: 18.0,
                 spacing: 6.0,
                 radius: 2.0,
                 border_width: 1.0,
             },
-            menu: ResolvedMenu {
+            menu: ResolvedMenuTheme {
                 background: c,
                 foreground: c,
                 separator: c,
@@ -794,7 +795,7 @@ mod tests {
                 icon_spacing: 6.0,
                 font: f.clone(),
             },
-            tooltip: ResolvedTooltip {
+            tooltip: ResolvedTooltipTheme {
                 background: c,
                 foreground: c,
                 padding_horizontal: 6.0,
@@ -803,7 +804,7 @@ mod tests {
                 radius: 4.0,
                 font: f.clone(),
             },
-            scrollbar: ResolvedScrollbar {
+            scrollbar: ResolvedScrollbarTheme {
                 track: c,
                 thumb: c,
                 thumb_hover: c,
@@ -812,7 +813,7 @@ mod tests {
                 slider_width: 8.0,
                 overlay_mode: false,
             },
-            slider: ResolvedSlider {
+            slider: ResolvedSliderTheme {
                 fill: c,
                 track: c,
                 thumb: c,
@@ -820,14 +821,14 @@ mod tests {
                 thumb_size: 16.0,
                 tick_length: 6.0,
             },
-            progress_bar: ResolvedProgressBar {
+            progress_bar: ResolvedProgressBarTheme {
                 fill: c,
                 track: c,
                 height: 6.0,
                 min_width: 100.0,
                 radius: 3.0,
             },
-            tab: ResolvedTab {
+            tab: ResolvedTabTheme {
                 background: c,
                 foreground: c,
                 active_background: c,
@@ -838,18 +839,18 @@ mod tests {
                 padding_horizontal: 12.0,
                 padding_vertical: 6.0,
             },
-            sidebar: ResolvedSidebar {
+            sidebar: ResolvedSidebarTheme {
                 background: c,
                 foreground: c,
             },
-            toolbar: ResolvedToolbar {
+            toolbar: ResolvedToolbarTheme {
                 height: 40.0,
                 item_spacing: 4.0,
                 padding: 4.0,
                 font: f.clone(),
             },
-            status_bar: ResolvedStatusBar { font: f.clone() },
-            list: ResolvedList {
+            status_bar: ResolvedStatusBarTheme { font: f.clone() },
+            list: ResolvedListTheme {
                 background: c,
                 foreground: c,
                 alternate_row: c,
@@ -862,15 +863,15 @@ mod tests {
                 padding_horizontal: 8.0,
                 padding_vertical: 4.0,
             },
-            popover: ResolvedPopover {
+            popover: ResolvedPopoverTheme {
                 background: c,
                 foreground: c,
                 border: c,
                 radius: 6.0,
             },
-            splitter: ResolvedSplitter { width: 4.0 },
-            separator: ResolvedSeparator { color: c },
-            switch: ResolvedSwitch {
+            splitter: ResolvedSplitterTheme { width: 4.0 },
+            separator: ResolvedSeparatorTheme { color: c },
+            switch: ResolvedSwitchTheme {
                 checked_bg: c,
                 unchecked_bg: c,
                 thumb_bg: c,
@@ -879,7 +880,7 @@ mod tests {
                 thumb_size: 14.0,
                 track_radius: 10.0,
             },
-            dialog: ResolvedDialog {
+            dialog: ResolvedDialogTheme {
                 min_width: 320.0,
                 max_width: 600.0,
                 min_height: 200.0,
@@ -891,13 +892,13 @@ mod tests {
                 button_order: DialogButtonOrder::TrailingAffirmative,
                 title_font: f.clone(),
             },
-            spinner: ResolvedSpinner {
+            spinner: ResolvedSpinnerTheme {
                 fill: c,
                 diameter: 24.0,
                 min_size: 16.0,
                 stroke_width: 2.0,
             },
-            combo_box: ResolvedComboBox {
+            combo_box: ResolvedComboBoxTheme {
                 min_height: 28.0,
                 min_width: 80.0,
                 padding_horizontal: 8.0,
@@ -905,26 +906,26 @@ mod tests {
                 arrow_area_width: 20.0,
                 radius: 4.0,
             },
-            segmented_control: ResolvedSegmentedControl {
+            segmented_control: ResolvedSegmentedControlTheme {
                 segment_height: 28.0,
                 separator_width: 1.0,
                 padding_horizontal: 12.0,
                 radius: 4.0,
             },
-            card: ResolvedCard {
+            card: ResolvedCardTheme {
                 background: c,
                 border: c,
                 radius: 8.0,
                 padding: 12.0,
                 shadow: true,
             },
-            expander: ResolvedExpander {
+            expander: ResolvedExpanderTheme {
                 header_height: 32.0,
                 arrow_size: 12.0,
                 content_padding: 8.0,
                 radius: 4.0,
             },
-            link: ResolvedLink {
+            link: ResolvedLinkTheme {
                 color: c,
                 visited: c,
                 background: c,
@@ -937,6 +938,6 @@ mod tests {
         let theme2 = theme.clone();
         assert_eq!(theme, theme2);
         let dbg = format!("{theme:?}");
-        assert!(dbg.contains("ResolvedTheme"));
+        assert!(dbg.contains("ResolvedThemeVariant"));
     }
 }

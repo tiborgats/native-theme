@@ -170,7 +170,7 @@ To add support for a new platform (e.g., a new Linux desktop environment):
 1. **Feature flag:** Add a new feature in `native-theme/Cargo.toml` with any
    required dependencies.
 2. **Reader module:** Create a new module (e.g., `native-theme/src/cosmic.rs`)
-   with a `from_cosmic()` function that returns `Result<NativeTheme>`.
+   with a `from_cosmic()` function that returns `Result<ThemeSpec>`.
 3. **Widget metrics:** Add a `cosmic_widget_metrics()` function if the platform
    has well-defined widget sizing constants.
 4. **Preset file:** Create `native-theme/src/presets/cosmic.toml` with default

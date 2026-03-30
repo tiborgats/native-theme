@@ -33,9 +33,9 @@ native-theme = "0.5"
 Load a bundled preset:
 
 ```rust
-use native_theme::NativeTheme;
+use native_theme::ThemeSpec;
 
-let theme = NativeTheme::preset("dracula").unwrap();
+let theme = ThemeSpec::preset("dracula").unwrap();
 let dark = theme.dark.as_ref().unwrap();
 let accent = dark.defaults.accent.unwrap();
 let [r, g, b, a] = accent.to_f32_array();
@@ -44,20 +44,20 @@ let [r, g, b, a] = accent.to_f32_array();
 Read the OS theme at runtime (returns a fully resolved `SystemTheme`):
 
 ```rust,ignore
-use native_theme::from_system;
+use native_theme::SystemTheme;
 
-let system = from_system().unwrap();
-let active = system.active(); // &ResolvedTheme for current OS mode
+let system = SystemTheme::from_system().unwrap();
+let active = system.active(); // &ResolvedThemeVariant for current OS mode
 let accent = active.defaults.accent;  // Rgba (not Option)
 ```
 
 Layer user overrides on top of a preset:
 
 ```rust
-use native_theme::NativeTheme;
+use native_theme::ThemeSpec;
 
-let mut theme = NativeTheme::preset("nord").unwrap();
-let overrides = NativeTheme::from_toml(r#"
+let mut theme = ThemeSpec::preset("nord").unwrap();
+let overrides = ThemeSpec::from_toml(r#"
 name = "My Nord"
 [light.defaults]
 accent = "#ff6600"
@@ -76,15 +76,13 @@ native-theme-gpui = "0.5"
 ```
 
 ```rust,ignore
-use native_theme::NativeTheme;
+use native_theme::ThemeSpec;
 use native_theme_gpui::to_theme;
 
-let nt = NativeTheme::preset("dracula").unwrap();
+let nt = ThemeSpec::preset("dracula").unwrap();
 let is_dark = true;
 if let Some(variant) = nt.pick_variant(is_dark) {
-    let mut v = variant.clone();
-    v.resolve();
-    let resolved = v.validate().unwrap();
+    let resolved = variant.clone().into_resolved().unwrap();
     let theme = to_theme(&resolved, "My App", is_dark);
     // Use as your gpui-component theme
 }
@@ -105,14 +103,12 @@ native-theme-iced = "0.5"
 ```
 
 ```rust,ignore
-use native_theme::NativeTheme;
+use native_theme::ThemeSpec;
 use native_theme_iced::to_theme;
 
-let nt = NativeTheme::preset("dracula").unwrap();
+let nt = ThemeSpec::preset("dracula").unwrap();
 if let Some(variant) = nt.pick_variant(true) {
-    let mut v = variant.clone();
-    v.resolve();
-    let resolved = v.validate().unwrap();
+    let resolved = variant.clone().into_resolved().unwrap();
     let theme = to_theme(&resolved, "My App");
     // Use as your iced application theme
 }
@@ -126,7 +122,7 @@ cargo run -p native-theme-iced --example showcase
 
 ### Other toolkits
 
-Map `ResolvedTheme` fields to your toolkit's types directly. After resolving,
+Map `ResolvedThemeVariant` fields to your toolkit's types directly. After resolving,
 all color, font, geometry, and spacing fields are guaranteed populated. See the
 [API docs](https://docs.rs/native-theme) for details.
 
@@ -179,7 +175,7 @@ toolkit-specific playback helpers.
 
 `from_system()` auto-detects the platform and desktop environment via
 `XDG_CURRENT_DESKTOP`, returning a `SystemTheme` with both light and dark
-`ResolvedTheme` variants. Falls back to bundled presets when a reader is
+`ResolvedThemeVariant` variants. Falls back to bundled presets when a reader is
 unavailable. GTK-based desktops (GNOME, XFCE, Cinnamon, MATE, Budgie, LXQt)
 are all handled by the portal reader.
 
@@ -232,7 +228,7 @@ macOS deps.
 | Platform | `kde-breeze`, `adwaita`, `windows-11`, `macos-sonoma`, `material`, `ios` |
 | Community | `catppuccin-latte`, `catppuccin-frappe`, `catppuccin-macchiato`, `catppuccin-mocha`, `nord`, `dracula`, `gruvbox`, `solarized`, `tokyo-night`, `one-dark` |
 
-Use `NativeTheme::list_presets_for_platform()` to get only the presets
+Use `ThemeSpec::list_presets_for_platform()` to get only the presets
 appropriate for the current OS.
 
 ## License

@@ -1,10 +1,10 @@
 //! iced toolkit connector for native-theme.
 //!
-//! Maps [`native_theme::ResolvedTheme`] data to iced's theming system.
+//! Maps [`native_theme::ResolvedThemeVariant`] data to iced's theming system.
 //!
 //! # Overview
 //!
-//! This crate provides a thin mapping layer from `native_theme::ResolvedTheme`
+//! This crate provides a thin mapping layer from `native_theme::ResolvedThemeVariant`
 //! to `iced_core::theme::Theme`. The main entry point is [`to_theme()`], which
 //! produces a valid iced `Theme` with correct colors for all built-in widget
 //! styles via iced's Catalog system.
@@ -16,10 +16,10 @@
 //! # Example
 //!
 //! ```rust
-//! use native_theme::NativeTheme;
+//! use native_theme::ThemeSpec;
 //! use native_theme_iced::to_theme;
 //!
-//! let nt = NativeTheme::preset("catppuccin-mocha").unwrap();
+//! let nt = ThemeSpec::preset("catppuccin-mocha").unwrap();
 //! let mut variant = nt.pick_variant(false).unwrap().clone();
 //! variant.resolve();
 //! let resolved = variant.validate().unwrap();
@@ -36,22 +36,22 @@ pub mod extended;
 pub mod icons;
 pub mod palette;
 
-/// Select light or dark variant from a [`native_theme::NativeTheme`], with cross-fallback.
+/// Select light or dark variant from a [`native_theme::ThemeSpec`], with cross-fallback.
 ///
 /// When `is_dark` is true, prefers `theme.dark` and falls back to `theme.light`.
 /// When `is_dark` is false, prefers `theme.light` and falls back to `theme.dark`.
 ///
 /// Returns `None` only if the theme has no variants at all.
-#[deprecated(since = "0.3.2", note = "Use NativeTheme::pick_variant() instead")]
+#[deprecated(since = "0.3.2", note = "Use ThemeSpec::pick_variant() instead")]
 #[allow(deprecated)]
 pub fn pick_variant(
-    theme: &native_theme::NativeTheme,
+    theme: &native_theme::ThemeSpec,
     is_dark: bool,
 ) -> Option<&native_theme::ThemeVariant> {
     theme.pick_variant(is_dark)
 }
 
-/// Create an iced [`iced_core::theme::Theme`] from a [`native_theme::ResolvedTheme`].
+/// Create an iced [`iced_core::theme::Theme`] from a [`native_theme::ResolvedThemeVariant`].
 ///
 /// Builds a custom theme using `Theme::custom_with_fn()`, which:
 /// 1. Maps the 6 Palette fields from resolved theme colors via [`palette::to_palette()`]
@@ -63,7 +63,7 @@ pub fn pick_variant(
 /// Container, TextInput, Scrollable, Checkbox, Slider, ProgressBar, Tooltip)
 /// automatically derive their Style structs from this palette. No explicit
 /// Catalog implementations are needed.
-pub fn to_theme(resolved: &native_theme::ResolvedTheme, name: &str) -> iced_core::theme::Theme {
+pub fn to_theme(resolved: &native_theme::ResolvedThemeVariant, name: &str) -> iced_core::theme::Theme {
     let pal = palette::to_palette(resolved);
 
     // Clone the resolved fields we need into the closure.
@@ -85,7 +85,7 @@ pub fn to_theme(resolved: &native_theme::ResolvedTheme, name: &str) -> iced_core
 }
 
 /// Returns button padding as `[horizontal, vertical]` from the resolved theme.
-pub fn button_padding(resolved: &native_theme::ResolvedTheme) -> [f32; 2] {
+pub fn button_padding(resolved: &native_theme::ResolvedThemeVariant) -> [f32; 2] {
     [
         resolved.button.padding_horizontal,
         resolved.button.padding_vertical,
@@ -93,7 +93,7 @@ pub fn button_padding(resolved: &native_theme::ResolvedTheme) -> [f32; 2] {
 }
 
 /// Returns text input padding as `[horizontal, vertical]` from the resolved theme.
-pub fn input_padding(resolved: &native_theme::ResolvedTheme) -> [f32; 2] {
+pub fn input_padding(resolved: &native_theme::ResolvedThemeVariant) -> [f32; 2] {
     [
         resolved.input.padding_horizontal,
         resolved.input.padding_vertical,
@@ -101,22 +101,22 @@ pub fn input_padding(resolved: &native_theme::ResolvedTheme) -> [f32; 2] {
 }
 
 /// Returns the standard border radius from the resolved theme.
-pub fn border_radius(resolved: &native_theme::ResolvedTheme) -> f32 {
+pub fn border_radius(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
     resolved.defaults.radius
 }
 
 /// Returns the large border radius from the resolved theme.
-pub fn border_radius_lg(resolved: &native_theme::ResolvedTheme) -> f32 {
+pub fn border_radius_lg(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
     resolved.defaults.radius_lg
 }
 
 /// Returns the scrollbar width from the resolved theme.
-pub fn scrollbar_width(resolved: &native_theme::ResolvedTheme) -> f32 {
+pub fn scrollbar_width(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
     resolved.scrollbar.width
 }
 
 /// Returns the primary UI font family name from the resolved theme.
-pub fn font_family(resolved: &native_theme::ResolvedTheme) -> &str {
+pub fn font_family(resolved: &native_theme::ResolvedThemeVariant) -> &str {
     &resolved.defaults.font.family
 }
 
@@ -124,12 +124,12 @@ pub fn font_family(resolved: &native_theme::ResolvedTheme) -> &str {
 ///
 /// ResolvedFontSpec.size is already in logical pixels -- no pt-to-px conversion
 /// is applied.
-pub fn font_size(resolved: &native_theme::ResolvedTheme) -> f32 {
+pub fn font_size(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
     resolved.defaults.font.size
 }
 
 /// Returns the monospace font family name from the resolved theme.
-pub fn mono_font_family(resolved: &native_theme::ResolvedTheme) -> &str {
+pub fn mono_font_family(resolved: &native_theme::ResolvedThemeVariant) -> &str {
     &resolved.defaults.mono_font.family
 }
 
@@ -137,7 +137,7 @@ pub fn mono_font_family(resolved: &native_theme::ResolvedTheme) -> &str {
 ///
 /// ResolvedFontSpec.size is already in logical pixels -- no pt-to-px conversion
 /// is applied.
-pub fn mono_font_size(resolved: &native_theme::ResolvedTheme) -> f32 {
+pub fn mono_font_size(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
     resolved.defaults.mono_font.size
 }
 
@@ -146,10 +146,10 @@ pub fn mono_font_size(resolved: &native_theme::ResolvedTheme) -> f32 {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use native_theme::{NativeTheme, ThemeVariant};
+    use native_theme::{ThemeSpec, ThemeVariant};
 
-    fn make_resolved(is_dark: bool) -> native_theme::ResolvedTheme {
-        let nt = NativeTheme::preset("catppuccin-mocha").unwrap();
+    fn make_resolved(is_dark: bool) -> native_theme::ResolvedThemeVariant {
+        let nt = ThemeSpec::preset("catppuccin-mocha").unwrap();
         let mut variant = nt.pick_variant(is_dark).unwrap().clone();
         variant.resolve();
         variant.validate().unwrap()
@@ -159,7 +159,7 @@ mod tests {
 
     #[test]
     fn pick_variant_light_preferred_returns_light() {
-        let mut theme = NativeTheme::new("Test");
+        let mut theme = ThemeSpec::new("Test");
         theme.light = Some(ThemeVariant::default());
         theme.dark = Some(ThemeVariant::default());
 
@@ -170,7 +170,7 @@ mod tests {
 
     #[test]
     fn pick_variant_dark_preferred_returns_dark() {
-        let mut theme = NativeTheme::new("Test");
+        let mut theme = ThemeSpec::new("Test");
         theme.light = Some(ThemeVariant::default());
         theme.dark = Some(ThemeVariant::default());
 
@@ -181,7 +181,7 @@ mod tests {
 
     #[test]
     fn pick_variant_falls_back_to_light_when_no_dark() {
-        let mut theme = NativeTheme::new("Test");
+        let mut theme = ThemeSpec::new("Test");
         theme.light = Some(ThemeVariant::default());
 
         let result = pick_variant(&theme, true);
@@ -191,7 +191,7 @@ mod tests {
 
     #[test]
     fn pick_variant_falls_back_to_dark_when_no_light() {
-        let mut theme = NativeTheme::new("Test");
+        let mut theme = ThemeSpec::new("Test");
         theme.dark = Some(ThemeVariant::default());
 
         let result = pick_variant(&theme, false);
@@ -201,7 +201,7 @@ mod tests {
 
     #[test]
     fn pick_variant_returns_none_when_empty() {
-        let theme = NativeTheme::new("Test");
+        let theme = ThemeSpec::new("Test");
         assert!(pick_variant(&theme, false).is_none());
         assert!(pick_variant(&theme, true).is_none());
     }

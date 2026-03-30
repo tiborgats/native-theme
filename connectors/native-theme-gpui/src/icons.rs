@@ -756,7 +756,7 @@ pub fn to_image_source_colored(data: &IconData, color: Hsla) -> ImageSource {
 /// found and no bundled SVG available).
 pub fn custom_icon_to_image_source(
     provider: &(impl IconProvider + ?Sized),
-    icon_set: &str,
+    icon_set: native_theme::IconSet,
 ) -> Option<ImageSource> {
     let data = load_custom_icon(provider, icon_set)?;
     Some(to_image_source(&data))
@@ -769,7 +769,7 @@ pub fn custom_icon_to_image_source(
 /// icons, prefer [`custom_icon_to_image_source()`].
 pub fn custom_icon_to_image_source_colored(
     provider: &(impl IconProvider + ?Sized),
-    icon_set: &str,
+    icon_set: native_theme::IconSet,
     color: Hsla,
 ) -> Option<ImageSource> {
     let data = load_custom_icon(provider, icon_set)?;
@@ -851,7 +851,7 @@ pub fn with_spin_animation(
 /// skips the RGBA→BGRA pixel conversion that all other formats perform,
 /// causing red and blue channels to be swapped.
 fn svg_to_bmp_source(svg_bytes: &[u8]) -> ImageSource {
-    if let Some(IconData::Rgba {
+    if let Ok(IconData::Rgba {
         width,
         height,
         data,
@@ -1217,13 +1217,13 @@ mod tests {
 
     #[test]
     fn custom_icon_to_image_source_with_svg_provider_returns_some() {
-        let result = custom_icon_to_image_source(&TestCustomIcon, "material");
+        let result = custom_icon_to_image_source(&TestCustomIcon, native_theme::IconSet::Material);
         assert!(result.is_some());
     }
 
     #[test]
     fn custom_icon_to_image_source_with_empty_provider_returns_none() {
-        let result = custom_icon_to_image_source(&EmptyProvider, "material");
+        let result = custom_icon_to_image_source(&EmptyProvider, native_theme::IconSet::Material);
         assert!(result.is_none());
     }
 
@@ -1235,14 +1235,14 @@ mod tests {
             l: 0.5,
             a: 1.0,
         };
-        let result = custom_icon_to_image_source_colored(&TestCustomIcon, "material", color);
+        let result = custom_icon_to_image_source_colored(&TestCustomIcon, native_theme::IconSet::Material, color);
         assert!(result.is_some());
     }
 
     #[test]
     fn custom_icon_to_image_source_accepts_dyn_provider() {
         let boxed: Box<dyn native_theme::IconProvider> = Box::new(TestCustomIcon);
-        let result = custom_icon_to_image_source(&*boxed, "material");
+        let result = custom_icon_to_image_source(&*boxed, native_theme::IconSet::Material);
         assert!(result.is_some());
     }
 
@@ -1257,7 +1257,6 @@ mod tests {
                 IconData::Svg(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='6' fill='green'/></svg>".to_vec()),
             ],
             frame_duration_ms: 80,
-            repeat: native_theme::Repeat::Infinite,
         };
         let result = animated_frames_to_image_sources(&anim);
         assert!(result.is_some());
@@ -1282,7 +1281,6 @@ mod tests {
         let anim = AnimatedIcon::Frames {
             frames: vec![],
             frame_duration_ms: 80,
-            repeat: native_theme::Repeat::Infinite,
         };
         let result = animated_frames_to_image_sources(&anim);
         assert!(result.is_some());

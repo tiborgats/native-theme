@@ -9,8 +9,8 @@ covers the native-theme core crate. Cross-references to it are marked with
 **[CORE-N]** (where N is the section number in the companion doc).
 
 **Assumed core renames**: Proposed code in this document uses post-rename names
-from the core crate per **[CORE-1]** (`ResolvedTheme` → `ResolvedThemeVariant`)
-and **[CORE-2]** (`NativeTheme` → `ThemeSpec`). Current-code examples retain
+from the core crate per **[CORE-1]** (`ResolvedThemeVariant` → `ResolvedThemeVariant`)
+and **[CORE-2]** (`ThemeSpec` → `ThemeSpec`). Current-code examples retain
 the pre-rename names.
 
 ---
@@ -61,7 +61,7 @@ function clones internally.
 The most common operation today requires 6 steps:
 
 ```rust
-let nt = NativeTheme::preset("dracula")?;
+let nt = ThemeSpec::preset("dracula")?;
 if let Some(variant) = nt.pick_variant(is_dark) {
     let mut v = variant.clone();
     v.resolve();
@@ -86,13 +86,13 @@ better than the public one.
 **Contra:**
 - Adds another free function to the crate root
 - Couples preset loading and gpui conversion (less composable)
-- Callers who need the intermediate `ResolvedTheme` still need the manual path
+- Callers who need the intermediate `ResolvedThemeVariant` still need the manual path
 
-### Option B: Add `NativeTheme::into_gpui_theme(self, is_dark) -> Result<Theme>` via extension trait
+### Option B: Add `ThemeSpec::into_gpui_theme(self, is_dark) -> Result<Theme>` via extension trait
 
 **Pro:**
 - Method syntax on the type users already have
-- Composable: users can still use `NativeTheme` for other things first
+- Composable: users can still use `ThemeSpec` for other things first
 - Extension trait pattern is idiomatic Rust
 
 **Contra:**
@@ -145,7 +145,7 @@ nt.pick_variant(is_dark)           // is_dark selects the variant
 to_theme(&resolved, name, is_dark) // is_dark passed AGAIN
 ```
 
-By the time you have a `ResolvedTheme`, the darkness is baked into the color
+By the time you have a `ResolvedThemeVariant`, the darkness is baked into the color
 values. The `is_dark` in `to_theme()` is only used to set `ThemeMode::Dark` vs
 `ThemeMode::Light`. Meanwhile, `colors.rs` already has a private
 `is_dark_background(bg)` that checks `bg.l < 0.5`.
@@ -154,12 +154,12 @@ values. The `is_dark` in `to_theme()` is only used to set `ThemeMode::Dark` vs
 But `colors::to_theme_color()` (line 37) independently re-derives `is_dark`
 via `is_dark_background(bg)` and uses THAT value for `active_color()` darkening
 amounts. These two signals can disagree: a caller might pass `is_dark=false`
-with a dark `ResolvedTheme` variant, causing `ThemeMode` to say Light while
+with a dark `ResolvedThemeVariant` variant, causing `ThemeMode` to say Light while
 active-state colors darken by 20% (dark-mode path). This is not just redundancy
 -- it is a correctness bug where two systems within the same `to_theme()` call
 have different answers to "is this theme dark?".
 
-### Option A: Add `is_dark` field to `ResolvedTheme` (native-theme core change)
+### Option A: Add `is_dark` field to `ResolvedThemeVariant` (native-theme core change)
 
 **Pro:**
 - Single source of truth -- set during resolve, carried through
@@ -168,7 +168,7 @@ have different answers to "is this theme dark?".
 
 **Contra:**
 - Changes a core type in native-theme (semver: minor bump needed)
-- `ResolvedTheme` is currently pure visual data; adding metadata is a design shift
+- `ResolvedThemeVariant` is currently pure visual data; adding metadata is a design shift
 - Who sets it? The caller of `validate()`? Automatic from background lightness?
 - If auto-detected, edge-case themes (very dark "light" themes) could be misclassified
 
@@ -212,7 +212,7 @@ have different answers to "is this theme dark?".
 ```rust
 // to_theme_color() currently derives is_dark internally from bg.l < 0.5.
 // Instead, accept it as a parameter from to_theme().
-pub fn to_theme_color(resolved: &ResolvedTheme, is_dark: bool) -> ThemeColor
+pub fn to_theme_color(resolved: &ResolvedThemeVariant, is_dark: bool) -> ThemeColor
 ```
 
 **Pro:**
@@ -247,7 +247,7 @@ forwards it consistently. If `colors`/`config`/`derive` become `pub(crate)`
 name. This section covers the residual issue for manual-path users.
 
 ```rust
-pub fn to_theme(resolved: &ResolvedTheme, name: &str, is_dark: bool) -> Theme
+pub fn to_theme(resolved: &ResolvedThemeVariant, name: &str, is_dark: bool) -> Theme
 ```
 
 `name` sets `ThemeConfig.name` -- a display string with no functional effect.
@@ -278,7 +278,7 @@ Change signature to `to_theme(resolved, name: Option<&str>, is_dark)` or use
 - Power users still need to pass a name
 - SystemTheme users have a name field they could use
 
-### Option C: Add `name` field to `ResolvedTheme`
+### Option C: Add `name` field to `ResolvedThemeVariant`
 
 **Pro:**
 - Carried through the pipeline automatically
@@ -287,7 +287,7 @@ Change signature to `to_theme(resolved, name: Option<&str>, is_dark)` or use
 
 **Contra:**
 - Changes a core type for a purely cosmetic field
-- `ResolvedTheme` is visual data; a display name doesn't belong there
+- `ResolvedThemeVariant` is visual data; a display name doesn't belong there
 - Who populates it? Presets have names, system themes have names, but custom themes?
 
 ### Option D: Provide a `to_theme_named()` and `to_theme()` (name defaults to "Native Theme")
@@ -771,16 +771,16 @@ struct ResolvedColors {
   some functions don't need (harmless but slightly wasteful)
 - Refactoring effort for purely internal improvement
 
-### Option B: Pass `(&ResolvedTheme, &mut ThemeColor)` and let each function extract what it needs
+### Option B: Pass `(&ResolvedThemeVariant, &mut ThemeColor)` and let each function extract what it needs
 
 **Pro:**
 - No new struct needed
-- Each function reads exactly what it needs from ResolvedTheme
-- Simpler signatures: `fn assign_core(tc: &mut ThemeColor, resolved: &ResolvedTheme)`
+- Each function reads exactly what it needs from ResolvedThemeVariant
+- Simpler signatures: `fn assign_core(tc: &mut ThemeColor, resolved: &ResolvedThemeVariant)`
 
 **Contra:**
 - Functions do redundant `rgba_to_hsla()` conversions
-- The `ResolvedTheme` -> `Hsla` conversion logic is spread across 4 functions
+- The `ResolvedThemeVariant` -> `Hsla` conversion logic is spread across 4 functions
   instead of centralized
 - Harder to see the full mapping at a glance
 
@@ -798,7 +798,7 @@ struct ResolvedColors {
 
 ### PROPOSED: Option A
 
-Extract a `ResolvedColors` struct. The conversion from `ResolvedTheme` fields to
+Extract a `ResolvedColors` struct. The conversion from `ResolvedThemeVariant` fields to
 `Hsla` values happens once in `to_theme_color()`, and the struct is passed by
 reference to each assign function. This is a pure internal refactor with no API
 impact, and it eliminates 4 clippy suppressions while improving readability.
@@ -987,7 +987,7 @@ the offsets or add theme-level chart color overrides later.
 
 **Verdict: VALID -- high priority (documentation / design)**
 
-`ResolvedTheme` has 25 per-widget structs with ~150+ fields of carefully resolved
+`ResolvedThemeVariant` has 25 per-widget structs with ~150+ fields of carefully resolved
 geometry (padding, min-width, min-height, radius, font, border-width, spacing,
 disabled-opacity, etc.). The connector silently discards the vast majority:
 
@@ -1044,12 +1044,12 @@ exactly which fields are consumed and which are discarded.
 ```rust
 pub struct GpuiTheme {
     pub theme: Theme,
-    pub resolved: ResolvedTheme,  // retained for caller access to geometry
+    pub resolved: ResolvedThemeVariant,  // retained for caller access to geometry
 }
 ```
 
 **Pro:**
-- Users get both the gpui Theme AND the full ResolvedTheme
+- Users get both the gpui Theme AND the full ResolvedThemeVariant
 - Application code can read `gpui_theme.resolved.button.padding_horizontal`
   when building UI elements
 - No data is lost
@@ -1057,14 +1057,14 @@ pub struct GpuiTheme {
 **Contra:**
 - Breaks the current return type
 - Awkward: users must destructure or access `.theme` everywhere
-- `ResolvedTheme` is large -- carrying it increases memory usage
-- The caller already has the `ResolvedTheme` they passed in (they can keep it)
+- `ResolvedThemeVariant` is large -- carrying it increases memory usage
+- The caller already has the `ResolvedThemeVariant` they passed in (they can keep it)
 
 ### Option C: Provide per-widget accessor helpers
 
 ```rust
-pub fn button_style(resolved: &ResolvedTheme) -> ButtonStyle { ... }
-pub fn dialog_style(resolved: &ResolvedTheme) -> DialogStyle { ... }
+pub fn button_style(resolved: &ResolvedThemeVariant) -> ButtonStyle { ... }
+pub fn dialog_style(resolved: &ResolvedThemeVariant) -> DialogStyle { ... }
 ```
 
 Where `ButtonStyle`/`DialogStyle` are gpui-native style structs containing
@@ -1079,7 +1079,7 @@ padding, radius, font, etc. that the caller can apply to gpui elements.
 - Large API surface: one struct + function per widget (25 widgets = 25 functions)
 - gpui layout uses inline styles, not style objects -- these structs
   don't map 1:1 to how gpui styling works
-- Maintenance burden: must track both ResolvedTheme and gpui layout APIs
+- Maintenance burden: must track both ResolvedThemeVariant and gpui layout APIs
 - Speculative: unclear if users actually need this (gpui-component widgets
   have their own internal sizing)
 
@@ -1087,7 +1087,7 @@ padding, radius, font, etc. that the caller can apply to gpui elements.
 
 ```rust
 pub const CONSUMED_FIELDS: &[&str] = &["defaults.background", "button.primary_bg", ...];
-pub fn coverage_report(resolved: &ResolvedTheme) -> CoverageReport { ... }
+pub fn coverage_report(resolved: &ResolvedThemeVariant) -> CoverageReport { ... }
 ```
 
 **Pro:**
@@ -1104,7 +1104,7 @@ pub fn coverage_report(resolved: &ResolvedTheme) -> CoverageReport { ... }
 Document the coverage gap explicitly in the crate docs and `to_theme()` docs.
 The limitation is architectural (gpui-component's ThemeColor has no geometry
 slots). Users who need per-widget geometry can read it directly from the
-`ResolvedTheme` they already have. A coverage table in the docs is the honest,
+`ResolvedThemeVariant` they already have. A coverage table in the docs is the honest,
 low-effort solution. If demand for geometry bridging emerges, Option C can be
 revisited.
 
@@ -1164,7 +1164,7 @@ tc.overlay = Hsla {
 - Magenta respects the theme's saturation and lightness range
 - Overlay uses the theme's own shadow color
 - Still reads as "magenta" and "overlay" but fits the palette
-- No new fields needed in ResolvedTheme
+- No new fields needed in ResolvedThemeVariant
 
 **Contra:**
 - A low-saturation accent (s=0.1) produces a washed-out magenta that may not
@@ -1172,9 +1172,9 @@ tc.overlay = Hsla {
 - Shadow color may have unexpected hue (e.g., blue-tinted shadows)
 - More complex derivation logic
 
-### Option B: Add explicit base color slots to ResolvedTheme (core change)
+### Option B: Add explicit base color slots to ResolvedThemeVariant (core change)
 
-Add `magenta`, `cyan`, `overlay` fields to `ResolvedDefaults`.
+Add `magenta`, `cyan`, `overlay` fields to `ResolvedThemeDefaults`.
 
 **Pro:**
 - Theme authors control every color explicitly
@@ -1271,7 +1271,7 @@ tc.link_active = active_color(link, is_dark);
 - Could clash with themes where the link color was chosen for minimal contrast
   change (hover/active derivation might produce unreadable colors)
 
-### Option B: Derive from ResolvedTheme's link widget data
+### Option B: Derive from ResolvedThemeVariant's link widget data
 
 ```rust
 tc.link_hover = rgba_to_hsla(resolved.link.hover_bg);
@@ -1352,7 +1352,7 @@ clamping.
   that may be too opaque
 
 **Contra:**
-- `ResolvedTheme` has no way to distinguish "explicitly set" from "resolved from
+- `ResolvedThemeVariant` has no way to distinguish "explicitly set" from "resolved from
   default" -- all fields are populated after resolution
 - Cannot be implemented without core changes
 
@@ -1400,7 +1400,7 @@ after apply_config), so there's no reason to replicate that clamping here.
 Users must depend on three crates and import types from each:
 
 ```rust
-use native_theme::{ResolvedTheme, IconRole, IconData, AnimatedIcon, IconProvider};
+use native_theme::{ResolvedThemeVariant, IconRole, IconData, AnimatedIcon, IconProvider};
 use gpui_component::theme::Theme;
 use gpui::Hsla;
 use native_theme_gpui::{to_theme, icons::to_image_source};
@@ -1570,7 +1570,7 @@ If section 10 is deferred, fall back to Option A (remove the params).
 tc.accent_foreground = fg;
 ```
 
-`ResolvedDefaults` has an explicit `accent_foreground: Rgba` field
+`ResolvedThemeDefaults` has an explicit `accent_foreground: Rgba` field
 (`resolved.rs:100`), but the connector ignores it and substitutes plain `fg`
 (the default text foreground). `accent_foreground` is the text color intended
 for use *on top of accent-colored backgrounds*. If a theme sets accent to dark
@@ -1632,7 +1632,7 @@ tc.accent_foreground = if is_dark_background(accent) {
 ### PROPOSED: Option A
 
 Map `tc.accent_foreground = rgba_to_hsla(d.accent_foreground)`. This is a
-clear bug -- the field exists in `ResolvedDefaults`, is set by the resolution
+clear bug -- the field exists in `ResolvedThemeDefaults`, is set by the resolution
 pipeline, and is ignored for no discernible reason. Also fix
 `sidebar_accent_foreground` the same way.
 
@@ -1649,7 +1649,7 @@ radius: Some(d.radius as usize),
 radius_lg: Some(d.radius_lg as usize),
 ```
 
-`ResolvedDefaults.radius` is `f32` (logical pixels). `ThemeConfig.radius` is
+`ResolvedThemeDefaults.radius` is `f32` (logical pixels). `ThemeConfig.radius` is
 `Option<usize>`. The `as usize` cast truncates toward zero: `radius = 5.9`
 becomes `5`, not `6`. For themes that derive radius from OS metrics (e.g.,
 KDE's `FrameRadius` which can be non-integer after DPI scaling), this

@@ -62,7 +62,7 @@ pub fn to_svg_handle_colored(
 /// icon is SVG (use [`custom_icon_to_svg_handle()`] for SVG icons).
 pub fn custom_icon_to_image_handle(
     provider: &(impl IconProvider + ?Sized),
-    icon_set: &str,
+    icon_set: native_theme::IconSet,
 ) -> Option<iced_core::image::Handle> {
     let data = load_custom_icon(provider, icon_set)?;
     to_image_handle(&data)
@@ -74,7 +74,7 @@ pub fn custom_icon_to_image_handle(
 /// icon is RGBA (use [`custom_icon_to_image_handle()`] for RGBA icons).
 pub fn custom_icon_to_svg_handle(
     provider: &(impl IconProvider + ?Sized),
-    icon_set: &str,
+    icon_set: native_theme::IconSet,
 ) -> Option<iced_core::svg::Handle> {
     let data = load_custom_icon(provider, icon_set)?;
     to_svg_handle(&data)
@@ -87,7 +87,7 @@ pub fn custom_icon_to_svg_handle(
 /// [`custom_icon_to_svg_handle()`].
 pub fn custom_icon_to_svg_handle_colored(
     provider: &(impl IconProvider + ?Sized),
-    icon_set: &str,
+    icon_set: native_theme::IconSet,
     color: iced_core::Color,
 ) -> Option<iced_core::svg::Handle> {
     let data = load_custom_icon(provider, icon_set)?;
@@ -311,39 +311,39 @@ mod tests {
     #[test]
     fn custom_icon_to_image_handle_with_svg_provider_returns_none() {
         // SVG data is not RGBA, so to_image_handle returns None
-        let result = custom_icon_to_image_handle(&TestSvgProvider, "material");
+        let result = custom_icon_to_image_handle(&TestSvgProvider, native_theme::IconSet::Material);
         assert!(result.is_none());
     }
 
     #[test]
     fn custom_icon_to_svg_handle_with_svg_provider_returns_some() {
-        let result = custom_icon_to_svg_handle(&TestSvgProvider, "material");
+        let result = custom_icon_to_svg_handle(&TestSvgProvider, native_theme::IconSet::Material);
         assert!(result.is_some());
     }
 
     #[test]
     fn custom_icon_to_svg_handle_colored_with_svg_provider_returns_some() {
         let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
-        let result = custom_icon_to_svg_handle_colored(&TestSvgProvider, "material", color);
+        let result = custom_icon_to_svg_handle_colored(&TestSvgProvider, native_theme::IconSet::Material, color);
         assert!(result.is_some());
     }
 
     #[test]
     fn custom_icon_to_image_handle_with_empty_provider_returns_none() {
-        let result = custom_icon_to_image_handle(&EmptyProvider, "material");
+        let result = custom_icon_to_image_handle(&EmptyProvider, native_theme::IconSet::Material);
         assert!(result.is_none());
     }
 
     #[test]
     fn custom_icon_to_svg_handle_with_empty_provider_returns_none() {
-        let result = custom_icon_to_svg_handle(&EmptyProvider, "material");
+        let result = custom_icon_to_svg_handle(&EmptyProvider, native_theme::IconSet::Material);
         assert!(result.is_none());
     }
 
     #[test]
     fn custom_icon_helpers_accept_dyn_provider() {
         let boxed: Box<dyn native_theme::IconProvider> = Box::new(TestSvgProvider);
-        let result = custom_icon_to_svg_handle(&*boxed, "material");
+        let result = custom_icon_to_svg_handle(&*boxed, native_theme::IconSet::Material);
         assert!(result.is_some());
     }
 
@@ -371,7 +371,6 @@ mod tests {
                 IconData::Svg(b"<svg></svg>".to_vec()),
             ],
             frame_duration_ms: 80,
-            repeat: native_theme::Repeat::Infinite,
         };
         let result = animated_frames_to_svg_handles(&anim);
         assert!(result.is_some());
@@ -393,7 +392,6 @@ mod tests {
         let anim = AnimatedIcon::Frames {
             frames: vec![],
             frame_duration_ms: 80,
-            repeat: native_theme::Repeat::Infinite,
         };
         let result = animated_frames_to_svg_handles(&anim);
         assert!(result.is_none());
@@ -408,7 +406,6 @@ mod tests {
                 data: vec![0u8; 16 * 16 * 4],
             }],
             frame_duration_ms: 80,
-            repeat: native_theme::Repeat::Infinite,
         };
         let result = animated_frames_to_svg_handles(&anim);
         assert!(result.is_none());

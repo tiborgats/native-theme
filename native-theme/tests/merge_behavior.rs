@@ -76,13 +76,13 @@ fn merge_preserves_base_when_overlay_empty() {
 
 #[test]
 fn merge_native_theme_light_dark() {
-    let mut base = NativeTheme::new("Base");
+    let mut base = ThemeSpec::new("Base");
     let mut base_light = ThemeVariant::default();
     base_light.defaults.background = Some(Rgba::rgb(255, 255, 255));
     base.light = Some(base_light);
     // base has no dark
 
-    let mut overlay = NativeTheme::new("Overlay");
+    let mut overlay = ThemeSpec::new("Overlay");
     let mut overlay_dark = ThemeVariant::default();
     overlay_dark.defaults.background = Some(Rgba::rgb(30, 30, 30));
     overlay.dark = Some(overlay_dark);
@@ -110,12 +110,12 @@ fn merge_native_theme_light_dark() {
 
 #[test]
 fn merge_native_theme_deep_merge_variants() {
-    let mut base = NativeTheme::new("Base");
+    let mut base = ThemeSpec::new("Base");
     let mut base_light = ThemeVariant::default();
     base_light.defaults.background = Some(Rgba::rgb(255, 255, 255));
     base.light = Some(base_light);
 
-    let mut overlay = NativeTheme::new("Overlay");
+    let mut overlay = ThemeSpec::new("Overlay");
     let mut overlay_light = ThemeVariant::default();
     overlay_light.defaults.accent = Some(Rgba::rgb(61, 174, 233));
     overlay.light = Some(overlay_light);
@@ -218,7 +218,7 @@ fn trait_assertions_send_sync() {
     fn assert_send_sync<T: Send + Sync>() {}
 
     assert_send_sync::<Rgba>();
-    assert_send_sync::<NativeTheme>();
+    assert_send_sync::<ThemeSpec>();
     assert_send_sync::<ThemeVariant>();
     assert_send_sync::<ThemeDefaults>();
     assert_send_sync::<FontSpec>();
@@ -231,7 +231,7 @@ fn trait_assertions_default_clone_debug() {
     fn assert_default_clone_debug<T: Default + Clone + std::fmt::Debug>() {}
 
     assert_default_clone_debug::<Rgba>();
-    assert_default_clone_debug::<NativeTheme>();
+    assert_default_clone_debug::<ThemeSpec>();
     assert_default_clone_debug::<ThemeVariant>();
     assert_default_clone_debug::<ThemeDefaults>();
     assert_default_clone_debug::<FontSpec>();
@@ -249,7 +249,7 @@ fn trait_assertions_default_clone_debug() {
 #[test]
 fn realistic_theme_layering_scenario() {
     // Base preset: Breeze Light with many fields set
-    let mut base = NativeTheme::new("Breeze Light");
+    let mut base = ThemeSpec::new("Breeze Light");
     let mut light = ThemeVariant::default();
 
     // Populate base default colors
@@ -285,7 +285,7 @@ fn realistic_theme_layering_scenario() {
     base.light = Some(light);
 
     // User override: just accent color and font family
-    let mut user_override = NativeTheme::new("User Override");
+    let mut user_override = ThemeSpec::new("User Override");
     let mut user_light = ThemeVariant::default();
     user_light.defaults.accent = Some(Rgba::rgb(156, 39, 176)); // purple accent
     user_light.defaults.font.family = Some("Inter".into()); // different font

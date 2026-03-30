@@ -5,7 +5,7 @@
 // crate. Returns None when the role has no freedesktop mapping or the
 // icon is not found in the active theme.
 
-use crate::model::animated::{AnimatedIcon, Repeat, TransformAnimation};
+use crate::model::animated::{AnimatedIcon, TransformAnimation};
 use crate::{IconData, IconRole, IconSet, icon_name};
 use std::path::PathBuf;
 
@@ -14,7 +14,7 @@ use std::path::PathBuf;
 /// Delegates to `system_icon_theme()` which handles DE-specific detection
 /// (KDE reads kdeglobals, GNOME uses gsettings, etc.).
 fn detect_theme() -> String {
-    crate::system_icon_theme()
+    crate::system_icon_theme().to_string()
 }
 
 /// Look up an icon by freedesktop name using a two-pass strategy.
@@ -55,10 +55,10 @@ fn find_icon(name: &str, theme: &str, size: u16) -> Option<PathBuf> {
 ///
 /// Returns `None` if the role has no freedesktop mapping or the icon
 /// is not found in the active theme.
-pub fn load_freedesktop_icon(role: IconRole) -> Option<IconData> {
+pub fn load_freedesktop_icon(role: IconRole, size: u16) -> Option<IconData> {
     let theme = detect_theme();
-    let name = icon_name(IconSet::Freedesktop, role)?;
-    let path = find_icon(name, &theme, 24)?;
+    let name = icon_name(role, IconSet::Freedesktop)?;
+    let path = find_icon(name, &theme, size)?;
     let bytes = std::fs::read(&path).ok()?;
     Some(IconData::Svg(bytes))
 }
@@ -75,8 +75,8 @@ pub fn load_freedesktop_icon(role: IconRole) -> Option<IconData> {
 /// `IconRole` variants.
 ///
 /// Returns `None` if the icon is not found in the theme.
-pub fn load_freedesktop_icon_by_name(name: &str, theme: &str) -> Option<IconData> {
-    let path = find_icon(name, theme, 24)?;
+pub fn load_freedesktop_icon_by_name(name: &str, theme: &str, size: u16) -> Option<IconData> {
+    let path = find_icon(name, theme, size)?;
     let bytes = std::fs::read(&path).ok()?;
     Some(IconData::Svg(bytes))
 }
@@ -167,7 +167,6 @@ pub(crate) fn load_freedesktop_spinner() -> Option<AnimatedIcon> {
             return Some(AnimatedIcon::Frames {
                 frames: frames.into_iter().map(IconData::Svg).collect(),
                 frame_duration_ms: 80,
-                repeat: Repeat::Infinite,
             });
         }
         // Not a sprite sheet -- treat as single frame with spin
@@ -203,7 +202,7 @@ mod tests {
     #[test]
     #[ignore = "requires a freedesktop icon theme installed (not available on CI)"]
     fn load_icon_returns_some_for_dialog_error() {
-        let result = load_freedesktop_icon(IconRole::DialogError);
+        let result = load_freedesktop_icon(IconRole::DialogError, 24);
         assert!(result.is_some(), "DialogError should resolve to an icon");
         match result.unwrap() {
             IconData::Svg(bytes) => {
@@ -222,14 +221,14 @@ mod tests {
         // Notification is mapped to "notification-active" (KDE convention).
         // Result depends on whether the active theme ships this icon.
         // This test verifies the loader does not panic and does not fall back to Material.
-        let _result = load_freedesktop_icon(IconRole::Notification);
+        let _result = load_freedesktop_icon(IconRole::Notification, 24);
         // No assertion on Some/None -- theme-dependent
     }
 
     #[test]
     #[ignore = "requires a freedesktop icon theme installed (not available on CI)"]
     fn load_icon_returns_svg_variant() {
-        let result = load_freedesktop_icon(IconRole::ActionCopy);
+        let result = load_freedesktop_icon(IconRole::ActionCopy, 24);
         assert!(result.is_some(), "ActionCopy should resolve to an icon");
         assert!(
             matches!(result.unwrap(), IconData::Svg(_)),
@@ -263,7 +262,7 @@ mod tests {
 
     #[test]
     fn load_icon_by_name_returns_none_for_nonexistent() {
-        let result = load_freedesktop_icon_by_name("zzz-nonexistent-icon", "hicolor");
+        let result = load_freedesktop_icon_by_name("zzz-nonexistent-icon", "hicolor", 24);
         assert!(result.is_none());
     }
 

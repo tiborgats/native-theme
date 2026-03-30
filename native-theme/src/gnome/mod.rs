@@ -274,16 +274,16 @@ fn compute_text_scale(base_size: f32) -> TextScale {
     }
 }
 
-/// Build a NativeTheme from an Adwaita base, applying portal-provided
+/// Build a ThemeSpec from an Adwaita base, applying portal-provided
 /// color scheme, accent color, and contrast settings plus OS-readable fields.
 ///
 /// This is the testable core -- no D-Bus required.
 pub(crate) fn build_theme(
-    base: crate::NativeTheme,
+    base: crate::ThemeSpec,
     scheme: ColorScheme,
     accent: Option<Color>,
     contrast: Contrast,
-) -> crate::Result<crate::NativeTheme> {
+) -> crate::Result<crate::ThemeSpec> {
     let is_dark = matches!(scheme, ColorScheme::PreferDark);
 
     // Pick the appropriate variant from the Adwaita base
@@ -297,15 +297,15 @@ pub(crate) fn build_theme(
     let os_variant = build_gnome_variant(scheme, accent, contrast);
     variant.merge(&os_variant);
 
-    // Build NativeTheme with only the selected variant populated
+    // Build ThemeSpec with only the selected variant populated
     let theme = if is_dark {
-        crate::NativeTheme {
+        crate::ThemeSpec {
             name: "GNOME".to_string(),
             light: None,
             dark: Some(variant),
         }
     } else {
-        crate::NativeTheme {
+        crate::ThemeSpec {
             name: "GNOME".to_string(),
             light: Some(variant),
             dark: None,
@@ -322,8 +322,8 @@ pub(crate) fn build_theme(
 ///
 /// Falls back to bundled Adwaita defaults when the portal is unavailable
 /// (no D-Bus session, sandboxed environment, or old portal version).
-pub async fn from_gnome() -> crate::Result<crate::NativeTheme> {
-    let base = crate::NativeTheme::preset("adwaita")?;
+pub async fn from_gnome() -> crate::Result<crate::ThemeSpec> {
+    let base = crate::ThemeSpec::preset("adwaita")?;
 
     // Try to connect to the portal. If unavailable, return Adwaita defaults.
     let settings = match ashpd::desktop::settings::Settings::new().await {
@@ -351,14 +351,14 @@ pub async fn from_gnome() -> crate::Result<crate::NativeTheme> {
 /// Reads the KDE kdeglobals file as the base theme via [`crate::kde::from_kde()`],
 /// then attempts to read the accent color from the XDG Desktop Portal. If the
 /// portal provides a valid accent color, it is applied to accent, selection,
-/// and focus_ring_color fields via [`NativeTheme::merge`].
+/// and focus_ring_color fields via [`ThemeSpec::merge`].
 ///
 /// Falls back to the KDE-only base if the portal is unavailable or provides
 /// no accent color.
 ///
 /// Requires both `kde` and `portal` features.
 #[cfg(feature = "kde")]
-pub async fn from_kde_with_portal() -> crate::Result<crate::NativeTheme> {
+pub async fn from_kde_with_portal() -> crate::Result<crate::ThemeSpec> {
     let mut base = crate::kde::from_kde()?;
 
     // Try to get accent color from portal
@@ -378,7 +378,7 @@ pub async fn from_kde_with_portal() -> crate::Result<crate::NativeTheme> {
     };
 
     // Build overlay with accent applied to the same variant(s) as base
-    let mut overlay = crate::NativeTheme::new("");
+    let mut overlay = crate::ThemeSpec::new("");
 
     if base.light.is_some() {
         let mut variant = crate::ThemeVariant::default();
@@ -708,8 +708,8 @@ mod tests {
 
     // === build_theme tests ===
 
-    fn adwaita_base() -> crate::NativeTheme {
-        crate::NativeTheme::preset("adwaita").unwrap()
+    fn adwaita_base() -> crate::ThemeSpec {
+        crate::ThemeSpec::preset("adwaita").unwrap()
     }
 
     #[test]

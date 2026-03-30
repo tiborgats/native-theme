@@ -9,7 +9,6 @@ use serde::{Deserialize, Serialize};
 #[serde_with::skip_serializing_none]
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
-#[non_exhaustive]
 pub struct ThemeSpacing {
     /// Extra-extra-small spacing (e.g., 2px).
     pub xxs: Option<f32>,

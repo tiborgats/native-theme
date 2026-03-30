@@ -1,4 +1,4 @@
-//! ResolvedTheme -> gpui_component::theme::ThemeConfig mapping.
+//! ResolvedThemeVariant -> gpui_component::theme::ThemeConfig mapping.
 //!
 //! Maps native-theme's resolved font and geometry settings to gpui-component's
 //! `ThemeConfig`, which controls per-theme font family, font size, radius,
@@ -6,14 +6,14 @@
 
 use gpui::SharedString;
 use gpui_component::theme::{ThemeConfig, ThemeMode};
-use native_theme::ResolvedTheme;
+use native_theme::ResolvedThemeVariant;
 
-/// Build a [`ThemeConfig`] from a [`ResolvedTheme`].
+/// Build a [`ThemeConfig`] from a [`ResolvedThemeVariant`].
 ///
-/// Maps ResolvedDefaults font/geometry fields to font_family/mono_font_family/
+/// Maps ResolvedThemeDefaults font/geometry fields to font_family/mono_font_family/
 /// font_size/mono_font_size, radius/radius_lg/shadow. IMPORTANT: ResolvedFontSpec
 /// sizes are already in logical pixels -- no pt-to-px conversion is applied.
-pub fn to_theme_config(resolved: &ResolvedTheme, name: &str, mode: ThemeMode) -> ThemeConfig {
+pub fn to_theme_config(resolved: &ResolvedThemeVariant, name: &str, mode: ThemeMode) -> ThemeConfig {
     let d = &resolved.defaults;
 
     ThemeConfig {
@@ -38,11 +38,11 @@ pub fn to_theme_config(resolved: &ResolvedTheme, name: &str, mode: ThemeMode) ->
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use native_theme::NativeTheme;
+    use native_theme::ThemeSpec;
 
-    /// Create a ResolvedTheme via the preset resolve+validate pipeline.
-    fn test_resolved() -> native_theme::ResolvedTheme {
-        let nt = NativeTheme::preset("catppuccin-mocha").expect("preset must exist");
+    /// Create a ResolvedThemeVariant via the preset resolve+validate pipeline.
+    fn test_resolved() -> native_theme::ResolvedThemeVariant {
+        let nt = ThemeSpec::preset("catppuccin-mocha").expect("preset must exist");
         let mut v = nt
             .pick_variant(false)
             .expect("preset must have light variant")

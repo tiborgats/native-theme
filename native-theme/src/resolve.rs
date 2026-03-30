@@ -1,12 +1,11 @@
-// Resolution engine: resolve() fills inheritance rules, validate() produces ResolvedTheme.
+// Resolution engine: resolve() fills inheritance rules, validate() produces ResolvedThemeVariant.
 
 use crate::error::ThemeResolutionError;
 use crate::model::resolved::{
-    ResolvedDefaults, ResolvedIconSizes, ResolvedSpacing, ResolvedTextScale,
-    ResolvedTextScaleEntry, ResolvedTheme,
+    ResolvedThemeDefaults, ResolvedIconSizes, ResolvedSpacing, ResolvedTextScale,
+    ResolvedTextScaleEntry, ResolvedThemeVariant,
 };
-use crate::model::widgets::ResolvedFontSpec;
-use crate::model::{FontSpec, TextScaleEntry, ThemeVariant};
+use crate::model::{FontSpec, ResolvedFontSpec, TextScaleEntry, ThemeVariant};
 
 /// Resolve a per-widget font from defaults.
 /// If the widget font is None, clone defaults entirely.
@@ -58,7 +57,7 @@ fn resolve_text_scale_entry(
 ///
 /// Returns the value if present, or `T::default()` as a placeholder if missing.
 /// The placeholder is never used: `validate()` returns `Err` before constructing
-/// `ResolvedTheme` when any field was recorded as missing.
+/// `ResolvedThemeVariant` when any field was recorded as missing.
 fn require<T: Clone + Default>(field: &Option<T>, path: &str, missing: &mut Vec<String>) -> T {
     match field {
         Some(val) => val.clone(),
@@ -151,6 +150,43 @@ impl ThemeVariant {
         self.resolve_safety_nets();
         self.resolve_widgets_from_defaults();
         self.resolve_widget_to_widget();
+
+        // Phase 5: icon_set fallback — fill from system default if not set
+        if self.icon_set.is_none() {
+            self.icon_set = Some(
+                crate::model::icons::system_icon_set()
+                    .name()
+                    .to_string(),
+            );
+        }
+    }
+
+    /// Resolve all inheritance rules and validate in one step.
+    ///
+    /// This is the recommended way to convert a `ThemeVariant` into a
+    /// [`ResolvedThemeVariant`]. It calls [`resolve()`](Self::resolve) followed
+    /// by [`validate()`](Self::validate), ensuring no fields are left
+    /// unresolved.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Resolution`] if any fields remain `None` after
+    /// resolution (e.g., when accent color is missing and cannot be derived).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use native_theme::ThemeSpec;
+    ///
+    /// let theme = ThemeSpec::preset("dracula").unwrap();
+    /// let variant = theme.dark.unwrap();
+    /// let resolved = variant.into_resolved().unwrap();
+    /// // All fields are now guaranteed populated
+    /// let accent = resolved.defaults.accent;
+    /// ```
+    pub fn into_resolved(mut self) -> crate::Result<ResolvedThemeVariant> {
+        self.resolve();
+        self.validate()
     }
 
     // --- Phase 1: Defaults internal chains ---
@@ -504,17 +540,17 @@ impl ThemeVariant {
 
     // --- validate() ---
 
-    /// Convert this ThemeVariant into a [`ResolvedTheme`] with all fields guaranteed.
+    /// Convert this ThemeVariant into a [`ResolvedThemeVariant`] with all fields guaranteed.
     ///
     /// Should be called after [`resolve()`](ThemeVariant::resolve). Walks every field
-    /// and collects missing (None) field paths. Returns `Ok(ResolvedTheme)` if all fields
+    /// and collects missing (None) field paths. Returns `Ok(ResolvedThemeVariant)` if all fields
     /// are populated, or `Err(Error::Resolution(...))` listing every missing field.
     ///
     /// # Errors
     ///
     /// Returns [`crate::Error::Resolution`] containing a [`ThemeResolutionError`]
     /// with all missing field paths if any fields remain None.
-    pub fn validate(&self) -> crate::Result<ResolvedTheme> {
+    pub fn validate(&self) -> crate::Result<ResolvedThemeVariant> {
         let mut missing = Vec::new();
 
         // --- defaults ---
@@ -1201,11 +1237,11 @@ impl ThemeVariant {
             }));
         }
 
-        // All fields present -- construct ResolvedTheme.
+        // All fields present -- construct ResolvedThemeVariant.
         // require() returns T directly (using T::default() as placeholder for missing),
         // so no unwrap() is needed. The defaults are never used: we returned Err above.
-        Ok(ResolvedTheme {
-            defaults: ResolvedDefaults {
+        Ok(ResolvedThemeVariant {
+            defaults: ResolvedThemeDefaults {
                 font: defaults_font,
                 line_height: defaults_line_height,
                 mono_font: defaults_mono_font,
@@ -1266,7 +1302,7 @@ impl ThemeVariant {
                 dialog_title: ts_dialog_title,
                 display: ts_display,
             },
-            window: crate::model::widgets::ResolvedWindow {
+            window: crate::model::widgets::ResolvedWindowTheme {
                 background: window_background,
                 foreground: window_foreground,
                 border: window_border,
@@ -1278,7 +1314,7 @@ impl ThemeVariant {
                 shadow: window_shadow,
                 title_bar_font: window_title_bar_font,
             },
-            button: crate::model::widgets::ResolvedButton {
+            button: crate::model::widgets::ResolvedButtonTheme {
                 background: button_background,
                 foreground: button_foreground,
                 border: button_border,
@@ -1294,7 +1330,7 @@ impl ThemeVariant {
                 shadow: button_shadow,
                 font: button_font,
             },
-            input: crate::model::widgets::ResolvedInput {
+            input: crate::model::widgets::ResolvedInputTheme {
                 background: input_background,
                 foreground: input_foreground,
                 border: input_border,
@@ -1309,14 +1345,14 @@ impl ThemeVariant {
                 border_width: input_border_width,
                 font: input_font,
             },
-            checkbox: crate::model::widgets::ResolvedCheckbox {
+            checkbox: crate::model::widgets::ResolvedCheckboxTheme {
                 checked_bg: checkbox_checked_bg,
                 indicator_size: checkbox_indicator_size,
                 spacing: checkbox_spacing,
                 radius: checkbox_radius,
                 border_width: checkbox_border_width,
             },
-            menu: crate::model::widgets::ResolvedMenu {
+            menu: crate::model::widgets::ResolvedMenuTheme {
                 background: menu_background,
                 foreground: menu_foreground,
                 separator: menu_separator,
@@ -1326,7 +1362,7 @@ impl ThemeVariant {
                 icon_spacing: menu_icon_spacing,
                 font: menu_font,
             },
-            tooltip: crate::model::widgets::ResolvedTooltip {
+            tooltip: crate::model::widgets::ResolvedTooltipTheme {
                 background: tooltip_background,
                 foreground: tooltip_foreground,
                 padding_horizontal: tooltip_padding_horizontal,
@@ -1335,7 +1371,7 @@ impl ThemeVariant {
                 radius: tooltip_radius,
                 font: tooltip_font,
             },
-            scrollbar: crate::model::widgets::ResolvedScrollbar {
+            scrollbar: crate::model::widgets::ResolvedScrollbarTheme {
                 track: scrollbar_track,
                 thumb: scrollbar_thumb,
                 thumb_hover: scrollbar_thumb_hover,
@@ -1344,7 +1380,7 @@ impl ThemeVariant {
                 slider_width: scrollbar_slider_width,
                 overlay_mode: scrollbar_overlay_mode,
             },
-            slider: crate::model::widgets::ResolvedSlider {
+            slider: crate::model::widgets::ResolvedSliderTheme {
                 fill: slider_fill,
                 track: slider_track,
                 thumb: slider_thumb,
@@ -1352,14 +1388,14 @@ impl ThemeVariant {
                 thumb_size: slider_thumb_size,
                 tick_length: slider_tick_length,
             },
-            progress_bar: crate::model::widgets::ResolvedProgressBar {
+            progress_bar: crate::model::widgets::ResolvedProgressBarTheme {
                 fill: progress_bar_fill,
                 track: progress_bar_track,
                 height: progress_bar_height,
                 min_width: progress_bar_min_width,
                 radius: progress_bar_radius,
             },
-            tab: crate::model::widgets::ResolvedTab {
+            tab: crate::model::widgets::ResolvedTabTheme {
                 background: tab_background,
                 foreground: tab_foreground,
                 active_background: tab_active_background,
@@ -1370,20 +1406,20 @@ impl ThemeVariant {
                 padding_horizontal: tab_padding_horizontal,
                 padding_vertical: tab_padding_vertical,
             },
-            sidebar: crate::model::widgets::ResolvedSidebar {
+            sidebar: crate::model::widgets::ResolvedSidebarTheme {
                 background: sidebar_background,
                 foreground: sidebar_foreground,
             },
-            toolbar: crate::model::widgets::ResolvedToolbar {
+            toolbar: crate::model::widgets::ResolvedToolbarTheme {
                 height: toolbar_height,
                 item_spacing: toolbar_item_spacing,
                 padding: toolbar_padding,
                 font: toolbar_font,
             },
-            status_bar: crate::model::widgets::ResolvedStatusBar {
+            status_bar: crate::model::widgets::ResolvedStatusBarTheme {
                 font: status_bar_font,
             },
-            list: crate::model::widgets::ResolvedList {
+            list: crate::model::widgets::ResolvedListTheme {
                 background: list_background,
                 foreground: list_foreground,
                 alternate_row: list_alternate_row,
@@ -1396,19 +1432,19 @@ impl ThemeVariant {
                 padding_horizontal: list_padding_horizontal,
                 padding_vertical: list_padding_vertical,
             },
-            popover: crate::model::widgets::ResolvedPopover {
+            popover: crate::model::widgets::ResolvedPopoverTheme {
                 background: popover_background,
                 foreground: popover_foreground,
                 border: popover_border,
                 radius: popover_radius,
             },
-            splitter: crate::model::widgets::ResolvedSplitter {
+            splitter: crate::model::widgets::ResolvedSplitterTheme {
                 width: splitter_width,
             },
-            separator: crate::model::widgets::ResolvedSeparator {
+            separator: crate::model::widgets::ResolvedSeparatorTheme {
                 color: separator_color,
             },
-            switch: crate::model::widgets::ResolvedSwitch {
+            switch: crate::model::widgets::ResolvedSwitchTheme {
                 checked_bg: switch_checked_bg,
                 unchecked_bg: switch_unchecked_bg,
                 thumb_bg: switch_thumb_bg,
@@ -1417,7 +1453,7 @@ impl ThemeVariant {
                 thumb_size: switch_thumb_size,
                 track_radius: switch_track_radius,
             },
-            dialog: crate::model::widgets::ResolvedDialog {
+            dialog: crate::model::widgets::ResolvedDialogTheme {
                 min_width: dialog_min_width,
                 max_width: dialog_max_width,
                 min_height: dialog_min_height,
@@ -1429,13 +1465,13 @@ impl ThemeVariant {
                 button_order: dialog_button_order,
                 title_font: dialog_title_font,
             },
-            spinner: crate::model::widgets::ResolvedSpinner {
+            spinner: crate::model::widgets::ResolvedSpinnerTheme {
                 fill: spinner_fill,
                 diameter: spinner_diameter,
                 min_size: spinner_min_size,
                 stroke_width: spinner_stroke_width,
             },
-            combo_box: crate::model::widgets::ResolvedComboBox {
+            combo_box: crate::model::widgets::ResolvedComboBoxTheme {
                 min_height: combo_box_min_height,
                 min_width: combo_box_min_width,
                 padding_horizontal: combo_box_padding_horizontal,
@@ -1443,26 +1479,26 @@ impl ThemeVariant {
                 arrow_area_width: combo_box_arrow_area_width,
                 radius: combo_box_radius,
             },
-            segmented_control: crate::model::widgets::ResolvedSegmentedControl {
+            segmented_control: crate::model::widgets::ResolvedSegmentedControlTheme {
                 segment_height: segmented_control_segment_height,
                 separator_width: segmented_control_separator_width,
                 padding_horizontal: segmented_control_padding_horizontal,
                 radius: segmented_control_radius,
             },
-            card: crate::model::widgets::ResolvedCard {
+            card: crate::model::widgets::ResolvedCardTheme {
                 background: card_background,
                 border: card_border,
                 radius: card_radius,
                 padding: card_padding,
                 shadow: card_shadow,
             },
-            expander: crate::model::widgets::ResolvedExpander {
+            expander: crate::model::widgets::ResolvedExpanderTheme {
                 header_height: expander_header_height,
                 arrow_size: expander_arrow_size,
                 content_padding: expander_content_padding,
                 radius: expander_radius,
             },
-            link: crate::model::widgets::ResolvedLink {
+            link: crate::model::widgets::ResolvedLinkTheme {
                 color: link_color,
                 visited: link_visited,
                 background: link_background,
@@ -2428,7 +2464,7 @@ mod tests {
         // Simulate GNOME reader pipeline: adwaita base + GNOME reader overlay.
         // On a non-GNOME system, build_gnome_variant() only sets dialog.button_order
         // and icon_set (gsettings calls return None). We simulate the full merge.
-        let adwaita = crate::NativeTheme::preset("adwaita").unwrap();
+        let adwaita = crate::ThemeSpec::preset("adwaita").unwrap();
 
         // Pick dark variant from adwaita (matches GNOME PreferDark path).
         let mut variant = adwaita

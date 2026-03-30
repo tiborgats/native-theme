@@ -1,21 +1,7 @@
 // Per-widget struct pairs and macros
 
 use crate::Rgba;
-use crate::model::{DialogButtonOrder, FontSpec};
-
-/// A resolved (non-optional) font specification produced after theme resolution.
-///
-/// Unlike [`crate::model::FontSpec`], all fields are required (non-optional)
-/// because resolution has already filled in all defaults.
-#[derive(Clone, Debug, Default, PartialEq)]
-pub struct ResolvedFontSpec {
-    /// Font family name.
-    pub family: String,
-    /// Font size in logical pixels.
-    pub size: f32,
-    /// CSS font weight (100–900).
-    pub weight: u16,
-}
+use crate::model::{DialogButtonOrder, FontSpec, ResolvedFontSpec};
 
 /// Generates a paired Option-based theme struct and a Resolved struct from a single definition.
 ///
@@ -66,7 +52,7 @@ macro_rules! define_widget_pair {
         }
 
         $(#[$attr])*
-        #[derive(Clone, Debug, PartialEq)]
+        #[derive(Clone, Debug, PartialEq, serde::Serialize)]
         #[allow(missing_docs)]
         pub struct $resolved_name {
             $($(pub $opt_field: $opt_type,)*)?
@@ -84,7 +70,7 @@ macro_rules! define_widget_pair {
 
 define_widget_pair! {
     /// Window chrome: background, title bar colors, inactive states, geometry.
-    WindowTheme / ResolvedWindow {
+    WindowTheme / ResolvedWindowTheme {
         option {
             background: Rgba,
             foreground: Rgba,
@@ -106,7 +92,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Push button: colors, sizing, spacing, geometry.
-    ButtonTheme / ResolvedButton {
+    ButtonTheme / ResolvedButtonTheme {
         option {
             background: Rgba,
             foreground: Rgba,
@@ -132,7 +118,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Single-line and multi-line text input fields.
-    InputTheme / ResolvedInput {
+    InputTheme / ResolvedInputTheme {
         option {
             background: Rgba,
             foreground: Rgba,
@@ -157,7 +143,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Checkbox and radio button indicator geometry.
-    CheckboxTheme / ResolvedCheckbox {
+    CheckboxTheme / ResolvedCheckboxTheme {
         option {
             checked_bg: Rgba,
             indicator_size: f32,
@@ -172,7 +158,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Popup and context menu appearance.
-    MenuTheme / ResolvedMenu {
+    MenuTheme / ResolvedMenuTheme {
         option {
             background: Rgba,
             foreground: Rgba,
@@ -192,7 +178,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Tooltip popup appearance.
-    TooltipTheme / ResolvedTooltip {
+    TooltipTheme / ResolvedTooltipTheme {
         option {
             background: Rgba,
             foreground: Rgba,
@@ -211,7 +197,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Scrollbar colors and geometry.
-    ScrollbarTheme / ResolvedScrollbar {
+    ScrollbarTheme / ResolvedScrollbarTheme {
         option {
             track: Rgba,
             thumb: Rgba,
@@ -228,7 +214,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Slider control colors and geometry.
-    SliderTheme / ResolvedSlider {
+    SliderTheme / ResolvedSliderTheme {
         option {
             fill: Rgba,
             track: Rgba,
@@ -244,7 +230,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Progress bar colors and geometry.
-    ProgressBarTheme / ResolvedProgressBar {
+    ProgressBarTheme / ResolvedProgressBarTheme {
         option {
             fill: Rgba,
             track: Rgba,
@@ -259,7 +245,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Tab bar colors and sizing.
-    TabTheme / ResolvedTab {
+    TabTheme / ResolvedTabTheme {
         option {
             background: Rgba,
             foreground: Rgba,
@@ -278,7 +264,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Sidebar panel background and foreground colors.
-    SidebarTheme / ResolvedSidebar {
+    SidebarTheme / ResolvedSidebarTheme {
         option {
             background: Rgba,
             foreground: Rgba,
@@ -290,7 +276,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Toolbar sizing, spacing, and font.
-    ToolbarTheme / ResolvedToolbar {
+    ToolbarTheme / ResolvedToolbarTheme {
         option {
             height: f32,
             item_spacing: f32,
@@ -306,7 +292,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Status bar font.
-    StatusBarTheme / ResolvedStatusBar {
+    StatusBarTheme / ResolvedStatusBarTheme {
         optional_nested {
             font: [FontSpec, ResolvedFontSpec],
         }
@@ -317,7 +303,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// List and table colors and row geometry.
-    ListTheme / ResolvedList {
+    ListTheme / ResolvedListTheme {
         option {
             background: Rgba,
             foreground: Rgba,
@@ -338,7 +324,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Popover / dropdown panel appearance.
-    PopoverTheme / ResolvedPopover {
+    PopoverTheme / ResolvedPopoverTheme {
         option {
             background: Rgba,
             foreground: Rgba,
@@ -352,7 +338,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Splitter handle width.
-    SplitterTheme / ResolvedSplitter {
+    SplitterTheme / ResolvedSplitterTheme {
         option {
             width: f32,
         }
@@ -363,7 +349,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Separator line color.
-    SeparatorTheme / ResolvedSeparator {
+    SeparatorTheme / ResolvedSeparatorTheme {
         option {
             color: Rgba,
         }
@@ -374,7 +360,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Toggle switch track, thumb, and geometry.
-    SwitchTheme / ResolvedSwitch {
+    SwitchTheme / ResolvedSwitchTheme {
         option {
             checked_bg: Rgba,
             unchecked_bg: Rgba,
@@ -391,7 +377,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Dialog sizing, spacing, button order, and title font.
-    DialogTheme / ResolvedDialog {
+    DialogTheme / ResolvedDialogTheme {
         option {
             min_width: f32,
             max_width: f32,
@@ -413,7 +399,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Spinner / indeterminate progress indicator.
-    SpinnerTheme / ResolvedSpinner {
+    SpinnerTheme / ResolvedSpinnerTheme {
         option {
             fill: Rgba,
             diameter: f32,
@@ -427,7 +413,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// ComboBox / dropdown trigger sizing.
-    ComboBoxTheme / ResolvedComboBox {
+    ComboBoxTheme / ResolvedComboBoxTheme {
         option {
             min_height: f32,
             min_width: f32,
@@ -443,7 +429,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Segmented control sizing (macOS-primary; KDE uses tab bar metrics as proxy).
-    SegmentedControlTheme / ResolvedSegmentedControl {
+    SegmentedControlTheme / ResolvedSegmentedControlTheme {
         option {
             segment_height: f32,
             separator_width: f32,
@@ -457,7 +443,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Card / container colors and geometry.
-    CardTheme / ResolvedCard {
+    CardTheme / ResolvedCardTheme {
         option {
             background: Rgba,
             border: Rgba,
@@ -472,7 +458,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Expander / disclosure row geometry.
-    ExpanderTheme / ResolvedExpander {
+    ExpanderTheme / ResolvedExpanderTheme {
         option {
             header_height: f32,
             arrow_size: f32,
@@ -486,7 +472,7 @@ define_widget_pair! {
 
 define_widget_pair! {
     /// Hyperlink colors and underline setting.
-    LinkTheme / ResolvedLink {
+    LinkTheme / ResolvedLinkTheme {
         option {
             color: Rgba,
             visited: Rgba,

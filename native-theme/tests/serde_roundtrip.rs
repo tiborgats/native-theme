@@ -106,12 +106,12 @@ fn fully_populated_variant(offset: u8) -> ThemeVariant {
 
 #[test]
 fn round_trip_full_theme() {
-    let mut theme = NativeTheme::new("Test Theme");
+    let mut theme = ThemeSpec::new("Test Theme");
     theme.light = Some(fully_populated_variant(0));
     theme.dark = Some(fully_populated_variant(10));
 
     let toml_str = toml::to_string_pretty(&theme).unwrap();
-    let deserialized: NativeTheme = toml::from_str(&toml_str).unwrap();
+    let deserialized: ThemeSpec = toml::from_str(&toml_str).unwrap();
 
     assert_eq!(deserialized.name, "Test Theme");
 
@@ -228,11 +228,11 @@ fn round_trip_preserves_all_color_fields() {
     // Per-widget: separator
     v.separator.color = Some(Rgba::rgb(33, 0, 0));
 
-    let mut theme = NativeTheme::new("All Colors");
+    let mut theme = ThemeSpec::new("All Colors");
     theme.light = Some(v);
 
     let toml_str = toml::to_string_pretty(&theme).unwrap();
-    let de: NativeTheme = toml::from_str(&toml_str).unwrap();
+    let de: ThemeSpec = toml::from_str(&toml_str).unwrap();
     let de_v = de.light.as_ref().unwrap();
     let orig_v = theme.light.as_ref().unwrap();
 
@@ -316,7 +316,7 @@ name = "Minimal"
 accent = "#3daee9"
 "##;
 
-    let theme: NativeTheme = toml::from_str(toml_str).unwrap();
+    let theme: ThemeSpec = toml::from_str(toml_str).unwrap();
 
     assert_eq!(theme.name, "Minimal");
     assert_eq!(
@@ -334,7 +334,7 @@ accent = "#3daee9"
 fn very_sparse_toml_name_only() {
     let toml_str = r#"name = "Empty""#;
 
-    let theme: NativeTheme = toml::from_str(toml_str).unwrap();
+    let theme: ThemeSpec = toml::from_str(toml_str).unwrap();
 
     assert_eq!(theme.name, "Empty");
     assert!(theme.light.is_none());
@@ -347,7 +347,7 @@ fn very_sparse_toml_name_only() {
 
 #[test]
 fn serialization_skips_none_fields() {
-    let mut theme = NativeTheme::new("Skip Test");
+    let mut theme = ThemeSpec::new("Skip Test");
     let mut light = ThemeVariant::default();
     light.defaults.accent = Some(Rgba::rgb(61, 174, 233));
     theme.light = Some(light);
@@ -380,7 +380,7 @@ fn serialization_skips_none_fields() {
 
 #[test]
 fn toml_structure_is_human_readable() {
-    let mut theme = NativeTheme::new("Readable");
+    let mut theme = ThemeSpec::new("Readable");
     let mut light = ThemeVariant::default();
     light.defaults.accent = Some(Rgba::rgb(61, 174, 233));
     light.defaults.background = Some(Rgba::rgb(255, 255, 255));
@@ -428,7 +428,7 @@ accent = "#3daee9"
 shadow = "#00000040"
 "##;
 
-    let theme: NativeTheme = toml::from_str(toml_str).unwrap();
+    let theme: ThemeSpec = toml::from_str(toml_str).unwrap();
     let light = theme.light.as_ref().unwrap();
 
     // accent: #3daee9 -> r=61, g=174, b=233, a=255 (no alpha => opaque)

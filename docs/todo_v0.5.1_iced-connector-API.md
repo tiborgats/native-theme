@@ -17,8 +17,8 @@ Where the iced connector differs (e.g., no `is_dark` parameter, no SVG
 rasterization, native SVG rendering), those differences are called out.
 
 **Assumed core renames**: Proposed code in this document uses post-rename names
-from the core crate per **[CORE-1]** (`ResolvedTheme` → `ResolvedThemeVariant`)
-and **[CORE-2]** (`NativeTheme` → `ThemeSpec`). Current-code examples retain
+from the core crate per **[CORE-1]** (`ResolvedThemeVariant` → `ResolvedThemeVariant`)
+and **[CORE-2]** (`ThemeSpec` → `ThemeSpec`). Current-code examples retain
 the pre-rename names.
 
 ---
@@ -58,7 +58,7 @@ the pre-rename names.
 The crate-level example (`lib.rs:18-27`) shows the canonical path:
 
 ```rust
-let nt = NativeTheme::preset("catppuccin-mocha").unwrap();
+let nt = ThemeSpec::preset("catppuccin-mocha").unwrap();
 let mut variant = nt.pick_variant(false).unwrap().clone();
 variant.resolve();
 let resolved = variant.validate().unwrap();
@@ -82,11 +82,11 @@ and converts -- all in one call.
 **Contra:**
 - Adds a free function to the crate root
 - Couples preset loading with iced conversion (less composable)
-- Callers who need the intermediate `ResolvedTheme` for widget metrics
+- Callers who need the intermediate `ResolvedThemeVariant` for widget metrics
   (e.g., `button_padding()`) still need the manual path
-- Cannot expose the `ResolvedTheme` without returning a richer type
+- Cannot expose the `ResolvedThemeVariant` without returning a richer type
 
-### Option B: Extension trait on `NativeTheme`
+### Option B: Extension trait on `ThemeSpec`
 
 ```rust
 pub trait NativeThemeExt {
@@ -96,7 +96,7 @@ pub trait NativeThemeExt {
 
 **Pro:**
 - Method syntax on the type users already have
-- Composable: use `NativeTheme` for other things first
+- Composable: use `ThemeSpec` for other things first
 - Extension traits are idiomatic Rust
 
 **Contra:**
@@ -123,26 +123,26 @@ composable path for power users.
 **Pro:**
 - One-liner for the common case
 - Power users can still compose intermediate steps (and call `button_padding()`
-  etc. on the `ResolvedTheme` they get from `into_resolved()`)
+  etc. on the `ResolvedThemeVariant` they get from `into_resolved()`)
 - Both crates get better APIs
 
 **Contra:**
 - More API surface (two ways to do the same thing)
 
-### Option E: `from_preset()` returns both the Theme and the ResolvedTheme
+### Option E: `from_preset()` returns both the Theme and the ResolvedThemeVariant
 
 ```rust
-pub fn from_preset(name: &str, is_dark: bool) -> Result<(iced_core::theme::Theme, ResolvedTheme)>
+pub fn from_preset(name: &str, is_dark: bool) -> Result<(iced_core::theme::Theme, ResolvedThemeVariant)>
 ```
 
 **Pro:**
-- One-liner AND callers get the `ResolvedTheme` for widget metrics
+- One-liner AND callers get the `ResolvedThemeVariant` for widget metrics
 - No data loss: callers can read `resolved.button.padding_horizontal` etc.
 - Strictly more useful than returning only the Theme
 
 **Contra:**
 - Tuple return is slightly awkward; could use a named struct instead
-- The `ResolvedTheme` may not be needed by most callers (wasted allocation)
+- The `ResolvedThemeVariant` may not be needed by most callers (wasted allocation)
 - A named struct adds a new type to the API
 
 ### PROPOSED: Option D
@@ -151,10 +151,10 @@ Add `from_preset(name, is_dark) -> Result<Theme>` as the primary entry point.
 This depends on **[CORE-3]** (`into_resolved()`) landing first. The
 convenience function covers the common case; the composable path via
 `into_resolved()` + `to_theme()` covers callers who also need widget metrics
-from the `ResolvedTheme`.
+from the `ResolvedThemeVariant`.
 
 Option E's tuple return is tempting (since section 8 documents the data loss),
-but most callers only need the iced Theme. Those who need `ResolvedTheme` for
+but most callers only need the iced Theme. Those who need `ResolvedThemeVariant` for
 metrics should use the manual path -- it's only 2-3 steps once [CORE-3] lands.
 
 ---
@@ -167,7 +167,7 @@ metrics should use the manual path -- it's only 2-3 steps once [CORE-3] lands.
 `is_dark` parameter alongside `name`.
 
 ```rust
-pub fn to_theme(resolved: &ResolvedTheme, name: &str) -> iced_core::theme::Theme
+pub fn to_theme(resolved: &ResolvedThemeVariant, name: &str) -> iced_core::theme::Theme
 ```
 
 `name` sets `Theme`'s internal display string. It has no functional effect on
@@ -178,7 +178,7 @@ name.
 ### Option A: Remove `name`, default to `"Native Theme"`
 
 ```rust
-pub fn to_theme(resolved: &ResolvedTheme) -> iced_core::theme::Theme
+pub fn to_theme(resolved: &ResolvedThemeVariant) -> iced_core::theme::Theme
 ```
 
 Internally passes `"Native Theme".to_string()` to `Theme::custom_with_fn()`.
@@ -196,7 +196,7 @@ Internally passes `"Native Theme".to_string()` to `Theme::custom_with_fn()`.
 ### Option B: Make `name` optional via `impl Into<Option<&str>>`
 
 ```rust
-pub fn to_theme(resolved: &ResolvedTheme, name: impl Into<Option<&str>>) -> Theme
+pub fn to_theme(resolved: &ResolvedThemeVariant, name: impl Into<Option<&str>>) -> Theme
 ```
 
 **Pro:**
@@ -222,7 +222,7 @@ pub fn to_theme(resolved: &ResolvedTheme, name: impl Into<Option<&str>>) -> Them
 - Power users must still pass a name even if they don't care
 - Inconsistent: convenience path auto-names, manual path forces a name
 
-### Option D: Add `name` field to `ResolvedTheme` (core change)
+### Option D: Add `name` field to `ResolvedThemeVariant` (core change)
 
 **Pro:**
 - Single source of truth carried through the pipeline
@@ -230,7 +230,7 @@ pub fn to_theme(resolved: &ResolvedTheme, name: impl Into<Option<&str>>) -> Them
 
 **Contra:**
 - Changes a core type for a purely cosmetic field
-- `ResolvedTheme` is visual data; a display name doesn't belong there
+- `ResolvedThemeVariant` is visual data; a display name doesn't belong there
 - Who populates it? Presets have names, system themes have names, but what
   about custom themes?
 
@@ -253,7 +253,7 @@ a non-issue once the convenience functions exist.
 
 ```rust
 let system = native_theme::from_system()?;
-let resolved = system.active();  // returns &ResolvedTheme
+let resolved = system.active();  // returns &ResolvedThemeVariant
 let theme = to_theme(resolved, &system.name);
 ```
 
@@ -632,7 +632,7 @@ iced_core::theme::Theme::custom_with_fn(name.to_string(), pal, move |p| {
 `extended::apply_overrides()` (`extended.rs:17-25`) does the same 4 overrides:
 
 ```rust
-pub fn apply_overrides(extended: &mut Extended, resolved: &ResolvedTheme) {
+pub fn apply_overrides(extended: &mut Extended, resolved: &ResolvedThemeVariant) {
     extended.secondary.base.color = to_color(resolved.button.background);
     extended.secondary.base.text = to_color(resolved.button.foreground);
     extended.background.weak.color = to_color(resolved.defaults.surface);
@@ -660,7 +660,7 @@ closure can borrow `&resolved` instead of cloning individual fields.
 ### Option A: Call `apply_overrides()` from within the closure
 
 ```rust
-pub fn to_theme(resolved: &ResolvedTheme) -> Theme {
+pub fn to_theme(resolved: &ResolvedThemeVariant) -> Theme {
     let pal = palette::to_palette(resolved);
 
     iced_core::theme::Theme::custom_with_fn("Native Theme".to_string(), pal, |p| {
@@ -716,7 +716,7 @@ internal detail.
 - Code review will repeatedly flag the inconsistency
 - The principle "don't repeat yourself" exists for exactly this pattern
 
-### Option D: Refactor `apply_overrides()` to take individual fields instead of `&ResolvedTheme`
+### Option D: Refactor `apply_overrides()` to take individual fields instead of `&ResolvedThemeVariant`
 
 ```rust
 pub fn apply_overrides(
@@ -735,7 +735,7 @@ Both `to_theme()` and external callers call this with the appropriate fields.
 
 **Contra:**
 - Ugly signature (4 positional `Rgba` parameters)
-- The current signature `(&mut Extended, &ResolvedTheme)` is cleaner
+- The current signature `(&mut Extended, &ResolvedThemeVariant)` is cleaner
 - Splitting a struct into individual fields defeats the purpose of the struct
 
 ### PROPOSED: Option A
@@ -777,7 +777,7 @@ more valuable as a composable helper.
 
 **Parallel: [GPUI-13]**. Same structural problem, different severity.
 
-`ResolvedTheme` contains 28 top-level fields (25 per-widget structs +
+`ResolvedThemeVariant` contains 28 top-level fields (25 per-widget structs +
 `defaults` + `text_scale` + `icon_set`) with ~300+ individual fields across
 the entire tree. The connector uses a small fraction.
 
@@ -851,7 +851,7 @@ exactly which fields are consumed and which are discarded.
 **Pro:**
 - Zero code change -- pure documentation
 - Honest with users about what the connector does and doesn't do
-- Users can read discarded fields directly from the `ResolvedTheme`
+- Users can read discarded fields directly from the `ResolvedThemeVariant`
   they already have (e.g., `resolved.tooltip.padding_horizontal`)
 - The limitation is in iced's theme architecture, not in this crate
 
@@ -860,32 +860,32 @@ exactly which fields are consumed and which are discarded.
 - Large doc section that may become stale
 - Doesn't help users who expect "apply theme" to be complete
 
-### Option B: Return a richer struct that carries Theme + ResolvedTheme
+### Option B: Return a richer struct that carries Theme + ResolvedThemeVariant
 
 ```rust
 pub struct IcedTheme {
     pub theme: iced_core::theme::Theme,
-    pub resolved: ResolvedTheme,
+    pub resolved: ResolvedThemeVariant,
 }
 ```
 
 **Pro:**
-- Users get both the iced Theme AND full ResolvedTheme
+- Users get both the iced Theme AND full ResolvedThemeVariant
 - Application code can read `iced_theme.resolved.tooltip.padding_horizontal`
 - No data is lost
 
 **Contra:**
 - Changes the return type of `to_theme()` (breaking, but pre-1.0)
 - Awkward: users must access `.theme` everywhere
-- The caller already has the `ResolvedTheme` they passed in
+- The caller already has the `ResolvedThemeVariant` they passed in
 - Carrying a second copy increases memory usage for no reason
 
 ### Option C: Provide per-widget accessor helpers for common metrics
 
 ```rust
-pub fn tooltip_padding(resolved: &ResolvedTheme) -> [f32; 2]
-pub fn menu_item_height(resolved: &ResolvedTheme) -> f32
-pub fn checkbox_indicator_size(resolved: &ResolvedTheme) -> f32
+pub fn tooltip_padding(resolved: &ResolvedThemeVariant) -> [f32; 2]
+pub fn menu_item_height(resolved: &ResolvedThemeVariant) -> f32
+pub fn checkbox_indicator_size(resolved: &ResolvedThemeVariant) -> f32
 // ... one per widget
 ```
 
@@ -896,8 +896,8 @@ pub fn checkbox_indicator_size(resolved: &ResolvedTheme) -> f32
 
 **Contra:**
 - Massive API surface: one function per metric per widget (~50+ functions)
-- Each is a trivial field access the user can do themselves on `ResolvedTheme`
-- Maintenance burden: must track both `ResolvedTheme` and iced layout APIs
+- Each is a trivial field access the user can do themselves on `ResolvedThemeVariant`
+- Maintenance burden: must track both `ResolvedThemeVariant` and iced layout APIs
 - Speculative: unclear which widgets users actually customize in iced apps
 
 ### Option D: Document coverage + provide a few high-value helpers
@@ -906,9 +906,9 @@ Document the coverage gap (Option A). Add helpers only for widgets where
 iced doesn't provide theme-level styling but the metric is commonly needed:
 
 ```rust
-pub fn tooltip_padding(resolved: &ResolvedTheme) -> [f32; 2]
-pub fn tab_padding(resolved: &ResolvedTheme) -> [f32; 2]
-pub fn list_item_height(resolved: &ResolvedTheme) -> f32
+pub fn tooltip_padding(resolved: &ResolvedThemeVariant) -> [f32; 2]
+pub fn tab_padding(resolved: &ResolvedThemeVariant) -> [f32; 2]
+pub fn list_item_height(resolved: &ResolvedThemeVariant) -> f32
 ```
 
 **Pro:**
@@ -927,7 +927,7 @@ pub fn list_item_height(resolved: &ResolvedTheme) -> f32
 Document the coverage gap in crate-level and `to_theme()` docs. The
 limitation is architectural (iced's `Theme` has 6 color slots + auto-generated
 extended palette, no geometry). Users who need per-widget metrics read them
-from the `ResolvedTheme` they already have. A coverage table in the docs is
+from the `ResolvedThemeVariant` they already have. A coverage table in the docs is
 the honest, low-effort solution.
 
 The existing helpers (`button_padding`, `input_padding`, `border_radius`,
@@ -947,7 +947,7 @@ iced uses `iced_core::Color` instead of `gpui::Hsla`.
 Users must import types from three crates:
 
 ```rust
-use native_theme::{ResolvedTheme, NativeTheme, IconData, IconProvider, AnimatedIcon, Repeat};
+use native_theme::{ResolvedThemeVariant, ThemeSpec, IconData, IconProvider, AnimatedIcon, Repeat};
 use iced_core::{Color, theme::Theme};
 use native_theme_iced::{to_theme, icons::to_svg_handle};
 ```
@@ -1006,7 +1006,7 @@ pub use native_theme::{
   those types are available
 - Smaller re-export surface (~7 types)
 - Covers the main friction: needing `native-theme` as a direct `Cargo.toml`
-  dependency just to name `ResolvedTheme` or `IconData`
+  dependency just to name `ResolvedThemeVariant` or `IconData`
 
 **Contra:**
 - Users still need `iced_core` for `Color` / `Handle` types
@@ -1043,17 +1043,17 @@ functions.
 `lib.rs:39-52`:
 
 ```rust
-#[deprecated(since = "0.3.2", note = "Use NativeTheme::pick_variant() instead")]
+#[deprecated(since = "0.3.2", note = "Use ThemeSpec::pick_variant() instead")]
 #[allow(deprecated)]
 pub fn pick_variant(
-    theme: &native_theme::NativeTheme,
+    theme: &native_theme::ThemeSpec,
     is_dark: bool,
 ) -> Option<&native_theme::ThemeVariant> {
     theme.pick_variant(is_dark)
 }
 ```
 
-This function was deprecated in v0.3.2 when `NativeTheme::pick_variant()` was
+This function was deprecated in v0.3.2 when `ThemeSpec::pick_variant()` was
 added to the core crate. It's a trivial delegation that adds nothing. The
 `#[allow(deprecated)]` attribute suppresses the warning on the function's own
 body, which calls the same method it's deprecated in favor of.
@@ -1107,10 +1107,10 @@ instead of `pick_variant(theme, is_dark)`).
 **Unique to the iced connector** -- no parallel in [GPUI].
 
 ```rust
-pub fn button_padding(resolved: &ResolvedTheme) -> [f32; 2] {
+pub fn button_padding(resolved: &ResolvedThemeVariant) -> [f32; 2] {
     [resolved.button.padding_horizontal, resolved.button.padding_vertical]
 }
-pub fn input_padding(resolved: &ResolvedTheme) -> [f32; 2] {
+pub fn input_padding(resolved: &ResolvedThemeVariant) -> [f32; 2] {
     [resolved.input.padding_horizontal, resolved.input.padding_vertical]
 }
 ```
@@ -1142,7 +1142,7 @@ This is a usability trap that every caller must know to avoid.
 ### Option A: Return `iced_core::Padding` directly
 
 ```rust
-pub fn button_padding(resolved: &ResolvedTheme) -> iced_core::Padding {
+pub fn button_padding(resolved: &ResolvedThemeVariant) -> iced_core::Padding {
     iced_core::Padding::from([
         resolved.button.padding_vertical,
         resolved.button.padding_horizontal,
@@ -1166,7 +1166,7 @@ pub fn button_padding(resolved: &ResolvedTheme) -> iced_core::Padding {
 ### Option B: Return `[vertical, horizontal]` to match iced convention
 
 ```rust
-pub fn button_padding(resolved: &ResolvedTheme) -> [f32; 2] {
+pub fn button_padding(resolved: &ResolvedThemeVariant) -> [f32; 2] {
     [resolved.button.padding_vertical, resolved.button.padding_horizontal]
 }
 ```
@@ -1429,10 +1429,10 @@ struct has a `weight` field, and CSS-style text rendering requires all three.
 ### Option A: Add `font_weight()` and `mono_font_weight()` helpers
 
 ```rust
-pub fn font_weight(resolved: &ResolvedTheme) -> u16 {
+pub fn font_weight(resolved: &ResolvedThemeVariant) -> u16 {
     resolved.defaults.font.weight
 }
-pub fn mono_font_weight(resolved: &ResolvedTheme) -> u16 {
+pub fn mono_font_weight(resolved: &ResolvedThemeVariant) -> u16 {
     resolved.defaults.mono_font.weight
 }
 ```
@@ -1451,7 +1451,7 @@ pub fn mono_font_weight(resolved: &ResolvedTheme) -> u16 {
 ### Option B: Return `iced_core::Font` struct directly
 
 ```rust
-pub fn font(resolved: &ResolvedTheme) -> iced_core::Font {
+pub fn font(resolved: &ResolvedThemeVariant) -> iced_core::Font {
     iced_core::Font {
         family: iced_core::font::Family::Name(
             resolved.defaults.font.family.clone().leak()
@@ -1477,7 +1477,7 @@ pub fn font(resolved: &ResolvedTheme) -> iced_core::Font {
 If adding font helpers, also add:
 
 ```rust
-pub fn line_height(resolved: &ResolvedTheme) -> f32 {
+pub fn line_height(resolved: &ResolvedThemeVariant) -> f32 {
     resolved.defaults.line_height
 }
 ```
@@ -1548,7 +1548,7 @@ pub(crate) fn to_color(rgba: Rgba) -> iced_core::Color {
 }
 ```
 
-Power users who build custom iced themes from `ResolvedTheme` fields need
+Power users who build custom iced themes from `ResolvedThemeVariant` fields need
 this conversion. For example, a user who wants to use
 `resolved.input.caret` (not mapped by the connector) as an iced `Color`
 must reimplement this trivial function themselves.

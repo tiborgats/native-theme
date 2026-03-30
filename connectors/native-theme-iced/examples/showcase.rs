@@ -18,7 +18,7 @@ use iced::{Color, Element, Fill, Length, Padding, Theme};
 
 use iced::Subscription;
 use native_theme::{
-    AnimatedIcon, IconData, IconRole, IconSet, NativeTheme, TransformAnimation, loading_indicator,
+    AnimatedIcon, IconData, IconRole, IconSet, ThemeSpec, TransformAnimation, loading_indicator,
     platform_preset_name, prefers_reduced_motion,
 };
 use native_theme_iced::icons::{
@@ -179,7 +179,7 @@ impl Eq for ThemeChoice {}
 fn theme_choices(default_label: &str) -> Vec<ThemeChoice> {
     let mut choices = vec![ThemeChoice::OsTheme(default_label.to_string())];
     choices.extend(
-        NativeTheme::list_presets_for_platform()
+        ThemeSpec::list_presets_for_platform()
             .iter()
             .map(|name| ThemeChoice::Preset((*name).to_string())),
     );
@@ -253,21 +253,11 @@ impl IconSetChoice {
         IconSetChoice::System,
     ];
 
-    fn icon_set_name(&self) -> &str {
+    fn icon_set(&self) -> IconSet {
         match self {
-            IconSetChoice::Material => "material",
-            IconSetChoice::Lucide => "lucide",
-            IconSetChoice::System => {
-                if cfg!(target_os = "linux") {
-                    "freedesktop"
-                } else if cfg!(target_os = "macos") {
-                    "sf-symbols"
-                } else if cfg!(target_os = "windows") {
-                    "segoe-fluent"
-                } else {
-                    "material"
-                }
-            }
+            IconSetChoice::Material => IconSet::Material,
+            IconSetChoice::Lucide => IconSet::Lucide,
+            IconSetChoice::System => native_theme::system_icon_set(),
         }
     }
 }
@@ -328,16 +318,18 @@ struct LoadedIcon {
     source: IconSource,
 }
 
-/// Pre-load all 42 icons for the given icon set name, tracking source.
-fn load_all_icons(icon_set_name: &str) -> Vec<LoadedIcon> {
-    let set = IconSet::from_name(icon_set_name).unwrap_or_else(native_theme::system_icon_set);
-    let is_system_set = matches!(icon_set_name, "freedesktop" | "sf-symbols" | "segoe-fluent");
+/// Pre-load all 42 icons for the given icon set, tracking source.
+fn load_all_icons(set: IconSet) -> Vec<LoadedIcon> {
+    let is_system_set = matches!(
+        set,
+        IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeIcons
+    );
 
     // For system icon sets, pre-load the Material set so we can detect fallbacks
     let material_icons: Vec<Option<IconData>> = if is_system_set {
         IconRole::ALL
             .iter()
-            .map(|role| native_theme::load_icon(*role, "material"))
+            .map(|role| native_theme::load_icon(*role, IconSet::Material))
             .collect()
     } else {
         vec![]
@@ -347,8 +339,8 @@ fn load_all_icons(icon_set_name: &str) -> Vec<LoadedIcon> {
         .iter()
         .enumerate()
         .map(|(i, &role)| {
-            let data = native_theme::load_icon(role, icon_set_name);
-            let name = native_theme::icon_name(set, role);
+            let data = native_theme::load_icon(role, set);
+            let name = native_theme::icon_name(role, set);
             let source = match (&data, is_system_set) {
                 (None, _) => IconSource::NotFound,
                 (Some(_), false) => IconSource::Bundled,
@@ -388,7 +380,7 @@ fn load_all_icons(icon_set_name: &str) -> Vec<LoadedIcon> {
 /// Returns the full set of animation state fields that go into `State`.
 #[allow(clippy::type_complexity)]
 fn build_animation_caches(
-    icon_set: &str,
+    icon_set: native_theme::IconSet,
 ) -> (
     Vec<(String, Vec<iced_core::svg::Handle>, u32)>, // animated_frames
     Vec<usize>,                                      // animated_frame_indices
@@ -402,9 +394,9 @@ fn build_animation_caches(
     let mut animated_spins = Vec::new();
     let mut animated_static = Vec::new();
 
-    let set_name = icon_set.to_string();
+    let set_name = icon_set.name().to_string();
     {
-        if let Some(anim) = loading_indicator(&set_name) {
+        if let Some(anim) = loading_indicator(icon_set) {
             // Cache static first-frame for reduced motion
             if let Some(frame_data) = anim.first_frame()
                 && let Some(handle) = to_svg_handle(frame_data)
@@ -460,7 +452,7 @@ struct State {
     current_theme: Theme,
     color_mode: ColorMode,
     is_dark: bool,
-    current_resolved: native_theme::ResolvedTheme,
+    current_resolved: native_theme::ResolvedThemeVariant,
     /// Dynamic label for the default theme entry, updated on color mode change.
     default_label: String,
 
@@ -525,7 +517,7 @@ impl Default for State {
     fn default() -> Self {
         let color_mode = ColorMode::System;
         let is_dark = color_mode.is_dark();
-        let (resolved, theme, initial_error) = match native_theme::from_system() {
+        let (resolved, theme, initial_error) = match native_theme::SystemTheme::from_system() {
             Ok(system) => {
                 let r = system.pick(is_dark).clone();
                 let t = native_theme_iced::to_theme(&r, &system.name);
@@ -533,7 +525,7 @@ impl Default for State {
             }
             Err(e) => {
                 // Fallback: load adwaita preset through resolve pipeline
-                let nt = NativeTheme::preset("adwaita").expect("adwaita preset must exist");
+                let nt = ThemeSpec::preset("adwaita").expect("adwaita preset must exist");
                 let mut variant = nt.pick_variant(is_dark).unwrap().clone();
                 variant.resolve();
                 let r = variant.validate().expect("adwaita preset must validate");
@@ -560,7 +552,7 @@ impl Default for State {
         ];
 
         let icon_set_choice = IconSetChoice::Lucide;
-        let loaded_icons = load_all_icons(icon_set_choice.icon_set_name());
+        let loaded_icons = load_all_icons(icon_set_choice.icon_set());
 
         let (
             animated_frames,
@@ -570,7 +562,7 @@ impl Default for State {
             animation_start,
             reduced_motion,
             animated_static,
-        ) = build_animation_caches(icon_set_choice.icon_set_name());
+        ) = build_animation_caches(icon_set_choice.icon_set());
 
         let default_label = format!("default ({})", platform_preset_name());
 
@@ -649,10 +641,10 @@ impl Default for State {
                     "lucide" => IconSetChoice::Lucide,
                     _ => IconSetChoice::System,
                 };
-                state.icon_set_choice = choice;
-                state.loaded_icons = load_all_icons(set_name);
+                state.icon_set_choice = choice.clone();
+                state.loaded_icons = load_all_icons(choice.icon_set());
                 let (frames, indices, elapsed, spins, start, rm, statics) =
-                    build_animation_caches(set_name);
+                    build_animation_caches(choice.icon_set());
                 state.animated_frames = frames;
                 state.animated_frame_indices = indices;
                 state.animated_frame_elapsed = elapsed;
@@ -679,16 +671,16 @@ impl State {
         let is_default = matches!(self.current_choice, ThemeChoice::OsTheme(_));
         match &self.current_choice {
             ThemeChoice::OsTheme(_) => {
-                match native_theme::from_system() {
+                match native_theme::SystemTheme::from_system() {
                     Ok(system) => {
                         self.current_resolved = system.pick(self.is_dark).clone();
                         self.current_theme =
                             native_theme_iced::to_theme(&self.current_resolved, &system.name);
                         // Update default label based on which variant is active
                         if system.is_dark == self.is_dark {
-                            self.default_label = format!("default ({})", system.live_preset);
+                            self.default_label = format!("default ({})", system.preset);
                         } else {
-                            self.default_label = format!("default ({})", system.full_preset);
+                            self.default_label = format!("default ({})", system.preset);
                         }
                         self.error_message = None;
                     }
@@ -696,7 +688,7 @@ impl State {
                         self.error_message =
                             Some(format!("OS theme failed: {e}. Using adwaita fallback."));
                         // Fallback: load adwaita preset through resolve pipeline
-                        let nt = NativeTheme::preset("adwaita").expect("adwaita preset must exist");
+                        let nt = ThemeSpec::preset("adwaita").expect("adwaita preset must exist");
                         let mut variant = nt.pick_variant(self.is_dark).unwrap().clone();
                         variant.resolve();
                         let resolved = variant.validate().unwrap();
@@ -708,7 +700,7 @@ impl State {
             }
             ThemeChoice::Preset(name) => {
                 let name = name.clone();
-                match NativeTheme::preset(&name) {
+                match ThemeSpec::preset(&name) {
                     Ok(nt) => match nt.pick_variant(self.is_dark) {
                         Some(variant) => {
                             let mut v = variant.clone();
@@ -1077,11 +1069,11 @@ fn update_inner(state: &mut State, message: Message) {
         Message::VSliderChanged(v) => state.vslider_value = v,
         Message::ProgressChanged(v) => state.progress_value = v,
         Message::IconSetSelected(choice) => {
-            state.loaded_icons = load_all_icons(choice.icon_set_name());
+            state.loaded_icons = load_all_icons(choice.icon_set());
 
             // Rebuild animation caches when icon set changes
             let (af, afi, afe, asp, astart, rm, ast) =
-                build_animation_caches(choice.icon_set_name());
+                build_animation_caches(choice.icon_set());
             state.icon_set_choice = choice;
             state.animated_frames = af;
             state.animated_frame_indices = afi;
@@ -1359,7 +1351,7 @@ fn widget_tooltip(
 }
 
 /// Format the resolved theme font settings for display.
-fn format_font_info(resolved: &native_theme::ResolvedTheme) -> String {
+fn format_font_info(resolved: &native_theme::ResolvedThemeVariant) -> String {
     let ff = &resolved.defaults.font.family;
     let fs = format!("{:.0}px", resolved.defaults.font.size);
     let mf = &resolved.defaults.mono_font.family;
@@ -2164,7 +2156,7 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
             text(font_info).size(12),
             text(format!(
                 "Available presets: {} | All presets have both light and dark variants.",
-                NativeTheme::list_presets().len(),
+                ThemeSpec::list_presets().len(),
             ))
             .size(12),
         ]

@@ -22,6 +22,20 @@ impl_merge!(FontSpec {
     option { family, size, weight }
 });
 
+/// A resolved (non-optional) font specification produced after theme resolution.
+///
+/// Unlike [`FontSpec`], all fields are required (non-optional)
+/// because resolution has already filled in all defaults.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize)]
+pub struct ResolvedFontSpec {
+    /// Font family name.
+    pub family: String,
+    /// Font size in logical pixels.
+    pub size: f32,
+    /// CSS font weight (100–900).
+    pub weight: u16,
+}
+
 /// A single entry in a text scale: size, weight, and line height.
 ///
 /// Used to define typographic roles (caption, heading, etc.) with

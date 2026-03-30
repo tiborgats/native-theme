@@ -49,6 +49,7 @@ pub struct ReadmeDoctests;
 /// assert_eq!(base.accent.as_deref(), Some("blue"));
 /// assert_eq!(base.background.as_deref(), Some("white"));
 /// ```
+#[doc(hidden)]
 #[macro_export]
 macro_rules! impl_merge {
     (
@@ -114,14 +115,14 @@ mod resolve;
 ))]
 mod spinners;
 
-pub use color::Rgba;
+pub use color::{ParseColorError, Rgba};
 pub use error::{Error, ThemeResolutionError};
 pub use model::{
     AnimatedIcon, ButtonTheme, CardTheme, CheckboxTheme, ComboBoxTheme, DialogButtonOrder,
     DialogTheme, ExpanderTheme, FontSpec, IconData, IconProvider, IconRole, IconSet, IconSizes,
-    InputTheme, LinkTheme, ListTheme, MenuTheme, NativeTheme, PopoverTheme, ProgressBarTheme,
-    Repeat, ResolvedDefaults, ResolvedFontSpec, ResolvedIconSizes, ResolvedSpacing,
-    ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme, ScrollbarTheme,
+    InputTheme, LinkTheme, ListTheme, MenuTheme, ThemeSpec, PopoverTheme, ProgressBarTheme,
+    ResolvedThemeDefaults, ResolvedFontSpec, ResolvedIconSizes, ResolvedSpacing,
+    ResolvedTextScale, ResolvedTextScaleEntry, ResolvedThemeVariant, ScrollbarTheme,
     SegmentedControlTheme, SeparatorTheme, SidebarTheme, SliderTheme, SpinnerTheme, SplitterTheme,
     StatusBarTheme, SwitchTheme, TabTheme, TextScale, TextScaleEntry, ThemeDefaults, ThemeSpacing,
     ThemeVariant, ToolbarTheme, TooltipTheme, TransformAnimation, WindowTheme,
@@ -134,7 +135,10 @@ pub use model::icons::{icon_name, system_icon_set, system_icon_theme};
 #[cfg(all(target_os = "linux", feature = "system-icons"))]
 pub mod freedesktop;
 /// macOS platform helpers.
+#[cfg(target_os = "macos")]
 pub mod macos;
+#[cfg(not(target_os = "macos"))]
+pub(crate) mod macos;
 /// SVG-to-RGBA rasterization utilities.
 #[cfg(feature = "svg-rasterize")]
 pub mod rasterize;
@@ -142,15 +146,17 @@ pub mod rasterize;
 #[cfg(all(target_os = "macos", feature = "system-icons"))]
 pub mod sficons;
 /// Windows platform theme reader.
-///
-/// On non-Windows hosts the module is compiled (for testing), but the
-/// public `from_windows()` entry point is only available on Windows.
-#[cfg_attr(not(target_os = "windows"), allow(dead_code, unused_variables))]
+#[cfg(target_os = "windows")]
 pub mod windows;
+#[cfg(not(target_os = "windows"))]
+#[allow(dead_code, unused_variables)]
+pub(crate) mod windows;
 /// Windows Segoe Fluent / stock icon loader.
-#[cfg(feature = "system-icons")]
-#[cfg_attr(not(target_os = "windows"), allow(dead_code, unused_imports))]
+#[cfg(all(target_os = "windows", feature = "system-icons"))]
 pub mod winicons;
+#[cfg(all(not(target_os = "windows"), feature = "system-icons"))]
+#[allow(dead_code, unused_imports)]
+pub(crate) mod winicons;
 
 #[cfg(all(target_os = "linux", feature = "system-icons"))]
 pub use freedesktop::{load_freedesktop_icon, load_freedesktop_icon_by_name};
@@ -226,14 +232,26 @@ pub fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
 ///
 /// Uses synchronous, platform-specific checks so the result is available
 /// immediately at window creation time (before any async portal response).
-/// The result is cached after the first call using `OnceLock`.
+///
+/// # Caching
+///
+/// The result is cached after the first call using `OnceLock` and never
+/// refreshed. If the user toggles dark mode while the app is running,
+/// this function will return stale data.
+///
+/// For live dark-mode tracking, subscribe to OS appearance-change events
+/// (D-Bus `SettingChanged` on Linux, `NSAppearance` KVO on macOS,
+/// `UISettings.ColorValuesChanged` on Windows) and call [`from_system()`]
+/// to get a fresh [`SystemTheme`] with updated resolved variants.
 ///
 /// # Platform Behavior
 ///
 /// - **Linux:** Queries `gsettings` for `color-scheme`; falls back to KDE
-///   `kdeglobals` background luminance (with `kde` feature).
-/// - **macOS:** Reads `AppleInterfaceStyle` from global user defaults; returns
-///   `true` when the value is `"Dark"` (key absent in light mode).
+///   `kdeglobals` background luminance (with `kde` feature). When the
+///   `portal-tokio` or `portal-async-io` feature is enabled, prefers a
+///   synchronous D-Bus portal query over subprocess spawning.
+/// - **macOS:** Reads `AppleInterfaceStyle` via `NSUserDefaults` (with
+///   `macos` feature) or `defaults` subprocess (without).
 /// - **Windows:** Checks foreground color luminance from `UISettings` via
 ///   BT.601 coefficients (requires `windows` feature).
 /// - **Other platforms / missing features:** Returns `false` (light).
@@ -284,15 +302,28 @@ fn detect_is_dark_inner() -> bool {
     {
         // AppleInterfaceStyle is "Dark" when dark mode is active.
         // The key is absent in light mode, so any failure means light.
-        if let Ok(output) = std::process::Command::new("defaults")
-            .args(["read", "-g", "AppleInterfaceStyle"])
-            .output()
-            && output.status.success()
+        #[cfg(feature = "macos")]
         {
-            let val = String::from_utf8_lossy(&output.stdout);
-            return val.trim().eq_ignore_ascii_case("dark");
+            use objc2_foundation::NSUserDefaults;
+            let defaults = NSUserDefaults::standardUserDefaults();
+            let key = objc2_foundation::ns_string!("AppleInterfaceStyle");
+            if let Some(value) = unsafe { defaults.stringForKey(key) } {
+                return value.to_string().eq_ignore_ascii_case("dark");
+            }
+            return false;
         }
-        return false;
+        #[cfg(not(feature = "macos"))]
+        {
+            if let Ok(output) = std::process::Command::new("defaults")
+                .args(["read", "-g", "AppleInterfaceStyle"])
+                .output()
+                && output.status.success()
+            {
+                let val = String::from_utf8_lossy(&output.stdout);
+                return val.trim().eq_ignore_ascii_case("dark");
+            }
+            return false;
+        }
     }
 
     #[cfg(target_os = "windows")]
@@ -327,7 +358,11 @@ fn detect_is_dark_inner() -> bool {
 /// should be reduced or disabled. Returns `false` (allow animations) on
 /// unsupported platforms or when the query fails.
 ///
-/// The result is cached after the first call using `OnceLock`.
+/// # Caching
+///
+/// The result is cached after the first call using `OnceLock` and never
+/// refreshed. For live accessibility-change tracking, subscribe to OS
+/// accessibility events and re-query as needed.
 ///
 /// # Platform Behavior
 ///
@@ -409,34 +444,35 @@ fn detect_reduced_motion_inner() -> bool {
 
 /// Result of the OS-first pipeline. Holds both resolved variants.
 ///
-/// Produced by [`from_system()`] and [`from_system_async()`].
+/// Produced by [`SystemTheme::from_system()`] and [`SystemTheme::from_system_async()`].
 /// Both light and dark are always populated: the OS-active variant
 /// comes from the reader + preset + resolve, the inactive variant
 /// comes from the preset + resolve.
+#[derive(Clone, Debug)]
 pub struct SystemTheme {
     /// Theme name (from reader or preset).
     pub name: String,
     /// Whether the OS is currently in dark mode.
     pub is_dark: bool,
     /// Resolved light variant (always populated).
-    pub light: ResolvedTheme,
+    pub light: ResolvedThemeVariant,
     /// Resolved dark variant (always populated).
-    pub dark: ResolvedTheme,
+    pub dark: ResolvedThemeVariant,
     /// Pre-resolve light variant (retained for overlay support).
     pub(crate) light_variant: ThemeVariant,
     /// Pre-resolve dark variant (retained for overlay support).
     pub(crate) dark_variant: ThemeVariant,
-    /// The live preset name used for the OS-active variant (e.g., "kde-breeze-live").
-    pub live_preset: String,
-    /// The full preset name used for the inactive variant (e.g., "kde-breeze").
-    pub full_preset: String,
+    /// The platform preset used (e.g., "kde-breeze", "adwaita", "macos-sonoma").
+    pub preset: String,
+    /// The live preset name used internally (e.g., "kde-breeze-live").
+    pub(crate) live_preset: String,
 }
 
 impl SystemTheme {
     /// Returns the OS-active resolved variant.
     ///
     /// If `is_dark` is true, returns `&self.dark`; otherwise `&self.light`.
-    pub fn active(&self) -> &ResolvedTheme {
+    pub fn active(&self) -> &ResolvedThemeVariant {
         if self.is_dark {
             &self.dark
         } else {
@@ -447,14 +483,14 @@ impl SystemTheme {
     /// Pick a resolved variant by explicit preference.
     ///
     /// `pick(true)` returns `&self.dark`, `pick(false)` returns `&self.light`.
-    pub fn pick(&self, is_dark: bool) -> &ResolvedTheme {
+    pub fn pick(&self, is_dark: bool) -> &ResolvedThemeVariant {
         if is_dark { &self.dark } else { &self.light }
     }
 
     /// Apply an app-level TOML overlay and re-resolve.
     ///
     /// Merges the overlay onto the pre-resolve [`ThemeVariant`] (not the
-    /// already-resolved [`ResolvedTheme`]) so that changed source fields
+    /// already-resolved [`ResolvedThemeVariant`]) so that changed source fields
     /// propagate correctly through `resolve()`. For example, changing
     /// `defaults.accent` in the overlay will cause `button.primary_bg`,
     /// `checkbox.checked_bg`, `slider.fill`, etc. to be re-derived from
@@ -463,8 +499,8 @@ impl SystemTheme {
     /// # Examples
     ///
     /// ```no_run
-    /// let system = native_theme::from_system().unwrap();
-    /// let overlay = native_theme::NativeTheme::from_toml(r##"
+    /// let system = native_theme::SystemTheme::from_system().unwrap();
+    /// let overlay = native_theme::ThemeSpec::from_toml(r##"
     ///     [light.defaults]
     ///     accent = "#ff6600"
     ///     [dark.defaults]
@@ -474,7 +510,7 @@ impl SystemTheme {
     /// // customized.active().defaults.accent is now #ff6600
     /// // and all accent-derived fields are updated
     /// ```
-    pub fn with_overlay(self, overlay: &NativeTheme) -> crate::Result<Self> {
+    pub fn with_overlay(&self, overlay: &ThemeSpec) -> crate::Result<Self> {
         // Start from pre-resolve variants (avoids double-resolve idempotency issue)
         let mut light = self.light_variant.clone();
         let mut dark = self.dark_variant.clone();
@@ -488,37 +524,99 @@ impl SystemTheme {
         }
 
         // Resolve and validate both
-        let resolved_light = resolve_variant(light.clone())?;
-        let resolved_dark = resolve_variant(dark.clone())?;
+        let resolved_light = light.clone().into_resolved()?;
+        let resolved_dark = dark.clone().into_resolved()?;
 
         Ok(SystemTheme {
-            name: self.name,
+            name: self.name.clone(),
             is_dark: self.is_dark,
             light: resolved_light,
             dark: resolved_dark,
             light_variant: light,
             dark_variant: dark,
-            live_preset: self.live_preset,
-            full_preset: self.full_preset,
+            live_preset: self.live_preset.clone(),
+            preset: self.preset.clone(),
         })
     }
 
     /// Apply an app overlay from a TOML string.
     ///
-    /// Parses the TOML as a [`NativeTheme`] and calls [`with_overlay`](Self::with_overlay).
-    pub fn with_overlay_toml(self, toml: &str) -> crate::Result<Self> {
-        let overlay = NativeTheme::from_toml(toml)?;
+    /// Parses the TOML as a [`ThemeSpec`] and calls [`with_overlay`](Self::with_overlay).
+    pub fn with_overlay_toml(&self, toml: &str) -> crate::Result<Self> {
+        let overlay = ThemeSpec::from_toml(toml)?;
         self.with_overlay(&overlay)
     }
-}
 
-/// Resolve a single `ThemeVariant` into a `ResolvedTheme`.
-///
-/// Calls `resolve()` to fill inheritance chains, then `validate()`
-/// to convert all `Option` fields to their non-optional counterparts.
-fn resolve_variant(mut variant: ThemeVariant) -> crate::Result<ResolvedTheme> {
-    variant.resolve();
-    variant.validate()
+    /// Load the OS theme synchronously.
+    ///
+    /// Detects the platform and desktop environment, reads the current theme
+    /// settings, merges with a platform preset, and returns a fully resolved
+    /// [`SystemTheme`] with both light and dark variants.
+    ///
+    /// The return value goes through the full pipeline: reader output →
+    /// resolve → validate → [`SystemTheme`] with both light and dark
+    /// [`ResolvedThemeVariant`] variants.
+    ///
+    /// # Platform Behavior
+    ///
+    /// - **macOS:** Calls `from_macos()` when the `macos` feature is enabled.
+    ///   Reads both light and dark variants via NSAppearance, merges with
+    ///   `macos-sonoma` preset.
+    /// - **Linux (KDE):** Calls `from_kde()` when `XDG_CURRENT_DESKTOP` contains
+    ///   "KDE" and the `kde` feature is enabled, merges with `kde-breeze` preset.
+    /// - **Linux (other):** Uses the `adwaita` preset. For live GNOME portal
+    ///   data, use [`from_system_async()`](Self::from_system_async) (requires
+    ///   `portal-tokio` or `portal-async-io` feature).
+    /// - **Windows:** Calls `from_windows()` when the `windows` feature is enabled,
+    ///   merges with `windows-11` preset.
+    /// - **Other platforms:** Returns `Error::Unsupported`.
+    ///
+    /// # Errors
+    ///
+    /// - `Error::Unsupported` if the platform has no reader or the required feature
+    ///   is not enabled.
+    /// - `Error::Unavailable` if the platform reader cannot access theme data.
+    ///
+    /// # Examples
+    ///
+    /// ```no_run
+    /// let system = native_theme::SystemTheme::from_system().unwrap();
+    /// let active = system.active();
+    /// ```
+    #[must_use = "this returns the detected theme; it does not apply it"]
+    pub fn from_system() -> crate::Result<Self> {
+        from_system_inner()
+    }
+
+    /// Async version of [`from_system()`](Self::from_system) that uses D-Bus
+    /// portal backend detection to improve desktop environment heuristics on
+    /// Linux.
+    ///
+    /// When `XDG_CURRENT_DESKTOP` is unset or unrecognized, queries the
+    /// D-Bus session bus for portal backend activatable names to determine
+    /// whether KDE or GNOME portal is running, then dispatches to the
+    /// appropriate reader.
+    ///
+    /// Returns a [`SystemTheme`] with both resolved light and dark variants,
+    /// same as [`from_system()`](Self::from_system).
+    ///
+    /// On non-Linux platforms, behaves identically to
+    /// [`from_system()`](Self::from_system).
+    #[cfg(target_os = "linux")]
+    #[must_use = "this returns the detected theme; it does not apply it"]
+    pub async fn from_system_async() -> crate::Result<Self> {
+        from_system_async_inner().await
+    }
+
+    /// Async version of [`from_system()`](Self::from_system).
+    ///
+    /// On non-Linux platforms, this is equivalent to calling
+    /// [`from_system()`](Self::from_system).
+    #[cfg(not(target_os = "linux"))]
+    #[must_use = "this returns the detected theme; it does not apply it"]
+    pub async fn from_system_async() -> crate::Result<Self> {
+        from_system_inner()
+    }
 }
 
 /// Run the OS-first pipeline: merge reader output onto a platform
@@ -528,15 +626,15 @@ fn resolve_variant(mut variant: ThemeVariant) -> crate::Result<ResolvedTheme> {
 /// version is used. For the variant the reader did NOT supply, the full
 /// platform preset (with colors/fonts) is used as fallback.
 fn run_pipeline(
-    reader_output: NativeTheme,
+    reader_output: ThemeSpec,
     preset_name: &str,
     is_dark: bool,
 ) -> crate::Result<SystemTheme> {
-    let live_preset = NativeTheme::preset(preset_name)?;
+    let live_preset = ThemeSpec::preset(preset_name)?;
 
     // For the inactive variant, load the full preset (with colors)
     let full_preset_name = preset_name.strip_suffix("-live").unwrap_or(preset_name);
-    let full_preset = NativeTheme::preset(full_preset_name)?;
+    let full_preset = ThemeSpec::preset(full_preset_name)?;
 
     // Merge: full preset provides color/font defaults, live preset overrides
     // geometry, reader output provides live OS data on top.
@@ -569,8 +667,8 @@ fn run_pipeline(
     let light_variant_pre = light_variant.clone();
     let dark_variant_pre = dark_variant.clone();
 
-    let light = resolve_variant(light_variant)?;
-    let dark = resolve_variant(dark_variant)?;
+    let light = light_variant.into_resolved()?;
+    let dark = dark_variant.into_resolved()?;
 
     Ok(SystemTheme {
         name,
@@ -579,8 +677,8 @@ fn run_pipeline(
         dark,
         light_variant: light_variant_pre,
         dark_variant: dark_variant_pre,
+        preset: full_preset_name.to_string(),
         live_preset: preset_name.to_string(),
-        full_preset: full_preset_name.to_string(),
     })
 }
 
@@ -631,7 +729,7 @@ pub fn platform_preset_name() -> &'static str {
 /// `false` (light); callers can use [`SystemTheme::pick()`] for
 /// explicit variant selection regardless of this default.
 #[allow(dead_code)]
-fn reader_is_dark(reader: &NativeTheme) -> bool {
+fn reader_is_dark(reader: &ThemeSpec) -> bool {
     reader.dark.is_some() && reader.light.is_none()
 }
 
@@ -651,13 +749,13 @@ fn from_linux() -> crate::Result<SystemTheme> {
             run_pipeline(reader, "kde-breeze-live", is_dark)
         }
         #[cfg(not(feature = "kde"))]
-        LinuxDesktop::Kde => run_pipeline(NativeTheme::preset("adwaita")?, "adwaita-live", is_dark),
+        LinuxDesktop::Kde => run_pipeline(ThemeSpec::preset("adwaita")?, "adwaita-live", is_dark),
         LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
             // GNOME sync path: no portal, just adwaita preset
-            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita-live", is_dark)
+            run_pipeline(ThemeSpec::preset("adwaita")?, "adwaita-live", is_dark)
         }
         LinuxDesktop::Xfce | LinuxDesktop::Cinnamon | LinuxDesktop::Mate | LinuxDesktop::LxQt => {
-            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita-live", is_dark)
+            run_pipeline(ThemeSpec::preset("adwaita")?, "adwaita-live", is_dark)
         }
         LinuxDesktop::Unknown => {
             #[cfg(feature = "kde")]
@@ -668,39 +766,12 @@ fn from_linux() -> crate::Result<SystemTheme> {
                     return run_pipeline(reader, "kde-breeze-live", is_dark);
                 }
             }
-            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita-live", is_dark)
+            run_pipeline(ThemeSpec::preset("adwaita")?, "adwaita-live", is_dark)
         }
     }
 }
 
-/// Read the current system theme, auto-detecting the platform and
-/// desktop environment.
-///
-/// Runs the full OS-first pipeline: OS reader -> platform preset merge ->
-/// resolve -> validate -> [`SystemTheme`] with both light and dark
-/// [`ResolvedTheme`] variants.
-///
-/// # Platform Behavior
-///
-/// - **macOS:** Calls `from_macos()` when the `macos` feature is enabled.
-///   Reads both light and dark variants via NSAppearance, merges with
-///   `macos-sonoma` preset.
-/// - **Linux (KDE):** Calls `from_kde()` when `XDG_CURRENT_DESKTOP` contains
-///   "KDE" and the `kde` feature is enabled, merges with `kde-breeze` preset.
-/// - **Linux (other):** Uses the `adwaita` preset. For live GNOME portal
-///   data, use [`from_system_async()`] (requires `portal-tokio` or
-///   `portal-async-io` feature).
-/// - **Windows:** Calls `from_windows()` when the `windows` feature is enabled,
-///   merges with `windows-11` preset.
-/// - **Other platforms:** Returns `Error::Unsupported`.
-///
-/// # Errors
-///
-/// - `Error::Unsupported` if the platform has no reader or the required feature
-///   is not enabled.
-/// - `Error::Unavailable` if the platform reader cannot access theme data.
-#[must_use = "this returns the detected theme; it does not apply it"]
-pub fn from_system() -> crate::Result<SystemTheme> {
+fn from_system_inner() -> crate::Result<SystemTheme> {
     #[cfg(target_os = "macos")]
     {
         #[cfg(feature = "macos")]
@@ -738,21 +809,8 @@ pub fn from_system() -> crate::Result<SystemTheme> {
     }
 }
 
-/// Async version of [`from_system()`] that uses D-Bus portal backend
-/// detection to improve desktop environment heuristics on Linux.
-///
-/// When `XDG_CURRENT_DESKTOP` is unset or unrecognized, queries the
-/// D-Bus session bus for portal backend activatable names to determine
-/// whether KDE or GNOME portal is running, then dispatches to the
-/// appropriate reader.
-///
-/// Returns a [`SystemTheme`] with both resolved light and dark variants,
-/// same as [`from_system()`].
-///
-/// On non-Linux platforms, behaves identically to [`from_system()`].
 #[cfg(target_os = "linux")]
-#[must_use = "this returns the detected theme; it does not apply it"]
-pub async fn from_system_async() -> crate::Result<SystemTheme> {
+async fn from_system_async_inner() -> crate::Result<SystemTheme> {
     let is_dark = system_is_dark();
     let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
     match detect_linux_de(&desktop) {
@@ -770,7 +828,7 @@ pub async fn from_system_async() -> crate::Result<SystemTheme> {
             }
         }
         #[cfg(not(feature = "kde"))]
-        LinuxDesktop::Kde => run_pipeline(NativeTheme::preset("adwaita")?, "adwaita-live", is_dark),
+        LinuxDesktop::Kde => run_pipeline(ThemeSpec::preset("adwaita")?, "adwaita-live", is_dark),
         #[cfg(feature = "portal")]
         LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
             let reader = crate::gnome::from_gnome().await?;
@@ -778,10 +836,10 @@ pub async fn from_system_async() -> crate::Result<SystemTheme> {
         }
         #[cfg(not(feature = "portal"))]
         LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
-            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita-live", is_dark)
+            run_pipeline(ThemeSpec::preset("adwaita")?, "adwaita-live", is_dark)
         }
         LinuxDesktop::Xfce | LinuxDesktop::Cinnamon | LinuxDesktop::Mate | LinuxDesktop::LxQt => {
-            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita-live", is_dark)
+            run_pipeline(ThemeSpec::preset("adwaita")?, "adwaita-live", is_dark)
         }
         LinuxDesktop::Unknown => {
             // Use D-Bus portal backend detection to refine heuristic
@@ -796,7 +854,7 @@ pub async fn from_system_async() -> crate::Result<SystemTheme> {
                         }
                         #[cfg(not(feature = "kde"))]
                         LinuxDesktop::Kde => {
-                            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita-live", is_dark)
+                            run_pipeline(ThemeSpec::preset("adwaita")?, "adwaita-live", is_dark)
                         }
                         LinuxDesktop::Gnome => {
                             let reader = crate::gnome::from_gnome().await?;
@@ -817,18 +875,9 @@ pub async fn from_system_async() -> crate::Result<SystemTheme> {
                     return run_pipeline(reader, "kde-breeze-live", is_dark);
                 }
             }
-            run_pipeline(NativeTheme::preset("adwaita")?, "adwaita-live", is_dark)
+            run_pipeline(ThemeSpec::preset("adwaita")?, "adwaita-live", is_dark)
         }
     }
-}
-
-/// Async version of [`from_system()`].
-///
-/// On non-Linux platforms, this is equivalent to calling [`from_system()`].
-#[cfg(not(target_os = "linux"))]
-#[must_use = "this returns the detected theme; it does not apply it"]
-pub async fn from_system_async() -> crate::Result<SystemTheme> {
-    from_system()
 }
 
 /// Load an icon for the given role using the specified icon set.
@@ -840,31 +889,28 @@ pub async fn from_system_async() -> crate::Result<SystemTheme> {
 ///
 /// # Dispatch
 ///
-/// 1. Parse `icon_set` to `IconSet` (unknown names fall back to system set)
-/// 2. Platform loader (freedesktop/sf-symbols/segoe-fluent) when `system-icons` enabled
-/// 3. Bundled SVGs (material/lucide) when the corresponding feature is enabled
-/// 4. Non-matching set: `None` (no cross-set fallback)
+/// 1. Platform loader (freedesktop/sf-symbols/segoe-fluent) when `system-icons` enabled
+/// 2. Bundled SVGs (material/lucide) when the corresponding feature is enabled
+/// 3. Non-matching set: `None` (no cross-set fallback)
 ///
 /// # Examples
 ///
 /// ```
-/// use native_theme::{load_icon, IconRole};
+/// use native_theme::{load_icon, IconRole, IconSet};
 ///
 /// // With material-icons feature enabled
 /// # #[cfg(feature = "material-icons")]
 /// # {
-/// let icon = load_icon(IconRole::ActionCopy, "material");
+/// let icon = load_icon(IconRole::ActionCopy, IconSet::Material);
 /// assert!(icon.is_some());
 /// # }
 /// ```
 #[must_use = "this returns the loaded icon data; it does not display it"]
 #[allow(unreachable_patterns, clippy::needless_return, unused_variables)]
-pub fn load_icon(role: IconRole, icon_set: &str) -> Option<IconData> {
-    let set = IconSet::from_name(icon_set).unwrap_or_else(system_icon_set);
-
+pub fn load_icon(role: IconRole, set: IconSet) -> Option<IconData> {
     match set {
         #[cfg(all(target_os = "linux", feature = "system-icons"))]
-        IconSet::Freedesktop => freedesktop::load_freedesktop_icon(role),
+        IconSet::Freedesktop => freedesktop::load_freedesktop_icon(role, 24),
 
         #[cfg(all(target_os = "macos", feature = "system-icons"))]
         IconSet::SfSymbols => sficons::load_sf_icon(role),
@@ -874,12 +920,12 @@ pub fn load_icon(role: IconRole, icon_set: &str) -> Option<IconData> {
 
         #[cfg(feature = "material-icons")]
         IconSet::Material => {
-            bundled_icon_svg(IconSet::Material, role).map(|b| IconData::Svg(b.to_vec()))
+            bundled_icon_svg(role, IconSet::Material).map(|b| IconData::Svg(b.to_vec()))
         }
 
         #[cfg(feature = "lucide-icons")]
         IconSet::Lucide => {
-            bundled_icon_svg(IconSet::Lucide, role).map(|b| IconData::Svg(b.to_vec()))
+            bundled_icon_svg(role, IconSet::Lucide).map(|b| IconData::Svg(b.to_vec()))
         }
 
         // Non-matching platform or unknown set: no cross-set fallback
@@ -916,7 +962,7 @@ pub fn load_system_icon_by_name(name: &str, set: IconSet) -> Option<IconData> {
         #[cfg(all(target_os = "linux", feature = "system-icons"))]
         IconSet::Freedesktop => {
             let theme = system_icon_theme();
-            freedesktop::load_freedesktop_icon_by_name(name, &theme)
+            freedesktop::load_freedesktop_icon_by_name(name, &theme, 24)
         }
 
         #[cfg(all(target_os = "macos", feature = "system-icons"))]
@@ -927,12 +973,12 @@ pub fn load_system_icon_by_name(name: &str, set: IconSet) -> Option<IconData> {
 
         #[cfg(feature = "material-icons")]
         IconSet::Material => {
-            bundled_icon_by_name(IconSet::Material, name).map(|b| IconData::Svg(b.to_vec()))
+            bundled_icon_by_name(name, IconSet::Material).map(|b| IconData::Svg(b.to_vec()))
         }
 
         #[cfg(feature = "lucide-icons")]
         IconSet::Lucide => {
-            bundled_icon_by_name(IconSet::Lucide, name).map(|b| IconData::Svg(b.to_vec()))
+            bundled_icon_by_name(name, IconSet::Lucide).map(|b| IconData::Svg(b.to_vec()))
         }
 
         _ => None,
@@ -941,29 +987,25 @@ pub fn load_system_icon_by_name(name: &str, set: IconSet) -> Option<IconData> {
 
 /// Return the loading/spinner animation for the given icon set.
 ///
-/// This is the animated-icon counterpart of [`load_icon()`]. It resolves
-/// `icon_set` to an [`IconSet`] via [`IconSet::from_name()`], falling back
-/// to [`system_icon_set()`] for unrecognized names, then dispatches to the
-/// appropriate bundled spinner data.
+/// This is the animated-icon counterpart of [`load_icon()`].
 ///
 /// # Dispatch
 ///
-/// - `"material"` -- `progress_activity.svg` with continuous spin transform (1000ms)
-/// - `"lucide"` -- `loader.svg` with continuous spin transform (1000ms)
-/// - `"freedesktop"` -- loads `process-working` sprite sheet from active icon theme
-/// - Unknown set -- `None`
+/// - [`IconSet::Material`] -- `progress_activity.svg` with continuous spin transform (1000ms)
+/// - [`IconSet::Lucide`] -- `loader.svg` with continuous spin transform (1000ms)
+/// - [`IconSet::Freedesktop`] -- loads `process-working` sprite sheet from active icon theme
+/// - Other sets -- `None`
 ///
 /// # Examples
 ///
 /// ```
 /// // Result depends on enabled features and platform
-/// let anim = native_theme::loading_indicator("lucide");
+/// let anim = native_theme::loading_indicator(native_theme::IconSet::Lucide);
 /// # #[cfg(feature = "lucide-icons")]
 /// # assert!(anim.is_some());
 /// ```
 #[must_use = "this returns animation data; it does not display anything"]
-pub fn loading_indicator(icon_set: &str) -> Option<AnimatedIcon> {
-    let set = IconSet::from_name(icon_set).unwrap_or_else(system_icon_set);
+pub fn loading_indicator(set: IconSet) -> Option<AnimatedIcon> {
     match set {
         #[cfg(all(target_os = "linux", feature = "system-icons"))]
         IconSet::Freedesktop => freedesktop::load_freedesktop_spinner(),
@@ -988,27 +1030,23 @@ pub fn loading_indicator(icon_set: &str) -> Option<AnimatedIcon> {
 /// 2. Provider's [`icon_svg()`](IconProvider::icon_svg) -- bundled SVG data
 /// 3. `None` -- **no cross-set fallback** (mixing icon sets is forbidden)
 ///
-/// The `icon_set` string is parsed via [`IconSet::from_name()`], falling back
-/// to [`system_icon_set()`] for unrecognized names.
-///
 /// # Examples
 ///
 /// ```
-/// use native_theme::{load_custom_icon, IconRole};
+/// use native_theme::{load_custom_icon, IconRole, IconSet};
 ///
 /// // IconRole implements IconProvider, so it works with load_custom_icon
 /// # #[cfg(feature = "material-icons")]
 /// # {
-/// let icon = load_custom_icon(&IconRole::ActionCopy, "material");
+/// let icon = load_custom_icon(&IconRole::ActionCopy, IconSet::Material);
 /// assert!(icon.is_some());
 /// # }
 /// ```
 #[must_use = "this returns the loaded icon data; it does not display it"]
 pub fn load_custom_icon(
     provider: &(impl IconProvider + ?Sized),
-    icon_set: &str,
+    set: IconSet,
 ) -> Option<IconData> {
-    let set = IconSet::from_name(icon_set).unwrap_or_else(system_icon_set);
 
     // Step 1: Try system loader with provider's name mapping
     if let Some(name) = provider.icon_name(set)
@@ -1227,7 +1265,7 @@ mod dispatch_tests {
         // With GNOME set, it should return the Adwaita preset.
         // SAFETY: ENV_MUTEX serializes env var access across parallel tests
         unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "GNOME") };
-        let result = from_system();
+        let result = SystemTheme::from_system();
         unsafe { std::env::remove_var("XDG_CURRENT_DESKTOP") };
 
         let theme = result.expect("from_system() should return Ok on Linux");
@@ -1243,7 +1281,7 @@ mod load_icon_tests {
     #[test]
     #[cfg(feature = "material-icons")]
     fn load_icon_material_returns_svg() {
-        let result = load_icon(IconRole::ActionCopy, "material");
+        let result = load_icon(IconRole::ActionCopy, IconSet::Material);
         assert!(result.is_some(), "material ActionCopy should return Some");
         match result.unwrap() {
             IconData::Svg(bytes) => {
@@ -1257,7 +1295,7 @@ mod load_icon_tests {
     #[test]
     #[cfg(feature = "lucide-icons")]
     fn load_icon_lucide_returns_svg() {
-        let result = load_icon(IconRole::ActionCopy, "lucide");
+        let result = load_icon(IconRole::ActionCopy, IconSet::Lucide);
         assert!(result.is_some(), "lucide ActionCopy should return Some");
         match result.unwrap() {
             IconData::Svg(bytes) => {
@@ -1274,7 +1312,7 @@ mod load_icon_tests {
         // On Linux (test platform), unknown theme resolves to system_icon_set() = Freedesktop.
         // Without system-icons feature, Freedesktop falls through to wildcard -> None.
         // No cross-set Material fallback.
-        let result = load_icon(IconRole::ActionCopy, "unknown-theme");
+        let result = load_icon(IconRole::ActionCopy, IconSet::Freedesktop);
         // Without system-icons, this falls to wildcard which returns None
         // With system-icons, this dispatches to load_freedesktop_icon which may return Some
         // Either way, no panic
@@ -1287,7 +1325,7 @@ mod load_icon_tests {
         // Material has 42 of 42 roles mapped, all return Some
         let mut some_count = 0;
         for role in IconRole::ALL {
-            if load_icon(role, "material").is_some() {
+            if load_icon(role, IconSet::Material).is_some() {
                 some_count += 1;
             }
         }
@@ -1303,7 +1341,7 @@ mod load_icon_tests {
     fn load_icon_all_roles_lucide() {
         let mut some_count = 0;
         for role in IconRole::ALL {
-            if load_icon(role, "lucide").is_some() {
+            if load_icon(role, IconSet::Lucide).is_some() {
                 some_count += 1;
             }
         }
@@ -1317,7 +1355,7 @@ mod load_icon_tests {
     #[test]
     fn load_icon_unrecognized_set_no_features() {
         // SfSymbols on Linux without system-icons: falls through to wildcard -> None
-        let _result = load_icon(IconRole::ActionCopy, "sf-symbols");
+        let _result = load_icon(IconRole::ActionCopy, IconSet::SfSymbols);
         // Just verifying it doesn't panic
     }
 }
@@ -1375,7 +1413,7 @@ mod load_custom_icon_tests {
     #[test]
     #[cfg(feature = "material-icons")]
     fn custom_icon_with_icon_role_material() {
-        let result = load_custom_icon(&IconRole::ActionCopy, "material");
+        let result = load_custom_icon(&IconRole::ActionCopy, IconSet::Material);
         assert!(
             result.is_some(),
             "IconRole::ActionCopy should load via material"
@@ -1385,7 +1423,7 @@ mod load_custom_icon_tests {
     #[test]
     #[cfg(feature = "lucide-icons")]
     fn custom_icon_with_icon_role_lucide() {
-        let result = load_custom_icon(&IconRole::ActionCopy, "lucide");
+        let result = load_custom_icon(&IconRole::ActionCopy, IconSet::Lucide);
         assert!(
             result.is_some(),
             "IconRole::ActionCopy should load via lucide"
@@ -1406,7 +1444,7 @@ mod load_custom_icon_tests {
             }
         }
 
-        let result = load_custom_icon(&NullProvider, "material");
+        let result = load_custom_icon(&NullProvider, IconSet::Material);
         assert!(
             result.is_none(),
             "NullProvider should return None (no cross-set fallback)"
@@ -1428,14 +1466,14 @@ mod load_custom_icon_tests {
         }
 
         // Just verify it doesn't panic -- the actual set chosen depends on platform
-        let _result = load_custom_icon(&NullProvider, "unknown-set");
+        let _result = load_custom_icon(&NullProvider, IconSet::Freedesktop);
     }
 
     #[test]
     #[cfg(feature = "material-icons")]
     fn custom_icon_via_dyn_dispatch() {
         let boxed: Box<dyn IconProvider> = Box::new(IconRole::ActionCopy);
-        let result = load_custom_icon(&*boxed, "material");
+        let result = load_custom_icon(&*boxed, IconSet::Material);
         assert!(
             result.is_some(),
             "dyn dispatch through Box<dyn IconProvider> should work"
@@ -1457,7 +1495,7 @@ mod load_custom_icon_tests {
             }
         }
 
-        let result = load_custom_icon(&SvgOnlyProvider, "material");
+        let result = load_custom_icon(&SvgOnlyProvider, IconSet::Material);
         assert!(
             result.is_some(),
             "provider with icon_svg should return Some"
@@ -1481,7 +1519,7 @@ mod loading_indicator_tests {
     #[test]
     #[cfg(feature = "lucide-icons")]
     fn loading_indicator_lucide_returns_transform_spin() {
-        let anim = loading_indicator("lucide");
+        let anim = loading_indicator(IconSet::Lucide);
         assert!(anim.is_some(), "lucide should return Some");
         let anim = anim.unwrap();
         assert!(
@@ -1501,7 +1539,7 @@ mod loading_indicator_tests {
     #[test]
     #[cfg(all(target_os = "linux", feature = "system-icons"))]
     fn loading_indicator_freedesktop_depends_on_theme() {
-        let anim = loading_indicator("freedesktop");
+        let anim = loading_indicator(IconSet::Freedesktop);
         // Result depends on installed icon theme -- Some if process-working exists
         if let Some(anim) = anim {
             match anim {
@@ -1518,16 +1556,10 @@ mod loading_indicator_tests {
         }
     }
 
-    /// Unknown icon set name falls back to system_icon_set().
-    /// Result depends on platform and available icon themes.
+    /// Freedesktop spinner depends on platform and icon theme.
     #[test]
-    fn loading_indicator_unknown_falls_back_to_system() {
-        let _result = loading_indicator("unknown");
-    }
-
-    #[test]
-    fn loading_indicator_empty_string_falls_back_to_system() {
-        let _result = loading_indicator("");
+    fn loading_indicator_freedesktop_does_not_panic() {
+        let _result = loading_indicator(IconSet::Freedesktop);
     }
 
     // === Direct spinner construction tests (any platform) ===
@@ -1587,7 +1619,7 @@ mod system_theme_tests {
 
     #[test]
     fn test_system_theme_active_dark() {
-        let preset = NativeTheme::preset("catppuccin-mocha").unwrap();
+        let preset = ThemeSpec::preset("catppuccin-mocha").unwrap();
         let mut light_v = preset.light.clone().unwrap();
         let mut dark_v = preset.dark.clone().unwrap();
         // Give them distinct accents so we can tell them apart
@@ -1606,14 +1638,14 @@ mod system_theme_tests {
             light_variant: preset.light.unwrap(),
             dark_variant: preset.dark.unwrap(),
             live_preset: "catppuccin-mocha".into(),
-            full_preset: "catppuccin-mocha".into(),
+            preset: "catppuccin-mocha".into(),
         };
         assert_eq!(st.active().defaults.accent, dark_resolved.defaults.accent);
     }
 
     #[test]
     fn test_system_theme_active_light() {
-        let preset = NativeTheme::preset("catppuccin-mocha").unwrap();
+        let preset = ThemeSpec::preset("catppuccin-mocha").unwrap();
         let mut light_v = preset.light.clone().unwrap();
         let mut dark_v = preset.dark.clone().unwrap();
         light_v.defaults.accent = Some(Rgba::rgb(0, 0, 255));
@@ -1631,14 +1663,14 @@ mod system_theme_tests {
             light_variant: preset.light.unwrap(),
             dark_variant: preset.dark.unwrap(),
             live_preset: "catppuccin-mocha".into(),
-            full_preset: "catppuccin-mocha".into(),
+            preset: "catppuccin-mocha".into(),
         };
         assert_eq!(st.active().defaults.accent, light_resolved.defaults.accent);
     }
 
     #[test]
     fn test_system_theme_pick() {
-        let preset = NativeTheme::preset("catppuccin-mocha").unwrap();
+        let preset = ThemeSpec::preset("catppuccin-mocha").unwrap();
         let mut light_v = preset.light.clone().unwrap();
         let mut dark_v = preset.dark.clone().unwrap();
         light_v.defaults.accent = Some(Rgba::rgb(0, 0, 255));
@@ -1656,7 +1688,7 @@ mod system_theme_tests {
             light_variant: preset.light.unwrap(),
             dark_variant: preset.dark.unwrap(),
             live_preset: "catppuccin-mocha".into(),
-            full_preset: "catppuccin-mocha".into(),
+            preset: "catppuccin-mocha".into(),
         };
         assert_eq!(st.pick(true).defaults.accent, dark_resolved.defaults.accent);
         assert_eq!(
@@ -1693,11 +1725,11 @@ mod system_theme_tests {
 
     #[test]
     fn test_run_pipeline_produces_both_variants() {
-        let reader = NativeTheme::preset("catppuccin-mocha").unwrap();
+        let reader = ThemeSpec::preset("catppuccin-mocha").unwrap();
         let result = run_pipeline(reader, "catppuccin-mocha", false);
         assert!(result.is_ok(), "run_pipeline should succeed");
         let st = result.unwrap();
-        // Both light and dark exist as ResolvedTheme (non-Option)
+        // Both light and dark exist as ResolvedThemeVariant (non-Option)
         assert!(!st.name.is_empty(), "name should be populated");
         // If we get here, both variants validated successfully
     }
@@ -1706,7 +1738,7 @@ mod system_theme_tests {
     fn test_run_pipeline_reader_values_win() {
         // Create a reader with a custom accent color
         let custom_accent = Rgba::rgb(42, 100, 200);
-        let mut reader = NativeTheme::default();
+        let mut reader = ThemeSpec::default();
         reader.name = "CustomTheme".into();
         let mut variant = ThemeVariant::default();
         variant.defaults.accent = Some(custom_accent);
@@ -1728,8 +1760,8 @@ mod system_theme_tests {
         // Simulate a real OS reader that provides a complete dark variant
         // (like KDE's from_kde() would) but no light variant.
         // Use a live preset so the inactive light variant gets the full preset.
-        let full = NativeTheme::preset("kde-breeze").unwrap();
-        let mut reader = NativeTheme::default();
+        let full = ThemeSpec::preset("kde-breeze").unwrap();
+        let mut reader = ThemeSpec::default();
         let mut dark_v = full.dark.clone().unwrap();
         // Override accent to prove reader values win
         dark_v.defaults.accent = Some(Rgba::rgb(200, 50, 50));
@@ -1751,15 +1783,15 @@ mod system_theme_tests {
         // Light should still exist (from full preset, which has colors)
         // If we get here, both variants validated successfully
         assert_eq!(st.live_preset, "kde-breeze-live");
-        assert_eq!(st.full_preset, "kde-breeze");
+        assert_eq!(st.preset, "kde-breeze");
     }
 
     #[test]
     fn test_run_pipeline_inactive_variant_from_full_preset() {
         // When reader provides only dark, light must come from the full preset
         // (not the live preset, which has no colors and would fail validation).
-        let full = NativeTheme::preset("kde-breeze").unwrap();
-        let mut reader = NativeTheme::default();
+        let full = ThemeSpec::preset("kde-breeze").unwrap();
+        let mut reader = ThemeSpec::default();
         reader.dark = Some(full.dark.clone().unwrap());
         reader.light = None;
 
@@ -1785,7 +1817,7 @@ mod system_theme_tests {
     fn test_run_pipeline_with_preset_as_reader() {
         // Simulates GNOME sync fallback: adwaita used as both reader and preset.
         // Double-merge is harmless: merge is idempotent for matching values.
-        let reader = NativeTheme::preset("adwaita").unwrap();
+        let reader = ThemeSpec::preset("adwaita").unwrap();
         let result = run_pipeline(reader, "adwaita", false);
         assert!(
             result.is_ok(),
@@ -1799,7 +1831,7 @@ mod system_theme_tests {
 
     #[test]
     fn test_reader_is_dark_only_dark() {
-        let mut theme = NativeTheme::default();
+        let mut theme = ThemeSpec::default();
         theme.dark = Some(ThemeVariant::default());
         theme.light = None;
         assert!(
@@ -1810,7 +1842,7 @@ mod system_theme_tests {
 
     #[test]
     fn test_reader_is_dark_only_light() {
-        let mut theme = NativeTheme::default();
+        let mut theme = ThemeSpec::default();
         theme.light = Some(ThemeVariant::default());
         theme.dark = None;
         assert!(
@@ -1821,7 +1853,7 @@ mod system_theme_tests {
 
     #[test]
     fn test_reader_is_dark_both() {
-        let mut theme = NativeTheme::default();
+        let mut theme = ThemeSpec::default();
         theme.light = Some(ThemeVariant::default());
         theme.dark = Some(ThemeVariant::default());
         assert!(
@@ -1832,7 +1864,7 @@ mod system_theme_tests {
 
     #[test]
     fn test_reader_is_dark_neither() {
-        let theme = NativeTheme::default();
+        let theme = ThemeSpec::default();
         assert!(
             !reader_is_dark(&theme),
             "should be false when neither is set"
@@ -1886,7 +1918,7 @@ mod overlay_tests {
 
     /// Helper: build a SystemTheme from a preset via run_pipeline.
     fn default_system_theme() -> SystemTheme {
-        let reader = NativeTheme::preset("catppuccin-mocha").unwrap();
+        let reader = ThemeSpec::preset("catppuccin-mocha").unwrap();
         run_pipeline(reader, "catppuccin-mocha", false).unwrap()
     }
 
@@ -1896,7 +1928,7 @@ mod overlay_tests {
         let new_accent = Rgba::rgb(255, 0, 0);
 
         // Build overlay with accent on both light and dark
-        let mut overlay = NativeTheme::default();
+        let mut overlay = ThemeSpec::default();
         let mut light_v = ThemeVariant::default();
         light_v.defaults.accent = Some(new_accent);
         let mut dark_v = ThemeVariant::default();
@@ -1922,7 +1954,7 @@ mod overlay_tests {
         let original_bg = st.light.defaults.background;
 
         // Apply overlay changing only accent
-        let mut overlay = NativeTheme::default();
+        let mut overlay = ThemeSpec::default();
         let mut light_v = ThemeVariant::default();
         light_v.defaults.accent = Some(Rgba::rgb(255, 0, 0));
         overlay.light = Some(light_v);
@@ -1942,7 +1974,7 @@ mod overlay_tests {
         let original_light_bg = st.light.defaults.background;
 
         // Empty overlay
-        let overlay = NativeTheme::default();
+        let overlay = ThemeSpec::default();
         let result = st.with_overlay(&overlay).unwrap();
 
         assert_eq!(result.light.defaults.accent, original_light_accent);
@@ -1956,7 +1988,7 @@ mod overlay_tests {
         let red = Rgba::rgb(255, 0, 0);
         let green = Rgba::rgb(0, 255, 0);
 
-        let mut overlay = NativeTheme::default();
+        let mut overlay = ThemeSpec::default();
         let mut light_v = ThemeVariant::default();
         light_v.defaults.accent = Some(red);
         let mut dark_v = ThemeVariant::default();
@@ -1973,7 +2005,7 @@ mod overlay_tests {
     fn test_overlay_font_family() {
         let st = default_system_theme();
 
-        let mut overlay = NativeTheme::default();
+        let mut overlay = ThemeSpec::default();
         let mut light_v = ThemeVariant::default();
         light_v.defaults.font.family = Some("Comic Sans".into());
         overlay.light = Some(light_v);

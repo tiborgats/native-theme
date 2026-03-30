@@ -4,8 +4,11 @@ use serde::{Deserialize, Serialize};
 
 /// Specifies the order of affirmative/cancel buttons in dialogs.
 ///
-/// Different desktop environments place the confirmation button at
-/// different ends of the button row.
+/// This is a **platform convention**, not visual styling. Different desktop
+/// environments place the confirmation button at different ends of the
+/// button row (macOS/KDE: leading, Windows/GNOME: trailing). It is part
+/// of the theme model because "native feel" includes layout conventions
+/// that vary by platform, and it is overridable in theme presets.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DialogButtonOrder {

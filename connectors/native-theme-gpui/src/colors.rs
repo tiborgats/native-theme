@@ -1,4 +1,4 @@
-//! ResolvedTheme -> gpui_component::theme::ThemeColor mapping (108 fields).
+//! ResolvedThemeVariant -> gpui_component::theme::ThemeColor mapping (108 fields).
 //!
 //! Maps native-theme's per-widget resolved fields to gpui-component's 108-field
 //! ThemeColor struct. Direct mappings cover ~40 fields; the remaining ~68 are
@@ -7,7 +7,7 @@
 
 use gpui::Hsla;
 use gpui_component::{Colorize, theme::ThemeColor};
-use native_theme::ResolvedTheme;
+use native_theme::ResolvedThemeVariant;
 
 use crate::derive::{active_color, hover_color};
 
@@ -23,12 +23,12 @@ fn is_dark_background(bg: Hsla) -> bool {
     bg.l < 0.5
 }
 
-/// Build a complete [`ThemeColor`] from a [`ResolvedTheme`].
+/// Build a complete [`ThemeColor`] from a [`ResolvedThemeVariant`].
 ///
-/// Maps all 108 fields: ~40 directly from ResolvedTheme per-widget structs,
+/// Maps all 108 fields: ~40 directly from ResolvedThemeVariant per-widget structs,
 /// the rest derived via shade generation following gpui-component's own
 /// fallback logic.
-pub fn to_theme_color(resolved: &ResolvedTheme) -> ThemeColor {
+pub fn to_theme_color(resolved: &ResolvedThemeVariant) -> ThemeColor {
     let d = &resolved.defaults;
 
     // -- Resolve core colors from defaults --
@@ -234,7 +234,7 @@ fn assign_list_table(
 #[allow(clippy::too_many_arguments)]
 fn assign_tab_sidebar(
     tc: &mut ThemeColor,
-    resolved: &ResolvedTheme,
+    resolved: &ResolvedThemeVariant,
     _bg: Hsla,
     fg: Hsla,
     _surface: Hsla,
@@ -280,7 +280,7 @@ fn assign_charts(tc: &mut ThemeColor, accent: Hsla) {
 #[allow(clippy::too_many_arguments)]
 fn assign_misc(
     tc: &mut ThemeColor,
-    resolved: &ResolvedTheme,
+    resolved: &ResolvedThemeVariant,
     bg: Hsla,
     fg: Hsla,
     accent: Hsla,
@@ -386,11 +386,11 @@ fn assign_base_colors(
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use native_theme::NativeTheme;
+    use native_theme::ThemeSpec;
 
-    /// Create a ResolvedTheme via the preset resolve+validate pipeline.
-    fn test_resolved() -> ResolvedTheme {
-        let nt = NativeTheme::preset("catppuccin-mocha").expect("preset must exist");
+    /// Create a ResolvedThemeVariant via the preset resolve+validate pipeline.
+    fn test_resolved() -> ResolvedThemeVariant {
+        let nt = ThemeSpec::preset("catppuccin-mocha").expect("preset must exist");
         let mut v = nt
             .pick_variant(false)
             .expect("preset must have light variant")

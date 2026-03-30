@@ -9,7 +9,6 @@ use serde::{Deserialize, Serialize};
 #[serde_with::skip_serializing_none]
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
-#[non_exhaustive]
 pub struct IconSizes {
     /// Icon size for toolbar buttons (e.g., 24px).
     pub toolbar: Option<f32>,

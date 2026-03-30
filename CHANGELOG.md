@@ -17,11 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `DialogButtonOrder` enum (TrailingAffirmative / LeadingAffirmative)
 - `ThemeSpacing` struct (xxs through xxl)
 - `define_widget_pair!` macro generating paired Option/Resolved structs from a single definition
-- `ResolvedTheme` type where all fields are guaranteed populated (non-optional)
-- `ResolvedDefaults`, `ResolvedFontSpec`, `ResolvedSpacing`, `ResolvedIconSizes`, `ResolvedTextScale`, `ResolvedTextScaleEntry` types
+- `ResolvedThemeVariant` type where all fields are guaranteed populated (non-optional)
+- `ResolvedThemeDefaults`, `ResolvedFontSpec`, `ResolvedSpacing`, `ResolvedIconSizes`, `ResolvedTextScale`, `ResolvedTextScaleEntry` types
 - `ThemeResolutionError` listing missing field paths; `Error::Resolution` variant
 - `ThemeVariant::resolve()` with ~90 inheritance rules in 4 phases (defaults-internal, safety-nets, widget-from-defaults, widget-to-widget)
-- `ThemeVariant::validate()` producing `ResolvedTheme` or listing all missing fields
+- `ThemeVariant::validate()` producing `ResolvedThemeVariant` or listing all missing fields
 - `SystemTheme` type returned by `from_system()` with `active()`, `pick()`, `with_overlay()`, `with_overlay_toml()`
 - Live platform presets (geometry-only, internal): `kde-breeze-live`, `adwaita-live`, `macos-sonoma-live`, `windows-11-live`
 - `platform_preset_name()` mapping the current OS to its live preset
@@ -35,11 +35,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - `ThemeVariant` composes `ThemeDefaults` + 25 per-widget structs instead of flat `ThemeColors`/`ThemeFonts`/`ThemeGeometry`
-- `from_system()` and `from_system_async()` return `SystemTheme` instead of `NativeTheme`
-- gpui and iced connector `to_theme()` accept `&ResolvedTheme` instead of `&ThemeVariant`
+- `from_system()` and `from_system_async()` return `SystemTheme` instead of `ThemeSpec`
+- gpui and iced connector `to_theme()` accept `&ResolvedThemeVariant` instead of `&ThemeVariant`
 - All 16 preset TOMLs rewritten for per-widget structure; platform presets slimmed to design constants only
 - `impl_merge!` macro extended with `optional_nested` category for per-widget font fields
-- Both gpui and iced showcase examples updated for `SystemTheme` / `ResolvedTheme` API
+- Both gpui and iced showcase examples updated for `SystemTheme` / `ResolvedThemeVariant` API
 
 ### Removed
 
@@ -57,12 +57,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ```rust,ignore
 // Before (v0.4.x)
-let nt: NativeTheme = from_system().unwrap_or_else(|_| NativeTheme::preset("adwaita").unwrap());
+let nt: ThemeSpec = from_system().unwrap_or_else(|_| ThemeSpec::preset("adwaita").unwrap());
 let variant = nt.pick_variant(true).unwrap();
 
 // After (v0.5.0)
 let system: SystemTheme = from_system().unwrap();
-let resolved: &ResolvedTheme = system.active(); // all fields guaranteed
+let resolved: &ResolvedThemeVariant = system.active(); // all fields guaranteed
 ```
 
 **Connectors:**
@@ -201,8 +201,8 @@ let busy = load_icon(IconRole::StatusBusy, "material");
 
 ### Added
 
-- `NativeTheme::pick_variant()` method for selecting the appropriate theme variant with cross-fallback
-- `#[must_use]` annotations on all public API functions and key types (`NativeTheme`, `IconData`)
+- `ThemeSpec::pick_variant()` method for selecting the appropriate theme variant with cross-fallback
+- `#[must_use]` annotations on all public API functions and key types (`ThemeSpec`, `IconData`)
 
 ### Changed
 
@@ -213,7 +213,7 @@ let busy = load_icon(IconRole::StatusBusy, "material");
 
 ### Deprecated
 
-- `pick_variant()` free functions in gpui and iced connectors (use `NativeTheme::pick_variant()` instead)
+- `pick_variant()` free functions in gpui and iced connectors (use `ThemeSpec::pick_variant()` instead)
 
 ### Removed
 
@@ -279,19 +279,19 @@ let busy = load_icon(IconRole::StatusBusy, "material");
 
 - Restructured as Cargo workspace with `native-theme`, `native-theme-iced`, and `native-theme-gpui` crates
 - Flattened `ThemeColors` from nested sub-structs to 36 direct `Option<Rgba>` fields
-- Moved preset API from free functions to `NativeTheme` associated methods (`preset()`, `from_toml()`, `from_file()`, `list_presets()`, `to_toml()`)
+- Moved preset API from free functions to `ThemeSpec` associated methods (`preset()`, `from_toml()`, `from_file()`, `list_presets()`, `to_toml()`)
 - Renamed primary/secondary color fields with prefix (`primary_background`, `primary_foreground`, `secondary_background`, `secondary_foreground`)
 
 ### Removed
 
 - `CoreColors`, `ActionColors`, `StatusColors`, `InteractiveColors`, `PanelColors`, `ComponentColors` nested sub-structs (replaced by flat `ThemeColors`)
-- Free-standing `preset()`, `from_toml()`, `from_file()`, `list_presets()`, `to_toml()` functions (now methods on `NativeTheme`)
+- Free-standing `preset()`, `from_toml()`, `from_file()`, `list_presets()`, `to_toml()` functions (now methods on `ThemeSpec`)
 
 ## [0.1.0] - 2026-03-07
 
 ### Added
 
-- `NativeTheme` data model with 36 semantic color roles, fonts, geometry, and spacing
+- `ThemeSpec` data model with 36 semantic color roles, fonts, geometry, and spacing
 - `Rgba` color type with hex string parsing and serialization
 - `ThemeVariant` composing colors, fonts, geometry, and spacing
 - TOML serialization and deserialization for all theme types

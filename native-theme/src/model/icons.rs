@@ -262,14 +262,17 @@ pub enum IconData {
 /// // Unknown names return None
 /// assert_eq!(IconSet::from_name("unknown"), None);
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "kebab-case")]
 #[non_exhaustive]
 pub enum IconSet {
     /// Apple SF Symbols (macOS, iOS).
     SfSymbols,
     /// Microsoft Segoe Fluent Icons (Windows).
+    #[serde(rename = "segoe-fluent")]
     SegoeIcons,
     /// freedesktop Icon Naming Specification (Linux).
+    #[default]
     Freedesktop,
     /// Google Material Symbols.
     Material,
@@ -358,11 +361,11 @@ pub trait IconProvider: std::fmt::Debug {
 
 impl IconProvider for IconRole {
     fn icon_name(&self, set: IconSet) -> Option<&str> {
-        icon_name(set, *self)
+        icon_name(*self, set)
     }
 
     fn icon_svg(&self, set: IconSet) -> Option<&'static [u8]> {
-        crate::model::bundled::bundled_icon_svg(set, *self)
+        crate::model::bundled::bundled_icon_svg(*self, set)
     }
 }
 
@@ -377,12 +380,12 @@ impl IconProvider for IconRole {
 /// ```
 /// use native_theme::{IconSet, IconRole, icon_name};
 ///
-/// assert_eq!(icon_name(IconSet::SfSymbols, IconRole::ActionCopy), Some("doc.on.doc"));
-/// assert_eq!(icon_name(IconSet::Freedesktop, IconRole::ActionCopy), Some("edit-copy"));
-/// assert_eq!(icon_name(IconSet::SfSymbols, IconRole::FolderOpen), None);
+/// assert_eq!(icon_name(IconRole::ActionCopy, IconSet::SfSymbols), Some("doc.on.doc"));
+/// assert_eq!(icon_name(IconRole::ActionCopy, IconSet::Freedesktop), Some("edit-copy"));
+/// assert_eq!(icon_name(IconRole::FolderOpen, IconSet::SfSymbols), None);
 /// ```
 #[allow(unreachable_patterns)] // wildcard arm kept for #[non_exhaustive] forward compat
-pub fn icon_name(set: IconSet, role: IconRole) -> Option<&'static str> {
+pub fn icon_name(role: IconRole, set: IconSet) -> Option<&'static str> {
     match set {
         IconSet::SfSymbols => sf_symbols_name(role),
         IconSet::SegoeIcons => segoe_name(role),
@@ -449,25 +452,25 @@ pub fn system_icon_set() -> IconSet {
 /// // On macOS: "sf-symbols"
 /// ```
 #[must_use = "this returns the current icon theme name"]
-pub fn system_icon_theme() -> String {
+pub fn system_icon_theme() -> &'static str {
     #[cfg(target_os = "linux")]
     static CACHED_ICON_THEME: OnceLock<String> = OnceLock::new();
 
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     {
-        return "sf-symbols".to_string();
+        return "sf-symbols";
     }
 
     #[cfg(target_os = "windows")]
     {
-        return "segoe-fluent".to_string();
+        return "segoe-fluent";
     }
 
     #[cfg(target_os = "linux")]
     {
         CACHED_ICON_THEME
             .get_or_init(detect_linux_icon_theme)
-            .clone()
+            .as_str()
     }
 
     #[cfg(not(any(
@@ -477,7 +480,7 @@ pub fn system_icon_theme() -> String {
         target_os = "ios"
     )))]
     {
-        "material".to_string()
+        "material"
     }
 }
 
@@ -964,64 +967,108 @@ mod tests {
 
     #[test]
     fn icon_role_all_contains_every_variant() {
-        // Verify specific variants from each category are present
-        let all = &IconRole::ALL;
+        // Exhaustive match — adding a new IconRole variant without adding it
+        // here will cause a compile error (missing match arm). This is valid
+        // within the defining crate despite #[non_exhaustive].
+        use std::collections::HashSet;
+        let all_set: HashSet<IconRole> = IconRole::ALL.iter().copied().collect();
+        let check = |role: IconRole| {
+            assert!(
+                all_set.contains(&role),
+                "IconRole::{role:?} missing from ALL array"
+            );
+        };
 
-        // Dialog (6)
-        assert!(all.contains(&IconRole::DialogWarning));
-        assert!(all.contains(&IconRole::DialogError));
-        assert!(all.contains(&IconRole::DialogInfo));
-        assert!(all.contains(&IconRole::DialogQuestion));
-        assert!(all.contains(&IconRole::DialogSuccess));
-        assert!(all.contains(&IconRole::Shield));
+        // Exhaustive match forces compiler to catch new variants:
+        #[deny(unreachable_patterns)]
+        match IconRole::DialogWarning {
+            IconRole::DialogWarning
+            | IconRole::DialogError
+            | IconRole::DialogInfo
+            | IconRole::DialogQuestion
+            | IconRole::DialogSuccess
+            | IconRole::Shield
+            | IconRole::WindowClose
+            | IconRole::WindowMinimize
+            | IconRole::WindowMaximize
+            | IconRole::WindowRestore
+            | IconRole::ActionSave
+            | IconRole::ActionDelete
+            | IconRole::ActionCopy
+            | IconRole::ActionPaste
+            | IconRole::ActionCut
+            | IconRole::ActionUndo
+            | IconRole::ActionRedo
+            | IconRole::ActionSearch
+            | IconRole::ActionSettings
+            | IconRole::ActionEdit
+            | IconRole::ActionAdd
+            | IconRole::ActionRemove
+            | IconRole::ActionRefresh
+            | IconRole::ActionPrint
+            | IconRole::NavBack
+            | IconRole::NavForward
+            | IconRole::NavUp
+            | IconRole::NavDown
+            | IconRole::NavHome
+            | IconRole::NavMenu
+            | IconRole::FileGeneric
+            | IconRole::FolderClosed
+            | IconRole::FolderOpen
+            | IconRole::TrashEmpty
+            | IconRole::TrashFull
+            | IconRole::StatusBusy
+            | IconRole::StatusCheck
+            | IconRole::StatusError
+            | IconRole::UserAccount
+            | IconRole::Notification
+            | IconRole::Help
+            | IconRole::Lock => {}
+        }
 
-        // Window (4)
-        assert!(all.contains(&IconRole::WindowClose));
-        assert!(all.contains(&IconRole::WindowMinimize));
-        assert!(all.contains(&IconRole::WindowMaximize));
-        assert!(all.contains(&IconRole::WindowRestore));
-
-        // Action (14)
-        assert!(all.contains(&IconRole::ActionSave));
-        assert!(all.contains(&IconRole::ActionDelete));
-        assert!(all.contains(&IconRole::ActionCopy));
-        assert!(all.contains(&IconRole::ActionPaste));
-        assert!(all.contains(&IconRole::ActionCut));
-        assert!(all.contains(&IconRole::ActionUndo));
-        assert!(all.contains(&IconRole::ActionRedo));
-        assert!(all.contains(&IconRole::ActionSearch));
-        assert!(all.contains(&IconRole::ActionSettings));
-        assert!(all.contains(&IconRole::ActionEdit));
-        assert!(all.contains(&IconRole::ActionAdd));
-        assert!(all.contains(&IconRole::ActionRemove));
-        assert!(all.contains(&IconRole::ActionRefresh));
-        assert!(all.contains(&IconRole::ActionPrint));
-
-        // Navigation (6)
-        assert!(all.contains(&IconRole::NavBack));
-        assert!(all.contains(&IconRole::NavForward));
-        assert!(all.contains(&IconRole::NavUp));
-        assert!(all.contains(&IconRole::NavDown));
-        assert!(all.contains(&IconRole::NavHome));
-        assert!(all.contains(&IconRole::NavMenu));
-
-        // Files (5)
-        assert!(all.contains(&IconRole::FileGeneric));
-        assert!(all.contains(&IconRole::FolderClosed));
-        assert!(all.contains(&IconRole::FolderOpen));
-        assert!(all.contains(&IconRole::TrashEmpty));
-        assert!(all.contains(&IconRole::TrashFull));
-
-        // Status (3)
-        assert!(all.contains(&IconRole::StatusBusy));
-        assert!(all.contains(&IconRole::StatusCheck));
-        assert!(all.contains(&IconRole::StatusError));
-
-        // System (4)
-        assert!(all.contains(&IconRole::UserAccount));
-        assert!(all.contains(&IconRole::Notification));
-        assert!(all.contains(&IconRole::Help));
-        assert!(all.contains(&IconRole::Lock));
+        // Verify each variant is in ALL:
+        check(IconRole::DialogWarning);
+        check(IconRole::DialogError);
+        check(IconRole::DialogInfo);
+        check(IconRole::DialogQuestion);
+        check(IconRole::DialogSuccess);
+        check(IconRole::Shield);
+        check(IconRole::WindowClose);
+        check(IconRole::WindowMinimize);
+        check(IconRole::WindowMaximize);
+        check(IconRole::WindowRestore);
+        check(IconRole::ActionSave);
+        check(IconRole::ActionDelete);
+        check(IconRole::ActionCopy);
+        check(IconRole::ActionPaste);
+        check(IconRole::ActionCut);
+        check(IconRole::ActionUndo);
+        check(IconRole::ActionRedo);
+        check(IconRole::ActionSearch);
+        check(IconRole::ActionSettings);
+        check(IconRole::ActionEdit);
+        check(IconRole::ActionAdd);
+        check(IconRole::ActionRemove);
+        check(IconRole::ActionRefresh);
+        check(IconRole::ActionPrint);
+        check(IconRole::NavBack);
+        check(IconRole::NavForward);
+        check(IconRole::NavUp);
+        check(IconRole::NavDown);
+        check(IconRole::NavHome);
+        check(IconRole::NavMenu);
+        check(IconRole::FileGeneric);
+        check(IconRole::FolderClosed);
+        check(IconRole::FolderOpen);
+        check(IconRole::TrashEmpty);
+        check(IconRole::TrashFull);
+        check(IconRole::StatusBusy);
+        check(IconRole::StatusCheck);
+        check(IconRole::StatusError);
+        check(IconRole::UserAccount);
+        check(IconRole::Notification);
+        check(IconRole::Help);
+        check(IconRole::Lock);
     }
 
     #[test]
@@ -1239,7 +1286,7 @@ mod tests {
     #[test]
     fn icon_name_sf_symbols_action_copy() {
         assert_eq!(
-            icon_name(IconSet::SfSymbols, IconRole::ActionCopy),
+            icon_name(IconRole::ActionCopy, IconSet::SfSymbols),
             Some("doc.on.doc")
         );
     }
@@ -1247,7 +1294,7 @@ mod tests {
     #[test]
     fn icon_name_segoe_action_copy() {
         assert_eq!(
-            icon_name(IconSet::SegoeIcons, IconRole::ActionCopy),
+            icon_name(IconRole::ActionCopy, IconSet::SegoeIcons),
             Some("Copy")
         );
     }
@@ -1255,7 +1302,7 @@ mod tests {
     #[test]
     fn icon_name_freedesktop_action_copy() {
         assert_eq!(
-            icon_name(IconSet::Freedesktop, IconRole::ActionCopy),
+            icon_name(IconRole::ActionCopy, IconSet::Freedesktop),
             Some("edit-copy")
         );
     }
@@ -1263,7 +1310,7 @@ mod tests {
     #[test]
     fn icon_name_material_action_copy() {
         assert_eq!(
-            icon_name(IconSet::Material, IconRole::ActionCopy),
+            icon_name(IconRole::ActionCopy, IconSet::Material),
             Some("content_copy")
         );
     }
@@ -1271,7 +1318,7 @@ mod tests {
     #[test]
     fn icon_name_lucide_action_copy() {
         assert_eq!(
-            icon_name(IconSet::Lucide, IconRole::ActionCopy),
+            icon_name(IconRole::ActionCopy, IconSet::Lucide),
             Some("copy")
         );
     }
@@ -1279,7 +1326,7 @@ mod tests {
     #[test]
     fn icon_name_sf_symbols_dialog_warning() {
         assert_eq!(
-            icon_name(IconSet::SfSymbols, IconRole::DialogWarning),
+            icon_name(IconRole::DialogWarning, IconSet::SfSymbols),
             Some("exclamationmark.triangle.fill")
         );
     }
@@ -1287,26 +1334,26 @@ mod tests {
     // None cases for known gaps
     #[test]
     fn icon_name_sf_symbols_folder_open_is_none() {
-        assert_eq!(icon_name(IconSet::SfSymbols, IconRole::FolderOpen), None);
+        assert_eq!(icon_name(IconRole::FolderOpen, IconSet::SfSymbols), None);
     }
 
     #[test]
     fn icon_name_sf_symbols_trash_full() {
         assert_eq!(
-            icon_name(IconSet::SfSymbols, IconRole::TrashFull),
+            icon_name(IconRole::TrashFull, IconSet::SfSymbols),
             Some("trash.fill")
         );
     }
 
     #[test]
     fn icon_name_sf_symbols_status_busy_is_none() {
-        assert_eq!(icon_name(IconSet::SfSymbols, IconRole::StatusBusy), None);
+        assert_eq!(icon_name(IconRole::StatusBusy, IconSet::SfSymbols), None);
     }
 
     #[test]
     fn icon_name_sf_symbols_window_restore() {
         assert_eq!(
-            icon_name(IconSet::SfSymbols, IconRole::WindowRestore),
+            icon_name(IconRole::WindowRestore, IconSet::SfSymbols),
             Some("arrow.down.right.and.arrow.up.left")
         );
     }
@@ -1314,20 +1361,20 @@ mod tests {
     #[test]
     fn icon_name_segoe_dialog_success() {
         assert_eq!(
-            icon_name(IconSet::SegoeIcons, IconRole::DialogSuccess),
+            icon_name(IconRole::DialogSuccess, IconSet::SegoeIcons),
             Some("CheckMark")
         );
     }
 
     #[test]
     fn icon_name_segoe_status_busy_is_none() {
-        assert_eq!(icon_name(IconSet::SegoeIcons, IconRole::StatusBusy), None);
+        assert_eq!(icon_name(IconRole::StatusBusy, IconSet::SegoeIcons), None);
     }
 
     #[test]
     fn icon_name_freedesktop_notification() {
         assert_eq!(
-            icon_name(IconSet::Freedesktop, IconRole::Notification),
+            icon_name(IconRole::Notification, IconSet::Freedesktop),
             Some("notification-active")
         );
     }
@@ -1335,7 +1382,7 @@ mod tests {
     #[test]
     fn icon_name_material_trash_full() {
         assert_eq!(
-            icon_name(IconSet::Material, IconRole::TrashFull),
+            icon_name(IconRole::TrashFull, IconSet::Material),
             Some("delete")
         );
     }
@@ -1343,7 +1390,7 @@ mod tests {
     #[test]
     fn icon_name_lucide_trash_full() {
         assert_eq!(
-            icon_name(IconSet::Lucide, IconRole::TrashFull),
+            icon_name(IconRole::TrashFull, IconSet::Lucide),
             Some("trash-2")
         );
     }
@@ -1352,23 +1399,23 @@ mod tests {
     #[test]
     fn icon_name_spot_check_dialog_error() {
         assert_eq!(
-            icon_name(IconSet::SfSymbols, IconRole::DialogError),
+            icon_name(IconRole::DialogError, IconSet::SfSymbols),
             Some("xmark.circle.fill")
         );
         assert_eq!(
-            icon_name(IconSet::SegoeIcons, IconRole::DialogError),
+            icon_name(IconRole::DialogError, IconSet::SegoeIcons),
             Some("SIID_ERROR")
         );
         assert_eq!(
-            icon_name(IconSet::Freedesktop, IconRole::DialogError),
+            icon_name(IconRole::DialogError, IconSet::Freedesktop),
             Some("dialog-error")
         );
         assert_eq!(
-            icon_name(IconSet::Material, IconRole::DialogError),
+            icon_name(IconRole::DialogError, IconSet::Material),
             Some("error")
         );
         assert_eq!(
-            icon_name(IconSet::Lucide, IconRole::DialogError),
+            icon_name(IconRole::DialogError, IconSet::Lucide),
             Some("circle-x")
         );
     }
@@ -1376,22 +1423,22 @@ mod tests {
     #[test]
     fn icon_name_spot_check_nav_home() {
         assert_eq!(
-            icon_name(IconSet::SfSymbols, IconRole::NavHome),
+            icon_name(IconRole::NavHome, IconSet::SfSymbols),
             Some("house")
         );
         assert_eq!(
-            icon_name(IconSet::SegoeIcons, IconRole::NavHome),
+            icon_name(IconRole::NavHome, IconSet::SegoeIcons),
             Some("Home")
         );
         assert_eq!(
-            icon_name(IconSet::Freedesktop, IconRole::NavHome),
+            icon_name(IconRole::NavHome, IconSet::Freedesktop),
             Some("go-home")
         );
         assert_eq!(
-            icon_name(IconSet::Material, IconRole::NavHome),
+            icon_name(IconRole::NavHome, IconSet::Material),
             Some("home")
         );
-        assert_eq!(icon_name(IconSet::Lucide, IconRole::NavHome), Some("house"));
+        assert_eq!(icon_name(IconRole::NavHome, IconSet::Lucide), Some("house"));
     }
 
     // Count test: verify expected Some/None count for each icon set
@@ -1400,7 +1447,7 @@ mod tests {
         // SF Symbols: 42 - 2 None (FolderOpen, StatusBusy) = 40 Some
         let some_count = IconRole::ALL
             .iter()
-            .filter(|r| icon_name(IconSet::SfSymbols, **r).is_some())
+            .filter(|r| icon_name(**r, IconSet::SfSymbols).is_some())
             .count();
         assert_eq!(some_count, 40, "SF Symbols should have 40 mappings");
     }
@@ -1410,7 +1457,7 @@ mod tests {
         // Segoe: 42 - 1 None (StatusBusy) = 41 Some
         let some_count = IconRole::ALL
             .iter()
-            .filter(|r| icon_name(IconSet::SegoeIcons, **r).is_some())
+            .filter(|r| icon_name(**r, IconSet::SegoeIcons).is_some())
             .count();
         assert_eq!(some_count, 41, "Segoe Icons should have 41 mappings");
     }
@@ -1420,7 +1467,7 @@ mod tests {
         // Freedesktop: all 42 roles mapped
         let some_count = IconRole::ALL
             .iter()
-            .filter(|r| icon_name(IconSet::Freedesktop, **r).is_some())
+            .filter(|r| icon_name(**r, IconSet::Freedesktop).is_some())
             .count();
         assert_eq!(some_count, 42, "Freedesktop should have 42 mappings");
     }
@@ -1430,7 +1477,7 @@ mod tests {
         // Material: all 42 roles mapped
         let some_count = IconRole::ALL
             .iter()
-            .filter(|r| icon_name(IconSet::Material, **r).is_some())
+            .filter(|r| icon_name(**r, IconSet::Material).is_some())
             .count();
         assert_eq!(some_count, 42, "Material should have 42 mappings");
     }
@@ -1440,7 +1487,7 @@ mod tests {
         // Lucide: all 42 roles mapped
         let some_count = IconRole::ALL
             .iter()
-            .filter(|r| icon_name(IconSet::Lucide, **r).is_some())
+            .filter(|r| icon_name(**r, IconSet::Lucide).is_some())
             .count();
         assert_eq!(some_count, 42, "Lucide should have 42 mappings");
     }
@@ -1550,7 +1597,7 @@ mod tests {
         for &set in &system_sets {
             for role in IconRole::ALL {
                 let is_known_gap = gaps.contains(&(set, role));
-                let is_mapped = icon_name(set, role).is_some();
+                let is_mapped = icon_name(role, set).is_some();
                 if !is_known_gap {
                     assert!(
                         is_mapped,

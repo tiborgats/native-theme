@@ -3,7 +3,7 @@
 [iced](https://iced.rs/) toolkit connector for
 [native-theme](https://crates.io/crates/native-theme).
 
-Maps [`native_theme::ResolvedTheme`](https://docs.rs/native-theme) data to
+Maps [`native_theme::ResolvedThemeVariant`](https://docs.rs/native-theme) data to
 iced's theming system, producing a fully configured `iced::Theme` with correct
 colors for all built-in widget styles via iced's Catalog system.
 
@@ -20,11 +20,11 @@ native-theme-iced = "0.5"
 Then create an iced theme from any native-theme preset:
 
 ```rust,ignore
-use native_theme::NativeTheme;
+use native_theme::ThemeSpec;
 use native_theme_iced::to_theme;
 
 // Load a preset and resolve it
-let nt = NativeTheme::preset("dracula").unwrap();
+let nt = ThemeSpec::preset("dracula").unwrap();
 let is_dark = true;
 if let Some(variant) = nt.pick_variant(is_dark) {
     let mut v = variant.clone();
@@ -38,7 +38,7 @@ if let Some(variant) = nt.pick_variant(is_dark) {
 Or read the OS theme at runtime:
 
 ```rust,ignore
-use native_theme::from_system;
+use native_theme::SystemTheme::from_system;
 use native_theme_iced::to_theme;
 
 let system = from_system().unwrap();
@@ -60,7 +60,7 @@ per-widget rather than through the Catalog:
 - `mono_font_family(resolved)` -- monospace font family name
 - `mono_font_size(resolved)` -- monospace font size in pixels
 
-All helpers take a `&ResolvedTheme` reference.
+All helpers take a `&ResolvedThemeVariant` reference.
 
 ## Modules
 

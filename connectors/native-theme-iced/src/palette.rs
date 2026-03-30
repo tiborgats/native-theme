@@ -1,4 +1,4 @@
-//! Maps [`native_theme::ResolvedTheme`] colors to an [`iced_core::theme::Palette`].
+//! Maps [`native_theme::ResolvedThemeVariant`] colors to an [`iced_core::theme::Palette`].
 //!
 //! The palette has 6 fields: background, text, primary, success, warning, danger.
 //! Each is mapped directly from the corresponding resolved theme color -- no
@@ -12,7 +12,7 @@ pub(crate) fn to_color(rgba: Rgba) -> iced_core::Color {
     iced_core::Color { r, g, b, a }
 }
 
-/// Build an iced [`iced_core::theme::Palette`] from a [`native_theme::ResolvedTheme`].
+/// Build an iced [`iced_core::theme::Palette`] from a [`native_theme::ResolvedThemeVariant`].
 ///
 /// Maps the 6 palette fields directly from resolved defaults:
 /// - `background` <- `resolved.defaults.background`
@@ -21,7 +21,7 @@ pub(crate) fn to_color(rgba: Rgba) -> iced_core::Color {
 /// - `success` <- `resolved.defaults.success`
 /// - `warning` <- `resolved.defaults.warning`
 /// - `danger` <- `resolved.defaults.danger`
-pub fn to_palette(resolved: &native_theme::ResolvedTheme) -> iced_core::theme::Palette {
+pub fn to_palette(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::theme::Palette {
     let d = &resolved.defaults;
 
     iced_core::theme::Palette {
@@ -38,7 +38,7 @@ pub fn to_palette(resolved: &native_theme::ResolvedTheme) -> iced_core::theme::P
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use native_theme::NativeTheme;
+    use native_theme::ThemeSpec;
 
     // Helper to compare iced_core::Color fields with tolerance
     fn color_approx_eq(a: iced_core::Color, b: iced_core::Color) -> bool {
@@ -68,7 +68,7 @@ mod tests {
 
     #[test]
     fn to_palette_maps_all_fields_from_resolved() {
-        let nt = NativeTheme::preset("catppuccin-mocha").unwrap();
+        let nt = ThemeSpec::preset("catppuccin-mocha").unwrap();
         let mut variant = nt.pick_variant(false).unwrap().clone();
         variant.resolve();
         let resolved = variant.validate().unwrap();
@@ -89,7 +89,7 @@ mod tests {
 
     #[test]
     fn to_palette_dark_variant_has_dark_background() {
-        let nt = NativeTheme::preset("catppuccin-mocha").unwrap();
+        let nt = ThemeSpec::preset("catppuccin-mocha").unwrap();
         let mut variant = nt.pick_variant(true).unwrap().clone();
         variant.resolve();
         let resolved = variant.validate().unwrap();

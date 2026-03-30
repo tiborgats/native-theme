@@ -22,12 +22,12 @@ use super::icons::{IconRole, IconSet};
 /// use native_theme::{IconSet, IconRole, bundled_icon_svg};
 ///
 /// // Without features enabled, bundled icons return None
-/// let result = bundled_icon_svg(IconSet::SfSymbols, IconRole::ActionCopy);
+/// let result = bundled_icon_svg(IconRole::ActionCopy, IconSet::SfSymbols);
 /// assert!(result.is_none());
 /// ```
 #[must_use = "this returns SVG bytes; it does not render the icon"]
 #[allow(unreachable_patterns, unused_variables)]
-pub fn bundled_icon_svg(set: IconSet, role: IconRole) -> Option<&'static [u8]> {
+pub fn bundled_icon_svg(role: IconRole, set: IconSet) -> Option<&'static [u8]> {
     match set {
         #[cfg(feature = "material-icons")]
         IconSet::Material => material_svg(role),
@@ -182,12 +182,12 @@ fn lucide_svg(role: IconRole) -> Option<&'static [u8]> {
 /// use native_theme::{IconSet, bundled_icon_by_name};
 ///
 /// // Without features enabled, bundled icons return None
-/// let result = bundled_icon_by_name(IconSet::SfSymbols, "check");
+/// let result = bundled_icon_by_name("check", IconSet::SfSymbols);
 /// assert!(result.is_none());
 /// ```
 #[must_use = "this returns SVG bytes; it does not render the icon"]
 #[allow(unreachable_patterns, unused_variables)]
-pub fn bundled_icon_by_name(set: IconSet, name: &str) -> Option<&'static [u8]> {
+pub fn bundled_icon_by_name(name: &str, set: IconSet) -> Option<&'static [u8]> {
     match set {
         #[cfg(feature = "material-icons")]
         IconSet::Material => material_svg_by_name(name),
@@ -401,7 +401,7 @@ mod tests {
     #[cfg(feature = "material-icons")]
     fn material_icons_cover_all_roles() {
         for role in IconRole::ALL {
-            let svg = bundled_icon_svg(IconSet::Material, role);
+            let svg = bundled_icon_svg(role, IconSet::Material);
             assert!(svg.is_some(), "Material icons missing SVG for {:?}", role);
             let bytes = svg.unwrap();
             let content = std::str::from_utf8(bytes).expect("SVG should be valid UTF-8");
@@ -418,7 +418,7 @@ mod tests {
     fn material_icons_total_size_under_200kb() {
         let total: usize = IconRole::ALL
             .iter()
-            .filter_map(|role| bundled_icon_svg(IconSet::Material, *role))
+            .filter_map(|role| bundled_icon_svg(*role, IconSet::Material))
             .map(|svg| svg.len())
             .sum();
         assert!(
@@ -434,7 +434,7 @@ mod tests {
     #[cfg(feature = "lucide-icons")]
     fn lucide_icons_cover_all_roles() {
         for role in IconRole::ALL {
-            let svg = bundled_icon_svg(IconSet::Lucide, role);
+            let svg = bundled_icon_svg(role, IconSet::Lucide);
             assert!(svg.is_some(), "Lucide icons missing SVG for {:?}", role);
             let bytes = svg.unwrap();
             let content = std::str::from_utf8(bytes).expect("SVG should be valid UTF-8");
@@ -451,7 +451,7 @@ mod tests {
     fn lucide_icons_total_size_under_100kb() {
         let total: usize = IconRole::ALL
             .iter()
-            .filter_map(|role| bundled_icon_svg(IconSet::Lucide, *role))
+            .filter_map(|role| bundled_icon_svg(*role, IconSet::Lucide))
             .map(|svg| svg.len())
             .sum();
         assert!(
@@ -466,15 +466,15 @@ mod tests {
     #[test]
     fn non_bundled_sets_return_none() {
         assert!(
-            bundled_icon_svg(IconSet::SfSymbols, IconRole::ActionCopy).is_none(),
+            bundled_icon_svg(IconRole::ActionCopy, IconSet::SfSymbols).is_none(),
             "SfSymbols should not be a bundled set"
         );
         assert!(
-            bundled_icon_svg(IconSet::Freedesktop, IconRole::ActionCopy).is_none(),
+            bundled_icon_svg(IconRole::ActionCopy, IconSet::Freedesktop).is_none(),
             "Freedesktop should not be a bundled set"
         );
         assert!(
-            bundled_icon_svg(IconSet::SegoeIcons, IconRole::ActionCopy).is_none(),
+            bundled_icon_svg(IconRole::ActionCopy, IconSet::SegoeIcons).is_none(),
             "SegoeIcons should not be a bundled set"
         );
     }
@@ -573,7 +573,7 @@ mod tests {
             "window-restore",
         ];
         for name in names {
-            let svg = bundled_icon_by_name(IconSet::Lucide, name);
+            let svg = bundled_icon_by_name(name, IconSet::Lucide);
             assert!(svg.is_some(), "Lucide by-name missing: {}", name);
             let bytes = svg.unwrap();
             let content = std::str::from_utf8(bytes).expect("SVG should be valid UTF-8");
@@ -667,7 +667,7 @@ mod tests {
             "close_fullscreen",
         ];
         for name in names {
-            let svg = bundled_icon_by_name(IconSet::Material, name);
+            let svg = bundled_icon_by_name(name, IconSet::Material);
             assert!(svg.is_some(), "Material by-name missing: {}", name);
             let bytes = svg.unwrap();
             let content = std::str::from_utf8(bytes).expect("SVG should be valid UTF-8");
@@ -681,14 +681,14 @@ mod tests {
 
     #[test]
     fn by_name_non_bundled_sets_return_none() {
-        assert!(bundled_icon_by_name(IconSet::SfSymbols, "check").is_none());
-        assert!(bundled_icon_by_name(IconSet::Freedesktop, "check").is_none());
-        assert!(bundled_icon_by_name(IconSet::SegoeIcons, "check").is_none());
+        assert!(bundled_icon_by_name("check", IconSet::SfSymbols).is_none());
+        assert!(bundled_icon_by_name("check", IconSet::Freedesktop).is_none());
+        assert!(bundled_icon_by_name("check", IconSet::SegoeIcons).is_none());
     }
 
     #[test]
     fn by_name_unknown_name_returns_none() {
-        assert!(bundled_icon_by_name(IconSet::Lucide, "nonexistent-icon-xyz").is_none());
-        assert!(bundled_icon_by_name(IconSet::Material, "nonexistent_icon_xyz").is_none());
+        assert!(bundled_icon_by_name("nonexistent-icon-xyz", IconSet::Lucide).is_none());
+        assert!(bundled_icon_by_name("nonexistent_icon_xyz", IconSet::Material).is_none());
     }
 }

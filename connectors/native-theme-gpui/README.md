@@ -3,7 +3,7 @@
 [gpui](https://gpui.rs/) + [gpui-component](https://crates.io/crates/gpui-component)
 toolkit connector for [native-theme](https://crates.io/crates/native-theme).
 
-Maps [`native_theme::ResolvedTheme`](https://docs.rs/native-theme) data to
+Maps [`native_theme::ResolvedThemeVariant`](https://docs.rs/native-theme) data to
 gpui-component's theming system, producing a fully configured `Theme` with
 correct colors, fonts, geometry, and icons for all gpui-component widgets.
 
@@ -20,11 +20,11 @@ native-theme-gpui = "0.5"
 Then create a gpui-component theme from any native-theme preset:
 
 ```rust,ignore
-use native_theme::NativeTheme;
+use native_theme::ThemeSpec;
 use native_theme_gpui::to_theme;
 
 // Load a preset and resolve it
-let nt = NativeTheme::preset("dracula").unwrap();
+let nt = ThemeSpec::preset("dracula").unwrap();
 let is_dark = true;
 if let Some(variant) = nt.pick_variant(is_dark) {
     let mut v = variant.clone();
@@ -38,7 +38,7 @@ if let Some(variant) = nt.pick_variant(is_dark) {
 Or read the OS theme at runtime:
 
 ```rust,ignore
-use native_theme::from_system;
+use native_theme::SystemTheme::from_system;
 use native_theme_gpui::to_theme;
 
 let system = from_system().unwrap();

@@ -13,7 +13,10 @@ use resvg::usvg;
 /// (preserving aspect ratio), and renders to a pixel buffer with straight
 /// (non-premultiplied) alpha.
 ///
-/// Returns `None` if the SVG cannot be parsed or the size is zero.
+/// # Errors
+///
+/// Returns [`crate::Error::Format`] if the SVG cannot be parsed, or
+/// [`crate::Error::Unavailable`] if the size is zero or pixmap allocation fails.
 ///
 /// # Examples
 ///
@@ -25,17 +28,18 @@ use resvg::usvg;
 ///
 /// let svg = b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10'/></svg>";
 /// let result = rasterize_svg(svg, 24);
-/// assert!(result.is_some());
-/// if let Some(IconData::Rgba { width, height, data }) = result {
+/// assert!(result.is_ok());
+/// if let Ok(IconData::Rgba { width, height, data }) = result {
 ///     assert_eq!(width, 24);
 ///     assert_eq!(height, 24);
 ///     assert_eq!(data.len(), 24 * 24 * 4);
 /// }
 /// # }
 /// ```
-pub fn rasterize_svg(svg_bytes: &[u8], size: u32) -> Option<IconData> {
+pub fn rasterize_svg(svg_bytes: &[u8], size: u32) -> crate::Result<IconData> {
     let options = usvg::Options::default();
-    let tree = usvg::Tree::from_data(svg_bytes, &options).ok()?;
+    let tree = usvg::Tree::from_data(svg_bytes, &options)
+        .map_err(|e| crate::Error::Format(format!("SVG parse error: {e}")))?;
 
     let original_size = tree.size();
     let scale_x = size as f32 / original_size.width();
@@ -48,7 +52,8 @@ pub fn rasterize_svg(svg_bytes: &[u8], size: u32) -> Option<IconData> {
     let offset_x = (size as f32 - scaled_w) / 2.0;
     let offset_y = (size as f32 - scaled_h) / 2.0;
 
-    let mut pixmap = tiny_skia::Pixmap::new(size, size)?;
+    let mut pixmap = tiny_skia::Pixmap::new(size, size)
+        .ok_or_else(|| crate::Error::Unavailable(format!("failed to allocate {size}x{size} pixmap")))?;
     let transform =
         tiny_skia::Transform::from_translate(offset_x, offset_y).post_scale(scale, scale);
     resvg::render(&tree, transform, &mut pixmap.as_mut());
@@ -57,7 +62,7 @@ pub fn rasterize_svg(svg_bytes: &[u8], size: u32) -> Option<IconData> {
     let mut data = pixmap.take();
     unpremultiply_alpha(&mut data);
 
-    Some(IconData::Rgba {
+    Ok(IconData::Rgba {
         width: size,
         height: size,
         data,
@@ -88,7 +93,7 @@ mod tests {
     #[test]
     fn rasterize_valid_svg_returns_rgba() {
         let result = rasterize_svg(VALID_SVG, 24);
-        assert!(result.is_some(), "valid SVG should produce Some");
+        assert!(result.is_ok(), "valid SVG should produce Ok");
         match result.unwrap() {
             IconData::Rgba {
                 width,
@@ -104,9 +109,9 @@ mod tests {
     }
 
     #[test]
-    fn rasterize_invalid_svg_returns_none() {
+    fn rasterize_invalid_svg_returns_err() {
         let result = rasterize_svg(b"not svg", 24);
-        assert!(result.is_none(), "invalid SVG should return None");
+        assert!(result.is_err(), "invalid SVG should return Err");
     }
 
     #[test]
@@ -156,8 +161,8 @@ mod tests {
     }
 
     #[test]
-    fn rasterize_zero_size_returns_none() {
+    fn rasterize_zero_size_returns_err() {
         let result = rasterize_svg(VALID_SVG, 0);
-        assert!(result.is_none(), "zero size should return None");
+        assert!(result.is_err(), "zero size should return Err");
     }
 }
