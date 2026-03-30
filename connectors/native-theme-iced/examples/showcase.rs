@@ -22,7 +22,7 @@ use native_theme::{
     prefers_reduced_motion,
 };
 use native_theme_iced::icons::{
-    animated_frames_to_svg_handles, spin_rotation_radians, to_svg_handle, AnimatedSvgHandles,
+    AnimatedSvgHandles, animated_frames_to_svg_handles, spin_rotation_radians, to_svg_handle,
 };
 use std::sync::OnceLock;
 use std::time::{Duration, Instant};
@@ -391,13 +391,13 @@ fn load_all_icons(set: IconSet) -> Vec<LoadedIcon> {
 fn build_animation_caches(
     icon_set: native_theme::IconSet,
 ) -> (
-    Vec<(String, AnimatedSvgHandles)>, // animated_frames
-    Vec<usize>,                                      // animated_frame_indices
-    Vec<Duration>,                                   // animated_frame_elapsed
-    Vec<(String, iced_core::svg::Handle, u32)>,      // animated_spins
-    Instant,                                         // animation_start
-    bool,                                            // reduced_motion
-    Vec<(String, iced_core::svg::Handle)>,           // animated_static
+    Vec<(String, AnimatedSvgHandles)>,          // animated_frames
+    Vec<usize>,                                 // animated_frame_indices
+    Vec<Duration>,                              // animated_frame_elapsed
+    Vec<(String, iced_core::svg::Handle, u32)>, // animated_spins
+    Instant,                                    // animation_start
+    bool,                                       // reduced_motion
+    Vec<(String, iced_core::svg::Handle)>,      // animated_static
 ) {
     let mut animated_frames = Vec::new();
     let mut animated_spins = Vec::new();
@@ -744,8 +744,7 @@ impl State {
         }
 
         // Sync icon set to the theme's preferred icon theme
-        let new_icon_choice =
-            IconSetChoice::from_icon_theme(&self.current_resolved.icon_theme);
+        let new_icon_choice = IconSetChoice::from_icon_theme(&self.current_resolved.icon_theme);
         if new_icon_choice != self.icon_set_choice {
             self.loaded_icons = load_all_icons(new_icon_choice.icon_set());
             let (af, afi, afe, asp, astart, rm, ast) =
@@ -1094,8 +1093,7 @@ fn update_inner(state: &mut State, message: Message) {
             state.loaded_icons = load_all_icons(choice.icon_set());
 
             // Rebuild animation caches when icon set changes
-            let (af, afi, afe, asp, astart, rm, ast) =
-                build_animation_caches(choice.icon_set());
+            let (af, afi, afe, asp, astart, rm, ast) = build_animation_caches(choice.icon_set());
             state.icon_set_choice = choice;
             state.animated_frames = af;
             state.animated_frame_indices = afi;
@@ -1408,9 +1406,8 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
     let radius = native_theme_iced::border_radius(&state.current_resolved);
     let radius_s = format!("{radius:.0}px");
 
-    let apply_pad = |b: button::Button<'a, Message>| -> button::Button<'a, Message> {
-        b.padding(btn_pad)
-    };
+    let apply_pad =
+        |b: button::Button<'a, Message>| -> button::Button<'a, Message> { b.padding(btn_pad) };
 
     let header = section_header(
         "Buttons",
@@ -2325,8 +2322,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
         }
     } else {
         // Frame-based animations
-        for (i, (set_name, anim_handles)) in state.animated_frames.iter().enumerate()
-        {
+        for (i, (set_name, anim_handles)) in state.animated_frames.iter().enumerate() {
             let frame_idx = state.animated_frame_indices[i];
             let icon = svg(anim_handles.handles[frame_idx].clone())
                 .width(Length::Fixed(32.0))

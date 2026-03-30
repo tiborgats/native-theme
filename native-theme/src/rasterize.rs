@@ -52,8 +52,9 @@ pub fn rasterize_svg(svg_bytes: &[u8], size: u32) -> crate::Result<IconData> {
     let offset_x = (size as f32 - scaled_w) / 2.0;
     let offset_y = (size as f32 - scaled_h) / 2.0;
 
-    let mut pixmap = tiny_skia::Pixmap::new(size, size)
-        .ok_or_else(|| crate::Error::Unavailable(format!("failed to allocate {size}x{size} pixmap")))?;
+    let mut pixmap = tiny_skia::Pixmap::new(size, size).ok_or_else(|| {
+        crate::Error::Unavailable(format!("failed to allocate {size}x{size} pixmap"))
+    })?;
     let transform =
         tiny_skia::Transform::from_translate(offset_x, offset_y).post_scale(scale, scale);
     resvg::render(&tree, transform, &mut pixmap.as_mut());

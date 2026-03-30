@@ -2,8 +2,8 @@
 
 use crate::error::ThemeResolutionError;
 use crate::model::resolved::{
-    ResolvedThemeDefaults, ResolvedIconSizes, ResolvedSpacing, ResolvedTextScale,
-    ResolvedTextScaleEntry, ResolvedThemeVariant,
+    ResolvedIconSizes, ResolvedSpacing, ResolvedTextScale, ResolvedTextScaleEntry,
+    ResolvedThemeDefaults, ResolvedThemeVariant,
 };
 use crate::model::{FontSpec, ResolvedFontSpec, TextScaleEntry, ThemeVariant};
 
@@ -153,18 +153,12 @@ impl ThemeVariant {
 
         // Phase 5: icon_set fallback — fill from system default if not set
         if self.icon_set.is_none() {
-            self.icon_set = Some(
-                crate::model::icons::system_icon_set()
-                    .name()
-                    .to_string(),
-            );
+            self.icon_set = Some(crate::model::icons::system_icon_set().name().to_string());
         }
 
         // Phase 6: icon_theme fallback — fill from system icon theme if not set
         if self.icon_theme.is_none() {
-            self.icon_theme = Some(
-                crate::model::icons::system_icon_theme().to_string(),
-            );
+            self.icon_theme = Some(crate::model::icons::system_icon_theme().to_string());
         }
     }
 

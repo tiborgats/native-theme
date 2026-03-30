@@ -189,9 +189,7 @@ pub(crate) fn validate_theme_overlap(config: &MasterConfig) -> Vec<BuildError> {
         .system_themes
         .iter()
         .filter(|t| bundled.contains(t.as_str()))
-        .map(|t| BuildError::ThemeOverlap {
-            theme: t.clone(),
-        })
+        .map(|t| BuildError::ThemeOverlap { theme: t.clone() })
         .collect()
 }
 
@@ -663,7 +661,10 @@ mod tests {
         let errors = validate_theme_overlap(&config);
         assert_eq!(errors.len(), 1);
         let msg = errors[0].to_string();
-        assert!(msg.contains("material"), "should mention the overlapping theme");
+        assert!(
+            msg.contains("material"),
+            "should mention the overlapping theme"
+        );
         assert!(
             msg.contains("bundled-themes") && msg.contains("system-themes"),
             "should mention both lists"
@@ -695,7 +696,10 @@ mod tests {
     fn identifiers_valid() {
         let config = make_config("app-icon", &["play-pause", "skip-forward"], &[], &[]);
         let errors = validate_identifiers(&config);
-        assert!(errors.is_empty(), "valid identifiers should produce no errors");
+        assert!(
+            errors.is_empty(),
+            "valid identifiers should produce no errors"
+        );
     }
 
     #[test]
@@ -718,10 +722,10 @@ mod tests {
         let config = make_config("app-icon", &["self"], &[], &[]);
         let errors = validate_identifiers(&config);
         assert!(
-            errors
-                .iter()
-                .any(|e| matches!(e, BuildError::InvalidIdentifier { name, reason }
-                    if name == "self" && reason.contains("keyword"))),
+            errors.iter().any(
+                |e| matches!(e, BuildError::InvalidIdentifier { name, reason }
+                    if name == "self" && reason.contains("keyword"))
+            ),
             "should detect keyword: {errors:?}"
         );
     }
@@ -732,10 +736,10 @@ mod tests {
         let config = make_config("self", &["play-pause"], &[], &[]);
         let errors = validate_identifiers(&config);
         assert!(
-            errors
-                .iter()
-                .any(|e| matches!(e, BuildError::InvalidIdentifier { name, reason }
-                    if name == "self" && reason.contains("keyword"))),
+            errors.iter().any(
+                |e| matches!(e, BuildError::InvalidIdentifier { name, reason }
+                    if name == "self" && reason.contains("keyword"))
+            ),
             "should detect keyword for enum name: {errors:?}"
         );
     }
@@ -746,10 +750,10 @@ mod tests {
         let config = make_config("app-icon", &["play_pause", "play-pause"], &[], &[]);
         let errors = validate_identifiers(&config);
         assert!(
-            errors
-                .iter()
-                .any(|e| matches!(e, BuildError::IdentifierCollision { pascal, .. }
-                    if pascal == "PlayPause")),
+            errors.iter().any(
+                |e| matches!(e, BuildError::IdentifierCollision { pascal, .. }
+                    if pascal == "PlayPause")
+            ),
             "should detect PascalCase collision: {errors:?}"
         );
     }
@@ -774,7 +778,10 @@ mod tests {
         let errors = validate_no_duplicate_roles_in_file(&config, "icons.toml");
         assert_eq!(errors.len(), 1);
         let msg = errors[0].to_string();
-        assert!(msg.contains("play-pause"), "should mention the duplicate role");
+        assert!(
+            msg.contains("play-pause"),
+            "should mention the duplicate role"
+        );
         assert!(msg.contains("icons.toml"), "should mention the file");
     }
 
@@ -787,8 +794,7 @@ mod tests {
 
     #[test]
     fn duplicate_role_in_file_multiple() {
-        let config =
-            make_config("x", &["a", "b", "a", "b", "c"], &[], &[]);
+        let config = make_config("x", &["a", "b", "a", "b", "c"], &[], &[]);
         let errors = validate_no_duplicate_roles_in_file(&config, "test.toml");
         assert_eq!(errors.len(), 2, "should detect both duplicates");
     }

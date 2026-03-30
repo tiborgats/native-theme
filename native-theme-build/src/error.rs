@@ -101,10 +101,7 @@ impl fmt::Display for BuildError {
             Self::UnknownTheme { theme } => {
                 let expected: Vec<&str> = THEME_TABLE.iter().map(|(k, _)| *k).collect();
                 let list = expected.join(", ");
-                write!(
-                    f,
-                    "unknown theme \"{theme}\" (expected one of: {list})"
-                )
+                write!(f, "unknown theme \"{theme}\" (expected one of: {list})")
             }
             Self::MissingDefault { role, mapping_file } => {
                 write!(

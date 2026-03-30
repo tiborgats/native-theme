@@ -80,7 +80,10 @@ pub use native_theme::{
 /// The `name` sets the theme's display name (visible in theme pickers).
 /// For the common case, use [`from_preset()`] to derive the name automatically.
 #[must_use]
-pub fn to_theme(resolved: &native_theme::ResolvedThemeVariant, name: &str) -> iced_core::theme::Theme {
+pub fn to_theme(
+    resolved: &native_theme::ResolvedThemeVariant,
+    name: &str,
+) -> iced_core::theme::Theme {
     let pal = palette::to_palette(resolved);
 
     // Clone the resolved fields we need into the closure.
@@ -296,7 +299,10 @@ mod tests {
         let resolved = make_resolved(false);
         let pad = button_padding(&resolved);
         assert!(pad.top > 0.0, "button vertical (top) padding should be > 0");
-        assert!(pad.right > 0.0, "button horizontal (right) padding should be > 0");
+        assert!(
+            pad.right > 0.0,
+            "button horizontal (right) padding should be > 0"
+        );
         // vertical maps to top+bottom, horizontal maps to left+right
         assert_eq!(pad.top, pad.bottom, "top and bottom should be equal");
         assert_eq!(pad.left, pad.right, "left and right should be equal");
@@ -307,7 +313,10 @@ mod tests {
         let resolved = make_resolved(false);
         let pad = input_padding(&resolved);
         assert!(pad.top > 0.0, "input vertical (top) padding should be > 0");
-        assert!(pad.right > 0.0, "input horizontal (right) padding should be > 0");
+        assert!(
+            pad.right > 0.0,
+            "input horizontal (right) padding should be > 0"
+        );
     }
 
     // === Font helper tests ===
@@ -344,14 +353,22 @@ mod tests {
     fn font_weight_returns_concrete_value() {
         let resolved = make_resolved(false);
         let w = font_weight(&resolved);
-        assert!(w >= 100 && w <= 900, "font weight should be 100-900, got {}", w);
+        assert!(
+            (100..=900).contains(&w),
+            "font weight should be 100-900, got {}",
+            w
+        );
     }
 
     #[test]
     fn mono_font_weight_returns_concrete_value() {
         let resolved = make_resolved(false);
         let w = mono_font_weight(&resolved);
-        assert!(w >= 100 && w <= 900, "mono font weight should be 100-900, got {}", w);
+        assert!(
+            (100..=900).contains(&w),
+            "mono font weight should be 100-900, got {}",
+            w
+        );
     }
 
     #[test]

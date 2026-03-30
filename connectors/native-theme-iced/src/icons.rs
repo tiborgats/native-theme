@@ -46,7 +46,10 @@ pub fn to_image_handle(data: &IconData) -> Option<iced_core::image::Handle> {
 /// monochrome icon sets (Material, Lucide). Pass `None` for multi-color
 /// system icons to preserve their native palette.
 #[must_use]
-pub fn to_svg_handle(data: &IconData, color: Option<iced_core::Color>) -> Option<iced_core::svg::Handle> {
+pub fn to_svg_handle(
+    data: &IconData,
+    color: Option<iced_core::Color>,
+) -> Option<iced_core::svg::Handle> {
     match data {
         IconData::Svg(bytes) => {
             let final_bytes = if let Some(c) = color {
@@ -119,8 +122,14 @@ pub fn custom_icon_to_svg_handle(
 #[must_use]
 pub fn animated_frames_to_svg_handles(anim: &AnimatedIcon) -> Option<AnimatedSvgHandles> {
     match anim {
-        AnimatedIcon::Frames { frames, frame_duration_ms } => {
-            let handles: Vec<_> = frames.iter().filter_map(|f| to_svg_handle(f, None)).collect();
+        AnimatedIcon::Frames {
+            frames,
+            frame_duration_ms,
+        } => {
+            let handles: Vec<_> = frames
+                .iter()
+                .filter_map(|f| to_svg_handle(f, None))
+                .collect();
             if handles.is_empty() {
                 None
             } else {
@@ -172,16 +181,21 @@ pub fn spin_rotation_radians(elapsed: std::time::Duration, duration_ms: u32) -> 
 #[must_use]
 pub fn into_image_handle(data: IconData) -> Option<iced_core::image::Handle> {
     match data {
-        IconData::Rgba { width, height, data } => {
-            Some(iced_core::image::Handle::from_rgba(width, height, data))
-        }
+        IconData::Rgba {
+            width,
+            height,
+            data,
+        } => Some(iced_core::image::Handle::from_rgba(width, height, data)),
         _ => None,
     }
 }
 
 /// Consuming version of [`to_svg_handle`] — moves the [`IconData`] instead of borrowing.
 #[must_use]
-pub fn into_svg_handle(data: IconData, color: Option<iced_core::Color>) -> Option<iced_core::svg::Handle> {
+pub fn into_svg_handle(
+    data: IconData,
+    color: Option<iced_core::Color>,
+) -> Option<iced_core::svg::Handle> {
     match data {
         IconData::Svg(bytes) => {
             let final_bytes = if let Some(c) = color {
@@ -365,14 +379,19 @@ mod tests {
 
     #[test]
     fn custom_icon_to_svg_handle_with_svg_provider_returns_some() {
-        let result = custom_icon_to_svg_handle(&TestSvgProvider, native_theme::IconSet::Material, None);
+        let result =
+            custom_icon_to_svg_handle(&TestSvgProvider, native_theme::IconSet::Material, None);
         assert!(result.is_some());
     }
 
     #[test]
     fn custom_icon_to_svg_handle_with_color_returns_some() {
         let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
-        let result = custom_icon_to_svg_handle(&TestSvgProvider, native_theme::IconSet::Material, Some(color));
+        let result = custom_icon_to_svg_handle(
+            &TestSvgProvider,
+            native_theme::IconSet::Material,
+            Some(color),
+        );
         assert!(result.is_some());
     }
 
@@ -384,7 +403,8 @@ mod tests {
 
     #[test]
     fn custom_icon_to_svg_handle_with_empty_provider_returns_none() {
-        let result = custom_icon_to_svg_handle(&EmptyProvider, native_theme::IconSet::Material, None);
+        let result =
+            custom_icon_to_svg_handle(&EmptyProvider, native_theme::IconSet::Material, None);
         assert!(result.is_none());
     }
 

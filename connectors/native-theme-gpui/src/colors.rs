@@ -226,10 +226,22 @@ fn assign_charts(tc: &mut ThemeColor, c: &ResolvedColors) {
     // Distribute 5 chart colors evenly around the hue wheel (~72° apart).
     // Preserves accent's saturation and lightness for palette coherence.
     tc.chart_1 = c.accent;
-    tc.chart_2 = Hsla { h: (c.accent.h + 0.2) % 1.0, ..c.accent };
-    tc.chart_3 = Hsla { h: (c.accent.h + 0.4) % 1.0, ..c.accent };
-    tc.chart_4 = Hsla { h: (c.accent.h + 0.6) % 1.0, ..c.accent };
-    tc.chart_5 = Hsla { h: (c.accent.h + 0.8) % 1.0, ..c.accent };
+    tc.chart_2 = Hsla {
+        h: (c.accent.h + 0.2) % 1.0,
+        ..c.accent
+    };
+    tc.chart_3 = Hsla {
+        h: (c.accent.h + 0.4) % 1.0,
+        ..c.accent
+    };
+    tc.chart_4 = Hsla {
+        h: (c.accent.h + 0.6) % 1.0,
+        ..c.accent
+    };
+    tc.chart_5 = Hsla {
+        h: (c.accent.h + 0.8) % 1.0,
+        ..c.accent
+    };
 }
 
 fn assign_misc(
@@ -244,7 +256,8 @@ fn assign_misc(
     tc.accordion = c.bg;
     tc.accordion_hover = c.accent.opacity(0.8);
 
-    tc.group_box = c.bg.blend(c.secondary.opacity(if is_dark { 0.3 } else { 0.4 }));
+    tc.group_box =
+        c.bg.blend(c.secondary.opacity(if is_dark { 0.3 } else { 0.4 }));
     tc.group_box_foreground = c.fg;
 
     tc.description_list_label = c.bg.blend(c.border.opacity(0.2));
@@ -534,14 +547,23 @@ mod tests {
         let resolved = test_resolved();
         let tc = to_theme_color(&resolved, false);
 
-        let hues = [tc.chart_1.h, tc.chart_2.h, tc.chart_3.h, tc.chart_4.h, tc.chart_5.h];
+        let hues = [
+            tc.chart_1.h,
+            tc.chart_2.h,
+            tc.chart_3.h,
+            tc.chart_4.h,
+            tc.chart_5.h,
+        ];
         // All 5 hues should be distinct
         for i in 0..5 {
             for j in (i + 1)..5 {
                 assert!(
                     (hues[i] - hues[j]).abs() > 0.05,
                     "chart_{} (h={:.3}) and chart_{} (h={:.3}) should have distinct hues",
-                    i + 1, hues[i], j + 1, hues[j]
+                    i + 1,
+                    hues[i],
+                    j + 1,
+                    hues[j]
                 );
             }
         }
@@ -563,12 +585,14 @@ mod tests {
         assert!(
             (tc.magenta.s - expected_s).abs() < 0.001,
             "magenta saturation {:.3} should be min(accent.s, 0.85) = {:.3}",
-            tc.magenta.s, expected_s
+            tc.magenta.s,
+            expected_s
         );
         assert!(
             (tc.magenta.l - accent.l).abs() < 0.001,
             "magenta lightness {:.3} should match accent lightness {:.3}",
-            tc.magenta.l, accent.l
+            tc.magenta.l,
+            accent.l
         );
     }
 
@@ -581,12 +605,14 @@ mod tests {
         assert!(
             (tc.overlay.h - shadow.h).abs() < 0.001,
             "overlay hue {:.3} should match shadow hue {:.3}",
-            tc.overlay.h, shadow.h
+            tc.overlay.h,
+            shadow.h
         );
         assert!(
             (tc.overlay.s - shadow.s).abs() < 0.001,
             "overlay saturation {:.3} should match shadow saturation {:.3}",
-            tc.overlay.s, shadow.s
+            tc.overlay.s,
+            shadow.s
         );
     }
 

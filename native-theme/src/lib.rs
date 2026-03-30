@@ -120,11 +120,11 @@ pub use error::{Error, ThemeResolutionError};
 pub use model::{
     AnimatedIcon, ButtonTheme, CardTheme, CheckboxTheme, ComboBoxTheme, DialogButtonOrder,
     DialogTheme, ExpanderTheme, FontSpec, IconData, IconProvider, IconRole, IconSet, IconSizes,
-    InputTheme, LinkTheme, ListTheme, MenuTheme, ThemeSpec, PopoverTheme, ProgressBarTheme,
-    ResolvedThemeDefaults, ResolvedFontSpec, ResolvedIconSizes, ResolvedSpacing,
-    ResolvedTextScale, ResolvedTextScaleEntry, ResolvedThemeVariant, ScrollbarTheme,
-    SegmentedControlTheme, SeparatorTheme, SidebarTheme, SliderTheme, SpinnerTheme, SplitterTheme,
-    StatusBarTheme, SwitchTheme, TabTheme, TextScale, TextScaleEntry, ThemeDefaults, ThemeSpacing,
+    InputTheme, LinkTheme, ListTheme, MenuTheme, PopoverTheme, ProgressBarTheme, ResolvedFontSpec,
+    ResolvedIconSizes, ResolvedSpacing, ResolvedTextScale, ResolvedTextScaleEntry,
+    ResolvedThemeDefaults, ResolvedThemeVariant, ScrollbarTheme, SegmentedControlTheme,
+    SeparatorTheme, SidebarTheme, SliderTheme, SpinnerTheme, SplitterTheme, StatusBarTheme,
+    SwitchTheme, TabTheme, TextScale, TextScaleEntry, ThemeDefaults, ThemeSpacing, ThemeSpec,
     ThemeVariant, ToolbarTheme, TooltipTheme, TransformAnimation, WindowTheme,
     bundled_icon_by_name, bundled_icon_svg,
 };
@@ -241,7 +241,7 @@ pub fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
 ///
 /// For live dark-mode tracking, subscribe to OS appearance-change events
 /// (D-Bus `SettingChanged` on Linux, `NSAppearance` KVO on macOS,
-/// `UISettings.ColorValuesChanged` on Windows) and call [`from_system()`]
+/// `UISettings.ColorValuesChanged` on Windows) and call [`SystemTheme::from_system()`]
 /// to get a fresh [`SystemTheme`] with updated resolved variants.
 ///
 /// # Platform Behavior
@@ -695,7 +695,7 @@ fn run_pipeline(
 ///
 /// Returns the live preset name for the current platform.
 ///
-/// This is the public API for what [`from_system()`] uses internally.
+/// This is the public API for what [`SystemTheme::from_system()`] uses internally.
 /// Showcase UIs use this to build the "default (...)" label.
 #[allow(unreachable_code)]
 pub fn platform_preset_name() -> &'static str {
@@ -819,12 +819,12 @@ async fn from_system_async_inner() -> crate::Result<SystemTheme> {
             #[cfg(feature = "portal")]
             {
                 let reader = crate::gnome::from_kde_with_portal().await?;
-                return run_pipeline(reader, "kde-breeze-live", is_dark);
+                run_pipeline(reader, "kde-breeze-live", is_dark)
             }
             #[cfg(not(feature = "portal"))]
             {
                 let reader = crate::kde::from_kde()?;
-                return run_pipeline(reader, "kde-breeze-live", is_dark);
+                run_pipeline(reader, "kde-breeze-live", is_dark)
             }
         }
         #[cfg(not(feature = "kde"))]
@@ -962,7 +962,7 @@ pub fn load_system_icon_by_name(name: &str, set: IconSet) -> Option<IconData> {
         #[cfg(all(target_os = "linux", feature = "system-icons"))]
         IconSet::Freedesktop => {
             let theme = system_icon_theme();
-            freedesktop::load_freedesktop_icon_by_name(name, &theme, 24)
+            freedesktop::load_freedesktop_icon_by_name(name, theme, 24)
         }
 
         #[cfg(all(target_os = "macos", feature = "system-icons"))]
@@ -1043,11 +1043,7 @@ pub fn loading_indicator(set: IconSet) -> Option<AnimatedIcon> {
 /// # }
 /// ```
 #[must_use = "this returns the loaded icon data; it does not display it"]
-pub fn load_custom_icon(
-    provider: &(impl IconProvider + ?Sized),
-    set: IconSet,
-) -> Option<IconData> {
-
+pub fn load_custom_icon(provider: &(impl IconProvider + ?Sized), set: IconSet) -> Option<IconData> {
     // Step 1: Try system loader with provider's name mapping
     if let Some(name) = provider.icon_name(set)
         && let Some(data) = load_system_icon_by_name(name, set)

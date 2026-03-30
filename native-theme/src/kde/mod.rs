@@ -18,7 +18,7 @@ use crate::model::{DialogButtonOrder, IconSizes, TextScaleEntry};
 pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ThemeSpec> {
     let mut ini = create_kde_parser();
     ini.read(content.to_string())
-        .map_err(|e| crate::Error::Format(e))?;
+        .map_err(crate::Error::Format)?;
 
     let mut variant = crate::ThemeVariant::default();
 
@@ -34,10 +34,10 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ThemeSpec>
     populate_accessibility(&ini, &mut variant);
 
     // KDE-05: Icon set from [Icons] Theme
-    if let Some(theme_name) = ini.get("Icons", "Theme") {
-        if !theme_name.is_empty() {
-            variant.icon_set = Some(theme_name);
-        }
+    if let Some(theme_name) = ini.get("Icons", "Theme")
+        && !theme_name.is_empty()
+    {
+        variant.icon_set = Some(theme_name);
     }
 
     // KDE-05: Icon sizes from index.theme
@@ -82,14 +82,14 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ThemeSpec>
 /// If defaults.font.size is None, heading/title/display entries are not set.
 fn populate_text_scale(ini: &configparser::ini::Ini, variant: &mut crate::ThemeVariant) {
     // caption from smallestReadableFont
-    if let Some(smallest_str) = ini.get("General", "smallestReadableFont") {
-        if let Some(spec) = fonts::parse_qt_font_with_weight(&smallest_str) {
-            variant.text_scale.caption = Some(TextScaleEntry {
-                size: spec.size,
-                weight: spec.weight,
-                line_height: None,
-            });
-        }
+    if let Some(smallest_str) = ini.get("General", "smallestReadableFont")
+        && let Some(spec) = fonts::parse_qt_font_with_weight(&smallest_str)
+    {
+        variant.text_scale.caption = Some(TextScaleEntry {
+            size: spec.size,
+            weight: spec.weight,
+            line_height: None,
+        });
     }
 
     // section_heading, dialog_title, and display from Kirigami multipliers on base font size
@@ -118,19 +118,18 @@ fn populate_text_scale(ini: &configparser::ini::Ini, variant: &mut crate::ThemeV
 /// - forceFontDPI -> text_scaling_factor = value / 96.0; missing -> None
 fn populate_accessibility(ini: &configparser::ini::Ini, variant: &mut crate::ThemeVariant) {
     // KDE-06: AnimationDurationFactor from [KDE]
-    if let Some(anim_str) = ini.get("KDE", "AnimationDurationFactor") {
-        if let Ok(value) = anim_str.trim().parse::<f32>() {
-            variant.defaults.reduce_motion = Some(value == 0.0);
-        }
+    if let Some(anim_str) = ini.get("KDE", "AnimationDurationFactor")
+        && let Ok(value) = anim_str.trim().parse::<f32>()
+    {
+        variant.defaults.reduce_motion = Some(value == 0.0);
     }
 
     // KDE-06: forceFontDPI from [General]
-    if let Some(dpi_str) = ini.get("General", "forceFontDPI") {
-        if let Ok(dpi) = dpi_str.trim().parse::<f32>() {
-            if dpi > 0.0 {
-                variant.defaults.text_scaling_factor = Some(dpi / 96.0);
-            }
-        }
+    if let Some(dpi_str) = ini.get("General", "forceFontDPI")
+        && let Ok(dpi) = dpi_str.trim().parse::<f32>()
+        && dpi > 0.0
+    {
+        variant.defaults.text_scaling_factor = Some(dpi / 96.0);
     }
 }
 
@@ -318,10 +317,10 @@ pub(crate) fn parse_rgb(value: &str) -> Option<Rgba> {
 /// Checks XDG_CONFIG_HOME (non-empty), then $HOME/.config/kdeglobals,
 /// then /etc/xdg/kdeglobals as last resort.
 pub(crate) fn kdeglobals_path() -> std::path::PathBuf {
-    if let Ok(config_home) = std::env::var("XDG_CONFIG_HOME") {
-        if !config_home.is_empty() {
-            return std::path::PathBuf::from(config_home).join("kdeglobals");
-        }
+    if let Ok(config_home) = std::env::var("XDG_CONFIG_HOME")
+        && !config_home.is_empty()
+    {
+        return std::path::PathBuf::from(config_home).join("kdeglobals");
     }
     if let Ok(home) = std::env::var("HOME") {
         return std::path::PathBuf::from(home)
@@ -337,11 +336,11 @@ pub(crate) fn kdeglobals_path() -> std::path::PathBuf {
 /// Uses BT.601 luminance coefficients on Colors:Window/BackgroundNormal.
 /// Defaults to false (light) if the section/key is missing.
 pub(crate) fn is_dark_theme(ini: &configparser::ini::Ini) -> bool {
-    if let Some(bg_str) = ini.get("Colors:Window", "BackgroundNormal") {
-        if let Some(bg) = parse_rgb(&bg_str) {
-            let luma = 0.299 * (bg.r as f32) + 0.587 * (bg.g as f32) + 0.114 * (bg.b as f32);
-            return luma < 128.0;
-        }
+    if let Some(bg_str) = ini.get("Colors:Window", "BackgroundNormal")
+        && let Some(bg) = parse_rgb(&bg_str)
+    {
+        let luma = 0.299 * (bg.r as f32) + 0.587 * (bg.g as f32) + 0.114 * (bg.b as f32);
+        return luma < 128.0;
     }
     false
 }

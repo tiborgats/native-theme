@@ -7,7 +7,7 @@
 //! 4 internal live presets (geometry-only, used by the OS-first pipeline)
 //! and functions for loading themes from TOML strings and files.
 
-use crate::{Error, ThemeSpec, Result};
+use crate::{Error, Result, ThemeSpec};
 use std::path::Path;
 use std::sync::LazyLock;
 
@@ -56,34 +56,40 @@ const PRESET_NAMES: &[&str] = &[
 ];
 
 // Cached presets: each parsed at most once for the process lifetime.
-// The unwrap() calls are safe because embedded TOML is compile-time constant
-// and tested in CI.
-#[allow(clippy::unwrap_used)]
+// Errors are stored as String (Error is not Clone) and propagated to callers.
 mod cached {
     use super::*;
-    static KDE_BREEZE: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(KDE_BREEZE_TOML).unwrap());
-    static ADWAITA: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(ADWAITA_TOML).unwrap());
-    static WINDOWS_11: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(WINDOWS_11_TOML).unwrap());
-    static MACOS_SONOMA: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(MACOS_SONOMA_TOML).unwrap());
-    static MATERIAL: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(MATERIAL_TOML).unwrap());
-    static IOS: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(IOS_TOML).unwrap());
-    static CATPPUCCIN_LATTE: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(CATPPUCCIN_LATTE_TOML).unwrap());
-    static CATPPUCCIN_FRAPPE: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(CATPPUCCIN_FRAPPE_TOML).unwrap());
-    static CATPPUCCIN_MACCHIATO: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(CATPPUCCIN_MACCHIATO_TOML).unwrap());
-    static CATPPUCCIN_MOCHA: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(CATPPUCCIN_MOCHA_TOML).unwrap());
-    static NORD: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(NORD_TOML).unwrap());
-    static DRACULA: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(DRACULA_TOML).unwrap());
-    static GRUVBOX: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(GRUVBOX_TOML).unwrap());
-    static SOLARIZED: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(SOLARIZED_TOML).unwrap());
-    static TOKYO_NIGHT: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(TOKYO_NIGHT_TOML).unwrap());
-    static ONE_DARK: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(ONE_DARK_TOML).unwrap());
-    // Internal live presets
-    static KDE_BREEZE_LIVE: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(KDE_BREEZE_LIVE_TOML).unwrap());
-    static ADWAITA_LIVE: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(ADWAITA_LIVE_TOML).unwrap());
-    static MACOS_SONOMA_LIVE: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(MACOS_SONOMA_LIVE_TOML).unwrap());
-    static WINDOWS_11_LIVE: LazyLock<ThemeSpec> = LazyLock::new(|| from_toml(WINDOWS_11_LIVE_TOML).unwrap());
 
-    pub(crate) fn get(name: &str) -> Option<&'static ThemeSpec> {
+    type Parsed = std::result::Result<ThemeSpec, String>;
+
+    fn parse(toml: &str) -> Parsed {
+        from_toml(toml).map_err(|e| e.to_string())
+    }
+
+    static KDE_BREEZE: LazyLock<Parsed> = LazyLock::new(|| parse(KDE_BREEZE_TOML));
+    static ADWAITA: LazyLock<Parsed> = LazyLock::new(|| parse(ADWAITA_TOML));
+    static WINDOWS_11: LazyLock<Parsed> = LazyLock::new(|| parse(WINDOWS_11_TOML));
+    static MACOS_SONOMA: LazyLock<Parsed> = LazyLock::new(|| parse(MACOS_SONOMA_TOML));
+    static MATERIAL: LazyLock<Parsed> = LazyLock::new(|| parse(MATERIAL_TOML));
+    static IOS: LazyLock<Parsed> = LazyLock::new(|| parse(IOS_TOML));
+    static CATPPUCCIN_LATTE: LazyLock<Parsed> = LazyLock::new(|| parse(CATPPUCCIN_LATTE_TOML));
+    static CATPPUCCIN_FRAPPE: LazyLock<Parsed> = LazyLock::new(|| parse(CATPPUCCIN_FRAPPE_TOML));
+    static CATPPUCCIN_MACCHIATO: LazyLock<Parsed> =
+        LazyLock::new(|| parse(CATPPUCCIN_MACCHIATO_TOML));
+    static CATPPUCCIN_MOCHA: LazyLock<Parsed> = LazyLock::new(|| parse(CATPPUCCIN_MOCHA_TOML));
+    static NORD: LazyLock<Parsed> = LazyLock::new(|| parse(NORD_TOML));
+    static DRACULA: LazyLock<Parsed> = LazyLock::new(|| parse(DRACULA_TOML));
+    static GRUVBOX: LazyLock<Parsed> = LazyLock::new(|| parse(GRUVBOX_TOML));
+    static SOLARIZED: LazyLock<Parsed> = LazyLock::new(|| parse(SOLARIZED_TOML));
+    static TOKYO_NIGHT: LazyLock<Parsed> = LazyLock::new(|| parse(TOKYO_NIGHT_TOML));
+    static ONE_DARK: LazyLock<Parsed> = LazyLock::new(|| parse(ONE_DARK_TOML));
+    // Internal live presets
+    static KDE_BREEZE_LIVE: LazyLock<Parsed> = LazyLock::new(|| parse(KDE_BREEZE_LIVE_TOML));
+    static ADWAITA_LIVE: LazyLock<Parsed> = LazyLock::new(|| parse(ADWAITA_LIVE_TOML));
+    static MACOS_SONOMA_LIVE: LazyLock<Parsed> = LazyLock::new(|| parse(MACOS_SONOMA_LIVE_TOML));
+    static WINDOWS_11_LIVE: LazyLock<Parsed> = LazyLock::new(|| parse(WINDOWS_11_LIVE_TOML));
+
+    pub(crate) fn get(name: &str) -> Option<&'static Parsed> {
         match name {
             "kde-breeze" => Some(&KDE_BREEZE),
             "adwaita" => Some(&ADWAITA),
@@ -111,9 +117,11 @@ mod cached {
 }
 
 pub(crate) fn preset(name: &str) -> Result<ThemeSpec> {
-    cached::get(name)
-        .cloned()
-        .ok_or_else(|| Error::Unavailable(format!("unknown preset: {name}")))
+    match cached::get(name) {
+        None => Err(Error::Unavailable(format!("unknown preset: {name}"))),
+        Some(Ok(theme)) => Ok(theme.clone()),
+        Some(Err(msg)) => Err(Error::Format(format!("bundled preset '{name}': {msg}"))),
+    }
 }
 
 pub(crate) fn list_presets() -> &'static [&'static str] {

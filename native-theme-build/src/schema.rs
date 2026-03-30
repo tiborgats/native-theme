@@ -146,10 +146,7 @@ mod tests {
     fn de_table_no_duplicate_keys() {
         let mut seen = HashSet::new();
         for (key, _) in DE_TABLE {
-            assert!(
-                seen.insert(*key),
-                "duplicate DE key in DE_TABLE: {key}"
-            );
+            assert!(seen.insert(*key), "duplicate DE key in DE_TABLE: {key}");
         }
     }
 

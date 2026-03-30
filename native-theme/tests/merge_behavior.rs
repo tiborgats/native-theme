@@ -149,10 +149,14 @@ fn merge_fonts_defaults_spacing() {
     assert_eq!(base_font.size, Some(12.0), "base size preserved");
 
     // ThemeDefaults (geometry fields)
-    let mut base_defaults = ThemeDefaults::default();
-    base_defaults.frame_width = Some(1.0);
-    let mut overlay_defaults = ThemeDefaults::default();
-    overlay_defaults.radius = Some(8.0);
+    let mut base_defaults = ThemeDefaults {
+        frame_width: Some(1.0),
+        ..Default::default()
+    };
+    let overlay_defaults = ThemeDefaults {
+        radius: Some(8.0),
+        ..Default::default()
+    };
     base_defaults.merge(&overlay_defaults);
     assert_eq!(base_defaults.radius, Some(8.0), "overlay radius replaces");
     assert_eq!(
@@ -162,10 +166,14 @@ fn merge_fonts_defaults_spacing() {
     );
 
     // ThemeSpacing
-    let mut base_spacing = ThemeSpacing::default();
-    base_spacing.l = Some(16.0);
-    let mut overlay_spacing = ThemeSpacing::default();
-    overlay_spacing.m = Some(12.0);
+    let mut base_spacing = ThemeSpacing {
+        l: Some(16.0),
+        ..Default::default()
+    };
+    let overlay_spacing = ThemeSpacing {
+        m: Some(12.0),
+        ..Default::default()
+    };
     base_spacing.merge(&overlay_spacing);
     assert_eq!(base_spacing.m, Some(12.0), "overlay m replaces");
     assert_eq!(base_spacing.l, Some(16.0), "base l preserved");

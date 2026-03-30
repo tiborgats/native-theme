@@ -261,12 +261,13 @@ mod tests {
     use crate::model::DialogButtonOrder;
     use crate::model::ResolvedFontSpec;
     use crate::model::widgets::{
-        ResolvedButtonTheme, ResolvedCardTheme, ResolvedCheckboxTheme, ResolvedComboBoxTheme, ResolvedDialogTheme,
-        ResolvedExpanderTheme, ResolvedInputTheme, ResolvedLinkTheme, ResolvedListTheme,
-        ResolvedMenuTheme, ResolvedPopoverTheme, ResolvedProgressBarTheme, ResolvedScrollbarTheme,
-        ResolvedSegmentedControlTheme, ResolvedSeparatorTheme, ResolvedSidebarTheme, ResolvedSliderTheme,
-        ResolvedSpinnerTheme, ResolvedSplitterTheme, ResolvedStatusBarTheme, ResolvedSwitchTheme, ResolvedTabTheme,
-        ResolvedToolbarTheme, ResolvedTooltipTheme, ResolvedWindowTheme,
+        ResolvedButtonTheme, ResolvedCardTheme, ResolvedCheckboxTheme, ResolvedComboBoxTheme,
+        ResolvedDialogTheme, ResolvedExpanderTheme, ResolvedInputTheme, ResolvedLinkTheme,
+        ResolvedListTheme, ResolvedMenuTheme, ResolvedPopoverTheme, ResolvedProgressBarTheme,
+        ResolvedScrollbarTheme, ResolvedSegmentedControlTheme, ResolvedSeparatorTheme,
+        ResolvedSidebarTheme, ResolvedSliderTheme, ResolvedSpinnerTheme, ResolvedSplitterTheme,
+        ResolvedStatusBarTheme, ResolvedSwitchTheme, ResolvedTabTheme, ResolvedToolbarTheme,
+        ResolvedTooltipTheme, ResolvedWindowTheme,
     };
 
     fn sample_font() -> ResolvedFontSpec {

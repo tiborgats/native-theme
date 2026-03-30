@@ -67,36 +67,36 @@ pub(crate) fn parse_qt_font_with_weight(font_str: &str) -> Option<crate::FontSpe
 ///
 /// Missing keys result in None fields (no hardcoded fallbacks).
 pub(crate) fn populate_fonts(ini: &configparser::ini::Ini, variant: &mut crate::ThemeVariant) {
-    if let Some(font_str) = ini.get("General", "font") {
-        if let Some(spec) = parse_qt_font_with_weight(&font_str) {
-            variant.defaults.font = spec;
-        }
+    if let Some(font_str) = ini.get("General", "font")
+        && let Some(spec) = parse_qt_font_with_weight(&font_str)
+    {
+        variant.defaults.font = spec;
     }
 
-    if let Some(fixed_str) = ini.get("General", "fixed") {
-        if let Some(spec) = parse_qt_font_with_weight(&fixed_str) {
-            variant.defaults.mono_font = spec;
-        }
+    if let Some(fixed_str) = ini.get("General", "fixed")
+        && let Some(spec) = parse_qt_font_with_weight(&fixed_str)
+    {
+        variant.defaults.mono_font = spec;
     }
 
     // KDE-03: Per-widget fonts
-    if let Some(menu_str) = ini.get("General", "menuFont") {
-        if let Some(spec) = parse_qt_font_with_weight(&menu_str) {
-            variant.menu.font = Some(spec);
-        }
+    if let Some(menu_str) = ini.get("General", "menuFont")
+        && let Some(spec) = parse_qt_font_with_weight(&menu_str)
+    {
+        variant.menu.font = Some(spec);
     }
 
-    if let Some(toolbar_str) = ini.get("General", "toolBarFont") {
-        if let Some(spec) = parse_qt_font_with_weight(&toolbar_str) {
-            variant.toolbar.font = Some(spec);
-        }
+    if let Some(toolbar_str) = ini.get("General", "toolBarFont")
+        && let Some(spec) = parse_qt_font_with_weight(&toolbar_str)
+    {
+        variant.toolbar.font = Some(spec);
     }
 
     // KDE-01: Title bar font from WM section
-    if let Some(active_font_str) = ini.get("WM", "activeFont") {
-        if let Some(spec) = parse_qt_font_with_weight(&active_font_str) {
-            variant.window.title_bar_font = Some(spec);
-        }
+    if let Some(active_font_str) = ini.get("WM", "activeFont")
+        && let Some(spec) = parse_qt_font_with_weight(&active_font_str)
+    {
+        variant.window.title_bar_font = Some(spec);
     }
 }
 

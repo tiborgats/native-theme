@@ -204,8 +204,8 @@ for f in glob.glob('${src_dir}/**/*.rs', recursive=True):
 for issue in issues:
     print(issue)
 sys.exit(0 if not issues else 1)
-" 2>&1)
-        if [ $? -ne 0 ]; then
+" 2>&1) || true
+        if [ -n "$HITS" ]; then
             echo "$HITS"
             PANIC_FOUND=1
         fi

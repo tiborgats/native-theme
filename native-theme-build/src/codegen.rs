@@ -45,10 +45,7 @@ pub(crate) fn de_key_to_variant(key: &str) -> Option<&'static str> {
     if key == "default" {
         return None;
     }
-    DE_TABLE
-        .iter()
-        .find(|(k, _)| *k == key)
-        .map(|(_, v)| *v)
+    DE_TABLE.iter().find(|(k, _)| *k == key).map(|(_, v)| *v)
 }
 
 /// Returns the fully-qualified DE variant path with crate prefix.
@@ -179,11 +176,7 @@ fn generate_icon_name(
     let needs_de_cache = has_any_de_aware_mappings(config, mappings);
     if needs_de_cache {
         writeln!(out, "        #[cfg(target_os = \"linux\")]").unwrap();
-        writeln!(
-            out,
-            "        let de = {{"
-        )
-        .unwrap();
+        writeln!(out, "        let de = {{").unwrap();
         writeln!(
             out,
             "            static CACHED_DE: std::sync::OnceLock<{crate_path}::LinuxDesktop> = std::sync::OnceLock::new();"
@@ -448,10 +441,7 @@ play-pause = { kde = "media-playback-start", default = "play" }
 
     #[test]
     fn theme_name_maps_lucide() {
-        assert_eq!(
-            theme_name_to_icon_set("lucide"),
-            Some("IconSet::Lucide")
-        );
+        assert_eq!(theme_name_to_icon_set("lucide"), Some("IconSet::Lucide"));
     }
 
     #[test]
@@ -862,10 +852,7 @@ play-pause = { default = "play" }
 
     #[test]
     fn escape_rust_str_combined() {
-        assert_eq!(
-            escape_rust_str("a\\b\n\"c\"\r\t"),
-            r#"a\\b\n\"c\"\r\t"#
-        );
+        assert_eq!(escape_rust_str("a\\b\n\"c\"\r\t"), r#"a\\b\n\"c\"\r\t"#);
     }
 
     #[test]
@@ -1012,9 +999,7 @@ system-themes = ["sf-symbols"]
         let extras = vec!["PartialOrd".to_string()];
         let output = generate_code(&config, &mappings, "icons", "native_theme", &extras);
         assert!(
-            output.contains(
-                "#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd)]"
-            ),
+            output.contains("#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, PartialOrd)]"),
             "single extra derive should be appended. output:\n{output}"
         );
     }

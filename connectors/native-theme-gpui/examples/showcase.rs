@@ -64,10 +64,9 @@ use gpui_component::{
 use std::time::Duration;
 
 use native_theme::{
-    AnimatedIcon, IconData, IconRole, IconSet, ThemeSpec, TransformAnimation,
-    bundled_icon_by_name, icon_name as native_icon_name, load_icon, loading_indicator,
-    platform_preset_name, prefers_reduced_motion, system_icon_set, system_icon_theme,
-    system_is_dark,
+    AnimatedIcon, IconData, IconRole, IconSet, ThemeSpec, TransformAnimation, bundled_icon_by_name,
+    icon_name as native_icon_name, load_icon, loading_indicator, platform_preset_name,
+    prefers_reduced_motion, system_icon_set, system_icon_theme, system_is_dark,
 };
 #[cfg(target_os = "linux")]
 use native_theme::{detect_linux_de, load_freedesktop_icon_by_name};
@@ -252,8 +251,7 @@ fn load_all_icons(
             // When an icon theme override is specified and we're using freedesktop,
             // load from that specific theme instead of the system default.
             #[cfg(target_os = "linux")]
-            let data = if let Some(theme) =
-                icon_theme.filter(|_| icon_set == IconSet::Freedesktop)
+            let data = if let Some(theme) = icon_theme.filter(|_| icon_set == IconSet::Freedesktop)
             {
                 native_icon_name(*role, IconSet::Freedesktop)
                     .and_then(|name| load_freedesktop_icon_by_name(name, theme, 24u16))
@@ -462,16 +460,15 @@ fn load_gpui_icons(icon_set: Option<IconSet>, icon_theme: Option<&str>) -> Vec<I
     // On Linux with freedesktop, detect DE + theme once for the whole batch.
     // Use the icon_theme override if provided, otherwise detect from system.
     #[cfg(target_os = "linux")]
-    let (linux_de, fd_theme) =
-        if is_system_set && icon_set == IconSet::Freedesktop {
-            let de_str = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
-            let theme = icon_theme
-                .map(|s| s.to_string())
-                .unwrap_or_else(|| system_icon_theme().to_string());
-            (Some(detect_linux_de(&de_str)), Some(theme))
-        } else {
-            (None, None)
-        };
+    let (linux_de, fd_theme) = if is_system_set && icon_set == IconSet::Freedesktop {
+        let de_str = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
+        let theme = icon_theme
+            .map(|s| s.to_string())
+            .unwrap_or_else(|| system_icon_theme().to_string());
+        (Some(detect_linux_de(&de_str)), Some(theme))
+    } else {
+        (None, None)
+    };
 
     GPUI_ICONS
         .iter()
@@ -483,14 +480,13 @@ fn load_gpui_icons(icon_set: Option<IconSet>, icon_theme: Option<&str>) -> Vec<I
                 // When an icon theme override is specified and we're using freedesktop,
                 // load from that specific theme instead of the system default.
                 #[cfg(target_os = "linux")]
-                let data = if let Some(theme) =
-                    icon_theme.filter(|_| icon_set == IconSet::Freedesktop)
-                {
-                    native_icon_name(r, IconSet::Freedesktop)
-                        .and_then(|n| load_freedesktop_icon_by_name(n, theme, 24u16))
-                } else {
-                    load_icon(r, icon_set)
-                };
+                let data =
+                    if let Some(theme) = icon_theme.filter(|_| icon_set == IconSet::Freedesktop) {
+                        native_icon_name(r, IconSet::Freedesktop)
+                            .and_then(|n| load_freedesktop_icon_by_name(n, theme, 24u16))
+                    } else {
+                        load_icon(r, icon_set)
+                    };
                 #[cfg(not(target_os = "linux"))]
                 let data = load_icon(r, icon_set);
                 let source = match &data {
@@ -1116,45 +1112,50 @@ impl Showcase {
 
         // Apply the initial OS Theme via native-theme pipeline.
         let is_dark = color_mode.is_dark();
-        let (original_font, original_mono_font, initial_default_label, initial_icon_theme, initial_error) =
-            match native_theme::SystemTheme::from_system() {
-                Ok(system) => {
-                    let resolved = system.pick(is_dark);
-                    let font = resolved.defaults.font.clone();
-                    let mono_font = resolved.defaults.mono_font.clone();
-                    let icon_theme = resolved.icon_theme.clone();
-                    let theme = to_theme(resolved, &system.name, is_dark);
-                    *Theme::global_mut(cx) = theme;
-                    window.refresh();
-                    let label = format!("default ({})", system.preset);
-                    (font, mono_font, label, icon_theme, None)
-                }
-                Err(e) => {
-                    // Fall back to gpui-component built-in theme so the window still renders
-                    Theme::sync_system_appearance(Some(window), cx);
-                    let font = native_theme::ResolvedFontSpec {
-                        family: "(default)".into(),
-                        size: 0.0,
-                        weight: 400,
-                    };
-                    let mono_font = native_theme::ResolvedFontSpec {
-                        family: "(default)".into(),
-                        size: 0.0,
-                        weight: 400,
-                    };
-                    let preset = platform_preset_name();
-                    let display = preset.strip_suffix("-live").unwrap_or(preset);
-                    let label = format!("default ({})", display);
-                    let icon_theme = system_icon_theme().to_string();
-                    (
-                        font,
-                        mono_font,
-                        label,
-                        icon_theme,
-                        Some(format!("Failed to load OS theme: {e}")),
-                    )
-                }
-            };
+        let (
+            original_font,
+            original_mono_font,
+            initial_default_label,
+            initial_icon_theme,
+            initial_error,
+        ) = match native_theme::SystemTheme::from_system() {
+            Ok(system) => {
+                let resolved = system.pick(is_dark);
+                let font = resolved.defaults.font.clone();
+                let mono_font = resolved.defaults.mono_font.clone();
+                let icon_theme = resolved.icon_theme.clone();
+                let theme = to_theme(resolved, &system.name, is_dark);
+                *Theme::global_mut(cx) = theme;
+                window.refresh();
+                let label = format!("default ({})", system.preset);
+                (font, mono_font, label, icon_theme, None)
+            }
+            Err(e) => {
+                // Fall back to gpui-component built-in theme so the window still renders
+                Theme::sync_system_appearance(Some(window), cx);
+                let font = native_theme::ResolvedFontSpec {
+                    family: "(default)".into(),
+                    size: 0.0,
+                    weight: 400,
+                };
+                let mono_font = native_theme::ResolvedFontSpec {
+                    family: "(default)".into(),
+                    size: 0.0,
+                    weight: 400,
+                };
+                let preset = platform_preset_name();
+                let display = preset.strip_suffix("-live").unwrap_or(preset);
+                let label = format!("default ({})", display);
+                let icon_theme = system_icon_theme().to_string();
+                (
+                    font,
+                    mono_font,
+                    label,
+                    icon_theme,
+                    Some(format!("Failed to load OS theme: {e}")),
+                )
+            }
+        };
 
         // Resolve initial icon set from the theme's preferred icon_theme
         let initial_icon_set = match initial_icon_theme.as_str() {
@@ -1467,8 +1468,7 @@ impl Showcase {
 
             // Update the icon theme dropdown to reflect the new effective icon theme
             let icon_theme = &self.current_icon_theme;
-            let default_label: SharedString =
-                format!("default ({})", icon_theme).into();
+            let default_label: SharedString = format!("default ({})", icon_theme).into();
             let detected_theme = system_icon_theme();
             let system_label = format!("{} (system)", detected_theme);
             let icon_names: Vec<SharedString> = vec![

@@ -91,8 +91,8 @@ pub fn pick_variant(theme: &ThemeSpec, is_dark: bool) -> Option<&ThemeVariant> {
 /// Convert a [`ResolvedThemeVariant`] into a gpui-component [`Theme`].
 ///
 /// Builds a complete Theme by:
-/// 1. Mapping all 108 ThemeColor fields via [`colors::to_theme_color`]
-/// 2. Building a ThemeConfig from fonts/geometry via [`config::to_theme_config`]
+/// 1. Mapping all 108 ThemeColor fields via `colors::to_theme_color`
+/// 2. Building a ThemeConfig from fonts/geometry via `config::to_theme_config`
 /// 3. Constructing the Theme from the ThemeColor and applying the config
 pub fn to_theme(resolved: &ResolvedThemeVariant, name: &str, is_dark: bool) -> Theme {
     let theme_color = colors::to_theme_color(resolved, is_dark);

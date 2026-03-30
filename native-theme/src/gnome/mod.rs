@@ -44,7 +44,7 @@ pub(crate) fn portal_color_to_rgba(color: &Color) -> Option<crate::Rgba> {
     let b = color.blue();
 
     // Per XDG spec: out-of-range means "accent color not set"
-    if r < 0.0 || r > 1.0 || g < 0.0 || g > 1.0 || b < 0.0 || b > 1.0 {
+    if !(0.0..=1.0).contains(&r) || !(0.0..=1.0).contains(&g) || !(0.0..=1.0).contains(&b) {
         return None;
     }
 
@@ -56,28 +56,6 @@ fn apply_accent(variant: &mut crate::ThemeVariant, accent: &crate::Rgba) {
     variant.defaults.accent = Some(*accent);
     variant.defaults.selection = Some(*accent);
     variant.defaults.focus_ring_color = Some(*accent);
-}
-
-/// Parse a GNOME font string in the format `'Family Name Size'`.
-///
-/// gsettings outputs font names with single quotes (e.g., `'Cantarell 11'`).
-/// The family is everything before the last space; the size is the number after it.
-///
-/// Returns `None` if the string is empty, has no space separator, or the size
-/// is not a valid positive number.
-pub(crate) fn parse_gnome_font_string(s: &str) -> Option<(String, f32)> {
-    let trimmed = s.trim().trim_matches('\'');
-    if trimmed.is_empty() {
-        return None;
-    }
-    let last_space = trimmed.rfind(' ')?;
-    let family = &trimmed[..last_space];
-    let size_str = &trimmed[last_space + 1..];
-    let size: f32 = size_str.parse().ok()?;
-    if family.is_empty() || size <= 0.0 {
-        return None;
-    }
-    Some((family.to_string(), size))
 }
 
 /// Parse a GNOME/Pango font string into a full FontSpec with weight extraction.
@@ -168,10 +146,10 @@ pub(crate) fn build_gnome_variant(
     let mut variant = crate::ThemeVariant::default();
 
     // Apply accent color from portal if valid
-    if let Some(color) = accent {
-        if let Some(rgba) = portal_color_to_rgba(&color) {
-            apply_accent(&mut variant, &rgba);
-        }
+    if let Some(color) = accent
+        && let Some(rgba) = portal_color_to_rgba(&color)
+    {
+        apply_accent(&mut variant, &rgba);
     }
 
     // High contrast from portal (GNOME-05)
@@ -181,24 +159,24 @@ pub(crate) fn build_gnome_variant(
 
     // ── Fonts (GNOME-01) ────────────────────────────────────────────────
     // Primary UI font
-    if let Some(font_str) = read_gsetting("org.gnome.desktop.interface", "font-name") {
-        if let Some(fs) = parse_gnome_font_to_fontspec(&font_str) {
-            variant.defaults.font = fs;
-        }
+    if let Some(font_str) = read_gsetting("org.gnome.desktop.interface", "font-name")
+        && let Some(fs) = parse_gnome_font_to_fontspec(&font_str)
+    {
+        variant.defaults.font = fs;
     }
 
     // Monospace font
-    if let Some(mono_str) = read_gsetting("org.gnome.desktop.interface", "monospace-font-name") {
-        if let Some(fs) = parse_gnome_font_to_fontspec(&mono_str) {
-            variant.defaults.mono_font = fs;
-        }
+    if let Some(mono_str) = read_gsetting("org.gnome.desktop.interface", "monospace-font-name")
+        && let Some(fs) = parse_gnome_font_to_fontspec(&mono_str)
+    {
+        variant.defaults.mono_font = fs;
     }
 
     // Titlebar font (GNOME-01 extension)
-    if let Some(tb_str) = read_gsetting("org.gnome.desktop.wm.preferences", "titlebar-font") {
-        if let Some(fs) = parse_gnome_font_to_fontspec(&tb_str) {
-            variant.window.title_bar_font = Some(fs);
-        }
+    if let Some(tb_str) = read_gsetting("org.gnome.desktop.wm.preferences", "titlebar-font")
+        && let Some(fs) = parse_gnome_font_to_fontspec(&tb_str)
+    {
+        variant.window.title_bar_font = Some(fs);
     }
 
     // ── Text scale (GNOME-02) ──────────────────────────────────────────
@@ -209,10 +187,10 @@ pub(crate) fn build_gnome_variant(
 
     // ── Accessibility (GNOME-03 / GNOME-05) ─────────────────────────────
     // Text scaling factor
-    if let Some(factor_str) = read_gsetting("org.gnome.desktop.interface", "text-scaling-factor") {
-        if let Ok(factor) = factor_str.parse::<f32>() {
-            variant.defaults.text_scaling_factor = Some(factor);
-        }
+    if let Some(factor_str) = read_gsetting("org.gnome.desktop.interface", "text-scaling-factor")
+        && let Ok(factor) = factor_str.parse::<f32>()
+    {
+        variant.defaults.text_scaling_factor = Some(factor);
     }
 
     // enable-animations -> reduce_motion (GNOME-05 gsettings fallback)
@@ -425,65 +403,6 @@ pub(crate) async fn detect_portal_backend() -> Option<super::LinuxDesktop> {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-
-    // === parse_gnome_font_string tests (backward compat) ===
-
-    #[test]
-    fn parse_gnome_font_string_standard() {
-        assert_eq!(
-            parse_gnome_font_string("'Cantarell 11'"),
-            Some(("Cantarell".to_string(), 11.0))
-        );
-    }
-
-    #[test]
-    fn parse_gnome_font_string_multi_word() {
-        assert_eq!(
-            parse_gnome_font_string("'Noto Sans 10'"),
-            Some(("Noto Sans".to_string(), 10.0))
-        );
-    }
-
-    #[test]
-    fn parse_gnome_font_string_no_quotes() {
-        assert_eq!(
-            parse_gnome_font_string("Ubuntu Mono 13"),
-            Some(("Ubuntu Mono".to_string(), 13.0))
-        );
-    }
-
-    #[test]
-    fn parse_gnome_font_string_fractional_size() {
-        assert_eq!(
-            parse_gnome_font_string("'Inter 10.5'"),
-            Some(("Inter".to_string(), 10.5))
-        );
-    }
-
-    #[test]
-    fn parse_gnome_font_string_empty() {
-        assert_eq!(parse_gnome_font_string(""), None);
-    }
-
-    #[test]
-    fn parse_gnome_font_string_only_quotes() {
-        assert_eq!(parse_gnome_font_string("''"), None);
-    }
-
-    #[test]
-    fn parse_gnome_font_string_no_size() {
-        assert_eq!(parse_gnome_font_string("'Cantarell'"), None);
-    }
-
-    #[test]
-    fn parse_gnome_font_string_zero_size() {
-        assert_eq!(parse_gnome_font_string("'Font 0'"), None);
-    }
-
-    #[test]
-    fn parse_gnome_font_string_negative_size() {
-        assert_eq!(parse_gnome_font_string("'Font -1'"), None);
-    }
 
     // === parse_gnome_font_to_fontspec with weight extraction ===
 

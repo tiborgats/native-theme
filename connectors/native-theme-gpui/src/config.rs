@@ -13,7 +13,11 @@ use native_theme::ResolvedThemeVariant;
 /// Maps ResolvedThemeDefaults font/geometry fields to font_family/mono_font_family/
 /// font_size/mono_font_size, radius/radius_lg/shadow. IMPORTANT: ResolvedFontSpec
 /// sizes are already in logical pixels -- no pt-to-px conversion is applied.
-pub fn to_theme_config(resolved: &ResolvedThemeVariant, name: &str, mode: ThemeMode) -> ThemeConfig {
+pub fn to_theme_config(
+    resolved: &ResolvedThemeVariant,
+    name: &str,
+    mode: ThemeMode,
+) -> ThemeConfig {
     let d = &resolved.defaults;
 
     ThemeConfig {
@@ -74,8 +78,14 @@ mod tests {
         );
 
         // Geometry
-        assert_eq!(config.radius, Some(resolved.defaults.radius.round() as usize));
-        assert_eq!(config.radius_lg, Some(resolved.defaults.radius_lg.round() as usize));
+        assert_eq!(
+            config.radius,
+            Some(resolved.defaults.radius.round() as usize)
+        );
+        assert_eq!(
+            config.radius_lg,
+            Some(resolved.defaults.radius_lg.round() as usize)
+        );
         assert_eq!(config.shadow, Some(resolved.defaults.shadow_enabled));
     }
 

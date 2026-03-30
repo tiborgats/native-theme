@@ -229,9 +229,7 @@ impl UnwrapOrExit<GenerateOutput> for Result<GenerateOutput, BuildErrors> {
 ///
 /// Panics if `CARGO_MANIFEST_DIR` or `OUT_DIR` environment variables are
 /// not set (they are always set by cargo during a build).
-pub fn generate_icons(
-    toml_path: impl AsRef<Path>,
-) -> Result<GenerateOutput, BuildErrors> {
+pub fn generate_icons(toml_path: impl AsRef<Path>) -> Result<GenerateOutput, BuildErrors> {
     let toml_path = toml_path.as_ref();
     let manifest_dir =
         PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set"));
@@ -356,8 +354,9 @@ impl IconGenerator {
     pub fn generate(self) -> Result<GenerateOutput, BuildErrors> {
         if self.sources.is_empty() {
             return Err(BuildErrors(vec![BuildError::Io {
-                message: "no source files added to IconGenerator (call .source() before .generate())"
-                    .into(),
+                message:
+                    "no source files added to IconGenerator (call .source() before .generate())"
+                        .into(),
             }]));
         }
 
@@ -517,8 +516,7 @@ pub fn run_pipeline(
     // Step 0: Validate each config in isolation
     for (file_path, config) in configs {
         // Check for duplicate roles within a single file
-        let dup_in_file_errors =
-            validate::validate_no_duplicate_roles_in_file(config, file_path);
+        let dup_in_file_errors = validate::validate_no_duplicate_roles_in_file(config, file_path);
         errors.extend(dup_in_file_errors);
 
         // Check for theme overlap (same theme in bundled and system)
@@ -680,7 +678,13 @@ pub fn run_pipeline(
 
     // Step 4: Generate code
     let effective_crate_path = crate_path.unwrap_or("native_theme");
-    let code = codegen::generate_code(&merged, &all_mappings, &base_dir_str, effective_crate_path, extra_derives);
+    let code = codegen::generate_code(
+        &merged,
+        &all_mappings,
+        &base_dir_str,
+        effective_crate_path,
+        extra_derives,
+    );
 
     // Step 5: Compute size report
     let total_svg_bytes: u64 = svg_paths
@@ -782,16 +786,15 @@ fn pipeline_result_to_output(
 
     let output_path = out_dir.join(&result.output_filename);
 
-    let (role_count, bundled_theme_count, svg_count, total_svg_bytes) =
-        match &result.size_report {
-            Some(report) => (
-                report.role_count,
-                report.bundled_theme_count,
-                report.svg_count,
-                report.total_svg_bytes,
-            ),
-            None => (0, 0, 0, 0),
-        };
+    let (role_count, bundled_theme_count, svg_count, total_svg_bytes) = match &result.size_report {
+        Some(report) => (
+            report.role_count,
+            report.bundled_theme_count,
+            report.svg_count,
+            report.total_svg_bytes,
+        ),
+        None => (0, 0, 0, 0),
+    };
 
     Ok(GenerateOutput {
         output_path,
@@ -1488,10 +1491,12 @@ bundled-themes = ["material"]
         );
 
         assert!(!result.errors.is_empty(), "should detect duplicate roles");
-        assert!(result
-            .errors
-            .iter()
-            .any(|e| e.to_string().contains("play-pause")));
+        assert!(
+            result
+                .errors
+                .iter()
+                .any(|e| e.to_string().contains("play-pause"))
+        );
 
         let _ = fs::remove_dir_all(&dir);
     }
@@ -1686,10 +1691,7 @@ system-themes = ["material"]
             &[],
         );
 
-        assert!(
-            !result.errors.is_empty(),
-            "should detect theme overlap"
-        );
+        assert!(!result.errors.is_empty(), "should detect theme overlap");
         assert!(
             result.errors.iter().any(|e| matches!(
                 e,
@@ -1745,11 +1747,7 @@ bundled-themes = ["material"]
     #[test]
     fn pipeline_detects_invalid_identifier() {
         let dir = create_fixture_dir("id_invalid");
-        write_fixture(
-            &dir,
-            "material/mapping.toml",
-            "self = \"self_icon\"\n",
-        );
+        write_fixture(&dir, "material/mapping.toml", "self = \"self_icon\"\n");
         write_fixture(&dir, "material/self_icon.svg", SVG_STUB);
 
         let config: MasterConfig = toml::from_str(
@@ -1796,10 +1794,7 @@ bundled-themes = ["material"]
         // arrays allow duplicates
         let config = MasterConfig {
             name: "test".to_string(),
-            roles: vec![
-                "play-pause".to_string(),
-                "play-pause".to_string(),
-            ],
+            roles: vec!["play-pause".to_string(), "play-pause".to_string()],
             bundled_themes: vec!["material".to_string()],
             system_themes: Vec::new(),
         };

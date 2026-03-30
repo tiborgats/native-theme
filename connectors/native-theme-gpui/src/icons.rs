@@ -344,49 +344,49 @@ pub fn freedesktop_name_for_gpui_icon(
 
     Some(match icon {
         // --- Icons with freedesktop standard names (all DEs) ---
-        IconName::BookOpen => "help-contents",              // close
-        IconName::Bot => "face-smile",                      // approximate
-        IconName::ChevronDown => "go-down",                 // close: full nav arrow, not disclosure chevron
-        IconName::ChevronLeft => "go-previous",             // close
-        IconName::ChevronRight => "go-next",                // close
-        IconName::ChevronUp => "go-up",                     // close
-        IconName::CircleX => "dialog-error",                // close
-        IconName::Copy => "edit-copy",                      // exact
-        IconName::Dash => "list-remove",                    // exact
-        IconName::Delete => "edit-delete",                  // exact
-        IconName::File => "text-x-generic",                 // exact
-        IconName::Folder => "folder",                       // exact
-        IconName::FolderClosed => "folder",                 // exact
-        IconName::FolderOpen => "folder-open",              // exact
-        IconName::HeartOff => "non-starred",                // close: un-favorite semantics
-        IconName::Info => "dialog-information",             // exact
-        IconName::LayoutDashboard => "view-grid",           // close
-        IconName::Map => "find-location",                   // close
-        IconName::Maximize => "view-fullscreen",            // exact
-        IconName::Menu => "open-menu",                      // exact
-        IconName::Minimize => "window-minimize",            // exact
-        IconName::Minus => "list-remove",                   // exact
-        IconName::Moon => "weather-clear-night",            // close: dark mode toggle
-        IconName::Plus => "list-add",                       // exact
-        IconName::Redo => "edit-redo",                      // exact
-        IconName::Redo2 => "edit-redo",                     // exact
-        IconName::Replace => "edit-find-replace",           // exact
-        IconName::Search => "edit-find",                    // exact
-        IconName::Settings => "preferences-system",         // exact
-        IconName::SortAscending => "view-sort-ascending",   // exact
+        IconName::BookOpen => "help-contents",      // close
+        IconName::Bot => "face-smile",              // approximate
+        IconName::ChevronDown => "go-down",         // close: full nav arrow, not disclosure chevron
+        IconName::ChevronLeft => "go-previous",     // close
+        IconName::ChevronRight => "go-next",        // close
+        IconName::ChevronUp => "go-up",             // close
+        IconName::CircleX => "dialog-error",        // close
+        IconName::Copy => "edit-copy",              // exact
+        IconName::Dash => "list-remove",            // exact
+        IconName::Delete => "edit-delete",          // exact
+        IconName::File => "text-x-generic",         // exact
+        IconName::Folder => "folder",               // exact
+        IconName::FolderClosed => "folder",         // exact
+        IconName::FolderOpen => "folder-open",      // exact
+        IconName::HeartOff => "non-starred",        // close: un-favorite semantics
+        IconName::Info => "dialog-information",     // exact
+        IconName::LayoutDashboard => "view-grid",   // close
+        IconName::Map => "find-location",           // close
+        IconName::Maximize => "view-fullscreen",    // exact
+        IconName::Menu => "open-menu",              // exact
+        IconName::Minimize => "window-minimize",    // exact
+        IconName::Minus => "list-remove",           // exact
+        IconName::Moon => "weather-clear-night",    // close: dark mode toggle
+        IconName::Plus => "list-add",               // exact
+        IconName::Redo => "edit-redo",              // exact
+        IconName::Redo2 => "edit-redo",             // exact
+        IconName::Replace => "edit-find-replace",   // exact
+        IconName::Search => "edit-find",            // exact
+        IconName::Settings => "preferences-system", // exact
+        IconName::SortAscending => "view-sort-ascending", // exact
         IconName::SortDescending => "view-sort-descending", // exact
-        IconName::SquareTerminal => "utilities-terminal",   // close
-        IconName::Star => "starred",                        // exact
-        IconName::StarOff => "non-starred",                 // exact
-        IconName::Sun => "weather-clear",                   // close: light mode toggle
-        IconName::TriangleAlert => "dialog-warning",        // exact
-        IconName::Undo => "edit-undo",                      // exact
-        IconName::Undo2 => "edit-undo",                     // exact
-        IconName::User => "system-users",                   // exact
-        IconName::WindowClose => "window-close",            // exact
-        IconName::WindowMaximize => "window-maximize",      // exact
-        IconName::WindowMinimize => "window-minimize",      // exact
-        IconName::WindowRestore => "window-restore",        // exact
+        IconName::SquareTerminal => "utilities-terminal", // close
+        IconName::Star => "starred",                // exact
+        IconName::StarOff => "non-starred",         // exact
+        IconName::Sun => "weather-clear",           // close: light mode toggle
+        IconName::TriangleAlert => "dialog-warning", // exact
+        IconName::Undo => "edit-undo",              // exact
+        IconName::Undo2 => "edit-undo",             // exact
+        IconName::User => "system-users",           // exact
+        IconName::WindowClose => "window-close",    // exact
+        IconName::WindowMaximize => "window-maximize", // exact
+        IconName::WindowMinimize => "window-minimize", // exact
+        IconName::WindowRestore => "window-restore", // exact
 
         // --- Icons where KDE and GNOME both have names but they differ ---
         IconName::ArrowDown => {
@@ -808,8 +808,10 @@ pub fn animated_frames_to_image_sources(anim: &AnimatedIcon) -> Option<AnimatedI
             frames,
             frame_duration_ms,
         } => {
-            let sources: Vec<ImageSource> =
-                frames.iter().filter_map(|f| to_image_source(f, None, None)).collect();
+            let sources: Vec<ImageSource> = frames
+                .iter()
+                .filter_map(|f| to_image_source(f, None, None))
+                .collect();
             Some(AnimatedImageSources {
                 sources,
                 frame_duration_ms: *frame_duration_ms,
@@ -1397,10 +1399,7 @@ mod tests {
             !result_str.contains("currentColor"),
             "currentColor should be replaced"
         );
-        assert!(
-            result_str.contains('#'),
-            "should contain hex color"
-        );
+        assert!(result_str.contains('#'), "should contain hex color");
     }
 
     #[test]
@@ -1447,15 +1446,23 @@ mod tests {
 
     #[test]
     fn custom_icon_to_image_source_with_svg_provider_returns_some() {
-        let result =
-            custom_icon_to_image_source(&TestCustomIcon, native_theme::IconSet::Material, None, None);
+        let result = custom_icon_to_image_source(
+            &TestCustomIcon,
+            native_theme::IconSet::Material,
+            None,
+            None,
+        );
         assert!(result.is_some());
     }
 
     #[test]
     fn custom_icon_to_image_source_with_empty_provider_returns_none() {
-        let result =
-            custom_icon_to_image_source(&EmptyProvider, native_theme::IconSet::Material, None, None);
+        let result = custom_icon_to_image_source(
+            &EmptyProvider,
+            native_theme::IconSet::Material,
+            None,
+            None,
+        );
         assert!(result.is_none());
     }
 
@@ -1540,8 +1547,8 @@ mod tests {
 #[cfg(target_os = "linux")]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod freedesktop_mapping_tests {
-    use super::*;
     use super::tests::ALL_ICON_NAMES;
+    use super::*;
     use native_theme::LinuxDesktop;
 
     #[test]
@@ -1621,7 +1628,7 @@ mod freedesktop_mapping_tests {
         for name in ALL_ICON_NAMES {
             let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Kde)
                 .expect("icon has no KDE mapping");
-            if native_theme::load_freedesktop_icon_by_name(fd_name, &theme, 24).is_none() {
+            if native_theme::load_freedesktop_icon_by_name(fd_name, theme, 24).is_none() {
                 missing.push(format!("{} (not found)", fd_name));
             }
         }
@@ -1638,7 +1645,8 @@ mod freedesktop_mapping_tests {
         // Only runs when Adwaita is installed (it usually is on any Linux).
         let mut missing = Vec::new();
         for name in ALL_ICON_NAMES {
-            if let Some(fd_name) = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Gnome) {
+            if let Some(fd_name) = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Gnome)
+            {
                 // Has a GNOME mapping — verify it resolves in Adwaita
                 if native_theme::load_freedesktop_icon_by_name(fd_name, "Adwaita", 24).is_none() {
                     missing.push(format!("{} (not found)", fd_name));
