@@ -230,10 +230,9 @@ pub fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
 ///
 /// # Platform Behavior
 ///
-/// - **Linux:** Queries `gsettings` for `color-scheme`; falls back to KDE
-///   `kdeglobals` background luminance (with `kde` feature). When the
-///   `portal-tokio` or `portal-async-io` feature is enabled, prefers a
-///   synchronous D-Bus portal query over subprocess spawning.
+/// - **Linux:** Queries `gsettings` for `color-scheme` via subprocess;
+///   falls back to KDE `kdeglobals` background luminance (with `kde`
+///   feature).
 /// - **macOS:** Reads `AppleInterfaceStyle` via `NSUserDefaults` (with
 ///   `macos` feature) or `defaults` subprocess (without).
 /// - **Windows:** Checks foreground color luminance from `UISettings` via
@@ -876,6 +875,9 @@ async fn from_system_async_inner() -> crate::Result<SystemTheme> {
 /// 1. Platform loader (freedesktop/sf-symbols/segoe-fluent) when `system-icons` enabled
 /// 2. Bundled SVGs (material/lucide) when the corresponding feature is enabled
 /// 3. Non-matching set: `None` (no cross-set fallback)
+///
+/// Freedesktop icons are loaded at 24 px (the standard toolbar size). For
+/// custom sizes, call `freedesktop::load_freedesktop_icon()` directly.
 ///
 /// # Examples
 ///

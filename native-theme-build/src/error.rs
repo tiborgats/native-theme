@@ -81,6 +81,22 @@ pub enum BuildError {
         /// Path to the file containing the duplicate.
         file: String,
     },
+    /// A theme name appears more than once in the same list.
+    DuplicateTheme {
+        /// The duplicated theme name.
+        theme: String,
+        /// Which list contains the duplicate (`"bundled-themes"` or `"system-themes"`).
+        list: String,
+    },
+    /// A mapping value contains characters that are invalid for an icon name.
+    InvalidIconName {
+        /// The offending icon name.
+        name: String,
+        /// The role it belongs to.
+        role: String,
+        /// Path to the mapping file.
+        mapping_file: String,
+    },
 }
 
 impl fmt::Display for BuildError {
@@ -140,6 +156,20 @@ impl fmt::Display for BuildError {
             }
             Self::DuplicateRoleInFile { role, file } => {
                 write!(f, "role \"{role}\" appears more than once in {file}")
+            }
+            Self::DuplicateTheme { theme, list } => {
+                write!(f, "theme \"{theme}\" appears more than once in {list}")
+            }
+            Self::InvalidIconName {
+                name,
+                role,
+                mapping_file,
+            } => {
+                write!(
+                    f,
+                    "invalid icon name \"{name}\" for role \"{role}\" in {mapping_file}: \
+                     names must be non-empty and free of control characters"
+                )
             }
         }
     }

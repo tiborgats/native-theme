@@ -75,8 +75,7 @@ All helpers take a `&ResolvedThemeVariant` reference.
 For app-specific icons defined via `native-theme-build`, the connector provides:
 
 - `custom_icon_to_image_handle(provider, icon_set)` -- load a custom icon as an iced image handle
-- `custom_icon_to_svg_handle(provider, icon_set)` -- load as an SVG handle
-- `custom_icon_to_svg_handle_colored(provider, icon_set, color)` -- load with color tinting
+- `custom_icon_to_svg_handle(provider, icon_set, color)` -- load as an SVG handle (pass `None` for uncolored)
 
 These work with any type implementing `IconProvider`.
 

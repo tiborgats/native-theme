@@ -273,6 +273,66 @@ pub(crate) fn validate_no_duplicate_roles_in_file(
     errors
 }
 
+/// Validate that no theme name appears twice within the same list.
+///
+/// Checks both `bundled_themes` and `system_themes` for exact duplicates.
+/// Returns `BuildError::DuplicateTheme` for each duplicate found.
+pub(crate) fn validate_no_duplicate_themes(config: &MasterConfig) -> Vec<BuildError> {
+    let mut errors = Vec::new();
+
+    let mut seen = BTreeSet::new();
+    for theme in &config.bundled_themes {
+        if !seen.insert(theme.as_str()) {
+            errors.push(BuildError::DuplicateTheme {
+                theme: theme.clone(),
+                list: "bundled-themes".to_string(),
+            });
+        }
+    }
+
+    seen.clear();
+    for theme in &config.system_themes {
+        if !seen.insert(theme.as_str()) {
+            errors.push(BuildError::DuplicateTheme {
+                theme: theme.clone(),
+                list: "system-themes".to_string(),
+            });
+        }
+    }
+
+    errors
+}
+
+/// Validate that all icon name strings in a mapping are well-formed.
+///
+/// Rejects empty names and names containing control characters. Applied
+/// before escaping in codegen so users get an error pointing at their TOML
+/// rather than silently accepting dubious names.
+pub(crate) fn validate_mapping_values(
+    mapping: &ThemeMapping,
+    mapping_path: &str,
+) -> Vec<BuildError> {
+    let mut errors = Vec::new();
+
+    for (role, value) in mapping {
+        let names: Vec<&str> = match value {
+            MappingValue::Simple(s) => vec![s.as_str()],
+            MappingValue::DeAware(m) => m.values().map(|s| s.as_str()).collect(),
+        };
+        for name in names {
+            if name.is_empty() || name.chars().any(|c| c.is_control()) {
+                errors.push(BuildError::InvalidIconName {
+                    name: name.to_string(),
+                    role: role.clone(),
+                    mapping_file: mapping_path.to_string(),
+                });
+            }
+        }
+    }
+
+    errors
+}
+
 /// Validate that no role name appears in multiple config files.
 ///
 /// Given a list of `(file_path, MasterConfig)` pairs, checks for role name
@@ -808,5 +868,76 @@ mod tests {
             errors.is_empty(),
             "case-different roles are not exact duplicates"
         );
+    }
+
+    // === validate_no_duplicate_themes tests ===
+
+    #[test]
+    fn duplicate_bundled_theme_detected() {
+        let config = make_config("x", &["a"], &["material", "lucide", "material"], &[]);
+        let errors = validate_no_duplicate_themes(&config);
+        assert_eq!(errors.len(), 1);
+        let msg = errors[0].to_string();
+        assert!(msg.contains("material"));
+        assert!(msg.contains("bundled-themes"));
+    }
+
+    #[test]
+    fn duplicate_system_theme_detected() {
+        let config = make_config("x", &["a"], &[], &["freedesktop", "freedesktop"]);
+        let errors = validate_no_duplicate_themes(&config);
+        assert_eq!(errors.len(), 1);
+        let msg = errors[0].to_string();
+        assert!(msg.contains("freedesktop"));
+        assert!(msg.contains("system-themes"));
+    }
+
+    #[test]
+    fn no_duplicate_themes() {
+        let config = make_config("x", &["a"], &["material", "lucide"], &["freedesktop"]);
+        let errors = validate_no_duplicate_themes(&config);
+        assert!(errors.is_empty());
+    }
+
+    // === validate_mapping_values tests ===
+
+    #[test]
+    fn valid_icon_names_pass() {
+        let mapping = make_mapping(vec![
+            ("play-pause", MappingValue::Simple("play_pause".into())),
+            ("skip", MappingValue::Simple("skip_forward".into())),
+        ]);
+        let errors = validate_mapping_values(&mapping, "mapping.toml");
+        assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn empty_icon_name_rejected() {
+        let mapping = make_mapping(vec![("play-pause", MappingValue::Simple("".into()))]);
+        let errors = validate_mapping_values(&mapping, "mapping.toml");
+        assert_eq!(errors.len(), 1);
+        let msg = errors[0].to_string();
+        assert!(msg.contains("play-pause"));
+        assert!(msg.contains("invalid icon name"));
+    }
+
+    #[test]
+    fn control_char_in_icon_name_rejected() {
+        let mapping = make_mapping(vec![(
+            "play-pause",
+            MappingValue::Simple("play\x00pause".into()),
+        )]);
+        let errors = validate_mapping_values(&mapping, "mapping.toml");
+        assert_eq!(errors.len(), 1);
+    }
+
+    #[test]
+    fn de_aware_empty_value_rejected() {
+        let mut de_map = BTreeMap::new();
+        de_map.insert("default".to_string(), "".to_string());
+        de_map.insert("kde".to_string(), "valid_name".to_string());
+        let mapping = make_mapping(vec![("play-pause", MappingValue::DeAware(de_map))]);
+        let errors = validate_mapping_values(&mapping, "mapping.toml");
+        assert_eq!(errors.len(), 1);
     }
 }

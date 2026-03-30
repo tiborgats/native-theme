@@ -527,6 +527,10 @@ fn run_pipeline(
         // Check for theme overlap (same theme in bundled and system)
         let overlap_errors = validate::validate_theme_overlap(config);
         errors.extend(overlap_errors);
+
+        // Check for duplicate theme names within the same list
+        let dup_theme_errors = validate::validate_no_duplicate_themes(config);
+        errors.extend(dup_theme_errors);
     }
 
     // Step 1: Check for duplicate roles across all files
@@ -572,6 +576,11 @@ fn run_pipeline(
                     let map_errors =
                         validate::validate_mapping(&merged.roles, &mapping, &mapping_path_str);
                     errors.extend(map_errors);
+
+                    // Validate icon name values are well-formed
+                    let name_errors =
+                        validate::validate_mapping_values(&mapping, &mapping_path_str);
+                    errors.extend(name_errors);
 
                     // Validate SVGs exist
                     let svg_errors =
@@ -635,6 +644,11 @@ fn run_pipeline(
                     let map_errors =
                         validate::validate_mapping(&merged.roles, &mapping, &mapping_path_str);
                     errors.extend(map_errors);
+
+                    // Validate icon name values are well-formed
+                    let name_errors =
+                        validate::validate_mapping_values(&mapping, &mapping_path_str);
+                    errors.extend(name_errors);
 
                     // Warn about unrecognized DE keys in DeAware values
                     let de_warnings = validate::validate_de_keys(&mapping, &mapping_path_str);
