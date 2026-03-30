@@ -2,8 +2,8 @@
 
 use crate::error::ThemeResolutionError;
 use crate::model::resolved::{
-    ResolvedIconSizes, ResolvedSpacing, ResolvedTextScale, ResolvedTextScaleEntry,
-    ResolvedThemeDefaults, ResolvedThemeVariant,
+    ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedThemeDefaults,
+    ResolvedThemeSpacing, ResolvedThemeVariant,
 };
 use crate::model::{FontSpec, ResolvedFontSpec, TextScaleEntry, ThemeVariant};
 
@@ -1277,7 +1277,7 @@ impl ThemeVariant {
                 focus_ring_color: defaults_focus_ring_color,
                 focus_ring_width: defaults_focus_ring_width,
                 focus_ring_offset: defaults_focus_ring_offset,
-                spacing: ResolvedSpacing {
+                spacing: ResolvedThemeSpacing {
                     xxs: defaults_spacing_xxs,
                     xs: defaults_spacing_xs,
                     s: defaults_spacing_s,

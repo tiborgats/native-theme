@@ -7,11 +7,11 @@
 use super::font::ResolvedFontSpec;
 use crate::Rgba;
 
-// --- ResolvedSpacing ---
+// --- ResolvedThemeSpacing ---
 
 /// A fully resolved spacing scale where every tier is guaranteed populated.
 #[derive(Clone, Debug, PartialEq, serde::Serialize)]
-pub struct ResolvedSpacing {
+pub struct ResolvedThemeSpacing {
     /// Extra-extra-small spacing in logical pixels.
     pub xxs: f32,
     /// Extra-small spacing in logical pixels.
@@ -159,7 +159,7 @@ pub struct ResolvedThemeDefaults {
 
     // ---- Spacing scale ----
     /// Logical spacing scale.
-    pub spacing: ResolvedSpacing,
+    pub spacing: ResolvedThemeSpacing,
 
     // ---- Icon sizes ----
     /// Per-context icon sizes.
@@ -278,8 +278,8 @@ mod tests {
         }
     }
 
-    fn sample_spacing() -> ResolvedSpacing {
-        ResolvedSpacing {
+    fn sample_spacing() -> ResolvedThemeSpacing {
+        ResolvedThemeSpacing {
             xxs: 2.0,
             xs: 4.0,
             s: 6.0,
@@ -357,7 +357,7 @@ mod tests {
         }
     }
 
-    // --- ResolvedSpacing tests ---
+    // --- ResolvedThemeSpacing tests ---
 
     #[test]
     fn resolved_spacing_has_7_concrete_fields() {
@@ -377,7 +377,7 @@ mod tests {
         let s2 = s.clone();
         assert_eq!(s, s2);
         let dbg = format!("{s:?}");
-        assert!(dbg.contains("ResolvedSpacing"));
+        assert!(dbg.contains("ResolvedThemeSpacing"));
     }
 
     // --- ResolvedIconSizes tests ---

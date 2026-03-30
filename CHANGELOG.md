@@ -18,7 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - `ThemeSpacing` struct (xxs through xxl)
 - `define_widget_pair!` macro generating paired Option/Resolved structs from a single definition
 - `ResolvedThemeVariant` type where all fields are guaranteed populated (non-optional)
-- `ResolvedThemeDefaults`, `ResolvedFontSpec`, `ResolvedSpacing`, `ResolvedIconSizes`, `ResolvedTextScale`, `ResolvedTextScaleEntry` types
+- `ResolvedThemeDefaults`, `ResolvedFontSpec`, `ResolvedThemeSpacing`, `ResolvedIconSizes`, `ResolvedTextScale`, `ResolvedTextScaleEntry` types
 - `ThemeResolutionError` listing missing field paths; `Error::Resolution` variant
 - `ThemeVariant::resolve()` with ~90 inheritance rules in 4 phases (defaults-internal, safety-nets, widget-from-defaults, widget-to-widget)
 - `ThemeVariant::validate()` producing `ResolvedThemeVariant` or listing all missing fields

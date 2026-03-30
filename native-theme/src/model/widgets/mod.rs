@@ -34,10 +34,10 @@ macro_rules! define_widget_pair {
         $(#[$attr:meta])*
         $opt_name:ident / $resolved_name:ident {
             $(option {
-                $($opt_field:ident : $opt_type:ty),* $(,)?
+                $($(#[doc = $opt_doc:expr])* $opt_field:ident : $opt_type:ty),* $(,)?
             })?
             $(optional_nested {
-                $($on_field:ident : [$on_opt_type:ty, $on_res_type:ty]),* $(,)?
+                $($(#[doc = $on_doc:expr])* $on_field:ident : [$on_opt_type:ty, $on_res_type:ty]),* $(,)?
             })?
         }
     ) => {
@@ -45,21 +45,19 @@ macro_rules! define_widget_pair {
         #[serde_with::skip_serializing_none]
         #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
         #[serde(default)]
-        #[allow(missing_docs)]
         pub struct $opt_name {
-            $($(pub $opt_field: Option<$opt_type>,)*)?
-            $($(pub $on_field: Option<$on_opt_type>,)*)?
+            $($($(#[doc = $opt_doc])* pub $opt_field: Option<$opt_type>,)*)?
+            $($($(#[doc = $on_doc])* pub $on_field: Option<$on_opt_type>,)*)?
         }
 
         $(#[$attr])*
         #[derive(Clone, Debug, PartialEq, serde::Serialize)]
-        #[allow(missing_docs)]
         pub struct $resolved_name {
-            $($(pub $opt_field: $opt_type,)*)?
-            $($(pub $on_field: $on_res_type,)*)?
+            $($($(#[doc = $opt_doc])* pub $opt_field: $opt_type,)*)?
+            $($($(#[doc = $on_doc])* pub $on_field: $on_res_type,)*)?
         }
 
-        $crate::impl_merge!($opt_name {
+        impl_merge!($opt_name {
             $(option { $($opt_field),* })?
             $(optional_nested { $($on_field),* })?
         });
@@ -72,17 +70,27 @@ define_widget_pair! {
     /// Window chrome: background, title bar colors, inactive states, geometry.
     WindowTheme / ResolvedWindowTheme {
         option {
+            /// Main window background fill.
             background: Rgba,
+            /// Default text color on the window background.
             foreground: Rgba,
+            /// Window border color.
             border: Rgba,
+            /// Active title bar background fill.
             title_bar_background: Rgba,
+            /// Active title bar text color.
             title_bar_foreground: Rgba,
+            /// Title bar background when the window is unfocused.
             inactive_title_bar_background: Rgba,
+            /// Title bar text color when the window is unfocused.
             inactive_title_bar_foreground: Rgba,
+            /// Corner radius in logical pixels.
             radius: f32,
+            /// Whether the window has a drop shadow.
             shadow: bool,
         }
         optional_nested {
+            /// Title bar font specification.
             title_bar_font: [FontSpec, ResolvedFontSpec],
         }
     }
@@ -94,21 +102,35 @@ define_widget_pair! {
     /// Push button: colors, sizing, spacing, geometry.
     ButtonTheme / ResolvedButtonTheme {
         option {
+            /// Default button background fill.
             background: Rgba,
+            /// Default button text/icon color.
             foreground: Rgba,
+            /// Button border color.
             border: Rgba,
+            /// Primary / accent button background fill.
             primary_bg: Rgba,
+            /// Primary / accent button text/icon color.
             primary_fg: Rgba,
+            /// Minimum button width in logical pixels.
             min_width: f32,
+            /// Minimum button height in logical pixels.
             min_height: f32,
+            /// Horizontal padding inside the button.
             padding_horizontal: f32,
+            /// Vertical padding inside the button.
             padding_vertical: f32,
+            /// Corner radius in logical pixels.
             radius: f32,
+            /// Space between icon and label.
             icon_spacing: f32,
+            /// Opacity multiplier when the button is disabled (0.0–1.0).
             disabled_opacity: f32,
+            /// Whether the button has a drop shadow.
             shadow: bool,
         }
         optional_nested {
+            /// Button label font specification.
             font: [FontSpec, ResolvedFontSpec],
         }
     }
@@ -120,20 +142,33 @@ define_widget_pair! {
     /// Single-line and multi-line text input fields.
     InputTheme / ResolvedInputTheme {
         option {
+            /// Input field background fill.
             background: Rgba,
+            /// Typed text color.
             foreground: Rgba,
+            /// Input field border color.
             border: Rgba,
+            /// Placeholder text color.
             placeholder: Rgba,
+            /// Text cursor (caret) color.
             caret: Rgba,
+            /// Text selection highlight color.
             selection: Rgba,
+            /// Text color inside the selection highlight.
             selection_foreground: Rgba,
+            /// Minimum field height in logical pixels.
             min_height: f32,
+            /// Horizontal padding inside the field.
             padding_horizontal: f32,
+            /// Vertical padding inside the field.
             padding_vertical: f32,
+            /// Corner radius in logical pixels.
             radius: f32,
+            /// Border stroke width in logical pixels.
             border_width: f32,
         }
         optional_nested {
+            /// Input text font specification.
             font: [FontSpec, ResolvedFontSpec],
         }
     }
@@ -145,10 +180,15 @@ define_widget_pair! {
     /// Checkbox and radio button indicator geometry.
     CheckboxTheme / ResolvedCheckboxTheme {
         option {
+            /// Indicator background when checked.
             checked_bg: Rgba,
+            /// Indicator (check mark / radio dot) size in logical pixels.
             indicator_size: f32,
+            /// Space between indicator and label.
             spacing: f32,
+            /// Indicator corner radius in logical pixels.
             radius: f32,
+            /// Indicator border width in logical pixels.
             border_width: f32,
         }
     }
@@ -160,15 +200,23 @@ define_widget_pair! {
     /// Popup and context menu appearance.
     MenuTheme / ResolvedMenuTheme {
         option {
+            /// Menu panel background fill.
             background: Rgba,
+            /// Menu item text color.
             foreground: Rgba,
+            /// Separator line color between menu items.
             separator: Rgba,
+            /// Height of a single menu item row.
             item_height: f32,
+            /// Horizontal padding inside the menu panel.
             padding_horizontal: f32,
+            /// Vertical padding inside the menu panel.
             padding_vertical: f32,
+            /// Space between a menu item's icon and its label.
             icon_spacing: f32,
         }
         optional_nested {
+            /// Menu item font specification.
             font: [FontSpec, ResolvedFontSpec],
         }
     }
@@ -180,14 +228,21 @@ define_widget_pair! {
     /// Tooltip popup appearance.
     TooltipTheme / ResolvedTooltipTheme {
         option {
+            /// Tooltip background fill.
             background: Rgba,
+            /// Tooltip text color.
             foreground: Rgba,
+            /// Horizontal padding inside the tooltip.
             padding_horizontal: f32,
+            /// Vertical padding inside the tooltip.
             padding_vertical: f32,
+            /// Maximum tooltip width before wrapping.
             max_width: f32,
+            /// Corner radius in logical pixels.
             radius: f32,
         }
         optional_nested {
+            /// Tooltip font specification.
             font: [FontSpec, ResolvedFontSpec],
         }
     }
@@ -199,12 +254,19 @@ define_widget_pair! {
     /// Scrollbar colors and geometry.
     ScrollbarTheme / ResolvedScrollbarTheme {
         option {
+            /// Scrollbar track (gutter) color.
             track: Rgba,
+            /// Scrollbar thumb color.
             thumb: Rgba,
+            /// Thumb color on hover.
             thumb_hover: Rgba,
+            /// Scrollbar width in logical pixels.
             width: f32,
+            /// Minimum thumb height in logical pixels.
             min_thumb_height: f32,
+            /// Width of the slider rail within the scrollbar.
             slider_width: f32,
+            /// Whether the scrollbar overlays content instead of taking layout space.
             overlay_mode: bool,
         }
     }
@@ -216,11 +278,17 @@ define_widget_pair! {
     /// Slider control colors and geometry.
     SliderTheme / ResolvedSliderTheme {
         option {
+            /// Filled portion of the slider track.
             fill: Rgba,
+            /// Unfilled track color.
             track: Rgba,
+            /// Thumb (handle) color.
             thumb: Rgba,
+            /// Track height in logical pixels.
             track_height: f32,
+            /// Thumb diameter in logical pixels.
             thumb_size: f32,
+            /// Tick mark length in logical pixels.
             tick_length: f32,
         }
     }
@@ -232,10 +300,15 @@ define_widget_pair! {
     /// Progress bar colors and geometry.
     ProgressBarTheme / ResolvedProgressBarTheme {
         option {
+            /// Filled progress bar color.
             fill: Rgba,
+            /// Background track color.
             track: Rgba,
+            /// Bar height in logical pixels.
             height: f32,
+            /// Minimum bar width in logical pixels.
             min_width: f32,
+            /// Corner radius in logical pixels.
             radius: f32,
         }
     }
@@ -247,14 +320,23 @@ define_widget_pair! {
     /// Tab bar colors and sizing.
     TabTheme / ResolvedTabTheme {
         option {
+            /// Inactive tab background.
             background: Rgba,
+            /// Inactive tab text color.
             foreground: Rgba,
+            /// Active (selected) tab background.
             active_background: Rgba,
+            /// Active (selected) tab text color.
             active_foreground: Rgba,
+            /// Tab bar strip background.
             bar_background: Rgba,
+            /// Minimum tab width in logical pixels.
             min_width: f32,
+            /// Minimum tab height in logical pixels.
             min_height: f32,
+            /// Horizontal padding inside each tab.
             padding_horizontal: f32,
+            /// Vertical padding inside each tab.
             padding_vertical: f32,
         }
     }
@@ -266,7 +348,9 @@ define_widget_pair! {
     /// Sidebar panel background and foreground colors.
     SidebarTheme / ResolvedSidebarTheme {
         option {
+            /// Sidebar panel background fill.
             background: Rgba,
+            /// Sidebar text color.
             foreground: Rgba,
         }
     }
@@ -278,11 +362,15 @@ define_widget_pair! {
     /// Toolbar sizing, spacing, and font.
     ToolbarTheme / ResolvedToolbarTheme {
         option {
+            /// Toolbar height in logical pixels.
             height: f32,
+            /// Horizontal space between toolbar items.
             item_spacing: f32,
+            /// Padding around toolbar content.
             padding: f32,
         }
         optional_nested {
+            /// Toolbar label font specification.
             font: [FontSpec, ResolvedFontSpec],
         }
     }
@@ -294,6 +382,7 @@ define_widget_pair! {
     /// Status bar font.
     StatusBarTheme / ResolvedStatusBarTheme {
         optional_nested {
+            /// Status bar font specification.
             font: [FontSpec, ResolvedFontSpec],
         }
     }
@@ -305,16 +394,27 @@ define_widget_pair! {
     /// List and table colors and row geometry.
     ListTheme / ResolvedListTheme {
         option {
+            /// List background fill.
             background: Rgba,
+            /// Default item text color.
             foreground: Rgba,
+            /// Alternate row background for striped lists.
             alternate_row: Rgba,
+            /// Selected row highlight color.
             selection: Rgba,
+            /// Text color inside a selected row.
             selection_foreground: Rgba,
+            /// Column header background fill.
             header_background: Rgba,
+            /// Column header text color.
             header_foreground: Rgba,
+            /// Grid line color between rows/columns.
             grid_color: Rgba,
+            /// Row height in logical pixels.
             item_height: f32,
+            /// Horizontal padding inside each cell.
             padding_horizontal: f32,
+            /// Vertical padding inside each cell.
             padding_vertical: f32,
         }
     }
@@ -326,9 +426,13 @@ define_widget_pair! {
     /// Popover / dropdown panel appearance.
     PopoverTheme / ResolvedPopoverTheme {
         option {
+            /// Panel background fill.
             background: Rgba,
+            /// Panel text color.
             foreground: Rgba,
+            /// Panel border color.
             border: Rgba,
+            /// Corner radius in logical pixels.
             radius: f32,
         }
     }
@@ -340,6 +444,7 @@ define_widget_pair! {
     /// Splitter handle width.
     SplitterTheme / ResolvedSplitterTheme {
         option {
+            /// Handle width in logical pixels.
             width: f32,
         }
     }
@@ -351,6 +456,7 @@ define_widget_pair! {
     /// Separator line color.
     SeparatorTheme / ResolvedSeparatorTheme {
         option {
+            /// Separator line color.
             color: Rgba,
         }
     }
@@ -362,12 +468,19 @@ define_widget_pair! {
     /// Toggle switch track, thumb, and geometry.
     SwitchTheme / ResolvedSwitchTheme {
         option {
+            /// Track background when the switch is on.
             checked_bg: Rgba,
+            /// Track background when the switch is off.
             unchecked_bg: Rgba,
+            /// Thumb (knob) color.
             thumb_bg: Rgba,
+            /// Track width in logical pixels.
             track_width: f32,
+            /// Track height in logical pixels.
             track_height: f32,
+            /// Thumb diameter in logical pixels.
             thumb_size: f32,
+            /// Track corner radius in logical pixels.
             track_radius: f32,
         }
     }
@@ -379,17 +492,27 @@ define_widget_pair! {
     /// Dialog sizing, spacing, button order, and title font.
     DialogTheme / ResolvedDialogTheme {
         option {
+            /// Minimum dialog width in logical pixels.
             min_width: f32,
+            /// Maximum dialog width in logical pixels.
             max_width: f32,
+            /// Minimum dialog height in logical pixels.
             min_height: f32,
+            /// Maximum dialog height in logical pixels.
             max_height: f32,
+            /// Padding around dialog content.
             content_padding: f32,
+            /// Horizontal space between dialog buttons.
             button_spacing: f32,
+            /// Corner radius in logical pixels.
             radius: f32,
+            /// Icon size for dialog type icons (warning, error, etc.).
             icon_size: f32,
+            /// Platform button order convention (e.g., OK/Cancel vs Cancel/OK).
             button_order: DialogButtonOrder,
         }
         optional_nested {
+            /// Dialog title font specification.
             title_font: [FontSpec, ResolvedFontSpec],
         }
     }
@@ -401,9 +524,13 @@ define_widget_pair! {
     /// Spinner / indeterminate progress indicator.
     SpinnerTheme / ResolvedSpinnerTheme {
         option {
+            /// Spinner arc fill color.
             fill: Rgba,
+            /// Spinner outer diameter in logical pixels.
             diameter: f32,
+            /// Minimum rendered size in logical pixels.
             min_size: f32,
+            /// Arc stroke width in logical pixels.
             stroke_width: f32,
         }
     }
@@ -415,11 +542,17 @@ define_widget_pair! {
     /// ComboBox / dropdown trigger sizing.
     ComboBoxTheme / ResolvedComboBoxTheme {
         option {
+            /// Minimum trigger height in logical pixels.
             min_height: f32,
+            /// Minimum trigger width in logical pixels.
             min_width: f32,
+            /// Horizontal padding inside the trigger.
             padding_horizontal: f32,
+            /// Dropdown arrow size in logical pixels.
             arrow_size: f32,
+            /// Width of the arrow clickable area.
             arrow_area_width: f32,
+            /// Corner radius in logical pixels.
             radius: f32,
         }
     }
@@ -431,9 +564,13 @@ define_widget_pair! {
     /// Segmented control sizing (macOS-primary; KDE uses tab bar metrics as proxy).
     SegmentedControlTheme / ResolvedSegmentedControlTheme {
         option {
+            /// Segment height in logical pixels.
             segment_height: f32,
+            /// Width of the separator between segments.
             separator_width: f32,
+            /// Horizontal padding inside each segment.
             padding_horizontal: f32,
+            /// Corner radius in logical pixels.
             radius: f32,
         }
     }
@@ -445,10 +582,15 @@ define_widget_pair! {
     /// Card / container colors and geometry.
     CardTheme / ResolvedCardTheme {
         option {
+            /// Card background fill.
             background: Rgba,
+            /// Card border color.
             border: Rgba,
+            /// Corner radius in logical pixels.
             radius: f32,
+            /// Padding inside the card.
             padding: f32,
+            /// Whether the card has a drop shadow.
             shadow: bool,
         }
     }
@@ -460,9 +602,13 @@ define_widget_pair! {
     /// Expander / disclosure row geometry.
     ExpanderTheme / ResolvedExpanderTheme {
         option {
+            /// Collapsed header row height in logical pixels.
             header_height: f32,
+            /// Disclosure arrow size in logical pixels.
             arrow_size: f32,
+            /// Padding around expanded content.
             content_padding: f32,
+            /// Corner radius in logical pixels.
             radius: f32,
         }
     }
@@ -474,10 +620,15 @@ define_widget_pair! {
     /// Hyperlink colors and underline setting.
     LinkTheme / ResolvedLinkTheme {
         option {
+            /// Link text color.
             color: Rgba,
+            /// Visited link text color.
             visited: Rgba,
+            /// Link background fill (typically transparent).
             background: Rgba,
+            /// Link background on hover.
             hover_bg: Rgba,
+            /// Whether links are underlined.
             underline: bool,
         }
     }

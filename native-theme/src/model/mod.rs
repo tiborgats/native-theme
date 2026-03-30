@@ -31,8 +31,8 @@ pub use icons::{
     IconData, IconProvider, IconRole, IconSet, icon_name, system_icon_set, system_icon_theme,
 };
 pub use resolved::{
-    ResolvedIconSizes, ResolvedSpacing, ResolvedTextScale, ResolvedTextScaleEntry,
-    ResolvedThemeDefaults, ResolvedThemeVariant,
+    ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedThemeDefaults,
+    ResolvedThemeSpacing, ResolvedThemeVariant,
 };
 pub use spacing::ThemeSpacing;
 pub use widgets::*; // All 25 XxxTheme + ResolvedXxxTheme pairs

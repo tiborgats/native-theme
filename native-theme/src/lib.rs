@@ -30,27 +30,11 @@ pub struct ReadmeDoctests;
 ///
 /// # Examples
 ///
-/// ```
-/// use native_theme::impl_merge;
-///
-/// #[derive(Clone, Debug, Default)]
-/// struct MyColors {
-///     accent: Option<String>,
-///     background: Option<String>,
-/// }
-///
+/// ```ignore
 /// impl_merge!(MyColors {
 ///     option { accent, background }
 /// });
-///
-/// let mut base = MyColors { accent: Some("blue".into()), background: None };
-/// let overlay = MyColors { accent: None, background: Some("white".into()) };
-/// base.merge(&overlay);
-/// assert_eq!(base.accent.as_deref(), Some("blue"));
-/// assert_eq!(base.background.as_deref(), Some("white"));
 /// ```
-#[doc(hidden)]
-#[macro_export]
 macro_rules! impl_merge {
     (
         $struct_name:ident {
@@ -121,8 +105,8 @@ pub use model::{
     AnimatedIcon, ButtonTheme, CardTheme, CheckboxTheme, ComboBoxTheme, DialogButtonOrder,
     DialogTheme, ExpanderTheme, FontSpec, IconData, IconProvider, IconRole, IconSet, IconSizes,
     InputTheme, LinkTheme, ListTheme, MenuTheme, PopoverTheme, ProgressBarTheme, ResolvedFontSpec,
-    ResolvedIconSizes, ResolvedSpacing, ResolvedTextScale, ResolvedTextScaleEntry,
-    ResolvedThemeDefaults, ResolvedThemeVariant, ScrollbarTheme, SegmentedControlTheme,
+    ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedThemeDefaults,
+    ResolvedThemeSpacing, ResolvedThemeVariant, ScrollbarTheme, SegmentedControlTheme,
     SeparatorTheme, SidebarTheme, SliderTheme, SpinnerTheme, SplitterTheme, StatusBarTheme,
     SwitchTheme, TabTheme, TextScale, TextScaleEntry, ThemeDefaults, ThemeSpacing, ThemeSpec,
     ThemeVariant, ToolbarTheme, TooltipTheme, TransformAnimation, WindowTheme,

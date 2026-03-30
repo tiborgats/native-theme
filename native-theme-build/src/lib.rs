@@ -141,6 +141,7 @@ use schema::{MappingValue, THEME_TABLE};
 /// information needed to emit cargo directives. Call
 /// [`emit_cargo_directives()`](Self::emit_cargo_directives) to write the
 /// output file and print `cargo::rerun-if-changed` / `cargo::warning` lines.
+#[derive(Debug)]
 pub struct GenerateOutput {
     /// Path where the generated `.rs` file will be written.
     pub output_path: PathBuf,
@@ -157,7 +158,7 @@ pub struct GenerateOutput {
     /// Paths that cargo should watch for changes.
     rerun_paths: Vec<PathBuf>,
     /// The generated Rust source code.
-    code: String,
+    pub code: String,
 }
 
 impl GenerateOutput {
@@ -266,6 +267,7 @@ pub struct IconGenerator {
     base_dir: Option<PathBuf>,
     crate_path: Option<String>,
     extra_derives: Vec<String>,
+    output_dir: Option<PathBuf>,
 }
 
 impl Default for IconGenerator {
@@ -283,6 +285,7 @@ impl IconGenerator {
             base_dir: None,
             crate_path: None,
             extra_derives: Vec::new(),
+            output_dir: None,
         }
     }
 
@@ -341,16 +344,31 @@ impl IconGenerator {
         self
     }
 
+    /// Set an explicit output directory for the generated `.rs` file.
+    ///
+    /// When not set, the `OUT_DIR` environment variable is used (always
+    /// available during `cargo build`). Set this when running outside of
+    /// a build script context (e.g., in integration tests).
+    pub fn output_dir(mut self, path: impl AsRef<Path>) -> Self {
+        self.output_dir = Some(path.as_ref().to_path_buf());
+        self
+    }
+
     /// Run the full pipeline: load, validate, generate.
     ///
     /// Returns a [`GenerateOutput`] on success or [`BuildErrors`] on failure.
     /// Call [`GenerateOutput::emit_cargo_directives()`] on the result to write
     /// the generated file and emit cargo directives.
     ///
+    /// Source paths may be absolute or relative. Relative paths are resolved
+    /// against `CARGO_MANIFEST_DIR`. When all source paths are absolute,
+    /// `CARGO_MANIFEST_DIR` is not required.
+    ///
     /// # Panics
     ///
-    /// Panics if `CARGO_MANIFEST_DIR` or `OUT_DIR` environment variables are
-    /// not set.
+    /// Panics if `CARGO_MANIFEST_DIR` is not set and a relative source path
+    /// is used. Panics if neither [`output_dir()`](Self::output_dir) nor
+    /// `OUT_DIR` is set.
     pub fn generate(self) -> Result<GenerateOutput, BuildErrors> {
         if self.sources.is_empty() {
             return Err(BuildErrors(vec![BuildError::Io {
@@ -360,15 +378,29 @@ impl IconGenerator {
             }]));
         }
 
-        let manifest_dir =
-            PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set"));
-        let out_dir = PathBuf::from(std::env::var("OUT_DIR").expect("OUT_DIR not set"));
+        let needs_manifest_dir = self.sources.iter().any(|s| !s.is_absolute())
+            || self.base_dir.as_ref().is_some_and(|b| !b.is_absolute());
+        let manifest_dir = if needs_manifest_dir {
+            Some(PathBuf::from(
+                std::env::var("CARGO_MANIFEST_DIR").expect("CARGO_MANIFEST_DIR not set"),
+            ))
+        } else {
+            std::env::var("CARGO_MANIFEST_DIR").ok().map(PathBuf::from)
+        };
+
+        let out_dir = self
+            .output_dir
+            .unwrap_or_else(|| PathBuf::from(std::env::var("OUT_DIR").expect("OUT_DIR not set")));
 
         let mut configs = Vec::new();
         let mut base_dirs = Vec::new();
 
         for source in &self.sources {
-            let resolved = manifest_dir.join(source);
+            let resolved = if source.is_absolute() {
+                source.clone()
+            } else {
+                manifest_dir.as_ref().unwrap().join(source)
+            };
             let content = std::fs::read_to_string(&resolved)
                 .unwrap_or_else(|e| panic!("failed to read {}: {e}", resolved.display()));
             let config: MasterConfig = toml::from_str(&content)
@@ -377,7 +409,12 @@ impl IconGenerator {
             let file_path_str = resolved.to_string_lossy().to_string();
 
             if let Some(ref explicit_base) = self.base_dir {
-                base_dirs.push(manifest_dir.join(explicit_base));
+                let base = if explicit_base.is_absolute() {
+                    explicit_base.clone()
+                } else {
+                    manifest_dir.as_ref().unwrap().join(explicit_base)
+                };
+                base_dirs.push(base);
             } else {
                 let parent = resolved
                     .parent()
@@ -406,7 +443,7 @@ impl IconGenerator {
             &configs,
             &base_dirs,
             self.enum_name_override.as_deref(),
-            Some(&manifest_dir),
+            manifest_dir.as_deref(),
             self.crate_path.as_deref(),
             &self.extra_derives,
         );
@@ -415,42 +452,12 @@ impl IconGenerator {
     }
 }
 
-/// Load TOML files and run the pipeline. For integration testing only.
-///
-/// Unlike [`generate_icons()`] and [`IconGenerator::generate()`], this
-/// function takes resolved file paths directly and does not require
-/// `CARGO_MANIFEST_DIR` or `OUT_DIR` environment variables.
-#[doc(hidden)]
-pub fn run_pipeline_on_files(
-    toml_paths: &[&Path],
-    enum_name_override: Option<&str>,
-) -> PipelineResult {
-    let mut configs = Vec::new();
-    let mut base_dirs = Vec::new();
-
-    for path in toml_paths {
-        let content = std::fs::read_to_string(path)
-            .unwrap_or_else(|e| panic!("failed to read {}: {e}", path.display()));
-        let config: MasterConfig = toml::from_str(&content)
-            .unwrap_or_else(|e| panic!("failed to parse {}: {e}", path.display()));
-        let base_dir = path
-            .parent()
-            .expect("TOML path has no parent")
-            .to_path_buf();
-        configs.push((path.to_string_lossy().to_string(), config));
-        base_dirs.push(base_dir);
-    }
-
-    run_pipeline(&configs, &base_dirs, enum_name_override, None, None, &[])
-}
-
 /// Result of running the pure pipeline core.
 ///
 /// Contains the generated code, collected errors, and collected warnings.
 /// The thin outer layer ([`generate_icons()`] / [`IconGenerator::generate()`])
 /// converts this into `Result<GenerateOutput, BuildErrors>`.
-#[doc(hidden)]
-pub struct PipelineResult {
+struct PipelineResult {
     /// Generated Rust source code (empty if errors were found).
     pub code: String,
     /// Build errors found during validation.
@@ -466,8 +473,7 @@ pub struct PipelineResult {
 }
 
 /// Size report for cargo::warning output.
-#[doc(hidden)]
-pub struct SizeReport {
+struct SizeReport {
     /// Number of icon roles.
     pub role_count: usize,
     /// Number of bundled themes.
@@ -490,8 +496,7 @@ pub struct SizeReport {
 ///
 /// `crate_path` controls the Rust path prefix used in generated code
 /// (e.g. `"native_theme"` or `"my_crate::native_theme"`).
-#[doc(hidden)]
-pub fn run_pipeline(
+fn run_pipeline(
     configs: &[(String, MasterConfig)],
     base_dirs: &[PathBuf],
     enum_name_override: Option<&str>,

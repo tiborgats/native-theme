@@ -44,8 +44,7 @@ pub(crate) fn is_known_theme(name: &str) -> bool {
 /// ```
 #[derive(Deserialize)]
 #[serde(deny_unknown_fields)]
-#[doc(hidden)]
-pub struct MasterConfig {
+pub(crate) struct MasterConfig {
     /// Name for the generated enum (kebab-case, converted to PascalCase).
     pub name: String,
     /// List of role names (kebab-case).
