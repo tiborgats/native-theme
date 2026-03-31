@@ -30,7 +30,9 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeVariant) {
 
     // Progress bar
     variant.progress_bar.height = Some(6.0); // ProgressBar_Thickness
-    variant.progress_bar.min_width = Some(14.0); // ProgressBar_BusyIndicatorSize
+    // min_width: KDE has no native minimum (platform-facts §2.10).
+    // ProgressBar_BusyIndicatorSize (14) is the busy-indicator animation
+    // segment width, not a widget minimum. Preset provides the value.
 
     // Tab
     variant.tab.min_width = Some(80.0); // TabBar_TabMinWidth
