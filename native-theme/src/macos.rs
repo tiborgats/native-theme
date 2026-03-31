@@ -388,7 +388,7 @@ fn build_theme(
 
     let mut light_variant = widget_defaults.clone();
     light_variant.defaults = light_defaults;
-    light_variant.icon_set = Some("sf-symbols".to_string());
+    light_variant.icon_set = Some(crate::IconSet::SfSymbols);
     light_variant.menu.font = Some(widget_fonts.menu_font.clone());
     light_variant.tooltip.font = Some(widget_fonts.tooltip_font.clone());
     light_variant.window.title_bar_font = Some(widget_fonts.title_bar_font.clone());
@@ -396,7 +396,7 @@ fn build_theme(
 
     let mut dark_variant = widget_defaults;
     dark_variant.defaults = dark_defaults;
-    dark_variant.icon_set = Some("sf-symbols".to_string());
+    dark_variant.icon_set = Some(crate::IconSet::SfSymbols);
     dark_variant.menu.font = Some(widget_fonts.menu_font.clone());
     dark_variant.tooltip.font = Some(widget_fonts.tooltip_font.clone());
     dark_variant.window.title_bar_font = Some(widget_fonts.title_bar_font.clone());
@@ -421,6 +421,7 @@ fn build_theme(
 /// Returns `Error::Unavailable` if neither light nor dark appearance can be created
 /// (extremely unlikely on any macOS version that supports these APIs).
 #[cfg(all(target_os = "macos", feature = "macos"))]
+#[must_use = "this returns the detected macOS theme; it does not apply it"]
 pub fn from_macos() -> crate::Result<crate::ThemeSpec> {
     let light_name = NSString::from_str("NSAppearanceNameAqua");
     let dark_name = NSString::from_str("NSAppearanceNameDarkAqua");
@@ -722,10 +723,10 @@ mod tests {
         );
 
         let light = theme.light.as_ref().unwrap();
-        assert_eq!(light.icon_set.as_deref(), Some("sf-symbols"));
+        assert_eq!(light.icon_set, Some(crate::IconSet::SfSymbols));
 
         let dark = theme.dark.as_ref().unwrap();
-        assert_eq!(dark.icon_set.as_deref(), Some("sf-symbols"));
+        assert_eq!(dark.icon_set, Some(crate::IconSet::SfSymbols));
     }
 
     #[test]
@@ -914,8 +915,9 @@ mod tests {
             "font family should be from macOS reader"
         );
         assert_eq!(
-            resolved.icon_set, "sf-symbols",
-            "icon_set should be sf-symbols from macOS reader"
+            resolved.icon_set,
+            crate::IconSet::SfSymbols,
+            "icon_set should be SfSymbols from macOS reader"
         );
 
         // Test dark variant too.

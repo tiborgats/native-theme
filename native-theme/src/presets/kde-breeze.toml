@@ -33,15 +33,15 @@ focus_ring_color = "#3daee9"
 disabled_foreground = "#bcc0bf"
 accent_foreground = "#fcfcfc"
 
-radius = 4.0
+radius = 5.0
 radius_lg = 8.0
 frame_width = 1.0
 disabled_opacity = 0.5
 border_opacity = 0.2
 shadow_enabled = true
-line_height = 1.4
-focus_ring_width = 2.0
-focus_ring_offset = 1.0
+line_height = 1.36
+focus_ring_width = 1.0
+focus_ring_offset = 2.0
 text_scaling_factor = 1.0
 reduce_motion = false
 high_contrast = false
@@ -67,11 +67,11 @@ xl = 16.0
 xxl = 24.0
 
 [light.defaults.icon_sizes]
-toolbar = 24.0
+toolbar = 22.0
 small = 16.0
-large = 32.0
-dialog = 22.0
-panel = 20.0
+large = 48.0
+dialog = 32.0
+panel = 48.0
 
 [light.button]
 background = "#fcfcfc"
@@ -113,7 +113,7 @@ tick_length = 8.0
 
 [light.progress_bar]
 height = 6.0
-min_width = 14.0
+min_width = 6.0
 
 [light.tab]
 min_width = 80.0
@@ -155,10 +155,10 @@ width = 1.0
 [light.switch]
 unchecked_bg = "#bcc0bf"
 thumb_bg = "#fcfcfc"
-track_width = 40.0
-track_height = 20.0
-thumb_size = 16.0
-track_radius = 10.0
+track_width = 36.0
+track_height = 18.0
+thumb_size = 18.0
+track_radius = 9.0
 
 [light.dialog]
 button_order = "leading_affirmative"
@@ -176,7 +176,7 @@ background = "#00000000"
 hover_bg = "#3daee918"
 
 [light.spinner]
-diameter = 24.0
+diameter = 36.0
 min_size = 16.0
 stroke_width = 2.0
 
@@ -197,7 +197,7 @@ padding = 16.0
 
 [light.expander]
 header_height = 40.0
-arrow_size = 12.0
+arrow_size = 10.0
 content_padding = 16.0
 
 # === Dark variant (BreezeDark.colors) ===
@@ -231,15 +231,15 @@ focus_ring_color = "#3daee9"
 disabled_foreground = "#4d545b"
 accent_foreground = "#fcfcfc"
 
-radius = 4.0
+radius = 5.0
 radius_lg = 8.0
 frame_width = 1.0
 disabled_opacity = 0.5
 border_opacity = 0.2
 shadow_enabled = true
-line_height = 1.4
-focus_ring_width = 2.0
-focus_ring_offset = 1.0
+line_height = 1.36
+focus_ring_width = 1.0
+focus_ring_offset = 2.0
 text_scaling_factor = 1.0
 reduce_motion = false
 high_contrast = false
@@ -265,11 +265,11 @@ xl = 16.0
 xxl = 24.0
 
 [dark.defaults.icon_sizes]
-toolbar = 24.0
+toolbar = 22.0
 small = 16.0
-large = 32.0
-dialog = 22.0
-panel = 20.0
+large = 48.0
+dialog = 32.0
+panel = 48.0
 
 [dark.button]
 background = "#31363b"
@@ -311,7 +311,7 @@ tick_length = 8.0
 
 [dark.progress_bar]
 height = 6.0
-min_width = 14.0
+min_width = 6.0
 
 [dark.tab]
 min_width = 80.0
@@ -353,10 +353,10 @@ width = 1.0
 [dark.switch]
 unchecked_bg = "#4d545b"
 thumb_bg = "#fcfcfc"
-track_width = 40.0
-track_height = 20.0
-thumb_size = 16.0
-track_radius = 10.0
+track_width = 36.0
+track_height = 18.0
+thumb_size = 18.0
+track_radius = 9.0
 
 [dark.dialog]
 button_order = "leading_affirmative"
@@ -374,7 +374,7 @@ background = "#00000000"
 hover_bg = "#3daee918"
 
 [dark.spinner]
-diameter = 24.0
+diameter = 36.0
 min_size = 16.0
 stroke_width = 2.0
 
@@ -395,5 +395,5 @@ padding = 16.0
 
 [dark.expander]
 header_height = 40.0
-arrow_size = 12.0
+arrow_size = 10.0
 content_padding = 16.0

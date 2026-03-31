@@ -32,7 +32,7 @@ impl std::error::Error for ThemeResolutionError {}
 #[non_exhaustive]
 pub enum Error {
     /// Operation not supported on the current platform.
-    Unsupported,
+    Unsupported(&'static str),
 
     /// Data source exists but cannot be read right now.
     Unavailable(String),
@@ -53,7 +53,7 @@ pub enum Error {
 impl std::fmt::Display for Error {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            Error::Unsupported => write!(f, "operation not supported on this platform"),
+            Error::Unsupported(reason) => write!(f, "not supported: {reason}"),
             Error::Unavailable(msg) => write!(f, "theme data unavailable: {msg}"),
             Error::Format(msg) => write!(f, "theme format error: {msg}"),
             Error::Platform(err) => write!(f, "platform error: {err}"),
@@ -99,9 +99,10 @@ mod tests {
 
     #[test]
     fn unsupported_display() {
-        let err = Error::Unsupported;
+        let err = Error::Unsupported("KDE theme detection requires the `kde` feature");
         let msg = err.to_string();
         assert!(msg.contains("not supported"), "got: {msg}");
+        assert!(msg.contains("kde"), "got: {msg}");
     }
 
     #[test]
@@ -140,7 +141,7 @@ mod tests {
 
     #[test]
     fn non_platform_source_is_none() {
-        assert!(std::error::Error::source(&Error::Unsupported).is_none());
+        assert!(std::error::Error::source(&Error::Unsupported("test")).is_none());
         assert!(std::error::Error::source(&Error::Unavailable("x".into())).is_none());
         assert!(std::error::Error::source(&Error::Format("x".into())).is_none());
     }

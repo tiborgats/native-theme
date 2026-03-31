@@ -9,6 +9,7 @@
 //! | [`material_name_for_gpui_icon`] | Map [`IconName`] → Material name (`&str`) |
 //! | [`freedesktop_name_for_gpui_icon`] | Map [`IconName`] → freedesktop name (Linux only) |
 //! | [`to_image_source`] | Convert [`IconData`] → [`ImageSource`] with optional color/size |
+//! | [`into_image_source`] | Consuming variant of [`to_image_source`] (avoids clone) |
 //! | [`custom_icon_to_image_source`] | Load + convert via [`IconProvider`] |
 //! | [`animated_frames_to_image_sources`] | Convert animation frames → [`AnimatedImageSources`] |
 //! | [`with_spin_animation`] | Wrap an SVG element with spin animation |
@@ -25,11 +26,21 @@ use std::time::Duration;
 ///
 /// Returned by [`animated_frames_to_image_sources`]. Contains the
 /// rasterized frames and the per-frame duration needed to drive playback.
+#[derive(Clone)]
 pub struct AnimatedImageSources {
     /// Rasterized frames ready for gpui rendering.
     pub sources: Vec<ImageSource>,
     /// Duration of each frame in milliseconds.
     pub frame_duration_ms: u32,
+}
+
+impl std::fmt::Debug for AnimatedImageSources {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("AnimatedImageSources")
+            .field("frame_count", &self.sources.len())
+            .field("frame_duration_ms", &self.frame_duration_ms)
+            .finish()
+    }
 }
 
 /// Map an [`IconRole`] to a gpui-component [`IconName`] for the Lucide icon set.
@@ -57,6 +68,7 @@ pub struct AnimatedImageSources {
 /// assert_eq!(icon_name(IconRole::DialogWarning), Some(IconName::TriangleAlert));
 /// assert_eq!(icon_name(IconRole::Shield), None);
 /// ```
+#[must_use]
 pub fn icon_name(role: IconRole) -> Option<IconName> {
     Some(match role {
         // Dialog / Alert
@@ -114,8 +126,9 @@ pub fn icon_name(role: IconRole) -> Option<IconName> {
 /// [`native_theme::bundled_icon_by_name`].
 ///
 /// Covers all 86 gpui-component `IconName` variants.
-pub fn lucide_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
-    Some(match icon {
+#[must_use]
+pub fn lucide_name_for_gpui_icon(icon: IconName) -> &'static str {
+    match icon {
         IconName::ALargeSmall => "a-large-small",
         IconName::ArrowDown => "arrow-down",
         IconName::ArrowLeft => "arrow-left",
@@ -202,7 +215,7 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
         IconName::WindowMaximize => "window-maximize",
         IconName::WindowMinimize => "window-minimize",
         IconName::WindowRestore => "window-restore",
-    })
+    }
 }
 
 /// Map a gpui-component [`IconName`] to its canonical Material icon name.
@@ -211,8 +224,9 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
 /// [`native_theme::bundled_icon_by_name`].
 ///
 /// Covers all 86 gpui-component `IconName` variants.
-pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
-    Some(match icon {
+#[must_use]
+pub fn material_name_for_gpui_icon(icon: IconName) -> &'static str {
+    match icon {
         IconName::ALargeSmall => "font_size",
         IconName::ArrowDown => "arrow_downward",
         IconName::ArrowLeft => "arrow_back",
@@ -299,7 +313,7 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
         IconName::WindowMaximize => "open_in_full",
         IconName::WindowMinimize => "minimize",
         IconName::WindowRestore => "close_fullscreen",
-    })
+    }
 }
 
 /// Map a gpui-component [`IconName`] to its freedesktop icon name for the
@@ -314,9 +328,6 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
 /// Adwaita/GNOME naming convention. Qt-based DEs (KDE, LxQt) and
 /// Unknown share the Breeze/KDE convention.
 ///
-/// Returns `None` when no icon exists in the DE's naming convention,
-/// signaling the caller to fall back to bundled Lucide/Material icons.
-///
 /// ## Confidence levels
 ///
 /// Each mapping is annotated with a confidence level:
@@ -326,10 +337,11 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> Option<&'static str> {
 ///
 /// Covers all 86 gpui-component `IconName` variants.
 #[cfg(target_os = "linux")]
+#[must_use]
 pub fn freedesktop_name_for_gpui_icon(
     icon: IconName,
     de: native_theme::LinuxDesktop,
-) -> Option<&'static str> {
+) -> &'static str {
     use native_theme::LinuxDesktop;
 
     // GTK-based DEs follow GNOME/Adwaita naming; Qt-based follow KDE/Breeze
@@ -342,7 +354,7 @@ pub fn freedesktop_name_for_gpui_icon(
             | LinuxDesktop::Xfce
     );
 
-    Some(match icon {
+    match icon {
         // --- Icons with freedesktop standard names (all DEs) ---
         IconName::BookOpen => "help-contents",      // close
         IconName::Bot => "face-smile",              // approximate
@@ -692,7 +704,7 @@ pub fn freedesktop_name_for_gpui_icon(
                 "approved"
             }
         } // approximate
-    })
+    }
 }
 
 /// Default rasterization size for SVG icons.
@@ -728,6 +740,7 @@ const SVG_RASTERIZE_SIZE: u32 = 48;
 /// let colored = to_image_source(&svg, Some(color), None); // colorized, 48px
 /// let sized = to_image_source(&svg, None, Some(96));      // uncolorized, 96px
 /// ```
+#[must_use]
 pub fn to_image_source(
     data: &IconData,
     color: Option<Hsla>,
@@ -756,6 +769,45 @@ pub fn to_image_source(
     }
 }
 
+/// Convert [`IconData`] to a gpui [`ImageSource`], consuming the data.
+///
+/// This is the consuming variant of [`to_image_source()`]. It takes ownership
+/// of the `IconData` to avoid cloning the underlying `Vec<u8>`. Prefer this
+/// when you already own the data and won't use it again.
+///
+/// Returns `None` if the icon data cannot be converted (corrupt SVG,
+/// unknown variant).
+///
+/// See [`to_image_source()`] for details on the `color` and `size` parameters.
+#[must_use]
+pub fn into_image_source(
+    data: IconData,
+    color: Option<Hsla>,
+    size: Option<u32>,
+) -> Option<ImageSource> {
+    let raster_size = size.unwrap_or(SVG_RASTERIZE_SIZE);
+    match data {
+        IconData::Svg(bytes) => {
+            if let Some(c) = color {
+                let colored = colorize_svg(&bytes, c);
+                svg_to_bmp_source(&colored, raster_size)
+            } else {
+                svg_to_bmp_source(&bytes, raster_size)
+            }
+        }
+        IconData::Rgba {
+            width,
+            height,
+            data,
+        } => {
+            let bmp = encode_rgba_as_bmp(width, height, &data);
+            let image = Image::from_bytes(ImageFormat::Bmp, bmp);
+            Some(ImageSource::Image(Arc::new(image)))
+        }
+        _ => None,
+    }
+}
+
 /// Load a custom icon from an [`IconProvider`] and convert to a gpui [`ImageSource`].
 ///
 /// Equivalent to calling [`load_custom_icon()`](native_theme::load_custom_icon)
@@ -765,6 +817,7 @@ pub fn to_image_source(
 /// conversion fails.
 ///
 /// See [`to_image_source()`] for details on the `color` and `size` parameters.
+#[must_use]
 pub fn custom_icon_to_image_source(
     provider: &(impl IconProvider + ?Sized),
     icon_set: native_theme::IconSet,
@@ -802,6 +855,7 @@ pub fn custom_icon_to_image_source(
 ///     // gpui::img(sources[frame_index].clone())
 /// }
 /// ```
+#[must_use]
 pub fn animated_frames_to_image_sources(anim: &AnimatedIcon) -> Option<AnimatedImageSources> {
     match anim {
         AnimatedIcon::Frames {
@@ -850,6 +904,7 @@ pub fn animated_frames_to_image_sources(anim: &AnimatedIcon) -> Option<AnimatedI
 /// let animated = with_spin_animation(spinner, "my-spinner", 1000);
 /// // Use `animated` as a child element in your gpui view
 /// ```
+#[must_use]
 pub fn with_spin_animation(
     element: Svg,
     animation_id: impl Into<gpui::ElementId>,
@@ -928,10 +983,16 @@ fn colorize_svg(svg_bytes: &[u8], color: Hsla) -> Vec<u8> {
         let tag_end = pos + close;
         let tag = &svg_str[pos..tag_end];
         if !tag.contains("fill=") {
+            // Handle self-closing tags: inject before '/' in '<svg .../>'
+            let inject_pos = if tag_end > 0 && svg_str.as_bytes()[tag_end - 1] == b'/' {
+                tag_end - 1
+            } else {
+                tag_end
+            };
             let mut result = String::with_capacity(svg_str.len() + 20);
-            result.push_str(&svg_str[..tag_end]);
+            result.push_str(&svg_str[..inject_pos]);
             result.push_str(&format!(" fill=\"{}\"", hex));
-            result.push_str(&svg_str[tag_end..]);
+            result.push_str(&svg_str[inject_pos..]);
             return result.into_bytes();
         }
     }
@@ -1098,9 +1159,10 @@ mod tests {
     #[test]
     fn all_icons_have_lucide_mapping() {
         for icon in ALL_ICON_NAMES {
+            let name = lucide_name_for_gpui_icon(icon.clone());
             assert!(
-                lucide_name_for_gpui_icon(icon.clone()).is_some(),
-                "Missing Lucide mapping for an IconName variant",
+                !name.is_empty(),
+                "Empty Lucide mapping for an IconName variant",
             );
         }
     }
@@ -1108,9 +1170,10 @@ mod tests {
     #[test]
     fn all_icons_have_material_mapping() {
         for icon in ALL_ICON_NAMES {
+            let name = material_name_for_gpui_icon(icon.clone());
             assert!(
-                material_name_for_gpui_icon(icon.clone()).is_some(),
-                "Missing Material mapping for an IconName variant",
+                !name.is_empty(),
+                "Empty Material mapping for an IconName variant",
             );
         }
     }
@@ -1420,6 +1483,66 @@ mod tests {
         );
     }
 
+    #[test]
+    fn colorize_self_closing_svg_produces_valid_xml() {
+        // Self-closing <svg .../> tag — fill must be injected before '/'
+        let svg = b"<svg xmlns=\"http://www.w3.org/2000/svg\" />";
+        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+        let result = colorize_svg(svg, color);
+        let result_str = String::from_utf8(result).unwrap();
+        assert!(
+            result_str.contains("fill=\"#"),
+            "should inject fill, got: {}",
+            result_str
+        );
+        // Must NOT produce '/ fill=' (broken XML)
+        assert!(
+            !result_str.contains("/ fill="),
+            "fill must be before '/', got: {}",
+            result_str
+        );
+        // Must end with '/>' (valid self-closing)
+        assert!(
+            result_str.trim().ends_with("/>"),
+            "should remain self-closing, got: {}",
+            result_str
+        );
+    }
+
+    // --- into_image_source tests ---
+
+    #[test]
+    fn into_image_source_svg_returns_some() {
+        let svg = IconData::Svg(
+            b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>".to_vec(),
+        );
+        let result = into_image_source(svg, None, None);
+        assert!(result.is_some(), "valid SVG should convert");
+    }
+
+    #[test]
+    fn into_image_source_rgba_returns_some() {
+        let rgba = IconData::Rgba {
+            width: 2,
+            height: 2,
+            data: vec![
+                255, 0, 0, 255, 0, 255, 0, 255, 0, 0, 255, 255, 255, 255, 0, 255,
+            ],
+        };
+        let result = into_image_source(rgba, None, None);
+        assert!(result.is_some(), "RGBA should convert");
+    }
+
+    #[test]
+    fn into_image_source_with_color() {
+        let svg = IconData::Svg(
+            b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M0 0' stroke='currentColor'/></svg>".to_vec(),
+        );
+        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+        let result = into_image_source(svg, Some(color), None);
+        assert!(result.is_some(), "colorized SVG should convert");
+    }
+
     // --- custom_icon tests ---
 
     // Test helper: minimal IconProvider that returns a bundled SVG
@@ -1555,28 +1678,24 @@ mod freedesktop_mapping_tests {
 
     #[test]
     fn all_86_gpui_icons_have_mapping_on_kde() {
-        let mut missing_count = 0;
         for name in ALL_ICON_NAMES {
-            if freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Kde).is_none() {
-                missing_count += 1;
-            }
+            let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Kde);
+            assert!(
+                !fd_name.is_empty(),
+                "Empty KDE freedesktop mapping for an IconName variant",
+            );
         }
-        assert!(
-            missing_count == 0,
-            "Missing KDE freedesktop mappings for {} icon(s)",
-            missing_count,
-        );
     }
 
     #[test]
     fn eye_differs_by_de() {
         assert_eq!(
             freedesktop_name_for_gpui_icon(IconName::Eye, LinuxDesktop::Kde),
-            Some("view-visible"),
+            "view-visible",
         );
         assert_eq!(
             freedesktop_name_for_gpui_icon(IconName::Eye, LinuxDesktop::Gnome),
-            Some("view-reveal"),
+            "view-reveal",
         );
     }
 
@@ -1591,17 +1710,13 @@ mod freedesktop_mapping_tests {
 
     #[test]
     fn all_86_gpui_icons_have_mapping_on_gnome() {
-        let mut missing_count = 0;
         for name in ALL_ICON_NAMES {
-            if freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Gnome).is_none() {
-                missing_count += 1;
-            }
+            let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Gnome);
+            assert!(
+                !fd_name.is_empty(),
+                "Empty GNOME freedesktop mapping for an IconName variant",
+            );
         }
-        assert!(
-            missing_count == 0,
-            "Missing GNOME freedesktop mappings for {} icon(s)",
-            missing_count,
-        );
     }
 
     #[test]
@@ -1609,11 +1724,11 @@ mod freedesktop_mapping_tests {
         // XFCE is GTK-based and should use GNOME naming convention
         assert_eq!(
             freedesktop_name_for_gpui_icon(IconName::Eye, LinuxDesktop::Xfce),
-            Some("view-reveal"),
+            "view-reveal",
         );
         assert_eq!(
             freedesktop_name_for_gpui_icon(IconName::Bell, LinuxDesktop::Xfce),
-            Some("alarm"),
+            "alarm",
         );
     }
 
@@ -1628,8 +1743,7 @@ mod freedesktop_mapping_tests {
 
         let mut missing = Vec::new();
         for name in ALL_ICON_NAMES {
-            let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Kde)
-                .expect("icon has no KDE mapping");
+            let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Kde);
             if native_theme::load_freedesktop_icon_by_name(fd_name, theme, 24).is_none() {
                 missing.push(format!("{} (not found)", fd_name));
             }
@@ -1647,14 +1761,10 @@ mod freedesktop_mapping_tests {
         // Only runs when Adwaita is installed (it usually is on any Linux).
         let mut missing = Vec::new();
         for name in ALL_ICON_NAMES {
-            if let Some(fd_name) = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Gnome)
-            {
-                // Has a GNOME mapping — verify it resolves in Adwaita
-                if native_theme::load_freedesktop_icon_by_name(fd_name, "Adwaita", 24).is_none() {
-                    missing.push(format!("{} (not found)", fd_name));
-                }
+            let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Gnome);
+            if native_theme::load_freedesktop_icon_by_name(fd_name, "Adwaita", 24).is_none() {
+                missing.push(format!("{} (not found)", fd_name));
             }
-            // None means "fall back to bundled" — that's intentional, not a failure
         }
         assert!(
             missing.is_empty(),

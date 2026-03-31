@@ -165,10 +165,10 @@ pub struct ThemeVariant {
     #[serde(default, skip_serializing_if = "LinkTheme::is_empty")]
     pub link: LinkTheme,
 
-    /// Icon set / naming convention for this variant (e.g., "sf-symbols", "freedesktop").
+    /// Icon set / naming convention for this variant (e.g., `IconSet::Freedesktop`).
     /// When None, resolved at runtime via system_icon_set().
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub icon_set: Option<String>,
+    pub icon_set: Option<IconSet>,
 
     /// Icon theme name for this variant (e.g., "breeze", "Adwaita", "material").
     /// This is the visual icon theme, distinct from the naming convention in `icon_set`.
@@ -778,29 +778,29 @@ mod tests {
     fn icon_set_merge_overlay() {
         let mut base = ThemeVariant::default();
         let overlay = ThemeVariant {
-            icon_set: Some("material".into()),
+            icon_set: Some(IconSet::Material),
             ..Default::default()
         };
         base.merge(&overlay);
-        assert_eq!(base.icon_set.as_deref(), Some("material"));
+        assert_eq!(base.icon_set, Some(IconSet::Material));
     }
 
     #[test]
     fn icon_set_merge_none_preserves() {
         let mut base = ThemeVariant {
-            icon_set: Some("sf-symbols".into()),
+            icon_set: Some(IconSet::SfSymbols),
             ..Default::default()
         };
         let overlay = ThemeVariant::default();
         base.merge(&overlay);
-        assert_eq!(base.icon_set.as_deref(), Some("sf-symbols"));
+        assert_eq!(base.icon_set, Some(IconSet::SfSymbols));
     }
 
     #[test]
     fn icon_set_is_empty_when_set() {
         assert!(ThemeVariant::default().is_empty());
         let v = ThemeVariant {
-            icon_set: Some("material".into()),
+            icon_set: Some(IconSet::Material),
             ..Default::default()
         };
         assert!(!v.is_empty());
@@ -809,13 +809,13 @@ mod tests {
     #[test]
     fn icon_set_toml_round_trip() {
         let variant = ThemeVariant {
-            icon_set: Some("material".into()),
+            icon_set: Some(IconSet::Material),
             ..Default::default()
         };
         let toml_str = toml::to_string(&variant).unwrap();
         assert!(toml_str.contains("icon_set"));
         let deserialized: ThemeVariant = toml::from_str(&toml_str).unwrap();
-        assert_eq!(deserialized.icon_set.as_deref(), Some("material"));
+        assert_eq!(deserialized.icon_set, Some(IconSet::Material));
     }
 
     #[test]

@@ -7,6 +7,7 @@ use crate::schema::THEME_TABLE;
 /// Each variant provides structured context for actionable error messages
 /// suitable for `cargo::error=` output.
 #[derive(Debug, Clone)]
+#[non_exhaustive]
 pub enum BuildError {
     /// A role declared in the master TOML is missing from a theme mapping file.
     MissingRole {
@@ -182,7 +183,7 @@ impl std::error::Error for BuildError {}
 /// Wraps a `Vec<BuildError>` and provides [`emit_cargo_errors()`](Self::emit_cargo_errors)
 /// for printing each error as a `cargo::error=` directive.
 #[derive(Debug, Clone)]
-pub struct BuildErrors(pub Vec<BuildError>);
+pub struct BuildErrors(Vec<BuildError>);
 
 impl fmt::Display for BuildErrors {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
@@ -197,6 +198,11 @@ impl fmt::Display for BuildErrors {
 impl std::error::Error for BuildErrors {}
 
 impl BuildErrors {
+    /// Create a `BuildErrors` from a `Vec<BuildError>`.
+    pub(crate) fn new(errors: Vec<BuildError>) -> Self {
+        Self(errors)
+    }
+
     /// Create a single-error `BuildErrors` from an I/O error message.
     pub(crate) fn io(message: impl Into<String>) -> Self {
         Self(vec![BuildError::Io {
@@ -204,10 +210,48 @@ impl BuildErrors {
         }])
     }
 
+    /// Return a borrowed slice of the contained errors.
+    pub fn errors(&self) -> &[BuildError] {
+        &self.0
+    }
+
+    /// Consume this collection and return the inner `Vec<BuildError>`.
+    pub fn into_errors(self) -> Vec<BuildError> {
+        self.0
+    }
+
+    /// Returns `true` if there are no errors.
+    pub fn is_empty(&self) -> bool {
+        self.0.is_empty()
+    }
+
+    /// Returns the number of errors.
+    pub fn len(&self) -> usize {
+        self.0.len()
+    }
+
     /// Print each error as a `cargo::error=` directive to stdout.
     pub fn emit_cargo_errors(&self) {
         for e in &self.0 {
             println!("cargo::error={e}");
         }
+    }
+}
+
+impl IntoIterator for BuildErrors {
+    type Item = BuildError;
+    type IntoIter = std::vec::IntoIter<BuildError>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.into_iter()
+    }
+}
+
+impl<'a> IntoIterator for &'a BuildErrors {
+    type Item = &'a BuildError;
+    type IntoIter = std::slice::Iter<'a, BuildError>;
+
+    fn into_iter(self) -> Self::IntoIter {
+        self.0.iter()
     }
 }

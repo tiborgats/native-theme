@@ -15,8 +15,8 @@ use resvg::usvg;
 ///
 /// # Errors
 ///
-/// Returns [`crate::Error::Format`] if the SVG cannot be parsed, or
-/// [`crate::Error::Unavailable`] if the size is zero or pixmap allocation fails.
+/// Returns [`crate::Error::Format`] if the SVG cannot be parsed or
+/// the size is zero / pixmap allocation fails.
 ///
 /// # Examples
 ///
@@ -36,6 +36,7 @@ use resvg::usvg;
 /// }
 /// # }
 /// ```
+#[must_use = "this returns the rasterized icon data"]
 pub fn rasterize_svg(svg_bytes: &[u8], size: u32) -> crate::Result<IconData> {
     let options = usvg::Options::default();
     let tree = usvg::Tree::from_data(svg_bytes, &options)
@@ -52,9 +53,8 @@ pub fn rasterize_svg(svg_bytes: &[u8], size: u32) -> crate::Result<IconData> {
     let offset_x = (size as f32 - scaled_w) / 2.0;
     let offset_y = (size as f32 - scaled_h) / 2.0;
 
-    let mut pixmap = tiny_skia::Pixmap::new(size, size).ok_or_else(|| {
-        crate::Error::Unavailable(format!("failed to allocate {size}x{size} pixmap"))
-    })?;
+    let mut pixmap = tiny_skia::Pixmap::new(size, size)
+        .ok_or_else(|| crate::Error::Format(format!("invalid rasterization size {size}x{size}")))?;
     let transform =
         tiny_skia::Transform::from_translate(offset_x, offset_y).post_scale(scale, scale);
     resvg::render(&tree, transform, &mut pixmap.as_mut());

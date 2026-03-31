@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 /// button row (macOS/KDE: leading, Windows/GNOME: trailing). It is part
 /// of the theme model because "native feel" includes layout conventions
 /// that vary by platform, and it is overridable in theme presets.
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DialogButtonOrder {
     /// Affirmative button at the trailing (right) end — Windows, GNOME style.

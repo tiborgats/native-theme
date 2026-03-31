@@ -10,7 +10,7 @@ use crate::Rgba;
 // --- ResolvedThemeSpacing ---
 
 /// A fully resolved spacing scale where every tier is guaranteed populated.
-#[derive(Clone, Debug, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ResolvedThemeSpacing {
     /// Extra-extra-small spacing in logical pixels.
     pub xxs: f32,
@@ -31,7 +31,7 @@ pub struct ResolvedThemeSpacing {
 // --- ResolvedIconSizes ---
 
 /// Fully resolved per-context icon sizes where every context is guaranteed populated.
-#[derive(Clone, Debug, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ResolvedIconSizes {
     /// Icon size for toolbar buttons.
     pub toolbar: f32,
@@ -48,7 +48,7 @@ pub struct ResolvedIconSizes {
 // --- ResolvedTextScaleEntry ---
 
 /// A single resolved text scale entry with guaranteed size, weight, and line height.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ResolvedTextScaleEntry {
     /// Font size in logical pixels.
     pub size: f32,
@@ -61,7 +61,7 @@ pub struct ResolvedTextScaleEntry {
 // --- ResolvedTextScale ---
 
 /// A fully resolved text scale with all four typographic roles populated.
-#[derive(Clone, Debug, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ResolvedTextScale {
     /// Caption / small label text.
     pub caption: ResolvedTextScaleEntry,
@@ -79,7 +79,7 @@ pub struct ResolvedTextScale {
 ///
 /// Mirrors [`crate::model::ThemeDefaults`] but with concrete (non-Option) types.
 /// Produced by the resolution/validation pipeline.
-#[derive(Clone, Debug, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ResolvedThemeDefaults {
     // ---- Base font ----
     /// Primary UI font.
@@ -183,7 +183,7 @@ pub struct ResolvedThemeDefaults {
 /// Produced by `validate()` after `resolve()`. Consumed by toolkit connectors.
 /// Mirrors [`crate::model::ThemeVariant`] but with concrete (non-Option) types
 /// for all 25 per-widget structs plus defaults and text scale.
-#[derive(Clone, Debug, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ResolvedThemeVariant {
     /// Global defaults.
     pub defaults: ResolvedThemeDefaults,
@@ -242,8 +242,8 @@ pub struct ResolvedThemeVariant {
     /// Hyperlink.
     pub link: super::widgets::ResolvedLinkTheme,
 
-    /// Icon set / naming convention (e.g., "sf-symbols", "freedesktop").
-    pub icon_set: String,
+    /// Icon set / naming convention.
+    pub icon_set: crate::IconSet,
 
     /// Icon theme name (e.g., "breeze", "Adwaita", "material").
     pub icon_theme: String,
@@ -714,7 +714,7 @@ mod tests {
                 hover_bg: c,
                 underline: true,
             },
-            icon_set: "freedesktop".into(),
+            icon_set: crate::IconSet::Freedesktop,
             icon_theme: "breeze".into(),
         };
 
@@ -722,7 +722,7 @@ mod tests {
         assert_eq!(theme.defaults.font.family, "Inter");
         assert_eq!(theme.window.radius, 4.0);
         assert_eq!(theme.button.min_height, 28.0);
-        assert_eq!(theme.icon_set, "freedesktop");
+        assert_eq!(theme.icon_set, crate::IconSet::Freedesktop);
         assert_eq!(theme.icon_theme, "breeze");
         assert_eq!(theme.text_scale.caption.size, 12.0);
     }
@@ -938,7 +938,7 @@ mod tests {
                 hover_bg: c,
                 underline: true,
             },
-            icon_set: "freedesktop".into(),
+            icon_set: crate::IconSet::Freedesktop,
             icon_theme: "breeze".into(),
         };
 

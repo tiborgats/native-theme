@@ -51,7 +51,7 @@ macro_rules! define_widget_pair {
         }
 
         $(#[$attr])*
-        #[derive(Clone, Debug, PartialEq, serde::Serialize)]
+        #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
         pub struct $resolved_name {
             $($($(#[doc = $opt_doc])* pub $opt_field: $opt_type,)*)?
             $($($(#[doc = $on_doc])* pub $on_field: $on_res_type,)*)?

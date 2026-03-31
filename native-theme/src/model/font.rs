@@ -26,7 +26,7 @@ impl_merge!(FontSpec {
 ///
 /// Unlike [`FontSpec`], all fields are required (non-optional)
 /// because resolution has already filled in all defaults.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize)]
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ResolvedFontSpec {
     /// Font family name.
     pub family: String,

@@ -94,6 +94,7 @@ pub fn pick_variant(theme: &ThemeSpec, is_dark: bool) -> Option<&ThemeVariant> {
 /// 1. Mapping all 108 ThemeColor fields via `colors::to_theme_color`
 /// 2. Building a ThemeConfig from fonts/geometry via `config::to_theme_config`
 /// 3. Constructing the Theme from the ThemeColor and applying the config
+#[must_use = "this returns the theme; it does not apply it"]
 pub fn to_theme(resolved: &ResolvedThemeVariant, name: &str, is_dark: bool) -> Theme {
     let theme_color = colors::to_theme_color(resolved, is_dark);
     let mode = if is_dark {
@@ -132,6 +133,7 @@ pub fn to_theme(resolved: &ResolvedThemeVariant, name: &str, is_dark: bool) -> T
 /// let dark_theme = native_theme_gpui::from_preset("dracula", true)?;
 /// let light_theme = native_theme_gpui::from_preset("catppuccin-latte", false)?;
 /// ```
+#[must_use = "this returns the theme; it does not apply it"]
 pub fn from_preset(name: &str, is_dark: bool) -> native_theme::Result<Theme> {
     let spec = ThemeSpec::preset(name)?;
     let variant = spec
@@ -156,6 +158,7 @@ pub fn from_preset(name: &str, is_dark: bool) -> native_theme::Result<Theme> {
 /// ```ignore
 /// let theme = native_theme_gpui::from_system()?;
 /// ```
+#[must_use = "this returns the theme; it does not apply it"]
 pub fn from_system() -> native_theme::Result<Theme> {
     let sys = SystemTheme::from_system()?;
     Ok(to_theme(sys.active(), &sys.name, sys.is_dark))
@@ -176,6 +179,7 @@ pub trait SystemThemeExt {
     ///
     /// Uses the active variant (based on `is_dark`), the theme name,
     /// and the dark-mode flag from the `SystemTheme`.
+    #[must_use = "this returns the theme; it does not apply it"]
     fn to_gpui_theme(&self) -> Theme;
 }
 

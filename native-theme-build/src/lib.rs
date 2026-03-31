@@ -141,7 +141,8 @@ use schema::{MappingValue, THEME_TABLE};
 /// information needed to emit cargo directives. Call
 /// [`emit_cargo_directives()`](Self::emit_cargo_directives) to write the
 /// output file and print `cargo::rerun-if-changed` / `cargo::warning` lines.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
+#[must_use = "call .emit_cargo_directives() to write the file and emit cargo directives"]
 pub struct GenerateOutput {
     /// Path where the generated `.rs` file will be written.
     pub output_path: PathBuf,
@@ -162,6 +163,11 @@ pub struct GenerateOutput {
 }
 
 impl GenerateOutput {
+    /// Return the paths that cargo should watch for changes.
+    pub fn rerun_paths(&self) -> &[PathBuf] {
+        &self.rerun_paths
+    }
+
     /// Emit cargo directives, write the generated file, and print warnings.
     ///
     /// This prints `cargo::rerun-if-changed` for all tracked paths, writes the
@@ -170,6 +176,7 @@ impl GenerateOutput {
     /// # Errors
     ///
     /// Returns an I/O error if the output file cannot be written.
+    #[must_use = "this returns the result of emitting cargo directives"]
     pub fn emit_cargo_directives(&self) -> std::io::Result<()> {
         for path in &self.rerun_paths {
             println!("cargo::rerun-if-changed={}", path.display());
@@ -231,6 +238,7 @@ impl UnwrapOrExit<GenerateOutput> for Result<GenerateOutput, BuildErrors> {
 /// Returns [`BuildErrors`] if `CARGO_MANIFEST_DIR` or `OUT_DIR` environment
 /// variables are not set, if the TOML file cannot be read or parsed, or if
 /// the icon pipeline detects missing roles, SVGs, or invalid mappings.
+#[must_use = "this returns the generated output; call .emit_cargo_directives() to complete the build"]
 pub fn generate_icons(toml_path: impl AsRef<Path>) -> Result<GenerateOutput, BuildErrors> {
     let toml_path = toml_path.as_ref();
     let manifest_dir = PathBuf::from(
@@ -266,6 +274,8 @@ pub fn generate_icons(toml_path: impl AsRef<Path>) -> Result<GenerateOutput, Bui
 }
 
 /// Builder API for composing multiple TOML icon definitions.
+#[derive(Debug)]
+#[must_use = "a configured builder does nothing until .generate() is called"]
 pub struct IconGenerator {
     sources: Vec<PathBuf>,
     enum_name_override: Option<String>,
@@ -826,7 +836,7 @@ fn pipeline_result_to_output(
         for path in &result.rerun_paths {
             println!("cargo::rerun-if-changed={}", path.display());
         }
-        return Err(BuildErrors(result.errors));
+        return Err(BuildErrors::new(result.errors));
     }
 
     let output_path = out_dir.join(&result.output_filename);
@@ -1642,7 +1652,7 @@ system-themes = ["sf-symbols"]
 
     #[test]
     fn build_errors_display_format() {
-        let errors = BuildErrors(vec![
+        let errors = BuildErrors::new(vec![
             BuildError::MissingRole {
                 role: "play-pause".into(),
                 mapping_file: "mapping.toml".into(),

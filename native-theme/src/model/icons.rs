@@ -222,7 +222,7 @@ impl IconRole {
 ///     _ => unreachable!(),
 /// }
 /// ```
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 #[must_use = "loading icon data without using it is likely a bug"]
 pub enum IconData {
@@ -287,6 +287,7 @@ impl IconSet {
     /// `"sf-symbols"`, `"segoe-fluent"`, `"freedesktop"`, `"material"`, `"lucide"`.
     ///
     /// Returns `None` for unrecognized names.
+    #[must_use]
     pub fn from_name(name: &str) -> Option<Self> {
         match name {
             "sf-symbols" => Some(Self::SfSymbols),
@@ -299,6 +300,7 @@ impl IconSet {
     }
 
     /// The kebab-case string identifier for this icon set, as used in TOML.
+    #[must_use]
     pub fn name(&self) -> &'static str {
         match self {
             Self::SfSymbols => "sf-symbols",
@@ -384,6 +386,7 @@ impl IconProvider for IconRole {
 /// assert_eq!(icon_name(IconRole::ActionCopy, IconSet::Freedesktop), Some("edit-copy"));
 /// assert_eq!(icon_name(IconRole::FolderOpen, IconSet::SfSymbols), None);
 /// ```
+#[must_use]
 #[allow(unreachable_patterns)] // wildcard arm kept for #[non_exhaustive] forward compat
 pub fn icon_name(role: IconRole, set: IconSet) -> Option<&'static str> {
     match set {

@@ -22,7 +22,8 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     variant.defaults.background = get_color(ini, "Colors:Window", "BackgroundNormal");
     variant.defaults.foreground = window_fg;
     variant.defaults.surface = get_color(ini, "Colors:View", "BackgroundNormal");
-    variant.defaults.border = get_color(ini, "Colors:Window", "DecorationFocus");
+    // border: not set by reader -- KDE has no native border color API.
+    // The preset provides the correct neutral gray (platform-facts: "(preset)").
     variant.defaults.muted = get_color(ini, "Colors:Window", "ForegroundInactive");
     // KDE does not expose shadow color in kdeglobals
     variant.defaults.link = get_color(ini, "Colors:View", "ForegroundLink");
@@ -31,6 +32,8 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     // Selection
     variant.defaults.selection = get_color(ini, "Colors:Selection", "BackgroundNormal");
     variant.defaults.selection_foreground = get_color(ini, "Colors:Selection", "ForegroundNormal");
+    // accent_foreground: foreground on accent-colored backgrounds (platform-facts 2.1.3)
+    variant.defaults.accent_foreground = get_color(ini, "Colors:Selection", "ForegroundNormal");
 
     // Status colors
     variant.defaults.danger = get_color(ini, "Colors:View", "ForegroundNegative");
@@ -74,7 +77,9 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     // Separator
     variant.separator.color = get_color(ini, "Colors:Window", "ForegroundInactive");
 
-    // KDE-02: list fields
+    // KDE-02: list fields (Colors:View is the native source for list/table content areas)
+    variant.list.background = get_color(ini, "Colors:View", "BackgroundNormal");
+    variant.list.foreground = get_color(ini, "Colors:View", "ForegroundNormal");
     variant.list.alternate_row = get_color(ini, "Colors:View", "BackgroundAlternate");
     variant.list.header_background = get_color(ini, "Colors:Header", "BackgroundNormal");
     variant.list.header_foreground = get_color(ini, "Colors:Header", "ForegroundNormal");
@@ -192,9 +197,10 @@ inactiveForeground=161,169,177
     }
 
     #[test]
-    fn test_border_from_window_decoration_focus() {
+    fn test_border_not_set_by_reader() {
+        // Border is a preset value, not reader-provided (platform-facts: "(preset)")
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.defaults.border, Some(Rgba::rgb(61, 174, 233)));
+        assert!(v.defaults.border.is_none());
     }
 
     #[test]
@@ -317,6 +323,28 @@ inactiveForeground=161,169,177
         assert_eq!(v.input.caret, Some(Rgba::rgb(61, 174, 233)));
     }
 
+    // === accent_foreground from Selection ===
+
+    #[test]
+    fn test_accent_foreground_from_selection() {
+        let v = populate_fixture(BREEZE_DARK);
+        assert_eq!(v.defaults.accent_foreground, Some(Rgba::rgb(252, 252, 252)));
+    }
+
+    // === KDE-02: List background/foreground from View ===
+
+    #[test]
+    fn test_list_background_from_view() {
+        let v = populate_fixture(BREEZE_DARK);
+        assert_eq!(v.list.background, Some(Rgba::rgb(35, 38, 41)));
+    }
+
+    #[test]
+    fn test_list_foreground_from_view() {
+        let v = populate_fixture(BREEZE_DARK);
+        assert_eq!(v.list.foreground, Some(Rgba::rgb(252, 252, 252)));
+    }
+
     // === KDE-02: List alternate_row ===
 
     #[test]
@@ -389,7 +417,7 @@ DecorationFocus=61,174,233
         assert_eq!(v.defaults.background, Some(Rgba::rgb(49, 54, 59)));
         assert_eq!(v.defaults.foreground, Some(Rgba::rgb(239, 240, 241)));
         assert_eq!(v.defaults.muted, Some(Rgba::rgb(161, 169, 177)));
-        assert_eq!(v.defaults.border, Some(Rgba::rgb(61, 174, 233)));
+        assert!(v.defaults.border.is_none()); // border not set by reader
         assert!(v.defaults.accent.is_none());
         assert!(v.defaults.surface.is_none());
         assert!(v.button.background.is_none());
@@ -421,13 +449,17 @@ DecorationFocus=61,174,233
         assert!(v.defaults.background.is_some(), "background missing");
         assert!(v.defaults.foreground.is_some(), "foreground missing");
         assert!(v.defaults.surface.is_some(), "surface missing");
-        assert!(v.defaults.border.is_some(), "border missing");
+        // border is not set by reader (preset value)
         assert!(v.defaults.muted.is_some(), "muted missing");
         assert!(v.defaults.link.is_some(), "link missing");
         assert!(v.defaults.selection.is_some(), "selection missing");
         assert!(
             v.defaults.selection_foreground.is_some(),
             "selection_foreground missing"
+        );
+        assert!(
+            v.defaults.accent_foreground.is_some(),
+            "accent_foreground missing"
         );
         assert!(v.defaults.danger.is_some(), "danger missing");
         assert!(v.defaults.warning.is_some(), "warning missing");
@@ -446,6 +478,8 @@ DecorationFocus=61,174,233
         assert!(v.input.placeholder.is_some(), "input.placeholder missing");
         assert!(v.input.caret.is_some(), "input.caret missing");
         assert!(v.separator.color.is_some(), "separator.color missing");
+        assert!(v.list.background.is_some(), "list.background missing");
+        assert!(v.list.foreground.is_some(), "list.foreground missing");
         assert!(v.list.alternate_row.is_some(), "list.alternate_row missing");
         assert!(
             v.list.header_background.is_some(),

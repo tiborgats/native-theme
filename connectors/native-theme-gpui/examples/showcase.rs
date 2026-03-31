@@ -512,9 +512,8 @@ fn load_gpui_icons(icon_set: Option<IconSet>, icon_theme: Option<&str>) -> Vec<I
                 if matches!(source, IconSource::Fallback | IconSource::NotFound)
                     && let (Some(de), Some(theme)) = (&linux_de, &fd_theme)
                 {
-                    if let Some(fd_name) = freedesktop_name_for_gpui_icon(icon.clone(), *de)
-                        && let Some(fd_data) = load_freedesktop_icon_by_name(fd_name, theme, 24u16)
-                    {
+                    let fd_name = freedesktop_name_for_gpui_icon(icon.clone(), *de);
+                    if let Some(fd_data) = load_freedesktop_icon_by_name(fd_name, theme, 24u16) {
                         return (
                             *name,
                             icon.clone(),
@@ -532,9 +531,8 @@ fn load_gpui_icons(icon_set: Option<IconSet>, icon_theme: Option<&str>) -> Vec<I
             // No IconRole mapping — try by-name lookup for the active icon set
             #[cfg(target_os = "linux")]
             if let (Some(de), Some(theme)) = (&linux_de, &fd_theme) {
-                if let Some(fd_name) = freedesktop_name_for_gpui_icon(icon.clone(), *de)
-                    && let Some(data) = load_freedesktop_icon_by_name(fd_name, theme, 24u16)
-                {
+                let fd_name = freedesktop_name_for_gpui_icon(icon.clone(), *de);
+                if let Some(data) = load_freedesktop_icon_by_name(fd_name, theme, 24u16) {
                     return (*name, icon.clone(), None, Some(data), IconSource::System);
                 }
                 // System set but no system icon — do NOT fall back to bundled
@@ -543,8 +541,8 @@ fn load_gpui_icons(icon_set: Option<IconSet>, icon_theme: Option<&str>) -> Vec<I
 
             {
                 let lookup_name = match icon_set {
-                    IconSet::Lucide => lucide_name_for_gpui_icon(icon.clone()),
-                    IconSet::Material => material_name_for_gpui_icon(icon.clone()),
+                    IconSet::Lucide => Some(lucide_name_for_gpui_icon(icon.clone())),
+                    IconSet::Material => Some(material_name_for_gpui_icon(icon.clone())),
                     _ => None,
                 };
                 if let Some(lname) = lookup_name

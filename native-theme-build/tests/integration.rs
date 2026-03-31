@@ -190,10 +190,11 @@ bundled-themes = ["material"]
         .output_dir(&dir)
         .generate();
 
-    let errors = result.unwrap_err().0;
+    let errors = result.unwrap_err();
     assert!(!errors.is_empty(), "should have errors");
     assert!(
         errors
+            .errors()
             .iter()
             .any(|e| e.to_string().contains("skip-forward")),
         "should mention missing role 'skip-forward': {errors:?}",
@@ -227,10 +228,13 @@ bundled-themes = ["material"]
         .output_dir(&dir)
         .generate();
 
-    let errors = result.unwrap_err().0;
+    let errors = result.unwrap_err();
     assert!(!errors.is_empty(), "should have errors");
     assert!(
-        errors.iter().any(|e| e.to_string().contains("bluetooth")),
+        errors
+            .errors()
+            .iter()
+            .any(|e| e.to_string().contains("bluetooth")),
         "should mention unknown role 'bluetooth': {errors:?}",
     );
 
@@ -262,10 +266,11 @@ bundled-themes = ["material"]
         .output_dir(&dir)
         .generate();
 
-    let errors = result.unwrap_err().0;
+    let errors = result.unwrap_err();
     assert!(!errors.is_empty(), "should have errors");
     assert!(
         errors
+            .errors()
             .iter()
             .any(|e| e.to_string().contains("skip_next.svg")),
         "should mention missing SVG path: {errors:?}",
@@ -482,10 +487,13 @@ bundled-themes = ["material"]
         .output_dir(&dir)
         .generate();
 
-    let errors = result.unwrap_err().0;
+    let errors = result.unwrap_err();
     assert!(!errors.is_empty(), "should detect duplicate roles");
     assert!(
-        errors.iter().any(|e| e.to_string().contains("play-pause")),
+        errors
+            .errors()
+            .iter()
+            .any(|e| e.to_string().contains("play-pause")),
         "should mention duplicate role: {errors:?}",
     );
 

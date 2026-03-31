@@ -52,11 +52,13 @@ pub struct Rgba {
 
 impl Rgba {
     /// Create an opaque color (alpha = 255).
+    #[must_use]
     pub const fn rgb(r: u8, g: u8, b: u8) -> Self {
         Self { r, g, b, a: 255 }
     }
 
     /// Create a color with explicit alpha.
+    #[must_use]
     #[allow(clippy::self_named_constructors)]
     pub const fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self { r, g, b, a }
@@ -65,6 +67,7 @@ impl Rgba {
     /// Create a color from floating-point components in the 0.0..=1.0 range.
     ///
     /// Values are clamped to 0.0..=1.0 before conversion.
+    #[must_use]
     pub fn from_f32(r: f32, g: f32, b: f32, a: f32) -> Self {
         Self {
             r: (r.clamp(0.0, 1.0) * 255.0).round() as u8,
@@ -75,6 +78,7 @@ impl Rgba {
     }
 
     /// Convert to `[r, g, b, a]` in the 0.0..=1.0 range (for toolkit interop).
+    #[must_use]
     pub fn to_f32_array(&self) -> [f32; 4] {
         [
             self.r as f32 / 255.0,
@@ -85,6 +89,7 @@ impl Rgba {
     }
 
     /// Convert to `(r, g, b, a)` tuple in the 0.0..=1.0 range.
+    #[must_use]
     pub fn to_f32_tuple(&self) -> (f32, f32, f32, f32) {
         (
             self.r as f32 / 255.0,

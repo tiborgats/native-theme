@@ -153,7 +153,7 @@ impl ThemeVariant {
 
         // Phase 5: icon_set fallback — fill from system default if not set
         if self.icon_set.is_none() {
-            self.icon_set = Some(crate::model::icons::system_icon_set().name().to_string());
+            self.icon_set = Some(crate::model::icons::system_icon_set());
         }
 
         // Phase 6: icon_theme fallback — fill from system icon theme if not set
@@ -185,6 +185,7 @@ impl ThemeVariant {
     /// // All fields are now guaranteed populated
     /// let accent = resolved.defaults.accent;
     /// ```
+    #[must_use = "this returns the resolved theme; it does not modify self"]
     pub fn into_resolved(mut self) -> crate::Result<ResolvedThemeVariant> {
         self.resolve();
         self.validate()
@@ -413,7 +414,7 @@ impl ThemeVariant {
             self.list.foreground = d.foreground;
         }
         if self.list.alternate_row.is_none() {
-            self.list.alternate_row = d.background;
+            self.list.alternate_row = self.list.background;
         }
         if self.list.selection.is_none() {
             self.list.selection = d.selection;
@@ -551,6 +552,7 @@ impl ThemeVariant {
     ///
     /// Returns [`crate::Error::Resolution`] containing a [`ThemeResolutionError`]
     /// with all missing field paths if any fields remain None.
+    #[must_use = "this returns the resolved theme; it does not modify self"]
     pub fn validate(&self) -> crate::Result<ResolvedThemeVariant> {
         let mut missing = Vec::new();
 
@@ -1909,7 +1911,7 @@ mod tests {
         v.defaults.focus_ring_color = Some(Rgba::rgb(0, 120, 215));
 
         // icon_set / icon_theme
-        v.icon_set = Some("freedesktop".into());
+        v.icon_set = Some(crate::IconSet::Freedesktop);
         v.icon_theme = Some("breeze".into());
 
         // window
@@ -2183,7 +2185,7 @@ mod tests {
         );
         let resolved = result.unwrap();
         assert_eq!(resolved.defaults.font.family, "Inter");
-        assert_eq!(resolved.icon_set, "freedesktop");
+        assert_eq!(resolved.icon_set, crate::IconSet::Freedesktop);
     }
 
     #[test]
@@ -2362,7 +2364,7 @@ mod tests {
         // Start with defaults populated but widgets empty
         let mut v = variant_with_defaults();
         // Add non-derivable widget sizing fields
-        v.icon_set = Some("freedesktop".into());
+        v.icon_set = Some(crate::IconSet::Freedesktop);
 
         // Non-derivable fields that resolve() cannot fill:
         // button sizing
@@ -2479,7 +2481,7 @@ mod tests {
         // Apply what build_gnome_variant() would set.
         variant.dialog.button_order = Some(DialogButtonOrder::TrailingAffirmative);
         // icon_set comes from gsettings icon-theme; simulate typical GNOME value.
-        variant.icon_set = Some("Adwaita".to_string());
+        variant.icon_set = Some(crate::IconSet::Freedesktop);
 
         // Simulate GNOME reader font output (gsettings font-name on a GNOME system).
         variant.defaults.font = FontSpec {
@@ -2510,7 +2512,8 @@ mod tests {
             "dialog button order should be trailing affirmative for GNOME"
         );
         assert_eq!(
-            resolved.icon_set, "Adwaita",
+            resolved.icon_set,
+            crate::IconSet::Freedesktop,
             "icon_set should be from GNOME reader"
         );
     }

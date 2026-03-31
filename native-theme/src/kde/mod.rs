@@ -33,17 +33,15 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ThemeSpec>
     // KDE-06: Accessibility flags
     populate_accessibility(&ini, &mut variant);
 
-    // KDE-05: Icon set from [Icons] Theme
+    // KDE-05: Icon theme from [Icons] Theme
     if let Some(theme_name) = ini.get("Icons", "Theme")
         && !theme_name.is_empty()
     {
-        variant.icon_set = Some(theme_name);
-    }
-
-    // KDE-05: Icon sizes from index.theme
-    if let Some(ref theme_name) = variant.icon_set {
-        let sizes = parse_icon_sizes_from_index_theme(theme_name);
+        // Icon sizes from index.theme
+        let sizes = parse_icon_sizes_from_index_theme(&theme_name);
         variant.defaults.icon_sizes = sizes;
+
+        variant.icon_theme = Some(theme_name);
     }
 
     // Dialog button order: KDE uses leading affirmative (per project decision)
@@ -115,7 +113,7 @@ fn populate_text_scale(ini: &configparser::ini::Ini, variant: &mut crate::ThemeV
 /// Populate accessibility fields from KDE settings.
 ///
 /// - AnimationDurationFactor=0 -> reduce_motion=true; >0 -> false; missing -> None
-/// - forceFontDPI -> text_scaling_factor = value / 96.0; missing -> None
+/// - forceFontDPI from kcmfontsrc -> text_scaling_factor = value / 96.0; missing -> None
 fn populate_accessibility(ini: &configparser::ini::Ini, variant: &mut crate::ThemeVariant) {
     // KDE-06: AnimationDurationFactor from [KDE]
     if let Some(anim_str) = ini.get("KDE", "AnimationDurationFactor")
@@ -124,13 +122,40 @@ fn populate_accessibility(ini: &configparser::ini::Ini, variant: &mut crate::The
         variant.defaults.reduce_motion = Some(value == 0.0);
     }
 
-    // KDE-06: forceFontDPI from [General]
-    if let Some(dpi_str) = ini.get("General", "forceFontDPI")
-        && let Ok(dpi) = dpi_str.trim().parse::<f32>()
+    // KDE-06: forceFontDPI from kcmfontsrc [General] (not kdeglobals)
+    if let Some(dpi) = read_kcmfontsrc_key("General", "forceFontDPI")
+        && let Ok(dpi) = dpi.trim().parse::<f32>()
         && dpi > 0.0
     {
         variant.defaults.text_scaling_factor = Some(dpi / 96.0);
     }
+}
+
+/// Read a single key from `$XDG_CONFIG_HOME/kcmfontsrc` (or `~/.config/kcmfontsrc`).
+///
+/// Returns `None` if the file is missing, unreadable, or the key is not found.
+fn read_kcmfontsrc_key(section: &str, key: &str) -> Option<String> {
+    let path = if let Ok(config_home) = std::env::var("XDG_CONFIG_HOME") {
+        if config_home.is_empty() {
+            None
+        } else {
+            Some(std::path::PathBuf::from(config_home).join("kcmfontsrc"))
+        }
+    } else {
+        None
+    }
+    .or_else(|| {
+        std::env::var("HOME").ok().map(|h| {
+            std::path::PathBuf::from(h)
+                .join(".config")
+                .join("kcmfontsrc")
+        })
+    })?;
+
+    let content = std::fs::read_to_string(path).ok()?;
+    let mut ini = create_kde_parser();
+    ini.read(content).ok()?;
+    ini.get(section, key)
 }
 
 /// Parse icon sizes from a freedesktop index.theme INI already loaded into a parser.
@@ -279,6 +304,7 @@ fn find_index_theme_path(theme_name: &str) -> Option<std::path::PathBuf> {
 ///
 /// Parses `~/.config/kdeglobals` (respecting `XDG_CONFIG_HOME`) and maps
 /// KDE color groups and font strings to a `ThemeSpec`.
+#[must_use = "this returns the detected KDE theme; it does not apply it"]
 pub fn from_kde() -> crate::Result<crate::ThemeSpec> {
     let path = kdeglobals_path();
     let content = std::fs::read_to_string(&path)
@@ -871,7 +897,8 @@ BackgroundNormal=49,54,59
     fn test_icon_set_from_icons_theme() {
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
-        assert_eq!(v.icon_set.as_deref(), Some("breeze-dark"));
+        assert!(v.icon_set.is_none());
+        assert_eq!(v.icon_theme.as_deref(), Some("breeze-dark"));
     }
 
     #[test]
@@ -1169,10 +1196,11 @@ Name=whatever
             "input.caret should be from KDE reader (DecorationFocus)"
         );
 
-        // icon_set should be from KDE reader (breeze-dark)
+        // icon_set should be freedesktop (from kde-breeze preset base)
         assert_eq!(
-            resolved.icon_set, "breeze-dark",
-            "icon_set should be from KDE reader"
+            resolved.icon_set,
+            crate::IconSet::Freedesktop,
+            "icon_set should be freedesktop for KDE"
         );
 
         // dialog.button_order should be from KDE reader

@@ -4,6 +4,8 @@
 // icon system. Frame-based animations supply pre-rendered frames with timing;
 // transform-based animations describe a CSS-like transform on a single icon.
 
+use serde::{Deserialize, Serialize};
+
 use super::icons::IconData;
 
 /// A CSS-like transform animation applied to a single icon.
@@ -15,7 +17,7 @@ use super::icons::IconData;
 ///
 /// let spin = TransformAnimation::Spin { duration_ms: 1000 };
 /// ```
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum TransformAnimation {
     /// Continuous 360-degree rotation.
@@ -50,7 +52,7 @@ pub enum TransformAnimation {
 ///     animation: TransformAnimation::Spin { duration_ms: 1000 },
 /// };
 /// ```
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 pub enum AnimatedIcon {
     /// A sequence of pre-rendered frames played at a fixed interval (loops infinitely).

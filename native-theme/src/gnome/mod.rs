@@ -7,7 +7,7 @@
 //! along with OS-readable font, accessibility, and icon settings.
 
 use ashpd::desktop::Color;
-use ashpd::desktop::settings::{ColorScheme, Contrast};
+use ashpd::desktop::settings::{ColorScheme, Contrast, ReducedMotion};
 
 use crate::model::{DialogButtonOrder, FontSpec, TextScale, TextScaleEntry};
 
@@ -142,6 +142,7 @@ pub(crate) fn build_gnome_variant(
     scheme: ColorScheme,
     accent: Option<Color>,
     contrast: Contrast,
+    reduced_motion: Option<ReducedMotion>,
 ) -> crate::ThemeVariant {
     let mut variant = crate::ThemeVariant::default();
 
@@ -152,9 +153,19 @@ pub(crate) fn build_gnome_variant(
         apply_accent(&mut variant, &rgba);
     }
 
-    // High contrast from portal (GNOME-05)
+    // High contrast: portal first (GNOME-05)
     if matches!(contrast, Contrast::High) {
         variant.defaults.high_contrast = Some(true);
+    }
+    // gsettings fallback for high-contrast (covers GNOME < 44 without portal support)
+    if variant.defaults.high_contrast.is_none()
+        && let Some(hc_str) = read_gsetting("org.gnome.desktop.a11y.interface", "high-contrast")
+    {
+        match hc_str.as_str() {
+            "true" => variant.defaults.high_contrast = Some(true),
+            "false" => variant.defaults.high_contrast = Some(false),
+            _ => {}
+        }
     }
 
     // ── Fonts (GNOME-01) ────────────────────────────────────────────────
@@ -193,8 +204,17 @@ pub(crate) fn build_gnome_variant(
         variant.defaults.text_scaling_factor = Some(factor);
     }
 
-    // enable-animations -> reduce_motion (GNOME-05 gsettings fallback)
-    if let Some(anim_str) = read_gsetting("org.gnome.desktop.interface", "enable-animations") {
+    // reduce_motion: portal first, gsettings fallback (GNOME-05)
+    if let Some(rm) = reduced_motion {
+        match rm {
+            ReducedMotion::ReducedMotion => variant.defaults.reduce_motion = Some(true),
+            ReducedMotion::NoPreference => variant.defaults.reduce_motion = Some(false),
+        }
+    }
+    // gsettings fallback: enable-animations (only if portal didn't provide a value)
+    if variant.defaults.reduce_motion.is_none()
+        && let Some(anim_str) = read_gsetting("org.gnome.desktop.interface", "enable-animations")
+    {
         match anim_str.as_str() {
             "false" => variant.defaults.reduce_motion = Some(true),
             "true" => variant.defaults.reduce_motion = Some(false),
@@ -211,9 +231,9 @@ pub(crate) fn build_gnome_variant(
         }
     }
 
-    // ── Icon set (GNOME-04) ─────────────────────────────────────────────
+    // ── Icon theme (GNOME-04) ────────────────────────────────────────────
     if let Some(icon_theme) = read_gsetting("org.gnome.desktop.interface", "icon-theme") {
-        variant.icon_set = Some(icon_theme);
+        variant.icon_theme = Some(icon_theme);
     }
 
     // ── Dialog button order (project decision) ──────────────────────────
@@ -253,7 +273,8 @@ fn compute_text_scale(base_size: f32) -> TextScale {
 }
 
 /// Build a ThemeSpec from an Adwaita base, applying portal-provided
-/// color scheme, accent color, and contrast settings plus OS-readable fields.
+/// color scheme, accent color, contrast, and reduced-motion settings
+/// plus OS-readable fields.
 ///
 /// This is the testable core -- no D-Bus required.
 pub(crate) fn build_theme(
@@ -261,6 +282,7 @@ pub(crate) fn build_theme(
     scheme: ColorScheme,
     accent: Option<Color>,
     contrast: Contrast,
+    reduced_motion: Option<ReducedMotion>,
 ) -> crate::Result<crate::ThemeSpec> {
     let is_dark = matches!(scheme, ColorScheme::PreferDark);
 
@@ -272,7 +294,7 @@ pub(crate) fn build_theme(
     };
 
     // Build sparse OS variant and merge onto Adwaita base
-    let os_variant = build_gnome_variant(scheme, accent, contrast);
+    let os_variant = build_gnome_variant(scheme, accent, contrast, reduced_motion);
     variant.merge(&os_variant);
 
     // Build ThemeSpec with only the selected variant populated
@@ -312,16 +334,18 @@ pub async fn from_gnome() -> crate::Result<crate::ThemeSpec> {
                 ColorScheme::NoPreference,
                 None,
                 Contrast::NoPreference,
+                None,
             );
         }
     };
 
-    // Read the three appearance settings. Each can fail independently.
+    // Read the four appearance settings. Each can fail independently.
     let scheme = settings.color_scheme().await.unwrap_or_default();
     let accent = settings.accent_color().await.ok();
     let contrast = settings.contrast().await.unwrap_or_default();
+    let reduced_motion = settings.reduced_motion().await.ok();
 
-    build_theme(base, scheme, accent, contrast)
+    build_theme(base, scheme, accent, contrast, reduced_motion)
 }
 
 /// Read KDE theme from kdeglobals, then overlay portal accent color if available.
@@ -533,7 +557,12 @@ mod tests {
 
     #[test]
     fn build_gnome_variant_default_has_dialog_button_order() {
-        let v = build_gnome_variant(ColorScheme::NoPreference, None, Contrast::NoPreference);
+        let v = build_gnome_variant(
+            ColorScheme::NoPreference,
+            None,
+            Contrast::NoPreference,
+            None,
+        );
         assert_eq!(
             v.dialog.button_order,
             Some(DialogButtonOrder::TrailingAffirmative),
@@ -542,13 +571,18 @@ mod tests {
 
     #[test]
     fn build_gnome_variant_high_contrast_sets_flag() {
-        let v = build_gnome_variant(ColorScheme::NoPreference, None, Contrast::High);
+        let v = build_gnome_variant(ColorScheme::NoPreference, None, Contrast::High, None);
         assert_eq!(v.defaults.high_contrast, Some(true));
     }
 
     #[test]
     fn build_gnome_variant_normal_contrast_no_flag() {
-        let v = build_gnome_variant(ColorScheme::NoPreference, None, Contrast::NoPreference);
+        let v = build_gnome_variant(
+            ColorScheme::NoPreference,
+            None,
+            Contrast::NoPreference,
+            None,
+        );
         assert!(v.defaults.high_contrast.is_none());
     }
 
@@ -559,6 +593,7 @@ mod tests {
             ColorScheme::NoPreference,
             Some(accent),
             Contrast::NoPreference,
+            None,
         );
         let expected = crate::Rgba::from_f32(0.2, 0.4, 0.8, 1.0);
         assert_eq!(v.defaults.accent, Some(expected));
@@ -573,6 +608,7 @@ mod tests {
             ColorScheme::NoPreference,
             Some(accent),
             Contrast::NoPreference,
+            None,
         );
         assert!(v.defaults.accent.is_none());
     }
@@ -638,6 +674,7 @@ mod tests {
             ColorScheme::PreferDark,
             None,
             Contrast::NoPreference,
+            None,
         )
         .unwrap();
         assert_eq!(theme.name, "GNOME");
@@ -652,6 +689,7 @@ mod tests {
             ColorScheme::PreferLight,
             None,
             Contrast::NoPreference,
+            None,
         )
         .unwrap();
         assert_eq!(theme.name, "GNOME");
@@ -666,6 +704,7 @@ mod tests {
             ColorScheme::NoPreference,
             None,
             Contrast::NoPreference,
+            None,
         )
         .unwrap();
         assert_eq!(theme.name, "GNOME");
@@ -683,6 +722,7 @@ mod tests {
             ColorScheme::NoPreference,
             Some(accent),
             Contrast::NoPreference,
+            None,
         )
         .unwrap();
 
@@ -703,6 +743,7 @@ mod tests {
             ColorScheme::NoPreference,
             None,
             Contrast::High,
+            None,
         )
         .unwrap();
 
@@ -717,6 +758,7 @@ mod tests {
             ColorScheme::NoPreference,
             None,
             Contrast::NoPreference,
+            None,
         )
         .unwrap();
 
@@ -737,6 +779,7 @@ mod tests {
             ColorScheme::NoPreference,
             None,
             Contrast::NoPreference,
+            None,
         )
         .unwrap();
 
@@ -753,6 +796,7 @@ mod tests {
             ColorScheme::NoPreference,
             None,
             Contrast::NoPreference,
+            None,
         )
         .unwrap();
 

@@ -33,15 +33,15 @@ focus_ring_color = "#007aff"
 disabled_foreground = "#c7c7cc"
 accent_foreground = "#ffffff"
 
-radius = 6.0
+radius = 5.0
 radius_lg = 10.0
 frame_width = 1.0
-disabled_opacity = 0.5
+disabled_opacity = 0.3
 border_opacity = 0.2
 shadow_enabled = true
-line_height = 1.4
-focus_ring_width = 2.0
-focus_ring_offset = 1.0
+line_height = 1.19
+focus_ring_width = 3.0
+focus_ring_offset = -1.0
 text_scaling_factor = 1.0
 reduce_motion = false
 high_contrast = false
@@ -78,16 +78,16 @@ background = "#e8e8ed"
 foreground = "#1d1d1f"
 min_width = 64.0
 min_height = 22.0
-padding_horizontal = 12.0
-padding_vertical = 4.0
-icon_spacing = 6.0
+padding_horizontal = 8.0
+padding_vertical = 3.0
+icon_spacing = 4.0
 
 [light.input]
 background = "#ffffff"
 foreground = "#1d1d1f"
 min_height = 22.0
 padding_horizontal = 4.0
-padding_vertical = 4.0
+padding_vertical = 3.0
 
 [light.checkbox]
 indicator_size = 14.0
@@ -101,15 +101,15 @@ padding_vertical = 4.0
 max_width = 300.0
 
 [light.scrollbar]
-width = 15.0
+width = 16.0
 slider_width = 7.0
 overlay_mode = true
-min_thumb_height = 30.0
+min_thumb_height = 40.0
 
 [light.slider]
-track_height = 4.0
+track_height = 5.0
 thumb_size = 21.0
-tick_length = 4.0
+tick_length = 8.0
 
 [light.progress_bar]
 height = 6.0
@@ -124,19 +124,19 @@ padding_vertical = 4.0
 [light.menu]
 item_height = 22.0
 padding_horizontal = 12.0
-padding_vertical = 4.0
-icon_spacing = 8.0
+padding_vertical = 3.0
+icon_spacing = 4.0
 
 [light.list]
 alternate_row = "#f5f5fa"
 item_height = 24.0
 padding_horizontal = 4.0
-padding_vertical = 2.0
+padding_vertical = 4.0
 
 [light.toolbar]
 height = 38.0
 item_spacing = 8.0
-padding = 4.0
+padding = 8.0
 
 [light.sidebar]
 background = "#e8e8ed"
@@ -150,14 +150,14 @@ foreground = "#1d1d1f"
 color = "#d5d5d5"
 
 [light.splitter]
-width = 9.0
+width = 6.0
 
 [light.switch]
 unchecked_bg = "#d5d5d5"
 thumb_bg = "#ffffff"
-track_width = 40.0
-track_height = 20.0
-thumb_size = 16.0
+track_width = 38.0
+track_height = 22.0
+thumb_size = 18.0
 track_radius = 10.0
 
 [light.dialog]
@@ -176,15 +176,15 @@ background = "#00000000"
 hover_bg = "#007aff18"
 
 [light.spinner]
-diameter = 24.0
-min_size = 16.0
+diameter = 32.0
+min_size = 10.0
 stroke_width = 2.0
 
 [light.combo_box]
-min_height = 22.0
+min_height = 21.0
 min_width = 120.0
-padding_horizontal = 12.0
-arrow_size = 12.0
+padding_horizontal = 9.0
+arrow_size = 17.0
 arrow_area_width = 28.0
 
 [light.segmented_control]
@@ -231,15 +231,15 @@ focus_ring_color = "#0a84ff"
 disabled_foreground = "#48484a"
 accent_foreground = "#ffffff"
 
-radius = 6.0
+radius = 5.0
 radius_lg = 10.0
 frame_width = 1.0
-disabled_opacity = 0.5
+disabled_opacity = 0.3
 border_opacity = 0.2
 shadow_enabled = true
-line_height = 1.4
-focus_ring_width = 2.0
-focus_ring_offset = 1.0
+line_height = 1.19
+focus_ring_width = 3.0
+focus_ring_offset = -1.0
 text_scaling_factor = 1.0
 reduce_motion = false
 high_contrast = false
@@ -276,16 +276,16 @@ background = "#3a3a3c"
 foreground = "#ffffff"
 min_width = 64.0
 min_height = 22.0
-padding_horizontal = 12.0
-padding_vertical = 4.0
-icon_spacing = 6.0
+padding_horizontal = 8.0
+padding_vertical = 3.0
+icon_spacing = 4.0
 
 [dark.input]
 background = "#2d2d2d"
 foreground = "#ffffff"
 min_height = 22.0
 padding_horizontal = 4.0
-padding_vertical = 4.0
+padding_vertical = 3.0
 
 [dark.checkbox]
 indicator_size = 14.0
@@ -299,15 +299,15 @@ padding_vertical = 4.0
 max_width = 300.0
 
 [dark.scrollbar]
-width = 15.0
+width = 16.0
 slider_width = 7.0
 overlay_mode = true
-min_thumb_height = 30.0
+min_thumb_height = 40.0
 
 [dark.slider]
-track_height = 4.0
+track_height = 5.0
 thumb_size = 21.0
-tick_length = 4.0
+tick_length = 8.0
 
 [dark.progress_bar]
 height = 6.0
@@ -322,19 +322,19 @@ padding_vertical = 4.0
 [dark.menu]
 item_height = 22.0
 padding_horizontal = 12.0
-padding_vertical = 4.0
-icon_spacing = 8.0
+padding_vertical = 3.0
+icon_spacing = 4.0
 
 [dark.list]
 alternate_row = "#252527"
 item_height = 24.0
 padding_horizontal = 4.0
-padding_vertical = 2.0
+padding_vertical = 4.0
 
 [dark.toolbar]
 height = 38.0
 item_spacing = 8.0
-padding = 4.0
+padding = 8.0
 
 [dark.sidebar]
 background = "#262626"
@@ -348,14 +348,14 @@ foreground = "#ffffff"
 color = "#3d3d3d"
 
 [dark.splitter]
-width = 9.0
+width = 6.0
 
 [dark.switch]
 unchecked_bg = "#3d3d3d"
 thumb_bg = "#ffffff"
-track_width = 40.0
-track_height = 20.0
-thumb_size = 16.0
+track_width = 38.0
+track_height = 22.0
+thumb_size = 18.0
 track_radius = 10.0
 
 [dark.dialog]
@@ -374,15 +374,15 @@ background = "#00000000"
 hover_bg = "#0a84ff18"
 
 [dark.spinner]
-diameter = 24.0
-min_size = 16.0
+diameter = 32.0
+min_size = 10.0
 stroke_width = 2.0
 
 [dark.combo_box]
-min_height = 22.0
+min_height = 21.0
 min_width = 120.0
-padding_horizontal = 12.0
-arrow_size = 12.0
+padding_horizontal = 9.0
+arrow_size = 17.0
 arrow_area_width = 28.0
 
 [dark.segmented_control]

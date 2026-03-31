@@ -561,6 +561,7 @@ fn build_theme(
 ///
 /// Returns `Error::Unavailable` if UISettings cannot be created (pre-Windows 10).
 #[cfg(all(target_os = "windows", feature = "windows"))]
+#[must_use = "this returns the detected Windows theme; it does not apply it"]
 pub fn from_windows() -> crate::Result<crate::ThemeSpec> {
     let settings = UISettings::new()
         .map_err(|e| crate::Error::Unavailable(format!("UISettings unavailable: {e}")))?;
@@ -1334,8 +1335,9 @@ mod tests {
             "dialog button order should be trailing affirmative for Windows"
         );
         assert_eq!(
-            resolved.icon_set, "segoe-fluent",
-            "icon_set should be segoe-fluent from Windows preset"
+            resolved.icon_set,
+            crate::IconSet::SegoeIcons,
+            "icon_set should be SegoeIcons from Windows preset"
         );
     }
 }

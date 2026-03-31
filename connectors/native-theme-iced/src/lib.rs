@@ -7,7 +7,7 @@
 //! ```ignore
 //! use native_theme_iced::from_preset;
 //!
-//! let theme = from_preset("catppuccin-mocha", true)?;
+//! let (theme, resolved) = from_preset("catppuccin-mocha", true)?;
 //! ```
 //!
 //! Or from the OS-detected theme:
@@ -15,7 +15,7 @@
 //! ```ignore
 //! use native_theme_iced::from_system;
 //!
-//! let theme = from_system()?;
+//! let (theme, resolved) = from_system()?;
 //! ```
 //!
 //! # Manual Path
@@ -104,13 +104,18 @@ pub fn to_theme(
 /// # Errors
 ///
 /// Returns an error if the preset name is not recognized or if resolution fails.
-pub fn from_preset(name: &str, is_dark: bool) -> native_theme::Result<iced_core::theme::Theme> {
+#[must_use = "this returns the theme; it does not apply it"]
+pub fn from_preset(
+    name: &str,
+    is_dark: bool,
+) -> native_theme::Result<(iced_core::theme::Theme, native_theme::ResolvedThemeVariant)> {
     let spec = native_theme::ThemeSpec::preset(name)?;
     let variant = spec
         .pick_variant(is_dark)
         .ok_or_else(|| native_theme::Error::Format(format!("preset '{name}' has no variants")))?;
     let resolved = variant.clone().into_resolved()?;
-    Ok(to_theme(&resolved, name))
+    let theme = to_theme(&resolved, name);
+    Ok((theme, resolved))
 }
 
 /// Detect the OS theme and convert it to an iced [`Theme`](iced_core::theme::Theme) in one call.
@@ -118,14 +123,19 @@ pub fn from_preset(name: &str, is_dark: bool) -> native_theme::Result<iced_core:
 /// # Errors
 ///
 /// Returns an error if the platform theme cannot be read.
-pub fn from_system() -> native_theme::Result<iced_core::theme::Theme> {
+#[must_use = "this returns the theme; it does not apply it"]
+pub fn from_system()
+-> native_theme::Result<(iced_core::theme::Theme, native_theme::ResolvedThemeVariant)> {
     let sys = native_theme::SystemTheme::from_system()?;
-    Ok(to_theme(sys.active(), &sys.name))
+    let resolved = sys.active().clone();
+    let theme = to_theme(&resolved, &sys.name);
+    Ok((theme, resolved))
 }
 
 /// Extension trait for converting a [`SystemTheme`] to an iced theme.
 pub trait SystemThemeExt {
     /// Convert this system theme to an iced [`Theme`](iced_core::theme::Theme).
+    #[must_use = "this returns the theme; it does not apply it"]
     fn to_iced_theme(&self) -> iced_core::theme::Theme;
 }
 
@@ -382,14 +392,16 @@ mod tests {
 
     #[test]
     fn from_preset_valid_light() {
-        let theme = from_preset("catppuccin-mocha", false).expect("preset should load");
+        let (theme, resolved) = from_preset("catppuccin-mocha", false).expect("preset should load");
         // Should produce a valid custom theme (not Light or Dark built-in)
         assert_ne!(theme, iced_core::theme::Theme::Light);
+        // Should also return the resolved variant
+        assert!(!resolved.defaults.font.family.is_empty());
     }
 
     #[test]
     fn from_preset_valid_dark() {
-        let theme = from_preset("catppuccin-mocha", true).expect("preset should load");
+        let (theme, _resolved) = from_preset("catppuccin-mocha", true).expect("preset should load");
         assert_ne!(theme, iced_core::theme::Theme::Dark);
     }
 

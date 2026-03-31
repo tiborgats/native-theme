@@ -117,6 +117,7 @@ fn unpremultiply_alpha(buffer: &mut [u8]) {
 /// ```ignore
 /// let icon = load_sf_icon_by_name("arrow.right");
 /// ```
+#[must_use]
 pub fn load_sf_icon_by_name(name: &str) -> Option<IconData> {
     let size = DEFAULT_ICON_SIZE;
     let image = load_symbol(name, size as f64)?;
@@ -138,6 +139,7 @@ pub fn load_sf_icon_by_name(name: &str) -> Option<IconData> {
 ///
 /// Returns `None` if the role has no SF Symbols mapping or the symbol
 /// cannot be loaded on this macOS version.
+#[must_use]
 pub fn load_sf_icon(role: IconRole) -> Option<IconData> {
     let name = icon_name(role, IconSet::SfSymbols)?;
     let size = DEFAULT_ICON_SIZE;

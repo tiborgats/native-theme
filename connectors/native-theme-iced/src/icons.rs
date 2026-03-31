@@ -11,6 +11,7 @@ use native_theme::{AnimatedIcon, IconData, IconProvider, load_custom_icon};
 ///
 /// Returned by [`animated_frames_to_svg_handles`]. Contains the
 /// SVG handles and the per-frame duration needed to drive playback.
+#[derive(Debug, Clone)]
 pub struct AnimatedSvgHandles {
     /// SVG handles ready for iced rendering.
     pub handles: Vec<iced_core::svg::Handle>,

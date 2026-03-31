@@ -349,33 +349,35 @@ accent = "#00ff00"
 
     #[test]
     fn icon_set_native_presets_have_correct_values() {
-        let cases: &[(&str, &str)] = &[
-            ("windows-11", "segoe-fluent"),
-            ("macos-sonoma", "sf-symbols"),
-            ("ios", "sf-symbols"),
-            ("adwaita", "freedesktop"),
-            ("kde-breeze", "freedesktop"),
-            ("material", "material"),
+        use crate::IconSet;
+        let cases: &[(&str, IconSet)] = &[
+            ("windows-11", IconSet::SegoeIcons),
+            ("macos-sonoma", IconSet::SfSymbols),
+            ("ios", IconSet::SfSymbols),
+            ("adwaita", IconSet::Freedesktop),
+            ("kde-breeze", IconSet::Freedesktop),
+            ("material", IconSet::Material),
         ];
         for (name, expected) in cases {
             let theme = preset(name).unwrap();
             let light = theme.light.as_ref().unwrap();
             assert_eq!(
-                light.icon_set.as_deref(),
+                light.icon_set,
                 Some(*expected),
-                "preset '{name}' light.icon_set should be Some(\"{expected}\")"
+                "preset '{name}' light.icon_set should be Some({expected:?})"
             );
             let dark = theme.dark.as_ref().unwrap();
             assert_eq!(
-                dark.icon_set.as_deref(),
+                dark.icon_set,
                 Some(*expected),
-                "preset '{name}' dark.icon_set should be Some(\"{expected}\")"
+                "preset '{name}' dark.icon_set should be Some({expected:?})"
             );
         }
     }
 
     #[test]
     fn icon_set_community_presets_are_freedesktop() {
+        use crate::IconSet;
         let community = &[
             "catppuccin-latte",
             "catppuccin-frappe",
@@ -392,15 +394,15 @@ accent = "#00ff00"
             let theme = preset(name).unwrap();
             let light = theme.light.as_ref().unwrap();
             assert_eq!(
-                light.icon_set.as_deref(),
-                Some("freedesktop"),
-                "preset '{name}' light.icon_set should be Some(\"freedesktop\")"
+                light.icon_set,
+                Some(IconSet::Freedesktop),
+                "preset '{name}' light.icon_set should be Some(Freedesktop)"
             );
             let dark = theme.dark.as_ref().unwrap();
             assert_eq!(
-                dark.icon_set.as_deref(),
-                Some("freedesktop"),
-                "preset '{name}' dark.icon_set should be Some(\"freedesktop\")"
+                dark.icon_set,
+                Some(IconSet::Freedesktop),
+                "preset '{name}' dark.icon_set should be Some(Freedesktop)"
             );
         }
     }
@@ -605,7 +607,7 @@ accent = "#00ff00"
         assert_eq!(resolved.defaults.font.family, "Inter");
         assert_eq!(resolved.defaults.font.size, 14.0);
         assert_eq!(resolved.defaults.font.weight, 400);
-        assert_eq!(resolved.defaults.line_height, 1.4);
+        assert_eq!(resolved.defaults.line_height, 1.2);
         assert_eq!(resolved.defaults.radius, 8.0);
         assert_eq!(resolved.defaults.focus_ring_width, 2.0);
         assert_eq!(resolved.defaults.icon_sizes.toolbar, 24.0);
@@ -614,7 +616,7 @@ accent = "#00ff00"
         // Window inherits from defaults
         assert_eq!(resolved.window.background, resolved.defaults.background);
         // icon_set should be populated
-        assert_eq!(resolved.icon_set, "freedesktop");
+        assert_eq!(resolved.icon_set, crate::IconSet::Freedesktop);
     }
 
     #[test]
@@ -671,10 +673,10 @@ accent = "#00ff00"
             resolved.text_scale.caption.weight, 400,
             "caption weight from defaults.font.weight"
         );
-        // line_height = defaults.line_height * size = 1.4 * 14.0 = 19.6
+        // line_height = defaults.line_height * size = 1.2 * 14.0 = 16.8
         assert!(
-            (resolved.text_scale.caption.line_height - 19.6).abs() < 0.01,
-            "caption line_height should be line_height_multiplier * size = 19.6, got {}",
+            (resolved.text_scale.caption.line_height - 16.8).abs() < 0.01,
+            "caption line_height should be line_height_multiplier * size = 16.8, got {}",
             resolved.text_scale.caption.line_height
         );
     }

@@ -170,7 +170,7 @@ pub type Result<T> = std::result::Result<T, Error>;
 
 /// Desktop environments recognized on Linux.
 #[cfg(target_os = "linux")]
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LinuxDesktop {
     /// KDE Plasma desktop.
     Kde,
@@ -196,6 +196,7 @@ pub enum LinuxDesktop {
 /// Checks components in order; first recognized DE wins. Budgie is checked
 /// before GNOME because Budgie sets `Budgie:GNOME`.
 #[cfg(target_os = "linux")]
+#[must_use]
 pub fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
     for component in xdg_current_desktop.split(':') {
         match component {
@@ -455,6 +456,7 @@ impl SystemTheme {
     /// Returns the OS-active resolved variant.
     ///
     /// If `is_dark` is true, returns `&self.dark`; otherwise `&self.light`.
+    #[must_use]
     pub fn active(&self) -> &ResolvedThemeVariant {
         if self.is_dark {
             &self.dark
@@ -466,6 +468,7 @@ impl SystemTheme {
     /// Pick a resolved variant by explicit preference.
     ///
     /// `pick(true)` returns `&self.dark`, `pick(false)` returns `&self.light`.
+    #[must_use]
     pub fn pick(&self, is_dark: bool) -> &ResolvedThemeVariant {
         if is_dark { &self.dark } else { &self.light }
     }
@@ -493,6 +496,7 @@ impl SystemTheme {
     /// // customized.active().defaults.accent is now #ff6600
     /// // and all accent-derived fields are updated
     /// ```
+    #[must_use = "this returns a new theme with the overlay applied; it does not modify self"]
     pub fn with_overlay(&self, overlay: &ThemeSpec) -> crate::Result<Self> {
         // Start from pre-resolve variants (avoids double-resolve idempotency issue)
         let mut light = self.light_variant.clone();
@@ -525,6 +529,7 @@ impl SystemTheme {
     /// Apply an app overlay from a TOML string.
     ///
     /// Parses the TOML as a [`ThemeSpec`] and calls [`with_overlay`](Self::with_overlay).
+    #[must_use = "this returns a new theme with the overlay applied; it does not modify self"]
     pub fn with_overlay_toml(&self, toml: &str) -> crate::Result<Self> {
         let overlay = ThemeSpec::from_toml(toml)?;
         self.with_overlay(&overlay)
@@ -681,6 +686,7 @@ fn run_pipeline(
 /// This is the public API for what [`SystemTheme::from_system()`] uses internally.
 /// Showcase UIs use this to build the "default (...)" label.
 #[allow(unreachable_code)]
+#[must_use]
 pub fn platform_preset_name() -> &'static str {
     #[cfg(target_os = "macos")]
     {
@@ -765,7 +771,9 @@ fn from_system_inner() -> crate::Result<SystemTheme> {
         }
 
         #[cfg(not(feature = "macos"))]
-        return Err(crate::Error::Unsupported);
+        return Err(crate::Error::Unsupported(
+            "macOS theme detection requires the `macos` feature",
+        ));
     }
 
     #[cfg(target_os = "windows")]
@@ -778,7 +786,9 @@ fn from_system_inner() -> crate::Result<SystemTheme> {
         }
 
         #[cfg(not(feature = "windows"))]
-        return Err(crate::Error::Unsupported);
+        return Err(crate::Error::Unsupported(
+            "Windows theme detection requires the `windows` feature",
+        ));
     }
 
     #[cfg(target_os = "linux")]
@@ -788,7 +798,9 @@ fn from_system_inner() -> crate::Result<SystemTheme> {
 
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
-        Err(crate::Error::Unsupported)
+        Err(crate::Error::Unsupported(
+            "no theme reader available for this platform",
+        ))
     }
 }
 
