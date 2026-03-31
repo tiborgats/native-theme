@@ -197,6 +197,13 @@ impl fmt::Display for BuildErrors {
 impl std::error::Error for BuildErrors {}
 
 impl BuildErrors {
+    /// Create a single-error `BuildErrors` from an I/O error message.
+    pub(crate) fn io(message: impl Into<String>) -> Self {
+        Self(vec![BuildError::Io {
+            message: message.into(),
+        }])
+    }
+
     /// Print each error as a `cargo::error=` directive to stdout.
     pub fn emit_cargo_errors(&self) {
         for e in &self.0 {

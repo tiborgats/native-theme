@@ -233,36 +233,23 @@ impl UnwrapOrExit<GenerateOutput> for Result<GenerateOutput, BuildErrors> {
 /// the icon pipeline detects missing roles, SVGs, or invalid mappings.
 pub fn generate_icons(toml_path: impl AsRef<Path>) -> Result<GenerateOutput, BuildErrors> {
     let toml_path = toml_path.as_ref();
-    let manifest_dir = PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").map_err(|e| {
-        BuildErrors(vec![BuildError::Io {
-            message: format!("CARGO_MANIFEST_DIR not set: {e}"),
-        }])
-    })?);
-    let out_dir = PathBuf::from(std::env::var("OUT_DIR").map_err(|e| {
-        BuildErrors(vec![BuildError::Io {
-            message: format!("OUT_DIR not set: {e}"),
-        }])
-    })?);
+    let manifest_dir = PathBuf::from(
+        std::env::var("CARGO_MANIFEST_DIR")
+            .map_err(|e| BuildErrors::io(format!("CARGO_MANIFEST_DIR not set: {e}")))?,
+    );
+    let out_dir = PathBuf::from(
+        std::env::var("OUT_DIR").map_err(|e| BuildErrors::io(format!("OUT_DIR not set: {e}")))?,
+    );
     let resolved = manifest_dir.join(toml_path);
 
-    let content = std::fs::read_to_string(&resolved).map_err(|e| {
-        BuildErrors(vec![BuildError::Io {
-            message: format!("failed to read {}: {e}", resolved.display()),
-        }])
-    })?;
-    let config: MasterConfig = toml::from_str(&content).map_err(|e| {
-        BuildErrors(vec![BuildError::Io {
-            message: format!("failed to parse {}: {e}", resolved.display()),
-        }])
-    })?;
+    let content = std::fs::read_to_string(&resolved)
+        .map_err(|e| BuildErrors::io(format!("failed to read {}: {e}", resolved.display())))?;
+    let config: MasterConfig = toml::from_str(&content)
+        .map_err(|e| BuildErrors::io(format!("failed to parse {}: {e}", resolved.display())))?;
 
     let base_dir = resolved
         .parent()
-        .ok_or_else(|| {
-            BuildErrors(vec![BuildError::Io {
-                message: format!("{} has no parent directory", resolved.display()),
-            }])
-        })?
+        .ok_or_else(|| BuildErrors::io(format!("{} has no parent directory", resolved.display())))?
         .to_path_buf();
     let file_path_str = resolved.to_string_lossy().to_string();
 
@@ -389,22 +376,16 @@ impl IconGenerator {
     /// [`output_dir()`](Self::output_dir) nor `OUT_DIR` is set.
     pub fn generate(self) -> Result<GenerateOutput, BuildErrors> {
         if self.sources.is_empty() {
-            return Err(BuildErrors(vec![BuildError::Io {
-                message:
-                    "no source files added to IconGenerator (call .source() before .generate())"
-                        .into(),
-            }]));
+            return Err(BuildErrors::io(
+                "no source files added to IconGenerator (call .source() before .generate())",
+            ));
         }
 
         let needs_manifest_dir = self.sources.iter().any(|s| !s.is_absolute())
             || self.base_dir.as_ref().is_some_and(|b| !b.is_absolute());
         let manifest_dir = if needs_manifest_dir {
             Some(PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").map_err(
-                |e| {
-                    BuildErrors(vec![BuildError::Io {
-                        message: format!("CARGO_MANIFEST_DIR not set: {e}"),
-                    }])
-                },
+                |e| BuildErrors::io(format!("CARGO_MANIFEST_DIR not set: {e}")),
             )?))
         } else {
             std::env::var("CARGO_MANIFEST_DIR").ok().map(PathBuf::from)
@@ -412,11 +393,10 @@ impl IconGenerator {
 
         let out_dir = match self.output_dir {
             Some(dir) => dir,
-            None => PathBuf::from(std::env::var("OUT_DIR").map_err(|e| {
-                BuildErrors(vec![BuildError::Io {
-                    message: format!("OUT_DIR not set: {e}"),
-                }])
-            })?),
+            None => PathBuf::from(
+                std::env::var("OUT_DIR")
+                    .map_err(|e| BuildErrors::io(format!("OUT_DIR not set: {e}")))?,
+            ),
         };
 
         let mut configs = Vec::new();
@@ -429,24 +409,18 @@ impl IconGenerator {
                 manifest_dir
                     .as_ref()
                     .ok_or_else(|| {
-                        BuildErrors(vec![BuildError::Io {
-                            message: format!(
-                                "CARGO_MANIFEST_DIR required for relative path {}",
-                                source.display()
-                            ),
-                        }])
+                        BuildErrors::io(format!(
+                            "CARGO_MANIFEST_DIR required for relative path {}",
+                            source.display()
+                        ))
                     })?
                     .join(source)
             };
             let content = std::fs::read_to_string(&resolved).map_err(|e| {
-                BuildErrors(vec![BuildError::Io {
-                    message: format!("failed to read {}: {e}", resolved.display()),
-                }])
+                BuildErrors::io(format!("failed to read {}: {e}", resolved.display()))
             })?;
             let config: MasterConfig = toml::from_str(&content).map_err(|e| {
-                BuildErrors(vec![BuildError::Io {
-                    message: format!("failed to parse {}: {e}", resolved.display()),
-                }])
+                BuildErrors::io(format!("failed to parse {}: {e}", resolved.display()))
             })?;
 
             let file_path_str = resolved.to_string_lossy().to_string();
@@ -458,12 +432,10 @@ impl IconGenerator {
                     manifest_dir
                         .as_ref()
                         .ok_or_else(|| {
-                            BuildErrors(vec![BuildError::Io {
-                                message: format!(
-                                    "CARGO_MANIFEST_DIR required for relative base_dir {}",
-                                    explicit_base.display()
-                                ),
-                            }])
+                            BuildErrors::io(format!(
+                                "CARGO_MANIFEST_DIR required for relative base_dir {}",
+                                explicit_base.display()
+                            ))
                         })?
                         .join(explicit_base)
                 };
@@ -472,9 +444,7 @@ impl IconGenerator {
                 let parent = resolved
                     .parent()
                     .ok_or_else(|| {
-                        BuildErrors(vec![BuildError::Io {
-                            message: format!("{} has no parent directory", resolved.display()),
-                        }])
+                        BuildErrors::io(format!("{} has no parent directory", resolved.display()))
                     })?
                     .to_path_buf();
                 base_dirs.push(parent);
@@ -488,11 +458,10 @@ impl IconGenerator {
             let first = &base_dirs[0];
             let divergent = base_dirs.iter().any(|d| d != first);
             if divergent {
-                return Err(BuildErrors(vec![BuildError::Io {
-                    message: "multiple source files have different parent directories; \
-                              use .base_dir() to specify a common base directory for theme resolution"
-                        .into(),
-                }]));
+                return Err(BuildErrors::io(
+                    "multiple source files have different parent directories; \
+                     use .base_dir() to specify a common base directory for theme resolution",
+                ));
             }
         }
 
