@@ -1,0 +1,685 @@
+# v0.5.2 API Review -- native-theme (core crate)
+
+Verified against source code on 2026-03-31. Each chapter covers one
+API problem, lists all resolution options with full pro/contra, and
+recommends the best solution. Pre-1.0 -- backward compatibility is
+not a constraint.
+
+**Companion documents:**
+- [todo_v0.5.2_native-theme-build_api.md](todo_v0.5.2_native-theme-build_api.md)
+- [todo_v0.5.2_native-theme-iced_api.md](todo_v0.5.2_native-theme-iced_api.md)
+- [todo_v0.5.2_native-theme-gpui_api.md](todo_v0.5.2_native-theme-gpui_api.md)
+
+---
+
+## Summary
+
+| # | Issue | Severity | Fix complexity |
+|---|-------|----------|----------------|
+| 1 | `DialogButtonOrder` missing `Copy`/`Eq`/`Hash`; `LinuxDesktop` missing `Eq`/`Hash` | Medium | Trivial |
+| 2 | `Error::Unsupported` has no context payload | Medium | Low |
+| 3 | Resolved types missing `Deserialize` | Low | Low |
+| 4 | `icon_set` / `icon_theme` fields not validated on deserialization | Low | Medium |
+| 5 | `IconData` / `AnimatedIcon` not `Serialize` / `Deserialize` | Low | Medium |
+| 6 | `with_overlay` / `with_overlay_toml` missing `#[must_use]` | Medium | Trivial |
+| 7 | `rasterize_svg()` uses wrong error variant for allocation failure | Low | Trivial |
+| 8 | 20 public functions missing `#[must_use]` | Medium | Trivial |
+
+---
+
+## 1. DialogButtonOrder missing Copy, Eq, Hash
+
+**File:** `native-theme/src/model/dialog_order.rs:12`
+
+**What:** `DialogButtonOrder` is a two-variant fieldless enum:
+
+```rust
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+pub enum DialogButtonOrder {
+    #[default] TrailingAffirmative,
+    LeadingAffirmative,
+}
+```
+
+It is missing `Copy`, `Eq`, and `Hash`. Every comparable enum in the
+crate has the full set:
+
+| Enum | Copy | Eq | Hash |
+|------|------|----|------|
+| `IconRole` | yes | yes | yes |
+| `IconSet` | yes | yes | yes |
+| `TransformAnimation` | yes | yes | yes |
+| `LinuxDesktop` | yes | **no** | **no** |
+| `DialogButtonOrder` | **no** | **no** | **no** |
+
+`LinuxDesktop` (`lib.rs:173`) has the same `Eq`/`Hash` gap -- it
+derives `Debug, Clone, Copy, PartialEq` but omits `Eq` and `Hash`.
+
+Without `Copy` (DialogButtonOrder only), users must clone or borrow
+where a simple copy would suffice. Without `Eq`, the type cannot be a
+`HashMap` key even though `PartialEq` is derived. Without `Hash`, the
+type cannot be used in any hash-based collection.
+
+### Options
+
+**A. Add `Copy`, `Eq`, `Hash` to the derive list (recommended)**
+
+- Pro: Zero-cost -- fieldless enums get all three for free.
+- Pro: Brings consistency with every other enum in the crate.
+- Pro: Unlocks `HashMap<DialogButtonOrder, _>` use cases.
+- Pro: Trivial one-line change, no semantic impact.
+- Con: None. Adding derives to a fieldless enum has no downsides.
+
+**B. Add only `Eq` (minimal fix)**
+
+- Pro: Fixes the logical gap (`PartialEq` without `Eq`).
+- Con: Still leaves `Copy` and `Hash` missing, requiring a second pass
+  later.
+- Con: No compelling reason to omit `Copy` and `Hash` from a fieldless
+  enum.
+
+**C. Keep as-is**
+
+- Pro: No change.
+- Con: The derive list remains inconsistent with peer types.
+- Con: Users encounter surprising limitations (can't use as map key,
+  must clone instead of copy).
+
+### Recommendation
+
+**Option A.** There is no reason to withhold `Copy`, `Eq`, or `Hash`
+from a fieldless enum. The changes are:
+
+```rust
+// dialog_order.rs
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+pub enum DialogButtonOrder { ... }
+
+// lib.rs (LinuxDesktop -- also add Eq, Hash while fixing the same gap)
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+pub enum LinuxDesktop { ... }
+```
+
+---
+
+## 2. Error::Unsupported has no context payload
+
+**File:** `native-theme/src/error.rs:35`
+
+**What:** The `Error` enum has an `Unsupported` variant with no
+associated data:
+
+```rust
+pub enum Error {
+    Unsupported,
+    Unavailable(String),
+    Format(String),
+    Platform(Box<dyn Error + Send + Sync>),
+    Io(std::io::Error),
+    Resolution(ThemeResolutionError),
+}
+```
+
+When a function returns `Error::Unsupported`, the caller knows
+*something* is unsupported but not *what*. The `Display` impl at
+line 56 produces `"operation not supported on this platform"` with
+no specifics. Compare with `Unavailable(String)` which includes a
+reason.
+
+Practical impact: a user enabling the wrong combination of features, or
+running on an unusual platform, gets an opaque error with no guidance
+on what to enable or check.
+
+### Options
+
+**A. Add a `&'static str` payload: `Unsupported(&'static str)` (recommended)**
+
+- Pro: Every call site already knows what's unsupported (e.g.,
+  `"KDE theme detection requires the `kde` feature"`).
+- Pro: `&'static str` is zero-allocation and `Copy`-friendly.
+- Pro: Minimal diff -- each `Error::Unsupported` becomes
+  `Error::Unsupported("reason")`.
+- Pro: The `Display` impl can include the reason directly.
+- Con: Minor breaking change (pattern matches on `Unsupported` must
+  add `(_)` or a binding). Acceptable pre-1.0.
+
+**B. Add a `String` payload: `Unsupported(String)`**
+
+- Pro: Allows runtime-constructed messages.
+- Pro: Matches the `Unavailable(String)` pattern.
+- Con: Allocates for every error construction, even though the message
+  is always a compile-time constant in practice.
+- Con: Blurs the distinction from `Unavailable(String)` -- both
+  carry a String, differing only in semantic intent.
+
+**C. Merge into `Unavailable`**
+
+- Pro: Simplifies the enum -- one fewer variant.
+- Pro: `Unavailable` already carries a reason string.
+- Con: Loses the semantic distinction between "not supported on this
+  platform" and "supported but temporarily unavailable". Callers that
+  match on `Unsupported` to show platform-specific guidance would lose
+  their branch.
+
+**D. Keep as-is, improve documentation**
+
+- Pro: No code change.
+- Con: The error remains opaque. Documentation can't substitute for
+  runtime context in error messages.
+
+### Recommendation
+
+**Option A.** The `Unsupported` variant is used in feature-gated
+`#[cfg]` branches where the reason is always a compile-time constant.
+Using `&'static str` costs nothing at runtime and gives callers
+actionable context. The breaking change is minimal and the crate is
+pre-1.0.
+
+---
+
+## 3. Resolved types missing Deserialize
+
+**Files:** `native-theme/src/model/resolved.rs` and all
+`Resolved*Theme` structs generated by `define_widget_pair!`
+
+**What:** All `Resolved*` types derive `Clone, Debug, PartialEq,
+Serialize` but NOT `Deserialize`:
+
+```rust
+// Example from resolved.rs:13
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
+pub struct ResolvedThemeSpacing { ... }
+```
+
+This means resolved themes can be serialized (e.g., to TOML/JSON for
+inspection) but cannot be deserialized back. Use cases blocked:
+
+1. **Caching:** Serialize a resolved theme to disk on first run, load
+   it on subsequent runs to skip the resolution pipeline.
+2. **IPC:** Send a resolved theme between processes (e.g., a theme
+   preview daemon).
+3. **Testing:** Create specific resolved states from fixture files
+   without running the full unresolved-to-resolved pipeline.
+
+### Options
+
+**A. Add `Deserialize` to all resolved types (recommended)**
+
+- Pro: Enables caching, IPC, and test fixtures.
+- Pro: All fields are concrete (non-Option), so Deserialize is
+  straightforward -- every field must be present.
+- Pro: `serde` already generates Deserialize for similar concrete
+  structs throughout the crate.
+- Pro: Zero runtime cost when not used.
+- Con: Increases compile time slightly (serde codegen for ~26 more
+  structs).
+- Con: Creates a second entry point for resolved types that bypasses
+  the validation pipeline. Users could deserialize invalid data (e.g.,
+  negative radius). Mitigated: resolved types are output types and
+  their invariants are documented, not enforced by the type system.
+
+**B. Add `Deserialize` only to `ResolvedThemeVariant` (top-level)**
+
+- Pro: Covers the main caching use case.
+- Pro: Smaller scope than A.
+- Con: `ResolvedThemeVariant` contains `ResolvedThemeDefaults`,
+  `ResolvedFontSpec`, etc., so Deserialize must be added to all nested
+  types anyway. In practice this is the same as option A.
+
+**C. Provide a `ResolvedThemeVariant::from_toml()` constructor**
+
+- Pro: Can include runtime validation (check radius >= 0, etc.).
+- Pro: No derive needed -- manual deserialization with checks.
+- Con: Significant implementation effort (must validate ~100 fields).
+- Con: Duplicate logic with the existing resolution pipeline's
+  validation.
+- Con: Custom format would diverge from serde's standard behavior.
+
+**D. Keep as-is**
+
+- Pro: Resolved types remain output-only, enforcing the pipeline as
+  the single source of truth.
+- Pro: No risk of invalid deserialized data.
+- Con: Caching requires serializing the *unresolved* `ThemeVariant`
+  plus re-resolving on load, which is slower but ensures validity.
+- Con: Test fixtures must go through the full pipeline.
+
+### Recommendation
+
+**Option A.** The compile-time cost is negligible and the benefits
+(caching, testing) are concrete. The "invalid data" concern is
+theoretical -- resolved types already have public fields, so users
+can construct invalid states via struct literals today. Adding
+`Deserialize` doesn't weaken any invariant that isn't already
+bypassable.
+
+---
+
+## 4. icon_set / icon_theme fields not validated on deserialization
+
+**Files:** `native-theme/src/model/mod.rs:171`
+
+**What:** `ThemeVariant` has two `Option<String>` fields:
+
+```rust
+pub struct ThemeVariant {
+    // ...
+    pub icon_set: Option<String>,   // line 171
+    pub icon_theme: Option<String>, // line 177
+    // ...
+}
+```
+
+These accept arbitrary strings at deserialization time. A TOML file
+with `icon_set = "nonexistent"` parses without error. The invalid
+value is only discovered later when `IconSet::from_name()` returns
+`None` during resolution -- or worse, silently falls through to a
+default.
+
+`icon_set` maps to the `IconSet` enum (`"freedesktop"`, `"material"`,
+`"lucide"`, `"sf-symbols"`, `"segoe-fluent"`). `icon_theme` is
+freeform (e.g., `"breeze"`, `"Adwaita"`) so it can't be validated
+against a fixed set.
+
+### Options
+
+**A. Change `icon_set` to `Option<IconSet>` (recommended)**
+
+- Pro: Invalid icon set names are rejected at parse time with a clear
+  serde error message.
+- Pro: `IconSet` already has `Serialize` and `Deserialize` with
+  kebab-case serde rename, so TOML compatibility is preserved.
+- Pro: Eliminates the `IconSet::from_name()` lookup at resolution time
+  -- the value is already typed.
+- Pro: `icon_theme` stays as `Option<String>` (correct -- it's
+  freeform).
+- Con: Breaking change for anyone pattern-matching on
+  `ThemeVariant.icon_set` as `Option<String>`. Pre-1.0 so acceptable.
+- Con: Overlay merging logic must handle `Option<IconSet>` instead of
+  `Option<String>`. This is simpler, not harder.
+
+**B. Add a custom deserializer that validates against known names**
+
+- Pro: Keeps the field as `Option<String>` -- no type change.
+- Pro: Rejects unknown icon set names at parse time.
+- Con: Custom deserializer is more code than simply using the typed
+  enum.
+- Con: The known-name list must be synchronized with `IconSet` -- the
+  enum already IS that list.
+- Con: Returns a String that still needs `from_name()` conversion later.
+
+**C. Validate during `resolve()` and return an error**
+
+- Pro: No change to the data model.
+- Pro: Validation happens at a well-defined point in the pipeline.
+- Con: Errors surface late -- after parsing, merging, and partial
+  resolution. The user has already invested in loading the theme.
+- Con: The current `resolve()` method returns `()` (it mutates in
+  place); adding error returns would require changing its signature.
+
+**D. Keep as-is**
+
+- Pro: No change.
+- Con: Typos in TOML files silently produce wrong icon behavior.
+- Con: The type system communicates that any string is valid when only
+  5 values are.
+
+### Recommendation
+
+**Option A.** The `IconSet` enum exists precisely to represent this
+closed set of values. Using it directly in the model eliminates an
+entire class of bugs (typos, unknown names) at the earliest possible
+point (deserialization). The type change is the simplest and most
+idiomatic solution.
+
+---
+
+## 5. IconData / AnimatedIcon not Serialize / Deserialize
+
+**File:** `native-theme/src/model/icons.rs:225` and
+`native-theme/src/model/animated.rs:53`
+
+**What:** `IconData` and `AnimatedIcon` derive `Debug, Clone, PartialEq,
+Eq` but not `Serialize` or `Deserialize`:
+
+```rust
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+#[must_use = "loading icon data without using it is likely a bug"]
+pub enum IconData {
+    Svg(Vec<u8>),
+    Rgba { width: u32, height: u32, data: Vec<u8> },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum AnimatedIcon {
+    Frames { frames: Vec<IconData>, frame_duration_ms: u32 },
+    Transform { icon: IconData, animation: TransformAnimation },
+}
+```
+
+This prevents serializing loaded icons for caching, IPC, or
+persistence. Every icon must be re-loaded from source on each use.
+
+### Options
+
+**A. Add `Serialize` and `Deserialize` derives (recommended)**
+
+- Pro: Enables icon caching to disk (load once, serialize, reload
+  without filesystem/system icon lookup).
+- Pro: Enables IPC (send icon data between processes).
+- Pro: All inner types (`Vec<u8>`, `u32`, `TransformAnimation`) are
+  trivially serializable.
+- Pro: `TransformAnimation` (`animated.rs:18`) would also need the
+  derives -- it's a simple enum with `u32` data, so this is trivial.
+- Con: Serialized icon data can be large (SVG text or RGBA bitmaps).
+  Serde's default encoding for `Vec<u8>` in JSON is an array of
+  numbers, which is very inefficient. Mitigated: TOML isn't typically
+  used for binary blobs; users would use `bincode` or `rmp-serde` for
+  efficient binary serialization.
+- Con: `#[non_exhaustive]` complicates Deserialize -- new variants
+  added in future versions won't deserialize from old data. This is
+  inherent to the `non_exhaustive` attribute and acceptable.
+
+**B. Add Serialize only (no Deserialize)**
+
+- Pro: Enables inspection/logging of icon data.
+- Pro: No deserialization compatibility concerns.
+- Con: Cannot round-trip -- limits caching use case.
+- Con: Serialize without Deserialize is unusual and may confuse users.
+
+**C. Provide manual to_bytes() / from_bytes() methods**
+
+- Pro: Full control over binary format (compact, versioned).
+- Pro: No serde dependency on these types.
+- Con: Custom format requires maintenance and documentation.
+- Con: Doesn't integrate with serde ecosystems (JSON APIs, config
+  files).
+- Con: Significant implementation effort for little gain over serde.
+
+**D. Keep as-is**
+
+- Pro: No change. Icon data is loaded on demand from the system.
+- Pro: Avoids the large-payload serialization concern entirely.
+- Con: No caching possible. Applications that load many icons pay the
+  full cost every time.
+- Con: Testing with icon data requires calling the actual loaders.
+
+### Recommendation
+
+**Option A.** The derives are trivial and the cost is opt-in (users
+choose when to serialize). The `Vec<u8>` efficiency concern is a
+format choice, not a library concern -- `bincode` serializes `Vec<u8>`
+as a length-prefixed byte slice, which is optimal. `TransformAnimation`
+needs the same derives, which is a single-line addition.
+
+---
+
+## 6. with_overlay / with_overlay_toml missing #[must_use]
+
+**File:** `native-theme/src/lib.rs:496,528`
+
+**What:** Both overlay methods return `Result<Self>` but lack
+`#[must_use]`:
+
+```rust
+// line 496 -- no #[must_use]
+pub fn with_overlay(&self, overlay: &ThemeSpec) -> crate::Result<Self> {
+
+// line 528 -- no #[must_use]
+pub fn with_overlay_toml(&self, toml: &str) -> crate::Result<Self> {
+```
+
+These are expensive operations: they clone variants, merge the overlay,
+re-resolve, and re-validate. Discarding the result silently drops both
+the customized theme AND any errors.
+
+Compare with other `Result`-returning methods on the same struct:
+
+| Method | `#[must_use]` |
+|--------|:-------------:|
+| `from_system()` | yes |
+| `from_system_async()` | yes |
+| `with_overlay()` | **no** |
+| `with_overlay_toml()` | **no** |
+
+### Options
+
+**A. Add `#[must_use]` with custom message (recommended)**
+
+```rust
+#[must_use = "this returns a new theme with the overlay applied; it does not modify self"]
+pub fn with_overlay(&self, overlay: &ThemeSpec) -> crate::Result<Self> {
+```
+
+- Pro: Catches the discard-result bug at compile time.
+- Pro: The custom message clarifies that `&self` is borrowed, not
+  mutated -- a common source of confusion with `with_` methods.
+- Pro: Consistent with every other `Result`-returning method in the
+  crate.
+- Pro: Zero runtime cost.
+- Con: None.
+
+**B. Add bare `#[must_use]` (no custom message)**
+
+- Pro: Simpler, still catches the discard bug.
+- Con: Misses the opportunity to clarify the `&self` vs mutation
+  semantics, which is the most likely error path.
+
+**C. Keep as-is**
+
+- Pro: No change.
+- Con: Expensive work silently discarded.
+- Con: Errors silently swallowed.
+- Con: Inconsistent with peer methods.
+
+### Recommendation
+
+**Option A.** The custom message is important because `with_overlay`
+takes `&self` and returns a new `SystemTheme`. Users accustomed to
+`&mut self` mutation patterns may write `sys.with_overlay(&spec)?;`
+expecting `sys` to be modified. The message makes the borrowing
+semantics explicit.
+
+---
+
+## 7. rasterize_svg() uses wrong error variant for allocation failure
+
+**File:** `native-theme/src/rasterize.rs:55-57`
+
+**What:** When `Pixmap::new(size, size)` returns `None` (size is zero
+or dimensions overflow), the function returns `Error::Unavailable`:
+
+```rust
+let mut pixmap = tiny_skia::Pixmap::new(size, size).ok_or_else(|| {
+    crate::Error::Unavailable(format!("failed to allocate {size}x{size} pixmap"))
+})?;
+```
+
+`Error::Unavailable` means "data source exists but cannot be read
+right now" -- semantically a transient, retry-able condition.
+Pixmap allocation fails because the dimensions are invalid (zero or
+overflow), which is a permanent input-validation failure.
+
+Compare with line 42 where an SVG parse error correctly uses
+`Error::Format`:
+
+```rust
+let tree = usvg::Tree::from_data(svg_bytes, &options)
+    .map_err(|e| crate::Error::Format(format!("SVG parse error: {e}")))?;
+```
+
+Both are "your input is invalid" errors; they should use the same
+variant.
+
+The docstring at line 19 even documents the split explicitly:
+> Returns [`crate::Error::Format`] if the SVG cannot be parsed, or
+> [`crate::Error::Unavailable`] if the size is zero or pixmap
+> allocation fails.
+
+A user matching on `Error::Unavailable` to decide whether to retry
+would wrongly attempt to retry a permanent failure.
+
+### Options
+
+**A. Change to `Error::Format` (recommended)**
+
+```rust
+let mut pixmap = tiny_skia::Pixmap::new(size, size).ok_or_else(|| {
+    crate::Error::Format(format!("invalid rasterization size {size}x{size}"))
+})?;
+```
+
+- Pro: `Format` is already used for "your input is invalid" errors
+  throughout the crate.
+- Pro: Callers matching on `Unavailable` for retry logic won't
+  misclassify this case.
+- Pro: One-line change; update the docstring to match.
+- Con: Minor breaking change for code matching on `Unavailable` for
+  this specific function. Unlikely in practice.
+
+**B. Add a new variant `Error::Resource(String)`**
+
+- Pro: Distinguishes "invalid input" from "resource failure."
+- Con: Adds a variant for a single call site.
+- Con: `#[non_exhaustive]` means it's not breaking, but it's
+  unnecessary complexity.
+
+**C. Keep as-is**
+
+- Pro: No change.
+- Con: The error variant is semantically wrong.
+- Con: The docstring documents the wrong choice, making it harder to
+  fix later.
+
+### Recommendation
+
+**Option A.** The failure is an input-validation error (size is zero
+or overflow), exactly like an unparseable SVG. Using `Format` keeps
+the error variant consistent with the function's other error path.
+Update the docstring to say both errors are `Format`.
+
+---
+
+## 8. Multiple public functions missing #[must_use]
+
+**Files:** multiple source files across the core crate
+
+**What:** Twenty public functions/methods return values but lack
+`#[must_use]`, breaking the crate's otherwise thorough convention.
+(The overlay methods are covered separately in **issue #6** because
+their `&self` semantics introduce a specific mutation-confusion risk.)
+
+Functions that already have `#[must_use]` (23 functions/types) establish
+a clear crate-wide pattern. The twenty gaps fall into three tiers:
+
+**Tier 1 -- Core API (highest impact):**
+
+| Function | File:Line | Return type |
+|----------|-----------|-------------|
+| `ThemeVariant::into_resolved()` | `resolve.rs:188` | `Result<ResolvedThemeVariant>` |
+| `ThemeVariant::validate()` | `resolve.rs:554` | `Result<ResolvedThemeVariant>` |
+| `icon_name()` | `model/icons.rs:388` | `Option<&'static str>` |
+| `IconSet::from_name()` | `model/icons.rs:290` | `Option<Self>` |
+| `IconSet::name()` | `model/icons.rs:302` | `&'static str` |
+| `SystemTheme::active()` | `lib.rs:458` | `&ResolvedThemeVariant` |
+| `SystemTheme::pick()` | `lib.rs:469` | `&ResolvedThemeVariant` |
+| `detect_linux_de()` | `lib.rs:199` | `LinuxDesktop` |
+| `platform_preset_name()` | `lib.rs:684` | `&'static str` |
+| `rasterize_svg()` | `rasterize.rs:39` | `Result<IconData>` |
+
+**Tier 2 -- Platform-specific loaders (feature-gated, one per platform):**
+
+| Function | File:Line | Return type |
+|----------|-----------|-------------|
+| `from_kde()` | `kde/mod.rs:282` | `Result<ThemeSpec>` |
+| `from_macos()` | `macos.rs:424` | `Result<ThemeSpec>` |
+| `from_windows()` | `windows.rs:564` | `Result<ThemeSpec>` |
+| `load_freedesktop_icon()` | `freedesktop.rs:58` | `Option<IconData>` |
+| `load_freedesktop_icon_by_name()` | `freedesktop.rs:78` | `Option<IconData>` |
+| `load_sf_icon()` | `sficons.rs:141` | `Option<IconData>` |
+| `load_sf_icon_by_name()` | `sficons.rs:120` | `Option<IconData>` |
+| `load_windows_icon()` | `winicons.rs:385` | `Option<IconData>` |
+| `load_windows_icon_by_name()` | `winicons.rs:435` | `Option<IconData>` |
+
+**Tier 3 -- Rgba utility methods (low-risk, Copy type):**
+
+`Rgba::rgb()`, `Rgba::rgba()`, `Rgba::from_f32()`,
+`Rgba::to_f32_array()`, `Rgba::to_f32_tuple()` (all in `color.rs`).
+
+All are pure functions or accessors whose return values should never
+be discarded. `into_resolved()` and `validate()` are especially
+important: they perform expensive resolution/validation work and
+discarding the result silently throws away both the resolved theme
+and any errors.
+
+### Options
+
+**A. Add `#[must_use]` to all tiers, custom messages on Tier 1
+(recommended)**
+
+```rust
+// resolve.rs -- custom message (clarify return-not-mutate)
+#[must_use = "this returns the resolved theme; it does not modify self"]
+pub fn into_resolved(mut self) -> crate::Result<ResolvedThemeVariant> {
+
+#[must_use = "this returns the resolved theme; it does not modify self"]
+pub fn validate(&self) -> crate::Result<ResolvedThemeVariant> {
+
+// remaining Tier 1 -- bare #[must_use] sufficient
+#[must_use]
+pub fn icon_name(role: IconRole, set: IconSet) -> Option<&'static str> {
+
+// Tier 2 -- bare #[must_use] on all 9 platform-specific loaders
+#[must_use]
+pub fn from_kde() -> crate::Result<crate::ThemeSpec> {
+
+// Tier 3 -- bare #[must_use] on Rgba methods
+#[must_use]
+pub fn rgb(r: u8, g: u8, b: u8) -> Self {
+```
+
+- Pro: Catches discard-result bugs at compile time for all twenty
+  functions.
+- Pro: `into_resolved()` and `validate()` get custom messages that
+  clarify the return-not-mutate semantics.
+- Pro: Consistent with the other 23 annotated functions in the crate.
+- Pro: Tier 2 platform loaders match the existing pattern for
+  `load_icon()` and `load_custom_icon()` (which already have
+  `#[must_use]`).
+- Pro: Zero runtime cost.
+- Con: None. `#[must_use]` is purely a lint.
+
+**B. Add `#[must_use]` to Tiers 1-2 only (skip Rgba methods)**
+
+- Pro: Covers the twenty highest-impact functions.
+- Pro: `Rgba` is `Copy`, so discarding a constructor is cheap and
+  usually caught by the compiler's "unused variable" warning anyway.
+- Con: Inconsistent -- five Rgba methods remain unprotected.
+
+**C. Add `#[must_use]` only to Tier 1**
+
+- Pro: Targets the ten most important functions.
+- Con: Platform-specific loaders (`from_kde`, `load_freedesktop_icon`,
+  etc.) remain unprotected despite performing real I/O work.
+- Con: Arbitrary cutoff -- `load_icon()` already has `#[must_use]`
+  but the platform-specific loaders it dispatches to do not.
+
+**D. Keep as-is**
+
+- Pro: No change.
+- Con: Twenty functions have unprotected return values.
+- Con: `into_resolved()` and `validate()` silently discard expensive
+  work and errors.
+- Con: Inconsistent with 23 peer functions.
+
+### Recommendation
+
+**Option A.** Custom messages on `into_resolved()` and `validate()`
+provide the most value since those functions consume/borrow `self` and
+produce a new type. Bare `#[must_use]` is sufficient for all other
+functions where the name makes the return semantics obvious. Including
+the platform-specific loaders eliminates the inconsistency where the
+dispatching function (`load_icon`) has the attribute but the underlying
+per-platform functions do not.
