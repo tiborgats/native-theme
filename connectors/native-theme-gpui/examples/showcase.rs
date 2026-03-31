@@ -5208,12 +5208,28 @@ fn get_main_window_ptr() -> Option<*mut objc2::runtime::AnyObject> {
     unsafe {
         let ns_app: *mut objc2::runtime::AnyObject =
             objc2::msg_send![ns_app_class, sharedApplication];
-        let main_window: *mut objc2::runtime::AnyObject = objc2::msg_send![ns_app, mainWindow];
-        if main_window.is_null() {
-            None
-        } else {
-            Some(main_window)
+        // Try mainWindow first, then keyWindow, then first element of the
+        // windows array.  On CI runners the second GUI process launched in
+        // sequence may not get mainWindow promoted even after
+        // cx.activate(true) and a 1.5 s delay.
+        let main: *mut objc2::runtime::AnyObject = objc2::msg_send![ns_app, mainWindow];
+        if !main.is_null() {
+            return Some(main);
         }
+        let key: *mut objc2::runtime::AnyObject = objc2::msg_send![ns_app, keyWindow];
+        if !key.is_null() {
+            return Some(key);
+        }
+        let windows: *mut objc2::runtime::AnyObject = objc2::msg_send![ns_app, windows];
+        let count: usize = objc2::msg_send![windows, count];
+        if count > 0 {
+            let first: *mut objc2::runtime::AnyObject =
+                objc2::msg_send![windows, objectAtIndex: 0usize];
+            if !first.is_null() {
+                return Some(first);
+            }
+        }
+        None
     }
 }
 
@@ -5291,19 +5307,28 @@ fn nudge_content_size(delta_w: f64, delta_h: f64) {
 /// `CGWindowListCreateImage` API and produces a PNG with full title bar and
 /// window chrome.
 #[cfg(target_os = "macos")]
-fn capture_own_window_macos(_window: &mut Window, output_path: &str) {
-    let Some(main_window) = get_main_window_ptr() else {
+fn capture_own_window_macos(_window: &mut Window, output_path: &str) -> bool {
+    let Some(window_ptr) = get_main_window_ptr() else {
         eprintln!("No main window found");
-        return;
+        return false;
     };
-    let window_id: i64 = unsafe { objc2::msg_send![main_window, windowNumber] };
+    let window_id: i64 = unsafe { objc2::msg_send![window_ptr, windowNumber] };
     let status = std::process::Command::new("screencapture")
         .args(["-l", &format!("{}", window_id), "-o", output_path])
         .status();
     match status {
-        Ok(s) if s.success() => eprintln!("Screenshot saved to {output_path}"),
-        Ok(s) => eprintln!("screencapture exited with {s}"),
-        Err(e) => eprintln!("Failed to run screencapture: {e}"),
+        Ok(s) if s.success() => {
+            eprintln!("Screenshot saved to {output_path}");
+            true
+        }
+        Ok(s) => {
+            eprintln!("screencapture exited with {s}");
+            false
+        }
+        Err(e) => {
+            eprintln!("Failed to run screencapture: {e}");
+            false
+        }
     }
 }
 
@@ -5317,7 +5342,7 @@ fn capture_own_window_macos(_window: &mut Window, output_path: &str) {
 /// (more reliable than `GetForegroundWindow` which may return a console or
 /// other window on CI), then `BitBlt` + `GetDIBits` to extract pixel data.
 #[cfg(target_os = "windows")]
-fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
+fn capture_own_window_windows(_window: &mut Window, output_path: &str) -> bool {
     use windows::Win32::Foundation::*;
     use windows::Win32::Graphics::Dwm::*;
     use windows::Win32::Graphics::Gdi::*;
@@ -5334,7 +5359,7 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
             Ok(h) => h,
             Err(e) => {
                 eprintln!("FindWindowW failed: {e}");
-                return;
+                return false;
             }
         };
 
@@ -5352,7 +5377,7 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
         {
             if let Err(e) = GetWindowRect(hwnd, &mut rect) {
                 eprintln!("GetWindowRect failed: {e}");
-                return;
+                return false;
             }
         }
 
@@ -5360,7 +5385,7 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
         let height = rect.bottom - rect.top;
         if width <= 0 || height <= 0 {
             eprintln!("Invalid window dimensions: {width}x{height}");
-            return;
+            return false;
         }
         eprintln!(
             "windows capture: rect=({},{},{},{}), size={}x{}",
@@ -5390,7 +5415,7 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
             let _ = DeleteDC(mem_dc);
             ReleaseDC(None, screen_dc);
             eprintln!("BitBlt failed");
-            return;
+            return false;
         }
 
         let mut bmi = BITMAPINFO {
@@ -5424,7 +5449,7 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
 
         if lines == 0 {
             eprintln!("GetDIBits returned 0 lines");
-            return;
+            return false;
         }
 
         for chunk in pixels.chunks_exact_mut(4) {
@@ -5439,8 +5464,14 @@ fn capture_own_window_windows(_window: &mut Window, output_path: &str) {
             height as u32,
             image::ColorType::Rgba8,
         ) {
-            Ok(()) => eprintln!("Screenshot saved to {output_path}"),
-            Err(e) => eprintln!("Failed to save PNG: {e}"),
+            Ok(()) => {
+                eprintln!("Screenshot saved to {output_path}");
+                true
+            }
+            Err(e) => {
+                eprintln!("Failed to save PNG: {e}");
+                false
+            }
         }
     }
 }
@@ -5600,9 +5631,15 @@ fn main() {
                         Timer::after(Duration::from_millis(200)).await;
                         nudge_content_size(1.0, 0.0);
                         Timer::after(Duration::from_millis(1300)).await;
-                        let _ = cx.update_window(any_handle, |_view, window, _cx| {
-                            capture_own_window_macos(window, &path);
-                        });
+                        let captured = cx
+                            .update_window(any_handle, |_view, window, _cx| {
+                                capture_own_window_macos(window, &path)
+                            })
+                            .unwrap_or(false);
+                        if !captured {
+                            eprintln!("ERROR: screenshot capture failed for {path}");
+                            std::process::exit(1);
+                        }
                         let _ = cx.update(|cx| cx.quit());
                     })
                     .detach();
@@ -5613,9 +5650,15 @@ fn main() {
                     let any_handle = *window_handle;
                     cx.spawn(async move |cx| {
                         Timer::after(Duration::from_millis(1500)).await;
-                        let _ = cx.update_window(any_handle, |_view, window, _cx| {
-                            capture_own_window_windows(window, &path);
-                        });
+                        let captured = cx
+                            .update_window(any_handle, |_view, window, _cx| {
+                                capture_own_window_windows(window, &path)
+                            })
+                            .unwrap_or(false);
+                        if !captured {
+                            eprintln!("ERROR: screenshot capture failed for {path}");
+                            std::process::exit(1);
+                        }
                         let _ = cx.update(|cx| cx.quit());
                     })
                     .detach();
