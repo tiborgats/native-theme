@@ -6,7 +6,7 @@ Cross-platform native theme detection and loading for Rust GUI applications.
 
 ## Overview
 
-**native-theme** provides a toolkit-agnostic theme data model with 36 semantic
+**native-theme** provides a toolkit-agnostic theme data model with 22 semantic
 color roles, 25 per-widget resolved themes, bundled TOML presets, and optional
 OS theme reading. It gives your Rust GUI application access to consistent,
 structured theme data regardless of which toolkit you use.
@@ -62,9 +62,9 @@ theme.merge(&user_overrides);
 Use `from_system()` to read the current OS theme at runtime. It returns a
 `SystemTheme` with both light and dark `ResolvedThemeVariant` variants:
 
-```ignore
-use native_theme::from_system;
-let system = from_system().unwrap();
+```rust,ignore
+use native_theme::SystemTheme;
+let system = SystemTheme::from_system().unwrap();
 let active = system.active();            // &ResolvedThemeVariant for current OS mode
 let light = system.pick(false);          // Explicit variant selection
 let is_dark = system.is_dark;            // OS dark mode state
@@ -136,8 +136,8 @@ native_theme_build::generate_icons("icons/icons.toml");
 // src/lib.rs
 include!(concat!(env!("OUT_DIR"), "/app_icon.rs"));
 
-use native_theme::load_custom_icon;
-let icon = load_custom_icon(&AppIcon::PlayPause, "material");
+use native_theme::{load_custom_icon, IconSet};
+let icon = load_custom_icon(&AppIcon::PlayPause, IconSet::Material);
 ```
 
 See the [`native-theme-build` docs](https://docs.rs/native-theme-build) for the
@@ -156,9 +156,9 @@ matching the requested icon set (Material, Lucide, macOS, Windows, Adwaita,
 or a freedesktop theme's `process-working` animation):
 
 ```rust,ignore
-use native_theme::{loading_indicator, prefers_reduced_motion, AnimatedIcon};
+use native_theme::{loading_indicator, prefers_reduced_motion, AnimatedIcon, IconSet};
 
-if let Some(anim) = loading_indicator("material") {
+if let Some(anim) = loading_indicator(IconSet::Material) {
     if prefers_reduced_motion() {
         // Respect OS accessibility settings with a static fallback
         let static_icon = anim.first_frame();

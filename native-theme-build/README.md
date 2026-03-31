@@ -40,8 +40,8 @@ Include and use the generated code:
 ```rust,ignore
 include!(concat!(env!("OUT_DIR"), "/app_icon.rs"));
 
-use native_theme::load_custom_icon;
-let icon_data = load_custom_icon(&AppIcon::PlayPause, "material");
+use native_theme::{load_custom_icon, IconSet};
+let icon_data = load_custom_icon(&AppIcon::PlayPause, IconSet::Material);
 ```
 
 ## TOML Schema

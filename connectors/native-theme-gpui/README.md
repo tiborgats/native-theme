@@ -38,10 +38,10 @@ if let Some(variant) = nt.pick_variant(is_dark) {
 Or read the OS theme at runtime:
 
 ```rust,ignore
-use native_theme::SystemTheme::from_system;
+use native_theme::SystemTheme;
 use native_theme_gpui::to_theme;
 
-let system = from_system().unwrap();
+let system = SystemTheme::from_system().unwrap();
 let is_dark = system.is_dark;
 let theme = to_theme(system.active(), "System Theme", is_dark);
 ```
@@ -78,10 +78,9 @@ native-theme's icon bundles:
 
 For app-specific icons defined via `native-theme-build`, the connector provides:
 
-- `custom_icon_to_image_source(provider, icon_set)` -- load a custom icon as a gpui `ImageSource`
-- `custom_icon_to_image_source_colored(provider, icon_set, color)` -- load with color tinting
+- `custom_icon_to_image_source(provider, icon_set, color, size)` -- load a custom icon as a gpui `ImageSource`, with optional color tinting and size
 
-These work with any type implementing `IconProvider`.
+This works with any type implementing `IconProvider`.
 
 ## Animated Icons
 

@@ -8,9 +8,9 @@ Cross-platform native theme detection and loading for Rust GUI applications.
 [![License: MIT OR Apache-2.0 OR 0BSD](https://img.shields.io/badge/license-MIT%20%7C%20Apache--2.0%20%7C%200BSD-blue.svg)](#license)
 [![MSRV: 1.94.0](https://img.shields.io/badge/MSRV-1.94.0-blue.svg)](https://blog.rust-lang.org/2026/03/05/Rust-1.94.0.html)
 
-A toolkit-agnostic theme data model with 36 semantic color roles, 16 bundled
-TOML presets (light + dark), per-widget resolved themes, and optional OS theme
-readers for Linux, macOS, and Windows.
+A toolkit-agnostic theme data model with 22 semantic color roles, 25 per-widget
+themes, 16 bundled TOML presets (light + dark), and optional OS theme readers
+for Linux, macOS, and Windows.
 
 ![gpui theme switching](docs/assets/gpui-theme-switching.gif)
 
@@ -137,9 +137,9 @@ all color, font, geometry, and spacing fields are guaranteed populated. See the
 Platform-native loading spinners with accessibility support:
 
 ```rust,ignore
-use native_theme::{loading_indicator, prefers_reduced_motion, AnimatedIcon};
+use native_theme::{loading_indicator, prefers_reduced_motion, AnimatedIcon, IconSet};
 
-if let Some(anim) = loading_indicator("material") {
+if let Some(anim) = loading_indicator(IconSet::Material) {
     if prefers_reduced_motion() {
         // Respect OS accessibility settings with a static fallback
         let static_icon = anim.first_frame();

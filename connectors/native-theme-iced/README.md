@@ -38,10 +38,10 @@ if let Some(variant) = nt.pick_variant(is_dark) {
 Or read the OS theme at runtime:
 
 ```rust,ignore
-use native_theme::SystemTheme::from_system;
+use native_theme::SystemTheme;
 use native_theme_iced::to_theme;
 
-let system = from_system().unwrap();
+let system = SystemTheme::from_system().unwrap();
 let theme = to_theme(system.active(), "System Theme");
 ```
 

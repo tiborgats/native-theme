@@ -5,6 +5,39 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.2] - 2026-03-31
+
+### Added
+
+- `Deserialize` derive on all `Resolved*` types (enables caching, IPC, test fixtures)
+- `Serialize` and `Deserialize` on `IconData`, `AnimatedIcon`, and `TransformAnimation`
+- `Copy`, `Eq`, `Hash` derives on `DialogButtonOrder`; `Eq`, `Hash` on `LinuxDesktop`
+- `#[must_use]` on 20+ public functions across all four crates
+- `#[non_exhaustive]` on `BuildError` enum
+- `Debug` and `Clone` derives on `IconGenerator`, `GenerateOutput`, `AnimatedImageSources`, `AnimatedSvgHandles`
+- `into_image_source()` consuming variant in gpui connector
+- KDE reader: `accent_foreground`, `list.background`/`foreground` from live color scheme
+- GNOME reader: portal `reduce-motion` and gsettings `high-contrast` detection
+
+### Changed
+
+- `Error::Unsupported` now carries a `&'static str` context payload
+- `icon_set` field on `ThemeVariant` changed from `Option<String>` to `Option<IconSet>` (validated at parse time)
+- `rasterize_svg()` uses `Error::Format` instead of `Error::Unavailable` for invalid dimensions
+- `BuildErrors` inner field is now private; access via `errors()`, `into_errors()`, `len()`, `is_empty()`, and `IntoIterator`
+- gpui icon mapping functions (`lucide_name_for_gpui_icon`, `material_name_for_gpui_icon`, `freedesktop_name_for_gpui_icon`) return `&'static str` instead of `Option<&'static str>`
+- iced `from_preset()` and `from_system()` return `(Theme, ResolvedThemeVariant)` tuple
+
+### Fixed
+
+- KDE Breeze preset: `radius` 4 -> 5, `focus_ring_width`/`focus_ring_offset` swapped, `line_height` 1.4 -> 1.36, four incorrect `icon_sizes`, `progress_bar.min_width` mismap, `spinner.diameter`, `expander.arrow_size`, `switch` dimensions
+- KDE reader: `defaults.border` no longer overwritten with accent color; `forceFontDPI` read from correct file
+- Adwaita preset: `radius` 12 -> 9, `radius_lg` 14 -> 15, `line_height` 1.4 -> 1.21, `focus_ring_offset` 1 -> -2, `section_heading` weight 400 -> 700
+- macOS Sonoma preset: corrected geometry and metric values across both full and live presets
+- Windows 11 preset: corrected geometry and metric values across both full and live presets
+- gpui connector: `colorize_svg()` now handles self-closing SVG tags correctly
+- Build crate: simplified error handling pipeline, improved codegen
+
 ## [0.5.1] - 2026-03-30
 
 ### Changed
@@ -320,6 +353,7 @@ let busy = load_icon(IconRole::StatusBusy, "material");
 - `impl_merge!` macro for recursive Option-based theme merging
 - Deep merge support across all theme types
 
+[0.5.2]: https://github.com/tiborgats/native-theme/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/tiborgats/native-theme/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/tiborgats/native-theme/compare/v0.4.1...v0.5.0
 [0.4.1]: https://github.com/tiborgats/native-theme/compare/v0.4.0...v0.4.1
