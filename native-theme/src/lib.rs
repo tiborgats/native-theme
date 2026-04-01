@@ -1045,19 +1045,23 @@ async fn from_system_async_inner() -> crate::Result<SystemTheme> {
 
 /// Load an icon for the given role using the specified icon set.
 ///
-/// Resolves `icon_set` to an [`IconSet`] via [`IconSet::from_name()`],
-/// falling back to [`system_icon_set()`] if the set string is not
-/// recognized. Then dispatches to the appropriate platform loader or
-/// bundled icon set.
+/// Dispatches to the appropriate platform loader or bundled icon set
+/// based on the [`IconSet`] variant:
 ///
-/// # Dispatch
+/// - [`IconSet::Freedesktop`] -- freedesktop theme lookup at 24 px
+///   (requires `system-icons` feature, Linux only)
+/// - [`IconSet::SfSymbols`] -- SF Symbols lookup
+///   (requires `system-icons` feature, macOS only)
+/// - [`IconSet::SegoeIcons`] -- Segoe Fluent lookup
+///   (requires `system-icons` feature, Windows only)
+/// - [`IconSet::Material`] -- bundled Material SVG
+///   (requires `material-icons` feature)
+/// - [`IconSet::Lucide`] -- bundled Lucide SVG
+///   (requires `lucide-icons` feature)
 ///
-/// 1. Platform loader (freedesktop/sf-symbols/segoe-fluent) when `system-icons` enabled
-/// 2. Bundled SVGs (material/lucide) when the corresponding feature is enabled
-/// 3. Non-matching set: `None` (no cross-set fallback)
-///
-/// Freedesktop icons are loaded at 24 px (the standard toolbar size). For
-/// custom sizes, call `freedesktop::load_freedesktop_icon()` directly.
+/// Returns `None` when the required feature is not enabled, the platform
+/// doesn't match, or the role has no icon in the requested set.
+/// There is **no cross-set fallback** -- each set is self-contained.
 ///
 /// # Examples
 ///
