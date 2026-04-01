@@ -241,9 +241,9 @@ impl std::fmt::Display for ColorMode {
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum IconSetChoice {
+    Default,
     Material,
     Lucide,
-    System,
 }
 
 impl std::fmt::Display for IconSetChoice {
@@ -251,9 +251,9 @@ impl std::fmt::Display for IconSetChoice {
         match self {
             IconSetChoice::Material => write!(f, "Material"),
             IconSetChoice::Lucide => write!(f, "Lucide"),
-            IconSetChoice::System => {
+            IconSetChoice::Default => {
                 let name = native_theme::system_icon_theme();
-                write!(f, "System ({name})")
+                write!(f, "default ({name})")
             }
         }
     }
@@ -261,25 +261,25 @@ impl std::fmt::Display for IconSetChoice {
 
 impl IconSetChoice {
     const ALL: &[IconSetChoice] = &[
+        IconSetChoice::Default,
         IconSetChoice::Material,
         IconSetChoice::Lucide,
-        IconSetChoice::System,
     ];
 
     fn icon_set(&self) -> IconSet {
         match self {
             IconSetChoice::Material => IconSet::Material,
             IconSetChoice::Lucide => IconSet::Lucide,
-            IconSetChoice::System => native_theme::system_icon_set(),
+            IconSetChoice::Default => native_theme::system_icon_set(),
         }
     }
 
-    /// Map from a resolved theme's `icon_theme` name to the matching choice.
-    fn from_icon_theme(name: &str) -> Self {
-        match name {
-            "material" => IconSetChoice::Material,
-            "lucide" => IconSetChoice::Lucide,
-            _ => IconSetChoice::System,
+    /// Map from the resolved theme's `icon_set` to the matching choice.
+    fn from_icon_set(set: IconSet) -> Self {
+        match set {
+            IconSet::Material => IconSetChoice::Material,
+            IconSet::Lucide => IconSetChoice::Lucide,
+            _ => IconSetChoice::Default,
         }
     }
 }
@@ -578,7 +578,7 @@ impl Default for State {
             "Zig".to_string(),
         ];
 
-        let icon_set_choice = IconSetChoice::from_icon_theme(&resolved.icon_theme);
+        let icon_set_choice = IconSetChoice::from_icon_set(resolved.icon_set);
         let loaded_icons = load_all_icons(icon_set_choice.icon_set());
 
         let (
@@ -663,10 +663,9 @@ impl Default for State {
 
             // Override icon set
             if let Some(ref set_name) = cli.icon_set {
-                let choice = match set_name.as_str() {
-                    "material" => IconSetChoice::Material,
-                    "lucide" => IconSetChoice::Lucide,
-                    _ => IconSetChoice::System,
+                let choice = match IconSet::from_name(set_name) {
+                    Some(set) => IconSetChoice::from_icon_set(set),
+                    None => IconSetChoice::Default,
                 };
                 state.icon_set_choice = choice.clone();
                 state.loaded_icons = load_all_icons(choice.icon_set());
@@ -758,7 +757,7 @@ impl State {
         }
 
         // Sync icon set to the theme's preferred icon theme
-        let new_icon_choice = IconSetChoice::from_icon_theme(&self.current_resolved.icon_theme);
+        let new_icon_choice = IconSetChoice::from_icon_set(self.current_resolved.icon_set);
         if new_icon_choice != self.icon_set_choice {
             self.loaded_icons = load_all_icons(new_icon_choice.icon_set());
             let (af, afi, afe, asp, astart, rm, ast) =

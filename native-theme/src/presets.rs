@@ -357,7 +357,7 @@ accent = "#00ff00"
     }
 
     #[test]
-    fn icon_set_community_presets_have_none() {
+    fn icon_set_community_presets_have_lucide() {
         let community = &[
             "catppuccin-latte",
             "catppuccin-frappe",
@@ -374,13 +374,15 @@ accent = "#00ff00"
             let theme = preset(name).unwrap();
             let light = theme.light.as_ref().unwrap();
             assert_eq!(
-                light.icon_set, None,
-                "preset '{name}' light.icon_set should be None (resolved at runtime)"
+                light.icon_set,
+                Some(crate::IconSet::Lucide),
+                "preset '{name}' light.icon_set should be Lucide"
             );
             let dark = theme.dark.as_ref().unwrap();
             assert_eq!(
-                dark.icon_set, None,
-                "preset '{name}' dark.icon_set should be None (resolved at runtime)"
+                dark.icon_set,
+                Some(crate::IconSet::Lucide),
+                "preset '{name}' dark.icon_set should be Lucide"
             );
         }
     }
@@ -624,8 +626,8 @@ accent = "#00ff00"
         assert!(!resolved.defaults.reduce_motion);
         // Window inherits from defaults
         assert_eq!(resolved.window.background, resolved.defaults.background);
-        // icon_set should be populated
-        assert_eq!(resolved.icon_set, crate::IconSet::Freedesktop);
+        // icon_set should be populated (Lucide for community presets)
+        assert_eq!(resolved.icon_set, crate::IconSet::Lucide);
     }
 
     #[test]

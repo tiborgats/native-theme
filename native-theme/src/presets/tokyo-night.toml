@@ -5,6 +5,8 @@ name = "Tokyo Night"
 # === Light variant (Tokyo Night Day) ===
 
 [light]
+icon_set = "lucide"
+icon_theme = "Lucide"
 
 [light.defaults]
 accent = "#2e7de9"
@@ -201,6 +203,8 @@ content_padding = 16.0
 # === Dark variant (Tokyo Night) ===
 
 [dark]
+icon_set = "lucide"
+icon_theme = "Lucide"
 
 [dark.defaults]
 accent = "#7aa2f7"

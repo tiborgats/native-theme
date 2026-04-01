@@ -5,6 +5,8 @@ name = "Gruvbox"
 # === Light variant (Gruvbox Light medium contrast) ===
 
 [light]
+icon_set = "lucide"
+icon_theme = "Lucide"
 
 [light.defaults]
 accent = "#076678"
@@ -201,6 +203,8 @@ content_padding = 16.0
 # === Dark variant (Gruvbox Dark medium contrast) ===
 
 [dark]
+icon_set = "lucide"
+icon_theme = "Lucide"
 
 [dark.defaults]
 accent = "#83a598"

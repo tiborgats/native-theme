@@ -165,14 +165,19 @@ pub struct ThemeVariant {
     #[serde(default, skip_serializing_if = "LinkTheme::is_empty")]
     pub link: LinkTheme,
 
-    /// Icon set / naming convention for this variant (e.g., `IconSet::Freedesktop`).
-    /// When None, resolved at runtime via system_icon_set().
+    /// Which icon loading mechanism to use (`Freedesktop`, `Material`, `Lucide`,
+    /// `SfSymbols`, `SegoeIcons`).  Determines *how* icons are looked up — e.g.
+    /// freedesktop theme directories vs. bundled SVG tables.
+    /// When `None`, filled by [`resolve()`](ThemeVariant::resolve) from
+    /// [`system_icon_set()`](crate::system_icon_set).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon_set: Option<IconSet>,
 
-    /// Icon theme name for this variant (e.g., "breeze", "Adwaita", "material").
-    /// This is the visual icon theme, distinct from the naming convention in `icon_set`.
-    /// When None, resolved at runtime via system_icon_theme().
+    /// The name of the visual icon theme that provides the actual icon files
+    /// (e.g. `"breeze"`, `"Adwaita"`, `"Lucide"`).  For `Freedesktop` this
+    /// selects the theme directory; for bundled sets it is a display label.
+    /// When `None`, filled by [`resolve_platform_defaults()`](ThemeVariant::resolve_platform_defaults)
+    /// from [`system_icon_theme()`](crate::system_icon_theme).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon_theme: Option<String>,
 }

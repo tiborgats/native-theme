@@ -5,6 +5,8 @@ name = "Nord"
 # === Light variant (Snow Storm backgrounds + Frost/Aurora accents) ===
 
 [light]
+icon_set = "lucide"
+icon_theme = "Lucide"
 
 [light.defaults]
 accent = "#5e81ac"
@@ -201,6 +203,8 @@ content_padding = 16.0
 # === Dark variant (Polar Night backgrounds + Frost/Aurora accents) ===
 
 [dark]
+icon_set = "lucide"
+icon_theme = "Lucide"
 
 [dark.defaults]
 accent = "#88c0d0"

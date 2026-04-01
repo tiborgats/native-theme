@@ -5,6 +5,8 @@ name = "Catppuccin Latte"
 # === Light variant (Latte palette - primary) ===
 
 [light]
+icon_set = "lucide"
+icon_theme = "Lucide"
 
 [light.defaults]
 accent = "#1e66f5"
@@ -201,6 +203,8 @@ content_padding = 16.0
 # === Dark variant (derived - Frappe palette) ===
 
 [dark]
+icon_set = "lucide"
+icon_theme = "Lucide"
 
 [dark.defaults]
 accent = "#8caaee"

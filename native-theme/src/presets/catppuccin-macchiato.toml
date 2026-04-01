@@ -5,6 +5,8 @@ name = "Catppuccin Macchiato"
 # === Light variant (derived - Latte base with Macchiato accents) ===
 
 [light]
+icon_set = "lucide"
+icon_theme = "Lucide"
 
 [light.defaults]
 accent = "#8aadf4"
@@ -201,6 +203,8 @@ content_padding = 16.0
 # === Dark variant (Macchiato palette - primary) ===
 
 [dark]
+icon_set = "lucide"
+icon_theme = "Lucide"
 
 [dark.defaults]
 accent = "#8aadf4"

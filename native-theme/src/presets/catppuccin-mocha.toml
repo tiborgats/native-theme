@@ -5,6 +5,8 @@ name = "Catppuccin Mocha"
 # === Light variant (derived - Latte base with Mocha accents) ===
 
 [light]
+icon_set = "lucide"
+icon_theme = "Lucide"
 
 [light.defaults]
 accent = "#89b4fa"
@@ -201,6 +203,8 @@ content_padding = 16.0
 # === Dark variant (Mocha palette - primary) ===
 
 [dark]
+icon_set = "lucide"
+icon_theme = "Lucide"
 
 [dark.defaults]
 accent = "#89b4fa"

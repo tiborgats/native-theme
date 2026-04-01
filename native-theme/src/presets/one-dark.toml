@@ -5,6 +5,8 @@ name = "One Dark"
 # === Light variant (One Light) ===
 
 [light]
+icon_set = "lucide"
+icon_theme = "Lucide"
 
 [light.defaults]
 accent = "#4078f2"
@@ -201,6 +203,8 @@ content_padding = 16.0
 # === Dark variant (One Dark) ===
 
 [dark]
+icon_set = "lucide"
+icon_theme = "Lucide"
 
 [dark.defaults]
 accent = "#61aeee"

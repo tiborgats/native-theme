@@ -5,6 +5,8 @@ name = "Dracula"
 # === Light variant (Alucard - official light) ===
 
 [light]
+icon_set = "lucide"
+icon_theme = "Lucide"
 
 [light.defaults]
 accent = "#644ac9"
@@ -201,6 +203,8 @@ content_padding = 16.0
 # === Dark variant (Classic Dracula) ===
 
 [dark]
+icon_set = "lucide"
+icon_theme = "Lucide"
 
 [dark.defaults]
 accent = "#bd93f9"

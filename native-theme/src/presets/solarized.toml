@@ -5,6 +5,8 @@ name = "Solarized"
 # === Light variant (Solarized Light) ===
 
 [light]
+icon_set = "lucide"
+icon_theme = "Lucide"
 
 [light.defaults]
 accent = "#268bd2"
@@ -201,6 +203,8 @@ content_padding = 16.0
 # === Dark variant (Solarized Dark) ===
 
 [dark]
+icon_set = "lucide"
+icon_theme = "Lucide"
 
 [dark.defaults]
 accent = "#268bd2"

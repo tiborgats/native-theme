@@ -242,10 +242,12 @@ pub struct ResolvedThemeVariant {
     /// Hyperlink.
     pub link: super::widgets::ResolvedLinkTheme,
 
-    /// Icon set / naming convention.
+    /// Which icon loading mechanism to use — determines *how* icons are looked
+    /// up (freedesktop theme directories, bundled SVG tables, SF Symbols, etc.).
     pub icon_set: crate::IconSet,
 
-    /// Icon theme name (e.g., "breeze", "Adwaita", "material").
+    /// The name of the visual icon theme that provides the actual icon files
+    /// (e.g. `"breeze"`, `"Adwaita"`, `"Lucide"`).
     pub icon_theme: String,
 }
 
