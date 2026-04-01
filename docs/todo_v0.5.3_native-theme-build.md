@@ -1,0 +1,991 @@
+# v0.5.3 Review -- native-theme-build (codegen crate)
+
+Verified against source code on 2026-04-01. Each chapter covers one
+problem, lists all resolution options with full pro/contra, and
+recommends the best solution. Pre-1.0 -- backward compatibility is
+not a constraint.
+
+**Companion documents:**
+- [todo_v0.5.3_native-theme.md](todo_v0.5.3_native-theme.md)
+- [todo_v0.5.3_native-theme-gpui.md](todo_v0.5.3_native-theme-gpui.md)
+- [todo_v0.5.3_native-theme-iced.md](todo_v0.5.3_native-theme-iced.md)
+
+---
+
+## Summary
+
+| # | Issue | Severity | Fix complexity |
+|---|-------|----------|----------------|
+| 1 | `THEME_TABLE` / `DE_TABLE` string literals can drift from core crate enums | Medium | Low |
+| 2 | Windows path separators in generated `include_bytes!` paths | High | Low |
+| 3 | `merge_configs()` does not deduplicate roles, causing confusing redundant errors | Low | Low |
+| 4 | `run_pipeline()` indexes `configs[0]` without empty check | Low | Trivial |
+| 5 | `check_orphan_svgs()` silently ignores unreadable directories | Low | Trivial |
+| 6 | Empty `roles` list produces useless enum without warning | Low | Trivial |
+| 7 | `validate_identifiers()` accepts names that start with a digit | Medium | Low |
+| 8 | `emit_cargo_directives()` `io::Result` inconsistent with `UnwrapOrExit` | Low | Low |
+| 9 | `validate_svgs()` has unused `_mapping_path` parameter | Low | Trivial |
+| 10 | `derive()` and `crate_path()` don't validate inputs | Low | Low |
+| 11 | `validate_no_duplicate_roles_in_file` uses `HashMap<&str, bool>` instead of `HashSet` | Low | Trivial |
+
+---
+
+## 1. THEME_TABLE / DE_TABLE string literals can drift from core crate enums
+
+**File:** `native-theme-build/src/schema.rs:8-29`
+
+**What:** The build crate generates Rust code that references enum
+variants from the core crate by string:
+
+```rust
+pub(crate) const THEME_TABLE: &[(&str, &str)] = &[
+    ("sf-symbols", "IconSet::SfSymbols"),
+    ("segoe-fluent", "IconSet::SegoeIcons"),
+    ("freedesktop", "IconSet::Freedesktop"),
+    ("material", "IconSet::Material"),
+    ("lucide", "IconSet::Lucide"),
+];
+
+pub(crate) const DE_TABLE: &[(&str, &str)] = &[
+    ("kde", "LinuxDesktop::Kde"),
+    ("gnome", "LinuxDesktop::Gnome"),
+    ...
+];
+```
+
+These string literals must stay in sync with `IconSet` in
+`native-theme/src/model/icons.rs:268-281` and `LinuxDesktop` in
+`native-theme/src/lib.rs:174-191`. If the core crate renames a variant
+(e.g., `IconSet::SfSymbols` becomes `IconSet::AppleSfSymbols`), the
+build crate continues to compile and its own tests pass. The error
+appears only when a downstream consumer's generated code fails to
+compile -- a delayed, confusing failure.
+
+`native-theme-build` deliberately has no dependency on `native-theme`
+(it's a build-dependency crate that runs at compile time), so there is
+no compile-time binding between these string tables and the actual
+enum definitions.
+
+**Verified:** Both tables currently match their core crate counterparts
+exactly. `THEME_TABLE` matches all five `IconSet` variants.
+`DE_TABLE` matches all seven `LinuxDesktop` variants (excluding
+`Unknown`, which is the wildcard fallback and deliberately absent from
+the table).
+
+### Options
+
+**A. Add a dev-dependency integration test (recommended)**
+
+Add `native-theme` as a `[dev-dependencies]` in
+`native-theme-build/Cargo.toml` and write a test that verifies the
+tables match the actual enums:
+
+```rust
+#[test]
+fn theme_table_matches_icon_set_variants() {
+    use native_theme::IconSet;
+    let expected: &[(&str, IconSet)] = &[
+        ("sf-symbols", IconSet::SfSymbols),
+        ("segoe-fluent", IconSet::SegoeIcons),
+        ("freedesktop", IconSet::Freedesktop),
+        ("material", IconSet::Material),
+        ("lucide", IconSet::Lucide),
+    ];
+    for (toml_name, expected_set) in expected {
+        let table_entry = THEME_TABLE.iter().find(|(k, _)| k == toml_name);
+        assert!(table_entry.is_some(), "missing THEME_TABLE entry: {toml_name}");
+        let variant_str = format!("IconSet::{expected_set:?}");
+        assert_eq!(table_entry.unwrap().1, variant_str);
+    }
+}
+```
+
+Similarly for `DE_TABLE` vs `LinuxDesktop`.
+
+- Pro: Catches drift at `cargo test` time in the native-theme-build
+  crate, not in downstream consumers.
+- Pro: dev-dependency does not affect the build crate's compile-time
+  dependency footprint (dev-deps are only used for tests).
+- Pro: Clear error message pointing to the exact mismatch.
+- Con: Adds native-theme as a dev-dependency, which pulls in serde,
+  toml, and other core-crate deps during testing.
+- Con: The test itself has a mirrored list that must be kept in sync
+  -- but if the test's list drifts, the test fails, which is the
+  desired behavior.
+
+**B. Shared const between crates**
+
+Move `THEME_TABLE` and `DE_TABLE` into a shared crate (or the core
+crate) and import from both.
+
+- Pro: Single source of truth.
+- Con: Creates a compile-time dependency from native-theme-build to
+  the shared crate, which may pull in unwanted dependencies for
+  build scripts.
+- Con: The build crate needs string representations for codegen, but
+  the core crate uses actual enum types -- the table formats are
+  inherently different.
+
+**C. Generate the tables from a shared TOML/JSON definition**
+
+- Pro: Machine-readable single source of truth.
+- Con: Adds a build-time generation step to both crates.
+- Con: Over-engineered for 5+7 entries.
+
+**D. Keep status quo**
+
+- Pro: No change.
+- Con: Drift is undetected until downstream breakage.
+
+### Recommendation
+
+**Option A.** A dev-dependency test is the right balance: it catches
+drift immediately, has clear error messages, and doesn't affect the
+build crate's runtime dependency footprint. The dev-dependency cost
+(pulling in native-theme for tests only) is acceptable.
+
+---
+
+## 2. Windows path separators in generated include_bytes! paths
+
+**File:** `native-theme-build/src/lib.rs:724-732`,
+`native-theme-build/src/codegen.rs:316`
+
+**What:** The codegen builds `include_bytes!` paths by converting a
+`PathBuf` to a string via `to_string_lossy()`:
+
+```rust
+let base_dir_str = if let Some(mdir) = manifest_dir {
+    base_dir
+        .strip_prefix(mdir)
+        .unwrap_or(base_dir)
+        .to_string_lossy()
+        .to_string()
+} else {
+    base_dir.to_string_lossy().to_string()
+};
+```
+
+On Windows, `to_string_lossy()` preserves the native backslash path
+separator. The resulting string is then interpolated into a Rust
+string literal in the generated code (codegen.rs:316):
+
+```rust
+"... include_bytes!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"/{base_dir}/...\")) ..."
+```
+
+On Windows with nested icon directories, `base_dir_str` would be
+`icons\material`. The generated Rust source code would contain
+`"/icons\material/"` inside a string literal, where `\m` is an
+invalid escape sequence. This causes a compilation error in the
+downstream consumer's build.
+
+This only triggers when the stripped path contains directory
+separators (i.e., nested icon directories). Flat directories like
+`"icons"` produce no backslash and work correctly.
+
+### Options
+
+**A. Normalize path separators to forward slashes (recommended)**
+
+After converting to string, replace backslashes with forward slashes:
+
+```rust
+let base_dir_str = if let Some(mdir) = manifest_dir {
+    base_dir
+        .strip_prefix(mdir)
+        .unwrap_or(base_dir)
+        .to_string_lossy()
+        .replace('\\', "/")
+} else {
+    base_dir.to_string_lossy().replace('\\', "/")
+};
+```
+
+- Pro: One-line fix; generated code uses forward slashes on all
+  platforms.
+- Pro: `include_bytes!` accepts forward slashes on Windows.
+- Pro: No behavioral change on Linux/macOS (no backslashes to
+  replace).
+- Con: None identified.
+
+**B. Use `Path::display()` instead of `to_string_lossy()`**
+
+- Pro: Different API.
+- Con: `Display` for `Path` uses the OS-native separator, same issue.
+
+**C. Keep status quo**
+
+- Pro: No change.
+- Con: Generated code fails to compile on Windows when icon
+  directories are nested.
+
+### Recommendation
+
+**Option A.** Normalizing to forward slashes is the correct fix. Rust
+source code should always use forward slashes in path strings
+regardless of the build host platform.
+
+---
+
+## 3. merge_configs() does not deduplicate roles, causing confusing redundant errors
+
+**File:** `native-theme-build/src/lib.rs:805-806`
+
+**What:** When merging multiple icon TOML configs (the multi-file
+`IconGenerator` API), `merge_configs()` deduplicates `bundled_themes`
+and `system_themes` via `BTreeSet`, but concatenates `roles` without
+deduplication:
+
+```rust
+for (_path, config) in configs {
+    roles.extend(config.roles.iter().cloned());  // no dedup
+
+    for t in &config.bundled_themes {
+        if seen_bundled.insert(t.clone()) {       // deduped
+            bundled_themes.push(t.clone());
+        }
+    }
+    ...
+}
+```
+
+**Impact (corrected):** The `validate_no_duplicate_roles()` check at
+line 573 catches cross-file duplicate roles as a `DuplicateRole`
+error **before** `merge_configs()` runs. However, `merge_configs()`
+runs unconditionally at line 579 regardless of accumulated errors, and
+the merged config (now containing duplicate roles) is then passed to
+`validate_identifiers()` at line 582. `validate_identifiers()` sees
+the duplicated role names producing the same PascalCase variant and
+reports an additional `IdentifierCollision` error.
+
+The result is that a user with a cross-file duplicate role "play-pause"
+sees **two** confusing error messages:
+
+```
+error: role "play-pause" defined in both a.toml and b.toml
+error: roles "play-pause" and "play-pause" both produce the same PascalCase variant "PlayPause"
+```
+
+The second error is technically correct but misleading -- it implies
+a naming collision between different roles, when in fact it's the same
+role appearing twice. The duplicated roles never reach codegen because
+the error check at line 710 prevents code generation.
+
+### Options
+
+**A. Deduplicate roles with stable ordering (recommended)**
+
+Use a `BTreeSet` guard, matching the existing pattern for themes:
+
+```rust
+let mut seen_roles = std::collections::BTreeSet::new();
+for (_path, config) in configs {
+    for role in &config.roles {
+        if seen_roles.insert(role.clone()) {
+            roles.push(role.clone());
+        }
+    }
+}
+```
+
+- Pro: Eliminates the confusing redundant `IdentifierCollision` error.
+- Pro: Preserves insertion order (first occurrence wins).
+- Pro: Consistent with the existing `bundled_themes` dedup pattern.
+- Pro: No new dependency if using `BTreeSet` guard.
+- Pro: Defense-in-depth: makes `merge_configs()` robust to duplicates
+  even if validation order changes in the future.
+- Con: Silent dedup may surprise users who expect an error for
+  conflicting configs. Mitigated: the `DuplicateRole` error from
+  `validate_no_duplicate_roles()` already reports the issue.
+
+**B. Error on duplicate roles across files**
+
+Report cross-file duplicates as a `BuildError`, similar to within-file
+duplicate detection in `validate.rs`.
+
+- Pro: Explicit about conflicts; forces user to resolve.
+- Pro: Matches the within-file behavior.
+- Con: This already happens via `validate_no_duplicate_roles()` at
+  line 573. Adding another check would be redundant.
+
+**C. Early-return on errors before merge**
+
+Move the error check before `merge_configs()`:
+
+```rust
+if !errors.is_empty() {
+    return PipelineResult { errors, warnings, .. };
+}
+let merged = merge_configs(configs, enum_name_override);
+```
+
+- Pro: Prevents validation of a potentially-invalid merged config.
+- Pro: The remaining validation steps (identifiers, theme names) get
+  a clean merged config.
+- Con: Loses the ability to report all errors at once (duplicate role
+  error would suppress identifier errors in unrelated roles).
+
+**D. Keep status quo**
+
+- Pro: No change; the duplicate IS caught by validation.
+- Con: Users see a confusing redundant error message.
+
+### Recommendation
+
+**Option A.** Deduplicating roles in `merge_configs()` is the simplest
+fix. It aligns with the existing `bundled_themes` / `system_themes`
+dedup pattern, prevents the confusing second error, and adds
+defense-in-depth for future refactoring.
+
+---
+
+## 4. run_pipeline() indexes configs[0] without empty check
+
+**File:** `native-theme-build/src/lib.rs:552-554`
+
+**What:** The `run_pipeline()` function accesses `configs[0]` without
+checking that the slice is non-empty:
+
+```rust
+let first_name = enum_name_override
+    .map(|s| s.to_string())
+    .unwrap_or_else(|| configs[0].1.name.clone());  // panics if empty
+```
+
+The assertion on line 543 (`assert_eq!(configs.len(), base_dirs.len())`)
+ensures the two slices match in length but does not prevent both from
+being empty.
+
+**Mitigation:** Both public APIs (`generate_icons()` and
+`IconGenerator::generate()`) ensure at least one config is passed
+before calling `run_pipeline()`, so this cannot be triggered through
+the public API. The function is `pub(crate)` only.
+
+### Options
+
+**A. Add an early return for empty configs (recommended)**
+
+```rust
+if configs.is_empty() {
+    return PipelineResult {
+        code: String::new(),
+        errors: vec![BuildError::Io {
+            message: "no icon configs provided".into(),
+        }],
+        ..Default::default()
+    };
+}
+```
+
+- Pro: Defensive coding; prevents panic if internal callers change.
+- Pro: Clear error message instead of index-out-of-bounds.
+- Con: Dead code unless internal calling patterns change.
+
+**B. Convert to assert**
+
+```rust
+assert!(!configs.is_empty(), "run_pipeline requires at least one config");
+```
+
+- Pro: Documents the precondition explicitly.
+- Con: Still panics, just with a better message.
+
+**C. Keep status quo**
+
+- Pro: No change; public API prevents the condition.
+- Con: Latent panic if internal code is refactored.
+
+### Recommendation
+
+**Option A.** A defensive early return is cheap insurance against
+future refactoring that might change calling patterns.
+
+---
+
+## 5. check_orphan_svgs() silently ignores unreadable directories
+
+**File:** `native-theme-build/src/validate.rs:126-128`
+
+**What:** When a theme directory cannot be read, the orphan SVG check
+returns an empty warnings list without reporting the failure:
+
+```rust
+let entries = match fs::read_dir(theme_dir) {
+    Ok(entries) => entries,
+    Err(_) => return Vec::new(),  // silent
+};
+```
+
+If a theme directory is deleted, has wrong permissions, or is
+otherwise inaccessible, the orphan check silently skips it. The user
+sees no orphan warnings AND no indication that the check couldn't run.
+This can mask real problems (e.g., a typo in `bundled-themes` that
+points to a non-existent directory).
+
+### Options
+
+**A. Return a warning instead of empty (recommended)**
+
+```rust
+Err(e) => {
+    return vec![format!(
+        "cannot scan theme dir '{}' for orphan SVGs: {e}",
+        theme_dir.display()
+    )];
+}
+```
+
+- Pro: User sees why orphan checking failed.
+- Pro: Surfaces typos in `bundled-themes` configuration.
+- Pro: Trivial change.
+- Con: May produce noisy warnings in legitimate cases (e.g., theme
+  directory not yet created during initial setup).
+
+**B. Distinguish missing vs. unreadable directories**
+
+Return a warning only for permission errors, not for `NotFound`:
+
+```rust
+Err(e) if e.kind() != std::io::ErrorKind::NotFound => {
+    return vec![format!("cannot read theme dir: {e}")];
+}
+Err(_) => return Vec::new(),
+```
+
+- Pro: Avoids false warnings during initial setup.
+- Con: Hides typos in directory names (they produce `NotFound`).
+
+**C. Keep status quo**
+
+- Pro: No change; orphan checking is advisory.
+- Con: Silent failure can mask configuration errors.
+
+### Recommendation
+
+**Option A.** Always warn when a theme directory cannot be read. The
+warning is advisory (not an error), so it won't block the build. If
+initial-setup noise is a concern, Option B is a reasonable compromise.
+
+---
+
+## 6. Empty roles list produces useless enum without warning
+
+**File:** `native-theme-build/src/lib.rs:558-559` (validate loop),
+`native-theme-build/src/validate.rs` (validate_identifiers)
+
+**What:** If a config has `roles = []`, the pipeline generates a
+valid but useless empty enum:
+
+```rust
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum AppIcons {}
+
+impl AppIcons {
+    pub const ALL: &[Self] = &[];
+}
+```
+
+This compiles but provides no value. An empty roles list almost
+certainly indicates a user mistake (forgetting to add roles, or a
+typo in the TOML key). Neither `validate_identifiers()` nor any
+other validation step checks for this condition.
+
+The per-file validation loop (line 558) iterates over configs but
+checks each role's name, not whether roles exist:
+
+```rust
+for (file_path, config) in configs {
+    // Checks duplicate roles, invalid names -- but not empty list
+}
+```
+
+### Options
+
+**A. Emit a warning for empty roles (recommended)**
+
+Add a check in the per-file validation loop:
+
+```rust
+if config.roles.is_empty() {
+    warnings.push(format!(
+        "{}: roles list is empty; generated enum will have no variants",
+        file_path
+    ));
+}
+```
+
+- Pro: Alerts the user to a likely mistake.
+- Pro: Non-blocking -- the build continues, producing valid code.
+- Pro: Trivial change.
+- Con: A user who intentionally generates an empty enum gets a
+  spurious warning. Mitigated: this is an extreme edge case.
+
+**B. Error on empty roles**
+
+```rust
+if config.roles.is_empty() {
+    errors.push(BuildError::Io {
+        message: format!("{}: roles list is empty", file_path),
+    });
+}
+```
+
+- Pro: Prevents useless code generation.
+- Con: Breaks any (hypothetical) setup that intentionally generates
+  empty enums.
+
+**C. Keep status quo**
+
+- Pro: No change.
+- Con: User who forgets to add roles gets no feedback.
+
+### Recommendation
+
+**Option A.** A warning is the right level: it alerts the user to a
+likely mistake without blocking the build. Build errors should be
+reserved for conditions that would produce invalid code.
+
+---
+
+## 7. validate_identifiers() accepts names that start with a digit
+
+**File:** `native-theme-build/src/validate.rs:202-249`
+
+**What:** The `validate_identifiers()` function checks that PascalCase
+conversions are non-empty and not Rust keywords, but does **not**
+check that the result is a valid Rust identifier. Specifically, it
+doesn't reject names whose PascalCase conversion starts with a digit.
+
+The `heck` crate preserves leading digits during conversion:
+
+```
+"3d-rotate" -> "3dRotate"
+"123-icons" -> "123Icons"
+"3"         -> "3"
+```
+
+All three produce invalid Rust identifiers (identifiers must start
+with a letter or underscore). The generated code would contain:
+
+```rust
+pub enum 3dRotate { ... }   // compile error: expected identifier
+//  or
+3dRotate,                    // compile error: expected identifier
+```
+
+The user sees a confusing error pointing at generated code in
+`OUT_DIR`, not at their TOML configuration.
+
+**Scope:** Affects both the enum name (from the `name` field) and
+individual role names (from the `roles` array).
+
+### Options
+
+**A. Add an identifier start-character check (recommended)**
+
+After the PascalCase conversion, verify that the first character is
+a letter or underscore:
+
+```rust
+let pascal = role.to_upper_camel_case();
+if pascal.is_empty() {
+    // existing empty check
+} else if !pascal.starts_with(|c: char| c.is_ascii_alphabetic() || c == '_') {
+    errors.push(BuildError::InvalidIdentifier {
+        name: role.clone(),
+        reason: format!(
+            "\"{pascal}\" starts with a non-letter character; \
+             Rust identifiers must begin with a letter or underscore"
+        ),
+    });
+}
+```
+
+Apply the same check for the enum name.
+
+- Pro: Clear error at build-time pointing to the TOML source.
+- Pro: Catches the problem early, before code generation.
+- Pro: Minimal change to existing validation flow.
+- Pro: Handles all digit-leading cases uniformly.
+- Con: None identified.
+
+**B. Prefix the generated identifier with an underscore**
+
+When the PascalCase result starts with a digit, prepend `_`:
+
+```rust
+let pascal = if pascal.starts_with(|c: char| c.is_ascii_digit()) {
+    format!("_{pascal}")
+} else {
+    pascal
+};
+```
+
+- Pro: Silently recovers; user's TOML works without changes.
+- Con: The generated variant name (`_3dRotate`) doesn't match user
+  expectations. Surprising behavior.
+- Con: Inconsistent naming: some variants have `_` prefix, others
+  don't.
+
+**C. Keep status quo**
+
+- Pro: No change.
+- Con: User sees a confusing compile error in generated code.
+
+### Recommendation
+
+**Option A.** Rejecting invalid identifiers at the TOML level gives the
+user a clear, actionable error message pointing at their configuration
+file rather than a cryptic error in generated code.
+
+---
+
+## 8. emit_cargo_directives() io::Result inconsistent with UnwrapOrExit
+
+**File:** `native-theme-build/src/lib.rs:180-189` (emit_cargo_directives),
+`native-theme-build/src/lib.rs:212-225` (UnwrapOrExit)
+
+**What:** The recommended usage pattern creates an inconsistency in
+error handling:
+
+```rust
+// Documented pattern:
+native_theme_build::generate_icons("icons/icons.toml")
+    .unwrap_or_exit()           // BuildErrors -> cargo::error directives + exit(1)
+    .emit_cargo_directives();   // io::Result<()> -- what do you do with this?
+```
+
+`UnwrapOrExit` handles `BuildErrors` with formatted `cargo::error=`
+directives, providing clear build output. But `emit_cargo_directives()`
+returns `io::Result<()>`, and the user must handle it separately. The
+typical options are:
+
+1. `.expect("failed to write")` -- panics with raw message, no
+   `cargo::error=` formatting.
+2. `?` in a `fn main() -> Result<...>` -- generic error, no
+   `cargo::error=` formatting.
+3. Ignore the result -- `#[must_use]` on the method triggers a
+   compiler warning.
+
+In all cases, an I/O failure during `emit_cargo_directives()` produces
+a worse diagnostic experience than a validation failure.
+
+### Options
+
+**A. Make emit_cargo_directives() handle its own errors (recommended)**
+
+Emit a `cargo::error=` directive and call `process::exit(1)` on I/O
+failure, matching the `UnwrapOrExit` pattern:
+
+```rust
+pub fn emit_cargo_directives(&self) {
+    for path in &self.rerun_paths {
+        println!("cargo::rerun-if-changed={}", path.display());
+    }
+    if let Err(e) = std::fs::write(&self.output_path, &self.code) {
+        println!("cargo::error=failed to write {}: {e}", self.output_path.display());
+        std::process::exit(1);
+    }
+    for w in &self.warnings {
+        println!("cargo::warning={w}");
+    }
+}
+```
+
+- Pro: Consistent error handling -- all build failures use
+  `cargo::error=` directives.
+- Pro: Simplifies the caller; no `Result` to handle.
+- Pro: Eliminates `#[must_use]` friction.
+- Con: Removes the ability for callers to handle I/O errors
+  programmatically. Mitigated: build scripts rarely need to recover
+  from file-write failures.
+- Con: `process::exit(1)` skips destructors (acceptable in build
+  scripts).
+
+**B. Extend UnwrapOrExit to cover the full chain**
+
+Add a new method or trait that covers both stages:
+
+```rust
+pub fn emit_or_exit(result: Result<GenerateOutput, BuildErrors>) {
+    match result {
+        Ok(output) => {
+            if let Err(e) = output.emit_cargo_directives() {
+                println!("cargo::error=failed to write output: {e}");
+                std::process::exit(1);
+            }
+        }
+        Err(errors) => {
+            errors.emit_cargo_errors();
+            std::process::exit(1);
+        }
+    }
+}
+```
+
+- Pro: Single call handles everything.
+- Pro: Doesn't change the existing `emit_cargo_directives()` API.
+- Con: Adds another API surface. Users need to learn which pattern
+  to use.
+
+**C. Add a try_emit_cargo_directives() variant alongside the existing one**
+
+Keep the `io::Result<()>` version for programmatic use and add a
+fire-and-forget version.
+
+- Pro: Both use cases covered.
+- Con: API surface bloat for a marginal improvement.
+
+**D. Keep status quo**
+
+- Pro: No change; callers can handle the `io::Result` however they
+  want.
+- Con: Inconsistent error experience between validation failures
+  and I/O failures.
+
+### Recommendation
+
+**Option A.** Build scripts almost never recover from a file-write
+failure. Making `emit_cargo_directives()` handle its own errors gives
+a consistent, clean experience. Callers who need programmatic I/O
+control can use the `pub code` field and `pub output_path` field to
+write the file themselves.
+
+---
+
+## 9. validate_svgs() has unused _mapping_path parameter
+
+**File:** `native-theme-build/src/validate.rs:89-93`
+
+**What:** The `validate_svgs()` function has a `_mapping_path`
+parameter that is never used:
+
+```rust
+pub(crate) fn validate_svgs(
+    mapping: &ThemeMapping,
+    theme_dir: &Path,
+    _mapping_path: &str,   // unused, suppressed with _ prefix
+) -> Vec<BuildError> {
+```
+
+The parameter was likely intended for error messages, but
+`BuildError::MissingSvg` only contains the SVG path, not the mapping
+file path. The `_` prefix suppresses the compiler warning but the
+parameter is dead code.
+
+### Options
+
+**A. Remove the parameter (recommended)**
+
+Delete `_mapping_path` from the function signature and update the
+call site at `lib.rs:622`:
+
+```rust
+// Before:
+let svg_errors = validate::validate_svgs(&mapping, &theme_dir, &mapping_path_str);
+// After:
+let svg_errors = validate::validate_svgs(&mapping, &theme_dir);
+```
+
+- Pro: Removes dead code.
+- Pro: Simplifies the function signature.
+- Pro: Trivial change.
+- Con: None identified.
+
+**B. Use the parameter in MissingSvg errors**
+
+Add the mapping file to the `MissingSvg` error for better context:
+
+```rust
+errors.push(BuildError::MissingSvg {
+    path: svg_path.to_string_lossy().into_owned(),
+    mapping_file: mapping_path.to_string(),  // new field
+});
+```
+
+- Pro: Better error messages -- user sees which mapping file
+  references the missing SVG.
+- Con: Changes the `BuildError::MissingSvg` variant (adds a field).
+- Con: The SVG path already implies the theme, so the mapping file
+  is somewhat redundant.
+
+**C. Keep status quo**
+
+- Pro: No change.
+- Con: Dead parameter clutters the API.
+
+### Recommendation
+
+**Option A.** Remove the unused parameter. If richer error messages
+are desired later, the field can be added to `BuildError::MissingSvg`
+at that time.
+
+---
+
+## 10. derive() and crate_path() don't validate inputs
+
+**File:** `native-theme-build/src/lib.rs:357-359` (derive),
+`native-theme-build/src/lib.rs:339-342` (crate_path)
+
+**What:** Both builder methods accept arbitrary strings that are
+interpolated directly into generated Rust source code without
+validation:
+
+```rust
+pub fn derive(mut self, name: &str) -> Self {
+    self.extra_derives.push(name.to_string());
+    self
+}
+
+pub fn crate_path(mut self, path: &str) -> Self {
+    self.crate_path = Some(path.to_string());
+    self
+}
+```
+
+Invalid inputs produce compile errors in the generated code, not in
+the build script. Examples:
+
+| Input | Generated code | Error |
+|-------|----------------|-------|
+| `derive("")` | `#[derive(Debug, ..., Hash, )]` | Silent no-op (trailing comma is valid Rust) |
+| `derive("NotATrait")` | `#[derive(NotATrait)]` | Compile error in generated code |
+| `crate_path("")` | `impl ::IconProvider` | Compile error in generated code |
+| `crate_path("foo bar")` | `impl foo bar::IconProvider` | Compile error in generated code |
+
+The user sees confusing errors pointing at the generated file in
+`OUT_DIR` rather than at their `build.rs`.
+
+### Options
+
+**A. Validate basic syntax at the builder level (recommended)**
+
+Add simple checks to reject clearly invalid inputs:
+
+```rust
+pub fn derive(mut self, name: &str) -> Self {
+    assert!(
+        !name.is_empty() && !name.contains(char::is_whitespace),
+        "derive name must be non-empty and contain no whitespace: {name:?}"
+    );
+    self.extra_derives.push(name.to_string());
+    self
+}
+
+pub fn crate_path(mut self, path: &str) -> Self {
+    assert!(
+        !path.is_empty() && !path.contains(' '),
+        "crate_path must be non-empty and contain no spaces: {path:?}"
+    );
+    self.crate_path = Some(path.to_string());
+    self
+}
+```
+
+- Pro: Catches obvious mistakes at the build.rs level.
+- Pro: Clear panic message pointing at the caller's code, not
+  generated code.
+- Pro: Asserts in builder methods are a common Rust idiom (cf.
+  `Vec::with_capacity`).
+- Con: Can't catch all invalid inputs (e.g., `derive("not::valid")`
+  passes the check but fails to compile).
+- Con: Panics in build scripts, which is acceptable but worth noting.
+
+**B. Return Result from builder methods**
+
+Change `derive()` and `crate_path()` to return `Result`:
+
+```rust
+pub fn derive(mut self, name: &str) -> Result<Self, BuildErrors> {
+    if name.is_empty() { return Err(BuildErrors::io("...")); }
+    self.extra_derives.push(name.to_string());
+    Ok(self)
+}
+```
+
+- Pro: Non-panicking error handling.
+- Con: Breaks the fluent builder pattern (each call returns
+  `Result`, requiring `?` at every step).
+- Con: Over-engineered for build-time validation of a developer-
+  facing API.
+
+**C. Validate during generate() instead**
+
+Check derive names and crate path in `generate()` and return
+`BuildErrors`:
+
+- Pro: Doesn't change builder method signatures.
+- Pro: Uses existing error channel.
+- Con: Validation happens later than the source of the mistake.
+- Con: The accumulated builder state is already committed.
+
+**D. Keep status quo**
+
+- Pro: No change; the generated-code compile error eventually
+  surfaces the issue.
+- Con: Confusing error messages for invalid inputs.
+
+### Recommendation
+
+**Option A.** Simple asserts in builder methods are idiomatic for
+build-time APIs. They catch the most common mistakes (empty strings,
+whitespace) at the point where they're made, with clear messages.
+Perfect validation is impractical -- the goal is to catch obviously
+wrong inputs.
+
+---
+
+## 11. validate_no_duplicate_roles_in_file uses HashMap<&str, bool> instead of HashSet
+
+**File:** `native-theme-build/src/validate.rs:260-271`
+
+**What:** The function tracks seen role names using
+`HashMap<&str, bool>`, but the `bool` value is always `true` and
+never read:
+
+```rust
+let mut seen_exact: HashMap<&str, bool> = HashMap::new();
+
+for role in &config.roles {
+    if let Some(_already) = seen_exact.get(role.as_str()) {
+        errors.push(BuildError::DuplicateRoleInFile { ... });
+    } else {
+        seen_exact.insert(role.as_str(), true);
+    }
+}
+```
+
+A `HashSet<&str>` is the idiomatic choice for presence tracking:
+
+```rust
+let mut seen_exact: HashSet<&str> = HashSet::new();
+
+for role in &config.roles {
+    if !seen_exact.insert(role.as_str()) {
+        errors.push(BuildError::DuplicateRoleInFile { ... });
+    }
+}
+```
+
+### Options
+
+**A. Replace with HashSet (recommended)**
+
+- Pro: Idiomatic Rust; `HashSet::insert` returns `false` on
+  duplicate, combining the check and insert into one call.
+- Pro: Removes the unused `bool` value.
+- Pro: Slightly more memory-efficient (no `bool` stored).
+- Pro: Trivial change.
+- Con: None identified.
+
+**B. Keep status quo**
+
+- Pro: No change; functionally correct.
+- Con: Non-idiomatic; the `bool` value is misleading dead data.
+
+### Recommendation
+
+**Option A.** A straightforward cleanup to idiomatic Rust. No
+behavioral change.

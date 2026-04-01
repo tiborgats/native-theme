@@ -39,6 +39,28 @@ with the correct radius, border width, opacity, etc. baked in.
   `.style(native_theme_iced::button::primary(&variant))` per widget
 - Every iced style function needs a corresponding wrapper
 
+**Runtime vs build-time selection:** The style functions are always
+compiled (no feature flag). The choice between iced-native geometry
+and platform-native geometry is a **runtime decision** made by the
+application (or exposed as an end-user preference in a theme picker).
+Both code paths coexist in the same binary:
+
+```rust
+// App-level: user picks geometry mode in settings
+if user_wants_native_geometry {
+    button.style(native_theme_iced::button::primary(&resolved))
+} else {
+    button.style(button::primary)  // iced's built-in style
+}
+```
+
+This is better than a Cargo feature flag because:
+- End users can switch at runtime without rebuilding
+- Per-widget mixing is possible (native buttons, iced scrollbars)
+- No `#[cfg]` gates or conditional compilation complexity
+- Both "iced look with my colors" and "full native look" are served
+  by the same binary
+
 ### Option B: Wrapper Theme Type (rejected)
 
 Define a `NativeIcedTheme` struct wrapping `iced::Theme` + `ThemeVariant`
@@ -132,8 +154,15 @@ don't need custom style functions.
 
 ### 5. Colors (`ThemeColors`)
 
-Already fully mapped by `to_theme()` → `palette::to_palette()` →
-`extended::apply_overrides()`. **No changes needed.**
+Already fully mapped by `to_theme()` → `palette::to_palette()` +
+inline Extended overrides (4 fields: secondary.base.color/text,
+background.weak.color/text). **No changes needed.**
+
+Note: The Extended overrides were previously in
+`extended::apply_overrides()` but were inlined into `to_theme()` in
+v0.5.3 to avoid cloning the full `ResolvedThemeVariant` for 4 Copy
+values. `apply_overrides()` remains as a public utility for users who
+build custom iced Themes with `custom_with_fn`.
 
 36 color roles: accent, background, foreground, surface, border, muted,
 shadow, primary_background, primary_foreground, secondary_background,
