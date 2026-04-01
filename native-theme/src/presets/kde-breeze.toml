@@ -204,7 +204,7 @@ content_padding = 16.0
 
 [dark]
 icon_set = "freedesktop"
-icon_theme = "breeze"
+icon_theme = "breeze-dark"
 
 [dark.defaults]
 accent = "#3daee9"

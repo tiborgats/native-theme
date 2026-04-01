@@ -1048,8 +1048,8 @@ async fn from_system_async_inner() -> crate::Result<SystemTheme> {
 /// Dispatches to the appropriate platform loader or bundled icon set
 /// based on the [`IconSet`] variant:
 ///
-/// - [`IconSet::Freedesktop`] -- freedesktop theme lookup at 24 px
-///   (requires `system-icons` feature, Linux only)
+/// - [`IconSet::Freedesktop`] -- freedesktop theme lookup at 24 px using the
+///   system's installed icon theme (requires `system-icons` feature, Linux only)
 /// - [`IconSet::SfSymbols`] -- SF Symbols lookup
 ///   (requires `system-icons` feature, macOS only)
 /// - [`IconSet::SegoeIcons`] -- Segoe Fluent lookup
@@ -1103,10 +1103,96 @@ pub fn load_icon(role: IconRole, set: IconSet) -> Option<IconData> {
     }
 }
 
+/// Load an icon using a specific freedesktop icon theme instead of the
+/// system default.
+///
+/// For [`IconSet::Freedesktop`], loads from the `preferred_theme` directory
+/// (e.g. `"Adwaita"`, `"breeze"`). For bundled icon sets ([`IconSet::Material`],
+/// [`IconSet::Lucide`]), `preferred_theme` is ignored — the icons are compiled
+/// in and always available.
+///
+/// Use [`is_freedesktop_theme_available()`] first to check whether the theme
+/// is installed. If the theme is not installed, freedesktop lookups will fall
+/// through to `hicolor` and may return unexpected icons.
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::{load_icon_from_theme, IconRole, IconSet};
+///
+/// # #[cfg(feature = "material-icons")]
+/// # {
+/// // Bundled sets ignore the theme parameter
+/// let icon = load_icon_from_theme(IconRole::ActionCopy, IconSet::Material, "anything");
+/// assert!(icon.is_some());
+/// # }
+/// ```
+#[must_use = "this returns the loaded icon data; it does not display it"]
+#[allow(unreachable_patterns, clippy::needless_return, unused_variables)]
+pub fn load_icon_from_theme(
+    role: IconRole,
+    set: IconSet,
+    preferred_theme: &str,
+) -> Option<IconData> {
+    match set {
+        #[cfg(all(target_os = "linux", feature = "system-icons"))]
+        IconSet::Freedesktop => {
+            let name = icon_name(role, IconSet::Freedesktop)?;
+            freedesktop::load_freedesktop_icon_by_name(name, preferred_theme, 24)
+        }
+
+        // Bundled and platform sets — preferred_theme is irrelevant
+        _ => load_icon(role, set),
+    }
+}
+
+/// Check whether a freedesktop icon theme is installed on this system.
+///
+/// Looks for the theme's `index.theme` file in the standard XDG icon
+/// directories (`$XDG_DATA_DIRS/icons/<theme>/` and
+/// `$XDG_DATA_HOME/icons/<theme>/`).
+///
+/// Always returns `false` on non-Linux platforms.
+#[must_use]
+pub fn is_freedesktop_theme_available(theme: &str) -> bool {
+    #[cfg(target_os = "linux")]
+    {
+        let data_dirs = std::env::var("XDG_DATA_DIRS")
+            .unwrap_or_else(|_| "/usr/share:/usr/local/share".to_string());
+        for dir in data_dirs.split(':') {
+            if std::path::Path::new(dir)
+                .join("icons")
+                .join(theme)
+                .join("index.theme")
+                .exists()
+            {
+                return true;
+            }
+        }
+        let data_home = std::env::var("XDG_DATA_HOME").unwrap_or_else(|_| {
+            std::env::var("HOME")
+                .map(|h| format!("{h}/.local/share"))
+                .unwrap_or_default()
+        });
+        if !data_home.is_empty() {
+            return std::path::Path::new(&data_home)
+                .join("icons")
+                .join(theme)
+                .join("index.theme")
+                .exists();
+        }
+        false
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        false
+    }
+}
+
 /// Load a system icon by its platform-specific name string.
 ///
 /// Dispatches to the appropriate platform loader based on the icon set:
-/// - [`IconSet::Freedesktop`] -- freedesktop icon theme lookup (auto-detects theme)
+/// - [`IconSet::Freedesktop`] -- freedesktop icon theme lookup (system theme)
 /// - [`IconSet::SfSymbols`] -- macOS SF Symbols
 /// - [`IconSet::SegoeIcons`] -- Windows Segoe Fluent / stock icons
 /// - [`IconSet::Material`] / [`IconSet::Lucide`] -- bundled SVG lookup by name
