@@ -5,7 +5,6 @@ name = "Tokyo Night"
 # === Light variant (Tokyo Night Day) ===
 
 [light]
-icon_set = "freedesktop"
 
 [light.defaults]
 accent = "#2e7de9"
@@ -152,8 +151,8 @@ color = "#c4c8da"
 width = 4.0
 
 [light.switch]
-unchecked_bg = "#c4c8da"
-thumb_bg = "#e1e2e7"
+unchecked_background = "#c4c8da"
+thumb_background = "#e1e2e7"
 track_width = 40.0
 track_height = 20.0
 thumb_size = 16.0
@@ -202,7 +201,6 @@ content_padding = 16.0
 # === Dark variant (Tokyo Night) ===
 
 [dark]
-icon_set = "freedesktop"
 
 [dark.defaults]
 accent = "#7aa2f7"
@@ -349,8 +347,8 @@ color = "#292e42"
 width = 4.0
 
 [dark.switch]
-unchecked_bg = "#292e42"
-thumb_bg = "#a9b1d6"
+unchecked_background = "#292e42"
+thumb_background = "#a9b1d6"
 track_width = 40.0
 track_height = 20.0
 thumb_size = 16.0

@@ -5,7 +5,6 @@ name = "Dracula"
 # === Light variant (Alucard - official light) ===
 
 [light]
-icon_set = "freedesktop"
 
 [light.defaults]
 accent = "#644ac9"
@@ -152,8 +151,8 @@ color = "#b8b8c8"
 width = 4.0
 
 [light.switch]
-unchecked_bg = "#b8b8c8"
-thumb_bg = "#fffbeb"
+unchecked_background = "#b8b8c8"
+thumb_background = "#fffbeb"
 track_width = 40.0
 track_height = 20.0
 thumb_size = 16.0
@@ -202,7 +201,6 @@ content_padding = 16.0
 # === Dark variant (Classic Dracula) ===
 
 [dark]
-icon_set = "freedesktop"
 
 [dark.defaults]
 accent = "#bd93f9"
@@ -349,8 +347,8 @@ color = "#6272a4"
 width = 4.0
 
 [dark.switch]
-unchecked_bg = "#6272a4"
-thumb_bg = "#f8f8f2"
+unchecked_background = "#6272a4"
+thumb_background = "#f8f8f2"
 track_width = 40.0
 track_height = 20.0
 thumb_size = 16.0

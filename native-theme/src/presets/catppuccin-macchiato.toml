@@ -5,7 +5,6 @@ name = "Catppuccin Macchiato"
 # === Light variant (derived - Latte base with Macchiato accents) ===
 
 [light]
-icon_set = "freedesktop"
 
 [light.defaults]
 accent = "#8aadf4"
@@ -152,8 +151,8 @@ color = "#bcc0cc"
 width = 4.0
 
 [light.switch]
-unchecked_bg = "#bcc0cc"
-thumb_bg = "#eff1f5"
+unchecked_background = "#bcc0cc"
+thumb_background = "#eff1f5"
 track_width = 40.0
 track_height = 20.0
 thumb_size = 16.0
@@ -202,7 +201,6 @@ content_padding = 16.0
 # === Dark variant (Macchiato palette - primary) ===
 
 [dark]
-icon_set = "freedesktop"
 
 [dark.defaults]
 accent = "#8aadf4"
@@ -349,8 +347,8 @@ color = "#494d64"
 width = 4.0
 
 [dark.switch]
-unchecked_bg = "#494d64"
-thumb_bg = "#cad3f5"
+unchecked_background = "#494d64"
+thumb_background = "#cad3f5"
 track_width = 40.0
 track_height = 20.0
 thumb_size = 16.0

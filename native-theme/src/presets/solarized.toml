@@ -5,7 +5,6 @@ name = "Solarized"
 # === Light variant (Solarized Light) ===
 
 [light]
-icon_set = "freedesktop"
 
 [light.defaults]
 accent = "#268bd2"
@@ -152,8 +151,8 @@ color = "#eee8d5"
 width = 4.0
 
 [light.switch]
-unchecked_bg = "#eee8d5"
-thumb_bg = "#fdf6e3"
+unchecked_background = "#eee8d5"
+thumb_background = "#fdf6e3"
 track_width = 40.0
 track_height = 20.0
 thumb_size = 16.0
@@ -202,7 +201,6 @@ content_padding = 16.0
 # === Dark variant (Solarized Dark) ===
 
 [dark]
-icon_set = "freedesktop"
 
 [dark.defaults]
 accent = "#268bd2"
@@ -349,8 +347,8 @@ color = "#073642"
 width = 4.0
 
 [dark.switch]
-unchecked_bg = "#073642"
-thumb_bg = "#839496"
+unchecked_background = "#073642"
+thumb_background = "#839496"
 track_width = 40.0
 track_height = 20.0
 thumb_size = 16.0

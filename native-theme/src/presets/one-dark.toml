@@ -5,7 +5,6 @@ name = "One Dark"
 # === Light variant (One Light) ===
 
 [light]
-icon_set = "freedesktop"
 
 [light.defaults]
 accent = "#4078f2"
@@ -152,8 +151,8 @@ color = "#e0e0e0"
 width = 4.0
 
 [light.switch]
-unchecked_bg = "#e0e0e0"
-thumb_bg = "#fafafa"
+unchecked_background = "#e0e0e0"
+thumb_background = "#fafafa"
 track_width = 40.0
 track_height = 20.0
 thumb_size = 16.0
@@ -202,7 +201,6 @@ content_padding = 16.0
 # === Dark variant (One Dark) ===
 
 [dark]
-icon_set = "freedesktop"
 
 [dark.defaults]
 accent = "#61aeee"
@@ -349,8 +347,8 @@ color = "#3e4451"
 width = 4.0
 
 [dark.switch]
-unchecked_bg = "#3e4451"
-thumb_bg = "#abb2bf"
+unchecked_background = "#3e4451"
+thumb_background = "#abb2bf"
 track_width = 40.0
 track_height = 20.0
 thumb_size = 16.0

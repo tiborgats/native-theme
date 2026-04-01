@@ -133,6 +133,51 @@ pub struct ThemeDefaults {
     pub reduce_transparency: Option<bool>,
 }
 
+impl ThemeDefaults {
+    /// All serialized field names for ThemeDefaults, for TOML linting.
+    pub const FIELD_NAMES: &[&str] = &[
+        "font",
+        "line_height",
+        "mono_font",
+        "background",
+        "foreground",
+        "accent",
+        "accent_foreground",
+        "surface",
+        "border",
+        "muted",
+        "shadow",
+        "link",
+        "selection",
+        "selection_foreground",
+        "selection_inactive",
+        "disabled_foreground",
+        "danger",
+        "danger_foreground",
+        "warning",
+        "warning_foreground",
+        "success",
+        "success_foreground",
+        "info",
+        "info_foreground",
+        "radius",
+        "radius_lg",
+        "frame_width",
+        "disabled_opacity",
+        "border_opacity",
+        "shadow_enabled",
+        "focus_ring_color",
+        "focus_ring_width",
+        "focus_ring_offset",
+        "spacing",
+        "icon_sizes",
+        "text_scaling_factor",
+        "reduce_motion",
+        "high_contrast",
+        "reduce_transparency",
+    ];
+}
+
 impl_merge!(ThemeDefaults {
     option {
         line_height,

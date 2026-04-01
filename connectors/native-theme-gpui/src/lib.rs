@@ -7,7 +7,7 @@
 //! ```ignore
 //! use native_theme_gpui::from_preset;
 //!
-//! let theme = from_preset("catppuccin-mocha", true)?;
+//! let (theme, resolved) = from_preset("catppuccin-mocha", true)?;
 //! ```
 //!
 //! Or from the OS-detected theme:
@@ -15,7 +15,7 @@
 //! ```ignore
 //! use native_theme_gpui::from_system;
 //!
-//! let theme = from_system()?;
+//! let (theme, resolved) = from_system()?;
 //! ```
 //!
 //! # Manual Path
@@ -27,9 +27,8 @@
 //! use native_theme_gpui::to_theme;
 //!
 //! let nt = ThemeSpec::preset("catppuccin-mocha").unwrap();
-//! let mut variant = nt.pick_variant(false).unwrap().clone();
-//! variant.resolve();
-//! let resolved = variant.validate().unwrap();
+//! let variant = nt.into_variant(false).unwrap();
+//! let resolved = variant.into_resolved().unwrap();
 //! let theme = to_theme(&resolved, "Catppuccin Mocha", false);
 //! ```
 //!
@@ -42,7 +41,7 @@
 //! |----------|--------|-------|
 //! | `defaults` colors | All 20+ | background, foreground, accent, danger, etc. |
 //! | `defaults` geometry | radius, radius_lg, shadow | Font family/size also mapped |
-//! | `button` | 4 of 14 | primary_bg/fg, background/foreground (colors only) |
+//! | `button` | 4 of 14 | primary_background/foreground, background/foreground (colors only) |
 //! | `tab` | 5 of 9 | All colors, sizing not mapped |
 //! | `sidebar` | 2 of 2 | background, foreground |
 //! | `window` | 2 of 10 | title_bar_background, border |
@@ -72,28 +71,27 @@ pub mod icons;
 // Re-export native-theme types that appear in public signatures so downstream
 // crates don't need native-theme as a direct dependency.
 pub use native_theme::{
-    AnimatedIcon, IconData, IconProvider, IconRole, IconSet, ResolvedThemeVariant, SystemTheme,
-    ThemeSpec, ThemeVariant,
+    AnimatedIcon, Error, IconData, IconProvider, IconRole, IconSet, ResolvedThemeVariant,
+    SystemTheme, ThemeSpec, ThemeVariant, TransformAnimation,
 };
 
-use gpui_component::theme::{Theme, ThemeMode};
+#[cfg(target_os = "linux")]
+pub use native_theme::LinuxDesktop;
 
-/// Pick a theme variant based on the requested mode.
-///
-/// If `is_dark` is true, returns the dark variant (falling back to light).
-/// If `is_dark` is false, returns the light variant (falling back to dark).
-#[deprecated(since = "0.3.2", note = "Use ThemeSpec::pick_variant() instead")]
-#[allow(deprecated)]
-pub fn pick_variant(theme: &ThemeSpec, is_dark: bool) -> Option<&ThemeVariant> {
-    theme.pick_variant(is_dark)
-}
+use gpui::{SharedString, px};
+use gpui_component::theme::{Theme, ThemeMode};
+use std::rc::Rc;
 
 /// Convert a [`ResolvedThemeVariant`] into a gpui-component [`Theme`].
 ///
 /// Builds a complete Theme by:
 /// 1. Mapping all 108 ThemeColor fields via `colors::to_theme_color`
-/// 2. Building a ThemeConfig from fonts/geometry via `config::to_theme_config`
-/// 3. Constructing the Theme from the ThemeColor and applying the config
+/// 2. Setting font, geometry, and mode fields directly on the Theme
+/// 3. Storing a ThemeConfig in light_theme/dark_theme Rc for gpui-component switching
+///
+/// All Theme fields are set explicitly -- no `apply_config` call is used.
+/// This avoids the fragile apply-then-restore pattern where `apply_config`
+/// would overwrite all 108 color fields with defaults.
 #[must_use = "this returns the theme; it does not apply it"]
 pub fn to_theme(resolved: &ResolvedThemeVariant, name: &str, is_dark: bool) -> Theme {
     let theme_color = colors::to_theme_color(resolved, is_dark);
@@ -102,17 +100,25 @@ pub fn to_theme(resolved: &ResolvedThemeVariant, name: &str, is_dark: bool) -> T
     } else {
         ThemeMode::Light
     };
-    let theme_config = config::to_theme_config(resolved, name, mode);
+    let d = &resolved.defaults;
 
-    // gpui-component's `apply_config` sets non-color fields we need: font_family,
-    // font_size, radius, shadow, mode, light_theme/dark_theme Rc, and highlight_theme.
-    // However, `ThemeColor::apply_config` (called internally) overwrites ALL color
-    // fields with defaults, since our ThemeConfig has no explicit color overrides.
-    // We restore our carefully-mapped colors after. This is a known gpui-component
-    // API limitation -- there is no way to apply only non-color config fields.
     let mut theme = Theme::from(&theme_color);
-    theme.apply_config(&theme_config.into());
-    theme.colors = theme_color;
+    theme.mode = mode;
+    theme.font_family = SharedString::from(d.font.family.clone());
+    theme.font_size = px(d.font.size);
+    theme.mono_font_family = SharedString::from(d.mono_font.family.clone());
+    theme.mono_font_size = px(d.mono_font.size);
+    theme.radius = px(d.radius);
+    theme.radius_lg = px(d.radius_lg);
+    theme.shadow = d.shadow_enabled;
+
+    // Store config for gpui-component's theme switching
+    let config: Rc<_> = Rc::new(config::to_theme_config(resolved, name, mode));
+    if mode == ThemeMode::Dark {
+        theme.dark_theme = config;
+    } else {
+        theme.light_theme = config;
+    }
     theme
 }
 
@@ -120,6 +126,10 @@ pub fn to_theme(resolved: &ResolvedThemeVariant, name: &str, is_dark: bool) -> T
 ///
 /// This is the primary entry point for most users. It handles the full pipeline:
 /// load preset, pick variant, resolve, validate, and convert to gpui Theme.
+///
+/// Returns both the gpui Theme and the [`ResolvedThemeVariant`] so callers can
+/// access per-widget metrics (button padding, scrollbar width, etc.) that the
+/// flat `ThemeColor` cannot represent.
 ///
 /// The preset name is used as the theme display name.
 ///
@@ -130,23 +140,30 @@ pub fn to_theme(resolved: &ResolvedThemeVariant, name: &str, is_dark: bool) -> T
 /// # Examples
 ///
 /// ```ignore
-/// let dark_theme = native_theme_gpui::from_preset("dracula", true)?;
-/// let light_theme = native_theme_gpui::from_preset("catppuccin-latte", false)?;
+/// let (dark_theme, resolved) = native_theme_gpui::from_preset("dracula", true)?;
+/// let (light_theme, _) = native_theme_gpui::from_preset("catppuccin-latte", false)?;
 /// ```
 #[must_use = "this returns the theme; it does not apply it"]
-pub fn from_preset(name: &str, is_dark: bool) -> native_theme::Result<Theme> {
+pub fn from_preset(
+    name: &str,
+    is_dark: bool,
+) -> native_theme::Result<(Theme, ResolvedThemeVariant)> {
     let spec = ThemeSpec::preset(name)?;
-    let variant = spec
-        .pick_variant(is_dark)
-        .ok_or_else(|| native_theme::Error::Format(format!("preset '{name}' has no variants")))?;
-    let resolved = variant.clone().into_resolved()?;
-    Ok(to_theme(&resolved, name, is_dark))
+    let variant = spec.into_variant(is_dark).ok_or_else(|| {
+        native_theme::Error::Format(format!("preset '{name}' has no light or dark variant"))
+    })?;
+    let resolved = variant.into_resolved()?;
+    let theme = to_theme(&resolved, name, is_dark);
+    Ok((theme, resolved))
 }
 
 /// Detect the OS theme and convert it to a gpui-component [`Theme`] in one call.
 ///
 /// Combines [`SystemTheme::from_system()`](native_theme::SystemTheme::from_system)
 /// with [`to_theme()`] using the system-detected name and dark-mode preference.
+///
+/// Returns both the gpui Theme and the [`ResolvedThemeVariant`] so callers can
+/// access per-widget metrics that the flat `ThemeColor` cannot represent.
 ///
 /// # Errors
 ///
@@ -156,12 +173,15 @@ pub fn from_preset(name: &str, is_dark: bool) -> native_theme::Result<Theme> {
 /// # Examples
 ///
 /// ```ignore
-/// let theme = native_theme_gpui::from_system()?;
+/// let (theme, resolved) = native_theme_gpui::from_system()?;
 /// ```
 #[must_use = "this returns the theme; it does not apply it"]
-pub fn from_system() -> native_theme::Result<Theme> {
+pub fn from_system() -> native_theme::Result<(Theme, ResolvedThemeVariant)> {
     let sys = SystemTheme::from_system()?;
-    Ok(to_theme(sys.active(), &sys.name, sys.is_dark))
+    let is_dark = sys.is_dark;
+    let theme = to_theme(sys.active(), &sys.name, sys.is_dark);
+    let resolved = if is_dark { sys.dark } else { sys.light };
+    Ok((theme, resolved))
 }
 
 /// Extension trait for converting a [`SystemTheme`] to a gpui-component [`Theme`].
@@ -190,40 +210,18 @@ impl SystemThemeExt for SystemTheme {
 }
 
 #[cfg(test)]
-#[allow(deprecated)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
 
     fn test_resolved() -> ResolvedThemeVariant {
         let nt = ThemeSpec::preset("catppuccin-mocha").expect("preset must exist");
-        let mut v = nt
-            .pick_variant(false)
-            .expect("preset must have light variant")
-            .clone();
-        v.resolve();
-        v.validate().expect("resolved preset must validate")
-    }
-
-    #[test]
-    fn pick_variant_light_first() {
-        let nt = ThemeSpec::preset("catppuccin-mocha").expect("preset must exist");
-        let picked = pick_variant(&nt, false);
-        assert!(picked.is_some());
-    }
-
-    #[test]
-    fn pick_variant_dark_first() {
-        let nt = ThemeSpec::preset("catppuccin-mocha").expect("preset must exist");
-        let picked = pick_variant(&nt, true);
-        assert!(picked.is_some());
-    }
-
-    #[test]
-    fn pick_variant_empty_returns_none() {
-        let theme = ThemeSpec::new("Empty");
-        assert!(pick_variant(&theme, false).is_none());
-        assert!(pick_variant(&theme, true).is_none());
+        let variant = nt
+            .into_variant(false)
+            .expect("preset must have light variant");
+        variant
+            .into_resolved()
+            .expect("resolved preset must validate")
     }
 
     #[test]
@@ -238,29 +236,54 @@ mod tests {
     #[test]
     fn to_theme_dark_mode() {
         let nt = ThemeSpec::preset("catppuccin-mocha").expect("preset must exist");
-        let mut v = nt
-            .pick_variant(true)
-            .expect("preset must have dark variant")
-            .clone();
-        v.resolve();
-        let resolved = v.validate().expect("resolved preset must validate");
+        let variant = nt
+            .into_variant(true)
+            .expect("preset must have dark variant");
+        let resolved = variant
+            .into_resolved()
+            .expect("resolved preset must validate");
         let theme = to_theme(&resolved, "DarkTest", true);
 
         assert!(theme.is_dark());
+    }
+
+    #[test]
+    fn to_theme_applies_font_and_geometry() {
+        let resolved = test_resolved();
+        let theme = to_theme(&resolved, "Test", false);
+
+        assert_eq!(theme.font_family.to_string(), resolved.defaults.font.family);
+        assert_eq!(theme.font_size, px(resolved.defaults.font.size));
+        assert_eq!(
+            theme.mono_font_family.to_string(),
+            resolved.defaults.mono_font.family
+        );
+        assert_eq!(theme.mono_font_size, px(resolved.defaults.mono_font.size));
+        assert_eq!(theme.radius, px(resolved.defaults.radius));
+        assert_eq!(theme.radius_lg, px(resolved.defaults.radius_lg));
+        assert_eq!(theme.shadow, resolved.defaults.shadow_enabled);
     }
 
     // -- from_preset tests --
 
     #[test]
     fn from_preset_valid_light() {
-        let theme = from_preset("catppuccin-mocha", false).expect("preset should load");
+        let (theme, _resolved) =
+            from_preset("catppuccin-mocha", false).expect("preset should load");
         assert!(!theme.is_dark());
     }
 
     #[test]
     fn from_preset_valid_dark() {
-        let theme = from_preset("catppuccin-mocha", true).expect("preset should load");
+        let (theme, _resolved) = from_preset("catppuccin-mocha", true).expect("preset should load");
         assert!(theme.is_dark());
+    }
+
+    #[test]
+    fn from_preset_returns_resolved() {
+        let (_theme, resolved) = from_preset("catppuccin-mocha", true).expect("preset should load");
+        // ResolvedThemeVariant should have populated defaults
+        assert!(resolved.defaults.font.size > 0.0);
     }
 
     #[test]
@@ -270,13 +293,10 @@ mod tests {
     }
 
     // -- SystemThemeExt + from_system tests --
-    // SystemTheme has pub(crate) fields, so it can only be obtained via
-    // SystemTheme::from_system(). These tests verify the trait and function
-    // when a system theme is available, and gracefully skip when not.
 
     #[test]
     fn system_theme_ext_to_gpui_theme() {
-        // from_system() may fail on CI (no desktop env) — skip gracefully
+        // from_system() may fail on CI (no desktop env) -- skip gracefully
         let Ok(sys) = SystemTheme::from_system() else {
             return;
         };
@@ -290,8 +310,19 @@ mod tests {
 
     #[test]
     fn from_system_does_not_panic() {
-        // Just verify no panic — result may be Err on CI
+        // Just verify no panic -- result may be Err on CI
         let _ = from_system();
+    }
+
+    #[test]
+    fn from_system_returns_tuple() {
+        let Ok((theme, resolved)) = from_system() else {
+            return;
+        };
+        // Theme and resolved should agree on basic properties
+        assert!(resolved.defaults.font.size > 0.0);
+        // Theme mode should be set
+        let _ = theme.is_dark();
     }
 
     #[test]

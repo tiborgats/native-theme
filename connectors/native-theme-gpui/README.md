@@ -24,26 +24,21 @@ use native_theme::ThemeSpec;
 use native_theme_gpui::to_theme;
 
 // Load a preset and resolve it
-let nt = ThemeSpec::preset("dracula").unwrap();
+let nt = ThemeSpec::preset("dracula")?;
 let is_dark = true;
-if let Some(variant) = nt.pick_variant(is_dark) {
-    let mut v = variant.clone();
-    v.resolve();
-    let resolved = v.validate().unwrap();
-    let theme = to_theme(&resolved, "My App", is_dark);
-    // Use `theme` in your gpui-component application
-}
+let variant = nt.into_variant(is_dark).ok_or("no variant")?;
+let resolved = variant.into_resolved()?;
+let theme = to_theme(&resolved, "My App", is_dark);
+// Use `theme` in your gpui-component application
 ```
 
 Or read the OS theme at runtime:
 
 ```rust,ignore
-use native_theme::SystemTheme;
-use native_theme_gpui::to_theme;
+use native_theme_gpui::from_system;
 
-let system = SystemTheme::from_system().unwrap();
-let is_dark = system.is_dark;
-let theme = to_theme(system.active(), "System Theme", is_dark);
+let (theme, resolved) = from_system()?;
+// `theme` is the gpui-component Theme, `resolved` has per-widget metrics
 ```
 
 ## What Gets Mapped
@@ -58,7 +53,8 @@ gpui-component's 108-field `ThemeColor` struct. The mapping works in layers:
   base roles via shade derivation and alpha blending
 
 Fonts and geometry (`family`, `size`, `radius`, `shadow`) are mapped to
-gpui-component's `ThemeConfig`. Point sizes are converted to pixels (x96/72).
+gpui-component's `ThemeConfig`. Font sizes from the resolved theme are in
+logical pixels and are passed through directly.
 
 ## Icons
 
@@ -91,21 +87,21 @@ The connector provides helpers for displaying animated icons from
 - `with_spin_animation()` -- wraps an `Svg` element with continuous rotation for `AnimatedIcon::Transform` playback
 
 ```rust,ignore
-use native_theme::{loading_indicator, prefers_reduced_motion, AnimatedIcon};
+use native_theme::{loading_indicator, prefers_reduced_motion, AnimatedIcon, IconSet};
 use native_theme_gpui::icons::{animated_frames_to_image_sources, with_spin_animation, to_image_source};
 
-if let Some(anim) = loading_indicator("material") {
+if let Some(anim) = loading_indicator(IconSet::Material) {
     if prefers_reduced_motion() {
         // Static fallback for accessibility
-        let static_icon = anim.first_frame().map(|f| to_image_source(&f));
+        let static_icon = anim.first_frame().and_then(|f| to_image_source(f, None, None));
     } else {
         match &anim {
             AnimatedIcon::Frames { .. } => {
                 // Cache this -- do not call on every frame tick
-                let sources = animated_frames_to_image_sources(&anim);
+                let sources = animated_frames_to_image_sources(&anim, None, None);
             }
             AnimatedIcon::Transform { icon, .. } => {
-                let spinner = Svg::new("spinner.svg");
+                let spinner = gpui::svg().path("spinner.svg");
                 let element = with_spin_animation(spinner, "loading", 1000);
             }
         }

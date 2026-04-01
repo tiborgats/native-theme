@@ -473,8 +473,8 @@ fn build_theme(
     variant.defaults.selection = Some(accent);
     variant.defaults.focus_ring_color = Some(accent);
     variant.defaults.surface = Some(bg);
-    variant.button.primary_bg = Some(primary_bg);
-    variant.button.primary_fg = Some(fg);
+    variant.button.primary_background = Some(primary_bg);
+    variant.button.primary_foreground = Some(fg);
 
     // Disabled foreground: midpoint between fg and bg
     let disabled_r = ((fg.r as u16 + bg.r as u16) / 2) as u8;
@@ -834,7 +834,7 @@ mod tests {
             96,
         );
         // In light mode, AccentDark1 is not directly used in ThemeVariant (old primary_background
-        // is no longer a field). But the logic still selects primary_bg -- which is not set on the
+        // is no longer a field). But the logic still selects primary_background -- which is not set on the
         // new model. This is fine: the resolve() pipeline handles it.
         // Just verify the core defaults are set.
         let variant = theme.light.as_ref().expect("light variant");
@@ -1314,7 +1314,7 @@ mod tests {
             .light
             .clone()
             .expect("light variant should exist after merge");
-        light.resolve();
+        light.resolve_all();
         let resolved = light.validate().unwrap_or_else(|e| {
             panic!("Windows resolve/validate pipeline failed: {e}");
         });

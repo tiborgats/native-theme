@@ -27,6 +27,9 @@ not a constraint.
 | 9 | `validate_svgs()` has unused `_mapping_path` parameter | Low | Trivial |
 | 10 | `derive()` and `crate_path()` don't validate inputs | Low | Low |
 | 11 | `validate_no_duplicate_roles_in_file` uses `HashMap<&str, bool>` instead of `HashSet` | Low | Trivial |
+| 12 | No themes listed produces useless `IconProvider` without warning | Low | Trivial |
+| 13 | Module-level doc examples omit `.emit_cargo_directives()` | Low | Trivial |
+| 14 | `validate_svgs()` reports `MissingSvg` for unknown roles' SVGs | Low | Low |
 
 ---
 
@@ -818,9 +821,11 @@ errors.push(BuildError::MissingSvg {
 
 ### Recommendation
 
-**Option A.** Remove the unused parameter. If richer error messages
-are desired later, the field can be added to `BuildError::MissingSvg`
-at that time.
+**Option A.** Remove the unused parameter. If issue 14 is also fixed
+(filtering `validate_svgs` by master roles), replace `_mapping_path`
+with a `master_roles` parameter instead of just removing it.
+If issue 14 is not addressed, simply remove the dead parameter. Either
+way the current dead `_mapping_path` should go.
 
 ---
 
@@ -989,3 +994,251 @@ for role in &config.roles {
 
 **Option A.** A straightforward cleanup to idiomatic Rust. No
 behavioral change.
+
+---
+
+## 12. No themes listed produces useless IconProvider without warning
+
+**File:** `native-theme-build/src/lib.rs:599-707` (theme processing loops),
+`native-theme-build/src/schema.rs:53-57` (MasterConfig defaults)
+
+**What:** Both `bundled-themes` and `system-themes` default to empty
+via `#[serde(default)]`. A TOML config with no themes:
+
+```toml
+name = "my-icons"
+roles = ["play-pause", "skip-forward"]
+```
+
+passes all validation and generates an `IconProvider` impl where
+`icon_name()` and `icon_svg()` always return `None`:
+
+```rust
+impl native_theme::IconProvider for MyIcons {
+    fn icon_name(&self, set: native_theme::IconSet) -> Option<&str> {
+        match (self, set) {
+            _ => None,
+        }
+    }
+    fn icon_svg(&self, set: native_theme::IconSet) -> Option<&'static [u8]> {
+        match (self, set) {
+            _ => None,
+        }
+    }
+}
+```
+
+This is valid Rust but entirely useless -- icons with no theme
+mappings can never be resolved. Like issue 6 (empty roles), this is
+almost certainly a user mistake: they forgot to add theme entries, or
+used the wrong TOML key names.
+
+No validation step checks whether at least one theme is configured.
+
+### Options
+
+**A. Emit a warning for empty themes (recommended)**
+
+Add a check after merging configs:
+
+```rust
+if merged.bundled_themes.is_empty() && merged.system_themes.is_empty() {
+    warnings.push(format!(
+        "no bundled-themes or system-themes configured; \
+         generated IconProvider will always return None"
+    ));
+}
+```
+
+- Pro: Alerts the user to a likely mistake.
+- Pro: Non-blocking -- the build continues with valid code.
+- Pro: Trivial change, consistent with issue 6 (empty roles warning).
+- Con: A user who intentionally generates a theme-less icon enum gets
+  a spurious warning. Mitigated: extreme edge case.
+
+**B. Error on empty themes**
+
+- Pro: Prevents useless code generation.
+- Con: Could break valid use cases where themes are added dynamically
+  or incrementally during development.
+
+**C. Keep status quo**
+
+- Pro: No change.
+- Con: User who forgets themes gets no feedback.
+
+### Recommendation
+
+**Option A.** A warning matches the approach for empty roles (issue 6)
+and gives a consistent "your config is probably wrong" signal without
+breaking the build.
+
+---
+
+## 13. Module-level doc examples omit .emit_cargo_directives()
+
+**File:** `native-theme-build/src/lib.rs:66-76`
+
+**What:** The module-level rustdoc examples show `unwrap_or_exit()`
+without calling `emit_cargo_directives()`:
+
+```rust
+//! // Simple API (single TOML file):
+//! native_theme_build::generate_icons("icons/icons.toml")
+//!     .unwrap_or_exit();
+//!
+//! // Builder API (multiple TOML files, custom enum name):
+//! native_theme_build::IconGenerator::new()
+//!     .source("icons/media.toml")
+//!     .source("icons/navigation.toml")
+//!     .enum_name("AppIcon")
+//!     .generate()
+//!     .unwrap_or_exit();
+```
+
+`GenerateOutput` is `#[must_use = "call .emit_cargo_directives()..."]`,
+so copying this example produces a compiler warning. The generated
+file is never written. A user following these docs would get a
+`build.rs` that runs without error but silently produces no output.
+
+The `UnwrapOrExit` trait docstring at line 205 does show the correct
+pattern, but the module-level examples (more prominent, first thing
+users see) do not.
+
+### Options
+
+**A. Add .emit_cargo_directives() to the doc examples (recommended)**
+
+```rust
+//! native_theme_build::generate_icons("icons/icons.toml")
+//!     .unwrap_or_exit()
+//!     .emit_cargo_directives();
+```
+
+- Pro: Examples show the complete, correct pattern.
+- Pro: Consistent with the `UnwrapOrExit` trait doc at line 205.
+- Pro: Trivial change.
+- Con: None identified.
+
+Note: If issue 8 is fixed (making `emit_cargo_directives()` infallible),
+the examples are still correct and even simpler.
+
+**B. Keep status quo**
+
+- Pro: No change.
+- Con: Misleading examples; users get silent build failures.
+
+### Recommendation
+
+**Option A.** Doc examples should always show the complete pattern.
+
+---
+
+## 14. validate_svgs() reports MissingSvg for unknown roles' SVGs
+
+**File:** `native-theme-build/src/validate.rs:96-105` (iteration),
+`native-theme-build/src/lib.rs:612-624` (call site)
+
+**What:** `validate_svgs()` iterates **all** mapping values, not just
+those for roles declared in the master TOML:
+
+```rust
+for value in mapping.values() {       // iterates ALL entries
+    if let Some(name) = value.default_name() {
+        let svg_path = theme_dir.join(format!("{name}.svg"));
+        if !svg_path.exists() {
+            errors.push(BuildError::MissingSvg { path: ... });
+        }
+    }
+}
+```
+
+If a mapping file contains extra roles not in the master config,
+`validate_mapping()` correctly reports them as `UnknownRole`. But
+`validate_svgs()` also reports `MissingSvg` for those unknown roles'
+SVG files. The user sees redundant, confusing errors:
+
+```
+error: unknown role "bluetooth" in icons/material/mapping.toml (not declared in master TOML)
+error: SVG file not found: icons/material/bluetooth.svg
+```
+
+The second error is noise -- the SVG doesn't need to exist for a role
+that isn't declared. The user only needs to fix the `UnknownRole` (by
+removing the extra role or adding it to the master TOML).
+
+**Related:** Issue 9 (unused `_mapping_path` parameter). Fixing this
+issue by passing `master_roles` to `validate_svgs()` would also
+resolve issue 9 by replacing the dead parameter with a useful one.
+
+### Options
+
+**A. Filter by master roles (recommended)**
+
+Pass the master roles list to `validate_svgs()` and only check SVGs
+for known roles:
+
+```rust
+pub(crate) fn validate_svgs(
+    mapping: &ThemeMapping,
+    theme_dir: &Path,
+    master_roles: &[String],   // replaces unused _mapping_path
+) -> Vec<BuildError> {
+    let role_set: BTreeSet<&str> = master_roles.iter().map(|s| s.as_str()).collect();
+    let mut errors = Vec::new();
+    for (role, value) in mapping {
+        if role_set.contains(role.as_str()) {
+            if let Some(name) = value.default_name() {
+                let svg_path = theme_dir.join(format!("{name}.svg"));
+                if !svg_path.exists() {
+                    errors.push(BuildError::MissingSvg {
+                        path: svg_path.to_string_lossy().into_owned(),
+                    });
+                }
+            }
+        }
+    }
+    errors
+}
+```
+
+Update the call site:
+
+```rust
+let svg_errors = validate::validate_svgs(&mapping, &theme_dir, &merged.roles);
+```
+
+- Pro: Eliminates noise `MissingSvg` errors for unknown roles.
+- Pro: Also resolves issue 9 (replaces dead `_mapping_path` with
+  useful `master_roles`).
+- Pro: Consistent with the semantic intent: "check SVGs for roles
+  that will actually be used in code generation."
+- Con: Slightly more complex function signature (takes roles list).
+
+**B. Stop all validation after UnknownRole is detected**
+
+Insert an early-return between `validate_mapping` and `validate_svgs`:
+
+```rust
+errors.extend(map_errors);
+if !errors.is_empty() { continue; }  // skip SVG check if mapping has errors
+```
+
+- Pro: No SVG noise for any mapping error (missing roles, unknown
+  roles, missing defaults).
+- Con: Suppresses valid SVG errors that coexist with mapping errors.
+  A user with both a missing role AND missing SVGs would only see the
+  mapping error, then get a second error cycle for SVGs.
+
+**C. Keep status quo**
+
+- Pro: No change; the extra MissingSvg error is technically correct
+  (the file IS missing).
+- Con: Confusing noise alongside the real error.
+
+### Recommendation
+
+**Option A.** Filtering by master roles is the cleanest fix. It
+eliminates exactly the noise errors without suppressing any valid ones,
+and it naturally resolves issue 9 by replacing the dead parameter with
+one that serves a purpose.

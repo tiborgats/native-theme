@@ -27,11 +27,31 @@
 //! use native_theme_iced::to_theme;
 //!
 //! let nt = ThemeSpec::preset("catppuccin-mocha").unwrap();
-//! let mut variant = nt.pick_variant(false).unwrap().clone();
-//! variant.resolve();
-//! let resolved = variant.validate().unwrap();
+//! let resolved = nt.into_variant(false).unwrap().into_resolved().unwrap();
 //! let theme = to_theme(&resolved, "My App");
 //! ```
+//!
+//! # Font Configuration
+//!
+//! To use theme fonts with iced widgets, leak the family name to obtain
+//! the `&'static str` required by [`iced_core::font::Family::Name`]:
+//!
+//! ```ignore
+//! let name: &'static str = Box::leak(
+//!     native_theme_iced::font_family(&resolved).to_string().into_boxed_str()
+//! );
+//! let font = iced_core::Font {
+//!     family: iced_core::font::Family::Name(name),
+//!     weight: native_theme_iced::to_iced_weight(
+//!         native_theme_iced::font_weight(&resolved)
+//!     ),
+//!     ..Default::default()
+//! };
+//! ```
+//!
+//! This is the standard iced pattern for runtime font names. Each leak is
+//! ~10-20 bytes and persists for the app lifetime. Call once at theme init,
+//! not per-frame.
 //!
 //! # Theme Field Coverage
 //!
@@ -60,8 +80,8 @@ pub mod palette;
 
 // Re-export native-theme types that appear in public signatures.
 pub use native_theme::{
-    AnimatedIcon, IconData, IconProvider, IconRole, IconSet, ResolvedThemeVariant, SystemTheme,
-    ThemeSpec, ThemeVariant,
+    AnimatedIcon, Error, IconData, IconProvider, IconRole, IconSet, ResolvedThemeVariant, Result,
+    Rgba, SystemTheme, ThemeSpec, ThemeVariant, TransformAnimation,
 };
 
 /// Create an iced [`iced_core::theme::Theme`] from a [`native_theme::ResolvedThemeVariant`].
@@ -86,12 +106,19 @@ pub fn to_theme(
 ) -> iced_core::theme::Theme {
     let pal = palette::to_palette(resolved);
 
-    // Clone the resolved fields we need into the closure.
-    let resolved_clone = resolved.clone();
+    // Capture only the 4 Rgba values (Copy, 4 bytes each) instead of
+    // cloning the entire ResolvedThemeVariant (~2KB with heap data).
+    let btn_bg = resolved.button.background;
+    let btn_fg = resolved.button.foreground;
+    let surface = resolved.defaults.surface;
+    let foreground = resolved.defaults.foreground;
 
     iced_core::theme::Theme::custom_with_fn(name.to_string(), pal, move |p| {
         let mut ext = iced_core::theme::palette::Extended::generate(p);
-        extended::apply_overrides(&mut ext, &resolved_clone);
+        ext.secondary.base.color = palette::to_color(btn_bg);
+        ext.secondary.base.text = palette::to_color(btn_fg);
+        ext.background.weak.color = palette::to_color(surface);
+        ext.background.weak.text = palette::to_color(foreground);
         ext
     })
 }
@@ -110,10 +137,10 @@ pub fn from_preset(
     is_dark: bool,
 ) -> native_theme::Result<(iced_core::theme::Theme, native_theme::ResolvedThemeVariant)> {
     let spec = native_theme::ThemeSpec::preset(name)?;
-    let variant = spec
-        .pick_variant(is_dark)
-        .ok_or_else(|| native_theme::Error::Format(format!("preset '{name}' has no variants")))?;
-    let resolved = variant.clone().into_resolved()?;
+    let variant = spec.into_variant(is_dark).ok_or_else(|| {
+        native_theme::Error::Format(format!("preset '{name}' has no light or dark variant"))
+    })?;
+    let resolved = variant.into_resolved()?;
     let theme = to_theme(&resolved, name);
     Ok((theme, resolved))
 }
@@ -127,8 +154,9 @@ pub fn from_preset(
 pub fn from_system()
 -> native_theme::Result<(iced_core::theme::Theme, native_theme::ResolvedThemeVariant)> {
     let sys = native_theme::SystemTheme::from_system()?;
-    let resolved = sys.active().clone();
-    let theme = to_theme(&resolved, &sys.name);
+    let name = sys.name;
+    let resolved = if sys.is_dark { sys.dark } else { sys.light };
+    let theme = to_theme(&resolved, &name);
     Ok((theme, resolved))
 }
 
@@ -227,13 +255,46 @@ pub fn mono_font_weight(resolved: &native_theme::ResolvedThemeVariant) -> u16 {
     resolved.defaults.mono_font.weight
 }
 
-/// Returns the primary UI line height in logical pixels from the resolved theme.
+/// Returns the line height multiplier from the resolved theme.
 ///
-/// This is the computed value (`defaults.line_height * font.size`), not the
-/// raw multiplier.
+/// The raw multiplier (e.g., 1.4). Use with iced's
+/// `LineHeight::Relative(native_theme_iced::line_height_multiplier(&r))`
+/// for Text widgets. Font-size agnostic -- works correctly for both
+/// the primary UI font and monospace text.
+///
+/// For absolute pixels (layout math), multiply by the appropriate
+/// font size: `line_height_multiplier(&r) * font_size(&r)`.
 #[must_use]
-pub fn line_height(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
-    resolved.defaults.line_height * resolved.defaults.font.size
+pub fn line_height_multiplier(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
+    resolved.defaults.line_height
+}
+
+/// Convert a CSS font weight (100-900) to an iced [`Weight`](iced_core::font::Weight) enum.
+///
+/// Non-standard weights are rounded to the nearest standard value
+/// (e.g., 350 -> Normal, 550 -> Semibold).
+///
+/// # Example
+///
+/// ```ignore
+/// let weight = native_theme_iced::to_iced_weight(
+///     native_theme_iced::font_weight(&resolved),
+/// );
+/// ```
+#[must_use]
+pub fn to_iced_weight(css_weight: u16) -> iced_core::font::Weight {
+    use iced_core::font::Weight;
+    match css_weight {
+        0..=149 => Weight::Thin,
+        150..=249 => Weight::ExtraLight,
+        250..=349 => Weight::Light,
+        350..=449 => Weight::Normal,
+        450..=549 => Weight::Medium,
+        550..=649 => Weight::Semibold,
+        650..=749 => Weight::Bold,
+        750..=849 => Weight::ExtraBold,
+        850.. => Weight::Black,
+    }
 }
 
 #[cfg(test)]
@@ -243,10 +304,12 @@ mod tests {
     use native_theme::ThemeSpec;
 
     fn make_resolved(is_dark: bool) -> native_theme::ResolvedThemeVariant {
-        let nt = ThemeSpec::preset("catppuccin-mocha").unwrap();
-        let mut variant = nt.pick_variant(is_dark).unwrap().clone();
-        variant.resolve();
-        variant.validate().unwrap()
+        ThemeSpec::preset("catppuccin-mocha")
+            .unwrap()
+            .into_variant(is_dark)
+            .unwrap()
+            .into_resolved()
+            .unwrap()
     }
 
     // === to_theme tests ===
@@ -382,10 +445,39 @@ mod tests {
     }
 
     #[test]
-    fn line_height_returns_concrete_value() {
+    fn line_height_multiplier_returns_concrete_value() {
         let resolved = make_resolved(false);
-        let lh = line_height(&resolved);
-        assert!(lh > 0.0, "line height should be > 0");
+        let lh = line_height_multiplier(&resolved);
+        assert!(lh > 0.0, "line height multiplier should be > 0");
+        assert!(
+            lh < 5.0,
+            "line height multiplier should be a multiplier (e.g. 1.4), got {}",
+            lh
+        );
+    }
+
+    #[test]
+    fn to_iced_weight_standard_weights() {
+        use iced_core::font::Weight;
+        assert_eq!(to_iced_weight(100), Weight::Thin);
+        assert_eq!(to_iced_weight(200), Weight::ExtraLight);
+        assert_eq!(to_iced_weight(300), Weight::Light);
+        assert_eq!(to_iced_weight(400), Weight::Normal);
+        assert_eq!(to_iced_weight(500), Weight::Medium);
+        assert_eq!(to_iced_weight(600), Weight::Semibold);
+        assert_eq!(to_iced_weight(700), Weight::Bold);
+        assert_eq!(to_iced_weight(800), Weight::ExtraBold);
+        assert_eq!(to_iced_weight(900), Weight::Black);
+    }
+
+    #[test]
+    fn to_iced_weight_non_standard_rounds_correctly() {
+        use iced_core::font::Weight;
+        assert_eq!(to_iced_weight(350), Weight::Normal);
+        assert_eq!(to_iced_weight(450), Weight::Medium);
+        assert_eq!(to_iced_weight(550), Weight::Semibold);
+        assert_eq!(to_iced_weight(0), Weight::Thin);
+        assert_eq!(to_iced_weight(1000), Weight::Black);
     }
 
     // === Convenience API tests ===

@@ -8,32 +8,59 @@
 //! and functions for loading themes from TOML strings and files.
 
 use crate::{Error, Result, ThemeSpec};
+use std::collections::HashMap;
 use std::path::Path;
 use std::sync::LazyLock;
 
-// Embed preset TOML files at compile time
-const KDE_BREEZE_TOML: &str = include_str!("presets/kde-breeze.toml");
-const ADWAITA_TOML: &str = include_str!("presets/adwaita.toml");
-const WINDOWS_11_TOML: &str = include_str!("presets/windows-11.toml");
-const MACOS_SONOMA_TOML: &str = include_str!("presets/macos-sonoma.toml");
-const MATERIAL_TOML: &str = include_str!("presets/material.toml");
-const IOS_TOML: &str = include_str!("presets/ios.toml");
-const CATPPUCCIN_LATTE_TOML: &str = include_str!("presets/catppuccin-latte.toml");
-const CATPPUCCIN_FRAPPE_TOML: &str = include_str!("presets/catppuccin-frappe.toml");
-const CATPPUCCIN_MACCHIATO_TOML: &str = include_str!("presets/catppuccin-macchiato.toml");
-const CATPPUCCIN_MOCHA_TOML: &str = include_str!("presets/catppuccin-mocha.toml");
-const NORD_TOML: &str = include_str!("presets/nord.toml");
-const DRACULA_TOML: &str = include_str!("presets/dracula.toml");
-const GRUVBOX_TOML: &str = include_str!("presets/gruvbox.toml");
-const SOLARIZED_TOML: &str = include_str!("presets/solarized.toml");
-const TOKYO_NIGHT_TOML: &str = include_str!("presets/tokyo-night.toml");
-const ONE_DARK_TOML: &str = include_str!("presets/one-dark.toml");
-
-// Live presets: geometry/metrics only (internal, not user-selectable)
-const KDE_BREEZE_LIVE_TOML: &str = include_str!("presets/kde-breeze-live.toml");
-const ADWAITA_LIVE_TOML: &str = include_str!("presets/adwaita-live.toml");
-const MACOS_SONOMA_LIVE_TOML: &str = include_str!("presets/macos-sonoma-live.toml");
-const WINDOWS_11_LIVE_TOML: &str = include_str!("presets/windows-11-live.toml");
+/// All preset entries (name + embedded TOML source), parsed once into a HashMap.
+///
+/// To add a new preset, add it here and (if user-facing) to [`PRESET_NAMES`].
+const PRESET_ENTRIES: &[(&str, &str)] = &[
+    // Platform presets
+    ("kde-breeze", include_str!("presets/kde-breeze.toml")),
+    ("adwaita", include_str!("presets/adwaita.toml")),
+    ("windows-11", include_str!("presets/windows-11.toml")),
+    ("macos-sonoma", include_str!("presets/macos-sonoma.toml")),
+    ("material", include_str!("presets/material.toml")),
+    ("ios", include_str!("presets/ios.toml")),
+    // Community presets
+    (
+        "catppuccin-latte",
+        include_str!("presets/catppuccin-latte.toml"),
+    ),
+    (
+        "catppuccin-frappe",
+        include_str!("presets/catppuccin-frappe.toml"),
+    ),
+    (
+        "catppuccin-macchiato",
+        include_str!("presets/catppuccin-macchiato.toml"),
+    ),
+    (
+        "catppuccin-mocha",
+        include_str!("presets/catppuccin-mocha.toml"),
+    ),
+    ("nord", include_str!("presets/nord.toml")),
+    ("dracula", include_str!("presets/dracula.toml")),
+    ("gruvbox", include_str!("presets/gruvbox.toml")),
+    ("solarized", include_str!("presets/solarized.toml")),
+    ("tokyo-night", include_str!("presets/tokyo-night.toml")),
+    ("one-dark", include_str!("presets/one-dark.toml")),
+    // Internal live presets (geometry-only, not user-selectable)
+    (
+        "kde-breeze-live",
+        include_str!("presets/kde-breeze-live.toml"),
+    ),
+    ("adwaita-live", include_str!("presets/adwaita-live.toml")),
+    (
+        "macos-sonoma-live",
+        include_str!("presets/macos-sonoma-live.toml"),
+    ),
+    (
+        "windows-11-live",
+        include_str!("presets/windows-11-live.toml"),
+    ),
+];
 
 /// All available user-facing preset names (excludes internal live presets).
 const PRESET_NAMES: &[&str] = &[
@@ -57,67 +84,21 @@ const PRESET_NAMES: &[&str] = &[
 
 // Cached presets: each parsed at most once for the process lifetime.
 // Errors are stored as String (Error is not Clone) and propagated to callers.
-mod cached {
-    use super::*;
+type Parsed = std::result::Result<ThemeSpec, String>;
 
-    type Parsed = std::result::Result<ThemeSpec, String>;
-
-    fn parse(toml: &str) -> Parsed {
-        from_toml(toml).map_err(|e| e.to_string())
-    }
-
-    static KDE_BREEZE: LazyLock<Parsed> = LazyLock::new(|| parse(KDE_BREEZE_TOML));
-    static ADWAITA: LazyLock<Parsed> = LazyLock::new(|| parse(ADWAITA_TOML));
-    static WINDOWS_11: LazyLock<Parsed> = LazyLock::new(|| parse(WINDOWS_11_TOML));
-    static MACOS_SONOMA: LazyLock<Parsed> = LazyLock::new(|| parse(MACOS_SONOMA_TOML));
-    static MATERIAL: LazyLock<Parsed> = LazyLock::new(|| parse(MATERIAL_TOML));
-    static IOS: LazyLock<Parsed> = LazyLock::new(|| parse(IOS_TOML));
-    static CATPPUCCIN_LATTE: LazyLock<Parsed> = LazyLock::new(|| parse(CATPPUCCIN_LATTE_TOML));
-    static CATPPUCCIN_FRAPPE: LazyLock<Parsed> = LazyLock::new(|| parse(CATPPUCCIN_FRAPPE_TOML));
-    static CATPPUCCIN_MACCHIATO: LazyLock<Parsed> =
-        LazyLock::new(|| parse(CATPPUCCIN_MACCHIATO_TOML));
-    static CATPPUCCIN_MOCHA: LazyLock<Parsed> = LazyLock::new(|| parse(CATPPUCCIN_MOCHA_TOML));
-    static NORD: LazyLock<Parsed> = LazyLock::new(|| parse(NORD_TOML));
-    static DRACULA: LazyLock<Parsed> = LazyLock::new(|| parse(DRACULA_TOML));
-    static GRUVBOX: LazyLock<Parsed> = LazyLock::new(|| parse(GRUVBOX_TOML));
-    static SOLARIZED: LazyLock<Parsed> = LazyLock::new(|| parse(SOLARIZED_TOML));
-    static TOKYO_NIGHT: LazyLock<Parsed> = LazyLock::new(|| parse(TOKYO_NIGHT_TOML));
-    static ONE_DARK: LazyLock<Parsed> = LazyLock::new(|| parse(ONE_DARK_TOML));
-    // Internal live presets
-    static KDE_BREEZE_LIVE: LazyLock<Parsed> = LazyLock::new(|| parse(KDE_BREEZE_LIVE_TOML));
-    static ADWAITA_LIVE: LazyLock<Parsed> = LazyLock::new(|| parse(ADWAITA_LIVE_TOML));
-    static MACOS_SONOMA_LIVE: LazyLock<Parsed> = LazyLock::new(|| parse(MACOS_SONOMA_LIVE_TOML));
-    static WINDOWS_11_LIVE: LazyLock<Parsed> = LazyLock::new(|| parse(WINDOWS_11_LIVE_TOML));
-
-    pub(crate) fn get(name: &str) -> Option<&'static Parsed> {
-        match name {
-            "kde-breeze" => Some(&KDE_BREEZE),
-            "adwaita" => Some(&ADWAITA),
-            "windows-11" => Some(&WINDOWS_11),
-            "macos-sonoma" => Some(&MACOS_SONOMA),
-            "material" => Some(&MATERIAL),
-            "ios" => Some(&IOS),
-            "catppuccin-latte" => Some(&CATPPUCCIN_LATTE),
-            "catppuccin-frappe" => Some(&CATPPUCCIN_FRAPPE),
-            "catppuccin-macchiato" => Some(&CATPPUCCIN_MACCHIATO),
-            "catppuccin-mocha" => Some(&CATPPUCCIN_MOCHA),
-            "nord" => Some(&NORD),
-            "dracula" => Some(&DRACULA),
-            "gruvbox" => Some(&GRUVBOX),
-            "solarized" => Some(&SOLARIZED),
-            "tokyo-night" => Some(&TOKYO_NIGHT),
-            "one-dark" => Some(&ONE_DARK),
-            "kde-breeze-live" => Some(&KDE_BREEZE_LIVE),
-            "adwaita-live" => Some(&ADWAITA_LIVE),
-            "macos-sonoma-live" => Some(&MACOS_SONOMA_LIVE),
-            "windows-11-live" => Some(&WINDOWS_11_LIVE),
-            _ => None,
-        }
-    }
+fn parse(toml_str: &str) -> Parsed {
+    from_toml(toml_str).map_err(|e| e.to_string())
 }
 
+static CACHE: LazyLock<HashMap<&str, Parsed>> = LazyLock::new(|| {
+    PRESET_ENTRIES
+        .iter()
+        .map(|(name, toml_str)| (*name, parse(toml_str)))
+        .collect()
+});
+
 pub(crate) fn preset(name: &str) -> Result<ThemeSpec> {
-    match cached::get(name) {
+    match CACHE.get(name) {
         None => Err(Error::Unavailable(format!("unknown preset: {name}"))),
         Some(Ok(theme)) => Ok(theme.clone()),
         Some(Err(msg)) => Err(Error::Format(format!("bundled preset '{name}': {msg}"))),
@@ -376,8 +357,7 @@ accent = "#00ff00"
     }
 
     #[test]
-    fn icon_set_community_presets_are_freedesktop() {
-        use crate::IconSet;
+    fn icon_set_community_presets_have_none() {
         let community = &[
             "catppuccin-latte",
             "catppuccin-frappe",
@@ -394,15 +374,44 @@ accent = "#00ff00"
             let theme = preset(name).unwrap();
             let light = theme.light.as_ref().unwrap();
             assert_eq!(
-                light.icon_set,
-                Some(IconSet::Freedesktop),
-                "preset '{name}' light.icon_set should be Some(Freedesktop)"
+                light.icon_set, None,
+                "preset '{name}' light.icon_set should be None (resolved at runtime)"
             );
             let dark = theme.dark.as_ref().unwrap();
             assert_eq!(
-                dark.icon_set,
-                Some(IconSet::Freedesktop),
-                "preset '{name}' dark.icon_set should be Some(Freedesktop)"
+                dark.icon_set, None,
+                "preset '{name}' dark.icon_set should be None (resolved at runtime)"
+            );
+        }
+    }
+
+    #[test]
+    fn icon_set_community_presets_resolve_to_platform_value() {
+        let community = &[
+            "catppuccin-latte",
+            "catppuccin-frappe",
+            "catppuccin-macchiato",
+            "catppuccin-mocha",
+            "nord",
+            "dracula",
+            "gruvbox",
+            "solarized",
+            "tokyo-night",
+            "one-dark",
+        ];
+        for name in community {
+            let theme = preset(name).unwrap();
+            let mut light = theme.light.clone().unwrap();
+            light.resolve_all();
+            assert!(
+                light.icon_set.is_some(),
+                "preset '{name}' light.icon_set should be Some after resolve_all()"
+            );
+            let mut dark = theme.dark.clone().unwrap();
+            dark.resolve_all();
+            assert!(
+                dark.icon_set.is_some(),
+                "preset '{name}' dark.icon_set should be Some after resolve_all()"
             );
         }
     }
@@ -487,10 +496,10 @@ accent = "#00ff00"
                 ("dark", theme.dark.as_ref()),
             ] {
                 let variant = variant_opt.unwrap();
-                // button.primary_bg is derived from accent - should not be in presets
+                // button.primary_background is derived from accent - should not be in presets
                 assert!(
-                    variant.button.primary_bg.is_none(),
-                    "preset '{name}' {label}.button.primary_bg should be None (derived)"
+                    variant.button.primary_background.is_none(),
+                    "preset '{name}' {label}.button.primary_background should be None (derived)"
                 );
                 // checkbox.checked_bg is derived from accent
                 assert!(
@@ -507,10 +516,10 @@ accent = "#00ff00"
                     variant.progress_bar.fill.is_none(),
                     "preset '{name}' {label}.progress_bar.fill should be None (derived)"
                 );
-                // switch.checked_bg is derived from accent
+                // switch.checked_background is derived from accent
                 assert!(
-                    variant.switch.checked_bg.is_none(),
-                    "preset '{name}' {label}.switch.checked_bg should be None (derived)"
+                    variant.switch.checked_background.is_none(),
+                    "preset '{name}' {label}.switch.checked_background should be None (derived)"
                 );
             }
         }
@@ -523,13 +532,13 @@ accent = "#00ff00"
         for name in list_presets() {
             let theme = preset(name).unwrap();
             if let Some(mut light) = theme.light.clone() {
-                light.resolve();
+                light.resolve_all();
                 light.validate().unwrap_or_else(|e| {
                     panic!("preset {name} light variant failed validation: {e}");
                 });
             }
             if let Some(mut dark) = theme.dark.clone() {
-                dark.resolve();
+                dark.resolve_all();
                 dark.validate().unwrap_or_else(|e| {
                     panic!("preset {name} dark variant failed validation: {e}");
                 });
@@ -546,8 +555,8 @@ accent = "#00ff00"
 
         // Before resolve: accent-derived fields should be None (not in preset TOML)
         assert!(
-            light.button.primary_bg.is_none(),
-            "primary_bg should be None pre-resolve"
+            light.button.primary_background.is_none(),
+            "primary_background should be None pre-resolve"
         );
         assert!(
             light.checkbox.checked_bg.is_none(),
@@ -562,8 +571,8 @@ accent = "#00ff00"
             "progress_bar.fill should be None pre-resolve"
         );
         assert!(
-            light.switch.checked_bg.is_none(),
-            "switch.checked_bg should be None pre-resolve"
+            light.switch.checked_background.is_none(),
+            "switch.checked_background should be None pre-resolve"
         );
 
         light.resolve();
@@ -571,9 +580,9 @@ accent = "#00ff00"
         // After resolve: all accent-derived fields should equal accent
         let accent = light.defaults.accent.unwrap();
         assert_eq!(
-            light.button.primary_bg,
+            light.button.primary_background,
             Some(accent),
-            "button.primary_bg should match accent"
+            "button.primary_background should match accent"
         );
         assert_eq!(
             light.checkbox.checked_bg,
@@ -591,9 +600,9 @@ accent = "#00ff00"
             "progress_bar.fill should match accent"
         );
         assert_eq!(
-            light.switch.checked_bg,
+            light.switch.checked_background,
             Some(accent),
-            "switch.checked_bg should match accent"
+            "switch.checked_background should match accent"
         );
     }
 
@@ -601,7 +610,7 @@ accent = "#00ff00"
     fn resolve_then_validate_produces_complete_theme() {
         let theme = preset("catppuccin-mocha").unwrap();
         let mut light = theme.light.clone().unwrap();
-        light.resolve();
+        light.resolve_all();
         let resolved = light.validate().unwrap();
 
         assert_eq!(resolved.defaults.font.family, "Inter");
@@ -634,7 +643,7 @@ accent = "#00ff00"
             weight: None,
         });
 
-        light.resolve();
+        light.resolve_all();
         let resolved = light.validate().unwrap();
 
         // menu font should have inherited family/weight from defaults
@@ -661,7 +670,7 @@ accent = "#00ff00"
         // Clear caption to test inheritance
         light.text_scale.caption = None;
 
-        light.resolve();
+        light.resolve_all();
         let resolved = light.validate().unwrap();
 
         // caption should have been populated from defaults.font

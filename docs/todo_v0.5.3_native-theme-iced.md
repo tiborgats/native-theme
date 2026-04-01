@@ -1,6 +1,6 @@
 # v0.5.3 Review -- native-theme-iced (iced connector)
 
-Verified against source code on 2026-03-31. Each chapter covers one
+Verified against source code on 2026-04-01. Each chapter covers one
 problem, lists all resolution options with full pro/contra, and
 recommends the best solution. Pre-1.0 -- backward compatibility is
 not a constraint.
@@ -20,6 +20,45 @@ not a constraint.
 | 2 | `from_preset()` clones variant unnecessarily | Low | Trivial |
 | 3 | `from_preset()` error message is misleading | Low | Trivial |
 | 4 | `animated_frames_to_svg_handles()` silently drops non-SVG frames | Low | Low |
+| 5 | `from_system()` clones active variant unnecessarily | Low | Trivial |
+| 6 | Doc example shows obsolete `pick_variant().clone()` pattern | Low | Trivial |
+| 7 | `line_height()` returns absolute pixels but name suggests multiplier | Medium | Low |
+| 8 | Missing re-exports for types in public API surface | Low | Trivial |
+| 9 | `animated_frames_to_svg_handles()` hard-codes `None` for color | Low | Trivial |
+| 10 | Font helpers return raw primitives instead of iced types | Medium | Low |
+| 11 | `colorize_monochrome_svg()` silently corrupts non-UTF-8 SVG data | Medium | Trivial |
+| 12 | README has multiple documentation errors | Medium | Low |
+
+### Issue dependencies
+
+Issues #2 and #6 form a group: using `into_variant` (issue #2)
+means the manual-path doc example (issue #6) must be updated
+simultaneously. Issue #12 (README errors) depends on issues #2,
+#6, #7, and #9 because the README examples must reflect the final
+API signatures.
+
+### Implementation groups
+
+Issues can be implemented in three waves. Items within a wave are
+independent of each other.
+
+**Wave 1 -- API changes (breaking)**
+- Issue #2 (into_variant in from_preset) -- combine with issue #6
+  (doc example)
+- Issue #5 (move in from_system)
+- Issue #7 (line_height rename to line_height_multiplier)
+- Issue #8 (re-exports)
+- Issue #9 (add color param to animated_frames_to_svg_handles)
+- Issue #10 (add to_iced_weight, document family name leak pattern)
+
+**Wave 2 -- Independent fixes**
+- Issue #1 (clone optimization in to_theme closure)
+- Issue #3 (error message improvement)
+- Issue #11 (colorize UTF-8 guard)
+
+**Wave 3 -- Documentation only**
+- Issue #4 (document animated frame filtering behavior)
+- Issue #12 (fix README errors) -- after Wave 1 API changes
 
 ---
 
@@ -222,6 +261,9 @@ let variant = spec
 let resolved = variant.into_resolved()?;  // no clone needed
 ```
 
+The gpui connector at `connectors/native-theme-gpui/src/lib.rs:139-143`
+has the identical `pick_variant().clone().into_resolved()` pattern.
+
 ### Options
 
 **A. Use into_variant() instead of pick_variant() + clone()
@@ -240,7 +282,8 @@ let resolved = variant.into_resolved()?;  // no clone needed
 
 ### Recommendation
 
-**Option A.** The fix is trivial and uses the intended API.
+**Option A.** The fix is trivial and uses the intended API. Apply
+the same fix to the gpui connector (`lib.rs:139-143`).
 
 ---
 
@@ -375,3 +418,926 @@ Add a doc comment noting that non-SVG frames are silently excluded:
 correct design for a function named `animated_frames_to_svg_handles`.
 The function name already implies SVG output; a doc comment
 confirming that non-SVG frames are excluded completes the contract.
+
+---
+
+## 5. from_system() clones active variant unnecessarily
+
+**File:** `connectors/native-theme-iced/src/lib.rs:127-133`
+
+**What:** The `from_system()` function clones the OS-active
+`ResolvedThemeVariant` from `SystemTheme`:
+
+```rust
+pub fn from_system()
+-> native_theme::Result<(iced_core::theme::Theme, native_theme::ResolvedThemeVariant)> {
+    let sys = native_theme::SystemTheme::from_system()?;
+    let resolved = sys.active().clone();
+    //                         ^^^^^^^^ unnecessary clone
+    let theme = to_theme(&resolved, &sys.name);
+    Ok((theme, resolved))
+}
+```
+
+`SystemTheme::active()` returns `&ResolvedThemeVariant` -- a borrow
+of an owned field. The function needs to return the variant by value,
+so it clones. But `SystemTheme` has public fields (`name: String`,
+`is_dark: bool`, `light: ResolvedThemeVariant`,
+`dark: ResolvedThemeVariant`) and does not implement `Drop`, so the
+active variant can be moved out instead of cloned:
+
+```rust
+let sys = native_theme::SystemTheme::from_system()?;
+let name = sys.name;
+let resolved = if sys.is_dark { sys.dark } else { sys.light };
+let theme = to_theme(&resolved, &name);
+Ok((theme, resolved))
+```
+
+The compiler generates drop flags for the conditional partial move
+(`sys.dark` vs `sys.light`) and drops the remaining fields
+(`sys.light_variant`, `sys.dark_variant`, `sys.preset`,
+`sys.live_preset`) when `sys` goes out of scope.
+
+The gpui connector does not have this issue because its `from_system`
+returns only `Theme` (not a tuple), so it passes `sys.active()` by
+reference and never needs to clone.
+
+### Options
+
+**A. Move the variant from `sys` instead of cloning (recommended)**
+
+```rust
+pub fn from_system()
+-> native_theme::Result<(iced_core::theme::Theme, native_theme::ResolvedThemeVariant)> {
+    let sys = native_theme::SystemTheme::from_system()?;
+    let name = sys.name;
+    let resolved = if sys.is_dark { sys.dark } else { sys.light };
+    let theme = to_theme(&resolved, &name);
+    Ok((theme, resolved))
+}
+```
+
+- Pro: Eliminates clone of the entire `ResolvedThemeVariant` (~2KB
+  with heap-allocated font family strings).
+- Pro: Consistent with the issue #2 fix philosophy (use ownership,
+  don't borrow-then-clone).
+- Pro: The inactive variant and other `SystemTheme` fields are
+  dropped immediately instead of being held in memory during
+  `to_theme()`.
+- Con: Partial move semantics are slightly less readable than the
+  `active().clone()` pattern.
+- Con: The cost is one-time at startup; performance impact is
+  negligible.
+
+**B. Keep status quo**
+
+- Pro: Simpler, easier to read at a glance.
+- Con: Unnecessary clone of heap-allocated data.
+- Con: Inconsistent with the issue #2 fix.
+
+### Recommendation
+
+**Option A.** Consistent with issue #2's approach. The partial move
+is a standard Rust pattern and communicates intent clearly: we are
+extracting the variant we need and discarding the rest.
+
+---
+
+## 6. Doc example shows obsolete pick_variant().clone() pattern
+
+**File:** `connectors/native-theme-iced/src/lib.rs:26-34`
+
+**What:** The "Manual Path" doc example at the top of the crate
+demonstrates the verbose borrow-clone pattern instead of the
+consuming `into_variant()` + `into_resolved()` pipeline:
+
+```rust
+/// let nt = ThemeSpec::preset("catppuccin-mocha").unwrap();
+/// let mut variant = nt.pick_variant(false).unwrap().clone();
+/// variant.resolve();
+/// let resolved = variant.validate().unwrap();
+/// let theme = to_theme(&resolved, "My App");
+```
+
+The core crate's own doc for `into_variant()` (model/mod.rs:292-294)
+shows the idiomatic pipeline:
+
+```rust
+let theme = native_theme::ThemeSpec::preset("dracula").unwrap();
+let variant = theme.into_variant(true).unwrap();
+let resolved = variant.into_resolved().unwrap();
+```
+
+`into_resolved()` calls both `resolve()` and `validate()` internally
+(resolve.rs:189-192), so there is no loss of control.
+
+The test helpers in `lib.rs:245-249`, `palette.rs:76-79`, and
+`extended.rs:47-50` also use the `pick_variant().clone()` pattern.
+
+### Options
+
+**A. Use into_variant() + into_resolved() (recommended)**
+
+```rust
+/// let nt = ThemeSpec::preset("catppuccin-mocha").unwrap();
+/// let resolved = nt.into_variant(false).unwrap().into_resolved().unwrap();
+/// let theme = to_theme(&resolved, "My App");
+```
+
+- Pro: Shows the idiomatic 3-step pipeline (load, pick, resolve).
+- Pro: Consistent with the core crate's own docs.
+- Pro: Users learn the efficient pattern first.
+- Pro: 3 lines instead of 5.
+- Con: Hides the separate resolve/validate steps.
+
+**B. Use into_variant() with explicit resolve/validate**
+
+```rust
+/// let nt = ThemeSpec::preset("catppuccin-mocha").unwrap();
+/// let mut variant = nt.into_variant(false).unwrap();
+/// variant.resolve();
+/// let resolved = variant.validate().unwrap();
+/// let theme = to_theme(&resolved, "My App");
+```
+
+- Pro: Shows each pipeline step explicitly.
+- Pro: Uses the efficient `into_variant()`.
+- Con: 5 lines for a "quick start" doc example.
+- Con: Redundant -- `into_resolved()` does both steps.
+
+**C. Keep status quo**
+
+- Pro: No change.
+- Con: Demonstrates the `pick_variant().clone()` pattern that
+  issue #2 recommends fixing.
+- Con: New users learn the suboptimal pattern.
+
+### Recommendation
+
+**Option A.** The doc section is titled "Manual Path" but its purpose
+is to show how to use the API, not teach the resolve pipeline
+internals. The 3-line chained form is the pattern users should adopt.
+
+Also update the test helpers in `lib.rs`, `palette.rs`, and
+`extended.rs` to use `into_variant().into_resolved()`. These are test
+code (lower priority) but should match the recommended pattern.
+
+---
+
+## 7. line_height() returns absolute pixels but name suggests multiplier
+
+**File:** `connectors/native-theme-iced/src/lib.rs:235-238`
+
+**What:** The function computes `defaults.line_height * font.size` --
+an absolute pixel value:
+
+```rust
+pub fn line_height(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
+    resolved.defaults.line_height * resolved.defaults.font.size
+}
+```
+
+`defaults.line_height` is a **multiplier** (e.g., 1.4). The function
+multiplies it by the default font size to produce an absolute pixel
+value (e.g., 19.6 for a 14px font at 1.4x).
+
+**Problem 1 -- Name is misleading.** The bare name `line_height`
+suggests a multiplier in CSS/typography contexts and in iced itself
+(`LineHeight::Relative(1.4)`). A user writing:
+
+```rust
+text.line_height(LineHeight::Relative(
+    native_theme_iced::line_height(&resolved)
+))
+```
+
+gets `LineHeight::Relative(19.6)` instead of
+`LineHeight::Relative(1.4)` -- visually broken with enormous spacing.
+
+**Problem 2 -- Hardcodes the default font size.** The function always
+uses `defaults.font.size`. For monospace text (which uses
+`defaults.mono_font.size`), the result is wrong. There is no
+`mono_line_height()` companion.
+
+**Practical evidence:** The function is not used in the showcase
+example, suggesting the current semantics are not practical enough
+for real iced widget setup.
+
+### Options
+
+**A. Rename to line_height_px(), add line_height_multiplier()
+   (recommended)**
+
+```rust
+/// Returns the primary UI line height in logical pixels.
+///
+/// Computed as `defaults.line_height * defaults.font.size`. Use this
+/// for layout math (e.g., computing the height of N lines). For iced
+/// Text widgets, prefer [`line_height_multiplier()`] with
+/// `LineHeight::Relative`.
+#[must_use]
+pub fn line_height_px(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
+    resolved.defaults.line_height * resolved.defaults.font.size
+}
+
+/// Returns the line height multiplier from the resolved theme.
+///
+/// The raw multiplier (e.g., 1.4). Use with iced's
+/// `LineHeight::Relative(native_theme_iced::line_height_multiplier(&r))`
+/// for Text widgets. This value is font-size agnostic -- it works
+/// with any font (default or mono).
+#[must_use]
+pub fn line_height_multiplier(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
+    resolved.defaults.line_height
+}
+```
+
+- Pro: Both values available with self-documenting names.
+- Pro: Eliminates the ambiguity completely.
+- Pro: `_multiplier` is font-size agnostic -- works with mono text.
+- Pro: Pre-1.0, breaking rename is acceptable.
+- Con: Two functions where one existed.
+- Con: `line_height_multiplier` is a thin wrapper (same pattern as
+  `border_radius` forwarding `resolved.defaults.radius`).
+
+**B. Change to return the multiplier, keep name**
+
+```rust
+pub fn line_height(resolved: &...) -> f32 {
+    resolved.defaults.line_height
+}
+```
+
+- Pro: Simpler API -- one function.
+- Pro: Matches iced's `LineHeight::Relative` convention.
+- Pro: Font-size agnostic.
+- Con: Breaking semantic change -- silently changes the return value.
+- Con: Users who need absolute pixels lose their helper.
+
+**C. Return `iced_core::text::LineHeight` directly**
+
+```rust
+pub fn line_height(resolved: &...) -> iced_core::text::LineHeight {
+    iced_core::text::LineHeight::Relative(resolved.defaults.line_height)
+}
+```
+
+- Pro: Most ergonomic for iced widget setup.
+- Pro: No ambiguity.
+- Con: Breaking type change.
+- Con: Opinionated -- chooses Relative over Absolute.
+- Con: Harder to use for layout math (must unwrap the enum).
+
+**D. Remove the function entirely**
+
+- Pro: Simplifies API; the computation is trivial.
+- Pro: Forces users to think about which value they need.
+- Con: Loss of discoverability.
+- Con: Breaking change.
+
+**E. Keep status quo, improve doc comment**
+
+- Pro: No breaking change.
+- Con: Name remains misleading -- the footgun persists.
+- Con: Still hardcodes default font size.
+
+**F. Rename to `line_height_multiplier()` only, drop the px variant
+   (recommended)**
+
+```rust
+/// Returns the line height multiplier from the resolved theme.
+///
+/// The raw multiplier (e.g., 1.4). Use with iced's
+/// `LineHeight::Relative(native_theme_iced::line_height_multiplier(&r))`
+/// for Text widgets. Font-size agnostic -- works correctly for both
+/// the primary UI font and monospace text.
+///
+/// For absolute pixels (layout math), multiply by the appropriate
+/// font size: `line_height_multiplier(&r) * font_size(&r)`.
+#[must_use]
+pub fn line_height_multiplier(
+    resolved: &native_theme::ResolvedThemeVariant,
+) -> f32 {
+    resolved.defaults.line_height
+}
+```
+
+- Pro: Solves both Problem 1 (misleading name) and Problem 2
+  (hardcoded font size) with a single function.
+- Pro: Font-size agnostic -- correct for both primary and mono text.
+- Pro: One function, not two -- simpler API surface than Option A.
+- Pro: Rename ensures compile-time detection of the breaking change
+  (unlike Option B's silent semantic change).
+- Pro: Consistent with other thin wrappers (`border_radius`
+  forwarding `resolved.defaults.radius`).
+- Con: Users who need absolute pixels must multiply manually:
+  `line_height_multiplier(&r) * font_size(&r)`. (Trivial, and
+  forces the user to choose the correct font size.)
+- Con: Breaking rename (pre-1.0, acceptable).
+
+### Recommendation
+
+**Option F.** Cleaner than Option A: the `line_height_px()` proposed
+in Option A inherits Problem 2 -- it hardcodes `defaults.font.size`,
+so it is wrong for monospace text, and there is no
+`mono_line_height_px()` counterpart. Adding a second px variant that
+only works for one font creates a new footgun.
+
+Providing only the multiplier eliminates both problems with a single
+function. The multiplier is the universally correct value -- it works
+for any font size. Absolute pixels remain trivially computable:
+`line_height_multiplier(&r) * font_size(&r)` for UI text, or
+`line_height_multiplier(&r) * mono_font_size(&r)` for code. This
+forces the user to explicitly choose which font size they mean,
+preventing the silent "wrong font size for mono" bug that the
+current `line_height()` and Option A's `line_height_px()` both have.
+
+The rename (vs Option B) ensures existing callers get a compile-time
+error rather than a silent semantic change.
+
+---
+
+## 8. Missing re-exports for types in public API surface
+
+**File:** `connectors/native-theme-iced/src/lib.rs:62-65`
+
+**What:** The re-export list covers types used in the basic
+preset/system flow but misses types that users must name when using
+advanced features:
+
+```rust
+pub use native_theme::{
+    AnimatedIcon, IconData, IconProvider, IconRole, IconSet,
+    ResolvedThemeVariant, SystemTheme, ThemeSpec, ThemeVariant,
+};
+```
+
+| Type | Where users need it | Accessible without `native-theme` dep? |
+|------|---------------------|----------------------------------------|
+| `Error` | Matching errors from `from_preset` / `from_system` | No |
+| `Result` | Type alias for `std::result::Result<T, Error>` | No |
+| `Rgba` | Calling `palette::to_color(Rgba)` | No |
+| `TransformAnimation` | Destructuring re-exported `AnimatedIcon::Transform` | No |
+
+`TransformAnimation` is especially problematic: `AnimatedIcon` is
+re-exported, so users can receive an
+`AnimatedIcon::Transform { animation: TransformAnimation::Spin { .. } }`,
+but cannot name `TransformAnimation` to destructure it without adding
+`native-theme` as a direct dependency.
+
+`Error` appears in the return type of `from_preset()` and
+`from_system()` (via `native_theme::Result<T>`). Users who want to
+pattern-match error variants (not just propagate with `?`) must be
+able to name the type.
+
+The gpui connector has the identical re-export list and the same gap.
+
+### Options
+
+**A. Add Error, Result, Rgba, TransformAnimation (recommended)**
+
+```rust
+pub use native_theme::{
+    AnimatedIcon, Error, IconData, IconProvider, IconRole, IconSet,
+    ResolvedThemeVariant, Result, Rgba, SystemTheme, ThemeSpec,
+    ThemeVariant, TransformAnimation,
+};
+```
+
+- Pro: All types reachable from the public API can be named.
+- Pro: Trivial change (add items to `pub use`).
+- Pro: Users don't need `native-theme` as a direct dependency for
+  basic and intermediate usage.
+- Con: Larger re-export list.
+- Con: `Result` shadows `std::result::Result` in files that glob-
+  import the connector (mitigated by the `native_theme_iced::Result`
+  qualified path being clear enough).
+
+**B. Also re-export utility functions (loading_indicator,
+   prefers_reduced_motion)**
+
+Same as Option A, plus:
+```rust
+pub use native_theme::{loading_indicator, prefers_reduced_motion};
+```
+
+- Pro: Common animation workflow available from a single crate.
+- Pro: Matches what the showcase example needs.
+- Con: These functions are not iced-specific; re-exporting them
+  blurs the connector's scope.
+- Con: Where to draw the line? Users who need these functions
+  typically need other `native-theme` functions too (icon loaders,
+  system detection).
+
+**C. Keep status quo**
+
+- Pro: No change.
+- Con: Users hit the "can't name this type" wall when they first try
+  error handling or animation destructuring.
+- Con: Forces a `native-theme` dependency that the re-export pattern
+  is designed to avoid.
+
+### Recommendation
+
+**Option A.** Re-export the four types that appear in or are
+reachable from the connector's public API signatures. This is the
+minimum set needed for users to fully use the connector without a
+separate `native-theme` dependency. Apply the same fix to the gpui
+connector for consistency.
+
+Utility functions (Option B) can be deferred -- users who need
+`loading_indicator()` or `prefers_reduced_motion()` are engaging with
+the core crate's functionality and should depend on it directly.
+
+---
+
+## 9. animated_frames_to_svg_handles() hard-codes None for color
+
+**File:** `connectors/native-theme-iced/src/icons.rs:131-132`
+
+**What:** The function always passes `None` for the `color` parameter
+when calling `to_svg_handle()`:
+
+```rust
+let handles: Vec<_> = frames
+    .iter()
+    .filter_map(|f| to_svg_handle(f, None))
+    //                              ^^^^ always None
+    .collect();
+```
+
+`to_svg_handle()` accepts `color: Option<iced_core::Color>` to
+colorize monochrome SVGs (Material, Lucide icons). By hard-coding
+`None`, the animated frame converter never colorizes frames.
+Monochrome SVG animation frames render in their default fill (black)
+regardless of the current theme.
+
+**Practical impact:** Low. Bundled loading indicators use
+`AnimatedIcon::Transform` (spin), not `Frames`. Frame-based
+animations are user-defined and uncommon. But the API is
+inconsistent: `to_svg_handle()` takes `color`, yet the convenience
+wrapper that calls it doesn't forward the parameter.
+
+The showcase confirms this gap at `showcase.rs:431`: the call to
+`animated_frames_to_svg_handles(&anim)` cannot request colorization,
+unlike single-icon calls which pass `Some(fg_color)` at line 2407.
+
+The gpui connector's `animated_frames_to_image_sources()` has the
+identical `to_image_source(f, None, None)` pattern (icons.rs:867).
+
+### Options
+
+**A. Add a `color` parameter (recommended)**
+
+```rust
+pub fn animated_frames_to_svg_handles(
+    anim: &AnimatedIcon,
+    color: Option<iced_core::Color>,
+) -> Option<AnimatedSvgHandles> {
+    match anim {
+        AnimatedIcon::Frames { frames, frame_duration_ms } => {
+            let handles: Vec<_> = frames
+                .iter()
+                .filter_map(|f| to_svg_handle(f, color))
+                .collect();
+            // ...
+        }
+        _ => None,
+    }
+}
+```
+
+- Pro: Consistent with `to_svg_handle()` and
+  `custom_icon_to_svg_handle()`, both of which accept `color`.
+- Pro: Monochrome frame animations can be colorized to match the
+  theme foreground.
+- Pro: Trivial change (add one parameter, forward it).
+- Con: Breaking change (new parameter). All call sites must add the
+  argument. Pre-1.0 so this is acceptable.
+- Con: Callers who don't need colorization must now pass `None`
+  explicitly.
+
+**B. Keep None but document why**
+
+Add a doc note:
+
+```rust
+/// Frames are not colorized. For monochrome frame animations,
+/// iterate frames manually and call `to_svg_handle(f, Some(color))`
+/// on each.
+```
+
+- Pro: No breaking change.
+- Pro: Documents the workaround.
+- Con: Inconsistent API -- the convenience function is less capable
+  than the manual path.
+- Con: Users discover the limitation only by reading docs.
+
+**C. Keep status quo**
+
+- Pro: No change.
+- Con: Inconsistent with single-icon functions.
+- Con: Monochrome frame animations silently render in black.
+
+### Recommendation
+
+**Option A.** Adding the `color` parameter aligns the function with
+every other SVG conversion function in the module. The breaking
+change is trivial (add `, None` to existing call sites) and pre-1.0
+makes it cost-free. Apply the same fix to the gpui connector's
+`animated_frames_to_image_sources()`.
+
+---
+
+## 10. Font helpers return raw primitives instead of iced types
+
+**File:** `connectors/native-theme-iced/src/lib.rs:190-228`
+
+**What:** The font helpers return raw primitives that don't match
+iced's type system:
+
+```rust
+pub fn font_family(resolved: &...) -> &str { ... }      // iced needs Family::Name(&'static str)
+pub fn font_weight(resolved: &...) -> u16 { ... }       // iced needs font::Weight enum
+pub fn mono_font_family(resolved: &...) -> &str { ... }  // same
+pub fn mono_font_weight(resolved: &...) -> u16 { ... }   // same
+```
+
+iced 0.14's font types (`iced_core::font`, verified from
+`iced_core-0.14.0/src/font.rs`):
+
+```rust
+pub struct Font {
+    pub family: Family,   // Family::Name(&'static str)
+    pub weight: Weight,   // enum: Thin..Black (9 variants)
+    pub stretch: Stretch,
+    pub style: Style,
+}
+```
+
+**Two type mismatches:**
+
+1. **Weight: `u16` vs `Weight` enum.** Users must manually map CSS
+   100-900 values to the 9-variant enum. The mapping is non-trivial
+   for non-standard weights (e.g., CSS 350 must be rounded to
+   `Normal` or `Light`). The showcase confirms the gap: the Widget
+   Info panel at `showcase.rs:1447` lists `("font-weight", "hardcoded")`
+   -- acknowledging that the theme weight can't be applied.
+
+2. **Family: `&str` vs `&'static str`.** iced's `Family::Name`
+   requires `&'static str`. Font family names from the resolved theme
+   are heap-allocated `String`s with non-static lifetimes. Converting
+   requires leaking memory (`Box::leak`) -- a valid pattern for small
+   strings that persist for the app lifetime, but non-obvious and
+   undocumented.
+
+**Result:** The font helpers are only usable for display/info (as
+the showcase uses them at lines 2168-2178), not for actual iced
+widget configuration. Users cannot construct an `iced_core::Font`
+from the helpers without manual type conversion.
+
+### Options
+
+**A. Add `to_iced_weight()` conversion helper (recommended for
+   v0.5.3)**
+
+```rust
+/// Convert a CSS font weight (100-900) to an iced `Weight` enum.
+///
+/// Non-standard weights are rounded to the nearest standard value
+/// (e.g., 350 -> Normal, 550 -> Semibold).
+#[must_use]
+pub fn to_iced_weight(css_weight: u16) -> iced_core::font::Weight {
+    use iced_core::font::Weight;
+    match css_weight {
+        0..=149 => Weight::Thin,       // CSS 100
+        150..=249 => Weight::ExtraLight, // CSS 200
+        250..=349 => Weight::Light,     // CSS 300
+        350..=449 => Weight::Normal,    // CSS 400
+        450..=549 => Weight::Medium,    // CSS 500
+        550..=649 => Weight::Semibold,  // CSS 600
+        650..=749 => Weight::Bold,      // CSS 700
+        750..=849 => Weight::ExtraBold, // CSS 800
+        850.. => Weight::Black,         // CSS 900
+    }
+}
+```
+
+- Pro: Pure function, no side effects, no memory allocation.
+- Pro: Handles non-standard weights with well-defined rounding.
+- Pro: Directly useful: `to_iced_weight(font_weight(&resolved))`.
+- Pro: Trivial to implement and test.
+- Con: Doesn't address the `&str` → `&'static str` family name gap.
+- Con: Users still need two steps to build a `Font`.
+
+**B. Add `to_iced_font()` / `to_iced_mono_font()` that leak family
+   names**
+
+```rust
+/// Create an iced `Font` from the resolved theme's primary font.
+///
+/// The family name is leaked to `'static` (required by iced's
+/// `Family::Name`). This is a standard pattern for runtime font
+/// names in iced -- each leak is ~10-20 bytes and persists for
+/// the app lifetime. Call once at theme init, not per-frame.
+#[must_use]
+pub fn to_iced_font(
+    resolved: &native_theme::ResolvedThemeVariant,
+) -> iced_core::Font {
+    let name: &'static str = Box::leak(
+        resolved.defaults.font.family.clone().into_boxed_str()
+    );
+    iced_core::Font {
+        family: iced_core::font::Family::Name(name),
+        weight: to_iced_weight(resolved.defaults.font.weight),
+        stretch: iced_core::font::Stretch::Normal,
+        style: iced_core::font::Style::Normal,
+    }
+}
+```
+
+- Pro: Complete solution -- users get a ready-to-use `Font`.
+- Pro: `Box::leak` for font names is the standard iced pattern
+  (`Font::with_name` takes `&'static str` too).
+- Pro: Called once at theme init; ~10 bytes leaked per call.
+- Con: Intentional memory leak in a library function. Some users
+  and linters (`clippy::mem_forget`) may flag this.
+- Con: Repeated calls on theme switch leak multiple strings. With
+  17 presets * 2 modes, aggressive switching could leak ~680 bytes
+  total (negligible but non-zero).
+- Con: Cannot be `const` or used in static contexts.
+
+**C. Add `to_iced_weight()` + document the family name leak
+   pattern**
+
+Same as Option A, plus add to the crate-level docs:
+
+```rust
+/// # Font Configuration
+///
+/// To use theme fonts with iced widgets, leak the family name:
+/// ```ignore
+/// let name: &'static str = Box::leak(
+///     native_theme_iced::font_family(&resolved).to_string().into_boxed_str()
+/// );
+/// let font = iced_core::Font {
+///     family: iced_core::font::Family::Name(name),
+///     weight: native_theme_iced::to_iced_weight(
+///         native_theme_iced::font_weight(&resolved)
+///     ),
+///     ..Default::default()
+/// };
+/// ```
+```
+
+- Pro: `to_iced_weight()` is immediately useful (pure function).
+- Pro: Documents the family name pattern without hiding the leak.
+- Pro: Users make an informed decision about the leak.
+- Con: 6-line boilerplate for a common operation.
+
+**D. Add `to_iced_weight()` only, defer `to_iced_font()` to v0.6.0**
+
+- Pro: Pragmatic -- addresses the most actionable gap now.
+- Pro: v0.6.0 style functions will need `to_iced_font()` internally
+  anyway, so the full solution is coming.
+- Con: Family name gap remains undocumented until v0.6.0.
+
+**E. Keep status quo**
+
+- Pro: No change.
+- Con: Font weight listed as "hardcoded" in the showcase --
+  the connector can't bridge theme → widget for fonts.
+- Con: Users must discover both the weight mapping and the
+  `&'static str` leak pattern on their own.
+
+### Recommendation
+
+**Option C for v0.5.3.** Add `to_iced_weight()` (pure, testable,
+immediately useful) and document the family name leak pattern in the
+crate-level docs. This gives users a clear path to construct iced
+`Font` structs from the theme.
+
+**Option B for v0.6.0.** When style functions need complete `Font`
+structs internally, add `to_iced_font()` / `to_iced_mono_font()`.
+The `Box::leak` is the standard iced pattern and acceptable for
+one-time-per-theme-switch allocations. The v0.6.0 style functions
+will call these internally, so users won't need the manual
+boilerplate.
+
+---
+
+## 11. `colorize_monochrome_svg()` silently corrupts non-UTF-8 SVG data
+
+**File:** `connectors/native-theme-iced/src/icons.rs:222-268`
+
+**Cross-reference:** The gpui connector has the identical issue
+(gpui review issue #9, `colorize_svg()` at icons.rs:954-1002).
+
+**What:** The SVG colorization function converts bytes to a string
+using `from_utf8_lossy()`:
+
+```rust
+fn colorize_monochrome_svg(svg_bytes: &[u8], color: iced_core::Color) -> Vec<u8> {
+    ...
+    let svg_str = String::from_utf8_lossy(svg_bytes);
+    ...
+}
+```
+
+If `svg_bytes` contains non-UTF-8 sequences (e.g., a system icon
+file from a third-party freedesktop theme using Latin-1 encoding),
+`from_utf8_lossy()` silently replaces invalid bytes with U+FFFD
+(the Unicode replacement character). This can corrupt the SVG:
+
+- Element or attribute names containing high bytes become invalid
+  XML, causing the SVG renderer to fail.
+- A `fill=` value containing a high byte becomes unrecognizable,
+  causing the fill injection logic to misbehave.
+- The function returns corrupted bytes that fail SVG parsing
+  downstream, but the failure is delayed and disconnected from the
+  actual cause.
+
+**Practical impact:** Low for bundled icon sets (Material, Lucide
+-- always UTF-8). Medium for system icon themes on Linux, where
+third-party freedesktop icon themes may include non-UTF-8 SVGs.
+
+The function is called from two code paths:
+1. `to_svg_handle(data, Some(color))` -- colorizes a single icon.
+2. `into_svg_handle(data, Some(color))` -- consuming variant.
+
+When `color` is `None`, the function is not called and no
+corruption occurs. The issue only manifests when colorization is
+requested.
+
+### Options
+
+**A. Validate UTF-8, return bytes unchanged on failure
+   (recommended)**
+
+```rust
+fn colorize_monochrome_svg(svg_bytes: &[u8], color: iced_core::Color) -> Vec<u8> {
+    let Ok(svg_str) = std::str::from_utf8(svg_bytes) else {
+        return svg_bytes.to_vec();
+    };
+    ...
+    // rest of function uses svg_str (&str) instead of Cow
+}
+```
+
+- Pro: Non-UTF-8 SVGs pass through unmodified -- no corruption.
+- Pro: Colorization is a best-effort enhancement; skipping it for
+  non-UTF-8 data is the safe default.
+- Pro: Trivial change (replace `from_utf8_lossy` with `from_utf8`
+  and add an early return).
+- Pro: Eliminates the `Cow` overhead -- `from_utf8` returns `&str`
+  directly, avoiding the `Cow::Borrowed`/`Cow::Owned` branch.
+- Con: Non-UTF-8 SVGs won't be colorized. In practice these are
+  multi-color system icons that shouldn't be colorized anyway.
+
+**B. Return None to signal failure**
+
+Change the return type to `Option<Vec<u8>>`:
+
+```rust
+fn colorize_monochrome_svg(svg_bytes: &[u8], color: iced_core::Color) -> Option<Vec<u8>> {
+    let svg_str = std::str::from_utf8(svg_bytes).ok()?;
+    ...
+    Some(result)
+}
+```
+
+Then in `to_svg_handle`, fall back to the uncolorized bytes:
+
+```rust
+let final_bytes = color
+    .and_then(|c| colorize_monochrome_svg(bytes, c))
+    .unwrap_or_else(|| bytes.clone());
+```
+
+- Pro: Caller knows colorization failed.
+- Pro: Uncolorized SVG still renders (just without theme colors).
+- Con: Changes the internal API -- both `to_svg_handle` and
+  `into_svg_handle` must handle the `Option`.
+- Con: Over-engineered: Option A achieves the same result (return
+  original bytes) with less complexity.
+
+**C. Keep status quo**
+
+- Pro: No change.
+- Con: Silent corruption of non-UTF-8 SVGs.
+
+### Recommendation
+
+**Option A.** Return the original bytes unchanged when UTF-8
+validation fails. This is the same approach recommended for the
+gpui connector (gpui issue #9). Non-UTF-8 SVGs are rendered
+uncolorized, which is the correct behavior for multi-color system
+icons that happen to use legacy encoding. Apply the same fix to the
+gpui connector's `colorize_svg()` for consistency.
+
+---
+
+## 12. README has multiple documentation errors
+
+**File:** `connectors/native-theme-iced/README.md`
+
+**Cross-reference:** The gpui connector has the same class of
+README issues (gpui review issue #16).
+
+**What:** The README contains three categories of errors:
+
+### 12a. Manual path uses deprecated `pick_variant().clone()` pattern
+
+Lines 27-35:
+
+```rust
+let nt = ThemeSpec::preset("dracula").unwrap();
+let is_dark = true;
+if let Some(variant) = nt.pick_variant(is_dark) {
+    let mut v = variant.clone();
+    v.resolve();
+    let resolved = v.validate().unwrap();
+    let theme = to_theme(&resolved, "My App");
+}
+```
+
+Uses the `pick_variant()` + `.clone()` + manual
+`resolve()` / `validate()` pattern fixed by issue #2 (use
+`into_variant()` + `into_resolved()`). This is the README
+counterpart of issue #6 (which covers the module-level doc in
+`lib.rs`). Should become:
+
+```rust
+let nt = ThemeSpec::preset("dracula").unwrap();
+let resolved = nt.into_variant(true).unwrap().into_resolved().unwrap();
+let theme = to_theme(&resolved, "My App");
+```
+
+### 12b. Animated icon example has wrong API usage
+
+Lines 94-113 contain two errors:
+
+1. `loading_indicator("material")` -- the function takes `IconSet`,
+   not `&str`. Should be `loading_indicator(IconSet::Material)`.
+
+2. `let handles = animated_frames_to_svg_handles(&anim);` and the
+   comment text "Cache the `Vec<svg::Handle>`" (line 116) -- the
+   function returns `Option<AnimatedSvgHandles>`, not a bare
+   `Vec<svg::Handle>`. The result must be unwrapped and the handles
+   field accessed:
+   ```rust
+   if let Some(anim_handles) = animated_frames_to_svg_handles(&anim) {
+       // anim_handles.handles[frame_index].clone()
+   }
+   ```
+
+### 12c. Widget Metrics section omits 3 helpers
+
+Lines 48-63 list 9 of the 12 public helper functions. Missing:
+
+- `font_weight(resolved)` -- primary UI font weight (CSS 100-900)
+- `mono_font_weight(resolved)` -- monospace font weight (CSS 100-900)
+- `line_height(resolved)` -- primary UI line height in logical
+  pixels (will be renamed to `line_height_multiplier` per issue #7)
+
+### Options
+
+**A. Fix all three categories (recommended)**
+
+Update the README to:
+1. Replace the manual-path example with `into_variant()` +
+   `into_resolved()`.
+2. Fix `loading_indicator(IconSet::Material)` and the
+   `AnimatedSvgHandles` return type description.
+3. Add the missing Widget Metrics entries.
+
+- Pro: README matches actual code behavior.
+- Pro: Users following examples get working code.
+- Con: README must be updated again after Wave 1 API changes
+  (issue #7 renames `line_height`, issue #9 changes
+  `animated_frames_to_svg_handles` signature). Best done after
+  those changes land.
+
+**B. Fix animated icon errors immediately, defer rest**
+
+Correct the `loading_indicator("material")` and return type errors
+now. Defer the manual-path and metrics list until after Wave 1.
+
+- Pro: Stops the actively wrong code examples immediately.
+- Pro: Avoids double-editing example code.
+- Con: Manual-path example remains deprecated until Wave 1.
+
+**C. Keep status quo**
+
+- Pro: No change.
+- Con: Example code doesn't compile.
+- Con: Widget Metrics section incomplete.
+
+### Recommendation
+
+**Option A.** Fix all errors. Schedule after Wave 1 API changes so
+the examples reflect the final API. The animated icon fix (12b) can
+be done immediately since `loading_indicator(IconSet::Material)` is
+a factual fix unrelated to the Wave 1 API changes; use Option B if
+Wave 1 is not imminent.

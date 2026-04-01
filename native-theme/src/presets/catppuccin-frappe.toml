@@ -5,7 +5,6 @@ name = "Catppuccin Frappe"
 # === Light variant (derived - Latte base with Frappe accents) ===
 
 [light]
-icon_set = "freedesktop"
 
 [light.defaults]
 accent = "#8caaee"
@@ -152,8 +151,8 @@ color = "#bcc0cc"
 width = 4.0
 
 [light.switch]
-unchecked_bg = "#bcc0cc"
-thumb_bg = "#eff1f5"
+unchecked_background = "#bcc0cc"
+thumb_background = "#eff1f5"
 track_width = 40.0
 track_height = 20.0
 thumb_size = 16.0
@@ -202,7 +201,6 @@ content_padding = 16.0
 # === Dark variant (Frappe palette - primary) ===
 
 [dark]
-icon_set = "freedesktop"
 
 [dark.defaults]
 accent = "#8caaee"
@@ -349,8 +347,8 @@ color = "#51576d"
 width = 4.0
 
 [dark.switch]
-unchecked_bg = "#51576d"
-thumb_bg = "#c6d0f5"
+unchecked_background = "#51576d"
+thumb_background = "#c6d0f5"
 track_width = 40.0
 track_height = 20.0
 thumb_size = 16.0

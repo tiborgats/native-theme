@@ -43,8 +43,8 @@ fn fully_populated_variant(offset: u8) -> ThemeVariant {
     v.defaults.focus_ring_color = Some(c(61, 174, 233));
 
     // Per-widget: button (primary/secondary)
-    v.button.primary_bg = Some(c(61, 174, 233));
-    v.button.primary_fg = Some(c(252, 252, 252));
+    v.button.primary_background = Some(c(61, 174, 233));
+    v.button.primary_foreground = Some(c(252, 252, 252));
     v.button.background = Some(c(189, 195, 199));
     v.button.foreground = Some(c(49, 54, 59));
 
@@ -128,7 +128,10 @@ fn round_trip_full_theme() {
     assert_eq!(de_light.defaults.link, orig_light.defaults.link);
 
     // Per-widget colors
-    assert_eq!(de_light.button.primary_bg, orig_light.button.primary_bg);
+    assert_eq!(
+        de_light.button.primary_background,
+        orig_light.button.primary_background
+    );
     assert_eq!(de_light.button.background, orig_light.button.background);
     assert_eq!(de_light.sidebar.background, orig_light.sidebar.background);
     assert_eq!(de_light.tooltip.background, orig_light.tooltip.background);
@@ -201,8 +204,8 @@ fn round_trip_preserves_all_color_fields() {
     v.defaults.disabled_foreground = Some(Rgba::rgb(34, 0, 0));
 
     // Per-widget: button
-    v.button.primary_bg = Some(Rgba::rgb(8, 0, 0));
-    v.button.primary_fg = Some(Rgba::rgb(9, 0, 0));
+    v.button.primary_background = Some(Rgba::rgb(8, 0, 0));
+    v.button.primary_foreground = Some(Rgba::rgb(9, 0, 0));
     v.button.background = Some(Rgba::rgb(10, 0, 0));
     v.button.foreground = Some(Rgba::rgb(11, 0, 0));
 
@@ -282,8 +285,14 @@ fn round_trip_preserves_all_color_fields() {
     );
 
     // Per-widget colors
-    assert_eq!(de_v.button.primary_bg, orig_v.button.primary_bg);
-    assert_eq!(de_v.button.primary_fg, orig_v.button.primary_fg);
+    assert_eq!(
+        de_v.button.primary_background,
+        orig_v.button.primary_background
+    );
+    assert_eq!(
+        de_v.button.primary_foreground,
+        orig_v.button.primary_foreground
+    );
     assert_eq!(de_v.button.background, orig_v.button.background);
     assert_eq!(de_v.button.foreground, orig_v.button.foreground);
 

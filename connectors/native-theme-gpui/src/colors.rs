@@ -86,8 +86,8 @@ pub fn to_theme_color(resolved: &ResolvedThemeVariant, is_dark: bool) -> ThemeCo
         border: rgba_to_hsla(d.border),
         muted: rgba_to_hsla(d.muted),
         muted_fg: rgba_to_hsla(d.muted).blend(fg.opacity(0.7)),
-        primary: rgba_to_hsla(resolved.button.primary_bg),
-        primary_fg: rgba_to_hsla(resolved.button.primary_fg),
+        primary: rgba_to_hsla(resolved.button.primary_background),
+        primary_fg: rgba_to_hsla(resolved.button.primary_foreground),
         secondary: rgba_to_hsla(resolved.button.background),
         secondary_fg: rgba_to_hsla(resolved.button.foreground),
         danger: rgba_to_hsla(d.danger),
@@ -254,7 +254,7 @@ fn assign_misc(
     tc.popover_foreground = c.popover_fg;
 
     tc.accordion = c.bg;
-    tc.accordion_hover = c.accent.opacity(0.8);
+    tc.accordion_hover = hover_color(c.accent, c.bg);
 
     tc.group_box =
         c.bg.blend(c.secondary.opacity(if is_dark { 0.3 } else { 0.4 }));
@@ -282,8 +282,8 @@ fn assign_misc(
     tc.slider_thumb = rgba_to_hsla(resolved.slider.thumb);
 
     // Per-widget resolved switch colors
-    tc.switch = rgba_to_hsla(resolved.switch.unchecked_bg);
-    tc.switch_thumb = rgba_to_hsla(resolved.switch.thumb_bg);
+    tc.switch = rgba_to_hsla(resolved.switch.unchecked_background);
+    tc.switch_thumb = rgba_to_hsla(resolved.switch.thumb_background);
 
     // Per-widget resolved progress bar color
     tc.progress_bar = rgba_to_hsla(resolved.progress_bar.fill);
@@ -337,12 +337,12 @@ mod tests {
     /// Create a ResolvedThemeVariant via the preset resolve+validate pipeline.
     fn test_resolved() -> ResolvedThemeVariant {
         let nt = ThemeSpec::preset("catppuccin-mocha").expect("preset must exist");
-        let mut v = nt
-            .pick_variant(false)
-            .expect("preset must have light variant")
-            .clone();
-        v.resolve();
-        v.validate().expect("resolved preset must validate")
+        let variant = nt
+            .into_variant(false)
+            .expect("preset must have light variant");
+        variant
+            .into_resolved()
+            .expect("resolved preset must validate")
     }
 
     #[test]
@@ -466,11 +466,11 @@ mod tests {
             "title bar should come from resolved.window.title_bar_background"
         );
 
-        // Switch should match resolved switch unchecked_bg
-        let expected_switch = rgba_to_hsla(resolved.switch.unchecked_bg);
+        // Switch should match resolved switch unchecked_background
+        let expected_switch = rgba_to_hsla(resolved.switch.unchecked_background);
         assert_eq!(
             tc.switch, expected_switch,
-            "switch should come from resolved.switch.unchecked_bg"
+            "switch should come from resolved.switch.unchecked_background"
         );
 
         // Caret should match resolved input caret

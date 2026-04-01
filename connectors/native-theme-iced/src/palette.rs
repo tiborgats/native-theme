@@ -73,10 +73,12 @@ mod tests {
 
     #[test]
     fn to_palette_maps_all_fields_from_resolved() {
-        let nt = ThemeSpec::preset("catppuccin-mocha").unwrap();
-        let mut variant = nt.pick_variant(false).unwrap().clone();
-        variant.resolve();
-        let resolved = variant.validate().unwrap();
+        let resolved = ThemeSpec::preset("catppuccin-mocha")
+            .unwrap()
+            .into_variant(false)
+            .unwrap()
+            .into_resolved()
+            .unwrap();
 
         let palette = to_palette(&resolved);
 
@@ -94,10 +96,12 @@ mod tests {
 
     #[test]
     fn to_palette_dark_variant_has_dark_background() {
-        let nt = ThemeSpec::preset("catppuccin-mocha").unwrap();
-        let mut variant = nt.pick_variant(true).unwrap().clone();
-        variant.resolve();
-        let resolved = variant.validate().unwrap();
+        let resolved = ThemeSpec::preset("catppuccin-mocha")
+            .unwrap()
+            .into_variant(true)
+            .unwrap()
+            .into_resolved()
+            .unwrap();
 
         let palette = to_palette(&resolved);
 

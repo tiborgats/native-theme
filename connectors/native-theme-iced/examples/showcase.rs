@@ -428,7 +428,7 @@ fn build_animation_caches(
 
             match &anim {
                 AnimatedIcon::Frames { .. } => {
-                    if let Some(anim_handles) = animated_frames_to_svg_handles(&anim) {
+                    if let Some(anim_handles) = animated_frames_to_svg_handles(&anim, None) {
                         animated_frames.push((set_name.clone(), anim_handles));
                     }
                 }
@@ -2649,7 +2649,7 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
             ("accent_fg", d.accent_foreground),
             ("btn_bg", r.button.background),
             ("btn_fg", r.button.foreground),
-            ("btn_primary", r.button.primary_bg),
+            ("btn_primary", r.button.primary_background),
             ("danger", d.danger),
             ("danger_fg", d.danger_foreground),
             ("warning", d.warning),

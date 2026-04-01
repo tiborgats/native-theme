@@ -44,10 +44,12 @@ mod tests {
     }
 
     fn make_resolved() -> native_theme::ResolvedThemeVariant {
-        let nt = ThemeSpec::preset("catppuccin-mocha").unwrap();
-        let mut variant = nt.pick_variant(false).unwrap().clone();
-        variant.resolve();
-        variant.validate().unwrap()
+        ThemeSpec::preset("catppuccin-mocha")
+            .unwrap()
+            .into_variant(false)
+            .unwrap()
+            .into_resolved()
+            .unwrap()
     }
 
     #[test]

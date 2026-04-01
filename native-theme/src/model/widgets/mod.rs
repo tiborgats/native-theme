@@ -57,6 +57,14 @@ macro_rules! define_widget_pair {
             $($($(#[doc = $on_doc])* pub $on_field: $on_res_type,)*)?
         }
 
+        impl $opt_name {
+            /// All serialized field names for this widget theme, for TOML linting.
+            pub const FIELD_NAMES: &[&str] = &[
+                $($(stringify!($opt_field),)*)?
+                $($(stringify!($on_field),)*)?
+            ];
+        }
+
         impl_merge!($opt_name {
             $(option { $($opt_field),* })?
             $(optional_nested { $($on_field),* })?
@@ -109,9 +117,9 @@ define_widget_pair! {
             /// Button border color.
             border: Rgba,
             /// Primary / accent button background fill.
-            primary_bg: Rgba,
+            primary_background: Rgba,
             /// Primary / accent button text/icon color.
-            primary_fg: Rgba,
+            primary_foreground: Rgba,
             /// Minimum button width in logical pixels.
             min_width: f32,
             /// Minimum button height in logical pixels.
@@ -469,11 +477,11 @@ define_widget_pair! {
     SwitchTheme / ResolvedSwitchTheme {
         option {
             /// Track background when the switch is on.
-            checked_bg: Rgba,
+            checked_background: Rgba,
             /// Track background when the switch is off.
-            unchecked_bg: Rgba,
+            unchecked_background: Rgba,
             /// Thumb (knob) color.
-            thumb_bg: Rgba,
+            thumb_background: Rgba,
             /// Track width in logical pixels.
             track_width: f32,
             /// Track height in logical pixels.
@@ -635,7 +643,7 @@ define_widget_pair! {
 }
 
 #[cfg(test)]
-#[allow(clippy::unwrap_used, clippy::expect_used)]
+#[allow(clippy::unwrap_used, clippy::expect_used, dead_code)]
 mod tests {
     use super::*;
     use crate::Rgba;
@@ -913,8 +921,8 @@ mod tests {
             background: Some(Rgba::rgb(200, 200, 200)),
             foreground: Some(Rgba::rgb(30, 30, 30)),
             border: Some(Rgba::rgb(150, 150, 150)),
-            primary_bg: Some(Rgba::rgb(0, 120, 215)),
-            primary_fg: Some(Rgba::rgb(255, 255, 255)),
+            primary_background: Some(Rgba::rgb(0, 120, 215)),
+            primary_foreground: Some(Rgba::rgb(255, 255, 255)),
             min_width: Some(64.0),
             min_height: Some(28.0),
             padding_horizontal: Some(12.0),
@@ -931,7 +939,7 @@ mod tests {
         };
         assert!(!b.is_empty());
         assert_eq!(b.min_width, Some(64.0));
-        assert_eq!(b.primary_bg, Some(Rgba::rgb(0, 120, 215)));
+        assert_eq!(b.primary_background, Some(Rgba::rgb(0, 120, 215)));
     }
 
     #[test]
@@ -1126,7 +1134,7 @@ mod tests {
     #[test]
     fn switch_theme_toml_round_trip() {
         let s = SwitchTheme {
-            checked_bg: Some(Rgba::rgb(0, 120, 215)),
+            checked_background: Some(Rgba::rgb(0, 120, 215)),
             track_width: Some(40.0),
             track_height: Some(20.0),
             thumb_size: Some(14.0),

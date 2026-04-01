@@ -5,7 +5,6 @@ name = "Nord"
 # === Light variant (Snow Storm backgrounds + Frost/Aurora accents) ===
 
 [light]
-icon_set = "freedesktop"
 
 [light.defaults]
 accent = "#5e81ac"
@@ -152,8 +151,8 @@ color = "#d8dee9"
 width = 4.0
 
 [light.switch]
-unchecked_bg = "#d8dee9"
-thumb_bg = "#eceff4"
+unchecked_background = "#d8dee9"
+thumb_background = "#eceff4"
 track_width = 40.0
 track_height = 20.0
 thumb_size = 16.0
@@ -202,7 +201,6 @@ content_padding = 16.0
 # === Dark variant (Polar Night backgrounds + Frost/Aurora accents) ===
 
 [dark]
-icon_set = "freedesktop"
 
 [dark.defaults]
 accent = "#88c0d0"
@@ -349,8 +347,8 @@ color = "#434c5e"
 width = 4.0
 
 [dark.switch]
-unchecked_bg = "#434c5e"
-thumb_bg = "#d8dee9"
+unchecked_background = "#434c5e"
+thumb_background = "#d8dee9"
 track_width = 40.0
 track_height = 20.0
 thumb_size = 16.0

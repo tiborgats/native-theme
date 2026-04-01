@@ -65,7 +65,8 @@
 //! ```rust,ignore
 //! // Simple API (single TOML file):
 //! native_theme_build::generate_icons("icons/icons.toml")
-//!     .unwrap_or_exit();
+//!     .unwrap_or_exit()
+//!     .emit_cargo_directives();
 //!
 //! // Builder API (multiple TOML files, custom enum name):
 //! native_theme_build::IconGenerator::new()
@@ -73,7 +74,8 @@
 //!     .source("icons/navigation.toml")
 //!     .enum_name("AppIcon")
 //!     .generate()
-//!     .unwrap_or_exit();
+//!     .unwrap_or_exit()
+//!     .emit_cargo_directives();
 //! ```
 //!
 //! Both APIs resolve paths relative to `CARGO_MANIFEST_DIR`, and return a
@@ -173,19 +175,22 @@ impl GenerateOutput {
     /// This prints `cargo::rerun-if-changed` for all tracked paths, writes the
     /// generated code to [`output_path`](Self::output_path), and prints warnings.
     ///
-    /// # Errors
-    ///
-    /// Returns an I/O error if the output file cannot be written.
-    #[must_use = "this returns the result of emitting cargo directives"]
-    pub fn emit_cargo_directives(&self) -> std::io::Result<()> {
+    /// On I/O failure, emits a `cargo::error=` diagnostic and exits the process
+    /// with code 1 -- matching the `UnwrapOrExit` error-handling pattern.
+    pub fn emit_cargo_directives(&self) {
         for path in &self.rerun_paths {
             println!("cargo::rerun-if-changed={}", path.display());
         }
-        std::fs::write(&self.output_path, &self.code)?;
+        if let Err(e) = std::fs::write(&self.output_path, &self.code) {
+            println!(
+                "cargo::error=failed to write {}: {e}",
+                self.output_path.display()
+            );
+            std::process::exit(1);
+        }
         for w in &self.warnings {
             println!("cargo::warning={w}");
         }
-        Ok(())
     }
 }
 
@@ -337,6 +342,10 @@ impl IconGenerator {
     /// Set this to a custom path (e.g. `"my_crate::native_theme"`) when
     /// re-exporting native-theme from another crate.
     pub fn crate_path(mut self, path: &str) -> Self {
+        assert!(
+            !path.is_empty() && !path.contains(' '),
+            "crate_path must be non-empty and contain no spaces: {path:?}"
+        );
         self.crate_path = Some(path.to_string());
         self
     }
@@ -355,6 +364,10 @@ impl IconGenerator {
     ///     .unwrap_or_exit();
     /// ```
     pub fn derive(mut self, name: &str) -> Self {
+        assert!(
+            !name.is_empty() && !name.contains(char::is_whitespace),
+            "derive name must be non-empty and contain no whitespace: {name:?}"
+        );
         self.extra_derives.push(name.to_string());
         self
     }
@@ -540,6 +553,19 @@ fn run_pipeline(
     crate_path: Option<&str>,
     extra_derives: &[String],
 ) -> PipelineResult {
+    if configs.is_empty() {
+        return PipelineResult {
+            code: String::new(),
+            errors: vec![BuildError::Io {
+                message: "no icon configs provided".into(),
+            }],
+            warnings: Vec::new(),
+            rerun_paths: Vec::new(),
+            size_report: None,
+            output_filename: String::new(),
+        };
+    }
+
     assert_eq!(configs.len(), base_dirs.len());
 
     let mut errors: Vec<BuildError> = Vec::new();
@@ -556,6 +582,13 @@ fn run_pipeline(
 
     // Step 0: Validate each config in isolation
     for (file_path, config) in configs {
+        // Warn about empty roles (likely misconfiguration)
+        if config.roles.is_empty() {
+            warnings.push(format!(
+                "{file_path}: roles list is empty; generated enum will have no variants"
+            ));
+        }
+
         // Check for duplicate roles within a single file
         let dup_in_file_errors = validate::validate_no_duplicate_roles_in_file(config, file_path);
         errors.extend(dup_in_file_errors);
@@ -577,6 +610,15 @@ fn run_pipeline(
 
     // Step 2: Merge configs first so validation uses the merged role list
     let merged = merge_configs(configs, enum_name_override);
+
+    // Warn about empty themes (likely misconfiguration)
+    if merged.bundled_themes.is_empty() && merged.system_themes.is_empty() {
+        warnings.push(
+            "no bundled-themes or system-themes configured; \
+             generated IconProvider will always return None"
+                .to_string(),
+        );
+    }
 
     // Step 2b: Validate identifiers (enum name + role names)
     let id_errors = validate::validate_identifiers(&merged);
@@ -618,9 +660,8 @@ fn run_pipeline(
                         validate::validate_mapping_values(&mapping, &mapping_path_str);
                     errors.extend(name_errors);
 
-                    // Validate SVGs exist
-                    let svg_errors =
-                        validate::validate_svgs(&mapping, &theme_dir, &mapping_path_str);
+                    // Validate SVGs exist (only for declared master roles)
+                    let svg_errors = validate::validate_svgs(&mapping, &theme_dir, &merged.roles);
                     errors.extend(svg_errors);
 
                     // Warn about unrecognized DE keys in DeAware values
@@ -721,14 +762,16 @@ fn run_pipeline(
     // Compute base_dir for codegen -- strip manifest_dir prefix when available
     // so include_bytes! paths are relative (e.g., "icons/material/play.svg")
     // instead of absolute (e.g., "/home/user/project/icons/material/play.svg")
+    // Normalize to forward slashes so generated include_bytes! paths are valid
+    // on all platforms (backslashes in Rust string literals are escape sequences).
     let base_dir_str = if let Some(mdir) = manifest_dir {
         base_dir
             .strip_prefix(mdir)
             .unwrap_or(base_dir)
             .to_string_lossy()
-            .to_string()
+            .replace('\\', "/")
     } else {
-        base_dir.to_string_lossy().to_string()
+        base_dir.to_string_lossy().replace('\\', "/")
     };
 
     // Step 4: Generate code
@@ -799,11 +842,16 @@ fn merge_configs(
     let mut roles = Vec::new();
     let mut bundled_themes = Vec::new();
     let mut system_themes = Vec::new();
+    let mut seen_roles = std::collections::BTreeSet::new();
     let mut seen_bundled = std::collections::BTreeSet::new();
     let mut seen_system = std::collections::BTreeSet::new();
 
     for (_path, config) in configs {
-        roles.extend(config.roles.iter().cloned());
+        for role in &config.roles {
+            if seen_roles.insert(role.clone()) {
+                roles.push(role.clone());
+            }
+        }
 
         for t in &config.bundled_themes {
             if seen_bundled.insert(t.clone()) {
@@ -2061,5 +2109,51 @@ bundled-themes = ["material"]
         );
 
         let _ = fs::remove_dir_all(&dir);
+    }
+
+    // === Builder input validation tests ===
+
+    #[test]
+    #[should_panic(expected = "derive name must be non-empty")]
+    fn derive_rejects_empty_string() {
+        let _ = IconGenerator::new().derive("");
+    }
+
+    #[test]
+    #[should_panic(expected = "derive name must be non-empty and contain no whitespace")]
+    fn derive_rejects_whitespace() {
+        let _ = IconGenerator::new().derive("Ord PartialOrd");
+    }
+
+    #[test]
+    #[should_panic(expected = "derive name must be non-empty and contain no whitespace")]
+    fn derive_rejects_tab() {
+        let _ = IconGenerator::new().derive("Ord\t");
+    }
+
+    #[test]
+    fn derive_accepts_valid_name() {
+        // Should not panic
+        let _ = IconGenerator::new().derive("Ord");
+        let _ = IconGenerator::new().derive("serde::Serialize");
+    }
+
+    #[test]
+    #[should_panic(expected = "crate_path must be non-empty")]
+    fn crate_path_rejects_empty_string() {
+        let _ = IconGenerator::new().crate_path("");
+    }
+
+    #[test]
+    #[should_panic(expected = "crate_path must be non-empty and contain no spaces")]
+    fn crate_path_rejects_spaces() {
+        let _ = IconGenerator::new().crate_path("foo bar");
+    }
+
+    #[test]
+    fn crate_path_accepts_valid_path() {
+        // Should not panic
+        let _ = IconGenerator::new().crate_path("native_theme");
+        let _ = IconGenerator::new().crate_path("my_crate::native_theme");
     }
 }

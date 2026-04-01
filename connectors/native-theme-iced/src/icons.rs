@@ -94,9 +94,16 @@ pub fn custom_icon_to_svg_handle(
 /// Convert all frames of an [`AnimatedIcon::Frames`] to iced SVG handles.
 ///
 /// Returns `Some(AnimatedSvgHandles)` when the icon is the `Frames` variant
-/// and at least one frame is SVG. Non-SVG (RGBA) frames are filtered out.
-/// Returns `None` for `Transform` variants, empty frame sets, or if all
-/// frames are RGBA.
+/// and at least one frame is SVG. Returns `None` for `Transform` variants,
+/// empty frame sets, or if all frames are RGBA.
+///
+/// Only SVG frames are included. RGBA frames are silently excluded because
+/// iced's `Svg` widget cannot render raster data. The returned animation may
+/// have fewer frames than the input, causing it to play faster. If all frames
+/// are non-SVG, returns `None`.
+///
+/// When `color` is `Some`, colorizes monochrome SVG frames (Material, Lucide)
+/// to match the given color. Pass `None` for multi-color system icons.
 ///
 /// **Call this once and cache the result.** Do not call on every frame tick.
 /// Index into the cached `handles` using an `iced::time::every()` subscription
@@ -112,7 +119,7 @@ pub fn custom_icon_to_svg_handle(
 /// use native_theme_iced::icons::animated_frames_to_svg_handles;
 ///
 /// let anim = native_theme::loading_indicator();
-/// if let Some(anim_handles) = animated_frames_to_svg_handles(&anim) {
+/// if let Some(anim_handles) = animated_frames_to_svg_handles(&anim, None) {
 ///     // Cache `anim_handles`, then in subscription():
 ///     // iced::time::every(Duration::from_millis(anim_handles.frame_duration_ms as u64))
 ///     //     .map(|_| Message::AnimationTick)
@@ -121,7 +128,10 @@ pub fn custom_icon_to_svg_handle(
 /// }
 /// ```
 #[must_use]
-pub fn animated_frames_to_svg_handles(anim: &AnimatedIcon) -> Option<AnimatedSvgHandles> {
+pub fn animated_frames_to_svg_handles(
+    anim: &AnimatedIcon,
+    color: Option<iced_core::Color>,
+) -> Option<AnimatedSvgHandles> {
     match anim {
         AnimatedIcon::Frames {
             frames,
@@ -129,7 +139,7 @@ pub fn animated_frames_to_svg_handles(anim: &AnimatedIcon) -> Option<AnimatedSvg
         } => {
             let handles: Vec<_> = frames
                 .iter()
-                .filter_map(|f| to_svg_handle(f, None))
+                .filter_map(|f| to_svg_handle(f, color))
                 .collect();
             if handles.is_empty() {
                 None
@@ -225,7 +235,12 @@ fn colorize_monochrome_svg(svg_bytes: &[u8], color: iced_core::Color) -> Vec<u8>
     let b = (color.b.clamp(0.0, 1.0) * 255.0).round() as u8;
     let hex = format!("#{:02x}{:02x}{:02x}", r, g, b);
 
-    let svg_str = String::from_utf8_lossy(svg_bytes);
+    // Validate UTF-8 before attempting string operations. Non-UTF-8 SVGs
+    // (e.g., legacy Latin-1 encoded system icons) pass through unmodified
+    // rather than being corrupted by lossy replacement.
+    let Ok(svg_str) = std::str::from_utf8(svg_bytes) else {
+        return svg_bytes.to_vec();
+    };
 
     // Replace currentColor (handles Lucide-style SVGs)
     if svg_str.contains("currentColor") {
@@ -441,7 +456,7 @@ mod tests {
             ],
             frame_duration_ms: 80,
         };
-        let result = animated_frames_to_svg_handles(&anim);
+        let result = animated_frames_to_svg_handles(&anim, None);
         assert!(result.is_some());
         let anim_handles = result.unwrap();
         assert_eq!(anim_handles.handles.len(), 2);
@@ -454,7 +469,7 @@ mod tests {
             icon: IconData::Svg(b"<svg></svg>".to_vec()),
             animation: native_theme::TransformAnimation::Spin { duration_ms: 1000 },
         };
-        let result = animated_frames_to_svg_handles(&anim);
+        let result = animated_frames_to_svg_handles(&anim, None);
         assert!(result.is_none());
     }
 
@@ -464,7 +479,7 @@ mod tests {
             frames: vec![],
             frame_duration_ms: 80,
         };
-        let result = animated_frames_to_svg_handles(&anim);
+        let result = animated_frames_to_svg_handles(&anim, None);
         assert!(result.is_none());
     }
 
@@ -478,7 +493,7 @@ mod tests {
             }],
             frame_duration_ms: 80,
         };
-        let result = animated_frames_to_svg_handles(&anim);
+        let result = animated_frames_to_svg_handles(&anim, None);
         assert!(result.is_none());
     }
 
@@ -573,5 +588,28 @@ mod tests {
             "fill should not be between / and >, got: {}",
             result_str
         );
+    }
+
+    #[test]
+    fn colorize_non_utf8_returns_original_bytes() {
+        // SVG bytes with an invalid UTF-8 sequence (0xFF is never valid UTF-8)
+        let svg: Vec<u8> = b"<svg>\xff<path d=\"M0 0\"/></svg>".to_vec();
+        let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
+        let result = colorize_monochrome_svg(&svg, color);
+        // Should return the original bytes unchanged, not corrupt them
+        assert_eq!(result, svg, "non-UTF-8 SVG should pass through unmodified");
+    }
+
+    #[test]
+    fn animated_frames_with_color_colorizes_frames() {
+        let anim = AnimatedIcon::Frames {
+            frames: vec![IconData::Svg(
+                b"<svg><path fill=\"currentColor\"/></svg>".to_vec(),
+            )],
+            frame_duration_ms: 80,
+        };
+        let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
+        let result = animated_frames_to_svg_handles(&anim, Some(color));
+        assert!(result.is_some(), "should produce handles with color");
     }
 }

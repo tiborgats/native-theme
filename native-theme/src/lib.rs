@@ -113,7 +113,7 @@ pub use model::{
     bundled_icon_by_name, bundled_icon_svg,
 };
 // icon helper functions re-exported from this module
-pub use model::icons::{icon_name, system_icon_set, system_icon_theme};
+pub use model::icons::{detect_icon_theme, icon_name, system_icon_set, system_icon_theme};
 
 /// Freedesktop icon theme lookup (Linux).
 #[cfg(all(target_os = "linux", feature = "system-icons"))]
@@ -222,7 +222,8 @@ pub fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
 ///
 /// The result is cached after the first call using `OnceLock` and never
 /// refreshed. If the user toggles dark mode while the app is running,
-/// this function will return stale data.
+/// this function will return stale data. Use [`detect_is_dark()`] instead
+/// for a fresh reading suitable for polling or change tracking.
 ///
 /// For live dark-mode tracking, subscribe to OS appearance-change events
 /// (D-Bus `SettingChanged` on Linux, `NSAppearance` KVO on macOS,
@@ -243,6 +244,18 @@ pub fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
 pub fn system_is_dark() -> bool {
     static CACHED_IS_DARK: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
     *CACHED_IS_DARK.get_or_init(detect_is_dark_inner)
+}
+
+/// Detect whether the system is using a dark color scheme without caching.
+///
+/// Unlike [`system_is_dark()`], this function queries the OS every time it is
+/// called and never caches the result. Use this when polling for theme changes
+/// or implementing live dark-mode tracking.
+///
+/// See [`system_is_dark()`] for platform behavior details.
+#[must_use = "this returns whether the system uses dark mode"]
+pub fn detect_is_dark() -> bool {
+    detect_is_dark_inner()
 }
 
 /// Inner detection logic for [`system_is_dark()`].
@@ -371,6 +384,18 @@ pub fn prefers_reduced_motion() -> bool {
     *CACHED.get_or_init(detect_reduced_motion_inner)
 }
 
+/// Detect whether the user prefers reduced motion without caching.
+///
+/// Unlike [`prefers_reduced_motion()`], this function queries the OS every time
+/// it is called and never caches the result. Use this when polling for
+/// accessibility preference changes.
+///
+/// See [`prefers_reduced_motion()`] for platform behavior details.
+#[must_use = "this returns whether reduced motion is preferred"]
+pub fn detect_reduced_motion() -> bool {
+    detect_reduced_motion_inner()
+}
+
 /// Inner detection logic for [`prefers_reduced_motion()`].
 ///
 /// Separated from the public function to allow caching via `OnceLock`.
@@ -478,7 +503,7 @@ impl SystemTheme {
     /// Merges the overlay onto the pre-resolve [`ThemeVariant`] (not the
     /// already-resolved [`ResolvedThemeVariant`]) so that changed source fields
     /// propagate correctly through `resolve()`. For example, changing
-    /// `defaults.accent` in the overlay will cause `button.primary_bg`,
+    /// `defaults.accent` in the overlay will cause `button.primary_background`,
     /// `checkbox.checked_bg`, `slider.fill`, etc. to be re-derived from
     /// the new accent color.
     ///
@@ -670,6 +695,23 @@ fn run_pipeline(
     })
 }
 
+/// Map a Linux desktop environment to its matching live preset name.
+///
+/// This is the single source of truth for the DE-to-preset mapping used
+/// by [`from_linux()`], [`from_system_async_inner()`], and
+/// [`platform_preset_name()`].
+///
+/// - KDE -> `"kde-breeze-live"`
+/// - All others (GNOME, XFCE, Cinnamon, MATE, LXQt, Budgie, Unknown)
+///   -> `"adwaita-live"`
+#[cfg(target_os = "linux")]
+fn linux_preset_for_de(de: LinuxDesktop) -> &'static str {
+    match de {
+        LinuxDesktop::Kde => "kde-breeze-live",
+        _ => "adwaita-live",
+    }
+}
+
 /// Map the current platform to its matching live preset name.
 ///
 /// Live presets contain only geometry/metrics (no colors, fonts, or icons)
@@ -699,15 +741,134 @@ pub fn platform_preset_name() -> &'static str {
     #[cfg(target_os = "linux")]
     {
         let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
-        match detect_linux_de(&desktop) {
-            LinuxDesktop::Kde => "kde-breeze-live",
-            _ => "adwaita-live",
-        }
+        linux_preset_for_de(detect_linux_de(&desktop))
     }
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
         "adwaita-live"
     }
+}
+
+/// Check whether OS theme detection is available on this platform.
+///
+/// Returns a list of human-readable diagnostic messages describing what
+/// detection capabilities are available and what might be missing. Useful
+/// for debugging theme detection failures in end-user applications.
+///
+/// # Platform Behavior
+///
+/// - **Linux:** Reports detected desktop environment, `gsettings`
+///   availability, `XDG_CURRENT_DESKTOP` value, and KDE config file
+///   presence (when the `kde` feature is enabled).
+/// - **macOS:** Reports whether the `macos` feature is enabled.
+/// - **Windows:** Reports whether the `windows` feature is enabled.
+/// - **Other:** Reports that no platform detection is available.
+///
+/// # Examples
+///
+/// ```
+/// let diagnostics = native_theme::diagnose_platform_support();
+/// for line in &diagnostics {
+///     println!("{}", line);
+/// }
+/// ```
+#[must_use]
+pub fn diagnose_platform_support() -> Vec<String> {
+    let mut diagnostics = Vec::new();
+
+    #[cfg(target_os = "linux")]
+    {
+        diagnostics.push("Platform: Linux".to_string());
+
+        // Check XDG_CURRENT_DESKTOP
+        match std::env::var("XDG_CURRENT_DESKTOP") {
+            Ok(val) if !val.is_empty() => {
+                let de = detect_linux_de(&val);
+                diagnostics.push(format!("XDG_CURRENT_DESKTOP: {val}"));
+                diagnostics.push(format!("Detected DE: {de:?}"));
+            }
+            _ => {
+                diagnostics.push("XDG_CURRENT_DESKTOP: not set".to_string());
+                diagnostics.push("Detected DE: Unknown (env var missing)".to_string());
+            }
+        }
+
+        // Check gsettings availability
+        match std::process::Command::new("gsettings")
+            .arg("--version")
+            .output()
+        {
+            Ok(output) if output.status.success() => {
+                let version = String::from_utf8_lossy(&output.stdout);
+                diagnostics.push(format!("gsettings: available ({})", version.trim()));
+            }
+            Ok(_) => {
+                diagnostics.push("gsettings: found but returned error".to_string());
+            }
+            Err(_) => {
+                diagnostics.push(
+                    "gsettings: not found (dark mode and icon theme detection may be limited)"
+                        .to_string(),
+                );
+            }
+        }
+
+        // Check KDE config files
+        #[cfg(feature = "kde")]
+        {
+            let path = crate::kde::kdeglobals_path();
+            if path.exists() {
+                diagnostics.push(format!("KDE kdeglobals: found at {}", path.display()));
+            } else {
+                diagnostics.push(format!("KDE kdeglobals: not found at {}", path.display()));
+            }
+        }
+
+        #[cfg(not(feature = "kde"))]
+        {
+            diagnostics.push("KDE support: disabled (kde feature not enabled)".to_string());
+        }
+
+        // Report portal feature status
+        #[cfg(feature = "portal")]
+        diagnostics.push("Portal support: enabled".to_string());
+
+        #[cfg(not(feature = "portal"))]
+        diagnostics.push("Portal support: disabled (portal feature not enabled)".to_string());
+    }
+
+    #[cfg(target_os = "macos")]
+    {
+        diagnostics.push("Platform: macOS".to_string());
+
+        #[cfg(feature = "macos")]
+        diagnostics.push("macOS theme detection: enabled (macos feature active)".to_string());
+
+        #[cfg(not(feature = "macos"))]
+        diagnostics.push(
+            "macOS theme detection: limited (macos feature not enabled, using subprocess fallback)"
+                .to_string(),
+        );
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        diagnostics.push("Platform: Windows".to_string());
+
+        #[cfg(feature = "windows")]
+        diagnostics.push("Windows theme detection: enabled (windows feature active)".to_string());
+
+        #[cfg(not(feature = "windows"))]
+        diagnostics
+            .push("Windows theme detection: disabled (windows feature not enabled)".to_string());
+    }
+
+    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
+    {
+        diagnostics.push("Platform: unsupported (no native theme detection available)".to_string());
+    }
+
+    diagnostics
 }
 
 /// Infer dark-mode preference from the reader's output.
@@ -731,20 +892,22 @@ fn reader_is_dark(reader: &ThemeSpec) -> bool {
 fn from_linux() -> crate::Result<SystemTheme> {
     let is_dark = system_is_dark();
     let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
-    match detect_linux_de(&desktop) {
+    let de = detect_linux_de(&desktop);
+    let preset = linux_preset_for_de(de);
+    match de {
         #[cfg(feature = "kde")]
         LinuxDesktop::Kde => {
             let reader = crate::kde::from_kde()?;
-            run_pipeline(reader, "kde-breeze-live", is_dark)
+            run_pipeline(reader, preset, is_dark)
         }
         #[cfg(not(feature = "kde"))]
         LinuxDesktop::Kde => run_pipeline(ThemeSpec::preset("adwaita")?, "adwaita-live", is_dark),
         LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
             // GNOME sync path: no portal, just adwaita preset
-            run_pipeline(ThemeSpec::preset("adwaita")?, "adwaita-live", is_dark)
+            run_pipeline(ThemeSpec::preset("adwaita")?, preset, is_dark)
         }
         LinuxDesktop::Xfce | LinuxDesktop::Cinnamon | LinuxDesktop::Mate | LinuxDesktop::LxQt => {
-            run_pipeline(ThemeSpec::preset("adwaita")?, "adwaita-live", is_dark)
+            run_pipeline(ThemeSpec::preset("adwaita")?, preset, is_dark)
         }
         LinuxDesktop::Unknown => {
             #[cfg(feature = "kde")]
@@ -752,10 +915,10 @@ fn from_linux() -> crate::Result<SystemTheme> {
                 let path = crate::kde::kdeglobals_path();
                 if path.exists() {
                     let reader = crate::kde::from_kde()?;
-                    return run_pipeline(reader, "kde-breeze-live", is_dark);
+                    return run_pipeline(reader, linux_preset_for_de(LinuxDesktop::Kde), is_dark);
                 }
             }
-            run_pipeline(ThemeSpec::preset("adwaita")?, "adwaita-live", is_dark)
+            run_pipeline(ThemeSpec::preset("adwaita")?, preset, is_dark)
         }
     }
 }
@@ -808,18 +971,20 @@ fn from_system_inner() -> crate::Result<SystemTheme> {
 async fn from_system_async_inner() -> crate::Result<SystemTheme> {
     let is_dark = system_is_dark();
     let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
-    match detect_linux_de(&desktop) {
+    let de = detect_linux_de(&desktop);
+    let preset = linux_preset_for_de(de);
+    match de {
         #[cfg(feature = "kde")]
         LinuxDesktop::Kde => {
             #[cfg(feature = "portal")]
             {
                 let reader = crate::gnome::from_kde_with_portal().await?;
-                run_pipeline(reader, "kde-breeze-live", is_dark)
+                run_pipeline(reader, preset, is_dark)
             }
             #[cfg(not(feature = "portal"))]
             {
                 let reader = crate::kde::from_kde()?;
-                run_pipeline(reader, "kde-breeze-live", is_dark)
+                run_pipeline(reader, preset, is_dark)
             }
         }
         #[cfg(not(feature = "kde"))]
@@ -827,25 +992,26 @@ async fn from_system_async_inner() -> crate::Result<SystemTheme> {
         #[cfg(feature = "portal")]
         LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
             let reader = crate::gnome::from_gnome().await?;
-            run_pipeline(reader, "adwaita-live", is_dark)
+            run_pipeline(reader, preset, is_dark)
         }
         #[cfg(not(feature = "portal"))]
         LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
-            run_pipeline(ThemeSpec::preset("adwaita")?, "adwaita-live", is_dark)
+            run_pipeline(ThemeSpec::preset("adwaita")?, preset, is_dark)
         }
         LinuxDesktop::Xfce | LinuxDesktop::Cinnamon | LinuxDesktop::Mate | LinuxDesktop::LxQt => {
-            run_pipeline(ThemeSpec::preset("adwaita")?, "adwaita-live", is_dark)
+            run_pipeline(ThemeSpec::preset("adwaita")?, preset, is_dark)
         }
         LinuxDesktop::Unknown => {
             // Use D-Bus portal backend detection to refine heuristic
             #[cfg(feature = "portal")]
             {
                 if let Some(detected) = crate::gnome::detect_portal_backend().await {
+                    let detected_preset = linux_preset_for_de(detected);
                     return match detected {
                         #[cfg(feature = "kde")]
                         LinuxDesktop::Kde => {
                             let reader = crate::gnome::from_kde_with_portal().await?;
-                            run_pipeline(reader, "kde-breeze-live", is_dark)
+                            run_pipeline(reader, detected_preset, is_dark)
                         }
                         #[cfg(not(feature = "kde"))]
                         LinuxDesktop::Kde => {
@@ -853,12 +1019,12 @@ async fn from_system_async_inner() -> crate::Result<SystemTheme> {
                         }
                         LinuxDesktop::Gnome => {
                             let reader = crate::gnome::from_gnome().await?;
-                            run_pipeline(reader, "adwaita-live", is_dark)
+                            run_pipeline(reader, detected_preset, is_dark)
                         }
                         _ => {
                             // detect_portal_backend only returns Kde or Gnome;
                             // fall back to Adwaita if the set ever grows.
-                            run_pipeline(ThemeSpec::preset("adwaita")?, "adwaita-live", is_dark)
+                            run_pipeline(ThemeSpec::preset("adwaita")?, detected_preset, is_dark)
                         }
                     };
                 }
@@ -869,10 +1035,10 @@ async fn from_system_async_inner() -> crate::Result<SystemTheme> {
                 let path = crate::kde::kdeglobals_path();
                 if path.exists() {
                     let reader = crate::kde::from_kde()?;
-                    return run_pipeline(reader, "kde-breeze-live", is_dark);
+                    return run_pipeline(reader, linux_preset_for_de(LinuxDesktop::Kde), is_dark);
                 }
             }
-            run_pipeline(ThemeSpec::preset("adwaita")?, "adwaita-live", is_dark)
+            run_pipeline(ThemeSpec::preset("adwaita")?, preset, is_dark)
         }
     }
 }
@@ -1621,8 +1787,8 @@ mod system_theme_tests {
         // Give them distinct accents so we can tell them apart
         light_v.defaults.accent = Some(Rgba::rgb(0, 0, 255));
         dark_v.defaults.accent = Some(Rgba::rgb(255, 0, 0));
-        light_v.resolve();
-        dark_v.resolve();
+        light_v.resolve_all();
+        dark_v.resolve_all();
         let light_resolved = light_v.validate().unwrap();
         let dark_resolved = dark_v.validate().unwrap();
 
@@ -1646,8 +1812,8 @@ mod system_theme_tests {
         let mut dark_v = preset.dark.clone().unwrap();
         light_v.defaults.accent = Some(Rgba::rgb(0, 0, 255));
         dark_v.defaults.accent = Some(Rgba::rgb(255, 0, 0));
-        light_v.resolve();
-        dark_v.resolve();
+        light_v.resolve_all();
+        dark_v.resolve_all();
         let light_resolved = light_v.validate().unwrap();
         let dark_resolved = dark_v.validate().unwrap();
 
@@ -1671,8 +1837,8 @@ mod system_theme_tests {
         let mut dark_v = preset.dark.clone().unwrap();
         light_v.defaults.accent = Some(Rgba::rgb(0, 0, 255));
         dark_v.defaults.accent = Some(Rgba::rgb(255, 0, 0));
-        light_v.resolve();
-        dark_v.resolve();
+        light_v.resolve_all();
+        dark_v.resolve_all();
         let light_resolved = light_v.validate().unwrap();
         let dark_resolved = dark_v.validate().unwrap();
 
@@ -1937,11 +2103,11 @@ mod overlay_tests {
         // Accent itself
         assert_eq!(result.light.defaults.accent, new_accent);
         // Accent-derived widget fields
-        assert_eq!(result.light.button.primary_bg, new_accent);
+        assert_eq!(result.light.button.primary_background, new_accent);
         assert_eq!(result.light.checkbox.checked_bg, new_accent);
         assert_eq!(result.light.slider.fill, new_accent);
         assert_eq!(result.light.progress_bar.fill, new_accent);
-        assert_eq!(result.light.switch.checked_bg, new_accent);
+        assert_eq!(result.light.switch.checked_background, new_accent);
     }
 
     #[test]

@@ -411,6 +411,37 @@ impl ThemeSpec {
         crate::presets::from_toml(toml_str)
     }
 
+    /// Parse custom TOML and merge onto a base preset.
+    ///
+    /// This is the recommended way to create custom themes. The base preset
+    /// provides geometry, spacing, and widget defaults. The custom TOML
+    /// overrides colors, fonts, and any other fields.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::Unavailable`] if the base preset name is not
+    /// recognized, or [`crate::Error::Format`] if the custom TOML is invalid.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let theme = native_theme::ThemeSpec::from_toml_with_base(
+    ///     r##"name = "My Theme"
+    /// [dark.defaults]
+    /// accent = "#ff6600"
+    /// background = "#1e1e1e"
+    /// foreground = "#e0e0e0""##,
+    ///     "material",
+    /// ).unwrap();
+    /// assert!(theme.dark.is_some());
+    /// ```
+    pub fn from_toml_with_base(toml_str: &str, base: &str) -> crate::Result<Self> {
+        let mut theme = Self::preset(base)?;
+        let overlay = Self::from_toml(toml_str)?;
+        theme.merge(&overlay);
+        Ok(theme)
+    }
+
     /// Load a [`ThemeSpec`] from a TOML file.
     ///
     /// # Errors
@@ -468,6 +499,222 @@ impl ThemeSpec {
     #[must_use = "this serializes the theme to TOML; it does not write to a file"]
     pub fn to_toml(&self) -> crate::Result<String> {
         crate::presets::to_toml(self)
+    }
+
+    /// Check a TOML string for unrecognized field names.
+    ///
+    /// Parses the TOML as a generic table and walks all keys, comparing
+    /// against the known fields for each section. Returns a `Vec<String>`
+    /// of warnings for any keys that don't match a known field. An empty
+    /// vec means all keys are recognized.
+    ///
+    /// This is an opt-in linting tool for theme authors. It does NOT affect
+    /// `from_toml()` behavior (which silently ignores unknown fields via serde).
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the TOML string cannot be parsed at all.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// let warnings = native_theme::ThemeSpec::lint_toml(r##"
+    /// name = "Test"
+    /// [light.defaults]
+    /// backround = "#ffffff"
+    /// "##).unwrap();
+    /// assert_eq!(warnings.len(), 1);
+    /// assert!(warnings[0].contains("backround"));
+    /// ```
+    pub fn lint_toml(toml_str: &str) -> crate::Result<Vec<String>> {
+        use crate::model::defaults::ThemeDefaults;
+
+        let value: toml::Value = toml::from_str(toml_str)
+            .map_err(|e: toml::de::Error| crate::Error::Format(e.to_string()))?;
+
+        let mut warnings = Vec::new();
+
+        let top_table = match &value {
+            toml::Value::Table(t) => t,
+            _ => return Ok(warnings),
+        };
+
+        // Known top-level keys
+        const TOP_KEYS: &[&str] = &["name", "light", "dark"];
+
+        for key in top_table.keys() {
+            if !TOP_KEYS.contains(&key.as_str()) {
+                warnings.push(format!("unknown field: {key}"));
+            }
+        }
+
+        // Variant-level known keys: widget names + special fields
+        const VARIANT_KEYS: &[&str] = &[
+            "defaults",
+            "text_scale",
+            "window",
+            "button",
+            "input",
+            "checkbox",
+            "menu",
+            "tooltip",
+            "scrollbar",
+            "slider",
+            "progress_bar",
+            "tab",
+            "sidebar",
+            "toolbar",
+            "status_bar",
+            "list",
+            "popover",
+            "splitter",
+            "separator",
+            "switch",
+            "dialog",
+            "spinner",
+            "combo_box",
+            "segmented_control",
+            "card",
+            "expander",
+            "link",
+            "icon_set",
+            "icon_theme",
+        ];
+
+        // TextScaleEntry known fields
+        const TEXT_SCALE_ENTRY_FIELDS: &[&str] = &["size", "weight", "line_height"];
+
+        // TextScale known keys (entry names)
+        const TEXT_SCALE_KEYS: &[&str] = &["caption", "section_heading", "dialog_title", "display"];
+
+        // FontSpec known fields (for nested sub-tables like defaults.font)
+        const FONT_FIELDS: &[&str] = &["family", "size", "weight"];
+
+        // SpacingTheme known fields
+        const SPACING_FIELDS: &[&str] = &["xxs", "xs", "s", "m", "l", "xl", "xxl"];
+
+        // IconSizes known fields
+        const ICON_SIZES_FIELDS: &[&str] = &["toolbar", "small", "large", "dialog", "panel"];
+
+        /// Look up the known field names for a given widget section key.
+        fn widget_fields(section: &str) -> Option<&'static [&'static str]> {
+            match section {
+                "window" => Some(WindowTheme::FIELD_NAMES),
+                "button" => Some(ButtonTheme::FIELD_NAMES),
+                "input" => Some(InputTheme::FIELD_NAMES),
+                "checkbox" => Some(CheckboxTheme::FIELD_NAMES),
+                "menu" => Some(MenuTheme::FIELD_NAMES),
+                "tooltip" => Some(TooltipTheme::FIELD_NAMES),
+                "scrollbar" => Some(ScrollbarTheme::FIELD_NAMES),
+                "slider" => Some(SliderTheme::FIELD_NAMES),
+                "progress_bar" => Some(ProgressBarTheme::FIELD_NAMES),
+                "tab" => Some(TabTheme::FIELD_NAMES),
+                "sidebar" => Some(SidebarTheme::FIELD_NAMES),
+                "toolbar" => Some(ToolbarTheme::FIELD_NAMES),
+                "status_bar" => Some(StatusBarTheme::FIELD_NAMES),
+                "list" => Some(ListTheme::FIELD_NAMES),
+                "popover" => Some(PopoverTheme::FIELD_NAMES),
+                "splitter" => Some(SplitterTheme::FIELD_NAMES),
+                "separator" => Some(SeparatorTheme::FIELD_NAMES),
+                "switch" => Some(SwitchTheme::FIELD_NAMES),
+                "dialog" => Some(DialogTheme::FIELD_NAMES),
+                "spinner" => Some(SpinnerTheme::FIELD_NAMES),
+                "combo_box" => Some(ComboBoxTheme::FIELD_NAMES),
+                "segmented_control" => Some(SegmentedControlTheme::FIELD_NAMES),
+                "card" => Some(CardTheme::FIELD_NAMES),
+                "expander" => Some(ExpanderTheme::FIELD_NAMES),
+                "link" => Some(LinkTheme::FIELD_NAMES),
+                _ => None,
+            }
+        }
+
+        // Lint a text_scale section
+        fn lint_text_scale(
+            table: &toml::map::Map<String, toml::Value>,
+            prefix: &str,
+            warnings: &mut Vec<String>,
+        ) {
+            for key in table.keys() {
+                if !TEXT_SCALE_KEYS.contains(&key.as_str()) {
+                    warnings.push(format!("unknown field: {prefix}.{key}"));
+                } else if let Some(toml::Value::Table(entry_table)) = table.get(key) {
+                    for ekey in entry_table.keys() {
+                        if !TEXT_SCALE_ENTRY_FIELDS.contains(&ekey.as_str()) {
+                            warnings.push(format!("unknown field: {prefix}.{key}.{ekey}"));
+                        }
+                    }
+                }
+            }
+        }
+
+        // Lint a defaults section (with nested font, mono_font, spacing, icon_sizes)
+        fn lint_defaults(
+            table: &toml::map::Map<String, toml::Value>,
+            prefix: &str,
+            warnings: &mut Vec<String>,
+        ) {
+            for key in table.keys() {
+                if !ThemeDefaults::FIELD_NAMES.contains(&key.as_str()) {
+                    warnings.push(format!("unknown field: {prefix}.{key}"));
+                    continue;
+                }
+                // Check sub-tables for nested struct fields
+                if let Some(toml::Value::Table(sub)) = table.get(key) {
+                    let known = match key.as_str() {
+                        "font" | "mono_font" => FONT_FIELDS,
+                        "spacing" => SPACING_FIELDS,
+                        "icon_sizes" => ICON_SIZES_FIELDS,
+                        _ => continue,
+                    };
+                    for skey in sub.keys() {
+                        if !known.contains(&skey.as_str()) {
+                            warnings.push(format!("unknown field: {prefix}.{key}.{skey}"));
+                        }
+                    }
+                }
+            }
+        }
+
+        // Lint a variant section (light or dark)
+        fn lint_variant(
+            table: &toml::map::Map<String, toml::Value>,
+            prefix: &str,
+            warnings: &mut Vec<String>,
+        ) {
+            for key in table.keys() {
+                if !VARIANT_KEYS.contains(&key.as_str()) {
+                    warnings.push(format!("unknown field: {prefix}.{key}"));
+                    continue;
+                }
+
+                if let Some(toml::Value::Table(sub)) = table.get(key) {
+                    let sub_prefix = format!("{prefix}.{key}");
+                    match key.as_str() {
+                        "defaults" => lint_defaults(sub, &sub_prefix, warnings),
+                        "text_scale" => lint_text_scale(sub, &sub_prefix, warnings),
+                        _ => {
+                            if let Some(fields) = widget_fields(key) {
+                                for skey in sub.keys() {
+                                    if !fields.contains(&skey.as_str()) {
+                                        warnings
+                                            .push(format!("unknown field: {sub_prefix}.{skey}"));
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+
+        // Lint light and dark variant sections
+        for variant_key in &["light", "dark"] {
+            if let Some(toml::Value::Table(variant_table)) = top_table.get(*variant_key) {
+                lint_variant(variant_table, variant_key, &mut warnings);
+            }
+        }
+
+        Ok(warnings)
     }
 }
 
@@ -847,5 +1094,223 @@ accent = "#ff0000"
         assert_eq!(l.defaults.font.family.as_deref(), Some("Segoe UI"));
         assert_eq!(l.defaults.radius, Some(4.0));
         assert_eq!(l.defaults.spacing.m, Some(12.0));
+    }
+
+    // === from_toml_with_base tests ===
+
+    #[test]
+    fn from_toml_with_base_merges_colors_onto_preset() {
+        let custom_toml = r##"
+name = "Custom Colors"
+
+[dark.defaults]
+accent = "#ff6600"
+background = "#1e1e1e"
+foreground = "#e0e0e0"
+"##;
+        let theme = ThemeSpec::from_toml_with_base(custom_toml, "material").unwrap();
+
+        // Base name is preserved (material's name)
+        assert_eq!(theme.name, "Material");
+
+        // Both variants should exist (material has both)
+        assert!(theme.light.is_some());
+        assert!(theme.dark.is_some());
+
+        // Custom dark colors applied
+        let dark = theme.dark.as_ref().unwrap();
+        assert_eq!(dark.defaults.accent, Some(Rgba::rgb(255, 102, 0)));
+        assert_eq!(dark.defaults.background, Some(Rgba::rgb(30, 30, 30)));
+        assert_eq!(dark.defaults.foreground, Some(Rgba::rgb(224, 224, 224)));
+
+        // Base geometry preserved (material has these)
+        assert!(dark.button.min_height.is_some());
+        assert!(dark.defaults.spacing.m.is_some());
+
+        // resolve_all + validate should succeed
+        let mut dark_clone = dark.clone();
+        dark_clone.resolve_all();
+        dark_clone.validate().unwrap();
+    }
+
+    #[test]
+    fn from_toml_with_base_unknown_preset_returns_error() {
+        let err = ThemeSpec::from_toml_with_base("name = \"X\"", "nonexistent").unwrap_err();
+        match err {
+            crate::Error::Unavailable(msg) => assert!(msg.contains("nonexistent")),
+            other => panic!("expected Unavailable, got: {other:?}"),
+        }
+    }
+
+    #[test]
+    fn from_toml_with_base_invalid_toml_returns_error() {
+        let err = ThemeSpec::from_toml_with_base("{{{{invalid", "material").unwrap_err();
+        match err {
+            crate::Error::Format(_) => {}
+            other => panic!("expected Format, got: {other:?}"),
+        }
+    }
+
+    // === lint_toml tests ===
+
+    #[test]
+    fn lint_toml_valid_returns_empty() {
+        let toml = r##"
+name = "Valid Theme"
+[light.defaults]
+accent = "#ff0000"
+background = "#ffffff"
+[light.defaults.font]
+family = "Inter"
+size = 14.0
+[light.button]
+min_height = 32.0
+padding_horizontal = 12.0
+"##;
+        let warnings = ThemeSpec::lint_toml(toml).unwrap();
+        assert!(
+            warnings.is_empty(),
+            "Expected no warnings, got: {warnings:?}"
+        );
+    }
+
+    #[test]
+    fn lint_toml_detects_unknown_top_level() {
+        let toml = r##"
+name = "Test"
+theme_version = 2
+"##;
+        let warnings = ThemeSpec::lint_toml(toml).unwrap();
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("theme_version"));
+    }
+
+    #[test]
+    fn lint_toml_detects_misspelled_defaults_field() {
+        let toml = r##"
+name = "Test"
+[light.defaults]
+backround = "#ffffff"
+"##;
+        let warnings = ThemeSpec::lint_toml(toml).unwrap();
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("backround"));
+        assert!(warnings[0].contains("light.defaults.backround"));
+    }
+
+    #[test]
+    fn lint_toml_detects_unknown_widget_field() {
+        let toml = r##"
+name = "Test"
+[dark.button]
+primary_bg = "#0078d7"
+"##;
+        let warnings = ThemeSpec::lint_toml(toml).unwrap();
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("primary_bg"));
+    }
+
+    #[test]
+    fn lint_toml_detects_unknown_variant_section() {
+        let toml = r##"
+name = "Test"
+[light.badges]
+color = "#ff0000"
+"##;
+        let warnings = ThemeSpec::lint_toml(toml).unwrap();
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("badges"));
+    }
+
+    #[test]
+    fn lint_toml_detects_unknown_font_subfield() {
+        let toml = r##"
+name = "Test"
+[light.defaults.font]
+famly = "Inter"
+"##;
+        let warnings = ThemeSpec::lint_toml(toml).unwrap();
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("famly"));
+    }
+
+    #[test]
+    fn lint_toml_detects_unknown_spacing_subfield() {
+        let toml = r##"
+name = "Test"
+[light.defaults.spacing]
+medium = 12.0
+"##;
+        let warnings = ThemeSpec::lint_toml(toml).unwrap();
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("medium"));
+    }
+
+    #[test]
+    fn lint_toml_detects_unknown_text_scale_entry() {
+        let toml = r##"
+name = "Test"
+[light.text_scale.headline]
+size = 24.0
+"##;
+        let warnings = ThemeSpec::lint_toml(toml).unwrap();
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("headline"));
+    }
+
+    #[test]
+    fn lint_toml_detects_unknown_text_scale_entry_field() {
+        let toml = r##"
+name = "Test"
+[light.text_scale.caption]
+font_size = 12.0
+"##;
+        let warnings = ThemeSpec::lint_toml(toml).unwrap();
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("font_size"));
+    }
+
+    #[test]
+    fn lint_toml_multiple_errors() {
+        let toml = r##"
+name = "Test"
+author = "Me"
+[light.defaults]
+backround = "#ffffff"
+[light.button]
+primay_bg = "#0078d7"
+"##;
+        let warnings = ThemeSpec::lint_toml(toml).unwrap();
+        assert_eq!(warnings.len(), 3);
+    }
+
+    #[test]
+    fn lint_toml_invalid_toml_returns_error() {
+        let result = ThemeSpec::lint_toml("{{{{invalid");
+        assert!(result.is_err());
+    }
+
+    #[test]
+    fn lint_toml_preset_has_no_warnings() {
+        let theme = ThemeSpec::preset("catppuccin-mocha").unwrap();
+        let toml_str = theme.to_toml().unwrap();
+        let warnings = ThemeSpec::lint_toml(&toml_str).unwrap();
+        assert!(
+            warnings.is_empty(),
+            "Preset catppuccin-mocha should have no lint warnings, got: {warnings:?}"
+        );
+    }
+
+    #[test]
+    fn lint_toml_all_presets_clean() {
+        for name in ThemeSpec::list_presets() {
+            let theme = ThemeSpec::preset(name).unwrap();
+            let toml_str = theme.to_toml().unwrap();
+            let warnings = ThemeSpec::lint_toml(&toml_str).unwrap();
+            assert!(
+                warnings.is_empty(),
+                "Preset '{name}' has lint warnings: {warnings:?}"
+            );
+        }
     }
 }

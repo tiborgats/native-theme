@@ -130,12 +130,50 @@ fn require_text_scale_entry(
     }
 }
 
+// --- Range-check helpers for validate() ---
+//
+// These push a descriptive message to the `missing` vec (reusing the same
+// error-collection pattern as require()) so that all problems — missing
+// fields AND out-of-range values — are reported in a single pass.
+
+/// Check that an `f32` value is non-negative (>= 0.0).
+fn check_non_negative(value: f32, path: &str, errors: &mut Vec<String>) {
+    if value < 0.0 {
+        errors.push(format!("{path} must be >= 0, got {value}"));
+    }
+}
+
+/// Check that an `f32` value is strictly positive (> 0.0).
+fn check_positive(value: f32, path: &str, errors: &mut Vec<String>) {
+    if value <= 0.0 {
+        errors.push(format!("{path} must be > 0, got {value}"));
+    }
+}
+
+/// Check that an `f32` value falls within an inclusive range.
+fn check_range_f32(value: f32, min: f32, max: f32, path: &str, errors: &mut Vec<String>) {
+    if value < min || value > max {
+        errors.push(format!("{path} must be {min}..={max}, got {value}"));
+    }
+}
+
+/// Check that a `u16` value falls within an inclusive range.
+fn check_range_u16(value: u16, min: u16, max: u16, path: &str, errors: &mut Vec<String>) {
+    if value < min || value > max {
+        errors.push(format!("{path} must be {min}..={max}, got {value}"));
+    }
+}
+
 impl ThemeVariant {
-    /// Apply all ~90 inheritance rules in 4-phase order.
+    /// Apply all ~91 inheritance rules in 5-phase order (pure data transform).
     ///
     /// After calling resolve(), most Option fields that were None will be filled
     /// from defaults or related widget fields. Calling resolve() twice produces
     /// the same result (idempotent).
+    ///
+    /// This method is a pure data transform: it does not perform any OS detection
+    /// or I/O. For full resolution including platform defaults (icon theme from
+    /// the system), use [`resolve_all()`](Self::resolve_all).
     ///
     /// # Phases
     ///
@@ -145,6 +183,7 @@ impl ThemeVariant {
     /// 3. **Widget-from-defaults** -- colors, geometry, fonts, text scale entries
     ///    all inherit from defaults.
     /// 4. **Widget-to-widget** -- inactive title bar fields fall back to active.
+    /// 5. **Icon set** -- fills icon_set from the compile-time system default.
     pub fn resolve(&mut self) {
         self.resolve_defaults_internal();
         self.resolve_safety_nets();
@@ -155,18 +194,36 @@ impl ThemeVariant {
         if self.icon_set.is_none() {
             self.icon_set = Some(crate::model::icons::system_icon_set());
         }
+    }
 
-        // Phase 6: icon_theme fallback — fill from system icon theme if not set
+    /// Fill platform-detected defaults that require OS interaction.
+    ///
+    /// Currently fills `icon_theme` from the system icon theme if not already set.
+    /// This is separated from [`resolve()`](Self::resolve) because it performs
+    /// runtime OS detection (reading desktop environment settings), unlike the
+    /// pure inheritance rules in resolve().
+    pub fn resolve_platform_defaults(&mut self) {
         if self.icon_theme.is_none() {
             self.icon_theme = Some(crate::model::icons::system_icon_theme().to_string());
         }
     }
 
+    /// Apply all inheritance rules and platform defaults.
+    ///
+    /// Convenience method that calls [`resolve()`](Self::resolve) followed by
+    /// [`resolve_platform_defaults()`](Self::resolve_platform_defaults).
+    /// This is equivalent to the full resolution that
+    /// [`into_resolved()`](Self::into_resolved) performs before validation.
+    pub fn resolve_all(&mut self) {
+        self.resolve();
+        self.resolve_platform_defaults();
+    }
+
     /// Resolve all inheritance rules and validate in one step.
     ///
     /// This is the recommended way to convert a `ThemeVariant` into a
-    /// [`ResolvedThemeVariant`]. It calls [`resolve()`](Self::resolve) followed
-    /// by [`validate()`](Self::validate), ensuring no fields are left
+    /// [`ResolvedThemeVariant`]. It calls [`resolve_all()`](Self::resolve_all)
+    /// followed by [`validate()`](Self::validate), ensuring no fields are left
     /// unresolved.
     ///
     /// # Errors
@@ -187,7 +244,7 @@ impl ThemeVariant {
     /// ```
     #[must_use = "this returns the resolved theme; it does not modify self"]
     pub fn into_resolved(mut self) -> crate::Result<ResolvedThemeVariant> {
-        self.resolve();
+        self.resolve_all();
         self.validate()
     }
 
@@ -279,11 +336,11 @@ impl ThemeVariant {
         if self.button.border.is_none() {
             self.button.border = d.border;
         }
-        if self.button.primary_bg.is_none() {
-            self.button.primary_bg = d.accent;
+        if self.button.primary_background.is_none() {
+            self.button.primary_background = d.accent;
         }
-        if self.button.primary_fg.is_none() {
-            self.button.primary_fg = d.accent_foreground;
+        if self.button.primary_foreground.is_none() {
+            self.button.primary_foreground = d.accent_foreground;
         }
         if self.button.radius.is_none() {
             self.button.radius = d.radius;
@@ -449,11 +506,14 @@ impl ThemeVariant {
         }
 
         // --- switch ---
-        if self.switch.checked_bg.is_none() {
-            self.switch.checked_bg = d.accent;
+        if self.switch.checked_background.is_none() {
+            self.switch.checked_background = d.accent;
         }
-        if self.switch.thumb_bg.is_none() {
-            self.switch.thumb_bg = d.surface;
+        if self.switch.unchecked_background.is_none() {
+            self.switch.unchecked_background = d.muted;
+        }
+        if self.switch.thumb_background.is_none() {
+            self.switch.thumb_background = d.surface;
         }
 
         // --- dialog ---
@@ -500,7 +560,7 @@ impl ThemeVariant {
     }
 
     fn resolve_font_inheritance(&mut self) {
-        let defaults_font = &self.defaults.font.clone();
+        let defaults_font = &self.defaults.font;
         resolve_font(&mut self.window.title_bar_font, defaults_font);
         resolve_font(&mut self.button.font, defaults_font);
         resolve_font(&mut self.input.font, defaults_font);
@@ -512,7 +572,7 @@ impl ThemeVariant {
     }
 
     fn resolve_text_scale(&mut self) {
-        let defaults_font = &self.defaults.font.clone();
+        let defaults_font = &self.defaults.font;
         let defaults_lh = self.defaults.line_height;
         resolve_text_scale_entry(&mut self.text_scale.caption, defaults_font, defaults_lh);
         resolve_text_scale_entry(
@@ -800,8 +860,16 @@ impl ThemeVariant {
         let button_background = require(&self.button.background, "button.background", &mut missing);
         let button_foreground = require(&self.button.foreground, "button.foreground", &mut missing);
         let button_border = require(&self.button.border, "button.border", &mut missing);
-        let button_primary_bg = require(&self.button.primary_bg, "button.primary_bg", &mut missing);
-        let button_primary_fg = require(&self.button.primary_fg, "button.primary_fg", &mut missing);
+        let button_primary_background = require(
+            &self.button.primary_background,
+            "button.primary_background",
+            &mut missing,
+        );
+        let button_primary_foreground = require(
+            &self.button.primary_foreground,
+            "button.primary_foreground",
+            &mut missing,
+        );
         let button_min_width = require(&self.button.min_width, "button.min_width", &mut missing);
         let button_min_height = require(&self.button.min_height, "button.min_height", &mut missing);
         let button_padding_horizontal = require(
@@ -1083,13 +1151,21 @@ impl ThemeVariant {
 
         // --- switch ---
 
-        let switch_checked_bg = require(&self.switch.checked_bg, "switch.checked_bg", &mut missing);
-        let switch_unchecked_bg = require(
-            &self.switch.unchecked_bg,
-            "switch.unchecked_bg",
+        let switch_checked_background = require(
+            &self.switch.checked_background,
+            "switch.checked_background",
             &mut missing,
         );
-        let switch_thumb_bg = require(&self.switch.thumb_bg, "switch.thumb_bg", &mut missing);
+        let switch_unchecked_background = require(
+            &self.switch.unchecked_background,
+            "switch.unchecked_background",
+            &mut missing,
+        );
+        let switch_thumb_background = require(
+            &self.switch.thumb_background,
+            "switch.thumb_background",
+            &mut missing,
+        );
         let switch_track_width =
             require(&self.switch.track_width, "switch.track_width", &mut missing);
         let switch_track_height = require(
@@ -1233,7 +1309,453 @@ impl ThemeVariant {
         let icon_set = require(&self.icon_set, "icon_set", &mut missing);
         let icon_theme = require(&self.icon_theme, "icon_theme", &mut missing);
 
-        // --- check for missing fields ---
+        // --- range validation ---
+        //
+        // Operate on the already-extracted values from require(). If a field was
+        // missing, require() returned T::default() as placeholder — range-checking
+        // that placeholder is harmless because the missing-field error already
+        // captured the real problem.
+
+        // Fonts: size > 0, weight 100..=900
+        check_positive(defaults_font.size, "defaults.font.size", &mut missing);
+        check_range_u16(
+            defaults_font.weight,
+            100,
+            900,
+            "defaults.font.weight",
+            &mut missing,
+        );
+        check_positive(
+            defaults_mono_font.size,
+            "defaults.mono_font.size",
+            &mut missing,
+        );
+        check_range_u16(
+            defaults_mono_font.weight,
+            100,
+            900,
+            "defaults.mono_font.weight",
+            &mut missing,
+        );
+
+        // defaults: line_height > 0, text_scaling_factor > 0
+        check_positive(defaults_line_height, "defaults.line_height", &mut missing);
+        check_positive(
+            defaults_text_scaling_factor,
+            "defaults.text_scaling_factor",
+            &mut missing,
+        );
+
+        // defaults: radius, geometry >= 0
+        check_non_negative(defaults_radius, "defaults.radius", &mut missing);
+        check_non_negative(defaults_radius_lg, "defaults.radius_lg", &mut missing);
+        check_non_negative(defaults_frame_width, "defaults.frame_width", &mut missing);
+        check_non_negative(
+            defaults_focus_ring_width,
+            "defaults.focus_ring_width",
+            &mut missing,
+        );
+        // Note: focus_ring_offset is intentionally NOT range-checked — negative values
+        // mean an inset focus ring (e.g., adwaita uses -2.0, macOS uses -1.0).
+
+        // defaults: opacity 0..=1
+        check_range_f32(
+            defaults_disabled_opacity,
+            0.0,
+            1.0,
+            "defaults.disabled_opacity",
+            &mut missing,
+        );
+        check_range_f32(
+            defaults_border_opacity,
+            0.0,
+            1.0,
+            "defaults.border_opacity",
+            &mut missing,
+        );
+
+        // defaults: spacing >= 0
+        check_non_negative(defaults_spacing_xxs, "defaults.spacing.xxs", &mut missing);
+        check_non_negative(defaults_spacing_xs, "defaults.spacing.xs", &mut missing);
+        check_non_negative(defaults_spacing_s, "defaults.spacing.s", &mut missing);
+        check_non_negative(defaults_spacing_m, "defaults.spacing.m", &mut missing);
+        check_non_negative(defaults_spacing_l, "defaults.spacing.l", &mut missing);
+        check_non_negative(defaults_spacing_xl, "defaults.spacing.xl", &mut missing);
+        check_non_negative(defaults_spacing_xxl, "defaults.spacing.xxl", &mut missing);
+
+        // defaults: icon sizes >= 0
+        check_non_negative(
+            defaults_icon_sizes_toolbar,
+            "defaults.icon_sizes.toolbar",
+            &mut missing,
+        );
+        check_non_negative(
+            defaults_icon_sizes_small,
+            "defaults.icon_sizes.small",
+            &mut missing,
+        );
+        check_non_negative(
+            defaults_icon_sizes_large,
+            "defaults.icon_sizes.large",
+            &mut missing,
+        );
+        check_non_negative(
+            defaults_icon_sizes_dialog,
+            "defaults.icon_sizes.dialog",
+            &mut missing,
+        );
+        check_non_negative(
+            defaults_icon_sizes_panel,
+            "defaults.icon_sizes.panel",
+            &mut missing,
+        );
+
+        // text_scale: entry sizes > 0, line_height > 0
+        check_positive(ts_caption.size, "text_scale.caption.size", &mut missing);
+        check_positive(
+            ts_caption.line_height,
+            "text_scale.caption.line_height",
+            &mut missing,
+        );
+        check_range_u16(
+            ts_caption.weight,
+            100,
+            900,
+            "text_scale.caption.weight",
+            &mut missing,
+        );
+        check_positive(
+            ts_section_heading.size,
+            "text_scale.section_heading.size",
+            &mut missing,
+        );
+        check_positive(
+            ts_section_heading.line_height,
+            "text_scale.section_heading.line_height",
+            &mut missing,
+        );
+        check_range_u16(
+            ts_section_heading.weight,
+            100,
+            900,
+            "text_scale.section_heading.weight",
+            &mut missing,
+        );
+        check_positive(
+            ts_dialog_title.size,
+            "text_scale.dialog_title.size",
+            &mut missing,
+        );
+        check_positive(
+            ts_dialog_title.line_height,
+            "text_scale.dialog_title.line_height",
+            &mut missing,
+        );
+        check_range_u16(
+            ts_dialog_title.weight,
+            100,
+            900,
+            "text_scale.dialog_title.weight",
+            &mut missing,
+        );
+        check_positive(ts_display.size, "text_scale.display.size", &mut missing);
+        check_positive(
+            ts_display.line_height,
+            "text_scale.display.line_height",
+            &mut missing,
+        );
+        check_range_u16(
+            ts_display.weight,
+            100,
+            900,
+            "text_scale.display.weight",
+            &mut missing,
+        );
+
+        // window: radius >= 0
+        check_non_negative(window_radius, "window.radius", &mut missing);
+
+        // window font: size > 0, weight 100..=900
+        check_positive(
+            window_title_bar_font.size,
+            "window.title_bar_font.size",
+            &mut missing,
+        );
+        check_range_u16(
+            window_title_bar_font.weight,
+            100,
+            900,
+            "window.title_bar_font.weight",
+            &mut missing,
+        );
+
+        // button: geometry >= 0, opacity 0..=1, font size > 0, font weight 100..=900
+        check_non_negative(button_min_width, "button.min_width", &mut missing);
+        check_non_negative(button_min_height, "button.min_height", &mut missing);
+        check_non_negative(
+            button_padding_horizontal,
+            "button.padding_horizontal",
+            &mut missing,
+        );
+        check_non_negative(
+            button_padding_vertical,
+            "button.padding_vertical",
+            &mut missing,
+        );
+        check_non_negative(button_radius, "button.radius", &mut missing);
+        check_non_negative(button_icon_spacing, "button.icon_spacing", &mut missing);
+        check_range_f32(
+            button_disabled_opacity,
+            0.0,
+            1.0,
+            "button.disabled_opacity",
+            &mut missing,
+        );
+        check_positive(button_font.size, "button.font.size", &mut missing);
+        check_range_u16(
+            button_font.weight,
+            100,
+            900,
+            "button.font.weight",
+            &mut missing,
+        );
+
+        // input: geometry >= 0, font size > 0, font weight 100..=900
+        check_non_negative(input_min_height, "input.min_height", &mut missing);
+        check_non_negative(
+            input_padding_horizontal,
+            "input.padding_horizontal",
+            &mut missing,
+        );
+        check_non_negative(
+            input_padding_vertical,
+            "input.padding_vertical",
+            &mut missing,
+        );
+        check_non_negative(input_radius, "input.radius", &mut missing);
+        check_non_negative(input_border_width, "input.border_width", &mut missing);
+        check_positive(input_font.size, "input.font.size", &mut missing);
+        check_range_u16(
+            input_font.weight,
+            100,
+            900,
+            "input.font.weight",
+            &mut missing,
+        );
+
+        // checkbox: geometry >= 0
+        check_non_negative(
+            checkbox_indicator_size,
+            "checkbox.indicator_size",
+            &mut missing,
+        );
+        check_non_negative(checkbox_spacing, "checkbox.spacing", &mut missing);
+        check_non_negative(checkbox_radius, "checkbox.radius", &mut missing);
+        check_non_negative(checkbox_border_width, "checkbox.border_width", &mut missing);
+
+        // menu: geometry >= 0, font size > 0, font weight 100..=900
+        check_non_negative(menu_item_height, "menu.item_height", &mut missing);
+        check_non_negative(
+            menu_padding_horizontal,
+            "menu.padding_horizontal",
+            &mut missing,
+        );
+        check_non_negative(menu_padding_vertical, "menu.padding_vertical", &mut missing);
+        check_non_negative(menu_icon_spacing, "menu.icon_spacing", &mut missing);
+        check_positive(menu_font.size, "menu.font.size", &mut missing);
+        check_range_u16(menu_font.weight, 100, 900, "menu.font.weight", &mut missing);
+
+        // tooltip: geometry >= 0, font size > 0, font weight 100..=900
+        check_non_negative(
+            tooltip_padding_horizontal,
+            "tooltip.padding_horizontal",
+            &mut missing,
+        );
+        check_non_negative(
+            tooltip_padding_vertical,
+            "tooltip.padding_vertical",
+            &mut missing,
+        );
+        check_non_negative(tooltip_max_width, "tooltip.max_width", &mut missing);
+        check_non_negative(tooltip_radius, "tooltip.radius", &mut missing);
+        check_positive(tooltip_font.size, "tooltip.font.size", &mut missing);
+        check_range_u16(
+            tooltip_font.weight,
+            100,
+            900,
+            "tooltip.font.weight",
+            &mut missing,
+        );
+
+        // scrollbar: geometry >= 0
+        check_non_negative(scrollbar_width, "scrollbar.width", &mut missing);
+        check_non_negative(
+            scrollbar_min_thumb_height,
+            "scrollbar.min_thumb_height",
+            &mut missing,
+        );
+        check_non_negative(
+            scrollbar_slider_width,
+            "scrollbar.slider_width",
+            &mut missing,
+        );
+
+        // slider: geometry >= 0
+        check_non_negative(slider_track_height, "slider.track_height", &mut missing);
+        check_non_negative(slider_thumb_size, "slider.thumb_size", &mut missing);
+        check_non_negative(slider_tick_length, "slider.tick_length", &mut missing);
+
+        // progress_bar: geometry >= 0
+        check_non_negative(progress_bar_height, "progress_bar.height", &mut missing);
+        check_non_negative(
+            progress_bar_min_width,
+            "progress_bar.min_width",
+            &mut missing,
+        );
+        check_non_negative(progress_bar_radius, "progress_bar.radius", &mut missing);
+
+        // tab: geometry >= 0
+        check_non_negative(tab_min_width, "tab.min_width", &mut missing);
+        check_non_negative(tab_min_height, "tab.min_height", &mut missing);
+        check_non_negative(
+            tab_padding_horizontal,
+            "tab.padding_horizontal",
+            &mut missing,
+        );
+        check_non_negative(tab_padding_vertical, "tab.padding_vertical", &mut missing);
+
+        // toolbar: geometry >= 0, font size > 0, font weight 100..=900
+        check_non_negative(toolbar_height, "toolbar.height", &mut missing);
+        check_non_negative(toolbar_item_spacing, "toolbar.item_spacing", &mut missing);
+        check_non_negative(toolbar_padding, "toolbar.padding", &mut missing);
+        check_positive(toolbar_font.size, "toolbar.font.size", &mut missing);
+        check_range_u16(
+            toolbar_font.weight,
+            100,
+            900,
+            "toolbar.font.weight",
+            &mut missing,
+        );
+
+        // status_bar: font size > 0, font weight 100..=900
+        check_positive(status_bar_font.size, "status_bar.font.size", &mut missing);
+        check_range_u16(
+            status_bar_font.weight,
+            100,
+            900,
+            "status_bar.font.weight",
+            &mut missing,
+        );
+
+        // list: geometry >= 0
+        check_non_negative(list_item_height, "list.item_height", &mut missing);
+        check_non_negative(
+            list_padding_horizontal,
+            "list.padding_horizontal",
+            &mut missing,
+        );
+        check_non_negative(list_padding_vertical, "list.padding_vertical", &mut missing);
+
+        // popover: radius >= 0
+        check_non_negative(popover_radius, "popover.radius", &mut missing);
+
+        // splitter: width >= 0
+        check_non_negative(splitter_width, "splitter.width", &mut missing);
+
+        // switch: geometry >= 0
+        check_non_negative(switch_track_width, "switch.track_width", &mut missing);
+        check_non_negative(switch_track_height, "switch.track_height", &mut missing);
+        check_non_negative(switch_thumb_size, "switch.thumb_size", &mut missing);
+        check_non_negative(switch_track_radius, "switch.track_radius", &mut missing);
+
+        // dialog: geometry >= 0, font size > 0, font weight 100..=900
+        check_non_negative(dialog_min_width, "dialog.min_width", &mut missing);
+        check_non_negative(dialog_max_width, "dialog.max_width", &mut missing);
+        check_non_negative(dialog_min_height, "dialog.min_height", &mut missing);
+        check_non_negative(dialog_max_height, "dialog.max_height", &mut missing);
+        check_non_negative(
+            dialog_content_padding,
+            "dialog.content_padding",
+            &mut missing,
+        );
+        check_non_negative(dialog_button_spacing, "dialog.button_spacing", &mut missing);
+        check_non_negative(dialog_radius, "dialog.radius", &mut missing);
+        check_non_negative(dialog_icon_size, "dialog.icon_size", &mut missing);
+        check_positive(
+            dialog_title_font.size,
+            "dialog.title_font.size",
+            &mut missing,
+        );
+        check_range_u16(
+            dialog_title_font.weight,
+            100,
+            900,
+            "dialog.title_font.weight",
+            &mut missing,
+        );
+
+        // spinner: geometry >= 0
+        check_non_negative(spinner_diameter, "spinner.diameter", &mut missing);
+        check_non_negative(spinner_min_size, "spinner.min_size", &mut missing);
+        check_non_negative(spinner_stroke_width, "spinner.stroke_width", &mut missing);
+
+        // combo_box: geometry >= 0
+        check_non_negative(combo_box_min_height, "combo_box.min_height", &mut missing);
+        check_non_negative(combo_box_min_width, "combo_box.min_width", &mut missing);
+        check_non_negative(
+            combo_box_padding_horizontal,
+            "combo_box.padding_horizontal",
+            &mut missing,
+        );
+        check_non_negative(combo_box_arrow_size, "combo_box.arrow_size", &mut missing);
+        check_non_negative(
+            combo_box_arrow_area_width,
+            "combo_box.arrow_area_width",
+            &mut missing,
+        );
+        check_non_negative(combo_box_radius, "combo_box.radius", &mut missing);
+
+        // segmented_control: geometry >= 0
+        check_non_negative(
+            segmented_control_segment_height,
+            "segmented_control.segment_height",
+            &mut missing,
+        );
+        check_non_negative(
+            segmented_control_separator_width,
+            "segmented_control.separator_width",
+            &mut missing,
+        );
+        check_non_negative(
+            segmented_control_padding_horizontal,
+            "segmented_control.padding_horizontal",
+            &mut missing,
+        );
+        check_non_negative(
+            segmented_control_radius,
+            "segmented_control.radius",
+            &mut missing,
+        );
+
+        // card: geometry >= 0
+        check_non_negative(card_radius, "card.radius", &mut missing);
+        check_non_negative(card_padding, "card.padding", &mut missing);
+
+        // expander: geometry >= 0
+        check_non_negative(
+            expander_header_height,
+            "expander.header_height",
+            &mut missing,
+        );
+        check_non_negative(expander_arrow_size, "expander.arrow_size", &mut missing);
+        check_non_negative(
+            expander_content_padding,
+            "expander.content_padding",
+            &mut missing,
+        );
+        check_non_negative(expander_radius, "expander.radius", &mut missing);
+
+        // --- check for missing fields and range errors ---
 
         if !missing.is_empty() {
             return Err(crate::Error::Resolution(ThemeResolutionError {
@@ -1322,8 +1844,8 @@ impl ThemeVariant {
                 background: button_background,
                 foreground: button_foreground,
                 border: button_border,
-                primary_bg: button_primary_bg,
-                primary_fg: button_primary_fg,
+                primary_background: button_primary_background,
+                primary_foreground: button_primary_foreground,
                 min_width: button_min_width,
                 min_height: button_min_height,
                 padding_horizontal: button_padding_horizontal,
@@ -1449,9 +1971,9 @@ impl ThemeVariant {
                 color: separator_color,
             },
             switch: crate::model::widgets::ResolvedSwitchTheme {
-                checked_bg: switch_checked_bg,
-                unchecked_bg: switch_unchecked_bg,
-                thumb_bg: switch_thumb_bg,
+                checked_background: switch_checked_background,
+                unchecked_background: switch_unchecked_background,
+                thumb_background: switch_thumb_background,
                 track_width: switch_track_width,
                 track_height: switch_track_height,
                 thumb_size: switch_thumb_size,
@@ -1687,9 +2209,9 @@ mod tests {
         v.resolve();
 
         assert_eq!(
-            v.button.primary_bg,
+            v.button.primary_background,
             Some(Rgba::rgb(0, 120, 215)),
-            "button.primary_bg <- accent"
+            "button.primary_background <- accent"
         );
         assert_eq!(
             v.checkbox.checked_bg,
@@ -1707,9 +2229,9 @@ mod tests {
             "progress_bar.fill <- accent"
         );
         assert_eq!(
-            v.switch.checked_bg,
+            v.switch.checked_background,
             Some(Rgba::rgb(0, 120, 215)),
-            "switch.checked_bg <- accent"
+            "switch.checked_background <- accent"
         );
     }
 
@@ -1831,7 +2353,7 @@ mod tests {
         let mut v = variant_with_defaults();
         let explicit = Rgba::rgb(255, 0, 0);
         v.window.background = Some(explicit);
-        v.button.primary_bg = Some(explicit);
+        v.button.primary_background = Some(explicit);
         v.resolve();
 
         assert_eq!(
@@ -1840,9 +2362,9 @@ mod tests {
             "window.background preserved"
         );
         assert_eq!(
-            v.button.primary_bg,
+            v.button.primary_background,
             Some(explicit),
-            "button.primary_bg preserved"
+            "button.primary_background preserved"
         );
     }
 
@@ -1934,8 +2456,8 @@ mod tests {
         v.button.background = Some(c);
         v.button.foreground = Some(c);
         v.button.border = Some(c);
-        v.button.primary_bg = Some(c);
-        v.button.primary_fg = Some(c);
+        v.button.primary_background = Some(c);
+        v.button.primary_foreground = Some(c);
         v.button.min_width = Some(64.0);
         v.button.min_height = Some(28.0);
         v.button.padding_horizontal = Some(12.0);
@@ -2085,9 +2607,9 @@ mod tests {
         v.separator.color = Some(c);
 
         // switch
-        v.switch.checked_bg = Some(c);
-        v.switch.unchecked_bg = Some(c);
-        v.switch.thumb_bg = Some(c);
+        v.switch.checked_background = Some(c);
+        v.switch.unchecked_background = Some(c);
+        v.switch.thumb_background = Some(c);
         v.switch.track_width = Some(40.0);
         v.switch.track_height = Some(20.0);
         v.switch.thumb_size = Some(14.0);
@@ -2417,7 +2939,7 @@ mod tests {
         // splitter
         v.splitter.width = Some(4.0);
         // switch sizing
-        v.switch.unchecked_bg = Some(Rgba::rgb(180, 180, 180));
+        v.switch.unchecked_background = Some(Rgba::rgb(180, 180, 180));
         v.switch.track_width = Some(40.0);
         v.switch.track_height = Some(20.0);
         v.switch.thumb_size = Some(14.0);
@@ -2456,11 +2978,11 @@ mod tests {
         v.link.hover_bg = Some(Rgba::rgb(230, 230, 255));
         v.link.underline = Some(true);
 
-        v.resolve();
+        v.resolve_all();
         let result = v.validate();
         assert!(
             result.is_ok(),
-            "validate() should succeed after resolve() with all non-derivable fields set, got: {:?}",
+            "validate() should succeed after resolve_all() with all non-derivable fields set, got: {:?}",
             result.err()
         );
     }
@@ -2490,7 +3012,7 @@ mod tests {
             weight: Some(400),
         };
 
-        variant.resolve();
+        variant.resolve_all();
         let resolved = variant.validate().unwrap_or_else(|e| {
             panic!("GNOME resolve/validate pipeline failed: {e}");
         });
@@ -2516,5 +3038,519 @@ mod tests {
             crate::IconSet::Freedesktop,
             "icon_set should be from GNOME reader"
         );
+    }
+
+    // ===== Range validation tests =====
+
+    #[test]
+    fn validate_catches_negative_radius() {
+        let mut v = fully_populated_variant();
+        v.defaults.radius = Some(-5.0);
+        v.button.radius = Some(-1.0);
+        v.window.radius = Some(-3.0);
+
+        let result = v.validate();
+        assert!(result.is_err());
+        let err = match result.unwrap_err() {
+            crate::Error::Resolution(e) => e,
+            other => panic!("expected Resolution error, got: {other:?}"),
+        };
+        assert!(
+            err.missing_fields
+                .iter()
+                .any(|f| f.contains("defaults.radius") && f.contains("-5")),
+            "should report negative defaults.radius, got: {:?}",
+            err.missing_fields
+        );
+        assert!(
+            err.missing_fields
+                .iter()
+                .any(|f| f.contains("button.radius") && f.contains("-1")),
+            "should report negative button.radius, got: {:?}",
+            err.missing_fields
+        );
+        assert!(
+            err.missing_fields
+                .iter()
+                .any(|f| f.contains("window.radius") && f.contains("-3")),
+            "should report negative window.radius, got: {:?}",
+            err.missing_fields
+        );
+    }
+
+    #[test]
+    fn validate_catches_zero_font_size() {
+        let mut v = fully_populated_variant();
+        v.defaults.font.size = Some(0.0);
+
+        let result = v.validate();
+        assert!(result.is_err());
+        let err = match result.unwrap_err() {
+            crate::Error::Resolution(e) => e,
+            other => panic!("expected Resolution error, got: {other:?}"),
+        };
+        assert!(
+            err.missing_fields
+                .iter()
+                .any(|f| f.contains("defaults.font.size") && f.contains("> 0")),
+            "should report zero defaults.font.size, got: {:?}",
+            err.missing_fields
+        );
+    }
+
+    #[test]
+    fn validate_catches_opacity_out_of_range() {
+        let mut v = fully_populated_variant();
+        v.defaults.disabled_opacity = Some(1.5);
+        v.defaults.border_opacity = Some(-0.1);
+        v.button.disabled_opacity = Some(3.0);
+
+        let result = v.validate();
+        assert!(result.is_err());
+        let err = match result.unwrap_err() {
+            crate::Error::Resolution(e) => e,
+            other => panic!("expected Resolution error, got: {other:?}"),
+        };
+        assert!(
+            err.missing_fields
+                .iter()
+                .any(|f| f.contains("defaults.disabled_opacity")),
+            "should report out-of-range disabled_opacity, got: {:?}",
+            err.missing_fields
+        );
+        assert!(
+            err.missing_fields
+                .iter()
+                .any(|f| f.contains("defaults.border_opacity")),
+            "should report out-of-range border_opacity, got: {:?}",
+            err.missing_fields
+        );
+        assert!(
+            err.missing_fields
+                .iter()
+                .any(|f| f.contains("button.disabled_opacity")),
+            "should report out-of-range button.disabled_opacity, got: {:?}",
+            err.missing_fields
+        );
+    }
+
+    #[test]
+    fn validate_catches_invalid_font_weight() {
+        let mut v = fully_populated_variant();
+        v.defaults.font.weight = Some(50); // below 100
+        v.defaults.mono_font.weight = Some(1000); // above 900
+
+        let result = v.validate();
+        assert!(result.is_err());
+        let err = match result.unwrap_err() {
+            crate::Error::Resolution(e) => e,
+            other => panic!("expected Resolution error, got: {other:?}"),
+        };
+        assert!(
+            err.missing_fields
+                .iter()
+                .any(|f| f.contains("defaults.font.weight") && f.contains("50")),
+            "should report out-of-range font weight 50, got: {:?}",
+            err.missing_fields
+        );
+        assert!(
+            err.missing_fields
+                .iter()
+                .any(|f| f.contains("defaults.mono_font.weight") && f.contains("1000")),
+            "should report out-of-range mono_font weight 1000, got: {:?}",
+            err.missing_fields
+        );
+    }
+
+    #[test]
+    fn validate_reports_multiple_range_errors_together() {
+        let mut v = fully_populated_variant();
+        v.defaults.radius = Some(-1.0);
+        v.defaults.disabled_opacity = Some(2.0);
+        v.defaults.font.size = Some(0.0);
+        v.defaults.font.weight = Some(50);
+
+        let result = v.validate();
+        assert!(result.is_err());
+        let err = match result.unwrap_err() {
+            crate::Error::Resolution(e) => e,
+            other => panic!("expected Resolution error, got: {other:?}"),
+        };
+        // All 4 range errors should be reported in one batch
+        assert!(
+            err.missing_fields.len() >= 4,
+            "should report at least 4 range errors, got {}: {:?}",
+            err.missing_fields.len(),
+            err.missing_fields
+        );
+    }
+
+    #[test]
+    fn validate_allows_zero_radius_and_frame_width() {
+        // Zero is valid for these fields (flat design, no border)
+        let mut v = fully_populated_variant();
+        v.defaults.radius = Some(0.0);
+        v.defaults.radius_lg = Some(0.0);
+        v.defaults.frame_width = Some(0.0);
+        v.button.radius = Some(0.0);
+        v.defaults.disabled_opacity = Some(0.0);
+        v.defaults.border_opacity = Some(0.0);
+
+        let result = v.validate();
+        assert!(
+            result.is_ok(),
+            "zero values should be valid for radius/frame_width/opacity, got: {:?}",
+            result.err()
+        );
+    }
+
+    // ===== Resolve completeness test =====
+
+    /// Verify that resolve() has rules for every derived field.
+    ///
+    /// Constructs a ThemeVariant with ONLY root fields (the ~46 defaults
+    /// fields + ~65 widget geometry/behavior fields that have no derivation
+    /// path in resolve()). Derived fields (widget colors, widget fonts, text
+    /// scale entries, widget-to-widget chains) are left as None.
+    ///
+    /// If any derived field lacks a resolve rule, it stays None and
+    /// validate() reports it as missing -- catching the bug.
+    #[test]
+    fn resolve_completeness_minimal_variant() {
+        // Start with all defaults root fields populated
+        let mut v = variant_with_defaults();
+
+        // icon_set is required but not derived from anything -- it's a root field
+        v.icon_set = Some(crate::IconSet::Freedesktop);
+
+        // --- Non-derivable widget geometry/behavior fields ---
+        // These have no resolve() rule; they MUST be set explicitly.
+
+        // button
+        v.button.min_width = Some(64.0);
+        v.button.min_height = Some(28.0);
+        v.button.padding_horizontal = Some(12.0);
+        v.button.padding_vertical = Some(6.0);
+        v.button.icon_spacing = Some(6.0);
+
+        // input
+        v.input.min_height = Some(28.0);
+        v.input.padding_horizontal = Some(8.0);
+        v.input.padding_vertical = Some(4.0);
+
+        // checkbox
+        v.checkbox.indicator_size = Some(18.0);
+        v.checkbox.spacing = Some(6.0);
+
+        // menu
+        v.menu.item_height = Some(28.0);
+        v.menu.padding_horizontal = Some(8.0);
+        v.menu.padding_vertical = Some(4.0);
+        v.menu.icon_spacing = Some(6.0);
+
+        // tooltip
+        v.tooltip.padding_horizontal = Some(6.0);
+        v.tooltip.padding_vertical = Some(4.0);
+        v.tooltip.max_width = Some(300.0);
+
+        // scrollbar
+        v.scrollbar.width = Some(14.0);
+        v.scrollbar.min_thumb_height = Some(20.0);
+        v.scrollbar.slider_width = Some(8.0);
+        v.scrollbar.overlay_mode = Some(false);
+
+        // slider
+        v.slider.track_height = Some(4.0);
+        v.slider.thumb_size = Some(16.0);
+        v.slider.tick_length = Some(6.0);
+
+        // progress_bar
+        v.progress_bar.height = Some(6.0);
+        v.progress_bar.min_width = Some(100.0);
+
+        // tab
+        v.tab.min_width = Some(60.0);
+        v.tab.min_height = Some(32.0);
+        v.tab.padding_horizontal = Some(12.0);
+        v.tab.padding_vertical = Some(6.0);
+
+        // toolbar
+        v.toolbar.height = Some(40.0);
+        v.toolbar.item_spacing = Some(4.0);
+        v.toolbar.padding = Some(4.0);
+
+        // list
+        v.list.item_height = Some(28.0);
+        v.list.padding_horizontal = Some(8.0);
+        v.list.padding_vertical = Some(4.0);
+
+        // splitter
+        v.splitter.width = Some(4.0);
+
+        // switch
+        v.switch.track_width = Some(40.0);
+        v.switch.track_height = Some(20.0);
+        v.switch.thumb_size = Some(14.0);
+        v.switch.track_radius = Some(10.0);
+
+        // dialog
+        v.dialog.min_width = Some(320.0);
+        v.dialog.max_width = Some(600.0);
+        v.dialog.min_height = Some(200.0);
+        v.dialog.max_height = Some(800.0);
+        v.dialog.content_padding = Some(16.0);
+        v.dialog.button_spacing = Some(8.0);
+        v.dialog.icon_size = Some(22.0);
+        v.dialog.button_order = Some(DialogButtonOrder::TrailingAffirmative);
+
+        // spinner
+        v.spinner.diameter = Some(24.0);
+        v.spinner.min_size = Some(16.0);
+        v.spinner.stroke_width = Some(2.0);
+
+        // combo_box
+        v.combo_box.min_height = Some(28.0);
+        v.combo_box.min_width = Some(80.0);
+        v.combo_box.padding_horizontal = Some(8.0);
+        v.combo_box.arrow_size = Some(12.0);
+        v.combo_box.arrow_area_width = Some(20.0);
+
+        // segmented_control
+        v.segmented_control.segment_height = Some(28.0);
+        v.segmented_control.separator_width = Some(1.0);
+        v.segmented_control.padding_horizontal = Some(12.0);
+
+        // card
+        v.card.padding = Some(12.0);
+
+        // expander
+        v.expander.header_height = Some(32.0);
+        v.expander.arrow_size = Some(12.0);
+        v.expander.content_padding = Some(8.0);
+
+        // link: background and hover_bg have no derivation path
+        v.link.background = Some(Rgba::rgb(255, 255, 255));
+        v.link.hover_bg = Some(Rgba::rgb(230, 230, 255));
+        v.link.underline = Some(true);
+
+        // --- Verify: NO derived color/font/text_scale fields are set ---
+        // These should all be None at this point (resolve must fill them):
+        assert!(
+            v.window.background.is_none(),
+            "window.background should be None before resolve"
+        );
+        assert!(
+            v.button.background.is_none(),
+            "button.background should be None before resolve"
+        );
+        assert!(
+            v.button.font.is_none(),
+            "button.font should be None before resolve"
+        );
+        assert!(
+            v.text_scale.caption.is_none(),
+            "text_scale.caption should be None before resolve"
+        );
+
+        // --- Resolve and validate ---
+        v.resolve_all();
+        let result = v.validate();
+        assert!(
+            result.is_ok(),
+            "Resolve completeness failed -- some derived fields lack resolve rules: {:?}",
+            result.err()
+        );
+    }
+
+    /// Cross-check: verify completeness by stripping derived fields from a preset.
+    ///
+    /// Loads a known preset, clears all derived color/font/text_scale fields,
+    /// then verifies resolve() can reconstruct them. This is the complementary
+    /// approach to `resolve_completeness_minimal_variant` -- it starts from a
+    /// known-good preset instead of building from scratch.
+    #[test]
+    fn resolve_completeness_from_preset() {
+        let spec = crate::ThemeSpec::preset("material").unwrap();
+        let mut v = spec.dark.expect("material should have dark variant");
+
+        // Clear all derived color fields -- these should all be refilled by resolve()
+        // window colors
+        v.window.background = None;
+        v.window.foreground = None;
+        v.window.border = None;
+        v.window.title_bar_background = None;
+        v.window.title_bar_foreground = None;
+        v.window.inactive_title_bar_background = None;
+        v.window.inactive_title_bar_foreground = None;
+        v.window.radius = None;
+        v.window.shadow = None;
+
+        // button colors
+        v.button.background = None;
+        v.button.foreground = None;
+        v.button.border = None;
+        v.button.primary_background = None;
+        v.button.primary_foreground = None;
+        v.button.radius = None;
+        v.button.disabled_opacity = None;
+        v.button.shadow = None;
+
+        // input colors
+        v.input.background = None;
+        v.input.foreground = None;
+        v.input.border = None;
+        v.input.placeholder = None;
+        v.input.caret = None;
+        v.input.selection = None;
+        v.input.selection_foreground = None;
+        v.input.radius = None;
+        v.input.border_width = None;
+
+        // checkbox colors
+        v.checkbox.checked_bg = None;
+        v.checkbox.radius = None;
+        v.checkbox.border_width = None;
+
+        // menu colors
+        v.menu.background = None;
+        v.menu.foreground = None;
+        v.menu.separator = None;
+
+        // tooltip colors
+        v.tooltip.background = None;
+        v.tooltip.foreground = None;
+        v.tooltip.radius = None;
+
+        // scrollbar colors
+        v.scrollbar.track = None;
+        v.scrollbar.thumb = None;
+        v.scrollbar.thumb_hover = None;
+
+        // slider colors
+        v.slider.fill = None;
+        v.slider.track = None;
+        v.slider.thumb = None;
+
+        // progress_bar colors
+        v.progress_bar.fill = None;
+        v.progress_bar.track = None;
+        v.progress_bar.radius = None;
+
+        // tab colors
+        v.tab.background = None;
+        v.tab.foreground = None;
+        v.tab.active_background = None;
+        v.tab.active_foreground = None;
+        v.tab.bar_background = None;
+
+        // sidebar colors
+        v.sidebar.background = None;
+        v.sidebar.foreground = None;
+
+        // list colors
+        v.list.background = None;
+        v.list.foreground = None;
+        v.list.alternate_row = None;
+        v.list.selection = None;
+        v.list.selection_foreground = None;
+        v.list.header_background = None;
+        v.list.header_foreground = None;
+        v.list.grid_color = None;
+
+        // popover colors
+        v.popover.background = None;
+        v.popover.foreground = None;
+        v.popover.border = None;
+        v.popover.radius = None;
+
+        // separator
+        v.separator.color = None;
+
+        // switch colors
+        v.switch.checked_background = None;
+        v.switch.unchecked_background = None;
+        v.switch.thumb_background = None;
+
+        // dialog radius
+        v.dialog.radius = None;
+
+        // combo_box radius
+        v.combo_box.radius = None;
+
+        // segmented_control radius
+        v.segmented_control.radius = None;
+
+        // card colors
+        v.card.background = None;
+        v.card.border = None;
+        v.card.radius = None;
+        v.card.shadow = None;
+
+        // expander radius
+        v.expander.radius = None;
+
+        // link colors
+        v.link.color = None;
+        v.link.visited = None;
+
+        // spinner
+        v.spinner.fill = None;
+
+        // Clear all widget fonts (these are derived from defaults.font)
+        v.window.title_bar_font = None;
+        v.button.font = None;
+        v.input.font = None;
+        v.menu.font = None;
+        v.tooltip.font = None;
+        v.toolbar.font = None;
+        v.status_bar.font = None;
+        v.dialog.title_font = None;
+
+        // Clear text_scale entries (derived from defaults.font + defaults.line_height)
+        v.text_scale.caption = None;
+        v.text_scale.section_heading = None;
+        v.text_scale.dialog_title = None;
+        v.text_scale.display = None;
+
+        // Clear defaults internal chains (derived from accent/selection)
+        v.defaults.selection = None;
+        v.defaults.focus_ring_color = None;
+        v.defaults.selection_inactive = None;
+
+        // Resolve should fill everything back
+        v.resolve_all();
+        let result = v.validate();
+        assert!(
+            result.is_ok(),
+            "Resolve completeness from preset failed -- some derived fields lack resolve rules: {:?}",
+            result.err()
+        );
+    }
+
+    #[test]
+    fn validate_all_presets_pass_range_checks() {
+        // Verify no false positives: all 16 presets pass validation including range checks
+        let names = crate::ThemeSpec::list_presets();
+        assert!(names.len() >= 16, "expected at least 16 presets");
+
+        for name in names {
+            let spec = crate::ThemeSpec::preset(name).unwrap();
+            if let Some(light) = spec.light {
+                let resolved = light.into_resolved();
+                assert!(
+                    resolved.is_ok(),
+                    "preset '{name}' light variant failed: {:?}",
+                    resolved.err()
+                );
+            }
+            if let Some(dark) = spec.dark {
+                let resolved = dark.into_resolved();
+                assert!(
+                    resolved.is_ok(),
+                    "preset '{name}' dark variant failed: {:?}",
+                    resolved.err()
+                );
+            }
+        }
     }
 }

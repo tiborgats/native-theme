@@ -899,7 +899,7 @@ mod tests {
             .light
             .clone()
             .expect("light variant should exist after merge");
-        light.resolve();
+        light.resolve_all();
         let resolved = light.validate().unwrap_or_else(|e| {
             panic!("macOS resolve/validate pipeline failed (light): {e}");
         });
@@ -925,7 +925,7 @@ mod tests {
             .dark
             .clone()
             .expect("dark variant should exist after merge");
-        dark.resolve();
+        dark.resolve_all();
         let resolved_dark = dark.validate().unwrap_or_else(|e| {
             panic!("macOS resolve/validate pipeline failed (dark): {e}");
         });

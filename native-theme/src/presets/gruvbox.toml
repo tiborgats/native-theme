@@ -5,7 +5,6 @@ name = "Gruvbox"
 # === Light variant (Gruvbox Light medium contrast) ===
 
 [light]
-icon_set = "freedesktop"
 
 [light.defaults]
 accent = "#076678"
@@ -152,8 +151,8 @@ color = "#d5c4a1"
 width = 4.0
 
 [light.switch]
-unchecked_bg = "#d5c4a1"
-thumb_bg = "#fbf1c7"
+unchecked_background = "#d5c4a1"
+thumb_background = "#fbf1c7"
 track_width = 40.0
 track_height = 20.0
 thumb_size = 16.0
@@ -202,7 +201,6 @@ content_padding = 16.0
 # === Dark variant (Gruvbox Dark medium contrast) ===
 
 [dark]
-icon_set = "freedesktop"
 
 [dark.defaults]
 accent = "#83a598"
@@ -349,8 +347,8 @@ color = "#504945"
 width = 4.0
 
 [dark.switch]
-unchecked_bg = "#504945"
-thumb_bg = "#ebdbb2"
+unchecked_background = "#504945"
+thumb_background = "#ebdbb2"
 track_width = 40.0
 track_height = 20.0
 thumb_size = 16.0

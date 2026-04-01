@@ -1,6 +1,6 @@
 #[cfg(test)]
 use std::collections::BTreeMap;
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fs;
 use std::path::Path;
 
@@ -83,18 +83,25 @@ pub(crate) fn validate_mapping(
 
 /// Validate that SVG files exist for all entries in a bundled theme mapping.
 ///
-/// For each mapping entry, constructs the expected path as
+/// Only checks SVGs for roles declared in `master_roles`, avoiding spurious
+/// `MissingSvg` errors for unknown roles that are already reported by
+/// [`validate_mapping()`].
+///
+/// For each matching entry, constructs the expected path as
 /// `theme_dir / {default_name}.svg` and checks if the file exists.
 /// Returns `BuildError::MissingSvg` for each missing file.
 pub(crate) fn validate_svgs(
     mapping: &ThemeMapping,
     theme_dir: &Path,
-    _mapping_path: &str,
+    master_roles: &[String],
 ) -> Vec<BuildError> {
+    let role_set: BTreeSet<&str> = master_roles.iter().map(|s| s.as_str()).collect();
     let mut errors = Vec::new();
 
-    for value in mapping.values() {
-        if let Some(name) = value.default_name() {
+    for (role, value) in mapping {
+        if role_set.contains(role.as_str())
+            && let Some(name) = value.default_name()
+        {
             let svg_path = theme_dir.join(format!("{name}.svg"));
             if !svg_path.exists() {
                 errors.push(BuildError::MissingSvg {
@@ -125,7 +132,12 @@ pub(crate) fn check_orphan_svgs(
     // List all .svg files in the theme directory
     let entries = match fs::read_dir(theme_dir) {
         Ok(entries) => entries,
-        Err(_) => return Vec::new(),
+        Err(e) => {
+            return vec![format!(
+                "cannot scan theme dir '{}' for orphan SVGs: {e}",
+                theme_dir.display()
+            )];
+        }
     };
 
     let mut warnings = Vec::new();
@@ -193,10 +205,19 @@ pub(crate) fn validate_theme_overlap(config: &MasterConfig) -> Vec<BuildError> {
         .collect()
 }
 
+/// Check whether a PascalCase identifier starts with a valid Rust identifier character.
+fn is_valid_ident_start(pascal: &str) -> bool {
+    pascal
+        .chars()
+        .next()
+        .is_some_and(|c| c.is_ascii_alphabetic() || c == '_')
+}
+
 /// Validate identifiers produced from role names and the enum name.
 ///
 /// Checks:
 /// - PascalCase conversion produces a non-empty result.
+/// - Result starts with a letter or underscore (valid Rust identifier).
 /// - Result is not a Rust keyword.
 /// - No two roles produce the same PascalCase variant (collision).
 pub(crate) fn validate_identifiers(config: &MasterConfig) -> Vec<BuildError> {
@@ -208,6 +229,14 @@ pub(crate) fn validate_identifiers(config: &MasterConfig) -> Vec<BuildError> {
         errors.push(BuildError::InvalidIdentifier {
             name: config.name.clone(),
             reason: "PascalCase conversion produces an empty string".to_string(),
+        });
+    } else if !is_valid_ident_start(&enum_pascal) {
+        errors.push(BuildError::InvalidIdentifier {
+            name: config.name.clone(),
+            reason: format!(
+                "\"{enum_pascal}\" starts with a non-letter character; \
+                 Rust identifiers must begin with a letter or underscore"
+            ),
         });
     } else if RUST_KEYWORDS.contains(&enum_pascal.as_str()) {
         errors.push(BuildError::InvalidIdentifier {
@@ -228,7 +257,15 @@ pub(crate) fn validate_identifiers(config: &MasterConfig) -> Vec<BuildError> {
             });
             continue;
         }
-        if RUST_KEYWORDS.contains(&pascal.as_str()) {
+        if !is_valid_ident_start(&pascal) {
+            errors.push(BuildError::InvalidIdentifier {
+                name: role.clone(),
+                reason: format!(
+                    "\"{pascal}\" starts with a non-letter character; \
+                     Rust identifiers must begin with a letter or underscore"
+                ),
+            });
+        } else if RUST_KEYWORDS.contains(&pascal.as_str()) {
             errors.push(BuildError::InvalidIdentifier {
                 name: role.clone(),
                 reason: format!("\"{pascal}\" is a Rust keyword"),
@@ -257,16 +294,14 @@ pub(crate) fn validate_no_duplicate_roles_in_file(
     file_path: &str,
 ) -> Vec<BuildError> {
     let mut errors = Vec::new();
-    let mut seen_exact: HashMap<&str, bool> = HashMap::new();
+    let mut seen_exact: HashSet<&str> = HashSet::new();
 
     for role in &config.roles {
-        if let Some(_already) = seen_exact.get(role.as_str()) {
+        if !seen_exact.insert(role.as_str()) {
             errors.push(BuildError::DuplicateRoleInFile {
                 role: role.clone(),
                 file: file_path.to_string(),
             });
-        } else {
-            seen_exact.insert(role.as_str(), true);
         }
     }
 
@@ -518,7 +553,8 @@ mod tests {
             ("play-pause", MappingValue::Simple("play_pause".into())),
             ("skip-forward", MappingValue::Simple("skip_next".into())),
         ]);
-        let errors = validate_svgs(&mapping, &dir, "icons/material/mapping.toml");
+        let master_roles = vec!["play-pause".to_string(), "skip-forward".to_string()];
+        let errors = validate_svgs(&mapping, &dir, &master_roles);
         assert_eq!(errors.len(), 1);
         let msg = errors[0].to_string();
         assert!(
@@ -541,7 +577,8 @@ mod tests {
             ("play-pause", MappingValue::Simple("play_pause".into())),
             ("skip-forward", MappingValue::Simple("skip_next".into())),
         ]);
-        let errors = validate_svgs(&mapping, &dir, "mapping.toml");
+        let master_roles = vec!["play-pause".to_string(), "skip-forward".to_string()];
+        let errors = validate_svgs(&mapping, &dir, &master_roles);
         assert!(errors.is_empty(), "all SVGs present, no errors expected");
 
         let _ = fs::remove_dir_all(&dir);
@@ -558,7 +595,8 @@ mod tests {
         de_map.insert("kde".to_string(), "media-playback-start".to_string());
         de_map.insert("default".to_string(), "play".to_string());
         let mapping = make_mapping(vec![("play-pause", MappingValue::DeAware(de_map))]);
-        let errors = validate_svgs(&mapping, &dir, "mapping.toml");
+        let master_roles = vec!["play-pause".to_string()];
+        let errors = validate_svgs(&mapping, &dir, &master_roles);
         assert!(errors.is_empty(), "SVG for default name exists");
 
         let _ = fs::remove_dir_all(&dir);
@@ -827,6 +865,45 @@ mod tests {
                 .iter()
                 .any(|e| matches!(e, BuildError::IdentifierCollision { .. })),
             "should not detect collision for distinct roles"
+        );
+    }
+
+    #[test]
+    fn identifier_role_starts_with_digit() {
+        let config = make_config("app-icon", &["3d-rotate"], &[], &[]);
+        let errors = validate_identifiers(&config);
+        assert!(
+            errors.iter().any(
+                |e| matches!(e, BuildError::InvalidIdentifier { name, reason }
+                    if name == "3d-rotate" && reason.contains("non-letter"))
+            ),
+            "should reject digit-starting role identifier: {errors:?}"
+        );
+    }
+
+    #[test]
+    fn identifier_enum_name_starts_with_digit() {
+        let config = make_config("3d-icons", &["play-pause"], &[], &[]);
+        let errors = validate_identifiers(&config);
+        assert!(
+            errors.iter().any(
+                |e| matches!(e, BuildError::InvalidIdentifier { name, reason }
+                    if name == "3d-icons" && reason.contains("non-letter"))
+            ),
+            "should reject digit-starting enum name: {errors:?}"
+        );
+    }
+
+    #[test]
+    fn identifier_role_all_digits() {
+        let config = make_config("app-icon", &["123"], &[], &[]);
+        let errors = validate_identifiers(&config);
+        assert!(
+            errors.iter().any(
+                |e| matches!(e, BuildError::InvalidIdentifier { name, reason }
+                    if name == "123" && reason.contains("non-letter"))
+            ),
+            "should reject all-digits role identifier: {errors:?}"
         );
     }
 

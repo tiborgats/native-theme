@@ -201,4 +201,144 @@ mod tests {
         assert!(!is_known_theme("nonexistent"));
         assert!(!is_known_theme(""));
     }
+
+    // === Drift detection: THEME_TABLE vs native_theme::IconSet ===
+
+    /// Verify every THEME_TABLE entry resolves to a real IconSet variant
+    /// and that the variant path string matches the Debug representation.
+    #[test]
+    fn theme_table_entries_match_icon_set_variants() {
+        for (toml_key, variant_str) in THEME_TABLE {
+            let icon_set = native_theme::IconSet::from_name(toml_key).unwrap_or_else(|| {
+                panic!(
+                    "THEME_TABLE key \"{toml_key}\" does not match any IconSet variant \
+                     (IconSet::from_name returned None)"
+                )
+            });
+            let expected = format!("IconSet::{icon_set:?}");
+            assert_eq!(
+                *variant_str, expected,
+                "THEME_TABLE variant string for \"{toml_key}\" is \"{variant_str}\", \
+                 but IconSet::from_name produces {expected}"
+            );
+        }
+    }
+
+    /// Verify every IconSet variant has a corresponding THEME_TABLE entry.
+    ///
+    /// Uses the known set of all IconSet variants. If a new variant is added
+    /// to IconSet without updating this list, this test fails -- prompting
+    /// the developer to update both THEME_TABLE and this test.
+    #[test]
+    fn theme_table_covers_all_icon_set_variants() {
+        let all_variants: &[native_theme::IconSet] = &[
+            native_theme::IconSet::SfSymbols,
+            native_theme::IconSet::SegoeIcons,
+            native_theme::IconSet::Freedesktop,
+            native_theme::IconSet::Material,
+            native_theme::IconSet::Lucide,
+        ];
+
+        assert_eq!(
+            THEME_TABLE.len(),
+            all_variants.len(),
+            "THEME_TABLE has {} entries but there are {} IconSet variants -- \
+             a variant was added or removed without updating the table",
+            THEME_TABLE.len(),
+            all_variants.len(),
+        );
+
+        for variant in all_variants {
+            let name = variant.name();
+            assert!(
+                THEME_TABLE.iter().any(|(k, _)| *k == name),
+                "IconSet variant {:?} (name=\"{name}\") has no THEME_TABLE entry",
+                variant,
+            );
+        }
+    }
+
+    // === Drift detection: DE_TABLE vs native_theme::LinuxDesktop ===
+
+    /// Verify every DE_TABLE entry resolves to a real LinuxDesktop variant
+    /// and that the variant path string matches the Debug representation.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn de_table_entries_match_linux_desktop_variants() {
+        use native_theme::{LinuxDesktop, detect_linux_de};
+
+        // Map from TOML key to the XDG_CURRENT_DESKTOP value that produces
+        // each LinuxDesktop variant.
+        let key_to_xdg: &[(&str, &str)] = &[
+            ("kde", "KDE"),
+            ("gnome", "GNOME"),
+            ("xfce", "XFCE"),
+            ("cinnamon", "Cinnamon"),
+            ("mate", "MATE"),
+            ("lxqt", "LXQt"),
+            ("budgie", "Budgie:GNOME"),
+        ];
+
+        for (toml_key, variant_str) in DE_TABLE {
+            let xdg = key_to_xdg
+                .iter()
+                .find(|(k, _)| *k == *toml_key)
+                .unwrap_or_else(|| {
+                    panic!(
+                        "DE_TABLE key \"{toml_key}\" has no XDG mapping in the drift test -- \
+                     update key_to_xdg"
+                    )
+                });
+
+            let desktop = detect_linux_de(xdg.1);
+            assert_ne!(
+                desktop,
+                LinuxDesktop::Unknown,
+                "DE_TABLE key \"{toml_key}\" (XDG=\"{}\") resolves to LinuxDesktop::Unknown",
+                xdg.1,
+            );
+
+            let expected = format!("LinuxDesktop::{desktop:?}");
+            assert_eq!(
+                *variant_str, expected,
+                "DE_TABLE variant string for \"{toml_key}\" is \"{variant_str}\", \
+                 but detect_linux_de produces {expected}"
+            );
+        }
+    }
+
+    /// Verify every non-Unknown LinuxDesktop variant has a DE_TABLE entry.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn de_table_covers_all_linux_desktop_variants() {
+        use native_theme::LinuxDesktop;
+
+        // All non-Unknown variants. If a new variant is added to LinuxDesktop,
+        // update this list AND DE_TABLE.
+        let all_variants: &[(&str, LinuxDesktop)] = &[
+            ("kde", LinuxDesktop::Kde),
+            ("gnome", LinuxDesktop::Gnome),
+            ("xfce", LinuxDesktop::Xfce),
+            ("cinnamon", LinuxDesktop::Cinnamon),
+            ("mate", LinuxDesktop::Mate),
+            ("lxqt", LinuxDesktop::LxQt),
+            ("budgie", LinuxDesktop::Budgie),
+        ];
+
+        assert_eq!(
+            DE_TABLE.len(),
+            all_variants.len(),
+            "DE_TABLE has {} entries but there are {} non-Unknown LinuxDesktop variants -- \
+             a variant was added or removed without updating the table",
+            DE_TABLE.len(),
+            all_variants.len(),
+        );
+
+        for (expected_key, variant) in all_variants {
+            assert!(
+                DE_TABLE.iter().any(|(k, _)| k == expected_key),
+                "LinuxDesktop::{variant:?} (key=\"{expected_key}\") has no DE_TABLE entry",
+            );
+        }
+    }
 }

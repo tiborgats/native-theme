@@ -153,8 +153,8 @@ color = "#c4c8c6"
 width = 1.0
 
 [light.switch]
-unchecked_bg = "#bcc0bf"
-thumb_bg = "#fcfcfc"
+unchecked_background = "#bcc0bf"
+thumb_background = "#fcfcfc"
 track_width = 36.0
 track_height = 18.0
 thumb_size = 18.0
@@ -351,8 +351,8 @@ color = "#3e4550"
 width = 1.0
 
 [dark.switch]
-unchecked_bg = "#4d545b"
-thumb_bg = "#fcfcfc"
+unchecked_background = "#4d545b"
+thumb_background = "#fcfcfc"
 track_width = 36.0
 track_height = 18.0
 thumb_size = 18.0

@@ -25,14 +25,9 @@ use native_theme_iced::to_theme;
 
 // Load a preset and resolve it
 let nt = ThemeSpec::preset("dracula").unwrap();
-let is_dark = true;
-if let Some(variant) = nt.pick_variant(is_dark) {
-    let mut v = variant.clone();
-    v.resolve();
-    let resolved = v.validate().unwrap();
-    let theme = to_theme(&resolved, "My App");
-    // Use `theme` as your iced application theme
-}
+let resolved = nt.into_variant(true).unwrap().into_resolved().unwrap();
+let theme = to_theme(&resolved, "My App");
+// Use `theme` as your iced application theme
 ```
 
 Or read the OS theme at runtime:
@@ -57,10 +52,15 @@ per-widget rather than through the Catalog:
 - `scrollbar_width(resolved)` -- scrollbar track width
 - `font_family(resolved)` -- primary UI font family name
 - `font_size(resolved)` -- primary UI font size in logical pixels
+- `font_weight(resolved)` -- primary UI font weight (CSS 100-900)
 - `mono_font_family(resolved)` -- monospace font family name
 - `mono_font_size(resolved)` -- monospace font size in pixels
+- `mono_font_weight(resolved)` -- monospace font weight (CSS 100-900)
+- `line_height_multiplier(resolved)` -- line height multiplier (e.g. 1.4)
+- `to_iced_weight(css_weight)` -- converts CSS weight to iced `Weight` enum
 
-All helpers take a `&ResolvedThemeVariant` reference.
+All helpers take a `&ResolvedThemeVariant` reference (except `to_iced_weight`
+which takes a `u16`).
 
 ## Modules
 
@@ -88,10 +88,10 @@ The connector provides helpers for displaying animated icons from
 - `spin_rotation_radians()` -- computes the current rotation angle for `AnimatedIcon::Transform` playback
 
 ```rust,ignore
-use native_theme::{loading_indicator, prefers_reduced_motion, AnimatedIcon};
+use native_theme::{loading_indicator, prefers_reduced_motion, AnimatedIcon, IconSet};
 use native_theme_iced::icons::{animated_frames_to_svg_handles, spin_rotation_radians};
 
-if let Some(anim) = loading_indicator("material") {
+if let Some(anim) = loading_indicator(IconSet::Material) {
     if prefers_reduced_motion() {
         // Static fallback for accessibility
         let static_icon = anim.first_frame();
@@ -99,10 +99,11 @@ if let Some(anim) = loading_indicator("material") {
         match &anim {
             AnimatedIcon::Frames { frame_duration_ms, .. } => {
                 // Cache this -- do not call on every frame tick
-                let handles = animated_frames_to_svg_handles(&anim);
-                // Use iced::time::every(Duration::from_millis(*frame_duration_ms as u64))
-                // to drive frame_index = (frame_index + 1) % handles.len()
-                // In view: Svg::new(handles[frame_index].clone())
+                if let Some(anim_handles) = animated_frames_to_svg_handles(&anim, None) {
+                    // Use iced::time::every(Duration::from_millis(anim_handles.frame_duration_ms as u64))
+                    // to drive frame_index = (frame_index + 1) % anim_handles.handles.len()
+                    // In view: Svg::new(anim_handles.handles[frame_index].clone())
+                }
             }
             AnimatedIcon::Transform { icon, animation } => {
                 let angle = spin_rotation_radians(elapsed, 1000);
@@ -113,7 +114,7 @@ if let Some(anim) = loading_indicator("material") {
 }
 ```
 
-Cache the `Vec<svg::Handle>` from `animated_frames_to_svg_handles()` -- do not
+Cache the `AnimatedSvgHandles` from `animated_frames_to_svg_handles()` -- do not
 call it on every frame tick. Use `Rotation::Floating` (not `Rotation::Solid`)
 for spin animations to avoid layout jitter during rotation.
 

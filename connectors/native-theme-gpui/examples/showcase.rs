@@ -878,7 +878,8 @@ impl Showcase {
                 AnimatedIcon::Frames {
                     frame_duration_ms, ..
                 } => {
-                    if let Some(anim_sources) = animated_frames_to_image_sources(&anim) {
+                    if let Some(anim_sources) = animated_frames_to_image_sources(&anim, None, None)
+                    {
                         if let Some(first) = anim.first_frame()
                             && let Some(first_source) = to_image_source(first, None, None)
                         {

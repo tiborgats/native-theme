@@ -487,6 +487,43 @@ pub fn system_icon_theme() -> &'static str {
     }
 }
 
+/// Detect the icon theme name for the current platform without caching.
+///
+/// Unlike [`system_icon_theme()`], this function queries the OS every time it
+/// is called and never caches the result. Use this when polling for icon theme
+/// changes (e.g., the user switches from Breeze to Breeze Dark in system
+/// settings).
+///
+/// See [`system_icon_theme()`] for platform behavior details.
+#[must_use = "this returns the current icon theme name"]
+#[allow(unreachable_code)]
+pub fn detect_icon_theme() -> String {
+    #[cfg(any(target_os = "macos", target_os = "ios"))]
+    {
+        return "sf-symbols".to_string();
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        return "segoe-fluent".to_string();
+    }
+
+    #[cfg(target_os = "linux")]
+    {
+        detect_linux_icon_theme()
+    }
+
+    #[cfg(not(any(
+        target_os = "linux",
+        target_os = "windows",
+        target_os = "macos",
+        target_os = "ios"
+    )))]
+    {
+        "material".to_string()
+    }
+}
+
 /// Linux icon theme detection, dispatched by desktop environment.
 #[cfg(target_os = "linux")]
 fn detect_linux_icon_theme() -> String {

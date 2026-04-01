@@ -14,3 +14,6 @@ categories = ["development-tools::build-utils", "gui"]
 toml = "1.1.0"
 serde = { version = "1.0.228", features = ["derive"] }
 heck = "0.5"
+
+[dev-dependencies]
+native-theme = { path = "../native-theme" }

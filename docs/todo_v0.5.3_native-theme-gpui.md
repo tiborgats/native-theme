@@ -1,6 +1,6 @@
 # v0.5.3 Review -- native-theme-gpui (gpui connector)
 
-Verified against source code on 2026-03-31. Each chapter covers one
+Verified against source code on 2026-04-01. Each chapter covers one
 problem, lists all resolution options with full pro/contra, and
 recommends the best solution. Pre-1.0 -- backward compatibility is
 not a constraint.
@@ -17,12 +17,63 @@ not a constraint.
 | # | Issue | Severity | Fix complexity |
 |---|-------|----------|----------------|
 | 1 | `apply_config` workaround is fragile and untested | High | Low |
-| 2 | `from_preset()` discards `ResolvedThemeVariant` | High | Low |
+| 2 | `from_preset()` / `from_system()` discard `ResolvedThemeVariant` | High | Low |
 | 3 | `radius.round() as usize` truncates fractional radii | Medium | Trivial |
 | 4 | `encode_rgba_as_bmp()` has no input validation | Medium | Low |
-| 5 | `from_preset()` / `from_system()` clone variant unnecessarily | Low | Trivial |
+| 5 | `from_preset()` clones variant unnecessarily | Low | Trivial |
 | 6 | `accordion_hover` uses bare opacity instead of `hover_color()` | Low | Trivial |
-| 7 | `animated_frames_to_image_sources()` silently drops unconvertible frames | Low | Low |
+| 7 | `animated_frames_to_image_sources()` silently drops unconvertible frames | Low | Trivial |
+| 8 | Deprecated `pick_variant()` free function still exported | Low | Trivial |
+| 9 | `colorize_svg()` silently corrupts non-UTF-8 SVG data | Medium | Trivial |
+| 10 | No convenience function for IconName + IconSet to ImageSource | Low | Low |
+| 11 | `encode_rgba_as_bmp()` doc comment says "bottom-up" but code uses top-down | Low | Trivial |
+| 12 | `into_image_source()` duplicates `to_image_source()` body | Low | Trivial |
+| 13 | Missing re-exports: `LinuxDesktop`, `Error`, `TransformAnimation` | Medium | Trivial |
+| 14 | Module-level doc examples use deprecated/removed patterns | Low | Trivial |
+| 15 | `animated_frames_to_image_sources()` hardcodes `None` for color and size | Low | Trivial |
+| 16 | README has multiple documentation errors | Medium | Low |
+| 17 | `from_preset()` error message is misleading | Low | Trivial |
+
+### Issue dependencies
+
+Issues #1 and #3 are linked: bypassing `apply_config` (issue #1
+Option B) eliminates the radius truncation (issue #3) as a side
+effect. Issues #2, #5, #8, #14, and #17 form a group: changing the
+return type (issue #2) naturally uses `into_variant` (issue #5),
+removing `pick_variant` (issue #8) breaks the manual-path doc
+example, and all three require updating doc examples (issue #14).
+Issue #17 (error message) should be fixed alongside issue #5 since
+they modify the same `from_preset()` function. Issue #12 should be
+done before issue #4 so the `encode_rgba_as_bmp` return type change
+only needs to be applied in one code path. Issue #16 depends on
+issues #2, #5, #8, and #15 because the README examples must reflect
+the new API signatures.
+
+### Implementation groups
+
+Issues can be implemented in three waves. Items within a wave are
+independent of each other.
+
+**Wave 1 -- API changes (breaking)**
+- Issue #1 (bypass apply_config) -- also eliminates issue #3
+- Issue #2 (return tuple) -- combine with issue #5 (into_variant)
+- Issue #8 (remove deprecated pick_variant)
+- Issue #14 (update doc examples) -- part of #2, #5, #8
+- Issue #15 (add color/size params to animated frames)
+- Issue #17 (fix error message) -- part of #5
+
+**Wave 2 -- Independent fixes**
+- Issue #4 (BMP input validation)
+- Issue #6 (accordion_hover consistency)
+- Issue #9 (colorize_svg UTF-8 guard)
+- Issue #10 (bundled icon convenience function)
+- Issue #12 (into_image_source delegation) -- before #4
+- Issue #13 (missing re-exports)
+
+**Wave 3 -- Documentation only**
+- Issue #7 (document animated frame filtering)
+- Issue #11 (fix BMP doc comment)
+- Issue #16 (fix README errors) -- after Wave 1 API changes
 
 ---
 
@@ -39,9 +90,6 @@ pub fn to_theme(resolved: &ResolvedThemeVariant, name: &str, is_dark: bool) -> T
     let mode = if is_dark { ThemeMode::Dark } else { ThemeMode::Light };
     let theme_config = config::to_theme_config(resolved, name, mode);
 
-    // gpui-component's apply_config sets non-color fields (font_family,
-    // font_size, radius, shadow, mode) but also overwrites ALL color fields.
-    // We restore our colors after.
     let mut theme = Theme::from(&theme_color);
     theme.apply_config(&theme_config.into());
     theme.colors = theme_color; // restore clobbered colors
@@ -50,28 +98,52 @@ pub fn to_theme(resolved: &ResolvedThemeVariant, name: &str, is_dark: bool) -> T
 ```
 
 The connector relies on `apply_config` setting font_family, font_size,
-radius, shadow, and mode as side effects, then overwrites all colors.
-If gpui-component changes what `apply_config` does in a minor version
-(e.g., stops setting font_family, or starts setting additional state),
+radius, shadow, mode, and `light_theme`/`dark_theme` Rc storage as
+side effects, then overwrites all 108 color fields. If gpui-component
+changes what `apply_config` does in a minor version (e.g., stops
+setting font_family, or starts setting additional non-color state),
 the connector silently produces wrong themes.
 
 No existing test asserts that the side effects actually happened. The
-tests only check `theme.is_dark()`:
+tests only check `theme.is_dark()`.
+
+**Key finding:** Inspection of gpui-component 0.5.1 source reveals
+that **all 17 Theme fields are public**:
 
 ```rust
-fn to_theme_produces_valid_theme() {
-    let resolved = test_resolved();
-    let theme = to_theme(&resolved, "Test", false);
-    assert!(!theme.is_dark());
+pub struct Theme {
+    pub colors: ThemeColor,
+    pub highlight_theme: Arc<HighlightTheme>,
+    pub light_theme: Rc<ThemeConfig>,
+    pub dark_theme: Rc<ThemeConfig>,
+    pub mode: ThemeMode,
+    pub font_family: SharedString,
+    pub font_size: Pixels,
+    pub mono_font_family: SharedString,
+    pub mono_font_size: Pixels,
+    pub radius: Pixels,
+    pub radius_lg: Pixels,
+    pub shadow: bool,
+    pub transparent: Hsla,
+    pub scrollbar_show: ScrollbarShow,
+    pub tile_grid_size: Pixels,
+    pub tile_shadow: bool,
+    pub tile_radius: Pixels,
 }
 ```
 
+This means Option B (bypass `apply_config` entirely and set fields
+directly) is fully viable. The prior document incorrectly stated
+"Only possible if Theme exposes all needed fields publicly" as a
+conditional -- it does.
+
 ### Options
 
-**A. Add assertions for side-effect fields (recommended)**
+**A. Add test assertions for side-effect fields**
 
 Add a test that verifies font_family, font_size, radius, and shadow
-are set correctly after the `to_theme()` call:
+are set correctly after the `to_theme()` call. Since all Theme fields
+are public, the assertions are straightforward:
 
 ```rust
 #[test]
@@ -79,43 +151,80 @@ fn to_theme_applies_font_and_geometry() {
     let resolved = test_resolved();
     let theme = to_theme(&resolved, "Test", false);
 
-    // Font family should match the resolved theme
-    // (access via theme.config or Theme's public API)
-    // Radius should be set
-    // Shadow should match resolved.defaults.shadow_enabled
+    assert_eq!(theme.font_family.to_string(), resolved.defaults.font.family);
+    assert_eq!(theme.font_size, px(resolved.defaults.font.size));
+    assert_eq!(theme.shadow, resolved.defaults.shadow_enabled);
 }
 ```
-
-The exact assertions depend on gpui-component's Theme API for
-reading back config values. If Theme exposes font_family / radius
-as public fields or accessors, assert on those.
 
 - Pro: Catches breakage in gpui-component updates immediately.
 - Pro: Documents the workaround's expected behavior.
 - Pro: Low effort.
-- Con: Depends on gpui-component exposing the relevant fields for
-  inspection. If Theme's internals are opaque, the test may need
-  to compare against a known-good baseline.
+- Con: The underlying fragility remains -- tests catch breakage but
+  don't prevent it.
 
-**B. Bypass apply_config entirely**
+**B. Bypass apply_config entirely (recommended)**
 
-Set font_family, font_size, radius, shadow, and mode directly on the
-Theme struct (if fields are public) instead of using apply_config:
+Set all Theme fields directly, eliminating the apply-then-restore
+pattern:
 
 ```rust
-let mut theme = Theme::from(&theme_color);
-theme.mode = mode;
-theme.font_family = SharedString::from(d.font.family.clone());
-// ... etc
+pub fn to_theme(resolved: &ResolvedThemeVariant, name: &str, is_dark: bool) -> Theme {
+    let theme_color = colors::to_theme_color(resolved, is_dark);
+    let mode = if is_dark { ThemeMode::Dark } else { ThemeMode::Light };
+    let d = &resolved.defaults;
+
+    let mut theme = Theme::from(&theme_color);
+    theme.mode = mode;
+    theme.font_family = SharedString::from(d.font.family.clone());
+    theme.font_size = px(d.font.size);
+    theme.mono_font_family = SharedString::from(d.mono_font.family.clone());
+    theme.mono_font_size = px(d.mono_font.size);
+    theme.radius = px(d.radius);       // f32 directly, no usize truncation
+    theme.radius_lg = px(d.radius_lg); // f32 directly, no usize truncation
+    theme.shadow = d.shadow_enabled;
+
+    // Store config for gpui-component's theme switching
+    let config: Rc<ThemeConfig> = Rc::new(
+        config::to_theme_config(resolved, name, mode),
+    );
+    if mode == ThemeMode::Dark {
+        theme.dark_theme = config;
+    } else {
+        theme.light_theme = config;
+    }
+    theme
+}
 ```
 
-- Pro: No dependency on apply_config's side effects.
-- Pro: Explicit about what is being set.
-- Con: Only possible if Theme exposes all needed fields publicly.
-  gpui-component may have private fields that only apply_config can
-  set (e.g., internal Rc<> references, highlight_theme).
-- Con: Fragile in a different way -- directly poking struct fields
-  may bypass invariants that apply_config maintains.
+- Pro: No dependency on `apply_config` side effects.
+- Pro: Explicit about every field being set.
+- Pro: **Eliminates issue #3** as a side effect -- `radius` is set as
+  `px(d.radius)` directly from `f32`, not truncated through
+  `usize`. Full sub-pixel precision preserved.
+- Pro: `ThemeConfig::to_theme_config()` can be simplified (no longer
+  needs radius-to-usize conversion) or kept as-is for the Rc
+  storage.
+- Pro: Colors are never overwritten -- no restore step needed.
+- Con: If gpui-component adds new Theme fields in a future version,
+  they get the `Theme::from()` defaults rather than `apply_config`
+  defaults. But since all fields are public, this is visible and
+  testable.
+- Con: Five fields (`transparent`, `scrollbar_show`, `tile_grid_size`,
+  `tile_shadow`, `tile_radius`) retain `Theme::from()` defaults.
+  This matches current behavior (apply_config also uses defaults
+  for these when the config doesn't set them), but future upstream
+  changes should be monitored.
+- Con: Must handle `highlight_theme` if our ThemeConfig ever provides
+  syntax highlighting. Currently a no-op (our config has no
+  `highlight` field).
+- Con: The `ThemeConfig` stored in the `light_theme`/`dark_theme` Rc
+  still contains truncated `radius: Some(d.radius.round() as usize)`.
+  This doesn't affect rendering (radius is set directly as
+  `px(d.radius)`), but if gpui-component reads the stored config for
+  theme switching, it would see the truncated value. Acceptable since
+  the connector produces single-mode themes; multi-mode switching is
+  the caller's responsibility.
 
 **C. File upstream issue for a non-clobbering API**
 
@@ -133,39 +242,45 @@ or `apply_config(&config, preserve_colors: bool)`.
 
 ### Recommendation
 
-**Option A** now, **Option C** as a parallel upstream request. The
-test is cheap insurance. The upstream issue addresses the root cause.
+**Option B.** Bypassing `apply_config` is now clearly the best
+approach since all Theme fields are public. It eliminates the
+fragile apply-then-restore pattern, makes every field assignment
+explicit, and as a bonus fixes issue #3 (radius truncation) by
+setting radius directly from `f32`. Add tests from Option A to
+verify the field assignments. File upstream issue (Option C) as
+a courtesy.
 
 ---
 
-## 2. from_preset() discards ResolvedThemeVariant
+## 2. from_preset() / from_system() discard ResolvedThemeVariant
 
-**File:** `connectors/native-theme-gpui/src/lib.rs:137-144`
+**File:** `connectors/native-theme-gpui/src/lib.rs:137-144, 162-165`
 
-**What:** The gpui connector's `from_preset()` returns only the
+**What:** The gpui connector's convenience functions return only the
 `Theme`, discarding the `ResolvedThemeVariant`:
 
 ```rust
 pub fn from_preset(name: &str, is_dark: bool) -> native_theme::Result<Theme> {
-    let spec = ThemeSpec::preset(name)?;
-    let variant = spec
-        .pick_variant(is_dark)
-        .ok_or_else(|| ...)?;
+    ...
     let resolved = variant.clone().into_resolved()?;
     Ok(to_theme(&resolved, name, is_dark))
     //  ^^^^^^^^ resolved is dropped here
+}
+
+pub fn from_system() -> native_theme::Result<Theme> {
+    let sys = SystemTheme::from_system()?;
+    Ok(to_theme(sys.active(), &sys.name, sys.is_dark))
+    //         ^^^^^^^^^^^^^^^^ sys (and both variants) dropped here
 }
 ```
 
 The iced connector (fixed in v0.5.2) returns
 `Result<(Theme, ResolvedThemeVariant)>`, giving users access to
-per-widget metrics that iced's theme system can't represent. The gpui
-connector has the same limitation: gpui-component's flat `ThemeColor`
-cannot represent per-widget geometry (button padding, scrollbar width,
-etc.), so users need the `ResolvedThemeVariant` to access these values.
+per-widget metrics that the flat `ThemeColor` cannot represent
+(button padding, scrollbar width, tooltip delay, etc.).
 
-The `from_system()` function has the same problem -- it returns only
-`Theme`.
+The same limitation affects `SystemThemeExt::to_gpui_theme()`, which
+returns `Theme` and discards the variant.
 
 ### Options
 
@@ -177,39 +292,75 @@ Change both functions to match the iced connector:
 pub fn from_preset(name: &str, is_dark: bool)
     -> native_theme::Result<(Theme, ResolvedThemeVariant)>
 {
-    ...
+    let spec = ThemeSpec::preset(name)?;
+    let variant = spec
+        .into_variant(is_dark)   // consumes spec, no clone (see issue #5)
+        .ok_or_else(|| native_theme::Error::Format(
+            format!("preset '{name}' has no variants")
+        ))?;
+    let resolved = variant.into_resolved()?;
     Ok((to_theme(&resolved, name, is_dark), resolved))
 }
+```
 
+For `from_system()`, `SystemTheme` has public `light` and `dark`
+fields (both owned `ResolvedThemeVariant`), so the active variant
+can be moved out without cloning:
+
+```rust
 pub fn from_system()
     -> native_theme::Result<(Theme, ResolvedThemeVariant)>
-{ ... }
+{
+    let sys = SystemTheme::from_system()?;
+    let is_dark = sys.is_dark;
+    let theme = sys.to_gpui_theme();
+    let resolved = if is_dark { sys.dark } else { sys.light };
+    Ok((theme, resolved))
+}
+```
+
+For `SystemThemeExt`, the trait borrows `&self` so it cannot move
+fields. Since the caller already owns the `SystemTheme` and can
+access `sys.light` / `sys.dark` directly (or use `sys.active()`
+/ `sys.pick(is_dark)` for borrowing access), the trait can remain
+returning just `Theme`:
+
+```rust
+pub trait SystemThemeExt {
+    fn to_gpui_theme(&self) -> Theme;
+}
 ```
 
 - Pro: Consistent with the iced connector.
 - Pro: Users get per-widget metrics without re-running the pipeline.
 - Pro: Pre-1.0, so breaking changes are acceptable.
-- Con: Breaking change -- callers must update from
-  `let theme = from_preset(...)?` to
+- Pro: `from_system()` achieves this without cloning by moving the
+  active variant out of the owned `SystemTheme`.
+- Con: Breaking change for callers:
+  `let theme = from_preset(...)?` becomes
   `let (theme, _resolved) = from_preset(...)?`.
-- Con: Users who don't need the resolved data must use `_` to
-  discard it.
 
 **B. Add separate from_preset_full() / from_system_full()**
 
-Keep the existing functions unchanged and add new ones:
-
-```rust
-pub fn from_preset_full(name: &str, is_dark: bool)
-    -> native_theme::Result<(Theme, ResolvedThemeVariant)>
-```
+Keep existing functions unchanged and add new ones returning tuples.
 
 - Pro: Non-breaking.
 - Con: API proliferation (4 convenience functions instead of 2).
 - Con: Inconsistent with the iced connector which changed the
   primary function.
 
-**C. Keep status quo**
+**C. Return (Theme, SystemTheme) from from_system()**
+
+Return the entire `SystemTheme` instead of just the active variant.
+
+- Pro: Users get both light and dark variants plus metadata.
+- Pro: No clone needed.
+- Con: Return type differs from `from_preset()`, which returns
+  `(Theme, ResolvedThemeVariant)`.
+- Con: Users who only need one variant get a larger-than-needed
+  return type.
+
+**D. Keep status quo**
 
 - Pro: No change.
 - Con: gpui users cannot access per-widget metrics from the
@@ -220,11 +371,10 @@ pub fn from_preset_full(name: &str, is_dark: bool)
 
 **Option A.** The crate is pre-1.0, so breaking changes are expected.
 The iced connector already made this change in v0.5.2. The gpui
-connector should match.
-
-Also apply the same change to `from_system()` and
-`SystemThemeExt::to_gpui_theme()` (the latter should return
-`(Theme, ResolvedThemeVariant)` or a dedicated struct).
+connector should match. `from_system()` can move the active variant
+out of `SystemTheme` without cloning. `SystemThemeExt` can keep its
+current return type since callers who need the resolved data already
+own the `SystemTheme`.
 
 ---
 
@@ -242,55 +392,62 @@ radius_lg: Some(d.radius_lg.round() as usize),
 
 A theme with `radius = 5.5` becomes `6usize`. A theme with
 `radius = 0.5` (subtle rounding) becomes `1usize` (a full pixel).
-This precision loss is undocumented and may surprise theme authors
-who expect sub-pixel corner radii.
+This precision loss is undocumented.
 
 Negative radius values would wrap to `usize::MAX` (this should be
 caught by the validate() range checks proposed in the core crate
 review).
 
+**Note:** If issue #1 is resolved with Option B (bypass
+`apply_config`), this issue is eliminated entirely. The radius would
+be set directly as `px(d.radius)` preserving full `f32` precision,
+because `Theme::radius` is `Pixels(f32)` -- the `usize` truncation
+only exists in `ThemeConfig`, which is bypassed.
+
 ### Options
 
-**A. Document the truncation (recommended)**
+**A. Resolve via issue #1 Option B (recommended)**
 
-Add a doc comment to `to_theme_config()` noting the precision loss:
+Bypassing `apply_config` sets `theme.radius = px(d.radius)` directly.
+No `ThemeConfig` involved, no `usize` truncation. Full `f32`
+precision preserved.
 
-```rust
-/// Builds a ThemeConfig from a ResolvedThemeVariant.
-///
-/// Note: gpui-component's ThemeConfig accepts radius as `usize`,
-/// so fractional radii are rounded to the nearest integer. A
-/// resolved radius of 5.5 becomes 6.
-```
+- Pro: No dedicated fix needed -- issue is eliminated as a side
+  effect.
+- Pro: Better precision than any `ThemeConfig`-based solution.
+
+**B. Document the truncation**
+
+Add a doc comment to `to_theme_config()` noting the precision loss.
 
 - Pro: Users know what to expect.
 - Pro: No code change beyond documentation.
 - Con: Doesn't fix the precision loss.
 
-**B. Request upstream f32 radius**
+**C. Request upstream f32 radius**
 
 File an issue with gpui-component to accept `f32` radius in
 ThemeConfig.
 
-- Pro: Fixes the root cause.
+- Pro: Fixes the root cause for all ThemeConfig users.
 - Con: Depends on upstream.
 
-**C. Keep status quo**
+**D. Keep status quo**
 
 - Pro: No change.
 - Con: Undocumented precision loss.
 
 ### Recommendation
 
-**Option A** (document) now, **Option B** (upstream) as a follow-up.
-The truncation is a gpui-component limitation, not a connector bug.
-Documenting it sets correct expectations.
+**Option A.** Fixing issue #1 with the bypass approach eliminates
+this issue entirely. If issue #1 is instead fixed with Option A
+(test-only), then apply Option B here to document the truncation.
 
 ---
 
 ## 4. encode_rgba_as_bmp() has no input validation
 
-**File:** `connectors/native-theme-gpui/src/icons.rs:1008-1062`
+**File:** `connectors/native-theme-gpui/src/icons.rs:1008-1063`
 
 **What:** The BMP encoder accepts `width`, `height`, and `rgba` bytes
 without verifying that `rgba.len() == width * height * 4`:
@@ -299,33 +456,52 @@ without verifying that `rgba.len() == width * height * 4`:
 fn encode_rgba_as_bmp(width: u32, height: u32, rgba: &[u8]) -> Vec<u8> {
     let pixel_data_size = (width * height * 4) as usize;
     ...
-    for pixel in rgba.chunks_exact(4) {
-        buf.push(pixel[2]); // B
-        ...
-    }
+    for pixel in rgba.chunks_exact(4) { ... }
     buf
 }
 ```
 
-Two problems:
+Three problems:
 
 1. **Mismatched length:** If `rgba.len() < width * height * 4`, the
-   BMP header declares a larger image than the actual pixel data. The
-   `chunks_exact()` iterator processes only the available bytes
-   (no panic), but the resulting BMP file is truncated and malformed.
+   BMP header declares a larger image than the actual pixel data.
+   The `chunks_exact()` iterator processes only available bytes
+   (no panic), but the resulting BMP is truncated and malformed.
    If `rgba.len() > width * height * 4`, extra pixels are appended
    beyond what the header declares.
 
-2. **Arithmetic overflow:** `width * height * 4` is computed as `u32`
-   multiplication. For icons larger than ~23170x23170 pixels, this
-   overflows. In debug builds this panics; in release builds it
-   wraps silently, producing a corrupt BMP. While icons this large
-   are unrealistic, the arithmetic is technically unsound.
+2. **Arithmetic overflow in pixel_data_size:** `width * height * 4`
+   is computed as `u32` multiplication. For images larger than
+   ~23170x23170, this overflows. In debug builds this panics; in
+   release builds it wraps silently, producing a corrupt BMP with
+   a wrong header size.
 
-The callers (`to_image_source()`, `into_image_source()`) pass
-`IconData::Rgba { width, height, data }` directly without validating
-the length. If a system icon loader returns misaligned RGBA data, the
-BMP is silently corrupt.
+3. **Arithmetic overflow in file_size:** Line 1012 compounds the
+   overflow:
+   ```rust
+   let file_size = header_size + dib_header_size + pixel_data_size as u32;
+   ```
+   Even if `pixel_data_size` fits in `usize`, the `as u32` cast
+   truncates it on 64-bit platforms. Then the addition with header
+   sizes can wrap.
+
+4. **`height as i32` overflow in BMP header:** Line 1027 casts height
+   to i32 and negates it for top-down BMP:
+   ```rust
+   buf.extend_from_slice(&(-(height as i32)).to_le_bytes());
+   ```
+   If `height > i32::MAX`, the cast wraps. If `height == i32::MAX + 1`,
+   negating `i32::MIN` overflows (panics in debug, wraps in release).
+   In practice, the file_size validation (point 3's fix) implicitly
+   prevents this: if `file_size` fits in `u32` and `width >= 1`,
+   then `height <= (u32::MAX - 122) / 4 < i32::MAX`. The edge case
+   `width == 0` bypasses this guarantee but produces a degenerate
+   zero-pixel BMP.
+
+While icons this large are unrealistic (the callers pass icon-sized
+data), the arithmetic is technically unsound and the lack of a length
+check means corrupt system icon data produces a malformed BMP
+silently.
 
 ### Options
 
@@ -333,12 +509,18 @@ BMP is silently corrupt.
 
 ```rust
 fn encode_rgba_as_bmp(width: u32, height: u32, rgba: &[u8]) -> Option<Vec<u8>> {
+    if width == 0 || height == 0 {
+        return None;
+    }
     let expected = (width as usize)
         .checked_mul(height as usize)?
         .checked_mul(4)?;
     if rgba.len() != expected {
         return None;
     }
+    // file_size check also guards height-as-i32 cast (point 4):
+    // if file_size fits in u32 and width >= 1, then height < i32::MAX.
+    let file_size = u32::try_from(14usize + 108 + expected).ok()?;
     ...
     Some(buf)
 }
@@ -346,9 +528,11 @@ fn encode_rgba_as_bmp(width: u32, height: u32, rgba: &[u8]) -> Option<Vec<u8>> {
 
 - Pro: Catches misaligned data before producing a corrupt BMP.
 - Pro: Checked arithmetic prevents overflow on all platforms.
+- Pro: Zero-dimension early return prevents degenerate BMPs and guards
+  against the `height as i32` edge case (point 4).
 - Pro: Callers already handle `Option` returns (the image source
   conversion functions return `Option<ImageSource>`).
-- Con: Adds one branch to a function called once per icon load.
+- Con: Adds a few branches to a function called once per icon load.
 
 **B. Use debug_assert for length check**
 
@@ -362,28 +546,28 @@ debug_assert_eq!(
 
 - Pro: Zero-cost in release builds.
 - Pro: Catches bugs during development.
-- Con: No protection in release builds; corrupt BMPs can still be
-  produced.
+- Con: No protection in release builds.
 
 **C. Keep status quo**
 
 - Pro: No change.
-- Con: Corrupt BMP files from misaligned input.
+- Con: Corrupt BMP files from misaligned input; unsound arithmetic.
 
 ### Recommendation
 
 **Option A.** Returning `Option` from `encode_rgba_as_bmp` is clean,
 safe, and consistent with the caller's existing `Option` return type.
 Checked arithmetic is standard practice for buffer size calculations.
+The `file_size` check prevents the compound overflow.
 
 ---
 
-## 5. from_preset() / from_system() clone variant unnecessarily
+## 5. from_preset() clones variant unnecessarily
 
-**File:** `connectors/native-theme-gpui/src/lib.rs:137-144, 162-165`
+**File:** `connectors/native-theme-gpui/src/lib.rs:137-144`
 
-**What:** Both convenience functions use `pick_variant()` (which
-returns `&ThemeVariant`) and then clone the borrowed variant to call
+**What:** `from_preset()` uses `pick_variant()` (which returns
+`&ThemeVariant`) and then clones the borrowed variant to call
 `into_resolved()` (which takes `self` by value):
 
 ```rust
@@ -401,69 +585,48 @@ pub fn from_preset(name: &str, is_dark: bool) -> native_theme::Result<Theme> {
 The `ThemeSpec::preset()` function already clones the cached preset,
 so `spec` is owned. The crate provides `ThemeSpec::into_variant()`
 which consumes the owned `ThemeSpec` and returns `Option<ThemeVariant>`
-by value, avoiding the second clone:
+by value, avoiding the clone.
 
-```rust
-pub fn from_preset(name: &str, is_dark: bool) -> native_theme::Result<Theme> {
-    let spec = ThemeSpec::preset(name)?;
-    let variant = spec
-        .into_variant(is_dark)  // consumes spec, returns ThemeVariant by value
-        .ok_or_else(|| ...)?;
-    let resolved = variant.into_resolved()?;  // no clone needed
-    Ok(to_theme(&resolved, name, is_dark))
-}
-```
-
-The clone copies all ~100 `Option<Rgba>` fields, `Option<f32>` values,
-and `Option<String>` font family names. While this is a one-time
-operation during theme loading (not performance-critical), it is
-unnecessarily wasteful and the fix is trivial.
-
-The same pattern appears in `from_system()` at line 162-165.
+**Correction:** The prior version of this document incorrectly stated
+that `from_system()` also clones. It does not -- `from_system()` uses
+`sys.active()` which returns `&ResolvedThemeVariant`, and `to_theme()`
+takes a reference. No clone occurs in `from_system()`.
 
 ### Options
 
 **A. Use into_variant() instead of pick_variant() + clone()
    (recommended)**
 
-Replace `spec.pick_variant(is_dark)` with `spec.into_variant(is_dark)`
-in both `from_preset()` and `from_system()`.
+```rust
+pub fn from_preset(name: &str, is_dark: bool) -> native_theme::Result<Theme> {
+    let spec = ThemeSpec::preset(name)?;
+    let variant = spec
+        .into_variant(is_dark)  // consumes spec, no clone
+        .ok_or_else(|| native_theme::Error::Format(
+            format!("preset '{name}' has no variants")
+        ))?;
+    let resolved = variant.into_resolved()?;  // consumes variant, no clone
+    Ok(to_theme(&resolved, name, is_dark))
+}
+```
 
-- Pro: Eliminates unnecessary clone of the entire ThemeVariant.
+- Pro: Eliminates unnecessary clone of the entire ThemeVariant
+  (~100 `Option<Rgba>` fields, font family strings, etc.).
 - Pro: Trivial two-line change.
-- Pro: Uses the API as designed (`into_variant()` exists specifically
-  for this use case, per its doc: "Use this when you own the
-  `ThemeSpec` and don't need it afterward").
+- Pro: Uses the API as designed (`into_variant()` exists for this
+  use case).
 - Con: None identified.
 
 **B. Keep status quo**
 
 - Pro: No change.
-- Con: Unnecessary heap allocation for font family strings on every
-  theme load.
+- Con: Unnecessary heap allocation on every theme load.
 
 ### Recommendation
 
-**Option A.** The fix is trivial and uses the intended API. Apply to
-both `from_preset()` and `from_system()`.
-
-Note: When issue #2 is also applied (returning
-`(Theme, ResolvedThemeVariant)`), the combined fix is:
-
-```rust
-pub fn from_preset(name: &str, is_dark: bool)
-    -> native_theme::Result<(Theme, ResolvedThemeVariant)>
-{
-    let spec = ThemeSpec::preset(name)?;
-    let variant = spec
-        .into_variant(is_dark)
-        .ok_or_else(|| native_theme::Error::Format(
-            format!("preset '{name}' has no variants")
-        ))?;
-    let resolved = variant.into_resolved()?;
-    Ok((to_theme(&resolved, name, is_dark), resolved))
-}
-```
+**Option A.** The fix is trivial and uses the intended API. When
+combined with issue #2 (returning `ResolvedThemeVariant`), the
+resolved variant is moved into the return tuple at zero cost.
 
 ---
 
@@ -476,10 +639,10 @@ the `hover_color()` helper, which blends the base color with the
 background:
 
 ```rust
-tc.link_hover = hover_color(c.link, c.bg);         // line 141
-tc.primary_hover = hover_color(c.primary, c.bg);   // line 148
-tc.info_hover = hover_color(c.info, c.bg);          // line 177
-tc.list_hover = hover_color(c.secondary, c.bg);     // line 186
+tc.link_hover = hover_color(c.link, c.bg);
+tc.primary_hover = hover_color(c.primary, c.bg);
+tc.info_hover = hover_color(c.info, c.bg);
+tc.list_hover = hover_color(c.secondary, c.bg);
 ```
 
 `hover_color()` (derive.rs:17-18) is `bg.blend(base.opacity(0.9))`,
@@ -494,10 +657,8 @@ tc.accordion_hover = c.accent.opacity(0.8);  // line 257
 This applies bare `opacity(0.8)` without blending, producing a
 semi-transparent result. All other hover fields produce opaque colors.
 
-The practical difference is small (both reduce saturation compared to
-the base color), but the inconsistency means:
-- A global change to `hover_color()` (e.g., changing 0.9 to 0.85)
-  would not affect accordion_hover.
+The inconsistency means:
+- A global change to `hover_color()` would not affect accordion_hover.
 - A contributor adding a new hover field has two conflicting patterns
   to choose from.
 
@@ -516,15 +677,10 @@ tc.accordion_hover = hover_color(c.accent, c.bg);
 
 **B. Document the intentional difference**
 
-Add a comment explaining why accordion_hover uses a different pattern:
-
-```rust
-// Accordion hover uses semi-transparent accent (not opaque blend) because ...
-tc.accordion_hover = c.accent.opacity(0.8);
-```
+Add a comment explaining why accordion_hover uses a different pattern.
 
 - Pro: Preserves current behavior.
-- Con: Unclear what the "because" justification would be.
+- Con: No clear justification for the difference exists.
 
 **C. Keep status quo**
 
@@ -540,44 +696,27 @@ difference is negligible and all other hover fields use this pattern.
 
 ## 7. animated_frames_to_image_sources() silently drops unconvertible frames
 
-**File:** `connectors/native-theme-gpui/src/icons.rs:865-876`
+**File:** `connectors/native-theme-gpui/src/icons.rs:859-880`
 
 **What:** The frame-based animation converter uses `filter_map` to
 silently skip frames that cannot be converted:
 
 ```rust
-pub fn animated_frames_to_image_sources(anim: &AnimatedIcon) -> Option<AnimatedImageSources> {
-    match anim {
-        AnimatedIcon::Frames { frames, frame_duration_ms } => {
-            let sources: Vec<ImageSource> = frames
-                .iter()
-                .filter_map(|f| to_image_source(f, None, None))
-                .collect();
-            if sources.is_empty() {
-                None
-            } else {
-                Some(AnimatedImageSources {
-                    sources,
-                    frame_duration_ms: *frame_duration_ms,
-                })
-            }
-        }
-        _ => None,
-    }
-}
+let sources: Vec<ImageSource> = frames
+    .iter()
+    .filter_map(|f| to_image_source(f, None, None))
+    .collect();
 ```
 
 If a frame fails conversion (e.g., corrupt SVG data, rasterization
 failure), it is removed from the animation. The `frame_duration_ms`
 remains unchanged, so the animation plays faster than intended
-(fewer frames times the same per-frame duration = shorter total
-cycle).
+(fewer frames at the same per-frame duration = shorter total cycle).
 
 **Practical impact:** Low. Bundled loading indicators use
 `AnimatedIcon::Transform` (spin), not `Frames`. The `Frames` variant
 is for user-defined sprite-sheet animations, where all frames are
-typically homogeneous (all SVG or all RGBA). Mixed or corrupt frames
-are unlikely.
+typically homogeneous. Mixed or corrupt frames are unlikely.
 
 ### Options
 
@@ -614,7 +753,9 @@ let sources = sources?;
 
 ```rust
 let original_count = frames.len();
-let adjusted_duration = frame_duration_ms * (original_count as u32) / (sources.len() as u32);
+let adjusted_duration = frame_duration_ms
+    * (original_count as u32)
+    / (sources.len() as u32);
 ```
 
 - Pro: Preserves the intended total animation duration.
@@ -630,5 +771,788 @@ let adjusted_duration = frame_duration_ms * (original_count as u32) / (sources.l
 
 **Option A.** Document the behavior. The filtering is a reasonable
 best-effort strategy for an edge case that essentially never occurs
-with the current icon system. The same pattern exists in the iced
-connector's `animated_frames_to_svg_handles()`.
+with the current icon system.
+
+---
+
+## 8. Deprecated pick_variant() free function still exported
+
+**File:** `connectors/native-theme-gpui/src/lib.rs:81-89`
+
+**What:** The crate exports a deprecated free function that wraps
+`ThemeSpec::pick_variant()`:
+
+```rust
+#[deprecated(since = "0.3.2", note = "Use ThemeSpec::pick_variant() instead")]
+pub fn pick_variant(theme: &ThemeSpec, is_dark: bool) -> Option<&ThemeVariant> {
+    theme.pick_variant(is_dark)
+}
+```
+
+This has been deprecated since 0.3.2 and replaced by the method on
+`ThemeSpec`. The crate is pre-1.0, so removing deprecated items is
+expected. Keeping it adds noise to the public API and forces the
+`#[allow(deprecated)]` in the test module.
+
+### Options
+
+**A. Remove the function (recommended)**
+
+Delete the function, remove the `#[allow(deprecated)]` in tests,
+and remove any tests that exercise the deprecated function.
+
+- Pro: Cleans up the public API.
+- Pro: Pre-1.0, so removal is expected.
+- Pro: Removes 3 test functions that test trivial delegation.
+- Con: Breaking change for any user still calling the free function.
+  Given the deprecation warning since 0.3.2, this is unlikely.
+
+**B. Keep status quo**
+
+- Pro: No change.
+- Con: Dead code in the public API; noise in documentation.
+
+### Recommendation
+
+**Option A.** Remove it. The crate is pre-1.0 and the function has
+been deprecated for multiple releases.
+
+---
+
+## 9. colorize_svg() silently corrupts non-UTF-8 SVG data
+
+**File:** `connectors/native-theme-gpui/src/icons.rs:954-1002`
+
+**What:** The SVG colorization function converts bytes to a string
+using `from_utf8_lossy()`:
+
+```rust
+fn colorize_svg(svg_bytes: &[u8], color: Hsla) -> Vec<u8> {
+    ...
+    let svg_str = String::from_utf8_lossy(svg_bytes);
+    ...
+}
+```
+
+If `svg_bytes` contains non-UTF-8 sequences (e.g., a system icon
+file using Latin-1 encoding), `from_utf8_lossy()` silently replaces
+invalid bytes with U+FFFD (replacement character). This can corrupt
+the SVG structure:
+
+- An element name containing a high byte becomes invalid XML.
+- A `fill=` attribute value containing a high byte becomes
+  unrecognizable, causing the fill injection logic to misbehave.
+- The function returns corrupted bytes that fail SVG parsing
+  downstream, but the failure is delayed and disconnected from the
+  actual cause.
+
+**Practical impact:** Low for bundled icon sets (always UTF-8), but
+medium for system icon themes on Linux, where third-party icon
+themes may include non-UTF-8 SVGs.
+
+### Options
+
+**A. Validate UTF-8, return bytes unchanged on failure (recommended)**
+
+```rust
+fn colorize_svg(svg_bytes: &[u8], color: Hsla) -> Vec<u8> {
+    let Ok(svg_str) = std::str::from_utf8(svg_bytes) else {
+        return svg_bytes.to_vec();
+    };
+    ...
+}
+```
+
+- Pro: Non-UTF-8 SVGs pass through unmodified -- no corruption.
+- Pro: Colorization is a best-effort enhancement; skipping it for
+  non-UTF-8 data is the safe default.
+- Pro: Trivial change (one line).
+- Con: Non-UTF-8 SVGs won't be colorized. In practice these are
+  multi-color system icons that shouldn't be colorized anyway.
+
+**B. Return None to signal failure**
+
+Change the return type to `Option<Vec<u8>>` and return `None` for
+non-UTF-8 input.
+
+- Pro: Caller knows colorization failed.
+- Con: Requires changing the call sites (the function is called
+  inside `to_image_source` which would then need to handle None).
+- Con: Over-engineered: the SVG bytes are still valid for
+  rendering, just not colorizable.
+
+**C. Keep status quo**
+
+- Pro: No change.
+- Con: Silent corruption of non-UTF-8 SVGs.
+
+### Recommendation
+
+**Option A.** Return the original bytes unchanged when UTF-8
+validation fails. This is a one-line fix that prevents silent
+corruption. Non-UTF-8 SVGs are rendered uncolorized, which is the
+correct behavior for multi-color system icons that happen to use
+legacy encoding.
+
+---
+
+## 10. No convenience function for IconName + IconSet to ImageSource
+
+**File:** `connectors/native-theme-gpui/src/icons.rs` (module-level API)
+
+**What:** Converting a gpui-component `IconName` to a renderable
+`ImageSource` using a bundled icon set requires a 3-step ceremony:
+
+```rust
+// Step 1: Map IconName to the icon set's filename
+let name = lucide_name_for_gpui_icon(icon_name);
+// Step 2: Load the bundled SVG bytes
+let svg = native_theme::bundled_icon_by_name(name, IconSet::Lucide)?;
+let data = IconData::Svg(svg.to_vec());
+// Step 3: Convert to gpui ImageSource
+let source = to_image_source(&data, Some(foreground_color), None)?;
+```
+
+Each step requires knowing the correct mapping function for the chosen
+icon set (`lucide_name_for_gpui_icon` vs `material_name_for_gpui_icon`).
+Getting the wrong mapping function produces incorrect icon names that
+silently return `None` at step 2.
+
+The existing `custom_icon_to_image_source()` handles step 2+3 for
+`IconProvider` types, but there's no equivalent for `IconName`.
+
+**Important:** Freedesktop icons are **not bundled** -- they are loaded
+from system icon themes via `load_freedesktop_icon_by_name()`, which
+takes a theme name and size. This fundamentally different loading
+path means a single convenience function cannot cleanly cover all
+icon sets. The function should be scoped to bundled sets only
+(Lucide, Material).
+
+### Options
+
+**A. Add a convenience function for bundled icon sets (recommended)**
+
+```rust
+/// Load a gpui-component icon from a bundled icon set and convert
+/// to an `ImageSource` ready for rendering.
+///
+/// Supports `IconSet::Lucide` and `IconSet::Material`. Returns
+/// `None` for other icon sets -- use [`to_image_source`] with
+/// [`load_freedesktop_icon_by_name`] for freedesktop system icons.
+pub fn bundled_icon_to_image_source(
+    icon: IconName,
+    icon_set: IconSet,
+    color: Option<Hsla>,
+    size: Option<u32>,
+) -> Option<ImageSource> {
+    let name = match icon_set {
+        IconSet::Lucide => lucide_name_for_gpui_icon(icon),
+        IconSet::Material => material_name_for_gpui_icon(icon),
+        _ => return None,
+    };
+    let svg = native_theme::bundled_icon_by_name(name, icon_set)?;
+    let data = IconData::Svg(svg.to_vec());
+    to_image_source(&data, color, size)
+}
+```
+
+- Pro: Single function call replaces 3-step ceremony for bundled sets.
+- Pro: Eliminates the risk of using the wrong mapping function for
+  the icon set.
+- Pro: Consistent with `custom_icon_to_image_source()` pattern.
+- Pro: Explicit `None` return for unsupported sets instead of
+  silently producing wrong names.
+- Con: Adds one more function to the public API.
+- Con: Does not cover freedesktop icons. Users loading freedesktop
+  icons must still use the manual steps with
+  `load_freedesktop_icon_by_name()`. This is deliberate: the
+  freedesktop loading path requires a system icon theme name and
+  uses a separate lookup mechanism, making it semantically
+  different from bundled loading.
+
+**B. Keep status quo**
+
+- Pro: No new API surface.
+- Pro: Users have full control over each step.
+- Con: 3-step ceremony for a common operation.
+- Con: Easy to use the wrong mapping function.
+
+### Recommendation
+
+**Option A.** The convenience function is the natural composition of
+the mapping and loading steps for bundled icon sets. It eliminates a
+class of mis-use errors (wrong mapping function for the icon set) and
+matches the existing `custom_icon_to_image_source()` pattern. Scoping
+to bundled sets only (Lucide, Material) keeps the function honest
+about what it can do -- freedesktop loading is a fundamentally
+different operation.
+
+---
+
+## 11. encode_rgba_as_bmp() doc comment says "bottom-up" but code uses top-down
+
+**File:** `connectors/native-theme-gpui/src/icons.rs:1004-1007`
+
+**What:** The doc comment on `encode_rgba_as_bmp` states:
+
+```rust
+/// Encode RGBA pixel data as a BMP with BITMAPV4HEADER.
+///
+/// BMP with a V4 header supports 32-bit RGBA via channel masks.
+/// The pixel data is stored bottom-up (BMP convention) with no compression.
+```
+
+But the code uses a **negative height** (line 1027), which produces
+a **top-down** BMP:
+
+```rust
+buf.extend_from_slice(&(-(height as i32)).to_le_bytes()); // height (top-down)
+```
+
+In BMP format, positive height means bottom-up (rows stored from
+bottom to top), while negative height means top-down (rows stored
+from top to bottom). The code correctly uses negative height to
+avoid needing to flip rows, but the doc comment contradicts this.
+
+The inline comment on the same line says "top-down", which is
+correct. Only the function-level doc comment is wrong.
+
+### Options
+
+**A. Fix the doc comment (recommended)**
+
+```rust
+/// The pixel data is stored top-down (negative height in the BMP
+/// header) with no compression.
+```
+
+- Pro: Eliminates the contradiction.
+- Pro: One-line fix.
+- Con: None.
+
+**B. Keep status quo**
+
+- Pro: No change.
+- Con: Doc comment misleads anyone reading or maintaining the BMP
+  encoder.
+
+### Recommendation
+
+**Option A.** Fix the doc comment. Trivial correction.
+
+---
+
+## 12. into_image_source() duplicates to_image_source() body
+
+**File:** `connectors/native-theme-gpui/src/icons.rs:783-809`
+
+**What:** `into_image_source()` is the consuming variant of
+`to_image_source()`. Its body is 25+ lines of near-identical code:
+
+```rust
+// to_image_source (borrowing):
+pub fn to_image_source(data: &IconData, ...) -> Option<ImageSource> {
+    match data {
+        IconData::Svg(bytes) => svg_to_bmp_source(bytes, raster_size),
+        IconData::Rgba { width, height, data } => {
+            let bmp = encode_rgba_as_bmp(*width, *height, data);
+            ...
+        }
+        _ => None,
+    }
+}
+
+// into_image_source (consuming):
+pub fn into_image_source(data: IconData, ...) -> Option<ImageSource> {
+    match data {
+        IconData::Svg(bytes) => svg_to_bmp_source(&bytes, raster_size),
+        IconData::Rgba { width, height, data } => {
+            let bmp = encode_rgba_as_bmp(width, height, &data);
+            ...
+        }
+        _ => None,
+    }
+}
+```
+
+The consuming variant doesn't benefit from ownership internally --
+both branches immediately borrow the inner data for rasterization
+or BMP encoding. The only benefit is at the call site: callers with
+an owned `IconData` don't need to clone it.
+
+If `encode_rgba_as_bmp` is changed to return `Option` (issue #4),
+both bodies must be updated independently.
+
+### Options
+
+**A. Delegate to the borrowing variant (recommended)**
+
+```rust
+pub fn into_image_source(
+    data: IconData,
+    color: Option<Hsla>,
+    size: Option<u32>,
+) -> Option<ImageSource> {
+    to_image_source(&data, color, size)
+}
+```
+
+- Pro: Eliminates 25 lines of duplication.
+- Pro: Single code path to maintain -- fixes to `to_image_source`
+  automatically apply to both variants.
+- Pro: Issue #4 fix only needs to be applied once.
+- Con: None. The consuming variant doesn't gain any advantage from
+  ownership internally.
+
+**B. Keep status quo**
+
+- Pro: No change.
+- Con: Two code paths to maintain; bug fixes must be applied twice.
+
+### Recommendation
+
+**Option A.** The delegation is a one-line body replacement that
+eliminates duplication with zero functional change.
+
+---
+
+## 13. Missing re-exports: LinuxDesktop, Error, TransformAnimation
+
+**File:** `connectors/native-theme-gpui/src/lib.rs:72-77`
+
+**What:** The crate re-exports 9 native-theme types that appear in
+public signatures:
+
+```rust
+pub use native_theme::{
+    AnimatedIcon, IconData, IconProvider, IconRole, IconSet,
+    ResolvedThemeVariant, SystemTheme, ThemeSpec, ThemeVariant,
+};
+```
+
+Three types that appear in or are reachable from public signatures
+are missing:
+
+1. **`LinuxDesktop`** -- used in `freedesktop_name_for_gpui_icon()`
+   (icons.rs:343):
+
+   ```rust
+   pub fn freedesktop_name_for_gpui_icon(
+       icon: IconName,
+       de: native_theme::LinuxDesktop,  // not re-exported
+   ) -> &'static str
+   ```
+
+   Linux users calling this function must add `native-theme` as a
+   direct dependency just to name `LinuxDesktop`, defeating the
+   purpose of the re-exports.
+
+2. **`Error`** -- used in `from_preset()` and `from_system()` return
+   types (lib.rs:137, 162):
+
+   ```rust
+   pub fn from_preset(...) -> native_theme::Result<Theme>
+   pub fn from_system() -> native_theme::Result<Theme>
+   ```
+
+   `native_theme::Result<T>` is `Result<T, native_theme::Error>`.
+   Users who want to name this error type in their own function
+   signatures (e.g., `fn init() -> Result<Theme, native_theme::Error>`)
+   must add `native-theme` as a direct dependency.
+
+   Note: most users can use `?` with `anyhow::Error` or
+   `Box<dyn std::error::Error>` without naming the type. This gap
+   primarily affects users with typed error enums.
+
+3. **`TransformAnimation`** -- reachable from re-exported
+   `AnimatedIcon`:
+
+   ```rust
+   // AnimatedIcon is re-exported, so users can receive this:
+   AnimatedIcon::Transform { icon, animation }
+   //                               ^^^^^^^^^ TransformAnimation -- not re-exported
+   ```
+
+   Users who destructure `AnimatedIcon::Transform` to extract the
+   animation type (e.g., to get `duration_ms` from
+   `TransformAnimation::Spin { duration_ms }`) cannot name
+   `TransformAnimation` without a direct `native-theme` dependency.
+   The showcase example confirms this gap: it imports
+   `TransformAnimation` directly from `native_theme` (showcase.rs:67)
+   and destructures it at line 903.
+
+   The iced connector's review (iced issue #8) identifies this same
+   gap for both connectors.
+
+### Options
+
+**A. Add the missing re-exports (recommended)**
+
+```rust
+pub use native_theme::{
+    AnimatedIcon, Error, IconData, IconProvider, IconRole, IconSet,
+    ResolvedThemeVariant, SystemTheme, ThemeSpec, ThemeVariant,
+    TransformAnimation,
+};
+
+#[cfg(target_os = "linux")]
+pub use native_theme::LinuxDesktop;
+```
+
+- Pro: Downstream crates never need `native-theme` as a direct
+  dependency for types that appear in or are reachable from this
+  crate's public API.
+- Pro: `LinuxDesktop` is conditionally re-exported only on Linux,
+  matching `freedesktop_name_for_gpui_icon`.
+- Pro: Consistent with the iced connector's planned fix (iced
+  issue #8).
+- Con: Slightly larger public API surface.
+
+**B. Re-export a type alias instead of Error**
+
+```rust
+/// Result type for native-theme operations.
+pub type Result<T> = native_theme::Result<T>;
+```
+
+- Pro: Users can write `native_theme_gpui::Result<Theme>`.
+- Pro: Hides the `Error` type (only the `Result` alias is needed).
+- Con: Adds a type alias that duplicates native-theme's.
+- Con: Still doesn't help users who need to match on error variants.
+- Con: Does not address `TransformAnimation` or `LinuxDesktop`.
+
+**C. Keep status quo**
+
+- Pro: No change.
+- Con: `freedesktop_name_for_gpui_icon` is unusable without
+  `native-theme` as a direct dependency on Linux.
+- Con: `AnimatedIcon::Transform` is not fully destructurable without
+  `native-theme` as a direct dependency.
+- Con: Violates the stated purpose of the re-exports: "so downstream
+  crates don't need native-theme as a direct dependency."
+
+### Recommendation
+
+**Option A.** Add `LinuxDesktop` (Linux-only), `Error`, and
+`TransformAnimation` to the re-exports. This completes the set of
+types needed to fully use every public function and destructure every
+re-exported enum without a direct `native-theme` dependency.
+
+---
+
+## 14. Module-level doc examples use deprecated/removed patterns
+
+**File:** `connectors/native-theme-gpui/src/lib.rs:1-61`
+
+**What:** The module-level documentation shows three usage examples
+that will become incorrect after implementing fixes #2, #5, and #8:
+
+1. **Quick Start example** (line 8-10):
+   ```rust
+   let theme = from_preset("catppuccin-mocha", true)?;
+   ```
+   After issue #2, `from_preset` returns
+   `(Theme, ResolvedThemeVariant)`, so this must become:
+   ```rust
+   let (theme, _resolved) = from_preset("catppuccin-mocha", true)?;
+   ```
+
+2. **System theme example** (line 15-17):
+   ```rust
+   let theme = from_system()?;
+   ```
+   Same issue -- must become `let (theme, _resolved) = ...`.
+
+3. **Manual Path example** (line 28-33):
+   ```rust
+   let nt = ThemeSpec::preset("catppuccin-mocha").unwrap();
+   let mut variant = nt.pick_variant(false).unwrap().clone();
+   variant.resolve();
+   let resolved = variant.validate().unwrap();
+   ```
+   Uses `pick_variant()` (removed in issue #8) and `.clone()`
+   (fixed in issue #5). Should become:
+   ```rust
+   let nt = ThemeSpec::preset("catppuccin-mocha").unwrap();
+   let variant = nt.into_variant(false).unwrap();
+   let resolved = variant.into_resolved().unwrap();
+   ```
+
+Similarly, `from_preset`'s own doc example (line 133-134) and
+`from_system`'s doc example (line 159) need updating.
+
+### Options
+
+**A. Update all doc examples as part of implementing issues #2, #5, #8
+   (recommended)**
+
+Update each example when implementing its corresponding fix. This
+is a natural part of the implementation and costs nothing extra.
+
+- Pro: Examples stay consistent with the code.
+- Pro: No dedicated effort needed -- it's part of the fix.
+- Con: None.
+
+**B. Keep status quo**
+
+- Pro: No change.
+- Con: Doc examples don't compile (even conceptually) after the
+  API changes, misleading users who follow them.
+
+### Recommendation
+
+**Option A.** Update doc examples as part of implementing the
+corresponding fixes. This is not a standalone task but a checklist
+item when implementing issues #2, #5, and #8.
+
+---
+
+## 15. `animated_frames_to_image_sources()` hardcodes `None` for color and size
+
+**File:** `connectors/native-theme-gpui/src/icons.rs:859-880`
+
+**What:** The animation frame converter passes `None` for both `color`
+and `size` to `to_image_source()`:
+
+```rust
+let sources: Vec<ImageSource> = frames
+    .iter()
+    .filter_map(|f| to_image_source(f, None, None))
+    .collect();
+```
+
+Every other image conversion function in the module accepts `color`
+and `size` parameters: `to_image_source`, `into_image_source`, and
+`custom_icon_to_image_source`. This function is the only one that
+hardcodes them.
+
+The hardcoded `None` means:
+1. SVG frames using `currentColor` render as black (the SVG spec
+   default), making them invisible on dark backgrounds.
+2. All frames are rasterized at the hardcoded 48px default regardless
+   of the actual display size.
+
+**Practical impact:** On Linux, `loading_indicator(IconSet::Freedesktop)`
+returns `AnimatedIcon::Frames` when the system icon theme provides
+sprite-sheet spinners. These system SVGs typically have explicit fills
+(not `currentColor`), so colorization is not needed for the common
+case. However, custom frame-based animations using `currentColor` SVGs
+would render as invisible black frames on dark backgrounds.
+
+### Options
+
+**A. Add color and size parameters (recommended)**
+
+```rust
+pub fn animated_frames_to_image_sources(
+    anim: &AnimatedIcon,
+    color: Option<Hsla>,
+    size: Option<u32>,
+) -> Option<AnimatedImageSources> {
+    match anim {
+        AnimatedIcon::Frames {
+            frames,
+            frame_duration_ms,
+        } => {
+            let sources: Vec<ImageSource> = frames
+                .iter()
+                .filter_map(|f| to_image_source(f, color, size))
+                .collect();
+            if sources.is_empty() {
+                None
+            } else {
+                Some(AnimatedImageSources {
+                    sources,
+                    frame_duration_ms: *frame_duration_ms,
+                })
+            }
+        }
+        _ => None,
+    }
+}
+```
+
+- Pro: Consistent with all other image conversion functions in the
+  module.
+- Pro: Enables colorized frame animations (needed for `currentColor`
+  SVGs on dark backgrounds).
+- Pro: Enables custom rasterization sizes for DPI-aware rendering.
+- Pro: Callers who don't need these pass `None, None` -- same
+  behavior as today.
+- Con: Breaking change -- existing callers must add `, None, None`.
+  Pre-1.0, so breaking changes are expected.
+
+**B. Keep status quo**
+
+- Pro: No change.
+- Pro: Freedesktop sprite-sheet spinners work correctly without
+  colorization (they have explicit fills).
+- Con: API inconsistency with every other image conversion function.
+- Con: Custom frame animations with `currentColor` SVGs render as
+  invisible black frames on dark themes.
+
+### Recommendation
+
+**Option A.** Add the parameters for API consistency. The breaking
+change is trivial for callers (add `, None, None`) and the crate is
+pre-1.0. This naturally fits in Wave 1 alongside other API changes.
+
+---
+
+## 16. README has multiple documentation errors
+
+**File:** `connectors/native-theme-gpui/README.md`
+
+**What:** The crate README contains three categories of errors:
+
+### 16a. Font size conversion claim is factually wrong
+
+Line 61 states:
+
+> Point sizes are converted to pixels (x96/72).
+
+The code does the **opposite**. `config.rs:27-29` explicitly avoids
+this conversion:
+
+```rust
+// Font sizes are already in logical pixels (NOT points) -- use directly
+font_family: Some(SharedString::from(d.font.family.clone())),
+font_size: Some(d.font.size),
+```
+
+The test `font_size_is_not_converted_from_points()` (config.rs:100-115)
+explicitly asserts that the pt-to-px conversion is NOT applied. The
+README claim actively misleads users about the crate's behavior. A
+user reading this might apply their own compensating conversion,
+producing incorrectly-sized text.
+
+### 16b. Animated icon code example has wrong API usage
+
+Lines 97-113 contain three errors:
+
+1. `loading_indicator("material")` -- the function takes `IconSet`,
+   not `&str`. Should be `loading_indicator(IconSet::Material)`.
+
+2. `anim.first_frame().map(|f| to_image_source(&f))` --
+   `first_frame()` returns `Option<&IconData>`, so `f` is
+   `&IconData` and `to_image_source(&f)` passes `&&IconData`,
+   which doesn't match `to_image_source(data: &IconData, ...)`.
+   Also missing the required `color` and `size` arguments. Should
+   be `anim.first_frame().and_then(|f| to_image_source(f, None, None))`.
+
+3. `Svg::new("spinner.svg")` -- gpui's SVG builder uses
+   `gpui::svg().path("spinner.svg")`, not `Svg::new()`.
+
+### 16c. Manual path example uses deprecated patterns
+
+Lines 27-35 use `pick_variant()` + `.clone()` + manual `resolve()`
++ `validate()`:
+
+```rust
+if let Some(variant) = nt.pick_variant(is_dark) {
+    let mut v = variant.clone();
+    v.resolve();
+    let resolved = v.validate().unwrap();
+```
+
+After issues #5 and #8, this should use `into_variant()` +
+`into_resolved()`. (This is distinct from issue #14, which covers
+the module-level doc comments in `lib.rs`, not the README.)
+
+### Options
+
+**A. Fix all three categories (recommended)**
+
+Update the README to:
+1. Remove the false font size conversion claim. Replace with:
+   "Font sizes from the resolved theme are in logical pixels and
+   are passed through directly."
+2. Fix the animated icon example to use correct API signatures.
+3. Update the manual path example to use `into_variant()` +
+   `into_resolved()`.
+
+- Pro: README matches actual code behavior.
+- Pro: Users following README examples get working code.
+- Pro: Prevents incorrect font size compensation.
+- Con: README must be updated again after Wave 1 API changes
+  (issue #2 changes return types, issue #15 changes
+  `animated_frames_to_image_sources` signature). Best done after
+  those changes land.
+
+**B. Fix font size claim immediately, defer rest**
+
+Correct the factual error on line 61 now. Defer the code example
+fixes until after Wave 1 API changes.
+
+- Pro: Stops the actively misleading font size claim immediately.
+- Pro: Avoids double-editing example code (once now, once after
+  Wave 1).
+- Con: README examples remain wrong until Wave 1 completes.
+
+**C. Keep status quo**
+
+- Pro: No change.
+- Con: Font size claim is factually wrong and actively misleading.
+- Con: Example code doesn't compile.
+
+### Recommendation
+
+**Option A.** Fix all errors. Schedule after Wave 1 API changes so
+the examples reflect the final API. The font size correction (16a)
+can be done immediately since it's a factual fix unrelated to API
+changes; use Option B if Wave 1 is not imminent.
+
+---
+
+## 17. `from_preset()` error message is misleading
+
+**File:** `connectors/native-theme-gpui/src/lib.rs:141`
+
+**What:** The error message says "has no variants" but the condition
+that triggers it is "the ThemeSpec has neither a light nor dark
+variant":
+
+```rust
+.ok_or_else(|| native_theme::Error::Format(format!("preset '{name}' has no variants")))?;
+```
+
+`pick_variant()` / `into_variant()` returns `None` only when both
+`light` and `dark` fields are `None`. Since both functions include
+cross-fallback (dark falls back to light and vice versa), this truly
+means "no variants at all" -- so the message is technically accurate.
+
+However, a user seeing this error may think they selected the wrong
+mode, when the real problem is that the ThemeSpec is empty (a broken
+or misformatted preset file). A more precise message would help
+diagnosis.
+
+The iced connector at `lib.rs:115` has the identical message (iced
+review issue #3 recommends fixing both).
+
+### Options
+
+**A. Improve the error message (recommended)**
+
+```rust
+.ok_or_else(|| native_theme::Error::Format(
+    format!("preset '{name}' has no light or dark variant")
+))?;
+```
+
+- Pro: Clearer about what's missing -- both variants, not just one.
+- Pro: One-line change.
+- Pro: Consistent with the iced connector fix (iced review issue #3).
+- Con: Cosmetic improvement; the current message is technically
+  correct.
+
+**B. Keep status quo**
+
+- Pro: No change; the current message is technically correct.
+- Con: Potentially confusing for users debugging empty or broken
+  preset files.
+
+### Recommendation
+
+**Option A.** Apply to the gpui connector (lib.rs:141) for
+consistency with the iced connector. The fix is trivial and
+naturally groups with the issue #5 change to the same function.

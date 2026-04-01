@@ -47,12 +47,12 @@ mod tests {
     /// Create a ResolvedThemeVariant via the preset resolve+validate pipeline.
     fn test_resolved() -> native_theme::ResolvedThemeVariant {
         let nt = ThemeSpec::preset("catppuccin-mocha").expect("preset must exist");
-        let mut v = nt
-            .pick_variant(false)
-            .expect("preset must have light variant")
-            .clone();
-        v.resolve();
-        v.validate().expect("resolved preset must validate")
+        let variant = nt
+            .into_variant(false)
+            .expect("preset must have light variant");
+        variant
+            .into_resolved()
+            .expect("resolved preset must validate")
     }
 
     #[test]

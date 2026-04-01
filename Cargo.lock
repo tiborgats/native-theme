@@ -4354,6 +4354,7 @@ name = "native-theme-build"
 version = "0.5.3"
 dependencies = [
  "heck 0.5.0",
+ "native-theme",
  "serde",
  "toml 1.1.0+spec-1.1.0",
 ]

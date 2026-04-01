@@ -761,7 +761,7 @@ pub fn to_image_source(
             height,
             data,
         } => {
-            let bmp = encode_rgba_as_bmp(*width, *height, data);
+            let bmp = encode_rgba_as_bmp(*width, *height, data)?;
             let image = Image::from_bytes(ImageFormat::Bmp, bmp);
             Some(ImageSource::Image(Arc::new(image)))
         }
@@ -785,27 +785,7 @@ pub fn into_image_source(
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<ImageSource> {
-    let raster_size = size.unwrap_or(SVG_RASTERIZE_SIZE);
-    match data {
-        IconData::Svg(bytes) => {
-            if let Some(c) = color {
-                let colored = colorize_svg(&bytes, c);
-                svg_to_bmp_source(&colored, raster_size)
-            } else {
-                svg_to_bmp_source(&bytes, raster_size)
-            }
-        }
-        IconData::Rgba {
-            width,
-            height,
-            data,
-        } => {
-            let bmp = encode_rgba_as_bmp(width, height, &data);
-            let image = Image::from_bytes(ImageFormat::Bmp, bmp);
-            Some(ImageSource::Image(Arc::new(image)))
-        }
-        _ => None,
-    }
+    to_image_source(&data, color, size)
 }
 
 /// Load a custom icon from an [`IconProvider`] and convert to a gpui [`ImageSource`].
@@ -828,10 +808,50 @@ pub fn custom_icon_to_image_source(
     to_image_source(&data, color, size)
 }
 
+/// Load a gpui-component icon from a bundled icon set and convert to an [`ImageSource`].
+///
+/// Combines the icon-name mapping and loading steps into a single call for
+/// bundled icon sets. Supports [`native_theme::IconSet::Lucide`] and [`native_theme::IconSet::Material`].
+/// Returns `None` for other icon sets (use [`to_image_source`] with
+/// [`native_theme::load_freedesktop_icon_by_name`] for freedesktop system icons).
+///
+/// See [`to_image_source()`] for details on the `color` and `size` parameters.
+///
+/// # Examples
+///
+/// ```ignore
+/// use gpui_component::IconName;
+/// use native_theme::IconSet;
+/// use native_theme_gpui::icons::bundled_icon_to_image_source;
+///
+/// let source = bundled_icon_to_image_source(IconName::Search, IconSet::Lucide, None, None);
+/// ```
+#[must_use]
+pub fn bundled_icon_to_image_source(
+    icon: IconName,
+    icon_set: native_theme::IconSet,
+    color: Option<Hsla>,
+    size: Option<u32>,
+) -> Option<ImageSource> {
+    let name = match icon_set {
+        native_theme::IconSet::Lucide => lucide_name_for_gpui_icon(icon),
+        native_theme::IconSet::Material => material_name_for_gpui_icon(icon),
+        _ => return None,
+    };
+    let svg = native_theme::bundled_icon_by_name(name, icon_set)?;
+    let data = IconData::Svg(svg.to_vec());
+    to_image_source(&data, color, size)
+}
+
 /// Convert all frames of an [`AnimatedIcon::Frames`] to gpui [`ImageSource`]s.
 ///
 /// Returns `Some(Vec<ImageSource>)` when the icon is the `Frames` variant,
 /// with one `ImageSource` per frame. Returns `None` for `Transform` variants.
+///
+/// **Note:** Frames that cannot be converted to `ImageSource` (e.g., corrupt
+/// SVG data, rasterization failure) are silently excluded. The returned
+/// animation may have fewer frames than the input, causing it to play faster.
+/// If all frames fail, returns `None`.
 ///
 /// **Call this once and cache the result.** Do not call on every frame tick --
 /// SVG rasterization is expensive. Index into the cached `Vec` using a
@@ -848,7 +868,7 @@ pub fn custom_icon_to_image_source(
 ///
 /// let anim = native_theme::loading_indicator();
 /// if let Some(AnimatedImageSources { sources, frame_duration_ms }) =
-///     animated_frames_to_image_sources(&anim)
+///     animated_frames_to_image_sources(&anim, None, None)
 /// {
 ///     // Cache `sources`, then on each timer tick (every `frame_duration_ms` ms):
 ///     // frame_index = (frame_index + 1) % sources.len();
@@ -856,7 +876,11 @@ pub fn custom_icon_to_image_source(
 /// }
 /// ```
 #[must_use]
-pub fn animated_frames_to_image_sources(anim: &AnimatedIcon) -> Option<AnimatedImageSources> {
+pub fn animated_frames_to_image_sources(
+    anim: &AnimatedIcon,
+    color: Option<Hsla>,
+    size: Option<u32>,
+) -> Option<AnimatedImageSources> {
     match anim {
         AnimatedIcon::Frames {
             frames,
@@ -864,7 +888,7 @@ pub fn animated_frames_to_image_sources(anim: &AnimatedIcon) -> Option<AnimatedI
         } => {
             let sources: Vec<ImageSource> = frames
                 .iter()
-                .filter_map(|f| to_image_source(f, None, None))
+                .filter_map(|f| to_image_source(f, color, size))
                 .collect();
             if sources.is_empty() {
                 None
@@ -933,7 +957,7 @@ fn svg_to_bmp_source(svg_bytes: &[u8], size: u32) -> Option<ImageSource> {
     else {
         return None;
     };
-    let bmp = encode_rgba_as_bmp(width, height, &data);
+    let bmp = encode_rgba_as_bmp(width, height, &data)?;
     let image = Image::from_bytes(ImageFormat::Bmp, bmp);
     Some(ImageSource::Image(Arc::new(image)))
 }
@@ -958,7 +982,11 @@ fn colorize_svg(svg_bytes: &[u8], color: Hsla) -> Vec<u8> {
     let b = (rgba.b.clamp(0.0, 1.0) * 255.0).round() as u8;
     let hex = format!("#{:02x}{:02x}{:02x}", r, g, b);
 
-    let svg_str = String::from_utf8_lossy(svg_bytes);
+    let Ok(svg_str) = std::str::from_utf8(svg_bytes) else {
+        // Non-UTF-8 SVGs pass through unmodified -- no corruption risk.
+        // These are typically multi-color system icons that shouldn't be colorized.
+        return svg_bytes.to_vec();
+    };
 
     // 1. Replace currentColor (handles Lucide-style SVGs)
     if svg_str.contains("currentColor") {
@@ -1004,31 +1032,46 @@ fn colorize_svg(svg_bytes: &[u8], color: Hsla) -> Vec<u8> {
 /// Encode RGBA pixel data as a BMP with BITMAPV4HEADER.
 ///
 /// BMP with a V4 header supports 32-bit RGBA via channel masks.
-/// The pixel data is stored bottom-up (BMP convention) with no compression.
-fn encode_rgba_as_bmp(width: u32, height: u32, rgba: &[u8]) -> Vec<u8> {
-    let pixel_data_size = (width * height * 4) as usize;
-    let header_size: u32 = 14; // BITMAPFILEHEADER
-    let dib_header_size: u32 = 108; // BITMAPV4HEADER
-    let file_size = header_size + dib_header_size + pixel_data_size as u32;
+/// The pixel data is stored top-down (negative height in the BMP header)
+/// with no compression.
+///
+/// Returns `None` if dimensions are zero, the RGBA data length does not
+/// match `width * height * 4`, or the total file size exceeds `u32::MAX`.
+fn encode_rgba_as_bmp(width: u32, height: u32, rgba: &[u8]) -> Option<Vec<u8>> {
+    if width == 0 || height == 0 {
+        return None;
+    }
+    let pixel_data_size = (width as usize)
+        .checked_mul(height as usize)?
+        .checked_mul(4)?;
+    if rgba.len() != pixel_data_size {
+        return None;
+    }
+    let header_size: usize = 14; // BITMAPFILEHEADER
+    let dib_header_size: usize = 108; // BITMAPV4HEADER
+    let file_size = u32::try_from(header_size + dib_header_size + pixel_data_size).ok()?;
 
     let mut buf = Vec::with_capacity(file_size as usize);
+
+    let dib_header_u32 = dib_header_size as u32;
+    let pixel_data_u32 = pixel_data_size as u32;
 
     // BITMAPFILEHEADER (14 bytes)
     buf.extend_from_slice(b"BM"); // signature
     buf.extend_from_slice(&file_size.to_le_bytes()); // file size
     buf.extend_from_slice(&0u16.to_le_bytes()); // reserved1
     buf.extend_from_slice(&0u16.to_le_bytes()); // reserved2
-    buf.extend_from_slice(&(header_size + dib_header_size).to_le_bytes()); // pixel data offset
+    buf.extend_from_slice(&(header_size as u32 + dib_header_u32).to_le_bytes()); // pixel data offset
 
     // BITMAPV4HEADER (108 bytes)
-    buf.extend_from_slice(&dib_header_size.to_le_bytes()); // header size
+    buf.extend_from_slice(&dib_header_u32.to_le_bytes()); // header size
     buf.extend_from_slice(&(width as i32).to_le_bytes()); // width
     // Negative height = top-down (avoids flipping rows)
     buf.extend_from_slice(&(-(height as i32)).to_le_bytes()); // height (top-down)
     buf.extend_from_slice(&1u16.to_le_bytes()); // planes
     buf.extend_from_slice(&32u16.to_le_bytes()); // bits per pixel
     buf.extend_from_slice(&3u32.to_le_bytes()); // compression = BI_BITFIELDS
-    buf.extend_from_slice(&(pixel_data_size as u32).to_le_bytes()); // image size
+    buf.extend_from_slice(&pixel_data_u32.to_le_bytes()); // image size
     buf.extend_from_slice(&2835u32.to_le_bytes()); // x pixels per meter (~72 DPI)
     buf.extend_from_slice(&2835u32.to_le_bytes()); // y pixels per meter
     buf.extend_from_slice(&0u32.to_le_bytes()); // colors used
@@ -1059,7 +1102,7 @@ fn encode_rgba_as_bmp(width: u32, height: u32, rgba: &[u8]) -> Vec<u8> {
         buf.push(pixel[3]); // A
     }
 
-    buf
+    Some(buf)
 }
 
 #[cfg(test)]
@@ -1386,7 +1429,7 @@ mod tests {
     #[test]
     fn encode_rgba_as_bmp_correct_file_size() {
         let rgba = vec![0u8; 4 * 4 * 4]; // 4x4 image
-        let bmp = encode_rgba_as_bmp(4, 4, &rgba);
+        let bmp = encode_rgba_as_bmp(4, 4, &rgba).expect("valid input");
         let expected_size = 14 + 108 + (4 * 4 * 4); // header + dib + pixels
         assert_eq!(bmp.len(), expected_size);
     }
@@ -1394,7 +1437,7 @@ mod tests {
     #[test]
     fn encode_rgba_as_bmp_starts_with_bm() {
         let rgba = vec![0u8; 4]; // 1x1 image
-        let bmp = encode_rgba_as_bmp(1, 1, &rgba);
+        let bmp = encode_rgba_as_bmp(1, 1, &rgba).expect("valid input");
         assert_eq!(&bmp[0..2], b"BM");
     }
 
@@ -1402,13 +1445,39 @@ mod tests {
     fn encode_rgba_as_bmp_pixel_order_is_bgra() {
         // Input RGBA: R=0xAA, G=0xBB, B=0xCC, A=0xDD
         let rgba = vec![0xAA, 0xBB, 0xCC, 0xDD];
-        let bmp = encode_rgba_as_bmp(1, 1, &rgba);
+        let bmp = encode_rgba_as_bmp(1, 1, &rgba).expect("valid input");
         let pixel_offset = (14 + 108) as usize;
         // BMP stores as BGRA
         assert_eq!(bmp[pixel_offset], 0xCC); // B
         assert_eq!(bmp[pixel_offset + 1], 0xBB); // G
         assert_eq!(bmp[pixel_offset + 2], 0xAA); // R
         assert_eq!(bmp[pixel_offset + 3], 0xDD); // A
+    }
+
+    #[test]
+    fn encode_rgba_as_bmp_zero_width_returns_none() {
+        let rgba = vec![0u8; 4];
+        assert!(encode_rgba_as_bmp(0, 1, &rgba).is_none());
+    }
+
+    #[test]
+    fn encode_rgba_as_bmp_zero_height_returns_none() {
+        let rgba = vec![0u8; 4];
+        assert!(encode_rgba_as_bmp(1, 0, &rgba).is_none());
+    }
+
+    #[test]
+    fn encode_rgba_as_bmp_mismatched_length_returns_none() {
+        // 2x2 image expects 16 bytes, provide 12
+        let rgba = vec![0u8; 12];
+        assert!(encode_rgba_as_bmp(2, 2, &rgba).is_none());
+    }
+
+    #[test]
+    fn encode_rgba_as_bmp_oversized_length_returns_none() {
+        // 2x2 image expects 16 bytes, provide 20
+        let rgba = vec![0u8; 20];
+        assert!(encode_rgba_as_bmp(2, 2, &rgba).is_none());
     }
     // --- colorize_svg tests ---
 
@@ -1481,6 +1550,17 @@ mod tests {
             "should inject fill into root svg tag, got: {}",
             result_str
         );
+    }
+
+    #[test]
+    fn colorize_svg_non_utf8_returns_original() {
+        // Non-UTF-8 bytes: valid SVG prefix followed by invalid byte sequence
+        let mut svg = b"<svg><path fill=\"black\" d=\"M0 0\"/>".to_vec();
+        svg.push(0xFF); // invalid UTF-8 byte
+        svg.extend_from_slice(b"</svg>");
+        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+        let result = colorize_svg(&svg, color);
+        assert_eq!(result, svg, "non-UTF-8 input should be returned unchanged");
     }
 
     #[test]
@@ -1618,6 +1698,61 @@ mod tests {
         assert!(result.is_some());
     }
 
+    // --- bundled_icon_to_image_source tests ---
+
+    #[test]
+    fn bundled_icon_lucide_returns_some() {
+        let result = bundled_icon_to_image_source(
+            IconName::Search,
+            native_theme::IconSet::Lucide,
+            None,
+            None,
+        );
+        assert!(result.is_some(), "Lucide search icon should convert");
+    }
+
+    #[test]
+    fn bundled_icon_material_returns_some() {
+        let result = bundled_icon_to_image_source(
+            IconName::Search,
+            native_theme::IconSet::Material,
+            None,
+            None,
+        );
+        assert!(result.is_some(), "Material search icon should convert");
+    }
+
+    #[test]
+    fn bundled_icon_freedesktop_returns_none() {
+        let result = bundled_icon_to_image_source(
+            IconName::Search,
+            native_theme::IconSet::Freedesktop,
+            None,
+            None,
+        );
+        assert!(
+            result.is_none(),
+            "Freedesktop is not bundled -- should return None"
+        );
+    }
+
+    #[test]
+    fn bundled_icon_with_color() {
+        let color = Hsla {
+            h: 0.0,
+            s: 1.0,
+            l: 0.5,
+            a: 1.0,
+        };
+        let result = bundled_icon_to_image_source(
+            IconName::Check,
+            native_theme::IconSet::Lucide,
+            Some(color),
+            None,
+        );
+        assert!(result.is_some(), "colorized bundled icon should convert");
+    }
+
     // --- animated icon tests ---
 
     #[test]
@@ -1630,7 +1765,7 @@ mod tests {
             ],
             frame_duration_ms: 80,
         };
-        let result = animated_frames_to_image_sources(&anim);
+        let result = animated_frames_to_image_sources(&anim, None, None);
         let ais = result.expect("Frames variant should return Some");
         assert_eq!(ais.sources.len(), 3);
         assert_eq!(ais.frame_duration_ms, 80);
@@ -1645,7 +1780,7 @@ mod tests {
             ),
             animation: native_theme::TransformAnimation::Spin { duration_ms: 1000 },
         };
-        let result = animated_frames_to_image_sources(&anim);
+        let result = animated_frames_to_image_sources(&anim, None, None);
         assert!(result.is_none());
     }
 
@@ -1655,7 +1790,7 @@ mod tests {
             frames: vec![],
             frame_duration_ms: 80,
         };
-        let result = animated_frames_to_image_sources(&anim);
+        let result = animated_frames_to_image_sources(&anim, None, None);
         assert!(result.is_none());
     }
 

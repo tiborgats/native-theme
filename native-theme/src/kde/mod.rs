@@ -1158,7 +1158,7 @@ Name=whatever
             .expect("dark variant should exist after merge");
 
         // Run the resolution pipeline.
-        dark.resolve();
+        dark.resolve_all();
 
         // Validate should produce Ok(ResolvedThemeVariant) with all fields filled.
         let resolved = dark.validate().unwrap_or_else(|e| {
