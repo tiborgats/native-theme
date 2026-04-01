@@ -504,7 +504,7 @@ impl SystemTheme {
     /// already-resolved [`ResolvedThemeVariant`]) so that changed source fields
     /// propagate correctly through `resolve()`. For example, changing
     /// `defaults.accent` in the overlay will cause `button.primary_background`,
-    /// `checkbox.checked_bg`, `slider.fill`, etc. to be re-derived from
+    /// `checkbox.checked_background`, `slider.fill`, etc. to be re-derived from
     /// the new accent color.
     ///
     /// # Examples
@@ -2104,7 +2104,7 @@ mod overlay_tests {
         assert_eq!(result.light.defaults.accent, new_accent);
         // Accent-derived widget fields
         assert_eq!(result.light.button.primary_background, new_accent);
-        assert_eq!(result.light.checkbox.checked_bg, new_accent);
+        assert_eq!(result.light.checkbox.checked_background, new_accent);
         assert_eq!(result.light.slider.fill, new_accent);
         assert_eq!(result.light.progress_bar.fill, new_accent);
         assert_eq!(result.light.switch.checked_background, new_accent);

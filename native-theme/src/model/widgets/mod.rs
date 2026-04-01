@@ -189,7 +189,7 @@ define_widget_pair! {
     CheckboxTheme / ResolvedCheckboxTheme {
         option {
             /// Indicator background when checked.
-            checked_bg: Rgba,
+            checked_background: Rgba,
             /// Indicator (check mark / radio dot) size in logical pixels.
             indicator_size: f32,
             /// Space between indicator and label.

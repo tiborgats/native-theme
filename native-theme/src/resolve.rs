@@ -379,8 +379,8 @@ impl ThemeVariant {
         }
 
         // --- checkbox ---
-        if self.checkbox.checked_bg.is_none() {
-            self.checkbox.checked_bg = d.accent;
+        if self.checkbox.checked_background.is_none() {
+            self.checkbox.checked_background = d.accent;
         }
         if self.checkbox.radius.is_none() {
             self.checkbox.radius = d.radius;
@@ -927,9 +927,9 @@ impl ThemeVariant {
 
         // --- checkbox ---
 
-        let checkbox_checked_bg = require(
-            &self.checkbox.checked_bg,
-            "checkbox.checked_bg",
+        let checkbox_checked_background = require(
+            &self.checkbox.checked_background,
+            "checkbox.checked_background",
             &mut missing,
         );
         let checkbox_indicator_size = require(
@@ -1872,7 +1872,7 @@ impl ThemeVariant {
                 font: input_font,
             },
             checkbox: crate::model::widgets::ResolvedCheckboxTheme {
-                checked_bg: checkbox_checked_bg,
+                checked_background: checkbox_checked_background,
                 indicator_size: checkbox_indicator_size,
                 spacing: checkbox_spacing,
                 radius: checkbox_radius,
@@ -2214,9 +2214,9 @@ mod tests {
             "button.primary_background <- accent"
         );
         assert_eq!(
-            v.checkbox.checked_bg,
+            v.checkbox.checked_background,
             Some(Rgba::rgb(0, 120, 215)),
-            "checkbox.checked_bg <- accent"
+            "checkbox.checked_background <- accent"
         );
         assert_eq!(
             v.slider.fill,
@@ -2492,7 +2492,7 @@ mod tests {
         });
 
         // checkbox
-        v.checkbox.checked_bg = Some(c);
+        v.checkbox.checked_background = Some(c);
         v.checkbox.indicator_size = Some(18.0);
         v.checkbox.spacing = Some(6.0);
         v.checkbox.radius = Some(2.0);
@@ -3407,7 +3407,7 @@ mod tests {
         v.input.border_width = None;
 
         // checkbox colors
-        v.checkbox.checked_bg = None;
+        v.checkbox.checked_background = None;
         v.checkbox.radius = None;
         v.checkbox.border_width = None;
 

@@ -501,10 +501,10 @@ accent = "#00ff00"
                     variant.button.primary_background.is_none(),
                     "preset '{name}' {label}.button.primary_background should be None (derived)"
                 );
-                // checkbox.checked_bg is derived from accent
+                // checkbox.checked_background is derived from accent
                 assert!(
-                    variant.checkbox.checked_bg.is_none(),
-                    "preset '{name}' {label}.checkbox.checked_bg should be None (derived)"
+                    variant.checkbox.checked_background.is_none(),
+                    "preset '{name}' {label}.checkbox.checked_background should be None (derived)"
                 );
                 // slider.fill is derived from accent
                 assert!(
@@ -559,8 +559,8 @@ accent = "#00ff00"
             "primary_background should be None pre-resolve"
         );
         assert!(
-            light.checkbox.checked_bg.is_none(),
-            "checkbox.checked_bg should be None pre-resolve"
+            light.checkbox.checked_background.is_none(),
+            "checkbox.checked_background should be None pre-resolve"
         );
         assert!(
             light.slider.fill.is_none(),
@@ -585,9 +585,9 @@ accent = "#00ff00"
             "button.primary_background should match accent"
         );
         assert_eq!(
-            light.checkbox.checked_bg,
+            light.checkbox.checked_background,
             Some(accent),
-            "checkbox.checked_bg should match accent"
+            "checkbox.checked_background should match accent"
         );
         assert_eq!(
             light.slider.fill,

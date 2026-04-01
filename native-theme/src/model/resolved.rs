@@ -561,7 +561,7 @@ mod tests {
                 font: f.clone(),
             },
             checkbox: ResolvedCheckboxTheme {
-                checked_bg: c,
+                checked_background: c,
                 indicator_size: 18.0,
                 spacing: 6.0,
                 radius: 2.0,
@@ -785,7 +785,7 @@ mod tests {
                 font: f.clone(),
             },
             checkbox: ResolvedCheckboxTheme {
-                checked_bg: c,
+                checked_background: c,
                 indicator_size: 18.0,
                 spacing: 6.0,
                 radius: 2.0,

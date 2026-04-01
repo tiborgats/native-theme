@@ -11,6 +11,20 @@ pub struct ThemeResolutionError {
     pub missing_fields: Vec<String>,
 }
 
+impl ThemeResolutionError {
+    /// Categorize a field path into a human-readable group name.
+    fn field_category(field: &str) -> &'static str {
+        if field == "icon_set" {
+            return "icon set";
+        }
+        match field.split('.').next() {
+            Some("defaults") => "root defaults",
+            Some("text_scale") => "text scale",
+            _ => "widget fields",
+        }
+    }
+}
+
 impl std::fmt::Display for ThemeResolutionError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
@@ -18,9 +32,38 @@ impl std::fmt::Display for ThemeResolutionError {
             "theme resolution failed: {} missing field(s):",
             self.missing_fields.len()
         )?;
-        for field in &self.missing_fields {
-            write!(f, "\n  - {field}")?;
+
+        // Group fields by category, preserving insertion order within each group.
+        let categories: &[&str] = &["root defaults", "text scale", "widget fields", "icon set"];
+        for &cat in categories {
+            let fields: Vec<&str> = self
+                .missing_fields
+                .iter()
+                .filter(|f| Self::field_category(f) == cat)
+                .map(|s| s.as_str())
+                .collect();
+            if fields.is_empty() {
+                continue;
+            }
+            write!(f, "\n  [{cat}]")?;
+            for field in &fields {
+                write!(f, "\n    - {field}")?;
+            }
         }
+
+        // Hint when root defaults are missing (the most common user mistake).
+        let has_root = self
+            .missing_fields
+            .iter()
+            .any(|f| Self::field_category(f) == "root defaults");
+        if has_root {
+            write!(
+                f,
+                "\n  hint: root defaults drive widget inheritance; \
+                 consider using ThemeSpec::from_toml_with_base() to inherit from a complete preset"
+            )?;
+        }
+
         Ok(())
     }
 }
@@ -189,7 +232,7 @@ mod tests {
     }
 
     #[test]
-    fn theme_resolution_error_display_lists_count_and_fields() {
+    fn theme_resolution_error_display_categorizes_fields() {
         let e = ThemeResolutionError {
             missing_fields: vec![
                 "defaults.accent".into(),
@@ -199,9 +242,43 @@ mod tests {
         };
         let msg = e.to_string();
         assert!(msg.contains("3 missing field(s)"), "got: {msg}");
+        assert!(msg.contains("[root defaults]"), "got: {msg}");
         assert!(msg.contains("defaults.accent"), "got: {msg}");
+        assert!(msg.contains("[widget fields]"), "got: {msg}");
         assert!(msg.contains("button.foreground"), "got: {msg}");
         assert!(msg.contains("window.radius"), "got: {msg}");
+        assert!(msg.contains("hint:"), "got: {msg}");
+        assert!(msg.contains("from_toml_with_base"), "got: {msg}");
+    }
+
+    #[test]
+    fn theme_resolution_error_display_no_hint_without_root_defaults() {
+        let e = ThemeResolutionError {
+            missing_fields: vec!["button.foreground".into()],
+        };
+        let msg = e.to_string();
+        assert!(msg.contains("[widget fields]"), "got: {msg}");
+        assert!(!msg.contains("hint:"), "got: {msg}");
+    }
+
+    #[test]
+    fn theme_resolution_error_display_groups_text_scale() {
+        let e = ThemeResolutionError {
+            missing_fields: vec!["text_scale.caption".into(), "defaults.font.family".into()],
+        };
+        let msg = e.to_string();
+        assert!(msg.contains("[text scale]"), "got: {msg}");
+        assert!(msg.contains("[root defaults]"), "got: {msg}");
+    }
+
+    #[test]
+    fn theme_resolution_error_display_icon_set_category() {
+        let e = ThemeResolutionError {
+            missing_fields: vec!["icon_set".into()],
+        };
+        let msg = e.to_string();
+        assert!(msg.contains("[icon set]"), "got: {msg}");
+        assert!(!msg.contains("hint:"), "got: {msg}");
     }
 
     #[test]
