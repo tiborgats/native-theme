@@ -131,7 +131,10 @@ freedesktop, SF Symbols, Segoe Fluent).
 
 ```rust,ignore
 // build.rs
-native_theme_build::generate_icons("icons/icons.toml");
+use native_theme_build::UnwrapOrExit;
+native_theme_build::generate_icons("icons/icons.toml")
+    .unwrap_or_exit()
+    .emit_cargo_directives();
 
 // src/lib.rs
 include!(concat!(env!("OUT_DIR"), "/app_icon.rs"));

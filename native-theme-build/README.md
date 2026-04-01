@@ -30,8 +30,12 @@ system-themes = ["sf-symbols", "segoe-fluent", "freedesktop"]
 Call `generate_icons()` in your `build.rs`:
 
 ```rust,ignore
+use native_theme_build::UnwrapOrExit;
+
 fn main() {
-    native_theme_build::generate_icons("icons/icons.toml");
+    native_theme_build::generate_icons("icons/icons.toml")
+        .unwrap_or_exit()
+        .emit_cargo_directives();
 }
 ```
 
@@ -95,12 +99,16 @@ A `default` key is required for every DE-aware entry.
 For projects with multiple TOML files or custom enum names:
 
 ```rust,ignore
+use native_theme_build::UnwrapOrExit;
+
 fn main() {
     native_theme_build::IconGenerator::new()
         .source("icons/media.toml")
         .source("icons/navigation.toml")
         .enum_name("AppIcon")
-        .generate();
+        .generate()
+        .unwrap_or_exit()
+        .emit_cargo_directives();
 }
 ```
 

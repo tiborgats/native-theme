@@ -605,13 +605,15 @@ impl ThemeVariant {
     /// Convert this ThemeVariant into a [`ResolvedThemeVariant`] with all fields guaranteed.
     ///
     /// Should be called after [`resolve()`](ThemeVariant::resolve). Walks every field
-    /// and collects missing (None) field paths. Returns `Ok(ResolvedThemeVariant)` if all fields
-    /// are populated, or `Err(Error::Resolution(...))` listing every missing field.
+    /// and collects missing (None) field paths, then validates that numeric values
+    /// are within legal ranges (e.g., spacing >= 0, opacity 0..=1, font weight
+    /// 100..=900). Returns `Ok(ResolvedThemeVariant)` if all fields are populated
+    /// and in range.
     ///
     /// # Errors
     ///
     /// Returns [`crate::Error::Resolution`] containing a [`ThemeResolutionError`]
-    /// with all missing field paths if any fields remain None.
+    /// with all missing field paths and out-of-range diagnostics.
     #[must_use = "this returns the resolved theme; it does not modify self"]
     pub fn validate(&self) -> crate::Result<ResolvedThemeVariant> {
         let mut missing = Vec::new();

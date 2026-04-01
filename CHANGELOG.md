@@ -5,6 +5,60 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.3] - 2026-04-01
+
+### Added
+
+- `ThemeVariant::resolve_platform_defaults()` — separated platform-dependent resolution (icon theme detection) from the pure data-transform `resolve()`
+- `ThemeVariant::resolve_all()` — convenience for `resolve()` + `resolve_platform_defaults()`
+- `ThemeSpec::from_toml_with_base()` — merge custom TOML overrides onto a named base preset in one call
+- `ThemeSpec::lint_toml()` — detect unrecognized field names in TOML theme files (opt-in linting for theme authors)
+- `detect_is_dark()`, `detect_reduced_motion()`, `detect_icon_theme()` — uncached polling variants of `system_is_dark()`, `prefers_reduced_motion()`, `system_icon_theme()`
+- `diagnose_platform_support()` — human-readable diagnostic messages for OS theme detection availability
+- `FIELD_NAMES` const on all 25 per-widget `Option` structs and `ThemeDefaults` (used by `lint_toml()`)
+- Range validation in `validate()` for ~50 geometry, opacity, font-size, and font-weight fields
+- `switch.unchecked_background` resolve rule (falls back to `muted`)
+- gpui connector: `bundled_icon_to_image_source()` — single-call `IconName` + `IconSet` to `ImageSource` conversion
+- gpui connector: re-exports `Error`, `TransformAnimation`, `LinuxDesktop` (Linux-only)
+- iced connector: `to_iced_weight()` — CSS font weight (100-900) to iced `Weight` enum
+- iced connector: `into_image_handle()`, `into_svg_handle()` — consuming variants of the borrow-based helpers
+- iced connector: re-exports `Error`, `Result`, `Rgba`, `TransformAnimation`
+- Build crate: drift detection tests for `THEME_TABLE` vs `IconSet` and `DE_TABLE` vs `LinuxDesktop`
+- Build crate: digit-starting identifier validation (rejects names that produce invalid Rust identifiers)
+- Build crate: empty-roles and no-themes warnings for likely misconfiguration
+
+### Changed
+
+- `ButtonTheme`: `primary_bg` → `primary_background`, `primary_fg` → `primary_foreground`
+- `SwitchTheme`: `checked_bg` → `checked_background`, `unchecked_bg` → `unchecked_background`, `thumb_bg` → `thumb_background`
+- `into_resolved()` now calls `resolve_all()` (includes platform defaults) for backward compatibility
+- Preset registry refactored from 20 constants + 20 `LazyLock` + 20-arm match to data-driven `HashMap`
+- Community presets no longer hardcode `icon_set = "freedesktop"`
+- gpui `from_preset()` and `from_system()` return `(Theme, ResolvedThemeVariant)` tuple
+- gpui `to_theme()` sets all `Theme` fields directly — eliminates `apply_config` workaround and radius truncation
+- gpui `animated_frames_to_image_sources()` accepts `color` and `size` parameters
+- gpui `into_image_source()` delegates to `to_image_source()` instead of duplicating logic
+- iced `to_theme()` captures 4 `Copy` Rgba values instead of cloning entire `ResolvedThemeVariant`
+- iced `from_preset()` uses `into_variant()` (avoids clone); `from_system()` moves variant
+- iced `line_height()` renamed to `line_height_multiplier()` (returns raw multiplier, not pixels)
+- iced `animated_frames_to_svg_handles()` accepts `color` parameter
+- Build crate: `GenerateOutput::emit_cargo_directives()` returns `()` instead of `io::Result<()>` — handles errors internally
+- Build crate: `IconGenerator::crate_path()` and `derive()` validate input (assert on empty/whitespace)
+- Build crate: role deduplication in `merge_configs()` via `BTreeSet`
+
+### Removed
+
+- gpui connector: `pick_variant()` free function (use `ThemeSpec::into_variant()`)
+
+### Fixed
+
+- gpui BMP encoder validates dimensions and detects overflow (returns `Option` instead of panicking)
+- gpui `colorize_svg()` returns original bytes on non-UTF-8 input (prevents data corruption)
+- iced `colorize_monochrome_svg()` returns original bytes on non-UTF-8 input
+- Build crate: Windows path separators in generated `include_bytes!` paths (backslash → forward slash)
+- Build crate: empty config early return in pipeline (prevents index panic)
+- Build crate: orphan SVG check emits warning instead of silently ignoring unreadable directories
+
 ## [0.5.2] - 2026-03-31
 
 ### Added
@@ -353,6 +407,7 @@ let busy = load_icon(IconRole::StatusBusy, "material");
 - `impl_merge!` macro for recursive Option-based theme merging
 - Deep merge support across all theme types
 
+[0.5.3]: https://github.com/tiborgats/native-theme/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/tiborgats/native-theme/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/tiborgats/native-theme/compare/v0.5.0...v0.5.1
 [0.5.0]: https://github.com/tiborgats/native-theme/compare/v0.4.1...v0.5.0
