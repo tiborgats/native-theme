@@ -2178,13 +2178,16 @@ more aggressively than light theme's 10%. Matches upstream gpui-component.
 | 47 | `mono_font_weight()` helper missing | **Low** | Trivial | Add helper (+ expand #13) |
 | 48 | `DialogButtonOrder` not re-exported | **Low** | Trivial | Add re-export + helper |
 | 49 | `from_system()` resolves both variants, wastes one | **Low** | Trivial | Document cost |
+| 50 | `test_resolved()` tests wrong preset's colors | **High** | Trivial | Fix `into_variant(true)` |
 | 51 | Switch ON uses `tc.primary` not `switch.checked_background` | **Medium** | N/A | gpui-component limitation; document |
 | 52 | `active_color()` indistinguishable on near-black themes | **Medium** | Trivial | Add minimum lightness delta + clamp |
 | 53 | `Theme.transparent` never explicitly set | **Negligible** | Trivial | Add comment |
+| 54 | BMP encoder comment misleading about BGRA swizzle | **Negligible** | Trivial | Fix comment |
+| 55 | Showcase `role_for_gpui_icon()` ambiguous reverse mapping | **Negligible** | Trivial | Add comment |
+| 56 | Showcase redundant Material loads in `load_gpui_icons()` | **Low** | Low | Pre-load material cache |
 | 57 | Showcase NaN propagation from NumberInput | **Low** | Trivial | Reject non-finite values |
 | 58 | Dark theme 20% active darkening counterproductive | **Low** | Trivial | Document rationale |
 | 59 | Showcase uses `resolve()` not `resolve_all()` (CC-10) | **Medium** | Trivial | Replace at showcase.rs:1636 |
-| 50 | `test_resolved()` tests wrong preset's colors | **High** | Trivial | Fix `into_variant(true)` |
 
 ---
 
@@ -2622,17 +2625,3 @@ This compounds with issue #52 (already-near-black colors get invisible).
 **Best solution: A for v0.5.4** (matches upstream). Consider B for v0.6.0
 alongside a discussion with the gpui-component maintainers.
 
----
-
-## Updated Priority Summary (Third Pass Additions)
-
-| # | Issue | Severity | Effort | Best Fix |
-|---|-------|----------|--------|----------|
-| 51 | Switch checked state ignores `switch.checked_background` | **Medium** | Trivial | Document limitation + upstream issue |
-| 52 | `active_color()` invisible on near-black base colors | **Medium** | Low | Lighten instead of darken below threshold |
-| 53 | `Theme.transparent` never explicitly set | **Negligible** | Trivial | Set `transparent = transparent_black()` |
-| 54 | BMP encoder comment misleading about BGRA swizzle | **Negligible** | Trivial | Fix comment |
-| 55 | Showcase `role_for_gpui_icon()` ambiguous reverse mapping | **Negligible** | Trivial | Add comment |
-| 56 | Showcase redundant Material loads in `load_gpui_icons()` | **Low** | Low | Pre-load and pass material cache |
-| 57 | Showcase NumberInput NaN/Infinity trap | **Low** | Trivial | Guard `is_finite()` |
-| 58 | `active_color` darkens toward bg on dark themes (design concern) | **Low** | Trivial | Document upstream rationale |
