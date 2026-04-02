@@ -1235,3 +1235,5 @@ defeating compiler exhaustiveness checking.
 | 30 | Showcase drops alpha in resolved color swatches | Low | Trivial | Use `from_rgba` |
 | 34 | No Palette/Extended field count tripwire test | Low | Trivial | Add size_of assertion |
 | 35 | Showcase `_ => false` defeats exhaustiveness | Very Low | Trivial | Explicit match arms |
+| 36 | Missing `DialogButtonOrder` re-export (CC-3) | Low | Trivial | Add to re-export block |
+| 37 | `to_theme()` bare `#[must_use]` (CC-7) | Very Low | Trivial | Add message string |

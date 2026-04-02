@@ -2183,6 +2183,7 @@ more aggressively than light theme's 10%. Matches upstream gpui-component.
 | 53 | `Theme.transparent` never explicitly set | **Negligible** | Trivial | Add comment |
 | 57 | Showcase NaN propagation from NumberInput | **Low** | Trivial | Reject non-finite values |
 | 58 | Dark theme 20% active darkening counterproductive | **Low** | Trivial | Document rationale |
+| 59 | Showcase uses `resolve()` not `resolve_all()` (CC-10) | **Medium** | Trivial | Replace at showcase.rs:1636 |
 | 50 | `test_resolved()` tests wrong preset's colors | **High** | Trivial | Fix `into_variant(true)` |
 
 ---

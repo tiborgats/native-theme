@@ -1376,6 +1376,175 @@ Title bar inherits from `surface` while window background inherits from
 
 ---
 
+## 18. Preset Color Mismatches (Fourth Pass)
+
+### 18a. Windows 11 dark `accent_foreground = "#ffffff"` -- platform-facts says `#000000`
+
+**File:** `src/presets/windows-11.toml:232`
+
+platform-facts.md Appendix line 1389: `TextOnAccentFillColorPrimary D #000000`.
+Preset uses `#ffffff`. Text on accent backgrounds in dark mode has **reversed
+contrast** -- white on light blue instead of black on light blue.
+
+**Impact:** HIGH. This is the most severe color correctness issue found.
+
+**Also affects:** `windows-11-live.toml`
+
+### 18b. Windows 11 dark `danger = "#ff9999"` -- should be `#ff99a4`
+
+**File:** `src/presets/windows-11.toml:218`
+
+platform-facts.md Appendix line 1376: `SystemFillColorCritical D #ff99a4`.
+
+**Also affects:** `windows-11-live.toml`
+
+### 18c. Windows 11 dark `warning = "#f0c239"` -- should be `#fce100`
+
+**File:** `src/presets/windows-11.toml:220`
+
+platform-facts.md Appendix line 1377: `SystemFillColorCaution D #fce100`.
+
+**Also affects:** `windows-11-live.toml`
+
+---
+
+## 19. Missing Text Scale Weights (Fourth Pass)
+
+All platform presets rely on `defaults.font.weight = 400` for text_scale
+entries that lack an explicit weight. Platform-facts.md SS2.19 documents
+heavier weights for headings and titles.
+
+### 19a. Adwaita missing `text_scale.dialog_title.weight` -- should be 800
+
+GNOME `.title-2` weight = 800. Resolves to 400.
+
+### 19b. Adwaita missing `text_scale.display.weight` -- should be 800
+
+GNOME `.title-1` weight = 800. Resolves to 400.
+
+### 19c. macOS missing `text_scale.section_heading.weight` -- should be 700
+
+macOS `.headline` weight = 700 (Bold). Resolves to 400.
+
+### 19d. Windows 11 missing `text_scale.section_heading.weight` -- should be 600
+
+Fluent Subtitle weight = 600 (SemiBold). Resolves to 400.
+
+### 19e. Windows 11 missing `text_scale.dialog_title.weight` -- should be 600
+
+Fluent Title weight = 600 (SemiBold). Resolves to 400.
+
+### 19f. Windows 11 missing `text_scale.display.weight` -- should be 600
+
+Fluent Display weight = 600 (SemiBold). Resolves to 400.
+
+**Recommended for all 19a-19f:** Add explicit `weight` to the relevant
+`text_scale` sections in each preset. Also update corresponding live presets.
+
+---
+
+## 20. Additional Geometry/Padding Mismatches (Fourth Pass)
+
+### 20a. macOS `dialog.button_spacing = 8` -- should be 12
+
+**File:** `src/presets/macos-sonoma.toml:170,368`
+
+platform-facts.md SS2.22 line 1194. **Also affects:** live preset.
+
+### 20b. macOS `dialog.content_padding = 24` -- should be 20
+
+**File:** `src/presets/macos-sonoma.toml:169,367`
+
+platform-facts.md SS2.22 line 1193. **Also affects:** live preset.
+
+### 20c. KDE Breeze `dialog.button_spacing = 8` -- should be 6
+
+**File:** `src/presets/kde-breeze.toml:170,368`
+
+platform-facts.md SS2.22: KDE `Layout_DefaultSpacing` = 6.
+
+### 20d. KDE Breeze `dialog.content_padding = 24` -- should be 10
+
+**File:** `src/presets/kde-breeze.toml:169,367`
+
+platform-facts.md SS2.22: KDE `Layout_TopLevelMarginWidth` = 10.
+
+### 20e. Adwaita `dialog.radius` inherits 15 -- should be 18
+
+**File:** `src/presets/adwaita.toml` (absent; resolves from `radius_lg = 15.0`)
+
+platform-facts.md SS2.22: AdwAlertDialog `$alert_radius: 18px`.
+
+### 20f. Adwaita `button.icon_spacing = 6` -- should be 8
+
+**File:** `src/presets/adwaita.toml:89,294`
+
+platform-facts.md SS2.3 line 975.
+
+### 20g. Adwaita `menu.padding_vertical = 4` -- should be 0
+
+**File:** `src/presets/adwaita.toml:134,339`
+
+platform-facts.md SS2.6: `padding: 0 12px`.
+
+### 20h. Adwaita `combo_box.arrow_size = 12` -- should be 16
+
+**File:** `src/presets/adwaita.toml:194,399`
+
+platform-facts.md SS2.24: GtkDropDown arrow = 16px.
+
+### 20i. Adwaita `combo_box.padding_horizontal = 12` -- should be 10
+
+**File:** `src/presets/adwaita.toml:193,398`
+
+platform-facts.md SS2.24: inherits button padding = 10.
+
+### 20j. Adwaita `scrollbar.min_thumb_height = 30` -- should be 40
+
+**File:** `src/presets/adwaita.toml:114,319`
+
+platform-facts.md SS2.8 line 1048.
+
+### 20k. Windows 11 `menu.padding_horizontal = 12` -- should be 11
+
+**File:** `src/presets/windows-11.toml:126,325`
+
+platform-facts.md SS2.6: `MenuFlyoutItemThemePadding=11,8,11,9`.
+
+### 20l. Windows 11 `tab.padding_horizontal = 12` -- should be 8
+
+**File:** `src/presets/windows-11.toml:121,319`
+
+platform-facts.md SS2.11: `TabViewItemHeaderPadding=8,3,4,3`.
+
+### 20m. Windows 11 `tab.padding_vertical = 4` -- should be 3
+
+**File:** `src/presets/windows-11.toml:122,320`
+
+platform-facts.md SS2.11: vertical = 3.
+
+### 20n. KDE Breeze `button.padding_vertical = 6` -- should be 5
+
+**File:** `src/presets/kde-breeze.toml:82,280`
+
+platform-facts.md SS2.3 line 973.
+
+### 20o. KDE Breeze `input.padding_vertical = 6` -- should be 3
+
+**File:** `src/presets/kde-breeze.toml:90,288`
+
+platform-facts.md SS2.4 line 995.
+
+### 20p. macOS `frame_width = 1.0` -- platform-facts says 0.5
+
+**File:** `src/presets/macos-sonoma.toml:38,238`
+
+platform-facts.md SS2.1.6 line 919 (measured, lower confidence).
+
+**All of 20a-20p also affect corresponding live presets.**
+
+---
+
 ## Priority Summary
 
 **Note:** Every preset mismatch marked with "Also affects" requires updating BOTH the full preset and the corresponding live preset in lockstep.
@@ -1448,3 +1617,28 @@ Title bar inherits from `surface` while window background inherits from
 | 17a | merge() name preservation edge case untested | low | trivial | Add test |
 | 17b | accent->selection->selection_inactive chain untested | medium | trivial | Add derivation test |
 | 17c | title_bar_background <- surface distinction untested | low | trivial | Add inheritance test |
+| 18a | win11 dark accent_foreground #fff vs #000 | **high** | trivial | Fix to #000000 |
+| 18b | win11 dark danger #ff9999 vs #ff99a4 | medium | trivial | Fix hex |
+| 18c | win11 dark warning #f0c239 vs #fce100 | medium | trivial | Fix hex |
+| 19a | adwaita text_scale dialog_title weight 400 vs 800 | medium | trivial | Add weight = 800 |
+| 19b | adwaita text_scale display weight 400 vs 800 | medium | trivial | Add weight = 800 |
+| 19c | macOS text_scale section_heading weight 400 vs 700 | medium | trivial | Add weight = 700 |
+| 19d | win11 text_scale section_heading weight 400 vs 600 | medium | trivial | Add weight = 600 |
+| 19e | win11 text_scale dialog_title weight 400 vs 600 | medium | trivial | Add weight = 600 |
+| 19f | win11 text_scale display weight 400 vs 600 | medium | trivial | Add weight = 600 |
+| 20a | macOS dialog button_spacing 8 vs 12 | medium | trivial | Fix to 12 |
+| 20b | macOS dialog content_padding 24 vs 20 | medium | trivial | Fix to 20 |
+| 20c | kde dialog button_spacing 8 vs 6 | medium | trivial | Fix to 6 |
+| 20d | kde dialog content_padding 24 vs 10 | medium | trivial | Fix to 10 |
+| 20e | adwaita dialog radius 15 vs 18 | medium | trivial | Add dialog radius = 18 |
+| 20f | adwaita button icon_spacing 6 vs 8 | low | trivial | Fix to 8 |
+| 20g | adwaita menu padding_vertical 4 vs 0 | low | trivial | Fix to 0 |
+| 20h | adwaita combo_box arrow_size 12 vs 16 | medium | trivial | Fix to 16 |
+| 20i | adwaita combo_box padding_horizontal 12 vs 10 | low | trivial | Fix to 10 |
+| 20j | adwaita scrollbar min_thumb_height 30 vs 40 | low | trivial | Fix to 40 |
+| 20k | win11 menu padding_horizontal 12 vs 11 | low | trivial | Fix to 11 |
+| 20l | win11 tab padding_horizontal 12 vs 8 | medium | trivial | Fix to 8 |
+| 20m | win11 tab padding_vertical 4 vs 3 | low | trivial | Fix to 3 |
+| 20n | kde button padding_vertical 6 vs 5 | low | trivial | Fix to 5 |
+| 20o | kde input padding_vertical 6 vs 3 | medium | trivial | Fix to 3 |
+| 20p | macOS frame_width 1.0 vs 0.5 | low | trivial | Fix to 0.5 (lower confidence) |
