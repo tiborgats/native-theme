@@ -2057,74 +2057,6 @@ just "testing light mode" -- it is testing a different preset entirely.
 
 ---
 
-## 51. Switch ON State Uses `tc.primary` Instead of `resolved.switch.checked_background`
-
-**File:** `colors.rs:285-286`
-
-gpui-component `switch.rs:97-98` hardcodes `cx.theme().primary` for the
-checked track. Theme authors cannot independently control switch ON color.
-The connector maps `tc.primary` from `button.primary_background`, not from
-`resolved.switch.checked_background`.
-
-**Recommended:** Override `tc.primary` with `resolved.switch.checked_background`
-would fix switch but break primary buttons. Document as a gpui-component
-limitation and propose upstream split of primary vs switch-checked.
-
----
-
-## 52. `active_color()` Produces Indistinguishable Results on Near-Black Themes
-
-**File:** `derive.rs:27-29`
-
-`active_color()` darkens via `l * (1.0 - factor)`. When base lightness is
-near zero (l < 0.15), the result is visually identical to the base. Affects
-all 8 `_active` ThemeColor fields on dark themes with near-black accents.
-
-#### Solutions
-
-| # | Solution | Pros | Cons |
-|---|----------|------|------|
-| A | Add minimum lightness delta: `l = (l * (1.0 - factor)).min(l - 0.05)` | Always-visible state change | May push below 0.0 (needs clamp) |
-| B | Switch to additive darkening for very dark colors | Consistent contrast | More complex |
-
-**Recommended:** A with clamp to 0.0.
-
----
-
-## 53. `Theme.transparent` Never Explicitly Set
-
-**File:** `lib.rs:96-123`
-
-`Theme.transparent` relies on `Hsla::default()` from `Theme::from()`.
-Doc at lib.rs:92-94 claims "all Theme fields are set explicitly."
-
-**Recommended:** Add comment clarifying `transparent` is intentionally
-defaulted, or set it explicitly.
-
----
-
-## 57. Showcase NaN Propagation From NumberInput
-
-**File:** `examples/showcase.rs:1203-1204`
-
-Typing "NaN" or "Infinity" into NumberInput causes permanent NaN
-propagation. `f64::from_str` succeeds on these strings.
-
-**Recommended:** Reject non-finite values in the input handler.
-
----
-
-## 58. Dark Theme 20% Active Darkening vs 10% Light Is Counterproductive
-
-**File:** `derive.rs:22-24`
-
-On dark themes, 20% darkening reduces contrast against the dark background
-more aggressively than light theme's 10%. Matches upstream gpui-component.
-
-**Recommended:** Document rationale for v0.5.4.
-
----
-
 ## Priority Summary
 
 | # | Issue | Severity | Effort | Best Fix |
@@ -2188,10 +2120,6 @@ more aggressively than light theme's 10%. Matches upstream gpui-component.
 | 57 | Showcase NaN propagation from NumberInput | **Low** | Trivial | Reject non-finite values |
 | 58 | Dark theme 20% active darkening counterproductive | **Low** | Trivial | Document rationale |
 | 59 | Showcase uses `resolve()` not `resolve_all()` (CC-10) | **Medium** | Trivial | Replace at showcase.rs:1636 |
-
----
-
-## Third-Pass Findings (51--58)
 
 ---
 

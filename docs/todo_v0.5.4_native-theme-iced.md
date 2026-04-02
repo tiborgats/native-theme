@@ -138,19 +138,20 @@ status colors have distinct character.
 | B | Override all `.base`, `.weak`, `.strong` tiers for all 5 families using resolved + derived tints | Closest possible match to theme intent across all sub-palette tiers | Complex; deriving weak/strong variants needs a tinting algorithm; over-engineering |
 | C | Document the limitation; leave auto-generation | No code change; users know what to expect | Widgets visually diverge from theme intent on community presets |
 
-**Recommended: A.** Six additional lines of overrides (same pattern
-as the existing secondary/background overrides) eliminate the biggest
-divergence. The `.weak` and `.strong` sub-tiers can remain auto-derived
-since they are visual variants (hover, disabled) rather than semantic
-colors.
+**Recommended: A.** Override the `.base.text` fields for all families
+that have platform-specific foreground colors.
+
+**Correction (issue 29):** The `.base.color` overrides below are
+REDUNDANT -- palette auto-generation already sets them correctly via
+`to_palette()`. Only the `.base.text` fields need overriding. Also add
+`warning` (iced DOES have a Warning family, contrary to issue 13's
+original claim). The correct fix is 4 text-only overrides:
 
 ```rust
-ext.primary.base.color = to_color(accent);
 ext.primary.base.text = to_color(accent_foreground);
-ext.success.base.color = to_color(success);
 ext.success.base.text = to_color(success_foreground);
-ext.danger.base.color = to_color(danger);
 ext.danger.base.text = to_color(danger_foreground);
+ext.warning.base.text = to_color(warning_foreground);
 ```
 
 ---
@@ -552,9 +553,16 @@ The core model provides:
 - `info` / `info_foreground` (blue/teal semantic color pair)
 - `warning_foreground` (text on warning background)
 
-Iced's Extended palette has no `info` or `warning` family. The
+**Correction (issue 29):** The claim below that iced has no `warning`
+family is INCORRECT. Iced `Extended` HAS a `Warning` family with
+`base`, `weak`, `strong`. The `warning.base.color` is correct via
+palette, but `warning.base.text` defaults to `d.foreground` instead of
+`d.warning_foreground`. See issue 29 for the fix.
+
+Iced's Extended palette has no `info` family. The
 `warning` base color reaches iced via `palette.warning` -> `d.warning`,
-but its foreground pair is lost. `info` is lost entirely.
+but its foreground pair (`warning_foreground`) is not overridden (see
+issue 29). `info` is lost entirely.
 
 The gpui connector maps ALL of these: `tc.info`, `tc.info_foreground`,
 `tc.info_hover`, `tc.info_active` at colors.rs:175-178.
@@ -1197,6 +1205,29 @@ connector has no equivalent. Upstream palette additions go undetected.
 defeating compiler exhaustiveness checking.
 
 **Recommended:** Use explicit match arms for all 5 `IconSet` variants.
+
+---
+
+## 36. Missing `DialogButtonOrder` Re-export (Cross-Crate CC-3)
+
+`ResolvedThemeVariant` carries `dialog.button_order: DialogButtonOrder`
+but `DialogButtonOrder` is not in the re-export block at `lib.rs:82-85`.
+Users must depend on `native-theme` directly to name the type. Neither
+connector re-exports it. The gpui connector tracks this as issue #48.
+
+**Recommended:** Add `DialogButtonOrder` to re-export block.
+
+---
+
+## 37. `to_theme()` Bare `#[must_use]` (Cross-Crate CC-7)
+
+**File:** `lib.rs:102`
+
+Iced `to_theme()` uses bare `#[must_use]` without a message. The gpui
+connector's identical function has `#[must_use = "this returns the theme; it does not apply it"]`. All other entry points in both connectors include
+the message.
+
+**Recommended:** Add message string for consistency.
 
 ---
 
