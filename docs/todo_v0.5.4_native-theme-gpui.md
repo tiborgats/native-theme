@@ -686,6 +686,13 @@ let fg = if status.l > 0.5 { black } else { white };
 contrast is insufficient. This handles Windows correctly (its values already
 have good contrast) while fixing macOS/KDE/GNOME.
 
+**Limitation note:** The proposed `ensure_contrast` heuristic uses HSL
+lightness difference, which is NOT perceptually uniform. Two colors with
+0.31 lightness difference can still be illegible (e.g., saturated blue fg
+on dark blue bg). A more robust approach would use WCAG relative luminance:
+`L = 0.2126*R + 0.7152*G + 0.0722*B` (on linearized sRGB). At minimum,
+document that the heuristic is approximate.
+
 ---
 
 ## 10. SVG Colorization Missing `stroke="black"` Patterns
@@ -1589,6 +1596,13 @@ let gpui_rgba = gpui::Rgba {
 
 **Best solution: A.** Negligible cost for robustness gained.
 
+**Severity note:** `native_theme::Rgba` stores `u8` values (0-255) and
+`to_f32_array()` at `color.rs:82-88` divides by 255.0, guaranteeing the
+result is always in [0.0, 1.0]. The concern is theoretical only -- no
+malformed input can reach the connector through the `ResolvedThemeVariant`
+pipeline. Severity downgraded from **Low** to **Negligible**. The clamp
+is still good defensive practice.
+
 ---
 
 ## 30. Doc Examples Use `.unwrap()`
@@ -1875,6 +1889,52 @@ as `examples/showcase/main.rs`). The showcase is a reference tool, not a
 
 ---
 
+## 41. `ALL_ICON_NAMES` Has No Compile-Time Exhaustiveness Check
+
+**File:** `icons.rs:1114-1201`
+
+The test constant `ALL_ICON_NAMES` lists 86 `IconName` variants manually.
+If `gpui_component` adds a new variant, the `lucide_name_for_gpui_icon`
+and `material_name_for_gpui_icon` match arms get a compile error
+(non-exhaustive match) -- that is good. However, `ALL_ICON_NAMES` would
+silently remain at 86, so the "all_icons_have_lucide_mapping" test would
+appear to pass while not covering the new variant.
+
+### Solutions
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Add count tripwire test: `assert_eq!(ALL_ICON_NAMES.len(), 86)` | Alerts when list goes stale; trivial | Must manually update count on change |
+| B | Use `strum` to derive variant iteration | Automatic | Requires `gpui_component` to derive `EnumIter`, which it doesn't |
+
+**Recommended:** A. A simple count assertion catches the most likely failure
+mode and complements the existing match exhaustiveness.
+
+---
+
+## 42. `tab_bar_segmented` Uses `c.secondary` Without Explanation
+
+**File:** `colors.rs:208`
+
+```rust
+tc.tab_bar_segmented = c.secondary;
+```
+
+All other tab fields are mapped from `resolved.tab.*` per-widget values.
+`tab_bar_segmented` uses the button secondary color instead. There is no
+`segmented` field in `ResolvedTabTheme`, so this is the only available
+fallback. However, there is no comment explaining why.
+
+### Solutions
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Add explanatory comment | Documents the design decision | No functional change |
+
+**Recommended:** A. One-line comment.
+
+---
+
 ## Priority Summary
 
 | # | Issue | Severity | Effort | Best Fix |
@@ -1907,7 +1967,7 @@ as `examples/showcase/main.rs`). The showcase is a reference tool, not a
 | 26 | Missing integration tests | **Medium** | Low | Pipeline + all-presets tests |
 | 27 | bundled_icon Vec alloc unnecessary | **Low** | Low | Accept &[u8] directly |
 | 28 | Missing icon size validation | **Medium** | Trivial | Clamp to 1..512 |
-| 29 | RGBA-to-HSLA no float clamp | **Low** | Trivial | Clamp before conversion |
+| 29 | RGBA-to-HSLA no float clamp | **Negligible** | Trivial | Clamp before conversion |
 | 30 | Doc examples use .unwrap() | **Low** | Trivial | Use ? operator |
 | 31 | from_system drops inactive variant | **Low** | Trivial | Document behavior |
 | 32 | Accessibility properties not exposed | **Medium** | Trivial | Add helper functions |
@@ -1919,3 +1979,5 @@ as `examples/showcase/main.rs`). The showcase is a reference tool, not a
 | 38 | Hardcoded BMP DPI | **Negligible** | None | Keep (status quo) |
 | 39 | from_system consistency test missing | **Low** | Trivial | Add test |
 | 40 | Showcase 5867 lines | **Negligible** | None | Keep (justified by purpose) |
+| 41 | `ALL_ICON_NAMES` no exhaustiveness check | **Low** | Trivial | Add count tripwire test |
+| 42 | `tab_bar_segmented = c.secondary` unexplained | **Negligible** | Trivial | Add comment |

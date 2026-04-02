@@ -1363,6 +1363,30 @@ to the runtime crate. This is correct by design.
 
 ---
 
+## 36. Missing `BuildError::Display` Tests for `DuplicateTheme` and `InvalidIconName`
+
+**File:** `src/lib.rs:1027-1107` (existing Display test block)
+
+The `test_display_*` tests at `lib.rs:1027-1107` cover `MissingRole`,
+`MissingSvg`, `UnknownRole`, `UnknownTheme`, `MissingDefault`,
+`DuplicateRole`, `InvalidIdentifier`, `IdentifierCollision`,
+`ThemeOverlap`, `DuplicateRoleInFile` -- but NOT `DuplicateTheme` or
+`InvalidIconName`. The `Display` implementations at `error.rs:158-175`
+for these two variants are tested only indirectly through `validate.rs`
+tests that use `.contains()` substring checks, not full format verification.
+
+### Solutions
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Add `Display` tests for both missing variants | Complete coverage; consistent with existing pattern; catches formatting regressions | Two trivial tests |
+| B | Rely on indirect testing from `validate.rs` | No new code | Indirect tests check `contains()`, not full format; if validation tests change, Display gaps silently open |
+
+**Recommended:** A. Two trivial tests matching the existing pattern at
+`lib.rs:1027+`.
+
+---
+
 ## Summary
 
 | # | Issue | Severity | Effort | Best Fix |
@@ -1402,3 +1426,4 @@ to the runtime crate. This is correct by design.
 | 33 | No test: generated code compiles | **Medium** | Medium | Add golden compile test |
 | 34 | No test: `enum_name()` normalization | **Low** | Trivial | Add codegen test |
 | 35 | No test: `output_dir()` vs `OUT_DIR` fallback | **Low** | Trivial | Add test |
+| 36 | Missing `BuildError::Display` tests for 2 variants | **Low** | Trivial | Add 2 format tests |

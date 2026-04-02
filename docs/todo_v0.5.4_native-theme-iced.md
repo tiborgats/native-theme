@@ -1017,6 +1017,43 @@ and ready.
 
 ---
 
+## 21. Showcase Error Banner Uses Hardcoded Red
+
+`showcase.rs:1377`: the error banner color is `Color::from_rgb(0.9, 0.1, 0.1)`
+-- a hardcoded red. This could use `palette.danger` from the active theme,
+consistent with issues 17 and 19 about deriving values from the theme.
+
+### Solutions
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Use `palette.danger` from the theme | Consistent with theme; follows same principle as issues 17/19 | Must propagate palette to error display |
+| B | Keep hardcoded | Always visible red regardless of theme | Inconsistent with theme-awareness goal |
+
+**Recommended:** A. Same principle as issues 17 and 19 -- derive from theme.
+
+---
+
+## 22. Six of Seven Doc-tests Are `ignore`d
+
+Six doc-tests are `ignore`d (only the manual-path example at `lib.rs:25-32`
+runs). The `from_preset`, `from_system`, font configuration, `animated_frames`,
+and `spin_rotation` doc examples are all `ignore`d. This is expected for
+examples requiring a display system or runtime state, but means doc examples
+are not CI-validated.
+
+### Solutions
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Change applicable doc-tests from `ignore` to `no_run` | Compile-checked without execution; catches API drift | May need mock setup |
+| B | Keep `ignore`d | No change | Doc examples can silently rot |
+
+**Recommended:** A where feasible. `no_run` at least validates that doc
+examples compile.
+
+---
+
 ## Summary: Priority Order
 
 | # | Issue | Severity | Effort | Recommended Fix |
@@ -1040,3 +1077,5 @@ and ready.
 | 16 | Showcase: `process::exit(1)` | Low | Low | Add explanatory comment |
 | 7 | `to_theme()` missing `is_dark` param | Low | N/A | Defer until iced needs it (YAGNI) |
 | 20 | `to_palette()` alpha handling | None | N/A | No action needed |
+| 21 | Showcase error banner hardcoded red | Low | Trivial | Use `palette.danger` |
+| 22 | Six of seven doc-tests `ignore`d | Low | Trivial | Change to `no_run` where feasible |

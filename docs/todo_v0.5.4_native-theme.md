@@ -444,6 +444,15 @@ A typo or missing match arm would silently return `None`.
 
 **Recommended:** A. This is easy to write and catches real bugs.
 
+**Specific gaps identified:**
+1. No test that Material maps all 42 roles to `Some(...)` (Material covers everything)
+2. No test that Lucide maps all 42 roles to `Some(...)` (Lucide covers everything)
+3. No test that Freedesktop maps all 42 roles to `Some(...)` (Freedesktop covers everything)
+4. No test that Segoe maps 40 of 42 roles (missing StatusBusy) to `Some(...)`
+
+These gaps mean a missing match arm in `material_name()`, `lucide_name()`,
+or `freedesktop_name()` would go undetected.
+
 ### 2c. Duplicated test coverage between `tests/preset_loading.rs` and `src/presets.rs`
 
 **File:** `tests/preset_loading.rs` vs `src/presets.rs::tests`
@@ -554,6 +563,47 @@ directly with realistic user scenarios.
 | B | Leave to doctest | Existing doctest covers it | Doctests are fragile |
 
 **Recommended:** A.
+
+### 2i. Missing test: `validate()` cross-field constraints (dialog min/max)
+
+**File:** `src/resolve.rs:1674-1677`
+
+`validate()` checks each geometry field is non-negative, but never verifies
+cross-field constraints:
+- `dialog.min_width <= dialog.max_width` is not checked
+- `dialog.min_height <= dialog.max_height` is not checked
+
+A theme with `min_width = 600, max_width = 400` passes validation but
+produces nonsensical rendering constraints.
+
+#### Solutions
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Add cross-field checks after range checks | Catches nonsensical themes; 4 lines | Slightly more validation code |
+| B | Leave to toolkit connectors | No core change | Bad themes pass validation silently |
+| C | Add a `check_min_max(min, max, prefix, errors)` helper | Reusable, DRY; follows existing `check_non_negative()` pattern | One more helper function |
+
+**Recommended:** C. The helper follows the existing `check_non_negative()` pattern
+and can guard both dialog width and height dimensions.
+
+### 2j. Missing test: `resolve()` idempotency guarantee
+
+**File:** `src/resolve.rs:174`
+
+The doc comment states: "Calling resolve() twice produces the same result
+(idempotent)." No test verifies this. If a future resolve rule mutates a
+field unconditionally (rather than only when `None`), the guarantee breaks
+silently.
+
+#### Solutions
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Add test: `resolve()`, clone, `resolve()` again, assert_eq | Documents the property; catches drift | ~15 lines per representative preset |
+| B | Leave untested | No work | Regression risk on a documented guarantee |
+
+**Recommended:** A. A single test over one or two presets is sufficient.
 
 ---
 
@@ -787,6 +837,13 @@ tokyo-night, one-dark) hardcode `trailing_affirmative`. When used on KDE
 **Recommended:** A+B. Omit from community presets AND add a resolve rule:
 `if dialog.button_order.is_none() { dialog.button_order = Some(platform_button_order()) }`.
 
+**Prerequisite:** The `resolve()` rule is a prerequisite for omitting
+`button_order` from community presets. Without a `platform_button_order()`
+resolve function, removing the field would cause those presets to fail
+validation. The correct platform defaults are:
+- KDE: `LeadingAffirmative`
+- Everything else (Windows, GNOME, macOS, iOS): `TrailingAffirmative`
+
 ### 5d. `from_kde_content` calls `ini.get("General", "ColorScheme").unwrap_or_else`
 
 **File:** `src/kde/mod.rs:52`
@@ -816,6 +873,24 @@ or these will fail to compile on older toolchains.
 | B | Refactor to nested `if let` for lower MSRV | Supports older Rust | Verbose code |
 
 **Recommended:** A. Simply verify and document.
+
+### 5f. `xdg_config_dir()` falls back to `/tmp/.config` when `$HOME` is unset
+
+**File:** `src/model/icons.rs:637-639`
+
+When neither `$XDG_CONFIG_HOME` nor `$HOME` is set, the function returns
+`/tmp/.config`. Icon theme detection then looks at `/tmp/.config/kdeglobals`,
+which is semantically wrong. While `$HOME` is virtually always set on Linux,
+the fallback path is incorrect in principle.
+
+#### Solutions
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Return early with `"hicolor"` when both env vars are unset | Correct fallback behavior | Slight behavior change in pathological edge case |
+| B | Keep `/tmp` fallback (current) | No change | Wrong path if HOME unset |
+
+**Recommended:** A. Low-risk fix with correct semantics.
 
 ---
 
@@ -925,6 +1000,25 @@ accent. There are no tests verifying this re-derivation chain.
 
 **Recommended:** A.
 
+### 7g. `Rgba::from_f32()` and `to_f32_array()` are not exact inverses due to u8 quantization
+
+**File:** `src/color.rs:70-89`
+
+`from_f32(0.5, ...)` produces `r=128` (0.5 * 255 = 127.5, rounded up).
+`to_f32_array()` on `r=128` produces `128/255 = 0.5019...`, not `0.5`. This
+is inherent to u8 quantization and is NOT a bug, but there is no test or doc
+comment documenting this non-invertibility. A user might expect round-trip
+fidelity.
+
+#### Solutions
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Add a test documenting the quantization behavior | Sets expectations; ~5 lines | Trivial effort |
+| B | Add doc comment noting u8 quantization | Sets expectations in docs | Slightly more verbose |
+
+**Recommended:** A+B. Both are cheap and prevent user confusion.
+
 ---
 
 ## 8. Test Completeness Summary
@@ -942,11 +1036,14 @@ accent. There are no tests verifying this re-derivation chain.
 
 ### Under-tested areas
 - `validate()` range checks (zero negative tests)
+- `validate()` cross-field constraints: dialog min <= max (2i)
 - `lint_toml()` (only doctest)
-- `icon_name()` exhaustive mapping
+- `icon_name()` exhaustive mapping per icon set (2b)
 - `resolve()` individual inheritance rules (tested indirectly, not directly)
+- `resolve()` idempotency guarantee (documented but untested) (2j)
 - `SystemTheme::with_overlay()` accent re-derivation chain
 - `from_toml_with_base()` public API
+- `Rgba::from_f32()` / `to_f32_array()` quantization round-trip (7g)
 - Cross-platform `detect_*` functions (inherently hard to test)
 
 ### Unnecessary/bloated tests
@@ -997,3 +1094,7 @@ accent. There are no tests verifying this re-derivation chain.
 | 5e | Verify MSRV >= 1.87 for let chains | low | trivial | Verify workspace Cargo.toml |
 | 6a | presets.rs doc grouping confusing | low | trivial | Simplify wording |
 | 7f | No test for with_overlay re-derivation | low | small | Add integration test |
+| 2i | Missing validate() cross-field min/max check | medium | trivial | Add check_min_max helper |
+| 2j | Missing resolve() idempotency test | medium | trivial | Add resolve-twice-assert-eq test |
+| 5f | xdg_config_dir /tmp fallback when HOME unset | low | trivial | Return "hicolor" early |
+| 7g | Rgba f32 quantization undocumented | low | trivial | Add test + doc comment |
