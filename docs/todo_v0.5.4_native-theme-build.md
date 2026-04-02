@@ -1387,6 +1387,174 @@ tests that use `.contains()` substring checks, not full format verification.
 
 ---
 
+## 37. `enum_name_override` Not Validated for Output Filename Edge Cases
+
+**File:** `lib.rs:319-321,577-581`
+
+`enum_name()` builder stores raw string with no validation. If set to `"---"`,
+`to_snake_case()` produces `""`, and `output_filename` becomes `".rs"`. The
+filename is computed BEFORE validation runs at `lib.rs:624`.
+
+**Recommended:** Validate that `output_filename` is not just `".rs"` after
+snake_case conversion.
+
+---
+
+## 38. `merge_configs` Silently Deduplicates Themes Across Files
+
+**File:** `lib.rs:849-864`
+
+`merge_configs` silently deduplicates `bundled_themes` and `system_themes`
+across files. No warning emitted. Users cannot tell why a theme is loaded
+once instead of twice.
+
+**Recommended:** Emit warning when cross-file dedup occurs.
+
+---
+
+## 39. `output_filename` Computed Twice From Parallel Sources
+
+**Files:** `lib.rs:578-581` and `lib.rs:838`
+
+`first_name` at line 578 and `merged.name` at line 838 compute the same
+thing via different paths. If one changes without the other, the output
+file name and enum name diverge.
+
+**Recommended:** Derive `output_filename` from `merged.name` only.
+
+---
+
+## 40. `escape_rust_str` Scope Undocumented
+
+**File:** `codegen.rs:11-24`
+
+The function handles string literals but NOT format strings. No doc comment
+states this limitation. If ever used inside `format!()`, unescaped `{`/`}`
+would cause issues.
+
+**Recommended:** Add doc comment clarifying scope.
+
+---
+
+## 41. Generated `icon_svg` Path Uses Escaped Name vs Validation Uses Raw Name
+
+**File:** `codegen.rs:308-316` vs `validate.rs:100-116`
+
+`escape_rust_str(icon_name)` is used in `include_bytes!` path, but
+`validate_svgs` checks with unescaped `format!("{name}.svg")`. For icon
+names with backslashes, these resolve to different filesystem paths.
+
+**Recommended:** Resolved by issue 4's fix (reject `\` in icon names).
+
+---
+
+## 42. `#[should_panic]` Tests Are Tautological and Fragile
+
+**File:** `lib.rs:2117-2158`
+
+Six tests verify `assert!()` panics when its condition is false -- they
+test the assert macro, not the builder. When issue 2 is implemented
+(defer validation to `generate()`), all six become obsolete.
+
+**Recommended:** Rewrite as `Result`-checking tests when issue 2 is fixed.
+
+---
+
+## 43. `validate_mapping_values` Does Not Check DeAware Keys
+
+**File:** `validate.rs:346-368`
+
+Checks values but not the DE keys themselves. An empty string DE key `""`
+passes both `validate_mapping_values` and `validate_de_keys` (the latter
+only warns about unrecognized keys).
+
+**Recommended:** Validate DE keys for empty/control-char alongside values.
+
+---
+
+## 44. `check_orphan_svgs` Does Not Handle Symlinks
+
+**File:** `validate.rs:133-161`
+
+A symlink named `escape.svg` pointing outside the theme directory is treated
+as a valid SVG. `svg_path.exists()` follows symlinks. Distinct from issue 4
+(path traversal in icon names).
+
+**Recommended:** Warn when a referenced SVG is a symlink outside theme dir.
+
+---
+
+## 45. Integration Test Cleanup Ignores `remove_dir_all` Errors (Stale Data Risk)
+
+**File:** `tests/integration.rs:12-17`
+
+`let _ = fs::remove_dir_all(&dir)` ignores ALL errors including permission
+denied. A previous test run's stale data persists silently. Combined with
+fixed directory names (issue 32), tests can pass against stale fixtures.
+
+**Recommended:** Use `tempfile::tempdir()` (reinforces issue 32 with
+additional justification). Issue 32 severity should be **Medium** not Low.
+
+---
+
+## 46. No Enum Variant vs Enum Name Collision Check
+
+**File:** `validate.rs:223-286`
+
+`validate_identifiers` does not check if a role's PascalCase matches the
+enum name. `name = "play-pause"` with `roles = ["play-pause"]` produces
+`pub enum PlayPause { PlayPause }` which is confusing.
+
+**Recommended:** Warn when collision detected.
+
+---
+
+## 47. Generated `extern crate` May Produce Lint Warnings
+
+**File:** `codegen.rs:86-89`
+
+`extern crate native_theme;` generates `unused_extern_crates` warnings in
+2021+ editions.
+
+**Recommended:** Add `#[allow(unused_extern_crates)]` above the line.
+
+---
+
+## 48. `icon_svg_has_wildcard` Test Is Tautological
+
+**File:** `codegen.rs:604-616`
+
+Checks `output.matches("_ => None").count() >= 2` but `_ => None` is always
+emitted regardless of match arms. Would pass even with all arms removed.
+
+**Recommended:** Replace with tests checking specific match arms, or delete
+(other tests already cover them).
+
+---
+
+## 49. `generate_icons()` Simple API Limitations Undocumented
+
+**File:** `lib.rs:232-279`
+
+`generate_icons()` always passes `None` for `crate_path` and `&[]` for
+`extra_derives`. The doc comment does not mention these limitations.
+
+**Recommended:** Add doc sentence listing what it does NOT support.
+
+---
+
+## 50. `IdentifierCollision` Error Lacks File Context
+
+**File:** `validate.rs:248-283`
+
+`validate_identifiers` operates on the merged config and has no file context.
+With multiple source files, the collision error does not say which file
+contains the offending roles.
+
+**Recommended:** Pass file path context to `validate_identifiers`.
+
+---
+
 ## Summary
 
 | # | Issue | Severity | Effort | Best Fix |
@@ -1422,8 +1590,22 @@ tests that use `.contains()` substring checks, not full format verification.
 | 29 | `base_dir()` builder method untested | **Medium** | Low | Add integration tests |
 | 30 | No test: backslash path normalization | **Low** | Trivial | Add unit test |
 | 31 | No fixtures for freedesktop/lucide/segoe | **Low** | Low | Add fixture files |
-| 32 | Non-unique temp dirs in tests | **Low** | Low | Use `tempfile::tempdir()` |
+| 32 | Non-unique temp dirs in tests | **Medium** | Low | Use `tempfile::tempdir()` |
 | 33 | No test: generated code compiles | **Medium** | Medium | Add golden compile test |
 | 34 | No test: `enum_name()` normalization | **Low** | Trivial | Add codegen test |
 | 35 | No test: `output_dir()` vs `OUT_DIR` fallback | **Low** | Trivial | Add test |
 | 36 | Missing `BuildError::Display` tests for 2 variants | **Low** | Trivial | Add 2 format tests |
+| 37 | `enum_name_override` filename edge case | **Low** | Trivial | Validate non-empty after snake_case |
+| 38 | `merge_configs` silent cross-file theme dedup | **Low** | Trivial | Emit warning on dedup |
+| 39 | `output_filename` computed twice from parallel sources | **Low** | Trivial | Derive from `merged.name` only |
+| 40 | `escape_rust_str` scope undocumented | **Low** | Trivial | Add doc comment |
+| 41 | `icon_svg` path escaping vs validation | **Low** | None | Resolved by issue 4 fix |
+| 42 | `#[should_panic]` tests tautological | **Low** | Low | Rewrite when issue 2 is fixed |
+| 43 | `validate_mapping_values` skips DeAware keys | **Low** | Trivial | Validate keys alongside values |
+| 44 | `check_orphan_svgs` ignores symlinks | **Low** | Low | Warn on external symlinks |
+| 45 | Integration test cleanup ignores errors | **Medium** | Low | Use `tempfile::tempdir()` |
+| 46 | No enum variant vs enum name collision check | **Low** | Trivial | Warn on collision |
+| 47 | Generated `extern crate` lint warning | **Low** | Trivial | Add `#[allow]` attribute |
+| 48 | `icon_svg_has_wildcard` test tautological | **Low** | Trivial | Replace or delete |
+| 49 | `generate_icons()` limitations undocumented | **Low** | Trivial | Add doc sentence |
+| 50 | `IdentifierCollision` lacks file context | **Medium** | Low | Pass file path to validator |

@@ -1935,11 +1935,133 @@ fallback. However, there is no comment explaining why.
 
 ---
 
+## 43. `scrollbar_show` and `highlight_theme` Not Set in `to_theme()`
+
+**Files:** `lib.rs:96-123`, `colors.rs:228-244`
+
+`Theme` has 5 fields beyond colors/font/radius that `to_theme()` never sets:
+
+| Field | Default | Resolved source |
+|---|---|---|
+| `scrollbar_show` | `Scrolling` | `resolved.scrollbar.overlay_mode` |
+| `highlight_theme` | `default_light()` | Should use `is_dark` |
+| `tile_grid_size` | `px(8.)` | No direct field |
+| `tile_shadow` | `true` | No direct field |
+| `tile_radius` | `px(0.)` | No direct field |
+
+**Critical:** `highlight_theme` is always `default_light()` even for dark
+themes. Code syntax highlighting shows light-mode colors on dark backgrounds
+-- unreadable. And `scrollbar_show = Scrolling` on all platforms ignores
+the per-platform `overlay_mode` boolean.
+
+#### Solutions
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Map `scrollbar_show` from `overlay_mode`; set `highlight_theme` from `is_dark` | Correct behavior per platform; readable syntax highlighting | Must decide overlay -> ScrollbarShow mapping |
+| B | Add helper functions only | Discoverable | Not automatic |
+
+**Recommended:** A. Set `highlight_theme` based on `is_dark` and
+`scrollbar_show` based on `overlay_mode`.
+
+---
+
+## 44. `ThemeConfig.highlight` Not Populated (Compounds Issue #5)
+
+**File:** `config.rs:23-38`
+
+`to_theme_config()` leaves `highlight: None`. When `apply_config()` runs
+(issue #5 scenario), it does NOT update `highlight_theme`, so the wrong
+light-mode default from issue 43 persists even through config application.
+
+**Recommended:** Set `highlight` based on `is_dark` alongside fix for #43.
+
+---
+
+## 45. 19 of 30 Icon Role Mappings Lack Individual Regression Tests
+
+**File:** `icons.rs:1203-1365`
+
+The count test (`icon_name_maps_exactly_30_roles`) passes if any 30 roles
+map to `Some(anything)`. Only 11 of 30 have spot-check tests verifying
+the specific `IconName` target. Missing tests for: `WindowMinimize`,
+`WindowMaximize`, `WindowRestore`, `ActionDelete`, `ActionUndo`,
+`ActionRedo`, `ActionSearch`, `ActionSettings`, `ActionAdd`,
+`ActionRemove`, `NavForward`, `NavUp`, `NavDown`, `NavMenu`,
+`FolderClosed`, `FolderOpen`, `TrashEmpty`, `StatusBusy`, `StatusError`.
+
+#### Solutions
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Add data-driven test with `[(IconRole, IconName)]` table | Catches any mapping regression; single test | Must list all 30 pairs |
+| B | Add 19 individual tests | Matches existing style | 19 functions |
+
+**Recommended:** A. One data-driven test covering all 30 pairs.
+
+---
+
+## 46. `StatusError`/`DialogError` Both Map to `CircleX` (Undocumented)
+
+**File:** `icons.rs:77,113`
+
+Same pattern as issue #33 (`ActionDelete`/`TrashEmpty` -> `Delete`). These
+are semantically different but gpui-component has no separate icon.
+
+**Recommended:** Add explanatory comment, same approach as issue #33.
+
+---
+
+## 47. `mono_font_weight()` Helper Missing (Iced Has It)
+
+**File:** `lib.rs` (absent)
+
+The iced connector exposes both `font_weight()` and `mono_font_weight()`
+at `lib.rs:248,254`. The gpui connector's issue #13 mentions only the UI
+font weight.
+
+**Recommended:** Add both `font_weight()` and `mono_font_weight()` helpers.
+
+---
+
+## 48. `DialogButtonOrder` Not Re-exported
+
+**File:** `lib.rs:73-79`
+
+`dialog.button_order` is critical for correct dialog layout but
+`DialogButtonOrder` is not in the re-export block. Users must depend on
+`native-theme` directly.
+
+**Recommended:** Add to re-exports + add `dialog_button_order()` helper.
+
+---
+
+## 49. `from_system()` Resolves Both Variants, Discards One
+
+**File:** `lib.rs:179-185`
+
+`SystemTheme::from_system()` resolves both light and dark. `from_system()`
+discards the unused one. Wasted resolution cost on every call.
+
+**Recommended:** Document cost for v0.5.4; consider `from_system_active_only()`
+in core for v0.6.0.
+
+---
+
+## 50. Issue #1 Refinement: `test_resolved()` Tests Wrong Preset's Colors
+
+`into_variant(false)` on catppuccin-mocha loads the LIGHT fallback variant,
+which is catppuccin-latte. Every test assertion about "catppuccin-mocha
+colors" is actually testing catppuccin-latte values. This is worse than
+just "testing light mode" -- it is testing a different preset entirely.
+
+---
+
 ## Priority Summary
 
 | # | Issue | Severity | Effort | Best Fix |
 |---|-------|----------|--------|----------|
-| 1 | All tests single-preset light-only | **High** | Low | Multi-preset dual-mode tests + shared fixture |
+| 1 | All tests single-preset light-only (+ wrong preset colors) | **High** | Low | Multi-preset dual-mode tests + shared fixture |
 | 2 | muted_fg semantic mismatch + wrong derivation | **High** | Low | Use d.muted as muted_fg, derive bg for tc.muted |
 | 3 | _light colors wrong on dark themes | **High** | Low | Mode-aware derivation with is_dark parameter |
 | 4 | Animation frame timing bug | **High** | Trivial | Fail entire animation on frame error |
@@ -1981,3 +2103,10 @@ fallback. However, there is no comment explaining why.
 | 40 | Showcase 5867 lines | **Negligible** | None | Keep (justified by purpose) |
 | 41 | `ALL_ICON_NAMES` no exhaustiveness check | **Low** | Trivial | Add count tripwire test |
 | 42 | `tab_bar_segmented = c.secondary` unexplained | **Negligible** | Trivial | Add comment |
+| 43 | `highlight_theme` wrong on dark + `scrollbar_show` ignored | **High** | Low | Set from `is_dark` and `overlay_mode` |
+| 44 | `ThemeConfig.highlight` not populated | **Medium** | Low | Set highlight in config |
+| 45 | 19 of 30 icon mappings lack regression tests | **Medium** | Low | Data-driven mapping test |
+| 46 | `StatusError`/`DialogError` -> same CircleX | **Negligible** | Trivial | Add comment |
+| 47 | `mono_font_weight()` helper missing | **Low** | Trivial | Add helper (+ expand #13) |
+| 48 | `DialogButtonOrder` not re-exported | **Low** | Trivial | Add re-export + helper |
+| 49 | `from_system()` resolves both variants, wastes one | **Low** | Trivial | Document cost |

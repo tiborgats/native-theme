@@ -1054,6 +1054,99 @@ examples compile.
 
 ---
 
+## 23. Showcase Uses `resolve()` Instead of `resolve_all()`
+
+**File:** `examples/showcase.rs:186,787`
+
+Two code paths call `variant.resolve()` instead of `variant.resolve_all()`.
+The skipped `resolve_platform_defaults()` fills `icon_theme` from the system
+when TOML does not specify one. Without it, custom presets missing
+`icon_theme` would fail validation.
+
+The gpui showcase has the same bug at its `showcase.rs:1636`.
+
+#### Solutions
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Replace `variant.resolve()` with `variant.resolve_all()` | Correct behavior; one-word change | None |
+| B | Replace entire manual pipeline with `variant.clone().into_resolved()?` | Simplest | Requires clone |
+
+**Recommended:** A. Apply same fix to gpui showcase.
+
+---
+
+## 24. `colorize_monochrome_svg()` -- `fill="none"` Blocks All Colorization
+
+**File:** `icons.rs:262-280`
+
+When root tag has `fill="none"` (common in stroke-based SVGs), the fill
+injection branch skips. Combined with no `stroke="black"` replacement
+(issue 10), a stroke-only SVG with explicit `stroke="#000"` receives
+no colorization at all.
+
+**Recommended:** Move explicit-black-stroke replacements (issue 10's fix)
+before the `fill=` check on the root tag, so they run regardless.
+
+---
+
+## 25. Re-export Asymmetry: `Result`/`Rgba` in Iced but Not Gpui
+
+**File:** `lib.rs:82-85` vs gpui `lib.rs:73-76`
+
+Iced re-exports `Result` and `Rgba`. Gpui does not. These appear in public
+API signatures. Reverse of existing issue 9 (gpui exports `LinuxDesktop`
+but iced doesn't).
+
+**Recommended:** Add `Result` and `Rgba` to gpui's re-exports.
+
+---
+
+## 26. Showcase `color_swatch()` Hardcoded Border Values
+
+**File:** `examples/showcase.rs:2818-2824`
+
+Three hardcoded values: `Color::from_rgba(0.5, 0.5, 0.5, 0.3)` (border
+color), `width: 1.0`, `radius: 4.0`. Should derive from
+`resolved.defaults.border`, `resolved.defaults.frame_width`, and
+`border_radius()`. Called ~36 times in Theme Map tab.
+
+**Recommended:** Pass radius and border color as parameters.
+
+---
+
+## 27. Tab Content Areas: ~65 Hardcoded `.spacing()` Calls (Extends Issue 17)
+
+**File:** `examples/showcase.rs:1490-2797`
+
+Issue 17 identified sidebar (~12) and tab bar (~3) hardcoded values. The
+tab content functions contain ~65 additional hardcoded `.spacing()` calls
+plus 4 `.gap(5)` instances at lines 2198,2206,2214,2222. Issue 17's effort
+should be **High** not Medium.
+
+---
+
+## 28. Missing Tests for `fill="#000"` and `fill="#000000"` Patterns
+
+**File:** `icons.rs:253-255`
+
+Code handles three fill patterns (`fill="black"`, `fill="#000000"`,
+`fill="#000"`) but only `fill="black"` has a dedicated test (line 537).
+
+**Recommended:** Add two trivial tests for hex patterns.
+
+---
+
+## Correction: Issue 14.3/14.5 -- `extended.rs` Test Setup Mismatch
+
+The `make_resolved()` helper uses `is_dark=false` (catppuccin-mocha light),
+but Extended palette is generated from `Palette::DARK` (hardcoded at
+`extended.rs:43`). The "changed from original" assertion is trivially
+satisfied because light theme colors always differ from DARK palette
+defaults. The test should assert exact expected values, not just "different."
+
+---
+
 ## Summary: Priority Order
 
 | # | Issue | Severity | Effort | Recommended Fix |
@@ -1079,3 +1172,9 @@ examples compile.
 | 20 | `to_palette()` alpha handling | None | N/A | No action needed |
 | 21 | Showcase error banner hardcoded red | Low | Trivial | Use `palette.danger` |
 | 22 | Six of seven doc-tests `ignore`d | Low | Trivial | Change to `no_run` where feasible |
+| 23 | Showcase uses `resolve()` not `resolve_all()` | Medium | Trivial | Replace with `resolve_all()` |
+| 24 | `fill="none"` blocks all SVG colorization | Low | Low | Restructure replacement order |
+| 25 | Re-export asymmetry: `Result`/`Rgba` vs gpui | Low | Trivial | Add to gpui re-exports |
+| 26 | `color_swatch()` hardcoded border values | Low | Low | Derive from resolved theme |
+| 27 | ~65 hardcoded spacing in tab content (extends #17) | Low | High | Apply spacing scale |
+| 28 | Missing tests for fill hex patterns | Low | Trivial | Add 2 pattern tests |
