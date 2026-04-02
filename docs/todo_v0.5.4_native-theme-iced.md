@@ -7,21 +7,22 @@ cross-connector symmetry with the gpui connector.
 Files analyzed:
 - `connectors/native-theme-iced/Cargo.toml`
 - `connectors/native-theme-iced/src/lib.rs` (519 lines)
-- `connectors/native-theme-iced/src/extended.rs` (118 lines)
+- `connectors/native-theme-iced/src/extended.rs` (117 lines)
 - `connectors/native-theme-iced/src/icons.rs` (615 lines)
-- `connectors/native-theme-iced/src/palette.rs` (112 lines)
+- `connectors/native-theme-iced/src/palette.rs` (111 lines)
 - `connectors/native-theme-iced/examples/showcase.rs` (2903 lines)
 - `native-theme/src/model/mod.rs` (ThemeVariant structure)
-- `native-theme/src/model/resolved.rs` (ResolvedThemeVariant, 252 lines)
+- `native-theme/src/model/resolved.rs` (ResolvedThemeVariant)
 - `native-theme/src/lib.rs` (public API, re-exports)
 - `connectors/native-theme-gpui/src/lib.rs` (reference for symmetry)
 - `connectors/native-theme-gpui/src/colors.rs` (reference for color mapping)
-- `docs/platform-facts.md` (1475 lines, cross-reference target)
+- `docs/platform-facts.md` (cross-reference target)
 
 All 57 tests pass (lib.rs:21, extended.rs:4, icons.rs:29, palette.rs:3).
 No `unwrap()`/`expect()`/`panic!()` in production code -- all instances
 are inside `#[cfg(test)] #[allow(clippy::unwrap_used, clippy::expect_used)]`
-blocks or doc comments.
+blocks or doc comments. The crate enforces this with `#![deny(clippy::unwrap_used)]`
+and `#![deny(clippy::expect_used)]` at `lib.rs:74-75`.
 
 ---
 
@@ -168,9 +169,13 @@ let theme = to_theme(&resolved, name);  // <-- slug, not spec.name
 `from_preset("catppuccin-mocha", true)` passes the lookup slug
 `"catppuccin-mocha"` as the theme display name. `ThemeSpec` has a
 proper display name in `spec.name` (e.g., `"Catppuccin Mocha"`), but
-`spec` is consumed by `into_variant()` before the name is captured.
+`spec` is consumed by `into_variant()` at line 140 before the name
+is captured.
 
-The gpui connector has the same issue at its `lib.rs:152-157`.
+Verified: `native-theme/src/presets/catppuccin-mocha.toml` has
+`name = "Catppuccin Mocha"`, confirming the slug and display name differ.
+
+The gpui connector has the same issue at its `lib.rs:151-156`.
 
 **Impact:** Cosmetic. Theme pickers show `"catppuccin-mocha"` instead
 of `"Catppuccin Mocha"`.
@@ -202,7 +207,7 @@ empty (it falls back from preferred to alternate before giving up).
 The error message "has no light or dark variant" implies one specific
 variant is absent, which is misleading.
 
-The gpui connector has the same incorrect message at its `lib.rs:152-154`.
+The gpui connector has the same incorrect message at its `lib.rs:152-153`.
 
 **Impact:** Low. Confusing error for edge case of completely empty
 ThemeSpecs.
@@ -419,6 +424,11 @@ sources) will not be colorized. The stroke attribute is semantically
 distinct from fill -- outline icons that use `stroke` for their paths
 would appear permanently black regardless of the color parameter.
 
+Note: the `currentColor` replacement at line 247 does handle both fill
+and stroke correctly, since it replaces the string `"currentColor"`
+regardless of which attribute contains it. This gap only affects the
+explicit-black-fill branch at lines 250-258.
+
 The gpui connector has the same gap.
 
 **Impact:** Low. All bundled sets (Material uses implicit fill, Lucide
@@ -477,7 +487,7 @@ pub(crate) mod derive;
 
 ## 12. Many Resolved Colors Have No Helper Functions
 
-Cross-referencing `ResolvedThemeDefaults` (resolved.rs:83-177) against
+Cross-referencing `ResolvedThemeDefaults` (resolved.rs:83-191) against
 the iced connector's public API reveals these unmapped fields without
 helper functions:
 
@@ -571,12 +581,82 @@ cannot consume them automatically.
 
 ### 14.1 Test inventory (57 tests total)
 
-| File | Count | Scope |
-|------|-------|-------|
-| `lib.rs` | 21 | to_theme, from_preset, from_system, SystemThemeExt, all metric helpers, weight conversion |
-| `icons.rs` | 29 | to_image_handle, to_svg_handle, colorize_monochrome_svg (7 variants), custom_icon_*, animated_frames_*, spin_rotation_*, into_* |
-| `extended.rs` | 4 | apply_overrides (all 4 override fields) |
-| `palette.rs` | 3 | to_color, to_palette (light), to_palette (dark) |
+#### lib.rs -- 21 tests
+
+| # | Test name | What it tests |
+|---|-----------|---------------|
+| 1 | `to_theme_produces_non_default_theme` | `to_theme()` returns a custom theme, not built-in Light/Dark; palette primary is non-zero |
+| 2 | `to_theme_from_preset` | `to_theme()` with catppuccin-mocha light produces background > 0.9 |
+| 3 | `border_radius_returns_resolved_value` | `border_radius()` returns positive value |
+| 4 | `border_radius_lg_returns_resolved_value` | `border_radius_lg()` returns positive value >= `border_radius()` |
+| 5 | `scrollbar_width_returns_resolved_value` | `scrollbar_width()` returns positive value |
+| 6 | `button_padding_returns_iced_padding` | `button_padding()` maps vertical to top/bottom and horizontal to left/right; symmetry |
+| 7 | `input_padding_returns_iced_padding` | `input_padding()` maps vertical to top/bottom and horizontal to left/right |
+| 8 | `font_family_returns_concrete_value` | `font_family()` returns non-empty string |
+| 9 | `font_size_returns_concrete_value` | `font_size()` returns positive value |
+| 10 | `mono_font_family_returns_concrete_value` | `mono_font_family()` returns non-empty string |
+| 11 | `mono_font_size_returns_concrete_value` | `mono_font_size()` returns positive value |
+| 12 | `font_weight_returns_concrete_value` | `font_weight()` returns value in 100-900 range |
+| 13 | `mono_font_weight_returns_concrete_value` | `mono_font_weight()` returns value in 100-900 range |
+| 14 | `line_height_multiplier_returns_concrete_value` | `line_height_multiplier()` returns positive value < 5.0 (a multiplier, not pixels) |
+| 15 | `to_iced_weight_standard_weights` | All 9 standard CSS weights (100-900) map to correct iced Weight variants |
+| 16 | `to_iced_weight_non_standard_rounds_correctly` | Non-standard weights 350, 450, 550 round to correct band; boundary values 0 and 1000 safe |
+| 17 | `from_preset_valid_light` | `from_preset("catppuccin-mocha", false)` succeeds; produces custom theme with populated font family |
+| 18 | `from_preset_valid_dark` | `from_preset("catppuccin-mocha", true)` succeeds; produces custom theme |
+| 19 | `from_preset_invalid_name` | `from_preset("nonexistent-preset", false)` returns `Err` |
+| 20 | `system_theme_ext_to_iced_theme` | `SystemTheme::to_iced_theme()` does not panic (gracefully skips if system unavailable) |
+| 21 | `from_system_does_not_panic` | `from_system()` does not panic regardless of success/failure |
+
+#### extended.rs -- 4 tests
+
+| # | Test name | What it tests |
+|---|-----------|---------------|
+| 1 | `apply_overrides_sets_secondary_base_color` | `apply_overrides()` changes `secondary.base.color` from DARK default to `resolved.button.background` |
+| 2 | `apply_overrides_sets_secondary_base_text` | `apply_overrides()` sets `secondary.base.text` to match `resolved.button.foreground` |
+| 3 | `apply_overrides_sets_background_weak_color` | `apply_overrides()` sets `background.weak.color` to match `resolved.defaults.surface` |
+| 4 | `apply_overrides_sets_background_weak_text` | `apply_overrides()` sets `background.weak.text` to match `resolved.defaults.foreground` |
+
+#### icons.rs -- 29 tests
+
+| # | Test name | What it tests |
+|---|-----------|---------------|
+| 1 | `to_image_handle_with_rgba_returns_some` | RGBA IconData produces an image handle |
+| 2 | `to_image_handle_with_svg_returns_none` | SVG IconData returns None for image handle |
+| 3 | `to_svg_handle_with_svg_returns_some` | SVG IconData produces an SVG handle |
+| 4 | `to_svg_handle_with_rgba_returns_none` | RGBA IconData returns None for SVG handle |
+| 5 | `to_svg_handle_colored_replaces_current_color` | Colorizing SVG with `currentColor` replaces with hex; no `currentColor` remains |
+| 6 | `to_svg_handle_colored_injects_fill_for_material_style` | Material-style SVG (no fill attr) gets fill injected into root `<svg>` tag |
+| 7 | `to_svg_handle_colored_with_rgba_returns_none` | RGBA data with color parameter still returns None for SVG handle |
+| 8 | `custom_icon_to_image_handle_with_svg_provider_returns_none` | SVG-only provider returns None for image handle (type mismatch) |
+| 9 | `custom_icon_to_svg_handle_with_svg_provider_returns_some` | SVG-only provider returns Some for SVG handle |
+| 10 | `custom_icon_to_svg_handle_with_color_returns_some` | Custom SVG icon with color parameter produces handle |
+| 11 | `custom_icon_to_image_handle_with_empty_provider_returns_none` | Empty provider returns None for image handle |
+| 12 | `custom_icon_to_svg_handle_with_empty_provider_returns_none` | Empty provider returns None for SVG handle |
+| 13 | `custom_icon_helpers_accept_dyn_provider` | Custom icon helpers work with `Box<dyn IconProvider>` (trait object) |
+| 14 | `colorize_svg_preserves_existing_fill` | SVG with `fill="red"` is not overwritten by colorization |
+| 15 | `animated_frames_returns_handles` | 2-frame SVG animation produces 2 handles with correct frame_duration_ms |
+| 16 | `animated_frames_transform_returns_none` | Transform (spin) variant returns None from frame converter |
+| 17 | `animated_frames_empty_returns_none` | Empty frame list returns None |
+| 18 | `animated_frames_rgba_only_returns_none` | All-RGBA frame list returns None (only SVG handled) |
+| 19 | `spin_rotation_zero_elapsed` | Zero elapsed time produces 0.0 radians |
+| 20 | `spin_rotation_half` | 500ms of 1000ms cycle produces PI radians |
+| 21 | `spin_rotation_full_wraps` | 1000ms of 1000ms cycle wraps to ~0.0 radians |
+| 22 | `spin_rotation_zero_duration_returns_zero` | Zero duration_ms returns 0.0 (not NaN) |
+| 23 | `colorize_replaces_explicit_black_fill` | `fill="black"` is replaced by hex color |
+| 24 | `into_image_handle_with_rgba` | Consuming version converts RGBA data |
+| 25 | `into_svg_handle_with_svg` | Consuming version converts SVG data |
+| 26 | `to_svg_handle_with_rgba_returns_none_no_color` | RGBA data without color returns None (duplicate coverage with #4) |
+| 27 | `colorize_self_closing_svg_produces_valid_xml` | Self-closing `<svg/>` gets fill injected before `/`, producing valid XML |
+| 28 | `colorize_non_utf8_returns_original_bytes` | Non-UTF-8 SVG bytes pass through unmodified |
+| 29 | `animated_frames_with_color_colorizes_frames` | Animated frames with color parameter produce handles (colorization path exercised) |
+
+#### palette.rs -- 3 tests
+
+| # | Test name | What it tests |
+|---|-----------|---------------|
+| 1 | `to_color_converts_rgba` | `to_color(Rgba::rgb(255, 0, 0))` produces `Color { r: 1.0, g: 0.0, b: 0.0, a: 1.0 }` (exact value check) |
+| 2 | `to_palette_maps_all_fields_from_resolved` | Light catppuccin-mocha: background light (>0.9), text dark (<0.3), primary non-zero |
+| 3 | `to_palette_dark_variant_has_dark_background` | Dark catppuccin-mocha: background dark (<0.3) |
 
 ### 14.2 What is well tested
 
@@ -605,7 +685,7 @@ cannot consume them automatically.
 | `spin_rotation_radians()` with very large elapsed (days) | Low | f32 modulo precision at large values |
 | `from_preset()` with a preset that has only one variant | Low | Variant fallback path tested in core but not through iced convenience API |
 | `to_theme()` produces different themes for different presets | Low | Regression guard against all-same output |
-| `to_theme()` extended palette overrides with light variant (tests only use catppuccin-mocha light, never dark) | Medium | Dark variant overrides untested in extended.rs |
+| `to_theme()` extended palette overrides with dark variant | Medium | All extended.rs tests use `make_resolved()` which always passes `is_dark=false` (light only) |
 | `apply_overrides()` with a dark variant input | Medium | All 4 tests use `make_resolved()` which always passes `is_dark=false` |
 
 ### 14.4 Tests that only test one preset
@@ -613,7 +693,7 @@ cannot consume them automatically.
 All test helper functions use only `catppuccin-mocha`:
 
 - `lib.rs:306-313 make_resolved(is_dark)` -- always catppuccin-mocha
-- `extended.rs:47-53 make_resolved()` -- always catppuccin-mocha, always `is_dark=false`
+- `extended.rs:46-53 make_resolved()` -- always catppuccin-mocha, always `is_dark=false`
 - `palette.rs:76-81` and `palette.rs:99-104` -- always catppuccin-mocha
 
 No test ever exercises a different preset (e.g., dracula, nord, adwaita,
@@ -634,9 +714,18 @@ breeze). This means preset-specific resolution bugs are invisible.
   asserts color differs from DARK palette original. Should assert the
   specific value matches `resolved.button.background`.
 
-### 14.6 No redundant or bloated tests
+### 14.6 Near-duplicate test
 
-All 57 tests serve a clear purpose. None are redundant.
+`to_svg_handle_with_rgba_returns_none_no_color` (icons.rs:565-572)
+is functionally identical to `to_svg_handle_with_rgba_returns_none`
+(icons.rs:314-321). Both pass RGBA data and assert `to_svg_handle`
+returns `None`. The only difference is #4 passes `None` for color
+while #26 also passes `None` for color. They test the same code path
+with the same inputs. Not harmful but adds no coverage.
+
+### 14.7 No redundant or bloated tests (aside from 14.6)
+
+All other 56 tests serve a clear purpose.
 
 ---
 
@@ -718,7 +807,7 @@ cross-referencing against platform-facts.md.
 
 ## 16. Showcase: `std::process::exit(1)` at Line 605
 
-`showcase.rs:601-606`:
+`showcase.rs:600-606`:
 
 ```rust
 None => {
@@ -761,18 +850,22 @@ disproportionate effort.
 
 ## 17. Showcase: Hardcoded Spacing Values in Sidebar
 
-`showcase.rs:1221-1332`: the sidebar uses hardcoded pixel values:
+The sidebar at `showcase.rs:1221-1332` uses hardcoded pixel values
+while the right panel at lines 1366-1369 correctly uses resolved
+spacing (`sp.l`, `sp.s`, `sp.xs`).
+
+Hardcoded sidebar values:
 
 | Line(s) | Value | Correct theme equivalent |
 |---------|-------|------------------------|
-| 1236, 1242, 1259, 1303 | `.spacing(4)` | `sp.xs` (4px in most themes) |
-| 1282 | `.spacing(2)` | `sp.xxs` (2px in most themes) |
-| 1323 | `.spacing(8)` | `sp.s` or `sp.m` depending on theme |
+| 1235, 1247, 1259, 1303 | `.spacing(4)` | `sp.xs` (4px in most themes) |
+| 1281 | `.spacing(2)` | `sp.xxs` (2px in most themes) |
+| 1322 | `.spacing(8)` | `sp.s` or `sp.m` depending on theme |
 | 1298 | `Padding::from(6)` | `sp.s` (6px in KDE) or `sp.xs` (4px in Adwaita) |
-| 1324 | `Padding::from(10)` | `sp.m` (12px) or `sp.s` (8px) |
-| 1325 | `Length::Fixed(210.0)` | No direct equivalent (layout fixed width) |
+| 1323 | `Padding::from(10)` | `sp.m` (12px) or `sp.s` (8px) |
+| 1324 | `Length::Fixed(210.0)` | No direct equivalent (layout fixed width) |
 
-The right panel at lines 1367-1369 correctly uses resolved spacing:
+Correctly themed right panel (lines 1366-1369):
 
 ```rust
 let sp = &state.current_resolved.defaults.spacing;
@@ -780,8 +873,16 @@ let tab_padding = Padding::ZERO.left(sp.l).right(sp.l).top(sp.s);
 let content_padding = Padding::from(sp.l);
 ```
 
-The inconsistency means the sidebar does not adapt when switching
-between themes with different spacing scales.
+Additional hardcoded spacing outside the sidebar:
+
+| Line(s) | Value | Context |
+|---------|-------|---------|
+| 1347 | `Padding::from([4, 10])` | Tab bar button padding |
+| 1351 | `.spacing(4)` | Tab bar button row spacing |
+| 1380 | `Padding::from([4, 8])` | Error banner padding |
+
+The inconsistency means the sidebar and tab bar do not adapt when
+switching between themes with different spacing scales.
 
 **Impact:** Low. The sidebar layout is static and functional. But it
 violates the project rule "Never hardcode spacing/padding/sizing."
@@ -790,7 +891,7 @@ violates the project rule "Never hardcode spacing/padding/sizing."
 
 | # | Solution | Pros | Cons |
 |---|----------|------|------|
-| A | Replace hardcoded values with spacing scale references throughout the sidebar | Follows project rules; layout adapts to theme | Must audit each value and choose the right tier |
+| A | Replace hardcoded values with spacing scale references throughout the sidebar and tab bar | Follows project rules; layout adapts to theme | Must audit each value and choose the right tier |
 | B | Keep hardcoded values in sidebar, add comment explaining it is intentional for fixed-width sidebar stability | Explicit decision | Still violates convention; inconsistent with right panel |
 | C | Keep as-is | No work | Violates project conventions |
 
@@ -803,9 +904,13 @@ hardcoded since it is a layout constraint, not spacing.
 ## 18. Showcase: Repetitive Extended Palette Section
 
 `showcase.rs:2535-2797` (`view_theme_map()`): the extended palette
-visualization repeats the same pattern 5 times for background, primary,
-secondary, success, danger, and warning color families. Each is
-~25 lines of identical structure:
+visualization repeats the same pattern for 7 color displays. Three
+(`base_palette`, `ext_background`, `ext_primary`) are wrapped in
+`hoverable()` with `widget_tooltip()` for Widget Info integration.
+Four (`ext_secondary`, `ext_success`, `ext_warning`, `ext_danger`
+at lines 2650-2707) are plain `column![]` without hoverable wrapping.
+
+Each section is ~15-25 lines of identical structure:
 
 ```rust
 let ext_$name = column![
@@ -818,25 +923,23 @@ let ext_$name = column![
 ].spacing(8);
 ```
 
-Three of the six (secondary, success, warning, danger at lines 2650-2707)
-do not even have hoverable wrapping, unlike background and primary.
-This inconsistency suggests copy-paste drift.
-
 **Impact:** Low. ~150 lines of mechanical repetition. Maintenance
-burden if the swatch layout needs to change.
+burden if the swatch layout needs to change. The missing hoverable
+wrapping on 4 of 7 sections is an inconsistency -- hovering those
+sections shows no widget info.
 
 ### Solutions
 
 | # | Solution | Pros | Cons |
 |---|----------|------|------|
 | A | Extract a helper function taking the family name + `iced_core::theme::palette::Secondary`/etc. reference | Eliminates repetition; single place to update | iced's Extended palette families are different types (not a common trait); need a macro or pass individual `Pair` references |
-| B | Use a macro to generate the 6 sections | Compact; easy to add new families | Macros harder to read than functions |
+| B | Use a macro to generate the 7 sections | Compact; easy to add new families | Macros harder to read than functions |
 | C | Pass `(name, base_color, base_text, weak_color, weak_text, strong_color, strong_text)` tuple to a helper | Works with any Extended family type; no trait needed | Long parameter list (7 values) |
 | D | Keep repetition | Each section independently readable | ~150 lines of copy-paste; inconsistent hoverable wrapping |
 
 **Recommended: C.** A helper function taking 7 values is more readable
-than 6 copies of 25 lines. Also fix the missing hoverable wrappers on
-4 of the 6 sections for consistency.
+than 7 copies of 15-25 lines. Also add hoverable wrapping to the 4
+sections that lack it for consistency.
 
 ---
 
@@ -846,19 +949,29 @@ Throughout the showcase, widget text sizes are hardcoded:
 
 | Pattern | Count | Examples |
 |---------|-------|---------|
-| `.size(9)` | ~20 | Icon cell labels, swatch hex text |
-| `.size(10)` | ~15 | Theme config inspector values |
+| `.size(8)` | ~1 | Icon cell source label |
+| `.size(9)` | ~3 | Icon cell labels, swatch hex text |
+| `.size(10)` | ~7 | Theme config inspector values, widget info text |
 | `.size(11)` | ~5 | Animation labels, source labels |
-| `.size(12)` | ~15 | Section labels, status text |
-| `.size(13)` | ~5 | Descriptive text |
-| `.size(14)` | ~3 | Button content text |
+| `.size(12)` | ~15 | Section labels, status text, tab button labels |
+| `.size(13)` | ~5 | Descriptive text, icon set info |
+| `.size(14)` | ~7 | Button content text, value display text, container labels |
 | `.size(16)` | ~15 | Sub-section headings |
 | `.size(18)` | 1 | Title "native-theme" |
-| `.size(24)` | ~7 | Section headers |
+| `.size(20)` | 1 | "Animated Icons" heading |
+| `.size(24)` | ~2 | Section headers via `section_header()` |
 
 None of these derive from the resolved theme's text scale
-(`resolved.text_scale.caption.size`, `resolved.text_scale.section_heading.size`,
-etc.) or font size (`resolved.defaults.font.size`).
+(`resolved.text_scale.caption`, `resolved.text_scale.section_heading`,
+`resolved.text_scale.dialog_title`, `resolved.text_scale.display`)
+or font size (`resolved.defaults.font.size`).
+
+The `ResolvedTextScale` has 4 roles, each with `size`, `weight`, and
+`line_height`:
+- `caption` -- small label text (e.g., 11px)
+- `section_heading` -- section heading text (e.g., 14px)
+- `dialog_title` -- dialog title text (e.g., 16px)
+- `display` -- large hero text (e.g., 24px)
 
 **Impact:** Low. The showcase is a demonstration app, and hardcoded
 sizes ensure stable screenshots. But it misses the opportunity to
@@ -868,7 +981,7 @@ demonstrate text scale usage.
 
 | # | Solution | Pros | Cons |
 |---|----------|------|------|
-| A | Replace at least the main categories with text scale references: `.size(24)` -> `text_scale.section_heading.size`, `.size(12)` -> `text_scale.caption.size` | Demonstrates text scale usage; adapts to theme | Must map each hardcoded size to the right scale tier; some sizes have no direct equivalent |
+| A | Replace at least the main categories with text scale references: `.size(24)` -> `text_scale.display.size`, `.size(16)` -> `text_scale.dialog_title.size`, `.size(12)` -> `text_scale.caption.size` | Demonstrates text scale usage; adapts to theme | Must map each hardcoded size to the right scale tier; some sizes have no direct equivalent |
 | B | Add one dedicated section showing text scale in the Display tab | Demonstrates the feature without changing existing layout | Existing sections still hardcoded |
 | C | Keep hardcoded sizes | Stable layout; predictable screenshots | Misses demo opportunity |
 

@@ -5,10 +5,10 @@ safety, code quality, API design, and test coverage.
 
 Files reviewed:
 - `Cargo.toml`
-- `src/lib.rs` (2160 lines), `src/codegen.rs` (~1000 lines), `src/error.rs` (258 lines), `src/schema.rs` (344 lines), `src/validate.rs` (1020 lines)
+- `src/lib.rs` (2160 lines), `src/codegen.rs` (1003 lines), `src/error.rs` (257 lines), `src/schema.rs` (344 lines), `src/validate.rs` (1020 lines)
 - `tests/integration.rs` (502 lines)
-- `tests/fixtures/material/mapping.toml`, `tests/fixtures/sample-icons.toml`, `tests/fixtures/sf-symbols/mapping.toml`
-- `docs/platform-facts.md` (1475 lines, cross-referenced for icon/theme accuracy)
+- `tests/fixtures/sample-icons.toml`, `tests/fixtures/material/mapping.toml`, `tests/fixtures/sf-symbols/mapping.toml`
+- `docs/platform-facts.md` (cross-referenced for icon/theme accuracy)
 
 ---
 
@@ -70,7 +70,7 @@ violates least-surprise. Return `Result` and let callers use
 
 Three locations use panic-based assertions outside `#[cfg(test)]`:
 
-- **`lib.rs:345-348`** -- `crate_path()` builder method:
+- **`lib.rs:345-347`** -- `crate_path()` builder method:
   `assert!(!path.is_empty() && !path.contains(' '), ...)`.
 - **`lib.rs:367-369`** -- `derive()` builder method:
   `assert!(!name.is_empty() && !name.contains(char::is_whitespace), ...)`.
@@ -134,7 +134,7 @@ would produce `"icon\0name"` in generated code. Rust string literals
 cannot contain raw null bytes; this would be a compile error in the
 generated code.
 
-`validate_mapping_values()` at `validate.rs:357` does reject control
+`validate_mapping_values()` at `validate.rs:346-368` does reject control
 characters (which includes `\0`), so this is currently defended by
 validation. But `escape_rust_str` is a standalone function that
 should be correct in isolation.
@@ -176,7 +176,7 @@ and optionally a test.
 
 ## 4. Path Traversal via Icon Names in `include_bytes!`
 
-**`validate.rs:345-368`** -- `validate_mapping_values()` rejects
+**`validate.rs:346-368`** -- `validate_mapping_values()` rejects
 empty strings and control characters, but does NOT reject `/`, `\`,
 or `..`. An icon name like `"../../etc/passwd"` passes validation
 and is interpolated into the generated `include_bytes!` path at
@@ -531,7 +531,7 @@ writeln!(out, "... concat!(env!(\"CARGO_MANIFEST_DIR\"), \"{sep}{base_dir}/{them
 
 ## 11. Orphan SVG Detection Ignores DE-Specific Icon Names
 
-**`validate.rs:126-129`** -- `check_orphan_svgs()` builds its
+**`validate.rs:127-130`** -- `check_orphan_svgs()` builds its
 `referenced` set from `v.default_name()` only. For a DE-aware mapping
 like `{ kde = "media-playback-start", default = "play" }`, only
 `"play"` is in the referenced set.
@@ -570,7 +570,7 @@ that appears in any mapping value.
 
 ## 12. SVG Path/Rerun Tracking Ignores DE-Specific Names
 
-**`lib.rs:820-826`** -- `check_orphan_svgs_and_collect_paths()` uses
+**`lib.rs:820-828`** -- `check_orphan_svgs_and_collect_paths()` uses
 `value.default_name()` for both `rerun_paths` and `svg_paths`.
 DE-specific SVGs (e.g., `media-playback-start.svg`) placed in a
 bundled theme directory are not tracked for cargo rebuild and not
@@ -596,7 +596,7 @@ Iterate all values in MappingValue, not just default.
 
 ## 13. `unwrap_or("unknown")` Hides Non-UTF-8 Filenames
 
-**`validate.rs:149-153`** -- In `check_orphan_svgs()`:
+**`validate.rs:150-153`** -- In `check_orphan_svgs()`:
 
 ```rust
 let file_name = path
@@ -642,7 +642,7 @@ checks `to_str()`), so use `format!("{stem}.svg")` in the warning.
 
 ## 14. `check_orphan_svgs()` Silently Flattens `read_dir` Errors
 
-**`validate.rs:143`** -- `for entry in entries.flatten()` silently
+**`validate.rs:144`** -- `for entry in entries.flatten()` silently
 discards individual directory entry errors. On Linux, permission-denied
 or broken-symlink entries are silently skipped. The orphan detection
 may report incorrect results without any indication of why.
@@ -683,7 +683,7 @@ swallowing filesystem errors makes debugging harder than necessary.
 
 ## 15. `#[cfg(test)]` Import Misplaced at Module Scope
 
-**`validate.rs:1`** -- `BTreeMap` is imported with `#[cfg(test)]` at
+**`validate.rs:1-2`** -- `BTreeMap` is imported with `#[cfg(test)]` at
 module scope:
 
 ```rust
@@ -754,7 +754,7 @@ this fail? Are we silently dropping errors?"
 
 ## 17. Incomplete `RUST_KEYWORDS` List
 
-**`validate.rs:12-17`** -- The list has 38 entries but is missing
+**`validate.rs:13-18`** -- The list has 38 entries but is missing
 reserved-for-future keywords: `abstract`, `become`, `box`, `do`,
 `final`, `macro`, `override`, `priv`, `try`, `typeof`, `unsized`,
 `virtual`, `yield`.
@@ -796,7 +796,7 @@ harmless but misleading.
 
 ## 18. Repeated `to_upper_camel_case()` Calls
 
-`codegen.rs:99`, `codegen.rs:110`, `codegen.rs:210`, `codegen.rs:312`
+`codegen.rs:100`, `codegen.rs:110`, `codegen.rs:208`, `codegen.rs:312`
 all call `role.to_upper_camel_case()` on the same role string. For an
 enum with N roles and M themes, each role is converted at least
 2 + M times.
@@ -832,7 +832,7 @@ Build `let role_variants: Vec<(&str, String)>` once in
 
 ## 19. Silent Name Normalization
 
-**`validate.rs:222-246`** -- The identifier validation accepts names
+**`validate.rs:223-246`** -- The identifier validation accepts names
 with spaces, underscores, or mixed casing (e.g., `"app icon"`,
 `"APP_ICON"`) and silently normalizes them to PascalCase via
 `to_upper_camel_case()`. Users may not realize their name was
@@ -966,7 +966,7 @@ when debugging DE detection issues.
 theme somehow bypasses validation and reaches codegen, the generated
 enum silently lacks match arms for that theme.
 
-Validation at `validate.rs:23-33` should catch all unknown themes, so
+Validation at `validate.rs:24-34` should catch all unknown themes, so
 this should be unreachable. But the `continue` silently hides bugs.
 
 ### Solutions
@@ -996,16 +996,16 @@ development.
 
 ## 23. All 4 Doctests Are `rust,ignore`
 
-**`lib.rs:65`, `lib.rs:92`, `lib.rs:205`, `lib.rs:358`** -- Every
-doctest in the crate is marked `rust,ignore`, meaning they are never
-compiled or run by `cargo test`. They can silently drift from the
+**`lib.rs:65`**, **`lib.rs:92`**, **`lib.rs:205`**, **`lib.rs:358`**
+-- Every doctest in the crate is marked `rust,ignore`, meaning they are
+never compiled or run by `cargo test`. They can silently drift from the
 actual API.
 
 Examining the doctests:
-- Lines 65-70: Simple API example -- references `generate_icons()` and
-  `unwrap_or_exit()`.
-- Lines 92-99: Builder API example -- references `IconGenerator::new()`.
-- Lines 205-210: `UnwrapOrExit` trait example.
+- Lines 65-79: Simple and Builder API example -- references `generate_icons()`,
+  `unwrap_or_exit()`, `IconGenerator::new()`.
+- Lines 92-99: Generated code usage example.
+- Lines 205-211: `UnwrapOrExit` trait example.
 - Lines 358-365: `derive()` method example.
 
 All four require `CARGO_MANIFEST_DIR` and `OUT_DIR` to be set and a
@@ -1067,7 +1067,7 @@ produces a separate match arm with the correct value.
 
 ### 26. No test for empty themes warning
 
-`lib.rs:614-621` emits a warning when both `bundled_themes` and
+`lib.rs:615-621` emits a warning when both `bundled_themes` and
 `system_themes` are empty. This code path has no test.
 
 **Recommended:** Add a test.
@@ -1159,6 +1159,156 @@ generated code to `OUT_DIR`, then `include!`s it from a test binary
 that calls the generated methods. This requires the test binary to
 depend on `native-theme`.
 
+### 34. No test for `enum_name()` normalization
+
+The `enum_name()` builder method at `lib.rs:319` stores the raw
+string and `generate_code()` at `codegen.rs:77` applies
+`to_upper_camel_case()`. No test verifies that an `enum_name` like
+`"my-icons"` produces `pub enum MyIcons`. The existing test at
+`lib.rs:1481-1493` (`merge_configs_uses_enum_name_override`) only
+checks that the raw string reaches `merged.name` -- not that the
+final generated code has the correct PascalCase form.
+
+**Risk:** A regression in enum name normalization when using the
+`enum_name()` override would go undetected.
+
+**Recommended:** Add a test that calls `run_pipeline` with
+`enum_name_override` set to a kebab-case name and asserts the
+generated code contains the PascalCase version.
+
+### 35. No test for `output_dir()` builder method
+
+The `output_dir()` method at `lib.rs:380-382` is used in all
+integration tests (to bypass `OUT_DIR`), but there is no test
+verifying the behavior when `output_dir()` is NOT set and `OUT_DIR`
+IS set. The `output_dir` vs `OUT_DIR` fallback path at
+`lib.rs:417-423` is tested only indirectly.
+
+**Recommended:** Add a test that sets `OUT_DIR` and does not call
+`output_dir()`, verifying the output file lands in `OUT_DIR`.
+
+---
+
+## Inline Test Module Coverage Analysis
+
+### `lib.rs` inline tests (63 tests)
+
+Coverage is strong for the core pipeline:
+
+- **MasterConfig deserialization**: 3 tests -- happy path, optional
+  fields, unknown field rejection. Covers the serde boundary well.
+- **MappingValue deserialization**: 3 tests -- Simple, DeAware, mixed.
+  Good structural coverage.
+- **MappingValue::default_name()**: 3 tests -- Simple, DeAware with
+  default, DeAware without default. Complete branch coverage.
+- **BuildError Display**: 7 tests -- one per variant (MissingRole,
+  MissingSvg, UnknownRole, UnknownTheme, MissingDefault, DuplicateRole,
+  InvalidIdentifier, IdentifierCollision, ThemeOverlap,
+  DuplicateRoleInFile). Missing: `DuplicateTheme`, `InvalidIconName`.
+  The newer error variants have no Display format test.
+- **THEME_TABLE**: 1 test -- verifies 5 entries and all names present.
+- **run_pipeline**: 7 tests -- happy path, output filename, rerun
+  paths, size report, missing role error, missing SVG error, orphan SVG
+  warnings. These are the most meaningful tests in the crate.
+- **merge_configs**: 2 tests -- combines roles/themes, enum name
+  override. Lacks test for deduplication edge cases.
+- **Builder pipeline**: 2 tests -- merges two files, detects duplicate
+  roles across files. No test for divergent base dirs.
+- **include_bytes! relative paths**: 1 test -- verifies manifest_dir
+  stripping. Important test.
+- **System theme**: 1 test -- verifies system themes skip SVG checks.
+- **BuildErrors**: 1 test -- Display format.
+- **Identifier validation**: 3 tests -- collision, invalid keyword,
+  duplicate in file.
+- **DE-aware warnings**: 2 tests -- bundled DE-aware produces warning,
+  system DE-aware does not.
+- **crate_path**: 2 tests -- custom path used in impl, default emits
+  extern crate.
+- **Builder input validation**: 6 `#[should_panic]` tests for
+  `derive()` and `crate_path()` assertions.
+
+### `codegen.rs` inline tests (37 tests)
+
+- **theme_name_to_icon_set**: 6 tests -- all 5 themes + unknown.
+  Complete coverage.
+- **theme_name_to_qualified_icon_set**: 1 test -- verifies crate path
+  prefix.
+- **generate_code structural**: 6 tests -- header, derives,
+  non_exhaustive, enum name, variants, const ALL. Good.
+- **IconProvider impl**: 7 tests -- icon_name for bundled/system,
+  wildcards, include_bytes for bundled, no include_bytes for system,
+  SVG path uses mapping value. Good.
+- **de_key_to_variant**: 9 tests -- all 7 DEs + default + unknown.
+  Complete.
+- **DE-aware codegen**: 9 tests -- cfg gates, detect_linux_de call,
+  KDE arm, default arm, OnceLock cache, non-Linux default, default-only
+  collapse, simple value regression.
+- **escape_rust_str**: 7 tests -- plain, backslash, quote, newline,
+  carriage return, tab, combined. Thorough.
+- **crate_path codegen**: 3 tests -- extern crate, custom path used,
+  custom path with DE-aware.
+- **extra_derives codegen**: 3 tests -- none, single, multiple.
+
+### `validate.rs` inline tests (37 tests)
+
+- **validate_themes**: 4 tests -- all known, unknown bundled, unknown
+  system, multiple unknown. Good.
+- **validate_mapping (VAL-01, VAL-03, VAL-04)**: 5 tests -- missing
+  role, unknown role, missing default, all valid, DeAware with default.
+- **validate_svgs (VAL-02)**: 3 tests -- missing SVG, all present,
+  DeAware uses default name. Good.
+- **check_orphan_svgs (VAL-05)**: 2 tests -- orphan found, no orphans.
+- **validate_no_duplicate_roles (VAL-06)**: 3 tests -- duplicate found,
+  no duplicates, three-file duplicate.
+- **validate_de_keys**: 5 tests -- all recognized, cosmic unknown,
+  mixed, default only, simple ignored.
+- **validate_theme_overlap**: 3 tests -- detected, none, multiple.
+- **validate_identifiers**: 7 tests -- valid, empty pascal, keyword
+  role, keyword enum, collision, no collision, digit start role, digit
+  start enum, all digits.
+- **validate_no_duplicate_roles_in_file**: 4 tests -- detected, none,
+  multiple, case-sensitive.
+- **validate_no_duplicate_themes**: 3 tests -- bundled, system, none.
+- **validate_mapping_values**: 4 tests -- valid, empty name, control
+  char, DeAware empty value.
+
+### `schema.rs` inline tests (11 tests)
+
+- **THEME_TABLE consistency**: 4 tests -- no duplicate keys, no
+  duplicate variants, variants start with IconSet::, keys non-empty.
+- **DE_TABLE consistency**: 5 tests -- same pattern as THEME_TABLE,
+  plus no "default" key.
+- **is_known_theme**: 2 tests -- known returns true, unknown returns
+  false.
+- **Drift detection**: 4 tests -- THEME_TABLE entries match IconSet
+  variants, covers all variants; DE_TABLE entries match LinuxDesktop
+  variants, covers all variants. The DE tests are correctly
+  `#[cfg(target_os = "linux")]`.
+
+### `tests/integration.rs` (13 tests)
+
+- **Happy path**: 7 tests -- correct enum, IconProvider impl, Material
+  icon_name, SfSymbols icon_name, bundled icon_svg, const ALL, output
+  filename, size report. These test the full public API through
+  `IconGenerator`.
+- **Error paths**: 3 tests -- missing role, unknown role, missing SVG.
+  All use temp dirs with intentional errors.
+- **Builder API**: 1 test -- merges disjoint roles from two files.
+- **DE-aware**: 2 tests -- DE dispatch code generated, unknown DE key
+  produces warning.
+
+**Overall assessment of test quality:**
+- Unit tests are focused and well-named; each tests one thing.
+- The pipeline tests in `lib.rs` provide the most value because they
+  exercise the full flow without I/O.
+- Integration tests verify the public API surface well.
+- The drift detection tests in `schema.rs` are an excellent pattern
+  for catching enum mismatches between crates.
+- The main gap is the absence of compile-verification: all codegen
+  tests check substring presence, not syntactic validity (issue 33).
+- `#[should_panic]` tests for builder assertions will need updating
+  when issue 2 is resolved (move to `generate()` errors).
+
 ---
 
 ## Cross-Reference with platform-facts.md
@@ -1178,7 +1328,7 @@ platform-facts.md confirms:
 - Linux KDE/GNOME: freedesktop icon themes (section 1.3.6, line 670+)
 - Material and Lucide are cross-platform bundled sets
 
-The drift detection tests in `schema.rs:208-258` verify sync with
+The drift detection tests in `schema.rs:210-258` verify sync with
 the runtime crate's `IconSet` enum. No mismatch found.
 
 ### DE table coverage: CORRECT
@@ -1192,7 +1342,7 @@ the runtime crate's `IconSet` enum. No mismatch found.
 - `lxqt` -> `LinuxDesktop::LxQt`
 - `budgie` -> `LinuxDesktop::Budgie`
 
-The drift detection tests in `schema.rs:266-343` verify sync with
+The drift detection tests in `schema.rs:267-343` verify sync with
 the runtime crate's `LinuxDesktop` enum. These tests are correctly
 `#[cfg(target_os = "linux")]` because `LinuxDesktop` and
 `detect_linux_de()` only exist on Linux in the main crate.
@@ -1250,3 +1400,5 @@ to the runtime crate. This is correct by design.
 | 31 | No fixtures for freedesktop/lucide/segoe | **Low** | Low | Add fixture files |
 | 32 | Non-unique temp dirs in tests | **Low** | Low | Use `tempfile::tempdir()` |
 | 33 | No test: generated code compiles | **Medium** | Medium | Add golden compile test |
+| 34 | No test: `enum_name()` normalization | **Low** | Trivial | Add codegen test |
+| 35 | No test: `output_dir()` vs `OUT_DIR` fallback | **Low** | Trivial | Add test |

@@ -7,6 +7,114 @@ Independent critical analysis of the gpui connector crate.
 All production code is `#![deny(clippy::unwrap_used)]` and `#![deny(clippy::expect_used)]`.
 Test code uses `#[allow(clippy::unwrap_used, clippy::expect_used)]`.
 
+### Test Inventory
+
+**lib.rs -- 11 tests:**
+1. `to_theme_produces_valid_theme` -- light mode theme has correct `is_dark()` flag
+2. `to_theme_dark_mode` -- dark mode theme has correct `is_dark()` flag
+3. `to_theme_applies_font_and_geometry` -- font family/size, mono font, radius, shadow mapped
+4. `from_preset_valid_light` -- light preset loads without error
+5. `from_preset_valid_dark` -- dark preset loads without error
+6. `from_preset_returns_resolved` -- returned ResolvedThemeVariant has populated font size
+7. `from_preset_invalid_name` -- nonexistent preset returns Err
+8. `system_theme_ext_to_gpui_theme` -- SystemThemeExt trait produces matching is_dark
+9. `from_system_does_not_panic` -- from_system() doesn't panic (result may be Err)
+10. `from_system_returns_tuple` -- returned tuple has valid font size and is_dark
+11. `from_system_matches_manual_path` -- convenience and manual paths agree on is_dark
+
+**colors.rs -- 15 tests:**
+1. `rgba_to_hsla_converts_red` -- red RGB has hue near 0
+2. `rgba_to_hsla_converts_green` -- green RGB has hue near 0.333
+3. `rgba_to_hsla_converts_blue` -- blue RGB has hue near 0.667
+4. `to_theme_color_produces_nondefault` -- bg, fg, primary, danger, border differ from default
+5. `is_dark_detects_dark_background` -- test-only function correctly classifies lightness
+6. `hover_states_differ_from_base` -- primary_hover and danger_hover differ from base
+7. `per_widget_fields_used` -- scrollbar, slider, progress, title bar, switch, caret match resolved
+8. `accent_foreground_uses_theme_value` -- accent_fg comes from d.accent_foreground not d.fg
+9. `is_dark_passed_not_derived` -- primary_active differs between is_dark=false and is_dark=true
+10. `link_hover_differs_from_link` -- link_hover and link_active differ from link
+11. `selection_not_clamped` -- selection uses theme value without alpha clamping
+12. `chart_colors_have_hue_separation` -- all 5 chart hues are distinct, chart_1 matches accent
+13. `magenta_uses_theme_saturation` -- magenta.s = min(accent.s, 0.85), magenta.l = accent.l
+14. `overlay_uses_shadow_color` -- overlay hue and saturation match shadow color
+15. `theme_color_field_count_tripwire` -- ThemeColor has exactly 108 Hsla fields
+
+**config.rs -- 3 tests:**
+1. `to_theme_config_from_resolved` -- all config fields populated from resolved defaults
+2. `to_theme_config_dark_mode` -- dark mode sets ThemeMode::Dark
+3. `font_size_is_not_converted_from_points` -- font size equals resolved value (no pt-to-px)
+
+**derive.rs -- 3 tests:**
+1. `hover_color_differs_from_base` -- hover result differs from input base color
+2. `active_color_light_theme_darkens` -- light active has lower lightness than base
+3. `active_color_dark_theme_darkens_more` -- dark active darkens more than light active
+
+**icons.rs -- 60 tests (53 main + 7 linux-only freedesktop):**
+
+Main module (53):
+1. `all_icons_have_lucide_mapping` -- all 86 IconName variants have non-empty Lucide name
+2. `all_icons_have_material_mapping` -- all 86 variants have non-empty Material name
+3. `icon_name_dialog_warning_maps_to_triangle_alert` -- DialogWarning -> TriangleAlert
+4. `icon_name_dialog_error_maps_to_circle_x` -- DialogError -> CircleX
+5. `icon_name_dialog_info_maps_to_info` -- DialogInfo -> Info
+6. `icon_name_dialog_success_maps_to_circle_check` -- DialogSuccess -> CircleCheck
+7. `icon_name_window_close_maps` -- WindowClose -> WindowClose
+8. `icon_name_action_copy_maps_to_copy` -- ActionCopy -> Copy
+9. `icon_name_nav_back_maps_to_chevron_left` -- NavBack -> ChevronLeft
+10. `icon_name_file_generic_maps_to_file` -- FileGeneric -> File
+11. `icon_name_status_check_maps_to_check` -- StatusCheck -> Check
+12. `icon_name_user_account_maps_to_user` -- UserAccount -> User
+13. `icon_name_notification_maps_to_bell` -- Notification -> Bell
+14. `icon_name_shield_returns_none` -- Shield has no Lucide mapping
+15. `icon_name_lock_returns_none` -- Lock has no Lucide mapping
+16. `icon_name_action_save_returns_none` -- ActionSave has no Lucide mapping
+17. `icon_name_help_returns_none` -- Help has no Lucide mapping
+18. `icon_name_dialog_question_returns_none` -- DialogQuestion has no Lucide mapping
+19. `icon_name_maps_at_least_28_roles` -- at least 28 IconRole variants map to Some
+20. `icon_name_maps_exactly_30_roles` -- exactly 30 of 42 IconRole variants map to Some
+21. `to_image_source_svg_returns_bmp_rasterized` -- SVG produces BMP ImageSource
+22. `to_image_source_rgba_returns_bmp_image_source` -- RGBA produces BMP ImageSource
+23. `to_image_source_with_color` -- colorized SVG converts successfully
+24. `to_image_source_with_custom_size` -- custom raster size converts successfully
+25. `encode_rgba_as_bmp_correct_file_size` -- 4x4 BMP has correct byte count
+26. `encode_rgba_as_bmp_starts_with_bm` -- BMP starts with "BM" magic bytes
+27. `encode_rgba_as_bmp_pixel_order_is_bgra` -- RGBA input stored as BGRA in BMP
+28. `encode_rgba_as_bmp_zero_width_returns_none` -- zero width rejected
+29. `encode_rgba_as_bmp_zero_height_returns_none` -- zero height rejected
+30. `encode_rgba_as_bmp_mismatched_length_returns_none` -- too few bytes rejected
+31. `encode_rgba_as_bmp_oversized_length_returns_none` -- too many bytes rejected
+32. `colorize_svg_replaces_fill_black` -- fill="black" replaced with hex
+33. `colorize_svg_replaces_fill_hex_black` -- fill="#000000" replaced with hex
+34. `colorize_svg_replaces_fill_short_hex_black` -- fill="#000" replaced with hex
+35. `colorize_svg_current_color_still_works` -- currentColor replaced with hex
+36. `colorize_svg_implicit_black_still_works` -- fill injected into root svg tag
+37. `colorize_svg_non_utf8_returns_original` -- non-UTF-8 input returned unchanged
+38. `colorize_self_closing_svg_produces_valid_xml` -- fill injected before / in self-closing tag
+39. `into_image_source_svg_returns_some` -- consuming SVG variant returns Some
+40. `into_image_source_rgba_returns_some` -- consuming RGBA variant returns Some
+41. `into_image_source_with_color` -- consuming colorized SVG returns Some
+42. `custom_icon_to_image_source_with_svg_provider_returns_some` -- custom SVG provider works
+43. `custom_icon_to_image_source_with_empty_provider_returns_none` -- empty provider returns None
+44. `custom_icon_to_image_source_with_color` -- custom provider with color works
+45. `custom_icon_to_image_source_accepts_dyn_provider` -- Box<dyn IconProvider> accepted
+46. `bundled_icon_lucide_returns_some` -- Lucide Search icon converts
+47. `bundled_icon_material_returns_some` -- Material Search icon converts
+48. `bundled_icon_freedesktop_returns_none` -- Freedesktop set returns None (not bundled)
+49. `bundled_icon_with_color` -- bundled Lucide Check icon with color converts
+50. `animated_frames_returns_sources` -- 3-frame animation produces 3 sources with correct timing
+51. `animated_frames_transform_returns_none` -- Transform variant returns None
+52. `animated_frames_empty_returns_none` -- empty frames returns None
+53. `spin_animation_constructs_without_context` -- with_spin_animation needs no render context
+
+Linux-only freedesktop_mapping_tests (7):
+54. `all_86_gpui_icons_have_mapping_on_kde` -- all variants have KDE freedesktop name
+55. `eye_differs_by_de` -- Eye maps differently for KDE vs GNOME
+56. `freedesktop_standard_ignores_de` -- edit-copy is same for all DEs
+57. `all_86_gpui_icons_have_mapping_on_gnome` -- all variants have GNOME freedesktop name
+58. `xfce_uses_gnome_names` -- XFCE follows GNOME naming convention
+59. `all_kde_names_resolve_in_breeze` -- all KDE names find icons in Breeze theme
+60. `gnome_names_resolve_in_adwaita` -- all GNOME names find icons in Adwaita theme
+
 ---
 
 ## 1. All Tests Use a Single Preset, and Only Test Light Mode Colors
@@ -23,11 +131,16 @@ This is doubly wrong. Catppuccin Mocha IS a dark theme. The test helper calls
 important code path -- dark theme color derivation for the primary design-target
 preset -- is never tested.
 
+**Exception:** `lib.rs:237-248` has a `to_theme_dark_mode` test that loads
+catppuccin-mocha with `into_variant(true)` and passes `is_dark: true` to
+`to_theme()`. But this only checks `theme.is_dark()` -- it does not test any
+color derivation.
+
 **Concrete consequences:**
 - `active_color()` dark branch (20% darkening) is never tested for correctness
 - `overlay` alpha 0.5 (dark path) is never tested
 - `group_box` opacity 0.3 (dark path) is never tested
-- `_light` color variants (issue #5) produce wrong results on dark themes but
+- `_light` color variants (issue #3) produce wrong results on dark themes but
   this was invisible because dark mode was never tested
 - No coverage of themes with low saturation, unusual radii, or extreme lightness
 - No coverage of any preset other than catppuccin-mocha (dracula, adwaita,
@@ -77,7 +190,7 @@ fn dark_mode_color_derivations_are_correct() {
 | Catches dark-mode bugs immediately | Slightly slower test suite |
 | Tests the actual design-target mode for each preset | Must pick representative presets |
 | Eliminates the duplicate test_resolved() helper | |
-| Would have caught issue #5 | |
+| Would have caught issue #3 | |
 
 #### B. Add property-based fuzz tests with proptest
 
@@ -112,10 +225,11 @@ muted_fg: rgba_to_hsla(d.muted).blend(fg.opacity(0.7)),
 Two compounding problems:
 
 1. **Semantic mismatch:** In native-theme, `d.muted` is documented as
-   "Secondary/subdued text color" -- a FOREGROUND color. But gpui-component's
-   `ThemeColor.muted` slot (colors.rs:135: `tc.muted = c.muted`) is documented
-   as "Muted backgrounds such as Skeleton and Switch" -- a BACKGROUND slot.
-   So a text color is being written to a background slot.
+   "Secondary/subdued text color" (resolved.rs:106) -- a FOREGROUND color.
+   But gpui-component's `ThemeColor.muted` slot (theme_color.rs:86-87) is
+   documented as "Muted backgrounds such as Skeleton and Switch" -- a BACKGROUND
+   slot. So a text color is being written to a background slot at colors.rs:135
+   (`tc.muted = c.muted`).
 
 2. **Wrong derivation:** `muted_fg` blends `d.muted` (already a subdued text
    color) with 0.7-opacity foreground. On dark themes where `muted` is grayish
@@ -188,8 +302,8 @@ This affects all 6 `_light` colors: red, green, blue, yellow, magenta, cyan.
 `*_light` colors get dimmer mid-tones on dark themes instead of lighter tints.
 
 Note: `assign_base_colors` does NOT receive the `is_dark` parameter, even
-though the calling code has it available. This is the root cause -- the function
-has no way to adapt its derivation.
+though the calling code has it available (colors.rs:122). This is the root
+cause -- the function has no way to adapt its derivation.
 
 ### Solutions
 
@@ -252,6 +366,11 @@ is available. Thread it through and use mode-appropriate derivation.
 silently dropping frames that fail conversion. But it preserves the original
 `frame_duration_ms` unchanged. If 1 of 6 frames fails, the animation plays
 5 frames at the original per-frame duration -- 17% faster than intended.
+
+The doc comment at line 853-854 acknowledges this: "Frames that cannot be
+converted ... are silently excluded. The returned animation may have fewer
+frames than the input, causing it to play faster." But acknowledging a bug
+in documentation does not fix it.
 
 ### Solutions
 
@@ -317,6 +436,7 @@ still vulnerable to external events.
 
 gpui-component's `ThemeConfig` at schema.rs:64-65 HAS a `colors:
 ThemeConfigColors` field with `Option<SharedString>` entries for every color.
+Verified in gpui-component 0.5.1 at schema.rs:72-73.
 
 ### Solutions
 
@@ -360,7 +480,7 @@ cost at theme construction prevents a correctness landmine at runtime.
 
 ## 6. `overlay` Opacity Ignores `reduce_transparency` Accessibility Setting
 
-**File:** `colors.rs:265-272`
+**File:** `colors.rs:267-273`
 
 ```rust
 tc.overlay = Hsla {
@@ -370,9 +490,13 @@ tc.overlay = Hsla {
 ```
 
 The resolved theme carries `resolved.defaults.reduce_transparency` (bool) from
-the OS accessibility settings. This property is available but actively ignored.
-Users who enable "reduce transparency" in system settings still see translucent
-overlays.
+the OS accessibility settings (resolved.rs:176). This property is available but
+actively ignored. Users who enable "reduce transparency" in system settings
+still see translucent overlays.
+
+Note: `assign_misc()` does receive `resolved` as a parameter (colors.rs:248),
+so `resolved.defaults.reduce_transparency` is already accessible at this call
+site.
 
 ### Solutions
 
@@ -468,7 +592,7 @@ direct dependency" but omits `Result` and `Rgba`. Both `from_preset()` and
 callers must add `native-theme` as a direct dependency just to name the Result
 type.
 
-The iced connector correctly re-exports both at its line 83.
+The iced connector correctly re-exports both at its lib.rs:82-85.
 
 ### Solutions
 
@@ -755,7 +879,7 @@ pub fn font_weight(resolved: &ResolvedThemeVariant) -> u16 {
 
 ## 14. `ThemeConfig.radius` Negative Value Wrap-Around
 
-**File:** `config.rs:32-33`
+**File:** `config.rs:33-34`
 
 ```rust
 radius: Some(d.radius.round() as usize),
@@ -795,7 +919,7 @@ radius: Some((d.radius.round() as i64).max(0) as usize),
 
 ---
 
-## 15. 7+ Resolved Defaults Fields Silently Ignored
+## 15. 8 Resolved Defaults Fields Silently Ignored
 
 **File:** `colors.rs` (all assign_* functions)
 
@@ -892,9 +1016,9 @@ visible while preserving the theme's lightness.
 ## 17. Spacing, Icon Sizes, and Text Scale Not Mapped or Exposed
 
 The `ResolvedThemeVariant` carries:
-- `defaults.spacing` (7-tier scale: xxs through xxl)
-- `defaults.icon_sizes` (5 contexts: toolbar, small, large, dialog, panel)
-- `text_scale` (4 entries: caption, section_heading, dialog_title, display)
+- `defaults.spacing` (7-tier scale: xxs through xxl) -- resolved.rs:162
+- `defaults.icon_sizes` (5 contexts: toolbar, small, large, dialog, panel) -- resolved.rs:166
+- `text_scale` (4 entries: caption, section_heading, dialog_title, display) -- resolved.rs:191
 
 None of these are mapped by the connector. Theme authors who set custom spacing
 or text scales see no effect.
@@ -1034,7 +1158,7 @@ Ok((theme, resolved))
 
 ## 20. Tab/Sidebar/Window Fields Bypass `ResolvedColors` Cache
 
-**Files:** `colors.rs:202-222`, `colors.rs:267-292`
+**Files:** `colors.rs:202-222`, `colors.rs:247-292`
 
 `assign_tab_sidebar()` and `assign_misc()` call `rgba_to_hsla()` directly on
 `resolved.*` fields instead of using the pre-converted `ResolvedColors` struct:
@@ -1113,9 +1237,10 @@ Add to the `color` parameter doc:
 
 **File:** `colors.rs:34-65`
 
-The `ResolvedColors` struct has `#[allow(dead_code)]` on the ENTIRE struct.
-`surface` is computed at initialization but never consumed by any `assign_*`
-function. The blanket allow also masks any future field that becomes unused.
+The `ResolvedColors` struct has `#[allow(dead_code)]` on the ENTIRE struct
+(line 34). `surface` is computed at initialization (line 85) but never consumed
+by any `assign_*` function. The blanket allow also masks any future field that
+becomes unused.
 
 ### Solutions
 
@@ -1148,7 +1273,9 @@ struct ResolvedColors {
 |------|------|
 | Eliminates dead code by using it | Must identify correct target |
 
-**Best solution: A.** Per-field annotation is more precise.
+**Best solution: A.** Per-field annotation is more precise. Note: if issue #2
+is fixed with solution A (use `d.surface` for `tc.muted`), `surface` would no
+longer be dead code and the allow attribute could be removed entirely.
 
 ---
 
@@ -1200,9 +1327,10 @@ fn is_dark_background(bg: Hsla) -> bool {
 ```
 
 This function exists only in test code and is used by one test
-(`is_dark_detects_dark_background`). Production code takes `is_dark` as a
-parameter -- it never derives it from the background. This test gives false
-coverage confidence by testing a function that production code doesn't use.
+(`is_dark_detects_dark_background` at colors.rs:406). Production code takes
+`is_dark` as a parameter -- it never derives it from the background. This test
+gives false coverage confidence by testing a function that production code
+doesn't use.
 
 ### Solutions
 
@@ -1382,7 +1510,7 @@ fn svg_bytes_to_image_source(
 
 ## 28. Missing Size Parameter Validation in Icon Conversion
 
-**File:** `icons.rs:745-750`
+**File:** `icons.rs:750`
 
 ```rust
 let raster_size = size.unwrap_or(SVG_RASTERIZE_SIZE);
@@ -1465,7 +1593,7 @@ let gpui_rgba = gpui::Rgba {
 
 ## 30. Doc Examples Use `.unwrap()`
 
-**File:** `lib.rs:29-32`
+**File:** `lib.rs:29-31`
 
 ```rust
 /// let nt = ThemeSpec::preset("catppuccin-mocha").unwrap();
@@ -1475,6 +1603,9 @@ let gpui_rgba = gpui::Rgba {
 
 Per the project's `#![deny(clippy::unwrap_used)]` policy, doc examples should
 model correct error handling. Users copying the example get code that panics.
+
+Note: these are inside `/// ```ignore` blocks so they do not compile, but they
+still serve as documentation that users will copy.
 
 ### Solutions
 
@@ -1524,7 +1655,7 @@ opposite mode. Users needing both for runtime theme switching must call
 
 ## 32. Accessibility Properties Not Exposed
 
-`ResolvedThemeDefaults` includes 4 accessibility properties:
+`ResolvedThemeDefaults` includes 4 accessibility properties (resolved.rs:169-176):
 - `text_scaling_factor` (f32)
 - `reduce_motion` (bool)
 - `reduce_transparency` (bool) -- partially addressed by issue #6
@@ -1583,10 +1714,11 @@ IconRole::TrashEmpty => IconName::Delete,
 
 ## 34. SVG Fill Injection Fragile to Quoted `>` in Attributes
 
-**File:** `icons.rs:1009-1027`
+**File:** `icons.rs:1009-1011`
 
 ```rust
-if let Some(close) = svg_str[pos..].find('>')  // naive search
+if let Some(pos) = svg_str.find("<svg")
+    && let Some(close) = svg_str[pos..].find('>')  // naive search
 ```
 
 An SVG attribute containing `>` inside quotes would match at the wrong position.
@@ -1611,7 +1743,7 @@ Bundled icon sets never have quoted `>` in attributes. Add a doc note.
 **File:** `lib.rs:36-58`
 
 The per-widget coverage table (e.g., "button: 4 of 14") is not verified by any
-test. The 108-field tripwire at colors.rs:620-630 checks total count but not
+test. The 108-field tripwire at colors.rs:619-630 checks total count but not
 per-widget breakdown.
 
 ### Solutions
@@ -1761,7 +1893,7 @@ as `examples/showcase/main.rs`). The showcase is a reference tool, not a
 | 12 | to_theme only populates one mode | **Low** | Trivial | Document single-mode behavior |
 | 13 | Font weight never mapped | **Low** | Trivial | Add font_weight() helper |
 | 14 | ThemeConfig radius negative wrap | **Low** | Trivial | Clamp to 0.0 before rounding |
-| 15 | 7+ defaults fields unmapped | **Medium** | Low | Add helper functions |
+| 15 | 8 defaults fields unmapped | **Medium** | Low | Add helper functions |
 | 16 | Chart colors gray accent | **Low** | Trivial | Saturation floor for charts |
 | 17 | Spacing/icons/text_scale not exposed | **Medium** | Low | Add helper functions |
 | 18 | Cargo.toml heavy features unconditional | **Medium** | Low | Feature-gate icon/platform features |

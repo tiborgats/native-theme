@@ -26,6 +26,8 @@ Preset uses `max_width = 560.0` in both light and dark.
 
 **Recommended:** A. The XAML resource is authoritative.
 
+**Also affects:** `src/presets/windows-11-live.toml:104,238`
+
 ### 1b. Windows 11 `dialog.min_height = 140` -- platform-facts says 184
 
 **File:** `src/presets/windows-11.toml:167,366`
@@ -42,6 +44,8 @@ platform-facts.md SS1.2.4: "WinUI3 ContentDialog: 184-756". Preset uses 140.
 | B | Keep 140 | More flexible | Contradicts authoritative source |
 
 **Recommended:** A.
+
+**Also affects:** `src/presets/windows-11-live.toml:105,239`
 
 ### 1c. Windows 11 `dialog.max_height = 600` -- platform-facts says 756
 
@@ -60,6 +64,8 @@ platform-facts.md SS1.2.4: "WinUI3 ContentDialog: 184-756". Preset uses 600.
 
 **Recommended:** A.
 
+**Also affects:** `src/presets/windows-11-live.toml:106,240`
+
 ### 1d. Windows 11 `spinner.stroke_width = 2` -- platform-facts says 4
 
 **File:** `src/presets/windows-11.toml:181,380`
@@ -76,6 +82,8 @@ platform-facts.md SS1.2.4: "WinUI3: ProgressRingStrokeThickness=4". Preset uses 
 | B | Keep 2.0, document as intentional | Thinner appearance may be preferred | Contradicts platform source |
 
 **Recommended:** A.
+
+**Also affects:** `src/presets/windows-11-live.toml:117,251`
 
 ### 1e. Windows 11 `tooltip.padding = 8.0` both horiz and vert -- platform-facts says 9/6-8
 
@@ -95,6 +103,8 @@ horizontal should be 9, not 8.
 
 **Recommended:** A. The horizontal value is clearly documented as 9.
 
+**Also affects:** `src/presets/windows-11-live.toml:51-52,185-186`
+
 ### 1f. Windows 11 `spinner.diameter = 24` -- platform-facts says 32
 
 **File:** `src/presets/windows-11.toml:179,378`
@@ -113,6 +123,8 @@ platform-facts.md SS1.2.4: "WinUI3: ProgressRing Width/Height=32". Preset uses 2
 
 **Recommended:** A. The WinUI3 XAML resource is authoritative.
 
+**Also affects:** `src/presets/windows-11-live.toml:115,249`
+
 ### 1g. Windows 11 `expander.header_height = 40` -- platform-facts says 48
 
 **File:** `src/presets/windows-11.toml:199,398`
@@ -128,13 +140,15 @@ platform-facts.md SS1.2.4: "WinUI3: ExpanderMinHeight=48". Preset uses 40.
 
 **Recommended:** A.
 
+**Also affects:** `src/presets/windows-11-live.toml:135,269`
+
 ### 1h. Windows 11 `expander.content_padding = 16` -- platform-facts says 16
 
 Correct. Matches `ExpanderContentPadding=16`.
 
 ### 1i. Adwaita `dialog.button_spacing = 8` -- platform-facts says 12
 
-**File:** `src/presets/adwaita.toml:175,370`
+**File:** `src/presets/adwaita.toml:177,382`
 
 platform-facts.md SS1.4.4: "AdwAlertDialog button spacing: 12px" from
 `_message-dialog.scss .response-area { border-spacing: 12px }`. Preset uses 8.
@@ -149,6 +163,8 @@ platform-facts.md SS1.4.4: "AdwAlertDialog button spacing: 12px" from
 | B | Keep 8, document | Consistent with current look | Contradicts authoritative CSS |
 
 **Recommended:** A.
+
+**Also affects:** `src/presets/adwaita-live.toml:111,248`
 
 ### 1j. macOS `dialog.button_order = "leading_affirmative"` -- should be trailing
 
@@ -174,9 +190,11 @@ the left instead of the right.
 **Recommended:** A. Fix the preset and fix the enum doc comment that incorrectly
 lists macOS with `LeadingAffirmative`.
 
+**Also affects:** `src/presets/macos-sonoma-live.toml:102,236`
+
 ### 1k. Adwaita `checkbox.indicator_size = 20` -- platform-facts says 14 (20 with padding)
 
-**File:** `src/presets/adwaita.toml:99,289`
+**File:** `src/presets/adwaita.toml:100,305`
 
 platform-facts.md SS1.4.4: "CheckButton indicator size: 14px (20px with padding)".
 The field name `indicator_size` semantically refers to the visual indicator itself,
@@ -210,6 +228,8 @@ Preset uses 8.
 
 **Recommended:** A.
 
+**Also affects:** `src/presets/windows-11-live.toml:80,214`
+
 ### 1m. Windows 11 `combo_box.min_width = 120` -- platform-facts says 64
 
 **File:** `src/presets/windows-11.toml:185,384`
@@ -226,6 +246,8 @@ platform-facts.md SS1.2.4: "WinUI3: ComboBoxThemeMinWidth=64". Preset uses 120.
 | B | Keep 120, document as deliberate wider minimum | Prevents clipped text | Contradicts source |
 
 **Recommended:** A.
+
+**Also affects:** `src/presets/windows-11-live.toml:121,255`
 
 ### 1n. Windows 11 `toolbar.padding = 4` -- platform-facts says "4px left only"
 
@@ -246,6 +268,138 @@ equivalent is the `SwipeListItem` or delegateHeight -- typically 36px
 equivalent is 50px (GNOME). 40 is a reasonable compromise.
 
 **Verdict:** Acceptable. Add TOML comment citing Kirigami.
+
+### 1p. KDE Breeze `combo_box.padding_horizontal = 12` -- platform-facts says 6
+
+**File:** `src/presets/kde-breeze.toml:186,384`
+
+platform-facts.md SS1.3.4 line 649: "ComboBox_FrameWidth | ComboBox padding | 6px |
+breezemetrics.h". Cross-reference SS2.24 line 1223: "KDE: `ComboBox_FrameWidth` = 6".
+Preset uses `padding_horizontal = 12.0` in both light and dark.
+
+**Impact:** ComboBox horizontal padding is double the native Breeze value.
+
+#### Solutions
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Fix to 6 | Matches breezemetrics.h exactly | Narrower padding |
+| B | Keep 12, document as deliberate | Roomier appearance | Contradicts authoritative Breeze source |
+
+**Recommended:** A. The `ComboBox_FrameWidth` constant in breezemetrics.h is authoritative.
+
+**Also affects:** `src/presets/kde-breeze-live.toml:122,256`
+
+### 1q. KDE Breeze `combo_box.arrow_area_width = 28` -- platform-facts says 20
+
+**File:** `src/presets/kde-breeze.toml:188,386`
+
+platform-facts.md SS1.3.4 line 650: "MenuButton_IndicatorWidth | ComboBox arrow area
+width | 20px | breezemetrics.h". Cross-reference SS2.24 line 1225: "KDE: 20px".
+Preset uses `arrow_area_width = 28.0` in both light and dark.
+
+**Impact:** Arrow area 8px wider than native Breeze, visually over-sized.
+
+#### Solutions
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Fix to 20 | Matches breezemetrics.h exactly | Narrower arrow area |
+| B | Keep 28 | Possibly accommodates larger icon | Contradicts authoritative source |
+
+**Recommended:** A. The `MenuButton_IndicatorWidth` constant is authoritative.
+
+**Also affects:** `src/presets/kde-breeze-live.toml:124,258`
+
+### 1r. Adwaita `expander.arrow_size = 12` -- platform-facts says 16
+
+**File:** `src/presets/adwaita.toml:207,412`
+
+platform-facts.md SS1.4.4 line 794: "GtkExpander | arrow size | 16 x 16px |
+_expanders.scss `min-width/min-height: 16px`". Cross-reference SS2.27 line 1260:
+"GNOME: 16px (pan-end-symbolic)". Preset uses `arrow_size = 12.0` in both light
+and dark.
+
+**Impact:** Expander arrow 4px smaller than native Adwaita, visually undersized.
+
+#### Solutions
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Fix to 16 | Matches libadwaita CSS source | Larger arrow |
+| B | Keep 12 | Compact | Contradicts authoritative _expanders.scss |
+
+**Recommended:** A. The libadwaita CSS `min-width/min-height: 16px` is authoritative.
+
+**Also affects:** `src/presets/adwaita-live.toml:139,276`
+
+### 1s. Adwaita `expander.header_height = 40` -- platform-facts says 50
+
+**File:** `src/presets/adwaita.toml:206,411`
+
+platform-facts.md SS1.4.4 line 795: "AdwExpanderRow | header min-height | 50px |
+_lists.scss". Cross-reference SS2.27 line 1259: "GNOME: AdwExpanderRow: 50".
+Preset uses `header_height = 40.0` in both light and dark.
+
+**Impact:** Expander header 10px shorter than native AdwExpanderRow, may feel cramped.
+
+#### Solutions
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Fix to 50 | Matches libadwaita CSS source | Taller header |
+| B | Keep 40 | Compact | Contradicts authoritative _lists.scss |
+
+**Recommended:** A. The AdwExpanderRow min-height of 50px from _lists.scss is
+authoritative.
+
+**Also affects:** `src/presets/adwaita-live.toml:138,275`
+
+### 1t. Adwaita `tab.padding_vertical = 4` -- platform-facts says 3
+
+**File:** `src/presets/adwaita.toml:129,334`
+
+platform-facts.md SS1.4.4 line 801: "Notebook (tab) | tab padding | 3px 12px |
+_notebook.scss `padding: 3px 12px`". The horizontal padding (12) matches but the
+vertical padding is 4 in the preset vs 3 in the CSS. Both light and dark variants
+have `padding_vertical = 4.0`.
+
+**Impact:** Tab vertical padding 1px more than native -- subtle but measurable.
+
+#### Solutions
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Fix to 3 | Matches _notebook.scss exactly | 1px shorter tabs |
+| B | Keep 4 | Slightly roomier | Contradicts authoritative CSS |
+
+**Recommended:** A. The _notebook.scss `padding: 3px 12px` is authoritative.
+
+**Also affects:** `src/presets/adwaita-live.toml:77,214`
+
+### 1u. iOS `dialog.button_order = "leading_affirmative"` -- same Apple HIG issue as macOS
+
+**File:** `src/presets/ios.toml:164,362`
+
+Apple's Human Interface Guidelines apply to both macOS and iOS. For iOS
+`UIAlertController` with 2 side-by-side buttons, the preferred (affirmative)
+action is on the right; cancel is on the left. This is the same
+`trailing_affirmative` convention as macOS.
+
+The iOS preset has `button_order = "leading_affirmative"` in both light and
+dark variants, which is wrong for the same reason as the macOS preset (issue 1j).
+
+**Impact:** iOS dialog button order is wrong -- affirmative button renders on
+the left instead of the right.
+
+#### Solutions
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Fix to `trailing_affirmative` | Matches Apple HIG for iOS | Changes dialog layout for iOS users |
+| B | Keep as-is | No change | Contradicts Apple HIG |
+
+**Recommended:** A. The Apple HIG is authoritative for both macOS and iOS.
 
 ---
 
@@ -804,9 +958,12 @@ accent. There are no tests verifying this re-derivation chain.
 
 ## Priority Summary
 
+**Note:** Every preset mismatch marked with "Also affects" requires updating BOTH the full preset and the corresponding live preset in lockstep.
+
 | # | Issue | Severity | Effort | Best Fix |
 |---|-------|----------|--------|----------|
 | 1j | macOS button_order leading vs trailing | high | trivial | Fix preset to `trailing_affirmative` |
+| 1u | iOS button_order leading vs trailing | high | trivial | Fix preset to `trailing_affirmative` |
 | 4a | DialogButtonOrder doc incorrect for macOS | high | trivial | Fix doc: Leading = KDE only |
 | 1a | win11 dialog max_width 560 vs 548 | medium | trivial | Fix to 548 |
 | 1b | win11 dialog min_height 140 vs 184 | medium | trivial | Fix to 184 |
@@ -817,6 +974,11 @@ accent. There are no tests verifying this re-derivation chain.
 | 1i | adwaita dialog button_spacing 8 vs 12 | medium | trivial | Fix to 12 |
 | 1l | win11 menu icon_spacing 8 vs 12 | medium | trivial | Fix to 12 |
 | 1m | win11 combo_box min_width 120 vs 64 | medium | trivial | Fix to 64 |
+| 1p | kde combo_box padding_horizontal 12 vs 6 | medium | trivial | Fix to 6 |
+| 1q | kde combo_box arrow_area_width 28 vs 20 | medium | trivial | Fix to 20 |
+| 1r | adwaita expander arrow_size 12 vs 16 | medium | trivial | Fix to 16 |
+| 1s | adwaita expander header_height 40 vs 50 | medium | trivial | Fix to 50 |
+| 1t | adwaita tab padding_vertical 4 vs 3 | low | trivial | Fix to 3 |
 | 2a | missing validate() range-check tests | medium | small | Add negative tests |
 | 2b | missing exhaustive icon_name test | medium | small | Add IconRole::ALL loop test |
 | 5c | community presets hardcode button_order | medium | small | Omit + add resolve rule |
