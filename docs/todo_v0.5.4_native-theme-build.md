@@ -1555,6 +1555,105 @@ contains the offending roles.
 
 ---
 
+## 51. `include_bytes!` Path Malformed With Absolute `base_dir`
+
+**File:** `lib.rs:767-775`, `codegen.rs:316`
+
+When `manifest_dir: None` and `base_dir` is absolute, generated path
+concatenates `CARGO_MANIFEST_DIR` with an already-absolute path.
+
+**Recommended:** Skip `CARGO_MANIFEST_DIR` concat when `base_dir_str`
+starts with `/`.
+
+---
+
+## 52. `validate_identifiers` on Merged Config Loses Per-File Context
+
+**File:** `lib.rs:624`, `validate.rs:223-286`
+
+Keyword/digit-starting role errors have no source file path. Distinct from
+issue 50 (collisions only). All `InvalidIdentifier` errors are affected.
+
+**Recommended:** Run `validate_identifiers` per-file before merge too.
+
+---
+
+## 53. DE-Aware Mappings Where All Overrides Equal Default Generate Redundant Code
+
+**File:** `codegen.rs:226-274`
+
+`{ kde = "play", gnome = "play", default = "play" }` generates full
+cfg/match code when a simple arm suffices.
+
+**Recommended:** Collapse to simple arm when all values equal default.
+
+---
+
+## 57. Per-File PascalCase Collisions Lose File Context
+
+**File:** `validate.rs:292-309`
+
+`validate_no_duplicate_roles_in_file` checks exact strings only.
+PascalCase collisions caught by merged validator lack file path.
+
+**Recommended:** Add PascalCase collision check to per-file validator.
+
+---
+
+## 58. Integration Test Warning Assertions Coupled to Exact Prose
+
+**File:** `tests/integration.rs:435-441`
+
+Substring matching on `"unrecognized DE key"` breaks on wording changes.
+
+**Recommended:** Extract stable prefix or use structured warnings.
+
+---
+
+## 59. `validate_themes` `UnknownTheme` Error Lacks Source File
+
+**File:** `lib.rs:633`, `validate.rs:24-34`
+
+When multiple source files provide themes, error doesn't say which file
+contains the unknown theme name.
+
+**Recommended:** Run `validate_themes` per-file in the validation loop.
+
+---
+
+## 61. `builder_merges_disjoint_roles` Test Does Not Verify Variant Ordering
+
+**File:** `tests/integration.rs:287-341`
+
+Checks presence of `PlayPause` and `SkipForward` but not their ORDER.
+Merge ordering contract is undocumented.
+
+**Recommended:** Add position-order assertion.
+
+---
+
+## 62. Invisible Unicode Passes Validation and Escaping Unchanged
+
+**File:** `codegen.rs:11-24`, `validate.rs:346-368`
+
+BOM (`\u{FEFF}`), zero-width space (`\u{200B}`) pass both validation and
+`escape_rust_str` unchanged. Generated code contains invisible characters.
+
+**Recommended:** Reject invisible Unicode in icon name validation.
+
+---
+
+## 64. Default-Only DeAware Test Does Not Assert `!OnceLock`
+
+**File:** `codegen.rs:787-803`
+
+Test checks simple arm exists and no `detect_linux_de`, but does NOT check
+that `OnceLock` cache is omitted. Would pass if OnceLock incorrectly emitted.
+
+**Recommended:** Add `!output.contains("OnceLock")` assertion.
+
+---
+
 ## Summary
 
 | # | Issue | Severity | Effort | Best Fix |
@@ -1609,3 +1708,12 @@ contains the offending roles.
 | 48 | `icon_svg_has_wildcard` test tautological | **Low** | Trivial | Replace or delete |
 | 49 | `generate_icons()` limitations undocumented | **Low** | Trivial | Add doc sentence |
 | 50 | `IdentifierCollision` lacks file context | **Medium** | Low | Pass file path to validator |
+| 51 | `include_bytes!` path malformed with absolute base_dir | **Medium** | Low | Skip CARGO_MANIFEST_DIR for absolute paths |
+| 52 | `validate_identifiers` merged loses per-file context | **Medium** | Low | Also run per-file before merge |
+| 53 | DE-aware redundant code when all overrides equal default | **Low** | Trivial | Collapse to simple arm |
+| 57 | Per-file PascalCase collisions lose context | **Medium** | Low | Add PascalCase to per-file validator |
+| 58 | Integration test warning assertions fragile | **Low** | Low | Extract stable prefix |
+| 59 | `UnknownTheme` error lacks source file | **Medium** | Trivial | Run per-file |
+| 61 | Merge ordering not tested | **Low** | Trivial | Add position assertion |
+| 62 | Invisible Unicode passes validation | **Low** | Low | Reject invisible chars |
+| 64 | Default-only DeAware test missing OnceLock assertion | **Low** | Trivial | Add assertion |

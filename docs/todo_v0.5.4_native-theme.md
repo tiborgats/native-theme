@@ -1278,6 +1278,104 @@ Consuming counterpart to `pick_variant()`. No tests verify fallback.
 
 ---
 
+## 14. Preset Color/Radius Issues (Third Pass)
+
+### 14b. Solarized `border` == `surface` (invisible borders)
+
+**File:** `src/presets/solarized.toml:16,214` (light and dark)
+
+Light: `surface = "#eee8d5"`, `border = "#eee8d5"` -- identical.
+Dark: `surface = "#073642"`, `border = "#073642"` -- identical.
+Elements on surface backgrounds have invisible borders.
+
+**Recommended:** Light border -> `#93a1a1` (Base1). Dark border -> `#586e75` (Base01).
+
+### 14c. Solarized `separator.color` == `surface` (invisible separators)
+
+**File:** `src/presets/solarized.toml:150,348`
+
+Same colors as border/surface. Separators are completely invisible.
+
+**Recommended:** Fix alongside 14b.
+
+### 14d. Gruvbox/Solarized/One Dark `radius_lg` == `radius` (no tier distinction)
+
+**Files:** `src/presets/gruvbox.toml:37-38`, `solarized.toml:37-38`, `one-dark.toml:37-38`
+
+All three have `radius = 8.0` and `radius_lg = 8.0`. Dialogs/cards get
+same corners as buttons/inputs, defeating the two-tier radius system.
+
+**Recommended:** Set `radius_lg = 12.0` (consistent with Catppuccin/Nord/Dracula).
+
+---
+
+## 15. Missing Resolve Safety Nets (Third Pass)
+
+### 15b. No resolve rule for `accent_foreground` when missing
+
+**File:** `src/resolve.rs:251-268`
+
+If user theme sets `accent` but omits `accent_foreground`, validation
+fails. Every preset sets it explicitly but minimal themes hit this.
+
+**Recommended:** Default to `#ffffff` in `resolve_safety_nets()`.
+
+### 15c. No resolve safety net for `shadow` color
+
+If omitted, validation fails. Reasonable default: `#00000040`.
+
+### 15d. No resolve safety net for `disabled_foreground`
+
+If omitted, validation fails. Reasonable default: derive from `muted`.
+
+---
+
+## 16. Subtle Code Issues (Third Pass)
+
+### 16c. NaN silently passes all range checks in `validate()`
+
+**File:** `src/resolve.rs:139-165`
+
+`check_range_f32`, `check_positive`, `check_non_negative` all pass NaN
+because `NAN < min` and `NAN > max` are both `false`. A NaN geometry
+field would cause rendering artifacts.
+
+#### Solutions
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Add `value.is_nan()` guard to each check function | Catches NaN; 4 lines | Trivial effort |
+| B | Add single `check_finite()` helper | DRY | One more helper |
+
+**Recommended:** A. Defensive, low cost.
+
+---
+
+## 17. Missing Test Patterns (Third Pass)
+
+### 17a. No test for `merge()` name preservation with empty base name
+
+**File:** `src/model/mod.rs:255-269`
+
+Merge keeps empty base name over non-empty overlay name. No test documents
+this edge case.
+
+### 17b. No test for `accent -> selection -> selection_inactive` derivation chain
+
+**File:** `src/resolve.rs:253-268`
+
+The three-step derivation chain is the most complex internal chain. No test
+verifies it end-to-end.
+
+### 17c. No test for `title_bar_background <- surface` (not `background`)
+
+**File:** `src/resolve.rs:316-318`
+
+Title bar inherits from `surface` while window background inherits from
+`background`. No test documents this distinction.
+
+---
+
 ## Priority Summary
 
 **Note:** Every preset mismatch marked with "Also affects" requires updating BOTH the full preset and the corresponding live preset in lockstep.
@@ -1340,3 +1438,13 @@ Consuming counterpart to `pick_variant()`. No tests verify fallback.
 | 11b | No resolve() rule for button_order | medium | small | Add platform_button_order() |
 | 13a | lint_toml not tested against all presets | low | small | Add regression test |
 | 13b | pick_variant fallback untested | low | trivial | Add fallback tests |
+| 14b | Solarized border == surface (invisible) | medium | trivial | Use distinct palette colors |
+| 14c | Solarized separator == surface (invisible) | medium | trivial | Fix alongside 14b |
+| 14d | Gruvbox/Solarized/OneDark radius_lg == radius | low | trivial | Set radius_lg = 12.0 |
+| 15b | No resolve rule for accent_foreground | medium | trivial | Default to #ffffff |
+| 15c | No resolve safety net for shadow | low | trivial | Default to #00000040 |
+| 15d | No resolve safety net for disabled_foreground | low | trivial | Derive from muted |
+| 16c | NaN passes validate() range checks | medium | trivial | Add is_nan() guard |
+| 17a | merge() name preservation edge case untested | low | trivial | Add test |
+| 17b | accent->selection->selection_inactive chain untested | medium | trivial | Add derivation test |
+| 17c | title_bar_background <- surface distinction untested | low | trivial | Add inheritance test |

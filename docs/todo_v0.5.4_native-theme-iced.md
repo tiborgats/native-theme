@@ -1147,6 +1147,59 @@ defaults. The test should assert exact expected values, not just "different."
 
 ---
 
+## 29. Issue #2/#13 Correction: `warning.base.text` Also Needs Override
+
+**File:** `lib.rs:116-123`
+
+Issue #13 falsely claims iced has no `warning` family. Iced `Extended` HAS
+a `Warning` family. `warning.base.text` gets `d.foreground` from
+auto-generation, should be `d.warning_foreground`.
+
+Issue #2's fix should be 4 `.base.text` overrides (not 8 lines):
+```rust
+ext.primary.base.text   = to_color(accent_foreground);
+ext.success.base.text   = to_color(success_foreground);
+ext.danger.base.text    = to_color(danger_foreground);
+ext.warning.base.text   = to_color(warning_foreground);
+```
+
+Note: `.base.color` overrides are redundant -- already correct via palette.
+
+---
+
+## 30. Showcase Drops Alpha Channel in Resolved Color Swatches
+
+**File:** `examples/showcase.rs:2760-2761`
+
+`Color::from_rgb(cr, cg, cb)` discards alpha. Colors with meaningful alpha
+(e.g., `shadow` ~0.3) display fully opaque.
+
+**Recommended:** Use `Color::from_rgba(cr, cg, cb, a)`.
+
+---
+
+## 34. No Tripwire Test for Iced Palette/Extended Field Count
+
+**File:** `lib.rs` tests
+
+The gpui connector has a `theme_color_field_count_tripwire` test. The iced
+connector has no equivalent. Upstream palette additions go undetected.
+
+**Recommended:** Add `size_of::<Palette>() / size_of::<Color>() == 6`.
+
+---
+
+## 35. Showcase `_ => false` Catch-All in Icon Set Availability
+
+**File:** `examples/showcase.rs:301`
+
+`_ => false` silently treats any future `IconSet` variant as unavailable,
+defeating compiler exhaustiveness checking.
+
+**Recommended:** Use explicit match arms for all 5 `IconSet` variants.
+
+---
+
 ## Summary: Priority Order
 
 | # | Issue | Severity | Effort | Recommended Fix |
@@ -1178,3 +1231,7 @@ defaults. The test should assert exact expected values, not just "different."
 | 26 | `color_swatch()` hardcoded border values | Low | Low | Derive from resolved theme |
 | 27 | ~65 hardcoded spacing in tab content (extends #17) | Low | High | Apply spacing scale |
 | 28 | Missing tests for fill hex patterns | Low | Trivial | Add 2 pattern tests |
+| 29 | Issue #2/#13 correction: warning.base.text needs override | Medium | Trivial | Add 4th .base.text override |
+| 30 | Showcase drops alpha in resolved color swatches | Low | Trivial | Use `from_rgba` |
+| 34 | No Palette/Extended field count tripwire test | Low | Trivial | Add size_of assertion |
+| 35 | Showcase `_ => false` defeats exhaustiveness | Very Low | Trivial | Explicit match arms |

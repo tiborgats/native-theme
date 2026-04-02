@@ -2057,6 +2057,74 @@ just "testing light mode" -- it is testing a different preset entirely.
 
 ---
 
+## 51. Switch ON State Uses `tc.primary` Instead of `resolved.switch.checked_background`
+
+**File:** `colors.rs:285-286`
+
+gpui-component `switch.rs:97-98` hardcodes `cx.theme().primary` for the
+checked track. Theme authors cannot independently control switch ON color.
+The connector maps `tc.primary` from `button.primary_background`, not from
+`resolved.switch.checked_background`.
+
+**Recommended:** Override `tc.primary` with `resolved.switch.checked_background`
+would fix switch but break primary buttons. Document as a gpui-component
+limitation and propose upstream split of primary vs switch-checked.
+
+---
+
+## 52. `active_color()` Produces Indistinguishable Results on Near-Black Themes
+
+**File:** `derive.rs:27-29`
+
+`active_color()` darkens via `l * (1.0 - factor)`. When base lightness is
+near zero (l < 0.15), the result is visually identical to the base. Affects
+all 8 `_active` ThemeColor fields on dark themes with near-black accents.
+
+#### Solutions
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Add minimum lightness delta: `l = (l * (1.0 - factor)).min(l - 0.05)` | Always-visible state change | May push below 0.0 (needs clamp) |
+| B | Switch to additive darkening for very dark colors | Consistent contrast | More complex |
+
+**Recommended:** A with clamp to 0.0.
+
+---
+
+## 53. `Theme.transparent` Never Explicitly Set
+
+**File:** `lib.rs:96-123`
+
+`Theme.transparent` relies on `Hsla::default()` from `Theme::from()`.
+Doc at lib.rs:92-94 claims "all Theme fields are set explicitly."
+
+**Recommended:** Add comment clarifying `transparent` is intentionally
+defaulted, or set it explicitly.
+
+---
+
+## 57. Showcase NaN Propagation From NumberInput
+
+**File:** `examples/showcase.rs:1203-1204`
+
+Typing "NaN" or "Infinity" into NumberInput causes permanent NaN
+propagation. `f64::from_str` succeeds on these strings.
+
+**Recommended:** Reject non-finite values in the input handler.
+
+---
+
+## 58. Dark Theme 20% Active Darkening vs 10% Light Is Counterproductive
+
+**File:** `derive.rs:22-24`
+
+On dark themes, 20% darkening reduces contrast against the dark background
+more aggressively than light theme's 10%. Matches upstream gpui-component.
+
+**Recommended:** Document rationale for v0.5.4.
+
+---
+
 ## Priority Summary
 
 | # | Issue | Severity | Effort | Best Fix |
@@ -2110,3 +2178,460 @@ just "testing light mode" -- it is testing a different preset entirely.
 | 47 | `mono_font_weight()` helper missing | **Low** | Trivial | Add helper (+ expand #13) |
 | 48 | `DialogButtonOrder` not re-exported | **Low** | Trivial | Add re-export + helper |
 | 49 | `from_system()` resolves both variants, wastes one | **Low** | Trivial | Document cost |
+| 51 | Switch ON uses `tc.primary` not `switch.checked_background` | **Medium** | N/A | gpui-component limitation; document |
+| 52 | `active_color()` indistinguishable on near-black themes | **Medium** | Trivial | Add minimum lightness delta + clamp |
+| 53 | `Theme.transparent` never explicitly set | **Negligible** | Trivial | Add comment |
+| 57 | Showcase NaN propagation from NumberInput | **Low** | Trivial | Reject non-finite values |
+| 58 | Dark theme 20% active darkening counterproductive | **Low** | Trivial | Document rationale |
+| 50 | `test_resolved()` tests wrong preset's colors | **High** | Trivial | Fix `into_variant(true)` |
+
+---
+
+## Third-Pass Findings (51--58)
+
+---
+
+## 51. Switch Checked State Ignores `switch.checked_background`
+
+**File:** `colors.rs:285-286`
+
+```rust
+tc.switch = rgba_to_hsla(resolved.switch.unchecked_background);
+tc.switch_thumb = rgba_to_hsla(resolved.switch.thumb_background);
+```
+
+gpui-component's switch rendering (switch.rs:97-98) uses:
+- **Checked (ON):** `cx.theme().primary` as the track background
+- **Unchecked (OFF):** `cx.theme().switch` as the track background
+
+The connector correctly maps `tc.switch` from `resolved.switch.unchecked_background`.
+But the checked/ON state uses `tc.primary`, which is mapped from
+`resolved.button.primary_background` (colors.rs:89) -- NOT from
+`resolved.switch.checked_background`.
+
+`ResolvedSwitchTheme` (widgets/mod.rs:477-484) has an explicit
+`checked_background: Rgba` field that theme authors set to control the
+switch ON color. This field is resolved, validated, and present in every
+preset's TOML -- but the connector never reads it.
+
+**Impact:** Theme authors who set `switch.checked_background` to a color
+different from `button.primary_background` (e.g., a green "active" color
+vs a blue "primary" button color) see the wrong ON color. The switch always
+uses the button primary color instead of its own checked background.
+
+### Solutions
+
+#### A. Set `tc.primary` from `switch.checked_background` when they differ? -- NOT viable
+
+This would break all primary button colors just to fix the switch. The
+underlying problem is gpui-component hardcodes `primary` as the checked
+track color -- there is no separate `switch_checked` ThemeColor field.
+
+#### B. Document the limitation (recommended for v0.5.4)
+
+Add a comment in `assign_misc()` explaining that gpui-component's Switch
+uses `tc.primary` for the checked state, so `switch.checked_background`
+cannot be independently mapped. Theme authors should set
+`button.primary_background` to their desired switch-ON color, or accept
+that the switch ON color matches the primary button.
+
+```rust
+// gpui-component Switch uses tc.primary for the checked (ON) track,
+// so resolved.switch.checked_background cannot be mapped independently.
+// The ON color is controlled by button.primary_background / d.accent.
+tc.switch = rgba_to_hsla(resolved.switch.unchecked_background);
+tc.switch_thumb = rgba_to_hsla(resolved.switch.thumb_background);
+```
+
+| Pros | Cons |
+|------|------|
+| Honest documentation | No functional change |
+| No risk of breaking primary | Theme authors lose independent switch color |
+
+#### C. Request `switch_checked` field in gpui-component upstream
+
+| Pros | Cons |
+|------|------|
+| Fixes the root cause | Upstream dependency, unknown timeline |
+
+**Best solution: B now, C long-term.** Document the limitation so theme
+authors understand the constraint, and file an upstream issue for a
+dedicated `switch_checked` ThemeColor field.
+
+---
+
+## 52. `active_color()` Darkens Already-Black Colors to Black (No Visual Feedback)
+
+**File:** `derive.rs:27-29`
+
+```rust
+pub fn active_color(base: Hsla, is_dark: bool) -> Hsla {
+    let factor = if is_dark { 0.2 } else { 0.1 };
+    base.darken(factor)
+}
+```
+
+`Colorize::darken` (gpui-component color.rs:94-98) computes `l = self.l * (1.0 - factor)`.
+When the base color's lightness is already very low (e.g., `l = 0.05` for a near-black
+button on a dark theme), darkening by 20% yields `l = 0.04` -- visually
+indistinguishable. The active state provides zero visual feedback.
+
+Similarly, `hover_color(base, bg)` blends the base at 0.9 opacity onto bg.
+On a dark theme where both base and bg have low lightness, the hover state
+is also indistinguishable from the base.
+
+This affects all 8 `_active` fields (primary, secondary, danger, success,
+warning, info, link, accordion) and all corresponding hover fields when
+the theme uses very dark base colors.
+
+**Impact:** Dark themes with near-black button/accent colors (e.g., some
+industrial/minimal themes) get no visual feedback on hover or click.
+
+### Solutions
+
+#### A. Lighten instead of darken when base is already dark (recommended)
+
+```rust
+pub fn active_color(base: Hsla, is_dark: bool) -> Hsla {
+    if base.l < 0.15 {
+        // Already very dark: lighten instead of darken for visible feedback
+        Hsla { l: base.l + 0.08, ..base }
+    } else {
+        let factor = if is_dark { 0.2 } else { 0.1 };
+        base.darken(factor)
+    }
+}
+```
+
+| Pros | Cons |
+|------|------|
+| Visible active state on all themes | Additional branch |
+| Preserves normal behavior for typical colors | Threshold is somewhat arbitrary |
+| Same pattern as "_light" fix (issue #3) | |
+
+#### B. Use mix toward mid-gray instead of darken
+
+```rust
+base.mix(Hsla { h: base.h, s: base.s, l: 0.3, a: base.a }, 0.3)
+```
+
+| Pros | Cons |
+|------|------|
+| Always moves toward a visible tone | May look odd for very dark themes |
+
+#### C. Keep current behavior
+
+| Pros | Cons |
+|------|------|
+| No change | No visual feedback on near-black themes |
+| Simple | |
+
+**Best solution: A.** A lightness threshold with inverse direction ensures
+visual feedback without changing behavior for the vast majority of themes
+where base lightness is in the normal range.
+
+---
+
+## 53. `Theme.transparent` Field Never Set -- Gets `Hsla::default()` (Transparent Black)
+
+**File:** `lib.rs:96-123`, gpui-component `theme/mod.rs:67`
+
+gpui-component's `Theme` struct has a `pub transparent: Hsla` field (mod.rs:67).
+The connector's `to_theme()` builds the theme via `Theme::from(&theme_color)` and
+then explicitly sets `mode`, `font_family`, `font_size`, `mono_font_family`,
+`mono_font_size`, `radius`, `radius_lg`, and `shadow` -- but never touches
+`transparent`.
+
+`Theme::from(&ThemeColor)` sets `transparent` from `ThemeColor::default()`, which
+is `Hsla::default()` -- transparent black `(h:0, s:0, l:0, a:0)`. This is actually
+correct for its purpose (a fully transparent color), but it's the only `Theme`-level
+field that is never explicitly set by the connector. If a future gpui-component
+version changes the default, the connector would silently pick up the wrong value.
+
+**Severity:** Negligible -- the default is correct. But this is an inconsistency in
+the "all Theme fields are set explicitly" claim in the doc comment at lib.rs:92-94.
+
+### Solutions
+
+#### A. Explicitly set `theme.transparent = gpui::transparent_black()` (recommended)
+
+```rust
+theme.transparent = gpui::transparent_black();
+```
+
+| Pros | Cons |
+|------|------|
+| Matches the doc comment's claim | One line |
+| Immune to upstream default changes | |
+
+#### B. Fix the doc comment to exclude `transparent`
+
+| Pros | Cons |
+|------|------|
+| Accurate documentation | Leaves implicit dependency |
+
+**Best solution: A.** One line, future-proof.
+
+---
+
+## 54. BMP Encoder Has Redundant BGRA Conversion Comment
+
+**File:** `icons.rs:1081-1084`
+
+```rust
+// Channel masks (RGBA -> BGRA in BMP, but we use BI_BITFIELDS to specify layout)
+buf.extend_from_slice(&0x00FF0000u32.to_le_bytes()); // red mask
+buf.extend_from_slice(&0x0000FF00u32.to_le_bytes()); // green mask
+buf.extend_from_slice(&0x000000FFu32.to_le_bytes()); // blue mask
+buf.extend_from_slice(&0xFF000000u32.to_le_bytes()); // alpha mask
+```
+
+The comment says "RGBA -> BGRA in BMP, but we use BI_BITFIELDS" suggesting the
+masks handle the swizzle. But the code ALSO does manual BGRA conversion in the
+pixel loop at lines 1098-1104:
+
+```rust
+buf.push(pixel[2]); // B
+buf.push(pixel[1]); // G
+buf.push(pixel[0]); // R
+buf.push(pixel[3]); // A
+```
+
+The channel masks say: red is at byte offset 2 (`0x00FF0000`), green at 1
+(`0x0000FF00`), blue at 0 (`0x000000FF`). But the manual BGRA conversion
+already writes blue to offset 0, green to 1, red to 2. So the masks describe
+the already-swizzled data correctly.
+
+However, if someone reads the comment "but we use BI_BITFIELDS to specify layout"
+they might think the masks handle the swizzle and remove the manual conversion
+in the pixel loop -- which would break the output. The comment is misleading.
+
+### Solutions
+
+#### A. Fix the comment to clarify both steps are needed (recommended)
+
+```rust
+// BI_BITFIELDS channel masks: describe the byte layout of BGRA pixel data.
+// The pixel loop below manually swizzles RGBA to BGRA; these masks tell
+// the BMP reader where each channel lives in the swizzled output.
+```
+
+| Pros | Cons |
+|------|------|
+| Prevents future maintainer from removing pixel swizzle | Trivial change |
+
+**Best solution: A.**
+
+---
+
+## 55. `role_for_gpui_icon()` in Showcase Missing `StatusError` Reverse Mapping
+
+**File:** `showcase.rs:323-356` (`role_for_gpui_icon()`)
+
+The reverse-lookup table maps gpui-component icon names back to `IconRole`.
+`"CircleX"` maps to `Some(IconRole::DialogError)` (line 328). But the
+forward mapping in `icon_name()` (icons.rs:113) also maps
+`IconRole::StatusError => IconName::CircleX`.
+
+The reverse lookup is used to decide which icons get loaded from
+native-theme. Since `CircleX` -> `DialogError` only, when the showcase
+renders the `CircleX` row in the gpui icon gallery, it loads the
+`DialogError` role icon. But the user might expect to see the
+`StatusError` role's icon for that same `CircleX` slot.
+
+This is arguably not a bug (existing issue #46 documents the
+forward-mapping overlap), but the reverse lookup silently picks one role
+over another without documentation. The showcase displays "DialogError"
+as the role for `CircleX` even though `StatusError` would also be valid.
+
+**Impact:** Showcase-only (no production impact). Minor UX confusion.
+
+### Solutions
+
+#### A. Add comment to `role_for_gpui_icon()` explaining the ambiguity (recommended)
+
+```rust
+// CircleX maps to both DialogError and StatusError in the forward mapping.
+// We prefer DialogError as the reverse lookup result since it's the
+// more common use case for the gpui-component CircleX icon.
+"CircleX" => Some(IconRole::DialogError),
+```
+
+| Pros | Cons |
+|------|------|
+| Documents the choice | No functional change |
+
+**Best solution: A.** Same treatment as issues #33 and #46.
+
+---
+
+## 56. Showcase `load_gpui_icons()` Calls `load_icon()` Redundantly for Material Fallback Detection
+
+**File:** `showcase.rs:538-549`
+
+```rust
+Some(IconData::Svg(loaded)) => {
+    let mat = load_icon(r, IconSet::Material);
+    if let Some(IconData::Svg(mat_bytes)) = &mat {
+        if loaded == mat_bytes {
+            IconSource::Fallback
+        } else {
+            IconSource::System
+        }
+    } else {
+        IconSource::System
+    }
+}
+```
+
+For EVERY icon in the system set, this calls `load_icon(r, IconSet::Material)` to
+compare bytes and detect whether the result is a bundled fallback. This is 42
+Material icon loads per call to `load_gpui_icons()`, happening every time the icon
+set changes. Compare with `load_all_icons()` (showcase.rs:244-255) which pre-loads
+all Material icons once in a batch.
+
+**Impact:** Showcase-only performance. Each icon set switch triggers 42+86=128
+unnecessary Material icon loads in `load_gpui_icons` (42 with roles + 86 total,
+some overlap). On fast systems this is <100ms, but on slow I/O it can stutter.
+
+### Solutions
+
+#### A. Pre-load Material icons once and pass as parameter (recommended)
+
+```rust
+fn load_gpui_icons(
+    icon_set: Option<IconSet>,
+    default_theme: Option<&str>,
+    cli_override: Option<&str>,
+    material_cache: &[Option<IconData>],  // pre-loaded material icons
+) -> Vec<IconEntry> {
+```
+
+| Pros | Cons |
+|------|------|
+| Eliminates 42 redundant loads per call | Requires passing pre-loaded data |
+| Consistent with `load_all_icons` pattern | |
+
+#### B. Keep current (acceptable for showcase)
+
+| Pros | Cons |
+|------|------|
+| Showcase-only, not production | Stutters on slow I/O |
+
+**Best solution: A for polish, B is acceptable.**
+
+---
+
+## 57. Showcase `number_input_state` Handler Uses `f64::parse` Without NaN/Inf Guard
+
+**File:** `showcase.rs:1203-1204`
+
+```rust
+let value = input.value();
+let num: f64 = value.parse().unwrap_or(0.0);
+```
+
+If a user types "NaN" or "Infinity" into the number input, `f64::parse`
+succeeds (Rust's `f64::from_str` accepts these). Then:
+```rust
+let new_value = if *action == StepAction::Increment {
+    num + 1.0  // NaN + 1.0 = NaN
+} else {
+    num - 1.0  // NaN - 1.0 = NaN
+};
+input.set_value(SharedString::from(new_value.to_string()), window, cx);
+```
+
+The input permanently displays "NaN" -- subsequent increment/decrement
+operations are no-ops because NaN propagates. The only escape is to
+manually clear and retype a number.
+
+**Impact:** Showcase-only, but demonstrates poor NumberInput integration
+to users copying the example pattern.
+
+### Solutions
+
+#### A. Guard against non-finite values (recommended)
+
+```rust
+let num: f64 = value.parse().unwrap_or(0.0);
+let num = if num.is_finite() { num } else { 0.0 };
+```
+
+| Pros | Cons |
+|------|------|
+| NaN/Inf resets to 0 | Silently discards edge values |
+| One-line fix | |
+
+**Best solution: A.**
+
+---
+
+## 58. `Colorize::darken` Doc Mismatch -- Active Color Direction Inverted for Dark Themes
+
+**File:** `derive.rs:22-24`
+
+```rust
+/// For light themes (is_dark=false): darkens by 10%.
+/// For dark themes (is_dark=true): darkens by 20%.
+```
+
+The doc says dark themes darken MORE (20% vs 10%). But on dark themes,
+darkening the already-dark active state makes it LESS visible (closer to
+the dark background), not more. This is the opposite of the expected UX
+where active states should be MORE distinct.
+
+gpui-component's own `apply_config` uses the same darkening approach, so
+the connector matches upstream. But the design choice itself is questionable:
+on a dark theme with `primary.l = 0.4`, active becomes `0.4 * 0.8 = 0.32`,
+moving it TOWARD the dark background (l~0.1) and reducing contrast. On a
+light theme with the same primary, active becomes `0.4 * 0.9 = 0.36`,
+also moving toward the background (l~0.95) -- but the light background is
+so far away that contrast is still fine.
+
+The asymmetry (20% dark vs 10% light) amplifies this problem on dark themes.
+
+This compounds with issue #52 (already-near-black colors get invisible).
+
+### Solutions
+
+#### A. Document the upstream rationale (recommended for v0.5.4)
+
+```rust
+/// For dark themes (is_dark=true): darkens by 20%.
+///
+/// NOTE: This matches gpui-component's apply_config derivation.
+/// On dark themes, 20% darkening reduces contrast with the dark background
+/// more than 10% on light themes. For near-black base colors (l < 0.15),
+/// consider issue #52's lightening approach.
+```
+
+| Pros | Cons |
+|------|------|
+| Honest documentation | No behavioral fix |
+| Explains the upstream constraint | |
+
+#### B. Invert direction on dark themes (lighten instead of darken)
+
+| Pros | Cons |
+|------|------|
+| Better contrast on dark themes | Diverges from gpui-component behavior |
+| More accessible | May look wrong to users expecting upstream behavior |
+
+**Best solution: A for v0.5.4** (matches upstream). Consider B for v0.6.0
+alongside a discussion with the gpui-component maintainers.
+
+---
+
+## Updated Priority Summary (Third Pass Additions)
+
+| # | Issue | Severity | Effort | Best Fix |
+|---|-------|----------|--------|----------|
+| 51 | Switch checked state ignores `switch.checked_background` | **Medium** | Trivial | Document limitation + upstream issue |
+| 52 | `active_color()` invisible on near-black base colors | **Medium** | Low | Lighten instead of darken below threshold |
+| 53 | `Theme.transparent` never explicitly set | **Negligible** | Trivial | Set `transparent = transparent_black()` |
+| 54 | BMP encoder comment misleading about BGRA swizzle | **Negligible** | Trivial | Fix comment |
+| 55 | Showcase `role_for_gpui_icon()` ambiguous reverse mapping | **Negligible** | Trivial | Add comment |
+| 56 | Showcase redundant Material loads in `load_gpui_icons()` | **Low** | Low | Pre-load and pass material cache |
+| 57 | Showcase NumberInput NaN/Infinity trap | **Low** | Trivial | Guard `is_finite()` |
+| 58 | `active_color` darkens toward bg on dark themes (design concern) | **Low** | Trivial | Document upstream rationale |
