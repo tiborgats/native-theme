@@ -28,10 +28,7 @@ const RUST_KEYWORDS: [&str; 38] = [
 ///
 /// When `file_hint` is `Some`, it is included in the error for per-file context.
 /// Pass `None` when validating a merged config where per-file context is lost.
-pub(crate) fn validate_themes(
-    config: &MasterConfig,
-    file_hint: Option<&str>,
-) -> Vec<BuildError> {
+pub(crate) fn validate_themes(config: &MasterConfig, file_hint: Option<&str>) -> Vec<BuildError> {
     config
         .bundled_themes
         .iter()
@@ -170,6 +167,30 @@ pub(crate) fn check_orphan_svgs(
             }
         };
         let path = entry.path();
+
+        // Issue 44: Warn about symlinks pointing outside the theme directory.
+        // Use symlink_metadata to detect symlinks without following them.
+        if let Ok(meta) = fs::symlink_metadata(&path)
+            && meta.file_type().is_symlink()
+            && let Ok(target) = fs::read_link(&path)
+        {
+            let resolved = if target.is_absolute() {
+                target.clone()
+            } else {
+                path.parent().unwrap_or(Path::new(".")).join(&target)
+            };
+            if !resolved.starts_with(theme_dir) {
+                let file_name = path
+                    .file_name()
+                    .map(|n| n.to_string_lossy())
+                    .unwrap_or_else(|| std::borrow::Cow::Borrowed("unknown"));
+                warnings.push(format!(
+                    "SVG symlink {file_name} in {theme_name} points outside the theme directory: {}",
+                    target.display()
+                ));
+            }
+        }
+
         // path.extension() works on the path string (not the filesystem),
         // so symlinked SVGs are correctly detected by extension check alone.
         if path.extension().and_then(|e| e.to_str()) == Some("svg")

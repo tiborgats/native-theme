@@ -674,6 +674,14 @@ fn run_pipeline(
         // Check for duplicate theme names within the same list
         let dup_theme_errors = validate::validate_no_duplicate_themes(config);
         errors.extend(dup_theme_errors);
+
+        // Per-file identifier validation (provides file context for collisions)
+        let file_id_errors = validate::validate_identifiers(config, Some(file_path));
+        errors.extend(file_id_errors);
+
+        // Per-file theme validation (provides file context for unknown themes)
+        let file_theme_errors = validate::validate_themes(config, Some(file_path));
+        errors.extend(file_theme_errors);
     }
 
     // Step 1: Check for duplicate roles across all files
@@ -735,8 +743,9 @@ fn run_pipeline(
         }
     }
 
-    // Step 2b: Validate identifiers (enum name + role names)
-    // Per-file context lost after merge — source_file will be None here.
+    // Step 2b: Validate identifiers on merged config (catches cross-file collisions).
+    // Per-file validation above provides file context for within-file collisions;
+    // this merged call catches collisions between roles from different files.
     let id_errors = validate::validate_identifiers(&merged, None);
     errors.extend(id_errors);
 
@@ -745,8 +754,9 @@ fn run_pipeline(
         rerun_paths.push(PathBuf::from(file_path));
     }
 
-    // Validate theme names on the merged config
-    // Per-file context lost after merge — source_file will be None here.
+    // Validate theme names on the merged config (catches cross-file theme issues).
+    // Per-file validation above provides file context for per-file unknown themes;
+    // this merged call validates the combined theme lists after merge.
     let theme_errors = validate::validate_themes(&merged, None);
     errors.extend(theme_errors);
 

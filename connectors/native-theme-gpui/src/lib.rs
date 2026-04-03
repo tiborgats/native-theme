@@ -137,8 +137,11 @@ pub fn to_theme(resolved: &ResolvedThemeVariant, name: &str, is_dark: bool) -> T
     theme.shadow = d.shadow_enabled;
 
     // Issue 43: set scrollbar_show from resolved overlay_mode
-    // highlight_theme is left at ThemeConfig default — gpui-component's syntax
-    // highlighting colors require a separate HighlightTheme mapping (v0.6.0).
+    // ThemeConfig.highlight requires syntax highlighting colors (keyword, string,
+    // comment, type, function, etc. — ~35 SyntaxColors + ~15 StatusColors fields)
+    // which native-theme's ResolvedThemeVariant does not include. These are
+    // editor-specific and cannot be derived from platform UI theme colors.
+    // Users should set highlight separately via gpui-component's HighlightTheme API.
     theme.scrollbar_show = if resolved.scrollbar.overlay_mode {
         ScrollbarShow::Scrolling
     } else {

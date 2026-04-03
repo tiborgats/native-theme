@@ -19,8 +19,13 @@ use crate::colors::{hsla_to_hex, to_theme_color};
 /// Also populates the `colors` field with all 108 ThemeColor fields converted
 /// to hex strings, so the config can be serialized/deserialized losslessly.
 ///
-/// Fields not explicitly set inherit from `ThemeConfig::default()`. The `is_default`
-/// field is intentionally left at its default value.
+/// Fields not explicitly set inherit from `ThemeConfig::default()`.
+///
+/// `highlight` (syntax highlighting) is left at None because it requires ~35
+/// syntax token colors (keyword, string, comment, type, function, etc.) plus ~15
+/// status colors that are editor-specific and not present in native-theme's
+/// `ResolvedThemeVariant`. Users should set it separately via gpui-component's
+/// `HighlightTheme` API.
 pub fn to_theme_config(
     resolved: &ResolvedThemeVariant,
     name: &str,
@@ -53,6 +58,9 @@ pub fn to_theme_config(
 
         colors,
 
+        // highlight: None — syntax highlighting colors (keyword, string, comment,
+        // type, etc.) are editor-specific and not in ResolvedThemeVariant.
+        // Users should set highlight separately via gpui-component's HighlightTheme API.
         ..ThemeConfig::default()
     }
 }

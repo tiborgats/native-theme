@@ -146,10 +146,7 @@ impl fmt::Display for BuildError {
                     "unknown role \"{role}\" in {mapping_file} (not declared in master TOML)"
                 )
             }
-            Self::UnknownTheme {
-                theme,
-                source_file,
-            } => {
+            Self::UnknownTheme { theme, source_file } => {
                 let expected: Vec<&str> = THEME_TABLE.iter().map(|(k, _)| *k).collect();
                 let list = expected.join(", ");
                 write!(f, "unknown theme \"{theme}\" (expected one of: {list})")?;
@@ -270,7 +267,10 @@ impl std::error::Error for BuildErrors {}
 impl BuildErrors {
     /// Create a `BuildErrors` from a `Vec<BuildError>`.
     pub(crate) fn new(errors: Vec<BuildError>) -> Self {
-        debug_assert!(!errors.is_empty(), "BuildErrors created with empty error list");
+        debug_assert!(
+            !errors.is_empty(),
+            "BuildErrors created with empty error list"
+        );
         Self {
             errors,
             rerun_paths: Vec::new(),
@@ -347,5 +347,61 @@ impl<'a> IntoIterator for &'a BuildErrors {
 
     fn into_iter(self) -> Self::IntoIter {
         self.errors.iter()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn build_errors_is_empty_and_len() {
+        let errors = BuildErrors::new(vec![BuildError::Io {
+            message: "test".into(),
+        }]);
+        assert!(!errors.is_empty());
+        assert_eq!(errors.len(), 1);
+    }
+
+    #[test]
+    fn build_errors_len_multiple() {
+        let errors = BuildErrors::new(vec![
+            BuildError::Io {
+                message: "first".into(),
+            },
+            BuildError::Io {
+                message: "second".into(),
+            },
+        ]);
+        assert!(!errors.is_empty());
+        assert_eq!(errors.len(), 2);
+    }
+
+    #[test]
+    fn build_errors_display_shows_count() {
+        let errors = BuildErrors::new(vec![BuildError::Io {
+            message: "oops".into(),
+        }]);
+        let display = format!("{errors}");
+        assert!(display.contains("1 build error(s)"));
+        assert!(display.contains("oops"));
+    }
+
+    #[test]
+    fn build_errors_into_iter() {
+        let errors = BuildErrors::new(vec![BuildError::Io {
+            message: "iter".into(),
+        }]);
+        let collected: Vec<BuildError> = errors.into_iter().collect();
+        assert_eq!(collected.len(), 1);
+    }
+
+    #[test]
+    fn build_errors_ref_iter() {
+        let errors = BuildErrors::new(vec![BuildError::Io {
+            message: "ref".into(),
+        }]);
+        let collected: Vec<&BuildError> = (&errors).into_iter().collect();
+        assert_eq!(collected.len(), 1);
     }
 }

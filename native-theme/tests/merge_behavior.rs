@@ -211,10 +211,241 @@ fn merge_chained_multiple_overlays() {
 
 #[test]
 fn is_empty_all_structs() {
+    // Core structs
+    assert!(ThemeSpec::default().is_empty());
+    assert!(ThemeVariant::default().is_empty());
     assert!(ThemeDefaults::default().is_empty());
     assert!(FontSpec::default().is_empty());
     assert!(ThemeSpacing::default().is_empty());
-    assert!(ThemeVariant::default().is_empty());
+    assert!(IconSizes::default().is_empty());
+    assert!(TextScaleEntry::default().is_empty());
+    assert!(TextScale::default().is_empty());
+
+    // All 25 widget theme structs
+    assert!(WindowTheme::default().is_empty());
+    assert!(ButtonTheme::default().is_empty());
+    assert!(InputTheme::default().is_empty());
+    assert!(CheckboxTheme::default().is_empty());
+    assert!(MenuTheme::default().is_empty());
+    assert!(TooltipTheme::default().is_empty());
+    assert!(ScrollbarTheme::default().is_empty());
+    assert!(SliderTheme::default().is_empty());
+    assert!(ProgressBarTheme::default().is_empty());
+    assert!(TabTheme::default().is_empty());
+    assert!(SidebarTheme::default().is_empty());
+    assert!(ToolbarTheme::default().is_empty());
+    assert!(StatusBarTheme::default().is_empty());
+    assert!(ListTheme::default().is_empty());
+    assert!(PopoverTheme::default().is_empty());
+    assert!(SplitterTheme::default().is_empty());
+    assert!(SeparatorTheme::default().is_empty());
+    assert!(SwitchTheme::default().is_empty());
+    assert!(DialogTheme::default().is_empty());
+    assert!(SpinnerTheme::default().is_empty());
+    assert!(ComboBoxTheme::default().is_empty());
+    assert!(SegmentedControlTheme::default().is_empty());
+    assert!(CardTheme::default().is_empty());
+    assert!(ExpanderTheme::default().is_empty());
+    assert!(LinkTheme::default().is_empty());
+}
+
+#[test]
+fn is_empty_false_after_setting_field() {
+    // Core structs
+    let spec = ThemeSpec {
+        light: Some(ThemeVariant::default()),
+        ..Default::default()
+    };
+    assert!(!spec.is_empty());
+
+    let mut variant = ThemeVariant::default();
+    variant.defaults.background = Some(Rgba::rgb(0, 0, 0));
+    assert!(!variant.is_empty());
+
+    let defaults = ThemeDefaults {
+        background: Some(Rgba::rgb(0, 0, 0)),
+        ..Default::default()
+    };
+    assert!(!defaults.is_empty());
+
+    let font = FontSpec {
+        family: Some("Inter".into()),
+        ..Default::default()
+    };
+    assert!(!font.is_empty());
+
+    let spacing = ThemeSpacing {
+        m: Some(12.0),
+        ..Default::default()
+    };
+    assert!(!spacing.is_empty());
+
+    let icons = IconSizes {
+        toolbar: Some(24.0),
+        ..Default::default()
+    };
+    assert!(!icons.is_empty());
+
+    let tse = TextScaleEntry {
+        size: Some(14.0),
+        ..Default::default()
+    };
+    assert!(!tse.is_empty());
+
+    let ts = TextScale {
+        caption: Some(TextScaleEntry::default()),
+        ..Default::default()
+    };
+    assert!(!ts.is_empty());
+
+    // All 25 widget theme structs
+    let w = WindowTheme {
+        background: Some(Rgba::rgb(0, 0, 0)),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = ButtonTheme {
+        background: Some(Rgba::rgb(0, 0, 0)),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = InputTheme {
+        background: Some(Rgba::rgb(0, 0, 0)),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = CheckboxTheme {
+        checked_background: Some(Rgba::rgb(0, 0, 0)),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = MenuTheme {
+        background: Some(Rgba::rgb(0, 0, 0)),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = TooltipTheme {
+        background: Some(Rgba::rgb(0, 0, 0)),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = ScrollbarTheme {
+        track: Some(Rgba::rgb(0, 0, 0)),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = SliderTheme {
+        fill: Some(Rgba::rgb(0, 0, 0)),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = ProgressBarTheme {
+        fill: Some(Rgba::rgb(0, 0, 0)),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = TabTheme {
+        background: Some(Rgba::rgb(0, 0, 0)),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = SidebarTheme {
+        background: Some(Rgba::rgb(0, 0, 0)),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = ToolbarTheme {
+        height: Some(48.0),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = StatusBarTheme {
+        font: Some(FontSpec {
+            size: Some(12.0),
+            ..Default::default()
+        }),
+    };
+    assert!(!w.is_empty());
+
+    let w = ListTheme {
+        background: Some(Rgba::rgb(0, 0, 0)),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = PopoverTheme {
+        background: Some(Rgba::rgb(0, 0, 0)),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = SplitterTheme { width: Some(4.0) };
+    assert!(!w.is_empty());
+
+    let w = SeparatorTheme {
+        color: Some(Rgba::rgb(0, 0, 0)),
+    };
+    assert!(!w.is_empty());
+
+    let w = SwitchTheme {
+        checked_background: Some(Rgba::rgb(0, 0, 0)),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = DialogTheme {
+        min_width: Some(400.0),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = SpinnerTheme {
+        fill: Some(Rgba::rgb(0, 0, 0)),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = ComboBoxTheme {
+        min_height: Some(32.0),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = SegmentedControlTheme {
+        segment_height: Some(28.0),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = CardTheme {
+        background: Some(Rgba::rgb(0, 0, 0)),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = ExpanderTheme {
+        header_height: Some(40.0),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
+
+    let w = LinkTheme {
+        color: Some(Rgba::rgb(0, 0, 255)),
+        ..Default::default()
+    };
+    assert!(!w.is_empty());
 }
 
 // ---------------------------------------------------------------------------

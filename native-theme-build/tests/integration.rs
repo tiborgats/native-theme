@@ -205,7 +205,8 @@ bundled-themes = ["material"]
 
     let errors = result.unwrap_err();
     assert!(!errors.is_empty(), "should have errors");
-    // Expected variant: BuildError::MissingRole { role: "skip-forward", .. }
+    // Expected: BuildError::MissingRole { role: "skip-forward", mapping_file: "..." }
+    // Using .contains() because BuildError fields are not publicly matchable.
     assert!(
         errors
             .errors()
@@ -246,7 +247,8 @@ bundled-themes = ["material"]
 
     let errors = result.unwrap_err();
     assert!(!errors.is_empty(), "should have errors");
-    // Expected variant: BuildError::UnknownRole { role: "bluetooth", .. }
+    // Expected: BuildError::UnknownRole { role: "bluetooth", mapping_file: "..." }
+    // Using .contains() because BuildError fields are not publicly matchable.
     assert!(
         errors
             .errors()
@@ -287,7 +289,8 @@ bundled-themes = ["material"]
 
     let errors = result.unwrap_err();
     assert!(!errors.is_empty(), "should have errors");
-    // Expected variant: BuildError::MissingSvg { path: "...skip_next.svg" }
+    // Expected: BuildError::MissingSvg { path: "...skip_next.svg" }
+    // Using .contains() because BuildError fields are not publicly matchable.
     assert!(
         errors
             .errors()
@@ -357,7 +360,10 @@ bundled-themes = ["material"]
 
     // #61: Roles from the first source should appear before roles from the second
     let play_pos = output.code.find("PlayPause").expect("PlayPause not found");
-    let skip_pos = output.code.find("SkipForward").expect("SkipForward not found");
+    let skip_pos = output
+        .code
+        .find("SkipForward")
+        .expect("SkipForward not found");
     assert!(
         play_pos < skip_pos,
         "PlayPause (from file A) should appear before SkipForward (from file B) in generated code"
@@ -545,12 +551,19 @@ bundled-themes = ["material"]
 
     let errors = result.unwrap_err();
     assert!(!errors.is_empty(), "should detect duplicate roles");
+    // Count only the DuplicateRole errors (filter out any identifier-related errors
+    // that may also be emitted from per-file and merged validation passes).
+    let dup_role_errors: Vec<_> = errors
+        .errors()
+        .iter()
+        .filter(|e| e.to_string().contains("defined in both"))
+        .collect();
     assert!(
-        !errors.errors().is_empty(),
-        "expected at least 1 duplicate role error, got {}",
-        errors.errors().len()
+        !dup_role_errors.is_empty(),
+        "expected at least 1 DuplicateRole error, got 0. All errors: {errors:?}",
     );
-    // Expected variant: BuildError::DuplicateRole { role: "play-pause", .. }
+    // Expected: BuildError::DuplicateRole { role: "play-pause", file_a: "...", file_b: "..." }
+    // Using .contains() because BuildError fields are not publicly matchable.
     assert!(
         errors
             .errors()
@@ -722,6 +735,99 @@ fn golden_syntax_check() {
     );
 }
 
+/// #31: Test that the freedesktop fixture mapping (with DE-aware values) works as a system theme.
+#[test]
+fn freedesktop_fixture_as_system_theme() {
+    let dir = create_temp_dir("freedesktop_fixture");
+
+    write_file(
+        &dir,
+        "icons.toml",
+        r#"
+name = "freedesktop-test"
+roles = ["play-pause", "skip-forward"]
+system-themes = ["freedesktop"]
+"#,
+    );
+    // Copy the committed fixture mapping into the temp dir
+    let fixture_mapping = fs::read_to_string(fixtures_dir().join("freedesktop/mapping.toml"))
+        .unwrap_or_else(|e| panic!("failed to read freedesktop fixture: {e}"));
+    write_file(&dir, "freedesktop/mapping.toml", &fixture_mapping);
+
+    let output = IconGenerator::new()
+        .source(dir.join("icons.toml"))
+        .output_dir(&dir)
+        .generate()
+        .unwrap_or_else(|e| panic!("expected no errors: {e}"));
+
+    assert!(!output.code.is_empty(), "should generate code");
+    assert!(
+        output.code.contains("PlayPause"),
+        "should have PlayPause variant"
+    );
+    assert!(
+        output.code.contains("SkipForward"),
+        "should have SkipForward variant"
+    );
+    // System theme should not have include_bytes!
+    assert!(
+        !output.code.contains("include_bytes!"),
+        "system theme should not have embedded SVGs"
+    );
+    // DE-aware mapping should generate DE dispatch code
+    assert!(
+        output.code.contains("media-playback-start"),
+        "should contain KDE-specific icon name"
+    );
+
+    if let Err(e) = fs::remove_dir_all(&dir) {
+        eprintln!("test cleanup warning: {e}");
+    }
+}
+
+/// #31: Test that the segoe-fluent fixture mapping works as a system theme.
+#[test]
+fn segoe_fluent_fixture_as_system_theme() {
+    let dir = create_temp_dir("segoe_fluent_fixture");
+
+    write_file(
+        &dir,
+        "icons.toml",
+        r#"
+name = "segoe-test"
+roles = ["play-pause", "skip-forward"]
+system-themes = ["segoe-fluent"]
+"#,
+    );
+    let fixture_mapping = fs::read_to_string(fixtures_dir().join("segoe-fluent/mapping.toml"))
+        .unwrap_or_else(|e| panic!("failed to read segoe-fluent fixture: {e}"));
+    write_file(&dir, "segoe-fluent/mapping.toml", &fixture_mapping);
+
+    let output = IconGenerator::new()
+        .source(dir.join("icons.toml"))
+        .output_dir(&dir)
+        .generate()
+        .unwrap_or_else(|e| panic!("expected no errors: {e}"));
+
+    assert!(!output.code.is_empty(), "should generate code");
+    assert!(
+        output.code.contains("PlayPause"),
+        "should have PlayPause variant"
+    );
+    assert!(
+        output.code.contains("SkipForward"),
+        "should have SkipForward variant"
+    );
+    assert!(
+        !output.code.contains("include_bytes!"),
+        "system theme should not have embedded SVGs"
+    );
+
+    if let Err(e) = fs::remove_dir_all(&dir) {
+        eprintln!("test cleanup warning: {e}");
+    }
+}
+
 /// #31: Test that the lucide fixture mapping can be loaded as a system theme.
 #[test]
 fn lucide_fixture_as_system_theme() {
@@ -737,9 +843,8 @@ system-themes = ["lucide"]
 "#,
     );
     // Copy the committed fixture mapping into the temp dir
-    let fixture_mapping =
-        fs::read_to_string(fixtures_dir().join("lucide/mapping.toml"))
-            .unwrap_or_else(|e| panic!("failed to read lucide fixture: {e}"));
+    let fixture_mapping = fs::read_to_string(fixtures_dir().join("lucide/mapping.toml"))
+        .unwrap_or_else(|e| panic!("failed to read lucide fixture: {e}"));
     write_file(&dir, "lucide/mapping.toml", &fixture_mapping);
 
     let output = IconGenerator::new()

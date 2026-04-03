@@ -95,7 +95,7 @@ pub use native_theme::LinuxDesktop;
 /// Builds a custom theme using `Theme::custom_with_fn()`, which:
 /// 1. Maps the 6 Palette fields from resolved theme colors via [`palette::to_palette()`]
 /// 2. Generates an Extended palette, then overrides secondary, background.weak,
-///    and status-family `.base.text` entries via [`extended::apply_overrides()`]
+///    and status-family `.base.text` entries via `extended::apply_overrides()`
 ///
 /// The resulting theme carries the mapped Palette and Extended palette. iced's
 /// built-in Catalog trait implementations for all 8 core widgets (Button,
@@ -187,7 +187,7 @@ pub fn from_system() -> native_theme::Result<(
 
 /// Extension trait for converting a [`SystemTheme`] to an iced theme.
 pub trait SystemThemeExt {
-    /// Convert this system theme to an iced [`Theme`] and its [`ResolvedThemeVariant`].
+    /// Convert this system theme to an iced [`iced_core::theme::Theme`] and its [`ResolvedThemeVariant`].
     ///
     /// Returns both the iced theme and the resolved variant, so callers can
     /// access per-widget metrics without re-resolving.
@@ -785,7 +785,22 @@ mod tests {
         }
     }
 
-    // === Integration: all presets smoke test ===
+    #[test]
+    fn to_theme_extended_overrides_take_effect() {
+        let resolved = make_resolved(true);
+        let theme = to_theme(&resolved, "test");
+        let ext = theme.extended_palette();
+        // Generate what the Extended palette would be without overrides
+        let auto_palette = iced_core::theme::palette::Extended::generate(theme.palette());
+        // apply_overrides sets secondary.base from button.bg/fg which differs
+        // from the auto-generated value
+        assert_ne!(
+            ext.secondary.base.color, auto_palette.secondary.base.color,
+            "secondary.base.color should be overridden, not auto-generated"
+        );
+    }
+
+    // Integration-level: exercises the full from_preset -> to_theme pipeline for all presets
 
     #[test]
     fn all_presets_produce_valid_themes() {

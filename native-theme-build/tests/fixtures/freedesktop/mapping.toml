@@ -1,0 +1,2 @@
+play-pause = { kde = "media-playback-start", default = "media-playback-pause" }
+skip-forward = "media-skip-forward"

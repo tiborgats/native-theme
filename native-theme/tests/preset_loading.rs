@@ -328,6 +328,8 @@ fn dark_backgrounds_are_darker() {
             .background
             .unwrap_or_else(|| panic!("preset '{name}' dark missing background"));
 
+        // Naive RGB sum (r+g+b < threshold) is sufficient for binary dark/light
+        // classification. BT.601 weighted luma would be more accurate but unnecessary here.
         let light_sum = light_bg.r as u16 + light_bg.g as u16 + light_bg.b as u16;
         let dark_sum = dark_bg.r as u16 + dark_bg.g as u16 + dark_bg.b as u16;
 

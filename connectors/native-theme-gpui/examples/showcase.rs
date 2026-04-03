@@ -61,6 +61,7 @@ use gpui_component::{
     tree::{Tree, TreeItem, TreeState},
     v_flex,
 };
+use std::collections::HashMap;
 use std::time::Duration;
 
 use native_theme::{
@@ -506,6 +507,20 @@ fn load_gpui_icons(
         (None, None)
     };
 
+    // Pre-load Material icons once for all roles that appear in GPUI_ICONS,
+    // so we can detect system-vs-fallback without redundant per-icon loads.
+    let material_cache: HashMap<IconRole, Option<IconData>> = if is_system_set {
+        GPUI_ICONS
+            .iter()
+            .filter_map(|(name, _)| role_for_gpui_icon(name))
+            .collect::<std::collections::HashSet<_>>()
+            .into_iter()
+            .map(|r| (r, load_icon(r, IconSet::Material)))
+            .collect()
+    } else {
+        HashMap::new()
+    };
+
     GPUI_ICONS
         .iter()
         .map(|(name, icon)| {
@@ -540,9 +555,8 @@ fn load_gpui_icons(
                     None => IconSource::NotFound,
                     Some(_) if !is_system_set => IconSource::Bundled,
                     Some(IconData::Svg(loaded)) => {
-                        // Material fallback loaded per-icon for showcase demonstration of fallback behavior.
-                        let mat = load_icon(r, IconSet::Material);
-                        if let Some(IconData::Svg(mat_bytes)) = &mat {
+                        // Compare against pre-loaded Material icon to detect fallback
+                        if let Some(Some(IconData::Svg(mat_bytes))) = material_cache.get(&r) {
                             if loaded == mat_bytes {
                                 IconSource::Fallback
                             } else {
