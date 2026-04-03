@@ -916,6 +916,7 @@ impl Showcase {
         self.animated_static_sources.clear();
 
         let set_name = &self.icon_set_name;
+        let fg = self.icon_cache_fg;
         // gpui-builtin is not a native-theme icon set; loading_indicator would
         // fall back to the system set, showing the wrong spinner.
         if let Some(icon_set) = self.icon_set_enum
@@ -925,10 +926,11 @@ impl Showcase {
                 AnimatedIcon::Frames {
                     frame_duration_ms, ..
                 } => {
-                    if let Some(anim_sources) = animated_frames_to_image_sources(&anim, None, None)
+                    if let Some(anim_sources) =
+                        animated_frames_to_image_sources(&anim, Some(fg), None)
                     {
                         if let Some(first) = anim.first_frame()
-                            && let Some(first_source) = to_image_source(first, None, None)
+                            && let Some(first_source) = to_image_source(first, Some(fg), None)
                         {
                             self.animated_static_sources.push((
                                 set_name.to_string(),
