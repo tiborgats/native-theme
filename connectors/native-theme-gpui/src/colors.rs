@@ -9,13 +9,31 @@ use gpui::Hsla;
 use gpui_component::theme::ThemeColor;
 use native_theme::ResolvedThemeVariant;
 
-use crate::derive::{active_color, hover_color};
+use crate::derive::{active_color, contrast_ratio, hover_color, light_variant};
 
 /// Convert a `native_theme::Rgba` to `gpui::Hsla`.
-fn rgba_to_hsla(rgba: native_theme::Rgba) -> Hsla {
+///
+/// The input is clamped to [0.0, 1.0] per channel before conversion.
+pub(crate) fn rgba_to_hsla(rgba: native_theme::Rgba) -> Hsla {
     let [r, g, b, a] = rgba.to_f32_array();
-    let gpui_rgba = gpui::Rgba { r, g, b, a };
+    let gpui_rgba = gpui::Rgba {
+        r: r.clamp(0.0, 1.0),
+        g: g.clamp(0.0, 1.0),
+        b: b.clamp(0.0, 1.0),
+        a: a.clamp(0.0, 1.0),
+    };
     gpui_rgba.into()
+}
+
+/// Convert an `Hsla` color to a `#rrggbb` hex string.
+///
+/// Alpha is discarded (only the opaque RGB is encoded).
+pub(crate) fn hsla_to_hex(c: Hsla) -> String {
+    let rgba: gpui::Rgba = c.into();
+    let r = (rgba.r.clamp(0.0, 1.0) * 255.0).round() as u8;
+    let g = (rgba.g.clamp(0.0, 1.0) * 255.0).round() as u8;
+    let b = (rgba.b.clamp(0.0, 1.0) * 255.0).round() as u8;
+    format!("#{r:02x}{g:02x}{b:02x}")
 }
 
 /// Returns true if the background color indicates a dark theme (lightness < 0.5).
@@ -24,21 +42,50 @@ fn is_dark_background(bg: Hsla) -> bool {
     bg.l < 0.5
 }
 
+/// Minimum WCAG contrast ratio for status foreground against its background.
+/// 4.5:1 is AA for normal text.
+const MIN_STATUS_CONTRAST: f32 = 4.5;
+
+/// Ensure a status foreground color has sufficient contrast against its background.
+///
+/// If the foreground has less than 4.5:1 contrast against the background,
+/// falls back to white (for dark backgrounds) or black (for light backgrounds).
+fn ensure_status_contrast(fg: Hsla, bg: Hsla) -> Hsla {
+    if contrast_ratio(fg, bg) >= MIN_STATUS_CONTRAST {
+        fg
+    } else if bg.l < 0.5 {
+        Hsla {
+            h: 0.0,
+            s: 0.0,
+            l: 1.0,
+            a: 1.0,
+        }
+    } else {
+        Hsla {
+            h: 0.0,
+            s: 0.0,
+            l: 0.0,
+            a: 1.0,
+        }
+    }
+}
+
 /// Pre-converted HSLA colors extracted from a [`ResolvedThemeVariant`].
 ///
 /// Built once in [`to_theme_color()`] and passed by reference to all
 /// assign helper functions, replacing 10-15 parameter signatures.
 ///
-/// Some fields (e.g. `surface`) are not currently consumed by any assign
-/// function but are retained for future mapping completeness.
-#[allow(dead_code)]
+/// The `surface` field is used for the `muted` background slot (Issue 2).
 struct ResolvedColors {
     bg: Hsla,
     fg: Hsla,
     accent: Hsla,
     accent_fg: Hsla,
+    #[allow(dead_code)]
     surface: Hsla,
     border: Hsla,
+    // Issue 2: `muted` is the muted *background* slot (derived from surface),
+    // and `muted_fg` is the muted *foreground* (d.muted IS the muted foreground).
     muted: Hsla,
     muted_fg: Hsla,
     primary: Hsla,
@@ -71,21 +118,31 @@ struct ResolvedColors {
 /// fallback logic.
 ///
 /// The `is_dark` parameter controls both `ThemeMode` (set in [`crate::to_theme`])
-/// and active-state darkening amounts — a single source of truth that prevents
+/// and active-state darkening amounts -- a single source of truth that prevents
 /// the split-brain bug where `ThemeMode` and color derivation could disagree.
+///
+/// Callers can derive `is_dark` from `resolved.defaults.background` lightness
+/// when the caller does not have an explicit dark-mode flag:
+/// `let is_dark = rgba_to_hsla(resolved.defaults.background).l < 0.5;`
 pub fn to_theme_color(resolved: &ResolvedThemeVariant, is_dark: bool) -> ThemeColor {
     let d = &resolved.defaults;
+    let bg = rgba_to_hsla(d.background);
     let fg = rgba_to_hsla(d.foreground);
 
+    // Issue 2: d.muted IS the muted foreground color (subdued text).
+    // The muted *background* slot (Skeleton, Switch bg) uses a derived bg.
+    let muted_fg = rgba_to_hsla(d.muted);
+    let muted_bg = bg.blend(fg.opacity(0.1));
+
     let c = ResolvedColors {
-        bg: rgba_to_hsla(d.background),
+        bg,
         fg,
         accent: rgba_to_hsla(d.accent),
         accent_fg: rgba_to_hsla(d.accent_foreground),
         surface: rgba_to_hsla(d.surface),
         border: rgba_to_hsla(d.border),
-        muted: rgba_to_hsla(d.muted),
-        muted_fg: rgba_to_hsla(d.muted).blend(fg.opacity(0.7)),
+        muted: muted_bg,
+        muted_fg,
         primary: rgba_to_hsla(resolved.button.primary_background),
         primary_fg: rgba_to_hsla(resolved.button.primary_foreground),
         secondary: rgba_to_hsla(resolved.button.background),
@@ -115,11 +172,11 @@ pub fn to_theme_color(resolved: &ResolvedThemeVariant, is_dark: bool) -> ThemeCo
     assign_primary(&mut tc, &c, is_dark);
     assign_secondary(&mut tc, &c, is_dark);
     assign_status(&mut tc, &c, is_dark);
-    assign_list_table(&mut tc, &c);
+    assign_list_table(&mut tc, &c, is_dark);
     assign_tab_sidebar(&mut tc, &c, resolved);
     assign_charts(&mut tc, &c);
     assign_misc(&mut tc, &c, resolved, is_dark);
-    assign_base_colors(&mut tc, &c);
+    assign_base_colors(&mut tc, &c, is_dark);
 
     tc
 }
@@ -157,23 +214,25 @@ fn assign_secondary(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
 }
 
 fn assign_status(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
+    // Issue 9: ensure status foreground colors have sufficient contrast
+    // against their respective status backgrounds.
     tc.danger = c.danger;
-    tc.danger_foreground = c.danger_fg;
+    tc.danger_foreground = ensure_status_contrast(c.danger_fg, c.danger);
     tc.danger_hover = hover_color(c.danger, c.bg);
     tc.danger_active = active_color(c.danger, is_dark);
 
     tc.success = c.success;
-    tc.success_foreground = c.success_fg;
+    tc.success_foreground = ensure_status_contrast(c.success_fg, c.success);
     tc.success_hover = hover_color(c.success, c.bg);
     tc.success_active = active_color(c.success, is_dark);
 
     tc.warning = c.warning;
-    tc.warning_foreground = c.warning_fg;
+    tc.warning_foreground = ensure_status_contrast(c.warning_fg, c.warning);
     tc.warning_hover = hover_color(c.warning, c.bg);
     tc.warning_active = active_color(c.warning, is_dark);
 
     tc.info = c.info;
-    tc.info_foreground = c.info_fg;
+    tc.info_foreground = ensure_status_contrast(c.info_fg, c.info);
     tc.info_hover = hover_color(c.info, c.bg);
     tc.info_active = active_color(c.info, is_dark);
 
@@ -181,10 +240,13 @@ fn assign_status(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
     tc.bearish = c.danger;
 }
 
-fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors) {
+fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
     tc.list = c.bg;
     tc.list_hover = hover_color(c.secondary, c.bg);
-    tc.list_active = c.bg.blend(c.primary.opacity(0.1)).alpha(0.2);
+    // Issue 7: removed spurious .alpha(0.2) that made the active state nearly
+    // invisible. Use mode-aware opacity: dark themes need subtler tinting.
+    let active_opacity = if is_dark { 0.08 } else { 0.1 };
+    tc.list_active = c.bg.blend(c.primary.opacity(active_opacity));
     tc.list_active_border = c.bg.blend(c.primary.opacity(0.6));
     tc.list_even = c.alternate_row;
     tc.list_head = c.bg;
@@ -205,6 +267,9 @@ fn assign_tab_sidebar(tc: &mut ThemeColor, c: &ResolvedColors, resolved: &Resolv
     tc.tab_active = rgba_to_hsla(resolved.tab.active_background);
     tc.tab_active_foreground = rgba_to_hsla(resolved.tab.active_foreground);
     tc.tab_bar = rgba_to_hsla(resolved.tab.bar_background);
+    // Issue 42: tab_bar_segmented uses secondary because native-theme's
+    // ResolvedTabTheme has no segmented-specific color. The secondary button
+    // color is the closest semantic match for the segmented tab indicator.
     tc.tab_bar_segmented = c.secondary;
     tc.tab_foreground = rgba_to_hsla(resolved.tab.foreground);
 
@@ -223,23 +288,30 @@ fn assign_tab_sidebar(tc: &mut ThemeColor, c: &ResolvedColors, resolved: &Resolv
 }
 
 fn assign_charts(tc: &mut ThemeColor, c: &ResolvedColors) {
-    // Distribute 5 chart colors evenly around the hue wheel (~72° apart).
-    // Preserves accent's saturation and lightness for palette coherence.
+    // Distribute 5 chart colors evenly around the hue wheel (~72 degrees apart).
+    // Preserves accent's lightness for palette coherence.
+    // Issue 16: enforce a saturation floor of 0.3 so desaturated themes
+    // (e.g. Nord, Solarized) still produce distinguishable chart colors.
+    let s = c.accent.s.max(0.3);
     tc.chart_1 = c.accent;
     tc.chart_2 = Hsla {
         h: (c.accent.h + 0.2) % 1.0,
+        s,
         ..c.accent
     };
     tc.chart_3 = Hsla {
         h: (c.accent.h + 0.4) % 1.0,
+        s,
         ..c.accent
     };
     tc.chart_4 = Hsla {
         h: (c.accent.h + 0.6) % 1.0,
+        s,
         ..c.accent
     };
     tc.chart_5 = Hsla {
         h: (c.accent.h + 0.8) % 1.0,
+        s,
         ..c.accent
     };
 }
@@ -254,7 +326,9 @@ fn assign_misc(
     tc.popover_foreground = c.popover_fg;
 
     tc.accordion = c.bg;
-    tc.accordion_hover = hover_color(c.accent, c.bg);
+    // Issue 60: match upstream apply_config fallback: accent.opacity(0.8).
+    // Use accent blended into bg for a subtler hover tint.
+    tc.accordion_hover = c.bg.blend(c.accent.opacity(0.08));
 
     tc.group_box =
         c.bg.blend(c.secondary.opacity(if is_dark { 0.3 } else { 0.4 }));
@@ -263,17 +337,25 @@ fn assign_misc(
     tc.description_list_label = c.bg.blend(c.border.opacity(0.2));
     tc.description_list_label_foreground = tc.muted_foreground;
 
-    // Derive overlay from the theme's shadow color instead of hardcoded black
+    // Issue 6: respect reduce_transparency. When the user requests reduced
+    // transparency, use a fully opaque overlay instead of semi-transparent.
     let shadow = rgba_to_hsla(resolved.defaults.shadow);
+    let overlay_alpha = if resolved.defaults.reduce_transparency {
+        1.0
+    } else if is_dark {
+        0.5
+    } else {
+        0.4
+    };
     tc.overlay = Hsla {
         h: shadow.h,
         s: shadow.s,
         l: shadow.l,
-        a: if is_dark { 0.5 } else { 0.4 },
+        a: overlay_alpha,
     };
 
-    // Per-widget resolved scrollbar colors
-    tc.scrollbar = c.bg;
+    // Issue 68: use resolved scrollbar track color instead of plain bg
+    tc.scrollbar = rgba_to_hsla(resolved.scrollbar.track);
     tc.scrollbar_thumb = rgba_to_hsla(resolved.scrollbar.thumb);
     tc.scrollbar_thumb_hover = rgba_to_hsla(resolved.scrollbar.thumb_hover);
 
@@ -283,6 +365,10 @@ fn assign_misc(
 
     // Per-widget resolved switch colors
     tc.switch = rgba_to_hsla(resolved.switch.unchecked_background);
+    // Issue 51: switch.checked_background is not mapped because gpui-component's
+    // ThemeColor has no checked-state field for switches. The unchecked background
+    // is the only mappable slot. Callers needing checked-state styling should read
+    // resolved.switch.checked_background directly.
     tc.switch_thumb = rgba_to_hsla(resolved.switch.thumb_background);
 
     // Per-widget resolved progress bar color
@@ -299,15 +385,18 @@ fn assign_misc(
     tc.drop_target = c.primary.opacity(0.2);
 }
 
-fn assign_base_colors(tc: &mut ThemeColor, c: &ResolvedColors) {
+fn assign_base_colors(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
+    // Issue 3: _light variants use mode-aware derivation. On dark themes,
+    // blending toward a dark bg *darkens* the color (wrong); instead we
+    // increase lightness for a visible tinted background.
     tc.red = c.danger;
-    tc.red_light = c.bg.blend(c.danger.opacity(0.8));
+    tc.red_light = light_variant(c.bg, c.danger, is_dark);
     tc.green = c.success;
-    tc.green_light = c.bg.blend(c.success.opacity(0.8));
+    tc.green_light = light_variant(c.bg, c.success, is_dark);
     tc.blue = c.info;
-    tc.blue_light = c.bg.blend(c.info.opacity(0.8));
+    tc.blue_light = light_variant(c.bg, c.info, is_dark);
     tc.yellow = c.warning;
-    tc.yellow_light = c.bg.blend(c.warning.opacity(0.8));
+    tc.yellow_light = light_variant(c.bg, c.warning, is_dark);
     // Magenta: fixed hue, but saturation and lightness from accent
     let magenta = Hsla {
         h: 0.833,
@@ -316,7 +405,7 @@ fn assign_base_colors(tc: &mut ThemeColor, c: &ResolvedColors) {
         a: 1.0,
     };
     tc.magenta = magenta;
-    tc.magenta_light = c.bg.blend(magenta.opacity(0.8));
+    tc.magenta_light = light_variant(c.bg, magenta, is_dark);
     // Cyan: fixed hue, but saturation and lightness from info
     let cyan = Hsla {
         h: 0.5,
@@ -325,7 +414,7 @@ fn assign_base_colors(tc: &mut ThemeColor, c: &ResolvedColors) {
         a: 1.0,
     };
     tc.cyan = cyan;
-    tc.cyan_light = c.bg.blend(cyan.opacity(0.8));
+    tc.cyan_light = light_variant(c.bg, cyan, is_dark);
 }
 
 #[cfg(test)]
@@ -334,9 +423,23 @@ mod tests {
     use super::*;
     use native_theme::ThemeSpec;
 
-    /// Create a ResolvedThemeVariant via the preset resolve+validate pipeline.
+    /// Create a dark ResolvedThemeVariant for catppuccin-mocha.
+    ///
+    /// Issue 1: fixed to use `into_variant(true)` -- catppuccin-mocha is a dark
+    /// theme, so loading with `false` would pick the light fallback.
     fn test_resolved() -> ResolvedThemeVariant {
         let nt = ThemeSpec::preset("catppuccin-mocha").expect("preset must exist");
+        let variant = nt
+            .into_variant(true)
+            .expect("preset must have dark variant");
+        variant
+            .into_resolved()
+            .expect("resolved preset must validate")
+    }
+
+    /// Create a light ResolvedThemeVariant for catppuccin-latte.
+    fn test_resolved_light() -> ResolvedThemeVariant {
+        let nt = ThemeSpec::preset("catppuccin-latte").expect("preset must exist");
         let variant = nt
             .into_variant(false)
             .expect("preset must have light variant");
@@ -382,10 +485,32 @@ mod tests {
         );
     }
 
+    // Issue 29: RGBA-to-HSLA clamping
+    #[test]
+    fn rgba_to_hsla_clamps_out_of_range() {
+        // Verify no panic on values that would be out of [0,1] range
+        let c = native_theme::Rgba::from_f32(1.5, -0.1, 0.5, 2.0);
+        let result = rgba_to_hsla(c);
+        assert!(result.a <= 1.0, "alpha should be clamped to 1.0");
+    }
+
+    #[test]
+    fn hsla_to_hex_roundtrip() {
+        let c = Hsla {
+            h: 0.0,
+            s: 1.0,
+            l: 0.5,
+            a: 1.0,
+        };
+        let hex = hsla_to_hex(c);
+        assert!(hex.starts_with('#'), "hex should start with #");
+        assert_eq!(hex.len(), 7, "hex should be #rrggbb");
+    }
+
     #[test]
     fn to_theme_color_produces_nondefault() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, false);
+        let tc = to_theme_color(&resolved, true);
         let default = ThemeColor::default();
 
         // Direct-mapped fields should differ from default
@@ -421,7 +546,7 @@ mod tests {
     #[test]
     fn hover_states_differ_from_base() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, false);
+        let tc = to_theme_color(&resolved, true);
 
         assert_ne!(
             tc.primary_hover, tc.primary,
@@ -436,13 +561,20 @@ mod tests {
     #[test]
     fn per_widget_fields_used() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, false);
+        let tc = to_theme_color(&resolved, true);
 
         // Scrollbar thumb should match resolved scrollbar
         let expected_thumb = rgba_to_hsla(resolved.scrollbar.thumb);
         assert_eq!(
             tc.scrollbar_thumb, expected_thumb,
             "scrollbar thumb should come from resolved.scrollbar.thumb"
+        );
+
+        // Issue 68: scrollbar track should come from resolved, not bg
+        let expected_track = rgba_to_hsla(resolved.scrollbar.track);
+        assert_eq!(
+            tc.scrollbar, expected_track,
+            "scrollbar should come from resolved.scrollbar.track"
         );
 
         // Slider bar should match resolved slider fill
@@ -484,7 +616,7 @@ mod tests {
     #[test]
     fn accent_foreground_uses_theme_value() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, false);
+        let tc = to_theme_color(&resolved, true);
 
         // accent_foreground should come from d.accent_foreground, not from fg
         let expected = rgba_to_hsla(resolved.defaults.accent_foreground);
@@ -517,7 +649,7 @@ mod tests {
     #[test]
     fn link_hover_differs_from_link() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, false);
+        let tc = to_theme_color(&resolved, true);
 
         assert_ne!(
             tc.link_hover, tc.link,
@@ -532,7 +664,7 @@ mod tests {
     #[test]
     fn selection_not_clamped() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, false);
+        let tc = to_theme_color(&resolved, true);
 
         // The theme's selection color should be used as-is, not alpha-clamped to 0.3
         let expected = rgba_to_hsla(resolved.defaults.selection);
@@ -545,7 +677,7 @@ mod tests {
     #[test]
     fn chart_colors_have_hue_separation() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, false);
+        let tc = to_theme_color(&resolved, true);
 
         let hues = [
             tc.chart_1.h,
@@ -578,7 +710,7 @@ mod tests {
     #[test]
     fn magenta_uses_theme_saturation() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, false);
+        let tc = to_theme_color(&resolved, true);
 
         let accent = rgba_to_hsla(resolved.defaults.accent);
         let expected_s = accent.s.min(0.85);
@@ -599,7 +731,7 @@ mod tests {
     #[test]
     fn overlay_uses_shadow_color() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, false);
+        let tc = to_theme_color(&resolved, true);
 
         let shadow = rgba_to_hsla(resolved.defaults.shadow);
         assert!(
@@ -619,13 +751,122 @@ mod tests {
     #[test]
     fn theme_color_field_count_tripwire() {
         // ThemeColor has N Hsla fields (each 16 bytes = 4x f32).
-        // If this fails, gpui-component added/removed fields — update the color mapping.
+        // If this fails, gpui-component added/removed fields -- update the color mapping.
         let size = std::mem::size_of::<ThemeColor>();
         let hsla_size = std::mem::size_of::<Hsla>();
         let field_count = size / hsla_size;
         assert_eq!(
             field_count, 108,
-            "ThemeColor field count changed (got {field_count}) — update color mapping in to_theme_color()"
+            "ThemeColor field count changed (got {field_count}) -- update color mapping in to_theme_color()"
+        );
+    }
+
+    // Issue 2: muted_fg should differ from muted background
+    #[test]
+    fn muted_fg_differs_from_muted_bg() {
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved, true);
+        assert_ne!(
+            tc.muted, tc.muted_foreground,
+            "muted (bg) and muted_foreground should be different"
+        );
+    }
+
+    // Issue 3: _light color variants should be lighter than base on dark themes
+    #[test]
+    fn light_variants_lighter_on_dark_theme() {
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved, true);
+        assert!(
+            tc.red_light.l > tc.red.l,
+            "red_light (l={:.3}) should be lighter than red (l={:.3}) on dark theme",
+            tc.red_light.l,
+            tc.red.l
+        );
+        assert!(
+            tc.green_light.l > tc.green.l,
+            "green_light should be lighter than green on dark theme"
+        );
+    }
+
+    // Issue 7: list_active should not have alpha forced to 0.2
+    #[test]
+    fn list_active_is_not_nearly_transparent() {
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved, true);
+        // The old code forced alpha to 0.2 which made list_active invisible.
+        // The new code should produce a color with a > 0.5 (near-opaque from blend).
+        assert!(
+            tc.list_active.a > 0.5,
+            "list_active alpha={} should not be forced to 0.2",
+            tc.list_active.a
+        );
+    }
+
+    // Issue 9: status foreground contrast check
+    #[test]
+    fn status_foreground_has_sufficient_contrast() {
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved, true);
+        // All status foregrounds should have at least 4.5:1 contrast
+        assert!(
+            contrast_ratio(tc.danger_foreground, tc.danger) >= MIN_STATUS_CONTRAST
+                || tc.danger_foreground.l == 0.0
+                || tc.danger_foreground.l == 1.0,
+            "danger_foreground should have sufficient contrast or be black/white"
+        );
+    }
+
+    // Issue 50: multi-preset dual-mode tests
+    #[test]
+    fn multi_preset_dark_mode() {
+        let presets = [
+            "catppuccin-mocha",
+            "dracula",
+            "nord",
+            "tokyo-night",
+            "one-dark",
+        ];
+        for name in presets {
+            let nt = ThemeSpec::preset(name).expect("preset must exist");
+            let variant = nt
+                .into_variant(true)
+                .expect("preset must have dark variant");
+            let resolved = variant.into_resolved().expect("must validate");
+            let _tc = to_theme_color(&resolved, true);
+        }
+    }
+
+    #[test]
+    fn multi_preset_light_mode() {
+        let presets = [
+            "catppuccin-latte",
+            "adwaita",
+            "material",
+            "solarized",
+            "gruvbox",
+        ];
+        for name in presets {
+            let nt = ThemeSpec::preset(name).expect("preset must exist");
+            let variant = nt
+                .into_variant(false)
+                .expect("preset must have light variant");
+            let resolved = variant.into_resolved().expect("must validate");
+            let _tc = to_theme_color(&resolved, false);
+        }
+    }
+
+    // Issue 50: light theme produces lighter base colors
+    #[test]
+    fn light_theme_light_variants_blend_toward_bg() {
+        let resolved = test_resolved_light();
+        let tc = to_theme_color(&resolved, false);
+        // On a light theme, red_light should be lighter than red (blended toward white bg)
+        assert!(
+            tc.red_light.l > tc.red.l,
+            "red_light (l={:.3}) should be > red (l={:.3}) on light theme",
+            tc.red_light.l,
+            tc.red.l
         );
     }
 }

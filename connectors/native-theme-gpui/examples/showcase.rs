@@ -1202,6 +1202,8 @@ impl Showcase {
                 input.update(cx, |input, cx| {
                     let value = input.value();
                     let num: f64 = value.parse().unwrap_or(0.0);
+                    // Issue 57: guard against NaN/Inf from malformed input
+                    let num = if num.is_finite() { num } else { 0.0 };
                     let new_value = if *action == StepAction::Increment {
                         num + 1.0
                     } else {
@@ -1633,7 +1635,8 @@ impl Showcase {
                 // Check icon_theme before resolution fills it in
                 self.has_toml_icon_theme = variant.icon_theme.is_some();
                 let mut v = variant.clone();
-                v.resolve();
+                // Issue 59: use resolve_all() to include platform defaults
+                v.resolve_all();
                 let resolved = match v.validate() {
                     Ok(r) => r,
                     Err(e) => {
