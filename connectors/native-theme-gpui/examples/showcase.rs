@@ -1635,8 +1635,7 @@ impl Showcase {
                 // Check icon_theme before resolution fills it in
                 self.has_toml_icon_theme = variant.icon_theme.is_some();
                 let mut v = variant.clone();
-                // Issue 59: use resolve_all() to include platform defaults
-                v.resolve_all();
+                v.resolve();
                 let resolved = match v.validate() {
                     Ok(r) => r,
                     Err(e) => {

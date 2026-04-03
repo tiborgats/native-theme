@@ -183,7 +183,7 @@ impl Eq for ThemeChoice {}
 fn load_adwaita_fallback(is_dark: bool) -> Option<(native_theme::ResolvedThemeVariant, Theme)> {
     let nt = ThemeSpec::preset("adwaita").ok()?;
     let mut variant = nt.pick_variant(is_dark)?.clone();
-    variant.resolve_all();
+    variant.resolve();
     let r = variant.validate().ok()?;
     let t = native_theme_iced::to_theme(&r, &nt.name);
     Some((r, t))
