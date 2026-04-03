@@ -5,6 +5,75 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.4] - 2026-04-03
+
+### Added
+
+#### native-theme (core)
+- `xdg_current_desktop()` helper for consistent `XDG_CURRENT_DESKTOP` parsing
+- `Display` implementations for `IconRole` and `IconSet`
+- Resolve safety nets: `line_height`, `button_order`, `accent_foreground`, `shadow`, `disabled_foreground`, `spinner.fill` falls back to `accent`, `text_scale` size ratios and weight defaults
+- Validate hardening: NaN/Infinity rejection for geometry fields, `dialog` min/max cross-field validation
+- `unpremultiply_alpha()` deduplication across platform readers
+- 45+ new tests
+
+#### native-theme-build
+- `emit_cargo_directives()` returns `Result` instead of calling `process::exit()`
+- Builder validation deferred to `generate()` (no `assert!` panics in `crate_path()`/`derives()`)
+- Path traversal rejection for TOML source paths
+- `crate_path` and `derives` Rust path validation
+- Invisible Unicode rejection in role names and paths
+- Bundled DE-aware mapping entries now produce `BuildError`
+- Post-merge theme overlap validation
+- Theme directory existence check
+- Name normalization warnings for non-kebab-case identifiers
+- 39 new tests, 3 compiled doctests
+
+#### native-theme-gpui
+- All 96 `ThemeColor` fields populated in `ThemeConfig` (prevents `apply_config` reset)
+- 20+ new helper functions: accessibility queries, typography helpers, layout utilities, spacing calculators
+- Animation frames: all-or-nothing semantics (returns `None` if any frame fails)
+- SVG colorization: stroke pattern support
+- 37 new tests (132 total)
+
+#### native-theme-iced
+- Extended palette: all 4 status families overridden (was 2 of 5)
+- `apply_overrides` restructured (was dead code)
+- `from_preset()`: proper display name, accurate error messages
+- `from_system()`: returns OS `is_dark` flag
+- SVG colorization: stroke pattern support
+- 11 new helper functions
+- 31 new tests (88 total)
+
+### Changed
+
+#### native-theme (core)
+- Preset corrections:
+  - Windows 11: 16 geometry fixes + 3 color fixes
+  - Adwaita: 10 geometry fixes + dialog radius + text_scale corrections
+  - KDE Breeze: 6 geometry fixes
+  - macOS Sonoma: 4 geometry fixes + `button_order` corrected
+  - iOS: `button_order` corrected
+  - Community presets: `button_order` removed where inappropriate, Solarized border colors fixed, `radius_lg` fixed
+
+#### native-theme-gpui
+- Color mapping: `muted_fg` semantic fix, `_light` mode-aware derivation, `list_active` double-opacity fix, scrollbar track derived from resolved theme, WCAG contrast enforcement for status foregrounds, chart color saturation floor, `active_color` near-black fix, overlay respects `reduce_transparency`
+
+#### native-theme-iced
+- `from_preset()` uses correct display name and error messages
+- `from_system()` propagates OS `is_dark` flag
+
+### Fixed
+
+#### native-theme-gpui
+- `list_active` double-opacity rendering
+- `active_color` near-black derivation
+- Chart colors losing saturation at low lightness
+
+#### native-theme-iced
+- Extended palette: missing status family overrides caused iced defaults to leak through
+- `apply_overrides` dead code path that prevented custom palette entries from taking effect
+
 ## [0.5.3] - 2026-04-01
 
 ### Added
@@ -407,6 +476,7 @@ let busy = load_icon(IconRole::StatusBusy, "material");
 - `impl_merge!` macro for recursive Option-based theme merging
 - Deep merge support across all theme types
 
+[0.5.4]: https://github.com/tiborgats/native-theme/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/tiborgats/native-theme/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/tiborgats/native-theme/compare/v0.5.1...v0.5.2
 [0.5.1]: https://github.com/tiborgats/native-theme/compare/v0.5.0...v0.5.1
