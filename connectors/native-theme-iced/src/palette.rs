@@ -3,13 +3,19 @@
 //! The palette has 6 fields: background, text, primary, success, warning, danger.
 //! Each is mapped directly from the corresponding resolved theme color -- no
 //! fallbacks needed since all fields are guaranteed populated.
+//!
+//! Note: `to_color()` preserves the alpha channel. The 6 palette colors are
+//! always fully opaque in resolved themes (`a = 1.0`). Other resolved fields
+//! (e.g., `shadow`, `selection_inactive`) may carry meaningful alpha values;
+//! use [`to_color()`] to convert them when needed.
 
 use native_theme::Rgba;
 
 /// Convert a [`native_theme::Rgba`] to [`iced_core::Color`].
 ///
 /// Useful for power users who need to map arbitrary `ResolvedThemeVariant`
-/// fields to iced colors beyond what [`to_palette()`] covers.
+/// fields to iced colors beyond what [`to_palette()`] covers. The alpha
+/// channel is preserved faithfully.
 #[must_use]
 pub fn to_color(rgba: Rgba) -> iced_core::Color {
     let [r, g, b, a] = rgba.to_f32_array();
@@ -45,30 +51,33 @@ mod tests {
     use super::*;
     use native_theme::ThemeSpec;
 
-    // Helper to compare iced_core::Color fields with tolerance
-    fn color_approx_eq(a: iced_core::Color, b: iced_core::Color) -> bool {
-        (a.r - b.r).abs() < 0.01
-            && (a.g - b.g).abs() < 0.01
-            && (a.b - b.b).abs() < 0.01
-            && (a.a - b.a).abs() < 0.01
-    }
-
     #[test]
     fn to_color_converts_rgba() {
         let result = to_color(Rgba::rgb(255, 0, 0));
-        assert!(
-            color_approx_eq(
-                result,
-                iced_core::Color {
-                    r: 1.0,
-                    g: 0.0,
-                    b: 0.0,
-                    a: 1.0
-                }
-            ),
-            "expected red, got {:?}",
+        // 255/255.0 = 1.0 exactly in f32, so exact comparison is safe
+        assert_eq!(
+            result,
+            iced_core::Color {
+                r: 1.0,
+                g: 0.0,
+                b: 0.0,
+                a: 1.0
+            },
+            "expected exact red, got {:?}",
             result
         );
+    }
+
+    #[test]
+    fn to_color_preserves_alpha() {
+        let result = to_color(Rgba::rgba(0, 0, 0, 128));
+        let expected_alpha = 128.0 / 255.0;
+        assert!(
+            (result.a - expected_alpha).abs() < 1e-6,
+            "alpha should be ~{expected_alpha}, got {}",
+            result.a
+        );
+        assert!((result.r).abs() < 1e-6, "r should be ~0, got {}", result.r);
     }
 
     #[test]
@@ -82,16 +91,13 @@ mod tests {
 
         let palette = to_palette(&resolved);
 
-        // All fields should be populated (non-zero)
-        // Catppuccin Mocha light has a white-ish background
-        assert!(palette.background.r > 0.9, "background should be light");
-        // Text should be dark
-        assert!(palette.text.r < 0.3, "text should be dark");
-        // Primary should be non-zero (accent color)
-        assert!(
-            palette.primary.r > 0.0 || palette.primary.g > 0.0 || palette.primary.b > 0.0,
-            "primary should be non-zero"
-        );
+        // Exact match against resolved values
+        assert_eq!(palette.background, to_color(resolved.defaults.background));
+        assert_eq!(palette.text, to_color(resolved.defaults.foreground));
+        assert_eq!(palette.primary, to_color(resolved.defaults.accent));
+        assert_eq!(palette.success, to_color(resolved.defaults.success));
+        assert_eq!(palette.warning, to_color(resolved.defaults.warning));
+        assert_eq!(palette.danger, to_color(resolved.defaults.danger));
     }
 
     #[test]
@@ -107,5 +113,24 @@ mod tests {
 
         // Dark background should be dark
         assert!(palette.background.r < 0.3, "dark background should be dark");
+    }
+
+    #[test]
+    fn to_palette_multiple_presets() {
+        for name in ["catppuccin-mocha", "dracula", "nord", "gruvbox"] {
+            let resolved = ThemeSpec::preset(name)
+                .unwrap()
+                .into_variant(true)
+                .unwrap()
+                .into_resolved()
+                .unwrap();
+            let palette = to_palette(&resolved);
+            // Exact match for all presets
+            assert_eq!(
+                palette.primary,
+                to_color(resolved.defaults.accent),
+                "{name}: primary should match accent"
+            );
+        }
     }
 }
