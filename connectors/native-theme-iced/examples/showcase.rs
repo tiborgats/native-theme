@@ -2935,6 +2935,7 @@ fn main() -> iced::Result {
         })
         .theme(theme)
         .subscription(subscription)
+        .antialiasing(true)
         .window_size((1060.0, 750.0))
         .centered()
         .run()

@@ -11,9 +11,9 @@
 //! ```
 
 use gpui::{
-    Animation, AnimationExt, AnyElement, App, Application, Bounds, Context, Entity, Hsla,
-    ImageSource, IntoElement, Keystroke, Menu, MenuItem, ParentElement, Render, SharedString,
-    Styled, Task, Timer, Window, WindowBounds, WindowOptions, div, prelude::*, px, rems, size,
+    AnyElement, App, Application, Bounds, Context, Entity, Hsla, ImageSource, IntoElement,
+    Keystroke, Menu, MenuItem, ParentElement, Render, SharedString, Styled, Task, Timer, Window,
+    WindowBounds, WindowOptions, div, prelude::*, px, rems, size,
 };
 use gpui_component::{
     ActiveTheme, Disableable, Icon, IconName, PixelsExt, Placement, Root, Sizable, Size, StyledExt,
@@ -75,7 +75,7 @@ use native_theme::{detect_linux_de, load_freedesktop_icon_by_name};
 use native_theme_gpui::icons::freedesktop_name_for_gpui_icon;
 use native_theme_gpui::icons::{
     animated_frames_to_image_sources, lucide_name_for_gpui_icon, material_name_for_gpui_icon,
-    to_image_source,
+    to_image_source, with_spin_animation,
 };
 use native_theme_gpui::to_theme;
 
@@ -851,8 +851,10 @@ struct Showcase {
     animated_frame_durations: Vec<u32>,
     /// Current frame index for each frame-based animation.
     animated_frame_indices: Vec<usize>,
-    /// Cached ImageSource for transform-based (spin) animations (set name, source, duration_ms).
-    animated_spin_sources: Vec<(String, ImageSource, u32)>,
+    /// Cached spin animation data: (set name, temp SVG path, duration_ms).
+    /// The SVG bytes are written to temp files so `gpui::svg().path()` can load
+    /// them as Svg elements (which support `with_transformation` for rotation).
+    animated_spin_sources: Vec<(String, std::path::PathBuf, u32)>,
     /// Timer task handle for frame cycling (dropped to cancel).
     animation_timer: Option<Task<()>>,
     /// Whether reduced motion is active.
@@ -945,15 +947,25 @@ impl Showcase {
                     if let Some(source) = to_image_source(icon, None, None) {
                         self.animated_static_sources.push((
                             set_name.to_string(),
-                            source.clone(),
+                            source,
                             "Transform",
                         ));
-                        if let TransformAnimation::Spin { duration_ms } = animation {
-                            self.animated_spin_sources.push((
-                                set_name.to_string(),
-                                source,
-                                *duration_ms,
+                    }
+                    if let TransformAnimation::Spin { duration_ms } = animation {
+                        // Write SVG bytes to a temp file so gpui::svg() can load
+                        // them as Svg elements with real rotation support.
+                        if let IconData::Svg(bytes) = icon {
+                            let path = std::env::temp_dir().join(format!(
+                                "native_theme_spin_{}.svg",
+                                set_name.replace(|c: char| !c.is_alphanumeric(), "_")
                             ));
+                            if std::fs::write(&path, bytes).is_ok() {
+                                self.animated_spin_sources.push((
+                                    set_name.to_string(),
+                                    path,
+                                    *duration_ms,
+                                ));
+                            }
                         }
                     }
                 }
@@ -4514,16 +4526,18 @@ impl Showcase {
                 }
             }
 
-            // Transform (spin) animations -- displayed with opacity pulse.
-            // gpui only supports rotation on Svg elements (loaded from asset
-            // paths), but native-theme spinners are raw SVG bytes (include_bytes!).
-            // In real applications, use with_spin_animation() on a gpui::svg()
-            // element loaded from your asset system.
-            for (set_name, source, duration_ms) in &self.animated_spin_sources {
+            // Transform (spin) animations -- SVG written to temp file so
+            // gpui::svg() can load it as an Svg element with real rotation.
+            for (set_name, svg_path, duration_ms) in &self.animated_spin_sources {
                 let label_text: SharedString =
                     format!("{} - Spin ({}ms)", set_name, duration_ms).into();
                 let spin_id = SharedString::from(format!("spinner-{}", set_name));
-                let dur = Duration::from_millis(*duration_ms as u64);
+                let path_str = SharedString::from(svg_path.to_string_lossy().into_owned());
+                let spinner_svg = with_spin_animation(
+                    gpui::svg().path(path_str).size(px(32.)),
+                    spin_id,
+                    *duration_ms,
+                );
                 cards.push(
                     v_flex()
                         .items_center()
@@ -4532,22 +4546,7 @@ impl Showcase {
                         .rounded_md()
                         .border_1()
                         .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
-                        .child(
-                            div()
-                                .size(px(32.))
-                                .child(gpui::img(source.clone()).size(px(32.)))
-                                .with_animation(
-                                    spin_id,
-                                    Animation::new(dur).repeat(),
-                                    |el, delta| {
-                                        // Pulse opacity to indicate animation (gpui
-                                        // cannot rotate rasterized images -- only Svg
-                                        // elements from file paths support rotation).
-                                        let opacity = 0.3 + 0.7 * (1.0 - (delta * 2.0 - 1.0).abs());
-                                        el.opacity(opacity)
-                                    },
-                                ),
-                        )
+                        .child(spinner_svg)
                         .child(Label::new(label_text).text_xs())
                         .into_any_element(),
                 );
