@@ -2553,3 +2553,375 @@ This compounds with issue #52 (already-near-black colors get invisible).
 **Best solution: A for v0.5.4** (matches upstream). Consider B for v0.6.0
 alongside a discussion with the gpui-component maintainers.
 
+---
+
+## New Findings: Second-Pass Deep Audit
+
+The following issues are genuinely new -- not covered by existing issues 1--59.
+
+### 60. `accordion_hover` Derived From Accent Instead of Accordion Base Color
+
+**Category:** derive-bug
+**Severity:** medium
+**File(s):** `colors.rs:257`
+
+**Problem:** `tc.accordion_hover` is derived as `hover_color(c.accent, c.bg)` -- a
+hover variant of the ACCENT color blended onto background. But `tc.accordion` is set
+to `c.bg` at line 256. The hover state of a bg-colored element should be derived from
+bg, not from accent. This means hovering over an accordion header produces an
+accent-tinted highlight (e.g. blue tint) rather than a subtle lightening/darkening of
+the background. Compare with `tc.list_hover = hover_color(c.secondary, c.bg)` which
+correctly derives hover from the list's own base color (secondary).
+
+gpui-component's own `apply_config` derives `accordion_hover` as
+`accent.opacity(0.08)` blended on bg -- accent-tinted but very subtle. The connector's
+version uses `accent.opacity(0.9)` (via `hover_color`), which is far more opaque and
+produces a much stronger accent tint than upstream intends. The 0.9 opacity was designed
+for hover on buttons (where the base IS the accent); applied to accordion headers
+(where the base is bg), it creates an unexpectedly vivid hover effect.
+
+**Solution Options:**
+
+A. Match gpui-component's own accordion_hover derivation:
+```rust
+tc.accordion_hover = c.bg.blend(c.accent.opacity(0.08));
+```
+
+B. Derive from the accordion base color:
+```rust
+tc.accordion_hover = hover_color(c.bg, c.bg); // subtle bg shift
+```
+
+C. Keep current (accent-tinted hover).
+
+**Best Solution:** A. Matches upstream intent: subtle accent tint on bg, not a
+near-opaque accent blend.
+
+---
+
+### 61. `description_list_label_foreground` Reads From `tc.muted_foreground` After Assignment
+
+**Category:** mapping-bug
+**Severity:** low
+**File(s):** `colors.rs:264`
+
+**Problem:**
+```rust
+tc.description_list_label_foreground = tc.muted_foreground;
+```
+
+This reads from `tc.muted_foreground`, which was set by `assign_core` (called before
+`assign_misc`). This works correctly TODAY because `assign_core` runs first in
+`to_theme_color()` (line 114). But it creates an implicit ordering dependency between
+`assign_core` and `assign_misc` -- if someone reorders the assign calls (e.g. for
+readability), the description list label foreground silently picks up the wrong value
+(ThemeColor::default muted_foreground).
+
+All other assign functions read from `&ResolvedColors` which is computed once upfront.
+This is the only place in the codebase where one assign function reads a ThemeColor
+field set by another assign function.
+
+**Solution Options:**
+
+A. Read from `c.muted_fg` instead (recommended):
+```rust
+tc.description_list_label_foreground = c.muted_fg;
+```
+
+B. Add comment documenting the ordering dependency.
+
+**Best Solution:** A. Uses the same source, removes the fragile cross-assignment read.
+
+---
+
+### 62. `sidebar_border` Uses Global `c.border` Instead of `resolved.window.border`
+
+**Category:** mapping-bug
+**Severity:** low
+**File(s):** `colors.rs:215`
+
+**Problem:**
+```rust
+tc.sidebar_border = c.border;
+```
+
+The `sidebar_border` field uses the global `defaults.border` color. But two lines
+below, `tc.title_bar_border` and `tc.window_border` both use the per-widget
+`resolved.window.border` (lines 221-222). On themes where `window.border` differs
+from `defaults.border` (e.g., window has a darker frame border while the global
+border is a lighter separator), the sidebar border will not match the window border,
+creating a visible discontinuity where the sidebar meets the title bar.
+
+platform-facts.md section 2.2 shows `window.border` inherits from `defaults.border`
+on most platforms (`<- defaults.border`), so in practice these values are usually
+equal. However, theme authors can override `window.border` independently (e.g., KDE's
+`[WM]` decoration colors can differ from `[Colors:Window]`), and the connector should
+respect that override for sidebar border too.
+
+**Solution Options:**
+
+A. Use `resolved.window.border` for sidebar border:
+```rust
+tc.sidebar_border = rgba_to_hsla(resolved.window.border);
+```
+
+B. Keep using global border (documented as intentional).
+
+**Best Solution:** A. The sidebar is part of the window chrome, so its border should
+match the window border, not the global separator.
+
+---
+
+### 63. No Test Verifies `assign_tab_sidebar` Maps All 12 Fields
+
+**Category:** test-gap
+**Severity:** low
+**File(s):** `colors.rs` tests (absent)
+
+**Problem:** `assign_tab_sidebar` sets 12 ThemeColor fields: `tab`, `tab_active`,
+`tab_active_foreground`, `tab_bar`, `tab_bar_segmented`, `tab_foreground`, `sidebar`,
+`sidebar_foreground`, `sidebar_accent`, `sidebar_accent_foreground`, `sidebar_border`,
+`sidebar_primary`, `sidebar_primary_foreground`, `title_bar`, `title_bar_border`,
+`window_border`. The only sidebar/tab test is the `per_widget_fields_used` test
+(colors.rs:437) which checks `scrollbar_thumb`, `slider_bar`, `progress_bar`,
+`title_bar`, `switch`, and `caret` -- but NOT `tab`, `tab_active`, `sidebar`, or
+`sidebar_foreground`. Similarly, the `accent_foreground_uses_theme_value` test
+(colors.rs:485) checks `sidebar_accent_foreground` but none of the other 11 fields.
+
+This means 10 of the 15 fields set by `assign_tab_sidebar` have no regression test
+verifying they receive the correct source value. A mapping regression (e.g.,
+accidentally swapping `tab_active` and `tab_foreground`) would be invisible to the
+test suite.
+
+Note: Issue #35 covers the doc-comment coverage TABLE becoming stale, and issue #45
+covers icon MAPPING regression tests. This issue is specifically about the
+tab/sidebar/window COLOR mapping lacking individual field-level assertions.
+
+**Solution Options:**
+
+A. Add test that verifies all 15 fields against their expected sources:
+```rust
+#[test]
+fn tab_sidebar_window_fields_match_resolved() {
+    let resolved = test_resolved();
+    let tc = to_theme_color(&resolved, false);
+    assert_eq!(tc.tab, rgba_to_hsla(resolved.tab.background));
+    assert_eq!(tc.tab_active, rgba_to_hsla(resolved.tab.active_background));
+    assert_eq!(tc.sidebar, rgba_to_hsla(resolved.sidebar.background));
+    // ... all 15 fields
+}
+```
+
+B. Keep relying on the "produces nondefault" test.
+
+**Best Solution:** A. Direct source-to-field assertions catch mapping regressions.
+
+---
+
+### 64. `encode_rgba_as_bmp` Height Cast Can Overflow for Heights > i32::MAX
+
+**Category:** api-misuse
+**Severity:** low
+**File(s):** `icons.rs:1071`
+
+**Problem:**
+```rust
+buf.extend_from_slice(&(-(height as i32)).to_le_bytes()); // height (top-down)
+```
+
+If `height` exceeds `i32::MAX` (2,147,483,647), the `as i32` cast wraps, and
+negation can overflow. For example, `height = u32::MAX` casts to `-1i32`, then
+negation yields `1` -- a valid but incorrect height. The function validates that
+`width * height * 4` fits in `usize` (line 1046-1047), but on 64-bit systems
+this allows values well above `i32::MAX`.
+
+The existing validation at line 1053 checks `u32::try_from(file_size).ok()?` which
+limits total file size to 4 GB (about 32k x 32k at 4 bytes/pixel), so in practice
+height cannot exceed ~32768 before the file-size check fails. However, for
+non-square images (e.g., width=1, height=3_000_000_000), the pixel data is only 12 GB
+which overflows usize on 32-bit but could pass on 64-bit -- though the u32 file_size
+check at line 1053 would catch it.
+
+While the existing checks make exploitation difficult, the `as i32` cast is
+technically unsound. Issue #28 covers the SIZE parameter validation (clamping to
+1..512), which would also prevent this. But `encode_rgba_as_bmp` is a separate
+internal function that could be called with arbitrary dimensions.
+
+**Solution Options:**
+
+A. Add explicit i32 range check (recommended):
+```rust
+if width == 0 || height == 0 || height > i32::MAX as u32 {
+    return None;
+}
+```
+
+B. Rely on the u32 file-size overflow check (current behavior).
+
+**Best Solution:** A. Trivial guard, prevents the silent i32 wrap for defense in depth.
+
+---
+
+### 65. `colorize_svg` Short-Circuits on `currentColor`, Misses Co-occurring Explicit Black Fills
+
+**Category:** mapping-bug
+**Severity:** low
+**File(s):** `icons.rs:992-995`
+
+**Problem:**
+```rust
+if svg_str.contains("currentColor") {
+    return svg_str.replace("currentColor", &hex).into_bytes();
+}
+```
+
+If an SVG contains BOTH `currentColor` AND `fill="black"` on different elements
+(e.g., `<path stroke="currentColor"/><rect fill="black"/>`), the function replaces
+only `currentColor` and returns immediately -- the `fill="black"` on the rect is left
+unchanged, rendering that element in black regardless of the requested color.
+
+This is unlikely with bundled Lucide/Material icons (which use one convention
+consistently), but third-party SVGs that mix conventions would be partially colorized.
+Issue #10 covers missing `stroke="black"` patterns, and issue #34 covers quoted `>`
+fragility -- but neither covers the early-return short-circuit that skips subsequent
+replacement phases.
+
+**Solution Options:**
+
+A. Remove early return; apply all three phases sequentially:
+```rust
+let mut result = svg_str.to_string();
+// Phase 1: currentColor
+result = result.replace("currentColor", &hex);
+// Phase 2: explicit black fills
+let fill_hex = format!("fill=\"{}\"", hex);
+result = result.replace("fill=\"black\"", &fill_hex)
+    .replace("fill=\"#000000\"", &fill_hex)
+    .replace("fill=\"#000\"", &fill_hex);
+// Phase 3: implicit black -- skip if fill was already replaced/injected
+```
+
+B. Keep early return with documentation (recommended for v0.5.4):
+The function doc at line 967-971 says "Handles three SVG color patterns (in order)"
+implying they are alternatives. Add explicit note that `currentColor` SVGs with
+co-occurring explicit black fills are only partially colorized.
+
+**Best Solution:** B for v0.5.4, A for v0.6.0. The early return is a deliberate
+design choice (currentColor SVGs from Lucide should not have explicit black fills
+rewritten), and removing it risks double-colorizing elements. But documenting the
+limitation prevents user confusion.
+
+---
+
+### 66. `colorize_svg` Phase 3 Injection Skips SVGs Where Root Has Non-Black `fill`
+
+**Category:** test-gap
+**Severity:** low
+**File(s):** `icons.rs:1014`
+
+**Problem:**
+```rust
+if !tag.contains("fill=") {
+    // inject fill
+}
+```
+
+This check prevents injection when the root `<svg>` tag has ANY `fill=` attribute --
+including `fill="none"` or `fill="white"`. If a third-party SVG has
+`<svg fill="none">` with children that rely on inherited fill, the function correctly
+skips injection. But if the SVG has `<svg fill="white">` and the user wants to
+colorize it, the function returns the original unchanged because the root already has
+a fill.
+
+The existing test suite has no test for this case. There is `colorize_svg_implicit_
+black_still_works` (no fill at all) and `colorize_svg_replaces_fill_black` (explicit
+black), but no test for `fill="white"` or `fill="none"` on the root tag.
+
+**Solution Options:**
+
+A. Add tests for non-black root fills (recommended):
+```rust
+#[test]
+fn colorize_svg_root_fill_white_unchanged() {
+    let svg = b"<svg fill=\"white\"><path d=\"M0 0\"/></svg>";
+    let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+    let result = colorize_svg(svg, color);
+    assert_eq!(result, svg.to_vec(), "non-black root fill should be unchanged");
+}
+
+#[test]
+fn colorize_svg_root_fill_none_unchanged() {
+    let svg = b"<svg fill=\"none\"><path d=\"M0 0\"/></svg>";
+    let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
+    let result = colorize_svg(svg, color);
+    assert_eq!(result, svg.to_vec(), "fill=none root should be unchanged");
+}
+```
+
+B. Keep untested.
+
+**Best Solution:** A. Tests document the intended behavior for these edge cases.
+
+---
+
+### 67. `hover_color` and `active_color` Not Tested With Fully Transparent or Zero-Alpha Colors
+
+**Category:** test-gap
+**Severity:** low
+**File(s):** `derive.rs` tests (lines 39-70)
+
+**Problem:** The three derive.rs tests use a single base color `hsla(0.6, 0.7, 0.5, 1.0)` -- fully opaque, mid-lightness. No test exercises edge cases:
+- `alpha = 0.0` (fully transparent base) -- `hover_color` blends at 0.9 opacity, but
+  the base itself has 0 alpha. The blend math `bg.blend(base.opacity(0.9))` where
+  `base.a = 0.0` means `base.opacity(0.9)` produces `a = 0.0 * 0.9 = 0.0` -- the
+  hover color equals `bg`, making hover indistinguishable from the background.
+- `saturation = 0.0` (achromatic) -- hue is meaningless, verify no NaN.
+- `lightness = 0.0` (pure black) -- `active_color` darkens by 10-20%, which is a
+  no-op on black. This overlaps with issue #52 but that issue has no TEST for it.
+- `lightness = 1.0` (pure white) -- `active_color` darkens to 0.8/0.9, which works
+  but `hover_color` blend on a white bg produces white -- indistinguishable.
+
+Issue #52 describes the near-black active problem but proposes a CODE fix, not a TEST.
+The test gap remains: the derive module has zero edge-case tests.
+
+**Solution Options:**
+
+A. Add edge-case tests (recommended):
+```rust
+#[test]
+fn hover_color_transparent_base_equals_bg() {
+    let base = hsla(0.0, 0.0, 0.5, 0.0);
+    let bg = hsla(0.0, 0.0, 1.0, 1.0);
+    let result = hover_color(base, bg);
+    // With base alpha=0, result should essentially be bg
+    assert!((result.l - bg.l).abs() < 0.01);
+}
+
+#[test]
+fn active_color_black_stays_black() {
+    let base = hsla(0.0, 0.0, 0.0, 1.0);
+    let result = active_color(base, true);
+    assert!(result.l < 0.01, "darkening black should stay at ~0");
+}
+```
+
+B. Keep testing only the happy path.
+
+**Best Solution:** A. Edge-case tests catch regressions if the derivation logic changes
+and document the known limitations for future maintainers.
+
+---
+
+## New Findings: Priority Summary
+
+| # | Issue | Severity | Effort | Best Fix |
+|---|-------|----------|--------|----------|
+| 60 | `accordion_hover` derived from accent at 0.9 opacity, not bg | **Medium** | Trivial | Match upstream `accent.opacity(0.08)` blend |
+| 61 | `description_list_label_foreground` reads tc field, not ResolvedColors | **Low** | Trivial | Read from `c.muted_fg` |
+| 62 | `sidebar_border` uses global border, not window border | **Low** | Trivial | Use `resolved.window.border` |
+| 63 | No test for 10 of 15 tab/sidebar/window field mappings | **Low** | Low | Add per-field assertions |
+| 64 | `encode_rgba_as_bmp` height i32 cast can wrap | **Low** | Trivial | Add `height > i32::MAX` guard |
+| 65 | `colorize_svg` early-returns on currentColor, skips explicit black | **Low** | Trivial | Document limitation |
+| 66 | `colorize_svg` non-black root fill untested | **Low** | Trivial | Add edge-case tests |
+| 67 | `hover_color`/`active_color` zero-alpha/black edge cases untested | **Low** | Trivial | Add edge-case tests |
+

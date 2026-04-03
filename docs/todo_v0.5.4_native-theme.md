@@ -2019,3 +2019,219 @@ No previously identified issues were found to be invalid or already fixed.
 | 15d | No resolve safety net for disabled_foreground | low | trivial | Derive from muted |
 | 17a | merge() name preservation edge case untested | low | trivial | Add test |
 | 17c | title_bar_background <- surface distinction untested | low | trivial | Add inheritance test |
+
+---
+
+## 23. Second-Pass Deep Audit (new findings only)
+
+Full re-read of every `.rs` file, every `.toml` preset, all test files, and
+all 1475 lines of `docs/platform-facts.md`. The following issues are NOT
+already covered in sections 1-22.
+
+### 23a. `kde/metrics.rs` does not set `button.padding_vertical` or `input.padding_vertical`
+
+**Category:** api-bug
+**Severity:** medium
+**File(s):** `src/kde/metrics.rs:8-61`
+
+**Problem:** `populate_widget_sizing()` sets `button.padding_horizontal = 6.0`
+(Button_MarginWidth) and `input.padding_horizontal = 6.0` (LineEdit_FrameWidth)
+but never sets `button.padding_vertical` or `input.padding_vertical`. These
+fields come exclusively from the kde-breeze preset TOML. If a user calls
+`from_kde()` directly (without the preset base), these fields remain `None`
+and fail validation.
+
+platform-facts.md SS2.3 line 973: "KDE: 5 (measured) Breeze frame+margin"
+(button.padding_vertical). SS2.4 line 995: "KDE: 3 (measured) Breeze frame"
+(input.padding_vertical). Both are measured values, not named
+breezemetrics.h constants, which is why they were omitted from the metrics
+module. However, the metrics module already includes measured values for
+`list.padding_vertical = 1.0` (ItemView_ItemMarginTop from breezemetrics.h),
+so the exclusion is inconsistent.
+
+**Solution Options:**
+
+1. **Add to `populate_widget_sizing()`**
+   - *Pros:* Consistent with other metrics already in the function; `from_kde()` pipeline becomes more self-contained
+   - *Cons:* Values are measured, not from named constants (but list padding values are sourced from breezemetrics.h constants anyway)
+
+2. **Keep in preset only, document the dependency**
+   - *Pros:* No code change
+   - *Cons:* `from_kde()` without preset base fails validation for these fields
+
+**Best Solution:** Option 1. Add `button.padding_vertical = Some(5.0)` and
+`input.padding_vertical = Some(3.0)` to `populate_widget_sizing()`, consistent
+with the existing pattern. Note: `list.padding_vertical` IS sourced from
+a named constant (ItemView_ItemMarginTop), so the button/input cases are
+genuinely different. Still, adding them improves the self-containedness of
+the KDE reader pipeline.
+
+### 23b. `qt5_to_css_weight()` accepts negative values, maps them to 900
+
+**Category:** parsing-bug
+**Severity:** low
+**File(s):** `src/kde/fonts.rs:8-19`
+
+**Problem:** The `qt5_to_css_weight()` function takes `i32` but the catch-all
+`_ => 900` arm matches negative values. Qt5 weight range is 0-99; a negative
+value in the font string indicates a corrupted or invalid entry. Mapping it
+to 900 (Black) silently produces the heaviest possible weight.
+
+The function is only called from `parse_qt_font_with_weight()` which passes
+the raw parsed weight from the kdeglobals font string. A corrupted font
+entry with a negative weight (e.g., `-1`) would yield CSS 900 instead of
+being rejected.
+
+No existing test covers negative input to `qt5_to_css_weight()`.
+
+**Solution Options:**
+
+1. **Return a sentinel value (e.g., 400) for negative input**
+   - *Pros:* Safe default for corrupted data
+   - *Cons:* Silently masks corruption
+
+2. **Clamp negative to 0 before matching**
+   - *Pros:* Maps to 100 (Thin) which is the minimum valid weight
+   - *Cons:* Still silent
+
+3. **Reject at caller: add `if raw_weight < 0 { return None; }` in `parse_qt_font_with_weight()`**
+   - *Pros:* Rejects truly invalid data at the earliest point
+   - *Cons:* Changes behavior for edge case
+
+**Best Solution:** Option 3. Add `if raw_weight < 0 { return None; }` before
+the Qt5/Qt6 branch in `parse_qt_font_with_weight()`. This rejects corrupted
+entries at the earliest point, consistent with the existing `size <= 0.0`
+rejection at line 38. Add a test for negative weight input.
+
+### 23c. Missing test: `qt5_to_css_weight()` negative input
+
+**Category:** test-gap
+**Severity:** low
+**File(s):** `src/kde/fonts.rs:111-148`
+
+**Problem:** The test suite covers boundary values 0, 12, 25, 50, 63, 75,
+88, and 100, but no test covers negative input. Given issue 23b, a test
+for `qt5_to_css_weight(-1)` should be added to document the expected
+behavior (currently maps to 900).
+
+**Best Solution:** Add test alongside the fix for 23b.
+
+### 23d. `gnome/mod.rs` `compute_text_scale()` hardcodes `caption.weight = 400` instead of leaving it to inherit
+
+**Category:** api-bug
+**Severity:** low
+**File(s):** `src/gnome/mod.rs:253-271`
+
+**Problem:** `compute_text_scale()` hardcodes `caption.weight = Some(400)`.
+This is correct for the default Adwaita CSS (`.caption` is Regular 400), but
+if the user has changed their system font to a non-Regular weight (e.g.,
+"Cantarell Light 11" which parses as weight 300), the caption weight will
+still be forced to 400, ignoring the user's lighter font preference.
+
+The `dialog_title` and `display` entries correctly leave `weight: None` to
+inherit from the Adwaita preset base. Caption forces weight to 400 instead
+of following the same inheritance pattern.
+
+platform-facts.md SS1.4.1 line 724: "`.caption`: 82%, 400". The CSS does
+specify 400 explicitly, so the hardcoded value is technically correct for
+stock Adwaita. But the runtime reader's purpose is to adapt to user settings.
+
+**Solution Options:**
+
+1. **Change caption.weight to None (inherit from base preset / defaults.font.weight)**
+   - *Pros:* Consistent with dialog_title/display entries in the same function; respects user font weight override
+   - *Cons:* Default behavior unchanged (400) since Adwaita base sets caption weight
+
+2. **Keep hardcoded 400**
+   - *Pros:* Matches Adwaita CSS spec exactly
+   - *Cons:* Ignores user font weight override; inconsistent with dialog_title/display entries
+
+**Best Solution:** Option 1. Set `weight: None` so the Adwaita preset's
+`text_scale.caption` (or defaults.font.weight) is used, consistent
+with the other entries in `compute_text_scale()`.
+
+### 23e. `kde/mod.rs` `read_kcmfontsrc_key()` silently returns `None` when HOME is set but XDG_CONFIG_HOME is empty string
+
+**Category:** correctness
+**Severity:** low
+**File(s):** `src/kde/mod.rs:140-161`
+
+**Problem:** When `XDG_CONFIG_HOME` is set to an empty string, the function
+correctly treats it as unset (line 141: `if config_home.is_empty() { None }`)
+and falls through to the `HOME`-based path via `.or_else()`. This behavior
+is correct per the XDG Base Directory Specification ("If $XDG_CONFIG_HOME
+is either not set or empty, a default equal to $HOME/.config should be used").
+
+**Verdict:** Correct. Not a bug. Verified the empty-string handling matches
+the XDG spec.
+
+### 23f. `kde/mod.rs` `parse_icon_sizes_from_content()` does not set `dialog` or `panel` icon sizes
+
+**Category:** api-bug
+**Severity:** low
+**File(s):** `src/kde/mod.rs:172-239`
+
+**Problem:** The function parses icon sizes from the icon theme's index.theme
+and derives `small`, `toolbar`, and `large` from directory entries, but
+always returns `dialog: None, panel: None` (lines 237-238). platform-facts.md
+SS1.3.6 line 686-687: "KDE Dialog DialogDefault: 32px (C++ fallback, Breeze
+default matches)", "Panel PanelDefault: 48px (C++ fallback, Breeze default
+matches)".
+
+These sizes come from `index.theme` `[Icon Theme]` keys `DialogDefault` and
+`PanelDefault`, which are read by KIconLoader in the C++ API but not parsed
+by `parse_icon_sizes_from_content()`. The function only inspects per-directory
+`Size` and `Context` pairs, not the top-level icon theme metadata keys.
+
+**Solution Options:**
+
+1. **Read `DialogDefault` and `PanelDefault` keys from `[Icon Theme]` section**
+   - *Pros:* Matches KDE KIconLoader behavior; fills all 5 icon size fields
+   - *Cons:* Adds ~10 lines of key lookup
+
+2. **Keep None, let preset fill them**
+   - *Pros:* No change; preset provides the values
+   - *Cons:* `from_kde()` returns incomplete icon sizes; custom icon themes with non-default values are ignored
+
+**Best Solution:** Option 1. The keys are simple integer lookups from the same
+INI file already being parsed. Add:
+```
+dialog = ini.get("Icon Theme", "DialogDefault")
+    .and_then(|s| s.trim().parse::<u32>().ok())
+    .map(|sz| sz as f32);
+panel = ini.get("Icon Theme", "PanelDefault")
+    .and_then(|s| s.trim().parse::<u32>().ok())
+    .map(|sz| sz as f32);
+```
+
+### 23g. `gnome/mod.rs` `build_gnome_variant()` sets `dialog.button_order = TrailingAffirmative` for GNOME but no icon_set
+
+**Category:** api-bug
+**Severity:** low
+**File(s):** `src/gnome/mod.rs:238-239`
+
+**Problem:** The GNOME variant builder explicitly sets
+`dialog.button_order = Some(DialogButtonOrder::TrailingAffirmative)` (correct
+per platform-facts.md SS2.22) but does not set `icon_set`. The icon_set is
+filled later by `resolve()` Phase 5 which calls `system_icon_set()`, and
+since GNOME is Linux, this returns `Freedesktop` which is correct. However,
+the KDE reader at `src/kde/mod.rs:47` does not set icon_set either.
+
+Both readers rely on the resolve() fallback for icon_set, which is correct
+design. This is not a bug -- just noting the consistent pattern for
+completeness.
+
+**Verdict:** Correct. Not a bug. Both KDE and GNOME readers correctly rely
+on resolve() Phase 5 for icon_set.
+
+### 23h. Windows 11 `combo_box.arrow_area_width = 38` -- platform-facts says 38
+
+**Category:** preset-value
+**Severity:** low (correct)
+**File(s):** `src/presets/windows-11.toml:189,388`
+
+**Problem:** Checked this because KDE was flagged (28 vs 20) in issue 1q.
+platform-facts.md SS2.24 line 1225: "Windows: WinUI3: 38". The preset uses
+38.0 for both light and dark. Confirmed correct.
+
+**Verdict:** Correct. No issue.

@@ -1268,3 +1268,322 @@ the message.
 | 35 | Showcase `_ => false` defeats exhaustiveness | Very Low | Trivial | Explicit match arms |
 | 36 | Missing `DialogButtonOrder` re-export (CC-3) | Low | Trivial | Add to re-export block |
 | 37 | `to_theme()` bare `#[must_use]` (CC-7) | Very Low | Trivial | Add message string |
+
+---
+
+## New Findings: Second-Pass Deep Audit
+
+Second-pass audit of all 4 source files, the showcase example, all 57
+tests, the core model types, and platform-facts.md. Cross-referenced
+every mapping, analyzed every test assertion, and checked for edge
+cases. Issue numbering continues from the existing document.
+
+---
+
+### 38. `colorize_monochrome_svg()` Replaces `currentColor` Globally Including Non-Color Attributes
+
+**Category:** mapping-bug
+**Severity:** low
+**File(s):** `connectors/native-theme-iced/src/icons.rs:246-248`
+
+**Problem:** The `currentColor` replacement at line 247 uses
+`svg_str.replace("currentColor", &hex)` which performs a global string
+replacement. This is correct for `fill="currentColor"` and
+`stroke="currentColor"`, but SVG attributes can reference
+`currentColor` in other properties too -- for example,
+`stop-color="currentColor"` in gradients, `flood-color="currentColor"`
+in filters, or `lighting-color="currentColor"`. For monochrome icons
+this is actually the desired behavior (recolor everything), so this is
+not a bug for the intended use case (Material, Lucide). However, if a
+user passes a *multi-color* SVG that happens to use `currentColor` in
+one gradient stop alongside explicit colors in another, the global
+replacement would recolor the `currentColor` stop while leaving
+explicit colors intact, potentially producing unexpected results.
+
+The doc comment at line 223 correctly says "for **monochrome** SVG
+icon" and the public `to_svg_handle()` doc at line 48 correctly says
+"Pass `None` for multi-color system icons to preserve their native
+palette." So the API contract is clear. But the `currentColor` branch
+short-circuits before the fill-specific branch -- if a multi-color SVG
+accidentally contains one `currentColor` reference alongside explicit
+colors, all `currentColor` instances get replaced and the function
+returns early without touching the explicit colors.
+
+**Solution Options:**
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | No code change; add a warning to the `colorize_monochrome_svg` doc comment noting that `currentColor` replacement is global | Documents the behavior explicitly | No code change |
+| B | Only replace `currentColor` inside `fill=` and `stroke=` attribute values | More precise; avoids replacing gradient/filter references | More complex regex or parsing; over-engineering for monochrome icons |
+
+**Best Solution:** A. The function is internal (`fn`, not `pub fn`) and
+its doc comment already says "monochrome SVG icon." Adding a one-line
+note clarifying that `currentColor` replacement is global (not
+attribute-scoped) is sufficient. The intended usage pattern (users pass
+`None` for multi-color icons) prevents the issue in practice.
+
+---
+
+### 39. `from_system()` Moves `sys.dark`/`sys.light` Without Selecting by `is_dark`
+
+**Category:** api-misuse
+**Severity:** low
+**File(s):** `connectors/native-theme-iced/src/lib.rs:156-158`
+
+**Problem:** The `from_system()` function at line 158 uses
+`if sys.is_dark { sys.dark } else { sys.light }` to select the
+variant. This moves the selected `ResolvedThemeVariant` out of the
+`SystemTheme`, consuming it. The non-selected variant is dropped.
+
+Meanwhile, `SystemThemeExt::to_iced_theme()` at line 171 calls
+`self.active()` which returns a reference and does not consume
+anything. The two entry points behave differently:
+- `from_system()` moves and consumes the `SystemTheme` (returning
+  owned `ResolvedThemeVariant`)
+- `to_iced_theme()` borrows the `SystemTheme` (discarding the
+  `ResolvedThemeVariant`)
+
+This is not a bug -- `from_system()` returns the resolved variant so
+callers have it for metrics, while `to_iced_theme()` discards it
+(issue 6 already covers that). But there is a subtle asymmetry: if a
+caller needs both variants (e.g., to support live dark/light switching
+without re-reading the system theme), `from_system()` drops the
+inactive variant. The caller must hold onto the `SystemTheme` directly
+instead.
+
+This is already partially covered by issue 5 (discards `is_dark` flag)
+and issue 6 (discards resolved variant). No separate fix needed beyond
+those.
+
+**Solution Options:** Subsumed by issues 5 and 6.
+
+**Best Solution:** No additional action. Issues 5 and 6 already cover
+the necessary API improvements. Noting for completeness.
+
+---
+
+### 40. `into_image_handle()` and `into_svg_handle()` Have No Tests for Wrong-Variant Input
+
+**Category:** test-gap
+**Severity:** low
+**File(s):** `connectors/native-theme-iced/src/icons.rs:549-562`
+
+**Problem:** The consuming versions `into_image_handle()` and
+`into_svg_handle()` have tests for the happy path (RGBA for image,
+SVG for svg) but no tests for the rejection path:
+- `into_image_handle(IconData::Svg(...))` -- should return `None`
+- `into_svg_handle(IconData::Rgba { .. }, None)` -- should return `None`
+
+The borrowing versions (`to_image_handle`, `to_svg_handle`) DO have
+both happy and rejection tests. The consuming versions rely on the
+same `match` logic, so they are almost certainly correct, but the
+asymmetric test coverage means a future refactor that changes only the
+consuming path could introduce a regression undetected.
+
+**Solution Options:**
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Add 2 tests: `into_image_handle_with_svg_returns_none` and `into_svg_handle_with_rgba_returns_none` | Symmetric coverage with borrowing variants; trivial to write | 2 more tests |
+| B | No change | The borrowing tests cover the logic | Asymmetric coverage |
+
+**Best Solution:** A. Two trivial tests for completeness.
+
+---
+
+### 41. Showcase `build_animation_caches()` Only Caches One Icon Set's Animations
+
+**Category:** styling-gap
+**Severity:** low
+**File(s):** `connectors/native-theme-iced/examples/showcase.rs:446-505`
+
+**Problem:** `build_animation_caches()` takes a single `IconSet` and
+caches animations only for that set. It calls `loading_indicator(icon_set)`
+which returns the loading indicator for the given set. The `set_name`
+variable at line 461 is used as a label in the UI.
+
+However, when the user switches icon sets via the pick list (line
+1174-1192), the animation caches are rebuilt from scratch for the new
+set, discarding the old caches. This means the animated icons section
+shows only the current set's loading indicator, not a comparison of
+all sets' animations.
+
+This is an intentional design choice (show the active set's animation),
+not a bug. The gpui showcase likely does the same. Noting only because
+the function name `build_animation_caches` (plural) suggests it builds
+caches for multiple sets, but it only handles one.
+
+**Solution Options:** No action needed. This is a naming observation,
+not a functional issue.
+
+**Best Solution:** No change. The function correctly builds caches for
+the active icon set. The plural "caches" refers to the multiple cache
+data structures (frames, spins, statics), not multiple icon sets.
+
+---
+
+### 42. No Test That `to_color()` Preserves Alpha for Non-Opaque Input
+
+**Category:** test-gap
+**Severity:** low
+**File(s):** `connectors/native-theme-iced/src/palette.rs:57-71`
+
+**Problem:** The single `to_color` test at `palette.rs:57-71` uses
+`Rgba::rgb(255, 0, 0)` which produces `a = 1.0`. There is no test
+that verifies alpha preservation for non-opaque colors (e.g.,
+`Rgba::new(128, 128, 128, 128)` should produce `a ~= 0.502`).
+
+Issue 20 in the existing document notes that the alpha channel is
+preserved by `to_color()` but all palette colors are fully opaque.
+However, `to_color()` is a public function documented as useful "for
+power users who need to map arbitrary `ResolvedThemeVariant` fields to
+iced colors" (line 11-12). Some resolved fields carry meaningful alpha
+(e.g., `shadow` at ~0.3 opacity). A test verifying alpha round-trip
+would guard against future regressions in the conversion.
+
+**Solution Options:**
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Add one test: `to_color_preserves_alpha` with a non-1.0 alpha input | Guards the documented alpha-preserving behavior | 1 more test |
+| B | No change | `to_color` is trivial; unlikely to regress | Alpha path untested |
+
+**Best Solution:** A. One trivial test:
+```rust
+#[test]
+fn to_color_preserves_alpha() {
+    let result = to_color(Rgba::new(0, 0, 0, 128));
+    assert!((result.a - 128.0 / 255.0).abs() < 0.01);
+}
+```
+
+---
+
+### 43. Showcase `color_to_hex()` Truncates Alpha (Inconsistent With `colorize_monochrome_svg`)
+
+**Category:** styling-gap
+**Severity:** very low
+**File(s):** `connectors/native-theme-iced/examples/showcase.rs:2799-2804`
+
+**Problem:** The showcase's `color_to_hex()` function converts an iced
+`Color` to a 6-digit hex string (`#rrggbb`), discarding the alpha
+channel. This is used in color swatch labels throughout the Theme Map
+tab.
+
+This is closely related to issue 30 (which notes that `from_rgb` at
+line 2761 discards alpha when constructing the swatch color itself).
+However, even after issue 30 is fixed (using `from_rgba`), the hex
+label would still show only 6 digits because `color_to_hex` only
+formats RGB.
+
+After issue 30 is applied, swatches for colors like `shadow` (which
+has ~0.3 alpha) would render with correct semi-transparent appearance
+but display a misleading hex label like `#000000` instead of
+`#00000040` or `rgba(0,0,0,0.24)`.
+
+**Solution Options:**
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Extend `color_to_hex()` to include alpha when `a < 1.0` as `#rrggbbaa` | Complete color information in labels | 8-char hex less familiar to some users |
+| B | Show alpha as a separate annotation: `#000000 @24%` | Clear separation of RGB and alpha | Custom format |
+| C | No change | Simpler labels | Incomplete color info after issue 30 is fixed |
+
+**Best Solution:** A. Emit 8-digit hex (`#rrggbbaa`) only when alpha
+is not 1.0, 6-digit hex otherwise. Consistent with CSS Color Level 4
+8-digit hex notation. Should be done when issue 30 is implemented.
+
+---
+
+### 44. `from_preset()` Light/Dark Selection Inconsistency With `catppuccin-mocha`
+
+**Category:** test-gap
+**Severity:** medium
+**File(s):** `connectors/native-theme-iced/src/lib.rs:486-498`
+
+**Problem:** Test `from_preset_valid_light` at line 487 calls
+`from_preset("catppuccin-mocha", false)`. This requests the light
+variant of catppuccin-mocha. The test passes because catppuccin-mocha
+has both light and dark variants (the light variant is the
+auto-generated inverse).
+
+However, the test name says "valid_light" and the comment at line 491
+says "Should produce a valid custom theme (not Light or Dark built-in)"
+-- it then asserts `assert_ne!(theme, Theme::Light)`. This assertion
+is trivially true because any custom theme with `Theme::custom_with_fn`
+is never `==` to the built-in `Theme::Light` variant, regardless of
+whether the palette mapping is correct.
+
+Similarly, `from_preset_valid_dark` at line 496 asserts
+`assert_ne!(theme, Theme::Dark)`, which is equally trivially true.
+
+These tests verify that `from_preset()` succeeds and returns a custom
+theme, but they do not verify that the returned theme actually
+corresponds to the requested light/dark variant. A test could verify
+that `from_preset("catppuccin-mocha", false)` produces a light
+background (>0.9) and `from_preset("catppuccin-mocha", true)` produces
+a dark background (<0.3).
+
+This is partially covered by existing issue 14.5 (weak assertions) and
+14.3 (missing test scenarios). However, the specific concern that
+`from_preset` tests do not verify variant correctness (light vs dark)
+is not explicitly called out.
+
+**Solution Options:**
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Add background luminance assertions to both tests: light should be >0.9, dark should be <0.3 | Verifies variant selection correctness | Fragile if theme adjusts background slightly |
+| B | Verify specific resolved field (e.g., `resolved.defaults.background`) matches known catppuccin-mocha hex | Exact verification | Couples test to preset values |
+
+**Best Solution:** A. Add one assertion per test. The light test
+already has this pattern in `to_theme_from_preset` (line 340:
+`palette.background.r > 0.9`), so applying it to `from_preset_valid_light`
+and adding `palette.background.r < 0.3` to `from_preset_valid_dark`
+is consistent.
+
+---
+
+### 45. `input_padding()` Test Does Not Assert Top/Bottom Symmetry
+
+**Category:** test-gap
+**Severity:** low
+**File(s):** `connectors/native-theme-iced/src/lib.rs:384-393`
+
+**Problem:** The `button_padding_returns_iced_padding` test at line
+371-382 has four assertions including symmetry checks:
+```rust
+assert_eq!(pad.top, pad.bottom, "top and bottom should be equal");
+assert_eq!(pad.left, pad.right, "left and right should be equal");
+```
+
+The `input_padding_returns_iced_padding` test at line 384-393 only
+asserts `pad.top > 0.0` and `pad.right > 0.0`, without the symmetry
+checks. Since `input_padding()` uses the same `Padding::from([v, h])`
+pattern as `button_padding()`, the symmetry is guaranteed by iced's
+`Padding::from` implementation. But the asymmetric test coverage means
+a future change to `input_padding()` that breaks symmetry (e.g.,
+switching to per-side padding for asymmetric input fields like WinUI3
+TextBox with 5px top / 6px bottom) would not be caught.
+
+**Solution Options:**
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Add symmetry assertions to `input_padding` test matching `button_padding` test | Consistent test quality between the two helpers | 2 more assertions |
+| B | No change | Symmetry is guaranteed by `Padding::from` | Inconsistent test rigor |
+
+**Best Solution:** A. Two additional assertions for consistency:
+```rust
+assert_eq!(pad.top, pad.bottom, "top and bottom should be equal");
+assert_eq!(pad.left, pad.right, "left and right should be equal");
+```
+
+---
+
+### Summary: Second-Pass New Findings
+
+| # | Issue | Severity | Effort | Recommended Fix |
+|---|-------|----------|--------|----------------|
+| 38 | `currentColor` replacement is global (non-attribute-scoped) | Low | Trivial | Add doc comment note |
+| 39 | `from_system()` variant asymmetry | Low | N/A | Subsumed by issues 5+6 |
+| 40 | `into_image_handle`/`into_svg_handle` missing rejection-path tests | Low | Trivial | Add 2 tests |
+| 41 | `build_animation_caches()` naming suggestion | Very Low | N/A | No action needed |
+| 42 | `to_color()` has no alpha preservation test | Low | Trivial | Add 1 test |
+| 43 | `color_to_hex()` truncates alpha (complements issue 30) | Very Low | Trivial | Extend to 8-digit hex when alpha < 1.0 |
+| 44 | `from_preset` tests do not verify light/dark variant correctness | Medium | Trivial | Add background luminance assertions |
+| 45 | `input_padding()` test missing symmetry assertions | Low | Trivial | Add 2 assertions |

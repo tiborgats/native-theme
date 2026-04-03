@@ -1717,3 +1717,632 @@ that `OnceLock` cache is omitted. Would pass if OnceLock incorrectly emitted.
 | 61 | Merge ordering not tested | **Low** | Trivial | Add position assertion |
 | 62 | Invisible Unicode passes validation | **Low** | Low | Reject invisible chars |
 | 64 | Default-only DeAware test missing OnceLock assertion | **Low** | Trivial | Add assertion |
+
+---
+
+## New Findings: Second-Pass Deep Audit
+
+### 65. Generated Code Missing `#[allow(unused_imports)]` for `std::sync::OnceLock`
+
+**Category:** codegen-bug
+**Severity:** low
+**File(s):** `src/codegen.rs:181`
+
+**Problem:** When DE-aware mappings are present, the generated code emits
+`static CACHED_DE: std::sync::OnceLock<...>` inside a `#[cfg(target_os = "linux")]`
+block. On non-Linux targets, this entire block is compiled out. However, the
+generated code does not contain a `#[cfg(target_os = "linux")]` guard around
+`use std::sync::OnceLock` (it uses the fully-qualified path inline instead).
+This is technically fine because the `OnceLock` type is referenced only inside
+the `cfg`-gated block.
+
+However, if the generated code is ever refactored to use a `use` import for
+cleanliness, the import would trigger an `unused_imports` warning on non-Linux.
+Additionally, the `std::env::var` call on line 185 is also inside the cfg block,
+but `std::env` is used without import. No actual warning is produced today, but
+this is fragile.
+
+This is distinct from issue 47 (which covers `extern crate` lint warnings).
+
+**Solution Options:**
+
+1. **Add `#[allow(dead_code, unused_imports)]` at the top of the generated file**
+   - *Pros:* Prevents any future warnings from cfg-gated code paths
+   - *Cons:* Overly broad suppression; hides real unused items
+
+2. **Keep status quo (fully-qualified paths avoid the issue)**
+   - *Pros:* No generated code change; works correctly today
+   - *Cons:* Fragile if codegen style changes; no protection for future refactors
+
+**Best Solution:** 2 -- The current approach of using fully-qualified paths
+(`std::sync::OnceLock`, `std::env::var`) avoids the warning entirely.
+This is a non-issue today but worth noting for future codegen changes.
+
+---
+
+### 66. `MappingValue::DeAware` Accepts Empty Table `{}` Without Error
+
+**Category:** validation-bug
+**Severity:** medium
+**File(s):** `src/schema.rs:76-81`, `src/validate.rs:71-79`
+
+**Problem:** The `#[serde(untagged)]` deserialization of `MappingValue` tries
+`Simple(String)` first, then `DeAware(BTreeMap<String, String>)`. A TOML
+value of `play-pause = {}` (empty inline table) deserializes as
+`DeAware(BTreeMap::new())` -- an empty map with no keys at all.
+
+`validate_mapping` at `validate.rs:71-79` checks for missing `"default"` key
+and correctly reports `MissingDefault` for this case. So validation catches it.
+
+However, the error message says `DE-aware mapping for "play-pause" is missing
+the required "default" key`, which is confusing when the user wrote `{}` -- they
+may not realize they created a "DE-aware mapping" at all. The user likely
+intended a simple string and made a TOML syntax error.
+
+**Solution Options:**
+
+1. **Add a specific error or warning for empty DeAware maps**
+   - *Pros:* Better DX; points user to the real problem (TOML syntax error)
+   - *Cons:* One more check in validation
+
+2. **Keep current behavior (MissingDefault catches it)**
+   - *Pros:* No code change; technically caught
+   - *Cons:* Confusing error message for a common TOML typo
+
+**Best Solution:** 1 -- Check for empty DeAware maps explicitly and emit
+a more helpful error: `mapping for "play-pause" in {file} is an empty table;
+expected a string or a table with at least a "default" key`.
+
+---
+
+### 67. `validate_svgs` Only Checks Default Name for DE-Aware Bundled Mappings
+
+**Category:** validation-bug
+**Severity:** low
+**File(s):** `src/validate.rs:93-115`
+
+**Problem:** `validate_svgs()` uses `value.default_name()` at line 103 to
+determine which SVG file must exist. For a DE-aware bundled mapping like
+`{ kde = "media-playback-start", default = "play_pause" }`, only
+`play_pause.svg` is checked.
+
+This is related to issues 11 and 12 (orphan SVG detection and path tracking)
+but is a distinct code path: `validate_svgs` is about *required* SVGs, not
+orphan detection. The existing document covers this only indirectly through
+issue 7 (bundled DE-aware mismatch), which proposes making bundled DE-aware
+an error. If issue 7 is NOT implemented (i.e., bundled DE-aware remains a
+warning), then `validate_svgs` is correct -- only the default SVG is embedded,
+so only it needs to exist.
+
+This finding is documented for completeness: it is NOT a bug given the
+current design, but becomes one if bundled DE-aware is ever allowed without
+issue 7's fix. The dependency chain is: if issue 7 is resolved (bundled
+DE-aware becomes an error), this is moot. If issue 7 is deferred, this
+is correct behavior.
+
+**Solution Options:**
+
+1. **No change needed if issue 7 is implemented**
+   - *Pros:* Correct by construction
+   - *Cons:* Depends on issue 7
+
+2. **Add a comment documenting the dependency on issue 7's design decision**
+   - *Pros:* Future-proofs the code against accidental changes
+   - *Cons:* One comment
+
+**Best Solution:** 2 -- Add a comment in `validate_svgs` noting that it
+intentionally checks only the default name because bundled DE-aware
+mappings only embed the default SVG.
+
+---
+
+### 68. `merge_configs` Does Not Validate Cross-File Theme Overlap
+
+**Category:** validation-bug
+**Severity:** medium
+**File(s):** `src/lib.rs:834-874`, `src/lib.rs:612-633`
+
+**Problem:** This is already documented as issue 8. However, the existing
+document's analysis misses a subtlety: `merge_configs` at lines 856-864
+deduplicates themes into separate `seen_bundled` and `seen_system` sets.
+If file A has `bundled-themes = ["material"]` and file B has
+`system-themes = ["material"]`, the merged config has "material" in BOTH
+`bundled_themes` and `system_themes` because they use separate `BTreeSet`s.
+
+The per-file `validate_theme_overlap` at line 597 only checks within a
+single file. The post-merge `validate_themes` at line 633 only checks
+for unknown theme names, NOT overlap. So the overlap goes entirely
+undetected.
+
+**This is already covered by issue 8.** No new issue needed.
+
+---
+
+### 69. No Test for `BuildErrors::is_empty()` or `BuildErrors::len()`
+
+**Category:** test-gap
+**Severity:** low
+**File(s):** `src/error.rs:223-231`
+
+**Problem:** `BuildErrors` exposes `is_empty()` and `len()` methods at
+`error.rs:223-231`. Neither has a dedicated unit test. They are tested only
+indirectly through integration tests that call `errors.is_empty()` in
+assertions, but the methods' return values for non-empty collections are
+never explicitly verified.
+
+The `IntoIterator` implementations at `error.rs:241-257` are also untested
+directly, though they are used implicitly in `for e in &errors` loops
+in the Display implementation tests.
+
+**Solution Options:**
+
+1. **Add targeted tests for `is_empty`, `len`, `into_iter`, and `iter`**
+   - *Pros:* Documents the API contract; catches regressions in trivial methods
+   - *Cons:* Tests for trivial delegation to Vec
+
+2. **Skip (methods are trivial delegations)**
+   - *Pros:* No test bloat
+   - *Cons:* Small API surface untested
+
+**Best Solution:** 1 -- These are public API methods. A single test
+function covering all four is sufficient:
+`assert!(!errors.is_empty()); assert_eq!(errors.len(), 2);
+assert_eq!(errors.into_iter().count(), 2);`.
+
+---
+
+### 70. `check_orphan_svgs` Does Not Consider DE-Specific SVGs From Other Roles
+
+**Category:** validation-bug
+**Severity:** low
+**File(s):** `src/validate.rs:121-161`
+
+**Problem:** Issue 11 documents that `check_orphan_svgs` misses DE-specific
+names from the same role. But there is an additional dimension: the
+`referenced` set at line 127 is built from `mapping.values()` using
+`default_name()`. This means only the *default* name of each role is
+considered referenced.
+
+In practice, this means:
+- Role A maps to `{ kde = "icon-kde-a", default = "icon-a" }`
+- Role B maps to `"icon-b"` (simple)
+- SVG `icon-kde-a.svg` exists in the directory
+
+The SVG `icon-kde-a.svg` is reported as orphan even though it belongs to
+role A's KDE-specific mapping.
+
+**This is fully covered by issue 11's fix** (include all icon names in
+the referenced set). No new issue needed -- this is the same root cause.
+
+---
+
+### 71. Generated `match de` Block Uses `_ =>` Wildcard That Matches `LinuxDesktop::Unknown`
+
+**Category:** codegen-bug
+**Severity:** low
+**File(s):** `src/codegen.rs:256-259`
+
+**Problem:** The generated DE dispatch code at `codegen.rs:256-259` emits:
+
+```rust
+match de {
+    native_theme::LinuxDesktop::Kde => Some("media-playback-start"),
+    _ => Some("play"),
+}
+```
+
+The `_ =>` wildcard matches all `LinuxDesktop` variants not explicitly
+listed, including `LinuxDesktop::Unknown`. This means that when the desktop
+environment is unknown/unrecognized, the default icon name is returned.
+
+This is actually correct behavior -- the `default` key in the TOML mapping
+IS intended as the fallback for all unmatched DEs including Unknown. The
+runtime crate's `detect_linux_de` returns `LinuxDesktop::Unknown` for
+unrecognized desktops, and the default icon name is the appropriate
+fallback.
+
+However, if a new `LinuxDesktop` variant is added (e.g., `Cosmic`), the
+wildcard silently captures it and returns the default instead of
+potentially returning `None`. This is a non-exhaustive match concern.
+
+The drift detection tests in `schema.rs:313-343` will catch the missing
+DE_TABLE entry when a new variant is added. And even if DE_TABLE is
+updated, the wildcard in generated code is still correct (unknown DE
+variants should get the default). So this is actually a correct design
+choice.
+
+**This is not a bug.** The `_ =>` wildcard correctly handles both
+`LinuxDesktop::Unknown` and any future variants. The drift detection
+tests in `schema.rs` provide the safety net for table updates.
+
+---
+
+### 72. `has_any_de_aware_mappings` Only Checks Known DE Keys
+
+**Category:** codegen-bug
+**Severity:** low
+**File(s):** `src/codegen.rs:135-159`
+
+**Problem:** `has_any_de_aware_mappings()` at line 150 checks whether any
+DE-aware mapping has a non-default key that maps to a *known* DE variant
+(`de_key_to_variant(k).is_some()`). If a mapping has ONLY unrecognized DE
+keys (e.g., `{ cosmic = "x", default = "y" }`), the function returns
+`false`, and no `OnceLock` cache is emitted.
+
+Meanwhile, `generate_icon_name()` at line 226-233 filters DE entries the
+same way (via `de_key_to_qualified_variant`), so unrecognized keys produce
+no match arms. The DE-aware value correctly collapses to a simple arm at
+line 235-240.
+
+So the OnceLock is correctly omitted when no known DE keys produce match
+arms. The behavior is consistent: if no known DE variants are referenced,
+no DE dispatch code is generated, and no cache is needed.
+
+**This is not a bug.** The logic is correct and consistent between
+`has_any_de_aware_mappings` and `generate_icon_name`. Both filter on
+known DE keys.
+
+---
+
+### 73. `native-theme` Is a Dev-Dependency But Used in `#[cfg(test)]` Schema Drift Tests
+
+**Category:** api-inconsistency
+**Severity:** low
+**File(s):** `Cargo.toml:19`, `src/schema.rs:210-343`
+
+**Problem:** The `native-theme` crate is listed in `[dev-dependencies]` at
+`Cargo.toml:19`. The drift detection tests in `schema.rs:210-343` import
+`native_theme::IconSet` and `native_theme::LinuxDesktop` to verify that
+`THEME_TABLE` and `DE_TABLE` stay in sync with the runtime crate.
+
+This is correct Rust practice -- `#[cfg(test)]` code can use dev-dependencies.
+However, it means that **the build crate's production code has no compile-time
+link to the runtime crate's types**. The string constants in `THEME_TABLE`
+and `DE_TABLE` (e.g., `"IconSet::SfSymbols"`) are opaque strings that are
+only verified by tests, not by the type system.
+
+If someone modifies the runtime crate's `IconSet` enum variant names (e.g.,
+renames `SfSymbols` to `AppleSfSymbols`) without running the build crate's
+tests, the generated code would reference a non-existent variant.
+
+The existing drift detection tests mitigate this well. This is not a bug
+but a design trade-off worth noting.
+
+**This is not a bug.** The drift detection tests at `schema.rs:210-258`
+and `schema.rs:267-343` provide strong protection against this scenario.
+No action needed.
+
+---
+
+### 74. `validate_no_duplicate_roles_in_file` Does Not Catch TOML-Level Duplicates
+
+**Category:** validation-bug
+**Severity:** medium
+**File(s):** `src/validate.rs:292-309`, `src/lib.rs:592-594`
+
+**Problem:** TOML specification says that duplicate keys in a table are
+forbidden. The `toml` crate (v1.1.0) rejects duplicate keys at parse time
+with a parse error. So a TOML file with:
+
+```toml
+roles = ["play-pause", "skip-forward"]
+roles = ["volume-up"]
+```
+
+would fail at `toml::from_str()` before `validate_no_duplicate_roles_in_file`
+ever runs.
+
+However, `validate_no_duplicate_roles_in_file` checks for duplicates
+*within* the `roles` array:
+
+```toml
+roles = ["play-pause", "play-pause"]
+```
+
+TOML arrays DO allow duplicate values (only table keys must be unique).
+So this validation is correct and necessary.
+
+The test at `validate.rs:912-923` constructs a `MasterConfig` directly
+(not via TOML parsing) to test this, which is correct since TOML parsing
+alone cannot produce a `roles` array with duplicates from a valid TOML file.
+
+Wait -- TOML arrays *can* contain duplicate string values. A TOML file with
+`roles = ["play-pause", "play-pause"]` is valid TOML and produces a Vec
+with two identical entries. The `toml` crate deserializes this without
+error. So `validate_no_duplicate_roles_in_file` is a necessary check.
+
+**This is not a bug.** The validation correctly catches duplicate entries
+in TOML arrays, which are valid TOML but semantically incorrect.
+
+---
+
+### 75. `MasterConfig` `name` Field Allows Empty String
+
+**Category:** validation-bug
+**Severity:** medium
+**File(s):** `src/schema.rs:47-58`, `src/validate.rs:223-246`
+
+**Problem:** `MasterConfig.name` is a `String` field with no serde
+validation. A TOML file with `name = ""` deserializes successfully.
+`validate_identifiers` at `validate.rs:227-228` checks the PascalCase
+conversion of the name and catches the empty-string case (produces
+`InvalidIdentifier` with reason "PascalCase conversion produces an
+empty string").
+
+However, issue 37 already documents a related edge case:
+`output_filename` is computed at `lib.rs:581` BEFORE validation runs.
+For `name = ""`, `to_snake_case("")` produces `""`, and
+`output_filename` becomes `".rs"`. The validation error at line 624
+catches the identifier issue, but by then `output_filename` has already
+been set to `".rs"`.
+
+Since the pipeline returns errors without writing any file (line 751-759),
+the malformed filename is never used on the error path. On the success
+path (which cannot happen with `name = ""`), the filename would be wrong.
+But since validation prevents the success path, this is a latent bug
+that cannot be triggered.
+
+**This is already covered by issue 37.** No new issue needed.
+
+---
+
+### 76. `generate_icon_svg` Uses `default_name()` for `include_bytes!` Path Even for DE-Aware Values
+
+**Category:** codegen-bug
+**Severity:** low
+**File(s):** `src/codegen.rs:308-316`
+
+**Problem:** At `codegen.rs:309-311`, the `icon_svg` match arm construction
+uses `mv.default_name()` to get the SVG filename for `include_bytes!`.
+For a DE-aware bundled value like `{ kde = "media-playback-start",
+default = "play_pause" }`, only `play_pause.svg` is embedded.
+
+The `icon_svg` method returns this same SVG data regardless of the active
+desktop environment. But `icon_name()` returns different strings depending
+on the DE (issue 7's mismatch).
+
+**This is already fully covered by issue 7.** No new issue needed.
+
+---
+
+### 77. No Validation That `name` Field Contains Only Safe Characters for Filenames
+
+**Category:** validation-bug
+**Severity:** low
+**File(s):** `src/lib.rs:578-581`, `src/validate.rs:223-246`
+
+**Problem:** The `name` field from TOML is used to derive the output
+filename via `to_snake_case()` at `lib.rs:581`:
+
+```rust
+let output_filename = format!("{}.rs", first_name.to_snake_case());
+```
+
+`to_snake_case()` from the `heck` crate strips non-alphanumeric characters
+and converts to lowercase with underscores. For most inputs this produces
+safe filenames. But edge cases exist:
+
+- `name = "..."` produces `to_snake_case("...") = ""` -> filename `".rs"`
+  (issue 37)
+- `name = "a/b"` produces `to_snake_case("a/b") = "a_b"` -> filename
+  `"a_b.rs"` (safe, path separator stripped)
+- `name = "NUL"` on Windows produces `to_snake_case("NUL") = "nul"` ->
+  filename `"nul.rs"` which is a Windows reserved device name
+
+The Windows reserved name issue is theoretical (the build crate is a
+build-time tool running on the developer's machine, not in production).
+The identifier validation catches most problematic names because
+PascalCase conversion filters aggressively.
+
+**Solution Options:**
+
+1. **Add Windows reserved name check to filename generation**
+   - *Pros:* Prevents rare Windows build failure
+   - *Cons:* Extremely unlikely scenario; `heck` already sanitizes most inputs
+
+2. **No change (issue 37's fix subsumes the empty-string case)**
+   - *Pros:* No code change
+   - *Cons:* Windows reserved names remain theoretically possible
+
+**Best Solution:** 2 -- The practical risk is negligible. A TOML file with
+`name = "nul"` would produce `pub enum Nul` which is a valid Rust
+identifier but a problematic filename only on Windows. Issue 37's fix
+(validate non-empty after snake_case) covers the worst case.
+
+---
+
+### 78. `validate_mapping` Quadratic Complexity for Large Role Lists
+
+**Category:** api-inconsistency
+**Severity:** low
+**File(s):** `src/validate.rs:42-82`
+
+**Problem:** `validate_mapping()` at lines 49-57 iterates over all
+`master_roles` and calls `mapping.contains_key(role)` for each. Since
+`mapping` is a `BTreeMap`, each `contains_key` is O(log n). The overall
+complexity is O(m * log n) where m = number of roles and n = number of
+mapping entries.
+
+At line 59, a `BTreeSet` is built from `master_roles` for the reverse
+check (unknown roles in mapping). This set construction is O(m * log m).
+The reverse check iterates mapping keys (O(n)) with set lookups (O(log m))
+for O(n * log m) total.
+
+For any realistic number of roles (tens to low hundreds), this is
+completely fine. The observation is recorded for completeness, not as
+an actionable issue.
+
+**This is not a bug.** Performance is irrelevant at build-time for
+realistic input sizes.
+
+---
+
+### 79. `check_orphan_svgs_and_collect_paths` Only Tracks SVGs That Exist on Disk
+
+**Category:** validation-bug
+**Severity:** low
+**File(s):** `src/lib.rs:812-831`
+
+**Problem:** At `lib.rs:823`, `check_orphan_svgs_and_collect_paths` only
+adds an SVG to `rerun_paths` and `svg_paths` if `svg_path.exists()` returns
+true. If the SVG file is created AFTER the build script runs but BEFORE
+the next build, cargo will not detect the change because the path was never
+registered for watching.
+
+However, this scenario is already handled: if the SVG does not exist,
+`validate_svgs` (run earlier at line 664) will report a `MissingSvg`
+error, and the pipeline will abort before reaching
+`check_orphan_svgs_and_collect_paths`. So the `.exists()` check at line
+823 is effectively dead code on the success path -- all SVGs must exist
+for the pipeline to reach this point.
+
+On the error path, the pipeline returns at line 751-759 and
+`pipeline_result_to_output` emits rerun-if-changed for all collected
+paths (including the master TOML and mapping files). When the user
+creates the missing SVG, the mapping.toml file's containing directory
+is already tracked at line 648, which will trigger a rebuild.
+
+**This is not a bug.** The `.exists()` guard is redundant but harmless
+on the success path. On the error path, directory-level tracking provides
+sufficient rebuild coverage.
+
+---
+
+### 80. `Cinnamon` DE Detection Mismatch Between Build and Runtime Crates
+
+**Category:** schema-gap
+**Severity:** medium
+**File(s):** `src/schema.rs:25` (DE_TABLE), runtime crate `src/lib.rs:207`
+
+**Problem:** The runtime crate's `detect_linux_de()` at `lib.rs:207`
+matches both `"X-Cinnamon"` and `"Cinnamon"` for `LinuxDesktop::Cinnamon`:
+
+```rust
+"X-Cinnamon" | "Cinnamon" => return LinuxDesktop::Cinnamon,
+```
+
+The drift detection test at `schema.rs:272-279` maps `("cinnamon", "Cinnamon")`
+for the XDG value, which correctly detects `Cinnamon`. Both string variants
+in the runtime crate resolve to the same `LinuxDesktop::Cinnamon` variant.
+
+The `DE_TABLE` entry `("cinnamon", "LinuxDesktop::Cinnamon")` is used for
+the *TOML key* in mapping files, not for XDG detection. The TOML key
+`cinnamon` in a `mapping.toml` file generates a match arm
+`LinuxDesktop::Cinnamon => Some("...")` in the output code. This match arm
+correctly catches both `X-Cinnamon` and `Cinnamon` XDG values because
+the runtime `detect_linux_de` returns the same enum variant for both.
+
+**This is not a bug.** The layering is correct: TOML keys map to enum
+variants, and the runtime crate handles the XDG string-to-variant mapping.
+
+---
+
+### 81. No Validation That Enum Name Does Not Collide With Generated `impl` Block Items
+
+**Category:** validation-bug
+**Severity:** low
+**File(s):** `src/validate.rs:223-246`, `src/codegen.rs:106-114`
+
+**Problem:** The generated code creates `impl {EnumName}` with
+`pub const ALL: &[Self]`. If the enum name were somehow identical to a
+type already in scope (e.g., the user names their enum `IconSet`), the
+generated `impl IconSet` would collide with or shadow the imported
+`native_theme::IconSet`.
+
+In practice, the generated code uses `Self` inside the impl block, and
+the enum is defined in the user's module (via `include!`), so there is no
+actual name collision with the imported `native_theme::IconSet` -- they
+are different types in different modules. The `impl` block applies to
+the locally defined enum, not the imported one.
+
+**This is not a bug.** Rust's module system prevents actual collisions.
+A user naming their enum `IconSet` would get confusing code but no
+compile error.
+
+---
+
+### 82. `generate_icons()` Does Not Support `crate_path` or `extra_derives`
+
+**Category:** api-inconsistency
+**Severity:** low
+**File(s):** `src/lib.rs:247-279`
+
+**Problem:** The simple `generate_icons()` API at line 269-276 passes
+`None` for `crate_path` and `&[]` for `extra_derives` to `run_pipeline`.
+Users of the simple API cannot customize these.
+
+**This is already covered by issue 49** which notes that the simple API's
+limitations are undocumented. No new issue needed.
+
+---
+
+### 83. `BuildErrors::new()` Accepts Empty Vec
+
+**Category:** api-inconsistency
+**Severity:** low
+**File(s):** `src/error.rs:202-204`
+
+**Problem:** `BuildErrors::new(vec![])` creates a `BuildErrors` instance
+with zero errors. `is_empty()` returns `true` and `Display` shows
+"0 build error(s):". This is semantically odd -- a "build errors"
+collection with no errors.
+
+The constructor is `pub(crate)`, so external users cannot create empty
+`BuildErrors`. Internally, the only caller that could produce this is
+`pipeline_result_to_output` at `lib.rs:881`, but it checks
+`!result.errors.is_empty()` before constructing `BuildErrors`.
+
+**Solution Options:**
+
+1. **Add `debug_assert!(!errors.is_empty())` in `BuildErrors::new()`**
+   - *Pros:* Documents invariant; catches internal misuse in debug builds
+   - *Cons:* Minimal value since constructor is pub(crate) only
+
+2. **No change (internal-only, guarded by caller)**
+   - *Pros:* No code change
+   - *Cons:* Invariant not enforced
+
+**Best Solution:** 1 -- A `debug_assert` documents the intent that
+`BuildErrors` should always contain at least one error.
+
+---
+
+### 84. `merge_configs` Uses First Config's Name Without Warning When Multiple Configs Have Different Names
+
+**Category:** api-inconsistency
+**Severity:** low
+**File(s):** `src/lib.rs:838-840`
+
+**Problem:** When merging multiple configs without an `enum_name_override`,
+`merge_configs` at line 838-840 silently uses the first config's `name`:
+
+```rust
+let name = enum_name_override
+    .map(|s| s.to_string())
+    .unwrap_or_else(|| configs[0].1.name.clone());
+```
+
+If file A has `name = "media-icons"` and file B has `name = "nav-icons"`,
+the merged enum is silently named `MediaIcons` with no warning that file
+B's name was discarded.
+
+This is similar to issue 38 (silent theme deduplication) but applies to
+the enum name, which is arguably more surprising -- the user explicitly
+chose a name in each file.
+
+**Solution Options:**
+
+1. **Emit a warning when multiple configs have different names and no override is set**
+   - *Pros:* Users know their name choice was discarded
+   - *Cons:* One more warning
+
+2. **Require `enum_name()` override when multiple sources have different names**
+   - *Pros:* No ambiguity
+   - *Cons:* Breaking change for existing multi-file setups (if any)
+
+3. **No change (document the behavior)**
+   - *Pros:* No code change
+   - *Cons:* Surprising behavior
+
+**Best Solution:** 1 -- Emit a warning. The user should know that only
+the first file's name is used when merging without an explicit override.
