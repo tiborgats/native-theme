@@ -2925,3 +2925,564 @@ and document the known limitations for future maintainers.
 | 66 | `colorize_svg` non-black root fill untested | **Low** | Trivial | Add edge-case tests |
 | 67 | `hover_color`/`active_color` zero-alpha/black edge cases untested | **Low** | Trivial | Add edge-case tests |
 
+---
+
+## New Findings: Third-Pass Deep Audit
+
+The following issues are genuinely new -- not covered by existing issues 1--67.
+
+### 68. `tc.scrollbar` Uses `c.bg` Instead of `resolved.scrollbar.track`
+
+**Category:** mapping-bug
+**Severity:** medium
+**File(s):** `colors.rs:276`
+
+**Problem:**
+```rust
+tc.scrollbar = c.bg;
+```
+
+The `tc.scrollbar` field is documented in gpui-component as "Scrollbar background color"
+(theme_color.rs:107). The connector maps it to `c.bg` (`defaults.background`). However,
+`ResolvedScrollbarTheme` has an explicit `track: Rgba` field (widgets/mod.rs:266) that
+represents the scrollbar track/gutter color.
+
+platform-facts.md section 2.8 shows:
+- macOS: track is **transparent** (overlay mode)
+- Windows: track is **transparent**
+- KDE: track is `defaults.background`
+- GNOME: track is from Adwaita CSS scrollbar styling
+
+On macOS and Windows, `resolved.scrollbar.track` will be a transparent or near-transparent
+color. By using `c.bg` (which is always opaque), the connector produces an opaque scrollbar
+gutter on platforms where native scrollbars have transparent backgrounds. This is visually
+wrong for overlay-style scrollbars -- the gutter should be transparent so content shows
+through behind it.
+
+On KDE, `track` inherits from `defaults.background`, so the current mapping accidentally
+produces the correct result.
+
+Two lines below, the connector correctly uses `resolved.scrollbar.thumb` and
+`resolved.scrollbar.thumb_hover` for the thumb colors -- making the track the only
+scrollbar field that bypasses the resolved per-widget value.
+
+**Solution Options:**
+
+A. Use `resolved.scrollbar.track`:
+```rust
+tc.scrollbar = rgba_to_hsla(resolved.scrollbar.track);
+```
+
+B. Keep `c.bg` (correct for KDE, wrong for macOS/Windows).
+
+**Best Solution:** A. Consistent with all other per-widget scrollbar field mappings in the
+same function and respects the platform-specific track color.
+
+---
+
+### 69. `to_theme_config` Does Not Set `is_default` Field
+
+**Category:** config-gap
+**Severity:** low
+**File(s):** `config.rs:23-38`
+
+**Problem:** `ThemeConfig` has an `is_default: bool` field (gpui-component schema.rs:32).
+The connector leaves it at `false` via `..ThemeConfig::default()`. gpui-component uses
+`is_default` to decide whether to treat a theme as the built-in default when
+`Theme::default()` is invoked.
+
+For native-theme-derived configs, `is_default = false` is arguably correct -- these are
+NOT gpui-component's built-in defaults. However, the field is never mentioned in
+documentation, and the connector's `to_theme_config` has no comment acknowledging it.
+If a downstream consumer checks `is_default` to decide whether to allow theme customization,
+native-theme themes would be incorrectly treated as customized even when they are the
+application's primary theme.
+
+**Solution Options:**
+
+A. Add a comment documenting the intentional `false`:
+```rust
+// is_default: false -- native-theme configs are not gpui-component built-in defaults.
+// Consumers who want to mark the system theme as "default" should set this on the
+// returned ThemeConfig.
+```
+
+B. Keep as-is.
+
+**Best Solution:** A. Documentation for future maintainers.
+
+---
+
+### 70. `config.rs` Tests Assert Tautology: `radius` Compared to Same Expression
+
+**Category:** test-weakness
+**Severity:** low
+**File(s):** `config.rs:81-88`
+
+**Problem:**
+```rust
+assert_eq!(
+    config.radius,
+    Some(resolved.defaults.radius.round() as usize)
+);
+assert_eq!(
+    config.radius_lg,
+    Some(resolved.defaults.radius_lg.round() as usize)
+);
+```
+
+These assertions compare the output of `to_theme_config` against the SAME expression used
+in the production code (config.rs:33-34). If the production code has a bug (e.g., rounding
+wrong, wrong source field), the test replicates the same bug in its expectation. The test
+would pass with `radius: Some(d.radius_lg.round() as usize)` (swapped fields) because
+catppuccin-mocha happens to have radius == radius_lg (both 8.0 in the light fallback).
+
+This is a special case of the broader issue #1 (single-preset testing), but specifically
+for config.rs: the test asserts structural identity ("the code does what the code says")
+rather than semantic correctness ("the theme config has a radius of 8 for catppuccin-mocha
+light").
+
+**Solution Options:**
+
+A. Assert against a known concrete value from the preset:
+```rust
+// catppuccin-mocha light (actually catppuccin-latte) has radius 8.0
+assert_eq!(config.radius, Some(8));
+```
+
+B. Use a preset where radius != radius_lg to catch field swaps.
+
+**Best Solution:** A combined with B. A hardcoded known-good value catches regressions the
+tautological assertion misses, and a preset with differing radii catches field swaps.
+
+---
+
+### 71. Material Icon Mapping: `SortAscending` and `ArrowUp` Both Map to `arrow_upward`
+
+**Category:** icon-collision
+**Severity:** low
+**File(s):** `icons.rs:301,236`
+
+**Problem:**
+```rust
+IconName::ArrowUp => "arrow_upward",       // line 236
+IconName::SortAscending => "arrow_upward", // line 301
+```
+
+Two distinct gpui-component `IconName` variants map to the same Material icon name
+`arrow_upward`. Similarly:
+```rust
+IconName::ArrowDown => "arrow_downward",     // line 232
+IconName::SortDescending => "arrow_downward", // line 302
+```
+
+And:
+```rust
+IconName::Dash => "remove",   // line 255
+IconName::Minus => "remove",  // line 283
+```
+
+And:
+```rust
+IconName::Redo => "redo",     // line 294
+IconName::Redo2 => "redo",    // line 295
+IconName::Undo => "undo",     // line 310
+IconName::Undo2 => "undo",    // line 311
+```
+
+And:
+```rust
+IconName::Folder => "folder",        // line 263
+IconName::FolderClosed => "folder",  // line 264
+```
+
+And:
+```rust
+IconName::PanelRight => "right_panel_close",       // line 291
+IconName::PanelRightClose => "right_panel_close",  // line 292
+```
+
+This is 7 collision pairs in the Material mapping alone. The Lucide mapping has fewer because
+Lucide has more specific icons. The issues are:
+1. `SortAscending` should ideally use a sort-specific icon (`sort` in Material) rather than a
+   directional arrow.
+2. `PanelRight` and `PanelRightClose` are semantically different (panel visible vs closing the
+   panel) but use the same Material icon.
+
+Issues #33 and #46 cover the forward `IconRole -> IconName` collisions (2 roles mapping to the
+same IconName). This issue covers a different problem: **different IconNames producing the same
+Material icon file**, which means the Material icon set provides no visual distinction for
+these pairs.
+
+**Solution Options:**
+
+A. Document the collisions in `material_name_for_gpui_icon`:
+```rust
+// NOTE: SortAscending and ArrowUp both map to "arrow_upward" because Material
+// has no dedicated sort-direction icon distinct from a directional arrow.
+```
+
+B. Use `sort` for `SortAscending` / `SortDescending` if Material has it.
+
+**Best Solution:** A for v0.5.4, investigate B for v0.6.0. Material Symbols does have `sort`
+and `sort_by_alpha` icons, but they may not be bundled. Documenting the known collisions
+prevents confusion when the same icon appears in multiple gallery rows.
+
+---
+
+### 72. `list_active` Result Has `a=0.2` Making the Selection Nearly Invisible
+
+**Category:** mapping-bug
+**Severity:** medium
+**File(s):** `colors.rs:187`
+
+**Problem:** Issue #7 identifies the double-opacity pattern but does not fully analyze the
+resulting alpha value. Let me trace the exact computation:
+
+```rust
+tc.list_active = c.bg.blend(c.primary.opacity(0.1)).alpha(0.2);
+```
+
+Step by step:
+1. `c.primary.opacity(0.1)` -- produces an Hsla with `a=0.1`
+2. `c.bg.blend(...)` -- blends primary at 10% onto bg. Result has `a = bg.a` (bg alpha,
+   typically 1.0). The blend itself is barely visible (only 10% primary mixed in).
+3. `.alpha(0.2)` -- SETS the result's alpha to 0.2, regardless of what came before.
+
+The final `list_active` color has `a=0.2`. When gpui renders a `list_active` background,
+the background is 80% transparent. On a dark theme where `bg` is near-black and `primary`
+is a saturated color, the 10%-blended-then-80%-transparent result is nearly invisible.
+
+Issue #7 proposes removing the double-opacity but does not note that the `.alpha(0.2)` call
+produces a SEMI-TRANSPARENT fill that is also used for:
+- `tc.table_active = tc.list_active` (line 194)
+
+Both the table and list active selection states are 80% transparent. This means the
+selection highlight bleeds through to whatever is beneath it, which may be acceptable for
+overlaid scroll containers but is incorrect for opaque list backgrounds.
+
+By contrast, `tc.list_active_border` at line 188 uses `.opacity(0.6)` for blending but does
+NOT call `.alpha()`, so its result is fully opaque (`a = bg.a = 1.0`). The selection has a
+visible border but a nearly invisible fill.
+
+**NOTE:** This deepens issue #7's analysis rather than replacing it. Issue #7's recommended
+fix (mode-aware single-stage opacity) would also fix this. But the key new observation is
+that the final alpha value is 0.2, making the fill semi-transparent -- which is a distinct
+problem from the double-opacity confusion issue #7 describes.
+
+**Solution Options:**
+
+Same as issue #7's solution A, with the additional note that the resulting color should
+have `a=1.0` (fully opaque) for proper list selection rendering:
+```rust
+tc.list_active = c.bg.blend(c.primary.opacity(selection_opacity));
+// Result has a=1.0 from bg, no .alpha() override
+```
+
+**Best Solution:** Fix alongside issue #7. The `.alpha(0.2)` call should be removed entirely.
+
+---
+
+### 73. `to_theme()` Never Sets `theme.colors` Field -- Relies on `Theme::from` Deref
+
+**Category:** correctness-risk
+**Severity:** low
+**File(s):** `lib.rs:97-122`
+
+**Problem:**
+```rust
+let theme_color = colors::to_theme_color(resolved, is_dark);
+let mut theme = Theme::from(&theme_color);
+theme.mode = mode;
+theme.font_family = ...;
+// Never: theme.colors = theme_color;
+```
+
+`Theme::from(&ThemeColor)` at gpui-component mod.rs:183-210 sets `colors: *colors`
+(copies the ThemeColor). Then the connector sets individual fields on `theme.*` which,
+via `DerefMut` to `ThemeColor`, write directly into `theme.colors.*`.
+
+Wait -- looking more carefully at the code, the connector does NOT write to any ThemeColor
+fields after `Theme::from()`. It only writes to Theme-level fields (`mode`, `font_family`,
+etc.). The colors are all set correctly via `Theme::from(&theme_color)`.
+
+This is NOT an issue. Removing from findings.
+
+---
+
+### 73. `assign_list_table` Does Not Receive `is_dark` But Contains Mode-Dependent Logic
+
+**Category:** design-inconsistency
+**Severity:** low
+**File(s):** `colors.rs:184,118`
+
+**Problem:** `assign_list_table` is the only assign function (other than `assign_charts` and
+`assign_base_colors`) that does NOT receive `is_dark` as a parameter:
+
+```rust
+assign_core(&mut tc, &c, is_dark);        // receives is_dark
+assign_primary(&mut tc, &c, is_dark);     // receives is_dark
+assign_secondary(&mut tc, &c, is_dark);   // receives is_dark
+assign_status(&mut tc, &c, is_dark);      // receives is_dark
+assign_list_table(&mut tc, &c);           // NO is_dark
+assign_tab_sidebar(&mut tc, &c, resolved); // no is_dark but has resolved
+assign_charts(&mut tc, &c);              // no is_dark (stateless hue rotation)
+assign_misc(&mut tc, &c, resolved, is_dark); // receives is_dark
+assign_base_colors(&mut tc, &c);          // NO is_dark (issue #3 already covers this)
+```
+
+`assign_list_table` derives `list_active` and `list_hover` via `hover_color` and opacity
+blending that would benefit from mode-awareness (as issue #7 proposes). The function
+CANNOT currently implement issue #7's fix because it does not have access to `is_dark`.
+
+Issue #3 covers `assign_base_colors` missing `is_dark`. Issue #7 covers `list_active`'s
+double-opacity. But neither notes that `assign_list_table`'s signature actively prevents
+mode-aware fixes -- it is a prerequisite blocker for issue #7's recommended solution.
+
+**Solution Options:**
+
+A. Add `is_dark` parameter when implementing issue #7's fix:
+```rust
+fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
+```
+
+B. Leave as-is until issue #7 is addressed.
+
+**Best Solution:** A. This is the enabling change for issue #7 and should be done at the
+same time.
+
+---
+
+### 74. `from_system()` Uses `sys.active()` Which Borrows, Then `sys.dark`/`sys.light` Moves
+
+**Category:** already-covered (withdraw)
+
+This is existing issue #19. Skipping.
+
+---
+
+### 74. `ThemeConfigColors` Has `group_box_title_foreground` With No `ThemeColor` Counterpart
+
+**Category:** upstream-mismatch
+**Severity:** negligible
+**File(s):** gpui-component `schema.rs:98-100`
+
+**Problem:** `ThemeConfigColors` (schema.rs:98-100) has a field:
+```rust
+#[serde(rename = "group_box.title.foreground")]
+pub group_box_title_foreground: Option<SharedString>,
+```
+
+But `ThemeColor` (theme_color.rs) has only `group_box` and `group_box_foreground` -- no
+`group_box_title_foreground`. This means `ThemeConfigColors` has a color field that has no
+destination in `ThemeColor` when `apply_config` runs. If issue #5's fix populates
+`ThemeConfigColors` from the computed `ThemeColor`, this field should be left as `None`
+(it has no source in `ThemeColor` to read from).
+
+This is a gpui-component inconsistency, not a connector bug. But it affects the
+implementation of issue #5's recommended fix.
+
+**Solution Options:**
+
+A. When implementing issue #5, skip `group_box_title_foreground` (it has no `ThemeColor`
+source) and add a comment:
+```rust
+// group_box_title_foreground: None -- ThemeConfigColors has this field but
+// ThemeColor does not, so there is no source value to populate it from.
+```
+
+B. File upstream issue to either add `group_box_title_foreground` to `ThemeColor` or
+remove it from `ThemeConfigColors`.
+
+**Best Solution:** A now, B if gpui-component has an issue tracker.
+
+---
+
+### 75. No Test Verifies `list_active_border` / `table_active_border` Opacity Values
+
+**Category:** test-gap
+**Severity:** low
+**File(s):** `colors.rs` tests (absent)
+
+**Problem:** `tc.list_active_border` is set at colors.rs:188:
+```rust
+tc.list_active_border = c.bg.blend(c.primary.opacity(0.6));
+```
+
+And `tc.table_active_border = tc.list_active_border` at line 195.
+
+No test verifies this value. The `to_theme_color_produces_nondefault` test (line 386)
+checks `background`, `foreground`, `primary`, `danger`, `border` -- but not
+`list_active_border`. The `per_widget_fields_used` test (line 437) checks `scrollbar_thumb`,
+`slider_bar`, `progress_bar`, `title_bar`, `switch`, `caret` -- but not list/table borders.
+
+If the `0.6` opacity was changed to `0.06` (typo), or if `c.primary` was accidentally
+replaced with `c.fg`, no test would catch it.
+
+**Solution Options:**
+
+A. Add test verifying list_active_border is a blend of primary onto bg:
+```rust
+#[test]
+fn list_active_border_blends_primary_on_bg() {
+    let resolved = test_resolved();
+    let tc = to_theme_color(&resolved, false);
+    let c_bg = rgba_to_hsla(resolved.defaults.background);
+    let c_primary = rgba_to_hsla(resolved.button.primary_background);
+    let expected = c_bg.blend(c_primary.opacity(0.6));
+    assert_eq!(tc.list_active_border, expected);
+}
+```
+
+B. Keep untested.
+
+**Best Solution:** A. This is one of the most complex derivations and deserves a direct test.
+
+---
+
+### 76. `table_head_foreground` Uses `c.muted_fg` But Has Same Semantic Issue as `tc.muted`
+
+**Category:** mapping-concern
+**Severity:** low
+**File(s):** `colors.rs:198`
+
+**Problem:**
+```rust
+tc.table_head_foreground = c.muted_fg;
+```
+
+Issue #2 identifies that `c.muted_fg` is derived as `rgba_to_hsla(d.muted).blend(fg.opacity(0.7))`
+(colors.rs:88), which on dark themes pushes the result toward white, making it
+indistinguishable from regular foreground.
+
+If issue #2 is fixed (using `d.muted` directly as `muted_fg`), `table_head_foreground`
+would also be fixed because it reads from `c.muted_fg`. However, the semantic question
+is: should table column headers use the muted foreground at all?
+
+gpui-component's `apply_config` derivation for `table_head_foreground` uses
+`muted_foreground` (the same field). So the mapping choice is correct -- the issue is
+upstream in the derivation of `muted_fg` itself (issue #2).
+
+This is NOT a new issue -- it's a downstream consequence of issue #2. Documented here
+for completeness during the color mapping audit to confirm that no independent mapping
+error exists for this field.
+
+---
+
+### 77. `drag_border` and `drop_target` Use Hardcoded Opacity Values
+
+**Category:** hardcoded-value
+**Severity:** negligible
+**File(s):** `colors.rs:298-299`
+
+**Problem:**
+```rust
+tc.drag_border = c.primary.opacity(0.65);
+tc.drop_target = c.primary.opacity(0.2);
+```
+
+These use hardcoded opacity values (0.65 and 0.2) that do not adapt to theme mode or
+primary color lightness. On a dark theme with a high-lightness primary (e.g., l=0.9),
+`drag_border` at 65% opacity is very prominent; on a dark primary (l=0.2), it nearly
+vanishes.
+
+gpui-component's own `apply_config` uses the same fixed opacities (0.65 and 0.2), so
+the connector matches upstream behavior. The values are not derived from any resolved
+property.
+
+**Solution Options:**
+
+A. Keep current -- matches upstream, and drag/drop styling is rarely visible.
+
+**Best Solution:** A. The values match gpui-component exactly. This is a gpui-component
+design choice, not a connector mapping error. Logged for audit completeness only.
+
+---
+
+### 78. `config.rs` Test `to_theme_config_from_resolved` Does Not Verify `mono_font_size`
+
+**Category:** test-weakness
+**Severity:** low
+**File(s):** `config.rs:74-77`
+
+**Problem:** The test verifies `font_size` matches resolved:
+```rust
+assert_eq!(config.font_size, Some(resolved.defaults.font.size));
+```
+
+And verifies `mono_font_family` is `Some`:
+```rust
+assert!(config.mono_font_family.is_some(), "mono_font_family should be set");
+```
+
+But it never checks that `mono_font_size` has the correct VALUE. The assertion at line
+74 checks `font_size` against the expected resolved value, but the corresponding check
+for `mono_font_size` is missing entirely. Line 76-77 only checks `mono_font_size`
+indirectly via the `font_size_is_not_converted_from_points` test, which also only checks
+the UI font, not the mono font.
+
+If `mono_font_size` were accidentally set to `Some(d.font.size)` instead of
+`Some(d.mono_font.size)`, no test would catch it (both would be present, both non-None).
+
+**Solution Options:**
+
+A. Add explicit value check:
+```rust
+assert_eq!(config.mono_font_size, Some(resolved.defaults.mono_font.size),
+    "mono_font_size should match resolved mono font");
+```
+
+B. Keep relying on the indirect `is_some()` check.
+
+**Best Solution:** A. Trivial addition that catches a likely copy-paste error class.
+
+---
+
+### 79. `with_spin_animation` Duration Cast: `u32` to `u64` Is Always Safe But Undocumented
+
+**Category:** documentation-gap
+**Severity:** negligible
+**File(s):** `icons.rs:940`
+
+**Problem:**
+```rust
+Animation::new(Duration::from_millis(duration_ms as u64)).repeat()
+```
+
+The `as u64` cast from `u32` is always widening and lossless. However, a `duration_ms`
+of 0 produces a zero-duration animation that repeats infinitely -- effectively a no-op
+that might spin-lock the animation system on some gpui backends (though gpui likely
+guards against this internally).
+
+`TransformAnimation::Spin { duration_ms }` in native-theme has no documented minimum.
+A theme author could set `duration_ms: 0` in TOML, which would propagate here.
+
+**Solution Options:**
+
+A. Guard zero duration:
+```rust
+let ms = (duration_ms as u64).max(1);
+Animation::new(Duration::from_millis(ms)).repeat()
+```
+
+B. Keep as-is (gpui likely handles zero duration gracefully).
+
+**Best Solution:** B for v0.5.4 -- this is defensive paranoia. If gpui does not handle
+zero-duration animations, the fix is one line.
+
+---
+
+## New Findings: Third-Pass Priority Summary
+
+| # | Issue | Severity | Effort | Best Fix |
+|---|-------|----------|--------|----------|
+| 68 | `tc.scrollbar` uses `c.bg` instead of `resolved.scrollbar.track` | **Medium** | Trivial | Use `resolved.scrollbar.track` |
+| 69 | `to_theme_config` does not document `is_default = false` | **Low** | Trivial | Add comment |
+| 70 | `config.rs` test asserts tautology for radius values | **Low** | Trivial | Assert against known concrete value |
+| 71 | 7 Material icon collision pairs undocumented | **Low** | Trivial | Add comments to colliding pairs |
+| 72 | `list_active` has `a=0.2` making selection 80% transparent (deepens #7) | **Medium** | Trivial | Remove `.alpha(0.2)` alongside #7 fix |
+| 73 | `assign_list_table` missing `is_dark` blocks issue #7 fix | **Low** | Trivial | Add `is_dark` param when fixing #7 |
+| 74 | `ThemeConfigColors.group_box_title_foreground` has no ThemeColor source | **Negligible** | Trivial | Document in #5 implementation |
+| 75 | No test for `list_active_border` / `table_active_border` | **Low** | Trivial | Add blend-verification test |
+| 78 | `config.rs` test missing `mono_font_size` value assertion | **Low** | Trivial | Add `assert_eq!` for mono_font_size |
+| 79 | `with_spin_animation` zero-duration undocumented | **Negligible** | Trivial | Keep as-is or guard with `.max(1)` |

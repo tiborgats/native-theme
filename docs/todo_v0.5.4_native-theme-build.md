@@ -2346,3 +2346,512 @@ chose a name in each file.
 
 **Best Solution:** 1 -- Emit a warning. The user should know that only
 the first file's name is used when merging without an explicit override.
+
+---
+
+## New Findings: Third-Pass Deep Audit
+
+### Focus A: Test Assertion Correctness
+
+#### 85. `generated_code_icon_svg_has_wildcard` Test Is Purely Structural, Not Semantic
+
+**Category:** tautological-test
+**Severity:** low
+**File(s):** `src/codegen.rs:604-616`
+
+**Problem:** Issue 48 already flagged this test as tautological because
+`_ => None` is always emitted. But a closer look reveals a second problem:
+the test asserts `count >= 2` (one for `icon_name`, one for `icon_svg`),
+yet the actual code emits **four** `_ => None` patterns for the
+`sample_config_and_mappings` fixture: one for the outer `icon_name` match,
+one for each inner `match (self, set)` closing, and one for `icon_svg`.
+The `>= 2` threshold is so low that ANY output with an `icon_name` and
+`icon_svg` method will pass, even if the match arms themselves were removed
+or duplicated. The test verifies the existence of fallback arms -- which
+are unconditionally emitted by the codegen -- rather than the correctness
+of the generated match structure.
+
+**Already noted by:** Issue 48 (partial). This adds the observation that
+the threshold itself is wrong, not just the overall approach. **No new
+issue number needed.**
+
+#### 86. `happy_path_icon_svg_bundled_only` Uses Compound Boolean That Can Mask Failures
+
+**Category:** test-gap
+**Severity:** low
+**File(s):** `tests/integration.rs:118-119`
+
+**Problem:** The assertion at line 118:
+
+```rust
+assert!(
+    output.code.contains("include_bytes!") && output.code.contains("material/play_pause.svg"),
+    ...
+);
+```
+
+uses a single `assert!` with `&&`. If `include_bytes!` is present but the
+path is wrong (e.g., `material/play_PAUSE.svg` due to a casing bug), the
+assertion fails but the error message says "should have include_bytes! for
+bundled material SVGs" -- which is misleading because `include_bytes!`
+IS present. The compound condition hides which half failed.
+
+**Recommended:** Split into two separate assertions, or use `assert!` with
+explicit format for each condition.
+
+#### 87. Integration Test Error Assertions Use `.any()` With `.to_string().contains()` -- Can Match Wrong Error
+
+**Category:** test-gap
+**Severity:** low
+**File(s):** `tests/integration.rs:195-201`, `233-238`, `271-276`, `492-498`
+
+**Problem:** All error-path integration tests use this pattern:
+
+```rust
+errors.errors().iter().any(|e| e.to_string().contains("skip-forward"))
+```
+
+This checks that ANY error in the collection mentions the substring. If the
+pipeline returns multiple errors, a substring match on the wrong error
+causes the test to pass. For example, `error_missing_role_in_mapping` at
+line 195 checks for `"skip-forward"` -- but if a future code change causes
+an unrelated error that coincidentally mentions `"skip-forward"` (e.g.,
+"cannot process skip-forward.svg"), the test passes even though the
+`MissingRole` variant is missing.
+
+More critically, none of these tests assert the *error count* or *error
+variant*. They verify that a substring appears somewhere in any error, not
+that the correct error type was produced.
+
+**Recommended:** Match on the enum variant using `matches!()`, as the
+inline `lib.rs` tests already do (e.g., line 1799, 1840). The integration
+tests should follow the same pattern.
+
+#### 88. `builder_detects_duplicate_roles` Test Does Not Assert Error Count
+
+**Category:** test-gap
+**Severity:** low
+**File(s):** `tests/integration.rs:490-498`
+
+**Problem:** The test verifies `!errors.is_empty()` and that some error
+mentions `"play-pause"`, but does not check `errors.len() == 1`. If the
+pipeline incorrectly reports the duplicate twice (once from each file),
+the test still passes. The inline test at `lib.rs:1596` has the same gap.
+
+**Recommended:** Assert `errors.len() == 1` to verify exactly one
+`DuplicateRole` is reported per pair.
+
+#### 89. `de_aware_mapping_generates_de_dispatch_code` Does Not Verify `icon_svg` Behavior
+
+**Category:** test-gap
+**Severity:** low
+**File(s):** `tests/integration.rs:347-404`
+
+**Problem:** This integration test verifies `icon_name` DE dispatch
+thoroughly (cfg gates, detect_linux_de call, KDE arm, default arm,
+non-Linux gate). But it does NOT verify the `icon_svg` method at all.
+Since `freedesktop` is a system theme, `icon_svg` should emit only
+`_ => None` for it. This is indirectly covered by
+`happy_path_icon_svg_bundled_only` (which tests a different fixture), but
+there is no test that verifies `icon_svg` behavior specifically for a
+config containing ONLY system themes.
+
+**Recommended:** Add an assertion that the generated code does NOT contain
+`include_bytes!` when only system themes are configured.
+
+#### 90. `#[should_panic]` Tests Do Not Verify Panic Message Specificity
+
+**Category:** test-gap
+**Severity:** low
+**File(s):** `src/lib.rs:2116-2158`
+
+**Problem:** The `#[should_panic(expected = "...")]` tests use partial
+substrings:
+
+- `expected = "derive name must be non-empty"` (line 2117)
+- `expected = "crate_path must be non-empty"` (line 2142)
+
+These match the beginning of the panic message. However, two tests at
+lines 2123 and 2129 use the FULL message string:
+
+- `expected = "derive name must be non-empty and contain no whitespace"`
+
+The inconsistency means the first test (`derive_rejects_empty_string`)
+would also pass if the panic message were changed to "derive name must be
+non-empty; please provide a name" without the whitespace check being
+triggered. The `expected` string is a prefix, not a full match --
+`#[should_panic]` only checks that the panic message *contains* the
+expected string.
+
+This is not a bug per se, but the inconsistency between tests weakens
+confidence. When issue 2 converts these to `Result`-returning validation,
+this becomes moot.
+
+**Already noted by:** Issue 42 (general tautological concern). This adds
+the specific observation about prefix-match inconsistency. **No new issue
+number needed.**
+
+### Focus B: Codegen Output Verification
+
+#### 91. DE-Aware Codegen Emits Bare Blocks After `#[cfg(...)]` -- Relies on Unstable-Looking Pattern
+
+**Category:** codegen-correctness
+**Severity:** low
+**File(s):** `src/codegen.rs:243-273`
+
+**Problem:** The generated code for a DE-aware match arm looks like:
+
+```rust
+            (Self::PlayPause, native_theme::IconSet::Freedesktop) => {
+                #[cfg(target_os = "linux")]
+                {
+                    match de {
+                        native_theme::LinuxDesktop::Kde => Some("media-playback-start"),
+                        _ => Some("play"),
+                    }
+                }
+                #[cfg(not(target_os = "linux"))]
+                {
+                    Some("play")
+                }
+            },
+```
+
+The `#[cfg(...)]` attributes are applied to bare block expressions
+(`{ ... }`) inside a match arm body. This IS valid Rust -- attributes on
+block expressions are stable since Rust 1.0. The match arm body is a block
+expression containing two cfg-gated sub-blocks, exactly one of which
+compiles on any given platform.
+
+However, this relies on the fact that exactly one cfg-gated block evaluates
+to the arm's return value. If a hypothetical third platform check were
+added without a corresponding `#[cfg(...)]` block, the arm would have
+multiple block expressions and the last one would be the return value,
+silently ignoring the first. There is no structural guard against this.
+
+This is correct today and the codegen is self-contained, so the risk is
+low. Noting for completeness.
+
+**This is not a bug.** The generated pattern is valid and correct. The
+observation is recorded for future codegen changes.
+
+#### 92. `generate_icons()` Unconditionally Joins `manifest_dir` With `toml_path` -- Absolute Paths Doubled
+
+**Category:** api-bug
+**Severity:** medium
+**File(s):** `src/lib.rs:256`
+
+**Problem:** `generate_icons()` at line 256 does:
+
+```rust
+let resolved = manifest_dir.join(toml_path);
+```
+
+`Path::join` on an absolute path replaces the base entirely (standard
+Rust behavior), so `generate_icons("/absolute/path/icons.toml")` would
+correctly resolve to `/absolute/path/icons.toml`. So this is actually
+NOT a bug -- `Path::join` handles it correctly.
+
+However, unlike `IconGenerator::generate()` which explicitly checks
+`source.is_absolute()` and skips the join, `generate_icons()` always
+performs the join, relying on `Path::join`'s implicit absolute-path
+behavior. The inconsistency between the two code paths is surprising but
+not incorrect.
+
+**This is not a bug.** Both paths produce the same result for absolute
+inputs due to `Path::join` semantics.
+
+#### 93. Generated `const ALL` Uses `&[Self]` -- Correct for `#[non_exhaustive]` Enums
+
+**Category:** codegen-correctness (verified)
+**Severity:** none
+
+The generated code at `codegen.rs:108` emits:
+
+```rust
+pub const ALL: &[Self] = &[...];
+```
+
+This is correct. `&[Self]` is a slice reference with `'static` lifetime
+elided. The `#[non_exhaustive]` attribute on the enum does not affect the
+const -- it only prevents external code from creating instances or
+exhaustive matching. `ALL` lists all variants known at build time, which
+is the correct semantic.
+
+**Not a bug.** Verified correct.
+
+#### 94. Codegen `include_bytes!` Path: `base_dir` With Trailing Slash Produces Double Slash
+
+**Category:** codegen-bug
+**Severity:** low
+**File(s):** `src/codegen.rs:316`
+
+**Problem:** The `include_bytes!` path at line 316 is:
+
+```rust
+"/{base_dir}/{theme_name}/{escaped_icon}.svg"
+```
+
+Issue 10 covers the case where `base_dir` is empty (produces `//`). But
+there is an additional case: if `base_dir` itself contains a trailing
+slash (e.g., `"icons/"`), the generated path becomes
+`"/icons//material/play.svg"`. This can happen when `base_dir_str` at
+`lib.rs:767-775` is derived from a path that has a trailing separator.
+
+In practice, `strip_prefix` and `to_string_lossy` do NOT produce trailing
+slashes for non-root paths on any platform. The `replace('\\', "/")` on
+line 772 could theoretically produce one if the original path had a
+trailing backslash, but this is pathological.
+
+**This is a sub-case of issue 10's fix.** If issue 10 normalizes the
+separator logic, this case is implicitly handled. **No new issue number
+needed.**
+
+#### 95. Codegen Does Not Emit `#[allow(clippy::match_single_binding)]` for Single-Theme Configs
+
+**Category:** codegen-lint
+**Severity:** low
+**File(s):** `src/codegen.rs:190-284`, `src/codegen.rs:295-325`
+
+**Problem:** When a config has only one theme (e.g., `bundled-themes =
+["material"]`) and one role, the generated `match (self, set)` block in
+both `icon_name` and `icon_svg` has exactly two arms:
+
+```rust
+match (self, set) {
+    (Self::PlayPause, native_theme::IconSet::Material) => Some("play_pause"),
+    _ => None,
+}
+```
+
+This is fine and does not trigger `clippy::match_single_binding`. However,
+if there were exactly one arm before the wildcard, clippy might suggest an
+`if let` instead (`clippy::single_match`). In current Clippy (0.1.84+),
+`single_match` does NOT fire on tuple-pattern matches with wildcards, so
+this is not a real issue today.
+
+**This is not a bug.** The generated match pattern does not trigger any
+current Clippy lint.
+
+### Focus C: Error Message Quality
+
+#### 96. `BuildError::UnknownTheme` Display Lists All Known Themes -- Good, But Linear Scan
+
+**Category:** error-quality (verified)
+**Severity:** none
+
+The `UnknownTheme` variant's `Display` impl at `error.rs:118-122`
+constructs the list of valid themes on every format call by iterating
+`THEME_TABLE`. For error formatting (called once per error, at build
+time), this is fine. The error message is exemplary:
+
+```
+unknown theme "typo-theme" (expected one of: sf-symbols, segoe-fluent, freedesktop, material, lucide)
+```
+
+**Not a bug.** This is good error design.
+
+#### 97. `BuildError::InvalidIconName` Error Message Does Not Explain WHICH Character Is Invalid
+
+**Category:** error-quality
+**Severity:** low
+**File(s):** `src/error.rs:169-174`
+
+**Problem:** The `InvalidIconName` Display impl says:
+
+```
+invalid icon name "play\x00pause" for role "play-pause" in mapping.toml:
+names must be non-empty and free of control characters
+```
+
+When the icon name contains a control character, the error message does
+not say WHICH character triggered the rejection. For empty strings the
+message is clear ("non-empty"), but for control characters, a user seeing
+`"play\x00pause"` in the error output may not recognize `\x00` as a
+control character, especially if their terminal renders it as invisible.
+
+**Recommended:** Include the offending character's Unicode codepoint:
+`"names must be non-empty and free of control characters (found U+0000)"`.
+
+#### 98. `BuildError::Io` Loses Structured Context
+
+**Category:** error-quality
+**Severity:** low
+**File(s):** `src/error.rs:52-56`
+
+**Problem:** The `Io` variant carries only a `message: String` with no
+structured fields. All I/O errors throughout the crate construct the
+message string manually:
+
+- `lib.rs:443`: `"failed to read {}: {e}"`
+- `lib.rs:446`: `"failed to parse {}: {e}"`
+- `lib.rs:697`: `"failed to parse {mapping_path_str}: {e}"`
+
+The `Display` impl at line 136 just forwards `{message}`. This means
+programmatic error handling cannot distinguish "file not found" from "parse
+error" from "CARGO_MANIFEST_DIR not set" -- they are all `Io { message }`.
+
+Given that `BuildErrors` is typically consumed by `emit_cargo_errors()`
+(which just prints), this is acceptable for human-readable output. But if
+a downstream tool ever needs to programmatically distinguish I/O errors,
+it would need to parse the message string.
+
+**Recommended:** Consider splitting `Io` into `IoRead`, `IoParse`, and
+`IoEnv` variants in a future API revision. Low priority since the current
+consumer is always human-readable cargo output.
+
+### Focus D: Builder Pattern Edge Cases
+
+#### 99. `source()` Called After `generate()` Is a Compile Error -- Correct by Design
+
+**Category:** builder-edge-case (verified)
+**Severity:** none
+
+`generate(self)` consumes `self`, so calling `source()` afterward is a
+compile error. The builder pattern uses the consuming-builder style
+(`fn source(mut self, ...) -> Self`), which means the builder is consumed
+on `generate()`. This is correct.
+
+**Not a bug.** Builder ownership semantics prevent misuse.
+
+#### 100. `derive()` and `crate_path()` Can Be Called Multiple Times -- Different Behaviors
+
+**Category:** builder-edge-case
+**Severity:** low
+**File(s):** `src/lib.rs:344-372`
+
+**Problem:** `derive()` accumulates (each call pushes to `extra_derives`).
+`crate_path()` replaces (each call sets `self.crate_path = Some(...)`).
+`enum_name()` replaces. `output_dir()` replaces. `base_dir()` replaces.
+`source()` accumulates.
+
+This is standard builder pattern behavior, but the asymmetry between
+accumulating methods (`source`, `derive`) and replacing methods
+(`crate_path`, `enum_name`, `output_dir`, `base_dir`) is undocumented.
+
+A user who writes:
+
+```rust
+IconGenerator::new()
+    .crate_path("my_crate")
+    .crate_path("other_crate")  // silently replaces
+    .derive("Ord")
+    .derive("Ord")              // silently duplicates
+```
+
+gets `#[derive(..., Ord, Ord)]` (which compiles but warns) and
+`crate_path = "other_crate"` (silently replacing the first).
+
+**Recommended:** Document in the builder method doc comments whether each
+method accumulates or replaces. For `derive()`, consider deduplicating
+the extra_derives Vec (or at minimum document that duplicates are passed
+through).
+
+#### 101. `generate()` With Zero Sources Returns `Err` -- Correct, But Different From `run_pipeline()`
+
+**Category:** builder-edge-case (verified)
+**Severity:** none
+
+`IconGenerator::generate()` at line 401-404 checks
+`self.sources.is_empty()` and returns an `Err`. `run_pipeline()` at line
+556-567 also checks `configs.is_empty()` and returns an error
+`PipelineResult`. Both paths are guarded.
+
+**Not a bug.** Both layers handle the zero-sources case.
+
+#### 102. `derive("Debug")` Produces `#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Debug)]`
+
+**Category:** builder-edge-case
+**Severity:** low
+**File(s):** `src/codegen.rs:92-95`
+
+**Problem:** The base derive set at `codegen.rs:92` is hardcoded:
+
+```rust
+let mut derives = String::from("Debug, Clone, Copy, PartialEq, Eq, Hash");
+```
+
+Extra derives are appended unconditionally at lines 93-95. If a user
+calls `.derive("Debug")`, the generated code contains
+`#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Debug)]`.
+
+The Rust compiler accepts duplicate derives silently (each derive macro
+is invoked independently), so this does not cause a compile error. However,
+it triggers `clippy::duplicated_attributes` (added in Clippy 1.78):
+
+```
+warning: duplicated attribute
+ --> generated.rs:3:47
+  |
+3 | #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Debug)]
+  |                                                    ^^^^^
+  |
+  = note: `#[warn(clippy::duplicated_attributes)]` on by default
+```
+
+Since the generated code is typically `include!`'d, this warning appears
+in the user's build output.
+
+**Recommended:** Either (a) deduplicate extra_derives against the base set
+in `generate_code()`, or (b) document in `derive()` that the base set is
+always included and should not be repeated.
+
+#### 103. `source()` Accepts Directories and Non-TOML Paths Without Early Validation
+
+**Category:** builder-edge-case
+**Severity:** low
+**File(s):** `src/lib.rs:313-315`
+
+**Problem:** `source()` stores any `PathBuf` without checking that it
+points to a file or has a `.toml` extension. A user who writes
+`.source("icons/")` (a directory) gets an error at `generate()` time:
+`"failed to read /path/to/icons/: Is a directory"` -- which is technically
+correct but not the most helpful message.
+
+Similarly, `.source("icons/mapping.json")` would attempt to parse JSON as
+TOML and fail with a parse error rather than a format mismatch hint.
+
+This follows the deferred-validation pattern recommended by issue 2 (all
+validation in `generate()`), so it is consistent. But adding a `.toml`
+extension check or directory check to the error message would improve DX.
+
+**Recommended:** When `read_to_string` fails with `IsADirectory`, emit a
+more specific message: `"source path is a directory, not a file: ..."`.
+Low priority.
+
+#### 104. `enum_name()` Accepts Empty Strings and Whitespace -- Deferred to `generate()`
+
+**Category:** builder-edge-case (verified)
+**Severity:** none
+
+`enum_name()` at line 319-321 stores the raw string with no validation.
+The empty string case (`enum_name("")`) is caught by
+`validate_identifiers()` which runs in `run_pipeline()`. The whitespace
+case (`enum_name("my icons")`) is caught by `to_upper_camel_case()`
+normalization, which produces `"MyIcons"` -- this is valid but potentially
+surprising (see issue 19).
+
+Unlike `crate_path()` and `derive()`, `enum_name()` has NO assertion at
+all. This is inconsistent with the other builder methods that panic on
+empty/whitespace input. When issue 2 is implemented (defer all validation
+to `generate()`), this inconsistency resolves naturally.
+
+**Already covered by:** Issue 2 (deferred validation) and issue 19 (silent
+normalization). **No new issue number needed.**
+
+### Summary of Genuinely New Findings
+
+| # | Finding | Severity | Type |
+|---|---------|----------|------|
+| 86 | `happy_path_icon_svg_bundled_only` compound boolean masks failures | Low | test-gap |
+| 87 | Integration error tests use `.any()` + `.contains()` instead of variant matching | Low | test-gap |
+| 88 | `builder_detects_duplicate_roles` does not assert error count | Low | test-gap |
+| 89 | DE-aware integration test does not verify `icon_svg` for system-only config | Low | test-gap |
+| 97 | `InvalidIconName` error does not identify the offending character | Low | error-quality |
+| 98 | `BuildError::Io` lacks structured sub-variants for programmatic handling | Low | error-quality |
+| 100 | Builder accumulate-vs-replace asymmetry undocumented | Low | builder-edge-case |
+| 102 | `derive("Debug")` produces duplicate derive, triggers Clippy warning | Low | builder-edge-case |
+| 103 | `source()` accepts directories without early hint | Low | builder-edge-case |
+
+All 9 genuinely new findings are low severity. The first two passes were
+thorough -- no medium or high severity issues were missed.

@@ -1587,3 +1587,477 @@ assert_eq!(pad.left, pad.right, "left and right should be equal");
 | 43 | `color_to_hex()` truncates alpha (complements issue 30) | Very Low | Trivial | Extend to 8-digit hex when alpha < 1.0 |
 | 44 | `from_preset` tests do not verify light/dark variant correctness | Medium | Trivial | Add background luminance assertions |
 | 45 | `input_padding()` test missing symmetry assertions | Low | Trivial | Add 2 assertions |
+
+---
+
+## New Findings: Third-Pass Deep Audit
+
+Third-pass audit of all 4 source files, the showcase example, all 57
+tests, the gpui connector for symmetry, and `Rgba::to_f32_array()` for
+color precision. Focused on test assertion correctness, SVG edge cases,
+showcase state consistency, and cross-connector gaps missed by passes 1
+and 2. Issue numbering continues from the existing document.
+
+---
+
+### 46. `color_approx_eq` Epsilon Is 250x Too Loose for Direct Conversions
+
+**Category:** test-quality
+**Severity:** medium
+**File(s):** `connectors/native-theme-iced/src/palette.rs:49-53`,
+`connectors/native-theme-iced/src/extended.rs:34-38`
+
+**Problem:** Both test modules define `color_approx_eq` with an epsilon
+of 0.01 per channel. The conversion path is `u8 -> f32 / 255.0 ->
+iced_core::Color { f32 }` which is a single floating-point division.
+The maximum error from f32 representation for any u8 value divided by
+255.0 is approximately 3e-8 (verified empirically for all 256 values).
+
+An epsilon of 0.01 in the 0.0..1.0 range corresponds to 2.55 u8 steps.
+This means a color could be off by 2 sRGB values per channel (e.g., the
+test expects `#ff0000` but would also pass with `#fd0202`) and the test
+would still pass. Since the `to_color()` path is a direct lossless
+conversion with no intermediate color space transforms, the appropriate
+epsilon is approximately 1e-6 (or use exact equality).
+
+The `to_color_converts_rgba` test at `palette.rs:57-71` uses
+`color_approx_eq` to verify that `Rgba::rgb(255, 0, 0)` maps to
+`Color { 1.0, 0.0, 0.0, 1.0 }`. This conversion is mathematically
+exact (255/255.0 = 1.0 in f32), so the tolerance hides nothing here.
+But the same helper is used in `extended.rs` tests where the expected
+value is computed through the same `to_color()` call, meaning the
+"expected" and "actual" go through the identical path -- the comparison
+is always exact. The loose epsilon gives false confidence that the
+tests would catch a real off-by-one bug when they would not.
+
+**Solution Options:**
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Tighten epsilon to 1e-6 (or use `assert_eq!` directly since both sides go through the same `to_color()` path) | Catches real off-by-one bugs; accurate for the conversion's actual precision | If a future code path introduces legitimate rounding (e.g., color space conversion), tests would need updating |
+| B | No change | No test disruption | Epsilon tolerates 2-step errors that should be zero |
+
+**Best Solution:** A. For the `palette.rs` test that checks a known
+constant, use `assert_eq!` directly (the conversion is exact for 0
+and 255). For `extended.rs` tests where both sides use `to_color()`,
+either use `assert_eq!` or tighten to `1e-6`.
+
+---
+
+### 47. `colorize_monochrome_svg` Incorrectly Handles SVGs with Multiple `<svg>` Elements
+
+**Category:** edge-case
+**Severity:** very low
+**File(s):** `connectors/native-theme-iced/src/icons.rs:262-280`
+
+**Problem:** The root `<svg>` tag injection branch at line 262 uses
+`svg_str.find("<svg")` which finds the FIRST `<svg` substring. In a
+valid SVG, this is always the root element. However, SVGs can contain
+nested `<svg>` elements (embedded sub-documents) or `<svg` appearing
+inside comments (`<!-- <svg ... -->`), CDATA sections, or text content.
+
+For the intended use case (Material/Lucide monochrome icons from bundled
+sets), these edge cases do not arise -- bundled icons have a single root
+`<svg>` with child `<path>` elements. However, if a user passes a
+complex system icon with nested SVG elements, the fill injection would
+correctly target the root `<svg>` tag (since `find` returns the first
+occurrence, which is the root in valid XML).
+
+The only true edge case is `<svg` appearing inside an XML comment before
+the actual root `<svg>` tag, e.g.:
+```xml
+<!-- <svg removed for debugging -->
+<svg xmlns="..."><path d="..."/></svg>
+```
+Here, `find("<svg")` would match the comment, and the `find('>')`
+would locate the comment's `>`, injecting `fill=` into a comment. The
+result would be a malformed SVG. This is extremely unlikely in practice.
+
+No test covers this, and no fix is needed. Documenting for completeness.
+
+**Best Solution:** No action. The edge case requires malformed/unusual
+input that bundled icon sets never produce. The gpui connector has the
+identical behavior.
+
+---
+
+### 48. Showcase `button_press_count` Can Overflow `u32`
+
+**Category:** edge-case
+**Severity:** very low
+**File(s):** `connectors/native-theme-iced/examples/showcase.rs:528,1155`
+
+**Problem:** `button_press_count` is `u32` and incremented with
+`state.button_press_count += 1` at line 1155. In debug mode, Rust's
+overflow checking would panic after 4,294,967,295 presses. In release
+mode, it would wrap to 0.
+
+This is a showcase example, not production code. A user would need to
+click a button 4 billion times to trigger this. Not a practical concern.
+
+**Best Solution:** No action. Documenting only because the project rule
+is "no runtime panics" and debug-mode overflow panics are technically
+panics. If a fix is desired, change to `state.button_press_count =
+state.button_press_count.wrapping_add(1)` or use `saturating_add`.
+
+---
+
+### 49. `from_system()` Moves `sys.name` Before Using `sys.dark`/`sys.light`
+
+**Category:** code-quality
+**Severity:** none (informational)
+**File(s):** `connectors/native-theme-iced/src/lib.rs:156-160`
+
+**Problem:** Line 157 does `let name = sys.name;` which moves
+`sys.name` out of the `SystemTheme`. Line 158 then accesses `sys.dark`
+and `sys.light` which are still valid because `name` is a separate
+field. This works because Rust allows partial moves -- after moving
+`sys.name`, the other fields of `sys` are still accessible.
+
+The gpui connector at `lib.rs:180-183` avoids this by borrowing first:
+`let theme = to_theme(sys.active(), &sys.name, sys.is_dark)` borrows
+`sys.name` with `&sys.name`, then moves the variant on line 183. The
+iced connector moves the name first, then destructures the variant.
+
+Both are correct Rust. The iced version is slightly more idiomatic for
+moving all data out (no borrow needed since `name` is moved into
+`to_theme` via `&name`). No change needed.
+
+**Best Solution:** No action. This is a style observation, not a bug.
+
+---
+
+### 50. Gpui Connector Missing `Result` and `Rgba` Re-exports (Reverse of Issue 25)
+
+**Category:** cross-connector-symmetry
+**Severity:** low
+**File(s):** `connectors/native-theme-gpui/src/lib.rs:73-76` vs
+`connectors/native-theme-iced/src/lib.rs:82-85`
+
+**Problem:** Issue 25 already notes this asymmetry. However, a closer
+examination reveals the full scope. Iced re-exports:
+```
+AnimatedIcon, Error, IconData, IconProvider, IconRole, IconSet,
+ResolvedThemeVariant, Result, Rgba, SystemTheme, ThemeSpec,
+ThemeVariant, TransformAnimation
+```
+
+Gpui re-exports:
+```
+AnimatedIcon, Error, IconData, IconProvider, IconRole, IconSet,
+ResolvedThemeVariant, SystemTheme, ThemeSpec, ThemeVariant,
+TransformAnimation
+```
+
+Missing from gpui: `Result`, `Rgba`.
+Missing from iced: `LinuxDesktop` (issue 9 already covers this).
+
+Additionally, neither connector re-exports the free functions that
+the showcase imports directly from `native_theme`:
+- `prefers_reduced_motion()`
+- `loading_indicator()`
+- `system_icon_theme()`
+- `system_icon_set()`
+- `system_is_dark()`
+- `load_icon()`
+- `load_icon_from_theme()`
+- `is_freedesktop_theme_available()`
+
+These are used in the iced showcase at lines 21-22 via
+`use native_theme::{..., loading_indicator, prefers_reduced_motion}`.
+Users of the connector crate must depend on `native_theme` directly
+to access these functions. This is different from type re-exports
+(which enable using the connector as the sole dependency for types
+in public signatures); function re-exports are less critical since
+users can call `native_theme::load_icon()` directly.
+
+Issue 25 already covers the type re-export gap. The free function
+gap is an intentional design choice (connectors re-export types for
+signature compatibility, not utility functions). No additional fix
+needed beyond issue 25.
+
+**Best Solution:** Subsumed by issue 25. The free function observation
+is informational only.
+
+---
+
+### 51. `colorize_monochrome_svg` Does Not Handle `style` Attribute CSS Colors
+
+**Category:** mapping-gap
+**Severity:** low
+**File(s):** `connectors/native-theme-iced/src/icons.rs:232-283`
+
+**Problem:** The colorize function handles three patterns:
+1. `currentColor` keyword (global string replace)
+2. `fill="black"` / `fill="#000000"` / `fill="#000"` (attribute replace)
+3. Root `<svg>` tag fill injection (when no fill attribute exists)
+
+It does NOT handle colors specified via CSS `style` attributes, which
+are valid SVG:
+- `style="fill:black"` or `style="fill:#000000"`
+- `style="fill:currentColor"` (the `currentColor` branch catches this
+  because it does a global string replace, but the replacement produces
+  `style="fill:#ff0000"` which is valid CSS)
+- `<style>` blocks: `.icon { fill: black; }` (these are never handled)
+
+The gpui connector's `colorize_svg` doc comment at line 975 explicitly
+documents this: "Not handled: [...] CSS `style=\"fill:black\"` [...]".
+The iced connector's doc comment does not document this limitation.
+
+All bundled icon sets (Material, Lucide) use XML attributes, not CSS
+style attributes, so this gap has no practical impact. Third-party
+SVGs that use inline CSS styles would not be colorized.
+
+**Solution Options:**
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Add a doc comment noting that CSS `style` attribute colors are not handled (matching gpui's doc) | Documents the limitation; consistent between connectors | No code change |
+| B | Add `style="fill:black"` replacements | More thorough | Complex; risk of corrupting multi-property style strings |
+
+**Best Solution:** A. Add one line to the doc comment matching gpui's
+explicit documentation of what is NOT handled.
+
+---
+
+### 52. `from_system()` and `to_iced_theme()` Use Different `SystemTheme` Consumption Patterns
+
+**Category:** api-design
+**Severity:** low
+**File(s):** `connectors/native-theme-iced/src/lib.rs:154-173`
+
+**Problem:** `from_system()` consumes the `SystemTheme` by moving
+fields out (line 157: `let name = sys.name`, line 158:
+`if sys.is_dark { sys.dark } else { sys.light }`). After this, `sys`
+is partially moved and cannot be reused.
+
+`SystemThemeExt::to_iced_theme()` borrows via `&self` (line 171-173),
+calling `self.active()` which returns `&ResolvedThemeVariant`. The
+caller retains full ownership of the `SystemTheme`.
+
+This means there is no way to get both the iced `Theme` AND retain
+the `SystemTheme` for later variant switching using the convenience
+API. A user who wants to switch between dark/light on the same
+`SystemTheme` must either:
+- Use `to_iced_theme()` (but loses the resolved variant per issue 6)
+- Call `to_theme()` directly with `sys.active()` and `&sys.name`
+
+This is already partially covered by issues 5, 6, and 39. However,
+a specific pattern that is NOT covered: an app that wants to
+pre-build both light and dark iced themes from a single `SystemTheme`
+must call `to_theme()` twice manually:
+
+```rust
+let sys = SystemTheme::from_system()?;
+let light_theme = to_theme(&sys.light, &sys.name);
+let dark_theme = to_theme(&sys.dark, &sys.name);
+```
+
+This works today. No additional issue needed. The existing API
+supports this use case via the manual `to_theme()` path.
+
+**Best Solution:** No additional action beyond issues 5 and 6. The
+manual `to_theme()` path serves users who need both variants.
+
+---
+
+### 53. Showcase `resolve_icon_choice()` Silently Falls Back to System for Unknown `IconSet` Variants
+
+**Category:** robustness
+**Severity:** very low
+**File(s):** `connectors/native-theme-iced/examples/showcase.rs:294-301`
+
+**Problem:** `resolve_icon_choice()` at line 294-302 matches
+`resolved.icon_set` to determine availability:
+
+```rust
+let available = match resolved.icon_set {
+    IconSet::Material | IconSet::Lucide => true,
+    IconSet::Freedesktop => {
+        native_theme::is_freedesktop_theme_available(&resolved.icon_theme)
+    }
+    _ => false,
+};
+```
+
+The `_ => false` wildcard (already noted in issue 35) means any future
+`IconSet` variant added to native-theme would silently be treated as
+unavailable, falling back to the System icon set even though the new
+set might be perfectly usable.
+
+Issue 35 already covers this. However, issue 35 frames it as
+"defeats exhaustiveness checking" -- the deeper consequence is that
+adding a new icon set to native-theme would cause the showcase to
+silently fall back without any indication to the user. The same
+wildcard appears at lines 628-633 in the initial `Default` impl and
+at lines 724-729 in the CLI override handling, and at lines 825-829
+in `rebuild_theme()`, totaling 4 instances of this pattern in the
+showcase.
+
+**Best Solution:** Subsumed by issue 35. When fixing issue 35, apply
+the fix to all 4 instances of the `IconSet` match in showcase.rs,
+not just the one at line 301.
+
+---
+
+### 54. `colorize_monochrome_svg` Root Tag Detection Does Not Skip XML Declaration or Comments
+
+**Category:** edge-case
+**Severity:** very low
+**File(s):** `connectors/native-theme-iced/src/icons.rs:262`
+
+**Problem:** The fill injection branch uses `svg_str.find("<svg")` to
+locate the root `<svg>` tag. However, SVG files can begin with an XML
+declaration (`<?xml version="1.0"?>`) or contain comments before the
+root element. If there is a comment containing the literal string
+`<svg` before the actual root `<svg>` tag, the function would
+incorrectly inject `fill=` into the comment.
+
+More practically, if an SVG file starts with `<?xml ...?>` (which
+many system-generated SVGs do), `find("<svg")` correctly skips the
+XML declaration because `<?xml` does not match `<svg`. So the XML
+declaration case is already handled correctly.
+
+The only failing case is: a comment containing `<svg` before the
+actual root element. This is addressed in issue 47. No additional
+finding here.
+
+**Best Solution:** Subsumed by issue 47. No additional action.
+
+---
+
+### 55. Gpui `from_preset()` Passes `name` (Slug) to `to_theme()` -- Same Issue as Iced #3
+
+**Category:** cross-connector-symmetry
+**Severity:** low
+**File(s):** `connectors/native-theme-gpui/src/lib.rs:151-157`
+
+**Problem:** Issue 3 notes that iced's `from_preset()` passes the
+lookup slug (e.g., `"catppuccin-mocha"`) as the display name instead
+of `spec.name` (e.g., `"Catppuccin Mocha"`). Examining the gpui
+connector confirms the exact same issue at `lib.rs:151-156`:
+
+```rust
+let spec = ThemeSpec::preset(name)?;
+let variant = spec.into_variant(is_dark).ok_or_else(|| { ... })?;
+let resolved = variant.into_resolved()?;
+let theme = to_theme(&resolved, name, is_dark);
+```
+
+Issue 3 already notes "The gpui connector has the same issue at its
+`lib.rs:151-156`" at line 179 of the existing document. This is
+already fully covered. No new finding.
+
+**Best Solution:** Already covered by issue 3.
+
+---
+
+### 56. Showcase Missing `has_toml_icon_theme` Propagation on Error Fallback Paths
+
+**Category:** logic-gap
+**Severity:** low
+**File(s):** `connectors/native-theme-iced/examples/showcase.rs:770-778`
+
+**Problem:** In `rebuild_theme()`, when `ThemeChoice::OsTheme` and
+the system theme lookup fails (line 770-778), the fallback path
+loads adwaita but does NOT set `has_toml_icon_theme`. The variable
+is initialized to `false` at line 757 and only set to `true` at
+line 763 (system success path) or line 785 (preset success path).
+
+When the system lookup fails and adwaita fallback is used,
+`has_toml_icon_theme` remains `false`. This is passed to
+`resolve_icon_choice()` at line 822, which then returns
+`(IconSetChoice::System, ...)` -- skipping the adwaita preset's
+`icon_theme` specification.
+
+This is actually correct behavior: when the system theme fails,
+falling back to the System icon set is reasonable since the user's
+desktop environment is accessible even if the theme detection failed.
+The adwaita TOML specifies `icon_theme = "default"` which means
+"use whatever the TOML says", but since we are in fallback mode and
+the system theme detection failed, respecting the system icon theme
+is the safer choice.
+
+However, there is a subtle inconsistency: in the `Default::default()`
+init path at line 625, `has_toml_icon_theme` is hardcoded to `true`
+regardless of whether the system succeeded or the adwaita fallback
+was used. So the initial load and the rebuild-on-error paths handle
+`has_toml_icon_theme` differently for the same adwaita fallback
+scenario.
+
+**Solution Options:**
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Set `has_toml_icon_theme = true` in the system-failure-adwaita-fallback branch of `rebuild_theme()` to match `Default::default()` | Consistent between init and rebuild | Adwaita fallback uses adwaita's icon_theme spec even when system theme is broken |
+| B | Change `Default::default()` init to pass `has_toml_icon_theme = false` for the fallback path | Consistent in the other direction | Initial load would use System icons instead of adwaita's icon_theme |
+| C | No change | Both paths work reasonably for their contexts | Inconsistent behavior |
+
+**Best Solution:** A. The init path's behavior (use adwaita's
+icon_theme) is correct, so align `rebuild_theme()` to match.
+
+---
+
+### 57. No Test Verifies That `to_theme()` Extended Overrides Survive Round-Trip Through Palette Extraction
+
+**Category:** test-gap
+**Severity:** medium
+**File(s):** `connectors/native-theme-iced/src/lib.rs` tests
+
+**Problem:** The `to_theme()` function constructs a theme via
+`Theme::custom_with_fn(name, pal, closure)`. The closure overrides 4
+Extended palette fields. However, no test ever extracts the Extended
+palette from the resulting theme and verifies the override values.
+
+The existing tests verify:
+- `to_theme_produces_non_default_theme`: checks palette.primary is
+  non-zero (does NOT check Extended)
+- `to_theme_from_preset`: checks palette.background > 0.9 (does NOT
+  check Extended)
+
+The `extended.rs` tests verify `apply_overrides()`, but as issue 1
+documents, this function is dead code -- the production path uses an
+inline closure in `to_theme()`. No test verifies that the inline
+closure's overrides actually take effect on the final theme.
+
+To verify, a test would need to:
+```rust
+let theme = to_theme(&resolved, "test");
+let ext = theme.extended_palette();
+assert_eq!(ext.secondary.base.color, palette::to_color(resolved.button.background));
+assert_eq!(ext.secondary.base.text, palette::to_color(resolved.button.foreground));
+assert_eq!(ext.background.weak.color, palette::to_color(resolved.defaults.surface));
+assert_eq!(ext.background.weak.text, palette::to_color(resolved.defaults.foreground));
+```
+
+This is the most significant test gap in the crate: the primary
+production code path (the inline closure) has zero test coverage for
+its Extended palette overrides. The 4 tests in `extended.rs` test
+the dead `apply_overrides()` function, not the live code.
+
+**Solution Options:**
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Add a test in `lib.rs` that calls `to_theme()`, extracts the Extended palette, and verifies all 4 overridden fields match the resolved theme values exactly | Tests the actual production code path; highest-value single test in the crate | 1 new test |
+| B | Fix issue 1 first (make `to_theme()` call `apply_overrides()`), then the existing extended.rs tests cover the production path | Eliminates the gap structurally | Depends on issue 1 |
+
+**Best Solution:** A immediately, then B when issue 1 is addressed.
+This single test would be the highest-value addition to the test
+suite because it validates the only production code path that is
+currently untested.
+
+---
+
+### Summary: Third-Pass New Findings
+
+| # | Issue | Severity | Effort | Recommended Fix |
+|---|-------|----------|--------|----------------|
+| 46 | `color_approx_eq` epsilon 250x too loose for direct conversions | Medium | Trivial | Tighten to 1e-6 or use `assert_eq!` |
+| 47 | `colorize_monochrome_svg` matches `<svg` in XML comments | Very Low | N/A | No action (edge case too unlikely) |
+| 48 | Showcase `button_press_count` u32 overflow in debug mode | Very Low | Trivial | Use `wrapping_add` if desired |
+| 49 | `from_system()` partial move style (informational) | None | N/A | No action |
+| 50 | Gpui missing `Result`/`Rgba` + function re-export scope | Low | N/A | Subsumed by issue 25 |
+| 51 | `colorize_monochrome_svg` missing CSS `style` attribute doc | Low | Trivial | Add doc comment matching gpui |
+| 52 | `from_system()` vs `to_iced_theme()` consumption asymmetry | Low | N/A | Subsumed by issues 5+6 |
+| 53 | Showcase 4 instances of `_ => false` on `IconSet` match | Very Low | N/A | Subsumed by issue 35 (apply to all 4) |
+| 54 | Root tag detection skips XML decl correctly but not comments | Very Low | N/A | Subsumed by issue 47 |
+| 55 | Gpui `from_preset()` slug-as-name (same as iced) | Low | N/A | Already covered by issue 3 |
+| 56 | Showcase `has_toml_icon_theme` inconsistency between init and rebuild | Low | Trivial | Set `true` in adwaita-fallback rebuild path |
+| 57 | No test verifies `to_theme()` Extended overrides on live code path | Medium | Low | Add 1 test extracting Extended palette from `to_theme()` output |

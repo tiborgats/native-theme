@@ -2235,3 +2235,514 @@ platform-facts.md SS2.24 line 1225: "Windows: WinUI3: 38". The preset uses
 38.0 for both light and dark. Confirmed correct.
 
 **Verdict:** Correct. No issue.
+
+---
+
+## 24. Third-Pass Deep Audit (new findings only)
+
+Exhaustive cross-reference of all 11 community preset TOMLs, all 4 live vs
+static preset pairs, line-by-line resolve.rs edge-case audit, defaults.rs
+cross-reference, every test assertion verification, and iOS preset review.
+Only genuinely new findings below (not already covered in sections 1-23).
+
+### 24a. All 11 community presets missing `text_scale` sections entirely
+
+**Category:** preset-gap
+**Severity:** medium
+**File(s):** `src/presets/catppuccin-latte.toml`, `catppuccin-frappe.toml`,
+`catppuccin-macchiato.toml`, `catppuccin-mocha.toml`, `dracula.toml`,
+`gruvbox.toml`, `nord.toml`, `one-dark.toml`, `solarized.toml`,
+`tokyo-night.toml`, `material.toml`
+
+**Problem:** None of the 11 community presets define any `text_scale`
+sections (`caption`, `section_heading`, `dialog_title`, `display`). Only
+Adwaita (and its live preset) defines `text_scale.section_heading.weight`.
+No other platform preset (macOS, Windows 11, KDE, iOS) or community preset
+defines any text_scale entries.
+
+When `resolve_text_scale()` runs, it calls `resolve_text_scale_entry()`
+for each missing entry, which creates a default `TextScaleEntry` and fills
+`size` from `defaults.font.size` and `weight` from `defaults.font.weight`
+(both 400 for all community presets). All four text_scale entries thus
+resolve to the same `{size: 14.0, weight: 400, line_height: 16.8}` for
+community presets using Inter 14.0 at line_height 1.2.
+
+This means:
+- `caption` has the same size as body text (should be smaller, ~82-85% per
+  platform-facts.md SS2.19)
+- `section_heading` has weight 400 (should typically be 600-700 for headings)
+- `dialog_title` has weight 400 (should typically be 600-800)
+- `display` has the same size as body text (should be larger, ~170-200%)
+
+**Impact:** Any connector using `text_scale` entries for typographic
+hierarchy gets flat, undifferentiated text sizes and weights from community
+presets.
+
+**Solution Options:**
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Add sensible text_scale entries to each community preset based on their design language | Proper typographic hierarchy | 11 files to update |
+| B | Add resolve safety nets that derive text_scale sizes from defaults.font.size using standard ratios (caption=0.82x, heading=1.2x, display=2.0x) | Works for all presets automatically; no TOML changes needed | Opinionated defaults |
+| C | Leave as-is | No changes | Flat typography |
+
+**Recommended:** B for v0.5.4 (safety-net approach in resolve.rs), then A
+for individual presets that want specific weights (e.g., Material should use
+500 for headings per Material Design type scale).
+
+### 24b. Community presets all use `icon_set = "lucide"` / `icon_theme = "Lucide"` -- case mismatch risk
+
+**Category:** api-consistency
+**Severity:** low
+**File(s):** All 10 community presets (excluding material.toml)
+
+**Problem:** The 10 non-Material community presets all set
+`icon_set = "lucide"` and `icon_theme = "Lucide"` (uppercase L for theme,
+lowercase for set). The material preset uses `icon_set = "material"` and
+`icon_theme = "material"` (all lowercase). This is consistent within each
+preset, but the `icon_theme` field uses a different casing convention
+(`"Lucide"` vs `"material"` vs `"Adwaita"` vs `"breeze"` vs `"sf-symbols"`
+vs `"segoe-fluent"`).
+
+The `icon_theme` field is a free-form string used for display/identification
+purposes, not for filesystem lookups (freedesktop icon theme lookups use
+the system theme, not this field). So mixed casing is cosmetic, not
+functional.
+
+**Verdict:** Cosmetic inconsistency only. Not a functional bug. Could be
+normalized in a future cleanup pass.
+
+### 24c. Catppuccin Latte dark variant uses Frappe palette colors but light variant `danger_foreground` differs across the four Catppuccin presets
+
+**Category:** preset-consistency
+**Severity:** low
+**File(s):** `src/presets/catppuccin-latte.toml:20-27` vs
+`catppuccin-frappe.toml:20-27` vs `catppuccin-macchiato.toml:20-27` vs
+`catppuccin-mocha.toml:20-27`
+
+**Problem:** The four Catppuccin presets' light variants have inconsistent
+`danger_foreground` / `warning_foreground` / `success_foreground` /
+`info_foreground` values:
+
+- **Latte** (light primary): `danger_foreground = "#ffffff"`,
+  `success_foreground = "#ffffff"`, `info_foreground = "#ffffff"` -- white
+  foreground on colored backgrounds (good contrast)
+- **Frappe/Macchiato/Mocha** (light derived): `danger_foreground = "#4c4f69"`,
+  `success_foreground = "#4c4f69"`, `info_foreground = "#4c4f69"` -- dark
+  foreground on colored backgrounds
+
+The Frappe/Macchiato/Mocha light variants use the Latte base background
+colors but with Frappe/Macchiato/Mocha accent colors. The Frappe accent
+colors (e.g., `danger = "#e78284"`) are lighter/pastel compared to Latte's
+(`danger = "#d20f39"`). White foreground text on `#e78284` would have poor
+contrast, so `#4c4f69` (dark text) is the correct choice for the lighter
+danger colors.
+
+**Verdict:** Correct. The different foreground values are appropriate for
+the different danger/success/info color intensities. Not a bug.
+
+### 24d. Live presets missing `text_scale` sections that static presets have
+
+**Category:** live-sync
+**Severity:** medium
+**File(s):** `src/presets/adwaita-live.toml:34,171` vs
+`src/presets/adwaita.toml:76,281`
+
+**Problem:** The Adwaita live preset includes `[light.text_scale.section_heading]
+weight = 700` and the same for dark -- this matches the static preset.
+However, no other live preset (kde-breeze-live, macos-sonoma-live,
+windows-11-live) has any text_scale sections, which is consistent with
+their static counterparts also lacking text_scale. So there is no sync
+gap between live and static for text_scale specifically.
+
+The actual sync gap is that issue 19a-19f identified that the static
+platform presets SHOULD have text_scale weight entries but do not. When
+those are added to the static presets, they must also be added to the
+corresponding live presets.
+
+**Verdict:** No current sync gap. But when issues 19a-19f are fixed,
+live presets must be updated in lockstep. Already implicitly covered by
+issue 8a's recommendation for a sync test.
+
+### 24e. Live vs static: `adwaita-live.toml` matches `adwaita.toml` geometry except for intentionally omitted color/font/icon fields
+
+**Category:** live-sync (verification)
+**Severity:** N/A (no issue found)
+
+**Verification:** Cross-referenced every geometry field in
+`adwaita-live.toml` against `adwaita.toml`. All values match exactly:
+- `radius = 9.0`, `radius_lg = 15.0`, `frame_width = 1.0`,
+  `disabled_opacity = 0.5`, `border_opacity = 0.15`, `shadow_enabled = true`,
+  `line_height = 1.21`, `focus_ring_width = 2.0`, `focus_ring_offset = -2.0`
+- All widget geometry (button, input, checkbox, etc.) matches.
+- Live correctly omits: colors, fonts, icon_set, icon_theme,
+  text_scaling_factor, reduce_motion, high_contrast, reduce_transparency.
+
+**Verdict:** In sync. No discrepancy.
+
+### 24f. Live vs static: `kde-breeze-live.toml` matches `kde-breeze.toml` geometry
+
+**Category:** live-sync (verification)
+**Severity:** N/A (no issue found)
+
+**Verification:** All geometry values match. Live correctly omits colors,
+fonts, icon_set, icon_theme, and accessibility flags.
+
+**Verdict:** In sync.
+
+### 24g. Live vs static: `macos-sonoma-live.toml` matches `macos-sonoma.toml` geometry
+
+**Category:** live-sync (verification)
+**Severity:** N/A (no issue found)
+
+**Verification:** All geometry values match.
+
+**Verdict:** In sync.
+
+### 24h. Live vs static: `windows-11-live.toml` matches `windows-11.toml` geometry
+
+**Category:** live-sync (verification)
+**Severity:** N/A (no issue found)
+
+**Verification:** All geometry values match.
+
+**Verdict:** In sync.
+
+### 24i. `resolve.rs` `check_non_negative` and `check_positive` pass `Infinity`
+
+**Category:** api-bug
+**Severity:** low
+**File(s):** `src/resolve.rs:139-151`
+
+**Problem:** Issue 16c covers NaN passing range checks. The same functions
+also pass `f32::INFINITY`:
+- `check_non_negative(INFINITY, ...)` passes (INFINITY >= 0.0 is true)
+- `check_positive(INFINITY, ...)` passes (INFINITY > 0.0 is true)
+- `check_range_f32(INFINITY, 0.0, 1.0, ...)` correctly fails (INFINITY > 1.0)
+
+A geometry field set to `f32::INFINITY` would pass all non-negative/positive
+checks and produce rendering artifacts. The `check_range_f32` function already
+catches Infinity for bounded ranges (opacity, font weight), but unbounded
+geometry checks (radius, padding, width, height) do not.
+
+This is partially covered by issue 16c's recommendation to add `is_nan()`
+guards. Extending the fix to `!value.is_finite()` (which catches both NaN
+and Infinity) would be more thorough.
+
+**Recommended:** Amend issue 16c's solution from `is_nan()` to
+`!is_finite()` (catches both NaN and Infinity in one check).
+
+### 24j. `resolve.rs` does not range-check `defaults.font.size` or `defaults.mono_font.size`
+
+**Category:** api-bug
+**Severity:** medium
+**File(s):** `src/resolve.rs:621-631`
+
+**Problem:** The `validate()` function requires `defaults.font` and
+`defaults.mono_font` via `require_font()`, which extracts `family`, `size`,
+and `weight`. But the extracted `defaults_font.size` and
+`defaults_mono_font.size` are never passed to `check_positive()`.
+
+Compare with widget fonts (button.font, input.font, menu.font, etc.) which
+DO get `check_positive(xxx_font.size, ...)` calls. The defaults font sizes
+are the root from which all widget fonts inherit, yet they are the only
+font sizes not validated.
+
+A `defaults.font.size = 0.0` or `defaults.font.size = -5.0` would pass
+validation, then every widget would inherit the invalid size.
+
+**Solution Options:**
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Add `check_positive(defaults_font.size, ...)` and same for mono_font | Consistent with widget font checks | 4 lines |
+| B | Leave to widget-level checks | Widgets inherit and their checks catch it | Only catches at widget level, not at source |
+
+**Recommended:** A. Add after the existing `require_font()` calls:
+```
+check_positive(defaults_font.size, "defaults.font.size", &mut missing);
+check_range_u16(defaults_font.weight, 100, 900, "defaults.font.weight", &mut missing);
+check_positive(defaults_mono_font.size, "defaults.mono_font.size", &mut missing);
+check_range_u16(defaults_mono_font.weight, 100, 900, "defaults.mono_font.weight", &mut missing);
+```
+
+### 24k. `preset_loading.rs` `all_presets_have_valid_fonts` does not check mono_font at all
+
+**Category:** test-gap
+**Severity:** low
+**File(s):** `tests/preset_loading.rs:138-163`
+
+**Problem:** The test checks `defaults.font.family.is_some()` and
+`defaults.font.size > 0` for both light and dark variants of all 16
+presets, but never checks `defaults.mono_font`. Every preset defines
+`mono_font.family` and `mono_font.size`, but a preset missing
+`mono_font.family` would pass this test.
+
+Additionally, as noted in existing issue 9a, the test does not check
+`defaults.font.weight.is_some()`.
+
+**Recommended:** Extend the test to also assert `mono_font.family.is_some()`
+and `mono_font.size.unwrap() > 0`, plus `font.weight.is_some()` per issue 9a.
+
+### 24l. `preset_loading.rs` `all_presets_have_spacing` only checks `spacing.m`
+
+**Category:** test-gap
+**Severity:** low
+**File(s):** `tests/preset_loading.rs:192-209`
+
+**Problem:** The test asserts only `spacing.m.is_some()`. All 16 presets
+define all 7 spacing values (xxs through xxl), but a preset missing any
+of the other 6 values would pass this test. Given that `validate()` requires
+all 7 spacing fields, a missing value would only be caught at
+resolve+validate time, not in this early-catch test.
+
+**Recommended:** Assert all 7 spacing fields: xxs, xs, s, m, l, xl, xxl.
+
+### 24m. `preset_loading.rs` `all_presets_have_geometry` does not check `frame_width`, `disabled_opacity`, `border_opacity`, `line_height`, `focus_ring_width`
+
+**Category:** test-gap
+**Severity:** low
+**File(s):** `tests/preset_loading.rs:165-190`
+
+**Problem:** The geometry test only checks `radius`, `radius_lg`, and
+`shadow_enabled`. But `validate()` requires many more defaults-level
+geometry fields: `frame_width`, `disabled_opacity`, `border_opacity`,
+`focus_ring_width`, `focus_ring_offset`, `line_height`. A preset missing
+any of these would pass the loading test but fail at validation time.
+
+**Recommended:** Extend to check at least `frame_width.is_some()` and
+`line_height.is_some()` which are the most critical for rendering.
+
+### 24n. `serde_roundtrip.rs` `fully_populated_variant()` never sets `accent_foreground`, `selection_inactive`, or `shadow_enabled`
+
+**Category:** test-gap
+**Severity:** low
+**File(s):** `tests/serde_roundtrip.rs:15-101`
+
+**Problem:** This helper function is used for round-trip tests but
+omits several defaults fields that have special behavior:
+
+- `accent_foreground`: resolve derives it if missing, but the round-trip
+  helper never sets it, so the round-trip test never verifies it survives
+  serialization.
+- `selection_inactive`: derived from `selection` by resolve, but never
+  set explicitly in the helper, so never tested in round-trip.
+- `shadow_enabled`: a `bool` field (not color), never set in the helper.
+- `radius_lg`: never set in the helper.
+- `line_height`: never set in the helper.
+
+This is partially covered by existing issue 9e, but specifying the
+exact missing fields adds actionable detail.
+
+**Recommended:** Extend the helper or (per issue 9e) use an actual
+preset for round-trip testing, which has all fields populated.
+
+### 24o. iOS preset `font.size = 17.0` vs macOS `font.size = 13.0` -- correct per Apple HIG
+
+**Category:** preset-value (verification)
+**Severity:** N/A (no issue found)
+**File(s):** `src/presets/ios.toml:52,249` vs `src/presets/macos-sonoma.toml:52,252`
+
+**Verification:** Apple Human Interface Guidelines specify 17pt as the
+default body text size for iOS (UIKit `.body` dynamic type). macOS uses
+13pt (NSFont systemFontSize). The 4pt difference is correct -- iOS is a
+touch-first platform requiring larger tap targets and text.
+
+Other iOS-specific correct values verified:
+- `button.min_height = 44.0` (Apple's 44pt minimum tap target)
+- `menu.item_height = 44.0` (same tap target minimum)
+- `scrollbar.overlay_mode = true` (iOS always uses overlay scrollbars)
+- `frame_width = 0.5` (iOS uses hairline borders -- 0.5pt = 1px on 2x)
+- `disabled_opacity = 0.3` (matches UIControl disabled alpha)
+- `switch.track_width = 51.0`, `track_height = 31.0` (UISwitch dimensions)
+
+**Verdict:** iOS preset values are well-researched and consistent with
+Apple's UIKit/SwiftUI specifications.
+
+### 24p. iOS preset `dialog.button_order = "leading_affirmative"` -- already tracked in issue 1u
+
+**Category:** preset-value
+**Severity:** high (already tracked)
+
+**Verification:** Issue 1u already identifies this. Confirming that both
+`ios.toml:164` (light) and `ios.toml:362` (dark) have the wrong value.
+No additional finding.
+
+### 24q. Material preset uses `disabled_opacity = 0.38` and `border_opacity = 0.12` -- correct per MD3
+
+**Category:** preset-value (verification)
+**Severity:** N/A (no issue found)
+**File(s):** `src/presets/material.toml:39-40,238-239`
+
+**Verification:** Material Design 3 specifies:
+- Disabled state opacity: 0.38 (38%)
+- Outline opacity: 0.12 (12%)
+
+The preset matches these values exactly. Additionally verified:
+- `radius = 12.0`, `radius_lg = 16.0` (MD3 corner radius scale)
+- `button.min_height = 40.0` (MD3 button height)
+- `input.min_height = 56.0` (MD3 text field height)
+- `toolbar.height = 64.0` (MD3 top app bar height)
+- `menu.item_height = 48.0` (MD3 menu item height)
+- `switch.track_width = 52.0`, `track_height = 32.0` (MD3 switch)
+- `dialog.min_width = 280.0` (MD3 dialog minimum)
+
+**Verdict:** Material preset is well-aligned with Material Design 3
+specifications.
+
+### 24r. Material preset uses `link.underline = false` -- correct per MD3
+
+**Category:** preset-value (verification)
+**Severity:** N/A (no issue found)
+
+**Verification:** Material Design 3 does not underline links by default;
+it relies on color differentiation. The `link.underline = false` value is
+correct. All other presets use `underline = true` which is correct for
+their respective platforms/design systems.
+
+### 24s. Material preset `spacing.s = 8.0` and `spacing.l = 16.0` differ from all other presets
+
+**Category:** preset-consistency (informational)
+**Severity:** N/A (not a bug)
+**File(s):** `src/presets/material.toml:63-64,262-263`
+
+**Observation:** Material uses `s = 8.0` where all other presets use
+`s = 6.0`, and `l = 16.0` where most community presets use `l = 18.0`.
+This reflects Material Design 3's 4dp baseline grid (`4, 8, 12, 16, 24`
+progression) vs the `2, 4, 6, 12, 18, 24, 36` scale used by others.
+
+**Verdict:** Correct for Material Design. Not a consistency bug.
+
+### 24t. `resolve.rs` `resolve_color_inheritance()` does not derive `spinner.fill` from `accent` -- uses `foreground` instead
+
+**Category:** api-design
+**Severity:** low
+**File(s):** `src/resolve.rs:282-284`
+
+**Problem:** In `resolve_safety_nets()`:
+```rust
+if self.spinner.fill.is_none() {
+    self.spinner.fill = self.defaults.foreground;
+}
+```
+
+platform-facts.md SS2.16 line 1140-1143:
+- macOS: `controlAccentColor` (accent)
+- Windows: `ProgressRing foreground = accent color`
+- GNOME: `accent_bg_color` (accent)
+- KDE: `[Colors:View] DecorationFocus` (accent)
+
+All four platforms use accent for spinner fill, not foreground. The
+current safety net uses `foreground`, which is only correct as a
+last-resort fallback. Platform readers set the correct accent-based
+value, but community presets that omit `spinner.fill` will get
+`foreground` (a dark/light gray) instead of the accent color.
+
+This is similar in spirit to the `input.caret` discussion in 21o,
+but the evidence is stronger here: ALL four platforms use accent for
+spinners.
+
+**Solution Options:**
+
+| # | Solution | Pros | Cons |
+|---|----------|------|------|
+| A | Change safety net to `accent` | Matches all 4 platforms; community presets get colored spinners | Low contrast possible if accent is very light |
+| B | Keep `foreground` | Always visible | Wrong for all platforms |
+
+**Recommended:** A. Change `spinner.fill` safety net from
+`defaults.foreground` to `defaults.accent`.
+
+### 24u. `resolve.rs` `resolve_color_inheritance()` does not derive `scrollbar.thumb_hover` distinctly from `thumb`
+
+**Category:** api-design
+**Severity:** low
+**File(s):** `src/resolve.rs:417-420`
+
+**Problem:** Both `scrollbar.thumb` and `scrollbar.thumb_hover` resolve
+to `defaults.muted`:
+```rust
+if self.scrollbar.thumb.is_none() {
+    self.scrollbar.thumb = d.muted;
+}
+if self.scrollbar.thumb_hover.is_none() {
+    self.scrollbar.thumb_hover = d.muted;
+}
+```
+
+This means the hover state is identical to the normal state -- no visual
+feedback when hovering over the scrollbar thumb. All platforms provide
+distinct hover states (typically darker/lighter).
+
+The resolve chain should derive `thumb_hover` from `thumb` rather than
+independently from `muted`, so that presets setting only `thumb` still
+get a distinct hover. However, since all bundled presets rely on resolve
+for these colors and none of them explicitly set `scrollbar.thumb_hover`,
+ALL presets currently have identical thumb and thumb_hover colors.
+
+**Recommended:** Low priority. Document the limitation. A proper fix
+would derive `thumb_hover` from `thumb` with a slight darkening/lightening
+transform, which requires color manipulation not currently in the
+resolve engine.
+
+### 24v. `merge_behavior.rs` `is_empty_all_structs` test covers only 4 structs -- already noted in 9c but exact gap is larger
+
+**Category:** test-gap
+**Severity:** low
+**File(s):** `tests/merge_behavior.rs:212-218`
+
+**Problem:** Issue 9c already notes this test covers only 4 of 30+ structs.
+Exact gap: the test checks `ThemeDefaults`, `FontSpec`, `ThemeSpacing`,
+`ThemeVariant` but misses `ThemeSpec`, `IconSizes`, `TextScale`,
+`TextScaleEntry`, and all 25 widget structs generated by
+`define_widget_pair!` (ButtonTheme, InputTheme, CheckboxTheme, etc.).
+
+**Verdict:** Already tracked in 9c. Adding exact struct names for the fix.
+
+### 24w. `serde_roundtrip.rs` `round_trip_full_theme` does not verify `ThemeSpec` structural equality -- only spot-checks fields
+
+**Category:** test-gap
+**Severity:** low
+**File(s):** `tests/serde_roundtrip.rs:107-173`
+
+**Problem:** The test manually compares individual fields (accent,
+background, foreground, etc.) rather than using `assert_eq!(theme, deserialized)`.
+If `ThemeSpec` implements `PartialEq` (which it does, since all its
+constituent types derive it), a single `assert_eq!` would catch any field
+that fails round-trip without needing to enumerate every field manually.
+
+The current approach means that any new field added to a struct but not
+added to the test will silently pass even if its round-trip is broken.
+
+**Recommended:** Replace spot-check assertions with
+`assert_eq!(theme, deserialized)` for complete structural equality
+verification. Keep one or two spot-checks for human-readable failure
+messages if the full equality assert fails.
+
+### 24x. All community presets have identical widget geometry values (copy-paste template)
+
+**Category:** preset-design
+**Severity:** low (informational)
+**File(s):** All 11 community presets
+
+**Observation:** Every community preset uses identical widget geometry:
+- `button: min_width=64, min_height=32, padding_horizontal=12, padding_vertical=6`
+- `input: min_height=32, padding_horizontal=8, padding_vertical=6`
+- `checkbox: indicator_size=18, spacing=6`
+- `tooltip: padding_horizontal=6, padding_vertical=6, max_width=300`
+- `scrollbar: width=14, slider_width=8, min_thumb_height=30`
+- `slider: track_height=4, thumb_size=20, tick_length=4`
+- `dialog: min_width=320, max_width=560, min_height=140, max_height=600`
+- (and all other widget sections)
+
+The only exceptions are Material (which has its own MD3-specific geometry)
+and the non-geometry fields (colors).
+
+This is not a bug -- the community presets are primarily color themes
+that share a common geometry baseline. But it means the geometry values
+are effectively hardcoded constants copied 10 times. If the baseline
+geometry should change (e.g., following a future issue fix), all 10 files
+need updating.
+
+**Recommended:** Consider extracting a shared geometry template that
+community presets inherit from, reducing duplication. This is a v0.6.0+
+design consideration, not a v0.5.4 fix.
