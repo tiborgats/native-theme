@@ -190,6 +190,13 @@ pub enum LinuxDesktop {
     Unknown,
 }
 
+/// Read the `XDG_CURRENT_DESKTOP` environment variable, returning an
+/// empty string if unset or invalid UTF-8.
+#[cfg(target_os = "linux")]
+pub(crate) fn xdg_current_desktop() -> String {
+    std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default()
+}
+
 /// Parse `XDG_CURRENT_DESKTOP` (a colon-separated list) and return
 /// the recognized desktop environment.
 ///
@@ -740,8 +747,7 @@ pub fn platform_preset_name() -> &'static str {
     }
     #[cfg(target_os = "linux")]
     {
-        let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
-        linux_preset_for_de(detect_linux_de(&desktop))
+        linux_preset_for_de(detect_linux_de(&xdg_current_desktop()))
     }
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
@@ -891,8 +897,7 @@ fn reader_is_dark(reader: &ThemeSpec) -> bool {
 #[cfg(target_os = "linux")]
 fn from_linux() -> crate::Result<SystemTheme> {
     let is_dark = system_is_dark();
-    let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
-    let de = detect_linux_de(&desktop);
+    let de = detect_linux_de(&xdg_current_desktop());
     let preset = linux_preset_for_de(de);
     match de {
         #[cfg(feature = "kde")]
@@ -970,8 +975,7 @@ fn from_system_inner() -> crate::Result<SystemTheme> {
 #[cfg(target_os = "linux")]
 async fn from_system_async_inner() -> crate::Result<SystemTheme> {
     let is_dark = system_is_dark();
-    let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
-    let de = detect_linux_de(&desktop);
+    let de = detect_linux_de(&xdg_current_desktop());
     let preset = linux_preset_for_de(de);
     match de {
         #[cfg(feature = "kde")]

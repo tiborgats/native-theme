@@ -1,11 +1,12 @@
 // Resolution engine: resolve() fills inheritance rules, validate() produces ResolvedThemeVariant.
 
+use crate::Rgba;
 use crate::error::ThemeResolutionError;
 use crate::model::resolved::{
     ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedThemeDefaults,
     ResolvedThemeSpacing, ResolvedThemeVariant,
 };
-use crate::model::{FontSpec, ResolvedFontSpec, TextScaleEntry, ThemeVariant};
+use crate::model::{DialogButtonOrder, FontSpec, ResolvedFontSpec, TextScaleEntry, ThemeVariant};
 
 /// Resolve a per-widget font from defaults.
 /// If the widget font is None, clone defaults entirely.
@@ -31,18 +32,24 @@ fn resolve_font(widget_font: &mut Option<FontSpec>, defaults_font: &FontSpec) {
 
 /// Resolve a text scale entry from defaults.
 /// Creates the entry if None, fills sub-fields from defaults.font,
-/// computes line_height from defaults.line_height * resolved_size.
+/// applies a size ratio and default weight, then computes line_height
+/// from defaults.line_height * resolved_size.
+///
+/// `size_ratio` scales the default font size (e.g. 0.82 for caption).
+/// `default_weight` is the fallback weight when none is set (e.g. 700 for headings).
 fn resolve_text_scale_entry(
     entry: &mut Option<TextScaleEntry>,
     defaults_font: &FontSpec,
     defaults_line_height: Option<f32>,
+    size_ratio: f32,
+    default_weight: u16,
 ) {
     let entry = entry.get_or_insert_with(TextScaleEntry::default);
     if entry.size.is_none() {
-        entry.size = defaults_font.size;
+        entry.size = defaults_font.size.map(|s| s * size_ratio);
     }
     if entry.weight.is_none() {
-        entry.weight = defaults_font.weight;
+        entry.weight = Some(default_weight);
     }
     if entry.line_height.is_none()
         && let (Some(lh_mult), Some(size)) = (defaults_line_height, entry.size)
@@ -136,24 +143,30 @@ fn require_text_scale_entry(
 // error-collection pattern as require()) so that all problems — missing
 // fields AND out-of-range values — are reported in a single pass.
 
-/// Check that an `f32` value is non-negative (>= 0.0).
+/// Check that an `f32` value is finite and non-negative (>= 0.0).
 fn check_non_negative(value: f32, path: &str, errors: &mut Vec<String>) {
-    if value < 0.0 {
-        errors.push(format!("{path} must be >= 0, got {value}"));
+    if !value.is_finite() || value < 0.0 {
+        errors.push(format!(
+            "{path} must be a finite non-negative number, got {value}"
+        ));
     }
 }
 
-/// Check that an `f32` value is strictly positive (> 0.0).
+/// Check that an `f32` value is finite and strictly positive (> 0.0).
 fn check_positive(value: f32, path: &str, errors: &mut Vec<String>) {
-    if value <= 0.0 {
-        errors.push(format!("{path} must be > 0, got {value}"));
+    if !value.is_finite() || value <= 0.0 {
+        errors.push(format!(
+            "{path} must be a finite positive number, got {value}"
+        ));
     }
 }
 
-/// Check that an `f32` value falls within an inclusive range.
+/// Check that an `f32` value is finite and falls within an inclusive range.
 fn check_range_f32(value: f32, min: f32, max: f32, path: &str, errors: &mut Vec<String>) {
-    if value < min || value > max {
-        errors.push(format!("{path} must be {min}..={max}, got {value}"));
+    if !value.is_finite() || value < min || value > max {
+        errors.push(format!(
+            "{path} must be a finite number between {min} and {max}, got {value}"
+        ));
     }
 }
 
@@ -162,6 +175,36 @@ fn check_range_u16(value: u16, min: u16, max: u16, path: &str, errors: &mut Vec<
     if value < min || value > max {
         errors.push(format!("{path} must be {min}..={max}, got {value}"));
     }
+}
+
+/// Check that a min value does not exceed its corresponding max value.
+fn check_min_max(
+    min_val: f32,
+    max_val: f32,
+    min_name: &str,
+    max_name: &str,
+    errors: &mut Vec<String>,
+) {
+    if min_val > max_val {
+        errors.push(format!(
+            "{min_name} ({min_val}) must not exceed {max_name} ({max_val})"
+        ));
+    }
+}
+
+/// Return the platform-appropriate dialog button order.
+///
+/// On Linux/KDE, the convention is leading-affirmative (OK on the left).
+/// On Windows, GNOME, macOS, iOS the convention is trailing-affirmative.
+fn platform_button_order() -> DialogButtonOrder {
+    #[cfg(target_os = "linux")]
+    {
+        if crate::detect_linux_de(&crate::xdg_current_desktop()) == crate::LinuxDesktop::Kde {
+            return DialogButtonOrder::LeadingAffirmative;
+        }
+    }
+    // Windows, GNOME, macOS, iOS all use trailing affirmative
+    DialogButtonOrder::TrailingAffirmative
 }
 
 impl ThemeVariant {
@@ -270,6 +313,26 @@ impl ThemeVariant {
     // --- Phase 2: Safety nets ---
 
     fn resolve_safety_nets(&mut self) {
+        // defaults.line_height -- ensure minimal themes that omit it still work
+        if self.defaults.line_height.is_none() {
+            self.defaults.line_height = Some(1.2);
+        }
+        // defaults.accent_foreground -- white is legible on most accent colors
+        if self.defaults.accent_foreground.is_none() {
+            self.defaults.accent_foreground = Some(Rgba::rgb(255, 255, 255));
+        }
+        // defaults.shadow -- semi-transparent black
+        if self.defaults.shadow.is_none() {
+            self.defaults.shadow = Some(Rgba::rgba(0, 0, 0, 64));
+        }
+        // defaults.disabled_foreground <- defaults.muted
+        if self.defaults.disabled_foreground.is_none() {
+            self.defaults.disabled_foreground = self.defaults.muted;
+        }
+        // dialog.button_order <- platform convention
+        if self.dialog.button_order.is_none() {
+            self.dialog.button_order = Some(platform_button_order());
+        }
         // input.caret <- defaults.foreground
         if self.input.caret.is_none() {
             self.input.caret = self.defaults.foreground;
@@ -278,9 +341,9 @@ impl ThemeVariant {
         if self.scrollbar.track.is_none() {
             self.scrollbar.track = self.defaults.background;
         }
-        // spinner.fill <- defaults.foreground
+        // spinner.fill <- defaults.accent (all platforms use accent)
         if self.spinner.fill.is_none() {
-            self.spinner.fill = self.defaults.foreground;
+            self.spinner.fill = self.defaults.accent;
         }
         // popover.background <- defaults.background
         if self.popover.background.is_none() {
@@ -574,18 +637,40 @@ impl ThemeVariant {
     fn resolve_text_scale(&mut self) {
         let defaults_font = &self.defaults.font;
         let defaults_lh = self.defaults.line_height;
-        resolve_text_scale_entry(&mut self.text_scale.caption, defaults_font, defaults_lh);
+        let body_weight = defaults_font.weight.unwrap_or(400);
+
+        // caption: 0.82x body size, body weight
+        resolve_text_scale_entry(
+            &mut self.text_scale.caption,
+            defaults_font,
+            defaults_lh,
+            0.82,
+            body_weight,
+        );
+        // section_heading: 1.0x body size, bold (700)
         resolve_text_scale_entry(
             &mut self.text_scale.section_heading,
             defaults_font,
             defaults_lh,
+            1.0,
+            700,
         );
+        // dialog_title: 1.2x body size, bold (700)
         resolve_text_scale_entry(
             &mut self.text_scale.dialog_title,
             defaults_font,
             defaults_lh,
+            1.2,
+            700,
         );
-        resolve_text_scale_entry(&mut self.text_scale.display, defaults_font, defaults_lh);
+        // display: 2.0x body size, bold (700)
+        resolve_text_scale_entry(
+            &mut self.text_scale.display,
+            defaults_font,
+            defaults_lh,
+            2.0,
+            700,
+        );
     }
 
     // --- Phase 4: Widget-to-widget chains ---
@@ -1696,6 +1781,22 @@ impl ThemeVariant {
             &mut missing,
         );
 
+        // dialog: cross-field min/max constraints
+        check_min_max(
+            dialog_min_width,
+            dialog_max_width,
+            "dialog.min_width",
+            "dialog.max_width",
+            &mut missing,
+        );
+        check_min_max(
+            dialog_min_height,
+            dialog_max_height,
+            "dialog.min_height",
+            "dialog.max_height",
+            &mut missing,
+        );
+
         // spinner: geometry >= 0
         check_non_negative(spinner_diameter, "spinner.diameter", &mut missing);
         check_non_negative(spinner_min_size, "spinner.min_size", &mut missing);
@@ -2173,8 +2274,34 @@ mod tests {
         let mut v = ThemeVariant::default();
         v.defaults.foreground = Some(Rgba::rgb(30, 30, 30));
         v.defaults.background = Some(Rgba::rgb(255, 255, 255));
+        v.defaults.accent = Some(Rgba::rgb(0, 120, 215));
+        v.defaults.muted = Some(Rgba::rgb(128, 128, 128));
         v.resolve();
 
+        assert_eq!(
+            v.defaults.line_height,
+            Some(1.2),
+            "defaults.line_height safety net"
+        );
+        assert_eq!(
+            v.defaults.accent_foreground,
+            Some(Rgba::rgb(255, 255, 255)),
+            "defaults.accent_foreground safety net"
+        );
+        assert_eq!(
+            v.defaults.shadow,
+            Some(Rgba::rgba(0, 0, 0, 64)),
+            "defaults.shadow safety net"
+        );
+        assert_eq!(
+            v.defaults.disabled_foreground,
+            Some(Rgba::rgb(128, 128, 128)),
+            "defaults.disabled_foreground <- muted"
+        );
+        assert!(
+            v.dialog.button_order.is_some(),
+            "dialog.button_order safety net"
+        );
         assert_eq!(
             v.input.caret,
             Some(Rgba::rgb(30, 30, 30)),
@@ -2187,8 +2314,8 @@ mod tests {
         );
         assert_eq!(
             v.spinner.fill,
-            Some(Rgba::rgb(30, 30, 30)),
-            "spinner.fill <- foreground"
+            Some(Rgba::rgb(0, 120, 215)),
+            "spinner.fill <- accent"
         );
         assert_eq!(
             v.popover.background,
@@ -2294,21 +2421,54 @@ mod tests {
             weight: Some(400),
         };
         v.defaults.line_height = Some(1.4);
-        // Leave text_scale.caption as None
+        // Leave text_scale entries as None
         v.resolve();
 
+        // caption: 0.82x body size = 14.0 * 0.82 = 11.48, body weight (400)
         let caption = v.text_scale.caption.as_ref().unwrap();
-        assert_eq!(caption.size, Some(14.0), "size from defaults.font.size");
-        assert_eq!(
-            caption.weight,
-            Some(400),
-            "weight from defaults.font.weight"
-        );
-        // line_height = defaults.line_height * resolved_size = 1.4 * 14.0 = 19.6
+        let expected_caption_size = 14.0 * 0.82;
         assert!(
-            (caption.line_height.unwrap() - 19.6).abs() < 0.001,
-            "line_height computed"
+            (caption.size.unwrap() - expected_caption_size).abs() < 0.001,
+            "caption size = 0.82 * body size, got {:?}",
+            caption.size
         );
+        assert_eq!(caption.weight, Some(400), "caption weight from body weight");
+        // line_height = defaults.line_height * caption_size = 1.4 * 11.48 = 16.072
+        let expected_caption_lh = 1.4 * expected_caption_size;
+        assert!(
+            (caption.line_height.unwrap() - expected_caption_lh).abs() < 0.001,
+            "caption line_height computed"
+        );
+
+        // section_heading: 1.0x body size = 14.0, bold (700)
+        let sh = v.text_scale.section_heading.as_ref().unwrap();
+        assert!(
+            (sh.size.unwrap() - 14.0).abs() < 0.001,
+            "section_heading size = 1.0 * body size"
+        );
+        assert_eq!(
+            sh.weight,
+            Some(700),
+            "section_heading weight defaults to bold"
+        );
+
+        // dialog_title: 1.2x body size = 16.8, bold (700)
+        let dt = v.text_scale.dialog_title.as_ref().unwrap();
+        let expected_dt_size = 14.0 * 1.2;
+        assert!(
+            (dt.size.unwrap() - expected_dt_size).abs() < 0.001,
+            "dialog_title size = 1.2 * body size"
+        );
+        assert_eq!(dt.weight, Some(700), "dialog_title weight defaults to bold");
+
+        // display: 2.0x body size = 28.0, bold (700)
+        let disp = v.text_scale.display.as_ref().unwrap();
+        let expected_disp_size = 14.0 * 2.0;
+        assert!(
+            (disp.size.unwrap() - expected_disp_size).abs() < 0.001,
+            "display size = 2.0 * body size"
+        );
+        assert_eq!(disp.weight, Some(700), "display weight defaults to bold");
     }
 
     // ===== Phase 3: Color inheritance =====
@@ -3094,7 +3254,7 @@ mod tests {
         assert!(
             err.missing_fields
                 .iter()
-                .any(|f| f.contains("defaults.font.size") && f.contains("> 0")),
+                .any(|f| f.contains("defaults.font.size") && f.contains("positive")),
             "should report zero defaults.font.size, got: {:?}",
             err.missing_fields
         );
@@ -3203,6 +3363,176 @@ mod tests {
             result.is_ok(),
             "zero values should be valid for radius/frame_width/opacity, got: {:?}",
             result.err()
+        );
+    }
+
+    // ===== Additional range-check negative tests (issue 2a) =====
+
+    #[test]
+    fn validate_catches_negative_font_size() {
+        let mut v = fully_populated_variant();
+        v.defaults.font.size = Some(-1.0);
+
+        let result = v.validate();
+        assert!(result.is_err());
+        let err = match result.unwrap_err() {
+            crate::Error::Resolution(e) => e,
+            other => panic!("expected Resolution error, got: {other:?}"),
+        };
+        assert!(
+            err.missing_fields
+                .iter()
+                .any(|f| f.contains("defaults.font.size")),
+            "should report negative font.size, got: {:?}",
+            err.missing_fields
+        );
+    }
+
+    #[test]
+    fn validate_catches_disabled_opacity_above_one() {
+        let mut v = fully_populated_variant();
+        v.defaults.disabled_opacity = Some(2.0);
+
+        let result = v.validate();
+        assert!(result.is_err());
+        let err = match result.unwrap_err() {
+            crate::Error::Resolution(e) => e,
+            other => panic!("expected Resolution error, got: {other:?}"),
+        };
+        assert!(
+            err.missing_fields
+                .iter()
+                .any(|f| f.contains("defaults.disabled_opacity")),
+            "should report disabled_opacity=2.0 out of 0..=1 range, got: {:?}",
+            err.missing_fields
+        );
+    }
+
+    #[test]
+    fn validate_catches_font_weight_zero() {
+        let mut v = fully_populated_variant();
+        v.defaults.font.weight = Some(0);
+
+        let result = v.validate();
+        assert!(result.is_err());
+        let err = match result.unwrap_err() {
+            crate::Error::Resolution(e) => e,
+            other => panic!("expected Resolution error, got: {other:?}"),
+        };
+        assert!(
+            err.missing_fields
+                .iter()
+                .any(|f| f.contains("defaults.font.weight")),
+            "should report font.weight=0 out of 100..=900 range, got: {:?}",
+            err.missing_fields
+        );
+    }
+
+    #[test]
+    fn validate_catches_nan_values() {
+        let mut v = fully_populated_variant();
+        v.defaults.radius = Some(f32::NAN);
+
+        let result = v.validate();
+        assert!(result.is_err());
+        let err = match result.unwrap_err() {
+            crate::Error::Resolution(e) => e,
+            other => panic!("expected Resolution error, got: {other:?}"),
+        };
+        assert!(
+            err.missing_fields
+                .iter()
+                .any(|f| f.contains("defaults.radius")),
+            "should report NaN defaults.radius, got: {:?}",
+            err.missing_fields
+        );
+    }
+
+    #[test]
+    fn validate_catches_infinity() {
+        let mut v = fully_populated_variant();
+        v.defaults.font.size = Some(f32::INFINITY);
+
+        let result = v.validate();
+        assert!(result.is_err());
+        let err = match result.unwrap_err() {
+            crate::Error::Resolution(e) => e,
+            other => panic!("expected Resolution error, got: {other:?}"),
+        };
+        assert!(
+            err.missing_fields
+                .iter()
+                .any(|f| f.contains("defaults.font.size")),
+            "should report infinite font.size, got: {:?}",
+            err.missing_fields
+        );
+    }
+
+    #[test]
+    fn validate_catches_negative_infinity() {
+        let mut v = fully_populated_variant();
+        v.defaults.spacing.m = Some(f32::NEG_INFINITY);
+
+        let result = v.validate();
+        assert!(result.is_err());
+        let err = match result.unwrap_err() {
+            crate::Error::Resolution(e) => e,
+            other => panic!("expected Resolution error, got: {other:?}"),
+        };
+        assert!(
+            err.missing_fields
+                .iter()
+                .any(|f| f.contains("defaults.spacing.m")),
+            "should report -inf spacing.m, got: {:?}",
+            err.missing_fields
+        );
+    }
+
+    // ===== Derivation chain tests (issues 17a, 17b, 17c) =====
+
+    #[test]
+    fn merge_preserves_base_name_when_overlay_name_empty() {
+        let mut base = crate::ThemeSpec::new("My Base");
+        let overlay = crate::ThemeSpec::new("");
+        base.merge(&overlay);
+        assert_eq!(base.name, "My Base", "base name should be preserved");
+    }
+
+    #[test]
+    fn accent_derives_selection_then_selection_inactive() {
+        let mut v = ThemeVariant::default();
+        let accent = Rgba::rgb(0, 120, 215);
+        v.defaults.accent = Some(accent);
+        v.resolve();
+
+        // accent -> selection -> selection_inactive chain
+        assert_eq!(
+            v.defaults.selection,
+            Some(accent),
+            "selection should derive from accent"
+        );
+        assert_eq!(
+            v.defaults.selection_inactive,
+            Some(accent),
+            "selection_inactive should derive from selection"
+        );
+    }
+
+    #[test]
+    fn title_bar_background_inherits_from_surface_not_background() {
+        let mut v = ThemeVariant::default();
+        v.defaults.surface = Some(Rgba::rgb(240, 240, 240));
+        v.defaults.background = Some(Rgba::rgb(255, 255, 255));
+        v.resolve();
+
+        assert_eq!(
+            v.window.title_bar_background,
+            Some(Rgba::rgb(240, 240, 240)),
+            "title_bar_background should inherit from surface, not background"
+        );
+        assert_ne!(
+            v.window.title_bar_background, v.defaults.background,
+            "title_bar_background must not equal background"
         );
     }
 

@@ -183,10 +183,42 @@ mod tests {
     }
 
     #[test]
-    fn non_platform_source_is_none() {
-        assert!(std::error::Error::source(&Error::Unsupported("test")).is_none());
-        assert!(std::error::Error::source(&Error::Unavailable("x".into())).is_none());
-        assert!(std::error::Error::source(&Error::Format("x".into())).is_none());
+    fn source_is_none_for_unsupported_unavailable_format() {
+        assert!(
+            std::error::Error::source(&Error::Unsupported("test")).is_none(),
+            "Unsupported should return None from source()"
+        );
+        assert!(
+            std::error::Error::source(&Error::Unavailable("x".into())).is_none(),
+            "Unavailable should return None from source()"
+        );
+        assert!(
+            std::error::Error::source(&Error::Format("x".into())).is_none(),
+            "Format should return None from source()"
+        );
+    }
+
+    #[test]
+    fn source_is_some_for_io_and_platform() {
+        let io_err = Error::Io(std::io::Error::other("io failure"));
+        assert!(
+            std::error::Error::source(&io_err).is_some(),
+            "Io should return Some from source()"
+        );
+
+        let platform_err = Error::Platform(Box::new(std::io::Error::other("platform failure")));
+        assert!(
+            std::error::Error::source(&platform_err).is_some(),
+            "Platform should return Some from source()"
+        );
+
+        let resolution_err = Error::Resolution(ThemeResolutionError {
+            missing_fields: vec!["test".into()],
+        });
+        assert!(
+            std::error::Error::source(&resolution_err).is_some(),
+            "Resolution should return Some from source()"
+        );
     }
 
     #[test]

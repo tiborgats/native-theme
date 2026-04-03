@@ -79,7 +79,7 @@ foreground = "#232629"
 min_width = 80.0
 min_height = 32.0
 padding_horizontal = 6.0
-padding_vertical = 6.0
+padding_vertical = 5.0
 icon_spacing = 4.0
 
 [light.input]
@@ -87,7 +87,7 @@ background = "#ffffff"
 foreground = "#232629"
 min_height = 32.0
 padding_horizontal = 6.0
-padding_vertical = 6.0
+padding_vertical = 3.0
 
 [light.checkbox]
 indicator_size = 20.0
@@ -166,8 +166,8 @@ min_width = 320.0
 max_width = 560.0
 min_height = 140.0
 max_height = 600.0
-content_padding = 24.0
-button_spacing = 8.0
+content_padding = 10.0
+button_spacing = 6.0
 icon_size = 32.0
 
 [light.link]
@@ -183,9 +183,9 @@ stroke_width = 2.0
 [light.combo_box]
 min_height = 32.0
 min_width = 120.0
-padding_horizontal = 12.0
+padding_horizontal = 6.0
 arrow_size = 12.0
-arrow_area_width = 28.0
+arrow_area_width = 20.0
 
 [light.segmented_control]
 segment_height = 28.0
@@ -277,7 +277,7 @@ foreground = "#fcfcfc"
 min_width = 80.0
 min_height = 32.0
 padding_horizontal = 6.0
-padding_vertical = 6.0
+padding_vertical = 5.0
 icon_spacing = 4.0
 
 [dark.input]
@@ -285,7 +285,7 @@ background = "#1b1e20"
 foreground = "#fcfcfc"
 min_height = 32.0
 padding_horizontal = 6.0
-padding_vertical = 6.0
+padding_vertical = 3.0
 
 [dark.checkbox]
 indicator_size = 20.0
@@ -364,8 +364,8 @@ min_width = 320.0
 max_width = 560.0
 min_height = 140.0
 max_height = 600.0
-content_padding = 24.0
-button_spacing = 8.0
+content_padding = 10.0
+button_spacing = 6.0
 icon_size = 32.0
 
 [dark.link]
@@ -381,9 +381,9 @@ stroke_width = 2.0
 [dark.combo_box]
 min_height = 32.0
 min_width = 120.0
-padding_horizontal = 12.0
+padding_horizontal = 6.0
 arrow_size = 12.0
-arrow_area_width = 28.0
+arrow_area_width = 20.0
 
 [dark.segmented_control]
 segment_height = 28.0

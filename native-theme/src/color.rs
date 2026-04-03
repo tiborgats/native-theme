@@ -38,6 +38,11 @@ use std::str::FromStr;
 /// let arr = Rgba::rgb(255, 0, 0).to_f32_array();
 /// assert_eq!(arr, [1.0, 0.0, 0.0, 1.0]);
 /// ```
+///
+/// # Default
+///
+/// `Rgba::default()` is transparent black `(0, 0, 0, 0)`, not opaque black.
+/// Use `Rgba::rgb(0, 0, 0)` for opaque black.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
 pub struct Rgba {
     /// Red component (0-255).
@@ -67,6 +72,10 @@ impl Rgba {
     /// Create a color from floating-point components in the 0.0..=1.0 range.
     ///
     /// Values are clamped to 0.0..=1.0 before conversion.
+    ///
+    /// Note: round-trip through `from_f32` -> `to_f32_array` is lossy due to
+    /// u8 quantization (e.g., `from_f32(0.5, ...)` -> r=128 ->
+    /// `to_f32_array()` -> 0.50196...).
     #[must_use]
     pub fn from_f32(r: f32, g: f32, b: f32, a: f32) -> Self {
         Self {
@@ -78,6 +87,9 @@ impl Rgba {
     }
 
     /// Convert to `[r, g, b, a]` in the 0.0..=1.0 range (for toolkit interop).
+    ///
+    /// Note: round-trip through `from_f32` -> `to_f32_array` is lossy due to
+    /// u8 quantization (256 discrete steps per channel).
     #[must_use]
     pub fn to_f32_array(&self) -> [f32; 4] {
         [
@@ -202,6 +214,27 @@ impl<'de> Deserialize<'de> for Rgba {
     fn deserialize<D: Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
         let s = String::deserialize(deserializer)?;
         Rgba::from_str(&s).map_err(de::Error::custom)
+    }
+}
+
+/// Convert premultiplied RGBA pixel data to straight (non-premultiplied) alpha.
+///
+/// For each pixel where `a > 0 && a < 255`:
+///   `channel = min(255, channel * 255 / a)`
+///
+/// Fully opaque pixels (a == 255) and fully transparent pixels (a == 0)
+/// are left unchanged.
+///
+/// Used by `rasterize`, `sficons`, and `winicons` modules (feature/platform gated).
+#[allow(dead_code)]
+pub(crate) fn unpremultiply_alpha(buffer: &mut [u8]) {
+    for pixel in buffer.chunks_exact_mut(4) {
+        let a = pixel[3] as u16;
+        if a > 0 && a < 255 {
+            pixel[0] = ((pixel[0] as u16 * 255) / a).min(255) as u8;
+            pixel[1] = ((pixel[1] as u16 * 255) / a).min(255) as u8;
+            pixel[2] = ((pixel[2] as u16 * 255) / a).min(255) as u8;
+        }
     }
 }
 

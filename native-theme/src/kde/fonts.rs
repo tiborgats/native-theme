@@ -41,6 +41,11 @@ pub(crate) fn parse_qt_font_with_weight(font_str: &str) -> Option<crate::FontSpe
     }
     let raw_weight = fields[4].trim().parse::<i32>().ok()?;
 
+    // Reject corrupted font entries with negative weight
+    if raw_weight < 0 {
+        return None;
+    }
+
     // Qt6 format has >= 16 fields and uses CSS weight scale (100-900) directly.
     // Qt5 format has < 16 fields and uses a 0-100 scale.
     let css_weight = if fields.len() >= 16 {
@@ -205,6 +210,11 @@ mod tests {
     #[test]
     fn parse_zero_size_returns_none() {
         assert!(parse_qt_font_with_weight("Noto Sans,0,-1,5,400,0,0,0,0,0").is_none());
+    }
+
+    #[test]
+    fn parse_negative_weight_returns_none() {
+        assert!(parse_qt_font_with_weight("Noto Sans,10,-1,5,-1,0,0,0,0,0").is_none());
     }
 
     // === populate_fonts tests ===

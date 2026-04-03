@@ -98,24 +98,6 @@ fn bgra_to_rgba(pixels: &mut [u8]) {
     }
 }
 
-/// Convert premultiplied RGBA to straight (non-premultiplied) alpha.
-///
-/// For each pixel where `a > 0 && a < 255`:
-///   `channel = min(255, channel * 255 / a)`
-///
-/// Fully opaque pixels (a == 255) and fully transparent pixels (a == 0)
-/// are left unchanged.
-fn unpremultiply_alpha(buffer: &mut [u8]) {
-    for pixel in buffer.chunks_exact_mut(4) {
-        let a = pixel[3] as u16;
-        if a > 0 && a < 255 {
-            pixel[0] = ((pixel[0] as u16 * 255) / a).min(255) as u8;
-            pixel[1] = ((pixel[1] as u16 * 255) / a).min(255) as u8;
-            pixel[2] = ((pixel[2] as u16 * 255) / a).min(255) as u8;
-        }
-    }
-}
-
 /// Convert a GGO_GRAY8_BITMAP grayscale value (0-64) to an RGBA pixel.
 ///
 /// Produces white foreground (255,255,255) with alpha scaled from the
@@ -182,7 +164,7 @@ unsafe fn hicon_to_rgba(hicon: HICON) -> Option<IconData> {
 
         // Convert BGRA to RGBA and fix premultiplied alpha
         bgra_to_rgba(&mut pixels);
-        unpremultiply_alpha(&mut pixels);
+        crate::color::unpremultiply_alpha(&mut pixels);
 
         Some(IconData::Rgba {
             width,
@@ -480,17 +462,17 @@ mod tests {
     fn unpremultiply_correctness() {
         // Premultiplied [128, 0, 0, 128] -> straight [255, 0, 0, 128]
         let mut buf = [128u8, 0, 0, 128];
-        unpremultiply_alpha(&mut buf);
+        crate::color::unpremultiply_alpha(&mut buf);
         assert_eq!(buf, [255, 0, 0, 128]);
 
         // Fully opaque pixels are unchanged
         let mut buf = [100u8, 200, 50, 255];
-        unpremultiply_alpha(&mut buf);
+        crate::color::unpremultiply_alpha(&mut buf);
         assert_eq!(buf, [100, 200, 50, 255]);
 
         // Fully transparent pixels are unchanged
         let mut buf = [0u8, 0, 0, 0];
-        unpremultiply_alpha(&mut buf);
+        crate::color::unpremultiply_alpha(&mut buf);
         assert_eq!(buf, [0, 0, 0, 0]);
     }
 

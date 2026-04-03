@@ -231,12 +231,24 @@ pub(crate) fn parse_icon_sizes_from_content(ini: &configparser::ini::Ini) -> Ico
         }
     };
 
+    // dialog: DialogDefault from [Icon Theme] (e.g., 22)
+    let dialog = ini
+        .get("Icon Theme", "DialogDefault")
+        .and_then(|s| s.trim().parse::<u32>().ok())
+        .map(|sz| sz as f32);
+
+    // panel: PanelDefault from [Icon Theme] (e.g., 48)
+    let panel = ini
+        .get("Icon Theme", "PanelDefault")
+        .and_then(|s| s.trim().parse::<u32>().ok())
+        .map(|sz| sz as f32);
+
     IconSizes {
         small,
         toolbar,
         large,
-        dialog: None,
-        panel: None,
+        dialog,
+        panel,
     }
 }
 

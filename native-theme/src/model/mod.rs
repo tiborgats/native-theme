@@ -450,7 +450,8 @@ impl ThemeSpec {
     /// Load a [`ThemeSpec`] from a TOML file.
     ///
     /// # Errors
-    /// Returns [`crate::Error::Unavailable`] if the file cannot be read.
+    /// Returns [`crate::Error::Io`] if the file cannot be read, or
+    /// [`crate::Error::Format`] if the TOML content is invalid.
     ///
     /// # Examples
     /// ```no_run

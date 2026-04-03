@@ -1,11 +1,11 @@
 //! Bundled theme presets and TOML serialization API.
 //!
 //! Provides 16 user-facing built-in presets embedded at compile time:
-//! 2 core platform (kde-breeze, adwaita), 4 platform (windows-11,
-//! macos-sonoma, material, ios), and 10 community (Catppuccin 4 flavors,
-//! Nord, Dracula, Gruvbox, Solarized, Tokyo Night, One Dark), plus
-//! 4 internal live presets (geometry-only, used by the OS-first pipeline)
-//! and functions for loading themes from TOML strings and files.
+//! 6 platform (kde-breeze, adwaita, windows-11, macos-sonoma, material,
+//! ios) and 10 community (Catppuccin 4 flavors, Nord, Dracula, Gruvbox,
+//! Solarized, Tokyo Night, One Dark), plus 4 internal live presets
+//! (geometry-only, used by the OS-first pipeline) and functions for
+//! loading themes from TOML strings and files.
 
 use crate::{Error, Result, ThemeSpec};
 use std::collections::HashMap;
@@ -133,11 +133,8 @@ fn detect_platform() -> &'static str {
     }
     #[cfg(target_os = "linux")]
     {
-        let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
-        for component in desktop.split(':') {
-            if component == "KDE" {
-                return "linux-kde";
-            }
+        if crate::detect_linux_de(&crate::xdg_current_desktop()) == crate::LinuxDesktop::Kde {
+            return "linux-kde";
         }
         "linux"
     }
@@ -187,52 +184,9 @@ pub(crate) fn to_toml(theme: &ThemeSpec) -> Result<String> {
 mod tests {
     use super::*;
 
-    #[test]
-    fn all_presets_loadable_via_preset_fn() {
-        for name in list_presets() {
-            let theme =
-                preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed to parse: {e}"));
-            assert!(
-                theme.light.is_some(),
-                "preset '{name}' missing light variant"
-            );
-            assert!(theme.dark.is_some(), "preset '{name}' missing dark variant");
-        }
-    }
-
-    #[test]
-    fn all_presets_have_nonempty_core_colors() {
-        for name in list_presets() {
-            let theme = preset(name).unwrap();
-            let light = theme.light.as_ref().unwrap();
-            let dark = theme.dark.as_ref().unwrap();
-
-            assert!(
-                light.defaults.accent.is_some(),
-                "preset '{name}' light missing accent"
-            );
-            assert!(
-                light.defaults.background.is_some(),
-                "preset '{name}' light missing background"
-            );
-            assert!(
-                light.defaults.foreground.is_some(),
-                "preset '{name}' light missing foreground"
-            );
-            assert!(
-                dark.defaults.accent.is_some(),
-                "preset '{name}' dark missing accent"
-            );
-            assert!(
-                dark.defaults.background.is_some(),
-                "preset '{name}' dark missing background"
-            );
-            assert!(
-                dark.defaults.foreground.is_some(),
-                "preset '{name}' dark missing foreground"
-            );
-        }
-    }
+    // NOTE: all_presets_loadable_via_preset_fn and all_presets_have_nonempty_core_colors
+    // are covered by tests/preset_loading.rs (all_presets_parse_without_error,
+    // all_presets_have_both_variants, all_presets_have_core_colors).
 
     #[test]
     fn preset_unknown_name_returns_unavailable() {
@@ -243,27 +197,8 @@ mod tests {
         }
     }
 
-    #[test]
-    fn list_presets_returns_all_sixteen() {
-        let names = list_presets();
-        assert_eq!(names.len(), 16);
-        assert!(names.contains(&"kde-breeze"));
-        assert!(names.contains(&"adwaita"));
-        assert!(names.contains(&"windows-11"));
-        assert!(names.contains(&"macos-sonoma"));
-        assert!(names.contains(&"material"));
-        assert!(names.contains(&"ios"));
-        assert!(names.contains(&"catppuccin-latte"));
-        assert!(names.contains(&"catppuccin-frappe"));
-        assert!(names.contains(&"catppuccin-macchiato"));
-        assert!(names.contains(&"catppuccin-mocha"));
-        assert!(names.contains(&"nord"));
-        assert!(names.contains(&"dracula"));
-        assert!(names.contains(&"gruvbox"));
-        assert!(names.contains(&"solarized"));
-        assert!(names.contains(&"tokyo-night"));
-        assert!(names.contains(&"one-dark"));
-    }
+    // NOTE: list_presets_returns_all_sixteen is covered by
+    // tests/preset_loading.rs::list_presets_returns_sixteen_entries.
 
     #[test]
     fn from_toml_minimal_valid() {
@@ -435,57 +370,9 @@ accent = "#00ff00"
         }
     }
 
-    #[test]
-    fn presets_have_correct_names() {
-        assert_eq!(preset("kde-breeze").unwrap().name, "KDE Breeze");
-        assert_eq!(preset("adwaita").unwrap().name, "Adwaita");
-        assert_eq!(preset("windows-11").unwrap().name, "Windows 11");
-        assert_eq!(preset("macos-sonoma").unwrap().name, "macOS Sonoma");
-        assert_eq!(preset("material").unwrap().name, "Material");
-        assert_eq!(preset("ios").unwrap().name, "iOS");
-        assert_eq!(preset("catppuccin-latte").unwrap().name, "Catppuccin Latte");
-        assert_eq!(
-            preset("catppuccin-frappe").unwrap().name,
-            "Catppuccin Frappe"
-        );
-        assert_eq!(
-            preset("catppuccin-macchiato").unwrap().name,
-            "Catppuccin Macchiato"
-        );
-        assert_eq!(preset("catppuccin-mocha").unwrap().name, "Catppuccin Mocha");
-        assert_eq!(preset("nord").unwrap().name, "Nord");
-        assert_eq!(preset("dracula").unwrap().name, "Dracula");
-        assert_eq!(preset("gruvbox").unwrap().name, "Gruvbox");
-        assert_eq!(preset("solarized").unwrap().name, "Solarized");
-        assert_eq!(preset("tokyo-night").unwrap().name, "Tokyo Night");
-        assert_eq!(preset("one-dark").unwrap().name, "One Dark");
-    }
-
-    #[test]
-    fn all_presets_with_fonts_have_valid_sizes() {
-        for name in list_presets() {
-            let theme = preset(name).unwrap();
-            for (label, variant) in [
-                ("light", theme.light.as_ref()),
-                ("dark", theme.dark.as_ref()),
-            ] {
-                let variant = variant.unwrap();
-                // Community color themes may omit fonts entirely — skip those.
-                if let Some(size) = variant.defaults.font.size {
-                    assert!(
-                        size > 0.0,
-                        "preset '{name}' {label} font size must be positive, got {size}"
-                    );
-                }
-                if let Some(mono_size) = variant.defaults.mono_font.size {
-                    assert!(
-                        mono_size > 0.0,
-                        "preset '{name}' {label} mono font size must be positive, got {mono_size}"
-                    );
-                }
-            }
-        }
-    }
+    // NOTE: presets_have_correct_names is tested via tests/preset_loading.rs.
+    // NOTE: all_presets_with_fonts_have_valid_sizes is covered by
+    // tests/preset_loading.rs::all_presets_have_valid_fonts.
 
     #[test]
     fn platform_presets_no_derived_fields() {
@@ -675,39 +562,29 @@ accent = "#00ff00"
         light.resolve_all();
         let resolved = light.validate().unwrap();
 
-        // caption should have been populated from defaults.font
-        assert_eq!(
-            resolved.text_scale.caption.size, 14.0,
-            "caption size from defaults.font.size"
+        // caption should have been populated from defaults.font with 0.82x ratio
+        // defaults.font.size = 14.0, so caption.size = 14.0 * 0.82 = 11.48
+        let expected_size = 14.0 * 0.82;
+        assert!(
+            (resolved.text_scale.caption.size - expected_size).abs() < 0.01,
+            "caption size = 0.82 * defaults.font.size, got {}",
+            resolved.text_scale.caption.size
         );
         assert_eq!(
             resolved.text_scale.caption.weight, 400,
             "caption weight from defaults.font.weight"
         );
-        // line_height = defaults.line_height * size = 1.2 * 14.0 = 16.8
+        // line_height = defaults.line_height * caption_size = 1.2 * 11.48 = 13.776
+        let expected_lh = 1.2 * expected_size;
         assert!(
-            (resolved.text_scale.caption.line_height - 16.8).abs() < 0.01,
-            "caption line_height should be line_height_multiplier * size = 16.8, got {}",
+            (resolved.text_scale.caption.line_height - expected_lh).abs() < 0.01,
+            "caption line_height should be line_height_multiplier * caption_size = {expected_lh}, got {}",
             resolved.text_scale.caption.line_height
         );
     }
 
-    #[test]
-    fn all_presets_round_trip_exact() {
-        // All 16 presets must survive a serde round-trip
-        for name in list_presets() {
-            let theme1 =
-                preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed to parse: {e}"));
-            let toml_str = to_toml(&theme1)
-                .unwrap_or_else(|e| panic!("preset '{name}' failed to serialize: {e}"));
-            let theme2 = from_toml(&toml_str)
-                .unwrap_or_else(|e| panic!("preset '{name}' failed to re-parse: {e}"));
-            assert_eq!(
-                theme1, theme2,
-                "preset '{name}' round-trip produced different value"
-            );
-        }
-    }
+    // NOTE: all_presets_round_trip_exact is covered by
+    // tests/preset_loading.rs::all_presets_round_trip_toml.
 
     // === Live preset tests ===
 

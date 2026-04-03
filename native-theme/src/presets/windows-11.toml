@@ -73,11 +73,20 @@ large = 32.0
 dialog = 22.0
 panel = 20.0
 
+[light.text_scale.section_heading]
+weight = 600
+
+[light.text_scale.dialog_title]
+weight = 600
+
+[light.text_scale.display]
+weight = 600
+
 [light.button]
 background = "#fdfdfd"
 foreground = "#1a1a1a"
 min_width = 64.0
-min_height = 27.0
+min_height = 32.0
 padding_horizontal = 11.0
 padding_vertical = 6.0
 icon_spacing = 8.0
@@ -96,8 +105,8 @@ spacing = 8.0
 [light.tooltip]
 background = "#2c2c2c"
 foreground = "#ffffff"
-padding_horizontal = 8.0
-padding_vertical = 8.0
+padding_horizontal = 9.0
+padding_vertical = 7.0
 max_width = 320.0
 
 [light.scrollbar]
@@ -118,14 +127,14 @@ min_width = 100.0
 [light.tab]
 min_width = 64.0
 min_height = 32.0
-padding_horizontal = 12.0
-padding_vertical = 4.0
+padding_horizontal = 8.0
+padding_vertical = 3.0
 
 [light.menu]
-item_height = 23.0
-padding_horizontal = 12.0
+item_height = 36.0
+padding_horizontal = 11.0
 padding_vertical = 8.0
-icon_spacing = 8.0
+icon_spacing = 12.0
 
 [light.list]
 alternate_row = "#f9f9f9"
@@ -134,7 +143,7 @@ padding_horizontal = 12.0
 padding_vertical = 4.0
 
 [light.toolbar]
-height = 64.0
+height = 48.0
 item_spacing = 0.0
 padding = 4.0
 
@@ -163,9 +172,9 @@ track_radius = 10.0
 [light.dialog]
 button_order = "trailing_affirmative"
 min_width = 320.0
-max_width = 560.0
-min_height = 140.0
-max_height = 600.0
+max_width = 548.0
+min_height = 184.0
+max_height = 756.0
 content_padding = 24.0
 button_spacing = 8.0
 icon_size = 32.0
@@ -176,13 +185,13 @@ background = "#00000000"
 hover_bg = "#0078d418"
 
 [light.spinner]
-diameter = 24.0
+diameter = 32.0
 min_size = 16.0
-stroke_width = 2.0
+stroke_width = 4.0
 
 [light.combo_box]
 min_height = 32.0
-min_width = 120.0
+min_width = 64.0
 padding_horizontal = 12.0
 arrow_size = 12.0
 arrow_area_width = 38.0
@@ -196,7 +205,7 @@ padding_horizontal = 12.0
 padding = 16.0
 
 [light.expander]
-header_height = 40.0
+header_height = 48.0
 arrow_size = 12.0
 content_padding = 16.0
 
@@ -215,9 +224,9 @@ border = "#454545"
 muted = "#9a9a9a"
 shadow = "#00000040"
 
-danger = "#ff9999"
+danger = "#ff99a4"
 danger_foreground = "#1a1a1a"
-warning = "#f0c239"
+warning = "#fce100"
 warning_foreground = "#1a1a1a"
 success = "#6ccb5f"
 success_foreground = "#1a1a1a"
@@ -229,7 +238,7 @@ selection_foreground = "#ffffff"
 link = "#60cdff"
 focus_ring_color = "#0078d4"
 disabled_foreground = "#454545"
-accent_foreground = "#ffffff"
+accent_foreground = "#000000"
 
 radius = 4.0
 radius_lg = 8.0
@@ -271,11 +280,20 @@ large = 32.0
 dialog = 22.0
 panel = 20.0
 
+[dark.text_scale.section_heading]
+weight = 600
+
+[dark.text_scale.dialog_title]
+weight = 600
+
+[dark.text_scale.display]
+weight = 600
+
 [dark.button]
 background = "#333333"
 foreground = "#ffffff"
 min_width = 64.0
-min_height = 27.0
+min_height = 32.0
 padding_horizontal = 11.0
 padding_vertical = 6.0
 icon_spacing = 8.0
@@ -294,8 +312,8 @@ spacing = 8.0
 [dark.tooltip]
 background = "#3a3a3a"
 foreground = "#ffffff"
-padding_horizontal = 8.0
-padding_vertical = 8.0
+padding_horizontal = 9.0
+padding_vertical = 7.0
 max_width = 320.0
 
 [dark.scrollbar]
@@ -316,14 +334,14 @@ min_width = 100.0
 [dark.tab]
 min_width = 64.0
 min_height = 32.0
-padding_horizontal = 12.0
-padding_vertical = 4.0
+padding_horizontal = 8.0
+padding_vertical = 3.0
 
 [dark.menu]
-item_height = 23.0
-padding_horizontal = 12.0
+item_height = 36.0
+padding_horizontal = 11.0
 padding_vertical = 8.0
-icon_spacing = 8.0
+icon_spacing = 12.0
 
 [dark.list]
 alternate_row = "#262626"
@@ -332,7 +350,7 @@ padding_horizontal = 12.0
 padding_vertical = 4.0
 
 [dark.toolbar]
-height = 64.0
+height = 48.0
 item_spacing = 0.0
 padding = 4.0
 
@@ -361,9 +379,9 @@ track_radius = 10.0
 [dark.dialog]
 button_order = "trailing_affirmative"
 min_width = 320.0
-max_width = 560.0
-min_height = 140.0
-max_height = 600.0
+max_width = 548.0
+min_height = 184.0
+max_height = 756.0
 content_padding = 24.0
 button_spacing = 8.0
 icon_size = 32.0
@@ -374,13 +392,13 @@ background = "#00000000"
 hover_bg = "#0078d418"
 
 [dark.spinner]
-diameter = 24.0
+diameter = 32.0
 min_size = 16.0
-stroke_width = 2.0
+stroke_width = 4.0
 
 [dark.combo_box]
 min_height = 32.0
-min_width = 120.0
+min_width = 64.0
 padding_horizontal = 12.0
 arrow_size = 12.0
 arrow_area_width = 38.0
@@ -394,6 +412,6 @@ padding_horizontal = 12.0
 padding = 16.0
 
 [dark.expander]
-header_height = 40.0
+header_height = 48.0
 arrow_size = 12.0
 content_padding = 16.0

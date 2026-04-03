@@ -140,6 +140,12 @@ pub enum IconRole {
     Lock,
 }
 
+impl std::fmt::Display for IconRole {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Debug::fmt(self, f)
+    }
+}
+
 impl IconRole {
     /// All icon role variants, useful for iteration and exhaustive testing.
     ///
@@ -272,12 +278,23 @@ pub enum IconSet {
     #[serde(rename = "segoe-fluent")]
     SegoeIcons,
     /// freedesktop Icon Naming Specification (Linux).
+    ///
+    /// This is the `#[default]` variant, so `IconSet::default()` returns
+    /// `Freedesktop`. This serves as a serialization-friendly fallback, not
+    /// a platform-correct value. The `resolve()` pipeline handles
+    /// platform-correct icon set selection.
     #[default]
     Freedesktop,
     /// Google Material Symbols.
     Material,
     /// Lucide Icons (fork of Feather).
     Lucide,
+}
+
+impl std::fmt::Display for IconSet {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.name())
+    }
 }
 
 impl IconSet {
@@ -527,8 +544,7 @@ pub fn detect_icon_theme() -> String {
 /// Linux icon theme detection, dispatched by desktop environment.
 #[cfg(target_os = "linux")]
 fn detect_linux_icon_theme() -> String {
-    let desktop = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
-    let de = crate::detect_linux_de(&desktop);
+    let de = crate::detect_linux_de(&crate::xdg_current_desktop());
 
     match de {
         crate::LinuxDesktop::Kde => detect_kde_icon_theme(),
@@ -562,7 +578,9 @@ fn detect_linux_icon_theme() -> String {
 /// works without the `kde` feature enabled.
 #[cfg(target_os = "linux")]
 fn detect_kde_icon_theme() -> String {
-    let config_dir = xdg_config_dir();
+    let Some(config_dir) = xdg_config_dir() else {
+        return "hicolor".to_string();
+    };
     let paths = [
         config_dir.join("kdeglobals"),
         config_dir.join("kdedefaults").join("kdeglobals"),
@@ -610,7 +628,10 @@ fn detect_xfce_icon_theme() -> String {
 /// key), so we scan for the bare `icon_theme=` prefix.
 #[cfg(target_os = "linux")]
 fn detect_lxqt_icon_theme() -> String {
-    let path = xdg_config_dir().join("lxqt").join("lxqt.conf");
+    let Some(config_dir) = xdg_config_dir() else {
+        return "hicolor".to_string();
+    };
+    let path = config_dir.join("lxqt").join("lxqt.conf");
 
     if let Ok(content) = std::fs::read_to_string(&path) {
         for line in content.lines() {
@@ -627,17 +648,20 @@ fn detect_lxqt_icon_theme() -> String {
 }
 
 /// Resolve `$XDG_CONFIG_HOME`, falling back to `$HOME/.config`.
+///
+/// Returns `None` when both `$XDG_CONFIG_HOME` and `$HOME` are unset,
+/// avoiding a bogus `/tmp/.config` fallback.
 #[cfg(target_os = "linux")]
-fn xdg_config_dir() -> std::path::PathBuf {
+fn xdg_config_dir() -> Option<std::path::PathBuf> {
     if let Ok(config_home) = std::env::var("XDG_CONFIG_HOME")
         && !config_home.is_empty()
     {
-        return std::path::PathBuf::from(config_home);
+        return Some(std::path::PathBuf::from(config_home));
     }
     std::env::var("HOME")
-        .map(std::path::PathBuf::from)
-        .unwrap_or_else(|_| std::path::PathBuf::from("/tmp"))
-        .join(".config")
+        .ok()
+        .filter(|h| !h.is_empty())
+        .map(|h| std::path::PathBuf::from(h).join(".config"))
 }
 
 /// Read a value from an INI file by section and key.
@@ -1658,6 +1682,73 @@ mod tests {
                     bundled_icon_svg(role, set).is_some(),
                     "{role:?} has no bundled SVG for {set:?}"
                 );
+            }
+        }
+    }
+
+    /// Exhaustive icon_name() coverage: Material, Lucide, and Freedesktop map ALL 42,
+    /// Segoe maps at least 41, SF Symbols maps at least 40.
+    #[test]
+    fn icon_name_exhaustive_all_sets() {
+        // Material: all 42
+        for role in IconRole::ALL {
+            assert!(
+                icon_name(role, IconSet::Material).is_some(),
+                "Material must map {role:?} to Some"
+            );
+        }
+        // Lucide: all 42
+        for role in IconRole::ALL {
+            assert!(
+                icon_name(role, IconSet::Lucide).is_some(),
+                "Lucide must map {role:?} to Some"
+            );
+        }
+        // Freedesktop: all 42
+        for role in IconRole::ALL {
+            assert!(
+                icon_name(role, IconSet::Freedesktop).is_some(),
+                "Freedesktop must map {role:?} to Some"
+            );
+        }
+        // Segoe: at least 41 (StatusBusy is None)
+        let segoe_count = IconRole::ALL
+            .iter()
+            .filter(|r| icon_name(**r, IconSet::SegoeIcons).is_some())
+            .count();
+        assert!(
+            segoe_count >= 41,
+            "Segoe should map at least 41 roles, got {segoe_count}"
+        );
+        // SF Symbols: at least 40 (FolderOpen and StatusBusy are None)
+        let sf_count = IconRole::ALL
+            .iter()
+            .filter(|r| icon_name(**r, IconSet::SfSymbols).is_some())
+            .count();
+        assert!(
+            sf_count >= 40,
+            "SfSymbols should map at least 40 roles, got {sf_count}"
+        );
+    }
+
+    /// Verify icon_name returns non-empty strings for all mapped roles.
+    #[test]
+    fn icon_name_returns_nonempty_strings() {
+        let all_sets = [
+            IconSet::SfSymbols,
+            IconSet::SegoeIcons,
+            IconSet::Freedesktop,
+            IconSet::Material,
+            IconSet::Lucide,
+        ];
+        for set in all_sets {
+            for role in IconRole::ALL {
+                if let Some(name) = icon_name(role, set) {
+                    assert!(
+                        !name.is_empty(),
+                        "icon_name({role:?}, {set:?}) returned empty string"
+                    );
+                }
             }
         }
     }

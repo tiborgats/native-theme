@@ -6,16 +6,16 @@ use serde::{Deserialize, Serialize};
 ///
 /// This is a **platform convention**, not visual styling. Different desktop
 /// environments place the confirmation button at different ends of the
-/// button row (macOS/KDE: leading, Windows/GNOME: trailing). It is part
+/// button row (KDE: leading, Windows/GNOME/macOS: trailing). It is part
 /// of the theme model because "native feel" includes layout conventions
 /// that vary by platform, and it is overridable in theme presets.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum DialogButtonOrder {
-    /// Affirmative button at the trailing (right) end — Windows, GNOME style.
+    /// Affirmative button at the trailing (right) end -- Windows, GNOME, macOS, iOS style.
     #[default]
     TrailingAffirmative,
-    /// Affirmative button at the leading (left) end — macOS, KDE style.
+    /// Affirmative button at the leading (left) end -- KDE style.
     LeadingAffirmative,
 }
 

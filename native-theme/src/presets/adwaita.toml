@@ -76,6 +76,12 @@ panel = 20.0
 [light.text_scale.section_heading]
 weight = 700
 
+[light.text_scale.dialog_title]
+weight = 800
+
+[light.text_scale.display]
+weight = 800
+
 [light.window]
 title_bar_foreground = "#2e3436"
 
@@ -86,7 +92,7 @@ min_width = 64.0
 min_height = 34.0
 padding_horizontal = 10.0
 padding_vertical = 5.0
-icon_spacing = 6.0
+icon_spacing = 8.0
 
 [light.input]
 background = "#ffffff"
@@ -111,7 +117,7 @@ max_width = 300.0
 width = 12.0
 slider_width = 8.0
 overlay_mode = false
-min_thumb_height = 30.0
+min_thumb_height = 40.0
 
 [light.slider]
 track_height = 10.0
@@ -126,12 +132,12 @@ min_width = 80.0
 min_width = 64.0
 min_height = 30.0
 padding_horizontal = 12.0
-padding_vertical = 4.0
+padding_vertical = 3.0
 
 [light.menu]
 item_height = 32.0
 padding_horizontal = 12.0
-padding_vertical = 4.0
+padding_vertical = 0.0
 icon_spacing = 8.0
 
 [light.list]
@@ -174,8 +180,9 @@ max_width = 560.0
 min_height = 140.0
 max_height = 600.0
 content_padding = 24.0
-button_spacing = 8.0
+button_spacing = 12.0
 icon_size = 32.0
+radius = 18.0
 
 [light.link]
 underline = true
@@ -190,8 +197,8 @@ stroke_width = 2.0
 [light.combo_box]
 min_height = 34.0
 min_width = 120.0
-padding_horizontal = 12.0
-arrow_size = 12.0
+padding_horizontal = 10.0
+arrow_size = 16.0
 arrow_area_width = 28.0
 
 [light.segmented_control]
@@ -203,8 +210,8 @@ padding_horizontal = 12.0
 padding = 16.0
 
 [light.expander]
-header_height = 40.0
-arrow_size = 12.0
+header_height = 50.0
+arrow_size = 16.0
 content_padding = 16.0
 
 # === Dark variant ===
@@ -281,6 +288,12 @@ panel = 20.0
 [dark.text_scale.section_heading]
 weight = 700
 
+[dark.text_scale.dialog_title]
+weight = 800
+
+[dark.text_scale.display]
+weight = 800
+
 [dark.window]
 title_bar_foreground = "#ffffff"
 
@@ -291,7 +304,7 @@ min_width = 64.0
 min_height = 34.0
 padding_horizontal = 10.0
 padding_vertical = 5.0
-icon_spacing = 6.0
+icon_spacing = 8.0
 
 [dark.input]
 background = "#303034"
@@ -316,7 +329,7 @@ max_width = 300.0
 width = 12.0
 slider_width = 8.0
 overlay_mode = false
-min_thumb_height = 30.0
+min_thumb_height = 40.0
 
 [dark.slider]
 track_height = 10.0
@@ -331,12 +344,12 @@ min_width = 80.0
 min_width = 64.0
 min_height = 30.0
 padding_horizontal = 12.0
-padding_vertical = 4.0
+padding_vertical = 3.0
 
 [dark.menu]
 item_height = 32.0
 padding_horizontal = 12.0
-padding_vertical = 4.0
+padding_vertical = 0.0
 icon_spacing = 8.0
 
 [dark.list]
@@ -379,8 +392,9 @@ max_width = 560.0
 min_height = 140.0
 max_height = 600.0
 content_padding = 24.0
-button_spacing = 8.0
+button_spacing = 12.0
 icon_size = 32.0
+radius = 18.0
 
 [dark.link]
 underline = true
@@ -395,8 +409,8 @@ stroke_width = 2.0
 [dark.combo_box]
 min_height = 34.0
 min_width = 120.0
-padding_horizontal = 12.0
-arrow_size = 12.0
+padding_horizontal = 10.0
+arrow_size = 16.0
 arrow_area_width = 28.0
 
 [dark.segmented_control]
@@ -408,6 +422,6 @@ padding_horizontal = 12.0
 padding = 16.0
 
 [dark.expander]
-header_height = 40.0
-arrow_size = 12.0
+header_height = 50.0
+arrow_size = 16.0
 content_padding = 16.0

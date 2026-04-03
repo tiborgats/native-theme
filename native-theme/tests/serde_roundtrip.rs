@@ -113,63 +113,23 @@ fn round_trip_full_theme() {
     let toml_str = toml::to_string_pretty(&theme).unwrap();
     let deserialized: ThemeSpec = toml::from_str(&toml_str).unwrap();
 
-    assert_eq!(deserialized.name, "Test Theme");
-
-    let orig_light = theme.light.as_ref().unwrap();
-    let de_light = deserialized.light.as_ref().unwrap();
-
-    // Defaults colors
-    assert_eq!(de_light.defaults.accent, orig_light.defaults.accent);
-    assert_eq!(de_light.defaults.background, orig_light.defaults.background);
-    assert_eq!(de_light.defaults.foreground, orig_light.defaults.foreground);
-    assert_eq!(de_light.defaults.danger, orig_light.defaults.danger);
-    assert_eq!(de_light.defaults.success, orig_light.defaults.success);
-    assert_eq!(de_light.defaults.selection, orig_light.defaults.selection);
-    assert_eq!(de_light.defaults.link, orig_light.defaults.link);
-
-    // Per-widget colors
+    // Full structural equality (issue 9e/24w)
     assert_eq!(
-        de_light.button.primary_background,
-        orig_light.button.primary_background
+        theme, deserialized,
+        "round-trip should produce structurally identical ThemeSpec"
     );
-    assert_eq!(de_light.button.background, orig_light.button.background);
-    assert_eq!(de_light.sidebar.background, orig_light.sidebar.background);
-    assert_eq!(de_light.tooltip.background, orig_light.tooltip.background);
-    assert_eq!(de_light.input.background, orig_light.input.background);
+}
 
-    // Fonts
+/// Round-trip test using an actual preset (issue 24w: ensures all widget sections are covered).
+#[test]
+fn round_trip_actual_preset() {
+    let theme = ThemeSpec::preset("kde-breeze").unwrap();
+    let toml_str = toml::to_string_pretty(&theme).unwrap();
+    let deserialized: ThemeSpec = toml::from_str(&toml_str).unwrap();
     assert_eq!(
-        de_light.defaults.font.family,
-        orig_light.defaults.font.family
+        theme, deserialized,
+        "kde-breeze preset round-trip should produce structurally identical ThemeSpec"
     );
-    assert_eq!(de_light.defaults.font.size, orig_light.defaults.font.size);
-    assert_eq!(
-        de_light.defaults.mono_font.family,
-        orig_light.defaults.mono_font.family
-    );
-    assert_eq!(
-        de_light.defaults.mono_font.size,
-        orig_light.defaults.mono_font.size
-    );
-
-    // Geometry
-    assert_eq!(de_light.defaults.radius, orig_light.defaults.radius);
-    assert_eq!(
-        de_light.defaults.frame_width,
-        orig_light.defaults.frame_width
-    );
-
-    // Spacing
-    assert_eq!(de_light.defaults.spacing.m, orig_light.defaults.spacing.m);
-    assert_eq!(de_light.defaults.spacing.l, orig_light.defaults.spacing.l);
-
-    // Dark variant spot-checks
-    let orig_dark = theme.dark.as_ref().unwrap();
-    let de_dark = deserialized.dark.as_ref().unwrap();
-    assert_eq!(de_dark.defaults.accent, orig_dark.defaults.accent);
-    assert_eq!(de_dark.defaults.font.family, orig_dark.defaults.font.family);
-    assert_eq!(de_dark.defaults.radius, orig_dark.defaults.radius);
-    assert_eq!(de_dark.defaults.spacing.xxl, orig_dark.defaults.spacing.xxl);
 }
 
 #[test]

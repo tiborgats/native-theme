@@ -158,6 +158,22 @@ fn all_presets_have_valid_fonts() {
                 size > 0.0,
                 "preset '{name}' {label} font size must be > 0, got {size}"
             );
+            // font.weight should be set (issue 9a)
+            assert!(
+                variant.defaults.font.weight.is_some(),
+                "preset '{name}' {label} missing defaults.font.weight"
+            );
+            // mono_font checks (issue 24k)
+            assert!(
+                variant.defaults.mono_font.family.is_some(),
+                "preset '{name}' {label} missing defaults.mono_font.family"
+            );
+            if let Some(mono_size) = variant.defaults.mono_font.size {
+                assert!(
+                    mono_size > 0.0,
+                    "preset '{name}' {label} mono font size must be > 0, got {mono_size}"
+                );
+            }
         }
     }
 }
@@ -185,6 +201,15 @@ fn all_presets_have_geometry() {
                 variant.defaults.shadow_enabled.is_some(),
                 "preset '{name}' {label} missing defaults.shadow_enabled"
             );
+            // Extended checks (issues 24l, 24m)
+            assert!(
+                variant.defaults.frame_width.is_some(),
+                "preset '{name}' {label} missing defaults.frame_width"
+            );
+            assert!(
+                variant.defaults.line_height.is_some(),
+                "preset '{name}' {label} missing defaults.line_height"
+            );
         }
     }
 }
@@ -200,9 +225,34 @@ fn all_presets_have_spacing() {
         ] {
             let variant =
                 variant.unwrap_or_else(|| panic!("preset '{name}' missing {label} variant"));
+            // Check all 7 spacing values (issue 24l)
+            assert!(
+                variant.defaults.spacing.xxs.is_some(),
+                "preset '{name}' {label} missing defaults.spacing.xxs"
+            );
+            assert!(
+                variant.defaults.spacing.xs.is_some(),
+                "preset '{name}' {label} missing defaults.spacing.xs"
+            );
+            assert!(
+                variant.defaults.spacing.s.is_some(),
+                "preset '{name}' {label} missing defaults.spacing.s"
+            );
             assert!(
                 variant.defaults.spacing.m.is_some(),
                 "preset '{name}' {label} missing defaults.spacing.m"
+            );
+            assert!(
+                variant.defaults.spacing.l.is_some(),
+                "preset '{name}' {label} missing defaults.spacing.l"
+            );
+            assert!(
+                variant.defaults.spacing.xl.is_some(),
+                "preset '{name}' {label} missing defaults.spacing.xl"
+            );
+            assert!(
+                variant.defaults.spacing.xxl.is_some(),
+                "preset '{name}' {label} missing defaults.spacing.xxl"
             );
         }
     }

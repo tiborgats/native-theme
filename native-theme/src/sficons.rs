@@ -85,25 +85,6 @@ fn rasterize(cg_image: &CGImage, width: u32, height: u32) -> Option<Vec<u8>> {
     Some(buffer)
 }
 
-/// Convert premultiplied RGBA to straight (non-premultiplied) alpha.
-///
-/// For each pixel where `a > 0 && a < 255`:
-///   `channel = min(255, channel * 255 / a)`
-///
-/// Fully opaque pixels (a == 255) are left unchanged.
-/// Fully transparent pixels (a == 0) are left unchanged (RGB should
-/// already be zero for premultiplied data).
-fn unpremultiply_alpha(buffer: &mut [u8]) {
-    for pixel in buffer.chunks_exact_mut(4) {
-        let a = pixel[3] as u16;
-        if a > 0 && a < 255 {
-            pixel[0] = ((pixel[0] as u16 * 255) / a).min(255) as u8;
-            pixel[1] = ((pixel[1] as u16 * 255) / a).min(255) as u8;
-            pixel[2] = ((pixel[2] as u16 * 255) / a).min(255) as u8;
-        }
-    }
-}
-
 /// Load an SF Symbol by its name string as RGBA pixel data.
 ///
 /// This is the low-level loader for arbitrary SF Symbol names beyond
@@ -125,7 +106,7 @@ pub fn load_sf_icon_by_name(name: &str) -> Option<IconData> {
     let w = CGImage::width(Some(&cg_image)) as u32;
     let h = CGImage::height(Some(&cg_image)) as u32;
     let mut data = rasterize(&cg_image, w, h)?;
-    unpremultiply_alpha(&mut data);
+    crate::color::unpremultiply_alpha(&mut data);
     Some(IconData::Rgba {
         width: w,
         height: h,
@@ -148,7 +129,7 @@ pub fn load_sf_icon(role: IconRole) -> Option<IconData> {
     let w = CGImage::width(Some(&cg_image)) as u32;
     let h = CGImage::height(Some(&cg_image)) as u32;
     let mut data = rasterize(&cg_image, w, h)?;
-    unpremultiply_alpha(&mut data);
+    crate::color::unpremultiply_alpha(&mut data);
     Some(IconData::Rgba {
         width: w,
         height: h,
@@ -165,17 +146,17 @@ mod tests {
     fn unpremultiply_correctness() {
         // Premultiplied [128, 0, 0, 128] -> straight [255, 0, 0, 128]
         let mut buf = [128u8, 0, 0, 128];
-        unpremultiply_alpha(&mut buf);
+        crate::color::unpremultiply_alpha(&mut buf);
         assert_eq!(buf, [255, 0, 0, 128]);
 
         // Fully opaque pixels are unchanged
         let mut buf = [100u8, 200, 50, 255];
-        unpremultiply_alpha(&mut buf);
+        crate::color::unpremultiply_alpha(&mut buf);
         assert_eq!(buf, [100, 200, 50, 255]);
 
         // Fully transparent pixels are unchanged
         let mut buf = [0u8, 0, 0, 0];
-        unpremultiply_alpha(&mut buf);
+        crate::color::unpremultiply_alpha(&mut buf);
         assert_eq!(buf, [0, 0, 0, 0]);
     }
 

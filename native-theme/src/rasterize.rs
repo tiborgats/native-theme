@@ -61,27 +61,13 @@ pub fn rasterize_svg(svg_bytes: &[u8], size: u32) -> crate::Result<IconData> {
 
     // resvg outputs premultiplied RGBA; convert to straight alpha
     let mut data = pixmap.take();
-    unpremultiply_alpha(&mut data);
+    crate::color::unpremultiply_alpha(&mut data);
 
     Ok(IconData::Rgba {
         width: size,
         height: size,
         data,
     })
-}
-
-/// Convert premultiplied RGBA pixel data to straight (non-premultiplied) alpha.
-///
-/// Same pattern used in sficons.rs and winicons.rs for platform icon loaders.
-fn unpremultiply_alpha(buffer: &mut [u8]) {
-    for pixel in buffer.chunks_exact_mut(4) {
-        let a = pixel[3] as u16;
-        if a > 0 && a < 255 {
-            pixel[0] = ((pixel[0] as u16 * 255) / a).min(255) as u8;
-            pixel[1] = ((pixel[1] as u16 * 255) / a).min(255) as u8;
-            pixel[2] = ((pixel[2] as u16 * 255) / a).min(255) as u8;
-        }
-    }
 }
 
 #[cfg(test)]

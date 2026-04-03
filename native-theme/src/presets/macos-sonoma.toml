@@ -35,7 +35,7 @@ accent_foreground = "#ffffff"
 
 radius = 5.0
 radius_lg = 10.0
-frame_width = 1.0
+frame_width = 0.5
 disabled_opacity = 0.3
 border_opacity = 0.2
 shadow_enabled = true
@@ -158,16 +158,16 @@ thumb_background = "#ffffff"
 track_width = 38.0
 track_height = 22.0
 thumb_size = 18.0
-track_radius = 10.0
+track_radius = 11.0
 
 [light.dialog]
-button_order = "leading_affirmative"
+button_order = "trailing_affirmative"
 min_width = 320.0
 max_width = 560.0
 min_height = 140.0
 max_height = 600.0
-content_padding = 24.0
-button_spacing = 8.0
+content_padding = 20.0
+button_spacing = 12.0
 icon_size = 32.0
 
 [light.link]
@@ -199,6 +199,9 @@ padding = 16.0
 header_height = 40.0
 arrow_size = 12.0
 content_padding = 16.0
+
+[light.text_scale.section_heading]
+weight = 700
 
 # === Dark variant ===
 
@@ -233,7 +236,7 @@ accent_foreground = "#ffffff"
 
 radius = 5.0
 radius_lg = 10.0
-frame_width = 1.0
+frame_width = 0.5
 disabled_opacity = 0.3
 border_opacity = 0.2
 shadow_enabled = true
@@ -356,16 +359,16 @@ thumb_background = "#ffffff"
 track_width = 38.0
 track_height = 22.0
 thumb_size = 18.0
-track_radius = 10.0
+track_radius = 11.0
 
 [dark.dialog]
-button_order = "leading_affirmative"
+button_order = "trailing_affirmative"
 min_width = 320.0
 max_width = 560.0
 min_height = 140.0
 max_height = 600.0
-content_padding = 24.0
-button_spacing = 8.0
+content_padding = 20.0
+button_spacing = 12.0
 icon_size = 32.0
 
 [dark.link]
@@ -397,3 +400,6 @@ padding = 16.0
 header_height = 40.0
 arrow_size = 12.0
 content_padding = 16.0
+
+[dark.text_scale.section_heading]
+weight = 700

@@ -13,7 +13,7 @@ accent = "#268bd2"
 background = "#fdf6e3"
 foreground = "#657b83"
 surface = "#eee8d5"
-border = "#eee8d5"
+border = "#93a1a1"
 muted = "#93a1a1"
 shadow = "#00000018"
 
@@ -34,7 +34,7 @@ disabled_foreground = "#93a1a1"
 accent_foreground = "#fdf6e3"
 
 radius = 8.0
-radius_lg = 8.0
+radius_lg = 12.0
 frame_width = 1.0
 disabled_opacity = 0.5
 border_opacity = 0.15
@@ -147,7 +147,7 @@ background = "#eee8d5"
 foreground = "#657b83"
 
 [light.separator]
-color = "#eee8d5"
+color = "#93a1a1"
 
 [light.splitter]
 width = 4.0
@@ -161,7 +161,6 @@ thumb_size = 16.0
 track_radius = 10.0
 
 [light.dialog]
-button_order = "trailing_affirmative"
 min_width = 320.0
 max_width = 560.0
 min_height = 140.0
@@ -211,7 +210,7 @@ accent = "#268bd2"
 background = "#002b36"
 foreground = "#839496"
 surface = "#073642"
-border = "#073642"
+border = "#586e75"
 muted = "#586e75"
 shadow = "#00000040"
 
@@ -232,7 +231,7 @@ disabled_foreground = "#586e75"
 accent_foreground = "#002b36"
 
 radius = 8.0
-radius_lg = 8.0
+radius_lg = 12.0
 frame_width = 1.0
 disabled_opacity = 0.5
 border_opacity = 0.15
@@ -345,7 +344,7 @@ background = "#073642"
 foreground = "#839496"
 
 [dark.separator]
-color = "#073642"
+color = "#586e75"
 
 [dark.splitter]
 width = 4.0
@@ -359,7 +358,6 @@ thumb_size = 16.0
 track_radius = 10.0
 
 [dark.dialog]
-button_order = "trailing_affirmative"
 min_width = 320.0
 max_width = 560.0
 min_height = 140.0

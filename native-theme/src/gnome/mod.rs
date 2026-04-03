@@ -255,7 +255,7 @@ fn compute_text_scale(base_size: f32) -> TextScale {
     TextScale {
         caption: Some(TextScaleEntry {
             size: Some(base_size * 0.82),
-            weight: Some(400),
+            weight: None, // inherits from base preset / defaults.font.weight
             line_height: None,
         }),
         section_heading: None,
@@ -625,7 +625,10 @@ mod tests {
             "caption size: expected {expected}, got {:?}",
             cap.size
         );
-        assert_eq!(cap.weight, Some(400));
+        assert!(
+            cap.weight.is_none(),
+            "caption weight should inherit from preset"
+        );
         assert!(cap.line_height.is_none());
     }
 

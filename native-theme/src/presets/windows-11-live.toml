@@ -33,7 +33,7 @@ panel = 20.0
 
 [light.button]
 min_width = 64.0
-min_height = 27.0
+min_height = 32.0
 padding_horizontal = 11.0
 padding_vertical = 6.0
 icon_spacing = 8.0
@@ -48,8 +48,8 @@ indicator_size = 20.0
 spacing = 8.0
 
 [light.tooltip]
-padding_horizontal = 8.0
-padding_vertical = 8.0
+padding_horizontal = 9.0
+padding_vertical = 7.0
 max_width = 320.0
 
 [light.scrollbar]
@@ -70,14 +70,14 @@ min_width = 100.0
 [light.tab]
 min_width = 64.0
 min_height = 32.0
-padding_horizontal = 12.0
-padding_vertical = 4.0
+padding_horizontal = 8.0
+padding_vertical = 3.0
 
 [light.menu]
-item_height = 23.0
-padding_horizontal = 12.0
+item_height = 36.0
+padding_horizontal = 11.0
 padding_vertical = 8.0
-icon_spacing = 8.0
+icon_spacing = 12.0
 
 [light.list]
 item_height = 40.0
@@ -85,7 +85,7 @@ padding_horizontal = 12.0
 padding_vertical = 4.0
 
 [light.toolbar]
-height = 64.0
+height = 48.0
 item_spacing = 0.0
 padding = 4.0
 
@@ -101,9 +101,9 @@ track_radius = 10.0
 [light.dialog]
 button_order = "trailing_affirmative"
 min_width = 320.0
-max_width = 560.0
-min_height = 140.0
-max_height = 600.0
+max_width = 548.0
+min_height = 184.0
+max_height = 756.0
 content_padding = 24.0
 button_spacing = 8.0
 icon_size = 32.0
@@ -112,13 +112,13 @@ icon_size = 32.0
 underline = true
 
 [light.spinner]
-diameter = 24.0
+diameter = 32.0
 min_size = 16.0
-stroke_width = 2.0
+stroke_width = 4.0
 
 [light.combo_box]
 min_height = 32.0
-min_width = 120.0
+min_width = 64.0
 padding_horizontal = 12.0
 arrow_size = 12.0
 arrow_area_width = 38.0
@@ -132,7 +132,7 @@ padding_horizontal = 12.0
 padding = 16.0
 
 [light.expander]
-header_height = 40.0
+header_height = 48.0
 arrow_size = 12.0
 content_padding = 16.0
 
@@ -167,7 +167,7 @@ panel = 20.0
 
 [dark.button]
 min_width = 64.0
-min_height = 27.0
+min_height = 32.0
 padding_horizontal = 11.0
 padding_vertical = 6.0
 icon_spacing = 8.0
@@ -182,8 +182,8 @@ indicator_size = 20.0
 spacing = 8.0
 
 [dark.tooltip]
-padding_horizontal = 8.0
-padding_vertical = 8.0
+padding_horizontal = 9.0
+padding_vertical = 7.0
 max_width = 320.0
 
 [dark.scrollbar]
@@ -204,14 +204,14 @@ min_width = 100.0
 [dark.tab]
 min_width = 64.0
 min_height = 32.0
-padding_horizontal = 12.0
-padding_vertical = 4.0
+padding_horizontal = 8.0
+padding_vertical = 3.0
 
 [dark.menu]
-item_height = 23.0
-padding_horizontal = 12.0
+item_height = 36.0
+padding_horizontal = 11.0
 padding_vertical = 8.0
-icon_spacing = 8.0
+icon_spacing = 12.0
 
 [dark.list]
 item_height = 40.0
@@ -219,7 +219,7 @@ padding_horizontal = 12.0
 padding_vertical = 4.0
 
 [dark.toolbar]
-height = 64.0
+height = 48.0
 item_spacing = 0.0
 padding = 4.0
 
@@ -235,9 +235,9 @@ track_radius = 10.0
 [dark.dialog]
 button_order = "trailing_affirmative"
 min_width = 320.0
-max_width = 560.0
-min_height = 140.0
-max_height = 600.0
+max_width = 548.0
+min_height = 184.0
+max_height = 756.0
 content_padding = 24.0
 button_spacing = 8.0
 icon_size = 32.0
@@ -246,13 +246,13 @@ icon_size = 32.0
 underline = true
 
 [dark.spinner]
-diameter = 24.0
+diameter = 32.0
 min_size = 16.0
-stroke_width = 2.0
+stroke_width = 4.0
 
 [dark.combo_box]
 min_height = 32.0
-min_width = 120.0
+min_width = 64.0
 padding_horizontal = 12.0
 arrow_size = 12.0
 arrow_area_width = 38.0
@@ -266,6 +266,6 @@ padding_horizontal = 12.0
 padding = 16.0
 
 [dark.expander]
-header_height = 40.0
+header_height = 48.0
 arrow_size = 12.0
 content_padding = 16.0

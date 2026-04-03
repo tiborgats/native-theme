@@ -9,6 +9,7 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeVariant) {
     // Button
     variant.button.min_width = Some(80.0); // Button_MinWidth
     variant.button.padding_horizontal = Some(6.0); // Button_MarginWidth
+    variant.button.padding_vertical = Some(5.0); // Breeze measured frame+margin
     variant.button.icon_spacing = Some(4.0); // Button_ItemSpacing
 
     // Checkbox
@@ -17,6 +18,7 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeVariant) {
 
     // Input
     variant.input.padding_horizontal = Some(6.0); // LineEdit_FrameWidth
+    variant.input.padding_vertical = Some(3.0); // Breeze measured frame
 
     // Scrollbar
     variant.scrollbar.width = Some(21.0); // ScrollBar_Extend

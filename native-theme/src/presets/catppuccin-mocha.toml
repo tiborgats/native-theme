@@ -161,7 +161,6 @@ thumb_size = 16.0
 track_radius = 10.0
 
 [light.dialog]
-button_order = "trailing_affirmative"
 min_width = 320.0
 max_width = 560.0
 min_height = 140.0
@@ -359,7 +358,6 @@ thumb_size = 16.0
 track_radius = 10.0
 
 [dark.dialog]
-button_order = "trailing_affirmative"
 min_width = 320.0
 max_width = 560.0
 min_height = 140.0
