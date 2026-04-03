@@ -91,6 +91,17 @@ impl MappingValue {
             Self::DeAware(m) => m.get("default").map(|s| s.as_str()),
         }
     }
+
+    /// Returns all icon names referenced by this mapping value.
+    ///
+    /// For `Simple`, returns a single-element vec.
+    /// For `DeAware`, returns all values (default + DE-specific).
+    pub fn all_names(&self) -> Vec<&str> {
+        match self {
+            Self::Simple(s) => vec![s.as_str()],
+            Self::DeAware(m) => m.values().map(|s| s.as_str()).collect(),
+        }
+    }
 }
 
 #[cfg(test)]

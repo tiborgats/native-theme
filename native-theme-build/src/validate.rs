@@ -1,5 +1,3 @@
-#[cfg(test)]
-use std::collections::BTreeMap;
 use std::collections::{BTreeSet, HashMap, HashSet};
 use std::fs;
 use std::path::Path;
@@ -10,6 +8,12 @@ use crate::error::BuildError;
 use crate::schema::{DE_TABLE, MappingValue, MasterConfig, ThemeMapping};
 
 /// Rust keywords that cannot be used as identifiers (including contextual keywords).
+///
+/// Note: `to_upper_camel_case()` always produces PascalCase, so only `Self`
+/// is practically reachable from this list (it is the only keyword starting
+/// with an uppercase letter). Reserved-for-future keywords (`abstract`, `try`,
+/// `yield`, etc.) are omitted because PascalCase conversion makes them
+/// unreachable (`try` -> `Try`, which is a valid identifier).
 const RUST_KEYWORDS: [&str; 38] = [
     "Self", "self", "super", "crate", "fn", "mod", "pub", "use", "let", "mut", "const", "static",
     "struct", "enum", "trait", "impl", "type", "where", "for", "loop", "while", "if", "else",
@@ -118,15 +122,19 @@ pub(crate) fn validate_svgs(
 ///
 /// Lists all `.svg` files in `theme_dir` and checks if each is referenced
 /// by at least one mapping entry. Returns warning strings for unreferenced files.
+///
+/// Issue 11: Uses all icon names (including DE-specific names), not just
+/// the default, in the referenced set.
 pub(crate) fn check_orphan_svgs(
     mapping: &ThemeMapping,
     theme_dir: &Path,
     theme_name: &str,
 ) -> Vec<String> {
-    // Collect all referenced SVG stems from the mapping
+    // Issue 11: Collect ALL referenced SVG stems from the mapping (default + DE-specific)
     let referenced: BTreeSet<String> = mapping
         .values()
-        .filter_map(|v| v.default_name().map(|s| s.to_string()))
+        .flat_map(|v| v.all_names())
+        .map(|s| s.to_string())
         .collect();
 
     // List all .svg files in the theme directory
@@ -141,16 +149,28 @@ pub(crate) fn check_orphan_svgs(
     };
 
     let mut warnings = Vec::new();
-    for entry in entries.flatten() {
+    // Issue 14: Handle directory entry errors explicitly instead of flattening
+    for entry_result in entries {
+        let entry = match entry_result {
+            Ok(e) => e,
+            Err(e) => {
+                warnings.push(format!(
+                    "cannot read entry in '{}': {e}",
+                    theme_dir.display()
+                ));
+                continue;
+            }
+        };
         let path = entry.path();
         if path.extension().and_then(|e| e.to_str()) == Some("svg")
             && let Some(stem) = path.file_stem().and_then(|s| s.to_str())
             && !referenced.contains(stem)
         {
+            // Issue 13: Use to_string_lossy() instead of unwrap_or("unknown")
             let file_name = path
                 .file_name()
-                .and_then(|n| n.to_str())
-                .unwrap_or("unknown");
+                .map(|n| n.to_string_lossy())
+                .unwrap_or_else(|| std::borrow::Cow::Borrowed("unknown"));
             warnings.push(format!(
                 "orphan SVG in {theme_name}: {file_name} is not referenced by any mapping"
             ));
@@ -338,11 +358,34 @@ pub(crate) fn validate_no_duplicate_themes(config: &MasterConfig) -> Vec<BuildEr
     errors
 }
 
+/// Check if a character is an invisible Unicode character that should be
+/// rejected in icon names.
+fn is_invisible_unicode(c: char) -> bool {
+    matches!(
+        c,
+        '\u{FEFF}'        // BOM
+        | '\u{200B}'      // zero-width space
+        | '\u{200C}'      // zero-width non-joiner
+        | '\u{200D}'      // zero-width joiner
+        | '\u{2060}'      // word joiner
+        | '\u{00AD}'      // soft hyphen
+        | '\u{034F}'      // combining grapheme joiner
+        | '\u{FFFE}'      // non-character
+        | '\u{FFFF}' // non-character
+    )
+}
+
 /// Validate that all icon name strings in a mapping are well-formed.
 ///
-/// Rejects empty names and names containing control characters. Applied
-/// before escaping in codegen so users get an error pointing at their TOML
-/// rather than silently accepting dubious names.
+/// Rejects:
+/// - empty names
+/// - names containing control characters
+/// - names containing path separators (`/`, `\`) or parent-directory
+///   sequences (`..`) to prevent path traversal in `include_bytes!` paths
+/// - names containing invisible Unicode characters
+///
+/// Also validates DE keys (not just values) in DeAware mappings for empty
+/// strings and control characters.
 pub(crate) fn validate_mapping_values(
     mapping: &ThemeMapping,
     mapping_path: &str,
@@ -350,12 +393,33 @@ pub(crate) fn validate_mapping_values(
     let mut errors = Vec::new();
 
     for (role, value) in mapping {
+        // Issue 43: Validate DE keys alongside values
+        if let MappingValue::DeAware(m) = value {
+            for key in m.keys() {
+                if key.is_empty() || key.chars().any(|c| c.is_control()) {
+                    errors.push(BuildError::InvalidIconName {
+                        name: key.to_string(),
+                        role: role.clone(),
+                        mapping_file: mapping_path.to_string(),
+                    });
+                }
+            }
+        }
+
         let names: Vec<&str> = match value {
             MappingValue::Simple(s) => vec![s.as_str()],
             MappingValue::DeAware(m) => m.values().map(|s| s.as_str()).collect(),
         };
         for name in names {
-            if name.is_empty() || name.chars().any(|c| c.is_control()) {
+            if name.is_empty()
+                || name.chars().any(|c| c.is_control())
+                // Issue 4: Reject path separators and parent-directory sequences
+                || name.contains('/')
+                || name.contains('\\')
+                || name.contains("..")
+                // Issue 62: Reject invisible Unicode characters
+                || name.chars().any(is_invisible_unicode)
+            {
                 errors.push(BuildError::InvalidIconName {
                     name: name.to_string(),
                     role: role.clone(),
@@ -398,6 +462,7 @@ pub(crate) fn validate_no_duplicate_roles(configs: &[(String, MasterConfig)]) ->
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::collections::BTreeMap;
     use std::fs;
 
     // Helper to build a MasterConfig for testing
@@ -1016,5 +1081,68 @@ mod tests {
         let mapping = make_mapping(vec![("play-pause", MappingValue::DeAware(de_map))]);
         let errors = validate_mapping_values(&mapping, "mapping.toml");
         assert_eq!(errors.len(), 1);
+    }
+
+    // === Issue 4: Path traversal rejection ===
+
+    #[test]
+    fn slash_in_icon_name_rejected() {
+        let mapping = make_mapping(vec![("play-pause", MappingValue::Simple("sub/dir".into()))]);
+        let errors = validate_mapping_values(&mapping, "mapping.toml");
+        assert_eq!(errors.len(), 1);
+    }
+
+    #[test]
+    fn backslash_in_icon_name_rejected() {
+        let mapping = make_mapping(vec![(
+            "play-pause",
+            MappingValue::Simple("sub\\dir".into()),
+        )]);
+        let errors = validate_mapping_values(&mapping, "mapping.toml");
+        assert_eq!(errors.len(), 1);
+    }
+
+    #[test]
+    fn dotdot_in_icon_name_rejected() {
+        let mapping = make_mapping(vec![(
+            "play-pause",
+            MappingValue::Simple("../../etc/passwd".into()),
+        )]);
+        let errors = validate_mapping_values(&mapping, "mapping.toml");
+        assert_eq!(errors.len(), 1);
+    }
+
+    // === Issue 43: DE key validation ===
+
+    #[test]
+    fn empty_de_key_rejected() {
+        let mut de_map = BTreeMap::new();
+        de_map.insert("".to_string(), "icon_name".to_string());
+        de_map.insert("default".to_string(), "play".to_string());
+        let mapping = make_mapping(vec![("play-pause", MappingValue::DeAware(de_map))]);
+        let errors = validate_mapping_values(&mapping, "mapping.toml");
+        assert!(!errors.is_empty(), "should reject empty DE key");
+    }
+
+    // === Issue 62: Invisible Unicode rejection ===
+
+    #[test]
+    fn invisible_unicode_in_icon_name_rejected() {
+        let mapping = make_mapping(vec![(
+            "play-pause",
+            MappingValue::Simple("play\u{200B}pause".into()),
+        )]);
+        let errors = validate_mapping_values(&mapping, "mapping.toml");
+        assert_eq!(errors.len(), 1, "should reject zero-width space");
+    }
+
+    #[test]
+    fn bom_in_icon_name_rejected() {
+        let mapping = make_mapping(vec![(
+            "play-pause",
+            MappingValue::Simple("\u{FEFF}play".into()),
+        )]);
+        let errors = validate_mapping_values(&mapping, "mapping.toml");
+        assert_eq!(errors.len(), 1, "should reject BOM");
     }
 }

@@ -62,11 +62,14 @@
 //!
 //! # build.rs Setup
 //!
-//! ```rust,ignore
+//! ```rust,no_run
+//! use native_theme_build::UnwrapOrExit;
+//!
 //! // Simple API (single TOML file):
 //! native_theme_build::generate_icons("icons/icons.toml")
 //!     .unwrap_or_exit()
-//!     .emit_cargo_directives();
+//!     .emit_cargo_directives()
+//!     .expect("failed to write generated code");
 //!
 //! // Builder API (multiple TOML files, custom enum name):
 //! native_theme_build::IconGenerator::new()
@@ -75,7 +78,8 @@
 //!     .enum_name("AppIcon")
 //!     .generate()
 //!     .unwrap_or_exit()
-//!     .emit_cargo_directives();
+//!     .emit_cargo_directives()
+//!     .expect("failed to write generated code");
 //! ```
 //!
 //! Both APIs resolve paths relative to `CARGO_MANIFEST_DIR`, and return a
@@ -95,7 +99,7 @@
 //!
 //! // The generated enum implements IconProvider:
 //! use native_theme::load_custom_icon;
-//! let icon_data = load_custom_icon(&AppIcon::PlayPause, "material");
+//! let icon_data = load_custom_icon(&AppIcon::PlayPause, native_theme::IconSet::Material);
 //! ```
 //!
 //! # What Gets Generated
@@ -133,6 +137,42 @@ use heck::ToSnakeCase;
 
 pub use error::{BuildError, BuildErrors};
 use schema::{MasterConfig, ThemeMapping};
+
+/// Validate that a string is a valid Rust path (e.g. `"native_theme"` or
+/// `"my_crate::nested::module"`).
+///
+/// Returns `None` if valid, or `Some(reason)` describing the problem.
+/// Each segment between `::` must match `[a-zA-Z_][a-zA-Z0-9_]*`.
+fn validate_rust_path(path: &str) -> Option<String> {
+    if path.is_empty() {
+        return Some("must be non-empty".to_string());
+    }
+    let segments: Vec<&str> = path.split("::").collect();
+    for segment in &segments {
+        if segment.is_empty() {
+            return Some(
+                "contains empty segment (leading, trailing, or consecutive `::`)".to_string(),
+            );
+        }
+        let mut chars = segment.chars();
+        if let Some(first) = chars.next()
+            && !first.is_ascii_alphabetic()
+            && first != '_'
+        {
+            return Some(format!(
+                "segment \"{segment}\" must start with a letter or underscore"
+            ));
+        }
+        for c in chars {
+            if !c.is_ascii_alphanumeric() && c != '_' {
+                return Some(format!(
+                    "segment \"{segment}\" contains invalid character '{c}'"
+                ));
+            }
+        }
+    }
+    None
+}
 
 #[cfg(test)]
 use schema::{MappingValue, THEME_TABLE};
@@ -175,22 +215,20 @@ impl GenerateOutput {
     /// This prints `cargo::rerun-if-changed` for all tracked paths, writes the
     /// generated code to [`output_path`](Self::output_path), and prints warnings.
     ///
-    /// On I/O failure, emits a `cargo::error=` diagnostic and exits the process
-    /// with code 1 -- matching the `UnwrapOrExit` error-handling pattern.
-    pub fn emit_cargo_directives(&self) {
+    /// # Errors
+    ///
+    /// Returns `std::io::Error` if writing the generated file fails. Cargo
+    /// directives and warnings are printed before the write, so they are
+    /// emitted even on failure.
+    pub fn emit_cargo_directives(&self) -> Result<(), std::io::Error> {
         for path in &self.rerun_paths {
             println!("cargo::rerun-if-changed={}", path.display());
         }
-        if let Err(e) = std::fs::write(&self.output_path, &self.code) {
-            println!(
-                "cargo::error=failed to write {}: {e}",
-                self.output_path.display()
-            );
-            std::process::exit(1);
-        }
+        std::fs::write(&self.output_path, &self.code)?;
         for w in &self.warnings {
             println!("cargo::warning={w}");
         }
+        Ok(())
     }
 }
 
@@ -202,12 +240,13 @@ impl GenerateOutput {
 ///
 /// # Example
 ///
-/// ```rust,ignore
+/// ```rust,no_run
 /// use native_theme_build::UnwrapOrExit;
 ///
 /// native_theme_build::generate_icons("icons/icons.toml")
 ///     .unwrap_or_exit()
-///     .emit_cargo_directives();
+///     .emit_cargo_directives()
+///     .expect("failed to write generated code");
 /// ```
 pub trait UnwrapOrExit<T> {
     /// Unwrap the `Ok` value or emit cargo errors and exit the process.
@@ -237,6 +276,13 @@ impl UnwrapOrExit<GenerateOutput> for Result<GenerateOutput, BuildErrors> {
 ///
 /// Call [`GenerateOutput::emit_cargo_directives()`] on the result to write
 /// the generated file and emit cargo directives.
+///
+/// # Limitations
+///
+/// This simple API always uses the default crate path (`"native_theme"`) and
+/// does not support extra derives. For custom crate paths, extra derives,
+/// multiple source files, or explicit base directories, use
+/// [`IconGenerator`] instead.
 ///
 /// # Errors
 ///
@@ -342,10 +388,7 @@ impl IconGenerator {
     /// Set this to a custom path (e.g. `"my_crate::native_theme"`) when
     /// re-exporting native-theme from another crate.
     pub fn crate_path(mut self, path: &str) -> Self {
-        assert!(
-            !path.is_empty() && !path.contains(' '),
-            "crate_path must be non-empty and contain no spaces: {path:?}"
-        );
+        // Issue 2: store raw input, validate in generate()
         self.crate_path = Some(path.to_string());
         self
     }
@@ -355,19 +398,20 @@ impl IconGenerator {
     /// The base set (`Debug, Clone, Copy, PartialEq, Eq, Hash`) is always
     /// emitted. Each call appends one additional derive.
     ///
-    /// ```rust,ignore
+    /// ```rust,no_run
+    /// use native_theme_build::UnwrapOrExit;
+    ///
     /// native_theme_build::IconGenerator::new()
     ///     .source("icons/icons.toml")
     ///     .derive("Ord")
     ///     .derive("serde::Serialize")
     ///     .generate()
-    ///     .unwrap_or_exit();
+    ///     .unwrap_or_exit()
+    ///     .emit_cargo_directives()
+    ///     .expect("failed to write generated code");
     /// ```
     pub fn derive(mut self, name: &str) -> Self {
-        assert!(
-            !name.is_empty() && !name.contains(char::is_whitespace),
-            "derive name must be non-empty and contain no whitespace: {name:?}"
-        );
+        // Issue 2: store raw input, validate in generate()
         self.extra_derives.push(name.to_string());
         self
     }
@@ -402,6 +446,32 @@ impl IconGenerator {
             return Err(BuildErrors::io(
                 "no source files added to IconGenerator (call .source() before .generate())",
             ));
+        }
+
+        // Issue 2/5: Validate crate_path in generate(), not in builder
+        if let Some(ref path) = self.crate_path
+            && let Some(reason) = validate_rust_path(path)
+        {
+            return Err(BuildErrors::new(vec![BuildError::InvalidCratePath {
+                path: path.clone(),
+                reason,
+            }]));
+        }
+
+        // Issue 2/6: Validate derives in generate(), not in builder
+        {
+            let mut errors = Vec::new();
+            for name in &self.extra_derives {
+                if let Some(reason) = validate_rust_path(name) {
+                    errors.push(BuildError::InvalidDerive {
+                        name: name.clone(),
+                        reason,
+                    });
+                }
+            }
+            if !errors.is_empty() {
+                return Err(BuildErrors::new(errors));
+            }
         }
 
         let needs_manifest_dir = self.sources.iter().any(|s| !s.is_absolute())
@@ -566,7 +636,7 @@ fn run_pipeline(
         };
     }
 
-    assert_eq!(configs.len(), base_dirs.len());
+    debug_assert_eq!(configs.len(), base_dirs.len());
 
     let mut errors: Vec<BuildError> = Vec::new();
     let mut warnings: Vec<String> = Vec::new();
@@ -574,11 +644,7 @@ fn run_pipeline(
     let mut all_mappings: BTreeMap<String, ThemeMapping> = BTreeMap::new();
     let mut svg_paths: Vec<PathBuf> = Vec::new();
 
-    // Determine output filename from first config or override
-    let first_name = enum_name_override
-        .map(|s| s.to_string())
-        .unwrap_or_else(|| configs[0].1.name.clone());
-    let output_filename = format!("{}.rs", first_name.to_snake_case());
+    // Issue 39: output_filename is derived from merged.name after merge below.
 
     // Step 0: Validate each config in isolation
     for (file_path, config) in configs {
@@ -609,7 +675,11 @@ fn run_pipeline(
     }
 
     // Step 2: Merge configs first so validation uses the merged role list
-    let merged = merge_configs(configs, enum_name_override);
+    let merged = merge_configs(configs, enum_name_override, &mut warnings);
+
+    // Issue 8: Post-merge theme overlap validation (catches cross-file overlap)
+    let overlap_errors = validate::validate_theme_overlap(&merged);
+    errors.extend(overlap_errors);
 
     // Warn about empty themes (likely misconfiguration)
     if merged.bundled_themes.is_empty() && merged.system_themes.is_empty() {
@@ -618,6 +688,43 @@ fn run_pipeline(
              generated IconProvider will always return None"
                 .to_string(),
         );
+    }
+
+    // Issue 39: Derive output_filename from merged.name (single source of truth)
+    let output_filename = format!("{}.rs", merged.name.to_snake_case());
+
+    // Issue 37: Validate output_filename is not just ".rs" after snake_case
+    if output_filename == ".rs" {
+        errors.push(BuildError::InvalidIdentifier {
+            name: merged.name.clone(),
+            reason: "snake_case conversion produces an empty filename".to_string(),
+        });
+    }
+
+    // Issue 19: Warn when enum name normalization changes the input
+    {
+        let pascal = heck::ToUpperCamelCase::to_upper_camel_case(merged.name.as_str());
+        if !pascal.is_empty() && pascal != merged.name {
+            warnings.push(format!(
+                "name \"{}\" will be used as \"{}\" (PascalCase normalization)",
+                merged.name, pascal
+            ));
+        }
+    }
+
+    // Issue 46: Warn when a role's PascalCase matches the enum name
+    {
+        let enum_pascal = heck::ToUpperCamelCase::to_upper_camel_case(merged.name.as_str());
+        for role in &merged.roles {
+            let role_pascal = heck::ToUpperCamelCase::to_upper_camel_case(role.as_str());
+            if role_pascal == enum_pascal && !role_pascal.is_empty() {
+                warnings.push(format!(
+                    "role \"{role}\" produces the same PascalCase name \"{role_pascal}\" \
+                     as the enum; this creates `enum {enum_pascal} {{ {role_pascal}, ... }}` \
+                     which may be confusing"
+                ));
+            }
+        }
     }
 
     // Step 2b: Validate identifiers (enum name + role names)
@@ -640,6 +747,19 @@ fn run_pipeline(
     // Process bundled themes
     for theme_name in &merged.bundled_themes {
         let theme_dir = base_dir.join(theme_name);
+
+        // Issue 20: Early check for theme directory existence
+        if !theme_dir.exists() {
+            errors.push(BuildError::Io {
+                message: format!(
+                    "theme directory not found: {} (expected for bundled theme \"{}\")",
+                    theme_dir.display(),
+                    theme_name
+                ),
+            });
+            continue;
+        }
+
         let mapping_path = theme_dir.join("mapping.toml");
         let mapping_path_str = mapping_path.to_string_lossy().to_string();
 
@@ -668,15 +788,15 @@ fn run_pipeline(
                     let de_warnings = validate::validate_de_keys(&mapping, &mapping_path_str);
                     warnings.extend(de_warnings);
 
-                    // Issue 7: Warn when bundled themes have DE-aware mappings
-                    // (only the default SVG can be embedded).
+                    // Issue 7: Bundled themes with DE-aware mappings are a
+                    // semantic mismatch -- icon_name() returns a DE-specific name
+                    // but icon_svg() can only embed the default SVG.
                     for (role_name, value) in &mapping {
                         if matches!(value, schema::MappingValue::DeAware(_)) {
-                            warnings.push(format!(
-                                "bundled theme \"{}\" has DE-aware mapping for \"{}\": \
-                                 only the default SVG will be embedded",
-                                theme_name, role_name
-                            ));
+                            errors.push(BuildError::BundledDeAware {
+                                theme: theme_name.clone(),
+                                role: role_name.clone(),
+                            });
                         }
                     }
 
@@ -709,6 +829,19 @@ fn run_pipeline(
     // Process system themes (no SVG validation)
     for theme_name in &merged.system_themes {
         let theme_dir = base_dir.join(theme_name);
+
+        // Issue 20: Early check for theme directory existence
+        if !theme_dir.exists() {
+            errors.push(BuildError::Io {
+                message: format!(
+                    "theme directory not found: {} (expected for system theme \"{}\")",
+                    theme_dir.display(),
+                    theme_name
+                ),
+            });
+            continue;
+        }
+
         let mapping_path = theme_dir.join("mapping.toml");
         let mapping_path_str = mapping_path.to_string_lossy().to_string();
 
@@ -809,6 +942,9 @@ fn run_pipeline(
 }
 
 /// Check orphan SVGs and simultaneously collect SVG paths and rerun paths.
+///
+/// Issue 12: Tracks all icon names (including DE-specific names), not just
+/// the default name, for both rerun path tracking and size reporting.
 fn check_orphan_svgs_and_collect_paths(
     mapping: &ThemeMapping,
     theme_dir: &Path,
@@ -816,9 +952,10 @@ fn check_orphan_svgs_and_collect_paths(
     svg_paths: &mut Vec<PathBuf>,
     rerun_paths: &mut Vec<PathBuf>,
 ) -> Vec<String> {
-    // Collect referenced SVG paths
+    // Collect referenced SVG paths for all icon names (default + DE-specific)
     for value in mapping.values() {
-        if let Some(name) = value.default_name() {
+        let names = value.all_names();
+        for name in names {
             let svg_path = theme_dir.join(format!("{name}.svg"));
             if svg_path.exists() {
                 rerun_paths.push(svg_path.clone());
@@ -831,9 +968,12 @@ fn check_orphan_svgs_and_collect_paths(
 }
 
 /// Merge multiple configs into a single MasterConfig for code generation.
+///
+/// Issue 38: Emits a warning when cross-file theme deduplication occurs.
 fn merge_configs(
     configs: &[(String, MasterConfig)],
     enum_name_override: Option<&str>,
+    warnings: &mut Vec<String>,
 ) -> MasterConfig {
     let name = enum_name_override
         .map(|s| s.to_string())
@@ -854,12 +994,22 @@ fn merge_configs(
         }
 
         for t in &config.bundled_themes {
-            if seen_bundled.insert(t.clone()) {
+            if !seen_bundled.insert(t.clone()) {
+                // Issue 38: warn on cross-file theme deduplication
+                warnings.push(format!(
+                    "bundled theme \"{t}\" appears in multiple source files; using first occurrence"
+                ));
+            } else {
                 bundled_themes.push(t.clone());
             }
         }
         for t in &config.system_themes {
-            if seen_system.insert(t.clone()) {
+            if !seen_system.insert(t.clone()) {
+                // Issue 38: warn on cross-file theme deduplication
+                warnings.push(format!(
+                    "system theme \"{t}\" appears in multiple source files; using first occurrence"
+                ));
+            } else {
                 system_themes.push(t.clone());
             }
         }
@@ -879,12 +1029,12 @@ fn pipeline_result_to_output(
     out_dir: &Path,
 ) -> Result<GenerateOutput, BuildErrors> {
     if !result.errors.is_empty() {
-        // Emit rerun-if-changed even on error so cargo re-checks when the user
-        // fixes the files.
-        for path in &result.rerun_paths {
-            println!("cargo::rerun-if-changed={}", path.display());
-        }
-        return Err(BuildErrors::new(result.errors));
+        // Issue 9: Carry rerun paths in the error so the caller can emit them.
+        // No hidden I/O in this function.
+        return Err(BuildErrors::with_rerun_paths(
+            result.errors,
+            result.rerun_paths,
+        ));
     }
 
     let output_path = out_dir.join(&result.output_filename);
@@ -1469,7 +1619,8 @@ system-themes = ["sf-symbols"]
             ("a.toml".to_string(), config_a),
             ("b.toml".to_string(), config_b),
         ];
-        let merged = merge_configs(&configs, None);
+        let mut warnings = Vec::new();
+        let merged = merge_configs(&configs, None, &mut warnings);
 
         assert_eq!(merged.name, "a"); // uses first config's name
         assert_eq!(merged.roles, vec!["play-pause", "skip-forward"]);
@@ -1488,7 +1639,8 @@ roles = ["x"]
         .unwrap();
 
         let configs = vec![("a.toml".to_string(), config)];
-        let merged = merge_configs(&configs, Some("MyIcons"));
+        let mut warnings = Vec::new();
+        let merged = merge_configs(&configs, Some("MyIcons"), &mut warnings);
 
         assert_eq!(merged.name, "MyIcons");
     }
@@ -1955,19 +2107,19 @@ bundled-themes = ["material"]
             &[],
         );
 
+        // Issue 7: Bundled DE-aware is now a build error, not a warning
         assert!(
-            result.errors.is_empty(),
-            "bundled DE-aware should not be an error: {:?}",
-            result.errors
+            !result.errors.is_empty(),
+            "bundled DE-aware should be an error"
         );
         assert!(
-            result.warnings.iter().any(|w| {
-                w.contains("bundled theme \"material\"")
-                    && w.contains("play-pause")
-                    && w.contains("only the default SVG will be embedded")
-            }),
-            "should warn about bundled DE-aware mapping. warnings: {:?}",
-            result.warnings
+            result.errors.iter().any(|e| matches!(
+                e,
+                BuildError::BundledDeAware { theme, role }
+                    if theme == "material" && role == "play-pause"
+            )),
+            "should have BundledDeAware error for material/play-pause: {:?}",
+            result.errors
         );
 
         let _ = fs::remove_dir_all(&dir);
@@ -2111,49 +2263,893 @@ bundled-themes = ["material"]
         let _ = fs::remove_dir_all(&dir);
     }
 
-    // === Builder input validation tests ===
+    // === Builder input validation tests (Issue 2: deferred to generate()) ===
+
+    /// Helper to run generate() on a builder with a dummy source file.
+    /// Since we're testing builder validation (crate_path/derive), not the
+    /// pipeline, we just need any source path -- the error should fire before I/O.
+    fn generate_with_dummy_source(builder: IconGenerator) -> Result<GenerateOutput, BuildErrors> {
+        // Use a nonexistent path; the crate_path/derive validation fires first.
+        builder
+            .source("/nonexistent/icons.toml")
+            .output_dir("/tmp/native_theme_test_dummy")
+            .generate()
+    }
 
     #[test]
-    #[should_panic(expected = "derive name must be non-empty")]
     fn derive_rejects_empty_string() {
-        let _ = IconGenerator::new().derive("");
+        let result = generate_with_dummy_source(IconGenerator::new().derive(""));
+        let errors = result.unwrap_err();
+        assert!(
+            errors.errors().iter().any(|e| matches!(
+                e,
+                BuildError::InvalidDerive { name, .. } if name.is_empty()
+            )),
+            "should reject empty derive: {errors:?}"
+        );
     }
 
     #[test]
-    #[should_panic(expected = "derive name must be non-empty and contain no whitespace")]
     fn derive_rejects_whitespace() {
-        let _ = IconGenerator::new().derive("Ord PartialOrd");
+        let result = generate_with_dummy_source(IconGenerator::new().derive("Ord PartialOrd"));
+        let errors = result.unwrap_err();
+        assert!(
+            errors.errors().iter().any(|e| matches!(
+                e,
+                BuildError::InvalidDerive { name, .. } if name == "Ord PartialOrd"
+            )),
+            "should reject whitespace derive: {errors:?}"
+        );
     }
 
     #[test]
-    #[should_panic(expected = "derive name must be non-empty and contain no whitespace")]
     fn derive_rejects_tab() {
-        let _ = IconGenerator::new().derive("Ord\t");
+        let result = generate_with_dummy_source(IconGenerator::new().derive("Ord\t"));
+        let errors = result.unwrap_err();
+        assert!(
+            errors
+                .errors()
+                .iter()
+                .any(|e| matches!(e, BuildError::InvalidDerive { .. })),
+            "should reject tab derive: {errors:?}"
+        );
     }
 
     #[test]
     fn derive_accepts_valid_name() {
-        // Should not panic
-        let _ = IconGenerator::new().derive("Ord");
-        let _ = IconGenerator::new().derive("serde::Serialize");
+        // These should not produce InvalidDerive errors (may still fail on missing file)
+        let r1 = generate_with_dummy_source(IconGenerator::new().derive("Ord"));
+        if let Err(ref e) = r1 {
+            assert!(
+                !e.errors()
+                    .iter()
+                    .any(|e| matches!(e, BuildError::InvalidDerive { .. })),
+                "Ord should be valid: {e:?}"
+            );
+        }
+        let r2 = generate_with_dummy_source(IconGenerator::new().derive("serde::Serialize"));
+        if let Err(ref e) = r2 {
+            assert!(
+                !e.errors()
+                    .iter()
+                    .any(|e| matches!(e, BuildError::InvalidDerive { .. })),
+                "serde::Serialize should be valid: {e:?}"
+            );
+        }
     }
 
     #[test]
-    #[should_panic(expected = "crate_path must be non-empty")]
     fn crate_path_rejects_empty_string() {
-        let _ = IconGenerator::new().crate_path("");
+        let result = generate_with_dummy_source(IconGenerator::new().crate_path(""));
+        let errors = result.unwrap_err();
+        assert!(
+            errors.errors().iter().any(|e| matches!(
+                e,
+                BuildError::InvalidCratePath { path, .. } if path.is_empty()
+            )),
+            "should reject empty crate_path: {errors:?}"
+        );
     }
 
     #[test]
-    #[should_panic(expected = "crate_path must be non-empty and contain no spaces")]
     fn crate_path_rejects_spaces() {
-        let _ = IconGenerator::new().crate_path("foo bar");
+        let result = generate_with_dummy_source(IconGenerator::new().crate_path("foo bar"));
+        let errors = result.unwrap_err();
+        assert!(
+            errors.errors().iter().any(|e| matches!(
+                e,
+                BuildError::InvalidCratePath { path, .. } if path == "foo bar"
+            )),
+            "should reject spaces in crate_path: {errors:?}"
+        );
     }
 
     #[test]
     fn crate_path_accepts_valid_path() {
-        // Should not panic
-        let _ = IconGenerator::new().crate_path("native_theme");
-        let _ = IconGenerator::new().crate_path("my_crate::native_theme");
+        let r1 = generate_with_dummy_source(IconGenerator::new().crate_path("native_theme"));
+        if let Err(ref e) = r1 {
+            assert!(
+                !e.errors()
+                    .iter()
+                    .any(|e| matches!(e, BuildError::InvalidCratePath { .. })),
+                "native_theme should be valid: {e:?}"
+            );
+        }
+        let r2 =
+            generate_with_dummy_source(IconGenerator::new().crate_path("my_crate::native_theme"));
+        if let Err(ref e) = r2 {
+            assert!(
+                !e.errors()
+                    .iter()
+                    .any(|e| matches!(e, BuildError::InvalidCratePath { .. })),
+                "my_crate::native_theme should be valid: {e:?}"
+            );
+        }
+    }
+
+    // === validate_rust_path tests ===
+
+    #[test]
+    fn validate_rust_path_valid() {
+        assert!(validate_rust_path("native_theme").is_none());
+        assert!(validate_rust_path("my_crate::native_theme").is_none());
+        assert!(validate_rust_path("a::b::c").is_none());
+        assert!(validate_rust_path("_private").is_none());
+    }
+
+    #[test]
+    fn validate_rust_path_rejects_empty() {
+        assert!(validate_rust_path("").is_some());
+    }
+
+    #[test]
+    fn validate_rust_path_rejects_empty_segment() {
+        assert!(validate_rust_path("::foo").is_some());
+        assert!(validate_rust_path("foo::").is_some());
+        assert!(validate_rust_path("foo::::bar").is_some());
+    }
+
+    #[test]
+    fn validate_rust_path_rejects_digit_start() {
+        assert!(validate_rust_path("3crate").is_some());
+        assert!(validate_rust_path("foo::3bar").is_some());
+    }
+
+    #[test]
+    fn validate_rust_path_rejects_special_chars() {
+        assert!(validate_rust_path("foo bar").is_some());
+        assert!(validate_rust_path("foo-bar").is_some());
+        assert!(validate_rust_path("foo.bar").is_some());
+    }
+
+    // === Issue 36: Missing Display tests for DuplicateTheme and InvalidIconName ===
+
+    #[test]
+    fn build_error_duplicate_theme_format() {
+        let err = BuildError::DuplicateTheme {
+            theme: "material".into(),
+            list: "bundled-themes".into(),
+        };
+        let msg = err.to_string();
+        assert!(msg.contains("material"), "should contain theme name");
+        assert!(msg.contains("bundled-themes"), "should contain list name");
+    }
+
+    #[test]
+    fn build_error_invalid_icon_name_format() {
+        let err = BuildError::InvalidIconName {
+            name: "bad\x00name".into(),
+            role: "play-pause".into(),
+            mapping_file: "mapping.toml".into(),
+        };
+        let msg = err.to_string();
+        assert!(msg.contains("play-pause"), "should contain role name");
+        assert!(msg.contains("mapping.toml"), "should contain file path");
+    }
+
+    // === Issue 36: Display tests for new error variants ===
+
+    #[test]
+    fn build_error_bundled_de_aware_format() {
+        let err = BuildError::BundledDeAware {
+            theme: "material".into(),
+            role: "play-pause".into(),
+        };
+        let msg = err.to_string();
+        assert!(msg.contains("material"), "should contain theme name");
+        assert!(msg.contains("play-pause"), "should contain role name");
+        assert!(
+            msg.contains("system theme"),
+            "should suggest using system theme"
+        );
+    }
+
+    #[test]
+    fn build_error_invalid_crate_path_format() {
+        let err = BuildError::InvalidCratePath {
+            path: "foo bar".into(),
+            reason: "contains space".into(),
+        };
+        let msg = err.to_string();
+        assert!(msg.contains("foo bar"), "should contain the path");
+        assert!(msg.contains("contains space"), "should contain reason");
+    }
+
+    #[test]
+    fn build_error_invalid_derive_format() {
+        let err = BuildError::InvalidDerive {
+            name: "".into(),
+            reason: "must be non-empty".into(),
+        };
+        let msg = err.to_string();
+        assert!(msg.contains("must be non-empty"), "should contain reason");
+    }
+
+    // === Issue 24: Empty roles list behavior ===
+
+    #[test]
+    fn pipeline_empty_roles_list() {
+        let dir = create_fixture_dir("empty_roles");
+        write_fixture(&dir, "material/mapping.toml", "");
+
+        let config: MasterConfig = toml::from_str(
+            r#"
+name = "test"
+roles = []
+bundled-themes = ["material"]
+"#,
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        assert!(
+            result.errors.is_empty(),
+            "empty roles should not produce errors: {:?}",
+            result.errors
+        );
+        assert!(
+            result
+                .warnings
+                .iter()
+                .any(|w| w.contains("roles list is empty")),
+            "should warn about empty roles: {:?}",
+            result.warnings
+        );
+        // Generated code should still be valid (empty enum with #[non_exhaustive])
+        assert!(result.code.contains("pub enum Test {"));
+        assert!(result.code.contains("#[non_exhaustive]"));
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    // === Issue 25: Multiple DE overrides ===
+
+    #[test]
+    fn pipeline_multiple_de_overrides() {
+        let dir = create_fixture_dir("multi_de");
+        write_fixture(
+            &dir,
+            "freedesktop/mapping.toml",
+            r#"reveal = { kde = "view-kde", gnome = "view-gnome", xfce = "view-xfce", default = "view-default" }"#,
+        );
+
+        let config: MasterConfig = toml::from_str(
+            r#"
+name = "test"
+roles = ["reveal"]
+system-themes = ["freedesktop"]
+"#,
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        assert!(
+            result.errors.is_empty(),
+            "multiple DE overrides should not produce errors: {:?}",
+            result.errors
+        );
+        // Each DE should produce a separate match arm
+        assert!(
+            result
+                .code
+                .contains("LinuxDesktop::Kde => Some(\"view-kde\")"),
+            "should have KDE arm. code:\n{}",
+            result.code
+        );
+        assert!(
+            result
+                .code
+                .contains("LinuxDesktop::Gnome => Some(\"view-gnome\")"),
+            "should have GNOME arm. code:\n{}",
+            result.code
+        );
+        assert!(
+            result
+                .code
+                .contains("LinuxDesktop::Xfce => Some(\"view-xfce\")"),
+            "should have XFCE arm. code:\n{}",
+            result.code
+        );
+        assert!(
+            result.code.contains("_ => Some(\"view-default\")"),
+            "should have default arm. code:\n{}",
+            result.code
+        );
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    // === Issue 26: Empty themes warning ===
+
+    #[test]
+    fn pipeline_empty_themes_warning() {
+        let config: MasterConfig = toml::from_str(
+            r#"
+name = "test"
+roles = ["play-pause"]
+"#,
+        )
+        .unwrap();
+
+        let dir = create_fixture_dir("empty_themes");
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        assert!(
+            result.errors.is_empty(),
+            "empty themes should not be an error: {:?}",
+            result.errors
+        );
+        assert!(
+            result
+                .warnings
+                .iter()
+                .any(|w| w.contains("no bundled-themes or system-themes")),
+            "should warn about no themes. warnings: {:?}",
+            result.warnings
+        );
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    // === Issue 27: DE-specific SVG non-requirement ===
+
+    #[test]
+    fn pipeline_de_specific_svgs_not_required() {
+        let dir = create_fixture_dir("de_svgs_not_required");
+        // Bundled theme with DE-aware mapping has been moved to an error (Issue 7),
+        // so test with a system theme that no SVG is required for DE-specific names
+        write_fixture(
+            &dir,
+            "freedesktop/mapping.toml",
+            r#"play-pause = { kde = "media-playback-start", default = "play" }"#,
+        );
+
+        let config: MasterConfig = toml::from_str(
+            r#"
+name = "test"
+roles = ["play-pause"]
+system-themes = ["freedesktop"]
+"#,
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        // No MissingSvg error for DE-specific names in system themes
+        assert!(
+            !result
+                .errors
+                .iter()
+                .any(|e| matches!(e, BuildError::MissingSvg { .. })),
+            "should not require SVGs for system theme DE-specific names: {:?}",
+            result.errors
+        );
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    // === Issue 30: Backslash path normalization ===
+
+    #[test]
+    fn pipeline_backslash_path_normalized() {
+        let dir = create_fixture_dir("backslash_path");
+        write_fixture(
+            &dir,
+            "material/mapping.toml",
+            "play-pause = \"play_pause\"\n",
+        );
+        write_fixture(&dir, "material/play_pause.svg", SVG_STUB);
+
+        let config: MasterConfig = toml::from_str(
+            r#"
+name = "test"
+roles = ["play-pause"]
+bundled-themes = ["material"]
+"#,
+        )
+        .unwrap();
+
+        // Create a base_dir path with backslashes (as Windows would produce)
+        let base_with_backslash = PathBuf::from(dir.to_string_lossy().replace('/', "\\"));
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            // Use normal dir for filesystem operations, but verify normalization logic
+            std::slice::from_ref(&dir),
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
+        // Verify no backslashes in generated include_bytes! paths
+        let include_bytes_paths: Vec<&str> = result
+            .code
+            .lines()
+            .filter(|l| l.contains("include_bytes!"))
+            .collect();
+        for path_line in &include_bytes_paths {
+            // The string literal inside include_bytes should not contain raw backslashes
+            // (escaped \\ is different from raw \)
+            assert!(
+                !path_line.contains("\\\\"),
+                "include_bytes path should use forward slashes: {path_line}"
+            );
+        }
+
+        let _ = fs::remove_dir_all(&base_with_backslash);
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    // === Issue 34: enum_name normalization in codegen ===
+
+    #[test]
+    fn pipeline_enum_name_override_normalized() {
+        let dir = create_fixture_dir("enum_name_norm");
+        write_fixture(
+            &dir,
+            "material/mapping.toml",
+            "play-pause = \"play_pause\"\n",
+        );
+        write_fixture(&dir, "material/play_pause.svg", SVG_STUB);
+
+        let config: MasterConfig = toml::from_str(
+            r#"
+name = "original"
+roles = ["play-pause"]
+bundled-themes = ["material"]
+"#,
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            Some("my-custom-icons"),
+            None,
+            None,
+            &[],
+        );
+
+        assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
+        assert!(
+            result.code.contains("pub enum MyCustomIcons"),
+            "enum_name should be PascalCase of 'my-custom-icons'. code:\n{}",
+            result.code
+        );
+        assert_eq!(
+            result.output_filename, "my_custom_icons.rs",
+            "output filename should be snake_case"
+        );
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    // === Issue 4: Path traversal rejection ===
+
+    #[test]
+    fn pipeline_rejects_path_traversal_in_icon_names() {
+        let dir = create_fixture_dir("path_traversal");
+        write_fixture(
+            &dir,
+            "material/mapping.toml",
+            "play-pause = \"../../etc/passwd\"\n",
+        );
+
+        let config: MasterConfig = toml::from_str(
+            r#"
+name = "test"
+roles = ["play-pause"]
+bundled-themes = ["material"]
+"#,
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        assert!(
+            result.errors.iter().any(|e| matches!(
+                e,
+                BuildError::InvalidIconName { name, .. } if name.contains("..")
+            )),
+            "should reject path traversal in icon names: {:?}",
+            result.errors
+        );
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn pipeline_rejects_slash_in_icon_names() {
+        let dir = create_fixture_dir("slash_icon");
+        write_fixture(&dir, "material/mapping.toml", "play-pause = \"sub/dir\"\n");
+
+        let config: MasterConfig = toml::from_str(
+            r#"
+name = "test"
+roles = ["play-pause"]
+bundled-themes = ["material"]
+"#,
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        assert!(
+            result.errors.iter().any(|e| matches!(
+                e,
+                BuildError::InvalidIconName { name, .. } if name == "sub/dir"
+            )),
+            "should reject slash in icon names: {:?}",
+            result.errors
+        );
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    // === Issue 53: Collapse redundant DE-aware mappings ===
+
+    #[test]
+    fn pipeline_collapses_redundant_de_aware() {
+        let dir = create_fixture_dir("collapse_de");
+        write_fixture(
+            &dir,
+            "freedesktop/mapping.toml",
+            r#"play-pause = { kde = "play", gnome = "play", default = "play" }"#,
+        );
+
+        let config: MasterConfig = toml::from_str(
+            r#"
+name = "test"
+roles = ["play-pause"]
+system-themes = ["freedesktop"]
+"#,
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
+        // Should collapse to a simple arm since all values equal default
+        assert!(
+            !result.code.contains("detect_linux_de"),
+            "all-same DE-aware should collapse to simple arm. code:\n{}",
+            result.code
+        );
+        assert!(
+            result.code.contains("Some(\"play\")"),
+            "should contain simple play arm. code:\n{}",
+            result.code
+        );
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    // === Issue 62: Invisible Unicode rejection ===
+
+    #[test]
+    fn pipeline_rejects_invisible_unicode_in_icon_names() {
+        let dir = create_fixture_dir("invisible_unicode");
+        write_fixture(
+            &dir,
+            "material/mapping.toml",
+            "play-pause = \"play\u{200B}pause\"\n",
+        );
+
+        let config: MasterConfig = toml::from_str(
+            r#"
+name = "test"
+roles = ["play-pause"]
+bundled-themes = ["material"]
+"#,
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        assert!(
+            result
+                .errors
+                .iter()
+                .any(|e| matches!(e, BuildError::InvalidIconName { .. })),
+            "should reject invisible Unicode in icon names: {:?}",
+            result.errors
+        );
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    // === Issue 8: Post-merge theme overlap ===
+
+    #[test]
+    fn pipeline_cross_file_theme_overlap() {
+        let dir = create_fixture_dir("cross_overlap");
+        write_fixture(
+            &dir,
+            "material/mapping.toml",
+            "play-pause = \"play_pause\"\nskip-forward = \"skip_next\"\n",
+        );
+        write_fixture(&dir, "material/play_pause.svg", SVG_STUB);
+        write_fixture(&dir, "material/skip_next.svg", SVG_STUB);
+
+        let config_a: MasterConfig = toml::from_str(
+            r#"
+name = "a"
+roles = ["play-pause"]
+bundled-themes = ["material"]
+"#,
+        )
+        .unwrap();
+        let config_b: MasterConfig = toml::from_str(
+            r#"
+name = "b"
+roles = ["skip-forward"]
+system-themes = ["material"]
+"#,
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[
+                ("a.toml".to_string(), config_a),
+                ("b.toml".to_string(), config_b),
+            ],
+            &[dir.clone(), dir.clone()],
+            Some("AllIcons"),
+            None,
+            None,
+            &[],
+        );
+
+        assert!(
+            result.errors.iter().any(|e| matches!(
+                e,
+                BuildError::ThemeOverlap { theme } if theme == "material"
+            )),
+            "should detect cross-file theme overlap: {:?}",
+            result.errors
+        );
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    // === Issue 46: Enum variant vs name collision ===
+
+    #[test]
+    fn pipeline_warns_variant_vs_enum_name_collision() {
+        let dir = create_fixture_dir("variant_enum_collision");
+        write_fixture(
+            &dir,
+            "material/mapping.toml",
+            "play-pause = \"play_pause\"\n",
+        );
+        write_fixture(&dir, "material/play_pause.svg", SVG_STUB);
+
+        let config: MasterConfig = toml::from_str(
+            r#"
+name = "play-pause"
+roles = ["play-pause"]
+bundled-themes = ["material"]
+"#,
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        assert!(
+            result
+                .warnings
+                .iter()
+                .any(|w| w.contains("same PascalCase name")),
+            "should warn about variant/enum name collision. warnings: {:?}",
+            result.warnings
+        );
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    // === Issue 19: Name normalization warning ===
+
+    #[test]
+    fn pipeline_warns_on_name_normalization() {
+        let dir = create_fixture_dir("name_norm");
+        write_fixture(
+            &dir,
+            "material/mapping.toml",
+            "play-pause = \"play_pause\"\n",
+        );
+        write_fixture(&dir, "material/play_pause.svg", SVG_STUB);
+
+        let config: MasterConfig = toml::from_str(
+            r#"
+name = "my-app-icon"
+roles = ["play-pause"]
+bundled-themes = ["material"]
+"#,
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        assert!(
+            result
+                .warnings
+                .iter()
+                .any(|w| { w.contains("my-app-icon") && w.contains("MyAppIcon") }),
+            "should warn about name normalization. warnings: {:?}",
+            result.warnings
+        );
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    // === Issue 37: output_filename edge case ===
+
+    #[test]
+    fn pipeline_rejects_empty_output_filename() {
+        let dir = create_fixture_dir("empty_filename");
+
+        let config: MasterConfig = toml::from_str(
+            r#"
+name = "---"
+roles = ["play-pause"]
+"#,
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        assert!(
+            result.errors.iter().any(|e| matches!(
+                e,
+                BuildError::InvalidIdentifier { name, reason }
+                    if name == "---" && reason.contains("empty")
+            )),
+            "should reject name that produces empty filename: {:?}",
+            result.errors
+        );
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    // === Issue 20: Theme directory existence ===
+
+    #[test]
+    fn pipeline_missing_theme_directory() {
+        let dir = create_fixture_dir("missing_theme_dir");
+        // Do NOT create material/ directory
+
+        let config: MasterConfig = toml::from_str(
+            r#"
+name = "test"
+roles = ["play-pause"]
+bundled-themes = ["material"]
+"#,
+        )
+        .unwrap();
+
+        let result = run_pipeline(
+            &[("test.toml".to_string(), config)],
+            std::slice::from_ref(&dir),
+            None,
+            None,
+            None,
+            &[],
+        );
+
+        assert!(
+            result.errors.iter().any(|e| {
+                if let BuildError::Io { message } = e {
+                    message.contains("theme directory not found")
+                } else {
+                    false
+                }
+            }),
+            "should report missing theme directory: {:?}",
+            result.errors
+        );
+
+        let _ = fs::remove_dir_all(&dir);
     }
 }
