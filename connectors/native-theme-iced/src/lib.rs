@@ -95,7 +95,7 @@ pub use native_theme::LinuxDesktop;
 /// Builds a custom theme using `Theme::custom_with_fn()`, which:
 /// 1. Maps the 6 Palette fields from resolved theme colors via [`palette::to_palette()`]
 /// 2. Generates an Extended palette, then overrides secondary, background.weak,
-///    and status-family `.base.text` entries via [`extended::apply_overrides()`]
+///    and status-family `.base.text` entries via `extended::apply_overrides()`
 ///
 /// The resulting theme carries the mapped Palette and Extended palette. iced's
 /// built-in Catalog trait implementations for all 8 core widgets (Button,
