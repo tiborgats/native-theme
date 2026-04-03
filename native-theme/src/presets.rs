@@ -83,7 +83,8 @@ const PRESET_NAMES: &[&str] = &[
 ];
 
 // Cached presets: each parsed at most once for the process lifetime.
-// Errors are stored as String (Error is not Clone) and propagated to callers.
+// Errors are stored as String because Error is not Clone, which is
+// required for LazyLock storage without lifetime constraints.
 type Parsed = std::result::Result<ThemeSpec, String>;
 
 fn parse(toml_str: &str) -> Parsed {

@@ -473,6 +473,8 @@ pub fn system_icon_set() -> IconSet {
 /// ```
 #[must_use = "this returns the current icon theme name"]
 pub fn system_icon_theme() -> &'static str {
+    // Per-process lifetime cache: theme changes require process restart.
+    // Use detect_system_icon_theme() for a fresh uncached reading.
     #[cfg(target_os = "linux")]
     static CACHED_ICON_THEME: OnceLock<String> = OnceLock::new();
 

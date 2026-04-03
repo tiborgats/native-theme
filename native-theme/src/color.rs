@@ -152,6 +152,8 @@ impl FromStr for Rgba {
             return Err(ParseColorError("empty hex color string".into()));
         }
 
+        // Hex digits are single-byte ASCII characters in UTF-8, so byte-position
+        // string slicing (e.g., &hex[1..3]) is safe and cannot split a codepoint.
         match hex.len() {
             // #RGB shorthand: each digit doubled (e.g., 'a' -> 0xaa = a * 17)
             3 => {

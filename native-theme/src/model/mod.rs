@@ -593,11 +593,7 @@ impl ThemeSpec {
         // TextScale known keys (entry names)
         const TEXT_SCALE_KEYS: &[&str] = &["caption", "section_heading", "dialog_title", "display"];
 
-        // FontSpec known fields (for nested sub-tables like defaults.font)
-        const FONT_FIELDS: &[&str] = &["family", "size", "weight"];
-
-        // SpacingTheme known fields
-        const SPACING_FIELDS: &[&str] = &["xxs", "xs", "s", "m", "l", "xl", "xxl"];
+        // FontSpec and ThemeSpacing use their own FIELD_NAMES constants.
 
         // IconSizes known fields
         const ICON_SIZES_FIELDS: &[&str] = &["toolbar", "small", "large", "dialog", "panel"];
@@ -667,8 +663,8 @@ impl ThemeSpec {
                 // Check sub-tables for nested struct fields
                 if let Some(toml::Value::Table(sub)) = table.get(key) {
                     let known = match key.as_str() {
-                        "font" | "mono_font" => FONT_FIELDS,
-                        "spacing" => SPACING_FIELDS,
+                        "font" | "mono_font" => FontSpec::FIELD_NAMES,
+                        "spacing" => ThemeSpacing::FIELD_NAMES,
                         "icon_sizes" => ICON_SIZES_FIELDS,
                         _ => continue,
                     };
@@ -1085,10 +1081,33 @@ accent = "#ff0000"
     fn native_theme_serde_toml_round_trip() {
         let mut theme = ThemeSpec::new("Test Theme");
         let mut light = ThemeVariant::default();
+
+        // --- defaults: colors ---
         light.defaults.accent = Some(Rgba::rgb(0, 120, 215));
+        light.defaults.accent_foreground = Some(Rgba::rgb(255, 255, 255));
+        light.defaults.selection = Some(Rgba::rgb(0, 100, 200));
+        light.defaults.selection_inactive = Some(Rgba::rgb(180, 180, 200));
+        light.defaults.danger = Some(Rgba::rgb(220, 53, 69));
+        light.defaults.danger_foreground = Some(Rgba::rgb(255, 255, 255));
+        light.defaults.success = Some(Rgba::rgb(40, 167, 69));
+        light.defaults.success_foreground = Some(Rgba::rgb(255, 255, 255));
+        light.defaults.warning = Some(Rgba::rgb(240, 173, 78));
+        light.defaults.warning_foreground = Some(Rgba::rgb(30, 30, 30));
+        light.defaults.surface = Some(Rgba::rgb(245, 245, 245));
+        light.defaults.border = Some(Rgba::rgb(200, 200, 200));
+        light.defaults.muted = Some(Rgba::rgb(128, 128, 128));
+        light.defaults.shadow = Some(Rgba::rgb(0, 0, 0));
+
+        // --- defaults: font, radius, spacing ---
         light.defaults.font.family = Some("Segoe UI".into());
         light.defaults.radius = Some(4.0);
         light.defaults.spacing.m = Some(12.0);
+
+        // --- widget section: button ---
+        light.button.background = Some(Rgba::rgb(255, 255, 255));
+        light.button.foreground = Some(Rgba::rgb(0, 0, 0));
+        light.button.min_width = Some(64.0);
+
         theme.light = Some(light);
 
         let toml_str = toml::to_string(&theme).unwrap();
@@ -1096,10 +1115,38 @@ accent = "#ff0000"
 
         assert_eq!(deserialized.name, "Test Theme");
         let l = deserialized.light.unwrap();
+
+        // defaults colors
         assert_eq!(l.defaults.accent, Some(Rgba::rgb(0, 120, 215)));
+        assert_eq!(l.defaults.accent_foreground, Some(Rgba::rgb(255, 255, 255)));
+        assert_eq!(l.defaults.selection, Some(Rgba::rgb(0, 100, 200)));
+        assert_eq!(
+            l.defaults.selection_inactive,
+            Some(Rgba::rgb(180, 180, 200))
+        );
+        assert_eq!(l.defaults.danger, Some(Rgba::rgb(220, 53, 69)));
+        assert_eq!(l.defaults.danger_foreground, Some(Rgba::rgb(255, 255, 255)));
+        assert_eq!(l.defaults.success, Some(Rgba::rgb(40, 167, 69)));
+        assert_eq!(
+            l.defaults.success_foreground,
+            Some(Rgba::rgb(255, 255, 255))
+        );
+        assert_eq!(l.defaults.warning, Some(Rgba::rgb(240, 173, 78)));
+        assert_eq!(l.defaults.warning_foreground, Some(Rgba::rgb(30, 30, 30)));
+        assert_eq!(l.defaults.surface, Some(Rgba::rgb(245, 245, 245)));
+        assert_eq!(l.defaults.border, Some(Rgba::rgb(200, 200, 200)));
+        assert_eq!(l.defaults.muted, Some(Rgba::rgb(128, 128, 128)));
+        assert_eq!(l.defaults.shadow, Some(Rgba::rgb(0, 0, 0)));
+
+        // defaults font, radius, spacing
         assert_eq!(l.defaults.font.family.as_deref(), Some("Segoe UI"));
         assert_eq!(l.defaults.radius, Some(4.0));
         assert_eq!(l.defaults.spacing.m, Some(12.0));
+
+        // button widget section
+        assert_eq!(l.button.background, Some(Rgba::rgb(255, 255, 255)));
+        assert_eq!(l.button.foreground, Some(Rgba::rgb(0, 0, 0)));
+        assert_eq!(l.button.min_width, Some(64.0));
     }
 
     // === from_toml_with_base tests ===

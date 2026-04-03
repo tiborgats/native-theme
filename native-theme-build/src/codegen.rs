@@ -103,11 +103,16 @@ pub(crate) fn generate_code(
         let _ = writeln!(out);
     }
 
-    // Enum definition
-    let mut derives = String::from("Debug, Clone, Copy, PartialEq, Eq, Hash");
+    // Enum definition -- deduplicate extra derives against the base set
+    let base_derives = ["Debug", "Clone", "Copy", "PartialEq", "Eq", "Hash"];
+    let mut all_derives: Vec<&str> = base_derives.to_vec();
     for extra in extra_derives {
-        let _ = write!(derives, ", {extra}");
+        let trimmed = extra.trim();
+        if !all_derives.contains(&trimmed) {
+            all_derives.push(trimmed);
+        }
     }
+    let derives = all_derives.join(", ");
     let _ = writeln!(out, "#[derive({derives})]");
     let _ = writeln!(out, "#[non_exhaustive]");
     let _ = writeln!(out, "pub enum {enum_name} {{");
@@ -356,6 +361,12 @@ fn generate_icon_svg(
     // Issue 10: Skip the leading `/` when base_dir is empty to avoid double slash
     let sep = if base_dir.is_empty() { "" } else { "/" };
 
+    // Issue 51: Detect absolute base_dir -- when absolute, emit include_bytes!
+    // directly without wrapping in concat!(env!("CARGO_MANIFEST_DIR"), ...).
+    let is_absolute_base = base_dir.starts_with('/')
+        || base_dir.starts_with('\\')
+        || (base_dir.len() >= 2 && base_dir.as_bytes()[1] == b':');
+
     // Only bundled themes produce icon_svg arms
     for theme_name in &config.bundled_themes {
         // Issue 22: debug_assert when validation missed an unknown theme
@@ -375,10 +386,17 @@ fn generate_icon_svg(
                     && let Some(icon_name) = mv.default_name()
                 {
                     let escaped_icon = escape_rust_str(icon_name);
-                    let _ = writeln!(
-                        out,
-                        "            (Self::{variant}, {icon_set}) => Some(include_bytes!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"{sep}{base_dir}/{theme_name}/{escaped_icon}.svg\"))),"
-                    );
+                    if is_absolute_base {
+                        let _ = writeln!(
+                            out,
+                            "            (Self::{variant}, {icon_set}) => Some(include_bytes!(\"{base_dir}/{theme_name}/{escaped_icon}.svg\")),"
+                        );
+                    } else {
+                        let _ = writeln!(
+                            out,
+                            "            (Self::{variant}, {icon_set}) => Some(include_bytes!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"{sep}{base_dir}/{theme_name}/{escaped_icon}.svg\"))),"
+                        );
+                    }
                 }
             }
         }

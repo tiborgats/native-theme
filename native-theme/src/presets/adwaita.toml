@@ -73,17 +73,25 @@ large = 32.0
 dialog = 22.0
 panel = 20.0
 
+[light.text_scale.caption]
+size = 9.0
+
 [light.text_scale.section_heading]
 weight = 700
 
 [light.text_scale.dialog_title]
+size = 15.0
 weight = 800
 
 [light.text_scale.display]
+size = 20.0
 weight = 800
 
 [light.window]
 title_bar_foreground = "#2e3436"
+
+[light.window.title_bar_font]
+weight = 700
 
 [light.button]
 background = "#e8e8e8"
@@ -101,6 +109,7 @@ placeholder = "#929595"
 min_height = 34.0
 padding_horizontal = 9.0
 padding_vertical = 0.0
+caret = "#3584e4"
 
 [light.checkbox]
 indicator_size = 20.0
@@ -111,7 +120,7 @@ background = "#2e3436"
 foreground = "#ffffff"
 padding_horizontal = 10.0
 padding_vertical = 6.0
-max_width = 300.0
+max_width = 360.0
 
 [light.scrollbar]
 width = 12.0
@@ -175,8 +184,8 @@ track_radius = 14.0
 
 [light.dialog]
 button_order = "trailing_affirmative"
-min_width = 320.0
-max_width = 560.0
+min_width = 300.0
+max_width = 372.0
 min_height = 140.0
 max_height = 600.0
 content_padding = 24.0
@@ -208,9 +217,11 @@ padding_horizontal = 12.0
 
 [light.card]
 padding = 16.0
+radius = 12.0
 
 [light.expander]
 header_height = 50.0
+radius = 6.0
 arrow_size = 16.0
 content_padding = 16.0
 
@@ -285,17 +296,25 @@ large = 32.0
 dialog = 22.0
 panel = 20.0
 
+[dark.text_scale.caption]
+size = 9.0
+
 [dark.text_scale.section_heading]
 weight = 700
 
 [dark.text_scale.dialog_title]
+size = 15.0
 weight = 800
 
 [dark.text_scale.display]
+size = 20.0
 weight = 800
 
 [dark.window]
 title_bar_foreground = "#ffffff"
+
+[dark.window.title_bar_font]
+weight = 700
 
 [dark.button]
 background = "#3a3a3e"
@@ -313,6 +332,7 @@ placeholder = "#8b8b8b"
 min_height = 34.0
 padding_horizontal = 9.0
 padding_vertical = 0.0
+caret = "#78aeed"
 
 [dark.checkbox]
 indicator_size = 20.0
@@ -323,7 +343,7 @@ background = "#3a3a3e"
 foreground = "#ffffff"
 padding_horizontal = 10.0
 padding_vertical = 6.0
-max_width = 300.0
+max_width = 360.0
 
 [dark.scrollbar]
 width = 12.0
@@ -387,8 +407,8 @@ track_radius = 14.0
 
 [dark.dialog]
 button_order = "trailing_affirmative"
-min_width = 320.0
-max_width = 560.0
+min_width = 300.0
+max_width = 372.0
 min_height = 140.0
 max_height = 600.0
 content_padding = 24.0
@@ -420,8 +440,10 @@ padding_horizontal = 12.0
 
 [dark.card]
 padding = 16.0
+radius = 12.0
 
 [dark.expander]
 header_height = 50.0
+radius = 6.0
 arrow_size = 16.0
 content_padding = 16.0

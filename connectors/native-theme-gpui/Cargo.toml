@@ -11,14 +11,17 @@ categories = ["gui", "config"]
 readme = "README.md"
 description = "gpui toolkit connector for native-theme"
 
+[features]
+default = ["material-icons", "lucide-icons", "system-icons", "svg-rasterize"]
+material-icons = ["native-theme/material-icons"]
+lucide-icons = ["native-theme/lucide-icons"]
+system-icons = ["native-theme/system-icons"]
+svg-rasterize = ["native-theme/svg-rasterize"]
+
 [dependencies]
 gpui = "0.2.2"
 gpui-component = "0.5.1"
 native-theme = { workspace = true, features = [
-    "material-icons",
-    "lucide-icons",
-    "system-icons",
-    "svg-rasterize",
     "linux-async-io",
     "macos",
     "windows",

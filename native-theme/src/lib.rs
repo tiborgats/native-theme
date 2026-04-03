@@ -652,7 +652,8 @@ fn run_pipeline(
 ) -> crate::Result<SystemTheme> {
     let live_preset = ThemeSpec::preset(preset_name)?;
 
-    // For the inactive variant, load the full preset (with colors)
+    // For the inactive variant, load the full preset (with colors).
+    // Falls back to original name if not a live preset (e.g. user preset).
     let full_preset_name = preset_name.strip_suffix("-live").unwrap_or(preset_name);
     let full_preset = ThemeSpec::preset(full_preset_name)?;
 
@@ -670,7 +671,8 @@ fn run_pipeline(
     };
 
     // For the variant the reader provided: use merged (live geometry + reader colors)
-    // For the variant the reader didn't provide: use FULL preset (has colors)
+    // For the variant the reader didn't provide: use FULL preset (has colors).
+    // unwrap_or_default() yields an empty ThemeVariant -- valid for merge.
     let light_variant = if reader_output.light.is_some() {
         merged.light.unwrap_or_default()
     } else {

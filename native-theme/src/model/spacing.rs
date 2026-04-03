@@ -32,6 +32,11 @@ pub struct ThemeSpacing {
     pub xxl: Option<f32>,
 }
 
+impl ThemeSpacing {
+    /// All serialized field names for ThemeSpacing, for TOML linting.
+    pub const FIELD_NAMES: &[&str] = &["xxs", "xs", "s", "m", "l", "xl", "xxl"];
+}
+
 impl_merge!(ThemeSpacing {
     option { xxs, xs, s, m, l, xl, xxl }
 });

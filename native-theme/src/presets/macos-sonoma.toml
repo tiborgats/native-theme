@@ -168,7 +168,7 @@ min_height = 140.0
 max_height = 600.0
 content_padding = 20.0
 button_spacing = 12.0
-icon_size = 32.0
+icon_size = 64.0
 
 [light.link]
 underline = true
@@ -185,22 +185,34 @@ min_height = 21.0
 min_width = 120.0
 padding_horizontal = 9.0
 arrow_size = 17.0
-arrow_area_width = 28.0
+arrow_area_width = 17.0
 
 [light.segmented_control]
 segment_height = 24.0
 separator_width = 1.0
-padding_horizontal = 12.0
+padding_horizontal = 9.0
 
 [light.card]
 padding = 16.0
 
 [light.expander]
 header_height = 40.0
-arrow_size = 12.0
+arrow_size = 13.0
 content_padding = 16.0
 
+[light.text_scale.caption]
+size = 10.0
+
 [light.text_scale.section_heading]
+weight = 700
+
+[light.text_scale.dialog_title]
+size = 22.0
+
+[light.text_scale.display]
+size = 26.0
+
+[light.window.title_bar_font]
 weight = 700
 
 # === Dark variant ===
@@ -369,7 +381,7 @@ min_height = 140.0
 max_height = 600.0
 content_padding = 20.0
 button_spacing = 12.0
-icon_size = 32.0
+icon_size = 64.0
 
 [dark.link]
 underline = true
@@ -386,20 +398,32 @@ min_height = 21.0
 min_width = 120.0
 padding_horizontal = 9.0
 arrow_size = 17.0
-arrow_area_width = 28.0
+arrow_area_width = 17.0
 
 [dark.segmented_control]
 segment_height = 24.0
 separator_width = 1.0
-padding_horizontal = 12.0
+padding_horizontal = 9.0
 
 [dark.card]
 padding = 16.0
 
 [dark.expander]
 header_height = 40.0
-arrow_size = 12.0
+arrow_size = 13.0
 content_padding = 16.0
 
+[dark.text_scale.caption]
+size = 10.0
+
 [dark.text_scale.section_heading]
+weight = 700
+
+[dark.text_scale.dialog_title]
+size = 22.0
+
+[dark.text_scale.display]
+size = 26.0
+
+[dark.window.title_bar_font]
 weight = 700

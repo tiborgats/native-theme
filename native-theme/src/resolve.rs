@@ -479,7 +479,19 @@ impl ThemeVariant {
             self.scrollbar.thumb = d.muted;
         }
         if self.scrollbar.thumb_hover.is_none() {
-            self.scrollbar.thumb_hover = d.muted;
+            // Derive a visually distinct hover state from thumb.
+            // Lighten on dark themes, darken on light themes (~15% shift).
+            self.scrollbar.thumb_hover = self.scrollbar.thumb.map(|c| {
+                let bg_luma = d.background.map_or(128.0, |bg| {
+                    0.299 * (bg.r as f32) + 0.587 * (bg.g as f32) + 0.114 * (bg.b as f32)
+                });
+                let shift: i16 = if bg_luma < 128.0 { 38 } else { -38 };
+                Rgba::rgb(
+                    (c.r as i16 + shift).clamp(0, 255) as u8,
+                    (c.g as i16 + shift).clamp(0, 255) as u8,
+                    (c.b as i16 + shift).clamp(0, 255) as u8,
+                )
+            });
         }
 
         // --- slider ---
@@ -699,6 +711,8 @@ impl ThemeVariant {
     ///
     /// Returns [`crate::Error::Resolution`] containing a [`ThemeResolutionError`]
     /// with all missing field paths and out-of-range diagnostics.
+    // Validation is kept in a single function for field-level traceability.
+    // Future extraction into per-widget validators is planned for v0.6.0.
     #[must_use = "this returns the resolved theme; it does not modify self"]
     pub fn validate(&self) -> crate::Result<ResolvedThemeVariant> {
         let mut missing = Vec::new();
@@ -2541,6 +2555,20 @@ mod tests {
         assert_eq!(v, after_first, "second resolve() produces same result");
     }
 
+    #[test]
+    fn scrollbar_thumb_hover_differs_from_thumb() {
+        let mut v = variant_with_defaults();
+        // Ensure thumb and thumb_hover are not pre-set so resolve derives them
+        v.scrollbar.thumb = None;
+        v.scrollbar.thumb_hover = None;
+        v.resolve();
+        let thumb = v.scrollbar.thumb;
+        let thumb_hover = v.scrollbar.thumb_hover;
+        assert!(thumb.is_some(), "thumb should be resolved");
+        assert!(thumb_hover.is_some(), "thumb_hover should be resolved");
+        assert_ne!(thumb, thumb_hover, "thumb_hover should differ from thumb");
+    }
+
     // ===== All 8 font-carrying widgets get resolved fonts =====
 
     #[test]
@@ -3541,90 +3569,65 @@ mod tests {
     /// Verify that resolve() has rules for every derived field.
     ///
     /// Constructs a ThemeVariant with ONLY root fields (the ~46 defaults
-    /// fields + ~65 widget geometry/behavior fields that have no derivation
-    /// path in resolve()). Derived fields (widget colors, widget fonts, text
-    /// scale entries, widget-to-widget chains) are left as None.
+    /// Helper: populate all non-derivable widget geometry/behavior fields.
     ///
-    /// If any derived field lacks a resolve rule, it stays None and
-    /// validate() reports it as missing -- catching the bug.
-    #[test]
-    fn resolve_completeness_minimal_variant() {
-        // Start with all defaults root fields populated
-        let mut v = variant_with_defaults();
-
-        // icon_set is required but not derived from anything -- it's a root field
+    /// These fields have no resolve() rule; they MUST be set explicitly.
+    fn set_widget_geometry(v: &mut ThemeVariant) {
         v.icon_set = Some(crate::IconSet::Freedesktop);
-
-        // --- Non-derivable widget geometry/behavior fields ---
-        // These have no resolve() rule; they MUST be set explicitly.
-
         // button
         v.button.min_width = Some(64.0);
         v.button.min_height = Some(28.0);
         v.button.padding_horizontal = Some(12.0);
         v.button.padding_vertical = Some(6.0);
         v.button.icon_spacing = Some(6.0);
-
         // input
         v.input.min_height = Some(28.0);
         v.input.padding_horizontal = Some(8.0);
         v.input.padding_vertical = Some(4.0);
-
         // checkbox
         v.checkbox.indicator_size = Some(18.0);
         v.checkbox.spacing = Some(6.0);
-
         // menu
         v.menu.item_height = Some(28.0);
         v.menu.padding_horizontal = Some(8.0);
         v.menu.padding_vertical = Some(4.0);
         v.menu.icon_spacing = Some(6.0);
-
         // tooltip
         v.tooltip.padding_horizontal = Some(6.0);
         v.tooltip.padding_vertical = Some(4.0);
         v.tooltip.max_width = Some(300.0);
-
         // scrollbar
         v.scrollbar.width = Some(14.0);
         v.scrollbar.min_thumb_height = Some(20.0);
         v.scrollbar.slider_width = Some(8.0);
         v.scrollbar.overlay_mode = Some(false);
-
         // slider
         v.slider.track_height = Some(4.0);
         v.slider.thumb_size = Some(16.0);
         v.slider.tick_length = Some(6.0);
-
         // progress_bar
         v.progress_bar.height = Some(6.0);
         v.progress_bar.min_width = Some(100.0);
-
         // tab
         v.tab.min_width = Some(60.0);
         v.tab.min_height = Some(32.0);
         v.tab.padding_horizontal = Some(12.0);
         v.tab.padding_vertical = Some(6.0);
-
         // toolbar
         v.toolbar.height = Some(40.0);
         v.toolbar.item_spacing = Some(4.0);
         v.toolbar.padding = Some(4.0);
-
         // list
         v.list.item_height = Some(28.0);
         v.list.padding_horizontal = Some(8.0);
         v.list.padding_vertical = Some(4.0);
-
         // splitter
         v.splitter.width = Some(4.0);
-
         // switch
         v.switch.track_width = Some(40.0);
         v.switch.track_height = Some(20.0);
         v.switch.thumb_size = Some(14.0);
         v.switch.track_radius = Some(10.0);
-
         // dialog
         v.dialog.min_width = Some(320.0);
         v.dialog.max_width = Some(600.0);
@@ -3634,39 +3637,148 @@ mod tests {
         v.dialog.button_spacing = Some(8.0);
         v.dialog.icon_size = Some(22.0);
         v.dialog.button_order = Some(DialogButtonOrder::TrailingAffirmative);
-
         // spinner
         v.spinner.diameter = Some(24.0);
         v.spinner.min_size = Some(16.0);
         v.spinner.stroke_width = Some(2.0);
-
         // combo_box
         v.combo_box.min_height = Some(28.0);
         v.combo_box.min_width = Some(80.0);
         v.combo_box.padding_horizontal = Some(8.0);
         v.combo_box.arrow_size = Some(12.0);
         v.combo_box.arrow_area_width = Some(20.0);
-
         // segmented_control
         v.segmented_control.segment_height = Some(28.0);
         v.segmented_control.separator_width = Some(1.0);
         v.segmented_control.padding_horizontal = Some(12.0);
-
         // card
         v.card.padding = Some(12.0);
-
         // expander
         v.expander.header_height = Some(32.0);
         v.expander.arrow_size = Some(12.0);
         v.expander.content_padding = Some(8.0);
-
-        // link: background and hover_bg have no derivation path
+        // link (background and hover_bg have no derivation path)
         v.link.background = Some(Rgba::rgb(255, 255, 255));
         v.link.hover_bg = Some(Rgba::rgb(230, 230, 255));
         v.link.underline = Some(true);
+    }
 
-        // --- Verify: NO derived color/font/text_scale fields are set ---
-        // These should all be None at this point (resolve must fill them):
+    /// Helper: clear all derived color/font/text_scale fields on a variant.
+    ///
+    /// After calling this, resolve_all() must be able to reconstruct every
+    /// cleared field from the remaining defaults.
+    fn clear_derived_fields(v: &mut ThemeVariant) {
+        // Widget colors and radii (derived from defaults)
+        v.window.background = None;
+        v.window.foreground = None;
+        v.window.border = None;
+        v.window.title_bar_background = None;
+        v.window.title_bar_foreground = None;
+        v.window.inactive_title_bar_background = None;
+        v.window.inactive_title_bar_foreground = None;
+        v.window.radius = None;
+        v.window.shadow = None;
+        v.button.background = None;
+        v.button.foreground = None;
+        v.button.border = None;
+        v.button.primary_background = None;
+        v.button.primary_foreground = None;
+        v.button.radius = None;
+        v.button.disabled_opacity = None;
+        v.button.shadow = None;
+        v.input.background = None;
+        v.input.foreground = None;
+        v.input.border = None;
+        v.input.placeholder = None;
+        v.input.caret = None;
+        v.input.selection = None;
+        v.input.selection_foreground = None;
+        v.input.radius = None;
+        v.input.border_width = None;
+        v.checkbox.checked_background = None;
+        v.checkbox.radius = None;
+        v.checkbox.border_width = None;
+        v.menu.background = None;
+        v.menu.foreground = None;
+        v.menu.separator = None;
+        v.tooltip.background = None;
+        v.tooltip.foreground = None;
+        v.tooltip.radius = None;
+        v.scrollbar.track = None;
+        v.scrollbar.thumb = None;
+        v.scrollbar.thumb_hover = None;
+        v.slider.fill = None;
+        v.slider.track = None;
+        v.slider.thumb = None;
+        v.progress_bar.fill = None;
+        v.progress_bar.track = None;
+        v.progress_bar.radius = None;
+        v.tab.background = None;
+        v.tab.foreground = None;
+        v.tab.active_background = None;
+        v.tab.active_foreground = None;
+        v.tab.bar_background = None;
+        v.sidebar.background = None;
+        v.sidebar.foreground = None;
+        v.list.background = None;
+        v.list.foreground = None;
+        v.list.alternate_row = None;
+        v.list.selection = None;
+        v.list.selection_foreground = None;
+        v.list.header_background = None;
+        v.list.header_foreground = None;
+        v.list.grid_color = None;
+        v.popover.background = None;
+        v.popover.foreground = None;
+        v.popover.border = None;
+        v.popover.radius = None;
+        v.separator.color = None;
+        v.switch.checked_background = None;
+        v.switch.unchecked_background = None;
+        v.switch.thumb_background = None;
+        v.dialog.radius = None;
+        v.combo_box.radius = None;
+        v.segmented_control.radius = None;
+        v.card.background = None;
+        v.card.border = None;
+        v.card.radius = None;
+        v.card.shadow = None;
+        v.expander.radius = None;
+        v.link.color = None;
+        v.link.visited = None;
+        v.spinner.fill = None;
+        // Widget fonts (derived from defaults.font)
+        v.window.title_bar_font = None;
+        v.button.font = None;
+        v.input.font = None;
+        v.menu.font = None;
+        v.tooltip.font = None;
+        v.toolbar.font = None;
+        v.status_bar.font = None;
+        v.dialog.title_font = None;
+        // Text scale (derived from defaults.font + defaults.line_height)
+        v.text_scale.caption = None;
+        v.text_scale.section_heading = None;
+        v.text_scale.dialog_title = None;
+        v.text_scale.display = None;
+        // Defaults internal chains (derived from accent/selection)
+        v.defaults.selection = None;
+        v.defaults.focus_ring_color = None;
+        v.defaults.selection_inactive = None;
+    }
+
+    /// fields + ~65 widget geometry/behavior fields that have no derivation
+    /// path in resolve()). Derived fields (widget colors, widget fonts, text
+    /// scale entries, widget-to-widget chains) are left as None.
+    ///
+    /// If any derived field lacks a resolve rule, it stays None and
+    /// validate() reports it as missing -- catching the bug.
+    #[test]
+    fn resolve_completeness_minimal_variant() {
+        let mut v = variant_with_defaults();
+        set_widget_geometry(&mut v);
+
+        // Verify: NO derived color/font/text_scale fields are set
         assert!(
             v.window.background.is_none(),
             "window.background should be None before resolve"
@@ -3684,7 +3796,6 @@ mod tests {
             "text_scale.caption should be None before resolve"
         );
 
-        // --- Resolve and validate ---
         v.resolve_all();
         let result = v.validate();
         assert!(
@@ -3697,159 +3808,14 @@ mod tests {
     /// Cross-check: verify completeness by stripping derived fields from a preset.
     ///
     /// Loads a known preset, clears all derived color/font/text_scale fields,
-    /// then verifies resolve() can reconstruct them. This is the complementary
-    /// approach to `resolve_completeness_minimal_variant` -- it starts from a
-    /// known-good preset instead of building from scratch.
+    /// then verifies resolve() can reconstruct them.
     #[test]
     fn resolve_completeness_from_preset() {
         let spec = crate::ThemeSpec::preset("material").unwrap();
         let mut v = spec.dark.expect("material should have dark variant");
 
-        // Clear all derived color fields -- these should all be refilled by resolve()
-        // window colors
-        v.window.background = None;
-        v.window.foreground = None;
-        v.window.border = None;
-        v.window.title_bar_background = None;
-        v.window.title_bar_foreground = None;
-        v.window.inactive_title_bar_background = None;
-        v.window.inactive_title_bar_foreground = None;
-        v.window.radius = None;
-        v.window.shadow = None;
+        clear_derived_fields(&mut v);
 
-        // button colors
-        v.button.background = None;
-        v.button.foreground = None;
-        v.button.border = None;
-        v.button.primary_background = None;
-        v.button.primary_foreground = None;
-        v.button.radius = None;
-        v.button.disabled_opacity = None;
-        v.button.shadow = None;
-
-        // input colors
-        v.input.background = None;
-        v.input.foreground = None;
-        v.input.border = None;
-        v.input.placeholder = None;
-        v.input.caret = None;
-        v.input.selection = None;
-        v.input.selection_foreground = None;
-        v.input.radius = None;
-        v.input.border_width = None;
-
-        // checkbox colors
-        v.checkbox.checked_background = None;
-        v.checkbox.radius = None;
-        v.checkbox.border_width = None;
-
-        // menu colors
-        v.menu.background = None;
-        v.menu.foreground = None;
-        v.menu.separator = None;
-
-        // tooltip colors
-        v.tooltip.background = None;
-        v.tooltip.foreground = None;
-        v.tooltip.radius = None;
-
-        // scrollbar colors
-        v.scrollbar.track = None;
-        v.scrollbar.thumb = None;
-        v.scrollbar.thumb_hover = None;
-
-        // slider colors
-        v.slider.fill = None;
-        v.slider.track = None;
-        v.slider.thumb = None;
-
-        // progress_bar colors
-        v.progress_bar.fill = None;
-        v.progress_bar.track = None;
-        v.progress_bar.radius = None;
-
-        // tab colors
-        v.tab.background = None;
-        v.tab.foreground = None;
-        v.tab.active_background = None;
-        v.tab.active_foreground = None;
-        v.tab.bar_background = None;
-
-        // sidebar colors
-        v.sidebar.background = None;
-        v.sidebar.foreground = None;
-
-        // list colors
-        v.list.background = None;
-        v.list.foreground = None;
-        v.list.alternate_row = None;
-        v.list.selection = None;
-        v.list.selection_foreground = None;
-        v.list.header_background = None;
-        v.list.header_foreground = None;
-        v.list.grid_color = None;
-
-        // popover colors
-        v.popover.background = None;
-        v.popover.foreground = None;
-        v.popover.border = None;
-        v.popover.radius = None;
-
-        // separator
-        v.separator.color = None;
-
-        // switch colors
-        v.switch.checked_background = None;
-        v.switch.unchecked_background = None;
-        v.switch.thumb_background = None;
-
-        // dialog radius
-        v.dialog.radius = None;
-
-        // combo_box radius
-        v.combo_box.radius = None;
-
-        // segmented_control radius
-        v.segmented_control.radius = None;
-
-        // card colors
-        v.card.background = None;
-        v.card.border = None;
-        v.card.radius = None;
-        v.card.shadow = None;
-
-        // expander radius
-        v.expander.radius = None;
-
-        // link colors
-        v.link.color = None;
-        v.link.visited = None;
-
-        // spinner
-        v.spinner.fill = None;
-
-        // Clear all widget fonts (these are derived from defaults.font)
-        v.window.title_bar_font = None;
-        v.button.font = None;
-        v.input.font = None;
-        v.menu.font = None;
-        v.tooltip.font = None;
-        v.toolbar.font = None;
-        v.status_bar.font = None;
-        v.dialog.title_font = None;
-
-        // Clear text_scale entries (derived from defaults.font + defaults.line_height)
-        v.text_scale.caption = None;
-        v.text_scale.section_heading = None;
-        v.text_scale.dialog_title = None;
-        v.text_scale.display = None;
-
-        // Clear defaults internal chains (derived from accent/selection)
-        v.defaults.selection = None;
-        v.defaults.focus_ring_color = None;
-        v.defaults.selection_inactive = None;
-
-        // Resolve should fill everything back
         v.resolve_all();
         let result = v.validate();
         assert!(

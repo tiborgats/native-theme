@@ -319,6 +319,10 @@ fn is_native_icon_set(name: &str) -> bool {
 
 /// Reverse lookup: find the IconRole for a gpui-component icon name string.
 ///
+/// Maps gpui icon display names back to IconRole for showcase. When multiple roles
+/// map to the same icon (e.g., DialogError and StatusError both -> CircleX), the
+/// first listed role is used.
+///
 /// We match by Lucide icon name string since `IconName` doesn't implement `PartialEq`.
 fn role_for_gpui_icon(gpui_name: &str) -> Option<IconRole> {
     // Static table mapping gpui-component icon names to IconRole, derived from
@@ -536,6 +540,7 @@ fn load_gpui_icons(
                     None => IconSource::NotFound,
                     Some(_) if !is_system_set => IconSource::Bundled,
                     Some(IconData::Svg(loaded)) => {
+                        // Material fallback loaded per-icon for showcase demonstration of fallback behavior.
                         let mat = load_icon(r, IconSet::Material);
                         if let Some(IconData::Svg(mat_bytes)) = &mat {
                             if loaded == mat_bytes {
@@ -1204,6 +1209,8 @@ impl Showcase {
                 input.update(cx, |input, cx| {
                     let value = input.value();
                     let num: f64 = value.parse().unwrap_or(0.0);
+                    // Issue 57: guard against NaN/Inf from malformed input
+                    let num = if num.is_finite() { num } else { 0.0 };
                     let new_value = if *action == StepAction::Increment {
                         num + 1.0
                     } else {
@@ -1635,7 +1642,8 @@ impl Showcase {
                 // Check icon_theme before resolution fills it in
                 self.has_toml_icon_theme = variant.icon_theme.is_some();
                 let mut v = variant.clone();
-                v.resolve();
+                // Issue 59: use resolve_all() to include platform defaults
+                v.resolve_all();
                 let resolved = match v.validate() {
                     Ok(r) => r,
                     Err(e) => {

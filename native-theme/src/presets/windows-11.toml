@@ -73,13 +73,19 @@ large = 32.0
 dialog = 22.0
 panel = 20.0
 
+[light.text_scale.caption]
+size = 12.0
+
 [light.text_scale.section_heading]
+size = 20.0
 weight = 600
 
 [light.text_scale.dialog_title]
+size = 28.0
 weight = 600
 
 [light.text_scale.display]
+size = 68.0
 weight = 600
 
 [light.button]
@@ -178,6 +184,10 @@ max_height = 756.0
 content_padding = 24.0
 button_spacing = 8.0
 icon_size = 32.0
+
+[light.dialog.title_font]
+size = 20.0
+weight = 600
 
 [light.link]
 underline = true
@@ -280,13 +290,19 @@ large = 32.0
 dialog = 22.0
 panel = 20.0
 
+[dark.text_scale.caption]
+size = 12.0
+
 [dark.text_scale.section_heading]
+size = 20.0
 weight = 600
 
 [dark.text_scale.dialog_title]
+size = 28.0
 weight = 600
 
 [dark.text_scale.display]
+size = 68.0
 weight = 600
 
 [dark.button]
@@ -385,6 +401,10 @@ max_height = 756.0
 content_padding = 24.0
 button_spacing = 8.0
 icon_size = 32.0
+
+[dark.dialog.title_font]
+size = 20.0
+weight = 600
 
 [dark.link]
 underline = true

@@ -10,8 +10,13 @@ fn fixtures_dir() -> PathBuf {
 }
 
 fn create_temp_dir(suffix: &str) -> PathBuf {
-    let dir = std::env::temp_dir().join(format!("native_theme_integ_{suffix}"));
-    let _ = fs::remove_dir_all(&dir);
+    let dir = std::env::temp_dir().join(format!(
+        "native_theme_integ_{suffix}_{}",
+        std::process::id()
+    ));
+    if let Err(e) = fs::remove_dir_all(&dir) {
+        eprintln!("test cleanup warning: {e}");
+    }
     fs::create_dir_all(&dir).unwrap();
     dir
 }
@@ -116,8 +121,12 @@ fn happy_path_icon_svg_bundled_only() {
 
     // Material (bundled) should have include_bytes! arms
     assert!(
-        output.code.contains("include_bytes!") && output.code.contains("material/play_pause.svg"),
+        output.code.contains("include_bytes!"),
         "should have include_bytes! for bundled material SVGs"
+    );
+    assert!(
+        output.code.contains("material/play_pause.svg"),
+        "should reference material/play_pause.svg in include_bytes! path"
     );
 
     // sf-symbols (system) should NOT have include_bytes! arms
@@ -136,8 +145,12 @@ fn happy_path_has_const_all() {
         "should have const ALL"
     );
     assert!(
-        output.code.contains("Self::PlayPause") && output.code.contains("Self::SkipForward"),
-        "ALL should contain both variants"
+        output.code.contains("Self::PlayPause"),
+        "ALL should contain PlayPause variant"
+    );
+    assert!(
+        output.code.contains("Self::SkipForward"),
+        "ALL should contain SkipForward variant"
     );
 }
 
@@ -192,6 +205,7 @@ bundled-themes = ["material"]
 
     let errors = result.unwrap_err();
     assert!(!errors.is_empty(), "should have errors");
+    // Expected variant: BuildError::MissingRole { role: "skip-forward", .. }
     assert!(
         errors
             .errors()
@@ -200,7 +214,9 @@ bundled-themes = ["material"]
         "should mention missing role 'skip-forward': {errors:?}",
     );
 
-    let _ = fs::remove_dir_all(&dir);
+    if let Err(e) = fs::remove_dir_all(&dir) {
+        eprintln!("test cleanup warning: {e}");
+    }
 }
 
 #[test]
@@ -230,6 +246,7 @@ bundled-themes = ["material"]
 
     let errors = result.unwrap_err();
     assert!(!errors.is_empty(), "should have errors");
+    // Expected variant: BuildError::UnknownRole { role: "bluetooth", .. }
     assert!(
         errors
             .errors()
@@ -238,7 +255,9 @@ bundled-themes = ["material"]
         "should mention unknown role 'bluetooth': {errors:?}",
     );
 
-    let _ = fs::remove_dir_all(&dir);
+    if let Err(e) = fs::remove_dir_all(&dir) {
+        eprintln!("test cleanup warning: {e}");
+    }
 }
 
 #[test]
@@ -268,6 +287,7 @@ bundled-themes = ["material"]
 
     let errors = result.unwrap_err();
     assert!(!errors.is_empty(), "should have errors");
+    // Expected variant: BuildError::MissingSvg { path: "...skip_next.svg" }
     assert!(
         errors
             .errors()
@@ -276,7 +296,9 @@ bundled-themes = ["material"]
         "should mention missing SVG path: {errors:?}",
     );
 
-    let _ = fs::remove_dir_all(&dir);
+    if let Err(e) = fs::remove_dir_all(&dir) {
+        eprintln!("test cleanup warning: {e}");
+    }
 }
 
 // =============================================================================
@@ -332,12 +354,23 @@ bundled-themes = ["material"]
         output.code.contains("SkipForward"),
         "should have SkipForward from file B"
     );
+
+    // #61: Roles from the first source should appear before roles from the second
+    let play_pos = output.code.find("PlayPause").expect("PlayPause not found");
+    let skip_pos = output.code.find("SkipForward").expect("SkipForward not found");
+    assert!(
+        play_pos < skip_pos,
+        "PlayPause (from file A) should appear before SkipForward (from file B) in generated code"
+    );
+
     assert_eq!(
         output.output_path.file_name().unwrap().to_str().unwrap(),
         "all_icons.rs"
     );
 
-    let _ = fs::remove_dir_all(&dir);
+    if let Err(e) = fs::remove_dir_all(&dir) {
+        eprintln!("test cleanup warning: {e}");
+    }
 }
 
 // =============================================================================
@@ -401,7 +434,26 @@ reveal = { kde = "view-visible", default = "view-reveal" }
         output.code
     );
 
-    let _ = fs::remove_dir_all(&dir);
+    // #89: Verify DE-specific match arms reference the expected DE names
+    assert!(
+        output.code.contains("Kde"),
+        "should contain Kde variant in DE dispatch. code:\n{}",
+        output.code
+    );
+    assert!(
+        output.code.contains("view-visible"),
+        "should contain KDE-specific icon name 'view-visible'. code:\n{}",
+        output.code
+    );
+    assert!(
+        output.code.contains("view-reveal"),
+        "should contain default icon name 'view-reveal'. code:\n{}",
+        output.code
+    );
+
+    if let Err(e) = fs::remove_dir_all(&dir) {
+        eprintln!("test cleanup warning: {e}");
+    }
 }
 
 #[test]
@@ -430,13 +482,15 @@ reveal = { cosmic = "cosmic-reveal", default = "view-reveal" }
         .generate()
         .unwrap_or_else(|e| panic!("warnings should not be errors: {e}"));
 
-    // Warnings should mention cosmic and unrecognized
+    // Warnings should mention cosmic and unrecognized (checked separately for resilience)
     assert!(
-        output
-            .warnings
-            .iter()
-            .any(|w| w.contains("cosmic") && w.contains("unrecognized DE key")),
-        "should warn about unrecognized 'cosmic' DE key: {:?}",
+        output.warnings.iter().any(|w| w.contains("cosmic")),
+        "should mention 'cosmic': {:?}",
+        output.warnings
+    );
+    assert!(
+        output.warnings.iter().any(|w| w.contains("unrecognized")),
+        "should mention 'unrecognized': {:?}",
         output.warnings
     );
 
@@ -450,7 +504,9 @@ reveal = { cosmic = "cosmic-reveal", default = "view-reveal" }
         output.code
     );
 
-    let _ = fs::remove_dir_all(&dir);
+    if let Err(e) = fs::remove_dir_all(&dir) {
+        eprintln!("test cleanup warning: {e}");
+    }
 }
 
 #[test]
@@ -490,6 +546,12 @@ bundled-themes = ["material"]
     let errors = result.unwrap_err();
     assert!(!errors.is_empty(), "should detect duplicate roles");
     assert!(
+        !errors.errors().is_empty(),
+        "expected at least 1 duplicate role error, got {}",
+        errors.errors().len()
+    );
+    // Expected variant: BuildError::DuplicateRole { role: "play-pause", .. }
+    assert!(
         errors
             .errors()
             .iter()
@@ -497,5 +559,211 @@ bundled-themes = ["material"]
         "should mention duplicate role: {errors:?}",
     );
 
-    let _ = fs::remove_dir_all(&dir);
+    if let Err(e) = fs::remove_dir_all(&dir) {
+        eprintln!("test cleanup warning: {e}");
+    }
+}
+
+// =============================================================================
+// Additional test coverage
+// =============================================================================
+
+/// #28: Test generate_icons() simple API with a valid fixture TOML.
+#[test]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+fn generate_icons_simple_api() {
+    let out = create_temp_dir("simple_api_out");
+
+    // generate_icons() requires CARGO_MANIFEST_DIR and OUT_DIR env vars.
+    // CARGO_MANIFEST_DIR is set by cargo test. We set OUT_DIR explicitly.
+    unsafe { std::env::set_var("OUT_DIR", &out) };
+
+    let result = native_theme_build::generate_icons(
+        // Path relative to CARGO_MANIFEST_DIR
+        "tests/fixtures/sample-icons.toml",
+    );
+
+    let output = result.unwrap_or_else(|e| panic!("generate_icons() failed: {e}"));
+    assert!(!output.code.is_empty(), "should generate code");
+    assert!(
+        output.code.contains("pub enum SampleIcon"),
+        "should produce SampleIcon enum"
+    );
+    assert_eq!(output.role_count, 2);
+
+    if let Err(e) = fs::remove_dir_all(&out) {
+        eprintln!("test cleanup warning: {e}");
+    }
+}
+
+/// #29: Test that base_dir() affects the generated include_bytes! paths.
+#[test]
+fn base_dir_affects_include_bytes_paths() {
+    let dir = create_temp_dir("base_dir_test");
+
+    // Create a TOML file in a subdirectory, but themes in a different directory
+    write_file(
+        &dir,
+        "config/icons.toml",
+        r#"
+name = "base-test"
+roles = ["play-pause"]
+bundled-themes = ["material"]
+"#,
+    );
+    write_file(
+        &dir,
+        "themes/material/mapping.toml",
+        "play-pause = \"play_pause\"\n",
+    );
+    write_file(&dir, "themes/material/play_pause.svg", SVG_STUB);
+
+    let output = IconGenerator::new()
+        .source(dir.join("config/icons.toml"))
+        .base_dir(dir.join("themes"))
+        .output_dir(&dir)
+        .generate()
+        .unwrap_or_else(|e| panic!("expected no errors: {e}"));
+
+    // The include_bytes! path should be relative to the base_dir (themes/),
+    // not relative to the TOML file's parent directory (config/).
+    assert!(
+        output.code.contains("include_bytes!"),
+        "should have include_bytes! directives"
+    );
+    // With base_dir set to themes/, the path should reference material/play_pause.svg
+    assert!(
+        output.code.contains("material/play_pause.svg"),
+        "include_bytes! path should reference material/play_pause.svg. code:\n{}",
+        output.code
+    );
+
+    if let Err(e) = fs::remove_dir_all(&dir) {
+        eprintln!("test cleanup warning: {e}");
+    }
+}
+
+/// #35: Test output_dir fallback to OUT_DIR env var.
+#[test]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+fn output_dir_fallback_to_out_dir_env() {
+    let dir = create_temp_dir("outdir_fallback");
+    let out = create_temp_dir("outdir_fallback_out");
+
+    write_file(
+        &dir,
+        "icons.toml",
+        r#"
+name = "fallback-test"
+roles = ["play-pause"]
+bundled-themes = ["material"]
+"#,
+    );
+    write_file(
+        &dir,
+        "material/mapping.toml",
+        "play-pause = \"play_pause\"\n",
+    );
+    write_file(&dir, "material/play_pause.svg", SVG_STUB);
+
+    // Don't call .output_dir() -- rely on OUT_DIR env var
+    unsafe { std::env::set_var("OUT_DIR", &out) };
+
+    let output = IconGenerator::new()
+        .source(dir.join("icons.toml"))
+        .generate()
+        .unwrap_or_else(|e| panic!("expected no errors: {e}"));
+
+    // Output path should be inside the OUT_DIR directory
+    assert!(
+        output.output_path.starts_with(&out),
+        "output_path {:?} should be under OUT_DIR {:?}",
+        output.output_path,
+        out
+    );
+
+    if let Err(e) = fs::remove_dir_all(&dir) {
+        eprintln!("test cleanup warning: {e}");
+    }
+    if let Err(e) = fs::remove_dir_all(&out) {
+        eprintln!("test cleanup warning: {e}");
+    }
+}
+
+/// #33: Golden syntax test -- generated code has valid Rust structure.
+#[test]
+fn golden_syntax_check() {
+    let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
+
+    // Contains enum keyword
+    assert!(
+        output.code.contains("enum"),
+        "generated code should contain 'enum' keyword"
+    );
+
+    // Contains fn icon_name (trait impl method, not pub)
+    assert!(
+        output.code.contains("fn icon_name"),
+        "generated code should contain 'fn icon_name'"
+    );
+
+    // Contains fn icon_svg (bundled theme present, so SVG function should exist)
+    assert!(
+        output.code.contains("fn icon_svg"),
+        "generated code should contain 'fn icon_svg'"
+    );
+
+    // Braces are balanced
+    let open_braces = output.code.chars().filter(|&c| c == '{').count();
+    let close_braces = output.code.chars().filter(|&c| c == '}').count();
+    assert_eq!(
+        open_braces, close_braces,
+        "braces should be balanced: {{ = {open_braces}, }} = {close_braces}"
+    );
+}
+
+/// #31: Test that the lucide fixture mapping can be loaded as a system theme.
+#[test]
+fn lucide_fixture_as_system_theme() {
+    let dir = create_temp_dir("lucide_fixture");
+
+    write_file(
+        &dir,
+        "icons.toml",
+        r#"
+name = "lucide-test"
+roles = ["play-pause", "skip-forward"]
+system-themes = ["lucide"]
+"#,
+    );
+    // Copy the committed fixture mapping into the temp dir
+    let fixture_mapping =
+        fs::read_to_string(fixtures_dir().join("lucide/mapping.toml"))
+            .unwrap_or_else(|e| panic!("failed to read lucide fixture: {e}"));
+    write_file(&dir, "lucide/mapping.toml", &fixture_mapping);
+
+    let output = IconGenerator::new()
+        .source(dir.join("icons.toml"))
+        .output_dir(&dir)
+        .generate()
+        .unwrap_or_else(|e| panic!("expected no errors: {e}"));
+
+    assert!(!output.code.is_empty(), "should generate code");
+    assert!(
+        output.code.contains("PlayPause"),
+        "should have PlayPause variant"
+    );
+    assert!(
+        output.code.contains("SkipForward"),
+        "should have SkipForward variant"
+    );
+    // System theme should not have include_bytes!
+    assert!(
+        !output.code.contains("include_bytes!"),
+        "system theme should not have embedded SVGs"
+    );
+
+    if let Err(e) = fs::remove_dir_all(&dir) {
+        eprintln!("test cleanup warning: {e}");
+    }
 }

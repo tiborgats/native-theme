@@ -169,6 +169,7 @@ impl PartialEq for ThemeChoice {
         match (self, other) {
             (ThemeChoice::OsTheme(_), ThemeChoice::OsTheme(_)) => true,
             (ThemeChoice::Preset(a), ThemeChoice::Preset(b)) => a == b,
+            // Different ThemeChoice variants are never equal
             _ => false,
         }
     }
@@ -183,7 +184,7 @@ impl Eq for ThemeChoice {}
 fn load_adwaita_fallback(is_dark: bool) -> Option<(native_theme::ResolvedThemeVariant, Theme)> {
     let nt = ThemeSpec::preset("adwaita").ok()?;
     let mut variant = nt.pick_variant(is_dark)?.clone();
-    variant.resolve();
+    variant.resolve_all();
     let r = variant.validate().ok()?;
     let t = native_theme_iced::to_theme(&r, &nt.name);
     Some((r, t))
@@ -298,6 +299,10 @@ fn resolve_icon_choice(
             IconSet::Freedesktop => {
                 native_theme::is_freedesktop_theme_available(&resolved.icon_theme)
             }
+            // Platform-native icon APIs are always available on their platform
+            IconSet::SfSymbols | IconSet::SegoeIcons => true,
+            // Exhaustive: all current variants handled above.
+            // Future IconSet additions default to unavailable until platform support is verified.
             _ => false,
         };
         let choices = IconSetChoice::choices(Some(&resolved.icon_theme));
@@ -598,6 +603,11 @@ impl Default for State {
                             "adwaita".to_string(),
                         ),
                         None => {
+                            // This is the only safe fallback when both OS theme
+                            // detection and the bundled adwaita preset fail.
+                            // With bundled data this case is near-impossible.
+                            // process::exit avoids constructing a dummy
+                            // ResolvedThemeVariant (30+ required fields).
                             eprintln!(
                                 "Fatal: OS theme failed ({e}) and adwaita fallback \
                                  also failed. Cannot start."
@@ -754,6 +764,7 @@ impl State {
         self.is_dark = self.color_mode.is_dark();
         let is_default = matches!(self.current_choice, ThemeChoice::OsTheme(_));
         // Track whether the TOML specified icon_theme (before resolution fills it).
+        // Defaults to false — only set true when a successful theme load confirms icon_theme presence.
         let mut has_toml_icon_theme = false;
         match &self.current_choice {
             ThemeChoice::OsTheme(_) => {
@@ -784,7 +795,7 @@ impl State {
                         Some(variant) => {
                             has_toml_icon_theme = variant.icon_theme.is_some();
                             let mut v = variant.clone();
-                            v.resolve();
+                            v.resolve_all();
                             match v.validate() {
                                 Ok(resolved) => {
                                     self.current_resolved = resolved;
@@ -1152,7 +1163,7 @@ fn update_inner(state: &mut State, message: Message) {
             // Keep last info visible (like gpui showcase)
         }
         Message::ButtonPressed => {
-            state.button_press_count += 1;
+            state.button_press_count = state.button_press_count.saturating_add(1);
         }
         Message::TextInputChanged(value) => {
             state.text_input_value = value;
@@ -1219,6 +1230,7 @@ fn view(state: &State) -> Element<'_, Message> {
 
     // ---- Left sidebar ----
     let sidebar = {
+        let sp = &state.current_resolved.defaults.spacing;
         let title = text("native-theme").size(18);
         let subtitle = text(format!("iced showcase v{}", env!("CARGO_PKG_VERSION"))).size(12);
 
@@ -1232,7 +1244,7 @@ fn view(state: &State) -> Element<'_, Message> {
             )
             .width(Fill),
         ]
-        .spacing(4);
+        .spacing(sp.xs);
 
         // Color mode selector (System / Light / Dark)
         let color_mode_section = column![
@@ -1244,7 +1256,7 @@ fn view(state: &State) -> Element<'_, Message> {
             )
             .width(Fill),
         ]
-        .spacing(4);
+        .spacing(sp.xs);
 
         // Icon theme selector
         let icon_theme_section = column![
@@ -1256,7 +1268,7 @@ fn view(state: &State) -> Element<'_, Message> {
             )
             .width(Fill),
         ]
-        .spacing(4);
+        .spacing(sp.xs);
 
         // Theme config inspector (matches gpui sidebar)
         let fi = format_font_info(&state.current_resolved);
@@ -1278,7 +1290,7 @@ fn view(state: &State) -> Element<'_, Message> {
                 text(ip).size(10),
                 text(fi).size(10),
             ]
-            .spacing(2)
+            .spacing(sp.xxs)
         };
 
         // Widget Info panel
@@ -1295,12 +1307,12 @@ fn view(state: &State) -> Element<'_, Message> {
                         scrollable::Scrollbar::new().width(4).scroller_width(4),
                     )
                 ),)
-                .padding(Padding::from(6))
+                .padding(Padding::from(sp.s))
                 .style(container::rounded_box)
                 .width(Fill)
                 .height(Fill),
             ]
-            .spacing(4)
+            .spacing(sp.xs)
             .height(Fill)
         };
 
@@ -1319,8 +1331,8 @@ fn view(state: &State) -> Element<'_, Message> {
                     rule::horizontal(1),
                     widget_info_panel,
                 ]
-                .spacing(8)
-                .padding(Padding::from(10))
+                .spacing(sp.s)
+                .padding(Padding::from(sp.m))
                 .width(Length::Fixed(210.0)),
             )
             .direction(scrollable::Direction::Vertical(
@@ -1333,6 +1345,7 @@ fn view(state: &State) -> Element<'_, Message> {
 
     // ---- Tab bar ----
     let tab_bar: Element<'_, Message> = {
+        let sp = &state.current_resolved.defaults.spacing;
         let tabs: Vec<Element<'_, Message>> = Tab::ALL
             .iter()
             .map(|&tab| {
@@ -1344,11 +1357,11 @@ fn view(state: &State) -> Element<'_, Message> {
                     btn.style(button::secondary)
                 };
                 btn.on_press(Message::TabSelected(tab))
-                    .padding(Padding::from([4, 10]))
+                    .padding(Padding::from([sp.xs, sp.m]))
                     .into()
             })
             .collect();
-        row(tabs).spacing(4).into()
+        row(tabs).spacing(sp.xs).into()
     };
 
     // ---- Tab content ----
@@ -1371,14 +1384,17 @@ fn view(state: &State) -> Element<'_, Message> {
 
     // Error banner (if any)
     if let Some(ref msg) = state.error_message {
+        let danger = state.current_theme.palette().danger;
         right_panel = right_panel.push(
-            container(
-                text(msg.as_str())
-                    .color(Color::from_rgb(0.9, 0.1, 0.1))
-                    .size(12),
-            )
-            .padding(Padding::from([4, 8]))
-            .width(Fill),
+            container(text(msg.as_str()).color(danger).size(12))
+                .padding(
+                    Padding::ZERO
+                        .top(sp.xs)
+                        .bottom(sp.xs)
+                        .left(sp.s)
+                        .right(sp.s),
+                )
+                .width(Fill),
         );
     }
 
@@ -1488,6 +1504,8 @@ fn widget_tooltip_themed(
 // ---------------------------------------------------------------------------
 
 fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> {
+    let sp = &state.current_resolved.defaults.spacing;
+    let ts = &state.current_resolved.text_scale;
     let palette = state.current_theme.palette();
     let ext = state.current_theme.extended_palette();
     let radius = native_theme_iced::border_radius(&state.current_resolved);
@@ -1521,7 +1539,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
             ],
         ),
         column![
-            text("Primary Actions").size(16),
+            text("Primary Actions").size(ts.dialog_title.size),
             row![
                 apply_pad(
                     button("Primary")
@@ -1567,7 +1585,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
             ],
         ),
         column![
-            text("Disabled State").size(16),
+            text("Disabled State").size(ts.dialog_title.size),
             text("Buttons without on_press are rendered as disabled:").size(13),
             row![
                 apply_pad(button("Disabled Primary").style(button::primary)),
@@ -1583,16 +1601,16 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
     let counter_text = format!("Button presses this session: {}", state.button_press_count);
 
     let interactive = column![
-        text("Interactive Demo").size(16),
+        text("Interactive Demo").size(ts.dialog_title.size),
         row![
             apply_pad(
-                button(text("Click me!").size(14))
+                button(text("Click me!").size(ts.section_heading.size))
                     .on_press(Message::ButtonPressed)
                     .style(button::primary)
             ),
-            text(counter_text).size(14),
+            text(counter_text).size(ts.section_heading.size),
         ]
-        .spacing(12)
+        .spacing(sp.m)
         .align_y(iced::Center),
     ]
     .spacing(8);
@@ -1615,6 +1633,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
 // ---------------------------------------------------------------------------
 
 fn view_text_inputs<'a>(state: &'a State, radius: f32, inp_pad: Padding) -> Element<'a, Message> {
+    let ts = &state.current_resolved.text_scale;
     let palette = state.current_theme.palette();
     let ext = state.current_theme.extended_palette();
     let radius_s = format!("{radius:.0}px");
@@ -1652,13 +1671,13 @@ fn view_text_inputs<'a>(state: &'a State, radius: f32, inp_pad: Padding) -> Elem
                 ],
             ),
             column![
-                text("TextInput (single line)").size(16),
+                text("TextInput (single line)").size(ts.dialog_title.size),
                 input,
                 text(format!(
                     "Characters: {}  |  Border radius from theme: {radius:.0}px",
                     state.text_input_value.len()
                 ))
-                .size(12),
+                .size(ts.caption.size),
             ]
             .spacing(8)
             .into(),
@@ -1683,9 +1702,12 @@ fn view_text_inputs<'a>(state: &'a State, radius: f32, inp_pad: Padding) -> Elem
                 &[("border-radius", &radius_s)],
                 &[("mode", "password / secure — dots replace chars")],
             ),
-            column![text("TextInput (secure / password)").size(16), input,]
-                .spacing(8)
-                .into(),
+            column![
+                text("TextInput (secure / password)").size(ts.dialog_title.size),
+                input,
+            ]
+            .spacing(8)
+            .into(),
         )
     };
 
@@ -1705,11 +1727,11 @@ fn view_text_inputs<'a>(state: &'a State, radius: f32, inp_pad: Padding) -> Elem
             ],
         ),
         column![
-            text("TextEditor (multi-line)").size(16),
+            text("TextEditor (multi-line)").size(ts.dialog_title.size),
             text_editor(&state.text_editor_content)
                 .on_action(Message::EditorAction)
                 .height(Length::Fixed(180.0)),
-            text("Supports multi-line editing, selection, and scrolling").size(12),
+            text("Supports multi-line editing, selection, and scrolling").size(ts.caption.size),
         ]
         .spacing(8)
         .into(),
@@ -1733,6 +1755,7 @@ fn view_text_inputs<'a>(state: &'a State, radius: f32, inp_pad: Padding) -> Elem
 // ---------------------------------------------------------------------------
 
 fn view_selection(state: &State) -> Element<'_, Message> {
+    let ts = &state.current_resolved.text_scale;
     let palette = state.current_theme.palette();
     let ext = state.current_theme.extended_palette();
     let radius = native_theme_iced::border_radius(&state.current_resolved);
@@ -1763,7 +1786,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             ],
         ),
         column![
-            text("Checkboxes").size(16),
+            text("Checkboxes").size(ts.dialog_title.size),
             checkbox(state.checkbox_a)
                 .label("Enable notifications")
                 .on_toggle(Message::CheckboxAToggled),
@@ -1786,7 +1809,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 .collect::<Vec<_>>()
                 .join(", ")
             ))
-            .size(12),
+            .size(ts.caption.size),
         ]
         .spacing(8)
         .into(),
@@ -1808,7 +1831,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             &[("size", "hardcoded"), ("indicator size", "hardcoded")],
         ),
         column![
-            text("Radio Buttons").size(16),
+            text("Radio Buttons").size(ts.dialog_title.size),
             radio(
                 "Apple",
                 Fruit::Apple,
@@ -1834,7 +1857,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                     .map(|f| f.to_string())
                     .unwrap_or_else(|| "None".to_string())
             ))
-            .size(12),
+            .size(ts.caption.size),
         ]
         .spacing(8)
         .into(),
@@ -1856,7 +1879,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             &[("size", "hardcoded"), ("animation timing", "hardcoded")],
         ),
         column![
-            text("Toggler (Switch)").size(16),
+            text("Toggler (Switch)").size(ts.dialog_title.size),
             toggler(state.toggler_enabled)
                 .label("Feature flag enabled")
                 .on_toggle(Message::TogglerToggled),
@@ -1864,7 +1887,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 "State: {}",
                 if state.toggler_enabled { "ON" } else { "OFF" }
             ))
-            .size(12),
+            .size(ts.caption.size),
         ]
         .spacing(8)
         .into(),
@@ -1897,7 +1920,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             &[("dropdown arrow", "hardcoded chevron")],
         ),
         column![
-            text("PickList (dropdown)").size(16),
+            text("PickList (dropdown)").size(ts.dialog_title.size),
             pick_list(
                 languages,
                 state.pick_list_selected.as_ref(),
@@ -1908,7 +1931,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 "Selected: {}",
                 state.pick_list_selected.as_deref().unwrap_or("None")
             ))
-            .size(12),
+            .size(ts.caption.size),
         ]
         .spacing(8)
         .into(),
@@ -1926,7 +1949,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
             &[("search", "built-in text filter")],
         ),
         column![
-            text("ComboBox (searchable dropdown)").size(16),
+            text("ComboBox (searchable dropdown)").size(ts.dialog_title.size),
             combo_box(
                 &state.combo_state,
                 "Search a language...",
@@ -1938,7 +1961,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
                 "Selected: {}",
                 state.combo_selected.as_deref().unwrap_or("None")
             ))
-            .size(12),
+            .size(ts.caption.size),
         ]
         .spacing(8)
         .into(),
@@ -1973,6 +1996,8 @@ fn view_selection(state: &State) -> Element<'_, Message> {
 // ---------------------------------------------------------------------------
 
 fn view_range(state: &State) -> Element<'_, Message> {
+    let sp = &state.current_resolved.defaults.spacing;
+    let ts = &state.current_resolved.text_scale;
     let palette = state.current_theme.palette();
     let ext = state.current_theme.extended_palette();
 
@@ -1994,16 +2019,17 @@ fn view_range(state: &State) -> Element<'_, Message> {
             &[("track height", "hardcoded"), ("thumb size", "hardcoded")],
         ),
         column![
-            text("Horizontal Slider").size(16),
+            text("Horizontal Slider").size(ts.dialog_title.size),
             row![
                 slider(0.0..=100.0, state.slider_value, Message::SliderChanged).width(Fill),
                 text(format!("{:.1}", state.slider_value))
-                    .size(14)
+                    .size(ts.section_heading.size)
                     .width(Length::Fixed(50.0)),
             ]
-            .spacing(12)
+            .spacing(sp.m)
             .align_y(iced::Center),
-            text("Drag to change value. This slider drives the first progress bar below.").size(12),
+            text("Drag to change value. This slider drives the first progress bar below.")
+                .size(ts.caption.size),
         ]
         .spacing(8)
         .into(),
@@ -2017,16 +2043,16 @@ fn view_range(state: &State) -> Element<'_, Message> {
             &[("snap behavior", "hardcoded step increments")],
         ),
         column![
-            text("Slider with Step (5-unit increments)").size(16),
+            text("Slider with Step (5-unit increments)").size(ts.dialog_title.size),
             row![
                 slider(0.0..=100.0, state.slider_step, Message::StepSliderChanged)
                     .step(5.0)
                     .width(Fill),
                 text(format!("{:.0}", state.slider_step))
-                    .size(14)
+                    .size(ts.section_heading.size)
                     .width(Length::Fixed(50.0)),
             ]
-            .spacing(12)
+            .spacing(sp.m)
             .align_y(iced::Center),
         ]
         .spacing(8)
@@ -2041,7 +2067,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
             &[("track width", "hardcoded"), ("thumb size", "hardcoded")],
         ),
         column![
-            text("Vertical Slider").size(16),
+            text("Vertical Slider").size(ts.dialog_title.size),
             row![
                 container(
                     vertical_slider(0.0..=100.0, state.vslider_value, Message::VSliderChanged)
@@ -2049,12 +2075,13 @@ fn view_range(state: &State) -> Element<'_, Message> {
                 )
                 .center_x(Length::Fixed(60.0)),
                 column![
-                    text(format!("Value: {:.1}", state.vslider_value)).size(14),
+                    text(format!("Value: {:.1}", state.vslider_value))
+                        .size(ts.section_heading.size),
                     space().height(Length::Fixed(8.0)),
                     text("Vertical sliders are useful\nfor volume controls,\nequalizers, etc.")
-                        .size(12),
+                        .size(ts.caption.size),
                 ]
-                .spacing(4),
+                .spacing(sp.xs),
             ]
             .spacing(16),
         ]
@@ -2073,7 +2100,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
             &[("height", "hardcoded"), ("animation", "none — immediate")],
         ),
         column![
-            text("Progress Bars").size(16),
+            text("Progress Bars").size(ts.dialog_title.size),
             text("Driven by horizontal slider value:").size(13),
             progress_bar(0.0..=100.0, state.slider_value),
             space().height(Length::Fixed(4.0)),
@@ -2081,14 +2108,14 @@ fn view_range(state: &State) -> Element<'_, Message> {
             row![
                 slider(0.0..=100.0, state.progress_value, Message::ProgressChanged).width(Fill),
                 text(format!("{:.0}%", state.progress_value))
-                    .size(14)
+                    .size(ts.section_heading.size)
                     .width(Length::Fixed(50.0)),
             ]
-            .spacing(12)
+            .spacing(sp.m)
             .align_y(iced::Center),
             progress_bar(0.0..=100.0, state.progress_value),
         ]
-        .spacing(6)
+        .spacing(sp.s)
         .into(),
     );
 
@@ -2112,6 +2139,8 @@ fn view_range(state: &State) -> Element<'_, Message> {
 // ---------------------------------------------------------------------------
 
 fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
+    let sp = &state.current_resolved.defaults.spacing;
+    let ts = &state.current_resolved.text_scale;
     let ext = state.current_theme.extended_palette();
     let radius_s = format!("{radius:.0}px");
 
@@ -2132,17 +2161,17 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
             &[("padding", "set per widget instance")],
         ),
         column![
-            text("Styled Containers").size(16),
+            text("Styled Containers").size(ts.dialog_title.size),
             container(
                 column![
-                    text("Rounded Box Container").size(14),
+                    text("Rounded Box Container").size(ts.section_heading.size),
                     text(format!(
                         "This container uses the theme's rounded_box style. \
                          Border radius from theme metrics: {radius:.0}px."
                     ))
-                    .size(12),
+                    .size(ts.caption.size),
                 ]
-                .spacing(4),
+                .spacing(sp.xs),
             )
             .padding(Padding::from(16))
             .style(container::rounded_box)
@@ -2152,9 +2181,9 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
                     "A secondary container with different padding. Containers adapt their \
                       background and border colors from the active theme palette."
                 )
-                .size(12),
+                .size(ts.caption.size),
             )
-            .padding(Padding::from([12, 20]))
+            .padding(Padding::from([sp.m, 20.0]))
             .style(container::rounded_box)
             .width(Fill),
         ]
@@ -2163,7 +2192,7 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
     );
 
     let rules = column![
-        text("Divider Rules").size(16),
+        text("Divider Rules").size(ts.dialog_title.size),
         text("Horizontal rules at various thicknesses:").size(13),
         rule::horizontal(1),
         text("1px above, 2px below").size(11),
@@ -2171,7 +2200,7 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
         text("2px above, 4px below").size(11),
         rule::horizontal(4),
     ]
-    .spacing(6);
+    .spacing(sp.s);
 
     let tooltips = hoverable(
         widget_tooltip(
@@ -2185,7 +2214,7 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
             &[("gap", "set per widget instance"), ("delay", "none")],
         ),
         column![
-            text("Tooltips").size(16),
+            text("Tooltips").size(ts.dialog_title.size),
             row![
                 tooltip(
                     button("Hover: Top")
@@ -2252,42 +2281,42 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
 
     let info_box = container(
         column![
-            text("Theme Information").size(14),
-            text(theme_info_text).size(12),
-            text(font_info).size(12),
+            text("Theme Information").size(ts.section_heading.size),
+            text(theme_info_text).size(ts.caption.size),
+            text(font_info).size(ts.caption.size),
             text(format!(
                 "Available presets: {} | All presets have both light and dark variants.",
                 ThemeSpec::list_presets().len(),
             ))
-            .size(12),
+            .size(ts.caption.size),
         ]
-        .spacing(4),
+        .spacing(sp.xs),
     )
     .padding(Padding::from(16))
     .style(container::rounded_box)
     .width(Fill);
 
     let spacing_demo = column![
-        text("Spacing & Layout").size(16),
+        text("Spacing & Layout").size(ts.dialog_title.size),
         row![
-            container(text("A").size(14))
-                .padding(Padding::from(12))
+            container(text("A").size(ts.section_heading.size))
+                .padding(Padding::from(sp.m))
                 .style(container::rounded_box)
                 .center_x(Length::Fixed(60.0))
                 .center_y(Length::Fixed(60.0)),
-            container(text("B").size(14))
-                .padding(Padding::from(12))
+            container(text("B").size(ts.section_heading.size))
+                .padding(Padding::from(sp.m))
                 .style(container::rounded_box)
                 .center_x(Length::Fixed(60.0))
                 .center_y(Length::Fixed(60.0)),
-            container(text("C").size(14))
-                .padding(Padding::from(12))
+            container(text("C").size(ts.section_heading.size))
+                .padding(Padding::from(sp.m))
                 .style(container::rounded_box)
                 .center_x(Length::Fixed(60.0))
                 .center_y(Length::Fixed(60.0)),
             space().width(Fill),
-            container(text("Right-aligned").size(12))
-                .padding(Padding::from(12))
+            container(text("Right-aligned").size(ts.caption.size))
+                .padding(Padding::from(sp.m))
                 .style(container::rounded_box),
         ]
         .spacing(8)
@@ -2317,6 +2346,8 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
 // ---------------------------------------------------------------------------
 
 fn view_icons(state: &State) -> Element<'_, Message> {
+    let sp = &state.current_resolved.defaults.spacing;
+    let ts = &state.current_resolved.text_scale;
     let loaded_count = state
         .loaded_icons
         .iter()
@@ -2335,7 +2366,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
     let total_count = state.loaded_icons.len();
 
     let header = column![
-        text("Icons").size(24),
+        text("Icons").size(ts.display.size),
         text(format!(
             "All {total_count} IconRole variants — \
              {loaded_count} loaded, {system_count} system, {fallback_count} fallback"
@@ -2343,7 +2374,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
         .size(13),
         rule::horizontal(2),
     ]
-    .spacing(4);
+    .spacing(sp.xs);
 
     let icon_set_info = column![
         text(format!("Active icon set: {}", state.icon_set_choice)).size(13),
@@ -2353,7 +2384,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
         ))
         .size(11),
     ]
-    .spacing(4);
+    .spacing(sp.xs);
 
     // Use the theme's foreground color for colorizing icons
     let fg_color = state.current_theme.palette().text;
@@ -2389,6 +2420,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
 }
 
 fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Message> {
+    let sp = &state.current_resolved.defaults.spacing;
     let section_title = text("Animated Icons").size(20);
     let divider = rule::horizontal(2);
 
@@ -2405,7 +2437,12 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
                     color: Some(fg_color),
                 });
             let label = text(format!("{} - Static (reduced motion)", set_name)).size(11);
-            spinners.push(column![icon, label].spacing(4).align_x(iced::Center).into());
+            spinners.push(
+                column![icon, label]
+                    .spacing(sp.xs)
+                    .align_x(iced::Center)
+                    .into(),
+            );
         }
     } else {
         // Frame-based animations
@@ -2424,7 +2461,12 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
                 anim_handles.frame_duration_ms,
             ))
             .size(11);
-            spinners.push(column![icon, label].spacing(4).align_x(iced::Center).into());
+            spinners.push(
+                column![icon, label]
+                    .spacing(sp.xs)
+                    .align_x(iced::Center)
+                    .into(),
+            );
         }
 
         // Spin-based animations
@@ -2438,7 +2480,12 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
                     color: Some(fg_color),
                 });
             let label = text(format!("{} - Spin ({}ms)", set_name, duration_ms)).size(11);
-            spinners.push(column![icon, label].spacing(4).align_x(iced::Center).into());
+            spinners.push(
+                column![icon, label]
+                    .spacing(sp.xs)
+                    .align_x(iced::Center)
+                    .into(),
+            );
         }
     }
 
@@ -2452,7 +2499,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
         content =
             content.push(text("No animated icons available for this configuration.").size(11));
     } else {
-        content = content.push(row(spinners).spacing(24));
+        content = content.push(row(spinners).spacing(sp.xl));
     }
 
     content.into()
@@ -2533,6 +2580,8 @@ fn placeholder_icon<'a>() -> Element<'a, Message> {
 // ---------------------------------------------------------------------------
 
 fn view_theme_map(state: &State) -> Element<'_, Message> {
+    let sp = &state.current_resolved.defaults.spacing;
+    let ts = &state.current_resolved.text_scale;
     let header = section_header(
         "Theme Map",
         "All palette and extended palette colors from the current theme",
@@ -2540,6 +2589,21 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
 
     let palette = state.current_theme.palette();
     let extended = state.current_theme.extended_palette();
+    let swatch_border = native_theme_iced::border_color(&state.current_resolved);
+    let swatch_bw = state.current_resolved.defaults.frame_width;
+    let swatch_r = native_theme_iced::border_radius(&state.current_resolved);
+    // Local closure for concise swatch calls
+    let cs = |label: &'static str, color: Color| -> Element<'_, Message> {
+        color_swatch(label, color, swatch_border, swatch_bw, swatch_r)
+    };
+
+    let swatch_style = SwatchStyle {
+        border_color: swatch_border,
+        border_width: swatch_bw,
+        radius: swatch_r,
+        heading_size: ts.dialog_title.size,
+        swatch_spacing: sp.m,
+    };
 
     // Base palette (6 colors)
     let base_palette = hoverable(
@@ -2557,16 +2621,16 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
             &[],
         ),
         column![
-            text("Base Palette (6 fields)").size(16),
+            text("Base Palette (6 fields)").size(ts.dialog_title.size),
             row![
-                color_swatch("background", palette.background),
-                color_swatch("text", palette.text),
-                color_swatch("primary", palette.primary),
-                color_swatch("success", palette.success),
-                color_swatch("warning", palette.warning),
-                color_swatch("danger", palette.danger),
+                cs("background", palette.background),
+                cs("text", palette.text),
+                cs("primary", palette.primary),
+                cs("success", palette.success),
+                cs("warning", palette.warning),
+                cs("danger", palette.danger),
             ]
-            .spacing(12),
+            .spacing(sp.m),
         ]
         .spacing(8)
         .into(),
@@ -2595,19 +2659,13 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
             &[],
             &[],
         ),
-        column![
-            text("Background (Extended)").size(16),
-            row![
-                color_swatch("base.color", extended.background.base.color),
-                color_swatch("base.text", extended.background.base.text),
-                color_swatch("weak.color", extended.background.weak.color),
-                color_swatch("weak.text", extended.background.weak.text),
-                color_swatch("strong.color", extended.background.strong.color),
-                color_swatch("strong.text", extended.background.strong.text),
-            ]
-            .spacing(12),
-        ]
-        .spacing(8)
+        ext_palette_section(
+            "Background (Extended)",
+            extended.background.base,
+            extended.background.weak,
+            extended.background.strong,
+            &swatch_style,
+        )
         .into(),
     );
 
@@ -2630,81 +2688,45 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
             &[],
             &[],
         ),
-        column![
-            text("Primary (Extended)").size(16),
-            row![
-                color_swatch("base.color", extended.primary.base.color),
-                color_swatch("base.text", extended.primary.base.text),
-                color_swatch("weak.color", extended.primary.weak.color),
-                color_swatch("weak.text", extended.primary.weak.text),
-                color_swatch("strong.color", extended.primary.strong.color),
-                color_swatch("strong.text", extended.primary.strong.text),
-            ]
-            .spacing(12),
-        ]
-        .spacing(8)
+        ext_palette_section(
+            "Primary (Extended)",
+            extended.primary.base,
+            extended.primary.weak,
+            extended.primary.strong,
+            &swatch_style,
+        )
         .into(),
     );
 
-    // Extended palette - Secondary
-    let ext_secondary = column![
-        text("Secondary (Extended)").size(16),
-        row![
-            color_swatch("base.color", extended.secondary.base.color),
-            color_swatch("base.text", extended.secondary.base.text),
-            color_swatch("weak.color", extended.secondary.weak.color),
-            color_swatch("weak.text", extended.secondary.weak.text),
-            color_swatch("strong.color", extended.secondary.strong.color),
-            color_swatch("strong.text", extended.secondary.strong.text),
-        ]
-        .spacing(12),
-    ]
-    .spacing(8);
-
-    // Extended palette - Success
-    let ext_success = column![
-        text("Success (Extended)").size(16),
-        row![
-            color_swatch("base.color", extended.success.base.color),
-            color_swatch("base.text", extended.success.base.text),
-            color_swatch("weak.color", extended.success.weak.color),
-            color_swatch("weak.text", extended.success.weak.text),
-            color_swatch("strong.color", extended.success.strong.color),
-            color_swatch("strong.text", extended.success.strong.text),
-        ]
-        .spacing(12),
-    ]
-    .spacing(8);
-
-    // Extended palette - Warning
-    let ext_warning = column![
-        text("Warning (Extended)").size(16),
-        row![
-            color_swatch("base.color", extended.warning.base.color),
-            color_swatch("base.text", extended.warning.base.text),
-            color_swatch("weak.color", extended.warning.weak.color),
-            color_swatch("weak.text", extended.warning.weak.text),
-            color_swatch("strong.color", extended.warning.strong.color),
-            color_swatch("strong.text", extended.warning.strong.text),
-        ]
-        .spacing(12),
-    ]
-    .spacing(8);
-
-    // Extended palette - Danger
-    let ext_danger = column![
-        text("Danger (Extended)").size(16),
-        row![
-            color_swatch("base.color", extended.danger.base.color),
-            color_swatch("base.text", extended.danger.base.text),
-            color_swatch("weak.color", extended.danger.weak.color),
-            color_swatch("weak.text", extended.danger.weak.text),
-            color_swatch("strong.color", extended.danger.strong.color),
-            color_swatch("strong.text", extended.danger.strong.text),
-        ]
-        .spacing(12),
-    ]
-    .spacing(8);
+    // Extended palette sections (Secondary, Success, Warning, Danger)
+    let ext_secondary = ext_palette_section(
+        "Secondary (Extended)",
+        extended.secondary.base,
+        extended.secondary.weak,
+        extended.secondary.strong,
+        &swatch_style,
+    );
+    let ext_success = ext_palette_section(
+        "Success (Extended)",
+        extended.success.base,
+        extended.success.weak,
+        extended.success.strong,
+        &swatch_style,
+    );
+    let ext_warning = ext_palette_section(
+        "Warning (Extended)",
+        extended.warning.base,
+        extended.warning.weak,
+        extended.warning.strong,
+        &swatch_style,
+    );
+    let ext_danger = ext_palette_section(
+        "Danger (Extended)",
+        extended.danger.base,
+        extended.danger.weak,
+        extended.danger.strong,
+        &swatch_style,
+    );
 
     // Resolved theme colors (defaults + selected per-widget)
     let native_colors = {
@@ -2757,16 +2779,24 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
             let row_items: Vec<Element<'_, Message>> = pairs[idx..end]
                 .iter()
                 .map(|(name, rgba)| {
-                    let [cr, cg, cb, _a] = rgba.to_f32_array();
-                    color_swatch(name, Color::from_rgb(cr, cg, cb))
+                    let [cr, cg, cb, ca] = rgba.to_f32_array();
+                    color_swatch(
+                        name,
+                        Color::from_rgba(cr, cg, cb, ca),
+                        swatch_border,
+                        swatch_bw,
+                        swatch_r,
+                    )
                 })
                 .collect();
-            rows.push(row(row_items).spacing(12).into());
+            rows.push(row(row_items).spacing(sp.m).into());
             idx = end;
         }
 
-        let mut col =
-            column![text("Resolved Theme Colors (defaults + per-widget)").size(16),].spacing(8);
+        let mut col = column![
+            text("Resolved Theme Colors (defaults + per-widget)").size(ts.dialog_title.size),
+        ]
+        .spacing(8);
         for r in rows {
             col = col.push(r);
         }
@@ -2800,10 +2830,22 @@ fn color_to_hex(c: Color) -> String {
     let r = (c.r.clamp(0.0, 1.0) * 255.0).round() as u8;
     let g = (c.g.clamp(0.0, 1.0) * 255.0).round() as u8;
     let b = (c.b.clamp(0.0, 1.0) * 255.0).round() as u8;
-    format!("#{:02x}{:02x}{:02x}", r, g, b)
+    let a = c.a.clamp(0.0, 1.0);
+    if (a - 1.0).abs() < f32::EPSILON {
+        format!("#{:02x}{:02x}{:02x}", r, g, b)
+    } else {
+        let a8 = (a * 255.0).round() as u8;
+        format!("#{:02x}{:02x}{:02x}{:02x}", r, g, b, a8)
+    }
 }
 
-fn color_swatch<'a>(label: &'a str, color: Color) -> Element<'a, Message> {
+fn color_swatch<'a>(
+    label: &'a str,
+    color: Color,
+    border_color: Color,
+    border_width: f32,
+    radius: f32,
+) -> Element<'a, Message> {
     let hex = color_to_hex(color);
     // Determine if text should be light or dark for contrast
     let luminance = 0.299 * color.r + 0.587 * color.g + 0.114 * color.b;
@@ -2819,9 +2861,9 @@ fn color_swatch<'a>(label: &'a str, color: Color) -> Element<'a, Message> {
             .style(move |_theme: &Theme| container::Style {
                 background: Some(color.into()),
                 border: iced::Border {
-                    color: Color::from_rgba(0.5, 0.5, 0.5, 0.3),
-                    width: 1.0,
-                    radius: 4.0.into(),
+                    color: border_color,
+                    width: border_width,
+                    radius: radius.into(),
                 },
                 ..Default::default()
             })
@@ -2837,6 +2879,50 @@ fn color_swatch<'a>(label: &'a str, color: Color) -> Element<'a, Message> {
 // ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
+
+/// Swatch rendering parameters shared across extended palette sections.
+struct SwatchStyle {
+    border_color: Color,
+    border_width: f32,
+    radius: f32,
+    heading_size: f32,
+    swatch_spacing: f32,
+}
+
+/// Build an extended palette section with 6 color swatches (base/weak/strong x color/text).
+///
+/// Used by `view_theme_map` for Background, Primary, Secondary, Success, Warning, and Danger.
+fn ext_palette_section<'a>(
+    label: &'a str,
+    base: iced_core::theme::palette::Pair,
+    weak: iced_core::theme::palette::Pair,
+    strong: iced_core::theme::palette::Pair,
+    style: &SwatchStyle,
+) -> iced::widget::Column<'a, Message> {
+    let SwatchStyle {
+        border_color,
+        border_width,
+        radius,
+        heading_size,
+        swatch_spacing,
+    } = *style;
+    let cs = |field: &'static str, color: Color| -> Element<'_, Message> {
+        color_swatch(field, color, border_color, border_width, radius)
+    };
+    column![
+        text(label).size(heading_size),
+        row![
+            cs("base.color", base.color),
+            cs("base.text", base.text),
+            cs("weak.color", weak.color),
+            cs("weak.text", weak.text),
+            cs("strong.color", strong.color),
+            cs("strong.text", strong.text),
+        ]
+        .spacing(swatch_spacing),
+    ]
+    .spacing(8)
+}
 
 fn section_header<'a>(title: &'a str, description: &'a str) -> Element<'a, Message> {
     column![

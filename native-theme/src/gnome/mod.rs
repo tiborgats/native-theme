@@ -286,7 +286,9 @@ pub(crate) fn build_theme(
 ) -> crate::Result<crate::ThemeSpec> {
     let is_dark = matches!(scheme, ColorScheme::PreferDark);
 
-    // Pick the appropriate variant from the Adwaita base
+    // Pick the appropriate variant from the Adwaita base.
+    // unwrap_or_default() provides an empty ThemeVariant when the base
+    // preset lacks the requested variant, allowing the merge to proceed.
     let mut variant = if is_dark {
         base.dark.unwrap_or_default()
     } else {

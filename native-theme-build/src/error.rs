@@ -32,6 +32,8 @@ pub enum BuildError {
     UnknownTheme {
         /// The unrecognized theme name.
         theme: String,
+        /// The source file where the unknown theme was found, if known.
+        source_file: Option<String>,
     },
     /// A DE-aware mapping value is missing the required `default` key.
     MissingDefault {
@@ -50,6 +52,8 @@ pub enum BuildError {
         file_b: String,
     },
     /// A TOML or SVG file could not be read or parsed.
+    // v0.6.0: consider adding structured fields (path: PathBuf, operation: &str)
+    // for better diagnostics instead of flattening to String.
     Io {
         /// Human-readable description of the I/O error.
         message: String,
@@ -69,6 +73,8 @@ pub enum BuildError {
         role_b: String,
         /// The PascalCase variant they both produce.
         pascal: String,
+        /// The source file where the collision was detected, if known.
+        source_file: Option<String>,
     },
     /// A theme name appears in both `bundled_themes` and `system_themes`.
     ThemeOverlap {
@@ -97,6 +103,8 @@ pub enum BuildError {
         role: String,
         /// Path to the mapping file.
         mapping_file: String,
+        /// The first offending character, if identified.
+        offending: Option<char>,
     },
     /// A bundled theme has a DE-aware mapping, creating a semantic mismatch
     /// between `icon_name()` (which returns a DE-specific name) and `icon_svg()`
@@ -138,10 +146,17 @@ impl fmt::Display for BuildError {
                     "unknown role \"{role}\" in {mapping_file} (not declared in master TOML)"
                 )
             }
-            Self::UnknownTheme { theme } => {
+            Self::UnknownTheme {
+                theme,
+                source_file,
+            } => {
                 let expected: Vec<&str> = THEME_TABLE.iter().map(|(k, _)| *k).collect();
                 let list = expected.join(", ");
-                write!(f, "unknown theme \"{theme}\" (expected one of: {list})")
+                write!(f, "unknown theme \"{theme}\" (expected one of: {list})")?;
+                if let Some(file) = source_file {
+                    write!(f, " in {file}")?;
+                }
+                Ok(())
             }
             Self::MissingDefault { role, mapping_file } => {
                 write!(
@@ -166,11 +181,16 @@ impl fmt::Display for BuildError {
                 role_a,
                 role_b,
                 pascal,
+                source_file,
             } => {
                 write!(
                     f,
                     "roles \"{role_a}\" and \"{role_b}\" both produce the same PascalCase variant \"{pascal}\""
-                )
+                )?;
+                if let Some(file) = source_file {
+                    write!(f, " (in {file})")?;
+                }
+                Ok(())
             }
             Self::ThemeOverlap { theme } => {
                 write!(
@@ -188,11 +208,18 @@ impl fmt::Display for BuildError {
                 name,
                 role,
                 mapping_file,
+                offending,
             } => {
                 write!(
                     f,
-                    "invalid icon name \"{name}\" for role \"{role}\" in {mapping_file}: \
-                     names must be non-empty and free of control characters"
+                    "invalid icon name \"{name}\" for role \"{role}\" in {mapping_file}"
+                )?;
+                if let Some(ch) = offending {
+                    write!(f, " (contains '\\u{{{:04X}}}')", *ch as u32)?;
+                }
+                write!(
+                    f,
+                    ": names must be non-empty and free of control characters"
                 )
             }
             Self::BundledDeAware { theme, role } => {
@@ -243,6 +270,7 @@ impl std::error::Error for BuildErrors {}
 impl BuildErrors {
     /// Create a `BuildErrors` from a `Vec<BuildError>`.
     pub(crate) fn new(errors: Vec<BuildError>) -> Self {
+        debug_assert!(!errors.is_empty(), "BuildErrors created with empty error list");
         Self {
             errors,
             rerun_paths: Vec::new(),

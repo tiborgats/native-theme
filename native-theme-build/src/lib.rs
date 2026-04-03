@@ -355,19 +355,19 @@ impl IconGenerator {
         }
     }
 
-    /// Add a TOML icon definition file.
+    /// Adds a source file. Multiple calls accumulate.
     pub fn source(mut self, path: impl AsRef<Path>) -> Self {
         self.sources.push(path.as_ref().to_path_buf());
         self
     }
 
-    /// Override the generated enum name.
+    /// Sets the enum name override. Replaces any previous value.
     pub fn enum_name(mut self, name: &str) -> Self {
         self.enum_name_override = Some(name.to_string());
         self
     }
 
-    /// Set the base directory for theme resolution.
+    /// Sets the base directory. Replaces any previous value.
     ///
     /// When set, all theme directories (e.g., `material/`, `sf-symbols/`) are
     /// resolved relative to this path instead of the parent directory of each
@@ -380,7 +380,7 @@ impl IconGenerator {
         self
     }
 
-    /// Set the Rust crate path prefix used in generated code.
+    /// Sets the crate path. Replaces any previous value.
     ///
     /// Defaults to `"native_theme"`. When the default is used, the generated
     /// file includes `extern crate native_theme;` to support Cargo aliases.
@@ -393,10 +393,8 @@ impl IconGenerator {
         self
     }
 
-    /// Add an extra `#[derive(...)]` trait to the generated enum.
-    ///
-    /// The base set (`Debug, Clone, Copy, PartialEq, Eq, Hash`) is always
-    /// emitted. Each call appends one additional derive.
+    /// Adds an extra derive. Multiple calls accumulate. Duplicates with the
+    /// base set (`Debug, Clone, Copy, PartialEq, Eq, Hash`) are deduplicated.
     ///
     /// ```rust,no_run
     /// use native_theme_build::UnwrapOrExit;
@@ -416,7 +414,7 @@ impl IconGenerator {
         self
     }
 
-    /// Set an explicit output directory for the generated `.rs` file.
+    /// Sets the output directory. Replaces any previous value.
     ///
     /// When not set, the `OUT_DIR` environment variable is used (always
     /// available during `cargo build`). Set this when running outside of
@@ -509,6 +507,16 @@ impl IconGenerator {
                     })?
                     .join(source)
             };
+            // Issue 103: Reject directories early with a clear message
+            if resolved.is_dir() {
+                return Err(BuildErrors::new(vec![BuildError::Io {
+                    message: format!(
+                        "source path '{}' is a directory; expected a TOML file",
+                        resolved.display()
+                    ),
+                }]));
+            }
+
             let content = std::fs::read_to_string(&resolved).map_err(|e| {
                 BuildErrors::io(format!("failed to read {}: {e}", resolved.display()))
             })?;
@@ -728,7 +736,8 @@ fn run_pipeline(
     }
 
     // Step 2b: Validate identifiers (enum name + role names)
-    let id_errors = validate::validate_identifiers(&merged);
+    // Per-file context lost after merge — source_file will be None here.
+    let id_errors = validate::validate_identifiers(&merged, None);
     errors.extend(id_errors);
 
     // Track rerun paths for all master TOML files
@@ -737,7 +746,8 @@ fn run_pipeline(
     }
 
     // Validate theme names on the merged config
-    let theme_errors = validate::validate_themes(&merged);
+    // Per-file context lost after merge — source_file will be None here.
+    let theme_errors = validate::validate_themes(&merged, None);
     errors.extend(theme_errors);
 
     // Use the first base_dir as the reference for loading themes.
@@ -979,6 +989,23 @@ fn merge_configs(
         .map(|s| s.to_string())
         .unwrap_or_else(|| configs[0].1.name.clone());
 
+    // Issue 84: Warn when multiple configs have different non-empty names
+    // and no enum_name_override is set -- the user may not realize only the
+    // first config's name is used.
+    if enum_name_override.is_none() && configs.len() > 1 {
+        let first_name = &configs[0].1.name;
+        for (path, config) in &configs[1..] {
+            if !config.name.is_empty() && config.name != *first_name {
+                warnings.push(format!(
+                    "config \"{path}\" has name \"{}\" which differs from \
+                     the first config's name \"{first_name}\"; using \"{first_name}\" \
+                     (set .enum_name() to override)",
+                    config.name
+                ));
+            }
+        }
+    }
+
     let mut roles = Vec::new();
     let mut bundled_themes = Vec::new();
     let mut system_themes = Vec::new();
@@ -1218,6 +1245,7 @@ skip-forward = "skip_next"
     fn build_error_unknown_theme_format() {
         let err = BuildError::UnknownTheme {
             theme: "nonexistent".into(),
+            source_file: None,
         };
         let msg = err.to_string();
         assert!(msg.contains("nonexistent"), "should contain theme name");
@@ -1272,7 +1300,10 @@ skip-forward = "skip_next"
     // === Helper to create test fixture directories ===
 
     fn create_fixture_dir(suffix: &str) -> PathBuf {
-        let dir = std::env::temp_dir().join(format!("native_theme_test_pipeline_{suffix}"));
+        let dir = std::env::temp_dir().join(format!(
+            "native_theme_test_pipeline_{suffix}_{}",
+            std::process::id()
+        ));
         let _ = fs::remove_dir_all(&dir);
         fs::create_dir_all(&dir).unwrap();
         dir
@@ -1886,6 +1917,7 @@ system-themes = ["sf-symbols"]
             role_a: "play_pause".into(),
             role_b: "play-pause".into(),
             pascal: "PlayPause".into(),
+            source_file: None,
         };
         let msg = err.to_string();
         assert!(msg.contains("play_pause"), "should mention first role");
@@ -2441,10 +2473,15 @@ bundled-themes = ["material"]
             name: "bad\x00name".into(),
             role: "play-pause".into(),
             mapping_file: "mapping.toml".into(),
+            offending: Some('\x00'),
         };
         let msg = err.to_string();
         assert!(msg.contains("play-pause"), "should contain role name");
         assert!(msg.contains("mapping.toml"), "should contain file path");
+        assert!(
+            msg.contains("\\u{0000}"),
+            "should show offending character: {msg}"
+        );
     }
 
     // === Issue 36: Display tests for new error variants ===

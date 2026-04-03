@@ -18,6 +18,11 @@ pub struct FontSpec {
     pub weight: Option<u16>,
 }
 
+impl FontSpec {
+    /// All serialized field names for FontSpec, for TOML linting.
+    pub const FIELD_NAMES: &[&str] = &["family", "size", "weight"];
+}
+
 impl_merge!(FontSpec {
     option { family, size, weight }
 });

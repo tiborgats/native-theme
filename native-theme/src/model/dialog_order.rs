@@ -31,54 +31,48 @@ mod tests {
     }
 
     #[test]
-    fn trailing_affirmative_serializes_correctly() {
-        let w = Wrapper {
-            order: DialogButtonOrder::TrailingAffirmative,
-        };
-        let toml_str = toml::to_string(&w).unwrap();
-        assert!(toml_str.contains("trailing_affirmative"), "got: {toml_str}");
+    fn serde_round_trip_both_variants() {
+        for (variant, expected_str) in [
+            (
+                DialogButtonOrder::TrailingAffirmative,
+                "trailing_affirmative",
+            ),
+            (DialogButtonOrder::LeadingAffirmative, "leading_affirmative"),
+        ] {
+            let original = Wrapper { order: variant };
+            let serialized = toml::to_string(&original).unwrap();
+            assert!(serialized.contains(expected_str), "got: {serialized}");
+            let deserialized: Wrapper = toml::from_str(&serialized).unwrap();
+            assert_eq!(deserialized, original);
+        }
     }
 
     #[test]
-    fn leading_affirmative_serializes_correctly() {
-        let w = Wrapper {
-            order: DialogButtonOrder::LeadingAffirmative,
-        };
-        let toml_str = toml::to_string(&w).unwrap();
-        assert!(toml_str.contains("leading_affirmative"), "got: {toml_str}");
+    fn deserializes_from_toml_string_values() {
+        for (toml_str, expected) in [
+            (
+                r#"order = "trailing_affirmative""#,
+                DialogButtonOrder::TrailingAffirmative,
+            ),
+            (
+                r#"order = "leading_affirmative""#,
+                DialogButtonOrder::LeadingAffirmative,
+            ),
+        ] {
+            let w: Wrapper = toml::from_str(toml_str).unwrap();
+            assert_eq!(w.order, expected);
+        }
     }
 
     #[test]
-    fn trailing_affirmative_round_trip() {
-        let original = Wrapper {
-            order: DialogButtonOrder::TrailingAffirmative,
-        };
-        let serialized = toml::to_string(&original).unwrap();
-        let deserialized: Wrapper = toml::from_str(&serialized).unwrap();
-        assert_eq!(deserialized, original);
-    }
-
-    #[test]
-    fn leading_affirmative_round_trip() {
-        let original = Wrapper {
-            order: DialogButtonOrder::LeadingAffirmative,
-        };
-        let serialized = toml::to_string(&original).unwrap();
-        let deserialized: Wrapper = toml::from_str(&serialized).unwrap();
-        assert_eq!(deserialized, original);
-    }
-
-    #[test]
-    fn trailing_affirmative_deserializes_from_toml_value() {
-        let toml_str = r#"order = "trailing_affirmative""#;
-        let w: Wrapper = toml::from_str(toml_str).unwrap();
-        assert_eq!(w.order, DialogButtonOrder::TrailingAffirmative);
-    }
-
-    #[test]
-    fn leading_affirmative_deserializes_from_toml_value() {
-        let toml_str = r#"order = "leading_affirmative""#;
-        let w: Wrapper = toml::from_str(toml_str).unwrap();
-        assert_eq!(w.order, DialogButtonOrder::LeadingAffirmative);
+    fn debug_output_both_variants() {
+        assert_eq!(
+            format!("{:?}", DialogButtonOrder::TrailingAffirmative),
+            "TrailingAffirmative"
+        );
+        assert_eq!(
+            format!("{:?}", DialogButtonOrder::LeadingAffirmative),
+            "LeadingAffirmative"
+        );
     }
 }

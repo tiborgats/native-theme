@@ -6,7 +6,7 @@ name = "Catppuccin Macchiato"
 
 [light]
 icon_set = "lucide"
-icon_theme = "Lucide"
+icon_theme = "lucide"
 
 [light.defaults]
 accent = "#8aadf4"
@@ -203,7 +203,7 @@ content_padding = 16.0
 
 [dark]
 icon_set = "lucide"
-icon_theme = "Lucide"
+icon_theme = "lucide"
 
 [dark.defaults]
 accent = "#8aadf4"

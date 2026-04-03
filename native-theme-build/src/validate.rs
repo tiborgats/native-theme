@@ -25,7 +25,13 @@ const RUST_KEYWORDS: [&str; 38] = [
 ///
 /// Checks both `bundled_themes` and `system_themes` against [`THEME_TABLE`](crate::schema::THEME_TABLE).
 /// Returns a `BuildError::UnknownTheme` for each unrecognized theme name.
-pub(crate) fn validate_themes(config: &MasterConfig) -> Vec<BuildError> {
+///
+/// When `file_hint` is `Some`, it is included in the error for per-file context.
+/// Pass `None` when validating a merged config where per-file context is lost.
+pub(crate) fn validate_themes(
+    config: &MasterConfig,
+    file_hint: Option<&str>,
+) -> Vec<BuildError> {
     config
         .bundled_themes
         .iter()
@@ -33,6 +39,7 @@ pub(crate) fn validate_themes(config: &MasterConfig) -> Vec<BuildError> {
         .filter(|theme| !crate::schema::is_known_theme(theme))
         .map(|theme| BuildError::UnknownTheme {
             theme: theme.clone(),
+            source_file: file_hint.map(String::from),
         })
         .collect()
 }
@@ -72,8 +79,9 @@ pub(crate) fn validate_mapping(
         }
 
         // VAL-04: Check DE-aware values have a "default" key
+        // Issue 66: Also rejects empty DE-aware mappings (no keys at all)
         if let MappingValue::DeAware(m) = value
-            && !m.contains_key("default")
+            && (m.is_empty() || !m.contains_key("default"))
         {
             errors.push(BuildError::MissingDefault {
                 role: key.clone(),
@@ -162,6 +170,8 @@ pub(crate) fn check_orphan_svgs(
             }
         };
         let path = entry.path();
+        // path.extension() works on the path string (not the filesystem),
+        // so symlinked SVGs are correctly detected by extension check alone.
         if path.extension().and_then(|e| e.to_str()) == Some("svg")
             && let Some(stem) = path.file_stem().and_then(|s| s.to_str())
             && !referenced.contains(stem)
@@ -240,7 +250,14 @@ fn is_valid_ident_start(pascal: &str) -> bool {
 /// - Result starts with a letter or underscore (valid Rust identifier).
 /// - Result is not a Rust keyword.
 /// - No two roles produce the same PascalCase variant (collision).
-pub(crate) fn validate_identifiers(config: &MasterConfig) -> Vec<BuildError> {
+///
+/// When `file_hint` is `Some`, it is included in `IdentifierCollision` errors
+/// for per-file context. Pass `None` when validating a merged config where
+/// per-file context is lost.
+pub(crate) fn validate_identifiers(
+    config: &MasterConfig,
+    file_hint: Option<&str>,
+) -> Vec<BuildError> {
     let mut errors = Vec::new();
 
     // Check enum name
@@ -296,6 +313,7 @@ pub(crate) fn validate_identifiers(config: &MasterConfig) -> Vec<BuildError> {
                 role_a: first_role.to_string(),
                 role_b: role.clone(),
                 pascal,
+                source_file: file_hint.map(String::from),
             });
         } else {
             seen.insert(pascal, role.as_str());
@@ -397,10 +415,12 @@ pub(crate) fn validate_mapping_values(
         if let MappingValue::DeAware(m) = value {
             for key in m.keys() {
                 if key.is_empty() || key.chars().any(|c| c.is_control()) {
+                    let offending = key.chars().find(|c| c.is_control());
                     errors.push(BuildError::InvalidIconName {
                         name: key.to_string(),
                         role: role.clone(),
                         mapping_file: mapping_path.to_string(),
+                        offending,
                     });
                 }
             }
@@ -420,10 +440,15 @@ pub(crate) fn validate_mapping_values(
                 // Issue 62: Reject invisible Unicode characters
                 || name.chars().any(is_invisible_unicode)
             {
+                // Issue 97: Capture the first offending character for diagnostics
+                let offending = name.chars().find(|c| {
+                    c.is_control() || *c == '/' || *c == '\\' || is_invisible_unicode(*c)
+                });
                 errors.push(BuildError::InvalidIconName {
                     name: name.to_string(),
                     role: role.clone(),
                     mapping_file: mapping_path.to_string(),
+                    offending,
                 });
             }
         }
@@ -488,7 +513,7 @@ mod tests {
     #[test]
     fn validate_themes_all_known() {
         let config = make_config("x", &["a"], &["material"], &["sf-symbols"]);
-        let errors = validate_themes(&config);
+        let errors = validate_themes(&config, None);
         assert!(
             errors.is_empty(),
             "all themes are known, no errors expected"
@@ -498,7 +523,7 @@ mod tests {
     #[test]
     fn validate_themes_unknown_bundled() {
         let config = make_config("x", &["a"], &["material", "typo-theme"], &[]);
-        let errors = validate_themes(&config);
+        let errors = validate_themes(&config, None);
         assert_eq!(errors.len(), 1);
         let msg = errors[0].to_string();
         assert!(
@@ -510,7 +535,7 @@ mod tests {
     #[test]
     fn validate_themes_unknown_system() {
         let config = make_config("x", &["a"], &[], &["bogus-os"]);
-        let errors = validate_themes(&config);
+        let errors = validate_themes(&config, None);
         assert_eq!(errors.len(), 1);
         let msg = errors[0].to_string();
         assert!(msg.contains("bogus-os"), "should mention the unknown theme");
@@ -519,7 +544,7 @@ mod tests {
     #[test]
     fn validate_themes_multiple_unknown() {
         let config = make_config("x", &["a"], &["nope1"], &["nope2"]);
-        let errors = validate_themes(&config);
+        let errors = validate_themes(&config, None);
         assert_eq!(errors.len(), 2);
     }
 
@@ -858,7 +883,7 @@ mod tests {
     #[test]
     fn identifiers_valid() {
         let config = make_config("app-icon", &["play-pause", "skip-forward"], &[], &[]);
-        let errors = validate_identifiers(&config);
+        let errors = validate_identifiers(&config, None);
         assert!(
             errors.is_empty(),
             "valid identifiers should produce no errors"
@@ -869,7 +894,7 @@ mod tests {
     fn identifier_enum_name_empty_pascal() {
         // A name of only dashes produces empty PascalCase
         let config = make_config("---", &["play-pause"], &[], &[]);
-        let errors = validate_identifiers(&config);
+        let errors = validate_identifiers(&config, None);
         assert!(
             errors.iter().any(|e| {
                 matches!(e, BuildError::InvalidIdentifier { name, reason }
@@ -883,7 +908,7 @@ mod tests {
     fn identifier_role_is_keyword() {
         // "r#self" -> PascalCase "Self" which is a keyword
         let config = make_config("app-icon", &["self"], &[], &[]);
-        let errors = validate_identifiers(&config);
+        let errors = validate_identifiers(&config, None);
         assert!(
             errors.iter().any(
                 |e| matches!(e, BuildError::InvalidIdentifier { name, reason }
@@ -897,7 +922,7 @@ mod tests {
     fn identifier_enum_name_is_keyword() {
         // "self" -> PascalCase "Self" which is a Rust keyword
         let config = make_config("self", &["play-pause"], &[], &[]);
-        let errors = validate_identifiers(&config);
+        let errors = validate_identifiers(&config, None);
         assert!(
             errors.iter().any(
                 |e| matches!(e, BuildError::InvalidIdentifier { name, reason }
@@ -911,7 +936,7 @@ mod tests {
     fn identifier_collision_detected() {
         // "play_pause" and "play-pause" both become "PlayPause"
         let config = make_config("app-icon", &["play_pause", "play-pause"], &[], &[]);
-        let errors = validate_identifiers(&config);
+        let errors = validate_identifiers(&config, None);
         assert!(
             errors.iter().any(
                 |e| matches!(e, BuildError::IdentifierCollision { pascal, .. }
@@ -924,7 +949,7 @@ mod tests {
     #[test]
     fn identifier_no_collision_different_variants() {
         let config = make_config("app-icon", &["play-pause", "skip-forward"], &[], &[]);
-        let errors = validate_identifiers(&config);
+        let errors = validate_identifiers(&config, None);
         assert!(
             !errors
                 .iter()
@@ -936,7 +961,7 @@ mod tests {
     #[test]
     fn identifier_role_starts_with_digit() {
         let config = make_config("app-icon", &["3d-rotate"], &[], &[]);
-        let errors = validate_identifiers(&config);
+        let errors = validate_identifiers(&config, None);
         assert!(
             errors.iter().any(
                 |e| matches!(e, BuildError::InvalidIdentifier { name, reason }
@@ -949,7 +974,7 @@ mod tests {
     #[test]
     fn identifier_enum_name_starts_with_digit() {
         let config = make_config("3d-icons", &["play-pause"], &[], &[]);
-        let errors = validate_identifiers(&config);
+        let errors = validate_identifiers(&config, None);
         assert!(
             errors.iter().any(
                 |e| matches!(e, BuildError::InvalidIdentifier { name, reason }
@@ -962,7 +987,7 @@ mod tests {
     #[test]
     fn identifier_role_all_digits() {
         let config = make_config("app-icon", &["123"], &[], &[]);
-        let errors = validate_identifiers(&config);
+        let errors = validate_identifiers(&config, None);
         assert!(
             errors.iter().any(
                 |e| matches!(e, BuildError::InvalidIdentifier { name, reason }
