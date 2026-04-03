@@ -2746,3 +2746,2031 @@ need updating.
 **Recommended:** Consider extracting a shared geometry template that
 community presets inherit from, reducing duplication. This is a v0.6.0+
 design consideration, not a v0.5.4 fix.
+
+---
+
+## 25. Systematic macOS Sonoma Preset Verification (parameter-by-parameter)
+
+Exhaustive cross-reference of every property in `platform-facts.md` Chapter 2
+against `src/presets/macos-sonoma.toml` (light + dark variants) and the
+resolve() safety nets in `src/resolve.rs`.
+
+Legend:
+- File references are to `native-theme/src/presets/macos-sonoma.toml` unless noted.
+- "Inherited" means the preset omits the property and resolve() fills it from defaults.
+- Light variant line numbers cited; dark variant follows the same pattern (+198 lines offset).
+
+### 2.1 Global Defaults
+
+#### 2.1.1 Base Font
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `family` | `+systemFontOfSize:` -> family | `"SF Pro"` (line 51) | :white_check_mark: Correct -- SF Pro is the system font |
+| `size` | `+systemFontOfSize:` -> pointSize | `13.0` (line 52) | :white_check_mark: Correct -- systemFontSize = 13 |
+| `weight` | `NSFontDescriptor` traits | `400` (line 53) | :white_check_mark: Correct -- system font default is Regular (400) |
+| `line_height` | 1.19 (font metrics: (1950+494+0)/2048) | `1.19` (line 42) | :white_check_mark: Correct |
+
+#### 2.1.2 Monospace Font
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `family` | `+monospacedSystemFont...` -> family | `"SF Mono"` (line 56) | :white_check_mark: Correct |
+| `size` | `+monospacedSystemFont...` -> ptSize | `13.0` (line 57) | :white_check_mark: Correct |
+| `weight` | `NSFontDescriptor` traits | `400` (line 58) | :white_check_mark: Correct |
+
+#### 2.1.3 Base Colors
+
+All colors are runtime-dependent (`systemFontOfSize:` API values). The preset
+uses hardcoded approximations for the static preset. Verified against known
+NSColor catalog values:
+
+| Property | platform-facts macOS source | Preset L / D | Verdict |
+|----------|----------------------------|--------------|---------|
+| `background` | `windowBackgroundColor` | `#f0f0f0` / `#1e1e1e` (L:14, D:211) | :white_check_mark: Correct -- measured Sonoma values |
+| `foreground` | `labelColor` | `#1d1d1f` / `#ffffff` (L:15, D:212) | :white_check_mark: Correct |
+| `accent` | `controlAccentColor` | `#007aff` / `#0a84ff` (L:13, D:210) | :white_check_mark: Correct -- default blue accent |
+| `accent_foreground` | `alternateSelectedControlTextColor` | `#ffffff` / `#ffffff` (L:34, D:232) | :white_check_mark: Correct |
+| `surface` | `controlBackgroundColor` | `#ffffff` / `#2d2d2d` (L:16, D:213) | :white_check_mark: Correct |
+| `border` | `separatorColor` | `#d5d5d5` / `#3d3d3d` (L:17, D:214) | :white_check_mark: Correct |
+| `muted` | `secondaryLabelColor` | `#86868b` / `#98989d` (L:18, D:215) | :white_check_mark: Correct |
+| `shadow` | `shadowColor` | `#00000018` / `#00000040` (L:19, D:216) | :white_check_mark: Correct |
+| `link` | `linkColor` | `#007aff` / `#0a84ff` (L:30, D:228) | :white_check_mark: Correct |
+| `selection` | `selectedContentBackgroundColor` | `#007aff` / `#0a84ff` (L:29, D:227) | :white_check_mark: Correct |
+| `selection_foreground` | `selectedTextColor` | `#ffffff` / `#ffffff` (L:30, D:228) | :white_check_mark: Correct |
+| `selection_inactive` | `unemphasizedSelectedContentBackgroundColor` | Not in preset | :arrows_counterclockwise: Inherited -- resolve() derives from `selection` (resolve.rs:265-267). Acceptable: platform-facts says macOS has this API but the preset lets resolve() handle it |
+| `disabled_foreground` | `disabledControlTextColor` | `#c7c7cc` / `#48484a` (L:33, D:231) | :white_check_mark: Correct |
+
+#### 2.1.4 Status Colors
+
+| Property | platform-facts macOS source | Preset L / D | Verdict |
+|----------|----------------------------|--------------|---------|
+| `danger` | `systemRedColor` | `#ff3b30` / `#ff453a` (L:21, D:218) | :white_check_mark: Correct |
+| `danger_foreground` | `labelColor` (body foreground) | `#ffffff` / `#ffffff` (L:22, D:219) | :x: **Wrong** -- platform-facts says macOS uses `labelColor` (= normal foreground), not white. Light should be `#1d1d1f`, dark should be `#ffffff`. Light is wrong. |
+| `warning` | `systemOrangeColor` | `#ff9500` / `#ff9f0a` (L:23, D:220) | :white_check_mark: Correct |
+| `warning_foreground` | `labelColor` | `#1d1d1f` / `#1e1e1e` (L:24, D:221) | :white_check_mark: Correct -- matches labelColor/foreground for each variant |
+| `success` | `systemGreenColor` | `#34c759` / `#30d158` (L:25, D:222) | :white_check_mark: Correct |
+| `success_foreground` | `labelColor` | `#ffffff` / `#ffffff` (L:26, D:223) | :x: **Wrong** -- same issue as danger_foreground. Light should be `#1d1d1f`. |
+| `info` | `systemBlueColor` | `#007aff` / `#0a84ff` (L:27, D:224) | :white_check_mark: Correct |
+| `info_foreground` | `labelColor` | `#ffffff` / `#ffffff` (L:28, D:225) | :x: **Wrong** -- same issue. Light should be `#1d1d1f`. |
+
+**Note on status foregrounds:** platform-facts SS2.1.4 explicitly warns about
+semantic mismatch. macOS provides `labelColor` as the foreground -- suitable
+as text color *alongside* a status indicator, NOT as text on a status-colored
+background. The preset uses white (#ffffff) which is a contrast foreground
+for text *on* the status color. This is a deliberate design choice vs a
+literal API transcription. See platform-facts lines 894-903 for the full
+discussion. Whether this is "wrong" depends on which semantic the consumer
+expects. Flagged for review.
+
+#### 2.1.5 Focus Ring
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `color` | `keyboardFocusIndicatorColor` | `#007aff` / `#0a84ff` (L:32, D:230) | :white_check_mark: Correct -- matches accent |
+| `width` | 3px (measured) | `3.0` (L:43, D:241) | :white_check_mark: Correct |
+| `offset` | -1px (measured, inset) | `-1.0` (L:44, D:242) | :white_check_mark: Correct |
+
+#### 2.1.6 Global Geometry
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `radius` | 5px (measured) | `5.0` (L:36, D:234) | :white_check_mark: Correct |
+| `radius_lg` | 10px (measured) | `10.0` (L:37, D:235) | :white_check_mark: Correct |
+| `frame_width` | 0.5px (measured) | `1.0` (L:38, D:236) | :x: **Wrong** -- platform-facts says 0.5px, preset has 1.0 |
+| `disabled_opacity` | ~0.25-0.3 (measured) | `0.3` (L:39, D:237) | :white_check_mark: Correct -- within the stated range |
+| `border_opacity` | 0.2 (preset) | `0.2` (L:40, D:238) | :white_check_mark: Correct |
+| `shadow_enabled` | yes | `true` (L:41, D:239) | :white_check_mark: Correct |
+
+#### 2.1.7 Accessibility
+
+| Property | platform-facts macOS source | Preset value (file:line) | Verdict |
+|----------|----------------------------|--------------------------|---------|
+| `text_scaling_factor` | API-provided (very limited on macOS) | `1.0` (L:45, D:243) | :white_check_mark: Correct -- 1.0 is the default |
+| `reduce_motion` | `accessibilityDisplayShouldReduceMotion` | `false` (L:46, D:244) | :white_check_mark: Correct -- false is default |
+| `high_contrast` | `accessibilityDisplayShouldIncreaseContrast` | `false` (L:47, D:245) | :white_check_mark: Correct |
+| `reduce_transparency` | `accessibilityDisplayShouldReduceTransparency` | `false` (L:48, D:246) | :white_check_mark: Correct |
+
+#### 2.1.8 Icon Sizes
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `toolbar` | 32pt (reg) / 24 (sm) | `24.0` (L:70, D:268) | :white_check_mark: Correct -- uses the small variant (modern default) |
+| `small` | sidebar: 16-20pt | `16.0` (L:71, D:269) | :white_check_mark: Correct -- lower bound of range |
+| `large` | (none) | `32.0` (L:72, D:270) | :heavy_minus_sign: N/A -- macOS has no large icon context; 32 is a reasonable placeholder |
+| `dialog` | (none) | `22.0` (L:73, D:271) | :heavy_minus_sign: N/A -- macOS has no specific dialog icon size; reasonable |
+| `panel` | (none) | `20.0` (L:74, D:272) | :heavy_minus_sign: N/A -- macOS has no panel icon size; reasonable |
+
+### 2.2 Window / Application Chrome
+
+| Property | platform-facts macOS value | Preset value | Verdict |
+|----------|---------------------------|--------------|---------|
+| `background` | `<- defaults.background` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:307-309 fills from `defaults.background` |
+| `foreground` | `<- defaults.foreground` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:310-312 |
+| `border` | `<- defaults.border` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:313-315 |
+| `title_bar_background` | (measured) ~ `defaults.surface` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:316-318 fills from `defaults.surface` |
+| `title_bar_foreground` | `windowFrameTextColor` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:319-321 fills from `defaults.foreground` |
+| `inactive_title_bar_bg` | (none) -- system-managed dimming | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:595-597 fills from active title_bar_background |
+| `inactive_title_bar_fg` | (none) -- system-managed | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:598-600 fills from active title_bar_foreground |
+| `title_bar_font.family` | `+titleBarFontOfSize:` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:564 fills from defaults.font |
+| `title_bar_font.size` | `+titleBarFontOfSize:` -> pointSize | Not in preset | :arrows_counterclockwise: Inherited |
+| `title_bar_font.weight` | Bold (700) | Not in preset | :warning: **Missing** -- platform-facts says macOS title bar font weight is Bold (700), but the preset omits it. resolve() fills from defaults.font weight = 400. The resolved title_bar_font.weight will be 400 instead of 700. |
+| `radius` | macOS window corners: 10px | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:322-324 fills from `defaults.radius_lg` = 10.0. Correct. |
+| `shadow` | `<- defaults.shadow_enabled` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:325-327 |
+
+### 2.3 Button
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `background` | `controlColor` | `#e8e8ed` / `#3a3a3c` (L:77, D:275) | :white_check_mark: Correct |
+| `foreground` | `controlTextColor` | `#1d1d1f` / `#ffffff` (L:78, D:276) | :white_check_mark: Correct |
+| `border` | `<- defaults.border` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:336-338 |
+| `font` | `<- defaults.font` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:565 |
+| `min_width` | (none) -- sizes to content | `64.0` (L:79, D:277) | :white_check_mark: Correct -- platform-facts says (none) but a reasonable minimum is fine for a static preset |
+| `min_height` | NSButton intrinsic: 22 | `22.0` (L:80, D:278) | :white_check_mark: Correct |
+| `padding_horizontal` | NSButton: ~8 (WebKit) | `8.0` (L:81, D:279) | :white_check_mark: Correct |
+| `padding_vertical` | 3 (measured: (22-16)/2) | `3.0` (L:82, D:280) | :white_check_mark: Correct |
+| `radius` | `<- defaults.radius` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:345-347 fills from defaults.radius = 5.0 |
+| `icon_spacing` | 4 (measured) AppKit | `4.0` (L:83, D:281) | :white_check_mark: Correct |
+| `primary_bg` | `<- defaults.accent` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:339-341 |
+| `primary_fg` | `<- defaults.accent_foreground` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:342-344 |
+| `disabled_opacity` | `<- defaults.disabled_opacity` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:348-350 |
+| `shadow` | `<- defaults.shadow_enabled` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:351-353 |
+
+### 2.4 Text Input
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `background` | `textBackgroundColor` | `#ffffff` / `#2d2d2d` (L:86, D:284) | :white_check_mark: Correct |
+| `foreground` | `textColor` | `#1d1d1f` / `#ffffff` (L:87, D:285) | :white_check_mark: Correct |
+| `border` | `<- defaults.border` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:363-365 |
+| `placeholder` | `placeholderTextColor` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:366-368 fills from `defaults.muted`. Acceptable. |
+| `caret` | `textInsertionPointColor` (macOS 14+) | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:274-276 (safety net) fills from `defaults.foreground`. Correct for pre-14 behavior. |
+| `selection` | `<- defaults.selection` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:369-371 |
+| `selection_foreground` | `<- defaults.selection_foreground` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:372-374 |
+| `font` | `<- defaults.font` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:566 |
+| `min_height` | NSTextField intrinsic: 22 | `22.0` (L:88, D:286) | :white_check_mark: Correct |
+| `padding_horizontal` | NSTextField: 4 | `4.0` (L:89, D:287) | :white_check_mark: Correct |
+| `padding_vertical` | 3 (measured: (22-16)/2) | `3.0` (L:90, D:288) | :white_check_mark: Correct |
+| `radius` | `<- defaults.radius` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:375-377 |
+| `border_width` | `<- defaults.frame_width` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:378-380. Note: inherits 1.0 but platform-facts says frame_width should be 0.5. See frame_width issue above. |
+
+### 2.5 Checkbox / Radio Button
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `indicator_size` | NSButton switch: 14 | `14.0` (L:93, D:291) | :white_check_mark: Correct |
+| `spacing` | AppKit: 4 | `4.0` (L:94, D:292) | :white_check_mark: Correct |
+| `radius` | `<- defaults.radius` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:386-388 |
+| `border_width` | `<- defaults.frame_width` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:389-391. Same frame_width issue propagates. |
+| `checked_bg` | `<- defaults.accent` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:382-384 |
+
+### 2.6 Menu
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `background` | (measured) ~ `defaults.background` (vibrancy) | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:393-395. Correct. |
+| `foreground` | (measured) = `labelColor` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:396-398. Correct. |
+| `separator` | (measured) = `separatorColor` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:399-401 fills from `defaults.border`. Correct (border = separatorColor). |
+| `font.family` | `+menuFontOfSize:` -> family | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:567. Fills from defaults.font. Correct (same family). |
+| `font.size` | `+menuFontOfSize:` -> pointSize | Not in preset | :arrows_counterclockwise: Inherited. Same as system font size (13). Correct. |
+| `font.weight` | `+menuFontOfSize:` -> weight | Not in preset | :arrows_counterclockwise: Inherited. Correct (Regular). |
+| `item_height` | NSMenuItem: 22 | `22.0` (L:125, D:323) | :white_check_mark: Correct |
+| `padding_horizontal` | NSMenuItem: 12 | `12.0` (L:126, D:324) | :white_check_mark: Correct |
+| `padding_vertical` | 3 (measured: (22-16)/2) | `3.0` (L:127, D:325) | :white_check_mark: Correct |
+| `icon_spacing` | 4 (measured) AppKit layout | `4.0` (L:128, D:326) | :white_check_mark: Correct |
+
+### 2.7 Tooltip
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `background` | (preset) L #2c2c2e D #3a3a3c | `#2c2c2e` / `#3a3a3c` (L:97, D:295) | :white_check_mark: Correct |
+| `foreground` | (preset) #ffffff (both variants) | `#ffffff` / `#ffffff` (L:98, D:296) | :white_check_mark: Correct |
+| `font.family` | `+toolTipsFontOfSize:` -> family | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:568. Correct. |
+| `font.size` | `+toolTipsFontOfSize:` -> ptSize | Not in preset | :arrows_counterclockwise: Inherited. Correct (same as system font). |
+| `font.weight` | `+toolTipsFontOfSize:` -> weight | Not in preset | :arrows_counterclockwise: Inherited. Correct. |
+| `padding_horizontal` | NSToolTipManager: 4 | `4.0` (L:99, D:297) | :white_check_mark: Correct |
+| `padding_vertical` | NSToolTipManager: 4 | `4.0` (L:100, D:298) | :white_check_mark: Correct |
+| `max_width` | 300 (measured) macOS Sonoma | `300.0` (L:101, D:299) | :white_check_mark: Correct |
+| `radius` | `<- defaults.radius` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:410-412. Correct. |
+
+### 2.8 Scrollbar
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `track` | transparent (overlay mode) | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:278-280 (safety net) fills from `defaults.background`. Acceptable for legacy mode. |
+| `thumb` | `#80808080` (measured) Sonoma | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:415-417 fills from `defaults.muted`. Muted is `#86868b` (L) / `#98989d` (D), which differs from the measured `#80808080` (semi-transparent gray). The muted color is opaque, not semi-transparent. |
+| `thumb_hover` | `#60606080` (measured) Sonoma | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:418-420 fills from `defaults.muted`. Same opacity mismatch. |
+| `width` | legacy: 16 / overlay: ~6-7 | `16.0` (L:104, D:302) | :white_check_mark: Correct -- legacy width |
+| `min_thumb_height` | 40 (measured) legacy mode | `40.0` (L:107, D:305) | :white_check_mark: Correct |
+| `slider_width` | overlay: ~6-7 | `7.0` (L:105, D:303) | :white_check_mark: Correct |
+| `overlay_mode` | `NSScroller.preferredScrollerStyle` | `true` (L:106, D:304) | :white_check_mark: Correct -- Sonoma defaults to overlay |
+
+### 2.9 Slider
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `fill` | `<- defaults.accent` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:423-425 |
+| `track` | `<- defaults.muted` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:426-428 |
+| `thumb` | `<- defaults.surface` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:429-431 |
+| `track_height` | NSSlider: 5 | `5.0` (L:110, D:308) | :white_check_mark: Correct |
+| `thumb_size` | NSSlider knob: 21 | `21.0` (L:111, D:309) | :white_check_mark: Correct |
+| `tick_length` | NSSlider: 8 | `8.0` (L:112, D:310) | :white_check_mark: Correct |
+
+### 2.10 Progress Bar
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `fill` | `<- defaults.accent` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:434-436 |
+| `track` | `<- defaults.muted` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:437-439 |
+| `height` | NSProgressIndicator: 6 | `6.0` (L:115, D:313) | :white_check_mark: Correct |
+| `min_width` | (none) -- no minimum | `100.0` (L:116, D:314) | :white_check_mark: Correct -- reasonable default despite (none) in platform-facts |
+| `radius` | `<- defaults.radius` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:440-442 |
+
+### 2.11 Tab Bar
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `background` | `<- defaults.background` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:445-447 |
+| `foreground` | `<- defaults.foreground` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:448-450 |
+| `active_background` | `<- defaults.background` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:451-453 |
+| `active_foreground` | `<- defaults.foreground` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:454-456 |
+| `bar_background` | `<- defaults.background` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:457-459 |
+| `min_width` | (none) -- sizes to label | `64.0` (L:119, D:317) | :white_check_mark: Correct -- reasonable minimum |
+| `min_height` | NSTabView: 24 | `24.0` (L:120, D:318) | :white_check_mark: Correct |
+| `padding_horizontal` | NSTabView: 12 | `12.0` (L:121, D:319) | :white_check_mark: Correct |
+| `padding_vertical` | 4 (measured: (24-16)/2) | `4.0` (L:122, D:320) | :white_check_mark: Correct |
+
+### 2.12 Sidebar
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `background` | `underPageBackgroundColor` | `#e8e8ed` / `#262626` (L:142, D:340) | :white_check_mark: Correct -- explicit sidebar-specific color |
+| `foreground` | `<- defaults.foreground` | `#1d1d1f` / `#ffffff` (L:143, D:341) | :white_check_mark: Correct -- matches defaults.foreground |
+
+### 2.13 Toolbar
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `font.family` | `<- defaults.font` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:569 |
+| `font.size` | `<- defaults.font` | Not in preset | :arrows_counterclockwise: Inherited |
+| `font.weight` | `<- defaults.font` | Not in preset | :arrows_counterclockwise: Inherited |
+| `height` | NSToolbar: 38 | `38.0` (L:137, D:335) | :white_check_mark: Correct |
+| `item_spacing` | AppKit: 8 | `8.0` (L:138, D:336) | :white_check_mark: Correct |
+| `padding` | 8 (measured) NSToolbar | `8.0` (L:139, D:337) | :white_check_mark: Correct |
+
+### 2.14 Status Bar
+
+| Property | platform-facts macOS value | Preset value | Verdict |
+|----------|---------------------------|--------------|---------|
+| `font.family` | `<- defaults.font` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:570 |
+| `font.size` | `<- defaults.font` | Not in preset | :arrows_counterclockwise: Inherited |
+| `font.weight` | `<- defaults.font` | Not in preset | :arrows_counterclockwise: Inherited |
+
+### 2.15 List / Table
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `background` | `<- defaults.background` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:289-291 (safety net) fills from `defaults.background` |
+| `foreground` | `<- defaults.foreground` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:470-472 |
+| `alternate_row` | `alternatingContentBackgroundColors[1]` | `#f5f5fa` / `#252527` (L:131, D:329) | :white_check_mark: Correct -- measured values |
+| `selection` | `<- defaults.selection` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:476-478 |
+| `selection_foreground` | `<- defaults.selection_foreground` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:479-481 |
+| `header_background` | (measured) ~ `defaults.surface` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:482-484 fills from `defaults.surface`. Correct. |
+| `header_foreground` | `headerTextColor` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:485-487 fills from `defaults.foreground`. Acceptable. |
+| `grid_color` | `gridColor` (SS1.1.2) | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:488-490 fills from `defaults.border`. Acceptable. |
+| `item_height` | NSTableView row: 24 | `24.0` (L:132, D:330) | :white_check_mark: Correct |
+| `padding_horizontal` | NSTableView: 4 | `4.0` (L:133, D:331) | :white_check_mark: Correct |
+| `padding_vertical` | 4 (measured: (24-16)/2) | `4.0` (L:134, D:332) | :white_check_mark: Correct |
+
+### 2.16 Popover / Dropdown
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `background` | `<- defaults.background` | `#ffffff` / `#2d2d2d` (L:146, D:344) | :white_check_mark: Correct -- explicit value matches `defaults.surface`, not defaults.background. Platform-facts says it inherits from defaults.background, but the preset overrides with a specific value matching control/surface bg. |
+| `foreground` | `<- defaults.foreground` | `#1d1d1f` / `#ffffff` (L:147, D:345) | :white_check_mark: Correct |
+| `border` | `<- defaults.border` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:496-498 |
+| `radius` | `<- defaults.radius_lg` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:499-501 fills from `defaults.radius_lg` = 10.0. Correct. |
+
+### 2.17 Splitter
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `width` | NSSplitView divider: 6 | `6.0` (L:153, D:351) | :white_check_mark: Correct |
+
+### 2.18 Separator
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `color` | `separatorColor` | `#d5d5d5` / `#3d3d3d` (L:150, D:348) | :white_check_mark: Correct -- matches `defaults.border` |
+
+### 2.19 Text Scale
+
+The preset does NOT include text_scale entries. resolve_text_scale() in
+resolve.rs:574-589 creates them from defaults.font, inheriting size and
+weight from the base font, and computing line_height as
+`defaults.line_height * size`.
+
+| Role | platform-facts macOS value | Preset value | Verdict |
+|------|---------------------------|--------------|---------|
+| `caption.size` | `.caption1`: 10pt | Not in preset | :warning: **Missing** -- resolves to 13.0 (defaults.font.size). Should be 10.0. |
+| `caption.weight` | 400 | Not in preset | :arrows_counterclockwise: Inherited -- resolves to 400. Correct. |
+| `section_heading.size` | `.headline`: 13pt | Not in preset | :arrows_counterclockwise: Inherited -- resolves to 13.0. Correct. |
+| `section_heading.weight` | **700** (Bold) | Not in preset | :warning: **Missing** -- resolves to 400. Should be 700. |
+| `dialog_title.size` | `.title1`: 22pt | Not in preset | :warning: **Missing** -- resolves to 13.0. Should be 22.0. |
+| `dialog_title.weight` | 400 | Not in preset | :arrows_counterclockwise: Inherited -- resolves to 400. Correct. |
+| `display.size` | `.largeTitle`: 26pt | Not in preset | :warning: **Missing** -- resolves to 13.0. Should be 26.0. |
+| `display.weight` | 400 | Not in preset | :arrows_counterclockwise: Inherited -- resolves to 400. Correct. |
+
+### 2.20 Layout Spacing
+
+The model does not have explicit `layout_spacing` properties. The spacing
+scale (`defaults.spacing`) provides the building blocks. Platform-facts
+SS2.20 provides per-context guidance, not per-property model mapping.
+
+| Context | platform-facts macOS value | Mapping to spacing scale | Verdict |
+|---------|---------------------------|-------------------------|---------|
+| Standard widget gap | 8 (HIG) | `spacing.m = 10.0` or `spacing.xs = 4.0` | :warning: **No exact match** -- macOS HIG says 8px standard gap. The spacing scale has xs=4, s=6, m=10. There is no 8.0 tier. 8 falls between s and m. |
+| Nested container margin | (none) -- not specified | N/A | :heavy_minus_sign: N/A |
+| Window content margin | 20 (HIG) | `spacing.xl = 20.0` | :white_check_mark: Correct |
+| Section gap | 20 (HIG) | `spacing.xl = 20.0` | :white_check_mark: Correct |
+
+### 2.21 Switch / Toggle
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `track_width` | 38px | `38.0` (L:158, D:356) | :white_check_mark: Correct |
+| `track_height` | 22px | `22.0` (L:159, D:357) | :white_check_mark: Correct |
+| `thumb_size` | ~18px (measured) | `18.0` (L:160, D:358) | :white_check_mark: Correct |
+| `track_radius` | half height (pill) = 11 | `10.0` (L:161, D:359) | :x: **Wrong** -- half of 22 = 11, not 10. Should be `11.0` for a perfect pill shape. |
+| `checked_bg` | `<- defaults.accent` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:509-511 |
+| `unchecked_bg` | (measured) track bg | `#d5d5d5` / `#3d3d3d` (L:156, D:354) | :white_check_mark: Correct -- measured track background |
+| `thumb_bg` | (measured) white | `#ffffff` / `#ffffff` (L:157, D:355) | :white_check_mark: Correct |
+
+### 2.22 Dialog
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `min_width` | (none) -- AppKit-managed | `320.0` (L:165, D:363) | :heavy_minus_sign: N/A -- platform-facts says (none) for macOS; preset provides a reasonable default |
+| `max_width` | (none) -- AppKit-managed | `560.0` (L:166, D:364) | :heavy_minus_sign: N/A |
+| `min_height` | (none) -- AppKit-managed | `140.0` (L:167, D:365) | :heavy_minus_sign: N/A |
+| `max_height` | (none) -- AppKit-managed | `600.0` (L:168, D:366) | :heavy_minus_sign: N/A |
+| `content_padding` | ~20px (measured) | `24.0` (L:169, D:367) | :x: **Wrong** -- platform-facts says ~20px, preset has 24. |
+| `button_spacing` | ~12px (measured) | `8.0` (L:170, D:368) | :x: **Wrong** -- platform-facts says ~12px, preset has 8. |
+| `button_order` | primary rightmost | `"leading_affirmative"` (L:164, D:362) | :x: **Wrong** -- macOS places primary/affirmative on the RIGHT (trailing). The enum `LeadingAffirmative` is documented as "left end" in dialog_order.rs:19. If the enum name is taken literally, macOS should use `trailing_affirmative`. See analysis below. |
+| `title_font` | system alert heading | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:571. Fills from defaults.font. No specific alert heading font. |
+| `radius` | `<- defaults.radius_lg` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:520-522 fills from `defaults.radius_lg` = 10.0. Correct. |
+| `icon_size` | 64px (app icon) | `32.0` (L:171, D:369) | :x: **Wrong** -- platform-facts says macOS dialog icon is 64px, preset has 32. |
+
+**Dialog button_order analysis:** platform-facts SS2.22 line 1195 states
+macOS convention is "primary rightmost". The `DialogButtonOrder` enum in
+`dialog_order.rs` defines `TrailingAffirmative` as "affirmative button at
+the trailing (right) end" and labels it "Windows, GNOME style". It defines
+`LeadingAffirmative` as "affirmative button at the leading (left) end" and
+labels it "macOS, KDE style". The code comments are internally contradictory
+with platform-facts. The actual macOS behavior is primary button rightmost
+(trailing), which means either:
+(a) The preset should use `trailing_affirmative`, OR
+(b) The enum variant comments in dialog_order.rs have the descriptions
+    swapped ("leading" should mean "right" and "trailing" should mean "left").
+If (b), then the PRESET is correct but the doc strings are wrong. If (a),
+it is a logic bug affecting layout.
+
+### 2.23 Spinner / Progress Ring
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `diameter` | 32px regular | `32.0` (L:179, D:377) | :white_check_mark: Correct |
+| `min_size` | 10px (mini) | `10.0` (L:180, D:378) | :white_check_mark: Correct |
+| `stroke_width` | (none) -- fin-based | `2.0` (L:181, D:379) | :heavy_minus_sign: N/A -- macOS uses fins not strokes; 2.0 is a generic fallback |
+| `fill` | system gray | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:282-284 (safety net) fills from `defaults.foreground`. Acceptable. |
+
+### 2.24 ComboBox / Dropdown Trigger
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `min_height` | NSPopUpButton: 21 | `21.0` (L:184, D:382) | :white_check_mark: Correct |
+| `min_width` | (none) -- sizes to content | `120.0` (L:185, D:383) | :white_check_mark: Correct -- reasonable default |
+| `padding_horizontal` | ~8-10px (measured) | `9.0` (L:186, D:384) | :white_check_mark: Correct -- midpoint of range |
+| `arrow_size` | ~16-18px (measured) | `17.0` (L:187, D:385) | :white_check_mark: Correct -- midpoint of range |
+| `arrow_area_width` | ~16-18px (measured) | `28.0` (L:188, D:386) | :x: **Wrong** -- platform-facts says ~16-18px, preset has 28. The 28 value was previously confused with the arrow area width; WebKit confirms NSPopUpButton height=21, not arrow area. The arrow area is the same size as the arrow glyph on macOS. |
+| `radius` | `<- defaults.radius` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:525-527 |
+
+### 2.25 Segmented Control
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `segment_height` | NSSegmentedControl: 24 | `24.0` (L:191, D:389) | :white_check_mark: Correct |
+| `separator_width` | 1px | `1.0` (L:192, D:390) | :white_check_mark: Correct |
+| `padding_horizontal` | ~8-10px (measured) | `12.0` (L:193, D:391) | :x: **Wrong** -- platform-facts says ~8-10px, preset has 12. |
+| `radius` | `<- defaults.radius` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:530-532 |
+
+### 2.26 Card / Container
+
+platform-facts says macOS has `(none)` for all card properties.
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `background` | (none) | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:535-537 fills from `defaults.surface`. Acceptable placeholder. |
+| `border` | (none) | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:538-540 fills from `defaults.border`. |
+| `radius` | (none) | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:541-543 fills from `defaults.radius_lg`. |
+| `shadow` | (none) | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:544-546 fills from `defaults.shadow_enabled`. |
+| `padding` | (none) | `16.0` (L:196, D:394) | :heavy_minus_sign: N/A -- (none) in platform-facts; reasonable default |
+
+### 2.27 Expander / Disclosure
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `header_height` | (none) -- content-sized | `40.0` (L:199, D:397) | :heavy_minus_sign: N/A -- reasonable default |
+| `arrow_size` | ~13px (measured) | `12.0` (L:200, D:398) | :x: **Wrong** -- platform-facts says ~13px, preset has 12. |
+| `content_padding` | (none) -- app-defined | `16.0` (L:201, D:399) | :heavy_minus_sign: N/A |
+| `radius` | (none) | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:549-551 fills from `defaults.radius`. |
+
+### 2.28 Link
+
+| Property | platform-facts macOS value | Preset value (file:line) | Verdict |
+|----------|---------------------------|--------------------------|---------|
+| `color` | `linkColor` | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:554-556 fills from `defaults.link`. Correct. |
+| `visited` | (none) -- same as link | Not in preset | :arrows_counterclockwise: Inherited -- resolve.rs:557-559 fills from `defaults.link`. Correct. |
+| `underline` | yes | `true` (L:174, D:372) | :white_check_mark: Correct |
+| `background` | (none) -- inline | `#00000000` (L:175, D:373) | :white_check_mark: Correct -- transparent |
+| `hover_bg` | (none) | `#007aff18` / `#0a84ff18` (L:176, D:374) | :heavy_minus_sign: N/A -- (none) in platform-facts; provides subtle accent hover |
+
+---
+
+### Summary of Issues Found
+
+#### :x: Wrong Values (12 issues)
+
+| # | Section | Property | Expected (platform-facts) | Actual (preset) | Fix |
+|---|---------|----------|---------------------------|------------------|-----|
+| 1 | 2.1.4 | `danger_foreground` (light) | `#1d1d1f` (labelColor) | `#ffffff` | See semantic note -- deliberate design choice vs literal API. Review needed. |
+| 2 | 2.1.4 | `success_foreground` (light) | `#1d1d1f` (labelColor) | `#ffffff` | Same as #1. |
+| 3 | 2.1.4 | `info_foreground` (light) | `#1d1d1f` (labelColor) | `#ffffff` | Same as #1. |
+| 4 | 2.1.6 | `frame_width` | 0.5px | 1.0 | Change to `0.5`. Propagates to input.border_width and checkbox.border_width via inheritance. |
+| 5 | 2.21 | `switch.track_radius` | 11 (half of track_height 22) | 10.0 | Change to `11.0`. |
+| 6 | 2.22 | `dialog.content_padding` | ~20px (measured) | 24.0 | Change to `20.0`. |
+| 7 | 2.22 | `dialog.button_spacing` | ~12px (measured) | 8.0 | Change to `12.0`. |
+| 8 | 2.22 | `dialog.button_order` | primary rightmost (trailing) | `leading_affirmative` | Investigate: either fix preset to `trailing_affirmative`, or fix enum doc comments. See analysis above. |
+| 9 | 2.22 | `dialog.icon_size` | 64px | 32.0 | Change to `64.0`. macOS shows 64px app icon in alerts. |
+| 10 | 2.24 | `combo_box.arrow_area_width` | ~16-18px | 28.0 | Change to `17.0` (midpoint of measured range). |
+| 11 | 2.25 | `segmented_control.padding_horizontal` | ~8-10px | 12.0 | Change to `9.0` (midpoint). |
+| 12 | 2.27 | `expander.arrow_size` | ~13px (measured) | 12.0 | Change to `13.0`. |
+
+#### :warning: Missing Values (4 issues)
+
+| # | Section | Property | Expected (platform-facts) | Resolve fallback | Fix |
+|---|---------|----------|---------------------------|-----------------|-----|
+| 1 | 2.2 | `window.title_bar_font.weight` | Bold (700) | 400 (from defaults.font) | Add `[light.window.title_bar_font]` / `[dark.window.title_bar_font]` with `weight = 700`. |
+| 2 | 2.19 | `text_scale.caption.size` | 10pt | 13.0 (from defaults.font.size) | Add `[light.text_scale.caption]` / `[dark.text_scale.caption]` with `size = 10.0`. |
+| 3 | 2.19 | `text_scale.section_heading.weight` | 700 (Bold) | 400 | Add `[light.text_scale.section_heading]` with `weight = 700`. |
+| 4 | 2.19 | `text_scale.dialog_title.size` + `display.size` | 22pt / 26pt | 13.0 / 13.0 | Add text_scale entries: `dialog_title.size = 22.0`, `display.size = 26.0`. |
+
+#### Spacing scale gap (informational)
+
+The macOS HIG standard widget gap of 8px has no exact tier in the spacing
+scale (xs=4, s=6, m=10). This is not necessarily a bug -- the scale provides
+flexible tiers -- but consumers targeting macOS specifically may want an 8px
+option. Consider adding an `s2 = 8.0` tier or adjusting `s` to 8.0 in a
+future version.
+
+#### Status foreground semantic question (informational)
+
+Issues #1-#3 (danger/success/info foreground in light mode) are flagged
+because platform-facts documents macOS as providing `labelColor` (= normal
+body text foreground) for these fields. The preset uses `#ffffff` which is a
+contrast-on-status-background color. Both interpretations are valid depending
+on use case. platform-facts SS2.1.4 lines 894-903 explicitly documents this
+semantic mismatch. **Recommendation:** Keep `#ffffff` for now as it provides
+better contrast when used as text-on-status-background, but add a TOML
+comment documenting the deliberate deviation from `labelColor`.
+
+---
+
+## 27. Systematic KDE Breeze Preset Verification (parameter-by-parameter)
+
+Exhaustive verification of `native-theme/src/presets/kde-breeze.toml`
+against `docs/platform-facts.md` Chapter 2. Every property in every
+section (2.1--2.28) is checked.
+
+Legend:
+- Preset = `kde-breeze.toml` (static preset, both light/dark)
+- Live = `kde-breeze-live.toml` (geometry-only, no colors/fonts)
+- Resolve = `src/resolve.rs` inheritance/safety-net behavior
+- "Matches" = correct for the Breeze default kdeglobals / breezemetrics.h
+
+### 2.1 Global Defaults
+
+#### 2.1.1 Base Font
+
+| Property       | platform-facts KDE column               | Preset light      | Preset dark        | Verdict |
+|----------------|------------------------------------------|--------------------|--------------------|---------|
+| `family`       | `[General] font` field 0 = Noto Sans    | "Noto Sans"        | "Noto Sans"        | OK |
+| `size`         | `[General] font` field 1 = 10pt         | 10.0               | 10.0               | OK |
+| `weight`       | `[General] font` field 4 = 400          | 400                | 400                | OK |
+| `line_height`  | 1.36 (Noto Sans font metrics)           | 1.36               | 1.36               | OK |
+
+#### 2.1.2 Monospace Font
+
+| Property       | platform-facts KDE column                | Preset light      | Preset dark        | Verdict |
+|----------------|------------------------------------------|--------------------|--------------------|---------|
+| `family`       | `[General] fixed` field 0 = Hack         | "Hack"             | "Hack"             | OK |
+| `size`         | `[General] fixed` field 1 = 10pt         | 10.0               | 10.0               | OK |
+| `weight`       | `[General] fixed` field 4 = 400          | 400                | 400                | OK |
+
+#### 2.1.3 Base Colors
+
+| Property              | platform-facts KDE column                          | Preset light   | Preset dark    | Verdict |
+|-----------------------|----------------------------------------------------|----------------|----------------|---------|
+| `background`          | `[Colors:Window] BackgroundNormal`                 | #eff0f1        | #232629        | OK |
+| `foreground`          | `[Colors:Window] ForegroundNormal`                 | #232629        | #fcfcfc        | OK |
+| `accent`              | `[General] AccentColor` -> DecorationFocus         | #3daee9        | #3daee9        | OK |
+| `accent_foreground`   | `[Colors:Selection] ForegroundNormal`              | #fcfcfc        | #fcfcfc        | OK |
+| `surface`             | `[Colors:View] BackgroundNormal`                   | #ffffff        | #1b1e20        | OK |
+| `border`              | **(preset)** -- derived from background            | #bcc0bf        | #4d545b        | OK -- reasonable derived value |
+| `muted`               | `[Colors:Window] ForegroundInactive`               | #707d8a        | #a1a9b1        | OK |
+| `shadow`              | **(none)** -- preset: #00000040/#60                | #00000040      | #00000060      | OK -- matches documented preset convention |
+| `link`                | `[Colors:View] ForegroundLink`                     | #2980b9        | #1d99f3        | OK |
+| `selection`           | `[Colors:Selection] BackgroundNormal`              | #3daee9        | #3daee9        | OK |
+| `selection_foreground`| `[Colors:Selection] ForegroundNormal`              | #fcfcfc        | #fcfcfc        | OK |
+| `selection_inactive`  | **(none)** -- selection bg unchanged on focus loss | (not in preset)| (not in preset)| OK -- resolve chain sets selection_inactive <- selection |
+| `disabled_foreground` | `[Colors:View] ForegroundInactive`                 | #bcc0bf        | #4d545b        | OK |
+
+#### 2.1.4 Status Colors
+
+| Property              | platform-facts KDE column                    | Preset light   | Preset dark    | Verdict |
+|-----------------------|----------------------------------------------|----------------|----------------|---------|
+| `danger`              | `[Colors:View] ForegroundNegative`           | #da4453        | #da4453        | OK |
+| `danger_foreground`   | `[Colors:Window] ForegroundNormal` (note 1)  | #fcfcfc        | #fcfcfc        | WARNING |
+| `warning`             | `[Colors:View] ForegroundNeutral`            | #f67400        | #f67400        | OK |
+| `warning_foreground`  | `[Colors:Window] ForegroundNormal` (note 1)  | #232629        | #fcfcfc        | WARNING |
+| `success`             | `[Colors:View] ForegroundPositive`           | #27ae60        | #27ae60        | OK |
+| `success_foreground`  | `[Colors:Window] ForegroundNormal` (note 1)  | #fcfcfc        | #fcfcfc        | WARNING |
+| `info`                | `[Colors:View] ForegroundActive`             | #3daee9        | #3daee9        | OK |
+| `info_foreground`     | `[Colors:Window] ForegroundNormal` (note 1)  | #fcfcfc        | #fcfcfc        | WARNING |
+
+**Note 1 -- status foreground semantic divergence:** platform-facts.md
+SS2.1.4 documents that KDE `*_foreground` should be `[Colors:Window]
+ForegroundNormal` (body text color: L=#232629, D=#fcfcfc) -- suitable
+for text *alongside* a status indicator, not text *on* a status-colored
+background. The preset instead uses contrast-foreground values (white
+#fcfcfc on red/green/blue in light mode), which is the "text on status
+background" interpretation. This is a deliberate design choice
+documented in the platform-facts footnote. Both interpretations are
+valid; the preset chose the Windows-like semantic. The light-mode
+`warning_foreground = #232629` is the only one that matches the KDE
+native value. This is a known semantic divergence, not a bug -- no fix
+needed.
+
+#### 2.1.5 Focus Ring
+
+| Property  | platform-facts KDE column                      | Preset light | Preset dark | Verdict |
+|-----------|-------------------------------------------------|-------------|-------------|---------|
+| `color`   | `[Colors:View] DecorationFocus`                | #3daee9      | #3daee9     | OK |
+| `width`   | Breeze: 1.001px (stroke); 2px margin           | 1.0          | 1.0         | OK -- 1.0 rounds 1.001px stroke |
+| `offset`  | Breeze: 2px margin (outset)                    | 2.0          | 2.0         | OK |
+
+#### 2.1.6 Global Geometry
+
+| Property           | platform-facts KDE column                  | Preset light | Preset dark | Verdict |
+|--------------------|--------------------------------------------|-------------|-------------|---------|
+| `radius`           | `Frame_FrameRadius` = 5px                  | 5.0          | 5.0         | OK |
+| `radius_lg`        | **(none)** -- preset                       | 8.0          | 8.0         | OK -- no native equivalent |
+| `frame_width`      | `PenWidth::Frame` = 1.001px               | 1.0          | 1.0         | OK -- 1.0 rounds 1.001px |
+| `disabled_opacity` | **(none)** -- palette blending             | 0.5          | 0.5         | OK -- reasonable fallback |
+| `border_opacity`   | 0.2 **(preset)**                           | 0.2          | 0.2         | OK |
+| `shadow_enabled`   | yes (KWin compositor)                      | true         | true        | OK |
+
+#### 2.1.7 Accessibility
+
+| Property              | platform-facts KDE column                | Preset light | Preset dark | Verdict |
+|-----------------------|------------------------------------------|-------------|-------------|---------|
+| `text_scaling_factor` | `forceFontDPI / 96`                      | 1.0          | 1.0         | OK |
+| `reduce_motion`       | `AnimationDurationFactor = 0`            | false        | false       | OK |
+| `high_contrast`       | **(none)**                               | false        | false       | OK |
+| `reduce_transparency` | **(none)**                               | false        | false       | OK |
+
+#### 2.1.8 Icon Sizes
+
+| Context   | platform-facts KDE column               | Preset light | Preset dark | Verdict |
+|-----------|------------------------------------------|-------------|-------------|---------|
+| `toolbar` | MainToolbar: 22                          | 22.0         | 22.0        | OK |
+| `small`   | Small: 16                                | 16.0         | 16.0        | OK |
+| `large`   | Desktop: 48 (Breeze default)             | 48.0         | 48.0        | OK |
+| `dialog`  | Dialog: 32                               | 32.0         | 32.0        | OK |
+| `panel`   | Panel: 48 (Breeze default)               | 48.0         | 48.0        | OK |
+
+### 2.2 Window / Application Chrome
+
+All window properties are inherited via resolve.rs. The preset does not
+set any window-specific values.
+
+| Property                 | platform-facts KDE column               | Resolved from         | Verdict |
+|--------------------------|-----------------------------------------|-----------------------|---------|
+| `background`             | <- `defaults.background`               | defaults.background   | OK |
+| `foreground`             | <- `defaults.foreground`               | defaults.foreground   | OK |
+| `border`                 | `[WM]` decoration colors               | defaults.border       | OK |
+| `title_bar_background`   | `[WM] activeBackground`                | defaults.surface      | OK |
+| `title_bar_foreground`   | `[WM] activeForeground`                | defaults.foreground   | OK |
+| `inactive_title_bar_bg`  | `[WM] inactiveBackground`              | <- active title bg    | OK |
+| `inactive_title_bar_fg`  | `[WM] inactiveForeground`              | <- active title fg    | OK |
+| `title_bar_font`         | `[WM] activeFont`                      | defaults.font         | OK |
+| `radius`                 | <- `defaults.radius_lg`                | 8.0                   | OK |
+| `shadow`                 | <- `defaults.shadow_enabled`           | true                  | OK |
+
+### 2.3 Button
+
+| Property            | platform-facts KDE column               | Preset value   | Verdict |
+|---------------------|------------------------------------------|----------------|---------|
+| `background`        | `[Colors:Button] BackgroundNormal`       | L:#fcfcfc D:#31363b | OK |
+| `foreground`        | `[Colors:Button] ForegroundNormal`       | L:#232629 D:#fcfcfc | OK |
+| `border`            | <- `defaults.border`                    | (inherited)    | OK |
+| `font`              | <- `defaults.font`                      | (inherited)    | OK |
+| `min_width`         | `Button_MinWidth` = 80                   | 80.0           | OK |
+| `min_height`        | **(none)** -- sizes to content           | 32.0           | OK -- reasonable |
+| `padding_horizontal`| `Button_MarginWidth` = 6                 | 6.0            | OK |
+| `padding_vertical`  | 5 **(measured)** Breeze frame+margin     | 6.0            | MISMATCH -- 1px over |
+| `radius`            | <- `defaults.radius`                    | (inherited=5.0)| OK |
+| `icon_spacing`      | `Button_ItemSpacing` = 4                 | 4.0            | OK |
+| `primary_bg`        | <- `defaults.accent`                    | (inherited)    | OK |
+| `primary_fg`        | <- `defaults.accent_foreground`         | (inherited)    | OK |
+| `disabled_opacity`  | <- `defaults.disabled_opacity`          | (inherited=0.5)| OK |
+| `shadow`            | <- `defaults.shadow_enabled`            | (inherited)    | OK |
+
+### 2.4 Text Input
+
+| Property              | platform-facts KDE column                | Preset value   | Verdict |
+|-----------------------|------------------------------------------|----------------|---------|
+| `background`          | `[Colors:View] BackgroundNormal`         | L:#ffffff D:#1b1e20 | OK |
+| `foreground`          | `[Colors:View] ForegroundNormal`         | L:#232629 D:#fcfcfc | OK |
+| `border`              | <- `defaults.border`                    | (inherited)    | OK |
+| `placeholder`         | `[Colors:View] ForegroundInactive`       | (inherited=muted) | OK |
+| `caret`               | `[Colors:View] DecorationFocus` = accent | (none->foreground) | MISMATCH |
+| `selection`           | <- `defaults.selection`                 | (inherited)    | OK |
+| `selection_foreground`| <- `defaults.selection_foreground`      | (inherited)    | OK |
+| `font`                | <- `defaults.font`                      | (inherited)    | OK |
+| `min_height`          | **(none)** -- sizes to content           | 32.0           | OK -- reasonable |
+| `padding_horizontal`  | `LineEdit_FrameWidth` = 6                | 6.0            | OK |
+| `padding_vertical`    | 3 **(measured)** Breeze frame            | 6.0            | MISMATCH -- 3px over |
+| `radius`              | <- `defaults.radius`                    | (inherited=5.0)| OK |
+| `border_width`        | <- `defaults.frame_width`               | (inherited=1.0)| OK |
+
+### 2.5 Checkbox / Radio Button
+
+| Property        | platform-facts KDE column                | Preset value | Verdict |
+|-----------------|------------------------------------------|-------------|---------|
+| `indicator_size`| `CheckBox_Size` = 20                     | 20.0         | OK |
+| `spacing`       | `CheckBox_ItemSpacing` = 4               | 4.0          | OK |
+| `radius`        | <- `defaults.radius`                    | (inherited=5.0) | OK |
+| `border_width`  | <- `defaults.frame_width`               | (inherited=1.0) | OK |
+| `checked_bg`    | <- `defaults.accent`                    | (inherited)  | OK |
+
+### 2.6 Menu
+
+| Property            | platform-facts KDE column                    | Preset value | Verdict |
+|---------------------|----------------------------------------------|-------------|---------|
+| `background`        | `[Colors:Window] BackgroundNormal`           | (inherited)  | OK |
+| `foreground`        | `[Colors:Window] ForegroundNormal`           | (inherited)  | OK |
+| `separator`         | <- `defaults.border`                        | (inherited)  | OK |
+| `font`              | `[General] menuFont`                         | (inherited)  | OK |
+| `item_height`       | **(none)** -- sizes to font                  | 28.0         | OK -- reasonable |
+| `padding_horizontal`| `MenuItem_MarginWidth` = 4                   | 4.0          | OK |
+| `padding_vertical`  | `MenuItem_MarginHeight` = 4                  | 4.0          | OK |
+| `icon_spacing`      | 8 **(Breeze src)** icon-text gap             | 8.0          | OK |
+
+### 2.7 Tooltip
+
+| Property       | platform-facts KDE column                      | Preset value | Verdict |
+|----------------|-------------------------------------------------|-------------|---------|
+| `background`   | `[Colors:Tooltip] BackgroundNormal`             | L:#f7f7f7 D:#31363b | OK |
+| `foreground`   | `[Colors:Tooltip] ForegroundNormal`             | L:#232629 D:#fcfcfc | OK |
+| `font`         | <- `defaults.font`                             | (inherited)  | OK |
+| `padding_h`    | `ToolTip_FrameWidth` = 3                       | 3.0          | OK |
+| `padding_v`    | `ToolTip_FrameWidth` = 3                       | 3.0          | OK |
+| `max_width`    | **(none)** -- preset: 300                      | 300.0        | OK |
+| `radius`       | <- `defaults.radius`                           | (inherited=5.0) | OK |
+
+### 2.8 Scrollbar
+
+| Property          | platform-facts KDE column                        | Preset value | Verdict |
+|-------------------|--------------------------------------------------|-------------|---------|
+| `track`           | `defaults.background`                            | (safety net) | OK |
+| `thumb`           | **(Breeze src)** thumb color                     | (inherited=muted) | OK |
+| `thumb_hover`     | **(Breeze src)** thumb hover                     | (inherited=muted) | OK |
+| `width`           | `ScrollBar_Extend` = 21                          | 21.0         | OK |
+| `min_thumb_height`| `ScrollBar_MinSliderHeight` = 20                 | 20.0         | OK |
+| `slider_width`    | `ScrollBar_SliderWidth` = 8                      | 8.0          | OK |
+| `overlay_mode`    | **(none)** -- always persistent                  | false        | OK |
+
+### 2.9 Slider
+
+| Property       | platform-facts KDE column                    | Preset value | Verdict |
+|----------------|----------------------------------------------|-------------|---------|
+| `fill`         | <- `defaults.accent`                        | (inherited)  | OK |
+| `track`        | <- `defaults.muted`                         | (inherited)  | OK |
+| `thumb`        | <- `defaults.surface`                       | (inherited)  | OK |
+| `track_height` | `Slider_GrooveThickness` = 6                 | 6.0          | OK |
+| `thumb_size`   | `Slider_ControlThickness` = 20               | 20.0         | OK |
+| `tick_length`  | `Slider_TickLength` = 8                      | 8.0          | OK |
+
+### 2.10 Progress Bar
+
+| Property    | platform-facts KDE column                    | Preset value | Verdict |
+|-------------|----------------------------------------------|-------------|---------|
+| `fill`      | <- `defaults.accent`                        | (inherited)  | OK |
+| `track`     | <- `defaults.muted`                         | (inherited)  | OK |
+| `height`    | `ProgressBar_Thickness` = 6                  | 6.0          | OK |
+| `min_width` | **(none)** -- no minimum                    | 6.0          | OK |
+| `radius`    | <- `defaults.radius`                        | (inherited=5.0) | OK |
+
+### 2.11 Tab Bar
+
+| Property            | platform-facts KDE column                | Preset value | Verdict |
+|---------------------|------------------------------------------|-------------|---------|
+| `background`        | <- `defaults.background`                | (inherited)  | OK |
+| `foreground`        | <- `defaults.foreground`                | (inherited)  | OK |
+| `active_background` | <- `defaults.background`                | (inherited)  | OK |
+| `active_foreground` | <- `defaults.foreground`                | (inherited)  | OK |
+| `bar_background`    | <- `defaults.background`                | (inherited)  | OK |
+| `min_width`         | `TabBar_TabMinWidth` = 80                | 80.0         | OK |
+| `min_height`        | `TabBar_TabMinHeight` = 30               | 30.0         | OK |
+| `padding_horizontal`| `TabBar_TabMarginWidth` = 8              | 8.0          | OK |
+| `padding_vertical`  | `TabBar_TabMarginHeight` = 4             | 4.0          | OK |
+
+### 2.12 Sidebar
+
+| Property     | platform-facts KDE column                            | Preset value | Verdict |
+|--------------|------------------------------------------------------|-------------|---------|
+| `background` | `[Colors:Complementary] BackgroundNormal`            | L:#dee0e2 D:#272c31 | OK |
+| `foreground` | `[Colors:Complementary] ForegroundNormal`            | L:#232629 D:#fcfcfc | OK |
+
+### 2.13 Toolbar
+
+| Property       | platform-facts KDE column                        | Preset value | Verdict |
+|----------------|--------------------------------------------------|-------------|---------|
+| `font`         | `[General] toolBarFont`                          | (inherited)  | OK |
+| `height`       | **(none)** -- sizes to content                   | 40.0         | OK -- reasonable |
+| `item_spacing` | `ToolBar_ItemSpacing` = 0                        | 0.0          | OK |
+| `padding`      | `ToolBar_ItemMargin` = 6                         | 6.0          | OK |
+
+### 2.14 Status Bar
+
+| Property | platform-facts KDE column | Preset value | Verdict |
+|----------|---------------------------|-------------|---------|
+| `font`   | <- `defaults.font`       | (inherited)  | OK |
+
+### 2.15 List / Table
+
+| Property              | platform-facts KDE column                    | Preset value | Verdict |
+|-----------------------|----------------------------------------------|-------------|---------|
+| `background`          | `[Colors:View] BackgroundNormal`             | (safety net) | OK |
+| `foreground`          | `[Colors:View] ForegroundNormal`             | (inherited)  | OK |
+| `alternate_row`       | `[Colors:View] BackgroundAlternate`          | L:#f5f6f7 D:#2a2e32 | OK |
+| `selection`           | <- `defaults.selection`                     | (inherited)  | OK |
+| `selection_foreground`| <- `defaults.selection_foreground`           | (inherited)  | OK |
+| `header_background`   | `[Colors:Header] BackgroundNormal`           | (inherited=surface) | OK |
+| `header_foreground`   | `[Colors:Header] ForegroundNormal`           | (inherited=foreground) | OK |
+| `grid_color`          | **(none)** -- Qt views use palette pen       | (inherited=border) | OK |
+| `item_height`         | **(none)** -- sizes to content               | 28.0         | OK -- reasonable |
+| `padding_horizontal`  | `ItemView_ItemMarginLeft/Right` = 2          | 2.0          | OK |
+| `padding_vertical`    | `ItemView_ItemMarginTop/Bottom` = 1          | 1.0          | OK |
+
+### 2.16 Popover / Dropdown
+
+| Property     | platform-facts KDE column           | Preset value | Verdict |
+|--------------|--------------------------------------|-------------|---------|
+| `background` | <- `defaults.background`            | L:#ffffff D:#31363b | OK |
+| `foreground` | <- `defaults.foreground`            | L:#232629 D:#fcfcfc | OK |
+| `border`     | <- `defaults.border`                | (inherited)  | OK |
+| `radius`     | <- `defaults.radius_lg`             | (inherited=8.0) | OK |
+
+### 2.17 Splitter
+
+| Property | platform-facts KDE column    | Preset value | Verdict |
+|----------|------------------------------|-------------|---------|
+| `width`  | `Splitter_SplitterWidth` = 1 | 1.0          | OK |
+
+### 2.18 Separator
+
+| Property | platform-facts KDE column    | Preset value | Verdict |
+|----------|------------------------------|-------------|---------|
+| `color`  | <- `defaults.border`         | L:#c4c8c6 D:#3e4550 | OK -- custom separator |
+
+### 2.19 Text Scale
+
+Text scale entries are filled by resolve.rs from defaults.font and
+defaults.line_height. No explicit text_scale in the preset TOML.
+
+| Role              | platform-facts KDE column                    | Resolved value (at 10pt base) | Verdict |
+|-------------------|----------------------------------------------|-------------------------------|---------|
+| `caption`         | `smallestReadableFont` = 8pt, 400            | 10pt, 400 (from defaults.font)| OK -- resolve uses base font |
+| `section_heading` | Kirigami Level 2: body x 1.20                | 10pt, 400 (from defaults.font)| OK -- resolve uses base font |
+| `dialog_title`    | Kirigami Level 1: body x 1.35                | 10pt, 400 (from defaults.font)| OK -- resolve uses base font |
+| `display`         | **(none)** -- no equivalent                  | 10pt, 400 (from defaults.font)| OK -- resolve uses base font |
+
+### 2.20 Layout Spacing
+
+| Context                  | platform-facts KDE value           | Closest preset slot | Preset value | Verdict |
+|--------------------------|------------------------------------|---------------------|-------------|---------|
+| Standard widget gap      | `Layout_DefaultSpacing` = 6        | `spacing.s`         | 6.0          | OK |
+| Nested container margin  | `Layout_ChildMarginWidth` = 6      | `spacing.s`         | 6.0          | OK |
+| Window content margin    | `Layout_TopLevelMarginWidth` = 10  | (between m=8, l=12) | --           | OK |
+
+### 2.21 Switch / Toggle
+
+| Property          | platform-facts KDE column               | Preset value   | Verdict |
+|-------------------|-----------------------------------------|----------------|---------|
+| `track_width`     | QQC2: ~36 (font-derived)               | 36.0           | OK |
+| `track_height`    | QQC2: ~18 (font-derived)               | 18.0           | OK |
+| `thumb_size`      | QQC2: ~18 (= track height)             | 18.0           | OK |
+| `track_radius`    | half height (pill)                      | 9.0            | OK |
+| `checked_bg`      | <- `defaults.accent`                   | (inherited)    | OK |
+| `unchecked_bg`    | **(preset)** trough color              | L:#bcc0bf D:#4d545b | OK |
+| `thumb_bg`        | **(preset)** slider color              | #fcfcfc        | OK |
+
+### 2.22 Dialog
+
+| Property              | platform-facts KDE column                    | Preset value | Verdict |
+|-----------------------|----------------------------------------------|-------------|---------|
+| `min_width`           | **(none)** -- sizes to content               | 320.0        | OK -- reasonable |
+| `max_width`           | **(none)** -- sizes to content               | 560.0        | OK -- reasonable |
+| `min_height`          | **(none)** -- sizes to content               | 140.0        | OK -- reasonable |
+| `max_height`          | **(none)** -- sizes to content               | 600.0        | OK -- reasonable |
+| `content_padding`     | `Layout_TopLevelMarginWidth` = 10            | 24.0         | MISMATCH -- 14px over |
+| `button_spacing`      | `Layout_DefaultSpacing` = 6                  | 8.0          | MISMATCH -- 2px over |
+| `button_order`        | OK left of Cancel (right-aligned)            | "leading_affirmative" | OK |
+| `title_font`          | <- `defaults.font`                          | (inherited)  | OK |
+| `radius`              | <- `defaults.radius_lg`                     | (inherited=8.0) | OK |
+| `icon_size`           | **(none)** -- per-dialog                    | 32.0         | OK -- matches Dialog icon default |
+
+### 2.23 Spinner / Progress Ring
+
+| Property      | platform-facts KDE column                | Preset value | Verdict |
+|---------------|------------------------------------------|-------------|---------|
+| `diameter`    | QQC2 BusyIndicator: 36                   | 36.0         | OK |
+| `min_size`    | **(none)**                               | 16.0         | OK -- reasonable |
+| `stroke_width`| **(none)** -- icon-based                 | 2.0          | OK -- reasonable |
+| `fill`        | <- `defaults.foreground`                | (safety net) | OK |
+
+### 2.24 ComboBox / Dropdown Trigger
+
+| Property            | platform-facts KDE column                | Preset value | Verdict |
+|---------------------|------------------------------------------|-------------|---------|
+| `min_height`        | **(none)** -- sizes to content           | 32.0         | OK -- reasonable |
+| `min_width`         | **(none)** -- sizes to content           | 120.0        | OK -- reasonable |
+| `padding_horizontal`| `ComboBox_FrameWidth` = 6               | 12.0         | MISMATCH -- double native |
+| `arrow_size`        | `MenuButton_IndicatorWidth` = 20         | 12.0         | MISMATCH -- 8px under |
+| `arrow_area_width`  | 20px                                     | 28.0         | MISMATCH -- 8px over |
+| `radius`            | <- `defaults.radius`                    | (inherited=5.0) | OK |
+
+### 2.25 Segmented Control
+
+| Property            | platform-facts KDE column                | Preset value | Verdict |
+|---------------------|------------------------------------------|-------------|---------|
+| `segment_height`    | `TabBar_TabMinHeight` = 30 (proxy)       | 28.0         | MISMATCH -- 2px under |
+| `separator_width`   | `TabBar_TabOverlap` = 1                  | 1.0          | OK |
+| `padding_horizontal`| `TabBar_TabMarginWidth` = 8              | 12.0         | MISMATCH -- 4px over |
+| `radius`            | <- `defaults.radius`                    | (inherited=5.0) | OK |
+
+### 2.26 Card / Container
+
+KDE has no native card component. All values are preset-chosen.
+
+| Property     | platform-facts KDE column    | Preset value | Verdict |
+|--------------|------------------------------|-------------|---------|
+| `background` | **(none)**                   | (inherited=surface) | OK |
+| `border`     | **(none)**                   | (inherited=border) | OK |
+| `radius`     | **(none)**                   | (inherited=radius_lg=8.0) | OK |
+| `shadow`     | **(none)**                   | (inherited=shadow_enabled) | OK |
+| `padding`    | **(none)**                   | 16.0         | OK -- reasonable |
+
+### 2.27 Expander / Disclosure
+
+| Property          | platform-facts KDE column                | Preset value | Verdict |
+|-------------------|------------------------------------------|-------------|---------|
+| `header_height`   | **(none)** -- content-sized              | 40.0         | OK -- reasonable |
+| `arrow_size`      | `ItemView_ArrowSize` = 10                | 10.0         | OK |
+| `content_padding` | **(none)** -- app-defined                | 16.0         | OK -- reasonable |
+| `radius`          | `Frame_FrameRadius` = 5                  | (inherited=5.0) | OK |
+
+### 2.28 Link
+
+| Property      | platform-facts KDE column                | Preset value | Verdict |
+|---------------|------------------------------------------|-------------|---------|
+| `color`       | `ForegroundLink`                         | (inherited=link) | OK |
+| `visited`     | `ForegroundVisited`                      | (inherited=link) | OK -- no visited differentiation |
+| `underline`   | yes (Kirigami LinkButton)                | true         | OK |
+| `background`  | **(none)** -- inline                     | #00000000    | OK -- transparent |
+| `hover_bg`    | **(none)**                               | #3daee918    | OK -- subtle accent tint |
+
+### Live preset cross-check
+
+Every geometry value in `kde-breeze-live.toml` matches `kde-breeze.toml`
+exactly. No discrepancies between the two files.
+
+---
+
+### Issues Found (MISMATCH items only)
+
+| # | Section | Property | Preset | Expected | Severity | Source |
+|---|---------|----------|--------|----------|----------|--------|
+| 1 | 2.3 Button | `padding_vertical` | 6.0 | 5.0 | Low | platform-facts: "5 (measured) Breeze frame+margin" |
+| 2 | 2.4 Input | `padding_vertical` | 6.0 | 3.0 | Medium | platform-facts: "3 (measured) Breeze frame" |
+| 3 | 2.4 Input | `caret` | (none->fg) | accent #3daee9 | Medium | platform-facts: `[Colors:View] DecorationFocus` |
+| 4 | 2.22 Dialog | `content_padding` | 24.0 | 10.0 | Medium | `Layout_TopLevelMarginWidth` = 10 (breezemetrics.h) |
+| 5 | 2.22 Dialog | `button_spacing` | 8.0 | 6.0 | Low | `Layout_DefaultSpacing` = 6 (breezemetrics.h) |
+| 6 | 2.24 ComboBox | `padding_horizontal` | 12.0 | 6.0 | Medium | `ComboBox_FrameWidth` = 6 (breezemetrics.h) |
+| 7 | 2.24 ComboBox | `arrow_size` | 12.0 | 20.0 | Medium | `MenuButton_IndicatorWidth` = 20 (breezemetrics.h) |
+| 8 | 2.24 ComboBox | `arrow_area_width` | 28.0 | 20.0 | Low | breezemetrics.h derived |
+| 9 | 2.25 Segmented | `segment_height` | 28.0 | 30.0 | Low | `TabBar_TabMinHeight` = 30 (proxy) |
+| 10 | 2.25 Segmented | `padding_horizontal` | 12.0 | 8.0 | Low | `TabBar_TabMarginWidth` = 8 |
+
+### Solutions
+
+**Issue 1 -- button.padding_vertical (6 -> 5):**
+`kde-breeze.toml` L82,L280 and `kde-breeze-live.toml` L38,L170:
+change `padding_vertical = 6.0` to `padding_vertical = 5.0`.
+
+**Issue 2 -- input.padding_vertical (6 -> 3):**
+`kde-breeze.toml` L90,L288 and `kde-breeze-live.toml` L43,L178:
+change `padding_vertical = 6.0` to `padding_vertical = 3.0`.
+
+**Issue 3 -- input.caret missing (should be accent):**
+Add `caret = "#3daee9"` to `[light.input]` and `[dark.input]` in
+`kde-breeze.toml`. Live preset does not need this (OS reader fills
+colors). Do NOT change the resolve.rs safety net -- macOS and Windows
+use foreground for caret, so the fallback is correct for them.
+
+**Issue 4 -- dialog.content_padding (24 -> 10):**
+`kde-breeze.toml` L169,L367 and `kde-breeze-live.toml` L107,L241:
+change `content_padding = 24.0` to `content_padding = 10.0`.
+
+**Issue 5 -- dialog.button_spacing (8 -> 6):**
+`kde-breeze.toml` L170,L368 and `kde-breeze-live.toml` L108,L242:
+change `button_spacing = 8.0` to `button_spacing = 6.0`.
+
+**Issue 6 -- combo_box.padding_horizontal (12 -> 6):**
+`kde-breeze.toml` L186,L384 and `kde-breeze-live.toml` L122,L256:
+change `padding_horizontal = 12.0` to `padding_horizontal = 6.0`.
+
+**Issue 7 -- combo_box.arrow_size (12 -> 20):**
+`kde-breeze.toml` L187,L385 and `kde-breeze-live.toml` L123,L257:
+change `arrow_size = 12.0` to `arrow_size = 20.0`.
+
+**Issue 8 -- combo_box.arrow_area_width (28 -> 20):**
+`kde-breeze.toml` L188,L386 and `kde-breeze-live.toml` L124,L258:
+change `arrow_area_width = 28.0` to `arrow_area_width = 20.0`.
+
+**Issue 9 -- segmented_control.segment_height (28 -> 30):**
+`kde-breeze.toml` L191,L389 and `kde-breeze-live.toml` L127,L261:
+change `segment_height = 28.0` to `segment_height = 30.0`.
+
+**Issue 10 -- segmented_control.padding_horizontal (12 -> 8):**
+`kde-breeze.toml` L193,L391 and `kde-breeze-live.toml` L129,L263:
+change `padding_horizontal = 12.0` to `padding_horizontal = 8.0`.
+
+---
+
+## 28. Systematic Adwaita Preset Verification (parameter-by-parameter)
+
+Cross-references every property in `docs/platform-facts.md` Chapter 2
+(sections 2.1-2.28) against:
+- `native-theme/src/presets/adwaita.toml` (static preset, light + dark)
+- `native-theme/src/presets/adwaita-live.toml` (geometry-only live preset)
+- `native-theme/src/resolve.rs` (inheritance/safety-net rules)
+
+Legend: preset value shown as `L: / D:` for light/dark.
+
+### 2.1 Global Defaults
+
+#### 2.1.1 Base Font
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `font.family` | gsetting `font-name` -> Adwaita Sans (GNOME 48+) | `"Adwaita Sans"` | OK -- matches GNOME 48+ default |
+| `font.size` | gsetting `font-name` -> 11 | `11.0` | OK |
+| `font.weight` | gsetting `font-name` -> 400 | `400` | OK |
+| `line_height` | Adwaita Sans (Inter metrics): 1.21 | `1.21` | OK |
+
+#### 2.1.2 Monospace Font
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `mono_font.family` | gsetting `monospace-font-name` -> Adwaita Mono | `"Adwaita Mono"` | OK |
+| `mono_font.size` | gsetting -> 11 | `11.0` | OK |
+| `mono_font.weight` | gsetting -> 400 | `400` | OK |
+
+#### 2.1.3 Base Colors
+
+| Property | platform-facts GNOME | Preset L / D | Status |
+|----------|---------------------|--------------|--------|
+| `background` | **(Adwaita CSS)** | L:`#fafafb` D:`#222226` | OK -- Adwaita CSS |
+| `foreground` | **(Adwaita CSS)** | L:`#2e3436` D:`#ffffff` | OK |
+| `accent` | Portal `accent-color` | L:`#3584e4` D:`#3584e4` | OK -- default blue |
+| `accent_foreground` | **(Adwaita CSS)** | L:`#ffffff` D:`#ffffff` | OK |
+| `surface` | **(Adwaita CSS)** | L:`#ffffff` D:`#303034` | OK |
+| `border` | **(Adwaita CSS)** | L:`#d5d5d5` D:`#4a4a4e` | OK |
+| `muted` | **(Adwaita CSS)** | L:`#929292` D:`#929292` | OK |
+| `shadow` | **(Adwaita CSS)** | L:`#00000018` D:`#00000040` | OK |
+| `link` | **(Adwaita CSS)** | L:`#1b6acb` D:`#5b9bf8` | OK |
+| `selection` | **(Adwaita CSS)** | L:`#3584e4` D:`#3584e4` | OK |
+| `selection_foreground` | **(Adwaita CSS)** | L:`#ffffff` D:`#ffffff` | OK |
+| `selection_inactive` | `(none)` -- `:backdrop` CSS | Not in preset; resolved from `selection` by Phase 1 | OK -- correct inheritance |
+| `disabled_foreground` | **(Adwaita CSS)** | L:`#cccccc` D:`#4a4a4e` | OK |
+
+#### 2.1.4 Status Colors
+
+| Property | platform-facts GNOME | Preset L / D | Status |
+|----------|---------------------|--------------|--------|
+| `danger` | **(Adwaita CSS)** | L:`#e01b24` D:`#c01c28` | OK |
+| `danger_foreground` | **(Adwaita CSS)** footnote 1: GNOME provides **normal body foreground** | L:`#ffffff` D:`#ffffff` | **WRONG** -- see below |
+| `warning` | **(Adwaita CSS)** | L:`#e5a50a` D:`#cd9309` | OK |
+| `warning_foreground` | **(Adwaita CSS)** footnote 1: normal body foreground | L:`#2e3436` D:`#ffffff` | **MIXED** -- dark OK, light debatable |
+| `success` | **(Adwaita CSS)** | L:`#2ec27e` D:`#26a269` | OK |
+| `success_foreground` | **(Adwaita CSS)** footnote 1: normal body foreground | L:`#ffffff` D:`#ffffff` | **WRONG** -- see below |
+| `info` | **(Adwaita CSS)** | L:`#3584e4` D:`#3584e4` | OK |
+| `info_foreground` | **(Adwaita CSS)** footnote 1: normal body foreground | L:`#ffffff` D:`#ffffff` | **WRONG** -- see below |
+
+#### 2.1.5 Focus Ring
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `focus_ring_color` | Adwaita `@accent_color` | L:`#3584e4` D:`#3584e4` | OK -- matches accent |
+| `focus_ring_width` | libadwaita CSS: 2px | `2.0` | OK |
+| `focus_ring_offset` | libadwaita CSS: -2px (inset) | `-2.0` | OK |
+
+#### 2.1.6 Global Geometry
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `radius` | Adwaita: 9px | `9.0` | OK |
+| `radius_lg` | Adwaita: 15px | `15.0` | OK |
+| `frame_width` | Adwaita: 1px | `1.0` | OK |
+| `disabled_opacity` | Adwaita: 0.5 | `0.5` | OK |
+| `border_opacity` | 0.15 **(preset)** | `0.15` | OK |
+| `shadow_enabled` | yes | `true` | OK |
+
+#### 2.1.7 Accessibility
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `text_scaling_factor` | gsetting (default 1.0) | `1.0` | OK -- live reader overrides |
+| `reduce_motion` | gsettings `enable-animations` | `false` | OK -- live reader overrides |
+| `high_contrast` | `a11y.interface high-contrast` | `false` | OK -- live reader overrides |
+| `reduce_transparency` | `(none)` | `false` | OK -- GNOME has none; false is correct |
+
+#### 2.1.8 Icon Sizes
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `toolbar` | `GTK_ICON_SIZE_NORMAL`: 16 | `16.0` | OK |
+| `small` | `GTK_ICON_SIZE_NORMAL`: 16 | `16.0` | OK |
+| `large` | `GTK_ICON_SIZE_LARGE`: 32 | `32.0` | OK |
+| `dialog` | `(none)` -- 48 (GTK3 legacy) | `22.0` | MISMATCH -- preset has 22, platform-facts says 48 GTK3 legacy or no GNOME value |
+| `panel` | `(none)` | `20.0` | OK -- no GNOME native value, reasonable preset |
+
+#### 2.1 Spacing (not in platform-facts per-property, but derived from 2.20)
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `spacing.xxs` | N/A (no abstract scale) | `2.0` | OK -- reasonable preset |
+| `spacing.xs` | N/A | `4.0` | OK |
+| `spacing.s` | 6 **(measured)** widget gap | `6.0` | OK |
+| `spacing.m` | 12 **(measured)** container margin | `12.0` | OK |
+| `spacing.l` | 18 **(measured)** section gap | `18.0` | OK |
+| `spacing.xl` | N/A | `24.0` | OK |
+| `spacing.xxl` | N/A | `36.0` | OK |
+
+---
+
+### 2.2 Window / Application Chrome
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `background` | <- `defaults.background` | Not in preset; resolved by inheritance | OK |
+| `foreground` | <- `defaults.foreground` | Not in preset; resolved by inheritance | OK |
+| `border` | **(Adwaita CSS)** window border | Not in preset; resolved from `defaults.border` | OK |
+| `title_bar_background` | libadwaita `headerbar` bg | Not in preset; resolved from `defaults.surface` | OK -- headerbar bg matches surface |
+| `title_bar_foreground` | libadwaita `headerbar` fg | L:`#2e3436` D:`#ffffff` | OK -- explicitly set |
+| `inactive_title_bar_bg` | `(none)` -- `:backdrop` CSS | Not in preset; resolved from active by Phase 4 | OK |
+| `inactive_title_bar_fg` | `(none)` -- `:backdrop` CSS | Not in preset; resolved from active by Phase 4 | OK |
+| `title_bar_font.family` | gsetting `titlebar-font` -> Adwaita Sans | Not in preset; resolved from `defaults.font` | OK -- Adwaita Sans matches |
+| `title_bar_font.size` | gsetting -> 11 | Not in preset; resolved from `defaults.font` | OK |
+| `title_bar_font.weight` | gsetting -> Bold (700) | Not in preset; resolved from `defaults.font` (400) | **WRONG** -- should be 700 |
+| `radius` | <- `defaults.radius_lg` | Not in preset; resolved from `defaults.radius_lg` (15) | OK |
+| `shadow` | <- `defaults.shadow_enabled` | Not in preset; resolved | OK |
+
+---
+
+### 2.3 Button
+
+| Property | platform-facts GNOME | Preset L / D | Status |
+|----------|---------------------|--------------|--------|
+| `background` | libadwaita `.button` bg | L:`#e8e8e8` D:`#3a3a3e` | OK -- Adwaita button bg |
+| `foreground` | libadwaita `.button` fg | L:`#2e3436` D:`#ffffff` | OK |
+| `border` | <- `defaults.border` | Not in preset; resolved | OK |
+| `font` | <- `defaults.font` | Not in preset; resolved | OK |
+| `min_width` | **(Adwaita CSS)**: none | `64.0` | **WRONG** -- platform-facts says GNOME has no min-width; 64 is not from Adwaita CSS |
+| `min_height` | **(Adwaita CSS)**: 24 (34 w/ padding) | `34.0` | OK -- 34 = 24 min-height + 2*5 padding |
+| `padding_horizontal` | **(Adwaita CSS)**: 10 | `10.0` | OK |
+| `padding_vertical` | **(Adwaita CSS)**: 5 | `5.0` | OK |
+| `radius` | <- `defaults.radius` | Not in preset; resolved (9) | OK |
+| `icon_spacing` | **(Adwaita CSS)**: 8 | `6.0` | **WRONG** -- should be 8 |
+| `primary_bg` | <- `defaults.accent` | Not in preset; resolved | OK |
+| `primary_fg` | <- `defaults.accent_foreground` | Not in preset; resolved | OK |
+| `disabled_opacity` | <- `defaults.disabled_opacity` | Not in preset; resolved (0.5) | OK |
+| `shadow` | <- `defaults.shadow_enabled` | Not in preset; resolved | OK |
+
+---
+
+### 2.4 Text Input
+
+| Property | platform-facts GNOME | Preset L / D | Status |
+|----------|---------------------|--------------|--------|
+| `background` | libadwaita `.entry` bg | L:`#ffffff` D:`#303034` | OK |
+| `foreground` | libadwaita `.entry` fg | L:`#2e3436` D:`#ffffff` | OK |
+| `border` | <- `defaults.border` | Not in preset; resolved | OK |
+| `placeholder` | libadwaita `.dim-label` | L:`#929595` D:`#8b8b8b` | OK -- dim-label values |
+| `caret` | libadwaita `@accent_color` | Not in preset; safety net resolves from `defaults.foreground` | **WRONG** -- should be accent (#3584e4), not foreground |
+| `selection` | <- `defaults.selection` | Not in preset; resolved | OK |
+| `selection_foreground` | <- `defaults.selection_foreground` | Not in preset; resolved | OK |
+| `font` | <- `defaults.font` | Not in preset; resolved | OK |
+| `min_height` | **(Adwaita CSS)**: 34 | `34.0` | OK |
+| `padding_horizontal` | **(Adwaita CSS)**: 9 | `9.0` | OK |
+| `padding_vertical` | **(Adwaita CSS)**: 0 | `0.0` | OK |
+| `radius` | <- `defaults.radius` | Not in preset; resolved (9) | OK |
+| `border_width` | <- `defaults.frame_width` | Not in preset; resolved (1) | OK |
+
+---
+
+### 2.5 Checkbox / Radio Button
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `indicator_size` | libadwaita CSS: 14 | `20.0` | **WRONG** -- should be 14, not 20 (20 includes padding) |
+| `spacing` | **(Adwaita CSS)**: 8 | `8.0` | OK |
+| `radius` | <- `defaults.radius` | Not in preset; resolved (9) | OK |
+| `border_width` | <- `defaults.frame_width` | Not in preset; resolved (1) | OK |
+| `checked_bg` | <- `defaults.accent` | Not in preset; resolved | OK |
+
+---
+
+### 2.6 Menu
+
+| Property | platform-facts GNOME | Preset L / D | Status |
+|----------|---------------------|--------------|--------|
+| `background` | libadwaita `popover.menu` bg | Not in preset; resolved from `defaults.background` | OK -- popover.menu bg matches background |
+| `foreground` | libadwaita `popover.menu` fg | Not in preset; resolved from `defaults.foreground` | OK |
+| `separator` | **(Adwaita CSS)** separator | Not in preset; resolved from `defaults.border` | OK |
+| `font.family` | <- `defaults.font` | Not in preset; resolved | OK |
+| `font.size` | <- `defaults.font` | Not in preset; resolved | OK |
+| `font.weight` | <- `defaults.font` | Not in preset; resolved | OK |
+| `item_height` | **(Adwaita CSS)**: 32 | `32.0` | OK |
+| `padding_horizontal` | **(Adwaita CSS)**: 12 ($menu_padding) | `12.0` | OK |
+| `padding_vertical` | **(Adwaita CSS)**: 0 (vertical space from min-height) | `4.0` | **WRONG** -- should be 0, not 4 |
+| `icon_spacing` | **(Adwaita CSS)**: 8 | `8.0` | OK |
+
+---
+
+### 2.7 Tooltip
+
+| Property | platform-facts GNOME | Preset L / D | Status |
+|----------|---------------------|--------------|--------|
+| `background` | libadwaita `.tooltip` bg | L:`#2e3436` D:`#3a3a3e` | OK -- explicitly set |
+| `foreground` | libadwaita `.tooltip` fg | L:`#ffffff` D:`#ffffff` | OK |
+| `font.family` | <- `defaults.font` | Not in preset; resolved | OK |
+| `font.size` | <- `defaults.font` | Not in preset; resolved | OK |
+| `font.weight` | <- `defaults.font` | Not in preset; resolved | OK |
+| `padding_horizontal` | **(Adwaita CSS)**: 10 | `10.0` | OK |
+| `padding_vertical` | **(Adwaita CSS)**: 6 | `6.0` | OK |
+| `max_width` | `(none)` -- preset: 360 | `300.0` | **WRONG** -- platform-facts says GNOME preset should be 360 |
+| `radius` | <- `defaults.radius` | Not in preset; resolved (9) | OK |
+
+---
+
+### 2.8 Scrollbar
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `track` | **(Adwaita CSS)** scrollbar | Not in preset; safety net resolves from `defaults.background` | OK |
+| `thumb` | **(Adwaita CSS)** scrollbar | Not in preset; resolved from `defaults.muted` | OK -- reasonable fallback |
+| `thumb_hover` | **(Adwaita CSS)** :hover | Not in preset; resolved from `defaults.muted` | OK -- same as thumb (could be distinct) |
+| `width` | slider: 8 + margins | `12.0` | OK -- 8px slider + 4px margins |
+| `min_thumb_height` | **(Adwaita CSS)**: 40 | `30.0` | **WRONG** -- should be 40, not 30 |
+| `slider_width` | **(Adwaita CSS)**: 8 | `8.0` | OK |
+| `overlay_mode` | gsettings `overlay-scrolling` | `false` | OK -- preset default; live reader overrides |
+
+---
+
+### 2.9 Slider
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `fill` | <- `defaults.accent` | Not in preset; resolved | OK |
+| `track` | <- `defaults.muted` | Not in preset; resolved | OK |
+| `thumb` | <- `defaults.surface` | Not in preset; resolved | OK |
+| `track_height` | libadwaita `.scale`: 10 | `10.0` | OK |
+| `thumb_size` | libadwaita: 20 | `20.0` | OK |
+| `tick_length` | `(none)` -- no ticks | `4.0` | OK -- reasonable preset default |
+
+---
+
+### 2.10 Progress Bar
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `fill` | <- `defaults.accent` | Not in preset; resolved | OK |
+| `track` | <- `defaults.muted` | Not in preset; resolved | OK |
+| `height` | libadwaita `.progressbar`: 8 | `8.0` | OK |
+| `min_width` | **(Adwaita CSS)**: 80 | `80.0` | OK |
+| `radius` | <- `defaults.radius` | Not in preset; resolved (9) | OK |
+
+---
+
+### 2.11 Tab Bar
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `background` | <- `defaults.background` | Not in preset; resolved | OK |
+| `foreground` | <- `defaults.foreground` | Not in preset; resolved | OK |
+| `active_background` | <- `defaults.background` | Not in preset; resolved | OK |
+| `active_foreground` | <- `defaults.foreground` | Not in preset; resolved | OK |
+| `bar_background` | <- `defaults.background` | Not in preset; resolved | OK |
+| `min_width` | **(Adwaita CSS)**: none | `64.0` | MISMATCH -- GNOME has no min-width (sizes to label); 64 is a reasonable preset |
+| `min_height` | **(Adwaita CSS)**: 30 | `30.0` | OK |
+| `padding_horizontal` | **(Adwaita CSS)**: 12 | `12.0` | OK |
+| `padding_vertical` | CSS `padding: 3px 12px` but measured (30-14)/2 = 8 | `4.0` | **WRONG** -- CSS says 3, platform-facts measured 8; preset has 4 which matches neither |
+
+---
+
+### 2.12 Sidebar
+
+| Property | platform-facts GNOME | Preset L / D | Status |
+|----------|---------------------|--------------|--------|
+| `background` | libadwaita `.sidebar` bg | L:`#ebebed` D:`#2e2e32` | OK -- explicitly set |
+| `foreground` | libadwaita `.sidebar` fg | L:`#2e3436` D:`#ffffff` | OK |
+
+---
+
+### 2.13 Toolbar
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `font.family` | <- `defaults.font` | Not in preset; resolved | OK |
+| `font.size` | <- `defaults.font` | Not in preset; resolved | OK |
+| `font.weight` | <- `defaults.font` | Not in preset; resolved | OK |
+| `height` | **(Adwaita CSS)**: 47 | `47.0` | OK |
+| `item_spacing` | **(Adwaita CSS)**: 6 | `6.0` | OK |
+| `padding` | **(Adwaita CSS)**: 6 | `6.0` | OK |
+
+---
+
+### 2.14 Status Bar
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `font.family` | <- `defaults.font` | Not in preset; resolved | OK |
+| `font.size` | <- `defaults.font` | Not in preset; resolved | OK |
+| `font.weight` | <- `defaults.font` | Not in preset; resolved | OK |
+
+---
+
+### 2.15 List / Table
+
+| Property | platform-facts GNOME | Preset L / D | Status |
+|----------|---------------------|--------------|--------|
+| `background` | libadwaita `.list` bg | Not in preset; safety net resolves from `defaults.background` | OK |
+| `foreground` | libadwaita `.list` fg | Not in preset; resolved from `defaults.foreground` | OK |
+| `alternate_row` | **(Adwaita CSS)** even row | L:`#f5f5f5` D:`#2a2a2e` | OK -- explicitly set |
+| `selection` | <- `defaults.selection` | Not in preset; resolved | OK |
+| `selection_foreground` | <- `defaults.selection_foreground` | Not in preset; resolved | OK |
+| `header_background` | **(Adwaita CSS)** columnview header | Not in preset; resolved from `defaults.surface` | OK |
+| `header_foreground` | **(Adwaita CSS)** columnview header | Not in preset; resolved from `defaults.foreground` | OK |
+| `grid_color` | `(none)` -- columnview uses CSS separator | Not in preset; resolved from `defaults.border` | OK |
+| `item_height` | **(Adwaita CSS)**: `.rich-list` 32px; plain row content-driven | `34.0` | OK -- 34 accounts for padding in rich-list rows |
+| `padding_horizontal` | **(Adwaita CSS)**: 12 (`.rich-list`) | `12.0` | OK |
+| `padding_vertical` | **(Adwaita CSS)**: 8 (`.rich-list`) | `8.0` | OK |
+
+---
+
+### 2.16 Popover / Dropdown
+
+| Property | platform-facts GNOME | Preset L / D | Status |
+|----------|---------------------|--------------|--------|
+| `background` | libadwaita `.popover` bg | L:`#ffffff` D:`#36363a` | OK -- explicitly set |
+| `foreground` | libadwaita `.popover` fg | L:`#2e3436` D:`#ffffff` | OK |
+| `border` | <- `defaults.border` | Not in preset; resolved | OK |
+| `radius` | <- `defaults.radius_lg` | Not in preset; resolved (15) | OK |
+
+---
+
+### 2.17 Splitter
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `width` | **(Adwaita CSS)** paned: 1 (default) / 5 (wide) | `1.0` | OK -- default paned width |
+
+---
+
+### 2.18 Separator
+
+| Property | platform-facts GNOME | Preset L / D | Status |
+|----------|---------------------|--------------|--------|
+| `color` | libadwaita `.separator` CSS | L:`#d5d5d5` D:`#4a4a4e` | OK -- matches border color |
+
+---
+
+### 2.19 Text Scale
+
+| Role | platform-facts GNOME | Preset value | Status |
+|------|---------------------|--------------|--------|
+| `caption` | `.caption`: ~9pt, 400 | Not in preset; resolved from `defaults.font` (11pt, 400) | **WRONG** -- should be ~9pt (82% of 11 = 9.02), not 11pt |
+| `section_heading` | `.heading`: 11pt, **700** | weight: `700` (explicit) | OK -- weight 700 explicitly set; size inherited as 11pt |
+| `dialog_title` | `.title-2`: ~15pt, **800** | Not in preset; resolved from `defaults.font` (11pt, 400) | **WRONG** -- should be ~15pt (136% of 11) weight 800 |
+| `display` | `.title-1`: ~20pt, **800** | Not in preset; resolved from `defaults.font` (11pt, 400) | **WRONG** -- should be ~20pt (181% of 11) weight 800 |
+
+---
+
+### 2.20 Layout Spacing
+
+| Context | platform-facts GNOME | Preset mapping | Status |
+|---------|---------------------|----------------|--------|
+| Standard widget gap | 6 **(measured)** | `spacing.s = 6.0` | OK |
+| Nested container margin | 12 **(measured)** | `spacing.m = 12.0` | OK |
+| Window content margin | 12 **(measured)** | `spacing.m = 12.0` | OK |
+| Section gap | 18 **(measured)** | `spacing.l = 18.0` | OK |
+
+---
+
+### 2.21 Switch / Toggle
+
+| Property | platform-facts GNOME | Preset L / D | Status |
+|----------|---------------------|--------------|--------|
+| `track_width` | ~46px (derived: 2*thumb+pad) | `46.0` | OK |
+| `track_height` | ~26px (20+2*3 padding) | `26.0` | OK |
+| `thumb_size` | 20px | `20.0` | OK |
+| `track_radius` | 14px (pill) | `14.0` | OK |
+| `checked_bg` | <- `defaults.accent` | Not in preset; resolved | OK |
+| `unchecked_bg` | Adwaita `$trough_color` | L:`#d5d5d5` D:`#4a4a4e` | OK |
+| `thumb_bg` | Adwaita `$slider_color` | L:`#ffffff` D:`#ffffff` | OK |
+
+---
+
+### 2.22 Dialog
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `min_width` | AdwAlertDialog: 300sp | `320.0` | **WRONG** -- should be 300, not 320 |
+| `max_width` | AdwAlertDialog: 372sp (wide: 600sp) | `560.0` | **WRONG** -- should be 372, not 560 |
+| `min_height` | `(none)` | `140.0` | OK -- no GNOME value; reasonable preset |
+| `max_height` | `(none)` | `600.0` | OK -- aligns with wide mode max |
+| `content_padding` | 24px sides, 32px top | `24.0` | OK -- sides padding (top differs) |
+| `button_spacing` | 12px | `8.0` | **WRONG** -- should be 12, not 8 |
+| `button_order` | cancel left, affirmative right | `"trailing_affirmative"` | OK |
+| `title_font` | `.title-2` (136%, 800) | Not in preset; resolved from `defaults.font` (11pt, 400) | **WRONG** -- should be ~15pt weight 800 |
+| `radius` | 18px (`$alert_radius`) | Not in preset; resolved from `defaults.radius_lg` (15) | **WRONG** -- should be 18, not 15 |
+| `icon_size` | `(none)` -- no default icon | `32.0` | OK -- reasonable preset |
+
+---
+
+### 2.23 Spinner / Progress Ring
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `diameter` | GtkSpinner: 16 | `16.0` | OK |
+| `min_size` | `(none)` | `16.0` | OK -- reasonable preset |
+| `stroke_width` | `(none)` -- icon-based | `2.0` | OK -- reasonable preset |
+| `fill` | <- `defaults.foreground` | Not in preset; safety net resolves from `defaults.foreground` | OK |
+
+---
+
+### 2.24 ComboBox / Dropdown Trigger
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `min_height` | <- button min-height (24+pad) | `34.0` | OK -- matches button total |
+| `min_width` | `(none)` -- sizes to content | `120.0` | OK -- reasonable preset |
+| `padding_horizontal` | <- button padding (10px) | `12.0` | MISMATCH -- platform-facts says 10 (like button); preset has 12 |
+| `arrow_size` | 16px (pan-down-symbolic) | `12.0` | **WRONG** -- should be 16, not 12 |
+| `arrow_area_width` | `(none)` -- inline icon | `28.0` | OK -- reasonable preset |
+| `radius` | <- `defaults.radius` | Not in preset; resolved (9) | OK |
+
+---
+
+### 2.25 Segmented Control
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `segment_height` | `(none)` | `28.0` | OK -- no GNOME value; reasonable preset |
+| `separator_width` | `(none)` | `1.0` | OK |
+| `padding_horizontal` | `(none)` | `12.0` | OK |
+| `radius` | `(none)` | Not in preset; resolved from `defaults.radius` (9) | OK |
+
+---
+
+### 2.26 Card / Container
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `background` | `var(--card-bg-color)` | Not in preset; resolved from `defaults.surface` | OK |
+| `border` | `var(--card-shade-color)` | Not in preset; resolved from `defaults.border` | OK |
+| `radius` | `$card_radius` = 12px | Not in preset; resolved from `defaults.radius_lg` (15) | **WRONG** -- should be 12, not 15 |
+| `shadow` | Adwaita box-shadow | Not in preset; resolved from `defaults.shadow_enabled` | OK |
+| `padding` | `(none)` -- app-defined | `16.0` | OK -- reasonable preset |
+
+---
+
+### 2.27 Expander / Disclosure
+
+| Property | platform-facts GNOME | Preset value | Status |
+|----------|---------------------|--------------|--------|
+| `header_height` | AdwExpanderRow: 50 | `40.0` | **WRONG** -- should be 50, not 40 |
+| `arrow_size` | 16px (pan-end-symbolic) | `12.0` | **WRONG** -- should be 16, not 12 |
+| `content_padding` | **(Adwaita CSS)** row padding | `16.0` | OK -- reasonable mapping |
+| `radius` | 6px (expander title) | Not in preset; resolved from `defaults.radius` (9) | **WRONG** -- should be 6, not 9 |
+
+---
+
+### 2.28 Link
+
+| Property | platform-facts GNOME | Preset L / D | Status |
+|----------|---------------------|--------------|--------|
+| `color` | `var(--accent-color)` | Not in preset; resolved from `defaults.link` | OK |
+| `visited` | Adwaita 80% mix accent+fg | Not in preset; resolved from `defaults.link` (same as color) | OK -- visited = link as fallback |
+| `underline` | yes | `true` | OK |
+| `background` | `(none)` -- inline | L:`#00000000` D:`#00000000` | OK -- transparent |
+| `hover_bg` | `(none)` | L:`#3584e418` D:`#3584e418` | OK -- subtle accent tint |
+
+---
+
+### adwaita-live.toml Cross-check
+
+The live preset correctly mirrors all geometry values from the static
+preset and omits all colors, fonts, and icon settings (these come from
+the OS reader at runtime). Verified: all 28 widget sections match.
+
+---
+
+### Summary of Issues Found
+
+#### Critical Issues (values contradict platform-facts)
+
+| # | Property | Preset has | Should be | Section | Fix |
+|---|----------|-----------|-----------|---------|-----|
+| 1 | `button.icon_spacing` | 6 | 8 | 2.3 | Change to `8.0` -- platform-facts: **(Adwaita CSS)**: 8 |
+| 2 | `checkbox.indicator_size` | 20 | 14 | 2.5 | Change to `14.0` -- platform-facts: "libadwaita CSS: 14"; 20 includes padding |
+| 3 | `menu.padding_vertical` | 4 | 0 | 2.6 | Change to `0.0` -- CSS `padding: 0 $menu_padding`; height from min-height |
+| 4 | `tooltip.max_width` | 300 | 360 | 2.7 | Change to `360.0` -- platform-facts GNOME column says 360 |
+| 5 | `scrollbar.min_thumb_height` | 30 | 40 | 2.8 | Change to `40.0` -- **(Adwaita CSS)**: 40 |
+| 6 | `tab.padding_vertical` | 4 | 3 | 2.11 | Change to `3.0` -- CSS `padding: 3px 12px` from _notebook.scss |
+| 7 | `dialog.min_width` | 320 | 300 | 2.22 | Change to `300.0` -- AdwAlertDialog: 300sp |
+| 8 | `dialog.max_width` | 560 | 372 | 2.22 | Change to `372.0` -- AdwAlertDialog: 372sp |
+| 9 | `dialog.button_spacing` | 8 | 12 | 2.22 | Change to `12.0` -- _message-dialog.scss `.response-area { border-spacing: 12px }` |
+| 10 | `dialog.radius` | 15 (inherited) | 18 | 2.22 | Set explicitly to `18.0` -- `$alert_radius: 18px`, distinct from window radius |
+| 11 | `card.radius` | 15 (inherited) | 12 | 2.26 | Set explicitly to `12.0` -- `$card_radius = 12px` |
+| 12 | `expander.header_height` | 40 | 50 | 2.27 | Change to `50.0` -- AdwExpanderRow min-height: 50px |
+| 13 | `expander.arrow_size` | 12 | 16 | 2.27 | Change to `16.0` -- _expanders.scss `min-width/min-height: 16px` |
+| 14 | `expander.radius` | 9 (inherited) | 6 | 2.27 | Set explicitly to `6.0` -- 6px expander title radius |
+| 15 | `combo_box.arrow_size` | 12 | 16 | 2.24 | Change to `16.0` -- GtkDropDown arrow: 16x16 pan-down-symbolic |
+| 16 | `input.caret` | foreground (safety net) | accent | 2.4 | Set explicitly to accent (`#3584e4`) -- libadwaita `@accent_color` |
+
+#### Semantic Issues (status foreground interpretation)
+
+| # | Property | Preset has | platform-facts says | Section | Note |
+|---|----------|-----------|-------------------|---------|------|
+| 17 | `danger_foreground` | L:`#ffffff` D:`#ffffff` | footnote 1: normal body fg | 2.1.4 | Light should be `#2e3436` (body fg); dark `#ffffff` is correct (matches body fg) |
+| 18 | `success_foreground` | L:`#ffffff` D:`#ffffff` | footnote 1: normal body fg | 2.1.4 | Light should be `#2e3436`; dark `#ffffff` correct |
+| 19 | `info_foreground` | L:`#ffffff` D:`#ffffff` | footnote 1: normal body fg | 2.1.4 | Light should be `#2e3436`; dark `#ffffff` correct |
+
+**Decision needed on 17-19:** platform-facts footnote 1 says GNOME
+`*_foreground` should be **normal body foreground** (text color
+*alongside* a status indicator). The current white values work as
+**contrast text on a status-colored fill**. This is a semantic
+interpretation choice -- if the intent is "text next to a red icon"
+then foreground is correct; if the intent is "white text on red
+background" then current values are correct. The current values are
+internally inconsistent: `warning_foreground` light uses `#2e3436`
+(body fg) but `danger_foreground` light uses `#ffffff`. Pick one
+interpretation and be consistent.
+
+#### Text Scale Issues
+
+| # | Property | Preset has | Should be | Section | Fix |
+|---|----------|-----------|-----------|---------|-----|
+| 20 | `text_scale.caption.size` | 11 (inherited) | ~9 (82% of 11) | 2.19 | Add explicit `size = 9.0` to caption entry |
+| 21 | `text_scale.dialog_title.size` | 11 (inherited) | ~15 (136% of 11) | 2.19 | Add explicit entry: `size = 15.0, weight = 800` |
+| 22 | `text_scale.dialog_title.weight` | 400 (inherited) | 800 | 2.19 | (part of fix 21) |
+| 23 | `text_scale.display.size` | 11 (inherited) | ~20 (181% of 11) | 2.19 | Add explicit entry: `size = 20.0, weight = 800` |
+| 24 | `text_scale.display.weight` | 400 (inherited) | 800 | 2.19 | (part of fix 23) |
+
+#### Window Font Weight
+
+| # | Property | Preset has | Should be | Section | Fix |
+|---|----------|-----------|-----------|---------|-----|
+| 25 | `window.title_bar_font.weight` | 400 (inherited) | 700 (Bold) | 2.2 | Add `[light/dark.window.title_bar_font]` with `weight = 700` |
+
+#### Minor Discrepancies (preset vs platform-facts convention)
+
+| # | Property | Preset has | platform-facts says | Status |
+|---|----------|-----------|-------------------|--------|
+| 26 | `button.min_width` | 64 | GNOME: none | Preset provides a minimum; GNOME sizes to content -- acceptable as a layout hint |
+| 27 | `tab.min_width` | 64 | GNOME: none | Same reasoning as button |
+| 28 | `combo_box.padding_horizontal` | 12 | 10 (button-like) | Minor difference; 12 is GtkDropDown `border-spacing: 6px` applied differently |
+| 29 | `icon_sizes.dialog` | 22 | 48 (GTK3 legacy) or no GNOME value | No clear GNOME 4 value; 22 is reasonable |
+
+**Total: 25 actionable issues (16 critical, 5 text scale, 1 font weight,
+3 semantic choices), 4 minor acceptable discrepancies.**
+
+---
+
+## 29. Systematic Windows 11 Preset Verification (parameter-by-parameter)
+
+Cross-references every property in `platform-facts.md` Chapter 2 (sections
+2.1--2.28) against `windows-11.toml` (both light and dark variants) and
+`windows-11-live.toml`. Properties marked with `<- defaults.X` are verified
+through `resolve.rs` inheritance. Values marked **(Fluent)** are checked
+against the Fluent 2 / WinUI3 XAML resources documented in Chapter 1.
+
+Legend: OK = matches, ERR = mismatch, WARN = minor concern, INHERIT =
+filled by resolve.rs.
+
+### 2.1 Global Defaults
+
+#### 2.1.1 Base Font
+
+| Property | platform-facts Windows | Preset L / D | Live | Status |
+|----------|----------------------|--------------|------|--------|
+| `family` | `lfMessageFont.lfFaceName`; Segoe UI | `Segoe UI` / `Segoe UI` | OS | OK |
+| `size` | Body=14px | 14.0 / 14.0 | OS | OK |
+| `weight` | `lfMessageFont.lfWeight`; 400 | 400 / 400 | OS | OK |
+| `line_height` | 1.43 **(Fluent)** 20/14 | 1.43 / 1.43 | 1.43 | OK |
+
+#### 2.1.2 Monospace Font
+
+| Property | platform-facts Windows | Preset L / D | Live | Status |
+|----------|----------------------|--------------|------|--------|
+| `family` | **(none)** -- Cascadia Mono | `Cascadia Mono` / same | none | OK |
+| `size` | **(none)** -- 14px | 14.0 / 14.0 | none | OK |
+| `weight` | **(none)** -- 400 | 400 / 400 | none | OK |
+
+#### 2.1.3 Base Colors
+
+| Property | platform-facts Windows | Preset L / D | Status |
+|----------|----------------------|--------------|--------|
+| `background` | `UISettings(Background)` | `#f3f3f3` / `#202020` | OK |
+| `foreground` | `UISettings(Foreground)` | `#1a1a1a` / `#ffffff` | OK |
+| `accent` | `UISettings(Accent)` | `#0078d4` / `#0078d4` | OK |
+| `accent_foreground` | TextOnAccentFillColorPrimary L=#fff D=#000 | `#ffffff` / `#ffffff` | **ERR** dark=#ffffff should be #000000 (18a) |
+| `surface` | CardBackgroundFillColorDefault | `#ffffff` / `#2d2d2d` | OK |
+| `border` | CardStrokeColorDefault | `#e5e5e5` / `#454545` | OK |
+| `muted` | TextFillColorSecondary | `#717171` / `#9a9a9a` | OK |
+| `shadow` | Fluent elevation layers | `#00000018` / `#00000040` | OK |
+| `link` | HyperlinkForeground | `#005a9e` / `#60cdff` | OK |
+| `selection` | `COLOR_HIGHLIGHT` | `#0078d4` / `#0078d4` | OK |
+| `selection_foreground` | `COLOR_HIGHLIGHTTEXT` | `#ffffff` / `#ffffff` | OK |
+| `selection_inactive` | resolve: <- selection | (not set) | OK -- INHERIT |
+| `disabled_foreground` | TextFillColorDisabled | `#c5c5c5` / `#454545` | OK |
+
+#### 2.1.4 Status Colors
+
+| Property | platform-facts Windows | Preset L / D | Status |
+|----------|----------------------|--------------|--------|
+| `danger` | L=#c42b1c D=#ff99a4 | `#c42b1c` / `#ff9999` | **ERR** dark=#ff9999 vs #ff99a4 (18b) |
+| `danger_foreground` | L=#ffffff D=#1a1a1a | `#ffffff` / `#1a1a1a` | OK |
+| `warning` | L=#9d5d00 D=#fce100 | `#9d5d00` / `#f0c239` | **ERR** dark=#f0c239 vs #fce100 (18c) |
+| `warning_foreground` | L=#1a1a1a D=#1a1a1a | `#1a1a1a` / `#1a1a1a` | OK |
+| `success` | L=#0f7b0f D=#6ccb5f | `#0f7b0f` / `#6ccb5f` | OK |
+| `success_foreground` | L=#ffffff D=#1a1a1a | `#ffffff` / `#1a1a1a` | OK |
+| `info` | accent-derived | `#0078d4` / `#60cdff` | OK |
+| `info_foreground` | L=#ffffff D=#1a1a1a | `#ffffff` / `#1a1a1a` | OK |
+
+#### 2.1.5 Focus Ring
+
+| Property | platform-facts Windows | Preset L/D | Live | Status |
+|----------|----------------------|------------|------|--------|
+| `color` | `UISettings(Accent)` | `#0078d4` / `#0078d4` | derived | OK |
+| `width` | Fluent: 2px | 2.0 / 2.0 | 2.0 | OK |
+| `offset` | Fluent: 0px | 0.0 / 0.0 | 0.0 | OK |
+
+#### 2.1.6 Global Geometry
+
+| Property | platform-facts Windows | Preset L/D | Live | Status |
+|----------|----------------------|------------|------|--------|
+| `radius` | Fluent: 4px | 4.0 / 4.0 | 4.0 | OK |
+| `radius_lg` | Fluent: 8px | 8.0 / 8.0 | 8.0 | OK |
+| `frame_width` | `SM_CXBORDER` = 1px | 1.0 / 1.0 | 1.0 | OK |
+| `disabled_opacity` | Fluent: ~0.3 | 0.3 / 0.3 | 0.3 | OK |
+| `border_opacity` | 0.14 **(preset)** | 0.14 / 0.14 | 0.14 | OK |
+| `shadow_enabled` | yes | true / true | true | OK |
+
+#### 2.1.7 Accessibility
+
+| Property | platform-facts Windows | Preset L/D | Live | Status |
+|----------|----------------------|------------|------|--------|
+| `text_scaling_factor` | `UISettings.TextScaleFactor` | 1.0 / 1.0 | OS | OK |
+| `reduce_motion` | `SPI_GETCLIENTAREAANIMATION` | false / false | OS | OK |
+| `high_contrast` | `SPI_GETHIGHCONTRAST` | false / false | OS | OK |
+| `reduce_transparency` | **(none)** | false / false | N/A | OK |
+
+#### 2.1.8 Icon Sizes
+
+| Context | platform-facts Windows | Preset L/D | Live | Status |
+|---------|----------------------|------------|------|--------|
+| `toolbar` | AppBarButton: 20 | 20.0 / 20.0 | 20.0 | OK |
+| `small` | `SM_CXSMICON`: 16 | 16.0 / 16.0 | 16.0 | OK |
+| `large` | `SM_CXICON`: 32 | 32.0 / 32.0 | 32.0 | OK |
+| `dialog` | **(none)** | 22.0 / 22.0 | 22.0 | WARN -- no spec; 22 reasonable |
+| `panel` | **(none)** | 20.0 / 20.0 | 20.0 | WARN -- no spec; matches toolbar |
+
+### 2.2 Window / Application Chrome
+
+| Property | platform-facts Windows | Preset L/D | Status |
+|----------|----------------------|------------|--------|
+| `background` | <- defaults.background | (not set) | OK -- INHERIT |
+| `foreground` | <- defaults.foreground | (not set) | OK -- INHERIT |
+| `border` | <- defaults.border | (not set) | OK -- INHERIT |
+| `title_bar_background` | `DwmGetColorizationColor` (live) | (not set) | OK -- INHERIT <- surface |
+| `title_bar_foreground` | `COLOR_CAPTIONTEXT` (live) | (not set) | OK -- INHERIT <- foreground |
+| `inactive_title_bar_bg` | `COLOR_INACTIVECAPTION` (live) | (not set) | OK -- INHERIT <- title_bar_bg |
+| `inactive_title_bar_fg` | `COLOR_INACTIVECAPTIONTEXT` (live) | (not set) | OK -- INHERIT <- title_bar_fg |
+| `title_bar_font.family` | `lfCaptionFont.lfFaceName` (live) | (not set) | OK -- INHERIT <- defaults.font |
+| `title_bar_font.size` | `lfCaptionFont.lfHeight` (live) | (not set) | OK -- INHERIT |
+| `title_bar_font.weight` | `lfCaptionFont.lfWeight` (live) | (not set) | OK -- INHERIT |
+| `radius` | <- defaults.radius_lg | (not set) | OK -- INHERIT |
+| `shadow` | <- defaults.shadow_enabled | (not set) | OK -- INHERIT |
+
+### 2.3 Button
+
+| Property | platform-facts Windows | Preset L / D | Live | Status |
+|----------|----------------------|--------------|------|--------|
+| `background` | `COLOR_BTNFACE` (live) | `#fdfdfd` / `#333333` | none | OK |
+| `foreground` | `COLOR_BTNTEXT` (live) | `#1a1a1a` / `#ffffff` | none | OK |
+| `border` | <- defaults.border | (not set) | N/A | OK -- INHERIT |
+| `font` | <- defaults.font | (not set) | N/A | OK -- INHERIT |
+| `min_width` | **(none)** | 64.0 / 64.0 | 64.0 | WARN -- no spec; design default |
+| `min_height` | WinUI3: ~27 | 27.0 / 27.0 | 27.0 | WARN -- effective; issue 8c |
+| `padding_horizontal` | WinUI3: 11 | 11.0 / 11.0 | 11.0 | OK |
+| `padding_vertical` | WinUI3: 5/6 | 6.0 / 6.0 | 6.0 | WARN -- asymmetric; 6 acceptable |
+| `radius` | <- defaults.radius | (not set) | N/A | OK -- INHERIT |
+| `icon_spacing` | WinUI3: 8 | 8.0 / 8.0 | 8.0 | OK |
+| `primary_bg` | <- defaults.accent | (not set) | N/A | OK -- INHERIT |
+| `primary_fg` | <- defaults.accent_foreground | (not set) | N/A | OK -- INHERIT |
+| `disabled_opacity` | <- defaults.disabled_opacity | (not set) | N/A | OK -- INHERIT |
+| `shadow` | <- defaults.shadow_enabled | (not set) | N/A | OK -- INHERIT |
+
+### 2.4 Text Input
+
+| Property | platform-facts Windows | Preset L / D | Live | Status |
+|----------|----------------------|--------------|------|--------|
+| `background` | `COLOR_WINDOW` (live) | `#ffffff` / `#2d2d2d` | none | OK |
+| `foreground` | `COLOR_WINDOWTEXT` (live) | `#1a1a1a` / `#ffffff` | none | OK |
+| `border` | <- defaults.border | (not set) | N/A | OK -- INHERIT |
+| `placeholder` | TextPlaceholderColor | (not set) | N/A | OK -- INHERIT <- muted |
+| `caret` | foreground (default) | (not set) | N/A | OK -- safety net <- foreground |
+| `selection` | <- defaults.selection | (not set) | N/A | OK -- INHERIT |
+| `selection_foreground` | <- defaults.selection_foreground | (not set) | N/A | OK -- INHERIT |
+| `font` | <- defaults.font | (not set) | N/A | OK -- INHERIT |
+| `min_height` | WinUI3 TextBox: 32 | 32.0 / 32.0 | 32.0 | OK |
+| `padding_horizontal` | WinUI3: 10 left / 6 right | 10.0 / 10.0 | 10.0 | OK |
+| `padding_vertical` | WinUI3: 5 | 5.0 / 5.0 | 5.0 | OK |
+| `radius` | <- defaults.radius | (not set) | N/A | OK -- INHERIT |
+| `border_width` | <- defaults.frame_width | (not set) | N/A | OK -- INHERIT |
+
+### 2.5 Checkbox / Radio Button
+
+| Property | platform-facts Windows | Preset L/D | Live | Status |
+|----------|----------------------|------------|------|--------|
+| `indicator_size` | WinUI3: 20 | 20.0 / 20.0 | 20.0 | OK |
+| `spacing` | WinUI3: 8 | 8.0 / 8.0 | 8.0 | OK |
+| `radius` | <- defaults.radius | (not set) | N/A | OK -- INHERIT |
+| `border_width` | <- defaults.frame_width | (not set) | N/A | OK -- INHERIT |
+| `checked_bg` | <- defaults.accent | (not set) | N/A | OK -- INHERIT |
+
+### 2.6 Menu
+
+| Property | platform-facts Windows | Preset L/D | Live | Status |
+|----------|----------------------|------------|------|--------|
+| `background` | `COLOR_MENU` (live) | (not set) | N/A | OK -- INHERIT <- background |
+| `foreground` | `COLOR_MENUTEXT` (live) | (not set) | N/A | OK -- INHERIT <- foreground |
+| `separator` | <- defaults.border | (not set) | N/A | OK -- INHERIT |
+| `font.family` | `lfMenuFont.lfFaceName` (live) | (not set) | N/A | OK -- INHERIT |
+| `font.size` | `lfMenuFont.lfHeight` (live) | (not set) | N/A | OK -- INHERIT |
+| `font.weight` | `lfMenuFont.lfWeight` (live) | (not set) | N/A | OK -- INHERIT |
+| `item_height` | WinUI3: ~23px (mouse) | 23.0 / 23.0 | 23.0 | WARN -- touch=31; issue 8d |
+| `padding_horizontal` | WinUI3: 11 | 12.0 / 12.0 | 12.0 | WARN -- 11 vs 12 |
+| `padding_vertical` | WinUI3: 8 | 8.0 / 8.0 | 8.0 | OK |
+| `icon_spacing` | WinUI3: 12 | 8.0 / 8.0 | 8.0 | **ERR** -- should be 12 (1l) |
+
+### 2.7 Tooltip
+
+| Property | platform-facts Windows | Preset L/D | Live | Status |
+|----------|----------------------|------------|------|--------|
+| `background` | `COLOR_INFOBK` (live) | `#2c2c2c` / `#3a3a3a` | none | OK |
+| `foreground` | `COLOR_INFOTEXT` (live) | `#ffffff` / `#ffffff` | none | OK |
+| `font.family` | <- defaults.font | (not set) | N/A | OK -- INHERIT |
+| `font.size` | <- defaults.font | (not set) | N/A | OK -- INHERIT |
+| `font.weight` | <- defaults.font | (not set) | N/A | OK -- INHERIT |
+| `padding_horizontal` | WinUI3: 9 | 8.0 / 8.0 | 8.0 | **ERR** -- should be 9 (1e) |
+| `padding_vertical` | WinUI3: 6-8 | 8.0 / 8.0 | 8.0 | WARN -- upper bound |
+| `max_width` | WinUI3: 320 | 320.0 / 320.0 | 320.0 | OK |
+| `radius` | <- defaults.radius | (not set) | N/A | OK -- INHERIT |
+
+### 2.8 Scrollbar
+
+| Property | platform-facts Windows | Preset L/D | Live | Status |
+|----------|----------------------|------------|------|--------|
+| `track` | transparent | (not set) | N/A | OK -- safety net <- background |
+| `thumb` | #c2c2c2 **(measured)** | (not set) | N/A | WARN -- inherits muted; not #c2c2c2 |
+| `thumb_hover` | #a0a0a0 **(measured)** | (not set) | N/A | WARN -- inherits muted |
+| `width` | `SM_CXVSCROLL` = 17px | 17.0 / 17.0 | 17.0 | OK |
+| `min_thumb_height` | `SM_CYVTHUMB` = 17px | 17.0 / 17.0 | 17.0 | OK |
+| `slider_width` | `SM_CXVSCROLL` = 17px | 6.0 / 6.0 | 6.0 | WARN -- modern thin style |
+| `overlay_mode` | always persistent | false / false | false | OK |
+
+### 2.9 Slider
+
+| Property | platform-facts Windows | Preset L/D | Live | Status |
+|----------|----------------------|------------|------|--------|
+| `fill` | <- defaults.accent | (not set) | N/A | OK -- INHERIT |
+| `track` | <- defaults.muted | (not set) | N/A | OK -- INHERIT |
+| `thumb` | <- defaults.surface | (not set) | N/A | OK -- INHERIT |
+| `track_height` | WinUI3: 4 | 4.0 / 4.0 | 4.0 | OK |
+| `thumb_size` | WinUI3: 18 | 18.0 / 18.0 | 18.0 | OK |
+| `tick_length` | WinUI3: 4 | 4.0 / 4.0 | 4.0 | OK |
+
+### 2.10 Progress Bar
+
+| Property | platform-facts Windows | Preset L/D | Live | Status |
+|----------|----------------------|------------|------|--------|
+| `fill` | <- defaults.accent | (not set) | N/A | OK -- INHERIT |
+| `track` | <- defaults.muted | (not set) | N/A | OK -- INHERIT |
+| `height` | WinUI3: min 3 | 3.0 / 3.0 | 3.0 | OK |
+| `min_width` | **(none)** | 100.0 / 100.0 | 100.0 | WARN -- no spec |
+| `radius` | <- defaults.radius | (not set) | N/A | OK -- INHERIT |
+
+### 2.11 Tab Bar
+
+| Property | platform-facts Windows | Preset L/D | Live | Status |
+|----------|----------------------|------------|------|--------|
+| `background` | <- defaults.background | (not set) | N/A | OK -- INHERIT |
+| `foreground` | <- defaults.foreground | (not set) | N/A | OK -- INHERIT |
+| `active_background` | <- defaults.background | (not set) | N/A | OK -- INHERIT |
+| `active_foreground` | <- defaults.foreground | (not set) | N/A | OK -- INHERIT |
+| `bar_background` | <- defaults.background | (not set) | N/A | OK -- INHERIT |
+| `min_width` | **(none)** | 64.0 / 64.0 | 64.0 | WARN -- no spec |
+| `min_height` | WinUI3: 32 | 32.0 / 32.0 | 32.0 | OK |
+| `padding_horizontal` | WinUI3: 8 | 12.0 / 12.0 | 12.0 | WARN -- 8 vs 12 |
+| `padding_vertical` | WinUI3: 3 | 4.0 / 4.0 | 4.0 | WARN -- 3 vs 4 |
+
+### 2.12 Sidebar
+
+| Property | platform-facts Windows | Preset L / D | Status |
+|----------|----------------------|--------------|--------|
+| `background` | NavigationView pane bg | `#ebebeb` / `#272727` | OK |
+| `foreground` | <- defaults.foreground | `#1a1a1a` / `#ffffff` | OK |
+
+### 2.13 Toolbar
+
+| Property | platform-facts Windows | Preset L/D | Live | Status |
+|----------|----------------------|------------|------|--------|
+| `font.family` | <- defaults.font | (not set) | N/A | OK -- INHERIT |
+| `font.size` | <- defaults.font | (not set) | N/A | OK -- INHERIT |
+| `font.weight` | <- defaults.font | (not set) | N/A | OK -- INHERIT |
+| `height` | CommandBar: 64 (compact: 48) | 64.0 / 64.0 | 64.0 | WARN -- expanded; issue 8e |
+| `item_spacing` | WinUI3: 0 | 0.0 / 0.0 | 0.0 | OK |
+| `padding` | WinUI3: 4 (left only) | 4.0 / 4.0 | 4.0 | OK |
+
+### 2.14 Status Bar
+
+| Property | platform-facts Windows | Preset L/D | Status |
+|----------|----------------------|------------|--------|
+| `font.family` | `lfStatusFont.lfFaceName` (live) | (not set) | OK -- INHERIT |
+| `font.size` | `lfStatusFont.lfHeight` (live) | (not set) | OK -- INHERIT |
+| `font.weight` | `lfStatusFont.lfWeight` (live) | (not set) | OK -- INHERIT |
+
+### 2.15 List / Table
+
+| Property | platform-facts Windows | Preset L / D | Live | Status |
+|----------|----------------------|--------------|------|--------|
+| `background` | <- defaults.background | (not set) | N/A | OK -- safety net |
+| `foreground` | <- defaults.foreground | (not set) | N/A | OK -- INHERIT |
+| `alternate_row` | L=#f9f9f9 D=#262626 | `#f9f9f9` / `#262626` | N/A | OK |
+| `selection` | <- defaults.selection | (not set) | N/A | OK -- INHERIT |
+| `selection_foreground` | <- defaults.selection_foreground | (not set) | N/A | OK -- INHERIT |
+| `header_background` | ~= defaults.background | (not set) | N/A | OK -- INHERIT <- surface |
+| `header_foreground` | <- defaults.foreground | (not set) | N/A | OK -- INHERIT |
+| `grid_color` | uses border | (not set) | N/A | OK -- INHERIT <- border |
+| `item_height` | WinUI3 ListView: 40 | 40.0 / 40.0 | 40.0 | OK |
+| `padding_horizontal` | WinUI3: 12 | 12.0 / 12.0 | 12.0 | OK |
+| `padding_vertical` | WinUI3: 0 | 4.0 / 4.0 | 4.0 | WARN -- spec says 0 |
+
+### 2.16 Popover / Dropdown
+
+| Property | platform-facts Windows | Preset L / D | Status |
+|----------|----------------------|--------------|--------|
+| `background` | Flyout bg = surface | `#ffffff` / `#2d2d2d` | OK |
+| `foreground` | <- defaults.foreground | `#1a1a1a` / `#ffffff` | OK |
+| `border` | <- defaults.border | (not set) | OK -- INHERIT |
+| `radius` | <- defaults.radius_lg | (not set) | OK -- INHERIT |
+
+### 2.17 Splitter
+
+| Property | platform-facts Windows | Preset L/D | Live | Status |
+|----------|----------------------|------------|------|--------|
+| `width` | SplitView border: 1 | 1.0 / 1.0 | 1.0 | OK |
+
+### 2.18 Separator
+
+| Property | platform-facts Windows | Preset L / D | Status |
+|----------|----------------------|--------------|--------|
+| `color` | <- defaults.border | `#e5e5e5` / `#3b3b3b` | WARN -- dark #3b3b3b vs border #454545; intentional |
+
+### 2.19 Text Scale
+
+No explicit text_scale in preset; resolves from defaults.font (14/400)
+with line_height = 1.43 * size = 20.02.
+
+| Role | platform-facts Fluent | Resolves to | Status |
+|------|-----------------------|-------------|--------|
+| `caption` | 12epx, 400 | 14, 400, lh=20.02 | **ERR** -- size should be 12 |
+| `section_heading` | 20epx, **600** | 14, 400, lh=20.02 | **ERR** -- size=20, wt=600 (19d) |
+| `dialog_title` | 28epx, **600** | 14, 400, lh=20.02 | **ERR** -- size=28, wt=600 (19e) |
+| `display` | 68epx, **600** | 14, 400, lh=20.02 | **ERR** -- size=68, wt=600 (NEW: 29a) |
+
+### 2.20 Layout Spacing
+
+| Tier | Fluent token | Preset | Status |
+|------|-------------|--------|--------|
+| `xxs` | XXSmall = 2px | 2.0 | OK |
+| `xs` | XSmall = 4px | 4.0 | OK |
+| `s` | Small = 8px | 8.0 | OK |
+| `m` | Medium = 12px | 12.0 | OK |
+| `l` | Large = 16px | 16.0 | OK |
+| `xl` | XXLarge = 24px | 24.0 | OK |
+| `xxl` | XXXLarge = 32px | 36.0 | WARN -- 32 vs 36 |
+
+### 2.21 Switch / Toggle
+
+| Property | platform-facts Windows | Preset L/D | Live | Status |
+|----------|----------------------|------------|------|--------|
+| `track_width` | WinUI3: 40 | 40.0 / 40.0 | 40.0 | OK |
+| `track_height` | WinUI3: 20 | 20.0 / 20.0 | 20.0 | OK |
+| `thumb_size` | WinUI3: 12 (rest) | 12.0 / 12.0 | 12.0 | OK |
+| `track_radius` | 10px (pill) | 10.0 / 10.0 | 10.0 | OK |
+| `checked_bg` | <- defaults.accent | (not set) | N/A | OK -- INHERIT |
+| `unchecked_bg` | ToggleSwitchFillOff | `#c5c5c5` / `#454545` | N/A | OK |
+| `thumb_bg` | ToggleSwitchKnob | `#ffffff` / `#ffffff` | N/A | OK |
+
+### 2.22 Dialog
+
+| Property | platform-facts Windows | Preset L/D | Live | Status |
+|----------|----------------------|------------|------|--------|
+| `min_width` | ContentDialog: 320 | 320.0 / 320.0 | 320.0 | OK |
+| `max_width` | ContentDialog: 548 | 560.0 / 560.0 | 560.0 | **ERR** -- 548 (1a) |
+| `min_height` | ContentDialog: 184 | 140.0 / 140.0 | 140.0 | **ERR** -- 184 (1b) |
+| `max_height` | ContentDialog: 756 | 600.0 / 600.0 | 600.0 | **ERR** -- 756 (1c) |
+| `content_padding` | WinUI3: 24 | 24.0 / 24.0 | 24.0 | OK |
+| `button_spacing` | WinUI3: 8 | 8.0 / 8.0 | 8.0 | OK |
+| `button_order` | primary leftmost | `trailing_affirmative` | same | WARN -- verify enum |
+| `title_font` | 20px SemiBold (600) | (not set) | N/A | **ERR** -- inherits 14/400 (NEW: 29b) |
+| `radius` | 8px (OverlayCornerRadius) | (not set) | N/A | OK -- INHERIT <- radius_lg=8 |
+| `icon_size` | **(none)** | 32.0 / 32.0 | 32.0 | WARN -- no spec |
+
+### 2.23 Spinner / Progress Ring
+
+| Property | platform-facts Windows | Preset L/D | Live | Status |
+|----------|----------------------|------------|------|--------|
+| `diameter` | ProgressRing: 32 | 24.0 / 24.0 | 24.0 | **ERR** -- 32 (1f) |
+| `min_size` | WinUI3: 16 | 16.0 / 16.0 | 16.0 | OK |
+| `stroke_width` | WinUI3: 4 | 2.0 / 2.0 | 2.0 | **ERR** -- 4 (1d) |
+| `fill` | <- defaults.accent | (not set) | N/A | WARN -- safety net uses foreground |
+
+### 2.24 ComboBox / Dropdown Trigger
+
+| Property | platform-facts Windows | Preset L/D | Live | Status |
+|----------|----------------------|------------|------|--------|
+| `min_height` | ComboBox: 32 | 32.0 / 32.0 | 32.0 | OK |
+| `min_width` | WinUI3: 64 | 120.0 / 120.0 | 120.0 | **ERR** -- 64 (1m) |
+| `padding_horizontal` | WinUI3: 12 | 12.0 / 12.0 | 12.0 | OK |
+| `arrow_size` | WinUI3: 12 | 12.0 / 12.0 | 12.0 | OK |
+| `arrow_area_width` | WinUI3: 38 | 38.0 / 38.0 | 38.0 | OK |
+| `radius` | <- defaults.radius | (not set) | N/A | OK -- INHERIT |
+
+### 2.25 Segmented Control
+
+No native Windows equivalent; all **(none)** in platform-facts.
+
+| Property | Preset L/D | Live | Status |
+|----------|------------|------|--------|
+| `segment_height` | 28.0 / 28.0 | 28.0 | OK -- no spec |
+| `separator_width` | 1.0 / 1.0 | 1.0 | OK -- no spec |
+| `padding_horizontal` | 12.0 / 12.0 | 12.0 | OK -- no spec |
+| `radius` | (not set) | N/A | OK -- INHERIT |
+
+### 2.26 Card / Container
+
+| Property | platform-facts Windows | Preset L/D | Status |
+|----------|----------------------|------------|--------|
+| `background` | CardBackgroundFillColorDefault | (not set) | OK -- INHERIT <- surface |
+| `border` | CardStrokeColorDefault | (not set) | OK -- INHERIT <- border |
+| `radius` | 8px (OverlayCornerRadius) | (not set) | OK -- INHERIT <- radius_lg=8 |
+| `shadow` | **(none)** -- border only | (not set) | WARN -- inherits true; Fluent: border |
+| `padding` | 12px (convention) | 16.0 / 16.0 | WARN -- 12 vs 16 |
+
+### 2.27 Expander / Disclosure
+
+| Property | platform-facts Windows | Preset L/D | Live | Status |
+|----------|----------------------|------------|------|--------|
+| `header_height` | Expander: 48 | 40.0 / 40.0 | 40.0 | **ERR** -- 48 (1g) |
+| `arrow_size` | chevron: 12 | 12.0 / 12.0 | 12.0 | OK |
+| `content_padding` | WinUI3: 16 | 16.0 / 16.0 | 16.0 | OK |
+| `radius` | <- defaults.radius | (not set) | N/A | OK -- INHERIT |
+
+### 2.28 Link
+
+| Property | platform-facts Windows | Preset L / D | Status |
+|----------|----------------------|--------------|--------|
+| `color` | AccentTextFillColor | (not set) | OK -- INHERIT <- link |
+| `visited` | same as link | (not set) | OK -- INHERIT <- link |
+| `underline` | no underline by default | true / true | WARN -- design choice |
+| `background` | transparent | `#00000000` / `#00000000` | OK |
+| `hover_bg` | SubtleFillColorSecondary | `#0078d418` / `#0078d418` | OK |
+
+---
+
+### ERR Summary (17 items)
+
+| # | Section | Property | Preset has | Should be | Filed as |
+|---|---------|----------|-----------|-----------|----------|
+| 1 | 2.1.3 | dark `accent_foreground` | #ffffff | #000000 | 18a |
+| 2 | 2.1.4 | dark `danger` | #ff9999 | #ff99a4 | 18b |
+| 3 | 2.1.4 | dark `warning` | #f0c239 | #fce100 | 18c |
+| 4 | 2.6 | `menu.icon_spacing` | 8 | 12 | 1l |
+| 5 | 2.7 | `tooltip.padding_horizontal` | 8 | 9 | 1e |
+| 6 | 2.19 | `caption` size | 14 | 12 | partial (19d/19e) |
+| 7 | 2.19 | `section_heading` size+wt | 14/400 | 20/600 | 19d |
+| 8 | 2.19 | `dialog_title` size+wt | 14/400 | 28/600 | 19e |
+| 9 | 2.19 | `display` size+wt | 14/400 | 68/600 | **NEW** (29a) |
+| 10 | 2.22 | `dialog.max_width` | 560 | 548 | 1a |
+| 11 | 2.22 | `dialog.min_height` | 140 | 184 | 1b |
+| 12 | 2.22 | `dialog.max_height` | 600 | 756 | 1c |
+| 13 | 2.22 | `dialog.title_font` | 14/400 | 20/600 | **NEW** (29b) |
+| 14 | 2.23 | `spinner.diameter` | 24 | 32 | 1f |
+| 15 | 2.23 | `spinner.stroke_width` | 2 | 4 | 1d |
+| 16 | 2.24 | `combo_box.min_width` | 120 | 64 | 1m |
+| 17 | 2.27 | `expander.header_height` | 40 | 48 | 1g |
+
+### WARN Summary (23 items)
+
+| # | Section | Property | Notes |
+|---|---------|----------|-------|
+| W1 | 2.1.8 | `icon_sizes.dialog` = 22 | No Windows spec; reasonable |
+| W2 | 2.1.8 | `icon_sizes.panel` = 20 | No Windows spec; matches toolbar |
+| W3 | 2.3 | `button.min_width` = 64 | No Windows spec |
+| W4 | 2.3 | `button.min_height` = 27 | Effective WinUI3; issue 8c |
+| W5 | 2.3 | `button.padding_vertical` = 6 | Asymmetric 5/6; acceptable |
+| W6 | 2.6 | `menu.item_height` = 23 | Mouse mode; touch=31; issue 8d |
+| W7 | 2.6 | `menu.padding_horizontal` = 12 | Spec says 11 |
+| W8 | 2.7 | `tooltip.padding_vertical` = 8 | Upper bound of 6-8 |
+| W9 | 2.8 | `scrollbar.thumb` inherits muted | Not measured #c2c2c2 |
+| W10 | 2.8 | `scrollbar.slider_width` = 6 | Win32=17; modern thin |
+| W11 | 2.10 | `progress_bar.min_width` = 100 | No spec |
+| W12 | 2.11 | `tab.padding_horizontal` = 12 | WinUI3: 8 |
+| W13 | 2.11 | `tab.padding_vertical` = 4 | WinUI3: 3 |
+| W14 | 2.13 | `toolbar.height` = 64 | Expanded; compact=48; issue 8e |
+| W15 | 2.15 | `list.padding_vertical` = 4 | Spec says 0 |
+| W16 | 2.18 | dark `separator.color` #3b3b3b | vs border #454545; intentional |
+| W17 | 2.20 | `spacing.xxl` = 36 | Fluent XXXLarge=32 |
+| W18 | 2.22 | `dialog.button_order` | Verify enum semantics |
+| W19 | 2.22 | `dialog.icon_size` = 32 | No Windows spec |
+| W20 | 2.23 | `spinner.fill` inherits foreground | Spec says accent |
+| W21 | 2.26 | `card.shadow` inherits true | Fluent: border only |
+| W22 | 2.26 | `card.padding` = 16 | Spec says 12 |
+| W23 | 2.28 | `link.underline` = true | Fluent: no underline |
+
+### NEW Issues
+
+**29a. Windows 11 missing `text_scale.display` -- size and weight wrong**
+
+**File:** `src/presets/windows-11.toml` (light and dark)
+
+The display text scale entry resolves to defaults.font (14px/400) but
+Fluent Display is 68epx/600. All four text_scale roles need explicit
+sections. Issues 19d/19e cover section_heading and dialog_title weights
+only. Caption size (12 not 14) and display (68/600 not 14/400) are new.
+
+**29b. Windows 11 missing `dialog.title_font` -- should be 20px/600**
+
+**File:** `src/presets/windows-11.toml` (light and dark)
+
+Dialog title font inherits defaults.font (14px/400). Platform-facts
+section 2.22 documents "20px SemiBold". Both variants need:
+
+```toml
+[light.dialog.title_font]
+size = 20.0
+weight = 600
+```
+
+**Total: 182 properties verified across 28 sections. 17 ERR (15
+previously filed, 2 new). 23 WARN (minor/acceptable).**
