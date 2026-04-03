@@ -1774,20 +1774,22 @@ mod loading_indicator_tests {
 
     #[test]
     #[cfg(feature = "lucide-icons")]
-    fn loading_indicator_lucide_returns_transform_spin() {
+    fn loading_indicator_lucide_returns_frames() {
         let anim = loading_indicator(IconSet::Lucide);
         assert!(anim.is_some(), "lucide should return Some");
         let anim = anim.unwrap();
         assert!(
-            matches!(
-                anim,
-                AnimatedIcon::Transform {
-                    animation: TransformAnimation::Spin { duration_ms: 1000 },
-                    ..
-                }
-            ),
-            "lucide should be Transform::Spin at 1000ms"
+            matches!(anim, AnimatedIcon::Frames { .. }),
+            "lucide should be pre-rotated Frames"
         );
+        if let AnimatedIcon::Frames {
+            frames,
+            frame_duration_ms,
+        } = &anim
+        {
+            assert_eq!(frames.len(), 24);
+            assert_eq!(*frame_duration_ms, 42);
+        }
     }
 
     /// Freedesktop loading_indicator returns Some if the active icon theme
@@ -1822,15 +1824,12 @@ mod loading_indicator_tests {
 
     #[test]
     #[cfg(feature = "lucide-icons")]
-    fn lucide_spinner_is_transform() {
+    fn lucide_spinner_is_frames() {
         let anim = spinners::lucide_spinner();
-        assert!(matches!(
-            anim,
-            AnimatedIcon::Transform {
-                animation: TransformAnimation::Spin { duration_ms: 1000 },
-                ..
-            }
-        ));
+        assert!(
+            matches!(anim, AnimatedIcon::Frames { .. }),
+            "lucide should be pre-rotated Frames"
+        );
     }
 }
 
