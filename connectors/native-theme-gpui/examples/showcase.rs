@@ -509,6 +509,8 @@ fn load_gpui_icons(
 
     // Pre-load Material icons once for all roles that appear in GPUI_ICONS,
     // so we can detect system-vs-fallback without redundant per-icon loads.
+    // Issue 56: this duplicates the Material pre-load in load_all_icons().
+    // A future refactor could share the Material cache between both call sites.
     let material_cache: HashMap<IconRole, Option<IconData>> = if is_system_set {
         GPUI_ICONS
             .iter()

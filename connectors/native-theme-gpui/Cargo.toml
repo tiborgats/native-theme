@@ -21,11 +21,16 @@ svg-rasterize = ["native-theme/svg-rasterize"]
 [dependencies]
 gpui = "0.2.2"
 gpui-component = "0.5.1"
-native-theme = { workspace = true, features = [
-    "linux-async-io",
-    "macos",
-    "windows",
-] }
+native-theme = { workspace = true }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+native-theme = { workspace = true, features = ["linux-async-io"] }
+
+[target.'cfg(target_os = "macos")'.dependencies]
+native-theme = { workspace = true, features = ["macos"] }
+
+[target.'cfg(target_os = "windows")'.dependencies]
+native-theme = { workspace = true, features = ["windows"] }
 
 [dev-dependencies]
 gpui-component-assets = "0.5.1"

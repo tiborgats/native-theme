@@ -61,6 +61,10 @@ pub fn to_theme_config(
         // highlight: None — syntax highlighting colors (keyword, string, comment,
         // type, etc.) are editor-specific and not in ResolvedThemeVariant.
         // Users should set highlight separately via gpui-component's HighlightTheme API.
+        //
+        // is_default: false (via ThemeConfig::default()) — this is intentional.
+        // Connector-created themes are never the "default" theme; the application
+        // decides which theme is its default.
         ..ThemeConfig::default()
     }
 }

@@ -205,14 +205,12 @@ bundled-themes = ["material"]
 
     let errors = result.unwrap_err();
     assert!(!errors.is_empty(), "should have errors");
-    // Expected: BuildError::MissingRole { role: "skip-forward", mapping_file: "..." }
-    // Using .contains() because BuildError fields are not publicly matchable.
     assert!(
         errors
             .errors()
             .iter()
-            .any(|e| e.to_string().contains("skip-forward")),
-        "should mention missing role 'skip-forward': {errors:?}",
+            .any(|e| matches!(e, native_theme_build::BuildError::MissingRole { role, .. } if role == "skip-forward")),
+        "should have MissingRole for 'skip-forward': {errors:?}",
     );
 
     if let Err(e) = fs::remove_dir_all(&dir) {
@@ -247,14 +245,12 @@ bundled-themes = ["material"]
 
     let errors = result.unwrap_err();
     assert!(!errors.is_empty(), "should have errors");
-    // Expected: BuildError::UnknownRole { role: "bluetooth", mapping_file: "..." }
-    // Using .contains() because BuildError fields are not publicly matchable.
     assert!(
         errors
             .errors()
             .iter()
-            .any(|e| e.to_string().contains("bluetooth")),
-        "should mention unknown role 'bluetooth': {errors:?}",
+            .any(|e| matches!(e, native_theme_build::BuildError::UnknownRole { role, .. } if role == "bluetooth")),
+        "should have UnknownRole for 'bluetooth': {errors:?}",
     );
 
     if let Err(e) = fs::remove_dir_all(&dir) {
@@ -289,14 +285,12 @@ bundled-themes = ["material"]
 
     let errors = result.unwrap_err();
     assert!(!errors.is_empty(), "should have errors");
-    // Expected: BuildError::MissingSvg { path: "...skip_next.svg" }
-    // Using .contains() because BuildError fields are not publicly matchable.
     assert!(
         errors
             .errors()
             .iter()
-            .any(|e| e.to_string().contains("skip_next.svg")),
-        "should mention missing SVG path: {errors:?}",
+            .any(|e| matches!(e, native_theme_build::BuildError::MissingSvg { path } if path.contains("skip_next.svg"))),
+        "should have MissingSvg for 'skip_next.svg': {errors:?}",
     );
 
     if let Err(e) = fs::remove_dir_all(&dir) {
@@ -556,20 +550,20 @@ bundled-themes = ["material"]
     let dup_role_errors: Vec<_> = errors
         .errors()
         .iter()
-        .filter(|e| e.to_string().contains("defined in both"))
+        .filter(|e| matches!(e, native_theme_build::BuildError::DuplicateRole { .. }))
         .collect();
-    assert!(
-        !dup_role_errors.is_empty(),
-        "expected at least 1 DuplicateRole error, got 0. All errors: {errors:?}",
+    assert_eq!(
+        dup_role_errors.len(),
+        1,
+        "expected exactly 1 DuplicateRole error, got {}: {errors:?}",
+        dup_role_errors.len(),
     );
-    // Expected: BuildError::DuplicateRole { role: "play-pause", file_a: "...", file_b: "..." }
-    // Using .contains() because BuildError fields are not publicly matchable.
     assert!(
         errors
             .errors()
             .iter()
-            .any(|e| e.to_string().contains("play-pause")),
-        "should mention duplicate role: {errors:?}",
+            .any(|e| matches!(e, native_theme_build::BuildError::DuplicateRole { role, .. } if role == "play-pause")),
+        "should have DuplicateRole for 'play-pause': {errors:?}",
     );
 
     if let Err(e) = fs::remove_dir_all(&dir) {
@@ -866,6 +860,48 @@ system-themes = ["lucide"]
     assert!(
         !output.code.contains("include_bytes!"),
         "system theme should not have embedded SVGs"
+    );
+
+    if let Err(e) = fs::remove_dir_all(&dir) {
+        eprintln!("test cleanup warning: {e}");
+    }
+}
+
+#[test]
+fn system_only_theme_icon_svg_returns_none() {
+    let dir = create_temp_dir("sys_only_svg");
+    write_file(
+        &dir,
+        "icons.toml",
+        r#"
+name = "sys-only"
+roles = ["reveal"]
+system-themes = ["freedesktop"]
+"#,
+    );
+    write_file(
+        &dir,
+        "freedesktop/mapping.toml",
+        "reveal = \"view-reveal\"\n",
+    );
+
+    let output = IconGenerator::new()
+        .source(dir.join("icons.toml"))
+        .output_dir(&dir)
+        .generate()
+        .unwrap_or_else(|e| panic!("expected no errors: {e}"));
+
+    // System-only themes should NOT generate include_bytes! calls
+    assert!(
+        !output.code.contains("include_bytes!"),
+        "system-only theme should not embed SVG data via include_bytes!. code:\n{}",
+        output.code,
+    );
+
+    // The icon_svg function should exist but only return None for system themes
+    assert!(
+        output.code.contains("icon_svg"),
+        "generated code should contain icon_svg function",
     );
 
     if let Err(e) = fs::remove_dir_all(&dir) {

@@ -103,6 +103,24 @@ struct ResolvedColors {
     popover: Hsla,
     popover_fg: Hsla,
     alternate_row: Hsla,
+    // Issue 20: per-widget colors cached to avoid repeated rgba_to_hsla calls
+    // in assign_tab_sidebar() and assign_misc().
+    tab_bg: Hsla,
+    tab_active_bg: Hsla,
+    tab_active_fg: Hsla,
+    tab_bar_bg: Hsla,
+    tab_fg: Hsla,
+    title_bar_bg: Hsla,
+    window_border: Hsla,
+    scrollbar_track: Hsla,
+    scrollbar_thumb: Hsla,
+    scrollbar_thumb_hover: Hsla,
+    slider_fill: Hsla,
+    slider_thumb: Hsla,
+    switch_unchecked: Hsla,
+    switch_thumb: Hsla,
+    progress_fill: Hsla,
+    input_caret: Hsla,
 }
 
 /// Build a complete [`ThemeColor`] from a [`ResolvedThemeVariant`].
@@ -158,6 +176,23 @@ pub fn to_theme_color(resolved: &ResolvedThemeVariant, is_dark: bool) -> ThemeCo
         popover: rgba_to_hsla(resolved.popover.background),
         popover_fg: rgba_to_hsla(resolved.popover.foreground),
         alternate_row: rgba_to_hsla(resolved.list.alternate_row),
+        // Issue 20: per-widget colors
+        tab_bg: rgba_to_hsla(resolved.tab.background),
+        tab_active_bg: rgba_to_hsla(resolved.tab.active_background),
+        tab_active_fg: rgba_to_hsla(resolved.tab.active_foreground),
+        tab_bar_bg: rgba_to_hsla(resolved.tab.bar_background),
+        tab_fg: rgba_to_hsla(resolved.tab.foreground),
+        title_bar_bg: rgba_to_hsla(resolved.window.title_bar_background),
+        window_border: rgba_to_hsla(resolved.window.border),
+        scrollbar_track: rgba_to_hsla(resolved.scrollbar.track),
+        scrollbar_thumb: rgba_to_hsla(resolved.scrollbar.thumb),
+        scrollbar_thumb_hover: rgba_to_hsla(resolved.scrollbar.thumb_hover),
+        slider_fill: rgba_to_hsla(resolved.slider.fill),
+        slider_thumb: rgba_to_hsla(resolved.slider.thumb),
+        switch_unchecked: rgba_to_hsla(resolved.switch.unchecked_background),
+        switch_thumb: rgba_to_hsla(resolved.switch.thumb_background),
+        progress_fill: rgba_to_hsla(resolved.progress_bar.fill),
+        input_caret: rgba_to_hsla(resolved.input.caret),
     };
 
     let mut tc = ThemeColor::default();
@@ -167,7 +202,7 @@ pub fn to_theme_color(resolved: &ResolvedThemeVariant, is_dark: bool) -> ThemeCo
     assign_secondary(&mut tc, &c, is_dark);
     assign_status(&mut tc, &c, is_dark);
     assign_list_table(&mut tc, &c, is_dark);
-    assign_tab_sidebar(&mut tc, &c, resolved);
+    assign_tab_sidebar(&mut tc, &c);
     assign_charts(&mut tc, &c);
     assign_misc(&mut tc, &c, resolved, is_dark);
     assign_base_colors(&mut tc, &c, is_dark);
@@ -255,32 +290,30 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
     tc.table_row_border = c.border;
 }
 
-fn assign_tab_sidebar(tc: &mut ThemeColor, c: &ResolvedColors, resolved: &ResolvedThemeVariant) {
-    // Tab: use per-widget resolved tab colors
-    // No ResolvedColors equivalent -- reads directly from resolved
-    tc.tab = rgba_to_hsla(resolved.tab.background);
-    tc.tab_active = rgba_to_hsla(resolved.tab.active_background);
-    tc.tab_active_foreground = rgba_to_hsla(resolved.tab.active_foreground);
-    tc.tab_bar = rgba_to_hsla(resolved.tab.bar_background);
+fn assign_tab_sidebar(tc: &mut ThemeColor, c: &ResolvedColors) {
+    // Tab: use per-widget resolved tab colors (Issue 20: via ResolvedColors cache)
+    tc.tab = c.tab_bg;
+    tc.tab_active = c.tab_active_bg;
+    tc.tab_active_foreground = c.tab_active_fg;
+    tc.tab_bar = c.tab_bar_bg;
     // Issue 42: tab_bar_segmented uses secondary because native-theme's
     // ResolvedTabTheme has no segmented-specific color. The secondary button
     // color is the closest semantic match for the segmented tab indicator.
     tc.tab_bar_segmented = c.secondary;
-    tc.tab_foreground = rgba_to_hsla(resolved.tab.foreground);
+    tc.tab_foreground = c.tab_fg;
 
     tc.sidebar = c.sidebar;
     tc.sidebar_foreground = c.sidebar_fg;
     tc.sidebar_accent = c.accent;
     tc.sidebar_accent_foreground = c.accent_fg;
-    tc.sidebar_border = rgba_to_hsla(resolved.window.border);
+    tc.sidebar_border = c.window_border;
     tc.sidebar_primary = c.primary;
     tc.sidebar_primary_foreground = c.primary_fg;
 
-    // Title bar: use per-widget resolved window colors
-    // No ResolvedColors equivalent -- reads directly from resolved
-    tc.title_bar = rgba_to_hsla(resolved.window.title_bar_background);
-    tc.title_bar_border = rgba_to_hsla(resolved.window.border);
-    tc.window_border = rgba_to_hsla(resolved.window.border);
+    // Title bar / window (Issue 20: via ResolvedColors cache)
+    tc.title_bar = c.title_bar_bg;
+    tc.title_bar_border = c.window_border;
+    tc.window_border = c.window_border;
 }
 
 fn assign_charts(tc: &mut ThemeColor, c: &ResolvedColors) {
@@ -353,27 +386,28 @@ fn assign_misc(
     };
 
     // Issue 68: use resolved scrollbar track color instead of plain bg
-    tc.scrollbar = rgba_to_hsla(resolved.scrollbar.track);
-    tc.scrollbar_thumb = rgba_to_hsla(resolved.scrollbar.thumb);
-    tc.scrollbar_thumb_hover = rgba_to_hsla(resolved.scrollbar.thumb_hover);
+    // Issue 20: via ResolvedColors cache
+    tc.scrollbar = c.scrollbar_track;
+    tc.scrollbar_thumb = c.scrollbar_thumb;
+    tc.scrollbar_thumb_hover = c.scrollbar_thumb_hover;
 
-    // Per-widget resolved slider colors
-    tc.slider_bar = rgba_to_hsla(resolved.slider.fill);
-    tc.slider_thumb = rgba_to_hsla(resolved.slider.thumb);
+    // Per-widget resolved slider colors (Issue 20: via ResolvedColors cache)
+    tc.slider_bar = c.slider_fill;
+    tc.slider_thumb = c.slider_thumb;
 
-    // Per-widget resolved switch colors
-    tc.switch = rgba_to_hsla(resolved.switch.unchecked_background);
+    // Per-widget resolved switch colors (Issue 20: via ResolvedColors cache)
+    tc.switch = c.switch_unchecked;
     // Issue 51: switch.checked_background is not mapped because gpui-component's
     // ThemeColor has no checked-state field for switches. The unchecked background
     // is the only mappable slot. Callers needing checked-state styling should read
     // resolved.switch.checked_background directly.
-    tc.switch_thumb = rgba_to_hsla(resolved.switch.thumb_background);
+    tc.switch_thumb = c.switch_thumb;
 
-    // Per-widget resolved progress bar color
-    tc.progress_bar = rgba_to_hsla(resolved.progress_bar.fill);
+    // Per-widget resolved progress bar color (Issue 20: via ResolvedColors cache)
+    tc.progress_bar = c.progress_fill;
 
-    // Per-widget resolved caret from input
-    tc.caret = rgba_to_hsla(resolved.input.caret);
+    // Per-widget resolved caret from input (Issue 20: via ResolvedColors cache)
+    tc.caret = c.input_caret;
 
     tc.skeleton = c.secondary;
 
@@ -758,12 +792,16 @@ mod tests {
         // list/table: ~10, tab/sidebar: ~10, scrollbar/slider: ~8, input: ~12,
         // other widgets: ~33
         // Total: 108 Hsla fields
+        //
+        // NOTE (Issue 35): when updating this count, also update the per-category
+        // doc table in lib.rs (the "Theme Field Coverage" section) to keep the
+        // documented field counts in sync with the actual mapping.
         let size = std::mem::size_of::<ThemeColor>();
         let hsla_size = std::mem::size_of::<Hsla>();
         let field_count = size / hsla_size;
         assert_eq!(
             field_count, 108,
-            "ThemeColor field count changed (got {field_count}) -- update color mapping in to_theme_color()"
+            "ThemeColor field count changed (got {field_count}) -- update color mapping in to_theme_color() and the doc table in lib.rs"
         );
     }
 

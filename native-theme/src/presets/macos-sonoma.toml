@@ -67,6 +67,7 @@ xl = 20.0
 xxl = 32.0
 
 [light.defaults.icon_sizes]
+# toolbar icon_sizes = 24 matches the small toolbar icon mode. Large mode uses 32.
 toolbar = 24.0
 small = 16.0
 large = 32.0
@@ -280,6 +281,7 @@ xl = 20.0
 xxl = 32.0
 
 [dark.defaults.icon_sizes]
+# toolbar icon_sizes = 24 matches the small toolbar icon mode. Large mode uses 32.
 toolbar = 24.0
 small = 16.0
 large = 32.0

@@ -1234,7 +1234,7 @@ fn view(state: &State) -> Element<'_, Message> {
     let sidebar = {
         let sp = &state.current_resolved.defaults.spacing;
         let ts = &state.current_resolved.text_scale;
-        let title = text("native-theme").size(18);
+        let title = text("native-theme").size(ts.dialog_title.size);
         let subtitle =
             text(format!("iced showcase v{}", env!("CARGO_PKG_VERSION"))).size(ts.caption.size);
 
@@ -1287,12 +1287,12 @@ fn view(state: &State) -> Element<'_, Message> {
             let ip = format!("input pad: {:.0}\u{00d7}{:.0}", inp_pad.left, inp_pad.top);
             column![
                 text("Theme Config Inspector").size(ts.caption.size),
-                text(r).size(10),
-                text(rlg).size(10),
-                text(sw).size(10),
-                text(bp).size(10),
-                text(ip).size(10),
-                text(fi).size(10),
+                text(r).size(ts.caption.size),
+                text(rlg).size(ts.caption.size),
+                text(sw).size(ts.caption.size),
+                text(bp).size(ts.caption.size),
+                text(ip).size(ts.caption.size),
+                text(fi).size(ts.caption.size),
             ]
             .spacing(sp.xxs)
         };
@@ -1306,7 +1306,7 @@ fn view(state: &State) -> Element<'_, Message> {
             };
             column![
                 text("Widget Info").size(ts.caption.size),
-                container(scrollable(text(info_text).size(10)).direction(
+                container(scrollable(text(info_text).size(ts.caption.size)).direction(
                     scrollable::Direction::Vertical(
                         scrollable::Scrollbar::new().width(4).scroller_width(4),
                     )
@@ -2217,9 +2217,9 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
         text("Divider Rules").size(ts.dialog_title.size),
         text("Horizontal rules at various thicknesses:").size(ts.section_heading.size),
         rule::horizontal(1),
-        text("1px above, 2px below").size(11),
+        text("1px above, 2px below").size(ts.caption.size),
         rule::horizontal(2),
-        text("2px above, 4px below").size(11),
+        text("2px above, 4px below").size(ts.caption.size),
         rule::horizontal(4),
     ]
     .spacing(sp.s);
@@ -2404,7 +2404,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
             "System icon theme: {}",
             native_theme::system_icon_theme()
         ))
-        .size(11),
+        .size(ts.caption.size),
     ]
     .spacing(sp.xs);
 
@@ -2419,7 +2419,15 @@ fn view_icons(state: &State) -> Element<'_, Message> {
         let end = (idx + icons_per_row).min(state.loaded_icons.len());
         let row_icons: Vec<Element<'_, Message>> = state.loaded_icons[idx..end]
             .iter()
-            .map(|loaded| build_icon_cell(loaded, fg_color))
+            .map(|loaded| {
+                build_icon_cell(
+                    loaded,
+                    fg_color,
+                    ts.caption.size,
+                    ts.section_heading.size,
+                    sp.xxs,
+                )
+            })
             .collect();
         grid_rows.push(row(row_icons).spacing(sp.s).into());
         idx = end;
@@ -2459,7 +2467,8 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
                 .style(move |_theme, _status| iced::widget::svg::Style {
                     color: Some(fg_color),
                 });
-            let label = text(format!("{} - Static (reduced motion)", set_name)).size(11);
+            let label =
+                text(format!("{} - Static (reduced motion)", set_name)).size(ts.caption.size);
             spinners.push(
                 column![icon, label]
                     .spacing(sp.xs)
@@ -2483,7 +2492,7 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
                 anim_handles.handles.len(),
                 anim_handles.frame_duration_ms,
             ))
-            .size(11);
+            .size(ts.caption.size);
             spinners.push(
                 column![icon, label]
                     .spacing(sp.xs)
@@ -2502,7 +2511,8 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
                 .style(move |_theme, _status| iced::widget::svg::Style {
                     color: Some(fg_color),
                 });
-            let label = text(format!("{} - Spin ({}ms)", set_name, duration_ms)).size(11);
+            let label =
+                text(format!("{} - Spin ({}ms)", set_name, duration_ms)).size(ts.caption.size);
             spinners.push(
                 column![icon, label]
                     .spacing(sp.xs)
@@ -2515,12 +2525,14 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
     let mut content = column![section_title, divider].spacing(sp.s);
 
     if state.reduced_motion {
-        content = content.push(text("prefers-reduced-motion: showing static frames").size(11));
+        content = content
+            .push(text("prefers-reduced-motion: showing static frames").size(ts.caption.size));
     }
 
     if spinners.is_empty() {
-        content =
-            content.push(text("No animated icons available for this configuration.").size(11));
+        content = content.push(
+            text("No animated icons available for this configuration.").size(ts.caption.size),
+        );
     } else {
         content = content.push(row(spinners).spacing(sp.xl));
     }
@@ -2528,7 +2540,13 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
     content.into()
 }
 
-fn build_icon_cell<'a>(loaded: &LoadedIcon, fg_color: Color) -> Element<'a, Message> {
+fn build_icon_cell<'a>(
+    loaded: &LoadedIcon,
+    fg_color: Color,
+    caption_size: f32,
+    heading_size: f32,
+    xxs_spacing: f32,
+) -> Element<'a, Message> {
     let role_name = format!("{:?}", loaded.role);
     let icon_name_str = loaded.name.unwrap_or("(unmapped)");
     let source_label = loaded.source.label();
@@ -2542,7 +2560,7 @@ fn build_icon_cell<'a>(loaded: &LoadedIcon, fg_color: Color) -> Element<'a, Mess
                         .width(Length::Fixed(24.0))
                         .height(Length::Fixed(24.0))
                         .into(),
-                    None => placeholder_icon(),
+                    None => placeholder_icon(heading_size),
                 }
             } else {
                 // Bundled/fallback: colorize with theme foreground
@@ -2551,7 +2569,7 @@ fn build_icon_cell<'a>(loaded: &LoadedIcon, fg_color: Color) -> Element<'a, Mess
                         .width(Length::Fixed(24.0))
                         .height(Length::Fixed(24.0))
                         .into(),
-                    None => placeholder_icon(),
+                    None => placeholder_icon(heading_size),
                 }
             }
         }
@@ -2561,10 +2579,10 @@ fn build_icon_cell<'a>(loaded: &LoadedIcon, fg_color: Color) -> Element<'a, Mess
                     .width(Length::Fixed(24.0))
                     .height(Length::Fixed(24.0))
                     .into(),
-                None => placeholder_icon(),
+                None => placeholder_icon(heading_size),
             }
         }
-        _ => placeholder_icon(),
+        _ => placeholder_icon(heading_size),
     };
 
     let info = format!("{role_name}\nicon: {icon_name_str}\nsource: {source_label}");
@@ -2576,10 +2594,10 @@ fn build_icon_cell<'a>(loaded: &LoadedIcon, fg_color: Color) -> Element<'a, Mess
                 container(icon_element)
                     .center_x(Length::Fixed(32.0))
                     .center_y(Length::Fixed(32.0)),
-                text(role_name.clone()).size(9),
-                text(source_label).size(8),
+                text(role_name.clone()).size(caption_size),
+                text(source_label).size(caption_size),
             ]
-            .spacing(2)
+            .spacing(xxs_spacing)
             .align_x(iced::Center),
         )
         .padding(Padding::from(6))
@@ -2591,8 +2609,8 @@ fn build_icon_cell<'a>(loaded: &LoadedIcon, fg_color: Color) -> Element<'a, Mess
     .into()
 }
 
-fn placeholder_icon<'a>() -> Element<'a, Message> {
-    container(text("?").size(14))
+fn placeholder_icon<'a>(size: f32) -> Element<'a, Message> {
+    container(text("?").size(size))
         .center_x(Length::Fixed(24.0))
         .center_y(Length::Fixed(24.0))
         .into()
@@ -2618,8 +2636,18 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
     let swatch_bw = state.current_resolved.defaults.frame_width;
     let swatch_r = native_theme_iced::border_radius(&state.current_resolved);
     // Local closure for concise swatch calls
+    let caption_sz = ts.caption.size;
+    let xxs_sp = sp.xxs;
     let cs = |label: &'static str, color: Color| -> Element<'_, Message> {
-        color_swatch(label, color, swatch_border, swatch_bw, swatch_r)
+        color_swatch(
+            label,
+            color,
+            swatch_border,
+            swatch_bw,
+            swatch_r,
+            caption_sz,
+            xxs_sp,
+        )
     };
 
     let swatch_style = SwatchStyle {
@@ -2627,6 +2655,8 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
         border_width: swatch_bw,
         radius: swatch_r,
         heading_size: ts.dialog_title.size,
+        caption_size: ts.caption.size,
+        xxs_spacing: sp.xxs,
         swatch_spacing: sp.m,
         column_spacing: sp.s,
     };
@@ -2812,6 +2842,8 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
                         swatch_border,
                         swatch_bw,
                         swatch_r,
+                        ts.caption.size,
+                        sp.xxs,
                     )
                 })
                 .collect();
@@ -2871,6 +2903,8 @@ fn color_swatch<'a>(
     border_color: Color,
     border_width: f32,
     radius: f32,
+    caption_size: f32,
+    xxs_spacing: f32,
 ) -> Element<'a, Message> {
     let hex = color_to_hex(color);
     // Determine if text should be light or dark for contrast
@@ -2882,7 +2916,7 @@ fn color_swatch<'a>(
     };
 
     column![
-        container(text(hex.clone()).size(9).color(text_color))
+        container(text(hex.clone()).size(caption_size).color(text_color))
             .padding(Padding::from([6, 4]))
             .style(move |_theme: &Theme| container::Style {
                 background: Some(color.into()),
@@ -2895,9 +2929,9 @@ fn color_swatch<'a>(
             })
             .center_x(Length::Fixed(80.0))
             .center_y(Length::Fixed(32.0)),
-        text(label).size(9),
+        text(label).size(caption_size),
     ]
-    .spacing(2)
+    .spacing(xxs_spacing)
     .align_x(iced::Center)
     .into()
 }
@@ -2912,6 +2946,8 @@ struct SwatchStyle {
     border_width: f32,
     radius: f32,
     heading_size: f32,
+    caption_size: f32,
+    xxs_spacing: f32,
     swatch_spacing: f32,
     column_spacing: f32,
 }
@@ -2931,11 +2967,21 @@ fn ext_palette_section<'a>(
         border_width,
         radius,
         heading_size,
+        caption_size,
+        xxs_spacing,
         swatch_spacing,
         column_spacing,
     } = *style;
     let cs = |field: &'static str, color: Color| -> Element<'_, Message> {
-        color_swatch(field, color, border_color, border_width, radius)
+        color_swatch(
+            field,
+            color,
+            border_color,
+            border_width,
+            radius,
+            caption_size,
+            xxs_spacing,
+        )
     };
     column![
         text(label).size(heading_size),

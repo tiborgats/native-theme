@@ -207,6 +207,11 @@ pub fn from_preset(
 /// is active, or vice versa) is dropped. If you need both variants, use
 /// `SystemTheme::from_system()` directly and call [`to_theme()`] on each.
 ///
+/// **Performance note:** `SystemTheme::from_system()` resolves both light
+/// and dark variants before this function picks one. If you only need one
+/// variant and want to avoid the cost of resolving both, use
+/// `SystemTheme::from_system()` directly and resolve only the variant you need.
+///
 /// # Errors
 ///
 /// Returns an error if the platform theme cannot be read (e.g., unsupported platform,
@@ -221,8 +226,9 @@ pub fn from_preset(
 pub fn from_system() -> native_theme::Result<(Theme, ResolvedThemeVariant)> {
     let sys = SystemTheme::from_system()?;
     let is_dark = sys.is_dark;
-    let theme = to_theme(sys.active(), &sys.name, sys.is_dark);
+    let name = sys.name.clone();
     let resolved = if is_dark { sys.dark } else { sys.light };
+    let theme = to_theme(&resolved, &name, is_dark);
     Ok((theme, resolved))
 }
 

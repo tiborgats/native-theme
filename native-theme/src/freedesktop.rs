@@ -9,10 +9,12 @@ use crate::model::animated::{AnimatedIcon, TransformAnimation};
 use crate::{IconData, IconRole, IconSet, icon_name};
 use std::path::PathBuf;
 
-/// Detect the active freedesktop icon theme.
+/// Detect the current freedesktop icon theme name.
 ///
-/// Delegates to `system_icon_theme()` which handles DE-specific detection
-/// (KDE reads kdeglobals, GNOME uses gsettings, etc.).
+/// Delegates to [`crate::system_icon_theme()`] which handles DE-specific
+/// detection (KDE reads kdeglobals, GNOME uses gsettings, etc.). The result
+/// is computed fresh on each call (no caching). Callers that need the theme
+/// name repeatedly should cache the result themselves.
 fn detect_theme() -> String {
     crate::system_icon_theme().to_string()
 }

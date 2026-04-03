@@ -868,8 +868,8 @@ pub fn bundled_icon_to_image_source(
         _ => return None,
     };
     let svg = native_theme::bundled_icon_by_name(name, icon_set)?;
-    let data = IconData::Svg(svg.to_vec());
-    to_image_source(&data, color, size)
+    // Issue 27: pass &[u8] directly without copying to IconData::Svg
+    svg_bytes_to_image_source(svg, color, size)
 }
 
 /// Convert raw SVG bytes to an [`ImageSource`].
@@ -885,8 +885,27 @@ pub fn bundled_svg_to_image_source(
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<ImageSource> {
-    let data = IconData::Svg(svg_bytes.to_vec());
-    to_image_source(&data, color, size)
+    // Issue 27: pass &[u8] directly without copying to IconData::Svg
+    svg_bytes_to_image_source(svg_bytes, color, size)
+}
+
+/// Internal: rasterize SVG bytes to an [`ImageSource`] without copying to [`IconData`].
+///
+/// Issue 27: avoids the heap copy that wrapping in `IconData::Svg(bytes.to_vec())`
+/// would incur. Uses the same colorize + rasterize logic as `to_image_source`'s
+/// SVG branch.
+fn svg_bytes_to_image_source(
+    svg_bytes: &[u8],
+    color: Option<Hsla>,
+    size: Option<u32>,
+) -> Option<ImageSource> {
+    let raster_size = size.unwrap_or(SVG_RASTERIZE_SIZE).clamp(1, MAX_ICON_SIZE);
+    if let Some(c) = color {
+        let colored = colorize_svg(svg_bytes, c);
+        svg_to_bmp_source(&colored, raster_size)
+    } else {
+        svg_to_bmp_source(svg_bytes, raster_size)
+    }
 }
 
 /// Convert all frames of an [`AnimatedIcon::Frames`] to gpui [`ImageSource`]s.
