@@ -28,6 +28,7 @@ pub(crate) fn rgba_to_hsla(rgba: native_theme::Rgba) -> Hsla {
 /// Convert an `Hsla` color to a `#rrggbb` hex string.
 ///
 /// Alpha is discarded (only the opaque RGB is encoded).
+#[cfg(test)]
 pub(crate) fn hsla_to_hex(c: Hsla) -> String {
     let rgba: gpui::Rgba = c.into();
     let r = (rgba.r.clamp(0.0, 1.0) * 255.0).round() as u8;

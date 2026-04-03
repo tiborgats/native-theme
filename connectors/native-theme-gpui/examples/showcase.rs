@@ -4543,8 +4543,7 @@ impl Showcase {
                                         // Pulse opacity to indicate animation (gpui
                                         // cannot rotate rasterized images -- only Svg
                                         // elements from file paths support rotation).
-                                        let opacity =
-                                            0.3 + 0.7 * (1.0 - (delta * 2.0 - 1.0).abs());
+                                        let opacity = 0.3 + 0.7 * (1.0 - (delta * 2.0 - 1.0).abs());
                                         el.opacity(opacity)
                                     },
                                 ),
