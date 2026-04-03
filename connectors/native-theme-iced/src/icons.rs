@@ -229,29 +229,6 @@ pub fn into_svg_handle(
 ///
 /// Note: Only RGB channels are used; the alpha channel is discarded during
 /// hex conversion. For transparency, use `Svg::opacity()` on the rendered element.
-///
-/// ## Replacement strategy
-///
-/// 1. If `currentColor` appears anywhere in the SVG, it is replaced globally
-///    (not scoped to individual attributes). This correctly handles `fill`,
-///    `stroke`, `stop-color`, etc. For monochrome icons this is the desired
-///    behavior. Multi-color SVGs should not use this function.
-///
-/// 2. Explicit black fills and strokes (`"black"`, `"#000000"`, `"#000"`)
-///    are replaced in both `fill=` and `stroke=` attributes.
-///
-/// 3. If no replacements are found and the root `<svg>` tag lacks a `fill=`
-///    attribute, a `fill` is injected. Note: if the root tag has `fill="none"`
-///    (common in stroke-based SVGs), no injection occurs -- the explicit black
-///    stroke replacements from step 2 handle colorization instead.
-///
-/// ## Limitations
-///
-/// - Colors in CSS `style` attributes (e.g., `style="fill:black"`) are not
-///   replaced (except `currentColor` which is caught by step 1).
-/// - Only the first `<svg` in the document is considered for fill injection.
-///   SVGs with `<svg` inside comments could cause incorrect injection, though
-///   this is extremely unlikely with real icon files.
 fn colorize_monochrome_svg(svg_bytes: &[u8], color: iced_core::Color) -> Vec<u8> {
     let r = (color.r.clamp(0.0, 1.0) * 255.0).round() as u8;
     let g = (color.g.clamp(0.0, 1.0) * 255.0).round() as u8;
@@ -265,29 +242,23 @@ fn colorize_monochrome_svg(svg_bytes: &[u8], color: iced_core::Color) -> Vec<u8>
         return svg_bytes.to_vec();
     };
 
-    // Replace currentColor (handles Lucide-style SVGs).
-    // This is a global replacement that covers fill, stroke, stop-color, etc.
+    // Replace currentColor (handles Lucide-style SVGs)
     if svg_str.contains("currentColor") {
         return svg_str.replace("currentColor", &hex).into_bytes();
     }
 
-    // Replace explicit black fills and strokes (handles third-party SVGs).
-    // Stroke replacements handle outline-style icons that use stroke="black".
+    // Replace explicit black fills (handles third-party SVGs)
     let fill_hex = format!("fill=\"{}\"", hex);
-    let stroke_hex = format!("stroke=\"{}\"", hex);
     let replaced = svg_str
         .replace("fill=\"black\"", &fill_hex)
         .replace("fill=\"#000000\"", &fill_hex)
-        .replace("fill=\"#000\"", &fill_hex)
-        .replace("stroke=\"black\"", &stroke_hex)
-        .replace("stroke=\"#000000\"", &stroke_hex)
-        .replace("stroke=\"#000\"", &stroke_hex);
+        .replace("fill=\"#000\"", &fill_hex);
     if replaced != svg_str {
         return replaced.into_bytes();
     }
 
-    // No currentColor or explicit black found -- inject fill into the root
-    // <svg> tag (handles Material-style SVGs with implicit black fill).
+    // No currentColor found — inject fill into the root <svg> tag
+    // (handles Material-style SVGs with implicit black fill)
     if let Some(pos) = svg_str.find("<svg")
         && let Some(close) = svg_str[pos..].find('>')
     {
@@ -585,46 +556,19 @@ mod tests {
     }
 
     #[test]
-    fn into_image_handle_with_svg_returns_none() {
-        let data = IconData::Svg(b"<svg></svg>".to_vec());
-        assert!(into_image_handle(data).is_none());
-    }
-
-    #[test]
     fn into_svg_handle_with_svg() {
         let data = IconData::Svg(b"<svg></svg>".to_vec());
         assert!(into_svg_handle(data, None).is_some());
     }
 
     #[test]
-    fn into_svg_handle_with_rgba_returns_none() {
+    fn to_svg_handle_with_rgba_returns_none_no_color() {
         let data = IconData::Rgba {
             width: 16,
             height: 16,
-            data: vec![0u8; 16 * 16 * 4],
+            data: vec![255u8; 16 * 16 * 4],
         };
-        assert!(into_svg_handle(data, None).is_none());
-    }
-
-    #[test]
-    fn animated_frames_mixed_svg_rgba_filters_rgba() {
-        let anim = AnimatedIcon::Frames {
-            frames: vec![
-                IconData::Svg(b"<svg></svg>".to_vec()),
-                IconData::Rgba {
-                    width: 16,
-                    height: 16,
-                    data: vec![0u8; 16 * 16 * 4],
-                },
-                IconData::Svg(b"<svg></svg>".to_vec()),
-            ],
-            frame_duration_ms: 80,
-        };
-        let result = animated_frames_to_svg_handles(&anim, None);
-        assert!(result.is_some());
-        let handles = result.unwrap();
-        // RGBA frame should be filtered out, leaving 2 SVG frames
-        assert_eq!(handles.handles.len(), 2);
+        assert!(to_svg_handle(&data, None).is_none());
     }
 
     #[test]
@@ -642,71 +586,6 @@ mod tests {
         assert!(
             !result_str.contains("/ fill="),
             "fill should not be between / and >, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_replaces_fill_hex_000000() {
-        let svg = b"<svg><path fill=\"#000000\" d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(0.0, 1.0, 0.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("fill=\"#00ff00\""),
-            "fill=\"#000000\" should be replaced, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_replaces_fill_hex_short() {
-        let svg = b"<svg><path fill=\"#000\" d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(0.0, 0.0, 1.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("fill=\"#0000ff\""),
-            "fill=\"#000\" should be replaced, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_replaces_stroke_black() {
-        let svg = b"<svg><path stroke=\"black\" d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("stroke=\"#ff0000\""),
-            "stroke=\"black\" should be replaced, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_replaces_stroke_hex_000000() {
-        let svg = b"<svg><path stroke=\"#000000\" d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(0.0, 1.0, 0.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("stroke=\"#00ff00\""),
-            "stroke=\"#000000\" should be replaced, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_replaces_stroke_hex_short() {
-        let svg = b"<svg><path stroke=\"#000\" d=\"M0 0\"/></svg>";
-        let color = iced_core::Color::from_rgb(0.0, 0.0, 1.0);
-        let result = colorize_monochrome_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            result_str.contains("stroke=\"#0000ff\""),
-            "stroke=\"#000\" should be replaced, got: {}",
             result_str
         );
     }

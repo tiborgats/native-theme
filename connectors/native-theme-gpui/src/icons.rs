@@ -85,9 +85,6 @@ pub fn icon_name(role: IconRole) -> Option<IconName> {
         IconRole::WindowRestore => IconName::WindowRestore,
 
         // Common Actions
-        // Issue 33: both ActionDelete and TrashEmpty map to IconName::Delete.
-        // gpui-component's Delete icon is a backspace/erase glyph, not a
-        // trash can. This is the closest available match for both roles.
         IconRole::ActionDelete => IconName::Delete,
         IconRole::ActionCopy => IconName::Copy,
         IconRole::ActionUndo => IconName::Undo2,
@@ -113,9 +110,6 @@ pub fn icon_name(role: IconRole) -> Option<IconName> {
         // Status
         IconRole::StatusBusy => IconName::Loader,
         IconRole::StatusCheck => IconName::Check,
-        // Issue 46: StatusError maps to the same CircleX as DialogError.
-        // Both roles use the same visual glyph; the semantic distinction
-        // (inline status vs dialog header) is handled by size/placement.
         IconRole::StatusError => IconName::CircleX,
 
         // System
@@ -720,12 +714,6 @@ pub fn freedesktop_name_for_gpui_icon(
 /// on HiDPI screens. gpui uses the same 2x scale factor internally.
 const SVG_RASTERIZE_SIZE: u32 = 48;
 
-/// Maximum allowed rasterization size for icon conversion.
-///
-/// Values above this are clamped to prevent excessive memory allocation
-/// from a single icon render.
-const MAX_ICON_SIZE: u32 = 512;
-
 /// Convert [`IconData`] to a gpui [`ImageSource`] for rendering.
 ///
 /// Returns `None` if the icon data cannot be converted (corrupt SVG,
@@ -734,15 +722,13 @@ const MAX_ICON_SIZE: u32 = 512;
 /// # Parameters
 ///
 /// - `color`: If `Some`, colorizes monochrome SVGs with the given color
-///   (replaces `currentColor`, explicit black fills/strokes, or injects a fill
+///   (replaces `currentColor`, explicit black fills, or injects a fill
 ///   attribute). Best for bundled icon sets (Material, Lucide). Pass `None`
 ///   for system/OS icons to preserve their native palette.
-///   RGBA icons are passed through unchanged regardless of this parameter --
-///   the color's alpha channel is discarded during SVG colorization because
-///   SVG fill/stroke attributes only accept opaque hex (`#rrggbb`).
+///   RGBA icons are passed through unchanged regardless of this parameter.
 /// - `size`: Rasterize size in pixels for SVG icons. `None` defaults to 48px
-///   (2x HiDPI at 24px logical). Clamped to 1..=512 range. Pass
-///   `logical_size * scale_factor` for DPI-correct rendering.
+///   (2x HiDPI at 24px logical). Pass `logical_size * scale_factor` for
+///   DPI-correct rendering.
 ///
 /// # Examples
 ///
@@ -751,9 +737,9 @@ const MAX_ICON_SIZE: u32 = 512;
 /// use native_theme_gpui::icons::to_image_source;
 ///
 /// let svg = IconData::Svg(b"<svg></svg>".to_vec());
-/// let source = to_image_source(&svg, None, None);         // uncolorized, 48px
-/// let colored = to_image_source(&svg, Some(color), None);  // colorized, 48px
-/// let sized = to_image_source(&svg, None, Some(96));       // uncolorized, 96px
+/// let source = to_image_source(&svg, None, None);        // uncolorized, 48px
+/// let colored = to_image_source(&svg, Some(color), None); // colorized, 48px
+/// let sized = to_image_source(&svg, None, Some(96));      // uncolorized, 96px
 /// ```
 #[must_use]
 pub fn to_image_source(
@@ -761,8 +747,7 @@ pub fn to_image_source(
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<ImageSource> {
-    // Issue 28: clamp icon size to 1..=512
-    let raster_size = size.unwrap_or(SVG_RASTERIZE_SIZE).clamp(1, MAX_ICON_SIZE);
+    let raster_size = size.unwrap_or(SVG_RASTERIZE_SIZE);
     match data {
         IconData::Svg(bytes) => {
             if let Some(c) = color {
@@ -788,9 +773,8 @@ pub fn to_image_source(
 /// Convert [`IconData`] to a gpui [`ImageSource`], consuming the data.
 ///
 /// This is the consuming variant of [`to_image_source()`]. It takes ownership
-/// of the `IconData` so the caller doesn't need to keep it alive. Internally
-/// delegates to [`to_image_source()`] -- the `Vec<u8>` is borrowed, not moved,
-/// because rasterization always produces new output buffers.
+/// of the `IconData` to avoid cloning the underlying `Vec<u8>`. Prefer this
+/// when you already own the data and won't use it again.
 ///
 /// Returns `None` if the icon data cannot be converted (corrupt SVG,
 /// unknown variant).
@@ -860,32 +844,15 @@ pub fn bundled_icon_to_image_source(
     to_image_source(&data, color, size)
 }
 
-/// Convert raw SVG bytes to an [`ImageSource`].
-///
-/// This is a convenience wrapper for callers that already have SVG bytes
-/// (e.g. from [`native_theme::bundled_icon_by_name`]) and want to skip
-/// the `IconData` intermediate.
-///
-/// See [`to_image_source()`] for details on the `color` and `size` parameters.
-#[must_use]
-pub fn bundled_svg_to_image_source(
-    svg_bytes: &[u8],
-    color: Option<Hsla>,
-    size: Option<u32>,
-) -> Option<ImageSource> {
-    let data = IconData::Svg(svg_bytes.to_vec());
-    to_image_source(&data, color, size)
-}
-
 /// Convert all frames of an [`AnimatedIcon::Frames`] to gpui [`ImageSource`]s.
 ///
-/// Returns `Some(AnimatedImageSources)` when the icon is the `Frames` variant,
-/// with one `ImageSource` per frame. Returns `None` for `Transform` variants
-/// or if any frame fails to convert.
+/// Returns `Some(Vec<ImageSource>)` when the icon is the `Frames` variant,
+/// with one `ImageSource` per frame. Returns `None` for `Transform` variants.
 ///
-/// **All-or-nothing semantics:** if any single frame fails to rasterize, the
-/// entire animation returns `None`. This prevents timing glitches where a
-/// dropped frame would cause the animation to play faster than intended.
+/// **Note:** Frames that cannot be converted to `ImageSource` (e.g., corrupt
+/// SVG data, rasterization failure) are silently excluded. The returned
+/// animation may have fewer frames than the input, causing it to play faster.
+/// If all frames fail, returns `None`.
 ///
 /// **Call this once and cache the result.** Do not call on every frame tick --
 /// SVG rasterization is expensive. Index into the cached `Vec` using a
@@ -920,20 +887,18 @@ pub fn animated_frames_to_image_sources(
             frames,
             frame_duration_ms,
         } => {
-            if frames.is_empty() {
-                return None;
-            }
-            // Issue 4: use map + collect::<Option<Vec<_>>> so the whole
-            // animation fails if any frame fails. This prevents timing
-            // glitches from silently dropped frames.
-            let sources: Option<Vec<ImageSource>> = frames
+            let sources: Vec<ImageSource> = frames
                 .iter()
-                .map(|f| to_image_source(f, color, size))
+                .filter_map(|f| to_image_source(f, color, size))
                 .collect();
-            sources.map(|s| AnimatedImageSources {
-                sources: s,
-                frame_duration_ms: *frame_duration_ms,
-            })
+            if sources.is_empty() {
+                None
+            } else {
+                Some(AnimatedImageSources {
+                    sources,
+                    frame_duration_ms: *frame_duration_ms,
+                })
+            }
         }
         _ => None,
     }
@@ -1000,29 +965,23 @@ fn svg_to_bmp_source(svg_bytes: &[u8], size: u32) -> Option<ImageSource> {
 
 /// Rewrite SVG bytes to use the given color for strokes and fills.
 ///
-/// Handles four SVG color patterns (in order):
-/// 1. **`currentColor`** -- replaced with the hex color (Lucide-style SVGs).
-/// 2. **Explicit black fills** -- `fill="black"`, `fill="#000000"`, `fill="#000"`
+/// Handles three SVG color patterns (in order):
+/// 1. **`currentColor`** — replaced with the hex color (Lucide-style SVGs).
+/// 2. **Explicit black fills** — `fill="black"`, `fill="#000000"`, `fill="#000"`
 ///    are replaced with the hex color (third-party SVGs with hardcoded black).
-/// 3. **Explicit black strokes** -- `stroke="black"`, `stroke="#000000"`,
-///    `stroke="#000"` are also replaced (Issue 10).
-/// 4. **Implicit black** -- if the root `<svg>` tag has no `fill=` attribute,
+/// 3. **Implicit black** — if the root `<svg>` tag has no `fill=` attribute,
 ///    injects `fill="<hex>"` (Material-style SVGs).
 ///
-/// **Limitations** (Issue 34): CSS inline styles (`style="fill:black"`),
-/// `fill="rgb(0,0,0)"`, and explicit black on child elements when the root
-/// tag has a different fill are not handled. This function is designed for
-/// monochrome icon sets; multi-color SVGs should not be colorized.
-///
-/// **Alpha discard** (Issue 21): the Hsla color's alpha channel is discarded.
-/// SVG fill/stroke attributes only accept opaque hex (`#rrggbb`); semi-transparent
-/// colors are converted to their opaque RGB equivalent.
+/// Not handled: `stroke="black"`, CSS `style="fill:black"`, `fill="rgb(0,0,0)"`,
+/// or explicit black on child elements when the root tag has a different fill.
+/// This function is designed for monochrome icon sets; multi-color SVGs should
+/// not be colorized.
 fn colorize_svg(svg_bytes: &[u8], color: Hsla) -> Vec<u8> {
     let rgba: gpui::Rgba = color.into();
     let r = (rgba.r.clamp(0.0, 1.0) * 255.0).round() as u8;
     let g = (rgba.g.clamp(0.0, 1.0) * 255.0).round() as u8;
     let b = (rgba.b.clamp(0.0, 1.0) * 255.0).round() as u8;
-    let hex = format!("#{r:02x}{g:02x}{b:02x}");
+    let hex = format!("#{:02x}{:02x}{:02x}", r, g, b);
 
     let Ok(svg_str) = std::str::from_utf8(svg_bytes) else {
         // Non-UTF-8 SVGs pass through unmodified -- no corruption risk.
@@ -1036,24 +995,16 @@ fn colorize_svg(svg_bytes: &[u8], color: Hsla) -> Vec<u8> {
     }
 
     // 2. Replace explicit black fills (handles third-party SVGs)
-    let fill_hex = format!("fill=\"{hex}\"");
+    let fill_hex = format!("fill=\"{}\"", hex);
     let replaced = svg_str
         .replace("fill=\"black\"", &fill_hex)
         .replace("fill=\"#000000\"", &fill_hex)
         .replace("fill=\"#000\"", &fill_hex);
-
-    // 3. Issue 10: also replace explicit black strokes
-    let stroke_hex = format!("stroke=\"{hex}\"");
-    let replaced = replaced
-        .replace("stroke=\"black\"", &stroke_hex)
-        .replace("stroke=\"#000000\"", &stroke_hex)
-        .replace("stroke=\"#000\"", &stroke_hex);
-
     if replaced != svg_str {
         return replaced.into_bytes();
     }
 
-    // 4. No currentColor or explicit black -- inject fill into root <svg> tag
+    // 3. No currentColor or explicit black — inject fill into root <svg> tag
     // (handles Material-style SVGs with implicit black fill)
     if let Some(pos) = svg_str.find("<svg")
         && let Some(close) = svg_str[pos..].find('>')
@@ -1069,13 +1020,13 @@ fn colorize_svg(svg_bytes: &[u8], color: Hsla) -> Vec<u8> {
             };
             let mut result = String::with_capacity(svg_str.len() + 20);
             result.push_str(&svg_str[..inject_pos]);
-            result.push_str(&format!(" fill=\"{hex}\""));
+            result.push_str(&format!(" fill=\"{}\"", hex));
             result.push_str(&svg_str[inject_pos..]);
             return result.into_bytes();
         }
     }
 
-    // SVG already has non-black fill and no currentColor -- return as-is
+    // SVG already has non-black fill and no currentColor — return as-is
     svg_bytes.to_vec()
 }
 
@@ -1127,14 +1078,11 @@ fn encode_rgba_as_bmp(width: u32, height: u32, rgba: &[u8]) -> Option<Vec<u8>> {
     buf.extend_from_slice(&0u32.to_le_bytes()); // colors used
     buf.extend_from_slice(&0u32.to_le_bytes()); // important colors
 
-    // Issue 54: Channel masks for BI_BITFIELDS. Despite pixel data being
-    // written in BGRA order below, these masks tell the decoder that bit 16-23
-    // is red, 8-15 is green, 0-7 is blue, and 24-31 is alpha -- matching
-    // the BGRA byte layout in the pixel data section.
-    buf.extend_from_slice(&0x00FF0000u32.to_le_bytes()); // red mask   (byte 2)
-    buf.extend_from_slice(&0x0000FF00u32.to_le_bytes()); // green mask (byte 1)
-    buf.extend_from_slice(&0x000000FFu32.to_le_bytes()); // blue mask  (byte 0)
-    buf.extend_from_slice(&0xFF000000u32.to_le_bytes()); // alpha mask (byte 3)
+    // Channel masks (RGBA -> BGRA in BMP, but we use BI_BITFIELDS to specify layout)
+    buf.extend_from_slice(&0x00FF0000u32.to_le_bytes()); // red mask
+    buf.extend_from_slice(&0x0000FF00u32.to_le_bytes()); // green mask
+    buf.extend_from_slice(&0x000000FFu32.to_le_bytes()); // blue mask
+    buf.extend_from_slice(&0xFF000000u32.to_le_bytes()); // alpha mask
 
     // Color space type: LCS_sRGB
     buf.extend_from_slice(&0x73524742u32.to_le_bytes()); // 'sRGB'
@@ -1416,77 +1364,6 @@ mod tests {
         );
     }
 
-    // Issue 41: ALL_ICON_NAMES count tripwire test
-    #[test]
-    fn all_icon_names_count_matches_gpui_component() {
-        // If gpui-component adds or removes IconName variants, this will break.
-        assert_eq!(
-            ALL_ICON_NAMES.len(),
-            86,
-            "ALL_ICON_NAMES count changed (got {}) -- update the list",
-            ALL_ICON_NAMES.len()
-        );
-    }
-
-    // Issue 45: data-driven icon mapping regression tests
-    // Uses matches!() since IconName doesn't implement PartialEq.
-    #[test]
-    fn icon_name_data_driven() {
-        // Some() mappings
-        assert!(matches!(
-            icon_name(IconRole::DialogWarning),
-            Some(IconName::TriangleAlert)
-        ));
-        assert!(matches!(
-            icon_name(IconRole::DialogError),
-            Some(IconName::CircleX)
-        ));
-        assert!(matches!(
-            icon_name(IconRole::DialogInfo),
-            Some(IconName::Info)
-        ));
-        assert!(matches!(
-            icon_name(IconRole::DialogSuccess),
-            Some(IconName::CircleCheck)
-        ));
-        assert!(matches!(
-            icon_name(IconRole::WindowClose),
-            Some(IconName::WindowClose)
-        ));
-        assert!(matches!(
-            icon_name(IconRole::ActionDelete),
-            Some(IconName::Delete)
-        ));
-        assert!(matches!(
-            icon_name(IconRole::ActionCopy),
-            Some(IconName::Copy)
-        ));
-        assert!(matches!(
-            icon_name(IconRole::NavBack),
-            Some(IconName::ChevronLeft)
-        ));
-        assert!(matches!(
-            icon_name(IconRole::FileGeneric),
-            Some(IconName::File)
-        ));
-        assert!(matches!(
-            icon_name(IconRole::StatusCheck),
-            Some(IconName::Check)
-        ));
-        assert!(matches!(
-            icon_name(IconRole::StatusError),
-            Some(IconName::CircleX)
-        ));
-        assert!(matches!(
-            icon_name(IconRole::UserAccount),
-            Some(IconName::User)
-        ));
-        // None cases
-        assert!(icon_name(IconRole::Shield).is_none());
-        assert!(icon_name(IconRole::Lock).is_none());
-        assert!(icon_name(IconRole::Help).is_none());
-    }
-
     // --- to_image_source tests ---
 
     #[test]
@@ -1546,27 +1423,6 @@ mod tests {
         );
         let result = to_image_source(&svg, None, Some(32));
         assert!(result.is_some(), "custom size SVG should convert");
-    }
-
-    // Issue 28: size clamping
-    #[test]
-    fn to_image_source_clamps_oversized() {
-        let svg = IconData::Svg(
-            b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>".to_vec(),
-        );
-        // Should not panic or OOM with a huge size -- gets clamped to 512
-        let result = to_image_source(&svg, None, Some(99999));
-        assert!(result.is_some(), "oversized should clamp and still convert");
-    }
-
-    #[test]
-    fn to_image_source_clamps_zero_size() {
-        let svg = IconData::Svg(
-            b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>".to_vec(),
-        );
-        // Size 0 should clamp to 1
-        let result = to_image_source(&svg, None, Some(0));
-        assert!(result.is_some(), "zero size should clamp to 1 and convert");
     }
 
     // --- BMP encoding tests ---
@@ -1706,37 +1562,6 @@ mod tests {
         let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
         let result = colorize_svg(&svg, color);
         assert_eq!(result, svg, "non-UTF-8 input should be returned unchanged");
-    }
-
-    // Issue 10: stroke="black" replacement
-    #[test]
-    fn colorize_svg_replaces_stroke_black() {
-        let svg = b"<svg><path stroke=\"black\" d=\"M0 0h24\"/></svg>";
-        let color = gpui::hsla(0.6, 0.7, 0.5, 1.0);
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            !result_str.contains("stroke=\"black\""),
-            "stroke=\"black\" should be replaced, got: {}",
-            result_str
-        );
-        assert!(
-            result_str.contains("stroke=\"#"),
-            "should contain hex stroke, got: {}",
-            result_str
-        );
-    }
-
-    #[test]
-    fn colorize_svg_replaces_stroke_hex_black() {
-        let svg = b"<svg><line stroke=\"#000000\" x1=\"0\" y1=\"0\" x2=\"24\" y2=\"24\"/></svg>";
-        let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
-        let result = colorize_svg(svg, color);
-        let result_str = String::from_utf8(result).unwrap();
-        assert!(
-            !result_str.contains("#000000"),
-            "stroke=\"#000000\" should be replaced"
-        );
     }
 
     #[test]

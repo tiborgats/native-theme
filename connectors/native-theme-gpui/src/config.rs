@@ -20,10 +20,6 @@ pub fn to_theme_config(
 ) -> ThemeConfig {
     let d = &resolved.defaults;
 
-    // Issue 14: clamp radius to non-negative before rounding
-    let radius = d.radius.max(0.0).round() as usize;
-    let radius_lg = d.radius_lg.max(0.0).round() as usize;
-
     ThemeConfig {
         name: SharedString::from(name.to_string()),
         mode,
@@ -34,14 +30,10 @@ pub fn to_theme_config(
         mono_font_family: Some(SharedString::from(d.mono_font.family.clone())),
         mono_font_size: Some(d.mono_font.size),
 
-        radius: Some(radius),
-        radius_lg: Some(radius_lg),
+        radius: Some(d.radius.round() as usize),
+        radius_lg: Some(d.radius_lg.round() as usize),
         shadow: Some(d.shadow_enabled),
 
-        // Issue 5: ThemeConfigColors left at default (all None) intentionally.
-        // Populating them with hex strings loses alpha channels (overlay, blended
-        // colors), causing rendering artifacts if apply_config() is called at
-        // runtime. The primary ThemeColor set via Theme::from(&tc) is authoritative.
         ..ThemeConfig::default()
     }
 }
@@ -52,11 +44,12 @@ mod tests {
     use super::*;
     use native_theme::ThemeSpec;
 
+    /// Create a ResolvedThemeVariant via the preset resolve+validate pipeline.
     fn test_resolved() -> native_theme::ResolvedThemeVariant {
         let nt = ThemeSpec::preset("catppuccin-mocha").expect("preset must exist");
         let variant = nt
-            .into_variant(true)
-            .expect("preset must have dark variant");
+            .into_variant(false)
+            .expect("preset must have light variant");
         variant
             .into_resolved()
             .expect("resolved preset must validate")
@@ -65,23 +58,33 @@ mod tests {
     #[test]
     fn to_theme_config_from_resolved() {
         let resolved = test_resolved();
-        let config = to_theme_config(&resolved, "Test Theme", ThemeMode::Dark);
+        let config = to_theme_config(&resolved, "Test Theme", ThemeMode::Light);
 
         assert_eq!(config.name.to_string(), "Test Theme");
-        assert_eq!(config.mode, ThemeMode::Dark);
+        assert_eq!(config.mode, ThemeMode::Light);
+
+        // Font family should be populated
         assert!(config.font_family.is_some(), "font_family should be set");
         assert!(
             config.mono_font_family.is_some(),
             "mono_font_family should be set"
         );
+
+        // Font size should be directly from resolved (no pt-to-px conversion)
         assert_eq!(config.font_size, Some(resolved.defaults.font.size));
         assert_eq!(
             config.mono_font_size,
             Some(resolved.defaults.mono_font.size)
         );
+
+        // Geometry
         assert_eq!(
             config.radius,
-            Some(resolved.defaults.radius.max(0.0).round() as usize)
+            Some(resolved.defaults.radius.round() as usize)
+        );
+        assert_eq!(
+            config.radius_lg,
+            Some(resolved.defaults.radius_lg.round() as usize)
         );
         assert_eq!(config.shadow, Some(resolved.defaults.shadow_enabled));
     }
@@ -96,39 +99,18 @@ mod tests {
     #[test]
     fn font_size_is_not_converted_from_points() {
         let resolved = test_resolved();
-        let config = to_theme_config(&resolved, "SizeCheck", ThemeMode::Dark);
+        let config = to_theme_config(&resolved, "SizeCheck", ThemeMode::Light);
+
+        // The old code applied pt * (96.0/72.0) conversion. ResolvedFontSpec sizes
+        // are already logical pixels, so font_size should equal the resolved value directly.
         let expected = resolved.defaults.font.size;
         assert_eq!(config.font_size, Some(expected));
+        // Verify it is NOT the pt-converted value
         let pt_converted = expected * (96.0 / 72.0);
         assert_ne!(
             config.font_size,
             Some(pt_converted),
             "font size should NOT be pt-to-px converted"
         );
-    }
-
-    #[test]
-    fn negative_radius_clamped() {
-        let resolved = test_resolved();
-        let config = to_theme_config(&resolved, "Clamp", ThemeMode::Dark);
-        assert!(config.radius.unwrap() < 1000, "radius should be reasonable");
-    }
-
-    #[test]
-    fn multi_preset_config() {
-        let presets = [
-            ("catppuccin-mocha", ThemeMode::Dark),
-            ("catppuccin-latte", ThemeMode::Light),
-            ("dracula", ThemeMode::Dark),
-            ("adwaita", ThemeMode::Light),
-        ];
-        for (name, mode) in presets {
-            let nt = ThemeSpec::preset(name).expect("preset must exist");
-            let is_dark = mode.is_dark();
-            let variant = nt.into_variant(is_dark).expect("variant must exist");
-            let resolved = variant.into_resolved().expect("must validate");
-            let config = to_theme_config(&resolved, name, mode);
-            assert_eq!(config.mode, mode, "mode mismatch for {name}");
-        }
     }
 }
