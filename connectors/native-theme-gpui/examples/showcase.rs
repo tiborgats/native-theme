@@ -11,9 +11,9 @@
 //! ```
 
 use gpui::{
-    Animation, AnimationExt, AnyElement, App, Application, Bounds, Context, Entity, Hsla,
-    ImageSource, IntoElement, Keystroke, Menu, MenuItem, ParentElement, Render, SharedString,
-    Styled, Task, Timer, Window, WindowBounds, WindowOptions, div, prelude::*, px, rems, size,
+    AnyElement, App, Application, Bounds, Context, Entity, Hsla, ImageSource, IntoElement,
+    Keystroke, Menu, MenuItem, ParentElement, Render, SharedString, Styled, Task, Timer, Window,
+    WindowBounds, WindowOptions, div, prelude::*, px, rems, size,
 };
 use gpui_component::{
     ActiveTheme, Disableable, Icon, IconName, PixelsExt, Placement, Root, Sizable, Size, StyledExt,
@@ -75,7 +75,7 @@ use native_theme::{detect_linux_de, load_freedesktop_icon_by_name};
 use native_theme_gpui::icons::freedesktop_name_for_gpui_icon;
 use native_theme_gpui::icons::{
     animated_frames_to_image_sources, lucide_name_for_gpui_icon, material_name_for_gpui_icon,
-    to_image_source,
+    to_image_source, with_spin_animation,
 };
 use native_theme_gpui::to_theme;
 
@@ -851,8 +851,10 @@ struct Showcase {
     animated_frame_durations: Vec<u32>,
     /// Current frame index for each frame-based animation.
     animated_frame_indices: Vec<usize>,
-    /// Cached ImageSource for transform-based (spin) animations (set name, source, duration_ms).
-    animated_spin_sources: Vec<(String, ImageSource, u32)>,
+    /// Cached raw SVG bytes for transform-based (spin) animations (set name, bytes, duration_ms).
+    /// Stored as raw bytes so we can render with `gpui::svg()` (which supports rotation
+    /// via `with_spin_animation`) rather than rasterized BMP images (which can only pulse).
+    animated_spin_sources: Vec<(String, Vec<u8>, u32)>,
     /// Timer task handle for frame cycling (dropped to cancel).
     animation_timer: Option<Task<()>>,
     /// Whether reduced motion is active.
@@ -945,13 +947,17 @@ impl Showcase {
                     if let Some(source) = to_image_source(icon, None, None) {
                         self.animated_static_sources.push((
                             set_name.to_string(),
-                            source.clone(),
+                            source,
                             "Transform",
                         ));
-                        if let TransformAnimation::Spin { duration_ms } = animation {
+                    }
+                    if let TransformAnimation::Spin { duration_ms } = animation {
+                        // Store raw SVG bytes for spin animations so we can use
+                        // gpui::svg() with real rotation instead of rasterized BMP.
+                        if let IconData::Svg(bytes) = icon {
                             self.animated_spin_sources.push((
                                 set_name.to_string(),
-                                source,
+                                bytes.clone(),
                                 *duration_ms,
                             ));
                         }
@@ -4515,14 +4521,21 @@ impl Showcase {
                 }
             }
 
-            // Transform (spin) animations -- shown with opacity pulse since gpui
-            // Div lacks with_transformation (only Svg has it). In real usage,
-            // callers use with_spin_animation() on an Svg element.
-            for (set_name, source, duration_ms) in &self.animated_spin_sources {
+            // Transform (spin) animations -- rendered as gpui::svg() with real
+            // rotation via with_spin_animation(). The raw SVG bytes are stored
+            // in animated_spin_sources so we can use the Svg element (which
+            // supports with_transformation for rotation).
+            for (set_name, svg_bytes, duration_ms) in &self.animated_spin_sources {
                 let label_text: SharedString =
                     format!("{} - Spin ({}ms)", set_name, duration_ms).into();
                 let spin_id = SharedString::from(format!("spinner-{}", set_name));
-                let dur = Duration::from_millis(*duration_ms as u64);
+                let svg_source =
+                    gpui::SharedString::from(String::from_utf8_lossy(svg_bytes).into_owned());
+                let svg_el = gpui::svg()
+                    .path(svg_source)
+                    .size(px(32.))
+                    .text_color(gpui::hsla(0.0, 0.0, 0.5, 1.0));
+                let spinning = with_spin_animation(svg_el, spin_id, *duration_ms);
                 cards.push(
                     v_flex()
                         .items_center()
@@ -4531,20 +4544,7 @@ impl Showcase {
                         .rounded_md()
                         .border_1()
                         .border_color(gpui::hsla(0.0, 0.0, 0.5, 0.3))
-                        .child(
-                            div()
-                                .size(px(32.))
-                                .child(gpui::img(source.clone()).size(px(32.)))
-                                .with_animation(
-                                    spin_id,
-                                    Animation::new(dur).repeat(),
-                                    |el: gpui::Div, delta| {
-                                        // Pulse opacity 0.3..1.0 to indicate animation
-                                        let opacity = 0.3 + 0.7 * (1.0 - (delta * 2.0 - 1.0).abs());
-                                        el.opacity(opacity)
-                                    },
-                                ),
-                        )
+                        .child(spinning)
                         .child(Label::new(label_text).text_xs())
                         .into_any_element(),
                 );

@@ -2443,13 +2443,22 @@ fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Mes
         // Spin-based animations
         for (set_name, handle, duration_ms) in &state.animated_spins {
             let angle = spin_rotation_radians(state.animation_start.elapsed(), *duration_ms);
-            let icon = svg(handle.clone())
-                .width(Length::Fixed(32.0))
-                .height(Length::Fixed(32.0))
-                .rotation(iced::Rotation::Floating(angle))
-                .style(move |_theme, _status| iced::widget::svg::Style {
-                    color: Some(fg_color),
-                });
+            // Render at 64px internal resolution (2x) for smooth anti-aliasing on
+            // high-viewBox SVGs like Material (960-unit coordinate space), then
+            // constrain the layout to 32×32px.
+            let icon = container(
+                svg(handle.clone())
+                    .width(Length::Fixed(64.0))
+                    .height(Length::Fixed(64.0))
+                    .rotation(iced::Rotation::Floating(angle))
+                    .style(move |_theme, _status| iced::widget::svg::Style {
+                        color: Some(fg_color),
+                    }),
+            )
+            .width(Length::Fixed(32.0))
+            .height(Length::Fixed(32.0))
+            .clip(true)
+            .center(Length::Fixed(32.0));
             let label = text(format!("{} - Spin ({}ms)", set_name, duration_ms)).size(11);
             spinners.push(column![icon, label].spacing(4).align_x(iced::Center).into());
         }
