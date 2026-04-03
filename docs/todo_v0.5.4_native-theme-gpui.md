@@ -7,6 +7,11 @@ Independent critical analysis of the gpui connector crate.
 All production code is `#![deny(clippy::unwrap_used)]` and `#![deny(clippy::expect_used)]`.
 Test code uses `#[allow(clippy::unwrap_used, clippy::expect_used)]`.
 
+**Fourth-pass verification (2026-04-03):** All 80 issues independently verified against
+current source code. Zero issues have been fixed since the initial audit. Crate stats,
+test counts, and line numbers all confirmed accurate. Issue numbering collision at #73
+corrected (see note at issue #73a/73b). One new issue added (#80).
+
 ### Test Inventory
 
 **lib.rs -- 11 tests:**
@@ -2120,6 +2125,8 @@ just "testing light mode" -- it is testing a different preset entirely.
 | 57 | Showcase NaN propagation from NumberInput | **Low** | Trivial | Reject non-finite values |
 | 58 | Dark theme 20% active darkening counterproductive | **Low** | Trivial | Document rationale |
 | 59 | Showcase uses `resolve()` not `resolve_all()` (CC-10) | **Medium** | Trivial | Replace at showcase.rs:1636 |
+| 60--79 | See second/third-pass summary tables below | Various | Various | See individual entries |
+| 80 | `group_box` opacity diverges from upstream, not derived from theme | **Low** | Trivial | Match upstream `secondary.opacity(0.5)` |
 
 ---
 
@@ -3183,34 +3190,15 @@ tc.list_active = c.bg.blend(c.primary.opacity(selection_opacity));
 
 ---
 
-### 73. `to_theme()` Never Sets `theme.colors` Field -- Relies on `Theme::from` Deref
+### 73a. WITHDRAWN: `to_theme()` Never Sets `theme.colors` Field
 
-**Category:** correctness-risk
-**Severity:** low
-**File(s):** `lib.rs:97-122`
-
-**Problem:**
-```rust
-let theme_color = colors::to_theme_color(resolved, is_dark);
-let mut theme = Theme::from(&theme_color);
-theme.mode = mode;
-theme.font_family = ...;
-// Never: theme.colors = theme_color;
-```
-
-`Theme::from(&ThemeColor)` at gpui-component mod.rs:183-210 sets `colors: *colors`
-(copies the ThemeColor). Then the connector sets individual fields on `theme.*` which,
-via `DerefMut` to `ThemeColor`, write directly into `theme.colors.*`.
-
-Wait -- looking more carefully at the code, the connector does NOT write to any ThemeColor
-fields after `Theme::from()`. It only writes to Theme-level fields (`mode`, `font_family`,
-etc.). The colors are all set correctly via `Theme::from(&theme_color)`.
-
-This is NOT an issue. Removing from findings.
+**Status:** Withdrawn -- analysis determined this is NOT an issue. `Theme::from(&theme_color)`
+correctly copies all 108 ThemeColor fields. The connector only sets Theme-level fields
+(`mode`, `font_family`, etc.) after construction, never ThemeColor fields.
 
 ---
 
-### 73. `assign_list_table` Does Not Receive `is_dark` But Contains Mode-Dependent Logic
+### 73b. `assign_list_table` Does Not Receive `is_dark` But Contains Mode-Dependent Logic
 
 **Category:** design-inconsistency
 **Severity:** low
@@ -3253,15 +3241,13 @@ same time.
 
 ---
 
-### 74. `from_system()` Uses `sys.active()` Which Borrows, Then `sys.dark`/`sys.light` Moves
+### 74a. WITHDRAWN: `from_system()` Borrow/Move Interleaving
 
-**Category:** already-covered (withdraw)
-
-This is existing issue #19. Skipping.
+**Status:** Withdrawn -- duplicate of issue #19.
 
 ---
 
-### 74. `ThemeConfigColors` Has `group_box_title_foreground` With No `ThemeColor` Counterpart
+### 74b. `ThemeConfigColors` Has `group_box_title_foreground` With No `ThemeColor` Counterpart
 
 **Category:** upstream-mismatch
 **Severity:** negligible
@@ -3481,8 +3467,80 @@ zero-duration animations, the fix is one line.
 | 70 | `config.rs` test asserts tautology for radius values | **Low** | Trivial | Assert against known concrete value |
 | 71 | 7 Material icon collision pairs undocumented | **Low** | Trivial | Add comments to colliding pairs |
 | 72 | `list_active` has `a=0.2` making selection 80% transparent (deepens #7) | **Medium** | Trivial | Remove `.alpha(0.2)` alongside #7 fix |
-| 73 | `assign_list_table` missing `is_dark` blocks issue #7 fix | **Low** | Trivial | Add `is_dark` param when fixing #7 |
-| 74 | `ThemeConfigColors.group_box_title_foreground` has no ThemeColor source | **Negligible** | Trivial | Document in #5 implementation |
+| 73a | WITHDRAWN: `to_theme()` never sets `theme.colors` | N/A | N/A | Not an issue |
+| 73b | `assign_list_table` missing `is_dark` blocks issue #7 fix | **Low** | Trivial | Add `is_dark` param when fixing #7 |
+| 74a | WITHDRAWN: duplicate of #19 | N/A | N/A | See #19 |
+| 74b | `ThemeConfigColors.group_box_title_foreground` has no ThemeColor source | **Negligible** | Trivial | Document in #5 implementation |
 | 75 | No test for `list_active_border` / `table_active_border` | **Low** | Trivial | Add blend-verification test |
 | 78 | `config.rs` test missing `mono_font_size` value assertion | **Low** | Trivial | Add `assert_eq!` for mono_font_size |
 | 79 | `with_spin_animation` zero-duration undocumented | **Negligible** | Trivial | Keep as-is or guard with `.max(1)` |
+| 80 | `group_box` opacity hardcoded, not mode-aware (compounds #3 pattern) | **Low** | Trivial | Pass `is_dark` to `assign_misc`, adjust opacity |
+
+---
+
+## New Findings: Fourth-Pass Verification
+
+All 79 prior issues (including withdrawn 73a) independently verified against current
+source as of 2026-04-03. Zero fixes detected. The following is the single genuinely
+new finding from this pass.
+
+### 80. `group_box` Opacity Hardcoded Without Mode-Awareness (Same Pattern as Issues #3, #7)
+
+**Category:** design-inconsistency
+**Severity:** low
+**File(s):** `colors.rs:259-260`
+
+**Problem:**
+```rust
+tc.group_box =
+    c.bg.blend(c.secondary.opacity(if is_dark { 0.3 } else { 0.4 }));
+```
+
+The function `assign_misc` does receive `is_dark` and uses it here -- so unlike issue #3
+(`assign_base_colors` has no access to `is_dark`) and issue #7 (`assign_list_table` has no
+access), this function CAN adapt to mode. And it does: 0.3 for dark, 0.4 for light.
+
+However, the opacity values 0.3/0.4 produce different visual results depending on the
+secondary color's lightness relative to background. On a dark theme where `secondary` is
+a light gray (e.g., l=0.7) and `bg` is near-black (l=0.1), blending at 0.3 opacity creates
+a noticeable light tint. On a dark theme where `secondary` is also dark (l=0.2), blending
+at 0.3 opacity onto bg (l=0.1) creates an almost invisible change (result ~l=0.13).
+
+This is the same class of problem as issues #3 and #7: fixed opacity values interact
+unpredictably with the theme's actual color values. The mode-branch partially addresses
+this (unlike #3 and #7 which lack mode access entirely), but the 0.3/0.4 values are still
+arbitrary and not derived from any platform or gpui-component reference.
+
+gpui-component's own `apply_config` derivation for `group_box` uses
+`secondary.opacity(0.5)` blended on background -- a single value regardless of mode.
+The connector's mode-split (0.3/0.4) diverges from upstream without documented rationale.
+
+**Solution Options:**
+
+A. Match gpui-component's `secondary.opacity(0.5)` (mode-independent):
+```rust
+tc.group_box = c.bg.blend(c.secondary.opacity(0.5));
+```
+
+| Pros | Cons |
+|------|------|
+| Matches upstream derivation | Removes mode-awareness |
+| Simpler | May not be optimal for very dark/light themes |
+
+B. Keep current mode-split with documented rationale:
+```rust
+// Mode-split opacity: dark themes use slightly less secondary tint (0.3)
+// to avoid group boxes standing out too much against dark backgrounds.
+// Light themes use 0.4 for slightly more contrast.
+// NOTE: Diverges from gpui-component's mode-independent 0.5.
+tc.group_box =
+    c.bg.blend(c.secondary.opacity(if is_dark { 0.3 } else { 0.4 }));
+```
+
+| Pros | Cons |
+|------|------|
+| Preserves current behavior | Diverges from upstream |
+| Documents the design choice | Opacity still not derived from theme data |
+
+**Best Solution:** A for consistency with upstream. If the mode-split was intentionally
+chosen, B with documentation is acceptable.

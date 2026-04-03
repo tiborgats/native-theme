@@ -857,22 +857,10 @@ let name = ini
 This is safe (`unwrap_or_else` on `Option`, not `unwrap()`). The fallback
 "KDE" is reasonable when no scheme name is configured. Not a bug.
 
-### 5e. MSRV compatibility with `let` chains
+### 5e. ~~MSRV compatibility with `let` chains~~ -- FIXED
 
-**File:** `src/resolve.rs:46-49`, `src/gnome/mod.rs:150-153`, `src/kde/mod.rs` (multiple)
-
-The codebase uses `let` chains (e.g., `if let Some(x) = foo && let Some(y) = bar`),
-which were stabilized in Rust 1.87.0. The workspace `rust-version` must be >= 1.87
-or these will fail to compile on older toolchains.
-
-#### Solutions
-
-| # | Solution | Pros | Cons |
-|---|----------|------|------|
-| A | Verify workspace Cargo.toml sets `rust-version = "1.87"` or higher | Correct MSRV | None |
-| B | Refactor to nested `if let` for lower MSRV | Supports older Rust | Verbose code |
-
-**Recommended:** A. Simply verify and document.
+**Status:** RESOLVED. Workspace `Cargo.toml` sets `rust-version = "1.94.0"`,
+well above the 1.87.0 stabilization point for `let` chains. No action needed.
 
 ### 5f. `xdg_config_dir()` falls back to `/tmp/.config` when `$HOME` is unset
 
@@ -1583,7 +1571,7 @@ platform-facts.md SS2.1.6 line 919 (measured, lower confidence).
 | 4b | IconSet::Default is Linux-only | low | trivial | Add doc comment |
 | 4c | Rgba::default() is transparent black | low | trivial | Add doc comment |
 | 4d | No Display for IconRole/IconSet | low | small | Add Display impls |
-| 5e | Verify MSRV >= 1.87 for let chains | low | trivial | Verify workspace Cargo.toml |
+| ~~5e~~ | ~~Verify MSRV >= 1.87 for let chains~~ | ~~FIXED~~ | -- | MSRV is 1.94.0 |
 | 6a | presets.rs doc grouping confusing | low | trivial | Simplify wording |
 | 7f | No test for with_overlay re-derivation | low | small | Add integration test |
 | 2i | Missing validate() cross-field min/max check | medium | trivial | Add check_min_max helper |
@@ -2001,7 +1989,7 @@ No previously identified issues were found to be invalid or already fixed.
 | 4b | IconSet::Default is Linux-only | low | trivial | Add doc comment |
 | 4c | Rgba::default() is transparent black | low | trivial | Add doc comment |
 | 4d | No Display for IconRole/IconSet | low | small | Add Display impls |
-| 5e | Verify MSRV >= 1.87 for let chains | low | trivial | Verify workspace Cargo.toml |
+| ~~5e~~ | ~~Verify MSRV >= 1.87 for let chains~~ | ~~FIXED~~ | -- | MSRV is 1.94.0 |
 | 5f | xdg_config_dir /tmp fallback when HOME unset | low | trivial | Return "hicolor" early |
 | 6a | presets.rs doc grouping confusing | low | trivial | Simplify wording |
 | 7f | No test for with_overlay re-derivation | low | small | Add integration test |
@@ -2432,39 +2420,13 @@ and Infinity) would be more thorough.
 **Recommended:** Amend issue 16c's solution from `is_nan()` to
 `!is_finite()` (catches both NaN and Infinity in one check).
 
-### 24j. `resolve.rs` does not range-check `defaults.font.size` or `defaults.mono_font.size`
+### 24j. ~~`resolve.rs` does not range-check `defaults.font.size` or `defaults.mono_font.size`~~ -- FIXED
 
-**Category:** api-bug
-**Severity:** medium
-**File(s):** `src/resolve.rs:621-631`
-
-**Problem:** The `validate()` function requires `defaults.font` and
-`defaults.mono_font` via `require_font()`, which extracts `family`, `size`,
-and `weight`. But the extracted `defaults_font.size` and
-`defaults_mono_font.size` are never passed to `check_positive()`.
-
-Compare with widget fonts (button.font, input.font, menu.font, etc.) which
-DO get `check_positive(xxx_font.size, ...)` calls. The defaults font sizes
-are the root from which all widget fonts inherit, yet they are the only
-font sizes not validated.
-
-A `defaults.font.size = 0.0` or `defaults.font.size = -5.0` would pass
-validation, then every widget would inherit the invalid size.
-
-**Solution Options:**
-
-| # | Solution | Pros | Cons |
-|---|----------|------|------|
-| A | Add `check_positive(defaults_font.size, ...)` and same for mono_font | Consistent with widget font checks | 4 lines |
-| B | Leave to widget-level checks | Widgets inherit and their checks catch it | Only catches at widget level, not at source |
-
-**Recommended:** A. Add after the existing `require_font()` calls:
-```
-check_positive(defaults_font.size, "defaults.font.size", &mut missing);
-check_range_u16(defaults_font.weight, 100, 900, "defaults.font.weight", &mut missing);
-check_positive(defaults_mono_font.size, "defaults.mono_font.size", &mut missing);
-check_range_u16(defaults_mono_font.weight, 100, 900, "defaults.mono_font.weight", &mut missing);
-```
+**Status:** RESOLVED. The `validate()` function at `src/resolve.rs:1322-1341`
+already includes `check_positive(defaults_font.size, ...)`,
+`check_range_u16(defaults_font.weight, ...)`, and the same for
+`defaults_mono_font`. Both size and weight are validated for defaults fonts,
+consistent with widget font checks. No action needed.
 
 ### 24k. `preset_loading.rs` `all_presets_have_valid_fonts` does not check mono_font at all
 
@@ -4774,3 +4736,443 @@ weight = 600
 
 **Total: 182 properties verified across 28 sections. 17 ERR (15
 previously filed, 2 new). 23 WARN (minor/acceptable).**
+
+---
+
+## 30. Sixth-Pass Deep Audit (2026-04-03)
+
+Full re-verification of all source files, all presets, all tests, and
+platform-facts.md. Focus: find issues not yet tracked, verify previously
+identified issues are still present, mark any that have been fixed.
+
+### 30a. Issues confirmed FIXED in code
+
+The following issues from earlier passes were found to be already resolved
+in the current codebase:
+
+1. **Issue 5e (MSRV):** Workspace `Cargo.toml` sets `rust-version = "1.94.0"`,
+   well above the 1.87.0 requirement for `let` chains. No action needed.
+
+2. **Issue 24j (defaults.font.size range check):** `validate()` at
+   `src/resolve.rs:1322-1341` already includes `check_positive(defaults_font.size, ...)`
+   and `check_range_u16(defaults_font.weight, ...)` for both `defaults.font`
+   and `defaults.mono_font`. No action needed.
+
+### 30b. All other previously identified issues confirmed still present
+
+Every other issue from sections 1-29 was re-verified against the current
+source files. All remain unfixed:
+
+- **macOS/iOS button_order** (1j, 1u): Both `macos-sonoma.toml:164,362` and
+  `ios.toml:164,362` still use `"leading_affirmative"`.
+- **Windows 11 dark accent_foreground** (18a): `windows-11.toml:232` still
+  has `accent_foreground = "#ffffff"` instead of `#000000`.
+- **Windows 11 dark danger/warning** (18b, 18c): Still `#ff9999` and `#f0c239`.
+- **DialogButtonOrder doc** (4a, 21b): `dialog_order.rs:19` still says
+  "macOS, KDE style" for `LeadingAffirmative`.
+- **All geometry mismatches** (1a-1t, 8b-8e, 20a-20p): Verified unchanged.
+- **All missing text_scale entries** (19a-19f, 24a): No presets have been
+  updated with text_scale sections.
+- **NaN/Infinity pass validate()** (16c, 24i): No `is_finite()` guards added.
+- **validate() cross-field min/max** (2i): No `check_min_max` helper exists.
+- **Community presets hardcode button_order** (5c): Still hardcoded.
+- **No resolve rule for button_order** (11b): Still absent.
+- **All test gaps** (2a-2j, 9a-9f, 13a-13b, 17a-17c, 21h-21i, 24k-24w):
+  No new tests added.
+
+### 30c. NEW: `from_file` doc says `Error::Unavailable` but returns `Error::Io` -- confirmed at new line number
+
+**Category:** doc-bug
+**Severity:** medium
+**File(s):** `src/model/mod.rs:452-453`
+
+**Problem:** Issue 6b originally cited `src/presets.rs`. The actual user-facing
+doc is on `ThemeSpec::from_file()` at `src/model/mod.rs:452-453`:
+```rust
+/// # Errors
+/// Returns [`crate::Error::Unavailable`] if the file cannot be read.
+```
+But the implementation calls `std::fs::read_to_string(path)?` which converts
+via `From<std::io::Error>` to `Error::Io`, not `Error::Unavailable`.
+
+**Solution:** Change the doc to `Returns [`crate::Error::Io`] if the file
+cannot be read, or [`crate::Error::Format`] if the TOML is invalid.`
+
+### 30d. NEW: macOS `combo_box.arrow_area_width = 28` -- platform-facts says 16-18
+
+**Category:** preset-value
+**Severity:** medium
+**File(s):** `src/presets/macos-sonoma.toml:188,386`
+
+**Problem:** The existing section 25 verification (section 2.24) identified
+this as wrong: "platform-facts says ~16-18px, preset has 28." This was
+noted in the verification table but not given an explicit issue number for
+tracking. The arrow area on NSPopUpButton is the same width as the arrow
+glyph (~17px), not 28px. The 28px value was likely confused with the
+Windows ComboBox arrow area.
+
+**Solution:** Change to `17.0` (midpoint of measured 16-18px range).
+Also affects `macos-sonoma-live.toml`.
+
+### 30e. NEW: macOS `segmented_control.padding_horizontal = 12` -- platform-facts says 8-10
+
+**Category:** preset-value
+**Severity:** low
+**File(s):** `src/presets/macos-sonoma.toml:193,391`
+
+**Problem:** Section 25 verification (section 2.25) found this mismatch.
+NSSegmentedControl measured padding is ~8-10px; preset uses 12.
+
+**Solution:** Change to `9.0` (midpoint).
+Also affects `macos-sonoma-live.toml`.
+
+### 30f. NEW: macOS `expander.arrow_size = 12` -- platform-facts says 13
+
+**Category:** preset-value
+**Severity:** low
+**File(s):** `src/presets/macos-sonoma.toml:200,398`
+
+**Problem:** Section 25 verification (section 2.27) found the macOS
+disclosure triangle is ~13px measured, not 12.
+
+**Solution:** Change to `13.0`.
+Also affects `macos-sonoma-live.toml`.
+
+### 30g. NEW: macOS `dialog.icon_size = 32` -- platform-facts says 64
+
+**Category:** preset-value
+**Severity:** medium
+**File(s):** `src/presets/macos-sonoma.toml:171,369`
+
+**Problem:** Section 25 verification (section 2.22) found macOS alert
+dialogs show a 64px app icon. The preset uses 32.
+
+**Solution:** Change to `64.0`.
+Also affects `macos-sonoma-live.toml`.
+
+### 30h. NEW: macOS text_scale completely missing -- caption, dialog_title, display all wrong
+
+**Category:** preset-gap
+**Severity:** medium
+**File(s):** `src/presets/macos-sonoma.toml` (both variants)
+
+**Problem:** Section 25 verification (section 2.19) found the macOS preset
+has no text_scale entries. All four roles resolve to defaults.font (13pt/400),
+but platform-facts documents:
+- caption: 10pt (`.caption1`)
+- section_heading: 13pt/700 (`.headline`)
+- dialog_title: 22pt/400 (`.title1`)
+- display: 26pt/400 (`.largeTitle`)
+
+Issues 19c covered only `section_heading.weight`. The size mismatches for
+caption (10 vs 13), dialog_title (22 vs 13), and display (26 vs 13) were
+not given separate issue numbers.
+
+**Solution:** Add text_scale sections to macOS preset:
+```toml
+[light.text_scale.caption]
+size = 10.0
+
+[light.text_scale.section_heading]
+weight = 700
+
+[light.text_scale.dialog_title]
+size = 22.0
+
+[light.text_scale.display]
+size = 26.0
+```
+Same for dark variant and live preset.
+
+### 30i. NEW: Windows 11 text_scale `caption.size` should be 12, not 14
+
+**Category:** preset-gap
+**Severity:** medium
+**File(s):** `src/presets/windows-11.toml` (both variants)
+
+**Problem:** Issue 29a in the Windows 11 verification identified this but
+the existing issues 19d-19f only tracked weights, not sizes. The Fluent
+type scale specifies:
+- caption: 12epx/400
+- section_heading (Subtitle): 20epx/600
+- dialog_title (Title): 28epx/600
+- display (Display): 68epx/600
+
+The display size (68epx) is particularly dramatic -- the preset resolves
+to 14pt, missing by 54px.
+
+**Solution:** Add comprehensive text_scale sections to Windows 11 preset:
+```toml
+[light.text_scale.caption]
+size = 12.0
+
+[light.text_scale.section_heading]
+size = 20.0
+weight = 600
+
+[light.text_scale.dialog_title]
+size = 28.0
+weight = 600
+
+[light.text_scale.display]
+size = 68.0
+weight = 600
+```
+Same for dark variant and live preset.
+
+### 30j. NEW: Adwaita text_scale `caption.size` and `dialog_title`/`display` sizes missing
+
+**Category:** preset-gap
+**Severity:** medium
+**File(s):** `src/presets/adwaita.toml` (both variants)
+
+**Problem:** Section 28 verification found the Adwaita preset only sets
+`text_scale.section_heading.weight = 700`. Missing:
+- caption: ~9pt (82% of 11), weight 400
+- dialog_title: ~15pt (136% of 11), weight 800
+- display: ~20pt (181% of 11), weight 800
+
+Issues 19a-19b tracked dialog_title/display weights but not sizes.
+
+**Solution:** Add text_scale sections to Adwaita preset:
+```toml
+[light.text_scale.caption]
+size = 9.0
+
+[light.text_scale.dialog_title]
+size = 15.0
+weight = 800
+
+[light.text_scale.display]
+size = 20.0
+weight = 800
+```
+Same for dark variant and live preset.
+
+### 30k. NEW: Adwaita `dialog.min_width = 320` -- platform-facts says 300
+
+**Category:** preset-value
+**Severity:** medium
+**File(s):** `src/presets/adwaita.toml:172,377`
+
+**Problem:** Section 28 verification found AdwAlertDialog minimum width is
+300sp, not 320.
+
+**Solution:** Change to `300.0`.
+Also affects `adwaita-live.toml`.
+
+### 30l. NEW: Adwaita `dialog.max_width = 560` -- platform-facts says 372
+
+**Category:** preset-value
+**Severity:** medium
+**File(s):** `src/presets/adwaita.toml:173,378`
+
+**Problem:** Section 28 verification found AdwAlertDialog max width is
+372sp (or 600sp in wide mode). The current 560 matches neither.
+
+**Solution:** Change to `372.0` (standard mode).
+Also affects `adwaita-live.toml`.
+
+### 30m. NEW: Adwaita `card.radius` inherits 15 -- platform-facts says 12
+
+**Category:** preset-value
+**Severity:** low
+**File(s):** `src/presets/adwaita.toml` (absent; resolves from `radius_lg`)
+
+**Problem:** Section 28 verification (section 2.26) found Adwaita
+`$card_radius = 12px`, but the card inherits from `radius_lg = 15`.
+
+**Solution:** Add explicit `radius = 12.0` to card sections.
+
+### 30n. NEW: Adwaita `expander.radius` inherits 9 -- platform-facts says 6
+
+**Category:** preset-value
+**Severity:** low
+**File(s):** `src/presets/adwaita.toml` (absent; resolves from `radius`)
+
+**Problem:** Section 28 verification (section 2.27) found Adwaita expander
+title uses 6px radius, not the global 9px.
+
+**Solution:** Add explicit `radius = 6.0` to expander sections.
+
+### 30o. NEW: Adwaita `tooltip.max_width = 300` -- should be 360
+
+**Category:** preset-value
+**Severity:** low
+**File(s):** `src/presets/adwaita.toml:108,313`
+
+**Problem:** Section 28 verification (section 2.7) found GNOME tooltip
+max-width is 360px, not 300.
+
+**Solution:** Change to `360.0`.
+Also affects `adwaita-live.toml`.
+
+### 30p. NEW: Adwaita `input.caret` missing -- should be accent color
+
+**Category:** preset-value
+**Severity:** medium
+**File(s):** `src/presets/adwaita.toml` (absent)
+
+**Problem:** Section 28 verification (section 2.4) found the Adwaita
+preset does not set `input.caret`. The resolve safety net fills it from
+`defaults.foreground`, but GNOME uses `@accent_color` for the text
+insertion caret.
+
+**Solution:** Add `caret = "#3584e4"` to `[light.input]` and
+`caret = "#3584e4"` to `[dark.input]` in `adwaita.toml`.
+Note: the live preset does not need this -- the GNOME reader fills
+caret from the portal accent color at runtime.
+
+### 30q. NEW: Window title_bar_font.weight missing from both macOS and Adwaita presets
+
+**Category:** preset-gap
+**Severity:** medium
+**File(s):** `src/presets/macos-sonoma.toml`, `src/presets/adwaita.toml`
+
+**Problem:** Both section 25 (macOS 2.2) and section 28 (Adwaita 2.2)
+verification tables found that `window.title_bar_font.weight` inherits
+from `defaults.font.weight` (400) but should be Bold (700) on both
+platforms. Platform-facts confirms:
+- macOS: `+titleBarFontOfSize:` weight = Bold (700)
+- GNOME: headerbar title font weight = Bold (700)
+
+**Solution:** Add `[light.window.title_bar_font]` / `[dark.window.title_bar_font]`
+with `weight = 700` to both presets.
+
+### 30r. NEW: KDE Breeze `combo_box.arrow_size = 12` -- platform-facts says 20
+
+**Category:** preset-value
+**Severity:** medium
+**File(s):** `src/presets/kde-breeze.toml:187,385`
+
+**Problem:** Section 27 verification (section 2.24) found
+`MenuButton_IndicatorWidth = 20` in breezemetrics.h. The preset uses 12.
+This is distinct from issue 1q (arrow_area_width) -- this is the arrow
+glyph size itself.
+
+**Solution:** Change to `20.0`.
+Also affects `kde-breeze-live.toml`.
+
+### 30s. NEW: KDE Breeze `segmented_control.segment_height = 28` -- should be 30
+
+**Category:** preset-value
+**Severity:** low
+**File(s):** `src/presets/kde-breeze.toml:191,389`
+
+**Problem:** Section 27 verification (section 2.25) found the closest KDE
+proxy is `TabBar_TabMinHeight = 30`. The preset uses 28.
+
+**Solution:** Change to `30.0`.
+Also affects `kde-breeze-live.toml`.
+
+### 30t. NEW: KDE Breeze `segmented_control.padding_horizontal = 12` -- should be 8
+
+**Category:** preset-value
+**Severity:** low
+**File(s):** `src/presets/kde-breeze.toml:193,391`
+
+**Problem:** Section 27 verification (section 2.25) found
+`TabBar_TabMarginWidth = 8` in breezemetrics.h. The preset uses 12.
+
+**Solution:** Change to `8.0`.
+Also affects `kde-breeze-live.toml`.
+
+---
+
+## Updated Master Priority Summary (includes all findings through Pass 6)
+
+### FIXED (2 items -- remove from active tracking)
+
+| # | Issue | Status |
+|---|-------|--------|
+| 5e | MSRV for let chains | FIXED -- workspace rust-version = 1.94.0 |
+| 24j | defaults.font.size range check | FIXED -- validate() lines 1322-1341 |
+
+### HIGH Severity (4 items)
+
+| # | Issue | Effort | Fix |
+|---|-------|--------|-----|
+| 18a | win11 dark accent_foreground #fff vs #000 | trivial | Fix to #000000 |
+| 1j | macOS button_order leading vs trailing | trivial | Fix preset to trailing_affirmative |
+| 1u | iOS button_order leading vs trailing | trivial | Fix preset to trailing_affirmative |
+| 4a | DialogButtonOrder doc incorrect for macOS | trivial | Fix doc: Leading = KDE only |
+
+### MEDIUM Severity -- Preset Values (40+ items)
+
+| # | Issue | Fix |
+|---|-------|-----|
+| 1a | win11 dialog max_width 560 vs 548 | Fix to 548 |
+| 1b | win11 dialog min_height 140 vs 184 | Fix to 184 |
+| 1c | win11 dialog max_height 600 vs 756 | Fix to 756 |
+| 1d | win11 spinner stroke_width 2 vs 4 | Fix to 4.0 |
+| 1f | win11 spinner diameter 24 vs 32 | Fix to 32 |
+| 1g | win11 expander header_height 40 vs 48 | Fix to 48 |
+| 1i | adwaita dialog button_spacing 8 vs 12 | Fix to 12 |
+| 1l | win11 menu icon_spacing 8 vs 12 | Fix to 12 |
+| 1m | win11 combo_box min_width 120 vs 64 | Fix to 64 |
+| 1p | kde combo_box padding_horizontal 12 vs 6 | Fix to 6 |
+| 1q | kde combo_box arrow_area_width 28 vs 20 | Fix to 20 |
+| 1r | adwaita expander arrow_size 12 vs 16 | Fix to 16 |
+| 1s | adwaita expander header_height 40 vs 50 | Fix to 50 |
+| 8b | macOS switch track_radius 10 vs 11 | Fix to 11.0 |
+| 8c | win11 button min_height 27 vs 32 | Fix to 32.0 |
+| 8d | win11 menu item_height 23 vs 36 | Fix to 36.0 |
+| 8e | win11 toolbar height 64 vs 48 | Fix to 48.0 |
+| 18b | win11 dark danger #ff9999 vs #ff99a4 | Fix hex |
+| 18c | win11 dark warning #f0c239 vs #fce100 | Fix hex |
+| 20a | macOS dialog button_spacing 8 vs 12 | Fix to 12 |
+| 20b | macOS dialog content_padding 24 vs 20 | Fix to 20 |
+| 20c | kde dialog button_spacing 8 vs 6 | Fix to 6 |
+| 20d | kde dialog content_padding 24 vs 10 | Fix to 10 |
+| 20e | adwaita dialog radius 15 vs 18 | Set explicit 18 |
+| 20h | adwaita combo_box arrow_size 12 vs 16 | Fix to 16 |
+| 20l | win11 tab padding_horizontal 12 vs 8 | Fix to 8 |
+| 20o | kde input padding_vertical 6 vs 3 | Fix to 3 |
+| 30d | macOS combo_box arrow_area_width 28 vs 17 | Fix to 17 |
+| 30g | macOS dialog icon_size 32 vs 64 | Fix to 64 |
+| 30k | adwaita dialog min_width 320 vs 300 | Fix to 300 |
+| 30l | adwaita dialog max_width 560 vs 372 | Fix to 372 |
+| 30p | adwaita input.caret missing (should be accent) | Add caret |
+| 30r | kde combo_box arrow_size 12 vs 20 | Fix to 20 |
+
+### MEDIUM Severity -- Missing Text Scale (6 items, NEW comprehensive)
+
+| # | Issue | Fix |
+|---|-------|-----|
+| 30h | macOS text_scale fully missing (caption/dialog_title/display sizes) | Add 4 entries |
+| 30i | win11 text_scale fully missing (all 4 sizes + 3 weights) | Add 4 entries |
+| 30j | adwaita text_scale caption/dialog_title/display sizes missing | Add 3 entries |
+| 30q | macOS+adwaita window.title_bar_font.weight 400 vs 700 | Add weight = 700 |
+| 29a | win11 display text_scale 14/400 vs 68/600 (extreme) | Covered by 30i |
+| 29b | win11 dialog.title_font 14/400 vs 20/600 | Add title_font |
+
+### MEDIUM Severity -- Code/API Issues (11 items)
+
+| # | Issue | Fix |
+|---|-------|-----|
+| 2a | missing validate() range-check tests | Add negative tests |
+| 2b | missing exhaustive icon_name test | Add IconRole::ALL loop |
+| 2i | validate() missing min/max cross-check | Add check_min_max helper |
+| 5c | community presets hardcode button_order | Omit + add resolve rule |
+| 9b | no bundled SVG content validation | Add SVG header test |
+| 11a | no resolve safety net for line_height | Add 1.2 default |
+| 11b | no resolve rule for button_order | Add platform_button_order() |
+| 14b | solarized border == surface (invisible) | Fix colors |
+| 15b | no resolve rule for accent_foreground | Default to #ffffff |
+| 16c | NaN/Infinity pass validate() | Add !is_finite() guard |
+| 24t | spinner.fill safety net uses foreground, not accent | Change to accent |
+
+### LOW Severity (40+ items, see individual sections for details)
+
+Includes: minor padding mismatches (1e, 1t, 20f, 20g, 20i, 20j, 20k, 20m,
+20n, 20p, 30e, 30f, 30m, 30n, 30o, 30s, 30t), test gaps (2c-2h, 2j, 7f,
+7g, 9a, 9c-9f, 13a-13b, 17a-17c, 21h-21i, 24k-24w), code quality (3a-3e,
+10a-10c), API docs (4b-4d, 6a, 6b/30c), and community preset issues (14c-14d,
+24a-24b, 24x).
+
+---
+
+**Grand total: ~130 active issues (2 FIXED, 4 HIGH, ~57 MEDIUM, ~65 LOW).**
+
+All issues cross-referenced against platform-facts.md and current source code.
+Every file:line reference verified against the codebase as of 2026-04-03.
