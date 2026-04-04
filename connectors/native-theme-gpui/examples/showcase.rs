@@ -330,7 +330,7 @@ fn role_for_gpui_icon(gpui_name: &str) -> Option<IconRole> {
     // the connector's icon_name() mapping.
     match gpui_name {
         "TriangleAlert" => Some(IconRole::DialogWarning),
-        "CircleX" => Some(IconRole::DialogError),
+        "CircleX" => Some(IconRole::DialogError), // also maps StatusError (issue 46/55)
         "Info" => Some(IconRole::DialogInfo),
         "CircleCheck" => Some(IconRole::DialogSuccess),
         "WindowClose" => Some(IconRole::WindowClose),

@@ -2245,7 +2245,7 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
                     text("Tooltip on top!"),
                     tooltip::Position::Top,
                 )
-                .gap(5)
+                .gap(sp.xs)
                 .style(container::rounded_box),
                 tooltip(
                     button("Hover: Bottom")
@@ -2254,7 +2254,7 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
                     text("Tooltip on bottom!"),
                     tooltip::Position::Bottom,
                 )
-                .gap(5)
+                .gap(sp.xs)
                 .style(container::rounded_box),
                 tooltip(
                     button("Hover: Left")
@@ -2263,7 +2263,7 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
                     text("Tooltip on left!"),
                     tooltip::Position::Left,
                 )
-                .gap(5)
+                .gap(sp.xs)
                 .style(container::rounded_box),
                 tooltip(
                     button("Hover: Right")
@@ -2272,7 +2272,7 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
                     text("Tooltip on right!"),
                     tooltip::Position::Right,
                 )
-                .gap(5)
+                .gap(sp.xs)
                 .style(container::rounded_box),
             ]
             .spacing(sp.m),
@@ -2692,91 +2692,43 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
         .into(),
     );
 
-    // Extended palette - Background
-    let ext_background = hoverable(
-        widget_tooltip(
-            "Background (Extended)",
-            &[
-                ("base.color", "base.color", extended.background.base.color),
-                ("base.text", "base.text", extended.background.base.text),
-                ("weak.color", "weak.color", extended.background.weak.color),
-                ("weak.text", "weak.text", extended.background.weak.text),
-                (
-                    "strong.color",
-                    "strong.color",
-                    extended.background.strong.color,
-                ),
-                (
-                    "strong.text",
-                    "strong.text",
-                    extended.background.strong.text,
-                ),
-            ],
-            &[],
-            &[],
-        ),
-        ext_palette_section(
-            "Background (Extended)",
-            extended.background.base,
-            extended.background.weak,
-            extended.background.strong,
-            &swatch_style,
-        )
-        .into(),
+    // Extended palette sections (all 6 families use hoverable_ext_section)
+    let ext_background = hoverable_ext_section(
+        "Background (Extended)",
+        extended.background.base,
+        extended.background.weak,
+        extended.background.strong,
+        &swatch_style,
     );
-
-    // Extended palette - Primary
-    let ext_primary = hoverable(
-        widget_tooltip(
-            "Primary (Extended)",
-            &[
-                ("base.color", "base.color", extended.primary.base.color),
-                ("base.text", "base.text", extended.primary.base.text),
-                ("weak.color", "weak.color", extended.primary.weak.color),
-                ("weak.text", "weak.text", extended.primary.weak.text),
-                (
-                    "strong.color",
-                    "strong.color",
-                    extended.primary.strong.color,
-                ),
-                ("strong.text", "strong.text", extended.primary.strong.text),
-            ],
-            &[],
-            &[],
-        ),
-        ext_palette_section(
-            "Primary (Extended)",
-            extended.primary.base,
-            extended.primary.weak,
-            extended.primary.strong,
-            &swatch_style,
-        )
-        .into(),
+    let ext_primary = hoverable_ext_section(
+        "Primary (Extended)",
+        extended.primary.base,
+        extended.primary.weak,
+        extended.primary.strong,
+        &swatch_style,
     );
-
-    // Extended palette sections (Secondary, Success, Warning, Danger)
-    let ext_secondary = ext_palette_section(
+    let ext_secondary = hoverable_ext_section(
         "Secondary (Extended)",
         extended.secondary.base,
         extended.secondary.weak,
         extended.secondary.strong,
         &swatch_style,
     );
-    let ext_success = ext_palette_section(
+    let ext_success = hoverable_ext_section(
         "Success (Extended)",
         extended.success.base,
         extended.success.weak,
         extended.success.strong,
         &swatch_style,
     );
-    let ext_warning = ext_palette_section(
+    let ext_warning = hoverable_ext_section(
         "Warning (Extended)",
         extended.warning.base,
         extended.warning.weak,
         extended.warning.strong,
         &swatch_style,
     );
-    let ext_danger = ext_palette_section(
+    let ext_danger = hoverable_ext_section(
         "Danger (Extended)",
         extended.danger.base,
         extended.danger.weak,
@@ -2952,16 +2904,18 @@ struct SwatchStyle {
     column_spacing: f32,
 }
 
-/// Build an extended palette section with 6 color swatches (base/weak/strong x color/text).
+/// Build an extended palette section wrapped in a hoverable tooltip.
 ///
-/// Used by `view_theme_map` for Background, Primary, Secondary, Success, Warning, and Danger.
-fn ext_palette_section<'a>(
+/// Combines `widget_tooltip` + `ext_palette_section` + `hoverable` to eliminate
+/// repetition in `view_theme_map`. Each call produces a complete hoverable section
+/// with all 6 swatches (base/weak/strong x color/text) and a Widget Info tooltip.
+fn hoverable_ext_section<'a>(
     label: &'a str,
     base: iced_core::theme::palette::Pair,
     weak: iced_core::theme::palette::Pair,
     strong: iced_core::theme::palette::Pair,
     style: &SwatchStyle,
-) -> iced::widget::Column<'a, Message> {
+) -> Element<'a, Message> {
     let SwatchStyle {
         border_color,
         border_width,
@@ -2983,7 +2937,20 @@ fn ext_palette_section<'a>(
             xxs_spacing,
         )
     };
-    column![
+    let info = widget_tooltip(
+        label,
+        &[
+            ("base.color", "base.color", base.color),
+            ("base.text", "base.text", base.text),
+            ("weak.color", "weak.color", weak.color),
+            ("weak.text", "weak.text", weak.text),
+            ("strong.color", "strong.color", strong.color),
+            ("strong.text", "strong.text", strong.text),
+        ],
+        &[],
+        &[],
+    );
+    let content: Element<'a, Message> = column![
         text(label).size(heading_size),
         row![
             cs("base.color", base.color),
@@ -2996,6 +2963,8 @@ fn ext_palette_section<'a>(
         .spacing(swatch_spacing),
     ]
     .spacing(column_spacing)
+    .into();
+    hoverable(info, content)
 }
 
 fn section_header<'a>(

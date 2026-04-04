@@ -115,16 +115,17 @@ pub fn custom_icon_to_svg_handle(
 ///
 /// # Examples
 ///
-/// ```ignore
+/// ```no_run
 /// use native_theme_iced::icons::animated_frames_to_svg_handles;
 ///
-/// let anim = native_theme::loading_indicator();
-/// if let Some(anim_handles) = animated_frames_to_svg_handles(&anim, None) {
-///     // Cache `anim_handles`, then in subscription():
-///     // iced::time::every(Duration::from_millis(anim_handles.frame_duration_ms as u64))
-///     //     .map(|_| Message::AnimationTick)
-///     // In update(): frame_index = (frame_index + 1) % anim_handles.handles.len();
-///     // In view(): Svg::new(anim_handles.handles[frame_index].clone())
+/// if let Some(anim) = native_theme::loading_indicator(native_theme::IconSet::Material) {
+///     if let Some(anim_handles) = animated_frames_to_svg_handles(&anim, None) {
+///         // Cache `anim_handles`, then in subscription():
+///         // iced::time::every(Duration::from_millis(anim_handles.frame_duration_ms as u64))
+///         //     .map(|_| Message::AnimationTick)
+///         // In update(): frame_index = (frame_index + 1) % anim_handles.handles.len();
+///         // In view(): Svg::new(anim_handles.handles[frame_index].clone())
+///     }
 /// }
 /// ```
 #[must_use]
@@ -172,12 +173,12 @@ pub fn animated_frames_to_svg_handles(
 ///
 /// # Examples
 ///
-/// ```ignore
+/// ```no_run
 /// use native_theme_iced::icons::spin_rotation_radians;
-/// use iced_core::Rotation;
 ///
-/// let angle = spin_rotation_radians(self.elapsed, 1000);
-/// Svg::new(handle).rotation(Rotation::Floating(angle))
+/// let elapsed = std::time::Duration::from_millis(500);
+/// let angle = spin_rotation_radians(elapsed, 1000);
+/// // Use with: Svg::new(handle).rotation(Rotation::Floating(angle))
 /// ```
 #[must_use]
 pub fn spin_rotation_radians(elapsed: std::time::Duration, duration_ms: u32) -> iced_core::Radians {

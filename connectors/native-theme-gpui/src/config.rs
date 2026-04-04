@@ -21,10 +21,9 @@ use crate::colors::{hsla_to_hex, to_theme_color};
 ///
 /// Fields not explicitly set inherit from `ThemeConfig::default()`.
 ///
-/// `highlight` (syntax highlighting) is left at None because it requires ~35
-/// syntax token colors (keyword, string, comment, type, function, etc.) plus ~15
-/// status colors that are editor-specific and not present in native-theme's
-/// `ResolvedThemeVariant`. Users should set it separately via gpui-component's
+/// `highlight` is left at None here. The `Theme.highlight_theme` field is set
+/// directly in `to_theme()` using `HighlightTheme::default_dark()` or
+/// `default_light()` based on `is_dark`. Custom syntax colors require the full
 /// `HighlightTheme` API.
 pub fn to_theme_config(
     resolved: &ResolvedThemeVariant,
@@ -58,9 +57,9 @@ pub fn to_theme_config(
 
         colors,
 
-        // highlight: None — syntax highlighting colors (keyword, string, comment,
-        // type, etc.) are editor-specific and not in ResolvedThemeVariant.
-        // Users should set highlight separately via gpui-component's HighlightTheme API.
+        // highlight: None — Theme.highlight_theme is set directly in to_theme()
+        // via HighlightTheme::default_dark()/default_light(). ThemeConfig.highlight
+        // is for custom syntax colors and is left at None.
         //
         // is_default: false (via ThemeConfig::default()) — this is intentional.
         // Connector-created themes are never the "default" theme; the application

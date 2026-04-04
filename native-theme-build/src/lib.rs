@@ -294,21 +294,23 @@ pub fn generate_icons(toml_path: impl AsRef<Path>) -> Result<GenerateOutput, Bui
     let toml_path = toml_path.as_ref();
     let manifest_dir = PathBuf::from(
         std::env::var("CARGO_MANIFEST_DIR")
-            .map_err(|e| BuildErrors::io(format!("CARGO_MANIFEST_DIR not set: {e}")))?,
+            .map_err(|e| BuildErrors::io_env("CARGO_MANIFEST_DIR", e.to_string()))?,
     );
     let out_dir = PathBuf::from(
-        std::env::var("OUT_DIR").map_err(|e| BuildErrors::io(format!("OUT_DIR not set: {e}")))?,
+        std::env::var("OUT_DIR").map_err(|e| BuildErrors::io_env("OUT_DIR", e.to_string()))?,
     );
     let resolved = manifest_dir.join(toml_path);
 
     let content = std::fs::read_to_string(&resolved)
-        .map_err(|e| BuildErrors::io(format!("failed to read {}: {e}", resolved.display())))?;
+        .map_err(|e| BuildErrors::io_read(resolved.display().to_string(), e.to_string()))?;
     let config: MasterConfig = toml::from_str(&content)
-        .map_err(|e| BuildErrors::io(format!("failed to parse {}: {e}", resolved.display())))?;
+        .map_err(|e| BuildErrors::io_parse(resolved.display().to_string(), e.to_string()))?;
 
     let base_dir = resolved
         .parent()
-        .ok_or_else(|| BuildErrors::io(format!("{} has no parent directory", resolved.display())))?
+        .ok_or_else(|| {
+            BuildErrors::io_other(format!("{} has no parent directory", resolved.display()))
+        })?
         .to_path_buf();
     let file_path_str = resolved.to_string_lossy().to_string();
 
@@ -441,7 +443,7 @@ impl IconGenerator {
     /// [`output_dir()`](Self::output_dir) nor `OUT_DIR` is set.
     pub fn generate(self) -> Result<GenerateOutput, BuildErrors> {
         if self.sources.is_empty() {
-            return Err(BuildErrors::io(
+            return Err(BuildErrors::io_other(
                 "no source files added to IconGenerator (call .source() before .generate())",
             ));
         }
@@ -476,7 +478,7 @@ impl IconGenerator {
             || self.base_dir.as_ref().is_some_and(|b| !b.is_absolute());
         let manifest_dir = if needs_manifest_dir {
             Some(PathBuf::from(std::env::var("CARGO_MANIFEST_DIR").map_err(
-                |e| BuildErrors::io(format!("CARGO_MANIFEST_DIR not set: {e}")),
+                |e| BuildErrors::io_env("CARGO_MANIFEST_DIR", e.to_string()),
             )?))
         } else {
             std::env::var("CARGO_MANIFEST_DIR").ok().map(PathBuf::from)
@@ -486,7 +488,7 @@ impl IconGenerator {
             Some(dir) => dir,
             None => PathBuf::from(
                 std::env::var("OUT_DIR")
-                    .map_err(|e| BuildErrors::io(format!("OUT_DIR not set: {e}")))?,
+                    .map_err(|e| BuildErrors::io_env("OUT_DIR", e.to_string()))?,
             ),
         };
 
@@ -500,28 +502,25 @@ impl IconGenerator {
                 manifest_dir
                     .as_ref()
                     .ok_or_else(|| {
-                        BuildErrors::io(format!(
-                            "CARGO_MANIFEST_DIR required for relative path {}",
-                            source.display()
-                        ))
+                        BuildErrors::io_env(
+                            "CARGO_MANIFEST_DIR",
+                            format!("required for relative path {}", source.display()),
+                        )
                     })?
                     .join(source)
             };
             // Issue 103: Reject directories early with a clear message
             if resolved.is_dir() {
-                return Err(BuildErrors::new(vec![BuildError::Io {
-                    message: format!(
-                        "source path '{}' is a directory; expected a TOML file",
-                        resolved.display()
-                    ),
-                }]));
+                return Err(BuildErrors::io_other(format!(
+                    "source path '{}' is a directory; expected a TOML file",
+                    resolved.display()
+                )));
             }
 
-            let content = std::fs::read_to_string(&resolved).map_err(|e| {
-                BuildErrors::io(format!("failed to read {}: {e}", resolved.display()))
-            })?;
+            let content = std::fs::read_to_string(&resolved)
+                .map_err(|e| BuildErrors::io_read(resolved.display().to_string(), e.to_string()))?;
             let config: MasterConfig = toml::from_str(&content).map_err(|e| {
-                BuildErrors::io(format!("failed to parse {}: {e}", resolved.display()))
+                BuildErrors::io_parse(resolved.display().to_string(), e.to_string())
             })?;
 
             let file_path_str = resolved.to_string_lossy().to_string();
@@ -533,10 +532,13 @@ impl IconGenerator {
                     manifest_dir
                         .as_ref()
                         .ok_or_else(|| {
-                            BuildErrors::io(format!(
-                                "CARGO_MANIFEST_DIR required for relative base_dir {}",
-                                explicit_base.display()
-                            ))
+                            BuildErrors::io_env(
+                                "CARGO_MANIFEST_DIR",
+                                format!(
+                                    "required for relative base_dir {}",
+                                    explicit_base.display()
+                                ),
+                            )
                         })?
                         .join(explicit_base)
                 };
@@ -545,7 +547,10 @@ impl IconGenerator {
                 let parent = resolved
                     .parent()
                     .ok_or_else(|| {
-                        BuildErrors::io(format!("{} has no parent directory", resolved.display()))
+                        BuildErrors::io_other(format!(
+                            "{} has no parent directory",
+                            resolved.display()
+                        ))
                     })?
                     .to_path_buf();
                 base_dirs.push(parent);
@@ -559,7 +564,7 @@ impl IconGenerator {
             let first = &base_dirs[0];
             let divergent = base_dirs.iter().any(|d| d != first);
             if divergent {
-                return Err(BuildErrors::io(
+                return Err(BuildErrors::io_other(
                     "multiple source files have different parent directories; \
                      use .base_dir() to specify a common base directory for theme resolution",
                 ));
@@ -634,7 +639,7 @@ fn run_pipeline(
     if configs.is_empty() {
         return PipelineResult {
             code: String::new(),
-            errors: vec![BuildError::Io {
+            errors: vec![BuildError::IoOther {
                 message: "no icon configs provided".into(),
             }],
             warnings: Vec::new(),
@@ -770,11 +775,10 @@ fn run_pipeline(
 
         // Issue 20: Early check for theme directory existence
         if !theme_dir.exists() {
-            errors.push(BuildError::Io {
-                message: format!(
-                    "theme directory not found: {} (expected for bundled theme \"{}\")",
-                    theme_dir.display(),
-                    theme_name
+            errors.push(BuildError::IoRead {
+                path: theme_dir.display().to_string(),
+                reason: format!(
+                    "theme directory not found (expected for bundled theme \"{theme_name}\")"
                 ),
             });
             continue;
@@ -833,14 +837,16 @@ fn run_pipeline(
                     all_mappings.insert(theme_name.clone(), mapping);
                 }
                 Err(e) => {
-                    errors.push(BuildError::Io {
-                        message: format!("failed to parse {mapping_path_str}: {e}"),
+                    errors.push(BuildError::IoParse {
+                        path: mapping_path_str,
+                        reason: e.to_string(),
                     });
                 }
             },
             Err(e) => {
-                errors.push(BuildError::Io {
-                    message: format!("failed to read {mapping_path_str}: {e}"),
+                errors.push(BuildError::IoRead {
+                    path: mapping_path_str,
+                    reason: e.to_string(),
                 });
             }
         }
@@ -852,11 +858,10 @@ fn run_pipeline(
 
         // Issue 20: Early check for theme directory existence
         if !theme_dir.exists() {
-            errors.push(BuildError::Io {
-                message: format!(
-                    "theme directory not found: {} (expected for system theme \"{}\")",
-                    theme_dir.display(),
-                    theme_name
+            errors.push(BuildError::IoRead {
+                path: theme_dir.display().to_string(),
+                reason: format!(
+                    "theme directory not found (expected for system theme \"{theme_name}\")"
                 ),
             });
             continue;
@@ -887,14 +892,16 @@ fn run_pipeline(
                     all_mappings.insert(theme_name.clone(), mapping);
                 }
                 Err(e) => {
-                    errors.push(BuildError::Io {
-                        message: format!("failed to parse {mapping_path_str}: {e}"),
+                    errors.push(BuildError::IoParse {
+                        path: mapping_path_str,
+                        reason: e.to_string(),
                     });
                 }
             },
             Err(e) => {
-                errors.push(BuildError::Io {
-                    message: format!("failed to read {mapping_path_str}: {e}"),
+                errors.push(BuildError::IoRead {
+                    path: mapping_path_str,
+                    reason: e.to_string(),
                 });
             }
         }
@@ -3187,11 +3194,7 @@ bundled-themes = ["material"]
 
         assert!(
             result.errors.iter().any(|e| {
-                if let BuildError::Io { message } = e {
-                    message.contains("theme directory not found")
-                } else {
-                    false
-                }
+                matches!(e, BuildError::IoRead { reason, .. } if reason.contains("theme directory not found"))
             }),
             "should report missing theme directory: {:?}",
             result.errors

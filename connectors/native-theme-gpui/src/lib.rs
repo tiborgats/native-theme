@@ -137,15 +137,18 @@ pub fn to_theme(resolved: &ResolvedThemeVariant, name: &str, is_dark: bool) -> T
     theme.shadow = d.shadow_enabled;
 
     // Issue 43: set scrollbar_show from resolved overlay_mode
-    // ThemeConfig.highlight requires syntax highlighting colors (keyword, string,
-    // comment, type, function, etc. — ~35 SyntaxColors + ~15 StatusColors fields)
-    // which native-theme's ResolvedThemeVariant does not include. These are
-    // editor-specific and cannot be derived from platform UI theme colors.
-    // Users should set highlight separately via gpui-component's HighlightTheme API.
     theme.scrollbar_show = if resolved.scrollbar.overlay_mode {
         ScrollbarShow::Scrolling
     } else {
         ScrollbarShow::Always
+    };
+
+    // Issue 43/44: set highlight_theme based on is_dark so syntax highlighting
+    // uses appropriate colors (dark themes get dark highlight, light themes get light).
+    theme.highlight_theme = if is_dark {
+        gpui_component::highlighter::HighlightTheme::default_dark()
+    } else {
+        gpui_component::highlighter::HighlightTheme::default_light()
     };
 
     // Store config for gpui-component's theme switching
@@ -520,6 +523,30 @@ mod tests {
                 "overlay_mode=false should set Always"
             );
         }
+    }
+
+    // Issue 43/44: highlight_theme matches is_dark
+    #[test]
+    fn highlight_theme_matches_is_dark() {
+        let resolved = test_resolved();
+        let dark_theme = to_theme(&resolved, "Dark", true);
+        assert_eq!(
+            dark_theme.highlight_theme.appearance,
+            ThemeMode::Dark,
+            "dark theme should use dark highlight"
+        );
+
+        let light_resolved = {
+            let spec = ThemeSpec::preset("catppuccin-latte").expect("preset must exist");
+            let variant = spec.into_variant(false).expect("light variant");
+            variant.into_resolved().expect("must validate")
+        };
+        let light_theme = to_theme(&light_resolved, "Light", false);
+        assert_eq!(
+            light_theme.highlight_theme.appearance,
+            ThemeMode::Light,
+            "light theme should use light highlight"
+        );
     }
 
     // -- from_preset tests --

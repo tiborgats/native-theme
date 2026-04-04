@@ -21,6 +21,19 @@ fn create_temp_dir(suffix: &str) -> PathBuf {
     dir
 }
 
+fn copy_dir_recursive(src: &Path, dst: &Path) {
+    fs::create_dir_all(dst).unwrap();
+    for entry in fs::read_dir(src).unwrap() {
+        let entry = entry.unwrap();
+        let dest = dst.join(entry.file_name());
+        if entry.file_type().unwrap().is_dir() {
+            copy_dir_recursive(&entry.path(), &dest);
+        } else {
+            fs::copy(entry.path(), dest).unwrap();
+        }
+    }
+}
+
 fn write_file(dir: &Path, path: &str, content: &str) {
     let full_path = dir.join(path);
     if let Some(parent) = full_path.parent() {
@@ -727,6 +740,69 @@ fn golden_syntax_check() {
         open_braces, close_braces,
         "braces should be balanced: {{ = {open_braces}, }} = {close_braces}"
     );
+}
+
+/// #33: Verify generated code compiles by writing a temp Cargo project and running `cargo check`.
+///
+/// This goes beyond `golden_syntax_check` (string matching) by actually invoking the
+/// Rust compiler. Skips gracefully if `cargo` is unavailable or the build fails for
+/// environmental reasons (e.g., missing toolchain components in CI).
+#[test]
+fn compile_generated_code() {
+    let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
+
+    let dir = create_temp_dir("compile_check");
+    let src_dir = dir.join("src");
+    fs::create_dir_all(&src_dir).unwrap();
+
+    // Write the generated code as lib.rs
+    fs::write(src_dir.join("lib.rs"), &output.code).unwrap();
+
+    // Copy fixture SVGs so include_bytes! paths resolve (they reference CARGO_MANIFEST_DIR)
+    let manifest_dir = Path::new(env!("CARGO_MANIFEST_DIR"));
+    let fixture_src = manifest_dir.join("tests/fixtures");
+    if fixture_src.exists() {
+        copy_dir_recursive(&fixture_src, &dir.join("tests/fixtures"));
+    }
+
+    // Write a minimal Cargo.toml with native-theme as a path dependency
+    let native_theme_path = manifest_dir.join("../native-theme");
+    let cargo_toml = format!(
+        r#"[package]
+name = "compile-check"
+version = "0.0.0"
+edition = "2021"
+
+[dependencies]
+native-theme = {{ path = "{}" }}
+"#,
+        native_theme_path.display()
+    );
+    fs::write(dir.join("Cargo.toml"), cargo_toml).unwrap();
+
+    // Run cargo check
+    let result = std::process::Command::new("cargo")
+        .args(["check", "--quiet"])
+        .current_dir(&dir)
+        .output();
+
+    // Clean up
+    let _ = fs::remove_dir_all(&dir);
+
+    match result {
+        Ok(output_cmd) => {
+            if !output_cmd.status.success() {
+                let stderr = String::from_utf8_lossy(&output_cmd.stderr);
+                panic!(
+                    "generated code failed to compile:\n{stderr}\n\n--- generated code ---\n{}",
+                    output.code
+                );
+            }
+        }
+        Err(e) => {
+            eprintln!("skipping compile_generated_code: cargo not available ({e})");
+        }
+    }
 }
 
 /// #31: Test that the freedesktop fixture mapping (with DE-aware values) works as a system theme.

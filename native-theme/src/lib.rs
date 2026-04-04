@@ -655,6 +655,10 @@ fn run_pipeline(
     // For the inactive variant, load the full preset (with colors).
     // Falls back to original name if not a live preset (e.g. user preset).
     let full_preset_name = preset_name.strip_suffix("-live").unwrap_or(preset_name);
+    debug_assert!(
+        full_preset_name != preset_name || !preset_name.ends_with("-live"),
+        "live preset '{preset_name}' should have -live suffix stripped"
+    );
     let full_preset = ThemeSpec::preset(full_preset_name)?;
 
     // Merge: full preset provides color/font defaults, live preset overrides
@@ -2203,6 +2207,11 @@ mod overlay_tests {
         assert_eq!(result.light.slider.fill, new_accent);
         assert_eq!(result.light.progress_bar.fill, new_accent);
         assert_eq!(result.light.switch.checked_background, new_accent);
+        // Additional accent-derived fields re-resolved via safety nets
+        assert_eq!(
+            result.light.spinner.fill, new_accent,
+            "spinner.fill should re-derive from new accent"
+        );
     }
 
     #[test]

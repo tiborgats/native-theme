@@ -786,16 +786,6 @@ mod tests {
     fn theme_color_field_count_tripwire() {
         // ThemeColor has N Hsla fields (each 16 bytes = 4x f32).
         // If this fails, gpui-component added/removed fields -- update the color mapping.
-        //
-        // Field breakdown by category:
-        // background/foreground: ~15, status colors: ~12, border/shadow: ~8,
-        // list/table: ~10, tab/sidebar: ~10, scrollbar/slider: ~8, input: ~12,
-        // other widgets: ~33
-        // Total: 108 Hsla fields
-        //
-        // NOTE (Issue 35): when updating this count, also update the per-category
-        // doc table in lib.rs (the "Theme Field Coverage" section) to keep the
-        // documented field counts in sync with the actual mapping.
         let size = std::mem::size_of::<ThemeColor>();
         let hsla_size = std::mem::size_of::<Hsla>();
         let field_count = size / hsla_size;
@@ -803,6 +793,117 @@ mod tests {
             field_count, 108,
             "ThemeColor field count changed (got {field_count}) -- update color mapping in to_theme_color() and the doc table in lib.rs"
         );
+    }
+
+    // Issue 35: per-category tripwire tests to catch doc/code drift.
+    // When a count fails, update both the mapping function AND the doc table in lib.rs.
+    #[test]
+    fn coverage_tab_fields_mapped() {
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved, true);
+        let d = ThemeColor::default();
+        let mapped = [
+            tc.tab != d.tab,
+            tc.tab_active != d.tab_active,
+            tc.tab_active_foreground != d.tab_active_foreground,
+            tc.tab_bar != d.tab_bar,
+            tc.tab_foreground != d.tab_foreground,
+        ]
+        .iter()
+        .filter(|&&b| b)
+        .count();
+        assert_eq!(mapped, 5, "doc says 5 tab fields mapped; got {mapped}");
+    }
+
+    #[test]
+    fn coverage_sidebar_fields_mapped() {
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved, true);
+        let d = ThemeColor::default();
+        // sidebar, sidebar_foreground, sidebar_accent, sidebar_accent_foreground,
+        // sidebar_border, sidebar_primary, sidebar_primary_foreground
+        let mapped = [
+            tc.sidebar != d.sidebar,
+            tc.sidebar_foreground != d.sidebar_foreground,
+            tc.sidebar_accent != d.sidebar_accent,
+            tc.sidebar_accent_foreground != d.sidebar_accent_foreground,
+            tc.sidebar_border != d.sidebar_border,
+            tc.sidebar_primary != d.sidebar_primary,
+            tc.sidebar_primary_foreground != d.sidebar_primary_foreground,
+        ]
+        .iter()
+        .filter(|&&b| b)
+        .count();
+        assert_eq!(mapped, 7, "doc says sidebar+accent mapped; got {mapped}");
+    }
+
+    #[test]
+    fn coverage_list_table_fields_mapped() {
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved, true);
+        let d = ThemeColor::default();
+        let mapped = [
+            tc.list != d.list,
+            tc.list_hover != d.list_hover,
+            tc.list_active != d.list_active,
+            tc.list_active_border != d.list_active_border,
+            tc.list_even != d.list_even,
+            tc.list_head != d.list_head,
+            tc.table != d.table,
+            tc.table_hover != d.table_hover,
+            tc.table_active != d.table_active,
+            tc.table_active_border != d.table_active_border,
+            tc.table_even != d.table_even,
+            tc.table_head != d.table_head,
+            tc.table_head_foreground != d.table_head_foreground,
+            tc.table_row_border != d.table_row_border,
+        ]
+        .iter()
+        .filter(|&&b| b)
+        .count();
+        assert_eq!(
+            mapped, 14,
+            "doc says 14 list/table fields mapped; got {mapped}"
+        );
+    }
+
+    #[test]
+    fn coverage_scrollbar_slider_fields_mapped() {
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved, true);
+        let d = ThemeColor::default();
+        let mapped = [
+            tc.scrollbar != d.scrollbar,
+            tc.scrollbar_thumb != d.scrollbar_thumb,
+            tc.scrollbar_thumb_hover != d.scrollbar_thumb_hover,
+            tc.slider_bar != d.slider_bar,
+            tc.slider_thumb != d.slider_thumb,
+        ]
+        .iter()
+        .filter(|&&b| b)
+        .count();
+        assert_eq!(
+            mapped, 5,
+            "doc says 3 scrollbar + 2 slider fields mapped; got {mapped}"
+        );
+    }
+
+    #[test]
+    fn coverage_chart_fields_mapped() {
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved, true);
+        let d = ThemeColor::default();
+        let mapped = [
+            tc.chart_1 != d.chart_1,
+            tc.chart_2 != d.chart_2,
+            tc.chart_3 != d.chart_3,
+            tc.chart_4 != d.chart_4,
+            tc.chart_5 != d.chart_5,
+        ]
+        .iter()
+        .filter(|&&b| b)
+        .count();
+        assert_eq!(mapped, 5, "doc says 5 chart fields mapped; got {mapped}");
     }
 
     // Issue 2: muted_fg should differ from muted background

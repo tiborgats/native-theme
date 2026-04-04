@@ -51,11 +51,30 @@ pub enum BuildError {
         /// Path to the second file declaring the role.
         file_b: String,
     },
-    /// A TOML or SVG file could not be read or parsed.
-    // v0.6.0: consider adding structured fields (path: PathBuf, operation: &str)
-    // for better diagnostics instead of flattening to String.
-    Io {
-        /// Human-readable description of the I/O error.
+    /// A file could not be read from disk.
+    IoRead {
+        /// Filesystem path that could not be read.
+        path: String,
+        /// The underlying OS error message.
+        reason: String,
+    },
+    /// A file's contents could not be parsed (TOML syntax error, etc.).
+    IoParse {
+        /// Filesystem path that failed to parse.
+        path: String,
+        /// The parse error message.
+        reason: String,
+    },
+    /// A required environment variable is missing or invalid.
+    IoEnv {
+        /// Name of the environment variable (e.g. `CARGO_MANIFEST_DIR`).
+        var: String,
+        /// The underlying error message.
+        reason: String,
+    },
+    /// An I/O-related error that does not fit the read/parse/env categories.
+    IoOther {
+        /// Human-readable description of the error.
         message: String,
     },
     /// A role or enum name produces an invalid Rust identifier.
@@ -168,7 +187,16 @@ impl fmt::Display for BuildError {
             } => {
                 write!(f, "role \"{role}\" defined in both {file_a} and {file_b}")
             }
-            Self::Io { message } => {
+            Self::IoRead { path, reason } => {
+                write!(f, "failed to read {path}: {reason}")
+            }
+            Self::IoParse { path, reason } => {
+                write!(f, "failed to parse {path}: {reason}")
+            }
+            Self::IoEnv { var, reason } => {
+                write!(f, "environment variable {var} not available: {reason}")
+            }
+            Self::IoOther { message } => {
                 write!(f, "{message}")
             }
             Self::InvalidIdentifier { name, reason } => {
@@ -288,10 +316,44 @@ impl BuildErrors {
         }
     }
 
-    /// Create a single-error `BuildErrors` from an I/O error message.
-    pub(crate) fn io(message: impl Into<String>) -> Self {
+    /// Create a single-error `BuildErrors` from a file read failure.
+    pub(crate) fn io_read(path: impl Into<String>, reason: impl Into<String>) -> Self {
         Self {
-            errors: vec![BuildError::Io {
+            errors: vec![BuildError::IoRead {
+                path: path.into(),
+                reason: reason.into(),
+            }],
+            rerun_paths: Vec::new(),
+        }
+    }
+
+    /// Create a single-error `BuildErrors` from a file parse failure.
+    pub(crate) fn io_parse(path: impl Into<String>, reason: impl Into<String>) -> Self {
+        Self {
+            errors: vec![BuildError::IoParse {
+                path: path.into(),
+                reason: reason.into(),
+            }],
+            rerun_paths: Vec::new(),
+        }
+    }
+
+    /// Create a single-error `BuildErrors` from a missing environment variable.
+    pub(crate) fn io_env(var: impl Into<String>, reason: impl Into<String>) -> Self {
+        Self {
+            errors: vec![BuildError::IoEnv {
+                var: var.into(),
+                reason: reason.into(),
+            }],
+            rerun_paths: Vec::new(),
+        }
+    }
+
+    /// Create a single-error `BuildErrors` from an I/O error that doesn't
+    /// fit read/parse/env categories.
+    pub(crate) fn io_other(message: impl Into<String>) -> Self {
+        Self {
+            errors: vec![BuildError::IoOther {
                 message: message.into(),
             }],
             rerun_paths: Vec::new(),
@@ -356,7 +418,7 @@ mod tests {
 
     #[test]
     fn build_errors_is_empty_and_len() {
-        let errors = BuildErrors::new(vec![BuildError::Io {
+        let errors = BuildErrors::new(vec![BuildError::IoOther {
             message: "test".into(),
         }]);
         assert!(!errors.is_empty());
@@ -366,11 +428,13 @@ mod tests {
     #[test]
     fn build_errors_len_multiple() {
         let errors = BuildErrors::new(vec![
-            BuildError::Io {
-                message: "first".into(),
+            BuildError::IoRead {
+                path: "file.toml".into(),
+                reason: "first".into(),
             },
-            BuildError::Io {
-                message: "second".into(),
+            BuildError::IoParse {
+                path: "file.toml".into(),
+                reason: "second".into(),
             },
         ]);
         assert!(!errors.is_empty());
@@ -379,7 +443,7 @@ mod tests {
 
     #[test]
     fn build_errors_display_shows_count() {
-        let errors = BuildErrors::new(vec![BuildError::Io {
+        let errors = BuildErrors::new(vec![BuildError::IoOther {
             message: "oops".into(),
         }]);
         let display = format!("{errors}");
@@ -389,7 +453,7 @@ mod tests {
 
     #[test]
     fn build_errors_into_iter() {
-        let errors = BuildErrors::new(vec![BuildError::Io {
+        let errors = BuildErrors::new(vec![BuildError::IoOther {
             message: "iter".into(),
         }]);
         let collected: Vec<BuildError> = errors.into_iter().collect();
@@ -398,7 +462,7 @@ mod tests {
 
     #[test]
     fn build_errors_ref_iter() {
-        let errors = BuildErrors::new(vec![BuildError::Io {
+        let errors = BuildErrors::new(vec![BuildError::IoOther {
             message: "ref".into(),
         }]);
         let collected: Vec<&BuildError> = (&errors).into_iter().collect();
