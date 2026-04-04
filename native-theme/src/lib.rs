@@ -1848,8 +1848,9 @@ mod spinner_rasterize_tests {
     #[cfg(feature = "lucide-icons")]
     fn lucide_spinner_icon_rasterizes() {
         let anim = spinners::lucide_spinner();
-        if let AnimatedIcon::Transform { icon, .. } = &anim {
-            if let IconData::Svg(bytes) = icon {
+        if let AnimatedIcon::Frames { frames, .. } = &anim {
+            let first = frames.first().expect("should have at least one frame");
+            if let IconData::Svg(bytes) = first {
                 let result = crate::rasterize::rasterize_svg(bytes, 24);
                 assert!(result.is_ok(), "lucide loader should rasterize");
                 if let Ok(IconData::Rgba { data, .. }) = &result {
@@ -1859,10 +1860,10 @@ mod spinner_rasterize_tests {
                     );
                 }
             } else {
-                panic!("lucide spinner icon should be Svg");
+                panic!("lucide spinner frame should be Svg");
             }
         } else {
-            panic!("lucide spinner should be Transform");
+            panic!("lucide spinner should be Frames");
         }
     }
 }
