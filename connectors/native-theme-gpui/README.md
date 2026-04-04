@@ -43,7 +43,7 @@ let (theme, resolved) = from_system()?;
 
 ## What Gets Mapped
 
-The connector translates native-theme's 36 semantic color roles into
+The connector translates native-theme's 22 semantic color roles into
 gpui-component's 108-field `ThemeColor` struct. The mapping works in layers:
 
 - **Direct mappings** (~30 fields) -- background, foreground, accent, border,
@@ -116,7 +116,7 @@ call it on every frame tick.
 
 | Module | Purpose |
 |--------|---------|
-| `colors` | Maps 36 semantic colors to 108 ThemeColor fields |
+| `colors` | Maps 22 semantic colors to 108 ThemeColor fields |
 | `config` | Maps fonts and geometry to ThemeConfig |
 | `derive` | Hover/active state color derivation helpers |
 | `icons` | Icon role mapping, image source conversion, and animated icon playback |

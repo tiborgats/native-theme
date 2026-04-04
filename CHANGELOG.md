@@ -464,7 +464,7 @@ let busy = load_icon(IconRole::StatusBusy, "material");
 
 ### Added
 
-- `ThemeSpec` data model with 36 semantic color roles, fonts, geometry, and spacing
+- `ThemeSpec` data model with 22 semantic color roles, fonts, geometry, and spacing
 - `Rgba` color type with hex string parsing and serialization
 - `ThemeVariant` composing colors, fonts, geometry, and spacing
 - TOML serialization and deserialization for all theme types
