@@ -22,6 +22,11 @@ pub struct IconSizes {
     pub panel: Option<f32>,
 }
 
+impl IconSizes {
+    /// All serialized field names for TOML linting (issue 3b).
+    pub const FIELD_NAMES: &[&str] = &["toolbar", "small", "large", "dialog", "panel"];
+}
+
 impl_merge!(IconSizes {
     option { toolbar, small, large, dialog, panel }
 });

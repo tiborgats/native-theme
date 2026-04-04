@@ -58,6 +58,11 @@ pub struct TextScaleEntry {
     pub line_height: Option<f32>,
 }
 
+impl TextScaleEntry {
+    /// All serialized field names for TOML linting (issue 3b).
+    pub const FIELD_NAMES: &[&str] = &["size", "weight", "line_height"];
+}
+
 impl_merge!(TextScaleEntry {
     option { size, weight, line_height }
 });
@@ -78,6 +83,11 @@ pub struct TextScale {
     pub dialog_title: Option<TextScaleEntry>,
     /// Large display / hero text.
     pub display: Option<TextScaleEntry>,
+}
+
+impl TextScale {
+    /// All serialized field names for TOML linting (issue 3b).
+    pub const FIELD_NAMES: &[&str] = &["caption", "section_heading", "dialog_title", "display"];
 }
 
 impl_merge!(TextScale {

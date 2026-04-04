@@ -683,19 +683,8 @@ play-pause = { kde = "media-playback-start", default = "play" }
         );
     }
 
-    #[test]
-    fn generated_code_icon_svg_has_wildcard() {
-        let (config, mappings) = sample_config_and_mappings();
-        let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
-        // icon_svg function should have _ => None
-        // We check this indirectly: the output must have at least two "_ => None" patterns
-        // (one for icon_name, one for icon_svg)
-        let count = output.matches("_ => None").count();
-        assert!(
-            count >= 2,
-            "expected at least 2 wildcard arms (icon_name + icon_svg), found {count}"
-        );
-    }
+    // Issue 48: tautological icon_svg_has_wildcard test removed.
+    // Replaced by generated_code_icon_svg_has_specific_match_arms below.
 
     // === de_key_to_variant tests ===
 

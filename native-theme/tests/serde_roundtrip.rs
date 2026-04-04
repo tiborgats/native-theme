@@ -79,6 +79,13 @@ fn fully_populated_variant(offset: u8) -> ThemeVariant {
     v.defaults.mono_font.family = Some("Hack".into());
     v.defaults.mono_font.size = Some(10.0);
 
+    // Missing fields added for issue 24n
+    v.defaults.accent_foreground = Some(c(252, 252, 252));
+    v.defaults.selection_inactive = Some(c(180, 210, 233));
+    v.defaults.line_height = Some(1.2);
+    v.defaults.radius_lg = Some(8.0);
+    v.defaults.shadow_enabled = Some(true);
+
     // Geometry (on defaults)
     v.defaults.radius = Some(4.0);
     v.defaults.frame_width = Some(1.0);

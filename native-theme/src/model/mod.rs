@@ -587,16 +587,8 @@ impl ThemeSpec {
             "icon_theme",
         ];
 
-        // TextScaleEntry known fields
-        const TEXT_SCALE_ENTRY_FIELDS: &[&str] = &["size", "weight", "line_height"];
-
-        // TextScale known keys (entry names)
-        const TEXT_SCALE_KEYS: &[&str] = &["caption", "section_heading", "dialog_title", "display"];
-
-        // FontSpec and ThemeSpacing use their own FIELD_NAMES constants.
-
-        // IconSizes known fields
-        const ICON_SIZES_FIELDS: &[&str] = &["toolbar", "small", "large", "dialog", "panel"];
+        // FontSpec, ThemeSpacing, TextScaleEntry, TextScale, and IconSizes
+        // all use their own FIELD_NAMES constants (issue 3b).
 
         /// Look up the known field names for a given widget section key.
         fn widget_fields(section: &str) -> Option<&'static [&'static str]> {
@@ -637,11 +629,11 @@ impl ThemeSpec {
             warnings: &mut Vec<String>,
         ) {
             for key in table.keys() {
-                if !TEXT_SCALE_KEYS.contains(&key.as_str()) {
+                if !TextScale::FIELD_NAMES.contains(&key.as_str()) {
                     warnings.push(format!("unknown field: {prefix}.{key}"));
                 } else if let Some(toml::Value::Table(entry_table)) = table.get(key) {
                     for ekey in entry_table.keys() {
-                        if !TEXT_SCALE_ENTRY_FIELDS.contains(&ekey.as_str()) {
+                        if !TextScaleEntry::FIELD_NAMES.contains(&ekey.as_str()) {
                             warnings.push(format!("unknown field: {prefix}.{key}.{ekey}"));
                         }
                     }
@@ -665,7 +657,7 @@ impl ThemeSpec {
                     let known = match key.as_str() {
                         "font" | "mono_font" => FontSpec::FIELD_NAMES,
                         "spacing" => ThemeSpacing::FIELD_NAMES,
-                        "icon_sizes" => ICON_SIZES_FIELDS,
+                        "icon_sizes" => IconSizes::FIELD_NAMES,
                         _ => continue,
                     };
                     for skey in sub.keys() {

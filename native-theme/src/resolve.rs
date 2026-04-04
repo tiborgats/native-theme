@@ -717,6 +717,14 @@ impl ThemeVariant {
     pub fn validate(&self) -> crate::Result<ResolvedThemeVariant> {
         let mut missing = Vec::new();
 
+        // ┌──────────────────────────────────────────────────────────────┐
+        // │ Adding a new widget or field? Follow these steps:           │
+        // │ 1. Add require() calls in the extraction section below      │
+        // │ 2. Add range checks in the "range validation" section       │
+        // │ 3. Add the field to the ResolvedThemeVariant construction   │
+        // │ Each section is marked with // --- widget_name ---          │
+        // └──────────────────────────────────────────────────────────────┘
+
         // --- defaults ---
 
         let defaults_font = require_font(&self.defaults.font, "defaults.font", &mut missing);
@@ -1410,6 +1418,9 @@ impl ThemeVariant {
         let icon_set = require(&self.icon_set, "icon_set", &mut missing);
         let icon_theme = require(&self.icon_theme, "icon_theme", &mut missing);
 
+        // NEW WIDGET: add require() calls above this line, then add
+        // range checks below and construction fields at the bottom.
+
         // --- range validation ---
         //
         // Operate on the already-extracted values from require(). If a field was
@@ -1871,6 +1882,8 @@ impl ThemeVariant {
             &mut missing,
         );
         check_non_negative(expander_radius, "expander.radius", &mut missing);
+
+        // NEW WIDGET: add range checks above this line.
 
         // --- check for missing fields and range errors ---
 
@@ -3524,6 +3537,19 @@ mod tests {
         let overlay = crate::ThemeSpec::new("");
         base.merge(&overlay);
         assert_eq!(base.name, "My Base", "base name should be preserved");
+    }
+
+    #[test]
+    fn merge_preserves_empty_base_name_over_nonempty_overlay() {
+        // Issue 17a edge case: merge() never touches self.name, so an empty
+        // base name is kept even when the overlay has a non-empty name.
+        let mut base = crate::ThemeSpec::new("");
+        let overlay = crate::ThemeSpec::new("Overlay Name");
+        base.merge(&overlay);
+        assert_eq!(
+            base.name, "",
+            "empty base name should be preserved (merge never touches name)"
+        );
     }
 
     #[test]

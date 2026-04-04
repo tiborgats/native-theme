@@ -949,4 +949,75 @@ mod tests {
         let dbg = format!("{theme:?}");
         assert!(dbg.contains("ResolvedThemeVariant"));
     }
+
+    // --- Behavioral tests (issue 2d) ---
+
+    /// Verify that resolving a preset produces a ResolvedThemeVariant where
+    /// button.background inherits from defaults.background when not overridden.
+    #[test]
+    fn resolve_fills_button_background_from_defaults() {
+        let spec = crate::ThemeSpec::preset("catppuccin-mocha").expect("preset exists");
+        let variant = spec.into_variant(true).expect("dark variant");
+        let resolved = variant.into_resolved().expect("resolves");
+        // Button background should be set (inherited from defaults if not explicit)
+        assert_ne!(
+            resolved.button.background,
+            Rgba::default(),
+            "button.background should be populated, not default"
+        );
+    }
+
+    /// Verify that the resolved theme's status colors are distinct.
+    #[test]
+    fn resolved_status_colors_are_distinct() {
+        let spec = crate::ThemeSpec::preset("kde-breeze").expect("preset exists");
+        let variant = spec.into_variant(false).expect("light variant");
+        let resolved = variant.into_resolved().expect("resolves");
+        assert_ne!(resolved.defaults.danger, resolved.defaults.success);
+        assert_ne!(resolved.defaults.warning, resolved.defaults.info);
+        assert_ne!(resolved.defaults.danger, resolved.defaults.warning);
+    }
+
+    /// Verify that resolve fills selection_inactive from selection.
+    #[test]
+    fn resolved_selection_inactive_derived_from_selection() {
+        let spec = crate::ThemeSpec::preset("nord").expect("preset exists");
+        let variant = spec.into_variant(true).expect("dark variant");
+        let resolved = variant.into_resolved().expect("resolves");
+        // selection_inactive should be populated (derived from selection)
+        assert_ne!(
+            resolved.defaults.selection_inactive,
+            Rgba::default(),
+            "selection_inactive should be derived"
+        );
+    }
+
+    /// Verify that all spacing fields are populated after resolution.
+    #[test]
+    fn resolved_spacing_all_fields_populated() {
+        let spec = crate::ThemeSpec::preset("dracula").expect("preset exists");
+        let variant = spec.into_variant(true).expect("dark variant");
+        let resolved = variant.into_resolved().expect("resolves");
+        assert!(resolved.defaults.spacing.xxs > 0.0);
+        assert!(resolved.defaults.spacing.xs > 0.0);
+        assert!(resolved.defaults.spacing.s > 0.0);
+        assert!(resolved.defaults.spacing.m > 0.0);
+        assert!(resolved.defaults.spacing.l > 0.0);
+        assert!(resolved.defaults.spacing.xl > 0.0);
+        assert!(resolved.defaults.spacing.xxl > 0.0);
+    }
+
+    /// Verify that text_scale entries have positive sizes after resolution.
+    #[test]
+    fn resolved_text_scale_has_positive_sizes() {
+        let spec = crate::ThemeSpec::preset("adwaita").expect("preset exists");
+        let variant = spec.into_variant(false).expect("light variant");
+        let resolved = variant.into_resolved().expect("resolves");
+        assert!(resolved.text_scale.caption.size > 0.0);
+        assert!(resolved.text_scale.section_heading.size > 0.0);
+        assert!(resolved.text_scale.dialog_title.size > 0.0);
+        assert!(resolved.text_scale.display.size > 0.0);
+        // caption < section_heading < dialog_title < display
+        assert!(resolved.text_scale.caption.size < resolved.text_scale.display.size);
+    }
 }
