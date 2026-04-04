@@ -5727,6 +5727,11 @@ fn main() {
                             };
                             s.color_mode = mode;
                             s.is_dark = is_dark;
+                            // Update the color mode selector dropdown
+                            let label = SharedString::from(mode.label());
+                            s.dark_mode_select.update(cx, |select, cx| {
+                                select.set_selected_value(&label, window, cx);
+                            });
                         }
 
                         // Override theme if --theme was specified
