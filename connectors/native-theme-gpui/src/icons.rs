@@ -1467,11 +1467,11 @@ mod tests {
         );
     }
 
-    // Issue 45: data-driven icon mapping regression tests
+    // Issue 45: data-driven icon mapping regression tests covering all 30 Some() mappings.
     // Uses matches!() since IconName doesn't implement PartialEq.
     #[test]
     fn icon_name_data_driven() {
-        // Some() mappings
+        // Dialog / Alert
         assert!(matches!(
             icon_name(IconRole::DialogWarning),
             Some(IconName::TriangleAlert)
@@ -1488,10 +1488,24 @@ mod tests {
             icon_name(IconRole::DialogSuccess),
             Some(IconName::CircleCheck)
         ));
+        // Window Controls
         assert!(matches!(
             icon_name(IconRole::WindowClose),
             Some(IconName::WindowClose)
         ));
+        assert!(matches!(
+            icon_name(IconRole::WindowMinimize),
+            Some(IconName::WindowMinimize)
+        ));
+        assert!(matches!(
+            icon_name(IconRole::WindowMaximize),
+            Some(IconName::WindowMaximize)
+        ));
+        assert!(matches!(
+            icon_name(IconRole::WindowRestore),
+            Some(IconName::WindowRestore)
+        ));
+        // Common Actions
         assert!(matches!(
             icon_name(IconRole::ActionDelete),
             Some(IconName::Delete)
@@ -1501,12 +1515,68 @@ mod tests {
             Some(IconName::Copy)
         ));
         assert!(matches!(
+            icon_name(IconRole::ActionUndo),
+            Some(IconName::Undo2)
+        ));
+        assert!(matches!(
+            icon_name(IconRole::ActionRedo),
+            Some(IconName::Redo2)
+        ));
+        assert!(matches!(
+            icon_name(IconRole::ActionSearch),
+            Some(IconName::Search)
+        ));
+        assert!(matches!(
+            icon_name(IconRole::ActionSettings),
+            Some(IconName::Settings)
+        ));
+        assert!(matches!(
+            icon_name(IconRole::ActionAdd),
+            Some(IconName::Plus)
+        ));
+        assert!(matches!(
+            icon_name(IconRole::ActionRemove),
+            Some(IconName::Minus)
+        ));
+        // Navigation
+        assert!(matches!(
             icon_name(IconRole::NavBack),
             Some(IconName::ChevronLeft)
         ));
         assert!(matches!(
+            icon_name(IconRole::NavForward),
+            Some(IconName::ChevronRight)
+        ));
+        assert!(matches!(
+            icon_name(IconRole::NavUp),
+            Some(IconName::ChevronUp)
+        ));
+        assert!(matches!(
+            icon_name(IconRole::NavDown),
+            Some(IconName::ChevronDown)
+        ));
+        assert!(matches!(icon_name(IconRole::NavMenu), Some(IconName::Menu)));
+        // Files / Places
+        assert!(matches!(
             icon_name(IconRole::FileGeneric),
             Some(IconName::File)
+        ));
+        assert!(matches!(
+            icon_name(IconRole::FolderClosed),
+            Some(IconName::FolderClosed)
+        ));
+        assert!(matches!(
+            icon_name(IconRole::FolderOpen),
+            Some(IconName::FolderOpen)
+        ));
+        assert!(matches!(
+            icon_name(IconRole::TrashEmpty),
+            Some(IconName::Delete)
+        ));
+        // Status
+        assert!(matches!(
+            icon_name(IconRole::StatusBusy),
+            Some(IconName::Loader)
         ));
         assert!(matches!(
             icon_name(IconRole::StatusCheck),
@@ -1516,9 +1586,14 @@ mod tests {
             icon_name(IconRole::StatusError),
             Some(IconName::CircleX)
         ));
+        // System
         assert!(matches!(
             icon_name(IconRole::UserAccount),
             Some(IconName::User)
+        ));
+        assert!(matches!(
+            icon_name(IconRole::Notification),
+            Some(IconName::Bell)
         ));
         // None cases
         assert!(icon_name(IconRole::Shield).is_none());

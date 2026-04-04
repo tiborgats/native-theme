@@ -2867,9 +2867,18 @@ fn color_swatch<'a>(
         Color::WHITE
     };
 
+    // Derive swatch padding from the theme spacing scale (xxs ~= 2px).
+    // Vertical uses 3×xxs, horizontal uses 2×xxs — keeps the swatch compact
+    // while scaling proportionally with the theme.
+    let swatch_pad = Padding::new(0.0)
+        .top(xxs_spacing * 3.0)
+        .bottom(xxs_spacing * 3.0)
+        .left(xxs_spacing * 2.0)
+        .right(xxs_spacing * 2.0);
+
     column![
         container(text(hex.clone()).size(caption_size).color(text_color))
-            .padding(Padding::from([6, 4]))
+            .padding(swatch_pad)
             .style(move |_theme: &Theme| container::Style {
                 background: Some(color.into()),
                 border: iced::Border {

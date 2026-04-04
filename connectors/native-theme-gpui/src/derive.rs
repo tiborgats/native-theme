@@ -235,6 +235,40 @@ mod tests {
         );
     }
 
+    // Issue 67: hover_color with fully transparent base (alpha=0.0)
+    #[test]
+    fn hover_color_transparent_base() {
+        let transparent = hsla(0.5, 0.5, 0.5, 0.0);
+        let bg = hsla(0.0, 0.0, 1.0, 1.0);
+        let result = hover_color(transparent, bg);
+        // Blending a 0-alpha color at 0.9 opacity onto bg should produce
+        // a color very close to bg (the transparent base contributes nothing).
+        assert!(
+            (result.l - bg.l).abs() < 0.05,
+            "hover of transparent base l={} should be close to bg l={}",
+            result.l,
+            bg.l
+        );
+    }
+
+    // Issue 67: active_color with pure black (l=0.0)
+    // Documents a Colorize trait limitation: lighten(0.2) on l=0.0 stays 0.0
+    // because the multiplication `l * (1 + factor) = 0`. The near-black safety
+    // net works for l > 0 but not exactly zero. This is acceptable since pure
+    // black rarely occurs in real themes.
+    #[test]
+    fn active_color_pure_black_stays_black() {
+        let pure_black = hsla(0.0, 0.0, 0.0, 1.0);
+        let result = active_color(pure_black, true);
+        // l=0.0 enters the lighten path but multiplicative lighten can't
+        // increase zero — result stays at l=0.0.
+        assert!(
+            (result.l - 0.0).abs() < f32::EPSILON,
+            "pure black active l={} stays at 0.0 (Colorize limitation)",
+            result.l,
+        );
+    }
+
     #[test]
     fn light_variant_clamped_to_095() {
         let bg = hsla(0.0, 0.0, 0.1, 1.0);

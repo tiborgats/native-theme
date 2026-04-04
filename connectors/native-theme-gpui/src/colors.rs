@@ -1073,4 +1073,62 @@ mod tests {
             tc.red.l
         );
     }
+
+    // Issue 63: exact source-to-field mapping for assign_tab_sidebar
+    #[test]
+    fn tab_sidebar_fields_match_resolved_sources() {
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved, true);
+
+        // Tab fields from resolved.tab.*
+        assert_eq!(tc.tab, rgba_to_hsla(resolved.tab.background));
+        assert_eq!(tc.tab_active, rgba_to_hsla(resolved.tab.active_background));
+        assert_eq!(
+            tc.tab_active_foreground,
+            rgba_to_hsla(resolved.tab.active_foreground)
+        );
+        assert_eq!(tc.tab_bar, rgba_to_hsla(resolved.tab.bar_background));
+        assert_eq!(tc.tab_foreground, rgba_to_hsla(resolved.tab.foreground));
+
+        // Sidebar fields
+        assert_eq!(tc.sidebar, rgba_to_hsla(resolved.sidebar.background));
+        assert_eq!(
+            tc.sidebar_foreground,
+            rgba_to_hsla(resolved.sidebar.foreground)
+        );
+        assert_eq!(tc.sidebar_accent, rgba_to_hsla(resolved.defaults.accent));
+        assert_eq!(
+            tc.sidebar_accent_foreground,
+            rgba_to_hsla(resolved.defaults.accent_foreground)
+        );
+        assert_eq!(tc.sidebar_border, rgba_to_hsla(resolved.window.border));
+
+        // Title bar / window fields
+        assert_eq!(
+            tc.title_bar,
+            rgba_to_hsla(resolved.window.title_bar_background)
+        );
+        assert_eq!(tc.title_bar_border, rgba_to_hsla(resolved.window.border));
+        assert_eq!(tc.window_border, rgba_to_hsla(resolved.window.border));
+    }
+
+    // Issue 75: list_active_border and table_active_border exact blend verification
+    #[test]
+    fn list_active_border_exact_blend_value() {
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved, true);
+
+        let bg = rgba_to_hsla(resolved.defaults.background);
+        let primary = rgba_to_hsla(resolved.button.primary_background);
+        let expected_border = bg.blend(primary.opacity(0.6));
+
+        assert_eq!(
+            tc.list_active_border, expected_border,
+            "list_active_border should be bg.blend(primary.opacity(0.6))"
+        );
+        assert_eq!(
+            tc.table_active_border, expected_border,
+            "table_active_border should equal list_active_border"
+        );
+    }
 }

@@ -734,4 +734,69 @@ mod tests {
         let result = animated_frames_to_svg_handles(&anim, Some(color));
         assert!(result.is_some(), "should produce handles with color");
     }
+
+    // Issue 14.3: colorize with mixed fill attributes (both black and non-black)
+    #[test]
+    fn colorize_mixed_fill_attributes() {
+        // SVG with both fill="black" (should be replaced) and fill="red" (should be preserved)
+        let svg = b"<svg><rect fill=\"black\" width=\"10\" height=\"10\"/><rect fill=\"red\" width=\"10\" height=\"10\"/></svg>";
+        let color = iced_core::Color::from_rgb(0.0, 1.0, 0.0);
+        let result = colorize_monochrome_svg(svg, color);
+        let result_str = String::from_utf8(result).unwrap();
+        assert!(
+            !result_str.contains("fill=\"black\""),
+            "fill=\"black\" should be replaced, got: {}",
+            result_str
+        );
+        assert!(
+            result_str.contains("fill=\"red\""),
+            "fill=\"red\" should be preserved, got: {}",
+            result_str
+        );
+    }
+
+    // Issue 14.3: colorize with non-black explicit fills (fill="white", fill="#FFF")
+    #[test]
+    fn colorize_non_black_fills_preserved() {
+        let svg = b"<svg fill=\"white\"><path d=\"M0 0\"/></svg>";
+        let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
+        let result = colorize_monochrome_svg(svg, color);
+        let result_str = String::from_utf8(result).unwrap();
+        // fill="white" is not black, should not be replaced by phases 1-2.
+        // Phase 3 (root fill injection) should be skipped since fill= already exists.
+        assert!(
+            result_str.contains("fill=\"white\""),
+            "fill=\"white\" should be preserved, got: {}",
+            result_str
+        );
+    }
+
+    // Issue 14.3: spin_rotation_radians with very large elapsed (wraps correctly)
+    #[test]
+    fn spin_rotation_large_elapsed_wraps() {
+        let duration_ms = 1000;
+        // 1_000_000 seconds = 1M full rotations. Result should be near 0.
+        let elapsed = std::time::Duration::from_secs(1_000_000);
+        let result = spin_rotation_radians(elapsed, duration_ms);
+        // The progress should be (elapsed_ms % duration_ms) / duration_ms.
+        // 1_000_000_000ms % 1000 = 0, so rotation should be ~0.
+        assert!(
+            result.0.abs() < 0.01,
+            "very large elapsed should wrap to near-zero, got {}",
+            result.0
+        );
+    }
+
+    // Issue 14.3: from_preset with a single-variant preset
+    #[test]
+    fn from_preset_single_variant_fallback() {
+        // catppuccin-mocha is dark-only; requesting light should still succeed
+        // via fallback (into_variant tries the other mode when primary is empty)
+        let result = crate::from_preset("catppuccin-mocha", false);
+        assert!(
+            result.is_ok(),
+            "single-variant preset should fallback to available variant: {:?}",
+            result.err()
+        );
+    }
 }
