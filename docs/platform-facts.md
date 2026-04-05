@@ -873,7 +873,7 @@ Every property name is self-describing. The suffix/pattern tells you
 the type and meaning:
 
 **Colors and fills:**
-- `*_color` — a color value (e.g. `border_color`, `text_color`, `caret_color`)
+- `*_color` — a color value (e.g. `border.color`, `text_color`, `caret_color`)
 - `*_background` — a background fill color (e.g. `background_color`, `hover_background`, `checked_background`)
 - `*_text_color` — a text rendering color for a specific state or context (e.g. `active_text_color`, `disabled_text_color`, `header_text_color`)
 
@@ -897,18 +897,34 @@ rules eliminate ambiguity for every dimension and spacing property:
    edge are **not** included. When a platform cell gives only the
    content-area value, it is annotated (e.g. "24 (34 w/ padding)").
 
-2. **Per-side rule for padding:** `padding_horizontal`,
-   `padding_vertical`, and `content_padding` are always **per-side**
-   values — the amount applied to EACH side independently.
-   `padding_horizontal: 10` means 10 px on the left AND 10 px on the
-   right (20 px total horizontal gap). When a platform has asymmetric
-   padding (different left vs right, or different top vs bottom), the
-   cell shows both values (e.g. "10 left / 6 right").
+2. **Per-side rule for padding:** `border.padding_horizontal` and
+   `border.padding_vertical` are always **per-side** values — the
+   amount applied to EACH side independently.
+   `border.padding_horizontal: 10` means 10 px on the left AND 10 px
+   on the right (20 px total horizontal gap). When a platform has
+   asymmetric padding (different left vs right, or different top vs
+   bottom), the cell shows both values (e.g. "10 left / 6 right").
 
-**Spacing and padding:**
-- `padding_horizontal` — per-side space between the widget's left/right inner border edge and its content (text, icon).
-- `padding_vertical` — per-side space between the widget's top/bottom inner border edge and its content.
-- `content_padding` — per-side space between a container's inner border edge and its content area. When platforms differ per direction, the cell notes the asymmetry (e.g. "24 sides, 32 top").
+**Border struct** (`border.*` sub-properties):
+
+The border struct groups all frame/boundary properties of a widget.
+Like `font`, it can appear as a single inherited row
+(`border = ← defaults.border`) or expanded into sub-properties when
+values differ per platform.
+
+- `border.line_width` — stroke thickness of the border outline.
+- `border.corner_radius` — corner rounding radius. `border.corner_radius_lg` is the larger variant used by popover/window/dialog containers.
+- `border.color` — color of the border outline.
+- `border.opacity` — opacity multiplier applied to the border color.
+- `border.shadow_enabled` — whether the widget casts a drop shadow.
+- `border.padding_horizontal` — per-side left/right space between the inner border edge and the widget's content (text, icon).
+- `border.padding_vertical` — per-side top/bottom space between the inner border edge and the widget's content.
+
+`defaults.border` provides: `line_width`, `border.corner_radius`,
+`border.corner_radius_lg`, `color`, `opacity`, `border.shadow_enabled`. Padding
+has no global default — it is always widget-specific.
+
+**Content gaps (distances between elements):**
 - `icon_text_gap` — horizontal distance between an icon and the adjacent text label inside the widget.
 - `label_gap` — distance between an indicator (checkbox/radio box) and its text label.
 - `item_gap` — distance between adjacent child items in a container (toolbar items, etc.).
@@ -918,11 +934,9 @@ rules eliminate ambiguity for every dimension and spacing property:
 - `container_margin` — default margin inside a nested layout container.
 - `window_margin` — default margin inside a top-level window layout.
 
-**Dimensions:**
+**Widget dimensions:**
 - `min_width`, `max_width` — minimum/maximum outer width of the widget (see outer-box rule).
 - `min_height`, `max_height` — minimum/maximum outer height of the widget (see outer-box rule).
-- `border_line_width` — stroke thickness of the widget's border outline.
-- `corner_radius` — corner rounding radius of the widget's border rectangle. `corner_radius_lg` is the larger variant for popover/window/dialog containers.
 - `row_height` — height of a single item row (menu item, list row).
 - `bar_height` — total height of a toolbar bar.
 - `track_height` — height of a slider or progress bar track groove.
@@ -951,7 +965,7 @@ rules eliminate ambiguity for every dimension and spacing property:
 - `diameter` — default outer diameter of the spinner ring.
 
 **Booleans and enums:**
-- `shadow_enabled` — whether the widget renders a drop shadow.
+- `border.shadow_enabled` — whether the widget renders a drop shadow.
 - `overlay_mode` — whether the scrollbar uses overlay (auto-hiding) mode.
 - `underline_enabled` — whether link text is underlined.
 - `button_order` — platform convention for dialog button arrangement (primary left vs right).
@@ -999,7 +1013,7 @@ rules eliminate ambiguity for every dimension and spacing property:
 | `accent_color`              | ⚙ `controlAccentColor`             | ⚙ `UISettings(Accent)`                              | ⚙ `[General] AccentColor` (propagated to `DecorationFocus`) | ⚙ Portal `accent-color`   |
 | `accent_text_color`   | ⚙ `alternateSelectedControlTextColor` | **(Fluent)** `TextOnAccentFillColorPrimary` (L #ffffff D #000000) | ⚙ `[Colors:Selection] ForegroundNormal` | **(Adwaita CSS)**        |
 | `surface_color`             | ⚙ `controlBackgroundColor`         | **(Fluent)** CardBackgroundFillColorDefault           | ⚙ `[Colors:View] BackgroundNormal`    | **(Adwaita CSS)**          |
-| `border_color`              | ⚙ `separatorColor`                 | **(Fluent)** CardStrokeColorDefault                  | **(preset)** — derived from background | **(Adwaita CSS)**          |
+| `border.color`              | ⚙ `separatorColor`                 | **(Fluent)** CardStrokeColorDefault                  | **(preset)** — derived from background | **(Adwaita CSS)**          |
 | `muted_color`               | ⚙ `secondaryLabelColor`            | **(Fluent)** TextFillColorSecondary                  | ⚙ `[Colors:Window] ForegroundInactive`| **(Adwaita CSS)**          |
 | `shadow_color`              | ⚙ `shadowColor`                    | **(Fluent)** two-layer per elevation (from [Fluent 2 spec](https://fluent2.microsoft.design/elevation)): low L=14%/14% D=28%/14%; high L=24%/20% D=28%/20% (note: FluentUI React web tokens use different opacities) | **(none)** — preset: #00000040/#60     | **(Adwaita CSS)**          |
 | `link_color`                | ⚙ `linkColor`                      | **(Fluent)** HyperlinkForeground                     | ⚙ `[Colors:View] ForegroundLink`      | **(Adwaita CSS)**          |
@@ -1044,12 +1058,12 @@ against the `danger_color` color if using it as a fill).
 
 | Property           | macOS          | Windows                   | KDE            | GNOME            |
 |--------------------|----------------|---------------------------|----------------|------------------|
-| `corner_radius`           | 5px **(measured)** | Fluent: 4px               | Breeze: 5px    | Adwaita: 9px     |
-| `corner_radius_lg`        | 10px **(measured)**| Fluent: 8px               | **(none)** — preset | Adwaita: 15px |
+| `border.corner_radius`           | 5px **(measured)** | Fluent: 4px               | Breeze: 5px    | Adwaita: 9px     |
+| `border.corner_radius_lg`        | 10px **(measured)**| Fluent: 8px               | **(none)** — preset | Adwaita: 15px |
 | `frame_width`      | 0.5px **(measured)** | ↕ `SM_CXBORDER` (DPI-aware) | Breeze: 1.001px | Adwaita: 1px     |
 | `disabled_opacity` | ≈0.25–0.3 **(measured)** | Fluent: per-control (≈0.3) | **(none)** — palette blending | Adwaita: 0.5 |
-| `border_opacity`   | 0.2 **(preset)** | 0.14 **(preset)**       | 0.2 **(preset)** | 0.15 **(preset)**|
-| `shadow_enabled`   | yes            | yes                       | yes            | yes              |
+| `border.opacity`   | 0.2 **(preset)** | 0.14 **(preset)**       | 0.2 **(preset)** | 0.15 **(preset)**|
+| `border.shadow_enabled`   | yes            | yes                       | yes            | yes              |
 
 #### 2.1.7 Accessibility
 
@@ -1077,8 +1091,8 @@ against the `danger_color` color if using it as a fill).
 | Property                 | macOS                                         | Windows                                         | KDE                              | GNOME                                            |
 |--------------------------|-----------------------------------------------|--------------------------------------------------|----------------------------------|--------------------------------------------------|
 | `background_color`             | ⚙ ← `defaults.background_color`                      | ⚙ ← `defaults.background_color`                         | ⚙ ← `defaults.background_color`         | ⚙ ← `defaults.background_color`                         |
-| `border_color`                 | ⚙ ← `defaults.border_color`                           | ⚙ ← `defaults.border_color` (Win10+: `COLOR_ACTIVEBORDER` unsupported) | ⚙ `[WM]` decoration theme colors | ⚙ **(Adwaita CSS)** window border                 |
-| `border_line_width`  | ⚙ ← `defaults.frame_width`     | ⚙ ← `defaults.frame_width`   | ⚙ ← `defaults.frame_width`            | ⚙ ← `defaults.frame_width`     |
+| `border.color`                 | ⚙ ← `defaults.border.color`                           | ⚙ ← `defaults.border.color` (Win10+: `COLOR_ACTIVEBORDER` unsupported) | ⚙ `[WM]` decoration theme colors | ⚙ **(Adwaita CSS)** window border                 |
+| `border.line_width`  | ⚙ ← `defaults.border.line_width`     | ⚙ ← `defaults.border.line_width`   | ⚙ ← `defaults.border.line_width`            | ⚙ ← `defaults.border.line_width`     |
 | `title_bar_background`   | ⚙ **(measured)** ≈ `defaults.surface_color`         | ⚙ `DwmGetColorizationColor`                     | ⚙ `[WM] activeBackground`       | ⚙ libadwaita `headerbar` bg                        |
 | `title_bar_font.family`  | ⚙ `+titleBarFontOfSize:` → family               | ⚙ `lfCaptionFont.lfFaceName`                    | ⚙ `[WM] activeFont` field 0     | ⚙ `titlebar-font` gsetting → family             |
 | `title_bar_font.size`    | ⚙ `+titleBarFontOfSize:` → pointSize            | ⚙ ↕ `abs(lfCaptionFont.lfHeight)*72/dpi`        | ⚙ `[WM] activeFont` field 1     | ⚙ `titlebar-font` gsetting → size               |
@@ -1087,8 +1101,8 @@ against the `danger_color` color if using it as a fill).
 | `title_bar_text_color`   | ⚙ `windowFrameTextColor`                        | ⚙ `COLOR_CAPTIONTEXT`                           | ⚙ `[WM] activeForeground`       | ⚙ libadwaita `headerbar` fg                     |
 | `inactive_title_bar_background`  | **(none)** — system-managed dimming            | ⚙ `COLOR_INACTIVECAPTION`                       | ⚙ `[WM] inactiveBackground`     | **(none)** — `:backdrop` CSS state               |
 | `inactive_title_bar_text_color`  | **(none)** — system-managed                    | ⚙ `COLOR_INACTIVECAPTIONTEXT`                   | ⚙ `[WM] inactiveForeground`     | **(none)** — `:backdrop` CSS state               |
-| `corner_radius`                 | ⚙ macOS window corners: 10px                     | ⚙ ← `defaults.corner_radius_lg`                          | ⚙ ← `defaults.corner_radius_lg`         | ⚙ ← `defaults.corner_radius_lg`                          |
-| `shadow_enabled`                 | ⚙ ← `defaults.shadow_enabled`                   | ⚙ ← `defaults.shadow_enabled`                     | ⚙ ← `defaults.shadow_enabled`    | ⚙ ← `defaults.shadow_enabled`                     |
+| `border.corner_radius`                 | ⚙ macOS window corners: 10px                     | ⚙ ← `defaults.border.corner_radius_lg`                          | ⚙ ← `defaults.border.corner_radius_lg`         | ⚙ ← `defaults.border.corner_radius_lg`                          |
+| `border.shadow_enabled`                 | ⚙ ← `defaults.border.shadow_enabled`                   | ⚙ ← `defaults.border.shadow_enabled`                     | ⚙ ← `defaults.border.shadow_enabled`    | ⚙ ← `defaults.border.shadow_enabled`                     |
 
 ### 2.3 Button
 
@@ -1096,19 +1110,19 @@ against the `danger_color` color if using it as a fill).
 |---------------------|-------------------------------|-----------------------------|--------------------------------------|-------------------------------|
 | `background_color`        | ⚙ `controlColor`             | ⚙ `COLOR_BTNFACE`          | ⚙ `[Colors:Button] BackgroundNormal` | ⚙ libadwaita `.button` bg      |
 | `text_color`        | ⚙ `controlTextColor`         | ⚙ `COLOR_BTNTEXT`          | ⚙ `[Colors:Button] ForegroundNormal` | ⚙ libadwaita `.button` fg      |
-| `border_color`            | ⚙ ← `defaults.border_color`          | ⚙ ← `defaults.border_color`        | ⚙ ← `defaults.border_color`                 | ⚙ ← `defaults.border_color`          |
-| `border_line_width`      | ⚙ ← `defaults.frame_width`     | ⚙ ← `defaults.frame_width`   | ⚙ ← `defaults.frame_width`            | ⚙ ← `defaults.frame_width`     |
+| `border.color`            | ⚙ ← `defaults.border.color`          | ⚙ ← `defaults.border.color`        | ⚙ ← `defaults.border.color`                 | ⚙ ← `defaults.border.color`          |
+| `border.line_width`      | ⚙ ← `defaults.border.line_width`     | ⚙ ← `defaults.border.line_width`   | ⚙ ← `defaults.border.line_width`            | ⚙ ← `defaults.border.line_width`     |
 | `font`              | ⚙ ← `defaults.font`            | ⚙ ← `defaults.font`          | ⚙ ← `defaults.font`                   | ⚙ ← `defaults.font`            |
 | `min_width`         | **(none)** — sizes to content | **(none)** — sizes to content | ⚙ `Button_MinWidth` = 80              | ⚙ **(Adwaita CSS)**: none       |
 | `min_height`        | ⚙ NSButton intrinsic: 22        | ⚙ WinUI3: ~27 (no explicit MinHeight) | **(none)** — sizes to content        | ⚙ **(Adwaita CSS)**: 24 (34 w/ padding) |
-| `padding_horizontal`| ⚙ NSButton: ~8 **(WebKit)**     | ⚙ WinUI3: 11                  | ⚙ `Button_MarginWidth` = 6            | ⚙ **(Adwaita CSS)**: 10         |
-| `padding_vertical`  | ⚙ 3 **(measured)** (22−16)/2    | ⚙ WinUI3: 5 top / 6 bottom   | ⚙ 5 **(measured)** Breeze frame+margin | ⚙ **(Adwaita CSS)**: 5          |
-| `corner_radius`            | ⚙ ← `defaults.corner_radius`          | ⚙ ← `defaults.corner_radius`        | ⚙ ← `defaults.corner_radius`                 | ⚙ ← `defaults.corner_radius`          |
+| `border.padding_horizontal`| ⚙ NSButton: ~8 **(WebKit)**     | ⚙ WinUI3: 11                  | ⚙ `Button_MarginWidth` = 6            | ⚙ **(Adwaita CSS)**: 10         |
+| `border.padding_vertical`  | ⚙ 3 **(measured)** (22−16)/2    | ⚙ WinUI3: 5 top / 6 bottom   | ⚙ 5 **(measured)** Breeze frame+margin | ⚙ **(Adwaita CSS)**: 5          |
+| `border.corner_radius`            | ⚙ ← `defaults.border.corner_radius`          | ⚙ ← `defaults.border.corner_radius`        | ⚙ ← `defaults.border.corner_radius`                 | ⚙ ← `defaults.border.corner_radius`          |
 | `icon_text_gap`      | ⚙ 4 **(measured)** AppKit       | ⚙ WinUI3: 8                   | ⚙ `Button_ItemSpacing` = 4            | ⚙ **(Adwaita CSS)**: 8          |
 | `primary_background`        | ⚙ ← `defaults.accent_color`          | ⚙ ← `defaults.accent_color`        | ⚙ ← `defaults.accent_color`                 | ⚙ ← `defaults.accent_color`          |
 | `primary_text_color`        | ⚙ ← `defaults.accent_text_color`| ⚙ ← `defaults.accent_text_color`| ⚙ ← `defaults.accent_text_color`   | ⚙ ← `defaults.accent_text_color`|
 | `disabled_opacity`  | ⚙ ← `defaults.disabled_opacity`| ⚙ ← `defaults.disabled_opacity`| ⚙ ← `defaults.disabled_opacity`     | ⚙ ← `defaults.disabled_opacity`|
-| `shadow_enabled`            | ⚙ ← `defaults.shadow_enabled`  | ⚙ ← `defaults.shadow_enabled`| ⚙ ← `defaults.shadow_enabled`         | ⚙ ← `defaults.shadow_enabled`  |
+| `border.shadow_enabled`            | ⚙ ← `defaults.border.shadow_enabled`  | ⚙ ← `defaults.border.shadow_enabled`| ⚙ ← `defaults.border.shadow_enabled`         | ⚙ ← `defaults.border.shadow_enabled`  |
 
 ### 2.4 Text Input
 
@@ -1116,18 +1130,18 @@ against the `danger_color` color if using it as a fill).
 |-----------------------|----------------------------------|-----------------------|--------------------------------------|-------------------------------|
 | `background_color`          | ⚙ `textBackgroundColor`         | ⚙ `COLOR_WINDOW`     | ⚙ `[Colors:View] BackgroundNormal`  | ⚙ libadwaita `.entry` bg        |
 | `text_color`          | ⚙ `textColor`                   | ⚙ `COLOR_WINDOWTEXT` | ⚙ `[Colors:View] ForegroundNormal`  | ⚙ libadwaita `.entry` fg        |
-| `border_color`              | ⚙ ← `defaults.border_color`             | ⚙ ← `defaults.border_color`  | ⚙ ← `defaults.border_color`                 | ⚙ ← `defaults.border_color`          |
-| `border_line_width`  | ⚙ ← `defaults.frame_width`     | ⚙ ← `defaults.frame_width`   | ⚙ ← `defaults.frame_width`            | ⚙ ← `defaults.frame_width`     |
+| `border.color`              | ⚙ ← `defaults.border.color`             | ⚙ ← `defaults.border.color`  | ⚙ ← `defaults.border.color`                 | ⚙ ← `defaults.border.color`          |
+| `border.line_width`  | ⚙ ← `defaults.border.line_width`     | ⚙ ← `defaults.border.line_width`   | ⚙ ← `defaults.border.line_width`            | ⚙ ← `defaults.border.line_width`     |
 | `placeholder_color`         | ⚙ `placeholderTextColor`        | ⚙ **(Fluent)** TextPlaceholderColor | ⚙ `[Colors:View] ForegroundInactive` | ⚙ libadwaita `.dim-label`      |
 | `caret_color`               | ⚙ `textInsertionPointColor` (macOS 14+; pre-14: `controlTextColor` via `NSTextView.insertionPointColor`) | ⚙ `foreground` (system default) | ⚙ `[Colors:View] DecorationFocus`   | ⚙ libadwaita `@accent_color`   |
 | `selection_background`           | ⚙ ← `defaults.selection_background`          | ⚙ ← `defaults.selection_background`| ⚙ ← `defaults.selection_background`              | ⚙ ← `defaults.selection_background`       |
 | `selection_text_color`| ⚙ ← `defaults.selection_text_color`| ⚙ ← `defaults.selection_text_color`| ⚙ ← `defaults.selection_text_color`| ⚙ ← `defaults.selection_text_color`|
 | `font`                | ⚙ ← `defaults.font`               | ⚙ ← `defaults.font`    | ⚙ ← `defaults.font`                   | ⚙ ← `defaults.font`            |
 | `min_height`          | ⚙ NSTextField intrinsic: 22        | ⚙ WinUI3 TextBox: 32    | **(none)** — sizes to content        | ⚙ **(Adwaita CSS)**: 34         |
-| `padding_horizontal`  | ⚙ NSTextField: 4                   | ⚙ WinUI3: 10 left / 6 right | ⚙ `LineEdit_FrameWidth` = 6            | ⚙ **(Adwaita CSS)**: 9          |
-| `padding_vertical`    | ⚙ 3 **(measured)** (22−16)/2       | ⚙ WinUI3: 5             | ⚙ 3 **(measured)** Breeze frame        | ⚙ **(Adwaita CSS)**: 0 (vertical space from min-height) |
-| `corner_radius`              | ⚙ ← `defaults.corner_radius`             | ⚙ ← `defaults.corner_radius`  | ⚙ ← `defaults.corner_radius`                 | ⚙ ← `defaults.corner_radius`          |
-| `border_line_width`        | ⚙ ← `defaults.frame_width`        | ⚙ ← `defaults.frame_width`| ⚙ ← `defaults.frame_width`          | ⚙ ← `defaults.frame_width`     |
+| `border.padding_horizontal`  | ⚙ NSTextField: 4                   | ⚙ WinUI3: 10 left / 6 right | ⚙ `LineEdit_FrameWidth` = 6            | ⚙ **(Adwaita CSS)**: 9          |
+| `border.padding_vertical`    | ⚙ 3 **(measured)** (22−16)/2       | ⚙ WinUI3: 5             | ⚙ 3 **(measured)** Breeze frame        | ⚙ **(Adwaita CSS)**: 0 (vertical space from min-height) |
+| `border.corner_radius`              | ⚙ ← `defaults.border.corner_radius`             | ⚙ ← `defaults.border.corner_radius`  | ⚙ ← `defaults.border.corner_radius`                 | ⚙ ← `defaults.border.corner_radius`          |
+| `border.line_width`        | ⚙ ← `defaults.border.line_width`        | ⚙ ← `defaults.border.line_width`| ⚙ ← `defaults.border.line_width`          | ⚙ ← `defaults.border.line_width`     |
 
 ### 2.5 Checkbox / Radio Button
 
@@ -1135,31 +1149,31 @@ against the `danger_color` color if using it as a fill).
 |-----------------|---------------------------|----------------------------------------------|---------------------------------------|--------------------------|
 | `background_color`    | ⚙ **(measured)** white       | ⚙ **(Fluent)** `ControlAltFillColorSecondary`  | ⚙ `[Colors:Button] BackgroundNormal` | ⚙ **(Adwaita CSS)** check bg|
 | `font`               | ⚙ ← `defaults.font`          | ⚙ ← `defaults.font`          | ⚙ ← `defaults.font`           | ⚙ ← `defaults.font`           |
-| `border_color`        | ⚙ **(measured)** gray outline| ⚙ **(Fluent)** `ControlStrongStrokeColorDefault`| ⚙ ← `defaults.border_color`                 | ⚙ **(Adwaita CSS)** check border|
-| `border_line_width`  | ⚙ ← `defaults.frame_width`     | ⚙ ← `defaults.frame_width`   | ⚙ ← `defaults.frame_width`            | ⚙ ← `defaults.frame_width`     |
+| `border.color`        | ⚙ **(measured)** gray outline| ⚙ **(Fluent)** `ControlStrongStrokeColorDefault`| ⚙ ← `defaults.border.color`                 | ⚙ **(Adwaita CSS)** check border|
+| `border.line_width`  | ⚙ ← `defaults.border.line_width`     | ⚙ ← `defaults.border.line_width`   | ⚙ ← `defaults.border.line_width`            | ⚙ ← `defaults.border.line_width`     |
 | `indicator_color`| ⚙ white (#ffffff)           | ⚙ **(Fluent)** `TextOnAccentFillColorPrimary`  | ⚙ `[Colors:Selection] ForegroundNormal`| ⚙ **(Adwaita CSS)** white |
 | `indicator_width`| ⚙ NSButton switch: 14       | ⚙ WinUI3 CheckBox: 20                          | ⚙ `CheckBox_Size` = 20                 | ⚙ libadwaita CSS: 14       |
 | `label_gap`       | ⚙ AppKit: 4                 | ⚙ WinUI3: 8           | ⚙ `CheckBox_ItemSpacing` = 4       | ⚙ **(Adwaita CSS)**: 8     |
-| `corner_radius`        | ⚙ ← `defaults.corner_radius`      | ⚙ ← `defaults.corner_radius`| ⚙ ← `defaults.corner_radius`              | ⚙ ← `defaults.corner_radius`     |
-| `border_line_width`  | ⚙ ← `defaults.frame_width` | ⚙ ← `defaults.frame_width`| ⚙ ← `defaults.frame_width`   | ⚙ ← `defaults.frame_width`|
+| `border.corner_radius`        | ⚙ ← `defaults.border.corner_radius`      | ⚙ ← `defaults.border.corner_radius`| ⚙ ← `defaults.border.corner_radius`              | ⚙ ← `defaults.border.corner_radius`     |
+| `border.line_width`  | ⚙ ← `defaults.border.line_width` | ⚙ ← `defaults.border.line_width`| ⚙ ← `defaults.border.line_width`   | ⚙ ← `defaults.border.line_width`|
 | `checked_background`   | ⚙ ← `defaults.accent_color`      | ⚙ ← `defaults.accent_color`    | ⚙ ← `defaults.accent_color`         | ⚙ ← `defaults.accent_color`    |
 
-Radio buttons use the same colors but with circular `corner_radius`.
+Radio buttons use the same colors but with circular `border.corner_radius`.
 
 ### 2.6 Menu
 
 | Property            | macOS                          | Windows                              | KDE                                    | GNOME                       |
 |---------------------|--------------------------------|--------------------------------------|----------------------------------------|-----------------------------|
 | `background_color`        | ⚙ **(measured)** ≈ `defaults.background_color` (vibrancy) | ⚙ `COLOR_MENU`          | ⚙ `[Colors:Window] BackgroundNormal`  | ⚙ libadwaita `popover.menu` bg|
-| `separator_color`         | ⚙ **(measured)** = `separatorColor`               | ⚙ ← `defaults.border_color`        | ⚙ ← `defaults.border_color`                   | ⚙ **(Adwaita CSS)** separator |
+| `separator_color`         | ⚙ **(measured)** = `separatorColor`               | ⚙ ← `defaults.border.color`        | ⚙ ← `defaults.border.color`                   | ⚙ **(Adwaita CSS)** separator |
 | `font.family`       | ⚙ `+menuFontOfSize:` → family   | ⚙ `lfMenuFont.lfFaceName`           | ⚙ `[General] menuFont` field 0        | ⚙ ← `defaults.font`          |
 | `font.size`         | ⚙ `+menuFontOfSize:` → pointSize| ⚙ ↕ `abs(lfMenuFont.lfHeight)*72/dpi` | ⚙ `[General] menuFont` field 1      | ⚙ ← `defaults.font`          |
 | `font.weight`       | ⚙ `+menuFontOfSize:` → weight   | ⚙ `lfMenuFont.lfWeight`             | ⚙ `[General] menuFont` field 4        | ⚙ ← `defaults.font`          |
 | `font.style`        | ⚙ `+menuFontOfSize:` → Normal   | ⚙ `lfMenuFont.lfItalic` (0 = Normal)| ⚙ `[General] menuFont` style field    | ⚙ ← `defaults.font`          |
 | `text_color`        | ⚙ **(measured)** = `labelColor`  | ⚙ `COLOR_MENUTEXT`                  | ⚙ `[Colors:Window] ForegroundNormal`  | ⚙ libadwaita `popover.menu` fg|
 | `row_height`       | ⚙ NSMenuItem: 22                 | ⚙ WinUI3: padding-derived (touch: ~31px = 14px text + 8+9 pad; narrow/mouse: ~23px = 14px + 4+5 pad) | **(none)** — sizes to font             | ⚙ **(Adwaita CSS)**: 32       |
-| `padding_horizontal`| ⚙ NSMenuItem: 12                 | ⚙ WinUI3: 11                           | ⚙ `MenuItem_MarginWidth` = 4             | ⚙ **(Adwaita CSS)**: 12 (`$menu_padding`) |
-| `padding_vertical`  | ⚙ 3 **(measured)** (22−16)/2     | ⚙ 8 **(Fluent)** MenuFlyoutItem padding| ⚙ `MenuItem_MarginHeight` = 4            | ⚙ **(Adwaita CSS)**: 0 (vertical space from min-height) |
+| `border.padding_horizontal`| ⚙ NSMenuItem: 12                 | ⚙ WinUI3: 11                           | ⚙ `MenuItem_MarginWidth` = 4             | ⚙ **(Adwaita CSS)**: 12 (`$menu_padding`) |
+| `border.padding_vertical`  | ⚙ 3 **(measured)** (22−16)/2     | ⚙ 8 **(Fluent)** MenuFlyoutItem padding| ⚙ `MenuItem_MarginHeight` = 4            | ⚙ **(Adwaita CSS)**: 0 (vertical space from min-height) |
 | `icon_text_gap`      | ⚙ 4 **(measured)** AppKit layout | ⚙ WinUI3: 12                           | ⚙ 8 **(Breeze src)** icon-text gap       | ⚙ **(Adwaita CSS)**: 8        |
 | `icon_size`         | ⚙ ~13pt ❓ SF Symbols in menus   | ⚙ ↕ `SM_CXSMICON`: 16                 | ⚙ `Small`: 16                         | ⚙ `GTK_ICON_SIZE_NORMAL`: 16  |
 | `hover_background`  | ⚙ `selectedContentBackgroundColor` | ⚙ **(Fluent)** `SubtleFillColorSecondary` | ⚙ `[Colors:Selection] BackgroundNormal` | ⚙ **(Adwaita CSS)** `:hover` modelbutton bg |
@@ -1176,13 +1190,13 @@ Radio buttons use the same colors but with circular `corner_radius`.
 | `font.weight` | ⚙ `+toolTipsFontOfSize:` → weight        | ⚙ ← `defaults.font`  | ⚙ ← `defaults.font`                   | ⚙ ← `defaults.font`      |
 | `font.style`  | ⚙ `+toolTipsFontOfSize:` → Normal        | ⚙ ← `defaults.font`  | ⚙ ← `defaults.font`                   | ⚙ ← `defaults.font`      |
 | `text_color`  | **(preset)** #ffffff (both variants)      | ⚙ `COLOR_INFOTEXT`  | ⚙ `[Colors:Tooltip] ForegroundNormal` | ⚙ libadwaita `.tooltip` fg|
-| `padding_horizontal` | ⚙ NSToolTipManager: 4               | ⚙ WinUI3: 9            | ⚙ `ToolTip_FrameWidth` = 3            | ⚙ **(Adwaita CSS)**: 10       |
-| `padding_vertical`   | ⚙ NSToolTipManager: 4               | ⚙ WinUI3: 6–8          | ⚙ `ToolTip_FrameWidth` = 3            | ⚙ **(Adwaita CSS)**: 6        |
+| `border.padding_horizontal` | ⚙ NSToolTipManager: 4               | ⚙ WinUI3: 9            | ⚙ `ToolTip_FrameWidth` = 3            | ⚙ **(Adwaita CSS)**: 10       |
+| `border.padding_vertical`   | ⚙ NSToolTipManager: 4               | ⚙ WinUI3: 6–8          | ⚙ `ToolTip_FrameWidth` = 3            | ⚙ **(Adwaita CSS)**: 6        |
 | `max_width`   | ⚙ 300 **(measured)** macOS Sonoma         | ⚙ WinUI3: 320         | **(none)** — preset: 300             | **(none)** — preset: 360 |
-| `corner_radius`      | ⚙ ← `defaults.corner_radius`                    | ⚙ ← `defaults.corner_radius`| ⚙ ← `defaults.corner_radius`                  | ⚙ ← `defaults.corner_radius`    |
-| `border_color`      | ⚙ **(measured)** subtle frame             | ⚙ **(Fluent)** `ToolTipBorderBrush`| ⚙ ← `defaults.border_color`           | ⚙ **(Adwaita CSS)** `.tooltip` border|
-| `border_line_width`  | ⚙ ← `defaults.frame_width`     | ⚙ ← `defaults.frame_width`   | ⚙ ← `defaults.frame_width`            | ⚙ ← `defaults.frame_width`     |
-| `shadow_enabled`      | ⚙ yes (system popup shadow)               | ⚙ yes (elevation)     | ⚙ yes (KWin compositor)                 | ⚙ **(Adwaita CSS)** box-shadow|
+| `border.corner_radius`      | ⚙ ← `defaults.border.corner_radius`                    | ⚙ ← `defaults.border.corner_radius`| ⚙ ← `defaults.border.corner_radius`                  | ⚙ ← `defaults.border.corner_radius`    |
+| `border.color`      | ⚙ **(measured)** subtle frame             | ⚙ **(Fluent)** `ToolTipBorderBrush`| ⚙ ← `defaults.border.color`           | ⚙ **(Adwaita CSS)** `.tooltip` border|
+| `border.line_width`  | ⚙ ← `defaults.border.line_width`     | ⚙ ← `defaults.border.line_width`   | ⚙ ← `defaults.border.line_width`            | ⚙ ← `defaults.border.line_width`     |
+| `border.shadow_enabled`      | ⚙ yes (system popup shadow)               | ⚙ yes (elevation)     | ⚙ yes (KWin compositor)                 | ⚙ **(Adwaita CSS)** box-shadow|
 
 ### 2.8 Scrollbar
 
@@ -1215,7 +1229,7 @@ Radio buttons use the same colors but with circular `corner_radius`.
 | `track_color`     | ⚙ ← `defaults.muted_color`   | ⚙ ← `defaults.muted_color`  | ⚙ ← `defaults.muted_color`         | ⚙ ← `defaults.muted_color`          |
 | `track_height`    | ⚙ NSProgressIndicator: 6| ⚙ WinUI3 track: 1 (control min: 3) | ⚙ `ProgressBar_Thickness` = 6| ⚙ libadwaita `.progressbar`: 8 |
 | `min_width` | **(none)** — no minimum | **(none)** — no minimum | **(none)** — no minimum     | ⚙ **(Adwaita CSS)**: 80       |
-| `corner_radius`    | ⚙ ← `defaults.corner_radius`  | ⚙ ← `defaults.corner_radius`| ⚙ ← `defaults.corner_radius`         | ⚙ ← `defaults.corner_radius`         |
+| `border.corner_radius`    | ⚙ ← `defaults.border.corner_radius`  | ⚙ ← `defaults.border.corner_radius`| ⚙ ← `defaults.border.corner_radius`         | ⚙ ← `defaults.border.corner_radius`         |
 
 ### 2.11 Tab Bar
 
@@ -1227,8 +1241,8 @@ Radio buttons use the same colors but with circular `corner_radius`.
 | `bar_background`    | ⚙ ← `defaults.background_color` | ⚙ ← `defaults.background_color`| ⚙ ← `defaults.background_color` | ⚙ ← `defaults.background_color` |
 | `min_width`         | **(none)** — sizes to label | **(none)** — sizes to label | ⚙ `TabBar_TabMinWidth` = 80  | ⚙ **(Adwaita CSS)**: none |
 | `min_height`        | ⚙ NSTabView: 24       | ⚙ WinUI3: 32          | ⚙ `TabBar_TabMinHeight` = 30 | ⚙ **(Adwaita CSS)**: 30  |
-| `padding_horizontal`| ⚙ NSTabView: 12       | ⚙ WinUI3: 8            | ⚙ `TabBar_TabMarginWidth` = 8| ⚙ **(Adwaita CSS)**: 12  |
-| `padding_vertical`  | ⚙ 4 **(measured)** (24−16)/2 | ⚙ WinUI3: 3      | ⚙ `TabBar_TabMarginHeight` = 4| ⚙ 8 **(measured)** (30−14)/2; CSS `padding: 3px 12px` |
+| `border.padding_horizontal`| ⚙ NSTabView: 12       | ⚙ WinUI3: 8            | ⚙ `TabBar_TabMarginWidth` = 8| ⚙ **(Adwaita CSS)**: 12  |
+| `border.padding_vertical`  | ⚙ 4 **(measured)** (24−16)/2 | ⚙ WinUI3: 3      | ⚙ `TabBar_TabMarginHeight` = 4| ⚙ 8 **(measured)** (30−14)/2; CSS `padding: 3px 12px` |
 | `font`              | ⚙ ← `defaults.font`    | ⚙ ← `defaults.font`    | ⚙ ← `defaults.font`          | ⚙ ← `defaults.font`     |
 
 ### 2.12 Sidebar
@@ -1250,7 +1264,8 @@ Radio buttons use the same colors but with circular `corner_radius`.
 | `text_color`   | ⚙ ← `defaults.text_color`   | ⚙ ← `defaults.text_color`   | ⚙ ← `defaults.text_color`          | ⚙ ← `defaults.text_color` |
 | `bar_height`       | ⚙ NSToolbar: 38         | ⚙ WinUI3 CommandBar: 64 (compact: 48) | **(none)** — sizes to content  | ⚙ **(Adwaita CSS)**: 47|
 | `item_gap` | ⚙ AppKit: 8             | ⚙ WinUI3: 0 (visual gap from AppBarButton margins) | ⚙ `ToolBar_ItemSpacing` = 0         | ⚙ **(Adwaita CSS)**: 6 |
-| `content_padding`      | ⚙ 8 **(measured)** NSToolbar | ⚙ WinUI3: 4 (left only) | ⚙ `ToolBar_ItemMargin` = 6          | ⚙ **(Adwaita CSS)**: 6 |
+| `border.padding_horizontal` | ⚙ 8 **(measured)** NSToolbar | ⚙ WinUI3: 4 (left only, 0 right) | ⚙ `ToolBar_ItemMargin` = 6   | ⚙ **(Adwaita CSS)**: 6 |
+| `border.padding_vertical`  | ⚙ 0                         | ⚙ WinUI3: 0                      | ⚙ 0                          | ⚙ 0                    |
 | `background_color`   | ⚙ ← `defaults.background_color`   | ⚙ ← `defaults.background_color`   | ⚙ ← `defaults.background_color`          | ⚙ ← `defaults.background_color` |
 | `icon_size`    | ⚙ 32pt (reg) / 24 (sm) = `← defaults.icon_sizes.toolbar` | ⚙ ↕ 20px = `← defaults.icon_sizes.toolbar` | ⚙ 22px = `← defaults.icon_sizes.toolbar` | ⚙ 16px = `← defaults.icon_sizes.toolbar` |
 
@@ -1279,8 +1294,8 @@ Radio buttons use the same colors but with circular `corner_radius`.
 | `header_text_color`   | ⚙ `headerTextColor`                   | ⚙ ← `defaults.text_color`| ⚙ `[Colors:Header] ForegroundNormal` | ⚙ **(Adwaita CSS)** columnview header|
 | `grid_color`          | ⚙ `gridColor` (§1.1.2)               | **(none)** — uses border color | **(none)** — Qt views use palette pen | **(none)** — columnview uses CSS separator |
 | `row_height`         | ⚙ NSTableView row: 24                    | ⚙ WinUI3 ListView: 40    | **(none)** — sizes to content          | ⚙ **(Adwaita CSS)**: `.rich-list` row min-height: 32px; plain row: content-driven (no min-height) |
-| `padding_horizontal`  | ⚙ NSTableView: 4                         | ⚙ WinUI3: 12             | ⚙ 2                                      | ⚙ **(Adwaita CSS)**: 12 (`.rich-list`); 2 (plain row) |
-| `padding_vertical`    | ⚙ 4 **(measured)** (24−16)/2             | ⚙ WinUI3: 0 (height from MinHeight=40)  | ⚙ 1                                      | ⚙ **(Adwaita CSS)**: 8 (`.rich-list` `padding: 8px 12px`); 2 (plain row `padding: 2px`) |
+| `border.padding_horizontal`  | ⚙ NSTableView: 4                         | ⚙ WinUI3: 12             | ⚙ 2                                      | ⚙ **(Adwaita CSS)**: 12 (`.rich-list`); 2 (plain row) |
+| `border.padding_vertical`    | ⚙ 4 **(measured)** (24−16)/2             | ⚙ WinUI3: 0 (height from MinHeight=40)  | ⚙ 1                                      | ⚙ **(Adwaita CSS)**: 8 (`.rich-list` `padding: 8px 12px`); 2 (plain row `padding: 2px`) |
 | `hover_background`    | ⚙ `selectedContentBackgroundColor` (reduced opacity) | ⚙ **(Fluent)** `SubtleFillColorSecondary` | ⚙ `[Colors:View] DecorationHover` blend | ⚙ **(Adwaita CSS)** row `:hover` bg |
 
 ### 2.16 Popover / Dropdown
@@ -1290,24 +1305,24 @@ Radio buttons use the same colors but with circular `corner_radius`.
 | `background_color` | ⚙ ← `defaults.background_color` | ⚙ **(Fluent)** Flyout bg = `defaults.surface_color` | ⚙ ← `defaults.background_color`| ⚙ libadwaita `.popover` bg|
 | `font`               | ⚙ ← `defaults.font`          | ⚙ ← `defaults.font`          | ⚙ ← `defaults.font`           | ⚙ ← `defaults.font`           |
 | `text_color` | ⚙ ← `defaults.text_color` | ⚙ ← `defaults.text_color`| ⚙ ← `defaults.text_color` | ⚙ libadwaita `.popover` fg|
-| `border_color`     | ⚙ ← `defaults.border_color`     | ⚙ ← `defaults.border_color`    | ⚙ ← `defaults.border_color`    | ⚙ ← `defaults.border_color`    |
-| `border_line_width`  | ⚙ ← `defaults.frame_width`     | ⚙ ← `defaults.frame_width`   | ⚙ ← `defaults.frame_width`            | ⚙ ← `defaults.frame_width`     |
-| `corner_radius`     | ⚙ ← `defaults.corner_radius_lg`  | ⚙ ← `defaults.corner_radius_lg` | ⚙ ← `defaults.corner_radius_lg` | ⚙ ← `defaults.corner_radius_lg` |
-| `shadow_enabled`     | ⚙ yes (system popup shadow)| ⚙ yes (Flyout elevation)  | ⚙ yes (KWin compositor)   | ⚙ **(Adwaita CSS)** box-shadow|
+| `border.color`     | ⚙ ← `defaults.border.color`     | ⚙ ← `defaults.border.color`    | ⚙ ← `defaults.border.color`    | ⚙ ← `defaults.border.color`    |
+| `border.line_width`  | ⚙ ← `defaults.border.line_width`     | ⚙ ← `defaults.border.line_width`   | ⚙ ← `defaults.border.line_width`            | ⚙ ← `defaults.border.line_width`     |
+| `border.corner_radius`     | ⚙ ← `defaults.border.corner_radius_lg`  | ⚙ ← `defaults.border.corner_radius_lg` | ⚙ ← `defaults.border.corner_radius_lg` | ⚙ ← `defaults.border.corner_radius_lg` |
+| `border.shadow_enabled`     | ⚙ yes (system popup shadow)| ⚙ yes (Flyout elevation)  | ⚙ yes (KWin compositor)   | ⚙ **(Adwaita CSS)** box-shadow|
 
 ### 2.17 Splitter
 
 | Property | macOS                  | Windows           | KDE                | GNOME                   |
 |----------|------------------------|-------------------|--------------------|-------------------------|
 | `divider_width`  | ⚙ NSSplitView divider: 6 | ⚙ **(Fluent)** SplitView pane border: 1 (WinUI3 source; no draggable divider control) | ⚙ Breeze splitter: 1 | ⚙ **(Adwaita CSS)** paned: 1 (default) / 5 (wide) |
-| `divider_color`  | ⚙ `separatorColor`    | ⚙ ← `defaults.border_color`| ⚙ ← `defaults.border_color`| ⚙ **(Adwaita CSS)** paned separator|
+| `divider_color`  | ⚙ `separatorColor`    | ⚙ ← `defaults.border.color`| ⚙ ← `defaults.border.color`| ⚙ **(Adwaita CSS)** paned separator|
 
 ### 2.18 Separator
 
 | Property | macOS            | Windows              | KDE                  | GNOME                      |
 |----------|------------------|----------------------|----------------------|----------------------------|
-| `line_color`  | ⚙ `separatorColor` | ⚙ ← `defaults.border_color` | ⚙ ← `defaults.border_color` | ⚙ libadwaita `.separator` CSS|
-| `line_width` | ⚙ ← `defaults.frame_width` | ⚙ ← `defaults.frame_width` | ⚙ ← `defaults.frame_width` | ⚙ ← `defaults.frame_width` |
+| `line_color`  | ⚙ `separatorColor` | ⚙ ← `defaults.border.color` | ⚙ ← `defaults.border.color` | ⚙ libadwaita `.separator` CSS|
+| `line_width` | ⚙ ← `defaults.border.line_width` | ⚙ ← `defaults.border.line_width` | ⚙ ← `defaults.border.line_width` | ⚙ ← `defaults.border.line_width` |
 
 ### 2.19 Text Scale
 
@@ -1342,7 +1357,7 @@ These are distinct from `defaults.spacing` (the abstract T-shirt scale
 `xxs`..`xxl`). The T-shirt scale is an application-level spacing palette
 for consumer layout code. This table documents what the platform's own
 layout managers default to — same pattern as per-widget spacing fields
-like `dialog.content_padding` or `toolbar.item_spacing`.
+like `dialog.border.padding_horizontal` or `toolbar.item_gap`.
 
 ### 2.21 Switch / Toggle
 
@@ -1365,12 +1380,13 @@ QQC2/Kirigami `Switch` with font-metric-derived sizing.
 |-----------------------|-------------------------------|-----------------------------------|------------------------------------|-------------------------------------|
 | `background_color`          | ⚙ ← `defaults.background_color`      | ⚙ **(Fluent)** `ContentDialogBackground` | ⚙ ← `defaults.background_color`      | ⚙ **(Adwaita CSS)** `messagedialog` bg|
 | `body_font`          | ⚙ ← `defaults.font`          | ⚙ ← `defaults.font`          | ⚙ ← `defaults.font`           | ⚙ ← `defaults.font`           |
-| `shadow_enabled`              | ⚙ yes (sheet overlay)           | ⚙ yes (ContentDialog smoke layer + elevation) | ⚙ yes (KWin compositor)       | ⚙ **(Adwaita CSS)** box-shadow       |
+| `border.shadow_enabled`              | ⚙ yes (sheet overlay)           | ⚙ yes (ContentDialog smoke layer + elevation) | ⚙ yes (KWin compositor)       | ⚙ **(Adwaita CSS)** box-shadow       |
 | `min_width`           | **(none)** — AppKit-managed   | ⚙ WinUI3 ContentDialog: 320         | **(none)** — sizes to content      | ⚙ AdwAlertDialog: 300sp              |
 | `max_width`           | **(none)** — AppKit-managed   | ⚙ WinUI3 ContentDialog: 548         | **(none)** — sizes to content      | ⚙ AdwAlertDialog: 372sp (wide: 600sp)|
 | `min_height`          | **(none)** — AppKit-managed   | ⚙ WinUI3 ContentDialog: 184         | **(none)** — sizes to content      | **(none)**                         |
 | `max_height`          | **(none)** — AppKit-managed   | ⚙ WinUI3 ContentDialog: 756         | **(none)** — sizes to content      | **(none)**                         |
-| `content_padding`     | ⚙ ~20px **(measured)**          | ⚙ WinUI3: 24                        | ⚙ `Layout_TopLevelMarginWidth` = 10  | ⚙ 24px sides, 32px top               |
+| `border.padding_horizontal` | ⚙ ~20px **(measured)**    | ⚙ WinUI3: 24                        | ⚙ `Layout_TopLevelMarginWidth` = 10  | ⚙ 24px                               |
+| `border.padding_vertical`  | ⚙ ~20px **(measured)**    | ⚙ WinUI3: 24                        | ⚙ `Layout_TopLevelMarginWidth` = 10  | ⚙ 32px top, 24px bottom (`.response-area`) |
 | `button_gap`      | ⚙ ~12px **(measured)**          | ⚙ WinUI3: 8                         | ⚙ `Layout_DefaultSpacing` = 6        | ⚙ 12px                               |
 | `button_order`        | ⚙ primary rightmost             | ⚙ primary leftmost                  | ⚙ OK left of Cancel (right-aligned group; Help/Reset left-aligned) | ⚙ cancel left, affirmative right     |
 | `title_font.family`   | ⚙ ← `defaults.font`            | ⚙ ← `defaults.font` (Segoe UI)     | ⚙ ← `defaults.font`                 | ⚙ ← `defaults.font`                 |
@@ -1378,13 +1394,13 @@ QQC2/Kirigami `Switch` with font-metric-derived sizing.
 | `title_font.weight`   | ⚙ alert heading weight ❓       | ⚙ SemiBold (600)                    | ⚙ ← `defaults.font`                 | ⚙ 800 (ExtraBold, `.title-2`)       |
 | `title_font.style`    | ⚙ Normal                        | ⚙ Normal                            | ⚙ ← `defaults.font`                 | ⚙ Normal                             |
 | `title_text_color`    | ⚙ ← `defaults.text_color`      | ⚙ ← `defaults.text_color`          | ⚙ ← `defaults.text_color`           | ⚙ ← `defaults.text_color`           |
-| `corner_radius`              | ⚙ ← `defaults.corner_radius_lg`       | ⚙ 8px (OverlayCornerRadius) ✅      | ⚙ ← `defaults.corner_radius_lg`            | ⚙ 18px (`$alert_radius`) — distinct from window radius (15px) |
+| `border.corner_radius`              | ⚙ ← `defaults.border.corner_radius_lg`       | ⚙ 8px (OverlayCornerRadius) ✅      | ⚙ ← `defaults.border.corner_radius_lg`            | ⚙ 18px (`$alert_radius`) — distinct from window radius (15px) |
 | `icon_size`           | ⚙ 64px (app icon)               | **(none)** — no default icon      | **(none)** — per-dialog            | **(none)** — no default icon       |
 
 Dialog dimensions (`min_width`, `max_width`, `min_height`, `max_height`)
 measure the **dialog surface** — the visible dialog box from its outer
 border edge to outer border edge. This includes the title area,
-`content_padding`, body text area, and button row. It does **not**
+`border.padding_*`, body text area, and button row. It does **not**
 include the drop shadow, the background overlay (smoke layer), the
 desktop window frame, or the desktop title bar. macOS sheets are
 fully AppKit-managed and expose no dimension constraints.
@@ -1412,15 +1428,15 @@ rotating `process-working-symbolic` icon.
 |---------------------|--------------------------|-----------------------|---------------------------------|------------------------------|
 | `background_color`        | ⚙ `controlColor`        | ⚙ `COLOR_BTNFACE`    | ⚙ `[Colors:Button] BackgroundNormal` | ⚙ libadwaita button bg    |
 | `text_color`        | ⚙ `controlTextColor`    | ⚙ `COLOR_BTNTEXT`    | ⚙ `[Colors:Button] ForegroundNormal` | ⚙ libadwaita button fg    |
-| `border_color`            | ⚙ ← `defaults.border_color`     | ⚙ ← `defaults.border_color`  | ⚙ ← `defaults.border_color`            | ⚙ ← `defaults.border_color`         |
-| `border_line_width`  | ⚙ ← `defaults.frame_width`     | ⚙ ← `defaults.frame_width`   | ⚙ ← `defaults.frame_width`            | ⚙ ← `defaults.frame_width`     |
+| `border.color`            | ⚙ ← `defaults.border.color`     | ⚙ ← `defaults.border.color`  | ⚙ ← `defaults.border.color`            | ⚙ ← `defaults.border.color`         |
+| `border.line_width`  | ⚙ ← `defaults.border.line_width`     | ⚙ ← `defaults.border.line_width`   | ⚙ ← `defaults.border.line_width`            | ⚙ ← `defaults.border.line_width`     |
 | `font`              | ⚙ ← `defaults.font`       | ⚙ ← `defaults.font`    | ⚙ ← `defaults.font`              | ⚙ ← `defaults.font`           |
 | `min_height`        | ⚙ NSPopUpButton: 21        | ⚙ WinUI3 ComboBox: 32   | **(none)** — sizes to content   | ⚙ ← button min-height (24+pad)|
 | `min_width`         | **(none)** — sizes to content | ⚙ WinUI3: 64         | **(none)** — sizes to content   | **(none)** — sizes to content|
-| `padding_horizontal`| ⚙ ~8–10px **(measured)**   | ⚙ WinUI3: 12             | ⚙ `ComboBox_FrameWidth` = 6      | ⚙ ← button padding (10px)     |
+| `border.padding_horizontal`| ⚙ ~8–10px **(measured)**   | ⚙ WinUI3: 12             | ⚙ `ComboBox_FrameWidth` = 6      | ⚙ ← button padding (10px)     |
 | `arrow_icon_size`        | ⚙ ~16–18px **(measured)**  | ⚙ WinUI3 glyph: 12      | ⚙ `MenuButton_IndicatorWidth` = 20| ⚙ 16px (pan-down-symbolic)    |
 | `arrow_area_width`  | ⚙ ~16–18px **(measured)**  | ⚙ WinUI3: 38             | ⚙ 20px                            | **(none)** — inline icon     |
-| `corner_radius`            | ⚙ ← `defaults.corner_radius`     | ⚙ ← `defaults.corner_radius`   | ⚙ ← `defaults.corner_radius`            | ⚙ ← `defaults.corner_radius`         |
+| `border.corner_radius`            | ⚙ ← `defaults.border.corner_radius`     | ⚙ ← `defaults.border.corner_radius`   | ⚙ ← `defaults.border.corner_radius`            | ⚙ ← `defaults.border.corner_radius`         |
 
 ### 2.25 Segmented Control
 
@@ -1433,8 +1449,8 @@ rotating `process-working-symbolic` icon.
 | `active_text_color`| ⚙ `alternateSelectedControlTextColor` | **(none)** | ⚙ `[Colors:Selection] ForegroundNormal`    | **(none)** |
 | `segment_height`  | ⚙ NSSegmentedControl: 24        | **(none)**     | ⚙ `TabBar_TabMinHeight` = 30 (tab bar as proxy) | **(none)** |
 | `separator_width` | ⚙ 1px                           | **(none)**     | ⚙ `TabBar_TabOverlap` = 1  | **(none)**          |
-| `padding_horizontal` | ⚙ ~8–10px **(measured)**     | **(none)**     | ⚙ `TabBar_TabMarginWidth` = 8 | **(none)**       |
-| `corner_radius`          | ⚙ ← `defaults.corner_radius`          | **(none)**     | ⚙ ← `defaults.corner_radius`     | **(none)**          |
+| `border.padding_horizontal` | ⚙ ~8–10px **(measured)**     | **(none)**     | ⚙ `TabBar_TabMarginWidth` = 8 | **(none)**       |
+| `border.corner_radius`          | ⚙ ← `defaults.border.corner_radius`          | **(none)**     | ⚙ ← `defaults.border.corner_radius`     | **(none)**          |
 
 macOS is the only platform with a first-class segmented control.
 Available styles: `.automatic`, `.rounded`, `.roundRect`, `.texturedRounded`,
@@ -1445,11 +1461,12 @@ Available styles: `.automatic`, `.rounded`, `.roundRect`, `.texturedRounded`,
 | Property     | macOS          | Windows                                    | KDE            | GNOME                     |
 |--------------|----------------|--------------------------------------------|----------------|---------------------------|
 | `background_color` | **(none)**     | ⚙ **(Fluent)** CardBackgroundFillColorDefault | **(none)**     | ⚙ `var(--card-bg-color)`    |
-| `border_color`     | **(none)**     | ⚙ **(Fluent)** CardStrokeColorDefault        | **(none)**     | ⚙ `var(--card-shade-color)` |
-| `border_line_width`  | **(none)**     | ⚙ 1px                                     | **(none)**     | ⚙ 1px (CSS)                |
-| `corner_radius`     | **(none)**     | ⚙ 8px (OverlayCornerRadius)                  | **(none)**     | ⚙ `$card_radius` = 12px    |
-| `shadow_enabled`     | **(none)**     | **(none)** — border only                   | **(none)**     | ⚙ Adwaita box-shadow        |
-| `content_padding`    | **(none)**     | ⚙ 12px (convention)                          | **(none)**     | **(none)** — app-defined  |
+| `border.color`     | **(none)**     | ⚙ **(Fluent)** CardStrokeColorDefault        | **(none)**     | ⚙ `var(--card-shade-color)` |
+| `border.line_width`  | **(none)**     | ⚙ 1px                                     | **(none)**     | ⚙ 1px (CSS)                |
+| `border.corner_radius`     | **(none)**     | ⚙ 8px (OverlayCornerRadius)                  | **(none)**     | ⚙ `$card_radius` = 12px    |
+| `border.shadow_enabled`     | **(none)**     | **(none)** — border only                   | **(none)**     | ⚙ Adwaita box-shadow        |
+| `border.padding_horizontal` | **(none)** | ⚙ 12px (convention)                       | **(none)**     | **(none)** — app-defined  |
+| `border.padding_vertical`  | **(none)** | ⚙ 12px (convention)                       | **(none)**     | **(none)** — app-defined  |
 
 macOS and KDE have no native card component. WinUI3 has card color
 resources but no Card control (open proposal #6543). GNOME defines
@@ -1462,8 +1479,9 @@ resources but no Card control (open proposal #6543). GNOME defines
 | `font`               | ⚙ ← `defaults.font`          | ⚙ ← `defaults.font`          | ⚙ ← `defaults.font`           | ⚙ ← `defaults.font`           |
 | `header_height`   | **(none)** — content-sized  | ⚙ WinUI3 Expander: 48      | **(none)** — content-sized   | ⚙ AdwExpanderRow: 50           |
 | `arrow_icon_size`      | ⚙ ~13px **(measured)**        | ⚙ WinUI3 chevron glyph: 12 | ⚙ `ItemView_ArrowSize` = 10    | ⚙ 16px (pan-end-symbolic)      |
-| `content_padding` | **(none)** — app-defined    | ⚙ WinUI3: 16               | **(none)** — app-defined     | ⚙ **(Adwaita CSS)** row padding|
-| `corner_radius`          | **(none)**                  | ⚙ ← `defaults.corner_radius`     | ⚙ `Frame_FrameRadius` = 5      | ⚙ 6px (expander title)         |
+| `border.padding_horizontal` | **(none)** — app-defined | ⚙ WinUI3: 16            | **(none)** — app-defined     | ⚙ **(Adwaita CSS)** row padding|
+| `border.padding_vertical`  | **(none)** — app-defined | ⚙ WinUI3: 16            | **(none)** — app-defined     | ⚙ **(Adwaita CSS)** row padding|
+| `border.corner_radius`          | **(none)**                  | ⚙ ← `defaults.border.corner_radius`     | ⚙ `Frame_FrameRadius` = 5      | ⚙ 6px (expander title)         |
 
 macOS uses `NSDisclosureButton` bezel style (triangle). KDE has no
 dedicated expander — `QGroupBox` with a checkbox is the closest.
