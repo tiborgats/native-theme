@@ -483,6 +483,23 @@ Fluent 2 uses numeric names `sizeNone`..`size320` for the code-implemented subse
 
 All pixel values confirmed via FluentUI spacings.ts. Token names are informal shorthand from the internal code keys (`xxs`, `xs`, `s`, etc.) — Fluent 2 design system uses `sizeNone`..`size320` (code subset) or up to `size560` (full ramp, 17 tokens); code exports use `spacingHorizontalXXS` etc.
 
+**What these tokens are for**: This is a value palette for WinUI3
+control template authors — a menu of recommended spacing values to
+pick from when defining padding, margins, and gaps inside XAML
+templates. Individual controls pick specific values from this ramp
+(and often use off-ramp values like 11px, 9px, 3px that don't land
+on any token). The tokens are not a system API, not user-configurable,
+and not exposed at runtime.
+
+**Why we don't implement this ramp**: Every spacing value that matters
+is already captured as a direct per-widget field — `button.padding_horizontal`
+= 11px (from `ButtonPadding`), `dialog.button_spacing` = 8px (from
+`ContentDialogButtonSpacing`), `menu.icon_spacing` = 12px, etc. (see
+§2.3–2.28). The abstract ramp adds no information beyond what the
+per-widget fields already provide. Windows has no layout container
+defaults either — `StackPanel.Spacing` defaults to 0 — so unlike KDE
+(§1.3.5) there are no global layout constants to capture in §2.20.
+
 #### 1.2.6 Icon Sizes
 
 **GetSystemMetrics (Win32):**
@@ -836,10 +853,7 @@ Symbolic icons are designed at 16×16 SVG and rendered at 16, 32,
 
 ## Chapter 2: Cross-Platform Property Mapping
 
-Maps OS-specific APIs from Chapter 1 to unified per-widget properties.
-For each widget, every property shows its source on each OS. When an OS
-has no widget-specific value, the global property that provides it is
-named.
+Maps OS-specific APIs from Chapter 1 to unified per-widget properties. For each widget, every property shows its source on each OS. When an OS has no widget-specific value, the global property that provides it is named. If a widget property can be overridden by user or application level setting, it is marked with "⚙".
 
 ### 2.1 Global Defaults
 
@@ -1158,14 +1172,29 @@ Maps platform type ramp entries into unified content roles.
 | `dialog_title`    | Dialog/page title (sheet header)         | ⚙ `.title1`: 22pt, 400 | Title: 28epx, **600** (=21pt @96dpi) | ⚙ Level 1: body × 1.35 ([Heading.qml](https://invent.kde.org/frameworks/kirigami/-/blob/master/src/controls/Heading.qml))        | `.title-2`: ≈15pt, **800**|
 | `display`         | Large hero text (onboarding, banners)    | ⚙ `.largeTitle`: 26pt, 400| Display: 68epx, **600** (=51pt @96dpi) | **(none)** — no equivalent | `.title-1`: ≈20pt, **800**|
 
-### 2.20 Layout Spacing
+### 2.20 Layout Container Defaults
 
-| Context                  | macOS HIG            | Windows Fluent         | KDE Breeze                        | GNOME libadwaita       |
-|--------------------------|----------------------|------------------------|-----------------------------------|------------------------|
-| Standard widget gap      | 8 **(HIG)**          | Small = 8 **(Fluent)** | `Layout_DefaultSpacing` = 6       | 6 **(measured)**       |
-| Nested container margin  | **(none)** — not specified | **(none)** — not specified | `Layout_ChildMarginWidth` = 6     | 12 **(measured)**      |
-| Window content margin    | 20 **(HIG)**         | **(none)** — not specified | `Layout_TopLevelMarginWidth` = 10 | 12 **(measured)**      |
-| Section gap              | 20 **(HIG)**         | **(none)** — not specified | **(none)** — not specified        | 18 **(measured)**      |
+Default spacing for toolkit layout containers (`QLayout`, `NSStackView`,
+`GtkBox`, `StackPanel`). These are the values a layout manager uses when
+the developer does not specify explicit spacing. None of these are
+user-configurable settings — they are compile-time constants (KDE
+`breezemetrics.h`), design guidelines (macOS HIG), or hardcoded CSS
+(GNOME). Windows has no layout container defaults; `StackPanel.Spacing`
+defaults to 0 and apps pick from the Fluent token ramp (§1.2.5)
+themselves.
+
+| Property           | macOS HIG            | Windows Fluent                | KDE Breeze                        | GNOME libadwaita       |
+|--------------------|----------------------|-------------------------------|-----------------------------------|------------------------|
+| `widget_gap`       | 8 **(HIG)**          | **(none)** — app chooses from Fluent ramp | `Layout_DefaultSpacing` = 6       | 6 **(measured)**       |
+| `container_margin` | **(none)** — not specified | **(none)**                    | `Layout_ChildMarginWidth` = 6     | 12 **(measured)**      |
+| `window_margin`    | 20 **(HIG)**         | **(none)**                    | `Layout_TopLevelMarginWidth` = 10 | 12 **(measured)**      |
+| `section_gap`      | 20 **(HIG)**         | **(none)**                    | **(none)** — not specified        | 18 **(measured)**      |
+
+These are distinct from `defaults.spacing` (the abstract T-shirt scale
+`xxs`..`xxl`). The T-shirt scale is an application-level spacing palette
+for consumer layout code. This table documents what the platform's own
+layout managers default to — same pattern as per-widget spacing fields
+like `dialog.content_padding` or `toolbar.item_spacing`.
 
 ### 2.21 Switch / Toggle
 

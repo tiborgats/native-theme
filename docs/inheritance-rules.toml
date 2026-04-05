@@ -1,0 +1,330 @@
+# Inheritance Rules — machine-readable source of truth for resolve().
+#
+# Derived from docs/archive/v0.5.0_inheritance-rules.md.
+# Uses struct field names (not platform-facts abbreviations).
+#
+# Three categories:
+#   [uniform]        — Same rule on all 4 platforms.
+#   [per_platform]   — Different fallback per platform; resolve() picks one.
+#   [no_inheritance] — Must come from preset/reader; None = validation error.
+#
+# Additional sections:
+#   [font_inheritance]     — FontSpec sub-field inheritance rules.
+#   [text_scale]           — TextScaleEntry sub-field inheritance rules.
+#   [defaults_internal]    — Defaults-to-defaults chains (Phase 1).
+#   [wrong_safety_nets]    — Fields where the resolve() fallback is known-wrong.
+#
+# Source: docs/archive/v0.5.0_inheritance-rules.md
+# Implementation: native-theme/src/resolve.rs
+
+# ─── Defaults-internal chains (Phase 1) ───────────────────────────────────
+#
+# These run first, before widget inheritance. They fill defaults fields
+# from other defaults fields.
+
+[defaults_internal]
+"defaults.selection"           = "defaults.accent"
+"defaults.focus_ring_color"    = "defaults.accent"
+"defaults.selection_inactive"  = "defaults.selection"    # must run AFTER selection
+
+# ─── Uniform inheritance (Phase 3) ────────────────────────────────────────
+#
+# Same rule on all 4 platforms. "all_agree" column from the inheritance doc.
+# Format: "widget.field" = "source.field"
+
+[uniform]
+# window (§2.2)
+"window.background"                   = "defaults.background"
+"window.foreground"                   = "defaults.foreground"
+"window.border"                       = "defaults.border"
+"window.title_bar_background"         = "defaults.surface"
+"window.title_bar_foreground"         = "defaults.foreground"
+"window.inactive_title_bar_background" = "window.title_bar_background"
+"window.inactive_title_bar_foreground" = "window.title_bar_foreground"
+"window.title_bar_font"               = "defaults.font"
+"window.radius"                       = "defaults.radius_lg"
+"window.shadow"                       = "defaults.shadow_enabled"
+
+# button (§2.3)
+"button.background"                   = "defaults.background"
+"button.foreground"                   = "defaults.foreground"
+"button.border"                       = "defaults.border"
+"button.font"                         = "defaults.font"
+"button.radius"                       = "defaults.radius"
+"button.disabled_opacity"             = "defaults.disabled_opacity"
+"button.shadow"                       = "defaults.shadow_enabled"
+"button.primary_background"           = "defaults.accent"
+"button.primary_foreground"           = "defaults.accent_foreground"
+
+# input (§2.4)
+"input.background"                    = "defaults.background"
+"input.foreground"                    = "defaults.foreground"
+"input.border"                        = "defaults.border"
+"input.placeholder"                   = "defaults.muted"
+"input.selection"                     = "defaults.selection"
+"input.selection_foreground"          = "defaults.selection_foreground"
+"input.font"                          = "defaults.font"
+"input.radius"                        = "defaults.radius"
+"input.border_width"                  = "defaults.frame_width"
+
+# checkbox (§2.5)
+"checkbox.checked_background"         = "defaults.accent"
+"checkbox.radius"                     = "defaults.radius"
+"checkbox.border_width"               = "defaults.frame_width"
+
+# menu (§2.6)
+"menu.background"                     = "defaults.background"
+"menu.foreground"                     = "defaults.foreground"
+"menu.separator"                      = "defaults.border"
+"menu.font"                           = "defaults.font"
+
+# tooltip (§2.7)
+"tooltip.background"                  = "defaults.background"
+"tooltip.foreground"                  = "defaults.foreground"
+"tooltip.font"                        = "defaults.font"
+"tooltip.radius"                      = "defaults.radius"
+
+# scrollbar (§2.8)
+"scrollbar.thumb"                     = "defaults.muted"
+"scrollbar.thumb_hover"               = "defaults.muted"  # doc says "(darker)" but that's the preset's job
+
+# slider (§2.9)
+"slider.fill"                         = "defaults.accent"
+"slider.track"                        = "defaults.muted"
+"slider.thumb"                        = "defaults.surface"
+
+# progress_bar (§2.10)
+"progress_bar.fill"                   = "defaults.accent"
+"progress_bar.track"                  = "defaults.muted"
+"progress_bar.radius"                 = "defaults.radius"
+
+# tab (§2.11)
+"tab.background"                      = "defaults.background"
+"tab.foreground"                      = "defaults.foreground"
+"tab.active_background"               = "defaults.background"
+"tab.active_foreground"               = "defaults.foreground"
+"tab.bar_background"                  = "defaults.background"
+
+# sidebar (§2.12)
+"sidebar.background"                  = "defaults.background"
+"sidebar.foreground"                  = "defaults.foreground"
+
+# toolbar (§2.13)
+"toolbar.font"                        = "defaults.font"
+
+# status_bar (§2.14)
+"status_bar.font"                     = "defaults.font"
+
+# list (§2.15)
+"list.foreground"                     = "defaults.foreground"
+"list.alternate_row"                  = "list.background"      # which itself ← defaults.background
+"list.selection"                      = "defaults.selection"
+"list.selection_foreground"           = "defaults.selection_foreground"
+"list.header_background"              = "defaults.surface"
+"list.header_foreground"              = "defaults.foreground"
+"list.grid_color"                     = "defaults.border"
+
+# popover (§2.16)
+"popover.foreground"                  = "defaults.foreground"
+"popover.border"                      = "defaults.border"
+"popover.radius"                      = "defaults.radius_lg"
+
+# separator (§2.18)
+"separator.color"                     = "defaults.border"
+
+# switch (§2.21)
+"switch.checked_background"           = "defaults.accent"
+"switch.thumb_background"             = "defaults.surface"
+
+# dialog (§2.22)
+"dialog.title_font"                   = "defaults.font"
+"dialog.radius"                       = "defaults.radius_lg"
+
+# combo_box (§2.24)
+"combo_box.radius"                    = "defaults.radius"
+
+# segmented_control (§2.25)
+"segmented_control.radius"            = "defaults.radius"
+
+# card (§2.26)
+"card.background"                     = "defaults.surface"
+"card.border"                         = "defaults.border"
+"card.radius"                         = "defaults.radius_lg"
+"card.shadow"                         = "defaults.shadow_enabled"
+
+# expander (§2.27)
+"expander.radius"                     = "defaults.radius"
+
+# link (§2.28)
+"link.color"                          = "defaults.link"
+"link.visited"                        = "defaults.link"
+
+# ─── Per-platform inheritance (Phase 2 safety nets) ───────────────────────
+#
+# These 5 fields have different sources per platform. resolve() picks one
+# fallback. The OS reader or preset usually provides the actual value, so
+# the resolve() fallback rarely fires.
+#
+# Format: field = { fallback = "...", note = "..." }
+
+[per_platform]
+
+[per_platform."input.caret"]
+fallback = "defaults.foreground"
+macos    = "preset"
+windows  = "defaults.foreground"
+kde      = "defaults.focus_ring_color"
+gnome    = "defaults.accent"
+
+[per_platform."scrollbar.track"]
+fallback = "defaults.background"
+macos    = "preset"
+windows  = "preset"
+kde      = "defaults.background"
+gnome    = "preset"
+
+[per_platform."spinner.fill"]
+fallback = "defaults.accent"
+macos    = "preset"
+windows  = "defaults.accent"
+kde      = "defaults.foreground"
+gnome    = "defaults.foreground"
+
+[per_platform."popover.background"]
+fallback = "defaults.background"
+macos    = "defaults.background"
+windows  = "preset"
+kde      = "defaults.background"
+gnome    = "preset"
+
+[per_platform."list.background"]
+fallback = "defaults.background"
+macos    = "defaults.background"
+windows  = "defaults.background"
+kde      = "preset"
+gnome    = "preset"
+
+# ─── No inheritance ───────────────────────────────────────────────────────
+#
+# These fields have no default inheritance — they MUST come from the OS
+# reader or preset TOML. If still None after resolve(), validate() errors.
+
+[no_inheritance]
+fields = [
+    "switch.unchecked_background",     # each platform has distinct off-track color
+                                       # BUG: resolve.rs:587-588 inherits from defaults.muted,
+                                       # contradicting this spec. Should be removed from resolve().
+    "switch.track_radius",             # derived from half track height (pill shape)
+    "link.underline",                  # boolean convention differs per platform
+    "link.background",                 # only Windows HyperlinkButton has a value
+    "link.hover_bg",                   # only Windows SubtleFillColorSecondary
+    "scrollbar.overlay_mode",          # boolean: macOS/GNOME overlay, Win/KDE persistent
+    "dialog.button_order",             # enum: macOS/GNOME trailing, Win/KDE leading
+    "icon_set",                        # OS reader detects or TOML specifies
+    "icon_theme",                      # OS reader detects or TOML specifies
+                                       # (not in v0.5.0 doc table but same behavior as icon_set)
+]
+
+# All sizing fields (min_width, min_height, padding_*, height, width,
+# diameter, etc.) also have no inheritance — they come from preset/reader.
+# Not listed individually because they never derive from another field.
+
+# ─── Wrong safety nets ────────────────────────────────────────────────────
+#
+# Fields where resolve() currently inherits, but the inheritance is known
+# to produce wrong results. The preset MUST provide the actual value.
+# These are listed in the inheritance doc as "cannot be universally derived."
+
+[wrong_safety_nets]
+
+[wrong_safety_nets."button.background"]
+inherits_from = "defaults.background"
+why_wrong     = "Button bg != window bg on all 4 platforms"
+
+[wrong_safety_nets."button.foreground"]
+inherits_from = "defaults.foreground"
+why_wrong     = "All platforms have distinct control text colors"
+
+[wrong_safety_nets."tooltip.background"]
+inherits_from = "defaults.background"
+why_wrong     = "Tooltip bg is always visually distinct"
+
+[wrong_safety_nets."tooltip.foreground"]
+inherits_from = "defaults.foreground"
+why_wrong     = "macOS tooltip fg is white, not label color"
+
+[wrong_safety_nets."sidebar.background"]
+inherits_from = "defaults.background"
+why_wrong     = "All platforms have distinct sidebar bg"
+
+[wrong_safety_nets."list.alternate_row"]
+inherits_from = "defaults.background"
+why_wrong     = "Alternate rows are always a tinted variant"
+
+[wrong_safety_nets."window.title_bar_background"]
+inherits_from = "defaults.surface"
+why_wrong     = "Only macOS ~ surface; Win/KDE/GNOME distinct"
+
+[wrong_safety_nets."list.header_background"]
+inherits_from = "defaults.surface"
+why_wrong     = "macOS ~ surface, Win ~ background, KDE/GNOME distinct"
+
+[wrong_safety_nets."input.background"]
+inherits_from = "defaults.background"
+why_wrong     = "KDE uses surface (View bg); all have distinct APIs"
+
+# ─── Hardcoded safety nets (resolve.rs Phase 2) ──────────────────────────
+#
+# These are NOT real inheritance rules — they fabricate values out of thin air
+# when a field is None. Documented in todo_v0.5.5.md as bugs to remove.
+# All 16 presets already provide these values, so the safety nets are dead code.
+#
+# Listed here for completeness so the TOML matches what resolve.rs actually does.
+
+[hardcoded_safety_nets]
+"defaults.line_height"         = { value = "1.2", status = "dead_code" }
+"defaults.accent_foreground"   = { value = "#ffffff", status = "dead_code" }
+"defaults.shadow"              = { value = "rgba(0,0,0,64)", status = "dead_code" }
+"defaults.disabled_foreground" = { copies = "defaults.muted", status = "dead_code" }
+"dialog.button_order"          = { value = "platform_button_order()", status = "runtime_detection" }
+
+# ─── FontSpec inheritance ─────────────────────────────────────────────────
+#
+# Per-widget font fields inherit from defaults.font.
+# Two cases:
+#   1. font is None → entire FontSpec cloned from defaults.font
+#   2. font is Some with None sub-fields → each None sub-field inherits:
+#        family ← defaults.font.family
+#        size   ← defaults.font.size
+#        weight ← defaults.font.weight
+
+[font_inheritance]
+widgets_with_font = [
+    "window.title_bar_font",
+    "button.font",
+    "input.font",
+    "menu.font",
+    "tooltip.font",
+    "toolbar.font",
+    "status_bar.font",
+    "dialog.title_font",
+]
+inherits_from = "defaults.font"
+sub_field_inheritance = true   # None sub-fields inherit independently
+
+# ─── TextScale inheritance ────────────────────────────────────────────────
+#
+# TextScaleEntry sub-fields inherit individually when None:
+#   size        ← defaults.font.size
+#   weight      ← defaults.font.weight
+#   line_height ← defaults.line_height * entry.size (COMPUTED — see todo)
+#
+# Note: the size and line_height computations via ratios (0.82x, 1.0x, etc.)
+# are documented in todo_v0.5.5.md as invented values that should be removed.
+# Presets should specify all text_scale entries explicitly.
+
+[text_scale_inheritance]
+entries = ["caption", "section_heading", "dialog_title", "display"]
+"size.inherits_from"        = "defaults.font.size"
+"weight.inherits_from"      = "defaults.font.weight"
+"line_height.inherits_from" = "COMPUTED: defaults.line_height * entry.size"

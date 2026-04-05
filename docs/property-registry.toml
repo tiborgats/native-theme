@@ -1,0 +1,375 @@
+# Property Registry — machine-readable source of truth for widget fields.
+#
+# Derived from docs/platform-facts.md (widget property tables, sections 2.1–2.28).
+# The struct field name is used (not the platform-facts abbreviation).
+#
+# Each widget lists ALL fields that the struct MUST have. A Rust test should
+# verify every field in this file exists in the corresponding struct, and
+# every field in the struct exists in this file.
+#
+# Field types: "color" (Rgba), "f32", "bool", "enum", "font" (FontSpec sub-struct)
+#
+# When platform-facts.md is updated with new properties (e.g., hover states),
+# this file MUST be updated to match, and the test will fail until the struct
+# catches up.
+#
+# Source: docs/platform-facts.md  (2026-04-04 snapshot)
+# Struct: native-theme/src/model/
+
+# ─── §2.1 Global Defaults (ThemeDefaults) ──────────────────────────────────
+
+[defaults]
+# Base font (nested FontSpec)
+"font.family"                = "font"
+"font.size"                  = "font"
+"font.weight"                = "font"
+line_height                  = "f32"
+# Mono font (nested FontSpec)
+"mono_font.family"           = "font"
+"mono_font.size"             = "font"
+"mono_font.weight"           = "font"
+# Base colors
+background                   = "color"
+foreground                   = "color"
+accent                       = "color"
+accent_foreground            = "color"
+surface                      = "color"
+border                       = "color"
+muted                        = "color"
+shadow                       = "color"
+link                         = "color"
+selection                    = "color"
+selection_foreground         = "color"
+selection_inactive           = "color"
+disabled_foreground          = "color"
+# Status colors
+danger                       = "color"
+danger_foreground            = "color"
+warning                      = "color"
+warning_foreground           = "color"
+success                      = "color"
+success_foreground           = "color"
+info                         = "color"
+info_foreground              = "color"
+# Geometry
+radius                       = "f32"
+radius_lg                    = "f32"
+frame_width                  = "f32"
+disabled_opacity             = "f32"
+border_opacity               = "f32"
+shadow_enabled               = "bool"
+# Focus ring
+focus_ring_color             = "color"
+focus_ring_width             = "f32"
+focus_ring_offset            = "f32"
+# NOTE: defaults.spacing (ThemeSpacing T-shirt scale xxs..xxl) exists in the
+# code but is NOT a platform theme property. All platform spacing values are
+# captured as direct per-widget fields (padding_horizontal, icon_spacing,
+# item_spacing, etc.) in §2.3–2.28, and as layout container defaults in
+# [layout] below (§2.20). The T-shirt scale should be removed from the code.
+# See todo_v0.5.5.md Spacing Design Analysis.
+# Icon sizes (nested IconSizes)
+"icon_sizes.toolbar"         = "f32"
+"icon_sizes.small"           = "f32"
+"icon_sizes.large"           = "f32"
+"icon_sizes.dialog"          = "f32"
+"icon_sizes.panel"           = "f32"
+# Accessibility
+text_scaling_factor          = "f32"
+reduce_motion                = "bool"
+high_contrast                = "bool"
+reduce_transparency          = "bool"
+
+# ─── §2.19 Text Scale (TextScale) ─────────────────────────────────────────
+# size and weight from §2.19 table; line_height derived from §1.1.1 TextStyle entries
+
+[text_scale]
+"caption.size"               = "f32"
+"caption.weight"             = "u16"
+"caption.line_height"        = "f32"
+"section_heading.size"       = "f32"
+"section_heading.weight"     = "u16"
+"section_heading.line_height" = "f32"
+"dialog_title.size"          = "f32"
+"dialog_title.weight"        = "u16"
+"dialog_title.line_height"   = "f32"
+"display.size"               = "f32"
+"display.weight"             = "u16"
+"display.line_height"        = "f32"
+
+# ─── Top-level ThemeVariant fields (structural, not from §2.x tables) ──────
+
+[theme_variant]
+icon_set                     = "enum"
+icon_theme                   = "string"
+
+# ─── §2.2 Window ──────────────────────────────────────────────────────────
+
+[window]
+background                   = "color"
+foreground                   = "color"
+border                       = "color"
+title_bar_background         = "color"
+title_bar_foreground         = "color"
+inactive_title_bar_background = "color"
+inactive_title_bar_foreground = "color"
+radius                       = "f32"
+shadow                       = "bool"
+# title_bar_font (optional_nested FontSpec)
+"title_bar_font"             = "font"
+
+# ─── §2.3 Button ──────────────────────────────────────────────────────────
+
+[button]
+background                   = "color"
+foreground                   = "color"
+border                       = "color"
+primary_background           = "color"
+primary_foreground           = "color"
+min_width                    = "f32"
+min_height                   = "f32"
+padding_horizontal           = "f32"
+padding_vertical             = "f32"
+radius                       = "f32"
+icon_spacing                 = "f32"
+disabled_opacity             = "f32"
+shadow                       = "bool"
+font                         = "font"
+
+# ─── §2.4 Text Input ──────────────────────────────────────────────────────
+
+[input]
+background                   = "color"
+foreground                   = "color"
+border                       = "color"
+placeholder                  = "color"
+caret                        = "color"
+selection                    = "color"
+selection_foreground         = "color"
+min_height                   = "f32"
+padding_horizontal           = "f32"
+padding_vertical             = "f32"
+radius                       = "f32"
+border_width                 = "f32"
+font                         = "font"
+
+# ─── §2.5 Checkbox / Radio ────────────────────────────────────────────────
+
+[checkbox]
+checked_background           = "color"
+indicator_size               = "f32"
+spacing                      = "f32"
+radius                       = "f32"
+border_width                 = "f32"
+
+# ─── §2.6 Menu ────────────────────────────────────────────────────────────
+
+[menu]
+background                   = "color"
+foreground                   = "color"
+separator                    = "color"
+item_height                  = "f32"
+padding_horizontal           = "f32"
+padding_vertical             = "f32"
+icon_spacing                 = "f32"
+font                         = "font"
+
+# ─── §2.7 Tooltip ─────────────────────────────────────────────────────────
+
+[tooltip]
+background                   = "color"
+foreground                   = "color"
+padding_horizontal           = "f32"
+padding_vertical             = "f32"
+max_width                    = "f32"
+radius                       = "f32"
+font                         = "font"
+
+# ─── §2.8 Scrollbar ───────────────────────────────────────────────────────
+
+[scrollbar]
+track                        = "color"
+thumb                        = "color"
+thumb_hover                  = "color"
+width                        = "f32"
+min_thumb_height             = "f32"
+slider_width                 = "f32"
+overlay_mode                 = "bool"
+
+# ─── §2.9 Slider ──────────────────────────────────────────────────────────
+
+[slider]
+fill                         = "color"
+track                        = "color"
+thumb                        = "color"
+track_height                 = "f32"
+thumb_size                   = "f32"
+tick_length                  = "f32"
+
+# ─── §2.10 Progress Bar ───────────────────────────────────────────────────
+
+[progress_bar]
+fill                         = "color"
+track                        = "color"
+height                       = "f32"
+min_width                    = "f32"
+radius                       = "f32"
+
+# ─── §2.11 Tab Bar ────────────────────────────────────────────────────────
+
+[tab]
+background                   = "color"
+foreground                   = "color"
+active_background            = "color"
+active_foreground            = "color"
+bar_background               = "color"
+min_width                    = "f32"
+min_height                   = "f32"
+padding_horizontal           = "f32"
+padding_vertical             = "f32"
+
+# ─── §2.12 Sidebar ────────────────────────────────────────────────────────
+
+[sidebar]
+background                   = "color"
+foreground                   = "color"
+
+# ─── §2.13 Toolbar ────────────────────────────────────────────────────────
+
+[toolbar]
+height                       = "f32"
+item_spacing                 = "f32"
+padding                      = "f32"
+font                         = "font"
+
+# ─── §2.14 Status Bar ─────────────────────────────────────────────────────
+
+[status_bar]
+font                         = "font"
+
+# ─── §2.15 List / Table ───────────────────────────────────────────────────
+
+[list]
+background                   = "color"
+foreground                   = "color"
+alternate_row                = "color"
+selection                    = "color"
+selection_foreground         = "color"
+header_background            = "color"
+header_foreground            = "color"
+grid_color                   = "color"
+item_height                  = "f32"
+padding_horizontal           = "f32"
+padding_vertical             = "f32"
+
+# ─── §2.16 Popover / Dropdown ─────────────────────────────────────────────
+
+[popover]
+background                   = "color"
+foreground                   = "color"
+border                       = "color"
+radius                       = "f32"
+
+# ─── §2.17 Splitter ───────────────────────────────────────────────────────
+
+[splitter]
+width                        = "f32"
+
+# ─── §2.18 Separator ──────────────────────────────────────────────────────
+
+[separator]
+color                        = "color"
+
+# ─── §2.21 Switch / Toggle ────────────────────────────────────────────────
+
+[switch]
+checked_background           = "color"
+unchecked_background         = "color"
+thumb_background             = "color"
+track_width                  = "f32"
+track_height                 = "f32"
+thumb_size                   = "f32"
+track_radius                 = "f32"
+
+# ─── §2.22 Dialog ─────────────────────────────────────────────────────────
+
+[dialog]
+min_width                    = "f32"
+max_width                    = "f32"
+min_height                   = "f32"
+max_height                   = "f32"
+content_padding              = "f32"
+button_spacing               = "f32"
+radius                       = "f32"
+icon_size                    = "f32"
+button_order                 = "enum"
+title_font                   = "font"
+
+# ─── §2.23 Spinner ────────────────────────────────────────────────────────
+
+[spinner]
+fill                         = "color"
+diameter                     = "f32"
+min_size                     = "f32"
+stroke_width                 = "f32"
+
+# ─── §2.24 ComboBox ───────────────────────────────────────────────────────
+
+[combo_box]
+min_height                   = "f32"
+min_width                    = "f32"
+padding_horizontal           = "f32"
+arrow_size                   = "f32"
+arrow_area_width             = "f32"
+radius                       = "f32"
+
+# ─── §2.25 Segmented Control ──────────────────────────────────────────────
+
+[segmented_control]
+segment_height               = "f32"
+separator_width              = "f32"
+padding_horizontal           = "f32"
+radius                       = "f32"
+
+# ─── §2.26 Card ───────────────────────────────────────────────────────────
+
+[card]
+background                   = "color"
+border                       = "color"
+radius                       = "f32"
+padding                      = "f32"
+shadow                       = "bool"
+
+# ─── §2.27 Expander ───────────────────────────────────────────────────────
+
+[expander]
+header_height                = "f32"
+arrow_size                   = "f32"
+content_padding              = "f32"
+radius                       = "f32"
+
+# ─── §2.28 Link ───────────────────────────────────────────────────────────
+
+[link]
+color                        = "color"
+visited                      = "color"
+background                   = "color"
+hover_bg                     = "color"
+underline                    = "bool"
+
+# ─── §2.20 Layout Container ──────────────────────────────────────────
+#
+# Default spacing for toolkit layout containers (QLayout, NSStackView,
+# GtkBox, StackPanel). These are the values a layout manager uses when
+# the developer does not specify explicit spacing.
+#
+# NOT YET IMPLEMENTED — struct and presets do not exist yet.
+# Currently only documented in platform-facts.md §2.20.
+# No platform exposes these as user-configurable settings; all values
+# are compile-time constants or design guidelines.
+
+[layout]
+widget_gap                   = "f32"
+container_margin             = "f32"
+window_margin                = "f32"
+section_gap                  = "f32"
