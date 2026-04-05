@@ -7,7 +7,7 @@
 # should verify every field in this file exists in the corresponding struct,
 # and every field in the struct exists in this file.
 #
-# Source: docs/platform-facts.md  (2026-04-05 snapshot)
+# Source: docs/platform-facts.md  (2026-04-06 snapshot)
 # Struct: native-theme/src/model/
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -29,12 +29,14 @@
 #   "text_scale_entry" — see _structures.TextScaleEntry
 
 [_structures.Font]
-# Font specification. Widgets reference this as `font = "font"` or with a
-# named prefix like `title_bar_font = "font"`, `body_font = "font"`, etc.
+# Font specification (§2 naming: family + size + weight + style + color).
+# Widgets reference this as `font = "font"` or with a named prefix like
+# `title_bar_font = "font"`, `body_font = "font"`, `item_font = "font"`, etc.
 family                       = "string"
 size                         = "f32"
 weight                       = "u16"
 style                        = "enum"   # Normal | Italic | Oblique
+color                        = "color"
 
 [_structures.Border]
 # Frame/border sub-struct. Widgets reference as `border = "border"`.
@@ -72,7 +74,7 @@ font                         = "font"
 line_height                  = "f32"
 # §2.1.2 Monospace Font
 mono_font                    = "font"
-# §2.1.3 Base Colors (text_color also listed in §2.1.1 — same property)
+# §2.1.3 Base Colors (text_color = defaults.font.color — same value, kept for state-override reference)
 background_color             = "color"
 text_color                   = "color"
 accent_color                 = "color"
@@ -141,7 +143,6 @@ icon_theme                   = "string"
 background_color             = "color"
 title_bar_background         = "color"
 title_bar_font               = "font"
-title_bar_text_color         = "color"
 inactive_title_bar_background = "color"
 inactive_title_bar_text_color = "color"
 border                       = "border"
@@ -152,7 +153,6 @@ border                       = "border"
 
 [button]
 background_color             = "color"
-text_color                   = "color"
 font                         = "font"
 min_width                    = "f32"
 min_height                   = "f32"
@@ -168,13 +168,13 @@ border                       = "border"
 
 [input]
 background_color             = "color"
-text_color                   = "color"
 placeholder_color            = "color"
 caret_color                  = "color"
 selection_background         = "color"
 selection_text_color         = "color"
 font                         = "font"
 min_height                   = "f32"
+disabled_opacity             = "f32"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -188,6 +188,7 @@ indicator_color              = "color"
 indicator_width              = "f32"
 label_gap                    = "f32"
 checked_background           = "color"
+disabled_opacity             = "f32"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -198,7 +199,6 @@ border                       = "border"
 background_color             = "color"
 separator_color              = "color"
 font                         = "font"
-text_color                   = "color"
 row_height                   = "f32"
 icon_text_gap                = "f32"
 icon_size                    = "f32"
@@ -214,7 +214,6 @@ border                       = "border"
 [tooltip]
 background_color             = "color"
 font                         = "font"
-text_color                   = "color"
 max_width                    = "f32"
 border                       = "border"
 
@@ -242,6 +241,7 @@ thumb_color                  = "color"
 track_height                 = "f32"
 thumb_diameter               = "f32"
 tick_mark_length             = "f32"
+disabled_opacity             = "f32"
 
 # ═══════════════════════════════════════════════════════════════════════════
 # §2.10 Progress Bar
@@ -275,7 +275,9 @@ border                       = "border"
 [sidebar]
 background_color             = "color"
 font                         = "font"
-text_color                   = "color"
+selection_background         = "color"
+selection_text_color         = "color"
+border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
 # §2.13 Toolbar
@@ -283,7 +285,6 @@ text_color                   = "color"
 
 [toolbar]
 font                         = "font"
-text_color                   = "color"
 bar_height                   = "f32"
 item_gap                     = "f32"
 background_color             = "color"
@@ -296,8 +297,8 @@ border                       = "border"
 
 [status_bar]
 font                         = "font"
-text_color                   = "color"
 background_color             = "color"
+border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
 # §2.15 List / Table
@@ -306,12 +307,11 @@ background_color             = "color"
 [list]
 background_color             = "color"
 item_font                    = "font"
-item_text_color              = "color"
 alternate_row_background     = "color"
 selection_background         = "color"
 selection_text_color         = "color"
+header_font                  = "font"
 header_background            = "color"
-header_text_color            = "color"
 grid_color                   = "color"
 row_height                   = "f32"
 hover_background             = "color"
@@ -324,7 +324,6 @@ border                       = "border"
 [popover]
 background_color             = "color"
 font                         = "font"
-text_color                   = "color"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -374,6 +373,7 @@ track_radius                 = "f32"
 checked_background           = "color"
 unchecked_background         = "color"
 thumb_background             = "color"
+disabled_opacity             = "f32"
 
 # ═══════════════════════════════════════════════════════════════════════════
 # §2.22 Dialog
@@ -389,7 +389,6 @@ max_height                   = "f32"
 button_gap                   = "f32"
 button_order                 = "enum"   # PrimaryRight | PrimaryLeft | KdeLayout | GnomeLayout
 title_font                   = "font"
-title_text_color             = "color"
 icon_size                    = "f32"
 border                       = "border"
 
@@ -409,12 +408,12 @@ fill_color                   = "color"
 
 [combo_box]
 background_color             = "color"
-text_color                   = "color"
 font                         = "font"
 min_height                   = "f32"
 min_width                    = "f32"
 arrow_icon_size              = "f32"
 arrow_area_width             = "f32"
+disabled_opacity             = "f32"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -424,11 +423,11 @@ border                       = "border"
 [segmented_control]
 background_color             = "color"
 font                         = "font"
-text_color                   = "color"
 active_background            = "color"
 active_text_color            = "color"
 segment_height               = "f32"
 separator_width              = "f32"
+disabled_opacity             = "f32"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -455,7 +454,6 @@ border                       = "border"
 
 [link]
 font                         = "font"
-text_color                   = "color"
 visited_text_color           = "color"
 underline_enabled            = "bool"
 background_color             = "color"

@@ -1039,8 +1039,10 @@ no global default — it is always widget-specific.
 | `shadow_color`              | `shadowColor`                    | **(Fluent)** two-layer per elevation (from [Fluent 2 spec](https://fluent2.microsoft.design/elevation)): low L=14%/14% D=28%/14%; high L=24%/20% D=28%/20% (note: FluentUI React web tokens use different opacities) | **(none)** — preset: #00000040/#60     | **(Adwaita CSS)**          |
 | `link_color`                | `linkColor`                      | **(Fluent)** HyperlinkForeground                     | `[Colors:View] ForegroundLink`      | **(Adwaita CSS)**          |
 | `selection_background`           | `selectedContentBackgroundColor` | `COLOR_HIGHLIGHT`                                 | `[Colors:Selection] BackgroundNormal`| **(Adwaita CSS)**         |
-| `selection_text_color`| `selectedTextColor`              | `COLOR_HIGHLIGHTTEXT`                             | `[Colors:Selection] ForegroundNormal`| **(Adwaita CSS)**         |
+| `selection_text_color`| `alternateSelectedControlTextColor` | `COLOR_HIGHLIGHTTEXT`                             | `[Colors:Selection] ForegroundNormal`| **(Adwaita CSS)**         |
 | `selection_inactive_background`  | `unemphasizedSelectedContentBackgroundColor` | **(none)** — reduced emphasis / `COLOR_BTNFACE` | **(none)** — selection bg unchanged on focus loss | **(none)** — `:backdrop` CSS state handles this |
+| `text_selection_background`      | `selectedTextBackgroundColor`    | ← `defaults.selection_background`                 | ← `defaults.selection_background`    | ← `defaults.selection_background` |
+| `text_selection_color` | `selectedTextColor`              | ← `defaults.selection_text_color`                 | ← `defaults.selection_text_color`    | ← `defaults.selection_text_color` |
 | `disabled_text_color` | `disabledControlTextColor`       | **(Fluent)** TextFillColorDisabled                   | `[Colors:View] ForegroundInactive`  | **(Adwaita CSS)**          |
 
 `defaults.text_color` and `defaults.font.color` are the same value
@@ -1048,6 +1050,14 @@ no global default — it is always widget-specific.
 here as a standalone color token so that state-override properties
 (`hover_text_color`, `disabled_text_color`, `active_text_color`, etc.)
 have a clear reference. Per-widget base text colors use `font.color`.
+
+macOS provides separate APIs for content/row selection
+(`selectedContentBackgroundColor` + `alternateSelectedControlTextColor`)
+and text-range selection (`selectedTextBackgroundColor` +
+`selectedTextColor`). Other platforms use the same colors for both
+contexts. `text_selection_*` tokens expose this distinction — widgets
+with editable text (§2.4) inherit `text_selection_*`, while list/sidebar
+widgets (§2.12, §2.15) inherit `selection_*`.
 
 #### 2.1.4 Status Colors
 
@@ -1164,8 +1174,8 @@ against the `danger_color` color if using it as a fill).
 | `border.line_width`  | ← `defaults.border.line_width`     | ← `defaults.border.line_width`   | ← `defaults.border.line_width`            | ← `defaults.border.line_width`     |
 | `placeholder_color`         | `placeholderTextColor`        | **(Fluent)** TextPlaceholderColor | `[Colors:View] ForegroundInactive` | libadwaita `.dim-label`      |
 | `caret_color`               | `textInsertionPointColor` (macOS 14+; pre-14: `controlTextColor` via `NSTextView.insertionPointColor`) | `foreground` (system default) | `[Colors:View] DecorationFocus`   | libadwaita `@accent_color`   |
-| `selection_background`           | ← `defaults.selection_background`          | ← `defaults.selection_background`| ← `defaults.selection_background`              | ← `defaults.selection_background`       |
-| `selection_text_color`| ← `defaults.selection_text_color`| ← `defaults.selection_text_color`| ← `defaults.selection_text_color`| ← `defaults.selection_text_color`|
+| `selection_background`           | ← `defaults.text_selection_background`     | ← `defaults.text_selection_background`| ← `defaults.text_selection_background`         | ← `defaults.text_selection_background`  |
+| `selection_text_color`| ← `defaults.text_selection_color`| ← `defaults.text_selection_color`| ← `defaults.text_selection_color`| ← `defaults.text_selection_color`|
 | `min_height`          | NSTextField intrinsic: 22        | WinUI3 TextBox: 32    | **(none)** — sizes to content        | **(Adwaita CSS)**: 34         |
 | `border.padding_horizontal`  | NSTextField: 4                   | WinUI3: 10 left / 6 right | `LineEdit_FrameWidth` = 6            | **(Adwaita CSS)**: 9          |
 | `border.padding_vertical`    | 3 **(measured)** (22−16)/2       | WinUI3: 5             | 3 **(measured)** Breeze frame        | **(Adwaita CSS)**: 0 (CSS sets no vertical padding; visual whitespace comes from `min-height: 34` centering the text) |
@@ -1290,7 +1300,7 @@ have no platform limit — preset values are our defaults.
 | `min_width`         | **(none)** — sizes to label | **(none)** — sizes to label | `TabBar_TabMinWidth` = 80  | **(Adwaita CSS)**: none |
 | `min_height`        | NSTabView: 24       | WinUI3: 32          | `TabBar_TabMinHeight` = 30 | **(Adwaita CSS)**: 30  |
 | `border.padding_horizontal`| NSTabView: 12       | WinUI3: 8            | `TabBar_TabMarginWidth` = 8| **(Adwaita CSS)**: 12  |
-| `border.padding_vertical`  | 4 **(measured)** (24−16)/2 | WinUI3: 3      | `TabBar_TabMarginHeight` = 4| 8 **(measured)** (30−14)/2; CSS `padding: 3px 12px` |
+| `border.padding_vertical`  | 4 **(measured)** (24−16)/2 | WinUI3: 3      | `TabBar_TabMarginHeight` = 4| **(Adwaita CSS)**: 3 (CSS `padding: 3px 12px`; visual 8px from min-height: 30 centering) |
 | `border.color` | **(none)** — CoreUI bezel is a multi-color composite, no single extractable color | **(Fluent)** selected: `CardStrokeColorDefault` gradient (1px top/sides); unselected: transparent | **(Breeze src)** `KColorUtils::mix(bg, WindowText)` blended stroke | Notebook: none per-tab (header has 1px `$border_color`); AdwTabBar: none (high-contrast only) |
 | `border.line_width` | **(none)** — CoreUI bezel is a multi-stroke composite, no single line width | 1 (`TabViewItemBorderThickness`; selected only: `TabViewSelectedItemBorderThickness=1,1,1,0`) | `PenWidth::Frame` = 1.001 | Notebook: 0; AdwTabBar: 0 (high-contrast: 1) |
 | `border.corner_radius` | **(none)** — CoreUI bezel corners baked into `.car` assets, no queryable constant | 8 top (`OverlayCornerRadius` via `TopCornerRadiusFilterConverter` → 8,8,0,0) | ~4.5 (`Frame_FrameRadius=5` minus half `PenWidth::Frame`; top corners only) | Notebook: 0; AdwTabBar: 9 (`$button_radius`) |
