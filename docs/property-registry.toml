@@ -34,7 +34,7 @@
 family                       = "string"
 size                         = "f32"
 weight                       = "u16"
-style                        = "enum"   # Normal | Italic
+style                        = "enum"   # Normal | Italic | Oblique
 
 [_structures.Border]
 # Frame/border sub-struct. Widgets reference as `border = "border"`.
