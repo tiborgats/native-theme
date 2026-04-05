@@ -1288,10 +1288,10 @@ have no platform limit — preset values are our defaults.
 | `min_height`        | ⚙ NSTabView: 24       | ⚙ WinUI3: 32          | ⚙ `TabBar_TabMinHeight` = 30 | ⚙ **(Adwaita CSS)**: 30  |
 | `border.padding_horizontal`| ⚙ NSTabView: 12       | ⚙ WinUI3: 8            | ⚙ `TabBar_TabMarginWidth` = 8| ⚙ **(Adwaita CSS)**: 12  |
 | `border.padding_vertical`  | ⚙ 4 **(measured)** (24−16)/2 | ⚙ WinUI3: 3      | ⚙ `TabBar_TabMarginHeight` = 4| ⚙ 8 **(measured)** (30−14)/2; CSS `padding: 3px 12px` |
-| `border.color` | **(none)** — no outline | **(none)** — no outline | **(none)** — no outline | **(none)** — no outline |
-| `border.line_width` | **(none)** — no outline | **(none)** — no outline | **(none)** — no outline | **(none)** — no outline |
-| `border.corner_radius` | **(none)** — no rounding | **(none)** — no rounding | **(none)** — no rounding | **(none)** — no rounding |
-| `border.shadow_enabled` | **(none)** — no shadow | **(none)** — no shadow | **(none)** — no shadow | **(none)** — no shadow |
+| `border.color` | ⚙ bezeled (system-drawn, no single color) ❓ | ⚙ **(Fluent)** selected: `CardStrokeColorDefault` gradient (1px top/sides); unselected: transparent | �� **(Breeze src)** `KColorUtils::mix(bg, WindowText)` blended stroke | ⚙ Notebook: none per-tab (header has 1px `$border_color`); AdwTabBar: none (high-contrast only) |
+| `border.line_width` | ⚙ bezeled (system-drawn) ❓ | ⚙ 1 (`TabViewItemBorderThickness`; selected only: `TabViewSelectedItemBorderThickness=1,1,1,0`) | ⚙ `PenWidth::Frame` = 1.001 | ⚙ Notebook: 0; AdwTabBar: 0 (high-contrast: 1) |
+| `border.corner_radius` | ⚙ rounded top corners (system-drawn, exact px unknown) ❓ | ⚙ 8 top (`OverlayCornerRadius` via `TopCornerRadiusFilterConverter` → 8,8,0,0) | ⚙ ~4.5 (`Frame_FrameRadius=5` minus half `PenWidth::Frame`; top corners only) | ⚙ Notebook: 0; AdwTabBar: 9 (`$button_radius`) |
+| `border.shadow_enabled` | ❓ bezel creates visual depth but no documented drop shadow | ⚙ no (`TabViewShadowDepth=16` resource exists but is unused in template) | ⚙ no | ⚙ no |
 | `font`              | ⚙ ← `defaults.font`    | ⚙ ← `defaults.font`    | ⚙ ← `defaults.font`          | ⚙ ← `defaults.font`     |
 
 ### 2.12 Sidebar
