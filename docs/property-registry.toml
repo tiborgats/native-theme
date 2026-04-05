@@ -86,6 +86,8 @@ link_color                   = "color"
 selection_background         = "color"
 selection_text_color         = "color"
 selection_inactive_background = "color"
+text_selection_background    = "color"
+text_selection_color         = "color"
 disabled_text_color          = "color"
 # §2.1.4 Status Colors
 danger_color                 = "color"
