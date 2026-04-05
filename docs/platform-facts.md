@@ -1213,7 +1213,7 @@ Radio buttons use the same colors but with circular `border.corner_radius`.
 | `border.corner_radius` | **(none)** — items are rectangular | **(none)** — items are rectangular | **(none)** — items are rectangular | **(none)** — items are rectangular |
 | `border.shadow_enabled` | **(none)** — popup shadow from §2.16 | **(none)** — popup shadow from §2.16 | **(none)** — popup shadow from §2.16 | **(none)** — popup shadow from §2.16 |
 | `icon_text_gap`      | 4 **(measured)** AppKit layout | WinUI3: 12                           | 8 **(Breeze src)** icon-text gap       | **(Adwaita CSS)**: 8        |
-| `icon_size`         | ~13pt ❓ SF Symbols in menus   | ↕ `SM_CXSMICON`: 16                 | `Small`: 16                         | `GTK_ICON_SIZE_NORMAL`: 16  |
+| `icon_size`         | 16 **(cross-project consensus)** — no Apple API constant; Qt/Firefox/Ladybird/Godot all use 16×16 for NSMenuItem images | ↕ `SM_CXSMICON`: 16                 | `Small`: 16                         | `GTK_ICON_SIZE_NORMAL`: 16  |
 | `hover_background`  | `selectedContentBackgroundColor` | **(Fluent)** `SubtleFillColorSecondary` | `[Colors:Selection] BackgroundNormal` | **(Adwaita CSS)** `:hover` modelbutton bg |
 | `hover_text_color`  | `selectedMenuItemTextColor` (white) | ← `defaults.text_color` (no change) | `[Colors:Selection] ForegroundNormal` | **(Adwaita CSS)** `:hover` fg (no change) |
 | `disabled_text_color`| `disabledControlTextColor` | **(Fluent)** `TextFillColorDisabled` | `[Colors:Window] ForegroundInactive` | **(Adwaita CSS)** `:disabled` fg |
@@ -1291,10 +1291,10 @@ have no platform limit — preset values are our defaults.
 | `min_height`        | NSTabView: 24       | WinUI3: 32          | `TabBar_TabMinHeight` = 30 | **(Adwaita CSS)**: 30  |
 | `border.padding_horizontal`| NSTabView: 12       | WinUI3: 8            | `TabBar_TabMarginWidth` = 8| **(Adwaita CSS)**: 12  |
 | `border.padding_vertical`  | 4 **(measured)** (24−16)/2 | WinUI3: 3      | `TabBar_TabMarginHeight` = 4| 8 **(measured)** (30−14)/2; CSS `padding: 3px 12px` |
-| `border.color` | bezeled (system-drawn, no single color) ❓ | **(Fluent)** selected: `CardStrokeColorDefault` gradient (1px top/sides); unselected: transparent | �� **(Breeze src)** `KColorUtils::mix(bg, WindowText)` blended stroke | Notebook: none per-tab (header has 1px `$border_color`); AdwTabBar: none (high-contrast only) |
-| `border.line_width` | bezeled (system-drawn) ❓ | 1 (`TabViewItemBorderThickness`; selected only: `TabViewSelectedItemBorderThickness=1,1,1,0`) | `PenWidth::Frame` = 1.001 | Notebook: 0; AdwTabBar: 0 (high-contrast: 1) |
-| `border.corner_radius` | rounded top corners (system-drawn, exact px unknown) ❓ | 8 top (`OverlayCornerRadius` via `TopCornerRadiusFilterConverter` → 8,8,0,0) | ~4.5 (`Frame_FrameRadius=5` minus half `PenWidth::Frame`; top corners only) | Notebook: 0; AdwTabBar: 9 (`$button_radius`) |
-| `border.shadow_enabled` | ❓ bezel creates visual depth but no documented drop shadow | no (`TabViewShadowDepth=16` resource exists but is unused in template) | no | no |
+| `border.color` | **(none)** — CoreUI bezel is a multi-color composite, no single extractable color | **(Fluent)** selected: `CardStrokeColorDefault` gradient (1px top/sides); unselected: transparent | **(Breeze src)** `KColorUtils::mix(bg, WindowText)` blended stroke | Notebook: none per-tab (header has 1px `$border_color`); AdwTabBar: none (high-contrast only) |
+| `border.line_width` | **(none)** — CoreUI bezel is a multi-stroke composite, no single line width | 1 (`TabViewItemBorderThickness`; selected only: `TabViewSelectedItemBorderThickness=1,1,1,0`) | `PenWidth::Frame` = 1.001 | Notebook: 0; AdwTabBar: 0 (high-contrast: 1) |
+| `border.corner_radius` | **(none)** — CoreUI bezel corners baked into `.car` assets, no queryable constant | 8 top (`OverlayCornerRadius` via `TopCornerRadiusFilterConverter` → 8,8,0,0) | ~4.5 (`Frame_FrameRadius=5` minus half `PenWidth::Frame`; top corners only) | Notebook: 0; AdwTabBar: 9 (`$button_radius`) |
+| `border.shadow_enabled` | no — bezel creates visual depth via edge shading, not a drop shadow | no (`TabViewShadowDepth=16` resource exists but is unused in template) | no | no |
 | `font`              | ← `defaults.font`    | ← `defaults.font`    | ← `defaults.font`          | ← `defaults.font`     |
 | `font.color`        | ← `defaults.font.color` | ← `defaults.font.color` | ← `defaults.font.color`  | ← `defaults.font.color` |
 
@@ -1457,8 +1457,8 @@ QQC2/Kirigami `Switch` with font-metric-derived sizing.
 | `button_gap`      | ~12px **(measured)**          | WinUI3: 8                         | `Layout_DefaultSpacing` = 6        | 12px                               |
 | `button_order`        | primary rightmost             | primary leftmost                  | OK left of Cancel (right-aligned group; Help/Reset left-aligned) | cancel left, affirmative right     |
 | `title_font.family`   | ← `defaults.font`            | ← `defaults.font` (Segoe UI)     | ← `defaults.font`                 | ← `defaults.font`                 |
-| `title_font.size`     | alert heading size ❓         | 20px (ContentDialog template)     | ← `defaults.font`                 | 136% of base ≈15pt (`.title-2`)   |
-| `title_font.weight`   | alert heading weight ❓       | SemiBold (600)                    | ← `defaults.font`                 | 800 (ExtraBold, `.title-2`)       |
+| `title_font.size`     | ✅ 13pt **(HIG)** — "emphasized system font" = `boldSystemFontOfSize:0` → `systemFontSize` (13pt); corroborated by Cocotron `NSAlert.m` | 20px (ContentDialog template)     | ← `defaults.font`                 | 136% of base ≈15pt (`.title-2`)   |
+| `title_font.weight`   | ✅ Bold (700) **(HIG)** — "emphasized system font" = `boldSystemFontOfSize:0`; corroborated by Cocotron `NSAlert.m` | SemiBold (600)                    | ← `defaults.font`                 | 800 (ExtraBold, `.title-2`)       |
 | `title_font.style`    | Normal                        | Normal                            | ← `defaults.font`                 | Normal                             |
 | `title_font.color`    | ← `defaults.font.color`      | ← `defaults.font.color`          | ← `defaults.font.color`           | ← `defaults.font.color`           |
 | `border.corner_radius`              | ← `defaults.border.corner_radius_lg`       | 8px (OverlayCornerRadius) ✅      | ← `defaults.border.corner_radius_lg`            | 18px (`$alert_radius`) — distinct from window radius (15px) |
