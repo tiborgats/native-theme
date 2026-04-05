@@ -983,11 +983,9 @@ has no global default — it is always widget-specific.
 **Other dimensions:**
 - `disabled_opacity` — opacity multiplier (0.0–1.0) applied to the entire widget when disabled.
 - `icon_size` — display size (width = height) of icons within the widget.
-- `diameter` — default outer diameter of the spinner ring.
 
 **Dimensionless ratios:**
 - `line_height` — ratio of line box height to font size (e.g. 1.19 means a 13px font produces ~15.5px line boxes). Derived from font metrics (sTypoAscender + |sTypoDescender| + sTypoLineGap) / unitsPerEm. **Not** in pixels — multiply by `font.size` to get the pixel line height.
-- `disabled_opacity` — (also listed above) 0.0–1.0 multiplier, not pixels.
 - `border.opacity` — 0.0–1.0 multiplier applied to the border color, not pixels.
 
 **Booleans and enums:**
@@ -1047,6 +1045,12 @@ has no global default — it is always widget-specific.
 | `selection_text_color`| ⚙ `selectedTextColor`              | ⚙ `COLOR_HIGHLIGHTTEXT`                             | ⚙ `[Colors:Selection] ForegroundNormal`| **(Adwaita CSS)**         |
 | `selection_inactive_background`  | ⚙ `unemphasizedSelectedContentBackgroundColor` | **(none)** — reduced emphasis / `COLOR_BTNFACE` | **(none)** — selection bg unchanged on focus loss | **(none)** — `:backdrop` CSS state handles this |
 | `disabled_text_color` | ⚙ `disabledControlTextColor`       | **(Fluent)** TextFillColorDisabled                   | ⚙ `[Colors:View] ForegroundInactive`  | **(Adwaita CSS)**          |
+
+`defaults.text_color` and `defaults.font.color` are the same value
+(both resolve to the primary text color). `defaults.text_color` is kept
+here as a standalone color token so that state-override properties
+(`hover_text_color`, `disabled_text_color`, `active_text_color`, etc.)
+have a clear reference. Per-widget base text colors use `font.color`.
 
 #### 2.1.4 Status Colors
 
@@ -1170,6 +1174,7 @@ against the `danger_color` color if using it as a fill).
 | `border.padding_vertical`    | ⚙ 3 **(measured)** (22−16)/2       | ⚙ WinUI3: 5             | ⚙ 3 **(measured)** Breeze frame        | ⚙ **(Adwaita CSS)**: 0 (CSS sets no vertical padding; visual whitespace comes from `min-height: 34` centering the text) |
 | `border.corner_radius`              | ⚙ ← `defaults.border.corner_radius`             | ⚙ ← `defaults.border.corner_radius`  | ⚙ ← `defaults.border.corner_radius`                 | ⚙ ← `defaults.border.corner_radius`          |
 | `border.shadow_enabled` | **(none)** — no shadow | **(none)** — no shadow | **(none)** — no shadow | **(none)** — no shadow |
+| `disabled_opacity`  | ⚙ ← `defaults.disabled_opacity`| ⚙ ← `defaults.disabled_opacity`| ⚙ ← `defaults.disabled_opacity`     | ⚙ ← `defaults.disabled_opacity`|
 
 ### 2.5 Checkbox / Radio Button
 
@@ -1188,6 +1193,7 @@ against the `danger_color` color if using it as a fill).
 | `border.padding_horizontal` | **(none)** — checkmark fills indicator | **(none)** — checkmark fills indicator | **(none)** — checkmark fills indicator | **(none)** — checkmark fills indicator |
 | `border.padding_vertical` | **(none)** — checkmark fills indicator | **(none)** — checkmark fills indicator | **(none)** — checkmark fills indicator | **(none)** — checkmark fills indicator |
 | `checked_background`   | ⚙ ← `defaults.accent_color`      | ⚙ ← `defaults.accent_color`    | ⚙ ← `defaults.accent_color`         | ⚙ ← `defaults.accent_color`    |
+| `disabled_opacity`  | ⚙ ← `defaults.disabled_opacity`| ⚙ ← `defaults.disabled_opacity`| ⚙ ← `defaults.disabled_opacity`     | ⚙ ← `defaults.disabled_opacity`|
 
 Radio buttons use the same colors but with circular `border.corner_radius`.
 
@@ -1263,6 +1269,7 @@ have no platform limit — preset values are our defaults.
 | `track_height` | ⚙ NSSlider: 5        | ⚙ WinUI3: 4       | ⚙ `Slider_GrooveThickness` = 6 | ⚙ libadwaita `.scale`: 10 |
 | `thumb_diameter`   | ⚙ NSSlider knob: 21  | ⚙ WinUI3: 18      | ⚙ `Slider_ControlThickness` = 20| ⚙ libadwaita: 20        |
 | `tick_mark_length`  | ⚙ NSSlider: 8        | ⚙ WinUI3: 4       | ⚙ `Slider_TickLength` = 8      | **(none)** — no ticks  |
+| `disabled_opacity`  | ⚙ ← `defaults.disabled_opacity`| ⚙ ← `defaults.disabled_opacity`| ⚙ ← `defaults.disabled_opacity`     | ⚙ ← `defaults.disabled_opacity`|
 
 ### 2.10 Progress Bar
 
@@ -1273,6 +1280,7 @@ have no platform limit — preset values are our defaults.
 | `track_height`    | ⚙ NSProgressIndicator: 6| ⚙ WinUI3: visual track groove=1 (`ProgressBarTrackHeight`); minimum control height=3 (`ProgressBarMinHeight`) — `track_height` is the groove: 1 | ⚙ `ProgressBar_Thickness` = 6| ⚙ libadwaita `.progressbar`: 8 |
 | `min_width` | **(none)** — no minimum | **(none)** — no minimum | **(none)** — no minimum     | ⚙ **(Adwaita CSS)**: 80       |
 | `border.corner_radius`    | ⚙ ← `defaults.border.corner_radius`  | ⚙ ← `defaults.border.corner_radius`| ⚙ ← `defaults.border.corner_radius`         | ⚙ ← `defaults.border.corner_radius`         |
+| `border.shadow_enabled` | **(none)** — no shadow | **(none)** — no shadow | **(none)** — no shadow | **(none)** — no shadow |
 
 ### 2.11 Tab Bar
 
@@ -1300,6 +1308,12 @@ have no platform limit — preset values are our defaults.
 | `background_color` | ⚙ `underPageBackgroundColor` | ⚙ **(Fluent)** NavigationView pane bg | ⚙ `[Colors:Complementary] BackgroundNormal`| ⚙ libadwaita `.sidebar` bg|
 | `font`               | ⚙ ← `defaults.font`          | ⚙ ← `defaults.font`          | ⚙ ← `defaults.font`           | ⚙ ← `defaults.font`           |
 | `font.color` | ⚙ ← `defaults.font.color`   | ⚙ ← `defaults.font.color`| ⚙ `[Colors:Complementary] ForegroundNormal`| ⚙ libadwaita `.sidebar` fg|
+| `selection_background`  | ⚙ ← `defaults.selection_background` | ⚙ ← `defaults.selection_background` | ⚙ ← `defaults.selection_background` | ⚙ ← `defaults.selection_background` |
+| `selection_text_color`  | ⚙ ← `defaults.selection_text_color` | ⚙ ← `defaults.selection_text_color` | ⚙ ← `defaults.selection_text_color` | ⚙ ← `defaults.selection_text_color` |
+| `border.color`     | ⚙ ← `defaults.border.color` | ⚙ ← `defaults.border.color` | ⚙ ← `defaults.border.color` | ⚙ ← `defaults.border.color` |
+| `border.line_width`| ⚙ ← `defaults.border.line_width` | ⚙ ← `defaults.border.line_width` | ⚙ ← `defaults.border.line_width` | ⚙ ← `defaults.border.line_width` |
+| `border.corner_radius`  | **(none)** — rectangular pane | **(none)** — rectangular pane | **(none)** — rectangular pane | **(none)** — rectangular pane |
+| `border.shadow_enabled` | **(none)** — no shadow | **(none)** — no shadow | **(none)** — no shadow | **(none)** — no shadow |
 
 ### 2.13 Toolbar
 
@@ -1327,6 +1341,10 @@ have no platform limit — preset values are our defaults.
 | `font.style`  | ⚙ ← `defaults.font` | ⚙ `lfStatusFont.lfItalic` (0 = Normal) | ⚙ ← `defaults.font` | ⚙ ← `defaults.font` |
 | `font.color`  | ⚙ ← `defaults.font.color` | ⚙ ← `defaults.font.color`        | ⚙ ← `defaults.font.color` | ⚙ ← `defaults.font.color` |
 | `background_color`  | ⚙ ← `defaults.background_color` | ⚙ ← `defaults.background_color`        | ⚙ ← `defaults.background_color` | ⚙ ← `defaults.background_color` |
+| `border.color`      | ⚙ ← `defaults.border.color` | ⚙ ← `defaults.border.color` | ⚙ ← `defaults.border.color` | ⚙ ← `defaults.border.color` |
+| `border.line_width` | ⚙ ← `defaults.border.line_width` | ⚙ ← `defaults.border.line_width` | ⚙ ← `defaults.border.line_width` | ⚙ ← `defaults.border.line_width` |
+| `border.corner_radius` | **(none)** — rectangular bar | **(none)** — rectangular bar | **(none)** — rectangular bar | **(none)** — rectangular bar |
+| `border.shadow_enabled` | **(none)** — no shadow | **(none)** — no shadow | **(none)** — no shadow | **(none)** — no shadow |
 
 ### 2.15 List / Table
 
@@ -1403,11 +1421,10 @@ themselves.
 | `window_margin`    | ⚙ 20 **(HIG)**         | **(none)**                    | ⚙ `Layout_TopLevelMarginWidth` = 10 | ⚙ 12 **(measured)**      |
 | `section_gap`      | ⚙ 20 **(HIG)**         | **(none)**                    | **(none)** — not specified        | ⚙ 18 **(measured)**      |
 
-These are distinct from `defaults.spacing` (the abstract T-shirt scale
-`xxs`..`xxl`). The T-shirt scale is an application-level spacing palette
-for consumer layout code. This table documents what the platform's own
-layout managers default to — same pattern as per-widget spacing fields
-like `dialog.border.padding_horizontal` or `toolbar.item_gap`.
+These are platform layout-manager defaults — what the toolkit uses when
+the developer does not specify explicit spacing. Same pattern as
+per-widget spacing fields like `dialog.border.padding_horizontal` or
+`toolbar.item_gap`.
 
 ### 2.21 Switch / Toggle
 
@@ -1420,6 +1437,7 @@ like `dialog.border.padding_horizontal` or `toolbar.item_gap`.
 | `checked_background`      | ⚙ ← `defaults.accent_color`     | ⚙ ← `defaults.accent_color`          | ⚙ ← `defaults.accent_color`             | ⚙ ← `defaults.accent_color`          |
 | `unchecked_background`    | ⚙ **(measured)** track bg  | ⚙ **(Fluent)** ToggleSwitchFillOff | **(preset)** trough color     | ⚙ Adwaita `$trough_color`      |
 | `thumb_background`        | ⚙ **(measured)** white     | ⚙ **(Fluent)** ToggleSwitchKnob | **(preset)** slider color        | ⚙ Adwaita `$slider_color`      |
+| `disabled_opacity`  | ⚙ ← `defaults.disabled_opacity`| ⚙ ← `defaults.disabled_opacity`| ⚙ ← `defaults.disabled_opacity`     | ⚙ ← `defaults.disabled_opacity`|
 
 macOS NSSwitch introduced in 10.15. KDE has no QWidget toggle — only
 QQC2/Kirigami `Switch` with font-metric-derived sizing.
@@ -1480,10 +1498,10 @@ rotating `process-working-symbolic` icon.
 | Property            | macOS                    | Windows               | KDE                             | GNOME                        |
 |---------------------|--------------------------|-----------------------|---------------------------------|------------------------------|
 | `background_color`        | ⚙ `controlColor`        | ⚙ `COLOR_BTNFACE`    | ⚙ `[Colors:Button] BackgroundNormal` | ⚙ libadwaita button bg    |
+| `font`              | ⚙ ← `defaults.font`       | ⚙ ← `defaults.font`    | ⚙ ← `defaults.font`              | ⚙ ← `defaults.font`           |
 | `font.color`        | ⚙ `controlTextColor`    | ⚙ `COLOR_BTNTEXT`    | ⚙ `[Colors:Button] ForegroundNormal` | ⚙ libadwaita button fg    |
 | `border.color`            | ⚙ ← `defaults.border.color`     | ⚙ ← `defaults.border.color`  | ⚙ ← `defaults.border.color`            | ⚙ ← `defaults.border.color`         |
 | `border.line_width`  | ⚙ ← `defaults.border.line_width`     | ⚙ ← `defaults.border.line_width`   | ⚙ ← `defaults.border.line_width`            | ⚙ ← `defaults.border.line_width`     |
-| `font`              | ⚙ ← `defaults.font`       | ⚙ ← `defaults.font`    | ⚙ ← `defaults.font`              | ⚙ ← `defaults.font`           |
 | `min_height`        | ⚙ NSPopUpButton: 21        | ⚙ WinUI3 ComboBox: 32   | **(none)** — sizes to content   | ⚙ ← button min-height (24+pad)|
 | `min_width`         | **(none)** — sizes to content | ⚙ WinUI3: 64         | **(none)** — sizes to content   | **(none)** — sizes to content|
 | `border.padding_horizontal`| ⚙ ~8–10px **(measured)**   | ⚙ WinUI3: 12             | ⚙ `ComboBox_FrameWidth` = 6      | ⚙ ← button padding (10px)     |
@@ -1492,6 +1510,7 @@ rotating `process-working-symbolic` icon.
 | `border.corner_radius`            | ⚙ ← `defaults.border.corner_radius`     | ⚙ ← `defaults.border.corner_radius`   | ⚙ ← `defaults.border.corner_radius`            | ⚙ ← `defaults.border.corner_radius`         |
 | `border.shadow_enabled` | **(none)** — no shadow | **(none)** — no shadow | **(none)** — no shadow | **(none)** — no shadow |
 | `border.padding_vertical` | ⚙ ~3px **(measured)** | ⚙ WinUI3: 5 top / 7 bottom | **(none)** — sizes to content | ⚙ ← button (5px) |
+| `disabled_opacity`  | ⚙ ← `defaults.disabled_opacity`| ⚙ ← `defaults.disabled_opacity`| ⚙ ← `defaults.disabled_opacity`     | ⚙ ← `defaults.disabled_opacity`|
 
 ### 2.25 Segmented Control
 
@@ -1510,6 +1529,7 @@ rotating `process-working-symbolic` icon.
 | `border.line_width` | ⚙ ← `defaults.border.line_width` | **(none)** | ⚙ ← `defaults.border.line_width` | **(none)** |
 | `border.shadow_enabled` | **(none)** — no shadow | **(none)** | **(none)** — no shadow | **(none)** |
 | `border.padding_vertical` | ⚙ ~3px **(measured)** | **(none)** | ⚙ `TabBar_TabMarginHeight` = 4 | **(none)** |
+| `disabled_opacity`  | ⚙ ← `defaults.disabled_opacity`| **(none)** | ⚙ ← `defaults.disabled_opacity`     | **(none)** |
 
 macOS is the only platform with a first-class segmented control.
 Available styles: `.automatic`, `.rounded`, `.roundRect`, `.texturedRounded`,
