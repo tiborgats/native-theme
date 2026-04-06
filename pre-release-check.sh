@@ -166,7 +166,7 @@ def scan_file(path):
         s = line.strip()
 
         # Track test module entry
-        if '#[cfg(test)]' in s:
+        if re.search(r'#\[cfg\((all\()?test[,\)]', s):
             test_active = True
             continue
 

@@ -110,7 +110,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 ### v0.5.5 Schema Overhaul & Quality (Phases 49-57)
 
-- [ ] **Phase 49: Additive Type Definitions** - Define BorderSpec, FontStyle, FontSpec extensions, and LayoutTheme as non-breaking additions
+- [x] **Phase 49: Additive Type Definitions** - Define BorderSpec, FontStyle, FontSpec extensions, and LayoutTheme as non-breaking additions (completed 2026-04-06)
 - [ ] **Phase 50: Atomic Schema Commit** - All ~70 renames + BorderSpec integration + font.color + foreground removal + ThemeSpacing removal + all 17 preset rewrites in one commit
 - [ ] **Phase 51: Resolution Engine Overhaul** - resolve_border(), resolve_font() update, safety net removal, text_scale removal, inheritance bug fixes
 - [ ] **Phase 52: Interactive State Colors** - ~70 new hover/active/disabled/focus fields across 18 widgets with preset values
@@ -241,7 +241,7 @@ Note: Phase 55 depends only on Phase 50 and can run in parallel with 51-54 if de
 | 27-32 | v0.4.0 | 8/8 | Complete | 2026-03-18 |
 | 33-43 | v0.4.1 | 22/22 | Complete | 2026-03-21 |
 | 44-48 | v0.5.0 | 17/17 | Complete | 2026-03-29 |
-| 49. Additive Type Definitions | v0.5.5 | 2/3 | In Progress|  |
+| 49. Additive Type Definitions | v0.5.5 | 3/3 | Complete   | 2026-04-06 |
 | 50. Atomic Schema Commit | v0.5.5 | 0/0 | Not started | - |
 | 51. Resolution Engine Overhaul | v0.5.5 | 0/0 | Not started | - |
 | 52. Interactive State Colors | v0.5.5 | 0/0 | Not started | - |
