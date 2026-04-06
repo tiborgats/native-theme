@@ -241,7 +241,7 @@ Note: Phase 55 depends only on Phase 50 and can run in parallel with 51-54 if de
 | 27-32 | v0.4.0 | 8/8 | Complete | 2026-03-18 |
 | 33-43 | v0.4.1 | 22/22 | Complete | 2026-03-21 |
 | 44-48 | v0.5.0 | 17/17 | Complete | 2026-03-29 |
-| 49. Additive Type Definitions | v0.5.5 | 1/3 | In Progress|  |
+| 49. Additive Type Definitions | v0.5.5 | 2/3 | In Progress|  |
 | 50. Atomic Schema Commit | v0.5.5 | 0/0 | Not started | - |
 | 51. Resolution Engine Overhaul | v0.5.5 | 0/0 | Not started | - |
 | 52. Interactive State Colors | v0.5.5 | 0/0 | Not started | - |

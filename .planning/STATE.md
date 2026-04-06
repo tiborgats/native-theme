@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.5
 milestone_name: Schema Overhaul & Quality
 status: executing
-stopped_at: Completed 49-01-PLAN.md
-last_updated: "2026-04-06T22:33:58.594Z"
+stopped_at: Completed 49-02-PLAN.md
+last_updated: "2026-04-06T22:39:48.033Z"
 last_activity: 2026-04-06
 progress:
   total_phases: 9
   completed_phases: 0
   total_plans: 3
-  completed_plans: 1
-  percent: 33
+  completed_plans: 2
+  percent: 67
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-06)
 ## Current Position
 
 Phase: 49 of 57 (Additive Type Definitions)
-Plan: 2 of 3 (Wave 1: 01+02 parallel, Wave 2: 03)
+Plan: 3 of 3 (Wave 1: 01+02 parallel, Wave 2: 03)
 Status: Ready to execute
 Last activity: 2026-04-06
 
@@ -46,6 +46,7 @@ All decisions logged in PROJECT.md Key Decisions table.
 Recent: Clean break for renames (no serde aliases -- pre-1.0, presets bundled, ~30 renames cross nesting levels).
 
 - [Phase 49]: ResolvedFontSpec color uses temporary Rgba::rgb(0,0,0) fallback in require_font -- Phase 51 wires proper foreground inheritance
+- [Phase 49]: LayoutTheme is non-Option field on ThemeSpec (shared, variant-independent); lint_toml updated with layout support
 
 ### Pending Todos
 
@@ -59,6 +60,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-06T22:33:58.591Z
-Stopped at: Completed 49-01-PLAN.md
+Last session: 2026-04-06T22:39:48.030Z
+Stopped at: Completed 49-02-PLAN.md
 Resume file: None
