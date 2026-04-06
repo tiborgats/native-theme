@@ -14,7 +14,7 @@
 #   [hardcoded_safety_nets]— Fabricated values in resolve.rs (dead code).
 #   [text_scale_inheritance]— TextScaleEntry sub-field inheritance.
 #
-# Source: docs/platform-facts.md  (2026-04-05 snapshot)
+# Source: docs/platform-facts.md  (2026-04-06 snapshot)
 # Implementation: native-theme/src/resolve.rs
 
 # ─── Defaults-internal chains (Phase 1) ───────────────────────────────────
@@ -25,20 +25,40 @@
 [defaults_internal]
 "defaults.selection_background"          = "defaults.accent_color"
 "defaults.focus_ring_color"              = "defaults.accent_color"
-"defaults.selection_inactive_background" = "defaults.selection_background"   # must run AFTER selection_background
+"defaults.selection_inactive_background" = "defaults.selection_background"       # must run AFTER selection_background
+"defaults.text_selection_background"     = "defaults.selection_background"       # must run AFTER selection_background
+"defaults.text_selection_color"          = "defaults.selection_text_color"
+"defaults.mono_font.color"              = "defaults.font.color"
 
 # ─── Border sub-field inheritance (Phase 3) ───────────────────────────────
 #
-# Widgets that have a border sub-struct inherit its sub-fields from
-# defaults.border. Listed once here to avoid repeating per widget.
+# Widgets that have a border sub-struct AND whose border sub-fields
+# inherit from defaults.border (per platform-facts tables showing
+# ← defaults.border.*). Listed once here to avoid repeating per widget.
 # padding_horizontal and padding_vertical are sizing fields with NO
 # inheritance. opacity and corner_radius_lg are defaults-only fields.
+#
+# Widgets whose border sub-fields are all platform-specific or (none)
+# are NOT listed here — they get values from preset/OS reader only.
+# Specifically excluded:
+#   menu   — border belongs to the popup container (§2.16), not menu items
+#   tab    — all border sub-fields have platform-specific values (§2.11)
+#   card   — all border sub-fields are platform-specific or (none) (§2.26)
+# Widgets with partial border inheritance (only color + line_width) are
+# handled with explicit rules in [uniform] instead:
+#   sidebar    — color/line_width inherit; corner_radius/shadow_enabled (none)
+#   status_bar — color/line_width inherit; corner_radius/shadow_enabled (none)
+#
+# Note: shadow_enabled inheritance may be wrong for widgets where all
+# platforms show (none) — no shadow (input, checkbox, progress_bar,
+# combo_box, expander). The preset MUST provide shadow_enabled = false
+# for these; the safety net from defaults would give shadow_enabled = true.
 
 [border_inheritance]
 widgets_with_border = [
-    "window", "button", "input", "checkbox", "menu", "tooltip",
-    "progress_bar", "tab", "toolbar", "list", "popover", "dialog",
-    "combo_box", "segmented_control", "card", "expander",
+    "window", "button", "input", "checkbox", "tooltip",
+    "progress_bar", "toolbar", "list", "popover", "dialog",
+    "combo_box", "segmented_control", "expander",
 ]
 "color.inherits_from"          = "defaults.border.color"
 "corner_radius.inherits_from"  = "defaults.border.corner_radius"
@@ -46,7 +66,7 @@ widgets_with_border = [
 "shadow_enabled.inherits_from" = "defaults.border.shadow_enabled"
 
 # Exceptions — these widgets use corner_radius_lg instead of corner_radius:
-corner_radius_lg_widgets = ["window", "popover", "dialog", "card"]
+corner_radius_lg_widgets = ["window", "popover", "dialog"]
 
 # ─── Font sub-struct inheritance (Phase 3) ────────────────────────────────
 #
@@ -58,6 +78,10 @@ corner_radius_lg_widgets = ["window", "popover", "dialog", "card"]
 #        size   ← defaults.font.size
 #        weight ← defaults.font.weight
 #        style  ← defaults.font.style
+#        color  ← defaults.font.color
+#
+# Exception: link.font.color inherits from defaults.link_color (not
+# defaults.font.color). This override is in [uniform] below.
 
 [font_inheritance]
 widgets_with_font = [
@@ -72,6 +96,7 @@ widgets_with_font = [
     "toolbar.font",
     "status_bar.font",
     "list.item_font",
+    "list.header_font",
     "popover.font",
     "dialog.body_font",
     "dialog.title_font",
@@ -87,43 +112,42 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 #
 # Same rule on all 4 platforms. Format: "widget.field" = "source.field"
 # Border sub-field rules are in [border_inheritance] above, not repeated here.
-# Font rules are in [font_inheritance] above, not repeated here.
+# Font rules (including font.color) are in [font_inheritance] above,
+# not repeated here — per-widget base text colors use font.color (§2 intro).
+# Exception: link.font.color overrides font_inheritance (see §2.28 below).
 
 [uniform]
 # window (§2.2)
 "window.background_color"                    = "defaults.background_color"
 "window.title_bar_background"                = "defaults.surface_color"       # see wrong_safety_nets
-"window.title_bar_text_color"                = "defaults.text_color"
 "window.inactive_title_bar_background"       = "window.title_bar_background"
-"window.inactive_title_bar_text_color"       = "window.title_bar_text_color"
+"window.inactive_title_bar_text_color"       = "window.title_bar_font.color"
 
 # button (§2.3)
 "button.background_color"                    = "defaults.background_color"    # see wrong_safety_nets
-"button.text_color"                          = "defaults.text_color"          # see wrong_safety_nets
 "button.primary_background"                  = "defaults.accent_color"
 "button.primary_text_color"                  = "defaults.accent_text_color"
 "button.disabled_opacity"                    = "defaults.disabled_opacity"
 
-# input (§2.4)
+# input (§2.4) — selection uses text_selection tokens, not content selection
 "input.background_color"                     = "defaults.background_color"    # see wrong_safety_nets
-"input.text_color"                           = "defaults.text_color"
 "input.placeholder_color"                    = "defaults.muted_color"
-"input.selection_background"                 = "defaults.selection_background"
-"input.selection_text_color"                 = "defaults.selection_text_color"
+"input.selection_background"                 = "defaults.text_selection_background"
+"input.selection_text_color"                 = "defaults.text_selection_color"
+"input.disabled_opacity"                     = "defaults.disabled_opacity"
 
 # checkbox (§2.5)
 "checkbox.checked_background"                = "defaults.accent_color"
+"checkbox.disabled_opacity"                  = "defaults.disabled_opacity"
 
 # menu (§2.6)
 "menu.background_color"                      = "defaults.background_color"
-"menu.text_color"                            = "defaults.text_color"
 "menu.separator_color"                       = "defaults.border.color"
 
 # tooltip (§2.7)
 "tooltip.background_color"                   = "defaults.background_color"    # see wrong_safety_nets
-"tooltip.text_color"                         = "defaults.text_color"          # see wrong_safety_nets
 
-# scrollbar (§2.8) — thumb colors: all platforms have own APIs, fallback only
+# scrollbar (§2.8) — all platforms have own APIs; safety net only
 "scrollbar.thumb_color"                      = "defaults.muted_color"
 "scrollbar.thumb_hover_color"                = "defaults.muted_color"
 
@@ -131,6 +155,7 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 "slider.fill_color"                          = "defaults.accent_color"
 "slider.track_color"                         = "defaults.muted_color"
 "slider.thumb_color"                         = "defaults.surface_color"
+"slider.disabled_opacity"                    = "defaults.disabled_opacity"
 
 # progress_bar (§2.10)
 "progress_bar.fill_color"                    = "defaults.accent_color"
@@ -144,54 +169,56 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 
 # sidebar (§2.12)
 "sidebar.background_color"                   = "defaults.background_color"    # see wrong_safety_nets
-"sidebar.text_color"                         = "defaults.text_color"
+"sidebar.selection_background"               = "defaults.selection_background"
+"sidebar.selection_text_color"               = "defaults.selection_text_color"
+"sidebar.border.color"                       = "defaults.border.color"
+"sidebar.border.line_width"                  = "defaults.border.line_width"
 
 # toolbar (§2.13)
-"toolbar.text_color"                         = "defaults.text_color"
 "toolbar.background_color"                   = "defaults.background_color"
 "toolbar.icon_size"                          = "defaults.icon_sizes.toolbar"
 
 # status_bar (§2.14)
-"status_bar.text_color"                      = "defaults.text_color"
 "status_bar.background_color"                = "defaults.background_color"
+"status_bar.border.color"                    = "defaults.border.color"
+"status_bar.border.line_width"               = "defaults.border.line_width"
 
 # list (§2.15)
-"list.item_text_color"                       = "defaults.text_color"
 "list.alternate_row_background"              = "list.background_color"        # see wrong_safety_nets
 "list.selection_background"                  = "defaults.selection_background"
 "list.selection_text_color"                  = "defaults.selection_text_color"
 "list.header_background"                     = "defaults.surface_color"       # see wrong_safety_nets
-"list.header_text_color"                     = "defaults.text_color"
 "list.grid_color"                            = "defaults.border.color"
 
-# popover (§2.16)
-"popover.text_color"                         = "defaults.text_color"
+# popover (§2.16) — no additional uniform rules beyond border/font
+
+# splitter (§2.17) — no border sub-struct; direct properties
+"splitter.divider_color"                     = "defaults.border.color"
 
 # separator (§2.18) — no border sub-struct; direct properties
 "separator.line_color"                       = "defaults.border.color"
 "separator.line_width"                       = "defaults.border.line_width"
 
-# splitter (§2.17) — no border sub-struct; direct properties
-"splitter.divider_color"                     = "defaults.border.color"
-
 # switch (§2.21)
 "switch.checked_background"                  = "defaults.accent_color"
 "switch.thumb_background"                    = "defaults.surface_color"
+"switch.disabled_opacity"                    = "defaults.disabled_opacity"
 
-# dialog (§2.22)
-"dialog.title_text_color"                    = "defaults.text_color"
+# dialog (§2.22) — no additional uniform rules beyond border/font
 
-# combo_box (§2.24) — no additional uniform rules beyond border/font
+# combo_box (§2.24)
+"combo_box.disabled_opacity"                 = "defaults.disabled_opacity"
 
-# segmented_control (§2.25) — no additional uniform rules beyond border/font
+# segmented_control (§2.25)
+"segmented_control.disabled_opacity"         = "defaults.disabled_opacity"
 
 # card (§2.26)
 "card.background_color"                      = "defaults.surface_color"
 
 # expander (§2.27) — no additional uniform rules beyond border/font
 
-# link (§2.28)
-"link.text_color"                            = "defaults.link_color"
+# link (§2.28) — font.color overrides font_inheritance default
+"link.font.color"                            = "defaults.link_color"
 "link.visited_text_color"                    = "defaults.link_color"
 
 # ─── Per-platform inheritance (Phase 2 safety nets) ───────────────────────
@@ -270,10 +297,10 @@ fields = [
 
 # ─── Wrong safety nets ────────────────────────────────────────────────────
 #
-# Fields where resolve() currently inherits (via [uniform] above), but the
-# inheritance is known to produce wrong results. The preset MUST provide
-# the actual value. These are listed in the inheritance doc as "cannot be
-# universally derived."
+# Fields where resolve() currently inherits (via [uniform] or
+# [font_inheritance] above), but the inheritance is known to produce
+# wrong results. The preset MUST provide the actual value. These are
+# listed in the inheritance doc as "cannot be universally derived."
 
 [wrong_safety_nets]
 
@@ -281,16 +308,16 @@ fields = [
 inherits_from = "defaults.background_color"
 why_wrong     = "Button bg != window bg on all 4 platforms"
 
-[wrong_safety_nets."button.text_color"]
-inherits_from = "defaults.text_color"
+[wrong_safety_nets."button.font.color"]
+inherits_from = "defaults.font.color"     # via font_inheritance
 why_wrong     = "All platforms have distinct control text colors"
 
 [wrong_safety_nets."tooltip.background_color"]
 inherits_from = "defaults.background_color"
 why_wrong     = "Tooltip bg is always visually distinct"
 
-[wrong_safety_nets."tooltip.text_color"]
-inherits_from = "defaults.text_color"
+[wrong_safety_nets."tooltip.font.color"]
+inherits_from = "defaults.font.color"     # via font_inheritance
 why_wrong     = "macOS tooltip fg is white, not label color"
 
 [wrong_safety_nets."sidebar.background_color"]

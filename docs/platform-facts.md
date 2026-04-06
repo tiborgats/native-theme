@@ -18,6 +18,8 @@ controls and the source is annotated:
 | **(Breeze src)**    | KDE Breeze style engine source (`breezemetrics.h`, etc.)   |
 | **(Adwaita CSS)**   | GNOME libadwaita stylesheet values                         |
 | **(measured)**      | Pixel-measured from rendered controls; OS version noted     |
+| **(font metrics)**  | Computed from OpenType font metric tables (sTypo/hhea)     |
+| **(WebKit)**        | Inferred from WebKit's native look implementation          |
 | **(cross-project)** | No platform API; value from cross-project consensus (Qt, Firefox, etc.) |
 | **(preset)**        | Value from our bundled preset TOML (originally measured)   |
 | **(none)**          | OS has no such concept; preset must supply a value         |
@@ -869,7 +871,7 @@ the type and meaning:
 
 **Colors and fills:**
 - `*_color` — a color value (e.g. `border.color`, `caret_color`, `line_color`)
-- `*_background` — a background fill color (e.g. `background_color`, `hover_background`, `checked_background`)
+- `*_background` — a background fill color (e.g. `hover_background`, `checked_background`, `selection_background`). The base background (`background_color`) uses `_color` suffix for consistency with other global colors.
 - `*_text_color` — a text rendering color for a specific state or context, kept outside the font struct because it overrides only the color, not the typeface (e.g. `active_text_color`, `disabled_text_color`, `hover_text_color`, `accent_text_color`)
 
 **Typography:**
@@ -1218,7 +1220,7 @@ Radio buttons use the same colors but with circular `border.corner_radius`.
 | `font.color`        | **(measured)** = `labelColor`  | `COLOR_MENUTEXT`                  | `[Colors:Window] ForegroundNormal`  | libadwaita `popover.menu` fg|
 | `row_height`       | NSMenuItem: 22                 | WinUI3: touch mode=31 (14 text + 8+9 pad), mouse/narrow mode=23 (14 text + 4+5 pad); no explicit MinHeight resource — derived from padding | **(none)** — sizes to font             | **(Adwaita CSS)**: 32       |
 | `border.padding_horizontal`| NSMenuItem: 12                 | WinUI3: 11                           | `MenuItem_MarginWidth` = 4             | **(Adwaita CSS)**: 12 (`$menu_padding`) |
-| `border.padding_vertical`  | 3 **(measured)** (22−16)/2     | 8 **(Fluent)** MenuFlyoutItem padding| `MenuItem_MarginHeight` = 4            | **(Adwaita CSS)**: 0 (vertical space from min-height) |
+| `border.padding_vertical`  | 3 **(measured)** (22−16)/2     | **(Fluent)** touch: 8 top / 9 bottom, mouse: 4 top / 5 bottom (MenuFlyoutItem padding) | `MenuItem_MarginHeight` = 4            | **(Adwaita CSS)**: 0 (vertical space from min-height) |
 | `border.color` | **(none)** — popup border from §2.16 | **(none)** — popup border from §2.16 | **(none)** — popup border from §2.16 | **(none)** — popup border from §2.16 |
 | `border.line_width` | **(none)** — popup border from §2.16 | **(none)** — popup border from §2.16 | **(none)** — popup border from §2.16 | **(none)** — popup border from §2.16 |
 | `border.corner_radius` | **(none)** — items are rectangular | **(none)** — items are rectangular | **(none)** — items are rectangular | **(none)** — items are rectangular |
@@ -1259,7 +1261,7 @@ have no platform limit — preset values are our defaults.
 
 | Property          | macOS                              | Windows                   | KDE                         | GNOME                      |
 |-------------------|------------------------------------|---------------------------|-----------------------------|----------------------------|
-| `track_color`           | transparent (overlay mode)         | transparent               | `defaults.background_color`      | **(Adwaita CSS)** scrollbar|
+| `track_color`           | transparent (overlay mode)         | transparent               | ← `defaults.background_color`   | **(Adwaita CSS)** scrollbar|
 | `thumb_color`           | `#80808080` **(measured)** Sonoma  | `#c2c2c2` **(measured)**  | **(Breeze src)** thumb color| **(Adwaita CSS)** scrollbar|
 | `thumb_hover_color`     | `#60606080` **(measured)** Sonoma  | `#a0a0a0` **(measured)**  | **(Breeze src)** thumb hover| **(Adwaita CSS)** :hover   |
 | `groove_width`           | mode-dependent: legacy=16 (persistent), overlay=7 (auto-hiding); see `overlay_mode` | ↕ `SM_CXVSCROLL` (DPI-aware)| `ScrollBar_Extend` = 21  | slider: 8 + margins        |
@@ -1334,7 +1336,7 @@ have no platform limit — preset values are our defaults.
 | `font.color`   | ← `defaults.font.color`   | ← `defaults.font.color`   | ← `defaults.font.color`          | ← `defaults.font.color` |
 | `bar_height`       | NSToolbar: 38         | WinUI3 CommandBar: default=64, compact mode=48 (`AppBarThemeCompactHeight`) | **(none)** — sizes to content  | **(Adwaita CSS)**: 47|
 | `item_gap` | AppKit: 8             | WinUI3: 0 (visual gap from AppBarButton margins) | `ToolBar_ItemSpacing` = 0         | **(Adwaita CSS)**: 6 |
-| `border.padding_horizontal` | 8 **(measured)** NSToolbar | WinUI3: 4 (left only, 0 right) | `ToolBar_ItemMargin` = 6   | **(Adwaita CSS)**: 6 |
+| `border.padding_horizontal` | 8 **(measured)** NSToolbar | WinUI3: 4 left / 0 right | `ToolBar_ItemMargin` = 6   | **(Adwaita CSS)**: 6 |
 | `border.padding_vertical`  | 0                         | WinUI3: 0                      | 0                          | 0                    |
 | `background_color`   | ← `defaults.background_color`   | ← `defaults.background_color`   | ← `defaults.background_color`          | ← `defaults.background_color` |
 | `icon_size`    | default=32, small mode=24 (`NSToolbar.SizeMode`, deprecated) = `← defaults.icon_sizes.toolbar` | ↕ 20 = `← defaults.icon_sizes.toolbar` | 22 = `← defaults.icon_sizes.toolbar` | 16 = `← defaults.icon_sizes.toolbar` |
