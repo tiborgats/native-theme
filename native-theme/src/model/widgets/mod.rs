@@ -668,6 +668,7 @@ define_widget_pair! {
 mod tests {
     use super::*;
     use crate::Rgba;
+    use crate::model::border::{BorderSpec, ResolvedBorderSpec};
     use crate::model::{DialogButtonOrder, FontSpec};
 
     // Define a test widget pair using the macro (validates macro itself still works)
@@ -1212,6 +1213,135 @@ mod tests {
             }),
         };
         assert!(!s.is_empty());
+    }
+
+    // === SC4: Dual optional_nested (font + border) test widget ===
+
+    // SC4: Verify define_widget_pair! handles dual optional_nested (font + border)
+    define_widget_pair! {
+        /// Test widget with both font and border nested sub-structs.
+        DualNestedTestWidget / ResolvedDualNestedTestWidget {
+            option {
+                background: Rgba,
+                min_height: f32,
+            }
+            optional_nested {
+                font: [FontSpec, ResolvedFontSpec],
+                border: [BorderSpec, ResolvedBorderSpec],
+            }
+        }
+    }
+
+    #[test]
+    fn dual_nested_default_is_empty() {
+        assert!(DualNestedTestWidget::default().is_empty());
+    }
+
+    #[test]
+    fn dual_nested_field_names() {
+        assert_eq!(DualNestedTestWidget::FIELD_NAMES.len(), 4);
+        assert!(DualNestedTestWidget::FIELD_NAMES.contains(&"background"));
+        assert!(DualNestedTestWidget::FIELD_NAMES.contains(&"min_height"));
+        assert!(DualNestedTestWidget::FIELD_NAMES.contains(&"font"));
+        assert!(DualNestedTestWidget::FIELD_NAMES.contains(&"border"));
+    }
+
+    #[test]
+    fn dual_nested_not_empty_when_font_set() {
+        let w = DualNestedTestWidget {
+            font: Some(FontSpec {
+                family: Some("Inter".into()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        assert!(!w.is_empty());
+    }
+
+    #[test]
+    fn dual_nested_not_empty_when_border_set() {
+        let w = DualNestedTestWidget {
+            border: Some(BorderSpec {
+                color: Some(Rgba::rgb(100, 100, 100)),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        assert!(!w.is_empty());
+    }
+
+    #[test]
+    fn dual_nested_merge_both_nested() {
+        let mut base = DualNestedTestWidget {
+            font: Some(FontSpec {
+                family: Some("Noto Sans".into()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let overlay = DualNestedTestWidget {
+            border: Some(BorderSpec {
+                corner_radius: Some(4.0),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        base.merge(&overlay);
+        assert!(base.font.is_some());
+        assert!(base.border.is_some());
+        assert_eq!(
+            base.font.as_ref().and_then(|f| f.family.as_deref()),
+            Some("Noto Sans")
+        );
+        assert_eq!(
+            base.border.as_ref().and_then(|b| b.corner_radius),
+            Some(4.0)
+        );
+    }
+
+    #[test]
+    fn dual_nested_merge_inner_font_fields() {
+        let mut base = DualNestedTestWidget {
+            font: Some(FontSpec {
+                family: Some("Noto Sans".into()),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        let overlay = DualNestedTestWidget {
+            font: Some(FontSpec {
+                size: Some(14.0),
+                ..Default::default()
+            }),
+            ..Default::default()
+        };
+        base.merge(&overlay);
+        let font = base.font.as_ref().unwrap();
+        assert_eq!(font.family.as_deref(), Some("Noto Sans")); // preserved
+        assert_eq!(font.size, Some(14.0)); // overlay sets
+    }
+
+    #[test]
+    fn dual_nested_toml_round_trip() {
+        let w = DualNestedTestWidget {
+            background: Some(Rgba::rgb(240, 240, 240)),
+            min_height: Some(32.0),
+            font: Some(FontSpec {
+                family: Some("Inter".into()),
+                size: Some(14.0),
+                weight: Some(400),
+                ..Default::default()
+            }),
+            border: Some(BorderSpec {
+                color: Some(Rgba::rgb(180, 180, 180)),
+                corner_radius: Some(4.0),
+                line_width: Some(1.0),
+                ..Default::default()
+            }),
+        };
+        let toml_str = toml::to_string(&w).unwrap();
+        let w2: DualNestedTestWidget = toml::from_str(&toml_str).unwrap();
+        assert_eq!(w, w2);
     }
 
     // === LayoutTheme tests ===

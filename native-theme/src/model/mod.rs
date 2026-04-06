@@ -1421,7 +1421,10 @@ primay_bg = "#0078d7"
 
         let toml_str = theme.to_toml().unwrap();
         // [layout] must be at top level, not under [light.layout] or [dark.layout]
-        assert!(toml_str.contains("[layout]"), "TOML should have [layout] section");
+        assert!(
+            toml_str.contains("[layout]"),
+            "TOML should have [layout] section"
+        );
         assert!(!toml_str.contains("[light.layout]"));
         assert!(!toml_str.contains("[dark.layout]"));
     }
