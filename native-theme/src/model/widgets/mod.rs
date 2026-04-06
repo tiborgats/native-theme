@@ -671,6 +671,8 @@ mod tests {
             family: "Inter".into(),
             size: 14.0,
             weight: 400,
+            style: crate::model::font::FontStyle::Normal,
+            color: crate::Rgba::rgb(0, 0, 0),
         };
         assert_eq!(rfs.family, "Inter");
         assert_eq!(rfs.size, 14.0);
@@ -722,6 +724,8 @@ mod tests {
                 family: "Inter".into(),
                 size: 14.0,
                 weight: 400,
+                style: crate::model::font::FontStyle::Normal,
+                color: crate::Rgba::rgb(0, 0, 0),
             },
         };
         assert_eq!(resolved.size, 24.0);
@@ -763,6 +767,7 @@ mod tests {
                 family: Some("Noto Sans".into()),
                 size: Some(12.0),
                 weight: None,
+                ..Default::default()
             }),
             ..Default::default()
         };
@@ -771,6 +776,7 @@ mod tests {
                 family: None,
                 size: None,
                 weight: Some(700),
+                ..Default::default()
             }),
             ..Default::default()
         };
@@ -789,6 +795,7 @@ mod tests {
                 family: Some("Inter".into()),
                 size: Some(14.0),
                 weight: Some(400),
+                ..Default::default()
             }),
             ..Default::default()
         };
@@ -806,6 +813,7 @@ mod tests {
                 family: Some("Inter".into()),
                 size: Some(14.0),
                 weight: Some(400),
+                ..Default::default()
             }),
             ..Default::default()
         };
@@ -880,6 +888,7 @@ mod tests {
                 family: Some("Noto".into()),
                 size: Some(11.0),
                 weight: None,
+                ..Default::default()
             }),
             ..Default::default()
         };
@@ -888,6 +897,7 @@ mod tests {
                 family: None,
                 size: Some(14.0),
                 weight: Some(400),
+                ..Default::default()
             }),
             ..Default::default()
         };
@@ -935,6 +945,7 @@ mod tests {
                 family: Some("Inter".into()),
                 size: Some(14.0),
                 weight: Some(400),
+                ..Default::default()
             }),
         };
         assert!(!b.is_empty());
@@ -954,6 +965,7 @@ mod tests {
                 family: Some("Noto Sans".into()),
                 size: Some(11.0),
                 weight: None,
+                ..Default::default()
             }),
             ..Default::default()
         };
@@ -980,6 +992,7 @@ mod tests {
                 family: Some("Inter".into()),
                 size: Some(14.0),
                 weight: Some(400),
+                ..Default::default()
             }),
             ..Default::default()
         };

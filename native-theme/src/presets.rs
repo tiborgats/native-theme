@@ -531,6 +531,7 @@ accent = "#00ff00"
             family: None,
             size: Some(12.0),
             weight: None,
+            ..Default::default()
         });
 
         light.resolve_all();

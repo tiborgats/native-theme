@@ -85,6 +85,8 @@ fn require_font(font: &FontSpec, prefix: &str, missing: &mut Vec<String>) -> Res
         family,
         size,
         weight,
+        style: font.style.unwrap_or_default(),
+        color: font.color.unwrap_or(Rgba::rgb(0, 0, 0)),
     }
 }
 
@@ -108,6 +110,8 @@ fn require_font_opt(
                 family,
                 size,
                 weight,
+                style: f.style.unwrap_or_default(),
+                color: f.color.unwrap_or(Rgba::rgb(0, 0, 0)),
             }
         }
     }
@@ -2229,12 +2233,14 @@ mod tests {
             family: Some("Inter".into()),
             size: Some(14.0),
             weight: Some(400),
+            ..Default::default()
         };
         v.defaults.line_height = Some(1.4);
         v.defaults.mono_font = FontSpec {
             family: Some("JetBrains Mono".into()),
             size: Some(13.0),
             weight: Some(400),
+            ..Default::default()
         };
 
         v.defaults.spacing.xxs = Some(2.0);
@@ -2400,12 +2406,14 @@ mod tests {
             family: Some("Inter".into()),
             size: Some(14.0),
             weight: Some(400),
+            ..Default::default()
         };
         // Menu has a font with only size set
         v.menu.font = Some(FontSpec {
             family: None,
             size: Some(12.0),
             weight: None,
+            ..Default::default()
         });
         v.resolve();
 
@@ -2426,6 +2434,7 @@ mod tests {
             family: Some("Inter".into()),
             size: Some(14.0),
             weight: Some(400),
+            ..Default::default()
         };
         // button.font is None, should inherit entire defaults.font
         assert!(v.button.font.is_none());
@@ -2446,6 +2455,7 @@ mod tests {
             family: Some("Inter".into()),
             size: Some(14.0),
             weight: Some(400),
+            ..Default::default()
         };
         v.defaults.line_height = Some(1.4);
         // Leave text_scale entries as None
@@ -2591,6 +2601,7 @@ mod tests {
             family: Some("Inter".into()),
             size: Some(14.0),
             weight: Some(400),
+            ..Default::default()
         };
         v.resolve();
 
@@ -2653,6 +2664,7 @@ mod tests {
             family: Some("Inter".into()),
             size: Some(14.0),
             weight: Some(400),
+            ..Default::default()
         });
 
         // button
@@ -2673,6 +2685,7 @@ mod tests {
             family: Some("Inter".into()),
             size: Some(14.0),
             weight: Some(400),
+            ..Default::default()
         });
 
         // input
@@ -2692,6 +2705,7 @@ mod tests {
             family: Some("Inter".into()),
             size: Some(14.0),
             weight: Some(400),
+            ..Default::default()
         });
 
         // checkbox
@@ -2713,6 +2727,7 @@ mod tests {
             family: Some("Inter".into()),
             size: Some(14.0),
             weight: Some(400),
+            ..Default::default()
         });
 
         // tooltip
@@ -2726,6 +2741,7 @@ mod tests {
             family: Some("Inter".into()),
             size: Some(14.0),
             weight: Some(400),
+            ..Default::default()
         });
 
         // scrollbar
@@ -2775,6 +2791,7 @@ mod tests {
             family: Some("Inter".into()),
             size: Some(14.0),
             weight: Some(400),
+            ..Default::default()
         });
 
         // status_bar
@@ -2782,6 +2799,7 @@ mod tests {
             family: Some("Inter".into()),
             size: Some(14.0),
             weight: Some(400),
+            ..Default::default()
         });
 
         // list
@@ -2832,6 +2850,7 @@ mod tests {
             family: Some("Inter".into()),
             size: Some(16.0),
             weight: Some(700),
+            ..Default::default()
         });
 
         // spinner
@@ -3213,6 +3232,7 @@ mod tests {
             family: Some("Cantarell".to_string()),
             size: Some(11.0),
             weight: Some(400),
+            ..Default::default()
         };
 
         variant.resolve_all();

@@ -2,6 +2,8 @@
 
 /// Animated icon types (frame sequences and transforms).
 pub mod animated;
+/// Border specification sub-struct for widget border properties.
+pub mod border;
 /// Bundled SVG icon lookup tables.
 pub mod bundled;
 /// Global theme defaults shared across widgets.
@@ -22,10 +24,11 @@ pub mod spacing;
 pub mod widgets;
 
 pub use animated::{AnimatedIcon, TransformAnimation};
+pub use border::{BorderSpec, ResolvedBorderSpec};
 pub use bundled::{bundled_icon_by_name, bundled_icon_svg};
 pub use defaults::ThemeDefaults;
 pub use dialog_order::DialogButtonOrder;
-pub use font::{FontSpec, ResolvedFontSpec, TextScale, TextScaleEntry};
+pub use font::{FontSpec, FontStyle, ResolvedFontSpec, TextScale, TextScaleEntry};
 pub use icon_sizes::IconSizes;
 pub use icons::{
     IconData, IconProvider, IconRole, IconSet, icon_name, system_icon_set, system_icon_theme,

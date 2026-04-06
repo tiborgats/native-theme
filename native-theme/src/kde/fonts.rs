@@ -58,6 +58,7 @@ pub(crate) fn parse_qt_font_with_weight(font_str: &str) -> Option<crate::FontSpe
         family: Some(family),
         size: Some(size),
         weight: Some(css_weight),
+        ..Default::default()
     })
 }
 

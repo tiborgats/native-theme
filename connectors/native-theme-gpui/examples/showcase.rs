@@ -1281,11 +1281,15 @@ impl Showcase {
                     family: "(default)".into(),
                     size: 0.0,
                     weight: 400,
+                    style: native_theme::FontStyle::Normal,
+                    color: native_theme::Rgba::default(),
                 };
                 let mono_font = native_theme::ResolvedFontSpec {
                     family: "(default)".into(),
                     size: 0.0,
                     weight: 400,
+                    style: native_theme::FontStyle::Normal,
+                    color: native_theme::Rgba::default(),
                 };
                 let preset = platform_preset_name();
                 let display = preset.strip_suffix("-live").unwrap_or(preset);

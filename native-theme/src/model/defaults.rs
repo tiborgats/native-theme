@@ -341,6 +341,7 @@ mod tests {
                 family: Some("Noto Sans".into()),
                 size: Some(11.0),
                 weight: None,
+                ..Default::default()
             },
             ..Default::default()
         };
@@ -349,6 +350,7 @@ mod tests {
                 family: None,
                 size: None,
                 weight: Some(700),
+                ..Default::default()
             },
             ..Default::default()
         };

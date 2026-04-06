@@ -262,6 +262,7 @@ mod tests {
     use crate::Rgba;
     use crate::model::DialogButtonOrder;
     use crate::model::ResolvedFontSpec;
+    use crate::model::font::FontStyle;
     use crate::model::widgets::{
         ResolvedButtonTheme, ResolvedCardTheme, ResolvedCheckboxTheme, ResolvedComboBoxTheme,
         ResolvedDialogTheme, ResolvedExpanderTheme, ResolvedInputTheme, ResolvedLinkTheme,
@@ -277,6 +278,8 @@ mod tests {
             family: "Inter".into(),
             size: 14.0,
             weight: 400,
+            style: FontStyle::Normal,
+            color: Rgba::rgb(128, 128, 128),
         }
     }
 
@@ -319,6 +322,8 @@ mod tests {
                 family: "JetBrains Mono".into(),
                 size: 12.0,
                 weight: 400,
+                style: FontStyle::Normal,
+                color: Rgba::rgb(128, 128, 128),
             },
             background: c,
             foreground: c,

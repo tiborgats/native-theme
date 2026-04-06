@@ -211,6 +211,7 @@ fn fontspec_from_nsfont(font: &NSFont) -> crate::FontSpec {
         family: font.familyName().map(|n| n.to_string()),
         size: Some(font.pointSize() as f32),
         weight: nsfont_weight_to_css(font),
+        ..Default::default()
     }
 }
 
@@ -538,16 +539,19 @@ mod tests {
                 family: Some("SF Pro".to_string()),
                 size: Some(14.0),
                 weight: Some(400),
+                ..Default::default()
             },
             tooltip_font: crate::FontSpec {
                 family: Some("SF Pro".to_string()),
                 size: Some(11.0),
                 weight: Some(400),
+                ..Default::default()
             },
             title_bar_font: crate::FontSpec {
                 family: Some("SF Pro".to_string()),
                 size: Some(13.0),
                 weight: Some(700),
+                ..Default::default()
             },
             text_scale: compute_text_scale(13.0),
         }
@@ -564,11 +568,13 @@ mod tests {
                 family: Some("SF Pro".to_string()),
                 size: Some(13.0),
                 weight: None,
+                ..Default::default()
             },
             mono_font: crate::FontSpec {
                 family: Some("SF Mono".to_string()),
                 size: Some(13.0),
                 weight: None,
+                ..Default::default()
             },
             ..Default::default()
         }
@@ -585,11 +591,13 @@ mod tests {
                 family: Some("SF Pro".to_string()),
                 size: Some(13.0),
                 weight: None,
+                ..Default::default()
             },
             mono_font: crate::FontSpec {
                 family: Some("SF Mono".to_string()),
                 size: Some(13.0),
                 weight: None,
+                ..Default::default()
             },
             ..Default::default()
         }
@@ -633,11 +641,13 @@ mod tests {
                 family: Some("SF Pro".to_string()),
                 size: Some(13.0),
                 weight: None,
+                ..Default::default()
             },
             mono_font: crate::FontSpec {
                 family: Some("SF Mono".to_string()),
                 size: Some(13.0),
                 weight: None,
+                ..Default::default()
             },
             ..Default::default()
         };

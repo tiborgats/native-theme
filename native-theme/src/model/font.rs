@@ -1,6 +1,20 @@
 // Font specification and text scale types
 
+use crate::Rgba;
 use serde::{Deserialize, Serialize};
+
+/// Font style: upright, italic, or oblique.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum FontStyle {
+    /// Normal upright text.
+    #[default]
+    Normal,
+    /// Italic text (true italic glyph).
+    Italic,
+    /// Oblique text (slanted upright glyph).
+    Oblique,
+}
 
 /// Font specification: family name, size, and weight.
 ///
@@ -16,15 +30,19 @@ pub struct FontSpec {
     pub size: Option<f32>,
     /// CSS font weight (100–900).
     pub weight: Option<u16>,
+    /// Font style (normal, italic, oblique).
+    pub style: Option<FontStyle>,
+    /// Font color.
+    pub color: Option<Rgba>,
 }
 
 impl FontSpec {
     /// All serialized field names for FontSpec, for TOML linting.
-    pub const FIELD_NAMES: &[&str] = &["family", "size", "weight"];
+    pub const FIELD_NAMES: &[&str] = &["family", "size", "weight", "style", "color"];
 }
 
 impl_merge!(FontSpec {
-    option { family, size, weight }
+    option { family, size, weight, style, color }
 });
 
 /// A resolved (non-optional) font specification produced after theme resolution.
@@ -39,6 +57,10 @@ pub struct ResolvedFontSpec {
     pub size: f32,
     /// CSS font weight (100–900).
     pub weight: u16,
+    /// Font style (normal, italic, oblique).
+    pub style: FontStyle,
+    /// Font color.
+    pub color: Rgba,
 }
 
 /// A single entry in a text scale: size, weight, and line height.
@@ -139,6 +161,7 @@ mod tests {
             family: Some("Inter".into()),
             size: Some(14.0),
             weight: Some(400),
+            ..Default::default()
         };
         let toml_str = toml::to_string(&fs).unwrap();
         let deserialized: FontSpec = toml::from_str(&toml_str).unwrap();
@@ -151,6 +174,7 @@ mod tests {
             family: Some("Inter".into()),
             size: None,
             weight: None,
+            ..Default::default()
         };
         let toml_str = toml::to_string(&fs).unwrap();
         let deserialized: FontSpec = toml::from_str(&toml_str).unwrap();
@@ -165,11 +189,13 @@ mod tests {
             family: Some("Noto Sans".into()),
             size: Some(12.0),
             weight: None,
+            ..Default::default()
         };
         let overlay = FontSpec {
             family: Some("Inter".into()),
             size: None,
             weight: None,
+            ..Default::default()
         };
         base.merge(&overlay);
         assert_eq!(base.family.as_deref(), Some("Inter"));
@@ -183,6 +209,7 @@ mod tests {
             family: Some("Noto Sans".into()),
             size: Some(12.0),
             weight: Some(400),
+            ..Default::default()
         };
         let overlay = FontSpec::default();
         base.merge(&overlay);
@@ -329,5 +356,77 @@ mod tests {
         base.merge(&overlay);
         assert!(base.display.is_some());
         assert_eq!(base.display.unwrap().size, Some(24.0));
+    }
+
+    // === FontStyle tests ===
+
+    #[test]
+    fn font_style_default_is_normal() {
+        assert_eq!(FontStyle::default(), FontStyle::Normal);
+    }
+
+    #[test]
+    fn font_style_serde_round_trip() {
+        // TOML cannot serialize a bare enum as a top-level value; use a wrapper struct.
+        #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
+        struct Wrapper {
+            style: FontStyle,
+        }
+
+        for (variant, expected_str) in [
+            (FontStyle::Normal, "normal"),
+            (FontStyle::Italic, "italic"),
+            (FontStyle::Oblique, "oblique"),
+        ] {
+            let original = Wrapper { style: variant };
+            let serialized = toml::to_string(&original).unwrap();
+            assert!(serialized.contains(expected_str), "got: {serialized}");
+            let deserialized: Wrapper = toml::from_str(&serialized).unwrap();
+            assert_eq!(deserialized, original);
+        }
+    }
+
+    #[test]
+    fn font_spec_with_style_and_color_round_trip() {
+        let fs = FontSpec {
+            family: Some("Inter".into()),
+            size: Some(14.0),
+            weight: Some(400),
+            style: Some(FontStyle::Italic),
+            color: Some(crate::Rgba::rgb(255, 0, 0)),
+        };
+        let toml_str = toml::to_string(&fs).unwrap();
+        let deserialized: FontSpec = toml::from_str(&toml_str).unwrap();
+        assert_eq!(deserialized, fs);
+    }
+
+    #[test]
+    fn font_spec_style_none_preserved() {
+        let fs = FontSpec {
+            family: Some("Inter".into()),
+            style: None,
+            ..Default::default()
+        };
+        let toml_str = toml::to_string(&fs).unwrap();
+        let deserialized: FontSpec = toml::from_str(&toml_str).unwrap();
+        assert!(deserialized.style.is_none());
+    }
+
+    #[test]
+    fn font_spec_merge_includes_style_and_color() {
+        let mut base = FontSpec {
+            family: Some("Noto Sans".into()),
+            style: Some(FontStyle::Normal),
+            color: Some(crate::Rgba::rgb(0, 0, 0)),
+            ..Default::default()
+        };
+        let overlay = FontSpec {
+            style: Some(FontStyle::Italic),
+            ..Default::default()
+        };
+        base.merge(&overlay);
+        assert_eq!(base.style, Some(FontStyle::Italic)); // overlay wins
+        assert_eq!(base.color, Some(crate::Rgba::rgb(0, 0, 0))); // base preserved
+        assert_eq!(base.family.as_deref(), Some("Noto Sans")); // base preserved
     }
 }
