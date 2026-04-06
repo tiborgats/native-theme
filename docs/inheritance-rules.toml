@@ -133,7 +133,7 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 
 # input (§2.4) — selection uses text_selection tokens, not content selection
 "input.background_color"                     = "defaults.background_color"    # see wrong_safety_nets
-"input.placeholder_color"                    = "defaults.muted_color"
+"input.placeholder_color"                    = "defaults.muted_color"         # see wrong_safety_nets
 "input.selection_background"                 = "defaults.text_selection_background"
 "input.selection_text_color"                 = "defaults.text_selection_color"
 "input.disabled_opacity"                     = "defaults.disabled_opacity"
@@ -203,7 +203,7 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 
 # switch (§2.21)
 "switch.checked_background"                  = "defaults.accent_color"
-"switch.thumb_background"                    = "defaults.surface_color"
+"switch.thumb_background"                    = "defaults.surface_color"       # see wrong_safety_nets
 "switch.disabled_opacity"                    = "defaults.disabled_opacity"
 
 # dialog (§2.22) — no additional uniform rules beyond border/font
@@ -381,6 +381,10 @@ why_wrong     = "Scrollbar thumb is a semi-transparent UI control; muted_color i
 [wrong_safety_nets."scrollbar.thumb_hover_color"]
 inherits_from = "defaults.muted_color"
 why_wrong     = "Same as thumb_color — all platforms have distinct scrollbar hover colors"
+
+[wrong_safety_nets."switch.thumb_background"]
+inherits_from = "defaults.surface_color"
+why_wrong     = "All platforms have distinct thumb APIs; macOS/GNOME thumb is white even in dark mode, surface_color is dark"
 
 # ─── Hardcoded safety nets (resolve.rs Phase 2) ──────────────────────────
 #

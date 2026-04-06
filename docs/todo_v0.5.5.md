@@ -1,6 +1,7 @@
 # v0.5.5 TODO
 
 Issues found during comprehensive audit (2026-04-04).
+Updated with property-registry.toml vs code audit (2026-04-06).
 
 ---
 
@@ -795,3 +796,631 @@ These are compile-time constants (KDE), design guidelines (macOS), or
 hardcoded CSS (GNOME). Windows has none — `StackPanel.Spacing` defaults
 to 0. Not user-configurable on any platform. They belong on a `layout`
 widget, same pattern as `dialog.content_padding` or `toolbar.item_spacing`.
+
+
+---
+
+## CRITICAL: property-registry.toml vs Code Naming / Structure Audit
+
+Comprehensive field-by-field comparison of every entry in
+`docs/property-registry.toml` against the actual Rust struct definitions in
+`native-theme/src/model/`. The registry is the source of truth for the v0.5.5
+naming convention overhaul; the code must be updated to match.
+
+### Summary
+
+- **3 structural issues** (Font missing fields, no Border sub-struct, enum mismatch)
+- **~70 field naming mismatches** (systematic rename patterns, listed per widget)
+- **~30 missing fields** (in registry but not in code, beyond interactive states)
+- **~15 extra fields** (in code but not in registry)
+
+### REG-1. FontSpec missing `style` and `color` fields
+
+**Registry** (`_structures.Font`):
+```
+family = "string"
+size   = "f32"
+weight = "u16"
+style  = "enum"   # Normal | Italic | Oblique
+color  = "color"
+```
+
+**Code** (`model/font.rs:12-19`):
+```rust
+pub struct FontSpec {
+    pub family: Option<String>,
+    pub size: Option<f32>,
+    pub weight: Option<u16>,
+    // MISSING: style, color
+}
+```
+
+**Impact**: `style` is never captured from any platform API (macOS NSFont italic
+trait, Windows LOGFONT.lfItalic, KDE font style, GNOME Pango style). `color`
+being on FontSpec means each widget's default text color lives inside its font
+sub-struct (e.g., `button.font.color`), rather than as a separate `foreground`
+field. This affects the TOML format for every widget.
+
+**Action**:
+- [ ] Add `FontStyle` enum: `Normal | Italic | Oblique`
+- [ ] Add `style: Option<FontStyle>` to `FontSpec`
+- [ ] Add `color: Option<Rgba>` to `FontSpec`
+- [ ] Migrate per-widget `foreground` fields into `font.color`
+- [ ] Update `ResolvedFontSpec` with corresponding non-optional fields
+- [ ] Update all presets and OS readers
+
+### REG-2. Border sub-struct does not exist — fields are flattened
+
+**Registry** (`_structures.Border`):
+```
+color              = "color"
+corner_radius      = "f32"
+corner_radius_lg   = "f32"    # defaults only
+line_width         = "f32"
+opacity            = "f32"    # defaults only
+shadow_enabled     = "bool"
+padding_horizontal = "f32"
+padding_vertical   = "f32"
+```
+
+**Code**: No `Border` struct exists. Each widget flattens these fields at the
+parent level with different names:
+- `border.color` → widget has `border: Option<Rgba>` (flat)
+- `border.corner_radius` → widget has `radius: Option<f32>` (flat)
+- `border.line_width` → `frame_width` (defaults) or `border_width` (input/checkbox)
+- `border.opacity` → `border_opacity` (defaults only)
+- `border.shadow_enabled` → `shadow_enabled` (defaults) or `shadow` (widgets)
+- `border.padding_horizontal` → `padding_horizontal` (flat on widget, not under border)
+- `border.padding_vertical` → `padding_vertical` (flat on widget, not under border)
+
+**TOML format change**: Creating a `Border` sub-struct changes serialization from:
+```toml
+[button]
+border = "#cccccc"
+radius = 6.0
+```
+to:
+```toml
+[button.border]
+color = "#cccccc"
+corner_radius = 6.0
+```
+
+**Action**:
+- [ ] Create `BorderSpec` struct with all 8 fields as `Option<T>`
+- [ ] Create `ResolvedBorderSpec` with non-optional fields
+- [ ] Replace flat border fields on every widget with `border: BorderSpec`
+- [ ] Update the `define_widget_pair!` macro to support nested border
+- [ ] Update all presets (every TOML file) to use `[widget.border]` sections
+- [ ] Update OS readers and resolve.rs
+
+### REG-3. DialogButtonOrder enum variant naming and cardinality mismatch
+
+**Registry**: `button_order = "enum"  # PrimaryRight | PrimaryLeft | KdeLayout | GnomeLayout`
+
+**Code** (`model/dialog_order.rs:14-20`):
+```rust
+pub enum DialogButtonOrder {
+    TrailingAffirmative,   // registry: PrimaryRight
+    LeadingAffirmative,    // registry: PrimaryLeft
+    // MISSING: KdeLayout, GnomeLayout
+}
+```
+
+The registry specifies 4 variants but code has only 2. The missing variants
+(`KdeLayout`, `GnomeLayout`) may represent more nuanced button placement
+patterns beyond simple left/right affirmative positioning.
+
+**Action**:
+- [ ] Decide: are 4 variants needed or are 2 sufficient? Check platform-facts.md
+- [ ] Rename variants to match registry names (or update registry)
+- [ ] Add `#[serde(rename = "...")]` for backwards compatibility if needed
+
+---
+
+### REG-4. Per-widget field audit
+
+Each table below compares registry fields against code. Status key:
+
+- OK = correct name and type
+- **RENAME** = field exists under a different name
+- **MISSING** = field not in code at all
+- **EXTRA** = field in code but not in registry
+
+#### §2.1 Global Defaults — `ThemeDefaults` (`model/defaults.rs:34-134`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `font` | `font: FontSpec` | OK (but FontSpec missing style/color, see REG-1) |
+| `line_height` | `line_height` | OK |
+| `mono_font` | `mono_font: FontSpec` | OK (but FontSpec missing style/color) |
+| `background_color` | `background` | **RENAME** → `background_color` |
+| `text_color` | `foreground` | **RENAME** → `text_color` |
+| `accent_color` | `accent` | **RENAME** → `accent_color` |
+| `accent_text_color` | `accent_foreground` | **RENAME** → `accent_text_color` |
+| `surface_color` | `surface` | **RENAME** → `surface_color` |
+| `muted_color` | `muted` | **RENAME** → `muted_color` |
+| `shadow_color` | `shadow` | **RENAME** → `shadow_color` |
+| `link_color` | `link` | **RENAME** → `link_color` |
+| `selection_background` | `selection` | **RENAME** → `selection_background` |
+| `selection_text_color` | `selection_foreground` | **RENAME** → `selection_text_color` |
+| `selection_inactive_background` | `selection_inactive` | **RENAME** → `selection_inactive_background` |
+| `text_selection_background` | — | **MISSING** (macOS has distinct text selection) |
+| `text_selection_color` | — | **MISSING** (macOS `selectedTextColor`) |
+| `disabled_text_color` | `disabled_foreground` | **RENAME** → `disabled_text_color` |
+| `danger_color` | `danger` | **RENAME** → `danger_color` |
+| `danger_text_color` | `danger_foreground` | **RENAME** → `danger_text_color` |
+| `warning_color` | `warning` | **RENAME** → `warning_color` |
+| `warning_text_color` | `warning_foreground` | **RENAME** → `warning_text_color` |
+| `success_color` | `success` | **RENAME** → `success_color` |
+| `success_text_color` | `success_foreground` | **RENAME** → `success_text_color` |
+| `info_color` | `info` | **RENAME** → `info_color` |
+| `info_text_color` | `info_foreground` | **RENAME** → `info_text_color` |
+| `focus_ring_color` | `focus_ring_color` | OK |
+| `focus_ring_width` | `focus_ring_width` | OK |
+| `focus_ring_offset` | `focus_ring_offset` | OK |
+| `border` (sub-struct) | flattened fields | **STRUCTURAL** (see REG-2) |
+| `border.color` | `border: Option<Rgba>` | **RENAME** → `border.color` |
+| `border.corner_radius` | `radius` | **RENAME** → `border.corner_radius` |
+| `border.corner_radius_lg` | `radius_lg` | **RENAME** → `border.corner_radius_lg` |
+| `border.line_width` | `frame_width` | **RENAME** → `border.line_width` |
+| `border.opacity` | `border_opacity` | **RENAME** → `border.opacity` |
+| `border.shadow_enabled` | `shadow_enabled` | **RENAME** → `border.shadow_enabled` |
+| `border.padding_horizontal` | — | **MISSING** (no padding on defaults) |
+| `border.padding_vertical` | — | **MISSING** (no padding on defaults) |
+| `disabled_opacity` | `disabled_opacity` | OK |
+| `text_scaling_factor` | `text_scaling_factor` | OK |
+| `reduce_motion` | `reduce_motion` | OK |
+| `high_contrast` | `high_contrast` | OK |
+| `reduce_transparency` | `reduce_transparency` | OK |
+| `icon_sizes` | `icon_sizes: IconSizes` | OK |
+| — | `spacing: ThemeSpacing` | **EXTRA** (registry NOTE says should be removed) |
+
+#### §2.19 Text Scale — `TextScale` (`model/font.rs:77-86`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `caption` | `caption` | OK |
+| `section_heading` | `section_heading` | OK |
+| `dialog_title` | `dialog_title` | OK |
+| `display` | `display` | OK |
+
+TextScaleEntry: registry has `size`, `weight`. Code adds `line_height` (noted
+in registry as extra, acceptable).
+
+#### Top-level `ThemeVariant` fields
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `icon_set` | `icon_set` | OK |
+| `icon_theme` | `icon_theme` | OK |
+
+#### §2.2 Window — `WindowTheme` (`widgets/mod.rs:77-105`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `background_color` | `background` | **RENAME** → `background_color` |
+| `title_bar_background` | `title_bar_background` | OK |
+| `title_bar_font` | `title_bar_font` | OK |
+| `inactive_title_bar_background` | `inactive_title_bar_background` | OK |
+| `inactive_title_bar_text_color` | `inactive_title_bar_foreground` | **RENAME** → `inactive_title_bar_text_color` |
+| `border` (sub-struct) | flattened | **STRUCTURAL** |
+| `border.color` | `border: Rgba` | **RENAME** → nest under border |
+| `border.corner_radius` | `radius` | **RENAME** → nest under border |
+| `border.shadow_enabled` | `shadow` | **RENAME** → nest under border |
+| — | `foreground` | **EXTRA** (not in registry) |
+| — | `title_bar_foreground` | **EXTRA** (not in registry — active title bar text) |
+
+**Note**: The registry has no active title bar text color field. But `title_bar_font`
+in the registry includes `color` (via Font sub-struct), which would serve this
+purpose. Check platform-facts.md §2.2 to confirm whether `title_bar_foreground`
+should be in the registry or is handled by `title_bar_font.color`.
+
+#### §2.3 Button — `ButtonTheme` (`widgets/mod.rs:109-145`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `background_color` | `background` | **RENAME** → `background_color` |
+| `font` | `font: FontSpec` | OK (but FontSpec missing style/color) |
+| `min_width` | `min_width` | OK |
+| `min_height` | `min_height` | OK |
+| `icon_text_gap` | `icon_spacing` | **RENAME** → `icon_text_gap` |
+| `primary_background` | `primary_background` | OK |
+| `primary_text_color` | `primary_foreground` | **RENAME** → `primary_text_color` |
+| `disabled_opacity` | `disabled_opacity` | OK |
+| `hover_background` | — | **MISSING** (tracked above in interactive states) |
+| `hover_text_color` | — | **MISSING** (tracked above) |
+| `border` (sub-struct) | flattened | **STRUCTURAL** |
+| `border.color` | `border: Rgba` | **RENAME** → nest |
+| `border.corner_radius` | `radius` | **RENAME** → nest |
+| `border.shadow_enabled` | `shadow` | **RENAME** → nest |
+| `border.padding_horizontal` | `padding_horizontal` | Name matches, needs nesting |
+| `border.padding_vertical` | `padding_vertical` | Name matches, needs nesting |
+| — | `foreground` | **EXTRA** (replaced by `font.color`) |
+| — | `border.line_width` | **MISSING** (no line_width on button border) |
+
+#### §2.4 Text Input — `InputTheme` (`widgets/mod.rs:149-183`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `background_color` | `background` | **RENAME** |
+| `placeholder_color` | `placeholder` | **RENAME** → `placeholder_color` |
+| `caret_color` | `caret` | **RENAME** → `caret_color` |
+| `selection_background` | `selection` | **RENAME** → `selection_background` |
+| `selection_text_color` | `selection_foreground` | **RENAME** → `selection_text_color` |
+| `font` | `font: FontSpec` | OK |
+| `min_height` | `min_height` | OK |
+| `disabled_opacity` | — | **MISSING** |
+| `border` (sub-struct) | flattened | **STRUCTURAL** |
+| `border.color` | `border: Rgba` | **RENAME** → nest |
+| `border.corner_radius` | `radius` | **RENAME** → nest |
+| `border.line_width` | `border_width` | **RENAME** → `border.line_width` |
+| `border.padding_horizontal` | `padding_horizontal` | Name matches, needs nesting |
+| `border.padding_vertical` | `padding_vertical` | Name matches, needs nesting |
+| — | `foreground` | **EXTRA** (replaced by `font.color`) |
+
+#### §2.5 Checkbox / Radio — `CheckboxTheme` (`widgets/mod.rs:187-203`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `background_color` | — | **MISSING** (unchecked bg) |
+| `font` | — | **MISSING** (label font, tracked in W-1) |
+| `indicator_color` | — | **MISSING** (checkmark/dot color) |
+| `indicator_width` | `indicator_size` | **RENAME** → `indicator_width` |
+| `label_gap` | `spacing` | **RENAME** → `label_gap` |
+| `checked_background` | `checked_background` | OK |
+| `disabled_opacity` | — | **MISSING** |
+| `border` (sub-struct) | partial flat fields | **STRUCTURAL** |
+| `border.corner_radius` | `radius` | **RENAME** → nest |
+| `border.line_width` | `border_width` | **RENAME** → nest |
+| `border.color` | — | **MISSING** |
+
+#### §2.6 Menu — `MenuTheme` (`widgets/mod.rs:207-231`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `background_color` | `background` | **RENAME** |
+| `separator_color` | `separator` | **RENAME** → `separator_color` |
+| `font` | `font: FontSpec` | OK |
+| `row_height` | `item_height` | **RENAME** → `row_height` |
+| `icon_text_gap` | `icon_spacing` | **RENAME** → `icon_text_gap` |
+| `icon_size` | — | **MISSING** |
+| `hover_background` | — | **MISSING** (tracked above) |
+| `hover_text_color` | — | **MISSING** (tracked above) |
+| `disabled_text_color` | — | **MISSING** (tracked above) |
+| `border` (sub-struct) | partial flat fields | **STRUCTURAL** |
+| `border.padding_horizontal` | `padding_horizontal` | Name matches, needs nesting |
+| `border.padding_vertical` | `padding_vertical` | Name matches, needs nesting |
+| `border.color` | — | **MISSING** |
+| `border.corner_radius` | — | **MISSING** |
+| — | `foreground` | **EXTRA** (replaced by `font.color`) |
+
+#### §2.7 Tooltip — `TooltipTheme` (`widgets/mod.rs:235-257`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `background_color` | `background` | **RENAME** |
+| `font` | `font: FontSpec` | OK |
+| `max_width` | `max_width` | OK |
+| `border` (sub-struct) | partial flat fields | **STRUCTURAL** |
+| `border.corner_radius` | `radius` | **RENAME** → nest |
+| `border.padding_horizontal` | `padding_horizontal` | Name matches, needs nesting |
+| `border.padding_vertical` | `padding_vertical` | Name matches, needs nesting |
+| `border.color` | — | **MISSING** (tracked above) |
+| — | `foreground` | **EXTRA** (replaced by `font.color`) |
+
+#### §2.8 Scrollbar — `ScrollbarTheme` (`widgets/mod.rs:261-281`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `track_color` | `track` | **RENAME** → `track_color` |
+| `thumb_color` | `thumb` | **RENAME** → `thumb_color` |
+| `thumb_hover_color` | `thumb_hover` | **RENAME** → `thumb_hover_color` |
+| `groove_width` | `width` | **RENAME** → `groove_width` |
+| `min_thumb_length` | `min_thumb_height` | **RENAME** → `min_thumb_length` |
+| `thumb_width` | `slider_width` | **RENAME** → `thumb_width` |
+| `overlay_mode` | `overlay_mode` | OK |
+
+#### §2.9 Slider — `SliderTheme` (`widgets/mod.rs:285-303`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `fill_color` | `fill` | **RENAME** → `fill_color` |
+| `track_color` | `track` | **RENAME** → `track_color` |
+| `thumb_color` | `thumb` | **RENAME** → `thumb_color` |
+| `track_height` | `track_height` | OK |
+| `thumb_diameter` | `thumb_size` | **RENAME** → `thumb_diameter` |
+| `tick_mark_length` | `tick_length` | **RENAME** → `tick_mark_length` |
+| `disabled_opacity` | — | **MISSING** |
+
+#### §2.10 Progress Bar — `ProgressBarTheme` (`widgets/mod.rs:307-323`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `fill_color` | `fill` | **RENAME** → `fill_color` |
+| `track_color` | `track` | **RENAME** → `track_color` |
+| `track_height` | `height` | **RENAME** → `track_height` |
+| `min_width` | `min_width` | OK |
+| `border` (sub-struct) | partial flat fields | **STRUCTURAL** |
+| `border.corner_radius` | `radius` | **RENAME** → nest |
+| `border.color` | — | **MISSING** |
+
+#### §2.11 Tab Bar — `TabTheme` (`widgets/mod.rs:327-351`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `background_color` | `background` | **RENAME** |
+| `active_background` | `active_background` | OK |
+| `active_text_color` | `active_foreground` | **RENAME** → `active_text_color` |
+| `bar_background` | `bar_background` | OK |
+| `min_width` | `min_width` | OK |
+| `min_height` | `min_height` | OK |
+| `font` | — | **MISSING** (tracked in W-1) |
+| `border` (sub-struct) | partial flat fields | **STRUCTURAL** |
+| `border.padding_horizontal` | `padding_horizontal` | Name matches, needs nesting |
+| `border.padding_vertical` | `padding_vertical` | Name matches, needs nesting |
+| `border.color` | — | **MISSING** |
+| — | `foreground` | **EXTRA** (replaced by `font.color`) |
+
+#### §2.12 Sidebar — `SidebarTheme` (`widgets/mod.rs:355-365`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `background_color` | `background` | **RENAME** |
+| `font` | — | **MISSING** |
+| `selection_background` | — | **MISSING** (tracked above) |
+| `selection_text_color` | — | **MISSING** (tracked above) |
+| `hover_background` | — | **MISSING** (tracked above) |
+| `border` (sub-struct) | — | **MISSING** entirely |
+| — | `foreground` | **EXTRA** (replaced by `font.color`) |
+
+#### §2.13 Toolbar — `ToolbarTheme` (`widgets/mod.rs:369-385`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `font` | `font: FontSpec` | OK |
+| `bar_height` | `height` | **RENAME** → `bar_height` |
+| `item_gap` | `item_spacing` | **RENAME** → `item_gap` |
+| `background_color` | — | **MISSING** (tracked above) |
+| `icon_size` | — | **MISSING** |
+| `border` (sub-struct) | — | **MISSING** entirely (tracked above) |
+| — | `padding` | **EXTRA** (not in registry) |
+
+#### §2.14 Status Bar — `StatusBarTheme` (`widgets/mod.rs:389-397`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `font` | `font: FontSpec` | OK |
+| `background_color` | — | **MISSING** (tracked above) |
+| `border` (sub-struct) | — | **MISSING** entirely (tracked above) |
+
+#### §2.15 List / Table — `ListTheme` (`widgets/mod.rs:401-429`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `background_color` | `background` | **RENAME** |
+| `item_font` | — | **MISSING** (tracked in W-1) |
+| `alternate_row_background` | `alternate_row` | **RENAME** → `alternate_row_background` |
+| `selection_background` | `selection` | **RENAME** → `selection_background` |
+| `selection_text_color` | `selection_foreground` | **RENAME** → `selection_text_color` |
+| `header_font` | — | **MISSING** |
+| `header_background` | `header_background` | OK |
+| `grid_color` | `grid_color` | OK |
+| `row_height` | `item_height` | **RENAME** → `row_height` |
+| `hover_background` | — | **MISSING** (tracked above) |
+| `border` (sub-struct) | partial flat fields | **STRUCTURAL** |
+| `border.padding_horizontal` | `padding_horizontal` | Name matches, needs nesting |
+| `border.padding_vertical` | `padding_vertical` | Name matches, needs nesting |
+| `border.color` | — | **MISSING** |
+| — | `foreground` | **EXTRA** (replaced by `item_font.color`) |
+| — | `header_foreground` | **EXTRA** (replaced by `header_font.color`) |
+
+#### §2.16 Popover / Dropdown — `PopoverTheme` (`widgets/mod.rs:433-447`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `background_color` | `background` | **RENAME** |
+| `font` | — | **MISSING** |
+| `border` (sub-struct) | partial flat fields | **STRUCTURAL** |
+| `border.color` | `border: Rgba` | **RENAME** → nest |
+| `border.corner_radius` | `radius` | **RENAME** → nest |
+| — | `foreground` | **EXTRA** (replaced by `font.color`) |
+
+#### §2.17 Splitter — `SplitterTheme` (`widgets/mod.rs:451-459`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `divider_width` | `width` | **RENAME** → `divider_width` |
+| `divider_color` | — | **MISSING** (tracked above as `color`) |
+
+#### §2.18 Separator — `SeparatorTheme` (`widgets/mod.rs:463-471`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `line_color` | `color` | **RENAME** → `line_color` |
+| `line_width` | — | **MISSING** |
+
+#### §2.20 Layout Container Defaults — NOT YET IMPLEMENTED
+
+Registry notes: "NOT YET IMPLEMENTED — struct and presets do not exist yet."
+No code exists. Needs new `LayoutDefaults` struct with `widget_gap`,
+`container_margin`, `window_margin`, `section_gap`.
+
+#### §2.21 Switch / Toggle — `SwitchTheme` (`widgets/mod.rs:475-495`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `track_width` | `track_width` | OK |
+| `track_height` | `track_height` | OK |
+| `thumb_diameter` | `thumb_size` | **RENAME** → `thumb_diameter` |
+| `track_radius` | `track_radius` | OK |
+| `checked_background` | `checked_background` | OK |
+| `unchecked_background` | `unchecked_background` | OK |
+| `thumb_background` | `thumb_background` | OK |
+| `disabled_opacity` | — | **MISSING** |
+
+#### §2.22 Dialog — `DialogTheme` (`widgets/mod.rs:499-527`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `background_color` | — | **MISSING** (tracked above) |
+| `body_font` | — | **MISSING** |
+| `min_width` | `min_width` | OK |
+| `max_width` | `max_width` | OK |
+| `min_height` | `min_height` | OK |
+| `max_height` | `max_height` | OK |
+| `button_gap` | `button_spacing` | **RENAME** → `button_gap` |
+| `button_order` | `button_order` | OK (but enum variants differ, see REG-3) |
+| `title_font` | `title_font` | OK |
+| `icon_size` | `icon_size` | OK |
+| `border` (sub-struct) | partial flat fields | **STRUCTURAL** |
+| `border.corner_radius` | `radius` | **RENAME** → nest |
+| `border.padding_horizontal` | `content_padding` | **RENAME** → `border.padding_horizontal` (or keep separate?) |
+
+#### §2.23 Spinner / Progress Ring — `SpinnerTheme` (`widgets/mod.rs:531-545`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `diameter` | `diameter` | OK |
+| `min_diameter` | `min_size` | **RENAME** → `min_diameter` |
+| `stroke_width` | `stroke_width` | OK |
+| `fill_color` | `fill` | **RENAME** → `fill_color` |
+
+#### §2.24 ComboBox — `ComboBoxTheme` (`widgets/mod.rs:549-567`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `background_color` | — | **MISSING** (tracked above) |
+| `font` | — | **MISSING** |
+| `min_height` | `min_height` | OK |
+| `min_width` | `min_width` | OK |
+| `arrow_icon_size` | `arrow_size` | **RENAME** → `arrow_icon_size` |
+| `arrow_area_width` | `arrow_area_width` | OK |
+| `disabled_opacity` | — | **MISSING** |
+| `border` (sub-struct) | partial flat fields | **STRUCTURAL** |
+| `border.corner_radius` | `radius` | **RENAME** → nest |
+| `border.padding_horizontal` | `padding_horizontal` | Name matches, needs nesting |
+| `border.color` | — | **MISSING** |
+
+#### §2.25 Segmented Control — `SegmentedControlTheme` (`widgets/mod.rs:571-585`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `background_color` | — | **MISSING** (tracked above) |
+| `font` | — | **MISSING** |
+| `active_background` | — | **MISSING** (tracked above) |
+| `active_text_color` | — | **MISSING** (tracked above) |
+| `segment_height` | `segment_height` | OK |
+| `separator_width` | `separator_width` | OK |
+| `disabled_opacity` | — | **MISSING** |
+| `border` (sub-struct) | partial flat fields | **STRUCTURAL** |
+| `border.corner_radius` | `radius` | **RENAME** → nest |
+| `border.padding_horizontal` | `padding_horizontal` | Name matches, needs nesting |
+| `border.color` | — | **MISSING** |
+
+#### §2.26 Card / Container — `CardTheme` (`widgets/mod.rs:589-605`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `background_color` | `background` | **RENAME** |
+| `border` (sub-struct) | partial flat fields | **STRUCTURAL** |
+| `border.color` | `border: Rgba` | **RENAME** → nest |
+| `border.corner_radius` | `radius` | **RENAME** → nest |
+| `border.shadow_enabled` | `shadow` | **RENAME** → nest |
+| `border.padding_horizontal/vertical` | `padding` | **RENAME** (single padding → split h/v) |
+
+#### §2.27 Expander / Disclosure — `ExpanderTheme` (`widgets/mod.rs:609-623`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `font` | — | **MISSING** |
+| `header_height` | `header_height` | OK |
+| `arrow_icon_size` | `arrow_size` | **RENAME** → `arrow_icon_size` |
+| `border` (sub-struct) | partial flat fields | **STRUCTURAL** |
+| `border.corner_radius` | `radius` | **RENAME** → nest |
+| `border.padding_horizontal/vertical` | `content_padding` | **RENAME** (single → split h/v) |
+| `border.color` | — | **MISSING** (tracked above) |
+
+#### §2.28 Link — `LinkTheme` (`widgets/mod.rs:627-643`)
+
+| Registry Field | Code Field | Status |
+|---|---|---|
+| `font` | — | **MISSING** |
+| `visited_text_color` | `visited` | **RENAME** → `visited_text_color` |
+| `underline_enabled` | `underline` | **RENAME** → `underline_enabled` |
+| `background_color` | `background` | **RENAME** |
+| `hover_background` | `hover_bg` | **RENAME** → `hover_background` |
+| — | `color` | **EXTRA** (replaced by `font.color`) |
+
+---
+
+### REG-5. Systematic rename patterns
+
+These patterns cover the bulk of the ~70 naming mismatches:
+
+| Pattern | Registry Convention | Current Code Convention | Count |
+|---|---|---|---|
+| Color suffix | `xxx_color` (e.g. `background_color`) | `xxx` (e.g. `background`) | ~25 |
+| Text color | `xxx_text_color` | `xxx_foreground` | ~15 |
+| Border nesting | `border.corner_radius` | `radius` (flat) | ~15 |
+| Border line_width | `border.line_width` | `frame_width` or `border_width` | ~3 |
+| Border shadow | `border.shadow_enabled` | `shadow` (bool) | ~5 |
+| Widget-specific | `icon_text_gap`, `row_height`, etc. | `icon_spacing`, `item_height`, etc. | ~10 |
+| Diameter/size | `thumb_diameter`, `min_diameter` | `thumb_size`, `min_size` | ~3 |
+
+### REG-6. Missing non-state fields not already tracked
+
+These are fields that appear in the registry but NOT in the existing
+"Missing Interactive State Colors" section above:
+
+| Widget | Missing Field | Registry Type | Notes |
+|---|---|---|---|
+| defaults | `text_selection_background` | color | macOS `selectedTextBackgroundColor` |
+| defaults | `text_selection_color` | color | macOS `selectedTextColor` |
+| checkbox | `background_color` | color | Unchecked background |
+| checkbox | `indicator_color` | color | Checkmark/dot color |
+| checkbox | `disabled_opacity` | f32 | |
+| input | `disabled_opacity` | f32 | |
+| menu | `icon_size` | f32 | Menu item icon size |
+| slider | `disabled_opacity` | f32 | |
+| list | `header_font` | font | Column header font |
+| popover | `font` | font | Popover text font |
+| separator | `line_width` | f32 | Separator thickness |
+| switch | `disabled_opacity` | f32 | |
+| dialog | `body_font` | font | Dialog body text font |
+| combo_box | `font` | font | Trigger text font |
+| combo_box | `disabled_opacity` | f32 | |
+| segmented_control | `font` | font | Segment label font |
+| segmented_control | `disabled_opacity` | f32 | |
+| expander | `font` | font | Header label font |
+| link | `font` | font | Link text font |
+| toolbar | `icon_size` | f32 | Toolbar button icon size |
+| sidebar | `font` | font | Sidebar item font |
+| layout | `widget_gap` | f32 | Entire struct not yet implemented |
+| layout | `container_margin` | f32 | |
+| layout | `window_margin` | f32 | |
+| layout | `section_gap` | f32 | |
+
+### REG-7. Extra fields in code NOT in registry
+
+These exist in the code but have no corresponding registry entry. They should
+either be added to the registry (and platform-facts.md), or removed from code
+if replaced by Font.color or Border sub-struct.
+
+| Widget | Code Field | Disposition |
+|---|---|---|
+| defaults | `spacing: ThemeSpacing` | **REMOVE** (registry NOTE confirms) |
+| window | `foreground` | Remove if `title_bar_font.color` covers it, or add to registry |
+| window | `title_bar_foreground` | Remove if `title_bar_font.color` covers it, or add to registry |
+| button | `foreground` | Remove — replaced by `font.color` |
+| input | `foreground` | Remove — replaced by `font.color` |
+| menu | `foreground` | Remove — replaced by `font.color` |
+| tooltip | `foreground` | Remove — replaced by `font.color` |
+| tab | `foreground` | Remove — replaced by `font.color` |
+| sidebar | `foreground` | Remove — replaced by `font.color` |
+| list | `foreground` | Remove — replaced by `item_font.color` |
+| list | `header_foreground` | Remove — replaced by `header_font.color` |
+| popover | `foreground` | Remove — replaced by `font.color` |
+| link | `color` | Remove — replaced by `font.color` |
+| toolbar | `padding` | Not in registry — add to registry or remove |
+| dialog | `content_padding` | Maps to `border.padding_horizontal/vertical` or keep? |
