@@ -141,7 +141,7 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 "checkbox.disabled_opacity"                  = "defaults.disabled_opacity"
 
 # menu (§2.6)
-"menu.background_color"                      = "defaults.background_color"
+"menu.background_color"                      = "defaults.background_color"    # see wrong_safety_nets
 "menu.separator_color"                       = "defaults.border.color"
 
 # tooltip (§2.7)
@@ -339,6 +339,34 @@ why_wrong     = "macOS ~ surface, Win ~ background, KDE/GNOME distinct"
 [wrong_safety_nets."input.background_color"]
 inherits_from = "defaults.background_color"
 why_wrong     = "KDE uses surface (View bg); all have distinct APIs"
+
+[wrong_safety_nets."menu.background_color"]
+inherits_from = "defaults.background_color"
+why_wrong     = "macOS vibrancy and Win COLOR_MENU differ; only KDE matches"
+
+[wrong_safety_nets."input.font.color"]
+inherits_from = "defaults.font.color"     # via font_inheritance
+why_wrong     = "All platforms have distinct text-field foreground APIs"
+
+[wrong_safety_nets."combo_box.font.color"]
+inherits_from = "defaults.font.color"     # via font_inheritance
+why_wrong     = "All platforms have distinct control text colors (same as button)"
+
+[wrong_safety_nets."menu.font.color"]
+inherits_from = "defaults.font.color"     # via font_inheritance
+why_wrong     = "Win COLOR_MENUTEXT and GNOME popover.menu fg differ from defaults"
+
+[wrong_safety_nets."sidebar.font.color"]
+inherits_from = "defaults.font.color"     # via font_inheritance
+why_wrong     = "KDE Complementary group and GNOME .sidebar fg are distinct"
+
+[wrong_safety_nets."list.item_font.color"]
+inherits_from = "defaults.font.color"     # via font_inheritance
+why_wrong     = "KDE View group and GNOME .list fg are distinct from defaults"
+
+[wrong_safety_nets."list.header_font.color"]
+inherits_from = "defaults.font.color"     # via font_inheritance
+why_wrong     = "macOS headerTextColor, KDE Header group, GNOME columnview header distinct"
 
 # ─── Hardcoded safety nets (resolve.rs Phase 2) ──────────────────────────
 #

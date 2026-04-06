@@ -1016,7 +1016,7 @@ no global default — it is always widget-specific.
 | `weight`       | `NSFontDescriptor` traits           | `lfMessageFont.lfWeight`            | `[General] font` field 4 | `font-name` gsetting → wt |
 | `style`        | `NSFontDescriptor` traits → Normal  | `lfMessageFont.lfItalic` (0 = Normal) | `[General] font` style field | `font-name` gsetting → style |
 | `color`        | `labelColor`                     | `UISettings(Foreground)`            | `[Colors:Window] ForegroundNormal` | **(Adwaita CSS)** body `color` |
-| `line_height`  | 1.19 **(font metrics)** SF Pro sTypo (ascender+\|descender\|+lineGap)/UPM=(1950+494+0)/2048; macOS HIG specifies per-style line heights (e.g. body 13/16=1.23, headline 13/16=1.23) but these are design guidelines, not API values — the font metrics yield 1.19 | 1.43 **(Fluent)** Body 20px/14px      | 1.36 **(font metrics)** Noto Sans sTypo (ascender+\|descender\|+lineGap)/UPM=(1069+293+0)/1000 (Roboto-compatible metrics; lineGap=0) | ✅ Cantarell (pre-48): 1.2 **(font metrics)** — `USE_TYPO_METRICS` (fsSelection bit 7) is **not set**, so HarfBuzz/Pango uses hhea metrics: hheaAscender=983 (=739+244, lineGap folded into ascender), hheaDescender=−217, hheaLineGap=0 → (983+217)/1000=1.2 (same total as sTypo: (739+217+244)/1000=1.2); Adwaita Sans (GNOME 48+)=1.21 **(font metrics)** from Inter metrics: (1984+494+0)/2048 (`USE_TYPO_METRICS` IS set, lineGap=0) |
+| `line_height`  | 1.19 **(font metrics)** SF Pro sTypo (ascender+\|descender\|+lineGap)/UPM=(1950+494+0)/2048; macOS HIG specifies per-style line heights (e.g. body 13/16=1.23, headline 13/16=1.23) but these are design guidelines, not API values — the font metrics yield 1.19 | 1.43 **(Fluent)** Body 20px/14px      | 1.36 **(font metrics)** Noto Sans sTypo (ascender+\|descender\|+lineGap)/UPM=(1069+293+0)/1000 (Roboto-compatible metrics; lineGap=0) | ✅ Cantarell (pre-48): 1.2 **(font metrics)** — `USE_TYPO_METRICS` (fsSelection bit 7) is **not set**, so FreeType/HarfBuzz falls back to Win metrics: usWinAscent=983 (=739+244, lineGap folded), usWinDescent=217 → (983+217)/1000=1.2 (all three metric sets — sTypo (739+217+244)/1000, Win (983+217)/1000, hhea (983+217)/1000 — agree on 1.2); Adwaita Sans (GNOME 48+)=1.21 **(font metrics)** from Inter metrics: (1984+494+0)/2048 (`USE_TYPO_METRICS` IS set, lineGap=0) |
 
 #### 2.1.2 Monospace Font
 
@@ -1101,7 +1101,7 @@ against the `danger_color` color if using it as a fill).
 | `border.corner_radius`           | 5px **(measured)** | Fluent: 4px               | Breeze: 5px    | Adwaita: 9px     |
 | `border.corner_radius_lg`        | 10px **(measured)**| Fluent: 8px               | **(none)** — preset | Adwaita: 15px |
 | `border.line_width` | 0.5px **(measured)** | ↕ `SM_CXBORDER` (DPI-aware) | Breeze: 1.001px | Adwaita: 1px     |
-| `disabled_opacity` | ≈0.25–0.3 **(measured)** | Fluent: per-control (≈0.3) | **(none)** — palette blending | Adwaita: 0.5 |
+| `disabled_opacity` | ≈0.25–0.3 **(measured)** (via text color alpha, not global opacity) | Fluent: per-control (≈0.3) | **(none)** — palette blending | Adwaita: 0.5 |
 | `border.opacity`   | 0.2 **(preset)** | 0.14 **(preset)**       | 0.2 **(preset)** | 0.15 **(preset)**|
 | `border.shadow_enabled`   | yes            | yes                       | yes            | yes              |
 
@@ -1165,6 +1165,8 @@ against the `danger_color` color if using it as a fill).
 | `primary_text_color`        | ← `defaults.accent_text_color`| ← `defaults.accent_text_color`| ← `defaults.accent_text_color`   | ← `defaults.accent_text_color`|
 | `disabled_opacity`  | ← `defaults.disabled_opacity`| ← `defaults.disabled_opacity`| ← `defaults.disabled_opacity`     | ← `defaults.disabled_opacity`|
 | `border.shadow_enabled`            | ← `defaults.border.shadow_enabled`  | ← `defaults.border.shadow_enabled`| ← `defaults.border.shadow_enabled`         | ← `defaults.border.shadow_enabled`  |
+| `hover_background`  | **(measured)** subtle CoreUI highlight | **(Fluent)** `SubtleFillColorSecondary` overlay | `[Colors:Button] DecorationHover` blend | **(Adwaita CSS)** `.button:hover` bg |
+| `hover_text_color`  | ← `font.color` (no change)         | ← `font.color` (no change) | ← `font.color` (no change)              | ← `font.color` (no change)          |
 
 ### 2.4 Text Input
 
@@ -1261,7 +1263,7 @@ have no platform limit — preset values are our defaults.
 
 | Property          | macOS                              | Windows                   | KDE                         | GNOME                      |
 |-------------------|------------------------------------|---------------------------|-----------------------------|----------------------------|
-| `track_color`           | transparent (overlay mode)         | transparent               | ← `defaults.background_color`   | **(Adwaita CSS)** scrollbar|
+| `track_color`           | mode-dependent: overlay=transparent, legacy=light gray **(measured)** | transparent               | ← `defaults.background_color`   | **(Adwaita CSS)** scrollbar|
 | `thumb_color`           | `#80808080` **(measured)** Sonoma  | `#c2c2c2` **(measured)**  | **(Breeze src)** thumb color| **(Adwaita CSS)** scrollbar|
 | `thumb_hover_color`     | `#60606080` **(measured)** Sonoma  | `#a0a0a0` **(measured)**  | **(Breeze src)** thumb hover| **(Adwaita CSS)** :hover   |
 | `groove_width`           | mode-dependent: legacy=16 (persistent), overlay=7 (auto-hiding); see `overlay_mode` | ↕ `SM_CXVSCROLL` (DPI-aware)| `ScrollBar_Extend` = 21  | slider: 8 + margins        |
@@ -1324,6 +1326,7 @@ have no platform limit — preset values are our defaults.
 | `border.line_width`| ← `defaults.border.line_width` | ← `defaults.border.line_width` | ← `defaults.border.line_width` | ← `defaults.border.line_width` |
 | `border.corner_radius`  | **(none)** — rectangular pane | **(none)** — rectangular pane | **(none)** — rectangular pane | **(none)** — rectangular pane |
 | `border.shadow_enabled` | **(none)** — no shadow | **(none)** — no shadow | **(none)** — no shadow | **(none)** — no shadow |
+| `hover_background`    | `selectedContentBackgroundColor` (reduced opacity) | **(Fluent)** `SubtleFillColorSecondary` | `[Colors:View] DecorationHover` blend | **(Adwaita CSS)** row `:hover` bg |
 
 ### 2.13 Toolbar
 
@@ -1339,7 +1342,7 @@ have no platform limit — preset values are our defaults.
 | `border.padding_horizontal` | 8 **(measured)** NSToolbar | WinUI3: 4 left / 0 right | `ToolBar_ItemMargin` = 6   | **(Adwaita CSS)**: 6 |
 | `border.padding_vertical`  | 0                         | WinUI3: 0                      | 0                          | 0                    |
 | `background_color`   | ← `defaults.background_color`   | ← `defaults.background_color`   | ← `defaults.background_color`          | ← `defaults.background_color` |
-| `icon_size`    | default=32, small mode=24 (`NSToolbar.SizeMode`, deprecated) = `← defaults.icon_sizes.toolbar` | ↕ 20 = `← defaults.icon_sizes.toolbar` | 22 = `← defaults.icon_sizes.toolbar` | 16 = `← defaults.icon_sizes.toolbar` |
+| `icon_size`    | default=32, small mode=24 (`NSToolbar.SizeMode`, deprecated) — see §2.1.8 toolbar | ↕ 20 — see §2.1.8 toolbar | 22 — see §2.1.8 toolbar | 16 — see §2.1.8 toolbar |
 
 ### 2.14 Status Bar
 
@@ -1374,6 +1377,13 @@ have no platform limit — preset values are our defaults.
 | `border.padding_horizontal`  | NSTableView: 4                         | WinUI3: 12             | 2                                      | **(Adwaita CSS)**: rich-list=12, plain list=2 |
 | `border.padding_vertical`    | 4 **(measured)** (24−16)/2             | WinUI3: 0 (height from MinHeight=40)  | 1                                      | **(Adwaita CSS)**: rich-list=8 (`padding: 8px 12px`), plain list=2 (`padding: 2px`) |
 | `hover_background`    | `selectedContentBackgroundColor` (reduced opacity) | **(Fluent)** `SubtleFillColorSecondary` | `[Colors:View] DecorationHover` blend | **(Adwaita CSS)** row `:hover` bg |
+
+Tree views share List/Table properties (row height, padding, selection,
+hover) plus tree-specific layout: per-level indentation width and
+expand/collapse arrow column. These are toolkit-internal (Qt
+`QTreeView::indentation()` default=20, GTK `GtkTreeExpander` arrow=16px,
+AppKit `NSOutlineView.indentationPerLevel` default=16) and not exposed
+as theme properties — they inherit the list row styling above.
 
 ### 2.16 Popover / Dropdown
 
@@ -1491,6 +1501,13 @@ Button order convention differs significantly across platforms.
 macOS primary action = rightmost. Windows primary = leftmost. KDE:
 Help/Reset left-aligned, then stretch, then OK/Apply/Cancel right-aligned
 (OK left of Cancel). GNOME: cancel left, affirmative right.
+
+Dialog internal spacing (title-to-body, body-to-buttons) is baked into
+each platform's dialog template, not exposed as a single adjustable gap.
+macOS: AppKit-managed (not queryable). Windows: ContentDialog XAML
+template controls layout. KDE: `Layout_DefaultSpacing` = 6 between
+elements. GNOME: `.message-area` padding-top=32, `.response-area`
+padding-top=12 / padding-bottom=24 (per `_message-dialog.scss`).
 
 ### 2.23 Spinner / Progress Ring
 
