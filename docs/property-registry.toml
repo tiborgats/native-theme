@@ -162,6 +162,8 @@ icon_text_gap                = "f32"
 primary_background           = "color"
 primary_text_color           = "color"
 disabled_opacity             = "f32"
+hover_background             = "color"
+hover_text_color             = "color"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -279,6 +281,7 @@ background_color             = "color"
 font                         = "font"
 selection_background         = "color"
 selection_text_color         = "color"
+hover_background             = "color"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
