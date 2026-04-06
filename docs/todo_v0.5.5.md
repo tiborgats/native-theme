@@ -1424,3 +1424,272 @@ if replaced by Font.color or Border sub-struct.
 | link | `color` | Remove — replaced by `font.color` |
 | toolbar | `padding` | Not in registry — add to registry or remove |
 | dialog | `content_padding` | Maps to `border.padding_horizontal/vertical` or keep? |
+
+
+---
+
+## CRITICAL: inheritance-rules.toml vs resolve.rs Audit
+
+Line-by-line comparison of every entry in `docs/inheritance-rules.toml` against
+the actual `resolve.rs` implementation (2026-04-06). Categorized by whether the
+mismatch is actionable now or blocked by missing struct fields (REG-1/REG-6).
+
+### Summary
+
+- **3 actionable bugs** (wrong source field, missing fallback, spec-violating inheritance)
+- **~40 missing inheritance rules** blocked by missing struct fields (REG-1, REG-6)
+- **1 undocumented inheritance** (card border inherits but spec excludes it)
+- **1 spec vs code disagreement** (scrollbar.thumb_hover_color)
+
+---
+
+### Actionable Now
+
+#### INH-1. `input.selection` uses wrong source field
+
+**Spec** (`inheritance-rules.toml:137-138`):
+```
+"input.selection_background" = "defaults.text_selection_background"
+"input.selection_text_color" = "defaults.text_selection_color"
+```
+
+**Code** (`resolve.rs:431-435`):
+```rust
+self.input.selection = d.selection;                 // ← d.selection, not d.text_selection
+self.input.selection_foreground = d.selection_foreground;  // ← same issue
+```
+
+macOS has distinct `selectedTextBackgroundColor` (text editing) vs
+`selectedContentBackgroundColor` (list/sidebar selection). The input widget
+should use text selection tokens, not content selection tokens. Currently both
+resolve to the same value because `defaults.text_selection_background` doesn't
+exist yet (REG-6), but once added, this source must change.
+
+**Fix**: After adding `text_selection_background`/`text_selection_color` to
+`ThemeDefaults`, change these two lines to use the text_selection fields.
+
+#### INH-2. `dialog.background_color` per-platform fallback missing entirely
+
+**Spec** (`inheritance-rules.toml:269-274`):
+```
+[per_platform."dialog.background_color"]
+fallback = "defaults.background_color"
+```
+
+**Code**: No `dialog.background` inheritance anywhere in `resolve_safety_nets()`
+or `resolve_color_inheritance()`. The field doesn't exist on `DialogTheme` yet
+(tracked in interactive states section), but the `[per_platform]` fallback should
+be added when the field is created.
+
+#### INH-3. `card` has border inheritance but spec explicitly excludes it
+
+**Spec** (`inheritance-rules.toml:43`):
+```
+# Specifically excluded:
+#   card   — all border sub-fields are platform-specific or (none) (§2.26)
+```
+
+**Code** (`resolve.rs:610-621`):
+```rust
+self.card.background = d.surface;
+self.card.border = d.border;         // ← spec says no inheritance
+self.card.radius = d.radius_lg;      // ← spec says no inheritance
+self.card.shadow = d.shadow_enabled;  // ← spec says no inheritance
+```
+
+`card.background ← defaults.surface_color` is correct (in `[uniform]`).
+But `card.border`, `card.radius`, and `card.shadow` should NOT inherit from
+defaults — the spec says all card border sub-fields are platform-specific.
+Presets must provide these values; `validate()` should error if missing.
+
+**Fix**: Remove lines 613-621 (card.border, card.radius, card.shadow inheritance).
+Verify all presets specify card border/radius/shadow explicitly. Add to
+`[no_inheritance]` in the spec if desired.
+
+---
+
+### Spec vs Code Disagreement
+
+#### INH-4. `scrollbar.thumb_hover_color` — spec says muted, code computes
+
+**Spec** (`inheritance-rules.toml:381-383`, `[wrong_safety_nets]`):
+```
+"scrollbar.thumb_hover_color"
+inherits_from = "defaults.muted_color"
+why_wrong = "Same as thumb_color — all platforms have distinct scrollbar hover colors"
+```
+
+**Code** (`resolve.rs:481-494`):
+```rust
+self.scrollbar.thumb_hover = self.scrollbar.thumb.map(|c| {
+    // luma-based RGB ±38 shift
+});
+```
+
+The spec documents `defaults.muted_color` as the source (same as
+`scrollbar.thumb_color`). The code derives from `scrollbar.thumb` with
+a luminance-based ±38 RGB shift — a different and more complex algorithm.
+Neither the spec's simple copy nor the code's luma shift is correct (both
+are in `[wrong_safety_nets]`). The discrepancy should be resolved by
+updating `inheritance-rules.toml` to document what the code actually does,
+or by simplifying the code to match the spec.
+
+**Fix**: Update `inheritance-rules.toml:381-383` to:
+```
+inherits_from = "COMPUTED: scrollbar.thumb ± 15% brightness shift"
+```
+And move to `[hardcoded_safety_nets]` since it fabricates a value.
+
+---
+
+### Phase 1: defaults_internal — 3 rules missing (blocked)
+
+All blocked by missing struct fields.
+
+| Spec Rule | Blocked By |
+|---|---|
+| `defaults.text_selection_background ← defaults.selection_background` | REG-6: `text_selection_background` field missing |
+| `defaults.text_selection_color ← defaults.selection_text_color` | REG-6: `text_selection_color` field missing |
+| `defaults.mono_font.color ← defaults.font.color` | REG-1: `FontSpec.color` field missing |
+
+**Action**: Implement these inheritance rules after the corresponding fields are
+added. The ordering constraint (must run AFTER `selection_background` is set)
+is already noted in the spec.
+
+---
+
+### Phase 3: Font inheritance — 11 of 19 widgets missing (blocked)
+
+The spec lists 19 widget fonts that should inherit from `defaults.font`.
+The code's `resolve_font_inheritance()` (`resolve.rs:637-647`) only handles 8:
+
+**Implemented** (8): `window.title_bar_font`, `button.font`, `input.font`,
+`menu.font`, `tooltip.font`, `toolbar.font`, `status_bar.font`, `dialog.title_font`
+
+**Missing** (11 — all blocked by REG-6, font field doesn't exist on struct):
+`checkbox.font`, `tab.font`, `sidebar.font`, `list.item_font`,
+`list.header_font`, `popover.font`, `dialog.body_font`, `combo_box.font`,
+`segmented_control.font`, `expander.font`, `link.font`
+
+Additionally, `resolve_font()` helper (`resolve.rs:14-31`) only handles
+`family`, `size`, `weight` — missing `style` and `color` sub-field
+inheritance. Blocked by REG-1 (FontSpec missing style/color fields).
+
+**Action**: After adding font fields to widget structs (REG-6), add
+`resolve_font()` calls for all 11 missing widgets. After adding style/color
+to FontSpec (REG-1), update `resolve_font()` to handle those sub-fields.
+
+---
+
+### Phase 3: Border inheritance — partially implemented
+
+The spec defines border inheritance for 13 widgets with 4 sub-fields each
+(`color`, `corner_radius`, `line_width`, `shadow_enabled`). The code flattens
+these as individual fields. Current implementation status per sub-field:
+
+| Widget | border.color | corner_radius | line_width | shadow_enabled |
+|---|---|---|---|---|
+| window | `border←d.border` | `radius←d.radius_lg` | ❌ missing | `shadow←d.shadow_enabled` |
+| button | `border←d.border` | `radius←d.radius` | ❌ missing | `shadow←d.shadow_enabled` |
+| input | `border←d.border` | `radius←d.radius` | `border_width←d.frame_width` | ❌ missing |
+| checkbox | ❌ missing | `radius←d.radius` | `border_width←d.frame_width` | ❌ missing |
+| tooltip | ❌ no field | `radius←d.radius` | ❌ no field | ❌ no field |
+| progress_bar | ❌ no field | `radius←d.radius` | ❌ no field | ❌ no field |
+| toolbar | ❌ no field | ❌ no field | ❌ no field | ❌ no field |
+| list | ❌ no field | ❌ no field | ❌ no field | ❌ no field |
+| popover | `border←d.border` | `radius←d.radius_lg` | ❌ no field | ❌ no field |
+| dialog | ❌ no field | `radius←d.radius_lg` | ❌ no field | ❌ no field |
+| combo_box | ❌ no field | `radius←d.radius` | ❌ no field | ❌ no field |
+| segmented_control | ❌ no field | `radius←d.radius` | ❌ no field | ❌ no field |
+| expander | ❌ no field | `radius←d.radius` | ❌ no field | ❌ no field |
+
+"no field" = struct field doesn't exist (blocked by REG-2 Border sub-struct).
+"missing" = struct field exists but inheritance rule not implemented.
+
+**Actionable now** (field exists, rule missing):
+- `checkbox.border` (color) ← `defaults.border` — no color inheritance
+- `input.shadow` — no shadow field, but if it existed should inherit
+
+**Note**: The spec warns that `shadow_enabled` inheritance is wrong for widgets
+where all platforms show `(none)` (input, checkbox, progress_bar, combo_box,
+segmented_control, expander). Presets must explicitly set `shadow_enabled = false`.
+
+---
+
+### Phase 3: Uniform color rules — missing (blocked by missing fields)
+
+These rules exist in `[uniform]` but have no code because the target field
+doesn't exist on the widget struct:
+
+| Spec Rule | Blocked By |
+|---|---|
+| `button.hover_text_color ← button.font.color` | interactive states (hover_text_color missing) |
+| `input.disabled_opacity ← defaults.disabled_opacity` | REG-6 (disabled_opacity missing on InputTheme) |
+| `checkbox.disabled_opacity ← defaults.disabled_opacity` | REG-6 |
+| `slider.disabled_opacity ← defaults.disabled_opacity` | REG-6 |
+| `switch.disabled_opacity ← defaults.disabled_opacity` | REG-6 |
+| `combo_box.disabled_opacity ← defaults.disabled_opacity` | REG-6 |
+| `segmented_control.disabled_opacity ← defaults.disabled_opacity` | REG-6 |
+| `sidebar.selection_background ← defaults.selection_background` | interactive states (field missing) |
+| `sidebar.selection_text_color ← defaults.selection_text_color` | interactive states (field missing) |
+| `sidebar.border.color ← defaults.border.color` | REG-2 (no border on sidebar) |
+| `sidebar.border.line_width ← defaults.border.line_width` | REG-2 |
+| `toolbar.background_color ← defaults.background_color` | interactive states (field missing) |
+| `toolbar.icon_size ← defaults.icon_sizes.toolbar` | REG-6 (icon_size missing on ToolbarTheme) |
+| `status_bar.background_color ← defaults.background_color` | interactive states (field missing) |
+| `status_bar.border.color ← defaults.border.color` | REG-2 |
+| `status_bar.border.line_width ← defaults.border.line_width` | REG-2 |
+| `splitter.divider_color ← defaults.border.color` | REG-6 (divider_color missing) |
+| `separator.line_width ← defaults.border.line_width` | REG-6 (line_width missing) |
+
+**Action**: Implement each rule as the corresponding field is added.
+
+---
+
+### Phase 4: Window inactive title bar — wrong source (minor)
+
+**Spec** (`inheritance-rules.toml:125`):
+```
+"window.inactive_title_bar_text_color" = "window.title_bar_font.color"
+```
+
+**Code** (`resolve.rs:695-697`):
+```rust
+self.window.inactive_title_bar_foreground = self.window.title_bar_foreground;
+```
+
+The spec says the source is `window.title_bar_font.color`, but the code uses
+`window.title_bar_foreground`. Currently both ultimately resolve to
+`defaults.foreground`, so the result is identical. But once FontSpec gets a
+`color` field (REG-1) and `title_bar_foreground` is removed (REG-7), this
+chain must be updated.
+
+**Action**: Blocked by REG-1. After FontSpec gets `color`, update to:
+`window.inactive_title_bar_text_color ← window.title_bar_font.color`
+
+---
+
+### Extra code inheritance not in spec
+
+| Code Rule | resolve.rs Line | Issue |
+|---|---|---|
+| `card.border ← d.border` | 613-615 | Spec excludes card from border_inheritance |
+| `card.radius ← d.radius_lg` | 616-618 | Spec excludes card |
+| `card.shadow ← d.shadow_enabled` | 619-621 | Spec excludes card |
+| `switch.unchecked_background ← d.muted` | 587-589 | Spec `[no_inheritance]` — known BUG (SPEC-3) |
+| `list.background` in safety nets | 353-355 | Consistent with `[per_platform]` fallback |
+| `popover.background` in safety nets | 349-351 | Consistent with `[per_platform]` fallback |
+| `window.foreground ← d.foreground` | 373-375 | Extra field (REG-7), no spec rule |
+| `tab.foreground ← d.foreground` | 523-525 | Extra field (REG-7), no spec rule |
+| `list.foreground ← d.foreground` | 545-547 | Extra field (REG-7), no spec rule |
+| `list.header_foreground ← d.foreground` | 560-562 | Extra field (REG-7), no spec rule |
+| `popover.foreground ← d.foreground` | 568-570 | Extra field (REG-7), no spec rule |
+| `menu.foreground ← d.foreground` | 459-461 | Extra field — font.color will handle this |
+| `button.foreground ← d.foreground` | 396-398 | Extra field — font.color will handle this |
+| `input.foreground ← d.foreground` | 422-424 | Extra field — font.color will handle this |
+| `tooltip.foreground ← d.foreground` | 470-472 | Extra field — font.color will handle this |
+| `sidebar.foreground ← d.foreground` | 540-542 | Extra field — font.color will handle this |
+
+The `foreground` rules become unnecessary once per-widget fonts carry their own
+`color` field (REG-1). They should be removed along with the `foreground` fields
+themselves (REG-7).
