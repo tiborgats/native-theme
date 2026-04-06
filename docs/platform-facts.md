@@ -891,7 +891,7 @@ and colors (`*_color`, `*_background`). Unit suffixes in cells
 platform's native terminology — all dimension values are logical
 pixels regardless of suffix. macOS "pt" = AppKit points = logical
 pixels; Windows "px" / "epx" = effective pixels = logical pixels;
-bare numbers are also logical pixels. Two general rules eliminate
+bare numbers are also logical pixels. Three general rules eliminate
 ambiguity for every dimension and spacing property:
 
 1. **Outer-box rule for dimensions:** `min_width`, `max_width`,
