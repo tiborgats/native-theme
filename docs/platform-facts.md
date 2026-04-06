@@ -1141,7 +1141,7 @@ against the `danger_color` color if using it as a fill).
 | `title_bar_font.color`   | `windowFrameTextColor`                        | `COLOR_CAPTIONTEXT`                           | `[WM] activeForeground`       | libadwaita `headerbar` fg                     |
 | `inactive_title_bar_background`  | **(none)** — system-managed dimming            | `COLOR_INACTIVECAPTION`                       | `[WM] inactiveBackground`     | **(none)** — `:backdrop` CSS state               |
 | `inactive_title_bar_text_color`  | **(none)** — system-managed                    | `COLOR_INACTIVECAPTIONTEXT`                   | `[WM] inactiveForeground`     | **(none)** — `:backdrop` CSS state               |
-| `border.corner_radius`                 | 10px **(measured)** (compositor-controlled, not inherited — happens to equal `defaults.border.corner_radius_lg`) | ← `defaults.border.corner_radius_lg`                          | ← `defaults.border.corner_radius_lg`         | ← `defaults.border.corner_radius_lg`                          |
+| `border.corner_radius`                 | 10px **(measured)** through Sequoia (compositor-controlled, not inherited — happens to equal `defaults.border.corner_radius_lg`); Tahoe (26): variable per window style, no public API (see appendix) | ← `defaults.border.corner_radius_lg`                          | ← `defaults.border.corner_radius_lg`         | ← `defaults.border.corner_radius_lg`                          |
 | `border.shadow_enabled`                 | ← `defaults.border.shadow_enabled`                   | ← `defaults.border.shadow_enabled`                     | ← `defaults.border.shadow_enabled`    | ← `defaults.border.shadow_enabled`                     |
 | `border.padding_horizontal` | **(none)** — use §2.20 layout margins | **(none)** — use §2.20 layout margins | **(none)** — use §2.20 layout margins | **(none)** — use §2.20 layout margins |
 | `border.padding_vertical` | **(none)** — use §2.20 layout margins | **(none)** — use §2.20 layout margins | **(none)** — use §2.20 layout margins | **(none)** — use §2.20 layout margins |
@@ -1183,7 +1183,7 @@ against the `danger_color` color if using it as a fill).
 | `selection_text_color`| ← `defaults.text_selection_color`| ← `defaults.text_selection_color`| ← `defaults.text_selection_color`| ← `defaults.text_selection_color`|
 | `min_height`          | NSTextField intrinsic: 22        | WinUI3 TextBox: 32    | **(none)** — sizes to content        | **(Adwaita CSS)**: 34         |
 | `border.padding_horizontal`  | NSTextField: 4                   | WinUI3: 10 left / 6 right | `LineEdit_FrameWidth` = 6            | **(Adwaita CSS)**: 9          |
-| `border.padding_vertical`    | 3 **(measured)** (22−16)/2       | WinUI3: 5             | 3 **(measured)** Breeze frame        | **(Adwaita CSS)**: 0 (CSS sets no vertical padding; visual whitespace comes from `min-height: 34` centering the text) |
+| `border.padding_vertical`    | 3 **(measured)** (22−16)/2       | WinUI3: 5 top / 6 bottom | 3 **(measured)** Breeze frame        | **(Adwaita CSS)**: 0 (CSS sets no vertical padding; visual whitespace comes from `min-height: 34` centering the text) |
 | `border.corner_radius`              | ← `defaults.border.corner_radius`             | ← `defaults.border.corner_radius`  | ← `defaults.border.corner_radius`                 | ← `defaults.border.corner_radius`          |
 | `border.shadow_enabled` | **(none)** — no shadow | **(none)** — no shadow | **(none)** — no shadow | **(none)** — no shadow |
 | `disabled_opacity`  | ← `defaults.disabled_opacity`| ← `defaults.disabled_opacity`| ← `defaults.disabled_opacity`     | ← `defaults.disabled_opacity`|
@@ -1304,7 +1304,7 @@ have no platform limit — preset values are our defaults.
 | `bar_background`    | ← `defaults.background_color` | ← `defaults.background_color`| ← `defaults.background_color` | ← `defaults.background_color` |
 | `min_width`         | **(none)** — sizes to label | **(none)** — sizes to label | `TabBar_TabMinWidth` = 80  | **(Adwaita CSS)**: none |
 | `min_height`        | NSTabView: 24       | WinUI3: 32          | `TabBar_TabMinHeight` = 30 | **(Adwaita CSS)**: 30  |
-| `border.padding_horizontal`| NSTabView: 12       | WinUI3: 8            | `TabBar_TabMarginWidth` = 8| **(Adwaita CSS)**: 12  |
+| `border.padding_horizontal`| NSTabView: 12       | WinUI3: 8 left / 4 right | `TabBar_TabMarginWidth` = 8| **(Adwaita CSS)**: 12  |
 | `border.padding_vertical`  | 4 **(measured)** (24−16)/2 | WinUI3: 3      | `TabBar_TabMarginHeight` = 4| **(Adwaita CSS)**: 3 (CSS `padding: 3px 12px`; visual 8px from min-height: 30 centering) |
 | `border.color` | **(none)** — CoreUI bezel is a multi-color composite, no single extractable color | **(Fluent)** selected: `CardStrokeColorDefault` gradient (1px top/sides); unselected: transparent | **(Breeze src)** `KColorUtils::mix(bg, WindowText)` blended stroke | Notebook: none per-tab (header has 1px `$border_color`); AdwTabBar: none (high-contrast only) |
 | `border.line_width` | **(none)** — CoreUI bezel is a multi-stroke composite, no single line width | 1 (`TabViewItemBorderThickness`; selected only: `TabViewSelectedItemBorderThickness=1,1,1,0`) | `PenWidth::Frame` = 1.001 | Notebook: 0; AdwTabBar: 0 (high-contrast: 1) |
@@ -1532,7 +1532,7 @@ rotating `process-working-symbolic` icon.
 | `border.line_width`  | ← `defaults.border.line_width`     | ← `defaults.border.line_width`   | ← `defaults.border.line_width`            | ← `defaults.border.line_width`     |
 | `min_height`        | NSPopUpButton: 21        | WinUI3 ComboBox: 32   | **(none)** — sizes to content   | ← button min-height (24+pad)|
 | `min_width`         | **(none)** — sizes to content | WinUI3: 64         | **(none)** — sizes to content   | **(none)** — sizes to content|
-| `border.padding_horizontal`| ~8–10px **(measured)**   | WinUI3: 12             | `ComboBox_FrameWidth` = 6      | ← button padding (10px)     |
+| `border.padding_horizontal`| ~8–10px **(measured)**   | WinUI3: 12 left / 0 right (arrow area adjacent) | `ComboBox_FrameWidth` = 6      | ← button padding (10px)     |
 | `arrow_icon_size`        | ~16–18px **(measured)**  | WinUI3 glyph: 12      | `MenuButton_IndicatorWidth` = 20| 16px (pan-down-symbolic)    |
 | `arrow_area_width`  | ~16–18px **(measured)**  | WinUI3: 38             | 20px                            | **(none)** — inline icon     |
 | `border.corner_radius`            | ← `defaults.border.corner_radius`     | ← `defaults.border.corner_radius`   | ← `defaults.border.corner_radius`            | ← `defaults.border.corner_radius`         |
