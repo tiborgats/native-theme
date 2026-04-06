@@ -542,12 +542,14 @@ fn build_theme(
             name: "Windows".to_string(),
             light: None,
             dark: Some(variant),
+            layout: crate::LayoutTheme::default(),
         }
     } else {
         crate::ThemeSpec {
             name: "Windows".to_string(),
             light: Some(variant),
             dark: None,
+            layout: crate::LayoutTheme::default(),
         }
     }
 }

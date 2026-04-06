@@ -237,6 +237,10 @@ pub struct ThemeSpec {
     /// Dark variant of the theme.
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub dark: Option<ThemeVariant>,
+
+    /// Layout spacing constants (shared between light and dark variants).
+    #[serde(default, skip_serializing_if = "LayoutTheme::is_empty")]
+    pub layout: LayoutTheme,
 }
 
 impl ThemeSpec {
@@ -246,6 +250,7 @@ impl ThemeSpec {
             name: name.into(),
             light: None,
             dark: None,
+            layout: LayoutTheme::default(),
         }
     }
 
@@ -269,6 +274,8 @@ impl ThemeSpec {
             (None, Some(over)) => self.dark = Some(over.clone()),
             _ => {}
         }
+
+        self.layout.merge(&overlay.layout);
     }
 
     /// Pick the appropriate variant for the given mode, with cross-fallback.
@@ -312,7 +319,7 @@ impl ThemeSpec {
 
     /// Returns true if the theme has no variants set.
     pub fn is_empty(&self) -> bool {
-        self.light.is_none() && self.dark.is_none()
+        self.light.is_none() && self.dark.is_none() && self.layout.is_empty()
     }
 
     /// Load a bundled theme preset by name.
@@ -549,7 +556,7 @@ impl ThemeSpec {
         };
 
         // Known top-level keys
-        const TOP_KEYS: &[&str] = &["name", "light", "dark"];
+        const TOP_KEYS: &[&str] = &["name", "light", "dark", "layout"];
 
         for key in top_table.keys() {
             if !TOP_KEYS.contains(&key.as_str()) {
@@ -708,6 +715,15 @@ impl ThemeSpec {
         for variant_key in &["light", "dark"] {
             if let Some(toml::Value::Table(variant_table)) = top_table.get(*variant_key) {
                 lint_variant(variant_table, variant_key, &mut warnings);
+            }
+        }
+
+        // Lint top-level [layout] section
+        if let Some(toml::Value::Table(layout_table)) = top_table.get("layout") {
+            for key in layout_table.keys() {
+                if !LayoutTheme::FIELD_NAMES.contains(&key.as_str()) {
+                    warnings.push(format!("unknown field: layout.{key}"));
+                }
             }
         }
 
@@ -1360,5 +1376,53 @@ primay_bg = "#0078d7"
                 "Preset '{name}' has lint warnings: {warnings:?}"
             );
         }
+    }
+
+    // === ThemeSpec layout integration tests ===
+
+    #[test]
+    fn theme_spec_layout_merge() {
+        let mut base = ThemeSpec::new("Base");
+        base.layout.widget_gap = Some(6.0);
+
+        let mut overlay = ThemeSpec::new("Overlay");
+        overlay.layout.container_margin = Some(8.0);
+
+        base.merge(&overlay);
+        assert_eq!(base.layout.widget_gap, Some(6.0));
+        assert_eq!(base.layout.container_margin, Some(8.0));
+    }
+
+    #[test]
+    fn theme_spec_layout_toml_round_trip() {
+        let mut theme = ThemeSpec::new("Layout Test");
+        theme.layout.widget_gap = Some(8.0);
+        theme.layout.container_margin = Some(12.0);
+        theme.layout.window_margin = Some(16.0);
+        theme.layout.section_gap = Some(24.0);
+
+        let toml_str = theme.to_toml().unwrap();
+        let theme2 = ThemeSpec::from_toml(&toml_str).unwrap();
+        assert_eq!(theme.layout, theme2.layout);
+    }
+
+    #[test]
+    fn theme_spec_is_empty_with_layout() {
+        let mut theme = ThemeSpec::new("Layout Only");
+        assert!(theme.is_empty()); // name doesn't count
+        theme.layout.widget_gap = Some(8.0);
+        assert!(!theme.is_empty());
+    }
+
+    #[test]
+    fn theme_spec_layout_top_level_toml() {
+        let mut theme = ThemeSpec::new("Top Level");
+        theme.layout.widget_gap = Some(8.0);
+
+        let toml_str = theme.to_toml().unwrap();
+        // [layout] must be at top level, not under [light.layout] or [dark.layout]
+        assert!(toml_str.contains("[layout]"), "TOML should have [layout] section");
+        assert!(!toml_str.contains("[light.layout]"));
+        assert!(!toml_str.contains("[dark.layout]"));
     }
 }

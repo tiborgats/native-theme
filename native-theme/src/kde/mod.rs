@@ -58,12 +58,14 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ThemeSpec>
             name,
             light: None,
             dark: Some(variant),
+            layout: crate::LayoutTheme::default(),
         }
     } else {
         crate::ThemeSpec {
             name,
             light: Some(variant),
             dark: None,
+            layout: crate::LayoutTheme::default(),
         }
     };
 

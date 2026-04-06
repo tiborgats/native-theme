@@ -407,6 +407,7 @@ fn build_theme(
         name: "macOS".to_string(),
         light: Some(light_variant),
         dark: Some(dark_variant),
+        layout: crate::LayoutTheme::default(),
     }
 }
 

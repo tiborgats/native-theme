@@ -306,12 +306,14 @@ pub(crate) fn build_theme(
             name: "GNOME".to_string(),
             light: None,
             dark: Some(variant),
+            layout: crate::LayoutTheme::default(),
         }
     } else {
         crate::ThemeSpec {
             name: "GNOME".to_string(),
             light: Some(variant),
             dark: None,
+            layout: crate::LayoutTheme::default(),
         }
     };
 

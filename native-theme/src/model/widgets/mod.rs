@@ -642,6 +642,27 @@ define_widget_pair! {
     }
 }
 
+// -- Layout (top-level, not per-variant) ------------------------------------------
+
+define_widget_pair! {
+    /// Layout spacing constants shared between light and dark variants.
+    ///
+    /// Unlike other widget themes, LayoutTheme lives on [`ThemeSpec`] (top-level)
+    /// rather than [`ThemeVariant`] because spacing is variant-independent.
+    LayoutTheme / ResolvedLayoutTheme {
+        option {
+            /// Space between adjacent widgets in logical pixels.
+            widget_gap: f32,
+            /// Padding inside containers in logical pixels.
+            container_margin: f32,
+            /// Padding inside the main window in logical pixels.
+            window_margin: f32,
+            /// Space between major content sections in logical pixels.
+            section_gap: f32,
+        }
+    }
+}
+
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used, dead_code)]
 mod tests {
@@ -1191,5 +1212,66 @@ mod tests {
             }),
         };
         assert!(!s.is_empty());
+    }
+
+    // === LayoutTheme tests ===
+
+    #[test]
+    fn layout_theme_default_is_empty() {
+        assert!(LayoutTheme::default().is_empty());
+    }
+
+    #[test]
+    fn layout_theme_not_empty_when_widget_gap_set() {
+        let l = LayoutTheme {
+            widget_gap: Some(8.0),
+            ..Default::default()
+        };
+        assert!(!l.is_empty());
+    }
+
+    #[test]
+    fn layout_theme_field_names() {
+        assert_eq!(LayoutTheme::FIELD_NAMES.len(), 4);
+        assert!(LayoutTheme::FIELD_NAMES.contains(&"widget_gap"));
+        assert!(LayoutTheme::FIELD_NAMES.contains(&"container_margin"));
+        assert!(LayoutTheme::FIELD_NAMES.contains(&"window_margin"));
+        assert!(LayoutTheme::FIELD_NAMES.contains(&"section_gap"));
+    }
+
+    #[test]
+    fn layout_theme_toml_round_trip() {
+        let l = LayoutTheme {
+            widget_gap: Some(8.0),
+            container_margin: Some(12.0),
+            window_margin: Some(16.0),
+            section_gap: Some(24.0),
+        };
+        let toml_str = toml::to_string(&l).unwrap();
+        let l2: LayoutTheme = toml::from_str(&toml_str).unwrap();
+        assert_eq!(l, l2);
+    }
+
+    #[test]
+    fn layout_theme_merge() {
+        let mut base = LayoutTheme {
+            widget_gap: Some(6.0),
+            container_margin: Some(10.0),
+            ..Default::default()
+        };
+        let overlay = LayoutTheme {
+            widget_gap: Some(8.0),
+            section_gap: Some(24.0),
+            ..Default::default()
+        };
+        base.merge(&overlay);
+        // overlay widget_gap replaces base
+        assert_eq!(base.widget_gap, Some(8.0));
+        // base container_margin preserved
+        assert_eq!(base.container_margin, Some(10.0));
+        // overlay section_gap added
+        assert_eq!(base.section_gap, Some(24.0));
+        // window_margin stays None
+        assert!(base.window_margin.is_none());
     }
 }
