@@ -51,8 +51,9 @@
 #
 # Note: shadow_enabled inheritance may be wrong for widgets where all
 # platforms show (none) — no shadow (input, checkbox, progress_bar,
-# combo_box, expander). The preset MUST provide shadow_enabled = false
-# for these; the safety net from defaults would give shadow_enabled = true.
+# combo_box, segmented_control, expander). The preset MUST provide
+# shadow_enabled = false for these; the safety net from defaults would
+# give shadow_enabled = true.
 
 [border_inheritance]
 widgets_with_border = [
@@ -348,6 +349,10 @@ why_wrong     = "macOS vibrancy and Win COLOR_MENU differ; only KDE matches"
 [wrong_safety_nets."input.font.color"]
 inherits_from = "defaults.font.color"     # via font_inheritance
 why_wrong     = "All platforms have distinct text-field foreground APIs"
+
+[wrong_safety_nets."input.placeholder_color"]
+inherits_from = "defaults.muted_color"
+why_wrong     = "macOS placeholderTextColor ≈ 0.25α vs secondaryLabelColor ≈ 0.55α; all platforms have distinct placeholder APIs"
 
 [wrong_safety_nets."combo_box.font.color"]
 inherits_from = "defaults.font.color"     # via font_inheritance
