@@ -18,6 +18,7 @@ controls and the source is annotated:
 | **(Breeze src)**    | KDE Breeze style engine source (`breezemetrics.h`, etc.)   |
 | **(Adwaita CSS)**   | GNOME libadwaita stylesheet values                         |
 | **(measured)**      | Pixel-measured from rendered controls; OS version noted     |
+| **(cross-project)** | No platform API; value from cross-project consensus (Qt, Firefox, etc.) |
 | **(preset)**        | Value from our bundled preset TOML (originally measured)   |
 | **(none)**          | OS has no such concept; preset must supply a value         |
 
@@ -869,7 +870,7 @@ the type and meaning:
 **Colors and fills:**
 - `*_color` — a color value (e.g. `border.color`, `caret_color`, `line_color`)
 - `*_background` — a background fill color (e.g. `background_color`, `hover_background`, `checked_background`)
-- `*_text_color` — a text rendering color for a specific state or context, kept outside the font struct because it overrides only the color, not the typeface (e.g. `active_text_color`, `disabled_text_color`, `hover_text_color`, `header_text_color`)
+- `*_text_color` — a text rendering color for a specific state or context, kept outside the font struct because it overrides only the color, not the typeface (e.g. `active_text_color`, `disabled_text_color`, `hover_text_color`, `accent_text_color`)
 
 **Typography:**
 - `font` — a typeface struct: family + size + weight + style + **color**. Every text needs both a typeface and a color to render, so color is part of the font struct. When a widget inherits `font ← defaults.font`, it inherits the color too.
@@ -939,7 +940,7 @@ values differ per platform.
 `corner_radius_lg`, `color`, `opacity`, `shadow_enabled`. Padding has
 no global default — it is always widget-specific.
 
-**Content gaps (distances between elements):**
+**Content gaps and layout margins:**
 - `icon_text_gap` — horizontal distance between an icon and the adjacent text label inside the widget.
 - `label_gap` — distance between an indicator (checkbox/radio box) and its text label.
 - `item_gap` — distance between adjacent child items in a container (toolbar items, etc.).
@@ -979,7 +980,7 @@ no global default — it is always widget-specific.
 - `icon_size` — display size (width = height) of icons within the widget.
 
 **Dimensionless ratios:**
-- `line_height` — ratio of line box height to font size (e.g. 1.19 means a 13px font produces ~15.5px line boxes). Derived from font metrics (sTypoAscender + |sTypoDescender| + sTypoLineGap) / unitsPerEm. **Not** in pixels — multiply by `font.size` to get the pixel line height.
+- `line_height` — ratio of line box height to font size (e.g. 1.19 means a 13px font produces ~15.5px line boxes). Typically derived from font metrics (sTypoAscender + |sTypoDescender| + sTypoLineGap) / unitsPerEm; Windows uses the Fluent type ramp value instead (Body 20px / 14px). **Not** in pixels — multiply by `font.size` to get the pixel line height.
 - `border.opacity` — 0.0–1.0 multiplier applied to the border color, not pixels.
 
 **Booleans and enums:**
@@ -1138,7 +1139,7 @@ against the `danger_color` color if using it as a fill).
 | `title_bar_font.color`   | `windowFrameTextColor`                        | `COLOR_CAPTIONTEXT`                           | `[WM] activeForeground`       | libadwaita `headerbar` fg                     |
 | `inactive_title_bar_background`  | **(none)** — system-managed dimming            | `COLOR_INACTIVECAPTION`                       | `[WM] inactiveBackground`     | **(none)** — `:backdrop` CSS state               |
 | `inactive_title_bar_text_color`  | **(none)** — system-managed                    | `COLOR_INACTIVECAPTIONTEXT`                   | `[WM] inactiveForeground`     | **(none)** — `:backdrop` CSS state               |
-| `border.corner_radius`                 | macOS window corners: 10px                     | ← `defaults.border.corner_radius_lg`                          | ← `defaults.border.corner_radius_lg`         | ← `defaults.border.corner_radius_lg`                          |
+| `border.corner_radius`                 | 10px **(measured)** (compositor-controlled, not inherited — happens to equal `defaults.border.corner_radius_lg`) | ← `defaults.border.corner_radius_lg`                          | ← `defaults.border.corner_radius_lg`         | ← `defaults.border.corner_radius_lg`                          |
 | `border.shadow_enabled`                 | ← `defaults.border.shadow_enabled`                   | ← `defaults.border.shadow_enabled`                     | ← `defaults.border.shadow_enabled`    | ← `defaults.border.shadow_enabled`                     |
 | `border.padding_horizontal` | **(none)** — use §2.20 layout margins | **(none)** — use §2.20 layout margins | **(none)** — use §2.20 layout margins | **(none)** — use §2.20 layout margins |
 | `border.padding_vertical` | **(none)** — use §2.20 layout margins | **(none)** — use §2.20 layout margins | **(none)** — use §2.20 layout margins | **(none)** — use §2.20 layout margins |
@@ -1223,7 +1224,7 @@ Radio buttons use the same colors but with circular `border.corner_radius`.
 | `border.corner_radius` | **(none)** — items are rectangular | **(none)** — items are rectangular | **(none)** — items are rectangular | **(none)** — items are rectangular |
 | `border.shadow_enabled` | **(none)** — popup shadow from §2.16 | **(none)** — popup shadow from §2.16 | **(none)** — popup shadow from §2.16 | **(none)** — popup shadow from §2.16 |
 | `icon_text_gap`      | 4 **(measured)** AppKit layout | WinUI3: 12                           | 8 **(Breeze src)** icon-text gap       | **(Adwaita CSS)**: 8        |
-| `icon_size`         | 16 **(cross-project consensus)** — no Apple API constant; Qt/Firefox/Ladybird/Godot all use 16×16 for NSMenuItem images | ↕ `SM_CXSMICON`: 16                 | `Small`: 16                         | `GTK_ICON_SIZE_NORMAL`: 16  |
+| `icon_size`         | 16 **(cross-project)** — no Apple API constant; Qt/Firefox/Ladybird/Godot all use 16×16 for NSMenuItem images | ↕ `SM_CXSMICON`: 16                 | `Small`: 16                         | `GTK_ICON_SIZE_NORMAL`: 16  |
 | `hover_background`  | `selectedContentBackgroundColor` | **(Fluent)** `SubtleFillColorSecondary` | `[Colors:Selection] BackgroundNormal` | **(Adwaita CSS)** `:hover` modelbutton bg |
 | `hover_text_color`  | `selectedMenuItemTextColor` (white) | ← `defaults.text_color` (no change) | `[Colors:Selection] ForegroundNormal` | **(Adwaita CSS)** `:hover` fg (no change) |
 | `disabled_text_color`| `disabledControlTextColor` | **(Fluent)** `TextFillColorDisabled` | `[Colors:Window] ForegroundInactive` | **(Adwaita CSS)** `:disabled` fg |
