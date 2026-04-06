@@ -128,6 +128,7 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 "button.primary_background"                  = "defaults.accent_color"
 "button.primary_text_color"                  = "defaults.accent_text_color"
 "button.disabled_opacity"                    = "defaults.disabled_opacity"
+"button.hover_text_color"                    = "button.font.color"
 
 # input (§2.4) — selection uses text_selection tokens, not content selection
 "input.background_color"                     = "defaults.background_color"    # see wrong_safety_nets
@@ -148,8 +149,8 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 "tooltip.background_color"                   = "defaults.background_color"    # see wrong_safety_nets
 
 # scrollbar (§2.8) — all platforms have own APIs; safety net only
-"scrollbar.thumb_color"                      = "defaults.muted_color"
-"scrollbar.thumb_hover_color"                = "defaults.muted_color"
+"scrollbar.thumb_color"                      = "defaults.muted_color"         # see wrong_safety_nets
+"scrollbar.thumb_hover_color"                = "defaults.muted_color"         # see wrong_safety_nets
 
 # slider (§2.9)
 "slider.fill_color"                          = "defaults.accent_color"
@@ -367,6 +368,14 @@ why_wrong     = "KDE View group and GNOME .list fg are distinct from defaults"
 [wrong_safety_nets."list.header_font.color"]
 inherits_from = "defaults.font.color"     # via font_inheritance
 why_wrong     = "macOS headerTextColor, KDE Header group, GNOME columnview header distinct"
+
+[wrong_safety_nets."scrollbar.thumb_color"]
+inherits_from = "defaults.muted_color"
+why_wrong     = "Scrollbar thumb is a semi-transparent UI control; muted_color is a text color"
+
+[wrong_safety_nets."scrollbar.thumb_hover_color"]
+inherits_from = "defaults.muted_color"
+why_wrong     = "Same as thumb_color — all platforms have distinct scrollbar hover colors"
 
 # ─── Hardcoded safety nets (resolve.rs Phase 2) ──────────────────────────
 #
