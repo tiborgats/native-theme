@@ -111,7 +111,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 ### v0.5.5 Schema Overhaul & Quality (Phases 49-57)
 
 - [x] **Phase 49: Additive Type Definitions** - Define BorderSpec, FontStyle, FontSpec extensions, and LayoutTheme as non-breaking additions (completed 2026-04-06)
-- [ ] **Phase 50: Atomic Schema Commit** - All ~70 renames + BorderSpec integration + font.color + foreground removal + ThemeSpacing removal + all 17 preset rewrites in one commit
+- [x] **Phase 50: Atomic Schema Commit** - All ~70 renames + BorderSpec integration + font.color + foreground removal + ThemeSpacing removal + all 17 preset rewrites in one commit (completed 2026-04-07)
 - [ ] **Phase 51: Resolution Engine Overhaul** - resolve_border(), resolve_font() update, safety net removal, text_scale removal, inheritance bug fixes
 - [ ] **Phase 52: Interactive State Colors** - ~70 new hover/active/disabled/focus fields across 18 widgets with preset values
 - [ ] **Phase 53: Preset Completeness** - text_scale for 13 missing presets, interactive state color values for all 17 presets
@@ -129,12 +129,16 @@ Phase details for milestones v0.1 through v0.5.0 are archived in `.planning/mile
 **Depends on**: Nothing (first phase of v0.5.5)
 **Requirements**: SCHEMA-01, SCHEMA-02, SCHEMA-03
 **Success Criteria** (what must be TRUE):
-  1. `BorderSpec` and `ResolvedBorderSpec` structs exist with all 8 fields (color, corner_radius, corner_radius_lg, line_width, opacity, shadow_enabled, padding_horizontal, padding_vertical), and round-trip through TOML serde correctly
+  1. `BorderSpec` and `ResolvedBorderSpec` structs exist with all 6 fields (color, corner_radius, line_width, shadow_enabled, padding_horizontal, padding_vertical), and round-trip through TOML serde correctly
   2. `FontStyle` enum (Normal, Italic, Oblique) exists with serde lowercase rename, and `FontSpec`/`ResolvedFontSpec` have `style` and `color` fields
   3. `LayoutTheme` and `ResolvedLayoutTheme` exist via `define_widget_pair!` with 4 fields (widget_gap, container_margin, window_margin, section_gap)
   4. `cargo expand` confirms `define_widget_pair!` correctly handles a widget with both `optional_nested font` and `optional_nested border` (tested on ButtonTheme definition)
   5. `pre-release-check.sh` passes (VERIFY-01 gate)
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [x] 49-01-PLAN.md — BorderSpec and FontSpec type definitions
+- [x] 49-02-PLAN.md — LayoutTheme and define_widget_pair! macro support
+- [x] 49-03-PLAN.md — SC4 dual optional_nested verification
 
 ### Phase 50: Atomic Schema Commit
 **Goal**: The entire data model matches property-registry.toml naming conventions, with BorderSpec sub-structs replacing flat border fields, font.color replacing foreground fields, ThemeSpacing removed, Layout widget added, and all 17 presets rewritten to the new TOML structure -- in a single atomic commit
@@ -146,7 +150,12 @@ Phase details for milestones v0.1 through v0.5.0 are archived in `.planning/mile
   3. No `foreground` fields exist on any widget struct -- text colors live in `font.color` (or named font like `item_font.color`, `header_font.color`)
   4. `ThemeSpacing` struct is removed, `defaults.spacing` field is gone, and `[layout]` section exists in all 17 presets
   5. `pre-release-check.sh` passes (VERIFY-01 gate)
-**Plans**: TBD
+**Plans**: 4 plans
+Plans:
+- [x] 50-01-PLAN.md — Model layer struct renames, BorderSpec expansion, ThemeSpacing removal
+- [x] 50-02-PLAN.md — resolve.rs and validate.rs field reference renames
+- [x] 50-03-PLAN.md — OS readers, presets.rs, and all 20 TOML preset rewrites
+- [x] 50-04-PLAN.md — Connector field reference updates and final verification
 
 ### Phase 51: Resolution Engine Overhaul
 **Goal**: resolve.rs correctly implements all inheritance rules from inheritance-rules.toml, with zero invented values -- all safety nets removed, text_scale computation removed, scrollbar.thumb_hover computation replaced, and inheritance bugs fixed
@@ -242,7 +251,7 @@ Note: Phase 55 depends only on Phase 50 and can run in parallel with 51-54 if de
 | 33-43 | v0.4.1 | 22/22 | Complete | 2026-03-21 |
 | 44-48 | v0.5.0 | 17/17 | Complete | 2026-03-29 |
 | 49. Additive Type Definitions | v0.5.5 | 3/3 | Complete   | 2026-04-06 |
-| 50. Atomic Schema Commit | v0.5.5 | 0/0 | Not started | - |
+| 50. Atomic Schema Commit | v0.5.5 | 4/4 | Complete   | 2026-04-07 |
 | 51. Resolution Engine Overhaul | v0.5.5 | 0/0 | Not started | - |
 | 52. Interactive State Colors | v0.5.5 | 0/0 | Not started | - |
 | 53. Preset Completeness | v0.5.5 | 0/0 | Not started | - |
