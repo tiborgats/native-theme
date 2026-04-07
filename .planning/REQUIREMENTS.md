@@ -50,11 +50,11 @@ Align data model, naming, and resolution engine with authoritative spec docs. El
 
 ### CI/Publishing
 
-- [ ] **CI-01**: Publish workflow tests gpui connector before publishing (P-1)
-- [ ] **CI-02**: Publish steps error handling improved (P-2)
-- [ ] **CI-03**: CI tests async-io runtime variants (P-3)
-- [ ] **CI-04**: Example names disambiguated (showcase-gpui, showcase-iced) (P-4)
-- [ ] **CI-05**: pre-release.sh gets max iteration timeout (P-5)
+- [x] **CI-01**: Publish workflow tests gpui connector before publishing (P-1)
+- [x] **CI-02**: Publish steps error handling improved (P-2)
+- [x] **CI-03**: CI tests async-io runtime variants (P-3)
+- [x] **CI-04**: Example names disambiguated (showcase-gpui, showcase-iced) (P-4)
+- [x] **CI-05**: pre-release.sh gets max iteration timeout (P-5)
 
 ### Testing
 
@@ -130,11 +130,11 @@ Deferred beyond v0.5.5:
 | CORRECT-03 | Phase 55 | Pending |
 | CORRECT-04 | Phase 55 | Complete |
 | CORRECT-05 | Phase 55 | Pending |
-| CI-01 | Phase 55 | Pending |
-| CI-02 | Phase 55 | Pending |
-| CI-03 | Phase 55 | Pending |
-| CI-04 | Phase 55 | Pending |
-| CI-05 | Phase 55 | Pending |
+| CI-01 | Phase 55 | Complete |
+| CI-02 | Phase 55 | Complete |
+| CI-03 | Phase 55 | Complete |
+| CI-04 | Phase 55 | Complete |
+| CI-05 | Phase 55 | Complete |
 | TEST-01 | Phase 56 | Pending |
 | TEST-02 | Phase 56 | Pending |
 | VERIFY-01 | Phase 57 | Pending |
