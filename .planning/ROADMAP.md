@@ -253,7 +253,11 @@ Plans:
   3. Widget struct doc comments are accurate (W-2 fixes), hardcoded connector opacity values are documented (K-6), all 4 READMEs updated for new API surface
   4. CHANGELOG has complete breaking change list with migration notes for every renamed field, removed struct, and changed TOML format
   5. `pre-release-check.sh` passes as final gate (VERIFY-01)
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [x] 57-01-PLAN.md — Verification audit (todo_v0.5.5.md, REQUIREMENTS.md), doc comment fixes (DOC-01), opacity documentation (DOC-02)
+- [ ] 57-02-PLAN.md — Spec-code synchronization (VERIFY-03, DOC-03) and README updates (DOC-04)
+- [ ] 57-03-PLAN.md — CHANGELOG entry (DOC-05) and final pre-release gate (VERIFY-01)
 
 ## Progress
 
@@ -278,4 +282,4 @@ Note: Phase 55 depends only on Phase 50 and can run in parallel with 51-54 if de
 | 54. Connector Migration | v0.5.5 | 3/3 | Complete   | 2026-04-07 |
 | 55. Correctness, Safety, and CI | v0.5.5 | 3/3 | Complete   | 2026-04-07 |
 | 56. Testing | v0.5.5 | 2/2 | Complete   | 2026-04-07 |
-| 57. Verification and Documentation | v0.5.5 | 0/0 | Not started | - |
+| 57. Verification and Documentation | v0.5.5 | 1/3 | In Progress|  |
