@@ -101,11 +101,11 @@ fn arb_theme_defaults() -> impl Strategy<Value = ThemeDefaults> {
         arb_border_spec(),
         arb_icon_sizes(),
         // 6 scalar Option fields
-        proptest::option::of(0.5f32..3.0),   // line_height
-        proptest::option::of(0.0f32..1.0),   // disabled_opacity
-        proptest::option::of(0.0f32..10.0),  // focus_ring_width
-        proptest::option::of(0.0f32..10.0),  // focus_ring_offset
-        proptest::option::of(0.5f32..3.0),   // text_scaling_factor
+        proptest::option::of(0.5f32..3.0),  // line_height
+        proptest::option::of(0.0f32..1.0),  // disabled_opacity
+        proptest::option::of(0.0f32..10.0), // focus_ring_width
+        proptest::option::of(0.0f32..10.0), // focus_ring_offset
+        proptest::option::of(0.5f32..3.0),  // text_scaling_factor
     )
         .prop_flat_map(|parts| {
             (
@@ -116,48 +116,63 @@ fn arb_theme_defaults() -> impl Strategy<Value = ThemeDefaults> {
                 proptest::option::of(any::<bool>()),
             )
         })
-        .prop_map(|((font, mono_font, border, icon_sizes, line_height,
-                      disabled_opacity, focus_ring_width, focus_ring_offset,
-                      text_scaling_factor),
-                     colors, reduce_motion, high_contrast, reduce_transparency)| {
-            ThemeDefaults {
-                font,
-                mono_font,
-                border,
-                icon_sizes,
-                line_height,
-                background_color: colors[0],
-                text_color: colors[1],
-                accent_color: colors[2],
-                accent_text_color: colors[3],
-                surface_color: colors[4],
-                muted_color: colors[5],
-                shadow_color: colors[6],
-                link_color: colors[7],
-                selection_background: colors[8],
-                selection_text_color: colors[9],
-                selection_inactive_background: colors[10],
-                text_selection_background: colors[11],
-                text_selection_color: colors[12],
-                disabled_text_color: colors[13],
-                danger_color: colors[14],
-                danger_text_color: colors[15],
-                warning_color: colors[16],
-                warning_text_color: colors[17],
-                success_color: colors[18],
-                success_text_color: colors[19],
-                info_color: colors[20],
-                info_text_color: colors[21],
-                disabled_opacity,
-                focus_ring_color: colors[22],
-                focus_ring_width,
-                focus_ring_offset,
-                text_scaling_factor,
+        .prop_map(
+            |(
+                (
+                    font,
+                    mono_font,
+                    border,
+                    icon_sizes,
+                    line_height,
+                    disabled_opacity,
+                    focus_ring_width,
+                    focus_ring_offset,
+                    text_scaling_factor,
+                ),
+                colors,
                 reduce_motion,
                 high_contrast,
                 reduce_transparency,
-            }
-        })
+            )| {
+                ThemeDefaults {
+                    font,
+                    mono_font,
+                    border,
+                    icon_sizes,
+                    line_height,
+                    background_color: colors[0],
+                    text_color: colors[1],
+                    accent_color: colors[2],
+                    accent_text_color: colors[3],
+                    surface_color: colors[4],
+                    muted_color: colors[5],
+                    shadow_color: colors[6],
+                    link_color: colors[7],
+                    selection_background: colors[8],
+                    selection_text_color: colors[9],
+                    selection_inactive_background: colors[10],
+                    text_selection_background: colors[11],
+                    text_selection_color: colors[12],
+                    disabled_text_color: colors[13],
+                    danger_color: colors[14],
+                    danger_text_color: colors[15],
+                    warning_color: colors[16],
+                    warning_text_color: colors[17],
+                    success_color: colors[18],
+                    success_text_color: colors[19],
+                    info_color: colors[20],
+                    info_text_color: colors[21],
+                    disabled_opacity,
+                    focus_ring_color: colors[22],
+                    focus_ring_width,
+                    focus_ring_offset,
+                    text_scaling_factor,
+                    reduce_motion,
+                    high_contrast,
+                    reduce_transparency,
+                }
+            },
+        )
 }
 
 // ── Widget strategies (5 complex widgets with full field coverage) ───────────
@@ -174,14 +189,25 @@ fn arb_window_theme() -> impl Strategy<Value = WindowTheme> {
         proptest::option::of(arb_font_spec()),
         proptest::option::of(arb_border_spec()),
     )
-        .prop_map(|(background_color, title_bar_background, inactive_title_bar_background,
-                     inactive_title_bar_text_color, title_bar_font, border)| {
-            WindowTheme {
-                background_color, title_bar_background,
-                inactive_title_bar_background, inactive_title_bar_text_color,
-                title_bar_font, border,
-            }
-        })
+        .prop_map(
+            |(
+                background_color,
+                title_bar_background,
+                inactive_title_bar_background,
+                inactive_title_bar_text_color,
+                title_bar_font,
+                border,
+            )| {
+                WindowTheme {
+                    background_color,
+                    title_bar_background,
+                    inactive_title_bar_background,
+                    inactive_title_bar_text_color,
+                    title_bar_font,
+                    border,
+                }
+            },
+        )
 }
 
 fn arb_button_theme() -> impl Strategy<Value = ButtonTheme> {
@@ -196,8 +222,8 @@ fn arb_button_theme() -> impl Strategy<Value = ButtonTheme> {
         proptest::option::of(arb_font_spec()),
         proptest::option::of(arb_border_spec()),
     )
-        .prop_map(|(colors, min_w, min_h, gap, dis_op, font, border)| {
-            ButtonTheme {
+        .prop_map(
+            |(colors, min_w, min_h, gap, dis_op, font, border)| ButtonTheme {
                 background_color: colors[0],
                 primary_background: colors[1],
                 primary_text_color: colors[2],
@@ -213,8 +239,8 @@ fn arb_button_theme() -> impl Strategy<Value = ButtonTheme> {
                 disabled_background: colors[8],
                 font,
                 border,
-            }
-        })
+            },
+        )
 }
 
 fn arb_input_theme() -> impl Strategy<Value = InputTheme> {
@@ -225,22 +251,20 @@ fn arb_input_theme() -> impl Strategy<Value = InputTheme> {
         proptest::option::of(arb_font_spec()),
         proptest::option::of(arb_border_spec()),
     )
-        .prop_map(|(colors, min_h, dis_op, font, border)| {
-            InputTheme {
-                background_color: colors[0],
-                placeholder_color: colors[1],
-                caret_color: colors[2],
-                selection_background: colors[3],
-                selection_text_color: colors[4],
-                min_height: min_h,
-                disabled_opacity: dis_op,
-                disabled_text_color: colors[5],
-                hover_border_color: colors[6],
-                focus_border_color: colors[7],
-                disabled_background: colors[5],
-                font,
-                border,
-            }
+        .prop_map(|(colors, min_h, dis_op, font, border)| InputTheme {
+            background_color: colors[0],
+            placeholder_color: colors[1],
+            caret_color: colors[2],
+            selection_background: colors[3],
+            selection_text_color: colors[4],
+            min_height: min_h,
+            disabled_opacity: dis_op,
+            disabled_text_color: colors[5],
+            hover_border_color: colors[6],
+            focus_border_color: colors[7],
+            disabled_background: colors[5],
+            font,
+            border,
         })
 }
 
@@ -253,22 +277,20 @@ fn arb_checkbox_theme() -> impl Strategy<Value = CheckboxTheme> {
         proptest::option::of(arb_font_spec()),
         proptest::option::of(arb_border_spec()),
     )
-        .prop_map(|(colors, ind_w, gap, dis_op, font, border)| {
-            CheckboxTheme {
-                background_color: colors[0],
-                checked_background: colors[1],
-                indicator_color: colors[2],
-                indicator_width: ind_w,
-                label_gap: gap,
-                disabled_opacity: dis_op,
-                disabled_text_color: colors[3],
-                hover_background: colors[4],
-                disabled_background: colors[5],
-                unchecked_background: colors[6],
-                unchecked_border_color: colors[3],
-                font,
-                border,
-            }
+        .prop_map(|(colors, ind_w, gap, dis_op, font, border)| CheckboxTheme {
+            background_color: colors[0],
+            checked_background: colors[1],
+            indicator_color: colors[2],
+            indicator_width: ind_w,
+            label_gap: gap,
+            disabled_opacity: dis_op,
+            disabled_text_color: colors[3],
+            hover_background: colors[4],
+            disabled_background: colors[5],
+            unchecked_background: colors[6],
+            unchecked_border_color: colors[3],
+            font,
+            border,
         })
 }
 
@@ -293,22 +315,35 @@ fn arb_dialog_theme() -> impl Strategy<Value = DialogTheme> {
         proptest::option::of(arb_font_spec()),
         proptest::option::of(arb_border_spec()),
     )
-        .prop_map(|(bg, min_w, max_w, min_h, max_h, gap, icon_sz, order,
-                     title_font, body_font, border)| {
-            DialogTheme {
-                background_color: bg,
-                min_width: min_w,
-                max_width: max_w,
-                min_height: min_h,
-                max_height: max_h,
-                button_gap: gap,
-                icon_size: icon_sz,
-                button_order: order,
+        .prop_map(
+            |(
+                bg,
+                min_w,
+                max_w,
+                min_h,
+                max_h,
+                gap,
+                icon_sz,
+                order,
                 title_font,
                 body_font,
                 border,
-            }
-        })
+            )| {
+                DialogTheme {
+                    background_color: bg,
+                    min_width: min_w,
+                    max_width: max_w,
+                    min_height: min_h,
+                    max_height: max_h,
+                    button_gap: gap,
+                    icon_size: icon_sz,
+                    button_order: order,
+                    title_font,
+                    body_font,
+                    border,
+                }
+            },
+        )
 }
 
 // ── IconSet strategy ────────────────────────────────────────────────────────
@@ -350,9 +385,8 @@ fn arb_theme_variant() -> impl Strategy<Value = ThemeVariant> {
         proptest::option::of(arb_icon_set()),
         proptest::option::of("[a-zA-Z]{1,15}"),
     )
-        .prop_map(|(defaults, text_scale, window, button, input, checkbox, dialog,
-                     icon_set, icon_theme)| {
-            ThemeVariant {
+        .prop_map(
+            |(
                 defaults,
                 text_scale,
                 window,
@@ -362,29 +396,41 @@ fn arb_theme_variant() -> impl Strategy<Value = ThemeVariant> {
                 dialog,
                 icon_set,
                 icon_theme,
-                // Remaining widgets use defaults -- exercises their empty round-trip paths
-                menu: MenuTheme::default(),
-                tooltip: TooltipTheme::default(),
-                scrollbar: ScrollbarTheme::default(),
-                slider: SliderTheme::default(),
-                progress_bar: ProgressBarTheme::default(),
-                tab: TabTheme::default(),
-                sidebar: SidebarTheme::default(),
-                toolbar: ToolbarTheme::default(),
-                status_bar: StatusBarTheme::default(),
-                list: ListTheme::default(),
-                popover: PopoverTheme::default(),
-                splitter: SplitterTheme::default(),
-                separator: SeparatorTheme::default(),
-                switch: SwitchTheme::default(),
-                spinner: SpinnerTheme::default(),
-                combo_box: ComboBoxTheme::default(),
-                segmented_control: SegmentedControlTheme::default(),
-                card: CardTheme::default(),
-                expander: ExpanderTheme::default(),
-                link: LinkTheme::default(),
-            }
-        })
+            )| {
+                ThemeVariant {
+                    defaults,
+                    text_scale,
+                    window,
+                    button,
+                    input,
+                    checkbox,
+                    dialog,
+                    icon_set,
+                    icon_theme,
+                    // Remaining widgets use defaults -- exercises their empty round-trip paths
+                    menu: MenuTheme::default(),
+                    tooltip: TooltipTheme::default(),
+                    scrollbar: ScrollbarTheme::default(),
+                    slider: SliderTheme::default(),
+                    progress_bar: ProgressBarTheme::default(),
+                    tab: TabTheme::default(),
+                    sidebar: SidebarTheme::default(),
+                    toolbar: ToolbarTheme::default(),
+                    status_bar: StatusBarTheme::default(),
+                    list: ListTheme::default(),
+                    popover: PopoverTheme::default(),
+                    splitter: SplitterTheme::default(),
+                    separator: SeparatorTheme::default(),
+                    switch: SwitchTheme::default(),
+                    spinner: SpinnerTheme::default(),
+                    combo_box: ComboBoxTheme::default(),
+                    segmented_control: SegmentedControlTheme::default(),
+                    card: CardTheme::default(),
+                    expander: ExpanderTheme::default(),
+                    link: LinkTheme::default(),
+                }
+            },
+        )
 }
 
 // ── ThemeSpec strategy ──────────────────────────────────────────────────────
@@ -396,17 +442,19 @@ fn arb_theme_spec() -> impl Strategy<Value = ThemeSpec> {
     (
         "[a-zA-Z ]{1,20}",
         arb_theme_variant(),
-        any::<bool>(),  // has_light
-        any::<bool>(),  // has_dark
+        any::<bool>(), // has_light
+        any::<bool>(), // has_dark
         arb_layout_theme(),
     )
-        .prop_map(|(name, variant, has_light, has_dark, layout)| {
-            ThemeSpec {
-                name,
-                light: if has_light { Some(variant.clone()) } else { None },
-                dark: if has_dark { Some(variant) } else { None },
-                layout,
-            }
+        .prop_map(|(name, variant, has_light, has_dark, layout)| ThemeSpec {
+            name,
+            light: if has_light {
+                Some(variant.clone())
+            } else {
+                None
+            },
+            dark: if has_dark { Some(variant) } else { None },
+            layout,
         })
 }
 
