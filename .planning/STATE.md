@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.5
 milestone_name: Schema Overhaul & Quality
 status: executing
-stopped_at: Phase 53 verified and complete
-last_updated: "2026-04-07T13:52:28.470Z"
+stopped_at: Completed 54-03-PLAN.md
+last_updated: "2026-04-07T14:54:39.680Z"
 last_activity: 2026-04-07
 progress:
   total_phases: 9
   completed_phases: 5
-  total_plans: 19
-  completed_plans: 19
-  percent: 100
+  total_plans: 22
+  completed_plans: 21
+  percent: 95
 ---
 
 # Project State
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-06)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 53 complete, ready for Phase 54
+**Current focus:** Phase 54 - Connector Migration (gpui/iced API parity)
 
 ## Current Position
 
-Phase: 53 of 57 (Preset Completeness) — COMPLETE
-Plan: 5 of 5 complete
-Status: Verified (4/4 success criteria passed)
+Phase: 54 of 57 (Connector Migration) — IN PROGRESS
+Plan: 3 of 3 complete
+Status: Ready to execute
 Last activity: 2026-04-07
 
 ## Performance Metrics
@@ -69,6 +69,7 @@ Recent: Clean break for renames (no serde aliases -- pre-1.0, presets bundled, ~
 - [Phase 53]: iOS text_scale uses Apple HIG iOS-specific sizes (12/15/22/34), not macOS values
 - [Phase 53]: Catppuccin text_scale omits line_height (inherits defaults 1.2); all 4 light variants share Latte state colors
 - [Phase 53]: Inactive title bar values set to match active title bar for presets without platform-specific inactive states (same as macOS system-managed dimming)
+- [Phase 54]: Used relative_luminance(bg) < 0.5 for dark/light branching in iced contrast enforcement (more accurate than HSL lightness for saturated colors)
 
 ### Pending Todos
 
@@ -82,6 +83,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-07T13:52:28.467Z
-Stopped at: Completed 53-05-PLAN.md
+Last session: 2026-04-07T14:54:39.678Z
+Stopped at: Completed 54-03-PLAN.md
 Resume file: None
