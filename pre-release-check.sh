@@ -199,6 +199,9 @@ def scan_file(path):
 import glob
 issues = []
 for f in glob.glob('${src_dir}/**/*.rs', recursive=True):
+    # Skip files named tests.rs (test-only modules included via #[cfg(test)] mod tests;)
+    if f.endswith('/tests.rs'):
+        continue
     issues.extend(scan_file(f))
 
 for issue in issues:
