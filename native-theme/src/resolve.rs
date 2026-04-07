@@ -541,6 +541,9 @@ impl ThemeVariant {
         if self.button.hover_background.is_none() {
             self.button.hover_background = d.background_color;
         }
+        if self.button.disabled_text_color.is_none() {
+            self.button.disabled_text_color = d.disabled_text_color;
+        }
 
         // --- input ---
         if self.input.background_color.is_none() {
@@ -558,6 +561,9 @@ impl ThemeVariant {
         if self.input.disabled_opacity.is_none() {
             self.input.disabled_opacity = d.disabled_opacity;
         }
+        if self.input.disabled_text_color.is_none() {
+            self.input.disabled_text_color = d.disabled_text_color;
+        }
 
         // --- checkbox ---
         if self.checkbox.background_color.is_none() {
@@ -571,6 +577,9 @@ impl ThemeVariant {
         }
         if self.checkbox.disabled_opacity.is_none() {
             self.checkbox.disabled_opacity = d.disabled_opacity;
+        }
+        if self.checkbox.disabled_text_color.is_none() {
+            self.checkbox.disabled_text_color = d.disabled_text_color;
         }
 
         // --- menu ---
@@ -860,6 +869,10 @@ impl ThemeVariant {
         // Must run AFTER resolve_font_inheritance has populated button.font.color
         if self.button.hover_text_color.is_none() {
             self.button.hover_text_color = self.button.font.as_ref().and_then(|f| f.color);
+        }
+        // button.active_text_color <- button.font.color (widget-to-widget)
+        if self.button.active_text_color.is_none() {
+            self.button.active_text_color = self.button.font.as_ref().and_then(|f| f.color);
         }
     }
 
@@ -1612,6 +1625,16 @@ impl ThemeVariant {
             &mut missing,
         );
         let button_border_spec = require_border(&self.button.border, "button.border", &mut missing);
+        let button_active_text_color = require(
+            &self.button.active_text_color,
+            "button.active_text_color",
+            &mut missing,
+        );
+        let button_disabled_text_color = require(
+            &self.button.disabled_text_color,
+            "button.disabled_text_color",
+            &mut missing,
+        );
 
         // input
         let input_disabled_opacity = require(
@@ -1620,6 +1643,11 @@ impl ThemeVariant {
             &mut missing,
         );
         let input_border_spec = require_border(&self.input.border, "input.border", &mut missing);
+        let input_disabled_text_color = require(
+            &self.input.disabled_text_color,
+            "input.disabled_text_color",
+            &mut missing,
+        );
 
         // checkbox
         let checkbox_background_color = require(
@@ -1640,6 +1668,11 @@ impl ThemeVariant {
         let checkbox_font = require_font_opt(&self.checkbox.font, "checkbox.font", &mut missing);
         let checkbox_border_spec =
             require_border(&self.checkbox.border, "checkbox.border", &mut missing);
+        let checkbox_disabled_text_color = require(
+            &self.checkbox.disabled_text_color,
+            "checkbox.disabled_text_color",
+            &mut missing,
+        );
 
         // menu (excluded from border_inheritance -- border belongs to popup container)
         let menu_icon_size = require(&self.menu.icon_size, "menu.icon_size", &mut missing);
@@ -2453,6 +2486,11 @@ impl ThemeVariant {
                 disabled_opacity: button_disabled_opacity,
                 hover_background: button_hover_background,
                 hover_text_color: button_hover_text_color,
+                active_text_color: button_active_text_color,
+                disabled_text_color: button_disabled_text_color,
+                // soft_option fields (Option in Resolved, no require):
+                active_background: self.button.active_background,
+                disabled_background: self.button.disabled_background,
                 font: button_font,
                 border: button_border_spec,
             },
@@ -2464,6 +2502,11 @@ impl ThemeVariant {
                 selection_text_color: input_selection_foreground,
                 min_height: input_min_height,
                 disabled_opacity: input_disabled_opacity,
+                disabled_text_color: input_disabled_text_color,
+                // soft_option fields (Option in Resolved, no require):
+                hover_border_color: self.input.hover_border_color,
+                focus_border_color: self.input.focus_border_color,
+                disabled_background: self.input.disabled_background,
                 font: input_font,
                 border: input_border_spec,
             },
@@ -2474,6 +2517,12 @@ impl ThemeVariant {
                 indicator_width: checkbox_indicator_size,
                 label_gap: checkbox_spacing,
                 disabled_opacity: checkbox_disabled_opacity,
+                disabled_text_color: checkbox_disabled_text_color,
+                // soft_option fields (Option in Resolved, no require):
+                hover_background: self.checkbox.hover_background,
+                disabled_background: self.checkbox.disabled_background,
+                unchecked_background: self.checkbox.unchecked_background,
+                unchecked_border_color: self.checkbox.unchecked_border_color,
                 font: checkbox_font,
                 border: checkbox_border_spec,
             },
@@ -2503,6 +2552,8 @@ impl ThemeVariant {
                 min_thumb_length: scrollbar_min_thumb_height,
                 thumb_width: scrollbar_slider_width,
                 overlay_mode: scrollbar_overlay_mode,
+                // soft_option field (Option in Resolved, no require):
+                thumb_active_color: self.scrollbar.thumb_active_color,
             },
             slider: crate::model::widgets::ResolvedSliderTheme {
                 fill_color: slider_fill,
@@ -2512,6 +2563,11 @@ impl ThemeVariant {
                 thumb_diameter: slider_thumb_size,
                 tick_mark_length: slider_tick_length,
                 disabled_opacity: slider_disabled_opacity,
+                // soft_option fields (Option in Resolved, no require):
+                thumb_hover_color: self.slider.thumb_hover_color,
+                disabled_fill_color: self.slider.disabled_fill_color,
+                disabled_track_color: self.slider.disabled_track_color,
+                disabled_thumb_color: self.slider.disabled_thumb_color,
             },
             progress_bar: crate::model::widgets::ResolvedProgressBarTheme {
                 fill_color: progress_bar_fill,
@@ -3262,6 +3318,10 @@ mod tests {
         v.button.disabled_opacity = Some(0.5);
         v.button.hover_background = Some(c);
         v.button.hover_text_color = Some(c);
+        v.button.active_text_color = Some(c);
+        v.button.disabled_text_color = Some(c);
+        v.button.active_background = Some(c);
+        v.button.disabled_background = Some(c);
         v.button.border.get_or_insert_default().shadow_enabled = Some(false);
         v.button.font = Some(FontSpec {
             family: Some("Inter".into()),
@@ -3282,6 +3342,10 @@ mod tests {
         v.input.border.get_or_insert_default().padding_horizontal = Some(8.0);
         v.input.border.get_or_insert_default().padding_vertical = Some(4.0);
         v.input.disabled_opacity = Some(0.5);
+        v.input.disabled_text_color = Some(c);
+        v.input.hover_border_color = Some(c);
+        v.input.focus_border_color = Some(c);
+        v.input.disabled_background = Some(c);
         v.input.border.get_or_insert_default().corner_radius = Some(4.0);
         v.input.border.get_or_insert_default().line_width = Some(1.0);
         v.input.border.get_or_insert_default().shadow_enabled = Some(false);
@@ -3299,6 +3363,11 @@ mod tests {
         v.checkbox.indicator_width = Some(18.0);
         v.checkbox.label_gap = Some(6.0);
         v.checkbox.disabled_opacity = Some(0.5);
+        v.checkbox.disabled_text_color = Some(c);
+        v.checkbox.hover_background = Some(c);
+        v.checkbox.disabled_background = Some(c);
+        v.checkbox.unchecked_background = Some(c);
+        v.checkbox.unchecked_border_color = Some(c);
         v.checkbox.font = Some(FontSpec {
             family: Some("Inter".into()),
             size: Some(14.0),
@@ -3352,6 +3421,7 @@ mod tests {
         v.scrollbar.min_thumb_length = Some(20.0);
         v.scrollbar.thumb_width = Some(8.0);
         v.scrollbar.overlay_mode = Some(false);
+        v.scrollbar.thumb_active_color = Some(c);
 
         // slider
         v.slider.fill_color = Some(c);
@@ -3361,6 +3431,10 @@ mod tests {
         v.slider.thumb_diameter = Some(16.0);
         v.slider.tick_mark_length = Some(6.0);
         v.slider.disabled_opacity = Some(0.5);
+        v.slider.thumb_hover_color = Some(c);
+        v.slider.disabled_fill_color = Some(c);
+        v.slider.disabled_track_color = Some(c);
+        v.slider.disabled_thumb_color = Some(c);
 
         // progress_bar
         v.progress_bar.fill_color = Some(c);
@@ -4473,6 +4547,8 @@ mod tests {
         v.button.primary_text_color = None;
         v.button.border = None;
         v.button.disabled_opacity = None;
+        v.button.active_text_color = None;
+        v.button.disabled_text_color = None;
         v.button.border = None;
         v.input.background_color = None;
         v.input.font = None;
@@ -4481,8 +4557,10 @@ mod tests {
         v.input.caret_color = None;
         v.input.selection_background = None;
         v.input.selection_text_color = None;
+        v.input.disabled_text_color = None;
         v.input.border = None;
         v.checkbox.checked_background = None;
+        v.checkbox.disabled_text_color = None;
         v.checkbox.border = None;
         v.menu.background_color = None;
         v.menu.font = None;
