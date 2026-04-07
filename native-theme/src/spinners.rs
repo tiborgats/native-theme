@@ -37,6 +37,14 @@ fn svg_to_spin_frames(svg_bytes: &[u8]) -> Vec<IconData> {
     };
     let svg_tag = &svg_str[..svg_open_end];
 
+    // S-2: guard against a malformed tag shorter than "<svg" (4 bytes).
+    // Currently unreachable (only called with bundled SVGs), but prevents
+    // a panic on the `&svg_tag[4..]` slice below if ever called with
+    // arbitrary input.
+    if svg_tag.len() < 4 {
+        return vec![IconData::Svg(svg_bytes.to_vec())];
+    }
+
     // Find the closing </svg> to extract inner content
     let inner_start = svg_open_end + 1;
     let Some(close_pos) = svg_str.rfind("</svg>") else {

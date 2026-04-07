@@ -1277,10 +1277,11 @@ fn validate_after_resolve_succeeds_for_derivable_fields() {
     v.toolbar.bar_height = Some(40.0);
     v.toolbar.item_gap = Some(4.0);
     // REMOVED: toolbar.padding not in new schema
-    // list sizing
+    // list sizing + alternate_row (no longer derived — must be explicit)
     v.list.row_height = Some(28.0);
     v.list.border.get_or_insert_default().padding_horizontal = Some(8.0);
     v.list.border.get_or_insert_default().padding_vertical = Some(4.0);
+    v.list.alternate_row_background = Some(Rgba::rgb(245, 245, 245));
     // splitter
     v.splitter.divider_width = Some(4.0);
     // switch sizing
@@ -1777,10 +1778,11 @@ fn set_widget_geometry(v: &mut ThemeVariant) {
     v.toolbar.bar_height = Some(40.0);
     v.toolbar.item_gap = Some(4.0);
     // REMOVED: toolbar.padding not in new schema
-    // list
+    // list (alternate_row_background has no inheritance -- must be preset-provided)
     v.list.row_height = Some(28.0);
     v.list.border.get_or_insert_default().padding_horizontal = Some(8.0);
     v.list.border.get_or_insert_default().padding_vertical = Some(4.0);
+    v.list.alternate_row_background = Some(Rgba::rgb(245, 245, 245));
     // splitter
     v.splitter.divider_width = Some(4.0);
     // switch (unchecked_background has no inheritance -- must be preset-provided)
@@ -1896,7 +1898,8 @@ fn clear_derived_fields(v: &mut ThemeVariant) {
     v.sidebar.font = None;
     v.list.background_color = None;
     v.list.item_font = None;
-    v.list.alternate_row_background = None;
+    // list.alternate_row_background: NOT cleared — it is no longer derived,
+    // so presets must provide it explicitly.
     v.list.selection_background = None;
     v.list.selection_text_color = None;
     v.list.header_background = None;

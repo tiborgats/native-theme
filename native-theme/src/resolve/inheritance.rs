@@ -362,9 +362,8 @@ impl ThemeVariant {
         }
 
         // --- list ---
-        if self.list.alternate_row_background.is_none() {
-            self.list.alternate_row_background = self.list.background_color;
-        }
+        // list.alternate_row_background: no fallback — all presets specify it
+        // explicitly and validate() enforces its presence.
         if self.list.selection_background.is_none() {
             self.list.selection_background = d.selection_background;
         }
