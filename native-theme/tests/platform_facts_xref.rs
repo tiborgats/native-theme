@@ -42,10 +42,7 @@ fn kde_breeze_matches_platform_facts() {
     assert_eq!(light.defaults.border.line_width, Some(1.0));
 
     // Accent color: #3daee9 (KDE Breeze highlight blue)
-    assert_eq!(
-        light.defaults.accent_color,
-        Some(Rgba::rgb(61, 174, 233))
-    );
+    assert_eq!(light.defaults.accent_color, Some(Rgba::rgb(61, 174, 233)));
 
     // Icon set and theme
     assert_eq!(light.icon_set, Some(IconSet::Freedesktop));
@@ -71,10 +68,7 @@ fn adwaita_matches_platform_facts() {
         .expect("adwaita should have light variant");
 
     // Font: documented as "Adwaita Sans 11" in platform-facts.md
-    assert_eq!(
-        light.defaults.font.family.as_deref(),
-        Some("Adwaita Sans")
-    );
+    assert_eq!(light.defaults.font.family.as_deref(), Some("Adwaita Sans"));
     assert_eq!(light.defaults.font.size, Some(11.0));
     assert_eq!(light.defaults.font.weight, Some(400));
 
@@ -87,10 +81,7 @@ fn adwaita_matches_platform_facts() {
     assert_eq!(light.defaults.border.line_width, Some(1.0));
 
     // Accent color: #3584e4 (GNOME blue)
-    assert_eq!(
-        light.defaults.accent_color,
-        Some(Rgba::rgb(53, 132, 228))
-    );
+    assert_eq!(light.defaults.accent_color, Some(Rgba::rgb(53, 132, 228)));
 
     // Icon set and theme
     assert_eq!(light.icon_set, Some(IconSet::Freedesktop));
@@ -126,10 +117,7 @@ fn windows_11_matches_platform_facts() {
     assert_eq!(light.defaults.border.line_width, Some(1.0));
 
     // Accent color: #0078d4 (Windows blue)
-    assert_eq!(
-        light.defaults.accent_color,
-        Some(Rgba::rgb(0, 120, 212))
-    );
+    assert_eq!(light.defaults.accent_color, Some(Rgba::rgb(0, 120, 212)));
 
     // Icon set and theme
     assert_eq!(light.icon_set, Some(IconSet::SegoeIcons));
@@ -164,10 +152,7 @@ fn macos_sonoma_matches_platform_facts() {
     assert_eq!(light.defaults.border.line_width, Some(0.5));
 
     // Accent color: #007aff (Apple blue)
-    assert_eq!(
-        light.defaults.accent_color,
-        Some(Rgba::rgb(0, 122, 255))
-    );
+    assert_eq!(light.defaults.accent_color, Some(Rgba::rgb(0, 122, 255)));
 
     // Icon set
     assert_eq!(light.icon_set, Some(IconSet::SfSymbols));
