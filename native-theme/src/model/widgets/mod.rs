@@ -191,7 +191,7 @@ define_widget_pair! {
 // ── §2.5 Checkbox / Radio Button ────────────────────────────────────────────
 
 define_widget_pair! {
-    /// Checkbox and radio button indicator geometry.
+    /// Checkbox and radio button theme: colors, indicator, label font, border, and interactive states.
     CheckboxTheme / ResolvedCheckboxTheme {
         option {
             /// Checkbox background color.
@@ -553,7 +553,7 @@ define_widget_pair! {
 // ── §2.21 Switch / Toggle ─────────────────────────────────────────────────────
 
 define_widget_pair! {
-    /// Toggle switch track, thumb, and geometry.
+    /// Toggle switch track, thumb, geometry, and interactive states.
     SwitchTheme / ResolvedSwitchTheme {
         option {
             /// Track background when the switch is on.
@@ -591,7 +591,7 @@ define_widget_pair! {
 // ── §2.22 Dialog ──────────────────────────────────────────────────────────────
 
 define_widget_pair! {
-    /// Dialog sizing, spacing, button order, and title font.
+    /// Dialog sizing, spacing, button order, fonts, border, and background.
     DialogTheme / ResolvedDialogTheme {
         option {
             /// Dialog background color.

@@ -148,6 +148,7 @@ pub fn to_theme_color(resolved: &ResolvedThemeVariant, is_dark: bool) -> ThemeCo
 
     // Issue 2: d.muted IS the muted foreground color (subdued text).
     // The muted *background* slot (Skeleton, Switch bg) uses a derived bg.
+    // Muted background: 10% foreground overlaid on background.
     let muted_fg = rgba_to_hsla(d.muted_color);
     let muted_bg = bg.blend(fg.opacity(0.1));
 
@@ -285,6 +286,7 @@ fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
     tc.list = c.bg;
     tc.list_hover = c.list_hover_bg;
     tc.list_active = c.list_selection_bg;
+    // List active border: 60% primary over background.
     tc.list_active_border = c.bg.blend(c.primary.opacity(0.6));
     tc.list_even = c.alternate_row;
     tc.list_head = c.bg;
@@ -328,8 +330,9 @@ fn assign_tab_sidebar(tc: &mut ThemeColor, c: &ResolvedColors) {
 fn assign_charts(tc: &mut ThemeColor, c: &ResolvedColors) {
     // Distribute 5 chart colors evenly around the hue wheel (~72 degrees apart).
     // Preserves accent's lightness for palette coherence.
-    // Issue 16: enforce a saturation floor of 0.3 so desaturated themes
-    // (e.g. Nord, Solarized) still produce distinguishable chart colors.
+    // Chart colors: ensure minimum 0.3 saturation for visibility.
+    // Desaturated themes (e.g. Nord, Solarized) need this floor to
+    // produce distinguishable chart colors (Issue 16).
     let s = c.accent.s.max(0.3);
     tc.chart_1 = c.accent;
     tc.chart_2 = Hsla {
@@ -364,16 +367,17 @@ fn assign_misc(
     tc.popover_foreground = c.popover_fg;
 
     tc.accordion = c.bg;
-    // Issue 60: match upstream apply_config fallback: accent.opacity(0.8).
-    // Use accent blended into bg for a subtler hover tint.
+    // Accordion hover: 8% accent tint over background.
+    // Matches upstream apply_config fallback pattern (Issue 60).
     tc.accordion_hover = c.bg.blend(c.accent.opacity(0.08));
 
-    // Dark=0.3, light=0.4: lower opacity on dark avoids washing out backgrounds.
-    // Diverges from upstream's uniform 0.5 for better per-mode contrast.
+    // Group box: lower opacity in dark mode (0.3) to preserve background contrast;
+    // light mode uses 0.4. Diverges from upstream's uniform 0.5.
     tc.group_box =
         c.bg.blend(c.secondary.opacity(if is_dark { 0.3 } else { 0.4 }));
     tc.group_box_foreground = c.fg;
 
+    // Description list label: subtle 20% border tint over background.
     tc.description_list_label = c.bg.blend(c.border.opacity(0.2));
     tc.description_list_label_foreground = c.muted_fg;
 
@@ -422,7 +426,9 @@ fn assign_misc(
 
     tc.tiles = c.bg;
 
+    // Drag border: 65% primary overlay for visible drag indicator.
     tc.drag_border = c.primary.opacity(0.65);
+    // Drop target: 20% primary overlay for subtle target highlight.
     tc.drop_target = c.primary.opacity(0.2);
 }
 
@@ -438,7 +444,8 @@ fn assign_base_colors(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
     tc.blue_light = light_variant(c.bg, c.info, is_dark);
     tc.yellow = c.warning;
     tc.yellow_light = light_variant(c.bg, c.warning, is_dark);
-    // Magenta: fixed hue, but saturation and lightness from accent
+    // Magenta: fixed hue, but saturation and lightness from accent.
+    // Cap saturation at 0.85 to prevent oversaturation in generated hues.
     let magenta = Hsla {
         h: 0.833,
         s: c.accent.s.min(0.85),
@@ -447,7 +454,8 @@ fn assign_base_colors(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
     };
     tc.magenta = magenta;
     tc.magenta_light = light_variant(c.bg, magenta, is_dark);
-    // Cyan: fixed hue, but saturation and lightness from info
+    // Cyan: fixed hue, but saturation and lightness from info.
+    // Same 0.85 saturation cap as magenta.
     let cyan = Hsla {
         h: 0.5,
         s: c.info.s.min(0.85),
