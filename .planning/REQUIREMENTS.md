@@ -65,14 +65,14 @@ Align data model, naming, and resolution engine with authoritative spec docs. El
 
 - [ ] **VERIFY-01**: `pre-release-check.sh` passes after each major phase (schema, resolve, presets, connectors)
 - [x] **VERIFY-02**: Final line-by-line audit of `docs/todo_v0.5.5.md` — every item confirmed implemented or improved
-- [ ] **VERIFY-03**: No contradictions between `property-registry.toml`, `inheritance-rules.toml`, `platform-facts.md`, and actual code
+- [x] **VERIFY-03**: No contradictions between `property-registry.toml`, `inheritance-rules.toml`, `platform-facts.md`, and actual code
 
 ### Documentation Sync
 
 - [x] **DOC-01**: Widget struct doc comment inaccuracies fixed (W-2: Checkbox, Switch, Dialog)
 - [x] **DOC-02**: Hardcoded connector opacity values documented (K-6)
-- [ ] **DOC-03**: `property-registry.toml`, `inheritance-rules.toml`, `platform-facts.md` updated to match final implementation
-- [ ] **DOC-04**: All READMEs updated (core, gpui connector, iced connector, build crate) for new API surface
+- [x] **DOC-03**: `property-registry.toml`, `inheritance-rules.toml`, `platform-facts.md` updated to match final implementation
+- [x] **DOC-04**: All READMEs updated (core, gpui connector, iced connector, build crate) for new API surface
 - [ ] **DOC-05**: CHANGELOG updated with all breaking changes and migration notes
 
 ## Future Requirements
@@ -139,11 +139,11 @@ Deferred beyond v0.5.5:
 | TEST-02 | Phase 56 | Complete |
 | VERIFY-01 | Phase 57 | Pending |
 | VERIFY-02 | Phase 57 | Complete |
-| VERIFY-03 | Phase 57 | Pending |
+| VERIFY-03 | Phase 57 | Complete |
 | DOC-01 | Phase 57 | Complete |
 | DOC-02 | Phase 57 | Complete |
-| DOC-03 | Phase 57 | Pending |
-| DOC-04 | Phase 57 | Pending |
+| DOC-03 | Phase 57 | Complete |
+| DOC-04 | Phase 57 | Complete |
 | DOC-05 | Phase 57 | Pending |
 
 **Coverage:**
