@@ -113,7 +113,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 49: Additive Type Definitions** - Define BorderSpec, FontStyle, FontSpec extensions, and LayoutTheme as non-breaking additions (completed 2026-04-06)
 - [x] **Phase 50: Atomic Schema Commit** - All ~70 renames + BorderSpec integration + font.color + foreground removal + ThemeSpacing removal + all 17 preset rewrites in one commit (completed 2026-04-07)
 - [x] **Phase 51: Resolution Engine Overhaul** - resolve_border(), resolve_font() update, safety net removal, text_scale removal, inheritance bug fixes (completed 2026-04-07)
-- [ ] **Phase 52: Interactive State Colors** - ~70 new hover/active/disabled/focus fields across 18 widgets with preset values
+- [x] **Phase 52: Interactive State Colors** - ~70 new hover/active/disabled/focus fields across 18 widgets with preset values (completed 2026-04-07)
 - [ ] **Phase 53: Preset Completeness** - text_scale for 13 missing presets, interactive state color values for all 17 presets
 - [ ] **Phase 54: Connector Migration** - Both connectors updated for new schema, derive.rs replaced with direct theme reads
 - [ ] **Phase 55: Correctness, Safety, and CI** - Bug fixes, animation safety guards, CI improvements, gsettings timeout
@@ -181,7 +181,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 52-01-PLAN.md — Batch 1: Button, Input, Checkbox, Scrollbar, Slider (18 fields)
-- [ ] 52-02-PLAN.md — Batch 2: Tab, List, Splitter, Switch, ComboBox, SegCtrl, Expander, Link (19 fields)
+- [x] 52-02-PLAN.md — Batch 2: Tab, List, Splitter, Switch, ComboBox, SegCtrl, Expander, Link (19 fields)
 
 ### Phase 53: Preset Completeness
 **Goal**: All 17 presets have explicit values for text_scale entries and interactive state colors -- no preset relies on runtime computation or safety nets for any field
@@ -256,7 +256,7 @@ Note: Phase 55 depends only on Phase 50 and can run in parallel with 51-54 if de
 | 49. Additive Type Definitions | v0.5.5 | 3/3 | Complete   | 2026-04-06 |
 | 50. Atomic Schema Commit | v0.5.5 | 4/4 | Complete   | 2026-04-07 |
 | 51. Resolution Engine Overhaul | v0.5.5 | 5/5 | Complete   | 2026-04-07 |
-| 52. Interactive State Colors | v0.5.5 | 1/2 | In Progress|  |
+| 52. Interactive State Colors | v0.5.5 | 2/2 | Complete   | 2026-04-07 |
 | 53. Preset Completeness | v0.5.5 | 0/0 | Not started | - |
 | 54. Connector Migration | v0.5.5 | 0/0 | Not started | - |
 | 55. Correctness, Safety, and CI | v0.5.5 | 0/0 | Not started | - |
