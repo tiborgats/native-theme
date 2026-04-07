@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.5
 milestone_name: Schema Overhaul & Quality
 status: verifying
-stopped_at: Completed 55-03-PLAN.md
-last_updated: "2026-04-07T15:38:41.099Z"
+stopped_at: Completed 55-01-PLAN.md
+last_updated: "2026-04-07T15:40:21.062Z"
 last_activity: 2026-04-07
 progress:
   total_phases: 9
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 25
-  completed_plans: 24
-  percent: 96
+  completed_plans: 25
+  percent: 100
 ---
 
 # Project State
@@ -74,6 +74,7 @@ Recent: Clean break for renames (no serde aliases -- pre-1.0, presets bundled, ~
 - [Phase 54-connector-migration]: primary_hover/active kept on derive.rs; button.hover_background is default button, not primary
 - [Phase 55]: Used const { assert!() } instead of debug_assert! for SPIN_FRAME_DURATION_MS -- clippy requires compile-time evaluation for constant expressions
 - [Phase 55-03]: Publish error handling uses grep -qi for already-published detection; pre-release timeout 30min via 180*10s iterations
+- [Phase 55]: Shared run_gsettings_with_timeout() in lib.rs as pub(crate); all gsettings calls use 2-second timeout
 
 ### Pending Todos
 
@@ -87,6 +88,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-07T15:38:41.096Z
-Stopped at: Completed 55-03-PLAN.md
+Last session: 2026-04-07T15:40:21.059Z
+Stopped at: Completed 55-01-PLAN.md
 Resume file: None

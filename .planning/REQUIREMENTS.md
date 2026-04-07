@@ -42,11 +42,11 @@ Align data model, naming, and resolution engine with authoritative spec docs. El
 
 ### Correctness & Safety
 
-- [ ] **CORRECT-01**: detect_is_dark() checks GTK_THEME env var and gtk-3.0/settings.ini for non-GNOME/non-KDE Linux (C-1)
-- [ ] **CORRECT-02**: iOS platform detection added to detect_platform() (C-2)
-- [ ] **CORRECT-03**: into_resolved() #[must_use] message fixed (C-3)
+- [x] **CORRECT-01**: detect_is_dark() checks GTK_THEME env var and gtk-3.0/settings.ini for non-GNOME/non-KDE Linux (C-1)
+- [x] **CORRECT-02**: iOS platform detection added to detect_platform() (C-2)
+- [x] **CORRECT-03**: into_resolved() #[must_use] message fixed (C-3)
 - [x] **CORRECT-04**: Spinner/animation safety guards added (S-1 width/height guard, S-3 empty frames, S-4 zero duration, S-5 single-quote viewBox)
-- [ ] **CORRECT-05**: gsettings commands get timeout (R-1)
+- [x] **CORRECT-05**: gsettings commands get timeout (R-1)
 
 ### CI/Publishing
 
@@ -125,11 +125,11 @@ Deferred beyond v0.5.5:
 | CONNECT-01 | Phase 54 | Complete |
 | CONNECT-02 | Phase 54 | Complete |
 | CONNECT-03 | Phase 54 | Complete |
-| CORRECT-01 | Phase 55 | Pending |
-| CORRECT-02 | Phase 55 | Pending |
-| CORRECT-03 | Phase 55 | Pending |
+| CORRECT-01 | Phase 55 | Complete |
+| CORRECT-02 | Phase 55 | Complete |
+| CORRECT-03 | Phase 55 | Complete |
 | CORRECT-04 | Phase 55 | Complete |
-| CORRECT-05 | Phase 55 | Pending |
+| CORRECT-05 | Phase 55 | Complete |
 | CI-01 | Phase 55 | Complete |
 | CI-02 | Phase 55 | Complete |
 | CI-03 | Phase 55 | Complete |
