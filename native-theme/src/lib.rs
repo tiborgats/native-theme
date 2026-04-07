@@ -247,9 +247,11 @@ pub fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
 ///
 /// # Platform Behavior
 ///
-/// - **Linux:** Queries `gsettings` for `color-scheme` via subprocess;
-///   falls back to KDE `kdeglobals` background luminance (with `kde`
-///   feature).
+/// - **Linux:** Checks `GTK_THEME` env var for `:dark` suffix or `-dark`
+///   in name; queries `gsettings` for `color-scheme` (with 2-second
+///   timeout); falls back to KDE `kdeglobals` background luminance (with
+///   `kde` feature); reads `gtk-3.0/settings.ini` for
+///   `gtk-application-prefer-dark-theme=1` as final fallback.
 /// - **macOS:** Reads `AppleInterfaceStyle` via `NSUserDefaults` (with
 ///   `macos` feature) or `defaults` subprocess (without).
 /// - **Windows:** Checks foreground color luminance from `UISettings` via
@@ -273,6 +275,54 @@ pub fn detect_is_dark() -> bool {
     detect_is_dark_inner()
 }
 
+/// Run a gsettings command with a 2-second timeout.
+///
+/// Spawns `gsettings` with the given arguments, waits up to 2 seconds
+/// for completion, and returns the trimmed stdout on success.  Returns
+/// `None` if the command fails, times out, or produces empty output.
+///
+/// Used by [`detect_is_dark_inner()`] and [`gnome::read_gsetting()`] to
+/// prevent gsettings from blocking indefinitely when D-Bus is unresponsive.
+#[cfg(target_os = "linux")]
+pub(crate) fn run_gsettings_with_timeout(args: &[&str]) -> Option<String> {
+    use std::io::Read;
+    use std::time::{Duration, Instant};
+
+    let deadline = Instant::now() + Duration::from_secs(2);
+    let mut child = std::process::Command::new("gsettings")
+        .args(args)
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .ok()?;
+
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) if status.success() => {
+                let mut buf = String::new();
+                if let Some(mut stdout) = child.stdout.take() {
+                    let _ = stdout.read_to_string(&mut buf);
+                }
+                let trimmed = buf.trim().to_string();
+                return if trimmed.is_empty() {
+                    None
+                } else {
+                    Some(trimmed)
+                };
+            }
+            Ok(Some(_)) => return None,
+            Ok(None) => {
+                if Instant::now() >= deadline {
+                    let _ = child.kill();
+                    return None;
+                }
+                std::thread::sleep(Duration::from_millis(50));
+            }
+            Err(_) => return None,
+        }
+    }
+}
+
 /// Inner detection logic for [`system_is_dark()`].
 ///
 /// Separated from the public function to allow caching via `OnceLock`.
@@ -280,13 +330,18 @@ pub fn detect_is_dark() -> bool {
 fn detect_is_dark_inner() -> bool {
     #[cfg(target_os = "linux")]
     {
-        // gsettings works across all modern DEs (GNOME, KDE, XFCE, …)
-        if let Ok(output) = std::process::Command::new("gsettings")
-            .args(["get", "org.gnome.desktop.interface", "color-scheme"])
-            .output()
-            && output.status.success()
+        // Check GTK_THEME env var (works across all GTK-based DEs)
+        if let Ok(gtk_theme) = std::env::var("GTK_THEME") {
+            let lower = gtk_theme.to_lowercase();
+            if lower.ends_with(":dark") || lower.contains("-dark") {
+                return true;
+            }
+        }
+
+        // gsettings color-scheme (with 2-second timeout)
+        if let Some(val) =
+            run_gsettings_with_timeout(&["get", "org.gnome.desktop.interface", "color-scheme"])
         {
-            let val = String::from_utf8_lossy(&output.stdout);
             if val.contains("prefer-dark") {
                 return true;
             }
@@ -303,6 +358,24 @@ fn detect_is_dark_inner() -> bool {
                 let mut ini = crate::kde::create_kde_parser();
                 if ini.read(content).is_ok() {
                     return crate::kde::is_dark_theme(&ini);
+                }
+            }
+        }
+
+        // Fallback: gtk-3.0/settings.ini for DEs that set the GTK dark preference
+        let config_home = std::env::var("XDG_CONFIG_HOME").unwrap_or_else(|_| {
+            let home = std::env::var("HOME").unwrap_or_default();
+            format!("{home}/.config")
+        });
+        let ini_path = format!("{config_home}/gtk-3.0/settings.ini");
+        if let Ok(content) = std::fs::read_to_string(&ini_path) {
+            for line in content.lines() {
+                let trimmed = line.trim();
+                if trimmed.starts_with("gtk-application-prefer-dark-theme")
+                    && let Some(val) = trimmed.split('=').nth(1)
+                    && (val.trim() == "1" || val.trim().eq_ignore_ascii_case("true"))
+                {
+                    return true;
                 }
             }
         }
@@ -420,12 +493,9 @@ fn detect_reduced_motion_inner() -> bool {
     {
         // gsettings boolean output is bare "true\n" or "false\n" (no quotes)
         // enable-animations has INVERTED semantics: false => reduced motion preferred
-        if let Ok(output) = std::process::Command::new("gsettings")
-            .args(["get", "org.gnome.desktop.interface", "enable-animations"])
-            .output()
-            && output.status.success()
+        if let Some(val) =
+            run_gsettings_with_timeout(&["get", "org.gnome.desktop.interface", "enable-animations"])
         {
-            let val = String::from_utf8_lossy(&output.stdout);
             return val.trim() == "false";
         }
         false

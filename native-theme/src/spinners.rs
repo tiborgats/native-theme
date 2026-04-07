@@ -215,14 +215,22 @@ mod tests {
     fn zero_dimension_viewbox_returns_static() {
         let svg = b"<svg viewBox=\"0 0 0 24\"><path d=\"M12 2v4\"/></svg>";
         let frames = svg_to_spin_frames(svg);
-        assert_eq!(frames.len(), 1, "zero-width viewBox should return single static frame");
+        assert_eq!(
+            frames.len(),
+            1,
+            "zero-width viewBox should return single static frame"
+        );
     }
 
     #[test]
     fn negative_dimension_viewbox_returns_static() {
         let svg = b"<svg viewBox=\"0 0 -10 24\"><path d=\"M12 2v4\"/></svg>";
         let frames = svg_to_spin_frames(svg);
-        assert_eq!(frames.len(), 1, "negative-width viewBox should return single static frame");
+        assert_eq!(
+            frames.len(),
+            1,
+            "negative-width viewBox should return single static frame"
+        );
     }
 
     #[test]

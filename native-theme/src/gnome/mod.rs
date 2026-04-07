@@ -118,20 +118,18 @@ fn extract_weight_from_family(s: &str) -> (&str, u16) {
 }
 
 /// Read a single gsettings value, returning None if gsettings is unavailable or fails.
+///
+/// Uses [`crate::run_gsettings_with_timeout()`] to enforce a 2-second deadline,
+/// preventing indefinite blocking when D-Bus is unresponsive.  Single-quote
+/// wrapping (gsettings string output format) is stripped from the result.
 fn read_gsetting(schema: &str, key: &str) -> Option<String> {
-    let output = std::process::Command::new("gsettings")
-        .args(["get", schema, key])
-        .output()
-        .ok()?;
-    if !output.status.success() {
-        return None;
-    }
-    let stdout = String::from_utf8_lossy(&output.stdout);
-    let trimmed = stdout.trim().trim_matches('\'').to_string();
+    let raw = crate::run_gsettings_with_timeout(&["get", schema, key])?;
+    let trimmed = raw.trim_matches('\'').to_string();
     if trimmed.is_empty() {
-        return None;
+        None
+    } else {
+        Some(trimmed)
     }
-    Some(trimmed)
 }
 
 /// Build a sparse ThemeVariant populated only with OS-readable fields.

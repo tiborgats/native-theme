@@ -139,7 +139,16 @@ fn detect_platform() -> &'static str {
         }
         "linux"
     }
-    #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
+    #[cfg(target_os = "ios")]
+    {
+        return "ios";
+    }
+    #[cfg(not(any(
+        target_os = "linux",
+        target_os = "windows",
+        target_os = "macos",
+        target_os = "ios"
+    )))]
     {
         "linux"
     }

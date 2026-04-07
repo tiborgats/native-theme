@@ -416,7 +416,7 @@ impl ThemeVariant {
     /// // All fields are now guaranteed populated
     /// let accent = resolved.defaults.accent_color;
     /// ```
-    #[must_use = "this returns the resolved theme; it does not modify self"]
+    #[must_use = "this returns the resolved theme and consumes self"]
     pub fn into_resolved(mut self) -> crate::Result<ResolvedThemeVariant> {
         self.resolve_all();
         self.validate()
@@ -921,7 +921,7 @@ impl ThemeVariant {
     /// with all missing field paths and out-of-range diagnostics.
     // Validation is kept in a single function for field-level traceability.
     // Future extraction into per-widget validators is planned for v0.6.0.
-    #[must_use = "this returns the resolved theme; it does not modify self"]
+    #[must_use = "this returns the validation result; handle the Result or propagate with ?"]
     pub fn validate(&self) -> crate::Result<ResolvedThemeVariant> {
         let mut missing = Vec::new();
 
