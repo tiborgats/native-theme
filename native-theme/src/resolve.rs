@@ -1,6 +1,5 @@
 // Resolution engine: resolve() fills inheritance rules, validate() produces ResolvedThemeVariant.
 
-use crate::Rgba;
 use crate::error::ThemeResolutionError;
 use crate::model::border::{BorderSpec, ResolvedBorderSpec};
 use crate::model::resolved::{
@@ -180,9 +179,10 @@ fn require_text_scale_entry(
 }
 
 /// Validate an `Option<BorderSpec>` (widget border fields).
-/// If None, records the path as missing. Requires all sub-fields that are
-/// filled by border_inheritance (color, corner_radius, line_width, shadow_enabled)
-/// plus padding sub-fields.
+/// If None, records the path as missing. Requires the 4 sub-fields filled by
+/// border_inheritance (color, corner_radius, line_width, shadow_enabled).
+/// Padding sub-fields are sizing fields with no inheritance -- they use
+/// the preset value if present, otherwise default to `T::default()`.
 fn require_border(
     border: &Option<BorderSpec>,
     prefix: &str,
@@ -195,11 +195,17 @@ fn require_border(
         }
         Some(b) => {
             let color = require(&b.color, &format!("{prefix}.color"), missing);
-            let corner_radius = require(&b.corner_radius, &format!("{prefix}.corner_radius"), missing);
+            let corner_radius = require(
+                &b.corner_radius,
+                &format!("{prefix}.corner_radius"),
+                missing,
+            );
             let line_width = require(&b.line_width, &format!("{prefix}.line_width"), missing);
-            let shadow_enabled = require(&b.shadow_enabled, &format!("{prefix}.shadow_enabled"), missing);
-            let padding_horizontal = require(&b.padding_horizontal, &format!("{prefix}.padding_horizontal"), missing);
-            let padding_vertical = require(&b.padding_vertical, &format!("{prefix}.padding_vertical"), missing);
+            let shadow_enabled = require(
+                &b.shadow_enabled,
+                &format!("{prefix}.shadow_enabled"),
+                missing,
+            );
             ResolvedBorderSpec {
                 color,
                 corner_radius,
@@ -207,41 +213,30 @@ fn require_border(
                 line_width,
                 opacity: b.opacity.unwrap_or_default(),
                 shadow_enabled,
-                padding_horizontal,
-                padding_vertical,
+                padding_horizontal: b.padding_horizontal.unwrap_or_default(),
+                padding_vertical: b.padding_vertical.unwrap_or_default(),
             }
         }
     }
 }
 
-/// Validate a border for widgets excluded from border_inheritance (menu, tab, card).
-/// These widgets have no inheritance for color/corner_radius/line_width/shadow_enabled;
-/// only padding sub-fields are expected from presets. Non-padding sub-fields use
-/// their preset value if present, otherwise default to `T::default()`.
-fn require_border_padding_only(
-    border: &Option<BorderSpec>,
-    prefix: &str,
-    missing: &mut Vec<String>,
-) -> ResolvedBorderSpec {
+/// Resolve a border for widgets excluded from border_inheritance (menu, tab, card).
+/// These widgets have no inheritance for any border sub-field; all sub-fields
+/// use the preset value if present, otherwise `T::default()`. No validation
+/// errors are recorded -- the border is entirely optional.
+fn border_all_optional(border: &Option<BorderSpec>) -> ResolvedBorderSpec {
     match border {
-        None => {
-            missing.push(prefix.to_string());
-            ResolvedBorderSpec::default()
-        }
-        Some(b) => {
-            let padding_horizontal = require(&b.padding_horizontal, &format!("{prefix}.padding_horizontal"), missing);
-            let padding_vertical = require(&b.padding_vertical, &format!("{prefix}.padding_vertical"), missing);
-            ResolvedBorderSpec {
-                color: b.color.unwrap_or_default(),
-                corner_radius: b.corner_radius.unwrap_or_default(),
-                corner_radius_lg: b.corner_radius_lg.unwrap_or_default(),
-                line_width: b.line_width.unwrap_or_default(),
-                opacity: b.opacity.unwrap_or_default(),
-                shadow_enabled: b.shadow_enabled.unwrap_or_default(),
-                padding_horizontal,
-                padding_vertical,
-            }
-        }
+        None => ResolvedBorderSpec::default(),
+        Some(b) => ResolvedBorderSpec {
+            color: b.color.unwrap_or_default(),
+            corner_radius: b.corner_radius.unwrap_or_default(),
+            corner_radius_lg: b.corner_radius_lg.unwrap_or_default(),
+            line_width: b.line_width.unwrap_or_default(),
+            opacity: b.opacity.unwrap_or_default(),
+            shadow_enabled: b.shadow_enabled.unwrap_or_default(),
+            padding_horizontal: b.padding_horizontal.unwrap_or_default(),
+            padding_vertical: b.padding_vertical.unwrap_or_default(),
+        },
     }
 }
 
@@ -544,6 +539,9 @@ impl ThemeVariant {
         if self.button.disabled_opacity.is_none() {
             self.button.disabled_opacity = d.disabled_opacity;
         }
+        if self.button.hover_background.is_none() {
+            self.button.hover_background = d.background_color;
+        }
 
         // --- input ---
         if self.input.background_color.is_none() {
@@ -563,8 +561,14 @@ impl ThemeVariant {
         }
 
         // --- checkbox ---
+        if self.checkbox.background_color.is_none() {
+            self.checkbox.background_color = d.background_color;
+        }
         if self.checkbox.checked_background.is_none() {
             self.checkbox.checked_background = d.accent_color;
+        }
+        if self.checkbox.indicator_color.is_none() {
+            self.checkbox.indicator_color = d.text_color;
         }
         if self.checkbox.disabled_opacity.is_none() {
             self.checkbox.disabled_opacity = d.disabled_opacity;
@@ -576,6 +580,18 @@ impl ThemeVariant {
         }
         if self.menu.separator_color.is_none() {
             self.menu.separator_color = d.border.color;
+        }
+        if self.menu.icon_size.is_none() {
+            self.menu.icon_size = d.icon_sizes.toolbar;
+        }
+        if self.menu.hover_background.is_none() {
+            self.menu.hover_background = d.selection_background;
+        }
+        if self.menu.hover_text_color.is_none() {
+            self.menu.hover_text_color = d.selection_text_color;
+        }
+        if self.menu.disabled_text_color.is_none() {
+            self.menu.disabled_text_color = d.disabled_text_color;
         }
 
         // --- tooltip ---
@@ -639,6 +655,9 @@ impl ThemeVariant {
         if self.sidebar.selection_text_color.is_none() {
             self.sidebar.selection_text_color = d.selection_text_color;
         }
+        if self.sidebar.hover_background.is_none() {
+            self.sidebar.hover_background = d.background_color;
+        }
 
         // --- toolbar ---
         if self.toolbar.background_color.is_none() {
@@ -669,6 +688,9 @@ impl ThemeVariant {
         if self.list.grid_color.is_none() {
             self.list.grid_color = d.border.color;
         }
+        if self.list.hover_background.is_none() {
+            self.list.hover_background = d.background_color;
+        }
 
         // --- splitter ---
         if self.splitter.divider_color.is_none() {
@@ -697,11 +719,23 @@ impl ThemeVariant {
         }
 
         // --- combo_box ---
+        if self.combo_box.background_color.is_none() {
+            self.combo_box.background_color = d.background_color;
+        }
         if self.combo_box.disabled_opacity.is_none() {
             self.combo_box.disabled_opacity = d.disabled_opacity;
         }
 
         // --- segmented_control ---
+        if self.segmented_control.background_color.is_none() {
+            self.segmented_control.background_color = d.background_color;
+        }
+        if self.segmented_control.active_background.is_none() {
+            self.segmented_control.active_background = d.accent_color;
+        }
+        if self.segmented_control.active_text_color.is_none() {
+            self.segmented_control.active_text_color = d.accent_text_color;
+        }
         if self.segmented_control.disabled_opacity.is_none() {
             self.segmented_control.disabled_opacity = d.disabled_opacity;
         }
@@ -1583,6 +1617,239 @@ impl ThemeVariant {
         let icon_set = require(&self.icon_set, "icon_set", &mut missing);
         let icon_theme = require(&self.icon_theme, "icon_theme", &mut missing);
 
+        // --- require() calls for fields previously using placeholder bindings ---
+
+        // window
+        let window_border_spec = require_border(&self.window.border, "window.border", &mut missing);
+
+        // button
+        let button_hover_background = require(
+            &self.button.hover_background,
+            "button.hover_background",
+            &mut missing,
+        );
+        let button_hover_text_color = require(
+            &self.button.hover_text_color,
+            "button.hover_text_color",
+            &mut missing,
+        );
+        let button_border_spec = require_border(&self.button.border, "button.border", &mut missing);
+
+        // input
+        let input_disabled_opacity = require(
+            &self.input.disabled_opacity,
+            "input.disabled_opacity",
+            &mut missing,
+        );
+        let input_border_spec = require_border(&self.input.border, "input.border", &mut missing);
+
+        // checkbox
+        let checkbox_background_color = require(
+            &self.checkbox.background_color,
+            "checkbox.background_color",
+            &mut missing,
+        );
+        let checkbox_indicator_color = require(
+            &self.checkbox.indicator_color,
+            "checkbox.indicator_color",
+            &mut missing,
+        );
+        let checkbox_disabled_opacity = require(
+            &self.checkbox.disabled_opacity,
+            "checkbox.disabled_opacity",
+            &mut missing,
+        );
+        let checkbox_font = require_font_opt(&self.checkbox.font, "checkbox.font", &mut missing);
+        let checkbox_border_spec =
+            require_border(&self.checkbox.border, "checkbox.border", &mut missing);
+
+        // menu (excluded from border_inheritance -- border belongs to popup container)
+        let menu_icon_size = require(&self.menu.icon_size, "menu.icon_size", &mut missing);
+        let menu_hover_background = require(
+            &self.menu.hover_background,
+            "menu.hover_background",
+            &mut missing,
+        );
+        let menu_hover_text_color = require(
+            &self.menu.hover_text_color,
+            "menu.hover_text_color",
+            &mut missing,
+        );
+        let menu_disabled_text_color = require(
+            &self.menu.disabled_text_color,
+            "menu.disabled_text_color",
+            &mut missing,
+        );
+        // menu border: no inheritance, all sub-fields optional (preset provides if available)
+        let menu_border_spec = border_all_optional(&self.menu.border);
+
+        // tooltip
+        let tooltip_border_spec =
+            require_border(&self.tooltip.border, "tooltip.border", &mut missing);
+
+        // slider
+        let slider_disabled_opacity = require(
+            &self.slider.disabled_opacity,
+            "slider.disabled_opacity",
+            &mut missing,
+        );
+
+        // progress_bar
+        let progress_bar_border_spec = require_border(
+            &self.progress_bar.border,
+            "progress_bar.border",
+            &mut missing,
+        );
+
+        // tab (excluded from border_inheritance -- all border sub-fields are platform-specific)
+        let tab_font = require_font_opt(&self.tab.font, "tab.font", &mut missing);
+        // tab border: no inheritance, all sub-fields optional (preset provides if available)
+        let tab_border_spec = border_all_optional(&self.tab.border);
+
+        // sidebar (partial border inheritance: color + line_width only)
+        let sidebar_selection_background = require(
+            &self.sidebar.selection_background,
+            "sidebar.selection_background",
+            &mut missing,
+        );
+        let sidebar_selection_text_color = require(
+            &self.sidebar.selection_text_color,
+            "sidebar.selection_text_color",
+            &mut missing,
+        );
+        let sidebar_hover_background = require(
+            &self.sidebar.hover_background,
+            "sidebar.hover_background",
+            &mut missing,
+        );
+        let sidebar_font = require_font_opt(&self.sidebar.font, "sidebar.font", &mut missing);
+        let sidebar_border_spec =
+            require_border_partial(&self.sidebar.border, "sidebar.border", &mut missing);
+
+        // toolbar
+        let toolbar_background_color = require(
+            &self.toolbar.background_color,
+            "toolbar.background_color",
+            &mut missing,
+        );
+        let toolbar_icon_size = require(&self.toolbar.icon_size, "toolbar.icon_size", &mut missing);
+        let toolbar_border_spec =
+            require_border(&self.toolbar.border, "toolbar.border", &mut missing);
+
+        // status_bar (partial border inheritance: color + line_width only)
+        let status_bar_background_color = require(
+            &self.status_bar.background_color,
+            "status_bar.background_color",
+            &mut missing,
+        );
+        let status_bar_border_spec =
+            require_border_partial(&self.status_bar.border, "status_bar.border", &mut missing);
+
+        // list
+        let list_item_font = require_font_opt(&self.list.item_font, "list.item_font", &mut missing);
+        let list_header_font =
+            require_font_opt(&self.list.header_font, "list.header_font", &mut missing);
+        let list_hover_background = require(
+            &self.list.hover_background,
+            "list.hover_background",
+            &mut missing,
+        );
+        let list_border_spec = require_border(&self.list.border, "list.border", &mut missing);
+
+        // popover
+        let popover_font = require_font_opt(&self.popover.font, "popover.font", &mut missing);
+        let popover_border_spec =
+            require_border(&self.popover.border, "popover.border", &mut missing);
+
+        // splitter
+        let splitter_divider_color = require(
+            &self.splitter.divider_color,
+            "splitter.divider_color",
+            &mut missing,
+        );
+
+        // separator
+        let separator_line_width = require(
+            &self.separator.line_width,
+            "separator.line_width",
+            &mut missing,
+        );
+
+        // switch
+        let switch_disabled_opacity = require(
+            &self.switch.disabled_opacity,
+            "switch.disabled_opacity",
+            &mut missing,
+        );
+
+        // dialog
+        let dialog_background_color = require(
+            &self.dialog.background_color,
+            "dialog.background_color",
+            &mut missing,
+        );
+        let dialog_body_font =
+            require_font_opt(&self.dialog.body_font, "dialog.body_font", &mut missing);
+        let dialog_border_spec = require_border(&self.dialog.border, "dialog.border", &mut missing);
+
+        // link
+        let link_font = require_font_opt(&self.link.font, "link.font", &mut missing);
+
+        // combo_box
+        let combo_box_background_color = require(
+            &self.combo_box.background_color,
+            "combo_box.background_color",
+            &mut missing,
+        );
+        let combo_box_disabled_opacity = require(
+            &self.combo_box.disabled_opacity,
+            "combo_box.disabled_opacity",
+            &mut missing,
+        );
+        let combo_box_font = require_font_opt(&self.combo_box.font, "combo_box.font", &mut missing);
+        let combo_box_border_spec =
+            require_border(&self.combo_box.border, "combo_box.border", &mut missing);
+
+        // segmented_control
+        let segmented_control_background_color = require(
+            &self.segmented_control.background_color,
+            "segmented_control.background_color",
+            &mut missing,
+        );
+        let segmented_control_active_background = require(
+            &self.segmented_control.active_background,
+            "segmented_control.active_background",
+            &mut missing,
+        );
+        let segmented_control_active_text_color = require(
+            &self.segmented_control.active_text_color,
+            "segmented_control.active_text_color",
+            &mut missing,
+        );
+        let segmented_control_disabled_opacity = require(
+            &self.segmented_control.disabled_opacity,
+            "segmented_control.disabled_opacity",
+            &mut missing,
+        );
+        let segmented_control_font = require_font_opt(
+            &self.segmented_control.font,
+            "segmented_control.font",
+            &mut missing,
+        );
+        let segmented_control_border_spec = require_border(
+            &self.segmented_control.border,
+            "segmented_control.border",
+            &mut missing,
+        );
+
+        // card (excluded from border_inheritance -- all sub-fields platform-specific or none)
+        let card_border_spec = border_all_optional(&self.card.border);
+
+        // expander
+        let expander_font = require_font_opt(&self.expander.font, "expander.font", &mut missing);
+        let expander_border_spec =
+            require_border(&self.expander.border, "expander.border", &mut missing);
+
         // NEW WIDGET: add require() calls above this line, then add
         // range checks below and construction fields at the bottom.
 
@@ -1798,8 +2065,15 @@ impl ThemeVariant {
             &mut missing,
         );
 
-        // input: geometry >= 0, font size > 0, font weight 100..=900
+        // input: geometry >= 0, opacity 0..=1, font size > 0, font weight 100..=900
         check_non_negative(input_min_height, "input.min_height", &mut missing);
+        check_range_f32(
+            input_disabled_opacity,
+            0.0,
+            1.0,
+            "input.disabled_opacity",
+            &mut missing,
+        );
         check_positive(input_font.size, "input.font.size", &mut missing);
         check_range_u16(
             input_font.weight,
@@ -1809,17 +2083,33 @@ impl ThemeVariant {
             &mut missing,
         );
 
-        // checkbox: geometry >= 0
+        // checkbox: geometry >= 0, opacity 0..=1, font size > 0, font weight 100..=900
         check_non_negative(
             checkbox_indicator_size,
             "checkbox.indicator_width",
             &mut missing,
         );
         check_non_negative(checkbox_spacing, "checkbox.label_gap", &mut missing);
+        check_range_f32(
+            checkbox_disabled_opacity,
+            0.0,
+            1.0,
+            "checkbox.disabled_opacity",
+            &mut missing,
+        );
+        check_positive(checkbox_font.size, "checkbox.font.size", &mut missing);
+        check_range_u16(
+            checkbox_font.weight,
+            100,
+            900,
+            "checkbox.font.weight",
+            &mut missing,
+        );
 
         // menu: geometry >= 0, font size > 0, font weight 100..=900
         check_non_negative(menu_item_height, "menu.row_height", &mut missing);
         check_non_negative(menu_icon_spacing, "menu.icon_text_gap", &mut missing);
+        check_non_negative(menu_icon_size, "menu.icon_size", &mut missing);
         check_positive(menu_font.size, "menu.font.size", &mut missing);
         check_range_u16(menu_font.weight, 100, 900, "menu.font.weight", &mut missing);
 
@@ -1847,10 +2137,17 @@ impl ThemeVariant {
             &mut missing,
         );
 
-        // slider: geometry >= 0
+        // slider: geometry >= 0, opacity 0..=1
         check_non_negative(slider_track_height, "slider.track_height", &mut missing);
         check_non_negative(slider_thumb_size, "slider.thumb_diameter", &mut missing);
         check_non_negative(slider_tick_length, "slider.tick_mark_length", &mut missing);
+        check_range_f32(
+            slider_disabled_opacity,
+            0.0,
+            1.0,
+            "slider.disabled_opacity",
+            &mut missing,
+        );
 
         // progress_bar: geometry >= 0
         check_non_negative(
@@ -1865,13 +2162,26 @@ impl ThemeVariant {
         );
         // progress_bar.border.corner_radius check handled by border spec validation
 
-        // tab: geometry >= 0
+        // tab: geometry >= 0, font size > 0, font weight 100..=900
         check_non_negative(tab_min_width, "tab.min_width", &mut missing);
         check_non_negative(tab_min_height, "tab.min_height", &mut missing);
+        check_positive(tab_font.size, "tab.font.size", &mut missing);
+        check_range_u16(tab_font.weight, 100, 900, "tab.font.weight", &mut missing);
+
+        // sidebar: font size > 0, font weight 100..=900
+        check_positive(sidebar_font.size, "sidebar.font.size", &mut missing);
+        check_range_u16(
+            sidebar_font.weight,
+            100,
+            900,
+            "sidebar.font.weight",
+            &mut missing,
+        );
 
         // toolbar: geometry >= 0, font size > 0, font weight 100..=900
         check_non_negative(toolbar_height, "toolbar.bar_height", &mut missing);
         check_non_negative(toolbar_item_spacing, "toolbar.item_gap", &mut missing);
+        check_non_negative(toolbar_icon_size, "toolbar.icon_size", &mut missing);
         check_positive(toolbar_font.size, "toolbar.font.size", &mut missing);
         check_range_u16(
             toolbar_font.weight,
@@ -1891,17 +2201,53 @@ impl ThemeVariant {
             &mut missing,
         );
 
-        // list: geometry >= 0
+        // list: geometry >= 0, font size > 0, font weight 100..=900
         check_non_negative(list_item_height, "list.row_height", &mut missing);
+        check_positive(list_item_font.size, "list.item_font.size", &mut missing);
+        check_range_u16(
+            list_item_font.weight,
+            100,
+            900,
+            "list.item_font.weight",
+            &mut missing,
+        );
+        check_positive(list_header_font.size, "list.header_font.size", &mut missing);
+        check_range_u16(
+            list_header_font.weight,
+            100,
+            900,
+            "list.header_font.weight",
+            &mut missing,
+        );
+
+        // popover: font size > 0, font weight 100..=900
+        check_positive(popover_font.size, "popover.font.size", &mut missing);
+        check_range_u16(
+            popover_font.weight,
+            100,
+            900,
+            "popover.font.weight",
+            &mut missing,
+        );
 
         // splitter: width >= 0
         check_non_negative(splitter_width, "splitter.divider_width", &mut missing);
 
-        // switch: geometry >= 0
+        // separator: line_width >= 0
+        check_non_negative(separator_line_width, "separator.line_width", &mut missing);
+
+        // switch: geometry >= 0, opacity 0..=1
         check_non_negative(switch_track_width, "switch.track_width", &mut missing);
         check_non_negative(switch_track_height, "switch.track_height", &mut missing);
         check_non_negative(switch_thumb_size, "switch.thumb_diameter", &mut missing);
         check_non_negative(switch_track_radius, "switch.track_radius", &mut missing);
+        check_range_f32(
+            switch_disabled_opacity,
+            0.0,
+            1.0,
+            "switch.disabled_opacity",
+            &mut missing,
+        );
 
         // dialog: geometry >= 0, font size > 0, font weight 100..=900
         check_non_negative(dialog_min_width, "dialog.min_width", &mut missing);
@@ -1920,6 +2266,16 @@ impl ThemeVariant {
             100,
             900,
             "dialog.title_font.weight",
+            &mut missing,
+        );
+
+        // dialog: body_font size > 0, weight 100..=900
+        check_positive(dialog_body_font.size, "dialog.body_font.size", &mut missing);
+        check_range_u16(
+            dialog_body_font.weight,
+            100,
+            900,
+            "dialog.body_font.weight",
             &mut missing,
         );
 
@@ -1944,7 +2300,11 @@ impl ThemeVariant {
         check_non_negative(spinner_min_size, "spinner.min_diameter", &mut missing);
         check_non_negative(spinner_stroke_width, "spinner.stroke_width", &mut missing);
 
-        // combo_box: geometry >= 0
+        // link: font size > 0, font weight 100..=900
+        check_positive(link_font.size, "link.font.size", &mut missing);
+        check_range_u16(link_font.weight, 100, 900, "link.font.weight", &mut missing);
+
+        // combo_box: geometry >= 0, opacity 0..=1, font size > 0, font weight 100..=900
         check_non_negative(combo_box_min_height, "combo_box.min_height", &mut missing);
         check_non_negative(combo_box_min_width, "combo_box.min_width", &mut missing);
         check_non_negative(
@@ -1957,8 +2317,23 @@ impl ThemeVariant {
             "combo_box.arrow_area_width",
             &mut missing,
         );
+        check_range_f32(
+            combo_box_disabled_opacity,
+            0.0,
+            1.0,
+            "combo_box.disabled_opacity",
+            &mut missing,
+        );
+        check_positive(combo_box_font.size, "combo_box.font.size", &mut missing);
+        check_range_u16(
+            combo_box_font.weight,
+            100,
+            900,
+            "combo_box.font.weight",
+            &mut missing,
+        );
 
-        // segmented_control: geometry >= 0
+        // segmented_control: geometry >= 0, opacity 0..=1, font size > 0, font weight 100..=900
         check_non_negative(
             segmented_control_segment_height,
             "segmented_control.segment_height",
@@ -1969,8 +2344,27 @@ impl ThemeVariant {
             "segmented_control.separator_width",
             &mut missing,
         );
+        check_range_f32(
+            segmented_control_disabled_opacity,
+            0.0,
+            1.0,
+            "segmented_control.disabled_opacity",
+            &mut missing,
+        );
+        check_positive(
+            segmented_control_font.size,
+            "segmented_control.font.size",
+            &mut missing,
+        );
+        check_range_u16(
+            segmented_control_font.weight,
+            100,
+            900,
+            "segmented_control.font.weight",
+            &mut missing,
+        );
 
-        // expander: geometry >= 0
+        // expander: geometry >= 0, font size > 0, font weight 100..=900
         check_non_negative(
             expander_header_height,
             "expander.header_height",
@@ -1979,6 +2373,14 @@ impl ThemeVariant {
         check_non_negative(
             expander_arrow_size,
             "expander.arrow_icon_size",
+            &mut missing,
+        );
+        check_positive(expander_font.size, "expander.font.size", &mut missing);
+        check_range_u16(
+            expander_font.weight,
+            100,
+            900,
+            "expander.font.weight",
             &mut missing,
         );
 
@@ -1995,68 +2397,6 @@ impl ThemeVariant {
         // All fields present -- construct ResolvedThemeVariant.
         // require() returns T directly (using T::default() as placeholder for missing),
         // so no unwrap() is needed. The defaults are never used: we returned Err above.
-
-        // Placeholder bindings for new fields added in Plan 01 that do not yet have
-        // require() calls. Phase 51 will wire these properly with inheritance.
-        let default_border_spec = ResolvedBorderSpec::default();
-        let default_font = defaults_font.clone();
-        let window_border_spec = default_border_spec.clone();
-        let button_hover_background = defaults_background;
-        let button_hover_text_color = defaults_foreground;
-        let button_border_spec = default_border_spec.clone();
-        let input_disabled_opacity = defaults_disabled_opacity;
-        let input_border_spec = default_border_spec.clone();
-        let checkbox_background_color = defaults_background;
-        let checkbox_indicator_color = defaults_foreground;
-        let checkbox_disabled_opacity = defaults_disabled_opacity;
-        let checkbox_font = default_font.clone();
-        let checkbox_border_spec = default_border_spec.clone();
-        let menu_icon_size = defaults_icon_sizes_toolbar;
-        let menu_hover_background = defaults_selection;
-        let menu_hover_text_color = defaults_selection_foreground;
-        let menu_disabled_text_color = defaults_disabled_foreground;
-        let menu_border_spec = default_border_spec.clone();
-        let tooltip_border_spec = default_border_spec.clone();
-        let slider_disabled_opacity = defaults_disabled_opacity;
-        let progress_bar_border_spec = default_border_spec.clone();
-        let tab_font = default_font.clone();
-        let tab_border_spec = default_border_spec.clone();
-        let sidebar_selection_background = defaults_selection;
-        let sidebar_selection_text_color = defaults_selection_foreground;
-        let sidebar_hover_background = defaults_background;
-        let sidebar_font = default_font.clone();
-        let sidebar_border_spec = default_border_spec.clone();
-        let toolbar_background_color = defaults_background;
-        let toolbar_icon_size = defaults_icon_sizes_toolbar;
-        let toolbar_border_spec = default_border_spec.clone();
-        let status_bar_background_color = defaults_background;
-        let status_bar_border_spec = default_border_spec.clone();
-        let list_item_font = default_font.clone();
-        let list_header_font = default_font.clone();
-        let list_hover_background = defaults_background;
-        let list_border_spec = default_border_spec.clone();
-        let popover_font = default_font.clone();
-        let popover_border_spec = default_border_spec.clone();
-        let splitter_divider_color = defaults_border;
-        let separator_line_width = defaults_frame_width;
-        let switch_disabled_opacity = defaults_disabled_opacity;
-        let dialog_background_color = defaults_surface;
-        let dialog_body_font = default_font.clone();
-        let dialog_border_spec = default_border_spec.clone();
-        let link_font = default_font.clone();
-        let combo_box_background_color = defaults_background;
-        let combo_box_disabled_opacity = defaults_disabled_opacity;
-        let combo_box_font = default_font.clone();
-        let combo_box_border_spec = default_border_spec.clone();
-        let segmented_control_background_color = defaults_background;
-        let segmented_control_active_background = defaults_accent;
-        let segmented_control_active_text_color = defaults_accent_foreground;
-        let segmented_control_disabled_opacity = defaults_disabled_opacity;
-        let segmented_control_font = default_font.clone();
-        let segmented_control_border_spec = default_border_spec.clone();
-        let card_border_spec = default_border_spec.clone();
-        let expander_font = default_font.clone();
-        let expander_border_spec = default_border_spec;
 
         Ok(ResolvedThemeVariant {
             defaults: ResolvedThemeDefaults {
@@ -2393,6 +2733,7 @@ mod tests {
             family: Some("Inter".into()),
             size: Some(14.0),
             weight: Some(400),
+            color: Some(c3), // foreground
             ..Default::default()
         };
         v.defaults.line_height = Some(1.4);
@@ -2400,6 +2741,7 @@ mod tests {
             family: Some("JetBrains Mono".into()),
             size: Some(13.0),
             weight: Some(400),
+            color: Some(c3), // foreground
             ..Default::default()
         };
 
@@ -2891,6 +3233,7 @@ mod tests {
         v.window.inactive_title_bar_background = Some(c);
         v.window.inactive_title_bar_text_color = Some(c);
         v.window.border.get_or_insert_default().corner_radius = Some(8.0);
+        v.window.border.get_or_insert_default().line_width = Some(1.0);
         v.window.border.get_or_insert_default().shadow_enabled = Some(true);
         v.window.title_bar_font = Some(FontSpec {
             family: Some("Inter".into()),
@@ -2910,8 +3253,11 @@ mod tests {
         v.button.border.get_or_insert_default().padding_horizontal = Some(12.0);
         v.button.border.get_or_insert_default().padding_vertical = Some(6.0);
         v.button.border.get_or_insert_default().corner_radius = Some(4.0);
+        v.button.border.get_or_insert_default().line_width = Some(1.0);
         v.button.icon_text_gap = Some(6.0);
         v.button.disabled_opacity = Some(0.5);
+        v.button.hover_background = Some(c);
+        v.button.hover_text_color = Some(c);
         v.button.border.get_or_insert_default().shadow_enabled = Some(false);
         v.button.font = Some(FontSpec {
             family: Some("Inter".into()),
@@ -2931,8 +3277,10 @@ mod tests {
         v.input.min_height = Some(28.0);
         v.input.border.get_or_insert_default().padding_horizontal = Some(8.0);
         v.input.border.get_or_insert_default().padding_vertical = Some(4.0);
+        v.input.disabled_opacity = Some(0.5);
         v.input.border.get_or_insert_default().corner_radius = Some(4.0);
         v.input.border.get_or_insert_default().line_width = Some(1.0);
+        v.input.border.get_or_insert_default().shadow_enabled = Some(false);
         v.input.font = Some(FontSpec {
             family: Some("Inter".into()),
             size: Some(14.0),
@@ -2941,11 +3289,21 @@ mod tests {
         });
 
         // checkbox
+        v.checkbox.background_color = Some(c);
         v.checkbox.checked_background = Some(c);
+        v.checkbox.indicator_color = Some(c);
         v.checkbox.indicator_width = Some(18.0);
         v.checkbox.label_gap = Some(6.0);
+        v.checkbox.disabled_opacity = Some(0.5);
+        v.checkbox.font = Some(FontSpec {
+            family: Some("Inter".into()),
+            size: Some(14.0),
+            weight: Some(400),
+            ..Default::default()
+        });
         v.checkbox.border.get_or_insert_default().corner_radius = Some(2.0);
         v.checkbox.border.get_or_insert_default().line_width = Some(1.0);
+        v.checkbox.border.get_or_insert_default().shadow_enabled = Some(false);
 
         // menu
         v.menu.background_color = Some(c);
@@ -2955,6 +3313,10 @@ mod tests {
         v.menu.border.get_or_insert_default().padding_horizontal = Some(8.0);
         v.menu.border.get_or_insert_default().padding_vertical = Some(4.0);
         v.menu.icon_text_gap = Some(6.0);
+        v.menu.icon_size = Some(16.0);
+        v.menu.hover_background = Some(c);
+        v.menu.hover_text_color = Some(c);
+        v.menu.disabled_text_color = Some(c);
         v.menu.font = Some(FontSpec {
             family: Some("Inter".into()),
             size: Some(14.0),
@@ -2969,6 +3331,8 @@ mod tests {
         v.tooltip.border.get_or_insert_default().padding_vertical = Some(4.0);
         v.tooltip.max_width = Some(300.0);
         v.tooltip.border.get_or_insert_default().corner_radius = Some(4.0);
+        v.tooltip.border.get_or_insert_default().line_width = Some(1.0);
+        v.tooltip.border.get_or_insert_default().shadow_enabled = Some(false);
         v.tooltip.font = Some(FontSpec {
             family: Some("Inter".into()),
             size: Some(14.0),
@@ -2992,6 +3356,7 @@ mod tests {
         v.slider.track_height = Some(4.0);
         v.slider.thumb_diameter = Some(16.0);
         v.slider.tick_mark_length = Some(6.0);
+        v.slider.disabled_opacity = Some(0.5);
 
         // progress_bar
         v.progress_bar.fill_color = Some(c);
@@ -2999,10 +3364,12 @@ mod tests {
         v.progress_bar.track_height = Some(6.0);
         v.progress_bar.min_width = Some(100.0);
         v.progress_bar.border.get_or_insert_default().corner_radius = Some(3.0);
+        v.progress_bar.border.get_or_insert_default().color = Some(c);
+        v.progress_bar.border.get_or_insert_default().line_width = Some(1.0);
+        v.progress_bar.border.get_or_insert_default().shadow_enabled = Some(false);
 
         // tab
         v.tab.background_color = Some(c);
-        v.tab.font.get_or_insert_default().color = Some(c);
         v.tab.active_background = Some(c);
         v.tab.active_text_color = Some(c);
         v.tab.bar_background = Some(c);
@@ -3010,15 +3377,36 @@ mod tests {
         v.tab.min_height = Some(32.0);
         v.tab.border.get_or_insert_default().padding_horizontal = Some(12.0);
         v.tab.border.get_or_insert_default().padding_vertical = Some(6.0);
+        v.tab.font = Some(FontSpec {
+            family: Some("Inter".into()),
+            size: Some(14.0),
+            weight: Some(400),
+            ..Default::default()
+        });
 
         // sidebar
         v.sidebar.background_color = Some(c);
-        v.sidebar.font.get_or_insert_default().color = Some(c);
+        v.sidebar.selection_background = Some(c);
+        v.sidebar.selection_text_color = Some(c);
+        v.sidebar.hover_background = Some(c);
+        v.sidebar.font = Some(FontSpec {
+            family: Some("Inter".into()),
+            size: Some(14.0),
+            weight: Some(400),
+            ..Default::default()
+        });
+        v.sidebar.border.get_or_insert_default().color = Some(c);
+        v.sidebar.border.get_or_insert_default().line_width = Some(1.0);
 
         // toolbar
+        v.toolbar.background_color = Some(c);
         v.toolbar.bar_height = Some(40.0);
         v.toolbar.item_gap = Some(4.0);
-        // REMOVED: toolbar.padding not in new schema
+        v.toolbar.icon_size = Some(24.0);
+        v.toolbar.border.get_or_insert_default().color = Some(c);
+        v.toolbar.border.get_or_insert_default().corner_radius = Some(4.0);
+        v.toolbar.border.get_or_insert_default().line_width = Some(1.0);
+        v.toolbar.border.get_or_insert_default().shadow_enabled = Some(false);
         v.toolbar.font = Some(FontSpec {
             family: Some("Inter".into()),
             size: Some(14.0),
@@ -3027,6 +3415,9 @@ mod tests {
         });
 
         // status_bar
+        v.status_bar.background_color = Some(c);
+        v.status_bar.border.get_or_insert_default().color = Some(c);
+        v.status_bar.border.get_or_insert_default().line_width = Some(1.0);
         v.status_bar.font = Some(FontSpec {
             family: Some("Inter".into()),
             size: Some(14.0),
@@ -3036,28 +3427,50 @@ mod tests {
 
         // list
         v.list.background_color = Some(c);
-        v.list.item_font.get_or_insert_default().color = Some(c);
         v.list.alternate_row_background = Some(c);
         v.list.selection_background = Some(c);
         v.list.selection_text_color = Some(c);
         v.list.header_background = Some(c);
-        v.list.header_font.get_or_insert_default().color = Some(c);
         v.list.grid_color = Some(c);
         v.list.row_height = Some(28.0);
-        v.list.border.get_or_insert_default().padding_horizontal = Some(8.0);
-        v.list.border.get_or_insert_default().padding_vertical = Some(4.0);
+        v.list.hover_background = Some(c);
+        v.list.item_font = Some(FontSpec {
+            family: Some("Inter".into()),
+            size: Some(14.0),
+            weight: Some(400),
+            ..Default::default()
+        });
+        v.list.header_font = Some(FontSpec {
+            family: Some("Inter".into()),
+            size: Some(14.0),
+            weight: Some(400),
+            ..Default::default()
+        });
+        v.list.border.get_or_insert_default().color = Some(c);
+        v.list.border.get_or_insert_default().corner_radius = Some(4.0);
+        v.list.border.get_or_insert_default().line_width = Some(1.0);
+        v.list.border.get_or_insert_default().shadow_enabled = Some(false);
 
         // popover
         v.popover.background_color = Some(c);
-        v.popover.font.get_or_insert_default().color = Some(c);
+        v.popover.font = Some(FontSpec {
+            family: Some("Inter".into()),
+            size: Some(14.0),
+            weight: Some(400),
+            ..Default::default()
+        });
         v.popover.border.get_or_insert_default().color = Some(c);
         v.popover.border.get_or_insert_default().corner_radius = Some(6.0);
+        v.popover.border.get_or_insert_default().line_width = Some(1.0);
+        v.popover.border.get_or_insert_default().shadow_enabled = Some(false);
 
         // splitter
         v.splitter.divider_width = Some(4.0);
+        v.splitter.divider_color = Some(c);
 
         // separator
         v.separator.line_color = Some(c);
+        v.separator.line_width = Some(1.0);
 
         // switch
         v.switch.checked_background = Some(c);
@@ -3067,21 +3480,31 @@ mod tests {
         v.switch.track_height = Some(20.0);
         v.switch.thumb_diameter = Some(14.0);
         v.switch.track_radius = Some(10.0);
+        v.switch.disabled_opacity = Some(0.5);
 
         // dialog
+        v.dialog.background_color = Some(c);
         v.dialog.min_width = Some(320.0);
         v.dialog.max_width = Some(600.0);
         v.dialog.min_height = Some(200.0);
         v.dialog.max_height = Some(800.0);
-        // REMOVED: content_padding not in new schema
         v.dialog.button_gap = Some(8.0);
+        v.dialog.border.get_or_insert_default().color = Some(c);
         v.dialog.border.get_or_insert_default().corner_radius = Some(8.0);
+        v.dialog.border.get_or_insert_default().line_width = Some(1.0);
+        v.dialog.border.get_or_insert_default().shadow_enabled = Some(true);
         v.dialog.icon_size = Some(22.0);
         v.dialog.button_order = Some(DialogButtonOrder::PrimaryRight);
         v.dialog.title_font = Some(FontSpec {
             family: Some("Inter".into()),
             size: Some(16.0),
             weight: Some(700),
+            ..Default::default()
+        });
+        v.dialog.body_font = Some(FontSpec {
+            family: Some("Inter".into()),
+            size: Some(14.0),
+            weight: Some(400),
             ..Default::default()
         });
 
@@ -3092,43 +3515,77 @@ mod tests {
         v.spinner.stroke_width = Some(2.0);
 
         // combo_box
+        v.combo_box.background_color = Some(c);
         v.combo_box.min_height = Some(28.0);
         v.combo_box.min_width = Some(80.0);
-        v.combo_box
-            .border
-            .get_or_insert_default()
-            .padding_horizontal = Some(8.0);
         v.combo_box.arrow_icon_size = Some(12.0);
         v.combo_box.arrow_area_width = Some(20.0);
+        v.combo_box.disabled_opacity = Some(0.5);
+        v.combo_box.font = Some(FontSpec {
+            family: Some("Inter".into()),
+            size: Some(14.0),
+            weight: Some(400),
+            ..Default::default()
+        });
+        v.combo_box.border.get_or_insert_default().color = Some(c);
         v.combo_box.border.get_or_insert_default().corner_radius = Some(4.0);
+        v.combo_box.border.get_or_insert_default().line_width = Some(1.0);
+        v.combo_box.border.get_or_insert_default().shadow_enabled = Some(false);
 
         // segmented_control
+        v.segmented_control.background_color = Some(c);
+        v.segmented_control.active_background = Some(c);
+        v.segmented_control.active_text_color = Some(c);
         v.segmented_control.segment_height = Some(28.0);
         v.segmented_control.separator_width = Some(1.0);
-        v.segmented_control
-            .border
-            .get_or_insert_default()
-            .padding_horizontal = Some(12.0);
+        v.segmented_control.disabled_opacity = Some(0.5);
+        v.segmented_control.font = Some(FontSpec {
+            family: Some("Inter".into()),
+            size: Some(14.0),
+            weight: Some(400),
+            ..Default::default()
+        });
+        v.segmented_control.border.get_or_insert_default().color = Some(c);
         v.segmented_control
             .border
             .get_or_insert_default()
             .corner_radius = Some(4.0);
+        v.segmented_control
+            .border
+            .get_or_insert_default()
+            .line_width = Some(1.0);
+        v.segmented_control
+            .border
+            .get_or_insert_default()
+            .shadow_enabled = Some(false);
 
         // card
         v.card.background_color = Some(c);
         v.card.border.get_or_insert_default().color = Some(c);
         v.card.border.get_or_insert_default().corner_radius = Some(8.0);
-        // REMOVED: card.padding not in new schema
         v.card.border.get_or_insert_default().shadow_enabled = Some(true);
 
         // expander
         v.expander.header_height = Some(32.0);
         v.expander.arrow_icon_size = Some(12.0);
-        // REMOVED: content_padding not in new schema
+        v.expander.font = Some(FontSpec {
+            family: Some("Inter".into()),
+            size: Some(14.0),
+            weight: Some(400),
+            ..Default::default()
+        });
+        v.expander.border.get_or_insert_default().color = Some(c);
         v.expander.border.get_or_insert_default().corner_radius = Some(4.0);
+        v.expander.border.get_or_insert_default().line_width = Some(1.0);
+        v.expander.border.get_or_insert_default().shadow_enabled = Some(false);
 
         // link
-        v.link.font.get_or_insert_default().color = Some(c);
+        v.link.font = Some(FontSpec {
+            family: Some("Inter".into()),
+            size: Some(14.0),
+            weight: Some(400),
+            ..Default::default()
+        });
         v.link.visited_text_color = Some(c);
         v.link.background_color = Some(c);
         v.link.hover_background = Some(c);
@@ -3155,6 +3612,32 @@ mod tests {
             weight: Some(300),
             line_height: Some(33.6),
         });
+
+        // Font color on all widget fonts (require_font/require_font_opt now requires color)
+        v.window.title_bar_font.get_or_insert_default().color = Some(c);
+        v.button.font.get_or_insert_default().color = Some(c);
+        v.input.font.get_or_insert_default().color = Some(c);
+        v.checkbox.font.get_or_insert_default().color = Some(c);
+        v.menu.font.get_or_insert_default().color = Some(c);
+        v.tooltip.font.get_or_insert_default().color = Some(c);
+        v.tab.font.get_or_insert_default().color = Some(c);
+        v.sidebar.font.get_or_insert_default().color = Some(c);
+        v.toolbar.font.get_or_insert_default().color = Some(c);
+        v.status_bar.font.get_or_insert_default().color = Some(c);
+        v.list.item_font.get_or_insert_default().color = Some(c);
+        v.list.header_font.get_or_insert_default().color = Some(c);
+        v.popover.font.get_or_insert_default().color = Some(c);
+        v.dialog.title_font.get_or_insert_default().color = Some(c);
+        v.dialog.body_font.get_or_insert_default().color = Some(c);
+        v.link.font.get_or_insert_default().color = Some(c);
+        v.combo_box.font.get_or_insert_default().color = Some(c);
+        v.segmented_control.font.get_or_insert_default().color = Some(c);
+        v.expander.font.get_or_insert_default().color = Some(c);
+
+        // Border sub-fields that require_border needs but weren't set above
+        v.checkbox.border.get_or_insert_default().color = Some(c);
+        v.checkbox.border.get_or_insert_default().shadow_enabled = Some(false);
+        v.tooltip.border.get_or_insert_default().color = Some(c);
 
         v
     }
