@@ -114,7 +114,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 50: Atomic Schema Commit** - All ~70 renames + BorderSpec integration + font.color + foreground removal + ThemeSpacing removal + all 17 preset rewrites in one commit (completed 2026-04-07)
 - [x] **Phase 51: Resolution Engine Overhaul** - resolve_border(), resolve_font() update, safety net removal, text_scale removal, inheritance bug fixes (completed 2026-04-07)
 - [x] **Phase 52: Interactive State Colors** - ~70 new hover/active/disabled/focus fields across 18 widgets with preset values (completed 2026-04-07)
-- [ ] **Phase 53: Preset Completeness** - text_scale for 13 missing presets, interactive state color values for all 17 presets
+- [x] **Phase 53: Preset Completeness** - text_scale for 13 missing presets, interactive state color values for all 17 presets (completed 2026-04-07)
 - [ ] **Phase 54: Connector Migration** - Both connectors updated for new schema, derive.rs replaced with direct theme reads
 - [ ] **Phase 55: Correctness, Safety, and CI** - Bug fixes, animation safety guards, CI improvements, gsettings timeout
 - [ ] **Phase 56: Testing** - Property-based tests and programmatic platform-facts cross-reference
@@ -198,7 +198,7 @@ Plans:
 - [x] 53-02-PLAN.md — macOS Sonoma + Windows 11 interactive state colors
 - [x] 53-03-PLAN.md — iOS + Material + Catppuccin text_scale and interactive state colors
 - [x] 53-04-PLAN.md — Community presets (nord, dracula, gruvbox, solarized, tokyo-night, one-dark) text_scale and interactive state colors
-- [ ] 53-05-PLAN.md — Comprehensive preset verification
+- [x] 53-05-PLAN.md — Comprehensive preset verification
 
 ### Phase 54: Connector Migration
 **Goal**: Both connectors (gpui and iced) use the new field names, read from BorderSpec and font.color directly, and replace derive.rs color computations with direct theme field reads where the theme now provides explicit values
@@ -263,7 +263,7 @@ Note: Phase 55 depends only on Phase 50 and can run in parallel with 51-54 if de
 | 50. Atomic Schema Commit | v0.5.5 | 4/4 | Complete   | 2026-04-07 |
 | 51. Resolution Engine Overhaul | v0.5.5 | 5/5 | Complete   | 2026-04-07 |
 | 52. Interactive State Colors | v0.5.5 | 2/2 | Complete   | 2026-04-07 |
-| 53. Preset Completeness | v0.5.5 | 4/5 | In Progress|  |
+| 53. Preset Completeness | v0.5.5 | 5/5 | Complete   | 2026-04-07 |
 | 54. Connector Migration | v0.5.5 | 0/0 | Not started | - |
 | 55. Correctness, Safety, and CI | v0.5.5 | 0/0 | Not started | - |
 | 56. Testing | v0.5.5 | 0/0 | Not started | - |

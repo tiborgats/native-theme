@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.5
 milestone_name: Schema Overhaul & Quality
 status: executing
-stopped_at: Completed 53-03-PLAN.md
-last_updated: "2026-04-07T13:43:36.986Z"
+stopped_at: Completed 53-05-PLAN.md
+last_updated: "2026-04-07T13:52:28.470Z"
 last_activity: 2026-04-07
 progress:
   total_phases: 9
-  completed_phases: 4
+  completed_phases: 5
   total_plans: 19
-  completed_plans: 18
-  percent: 95
+  completed_plans: 19
+  percent: 100
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-06)
 ## Current Position
 
 Phase: 53 of 57 (Preset Completeness) — IN PROGRESS
-Plan: 3 of 5 complete
+Plan: 4 of 5 complete
 Status: Ready to execute
 Last activity: 2026-04-07
 
@@ -68,6 +68,7 @@ Recent: Clean break for renames (no serde aliases -- pre-1.0, presets bundled, ~
 - [Phase 53]: Community presets use GNOME text_scale (9/400, 11/700, 15/800, 20/800); state colors derived with consistent darken/lighten percentages from own palettes
 - [Phase 53]: iOS text_scale uses Apple HIG iOS-specific sizes (12/15/22/34), not macOS values
 - [Phase 53]: Catppuccin text_scale omits line_height (inherits defaults 1.2); all 4 light variants share Latte state colors
+- [Phase 53]: Inactive title bar values set to match active title bar for presets without platform-specific inactive states (same as macOS system-managed dimming)
 
 ### Pending Todos
 
@@ -81,6 +82,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-07T13:43:36.983Z
-Stopped at: Completed 53-03-PLAN.md
+Last session: 2026-04-07T13:52:28.467Z
+Stopped at: Completed 53-05-PLAN.md
 Resume file: None
