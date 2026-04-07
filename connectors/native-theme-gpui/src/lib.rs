@@ -188,12 +188,13 @@ pub fn from_preset(
     is_dark: bool,
 ) -> native_theme::Result<(Theme, ResolvedThemeVariant)> {
     let spec = ThemeSpec::preset(name)?;
+    let display_name = spec.name.clone();
     let mode_str = if is_dark { "dark" } else { "light" };
     let variant = spec.into_variant(is_dark).ok_or_else(|| {
         native_theme::Error::Format(format!("preset '{name}' has no {mode_str} variant"))
     })?;
     let resolved = variant.into_resolved()?;
-    let theme = to_theme(&resolved, name, is_dark);
+    let theme = to_theme(&resolved, &display_name, is_dark);
     Ok((theme, resolved))
 }
 
