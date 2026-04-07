@@ -13,7 +13,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - ✅ **v0.4.0 Animated Icons** — Phases 27-32 (shipped 2026-03-18)
 - ✅ **v0.4.1 Release Prep** — Phases 33-43 (shipped 2026-03-21)
 - ✅ **v0.5.0 Per-Widget Architecture & Resolution Pipeline** — Phases 44-48 (shipped 2026-03-29)
-- 🚧 **v0.5.5 Schema Overhaul & Quality** — Phases 49-57 (in progress)
+- ✅ **v0.5.5 Schema Overhaul & Quality** — Phases 49-57 (shipped 2026-04-07)
 
 ## Phases
 
