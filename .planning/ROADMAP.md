@@ -117,7 +117,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 53: Preset Completeness** - text_scale for 13 missing presets, interactive state color values for all 17 presets (completed 2026-04-07)
 - [x] **Phase 54: Connector Migration** - Both connectors updated for new schema, derive.rs replaced with direct theme reads (completed 2026-04-07)
 - [x] **Phase 55: Correctness, Safety, and CI** - Bug fixes, animation safety guards, CI improvements, gsettings timeout (completed 2026-04-07)
-- [ ] **Phase 56: Testing** - Property-based tests and programmatic platform-facts cross-reference
+- [x] **Phase 56: Testing** - Property-based tests and programmatic platform-facts cross-reference (completed 2026-04-07)
 - [ ] **Phase 57: Verification and Documentation** - Full audit, spec-code sync, READMEs, CHANGELOG
 
 ## Phase Details
@@ -238,7 +238,10 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. Property-based tests (proptest or quickcheck) exist for TOML round-trip serialization, Rgba hex parsing, and merge() semantics -- random theme values survive serialize -> deserialize -> compare
   2. A test parses platform-facts.md and spot-checks key values against resolved presets for the 4 platform presets (windows-11, macos-sonoma, kde-breeze, adwaita), catching any drift between documentation and actual data
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [x] 56-01-PLAN.md — Property-based tests (proptest) for TOML round-trip and merge semantics
+- [x] 56-02-PLAN.md — Platform-facts cross-reference tests for 4 platform presets
 
 ### Phase 57: Verification and Documentation
 **Goal**: Every item in the v0.5.5 audit is confirmed implemented, all spec docs are synchronized with the final code, and all READMEs and CHANGELOG reflect the new API surface
@@ -274,5 +277,5 @@ Note: Phase 55 depends only on Phase 50 and can run in parallel with 51-54 if de
 | 53. Preset Completeness | v0.5.5 | 5/5 | Complete   | 2026-04-07 |
 | 54. Connector Migration | v0.5.5 | 3/3 | Complete   | 2026-04-07 |
 | 55. Correctness, Safety, and CI | v0.5.5 | 3/3 | Complete   | 2026-04-07 |
-| 56. Testing | v0.5.5 | 1/2 | In Progress|  |
+| 56. Testing | v0.5.5 | 2/2 | Complete   | 2026-04-07 |
 | 57. Verification and Documentation | v0.5.5 | 0/0 | Not started | - |

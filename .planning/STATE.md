@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.5
 milestone_name: Schema Overhaul & Quality
-status: verifying
-stopped_at: Completed 56-02-PLAN.md
-last_updated: "2026-04-07T16:31:05.954Z"
+status: executing
+stopped_at: Phase 56 verified and complete
+last_updated: "2026-04-07T16:36:06.109Z"
 last_activity: 2026-04-07
 progress:
   total_phases: 9
-  completed_phases: 7
+  completed_phases: 8
   total_plans: 27
-  completed_plans: 26
-  percent: 96
+  completed_plans: 27
+  percent: 100
 ---
 
 # Project State
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-06)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 55 complete, ready for Phase 56
+**Current focus:** Phase 56 complete, ready for Phase 57
 
 ## Current Position
 
-Phase: 55 of 57 (Correctness, Safety, and CI) — COMPLETE
-Plan: 3 of 3 complete
-Status: Phase complete — ready for verification
+Phase: 56 of 57 (Testing) — COMPLETE
+Plan: 2 of 2 complete
+Status: Verified (11/11 must-haves passed)
 Last activity: 2026-04-07
 
 ## Performance Metrics
@@ -76,6 +76,7 @@ Recent: Clean break for renames (no serde aliases -- pre-1.0, presets bundled, ~
 - [Phase 55-03]: Publish error handling uses grep -qi for already-published detection; pre-release timeout 30min via 180*10s iterations
 - [Phase 55]: Shared run_gsettings_with_timeout() in lib.rs as pub(crate); all gsettings calls use 2-second timeout
 - [Phase 56-testing]: Used simple contains() checks on embedded platform-facts.md text for drift detection -- more robust against formatting changes than parsing markdown tables
+- [Phase 56-testing]: Merge property tests at ThemeDefaults level to avoid proptest value tree stack overflow; ThemeSpec strategy uses single variant in light/dark slots
 
 ### Pending Todos
 
@@ -89,6 +90,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-07T16:31:05.951Z
-Stopped at: Completed 56-02-PLAN.md
+Last session: 2026-04-07T16:36:06.107Z
+Stopped at: Completed 56-01-PLAN.md
 Resume file: None

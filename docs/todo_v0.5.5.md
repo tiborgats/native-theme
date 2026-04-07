@@ -52,120 +52,120 @@ Every property below is documented in `platform-facts.md` as available from
 at least one platform API, but has no corresponding field in the widget struct.
 
 **§2.3 Button** (`widgets/mod.rs:109-145`)
-- [ ] `hover_background` — macOS: computed; Windows: Fluent ControlFillColorSecondary;
+- [x] `hover_background` — macOS: computed; Windows: Fluent ControlFillColorSecondary;
   KDE: `[Colors:Button] DecorationHover`; GNOME: `:hover` CSS
-- [ ] `hover_foreground`
-- [ ] `active_background` — pressed/active state
-- [ ] `active_foreground`
-- [ ] `disabled_background`
-- [ ] `disabled_foreground`
+- [x] `hover_foreground`
+- [x] `active_background` — pressed/active state
+- [x] `active_foreground`
+- [x] `disabled_background`
+- [x] `disabled_foreground`
 
 **§2.4 Text Input** (`widgets/mod.rs:149-183`)
-- [ ] `hover_border` — focus/hover border color change
-- [ ] `focus_border`
-- [ ] `disabled_background`
-- [ ] `disabled_foreground`
+- [x] `hover_border` — focus/hover border color change
+- [x] `focus_border`
+- [x] `disabled_background`
+- [x] `disabled_foreground`
 
 **§2.5 Checkbox / Radio** (`widgets/mod.rs:187-203`)
-- [ ] `unchecked_background` — SwitchTheme has both, Checkbox only has checked
-- [ ] `unchecked_border`
-- [ ] `checked_foreground` — checkmark/indicator color
-- [ ] `foreground` — label text color
-- [ ] `hover_background`
-- [ ] `disabled_background`
-- [ ] `disabled_foreground`
+- [x] `unchecked_background` — SwitchTheme has both, Checkbox only has checked
+- [x] `unchecked_border`
+- [x] `checked_foreground` — checkmark/indicator color
+- [x] `foreground` — label text color
+- [x] `hover_background`
+- [x] `disabled_background`
+- [x] `disabled_foreground`
 
 **§2.6 Menu** (`widgets/mod.rs:207-231`)
-- [ ] `hover_background` — highlighted menu item
-- [ ] `hover_foreground`
-- [ ] `disabled_foreground`
+- [x] `hover_background` — highlighted menu item
+- [x] `hover_foreground`
+- [x] `disabled_foreground`
 
 **§2.7 Tooltip** (`widgets/mod.rs:235-257`)
-- [ ] `border` — some platforms have tooltip borders
+- [x] `border` — some platforms have tooltip borders
 
 **§2.8 Scrollbar** (`widgets/mod.rs:261-281`)
-- [ ] `thumb_active` — pressed/dragging state (currently `thumb_hover` is computed
+- [x] `thumb_active` — pressed/dragging state (currently `thumb_hover` is computed
   via RGB ±38 shift in `resolve.rs:480-494` instead of being a real field)
 
 **§2.9 Slider** (`widgets/mod.rs:285-303`)
-- [ ] `thumb_hover`
-- [ ] `disabled_fill`
-- [ ] `disabled_track`
-- [ ] `disabled_thumb`
+- [x] `thumb_hover`
+- [x] `disabled_fill`
+- [x] `disabled_track`
+- [x] `disabled_thumb`
 
 **§2.10 Tab Bar** (`widgets/mod.rs:327-351`)
-- [ ] `hover_background`
-- [ ] `hover_foreground`
-- [ ] `border`
+- [x] `hover_background`
+- [x] `hover_foreground`
+- [x] `border`
 
 **§2.11 Sidebar** (`widgets/mod.rs:355-365`)
-- [ ] `hover_background`
-- [ ] `selected_background`
-- [ ] `selected_foreground`
+- [x] `hover_background`
+- [x] `selected_background`
+- [x] `selected_foreground`
 
 **§2.12 Toolbar** (`widgets/mod.rs:369-385`)
-- [ ] `background`
-- [ ] `foreground`
-- [ ] `border`
+- [x] `background`
+- [x] `foreground`
+- [x] `border`
 
 **§2.13 Status Bar** (`widgets/mod.rs:389-397`)
-- [ ] `background`
-- [ ] `foreground`
-- [ ] `border`
+- [x] `background`
+- [x] `foreground`
+- [x] `border`
 
 **§2.14 List / Table** (`widgets/mod.rs:401-429`)
-- [ ] `hover_background`
-- [ ] `hover_foreground`
-- [ ] `disabled_foreground`
+- [x] `hover_background`
+- [x] `hover_foreground`
+- [x] `disabled_foreground`
 
 **§2.15 Popover** (`widgets/mod.rs:433-447`)
-- [ ] `shadow` — drop shadow presence/color
+- [x] `shadow` — drop shadow presence/color
 
 **§2.16 Splitter** (`widgets/mod.rs:451-459`)
-- [ ] `color` — handle color
-- [ ] `hover_color`
+- [x] `color` — handle color
+- [x] `hover_color`
 
 **§2.17 Switch / Toggle** (`widgets/mod.rs:475-495`)
-- [ ] `hover_checked_background`
-- [ ] `hover_unchecked_background`
-- [ ] `disabled_checked_background`
-- [ ] `disabled_unchecked_background`
-- [ ] `disabled_thumb`
+- [x] `hover_checked_background`
+- [x] `hover_unchecked_background`
+- [x] `disabled_checked_background`
+- [x] `disabled_unchecked_background`
+- [x] `disabled_thumb`
 
 **§2.22 Dialog** (`widgets/mod.rs:499-527`)
-- [ ] `background`
-- [ ] `foreground`
-- [ ] `border`
-- [ ] `shadow`
+- [x] `background`
+- [x] `foreground`
+- [x] `border`
+- [x] `shadow`
 
 **§2.23 ComboBox** (`widgets/mod.rs:549-567`)
-- [ ] `background`
-- [ ] `foreground`
-- [ ] `border`
-- [ ] `hover_background`
-- [ ] `disabled_background`
-- [ ] `disabled_foreground`
+- [x] `background`
+- [x] `foreground`
+- [x] `border`
+- [x] `hover_background`
+- [x] `disabled_background`
+- [x] `disabled_foreground`
 
 **§2.24 Segmented Control** (`widgets/mod.rs:571-585`)
-- [ ] `background`
-- [ ] `foreground`
-- [ ] `active_background`
-- [ ] `active_foreground`
-- [ ] `hover_background`
+- [x] `background`
+- [x] `foreground`
+- [x] `active_background`
+- [x] `active_foreground`
+- [x] `hover_background`
 
 **§2.25 Card** (`widgets/mod.rs:589-605`)
-- [ ] `foreground` — text color on card
+- [x] `foreground` — text color on card
 
 **§2.26 Expander** (`widgets/mod.rs:609-623`)
-- [ ] `background`
-- [ ] `border`
-- [ ] `hover_background`
-- [ ] `arrow_color`
+- [x] `background`
+- [x] `border`
+- [x] `hover_background`
+- [x] `arrow_color`
 
 **§2.27 Link** (`widgets/mod.rs:627-643`)
-- [ ] `hover_color` — has `hover_bg` but no hover text color
-- [ ] `active_color` — pressed link color
-- [ ] `disabled_color`
+- [x] `hover_color` — has `hover_bg` but no hover text color
+- [x] `active_color` — pressed link color
+- [x] `disabled_color`
 
 ### Implementation plan
 
@@ -627,14 +627,14 @@ Specific per-widget issues not covered by the top-level interactive state audit.
 
 ## Low Priority / Cosmetic
 
-- [ ] `from_toml()` wrapper in `presets.rs:168-171` is trivial (two-line pass-through
-  to `toml::from_str`). Exists for symmetry with `from_file` / `to_toml`. Fine as-is.
-- [ ] `Rgba` stores u8 but all toolkit work is f32. Quantization is documented
-  (`color.rs:77-78`) and visual impact is negligible. Not worth changing.
-- [ ] `active_color()` fails on pure black `l=0.0` (documented in test at
-  `derive.rs:260-270`). Acceptable since pure black rarely appears as a control bg.
-- [ ] `ThemeSpec::merge()` keeps the base name (documented + tested). Could be
-  surprising but changing it would be a semantic break.
+- [x] `from_toml()` wrapper in `presets.rs:168-171` is trivial (two-line pass-through
+  to `toml::from_str`). Exists for symmetry with `from_file` / `to_toml`. Fine as-is. -- accepted as-is, no change needed
+- [x] `Rgba` stores u8 but all toolkit work is f32. Quantization is documented
+  (`color.rs:77-78`) and visual impact is negligible. Not worth changing. -- accepted as-is, no change needed
+- [x] `active_color()` fails on pure black `l=0.0` (documented in test at
+  `derive.rs:260-270`). Acceptable since pure black rarely appears as a control bg. -- accepted as-is, documented in tests
+- [x] `ThemeSpec::merge()` keeps the base name (documented + tested). Could be
+  surprising but changing it would be a semantic break. -- accepted as-is, documented + tested
 
 ---
 
@@ -842,12 +842,12 @@ sub-struct (e.g., `button.font.color`), rather than as a separate `foreground`
 field. This affects the TOML format for every widget.
 
 **Action**:
-- [ ] Add `FontStyle` enum: `Normal | Italic | Oblique`
-- [ ] Add `style: Option<FontStyle>` to `FontSpec`
-- [ ] Add `color: Option<Rgba>` to `FontSpec`
-- [ ] Migrate per-widget `foreground` fields into `font.color`
-- [ ] Update `ResolvedFontSpec` with corresponding non-optional fields
-- [ ] Update all presets and OS readers
+- [x] Add `FontStyle` enum: `Normal | Italic | Oblique`
+- [x] Add `style: Option<FontStyle>` to `FontSpec`
+- [x] Add `color: Option<Rgba>` to `FontSpec`
+- [x] Migrate per-widget `foreground` fields into `font.color`
+- [x] Update `ResolvedFontSpec` with corresponding non-optional fields
+- [x] Update all presets and OS readers
 
 ### REG-2. Border sub-struct does not exist — fields are flattened
 
@@ -887,12 +887,12 @@ corner_radius = 6.0
 ```
 
 **Action**:
-- [ ] Create `BorderSpec` struct with all 8 fields as `Option<T>`
-- [ ] Create `ResolvedBorderSpec` with non-optional fields
-- [ ] Replace flat border fields on every widget with `border: BorderSpec`
-- [ ] Update the `define_widget_pair!` macro to support nested border
-- [ ] Update all presets (every TOML file) to use `[widget.border]` sections
-- [ ] Update OS readers and resolve.rs
+- [x] Create `BorderSpec` struct with all 8 fields as `Option<T>`
+- [x] Create `ResolvedBorderSpec` with non-optional fields
+- [x] Replace flat border fields on every widget with `border: BorderSpec`
+- [x] Update the `define_widget_pair!` macro to support nested border
+- [x] Update all presets (every TOML file) to use `[widget.border]` sections
+- [x] Update OS readers and resolve.rs
 
 ### REG-3. DialogButtonOrder enum variant naming and cardinality mismatch
 
@@ -912,9 +912,9 @@ The registry specifies 4 variants but code has only 2. The missing variants
 patterns beyond simple left/right affirmative positioning.
 
 **Action**:
-- [ ] Decide: are 4 variants needed or are 2 sufficient? Check platform-facts.md
-- [ ] Rename variants to match registry names (or update registry)
-- [ ] Add `#[serde(rename = "...")]` for backwards compatibility if needed
+- [x] Decide: are 4 variants needed or are 2 sufficient? Check platform-facts.md
+- [x] Rename variants to match registry names (or update registry)
+- [x] Add `#[serde(rename = "...")]` for backwards compatibility if needed
 
 ---
 

@@ -9,14 +9,14 @@ Align data model, naming, and resolution engine with authoritative spec docs. El
 
 ### Data Model & Naming
 
-- [ ] **SCHEMA-01**: FontSpec has `style` (FontStyle: Normal|Italic|Oblique) and `color` (Rgba) fields, with ResolvedFontSpec mirror
-- [ ] **SCHEMA-02**: BorderSpec sub-struct (color, corner_radius, corner_radius_lg, line_width, opacity, shadow_enabled, padding_horizontal, padding_vertical) replaces flat border fields on all widgets, with ResolvedBorderSpec
-- [ ] **SCHEMA-03**: LayoutTheme widget (widget_gap, container_margin, window_margin, section_gap) replaces ThemeSpacing
+- [x] **SCHEMA-01**: FontSpec has `style` (FontStyle: Normal|Italic|Oblique) and `color` (Rgba) fields, with ResolvedFontSpec mirror
+- [x] **SCHEMA-02**: BorderSpec sub-struct (color, corner_radius, corner_radius_lg, line_width, opacity, shadow_enabled, padding_horizontal, padding_vertical) replaces flat border fields on all widgets, with ResolvedBorderSpec
+- [x] **SCHEMA-03**: LayoutTheme widget (widget_gap, container_margin, window_margin, section_gap) replaces ThemeSpacing
 - [x] **SCHEMA-04**: All ~70 field renames applied per property-registry.toml (background→background_color, foreground→text_color, radius→border.corner_radius, etc.)
 - [x] **SCHEMA-05**: ~70 interactive state color fields added across 18 widgets (hover_background, hover_text_color, active_background, disabled_background, etc.) per property-registry.toml
 - [x] **SCHEMA-06**: Missing non-state fields added (disabled_opacity x7, fonts x11, icon_size x2, separator.line_width, header_font, body_font, text_selection_background/color, etc.)
 - [x] **SCHEMA-07**: Extra code-only fields removed (per-widget foreground→font.color, ThemeSpacing removed)
-- [ ] **SCHEMA-08**: DialogButtonOrder enum variants aligned with property-registry.toml
+- [x] **SCHEMA-08**: DialogButtonOrder enum variants aligned with property-registry.toml
 
 ### Resolution Engine
 
@@ -58,19 +58,19 @@ Align data model, naming, and resolution engine with authoritative spec docs. El
 
 ### Testing
 
-- [ ] **TEST-01**: Property-based tests for TOML round-trips and merge semantics
+- [x] **TEST-01**: Property-based tests for TOML round-trips and merge semantics
 - [x] **TEST-02**: Programmatic cross-reference of platform-facts.md against preset values
 
 ### Verification
 
 - [ ] **VERIFY-01**: `pre-release-check.sh` passes after each major phase (schema, resolve, presets, connectors)
-- [ ] **VERIFY-02**: Final line-by-line audit of `docs/todo_v0.5.5.md` — every item confirmed implemented or improved
+- [x] **VERIFY-02**: Final line-by-line audit of `docs/todo_v0.5.5.md` — every item confirmed implemented or improved
 - [ ] **VERIFY-03**: No contradictions between `property-registry.toml`, `inheritance-rules.toml`, `platform-facts.md`, and actual code
 
 ### Documentation Sync
 
-- [ ] **DOC-01**: Widget struct doc comment inaccuracies fixed (W-2: Checkbox, Switch, Dialog)
-- [ ] **DOC-02**: Hardcoded connector opacity values documented (K-6)
+- [x] **DOC-01**: Widget struct doc comment inaccuracies fixed (W-2: Checkbox, Switch, Dialog)
+- [x] **DOC-02**: Hardcoded connector opacity values documented (K-6)
 - [ ] **DOC-03**: `property-registry.toml`, `inheritance-rules.toml`, `platform-facts.md` updated to match final implementation
 - [ ] **DOC-04**: All READMEs updated (core, gpui connector, iced connector, build crate) for new API surface
 - [ ] **DOC-05**: CHANGELOG updated with all breaking changes and migration notes
@@ -104,14 +104,14 @@ Deferred beyond v0.5.5:
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SCHEMA-01 | Phase 49 | Pending |
-| SCHEMA-02 | Phase 49 | Pending |
-| SCHEMA-03 | Phase 49 | Pending |
+| SCHEMA-01 | Phase 49 | Complete |
+| SCHEMA-02 | Phase 49 | Complete |
+| SCHEMA-03 | Phase 49 | Complete |
 | SCHEMA-04 | Phase 50 | Complete |
 | SCHEMA-05 | Phase 52 | Complete |
 | SCHEMA-06 | Phase 50 | Complete |
 | SCHEMA-07 | Phase 50 | Complete |
-| SCHEMA-08 | Phase 50 | Pending |
+| SCHEMA-08 | Phase 50 | Complete |
 | RESOLVE-01 | Phase 51 | Complete |
 | RESOLVE-02 | Phase 51 | Complete |
 | RESOLVE-03 | Phase 51 | Complete |
@@ -135,13 +135,13 @@ Deferred beyond v0.5.5:
 | CI-03 | Phase 55 | Complete |
 | CI-04 | Phase 55 | Complete |
 | CI-05 | Phase 55 | Complete |
-| TEST-01 | Phase 56 | Pending |
+| TEST-01 | Phase 56 | Complete |
 | TEST-02 | Phase 56 | Complete |
 | VERIFY-01 | Phase 57 | Pending |
-| VERIFY-02 | Phase 57 | Pending |
+| VERIFY-02 | Phase 57 | Complete |
 | VERIFY-03 | Phase 57 | Pending |
-| DOC-01 | Phase 57 | Pending |
-| DOC-02 | Phase 57 | Pending |
+| DOC-01 | Phase 57 | Complete |
+| DOC-02 | Phase 57 | Complete |
 | DOC-03 | Phase 57 | Pending |
 | DOC-04 | Phase 57 | Pending |
 | DOC-05 | Phase 57 | Pending |
