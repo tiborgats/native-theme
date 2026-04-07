@@ -23,9 +23,9 @@ Align data model, naming, and resolution engine with authoritative spec docs. El
 - [x] **RESOLVE-01**: All safety-net invented values removed (hardcoded line_height 1.2, accent_foreground #ffffff, shadow rgba(0,0,0,64), etc.)
 - [ ] **RESOLVE-02**: Text scale computation removed from resolve.rs, windows.rs, kde/mod.rs, macos.rs
 - [x] **RESOLVE-03**: scrollbar.thumb_hover computation replaced with explicit field inheritance
-- [ ] **RESOLVE-04**: resolve_border() and updated resolve_font() implement sub-struct inheritance per inheritance-rules.toml
+- [x] **RESOLVE-04**: resolve_border() and updated resolve_font() implement sub-struct inheritance per inheritance-rules.toml
 - [x] **RESOLVE-05**: Inheritance bugs fixed (INH-1: input.selection wrong source, INH-2: dialog.background missing, INH-3: card border removed, SPEC-3: switch.unchecked_background)
-- [ ] **RESOLVE-06**: Missing inheritance rules added per inheritance-rules.toml (~40 new rules for state colors, fonts, borders)
+- [x] **RESOLVE-06**: Missing inheritance rules added per inheritance-rules.toml (~40 new rules for state colors, fonts, borders)
 - [ ] **RESOLVE-07**: validate() updated for all new and renamed fields
 
 ### Preset Completeness
@@ -115,9 +115,9 @@ Deferred beyond v0.5.5:
 | RESOLVE-01 | Phase 51 | Complete |
 | RESOLVE-02 | Phase 51 | Pending |
 | RESOLVE-03 | Phase 51 | Complete |
-| RESOLVE-04 | Phase 51 | Pending |
+| RESOLVE-04 | Phase 51 | Complete |
 | RESOLVE-05 | Phase 51 | Complete |
-| RESOLVE-06 | Phase 51 | Pending |
+| RESOLVE-06 | Phase 51 | Complete |
 | RESOLVE-07 | Phase 51 | Pending |
 | PRESET-01 | Phase 50 | Complete |
 | PRESET-02 | Phase 53 | Pending |
