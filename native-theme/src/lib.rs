@@ -588,7 +588,7 @@ impl SystemTheme {
     /// Merges the overlay onto the pre-resolve [`ThemeVariant`] (not the
     /// already-resolved [`ResolvedThemeVariant`]) so that changed source fields
     /// propagate correctly through `resolve()`. For example, changing
-    /// `defaults.accent` in the overlay will cause `button.primary_background`,
+    /// `defaults.accent_color` in the overlay will cause `button.primary_background`,
     /// `checkbox.checked_background`, `slider.fill`, etc. to be re-derived from
     /// the new accent color.
     ///

@@ -33,7 +33,7 @@ a default for these.
 | Symbol | Meaning                                                        |
 |--------|----------------------------------------------------------------|
 | `→`    | "returns / extract field" — the API on the left yields the value on the right. Example: `+systemFontOfSize:` → family means calling `+systemFontOfSize:` and reading its `family` property. |
-| `←`    | "inherits from" — no widget-specific value; the property is taken from the referenced global default. Example: `← defaults.radius` means use the global default radius. |
+| `←`    | "inherits from" — no widget-specific value; the property is taken from the referenced global default. Example: `← defaults.border.corner_radius` means use the global default corner radius. |
 | L / D  | Light variant / Dark variant hex values.                       |
 | ⚙      | Value can be changed by the user via a system setting (theme, accent, font choice, etc.). Inherited (`←`) properties are not marked — follow the chain to the source. |
 | ↕      | Value scales with the system DPI / display scaling factor.     |

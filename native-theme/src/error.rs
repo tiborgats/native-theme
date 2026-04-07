@@ -2,7 +2,7 @@
 
 /// Error returned when theme resolution finds missing fields.
 ///
-/// Contains a list of field paths (e.g., `"defaults.accent"`, `"button.font.family"`)
+/// Contains a list of field paths (e.g., `"defaults.accent_color"`, `"button.font.family"`)
 /// that were still `None` after resolution. Used by `validate()` to report exactly
 /// which fields need to be supplied before a [`crate::model::ResolvedThemeVariant`] can be built.
 #[derive(Debug, Clone)]
@@ -256,10 +256,10 @@ mod tests {
     #[test]
     fn theme_resolution_error_construction() {
         let e = ThemeResolutionError {
-            missing_fields: vec!["defaults.accent".into(), "button.font.family".into()],
+            missing_fields: vec!["defaults.accent_color".into(), "button.font.family".into()],
         };
         assert_eq!(e.missing_fields.len(), 2);
-        assert_eq!(e.missing_fields[0], "defaults.accent");
+        assert_eq!(e.missing_fields[0], "defaults.accent_color");
         assert_eq!(e.missing_fields[1], "button.font.family");
     }
 
@@ -267,18 +267,18 @@ mod tests {
     fn theme_resolution_error_display_categorizes_fields() {
         let e = ThemeResolutionError {
             missing_fields: vec![
-                "defaults.accent".into(),
-                "button.foreground".into(),
-                "window.radius".into(),
+                "defaults.accent_color".into(),
+                "button.font.color".into(),
+                "window.border.corner_radius".into(),
             ],
         };
         let msg = e.to_string();
         assert!(msg.contains("3 missing field(s)"), "got: {msg}");
         assert!(msg.contains("[root defaults]"), "got: {msg}");
-        assert!(msg.contains("defaults.accent"), "got: {msg}");
+        assert!(msg.contains("defaults.accent_color"), "got: {msg}");
         assert!(msg.contains("[widget fields]"), "got: {msg}");
-        assert!(msg.contains("button.foreground"), "got: {msg}");
-        assert!(msg.contains("window.radius"), "got: {msg}");
+        assert!(msg.contains("button.font.color"), "got: {msg}");
+        assert!(msg.contains("window.border.corner_radius"), "got: {msg}");
         assert!(msg.contains("hint:"), "got: {msg}");
         assert!(msg.contains("from_toml_with_base"), "got: {msg}");
     }
@@ -286,7 +286,7 @@ mod tests {
     #[test]
     fn theme_resolution_error_display_no_hint_without_root_defaults() {
         let e = ThemeResolutionError {
-            missing_fields: vec!["button.foreground".into()],
+            missing_fields: vec!["button.font.color".into()],
         };
         let msg = e.to_string();
         assert!(msg.contains("[widget fields]"), "got: {msg}");
@@ -316,7 +316,7 @@ mod tests {
     #[test]
     fn theme_resolution_error_implements_std_error() {
         let e = ThemeResolutionError {
-            missing_fields: vec!["defaults.accent".into()],
+            missing_fields: vec!["defaults.accent_color".into()],
         };
         // This compiles only if ThemeResolutionError: std::error::Error
         let _: &dyn std::error::Error = &e;
@@ -325,7 +325,7 @@ mod tests {
     #[test]
     fn theme_resolution_error_is_clone() {
         let e = ThemeResolutionError {
-            missing_fields: vec!["defaults.accent".into()],
+            missing_fields: vec!["defaults.accent_color".into()],
         };
         let e2 = e.clone();
         assert_eq!(e.missing_fields, e2.missing_fields);
@@ -336,7 +336,7 @@ mod tests {
     #[test]
     fn error_resolution_variant_wraps_theme_resolution_error() {
         let inner = ThemeResolutionError {
-            missing_fields: vec!["defaults.accent".into()],
+            missing_fields: vec!["defaults.accent_color".into()],
         };
         let err = Error::Resolution(inner);
         match &err {
@@ -348,19 +348,22 @@ mod tests {
     #[test]
     fn error_resolution_display_delegates_to_inner() {
         let inner = ThemeResolutionError {
-            missing_fields: vec!["defaults.accent".into(), "window.radius".into()],
+            missing_fields: vec![
+                "defaults.accent_color".into(),
+                "window.border.corner_radius".into(),
+            ],
         };
         let err = Error::Resolution(inner);
         let msg = err.to_string();
         assert!(msg.contains("2 missing field(s)"), "got: {msg}");
-        assert!(msg.contains("defaults.accent"), "got: {msg}");
-        assert!(msg.contains("window.radius"), "got: {msg}");
+        assert!(msg.contains("defaults.accent_color"), "got: {msg}");
+        assert!(msg.contains("window.border.corner_radius"), "got: {msg}");
     }
 
     #[test]
     fn error_resolution_source_returns_inner() {
         let inner = ThemeResolutionError {
-            missing_fields: vec!["defaults.accent".into()],
+            missing_fields: vec!["defaults.accent_color".into()],
         };
         let err = Error::Resolution(inner);
         let source = std::error::Error::source(&err);

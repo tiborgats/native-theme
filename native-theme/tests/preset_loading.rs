@@ -191,11 +191,11 @@ fn all_presets_have_geometry() {
                 variant.unwrap_or_else(|| panic!("preset '{name}' missing {label} variant"));
             assert!(
                 variant.defaults.border.corner_radius.is_some(),
-                "preset '{name}' {label} missing defaults.radius"
+                "preset '{name}' {label} missing defaults.border.corner_radius"
             );
             assert!(
                 variant.defaults.border.corner_radius_lg.is_some(),
-                "preset '{name}' {label} missing defaults.radius_lg"
+                "preset '{name}' {label} missing defaults.border.corner_radius_lg"
             );
             assert!(
                 variant.defaults.border.shadow_enabled.is_some(),

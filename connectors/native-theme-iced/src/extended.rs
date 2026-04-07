@@ -100,7 +100,7 @@ fn ensure_status_contrast(fg: iced_core::Color, bg: iced_core::Color) -> iced_co
 /// Note: `.base.color` overrides for primary/success/danger/warning are
 /// redundant because `Extended::generate()` already sets them correctly
 /// from the base palette. Only the `.base.text` fields need overriding
-/// because the auto-generation uses `defaults.foreground` instead of the
+/// because the auto-generation uses `defaults.text_color` instead of the
 /// per-status foreground colors.
 pub(crate) fn apply_overrides(
     extended: &mut iced_core::theme::palette::Extended,
@@ -216,7 +216,7 @@ mod tests {
         let expected = to_color(resolved.defaults.text_color);
         assert_eq!(
             extended.background.weak.text, expected,
-            "background.weak.text should match resolved.defaults.foreground"
+            "background.weak.text should match resolved.defaults.text_color"
         );
     }
 

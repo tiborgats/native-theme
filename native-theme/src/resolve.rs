@@ -487,7 +487,7 @@ impl ThemeVariant {
         if self.scrollbar.track_color.is_none() {
             self.scrollbar.track_color = self.defaults.background_color;
         }
-        // spinner.fill <- defaults.accent (all platforms use accent)
+        // spinner.fill <- defaults.accent_color (all platforms use accent)
         if self.spinner.fill_color.is_none() {
             self.spinner.fill_color = self.defaults.accent_color;
         }
@@ -951,7 +951,7 @@ impl ThemeVariant {
         );
         let defaults_foreground = require(
             &self.defaults.text_color,
-            "defaults.foreground",
+            "defaults.text_color",
             &mut missing,
         );
         let defaults_accent = require(
@@ -4415,7 +4415,7 @@ mod tests {
             err.missing_fields
                 .iter()
                 .any(|f| f.contains("defaults.border.corner_radius")),
-            "should report NaN defaults.radius, got: {:?}",
+            "should report NaN defaults.border.corner_radius, got: {:?}",
             err.missing_fields
         );
     }
