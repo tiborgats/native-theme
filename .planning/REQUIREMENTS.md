@@ -59,7 +59,7 @@ Align data model, naming, and resolution engine with authoritative spec docs. El
 ### Testing
 
 - [ ] **TEST-01**: Property-based tests for TOML round-trips and merge semantics
-- [ ] **TEST-02**: Programmatic cross-reference of platform-facts.md against preset values
+- [x] **TEST-02**: Programmatic cross-reference of platform-facts.md against preset values
 
 ### Verification
 
@@ -136,7 +136,7 @@ Deferred beyond v0.5.5:
 | CI-04 | Phase 55 | Complete |
 | CI-05 | Phase 55 | Complete |
 | TEST-01 | Phase 56 | Pending |
-| TEST-02 | Phase 56 | Pending |
+| TEST-02 | Phase 56 | Complete |
 | VERIFY-01 | Phase 57 | Pending |
 | VERIFY-02 | Phase 57 | Pending |
 | VERIFY-03 | Phase 57 | Pending |

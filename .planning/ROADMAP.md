@@ -274,5 +274,5 @@ Note: Phase 55 depends only on Phase 50 and can run in parallel with 51-54 if de
 | 53. Preset Completeness | v0.5.5 | 5/5 | Complete   | 2026-04-07 |
 | 54. Connector Migration | v0.5.5 | 3/3 | Complete   | 2026-04-07 |
 | 55. Correctness, Safety, and CI | v0.5.5 | 3/3 | Complete   | 2026-04-07 |
-| 56. Testing | v0.5.5 | 0/0 | Not started | - |
+| 56. Testing | v0.5.5 | 1/2 | In Progress|  |
 | 57. Verification and Documentation | v0.5.5 | 0/0 | Not started | - |
