@@ -67,24 +67,24 @@ dialog = 22.0
 panel = 20.0
 
 [light.text_scale.caption]
-size = 11.5
+size = 11.0
 weight = 400
-line_height = 13.8
+line_height = 16.0
 
 [light.text_scale.section_heading]
-size = 14.0
-weight = 700
-line_height = 16.8
+size = 16.0
+weight = 500
+line_height = 24.0
 
 [light.text_scale.dialog_title]
-size = 16.8
-weight = 700
-line_height = 20.2
+size = 24.0
+weight = 400
+line_height = 32.0
 
 [light.text_scale.display]
-size = 28.0
-weight = 700
-line_height = 33.6
+size = 36.0
+weight = 400
+line_height = 44.0
 
 [light.button]
 background_color = "#e8def8"
@@ -300,24 +300,24 @@ dialog = 22.0
 panel = 20.0
 
 [dark.text_scale.caption]
-size = 11.5
+size = 11.0
 weight = 400
-line_height = 13.8
+line_height = 16.0
 
 [dark.text_scale.section_heading]
-size = 14.0
-weight = 700
-line_height = 16.8
+size = 16.0
+weight = 500
+line_height = 24.0
 
 [dark.text_scale.dialog_title]
-size = 16.8
-weight = 700
-line_height = 20.2
+size = 24.0
+weight = 400
+line_height = 32.0
 
 [dark.text_scale.display]
-size = 28.0
-weight = 700
-line_height = 33.6
+size = 36.0
+weight = 400
+line_height = 44.0
 
 [dark.button]
 background_color = "#4a4458"
