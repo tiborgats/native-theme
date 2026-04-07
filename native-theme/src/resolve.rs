@@ -117,12 +117,13 @@ fn require_font(font: &FontSpec, prefix: &str, missing: &mut Vec<String>) -> Res
     let family = require(&font.family, &format!("{prefix}.family"), missing);
     let size = require(&font.size, &format!("{prefix}.size"), missing);
     let weight = require(&font.weight, &format!("{prefix}.weight"), missing);
+    let color = require(&font.color, &format!("{prefix}.color"), missing);
     ResolvedFontSpec {
         family,
         size,
         weight,
         style: font.style.unwrap_or_default(),
-        color: font.color.unwrap_or(Rgba::rgb(0, 0, 0)),
+        color,
     }
 }
 
@@ -142,12 +143,13 @@ fn require_font_opt(
             let family = require(&f.family, &format!("{prefix}.family"), missing);
             let size = require(&f.size, &format!("{prefix}.size"), missing);
             let weight = require(&f.weight, &format!("{prefix}.weight"), missing);
+            let color = require(&f.color, &format!("{prefix}.color"), missing);
             ResolvedFontSpec {
                 family,
                 size,
                 weight,
                 style: f.style.unwrap_or_default(),
-                color: f.color.unwrap_or(Rgba::rgb(0, 0, 0)),
+                color,
             }
         }
     }
@@ -172,6 +174,101 @@ fn require_text_scale_entry(
                 size,
                 weight,
                 line_height,
+            }
+        }
+    }
+}
+
+/// Validate an `Option<BorderSpec>` (widget border fields).
+/// If None, records the path as missing. Requires all sub-fields that are
+/// filled by border_inheritance (color, corner_radius, line_width, shadow_enabled)
+/// plus padding sub-fields.
+fn require_border(
+    border: &Option<BorderSpec>,
+    prefix: &str,
+    missing: &mut Vec<String>,
+) -> ResolvedBorderSpec {
+    match border {
+        None => {
+            missing.push(prefix.to_string());
+            ResolvedBorderSpec::default()
+        }
+        Some(b) => {
+            let color = require(&b.color, &format!("{prefix}.color"), missing);
+            let corner_radius = require(&b.corner_radius, &format!("{prefix}.corner_radius"), missing);
+            let line_width = require(&b.line_width, &format!("{prefix}.line_width"), missing);
+            let shadow_enabled = require(&b.shadow_enabled, &format!("{prefix}.shadow_enabled"), missing);
+            let padding_horizontal = require(&b.padding_horizontal, &format!("{prefix}.padding_horizontal"), missing);
+            let padding_vertical = require(&b.padding_vertical, &format!("{prefix}.padding_vertical"), missing);
+            ResolvedBorderSpec {
+                color,
+                corner_radius,
+                corner_radius_lg: b.corner_radius_lg.unwrap_or_default(),
+                line_width,
+                opacity: b.opacity.unwrap_or_default(),
+                shadow_enabled,
+                padding_horizontal,
+                padding_vertical,
+            }
+        }
+    }
+}
+
+/// Validate a border for widgets excluded from border_inheritance (menu, tab, card).
+/// These widgets have no inheritance for color/corner_radius/line_width/shadow_enabled;
+/// only padding sub-fields are expected from presets. Non-padding sub-fields use
+/// their preset value if present, otherwise default to `T::default()`.
+fn require_border_padding_only(
+    border: &Option<BorderSpec>,
+    prefix: &str,
+    missing: &mut Vec<String>,
+) -> ResolvedBorderSpec {
+    match border {
+        None => {
+            missing.push(prefix.to_string());
+            ResolvedBorderSpec::default()
+        }
+        Some(b) => {
+            let padding_horizontal = require(&b.padding_horizontal, &format!("{prefix}.padding_horizontal"), missing);
+            let padding_vertical = require(&b.padding_vertical, &format!("{prefix}.padding_vertical"), missing);
+            ResolvedBorderSpec {
+                color: b.color.unwrap_or_default(),
+                corner_radius: b.corner_radius.unwrap_or_default(),
+                corner_radius_lg: b.corner_radius_lg.unwrap_or_default(),
+                line_width: b.line_width.unwrap_or_default(),
+                opacity: b.opacity.unwrap_or_default(),
+                shadow_enabled: b.shadow_enabled.unwrap_or_default(),
+                padding_horizontal,
+                padding_vertical,
+            }
+        }
+    }
+}
+
+/// Validate a border for widgets with partial border inheritance (sidebar, status_bar).
+/// Only color + line_width are inherited; other sub-fields use defaults if not in preset.
+fn require_border_partial(
+    border: &Option<BorderSpec>,
+    prefix: &str,
+    missing: &mut Vec<String>,
+) -> ResolvedBorderSpec {
+    match border {
+        None => {
+            missing.push(prefix.to_string());
+            ResolvedBorderSpec::default()
+        }
+        Some(b) => {
+            let color = require(&b.color, &format!("{prefix}.color"), missing);
+            let line_width = require(&b.line_width, &format!("{prefix}.line_width"), missing);
+            ResolvedBorderSpec {
+                color,
+                corner_radius: b.corner_radius.unwrap_or_default(),
+                corner_radius_lg: b.corner_radius_lg.unwrap_or_default(),
+                line_width,
+                opacity: b.opacity.unwrap_or_default(),
+                shadow_enabled: b.shadow_enabled.unwrap_or_default(),
+                padding_horizontal: b.padding_horizontal.unwrap_or_default(),
+                padding_vertical: b.padding_vertical.unwrap_or_default(),
             }
         }
     }
