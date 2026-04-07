@@ -461,10 +461,16 @@ impl ThemeVariant {
         if self.input.selection_text_color.is_none() {
             self.input.selection_text_color = d.text_selection_color;
         }
+        if self.input.disabled_opacity.is_none() {
+            self.input.disabled_opacity = d.disabled_opacity;
+        }
 
         // --- checkbox ---
         if self.checkbox.checked_background.is_none() {
             self.checkbox.checked_background = d.accent_color;
+        }
+        if self.checkbox.disabled_opacity.is_none() {
+            self.checkbox.disabled_opacity = d.disabled_opacity;
         }
 
         // --- menu ---
@@ -499,6 +505,9 @@ impl ThemeVariant {
         }
         if self.slider.thumb_color.is_none() {
             self.slider.thumb_color = d.surface_color;
+        }
+        if self.slider.disabled_opacity.is_none() {
+            self.slider.disabled_opacity = d.disabled_opacity;
         }
 
         // --- progress_bar ---
@@ -585,6 +594,19 @@ impl ThemeVariant {
         // distinct off-track color (SPEC-3 fix, per no_inheritance spec)
         if self.switch.thumb_background.is_none() {
             self.switch.thumb_background = d.surface_color;
+        }
+        if self.switch.disabled_opacity.is_none() {
+            self.switch.disabled_opacity = d.disabled_opacity;
+        }
+
+        // --- combo_box ---
+        if self.combo_box.disabled_opacity.is_none() {
+            self.combo_box.disabled_opacity = d.disabled_opacity;
+        }
+
+        // --- segmented_control ---
+        if self.segmented_control.disabled_opacity.is_none() {
+            self.segmented_control.disabled_opacity = d.disabled_opacity;
         }
 
         // --- card ---
@@ -724,6 +746,11 @@ impl ThemeVariant {
         if self.window.inactive_title_bar_text_color.is_none() {
             self.window.inactive_title_bar_text_color =
                 self.window.title_bar_font.as_ref().and_then(|f| f.color);
+        }
+        // button.hover_text_color <- button.font.color (widget-to-widget)
+        // Must run AFTER resolve_font_inheritance has populated button.font.color
+        if self.button.hover_text_color.is_none() {
+            self.button.hover_text_color = self.button.font.as_ref().and_then(|f| f.color);
         }
     }
 
