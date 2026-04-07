@@ -699,6 +699,9 @@ impl ThemeVariant {
         if self.list.hover_background.is_none() {
             self.list.hover_background = d.background_color;
         }
+        if self.list.disabled_text_color.is_none() {
+            self.list.disabled_text_color = d.disabled_text_color;
+        }
 
         // --- splitter ---
         if self.splitter.divider_color.is_none() {
@@ -733,6 +736,9 @@ impl ThemeVariant {
         if self.combo_box.disabled_opacity.is_none() {
             self.combo_box.disabled_opacity = d.disabled_opacity;
         }
+        if self.combo_box.disabled_text_color.is_none() {
+            self.combo_box.disabled_text_color = d.disabled_text_color;
+        }
 
         // --- segmented_control ---
         if self.segmented_control.background_color.is_none() {
@@ -758,6 +764,9 @@ impl ThemeVariant {
         // --- link ---
         if self.link.visited_text_color.is_none() {
             self.link.visited_text_color = d.link_color;
+        }
+        if self.link.disabled_text_color.is_none() {
+            self.link.disabled_text_color = d.disabled_text_color;
         }
     }
 
@@ -873,6 +882,26 @@ impl ThemeVariant {
         // button.active_text_color <- button.font.color (widget-to-widget)
         if self.button.active_text_color.is_none() {
             self.button.active_text_color = self.button.font.as_ref().and_then(|f| f.color);
+        }
+        // tab.hover_text_color <- tab.font.color (widget-to-widget)
+        if self.tab.hover_text_color.is_none() {
+            self.tab.hover_text_color = self.tab.font.as_ref().and_then(|f| f.color);
+        }
+        // list.hover_text_color <- list.item_font.color (widget-to-widget)
+        if self.list.hover_text_color.is_none() {
+            self.list.hover_text_color = self.list.item_font.as_ref().and_then(|f| f.color);
+        }
+        // splitter.hover_color <- splitter.divider_color (widget-to-widget)
+        if self.splitter.hover_color.is_none() {
+            self.splitter.hover_color = self.splitter.divider_color;
+        }
+        // link.hover_text_color <- link.font.color (widget-to-widget)
+        if self.link.hover_text_color.is_none() {
+            self.link.hover_text_color = self.link.font.as_ref().and_then(|f| f.color);
+        }
+        // link.active_text_color <- link.font.color (widget-to-widget)
+        if self.link.active_text_color.is_none() {
+            self.link.active_text_color = self.link.font.as_ref().and_then(|f| f.color);
         }
     }
 
@@ -1385,6 +1414,11 @@ impl ThemeVariant {
             require(&self.tab.bar_background, "tab.bar_background", &mut missing);
         let tab_min_width = require(&self.tab.min_width, "tab.min_width", &mut missing);
         let tab_min_height = require(&self.tab.min_height, "tab.min_height", &mut missing);
+        let tab_hover_text_color = require(
+            &self.tab.hover_text_color,
+            "tab.hover_text_color",
+            &mut missing,
+        );
 
         // --- sidebar ---
 
@@ -1765,6 +1799,16 @@ impl ThemeVariant {
             "list.hover_background",
             &mut missing,
         );
+        let list_hover_text_color = require(
+            &self.list.hover_text_color,
+            "list.hover_text_color",
+            &mut missing,
+        );
+        let list_disabled_text_color = require(
+            &self.list.disabled_text_color,
+            "list.disabled_text_color",
+            &mut missing,
+        );
         let list_border_spec = require_border(&self.list.border, "list.border", &mut missing);
 
         // popover
@@ -1776,6 +1820,11 @@ impl ThemeVariant {
         let splitter_divider_color = require(
             &self.splitter.divider_color,
             "splitter.divider_color",
+            &mut missing,
+        );
+        let splitter_hover_color = require(
+            &self.splitter.hover_color,
+            "splitter.hover_color",
             &mut missing,
         );
 
@@ -1805,6 +1854,21 @@ impl ThemeVariant {
 
         // link
         let link_font = require_font_opt(&self.link.font, "link.font", &mut missing);
+        let link_hover_text_color = require(
+            &self.link.hover_text_color,
+            "link.hover_text_color",
+            &mut missing,
+        );
+        let link_active_text_color = require(
+            &self.link.active_text_color,
+            "link.active_text_color",
+            &mut missing,
+        );
+        let link_disabled_text_color = require(
+            &self.link.disabled_text_color,
+            "link.disabled_text_color",
+            &mut missing,
+        );
 
         // combo_box
         let combo_box_background_color = require(
@@ -1815,6 +1879,11 @@ impl ThemeVariant {
         let combo_box_disabled_opacity = require(
             &self.combo_box.disabled_opacity,
             "combo_box.disabled_opacity",
+            &mut missing,
+        );
+        let combo_box_disabled_text_color = require(
+            &self.combo_box.disabled_text_color,
+            "combo_box.disabled_text_color",
             &mut missing,
         );
         let combo_box_font = require_font_opt(&self.combo_box.font, "combo_box.font", &mut missing);
@@ -2583,6 +2652,8 @@ impl ThemeVariant {
                 bar_background: tab_bar_background,
                 min_width: tab_min_width,
                 min_height: tab_min_height,
+                hover_text_color: tab_hover_text_color,
+                hover_background: self.tab.hover_background,
                 font: tab_font,
                 border: tab_border_spec,
             },
@@ -2616,6 +2687,8 @@ impl ThemeVariant {
                 grid_color: list_grid_color,
                 row_height: list_item_height,
                 hover_background: list_hover_background,
+                hover_text_color: list_hover_text_color,
+                disabled_text_color: list_disabled_text_color,
                 item_font: list_item_font,
                 header_font: list_header_font,
                 border: list_border_spec,
@@ -2628,6 +2701,7 @@ impl ThemeVariant {
             splitter: crate::model::widgets::ResolvedSplitterTheme {
                 divider_width: splitter_width,
                 divider_color: splitter_divider_color,
+                hover_color: splitter_hover_color,
             },
             separator: crate::model::widgets::ResolvedSeparatorTheme {
                 line_color: separator_color,
@@ -2642,6 +2716,11 @@ impl ThemeVariant {
                 thumb_diameter: switch_thumb_size,
                 track_radius: switch_track_radius,
                 disabled_opacity: switch_disabled_opacity,
+                hover_checked_background: self.switch.hover_checked_background,
+                hover_unchecked_background: self.switch.hover_unchecked_background,
+                disabled_checked_background: self.switch.disabled_checked_background,
+                disabled_unchecked_background: self.switch.disabled_unchecked_background,
+                disabled_thumb_color: self.switch.disabled_thumb_color,
             },
             dialog: crate::model::widgets::ResolvedDialogTheme {
                 background_color: dialog_background_color,
@@ -2669,6 +2748,9 @@ impl ThemeVariant {
                 arrow_icon_size: combo_box_arrow_size,
                 arrow_area_width: combo_box_arrow_area_width,
                 disabled_opacity: combo_box_disabled_opacity,
+                disabled_text_color: combo_box_disabled_text_color,
+                hover_background: self.combo_box.hover_background,
+                disabled_background: self.combo_box.disabled_background,
                 font: combo_box_font,
                 border: combo_box_border_spec,
             },
@@ -2679,6 +2761,7 @@ impl ThemeVariant {
                 segment_height: segmented_control_segment_height,
                 separator_width: segmented_control_separator_width,
                 disabled_opacity: segmented_control_disabled_opacity,
+                hover_background: self.segmented_control.hover_background,
                 font: segmented_control_font,
                 border: segmented_control_border_spec,
             },
@@ -2689,6 +2772,8 @@ impl ThemeVariant {
             expander: crate::model::widgets::ResolvedExpanderTheme {
                 header_height: expander_header_height,
                 arrow_icon_size: expander_arrow_size,
+                hover_background: self.expander.hover_background,
+                arrow_color: self.expander.arrow_color,
                 font: expander_font,
                 border: expander_border_spec,
             },
@@ -2697,6 +2782,9 @@ impl ThemeVariant {
                 underline_enabled: link_underline,
                 background_color: link_background,
                 hover_background: link_hover_bg,
+                hover_text_color: link_hover_text_color,
+                active_text_color: link_active_text_color,
+                disabled_text_color: link_disabled_text_color,
                 font: link_font,
             },
             icon_set,
@@ -3453,6 +3541,8 @@ mod tests {
         v.tab.bar_background = Some(c);
         v.tab.min_width = Some(60.0);
         v.tab.min_height = Some(32.0);
+        v.tab.hover_text_color = Some(c);
+        v.tab.hover_background = Some(c);
         v.tab.border.get_or_insert_default().padding_horizontal = Some(12.0);
         v.tab.border.get_or_insert_default().padding_vertical = Some(6.0);
         v.tab.font = Some(FontSpec {
@@ -3512,6 +3602,8 @@ mod tests {
         v.list.grid_color = Some(c);
         v.list.row_height = Some(28.0);
         v.list.hover_background = Some(c);
+        v.list.hover_text_color = Some(c);
+        v.list.disabled_text_color = Some(c);
         v.list.item_font = Some(FontSpec {
             family: Some("Inter".into()),
             size: Some(14.0),
@@ -3545,6 +3637,7 @@ mod tests {
         // splitter
         v.splitter.divider_width = Some(4.0);
         v.splitter.divider_color = Some(c);
+        v.splitter.hover_color = Some(c);
 
         // separator
         v.separator.line_color = Some(c);
@@ -3559,6 +3652,11 @@ mod tests {
         v.switch.thumb_diameter = Some(14.0);
         v.switch.track_radius = Some(10.0);
         v.switch.disabled_opacity = Some(0.5);
+        v.switch.hover_checked_background = Some(c);
+        v.switch.hover_unchecked_background = Some(c);
+        v.switch.disabled_checked_background = Some(c);
+        v.switch.disabled_unchecked_background = Some(c);
+        v.switch.disabled_thumb_color = Some(c);
 
         // dialog
         v.dialog.background_color = Some(c);
@@ -3599,6 +3697,9 @@ mod tests {
         v.combo_box.arrow_icon_size = Some(12.0);
         v.combo_box.arrow_area_width = Some(20.0);
         v.combo_box.disabled_opacity = Some(0.5);
+        v.combo_box.disabled_text_color = Some(c);
+        v.combo_box.hover_background = Some(c);
+        v.combo_box.disabled_background = Some(c);
         v.combo_box.font = Some(FontSpec {
             family: Some("Inter".into()),
             size: Some(14.0),
@@ -3617,6 +3718,7 @@ mod tests {
         v.segmented_control.segment_height = Some(28.0);
         v.segmented_control.separator_width = Some(1.0);
         v.segmented_control.disabled_opacity = Some(0.5);
+        v.segmented_control.hover_background = Some(c);
         v.segmented_control.font = Some(FontSpec {
             family: Some("Inter".into()),
             size: Some(14.0),
@@ -3646,6 +3748,8 @@ mod tests {
         // expander
         v.expander.header_height = Some(32.0);
         v.expander.arrow_icon_size = Some(12.0);
+        v.expander.hover_background = Some(c);
+        v.expander.arrow_color = Some(c);
         v.expander.font = Some(FontSpec {
             family: Some("Inter".into()),
             size: Some(14.0),
@@ -3667,6 +3771,9 @@ mod tests {
         v.link.visited_text_color = Some(c);
         v.link.background_color = Some(c);
         v.link.hover_background = Some(c);
+        v.link.hover_text_color = Some(c);
+        v.link.active_text_color = Some(c);
+        v.link.disabled_text_color = Some(c);
         v.link.underline_enabled = Some(true);
 
         // text_scale (all 4 entries fully populated)
@@ -4582,6 +4689,7 @@ mod tests {
         v.tab.active_background = None;
         v.tab.active_text_color = None;
         v.tab.bar_background = None;
+        v.tab.hover_text_color = None;
         v.sidebar.background_color = None;
         v.sidebar.font = None;
         v.list.background_color = None;
@@ -4592,21 +4700,28 @@ mod tests {
         v.list.header_background = None;
         v.list.header_font = None;
         v.list.grid_color = None;
+        v.list.hover_text_color = None;
+        v.list.disabled_text_color = None;
         v.popover.background_color = None;
         v.popover.font = None;
         v.popover.border = None;
         v.separator.line_color = None;
+        v.splitter.hover_color = None;
         v.switch.checked_background = None;
         // switch.unchecked_background: NOT cleared -- no inheritance, must come from preset
         v.switch.thumb_background = None;
         v.dialog.border = None;
         v.combo_box.border = None;
+        v.combo_box.disabled_text_color = None;
         v.segmented_control.border = None;
         v.card.background_color = None;
         // card.border: NOT cleared -- no inheritance from defaults (INH-3), must come from preset
         v.expander.border = None;
         v.link.font = None;
         v.link.visited_text_color = None;
+        v.link.hover_text_color = None;
+        v.link.active_text_color = None;
+        v.link.disabled_text_color = None;
         v.spinner.fill_color = None;
         // Widget fonts (derived from defaults.font)
         v.window.title_bar_font = None;
