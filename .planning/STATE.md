@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.5
 milestone_name: Schema Overhaul & Quality
 status: executing
-stopped_at: Completed 51-04 (validate rewiring, all placeholder bindings replaced)
-last_updated: "2026-04-07T08:45:04.037Z"
+stopped_at: Phase 51 verified and complete
+last_updated: "2026-04-07T10:00:00.000Z"
 last_activity: 2026-04-07
 progress:
   total_phases: 9
-  completed_phases: 2
+  completed_phases: 3
   total_plans: 12
-  completed_plans: 11
-  percent: 92
+  completed_plans: 12
+  percent: 100
 ---
 
 # Project State
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-06)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 51 - Resolution Engine Overhaul
+**Current focus:** Phase 51 complete, ready for Phase 52
 
 ## Current Position
 
-Phase: 51 of 57 (Resolution Engine Overhaul)
-Plan: 4 of 5 complete
-Status: Ready to execute
+Phase: 51 of 57 (Resolution Engine Overhaul) — COMPLETE
+Plan: 5 of 5 complete
+Status: Verified (5/5 must-haves passed)
 Last activity: 2026-04-07
 
 ## Performance Metrics
@@ -58,6 +58,7 @@ Recent: Clean break for renames (no serde aliases -- pre-1.0, presets bundled, ~
 - [Phase 51]: Removed 4 fabricated safety nets; card.border and switch.unchecked_background moved from derived to preset-required
 - [Phase 51]: button.hover_text_color in resolve_widget_to_widget (Phase 4) since it depends on button.font.color from Phase 3
 - [Phase 51]: Border padding fields use unwrap_or_default() (sizing, no inheritance); menu/tab/card borders fully optional via border_all_optional(); 13 interactive-state color inheritance rules added
+- [Phase 51]: text_scale entries inherit directly from defaults.font (no ratio scaling); all OS reader computation removed as dead code
 
 ### Pending Todos
 
@@ -71,6 +72,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-07T08:45:04.034Z
-Stopped at: Completed 51-04 (validate rewiring, all placeholder bindings replaced)
+Last session: 2026-04-07T08:57:30.862Z
+Stopped at: Completed 51-05 (text_scale computation removal, Phase 51 complete)
 Resume file: None
