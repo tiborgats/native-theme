@@ -5,6 +5,221 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.5] - 2026-04-XX
+
+### Breaking Changes
+
+> **Migration required.** This release renames ~70 fields, replaces flat border fields with `BorderSpec` sub-structs, removes `ThemeSpacing`, and changes per-widget foreground fields to `font.color`. Custom theme files and code accessing theme fields must be updated.
+
+#### Field renames (~70 fields)
+
+Color fields gain `_color` suffix, border fields move to sub-structs, and per-widget foreground fields are replaced by `font.color`:
+
+**Before (v0.5.4 TOML):**
+
+```toml
+[light.defaults]
+accent = "#3584e4"
+background = "#ffffff"
+foreground = "#000000"
+muted = "#929292"
+
+[light.button]
+foreground = "#000000"
+border_color = "#c0c0c0"
+corner_radius = 6.0
+border_width = 1.0
+```
+
+**After (v0.5.5 TOML):**
+
+```toml
+[light.defaults]
+accent_color = "#3584e4"
+background_color = "#ffffff"
+text_color = "#000000"
+muted_color = "#929292"
+
+[light.button]
+font = { color = "#000000" }
+border = { color = "#c0c0c0", corner_radius = 6.0, line_width = 1.0 }
+```
+
+Key renames by category:
+- **Colors**: `accent` -> `accent_color`, `background` -> `background_color`, `foreground` -> `text_color`, `muted` -> `muted_color`, `selection` -> `selection_color`, `focus_ring_color` -> `focus_ring_color` (unchanged), `accent_foreground` -> `accent_text_color`, `selection_foreground` -> `selection_text_color`, `disabled_foreground` -> `disabled_text_color`, `danger` -> `danger_color`, `danger_foreground` -> `danger_text_color`
+- **Borders**: flat `border_color`, `corner_radius`, `border_width` -> `border.color`, `border.corner_radius`, `border.line_width`
+- **Per-widget foreground**: `button.foreground`, `menu.foreground`, etc. -> `button.font.color`, `menu.font.color`, etc.
+
+#### ThemeSpacing removed
+
+`ThemeSpacing` (xs/sm/md/lg/xl) is replaced by `LayoutTheme` with semantic field names.
+
+**Before (v0.5.4 TOML):**
+
+```toml
+[light.defaults.spacing]
+xs = 2.0
+sm = 4.0
+md = 8.0
+lg = 16.0
+xl = 24.0
+```
+
+**After (v0.5.5 TOML):**
+
+```toml
+[light.layout]
+widget_gap = 6.0
+container_margin = 6.0
+window_margin = 10.0
+section_gap = 18.0
+```
+
+#### BorderSpec sub-struct
+
+Flat border fields on widgets are now nested under `[widget.border]` TOML tables.
+
+**Before (v0.5.4 TOML):**
+
+```toml
+[light.input]
+border_color = "#c0c0c0"
+corner_radius = 6.0
+border_width = 1.0
+```
+
+**After (v0.5.5 TOML):**
+
+```toml
+[light.input]
+
+[light.input.border]
+color = "#c0c0c0"
+corner_radius = 6.0
+line_width = 1.0
+```
+
+#### FontSpec expanded
+
+`FontSpec` gains `style` (`FontStyle` enum) and `color` fields.
+
+**New TOML structure:**
+
+```toml
+[light.defaults.font]
+family = "Inter"
+size = 13.0
+weight = 400
+style = "normal"
+color = "#000000"
+```
+
+#### Per-widget foreground removed
+
+Text color is now `widget.font.color` instead of `widget.foreground`.
+
+**Before (v0.5.4):**
+
+```toml
+[light.button]
+foreground = "#000000"
+```
+
+**After (v0.5.5):**
+
+```toml
+[light.button]
+font = { color = "#000000" }
+```
+
+### Added
+
+#### native-theme (core)
+- `BorderSpec` / `ResolvedBorderSpec` sub-structs for typed border configuration (color, corner_radius, line_width, shadow_enabled, padding_horizontal, padding_vertical)
+- `FontStyle` enum (`Normal`, `Italic`, `Oblique`) with serde lowercase rename
+- `LayoutTheme` / `ResolvedLayoutTheme` replacing `ThemeSpacing` (widget_gap, container_margin, window_margin, section_gap)
+- ~70 interactive state color fields across 18 widgets (hover_background, hover_text_color, active_background, disabled_background, etc.)
+- Property-based tests (proptest) for TOML round-trip serialization and merge semantics
+- Platform-facts cross-reference tests for drift detection between documentation and preset data
+- `detect_is_dark()` GTK_THEME env var and `gtk-3.0/settings.ini` fallback for non-GNOME/non-KDE Linux desktops
+- iOS platform detection (`target_os = "ios"`) in `detect_platform()`
+- Spinner safety guards: dimension validation (width/height > 0), empty frames guard, zero duration guard, single-quote viewBox attribute handling
+- gsettings command timeout (2-second) to prevent indefinite blocking
+- Iced connector WCAG contrast enforcement for status foreground colors
+
+#### native-theme-gpui
+- `from_system()` now returns `(Theme, ResolvedThemeVariant, bool)` 3-tuple (adds `is_dark` flag, matching iced connector)
+
+### Changed
+
+#### native-theme (core)
+- Field naming convention aligned with `property-registry.toml` (~70 renames across all structs)
+- Resolution engine overhauled: all safety-net invented values removed, proper inheritance per `inheritance-rules.toml`
+- `resolve_border()` and `resolve_font()` functions implement sub-field inheritance for all widgets
+- All 17 presets rewritten for new schema with explicit `text_scale` and interactive state color values
+- `into_resolved()` `#[must_use]` message corrected to reflect consuming semantics
+
+#### native-theme-gpui
+- Color derivations (hover, active, disabled) replaced with direct theme field reads where presets now provide explicit values
+- Display name in `from_preset()` uses `spec.name` for human-readable output (was using raw preset key)
+
+#### native-theme-iced
+- Display name in `from_preset()` already used `spec.name` (consistent with gpui fix)
+
+#### CI
+- `pre-release-check.sh` timeout added (30 min max)
+- Publish workflow: gpui connector gate added, better error handling
+- Async-io variants tested in CI
+- Example names disambiguated (`showcase-gpui`, `showcase-iced`)
+
+### Fixed
+
+#### native-theme (core)
+- `detect_is_dark()` now works on non-GNOME/non-KDE Linux desktops via GTK_THEME and gtk-3.0/settings.ini fallback (C-1)
+- `detect_platform()` returns `"ios"` on iOS targets (C-2)
+- `into_resolved()` `#[must_use]` message corrected (C-3)
+- Inheritance bugs: `input.selection` used wrong source (INH-1), `dialog.background_color` missing per-platform fallback (INH-2), `card` border inheritance removed where inappropriate (INH-3)
+
+#### CI
+- Async-io feature variants tested to prevent compilation regressions
+- Example binary names disambiguated to avoid Cargo build conflicts
+
+### Migration Notes
+
+**Migration checklist for v0.5.4 -> v0.5.5:**
+
+1. **Rename color fields** in custom TOML theme files:
+
+   | Before | After |
+   |--------|-------|
+   | `accent` | `accent_color` |
+   | `background` | `background_color` |
+   | `foreground` | `text_color` |
+   | `muted` | `muted_color` |
+   | `selection` | `selection_color` |
+   | `accent_foreground` | `accent_text_color` |
+   | `disabled_foreground` | `disabled_text_color` |
+   | `danger` | `danger_color` |
+   | `danger_foreground` | `danger_text_color` |
+
+2. **Update `[spacing]` sections** to `[layout]` with new field names:
+   - `xs`/`sm`/`md`/`lg`/`xl` -> `widget_gap`/`container_margin`/`window_margin`/`section_gap`
+
+3. **Move flat border fields** to `[widget.border]` sub-tables:
+   - `border_color` -> `border.color`
+   - `corner_radius` -> `border.corner_radius`
+   - `border_width` -> `border.line_width`
+
+4. **Replace `widget.foreground`** with `widget.font.color` in TOML and Rust code:
+   - `button.foreground` -> `button.font.color`
+   - `menu.foreground` -> `menu.font.color`
+   - (applies to all widgets with text)
+
+5. **Update Rust code** accessing resolved theme structs:
+   - `resolved.defaults.accent` -> `resolved.defaults.accent_color`
+   - `resolved.defaults.background` -> `resolved.defaults.background_color`
+   - `resolved.button.foreground` -> `resolved.button.font.color`
+
 ## [0.5.4] - 2026-04-03
 
 ### Added
@@ -476,6 +691,7 @@ let busy = load_icon(IconRole::StatusBusy, "material");
 - `impl_merge!` macro for recursive Option-based theme merging
 - Deep merge support across all theme types
 
+[0.5.5]: https://github.com/tiborgats/native-theme/compare/v0.5.4...v0.5.5
 [0.5.4]: https://github.com/tiborgats/native-theme/compare/v0.5.3...v0.5.4
 [0.5.3]: https://github.com/tiborgats/native-theme/compare/v0.5.2...v0.5.3
 [0.5.2]: https://github.com/tiborgats/native-theme/compare/v0.5.1...v0.5.2
