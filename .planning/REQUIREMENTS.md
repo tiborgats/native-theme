@@ -26,7 +26,7 @@ Align data model, naming, and resolution engine with authoritative spec docs. El
 - [x] **RESOLVE-04**: resolve_border() and updated resolve_font() implement sub-struct inheritance per inheritance-rules.toml
 - [x] **RESOLVE-05**: Inheritance bugs fixed (INH-1: input.selection wrong source, INH-2: dialog.background missing, INH-3: card border removed, SPEC-3: switch.unchecked_background)
 - [x] **RESOLVE-06**: Missing inheritance rules added per inheritance-rules.toml (~40 new rules for state colors, fonts, borders)
-- [ ] **RESOLVE-07**: validate() updated for all new and renamed fields
+- [x] **RESOLVE-07**: validate() updated for all new and renamed fields
 
 ### Preset Completeness
 
@@ -118,7 +118,7 @@ Deferred beyond v0.5.5:
 | RESOLVE-04 | Phase 51 | Complete |
 | RESOLVE-05 | Phase 51 | Complete |
 | RESOLVE-06 | Phase 51 | Complete |
-| RESOLVE-07 | Phase 51 | Pending |
+| RESOLVE-07 | Phase 51 | Complete |
 | PRESET-01 | Phase 50 | Complete |
 | PRESET-02 | Phase 53 | Pending |
 | PRESET-03 | Phase 53 | Pending |

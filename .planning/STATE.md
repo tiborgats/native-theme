@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.5
 milestone_name: Schema Overhaul & Quality
 status: executing
-stopped_at: Completed 51-03 (resolve_border/resolve_font/missing rules)
-last_updated: "2026-04-07T08:24:17.047Z"
+stopped_at: Completed 51-04 (validate rewiring, all placeholder bindings replaced)
+last_updated: "2026-04-07T08:45:04.037Z"
 last_activity: 2026-04-07
 progress:
   total_phases: 9
   completed_phases: 2
   total_plans: 12
-  completed_plans: 10
-  percent: 83
+  completed_plans: 11
+  percent: 92
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-06)
 ## Current Position
 
 Phase: 51 of 57 (Resolution Engine Overhaul)
-Plan: 3 of 5 complete
+Plan: 4 of 5 complete
 Status: Ready to execute
 Last activity: 2026-04-07
 
@@ -57,6 +57,7 @@ Recent: Clean break for renames (no serde aliases -- pre-1.0, presets bundled, ~
 - [Phase 51]: All 20 presets have explicit text_scale entries; live presets use platform defaults (KDE: 10.0, macOS: 13.0) for font.size
 - [Phase 51]: Removed 4 fabricated safety nets; card.border and switch.unchecked_background moved from derived to preset-required
 - [Phase 51]: button.hover_text_color in resolve_widget_to_widget (Phase 4) since it depends on button.font.color from Phase 3
+- [Phase 51]: Border padding fields use unwrap_or_default() (sizing, no inheritance); menu/tab/card borders fully optional via border_all_optional(); 13 interactive-state color inheritance rules added
 
 ### Pending Todos
 
@@ -70,6 +71,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-07T08:24:17.044Z
-Stopped at: Completed 51-03 (resolve_border/resolve_font/missing rules)
+Last session: 2026-04-07T08:45:04.034Z
+Stopped at: Completed 51-04 (validate rewiring, all placeholder bindings replaced)
 Resume file: None
