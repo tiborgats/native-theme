@@ -63,6 +63,7 @@ panel                        = "f32"
 # One entry in the text scale ramp (§2.19).
 size                         = "f32"
 weight                       = "u16"
+line_height                  = "f32"    # computed from defaults.line_height * size when None
 
 # ═══════════════════════════════════════════════════════════════════════════
 # §2.1 Global Defaults (ThemeDefaults)
@@ -122,8 +123,8 @@ icon_sizes                   = "icon_sizes"
 # §2.19 Text Scale (TextScale)
 # ═══════════════════════════════════════════════════════════════════════════
 # size and weight from §2.19 table.
-# NOTE: Each entry also has a line_height in the code (derived from
-# font metrics in §1.1.1), but line_height is not listed in §2.19.
+# NOTE: Each entry also has a line_height in the code (computed from
+# defaults.line_height * size when None). Listed in _structures above.
 
 [text_scale]
 caption                      = "text_scale_entry"

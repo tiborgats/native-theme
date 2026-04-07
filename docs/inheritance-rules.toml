@@ -28,7 +28,10 @@
 "defaults.selection_inactive_background" = "defaults.selection_background"       # must run AFTER selection_background
 "defaults.text_selection_background"     = "defaults.selection_background"       # must run AFTER selection_background
 "defaults.text_selection_color"          = "defaults.selection_text_color"
-"defaults.mono_font.color"              = "defaults.font.color"
+"defaults.font.color"                   = "defaults.text_color"                 # must run BEFORE mono_font.color
+"defaults.mono_font.color"              = "defaults.font.color"                 # must run AFTER font.color
+"defaults.border.padding_horizontal"    = "0.0 (when border.line_width or corner_radius present)"
+"defaults.border.padding_vertical"      = "0.0 (when border.line_width or corner_radius present)"
 
 # ─── Border sub-field inheritance (Phase 3) ───────────────────────────────
 #
@@ -129,6 +132,7 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 "button.primary_background"                  = "defaults.accent_color"
 "button.primary_text_color"                  = "defaults.accent_text_color"
 "button.disabled_opacity"                    = "defaults.disabled_opacity"
+"button.hover_background"                    = "defaults.background_color"    # see wrong_safety_nets
 "button.hover_text_color"                    = "button.font.color"
 "button.disabled_text_color"                 = "defaults.disabled_text_color"
 "button.active_text_color"                   = "button.font.color"            # widget-to-widget
@@ -142,13 +146,19 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 "input.disabled_text_color"                  = "defaults.disabled_text_color"
 
 # checkbox (§2.5)
+"checkbox.background_color"                  = "defaults.background_color"
 "checkbox.checked_background"                = "defaults.accent_color"
+"checkbox.indicator_color"                   = "defaults.text_color"
 "checkbox.disabled_opacity"                  = "defaults.disabled_opacity"
 "checkbox.disabled_text_color"               = "defaults.disabled_text_color"
 
 # menu (§2.6)
 "menu.background_color"                      = "defaults.background_color"    # see wrong_safety_nets
 "menu.separator_color"                       = "defaults.border.color"
+"menu.icon_size"                             = "defaults.icon_sizes.toolbar"
+"menu.hover_background"                      = "defaults.selection_background"
+"menu.hover_text_color"                      = "defaults.selection_text_color"
+"menu.disabled_text_color"                   = "defaults.disabled_text_color"
 
 # tooltip (§2.7)
 "tooltip.background_color"                   = "defaults.background_color"    # see wrong_safety_nets
@@ -177,6 +187,7 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 "sidebar.background_color"                   = "defaults.background_color"    # see wrong_safety_nets
 "sidebar.selection_background"               = "defaults.selection_background"
 "sidebar.selection_text_color"               = "defaults.selection_text_color"
+"sidebar.hover_background"                   = "defaults.background_color"
 "sidebar.border.color"                       = "defaults.border.color"
 "sidebar.border.line_width"                  = "defaults.border.line_width"
 
@@ -213,9 +224,13 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 # dialog (§2.22) — no additional uniform rules beyond border/font
 
 # combo_box (§2.24)
+"combo_box.background_color"                 = "defaults.background_color"
 "combo_box.disabled_opacity"                 = "defaults.disabled_opacity"
 
 # segmented_control (§2.25)
+"segmented_control.background_color"         = "defaults.background_color"
+"segmented_control.active_background"        = "defaults.accent_color"
+"segmented_control.active_text_color"        = "defaults.accent_text_color"
 "segmented_control.disabled_opacity"         = "defaults.disabled_opacity"
 
 # card (§2.26)
@@ -223,6 +238,8 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 
 # expander (§2.27) — no additional uniform rules beyond border/font
 
+# list (§2.15) additional
+"list.hover_background"                      = "defaults.background_color"
 # list state colors (§2.15)
 "list.hover_text_color"                      = "list.item_font.color"         # widget-to-widget
 "list.disabled_text_color"                   = "defaults.disabled_text_color"
