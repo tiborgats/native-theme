@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.5
 milestone_name: Schema Overhaul & Quality
 status: executing
-stopped_at: Phase 51 verified and complete
-last_updated: "2026-04-07T10:00:00.000Z"
+stopped_at: Completed 52-01 (interactive state colors batch 1)
+last_updated: "2026-04-07T09:57:04.000Z"
 last_activity: 2026-04-07
 progress:
   total_phases: 9
   completed_phases: 3
-  total_plans: 12
-  completed_plans: 12
-  percent: 100
+  total_plans: 14
+  completed_plans: 13
+  percent: 93
 ---
 
 # Project State
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-06)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 51 complete, ready for Phase 52
+**Current focus:** Phase 52 executing -- interactive state colors
 
 ## Current Position
 
-Phase: 51 of 57 (Resolution Engine Overhaul) — COMPLETE
-Plan: 5 of 5 complete
-Status: Verified (5/5 must-haves passed)
+Phase: 52 of 57 (Interactive State Colors)
+Plan: 1 of 2 complete
+Status: Executing
 Last activity: 2026-04-07
 
 ## Performance Metrics
@@ -59,6 +59,9 @@ Recent: Clean break for renames (no serde aliases -- pre-1.0, presets bundled, ~
 - [Phase 51]: button.hover_text_color in resolve_widget_to_widget (Phase 4) since it depends on button.font.color from Phase 3
 - [Phase 51]: Border padding fields use unwrap_or_default() (sizing, no inheritance); menu/tab/card borders fully optional via border_all_optional(); 13 interactive-state color inheritance rules added
 - [Phase 51]: text_scale entries inherit directly from defaults.font (no ratio scaling); all OS reader computation removed as dead code
+- [Phase 52]: soft_option macro block for fields that are Option in both Option and Resolved structs (no require() in validate)
+- [Phase 52]: button.active_text_color uses widget-to-widget chain from button.font.color (same pattern as hover_text_color)
+- [Phase 52]: 3 disabled_text_color fields inherit uniformly from defaults.disabled_text_color
 
 ### Pending Todos
 
@@ -72,6 +75,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-07T08:57:30.862Z
-Stopped at: Completed 51-05 (text_scale computation removal, Phase 51 complete)
+Last session: 2026-04-07T09:57:04Z
+Stopped at: Completed 52-01-PLAN.md
 Resume file: None

@@ -13,7 +13,7 @@ Align data model, naming, and resolution engine with authoritative spec docs. El
 - [ ] **SCHEMA-02**: BorderSpec sub-struct (color, corner_radius, corner_radius_lg, line_width, opacity, shadow_enabled, padding_horizontal, padding_vertical) replaces flat border fields on all widgets, with ResolvedBorderSpec
 - [ ] **SCHEMA-03**: LayoutTheme widget (widget_gap, container_margin, window_margin, section_gap) replaces ThemeSpacing
 - [x] **SCHEMA-04**: All ~70 field renames applied per property-registry.toml (background→background_color, foreground→text_color, radius→border.corner_radius, etc.)
-- [ ] **SCHEMA-05**: ~70 interactive state color fields added across 18 widgets (hover_background, hover_text_color, active_background, disabled_background, etc.) per property-registry.toml
+- [x] **SCHEMA-05**: ~70 interactive state color fields added across 18 widgets (hover_background, hover_text_color, active_background, disabled_background, etc.) per property-registry.toml
 - [x] **SCHEMA-06**: Missing non-state fields added (disabled_opacity x7, fonts x11, icon_size x2, separator.line_width, header_font, body_font, text_selection_background/color, etc.)
 - [x] **SCHEMA-07**: Extra code-only fields removed (per-widget foreground→font.color, ThemeSpacing removed)
 - [ ] **SCHEMA-08**: DialogButtonOrder enum variants aligned with property-registry.toml
@@ -21,7 +21,7 @@ Align data model, naming, and resolution engine with authoritative spec docs. El
 ### Resolution Engine
 
 - [x] **RESOLVE-01**: All safety-net invented values removed (hardcoded line_height 1.2, accent_foreground #ffffff, shadow rgba(0,0,0,64), etc.)
-- [ ] **RESOLVE-02**: Text scale computation removed from resolve.rs, windows.rs, kde/mod.rs, macos.rs
+- [x] **RESOLVE-02**: Text scale computation removed from resolve.rs, windows.rs, kde/mod.rs, macos.rs
 - [x] **RESOLVE-03**: scrollbar.thumb_hover computation replaced with explicit field inheritance
 - [x] **RESOLVE-04**: resolve_border() and updated resolve_font() implement sub-struct inheritance per inheritance-rules.toml
 - [x] **RESOLVE-05**: Inheritance bugs fixed (INH-1: input.selection wrong source, INH-2: dialog.background missing, INH-3: card border removed, SPEC-3: switch.unchecked_background)
@@ -108,12 +108,12 @@ Deferred beyond v0.5.5:
 | SCHEMA-02 | Phase 49 | Pending |
 | SCHEMA-03 | Phase 49 | Pending |
 | SCHEMA-04 | Phase 50 | Complete |
-| SCHEMA-05 | Phase 52 | Pending |
+| SCHEMA-05 | Phase 52 | Complete |
 | SCHEMA-06 | Phase 50 | Complete |
 | SCHEMA-07 | Phase 50 | Complete |
 | SCHEMA-08 | Phase 50 | Pending |
 | RESOLVE-01 | Phase 51 | Complete |
-| RESOLVE-02 | Phase 51 | Pending |
+| RESOLVE-02 | Phase 51 | Complete |
 | RESOLVE-03 | Phase 51 | Complete |
 | RESOLVE-04 | Phase 51 | Complete |
 | RESOLVE-05 | Phase 51 | Complete |
