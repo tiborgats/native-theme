@@ -67,24 +67,23 @@ fn resolve_border(
 
 /// Resolve a text scale entry from defaults.
 /// Creates the entry if None, fills sub-fields from defaults.font,
-/// applies a size ratio and default weight, then computes line_height
+/// fills None sub-fields from defaults.font, then computes line_height
 /// from defaults.line_height * resolved_size.
 ///
-/// `size_ratio` scales the default font size (e.g. 0.82 for caption).
-/// `default_weight` is the fallback weight when none is set (e.g. 700 for headings).
+/// Per `inheritance-rules.toml [text_scale_inheritance]`:
+/// - size inherits from defaults.font.size
+/// - weight inherits from defaults.font.weight
 fn resolve_text_scale_entry(
     entry: &mut Option<TextScaleEntry>,
     defaults_font: &FontSpec,
     defaults_line_height: Option<f32>,
-    size_ratio: f32,
-    default_weight: u16,
 ) {
     let entry = entry.get_or_insert_with(TextScaleEntry::default);
     if entry.size.is_none() {
-        entry.size = defaults_font.size.map(|s| s * size_ratio);
+        entry.size = defaults_font.size;
     }
     if entry.weight.is_none() {
-        entry.weight = Some(default_weight);
+        entry.weight = defaults_font.weight;
     }
     if entry.line_height.is_none()
         && let (Some(lh_mult), Some(size)) = (defaults_line_height, entry.size)
@@ -831,40 +830,19 @@ impl ThemeVariant {
     fn resolve_text_scale(&mut self) {
         let defaults_font = &self.defaults.font;
         let defaults_lh = self.defaults.line_height;
-        let body_weight = defaults_font.weight.unwrap_or(400);
 
-        // caption: 0.82x body size, body weight
-        resolve_text_scale_entry(
-            &mut self.text_scale.caption,
-            defaults_font,
-            defaults_lh,
-            0.82,
-            body_weight,
-        );
-        // section_heading: 1.0x body size, bold (700)
+        resolve_text_scale_entry(&mut self.text_scale.caption, defaults_font, defaults_lh);
         resolve_text_scale_entry(
             &mut self.text_scale.section_heading,
             defaults_font,
             defaults_lh,
-            1.0,
-            700,
         );
-        // dialog_title: 1.2x body size, bold (700)
         resolve_text_scale_entry(
             &mut self.text_scale.dialog_title,
             defaults_font,
             defaults_lh,
-            1.2,
-            700,
         );
-        // display: 2.0x body size, bold (700)
-        resolve_text_scale_entry(
-            &mut self.text_scale.display,
-            defaults_font,
-            defaults_lh,
-            2.0,
-            700,
-        );
+        resolve_text_scale_entry(&mut self.text_scale.display, defaults_font, defaults_lh);
     }
 
     // --- Phase 4: Widget-to-widget chains ---
@@ -3010,54 +2988,41 @@ mod tests {
             ..Default::default()
         };
         v.defaults.line_height = Some(1.4);
-        // Leave text_scale entries as None
+        // Leave text_scale entries as None -- resolve fills from defaults.font
         v.resolve();
 
-        // caption: 0.82x body size = 14.0 * 0.82 = 11.48, body weight (400)
-        let caption = v.text_scale.caption.as_ref().unwrap();
-        let expected_caption_size = 14.0 * 0.82;
-        assert!(
-            (caption.size.unwrap() - expected_caption_size).abs() < 0.001,
-            "caption size = 0.82 * body size, got {:?}",
-            caption.size
-        );
-        assert_eq!(caption.weight, Some(400), "caption weight from body weight");
-        // line_height = defaults.line_height * caption_size = 1.4 * 11.48 = 16.072
-        let expected_caption_lh = 1.4 * expected_caption_size;
-        assert!(
-            (caption.line_height.unwrap() - expected_caption_lh).abs() < 0.001,
-            "caption line_height computed"
-        );
+        // All entries inherit size = defaults.font.size (14.0),
+        // weight = defaults.font.weight (400),
+        // line_height = defaults.line_height * size = 1.4 * 14.0 = 19.6
 
-        // section_heading: 1.0x body size = 14.0, bold (700)
-        let sh = v.text_scale.section_heading.as_ref().unwrap();
-        assert!(
-            (sh.size.unwrap() - 14.0).abs() < 0.001,
-            "section_heading size = 1.0 * body size"
-        );
-        assert_eq!(
-            sh.weight,
-            Some(700),
-            "section_heading weight defaults to bold"
-        );
+        // caption
+        assert!(v.text_scale.caption.is_some(), "caption present");
+        if let Some(ref cap) = v.text_scale.caption {
+            assert_eq!(cap.size, Some(14.0), "caption size inherits defaults.font.size");
+            assert_eq!(cap.weight, Some(400), "caption weight inherits defaults.font.weight");
+            assert_eq!(cap.line_height, Some(19.6), "caption line_height = lh * size");
+        }
 
-        // dialog_title: 1.2x body size = 16.8, bold (700)
-        let dt = v.text_scale.dialog_title.as_ref().unwrap();
-        let expected_dt_size = 14.0 * 1.2;
-        assert!(
-            (dt.size.unwrap() - expected_dt_size).abs() < 0.001,
-            "dialog_title size = 1.2 * body size"
-        );
-        assert_eq!(dt.weight, Some(700), "dialog_title weight defaults to bold");
+        // section_heading
+        assert!(v.text_scale.section_heading.is_some(), "section_heading present");
+        if let Some(ref sh) = v.text_scale.section_heading {
+            assert_eq!(sh.size, Some(14.0), "section_heading size inherits defaults.font.size");
+            assert_eq!(sh.weight, Some(400), "section_heading weight inherits defaults.font.weight");
+        }
 
-        // display: 2.0x body size = 28.0, bold (700)
-        let disp = v.text_scale.display.as_ref().unwrap();
-        let expected_disp_size = 14.0 * 2.0;
-        assert!(
-            (disp.size.unwrap() - expected_disp_size).abs() < 0.001,
-            "display size = 2.0 * body size"
-        );
-        assert_eq!(disp.weight, Some(700), "display weight defaults to bold");
+        // dialog_title
+        assert!(v.text_scale.dialog_title.is_some(), "dialog_title present");
+        if let Some(ref dt) = v.text_scale.dialog_title {
+            assert_eq!(dt.size, Some(14.0), "dialog_title size inherits defaults.font.size");
+            assert_eq!(dt.weight, Some(400), "dialog_title weight inherits defaults.font.weight");
+        }
+
+        // display
+        assert!(v.text_scale.display.is_some(), "display present");
+        if let Some(ref disp) = v.text_scale.display {
+            assert_eq!(disp.size, Some(14.0), "display size inherits defaults.font.size");
+            assert_eq!(disp.weight, Some(400), "display weight inherits defaults.font.weight");
+        }
     }
 
     // ===== Phase 3: Color inheritance =====

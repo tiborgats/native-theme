@@ -573,19 +573,19 @@ accent_color = "#00ff00"
         light.resolve_all();
         let resolved = light.validate().unwrap();
 
-        // caption should have been populated from defaults.font with 0.82x ratio
-        // defaults.font.size = 14.0, so caption.size = 14.0 * 0.82 = 11.48
-        let expected_size = 14.0 * 0.82;
+        // caption should have been populated from defaults.font (no ratio)
+        // defaults.font.size = 14.0, so caption.size = 14.0
+        let expected_size = 14.0;
         assert!(
             (resolved.text_scale.caption.size - expected_size).abs() < 0.01,
-            "caption size = 0.82 * defaults.font.size, got {}",
+            "caption size = defaults.font.size, got {}",
             resolved.text_scale.caption.size
         );
         assert_eq!(
             resolved.text_scale.caption.weight, 400,
             "caption weight from defaults.font.weight"
         );
-        // line_height = defaults.line_height * caption_size = 1.2 * 11.48 = 13.776
+        // line_height = defaults.line_height * caption_size = 1.2 * 14.0 = 16.8
         let expected_lh = 1.2 * expected_size;
         assert!(
             (resolved.text_scale.caption.line_height - expected_lh).abs() < 0.01,
