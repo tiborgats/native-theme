@@ -1074,9 +1074,22 @@ mod tests {
     }
 
     #[test]
-    fn impl_merge_optional_nested_is_empty_some() {
+    fn impl_merge_optional_nested_is_empty_some_default() {
+        // Some(FontSpec::default()) with all-None sub-fields counts as empty (D-2 fix).
         let w = WithFont {
             font: Some(FontSpec::default()),
+            ..Default::default()
+        };
+        assert!(w.is_empty());
+    }
+
+    #[test]
+    fn impl_merge_optional_nested_is_not_empty_when_populated() {
+        let w = WithFont {
+            font: Some(FontSpec {
+                size: Some(14.0),
+                ..Default::default()
+            }),
             ..Default::default()
         };
         assert!(!w.is_empty());

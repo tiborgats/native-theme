@@ -78,7 +78,7 @@ macro_rules! impl_merge {
                 $($(&& self.$opt_field.is_none())*)?
                 $($(&& self.$so_field.is_none())*)?
                 $($(&& self.$nest_field.is_empty())*)?
-                $($(&& self.$on_field.is_none())*)?
+                $($(&& self.$on_field.as_ref().map_or(true, |v| v.is_empty()))*)?
             }
         }
     };
@@ -228,6 +228,8 @@ pub fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
     LinuxDesktop::Unknown
 }
 
+static CACHED_IS_DARK: std::sync::RwLock<Option<bool>> = std::sync::RwLock::new(None);
+
 /// Detect whether the system is using a dark color scheme.
 ///
 /// Uses synchronous, platform-specific checks so the result is available
@@ -235,10 +237,10 @@ pub fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
 ///
 /// # Caching
 ///
-/// The result is cached after the first call using `OnceLock` and never
-/// refreshed. If the user toggles dark mode while the app is running,
-/// this function will return stale data. Use [`detect_is_dark()`] instead
-/// for a fresh reading suitable for polling or change tracking.
+/// The result is cached after the first call and reused on subsequent calls.
+/// Call [`invalidate_caches()`] to clear the cached value so the next call
+/// re-queries the OS. For a fresh reading without affecting the cache, use
+/// [`detect_is_dark()`] instead.
 ///
 /// For live dark-mode tracking, subscribe to OS appearance-change events
 /// (D-Bus `SettingChanged` on Linux, `NSAppearance` KVO on macOS,
@@ -259,8 +261,34 @@ pub fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
 /// - **Other platforms / missing features:** Returns `false` (light).
 #[must_use = "this returns whether the system uses dark mode"]
 pub fn system_is_dark() -> bool {
-    static CACHED_IS_DARK: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *CACHED_IS_DARK.get_or_init(detect_is_dark_inner)
+    if let Ok(guard) = CACHED_IS_DARK.read()
+        && let Some(v) = *guard
+    {
+        return v;
+    }
+    let value = detect_is_dark_inner();
+    if let Ok(mut guard) = CACHED_IS_DARK.write() {
+        *guard = Some(value);
+    }
+    value
+}
+
+/// Reset all process-wide caches so the next call to [`system_is_dark()`],
+/// [`prefers_reduced_motion()`], or [`system_icon_theme()`] re-queries the OS.
+///
+/// Call this when you detect that the user has changed system settings (e.g.,
+/// dark mode toggle, icon theme switch, accessibility preferences).
+///
+/// The `detect_*()` family of functions are unaffected — they always query
+/// the OS directly.
+pub fn invalidate_caches() {
+    if let Ok(mut g) = CACHED_IS_DARK.write() {
+        *g = None;
+    }
+    if let Ok(mut g) = CACHED_REDUCED_MOTION.write() {
+        *g = None;
+    }
+    crate::model::icons::invalidate_icon_theme_cache();
 }
 
 /// Detect whether the system is using a dark color scheme without caching.
@@ -437,6 +465,8 @@ fn detect_is_dark_inner() -> bool {
     }
 }
 
+static CACHED_REDUCED_MOTION: std::sync::RwLock<Option<bool>> = std::sync::RwLock::new(None);
+
 /// Query whether the user prefers reduced motion.
 ///
 /// Returns `true` when the OS accessibility setting indicates animations
@@ -445,9 +475,10 @@ fn detect_is_dark_inner() -> bool {
 ///
 /// # Caching
 ///
-/// The result is cached after the first call using `OnceLock` and never
-/// refreshed. For live accessibility-change tracking, subscribe to OS
-/// accessibility events and re-query as needed.
+/// The result is cached after the first call and reused on subsequent calls.
+/// Call [`invalidate_caches()`] to clear the cached value so the next call
+/// re-queries the OS. For live accessibility-change tracking, subscribe to
+/// OS accessibility events and call `invalidate_caches()` when notified.
 ///
 /// # Platform Behavior
 ///
@@ -468,8 +499,16 @@ fn detect_is_dark_inner() -> bool {
 /// ```
 #[must_use = "this returns whether reduced motion is preferred"]
 pub fn prefers_reduced_motion() -> bool {
-    static CACHED: std::sync::OnceLock<bool> = std::sync::OnceLock::new();
-    *CACHED.get_or_init(detect_reduced_motion_inner)
+    if let Ok(guard) = CACHED_REDUCED_MOTION.read()
+        && let Some(v) = *guard
+    {
+        return v;
+    }
+    let value = detect_reduced_motion_inner();
+    if let Ok(mut guard) = CACHED_REDUCED_MOTION.write() {
+        *guard = Some(value);
+    }
+    value
 }
 
 /// Detect whether the user prefers reduced motion without caching.

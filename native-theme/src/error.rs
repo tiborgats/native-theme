@@ -71,7 +71,13 @@ impl std::fmt::Display for ThemeResolutionError {
 impl std::error::Error for ThemeResolutionError {}
 
 /// Errors that can occur when reading or processing theme data.
-#[derive(Debug)]
+///
+/// This type is [`Clone`] so it can be stored in caches alongside
+/// [`crate::ThemeSpec`]. The `Platform` and `Io` variants use [`Arc`]
+/// internally to enable cloning without losing the original error chain.
+///
+/// [`Arc`]: std::sync::Arc
+#[derive(Debug, Clone)]
 #[non_exhaustive]
 pub enum Error {
     /// Operation not supported on the current platform.
@@ -84,10 +90,10 @@ pub enum Error {
     Format(String),
 
     /// Wrapped platform-specific error.
-    Platform(Box<dyn std::error::Error + Send + Sync>),
+    Platform(std::sync::Arc<dyn std::error::Error + Send + Sync>),
 
     /// File I/O error (preserves the original `std::io::Error`).
-    Io(std::io::Error),
+    Io(std::sync::Arc<std::io::Error>),
 
     /// Theme resolution/validation found missing fields.
     Resolution(ThemeResolutionError),
@@ -109,8 +115,8 @@ impl std::fmt::Display for Error {
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            Error::Platform(err) => Some(&**err),
-            Error::Io(err) => Some(err),
+            Error::Platform(err) => Some(err.as_ref()),
+            Error::Io(err) => Some(err.as_ref()),
             Error::Resolution(e) => Some(e),
             _ => None,
         }
@@ -131,7 +137,7 @@ impl From<toml::ser::Error> for Error {
 
 impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Self {
-        Error::Io(err)
+        Error::Io(std::sync::Arc::new(err))
     }
 }
 
@@ -167,7 +173,7 @@ mod tests {
     #[test]
     fn platform_display() {
         let inner = std::io::Error::other("dbus failure");
-        let err = Error::Platform(Box::new(inner));
+        let err = Error::Platform(std::sync::Arc::new(inner));
         let msg = err.to_string();
         assert!(msg.contains("platform error"), "got: {msg}");
         assert!(msg.contains("dbus failure"), "got: {msg}");
@@ -176,7 +182,7 @@ mod tests {
     #[test]
     fn platform_source_returns_inner() {
         let inner = std::io::Error::other("inner error");
-        let err = Error::Platform(Box::new(inner));
+        let err = Error::Platform(std::sync::Arc::new(inner));
         let source = std::error::Error::source(&err);
         assert!(source.is_some());
         assert!(source.unwrap().to_string().contains("inner error"));
@@ -200,13 +206,15 @@ mod tests {
 
     #[test]
     fn source_is_some_for_io_and_platform() {
-        let io_err = Error::Io(std::io::Error::other("io failure"));
+        let io_err = Error::Io(std::sync::Arc::new(std::io::Error::other("io failure")));
         assert!(
             std::error::Error::source(&io_err).is_some(),
             "Io should return Some from source()"
         );
 
-        let platform_err = Error::Platform(Box::new(std::io::Error::other("platform failure")));
+        let platform_err = Error::Platform(std::sync::Arc::new(std::io::Error::other(
+            "platform failure",
+        )));
         assert!(
             std::error::Error::source(&platform_err).is_some(),
             "Platform should return Some from source()"
@@ -225,6 +233,20 @@ mod tests {
     fn error_is_send_sync() {
         fn assert_send_sync<T: Send + Sync>() {}
         assert_send_sync::<Error>();
+    }
+
+    #[test]
+    fn error_is_clone() {
+        fn assert_clone<T: Clone>() {}
+        assert_clone::<Error>();
+
+        let io_err: Error = std::io::Error::other("clone me").into();
+        let cloned = io_err.clone();
+        assert_eq!(io_err.to_string(), cloned.to_string());
+
+        let platform_err = Error::Platform(std::sync::Arc::new(std::io::Error::other("p")));
+        let cloned_p = platform_err.clone();
+        assert_eq!(platform_err.to_string(), cloned_p.to_string());
     }
 
     #[test]

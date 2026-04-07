@@ -296,8 +296,19 @@ fn is_empty_false_after_setting_field() {
     };
     assert!(!tse.is_empty());
 
+    // Some(TextScaleEntry::default()) with all-None sub-fields counts as empty (D-2 fix).
     let ts = TextScale {
         caption: Some(TextScaleEntry::default()),
+        ..Default::default()
+    };
+    assert!(ts.is_empty());
+
+    // A TextScaleEntry with at least one populated sub-field is not empty.
+    let ts = TextScale {
+        caption: Some(TextScaleEntry {
+            size: Some(12.0),
+            ..Default::default()
+        }),
         ..Default::default()
     };
     assert!(!ts.is_empty());

@@ -490,9 +490,13 @@ proptest! {
 proptest! {
     #[test]
     fn theme_defaults_toml_round_trip(d in arb_theme_defaults()) {
-        let toml_str = toml::to_string(&d).unwrap();
-        let deserialized: ThemeDefaults = toml::from_str(&toml_str).unwrap();
-        prop_assert_eq!(d, deserialized);
+        // Round-trip is idempotent: the first pass may normalize Some(empty) → None
+        // (D-2 fix), but a second pass must be stable.
+        let toml1 = toml::to_string(&d).unwrap();
+        let round1: ThemeDefaults = toml::from_str(&toml1).unwrap();
+        let toml2 = toml::to_string(&round1).unwrap();
+        let round2: ThemeDefaults = toml::from_str(&toml2).unwrap();
+        prop_assert_eq!(round1, round2, "TOML round-trip must be idempotent");
     }
 }
 
@@ -502,9 +506,11 @@ proptest! {
     fn theme_variant_toml_round_trip(v in arb_theme_variant()) {
         let mut theme = ThemeSpec::new("Test");
         theme.light = Some(v);
-        let toml_str = toml::to_string_pretty(&theme).unwrap();
-        let deserialized: ThemeSpec = toml::from_str(&toml_str).unwrap();
-        prop_assert_eq!(theme, deserialized);
+        let toml1 = toml::to_string_pretty(&theme).unwrap();
+        let round1: ThemeSpec = toml::from_str(&toml1).unwrap();
+        let toml2 = toml::to_string_pretty(&round1).unwrap();
+        let round2: ThemeSpec = toml::from_str(&toml2).unwrap();
+        prop_assert_eq!(round1, round2, "TOML round-trip must be idempotent");
     }
 }
 
@@ -512,9 +518,11 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(64))]
     #[test]
     fn theme_spec_toml_round_trip(theme in arb_theme_spec()) {
-        let toml_str = toml::to_string_pretty(&theme).unwrap();
-        let deserialized: ThemeSpec = toml::from_str(&toml_str).unwrap();
-        prop_assert_eq!(theme, deserialized);
+        let toml1 = toml::to_string_pretty(&theme).unwrap();
+        let round1: ThemeSpec = toml::from_str(&toml1).unwrap();
+        let toml2 = toml::to_string_pretty(&round1).unwrap();
+        let round2: ThemeSpec = toml::from_str(&toml2).unwrap();
+        prop_assert_eq!(round1, round2, "TOML round-trip must be idempotent");
     }
 }
 

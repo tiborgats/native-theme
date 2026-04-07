@@ -3,7 +3,10 @@
 // These are the core icon types for the native-theme icon system.
 
 #[cfg(target_os = "linux")]
-use std::sync::OnceLock;
+use std::sync::RwLock;
+
+#[cfg(target_os = "linux")]
+static CACHED_ICON_THEME: RwLock<Option<&'static str>> = RwLock::new(None);
 
 use serde::{Deserialize, Serialize};
 
@@ -473,10 +476,8 @@ pub fn system_icon_set() -> IconSet {
 /// ```
 #[must_use = "this returns the current icon theme name"]
 pub fn system_icon_theme() -> &'static str {
-    // Per-process lifetime cache: theme changes require process restart.
-    // Use detect_system_icon_theme() for a fresh uncached reading.
-    #[cfg(target_os = "linux")]
-    static CACHED_ICON_THEME: OnceLock<String> = OnceLock::new();
+    // Cached per-process. Call `invalidate_caches()` to force re-detection.
+    // Use `detect_icon_theme()` for a fresh uncached reading.
 
     #[cfg(any(target_os = "macos", target_os = "ios"))]
     {
@@ -490,9 +491,19 @@ pub fn system_icon_theme() -> &'static str {
 
     #[cfg(target_os = "linux")]
     {
-        CACHED_ICON_THEME
-            .get_or_init(detect_linux_icon_theme)
-            .as_str()
+        if let Ok(guard) = CACHED_ICON_THEME.read()
+            && let Some(v) = *guard
+        {
+            return v;
+        }
+        let value = detect_linux_icon_theme();
+        // Leak the string to produce a &'static str. This is intentional:
+        // invalidation is rare and the leaked theme name is ~20 bytes.
+        let leaked: &'static str = Box::leak(value.into_boxed_str());
+        if let Ok(mut guard) = CACHED_ICON_THEME.write() {
+            *guard = Some(leaked);
+        }
+        leaked
     }
 
     #[cfg(not(any(
@@ -505,6 +516,19 @@ pub fn system_icon_theme() -> &'static str {
         "material"
     }
 }
+
+/// Clear the cached icon theme so the next [`system_icon_theme()`] call
+/// re-queries the OS. Called by [`crate::invalidate_caches()`].
+#[cfg(target_os = "linux")]
+pub(crate) fn invalidate_icon_theme_cache() {
+    if let Ok(mut g) = CACHED_ICON_THEME.write() {
+        *g = None;
+    }
+}
+
+/// No-op on non-Linux (icon theme is a compile-time constant).
+#[cfg(not(target_os = "linux"))]
+pub(crate) fn invalidate_icon_theme_cache() {}
 
 /// Detect the icon theme name for the current platform without caching.
 ///
