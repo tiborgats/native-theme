@@ -1,7 +1,7 @@
 //! macOS theme reader: reads semantic NSColor values with P3-to-sRGB conversion,
 //! resolves both light and dark appearance variants via NSAppearance, reads
-//! system/monospace/per-widget fonts via NSFont, text scale entries from Apple's
-//! type scale, scrollbar overlay mode, and accessibility flags.
+//! system/monospace/per-widget fonts via NSFont, scrollbar overlay mode, and
+//! accessibility flags.
 
 // Objective-C FFI via objc2 -- no safe alternative
 #![allow(unsafe_code)]
@@ -247,52 +247,6 @@ fn read_per_widget_fonts() -> (crate::FontSpec, crate::FontSpec, crate::FontSpec
     )
 }
 
-/// Compute text scale entries from Apple's type scale ratios.
-///
-/// Uses the system font size as the base and derives caption, section heading,
-/// dialog title, and display sizes proportionally (Apple's default type scale
-/// at 13pt: caption ~11pt, subheadline ~15pt, title2 ~22pt, largeTitle ~34pt).
-/// Weight 400 for caption/body sizes; 700 for headings.
-#[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
-fn compute_text_scale(system_size: f32) -> crate::TextScale {
-    // Apple's type scale ratios relative to 13pt system font base.
-    // caption1 = 11/13, subheadline = 15/13, title2 = 22/13, largeTitle = 34/13
-    let ratio = system_size / 13.0;
-
-    crate::TextScale {
-        caption: Some(crate::TextScaleEntry {
-            size: Some((11.0 * ratio).round()),
-            weight: Some(400),
-            line_height: Some(1.3),
-        }),
-        section_heading: Some(crate::TextScaleEntry {
-            size: Some((15.0 * ratio).round()),
-            weight: Some(700),
-            line_height: Some(1.3),
-        }),
-        dialog_title: Some(crate::TextScaleEntry {
-            size: Some((22.0 * ratio).round()),
-            weight: Some(700),
-            line_height: Some(1.2),
-        }),
-        display: Some(crate::TextScaleEntry {
-            size: Some((34.0 * ratio).round()),
-            weight: Some(700),
-            line_height: Some(1.1),
-        }),
-    }
-}
-
-/// Read text scale entries from NSFont preferredFontForTextStyle.
-///
-/// Tries the system API first; if unavailable, falls back to proportional
-/// computation from the system font size.
-#[cfg(all(target_os = "macos", feature = "macos"))]
-fn read_text_scale() -> crate::TextScale {
-    let system_size = NSFont::systemFontSize() as f32;
-    compute_text_scale(system_size)
-}
-
 /// Return per-widget defaults populated from macOS HIG sizes.
 ///
 /// Values based on AppKit intrinsic content sizes and Apple Human Interface
@@ -389,13 +343,12 @@ struct WidgetFontData {
     menu_font: crate::FontSpec,
     tooltip_font: crate::FontSpec,
     title_bar_font: crate::FontSpec,
-    text_scale: crate::TextScale,
 }
 
 /// Testable core: assemble a ThemeSpec from pre-read color and font data.
 ///
 /// Takes pre-resolved ThemeDefaults for both light and dark variants, plus
-/// per-widget font data and text scale entries. Both variants are always
+/// per-widget font data. Both variants are always
 /// populated (unlike KDE/GNOME/Windows which populate only the active one),
 /// since macOS can resolve colors for both appearances.
 #[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
@@ -412,7 +365,6 @@ fn build_theme(
     light_variant.menu.font = Some(widget_fonts.menu_font.clone());
     light_variant.tooltip.font = Some(widget_fonts.tooltip_font.clone());
     light_variant.window.title_bar_font = Some(widget_fonts.title_bar_font.clone());
-    light_variant.text_scale = widget_fonts.text_scale.clone();
 
     let mut dark_variant = widget_defaults;
     dark_variant.defaults = dark_defaults;
@@ -420,7 +372,6 @@ fn build_theme(
     dark_variant.menu.font = Some(widget_fonts.menu_font.clone());
     dark_variant.tooltip.font = Some(widget_fonts.tooltip_font.clone());
     dark_variant.window.title_bar_font = Some(widget_fonts.title_bar_font.clone());
-    dark_variant.text_scale = widget_fonts.text_scale.clone();
 
     crate::ThemeSpec {
         name: "macOS".to_string(),
@@ -435,7 +386,7 @@ fn build_theme(
 /// Uses `NSAppearance::performAsCurrentDrawingAppearance` (macOS 11+) to scope
 /// semantic color resolution to each appearance. Reads ~25 NSColor semantic
 /// colors per variant with P3-to-sRGB conversion, per-widget fonts with weight,
-/// text scale entries, scrollbar overlay mode, and accessibility flags.
+/// scrollbar overlay mode, and accessibility flags.
 ///
 /// # Errors
 ///
@@ -459,12 +410,10 @@ pub fn from_macos() -> crate::Result<crate::ThemeSpec> {
     // Read appearance-independent data once.
     let (font, mono_font) = read_fonts();
     let (menu_font, tooltip_font, title_bar_font) = read_per_widget_fonts();
-    let text_scale = read_text_scale();
     let widget_fonts = WidgetFontData {
         menu_font,
         tooltip_font,
         title_bar_font,
-        text_scale,
     };
 
     // Type alias for the appearance-block data.
@@ -581,7 +530,6 @@ mod tests {
                 weight: Some(700),
                 ..Default::default()
             },
-            text_scale: compute_text_scale(13.0),
         }
     }
 
@@ -805,59 +753,6 @@ mod tests {
         assert_eq!(light.menu.font, dark.menu.font);
         assert_eq!(light.tooltip.font, dark.tooltip.font);
         assert_eq!(light.window.title_bar_font, dark.window.title_bar_font);
-    }
-
-    #[test]
-    fn build_theme_text_scale_populated() {
-        let theme = build_theme(
-            sample_light_defaults(),
-            sample_dark_defaults(),
-            &sample_widget_fonts(),
-        );
-
-        let light = theme.light.as_ref().unwrap();
-        assert!(light.text_scale.caption.is_some(), "caption should be set");
-        assert!(
-            light.text_scale.section_heading.is_some(),
-            "section_heading should be set"
-        );
-        assert!(
-            light.text_scale.dialog_title.is_some(),
-            "dialog_title should be set"
-        );
-        assert!(light.text_scale.display.is_some(), "display should be set");
-
-        // Both variants have the same text scale
-        let dark = theme.dark.as_ref().unwrap();
-        assert_eq!(light.text_scale, dark.text_scale);
-    }
-
-    #[test]
-    fn compute_text_scale_default_sizes() {
-        let ts = compute_text_scale(13.0);
-        assert_eq!(ts.caption.as_ref().unwrap().size, Some(11.0));
-        assert_eq!(ts.section_heading.as_ref().unwrap().size, Some(15.0));
-        assert_eq!(ts.dialog_title.as_ref().unwrap().size, Some(22.0));
-        assert_eq!(ts.display.as_ref().unwrap().size, Some(34.0));
-    }
-
-    #[test]
-    fn compute_text_scale_scaled_sizes() {
-        // If the system font is 26pt (2x default), text scale should also scale
-        let ts = compute_text_scale(26.0);
-        assert_eq!(ts.caption.as_ref().unwrap().size, Some(22.0));
-        assert_eq!(ts.section_heading.as_ref().unwrap().size, Some(30.0));
-        assert_eq!(ts.dialog_title.as_ref().unwrap().size, Some(44.0));
-        assert_eq!(ts.display.as_ref().unwrap().size, Some(68.0));
-    }
-
-    #[test]
-    fn compute_text_scale_weights() {
-        let ts = compute_text_scale(13.0);
-        assert_eq!(ts.caption.as_ref().unwrap().weight, Some(400));
-        assert_eq!(ts.section_heading.as_ref().unwrap().weight, Some(700));
-        assert_eq!(ts.dialog_title.as_ref().unwrap().weight, Some(700));
-        assert_eq!(ts.display.as_ref().unwrap().weight, Some(700));
     }
 
     #[test]

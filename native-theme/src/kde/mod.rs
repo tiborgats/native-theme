@@ -8,7 +8,7 @@ pub mod fonts;
 pub mod metrics;
 
 use crate::Rgba;
-use crate::model::{DialogButtonOrder, IconSizes, TextScaleEntry};
+use crate::model::{DialogButtonOrder, IconSizes};
 
 /// Parse a KDE kdeglobals content string into a ThemeSpec.
 ///
@@ -26,9 +26,6 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ThemeSpec>
     colors::populate_colors(&ini, &mut variant);
     fonts::populate_fonts(&ini, &mut variant);
     metrics::populate_widget_sizing(&mut variant);
-
-    // KDE-04: Text scale from smallestReadableFont + Kirigami multipliers
-    populate_text_scale(&ini, &mut variant);
 
     // KDE-06: Accessibility flags
     populate_accessibility(&ini, &mut variant);
@@ -70,46 +67,6 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ThemeSpec>
     };
 
     Ok(theme)
-}
-
-/// Populate text_scale from smallestReadableFont and Kirigami multipliers.
-///
-/// - caption: size and weight from smallestReadableFont
-/// - section_heading: base_size * 1.20 (Kirigami Heading Level 2)
-/// - dialog_title: base_size * 1.35 (Kirigami Heading Level 1)
-/// - display: base_size * 1.80 (Kirigami Title), weight 300
-///
-/// If defaults.font.size is None, heading/title/display entries are not set.
-fn populate_text_scale(ini: &configparser::ini::Ini, variant: &mut crate::ThemeVariant) {
-    // caption from smallestReadableFont
-    if let Some(smallest_str) = ini.get("General", "smallestReadableFont")
-        && let Some(spec) = fonts::parse_qt_font_with_weight(&smallest_str)
-    {
-        variant.text_scale.caption = Some(TextScaleEntry {
-            size: spec.size,
-            weight: spec.weight,
-            line_height: None,
-        });
-    }
-
-    // section_heading, dialog_title, and display from Kirigami multipliers on base font size
-    if let Some(base_size) = variant.defaults.font.size {
-        variant.text_scale.section_heading = Some(TextScaleEntry {
-            size: Some(base_size * 1.20),
-            weight: variant.defaults.font.weight,
-            line_height: None,
-        });
-        variant.text_scale.dialog_title = Some(TextScaleEntry {
-            size: Some(base_size * 1.35),
-            weight: variant.defaults.font.weight,
-            line_height: None,
-        });
-        variant.text_scale.display = Some(TextScaleEntry {
-            size: Some(base_size * 1.80),
-            weight: Some(300),
-            line_height: None,
-        });
-    }
 }
 
 /// Populate accessibility fields from KDE settings.
@@ -811,74 +768,6 @@ BackgroundNormal=49,54,59
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
         assert_eq!(v.link.visited_text_color, Some(Rgba::rgb(155, 89, 182)));
-    }
-
-    // === KDE-04: Text scale ===
-
-    #[test]
-    fn test_text_scale_caption_from_smallest_readable_font() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
-        let v = theme.dark.as_ref().unwrap();
-        let caption = v
-            .text_scale
-            .caption
-            .as_ref()
-            .expect("caption should be set");
-        assert_eq!(
-            caption.size,
-            Some(7.0),
-            "caption size from smallestReadableFont"
-        );
-        assert_eq!(caption.weight, Some(400));
-        assert!(
-            caption.line_height.is_none(),
-            "line_height filled by resolve()"
-        );
-    }
-
-    #[test]
-    fn test_text_scale_section_heading_kirigami_multiplier() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
-        let v = theme.dark.as_ref().unwrap();
-        let heading = v
-            .text_scale
-            .section_heading
-            .as_ref()
-            .expect("section_heading should be set");
-        // base_size = 10.0, multiplier = 1.20, expected = 12.0
-        assert!((heading.size.unwrap() - 12.0).abs() < 0.01);
-        assert_eq!(heading.weight, Some(400));
-    }
-
-    #[test]
-    fn test_text_scale_dialog_title_kirigami_multiplier() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
-        let v = theme.dark.as_ref().unwrap();
-        let title = v
-            .text_scale
-            .dialog_title
-            .as_ref()
-            .expect("dialog_title should be set");
-        // base_size = 10.0, multiplier = 1.35, expected = 13.5
-        assert!((title.size.unwrap() - 13.5).abs() < 0.01);
-    }
-
-    #[test]
-    fn test_text_scale_display_kirigami_multiplier() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
-        let v = theme.dark.as_ref().unwrap();
-        let display = v
-            .text_scale
-            .display
-            .as_ref()
-            .expect("display should be set");
-        // base_size = 10.0, multiplier = 1.80, expected = 18.0
-        assert!((display.size.unwrap() - 18.0).abs() < 0.01);
-        assert_eq!(display.weight, Some(300), "display weight should be 300");
-        assert!(
-            display.line_height.is_none(),
-            "line_height filled by resolve()"
-        );
     }
 
     // === KDE-06: Accessibility ===

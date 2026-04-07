@@ -9,7 +9,7 @@
 use ashpd::desktop::Color;
 use ashpd::desktop::settings::{ColorScheme, Contrast, ReducedMotion};
 
-use crate::model::{DialogButtonOrder, FontSpec, TextScale, TextScaleEntry};
+use crate::model::{DialogButtonOrder, FontSpec};
 
 /// Known GNOME/Pango font weight modifiers mapped to CSS weight values.
 const WEIGHT_MODIFIERS: &[(&str, u16)] = &[
@@ -191,12 +191,6 @@ pub(crate) fn build_gnome_variant(
         variant.window.title_bar_font = Some(fs);
     }
 
-    // ── Text scale (GNOME-02) ──────────────────────────────────────────
-    // Compute text scale entries from the base font size using CSS percentage multipliers
-    if let Some(base_size) = variant.defaults.font.size {
-        variant.text_scale = compute_text_scale(base_size);
-    }
-
     // ── Accessibility (GNOME-03 / GNOME-05) ─────────────────────────────
     // Text scaling factor
     if let Some(factor_str) = read_gsetting("org.gnome.desktop.interface", "text-scaling-factor")
@@ -244,33 +238,6 @@ pub(crate) fn build_gnome_variant(
     let _ = scheme; // consumed by caller for light/dark selection
 
     variant
-}
-
-/// Compute text scale entries from a base font size using CSS percentage multipliers.
-///
-/// GNOME/Adwaita CSS type scale:
-/// - caption: 82% of base
-/// - dialog_title: 136% of base
-/// - display: 181% of base
-fn compute_text_scale(base_size: f32) -> TextScale {
-    TextScale {
-        caption: Some(TextScaleEntry {
-            size: Some(base_size * 0.82),
-            weight: None, // inherits from base preset / defaults.font.weight
-            line_height: None,
-        }),
-        section_heading: None,
-        dialog_title: Some(TextScaleEntry {
-            size: Some(base_size * 1.36),
-            weight: None, // comes from adwaita.toml
-            line_height: None,
-        }),
-        display: Some(TextScaleEntry {
-            size: Some(base_size * 1.81),
-            weight: None, // comes from adwaita.toml
-            line_height: None,
-        }),
-    }
 }
 
 /// Build a ThemeSpec from an Adwaita base, applying portal-provided
@@ -613,57 +580,6 @@ mod tests {
             None,
         );
         assert!(v.defaults.accent_color.is_none());
-    }
-
-    // === compute_text_scale tests ===
-
-    #[test]
-    fn text_scale_caption_from_base() {
-        let ts = compute_text_scale(11.0);
-        let cap = ts.caption.as_ref().unwrap();
-        let expected = 11.0 * 0.82;
-        assert!(
-            (cap.size.unwrap() - expected).abs() < 0.01,
-            "caption size: expected {expected}, got {:?}",
-            cap.size
-        );
-        assert!(
-            cap.weight.is_none(),
-            "caption weight should inherit from preset"
-        );
-        assert!(cap.line_height.is_none());
-    }
-
-    #[test]
-    fn text_scale_dialog_title_from_base() {
-        let ts = compute_text_scale(11.0);
-        let dt = ts.dialog_title.as_ref().unwrap();
-        let expected = 11.0 * 1.36;
-        assert!(
-            (dt.size.unwrap() - expected).abs() < 0.01,
-            "dialog_title size: expected {expected}, got {:?}",
-            dt.size
-        );
-        assert!(dt.weight.is_none()); // comes from adwaita.toml
-    }
-
-    #[test]
-    fn text_scale_display_from_base() {
-        let ts = compute_text_scale(11.0);
-        let d = ts.display.as_ref().unwrap();
-        let expected = 11.0 * 1.81;
-        assert!(
-            (d.size.unwrap() - expected).abs() < 0.01,
-            "display size: expected {expected}, got {:?}",
-            d.size
-        );
-        assert!(d.weight.is_none()); // comes from adwaita.toml
-    }
-
-    #[test]
-    fn text_scale_section_heading_is_none() {
-        let ts = compute_text_scale(11.0);
-        assert!(ts.section_heading.is_none());
     }
 
     // === build_theme tests ===

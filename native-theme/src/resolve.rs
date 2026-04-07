@@ -2998,30 +2998,69 @@ mod tests {
         // caption
         assert!(v.text_scale.caption.is_some(), "caption present");
         if let Some(ref cap) = v.text_scale.caption {
-            assert_eq!(cap.size, Some(14.0), "caption size inherits defaults.font.size");
-            assert_eq!(cap.weight, Some(400), "caption weight inherits defaults.font.weight");
-            assert_eq!(cap.line_height, Some(19.6), "caption line_height = lh * size");
+            assert_eq!(
+                cap.size,
+                Some(14.0),
+                "caption size inherits defaults.font.size"
+            );
+            assert_eq!(
+                cap.weight,
+                Some(400),
+                "caption weight inherits defaults.font.weight"
+            );
+            assert_eq!(
+                cap.line_height,
+                Some(19.6),
+                "caption line_height = lh * size"
+            );
         }
 
         // section_heading
-        assert!(v.text_scale.section_heading.is_some(), "section_heading present");
+        assert!(
+            v.text_scale.section_heading.is_some(),
+            "section_heading present"
+        );
         if let Some(ref sh) = v.text_scale.section_heading {
-            assert_eq!(sh.size, Some(14.0), "section_heading size inherits defaults.font.size");
-            assert_eq!(sh.weight, Some(400), "section_heading weight inherits defaults.font.weight");
+            assert_eq!(
+                sh.size,
+                Some(14.0),
+                "section_heading size inherits defaults.font.size"
+            );
+            assert_eq!(
+                sh.weight,
+                Some(400),
+                "section_heading weight inherits defaults.font.weight"
+            );
         }
 
         // dialog_title
         assert!(v.text_scale.dialog_title.is_some(), "dialog_title present");
         if let Some(ref dt) = v.text_scale.dialog_title {
-            assert_eq!(dt.size, Some(14.0), "dialog_title size inherits defaults.font.size");
-            assert_eq!(dt.weight, Some(400), "dialog_title weight inherits defaults.font.weight");
+            assert_eq!(
+                dt.size,
+                Some(14.0),
+                "dialog_title size inherits defaults.font.size"
+            );
+            assert_eq!(
+                dt.weight,
+                Some(400),
+                "dialog_title weight inherits defaults.font.weight"
+            );
         }
 
         // display
         assert!(v.text_scale.display.is_some(), "display present");
         if let Some(ref disp) = v.text_scale.display {
-            assert_eq!(disp.size, Some(14.0), "display size inherits defaults.font.size");
-            assert_eq!(disp.weight, Some(400), "display weight inherits defaults.font.weight");
+            assert_eq!(
+                disp.size,
+                Some(14.0),
+                "display size inherits defaults.font.size"
+            );
+            assert_eq!(
+                disp.weight,
+                Some(400),
+                "display weight inherits defaults.font.weight"
+            );
         }
     }
 

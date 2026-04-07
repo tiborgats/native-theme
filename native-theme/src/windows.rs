@@ -159,35 +159,6 @@ fn read_all_system_fonts(dpi: u32) -> AllFonts {
     }
 }
 
-/// Compute text scale entries from the system default font size.
-///
-/// Derives caption, section heading, dialog title, and display sizes
-/// using Fluent Design type scale ratios relative to the base font.
-fn compute_text_scale(base_size: f32) -> crate::TextScale {
-    crate::TextScale {
-        caption: Some(crate::TextScaleEntry {
-            size: Some(base_size * 0.85),
-            weight: Some(400),
-            line_height: None,
-        }),
-        section_heading: Some(crate::TextScaleEntry {
-            size: Some(base_size * 1.15),
-            weight: Some(600),
-            line_height: None,
-        }),
-        dialog_title: Some(crate::TextScaleEntry {
-            size: Some(base_size * 1.35),
-            weight: Some(600),
-            line_height: None,
-        }),
-        display: Some(crate::TextScaleEntry {
-            size: Some(base_size * 1.80),
-            weight: Some(300),
-            line_height: None,
-        }),
-    }
-}
-
 // REMOVED(spacing): // WinUI3 Fluent Design spacing scale removed -- ThemeSpacing_DELETED deleted in Plan 01.
 
 /// Read DPI-aware system DPI value.
@@ -533,11 +504,6 @@ fn build_theme(
     variant.window.title_bar_font = Some(fonts.caption);
     variant.menu.font = Some(fonts.menu);
     variant.status_bar.font = Some(fonts.status);
-
-    // --- Text scale (derived from defaults.font.size) ---
-    if let Some(base_size) = variant.defaults.font.size {
-        variant.text_scale = compute_text_scale(base_size);
-    }
 
     // --- Geometry (Windows 11 defaults) ---
     variant.defaults.border.corner_radius = Some(4.0);
@@ -1087,71 +1053,6 @@ mod tests {
             variant.defaults.focus_ring_width.is_some(),
             "focus_ring_width should be set from SM_CXFOCUSBORDER"
         );
-    }
-
-    // === Text scale tests ===
-
-    #[test]
-    fn build_theme_text_scale_from_font_size() {
-        let fonts = named_fonts(); // msg font size = 9.0
-        let theme = build_theme(
-            crate::Rgba::rgb(0, 120, 215),
-            crate::Rgba::rgb(0, 0, 0),
-            crate::Rgba::rgb(255, 255, 255),
-            [None; 6],
-            fonts,
-            None,
-            None,
-            None,
-            None,
-            None,
-            96,
-        );
-        let variant = theme.light.as_ref().expect("light variant");
-        let caption = variant.text_scale.caption.as_ref().expect("caption");
-        assert!((caption.size.unwrap_or(0.0) - 9.0 * 0.85).abs() < 0.01);
-        assert_eq!(caption.weight, Some(400));
-
-        let heading = variant
-            .text_scale
-            .section_heading
-            .as_ref()
-            .expect("section_heading");
-        assert!((heading.size.unwrap_or(0.0) - 9.0 * 1.15).abs() < 0.01);
-        assert_eq!(heading.weight, Some(600));
-
-        let title = variant
-            .text_scale
-            .dialog_title
-            .as_ref()
-            .expect("dialog_title");
-        assert!((title.size.unwrap_or(0.0) - 9.0 * 1.35).abs() < 0.01);
-        assert_eq!(title.weight, Some(600));
-
-        let display = variant.text_scale.display.as_ref().expect("display");
-        assert!((display.size.unwrap_or(0.0) - 9.0 * 1.80).abs() < 0.01);
-        assert_eq!(display.weight, Some(300));
-    }
-
-    #[test]
-    fn compute_text_scale_values() {
-        let ts = compute_text_scale(10.0);
-        let cap = ts.caption.as_ref().unwrap();
-        assert!((cap.size.unwrap() - 8.5).abs() < 0.01);
-        assert_eq!(cap.weight, Some(400));
-        assert!(cap.line_height.is_none());
-
-        let sh = ts.section_heading.as_ref().unwrap();
-        assert!((sh.size.unwrap() - 11.5).abs() < 0.01);
-        assert_eq!(sh.weight, Some(600));
-
-        let dt = ts.dialog_title.as_ref().unwrap();
-        assert!((dt.size.unwrap() - 13.5).abs() < 0.01);
-        assert_eq!(dt.weight, Some(600));
-
-        let d = ts.display.as_ref().unwrap();
-        assert!((d.size.unwrap() - 18.0).abs() < 0.01);
-        assert_eq!(d.weight, Some(300));
     }
 
     // === DWM title bar color test (WIN-02) ===
