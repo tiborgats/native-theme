@@ -91,7 +91,7 @@ if let Some(variant) = nt.pick_variant(is_dark) {
 Run the gpui showcase (full widget gallery with color map inspector):
 
 ```sh
-cargo run -p native-theme-gpui --example showcase
+cargo run -p native-theme-gpui --example showcase-gpui
 ```
 
 ### iced
@@ -117,7 +117,7 @@ if let Some(variant) = nt.pick_variant(true) {
 Run the iced showcase (full widget gallery with live theme switching):
 
 ```sh
-cargo run -p native-theme-iced --example showcase
+cargo run -p native-theme-iced --example showcase-iced
 ```
 
 ### Other toolkits

@@ -53,6 +53,8 @@ jobs:
           - { name: "Linux (no features)", os: ubuntu-latest, flags: "--no-default-features" }
           - { name: "Linux (kde)", os: ubuntu-latest, flags: "--features kde" }
           - { name: "Linux (portal-tokio)", os: ubuntu-latest, flags: "--features portal-tokio" }
+          - { name: "Linux (portal-async-io)", os: ubuntu-latest, flags: "--features portal-async-io" }
+          - { name: "Linux (linux-async-io)", os: ubuntu-latest, flags: "--features linux-async-io" }
           - { name: "Linux (icons)", os: ubuntu-latest, flags: "--features material-icons,lucide-icons,system-icons,svg-rasterize" }
           - { name: "Windows (no features)", os: windows-latest, flags: "--no-default-features" }
           - { name: "Windows (windows)", os: windows-latest, flags: "--features windows" }

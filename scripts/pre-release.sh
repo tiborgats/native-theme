@@ -117,8 +117,14 @@ if [ "$status" = "completed" ]; then
     fi
 else
     info "Waiting for CI to complete..."
+    MAX_WAIT=180  # 30 minutes (180 iterations * 10s sleep)
+    WAIT_COUNT=0
     while true; do
         sleep 10
+        WAIT_COUNT=$((WAIT_COUNT + 1))
+        if [ "$WAIT_COUNT" -ge "$MAX_WAIT" ]; then
+            fail "Timed out waiting for CI after 30 minutes. Check: gh run view $RUN_ID"
+        fi
         STATUS=$(gh run view "$RUN_ID" --json status,conclusion --jq '"\(.status) \(.conclusion)"')
         read -r status conclusion <<< "$STATUS"
 

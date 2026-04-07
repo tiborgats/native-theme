@@ -44,7 +44,7 @@ echo "=== Generating iced theme-switching GIF ==="
 echo ""
 
 echo "--- Building iced showcase binary (release mode) ---"
-cargo build -p native-theme-iced --example showcase --release
+cargo build -p native-theme-iced --example showcase-iced --release
 echo ""
 
 # Clean up showcase process on exit
@@ -56,7 +56,7 @@ for i in "${!THEMES[@]}"; do
     frame_file="$ICED_FRAME_DIR/frame-$(printf '%02d' "$i").png"
     echo "[$((i + 1))/${#THEMES[@]}] $theme $variant (icons: $icon_set${icon_theme:+/$icon_theme})"
 
-    cargo run -p native-theme-iced --example showcase --release -- \
+    cargo run -p native-theme-iced --example showcase-iced --release -- \
         --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
         --tab buttons &
     PID=$!
@@ -85,7 +85,7 @@ echo "=== Generating gpui theme-switching GIF ==="
 echo ""
 
 echo "--- Building gpui showcase binary (release mode) ---"
-cargo build -p native-theme-gpui --example showcase --release
+cargo build -p native-theme-gpui --example showcase-gpui --release
 echo ""
 
 echo "--- Capturing gpui frames ---"
@@ -100,7 +100,7 @@ for i in "${!THEMES[@]}"; do
         cli_args+=(--icon-theme "$icon_theme")
     fi
 
-    cargo run -p native-theme-gpui --example showcase --release -- "${cli_args[@]}" &
+    cargo run -p native-theme-gpui --example showcase-gpui --release -- "${cli_args[@]}" &
     PID=$!
 
     sleep "$DELAY"

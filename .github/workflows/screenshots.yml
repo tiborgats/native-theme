@@ -54,7 +54,7 @@ jobs:
              VALUES ('kTCCServiceScreenCapture', '/bin/zsh', 1, 2, 4, 1);"
 
       - name: Build showcase
-        run: cargo build -p native-theme-${{ matrix.toolkit }} --example showcase --release
+        run: cargo build -p native-theme-${{ matrix.toolkit }} --example showcase-${{ matrix.toolkit }} --release
 
       - name: Create output directory
         run: mkdir -p docs/assets
@@ -70,7 +70,7 @@ jobs:
           for entry in "${themes[@]}"; do
             IFS=':' read -r theme variant icon_set <<< "$entry"
             echo "Capturing ${{ matrix.toolkit }}: $theme $variant (icons: $icon_set)"
-            cargo run -p native-theme-${{ matrix.toolkit }} --example showcase --release -- \
+            cargo run -p native-theme-${{ matrix.toolkit }} --example showcase-${{ matrix.toolkit }} --release -- \
               --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
               --tab buttons \
               --screenshot "docs/assets/${{ matrix.toolkit }}-${{ matrix.os_name }}-${theme}-${variant}.png"
@@ -87,7 +87,7 @@ jobs:
           for entry in "${themes[@]}"; do
             IFS=':' read -r theme variant icon_set <<< "$entry"
             echo "Capturing ${{ matrix.toolkit }}: $theme $variant (icons: $icon_set)"
-            cargo run -p native-theme-${{ matrix.toolkit }} --example showcase --release -- \
+            cargo run -p native-theme-${{ matrix.toolkit }} --example showcase-${{ matrix.toolkit }} --release -- \
               --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
               --tab buttons \
               --screenshot "docs/assets/${{ matrix.toolkit }}-${{ matrix.os_name }}-${theme}-${variant}.png"

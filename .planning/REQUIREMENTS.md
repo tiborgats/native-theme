@@ -45,7 +45,7 @@ Align data model, naming, and resolution engine with authoritative spec docs. El
 - [ ] **CORRECT-01**: detect_is_dark() checks GTK_THEME env var and gtk-3.0/settings.ini for non-GNOME/non-KDE Linux (C-1)
 - [ ] **CORRECT-02**: iOS platform detection added to detect_platform() (C-2)
 - [ ] **CORRECT-03**: into_resolved() #[must_use] message fixed (C-3)
-- [ ] **CORRECT-04**: Spinner/animation safety guards added (S-1 width/height guard, S-3 empty frames, S-4 zero duration, S-5 single-quote viewBox)
+- [x] **CORRECT-04**: Spinner/animation safety guards added (S-1 width/height guard, S-3 empty frames, S-4 zero duration, S-5 single-quote viewBox)
 - [ ] **CORRECT-05**: gsettings commands get timeout (R-1)
 
 ### CI/Publishing
@@ -128,7 +128,7 @@ Deferred beyond v0.5.5:
 | CORRECT-01 | Phase 55 | Pending |
 | CORRECT-02 | Phase 55 | Pending |
 | CORRECT-03 | Phase 55 | Pending |
-| CORRECT-04 | Phase 55 | Pending |
+| CORRECT-04 | Phase 55 | Complete |
 | CORRECT-05 | Phase 55 | Pending |
 | CI-01 | Phase 55 | Pending |
 | CI-02 | Phase 55 | Pending |

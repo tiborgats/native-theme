@@ -126,7 +126,7 @@ call it on every frame tick.
 Run the showcase widget gallery to explore all 16 presets interactively:
 
 ```sh
-cargo run -p native-theme-gpui --example showcase
+cargo run -p native-theme-gpui --example showcase-gpui
 ```
 
 The showcase displays all gpui-component widgets (buttons, inputs, tables,

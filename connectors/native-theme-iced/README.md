@@ -123,7 +123,7 @@ for spin animations to avoid layout jitter during rotation.
 Run the showcase widget gallery to explore all 16 presets interactively:
 
 ```sh
-cargo run -p native-theme-iced --example showcase
+cargo run -p native-theme-iced --example showcase-iced
 ```
 
 ### Linux

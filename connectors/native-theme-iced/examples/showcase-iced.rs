@@ -7,7 +7,7 @@
 //! inspector, plus a tabbed content area on the right — mirroring the gpui
 //! showcase layout.
 //!
-//! Run with: `cargo run -p native-theme-iced --example showcase`
+//! Run with: `cargo run -p native-theme-iced --example showcase-iced`
 
 use iced::widget::{
     button, checkbox, column, combo_box, container, mouse_area, pick_list, progress_bar, radio,

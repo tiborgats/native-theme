@@ -7,7 +7,7 @@
 //! # Running
 //!
 //! ```sh
-//! cargo run -p native-theme-gpui --example showcase
+//! cargo run -p native-theme-gpui --example showcase-gpui
 //! ```
 
 use gpui::{

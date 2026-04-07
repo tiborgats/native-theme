@@ -9,7 +9,7 @@ set -euo pipefail
 # local captures where self-capture is not available.
 #
 # NOTE: On macOS, you can use the showcase's built-in self-capture:
-#   cargo run -p native-theme-gpui --example showcase --release -- \
+#   cargo run -p native-theme-gpui --example showcase-gpui --release -- \
 #     --theme macos-sonoma --variant light --icon-set system \
 #     --screenshot docs/assets/gpui-macos-macos-sonoma-light.png
 #
@@ -41,7 +41,7 @@ echo ""
 # Pre-build showcase binary to avoid compile delays during capture loop
 echo "--- Building showcase binary (release mode) ---"
 cd "$PROJECT_ROOT"
-cargo build -p native-theme-gpui --example showcase --release
+cargo build -p native-theme-gpui --example showcase-gpui --release
 echo ""
 
 # Ensure output directory exists
@@ -72,7 +72,7 @@ for entry in "${THEMES[@]}"; do
         cli_args+=(--icon-theme "$icon_theme")
     fi
 
-    cargo run -p native-theme-gpui --example showcase --release -- "${cli_args[@]}" &
+    cargo run -p native-theme-gpui --example showcase-gpui --release -- "${cli_args[@]}" &
     PID=$!
 
     sleep "$DELAY"

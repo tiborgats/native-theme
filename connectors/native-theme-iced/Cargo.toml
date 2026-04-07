@@ -16,7 +16,7 @@ native-theme.workspace = true
 iced_core = "0.14"
 
 [[example]]
-name = "showcase"
+name = "showcase-iced"
 
 [dev-dependencies]
 iced = { version = "0.14", features = ["svg", "image", "tokio"] }
