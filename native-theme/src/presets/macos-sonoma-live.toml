@@ -24,6 +24,26 @@ large = 32.0
 dialog = 22.0
 panel = 20.0
 
+[light.text_scale.caption]
+size = 10.7
+weight = 400
+line_height = 12.7
+
+[light.text_scale.section_heading]
+size = 13.0
+weight = 700
+line_height = 15.5
+
+[light.text_scale.dialog_title]
+size = 15.6
+weight = 700
+line_height = 18.6
+
+[light.text_scale.display]
+size = 26.0
+weight = 700
+line_height = 30.9
+
 [light.button]
 min_width = 64.0
 min_height = 22.0
@@ -162,6 +182,26 @@ small = 16.0
 large = 32.0
 dialog = 22.0
 panel = 20.0
+
+[dark.text_scale.caption]
+size = 10.7
+weight = 400
+line_height = 12.7
+
+[dark.text_scale.section_heading]
+size = 13.0
+weight = 700
+line_height = 15.5
+
+[dark.text_scale.dialog_title]
+size = 15.6
+weight = 700
+line_height = 18.6
+
+[dark.text_scale.display]
+size = 26.0
+weight = 700
+line_height = 30.9
 
 [dark.button]
 min_width = 64.0

@@ -66,6 +66,26 @@ large = 32.0
 dialog = 22.0
 panel = 20.0
 
+[light.text_scale.caption]
+size = 13.9
+weight = 400
+line_height = 16.7
+
+[light.text_scale.section_heading]
+size = 17.0
+weight = 700
+line_height = 20.4
+
+[light.text_scale.dialog_title]
+size = 20.4
+weight = 700
+line_height = 24.5
+
+[light.text_scale.display]
+size = 34.0
+weight = 700
+line_height = 40.8
+
 [light.button]
 background_color = "#e5e5ea"
 min_width = 64.0
@@ -278,6 +298,26 @@ small = 16.0
 large = 32.0
 dialog = 22.0
 panel = 20.0
+
+[dark.text_scale.caption]
+size = 13.9
+weight = 400
+line_height = 16.7
+
+[dark.text_scale.section_heading]
+size = 17.0
+weight = 700
+line_height = 20.4
+
+[dark.text_scale.dialog_title]
+size = 20.4
+weight = 700
+line_height = 24.5
+
+[dark.text_scale.display]
+size = 34.0
+weight = 700
+line_height = 40.8
 
 [dark.button]
 background_color = "#2c2c2e"
