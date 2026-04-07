@@ -15,7 +15,7 @@
 //! ```ignore
 //! use native_theme_gpui::from_system;
 //!
-//! let (theme, resolved) = from_system()?;
+//! let (theme, resolved, is_dark) = from_system()?;
 //! ```
 //!
 //! # Manual Path
@@ -224,16 +224,16 @@ pub fn from_preset(
 /// # Examples
 ///
 /// ```ignore
-/// let (theme, resolved) = native_theme_gpui::from_system()?;
+/// let (theme, resolved, is_dark) = native_theme_gpui::from_system()?;
 /// ```
 #[must_use = "this returns the theme; it does not apply it"]
-pub fn from_system() -> native_theme::Result<(Theme, ResolvedThemeVariant)> {
+pub fn from_system() -> native_theme::Result<(Theme, ResolvedThemeVariant, bool)> {
     let sys = SystemTheme::from_system()?;
     let is_dark = sys.is_dark;
-    let name = sys.name.clone();
+    let name = sys.name; // K-5: move instead of clone
     let resolved = if is_dark { sys.dark } else { sys.light };
     let theme = to_theme(&resolved, &name, is_dark);
-    Ok((theme, resolved))
+    Ok((theme, resolved, is_dark))
 }
 
 /// Extension trait for converting a [`SystemTheme`] to a gpui-component [`Theme`].
@@ -610,7 +610,7 @@ mod tests {
 
     #[test]
     fn from_system_returns_tuple() {
-        let Ok((theme, resolved)) = from_system() else {
+        let Ok((theme, resolved, _is_dark)) = from_system() else {
             return;
         };
         // Theme and resolved should agree on basic properties
