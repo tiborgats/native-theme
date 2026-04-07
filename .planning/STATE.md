@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.5
 milestone_name: Schema Overhaul & Quality
 status: verifying
-stopped_at: Completed 53-02-PLAN.md
-last_updated: "2026-04-07T13:33:56.258Z"
+stopped_at: Completed 53-01-PLAN.md
+last_updated: "2026-04-07T13:34:53.083Z"
 last_activity: 2026-04-07
 progress:
   total_phases: 9
   completed_phases: 4
   total_plans: 19
-  completed_plans: 15
-  percent: 79
+  completed_plans: 16
+  percent: 84
 ---
 
 # Project State
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-06)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 52 complete, ready for Phase 53
+**Current focus:** Phase 53 in progress -- Linux platform presets done, remaining presets next
 
 ## Current Position
 
-Phase: 52 of 57 (Interactive State Colors) — COMPLETE
-Plan: 2 of 2 complete
-Status: Phase complete — ready for verification
+Phase: 53 of 57 (Preset Completeness) — IN PROGRESS
+Plan: 1 of 5 complete
+Status: Executing
 Last activity: 2026-04-07
 
 ## Performance Metrics
@@ -64,6 +64,7 @@ Recent: Clean break for renames (no serde aliases -- pre-1.0, presets bundled, ~
 - [Phase 52]: 3 disabled_text_color fields inherit uniformly from defaults.disabled_text_color
 - [Phase 52]: 5 widget-to-widget chains: tab/list/splitter/link hover/active from font/divider
 - [Phase 53]: macOS inactive window colors same as active (system-managed dimming); Windows Fluent SubtleFillColorSecondary for hover overlays
+- [Phase 53]: Adwaita hover backgrounds derived from Adwaita CSS :hover patterns; KDE hover uses DecorationHover blend #93cee9
 
 ### Pending Todos
 
@@ -77,6 +78,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-07T13:33:56.255Z
-Stopped at: Completed 53-02-PLAN.md
+Last session: 2026-04-07T13:34:53.080Z
+Stopped at: Completed 53-01-PLAN.md
 Resume file: None

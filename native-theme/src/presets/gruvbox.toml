@@ -84,6 +84,12 @@ weight = 800
 
 [light.button]
 background_color = "#ebdbb2"
+hover_background = "#d8c9a3"
+active_background = "#c7ba97"
+disabled_background = "#f1e5c9"
+hover_text_color = "#3c3836"
+active_text_color = "#3c3836"
+disabled_text_color = "#d5c4a1"
 min_width = 64.0
 min_height = 32.0
 icon_text_gap = 6.0
@@ -97,6 +103,10 @@ padding_vertical = 6.0
 color = "#3c3836"
 [light.input]
 background_color = "#fbf1c7"
+hover_border_color = "#076678"
+focus_border_color = "#076678"
+disabled_background = "#fcf5d7"
+disabled_text_color = "#d5c4a1"
 min_height = 32.0
 
 
@@ -107,6 +117,11 @@ padding_vertical = 6.0
 [light.input.font]
 color = "#3c3836"
 [light.checkbox]
+hover_background = "#dccda7"
+disabled_background = "#f1e5c9"
+disabled_text_color = "#d5c4a1"
+unchecked_background = "#ebdbb2"
+unchecked_border_color = "#d5c4a1"
 indicator_width = 18.0
 label_gap = 6.0
 
@@ -122,12 +137,18 @@ padding_vertical = 6.0
 [light.tooltip.font]
 color = "#fbf1c7"
 [light.scrollbar]
+thumb_hover_color = "#b5a68b"
+thumb_active_color = "#a89982"
 groove_width = 14.0
 thumb_width = 8.0
 overlay_mode = false
 min_thumb_length = 30.0
 
 [light.slider]
+thumb_hover_color = "#d3c5a0"
+disabled_fill_color = "#295861"
+disabled_track_color = "#bdb7b1"
+disabled_thumb_color = "#efe2c1"
 track_height = 4.0
 thumb_diameter = 20.0
 tick_mark_length = 4.0
@@ -137,6 +158,10 @@ track_height = 6.0
 min_width = 100.0
 
 [light.tab]
+active_background = "#fbf1c7"
+active_text_color = "#3c3836"
+hover_background = "#eee4bd"
+hover_text_color = "#3c3836"
 min_width = 64.0
 min_height = 32.0
 
@@ -145,6 +170,9 @@ min_height = 32.0
 padding_horizontal = 12.0
 padding_vertical = 4.0
 [light.menu]
+hover_background = "#076678"
+hover_text_color = "#fbf1c7"
+disabled_text_color = "#d5c4a1"
 row_height = 28.0
 icon_text_gap = 8.0
 
@@ -154,6 +182,9 @@ padding_horizontal = 8.0
 padding_vertical = 4.0
 [light.list]
 alternate_row_background = "#ebdbb2"
+hover_background = "#eee4bd"
+hover_text_color = "#3c3836"
+disabled_text_color = "#d5c4a1"
 row_height = 28.0
 
 
@@ -166,6 +197,7 @@ item_gap = 6.0
 
 [light.sidebar]
 background_color = "#ebdbb2"
+hover_background = "#dccda7"
 
 
 [light.sidebar.font]
@@ -180,11 +212,17 @@ color = "#3c3836"
 line_color = "#d5c4a1"
 
 [light.splitter]
+hover_color = "#b5a688"
 divider_width = 4.0
 
 [light.switch]
 unchecked_background = "#d5c4a1"
 thumb_background = "#fbf1c7"
+hover_checked_background = "#065b6c"
+hover_unchecked_background = "#c3b494"
+disabled_checked_background = "#225b66"
+disabled_unchecked_background = "#e1d5bd"
+disabled_thumb_color = "#fcf5d7"
 track_width = 40.0
 track_height = 20.0
 thumb_diameter = 16.0
@@ -202,6 +240,9 @@ icon_size = 32.0
 underline_enabled = true
 background_color = "#00000000"
 hover_background = "#07667818"
+hover_text_color = "#076678"
+active_text_color = "#076678"
+disabled_text_color = "#d5c4a1"
 
 [light.spinner]
 diameter = 24.0
@@ -209,6 +250,9 @@ min_diameter = 16.0
 stroke_width = 2.0
 
 [light.combo_box]
+hover_background = "#eee4bd"
+disabled_background = "#fcf5d7"
+disabled_text_color = "#d5c4a1"
 min_height = 32.0
 min_width = 120.0
 arrow_icon_size = 12.0
@@ -218,6 +262,9 @@ arrow_area_width = 28.0
 [light.combo_box.border]
 padding_horizontal = 12.0
 [light.segmented_control]
+active_background = "#076678"
+active_text_color = "#fbf1c7"
+hover_background = "#ebe2bb"
 segment_height = 28.0
 separator_width = 1.0
 
@@ -227,8 +274,14 @@ padding_horizontal = 12.0
 [light.card]
 
 [light.expander]
+hover_background = "#eee4bd"
+arrow_color = "#7c6f64"
 header_height = 40.0
 arrow_icon_size = 12.0
+
+[light.window]
+inactive_title_bar_background = "#ebdbb2"
+inactive_title_bar_text_color = "#3c3836"
 
 # === Dark variant (Gruvbox Dark medium contrast) ===
 
@@ -312,6 +365,12 @@ weight = 800
 
 [dark.button]
 background_color = "#504945"
+hover_background = "#615b57"
+active_background = "#6f6966"
+disabled_background = "#443e3a"
+hover_text_color = "#ebdbb2"
+active_text_color = "#ebdbb2"
+disabled_text_color = "#504945"
 min_width = 64.0
 min_height = 32.0
 icon_text_gap = 6.0
@@ -325,6 +384,10 @@ padding_vertical = 6.0
 color = "#ebdbb2"
 [dark.input]
 background_color = "#3c3836"
+hover_border_color = "#83a598"
+focus_border_color = "#83a598"
+disabled_background = "#302c2b"
+disabled_text_color = "#504945"
 min_height = 32.0
 
 
@@ -335,6 +398,11 @@ padding_vertical = 6.0
 [dark.input.font]
 color = "#ebdbb2"
 [dark.checkbox]
+hover_background = "#4b4746"
+disabled_background = "#332f2d"
+disabled_text_color = "#504945"
+unchecked_background = "#3c3836"
+unchecked_border_color = "#504945"
 indicator_width = 18.0
 label_gap = 6.0
 
@@ -350,12 +418,18 @@ padding_vertical = 6.0
 [dark.tooltip.font]
 color = "#ebdbb2"
 [dark.scrollbar]
+thumb_hover_color = "#b9ad9c"
+thumb_active_color = "#c6bcaf"
 groove_width = 14.0
 thumb_width = 8.0
 overlay_mode = false
 min_thumb_length = 30.0
 
 [dark.slider]
+thumb_hover_color = "#595554"
+disabled_fill_color = "#8e9f98"
+disabled_track_color = "#756b5c"
+disabled_thumb_color = "#332f2d"
 track_height = 4.0
 thumb_diameter = 20.0
 tick_mark_length = 4.0
@@ -365,6 +439,10 @@ track_height = 6.0
 min_width = 100.0
 
 [dark.tab]
+active_background = "#282828"
+active_text_color = "#ebdbb2"
+hover_background = "#343434"
+hover_text_color = "#ebdbb2"
 min_width = 64.0
 min_height = 32.0
 
@@ -373,6 +451,9 @@ min_height = 32.0
 padding_horizontal = 12.0
 padding_vertical = 4.0
 [dark.menu]
+hover_background = "#83a598"
+hover_text_color = "#282828"
+disabled_text_color = "#504945"
 row_height = 28.0
 icon_text_gap = 8.0
 
@@ -382,6 +463,9 @@ padding_horizontal = 8.0
 padding_vertical = 4.0
 [dark.list]
 alternate_row_background = "#3c3836"
+hover_background = "#343434"
+hover_text_color = "#ebdbb2"
+disabled_text_color = "#504945"
 row_height = 28.0
 
 
@@ -394,6 +478,7 @@ item_gap = 6.0
 
 [dark.sidebar]
 background_color = "#3c3836"
+hover_background = "#4b4746"
 
 
 [dark.sidebar.font]
@@ -408,11 +493,17 @@ color = "#ebdbb2"
 line_color = "#504945"
 
 [dark.splitter]
+hover_color = "#6a6460"
 divider_width = 4.0
 
 [dark.switch]
 unchecked_background = "#504945"
 thumb_background = "#ebdbb2"
+hover_checked_background = "#8faea2"
+hover_unchecked_background = "#615b57"
+disabled_checked_background = "#8ba098"
+disabled_unchecked_background = "#403a37"
+disabled_thumb_color = "#a4997c"
 track_width = 40.0
 track_height = 20.0
 thumb_diameter = 16.0
@@ -430,6 +521,9 @@ icon_size = 32.0
 underline_enabled = true
 background_color = "#00000000"
 hover_background = "#83a59818"
+hover_text_color = "#83a598"
+active_text_color = "#83a598"
+disabled_text_color = "#504945"
 
 [dark.spinner]
 diameter = 24.0
@@ -437,6 +531,9 @@ min_diameter = 16.0
 stroke_width = 2.0
 
 [dark.combo_box]
+hover_background = "#343434"
+disabled_background = "#222222"
+disabled_text_color = "#504945"
 min_height = 32.0
 min_width = 120.0
 arrow_icon_size = 12.0
@@ -446,6 +543,9 @@ arrow_area_width = 28.0
 [dark.combo_box.border]
 padding_horizontal = 12.0
 [dark.segmented_control]
+active_background = "#83a598"
+active_text_color = "#282828"
+hover_background = "#393939"
 segment_height = 28.0
 separator_width = 1.0
 
@@ -455,9 +555,14 @@ padding_horizontal = 12.0
 [dark.card]
 
 [dark.expander]
+hover_background = "#343434"
+arrow_color = "#a89984"
 header_height = 40.0
 arrow_icon_size = 12.0
 
+[dark.window]
+inactive_title_bar_background = "#3c3836"
+inactive_title_bar_text_color = "#ebdbb2"
 
 [layout]
 widget_gap = 6.0
