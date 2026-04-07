@@ -57,6 +57,10 @@ fn find_icon(name: &str, theme: &str, size: u16) -> Option<PathBuf> {
 ///
 /// Returns `None` if the role has no freedesktop mapping or the icon
 /// is not found in the active theme.
+///
+/// **Performance note:** Each call reads the icon file from disk. Callers
+/// that load the same icon repeatedly (e.g. per-frame in a GUI) should
+/// cache the returned `IconData` themselves.
 #[must_use]
 pub fn load_freedesktop_icon(role: IconRole, size: u16) -> Option<IconData> {
     let theme = detect_theme();
@@ -78,6 +82,9 @@ pub fn load_freedesktop_icon(role: IconRole, size: u16) -> Option<IconData> {
 /// `IconRole` variants.
 ///
 /// Returns `None` if the icon is not found in the theme.
+///
+/// **Performance note:** Each call reads the icon file from disk. Callers
+/// that load the same icon repeatedly should cache the returned `IconData`.
 #[must_use]
 pub fn load_freedesktop_icon_by_name(name: &str, theme: &str, size: u16) -> Option<IconData> {
     let path = find_icon(name, theme, size)?;

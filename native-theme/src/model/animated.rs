@@ -72,6 +72,38 @@ pub enum AnimatedIcon {
 }
 
 impl AnimatedIcon {
+    /// Create a frame-based animation.
+    ///
+    /// Returns `None` if `frames` is empty or `frame_duration_ms` is zero,
+    /// since both would produce an invalid animation (no displayable content
+    /// or a division-by-zero in playback code).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use native_theme::{AnimatedIcon, IconData};
+    ///
+    /// let anim = AnimatedIcon::new_frames(
+    ///     vec![IconData::Svg(b"<svg>f1</svg>".to_vec())],
+    ///     83,
+    /// );
+    /// assert!(anim.is_some());
+    ///
+    /// // Empty frames or zero duration returns None:
+    /// assert!(AnimatedIcon::new_frames(vec![], 83).is_none());
+    /// assert!(AnimatedIcon::new_frames(vec![IconData::Svg(vec![])], 0).is_none());
+    /// ```
+    #[must_use]
+    pub fn new_frames(frames: Vec<IconData>, frame_duration_ms: u32) -> Option<Self> {
+        if frames.is_empty() || frame_duration_ms == 0 {
+            return None;
+        }
+        Some(AnimatedIcon::Frames {
+            frames,
+            frame_duration_ms,
+        })
+    }
+
     /// Return a reference to the first displayable frame.
     ///
     /// For `Frames`, returns the first element (or `None` if empty).
@@ -195,5 +227,24 @@ mod tests {
             animation: TransformAnimation::Spin { duration_ms: 1000 },
         };
         assert_eq!(icon.first_frame(), Some(&data));
+    }
+
+    // === new_frames() constructor tests ===
+
+    #[test]
+    fn new_frames_valid() {
+        let anim = AnimatedIcon::new_frames(vec![IconData::Svg(b"<svg>f1</svg>".to_vec())], 83);
+        assert!(anim.is_some());
+    }
+
+    #[test]
+    fn new_frames_rejects_empty() {
+        assert!(AnimatedIcon::new_frames(vec![], 83).is_none());
+    }
+
+    #[test]
+    fn new_frames_rejects_zero_duration() {
+        let frames = vec![IconData::Svg(b"<svg>f1</svg>".to_vec())];
+        assert!(AnimatedIcon::new_frames(frames, 0).is_none());
     }
 }
