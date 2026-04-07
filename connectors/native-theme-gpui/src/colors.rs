@@ -69,14 +69,13 @@ fn ensure_status_contrast(fg: Hsla, bg: Hsla) -> Hsla {
 /// Built once in [`to_theme_color()`] and passed by reference to all
 /// assign helper functions, replacing 10-15 parameter signatures.
 ///
-/// The `surface` field is used for the `muted` background slot (Issue 2).
+/// Most fields are direct reads from the resolved theme's per-widget structs.
+/// Some (e.g. `muted`) are derived from defaults via blending.
 struct ResolvedColors {
     bg: Hsla,
     fg: Hsla,
     accent: Hsla,
     accent_fg: Hsla,
-    #[allow(dead_code)]
-    surface: Hsla,
     border: Hsla,
     // Issue 2: `muted` is the muted *background* slot (derived from surface),
     // and `muted_fg` is the muted *foreground* (d.muted IS the muted foreground).
@@ -121,6 +120,12 @@ struct ResolvedColors {
     switch_thumb: Hsla,
     progress_fill: Hsla,
     input_caret: Hsla,
+    // Phase 54: direct theme reads for interactive state colors
+    button_hover_bg: Hsla,
+    button_active_bg: Option<Hsla>,
+    list_hover_bg: Hsla,
+    list_selection_bg: Hsla,
+    link_hover_bg: Hsla,
 }
 
 /// Build a complete [`ThemeColor`] from a [`ResolvedThemeVariant`].
@@ -151,7 +156,6 @@ pub fn to_theme_color(resolved: &ResolvedThemeVariant, is_dark: bool) -> ThemeCo
         fg,
         accent: rgba_to_hsla(d.accent_color),
         accent_fg: rgba_to_hsla(d.accent_text_color),
-        surface: rgba_to_hsla(d.surface_color),
         border: rgba_to_hsla(d.border.color),
         muted: muted_bg,
         muted_fg,
@@ -193,6 +197,12 @@ pub fn to_theme_color(resolved: &ResolvedThemeVariant, is_dark: bool) -> ThemeCo
         switch_thumb: rgba_to_hsla(resolved.switch.thumb_background),
         progress_fill: rgba_to_hsla(resolved.progress_bar.fill_color),
         input_caret: rgba_to_hsla(resolved.input.caret_color),
+        // Phase 54: direct theme reads for interactive state colors
+        button_hover_bg: rgba_to_hsla(resolved.button.hover_background),
+        button_active_bg: resolved.button.active_background.map(rgba_to_hsla),
+        list_hover_bg: rgba_to_hsla(resolved.list.hover_background),
+        list_selection_bg: rgba_to_hsla(resolved.list.selection_background),
+        link_hover_bg: rgba_to_hsla(resolved.link.hover_background),
     };
 
     let mut tc = ThemeColor::default();
@@ -224,7 +234,7 @@ fn assign_core(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
     tc.ring = c.ring;
     tc.selection = c.selection;
     tc.link = c.link;
-    tc.link_hover = hover_color(c.link, c.bg);
+    tc.link_hover = c.link_hover_bg;
     tc.link_active = active_color(c.link, is_dark);
 }
 
@@ -238,8 +248,10 @@ fn assign_primary(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
 fn assign_secondary(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
     tc.secondary = c.secondary;
     tc.secondary_foreground = c.secondary_fg;
-    tc.secondary_hover = hover_color(c.secondary, c.bg);
-    tc.secondary_active = active_color(c.secondary, is_dark);
+    tc.secondary_hover = c.button_hover_bg;
+    tc.secondary_active = c
+        .button_active_bg
+        .unwrap_or_else(|| active_color(c.secondary, is_dark));
 }
 
 fn assign_status(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
@@ -269,13 +281,10 @@ fn assign_status(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
     tc.bearish = c.danger;
 }
 
-fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
+fn assign_list_table(tc: &mut ThemeColor, c: &ResolvedColors, _is_dark: bool) {
     tc.list = c.bg;
-    tc.list_hover = hover_color(c.secondary, c.bg);
-    // Issue 7: removed spurious .alpha(0.2) that made the active state nearly
-    // invisible. Use mode-aware opacity: dark themes need subtler tinting.
-    let active_opacity = if is_dark { 0.08 } else { 0.1 };
-    tc.list_active = c.bg.blend(c.primary.opacity(active_opacity));
+    tc.list_hover = c.list_hover_bg;
+    tc.list_active = c.list_selection_bg;
     tc.list_active_border = c.bg.blend(c.primary.opacity(0.6));
     tc.list_even = c.alternate_row;
     tc.list_head = c.bg;
@@ -589,6 +598,64 @@ mod tests {
         assert_ne!(
             tc.danger_hover, tc.danger,
             "danger_hover should differ from danger"
+        );
+
+        // Phase 54: secondary_hover and list_hover now come from resolved theme
+        assert_eq!(
+            tc.secondary_hover,
+            rgba_to_hsla(resolved.button.hover_background),
+            "secondary_hover should match resolved.button.hover_background"
+        );
+        assert_eq!(
+            tc.list_hover,
+            rgba_to_hsla(resolved.list.hover_background),
+            "list_hover should match resolved.list.hover_background"
+        );
+    }
+
+    /// Phase 54: verify all 5 direct theme reads produce values matching
+    /// the resolved theme fields exactly.
+    #[test]
+    fn direct_theme_reads_match_resolved_fields() {
+        let resolved = test_resolved();
+        let tc = to_theme_color(&resolved, true);
+
+        // 1. secondary_hover from button.hover_background
+        assert_eq!(
+            tc.secondary_hover,
+            rgba_to_hsla(resolved.button.hover_background),
+            "secondary_hover must match resolved.button.hover_background"
+        );
+
+        // 2. secondary_active from button.active_background (soft_option)
+        if let Some(active_bg) = resolved.button.active_background {
+            assert_eq!(
+                tc.secondary_active,
+                rgba_to_hsla(active_bg),
+                "secondary_active must match resolved.button.active_background when present"
+            );
+        }
+        // When None, secondary_active falls back to active_color() -- tested by is_dark_passed_not_derived
+
+        // 3. list_hover from list.hover_background
+        assert_eq!(
+            tc.list_hover,
+            rgba_to_hsla(resolved.list.hover_background),
+            "list_hover must match resolved.list.hover_background"
+        );
+
+        // 4. list_active from list.selection_background
+        assert_eq!(
+            tc.list_active,
+            rgba_to_hsla(resolved.list.selection_background),
+            "list_active must match resolved.list.selection_background"
+        );
+
+        // 5. link_hover from link.hover_background
+        assert_eq!(
+            tc.link_hover,
+            rgba_to_hsla(resolved.link.hover_background),
+            "link_hover must match resolved.link.hover_background"
         );
     }
 

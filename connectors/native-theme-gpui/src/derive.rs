@@ -1,8 +1,14 @@
-//! Shade derivation helpers for hover/active states.
+//! Shade derivation helpers for status/chart colors and fallbacks.
 //!
-//! Provides functions to derive interactive state colors (hover,
-//! active/pressed) from base colors. Uses the [`Colorize`] trait from
-//! gpui-component for lightness adjustments.
+//! For widget-specific hover/active states (button, list, link), `colors.rs`
+//! reads directly from the resolved theme. This module is retained for:
+//! - `hover_color` / `active_color`: status color hover/active pairs (danger,
+//!   success, warning, info) and primary button states
+//! - `active_color`: link active fallback
+//! - `light_variant`: chart `_light` color derivation
+//! - `contrast_ratio` / `ensure_status_contrast`: WCAG enforcement
+//!
+//! Uses the [`Colorize`] trait from gpui-component for lightness adjustments.
 
 use gpui::Hsla;
 use gpui_component::Colorize;

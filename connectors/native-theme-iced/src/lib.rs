@@ -127,6 +127,9 @@ pub fn to_theme(
         success_fg: resolved.defaults.success_text_color,
         danger_fg: resolved.defaults.danger_text_color,
         warning_fg: resolved.defaults.warning_text_color,
+        success_bg: resolved.defaults.success_color,
+        danger_bg: resolved.defaults.danger_color,
+        warning_bg: resolved.defaults.warning_color,
     };
 
     iced_core::theme::Theme::custom_with_fn(name.to_string(), pal, move |p| {
