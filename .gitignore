@@ -29,6 +29,9 @@
 .windsurf/
 .paul
 
+# Proptest regression files
+proptest-regressions/
+
 # OS generated files
 .DS_Store
 .DS_Store?
