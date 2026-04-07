@@ -27,7 +27,42 @@ fn resolve_font(widget_font: &mut Option<FontSpec>, defaults_font: &FontSpec) {
             if font.weight.is_none() {
                 font.weight = defaults_font.weight;
             }
+            if font.style.is_none() {
+                font.style = defaults_font.style;
+            }
+            if font.color.is_none() {
+                font.color = defaults_font.color;
+            }
         }
+    }
+}
+
+/// Resolve a per-widget border from defaults.border.
+/// If the widget border is None, creates it from defaults.
+/// If Some, fills None sub-fields from defaults.
+/// `use_lg_radius`: if true, uses corner_radius_lg instead of corner_radius.
+/// padding_horizontal and padding_vertical are NOT inherited (sizing fields).
+fn resolve_border(
+    widget_border: &mut Option<BorderSpec>,
+    defaults_border: &BorderSpec,
+    use_lg_radius: bool,
+) {
+    let border = widget_border.get_or_insert_with(BorderSpec::default);
+    if border.color.is_none() {
+        border.color = defaults_border.color;
+    }
+    if border.corner_radius.is_none() {
+        border.corner_radius = if use_lg_radius {
+            defaults_border.corner_radius_lg
+        } else {
+            defaults_border.corner_radius
+        };
+    }
+    if border.line_width.is_none() {
+        border.line_width = defaults_border.line_width;
+    }
+    if border.shadow_enabled.is_none() {
+        border.shadow_enabled = defaults_border.shadow_enabled;
     }
 }
 
@@ -383,6 +418,7 @@ impl ThemeVariant {
 
     fn resolve_widgets_from_defaults(&mut self) {
         self.resolve_color_inheritance();
+        self.resolve_border_inheritance();
         self.resolve_font_inheritance();
         self.resolve_text_scale();
     }
@@ -394,49 +430,13 @@ impl ThemeVariant {
         if self.window.background_color.is_none() {
             self.window.background_color = d.background_color;
         }
-        {
-            let font = self
-                .window
-                .title_bar_font
-                .get_or_insert_with(FontSpec::default);
-            if font.color.is_none() {
-                font.color = d.text_color;
-            }
-        }
-        {
-            let border = self.window.border.get_or_insert_with(BorderSpec::default);
-            if border.color.is_none() {
-                border.color = d.border.color;
-            }
-        }
         if self.window.title_bar_background.is_none() {
             self.window.title_bar_background = d.surface_color;
-        }
-        {
-            let border = self.window.border.get_or_insert_with(BorderSpec::default);
-            if border.corner_radius.is_none() {
-                border.corner_radius = d.border.corner_radius_lg;
-            }
-            if border.shadow_enabled.is_none() {
-                border.shadow_enabled = d.border.shadow_enabled;
-            }
         }
 
         // --- button ---
         if self.button.background_color.is_none() {
             self.button.background_color = d.background_color;
-        }
-        {
-            let font = self.button.font.get_or_insert_with(FontSpec::default);
-            if font.color.is_none() {
-                font.color = d.text_color;
-            }
-        }
-        {
-            let border = self.button.border.get_or_insert_with(BorderSpec::default);
-            if border.color.is_none() {
-                border.color = d.border.color;
-            }
         }
         if self.button.primary_background.is_none() {
             self.button.primary_background = d.accent_color;
@@ -444,37 +444,13 @@ impl ThemeVariant {
         if self.button.primary_text_color.is_none() {
             self.button.primary_text_color = d.accent_text_color;
         }
-        {
-            let border = self.button.border.get_or_insert_with(BorderSpec::default);
-            if border.corner_radius.is_none() {
-                border.corner_radius = d.border.corner_radius;
-            }
-        }
         if self.button.disabled_opacity.is_none() {
             self.button.disabled_opacity = d.disabled_opacity;
-        }
-        {
-            let border = self.button.border.get_or_insert_with(BorderSpec::default);
-            if border.shadow_enabled.is_none() {
-                border.shadow_enabled = d.border.shadow_enabled;
-            }
         }
 
         // --- input ---
         if self.input.background_color.is_none() {
             self.input.background_color = d.background_color;
-        }
-        {
-            let font = self.input.font.get_or_insert_with(FontSpec::default);
-            if font.color.is_none() {
-                font.color = d.text_color;
-            }
-        }
-        {
-            let border = self.input.border.get_or_insert_with(BorderSpec::default);
-            if border.color.is_none() {
-                border.color = d.border.color;
-            }
         }
         if self.input.placeholder_color.is_none() {
             self.input.placeholder_color = d.muted_color;
@@ -485,39 +461,15 @@ impl ThemeVariant {
         if self.input.selection_text_color.is_none() {
             self.input.selection_text_color = d.text_selection_color;
         }
-        {
-            let border = self.input.border.get_or_insert_with(BorderSpec::default);
-            if border.corner_radius.is_none() {
-                border.corner_radius = d.border.corner_radius;
-            }
-            if border.line_width.is_none() {
-                border.line_width = d.border.line_width;
-            }
-        }
 
         // --- checkbox ---
         if self.checkbox.checked_background.is_none() {
             self.checkbox.checked_background = d.accent_color;
         }
-        {
-            let border = self.checkbox.border.get_or_insert_with(BorderSpec::default);
-            if border.corner_radius.is_none() {
-                border.corner_radius = d.border.corner_radius;
-            }
-            if border.line_width.is_none() {
-                border.line_width = d.border.line_width;
-            }
-        }
 
         // --- menu ---
         if self.menu.background_color.is_none() {
             self.menu.background_color = d.background_color;
-        }
-        {
-            let font = self.menu.font.get_or_insert_with(FontSpec::default);
-            if font.color.is_none() {
-                font.color = d.text_color;
-            }
         }
         if self.menu.separator_color.is_none() {
             self.menu.separator_color = d.border.color;
@@ -526,18 +478,6 @@ impl ThemeVariant {
         // --- tooltip ---
         if self.tooltip.background_color.is_none() {
             self.tooltip.background_color = d.background_color;
-        }
-        {
-            let font = self.tooltip.font.get_or_insert_with(FontSpec::default);
-            if font.color.is_none() {
-                font.color = d.text_color;
-            }
-        }
-        {
-            let border = self.tooltip.border.get_or_insert_with(BorderSpec::default);
-            if border.corner_radius.is_none() {
-                border.corner_radius = d.border.corner_radius;
-            }
         }
 
         // --- scrollbar ---
@@ -568,26 +508,10 @@ impl ThemeVariant {
         if self.progress_bar.track_color.is_none() {
             self.progress_bar.track_color = d.muted_color;
         }
-        if self.progress_bar.border.is_none() {
-            self.progress_bar.border = Some(crate::model::border::BorderSpec {
-                corner_radius: d.border.corner_radius,
-                ..Default::default()
-            });
-        } else if let Some(ref mut b) = self.progress_bar.border
-            && b.corner_radius.is_none()
-        {
-            b.corner_radius = d.border.corner_radius;
-        }
 
         // --- tab ---
         if self.tab.background_color.is_none() {
             self.tab.background_color = d.background_color;
-        }
-        {
-            let font = self.tab.font.get_or_insert_with(FontSpec::default);
-            if font.color.is_none() {
-                font.color = d.text_color;
-            }
         }
         if self.tab.active_background.is_none() {
             self.tab.active_background = d.background_color;
@@ -603,20 +527,27 @@ impl ThemeVariant {
         if self.sidebar.background_color.is_none() {
             self.sidebar.background_color = d.background_color;
         }
-        {
-            let font = self.sidebar.font.get_or_insert_with(FontSpec::default);
-            if font.color.is_none() {
-                font.color = d.text_color;
-            }
+        if self.sidebar.selection_background.is_none() {
+            self.sidebar.selection_background = d.selection_background;
+        }
+        if self.sidebar.selection_text_color.is_none() {
+            self.sidebar.selection_text_color = d.selection_text_color;
+        }
+
+        // --- toolbar ---
+        if self.toolbar.background_color.is_none() {
+            self.toolbar.background_color = d.background_color;
+        }
+        if self.toolbar.icon_size.is_none() {
+            self.toolbar.icon_size = d.icon_sizes.toolbar;
+        }
+
+        // --- status_bar ---
+        if self.status_bar.background_color.is_none() {
+            self.status_bar.background_color = d.background_color;
         }
 
         // --- list ---
-        {
-            let font = self.list.item_font.get_or_insert_with(FontSpec::default);
-            if font.color.is_none() {
-                font.color = d.text_color;
-            }
-        }
         if self.list.alternate_row_background.is_none() {
             self.list.alternate_row_background = self.list.background_color;
         }
@@ -629,36 +560,21 @@ impl ThemeVariant {
         if self.list.header_background.is_none() {
             self.list.header_background = d.surface_color;
         }
-        {
-            let font = self.list.header_font.get_or_insert_with(FontSpec::default);
-            if font.color.is_none() {
-                font.color = d.text_color;
-            }
-        }
         if self.list.grid_color.is_none() {
             self.list.grid_color = d.border.color;
         }
 
-        // --- popover ---
-        {
-            let font = self.popover.font.get_or_insert_with(FontSpec::default);
-            if font.color.is_none() {
-                font.color = d.text_color;
-            }
-        }
-        {
-            let border = self.popover.border.get_or_insert_with(BorderSpec::default);
-            if border.color.is_none() {
-                border.color = d.border.color;
-            }
-            if border.corner_radius.is_none() {
-                border.corner_radius = d.border.corner_radius_lg;
-            }
+        // --- splitter ---
+        if self.splitter.divider_color.is_none() {
+            self.splitter.divider_color = d.border.color;
         }
 
         // --- separator ---
         if self.separator.line_color.is_none() {
             self.separator.line_color = d.border.color;
+        }
+        if self.separator.line_width.is_none() {
+            self.separator.line_width = d.border.line_width;
         }
 
         // --- switch ---
@@ -671,36 +587,6 @@ impl ThemeVariant {
             self.switch.thumb_background = d.surface_color;
         }
 
-        // --- dialog ---
-        {
-            let border = self.dialog.border.get_or_insert_with(BorderSpec::default);
-            if border.corner_radius.is_none() {
-                border.corner_radius = d.border.corner_radius_lg;
-            }
-        }
-
-        // --- combo_box ---
-        {
-            let border = self
-                .combo_box
-                .border
-                .get_or_insert_with(BorderSpec::default);
-            if border.corner_radius.is_none() {
-                border.corner_radius = d.border.corner_radius;
-            }
-        }
-
-        // --- segmented_control ---
-        {
-            let border = self
-                .segmented_control
-                .border
-                .get_or_insert_with(BorderSpec::default);
-            if border.corner_radius.is_none() {
-                border.corner_radius = d.border.corner_radius;
-            }
-        }
-
         // --- card ---
         if self.card.background_color.is_none() {
             self.card.background_color = d.surface_color;
@@ -708,36 +594,85 @@ impl ThemeVariant {
         // card.border: all sub-fields are platform-specific or (none) per §2.26
         // -- no inheritance from defaults.border (INH-3 fix)
 
-        // --- expander ---
-        {
-            let border = self.expander.border.get_or_insert_with(BorderSpec::default);
-            if border.corner_radius.is_none() {
-                border.corner_radius = d.border.corner_radius;
-            }
-        }
-
         // --- link ---
-        {
-            let font = self.link.font.get_or_insert_with(FontSpec::default);
-            if font.color.is_none() {
-                font.color = d.link_color;
-            }
-        }
         if self.link.visited_text_color.is_none() {
             self.link.visited_text_color = d.link_color;
         }
     }
 
+    fn resolve_border_inheritance(&mut self) {
+        let defaults_border = &self.defaults.border;
+
+        // 13 widgets with full border inheritance
+        // corner_radius_lg widgets: window, popover, dialog
+        resolve_border(&mut self.window.border, defaults_border, true);
+        resolve_border(&mut self.button.border, defaults_border, false);
+        resolve_border(&mut self.input.border, defaults_border, false);
+        resolve_border(&mut self.checkbox.border, defaults_border, false);
+        resolve_border(&mut self.tooltip.border, defaults_border, false);
+        resolve_border(&mut self.progress_bar.border, defaults_border, false);
+        resolve_border(&mut self.toolbar.border, defaults_border, false);
+        resolve_border(&mut self.list.border, defaults_border, false);
+        resolve_border(&mut self.popover.border, defaults_border, true);
+        resolve_border(&mut self.dialog.border, defaults_border, true);
+        resolve_border(&mut self.combo_box.border, defaults_border, false);
+        resolve_border(&mut self.segmented_control.border, defaults_border, false);
+        resolve_border(&mut self.expander.border, defaults_border, false);
+
+        // Partial border: sidebar (color + line_width only)
+        {
+            let border = self.sidebar.border.get_or_insert_with(BorderSpec::default);
+            if border.color.is_none() {
+                border.color = defaults_border.color;
+            }
+            if border.line_width.is_none() {
+                border.line_width = defaults_border.line_width;
+            }
+        }
+
+        // Partial border: status_bar (color + line_width only)
+        {
+            let border = self
+                .status_bar
+                .border
+                .get_or_insert_with(BorderSpec::default);
+            if border.color.is_none() {
+                border.color = defaults_border.color;
+            }
+            if border.line_width.is_none() {
+                border.line_width = defaults_border.line_width;
+            }
+        }
+    }
+
     fn resolve_font_inheritance(&mut self) {
         let defaults_font = &self.defaults.font;
+        // 19 widget fonts
         resolve_font(&mut self.window.title_bar_font, defaults_font);
         resolve_font(&mut self.button.font, defaults_font);
         resolve_font(&mut self.input.font, defaults_font);
+        resolve_font(&mut self.checkbox.font, defaults_font);
         resolve_font(&mut self.menu.font, defaults_font);
         resolve_font(&mut self.tooltip.font, defaults_font);
+        resolve_font(&mut self.tab.font, defaults_font);
+        resolve_font(&mut self.sidebar.font, defaults_font);
         resolve_font(&mut self.toolbar.font, defaults_font);
         resolve_font(&mut self.status_bar.font, defaults_font);
+        resolve_font(&mut self.list.item_font, defaults_font);
+        resolve_font(&mut self.list.header_font, defaults_font);
+        resolve_font(&mut self.popover.font, defaults_font);
         resolve_font(&mut self.dialog.title_font, defaults_font);
+        resolve_font(&mut self.dialog.body_font, defaults_font);
+        resolve_font(&mut self.combo_box.font, defaults_font);
+        resolve_font(&mut self.segmented_control.font, defaults_font);
+        resolve_font(&mut self.expander.font, defaults_font);
+        resolve_font(&mut self.link.font, defaults_font);
+
+        // Exception: link.font.color inherits from defaults.link_color, NOT defaults.font.color
+        // This MUST run AFTER the generic resolve_font call above
+        if let Some(ref mut font) = self.link.font {
+            font.color = self.defaults.link_color;
+        }
     }
 
     fn resolve_text_scale(&mut self) {
