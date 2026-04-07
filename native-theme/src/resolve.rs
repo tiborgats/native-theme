@@ -480,10 +480,10 @@ impl ThemeVariant {
             self.input.placeholder_color = d.muted_color;
         }
         if self.input.selection_background.is_none() {
-            self.input.selection_background = d.selection_background;
+            self.input.selection_background = d.text_selection_background;
         }
         if self.input.selection_text_color.is_none() {
-            self.input.selection_text_color = d.selection_text_color;
+            self.input.selection_text_color = d.text_selection_color;
         }
         {
             let border = self.input.border.get_or_insert_with(BorderSpec::default);
@@ -544,20 +544,10 @@ impl ThemeVariant {
         if self.scrollbar.thumb_color.is_none() {
             self.scrollbar.thumb_color = d.muted_color;
         }
+        // scrollbar.thumb_hover_color <- defaults.muted_color (per inheritance-rules.toml line 154)
+        // Both thumb_color and thumb_hover_color inherit from defaults.muted_color independently.
         if self.scrollbar.thumb_hover_color.is_none() {
-            // Derive a visually distinct hover state from thumb.
-            // Lighten on dark themes, darken on light themes (~15% shift).
-            self.scrollbar.thumb_hover_color = self.scrollbar.thumb_color.map(|c| {
-                let bg_luma = d.background_color.map_or(128.0, |bg| {
-                    0.299 * (bg.r as f32) + 0.587 * (bg.g as f32) + 0.114 * (bg.b as f32)
-                });
-                let shift: i16 = if bg_luma < 128.0 { 38 } else { -38 };
-                Rgba::rgb(
-                    (c.r as i16 + shift).clamp(0, 255) as u8,
-                    (c.g as i16 + shift).clamp(0, 255) as u8,
-                    (c.b as i16 + shift).clamp(0, 255) as u8,
-                )
-            });
+            self.scrollbar.thumb_hover_color = d.muted_color;
         }
 
         // --- slider ---
@@ -675,9 +665,8 @@ impl ThemeVariant {
         if self.switch.checked_background.is_none() {
             self.switch.checked_background = d.accent_color;
         }
-        if self.switch.unchecked_background.is_none() {
-            self.switch.unchecked_background = d.muted_color;
-        }
+        // switch.unchecked_background: no inheritance -- each platform has
+        // distinct off-track color (SPEC-3 fix, per no_inheritance spec)
         if self.switch.thumb_background.is_none() {
             self.switch.thumb_background = d.surface_color;
         }
@@ -716,18 +705,8 @@ impl ThemeVariant {
         if self.card.background_color.is_none() {
             self.card.background_color = d.surface_color;
         }
-        {
-            let border = self.card.border.get_or_insert_with(BorderSpec::default);
-            if border.color.is_none() {
-                border.color = d.border.color;
-            }
-            if border.corner_radius.is_none() {
-                border.corner_radius = d.border.corner_radius_lg;
-            }
-            if border.shadow_enabled.is_none() {
-                border.shadow_enabled = d.border.shadow_enabled;
-            }
-        }
+        // card.border: all sub-fields are platform-specific or (none) per §2.26
+        // -- no inheritance from defaults.border (INH-3 fix)
 
         // --- expander ---
         {
@@ -2760,17 +2739,26 @@ mod tests {
     }
 
     #[test]
-    fn scrollbar_thumb_hover_differs_from_thumb() {
+    fn scrollbar_thumb_hover_inherits_muted_color() {
         let mut v = variant_with_defaults();
+        let muted = v.defaults.muted_color;
         // Ensure thumb and thumb_hover are not pre-set so resolve derives them
         v.scrollbar.thumb_color = None;
         v.scrollbar.thumb_hover_color = None;
         v.resolve();
-        let thumb = v.scrollbar.thumb_color;
-        let thumb_hover = v.scrollbar.thumb_hover_color;
-        assert!(thumb.is_some(), "thumb should be resolved");
-        assert!(thumb_hover.is_some(), "thumb_hover should be resolved");
-        assert_ne!(thumb, thumb_hover, "thumb_hover should differ from thumb");
+        assert!(
+            v.scrollbar.thumb_hover_color.is_some(),
+            "thumb_hover should be resolved"
+        );
+        assert_eq!(
+            v.scrollbar.thumb_hover_color, muted,
+            "thumb_hover_color should inherit from defaults.muted_color"
+        );
+        // Both thumb_color and thumb_hover_color inherit from muted_color
+        assert_eq!(
+            v.scrollbar.thumb_color, muted,
+            "thumb_color should also inherit from defaults.muted_color"
+        );
     }
 
     // ===== All 8 font-carrying widgets get resolved fonts =====
@@ -3866,11 +3854,16 @@ mod tests {
         v.list.border.get_or_insert_default().padding_vertical = Some(4.0);
         // splitter
         v.splitter.divider_width = Some(4.0);
-        // switch
+        // switch (unchecked_background has no inheritance -- must be preset-provided)
+        v.switch.unchecked_background = Some(Rgba::rgb(180, 180, 180));
         v.switch.track_width = Some(40.0);
         v.switch.track_height = Some(20.0);
         v.switch.thumb_diameter = Some(14.0);
         v.switch.track_radius = Some(10.0);
+        // card (border sub-fields have no inheritance -- must be preset-provided)
+        v.card.border.get_or_insert_default().color = Some(Rgba::rgb(200, 200, 200));
+        v.card.border.get_or_insert_default().corner_radius = Some(8.0);
+        v.card.border.get_or_insert_default().shadow_enabled = Some(true);
         // dialog
         v.dialog.min_width = Some(320.0);
         v.dialog.max_width = Some(600.0);
@@ -3980,15 +3973,13 @@ mod tests {
         v.popover.border = None;
         v.separator.line_color = None;
         v.switch.checked_background = None;
-        v.switch.unchecked_background = None;
+        // switch.unchecked_background: NOT cleared -- no inheritance, must come from preset
         v.switch.thumb_background = None;
         v.dialog.border = None;
         v.combo_box.border = None;
         v.segmented_control.border = None;
         v.card.background_color = None;
-        v.card.border = None;
-        v.card.border = None;
-        v.card.border = None;
+        // card.border: NOT cleared -- no inheritance from defaults (INH-3), must come from preset
         v.expander.border = None;
         v.link.font = None;
         v.link.visited_text_color = None;
