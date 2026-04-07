@@ -118,7 +118,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 54: Connector Migration** - Both connectors updated for new schema, derive.rs replaced with direct theme reads (completed 2026-04-07)
 - [x] **Phase 55: Correctness, Safety, and CI** - Bug fixes, animation safety guards, CI improvements, gsettings timeout (completed 2026-04-07)
 - [x] **Phase 56: Testing** - Property-based tests and programmatic platform-facts cross-reference (completed 2026-04-07)
-- [ ] **Phase 57: Verification and Documentation** - Full audit, spec-code sync, READMEs, CHANGELOG
+- [x] **Phase 57: Verification and Documentation** - Full audit, spec-code sync, READMEs, CHANGELOG (completed 2026-04-07)
 
 ## Phase Details
 
@@ -257,7 +257,7 @@ Plans:
 Plans:
 - [x] 57-01-PLAN.md — Verification audit (todo_v0.5.5.md, REQUIREMENTS.md), doc comment fixes (DOC-01), opacity documentation (DOC-02)
 - [x] 57-02-PLAN.md — Spec-code synchronization (VERIFY-03, DOC-03) and README updates (DOC-04)
-- [ ] 57-03-PLAN.md — CHANGELOG entry (DOC-05) and final pre-release gate (VERIFY-01)
+- [x] 57-03-PLAN.md — CHANGELOG entry (DOC-05) and final pre-release gate (VERIFY-01)
 
 ## Progress
 
@@ -282,4 +282,4 @@ Note: Phase 55 depends only on Phase 50 and can run in parallel with 51-54 if de
 | 54. Connector Migration | v0.5.5 | 3/3 | Complete   | 2026-04-07 |
 | 55. Correctness, Safety, and CI | v0.5.5 | 3/3 | Complete   | 2026-04-07 |
 | 56. Testing | v0.5.5 | 2/2 | Complete   | 2026-04-07 |
-| 57. Verification and Documentation | v0.5.5 | 2/3 | In Progress|  |
+| 57. Verification and Documentation | v0.5.5 | 3/3 | Complete   | 2026-04-07 |
