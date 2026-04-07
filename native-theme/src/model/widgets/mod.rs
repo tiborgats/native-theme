@@ -37,6 +37,9 @@ macro_rules! define_widget_pair {
             $(option {
                 $($(#[doc = $opt_doc:expr])* $opt_field:ident : $opt_type:ty),* $(,)?
             })?
+            $(soft_option {
+                $($(#[doc = $so_doc:expr])* $so_field:ident : $so_type:ty),* $(,)?
+            })?
             $(optional_nested {
                 $($(#[doc = $on_doc:expr])* $on_field:ident : [$on_opt_type:ty, $on_res_type:ty]),* $(,)?
             })?
@@ -48,6 +51,7 @@ macro_rules! define_widget_pair {
         #[serde(default)]
         pub struct $opt_name {
             $($($(#[doc = $opt_doc])* pub $opt_field: Option<$opt_type>,)*)?
+            $($($(#[doc = $so_doc])* pub $so_field: Option<$so_type>,)*)?
             $($($(#[doc = $on_doc])* pub $on_field: Option<$on_opt_type>,)*)?
         }
 
@@ -55,6 +59,7 @@ macro_rules! define_widget_pair {
         #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
         pub struct $resolved_name {
             $($($(#[doc = $opt_doc])* pub $opt_field: $opt_type,)*)?
+            $($($(#[doc = $so_doc])* pub $so_field: Option<$so_type>,)*)?
             $($($(#[doc = $on_doc])* pub $on_field: $on_res_type,)*)?
         }
 
@@ -62,12 +67,14 @@ macro_rules! define_widget_pair {
             /// All serialized field names for this widget theme, for TOML linting.
             pub const FIELD_NAMES: &[&str] = &[
                 $($(stringify!($opt_field),)*)?
+                $($(stringify!($so_field),)*)?
                 $($(stringify!($on_field),)*)?
             ];
         }
 
         impl_merge!($opt_name {
             $(option { $($opt_field),* })?
+            $(soft_option { $($so_field),* })?
             $(optional_nested { $($on_field),* })?
         });
     };
@@ -121,6 +128,16 @@ define_widget_pair! {
             hover_background: Rgba,
             /// Button text color on hover.
             hover_text_color: Rgba,
+            /// Button text color when pressed/active.
+            active_text_color: Rgba,
+            /// Button text color when disabled.
+            disabled_text_color: Rgba,
+        }
+        soft_option {
+            /// Button background when pressed/active.
+            active_background: Rgba,
+            /// Button background when disabled.
+            disabled_background: Rgba,
         }
         optional_nested {
             /// Button label font specification.
@@ -151,6 +168,16 @@ define_widget_pair! {
             min_height: f32,
             /// Opacity multiplier when disabled (0.0-1.0).
             disabled_opacity: f32,
+            /// Input text color when disabled.
+            disabled_text_color: Rgba,
+        }
+        soft_option {
+            /// Border color when the input is hovered.
+            hover_border_color: Rgba,
+            /// Border color when the input has focus.
+            focus_border_color: Rgba,
+            /// Input background when disabled.
+            disabled_background: Rgba,
         }
         optional_nested {
             /// Input text font specification.
@@ -179,6 +206,18 @@ define_widget_pair! {
             label_gap: f32,
             /// Opacity multiplier when disabled (0.0-1.0).
             disabled_opacity: f32,
+            /// Checkbox label text color when disabled.
+            disabled_text_color: Rgba,
+        }
+        soft_option {
+            /// Checkbox background on hover.
+            hover_background: Rgba,
+            /// Checkbox background when disabled.
+            disabled_background: Rgba,
+            /// Indicator background when unchecked.
+            unchecked_background: Rgba,
+            /// Border color when unchecked.
+            unchecked_border_color: Rgba,
         }
         optional_nested {
             /// Checkbox label font specification.
@@ -262,6 +301,10 @@ define_widget_pair! {
             /// Whether the scrollbar overlays content instead of taking layout space.
             overlay_mode: bool,
         }
+        soft_option {
+            /// Thumb color when pressed/dragging.
+            thumb_active_color: Rgba,
+        }
     }
 }
 
@@ -285,6 +328,16 @@ define_widget_pair! {
             tick_mark_length: f32,
             /// Opacity multiplier when disabled (0.0-1.0).
             disabled_opacity: f32,
+        }
+        soft_option {
+            /// Thumb color on hover.
+            thumb_hover_color: Rgba,
+            /// Filled track color when disabled.
+            disabled_fill_color: Rgba,
+            /// Unfilled track color when disabled.
+            disabled_track_color: Rgba,
+            /// Thumb color when disabled.
+            disabled_thumb_color: Rgba,
         }
     }
 }

@@ -164,6 +164,10 @@ primary_text_color           = "color"
 disabled_opacity             = "f32"
 hover_background             = "color"
 hover_text_color             = "color"
+active_background            = "color"
+active_text_color            = "color"
+disabled_background          = "color"
+disabled_text_color          = "color"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -179,6 +183,10 @@ selection_text_color         = "color"
 font                         = "font"
 min_height                   = "f32"
 disabled_opacity             = "f32"
+hover_border_color           = "color"
+focus_border_color           = "color"
+disabled_background          = "color"
+disabled_text_color          = "color"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -193,6 +201,11 @@ indicator_width              = "f32"
 label_gap                    = "f32"
 checked_background           = "color"
 disabled_opacity             = "f32"
+hover_background             = "color"
+disabled_background          = "color"
+disabled_text_color          = "color"
+unchecked_background         = "color"
+unchecked_border_color       = "color"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -233,6 +246,7 @@ groove_width                 = "f32"
 min_thumb_length             = "f32"
 thumb_width                  = "f32"
 overlay_mode                 = "bool"
+thumb_active_color           = "color"
 
 # ═══════════════════════════════════════════════════════════════════════════
 # §2.9 Slider
@@ -246,6 +260,10 @@ track_height                 = "f32"
 thumb_diameter               = "f32"
 tick_mark_length             = "f32"
 disabled_opacity             = "f32"
+thumb_hover_color            = "color"
+disabled_fill_color          = "color"
+disabled_track_color         = "color"
+disabled_thumb_color         = "color"
 
 # ═══════════════════════════════════════════════════════════════════════════
 # §2.10 Progress Bar

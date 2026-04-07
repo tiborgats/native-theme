@@ -16,13 +16,14 @@ pub struct ReadmeDoctests;
 
 /// Generates `merge()` and `is_empty()` methods for theme structs.
 ///
-/// Three field categories:
+/// Four field categories:
 /// - `option { field1, field2, ... }` -- `Option<T>` leaf fields
+/// - `soft_option { field1, field2, ... }` -- `Option<T>` leaf fields (same merge/is_empty as option)
 /// - `nested { field1, field2, ... }` -- nested struct fields with their own `merge()`
 /// - `optional_nested { field1, field2, ... }` -- `Option<T>` where T has its own `merge()`
 ///
-/// For `option` fields, `Some` values in the overlay replace the corresponding
-/// fields in self; `None` fields are left unchanged.
+/// For `option` and `soft_option` fields, `Some` values in the overlay replace the
+/// corresponding fields in self; `None` fields are left unchanged.
 /// For `nested` fields, merge is called recursively.
 /// For `optional_nested` fields: if both base and overlay are `Some`, the inner values
 /// are merged recursively. If base is `None` and overlay is `Some`, overlay is cloned.
@@ -39,6 +40,7 @@ macro_rules! impl_merge {
     (
         $struct_name:ident {
             $(option { $($opt_field:ident),* $(,)? })?
+            $(soft_option { $($so_field:ident),* $(,)? })?
             $(nested { $($nest_field:ident),* $(,)? })?
             $(optional_nested { $($on_field:ident),* $(,)? })?
         }
@@ -51,6 +53,11 @@ macro_rules! impl_merge {
                 $($(
                     if overlay.$opt_field.is_some() {
                         self.$opt_field = overlay.$opt_field.clone();
+                    }
+                )*)?
+                $($(
+                    if overlay.$so_field.is_some() {
+                        self.$so_field = overlay.$so_field.clone();
                     }
                 )*)?
                 $($(
@@ -69,6 +76,7 @@ macro_rules! impl_merge {
             pub fn is_empty(&self) -> bool {
                 true
                 $($(&& self.$opt_field.is_none())*)?
+                $($(&& self.$so_field.is_none())*)?
                 $($(&& self.$nest_field.is_empty())*)?
                 $($(&& self.$on_field.is_none())*)?
             }

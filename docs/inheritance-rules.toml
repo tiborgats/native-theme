@@ -130,6 +130,8 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 "button.primary_text_color"                  = "defaults.accent_text_color"
 "button.disabled_opacity"                    = "defaults.disabled_opacity"
 "button.hover_text_color"                    = "button.font.color"
+"button.disabled_text_color"                 = "defaults.disabled_text_color"
+"button.active_text_color"                   = "button.font.color"            # widget-to-widget
 
 # input (§2.4) — selection uses text_selection tokens, not content selection
 "input.background_color"                     = "defaults.background_color"    # see wrong_safety_nets
@@ -137,10 +139,12 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 "input.selection_background"                 = "defaults.text_selection_background"
 "input.selection_text_color"                 = "defaults.text_selection_color"
 "input.disabled_opacity"                     = "defaults.disabled_opacity"
+"input.disabled_text_color"                  = "defaults.disabled_text_color"
 
 # checkbox (§2.5)
 "checkbox.checked_background"                = "defaults.accent_color"
 "checkbox.disabled_opacity"                  = "defaults.disabled_opacity"
+"checkbox.disabled_text_color"               = "defaults.disabled_text_color"
 
 # menu (§2.6)
 "menu.background_color"                      = "defaults.background_color"    # see wrong_safety_nets
@@ -291,6 +295,21 @@ fields = [
     "dialog.button_order",             # enum: macOS/GNOME trailing, Win/KDE leading
     "icon_set",                        # OS reader detects or TOML specifies
     "icon_theme",                      # OS reader detects or TOML specifies
+    # batch 1 interactive state colors (Phase 52, plan 01)
+    "button.active_background",        # platform-specific pressed state
+    "button.disabled_background",      # platform-specific disabled bg
+    "input.hover_border_color",        # platform-specific hover border
+    "input.focus_border_color",        # platform-specific focus border
+    "input.disabled_background",       # platform-specific disabled bg
+    "checkbox.hover_background",       # platform-specific hover bg
+    "checkbox.disabled_background",    # platform-specific disabled bg
+    "checkbox.unchecked_background",   # platform-specific unchecked indicator bg
+    "checkbox.unchecked_border_color", # platform-specific unchecked border
+    "scrollbar.thumb_active_color",    # platform-specific pressed thumb
+    "slider.thumb_hover_color",        # platform-specific hover thumb
+    "slider.disabled_fill_color",      # platform-specific disabled fill
+    "slider.disabled_track_color",     # platform-specific disabled track
+    "slider.disabled_thumb_color",     # platform-specific disabled thumb
 ]
 
 # All sizing fields (min_width, min_height, border.padding_*, height, width,
