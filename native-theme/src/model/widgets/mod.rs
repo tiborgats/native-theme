@@ -382,6 +382,12 @@ define_widget_pair! {
             min_width: f32,
             /// Minimum tab height in logical pixels.
             min_height: f32,
+            /// Tab text color on hover.
+            hover_text_color: Rgba,
+        }
+        soft_option {
+            /// Tab background on hover.
+            hover_background: Rgba,
         }
         optional_nested {
             /// Tab font specification.
@@ -480,6 +486,10 @@ define_widget_pair! {
             row_height: f32,
             /// Hovered row background color.
             hover_background: Rgba,
+            /// Hovered row text color.
+            hover_text_color: Rgba,
+            /// Disabled row text color.
+            disabled_text_color: Rgba,
         }
         optional_nested {
             /// List item font specification.
@@ -520,6 +530,8 @@ define_widget_pair! {
             divider_width: f32,
             /// Divider color.
             divider_color: Rgba,
+            /// Divider color on hover.
+            hover_color: Rgba,
         }
     }
 }
@@ -560,6 +572,18 @@ define_widget_pair! {
             track_radius: f32,
             /// Opacity multiplier when disabled (0.0-1.0).
             disabled_opacity: f32,
+        }
+        soft_option {
+            /// Track hover color when checked (on).
+            hover_checked_background: Rgba,
+            /// Track hover color when unchecked (off).
+            hover_unchecked_background: Rgba,
+            /// Track color when disabled and checked.
+            disabled_checked_background: Rgba,
+            /// Track color when disabled and unchecked.
+            disabled_unchecked_background: Rgba,
+            /// Thumb color when disabled.
+            disabled_thumb_color: Rgba,
         }
     }
 }
@@ -634,6 +658,14 @@ define_widget_pair! {
             arrow_area_width: f32,
             /// Opacity multiplier when disabled (0.0-1.0).
             disabled_opacity: f32,
+            /// ComboBox text color when disabled.
+            disabled_text_color: Rgba,
+        }
+        soft_option {
+            /// ComboBox background on hover.
+            hover_background: Rgba,
+            /// ComboBox background when disabled.
+            disabled_background: Rgba,
         }
         optional_nested {
             /// ComboBox font specification.
@@ -662,6 +694,10 @@ define_widget_pair! {
             separator_width: f32,
             /// Opacity multiplier when disabled (0.0-1.0).
             disabled_opacity: f32,
+        }
+        soft_option {
+            /// Segment background on hover.
+            hover_background: Rgba,
         }
         optional_nested {
             /// Segmented control font specification.
@@ -699,6 +735,12 @@ define_widget_pair! {
             /// Disclosure arrow size in logical pixels.
             arrow_icon_size: f32,
         }
+        soft_option {
+            /// Expander header background on hover.
+            hover_background: Rgba,
+            /// Disclosure arrow/chevron color.
+            arrow_color: Rgba,
+        }
         optional_nested {
             /// Expander font specification.
             font: [FontSpec, ResolvedFontSpec],
@@ -722,6 +764,12 @@ define_widget_pair! {
             background_color: Rgba,
             /// Link background on hover.
             hover_background: Rgba,
+            /// Link text color on hover.
+            hover_text_color: Rgba,
+            /// Link text color when pressed/active.
+            active_text_color: Rgba,
+            /// Link text color when disabled.
+            disabled_text_color: Rgba,
         }
         optional_nested {
             /// Link font specification.

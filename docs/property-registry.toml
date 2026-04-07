@@ -287,6 +287,8 @@ active_text_color            = "color"
 bar_background               = "color"
 min_width                    = "f32"
 min_height                   = "f32"
+hover_background             = "color"
+hover_text_color             = "color"
 font                         = "font"
 border                       = "border"
 
@@ -338,6 +340,8 @@ header_background            = "color"
 grid_color                   = "color"
 row_height                   = "f32"
 hover_background             = "color"
+hover_text_color             = "color"
+disabled_text_color          = "color"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -356,6 +360,7 @@ border                       = "border"
 [splitter]
 divider_width                = "f32"
 divider_color                = "color"
+hover_color                  = "color"
 
 # ═══════════════════════════════════════════════════════════════════════════
 # §2.18 Separator
@@ -397,6 +402,11 @@ checked_background           = "color"
 unchecked_background         = "color"
 thumb_background             = "color"
 disabled_opacity             = "f32"
+hover_checked_background     = "color"
+hover_unchecked_background   = "color"
+disabled_checked_background  = "color"
+disabled_unchecked_background = "color"
+disabled_thumb_color         = "color"
 
 # ═══════════════════════════════════════════════════════════════════════════
 # §2.22 Dialog
@@ -437,6 +447,9 @@ min_width                    = "f32"
 arrow_icon_size              = "f32"
 arrow_area_width             = "f32"
 disabled_opacity             = "f32"
+hover_background             = "color"
+disabled_background          = "color"
+disabled_text_color          = "color"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -451,6 +464,7 @@ active_text_color            = "color"
 segment_height               = "f32"
 separator_width              = "f32"
 disabled_opacity             = "f32"
+hover_background             = "color"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -469,6 +483,8 @@ border                       = "border"
 font                         = "font"
 header_height                = "f32"
 arrow_icon_size              = "f32"
+hover_background             = "color"
+arrow_color                  = "color"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -481,3 +497,6 @@ visited_text_color           = "color"
 underline_enabled            = "bool"
 background_color             = "color"
 hover_background             = "color"
+hover_text_color             = "color"
+active_text_color            = "color"
+disabled_text_color          = "color"

@@ -223,9 +223,27 @@ sub_field_inheritance = true   # None sub-fields inherit independently
 
 # expander (§2.27) — no additional uniform rules beyond border/font
 
+# list state colors (§2.15)
+"list.hover_text_color"                      = "list.item_font.color"         # widget-to-widget
+"list.disabled_text_color"                   = "defaults.disabled_text_color"
+
+# splitter state colors (§2.17)
+"splitter.hover_color"                       = "splitter.divider_color"       # widget-to-widget
+
+# tab state colors (§2.11)
+"tab.hover_text_color"                       = "tab.font.color"              # widget-to-widget
+
+# combo_box state colors (§2.24)
+"combo_box.disabled_text_color"              = "defaults.disabled_text_color"
+
 # link (§2.28) — font.color overrides font_inheritance default
 "link.font.color"                            = "defaults.link_color"
 "link.visited_text_color"                    = "defaults.link_color"
+
+# link state colors (§2.28)
+"link.hover_text_color"                      = "link.font.color"             # widget-to-widget
+"link.active_text_color"                     = "link.font.color"             # widget-to-widget
+"link.disabled_text_color"                   = "defaults.disabled_text_color"
 
 # ─── Per-platform inheritance (Phase 2 safety nets) ───────────────────────
 #
@@ -310,6 +328,18 @@ fields = [
     "slider.disabled_fill_color",      # platform-specific disabled fill
     "slider.disabled_track_color",     # platform-specific disabled track
     "slider.disabled_thumb_color",     # platform-specific disabled thumb
+    # batch 2 interactive state colors (Phase 52, plan 02)
+    "tab.hover_background",            # platform-specific hover bg
+    "switch.hover_checked_background", # platform-specific hover checked track
+    "switch.hover_unchecked_background", # platform-specific hover unchecked track
+    "switch.disabled_checked_background", # platform-specific disabled checked track
+    "switch.disabled_unchecked_background", # platform-specific disabled unchecked track
+    "switch.disabled_thumb_color",     # platform-specific disabled thumb
+    "combo_box.hover_background",      # platform-specific hover bg
+    "combo_box.disabled_background",   # platform-specific disabled bg
+    "segmented_control.hover_background", # platform-specific hover bg
+    "expander.hover_background",       # platform-specific hover bg
+    "expander.arrow_color",            # platform-specific arrow/chevron color
 ]
 
 # All sizing fields (min_width, min_height, border.padding_*, height, width,
