@@ -8,30 +8,46 @@
 pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeVariant) {
     // Button
     variant.button.min_width = Some(80.0); // Button_MinWidth
-    variant.button.padding_horizontal = Some(6.0); // Button_MarginWidth
-    variant.button.padding_vertical = Some(5.0); // Breeze measured frame+margin
-    variant.button.icon_spacing = Some(4.0); // Button_ItemSpacing
+    variant
+        .button
+        .border
+        .get_or_insert_default()
+        .padding_horizontal = Some(6.0); // Button_MarginWidth
+    variant
+        .button
+        .border
+        .get_or_insert_default()
+        .padding_vertical = Some(5.0); // Breeze measured frame+margin
+    variant.button.icon_text_gap = Some(4.0); // Button_ItemSpacing
 
     // Checkbox
-    variant.checkbox.indicator_size = Some(20.0); // CheckBox_Size
-    variant.checkbox.spacing = Some(4.0); // CheckBox_ItemSpacing
+    variant.checkbox.indicator_width = Some(20.0); // CheckBox_Size
+    variant.checkbox.label_gap = Some(4.0); // CheckBox_ItemSpacing
 
     // Input
-    variant.input.padding_horizontal = Some(6.0); // LineEdit_FrameWidth
-    variant.input.padding_vertical = Some(3.0); // Breeze measured frame
+    variant
+        .input
+        .border
+        .get_or_insert_default()
+        .padding_horizontal = Some(6.0); // LineEdit_FrameWidth
+    variant
+        .input
+        .border
+        .get_or_insert_default()
+        .padding_vertical = Some(3.0); // Breeze measured frame
 
     // Scrollbar
-    variant.scrollbar.width = Some(21.0); // ScrollBar_Extend
-    variant.scrollbar.min_thumb_height = Some(20.0); // ScrollBar_MinSliderHeight
-    variant.scrollbar.slider_width = Some(8.0); // ScrollBar_SliderWidth
+    variant.scrollbar.groove_width = Some(21.0); // ScrollBar_Extend
+    variant.scrollbar.min_thumb_length = Some(20.0); // ScrollBar_MinSliderHeight
+    variant.scrollbar.thumb_width = Some(8.0); // ScrollBar_SliderWidth
 
     // Slider
     variant.slider.track_height = Some(6.0); // Slider_GrooveThickness
-    variant.slider.thumb_size = Some(20.0); // Slider_ControlThickness
-    variant.slider.tick_length = Some(8.0); // Slider_TickLength
+    variant.slider.thumb_diameter = Some(20.0); // Slider_ControlThickness
+    variant.slider.tick_mark_length = Some(8.0); // Slider_TickLength
 
     // Progress bar
-    variant.progress_bar.height = Some(6.0); // ProgressBar_Thickness
+    variant.progress_bar.track_height = Some(6.0); // ProgressBar_Thickness
     // min_width: KDE has no native minimum (platform-facts §2.10).
     // ProgressBar_BusyIndicatorSize (14) is the busy-indicator animation
     // segment width, not a widget minimum. Preset provides the value.
@@ -39,28 +55,47 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeVariant) {
     // Tab
     variant.tab.min_width = Some(80.0); // TabBar_TabMinWidth
     variant.tab.min_height = Some(30.0); // TabBar_TabMinHeight
-    variant.tab.padding_horizontal = Some(8.0); // TabBar_TabMarginWidth
-    variant.tab.padding_vertical = Some(4.0); // TabBar_TabMarginHeight
+    variant
+        .tab
+        .border
+        .get_or_insert_default()
+        .padding_horizontal = Some(8.0); // TabBar_TabMarginWidth
+    variant.tab.border.get_or_insert_default().padding_vertical = Some(4.0); // TabBar_TabMarginHeight
 
     // Menu
-    variant.menu.padding_horizontal = Some(4.0); // MenuItem_MarginWidth
-    variant.menu.padding_vertical = Some(4.0); // MenuItem_MarginHeight
-    variant.menu.icon_spacing = Some(8.0); // MenuItem_TextLeftMargin
+    variant
+        .menu
+        .border
+        .get_or_insert_default()
+        .padding_horizontal = Some(4.0); // MenuItem_MarginWidth
+    variant.menu.border.get_or_insert_default().padding_vertical = Some(4.0); // MenuItem_MarginHeight
+    variant.menu.icon_text_gap = Some(8.0); // MenuItem_TextLeftMargin
 
     // Tooltip
-    variant.tooltip.padding_horizontal = Some(3.0); // ToolTip_FrameWidth
-    variant.tooltip.padding_vertical = Some(3.0); // ToolTip_FrameWidth
+    variant
+        .tooltip
+        .border
+        .get_or_insert_default()
+        .padding_horizontal = Some(3.0); // ToolTip_FrameWidth
+    variant
+        .tooltip
+        .border
+        .get_or_insert_default()
+        .padding_vertical = Some(3.0); // ToolTip_FrameWidth
 
     // List
-    variant.list.padding_horizontal = Some(2.0); // ItemView_ItemMarginLeft
-    variant.list.padding_vertical = Some(1.0); // ItemView_ItemMarginTop
+    variant
+        .list
+        .border
+        .get_or_insert_default()
+        .padding_horizontal = Some(2.0); // ItemView_ItemMarginLeft
+    variant.list.border.get_or_insert_default().padding_vertical = Some(1.0); // ItemView_ItemMarginTop
 
     // Toolbar
-    variant.toolbar.item_spacing = Some(0.0); // ToolBar_ItemSpacing
-    variant.toolbar.padding = Some(6.0); // ToolBar_ItemMargin
+    variant.toolbar.item_gap = Some(0.0); // ToolBar_ItemSpacing
 
     // Splitter
-    variant.splitter.width = Some(1.0); // Splitter_SplitterWidth
+    variant.splitter.divider_width = Some(1.0); // Splitter_SplitterWidth
 }
 
 #[cfg(test)]
@@ -76,31 +111,39 @@ mod tests {
     }
 
     #[test]
-    fn breeze_metrics_populates_checkbox_indicator_size() {
+    fn breeze_metrics_populates_checkbox_indicator_width() {
         let mut v = ThemeVariant::default();
         super::populate_widget_sizing(&mut v);
-        assert_eq!(v.checkbox.indicator_size, Some(20.0), "CheckBox_Size");
+        assert_eq!(v.checkbox.indicator_width, Some(20.0), "CheckBox_Size");
     }
 
     #[test]
-    fn breeze_metrics_populates_scrollbar_width() {
+    fn breeze_metrics_populates_scrollbar_groove_width() {
         let mut v = ThemeVariant::default();
         super::populate_widget_sizing(&mut v);
-        assert_eq!(v.scrollbar.width, Some(21.0), "ScrollBar_Extend");
+        assert_eq!(v.scrollbar.groove_width, Some(21.0), "ScrollBar_Extend");
     }
 
     #[test]
     fn breeze_metrics_populates_slider_thumb() {
         let mut v = ThemeVariant::default();
         super::populate_widget_sizing(&mut v);
-        assert_eq!(v.slider.thumb_size, Some(20.0), "Slider_ControlThickness");
+        assert_eq!(
+            v.slider.thumb_diameter,
+            Some(20.0),
+            "Slider_ControlThickness"
+        );
     }
 
     #[test]
     fn breeze_metrics_populates_splitter() {
         let mut v = ThemeVariant::default();
         super::populate_widget_sizing(&mut v);
-        assert_eq!(v.splitter.width, Some(1.0), "Splitter_SplitterWidth");
+        assert_eq!(
+            v.splitter.divider_width,
+            Some(1.0),
+            "Splitter_SplitterWidth"
+        );
     }
 
     #[test]

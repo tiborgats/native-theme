@@ -24,8 +24,8 @@ Load a preset and access theme fields:
 ```rust
 let theme = native_theme::ThemeSpec::preset("dracula").unwrap();
 let dark = theme.dark.as_ref().unwrap();
-let accent = dark.defaults.accent.unwrap();   // Option<Rgba>
-let bg = dark.defaults.background.unwrap();   // Option<Rgba>
+let accent = dark.defaults.accent_color.unwrap();   // Option<Rgba>
+let bg = dark.defaults.background_color.unwrap();   // Option<Rgba>
 // Convert to f32 for toolkits that use normalized colors
 let [r, g, b, a] = accent.to_f32_array();
 ```

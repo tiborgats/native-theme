@@ -15,8 +15,12 @@ pub struct BorderSpec {
     pub color: Option<Rgba>,
     /// Corner radius in logical pixels.
     pub corner_radius: Option<f32>,
+    /// Large corner radius in logical pixels (defaults only).
+    pub corner_radius_lg: Option<f32>,
     /// Border stroke width in logical pixels.
     pub line_width: Option<f32>,
+    /// Border alpha multiplier 0.0–1.0 (defaults only).
+    pub opacity: Option<f32>,
     /// Whether the bordered element has a drop shadow.
     pub shadow_enabled: Option<bool>,
     /// Horizontal padding inside the border in logical pixels.
@@ -30,7 +34,9 @@ impl BorderSpec {
     pub const FIELD_NAMES: &[&str] = &[
         "color",
         "corner_radius",
+        "corner_radius_lg",
         "line_width",
+        "opacity",
         "shadow_enabled",
         "padding_horizontal",
         "padding_vertical",
@@ -38,7 +44,7 @@ impl BorderSpec {
 }
 
 impl_merge!(BorderSpec {
-    option { color, corner_radius, line_width, shadow_enabled, padding_horizontal, padding_vertical }
+    option { color, corner_radius, corner_radius_lg, line_width, opacity, shadow_enabled, padding_horizontal, padding_vertical }
 });
 
 /// A resolved (non-optional) border specification produced after theme resolution.
@@ -51,8 +57,12 @@ pub struct ResolvedBorderSpec {
     pub color: Rgba,
     /// Corner radius in logical pixels.
     pub corner_radius: f32,
+    /// Large corner radius in logical pixels (defaults only).
+    pub corner_radius_lg: f32,
     /// Border stroke width in logical pixels.
     pub line_width: f32,
+    /// Border alpha multiplier 0.0–1.0 (defaults only).
+    pub opacity: f32,
     /// Whether the bordered element has a drop shadow.
     pub shadow_enabled: bool,
     /// Horizontal padding inside the border in logical pixels.
@@ -85,7 +95,9 @@ mod tests {
         let bs = BorderSpec {
             color: Some(Rgba::rgb(200, 200, 200)),
             corner_radius: Some(4.0),
+            corner_radius_lg: Some(8.0),
             line_width: Some(1.0),
+            opacity: Some(0.15),
             shadow_enabled: Some(true),
             padding_horizontal: Some(8.0),
             padding_vertical: Some(6.0),
@@ -100,7 +112,9 @@ mod tests {
         let bs = BorderSpec {
             color: Some(Rgba::rgb(100, 100, 100)),
             corner_radius: Some(8.0),
+            corner_radius_lg: None,
             line_width: None,
+            opacity: None,
             shadow_enabled: None,
             padding_horizontal: None,
             padding_vertical: None,
@@ -108,7 +122,9 @@ mod tests {
         let toml_str = toml::to_string(&bs).unwrap();
         let deserialized: BorderSpec = toml::from_str(&toml_str).unwrap();
         assert_eq!(deserialized, bs);
+        assert!(deserialized.corner_radius_lg.is_none());
         assert!(deserialized.line_width.is_none());
+        assert!(deserialized.opacity.is_none());
         assert!(deserialized.shadow_enabled.is_none());
         assert!(deserialized.padding_horizontal.is_none());
         assert!(deserialized.padding_vertical.is_none());
@@ -137,7 +153,9 @@ mod tests {
         assert_eq!(rbs.padding_horizontal, 0.0);
         assert_eq!(rbs.padding_vertical, 0.0);
         assert_eq!(rbs.corner_radius, 0.0);
+        assert_eq!(rbs.corner_radius_lg, 0.0);
         assert_eq!(rbs.line_width, 0.0);
+        assert_eq!(rbs.opacity, 0.0);
         assert!(!rbs.shadow_enabled);
     }
 }

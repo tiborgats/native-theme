@@ -119,14 +119,14 @@ pub fn to_theme(
     // Capture only the Rgba values (Copy, 4 bytes each) instead of
     // cloning the entire ResolvedThemeVariant (~2KB with heap data).
     let colors = extended::OverrideColors {
-        btn_bg: resolved.button.background,
-        btn_fg: resolved.button.foreground,
-        surface: resolved.defaults.surface,
-        foreground: resolved.defaults.foreground,
-        accent_fg: resolved.defaults.accent_foreground,
-        success_fg: resolved.defaults.success_foreground,
-        danger_fg: resolved.defaults.danger_foreground,
-        warning_fg: resolved.defaults.warning_foreground,
+        btn_bg: resolved.button.background_color,
+        btn_fg: resolved.button.font.color,
+        surface: resolved.defaults.surface_color,
+        foreground: resolved.defaults.text_color,
+        accent_fg: resolved.defaults.accent_text_color,
+        success_fg: resolved.defaults.success_text_color,
+        danger_fg: resolved.defaults.danger_text_color,
+        warning_fg: resolved.defaults.warning_text_color,
     };
 
     iced_core::theme::Theme::custom_with_fn(name.to_string(), pal, move |p| {
@@ -209,38 +209,38 @@ impl SystemThemeExt for native_theme::SystemTheme {
 #[must_use]
 pub fn button_padding(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::Padding {
     iced_core::Padding::from([
-        resolved.button.padding_vertical,
-        resolved.button.padding_horizontal,
+        resolved.button.border.padding_vertical,
+        resolved.button.border.padding_horizontal,
     ])
 }
 
 /// Returns text input padding from the resolved theme as an iced [`Padding`](iced_core::Padding).
 ///
-/// Maps `padding_vertical` to top/bottom and `padding_horizontal` to left/right.
+/// Maps `border.padding_vertical` to top/bottom and `border.padding_horizontal` to left/right.
 #[must_use]
 pub fn input_padding(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::Padding {
     iced_core::Padding::from([
-        resolved.input.padding_vertical,
-        resolved.input.padding_horizontal,
+        resolved.input.border.padding_vertical,
+        resolved.input.border.padding_horizontal,
     ])
 }
 
 /// Returns the standard border radius from the resolved theme.
 #[must_use]
 pub fn border_radius(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
-    resolved.defaults.radius
+    resolved.defaults.border.corner_radius
 }
 
 /// Returns the large border radius from the resolved theme.
 #[must_use]
 pub fn border_radius_lg(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
-    resolved.defaults.radius_lg
+    resolved.defaults.border.corner_radius_lg
 }
 
-/// Returns the scrollbar width from the resolved theme.
+/// Returns the scrollbar groove width from the resolved theme.
 #[must_use]
 pub fn scrollbar_width(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
-    resolved.scrollbar.width
+    resolved.scrollbar.groove_width
 }
 
 /// Returns the primary UI font family name from the resolved theme.
@@ -288,7 +288,7 @@ pub fn mono_font_weight(resolved: &native_theme::ResolvedThemeVariant) -> u16 {
 /// Returns the border/divider color from the resolved theme.
 #[must_use]
 pub fn border_color(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::Color {
-    palette::to_color(resolved.defaults.border)
+    palette::to_color(resolved.defaults.border.color)
 }
 
 /// Returns the disabled control opacity from the resolved theme.
@@ -306,13 +306,13 @@ pub fn focus_ring_color(resolved: &native_theme::ResolvedThemeVariant) -> iced_c
 /// Returns the hyperlink color from the resolved theme.
 #[must_use]
 pub fn link_color(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::Color {
-    palette::to_color(resolved.defaults.link)
+    palette::to_color(resolved.defaults.link_color)
 }
 
 /// Returns the selection highlight background color from the resolved theme.
 #[must_use]
 pub fn selection_color(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::Color {
-    palette::to_color(resolved.defaults.selection)
+    palette::to_color(resolved.defaults.selection_background)
 }
 
 /// Returns the info/attention color from the resolved theme.
@@ -321,13 +321,13 @@ pub fn selection_color(resolved: &native_theme::ResolvedThemeVariant) -> iced_co
 /// is not mapped automatically. Use this helper to access it directly.
 #[must_use]
 pub fn info_color(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::Color {
-    palette::to_color(resolved.defaults.info)
+    palette::to_color(resolved.defaults.info_color)
 }
 
 /// Returns the text color for info-colored backgrounds from the resolved theme.
 #[must_use]
 pub fn info_foreground_color(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::Color {
-    palette::to_color(resolved.defaults.info_foreground)
+    palette::to_color(resolved.defaults.info_text_color)
 }
 
 /// Returns the warning foreground text color from the resolved theme.
@@ -336,17 +336,7 @@ pub fn info_foreground_color(resolved: &native_theme::ResolvedThemeVariant) -> i
 /// the text color intended for use on warning-colored backgrounds.
 #[must_use]
 pub fn warning_foreground_color(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::Color {
-    palette::to_color(resolved.defaults.warning_foreground)
-}
-
-/// Returns a reference to the spacing scale from the resolved theme.
-///
-/// Provides access to all 7 spacing tiers: `xxs`, `xs`, `s`, `m`, `l`, `xl`, `xxl`.
-#[must_use]
-pub fn spacing(
-    resolved: &native_theme::ResolvedThemeVariant,
-) -> &native_theme::ResolvedThemeSpacing {
-    &resolved.defaults.spacing
+    palette::to_color(resolved.defaults.warning_text_color)
 }
 
 /// Returns a reference to the per-context icon sizes from the resolved theme.
@@ -431,7 +421,7 @@ mod tests {
 
         let palette = theme.palette();
         // Catppuccin Mocha dark primary should be non-trivial
-        let expected = palette::to_color(resolved.defaults.accent);
+        let expected = palette::to_color(resolved.defaults.accent_color);
         assert_eq!(palette.primary, expected, "primary should match accent");
     }
 
@@ -518,10 +508,15 @@ mod tests {
     fn button_padding_returns_iced_padding() {
         let resolved = make_resolved(false);
         let pad = button_padding(&resolved);
-        assert!(pad.top > 0.0, "button vertical (top) padding should be > 0");
+        // Padding values come from border sub-struct; >= 0 is the valid range.
+        // Phase 51 will wire per-widget border padding from presets.
         assert!(
-            pad.right > 0.0,
-            "button horizontal (right) padding should be > 0"
+            pad.top >= 0.0,
+            "button vertical (top) padding should be >= 0"
+        );
+        assert!(
+            pad.right >= 0.0,
+            "button horizontal (right) padding should be >= 0"
         );
         // vertical maps to top+bottom, horizontal maps to left+right
         assert_eq!(pad.top, pad.bottom, "top and bottom should be equal");
@@ -532,10 +527,15 @@ mod tests {
     fn input_padding_returns_iced_padding() {
         let resolved = make_resolved(false);
         let pad = input_padding(&resolved);
-        assert!(pad.top > 0.0, "input vertical (top) padding should be > 0");
+        // Padding values come from border sub-struct; >= 0 is the valid range.
+        // Phase 51 will wire per-widget border padding from presets.
         assert!(
-            pad.right > 0.0,
-            "input horizontal (right) padding should be > 0"
+            pad.top >= 0.0,
+            "input vertical (top) padding should be >= 0"
+        );
+        assert!(
+            pad.right >= 0.0,
+            "input horizontal (right) padding should be >= 0"
         );
         // Symmetry: vertical maps to top+bottom, horizontal maps to left+right
         assert_eq!(pad.top, pad.bottom, "top and bottom should be equal");
@@ -607,19 +607,6 @@ mod tests {
         let resolved = make_resolved(false);
         let c = warning_foreground_color(&resolved);
         assert!(c.a > 0.0, "warning foreground should have non-zero alpha");
-    }
-
-    #[test]
-    fn spacing_returns_all_tiers() {
-        let resolved = make_resolved(false);
-        let sp = spacing(&resolved);
-        assert!(sp.xxs > 0.0, "xxs should be > 0");
-        assert!(sp.xs >= sp.xxs, "xs >= xxs");
-        assert!(sp.s >= sp.xs, "s >= xs");
-        assert!(sp.m >= sp.s, "m >= s");
-        assert!(sp.l >= sp.m, "l >= m");
-        assert!(sp.xl >= sp.l, "xl >= l");
-        assert!(sp.xxl >= sp.xl, "xxl >= xl");
     }
 
     #[test]

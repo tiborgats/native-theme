@@ -107,7 +107,7 @@ use std::rc::Rc;
 /// The `is_dark` parameter is required rather than auto-derived because
 /// several presets (e.g. solarized, gruvbox) have borderline lightness
 /// values where auto-detection would disagree with the user's intent.
-/// To auto-derive: `let is_dark = resolved.defaults.background` lightness < 0.5
+/// To auto-derive: `let is_dark = resolved.defaults.background_color` lightness < 0.5
 /// via [`is_dark_resolved()`].
 ///
 /// Note: `is_dark` is an explicit parameter here, unlike the iced connector
@@ -132,9 +132,9 @@ pub fn to_theme(resolved: &ResolvedThemeVariant, name: &str, is_dark: bool) -> T
     theme.mono_font_family = SharedString::from(d.mono_font.family.clone());
     theme.mono_font_size = px(d.mono_font.size);
     // Issue 14: clamp radius to non-negative
-    theme.radius = px(d.radius.max(0.0));
-    theme.radius_lg = px(d.radius_lg.max(0.0));
-    theme.shadow = d.shadow_enabled;
+    theme.radius = px(d.border.corner_radius.max(0.0));
+    theme.radius_lg = px(d.border.corner_radius_lg.max(0.0));
+    theme.shadow = d.border.shadow_enabled;
 
     // Issue 43: set scrollbar_show from resolved overlay_mode
     theme.scrollbar_show = if resolved.scrollbar.overlay_mode {
@@ -272,7 +272,7 @@ impl SystemThemeExt for SystemTheme {
 /// auto-detected result may differ from the user's intent.
 #[must_use]
 pub fn is_dark_resolved(resolved: &ResolvedThemeVariant) -> bool {
-    colors::rgba_to_hsla(resolved.defaults.background).l < 0.5
+    colors::rgba_to_hsla(resolved.defaults.background_color).l < 0.5
 }
 
 // --- Issue 32: Accessibility helpers ---
@@ -308,7 +308,7 @@ pub fn is_reduced_transparency(resolved: &ResolvedThemeVariant) -> bool {
 /// Frame/border width from the resolved theme defaults.
 #[must_use]
 pub fn frame_width(resolved: &ResolvedThemeVariant) -> f32 {
-    resolved.defaults.frame_width
+    resolved.defaults.border.line_width
 }
 
 /// Disabled control opacity from the resolved theme defaults.
@@ -320,13 +320,13 @@ pub fn disabled_opacity(resolved: &ResolvedThemeVariant) -> f32 {
 /// Border opacity multiplier from the resolved theme defaults.
 #[must_use]
 pub fn border_opacity(resolved: &ResolvedThemeVariant) -> f32 {
-    resolved.defaults.border_opacity
+    resolved.defaults.border.opacity
 }
 
 /// Whether drop shadows are enabled.
 #[must_use]
 pub fn shadow_enabled(resolved: &ResolvedThemeVariant) -> bool {
-    resolved.defaults.shadow_enabled
+    resolved.defaults.border.shadow_enabled
 }
 
 /// Text scaling factor (1.0 = no scaling).
@@ -336,14 +336,6 @@ pub fn text_scaling_factor(resolved: &ResolvedThemeVariant) -> f32 {
 }
 
 // --- Issue 17: Spacing / icon-size / text-scale accessors ---
-
-/// Access the spacing scale from the resolved theme.
-///
-/// Returns the 7-step spacing scale (xxs, xs, s, m, l, xl, xxl) in logical pixels.
-#[must_use]
-pub fn spacing(resolved: &ResolvedThemeVariant) -> &native_theme::ResolvedThemeSpacing {
-    &resolved.defaults.spacing
-}
 
 /// Access the per-context icon sizes from the resolved theme.
 ///
@@ -404,39 +396,41 @@ pub fn dialog_button_order(resolved: &ResolvedThemeVariant) -> DialogButtonOrder
 // --- Issue 37: Padding/geometry helpers ---
 
 /// Dialog content padding in logical pixels.
+///
+/// Returns the horizontal padding from the dialog's border spec.
 #[must_use]
 pub fn dialog_content_padding(resolved: &ResolvedThemeVariant) -> f32 {
-    resolved.dialog.content_padding
+    resolved.dialog.border.padding_horizontal
 }
 
-/// Dialog button spacing in logical pixels.
+/// Dialog button gap in logical pixels.
 #[must_use]
 pub fn dialog_button_spacing(resolved: &ResolvedThemeVariant) -> f32 {
-    resolved.dialog.button_spacing
+    resolved.dialog.button_gap
 }
 
-/// Scrollbar width in logical pixels.
+/// Scrollbar groove width in logical pixels.
 #[must_use]
 pub fn scrollbar_width(resolved: &ResolvedThemeVariant) -> f32 {
-    resolved.scrollbar.width
+    resolved.scrollbar.groove_width
 }
 
 /// Selection text color (foreground for selected content).
 #[must_use]
 pub fn selection_foreground(resolved: &ResolvedThemeVariant) -> Rgba {
-    resolved.defaults.selection_foreground
+    resolved.defaults.selection_text_color
 }
 
 /// Selection background when window is unfocused.
 #[must_use]
 pub fn selection_inactive(resolved: &ResolvedThemeVariant) -> Rgba {
-    resolved.defaults.selection_inactive
+    resolved.defaults.selection_inactive_background
 }
 
 /// Foreground color for disabled elements.
 #[must_use]
 pub fn disabled_foreground(resolved: &ResolvedThemeVariant) -> Rgba {
-    resolved.defaults.disabled_foreground
+    resolved.defaults.disabled_text_color
 }
 
 /// Focus ring stroke width in logical pixels.
@@ -502,9 +496,15 @@ mod tests {
             resolved.defaults.mono_font.family
         );
         assert_eq!(theme.mono_font_size, px(resolved.defaults.mono_font.size));
-        assert_eq!(theme.radius, px(resolved.defaults.radius.max(0.0)));
-        assert_eq!(theme.radius_lg, px(resolved.defaults.radius_lg.max(0.0)));
-        assert_eq!(theme.shadow, resolved.defaults.shadow_enabled);
+        assert_eq!(
+            theme.radius,
+            px(resolved.defaults.border.corner_radius.max(0.0))
+        );
+        assert_eq!(
+            theme.radius_lg,
+            px(resolved.defaults.border.corner_radius_lg.max(0.0))
+        );
+        assert_eq!(theme.shadow, resolved.defaults.border.shadow_enabled);
     }
 
     // Issue 43: scrollbar_show set from overlay_mode
@@ -637,8 +637,8 @@ mod tests {
         // accent or background populated.
         let resolved = sys.active();
         assert!(
-            resolved.defaults.accent != native_theme::Rgba::default()
-                || resolved.defaults.background != native_theme::Rgba::default(),
+            resolved.defaults.accent_color != native_theme::Rgba::default()
+                || resolved.defaults.background_color != native_theme::Rgba::default(),
             "resolved variant should have at least accent or background populated"
         );
     }
@@ -648,7 +648,7 @@ mod tests {
     #[test]
     fn is_dark_resolved_matches_background() {
         let resolved = test_resolved();
-        let bg = colors::rgba_to_hsla(resolved.defaults.background);
+        let bg = colors::rgba_to_hsla(resolved.defaults.background_color);
         assert_eq!(
             is_dark_resolved(&resolved),
             bg.l < 0.5,
@@ -673,13 +673,6 @@ mod tests {
         assert!(disabled_opacity(&resolved) <= 1.0);
         assert!(border_opacity(&resolved) >= 0.0);
         assert!(text_scaling_factor(&resolved) > 0.0);
-    }
-
-    #[test]
-    fn spacing_helper() {
-        let resolved = test_resolved();
-        let sp = spacing(&resolved);
-        assert!(sp.m > 0.0, "medium spacing should be positive");
     }
 
     #[test]

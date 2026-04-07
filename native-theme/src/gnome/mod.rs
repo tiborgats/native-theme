@@ -53,8 +53,8 @@ pub(crate) fn portal_color_to_rgba(color: &Color) -> Option<crate::Rgba> {
 
 /// Apply a portal accent color across multiple semantic color roles.
 fn apply_accent(variant: &mut crate::ThemeVariant, accent: &crate::Rgba) {
-    variant.defaults.accent = Some(*accent);
-    variant.defaults.selection = Some(*accent);
+    variant.defaults.accent_color = Some(*accent);
+    variant.defaults.selection_background = Some(*accent);
     variant.defaults.focus_ring_color = Some(*accent);
 }
 
@@ -238,7 +238,7 @@ pub(crate) fn build_gnome_variant(
     }
 
     // ── Dialog button order (project decision) ──────────────────────────
-    variant.dialog.button_order = Some(DialogButtonOrder::TrailingAffirmative);
+    variant.dialog.button_order = Some(DialogButtonOrder::PrimaryRight);
 
     // Color scheme tag for the variant (not a field, but used for merge decision)
     let _ = scheme; // consumed by caller for light/dark selection
@@ -568,10 +568,7 @@ mod tests {
             Contrast::NoPreference,
             None,
         );
-        assert_eq!(
-            v.dialog.button_order,
-            Some(DialogButtonOrder::TrailingAffirmative),
-        );
+        assert_eq!(v.dialog.button_order, Some(DialogButtonOrder::PrimaryRight),);
     }
 
     #[test]
@@ -601,8 +598,8 @@ mod tests {
             None,
         );
         let expected = crate::Rgba::from_f32(0.2, 0.4, 0.8, 1.0);
-        assert_eq!(v.defaults.accent, Some(expected));
-        assert_eq!(v.defaults.selection, Some(expected));
+        assert_eq!(v.defaults.accent_color, Some(expected));
+        assert_eq!(v.defaults.selection_background, Some(expected));
         assert_eq!(v.defaults.focus_ring_color, Some(expected));
     }
 
@@ -615,7 +612,7 @@ mod tests {
             Contrast::NoPreference,
             None,
         );
-        assert!(v.defaults.accent.is_none());
+        assert!(v.defaults.accent_color.is_none());
     }
 
     // === compute_text_scale tests ===
@@ -737,8 +734,8 @@ mod tests {
         let variant = theme.light.as_ref().expect("light variant");
         let expected = crate::Rgba::from_f32(0.2, 0.4, 0.8, 1.0);
 
-        assert_eq!(variant.defaults.accent, Some(expected));
-        assert_eq!(variant.defaults.selection, Some(expected));
+        assert_eq!(variant.defaults.accent_color, Some(expected));
+        assert_eq!(variant.defaults.selection_background, Some(expected));
         assert_eq!(variant.defaults.focus_ring_color, Some(expected));
     }
 
@@ -793,8 +790,11 @@ mod tests {
 
         let variant = theme.light.as_ref().expect("light variant");
         // Adwaita colors should be preserved since OS variant doesn't set colors
-        assert_eq!(variant.defaults.background, base_light.defaults.background);
-        assert_eq!(variant.defaults.foreground, base_light.defaults.foreground);
+        assert_eq!(
+            variant.defaults.background_color,
+            base_light.defaults.background_color
+        );
+        assert_eq!(variant.defaults.text_color, base_light.defaults.text_color);
     }
 
     #[test]
@@ -811,7 +811,7 @@ mod tests {
         let variant = theme.light.as_ref().expect("light variant");
         assert_eq!(
             variant.dialog.button_order,
-            Some(DialogButtonOrder::TrailingAffirmative),
+            Some(DialogButtonOrder::PrimaryRight),
         );
     }
 

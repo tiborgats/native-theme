@@ -1,7 +1,7 @@
 // ThemeDefaults: global properties shared across widgets
 
 use crate::Rgba;
-use crate::model::spacing::ThemeSpacing;
+use crate::model::border::BorderSpec;
 use crate::model::{FontSpec, IconSizes};
 use serde::{Deserialize, Serialize};
 
@@ -11,19 +11,19 @@ use serde::{Deserialize, Serialize};
 ///
 /// This struct uses two patterns for its fields:
 ///
-/// - **`Option<T>` leaf fields** (`accent`, `radius`, `line_height`, etc.) —
+/// - **`Option<T>` leaf fields** (`accent_color`, `disabled_opacity`, `line_height`, etc.) —
 ///   `None` means "not set." During merge, an overlay's `Some` value replaces
 ///   the base wholesale.
 ///
-/// - **Non-Option nested struct fields** (`font`, `mono_font`, `spacing`,
+/// - **Non-Option nested struct fields** (`font`, `mono_font`, `border`,
 ///   `icon_sizes`) — these support partial field-by-field override during
 ///   merge. For example, an overlay that sets only `font.size` will inherit
 ///   the base's `font.family` and `font.weight`. This makes theme merging
 ///   more flexible: you can fine-tune individual properties without replacing
 ///   the entire sub-struct.
 ///
-/// This asymmetry is intentional. Checking "is accent set?" is
-/// `defaults.accent.is_some()`, while checking "is font set?" requires
+/// This asymmetry is intentional. Checking "is accent_color set?" is
+/// `defaults.accent_color.is_some()`, while checking "is font set?" requires
 /// inspecting individual fields like `defaults.font.family.is_some()`.
 ///
 /// When resolving a widget's properties, `None` on the widget struct
@@ -46,63 +46,58 @@ pub struct ThemeDefaults {
 
     // ---- Base colors ----
     /// Main window/surface background color.
-    pub background: Option<Rgba>,
+    pub background_color: Option<Rgba>,
     /// Default text color.
-    pub foreground: Option<Rgba>,
+    pub text_color: Option<Rgba>,
     /// Accent/brand color for interactive elements.
-    pub accent: Option<Rgba>,
+    pub accent_color: Option<Rgba>,
     /// Text color used on accent-colored backgrounds.
-    pub accent_foreground: Option<Rgba>,
+    pub accent_text_color: Option<Rgba>,
     /// Elevated surface color (cards, dialogs, popovers).
-    pub surface: Option<Rgba>,
-    /// Border/divider color.
-    pub border: Option<Rgba>,
+    pub surface_color: Option<Rgba>,
     /// Secondary/subdued text color.
-    pub muted: Option<Rgba>,
+    pub muted_color: Option<Rgba>,
     /// Drop shadow color (with alpha).
-    pub shadow: Option<Rgba>,
+    pub shadow_color: Option<Rgba>,
     /// Hyperlink text color.
-    pub link: Option<Rgba>,
+    pub link_color: Option<Rgba>,
     /// Selection highlight background.
-    pub selection: Option<Rgba>,
+    pub selection_background: Option<Rgba>,
     /// Text color over selection highlight.
-    pub selection_foreground: Option<Rgba>,
+    pub selection_text_color: Option<Rgba>,
     /// Selection background when window is unfocused.
-    pub selection_inactive: Option<Rgba>,
+    pub selection_inactive_background: Option<Rgba>,
+    /// Text selection background (inline text highlight).
+    pub text_selection_background: Option<Rgba>,
+    /// Text selection color (inline text highlight).
+    pub text_selection_color: Option<Rgba>,
     /// Text color for disabled controls.
-    pub disabled_foreground: Option<Rgba>,
+    pub disabled_text_color: Option<Rgba>,
 
     // ---- Status colors ----
     /// Danger/error color.
-    pub danger: Option<Rgba>,
+    pub danger_color: Option<Rgba>,
     /// Text color on danger-colored backgrounds.
-    pub danger_foreground: Option<Rgba>,
+    pub danger_text_color: Option<Rgba>,
     /// Warning color.
-    pub warning: Option<Rgba>,
+    pub warning_color: Option<Rgba>,
     /// Text color on warning-colored backgrounds.
-    pub warning_foreground: Option<Rgba>,
+    pub warning_text_color: Option<Rgba>,
     /// Success/confirmation color.
-    pub success: Option<Rgba>,
+    pub success_color: Option<Rgba>,
     /// Text color on success-colored backgrounds.
-    pub success_foreground: Option<Rgba>,
+    pub success_text_color: Option<Rgba>,
     /// Informational color.
-    pub info: Option<Rgba>,
+    pub info_color: Option<Rgba>,
     /// Text color on info-colored backgrounds.
-    pub info_foreground: Option<Rgba>,
+    pub info_text_color: Option<Rgba>,
 
     // ---- Global geometry ----
-    /// Default corner radius in logical pixels.
-    pub radius: Option<f32>,
-    /// Large corner radius (dialogs, floating panels).
-    pub radius_lg: Option<f32>,
-    /// Border/frame width in logical pixels.
-    pub frame_width: Option<f32>,
+    /// Border sub-struct (color, corner_radius, line_width, etc.).
+    #[serde(default, skip_serializing_if = "BorderSpec::is_empty")]
+    pub border: BorderSpec,
     /// Opacity for disabled controls (0.0–1.0).
     pub disabled_opacity: Option<f32>,
-    /// Border alpha multiplier (0.0–1.0).
-    pub border_opacity: Option<f32>,
-    /// Whether drop shadows are enabled.
-    pub shadow_enabled: Option<bool>,
 
     // ---- Focus ring ----
     /// Focus indicator outline color.
@@ -111,11 +106,6 @@ pub struct ThemeDefaults {
     pub focus_ring_width: Option<f32>,
     /// Gap between element edge and focus indicator.
     pub focus_ring_offset: Option<f32>,
-
-    // ---- Spacing scale ----
-    /// Logical spacing scale (xxs through xxl).
-    #[serde(default, skip_serializing_if = "ThemeSpacing::is_empty")]
-    pub spacing: ThemeSpacing,
 
     // ---- Icon sizes ----
     /// Per-context icon sizes.
@@ -139,37 +129,33 @@ impl ThemeDefaults {
         "font",
         "line_height",
         "mono_font",
-        "background",
-        "foreground",
-        "accent",
-        "accent_foreground",
-        "surface",
+        "background_color",
+        "text_color",
+        "accent_color",
+        "accent_text_color",
+        "surface_color",
+        "muted_color",
+        "shadow_color",
+        "link_color",
+        "selection_background",
+        "selection_text_color",
+        "selection_inactive_background",
+        "text_selection_background",
+        "text_selection_color",
+        "disabled_text_color",
+        "danger_color",
+        "danger_text_color",
+        "warning_color",
+        "warning_text_color",
+        "success_color",
+        "success_text_color",
+        "info_color",
+        "info_text_color",
         "border",
-        "muted",
-        "shadow",
-        "link",
-        "selection",
-        "selection_foreground",
-        "selection_inactive",
-        "disabled_foreground",
-        "danger",
-        "danger_foreground",
-        "warning",
-        "warning_foreground",
-        "success",
-        "success_foreground",
-        "info",
-        "info_foreground",
-        "radius",
-        "radius_lg",
-        "frame_width",
         "disabled_opacity",
-        "border_opacity",
-        "shadow_enabled",
         "focus_ring_color",
         "focus_ring_width",
         "focus_ring_offset",
-        "spacing",
         "icon_sizes",
         "text_scaling_factor",
         "reduce_motion",
@@ -181,16 +167,18 @@ impl ThemeDefaults {
 impl_merge!(ThemeDefaults {
     option {
         line_height,
-        background, foreground, accent, accent_foreground,
-        surface, border, muted, shadow, link, selection, selection_foreground,
-        selection_inactive, disabled_foreground,
-        danger, danger_foreground, warning, warning_foreground,
-        success, success_foreground, info, info_foreground,
-        radius, radius_lg, frame_width, disabled_opacity, border_opacity,
-        shadow_enabled, focus_ring_color, focus_ring_width, focus_ring_offset,
+        background_color, text_color, accent_color, accent_text_color,
+        surface_color, muted_color, shadow_color, link_color,
+        selection_background, selection_text_color,
+        selection_inactive_background,
+        text_selection_background, text_selection_color,
+        disabled_text_color,
+        danger_color, danger_text_color, warning_color, warning_text_color,
+        success_color, success_text_color, info_color, info_text_color,
+        disabled_opacity, focus_ring_color, focus_ring_width, focus_ring_offset,
         text_scaling_factor, reduce_motion, high_contrast, reduce_transparency
     }
-    nested { font, mono_font, spacing, icon_sizes }
+    nested { font, mono_font, border, icon_sizes }
 });
 
 #[cfg(test)]
@@ -198,7 +186,7 @@ impl_merge!(ThemeDefaults {
 mod tests {
     use super::*;
     use crate::Rgba;
-    use crate::model::spacing::ThemeSpacing;
+    use crate::model::border::BorderSpec;
     use crate::model::{FontSpec, IconSizes};
 
     // === default / is_empty ===
@@ -206,33 +194,29 @@ mod tests {
     #[test]
     fn default_has_all_none_options() {
         let d = ThemeDefaults::default();
-        assert!(d.background.is_none());
-        assert!(d.foreground.is_none());
-        assert!(d.accent.is_none());
-        assert!(d.accent_foreground.is_none());
-        assert!(d.surface.is_none());
-        assert!(d.border.is_none());
-        assert!(d.muted.is_none());
-        assert!(d.shadow.is_none());
-        assert!(d.link.is_none());
-        assert!(d.selection.is_none());
-        assert!(d.selection_foreground.is_none());
-        assert!(d.selection_inactive.is_none());
-        assert!(d.disabled_foreground.is_none());
-        assert!(d.danger.is_none());
-        assert!(d.danger_foreground.is_none());
-        assert!(d.warning.is_none());
-        assert!(d.warning_foreground.is_none());
-        assert!(d.success.is_none());
-        assert!(d.success_foreground.is_none());
-        assert!(d.info.is_none());
-        assert!(d.info_foreground.is_none());
-        assert!(d.radius.is_none());
-        assert!(d.radius_lg.is_none());
-        assert!(d.frame_width.is_none());
+        assert!(d.background_color.is_none());
+        assert!(d.text_color.is_none());
+        assert!(d.accent_color.is_none());
+        assert!(d.accent_text_color.is_none());
+        assert!(d.surface_color.is_none());
+        assert!(d.muted_color.is_none());
+        assert!(d.shadow_color.is_none());
+        assert!(d.link_color.is_none());
+        assert!(d.selection_background.is_none());
+        assert!(d.selection_text_color.is_none());
+        assert!(d.selection_inactive_background.is_none());
+        assert!(d.text_selection_background.is_none());
+        assert!(d.text_selection_color.is_none());
+        assert!(d.disabled_text_color.is_none());
+        assert!(d.danger_color.is_none());
+        assert!(d.danger_text_color.is_none());
+        assert!(d.warning_color.is_none());
+        assert!(d.warning_text_color.is_none());
+        assert!(d.success_color.is_none());
+        assert!(d.success_text_color.is_none());
+        assert!(d.info_color.is_none());
+        assert!(d.info_text_color.is_none());
         assert!(d.disabled_opacity.is_none());
-        assert!(d.border_opacity.is_none());
-        assert!(d.shadow_enabled.is_none());
         assert!(d.focus_ring_color.is_none());
         assert!(d.focus_ring_width.is_none());
         assert!(d.focus_ring_offset.is_none());
@@ -248,7 +232,7 @@ mod tests {
         let d = ThemeDefaults::default();
         assert!(d.font.is_empty());
         assert!(d.mono_font.is_empty());
-        assert!(d.spacing.is_empty());
+        assert!(d.border.is_empty());
         assert!(d.icon_sizes.is_empty());
     }
 
@@ -258,9 +242,9 @@ mod tests {
     }
 
     #[test]
-    fn not_empty_when_accent_set() {
+    fn not_empty_when_accent_color_set() {
         let d = ThemeDefaults {
-            accent: Some(Rgba::rgb(0, 120, 215)),
+            accent_color: Some(Rgba::rgb(0, 120, 215)),
             ..Default::default()
         };
         assert!(!d.is_empty());
@@ -279,10 +263,10 @@ mod tests {
     }
 
     #[test]
-    fn not_empty_when_spacing_set() {
+    fn not_empty_when_border_set() {
         let d = ThemeDefaults {
-            spacing: ThemeSpacing {
-                m: Some(12.0),
+            border: BorderSpec {
+                corner_radius: Some(4.0),
                 ..Default::default()
             },
             ..Default::default()
@@ -312,26 +296,26 @@ mod tests {
     #[test]
     fn merge_option_overlay_wins() {
         let mut base = ThemeDefaults {
-            accent: Some(Rgba::rgb(100, 100, 100)),
+            accent_color: Some(Rgba::rgb(100, 100, 100)),
             ..Default::default()
         };
         let overlay = ThemeDefaults {
-            accent: Some(Rgba::rgb(0, 120, 215)),
+            accent_color: Some(Rgba::rgb(0, 120, 215)),
             ..Default::default()
         };
         base.merge(&overlay);
-        assert_eq!(base.accent, Some(Rgba::rgb(0, 120, 215)));
+        assert_eq!(base.accent_color, Some(Rgba::rgb(0, 120, 215)));
     }
 
     #[test]
     fn merge_none_preserves_base() {
         let mut base = ThemeDefaults {
-            accent: Some(Rgba::rgb(0, 120, 215)),
+            accent_color: Some(Rgba::rgb(0, 120, 215)),
             ..Default::default()
         };
         let overlay = ThemeDefaults::default();
         base.merge(&overlay);
-        assert_eq!(base.accent, Some(Rgba::rgb(0, 120, 215)));
+        assert_eq!(base.accent_color, Some(Rgba::rgb(0, 120, 215)));
     }
 
     #[test]
@@ -361,24 +345,24 @@ mod tests {
     }
 
     #[test]
-    fn merge_spacing_nested_merges_recursively() {
+    fn merge_border_nested_merges_recursively() {
         let mut base = ThemeDefaults {
-            spacing: ThemeSpacing {
-                m: Some(12.0),
+            border: BorderSpec {
+                corner_radius: Some(4.0),
                 ..Default::default()
             },
             ..Default::default()
         };
         let overlay = ThemeDefaults {
-            spacing: ThemeSpacing {
-                s: Some(6.0),
+            border: BorderSpec {
+                line_width: Some(1.0),
                 ..Default::default()
             },
             ..Default::default()
         };
         base.merge(&overlay);
-        assert_eq!(base.spacing.m, Some(12.0)); // preserved
-        assert_eq!(base.spacing.s, Some(6.0)); // overlay wins
+        assert_eq!(base.border.corner_radius, Some(4.0)); // preserved
+        assert_eq!(base.border.line_width, Some(1.0)); // overlay wins
     }
 
     #[test]
@@ -405,9 +389,9 @@ mod tests {
     // === TOML round-trip ===
 
     #[test]
-    fn toml_round_trip_accent_and_font_family() {
+    fn toml_round_trip_accent_color_and_font_family() {
         let d = ThemeDefaults {
-            accent: Some(Rgba::rgb(0, 120, 215)),
+            accent_color: Some(Rgba::rgb(0, 120, 215)),
             font: FontSpec {
                 family: Some("Inter".into()),
                 ..Default::default()
@@ -420,10 +404,10 @@ mod tests {
             toml_str.contains("[font]"),
             "Expected [font] section, got: {toml_str}"
         );
-        // accent should appear as hex
+        // accent_color should appear as hex
         assert!(
-            toml_str.contains("accent"),
-            "Expected accent field, got: {toml_str}"
+            toml_str.contains("accent_color"),
+            "Expected accent_color field, got: {toml_str}"
         );
         // Round-trip
         let d2: ThemeDefaults = toml::from_str(&toml_str).unwrap();
@@ -445,8 +429,8 @@ mod tests {
             "Empty mono_font should be suppressed: {toml_str}"
         );
         assert!(
-            !toml_str.contains("[spacing]"),
-            "Empty spacing should be suppressed: {toml_str}"
+            !toml_str.contains("[border]"),
+            "Empty border should be suppressed: {toml_str}"
         );
         assert!(
             !toml_str.contains("[icon_sizes]"),
@@ -474,19 +458,19 @@ mod tests {
     }
 
     #[test]
-    fn toml_spacing_sub_table() {
+    fn toml_border_sub_table() {
         let d = ThemeDefaults {
-            spacing: ThemeSpacing {
-                m: Some(12.0),
-                l: Some(18.0),
+            border: BorderSpec {
+                corner_radius: Some(4.0),
+                line_width: Some(1.0),
                 ..Default::default()
             },
             ..Default::default()
         };
         let toml_str = toml::to_string(&d).unwrap();
         assert!(
-            toml_str.contains("[spacing]"),
-            "Expected [spacing] section, got: {toml_str}"
+            toml_str.contains("[border]"),
+            "Expected [border] section, got: {toml_str}"
         );
         let d2: ThemeDefaults = toml::from_str(&toml_str).unwrap();
         assert_eq!(d, d2);

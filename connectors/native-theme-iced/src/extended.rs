@@ -83,14 +83,14 @@ mod tests {
 
     fn colors_from_resolved(r: &native_theme::ResolvedThemeVariant) -> OverrideColors {
         OverrideColors {
-            btn_bg: r.button.background,
-            btn_fg: r.button.foreground,
-            surface: r.defaults.surface,
-            foreground: r.defaults.foreground,
-            accent_fg: r.defaults.accent_foreground,
-            success_fg: r.defaults.success_foreground,
-            danger_fg: r.defaults.danger_foreground,
-            warning_fg: r.defaults.warning_foreground,
+            btn_bg: r.button.background_color,
+            btn_fg: r.button.font.color,
+            surface: r.defaults.surface_color,
+            foreground: r.defaults.text_color,
+            accent_fg: r.defaults.accent_text_color,
+            success_fg: r.defaults.success_text_color,
+            danger_fg: r.defaults.danger_text_color,
+            warning_fg: r.defaults.warning_text_color,
         }
     }
 
@@ -105,7 +105,7 @@ mod tests {
 
         apply_from_resolved(&mut extended, &resolved);
 
-        let expected = to_color(resolved.button.background);
+        let expected = to_color(resolved.button.background_color);
         assert_eq!(
             extended.secondary.base.color, expected,
             "secondary.base.color should match resolved.button.background"
@@ -119,7 +119,7 @@ mod tests {
 
         apply_from_resolved(&mut extended, &resolved);
 
-        let expected = to_color(resolved.button.foreground);
+        let expected = to_color(resolved.button.font.color);
         assert_eq!(
             extended.secondary.base.text, expected,
             "secondary.base.text should match resolved.button.foreground"
@@ -133,7 +133,7 @@ mod tests {
 
         apply_from_resolved(&mut extended, &resolved);
 
-        let expected = to_color(resolved.defaults.surface);
+        let expected = to_color(resolved.defaults.surface_color);
         assert_eq!(
             extended.background.weak.color, expected,
             "background.weak.color should match resolved.defaults.surface"
@@ -147,7 +147,7 @@ mod tests {
 
         apply_from_resolved(&mut extended, &resolved);
 
-        let expected = to_color(resolved.defaults.foreground);
+        let expected = to_color(resolved.defaults.text_color);
         assert_eq!(
             extended.background.weak.text, expected,
             "background.weak.text should match resolved.defaults.foreground"
@@ -161,7 +161,7 @@ mod tests {
 
         apply_from_resolved(&mut extended, &resolved);
 
-        let expected = to_color(resolved.defaults.accent_foreground);
+        let expected = to_color(resolved.defaults.accent_text_color);
         assert_eq!(
             extended.primary.base.text, expected,
             "primary.base.text should match resolved.defaults.accent_foreground"
@@ -175,7 +175,7 @@ mod tests {
 
         apply_from_resolved(&mut extended, &resolved);
 
-        let expected = to_color(resolved.defaults.success_foreground);
+        let expected = to_color(resolved.defaults.success_text_color);
         assert_eq!(
             extended.success.base.text, expected,
             "success.base.text should match resolved.defaults.success_foreground"
@@ -189,7 +189,7 @@ mod tests {
 
         apply_from_resolved(&mut extended, &resolved);
 
-        let expected = to_color(resolved.defaults.danger_foreground);
+        let expected = to_color(resolved.defaults.danger_text_color);
         assert_eq!(
             extended.danger.base.text, expected,
             "danger.base.text should match resolved.defaults.danger_foreground"
@@ -203,7 +203,7 @@ mod tests {
 
         apply_from_resolved(&mut extended, &resolved);
 
-        let expected = to_color(resolved.defaults.warning_foreground);
+        let expected = to_color(resolved.defaults.warning_text_color);
         assert_eq!(
             extended.warning.base.text, expected,
             "warning.base.text should match resolved.defaults.warning_foreground"
@@ -217,7 +217,7 @@ mod tests {
 
         apply_from_resolved(&mut extended, &resolved);
 
-        let expected = to_color(resolved.button.background);
+        let expected = to_color(resolved.button.background_color);
         assert_eq!(
             extended.secondary.base.color, expected,
             "dark variant: secondary.base.color should match"
@@ -238,7 +238,7 @@ mod tests {
 
             assert_eq!(
                 extended.secondary.base.color,
-                to_color(resolved.button.background),
+                to_color(resolved.button.background_color),
                 "{name}: secondary.base.color mismatch"
             );
         }
@@ -252,12 +252,12 @@ mod tests {
 
         assert_eq!(
             extended.secondary.base.color,
-            to_color(resolved.button.background),
+            to_color(resolved.button.background_color),
             "adwaita: secondary.base.color mismatch"
         );
         assert_eq!(
             extended.primary.base.text,
-            to_color(resolved.defaults.accent_foreground),
+            to_color(resolved.defaults.accent_text_color),
             "adwaita: primary.base.text mismatch"
         );
     }

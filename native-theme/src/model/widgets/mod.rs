@@ -1,6 +1,7 @@
 // Per-widget struct pairs and macros
 
 use crate::Rgba;
+use crate::model::border::{BorderSpec, ResolvedBorderSpec};
 use crate::model::{DialogButtonOrder, FontSpec, ResolvedFontSpec};
 
 /// Generates a paired Option-based theme struct and a Resolved struct from a single definition.
@@ -79,27 +80,19 @@ define_widget_pair! {
     WindowTheme / ResolvedWindowTheme {
         option {
             /// Main window background fill.
-            background: Rgba,
-            /// Default text color on the window background.
-            foreground: Rgba,
-            /// Window border color.
-            border: Rgba,
+            background_color: Rgba,
             /// Active title bar background fill.
             title_bar_background: Rgba,
-            /// Active title bar text color.
-            title_bar_foreground: Rgba,
             /// Title bar background when the window is unfocused.
             inactive_title_bar_background: Rgba,
             /// Title bar text color when the window is unfocused.
-            inactive_title_bar_foreground: Rgba,
-            /// Corner radius in logical pixels.
-            radius: f32,
-            /// Whether the window has a drop shadow.
-            shadow: bool,
+            inactive_title_bar_text_color: Rgba,
         }
         optional_nested {
             /// Title bar font specification.
             title_bar_font: [FontSpec, ResolvedFontSpec],
+            /// Window border specification.
+            border: [BorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -111,35 +104,29 @@ define_widget_pair! {
     ButtonTheme / ResolvedButtonTheme {
         option {
             /// Default button background fill.
-            background: Rgba,
-            /// Default button text/icon color.
-            foreground: Rgba,
-            /// Button border color.
-            border: Rgba,
+            background_color: Rgba,
             /// Primary / accent button background fill.
             primary_background: Rgba,
             /// Primary / accent button text/icon color.
-            primary_foreground: Rgba,
+            primary_text_color: Rgba,
             /// Minimum button width in logical pixels.
             min_width: f32,
             /// Minimum button height in logical pixels.
             min_height: f32,
-            /// Horizontal padding inside the button.
-            padding_horizontal: f32,
-            /// Vertical padding inside the button.
-            padding_vertical: f32,
-            /// Corner radius in logical pixels.
-            radius: f32,
             /// Space between icon and label.
-            icon_spacing: f32,
-            /// Opacity multiplier when the button is disabled (0.0–1.0).
+            icon_text_gap: f32,
+            /// Opacity multiplier when the button is disabled (0.0-1.0).
             disabled_opacity: f32,
-            /// Whether the button has a drop shadow.
-            shadow: bool,
+            /// Button background on hover.
+            hover_background: Rgba,
+            /// Button text color on hover.
+            hover_text_color: Rgba,
         }
         optional_nested {
             /// Button label font specification.
             font: [FontSpec, ResolvedFontSpec],
+            /// Button border specification.
+            border: [BorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -151,33 +138,25 @@ define_widget_pair! {
     InputTheme / ResolvedInputTheme {
         option {
             /// Input field background fill.
-            background: Rgba,
-            /// Typed text color.
-            foreground: Rgba,
-            /// Input field border color.
-            border: Rgba,
+            background_color: Rgba,
             /// Placeholder text color.
-            placeholder: Rgba,
+            placeholder_color: Rgba,
             /// Text cursor (caret) color.
-            caret: Rgba,
+            caret_color: Rgba,
             /// Text selection highlight color.
-            selection: Rgba,
+            selection_background: Rgba,
             /// Text color inside the selection highlight.
-            selection_foreground: Rgba,
+            selection_text_color: Rgba,
             /// Minimum field height in logical pixels.
             min_height: f32,
-            /// Horizontal padding inside the field.
-            padding_horizontal: f32,
-            /// Vertical padding inside the field.
-            padding_vertical: f32,
-            /// Corner radius in logical pixels.
-            radius: f32,
-            /// Border stroke width in logical pixels.
-            border_width: f32,
+            /// Opacity multiplier when disabled (0.0-1.0).
+            disabled_opacity: f32,
         }
         optional_nested {
             /// Input text font specification.
             font: [FontSpec, ResolvedFontSpec],
+            /// Input border specification.
+            border: [BorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -188,16 +167,24 @@ define_widget_pair! {
     /// Checkbox and radio button indicator geometry.
     CheckboxTheme / ResolvedCheckboxTheme {
         option {
+            /// Checkbox background color.
+            background_color: Rgba,
             /// Indicator background when checked.
             checked_background: Rgba,
-            /// Indicator (check mark / radio dot) size in logical pixels.
-            indicator_size: f32,
+            /// Indicator (check mark / radio dot) color.
+            indicator_color: Rgba,
+            /// Indicator (check mark / radio dot) width in logical pixels.
+            indicator_width: f32,
             /// Space between indicator and label.
-            spacing: f32,
-            /// Indicator corner radius in logical pixels.
-            radius: f32,
-            /// Indicator border width in logical pixels.
-            border_width: f32,
+            label_gap: f32,
+            /// Opacity multiplier when disabled (0.0-1.0).
+            disabled_opacity: f32,
+        }
+        optional_nested {
+            /// Checkbox label font specification.
+            font: [FontSpec, ResolvedFontSpec],
+            /// Checkbox border specification.
+            border: [BorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -209,23 +196,27 @@ define_widget_pair! {
     MenuTheme / ResolvedMenuTheme {
         option {
             /// Menu panel background fill.
-            background: Rgba,
-            /// Menu item text color.
-            foreground: Rgba,
+            background_color: Rgba,
             /// Separator line color between menu items.
-            separator: Rgba,
+            separator_color: Rgba,
             /// Height of a single menu item row.
-            item_height: f32,
-            /// Horizontal padding inside the menu panel.
-            padding_horizontal: f32,
-            /// Vertical padding inside the menu panel.
-            padding_vertical: f32,
+            row_height: f32,
             /// Space between a menu item's icon and its label.
-            icon_spacing: f32,
+            icon_text_gap: f32,
+            /// Menu item icon size in logical pixels.
+            icon_size: f32,
+            /// Menu item background on hover.
+            hover_background: Rgba,
+            /// Menu item text color on hover.
+            hover_text_color: Rgba,
+            /// Disabled menu item text color.
+            disabled_text_color: Rgba,
         }
         optional_nested {
             /// Menu item font specification.
             font: [FontSpec, ResolvedFontSpec],
+            /// Menu border specification.
+            border: [BorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -237,21 +228,15 @@ define_widget_pair! {
     TooltipTheme / ResolvedTooltipTheme {
         option {
             /// Tooltip background fill.
-            background: Rgba,
-            /// Tooltip text color.
-            foreground: Rgba,
-            /// Horizontal padding inside the tooltip.
-            padding_horizontal: f32,
-            /// Vertical padding inside the tooltip.
-            padding_vertical: f32,
+            background_color: Rgba,
             /// Maximum tooltip width before wrapping.
             max_width: f32,
-            /// Corner radius in logical pixels.
-            radius: f32,
         }
         optional_nested {
             /// Tooltip font specification.
             font: [FontSpec, ResolvedFontSpec],
+            /// Tooltip border specification.
+            border: [BorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -263,17 +248,17 @@ define_widget_pair! {
     ScrollbarTheme / ResolvedScrollbarTheme {
         option {
             /// Scrollbar track (gutter) color.
-            track: Rgba,
+            track_color: Rgba,
             /// Scrollbar thumb color.
-            thumb: Rgba,
+            thumb_color: Rgba,
             /// Thumb color on hover.
-            thumb_hover: Rgba,
-            /// Scrollbar width in logical pixels.
-            width: f32,
-            /// Minimum thumb height in logical pixels.
-            min_thumb_height: f32,
-            /// Width of the slider rail within the scrollbar.
-            slider_width: f32,
+            thumb_hover_color: Rgba,
+            /// Scrollbar groove width in logical pixels.
+            groove_width: f32,
+            /// Minimum thumb length in logical pixels.
+            min_thumb_length: f32,
+            /// Width of the thumb rail within the scrollbar.
+            thumb_width: f32,
             /// Whether the scrollbar overlays content instead of taking layout space.
             overlay_mode: bool,
         }
@@ -287,17 +272,19 @@ define_widget_pair! {
     SliderTheme / ResolvedSliderTheme {
         option {
             /// Filled portion of the slider track.
-            fill: Rgba,
+            fill_color: Rgba,
             /// Unfilled track color.
-            track: Rgba,
+            track_color: Rgba,
             /// Thumb (handle) color.
-            thumb: Rgba,
+            thumb_color: Rgba,
             /// Track height in logical pixels.
             track_height: f32,
             /// Thumb diameter in logical pixels.
-            thumb_size: f32,
+            thumb_diameter: f32,
             /// Tick mark length in logical pixels.
-            tick_length: f32,
+            tick_mark_length: f32,
+            /// Opacity multiplier when disabled (0.0-1.0).
+            disabled_opacity: f32,
         }
     }
 }
@@ -309,15 +296,17 @@ define_widget_pair! {
     ProgressBarTheme / ResolvedProgressBarTheme {
         option {
             /// Filled progress bar color.
-            fill: Rgba,
+            fill_color: Rgba,
             /// Background track color.
-            track: Rgba,
+            track_color: Rgba,
             /// Bar height in logical pixels.
-            height: f32,
+            track_height: f32,
             /// Minimum bar width in logical pixels.
             min_width: f32,
-            /// Corner radius in logical pixels.
-            radius: f32,
+        }
+        optional_nested {
+            /// Progress bar border specification.
+            border: [BorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -329,23 +318,23 @@ define_widget_pair! {
     TabTheme / ResolvedTabTheme {
         option {
             /// Inactive tab background.
-            background: Rgba,
-            /// Inactive tab text color.
-            foreground: Rgba,
+            background_color: Rgba,
             /// Active (selected) tab background.
             active_background: Rgba,
             /// Active (selected) tab text color.
-            active_foreground: Rgba,
+            active_text_color: Rgba,
             /// Tab bar strip background.
             bar_background: Rgba,
             /// Minimum tab width in logical pixels.
             min_width: f32,
             /// Minimum tab height in logical pixels.
             min_height: f32,
-            /// Horizontal padding inside each tab.
-            padding_horizontal: f32,
-            /// Vertical padding inside each tab.
-            padding_vertical: f32,
+        }
+        optional_nested {
+            /// Tab font specification.
+            font: [FontSpec, ResolvedFontSpec],
+            /// Tab border specification.
+            border: [BorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -353,13 +342,23 @@ define_widget_pair! {
 // ── §2.12 Sidebar ─────────────────────────────────────────────────────────────
 
 define_widget_pair! {
-    /// Sidebar panel background and foreground colors.
+    /// Sidebar panel background, selection, and hover colors.
     SidebarTheme / ResolvedSidebarTheme {
         option {
             /// Sidebar panel background fill.
-            background: Rgba,
-            /// Sidebar text color.
-            foreground: Rgba,
+            background_color: Rgba,
+            /// Selected item background color.
+            selection_background: Rgba,
+            /// Selected item text color.
+            selection_text_color: Rgba,
+            /// Hovered item background color.
+            hover_background: Rgba,
+        }
+        optional_nested {
+            /// Sidebar font specification.
+            font: [FontSpec, ResolvedFontSpec],
+            /// Sidebar border specification.
+            border: [BorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -370,16 +369,20 @@ define_widget_pair! {
     /// Toolbar sizing, spacing, and font.
     ToolbarTheme / ResolvedToolbarTheme {
         option {
+            /// Toolbar background color.
+            background_color: Rgba,
             /// Toolbar height in logical pixels.
-            height: f32,
+            bar_height: f32,
             /// Horizontal space between toolbar items.
-            item_spacing: f32,
-            /// Padding around toolbar content.
-            padding: f32,
+            item_gap: f32,
+            /// Toolbar icon size in logical pixels.
+            icon_size: f32,
         }
         optional_nested {
             /// Toolbar label font specification.
             font: [FontSpec, ResolvedFontSpec],
+            /// Toolbar border specification.
+            border: [BorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -387,11 +390,17 @@ define_widget_pair! {
 // ── §2.14 Status Bar ──────────────────────────────────────────────────────────
 
 define_widget_pair! {
-    /// Status bar font.
+    /// Status bar font and background.
     StatusBarTheme / ResolvedStatusBarTheme {
+        option {
+            /// Status bar background color.
+            background_color: Rgba,
+        }
         optional_nested {
             /// Status bar font specification.
             font: [FontSpec, ResolvedFontSpec],
+            /// Status bar border specification.
+            border: [BorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -403,27 +412,29 @@ define_widget_pair! {
     ListTheme / ResolvedListTheme {
         option {
             /// List background fill.
-            background: Rgba,
-            /// Default item text color.
-            foreground: Rgba,
+            background_color: Rgba,
             /// Alternate row background for striped lists.
-            alternate_row: Rgba,
+            alternate_row_background: Rgba,
             /// Selected row highlight color.
-            selection: Rgba,
+            selection_background: Rgba,
             /// Text color inside a selected row.
-            selection_foreground: Rgba,
+            selection_text_color: Rgba,
             /// Column header background fill.
             header_background: Rgba,
-            /// Column header text color.
-            header_foreground: Rgba,
             /// Grid line color between rows/columns.
             grid_color: Rgba,
             /// Row height in logical pixels.
-            item_height: f32,
-            /// Horizontal padding inside each cell.
-            padding_horizontal: f32,
-            /// Vertical padding inside each cell.
-            padding_vertical: f32,
+            row_height: f32,
+            /// Hovered row background color.
+            hover_background: Rgba,
+        }
+        optional_nested {
+            /// List item font specification.
+            item_font: [FontSpec, ResolvedFontSpec],
+            /// Column header font specification.
+            header_font: [FontSpec, ResolvedFontSpec],
+            /// List border specification.
+            border: [BorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -435,13 +446,13 @@ define_widget_pair! {
     PopoverTheme / ResolvedPopoverTheme {
         option {
             /// Panel background fill.
-            background: Rgba,
-            /// Panel text color.
-            foreground: Rgba,
-            /// Panel border color.
-            border: Rgba,
-            /// Corner radius in logical pixels.
-            radius: f32,
+            background_color: Rgba,
+        }
+        optional_nested {
+            /// Popover font specification.
+            font: [FontSpec, ResolvedFontSpec],
+            /// Popover border specification.
+            border: [BorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -449,11 +460,13 @@ define_widget_pair! {
 // ── §2.17 Splitter ────────────────────────────────────────────────────────────
 
 define_widget_pair! {
-    /// Splitter handle width.
+    /// Splitter handle width and color.
     SplitterTheme / ResolvedSplitterTheme {
         option {
             /// Handle width in logical pixels.
-            width: f32,
+            divider_width: f32,
+            /// Divider color.
+            divider_color: Rgba,
         }
     }
 }
@@ -461,11 +474,13 @@ define_widget_pair! {
 // ── §2.18 Separator ───────────────────────────────────────────────────────────
 
 define_widget_pair! {
-    /// Separator line color.
+    /// Separator line color and width.
     SeparatorTheme / ResolvedSeparatorTheme {
         option {
             /// Separator line color.
-            color: Rgba,
+            line_color: Rgba,
+            /// Separator line width in logical pixels.
+            line_width: f32,
         }
     }
 }
@@ -487,9 +502,11 @@ define_widget_pair! {
             /// Track height in logical pixels.
             track_height: f32,
             /// Thumb diameter in logical pixels.
-            thumb_size: f32,
+            thumb_diameter: f32,
             /// Track corner radius in logical pixels.
             track_radius: f32,
+            /// Opacity multiplier when disabled (0.0-1.0).
+            disabled_opacity: f32,
         }
     }
 }
@@ -500,6 +517,8 @@ define_widget_pair! {
     /// Dialog sizing, spacing, button order, and title font.
     DialogTheme / ResolvedDialogTheme {
         option {
+            /// Dialog background color.
+            background_color: Rgba,
             /// Minimum dialog width in logical pixels.
             min_width: f32,
             /// Maximum dialog width in logical pixels.
@@ -508,12 +527,8 @@ define_widget_pair! {
             min_height: f32,
             /// Maximum dialog height in logical pixels.
             max_height: f32,
-            /// Padding around dialog content.
-            content_padding: f32,
             /// Horizontal space between dialog buttons.
-            button_spacing: f32,
-            /// Corner radius in logical pixels.
-            radius: f32,
+            button_gap: f32,
             /// Icon size for dialog type icons (warning, error, etc.).
             icon_size: f32,
             /// Platform button order convention (e.g., OK/Cancel vs Cancel/OK).
@@ -522,6 +537,10 @@ define_widget_pair! {
         optional_nested {
             /// Dialog title font specification.
             title_font: [FontSpec, ResolvedFontSpec],
+            /// Dialog body font specification.
+            body_font: [FontSpec, ResolvedFontSpec],
+            /// Dialog border specification.
+            border: [BorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -533,11 +552,11 @@ define_widget_pair! {
     SpinnerTheme / ResolvedSpinnerTheme {
         option {
             /// Spinner arc fill color.
-            fill: Rgba,
+            fill_color: Rgba,
             /// Spinner outer diameter in logical pixels.
             diameter: f32,
             /// Minimum rendered size in logical pixels.
-            min_size: f32,
+            min_diameter: f32,
             /// Arc stroke width in logical pixels.
             stroke_width: f32,
         }
@@ -550,18 +569,24 @@ define_widget_pair! {
     /// ComboBox / dropdown trigger sizing.
     ComboBoxTheme / ResolvedComboBoxTheme {
         option {
+            /// ComboBox background color.
+            background_color: Rgba,
             /// Minimum trigger height in logical pixels.
             min_height: f32,
             /// Minimum trigger width in logical pixels.
             min_width: f32,
-            /// Horizontal padding inside the trigger.
-            padding_horizontal: f32,
             /// Dropdown arrow size in logical pixels.
-            arrow_size: f32,
+            arrow_icon_size: f32,
             /// Width of the arrow clickable area.
             arrow_area_width: f32,
-            /// Corner radius in logical pixels.
-            radius: f32,
+            /// Opacity multiplier when disabled (0.0-1.0).
+            disabled_opacity: f32,
+        }
+        optional_nested {
+            /// ComboBox font specification.
+            font: [FontSpec, ResolvedFontSpec],
+            /// ComboBox border specification.
+            border: [BorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -572,14 +597,24 @@ define_widget_pair! {
     /// Segmented control sizing (macOS-primary; KDE uses tab bar metrics as proxy).
     SegmentedControlTheme / ResolvedSegmentedControlTheme {
         option {
+            /// Segmented control background color.
+            background_color: Rgba,
+            /// Active segment background.
+            active_background: Rgba,
+            /// Active segment text color.
+            active_text_color: Rgba,
             /// Segment height in logical pixels.
             segment_height: f32,
             /// Width of the separator between segments.
             separator_width: f32,
-            /// Horizontal padding inside each segment.
-            padding_horizontal: f32,
-            /// Corner radius in logical pixels.
-            radius: f32,
+            /// Opacity multiplier when disabled (0.0-1.0).
+            disabled_opacity: f32,
+        }
+        optional_nested {
+            /// Segmented control font specification.
+            font: [FontSpec, ResolvedFontSpec],
+            /// Segmented control border specification.
+            border: [BorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -591,15 +626,11 @@ define_widget_pair! {
     CardTheme / ResolvedCardTheme {
         option {
             /// Card background fill.
-            background: Rgba,
-            /// Card border color.
-            border: Rgba,
-            /// Corner radius in logical pixels.
-            radius: f32,
-            /// Padding inside the card.
-            padding: f32,
-            /// Whether the card has a drop shadow.
-            shadow: bool,
+            background_color: Rgba,
+        }
+        optional_nested {
+            /// Card border specification.
+            border: [BorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -613,11 +644,13 @@ define_widget_pair! {
             /// Collapsed header row height in logical pixels.
             header_height: f32,
             /// Disclosure arrow size in logical pixels.
-            arrow_size: f32,
-            /// Padding around expanded content.
-            content_padding: f32,
-            /// Corner radius in logical pixels.
-            radius: f32,
+            arrow_icon_size: f32,
+        }
+        optional_nested {
+            /// Expander font specification.
+            font: [FontSpec, ResolvedFontSpec],
+            /// Expander border specification.
+            border: [BorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -628,16 +661,18 @@ define_widget_pair! {
     /// Hyperlink colors and underline setting.
     LinkTheme / ResolvedLinkTheme {
         option {
-            /// Link text color.
-            color: Rgba,
             /// Visited link text color.
-            visited: Rgba,
-            /// Link background fill (typically transparent).
-            background: Rgba,
-            /// Link background on hover.
-            hover_bg: Rgba,
+            visited_text_color: Rgba,
             /// Whether links are underlined.
-            underline: bool,
+            underline_enabled: bool,
+            /// Link background fill (typically transparent).
+            background_color: Rgba,
+            /// Link background on hover.
+            hover_background: Rgba,
+        }
+        optional_nested {
+            /// Link font specification.
+            font: [FontSpec, ResolvedFontSpec],
         }
     }
 }
@@ -945,39 +980,21 @@ mod tests {
         assert!(!w.is_empty());
     }
 
-    // === ButtonTheme: 14 fields ===
-
-    #[test]
-    fn button_theme_has_all_fields_and_not_empty_when_set() {
-        let b = ButtonTheme {
-            background: Some(Rgba::rgb(200, 200, 200)),
-            foreground: Some(Rgba::rgb(30, 30, 30)),
-            border: Some(Rgba::rgb(150, 150, 150)),
-            primary_background: Some(Rgba::rgb(0, 120, 215)),
-            primary_foreground: Some(Rgba::rgb(255, 255, 255)),
-            min_width: Some(64.0),
-            min_height: Some(28.0),
-            padding_horizontal: Some(12.0),
-            padding_vertical: Some(6.0),
-            radius: Some(4.0),
-            icon_spacing: Some(6.0),
-            disabled_opacity: Some(0.5),
-            shadow: Some(false),
-            font: Some(FontSpec {
-                family: Some("Inter".into()),
-                size: Some(14.0),
-                weight: Some(400),
-                ..Default::default()
-            }),
-        };
-        assert!(!b.is_empty());
-        assert_eq!(b.min_width, Some(64.0));
-        assert_eq!(b.primary_background, Some(Rgba::rgb(0, 120, 215)));
-    }
+    // === ButtonTheme tests ===
 
     #[test]
     fn button_theme_default_is_empty() {
         assert!(ButtonTheme::default().is_empty());
+    }
+
+    #[test]
+    fn button_theme_not_empty_when_set() {
+        let b = ButtonTheme {
+            background_color: Some(Rgba::rgb(200, 200, 200)),
+            min_width: Some(64.0),
+            ..Default::default()
+        };
+        assert!(!b.is_empty());
     }
 
     #[test]
@@ -1006,14 +1023,17 @@ mod tests {
     }
 
     #[test]
-    fn button_theme_toml_round_trip_with_font() {
+    fn button_theme_toml_round_trip_with_font_and_border() {
         let b = ButtonTheme {
-            background: Some(Rgba::rgb(200, 200, 200)),
-            radius: Some(4.0),
+            background_color: Some(Rgba::rgb(200, 200, 200)),
             font: Some(FontSpec {
                 family: Some("Inter".into()),
                 size: Some(14.0),
                 weight: Some(400),
+                ..Default::default()
+            }),
+            border: Some(BorderSpec {
+                corner_radius: Some(4.0),
                 ..Default::default()
             }),
             ..Default::default()
@@ -1023,23 +1043,29 @@ mod tests {
         assert_eq!(b, b2);
     }
 
-    // === WindowTheme: inactive title bar fields ===
+    // === WindowTheme tests ===
 
     #[test]
-    fn window_theme_has_inactive_title_bar_fields() {
+    fn window_theme_has_new_fields() {
         let w = WindowTheme {
             inactive_title_bar_background: Some(Rgba::rgb(180, 180, 180)),
-            inactive_title_bar_foreground: Some(Rgba::rgb(120, 120, 120)),
+            inactive_title_bar_text_color: Some(Rgba::rgb(120, 120, 120)),
             title_bar_font: Some(FontSpec {
                 weight: Some(700),
+                ..Default::default()
+            }),
+            border: Some(BorderSpec {
+                corner_radius: Some(4.0),
+                shadow_enabled: Some(true),
                 ..Default::default()
             }),
             ..Default::default()
         };
         assert!(!w.is_empty());
         assert!(w.inactive_title_bar_background.is_some());
-        assert!(w.inactive_title_bar_foreground.is_some());
+        assert!(w.inactive_title_bar_text_color.is_some());
         assert!(w.title_bar_font.is_some());
+        assert!(w.border.is_some());
     }
 
     #[test]
@@ -1047,16 +1073,16 @@ mod tests {
         assert!(WindowTheme::default().is_empty());
     }
 
-    // === DialogTheme: button_order field ===
+    // === DialogTheme tests ===
 
     #[test]
     fn dialog_theme_button_order_works() {
         let d = DialogTheme {
-            button_order: Some(DialogButtonOrder::TrailingAffirmative),
+            button_order: Some(DialogButtonOrder::PrimaryRight),
             min_width: Some(300.0),
             ..Default::default()
         };
-        assert_eq!(d.button_order, Some(DialogButtonOrder::TrailingAffirmative));
+        assert_eq!(d.button_order, Some(DialogButtonOrder::PrimaryRight));
         assert_eq!(d.min_width, Some(300.0));
         assert!(!d.is_empty());
     }
@@ -1064,8 +1090,7 @@ mod tests {
     #[test]
     fn dialog_theme_button_order_toml_round_trip() {
         let d = DialogTheme {
-            button_order: Some(DialogButtonOrder::LeadingAffirmative),
-            radius: Some(8.0),
+            button_order: Some(DialogButtonOrder::PrimaryLeft),
             ..Default::default()
         };
         let toml_str = toml::to_string(&d).unwrap();
@@ -1078,22 +1103,31 @@ mod tests {
         assert!(DialogTheme::default().is_empty());
     }
 
-    // === SplitterTheme: 1 field ===
+    // === SplitterTheme tests ===
 
     #[test]
     fn splitter_theme_single_field_merge() {
-        let mut base = SplitterTheme { width: Some(4.0) };
-        let overlay = SplitterTheme { width: Some(6.0) };
+        let mut base = SplitterTheme {
+            divider_width: Some(4.0),
+            ..Default::default()
+        };
+        let overlay = SplitterTheme {
+            divider_width: Some(6.0),
+            ..Default::default()
+        };
         base.merge(&overlay);
-        assert_eq!(base.width, Some(6.0));
+        assert_eq!(base.divider_width, Some(6.0));
     }
 
     #[test]
     fn splitter_theme_merge_none_preserves_base() {
-        let mut base = SplitterTheme { width: Some(4.0) };
+        let mut base = SplitterTheme {
+            divider_width: Some(4.0),
+            ..Default::default()
+        };
         let overlay = SplitterTheme::default();
         base.merge(&overlay);
-        assert_eq!(base.width, Some(4.0));
+        assert_eq!(base.divider_width, Some(4.0));
     }
 
     #[test]
@@ -1103,15 +1137,22 @@ mod tests {
 
     #[test]
     fn splitter_theme_not_empty_when_set() {
-        assert!(!SplitterTheme { width: Some(4.0) }.is_empty());
+        assert!(
+            !SplitterTheme {
+                divider_width: Some(4.0),
+                ..Default::default()
+            }
+            .is_empty()
+        );
     }
 
-    // === SeparatorTheme: 1 field ===
+    // === SeparatorTheme tests ===
 
     #[test]
     fn separator_theme_single_field() {
         let s = SeparatorTheme {
-            color: Some(Rgba::rgb(200, 200, 200)),
+            line_color: Some(Rgba::rgb(200, 200, 200)),
+            ..Default::default()
         };
         assert!(!s.is_empty());
     }
@@ -1152,11 +1193,14 @@ mod tests {
     #[test]
     fn input_theme_toml_round_trip() {
         let t = InputTheme {
-            background: Some(Rgba::rgb(255, 255, 255)),
-            border: Some(Rgba::rgb(180, 180, 180)),
-            radius: Some(4.0),
+            background_color: Some(Rgba::rgb(255, 255, 255)),
             font: Some(FontSpec {
                 family: Some("Noto Sans".into()),
+                ..Default::default()
+            }),
+            border: Some(BorderSpec {
+                color: Some(Rgba::rgb(180, 180, 180)),
+                corner_radius: Some(4.0),
                 ..Default::default()
             }),
             ..Default::default()
@@ -1172,7 +1216,7 @@ mod tests {
             checked_background: Some(Rgba::rgb(0, 120, 215)),
             track_width: Some(40.0),
             track_height: Some(20.0),
-            thumb_size: Some(14.0),
+            thumb_diameter: Some(14.0),
             track_radius: Some(10.0),
             ..Default::default()
         };
@@ -1182,35 +1226,38 @@ mod tests {
     }
 
     #[test]
-    fn card_theme_has_shadow_bool_field() {
+    fn card_theme_with_border() {
         let c = CardTheme {
-            shadow: Some(true),
-            radius: Some(8.0),
-            ..Default::default()
+            background_color: Some(Rgba::rgb(255, 255, 255)),
+            border: Some(BorderSpec {
+                corner_radius: Some(8.0),
+                shadow_enabled: Some(true),
+                ..Default::default()
+            }),
         };
         assert!(!c.is_empty());
-        assert_eq!(c.shadow, Some(true));
     }
 
     #[test]
-    fn link_theme_has_underline_bool_field() {
+    fn link_theme_has_underline_enabled_bool_field() {
         let l = LinkTheme {
-            color: Some(Rgba::rgb(0, 100, 200)),
-            underline: Some(true),
+            visited_text_color: Some(Rgba::rgb(100, 0, 200)),
+            underline_enabled: Some(true),
             ..Default::default()
         };
         assert!(!l.is_empty());
-        assert_eq!(l.underline, Some(true));
+        assert_eq!(l.underline_enabled, Some(true));
     }
 
     #[test]
-    fn status_bar_theme_has_only_font_field() {
-        // StatusBarTheme has only a font optional_nested field
+    fn status_bar_theme_has_font_and_background() {
         let s = StatusBarTheme {
+            background_color: Some(Rgba::rgb(240, 240, 240)),
             font: Some(FontSpec {
                 size: Some(11.0),
                 ..Default::default()
             }),
+            ..Default::default()
         };
         assert!(!s.is_empty());
     }

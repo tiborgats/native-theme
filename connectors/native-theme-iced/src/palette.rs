@@ -25,23 +25,23 @@ pub fn to_color(rgba: Rgba) -> iced_core::Color {
 /// Build an iced [`iced_core::theme::Palette`] from a [`native_theme::ResolvedThemeVariant`].
 ///
 /// Maps the 6 palette fields directly from resolved defaults:
-/// - `background` <- `resolved.defaults.background`
-/// - `text` <- `resolved.defaults.foreground`
-/// - `primary` <- `resolved.defaults.accent`
-/// - `success` <- `resolved.defaults.success`
-/// - `warning` <- `resolved.defaults.warning`
-/// - `danger` <- `resolved.defaults.danger`
+/// - `background` <- `resolved.defaults.background_color`
+/// - `text` <- `resolved.defaults.text_color`
+/// - `primary` <- `resolved.defaults.accent_color`
+/// - `success` <- `resolved.defaults.success_color`
+/// - `warning` <- `resolved.defaults.warning_color`
+/// - `danger` <- `resolved.defaults.danger_color`
 #[must_use]
 pub fn to_palette(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::theme::Palette {
     let d = &resolved.defaults;
 
     iced_core::theme::Palette {
-        background: to_color(d.background),
-        text: to_color(d.foreground),
-        primary: to_color(d.accent),
-        success: to_color(d.success),
-        warning: to_color(d.warning),
-        danger: to_color(d.danger),
+        background: to_color(d.background_color),
+        text: to_color(d.text_color),
+        primary: to_color(d.accent_color),
+        success: to_color(d.success_color),
+        warning: to_color(d.warning_color),
+        danger: to_color(d.danger_color),
     }
 }
 
@@ -92,12 +92,15 @@ mod tests {
         let palette = to_palette(&resolved);
 
         // Exact match against resolved values
-        assert_eq!(palette.background, to_color(resolved.defaults.background));
-        assert_eq!(palette.text, to_color(resolved.defaults.foreground));
-        assert_eq!(palette.primary, to_color(resolved.defaults.accent));
-        assert_eq!(palette.success, to_color(resolved.defaults.success));
-        assert_eq!(palette.warning, to_color(resolved.defaults.warning));
-        assert_eq!(palette.danger, to_color(resolved.defaults.danger));
+        assert_eq!(
+            palette.background,
+            to_color(resolved.defaults.background_color)
+        );
+        assert_eq!(palette.text, to_color(resolved.defaults.text_color));
+        assert_eq!(palette.primary, to_color(resolved.defaults.accent_color));
+        assert_eq!(palette.success, to_color(resolved.defaults.success_color));
+        assert_eq!(palette.warning, to_color(resolved.defaults.warning_color));
+        assert_eq!(palette.danger, to_color(resolved.defaults.danger_color));
     }
 
     #[test]
@@ -128,7 +131,7 @@ mod tests {
             // Exact match for all presets
             assert_eq!(
                 palette.primary,
-                to_color(resolved.defaults.accent),
+                to_color(resolved.defaults.accent_color),
                 "{name}: primary should match accent"
             );
         }

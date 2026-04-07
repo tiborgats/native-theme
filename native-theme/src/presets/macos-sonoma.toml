@@ -9,36 +9,30 @@ icon_set = "sf-symbols"
 icon_theme = "sf-symbols"
 
 [light.defaults]
-accent = "#007aff"
-background = "#f0f0f0"
-foreground = "#1d1d1f"
-surface = "#ffffff"
-border = "#d5d5d5"
-muted = "#86868b"
-shadow = "#00000018"
+accent_color = "#007aff"
+background_color = "#f0f0f0"
+text_color = "#1d1d1f"
+surface_color = "#ffffff"
+muted_color = "#86868b"
+shadow_color = "#00000018"
 
-danger = "#ff3b30"
-danger_foreground = "#ffffff"
-warning = "#ff9500"
-warning_foreground = "#1d1d1f"
-success = "#34c759"
-success_foreground = "#ffffff"
-info = "#007aff"
-info_foreground = "#ffffff"
+danger_color = "#ff3b30"
+danger_text_color = "#ffffff"
+warning_color = "#ff9500"
+warning_text_color = "#1d1d1f"
+success_color = "#34c759"
+success_text_color = "#ffffff"
+info_color = "#007aff"
+info_text_color = "#ffffff"
 
-selection = "#007aff"
-selection_foreground = "#ffffff"
-link = "#007aff"
+selection_background = "#007aff"
+selection_text_color = "#ffffff"
+link_color = "#007aff"
 focus_ring_color = "#007aff"
-disabled_foreground = "#c7c7cc"
-accent_foreground = "#ffffff"
+disabled_text_color = "#c7c7cc"
+accent_text_color = "#ffffff"
 
-radius = 5.0
-radius_lg = 10.0
-frame_width = 0.5
 disabled_opacity = 0.3
-border_opacity = 0.2
-shadow_enabled = true
 line_height = 1.19
 focus_ring_width = 3.0
 focus_ring_offset = -1.0
@@ -47,6 +41,14 @@ reduce_motion = false
 high_contrast = false
 reduce_transparency = false
 
+
+[light.defaults.border]
+color = "#d5d5d5"
+corner_radius = 5.0
+corner_radius_lg = 10.0
+line_width = 0.5
+opacity = 0.2
+shadow_enabled = true
 [light.defaults.font]
 family = "SF Pro"
 size = 13.0
@@ -57,15 +59,6 @@ family = "SF Mono"
 size = 13.0
 weight = 400
 
-[light.defaults.spacing]
-xxs = 2.0
-xs = 4.0
-s = 6.0
-m = 10.0
-l = 16.0
-xl = 20.0
-xxl = 32.0
-
 [light.defaults.icon_sizes]
 # toolbar icon_sizes = 24 matches the small toolbar icon mode. Large mode uses 32.
 toolbar = 24.0
@@ -75,131 +68,153 @@ dialog = 22.0
 panel = 20.0
 
 [light.button]
-background = "#e8e8ed"
-foreground = "#1d1d1f"
+background_color = "#e8e8ed"
 min_width = 64.0
 min_height = 22.0
+icon_text_gap = 4.0
+
+
+[light.button.border]
 padding_horizontal = 8.0
 padding_vertical = 3.0
-icon_spacing = 4.0
 
+[light.button.font]
+color = "#1d1d1f"
 [light.input]
-background = "#ffffff"
-foreground = "#1d1d1f"
+background_color = "#ffffff"
 min_height = 22.0
+
+
+[light.input.border]
 padding_horizontal = 4.0
 padding_vertical = 3.0
 
+[light.input.font]
+color = "#1d1d1f"
 [light.checkbox]
-indicator_size = 14.0
-spacing = 4.0
+indicator_width = 14.0
+label_gap = 4.0
 
 [light.tooltip]
-background = "#2c2c2e"
-foreground = "#ffffff"
-padding_horizontal = 4.0
-padding_vertical = 4.0
+background_color = "#2c2c2e"
 max_width = 300.0
 
+
+[light.tooltip.border]
+padding_horizontal = 4.0
+padding_vertical = 4.0
+
+[light.tooltip.font]
+color = "#ffffff"
 [light.scrollbar]
-width = 16.0
-slider_width = 7.0
+groove_width = 16.0
+thumb_width = 7.0
 overlay_mode = true
-min_thumb_height = 40.0
+min_thumb_length = 40.0
 
 [light.slider]
 track_height = 5.0
-thumb_size = 21.0
-tick_length = 8.0
+thumb_diameter = 21.0
+tick_mark_length = 8.0
 
 [light.progress_bar]
-height = 6.0
+track_height = 6.0
 min_width = 100.0
 
 [light.tab]
 min_width = 64.0
 min_height = 24.0
+
+
+[light.tab.border]
 padding_horizontal = 12.0
 padding_vertical = 4.0
-
 [light.menu]
-item_height = 22.0
+row_height = 22.0
+icon_text_gap = 4.0
+
+
+[light.menu.border]
 padding_horizontal = 12.0
 padding_vertical = 3.0
-icon_spacing = 4.0
-
 [light.list]
-alternate_row = "#f5f5fa"
-item_height = 24.0
+alternate_row_background = "#f5f5fa"
+row_height = 24.0
+
+
+[light.list.border]
 padding_horizontal = 4.0
 padding_vertical = 4.0
-
 [light.toolbar]
-height = 38.0
-item_spacing = 8.0
-padding = 8.0
+bar_height = 38.0
+item_gap = 8.0
 
 [light.sidebar]
-background = "#e8e8ed"
-foreground = "#1d1d1f"
+background_color = "#e8e8ed"
 
+
+[light.sidebar.font]
+color = "#1d1d1f"
 [light.popover]
-background = "#ffffff"
-foreground = "#1d1d1f"
+background_color = "#ffffff"
 
+
+[light.popover.font]
+color = "#1d1d1f"
 [light.separator]
-color = "#d5d5d5"
+line_color = "#d5d5d5"
 
 [light.splitter]
-width = 6.0
+divider_width = 6.0
 
 [light.switch]
 unchecked_background = "#d5d5d5"
 thumb_background = "#ffffff"
 track_width = 38.0
 track_height = 22.0
-thumb_size = 18.0
+thumb_diameter = 18.0
 track_radius = 11.0
 
 [light.dialog]
-button_order = "trailing_affirmative"
+button_order = "primary_right"
 min_width = 320.0
 max_width = 560.0
 min_height = 140.0
 max_height = 600.0
-content_padding = 20.0
-button_spacing = 12.0
+button_gap = 12.0
 icon_size = 64.0
 
 [light.link]
-underline = true
-background = "#00000000"
-hover_bg = "#007aff18"
+underline_enabled = true
+background_color = "#00000000"
+hover_background = "#007aff18"
 
 [light.spinner]
 diameter = 32.0
-min_size = 10.0
+min_diameter = 10.0
 stroke_width = 2.0
 
 [light.combo_box]
 min_height = 21.0
 min_width = 120.0
-padding_horizontal = 9.0
-arrow_size = 17.0
+arrow_icon_size = 17.0
 arrow_area_width = 17.0
 
+
+[light.combo_box.border]
+padding_horizontal = 9.0
 [light.segmented_control]
 segment_height = 24.0
 separator_width = 1.0
-padding_horizontal = 9.0
 
+
+[light.segmented_control.border]
+padding_horizontal = 9.0
 [light.card]
-padding = 16.0
 
 [light.expander]
 header_height = 40.0
-arrow_size = 13.0
-content_padding = 16.0
+arrow_icon_size = 13.0
 
 [light.text_scale.caption]
 size = 10.0
@@ -223,36 +238,30 @@ icon_set = "sf-symbols"
 icon_theme = "sf-symbols"
 
 [dark.defaults]
-accent = "#0a84ff"
-background = "#1e1e1e"
-foreground = "#ffffff"
-surface = "#2d2d2d"
-border = "#3d3d3d"
-muted = "#98989d"
-shadow = "#00000040"
+accent_color = "#0a84ff"
+background_color = "#1e1e1e"
+text_color = "#ffffff"
+surface_color = "#2d2d2d"
+muted_color = "#98989d"
+shadow_color = "#00000040"
 
-danger = "#ff453a"
-danger_foreground = "#ffffff"
-warning = "#ff9f0a"
-warning_foreground = "#1e1e1e"
-success = "#30d158"
-success_foreground = "#ffffff"
-info = "#0a84ff"
-info_foreground = "#ffffff"
+danger_color = "#ff453a"
+danger_text_color = "#ffffff"
+warning_color = "#ff9f0a"
+warning_text_color = "#1e1e1e"
+success_color = "#30d158"
+success_text_color = "#ffffff"
+info_color = "#0a84ff"
+info_text_color = "#ffffff"
 
-selection = "#0a84ff"
-selection_foreground = "#ffffff"
-link = "#0a84ff"
+selection_background = "#0a84ff"
+selection_text_color = "#ffffff"
+link_color = "#0a84ff"
 focus_ring_color = "#0a84ff"
-disabled_foreground = "#48484a"
-accent_foreground = "#ffffff"
+disabled_text_color = "#48484a"
+accent_text_color = "#ffffff"
 
-radius = 5.0
-radius_lg = 10.0
-frame_width = 0.5
 disabled_opacity = 0.3
-border_opacity = 0.2
-shadow_enabled = true
 line_height = 1.19
 focus_ring_width = 3.0
 focus_ring_offset = -1.0
@@ -261,6 +270,14 @@ reduce_motion = false
 high_contrast = false
 reduce_transparency = false
 
+
+[dark.defaults.border]
+color = "#3d3d3d"
+corner_radius = 5.0
+corner_radius_lg = 10.0
+line_width = 0.5
+opacity = 0.2
+shadow_enabled = true
 [dark.defaults.font]
 family = "SF Pro"
 size = 13.0
@@ -271,15 +288,6 @@ family = "SF Mono"
 size = 13.0
 weight = 400
 
-[dark.defaults.spacing]
-xxs = 2.0
-xs = 4.0
-s = 6.0
-m = 10.0
-l = 16.0
-xl = 20.0
-xxl = 32.0
-
 [dark.defaults.icon_sizes]
 # toolbar icon_sizes = 24 matches the small toolbar icon mode. Large mode uses 32.
 toolbar = 24.0
@@ -289,131 +297,153 @@ dialog = 22.0
 panel = 20.0
 
 [dark.button]
-background = "#3a3a3c"
-foreground = "#ffffff"
+background_color = "#3a3a3c"
 min_width = 64.0
 min_height = 22.0
+icon_text_gap = 4.0
+
+
+[dark.button.border]
 padding_horizontal = 8.0
 padding_vertical = 3.0
-icon_spacing = 4.0
 
+[dark.button.font]
+color = "#ffffff"
 [dark.input]
-background = "#2d2d2d"
-foreground = "#ffffff"
+background_color = "#2d2d2d"
 min_height = 22.0
+
+
+[dark.input.border]
 padding_horizontal = 4.0
 padding_vertical = 3.0
 
+[dark.input.font]
+color = "#ffffff"
 [dark.checkbox]
-indicator_size = 14.0
-spacing = 4.0
+indicator_width = 14.0
+label_gap = 4.0
 
 [dark.tooltip]
-background = "#3a3a3c"
-foreground = "#ffffff"
-padding_horizontal = 4.0
-padding_vertical = 4.0
+background_color = "#3a3a3c"
 max_width = 300.0
 
+
+[dark.tooltip.border]
+padding_horizontal = 4.0
+padding_vertical = 4.0
+
+[dark.tooltip.font]
+color = "#ffffff"
 [dark.scrollbar]
-width = 16.0
-slider_width = 7.0
+groove_width = 16.0
+thumb_width = 7.0
 overlay_mode = true
-min_thumb_height = 40.0
+min_thumb_length = 40.0
 
 [dark.slider]
 track_height = 5.0
-thumb_size = 21.0
-tick_length = 8.0
+thumb_diameter = 21.0
+tick_mark_length = 8.0
 
 [dark.progress_bar]
-height = 6.0
+track_height = 6.0
 min_width = 100.0
 
 [dark.tab]
 min_width = 64.0
 min_height = 24.0
+
+
+[dark.tab.border]
 padding_horizontal = 12.0
 padding_vertical = 4.0
-
 [dark.menu]
-item_height = 22.0
+row_height = 22.0
+icon_text_gap = 4.0
+
+
+[dark.menu.border]
 padding_horizontal = 12.0
 padding_vertical = 3.0
-icon_spacing = 4.0
-
 [dark.list]
-alternate_row = "#252527"
-item_height = 24.0
+alternate_row_background = "#252527"
+row_height = 24.0
+
+
+[dark.list.border]
 padding_horizontal = 4.0
 padding_vertical = 4.0
-
 [dark.toolbar]
-height = 38.0
-item_spacing = 8.0
-padding = 8.0
+bar_height = 38.0
+item_gap = 8.0
 
 [dark.sidebar]
-background = "#262626"
-foreground = "#ffffff"
+background_color = "#262626"
 
+
+[dark.sidebar.font]
+color = "#ffffff"
 [dark.popover]
-background = "#2d2d2d"
-foreground = "#ffffff"
+background_color = "#2d2d2d"
 
+
+[dark.popover.font]
+color = "#ffffff"
 [dark.separator]
-color = "#3d3d3d"
+line_color = "#3d3d3d"
 
 [dark.splitter]
-width = 6.0
+divider_width = 6.0
 
 [dark.switch]
 unchecked_background = "#3d3d3d"
 thumb_background = "#ffffff"
 track_width = 38.0
 track_height = 22.0
-thumb_size = 18.0
+thumb_diameter = 18.0
 track_radius = 11.0
 
 [dark.dialog]
-button_order = "trailing_affirmative"
+button_order = "primary_right"
 min_width = 320.0
 max_width = 560.0
 min_height = 140.0
 max_height = 600.0
-content_padding = 20.0
-button_spacing = 12.0
+button_gap = 12.0
 icon_size = 64.0
 
 [dark.link]
-underline = true
-background = "#00000000"
-hover_bg = "#0a84ff18"
+underline_enabled = true
+background_color = "#00000000"
+hover_background = "#0a84ff18"
 
 [dark.spinner]
 diameter = 32.0
-min_size = 10.0
+min_diameter = 10.0
 stroke_width = 2.0
 
 [dark.combo_box]
 min_height = 21.0
 min_width = 120.0
-padding_horizontal = 9.0
-arrow_size = 17.0
+arrow_icon_size = 17.0
 arrow_area_width = 17.0
 
+
+[dark.combo_box.border]
+padding_horizontal = 9.0
 [dark.segmented_control]
 segment_height = 24.0
 separator_width = 1.0
-padding_horizontal = 9.0
 
+
+[dark.segmented_control.border]
+padding_horizontal = 9.0
 [dark.card]
-padding = 16.0
 
 [dark.expander]
 header_height = 40.0
-arrow_size = 13.0
-content_padding = 16.0
+arrow_icon_size = 13.0
 
 [dark.text_scale.caption]
 size = 10.0
@@ -429,3 +459,10 @@ size = 26.0
 
 [dark.window.title_bar_font]
 weight = 700
+
+
+[layout]
+widget_gap = 8.0
+container_margin = 8.0
+window_margin = 20.0
+section_gap = 20.0

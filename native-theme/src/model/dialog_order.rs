@@ -2,21 +2,22 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Specifies the order of affirmative/cancel buttons in dialogs.
+/// Specifies the order of primary/cancel buttons in dialogs.
 ///
 /// This is a **platform convention**, not visual styling. Different desktop
 /// environments place the confirmation button at different ends of the
-/// button row (KDE: leading, Windows/GNOME/macOS: trailing). It is part
-/// of the theme model because "native feel" includes layout conventions
-/// that vary by platform, and it is overridable in theme presets.
+/// button row (KDE: leading/left, Windows/GNOME/macOS: trailing/right).
+/// It is part of the theme model because "native feel" includes layout
+/// conventions that vary by platform, and it is overridable in theme presets.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
-#[serde(rename_all = "snake_case")]
 pub enum DialogButtonOrder {
-    /// Affirmative button at the trailing (right) end -- Windows, GNOME, macOS, iOS style.
+    /// Primary button at the trailing (right) end -- Windows, GNOME, macOS, iOS style.
     #[default]
-    TrailingAffirmative,
-    /// Affirmative button at the leading (left) end -- KDE style.
-    LeadingAffirmative,
+    #[serde(rename = "primary_right")]
+    PrimaryRight,
+    /// Primary button at the leading (left) end -- KDE style.
+    #[serde(rename = "primary_left")]
+    PrimaryLeft,
 }
 
 #[cfg(test)]
@@ -33,11 +34,8 @@ mod tests {
     #[test]
     fn serde_round_trip_both_variants() {
         for (variant, expected_str) in [
-            (
-                DialogButtonOrder::TrailingAffirmative,
-                "trailing_affirmative",
-            ),
-            (DialogButtonOrder::LeadingAffirmative, "leading_affirmative"),
+            (DialogButtonOrder::PrimaryRight, "primary_right"),
+            (DialogButtonOrder::PrimaryLeft, "primary_left"),
         ] {
             let original = Wrapper { order: variant };
             let serialized = toml::to_string(&original).unwrap();
@@ -51,13 +49,10 @@ mod tests {
     fn deserializes_from_toml_string_values() {
         for (toml_str, expected) in [
             (
-                r#"order = "trailing_affirmative""#,
-                DialogButtonOrder::TrailingAffirmative,
+                r#"order = "primary_right""#,
+                DialogButtonOrder::PrimaryRight,
             ),
-            (
-                r#"order = "leading_affirmative""#,
-                DialogButtonOrder::LeadingAffirmative,
-            ),
+            (r#"order = "primary_left""#, DialogButtonOrder::PrimaryLeft),
         ] {
             let w: Wrapper = toml::from_str(toml_str).unwrap();
             assert_eq!(w.order, expected);
@@ -67,12 +62,20 @@ mod tests {
     #[test]
     fn debug_output_both_variants() {
         assert_eq!(
-            format!("{:?}", DialogButtonOrder::TrailingAffirmative),
-            "TrailingAffirmative"
+            format!("{:?}", DialogButtonOrder::PrimaryRight),
+            "PrimaryRight"
         );
         assert_eq!(
-            format!("{:?}", DialogButtonOrder::LeadingAffirmative),
-            "LeadingAffirmative"
+            format!("{:?}", DialogButtonOrder::PrimaryLeft),
+            "PrimaryLeft"
+        );
+    }
+
+    #[test]
+    fn default_is_primary_right() {
+        assert_eq!(
+            DialogButtonOrder::default(),
+            DialogButtonOrder::PrimaryRight
         );
     }
 }

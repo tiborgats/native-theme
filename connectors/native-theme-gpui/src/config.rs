@@ -34,8 +34,8 @@ pub fn to_theme_config(
     let is_dark = mode.is_dark();
 
     // Issue 14: clamp radius to non-negative before rounding
-    let radius = d.radius.max(0.0).round() as usize;
-    let radius_lg = d.radius_lg.max(0.0).round() as usize;
+    let radius = d.border.corner_radius.max(0.0).round() as usize;
+    let radius_lg = d.border.corner_radius_lg.max(0.0).round() as usize;
 
     // Issue 5: populate ThemeConfigColors from computed ThemeColor
     let tc = to_theme_color(resolved, is_dark);
@@ -53,7 +53,7 @@ pub fn to_theme_config(
 
         radius: Some(radius),
         radius_lg: Some(radius_lg),
-        shadow: Some(d.shadow_enabled),
+        shadow: Some(d.border.shadow_enabled),
 
         colors,
 
@@ -224,13 +224,13 @@ mod tests {
         // Geometry (Issue 14: clamped to non-negative)
         assert_eq!(
             config.radius,
-            Some(resolved.defaults.radius.max(0.0).round() as usize)
+            Some(resolved.defaults.border.corner_radius.max(0.0).round() as usize)
         );
         assert_eq!(
             config.radius_lg,
-            Some(resolved.defaults.radius_lg.max(0.0).round() as usize)
+            Some(resolved.defaults.border.corner_radius_lg.max(0.0).round() as usize)
         );
-        assert_eq!(config.shadow, Some(resolved.defaults.shadow_enabled));
+        assert_eq!(config.shadow, Some(resolved.defaults.border.shadow_enabled));
     }
 
     #[test]

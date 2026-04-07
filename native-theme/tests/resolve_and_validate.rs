@@ -38,7 +38,7 @@ fn from_toml_with_base_overlay_merges_correctly() {
 name = "Custom"
 
 [light.defaults]
-accent = "#ff0000"
+accent_color = "#ff0000"
 "##;
     let theme = ThemeSpec::from_toml_with_base(custom_toml, "adwaita").unwrap();
 
@@ -47,21 +47,18 @@ accent = "#ff0000"
 
     // Overlay accent applied
     let light = theme.light.as_ref().unwrap();
-    assert_eq!(light.defaults.accent, Some(Rgba::rgb(255, 0, 0)));
+    assert_eq!(light.defaults.accent_color, Some(Rgba::rgb(255, 0, 0)));
 
     // Base geometry preserved (adwaita has these)
     assert!(
-        light.defaults.radius.is_some(),
+        light.defaults.border.corner_radius.is_some(),
         "base radius should survive overlay"
     );
     assert!(
         light.defaults.font.family.is_some(),
         "base font.family should survive overlay"
     );
-    assert!(
-        light.defaults.spacing.m.is_some(),
-        "base spacing.m should survive overlay"
-    );
+    // REMOVED: spacing assertion (ThemeSpacing deleted in Plan 01)
 
     // Resolved version should validate
     let mut resolved_variant = light.clone();
@@ -89,7 +86,7 @@ fn from_toml_with_base_invalid_base_returns_err() {
 fn overlay_accent_change_re_derives_widget_fields() {
     let theme = ThemeSpec::preset("material").unwrap();
     let mut variant = theme.dark.clone().unwrap();
-    let original_accent = variant.defaults.accent.unwrap();
+    let original_accent = variant.defaults.accent_color.unwrap();
 
     // Resolve the original
     variant.resolve_all();
@@ -99,13 +96,13 @@ fn overlay_accent_change_re_derives_widget_fields() {
     let mut variant2 = theme.dark.clone().unwrap();
     let new_accent = Rgba::rgb(255, 0, 0);
     assert_ne!(new_accent, original_accent);
-    variant2.defaults.accent = Some(new_accent);
+    variant2.defaults.accent_color = Some(new_accent);
     variant2.resolve_all();
     let new_resolved = variant2.validate().unwrap();
 
     // Accent-derived fields should differ
     assert_eq!(
-        new_resolved.defaults.accent, new_accent,
+        new_resolved.defaults.accent_color, new_accent,
         "accent should be the new value"
     );
     assert_ne!(
@@ -113,7 +110,7 @@ fn overlay_accent_change_re_derives_widget_fields() {
         "button.primary_background should change with new accent"
     );
     assert_ne!(
-        new_resolved.slider.fill, original_resolved.slider.fill,
+        new_resolved.slider.fill_color, original_resolved.slider.fill_color,
         "slider.fill should change with new accent"
     );
     assert_ne!(
@@ -186,33 +183,48 @@ fn live_presets_geometry_matches_full_presets() {
         ] {
             // Geometry fields: radius, radius_lg, frame_width
             assert_eq!(
-                full_var.defaults.radius, live_var.defaults.radius,
+                full_var.defaults.border.corner_radius, live_var.defaults.border.corner_radius,
                 "{full_name} {label} radius mismatch with live"
             );
             assert_eq!(
-                full_var.defaults.radius_lg, live_var.defaults.radius_lg,
+                full_var.defaults.border.corner_radius_lg,
+                live_var.defaults.border.corner_radius_lg,
                 "{full_name} {label} radius_lg mismatch with live"
             );
             assert_eq!(
-                full_var.defaults.frame_width, live_var.defaults.frame_width,
+                full_var.defaults.border.line_width, live_var.defaults.border.line_width,
                 "{full_name} {label} frame_width mismatch with live"
             );
-            // Spacing
-            assert_eq!(
-                full_var.defaults.spacing, live_var.defaults.spacing,
-                "{full_name} {label} spacing mismatch with live"
-            );
+            // REMOVED: spacing comparison (ThemeSpacing deleted in Plan 01)
             // Button geometry
             assert_eq!(
                 full_var.button.min_height, live_var.button.min_height,
                 "{full_name} {label} button.min_height mismatch with live"
             );
             assert_eq!(
-                full_var.button.padding_horizontal, live_var.button.padding_horizontal,
+                full_var
+                    .button
+                    .border
+                    .as_ref()
+                    .and_then(|b| b.padding_horizontal),
+                live_var
+                    .button
+                    .border
+                    .as_ref()
+                    .and_then(|b| b.padding_horizontal),
                 "{full_name} {label} button.padding_horizontal mismatch with live"
             );
             assert_eq!(
-                full_var.button.padding_vertical, live_var.button.padding_vertical,
+                full_var
+                    .button
+                    .border
+                    .as_ref()
+                    .and_then(|b| b.padding_vertical),
+                live_var
+                    .button
+                    .border
+                    .as_ref()
+                    .and_then(|b| b.padding_vertical),
                 "{full_name} {label} button.padding_vertical mismatch with live"
             );
             // Input geometry
@@ -222,7 +234,7 @@ fn live_presets_geometry_matches_full_presets() {
             );
             // Scrollbar
             assert_eq!(
-                full_var.scrollbar.width, live_var.scrollbar.width,
+                full_var.scrollbar.groove_width, live_var.scrollbar.groove_width,
                 "{full_name} {label} scrollbar.width mismatch with live"
             );
         }
@@ -255,7 +267,7 @@ fn pick_variant_falls_back_to_other() {
     // Theme with only light variant
     let mut theme_light_only = ThemeSpec::new("Light Only");
     let mut light = ThemeVariant::default();
-    light.defaults.accent = Some(Rgba::rgb(0, 0, 255));
+    light.defaults.accent_color = Some(Rgba::rgb(0, 0, 255));
     theme_light_only.light = Some(light);
 
     // pick_variant(true) should fall back to light
@@ -265,7 +277,7 @@ fn pick_variant_falls_back_to_other() {
         "pick_variant(true) should fall back to light variant"
     );
     assert_eq!(
-        picked.unwrap().defaults.accent,
+        picked.unwrap().defaults.accent_color,
         Some(Rgba::rgb(0, 0, 255)),
         "should return the light variant as fallback for dark"
     );
@@ -273,7 +285,7 @@ fn pick_variant_falls_back_to_other() {
     // Theme with only dark variant
     let mut theme_dark_only = ThemeSpec::new("Dark Only");
     let mut dark = ThemeVariant::default();
-    dark.defaults.accent = Some(Rgba::rgb(255, 0, 0));
+    dark.defaults.accent_color = Some(Rgba::rgb(255, 0, 0));
     theme_dark_only.dark = Some(dark);
 
     // pick_variant(false) should fall back to dark
@@ -283,7 +295,7 @@ fn pick_variant_falls_back_to_other() {
         "pick_variant(false) should fall back to dark variant"
     );
     assert_eq!(
-        picked.unwrap().defaults.accent,
+        picked.unwrap().defaults.accent_color,
         Some(Rgba::rgb(255, 0, 0)),
         "should return the dark variant as fallback for light"
     );
@@ -294,7 +306,7 @@ fn into_variant_falls_back_to_other() {
     // Theme with only light variant
     let mut theme = ThemeSpec::new("Light Only");
     let mut light = ThemeVariant::default();
-    light.defaults.accent = Some(Rgba::rgb(0, 0, 255));
+    light.defaults.accent_color = Some(Rgba::rgb(0, 0, 255));
     theme.light = Some(light);
 
     let variant = theme.into_variant(true);
@@ -302,7 +314,10 @@ fn into_variant_falls_back_to_other() {
         variant.is_some(),
         "into_variant(true) should fall back to light"
     );
-    assert_eq!(variant.unwrap().defaults.accent, Some(Rgba::rgb(0, 0, 255)));
+    assert_eq!(
+        variant.unwrap().defaults.accent_color,
+        Some(Rgba::rgb(0, 0, 255))
+    );
 }
 
 #[test]
@@ -339,7 +354,7 @@ fn default_theme_spec_is_empty() {
 #[test]
 fn theme_variant_with_one_field_is_not_empty() {
     let mut v = ThemeVariant::default();
-    v.defaults.accent = Some(Rgba::rgb(0, 0, 255));
+    v.defaults.accent_color = Some(Rgba::rgb(0, 0, 255));
     assert!(
         !v.is_empty(),
         "ThemeVariant with accent set should not be empty"

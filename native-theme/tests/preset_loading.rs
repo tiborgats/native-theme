@@ -44,28 +44,28 @@ fn all_presets_have_core_colors() {
             .unwrap_or_else(|| panic!("preset '{name}' missing dark variant"));
 
         assert!(
-            light.defaults.accent.is_some(),
+            light.defaults.accent_color.is_some(),
             "preset '{name}' light missing accent"
         );
         assert!(
-            light.defaults.background.is_some(),
+            light.defaults.background_color.is_some(),
             "preset '{name}' light missing background"
         );
         assert!(
-            light.defaults.foreground.is_some(),
+            light.defaults.text_color.is_some(),
             "preset '{name}' light missing foreground"
         );
 
         assert!(
-            dark.defaults.accent.is_some(),
+            dark.defaults.accent_color.is_some(),
             "preset '{name}' dark missing accent"
         );
         assert!(
-            dark.defaults.background.is_some(),
+            dark.defaults.background_color.is_some(),
             "preset '{name}' dark missing background"
         );
         assert!(
-            dark.defaults.foreground.is_some(),
+            dark.defaults.text_color.is_some(),
             "preset '{name}' dark missing foreground"
         );
     }
@@ -80,28 +80,28 @@ fn all_presets_have_status_colors() {
         let dark = theme.dark.as_ref().unwrap();
 
         assert!(
-            light.defaults.danger.is_some(),
+            light.defaults.danger_color.is_some(),
             "preset '{name}' light missing danger"
         );
         assert!(
-            light.defaults.warning.is_some(),
+            light.defaults.warning_color.is_some(),
             "preset '{name}' light missing warning"
         );
         assert!(
-            light.defaults.success.is_some(),
+            light.defaults.success_color.is_some(),
             "preset '{name}' light missing success"
         );
 
         assert!(
-            dark.defaults.danger.is_some(),
+            dark.defaults.danger_color.is_some(),
             "preset '{name}' dark missing danger"
         );
         assert!(
-            dark.defaults.warning.is_some(),
+            dark.defaults.warning_color.is_some(),
             "preset '{name}' dark missing warning"
         );
         assert!(
-            dark.defaults.success.is_some(),
+            dark.defaults.success_color.is_some(),
             "preset '{name}' dark missing success"
         );
     }
@@ -116,20 +116,20 @@ fn all_presets_have_interactive_colors() {
         let dark = theme.dark.as_ref().unwrap();
 
         assert!(
-            light.defaults.selection.is_some(),
+            light.defaults.selection_background.is_some(),
             "preset '{name}' light missing selection"
         );
         assert!(
-            light.defaults.link.is_some(),
+            light.defaults.link_color.is_some(),
             "preset '{name}' light missing link"
         );
 
         assert!(
-            dark.defaults.selection.is_some(),
+            dark.defaults.selection_background.is_some(),
             "preset '{name}' dark missing selection"
         );
         assert!(
-            dark.defaults.link.is_some(),
+            dark.defaults.link_color.is_some(),
             "preset '{name}' dark missing link"
         );
     }
@@ -190,20 +190,20 @@ fn all_presets_have_geometry() {
             let variant =
                 variant.unwrap_or_else(|| panic!("preset '{name}' missing {label} variant"));
             assert!(
-                variant.defaults.radius.is_some(),
+                variant.defaults.border.corner_radius.is_some(),
                 "preset '{name}' {label} missing defaults.radius"
             );
             assert!(
-                variant.defaults.radius_lg.is_some(),
+                variant.defaults.border.corner_radius_lg.is_some(),
                 "preset '{name}' {label} missing defaults.radius_lg"
             );
             assert!(
-                variant.defaults.shadow_enabled.is_some(),
+                variant.defaults.border.shadow_enabled.is_some(),
                 "preset '{name}' {label} missing defaults.shadow_enabled"
             );
             // Extended checks (issues 24l, 24m)
             assert!(
-                variant.defaults.frame_width.is_some(),
+                variant.defaults.border.line_width.is_some(),
                 "preset '{name}' {label} missing defaults.frame_width"
             );
             assert!(
@@ -225,35 +225,8 @@ fn all_presets_have_spacing() {
         ] {
             let variant =
                 variant.unwrap_or_else(|| panic!("preset '{name}' missing {label} variant"));
-            // Check all 7 spacing values (issue 24l)
-            assert!(
-                variant.defaults.spacing.xxs.is_some(),
-                "preset '{name}' {label} missing defaults.spacing.xxs"
-            );
-            assert!(
-                variant.defaults.spacing.xs.is_some(),
-                "preset '{name}' {label} missing defaults.spacing.xs"
-            );
-            assert!(
-                variant.defaults.spacing.s.is_some(),
-                "preset '{name}' {label} missing defaults.spacing.s"
-            );
-            assert!(
-                variant.defaults.spacing.m.is_some(),
-                "preset '{name}' {label} missing defaults.spacing.m"
-            );
-            assert!(
-                variant.defaults.spacing.l.is_some(),
-                "preset '{name}' {label} missing defaults.spacing.l"
-            );
-            assert!(
-                variant.defaults.spacing.xl.is_some(),
-                "preset '{name}' {label} missing defaults.spacing.xl"
-            );
-            assert!(
-                variant.defaults.spacing.xxl.is_some(),
-                "preset '{name}' {label} missing defaults.spacing.xxl"
-            );
+            // REMOVED: spacing checks (ThemeSpacing deleted in Plan 01)
+            let _ = variant;
         }
     }
 }
@@ -276,7 +249,7 @@ fn all_presets_round_trip_toml() {
             .as_ref()
             .unwrap_or_else(|| panic!("preset '{name}' round-trip lost light variant"));
         assert_eq!(
-            orig_light.defaults.accent, new_light.defaults.accent,
+            orig_light.defaults.accent_color, new_light.defaults.accent_color,
             "preset '{name}' light accent changed after round-trip"
         );
 
@@ -286,7 +259,7 @@ fn all_presets_round_trip_toml() {
             .as_ref()
             .unwrap_or_else(|| panic!("preset '{name}' round-trip lost dark variant"));
         assert_eq!(
-            orig_dark.defaults.accent, new_dark.defaults.accent,
+            orig_dark.defaults.accent_color, new_dark.defaults.accent_color,
             "preset '{name}' dark accent changed after round-trip"
         );
 
@@ -318,14 +291,14 @@ fn dark_backgrounds_are_darker() {
             .as_ref()
             .unwrap()
             .defaults
-            .background
+            .background_color
             .unwrap_or_else(|| panic!("preset '{name}' light missing background"));
         let dark_bg = theme
             .dark
             .as_ref()
             .unwrap()
             .defaults
-            .background
+            .background_color
             .unwrap_or_else(|| panic!("preset '{name}' dark missing background"));
 
         // Naive RGB sum (r+g+b < threshold) is sufficient for binary dark/light

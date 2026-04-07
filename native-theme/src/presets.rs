@@ -207,13 +207,16 @@ mod tests {
 name = "Minimal"
 
 [light.defaults]
-accent = "#ff0000"
+accent_color = "#ff0000"
 "##;
         let theme = from_toml(toml_str).unwrap();
         assert_eq!(theme.name, "Minimal");
         assert!(theme.light.is_some());
         let light = theme.light.unwrap();
-        assert_eq!(light.defaults.accent, Some(crate::Rgba::rgb(255, 0, 0)));
+        assert_eq!(
+            light.defaults.accent_color,
+            Some(crate::Rgba::rgb(255, 0, 0))
+        );
     }
 
     #[test]
@@ -239,7 +242,10 @@ accent = "#ff0000"
         // Core colors should survive the round-trip
         let orig_light = theme.light.as_ref().unwrap();
         let new_light = reparsed.light.as_ref().unwrap();
-        assert_eq!(orig_light.defaults.accent, new_light.defaults.accent);
+        assert_eq!(
+            orig_light.defaults.accent_color,
+            new_light.defaults.accent_color
+        );
     }
 
     #[test]
@@ -250,7 +256,7 @@ accent = "#ff0000"
 name = "File Test"
 
 [light.defaults]
-accent = "#00ff00"
+accent_color = "#00ff00"
 "##;
         std::fs::write(&path, toml_str).unwrap();
 
@@ -398,13 +404,13 @@ accent = "#00ff00"
                 );
                 // slider.fill is derived from accent
                 assert!(
-                    variant.slider.fill.is_none(),
-                    "preset '{name}' {label}.slider.fill should be None (derived)"
+                    variant.slider.fill_color.is_none(),
+                    "preset '{name}' {label}.slider.fill_color should be None (derived)"
                 );
                 // progress_bar.fill is derived from accent
                 assert!(
-                    variant.progress_bar.fill.is_none(),
-                    "preset '{name}' {label}.progress_bar.fill should be None (derived)"
+                    variant.progress_bar.fill_color.is_none(),
+                    "preset '{name}' {label}.progress_bar.fill_color should be None (derived)"
                 );
                 // switch.checked_background is derived from accent
                 assert!(
@@ -453,11 +459,11 @@ accent = "#00ff00"
             "checkbox.checked_background should be None pre-resolve"
         );
         assert!(
-            light.slider.fill.is_none(),
+            light.slider.fill_color.is_none(),
             "slider.fill should be None pre-resolve"
         );
         assert!(
-            light.progress_bar.fill.is_none(),
+            light.progress_bar.fill_color.is_none(),
             "progress_bar.fill should be None pre-resolve"
         );
         assert!(
@@ -468,7 +474,7 @@ accent = "#00ff00"
         light.resolve();
 
         // After resolve: all accent-derived fields should equal accent
-        let accent = light.defaults.accent.unwrap();
+        let accent = light.defaults.accent_color.unwrap();
         assert_eq!(
             light.button.primary_background,
             Some(accent),
@@ -480,12 +486,12 @@ accent = "#00ff00"
             "checkbox.checked_background should match accent"
         );
         assert_eq!(
-            light.slider.fill,
+            light.slider.fill_color,
             Some(accent),
             "slider.fill should match accent"
         );
         assert_eq!(
-            light.progress_bar.fill,
+            light.progress_bar.fill_color,
             Some(accent),
             "progress_bar.fill should match accent"
         );
@@ -507,13 +513,16 @@ accent = "#00ff00"
         assert_eq!(resolved.defaults.font.size, 14.0);
         assert_eq!(resolved.defaults.font.weight, 400);
         assert_eq!(resolved.defaults.line_height, 1.2);
-        assert_eq!(resolved.defaults.radius, 8.0);
+        assert_eq!(resolved.defaults.border.corner_radius, 8.0);
         assert_eq!(resolved.defaults.focus_ring_width, 2.0);
         assert_eq!(resolved.defaults.icon_sizes.toolbar, 24.0);
         assert_eq!(resolved.defaults.text_scaling_factor, 1.0);
         assert!(!resolved.defaults.reduce_motion);
         // Window inherits from defaults
-        assert_eq!(resolved.window.background, resolved.defaults.background);
+        assert_eq!(
+            resolved.window.background_color,
+            resolved.defaults.background_color
+        );
         // icon_set should be populated (Lucide for community presets)
         assert_eq!(resolved.icon_set, crate::IconSet::Lucide);
     }
@@ -617,27 +626,27 @@ accent = "#00ff00"
 
             // No colors
             assert!(
-                light.defaults.accent.is_none(),
+                light.defaults.accent_color.is_none(),
                 "live preset '{name}' light should have no accent"
             );
             assert!(
-                light.defaults.background.is_none(),
+                light.defaults.background_color.is_none(),
                 "live preset '{name}' light should have no background"
             );
             assert!(
-                light.defaults.foreground.is_none(),
+                light.defaults.text_color.is_none(),
                 "live preset '{name}' light should have no foreground"
             );
             assert!(
-                dark.defaults.accent.is_none(),
+                dark.defaults.accent_color.is_none(),
                 "live preset '{name}' dark should have no accent"
             );
             assert!(
-                dark.defaults.background.is_none(),
+                dark.defaults.background_color.is_none(),
                 "live preset '{name}' dark should have no background"
             );
             assert!(
-                dark.defaults.foreground.is_none(),
+                dark.defaults.text_color.is_none(),
                 "live preset '{name}' dark should have no foreground"
             );
 

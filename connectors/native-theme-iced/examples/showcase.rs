@@ -28,6 +28,39 @@ use std::sync::OnceLock;
 use std::time::{Duration, Instant};
 
 // ---------------------------------------------------------------------------
+// UI spacing scale (local constants, not a theme property)
+// ---------------------------------------------------------------------------
+
+/// Fixed spacing scale for showcase UI layout.
+///
+/// These are UI constants used by this example application for layout spacing.
+/// They are NOT theme-driven values -- they are design choices for this showcase.
+struct Spacing {
+    xxs: f32,
+    xs: f32,
+    s: f32,
+    m: f32,
+    l: f32,
+    xl: f32,
+}
+
+impl Spacing {
+    const fn new() -> Self {
+        Self {
+            xxs: 2.0,
+            xs: 4.0,
+            s: 8.0,
+            m: 12.0,
+            l: 16.0,
+            xl: 24.0,
+        }
+    }
+}
+
+/// Showcase UI spacing constants.
+const SP: Spacing = Spacing::new();
+
+// ---------------------------------------------------------------------------
 // CLI argument parsing
 // ---------------------------------------------------------------------------
 
@@ -1232,7 +1265,7 @@ fn view(state: &State) -> Element<'_, Message> {
 
     // ---- Left sidebar ----
     let sidebar = {
-        let sp = &state.current_resolved.defaults.spacing;
+        let sp = &SP;
         let ts = &state.current_resolved.text_scale;
         let title = text("native-theme").size(ts.dialog_title.size);
         let subtitle =
@@ -1349,7 +1382,7 @@ fn view(state: &State) -> Element<'_, Message> {
 
     // ---- Tab bar ----
     let tab_bar: Element<'_, Message> = {
-        let sp = &state.current_resolved.defaults.spacing;
+        let sp = &SP;
         let ts = &state.current_resolved.text_scale;
         let tabs: Vec<Element<'_, Message>> = Tab::ALL
             .iter()
@@ -1381,7 +1414,7 @@ fn view(state: &State) -> Element<'_, Message> {
     };
 
     // ---- Right panel (tabs + content) ----
-    let sp = &state.current_resolved.defaults.spacing;
+    let sp = &SP;
     let ts = &state.current_resolved.text_scale;
     let tab_padding = Padding::ZERO.left(sp.l).right(sp.l).top(sp.s);
     let content_padding = Padding::from(sp.l);
@@ -1510,7 +1543,7 @@ fn widget_tooltip_themed(
 // ---------------------------------------------------------------------------
 
 fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> {
-    let sp = &state.current_resolved.defaults.spacing;
+    let sp = &SP;
     let ts = &state.current_resolved.text_scale;
     let palette = state.current_theme.palette();
     let ext = state.current_theme.extended_palette();
@@ -1642,7 +1675,7 @@ fn view_buttons<'a>(state: &'a State, btn_pad: Padding) -> Element<'a, Message> 
 // ---------------------------------------------------------------------------
 
 fn view_text_inputs<'a>(state: &'a State, radius: f32, inp_pad: Padding) -> Element<'a, Message> {
-    let sp = &state.current_resolved.defaults.spacing;
+    let sp = &SP;
     let ts = &state.current_resolved.text_scale;
     let palette = state.current_theme.palette();
     let ext = state.current_theme.extended_palette();
@@ -1767,7 +1800,7 @@ fn view_text_inputs<'a>(state: &'a State, radius: f32, inp_pad: Padding) -> Elem
 // ---------------------------------------------------------------------------
 
 fn view_selection(state: &State) -> Element<'_, Message> {
-    let sp = &state.current_resolved.defaults.spacing;
+    let sp = &SP;
     let ts = &state.current_resolved.text_scale;
     let palette = state.current_theme.palette();
     let ext = state.current_theme.extended_palette();
@@ -2011,7 +2044,7 @@ fn view_selection(state: &State) -> Element<'_, Message> {
 // ---------------------------------------------------------------------------
 
 fn view_range(state: &State) -> Element<'_, Message> {
-    let sp = &state.current_resolved.defaults.spacing;
+    let sp = &SP;
     let ts = &state.current_resolved.text_scale;
     let palette = state.current_theme.palette();
     let ext = state.current_theme.extended_palette();
@@ -2159,7 +2192,7 @@ fn view_range(state: &State) -> Element<'_, Message> {
 // ---------------------------------------------------------------------------
 
 fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
-    let sp = &state.current_resolved.defaults.spacing;
+    let sp = &SP;
     let ts = &state.current_resolved.text_scale;
     let ext = state.current_theme.extended_palette();
     let radius_s = format!("{radius:.0}px");
@@ -2368,7 +2401,7 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
 // ---------------------------------------------------------------------------
 
 fn view_icons(state: &State) -> Element<'_, Message> {
-    let sp = &state.current_resolved.defaults.spacing;
+    let sp = &SP;
     let ts = &state.current_resolved.text_scale;
     let loaded_count = state
         .loaded_icons
@@ -2450,7 +2483,7 @@ fn view_icons(state: &State) -> Element<'_, Message> {
 }
 
 fn view_animated_icons<'a>(state: &'a State, fg_color: Color) -> Element<'a, Message> {
-    let sp = &state.current_resolved.defaults.spacing;
+    let sp = &SP;
     let ts = &state.current_resolved.text_scale;
     let section_title = text("Animated Icons").size(ts.display.size);
     let divider = rule::horizontal(2);
@@ -2621,7 +2654,7 @@ fn placeholder_icon<'a>(size: f32) -> Element<'a, Message> {
 // ---------------------------------------------------------------------------
 
 fn view_theme_map(state: &State) -> Element<'_, Message> {
-    let sp = &state.current_resolved.defaults.spacing;
+    let sp = &SP;
     let ts = &state.current_resolved.text_scale;
     let header = section_header(
         "Theme Map",
@@ -2633,7 +2666,7 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
     let palette = state.current_theme.palette();
     let extended = state.current_theme.extended_palette();
     let swatch_border = native_theme_iced::border_color(&state.current_resolved);
-    let swatch_bw = state.current_resolved.defaults.frame_width;
+    let swatch_bw = state.current_resolved.defaults.border.line_width;
     let swatch_r = native_theme_iced::border_radius(&state.current_resolved);
     // Local closure for concise swatch calls
     let caption_sz = ts.caption.size;
@@ -2741,42 +2774,42 @@ fn view_theme_map(state: &State) -> Element<'_, Message> {
         let d = &state.current_resolved.defaults;
         let r = &state.current_resolved;
         let pairs: Vec<(&str, native_theme::Rgba)> = vec![
-            ("accent", d.accent),
-            ("background", d.background),
-            ("foreground", d.foreground),
-            ("surface", d.surface),
-            ("border", d.border),
-            ("muted", d.muted),
-            ("shadow", d.shadow),
-            ("accent_fg", d.accent_foreground),
-            ("btn_bg", r.button.background),
-            ("btn_fg", r.button.foreground),
+            ("accent", d.accent_color),
+            ("background", d.background_color),
+            ("text", d.text_color),
+            ("surface", d.surface_color),
+            ("border", d.border.color),
+            ("muted", d.muted_color),
+            ("shadow", d.shadow_color),
+            ("accent_fg", d.accent_text_color),
+            ("btn_bg", r.button.background_color),
+            ("btn_fg", r.button.font.color),
             ("btn_primary", r.button.primary_background),
-            ("danger", d.danger),
-            ("danger_fg", d.danger_foreground),
-            ("warning", d.warning),
-            ("warning_fg", d.warning_foreground),
-            ("success", d.success),
-            ("success_fg", d.success_foreground),
-            ("info", d.info),
-            ("info_fg", d.info_foreground),
-            ("selection", d.selection),
-            ("selection_fg", d.selection_foreground),
-            ("link", d.link),
+            ("danger", d.danger_color),
+            ("danger_fg", d.danger_text_color),
+            ("warning", d.warning_color),
+            ("warning_fg", d.warning_text_color),
+            ("success", d.success_color),
+            ("success_fg", d.success_text_color),
+            ("info", d.info_color),
+            ("info_fg", d.info_text_color),
+            ("selection", d.selection_background),
+            ("selection_fg", d.selection_text_color),
+            ("link", d.link_color),
             ("focus_ring", d.focus_ring_color),
-            ("sidebar_bg", r.sidebar.background),
-            ("sidebar_fg", r.sidebar.foreground),
-            ("tooltip_bg", r.tooltip.background),
-            ("tooltip_fg", r.tooltip.foreground),
-            ("popover_bg", r.popover.background),
-            ("popover_fg", r.popover.foreground),
-            ("input_bg", r.input.background),
-            ("input_fg", r.input.foreground),
-            ("disabled_fg", d.disabled_foreground),
-            ("separator", r.separator.color),
-            ("alt_row", r.list.alternate_row),
-            ("sel_inactive", d.selection_inactive),
-            ("card_bg", r.card.background),
+            ("sidebar_bg", r.sidebar.background_color),
+            ("sidebar_fg", r.sidebar.font.color),
+            ("tooltip_bg", r.tooltip.background_color),
+            ("tooltip_fg", r.tooltip.font.color),
+            ("popover_bg", r.popover.background_color),
+            ("popover_fg", r.popover.font.color),
+            ("input_bg", r.input.background_color),
+            ("input_fg", r.input.font.color),
+            ("disabled_fg", d.disabled_text_color),
+            ("separator", r.separator.line_color),
+            ("alt_row", r.list.alternate_row_background),
+            ("sel_inactive", d.selection_inactive_background),
+            ("card_bg", r.card.background_color),
         ];
 
         // Wrap into rows of 6
@@ -2980,7 +3013,7 @@ fn section_header<'a>(
     title: &'a str,
     description: &'a str,
     ts: &native_theme::ResolvedTextScale,
-    sp: &native_theme::ResolvedThemeSpacing,
+    sp: &Spacing,
 ) -> Element<'a, Message> {
     column![
         text(title).size(ts.display.size),

@@ -9,36 +9,30 @@ icon_set = "material"
 icon_theme = "material"
 
 [light.defaults]
-accent = "#6750a4"
-background = "#fffbfe"
-foreground = "#1c1b1f"
-surface = "#fffbfe"
-border = "#79747e"
-muted = "#49454f"
-shadow = "#00000018"
+accent_color = "#6750a4"
+background_color = "#fffbfe"
+text_color = "#1c1b1f"
+surface_color = "#fffbfe"
+muted_color = "#49454f"
+shadow_color = "#00000018"
 
-danger = "#b3261e"
-danger_foreground = "#ffffff"
-warning = "#7d5700"
-warning_foreground = "#ffffff"
-success = "#386a20"
-success_foreground = "#ffffff"
-info = "#6750a4"
-info_foreground = "#ffffff"
+danger_color = "#b3261e"
+danger_text_color = "#ffffff"
+warning_color = "#7d5700"
+warning_text_color = "#ffffff"
+success_color = "#386a20"
+success_text_color = "#ffffff"
+info_color = "#6750a4"
+info_text_color = "#ffffff"
 
-selection = "#6750a4"
-selection_foreground = "#ffffff"
-link = "#6750a4"
+selection_background = "#6750a4"
+selection_text_color = "#ffffff"
+link_color = "#6750a4"
 focus_ring_color = "#6750a4"
-disabled_foreground = "#c4c7c5"
-accent_foreground = "#ffffff"
+disabled_text_color = "#c4c7c5"
+accent_text_color = "#ffffff"
 
-radius = 12.0
-radius_lg = 16.0
-frame_width = 1.0
 disabled_opacity = 0.38
-border_opacity = 0.12
-shadow_enabled = true
 line_height = 1.2
 focus_ring_width = 2.0
 focus_ring_offset = 1.0
@@ -47,6 +41,14 @@ reduce_motion = false
 high_contrast = false
 reduce_transparency = false
 
+
+[light.defaults.border]
+color = "#79747e"
+corner_radius = 12.0
+corner_radius_lg = 16.0
+line_width = 1.0
+opacity = 0.12
+shadow_enabled = true
 [light.defaults.font]
 family = "Roboto"
 size = 14.0
@@ -57,15 +59,6 @@ family = "Roboto Mono"
 size = 14.0
 weight = 400
 
-[light.defaults.spacing]
-xxs = 2.0
-xs = 4.0
-s = 8.0
-m = 12.0
-l = 16.0
-xl = 24.0
-xxl = 36.0
-
 [light.defaults.icon_sizes]
 toolbar = 24.0
 small = 16.0
@@ -74,131 +67,153 @@ dialog = 22.0
 panel = 20.0
 
 [light.button]
-background = "#e8def8"
-foreground = "#1d192b"
+background_color = "#e8def8"
 min_width = 64.0
 min_height = 40.0
+icon_text_gap = 8.0
+
+
+[light.button.border]
 padding_horizontal = 24.0
 padding_vertical = 10.0
-icon_spacing = 8.0
 
+[light.button.font]
+color = "#1d192b"
 [light.input]
-background = "#fffbfe"
-foreground = "#1c1b1f"
+background_color = "#fffbfe"
 min_height = 56.0
+
+
+[light.input.border]
 padding_horizontal = 16.0
 padding_vertical = 16.0
 
+[light.input.font]
+color = "#1c1b1f"
 [light.checkbox]
-indicator_size = 18.0
-spacing = 8.0
+indicator_width = 18.0
+label_gap = 8.0
 
 [light.tooltip]
-background = "#313033"
-foreground = "#f4eff4"
-padding_horizontal = 8.0
-padding_vertical = 8.0
+background_color = "#313033"
 max_width = 300.0
 
+
+[light.tooltip.border]
+padding_horizontal = 8.0
+padding_vertical = 8.0
+
+[light.tooltip.font]
+color = "#f4eff4"
 [light.scrollbar]
-width = 12.0
-slider_width = 4.0
+groove_width = 12.0
+thumb_width = 4.0
 overlay_mode = false
-min_thumb_height = 30.0
+min_thumb_length = 30.0
 
 [light.slider]
 track_height = 4.0
-thumb_size = 20.0
-tick_length = 4.0
+thumb_diameter = 20.0
+tick_mark_length = 4.0
 
 [light.progress_bar]
-height = 4.0
+track_height = 4.0
 min_width = 100.0
 
 [light.tab]
 min_width = 64.0
 min_height = 48.0
+
+
+[light.tab.border]
 padding_horizontal = 16.0
 padding_vertical = 4.0
-
 [light.menu]
-item_height = 48.0
+row_height = 48.0
+icon_text_gap = 8.0
+
+
+[light.menu.border]
 padding_horizontal = 12.0
 padding_vertical = 4.0
-icon_spacing = 8.0
-
 [light.list]
-alternate_row = "#f7f2fa"
-item_height = 48.0
+alternate_row_background = "#f7f2fa"
+row_height = 48.0
+
+
+[light.list.border]
 padding_horizontal = 16.0
 padding_vertical = 4.0
-
 [light.toolbar]
-height = 64.0
-item_spacing = 8.0
-padding = 8.0
+bar_height = 64.0
+item_gap = 8.0
 
 [light.sidebar]
-background = "#f3edf7"
-foreground = "#1c1b1f"
+background_color = "#f3edf7"
 
+
+[light.sidebar.font]
+color = "#1c1b1f"
 [light.popover]
-background = "#fffbfe"
-foreground = "#1c1b1f"
+background_color = "#fffbfe"
 
+
+[light.popover.font]
+color = "#1c1b1f"
 [light.separator]
-color = "#cac4d0"
+line_color = "#cac4d0"
 
 [light.splitter]
-width = 4.0
+divider_width = 4.0
 
 [light.switch]
 unchecked_background = "#79747e"
 thumb_background = "#fffbfe"
 track_width = 52.0
 track_height = 32.0
-thumb_size = 24.0
+thumb_diameter = 24.0
 track_radius = 16.0
 
 [light.dialog]
-button_order = "trailing_affirmative"
+button_order = "primary_right"
 min_width = 280.0
 max_width = 560.0
 min_height = 140.0
 max_height = 600.0
-content_padding = 24.0
-button_spacing = 8.0
+button_gap = 8.0
 icon_size = 32.0
 
 [light.link]
-underline = false
-background = "#00000000"
-hover_bg = "#6750a418"
+underline_enabled = false
+background_color = "#00000000"
+hover_background = "#6750a418"
 
 [light.spinner]
 diameter = 24.0
-min_size = 16.0
+min_diameter = 16.0
 stroke_width = 3.0
 
 [light.combo_box]
 min_height = 40.0
 min_width = 120.0
-padding_horizontal = 16.0
-arrow_size = 12.0
+arrow_icon_size = 12.0
 arrow_area_width = 28.0
 
+
+[light.combo_box.border]
+padding_horizontal = 16.0
 [light.segmented_control]
 segment_height = 40.0
 separator_width = 1.0
-padding_horizontal = 16.0
 
+
+[light.segmented_control.border]
+padding_horizontal = 16.0
 [light.card]
-padding = 16.0
 
 [light.expander]
 header_height = 48.0
-arrow_size = 12.0
-content_padding = 16.0
+arrow_icon_size = 12.0
 
 # === Dark variant ===
 
@@ -207,36 +222,30 @@ icon_set = "material"
 icon_theme = "material"
 
 [dark.defaults]
-accent = "#d0bcff"
-background = "#1c1b1f"
-foreground = "#e6e1e5"
-surface = "#1c1b1e"
-border = "#938f99"
-muted = "#cac4d0"
-shadow = "#00000040"
+accent_color = "#d0bcff"
+background_color = "#1c1b1f"
+text_color = "#e6e1e5"
+surface_color = "#1c1b1e"
+muted_color = "#cac4d0"
+shadow_color = "#00000040"
 
-danger = "#f2b8b5"
-danger_foreground = "#601410"
-warning = "#e6c18e"
-warning_foreground = "#3e2e00"
-success = "#b1d18a"
-success_foreground = "#1b3700"
-info = "#d0bcff"
-info_foreground = "#381e72"
+danger_color = "#f2b8b5"
+danger_text_color = "#601410"
+warning_color = "#e6c18e"
+warning_text_color = "#3e2e00"
+success_color = "#b1d18a"
+success_text_color = "#1b3700"
+info_color = "#d0bcff"
+info_text_color = "#381e72"
 
-selection = "#d0bcff"
-selection_foreground = "#381e72"
-link = "#d0bcff"
+selection_background = "#d0bcff"
+selection_text_color = "#381e72"
+link_color = "#d0bcff"
 focus_ring_color = "#d0bcff"
-disabled_foreground = "#49454f"
-accent_foreground = "#381e72"
+disabled_text_color = "#49454f"
+accent_text_color = "#381e72"
 
-radius = 12.0
-radius_lg = 16.0
-frame_width = 1.0
 disabled_opacity = 0.38
-border_opacity = 0.12
-shadow_enabled = true
 line_height = 1.2
 focus_ring_width = 2.0
 focus_ring_offset = 1.0
@@ -245,6 +254,14 @@ reduce_motion = false
 high_contrast = false
 reduce_transparency = false
 
+
+[dark.defaults.border]
+color = "#938f99"
+corner_radius = 12.0
+corner_radius_lg = 16.0
+line_width = 1.0
+opacity = 0.12
+shadow_enabled = true
 [dark.defaults.font]
 family = "Roboto"
 size = 14.0
@@ -255,15 +272,6 @@ family = "Roboto Mono"
 size = 14.0
 weight = 400
 
-[dark.defaults.spacing]
-xxs = 2.0
-xs = 4.0
-s = 8.0
-m = 12.0
-l = 16.0
-xl = 24.0
-xxl = 36.0
-
 [dark.defaults.icon_sizes]
 toolbar = 24.0
 small = 16.0
@@ -272,128 +280,157 @@ dialog = 22.0
 panel = 20.0
 
 [dark.button]
-background = "#4a4458"
-foreground = "#e8def8"
+background_color = "#4a4458"
 min_width = 64.0
 min_height = 40.0
+icon_text_gap = 8.0
+
+
+[dark.button.border]
 padding_horizontal = 24.0
 padding_vertical = 10.0
-icon_spacing = 8.0
 
+[dark.button.font]
+color = "#e8def8"
 [dark.input]
-background = "#1c1b1e"
-foreground = "#e6e1e5"
+background_color = "#1c1b1e"
 min_height = 56.0
+
+
+[dark.input.border]
 padding_horizontal = 16.0
 padding_vertical = 16.0
 
+[dark.input.font]
+color = "#e6e1e5"
 [dark.checkbox]
-indicator_size = 18.0
-spacing = 8.0
+indicator_width = 18.0
+label_gap = 8.0
 
 [dark.tooltip]
-background = "#e6e1e5"
-foreground = "#313033"
-padding_horizontal = 8.0
-padding_vertical = 8.0
+background_color = "#e6e1e5"
 max_width = 300.0
 
+
+[dark.tooltip.border]
+padding_horizontal = 8.0
+padding_vertical = 8.0
+
+[dark.tooltip.font]
+color = "#313033"
 [dark.scrollbar]
-width = 12.0
-slider_width = 4.0
+groove_width = 12.0
+thumb_width = 4.0
 overlay_mode = false
-min_thumb_height = 30.0
+min_thumb_length = 30.0
 
 [dark.slider]
 track_height = 4.0
-thumb_size = 20.0
-tick_length = 4.0
+thumb_diameter = 20.0
+tick_mark_length = 4.0
 
 [dark.progress_bar]
-height = 4.0
+track_height = 4.0
 min_width = 100.0
 
 [dark.tab]
 min_width = 64.0
 min_height = 48.0
+
+
+[dark.tab.border]
 padding_horizontal = 16.0
 padding_vertical = 4.0
-
 [dark.menu]
-item_height = 48.0
+row_height = 48.0
+icon_text_gap = 8.0
+
+
+[dark.menu.border]
 padding_horizontal = 12.0
 padding_vertical = 4.0
-icon_spacing = 8.0
-
 [dark.list]
-alternate_row = "#211f26"
-item_height = 48.0
+alternate_row_background = "#211f26"
+row_height = 48.0
+
+
+[dark.list.border]
 padding_horizontal = 16.0
 padding_vertical = 4.0
-
 [dark.toolbar]
-height = 64.0
-item_spacing = 8.0
-padding = 8.0
+bar_height = 64.0
+item_gap = 8.0
 
 [dark.sidebar]
-background = "#25232a"
-foreground = "#e6e1e5"
+background_color = "#25232a"
 
+
+[dark.sidebar.font]
+color = "#e6e1e5"
 [dark.popover]
-background = "#2b2930"
-foreground = "#e6e1e5"
+background_color = "#2b2930"
 
+
+[dark.popover.font]
+color = "#e6e1e5"
 [dark.separator]
-color = "#49454f"
+line_color = "#49454f"
 
 [dark.splitter]
-width = 4.0
+divider_width = 4.0
 
 [dark.switch]
 unchecked_background = "#938f99"
 thumb_background = "#e6e1e5"
 track_width = 52.0
 track_height = 32.0
-thumb_size = 24.0
+thumb_diameter = 24.0
 track_radius = 16.0
 
 [dark.dialog]
-button_order = "trailing_affirmative"
+button_order = "primary_right"
 min_width = 280.0
 max_width = 560.0
 min_height = 140.0
 max_height = 600.0
-content_padding = 24.0
-button_spacing = 8.0
+button_gap = 8.0
 icon_size = 32.0
 
 [dark.link]
-underline = false
-background = "#00000000"
-hover_bg = "#d0bcff18"
+underline_enabled = false
+background_color = "#00000000"
+hover_background = "#d0bcff18"
 
 [dark.spinner]
 diameter = 24.0
-min_size = 16.0
+min_diameter = 16.0
 stroke_width = 3.0
 
 [dark.combo_box]
 min_height = 40.0
 min_width = 120.0
-padding_horizontal = 16.0
-arrow_size = 12.0
+arrow_icon_size = 12.0
 arrow_area_width = 28.0
 
+
+[dark.combo_box.border]
+padding_horizontal = 16.0
 [dark.segmented_control]
 segment_height = 40.0
 separator_width = 1.0
-padding_horizontal = 16.0
 
+
+[dark.segmented_control.border]
+padding_horizontal = 16.0
 [dark.card]
-padding = 16.0
 
 [dark.expander]
 header_height = 48.0
-arrow_size = 12.0
-content_padding = 16.0
+arrow_icon_size = 12.0
+
+
+[layout]
+widget_gap = 6.0
+container_margin = 6.0
+window_margin = 10.0
+section_gap = 18.0

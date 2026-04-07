@@ -45,7 +45,7 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ThemeSpec>
     }
 
     // Dialog button order: KDE uses leading affirmative (per project decision)
-    variant.dialog.button_order = Some(DialogButtonOrder::LeadingAffirmative);
+    variant.dialog.button_order = Some(DialogButtonOrder::PrimaryLeft);
 
     let dark = is_dark_theme(&ini);
 
@@ -665,9 +665,9 @@ BackgroundNormal=49,54,59
     fn test_colors_populated() {
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let variant = theme.dark.as_ref().unwrap();
-        assert!(variant.defaults.accent.is_some());
-        assert!(variant.defaults.background.is_some());
-        assert!(variant.defaults.foreground.is_some());
+        assert!(variant.defaults.accent_color.is_some());
+        assert!(variant.defaults.background_color.is_some());
+        assert!(variant.defaults.text_color.is_some());
     }
 
     #[test]
@@ -696,7 +696,11 @@ BackgroundNormal=49,54,59
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let variant = theme.dark.as_ref().unwrap();
         assert_eq!(variant.button.min_width, Some(80.0), "Button_MinWidth");
-        assert_eq!(variant.scrollbar.width, Some(21.0), "ScrollBar_Extend");
+        assert_eq!(
+            variant.scrollbar.groove_width,
+            Some(21.0),
+            "ScrollBar_Extend"
+        );
     }
 
     #[test]
@@ -743,24 +747,33 @@ BackgroundNormal=49,54,59
     fn test_button_colors_populated() {
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
-        assert_eq!(v.button.background, Some(Rgba::rgb(49, 54, 59)));
-        assert_eq!(v.button.foreground, Some(Rgba::rgb(239, 240, 241)));
+        assert_eq!(v.button.background_color, Some(Rgba::rgb(49, 54, 59)));
+        assert_eq!(
+            v.button.font.as_ref().and_then(|f| f.color),
+            Some(Rgba::rgb(239, 240, 241))
+        );
     }
 
     #[test]
     fn test_tooltip_colors_populated() {
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
-        assert_eq!(v.tooltip.background, Some(Rgba::rgb(49, 54, 59)));
-        assert_eq!(v.tooltip.foreground, Some(Rgba::rgb(252, 252, 252)));
+        assert_eq!(v.tooltip.background_color, Some(Rgba::rgb(49, 54, 59)));
+        assert_eq!(
+            v.tooltip.font.as_ref().and_then(|f| f.color),
+            Some(Rgba::rgb(252, 252, 252))
+        );
     }
 
     #[test]
     fn test_sidebar_colors_populated() {
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
-        assert_eq!(v.sidebar.background, Some(Rgba::rgb(42, 46, 50)));
-        assert_eq!(v.sidebar.foreground, Some(Rgba::rgb(239, 240, 241)));
+        assert_eq!(v.sidebar.background_color, Some(Rgba::rgb(42, 46, 50)));
+        assert_eq!(
+            v.sidebar.font.as_ref().and_then(|f| f.color),
+            Some(Rgba::rgb(239, 240, 241))
+        );
     }
 
     #[test]
@@ -769,7 +782,7 @@ BackgroundNormal=49,54,59
         let v = theme.dark.as_ref().unwrap();
         assert_eq!(v.window.title_bar_background, Some(Rgba::rgb(49, 54, 59)));
         assert_eq!(
-            v.window.title_bar_foreground,
+            v.window.title_bar_font.as_ref().and_then(|f| f.color),
             Some(Rgba::rgb(239, 240, 241))
         );
         assert_eq!(
@@ -777,7 +790,7 @@ BackgroundNormal=49,54,59
             Some(Rgba::rgb(42, 46, 50))
         );
         assert_eq!(
-            v.window.inactive_title_bar_foreground,
+            v.window.inactive_title_bar_text_color,
             Some(Rgba::rgb(161, 169, 177))
         );
     }
@@ -787,14 +800,17 @@ BackgroundNormal=49,54,59
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
         assert_eq!(v.list.header_background, Some(Rgba::rgb(35, 38, 41)));
-        assert_eq!(v.list.header_foreground, Some(Rgba::rgb(252, 252, 252)));
+        assert_eq!(
+            v.list.header_font.as_ref().and_then(|f| f.color),
+            Some(Rgba::rgb(252, 252, 252))
+        );
     }
 
     #[test]
     fn test_link_visited() {
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
-        assert_eq!(v.link.visited, Some(Rgba::rgb(155, 89, 182)));
+        assert_eq!(v.link.visited_text_color, Some(Rgba::rgb(155, 89, 182)));
     }
 
     // === KDE-04: Text scale ===
@@ -1098,7 +1114,7 @@ Name=whatever
         let v = theme.dark.as_ref().unwrap();
         assert_eq!(
             v.dialog.button_order,
-            Some(crate::DialogButtonOrder::LeadingAffirmative)
+            Some(crate::DialogButtonOrder::PrimaryLeft)
         );
     }
 
@@ -1108,14 +1124,14 @@ Name=whatever
     fn test_widget_sizing_checkbox_indicator() {
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
-        assert_eq!(v.checkbox.indicator_size, Some(20.0));
+        assert_eq!(v.checkbox.indicator_width, Some(20.0));
     }
 
     #[test]
     fn test_widget_sizing_splitter() {
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
-        assert_eq!(v.splitter.width, Some(1.0));
+        assert_eq!(v.splitter.divider_width, Some(1.0));
     }
 
     // === Per-widget fonts (KDE-03) ===
@@ -1182,7 +1198,7 @@ Name=whatever
         // Spot-check: KDE-sourced fields should be present.
         // accent from Colors:View/DecorationFocus = 61,174,233
         assert_eq!(
-            resolved.defaults.accent,
+            resolved.defaults.accent_color,
             crate::Rgba::rgb(61, 174, 233),
             "accent should be from KDE reader"
         );
@@ -1195,7 +1211,7 @@ Name=whatever
 
         // button.background from Colors:Button/BackgroundNormal = 49,54,59
         assert_eq!(
-            resolved.button.background,
+            resolved.button.background_color,
             crate::Rgba::rgb(49, 54, 59),
             "button bg should be from KDE reader"
         );
@@ -1209,7 +1225,7 @@ Name=whatever
 
         // input.caret from Colors:View/DecorationFocus = 61,174,233
         assert_eq!(
-            resolved.input.caret,
+            resolved.input.caret_color,
             crate::Rgba::rgb(61, 174, 233),
             "input.caret should be from KDE reader (DecorationFocus)"
         );
@@ -1224,7 +1240,7 @@ Name=whatever
         // dialog.button_order should be from KDE reader
         assert_eq!(
             resolved.dialog.button_order,
-            crate::DialogButtonOrder::LeadingAffirmative,
+            crate::DialogButtonOrder::PrimaryLeft,
             "dialog button order should be leading affirmative for KDE"
         );
     }

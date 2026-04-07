@@ -18,82 +18,91 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
     let window_fg = get_color(ini, "Colors:Window", "ForegroundNormal");
 
     // === defaults-level colors ===
-    variant.defaults.accent = get_color(ini, "Colors:View", "DecorationFocus");
-    variant.defaults.background = get_color(ini, "Colors:Window", "BackgroundNormal");
-    variant.defaults.foreground = window_fg;
-    variant.defaults.surface = get_color(ini, "Colors:View", "BackgroundNormal");
+    variant.defaults.accent_color = get_color(ini, "Colors:View", "DecorationFocus");
+    variant.defaults.background_color = get_color(ini, "Colors:Window", "BackgroundNormal");
+    variant.defaults.text_color = window_fg;
+    variant.defaults.surface_color = get_color(ini, "Colors:View", "BackgroundNormal");
     // border: not set by reader -- KDE has no native border color API.
     // The preset provides the correct neutral gray (platform-facts: "(preset)").
-    variant.defaults.muted = get_color(ini, "Colors:Window", "ForegroundInactive");
+    variant.defaults.muted_color = get_color(ini, "Colors:Window", "ForegroundInactive");
     // KDE does not expose shadow color in kdeglobals
-    variant.defaults.link = get_color(ini, "Colors:View", "ForegroundLink");
+    variant.defaults.link_color = get_color(ini, "Colors:View", "ForegroundLink");
     variant.defaults.focus_ring_color = get_color(ini, "Colors:View", "DecorationFocus");
 
     // Selection
-    variant.defaults.selection = get_color(ini, "Colors:Selection", "BackgroundNormal");
-    variant.defaults.selection_foreground = get_color(ini, "Colors:Selection", "ForegroundNormal");
-    // accent_foreground: foreground on accent-colored backgrounds (platform-facts 2.1.3)
-    variant.defaults.accent_foreground = get_color(ini, "Colors:Selection", "ForegroundNormal");
+    variant.defaults.selection_background = get_color(ini, "Colors:Selection", "BackgroundNormal");
+    variant.defaults.selection_text_color = get_color(ini, "Colors:Selection", "ForegroundNormal");
+    // accent_text_color: foreground on accent-colored backgrounds (platform-facts 2.1.3)
+    variant.defaults.accent_text_color = get_color(ini, "Colors:Selection", "ForegroundNormal");
 
     // Status colors
-    variant.defaults.danger = get_color(ini, "Colors:View", "ForegroundNegative");
-    variant.defaults.danger_foreground = window_fg;
-    variant.defaults.warning = get_color(ini, "Colors:View", "ForegroundNeutral");
-    variant.defaults.warning_foreground = window_fg;
-    variant.defaults.success = get_color(ini, "Colors:View", "ForegroundPositive");
-    variant.defaults.success_foreground = window_fg;
-    variant.defaults.info = get_color(ini, "Colors:View", "ForegroundActive");
-    variant.defaults.info_foreground = window_fg;
+    variant.defaults.danger_color = get_color(ini, "Colors:View", "ForegroundNegative");
+    variant.defaults.danger_text_color = window_fg;
+    variant.defaults.warning_color = get_color(ini, "Colors:View", "ForegroundNeutral");
+    variant.defaults.warning_text_color = window_fg;
+    variant.defaults.success_color = get_color(ini, "Colors:View", "ForegroundPositive");
+    variant.defaults.success_text_color = window_fg;
+    variant.defaults.info_color = get_color(ini, "Colors:View", "ForegroundActive");
+    variant.defaults.info_text_color = window_fg;
 
     // Disabled
-    variant.defaults.disabled_foreground = get_color(ini, "Colors:View", "ForegroundInactive");
+    variant.defaults.disabled_text_color = get_color(ini, "Colors:View", "ForegroundInactive");
 
     // === per-widget colors ===
 
     // Button
-    variant.button.background = get_color(ini, "Colors:Button", "BackgroundNormal");
-    variant.button.foreground = get_color(ini, "Colors:Button", "ForegroundNormal");
+    variant.button.background_color = get_color(ini, "Colors:Button", "BackgroundNormal");
+    variant.button.font.get_or_insert_default().color =
+        get_color(ini, "Colors:Button", "ForegroundNormal");
 
     // Tooltip
-    variant.tooltip.background = get_color(ini, "Colors:Tooltip", "BackgroundNormal");
-    variant.tooltip.foreground = get_color(ini, "Colors:Tooltip", "ForegroundNormal");
+    variant.tooltip.background_color = get_color(ini, "Colors:Tooltip", "BackgroundNormal");
+    variant.tooltip.font.get_or_insert_default().color =
+        get_color(ini, "Colors:Tooltip", "ForegroundNormal");
 
     // Sidebar (from Complementary group)
-    variant.sidebar.background = get_color(ini, "Colors:Complementary", "BackgroundNormal");
-    variant.sidebar.foreground = get_color(ini, "Colors:Complementary", "ForegroundNormal");
+    variant.sidebar.background_color = get_color(ini, "Colors:Complementary", "BackgroundNormal");
+    variant.sidebar.font.get_or_insert_default().color =
+        get_color(ini, "Colors:Complementary", "ForegroundNormal");
 
     // Input
-    variant.input.background = get_color(ini, "Colors:View", "BackgroundNormal");
-    variant.input.foreground = get_color(ini, "Colors:View", "ForegroundNormal");
+    variant.input.background_color = get_color(ini, "Colors:View", "BackgroundNormal");
+    variant.input.font.get_or_insert_default().color =
+        get_color(ini, "Colors:View", "ForegroundNormal");
     // KDE-02: placeholder from View/ForegroundInactive
-    variant.input.placeholder = get_color(ini, "Colors:View", "ForegroundInactive");
+    variant.input.placeholder_color = get_color(ini, "Colors:View", "ForegroundInactive");
     // input.caret from View/DecorationFocus (the focus decoration color)
-    variant.input.caret = get_color(ini, "Colors:View", "DecorationFocus");
+    variant.input.caret_color = get_color(ini, "Colors:View", "DecorationFocus");
 
     // Popover (from View)
-    variant.popover.background = get_color(ini, "Colors:View", "BackgroundNormal");
-    variant.popover.foreground = get_color(ini, "Colors:View", "ForegroundNormal");
+    variant.popover.background_color = get_color(ini, "Colors:View", "BackgroundNormal");
+    variant.popover.font.get_or_insert_default().color =
+        get_color(ini, "Colors:View", "ForegroundNormal");
 
     // Separator
-    variant.separator.color = get_color(ini, "Colors:Window", "ForegroundInactive");
+    variant.separator.line_color = get_color(ini, "Colors:Window", "ForegroundInactive");
 
     // KDE-02: list fields (Colors:View is the native source for list/table content areas)
-    variant.list.background = get_color(ini, "Colors:View", "BackgroundNormal");
-    variant.list.foreground = get_color(ini, "Colors:View", "ForegroundNormal");
-    variant.list.alternate_row = get_color(ini, "Colors:View", "BackgroundAlternate");
+    variant.list.background_color = get_color(ini, "Colors:View", "BackgroundNormal");
+    variant.list.item_font.get_or_insert_default().color =
+        get_color(ini, "Colors:View", "ForegroundNormal");
+    variant.list.alternate_row_background = get_color(ini, "Colors:View", "BackgroundAlternate");
     variant.list.header_background = get_color(ini, "Colors:Header", "BackgroundNormal");
-    variant.list.header_foreground = get_color(ini, "Colors:Header", "ForegroundNormal");
+    variant.list.header_font.get_or_insert_default().color =
+        get_color(ini, "Colors:Header", "ForegroundNormal");
 
     // KDE-02: link.visited
-    variant.link.visited = get_color(ini, "Colors:View", "ForegroundVisited");
-    // link.color from View/ForegroundLink
-    variant.link.color = get_color(ini, "Colors:View", "ForegroundLink");
+    variant.link.visited_text_color = get_color(ini, "Colors:View", "ForegroundVisited");
+    // link.font.color from View/ForegroundLink
+    variant.link.font.get_or_insert_default().color =
+        get_color(ini, "Colors:View", "ForegroundLink");
 
     // === KDE-01: Window Manager title bar colors ===
     variant.window.title_bar_background = get_color(ini, "WM", "activeBackground");
-    variant.window.title_bar_foreground = get_color(ini, "WM", "activeForeground");
+    variant.window.title_bar_font.get_or_insert_default().color =
+        get_color(ini, "WM", "activeForeground");
     variant.window.inactive_title_bar_background = get_color(ini, "WM", "inactiveBackground");
-    variant.window.inactive_title_bar_foreground = get_color(ini, "WM", "inactiveForeground");
+    variant.window.inactive_title_bar_text_color = get_color(ini, "WM", "inactiveForeground");
 }
 
 #[cfg(test)]
@@ -175,38 +184,38 @@ inactiveForeground=161,169,177
     #[test]
     fn test_accent_from_view_decoration_focus() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.defaults.accent, Some(Rgba::rgb(61, 174, 233)));
+        assert_eq!(v.defaults.accent_color, Some(Rgba::rgb(61, 174, 233)));
     }
 
     #[test]
     fn test_background_from_window() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.defaults.background, Some(Rgba::rgb(49, 54, 59)));
+        assert_eq!(v.defaults.background_color, Some(Rgba::rgb(49, 54, 59)));
     }
 
     #[test]
-    fn test_foreground_from_window() {
+    fn test_text_color_from_window() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.defaults.foreground, Some(Rgba::rgb(239, 240, 241)));
+        assert_eq!(v.defaults.text_color, Some(Rgba::rgb(239, 240, 241)));
     }
 
     #[test]
     fn test_surface_from_view() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.defaults.surface, Some(Rgba::rgb(35, 38, 41)));
+        assert_eq!(v.defaults.surface_color, Some(Rgba::rgb(35, 38, 41)));
     }
 
     #[test]
     fn test_border_not_set_by_reader() {
         // Border is a preset value, not reader-provided (platform-facts: "(preset)")
         let v = populate_fixture(BREEZE_DARK);
-        assert!(v.defaults.border.is_none());
+        assert!(v.defaults.border.is_empty());
     }
 
     #[test]
     fn test_muted_from_window_foreground_inactive() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.defaults.muted, Some(Rgba::rgb(161, 169, 177)));
+        assert_eq!(v.defaults.muted_color, Some(Rgba::rgb(161, 169, 177)));
     }
 
     // === Status colors ===
@@ -214,10 +223,10 @@ inactiveForeground=161,169,177
     #[test]
     fn test_status_colors() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.defaults.danger, Some(Rgba::rgb(218, 68, 83)));
-        assert_eq!(v.defaults.warning, Some(Rgba::rgb(246, 116, 0)));
-        assert_eq!(v.defaults.success, Some(Rgba::rgb(39, 174, 96)));
-        assert_eq!(v.defaults.info, Some(Rgba::rgb(61, 174, 233)));
+        assert_eq!(v.defaults.danger_color, Some(Rgba::rgb(218, 68, 83)));
+        assert_eq!(v.defaults.warning_color, Some(Rgba::rgb(246, 116, 0)));
+        assert_eq!(v.defaults.success_color, Some(Rgba::rgb(39, 174, 96)));
+        assert_eq!(v.defaults.info_color, Some(Rgba::rgb(61, 174, 233)));
     }
 
     // === Selection ===
@@ -225,9 +234,12 @@ inactiveForeground=161,169,177
     #[test]
     fn test_selection_colors() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.defaults.selection, Some(Rgba::rgb(61, 174, 233)));
         assert_eq!(
-            v.defaults.selection_foreground,
+            v.defaults.selection_background,
+            Some(Rgba::rgb(61, 174, 233))
+        );
+        assert_eq!(
+            v.defaults.selection_text_color,
             Some(Rgba::rgb(252, 252, 252))
         );
     }
@@ -237,13 +249,16 @@ inactiveForeground=161,169,177
     #[test]
     fn test_button_background_from_colors_button() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.button.background, Some(Rgba::rgb(49, 54, 59)));
+        assert_eq!(v.button.background_color, Some(Rgba::rgb(49, 54, 59)));
     }
 
     #[test]
-    fn test_button_foreground_from_colors_button() {
+    fn test_button_font_color_from_colors_button() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.button.foreground, Some(Rgba::rgb(239, 240, 241)));
+        assert_eq!(
+            v.button.font.as_ref().and_then(|f| f.color),
+            Some(Rgba::rgb(239, 240, 241))
+        );
     }
 
     // === Per-widget: Tooltip ===
@@ -251,13 +266,16 @@ inactiveForeground=161,169,177
     #[test]
     fn test_tooltip_background_from_colors_tooltip() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.tooltip.background, Some(Rgba::rgb(49, 54, 59)));
+        assert_eq!(v.tooltip.background_color, Some(Rgba::rgb(49, 54, 59)));
     }
 
     #[test]
-    fn test_tooltip_foreground_from_colors_tooltip() {
+    fn test_tooltip_font_color_from_colors_tooltip() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.tooltip.foreground, Some(Rgba::rgb(252, 252, 252)));
+        assert_eq!(
+            v.tooltip.font.as_ref().and_then(|f| f.color),
+            Some(Rgba::rgb(252, 252, 252))
+        );
     }
 
     // === Per-widget: Sidebar (Complementary) ===
@@ -265,13 +283,16 @@ inactiveForeground=161,169,177
     #[test]
     fn test_sidebar_background_from_complementary() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.sidebar.background, Some(Rgba::rgb(42, 46, 50)));
+        assert_eq!(v.sidebar.background_color, Some(Rgba::rgb(42, 46, 50)));
     }
 
     #[test]
-    fn test_sidebar_foreground_from_complementary() {
+    fn test_sidebar_font_color_from_complementary() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.sidebar.foreground, Some(Rgba::rgb(239, 240, 241)));
+        assert_eq!(
+            v.sidebar.font.as_ref().and_then(|f| f.color),
+            Some(Rgba::rgb(239, 240, 241))
+        );
     }
 
     // === KDE-01: Title bar from WM ===
@@ -283,10 +304,10 @@ inactiveForeground=161,169,177
     }
 
     #[test]
-    fn test_title_bar_foreground_from_wm_active() {
+    fn test_title_bar_font_color_from_wm_active() {
         let v = populate_fixture(BREEZE_DARK);
         assert_eq!(
-            v.window.title_bar_foreground,
+            v.window.title_bar_font.as_ref().and_then(|f| f.color),
             Some(Rgba::rgb(239, 240, 241))
         );
     }
@@ -301,10 +322,10 @@ inactiveForeground=161,169,177
     }
 
     #[test]
-    fn test_inactive_title_bar_foreground_from_wm() {
+    fn test_inactive_title_bar_text_color_from_wm() {
         let v = populate_fixture(BREEZE_DARK);
         assert_eq!(
-            v.window.inactive_title_bar_foreground,
+            v.window.inactive_title_bar_text_color,
             Some(Rgba::rgb(161, 169, 177))
         );
     }
@@ -314,35 +335,38 @@ inactiveForeground=161,169,177
     #[test]
     fn test_input_placeholder_from_view_foreground_inactive() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.input.placeholder, Some(Rgba::rgb(161, 169, 177)));
+        assert_eq!(v.input.placeholder_color, Some(Rgba::rgb(161, 169, 177)));
     }
 
     #[test]
     fn test_input_caret_from_view_decoration_focus() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.input.caret, Some(Rgba::rgb(61, 174, 233)));
+        assert_eq!(v.input.caret_color, Some(Rgba::rgb(61, 174, 233)));
     }
 
-    // === accent_foreground from Selection ===
+    // === accent_text_color from Selection ===
 
     #[test]
-    fn test_accent_foreground_from_selection() {
+    fn test_accent_text_color_from_selection() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.defaults.accent_foreground, Some(Rgba::rgb(252, 252, 252)));
+        assert_eq!(v.defaults.accent_text_color, Some(Rgba::rgb(252, 252, 252)));
     }
 
-    // === KDE-02: List background/foreground from View ===
+    // === KDE-02: List background/item_font from View ===
 
     #[test]
     fn test_list_background_from_view() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.list.background, Some(Rgba::rgb(35, 38, 41)));
+        assert_eq!(v.list.background_color, Some(Rgba::rgb(35, 38, 41)));
     }
 
     #[test]
-    fn test_list_foreground_from_view() {
+    fn test_list_item_font_color_from_view() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.list.foreground, Some(Rgba::rgb(252, 252, 252)));
+        assert_eq!(
+            v.list.item_font.as_ref().and_then(|f| f.color),
+            Some(Rgba::rgb(252, 252, 252))
+        );
     }
 
     // === KDE-02: List alternate_row ===
@@ -350,7 +374,7 @@ inactiveForeground=161,169,177
     #[test]
     fn test_list_alternate_row_from_view() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.list.alternate_row, Some(Rgba::rgb(30, 33, 36)));
+        assert_eq!(v.list.alternate_row_background, Some(Rgba::rgb(30, 33, 36)));
     }
 
     // === KDE-02: List header from Header group ===
@@ -362,9 +386,12 @@ inactiveForeground=161,169,177
     }
 
     #[test]
-    fn test_list_header_foreground_from_header() {
+    fn test_list_header_font_color_from_header() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.list.header_foreground, Some(Rgba::rgb(252, 252, 252)));
+        assert_eq!(
+            v.list.header_font.as_ref().and_then(|f| f.color),
+            Some(Rgba::rgb(252, 252, 252))
+        );
     }
 
     // === KDE-02: Link visited ===
@@ -372,7 +399,7 @@ inactiveForeground=161,169,177
     #[test]
     fn test_link_visited_from_view() {
         let v = populate_fixture(BREEZE_DARK);
-        assert_eq!(v.link.visited, Some(Rgba::rgb(155, 89, 182)));
+        assert_eq!(v.link.visited_text_color, Some(Rgba::rgb(155, 89, 182)));
     }
 
     // === Sidebar None when Complementary missing ===
@@ -385,8 +412,8 @@ BackgroundNormal=35,38,41
 ForegroundNormal=252,252,252
 ";
         let v = populate_fixture(content);
-        assert!(v.sidebar.background.is_none());
-        assert!(v.sidebar.foreground.is_none());
+        assert!(v.sidebar.background_color.is_none());
+        assert!(v.sidebar.font.is_none());
     }
 
     // === Empty INI ===
@@ -396,10 +423,10 @@ ForegroundNormal=252,252,252
         let ini = super::super::create_kde_parser();
         let mut variant = ThemeVariant::default();
         populate_colors(&ini, &mut variant);
-        assert!(variant.defaults.accent.is_none());
-        assert!(variant.defaults.background.is_none());
-        assert!(variant.defaults.foreground.is_none());
-        assert!(variant.button.background.is_none());
+        assert!(variant.defaults.accent_color.is_none());
+        assert!(variant.defaults.background_color.is_none());
+        assert!(variant.defaults.text_color.is_none());
+        assert!(variant.button.background_color.is_none());
     }
 
     // === Partial sections ===
@@ -414,13 +441,13 @@ ForegroundInactive=161,169,177
 DecorationFocus=61,174,233
 ";
         let v = populate_fixture(content);
-        assert_eq!(v.defaults.background, Some(Rgba::rgb(49, 54, 59)));
-        assert_eq!(v.defaults.foreground, Some(Rgba::rgb(239, 240, 241)));
-        assert_eq!(v.defaults.muted, Some(Rgba::rgb(161, 169, 177)));
-        assert!(v.defaults.border.is_none()); // border not set by reader
-        assert!(v.defaults.accent.is_none());
-        assert!(v.defaults.surface.is_none());
-        assert!(v.button.background.is_none());
+        assert_eq!(v.defaults.background_color, Some(Rgba::rgb(49, 54, 59)));
+        assert_eq!(v.defaults.text_color, Some(Rgba::rgb(239, 240, 241)));
+        assert_eq!(v.defaults.muted_color, Some(Rgba::rgb(161, 169, 177)));
+        assert!(v.defaults.border.is_empty()); // border not set by reader
+        assert!(v.defaults.accent_color.is_none());
+        assert!(v.defaults.surface_color.is_none());
+        assert!(v.button.background_color.is_none());
     }
 
     // === Malformed values ===
@@ -434,8 +461,8 @@ ForegroundNormal=252,252,252
 DecorationFocus=61,174,233
 ";
         let v = populate_fixture(content);
-        assert!(v.defaults.surface.is_none()); // BackgroundNormal was malformed
-        assert_eq!(v.defaults.accent, Some(Rgba::rgb(61, 174, 233)));
+        assert!(v.defaults.surface_color.is_none()); // BackgroundNormal was malformed
+        assert_eq!(v.defaults.accent_color, Some(Rgba::rgb(61, 174, 233)));
     }
 
     // === Full mapping: all non-None fields populated ===
@@ -445,51 +472,99 @@ DecorationFocus=61,174,233
         let v = populate_fixture(BREEZE_DARK);
 
         // defaults-level
-        assert!(v.defaults.accent.is_some(), "accent missing");
-        assert!(v.defaults.background.is_some(), "background missing");
-        assert!(v.defaults.foreground.is_some(), "foreground missing");
-        assert!(v.defaults.surface.is_some(), "surface missing");
+        assert!(v.defaults.accent_color.is_some(), "accent_color missing");
+        assert!(
+            v.defaults.background_color.is_some(),
+            "background_color missing"
+        );
+        assert!(v.defaults.text_color.is_some(), "text_color missing");
+        assert!(v.defaults.surface_color.is_some(), "surface_color missing");
         // border is not set by reader (preset value)
-        assert!(v.defaults.muted.is_some(), "muted missing");
-        assert!(v.defaults.link.is_some(), "link missing");
-        assert!(v.defaults.selection.is_some(), "selection missing");
+        assert!(v.defaults.muted_color.is_some(), "muted_color missing");
+        assert!(v.defaults.link_color.is_some(), "link_color missing");
         assert!(
-            v.defaults.selection_foreground.is_some(),
-            "selection_foreground missing"
+            v.defaults.selection_background.is_some(),
+            "selection_background missing"
         );
         assert!(
-            v.defaults.accent_foreground.is_some(),
-            "accent_foreground missing"
+            v.defaults.selection_text_color.is_some(),
+            "selection_text_color missing"
         );
-        assert!(v.defaults.danger.is_some(), "danger missing");
-        assert!(v.defaults.warning.is_some(), "warning missing");
-        assert!(v.defaults.success.is_some(), "success missing");
-        assert!(v.defaults.info.is_some(), "info missing");
+        assert!(
+            v.defaults.accent_text_color.is_some(),
+            "accent_text_color missing"
+        );
+        assert!(v.defaults.danger_color.is_some(), "danger_color missing");
+        assert!(v.defaults.warning_color.is_some(), "warning_color missing");
+        assert!(v.defaults.success_color.is_some(), "success_color missing");
+        assert!(v.defaults.info_color.is_some(), "info_color missing");
 
         // per-widget
-        assert!(v.button.background.is_some(), "button.background missing");
-        assert!(v.button.foreground.is_some(), "button.foreground missing");
-        assert!(v.tooltip.background.is_some(), "tooltip.background missing");
-        assert!(v.tooltip.foreground.is_some(), "tooltip.foreground missing");
-        assert!(v.sidebar.background.is_some(), "sidebar.background missing");
-        assert!(v.sidebar.foreground.is_some(), "sidebar.foreground missing");
-        assert!(v.input.background.is_some(), "input.background missing");
-        assert!(v.input.foreground.is_some(), "input.foreground missing");
-        assert!(v.input.placeholder.is_some(), "input.placeholder missing");
-        assert!(v.input.caret.is_some(), "input.caret missing");
-        assert!(v.separator.color.is_some(), "separator.color missing");
-        assert!(v.list.background.is_some(), "list.background missing");
-        assert!(v.list.foreground.is_some(), "list.foreground missing");
-        assert!(v.list.alternate_row.is_some(), "list.alternate_row missing");
+        assert!(
+            v.button.background_color.is_some(),
+            "button.background_color missing"
+        );
+        assert!(
+            v.button.font.as_ref().and_then(|f| f.color).is_some(),
+            "button.font.color missing"
+        );
+        assert!(
+            v.tooltip.background_color.is_some(),
+            "tooltip.background_color missing"
+        );
+        assert!(
+            v.tooltip.font.as_ref().and_then(|f| f.color).is_some(),
+            "tooltip.font.color missing"
+        );
+        assert!(
+            v.sidebar.background_color.is_some(),
+            "sidebar.background_color missing"
+        );
+        assert!(
+            v.sidebar.font.as_ref().and_then(|f| f.color).is_some(),
+            "sidebar.font.color missing"
+        );
+        assert!(
+            v.input.background_color.is_some(),
+            "input.background_color missing"
+        );
+        assert!(
+            v.input.font.as_ref().and_then(|f| f.color).is_some(),
+            "input.font.color missing"
+        );
+        assert!(
+            v.input.placeholder_color.is_some(),
+            "input.placeholder_color missing"
+        );
+        assert!(v.input.caret_color.is_some(), "input.caret_color missing");
+        assert!(
+            v.separator.line_color.is_some(),
+            "separator.line_color missing"
+        );
+        assert!(
+            v.list.background_color.is_some(),
+            "list.background_color missing"
+        );
+        assert!(
+            v.list.item_font.as_ref().and_then(|f| f.color).is_some(),
+            "list.item_font.color missing"
+        );
+        assert!(
+            v.list.alternate_row_background.is_some(),
+            "list.alternate_row_background missing"
+        );
         assert!(
             v.list.header_background.is_some(),
             "list.header_background missing"
         );
         assert!(
-            v.list.header_foreground.is_some(),
-            "list.header_foreground missing"
+            v.list.header_font.as_ref().and_then(|f| f.color).is_some(),
+            "list.header_font.color missing"
         );
-        assert!(v.link.visited.is_some(), "link.visited missing");
+        assert!(
+            v.link.visited_text_color.is_some(),
+            "link.visited_text_color missing"
+        );
 
         // WM title bar
         assert!(
@@ -497,16 +572,20 @@ DecorationFocus=61,174,233
             "window.title_bar_background missing"
         );
         assert!(
-            v.window.title_bar_foreground.is_some(),
-            "window.title_bar_foreground missing"
+            v.window
+                .title_bar_font
+                .as_ref()
+                .and_then(|f| f.color)
+                .is_some(),
+            "window.title_bar_font.color missing"
         );
         assert!(
             v.window.inactive_title_bar_background.is_some(),
             "window.inactive_title_bar_background missing"
         );
         assert!(
-            v.window.inactive_title_bar_foreground.is_some(),
-            "window.inactive_title_bar_foreground missing"
+            v.window.inactive_title_bar_text_color.is_some(),
+            "window.inactive_title_bar_text_color missing"
         );
     }
 }

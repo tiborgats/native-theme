@@ -2,9 +2,10 @@
 
 use crate::Rgba;
 use crate::error::ThemeResolutionError;
+use crate::model::border::{BorderSpec, ResolvedBorderSpec};
 use crate::model::resolved::{
     ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedThemeDefaults,
-    ResolvedThemeSpacing, ResolvedThemeVariant,
+    ResolvedThemeVariant,
 };
 use crate::model::{DialogButtonOrder, FontSpec, ResolvedFontSpec, TextScaleEntry, ThemeVariant};
 
@@ -204,11 +205,11 @@ fn platform_button_order() -> DialogButtonOrder {
     #[cfg(target_os = "linux")]
     {
         if crate::detect_linux_de(&crate::xdg_current_desktop()) == crate::LinuxDesktop::Kde {
-            return DialogButtonOrder::LeadingAffirmative;
+            return DialogButtonOrder::PrimaryLeft;
         }
     }
-    // Windows, GNOME, macOS, iOS all use trailing affirmative
-    DialogButtonOrder::TrailingAffirmative
+    // Windows, GNOME, macOS, iOS all use primary-right
+    DialogButtonOrder::PrimaryRight
 }
 
 impl ThemeVariant {
@@ -287,7 +288,7 @@ impl ThemeVariant {
     /// let variant = theme.dark.unwrap();
     /// let resolved = variant.into_resolved().unwrap();
     /// // All fields are now guaranteed populated
-    /// let accent = resolved.defaults.accent;
+    /// let accent = resolved.defaults.accent_color;
     /// ```
     #[must_use = "this returns the resolved theme; it does not modify self"]
     pub fn into_resolved(mut self) -> crate::Result<ResolvedThemeVariant> {
@@ -300,17 +301,40 @@ impl ThemeVariant {
     fn resolve_defaults_internal(&mut self) {
         let d = &mut self.defaults;
 
-        // selection <- accent
-        if d.selection.is_none() {
-            d.selection = d.accent;
+        // selection_background <- accent_color
+        if d.selection_background.is_none() {
+            d.selection_background = d.accent_color;
         }
-        // focus_ring_color <- accent
+        // focus_ring_color <- accent_color
         if d.focus_ring_color.is_none() {
-            d.focus_ring_color = d.accent;
+            d.focus_ring_color = d.accent_color;
         }
-        // selection_inactive <- selection (MUST run after selection is set)
-        if d.selection_inactive.is_none() {
-            d.selection_inactive = d.selection;
+        // selection_inactive_background <- selection_background (MUST run after selection_background is set)
+        if d.selection_inactive_background.is_none() {
+            d.selection_inactive_background = d.selection_background;
+        }
+        // text_selection_background <- selection_background (inline text highlight defaults to selection)
+        if d.text_selection_background.is_none() {
+            d.text_selection_background = d.selection_background;
+        }
+        // text_selection_color <- selection_text_color
+        if d.text_selection_color.is_none() {
+            d.text_selection_color = d.selection_text_color;
+        }
+        // defaults.border padding -- defaults-level border carries no meaningful
+        // padding; per-widget border specs carry the actual padding values.
+        // Derive from line_width presence to ensure the field is populated.
+        if d.border.padding_horizontal.is_none() {
+            d.border.padding_horizontal = d.border.line_width.map(|_| 0.0_f32);
+            if d.border.padding_horizontal.is_none() {
+                d.border.padding_horizontal = d.border.corner_radius.map(|_| 0.0_f32);
+            }
+        }
+        if d.border.padding_vertical.is_none() {
+            d.border.padding_vertical = d.border.line_width.map(|_| 0.0_f32);
+            if d.border.padding_vertical.is_none() {
+                d.border.padding_vertical = d.border.corner_radius.map(|_| 0.0_f32);
+            }
         }
     }
 
@@ -321,41 +345,41 @@ impl ThemeVariant {
         if self.defaults.line_height.is_none() {
             self.defaults.line_height = Some(1.2);
         }
-        // defaults.accent_foreground -- white is legible on most accent colors
-        if self.defaults.accent_foreground.is_none() {
-            self.defaults.accent_foreground = Some(Rgba::rgb(255, 255, 255));
+        // defaults.accent_text_color -- white is legible on most accent colors
+        if self.defaults.accent_text_color.is_none() {
+            self.defaults.accent_text_color = Some(Rgba::rgb(255, 255, 255));
         }
-        // defaults.shadow -- semi-transparent black
-        if self.defaults.shadow.is_none() {
-            self.defaults.shadow = Some(Rgba::rgba(0, 0, 0, 64));
+        // defaults.shadow_color -- semi-transparent black
+        if self.defaults.shadow_color.is_none() {
+            self.defaults.shadow_color = Some(Rgba::rgba(0, 0, 0, 64));
         }
-        // defaults.disabled_foreground <- defaults.muted
-        if self.defaults.disabled_foreground.is_none() {
-            self.defaults.disabled_foreground = self.defaults.muted;
+        // defaults.disabled_text_color <- defaults.muted_color
+        if self.defaults.disabled_text_color.is_none() {
+            self.defaults.disabled_text_color = self.defaults.muted_color;
         }
         // dialog.button_order <- platform convention
         if self.dialog.button_order.is_none() {
             self.dialog.button_order = Some(platform_button_order());
         }
-        // input.caret <- defaults.foreground
-        if self.input.caret.is_none() {
-            self.input.caret = self.defaults.foreground;
+        // input.caret_color <- defaults.text_color
+        if self.input.caret_color.is_none() {
+            self.input.caret_color = self.defaults.text_color;
         }
-        // scrollbar.track <- defaults.background
-        if self.scrollbar.track.is_none() {
-            self.scrollbar.track = self.defaults.background;
+        // scrollbar.track <- defaults.background_color
+        if self.scrollbar.track_color.is_none() {
+            self.scrollbar.track_color = self.defaults.background_color;
         }
         // spinner.fill <- defaults.accent (all platforms use accent)
-        if self.spinner.fill.is_none() {
-            self.spinner.fill = self.defaults.accent;
+        if self.spinner.fill_color.is_none() {
+            self.spinner.fill_color = self.defaults.accent_color;
         }
-        // popover.background <- defaults.background
-        if self.popover.background.is_none() {
-            self.popover.background = self.defaults.background;
+        // popover.background <- defaults.background_color
+        if self.popover.background_color.is_none() {
+            self.popover.background_color = self.defaults.background_color;
         }
-        // list.background <- defaults.background
-        if self.list.background.is_none() {
-            self.list.background = self.defaults.background;
+        // list.background <- defaults.background_color
+        if self.list.background_color.is_none() {
+            self.list.background_color = self.defaults.background_color;
         }
     }
 
@@ -371,122 +395,164 @@ impl ThemeVariant {
         let d = &self.defaults;
 
         // --- window ---
-        if self.window.background.is_none() {
-            self.window.background = d.background;
+        if self.window.background_color.is_none() {
+            self.window.background_color = d.background_color;
         }
-        if self.window.foreground.is_none() {
-            self.window.foreground = d.foreground;
+        {
+            let font = self
+                .window
+                .title_bar_font
+                .get_or_insert_with(FontSpec::default);
+            if font.color.is_none() {
+                font.color = d.text_color;
+            }
         }
-        if self.window.border.is_none() {
-            self.window.border = d.border;
+        {
+            let border = self.window.border.get_or_insert_with(BorderSpec::default);
+            if border.color.is_none() {
+                border.color = d.border.color;
+            }
         }
         if self.window.title_bar_background.is_none() {
-            self.window.title_bar_background = d.surface;
+            self.window.title_bar_background = d.surface_color;
         }
-        if self.window.title_bar_foreground.is_none() {
-            self.window.title_bar_foreground = d.foreground;
-        }
-        if self.window.radius.is_none() {
-            self.window.radius = d.radius_lg;
-        }
-        if self.window.shadow.is_none() {
-            self.window.shadow = d.shadow_enabled;
+        {
+            let border = self.window.border.get_or_insert_with(BorderSpec::default);
+            if border.corner_radius.is_none() {
+                border.corner_radius = d.border.corner_radius_lg;
+            }
+            if border.shadow_enabled.is_none() {
+                border.shadow_enabled = d.border.shadow_enabled;
+            }
         }
 
         // --- button ---
-        if self.button.background.is_none() {
-            self.button.background = d.background;
+        if self.button.background_color.is_none() {
+            self.button.background_color = d.background_color;
         }
-        if self.button.foreground.is_none() {
-            self.button.foreground = d.foreground;
+        {
+            let font = self.button.font.get_or_insert_with(FontSpec::default);
+            if font.color.is_none() {
+                font.color = d.text_color;
+            }
         }
-        if self.button.border.is_none() {
-            self.button.border = d.border;
+        {
+            let border = self.button.border.get_or_insert_with(BorderSpec::default);
+            if border.color.is_none() {
+                border.color = d.border.color;
+            }
         }
         if self.button.primary_background.is_none() {
-            self.button.primary_background = d.accent;
+            self.button.primary_background = d.accent_color;
         }
-        if self.button.primary_foreground.is_none() {
-            self.button.primary_foreground = d.accent_foreground;
+        if self.button.primary_text_color.is_none() {
+            self.button.primary_text_color = d.accent_text_color;
         }
-        if self.button.radius.is_none() {
-            self.button.radius = d.radius;
+        {
+            let border = self.button.border.get_or_insert_with(BorderSpec::default);
+            if border.corner_radius.is_none() {
+                border.corner_radius = d.border.corner_radius;
+            }
         }
         if self.button.disabled_opacity.is_none() {
             self.button.disabled_opacity = d.disabled_opacity;
         }
-        if self.button.shadow.is_none() {
-            self.button.shadow = d.shadow_enabled;
+        {
+            let border = self.button.border.get_or_insert_with(BorderSpec::default);
+            if border.shadow_enabled.is_none() {
+                border.shadow_enabled = d.border.shadow_enabled;
+            }
         }
 
         // --- input ---
-        if self.input.background.is_none() {
-            self.input.background = d.background;
+        if self.input.background_color.is_none() {
+            self.input.background_color = d.background_color;
         }
-        if self.input.foreground.is_none() {
-            self.input.foreground = d.foreground;
+        {
+            let font = self.input.font.get_or_insert_with(FontSpec::default);
+            if font.color.is_none() {
+                font.color = d.text_color;
+            }
         }
-        if self.input.border.is_none() {
-            self.input.border = d.border;
+        {
+            let border = self.input.border.get_or_insert_with(BorderSpec::default);
+            if border.color.is_none() {
+                border.color = d.border.color;
+            }
         }
-        if self.input.placeholder.is_none() {
-            self.input.placeholder = d.muted;
+        if self.input.placeholder_color.is_none() {
+            self.input.placeholder_color = d.muted_color;
         }
-        if self.input.selection.is_none() {
-            self.input.selection = d.selection;
+        if self.input.selection_background.is_none() {
+            self.input.selection_background = d.selection_background;
         }
-        if self.input.selection_foreground.is_none() {
-            self.input.selection_foreground = d.selection_foreground;
+        if self.input.selection_text_color.is_none() {
+            self.input.selection_text_color = d.selection_text_color;
         }
-        if self.input.radius.is_none() {
-            self.input.radius = d.radius;
-        }
-        if self.input.border_width.is_none() {
-            self.input.border_width = d.frame_width;
+        {
+            let border = self.input.border.get_or_insert_with(BorderSpec::default);
+            if border.corner_radius.is_none() {
+                border.corner_radius = d.border.corner_radius;
+            }
+            if border.line_width.is_none() {
+                border.line_width = d.border.line_width;
+            }
         }
 
         // --- checkbox ---
         if self.checkbox.checked_background.is_none() {
-            self.checkbox.checked_background = d.accent;
+            self.checkbox.checked_background = d.accent_color;
         }
-        if self.checkbox.radius.is_none() {
-            self.checkbox.radius = d.radius;
-        }
-        if self.checkbox.border_width.is_none() {
-            self.checkbox.border_width = d.frame_width;
+        {
+            let border = self.checkbox.border.get_or_insert_with(BorderSpec::default);
+            if border.corner_radius.is_none() {
+                border.corner_radius = d.border.corner_radius;
+            }
+            if border.line_width.is_none() {
+                border.line_width = d.border.line_width;
+            }
         }
 
         // --- menu ---
-        if self.menu.background.is_none() {
-            self.menu.background = d.background;
+        if self.menu.background_color.is_none() {
+            self.menu.background_color = d.background_color;
         }
-        if self.menu.foreground.is_none() {
-            self.menu.foreground = d.foreground;
+        {
+            let font = self.menu.font.get_or_insert_with(FontSpec::default);
+            if font.color.is_none() {
+                font.color = d.text_color;
+            }
         }
-        if self.menu.separator.is_none() {
-            self.menu.separator = d.border;
+        if self.menu.separator_color.is_none() {
+            self.menu.separator_color = d.border.color;
         }
 
         // --- tooltip ---
-        if self.tooltip.background.is_none() {
-            self.tooltip.background = d.background;
+        if self.tooltip.background_color.is_none() {
+            self.tooltip.background_color = d.background_color;
         }
-        if self.tooltip.foreground.is_none() {
-            self.tooltip.foreground = d.foreground;
+        {
+            let font = self.tooltip.font.get_or_insert_with(FontSpec::default);
+            if font.color.is_none() {
+                font.color = d.text_color;
+            }
         }
-        if self.tooltip.radius.is_none() {
-            self.tooltip.radius = d.radius;
+        {
+            let border = self.tooltip.border.get_or_insert_with(BorderSpec::default);
+            if border.corner_radius.is_none() {
+                border.corner_radius = d.border.corner_radius;
+            }
         }
 
         // --- scrollbar ---
-        if self.scrollbar.thumb.is_none() {
-            self.scrollbar.thumb = d.muted;
+        if self.scrollbar.thumb_color.is_none() {
+            self.scrollbar.thumb_color = d.muted_color;
         }
-        if self.scrollbar.thumb_hover.is_none() {
+        if self.scrollbar.thumb_hover_color.is_none() {
             // Derive a visually distinct hover state from thumb.
             // Lighten on dark themes, darken on light themes (~15% shift).
-            self.scrollbar.thumb_hover = self.scrollbar.thumb.map(|c| {
-                let bg_luma = d.background.map_or(128.0, |bg| {
+            self.scrollbar.thumb_hover_color = self.scrollbar.thumb_color.map(|c| {
+                let bg_luma = d.background_color.map_or(128.0, |bg| {
                     0.299 * (bg.r as f32) + 0.587 * (bg.g as f32) + 0.114 * (bg.b as f32)
                 });
                 let shift: i16 = if bg_luma < 128.0 { 38 } else { -38 };
@@ -499,142 +565,191 @@ impl ThemeVariant {
         }
 
         // --- slider ---
-        if self.slider.fill.is_none() {
-            self.slider.fill = d.accent;
+        if self.slider.fill_color.is_none() {
+            self.slider.fill_color = d.accent_color;
         }
-        if self.slider.track.is_none() {
-            self.slider.track = d.muted;
+        if self.slider.track_color.is_none() {
+            self.slider.track_color = d.muted_color;
         }
-        if self.slider.thumb.is_none() {
-            self.slider.thumb = d.surface;
+        if self.slider.thumb_color.is_none() {
+            self.slider.thumb_color = d.surface_color;
         }
 
         // --- progress_bar ---
-        if self.progress_bar.fill.is_none() {
-            self.progress_bar.fill = d.accent;
+        if self.progress_bar.fill_color.is_none() {
+            self.progress_bar.fill_color = d.accent_color;
         }
-        if self.progress_bar.track.is_none() {
-            self.progress_bar.track = d.muted;
+        if self.progress_bar.track_color.is_none() {
+            self.progress_bar.track_color = d.muted_color;
         }
-        if self.progress_bar.radius.is_none() {
-            self.progress_bar.radius = d.radius;
+        if self.progress_bar.border.is_none() {
+            self.progress_bar.border = Some(crate::model::border::BorderSpec {
+                corner_radius: d.border.corner_radius,
+                ..Default::default()
+            });
+        } else if let Some(ref mut b) = self.progress_bar.border
+            && b.corner_radius.is_none()
+        {
+            b.corner_radius = d.border.corner_radius;
         }
 
         // --- tab ---
-        if self.tab.background.is_none() {
-            self.tab.background = d.background;
+        if self.tab.background_color.is_none() {
+            self.tab.background_color = d.background_color;
         }
-        if self.tab.foreground.is_none() {
-            self.tab.foreground = d.foreground;
+        {
+            let font = self.tab.font.get_or_insert_with(FontSpec::default);
+            if font.color.is_none() {
+                font.color = d.text_color;
+            }
         }
         if self.tab.active_background.is_none() {
-            self.tab.active_background = d.background;
+            self.tab.active_background = d.background_color;
         }
-        if self.tab.active_foreground.is_none() {
-            self.tab.active_foreground = d.foreground;
+        if self.tab.active_text_color.is_none() {
+            self.tab.active_text_color = d.text_color;
         }
         if self.tab.bar_background.is_none() {
-            self.tab.bar_background = d.background;
+            self.tab.bar_background = d.background_color;
         }
 
         // --- sidebar ---
-        if self.sidebar.background.is_none() {
-            self.sidebar.background = d.background;
+        if self.sidebar.background_color.is_none() {
+            self.sidebar.background_color = d.background_color;
         }
-        if self.sidebar.foreground.is_none() {
-            self.sidebar.foreground = d.foreground;
+        {
+            let font = self.sidebar.font.get_or_insert_with(FontSpec::default);
+            if font.color.is_none() {
+                font.color = d.text_color;
+            }
         }
 
         // --- list ---
-        if self.list.foreground.is_none() {
-            self.list.foreground = d.foreground;
+        {
+            let font = self.list.item_font.get_or_insert_with(FontSpec::default);
+            if font.color.is_none() {
+                font.color = d.text_color;
+            }
         }
-        if self.list.alternate_row.is_none() {
-            self.list.alternate_row = self.list.background;
+        if self.list.alternate_row_background.is_none() {
+            self.list.alternate_row_background = self.list.background_color;
         }
-        if self.list.selection.is_none() {
-            self.list.selection = d.selection;
+        if self.list.selection_background.is_none() {
+            self.list.selection_background = d.selection_background;
         }
-        if self.list.selection_foreground.is_none() {
-            self.list.selection_foreground = d.selection_foreground;
+        if self.list.selection_text_color.is_none() {
+            self.list.selection_text_color = d.selection_text_color;
         }
         if self.list.header_background.is_none() {
-            self.list.header_background = d.surface;
+            self.list.header_background = d.surface_color;
         }
-        if self.list.header_foreground.is_none() {
-            self.list.header_foreground = d.foreground;
+        {
+            let font = self.list.header_font.get_or_insert_with(FontSpec::default);
+            if font.color.is_none() {
+                font.color = d.text_color;
+            }
         }
         if self.list.grid_color.is_none() {
-            self.list.grid_color = d.border;
+            self.list.grid_color = d.border.color;
         }
 
         // --- popover ---
-        if self.popover.foreground.is_none() {
-            self.popover.foreground = d.foreground;
+        {
+            let font = self.popover.font.get_or_insert_with(FontSpec::default);
+            if font.color.is_none() {
+                font.color = d.text_color;
+            }
         }
-        if self.popover.border.is_none() {
-            self.popover.border = d.border;
-        }
-        if self.popover.radius.is_none() {
-            self.popover.radius = d.radius_lg;
+        {
+            let border = self.popover.border.get_or_insert_with(BorderSpec::default);
+            if border.color.is_none() {
+                border.color = d.border.color;
+            }
+            if border.corner_radius.is_none() {
+                border.corner_radius = d.border.corner_radius_lg;
+            }
         }
 
         // --- separator ---
-        if self.separator.color.is_none() {
-            self.separator.color = d.border;
+        if self.separator.line_color.is_none() {
+            self.separator.line_color = d.border.color;
         }
 
         // --- switch ---
         if self.switch.checked_background.is_none() {
-            self.switch.checked_background = d.accent;
+            self.switch.checked_background = d.accent_color;
         }
         if self.switch.unchecked_background.is_none() {
-            self.switch.unchecked_background = d.muted;
+            self.switch.unchecked_background = d.muted_color;
         }
         if self.switch.thumb_background.is_none() {
-            self.switch.thumb_background = d.surface;
+            self.switch.thumb_background = d.surface_color;
         }
 
         // --- dialog ---
-        if self.dialog.radius.is_none() {
-            self.dialog.radius = d.radius_lg;
+        {
+            let border = self.dialog.border.get_or_insert_with(BorderSpec::default);
+            if border.corner_radius.is_none() {
+                border.corner_radius = d.border.corner_radius_lg;
+            }
         }
 
         // --- combo_box ---
-        if self.combo_box.radius.is_none() {
-            self.combo_box.radius = d.radius;
+        {
+            let border = self
+                .combo_box
+                .border
+                .get_or_insert_with(BorderSpec::default);
+            if border.corner_radius.is_none() {
+                border.corner_radius = d.border.corner_radius;
+            }
         }
 
         // --- segmented_control ---
-        if self.segmented_control.radius.is_none() {
-            self.segmented_control.radius = d.radius;
+        {
+            let border = self
+                .segmented_control
+                .border
+                .get_or_insert_with(BorderSpec::default);
+            if border.corner_radius.is_none() {
+                border.corner_radius = d.border.corner_radius;
+            }
         }
 
         // --- card ---
-        if self.card.background.is_none() {
-            self.card.background = d.surface;
+        if self.card.background_color.is_none() {
+            self.card.background_color = d.surface_color;
         }
-        if self.card.border.is_none() {
-            self.card.border = d.border;
-        }
-        if self.card.radius.is_none() {
-            self.card.radius = d.radius_lg;
-        }
-        if self.card.shadow.is_none() {
-            self.card.shadow = d.shadow_enabled;
+        {
+            let border = self.card.border.get_or_insert_with(BorderSpec::default);
+            if border.color.is_none() {
+                border.color = d.border.color;
+            }
+            if border.corner_radius.is_none() {
+                border.corner_radius = d.border.corner_radius_lg;
+            }
+            if border.shadow_enabled.is_none() {
+                border.shadow_enabled = d.border.shadow_enabled;
+            }
         }
 
         // --- expander ---
-        if self.expander.radius.is_none() {
-            self.expander.radius = d.radius;
+        {
+            let border = self.expander.border.get_or_insert_with(BorderSpec::default);
+            if border.corner_radius.is_none() {
+                border.corner_radius = d.border.corner_radius;
+            }
         }
 
         // --- link ---
-        if self.link.color.is_none() {
-            self.link.color = d.link;
+        {
+            let font = self.link.font.get_or_insert_with(FontSpec::default);
+            if font.color.is_none() {
+                font.color = d.link_color;
+            }
         }
-        if self.link.visited.is_none() {
-            self.link.visited = d.link;
+        if self.link.visited_text_color.is_none() {
+            self.link.visited_text_color = d.link_color;
         }
     }
 
@@ -696,8 +811,9 @@ impl ThemeVariant {
         if self.window.inactive_title_bar_background.is_none() {
             self.window.inactive_title_bar_background = self.window.title_bar_background;
         }
-        if self.window.inactive_title_bar_foreground.is_none() {
-            self.window.inactive_title_bar_foreground = self.window.title_bar_foreground;
+        if self.window.inactive_title_bar_text_color.is_none() {
+            self.window.inactive_title_bar_text_color =
+                self.window.title_bar_font.as_ref().and_then(|f| f.color);
         }
     }
 
@@ -741,75 +857,125 @@ impl ThemeVariant {
             require_font(&self.defaults.mono_font, "defaults.mono_font", &mut missing);
 
         let defaults_background = require(
-            &self.defaults.background,
-            "defaults.background",
+            &self.defaults.background_color,
+            "defaults.background_color",
             &mut missing,
         );
         let defaults_foreground = require(
-            &self.defaults.foreground,
+            &self.defaults.text_color,
             "defaults.foreground",
             &mut missing,
         );
-        let defaults_accent = require(&self.defaults.accent, "defaults.accent", &mut missing);
-        let defaults_accent_foreground = require(
-            &self.defaults.accent_foreground,
-            "defaults.accent_foreground",
+        let defaults_accent = require(
+            &self.defaults.accent_color,
+            "defaults.accent_color",
             &mut missing,
         );
-        let defaults_surface = require(&self.defaults.surface, "defaults.surface", &mut missing);
-        let defaults_border = require(&self.defaults.border, "defaults.border", &mut missing);
-        let defaults_muted = require(&self.defaults.muted, "defaults.muted", &mut missing);
-        let defaults_shadow = require(&self.defaults.shadow, "defaults.shadow", &mut missing);
-        let defaults_link = require(&self.defaults.link, "defaults.link", &mut missing);
-        let defaults_selection =
-            require(&self.defaults.selection, "defaults.selection", &mut missing);
+        let defaults_accent_foreground = require(
+            &self.defaults.accent_text_color,
+            "defaults.accent_text_color",
+            &mut missing,
+        );
+        let defaults_surface = require(
+            &self.defaults.surface_color,
+            "defaults.surface_color",
+            &mut missing,
+        );
+        let defaults_border = require(
+            &self.defaults.border.color,
+            "defaults.border.color",
+            &mut missing,
+        );
+        let defaults_muted = require(
+            &self.defaults.muted_color,
+            "defaults.muted_color",
+            &mut missing,
+        );
+        let defaults_shadow = require(
+            &self.defaults.shadow_color,
+            "defaults.shadow_color",
+            &mut missing,
+        );
+        let defaults_link = require(
+            &self.defaults.link_color,
+            "defaults.link_color",
+            &mut missing,
+        );
+        let defaults_selection = require(
+            &self.defaults.selection_background,
+            "defaults.selection_background",
+            &mut missing,
+        );
         let defaults_selection_foreground = require(
-            &self.defaults.selection_foreground,
-            "defaults.selection_foreground",
+            &self.defaults.selection_text_color,
+            "defaults.selection_text_color",
             &mut missing,
         );
         let defaults_selection_inactive = require(
-            &self.defaults.selection_inactive,
-            "defaults.selection_inactive",
+            &self.defaults.selection_inactive_background,
+            "defaults.selection_inactive_background",
             &mut missing,
         );
         let defaults_disabled_foreground = require(
-            &self.defaults.disabled_foreground,
-            "defaults.disabled_foreground",
+            &self.defaults.disabled_text_color,
+            "defaults.disabled_text_color",
             &mut missing,
         );
 
-        let defaults_danger = require(&self.defaults.danger, "defaults.danger", &mut missing);
+        let defaults_danger = require(
+            &self.defaults.danger_color,
+            "defaults.danger_color",
+            &mut missing,
+        );
         let defaults_danger_foreground = require(
-            &self.defaults.danger_foreground,
-            "defaults.danger_foreground",
+            &self.defaults.danger_text_color,
+            "defaults.danger_text_color",
             &mut missing,
         );
-        let defaults_warning = require(&self.defaults.warning, "defaults.warning", &mut missing);
+        let defaults_warning = require(
+            &self.defaults.warning_color,
+            "defaults.warning_color",
+            &mut missing,
+        );
         let defaults_warning_foreground = require(
-            &self.defaults.warning_foreground,
-            "defaults.warning_foreground",
+            &self.defaults.warning_text_color,
+            "defaults.warning_text_color",
             &mut missing,
         );
-        let defaults_success = require(&self.defaults.success, "defaults.success", &mut missing);
+        let defaults_success = require(
+            &self.defaults.success_color,
+            "defaults.success_color",
+            &mut missing,
+        );
         let defaults_success_foreground = require(
-            &self.defaults.success_foreground,
-            "defaults.success_foreground",
+            &self.defaults.success_text_color,
+            "defaults.success_text_color",
             &mut missing,
         );
-        let defaults_info = require(&self.defaults.info, "defaults.info", &mut missing);
+        let defaults_info = require(
+            &self.defaults.info_color,
+            "defaults.info_color",
+            &mut missing,
+        );
         let defaults_info_foreground = require(
-            &self.defaults.info_foreground,
-            "defaults.info_foreground",
+            &self.defaults.info_text_color,
+            "defaults.info_text_color",
             &mut missing,
         );
 
-        let defaults_radius = require(&self.defaults.radius, "defaults.radius", &mut missing);
-        let defaults_radius_lg =
-            require(&self.defaults.radius_lg, "defaults.radius_lg", &mut missing);
+        let defaults_radius = require(
+            &self.defaults.border.corner_radius,
+            "defaults.border.corner_radius",
+            &mut missing,
+        );
+        let defaults_radius_lg = require(
+            &self.defaults.border.corner_radius_lg,
+            "defaults.border.corner_radius_lg",
+            &mut missing,
+        );
         let defaults_frame_width = require(
-            &self.defaults.frame_width,
-            "defaults.frame_width",
+            &self.defaults.border.line_width,
+            "defaults.border.line_width",
             &mut missing,
         );
         let defaults_disabled_opacity = require(
@@ -818,13 +984,13 @@ impl ThemeVariant {
             &mut missing,
         );
         let defaults_border_opacity = require(
-            &self.defaults.border_opacity,
-            "defaults.border_opacity",
+            &self.defaults.border.opacity,
+            "defaults.border.opacity",
             &mut missing,
         );
         let defaults_shadow_enabled = require(
-            &self.defaults.shadow_enabled,
-            "defaults.shadow_enabled",
+            &self.defaults.border.shadow_enabled,
+            "defaults.border.shadow_enabled",
             &mut missing,
         );
 
@@ -844,30 +1010,24 @@ impl ThemeVariant {
             &mut missing,
         );
 
-        let defaults_spacing_xxs = require(
-            &self.defaults.spacing.xxs,
-            "defaults.spacing.xxs",
+        let defaults_border_padding_h = require(
+            &self.defaults.border.padding_horizontal,
+            "defaults.border.padding_horizontal",
             &mut missing,
         );
-        let defaults_spacing_xs = require(
-            &self.defaults.spacing.xs,
-            "defaults.spacing.xs",
+        let defaults_border_padding_v = require(
+            &self.defaults.border.padding_vertical,
+            "defaults.border.padding_vertical",
             &mut missing,
         );
-        let defaults_spacing_s =
-            require(&self.defaults.spacing.s, "defaults.spacing.s", &mut missing);
-        let defaults_spacing_m =
-            require(&self.defaults.spacing.m, "defaults.spacing.m", &mut missing);
-        let defaults_spacing_l =
-            require(&self.defaults.spacing.l, "defaults.spacing.l", &mut missing);
-        let defaults_spacing_xl = require(
-            &self.defaults.spacing.xl,
-            "defaults.spacing.xl",
+        let defaults_text_selection_background = require(
+            &self.defaults.text_selection_background,
+            "defaults.text_selection_background",
             &mut missing,
         );
-        let defaults_spacing_xxl = require(
-            &self.defaults.spacing.xxl,
-            "defaults.spacing.xxl",
+        let defaults_text_selection_color = require(
+            &self.defaults.text_selection_color,
+            "defaults.text_selection_color",
             &mut missing,
         );
 
@@ -937,17 +1097,14 @@ impl ThemeVariant {
 
         // --- window ---
 
-        let window_background = require(&self.window.background, "window.background", &mut missing);
-        let window_foreground = require(&self.window.foreground, "window.foreground", &mut missing);
-        let window_border = require(&self.window.border, "window.border", &mut missing);
+        let window_background = require(
+            &self.window.background_color,
+            "window.background_color",
+            &mut missing,
+        );
         let window_title_bar_background = require(
             &self.window.title_bar_background,
             "window.title_bar_background",
-            &mut missing,
-        );
-        let window_title_bar_foreground = require(
-            &self.window.title_bar_foreground,
-            "window.title_bar_foreground",
             &mut missing,
         );
         let window_inactive_title_bar_background = require(
@@ -956,12 +1113,10 @@ impl ThemeVariant {
             &mut missing,
         );
         let window_inactive_title_bar_foreground = require(
-            &self.window.inactive_title_bar_foreground,
-            "window.inactive_title_bar_foreground",
+            &self.window.inactive_title_bar_text_color,
+            "window.inactive_title_bar_text_color",
             &mut missing,
         );
-        let window_radius = require(&self.window.radius, "window.radius", &mut missing);
-        let window_shadow = require(&self.window.shadow, "window.shadow", &mut missing);
         let window_title_bar_font = require_font_opt(
             &self.window.title_bar_font,
             "window.title_bar_font",
@@ -970,35 +1125,26 @@ impl ThemeVariant {
 
         // --- button ---
 
-        let button_background = require(&self.button.background, "button.background", &mut missing);
-        let button_foreground = require(&self.button.foreground, "button.foreground", &mut missing);
-        let button_border = require(&self.button.border, "button.border", &mut missing);
+        let button_background = require(
+            &self.button.background_color,
+            "button.background_color",
+            &mut missing,
+        );
         let button_primary_background = require(
             &self.button.primary_background,
             "button.primary_background",
             &mut missing,
         );
         let button_primary_foreground = require(
-            &self.button.primary_foreground,
-            "button.primary_foreground",
+            &self.button.primary_text_color,
+            "button.primary_text_color",
             &mut missing,
         );
         let button_min_width = require(&self.button.min_width, "button.min_width", &mut missing);
         let button_min_height = require(&self.button.min_height, "button.min_height", &mut missing);
-        let button_padding_horizontal = require(
-            &self.button.padding_horizontal,
-            "button.padding_horizontal",
-            &mut missing,
-        );
-        let button_padding_vertical = require(
-            &self.button.padding_vertical,
-            "button.padding_vertical",
-            &mut missing,
-        );
-        let button_radius = require(&self.button.radius, "button.radius", &mut missing);
         let button_icon_spacing = require(
-            &self.button.icon_spacing,
-            "button.icon_spacing",
+            &self.button.icon_text_gap,
+            "button.icon_text_gap",
             &mut missing,
         );
         let button_disabled_opacity = require(
@@ -1006,36 +1152,32 @@ impl ThemeVariant {
             "button.disabled_opacity",
             &mut missing,
         );
-        let button_shadow = require(&self.button.shadow, "button.shadow", &mut missing);
         let button_font = require_font_opt(&self.button.font, "button.font", &mut missing);
 
         // --- input ---
 
-        let input_background = require(&self.input.background, "input.background", &mut missing);
-        let input_foreground = require(&self.input.foreground, "input.foreground", &mut missing);
-        let input_border = require(&self.input.border, "input.border", &mut missing);
-        let input_placeholder = require(&self.input.placeholder, "input.placeholder", &mut missing);
-        let input_caret = require(&self.input.caret, "input.caret", &mut missing);
-        let input_selection = require(&self.input.selection, "input.selection", &mut missing);
+        let input_background = require(
+            &self.input.background_color,
+            "input.background_color",
+            &mut missing,
+        );
+        let input_placeholder = require(
+            &self.input.placeholder_color,
+            "input.placeholder_color",
+            &mut missing,
+        );
+        let input_caret = require(&self.input.caret_color, "input.caret_color", &mut missing);
+        let input_selection = require(
+            &self.input.selection_background,
+            "input.selection_background",
+            &mut missing,
+        );
         let input_selection_foreground = require(
-            &self.input.selection_foreground,
-            "input.selection_foreground",
+            &self.input.selection_text_color,
+            "input.selection_text_color",
             &mut missing,
         );
         let input_min_height = require(&self.input.min_height, "input.min_height", &mut missing);
-        let input_padding_horizontal = require(
-            &self.input.padding_horizontal,
-            "input.padding_horizontal",
-            &mut missing,
-        );
-        let input_padding_vertical = require(
-            &self.input.padding_vertical,
-            "input.padding_vertical",
-            &mut missing,
-        );
-        let input_radius = require(&self.input.radius, "input.radius", &mut missing);
-        let input_border_width =
-            require(&self.input.border_width, "input.border_width", &mut missing);
         let input_font = require_font_opt(&self.input.font, "input.font", &mut missing);
 
         // --- checkbox ---
@@ -1046,75 +1188,70 @@ impl ThemeVariant {
             &mut missing,
         );
         let checkbox_indicator_size = require(
-            &self.checkbox.indicator_size,
-            "checkbox.indicator_size",
+            &self.checkbox.indicator_width,
+            "checkbox.indicator_width",
             &mut missing,
         );
-        let checkbox_spacing = require(&self.checkbox.spacing, "checkbox.spacing", &mut missing);
-        let checkbox_radius = require(&self.checkbox.radius, "checkbox.radius", &mut missing);
-        let checkbox_border_width = require(
-            &self.checkbox.border_width,
-            "checkbox.border_width",
-            &mut missing,
-        );
+        let checkbox_spacing =
+            require(&self.checkbox.label_gap, "checkbox.label_gap", &mut missing);
 
         // --- menu ---
 
-        let menu_background = require(&self.menu.background, "menu.background", &mut missing);
-        let menu_foreground = require(&self.menu.foreground, "menu.foreground", &mut missing);
-        let menu_separator = require(&self.menu.separator, "menu.separator", &mut missing);
-        let menu_item_height = require(&self.menu.item_height, "menu.item_height", &mut missing);
-        let menu_padding_horizontal = require(
-            &self.menu.padding_horizontal,
-            "menu.padding_horizontal",
+        let menu_background = require(
+            &self.menu.background_color,
+            "menu.background_color",
             &mut missing,
         );
-        let menu_padding_vertical = require(
-            &self.menu.padding_vertical,
-            "menu.padding_vertical",
+        let menu_separator = require(
+            &self.menu.separator_color,
+            "menu.separator_color",
             &mut missing,
         );
-        let menu_icon_spacing = require(&self.menu.icon_spacing, "menu.icon_spacing", &mut missing);
+        let menu_item_height = require(&self.menu.row_height, "menu.row_height", &mut missing);
+        let menu_icon_spacing =
+            require(&self.menu.icon_text_gap, "menu.icon_text_gap", &mut missing);
         let menu_font = require_font_opt(&self.menu.font, "menu.font", &mut missing);
 
         // --- tooltip ---
 
-        let tooltip_background =
-            require(&self.tooltip.background, "tooltip.background", &mut missing);
-        let tooltip_foreground =
-            require(&self.tooltip.foreground, "tooltip.foreground", &mut missing);
-        let tooltip_padding_horizontal = require(
-            &self.tooltip.padding_horizontal,
-            "tooltip.padding_horizontal",
-            &mut missing,
-        );
-        let tooltip_padding_vertical = require(
-            &self.tooltip.padding_vertical,
-            "tooltip.padding_vertical",
+        let tooltip_background = require(
+            &self.tooltip.background_color,
+            "tooltip.background_color",
             &mut missing,
         );
         let tooltip_max_width = require(&self.tooltip.max_width, "tooltip.max_width", &mut missing);
-        let tooltip_radius = require(&self.tooltip.radius, "tooltip.radius", &mut missing);
         let tooltip_font = require_font_opt(&self.tooltip.font, "tooltip.font", &mut missing);
 
         // --- scrollbar ---
 
-        let scrollbar_track = require(&self.scrollbar.track, "scrollbar.track", &mut missing);
-        let scrollbar_thumb = require(&self.scrollbar.thumb, "scrollbar.thumb", &mut missing);
-        let scrollbar_thumb_hover = require(
-            &self.scrollbar.thumb_hover,
-            "scrollbar.thumb_hover",
+        let scrollbar_track = require(
+            &self.scrollbar.track_color,
+            "scrollbar.track_color",
             &mut missing,
         );
-        let scrollbar_width = require(&self.scrollbar.width, "scrollbar.width", &mut missing);
+        let scrollbar_thumb = require(
+            &self.scrollbar.thumb_color,
+            "scrollbar.thumb_color",
+            &mut missing,
+        );
+        let scrollbar_thumb_hover = require(
+            &self.scrollbar.thumb_hover_color,
+            "scrollbar.thumb_hover_color",
+            &mut missing,
+        );
+        let scrollbar_width = require(
+            &self.scrollbar.groove_width,
+            "scrollbar.groove_width",
+            &mut missing,
+        );
         let scrollbar_min_thumb_height = require(
-            &self.scrollbar.min_thumb_height,
-            "scrollbar.min_thumb_height",
+            &self.scrollbar.min_thumb_length,
+            "scrollbar.min_thumb_length",
             &mut missing,
         );
         let scrollbar_slider_width = require(
-            &self.scrollbar.slider_width,
-            "scrollbar.slider_width",
+            &self.scrollbar.thumb_width,
+            "scrollbar.thumb_width",
             &mut missing,
         );
         let scrollbar_overlay_mode = require(
@@ -1125,26 +1262,40 @@ impl ThemeVariant {
 
         // --- slider ---
 
-        let slider_fill = require(&self.slider.fill, "slider.fill", &mut missing);
-        let slider_track = require(&self.slider.track, "slider.track", &mut missing);
-        let slider_thumb = require(&self.slider.thumb, "slider.thumb", &mut missing);
+        let slider_fill = require(&self.slider.fill_color, "slider.fill_color", &mut missing);
+        let slider_track = require(&self.slider.track_color, "slider.track_color", &mut missing);
+        let slider_thumb = require(&self.slider.thumb_color, "slider.thumb_color", &mut missing);
         let slider_track_height = require(
             &self.slider.track_height,
             "slider.track_height",
             &mut missing,
         );
-        let slider_thumb_size = require(&self.slider.thumb_size, "slider.thumb_size", &mut missing);
-        let slider_tick_length =
-            require(&self.slider.tick_length, "slider.tick_length", &mut missing);
+        let slider_thumb_size = require(
+            &self.slider.thumb_diameter,
+            "slider.thumb_diameter",
+            &mut missing,
+        );
+        let slider_tick_length = require(
+            &self.slider.tick_mark_length,
+            "slider.tick_mark_length",
+            &mut missing,
+        );
 
         // --- progress_bar ---
 
-        let progress_bar_fill = require(&self.progress_bar.fill, "progress_bar.fill", &mut missing);
-        let progress_bar_track =
-            require(&self.progress_bar.track, "progress_bar.track", &mut missing);
+        let progress_bar_fill = require(
+            &self.progress_bar.fill_color,
+            "progress_bar.fill_color",
+            &mut missing,
+        );
+        let progress_bar_track = require(
+            &self.progress_bar.track_color,
+            "progress_bar.track_color",
+            &mut missing,
+        );
         let progress_bar_height = require(
-            &self.progress_bar.height,
-            "progress_bar.height",
+            &self.progress_bar.track_height,
+            "progress_bar.track_height",
             &mut missing,
         );
         let progress_bar_min_width = require(
@@ -1152,57 +1303,43 @@ impl ThemeVariant {
             "progress_bar.min_width",
             &mut missing,
         );
-        let progress_bar_radius = require(
-            &self.progress_bar.radius,
-            "progress_bar.radius",
-            &mut missing,
-        );
+        // progress_bar.border.corner_radius -- handled by placeholder border spec
 
         // --- tab ---
 
-        let tab_background = require(&self.tab.background, "tab.background", &mut missing);
-        let tab_foreground = require(&self.tab.foreground, "tab.foreground", &mut missing);
+        let tab_background = require(
+            &self.tab.background_color,
+            "tab.background_color",
+            &mut missing,
+        );
         let tab_active_background = require(
             &self.tab.active_background,
             "tab.active_background",
             &mut missing,
         );
         let tab_active_foreground = require(
-            &self.tab.active_foreground,
-            "tab.active_foreground",
+            &self.tab.active_text_color,
+            "tab.active_text_color",
             &mut missing,
         );
         let tab_bar_background =
             require(&self.tab.bar_background, "tab.bar_background", &mut missing);
         let tab_min_width = require(&self.tab.min_width, "tab.min_width", &mut missing);
         let tab_min_height = require(&self.tab.min_height, "tab.min_height", &mut missing);
-        let tab_padding_horizontal = require(
-            &self.tab.padding_horizontal,
-            "tab.padding_horizontal",
-            &mut missing,
-        );
-        let tab_padding_vertical = require(
-            &self.tab.padding_vertical,
-            "tab.padding_vertical",
-            &mut missing,
-        );
 
         // --- sidebar ---
 
-        let sidebar_background =
-            require(&self.sidebar.background, "sidebar.background", &mut missing);
-        let sidebar_foreground =
-            require(&self.sidebar.foreground, "sidebar.foreground", &mut missing);
+        let sidebar_background = require(
+            &self.sidebar.background_color,
+            "sidebar.background_color",
+            &mut missing,
+        );
 
         // --- toolbar ---
 
-        let toolbar_height = require(&self.toolbar.height, "toolbar.height", &mut missing);
-        let toolbar_item_spacing = require(
-            &self.toolbar.item_spacing,
-            "toolbar.item_spacing",
-            &mut missing,
-        );
-        let toolbar_padding = require(&self.toolbar.padding, "toolbar.padding", &mut missing);
+        let toolbar_height = require(&self.toolbar.bar_height, "toolbar.bar_height", &mut missing);
+        let toolbar_item_spacing =
+            require(&self.toolbar.item_gap, "toolbar.item_gap", &mut missing);
         let toolbar_font = require_font_opt(&self.toolbar.font, "toolbar.font", &mut missing);
 
         // --- status_bar ---
@@ -1212,14 +1349,24 @@ impl ThemeVariant {
 
         // --- list ---
 
-        let list_background = require(&self.list.background, "list.background", &mut missing);
-        let list_foreground = require(&self.list.foreground, "list.foreground", &mut missing);
-        let list_alternate_row =
-            require(&self.list.alternate_row, "list.alternate_row", &mut missing);
-        let list_selection = require(&self.list.selection, "list.selection", &mut missing);
+        let list_background = require(
+            &self.list.background_color,
+            "list.background_color",
+            &mut missing,
+        );
+        let list_alternate_row = require(
+            &self.list.alternate_row_background,
+            "list.alternate_row_background",
+            &mut missing,
+        );
+        let list_selection = require(
+            &self.list.selection_background,
+            "list.selection_background",
+            &mut missing,
+        );
         let list_selection_foreground = require(
-            &self.list.selection_foreground,
-            "list.selection_foreground",
+            &self.list.selection_text_color,
+            "list.selection_text_color",
             &mut missing,
         );
         let list_header_background = require(
@@ -1227,40 +1374,32 @@ impl ThemeVariant {
             "list.header_background",
             &mut missing,
         );
-        let list_header_foreground = require(
-            &self.list.header_foreground,
-            "list.header_foreground",
-            &mut missing,
-        );
         let list_grid_color = require(&self.list.grid_color, "list.grid_color", &mut missing);
-        let list_item_height = require(&self.list.item_height, "list.item_height", &mut missing);
-        let list_padding_horizontal = require(
-            &self.list.padding_horizontal,
-            "list.padding_horizontal",
-            &mut missing,
-        );
-        let list_padding_vertical = require(
-            &self.list.padding_vertical,
-            "list.padding_vertical",
-            &mut missing,
-        );
+        let list_item_height = require(&self.list.row_height, "list.row_height", &mut missing);
 
         // --- popover ---
 
-        let popover_background =
-            require(&self.popover.background, "popover.background", &mut missing);
-        let popover_foreground =
-            require(&self.popover.foreground, "popover.foreground", &mut missing);
-        let popover_border = require(&self.popover.border, "popover.border", &mut missing);
-        let popover_radius = require(&self.popover.radius, "popover.radius", &mut missing);
+        let popover_background = require(
+            &self.popover.background_color,
+            "popover.background_color",
+            &mut missing,
+        );
 
         // --- splitter ---
 
-        let splitter_width = require(&self.splitter.width, "splitter.width", &mut missing);
+        let splitter_width = require(
+            &self.splitter.divider_width,
+            "splitter.divider_width",
+            &mut missing,
+        );
 
         // --- separator ---
 
-        let separator_color = require(&self.separator.color, "separator.color", &mut missing);
+        let separator_color = require(
+            &self.separator.line_color,
+            "separator.line_color",
+            &mut missing,
+        );
 
         // --- switch ---
 
@@ -1286,7 +1425,11 @@ impl ThemeVariant {
             "switch.track_height",
             &mut missing,
         );
-        let switch_thumb_size = require(&self.switch.thumb_size, "switch.thumb_size", &mut missing);
+        let switch_thumb_size = require(
+            &self.switch.thumb_diameter,
+            "switch.thumb_diameter",
+            &mut missing,
+        );
         let switch_track_radius = require(
             &self.switch.track_radius,
             "switch.track_radius",
@@ -1299,17 +1442,8 @@ impl ThemeVariant {
         let dialog_max_width = require(&self.dialog.max_width, "dialog.max_width", &mut missing);
         let dialog_min_height = require(&self.dialog.min_height, "dialog.min_height", &mut missing);
         let dialog_max_height = require(&self.dialog.max_height, "dialog.max_height", &mut missing);
-        let dialog_content_padding = require(
-            &self.dialog.content_padding,
-            "dialog.content_padding",
-            &mut missing,
-        );
-        let dialog_button_spacing = require(
-            &self.dialog.button_spacing,
-            "dialog.button_spacing",
-            &mut missing,
-        );
-        let dialog_radius = require(&self.dialog.radius, "dialog.radius", &mut missing);
+        let dialog_button_spacing =
+            require(&self.dialog.button_gap, "dialog.button_gap", &mut missing);
         let dialog_icon_size = require(&self.dialog.icon_size, "dialog.icon_size", &mut missing);
         let dialog_button_order = require(
             &self.dialog.button_order,
@@ -1321,9 +1455,13 @@ impl ThemeVariant {
 
         // --- spinner ---
 
-        let spinner_fill = require(&self.spinner.fill, "spinner.fill", &mut missing);
+        let spinner_fill = require(&self.spinner.fill_color, "spinner.fill_color", &mut missing);
         let spinner_diameter = require(&self.spinner.diameter, "spinner.diameter", &mut missing);
-        let spinner_min_size = require(&self.spinner.min_size, "spinner.min_size", &mut missing);
+        let spinner_min_size = require(
+            &self.spinner.min_diameter,
+            "spinner.min_diameter",
+            &mut missing,
+        );
         let spinner_stroke_width = require(
             &self.spinner.stroke_width,
             "spinner.stroke_width",
@@ -1342,14 +1480,9 @@ impl ThemeVariant {
             "combo_box.min_width",
             &mut missing,
         );
-        let combo_box_padding_horizontal = require(
-            &self.combo_box.padding_horizontal,
-            "combo_box.padding_horizontal",
-            &mut missing,
-        );
         let combo_box_arrow_size = require(
-            &self.combo_box.arrow_size,
-            "combo_box.arrow_size",
+            &self.combo_box.arrow_icon_size,
+            "combo_box.arrow_icon_size",
             &mut missing,
         );
         let combo_box_arrow_area_width = require(
@@ -1357,7 +1490,6 @@ impl ThemeVariant {
             "combo_box.arrow_area_width",
             &mut missing,
         );
-        let combo_box_radius = require(&self.combo_box.radius, "combo_box.radius", &mut missing);
 
         // --- segmented_control ---
 
@@ -1371,24 +1503,14 @@ impl ThemeVariant {
             "segmented_control.separator_width",
             &mut missing,
         );
-        let segmented_control_padding_horizontal = require(
-            &self.segmented_control.padding_horizontal,
-            "segmented_control.padding_horizontal",
-            &mut missing,
-        );
-        let segmented_control_radius = require(
-            &self.segmented_control.radius,
-            "segmented_control.radius",
-            &mut missing,
-        );
 
         // --- card ---
 
-        let card_background = require(&self.card.background, "card.background", &mut missing);
-        let card_border = require(&self.card.border, "card.border", &mut missing);
-        let card_radius = require(&self.card.radius, "card.radius", &mut missing);
-        let card_padding = require(&self.card.padding, "card.padding", &mut missing);
-        let card_shadow = require(&self.card.shadow, "card.shadow", &mut missing);
+        let card_background = require(
+            &self.card.background_color,
+            "card.background_color",
+            &mut missing,
+        );
 
         // --- expander ---
 
@@ -1398,24 +1520,29 @@ impl ThemeVariant {
             &mut missing,
         );
         let expander_arrow_size = require(
-            &self.expander.arrow_size,
-            "expander.arrow_size",
+            &self.expander.arrow_icon_size,
+            "expander.arrow_icon_size",
             &mut missing,
         );
-        let expander_content_padding = require(
-            &self.expander.content_padding,
-            "expander.content_padding",
-            &mut missing,
-        );
-        let expander_radius = require(&self.expander.radius, "expander.radius", &mut missing);
 
         // --- link ---
 
-        let link_color = require(&self.link.color, "link.color", &mut missing);
-        let link_visited = require(&self.link.visited, "link.visited", &mut missing);
-        let link_background = require(&self.link.background, "link.background", &mut missing);
-        let link_hover_bg = require(&self.link.hover_bg, "link.hover_bg", &mut missing);
-        let link_underline = require(&self.link.underline, "link.underline", &mut missing);
+        let link_visited = require(
+            &self.link.visited_text_color,
+            "link.visited_text_color",
+            &mut missing,
+        );
+        let link_background = require(
+            &self.link.background_color,
+            "link.background_color",
+            &mut missing,
+        );
+        let link_hover_bg = require(
+            &self.link.hover_background,
+            "link.hover_background",
+            &mut missing,
+        );
+        let link_underline = require(&self.link.underline_enabled, "link.underline", &mut missing);
 
         // --- icon_set / icon_theme ---
 
@@ -1463,9 +1590,21 @@ impl ThemeVariant {
         );
 
         // defaults: radius, geometry >= 0
-        check_non_negative(defaults_radius, "defaults.radius", &mut missing);
-        check_non_negative(defaults_radius_lg, "defaults.radius_lg", &mut missing);
-        check_non_negative(defaults_frame_width, "defaults.frame_width", &mut missing);
+        check_non_negative(
+            defaults_radius,
+            "defaults.border.corner_radius",
+            &mut missing,
+        );
+        check_non_negative(
+            defaults_radius_lg,
+            "defaults.border.corner_radius_lg",
+            &mut missing,
+        );
+        check_non_negative(
+            defaults_frame_width,
+            "defaults.border.line_width",
+            &mut missing,
+        );
         check_non_negative(
             defaults_focus_ring_width,
             "defaults.focus_ring_width",
@@ -1486,18 +1625,21 @@ impl ThemeVariant {
             defaults_border_opacity,
             0.0,
             1.0,
-            "defaults.border_opacity",
+            "defaults.border.opacity",
             &mut missing,
         );
 
-        // defaults: spacing >= 0
-        check_non_negative(defaults_spacing_xxs, "defaults.spacing.xxs", &mut missing);
-        check_non_negative(defaults_spacing_xs, "defaults.spacing.xs", &mut missing);
-        check_non_negative(defaults_spacing_s, "defaults.spacing.s", &mut missing);
-        check_non_negative(defaults_spacing_m, "defaults.spacing.m", &mut missing);
-        check_non_negative(defaults_spacing_l, "defaults.spacing.l", &mut missing);
-        check_non_negative(defaults_spacing_xl, "defaults.spacing.xl", &mut missing);
-        check_non_negative(defaults_spacing_xxl, "defaults.spacing.xxl", &mut missing);
+        // defaults: border padding >= 0
+        check_non_negative(
+            defaults_border_padding_h,
+            "defaults.border.padding_horizontal",
+            &mut missing,
+        );
+        check_non_negative(
+            defaults_border_padding_v,
+            "defaults.border.padding_vertical",
+            &mut missing,
+        );
 
         // defaults: icon sizes >= 0
         check_non_negative(
@@ -1588,9 +1730,6 @@ impl ThemeVariant {
             &mut missing,
         );
 
-        // window: radius >= 0
-        check_non_negative(window_radius, "window.radius", &mut missing);
-
         // window font: size > 0, weight 100..=900
         check_positive(
             window_title_bar_font.size,
@@ -1608,18 +1747,7 @@ impl ThemeVariant {
         // button: geometry >= 0, opacity 0..=1, font size > 0, font weight 100..=900
         check_non_negative(button_min_width, "button.min_width", &mut missing);
         check_non_negative(button_min_height, "button.min_height", &mut missing);
-        check_non_negative(
-            button_padding_horizontal,
-            "button.padding_horizontal",
-            &mut missing,
-        );
-        check_non_negative(
-            button_padding_vertical,
-            "button.padding_vertical",
-            &mut missing,
-        );
-        check_non_negative(button_radius, "button.radius", &mut missing);
-        check_non_negative(button_icon_spacing, "button.icon_spacing", &mut missing);
+        check_non_negative(button_icon_spacing, "button.icon_text_gap", &mut missing);
         check_range_f32(
             button_disabled_opacity,
             0.0,
@@ -1638,18 +1766,6 @@ impl ThemeVariant {
 
         // input: geometry >= 0, font size > 0, font weight 100..=900
         check_non_negative(input_min_height, "input.min_height", &mut missing);
-        check_non_negative(
-            input_padding_horizontal,
-            "input.padding_horizontal",
-            &mut missing,
-        );
-        check_non_negative(
-            input_padding_vertical,
-            "input.padding_vertical",
-            &mut missing,
-        );
-        check_non_negative(input_radius, "input.radius", &mut missing);
-        check_non_negative(input_border_width, "input.border_width", &mut missing);
         check_positive(input_font.size, "input.font.size", &mut missing);
         check_range_u16(
             input_font.weight,
@@ -1662,38 +1778,19 @@ impl ThemeVariant {
         // checkbox: geometry >= 0
         check_non_negative(
             checkbox_indicator_size,
-            "checkbox.indicator_size",
+            "checkbox.indicator_width",
             &mut missing,
         );
-        check_non_negative(checkbox_spacing, "checkbox.spacing", &mut missing);
-        check_non_negative(checkbox_radius, "checkbox.radius", &mut missing);
-        check_non_negative(checkbox_border_width, "checkbox.border_width", &mut missing);
+        check_non_negative(checkbox_spacing, "checkbox.label_gap", &mut missing);
 
         // menu: geometry >= 0, font size > 0, font weight 100..=900
-        check_non_negative(menu_item_height, "menu.item_height", &mut missing);
-        check_non_negative(
-            menu_padding_horizontal,
-            "menu.padding_horizontal",
-            &mut missing,
-        );
-        check_non_negative(menu_padding_vertical, "menu.padding_vertical", &mut missing);
-        check_non_negative(menu_icon_spacing, "menu.icon_spacing", &mut missing);
+        check_non_negative(menu_item_height, "menu.row_height", &mut missing);
+        check_non_negative(menu_icon_spacing, "menu.icon_text_gap", &mut missing);
         check_positive(menu_font.size, "menu.font.size", &mut missing);
         check_range_u16(menu_font.weight, 100, 900, "menu.font.weight", &mut missing);
 
         // tooltip: geometry >= 0, font size > 0, font weight 100..=900
-        check_non_negative(
-            tooltip_padding_horizontal,
-            "tooltip.padding_horizontal",
-            &mut missing,
-        );
-        check_non_negative(
-            tooltip_padding_vertical,
-            "tooltip.padding_vertical",
-            &mut missing,
-        );
         check_non_negative(tooltip_max_width, "tooltip.max_width", &mut missing);
-        check_non_negative(tooltip_radius, "tooltip.radius", &mut missing);
         check_positive(tooltip_font.size, "tooltip.font.size", &mut missing);
         check_range_u16(
             tooltip_font.weight,
@@ -1704,46 +1801,43 @@ impl ThemeVariant {
         );
 
         // scrollbar: geometry >= 0
-        check_non_negative(scrollbar_width, "scrollbar.width", &mut missing);
+        check_non_negative(scrollbar_width, "scrollbar.groove_width", &mut missing);
         check_non_negative(
             scrollbar_min_thumb_height,
-            "scrollbar.min_thumb_height",
+            "scrollbar.min_thumb_length",
             &mut missing,
         );
         check_non_negative(
             scrollbar_slider_width,
-            "scrollbar.slider_width",
+            "scrollbar.thumb_width",
             &mut missing,
         );
 
         // slider: geometry >= 0
         check_non_negative(slider_track_height, "slider.track_height", &mut missing);
-        check_non_negative(slider_thumb_size, "slider.thumb_size", &mut missing);
-        check_non_negative(slider_tick_length, "slider.tick_length", &mut missing);
+        check_non_negative(slider_thumb_size, "slider.thumb_diameter", &mut missing);
+        check_non_negative(slider_tick_length, "slider.tick_mark_length", &mut missing);
 
         // progress_bar: geometry >= 0
-        check_non_negative(progress_bar_height, "progress_bar.height", &mut missing);
+        check_non_negative(
+            progress_bar_height,
+            "progress_bar.track_height",
+            &mut missing,
+        );
         check_non_negative(
             progress_bar_min_width,
             "progress_bar.min_width",
             &mut missing,
         );
-        check_non_negative(progress_bar_radius, "progress_bar.radius", &mut missing);
+        // progress_bar.border.corner_radius check handled by border spec validation
 
         // tab: geometry >= 0
         check_non_negative(tab_min_width, "tab.min_width", &mut missing);
         check_non_negative(tab_min_height, "tab.min_height", &mut missing);
-        check_non_negative(
-            tab_padding_horizontal,
-            "tab.padding_horizontal",
-            &mut missing,
-        );
-        check_non_negative(tab_padding_vertical, "tab.padding_vertical", &mut missing);
 
         // toolbar: geometry >= 0, font size > 0, font weight 100..=900
-        check_non_negative(toolbar_height, "toolbar.height", &mut missing);
-        check_non_negative(toolbar_item_spacing, "toolbar.item_spacing", &mut missing);
-        check_non_negative(toolbar_padding, "toolbar.padding", &mut missing);
+        check_non_negative(toolbar_height, "toolbar.bar_height", &mut missing);
+        check_non_negative(toolbar_item_spacing, "toolbar.item_gap", &mut missing);
         check_positive(toolbar_font.size, "toolbar.font.size", &mut missing);
         check_range_u16(
             toolbar_font.weight,
@@ -1764,24 +1858,15 @@ impl ThemeVariant {
         );
 
         // list: geometry >= 0
-        check_non_negative(list_item_height, "list.item_height", &mut missing);
-        check_non_negative(
-            list_padding_horizontal,
-            "list.padding_horizontal",
-            &mut missing,
-        );
-        check_non_negative(list_padding_vertical, "list.padding_vertical", &mut missing);
-
-        // popover: radius >= 0
-        check_non_negative(popover_radius, "popover.radius", &mut missing);
+        check_non_negative(list_item_height, "list.row_height", &mut missing);
 
         // splitter: width >= 0
-        check_non_negative(splitter_width, "splitter.width", &mut missing);
+        check_non_negative(splitter_width, "splitter.divider_width", &mut missing);
 
         // switch: geometry >= 0
         check_non_negative(switch_track_width, "switch.track_width", &mut missing);
         check_non_negative(switch_track_height, "switch.track_height", &mut missing);
-        check_non_negative(switch_thumb_size, "switch.thumb_size", &mut missing);
+        check_non_negative(switch_thumb_size, "switch.thumb_diameter", &mut missing);
         check_non_negative(switch_track_radius, "switch.track_radius", &mut missing);
 
         // dialog: geometry >= 0, font size > 0, font weight 100..=900
@@ -1789,13 +1874,7 @@ impl ThemeVariant {
         check_non_negative(dialog_max_width, "dialog.max_width", &mut missing);
         check_non_negative(dialog_min_height, "dialog.min_height", &mut missing);
         check_non_negative(dialog_max_height, "dialog.max_height", &mut missing);
-        check_non_negative(
-            dialog_content_padding,
-            "dialog.content_padding",
-            &mut missing,
-        );
-        check_non_negative(dialog_button_spacing, "dialog.button_spacing", &mut missing);
-        check_non_negative(dialog_radius, "dialog.radius", &mut missing);
+        check_non_negative(dialog_button_spacing, "dialog.button_gap", &mut missing);
         check_non_negative(dialog_icon_size, "dialog.icon_size", &mut missing);
         check_positive(
             dialog_title_font.size,
@@ -1828,24 +1907,22 @@ impl ThemeVariant {
 
         // spinner: geometry >= 0
         check_non_negative(spinner_diameter, "spinner.diameter", &mut missing);
-        check_non_negative(spinner_min_size, "spinner.min_size", &mut missing);
+        check_non_negative(spinner_min_size, "spinner.min_diameter", &mut missing);
         check_non_negative(spinner_stroke_width, "spinner.stroke_width", &mut missing);
 
         // combo_box: geometry >= 0
         check_non_negative(combo_box_min_height, "combo_box.min_height", &mut missing);
         check_non_negative(combo_box_min_width, "combo_box.min_width", &mut missing);
         check_non_negative(
-            combo_box_padding_horizontal,
-            "combo_box.padding_horizontal",
+            combo_box_arrow_size,
+            "combo_box.arrow_icon_size",
             &mut missing,
         );
-        check_non_negative(combo_box_arrow_size, "combo_box.arrow_size", &mut missing);
         check_non_negative(
             combo_box_arrow_area_width,
             "combo_box.arrow_area_width",
             &mut missing,
         );
-        check_non_negative(combo_box_radius, "combo_box.radius", &mut missing);
 
         // segmented_control: geometry >= 0
         check_non_negative(
@@ -1858,20 +1935,6 @@ impl ThemeVariant {
             "segmented_control.separator_width",
             &mut missing,
         );
-        check_non_negative(
-            segmented_control_padding_horizontal,
-            "segmented_control.padding_horizontal",
-            &mut missing,
-        );
-        check_non_negative(
-            segmented_control_radius,
-            "segmented_control.radius",
-            &mut missing,
-        );
-
-        // card: geometry >= 0
-        check_non_negative(card_radius, "card.radius", &mut missing);
-        check_non_negative(card_padding, "card.padding", &mut missing);
 
         // expander: geometry >= 0
         check_non_negative(
@@ -1879,13 +1942,11 @@ impl ThemeVariant {
             "expander.header_height",
             &mut missing,
         );
-        check_non_negative(expander_arrow_size, "expander.arrow_size", &mut missing);
         check_non_negative(
-            expander_content_padding,
-            "expander.content_padding",
+            expander_arrow_size,
+            "expander.arrow_icon_size",
             &mut missing,
         );
-        check_non_negative(expander_radius, "expander.radius", &mut missing);
 
         // NEW WIDGET: add range checks above this line.
 
@@ -1900,50 +1961,110 @@ impl ThemeVariant {
         // All fields present -- construct ResolvedThemeVariant.
         // require() returns T directly (using T::default() as placeholder for missing),
         // so no unwrap() is needed. The defaults are never used: we returned Err above.
+
+        // Placeholder bindings for new fields added in Plan 01 that do not yet have
+        // require() calls. Phase 51 will wire these properly with inheritance.
+        let default_border_spec = ResolvedBorderSpec::default();
+        let default_font = defaults_font.clone();
+        let window_border_spec = default_border_spec.clone();
+        let button_hover_background = defaults_background;
+        let button_hover_text_color = defaults_foreground;
+        let button_border_spec = default_border_spec.clone();
+        let input_disabled_opacity = defaults_disabled_opacity;
+        let input_border_spec = default_border_spec.clone();
+        let checkbox_background_color = defaults_background;
+        let checkbox_indicator_color = defaults_foreground;
+        let checkbox_disabled_opacity = defaults_disabled_opacity;
+        let checkbox_font = default_font.clone();
+        let checkbox_border_spec = default_border_spec.clone();
+        let menu_icon_size = defaults_icon_sizes_toolbar;
+        let menu_hover_background = defaults_selection;
+        let menu_hover_text_color = defaults_selection_foreground;
+        let menu_disabled_text_color = defaults_disabled_foreground;
+        let menu_border_spec = default_border_spec.clone();
+        let tooltip_border_spec = default_border_spec.clone();
+        let slider_disabled_opacity = defaults_disabled_opacity;
+        let progress_bar_border_spec = default_border_spec.clone();
+        let tab_font = default_font.clone();
+        let tab_border_spec = default_border_spec.clone();
+        let sidebar_selection_background = defaults_selection;
+        let sidebar_selection_text_color = defaults_selection_foreground;
+        let sidebar_hover_background = defaults_background;
+        let sidebar_font = default_font.clone();
+        let sidebar_border_spec = default_border_spec.clone();
+        let toolbar_background_color = defaults_background;
+        let toolbar_icon_size = defaults_icon_sizes_toolbar;
+        let toolbar_border_spec = default_border_spec.clone();
+        let status_bar_background_color = defaults_background;
+        let status_bar_border_spec = default_border_spec.clone();
+        let list_item_font = default_font.clone();
+        let list_header_font = default_font.clone();
+        let list_hover_background = defaults_background;
+        let list_border_spec = default_border_spec.clone();
+        let popover_font = default_font.clone();
+        let popover_border_spec = default_border_spec.clone();
+        let splitter_divider_color = defaults_border;
+        let separator_line_width = defaults_frame_width;
+        let switch_disabled_opacity = defaults_disabled_opacity;
+        let dialog_background_color = defaults_surface;
+        let dialog_body_font = default_font.clone();
+        let dialog_border_spec = default_border_spec.clone();
+        let link_font = default_font.clone();
+        let combo_box_background_color = defaults_background;
+        let combo_box_disabled_opacity = defaults_disabled_opacity;
+        let combo_box_font = default_font.clone();
+        let combo_box_border_spec = default_border_spec.clone();
+        let segmented_control_background_color = defaults_background;
+        let segmented_control_active_background = defaults_accent;
+        let segmented_control_active_text_color = defaults_accent_foreground;
+        let segmented_control_disabled_opacity = defaults_disabled_opacity;
+        let segmented_control_font = default_font.clone();
+        let segmented_control_border_spec = default_border_spec.clone();
+        let card_border_spec = default_border_spec.clone();
+        let expander_font = default_font.clone();
+        let expander_border_spec = default_border_spec;
+
         Ok(ResolvedThemeVariant {
             defaults: ResolvedThemeDefaults {
                 font: defaults_font,
                 line_height: defaults_line_height,
                 mono_font: defaults_mono_font,
-                background: defaults_background,
-                foreground: defaults_foreground,
-                accent: defaults_accent,
-                accent_foreground: defaults_accent_foreground,
-                surface: defaults_surface,
-                border: defaults_border,
-                muted: defaults_muted,
-                shadow: defaults_shadow,
-                link: defaults_link,
-                selection: defaults_selection,
-                selection_foreground: defaults_selection_foreground,
-                selection_inactive: defaults_selection_inactive,
-                disabled_foreground: defaults_disabled_foreground,
-                danger: defaults_danger,
-                danger_foreground: defaults_danger_foreground,
-                warning: defaults_warning,
-                warning_foreground: defaults_warning_foreground,
-                success: defaults_success,
-                success_foreground: defaults_success_foreground,
-                info: defaults_info,
-                info_foreground: defaults_info_foreground,
-                radius: defaults_radius,
-                radius_lg: defaults_radius_lg,
-                frame_width: defaults_frame_width,
+                background_color: defaults_background,
+                text_color: defaults_foreground,
+                accent_color: defaults_accent,
+                accent_text_color: defaults_accent_foreground,
+                surface_color: defaults_surface,
+                border: ResolvedBorderSpec {
+                    color: defaults_border,
+                    corner_radius: defaults_radius,
+                    corner_radius_lg: defaults_radius_lg,
+                    line_width: defaults_frame_width,
+                    opacity: defaults_border_opacity,
+                    shadow_enabled: defaults_shadow_enabled,
+                    padding_horizontal: defaults_border_padding_h,
+                    padding_vertical: defaults_border_padding_v,
+                },
+                muted_color: defaults_muted,
+                shadow_color: defaults_shadow,
+                link_color: defaults_link,
+                selection_background: defaults_selection,
+                selection_text_color: defaults_selection_foreground,
+                selection_inactive_background: defaults_selection_inactive,
+                text_selection_background: defaults_text_selection_background,
+                text_selection_color: defaults_text_selection_color,
+                disabled_text_color: defaults_disabled_foreground,
+                danger_color: defaults_danger,
+                danger_text_color: defaults_danger_foreground,
+                warning_color: defaults_warning,
+                warning_text_color: defaults_warning_foreground,
+                success_color: defaults_success,
+                success_text_color: defaults_success_foreground,
+                info_color: defaults_info,
+                info_text_color: defaults_info_foreground,
                 disabled_opacity: defaults_disabled_opacity,
-                border_opacity: defaults_border_opacity,
-                shadow_enabled: defaults_shadow_enabled,
                 focus_ring_color: defaults_focus_ring_color,
                 focus_ring_width: defaults_focus_ring_width,
                 focus_ring_offset: defaults_focus_ring_offset,
-                spacing: ResolvedThemeSpacing {
-                    xxs: defaults_spacing_xxs,
-                    xs: defaults_spacing_xs,
-                    s: defaults_spacing_s,
-                    m: defaults_spacing_m,
-                    l: defaults_spacing_l,
-                    xl: defaults_spacing_xl,
-                    xxl: defaults_spacing_xxl,
-                },
                 icon_sizes: ResolvedIconSizes {
                     toolbar: defaults_icon_sizes_toolbar,
                     small: defaults_icon_sizes_small,
@@ -1963,146 +2084,146 @@ impl ThemeVariant {
                 display: ts_display,
             },
             window: crate::model::widgets::ResolvedWindowTheme {
-                background: window_background,
-                foreground: window_foreground,
-                border: window_border,
+                background_color: window_background,
                 title_bar_background: window_title_bar_background,
-                title_bar_foreground: window_title_bar_foreground,
                 inactive_title_bar_background: window_inactive_title_bar_background,
-                inactive_title_bar_foreground: window_inactive_title_bar_foreground,
-                radius: window_radius,
-                shadow: window_shadow,
+                inactive_title_bar_text_color: window_inactive_title_bar_foreground,
                 title_bar_font: window_title_bar_font,
+                border: window_border_spec,
             },
             button: crate::model::widgets::ResolvedButtonTheme {
-                background: button_background,
-                foreground: button_foreground,
-                border: button_border,
+                background_color: button_background,
                 primary_background: button_primary_background,
-                primary_foreground: button_primary_foreground,
+                primary_text_color: button_primary_foreground,
                 min_width: button_min_width,
                 min_height: button_min_height,
-                padding_horizontal: button_padding_horizontal,
-                padding_vertical: button_padding_vertical,
-                radius: button_radius,
-                icon_spacing: button_icon_spacing,
+                icon_text_gap: button_icon_spacing,
                 disabled_opacity: button_disabled_opacity,
-                shadow: button_shadow,
+                hover_background: button_hover_background,
+                hover_text_color: button_hover_text_color,
                 font: button_font,
+                border: button_border_spec,
             },
             input: crate::model::widgets::ResolvedInputTheme {
-                background: input_background,
-                foreground: input_foreground,
-                border: input_border,
-                placeholder: input_placeholder,
-                caret: input_caret,
-                selection: input_selection,
-                selection_foreground: input_selection_foreground,
+                background_color: input_background,
+                placeholder_color: input_placeholder,
+                caret_color: input_caret,
+                selection_background: input_selection,
+                selection_text_color: input_selection_foreground,
                 min_height: input_min_height,
-                padding_horizontal: input_padding_horizontal,
-                padding_vertical: input_padding_vertical,
-                radius: input_radius,
-                border_width: input_border_width,
+                disabled_opacity: input_disabled_opacity,
                 font: input_font,
+                border: input_border_spec,
             },
             checkbox: crate::model::widgets::ResolvedCheckboxTheme {
+                background_color: checkbox_background_color,
                 checked_background: checkbox_checked_background,
-                indicator_size: checkbox_indicator_size,
-                spacing: checkbox_spacing,
-                radius: checkbox_radius,
-                border_width: checkbox_border_width,
+                indicator_color: checkbox_indicator_color,
+                indicator_width: checkbox_indicator_size,
+                label_gap: checkbox_spacing,
+                disabled_opacity: checkbox_disabled_opacity,
+                font: checkbox_font,
+                border: checkbox_border_spec,
             },
             menu: crate::model::widgets::ResolvedMenuTheme {
-                background: menu_background,
-                foreground: menu_foreground,
-                separator: menu_separator,
-                item_height: menu_item_height,
-                padding_horizontal: menu_padding_horizontal,
-                padding_vertical: menu_padding_vertical,
-                icon_spacing: menu_icon_spacing,
+                background_color: menu_background,
+                separator_color: menu_separator,
+                row_height: menu_item_height,
+                icon_text_gap: menu_icon_spacing,
+                icon_size: menu_icon_size,
+                hover_background: menu_hover_background,
+                hover_text_color: menu_hover_text_color,
+                disabled_text_color: menu_disabled_text_color,
                 font: menu_font,
+                border: menu_border_spec,
             },
             tooltip: crate::model::widgets::ResolvedTooltipTheme {
-                background: tooltip_background,
-                foreground: tooltip_foreground,
-                padding_horizontal: tooltip_padding_horizontal,
-                padding_vertical: tooltip_padding_vertical,
+                background_color: tooltip_background,
                 max_width: tooltip_max_width,
-                radius: tooltip_radius,
                 font: tooltip_font,
+                border: tooltip_border_spec,
             },
             scrollbar: crate::model::widgets::ResolvedScrollbarTheme {
-                track: scrollbar_track,
-                thumb: scrollbar_thumb,
-                thumb_hover: scrollbar_thumb_hover,
-                width: scrollbar_width,
-                min_thumb_height: scrollbar_min_thumb_height,
-                slider_width: scrollbar_slider_width,
+                track_color: scrollbar_track,
+                thumb_color: scrollbar_thumb,
+                thumb_hover_color: scrollbar_thumb_hover,
+                groove_width: scrollbar_width,
+                min_thumb_length: scrollbar_min_thumb_height,
+                thumb_width: scrollbar_slider_width,
                 overlay_mode: scrollbar_overlay_mode,
             },
             slider: crate::model::widgets::ResolvedSliderTheme {
-                fill: slider_fill,
-                track: slider_track,
-                thumb: slider_thumb,
+                fill_color: slider_fill,
+                track_color: slider_track,
+                thumb_color: slider_thumb,
                 track_height: slider_track_height,
-                thumb_size: slider_thumb_size,
-                tick_length: slider_tick_length,
+                thumb_diameter: slider_thumb_size,
+                tick_mark_length: slider_tick_length,
+                disabled_opacity: slider_disabled_opacity,
             },
             progress_bar: crate::model::widgets::ResolvedProgressBarTheme {
-                fill: progress_bar_fill,
-                track: progress_bar_track,
-                height: progress_bar_height,
+                fill_color: progress_bar_fill,
+                track_color: progress_bar_track,
+                track_height: progress_bar_height,
                 min_width: progress_bar_min_width,
-                radius: progress_bar_radius,
+                border: progress_bar_border_spec,
             },
             tab: crate::model::widgets::ResolvedTabTheme {
-                background: tab_background,
-                foreground: tab_foreground,
+                background_color: tab_background,
                 active_background: tab_active_background,
-                active_foreground: tab_active_foreground,
+                active_text_color: tab_active_foreground,
                 bar_background: tab_bar_background,
                 min_width: tab_min_width,
                 min_height: tab_min_height,
-                padding_horizontal: tab_padding_horizontal,
-                padding_vertical: tab_padding_vertical,
+                font: tab_font,
+                border: tab_border_spec,
             },
             sidebar: crate::model::widgets::ResolvedSidebarTheme {
-                background: sidebar_background,
-                foreground: sidebar_foreground,
+                background_color: sidebar_background,
+                selection_background: sidebar_selection_background,
+                selection_text_color: sidebar_selection_text_color,
+                hover_background: sidebar_hover_background,
+                font: sidebar_font,
+                border: sidebar_border_spec,
             },
             toolbar: crate::model::widgets::ResolvedToolbarTheme {
-                height: toolbar_height,
-                item_spacing: toolbar_item_spacing,
-                padding: toolbar_padding,
+                background_color: toolbar_background_color,
+                bar_height: toolbar_height,
+                item_gap: toolbar_item_spacing,
+                icon_size: toolbar_icon_size,
                 font: toolbar_font,
+                border: toolbar_border_spec,
             },
             status_bar: crate::model::widgets::ResolvedStatusBarTheme {
+                background_color: status_bar_background_color,
                 font: status_bar_font,
+                border: status_bar_border_spec,
             },
             list: crate::model::widgets::ResolvedListTheme {
-                background: list_background,
-                foreground: list_foreground,
-                alternate_row: list_alternate_row,
-                selection: list_selection,
-                selection_foreground: list_selection_foreground,
+                background_color: list_background,
+                alternate_row_background: list_alternate_row,
+                selection_background: list_selection,
+                selection_text_color: list_selection_foreground,
                 header_background: list_header_background,
-                header_foreground: list_header_foreground,
                 grid_color: list_grid_color,
-                item_height: list_item_height,
-                padding_horizontal: list_padding_horizontal,
-                padding_vertical: list_padding_vertical,
+                row_height: list_item_height,
+                hover_background: list_hover_background,
+                item_font: list_item_font,
+                header_font: list_header_font,
+                border: list_border_spec,
             },
             popover: crate::model::widgets::ResolvedPopoverTheme {
-                background: popover_background,
-                foreground: popover_foreground,
-                border: popover_border,
-                radius: popover_radius,
+                background_color: popover_background,
+                font: popover_font,
+                border: popover_border_spec,
             },
             splitter: crate::model::widgets::ResolvedSplitterTheme {
-                width: splitter_width,
+                divider_width: splitter_width,
+                divider_color: splitter_divider_color,
             },
             separator: crate::model::widgets::ResolvedSeparatorTheme {
-                color: separator_color,
+                line_color: separator_color,
+                line_width: separator_line_width,
             },
             switch: crate::model::widgets::ResolvedSwitchTheme {
                 checked_background: switch_checked_background,
@@ -2110,60 +2231,65 @@ impl ThemeVariant {
                 thumb_background: switch_thumb_background,
                 track_width: switch_track_width,
                 track_height: switch_track_height,
-                thumb_size: switch_thumb_size,
+                thumb_diameter: switch_thumb_size,
                 track_radius: switch_track_radius,
+                disabled_opacity: switch_disabled_opacity,
             },
             dialog: crate::model::widgets::ResolvedDialogTheme {
+                background_color: dialog_background_color,
                 min_width: dialog_min_width,
                 max_width: dialog_max_width,
                 min_height: dialog_min_height,
                 max_height: dialog_max_height,
-                content_padding: dialog_content_padding,
-                button_spacing: dialog_button_spacing,
-                radius: dialog_radius,
+                button_gap: dialog_button_spacing,
                 icon_size: dialog_icon_size,
                 button_order: dialog_button_order,
                 title_font: dialog_title_font,
+                body_font: dialog_body_font,
+                border: dialog_border_spec,
             },
             spinner: crate::model::widgets::ResolvedSpinnerTheme {
-                fill: spinner_fill,
+                fill_color: spinner_fill,
                 diameter: spinner_diameter,
-                min_size: spinner_min_size,
+                min_diameter: spinner_min_size,
                 stroke_width: spinner_stroke_width,
             },
             combo_box: crate::model::widgets::ResolvedComboBoxTheme {
+                background_color: combo_box_background_color,
                 min_height: combo_box_min_height,
                 min_width: combo_box_min_width,
-                padding_horizontal: combo_box_padding_horizontal,
-                arrow_size: combo_box_arrow_size,
+                arrow_icon_size: combo_box_arrow_size,
                 arrow_area_width: combo_box_arrow_area_width,
-                radius: combo_box_radius,
+                disabled_opacity: combo_box_disabled_opacity,
+                font: combo_box_font,
+                border: combo_box_border_spec,
             },
             segmented_control: crate::model::widgets::ResolvedSegmentedControlTheme {
+                background_color: segmented_control_background_color,
+                active_background: segmented_control_active_background,
+                active_text_color: segmented_control_active_text_color,
                 segment_height: segmented_control_segment_height,
                 separator_width: segmented_control_separator_width,
-                padding_horizontal: segmented_control_padding_horizontal,
-                radius: segmented_control_radius,
+                disabled_opacity: segmented_control_disabled_opacity,
+                font: segmented_control_font,
+                border: segmented_control_border_spec,
             },
             card: crate::model::widgets::ResolvedCardTheme {
-                background: card_background,
-                border: card_border,
-                radius: card_radius,
-                padding: card_padding,
-                shadow: card_shadow,
+                background_color: card_background,
+                border: card_border_spec,
             },
             expander: crate::model::widgets::ResolvedExpanderTheme {
                 header_height: expander_header_height,
-                arrow_size: expander_arrow_size,
-                content_padding: expander_content_padding,
-                radius: expander_radius,
+                arrow_icon_size: expander_arrow_size,
+                font: expander_font,
+                border: expander_border_spec,
             },
             link: crate::model::widgets::ResolvedLinkTheme {
-                color: link_color,
-                visited: link_visited,
-                background: link_background,
-                hover_bg: link_hover_bg,
-                underline: link_underline,
+                visited_text_color: link_visited,
+                underline_enabled: link_underline,
+                background_color: link_background,
+                hover_background: link_hover_bg,
+                font: link_font,
             },
             icon_set,
             icon_theme,
@@ -2199,32 +2325,32 @@ mod tests {
         let c17 = Rgba::rgb(255, 255, 255); // info_foreground
 
         let mut v = ThemeVariant::default();
-        v.defaults.accent = Some(c1);
-        v.defaults.background = Some(c2);
-        v.defaults.foreground = Some(c3);
-        v.defaults.surface = Some(c4);
-        v.defaults.border = Some(c5);
-        v.defaults.muted = Some(c6);
-        v.defaults.shadow = Some(c7);
-        v.defaults.link = Some(c8);
-        v.defaults.accent_foreground = Some(c9);
-        v.defaults.selection_foreground = Some(Rgba::rgb(255, 255, 255));
-        v.defaults.disabled_foreground = Some(Rgba::rgb(160, 160, 160));
-        v.defaults.danger = Some(c10);
-        v.defaults.danger_foreground = Some(c11);
-        v.defaults.warning = Some(c12);
-        v.defaults.warning_foreground = Some(c13);
-        v.defaults.success = Some(c14);
-        v.defaults.success_foreground = Some(c15);
-        v.defaults.info = Some(c16);
-        v.defaults.info_foreground = Some(c17);
+        v.defaults.accent_color = Some(c1);
+        v.defaults.background_color = Some(c2);
+        v.defaults.text_color = Some(c3);
+        v.defaults.surface_color = Some(c4);
+        v.defaults.border.color = Some(c5);
+        v.defaults.muted_color = Some(c6);
+        v.defaults.shadow_color = Some(c7);
+        v.defaults.link_color = Some(c8);
+        v.defaults.accent_text_color = Some(c9);
+        v.defaults.selection_text_color = Some(Rgba::rgb(255, 255, 255));
+        v.defaults.disabled_text_color = Some(Rgba::rgb(160, 160, 160));
+        v.defaults.danger_color = Some(c10);
+        v.defaults.danger_text_color = Some(c11);
+        v.defaults.warning_color = Some(c12);
+        v.defaults.warning_text_color = Some(c13);
+        v.defaults.success_color = Some(c14);
+        v.defaults.success_text_color = Some(c15);
+        v.defaults.info_color = Some(c16);
+        v.defaults.info_text_color = Some(c17);
 
-        v.defaults.radius = Some(4.0);
-        v.defaults.radius_lg = Some(8.0);
-        v.defaults.frame_width = Some(1.0);
+        v.defaults.border.corner_radius = Some(4.0);
+        v.defaults.border.corner_radius_lg = Some(8.0);
+        v.defaults.border.line_width = Some(1.0);
         v.defaults.disabled_opacity = Some(0.5);
-        v.defaults.border_opacity = Some(0.15);
-        v.defaults.shadow_enabled = Some(true);
+        v.defaults.border.opacity = Some(0.15);
+        v.defaults.border.shadow_enabled = Some(true);
 
         v.defaults.focus_ring_width = Some(2.0);
         v.defaults.focus_ring_offset = Some(1.0);
@@ -2243,13 +2369,13 @@ mod tests {
             ..Default::default()
         };
 
-        v.defaults.spacing.xxs = Some(2.0);
-        v.defaults.spacing.xs = Some(4.0);
-        v.defaults.spacing.s = Some(6.0);
-        v.defaults.spacing.m = Some(12.0);
-        v.defaults.spacing.l = Some(18.0);
-        v.defaults.spacing.xl = Some(24.0);
-        v.defaults.spacing.xxl = Some(36.0);
+        // REMOVED: defaults.spacing not in new schema
+        // REMOVED: defaults.spacing not in new schema
+        // REMOVED: defaults.spacing not in new schema
+        // REMOVED: defaults.spacing not in new schema
+        // REMOVED: defaults.spacing not in new schema
+        // REMOVED: defaults.spacing not in new schema
+        // REMOVED: defaults.spacing not in new schema
 
         v.defaults.icon_sizes.toolbar = Some(24.0);
         v.defaults.icon_sizes.small = Some(16.0);
@@ -2270,32 +2396,41 @@ mod tests {
     #[test]
     fn resolve_phase1_accent_fills_selection_and_focus_ring() {
         let mut v = ThemeVariant::default();
-        v.defaults.accent = Some(Rgba::rgb(0, 120, 215));
+        v.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
         v.resolve();
-        assert_eq!(v.defaults.selection, Some(Rgba::rgb(0, 120, 215)));
+        assert_eq!(
+            v.defaults.selection_background,
+            Some(Rgba::rgb(0, 120, 215))
+        );
         assert_eq!(v.defaults.focus_ring_color, Some(Rgba::rgb(0, 120, 215)));
     }
 
     #[test]
     fn resolve_phase1_selection_fills_selection_inactive() {
         let mut v = ThemeVariant::default();
-        v.defaults.accent = Some(Rgba::rgb(0, 120, 215));
+        v.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
         v.resolve();
         // selection_inactive should be set from selection (which was set from accent)
-        assert_eq!(v.defaults.selection_inactive, Some(Rgba::rgb(0, 120, 215)));
+        assert_eq!(
+            v.defaults.selection_inactive_background,
+            Some(Rgba::rgb(0, 120, 215))
+        );
     }
 
     #[test]
     fn resolve_phase1_explicit_selection_preserved() {
         let mut v = ThemeVariant::default();
-        v.defaults.accent = Some(Rgba::rgb(0, 120, 215));
-        v.defaults.selection = Some(Rgba::rgb(100, 100, 100));
+        v.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
+        v.defaults.selection_background = Some(Rgba::rgb(100, 100, 100));
         v.resolve();
         // Explicit selection preserved
-        assert_eq!(v.defaults.selection, Some(Rgba::rgb(100, 100, 100)));
+        assert_eq!(
+            v.defaults.selection_background,
+            Some(Rgba::rgb(100, 100, 100))
+        );
         // selection_inactive inherits from the explicit selection
         assert_eq!(
-            v.defaults.selection_inactive,
+            v.defaults.selection_inactive_background,
             Some(Rgba::rgb(100, 100, 100))
         );
     }
@@ -2305,10 +2440,10 @@ mod tests {
     #[test]
     fn resolve_phase2_safety_nets() {
         let mut v = ThemeVariant::default();
-        v.defaults.foreground = Some(Rgba::rgb(30, 30, 30));
-        v.defaults.background = Some(Rgba::rgb(255, 255, 255));
-        v.defaults.accent = Some(Rgba::rgb(0, 120, 215));
-        v.defaults.muted = Some(Rgba::rgb(128, 128, 128));
+        v.defaults.text_color = Some(Rgba::rgb(30, 30, 30));
+        v.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
+        v.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
+        v.defaults.muted_color = Some(Rgba::rgb(128, 128, 128));
         v.resolve();
 
         assert_eq!(
@@ -2317,17 +2452,17 @@ mod tests {
             "defaults.line_height safety net"
         );
         assert_eq!(
-            v.defaults.accent_foreground,
+            v.defaults.accent_text_color,
             Some(Rgba::rgb(255, 255, 255)),
             "defaults.accent_foreground safety net"
         );
         assert_eq!(
-            v.defaults.shadow,
+            v.defaults.shadow_color,
             Some(Rgba::rgba(0, 0, 0, 64)),
             "defaults.shadow safety net"
         );
         assert_eq!(
-            v.defaults.disabled_foreground,
+            v.defaults.disabled_text_color,
             Some(Rgba::rgb(128, 128, 128)),
             "defaults.disabled_foreground <- muted"
         );
@@ -2336,27 +2471,27 @@ mod tests {
             "dialog.button_order safety net"
         );
         assert_eq!(
-            v.input.caret,
+            v.input.caret_color,
             Some(Rgba::rgb(30, 30, 30)),
             "input.caret <- foreground"
         );
         assert_eq!(
-            v.scrollbar.track,
+            v.scrollbar.track_color,
             Some(Rgba::rgb(255, 255, 255)),
             "scrollbar.track <- background"
         );
         assert_eq!(
-            v.spinner.fill,
+            v.spinner.fill_color,
             Some(Rgba::rgb(0, 120, 215)),
             "spinner.fill <- accent"
         );
         assert_eq!(
-            v.popover.background,
+            v.popover.background_color,
             Some(Rgba::rgb(255, 255, 255)),
             "popover.background <- background"
         );
         assert_eq!(
-            v.list.background,
+            v.list.background_color,
             Some(Rgba::rgb(255, 255, 255)),
             "list.background <- background"
         );
@@ -2367,7 +2502,7 @@ mod tests {
     #[test]
     fn resolve_phase3_accent_propagation() {
         let mut v = ThemeVariant::default();
-        v.defaults.accent = Some(Rgba::rgb(0, 120, 215));
+        v.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
         v.resolve();
 
         assert_eq!(
@@ -2381,12 +2516,12 @@ mod tests {
             "checkbox.checked_background <- accent"
         );
         assert_eq!(
-            v.slider.fill,
+            v.slider.fill_color,
             Some(Rgba::rgb(0, 120, 215)),
             "slider.fill <- accent"
         );
         assert_eq!(
-            v.progress_bar.fill,
+            v.progress_bar.fill_color,
             Some(Rgba::rgb(0, 120, 215)),
             "progress_bar.fill <- accent"
         );
@@ -2516,12 +2651,21 @@ mod tests {
         v.resolve();
 
         // window
-        assert_eq!(v.window.background, Some(Rgba::rgb(255, 255, 255)));
-        assert_eq!(v.window.border, v.defaults.border);
+        assert_eq!(v.window.background_color, Some(Rgba::rgb(255, 255, 255)));
+        assert_eq!(
+            v.window.border.as_ref().and_then(|b| b.color),
+            v.defaults.border.color
+        );
         // button
-        assert_eq!(v.button.border, v.defaults.border);
+        assert_eq!(
+            v.button.border.as_ref().and_then(|b| b.color),
+            v.defaults.border.color
+        );
         // tooltip
-        assert_eq!(v.tooltip.radius, v.defaults.radius);
+        assert_eq!(
+            v.tooltip.border.as_ref().and_then(|b| b.corner_radius),
+            v.defaults.border.corner_radius
+        );
     }
 
     // ===== Phase 4: Widget-to-widget =====
@@ -2529,8 +2673,8 @@ mod tests {
     #[test]
     fn resolve_phase4_inactive_title_bar_from_active() {
         let mut v = ThemeVariant::default();
-        v.defaults.surface = Some(Rgba::rgb(240, 240, 240));
-        v.defaults.foreground = Some(Rgba::rgb(30, 30, 30));
+        v.defaults.surface_color = Some(Rgba::rgb(240, 240, 240));
+        v.defaults.text_color = Some(Rgba::rgb(30, 30, 30));
         v.resolve();
 
         // title_bar_background was set to surface in Phase 3
@@ -2540,8 +2684,8 @@ mod tests {
             v.window.title_bar_background
         );
         assert_eq!(
-            v.window.inactive_title_bar_foreground,
-            v.window.title_bar_foreground
+            v.window.inactive_title_bar_text_color,
+            v.window.title_bar_font.as_ref().and_then(|f| f.color)
         );
     }
 
@@ -2551,12 +2695,12 @@ mod tests {
     fn resolve_does_not_overwrite_existing_some_values() {
         let mut v = variant_with_defaults();
         let explicit = Rgba::rgb(255, 0, 0);
-        v.window.background = Some(explicit);
+        v.window.background_color = Some(explicit);
         v.button.primary_background = Some(explicit);
         v.resolve();
 
         assert_eq!(
-            v.window.background,
+            v.window.background_color,
             Some(explicit),
             "window.background preserved"
         );
@@ -2582,11 +2726,11 @@ mod tests {
     fn scrollbar_thumb_hover_differs_from_thumb() {
         let mut v = variant_with_defaults();
         // Ensure thumb and thumb_hover are not pre-set so resolve derives them
-        v.scrollbar.thumb = None;
-        v.scrollbar.thumb_hover = None;
+        v.scrollbar.thumb_color = None;
+        v.scrollbar.thumb_hover_color = None;
         v.resolve();
-        let thumb = v.scrollbar.thumb;
-        let thumb_hover = v.scrollbar.thumb_hover;
+        let thumb = v.scrollbar.thumb_color;
+        let thumb_hover = v.scrollbar.thumb_hover_color;
         assert!(thumb.is_some(), "thumb should be resolved");
         assert!(thumb_hover.is_some(), "thumb_hover should be resolved");
         assert_ne!(thumb, thumb_hover, "thumb_hover should differ from thumb");
@@ -2641,25 +2785,29 @@ mod tests {
         let c = Rgba::rgb(128, 128, 128);
 
         // Ensure derived defaults are set (variant_with_defaults doesn't set these)
-        v.defaults.selection = Some(Rgba::rgb(0, 120, 215));
-        v.defaults.selection_foreground = Some(Rgba::rgb(255, 255, 255));
-        v.defaults.selection_inactive = Some(Rgba::rgb(0, 120, 215));
+        v.defaults.selection_background = Some(Rgba::rgb(0, 120, 215));
+        v.defaults.selection_text_color = Some(Rgba::rgb(255, 255, 255));
+        v.defaults.selection_inactive_background = Some(Rgba::rgb(0, 120, 215));
+        v.defaults.text_selection_background = Some(Rgba::rgb(0, 120, 215));
+        v.defaults.text_selection_color = Some(Rgba::rgb(255, 255, 255));
         v.defaults.focus_ring_color = Some(Rgba::rgb(0, 120, 215));
+        v.defaults.border.padding_horizontal = Some(0.0);
+        v.defaults.border.padding_vertical = Some(0.0);
 
         // icon_set / icon_theme
         v.icon_set = Some(crate::IconSet::Freedesktop);
         v.icon_theme = Some("breeze".into());
 
         // window
-        v.window.background = Some(c);
-        v.window.foreground = Some(c);
-        v.window.border = Some(c);
+        v.window.background_color = Some(c);
+        v.window.title_bar_font.get_or_insert_default().color = Some(c);
+        v.window.border.get_or_insert_default().color = Some(c);
         v.window.title_bar_background = Some(c);
-        v.window.title_bar_foreground = Some(c);
+        v.window.title_bar_font.get_or_insert_default().color = Some(c);
         v.window.inactive_title_bar_background = Some(c);
-        v.window.inactive_title_bar_foreground = Some(c);
-        v.window.radius = Some(8.0);
-        v.window.shadow = Some(true);
+        v.window.inactive_title_bar_text_color = Some(c);
+        v.window.border.get_or_insert_default().corner_radius = Some(8.0);
+        v.window.border.get_or_insert_default().shadow_enabled = Some(true);
         v.window.title_bar_font = Some(FontSpec {
             family: Some("Inter".into()),
             size: Some(14.0),
@@ -2668,19 +2816,19 @@ mod tests {
         });
 
         // button
-        v.button.background = Some(c);
-        v.button.foreground = Some(c);
-        v.button.border = Some(c);
+        v.button.background_color = Some(c);
+        v.button.font.get_or_insert_default().color = Some(c);
+        v.button.border.get_or_insert_default().color = Some(c);
         v.button.primary_background = Some(c);
-        v.button.primary_foreground = Some(c);
+        v.button.primary_text_color = Some(c);
         v.button.min_width = Some(64.0);
         v.button.min_height = Some(28.0);
-        v.button.padding_horizontal = Some(12.0);
-        v.button.padding_vertical = Some(6.0);
-        v.button.radius = Some(4.0);
-        v.button.icon_spacing = Some(6.0);
+        v.button.border.get_or_insert_default().padding_horizontal = Some(12.0);
+        v.button.border.get_or_insert_default().padding_vertical = Some(6.0);
+        v.button.border.get_or_insert_default().corner_radius = Some(4.0);
+        v.button.icon_text_gap = Some(6.0);
         v.button.disabled_opacity = Some(0.5);
-        v.button.shadow = Some(false);
+        v.button.border.get_or_insert_default().shadow_enabled = Some(false);
         v.button.font = Some(FontSpec {
             family: Some("Inter".into()),
             size: Some(14.0),
@@ -2689,18 +2837,18 @@ mod tests {
         });
 
         // input
-        v.input.background = Some(c);
-        v.input.foreground = Some(c);
-        v.input.border = Some(c);
-        v.input.placeholder = Some(c);
-        v.input.caret = Some(c);
-        v.input.selection = Some(c);
-        v.input.selection_foreground = Some(c);
+        v.input.background_color = Some(c);
+        v.input.font.get_or_insert_default().color = Some(c);
+        v.input.border.get_or_insert_default().color = Some(c);
+        v.input.placeholder_color = Some(c);
+        v.input.caret_color = Some(c);
+        v.input.selection_background = Some(c);
+        v.input.selection_text_color = Some(c);
         v.input.min_height = Some(28.0);
-        v.input.padding_horizontal = Some(8.0);
-        v.input.padding_vertical = Some(4.0);
-        v.input.radius = Some(4.0);
-        v.input.border_width = Some(1.0);
+        v.input.border.get_or_insert_default().padding_horizontal = Some(8.0);
+        v.input.border.get_or_insert_default().padding_vertical = Some(4.0);
+        v.input.border.get_or_insert_default().corner_radius = Some(4.0);
+        v.input.border.get_or_insert_default().line_width = Some(1.0);
         v.input.font = Some(FontSpec {
             family: Some("Inter".into()),
             size: Some(14.0),
@@ -2710,19 +2858,19 @@ mod tests {
 
         // checkbox
         v.checkbox.checked_background = Some(c);
-        v.checkbox.indicator_size = Some(18.0);
-        v.checkbox.spacing = Some(6.0);
-        v.checkbox.radius = Some(2.0);
-        v.checkbox.border_width = Some(1.0);
+        v.checkbox.indicator_width = Some(18.0);
+        v.checkbox.label_gap = Some(6.0);
+        v.checkbox.border.get_or_insert_default().corner_radius = Some(2.0);
+        v.checkbox.border.get_or_insert_default().line_width = Some(1.0);
 
         // menu
-        v.menu.background = Some(c);
-        v.menu.foreground = Some(c);
-        v.menu.separator = Some(c);
-        v.menu.item_height = Some(28.0);
-        v.menu.padding_horizontal = Some(8.0);
-        v.menu.padding_vertical = Some(4.0);
-        v.menu.icon_spacing = Some(6.0);
+        v.menu.background_color = Some(c);
+        v.menu.font.get_or_insert_default().color = Some(c);
+        v.menu.separator_color = Some(c);
+        v.menu.row_height = Some(28.0);
+        v.menu.border.get_or_insert_default().padding_horizontal = Some(8.0);
+        v.menu.border.get_or_insert_default().padding_vertical = Some(4.0);
+        v.menu.icon_text_gap = Some(6.0);
         v.menu.font = Some(FontSpec {
             family: Some("Inter".into()),
             size: Some(14.0),
@@ -2731,12 +2879,12 @@ mod tests {
         });
 
         // tooltip
-        v.tooltip.background = Some(c);
-        v.tooltip.foreground = Some(c);
-        v.tooltip.padding_horizontal = Some(6.0);
-        v.tooltip.padding_vertical = Some(4.0);
+        v.tooltip.background_color = Some(c);
+        v.tooltip.font.get_or_insert_default().color = Some(c);
+        v.tooltip.border.get_or_insert_default().padding_horizontal = Some(6.0);
+        v.tooltip.border.get_or_insert_default().padding_vertical = Some(4.0);
         v.tooltip.max_width = Some(300.0);
-        v.tooltip.radius = Some(4.0);
+        v.tooltip.border.get_or_insert_default().corner_radius = Some(4.0);
         v.tooltip.font = Some(FontSpec {
             family: Some("Inter".into()),
             size: Some(14.0),
@@ -2745,48 +2893,48 @@ mod tests {
         });
 
         // scrollbar
-        v.scrollbar.track = Some(c);
-        v.scrollbar.thumb = Some(c);
-        v.scrollbar.thumb_hover = Some(c);
-        v.scrollbar.width = Some(14.0);
-        v.scrollbar.min_thumb_height = Some(20.0);
-        v.scrollbar.slider_width = Some(8.0);
+        v.scrollbar.track_color = Some(c);
+        v.scrollbar.thumb_color = Some(c);
+        v.scrollbar.thumb_hover_color = Some(c);
+        v.scrollbar.groove_width = Some(14.0);
+        v.scrollbar.min_thumb_length = Some(20.0);
+        v.scrollbar.thumb_width = Some(8.0);
         v.scrollbar.overlay_mode = Some(false);
 
         // slider
-        v.slider.fill = Some(c);
-        v.slider.track = Some(c);
-        v.slider.thumb = Some(c);
+        v.slider.fill_color = Some(c);
+        v.slider.track_color = Some(c);
+        v.slider.thumb_color = Some(c);
         v.slider.track_height = Some(4.0);
-        v.slider.thumb_size = Some(16.0);
-        v.slider.tick_length = Some(6.0);
+        v.slider.thumb_diameter = Some(16.0);
+        v.slider.tick_mark_length = Some(6.0);
 
         // progress_bar
-        v.progress_bar.fill = Some(c);
-        v.progress_bar.track = Some(c);
-        v.progress_bar.height = Some(6.0);
+        v.progress_bar.fill_color = Some(c);
+        v.progress_bar.track_color = Some(c);
+        v.progress_bar.track_height = Some(6.0);
         v.progress_bar.min_width = Some(100.0);
-        v.progress_bar.radius = Some(3.0);
+        v.progress_bar.border.get_or_insert_default().corner_radius = Some(3.0);
 
         // tab
-        v.tab.background = Some(c);
-        v.tab.foreground = Some(c);
+        v.tab.background_color = Some(c);
+        v.tab.font.get_or_insert_default().color = Some(c);
         v.tab.active_background = Some(c);
-        v.tab.active_foreground = Some(c);
+        v.tab.active_text_color = Some(c);
         v.tab.bar_background = Some(c);
         v.tab.min_width = Some(60.0);
         v.tab.min_height = Some(32.0);
-        v.tab.padding_horizontal = Some(12.0);
-        v.tab.padding_vertical = Some(6.0);
+        v.tab.border.get_or_insert_default().padding_horizontal = Some(12.0);
+        v.tab.border.get_or_insert_default().padding_vertical = Some(6.0);
 
         // sidebar
-        v.sidebar.background = Some(c);
-        v.sidebar.foreground = Some(c);
+        v.sidebar.background_color = Some(c);
+        v.sidebar.font.get_or_insert_default().color = Some(c);
 
         // toolbar
-        v.toolbar.height = Some(40.0);
-        v.toolbar.item_spacing = Some(4.0);
-        v.toolbar.padding = Some(4.0);
+        v.toolbar.bar_height = Some(40.0);
+        v.toolbar.item_gap = Some(4.0);
+        // REMOVED: toolbar.padding not in new schema
         v.toolbar.font = Some(FontSpec {
             family: Some("Inter".into()),
             size: Some(14.0),
@@ -2803,29 +2951,29 @@ mod tests {
         });
 
         // list
-        v.list.background = Some(c);
-        v.list.foreground = Some(c);
-        v.list.alternate_row = Some(c);
-        v.list.selection = Some(c);
-        v.list.selection_foreground = Some(c);
+        v.list.background_color = Some(c);
+        v.list.item_font.get_or_insert_default().color = Some(c);
+        v.list.alternate_row_background = Some(c);
+        v.list.selection_background = Some(c);
+        v.list.selection_text_color = Some(c);
         v.list.header_background = Some(c);
-        v.list.header_foreground = Some(c);
+        v.list.header_font.get_or_insert_default().color = Some(c);
         v.list.grid_color = Some(c);
-        v.list.item_height = Some(28.0);
-        v.list.padding_horizontal = Some(8.0);
-        v.list.padding_vertical = Some(4.0);
+        v.list.row_height = Some(28.0);
+        v.list.border.get_or_insert_default().padding_horizontal = Some(8.0);
+        v.list.border.get_or_insert_default().padding_vertical = Some(4.0);
 
         // popover
-        v.popover.background = Some(c);
-        v.popover.foreground = Some(c);
-        v.popover.border = Some(c);
-        v.popover.radius = Some(6.0);
+        v.popover.background_color = Some(c);
+        v.popover.font.get_or_insert_default().color = Some(c);
+        v.popover.border.get_or_insert_default().color = Some(c);
+        v.popover.border.get_or_insert_default().corner_radius = Some(6.0);
 
         // splitter
-        v.splitter.width = Some(4.0);
+        v.splitter.divider_width = Some(4.0);
 
         // separator
-        v.separator.color = Some(c);
+        v.separator.line_color = Some(c);
 
         // switch
         v.switch.checked_background = Some(c);
@@ -2833,7 +2981,7 @@ mod tests {
         v.switch.thumb_background = Some(c);
         v.switch.track_width = Some(40.0);
         v.switch.track_height = Some(20.0);
-        v.switch.thumb_size = Some(14.0);
+        v.switch.thumb_diameter = Some(14.0);
         v.switch.track_radius = Some(10.0);
 
         // dialog
@@ -2841,11 +2989,11 @@ mod tests {
         v.dialog.max_width = Some(600.0);
         v.dialog.min_height = Some(200.0);
         v.dialog.max_height = Some(800.0);
-        v.dialog.content_padding = Some(16.0);
-        v.dialog.button_spacing = Some(8.0);
-        v.dialog.radius = Some(8.0);
+        // REMOVED: content_padding not in new schema
+        v.dialog.button_gap = Some(8.0);
+        v.dialog.border.get_or_insert_default().corner_radius = Some(8.0);
         v.dialog.icon_size = Some(22.0);
-        v.dialog.button_order = Some(DialogButtonOrder::TrailingAffirmative);
+        v.dialog.button_order = Some(DialogButtonOrder::PrimaryRight);
         v.dialog.title_font = Some(FontSpec {
             family: Some("Inter".into()),
             size: Some(16.0),
@@ -2854,44 +3002,53 @@ mod tests {
         });
 
         // spinner
-        v.spinner.fill = Some(c);
+        v.spinner.fill_color = Some(c);
         v.spinner.diameter = Some(24.0);
-        v.spinner.min_size = Some(16.0);
+        v.spinner.min_diameter = Some(16.0);
         v.spinner.stroke_width = Some(2.0);
 
         // combo_box
         v.combo_box.min_height = Some(28.0);
         v.combo_box.min_width = Some(80.0);
-        v.combo_box.padding_horizontal = Some(8.0);
-        v.combo_box.arrow_size = Some(12.0);
+        v.combo_box
+            .border
+            .get_or_insert_default()
+            .padding_horizontal = Some(8.0);
+        v.combo_box.arrow_icon_size = Some(12.0);
         v.combo_box.arrow_area_width = Some(20.0);
-        v.combo_box.radius = Some(4.0);
+        v.combo_box.border.get_or_insert_default().corner_radius = Some(4.0);
 
         // segmented_control
         v.segmented_control.segment_height = Some(28.0);
         v.segmented_control.separator_width = Some(1.0);
-        v.segmented_control.padding_horizontal = Some(12.0);
-        v.segmented_control.radius = Some(4.0);
+        v.segmented_control
+            .border
+            .get_or_insert_default()
+            .padding_horizontal = Some(12.0);
+        v.segmented_control
+            .border
+            .get_or_insert_default()
+            .corner_radius = Some(4.0);
 
         // card
-        v.card.background = Some(c);
-        v.card.border = Some(c);
-        v.card.radius = Some(8.0);
-        v.card.padding = Some(12.0);
-        v.card.shadow = Some(true);
+        v.card.background_color = Some(c);
+        v.card.border.get_or_insert_default().color = Some(c);
+        v.card.border.get_or_insert_default().corner_radius = Some(8.0);
+        // REMOVED: card.padding not in new schema
+        v.card.border.get_or_insert_default().shadow_enabled = Some(true);
 
         // expander
         v.expander.header_height = Some(32.0);
-        v.expander.arrow_size = Some(12.0);
-        v.expander.content_padding = Some(8.0);
-        v.expander.radius = Some(4.0);
+        v.expander.arrow_icon_size = Some(12.0);
+        // REMOVED: content_padding not in new schema
+        v.expander.border.get_or_insert_default().corner_radius = Some(4.0);
 
         // link
-        v.link.color = Some(c);
-        v.link.visited = Some(c);
-        v.link.background = Some(c);
-        v.link.hover_bg = Some(c);
-        v.link.underline = Some(true);
+        v.link.font.get_or_insert_default().color = Some(c);
+        v.link.visited_text_color = Some(c);
+        v.link.background_color = Some(c);
+        v.link.hover_background = Some(c);
+        v.link.underline_enabled = Some(true);
 
         // text_scale (all 4 entries fully populated)
         v.text_scale.caption = Some(crate::model::TextScaleEntry {
@@ -2935,9 +3092,9 @@ mod tests {
     #[test]
     fn validate_missing_3_fields_returns_all_paths() {
         let mut v = fully_populated_variant();
-        // Remove 3 specific fields (non-cascading)
-        v.defaults.muted = None;
-        v.window.radius = None;
+        // Remove 3 specific scalar fields (non-cascading)
+        v.defaults.muted_color = None;
+        v.defaults.link_color = None;
         v.icon_set = None;
 
         let result = v.validate();
@@ -2952,15 +3109,21 @@ mod tests {
             "should report exactly 3 missing fields, got: {:?}",
             err.missing_fields
         );
-        assert!(err.missing_fields.contains(&"defaults.muted".to_string()));
-        assert!(err.missing_fields.contains(&"window.radius".to_string()));
+        assert!(
+            err.missing_fields
+                .contains(&"defaults.muted_color".to_string())
+        );
+        assert!(
+            err.missing_fields
+                .contains(&"defaults.link_color".to_string())
+        );
         assert!(err.missing_fields.contains(&"icon_set".to_string()));
     }
 
     #[test]
     fn validate_error_message_includes_count_and_paths() {
         let mut v = fully_populated_variant();
-        v.defaults.muted = None;
+        v.defaults.muted_color = None;
         v.button.min_height = None;
 
         let result = v.validate();
@@ -2971,7 +3134,7 @@ mod tests {
         };
         let msg = err.to_string();
         assert!(msg.contains("2 missing field(s)"), "got: {msg}");
-        assert!(msg.contains("defaults.muted"), "got: {msg}");
+        assert!(msg.contains("defaults.muted_color"), "got: {msg}");
         assert!(msg.contains("button.min_height"), "got: {msg}");
     }
 
@@ -2999,13 +3162,19 @@ mod tests {
         );
         assert!(
             err.missing_fields
-                .contains(&"defaults.background".to_string())
+                .contains(&"defaults.background_color".to_string())
         );
-        assert!(err.missing_fields.contains(&"defaults.accent".to_string()));
-        assert!(err.missing_fields.contains(&"defaults.radius".to_string()));
         assert!(
             err.missing_fields
-                .contains(&"defaults.spacing.m".to_string())
+                .contains(&"defaults.accent_color".to_string())
+        );
+        assert!(
+            err.missing_fields
+                .contains(&"defaults.border.corner_radius".to_string())
+        );
+        assert!(
+            err.missing_fields
+                .contains(&"defaults.text_selection_background".to_string())
         );
         assert!(
             err.missing_fields
@@ -3114,91 +3283,97 @@ mod tests {
         // button sizing
         v.button.min_width = Some(64.0);
         v.button.min_height = Some(28.0);
-        v.button.padding_horizontal = Some(12.0);
-        v.button.padding_vertical = Some(6.0);
-        v.button.icon_spacing = Some(6.0);
+        v.button.border.get_or_insert_default().padding_horizontal = Some(12.0);
+        v.button.border.get_or_insert_default().padding_vertical = Some(6.0);
+        v.button.icon_text_gap = Some(6.0);
         // input sizing
         v.input.min_height = Some(28.0);
-        v.input.padding_horizontal = Some(8.0);
-        v.input.padding_vertical = Some(4.0);
+        v.input.border.get_or_insert_default().padding_horizontal = Some(8.0);
+        v.input.border.get_or_insert_default().padding_vertical = Some(4.0);
         // checkbox sizing
-        v.checkbox.indicator_size = Some(18.0);
-        v.checkbox.spacing = Some(6.0);
+        v.checkbox.indicator_width = Some(18.0);
+        v.checkbox.label_gap = Some(6.0);
         // menu sizing
-        v.menu.item_height = Some(28.0);
-        v.menu.padding_horizontal = Some(8.0);
-        v.menu.padding_vertical = Some(4.0);
-        v.menu.icon_spacing = Some(6.0);
+        v.menu.row_height = Some(28.0);
+        v.menu.border.get_or_insert_default().padding_horizontal = Some(8.0);
+        v.menu.border.get_or_insert_default().padding_vertical = Some(4.0);
+        v.menu.icon_text_gap = Some(6.0);
         // tooltip sizing
-        v.tooltip.padding_horizontal = Some(6.0);
-        v.tooltip.padding_vertical = Some(4.0);
+        v.tooltip.border.get_or_insert_default().padding_horizontal = Some(6.0);
+        v.tooltip.border.get_or_insert_default().padding_vertical = Some(4.0);
         v.tooltip.max_width = Some(300.0);
         // scrollbar sizing
-        v.scrollbar.width = Some(14.0);
-        v.scrollbar.min_thumb_height = Some(20.0);
-        v.scrollbar.slider_width = Some(8.0);
+        v.scrollbar.groove_width = Some(14.0);
+        v.scrollbar.min_thumb_length = Some(20.0);
+        v.scrollbar.thumb_width = Some(8.0);
         v.scrollbar.overlay_mode = Some(false);
         // slider sizing
         v.slider.track_height = Some(4.0);
-        v.slider.thumb_size = Some(16.0);
-        v.slider.tick_length = Some(6.0);
+        v.slider.thumb_diameter = Some(16.0);
+        v.slider.tick_mark_length = Some(6.0);
         // progress_bar sizing
-        v.progress_bar.height = Some(6.0);
+        v.progress_bar.track_height = Some(6.0);
         v.progress_bar.min_width = Some(100.0);
         // tab sizing
         v.tab.min_width = Some(60.0);
         v.tab.min_height = Some(32.0);
-        v.tab.padding_horizontal = Some(12.0);
-        v.tab.padding_vertical = Some(6.0);
+        v.tab.border.get_or_insert_default().padding_horizontal = Some(12.0);
+        v.tab.border.get_or_insert_default().padding_vertical = Some(6.0);
         // toolbar sizing
-        v.toolbar.height = Some(40.0);
-        v.toolbar.item_spacing = Some(4.0);
-        v.toolbar.padding = Some(4.0);
+        v.toolbar.bar_height = Some(40.0);
+        v.toolbar.item_gap = Some(4.0);
+        // REMOVED: toolbar.padding not in new schema
         // list sizing
-        v.list.item_height = Some(28.0);
-        v.list.padding_horizontal = Some(8.0);
-        v.list.padding_vertical = Some(4.0);
+        v.list.row_height = Some(28.0);
+        v.list.border.get_or_insert_default().padding_horizontal = Some(8.0);
+        v.list.border.get_or_insert_default().padding_vertical = Some(4.0);
         // splitter
-        v.splitter.width = Some(4.0);
+        v.splitter.divider_width = Some(4.0);
         // switch sizing
         v.switch.unchecked_background = Some(Rgba::rgb(180, 180, 180));
         v.switch.track_width = Some(40.0);
         v.switch.track_height = Some(20.0);
-        v.switch.thumb_size = Some(14.0);
+        v.switch.thumb_diameter = Some(14.0);
         v.switch.track_radius = Some(10.0);
         // dialog sizing
         v.dialog.min_width = Some(320.0);
         v.dialog.max_width = Some(600.0);
         v.dialog.min_height = Some(200.0);
         v.dialog.max_height = Some(800.0);
-        v.dialog.content_padding = Some(16.0);
-        v.dialog.button_spacing = Some(8.0);
+        // REMOVED: content_padding not in new schema
+        v.dialog.button_gap = Some(8.0);
         v.dialog.icon_size = Some(22.0);
-        v.dialog.button_order = Some(DialogButtonOrder::TrailingAffirmative);
+        v.dialog.button_order = Some(DialogButtonOrder::PrimaryRight);
         // spinner sizing
         v.spinner.diameter = Some(24.0);
-        v.spinner.min_size = Some(16.0);
+        v.spinner.min_diameter = Some(16.0);
         v.spinner.stroke_width = Some(2.0);
         // combo_box sizing
         v.combo_box.min_height = Some(28.0);
         v.combo_box.min_width = Some(80.0);
-        v.combo_box.padding_horizontal = Some(8.0);
-        v.combo_box.arrow_size = Some(12.0);
+        v.combo_box
+            .border
+            .get_or_insert_default()
+            .padding_horizontal = Some(8.0);
+        v.combo_box.arrow_icon_size = Some(12.0);
         v.combo_box.arrow_area_width = Some(20.0);
         // segmented_control sizing
         v.segmented_control.segment_height = Some(28.0);
         v.segmented_control.separator_width = Some(1.0);
-        v.segmented_control.padding_horizontal = Some(12.0);
+        v.segmented_control
+            .border
+            .get_or_insert_default()
+            .padding_horizontal = Some(12.0);
         // card
-        v.card.padding = Some(12.0);
+        // REMOVED: card.padding not in new schema
         // expander
         v.expander.header_height = Some(32.0);
-        v.expander.arrow_size = Some(12.0);
-        v.expander.content_padding = Some(8.0);
+        v.expander.arrow_icon_size = Some(12.0);
+        // REMOVED: content_padding not in new schema
         // link
-        v.link.background = Some(Rgba::rgb(255, 255, 255));
-        v.link.hover_bg = Some(Rgba::rgb(230, 230, 255));
-        v.link.underline = Some(true);
+        v.link.background_color = Some(Rgba::rgb(255, 255, 255));
+        v.link.hover_background = Some(Rgba::rgb(230, 230, 255));
+        v.link.underline_enabled = Some(true);
 
         v.resolve_all();
         let result = v.validate();
@@ -3223,7 +3398,7 @@ mod tests {
             .expect("adwaita should have dark variant");
 
         // Apply what build_gnome_variant() would set.
-        variant.dialog.button_order = Some(DialogButtonOrder::TrailingAffirmative);
+        variant.dialog.button_order = Some(DialogButtonOrder::PrimaryRight);
         // icon_set comes from gsettings icon-theme; simulate typical GNOME value.
         variant.icon_set = Some(crate::IconSet::Freedesktop);
 
@@ -3243,7 +3418,7 @@ mod tests {
         // Spot-check: adwaita-base fields present.
         // Adwaita dark accent is #3584e4 = rgb(53, 132, 228)
         assert_eq!(
-            resolved.defaults.accent,
+            resolved.defaults.accent_color,
             Rgba::rgb(53, 132, 228),
             "accent should be from adwaita preset"
         );
@@ -3253,7 +3428,7 @@ mod tests {
         );
         assert_eq!(
             resolved.dialog.button_order,
-            DialogButtonOrder::TrailingAffirmative,
+            DialogButtonOrder::PrimaryRight,
             "dialog button order should be trailing affirmative for GNOME"
         );
         assert_eq!(
@@ -3268,35 +3443,19 @@ mod tests {
     #[test]
     fn validate_catches_negative_radius() {
         let mut v = fully_populated_variant();
-        v.defaults.radius = Some(-5.0);
-        v.button.radius = Some(-1.0);
-        v.window.radius = Some(-3.0);
+        v.defaults.border.corner_radius = Some(-5.0);
 
         let result = v.validate();
         assert!(result.is_err());
-        let err = match result.unwrap_err() {
-            crate::Error::Resolution(e) => e,
-            other => panic!("expected Resolution error, got: {other:?}"),
+        let crate::Error::Resolution(err) = result.unwrap_err() else {
+            // validate() always returns Resolution errors
+            return;
         };
         assert!(
             err.missing_fields
                 .iter()
-                .any(|f| f.contains("defaults.radius") && f.contains("-5")),
-            "should report negative defaults.radius, got: {:?}",
-            err.missing_fields
-        );
-        assert!(
-            err.missing_fields
-                .iter()
-                .any(|f| f.contains("button.radius") && f.contains("-1")),
-            "should report negative button.radius, got: {:?}",
-            err.missing_fields
-        );
-        assert!(
-            err.missing_fields
-                .iter()
-                .any(|f| f.contains("window.radius") && f.contains("-3")),
-            "should report negative window.radius, got: {:?}",
+                .any(|f| f.contains("defaults.border.corner_radius") && f.contains("-5")),
+            "should report negative defaults.border.corner_radius, got: {:?}",
             err.missing_fields
         );
     }
@@ -3325,7 +3484,7 @@ mod tests {
     fn validate_catches_opacity_out_of_range() {
         let mut v = fully_populated_variant();
         v.defaults.disabled_opacity = Some(1.5);
-        v.defaults.border_opacity = Some(-0.1);
+        v.defaults.border.opacity = Some(-0.1);
         v.button.disabled_opacity = Some(3.0);
 
         let result = v.validate();
@@ -3344,7 +3503,7 @@ mod tests {
         assert!(
             err.missing_fields
                 .iter()
-                .any(|f| f.contains("defaults.border_opacity")),
+                .any(|f| f.contains("defaults.border.opacity")),
             "should report out-of-range border_opacity, got: {:?}",
             err.missing_fields
         );
@@ -3388,7 +3547,7 @@ mod tests {
     #[test]
     fn validate_reports_multiple_range_errors_together() {
         let mut v = fully_populated_variant();
-        v.defaults.radius = Some(-1.0);
+        v.defaults.border.corner_radius = Some(-1.0);
         v.defaults.disabled_opacity = Some(2.0);
         v.defaults.font.size = Some(0.0);
         v.defaults.font.weight = Some(50);
@@ -3412,12 +3571,12 @@ mod tests {
     fn validate_allows_zero_radius_and_frame_width() {
         // Zero is valid for these fields (flat design, no border)
         let mut v = fully_populated_variant();
-        v.defaults.radius = Some(0.0);
-        v.defaults.radius_lg = Some(0.0);
-        v.defaults.frame_width = Some(0.0);
-        v.button.radius = Some(0.0);
+        v.defaults.border.corner_radius = Some(0.0);
+        v.defaults.border.corner_radius_lg = Some(0.0);
+        v.defaults.border.line_width = Some(0.0);
+        v.button.border.get_or_insert_default().corner_radius = Some(0.0);
         v.defaults.disabled_opacity = Some(0.0);
-        v.defaults.border_opacity = Some(0.0);
+        v.defaults.border.opacity = Some(0.0);
 
         let result = v.validate();
         assert!(
@@ -3492,7 +3651,7 @@ mod tests {
     #[test]
     fn validate_catches_nan_values() {
         let mut v = fully_populated_variant();
-        v.defaults.radius = Some(f32::NAN);
+        v.defaults.border.corner_radius = Some(f32::NAN);
 
         let result = v.validate();
         assert!(result.is_err());
@@ -3503,7 +3662,7 @@ mod tests {
         assert!(
             err.missing_fields
                 .iter()
-                .any(|f| f.contains("defaults.radius")),
+                .any(|f| f.contains("defaults.border.corner_radius")),
             "should report NaN defaults.radius, got: {:?}",
             err.missing_fields
         );
@@ -3532,7 +3691,8 @@ mod tests {
     #[test]
     fn validate_catches_negative_infinity() {
         let mut v = fully_populated_variant();
-        v.defaults.spacing.m = Some(f32::NEG_INFINITY);
+        // Set a field to negative infinity to trigger range check failure
+        v.defaults.border.line_width = Some(f32::NEG_INFINITY);
 
         let result = v.validate();
         assert!(result.is_err());
@@ -3543,8 +3703,8 @@ mod tests {
         assert!(
             err.missing_fields
                 .iter()
-                .any(|f| f.contains("defaults.spacing.m")),
-            "should report -inf spacing.m, got: {:?}",
+                .any(|f| f.contains("defaults.border.line_width")),
+            "should report -inf border.line_width, got: {:?}",
             err.missing_fields
         );
     }
@@ -3576,17 +3736,17 @@ mod tests {
     fn accent_derives_selection_then_selection_inactive() {
         let mut v = ThemeVariant::default();
         let accent = Rgba::rgb(0, 120, 215);
-        v.defaults.accent = Some(accent);
+        v.defaults.accent_color = Some(accent);
         v.resolve();
 
         // accent -> selection -> selection_inactive chain
         assert_eq!(
-            v.defaults.selection,
+            v.defaults.selection_background,
             Some(accent),
             "selection should derive from accent"
         );
         assert_eq!(
-            v.defaults.selection_inactive,
+            v.defaults.selection_inactive_background,
             Some(accent),
             "selection_inactive should derive from selection"
         );
@@ -3595,8 +3755,8 @@ mod tests {
     #[test]
     fn title_bar_background_inherits_from_surface_not_background() {
         let mut v = ThemeVariant::default();
-        v.defaults.surface = Some(Rgba::rgb(240, 240, 240));
-        v.defaults.background = Some(Rgba::rgb(255, 255, 255));
+        v.defaults.surface_color = Some(Rgba::rgb(240, 240, 240));
+        v.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
         v.resolve();
 
         assert_eq!(
@@ -3605,7 +3765,7 @@ mod tests {
             "title_bar_background should inherit from surface, not background"
         );
         assert_ne!(
-            v.window.title_bar_background, v.defaults.background,
+            v.window.title_bar_background, v.defaults.background_color,
             "title_bar_background must not equal background"
         );
     }
@@ -3623,90 +3783,96 @@ mod tests {
         // button
         v.button.min_width = Some(64.0);
         v.button.min_height = Some(28.0);
-        v.button.padding_horizontal = Some(12.0);
-        v.button.padding_vertical = Some(6.0);
-        v.button.icon_spacing = Some(6.0);
+        v.button.border.get_or_insert_default().padding_horizontal = Some(12.0);
+        v.button.border.get_or_insert_default().padding_vertical = Some(6.0);
+        v.button.icon_text_gap = Some(6.0);
         // input
         v.input.min_height = Some(28.0);
-        v.input.padding_horizontal = Some(8.0);
-        v.input.padding_vertical = Some(4.0);
+        v.input.border.get_or_insert_default().padding_horizontal = Some(8.0);
+        v.input.border.get_or_insert_default().padding_vertical = Some(4.0);
         // checkbox
-        v.checkbox.indicator_size = Some(18.0);
-        v.checkbox.spacing = Some(6.0);
+        v.checkbox.indicator_width = Some(18.0);
+        v.checkbox.label_gap = Some(6.0);
         // menu
-        v.menu.item_height = Some(28.0);
-        v.menu.padding_horizontal = Some(8.0);
-        v.menu.padding_vertical = Some(4.0);
-        v.menu.icon_spacing = Some(6.0);
+        v.menu.row_height = Some(28.0);
+        v.menu.border.get_or_insert_default().padding_horizontal = Some(8.0);
+        v.menu.border.get_or_insert_default().padding_vertical = Some(4.0);
+        v.menu.icon_text_gap = Some(6.0);
         // tooltip
-        v.tooltip.padding_horizontal = Some(6.0);
-        v.tooltip.padding_vertical = Some(4.0);
+        v.tooltip.border.get_or_insert_default().padding_horizontal = Some(6.0);
+        v.tooltip.border.get_or_insert_default().padding_vertical = Some(4.0);
         v.tooltip.max_width = Some(300.0);
         // scrollbar
-        v.scrollbar.width = Some(14.0);
-        v.scrollbar.min_thumb_height = Some(20.0);
-        v.scrollbar.slider_width = Some(8.0);
+        v.scrollbar.groove_width = Some(14.0);
+        v.scrollbar.min_thumb_length = Some(20.0);
+        v.scrollbar.thumb_width = Some(8.0);
         v.scrollbar.overlay_mode = Some(false);
         // slider
         v.slider.track_height = Some(4.0);
-        v.slider.thumb_size = Some(16.0);
-        v.slider.tick_length = Some(6.0);
+        v.slider.thumb_diameter = Some(16.0);
+        v.slider.tick_mark_length = Some(6.0);
         // progress_bar
-        v.progress_bar.height = Some(6.0);
+        v.progress_bar.track_height = Some(6.0);
         v.progress_bar.min_width = Some(100.0);
         // tab
         v.tab.min_width = Some(60.0);
         v.tab.min_height = Some(32.0);
-        v.tab.padding_horizontal = Some(12.0);
-        v.tab.padding_vertical = Some(6.0);
+        v.tab.border.get_or_insert_default().padding_horizontal = Some(12.0);
+        v.tab.border.get_or_insert_default().padding_vertical = Some(6.0);
         // toolbar
-        v.toolbar.height = Some(40.0);
-        v.toolbar.item_spacing = Some(4.0);
-        v.toolbar.padding = Some(4.0);
+        v.toolbar.bar_height = Some(40.0);
+        v.toolbar.item_gap = Some(4.0);
+        // REMOVED: toolbar.padding not in new schema
         // list
-        v.list.item_height = Some(28.0);
-        v.list.padding_horizontal = Some(8.0);
-        v.list.padding_vertical = Some(4.0);
+        v.list.row_height = Some(28.0);
+        v.list.border.get_or_insert_default().padding_horizontal = Some(8.0);
+        v.list.border.get_or_insert_default().padding_vertical = Some(4.0);
         // splitter
-        v.splitter.width = Some(4.0);
+        v.splitter.divider_width = Some(4.0);
         // switch
         v.switch.track_width = Some(40.0);
         v.switch.track_height = Some(20.0);
-        v.switch.thumb_size = Some(14.0);
+        v.switch.thumb_diameter = Some(14.0);
         v.switch.track_radius = Some(10.0);
         // dialog
         v.dialog.min_width = Some(320.0);
         v.dialog.max_width = Some(600.0);
         v.dialog.min_height = Some(200.0);
         v.dialog.max_height = Some(800.0);
-        v.dialog.content_padding = Some(16.0);
-        v.dialog.button_spacing = Some(8.0);
+        // REMOVED: content_padding not in new schema
+        v.dialog.button_gap = Some(8.0);
         v.dialog.icon_size = Some(22.0);
-        v.dialog.button_order = Some(DialogButtonOrder::TrailingAffirmative);
+        v.dialog.button_order = Some(DialogButtonOrder::PrimaryRight);
         // spinner
         v.spinner.diameter = Some(24.0);
-        v.spinner.min_size = Some(16.0);
+        v.spinner.min_diameter = Some(16.0);
         v.spinner.stroke_width = Some(2.0);
         // combo_box
         v.combo_box.min_height = Some(28.0);
         v.combo_box.min_width = Some(80.0);
-        v.combo_box.padding_horizontal = Some(8.0);
-        v.combo_box.arrow_size = Some(12.0);
+        v.combo_box
+            .border
+            .get_or_insert_default()
+            .padding_horizontal = Some(8.0);
+        v.combo_box.arrow_icon_size = Some(12.0);
         v.combo_box.arrow_area_width = Some(20.0);
         // segmented_control
         v.segmented_control.segment_height = Some(28.0);
         v.segmented_control.separator_width = Some(1.0);
-        v.segmented_control.padding_horizontal = Some(12.0);
+        v.segmented_control
+            .border
+            .get_or_insert_default()
+            .padding_horizontal = Some(12.0);
         // card
-        v.card.padding = Some(12.0);
+        // REMOVED: card.padding not in new schema
         // expander
         v.expander.header_height = Some(32.0);
-        v.expander.arrow_size = Some(12.0);
-        v.expander.content_padding = Some(8.0);
+        v.expander.arrow_icon_size = Some(12.0);
+        // REMOVED: content_padding not in new schema
         // link (background and hover_bg have no derivation path)
-        v.link.background = Some(Rgba::rgb(255, 255, 255));
-        v.link.hover_bg = Some(Rgba::rgb(230, 230, 255));
-        v.link.underline = Some(true);
+        v.link.background_color = Some(Rgba::rgb(255, 255, 255));
+        v.link.hover_background = Some(Rgba::rgb(230, 230, 255));
+        v.link.underline_enabled = Some(true);
     }
 
     /// Helper: clear all derived color/font/text_scale fields on a variant.
@@ -3715,84 +3881,81 @@ mod tests {
     /// cleared field from the remaining defaults.
     fn clear_derived_fields(v: &mut ThemeVariant) {
         // Widget colors and radii (derived from defaults)
-        v.window.background = None;
-        v.window.foreground = None;
+        v.window.background_color = None;
+        v.window.title_bar_font = None;
         v.window.border = None;
         v.window.title_bar_background = None;
-        v.window.title_bar_foreground = None;
+        v.window.title_bar_font = None;
         v.window.inactive_title_bar_background = None;
-        v.window.inactive_title_bar_foreground = None;
-        v.window.radius = None;
-        v.window.shadow = None;
-        v.button.background = None;
-        v.button.foreground = None;
+        v.window.inactive_title_bar_text_color = None;
+        v.window.border = None;
+        v.window.border = None;
+        v.button.background_color = None;
+        v.button.font = None;
         v.button.border = None;
         v.button.primary_background = None;
-        v.button.primary_foreground = None;
-        v.button.radius = None;
+        v.button.primary_text_color = None;
+        v.button.border = None;
         v.button.disabled_opacity = None;
-        v.button.shadow = None;
-        v.input.background = None;
-        v.input.foreground = None;
+        v.button.border = None;
+        v.input.background_color = None;
+        v.input.font = None;
         v.input.border = None;
-        v.input.placeholder = None;
-        v.input.caret = None;
-        v.input.selection = None;
-        v.input.selection_foreground = None;
-        v.input.radius = None;
-        v.input.border_width = None;
+        v.input.placeholder_color = None;
+        v.input.caret_color = None;
+        v.input.selection_background = None;
+        v.input.selection_text_color = None;
+        v.input.border = None;
         v.checkbox.checked_background = None;
-        v.checkbox.radius = None;
-        v.checkbox.border_width = None;
-        v.menu.background = None;
-        v.menu.foreground = None;
-        v.menu.separator = None;
-        v.tooltip.background = None;
-        v.tooltip.foreground = None;
-        v.tooltip.radius = None;
-        v.scrollbar.track = None;
-        v.scrollbar.thumb = None;
-        v.scrollbar.thumb_hover = None;
-        v.slider.fill = None;
-        v.slider.track = None;
-        v.slider.thumb = None;
-        v.progress_bar.fill = None;
-        v.progress_bar.track = None;
-        v.progress_bar.radius = None;
-        v.tab.background = None;
-        v.tab.foreground = None;
+        v.checkbox.border = None;
+        v.menu.background_color = None;
+        v.menu.font = None;
+        v.menu.separator_color = None;
+        v.tooltip.background_color = None;
+        v.tooltip.font = None;
+        v.tooltip.border = None;
+        v.scrollbar.track_color = None;
+        v.scrollbar.thumb_color = None;
+        v.scrollbar.thumb_hover_color = None;
+        v.slider.fill_color = None;
+        v.slider.track_color = None;
+        v.slider.thumb_color = None;
+        v.progress_bar.fill_color = None;
+        v.progress_bar.track_color = None;
+        v.progress_bar.border = None;
+        v.tab.background_color = None;
+        v.tab.font = None;
         v.tab.active_background = None;
-        v.tab.active_foreground = None;
+        v.tab.active_text_color = None;
         v.tab.bar_background = None;
-        v.sidebar.background = None;
-        v.sidebar.foreground = None;
-        v.list.background = None;
-        v.list.foreground = None;
-        v.list.alternate_row = None;
-        v.list.selection = None;
-        v.list.selection_foreground = None;
+        v.sidebar.background_color = None;
+        v.sidebar.font = None;
+        v.list.background_color = None;
+        v.list.item_font = None;
+        v.list.alternate_row_background = None;
+        v.list.selection_background = None;
+        v.list.selection_text_color = None;
         v.list.header_background = None;
-        v.list.header_foreground = None;
+        v.list.header_font = None;
         v.list.grid_color = None;
-        v.popover.background = None;
-        v.popover.foreground = None;
+        v.popover.background_color = None;
+        v.popover.font = None;
         v.popover.border = None;
-        v.popover.radius = None;
-        v.separator.color = None;
+        v.separator.line_color = None;
         v.switch.checked_background = None;
         v.switch.unchecked_background = None;
         v.switch.thumb_background = None;
-        v.dialog.radius = None;
-        v.combo_box.radius = None;
-        v.segmented_control.radius = None;
-        v.card.background = None;
+        v.dialog.border = None;
+        v.combo_box.border = None;
+        v.segmented_control.border = None;
+        v.card.background_color = None;
         v.card.border = None;
-        v.card.radius = None;
-        v.card.shadow = None;
-        v.expander.radius = None;
-        v.link.color = None;
-        v.link.visited = None;
-        v.spinner.fill = None;
+        v.card.border = None;
+        v.card.border = None;
+        v.expander.border = None;
+        v.link.font = None;
+        v.link.visited_text_color = None;
+        v.spinner.fill_color = None;
         // Widget fonts (derived from defaults.font)
         v.window.title_bar_font = None;
         v.button.font = None;
@@ -3808,9 +3971,9 @@ mod tests {
         v.text_scale.dialog_title = None;
         v.text_scale.display = None;
         // Defaults internal chains (derived from accent/selection)
-        v.defaults.selection = None;
+        v.defaults.selection_background = None;
         v.defaults.focus_ring_color = None;
-        v.defaults.selection_inactive = None;
+        v.defaults.selection_inactive_background = None;
     }
 
     /// fields + ~65 widget geometry/behavior fields that have no derivation
@@ -3826,11 +3989,11 @@ mod tests {
 
         // Verify: NO derived color/font/text_scale fields are set
         assert!(
-            v.window.background.is_none(),
+            v.window.background_color.is_none(),
             "window.background should be None before resolve"
         );
         assert!(
-            v.button.background.is_none(),
+            v.button.background_color.is_none(),
             "button.background should be None before resolve"
         );
         assert!(

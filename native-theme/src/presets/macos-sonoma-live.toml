@@ -5,25 +5,18 @@ name = "macOS Sonoma"
 # === Light variant ===
 
 [light.defaults]
-radius = 5.0
-radius_lg = 10.0
-frame_width = 0.5
 disabled_opacity = 0.3
-border_opacity = 0.2
-shadow_enabled = true
 line_height = 1.19
 focus_ring_width = 3.0
 focus_ring_offset = -1.0
 
-[light.defaults.spacing]
-xxs = 2.0
-xs = 4.0
-s = 6.0
-m = 10.0
-l = 16.0
-xl = 20.0
-xxl = 32.0
 
+[light.defaults.border]
+corner_radius = 5.0
+corner_radius_lg = 10.0
+line_width = 0.5
+opacity = 0.2
+shadow_enabled = true
 [light.defaults.icon_sizes]
 toolbar = 24.0
 small = 16.0
@@ -34,130 +27,135 @@ panel = 20.0
 [light.button]
 min_width = 64.0
 min_height = 22.0
+icon_text_gap = 4.0
+
+
+[light.button.border]
 padding_horizontal = 8.0
 padding_vertical = 3.0
-icon_spacing = 4.0
-
 [light.input]
 min_height = 22.0
+
+
+[light.input.border]
 padding_horizontal = 4.0
 padding_vertical = 3.0
-
 [light.checkbox]
-indicator_size = 14.0
-spacing = 4.0
+indicator_width = 14.0
+label_gap = 4.0
 
 [light.tooltip]
-padding_horizontal = 4.0
-padding_vertical = 4.0
 max_width = 300.0
 
+
+[light.tooltip.border]
+padding_horizontal = 4.0
+padding_vertical = 4.0
 [light.scrollbar]
-width = 16.0
-slider_width = 7.0
+groove_width = 16.0
+thumb_width = 7.0
 overlay_mode = true
-min_thumb_height = 40.0
+min_thumb_length = 40.0
 
 [light.slider]
 track_height = 5.0
-thumb_size = 21.0
-tick_length = 8.0
+thumb_diameter = 21.0
+tick_mark_length = 8.0
 
 [light.progress_bar]
-height = 6.0
+track_height = 6.0
 min_width = 100.0
 
 [light.tab]
 min_width = 64.0
 min_height = 24.0
+
+
+[light.tab.border]
 padding_horizontal = 12.0
 padding_vertical = 4.0
-
 [light.menu]
-item_height = 22.0
+row_height = 22.0
+icon_text_gap = 4.0
+
+
+[light.menu.border]
 padding_horizontal = 12.0
 padding_vertical = 3.0
-icon_spacing = 4.0
-
 [light.list]
-item_height = 24.0
+row_height = 24.0
+
+
+[light.list.border]
 padding_horizontal = 4.0
 padding_vertical = 4.0
-
 [light.toolbar]
-height = 38.0
-item_spacing = 8.0
-padding = 8.0
+bar_height = 38.0
+item_gap = 8.0
 
 [light.splitter]
-width = 6.0
+divider_width = 6.0
 
 [light.switch]
 track_width = 38.0
 track_height = 22.0
-thumb_size = 18.0
+thumb_diameter = 18.0
 track_radius = 11.0
 
 [light.dialog]
-button_order = "trailing_affirmative"
+button_order = "primary_right"
 min_width = 320.0
 max_width = 560.0
 min_height = 140.0
 max_height = 600.0
-content_padding = 20.0
-button_spacing = 12.0
+button_gap = 12.0
 icon_size = 64.0
 
 [light.link]
-underline = true
+underline_enabled = true
 
 [light.spinner]
 diameter = 32.0
-min_size = 10.0
+min_diameter = 10.0
 stroke_width = 2.0
 
 [light.combo_box]
 min_height = 21.0
 min_width = 120.0
-padding_horizontal = 9.0
-arrow_size = 17.0
+arrow_icon_size = 17.0
 arrow_area_width = 17.0
 
+
+[light.combo_box.border]
+padding_horizontal = 9.0
 [light.segmented_control]
 segment_height = 24.0
 separator_width = 1.0
-padding_horizontal = 9.0
 
+
+[light.segmented_control.border]
+padding_horizontal = 9.0
 [light.card]
-padding = 16.0
 
 [light.expander]
 header_height = 40.0
-arrow_size = 13.0
-content_padding = 16.0
+arrow_icon_size = 13.0
 
 # === Dark variant ===
 
 [dark.defaults]
-radius = 5.0
-radius_lg = 10.0
-frame_width = 0.5
 disabled_opacity = 0.3
-border_opacity = 0.2
-shadow_enabled = true
 line_height = 1.19
 focus_ring_width = 3.0
 focus_ring_offset = -1.0
 
-[dark.defaults.spacing]
-xxs = 2.0
-xs = 4.0
-s = 6.0
-m = 10.0
-l = 16.0
-xl = 20.0
-xxl = 32.0
 
+[dark.defaults.border]
+corner_radius = 5.0
+corner_radius_lg = 10.0
+line_width = 0.5
+opacity = 0.2
+shadow_enabled = true
 [dark.defaults.icon_sizes]
 toolbar = 24.0
 small = 16.0
@@ -168,104 +166,116 @@ panel = 20.0
 [dark.button]
 min_width = 64.0
 min_height = 22.0
+icon_text_gap = 4.0
+
+
+[dark.button.border]
 padding_horizontal = 8.0
 padding_vertical = 3.0
-icon_spacing = 4.0
-
 [dark.input]
 min_height = 22.0
+
+
+[dark.input.border]
 padding_horizontal = 4.0
 padding_vertical = 3.0
-
 [dark.checkbox]
-indicator_size = 14.0
-spacing = 4.0
+indicator_width = 14.0
+label_gap = 4.0
 
 [dark.tooltip]
-padding_horizontal = 4.0
-padding_vertical = 4.0
 max_width = 300.0
 
+
+[dark.tooltip.border]
+padding_horizontal = 4.0
+padding_vertical = 4.0
 [dark.scrollbar]
-width = 16.0
-slider_width = 7.0
+groove_width = 16.0
+thumb_width = 7.0
 overlay_mode = true
-min_thumb_height = 40.0
+min_thumb_length = 40.0
 
 [dark.slider]
 track_height = 5.0
-thumb_size = 21.0
-tick_length = 8.0
+thumb_diameter = 21.0
+tick_mark_length = 8.0
 
 [dark.progress_bar]
-height = 6.0
+track_height = 6.0
 min_width = 100.0
 
 [dark.tab]
 min_width = 64.0
 min_height = 24.0
+
+
+[dark.tab.border]
 padding_horizontal = 12.0
 padding_vertical = 4.0
-
 [dark.menu]
-item_height = 22.0
+row_height = 22.0
+icon_text_gap = 4.0
+
+
+[dark.menu.border]
 padding_horizontal = 12.0
 padding_vertical = 3.0
-icon_spacing = 4.0
-
 [dark.list]
-item_height = 24.0
+row_height = 24.0
+
+
+[dark.list.border]
 padding_horizontal = 4.0
 padding_vertical = 4.0
-
 [dark.toolbar]
-height = 38.0
-item_spacing = 8.0
-padding = 8.0
+bar_height = 38.0
+item_gap = 8.0
 
 [dark.splitter]
-width = 6.0
+divider_width = 6.0
 
 [dark.switch]
 track_width = 38.0
 track_height = 22.0
-thumb_size = 18.0
+thumb_diameter = 18.0
 track_radius = 11.0
 
 [dark.dialog]
-button_order = "trailing_affirmative"
+button_order = "primary_right"
 min_width = 320.0
 max_width = 560.0
 min_height = 140.0
 max_height = 600.0
-content_padding = 20.0
-button_spacing = 12.0
+button_gap = 12.0
 icon_size = 64.0
 
 [dark.link]
-underline = true
+underline_enabled = true
 
 [dark.spinner]
 diameter = 32.0
-min_size = 10.0
+min_diameter = 10.0
 stroke_width = 2.0
 
 [dark.combo_box]
 min_height = 21.0
 min_width = 120.0
-padding_horizontal = 9.0
-arrow_size = 17.0
+arrow_icon_size = 17.0
 arrow_area_width = 17.0
 
+
+[dark.combo_box.border]
+padding_horizontal = 9.0
 [dark.segmented_control]
 segment_height = 24.0
 separator_width = 1.0
-padding_horizontal = 9.0
 
+
+[dark.segmented_control.border]
+padding_horizontal = 9.0
 [dark.card]
-padding = 16.0
 
 [dark.expander]
 header_height = 40.0
-arrow_size = 13.0
-content_padding = 16.0
+arrow_icon_size = 13.0

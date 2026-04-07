@@ -82,28 +82,27 @@ fn read_appearance_colors() -> (crate::ThemeDefaults, PerWidgetColors) {
     let label = nscolor_to_rgba(&label_c, &srgb);
 
     let defaults = crate::ThemeDefaults {
-        accent: nscolor_to_rgba(&control_accent, &srgb),
-        accent_foreground: nscolor_to_rgba(&alt_sel_text, &srgb),
-        background: nscolor_to_rgba(&window_bg, &srgb),
-        foreground: label,
-        surface: nscolor_to_rgba(&control_bg, &srgb),
-        border: nscolor_to_rgba(&separator_c, &srgb),
-        muted: nscolor_to_rgba(&secondary_label, &srgb),
-        shadow: nscolor_to_rgba(&shadow_c, &srgb),
-        danger: nscolor_to_rgba(&system_red, &srgb),
-        danger_foreground: label,
-        warning: nscolor_to_rgba(&system_orange, &srgb),
-        warning_foreground: label,
-        success: nscolor_to_rgba(&system_green, &srgb),
-        success_foreground: label,
-        info: nscolor_to_rgba(&system_blue, &srgb),
-        info_foreground: label,
-        selection: nscolor_to_rgba(&sel_content_bg, &srgb),
-        selection_foreground: nscolor_to_rgba(&sel_text, &srgb),
-        selection_inactive: nscolor_to_rgba(&unemph_sel_bg, &srgb),
-        link: nscolor_to_rgba(&link_c, &srgb),
+        accent_color: nscolor_to_rgba(&control_accent, &srgb),
+        accent_text_color: nscolor_to_rgba(&alt_sel_text, &srgb),
+        background_color: nscolor_to_rgba(&window_bg, &srgb),
+        text_color: label,
+        surface_color: nscolor_to_rgba(&control_bg, &srgb),
+        muted_color: nscolor_to_rgba(&secondary_label, &srgb),
+        shadow_color: nscolor_to_rgba(&shadow_c, &srgb),
+        danger_color: nscolor_to_rgba(&system_red, &srgb),
+        danger_text_color: label,
+        warning_color: nscolor_to_rgba(&system_orange, &srgb),
+        warning_text_color: label,
+        success_color: nscolor_to_rgba(&system_green, &srgb),
+        success_text_color: label,
+        info_color: nscolor_to_rgba(&system_blue, &srgb),
+        info_text_color: label,
+        selection_background: nscolor_to_rgba(&sel_content_bg, &srgb),
+        selection_text_color: nscolor_to_rgba(&sel_text, &srgb),
+        selection_inactive_background: nscolor_to_rgba(&unemph_sel_bg, &srgb),
+        link_color: nscolor_to_rgba(&link_c, &srgb),
         focus_ring_color: nscolor_to_rgba(&focus_c, &srgb),
-        disabled_foreground: nscolor_to_rgba(&disabled_text, &srgb),
+        disabled_text_color: nscolor_to_rgba(&disabled_text, &srgb),
         ..Default::default()
     };
 
@@ -300,63 +299,83 @@ fn read_text_scale() -> crate::TextScale {
 /// Guidelines for standard control dimensions.
 #[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
 fn macos_widget_defaults() -> crate::ThemeVariant {
+    use crate::model::border::BorderSpec;
     crate::ThemeVariant {
         button: crate::ButtonTheme {
             min_height: Some(22.0), // NSButton regular control size
-            padding_horizontal: Some(12.0),
+            border: Some(BorderSpec {
+                padding_horizontal: Some(12.0),
+                ..Default::default()
+            }),
             ..Default::default()
         },
         checkbox: crate::CheckboxTheme {
-            indicator_size: Some(14.0), // NSButton switch type
-            spacing: Some(4.0),
+            indicator_width: Some(14.0), // NSButton switch type
+            label_gap: Some(4.0),
             ..Default::default()
         },
         input: crate::InputTheme {
             min_height: Some(22.0), // NSTextField regular
-            padding_horizontal: Some(4.0),
+            border: Some(BorderSpec {
+                padding_horizontal: Some(4.0),
+                ..Default::default()
+            }),
             ..Default::default()
         },
         scrollbar: crate::ScrollbarTheme {
-            width: Some(15.0),       // NSScroller legacy style
-            slider_width: Some(7.0), // Overlay style
+            groove_width: Some(15.0), // NSScroller legacy style
+            thumb_width: Some(7.0),   // Overlay style
             ..Default::default()
         },
         slider: crate::SliderTheme {
             track_height: Some(4.0), // NSSlider circular knob
-            thumb_size: Some(21.0),
+            thumb_diameter: Some(21.0),
             ..Default::default()
         },
         progress_bar: crate::ProgressBarTheme {
-            height: Some(6.0), // NSProgressIndicator regular
+            track_height: Some(6.0), // NSProgressIndicator regular
             ..Default::default()
         },
         tab: crate::TabTheme {
             min_height: Some(24.0), // NSTabView
-            padding_horizontal: Some(12.0),
+            border: Some(BorderSpec {
+                padding_horizontal: Some(12.0),
+                ..Default::default()
+            }),
             ..Default::default()
         },
         menu: crate::MenuTheme {
-            item_height: Some(22.0), // Standard menu item
-            padding_horizontal: Some(12.0),
+            row_height: Some(22.0), // Standard menu item
+            border: Some(BorderSpec {
+                padding_horizontal: Some(12.0),
+                ..Default::default()
+            }),
             ..Default::default()
         },
         tooltip: crate::TooltipTheme {
-            padding_horizontal: Some(4.0),
-            padding_vertical: Some(4.0),
+            border: Some(BorderSpec {
+                padding_horizontal: Some(4.0),
+                padding_vertical: Some(4.0),
+                ..Default::default()
+            }),
             ..Default::default()
         },
         list: crate::ListTheme {
-            item_height: Some(24.0), // NSTableView row
-            padding_horizontal: Some(4.0),
+            row_height: Some(24.0), // NSTableView row
+            border: Some(BorderSpec {
+                padding_horizontal: Some(4.0),
+                ..Default::default()
+            }),
             ..Default::default()
         },
         toolbar: crate::ToolbarTheme {
-            height: Some(38.0), // NSToolbar standard
-            item_spacing: Some(8.0),
+            bar_height: Some(38.0), // NSToolbar standard
+            item_gap: Some(8.0),
             ..Default::default()
         },
         splitter: crate::SplitterTheme {
-            width: Some(9.0), // NSSplitView divider
+            divider_width: Some(9.0), // NSSplitView divider
+            ..Default::default()
         },
         ..Default::default()
     }
@@ -487,20 +506,28 @@ pub fn from_macos() -> crate::Result<crate::ThemeSpec> {
 
     // Apply per-widget colors (appearance-dependent, per variant).
     if let (Some(v), Some(pw)) = (&mut theme.light, light_pw) {
-        v.input.placeholder = pw.placeholder;
-        v.input.selection = pw.selection_inactive;
-        v.list.alternate_row = pw.alternate_row;
-        v.list.header_foreground = pw.header_foreground;
+        v.input.placeholder_color = pw.placeholder;
+        v.input.selection_background = pw.selection_inactive;
+        v.list.alternate_row_background = pw.alternate_row;
+        if let Some(color) = pw.header_foreground {
+            v.list.header_font.get_or_insert_default().color = Some(color);
+        }
         v.list.grid_color = pw.grid_color;
-        v.window.title_bar_foreground = pw.title_bar_foreground;
+        if let Some(color) = pw.title_bar_foreground {
+            v.window.title_bar_font.get_or_insert_default().color = Some(color);
+        }
     }
     if let (Some(v), Some(pw)) = (&mut theme.dark, dark_pw) {
-        v.input.placeholder = pw.placeholder;
-        v.input.selection = pw.selection_inactive;
-        v.list.alternate_row = pw.alternate_row;
-        v.list.header_foreground = pw.header_foreground;
+        v.input.placeholder_color = pw.placeholder;
+        v.input.selection_background = pw.selection_inactive;
+        v.list.alternate_row_background = pw.alternate_row;
+        if let Some(color) = pw.header_foreground {
+            v.list.header_font.get_or_insert_default().color = Some(color);
+        }
         v.list.grid_color = pw.grid_color;
-        v.window.title_bar_foreground = pw.title_bar_foreground;
+        if let Some(color) = pw.title_bar_foreground {
+            v.window.title_bar_font.get_or_insert_default().color = Some(color);
+        }
     }
 
     // Scrollbar overlay mode (appearance-independent, requires main thread).
@@ -522,7 +549,7 @@ pub fn from_macos() -> crate::Result<crate::ThemeSpec> {
             v.defaults.reduce_transparency = reduce_transparency;
             v.defaults.text_scaling_factor = text_scaling_factor;
             // macOS uses leading affirmative (OK/Cancel) dialog button order.
-            v.dialog.button_order = Some(crate::DialogButtonOrder::LeadingAffirmative);
+            v.dialog.button_order = Some(crate::DialogButtonOrder::PrimaryLeft);
         }
     }
 
@@ -560,11 +587,14 @@ mod tests {
 
     fn sample_light_defaults() -> crate::ThemeDefaults {
         crate::ThemeDefaults {
-            accent: Some(crate::Rgba::rgb(0, 122, 255)),
-            background: Some(crate::Rgba::rgb(246, 246, 246)),
-            foreground: Some(crate::Rgba::rgb(0, 0, 0)),
-            surface: Some(crate::Rgba::rgb(255, 255, 255)),
-            border: Some(crate::Rgba::rgb(200, 200, 200)),
+            accent_color: Some(crate::Rgba::rgb(0, 122, 255)),
+            background_color: Some(crate::Rgba::rgb(246, 246, 246)),
+            text_color: Some(crate::Rgba::rgb(0, 0, 0)),
+            surface_color: Some(crate::Rgba::rgb(255, 255, 255)),
+            border: crate::model::border::BorderSpec {
+                color: Some(crate::Rgba::rgb(200, 200, 200)),
+                ..Default::default()
+            },
             font: crate::FontSpec {
                 family: Some("SF Pro".to_string()),
                 size: Some(13.0),
@@ -583,19 +613,16 @@ mod tests {
 
     fn sample_dark_defaults() -> crate::ThemeDefaults {
         crate::ThemeDefaults {
-            accent: Some(crate::Rgba::rgb(10, 132, 255)),
-            background: Some(crate::Rgba::rgb(30, 30, 30)),
-            foreground: Some(crate::Rgba::rgb(255, 255, 255)),
-            surface: Some(crate::Rgba::rgb(44, 44, 46)),
-            border: Some(crate::Rgba::rgb(56, 56, 58)),
-            font: crate::FontSpec {
-                family: Some("SF Pro".to_string()),
-                size: Some(13.0),
-                weight: None,
+            accent_color: Some(crate::Rgba::rgb(10, 132, 255)),
+            background_color: Some(crate::Rgba::rgb(30, 30, 30)),
+            text_color: Some(crate::Rgba::rgb(255, 255, 255)),
+            surface_color: Some(crate::Rgba::rgb(44, 44, 46)),
+            border: crate::model::border::BorderSpec {
+                color: Some(crate::Rgba::rgb(56, 56, 58)),
                 ..Default::default()
             },
-            mono_font: crate::FontSpec {
-                family: Some("SF Mono".to_string()),
+            font: crate::FontSpec {
+                family: Some("SF Pro".to_string()),
                 size: Some(13.0),
                 weight: None,
                 ..Default::default()
@@ -618,8 +645,11 @@ mod tests {
         // Colors should differ between variants
         let light = theme.light.as_ref().unwrap();
         let dark = theme.dark.as_ref().unwrap();
-        assert_ne!(light.defaults.accent, dark.defaults.accent);
-        assert_ne!(light.defaults.background, dark.defaults.background);
+        assert_ne!(light.defaults.accent_color, dark.defaults.accent_color);
+        assert_ne!(
+            light.defaults.background_color,
+            dark.defaults.background_color
+        );
 
         // Fonts should be identical in both
         assert_eq!(light.defaults.font, dark.defaults.font);
@@ -691,11 +721,11 @@ mod tests {
         let red = crate::Rgba::rgb(255, 59, 48);
 
         let light_defaults = crate::ThemeDefaults {
-            accent: Some(blue),
+            accent_color: Some(blue),
             ..Default::default()
         };
         let dark_defaults = crate::ThemeDefaults {
-            accent: Some(red),
+            accent_color: Some(red),
             ..Default::default()
         };
 
@@ -704,8 +734,8 @@ mod tests {
         let light = theme.light.as_ref().unwrap();
         let dark = theme.dark.as_ref().unwrap();
 
-        assert_eq!(light.defaults.accent, Some(blue));
-        assert_eq!(dark.defaults.accent, Some(red));
+        assert_eq!(light.defaults.accent_color, Some(blue));
+        assert_eq!(dark.defaults.accent_color, Some(red));
     }
 
     #[test]
@@ -716,13 +746,21 @@ mod tests {
             Some(22.0),
             "NSButton regular control size"
         );
-        assert_eq!(wv.scrollbar.width, Some(15.0), "NSScroller legacy style");
         assert_eq!(
-            wv.checkbox.indicator_size,
+            wv.scrollbar.groove_width,
+            Some(15.0),
+            "NSScroller legacy style"
+        );
+        assert_eq!(
+            wv.checkbox.indicator_width,
             Some(14.0),
             "NSButton switch type"
         );
-        assert_eq!(wv.slider.thumb_size, Some(21.0), "NSSlider circular knob");
+        assert_eq!(
+            wv.slider.thumb_diameter,
+            Some(21.0),
+            "NSSlider circular knob"
+        );
     }
 
     #[test]
@@ -833,17 +871,14 @@ mod tests {
         );
         let light = theme.light.as_ref().unwrap();
         assert!(
-            light.input.placeholder.is_none(),
-            "placeholder starts None (set by from_macos)"
+            light.input.placeholder_color.is_none(),
+            "placeholder_color starts None (set by from_macos)"
         );
         assert!(
-            light.list.alternate_row.is_none(),
-            "alternate_row starts None"
+            light.list.alternate_row_background.is_none(),
+            "alternate_row_background starts None"
         );
-        assert!(
-            light.list.header_foreground.is_none(),
-            "header_foreground starts None"
-        );
+        assert!(light.list.header_font.is_none(), "header_font starts None");
         assert!(light.list.grid_color.is_none(), "grid_color starts None");
     }
 
@@ -917,7 +952,7 @@ mod tests {
 
         // Spot-check: reader-sourced fields present.
         assert_eq!(
-            resolved.defaults.accent,
+            resolved.defaults.accent_color,
             crate::Rgba::rgb(0, 122, 255),
             "accent should be from macOS reader"
         );
@@ -941,7 +976,7 @@ mod tests {
             panic!("macOS resolve/validate pipeline failed (dark): {e}");
         });
         assert_eq!(
-            resolved_dark.defaults.accent,
+            resolved_dark.defaults.accent_color,
             crate::Rgba::rgb(10, 132, 255),
             "dark accent should be from macOS reader"
         );

@@ -188,21 +188,7 @@ fn compute_text_scale(base_size: f32) -> crate::TextScale {
     }
 }
 
-/// Return the WinUI3 Fluent Design spacing scale.
-///
-/// These are the standard spacing values from Microsoft Fluent Design guidelines,
-/// in effective pixels (epx). Pure function with no OS API calls.
-fn winui3_spacing() -> crate::ThemeSpacing {
-    crate::ThemeSpacing {
-        xxs: Some(2.0),
-        xs: Some(4.0),
-        s: Some(8.0),
-        m: Some(12.0),
-        l: Some(16.0),
-        xl: Some(24.0),
-        xxl: Some(32.0),
-    }
-}
+// REMOVED(spacing): // WinUI3 Fluent Design spacing scale removed -- ThemeSpacing_DELETED deleted in Plan 01.
 
 /// Read DPI-aware system DPI value.
 ///
@@ -225,60 +211,116 @@ fn read_frame_width(dpi: u32) -> f32 {
 #[allow(unsafe_code)]
 fn read_widget_sizing(dpi: u32, variant: &mut crate::ThemeVariant) {
     unsafe {
-        variant.scrollbar.width = Some(GetSystemMetricsForDpi(SM_CXVSCROLL, dpi) as f32);
-        variant.scrollbar.min_thumb_height = Some(GetSystemMetricsForDpi(SM_CYVTHUMB, dpi) as f32);
-        variant.menu.item_height = Some(GetSystemMetricsForDpi(SM_CYMENU, dpi) as f32);
+        variant.scrollbar.groove_width = Some(GetSystemMetricsForDpi(SM_CXVSCROLL, dpi) as f32);
+        variant.scrollbar.min_thumb_length = Some(GetSystemMetricsForDpi(SM_CYVTHUMB, dpi) as f32);
+        variant.menu.row_height = Some(GetSystemMetricsForDpi(SM_CYMENU, dpi) as f32);
         variant.defaults.focus_ring_width =
             Some(GetSystemMetricsForDpi(SM_CXFOCUSBORDER, dpi) as f32);
     }
     // WinUI3 Fluent Design constants (not from OS APIs)
     variant.button.min_height = Some(32.0);
-    variant.button.padding_horizontal = Some(12.0);
-    variant.checkbox.indicator_size = Some(20.0);
-    variant.checkbox.spacing = Some(8.0);
+    variant
+        .button
+        .border
+        .get_or_insert_default()
+        .padding_horizontal = Some(12.0);
+    variant.checkbox.indicator_width = Some(20.0);
+    variant.checkbox.label_gap = Some(8.0);
     variant.input.min_height = Some(32.0);
-    variant.input.padding_horizontal = Some(12.0);
+    variant
+        .input
+        .border
+        .get_or_insert_default()
+        .padding_horizontal = Some(12.0);
     variant.slider.track_height = Some(4.0);
-    variant.slider.thumb_size = Some(22.0);
-    variant.progress_bar.height = Some(4.0);
+    variant.slider.thumb_diameter = Some(22.0);
+    variant.progress_bar.track_height = Some(4.0);
     variant.tab.min_height = Some(32.0);
-    variant.tab.padding_horizontal = Some(12.0);
-    variant.menu.padding_horizontal = Some(12.0);
-    variant.tooltip.padding_horizontal = Some(8.0);
-    variant.tooltip.padding_vertical = Some(8.0);
-    variant.list.item_height = Some(40.0);
-    variant.list.padding_horizontal = Some(12.0);
-    variant.toolbar.height = Some(48.0);
-    variant.toolbar.item_spacing = Some(4.0);
-    variant.splitter.width = Some(4.0);
+    variant
+        .tab
+        .border
+        .get_or_insert_default()
+        .padding_horizontal = Some(12.0);
+    variant
+        .menu
+        .border
+        .get_or_insert_default()
+        .padding_horizontal = Some(12.0);
+    variant
+        .tooltip
+        .border
+        .get_or_insert_default()
+        .padding_horizontal = Some(8.0);
+    variant
+        .tooltip
+        .border
+        .get_or_insert_default()
+        .padding_vertical = Some(8.0);
+    variant.list.row_height = Some(40.0);
+    variant
+        .list
+        .border
+        .get_or_insert_default()
+        .padding_horizontal = Some(12.0);
+    variant.toolbar.bar_height = Some(48.0);
+    variant.toolbar.item_gap = Some(4.0);
+    variant.splitter.divider_width = Some(4.0);
 }
 
 /// Apply WinUI3 Fluent Design widget sizing constants (non-Windows testable version).
 #[cfg(not(all(target_os = "windows", feature = "windows")))]
 fn read_widget_sizing(_dpi: u32, variant: &mut crate::ThemeVariant) {
-    variant.scrollbar.width = Some(17.0);
-    variant.scrollbar.min_thumb_height = Some(40.0);
-    variant.menu.item_height = Some(32.0);
+    variant.scrollbar.groove_width = Some(17.0);
+    variant.scrollbar.min_thumb_length = Some(40.0);
+    variant.menu.row_height = Some(32.0);
     variant.defaults.focus_ring_width = Some(1.0); // SM_CXFOCUSBORDER typical value
     variant.button.min_height = Some(32.0);
-    variant.button.padding_horizontal = Some(12.0);
-    variant.checkbox.indicator_size = Some(20.0);
-    variant.checkbox.spacing = Some(8.0);
+    variant
+        .button
+        .border
+        .get_or_insert_default()
+        .padding_horizontal = Some(12.0);
+    variant.checkbox.indicator_width = Some(20.0);
+    variant.checkbox.label_gap = Some(8.0);
     variant.input.min_height = Some(32.0);
-    variant.input.padding_horizontal = Some(12.0);
+    variant
+        .input
+        .border
+        .get_or_insert_default()
+        .padding_horizontal = Some(12.0);
     variant.slider.track_height = Some(4.0);
-    variant.slider.thumb_size = Some(22.0);
-    variant.progress_bar.height = Some(4.0);
+    variant.slider.thumb_diameter = Some(22.0);
+    variant.progress_bar.track_height = Some(4.0);
     variant.tab.min_height = Some(32.0);
-    variant.tab.padding_horizontal = Some(12.0);
-    variant.menu.padding_horizontal = Some(12.0);
-    variant.tooltip.padding_horizontal = Some(8.0);
-    variant.tooltip.padding_vertical = Some(8.0);
-    variant.list.item_height = Some(40.0);
-    variant.list.padding_horizontal = Some(12.0);
-    variant.toolbar.height = Some(48.0);
-    variant.toolbar.item_spacing = Some(4.0);
-    variant.splitter.width = Some(4.0);
+    variant
+        .tab
+        .border
+        .get_or_insert_default()
+        .padding_horizontal = Some(12.0);
+    variant
+        .menu
+        .border
+        .get_or_insert_default()
+        .padding_horizontal = Some(12.0);
+    variant
+        .tooltip
+        .border
+        .get_or_insert_default()
+        .padding_horizontal = Some(8.0);
+    variant
+        .tooltip
+        .border
+        .get_or_insert_default()
+        .padding_vertical = Some(8.0);
+    variant.list.row_height = Some(40.0);
+    variant
+        .list
+        .border
+        .get_or_insert_default()
+        .padding_horizontal = Some(12.0);
+    variant.toolbar.bar_height = Some(48.0);
+    variant.toolbar.item_gap = Some(4.0);
+    variant.splitter.divider_width = Some(4.0);
 }
 
 /// Convert a Win32 COLORREF (0x00BBGGRR) to Rgba.
@@ -322,19 +364,19 @@ fn read_sys_colors() -> SysColors {
 
 /// Apply SysColors to the per-widget fields on a ThemeVariant.
 fn apply_sys_colors(variant: &mut crate::ThemeVariant, colors: &SysColors) {
-    variant.button.background = Some(colors.btn_face);
-    variant.button.foreground = Some(colors.btn_text);
-    variant.menu.background = Some(colors.menu_bg);
-    variant.menu.foreground = Some(colors.menu_text);
-    variant.tooltip.background = Some(colors.info_bg);
-    variant.tooltip.foreground = Some(colors.info_text);
-    variant.input.background = Some(colors.window_bg);
-    variant.input.foreground = Some(colors.window_text);
-    variant.input.placeholder = Some(colors.gray_text);
-    variant.list.selection = Some(colors.highlight);
-    variant.list.selection_foreground = Some(colors.highlight_text);
-    variant.window.title_bar_foreground = Some(colors.caption_text);
-    variant.window.inactive_title_bar_foreground = Some(colors.inactive_caption_text);
+    variant.button.background_color = Some(colors.btn_face);
+    variant.button.font.get_or_insert_default().color = Some(colors.btn_text);
+    variant.menu.background_color = Some(colors.menu_bg);
+    variant.menu.font.get_or_insert_default().color = Some(colors.menu_text);
+    variant.tooltip.background_color = Some(colors.info_bg);
+    variant.tooltip.font.get_or_insert_default().color = Some(colors.info_text);
+    variant.input.background_color = Some(colors.window_bg);
+    variant.input.font.get_or_insert_default().color = Some(colors.window_text);
+    variant.input.placeholder_color = Some(colors.gray_text);
+    variant.list.selection_background = Some(colors.highlight);
+    variant.list.selection_text_color = Some(colors.highlight_text);
+    variant.window.title_bar_font.get_or_insert_default().color = Some(colors.caption_text);
+    variant.window.inactive_title_bar_text_color = Some(colors.inactive_caption_text);
 }
 
 /// Read DwmGetColorizationColor for title bar background (WIN-02).
@@ -468,20 +510,20 @@ fn build_theme(
     let mut variant = crate::ThemeVariant::default();
 
     // --- Defaults-level colors ---
-    variant.defaults.accent = Some(accent);
-    variant.defaults.foreground = Some(fg);
-    variant.defaults.background = Some(bg);
-    variant.defaults.selection = Some(accent);
+    variant.defaults.accent_color = Some(accent);
+    variant.defaults.text_color = Some(fg);
+    variant.defaults.background_color = Some(bg);
+    variant.defaults.selection_background = Some(accent);
     variant.defaults.focus_ring_color = Some(accent);
-    variant.defaults.surface = Some(bg);
+    variant.defaults.surface_color = Some(bg);
     variant.button.primary_background = Some(primary_bg);
-    variant.button.primary_foreground = Some(fg);
+    variant.button.primary_text_color = Some(fg);
 
-    // Disabled foreground: midpoint between fg and bg
+    // Disabled text color: midpoint between fg and bg
     let disabled_r = ((fg.r as u16 + bg.r as u16) / 2) as u8;
     let disabled_g = ((fg.g as u16 + bg.g as u16) / 2) as u8;
     let disabled_b = ((fg.b as u16 + bg.b as u16) / 2) as u8;
-    variant.defaults.disabled_foreground =
+    variant.defaults.disabled_text_color =
         Some(crate::Rgba::rgb(disabled_r, disabled_g, disabled_b));
 
     // --- Defaults-level font (message font) ---
@@ -497,19 +539,16 @@ fn build_theme(
         variant.text_scale = compute_text_scale(base_size);
     }
 
-    // --- Spacing (WinUI3 Fluent) ---
-    variant.defaults.spacing = winui3_spacing();
-
     // --- Geometry (Windows 11 defaults) ---
-    variant.defaults.radius = Some(4.0);
-    variant.defaults.radius_lg = Some(8.0);
-    variant.defaults.shadow_enabled = Some(true);
+    variant.defaults.border.corner_radius = Some(4.0);
+    variant.defaults.border.corner_radius_lg = Some(8.0);
+    variant.defaults.border.shadow_enabled = Some(true);
 
     // --- Widget sizing ---
     read_widget_sizing(dpi, &mut variant);
 
     // --- Dialog button order (Windows convention) ---
-    variant.dialog.button_order = Some(crate::model::DialogButtonOrder::TrailingAffirmative);
+    variant.dialog.button_order = Some(crate::model::DialogButtonOrder::PrimaryRight);
 
     // --- DWM title bar color (WIN-02) ---
     if let Some(color) = dwm_title_bar {
@@ -809,10 +848,10 @@ mod tests {
             96,
         );
         let variant = theme.light.as_ref().expect("light variant");
-        assert_eq!(variant.defaults.accent, Some(accent));
-        assert_eq!(variant.defaults.foreground, Some(fg));
-        assert_eq!(variant.defaults.background, Some(bg));
-        assert_eq!(variant.defaults.selection, Some(accent));
+        assert_eq!(variant.defaults.accent_color, Some(accent));
+        assert_eq!(variant.defaults.text_color, Some(fg));
+        assert_eq!(variant.defaults.background_color, Some(bg));
+        assert_eq!(variant.defaults.selection_background, Some(accent));
         assert_eq!(variant.defaults.focus_ring_color, Some(accent));
     }
 
@@ -845,7 +884,7 @@ mod tests {
         // new model. This is fine: the resolve() pipeline handles it.
         // Just verify the core defaults are set.
         let variant = theme.light.as_ref().expect("light variant");
-        assert_eq!(variant.defaults.accent, Some(accent));
+        assert_eq!(variant.defaults.accent_color, Some(accent));
     }
 
     #[test]
@@ -868,7 +907,7 @@ mod tests {
             96,
         );
         let variant = theme.dark.as_ref().expect("dark variant");
-        assert_eq!(variant.defaults.accent, Some(accent));
+        assert_eq!(variant.defaults.accent_color, Some(accent));
     }
 
     // === Per-widget font tests (WIN-01) ===
@@ -982,44 +1021,59 @@ mod tests {
         );
         let variant = theme.light.as_ref().expect("light variant");
         assert_eq!(
-            variant.button.background,
+            variant.button.background_color,
             Some(crate::Rgba::rgb(240, 240, 240))
         );
-        assert_eq!(variant.button.foreground, Some(crate::Rgba::rgb(0, 0, 0)));
         assert_eq!(
-            variant.menu.background,
+            variant.button.font.as_ref().and_then(|f| f.color),
+            Some(crate::Rgba::rgb(0, 0, 0))
+        );
+        assert_eq!(
+            variant.menu.background_color,
             Some(crate::Rgba::rgb(255, 255, 255))
         );
-        assert_eq!(variant.menu.foreground, Some(crate::Rgba::rgb(0, 0, 0)));
         assert_eq!(
-            variant.tooltip.background,
+            variant.menu.font.as_ref().and_then(|f| f.color),
+            Some(crate::Rgba::rgb(0, 0, 0))
+        );
+        assert_eq!(
+            variant.tooltip.background_color,
             Some(crate::Rgba::rgb(255, 255, 225))
         );
-        assert_eq!(variant.tooltip.foreground, Some(crate::Rgba::rgb(0, 0, 0)));
         assert_eq!(
-            variant.input.background,
-            Some(crate::Rgba::rgb(255, 255, 255))
+            variant.tooltip.font.as_ref().and_then(|f| f.color),
+            Some(crate::Rgba::rgb(0, 0, 0))
         );
-        assert_eq!(variant.input.foreground, Some(crate::Rgba::rgb(0, 0, 0)));
-        assert_eq!(variant.list.selection, Some(crate::Rgba::rgb(0, 120, 215)));
         assert_eq!(
-            variant.list.selection_foreground,
+            variant.input.background_color,
             Some(crate::Rgba::rgb(255, 255, 255))
         );
         assert_eq!(
-            variant.window.title_bar_foreground,
+            variant.input.font.as_ref().and_then(|f| f.color),
+            Some(crate::Rgba::rgb(0, 0, 0))
+        );
+        assert_eq!(
+            variant.list.selection_background,
+            Some(crate::Rgba::rgb(0, 120, 215))
+        );
+        assert_eq!(
+            variant.list.selection_text_color,
+            Some(crate::Rgba::rgb(255, 255, 255))
+        );
+        assert_eq!(
+            variant.window.title_bar_font.as_ref().and_then(|f| f.color),
             Some(crate::Rgba::rgb(0, 0, 0)),
-            "caption_text -> window.title_bar_foreground"
+            "caption_text -> window.title_bar_font.color"
         );
         assert_eq!(
-            variant.window.inactive_title_bar_foreground,
+            variant.window.inactive_title_bar_text_color,
             Some(crate::Rgba::rgb(128, 128, 128)),
-            "inactive_caption_text -> window.inactive_title_bar_foreground"
+            "inactive_caption_text -> window.inactive_title_bar_text_color"
         );
         assert_eq!(
-            variant.input.placeholder,
+            variant.input.placeholder_color,
             Some(crate::Rgba::rgb(109, 109, 109)),
-            "gray_text -> input.placeholder"
+            "gray_text -> input.placeholder_color"
         );
     }
 
@@ -1195,12 +1249,12 @@ mod tests {
     // === Dialog button order test ===
 
     #[test]
-    fn build_theme_sets_dialog_trailing_affirmative() {
+    fn build_theme_sets_dialog_primary_right() {
         let theme = light_theme();
         let variant = theme.light.as_ref().expect("light variant");
         assert_eq!(
             variant.dialog.button_order,
-            Some(crate::model::DialogButtonOrder::TrailingAffirmative)
+            Some(crate::model::DialogButtonOrder::PrimaryRight)
         );
     }
 
@@ -1210,23 +1264,9 @@ mod tests {
     fn build_theme_sets_geometry_defaults() {
         let theme = light_theme();
         let variant = theme.light.as_ref().expect("light variant");
-        assert_eq!(variant.defaults.radius, Some(4.0));
-        assert_eq!(variant.defaults.radius_lg, Some(8.0));
-        assert_eq!(variant.defaults.shadow_enabled, Some(true));
-    }
-
-    // === Spacing test ===
-
-    #[test]
-    fn winui3_spacing_values() {
-        let spacing = winui3_spacing();
-        assert_eq!(spacing.xxs, Some(2.0));
-        assert_eq!(spacing.xs, Some(4.0));
-        assert_eq!(spacing.s, Some(8.0));
-        assert_eq!(spacing.m, Some(12.0));
-        assert_eq!(spacing.l, Some(16.0));
-        assert_eq!(spacing.xl, Some(24.0));
-        assert_eq!(spacing.xxl, Some(32.0));
+        assert_eq!(variant.defaults.border.corner_radius, Some(4.0));
+        assert_eq!(variant.defaults.border.corner_radius_lg, Some(8.0));
+        assert_eq!(variant.defaults.border.shadow_enabled, Some(true));
     }
 
     // === Widget sizing test ===
@@ -1236,12 +1276,12 @@ mod tests {
         let theme = light_theme();
         let variant = theme.light.as_ref().expect("light variant");
         assert_eq!(variant.button.min_height, Some(32.0));
-        assert_eq!(variant.checkbox.indicator_size, Some(20.0));
+        assert_eq!(variant.checkbox.indicator_width, Some(20.0));
         assert_eq!(variant.input.min_height, Some(32.0));
-        assert_eq!(variant.slider.thumb_size, Some(22.0));
-        assert!(variant.scrollbar.width.is_some());
-        assert!(variant.menu.item_height.is_some());
-        assert_eq!(variant.splitter.width, Some(4.0));
+        assert_eq!(variant.slider.thumb_diameter, Some(22.0));
+        assert!(variant.scrollbar.groove_width.is_some());
+        assert!(variant.menu.row_height.is_some());
+        assert_eq!(variant.splitter.divider_width, Some(4.0));
     }
 
     // === Surface and disabled_foreground tests ===
@@ -1263,7 +1303,7 @@ mod tests {
             96,
         );
         let variant = theme.light.as_ref().expect("light variant");
-        assert_eq!(variant.defaults.surface, Some(bg));
+        assert_eq!(variant.defaults.surface_color, Some(bg));
     }
 
     #[test]
@@ -1284,7 +1324,7 @@ mod tests {
         let variant = theme.light.as_ref().expect("light variant");
         // midpoint of (0,0,0) and (255,255,255) = (127,127,127)
         assert_eq!(
-            variant.defaults.disabled_foreground,
+            variant.defaults.disabled_text_color,
             Some(crate::Rgba::rgb(127, 127, 127))
         );
     }
@@ -1297,11 +1337,11 @@ mod tests {
         let theme = light_theme();
         let variant: &crate::ThemeVariant = theme.light.as_ref().unwrap();
         // Access new per-widget fields to prove they exist
-        let _ = variant.defaults.accent;
+        let _ = variant.defaults.accent_color;
         let _ = variant.window.title_bar_font;
         let _ = variant.menu.font;
         let _ = variant.status_bar.font;
-        let _ = variant.button.background;
+        let _ = variant.button.background_color;
         let _ = variant.defaults.icon_sizes.small;
         let _ = variant.defaults.reduce_motion;
         let _ = variant.dialog.button_order;
@@ -1328,7 +1368,7 @@ mod tests {
 
         // Spot-check: reader-sourced fields present.
         assert_eq!(
-            resolved.defaults.accent,
+            resolved.defaults.accent_color,
             crate::Rgba::rgb(0, 120, 215),
             "accent should be from Windows reader"
         );
@@ -1338,7 +1378,7 @@ mod tests {
         );
         assert_eq!(
             resolved.dialog.button_order,
-            crate::DialogButtonOrder::TrailingAffirmative,
+            crate::DialogButtonOrder::PrimaryRight,
             "dialog button order should be trailing affirmative for Windows"
         );
         assert_eq!(
