@@ -321,6 +321,14 @@ impl ThemeVariant {
         if d.text_selection_color.is_none() {
             d.text_selection_color = d.selection_text_color;
         }
+        // defaults.font.color <- defaults.text_color
+        if d.font.color.is_none() {
+            d.font.color = d.text_color;
+        }
+        // defaults.mono_font.color <- defaults.font.color (MUST run AFTER font.color is set)
+        if d.mono_font.color.is_none() {
+            d.mono_font.color = d.font.color;
+        }
         // defaults.border padding -- defaults-level border carries no meaningful
         // padding; per-widget border specs carry the actual padding values.
         // Derive from line_width presence to ensure the field is populated.
@@ -341,22 +349,6 @@ impl ThemeVariant {
     // --- Phase 2: Safety nets ---
 
     fn resolve_safety_nets(&mut self) {
-        // defaults.line_height -- ensure minimal themes that omit it still work
-        if self.defaults.line_height.is_none() {
-            self.defaults.line_height = Some(1.2);
-        }
-        // defaults.accent_text_color -- white is legible on most accent colors
-        if self.defaults.accent_text_color.is_none() {
-            self.defaults.accent_text_color = Some(Rgba::rgb(255, 255, 255));
-        }
-        // defaults.shadow_color -- semi-transparent black
-        if self.defaults.shadow_color.is_none() {
-            self.defaults.shadow_color = Some(Rgba::rgba(0, 0, 0, 64));
-        }
-        // defaults.disabled_text_color <- defaults.muted_color
-        if self.defaults.disabled_text_color.is_none() {
-            self.defaults.disabled_text_color = self.defaults.muted_color;
-        }
         // dialog.button_order <- platform convention
         if self.dialog.button_order.is_none() {
             self.dialog.button_order = Some(platform_button_order());
@@ -380,6 +372,10 @@ impl ThemeVariant {
         // list.background <- defaults.background_color
         if self.list.background_color.is_none() {
             self.list.background_color = self.defaults.background_color;
+        }
+        // dialog.background <- defaults.background_color (per_platform fallback)
+        if self.dialog.background_color.is_none() {
+            self.dialog.background_color = self.defaults.background_color;
         }
     }
 
@@ -2435,6 +2431,42 @@ mod tests {
         );
     }
 
+    #[test]
+    fn resolve_phase1_font_color_from_text_color() {
+        let mut v = ThemeVariant::default();
+        v.defaults.text_color = Some(Rgba::rgb(30, 30, 30));
+        v.resolve();
+        assert_eq!(
+            v.defaults.font.color,
+            Some(Rgba::rgb(30, 30, 30)),
+            "defaults.font.color <- defaults.text_color"
+        );
+        assert_eq!(
+            v.defaults.mono_font.color,
+            Some(Rgba::rgb(30, 30, 30)),
+            "defaults.mono_font.color <- defaults.font.color"
+        );
+    }
+
+    #[test]
+    fn resolve_phase1_font_color_explicit_preserved() {
+        let mut v = ThemeVariant::default();
+        v.defaults.text_color = Some(Rgba::rgb(30, 30, 30));
+        v.defaults.font.color = Some(Rgba::rgb(50, 50, 50));
+        v.resolve();
+        assert_eq!(
+            v.defaults.font.color,
+            Some(Rgba::rgb(50, 50, 50)),
+            "explicit font.color preserved"
+        );
+        // mono_font inherits from font.color, not text_color
+        assert_eq!(
+            v.defaults.mono_font.color,
+            Some(Rgba::rgb(50, 50, 50)),
+            "mono_font.color <- font.color (not text_color)"
+        );
+    }
+
     // ===== Phase 2: Safety nets =====
 
     #[test]
@@ -2446,26 +2478,26 @@ mod tests {
         v.defaults.muted_color = Some(Rgba::rgb(128, 128, 128));
         v.resolve();
 
+        // Removed safety nets: line_height, accent_text_color, shadow_color,
+        // disabled_text_color are no longer fabricated -- all 20 presets provide them.
         assert_eq!(
-            v.defaults.line_height,
-            Some(1.2),
-            "defaults.line_height safety net"
+            v.defaults.line_height, None,
+            "line_height no longer fabricated"
         );
         assert_eq!(
-            v.defaults.accent_text_color,
-            Some(Rgba::rgb(255, 255, 255)),
-            "defaults.accent_foreground safety net"
+            v.defaults.accent_text_color, None,
+            "accent_text_color no longer fabricated"
         );
         assert_eq!(
-            v.defaults.shadow_color,
-            Some(Rgba::rgba(0, 0, 0, 64)),
-            "defaults.shadow safety net"
+            v.defaults.shadow_color, None,
+            "shadow_color no longer fabricated"
         );
         assert_eq!(
-            v.defaults.disabled_text_color,
-            Some(Rgba::rgb(128, 128, 128)),
-            "defaults.disabled_foreground <- muted"
+            v.defaults.disabled_text_color, None,
+            "disabled_text_color no longer fabricated"
         );
+
+        // Kept safety nets (per_platform rules, not invented values):
         assert!(
             v.dialog.button_order.is_some(),
             "dialog.button_order safety net"
@@ -2494,6 +2526,11 @@ mod tests {
             v.list.background_color,
             Some(Rgba::rgb(255, 255, 255)),
             "list.background <- background"
+        );
+        assert_eq!(
+            v.dialog.background_color,
+            Some(Rgba::rgb(255, 255, 255)),
+            "dialog.background <- background"
         );
     }
 
