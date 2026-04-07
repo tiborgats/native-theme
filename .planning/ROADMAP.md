@@ -225,7 +225,11 @@ Plans:
   3. Spinner safety guards in place: width/height > 0 check (S-1), empty frames guard (S-3), zero duration guard (S-4), single-quote viewBox handling (S-5)
   4. gsettings commands have a timeout to prevent indefinite blocking (R-1)
   5. CI publish workflow tests gpui connector (P-1), error handling improved (P-2), async-io variants tested (P-3), examples disambiguated (P-4), pre-release.sh has iteration timeout (P-5)
-**Plans**: TBD
+**Plans**: 3 plans
+Plans:
+- [x] 55-01-PLAN.md — Correctness and reliability fixes (detect_is_dark, detect_platform, #[must_use], gsettings timeout)
+- [x] 55-02-PLAN.md — Spinner safety guards (viewBox parsing, dimension validation, empty frames, duration assertion)
+- [x] 55-03-PLAN.md — CI/publishing gaps (gpui gate, error handling, async-io variants, example rename, pre-release timeout)
 
 ### Phase 56: Testing
 **Goal**: Property-based tests verify TOML round-trip and merge correctness, and a programmatic cross-reference catches drift between platform-facts.md and preset values
