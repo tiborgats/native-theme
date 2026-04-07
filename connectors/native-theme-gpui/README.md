@@ -13,8 +13,8 @@ Add both crates to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-native-theme = "0.5.4"
-native-theme-gpui = "0.5.4"
+native-theme = "0.5.5"
+native-theme-gpui = "0.5.5"
 ```
 
 Then create a gpui-component theme from any native-theme preset:

@@ -37,7 +37,7 @@ resolve + validate pipeline:
 let mut variant = theme.pick_variant(true).unwrap().clone();
 variant.resolve();               // Apply inheritance rules
 let resolved = variant.validate().unwrap(); // -> ResolvedThemeVariant
-let accent = resolved.defaults.accent;      // Rgba (not Option)
+let accent = resolved.defaults.accent_color; // Rgba (not Option)
 ```
 
 ## Preset Workflow
@@ -52,7 +52,7 @@ let mut theme = ThemeSpec::preset("nord").unwrap();
 let user_overrides = ThemeSpec::from_toml(r##"
 name = "My Custom Nord"
 [light.defaults]
-accent = "#ff6600"
+accent_color = "#ff6600"
 "##).unwrap();
 theme.merge(&user_overrides);
 ```
@@ -75,7 +75,7 @@ Apply user overrides on top of the OS theme:
 ```ignore
 let customized = system.with_overlay_toml(r#"
     [light.defaults]
-    accent = "#ff6600"
+    accent_color = "#ff6600"
 "#).unwrap();
 ```
 
@@ -108,10 +108,10 @@ resolve + validate, all fields are guaranteed populated:
 
 ```rust,ignore
 let resolved = variant.validate().unwrap(); // ResolvedThemeVariant
-let bg = resolved.defaults.background;      // Rgba
-let accent = resolved.defaults.accent;      // Rgba
-let font = &resolved.defaults.font.family;  // &String
-let radius = resolved.defaults.radius;      // f32
+let bg = resolved.defaults.background_color;     // Rgba
+let accent = resolved.defaults.accent_color;     // Rgba
+let font = &resolved.defaults.font.family;       // &String
+let radius = resolved.defaults.border.corner_radius; // f32
 ```
 
 ## Custom Icon Roles

@@ -27,7 +27,7 @@ for Linux, macOS, and Windows.
 
 ```toml
 [dependencies]
-native-theme = "0.5.4"
+native-theme = "0.5.5"
 ```
 
 Load a bundled preset:
@@ -37,7 +37,7 @@ use native_theme::ThemeSpec;
 
 let theme = ThemeSpec::preset("dracula").unwrap();
 let dark = theme.dark.as_ref().unwrap();
-let accent = dark.defaults.accent.unwrap();
+let accent = dark.defaults.accent_color.unwrap();
 let [r, g, b, a] = accent.to_f32_array();
 ```
 
@@ -48,7 +48,7 @@ use native_theme::SystemTheme;
 
 let system = SystemTheme::from_system().unwrap();
 let active = system.active(); // &ResolvedThemeVariant for current OS mode
-let accent = active.defaults.accent;  // Rgba (not Option)
+let accent = active.defaults.accent_color;  // Rgba (not Option)
 ```
 
 Layer user overrides on top of a preset:
@@ -60,7 +60,7 @@ let mut theme = ThemeSpec::preset("nord").unwrap();
 let overrides = ThemeSpec::from_toml(r#"
 name = "My Nord"
 [light.defaults]
-accent = "#ff6600"
+accent_color = "#ff6600"
 "#).unwrap();
 theme.merge(&overrides);
 ```
@@ -71,8 +71,8 @@ theme.merge(&overrides);
 
 ```toml
 [dependencies]
-native-theme = "0.5.4"
-native-theme-gpui = "0.5.4"
+native-theme = "0.5.5"
+native-theme-gpui = "0.5.5"
 ```
 
 ```rust,ignore
@@ -98,8 +98,8 @@ cargo run -p native-theme-gpui --example showcase-gpui
 
 ```toml
 [dependencies]
-native-theme = "0.5.4"
-native-theme-iced = "0.5.4"
+native-theme = "0.5.5"
+native-theme-iced = "0.5.5"
 ```
 
 ```rust,ignore
@@ -190,7 +190,7 @@ No features are enabled by default. The preset API works without any features.
 
 ```toml
 [dependencies]
-native-theme = { version = "0.5.4", features = ["native"] }
+native-theme = { version = "0.5.5", features = ["native"] }
 ```
 
 ### Meta-features
