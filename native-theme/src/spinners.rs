@@ -16,6 +16,8 @@ use crate::model::icons::IconData;
 const SPIN_FRAME_COUNT: u32 = 24;
 
 /// Duration of each frame in milliseconds (24 frames × 42ms ≈ 1008ms ≈ 1s cycle).
+///
+/// Must be > 0; a zero duration would cause infinite-loop or division-by-zero in renderers.
 const SPIN_FRAME_DURATION_MS: u32 = 42;
 
 /// Generate pre-rotated SVG frames from a single SVG icon.
@@ -42,26 +44,47 @@ fn svg_to_spin_frames(svg_bytes: &[u8]) -> Vec<IconData> {
     };
     let inner_content = &svg_str[inner_start..close_pos];
 
-    // Extract viewBox to compute rotation center
-    let (cx, cy) = if let Some(vb_start) = svg_tag.find("viewBox=\"") {
-        let vb_val_start = vb_start + 9; // len of viewBox="
-        if let Some(vb_end) = svg_str[vb_val_start..].find('"') {
-            let vb = &svg_str[vb_val_start..vb_val_start + vb_end];
-            let parts: Vec<f64> = vb
-                .split_whitespace()
-                .filter_map(|s| s.parse::<f64>().ok())
-                .collect();
-            if parts.len() == 4 {
-                (parts[0] + parts[2] / 2.0, parts[1] + parts[3] / 2.0)
+    const { assert!(SPIN_FRAME_DURATION_MS > 0, "frame duration must be > 0") }
+
+    // Extract viewBox to compute rotation center (handle both quote styles)
+    let (cx, cy, valid_viewbox) = {
+        let (vb_val_start, quote) = if let Some(i) = svg_tag.find("viewBox=\"") {
+            (i + 9, '"')
+        } else if let Some(i) = svg_tag.find("viewBox='") {
+            (i + 9, '\'')
+        } else {
+            (0, '"') // no viewBox found; falls through to default
+        };
+
+        if vb_val_start > 0 {
+            if let Some(vb_end) = svg_str[vb_val_start..].find(quote) {
+                let vb = &svg_str[vb_val_start..vb_val_start + vb_end];
+                let parts: Vec<f64> = vb
+                    .split(|c: char| c.is_whitespace() || c == ',')
+                    .filter(|s| !s.is_empty())
+                    .filter_map(|s| s.parse::<f64>().ok())
+                    .collect();
+                if parts.len() == 4 {
+                    if parts[2] <= 0.0 || parts[3] <= 0.0 {
+                        // Invalid dimensions -- return static frame
+                        (12.0, 12.0, false)
+                    } else {
+                        (parts[0] + parts[2] / 2.0, parts[1] + parts[3] / 2.0, true)
+                    }
+                } else {
+                    (12.0, 12.0, true)
+                }
             } else {
-                (12.0, 12.0)
+                (12.0, 12.0, true)
             }
         } else {
-            (12.0, 12.0)
+            (12.0, 12.0, true) // fallback for 24x24 icons without viewBox
         }
-    } else {
-        (12.0, 12.0) // fallback for 24×24 icons without viewBox
     };
+
+    if !valid_viewbox {
+        return vec![IconData::Svg(svg_bytes.to_vec())];
+    }
 
     let mut frames = Vec::with_capacity(SPIN_FRAME_COUNT as usize);
     for i in 0..SPIN_FRAME_COUNT {
@@ -76,6 +99,12 @@ fn svg_to_spin_frames(svg_bytes: &[u8]) -> Vec<IconData> {
         );
         frames.push(IconData::Svg(rotated.into_bytes()));
     }
+
+    // Guard: if frame generation somehow produced nothing, return static frame
+    if frames.is_empty() {
+        return vec![IconData::Svg(svg_bytes.to_vec())];
+    }
+
     frames
 }
 
@@ -167,6 +196,43 @@ mod tests {
         {
             assert_eq!(frames.len(), 24);
             assert_eq!(*frame_duration_ms, 42);
+        }
+    }
+
+    #[test]
+    fn single_quote_viewbox() {
+        let svg = b"<svg viewBox='0 0 24 24'><path d=\"M12 2v4\"/></svg>";
+        let frames = svg_to_spin_frames(svg);
+        assert_eq!(frames.len(), SPIN_FRAME_COUNT as usize);
+        // Verify center is computed correctly (12.0, 12.0)
+        if let IconData::Svg(bytes) = &frames[0] {
+            let s = std::str::from_utf8(bytes).unwrap();
+            assert!(s.contains("rotate(0.0 12.0 12.0)"), "frame 0: {s}");
+        }
+    }
+
+    #[test]
+    fn zero_dimension_viewbox_returns_static() {
+        let svg = b"<svg viewBox=\"0 0 0 24\"><path d=\"M12 2v4\"/></svg>";
+        let frames = svg_to_spin_frames(svg);
+        assert_eq!(frames.len(), 1, "zero-width viewBox should return single static frame");
+    }
+
+    #[test]
+    fn negative_dimension_viewbox_returns_static() {
+        let svg = b"<svg viewBox=\"0 0 -10 24\"><path d=\"M12 2v4\"/></svg>";
+        let frames = svg_to_spin_frames(svg);
+        assert_eq!(frames.len(), 1, "negative-width viewBox should return single static frame");
+    }
+
+    #[test]
+    fn comma_separated_viewbox() {
+        let svg = b"<svg viewBox=\"0,0,24,24\"><circle r=\"5\"/></svg>";
+        let frames = svg_to_spin_frames(svg);
+        assert_eq!(frames.len(), SPIN_FRAME_COUNT as usize);
+        if let IconData::Svg(bytes) = &frames[0] {
+            let s = std::str::from_utf8(bytes).unwrap();
+            assert!(s.contains("rotate(0.0 12.0 12.0)"), "frame 0: {s}");
         }
     }
 }
