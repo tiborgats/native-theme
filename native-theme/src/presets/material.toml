@@ -284,6 +284,10 @@ arrow_icon_size = 12.0
 hover_background = "#1c1b1f14"
 arrow_color = "#49454f"
 
+[light.window]
+inactive_title_bar_background = "#fffbfe"
+inactive_title_bar_text_color = "#1c1b1f"
+
 # === Dark variant ===
 
 [dark]
@@ -566,6 +570,9 @@ arrow_icon_size = 12.0
 hover_background = "#e6e1e514"
 arrow_color = "#cac4d0"
 
+[dark.window]
+inactive_title_bar_background = "#1c1b1e"
+inactive_title_bar_text_color = "#e6e1e5"
 
 [layout]
 widget_gap = 6.0
