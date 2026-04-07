@@ -32,7 +32,7 @@ Align data model, naming, and resolution engine with authoritative spec docs. El
 
 - [x] **PRESET-01**: All 17 presets rewritten for new naming conventions, BorderSpec sections, and LayoutTheme values
 - [ ] **PRESET-02**: All 17 presets have explicit text_scale entries (13 currently missing get real platform values)
-- [ ] **PRESET-03**: All 17 presets have explicit interactive state color values
+- [x] **PRESET-03**: All 17 presets have explicit interactive state color values
 
 ### Connector Cleanup
 
@@ -121,7 +121,7 @@ Deferred beyond v0.5.5:
 | RESOLVE-07 | Phase 51 | Complete |
 | PRESET-01 | Phase 50 | Complete |
 | PRESET-02 | Phase 53 | Pending |
-| PRESET-03 | Phase 53 | Pending |
+| PRESET-03 | Phase 53 | Complete |
 | CONNECT-01 | Phase 54 | Pending |
 | CONNECT-02 | Phase 54 | Pending |
 | CONNECT-03 | Phase 54 | Pending |

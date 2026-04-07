@@ -195,7 +195,7 @@ Plans:
 **Plans**: 5 plans
 Plans:
 - [ ] 53-01-PLAN.md — Adwaita + KDE Breeze text_scale and interactive state colors
-- [ ] 53-02-PLAN.md — macOS Sonoma + Windows 11 interactive state colors
+- [x] 53-02-PLAN.md — macOS Sonoma + Windows 11 interactive state colors
 - [ ] 53-03-PLAN.md — iOS + Material + Catppuccin text_scale and interactive state colors
 - [ ] 53-04-PLAN.md — Community presets (nord, dracula, gruvbox, solarized, tokyo-night, one-dark) text_scale and interactive state colors
 - [ ] 53-05-PLAN.md — Comprehensive preset verification
@@ -263,7 +263,7 @@ Note: Phase 55 depends only on Phase 50 and can run in parallel with 51-54 if de
 | 50. Atomic Schema Commit | v0.5.5 | 4/4 | Complete   | 2026-04-07 |
 | 51. Resolution Engine Overhaul | v0.5.5 | 5/5 | Complete   | 2026-04-07 |
 | 52. Interactive State Colors | v0.5.5 | 2/2 | Complete   | 2026-04-07 |
-| 53. Preset Completeness | v0.5.5 | 0/5 | Planned | - |
+| 53. Preset Completeness | v0.5.5 | 1/5 | In Progress|  |
 | 54. Connector Migration | v0.5.5 | 0/0 | Not started | - |
 | 55. Correctness, Safety, and CI | v0.5.5 | 0/0 | Not started | - |
 | 56. Testing | v0.5.5 | 0/0 | Not started | - |
