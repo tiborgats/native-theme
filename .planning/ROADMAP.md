@@ -115,7 +115,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 51: Resolution Engine Overhaul** - resolve_border(), resolve_font() update, safety net removal, text_scale removal, inheritance bug fixes (completed 2026-04-07)
 - [x] **Phase 52: Interactive State Colors** - ~70 new hover/active/disabled/focus fields across 18 widgets with preset values (completed 2026-04-07)
 - [x] **Phase 53: Preset Completeness** - text_scale for 13 missing presets, interactive state color values for all 17 presets (completed 2026-04-07)
-- [ ] **Phase 54: Connector Migration** - Both connectors updated for new schema, derive.rs replaced with direct theme reads
+- [x] **Phase 54: Connector Migration** - Both connectors updated for new schema, derive.rs replaced with direct theme reads (completed 2026-04-07)
 - [ ] **Phase 55: Correctness, Safety, and CI** - Bug fixes, animation safety guards, CI improvements, gsettings timeout
 - [ ] **Phase 56: Testing** - Property-based tests and programmatic platform-facts cross-reference
 - [ ] **Phase 57: Verification and Documentation** - Full audit, spec-code sync, READMEs, CHANGELOG
@@ -211,7 +211,7 @@ Plans:
   4. `pre-release-check.sh` passes (VERIFY-01 gate)
 **Plans**: 3 plans
 Plans:
-- [ ] 54-01-PLAN.md — GPUI derive.rs replacement with direct theme reads + dead code removal (K-4)
+- [x] 54-01-PLAN.md — GPUI derive.rs replacement with direct theme reads + dead code removal (K-4)
 - [x] 54-02-PLAN.md — GPUI API fixes: display name (K-1), from_system 3-tuple (K-2), clone removal (K-5)
 - [x] 54-03-PLAN.md — Iced WCAG contrast enforcement for status foregrounds (K-3)
 
@@ -268,7 +268,7 @@ Note: Phase 55 depends only on Phase 50 and can run in parallel with 51-54 if de
 | 51. Resolution Engine Overhaul | v0.5.5 | 5/5 | Complete   | 2026-04-07 |
 | 52. Interactive State Colors | v0.5.5 | 2/2 | Complete   | 2026-04-07 |
 | 53. Preset Completeness | v0.5.5 | 5/5 | Complete   | 2026-04-07 |
-| 54. Connector Migration | v0.5.5 | 2/3 | In Progress|  |
+| 54. Connector Migration | v0.5.5 | 3/3 | Complete   | 2026-04-07 |
 | 55. Correctness, Safety, and CI | v0.5.5 | 0/0 | Not started | - |
 | 56. Testing | v0.5.5 | 0/0 | Not started | - |
 | 57. Verification and Documentation | v0.5.5 | 0/0 | Not started | - |

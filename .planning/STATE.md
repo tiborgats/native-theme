@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.5
 milestone_name: Schema Overhaul & Quality
-status: executing
-stopped_at: Completed 54-03-PLAN.md
-last_updated: "2026-04-07T14:54:39.680Z"
+status: verifying
+stopped_at: Completed 54-01-PLAN.md
+last_updated: "2026-04-07T14:55:54.780Z"
 last_activity: 2026-04-07
 progress:
   total_phases: 9
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 22
-  completed_plans: 21
-  percent: 95
+  completed_plans: 22
+  percent: 100
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-06)
 
 Phase: 54 of 57 (Connector Migration) — IN PROGRESS
 Plan: 3 of 3 complete
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-04-07
 
 ## Performance Metrics
@@ -70,6 +70,8 @@ Recent: Clean break for renames (no serde aliases -- pre-1.0, presets bundled, ~
 - [Phase 53]: Catppuccin text_scale omits line_height (inherits defaults 1.2); all 4 light variants share Latte state colors
 - [Phase 53]: Inactive title bar values set to match active title bar for presets without platform-specific inactive states (same as macOS system-managed dimming)
 - [Phase 54]: Used relative_luminance(bg) < 0.5 for dark/light branching in iced contrast enforcement (more accurate than HSL lightness for saturated colors)
+- [Phase 54-connector-migration]: button.active_background uses soft_option fallback (unwrap_or_else with active_color) for presets that omit it
+- [Phase 54-connector-migration]: primary_hover/active kept on derive.rs; button.hover_background is default button, not primary
 
 ### Pending Todos
 
@@ -83,6 +85,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-07T14:54:39.678Z
-Stopped at: Completed 54-03-PLAN.md
+Last session: 2026-04-07T14:55:54.778Z
+Stopped at: Completed 54-01-PLAN.md
 Resume file: None

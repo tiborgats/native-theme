@@ -36,8 +36,8 @@ Align data model, naming, and resolution engine with authoritative spec docs. El
 
 ### Connector Cleanup
 
-- [ ] **CONNECT-01**: Both connectors updated for new field names, BorderSpec, and font.color access patterns
-- [ ] **CONNECT-02**: Connector derive.rs computations replaced with direct theme field reads
+- [x] **CONNECT-01**: Both connectors updated for new field names, BorderSpec, and font.color access patterns
+- [x] **CONNECT-02**: Connector derive.rs computations replaced with direct theme field reads
 - [x] **CONNECT-03**: Connector inconsistencies fixed (K-1 display name, K-2 from_system return type, K-3 iced contrast, K-4 dead code, K-5 clone)
 
 ### Correctness & Safety
@@ -122,8 +122,8 @@ Deferred beyond v0.5.5:
 | PRESET-01 | Phase 50 | Complete |
 | PRESET-02 | Phase 53 | Complete |
 | PRESET-03 | Phase 53 | Complete |
-| CONNECT-01 | Phase 54 | Pending |
-| CONNECT-02 | Phase 54 | Pending |
+| CONNECT-01 | Phase 54 | Complete |
+| CONNECT-02 | Phase 54 | Complete |
 | CONNECT-03 | Phase 54 | Complete |
 | CORRECT-01 | Phase 55 | Pending |
 | CORRECT-02 | Phase 55 | Pending |
