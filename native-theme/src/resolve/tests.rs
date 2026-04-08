@@ -301,7 +301,7 @@ fn validate_text_scale_pt_converted() {
     v.text_scale.caption = Some(TextScaleEntry {
         size: Some(FontSize::Pt(9.0)),
         weight: Some(400),
-        line_height: Some(12.6),
+        line_height: Some(FontSize::Pt(12.6)),
     });
     let resolved = v.validate().expect("should validate");
     let cap = &resolved.text_scale.caption;
@@ -474,7 +474,7 @@ fn resolve_phase3_text_scale_inheritance() {
         );
         assert_eq!(
             cap.line_height,
-            Some(19.6),
+            Some(FontSize::Px(19.6)),
             "caption line_height = lh * size"
         );
     }
@@ -1100,22 +1100,22 @@ fn fully_populated_variant() -> ThemeVariant {
     v.text_scale.caption = Some(crate::model::TextScaleEntry {
         size: Some(FontSize::Px(11.0)),
         weight: Some(400),
-        line_height: Some(15.4),
+        line_height: Some(FontSize::Px(15.4)),
     });
     v.text_scale.section_heading = Some(crate::model::TextScaleEntry {
         size: Some(FontSize::Px(14.0)),
         weight: Some(600),
-        line_height: Some(19.6),
+        line_height: Some(FontSize::Px(19.6)),
     });
     v.text_scale.dialog_title = Some(crate::model::TextScaleEntry {
         size: Some(FontSize::Px(16.0)),
         weight: Some(700),
-        line_height: Some(22.4),
+        line_height: Some(FontSize::Px(22.4)),
     });
     v.text_scale.display = Some(crate::model::TextScaleEntry {
         size: Some(FontSize::Px(24.0)),
         weight: Some(300),
-        line_height: Some(33.6),
+        line_height: Some(FontSize::Px(33.6)),
     });
 
     // Font color on all widget fonts (require_font/require_font_opt now requires color)

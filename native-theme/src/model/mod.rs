@@ -1120,11 +1120,39 @@ accent_color = "#ff0000"
         assert!(variant.icon_set.is_none());
     }
 
-    // native_theme_serde_toml_round_trip: deferred until widget renames + preset updates (Plans 02-04)
+    #[test]
+    fn native_theme_serde_toml_round_trip() {
+        // Load a preset, serialize to TOML, deserialize back, and verify equality
+        let theme = ThemeSpec::preset("material").expect("material preset should load");
+        let toml_str = theme.to_toml().expect("should serialize");
+        let theme2 = ThemeSpec::from_toml(&toml_str).expect("should deserialize");
+        assert_eq!(theme, theme2, "round-trip should preserve ThemeSpec");
+    }
 
     // === from_toml_with_base tests ===
 
-    // from_toml_with_base_merges_colors_onto_preset: deferred until preset updates (Plan 03)
+    #[test]
+    fn from_toml_with_base_merges_colors_onto_preset() {
+        let overlay_toml = r##"
+name = "Custom"
+[light.defaults]
+accent_color = "#ff00ff"
+"##;
+        let theme =
+            ThemeSpec::from_toml_with_base(overlay_toml, "material").expect("should merge");
+        // The overlay accent_color should replace the preset's
+        let light = theme.light.as_ref().expect("light variant should exist");
+        assert_eq!(
+            light.defaults.accent_color,
+            Some(crate::Rgba::rgb(255, 0, 255)),
+            "overlay accent_color should replace preset"
+        );
+        // Other preset fields should be preserved (font is set in material)
+        assert!(
+            light.defaults.font.family.is_some(),
+            "preset font family should be preserved after merge"
+        );
+    }
 
     #[test]
     fn from_toml_with_base_unknown_preset_returns_error() {
@@ -1282,8 +1310,38 @@ primay_bg = "#0078d7"
         assert!(result.is_err());
     }
 
-    // lint_toml_preset_has_no_warnings: deferred until preset updates (Plan 03)
-    // lint_toml_all_presets_clean: deferred until preset updates (Plan 03)
+    #[test]
+    fn lint_toml_preset_has_no_warnings() {
+        // Spot-check one preset for lint cleanliness via round-trip
+        let theme = ThemeSpec::preset("material").expect("material preset should load");
+        let toml_str = theme.to_toml().expect("should serialize");
+        let warnings = ThemeSpec::lint_toml(&toml_str).expect("should parse");
+        assert!(
+            warnings.is_empty(),
+            "material preset should have no lint warnings, got: {warnings:?}"
+        );
+    }
+
+    #[test]
+    fn lint_toml_all_presets_clean() {
+        for name in ThemeSpec::list_presets() {
+            // Load the raw TOML source for each preset via include_str
+            // by loading via preset() + to_toml() round-trip
+            let theme = ThemeSpec::preset(name).unwrap_or_else(|e| {
+                panic!("preset {name} should load: {e}");
+            });
+            let toml_str = theme.to_toml().unwrap_or_else(|e| {
+                panic!("preset {name} should serialize: {e}");
+            });
+            let warnings = ThemeSpec::lint_toml(&toml_str).unwrap_or_else(|e| {
+                panic!("preset {name} should lint: {e}");
+            });
+            assert!(
+                warnings.is_empty(),
+                "preset {name} should have no lint warnings, got: {warnings:?}"
+            );
+        }
+    }
 
     // === ThemeSpec layout integration tests ===
 
