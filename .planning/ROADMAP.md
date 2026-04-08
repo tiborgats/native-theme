@@ -284,7 +284,7 @@ Note: Phase 55 depends only on Phase 50 and can run in parallel with 51-54 if de
 | 56. Testing | v0.5.5 | 2/2 | Complete   | 2026-04-07 |
 | 57. Verification and Documentation | v0.5.5 | 3/3 | Complete   | 2026-04-07 |
 | 58. Font pt/px DPI Conversion Fix | v0.5.5 | 3/3 | Complete   | 2026-04-08 |
-| 59. FontSize Compile-Time Unit Safety | v0.5.5 | 2/3 | In Progress|  |
+| 59. FontSize Compile-Time Unit Safety | v0.5.5 | 3/3 | Complete   | 2026-04-08 |
 
 ### Phase 58: Font pt/px DPI Conversion Fix
 **Goal**: Font sizes from OS readers are correctly converted from typographic points to logical pixels using a new font_dpi field, with DPI auto-detected per platform, KDE text_scaling_factor semantics fixed, and all doc comments updated
@@ -320,4 +320,4 @@ Plans:
 Plans:
 - [x] 59-01-PLAN.md — Core type refactoring (FontSize enum, proxy structs, OS readers, resolve, validate)
 - [x] 59-02-PLAN.md — TOML preset renames (20 files) and property-registry.toml update
-- [ ] 59-03-PLAN.md — Test updates, Phase 1.5 test rewrites, new FontSize tests, final verification
+- [x] 59-03-PLAN.md — Test updates, Phase 1.5 test rewrites, new FontSize tests, final verification

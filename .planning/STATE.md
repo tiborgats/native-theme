@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.5
 milestone_name: Schema Overhaul & Quality
 status: executing
-stopped_at: Completed 59-02-PLAN.md
-last_updated: "2026-04-08T14:23:20.228Z"
+stopped_at: Completed 59-03-PLAN.md
+last_updated: "2026-04-08T14:53:13.150Z"
 last_activity: 2026-04-08
 progress:
   total_phases: 11
-  completed_phases: 10
+  completed_phases: 11
   total_plans: 36
-  completed_plans: 35
-  percent: 97
+  completed_plans: 36
+  percent: 100
 ---
 
 # Project State
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-06)
 ## Current Position
 
 Phase: 59 (Implement Chapter 2 of docs/todo_v0.5.5_pt-px.md)
-Plan: 2 of 3 complete
+Plan: 3 of 3 complete
 Status: Ready to execute
 Last activity: 2026-04-08
 
@@ -88,6 +88,7 @@ Recent: Clean break for renames (no serde aliases -- pre-1.0, presets bundled, ~
 - [Phase 59]: line_height stays f32 (layout metric, not font size) -- converted alongside size when unit is points in validate
 - [Phase 59]: Phase 1.5 (resolve_font_dpi_conversion) fully deleted -- pt-to-px conversion moved to validate via FontSize::to_px(dpi)
 - [Phase 59]: Windows unit comments removed since _pt suffix is self-documenting
+- [Phase 59]: Used fully_populated_variant() for validate-based DPI tests; reverted incorrect _pt/_px rename on geometry fields in presets
 
 ### Roadmap Evolution
 
@@ -106,6 +107,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-08T14:23:20.225Z
-Stopped at: Completed 59-02-PLAN.md
+Last session: 2026-04-08T14:53:13.147Z
+Stopped at: Completed 59-03-PLAN.md
 Resume file: None
