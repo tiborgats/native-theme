@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v0.5.5
 milestone_name: Schema Overhaul & Quality
-status: verified
-stopped_at: Phase 59 verified and complete
-last_updated: "2026-04-08T14:53:13.150Z"
+status: executing
+stopped_at: Completed 60-01-PLAN.md
+last_updated: "2026-04-08T16:59:51.542Z"
 last_activity: 2026-04-08
 progress:
   total_phases: 11
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-06)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 59 complete — FontSize compile-time unit safety verified
+**Current focus:** Phase 60 — TextScaleEntry.line_height FontSize conversion
 
 ## Current Position
 
-Phase: 59 (Implement Chapter 2 of docs/todo_v0.5.5_pt-px.md)
-Plan: 3 of 3 complete
-Status: Ready to execute
+Phase: 60 (Implement Chapter 3 of docs/todo_v0.5.5_pt-px.md)
+Plan: 1 of 5 complete
+Status: Executing
 Last activity: 2026-04-08
 
 ## Performance Metrics
@@ -89,11 +89,13 @@ Recent: Clean break for renames (no serde aliases -- pre-1.0, presets bundled, ~
 - [Phase 59]: Phase 1.5 (resolve_font_dpi_conversion) fully deleted -- pt-to-px conversion moved to validate via FontSize::to_px(dpi)
 - [Phase 59]: Windows unit comments removed since _pt suffix is self-documenting
 - [Phase 59]: Used fully_populated_variant() for validate-based DPI tests; reverted incorrect _pt/_px rename on geometry fields in presets
+- [Phase 60]: TryFrom enforces unit consistency between size and line_height (both must use same _pt or _px suffix)
 
 ### Roadmap Evolution
 
 - Phase 58 added: implement docs/todo_v0.5.5_size-fix.md
 - Phase 59 added: Implement chapter 2 of docs/todo_v0.5.5_pt-px.md
+- Phase 60 added: Implement chapter 3 of docs/todo_v0.5.5_pt-px.md
 
 ### Pending Todos
 
@@ -107,6 +109,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-08T14:53:13.147Z
-Stopped at: Completed 59-03-PLAN.md
+Last session: 2026-04-08T16:59:51.539Z
+Stopped at: Completed 60-01-PLAN.md
 Resume file: None

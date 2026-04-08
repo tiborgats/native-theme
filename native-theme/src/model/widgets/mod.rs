@@ -4,6 +4,19 @@ use crate::Rgba;
 use crate::model::border::{BorderSpec, ResolvedBorderSpec};
 use crate::model::{DialogButtonOrder, FontSpec, ResolvedFontSpec};
 
+/// Helper macro for FIELD_NAMES: emits the TOML key name for an option field.
+/// With a rename literal, returns the literal; without, returns `stringify!(field)`.
+#[doc(hidden)]
+macro_rules! __field_name {
+    ($field:ident) => {
+        stringify!($field)
+    };
+    ($field:ident, $rename:literal) => {
+        $rename
+    };
+}
+pub(crate) use __field_name;
+
 /// Generates a paired Option-based theme struct and a Resolved struct from a single definition.
 ///
 /// # Usage
@@ -14,7 +27,7 @@ use crate::model::{DialogButtonOrder, FontSpec, ResolvedFontSpec};
 ///     ButtonTheme / ResolvedButtonTheme {
 ///         option {
 ///             color: crate::Rgba,
-///             size: f32,
+///             size as "size_px": f32,
 ///         }
 ///         optional_nested {
 ///             font: [crate::model::FontSpec, ResolvedFontSpec],
@@ -27,15 +40,17 @@ use crate::model::{DialogButtonOrder, FontSpec, ResolvedFontSpec};
 /// - `ButtonTheme` with all `option` fields as `Option<T>` and all `optional_nested` fields
 ///   as `Option<FontSpec>` (the first type in the pair). Derives: Clone, Debug, Default,
 ///   PartialEq, Serialize, Deserialize. Attributes: skip_serializing_none, serde(default).
+///   Fields with `as "name"` get `#[serde(rename = "name")]` on the Option struct only.
 /// - `ResolvedButtonTheme` with all `option` fields as plain `T` and all `optional_nested`
 ///   fields as `ResolvedFontSpec` (the second type in the pair). Derives: Clone, Debug, PartialEq.
+///   Resolved structs never get serde renames.
 /// - `impl_merge!` invocation for `ButtonTheme` using the `optional_nested` clause for font fields.
 macro_rules! define_widget_pair {
     (
         $(#[$attr:meta])*
         $opt_name:ident / $resolved_name:ident {
             $(option {
-                $($(#[doc = $opt_doc:expr])* $opt_field:ident : $opt_type:ty),* $(,)?
+                $($(#[doc = $opt_doc:expr])* $opt_field:ident $(as $opt_rename:literal)? : $opt_type:ty),* $(,)?
             })?
             $(soft_option {
                 $($(#[doc = $so_doc:expr])* $so_field:ident : $so_type:ty),* $(,)?
@@ -50,7 +65,7 @@ macro_rules! define_widget_pair {
         #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
         #[serde(default)]
         pub struct $opt_name {
-            $($($(#[doc = $opt_doc])* pub $opt_field: Option<$opt_type>,)*)?
+            $($($(#[doc = $opt_doc])* $(#[serde(rename = $opt_rename)])? pub $opt_field: Option<$opt_type>,)*)?
             $($($(#[doc = $so_doc])* pub $so_field: Option<$so_type>,)*)?
             $($($(#[doc = $on_doc])* pub $on_field: Option<$on_opt_type>,)*)?
         }
@@ -67,7 +82,7 @@ macro_rules! define_widget_pair {
         impl $opt_name {
             /// All serialized field names for this widget theme, for TOML linting.
             pub const FIELD_NAMES: &[&str] = &[
-                $($(stringify!($opt_field),)*)?
+                $($($crate::model::widgets::__field_name!($opt_field $(, $opt_rename)?),)*)?
                 $($(stringify!($so_field),)*)?
                 $($(stringify!($on_field),)*)?
             ];
@@ -118,11 +133,11 @@ define_widget_pair! {
             /// Primary / accent button text/icon color.
             primary_text_color: Rgba,
             /// Minimum button width in logical pixels.
-            min_width: f32,
+            min_width as "min_width_px": f32,
             /// Minimum button height in logical pixels.
-            min_height: f32,
+            min_height as "min_height_px": f32,
             /// Space between icon and label.
-            icon_text_gap: f32,
+            icon_text_gap as "icon_text_gap_px": f32,
             /// Opacity multiplier when the button is disabled (0.0-1.0).
             disabled_opacity: f32,
             /// Button background on hover.
@@ -166,7 +181,7 @@ define_widget_pair! {
             /// Text color inside the selection highlight.
             selection_text_color: Rgba,
             /// Minimum field height in logical pixels.
-            min_height: f32,
+            min_height as "min_height_px": f32,
             /// Opacity multiplier when disabled (0.0-1.0).
             disabled_opacity: f32,
             /// Input text color when disabled.
@@ -202,9 +217,9 @@ define_widget_pair! {
             /// Indicator (check mark / radio dot) color.
             indicator_color: Rgba,
             /// Indicator (check mark / radio dot) width in logical pixels.
-            indicator_width: f32,
+            indicator_width as "indicator_width_px": f32,
             /// Space between indicator and label.
-            label_gap: f32,
+            label_gap as "label_gap_px": f32,
             /// Opacity multiplier when disabled (0.0-1.0).
             disabled_opacity: f32,
             /// Checkbox label text color when disabled.
@@ -240,11 +255,11 @@ define_widget_pair! {
             /// Separator line color between menu items.
             separator_color: Rgba,
             /// Height of a single menu item row.
-            row_height: f32,
+            row_height as "row_height_px": f32,
             /// Space between a menu item's icon and its label.
-            icon_text_gap: f32,
+            icon_text_gap as "icon_text_gap_px": f32,
             /// Menu item icon size in logical pixels.
-            icon_size: f32,
+            icon_size as "icon_size_px": f32,
             /// Menu item background on hover.
             hover_background: Rgba,
             /// Menu item text color on hover.
@@ -270,7 +285,7 @@ define_widget_pair! {
             /// Tooltip background fill.
             background_color: Rgba,
             /// Maximum tooltip width before wrapping.
-            max_width: f32,
+            max_width as "max_width_px": f32,
         }
         optional_nested {
             /// Tooltip font specification.
@@ -294,11 +309,11 @@ define_widget_pair! {
             /// Thumb color on hover.
             thumb_hover_color: Rgba,
             /// Scrollbar groove width in logical pixels.
-            groove_width: f32,
+            groove_width as "groove_width_px": f32,
             /// Minimum thumb length in logical pixels.
-            min_thumb_length: f32,
+            min_thumb_length as "min_thumb_length_px": f32,
             /// Width of the thumb rail within the scrollbar.
-            thumb_width: f32,
+            thumb_width as "thumb_width_px": f32,
             /// Whether the scrollbar overlays content instead of taking layout space.
             overlay_mode: bool,
         }
@@ -322,11 +337,11 @@ define_widget_pair! {
             /// Thumb (handle) color.
             thumb_color: Rgba,
             /// Track height in logical pixels.
-            track_height: f32,
+            track_height as "track_height_px": f32,
             /// Thumb diameter in logical pixels.
-            thumb_diameter: f32,
+            thumb_diameter as "thumb_diameter_px": f32,
             /// Tick mark length in logical pixels.
-            tick_mark_length: f32,
+            tick_mark_length as "tick_mark_length_px": f32,
             /// Opacity multiplier when disabled (0.0-1.0).
             disabled_opacity: f32,
         }
@@ -354,9 +369,9 @@ define_widget_pair! {
             /// Background track color.
             track_color: Rgba,
             /// Bar height in logical pixels.
-            track_height: f32,
+            track_height as "track_height_px": f32,
             /// Minimum bar width in logical pixels.
-            min_width: f32,
+            min_width as "min_width_px": f32,
         }
         optional_nested {
             /// Progress bar border specification.
@@ -380,9 +395,9 @@ define_widget_pair! {
             /// Tab bar strip background.
             bar_background: Rgba,
             /// Minimum tab width in logical pixels.
-            min_width: f32,
+            min_width as "min_width_px": f32,
             /// Minimum tab height in logical pixels.
-            min_height: f32,
+            min_height as "min_height_px": f32,
             /// Tab text color on hover.
             hover_text_color: Rgba,
         }
@@ -432,11 +447,11 @@ define_widget_pair! {
             /// Toolbar background color.
             background_color: Rgba,
             /// Toolbar height in logical pixels.
-            bar_height: f32,
+            bar_height as "bar_height_px": f32,
             /// Horizontal space between toolbar items.
-            item_gap: f32,
+            item_gap as "item_gap_px": f32,
             /// Toolbar icon size in logical pixels.
-            icon_size: f32,
+            icon_size as "icon_size_px": f32,
         }
         optional_nested {
             /// Toolbar label font specification.
@@ -484,7 +499,7 @@ define_widget_pair! {
             /// Grid line color between rows/columns.
             grid_color: Rgba,
             /// Row height in logical pixels.
-            row_height: f32,
+            row_height as "row_height_px": f32,
             /// Hovered row background color.
             hover_background: Rgba,
             /// Hovered row text color.
@@ -528,7 +543,7 @@ define_widget_pair! {
     SplitterTheme / ResolvedSplitterTheme {
         option {
             /// Handle width in logical pixels.
-            divider_width: f32,
+            divider_width as "divider_width_px": f32,
             /// Divider color.
             divider_color: Rgba,
             /// Divider color on hover.
@@ -546,7 +561,7 @@ define_widget_pair! {
             /// Separator line color.
             line_color: Rgba,
             /// Separator line width in logical pixels.
-            line_width: f32,
+            line_width as "line_width_px": f32,
         }
     }
 }
@@ -564,13 +579,13 @@ define_widget_pair! {
             /// Thumb (knob) color.
             thumb_background: Rgba,
             /// Track width in logical pixels.
-            track_width: f32,
+            track_width as "track_width_px": f32,
             /// Track height in logical pixels.
-            track_height: f32,
+            track_height as "track_height_px": f32,
             /// Thumb diameter in logical pixels.
-            thumb_diameter: f32,
+            thumb_diameter as "thumb_diameter_px": f32,
             /// Track corner radius in logical pixels.
-            track_radius: f32,
+            track_radius as "track_radius_px": f32,
             /// Opacity multiplier when disabled (0.0-1.0).
             disabled_opacity: f32,
         }
@@ -598,17 +613,17 @@ define_widget_pair! {
             /// Dialog background color.
             background_color: Rgba,
             /// Minimum dialog width in logical pixels.
-            min_width: f32,
+            min_width as "min_width_px": f32,
             /// Maximum dialog width in logical pixels.
-            max_width: f32,
+            max_width as "max_width_px": f32,
             /// Minimum dialog height in logical pixels.
-            min_height: f32,
+            min_height as "min_height_px": f32,
             /// Maximum dialog height in logical pixels.
-            max_height: f32,
+            max_height as "max_height_px": f32,
             /// Horizontal space between dialog buttons.
-            button_gap: f32,
+            button_gap as "button_gap_px": f32,
             /// Icon size for dialog type icons (warning, error, etc.).
-            icon_size: f32,
+            icon_size as "icon_size_px": f32,
             /// Platform button order convention (e.g., OK/Cancel vs Cancel/OK).
             button_order: DialogButtonOrder,
         }
@@ -632,11 +647,11 @@ define_widget_pair! {
             /// Spinner arc fill color.
             fill_color: Rgba,
             /// Spinner outer diameter in logical pixels.
-            diameter: f32,
+            diameter as "diameter_px": f32,
             /// Minimum rendered size in logical pixels.
-            min_diameter: f32,
+            min_diameter as "min_diameter_px": f32,
             /// Arc stroke width in logical pixels.
-            stroke_width: f32,
+            stroke_width as "stroke_width_px": f32,
         }
     }
 }
@@ -650,13 +665,13 @@ define_widget_pair! {
             /// ComboBox background color.
             background_color: Rgba,
             /// Minimum trigger height in logical pixels.
-            min_height: f32,
+            min_height as "min_height_px": f32,
             /// Minimum trigger width in logical pixels.
-            min_width: f32,
+            min_width as "min_width_px": f32,
             /// Dropdown arrow size in logical pixels.
-            arrow_icon_size: f32,
+            arrow_icon_size as "arrow_icon_size_px": f32,
             /// Width of the arrow clickable area.
-            arrow_area_width: f32,
+            arrow_area_width as "arrow_area_width_px": f32,
             /// Opacity multiplier when disabled (0.0-1.0).
             disabled_opacity: f32,
             /// ComboBox text color when disabled.
@@ -690,9 +705,9 @@ define_widget_pair! {
             /// Active segment text color.
             active_text_color: Rgba,
             /// Segment height in logical pixels.
-            segment_height: f32,
+            segment_height as "segment_height_px": f32,
             /// Width of the separator between segments.
-            separator_width: f32,
+            separator_width as "separator_width_px": f32,
             /// Opacity multiplier when disabled (0.0-1.0).
             disabled_opacity: f32,
         }
@@ -732,9 +747,9 @@ define_widget_pair! {
     ExpanderTheme / ResolvedExpanderTheme {
         option {
             /// Collapsed header row height in logical pixels.
-            header_height: f32,
+            header_height as "header_height_px": f32,
             /// Disclosure arrow size in logical pixels.
-            arrow_icon_size: f32,
+            arrow_icon_size as "arrow_icon_size_px": f32,
         }
         soft_option {
             /// Expander header background on hover.
@@ -789,13 +804,13 @@ define_widget_pair! {
     LayoutTheme / ResolvedLayoutTheme {
         option {
             /// Space between adjacent widgets in logical pixels.
-            widget_gap: f32,
+            widget_gap as "widget_gap_px": f32,
             /// Padding inside containers in logical pixels.
-            container_margin: f32,
+            container_margin as "container_margin_px": f32,
             /// Padding inside the main window in logical pixels.
-            window_margin: f32,
+            window_margin as "window_margin_px": f32,
             /// Space between major content sections in logical pixels.
-            section_gap: f32,
+            section_gap as "section_gap_px": f32,
         }
     }
 }
@@ -1526,10 +1541,10 @@ mod tests {
     #[test]
     fn layout_theme_field_names() {
         assert_eq!(LayoutTheme::FIELD_NAMES.len(), 4);
-        assert!(LayoutTheme::FIELD_NAMES.contains(&"widget_gap"));
-        assert!(LayoutTheme::FIELD_NAMES.contains(&"container_margin"));
-        assert!(LayoutTheme::FIELD_NAMES.contains(&"window_margin"));
-        assert!(LayoutTheme::FIELD_NAMES.contains(&"section_gap"));
+        assert!(LayoutTheme::FIELD_NAMES.contains(&"widget_gap_px"));
+        assert!(LayoutTheme::FIELD_NAMES.contains(&"container_margin_px"));
+        assert!(LayoutTheme::FIELD_NAMES.contains(&"window_margin_px"));
+        assert!(LayoutTheme::FIELD_NAMES.contains(&"section_gap_px"));
     }
 
     #[test]
