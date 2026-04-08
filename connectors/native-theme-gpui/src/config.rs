@@ -13,8 +13,8 @@ use crate::colors::{hsla_to_hex, to_theme_color};
 /// Build a [`ThemeConfig`] from a [`ResolvedThemeVariant`].
 ///
 /// Maps ResolvedThemeDefaults font/geometry fields to font_family/mono_font_family/
-/// font_size/mono_font_size, radius/radius_lg/shadow. IMPORTANT: ResolvedFontSpec
-/// sizes are already in logical pixels -- no pt-to-px conversion is applied.
+/// font_size/mono_font_size, radius/radius_lg/shadow. ResolvedFontSpec sizes are
+/// in logical pixels (conversion from platform points is handled by the resolution step).
 ///
 /// Also populates the `colors` field with all 108 ThemeColor fields converted
 /// to hex strings, so the config can be serialized/deserialized losslessly.
@@ -45,7 +45,7 @@ pub fn to_theme_config(
         name: SharedString::from(name.to_string()),
         mode,
 
-        // Font sizes are already in logical pixels (NOT points) -- use directly
+        // Font sizes are in logical pixels (pt-to-px conversion handled during resolution)
         font_family: Some(SharedString::from(d.font.family.clone())),
         font_size: Some(d.font.size),
         mono_font_family: Some(SharedString::from(d.mono_font.family.clone())),
@@ -214,7 +214,7 @@ mod tests {
             "mono_font_family should be set"
         );
 
-        // Font size should be directly from resolved (no pt-to-px conversion)
+        // Font size from resolved (pt-to-px conversion already applied during resolution)
         assert_eq!(config.font_size, Some(resolved.defaults.font.size));
         assert_eq!(
             config.mono_font_size,

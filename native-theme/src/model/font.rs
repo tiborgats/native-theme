@@ -26,7 +26,10 @@ pub enum FontStyle {
 pub struct FontSpec {
     /// Font family name (e.g., "Inter", "Noto Sans").
     pub family: Option<String>,
-    /// Font size in logical pixels.
+    /// Font size. When `font_dpi` is set on `ThemeDefaults`, this is in
+    /// typographic points and will be converted to logical pixels during
+    /// resolution (`px = pt * font_dpi / 72`). When `font_dpi` is `None`,
+    /// this is already in logical pixels.
     pub size: Option<f32>,
     /// CSS font weight (100–900).
     pub weight: Option<u16>,
@@ -53,7 +56,8 @@ impl_merge!(FontSpec {
 pub struct ResolvedFontSpec {
     /// Font family name.
     pub family: String,
-    /// Font size in logical pixels.
+    /// Font size in logical pixels. Converted from platform points during
+    /// resolution if `font_dpi` was set on the source `ThemeDefaults`.
     pub size: f32,
     /// CSS font weight (100–900).
     pub weight: u16,
@@ -71,7 +75,7 @@ pub struct ResolvedFontSpec {
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct TextScaleEntry {
-    /// Font size in logical pixels.
+    /// Font size. Same unit semantics as `FontSpec.size` -- see its doc comment.
     pub size: Option<f32>,
     /// CSS font weight (100–900).
     pub weight: Option<u16>,

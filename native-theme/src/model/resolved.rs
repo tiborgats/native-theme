@@ -30,11 +30,14 @@ pub struct ResolvedIconSizes {
 /// A single resolved text scale entry with guaranteed size, weight, and line height.
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ResolvedTextScaleEntry {
-    /// Font size in logical pixels.
+    /// Font size in logical pixels (converted from points during resolution
+    /// if `font_dpi` was set).
     pub size: f32,
     /// CSS font weight (100-900).
     pub weight: u16,
-    /// Line height in logical pixels (computed as `defaults.line_height * size`).
+    /// Line height in logical pixels. Computed as `defaults.line_height * size`
+    /// when not explicitly set. Explicit values from presets are converted from
+    /// points to pixels along with sizes when `font_dpi` is set.
     pub line_height: f32,
 }
 
@@ -141,7 +144,11 @@ pub struct ResolvedThemeDefaults {
     pub font_dpi: f32,
 
     // ---- Accessibility ----
-    /// Text scaling factor (1.0 = no scaling).
+    /// Text scaling factor -- an accessibility multiplier for enlarged text
+    /// (1.0 = no scaling). Connectors and apps should multiply `font.size` by
+    /// this factor when the user's preference for larger text should be honored.
+    /// This is independent of `font_dpi` (which handles DPI-based
+    /// point-to-pixel conversion).
     pub text_scaling_factor: f32,
     /// Whether the user has requested reduced motion.
     pub reduce_motion: bool,

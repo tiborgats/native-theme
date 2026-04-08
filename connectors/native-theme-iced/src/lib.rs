@@ -254,8 +254,8 @@ pub fn font_family(resolved: &native_theme::ResolvedThemeVariant) -> &str {
 
 /// Returns the primary UI font size in logical pixels from the resolved theme.
 ///
-/// ResolvedFontSpec.size is already in logical pixels -- no pt-to-px conversion
-/// is applied.
+/// ResolvedFontSpec.size is in logical pixels (conversion from platform points
+/// is handled by the resolution step).
 #[must_use]
 pub fn font_size(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
     resolved.defaults.font.size
@@ -269,8 +269,8 @@ pub fn mono_font_family(resolved: &native_theme::ResolvedThemeVariant) -> &str {
 
 /// Returns the monospace font size in logical pixels from the resolved theme.
 ///
-/// ResolvedFontSpec.size is already in logical pixels -- no pt-to-px conversion
-/// is applied.
+/// ResolvedFontSpec.size is in logical pixels (conversion from platform points
+/// is handled by the resolution step).
 #[must_use]
 pub fn mono_font_size(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
     resolved.defaults.mono_font.size
