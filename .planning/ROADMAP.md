@@ -300,4 +300,4 @@ Note: Phase 55 depends only on Phase 50 and can run in parallel with 51-54 if de
 Plans:
 - [x] 58-01-PLAN.md — Data model (font_dpi field) and resolution engine (resolve_font_dpi_conversion)
 - [x] 58-02-PLAN.md — OS reader font_dpi detection (KDE, GNOME, macOS, Windows) and KDE text_scaling_factor fix
-- [ ] 58-03-PLAN.md — Pipeline propagation, doc comment updates, proptest, and final verification
+- [x] 58-03-PLAN.md — Pipeline propagation, doc comment updates, proptest, and final verification

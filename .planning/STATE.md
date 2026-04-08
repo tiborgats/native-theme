@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.5
 milestone_name: Schema Overhaul & Quality
-status: completed
-stopped_at: Completed 58-02-PLAN.md
-last_updated: "2026-04-08T01:12:55.665Z"
+status: executing
+stopped_at: Completed 58-03-PLAN.md
+last_updated: "2026-04-08T01:25:33.104Z"
 last_activity: 2026-04-08
 progress:
   total_phases: 10
-  completed_phases: 9
+  completed_phases: 10
   total_plans: 33
-  completed_plans: 32
-  percent: 97
+  completed_plans: 33
+  percent: 100
 ---
 
 # Project State
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-04-06)
 ## Current Position
 
 Phase: 58 (implement-docs-todo-v0-5-5-size-fix-md) — IN PROGRESS
-Plan: 1 of 3 complete
-Status: Plan 01 complete, Plan 02 next
+Plan: 2 of 3 complete
+Status: Ready to execute
 Last activity: 2026-04-08
 
 ## Performance Metrics
@@ -82,6 +82,8 @@ Recent: Clean break for renames (no serde aliases -- pre-1.0, presets bundled, ~
 - [Phase 57]: Used 2026-04-XX date placeholder for v0.5.5 CHANGELOG entry; grouped ~70 renames into 3 categories with representative examples
 - [Phase 58]: DEFAULT_FONT_DPI constant (96.0) in validate.rs; font_dpi cleared to None after conversion for idempotency
 - [Phase 58]: read_xft_dpi() in lib.rs for cross-feature accessibility; KDE forceFontDPI sets font_dpi not text_scaling_factor (Fix 5)
+- [Phase 58]: Pipeline propagation extracts font_dpi from reader via or_else chain, applies to both variants before resolution
+- [Phase 58]: read_xft_dpi() gated on kde/portal features (not just target_os) to match callers
 
 ### Roadmap Evolution
 
@@ -99,6 +101,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-08T01:12:55.662Z
-Stopped at: Completed 58-02-PLAN.md
+Last session: 2026-04-08T01:25:33.101Z
+Stopped at: Completed 58-03-PLAN.md
 Resume file: None
