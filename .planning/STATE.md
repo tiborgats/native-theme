@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v0.5.5
 milestone_name: Schema Overhaul & Quality
-status: executing
-stopped_at: Completed 58-03-PLAN.md
+status: complete
+stopped_at: Phase 58 verified and complete — font_dpi DPI conversion fix shipped
 last_updated: "2026-04-08T01:25:33.104Z"
 last_activity: 2026-04-08
 progress:
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-06)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 58 — font pt/px DPI conversion fix
+**Current focus:** Phase 58 complete — font pt/px DPI conversion fix verified
 
 ## Current Position
 
-Phase: 58 (implement-docs-todo-v0-5-5-size-fix-md) — IN PROGRESS
-Plan: 2 of 3 complete
-Status: Ready to execute
+Phase: 58 of 58 (Font pt/px DPI Conversion Fix) — COMPLETE
+Plan: 3 of 3 complete
+Status: Verified (7/7 must-haves passed)
 Last activity: 2026-04-08
 
 ## Performance Metrics

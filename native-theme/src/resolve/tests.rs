@@ -343,7 +343,13 @@ fn resolve_phase1_5_per_widget_font_converted() {
     v.resolve_font_dpi_conversion();
 
     // button font: 11pt * 96/72 = 14.666...px
-    let btn_size = v.button.font.as_ref().expect("button font exists").size.expect("size set");
+    let btn_size = v
+        .button
+        .font
+        .as_ref()
+        .expect("button font exists")
+        .size
+        .expect("size set");
     assert!(
         (btn_size - 14.666).abs() < 0.01,
         "11pt at 96 DPI should be ~14.666px, got {btn_size}"

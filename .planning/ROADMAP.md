@@ -283,6 +283,7 @@ Note: Phase 55 depends only on Phase 50 and can run in parallel with 51-54 if de
 | 55. Correctness, Safety, and CI | v0.5.5 | 3/3 | Complete   | 2026-04-07 |
 | 56. Testing | v0.5.5 | 2/2 | Complete   | 2026-04-07 |
 | 57. Verification and Documentation | v0.5.5 | 3/3 | Complete   | 2026-04-07 |
+| 58. Font pt/px DPI Conversion Fix | v0.5.5 | 3/3 | Complete   | 2026-04-08 |
 
 ### Phase 58: Font pt/px DPI Conversion Fix
 **Goal**: Font sizes from OS readers are correctly converted from typographic points to logical pixels using a new font_dpi field, with DPI auto-detected per platform, KDE text_scaling_factor semantics fixed, and all doc comments updated
