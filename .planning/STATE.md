@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.5
 milestone_name: Schema Overhaul & Quality
-status: complete
-stopped_at: Phase 57 verified and complete — v0.5.5 milestone shipped
-last_updated: "2026-04-07T17:24:49.562Z"
-last_activity: 2026-04-07
+status: completed
+stopped_at: Completed 58-02-PLAN.md
+last_updated: "2026-04-08T01:12:55.665Z"
+last_activity: 2026-04-08
 progress:
-  total_phases: 9
+  total_phases: 10
   completed_phases: 9
-  total_plans: 30
-  completed_plans: 30
-  percent: 100
+  total_plans: 33
+  completed_plans: 32
+  percent: 97
 ---
 
 # Project State
@@ -21,14 +21,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-06)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** v0.5.5 milestone complete — all 9 phases shipped
+**Current focus:** Phase 58 — font pt/px DPI conversion fix
 
 ## Current Position
 
-Phase: 57 of 57 (Verification and Documentation) — COMPLETE
-Plan: 3 of 3 complete
-Status: Verified (5/5 must-haves passed) — milestone complete
-Last activity: 2026-04-07
+Phase: 58 (implement-docs-todo-v0-5-5-size-fix-md) — IN PROGRESS
+Plan: 1 of 3 complete
+Status: Plan 01 complete, Plan 02 next
+Last activity: 2026-04-08
 
 ## Performance Metrics
 
@@ -80,6 +80,12 @@ Recent: Clean break for renames (no serde aliases -- pre-1.0, presets bundled, ~
 - [Phase 57]: Low-priority cosmetic items (from_toml wrapper, Rgba u8, active_color pure black, merge name) accepted as-is with annotations
 - [Phase 57]: Code is source of truth for spec docs -- 13 missing inheritance rules added to inheritance-rules.toml from resolve.rs
 - [Phase 57]: Used 2026-04-XX date placeholder for v0.5.5 CHANGELOG entry; grouped ~70 renames into 3 categories with representative examples
+- [Phase 58]: DEFAULT_FONT_DPI constant (96.0) in validate.rs; font_dpi cleared to None after conversion for idempotency
+- [Phase 58]: read_xft_dpi() in lib.rs for cross-feature accessibility; KDE forceFontDPI sets font_dpi not text_scaling_factor (Fix 5)
+
+### Roadmap Evolution
+
+- Phase 58 added: implement docs/todo_v0.5.5_size-fix.md
 
 ### Pending Todos
 
@@ -93,6 +99,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-07T17:24:49.559Z
-Stopped at: Completed 57-03-PLAN.md
+Last session: 2026-04-08T01:12:55.662Z
+Stopped at: Completed 58-02-PLAN.md
 Resume file: None
