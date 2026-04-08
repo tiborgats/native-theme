@@ -1,6 +1,6 @@
 # Explicit units for all dimensional fields in TOML presets
 
-Status: Chapter 2 implemented (Phase 59), Chapter 3 pending
+Status: Chapter 2 implemented (Phase 59), Chapter 3 implemented (Phase 60)
 Date: 2026-04-08
 
 ---
