@@ -107,16 +107,9 @@ fn require_text_scale_entry(
                 missing.push(format!("{prefix}.size"));
                 0.0
             });
-            let needs_pt_conversion = e.size.is_some_and(|fs| fs.is_pt());
             let line_height = e
                 .line_height
-                .map(|lh| {
-                    if needs_pt_conversion {
-                        lh * dpi / 72.0
-                    } else {
-                        lh
-                    }
-                })
+                .map(|fs| fs.to_px(dpi))
                 .unwrap_or_else(|| {
                     missing.push(format!("{prefix}.line_height"));
                     0.0

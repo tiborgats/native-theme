@@ -1,6 +1,7 @@
 // Resolution inheritance phases: fills None fields from defaults and widget-to-widget chains.
 
 use crate::model::border::BorderSpec;
+use crate::model::font::FontSize;
 use crate::model::{DialogButtonOrder, FontSpec, TextScaleEntry, ThemeVariant};
 
 /// Resolve a per-widget font from defaults.
@@ -83,7 +84,10 @@ fn resolve_text_scale_entry(
     if entry.line_height.is_none()
         && let (Some(lh_mult), Some(font_size)) = (defaults_line_height, entry.size)
     {
-        entry.line_height = Some(lh_mult * font_size.raw());
+        entry.line_height = Some(match font_size {
+            FontSize::Pt(_) => FontSize::Pt(lh_mult * font_size.raw()),
+            FontSize::Px(_) => FontSize::Px(lh_mult * font_size.raw()),
+        });
     }
 }
 
