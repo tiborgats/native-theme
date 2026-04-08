@@ -285,6 +285,7 @@ Note: Phase 55 depends only on Phase 50 and can run in parallel with 51-54 if de
 | 57. Verification and Documentation | v0.5.5 | 3/3 | Complete   | 2026-04-07 |
 | 58. Font pt/px DPI Conversion Fix | v0.5.5 | 3/3 | Complete   | 2026-04-08 |
 | 59. FontSize Compile-Time Unit Safety | v0.5.5 | 3/3 | Complete   | 2026-04-08 |
+| 60. TOML Key Unit Suffixes | v0.5.5 | 5/5 | Complete   | 2026-04-08 |
 
 ### Phase 58: Font pt/px DPI Conversion Fix
 **Goal**: Font sizes from OS readers are correctly converted from typographic points to logical pixels using a new font_dpi field, with DPI auto-detected per platform, KDE text_scaling_factor semantics fixed, and all doc comments updated
@@ -322,11 +323,21 @@ Plans:
 - [x] 59-02-PLAN.md — TOML preset renames (20 files) and property-registry.toml update
 - [x] 59-03-PLAN.md — Test updates, Phase 1.5 test rewrites, new FontSize tests, final verification
 
-### Phase 60: Implement chapter 3 of docs/todo_v0.5.5_pt-px.md
+### Phase 60: TOML Key Unit Suffixes — completed 2026-04-08
 
-**Goal:** [To be planned]
-**Depends on:** Phase 59
-**Plans:** 4/5 plans executed
+**Goal**: All TOML keys for always-pixel dimensional fields have explicit _px suffix, line_height becomes FontSize with _pt/_px suffix in presets, define_widget_pair! macro supports rename syntax, property-registry.toml synced
+**Depends on**: Phase 59
+**Success Criteria** (what must be TRUE):
+  1. `TextScaleEntry.line_height` is `Option<FontSize>` with proxy struct support (`line_height_pt`/`line_height_px`)
+  2. `define_widget_pair!` macro supports `as "toml_name"` syntax; 63 dimensional fields have `#[serde(rename)]`
+  3. All 20 TOML presets use `_px` suffixed keys for always-pixel fields; platform presets use `line_height_pt`, community use `line_height_px`
+  4. All tests pass (451), clippy clean, property-registry.toml synced
+  5. `pre-release-check.sh` passes
+**Plans**: 5 plans
 
 Plans:
-- [ ] TBD (run /gsd:plan-phase 60 to break down)
+- [x] 60-01-PLAN.md — TextScaleEntry.line_height to Option<FontSize> with proxy struct
+- [x] 60-02-PLAN.md — define_widget_pair! macro rename syntax + 63 serde renames
+- [x] 60-03-PLAN.md — TOML preset key renames (20 files, ~2800 keys)
+- [x] 60-04-PLAN.md — Test fixes, deferred test enablement, property-registry.toml sync
+- [x] 60-05-PLAN.md — Verification (pre-release-check.sh) and spec doc update
