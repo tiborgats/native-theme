@@ -1,6 +1,6 @@
 use super::*;
 use crate::Rgba;
-use crate::model::{DialogButtonOrder, FontSpec};
+use crate::model::{DialogButtonOrder, FontSpec, TextScaleEntry};
 
 /// Helper: build a ThemeVariant with all defaults.* fields populated.
 fn variant_with_defaults() -> ThemeVariant {
@@ -235,6 +235,123 @@ fn resolve_phase2_safety_nets() {
         v.dialog.background_color,
         Some(Rgba::rgb(255, 255, 255)),
         "dialog.background <- background"
+    );
+}
+
+// ===== Phase 1.5: Font DPI conversion =====
+//
+// These tests verify the resolve_font_dpi_conversion() method using
+// values from docs/todo_v0.5.5_size-fix.md (Fix 3) and the plan's
+// <behavior> section. DPI values (96, 72) are standard screen reference
+// values from the CSS/Web spec and Apple's coordinate system.
+
+/// Standard screen DPI (CSS reference pixel).
+const TEST_DPI_STANDARD: f32 = 96.0;
+/// Apple coordinate system DPI (1pt = 1px identity).
+const TEST_DPI_APPLE: f32 = 72.0;
+
+/// Build a variant with font_dpi and font size pre-configured.
+fn variant_with_dpi(dpi: Option<f32>, font_size: f32) -> ThemeVariant {
+    let mut v = ThemeVariant::default();
+    v.defaults.font_dpi = dpi;
+    v.defaults.font.size = Some(font_size);
+    v
+}
+
+#[test]
+fn resolve_phase1_5_font_dpi_96_converts_pt_to_px() {
+    // 10pt at 96 DPI -> 10 * 96/72 = 13.333...px
+    let mut v = variant_with_dpi(Some(TEST_DPI_STANDARD), 10.0);
+    v.resolve_font_dpi_conversion();
+    let result = v.defaults.font.size.expect("size should be set");
+    assert!(
+        (result - 13.333).abs() < 0.01,
+        "10pt at 96 DPI should be ~13.333px, got {result}"
+    );
+}
+
+#[test]
+fn resolve_phase1_5_font_dpi_none_no_conversion() {
+    // font_dpi=None -> sizes stay unchanged
+    let mut v = variant_with_dpi(None, 14.0);
+    v.resolve_font_dpi_conversion();
+    assert_eq!(
+        v.defaults.font.size,
+        Some(14.0),
+        "font_dpi=None should leave size unchanged"
+    );
+}
+
+#[test]
+fn resolve_phase1_5_font_dpi_72_identity() {
+    // 72 DPI (macOS): 13pt * 72/72 = 13px (identity)
+    let mut v = variant_with_dpi(Some(TEST_DPI_APPLE), 13.0);
+    v.resolve_font_dpi_conversion();
+    let result = v.defaults.font.size.expect("size should be set");
+    assert!(
+        (result - 13.0).abs() < 0.01,
+        "13pt at 72 DPI should stay 13.0px, got {result}"
+    );
+}
+
+#[test]
+fn resolve_phase1_5_text_scale_converted() {
+    // text_scale caption size and line_height both get converted
+    let mut v = variant_with_dpi(Some(TEST_DPI_STANDARD), 10.0);
+    v.text_scale.caption = Some(TextScaleEntry {
+        size: Some(9.0),
+        line_height: Some(12.6),
+        ..Default::default()
+    });
+    v.resolve_font_dpi_conversion();
+    let cap = v.text_scale.caption.as_ref().expect("caption should exist");
+    let size = cap.size.expect("size should be set");
+    let lh = cap.line_height.expect("line_height should be set");
+    assert!(
+        (size - 12.0).abs() < 0.01,
+        "9pt at 96 DPI should be 12.0px, got {size}"
+    );
+    assert!(
+        (lh - 16.8).abs() < 0.01,
+        "12.6pt line_height at 96 DPI should be 16.8px, got {lh}"
+    );
+}
+
+#[test]
+fn resolve_phase1_5_clears_font_dpi_after_conversion() {
+    // Idempotency guard: font_dpi is set to None after conversion
+    let mut v = variant_with_dpi(Some(TEST_DPI_STANDARD), 10.0);
+    v.resolve_font_dpi_conversion();
+    assert!(
+        v.defaults.font_dpi.is_none(),
+        "font_dpi should be cleared after conversion"
+    );
+}
+
+#[test]
+fn resolve_phase1_5_per_widget_font_converted() {
+    // Per-widget font with explicit size gets converted;
+    // per-widget font without a font set is unaffected
+    let mut v = variant_with_dpi(Some(TEST_DPI_STANDARD), 10.0);
+    // button has explicit size
+    v.button.font = Some(FontSpec {
+        size: Some(11.0),
+        ..Default::default()
+    });
+    // menu has no font set at all -- it stays None through DPI conversion
+    assert!(v.menu.font.is_none());
+    v.resolve_font_dpi_conversion();
+
+    // button font: 11pt * 96/72 = 14.666...px
+    let btn_size = v.button.font.as_ref().expect("button font exists").size.expect("size set");
+    assert!(
+        (btn_size - 14.666).abs() < 0.01,
+        "11pt at 96 DPI should be ~14.666px, got {btn_size}"
+    );
+    // menu font unchanged (still None -- DPI conversion only touches existing fonts)
+    assert!(
+        v.menu.font.is_none(),
+        "menu font should remain None through DPI conversion"
     );
 }
 
