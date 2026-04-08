@@ -542,6 +542,11 @@ fn build_theme(
         variant.defaults.reduce_motion = a.reduce_motion;
     }
 
+    // Windows uses 96 DPI as its logical coordinate base.
+    // The logfont_to_fontspec_raw function converts lfHeight to points via
+    // |lfHeight| * 72 / dpi. Setting font_dpi=96 converts back correctly.
+    variant.defaults.font_dpi = Some(96.0);
+
     if dark {
         crate::ThemeSpec {
             name: "Windows".to_string(),

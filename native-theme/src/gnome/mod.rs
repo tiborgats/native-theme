@@ -132,6 +132,18 @@ fn read_gsetting(schema: &str, key: &str) -> Option<String> {
     }
 }
 
+/// Detect font DPI from X resources.
+///
+/// GNOME uses Xft.dpi from X resources for font rendering DPI.
+/// Falls back to the X11-standard 96 DPI if xrdb is unavailable.
+fn detect_font_dpi() -> f32 {
+    if let Some(dpi) = crate::read_xft_dpi() {
+        return dpi;
+    }
+    // X11-standard fallback (same as KDE detect_font_dpi fallback)
+    96.0
+}
+
 /// Build a sparse ThemeVariant populated only with OS-readable fields.
 ///
 /// This function does NOT embed any Adwaita preset data -- it only sets
@@ -196,6 +208,10 @@ pub(crate) fn build_gnome_variant(
     {
         variant.defaults.text_scaling_factor = Some(factor);
     }
+
+    // Font DPI from Xft.dpi (GNOME uses X resources for font DPI).
+    // detect_font_dpi() handles the Xft.dpi -> 96.0 fallback chain.
+    variant.defaults.font_dpi = Some(detect_font_dpi());
 
     // reduce_motion: portal first, gsettings fallback (GNOME-05)
     if let Some(rm) = reduced_motion {

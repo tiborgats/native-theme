@@ -377,12 +377,11 @@ pub(crate) fn read_xft_dpi() -> Option<f32> {
                 }
                 // Parse "Xft.dpi:\t96" from multi-line output
                 for line in buf.lines() {
-                    if let Some(rest) = line.strip_prefix("Xft.dpi:") {
-                        if let Ok(dpi) = rest.trim().parse::<f32>() {
-                            if dpi > 0.0 {
-                                return Some(dpi);
-                            }
-                        }
+                    if let Some(rest) = line.strip_prefix("Xft.dpi:")
+                        && let Ok(dpi) = rest.trim().parse::<f32>()
+                        && dpi > 0.0
+                    {
+                        return Some(dpi);
                     }
                 }
                 return None;
