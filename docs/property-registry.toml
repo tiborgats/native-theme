@@ -47,29 +47,31 @@ color                        = "color"
 # Not every widget populates every field — platform-facts documents
 # which fields have actual platform values per widget.
 color                        = "color"
-corner_radius                = "f32"
-corner_radius_lg             = "f32"    # defaults only
-line_width                   = "f32"
+corner_radius_px             = "f32"
+corner_radius_lg_px          = "f32"    # defaults only
+line_width_px                = "f32"
 opacity                      = "f32"    # defaults only
 shadow_enabled               = "bool"
-padding_horizontal           = "f32"
-padding_vertical             = "f32"
+padding_horizontal_px        = "f32"
+padding_vertical_px          = "f32"
 
 [_structures.IconSizes]
 # Platform icon size contexts, nested under defaults.
-toolbar                      = "f32"
-small                        = "f32"
-large                        = "f32"
-dialog                       = "f32"
-panel                        = "f32"
+toolbar_px                   = "f32"
+small_px                     = "f32"
+large_px                     = "f32"
+dialog_px                    = "f32"
+panel_px                     = "f32"
 
 [_structures.TextScaleEntry]
 # One entry in the text scale ramp (§2.19).
 # Exactly one of size_pt or size_px must be set (same as Font.size_*).
+# Exactly one of line_height_pt or line_height_px must be set (same unit as size).
 size_pt                      = "f32"
 size_px                      = "f32"
 weight                       = "u16"
-line_height                  = "f32"    # computed from defaults.line_height * size when None
+line_height_pt               = "f32"    # computed from defaults.line_height * size when None
+line_height_px               = "f32"    # computed from defaults.line_height * size when None
 
 # ═══════════════════════════════════════════════════════════════════════════
 # §2.1 Global Defaults (ThemeDefaults)
@@ -107,8 +109,8 @@ info_color                   = "color"
 info_text_color              = "color"
 # §2.1.5 Focus Ring
 focus_ring_color             = "color"
-focus_ring_width             = "f32"
-focus_ring_offset            = "f32"
+focus_ring_width_px          = "f32"
+focus_ring_offset_px         = "f32"
 # §2.1.6 Global Geometry (border.* fields are inside the Border sub-struct)
 border                       = "border"
 disabled_opacity             = "f32"
@@ -163,9 +165,9 @@ border                       = "border"
 [button]
 background_color             = "color"
 font                         = "font"
-min_width                    = "f32"
-min_height                   = "f32"
-icon_text_gap                = "f32"
+min_width_px                 = "f32"
+min_height_px                = "f32"
+icon_text_gap_px             = "f32"
 primary_background           = "color"
 primary_text_color           = "color"
 disabled_opacity             = "f32"
@@ -188,7 +190,7 @@ caret_color                  = "color"
 selection_background         = "color"
 selection_text_color         = "color"
 font                         = "font"
-min_height                   = "f32"
+min_height_px                = "f32"
 disabled_opacity             = "f32"
 hover_border_color           = "color"
 focus_border_color           = "color"
@@ -204,8 +206,8 @@ border                       = "border"
 background_color             = "color"
 font                         = "font"
 indicator_color              = "color"
-indicator_width              = "f32"
-label_gap                    = "f32"
+indicator_width_px           = "f32"
+label_gap_px                 = "f32"
 checked_background           = "color"
 disabled_opacity             = "f32"
 hover_background             = "color"
@@ -223,9 +225,9 @@ border                       = "border"
 background_color             = "color"
 separator_color              = "color"
 font                         = "font"
-row_height                   = "f32"
-icon_text_gap                = "f32"
-icon_size                    = "f32"
+row_height_px                = "f32"
+icon_text_gap_px             = "f32"
+icon_size_px                 = "f32"
 hover_background             = "color"
 hover_text_color             = "color"
 disabled_text_color          = "color"
@@ -238,7 +240,7 @@ border                       = "border"
 [tooltip]
 background_color             = "color"
 font                         = "font"
-max_width                    = "f32"
+max_width_px                 = "f32"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -249,9 +251,9 @@ border                       = "border"
 track_color                  = "color"
 thumb_color                  = "color"
 thumb_hover_color            = "color"
-groove_width                 = "f32"
-min_thumb_length             = "f32"
-thumb_width                  = "f32"
+groove_width_px              = "f32"
+min_thumb_length_px          = "f32"
+thumb_width_px               = "f32"
 overlay_mode                 = "bool"
 thumb_active_color           = "color"
 
@@ -263,9 +265,9 @@ thumb_active_color           = "color"
 fill_color                   = "color"
 track_color                  = "color"
 thumb_color                  = "color"
-track_height                 = "f32"
-thumb_diameter               = "f32"
-tick_mark_length             = "f32"
+track_height_px              = "f32"
+thumb_diameter_px            = "f32"
+tick_mark_length_px          = "f32"
 disabled_opacity             = "f32"
 thumb_hover_color            = "color"
 disabled_fill_color          = "color"
@@ -279,8 +281,8 @@ disabled_thumb_color         = "color"
 [progress_bar]
 fill_color                   = "color"
 track_color                  = "color"
-track_height                 = "f32"
-min_width                    = "f32"
+track_height_px              = "f32"
+min_width_px                 = "f32"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -292,8 +294,8 @@ background_color             = "color"
 active_background            = "color"
 active_text_color            = "color"
 bar_background               = "color"
-min_width                    = "f32"
-min_height                   = "f32"
+min_width_px                 = "f32"
+min_height_px                = "f32"
 hover_background             = "color"
 hover_text_color             = "color"
 font                         = "font"
@@ -317,10 +319,10 @@ border                       = "border"
 
 [toolbar]
 font                         = "font"
-bar_height                   = "f32"
-item_gap                     = "f32"
+bar_height_px                = "f32"
+item_gap_px                  = "f32"
 background_color             = "color"
-icon_size                    = "f32"
+icon_size_px                 = "f32"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -345,7 +347,7 @@ selection_text_color         = "color"
 header_font                  = "font"
 header_background            = "color"
 grid_color                   = "color"
-row_height                   = "f32"
+row_height_px                = "f32"
 hover_background             = "color"
 hover_text_color             = "color"
 disabled_text_color          = "color"
@@ -365,7 +367,7 @@ border                       = "border"
 # ═══════════════════════════════════════════════════════════════════════════
 
 [splitter]
-divider_width                = "f32"
+divider_width_px             = "f32"
 divider_color                = "color"
 hover_color                  = "color"
 
@@ -375,7 +377,7 @@ hover_color                  = "color"
 
 [separator]
 line_color                   = "color"
-line_width                   = "f32"
+line_width_px                = "f32"
 
 # ═══════════════════════════════════════════════════════════════════════════
 # §2.20 Layout Container Defaults
@@ -391,20 +393,20 @@ line_width                   = "f32"
 # are compile-time constants or design guidelines.
 
 [layout]
-widget_gap                   = "f32"
-container_margin             = "f32"
-window_margin                = "f32"
-section_gap                  = "f32"
+widget_gap_px                = "f32"
+container_margin_px          = "f32"
+window_margin_px             = "f32"
+section_gap_px               = "f32"
 
 # ═══════════════════════════════════════════════════════════════════════════
 # §2.21 Switch / Toggle
 # ═══════════════════════════════════════════════════════════════════════════
 
 [switch]
-track_width                  = "f32"
-track_height                 = "f32"
-thumb_diameter               = "f32"
-track_radius                 = "f32"
+track_width_px               = "f32"
+track_height_px              = "f32"
+thumb_diameter_px            = "f32"
+track_radius_px              = "f32"
 checked_background           = "color"
 unchecked_background         = "color"
 thumb_background             = "color"
@@ -422,14 +424,14 @@ disabled_thumb_color         = "color"
 [dialog]
 background_color             = "color"
 body_font                    = "font"
-min_width                    = "f32"
-max_width                    = "f32"
-min_height                   = "f32"
-max_height                   = "f32"
-button_gap                   = "f32"
+min_width_px                 = "f32"
+max_width_px                 = "f32"
+min_height_px                = "f32"
+max_height_px                = "f32"
+button_gap_px                = "f32"
 button_order                 = "enum"   # PrimaryRight | PrimaryLeft | KdeLayout | GnomeLayout
 title_font                   = "font"
-icon_size                    = "f32"
+icon_size_px                 = "f32"
 border                       = "border"
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -437,9 +439,9 @@ border                       = "border"
 # ═══════════════════════════════════════════════════════════════════════════
 
 [spinner]
-diameter                     = "f32"
-min_diameter                 = "f32"
-stroke_width                 = "f32"
+diameter_px                  = "f32"
+min_diameter_px              = "f32"
+stroke_width_px              = "f32"
 fill_color                   = "color"
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -449,10 +451,10 @@ fill_color                   = "color"
 [combo_box]
 background_color             = "color"
 font                         = "font"
-min_height                   = "f32"
-min_width                    = "f32"
-arrow_icon_size              = "f32"
-arrow_area_width             = "f32"
+min_height_px                = "f32"
+min_width_px                 = "f32"
+arrow_icon_size_px           = "f32"
+arrow_area_width_px          = "f32"
 disabled_opacity             = "f32"
 hover_background             = "color"
 disabled_background          = "color"
@@ -468,8 +470,8 @@ background_color             = "color"
 font                         = "font"
 active_background            = "color"
 active_text_color            = "color"
-segment_height               = "f32"
-separator_width              = "f32"
+segment_height_px            = "f32"
+separator_width_px           = "f32"
 disabled_opacity             = "f32"
 hover_background             = "color"
 border                       = "border"
@@ -488,8 +490,8 @@ border                       = "border"
 
 [expander]
 font                         = "font"
-header_height                = "f32"
-arrow_icon_size              = "f32"
+header_height_px             = "f32"
+arrow_icon_size_px           = "f32"
 hover_background             = "color"
 arrow_color                  = "color"
 border                       = "border"

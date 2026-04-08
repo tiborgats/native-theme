@@ -3,8 +3,8 @@ gsd_state_version: 1.0
 milestone: v0.5.5
 milestone_name: Schema Overhaul & Quality
 status: executing
-stopped_at: Completed 60-02-PLAN.md
-last_updated: "2026-04-08T17:03:58.351Z"
+stopped_at: Completed 60-03-PLAN.md
+last_updated: "2026-04-08T17:12:57.590Z"
 last_activity: 2026-04-08
 progress:
   total_phases: 11
@@ -26,7 +26,7 @@ See: .planning/PROJECT.md (updated 2026-04-06)
 ## Current Position
 
 Phase: 60 (Implement Chapter 3 of docs/todo_v0.5.5_pt-px.md)
-Plan: 2 of 5 complete
+Plan: 3 of 5 complete
 Status: Ready to execute
 Last activity: 2026-04-08
 
@@ -91,6 +91,7 @@ Recent: Clean break for renames (no serde aliases -- pre-1.0, presets bundled, ~
 - [Phase 59]: Used fully_populated_variant() for validate-based DPI tests; reverted incorrect _pt/_px rename on geometry fields in presets
 - [Phase 60]: TryFrom enforces unit consistency between size and line_height (both must use same _pt or _px suffix)
 - [Phase 60]: Used __field_name! helper macro with pub(crate) use for FIELD_NAMES const array emission in define_widget_pair!
+- [Phase 60]: Material is the only community preset with text_scale line_height entries (renamed to _px); other community presets only have defaults.line_height multiplier
 
 ### Roadmap Evolution
 
@@ -110,6 +111,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-08T17:03:58.348Z
-Stopped at: Completed 60-02-PLAN.md
+Last session: 2026-04-08T17:12:57.586Z
+Stopped at: Completed 60-03-PLAN.md
 Resume file: None
