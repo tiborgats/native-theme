@@ -40,8 +40,11 @@ toml.workspace = true
 
 [target.'cfg(target_os = "macos")'.dependencies]
 objc2 = { version = "0.6.4", optional = true }
-objc2-foundation = { version = "0.3", optional = true, features = ["NSString", "NSUserDefaults"] }
-objc2-app-kit = { version = "0.3", optional = true, features = [
+objc2-foundation = { version = "0.3.2", optional = true, features = [
+    "NSString",
+    "NSUserDefaults",
+] }
+objc2-app-kit = { version = "0.3.2", optional = true, features = [
     "NSColor",
     "NSColorSpace",
     "NSAppearance",
@@ -56,7 +59,7 @@ objc2-app-kit = { version = "0.3", optional = true, features = [
     "NSWorkspace",
     "NSAccessibility",
 ] }
-block2 = { version = ">=0.6.1, <0.8.0", optional = true }
+block2 = { version = ">=0.6.2, <0.8.0", optional = true }
 objc2-core-foundation = { version = "0.3.2", optional = true, features = [
     "CFCGTypes",
 ] }
@@ -76,7 +79,7 @@ configparser = { version = "3.1.0", optional = true }
 freedesktop-icons = { version = "0.4", optional = true }
 
 [target.'cfg(target_os = "windows")'.dependencies]
-windows = { version = "0.62", optional = true, default-features = false, features = [
+windows = { version = "0.62.2", optional = true, default-features = false, features = [
     "UI_ViewManagement",
     "Win32_UI_WindowsAndMessaging",
     "Win32_UI_Accessibility",
@@ -88,5 +91,5 @@ windows = { version = "0.62", optional = true, default-features = false, feature
 ] }
 
 [dev-dependencies]
-proptest = "1"
+proptest = "1.11"
 serde_json = "1.0.149"

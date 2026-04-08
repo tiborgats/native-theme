@@ -52,23 +52,27 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
 
     // Button
     variant.button.background_color = get_color(ini, "Colors:Button", "BackgroundNormal");
-    variant.button.font.get_or_insert_default().color =
-        get_color(ini, "Colors:Button", "ForegroundNormal");
+    if let Some(color) = get_color(ini, "Colors:Button", "ForegroundNormal") {
+        variant.button.font.get_or_insert_default().color = Some(color);
+    }
 
     // Tooltip
     variant.tooltip.background_color = get_color(ini, "Colors:Tooltip", "BackgroundNormal");
-    variant.tooltip.font.get_or_insert_default().color =
-        get_color(ini, "Colors:Tooltip", "ForegroundNormal");
+    if let Some(color) = get_color(ini, "Colors:Tooltip", "ForegroundNormal") {
+        variant.tooltip.font.get_or_insert_default().color = Some(color);
+    }
 
     // Sidebar (from Complementary group)
     variant.sidebar.background_color = get_color(ini, "Colors:Complementary", "BackgroundNormal");
-    variant.sidebar.font.get_or_insert_default().color =
-        get_color(ini, "Colors:Complementary", "ForegroundNormal");
+    if let Some(color) = get_color(ini, "Colors:Complementary", "ForegroundNormal") {
+        variant.sidebar.font.get_or_insert_default().color = Some(color);
+    }
 
     // Input
     variant.input.background_color = get_color(ini, "Colors:View", "BackgroundNormal");
-    variant.input.font.get_or_insert_default().color =
-        get_color(ini, "Colors:View", "ForegroundNormal");
+    if let Some(color) = get_color(ini, "Colors:View", "ForegroundNormal") {
+        variant.input.font.get_or_insert_default().color = Some(color);
+    }
     // KDE-02: placeholder from View/ForegroundInactive
     variant.input.placeholder_color = get_color(ini, "Colors:View", "ForegroundInactive");
     // input.caret from View/DecorationFocus (the focus decoration color)
@@ -76,31 +80,36 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
 
     // Popover (from View)
     variant.popover.background_color = get_color(ini, "Colors:View", "BackgroundNormal");
-    variant.popover.font.get_or_insert_default().color =
-        get_color(ini, "Colors:View", "ForegroundNormal");
+    if let Some(color) = get_color(ini, "Colors:View", "ForegroundNormal") {
+        variant.popover.font.get_or_insert_default().color = Some(color);
+    }
 
     // Separator
     variant.separator.line_color = get_color(ini, "Colors:Window", "ForegroundInactive");
 
     // KDE-02: list fields (Colors:View is the native source for list/table content areas)
     variant.list.background_color = get_color(ini, "Colors:View", "BackgroundNormal");
-    variant.list.item_font.get_or_insert_default().color =
-        get_color(ini, "Colors:View", "ForegroundNormal");
+    if let Some(color) = get_color(ini, "Colors:View", "ForegroundNormal") {
+        variant.list.item_font.get_or_insert_default().color = Some(color);
+    }
     variant.list.alternate_row_background = get_color(ini, "Colors:View", "BackgroundAlternate");
     variant.list.header_background = get_color(ini, "Colors:Header", "BackgroundNormal");
-    variant.list.header_font.get_or_insert_default().color =
-        get_color(ini, "Colors:Header", "ForegroundNormal");
+    if let Some(color) = get_color(ini, "Colors:Header", "ForegroundNormal") {
+        variant.list.header_font.get_or_insert_default().color = Some(color);
+    }
 
     // KDE-02: link.visited
     variant.link.visited_text_color = get_color(ini, "Colors:View", "ForegroundVisited");
     // link.font.color from View/ForegroundLink
-    variant.link.font.get_or_insert_default().color =
-        get_color(ini, "Colors:View", "ForegroundLink");
+    if let Some(color) = get_color(ini, "Colors:View", "ForegroundLink") {
+        variant.link.font.get_or_insert_default().color = Some(color);
+    }
 
     // === KDE-01: Window Manager title bar colors ===
     variant.window.title_bar_background = get_color(ini, "WM", "activeBackground");
-    variant.window.title_bar_font.get_or_insert_default().color =
-        get_color(ini, "WM", "activeForeground");
+    if let Some(color) = get_color(ini, "WM", "activeForeground") {
+        variant.window.title_bar_font.get_or_insert_default().color = Some(color);
+    }
     variant.window.inactive_title_bar_background = get_color(ini, "WM", "inactiveBackground");
     variant.window.inactive_title_bar_text_color = get_color(ini, "WM", "inactiveForeground");
 }

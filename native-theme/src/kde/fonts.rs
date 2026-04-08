@@ -99,10 +99,15 @@ pub(crate) fn populate_fonts(ini: &configparser::ini::Ini, variant: &mut crate::
     }
 
     // KDE-01: Title bar font from WM section
+    // Merge into existing FontSpec to preserve .color set by populate_colors.
     if let Some(active_font_str) = ini.get("WM", "activeFont")
         && let Some(spec) = parse_qt_font_with_weight(&active_font_str)
     {
-        variant.window.title_bar_font = Some(spec);
+        let font = variant.window.title_bar_font.get_or_insert_default();
+        font.family = spec.family;
+        font.size = spec.size;
+        font.weight = spec.weight;
+        font.style = spec.style;
     }
 }
 

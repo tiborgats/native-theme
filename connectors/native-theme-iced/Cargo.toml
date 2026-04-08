@@ -24,7 +24,7 @@ native-theme = { workspace = true, features = [
     "material-icons",
     "lucide-icons",
 ] }
-image = { version = "0.25", default-features = false, features = ["png"] }
+image = { version = "0.25.10", default-features = false, features = ["png"] }
 
 [target.'cfg(target_os = "linux")'.dev-dependencies]
 native-theme = { workspace = true, features = ["system-icons", "linux"] }
