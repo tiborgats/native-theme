@@ -69,10 +69,37 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ThemeSpec>
     Ok(theme)
 }
 
+/// Detect font DPI from KDE settings.
+///
+/// Detection chain (first positive value wins):
+/// 1. `forceFontDPI` from kdeglobals `[General]` or kcmfontsrc
+/// 2. `Xft.dpi` from X resources (via `xrdb -query`)
+/// 3. Fallback: 96.0
+fn detect_font_dpi(ini: &configparser::ini::Ini) -> f32 {
+    // Check forceFontDPI from kdeglobals [General], then kcmfontsrc
+    let dpi_str = ini
+        .get("General", "forceFontDPI")
+        .or_else(|| read_kcmfontsrc_key("General", "forceFontDPI"));
+    if let Some(dpi_str) = dpi_str
+        && let Ok(dpi) = dpi_str.trim().parse::<f32>()
+        && dpi > 0.0
+    {
+        return dpi;
+    }
+
+    // Fallback to Xft.dpi from X resources
+    if let Some(dpi) = crate::read_xft_dpi() {
+        return dpi;
+    }
+
+    // Default: standard 96 DPI
+    96.0
+}
+
 /// Populate accessibility fields from KDE settings.
 ///
 /// - AnimationDurationFactor=0 -> reduce_motion=true; >0 -> false; missing -> None
-/// - forceFontDPI from kdeglobals or kcmfontsrc -> text_scaling_factor = value / 96.0; missing -> None
+/// - font_dpi detected via [`detect_font_dpi()`] (forceFontDPI / Xft.dpi / 96.0 fallback)
 fn populate_accessibility(ini: &configparser::ini::Ini, variant: &mut crate::ThemeVariant) {
     // KDE-06: AnimationDurationFactor from [KDE]
     if let Some(anim_str) = ini.get("KDE", "AnimationDurationFactor")
@@ -81,16 +108,10 @@ fn populate_accessibility(ini: &configparser::ini::Ini, variant: &mut crate::The
         variant.defaults.reduce_motion = Some(value == 0.0);
     }
 
-    // KDE-06: forceFontDPI — check kdeglobals [General] first, then kcmfontsrc
-    let dpi_str = ini
-        .get("General", "forceFontDPI")
-        .or_else(|| read_kcmfontsrc_key("General", "forceFontDPI"));
-    if let Some(dpi_str) = dpi_str
-        && let Ok(dpi) = dpi_str.trim().parse::<f32>()
-        && dpi > 0.0
-    {
-        variant.defaults.text_scaling_factor = Some(dpi / 96.0);
-    }
+    // Font DPI for pt-to-px conversion (Fix 2 / Fix 5).
+    // forceFontDPI is a font rendering DPI, NOT an accessibility scaling factor.
+    // It must NOT be used to derive text_scaling_factor.
+    variant.defaults.font_dpi = Some(detect_font_dpi(ini));
 }
 
 /// Read a single key from `$XDG_CONFIG_HOME/kcmfontsrc` (or `~/.config/kcmfontsrc`).
@@ -794,12 +815,13 @@ AnimationDurationFactor=1.0
     }
 
     #[test]
-    fn test_force_font_dpi_sets_text_scaling_factor() {
+    fn test_force_font_dpi_sets_font_dpi() {
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
-        // forceFontDPI=120 in [General], expected: 120/96 = 1.25
-        let factor = v.defaults.text_scaling_factor.unwrap_or(0.0);
-        assert!((factor - 1.25).abs() < 0.01);
+        // forceFontDPI=120 in [General] -> font_dpi=120.0 (raw DPI, not divided by 96)
+        assert_eq!(v.defaults.font_dpi, Some(120.0));
+        // forceFontDPI must NOT set text_scaling_factor (Fix 5)
+        assert!(v.defaults.text_scaling_factor.is_none());
     }
 
     #[test]
@@ -812,6 +834,10 @@ BackgroundNormal=49,54,59
         let v = theme.dark.as_ref().unwrap();
         assert!(v.defaults.reduce_motion.is_none());
         assert!(v.defaults.text_scaling_factor.is_none());
+        // Exact DPI value is environment-dependent (xrdb availability);
+        // we only verify the field is populated since detect_font_dpi always
+        // returns a value (forceFontDPI -> Xft.dpi -> 96.0 fallback).
+        assert!(v.defaults.font_dpi.is_some());
     }
 
     // === KDE-05: Icon set ===

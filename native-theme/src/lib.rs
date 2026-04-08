@@ -351,6 +351,55 @@ pub(crate) fn run_gsettings_with_timeout(args: &[&str]) -> Option<String> {
     }
 }
 
+/// Read `Xft.dpi` from X resources via `xrdb -query`.
+///
+/// Returns `None` if xrdb is not installed, times out (2 seconds),
+/// or the output does not contain a valid positive `Xft.dpi` value.
+#[cfg(target_os = "linux")]
+pub(crate) fn read_xft_dpi() -> Option<f32> {
+    use std::io::Read;
+    use std::time::{Duration, Instant};
+
+    let deadline = Instant::now() + Duration::from_secs(2);
+    let mut child = std::process::Command::new("xrdb")
+        .arg("-query")
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .ok()?;
+
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) if status.success() => {
+                let mut buf = String::new();
+                if let Some(mut stdout) = child.stdout.take() {
+                    let _ = stdout.read_to_string(&mut buf);
+                }
+                // Parse "Xft.dpi:\t96" from multi-line output
+                for line in buf.lines() {
+                    if let Some(rest) = line.strip_prefix("Xft.dpi:") {
+                        if let Ok(dpi) = rest.trim().parse::<f32>() {
+                            if dpi > 0.0 {
+                                return Some(dpi);
+                            }
+                        }
+                    }
+                }
+                return None;
+            }
+            Ok(Some(_)) => return None,
+            Ok(None) => {
+                if Instant::now() >= deadline {
+                    let _ = child.kill();
+                    return None;
+                }
+                std::thread::sleep(Duration::from_millis(50));
+            }
+            Err(_) => return None,
+        }
+    }
+}
+
 /// Inner detection logic for [`system_is_dark()`].
 ///
 /// Separated from the public function to allow caching via `OnceLock`.
