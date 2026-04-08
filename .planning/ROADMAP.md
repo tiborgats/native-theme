@@ -284,6 +284,7 @@ Note: Phase 55 depends only on Phase 50 and can run in parallel with 51-54 if de
 | 56. Testing | v0.5.5 | 2/2 | Complete   | 2026-04-07 |
 | 57. Verification and Documentation | v0.5.5 | 3/3 | Complete   | 2026-04-07 |
 | 58. Font pt/px DPI Conversion Fix | v0.5.5 | 3/3 | Complete   | 2026-04-08 |
+| 59. FontSize Compile-Time Unit Safety | v0.5.5 | 0/3 | Planned    |           |
 
 ### Phase 58: Font pt/px DPI Conversion Fix
 **Goal**: Font sizes from OS readers are correctly converted from typographic points to logical pixels using a new font_dpi field, with DPI auto-detected per platform, KDE text_scaling_factor semantics fixed, and all doc comments updated
@@ -302,3 +303,21 @@ Plans:
 - [x] 58-01-PLAN.md — Data model (font_dpi field) and resolution engine (resolve_font_dpi_conversion)
 - [x] 58-02-PLAN.md — OS reader font_dpi detection (KDE, GNOME, macOS, Windows) and KDE text_scaling_factor fix
 - [x] 58-03-PLAN.md — Pipeline propagation, doc comment updates, proptest, and final verification
+
+### Phase 59: FontSize Compile-Time Unit Safety
+
+**Goal**: Font sizes use a `FontSize` enum (`Pt(f32)` / `Px(f32)`) with compile-time unit safety, TOML presets use explicit `size_pt` / `size_px` keys, and pt-to-px conversion moves from hidden in-place mutation to type transformation in validate
+**Depends on**: Phase 58
+**Success Criteria** (what must be TRUE):
+  1. `FontSize` enum exists with `Pt(f32)` and `Px(f32)` variants, publicly re-exported from `lib.rs`
+  2. `FontSpec.size` and `TextScaleEntry.size` are `Option<FontSize>` with serde proxy structs mapping to `size_pt`/`size_px` TOML keys
+  3. Phase 1.5 (`resolve_font_dpi_conversion`) is deleted -- conversion happens in `validate()` via `FontSize::to_px(dpi)`
+  4. All 4 OS readers wrap font sizes in `FontSize::Pt(...)`
+  5. All 20 TOML presets use `size_pt` (platform) or `size_px` (community) -- zero bare `size =` keys remain
+  6. `pre-release-check.sh` passes
+**Plans**: 3 plans
+
+Plans:
+- [ ] 59-01-PLAN.md — Core type refactoring (FontSize enum, proxy structs, OS readers, resolve, validate)
+- [ ] 59-02-PLAN.md — TOML preset renames (20 files) and property-registry.toml update
+- [ ] 59-03-PLAN.md — Test updates, Phase 1.5 test rewrites, new FontSize tests, final verification

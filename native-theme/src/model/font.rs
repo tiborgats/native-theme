@@ -16,21 +16,74 @@ pub enum FontStyle {
     Oblique,
 }
 
+/// A font size with an explicit unit.
+///
+/// In TOML presets, this appears as either `size_pt` (typographic points)
+/// or `size_px` (logical pixels). Serde mapping is handled by the parent
+/// struct (`FontSpec`, `TextScaleEntry`) — `FontSize` itself has no
+/// `Serialize`/`Deserialize` impl.
+///
+/// During validation, all `FontSize` values are converted to logical pixels
+/// via `FontSize::to_px(dpi)`, producing a plain `f32` for the resolved model.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum FontSize {
+    /// Typographic points (1/72 inch). Used by platform presets where the OS
+    /// reports font sizes in points (KDE, GNOME, Windows).
+    /// Converted to px during validation: `px = pt * dpi / 72`.
+    Pt(f32),
+    /// Logical pixels. Used by community/non-platform presets where font sizes
+    /// are hand-authored in pixels.
+    Px(f32),
+}
+
+impl FontSize {
+    /// Convert to logical pixels.
+    ///
+    /// - `Pt(v)` -> `v * dpi / 72.0`
+    /// - `Px(v)` -> `v` (dpi ignored)
+    pub fn to_px(self, dpi: f32) -> f32 {
+        match self {
+            Self::Pt(v) => v * dpi / 72.0,
+            Self::Px(v) => v,
+        }
+    }
+
+    /// Return the raw numeric value regardless of unit.
+    /// Used during inheritance to compute derived values (e.g. line_height)
+    /// before unit conversion.
+    pub fn raw(self) -> f32 {
+        match self {
+            Self::Pt(v) | Self::Px(v) => v,
+        }
+    }
+
+    /// True when the value is in typographic points.
+    pub fn is_pt(self) -> bool {
+        matches!(self, Self::Pt(_))
+    }
+}
+
+impl Default for FontSize {
+    fn default() -> Self {
+        Self::Px(0.0)
+    }
+}
+
 /// Font specification: family name, size, and weight.
 ///
 /// All fields are optional to support partial overlays — a FontSpec with
 /// only `size` set will only override the size when merged.
-#[serde_with::skip_serializing_none]
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
-#[serde(default)]
+#[serde(try_from = "FontSpecRaw", into = "FontSpecRaw")]
 pub struct FontSpec {
     /// Font family name (e.g., "Inter", "Noto Sans").
     pub family: Option<String>,
-    /// Font size. When `font_dpi` is set on `ThemeDefaults`, this is in
-    /// typographic points and will be converted to logical pixels during
-    /// resolution (`px = pt * font_dpi / 72`). When `font_dpi` is `None`,
-    /// this is already in logical pixels.
-    pub size: Option<f32>,
+    /// Font size with explicit unit (points or pixels).
+    ///
+    /// In TOML, set as `size_pt` (typographic points) or `size_px` (logical
+    /// pixels). Converted to `f32` logical pixels during validation via
+    /// `FontSize::to_px(dpi)`.
+    pub size: Option<FontSize>,
     /// CSS font weight (100–900).
     pub weight: Option<u16>,
     /// Font style (normal, italic, oblique).
@@ -41,7 +94,59 @@ pub struct FontSpec {
 
 impl FontSpec {
     /// All serialized field names for FontSpec, for TOML linting.
-    pub const FIELD_NAMES: &[&str] = &["family", "size", "weight", "style", "color"];
+    pub const FIELD_NAMES: &[&str] = &["family", "size_pt", "size_px", "weight", "style", "color"];
+}
+
+/// Serde proxy for FontSpec. Maps `FontSize` to two mutually-exclusive keys.
+#[serde_with::skip_serializing_none]
+#[derive(Default, Serialize, Deserialize)]
+#[serde(default)]
+struct FontSpecRaw {
+    family: Option<String>,
+    size_pt: Option<f32>,
+    size_px: Option<f32>,
+    weight: Option<u16>,
+    style: Option<FontStyle>,
+    color: Option<Rgba>,
+}
+
+impl TryFrom<FontSpecRaw> for FontSpec {
+    type Error = String;
+    fn try_from(raw: FontSpecRaw) -> Result<Self, Self::Error> {
+        let size = match (raw.size_pt, raw.size_px) {
+            (Some(v), None) => Some(FontSize::Pt(v)),
+            (None, Some(v)) => Some(FontSize::Px(v)),
+            (None, None) => None,
+            (Some(_), Some(_)) => {
+                return Err("font: set `size_pt` or `size_px`, not both".into())
+            }
+        };
+        Ok(FontSpec {
+            family: raw.family,
+            size,
+            weight: raw.weight,
+            style: raw.style,
+            color: raw.color,
+        })
+    }
+}
+
+impl From<FontSpec> for FontSpecRaw {
+    fn from(fs: FontSpec) -> Self {
+        let (size_pt, size_px) = match fs.size {
+            Some(FontSize::Pt(v)) => (Some(v), None),
+            Some(FontSize::Px(v)) => (None, Some(v)),
+            None => (None, None),
+        };
+        FontSpecRaw {
+            family: fs.family,
+            size_pt,
+            size_px,
+            weight: fs.weight,
+            style: fs.style,
+            color: fs.color,
+        }
+    }
 }
 
 impl_merge!(FontSpec {
@@ -71,22 +176,71 @@ pub struct ResolvedFontSpec {
 ///
 /// Used to define typographic roles (caption, heading, etc.) with
 /// consistent sizing and spacing.
-#[serde_with::skip_serializing_none]
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
-#[serde(default)]
+#[serde(try_from = "TextScaleEntryRaw", into = "TextScaleEntryRaw")]
 pub struct TextScaleEntry {
-    /// Font size. Same unit semantics as `FontSpec.size` -- see its doc comment.
-    pub size: Option<f32>,
+    /// Font size with explicit unit (points or pixels).
+    ///
+    /// Same semantics as `FontSpec.size` -- in TOML, set as `size_pt` or
+    /// `size_px`. Converted to `f32` logical pixels during validation.
+    pub size: Option<FontSize>,
     /// CSS font weight (100–900).
     pub weight: Option<u16>,
-    /// Line height in logical pixels. When `None`, `resolve()` computes it
-    /// as `defaults.line_height × size`.
+    /// Line height in the same unit as the sibling `size`. When `None`,
+    /// `resolve()` computes it as `defaults.line_height * size.raw()`.
+    /// Converted alongside `size` during validation when the unit is points.
     pub line_height: Option<f32>,
 }
 
 impl TextScaleEntry {
-    /// All serialized field names for TOML linting (issue 3b).
-    pub const FIELD_NAMES: &[&str] = &["size", "weight", "line_height"];
+    /// All serialized field names for TOML linting.
+    pub const FIELD_NAMES: &[&str] = &["size_pt", "size_px", "weight", "line_height"];
+}
+
+/// Serde proxy for TextScaleEntry. Maps `FontSize` to two mutually-exclusive keys.
+#[serde_with::skip_serializing_none]
+#[derive(Default, Serialize, Deserialize)]
+#[serde(default)]
+struct TextScaleEntryRaw {
+    size_pt: Option<f32>,
+    size_px: Option<f32>,
+    weight: Option<u16>,
+    line_height: Option<f32>,
+}
+
+impl TryFrom<TextScaleEntryRaw> for TextScaleEntry {
+    type Error = String;
+    fn try_from(raw: TextScaleEntryRaw) -> Result<Self, Self::Error> {
+        let size = match (raw.size_pt, raw.size_px) {
+            (Some(v), None) => Some(FontSize::Pt(v)),
+            (None, Some(v)) => Some(FontSize::Px(v)),
+            (None, None) => None,
+            (Some(_), Some(_)) => {
+                return Err("text_scale: set `size_pt` or `size_px`, not both".into())
+            }
+        };
+        Ok(TextScaleEntry {
+            size,
+            weight: raw.weight,
+            line_height: raw.line_height,
+        })
+    }
+}
+
+impl From<TextScaleEntry> for TextScaleEntryRaw {
+    fn from(e: TextScaleEntry) -> Self {
+        let (size_pt, size_px) = match e.size {
+            Some(FontSize::Pt(v)) => (Some(v), None),
+            Some(FontSize::Px(v)) => (None, Some(v)),
+            None => (None, None),
+        };
+        TextScaleEntryRaw {
+            size_pt,
+            size_px,
+            weight: e.weight,
+            line_height: e.line_height,
+        }
+    }
 }
 
 impl_merge!(TextScaleEntry {

@@ -111,7 +111,8 @@ pub use color::{ParseColorError, Rgba};
 pub use error::{Error, ThemeResolutionError};
 pub use model::{
     AnimatedIcon, BorderSpec, ButtonTheme, CardTheme, CheckboxTheme, ComboBoxTheme,
-    DialogButtonOrder, DialogTheme, ExpanderTheme, FontSpec, FontStyle, IconData, IconProvider,
+    DialogButtonOrder, DialogTheme, ExpanderTheme, FontSize, FontSpec, FontStyle, IconData,
+    IconProvider,
     IconRole, IconSet, IconSizes, InputTheme, LayoutTheme, LinkTheme, ListTheme, MenuTheme,
     PopoverTheme, ProgressBarTheme, ResolvedBorderSpec, ResolvedFontSpec, ResolvedIconSizes,
     ResolvedTextScale, ResolvedTextScaleEntry, ResolvedThemeDefaults, ResolvedThemeVariant,
