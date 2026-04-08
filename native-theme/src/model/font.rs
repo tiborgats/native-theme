@@ -184,15 +184,14 @@ pub struct TextScaleEntry {
     pub size: Option<FontSize>,
     /// CSS font weight (100–900).
     pub weight: Option<u16>,
-    /// Line height in the same unit as the sibling `size`. When `None`,
-    /// `resolve()` computes it as `defaults.line_height * size.raw()`.
-    /// Converted alongside `size` during validation when the unit is points.
-    pub line_height: Option<f32>,
+    /// Line height with explicit unit. When `None`, `resolve()` computes it
+    /// as `defaults.line_height * size.raw()`, preserving the unit of `size`.
+    pub line_height: Option<FontSize>,
 }
 
 impl TextScaleEntry {
     /// All serialized field names for TOML linting.
-    pub const FIELD_NAMES: &[&str] = &["size_pt", "size_px", "weight", "line_height"];
+    pub const FIELD_NAMES: &[&str] = &["size_pt", "size_px", "weight", "line_height_pt", "line_height_px"];
 }
 
 /// Serde proxy for TextScaleEntry. Maps `FontSize` to two mutually-exclusive keys.
@@ -203,7 +202,8 @@ struct TextScaleEntryRaw {
     size_pt: Option<f32>,
     size_px: Option<f32>,
     weight: Option<u16>,
-    line_height: Option<f32>,
+    line_height_pt: Option<f32>,
+    line_height_px: Option<f32>,
 }
 
 impl TryFrom<TextScaleEntryRaw> for TextScaleEntry {
@@ -217,10 +217,28 @@ impl TryFrom<TextScaleEntryRaw> for TextScaleEntry {
                 return Err("text_scale: set `size_pt` or `size_px`, not both".into());
             }
         };
+        let line_height = match (raw.line_height_pt, raw.line_height_px) {
+            (Some(v), None) => Some(FontSize::Pt(v)),
+            (None, Some(v)) => Some(FontSize::Px(v)),
+            (None, None) => None,
+            (Some(_), Some(_)) => {
+                return Err(
+                    "text_scale: set `line_height_pt` or `line_height_px`, not both".into(),
+                );
+            }
+        };
+        if let (Some(s), Some(lh)) = (&size, &line_height) {
+            if s.is_pt() != lh.is_pt() {
+                return Err(
+                    "text_scale: size and line_height must use the same unit suffix (_pt or _px)"
+                        .into(),
+                );
+            }
+        }
         Ok(TextScaleEntry {
             size,
             weight: raw.weight,
-            line_height: raw.line_height,
+            line_height,
         })
     }
 }
@@ -232,11 +250,17 @@ impl From<TextScaleEntry> for TextScaleEntryRaw {
             Some(FontSize::Px(v)) => (None, Some(v)),
             None => (None, None),
         };
+        let (line_height_pt, line_height_px) = match e.line_height {
+            Some(FontSize::Pt(v)) => (Some(v), None),
+            Some(FontSize::Px(v)) => (None, Some(v)),
+            None => (None, None),
+        };
         TextScaleEntryRaw {
             size_pt,
             size_px,
             weight: e.weight,
-            line_height: e.line_height,
+            line_height_pt,
+            line_height_px,
         }
     }
 }
