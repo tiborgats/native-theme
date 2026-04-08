@@ -321,3 +321,12 @@ Plans:
 - [x] 59-01-PLAN.md — Core type refactoring (FontSize enum, proxy structs, OS readers, resolve, validate)
 - [x] 59-02-PLAN.md — TOML preset renames (20 files) and property-registry.toml update
 - [x] 59-03-PLAN.md — Test updates, Phase 1.5 test rewrites, new FontSize tests, final verification
+
+### Phase 60: Implement chapter 3 of docs/todo_v0.5.5_pt-px.md
+
+**Goal:** [To be planned]
+**Depends on:** Phase 59
+**Plans:** 0 plans
+
+Plans:
+- [ ] TBD (run /gsd:plan-phase 60 to break down)
