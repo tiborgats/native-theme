@@ -304,7 +304,7 @@ Plans:
 - [x] 58-02-PLAN.md — OS reader font_dpi detection (KDE, GNOME, macOS, Windows) and KDE text_scaling_factor fix
 - [x] 58-03-PLAN.md — Pipeline propagation, doc comment updates, proptest, and final verification
 
-### Phase 59: FontSize Compile-Time Unit Safety
+### Phase 59: FontSize Compile-Time Unit Safety — completed 2026-04-08
 
 **Goal**: Font sizes use a `FontSize` enum (`Pt(f32)` / `Px(f32)`) with compile-time unit safety, TOML presets use explicit `size_pt` / `size_px` keys, and pt-to-px conversion moves from hidden in-place mutation to type transformation in validate
 **Depends on**: Phase 58
