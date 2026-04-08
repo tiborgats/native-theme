@@ -11,7 +11,7 @@ keywords = ["theme", "icons", "codegen", "build", "gui"]
 categories = ["development-tools::build-utils", "gui"]
 
 [dependencies]
-toml = "1.1.0"
+toml = "1.1.2"
 serde = { version = "1.0.228", features = ["derive"] }
 heck = "0.5"
 

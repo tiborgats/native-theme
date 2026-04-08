@@ -21,7 +21,7 @@ categories = ["gui", "config", "os"]
 native-theme = { path = "native-theme", version = "0.5.5" }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_with = "3.18.0"
-toml = "1.1.0"
+toml = "1.1.2"
 
 # Optimize dependencies in dev builds for usable UI performance
 [profile.dev.package."*"]
