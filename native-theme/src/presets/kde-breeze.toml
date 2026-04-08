@@ -69,22 +69,22 @@ panel_px = 48.0
 [light.text_scale.caption]
 size_pt =8.2
 weight = 400
-line_height = 11.2
+line_height_pt = 11.2
 
 [light.text_scale.section_heading]
 size_pt =12.0
 weight = 700
-line_height = 16.3
+line_height_pt = 16.3
 
 [light.text_scale.dialog_title]
 size_pt =13.5
 weight = 700
-line_height = 18.4
+line_height_pt = 18.4
 
 [light.text_scale.display]
 size_pt =20.0
 weight = 700
-line_height = 27.2
+line_height_pt = 27.2
 
 [light.window]
 inactive_title_bar_background = "#eff0f1"
@@ -355,22 +355,22 @@ panel_px = 48.0
 [dark.text_scale.caption]
 size_pt =8.2
 weight = 400
-line_height = 11.2
+line_height_pt = 11.2
 
 [dark.text_scale.section_heading]
 size_pt =12.0
 weight = 700
-line_height = 16.3
+line_height_pt = 16.3
 
 [dark.text_scale.dialog_title]
 size_pt =13.5
 weight = 700
-line_height = 18.4
+line_height_pt = 18.4
 
 [dark.text_scale.display]
 size_pt =20.0
 weight = 700
-line_height = 27.2
+line_height_pt = 27.2
 
 [dark.window]
 inactive_title_bar_background = "#2d3035"

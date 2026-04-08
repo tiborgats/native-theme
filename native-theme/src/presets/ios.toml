@@ -69,22 +69,22 @@ panel_px = 20.0
 [light.text_scale.caption]
 size_pt =12.0
 weight = 400
-line_height = 14.4
+line_height_pt = 14.4
 
 [light.text_scale.section_heading]
 size_pt =15.0
 weight = 700
-line_height = 18.0
+line_height_pt = 18.0
 
 [light.text_scale.dialog_title]
 size_pt =22.0
 weight = 400
-line_height = 26.4
+line_height_pt = 26.4
 
 [light.text_scale.display]
 size_pt =34.0
 weight = 400
-line_height = 40.8
+line_height_pt = 40.8
 
 [light.button]
 background_color = "#e5e5ea"
@@ -355,22 +355,22 @@ panel_px = 20.0
 [dark.text_scale.caption]
 size_pt =12.0
 weight = 400
-line_height = 14.4
+line_height_pt = 14.4
 
 [dark.text_scale.section_heading]
 size_pt =15.0
 weight = 700
-line_height = 18.0
+line_height_pt = 18.0
 
 [dark.text_scale.dialog_title]
 size_pt =22.0
 weight = 400
-line_height = 26.4
+line_height_pt = 26.4
 
 [dark.text_scale.display]
 size_pt =34.0
 weight = 400
-line_height = 40.8
+line_height_pt = 40.8
 
 [dark.button]
 background_color = "#2c2c2e"
