@@ -2,6 +2,14 @@
 
 use crate::error::ThemeResolutionError;
 use crate::model::border::{BorderSpec, ResolvedBorderSpec};
+
+/// Standard screen DPI (96 dots per inch). Used as the resolved font_dpi
+/// when no DPI was set on the unresolved variant. This matches the CSS/Web
+/// reference pixel and the Windows default. The value is recorded in
+/// ResolvedThemeDefaults for informational purposes -- the actual pt-to-px
+/// conversion has already happened in resolve_font_dpi_conversion() by
+/// the time validate() runs.
+const DEFAULT_FONT_DPI: f32 = 96.0;
 use crate::model::resolved::{
     ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedThemeDefaults,
     ResolvedThemeVariant,
@@ -479,6 +487,10 @@ impl ThemeVariant {
             "defaults.icon_sizes.panel",
             &mut missing,
         );
+
+        // font_dpi is cleared to None after conversion in resolve_font_dpi_conversion(),
+        // so at validation time it records the DPI that was used (or the default).
+        let defaults_font_dpi = self.defaults.font_dpi.unwrap_or(DEFAULT_FONT_DPI);
 
         let defaults_text_scaling_factor = require(
             &self.defaults.text_scaling_factor,
@@ -1861,6 +1873,7 @@ impl ThemeVariant {
                     dialog: defaults_icon_sizes_dialog,
                     panel: defaults_icon_sizes_panel,
                 },
+                font_dpi: defaults_font_dpi,
                 text_scaling_factor: defaults_text_scaling_factor,
                 reduce_motion: defaults_reduce_motion,
                 high_contrast: defaults_high_contrast,

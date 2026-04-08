@@ -112,6 +112,16 @@ pub struct ThemeDefaults {
     #[serde(default, skip_serializing_if = "IconSizes::is_empty")]
     pub icon_sizes: IconSizes,
 
+    // ---- Font DPI ----
+    /// Font DPI for pt-to-px conversion. When `Some(dpi)`, font sizes
+    /// in this variant are in typographic points and will be converted
+    /// during resolution: `px = pt * font_dpi / 72`. When `None`, sizes
+    /// are already in logical pixels (no conversion applied).
+    ///
+    /// OS readers auto-detect this from system settings. Users can
+    /// override via TOML overlay or the Rust API.
+    pub font_dpi: Option<f32>,
+
     // ---- Accessibility ----
     /// Text scaling factor (1.0 = no scaling).
     pub text_scaling_factor: Option<f32>,
@@ -157,6 +167,7 @@ impl ThemeDefaults {
         "focus_ring_width",
         "focus_ring_offset",
         "icon_sizes",
+        "font_dpi",
         "text_scaling_factor",
         "reduce_motion",
         "high_contrast",
@@ -176,6 +187,7 @@ impl_merge!(ThemeDefaults {
         danger_color, danger_text_color, warning_color, warning_text_color,
         success_color, success_text_color, info_color, info_text_color,
         disabled_opacity, focus_ring_color, focus_ring_width, focus_ring_offset,
+        font_dpi,
         text_scaling_factor, reduce_motion, high_contrast, reduce_transparency
     }
     nested { font, mono_font, border, icon_sizes }
@@ -225,6 +237,7 @@ mod tests {
         assert!(d.high_contrast.is_none());
         assert!(d.reduce_transparency.is_none());
         assert!(d.line_height.is_none());
+        assert!(d.font_dpi.is_none());
     }
 
     #[test]

@@ -135,6 +135,11 @@ pub struct ResolvedThemeDefaults {
     /// Per-context icon sizes.
     pub icon_sizes: ResolvedIconSizes,
 
+    // ---- Font DPI ----
+    /// Font DPI used for pt-to-px conversion during resolution.
+    /// Defaults to 96.0 when not set on the unresolved variant.
+    pub font_dpi: f32,
+
     // ---- Accessibility ----
     /// Text scaling factor (1.0 = no scaling).
     pub text_scaling_factor: f32,
@@ -315,6 +320,7 @@ mod tests {
             focus_ring_width: 2.0,
             focus_ring_offset: 1.0,
             icon_sizes: sample_icon_sizes(),
+            font_dpi: 96.0,
             text_scaling_factor: 1.0,
             reduce_motion: false,
             high_contrast: false,

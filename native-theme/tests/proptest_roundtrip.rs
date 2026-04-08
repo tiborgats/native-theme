@@ -114,6 +114,7 @@ fn arb_theme_defaults() -> impl Strategy<Value = ThemeDefaults> {
                 proptest::option::of(any::<bool>()),
                 proptest::option::of(any::<bool>()),
                 proptest::option::of(any::<bool>()),
+                proptest::option::of(48.0f32..288.0), // font_dpi (valid DPI range)
             )
         })
         .prop_map(
@@ -133,6 +134,7 @@ fn arb_theme_defaults() -> impl Strategy<Value = ThemeDefaults> {
                 reduce_motion,
                 high_contrast,
                 reduce_transparency,
+                font_dpi,
             )| {
                 ThemeDefaults {
                     font,
@@ -166,6 +168,7 @@ fn arb_theme_defaults() -> impl Strategy<Value = ThemeDefaults> {
                     focus_ring_color: colors[22],
                     focus_ring_width,
                     focus_ring_offset,
+                    font_dpi,
                     text_scaling_factor,
                     reduce_motion,
                     high_contrast,
