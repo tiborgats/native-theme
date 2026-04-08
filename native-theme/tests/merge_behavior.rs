@@ -152,7 +152,11 @@ fn merge_fonts_defaults_spacing() {
         Some("Inter"),
         "overlay family replaces"
     );
-    assert_eq!(base_font.size, Some(FontSize::Px(12.0)), "base size preserved");
+    assert_eq!(
+        base_font.size,
+        Some(FontSize::Px(12.0)),
+        "base size preserved"
+    );
 
     // ThemeDefaults (geometry fields via border sub-struct)
     let mut base_defaults = ThemeDefaults {

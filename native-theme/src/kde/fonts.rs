@@ -318,8 +318,14 @@ mod tests {
             variant.menu.font.as_ref().unwrap().family.as_deref(),
             Some("Noto Sans")
         );
-        assert_eq!(variant.menu.font.as_ref().unwrap().size, Some(FontSize::Pt(9.0)));
-        assert_eq!(variant.toolbar.font.as_ref().unwrap().size, Some(FontSize::Pt(8.0)));
+        assert_eq!(
+            variant.menu.font.as_ref().unwrap().size,
+            Some(FontSize::Pt(9.0))
+        );
+        assert_eq!(
+            variant.toolbar.font.as_ref().unwrap().size,
+            Some(FontSize::Pt(8.0))
+        );
         assert_eq!(
             variant.window.title_bar_font.as_ref().unwrap().weight,
             Some(700)

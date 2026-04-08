@@ -413,7 +413,11 @@ fn resolve_phase3_font_subfield_inheritance() {
         Some("Inter"),
         "family from defaults"
     );
-    assert_eq!(menu_font.size, Some(FontSize::Px(12.0)), "explicit size preserved");
+    assert_eq!(
+        menu_font.size,
+        Some(FontSize::Px(12.0)),
+        "explicit size preserved"
+    );
     assert_eq!(menu_font.weight, Some(400), "weight from defaults");
 }
 

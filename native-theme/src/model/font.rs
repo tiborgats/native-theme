@@ -117,9 +117,7 @@ impl TryFrom<FontSpecRaw> for FontSpec {
             (Some(v), None) => Some(FontSize::Pt(v)),
             (None, Some(v)) => Some(FontSize::Px(v)),
             (None, None) => None,
-            (Some(_), Some(_)) => {
-                return Err("font: set `size_pt` or `size_px`, not both".into())
-            }
+            (Some(_), Some(_)) => return Err("font: set `size_pt` or `size_px`, not both".into()),
         };
         Ok(FontSpec {
             family: raw.family,
@@ -216,7 +214,7 @@ impl TryFrom<TextScaleEntryRaw> for TextScaleEntry {
             (None, Some(v)) => Some(FontSize::Px(v)),
             (None, None) => None,
             (Some(_), Some(_)) => {
-                return Err("text_scale: set `size_pt` or `size_px`, not both".into())
+                return Err("text_scale: set `size_pt` or `size_px`, not both".into());
             }
         };
         Ok(TextScaleEntry {
@@ -277,8 +275,8 @@ impl_merge!(TextScale {
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
-    use super::*;
     use super::FontSize;
+    use super::*;
 
     // === FontSpec tests ===
 
@@ -629,8 +627,14 @@ mod tests {
             ..Default::default()
         };
         let toml_str = toml::to_string(&fs).expect("serialize");
-        assert!(toml_str.contains("size_pt"), "should contain size_pt: {toml_str}");
-        assert!(!toml_str.contains("size_px"), "should not contain size_px: {toml_str}");
+        assert!(
+            toml_str.contains("size_pt"),
+            "should contain size_pt: {toml_str}"
+        );
+        assert!(
+            !toml_str.contains("size_px"),
+            "should not contain size_px: {toml_str}"
+        );
         let deserialized: FontSpec = toml::from_str(&toml_str).expect("deserialize");
         assert_eq!(deserialized, fs);
     }
@@ -642,8 +646,14 @@ mod tests {
             ..Default::default()
         };
         let toml_str = toml::to_string(&fs).expect("serialize");
-        assert!(toml_str.contains("size_px"), "should contain size_px: {toml_str}");
-        assert!(!toml_str.contains("size_pt"), "should not contain size_pt: {toml_str}");
+        assert!(
+            toml_str.contains("size_px"),
+            "should contain size_px: {toml_str}"
+        );
+        assert!(
+            !toml_str.contains("size_pt"),
+            "should not contain size_pt: {toml_str}"
+        );
         let deserialized: FontSpec = toml::from_str(&toml_str).expect("deserialize");
         assert_eq!(deserialized, fs);
     }
@@ -661,7 +671,10 @@ mod tests {
         // in FontSpecRaw. It deserializes to FontSpec with size=None.
         // The TOML linter (lint_toml) catches `size` as unknown separately.
         let result: FontSpec = toml::from_str(toml_str).expect("deserialize");
-        assert!(result.size.is_none(), "bare 'size' should not set FontSpec.size");
+        assert!(
+            result.size.is_none(),
+            "bare 'size' should not set FontSpec.size"
+        );
     }
 
     #[test]

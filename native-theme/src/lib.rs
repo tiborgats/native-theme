@@ -112,14 +112,13 @@ pub use error::{Error, ThemeResolutionError};
 pub use model::{
     AnimatedIcon, BorderSpec, ButtonTheme, CardTheme, CheckboxTheme, ComboBoxTheme,
     DialogButtonOrder, DialogTheme, ExpanderTheme, FontSize, FontSpec, FontStyle, IconData,
-    IconProvider,
-    IconRole, IconSet, IconSizes, InputTheme, LayoutTheme, LinkTheme, ListTheme, MenuTheme,
-    PopoverTheme, ProgressBarTheme, ResolvedBorderSpec, ResolvedFontSpec, ResolvedIconSizes,
-    ResolvedTextScale, ResolvedTextScaleEntry, ResolvedThemeDefaults, ResolvedThemeVariant,
-    ScrollbarTheme, SegmentedControlTheme, SeparatorTheme, SidebarTheme, SliderTheme, SpinnerTheme,
-    SplitterTheme, StatusBarTheme, SwitchTheme, TabTheme, TextScale, TextScaleEntry, ThemeDefaults,
-    ThemeSpec, ThemeVariant, ToolbarTheme, TooltipTheme, TransformAnimation, WindowTheme,
-    bundled_icon_by_name, bundled_icon_svg,
+    IconProvider, IconRole, IconSet, IconSizes, InputTheme, LayoutTheme, LinkTheme, ListTheme,
+    MenuTheme, PopoverTheme, ProgressBarTheme, ResolvedBorderSpec, ResolvedFontSpec,
+    ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedThemeDefaults,
+    ResolvedThemeVariant, ScrollbarTheme, SegmentedControlTheme, SeparatorTheme, SidebarTheme,
+    SliderTheme, SpinnerTheme, SplitterTheme, StatusBarTheme, SwitchTheme, TabTheme, TextScale,
+    TextScaleEntry, ThemeDefaults, ThemeSpec, ThemeVariant, ToolbarTheme, TooltipTheme,
+    TransformAnimation, WindowTheme, bundled_icon_by_name, bundled_icon_svg,
 };
 // icon helper functions re-exported from this module
 pub use model::icons::{detect_icon_theme, icon_name, system_icon_set, system_icon_theme};
