@@ -208,7 +208,7 @@ fn nsfont_weight_to_css(font: &NSFont) -> Option<u16> {
 fn fontspec_from_nsfont(font: &NSFont) -> crate::FontSpec {
     crate::FontSpec {
         family: font.familyName().map(|n| n.to_string()),
-        size: Some(font.pointSize() as f32),
+        size: Some(crate::model::font::FontSize::Pt(font.pointSize() as f32)),
         weight: nsfont_weight_to_css(font),
         ..Default::default()
     }
@@ -515,22 +515,23 @@ mod tests {
     use super::*;
 
     fn sample_widget_fonts() -> WidgetFontData {
+        use crate::model::font::FontSize;
         WidgetFontData {
             menu_font: crate::FontSpec {
                 family: Some("SF Pro".to_string()),
-                size: Some(14.0),
+                size: Some(FontSize::Pt(14.0)),
                 weight: Some(400),
                 ..Default::default()
             },
             tooltip_font: crate::FontSpec {
                 family: Some("SF Pro".to_string()),
-                size: Some(11.0),
+                size: Some(FontSize::Pt(11.0)),
                 weight: Some(400),
                 ..Default::default()
             },
             title_bar_font: crate::FontSpec {
                 family: Some("SF Pro".to_string()),
-                size: Some(13.0),
+                size: Some(FontSize::Pt(13.0)),
                 weight: Some(700),
                 ..Default::default()
             },
@@ -538,6 +539,7 @@ mod tests {
     }
 
     fn sample_light_defaults() -> crate::ThemeDefaults {
+        use crate::model::font::FontSize;
         crate::ThemeDefaults {
             accent_color: Some(crate::Rgba::rgb(0, 122, 255)),
             background_color: Some(crate::Rgba::rgb(246, 246, 246)),
@@ -549,13 +551,13 @@ mod tests {
             },
             font: crate::FontSpec {
                 family: Some("SF Pro".to_string()),
-                size: Some(13.0),
+                size: Some(FontSize::Pt(13.0)),
                 weight: None,
                 ..Default::default()
             },
             mono_font: crate::FontSpec {
                 family: Some("SF Mono".to_string()),
-                size: Some(13.0),
+                size: Some(FontSize::Pt(13.0)),
                 weight: None,
                 ..Default::default()
             },
@@ -564,6 +566,7 @@ mod tests {
     }
 
     fn sample_dark_defaults() -> crate::ThemeDefaults {
+        use crate::model::font::FontSize;
         crate::ThemeDefaults {
             accent_color: Some(crate::Rgba::rgb(10, 132, 255)),
             background_color: Some(crate::Rgba::rgb(30, 30, 30)),
@@ -575,7 +578,7 @@ mod tests {
             },
             font: crate::FontSpec {
                 family: Some("SF Pro".to_string()),
-                size: Some(13.0),
+                size: Some(FontSize::Pt(13.0)),
                 weight: None,
                 ..Default::default()
             },
@@ -619,16 +622,17 @@ mod tests {
 
     #[test]
     fn build_theme_fonts_populated() {
+        use crate::model::font::FontSize;
         let defaults = crate::ThemeDefaults {
             font: crate::FontSpec {
                 family: Some("SF Pro".to_string()),
-                size: Some(13.0),
+                size: Some(FontSize::Pt(13.0)),
                 weight: None,
                 ..Default::default()
             },
             mono_font: crate::FontSpec {
                 family: Some("SF Mono".to_string()),
-                size: Some(13.0),
+                size: Some(FontSize::Pt(13.0)),
                 weight: None,
                 ..Default::default()
             },

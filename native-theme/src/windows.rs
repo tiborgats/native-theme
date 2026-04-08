@@ -117,7 +117,7 @@ fn logfont_to_fontspec_raw(
     let weight = (lf_weight.clamp(100, 900)) as u16;
     FontSpec {
         family: Some(family),
-        size: Some(points),
+        size: Some(crate::model::font::FontSize::Pt(points)),
         weight: Some(weight),
         ..Default::default()
     }
@@ -633,28 +633,29 @@ mod tests {
 
     /// Helper: create AllFonts with named fonts for testing per-widget placement.
     fn named_fonts() -> AllFonts {
+        use crate::model::font::FontSize;
         AllFonts {
             msg: FontSpec {
                 family: Some("Segoe UI".to_string()),
-                size: Some(9.0),
+                size: Some(FontSize::Pt(9.0)),
                 weight: Some(400),
                 ..Default::default()
             },
             caption: FontSpec {
                 family: Some("Segoe UI".to_string()),
-                size: Some(9.0),
+                size: Some(FontSize::Pt(9.0)),
                 weight: Some(700),
                 ..Default::default()
             },
             menu: FontSpec {
                 family: Some("Segoe UI".to_string()),
-                size: Some(9.0),
+                size: Some(FontSize::Pt(9.0)),
                 weight: Some(400),
                 ..Default::default()
             },
             status: FontSpec {
                 family: Some("Segoe UI".to_string()),
-                size: Some(8.0),
+                size: Some(FontSize::Pt(8.0)),
                 weight: Some(400),
                 ..Default::default()
             },

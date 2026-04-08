@@ -3,12 +3,11 @@
 use crate::error::ThemeResolutionError;
 use crate::model::border::{BorderSpec, ResolvedBorderSpec};
 
-/// Standard screen DPI (96 dots per inch). Used as the resolved font_dpi
-/// when no DPI was set on the unresolved variant. This matches the CSS/Web
-/// reference pixel and the Windows default. The value is recorded in
-/// ResolvedThemeDefaults for informational purposes -- the actual pt-to-px
-/// conversion has already happened in resolve_font_dpi_conversion() by
-/// the time validate() runs.
+/// Standard screen DPI (96 dots per inch). Used as the font_dpi fallback
+/// when no DPI was set on the unresolved variant (e.g. community presets
+/// loaded standalone without OS reader). This matches the CSS/Web reference
+/// pixel and the Windows default. Validation uses this to convert
+/// `FontSize::Pt` values to logical pixels via `FontSize::to_px(dpi)`.
 const DEFAULT_FONT_DPI: f32 = 96.0;
 use crate::model::resolved::{
     ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedThemeDefaults,
@@ -34,10 +33,21 @@ fn require<T: Clone + Default>(field: &Option<T>, path: &str, missing: &mut Vec<
 }
 
 /// Validate a FontSpec that is stored directly (not wrapped in Option).
-/// Checks each sub-field individually.
-fn require_font(font: &FontSpec, prefix: &str, missing: &mut Vec<String>) -> ResolvedFontSpec {
+/// Checks each sub-field individually. Converts `FontSize` to `f32` px via `to_px(dpi)`.
+fn require_font(
+    font: &FontSpec,
+    prefix: &str,
+    dpi: f32,
+    missing: &mut Vec<String>,
+) -> ResolvedFontSpec {
     let family = require(&font.family, &format!("{prefix}.family"), missing);
-    let size = require(&font.size, &format!("{prefix}.size"), missing);
+    let size = font
+        .size
+        .map(|fs| fs.to_px(dpi))
+        .unwrap_or_else(|| {
+            missing.push(format!("{prefix}.size"));
+            0.0
+        });
     let weight = require(&font.weight, &format!("{prefix}.weight"), missing);
     let color = require(&font.color, &format!("{prefix}.color"), missing);
     ResolvedFontSpec {
@@ -50,10 +60,11 @@ fn require_font(font: &FontSpec, prefix: &str, missing: &mut Vec<String>) -> Res
 }
 
 /// Validate an `Option<FontSpec>` (widget font fields).
-/// If None, records the path as missing.
+/// If None, records the path as missing. Converts `FontSize` to `f32` px via `to_px(dpi)`.
 fn require_font_opt(
     font: &Option<FontSpec>,
     prefix: &str,
+    dpi: f32,
     missing: &mut Vec<String>,
 ) -> ResolvedFontSpec {
     match font {
@@ -63,7 +74,13 @@ fn require_font_opt(
         }
         Some(f) => {
             let family = require(&f.family, &format!("{prefix}.family"), missing);
-            let size = require(&f.size, &format!("{prefix}.size"), missing);
+            let size = f
+                .size
+                .map(|fs| fs.to_px(dpi))
+                .unwrap_or_else(|| {
+                    missing.push(format!("{prefix}.size"));
+                    0.0
+                });
             let weight = require(&f.weight, &format!("{prefix}.weight"), missing);
             let color = require(&f.color, &format!("{prefix}.color"), missing);
             ResolvedFontSpec {
@@ -78,9 +95,12 @@ fn require_font_opt(
 }
 
 /// Validate an `Option<TextScaleEntry>`.
+/// Converts `FontSize` to `f32` px via `to_px(dpi)`. Also converts `line_height`
+/// when the sibling `size` is in points (same unit, same DPI factor).
 fn require_text_scale_entry(
     entry: &Option<TextScaleEntry>,
     prefix: &str,
+    dpi: f32,
     missing: &mut Vec<String>,
 ) -> ResolvedTextScaleEntry {
     match entry {
@@ -89,9 +109,28 @@ fn require_text_scale_entry(
             ResolvedTextScaleEntry::default()
         }
         Some(e) => {
-            let size = require(&e.size, &format!("{prefix}.size"), missing);
+            let size = e
+                .size
+                .map(|fs| fs.to_px(dpi))
+                .unwrap_or_else(|| {
+                    missing.push(format!("{prefix}.size"));
+                    0.0
+                });
+            let needs_pt_conversion = e.size.is_some_and(|fs| fs.is_pt());
+            let line_height = e
+                .line_height
+                .map(|lh| {
+                    if needs_pt_conversion {
+                        lh * dpi / 72.0
+                    } else {
+                        lh
+                    }
+                })
+                .unwrap_or_else(|| {
+                    missing.push(format!("{prefix}.line_height"));
+                    0.0
+                });
             let weight = require(&e.weight, &format!("{prefix}.weight"), missing);
-            let line_height = require(&e.line_height, &format!("{prefix}.line_height"), missing);
             ResolvedTextScaleEntry {
                 size,
                 weight,
@@ -278,14 +317,17 @@ impl ThemeVariant {
 
         // --- defaults ---
 
-        let defaults_font = require_font(&self.defaults.font, "defaults.font", &mut missing);
+        // Extract DPI for FontSize::to_px conversion throughout validate().
+        let dpi = self.defaults.font_dpi.unwrap_or(DEFAULT_FONT_DPI);
+
+        let defaults_font = require_font(&self.defaults.font, "defaults.font", dpi, &mut missing);
         let defaults_line_height = require(
             &self.defaults.line_height,
             "defaults.line_height",
             &mut missing,
         );
         let defaults_mono_font =
-            require_font(&self.defaults.mono_font, "defaults.mono_font", &mut missing);
+            require_font(&self.defaults.mono_font, "defaults.mono_font", dpi, &mut missing);
 
         let defaults_background = require(
             &self.defaults.background_color,
@@ -488,9 +530,8 @@ impl ThemeVariant {
             &mut missing,
         );
 
-        // font_dpi is cleared to None after conversion in resolve_font_dpi_conversion(),
-        // so at validation time it records the DPI that was used (or the default).
-        let defaults_font_dpi = self.defaults.font_dpi.unwrap_or(DEFAULT_FONT_DPI);
+        // font_dpi records the DPI used for pt-to-px conversion (or the default).
+        let defaults_font_dpi = dpi;
 
         let defaults_text_scaling_factor = require(
             &self.defaults.text_scaling_factor,
@@ -516,19 +557,21 @@ impl ThemeVariant {
         // --- text_scale ---
 
         let ts_caption =
-            require_text_scale_entry(&self.text_scale.caption, "text_scale.caption", &mut missing);
+            require_text_scale_entry(&self.text_scale.caption, "text_scale.caption", dpi, &mut missing);
         let ts_section_heading = require_text_scale_entry(
             &self.text_scale.section_heading,
             "text_scale.section_heading",
+            dpi,
             &mut missing,
         );
         let ts_dialog_title = require_text_scale_entry(
             &self.text_scale.dialog_title,
             "text_scale.dialog_title",
+            dpi,
             &mut missing,
         );
         let ts_display =
-            require_text_scale_entry(&self.text_scale.display, "text_scale.display", &mut missing);
+            require_text_scale_entry(&self.text_scale.display, "text_scale.display", dpi, &mut missing);
 
         // --- window ---
 
@@ -555,6 +598,7 @@ impl ThemeVariant {
         let window_title_bar_font = require_font_opt(
             &self.window.title_bar_font,
             "window.title_bar_font",
+            dpi,
             &mut missing,
         );
 
@@ -587,7 +631,7 @@ impl ThemeVariant {
             "button.disabled_opacity",
             &mut missing,
         );
-        let button_font = require_font_opt(&self.button.font, "button.font", &mut missing);
+        let button_font = require_font_opt(&self.button.font, "button.font", dpi, &mut missing);
 
         // --- input ---
 
@@ -613,7 +657,7 @@ impl ThemeVariant {
             &mut missing,
         );
         let input_min_height = require(&self.input.min_height, "input.min_height", &mut missing);
-        let input_font = require_font_opt(&self.input.font, "input.font", &mut missing);
+        let input_font = require_font_opt(&self.input.font, "input.font", dpi, &mut missing);
 
         // --- checkbox ---
 
@@ -645,7 +689,7 @@ impl ThemeVariant {
         let menu_item_height = require(&self.menu.row_height, "menu.row_height", &mut missing);
         let menu_icon_spacing =
             require(&self.menu.icon_text_gap, "menu.icon_text_gap", &mut missing);
-        let menu_font = require_font_opt(&self.menu.font, "menu.font", &mut missing);
+        let menu_font = require_font_opt(&self.menu.font, "menu.font", dpi, &mut missing);
 
         // --- tooltip ---
 
@@ -655,7 +699,7 @@ impl ThemeVariant {
             &mut missing,
         );
         let tooltip_max_width = require(&self.tooltip.max_width, "tooltip.max_width", &mut missing);
-        let tooltip_font = require_font_opt(&self.tooltip.font, "tooltip.font", &mut missing);
+        let tooltip_font = require_font_opt(&self.tooltip.font, "tooltip.font", dpi, &mut missing);
 
         // --- scrollbar ---
 
@@ -780,12 +824,12 @@ impl ThemeVariant {
         let toolbar_height = require(&self.toolbar.bar_height, "toolbar.bar_height", &mut missing);
         let toolbar_item_spacing =
             require(&self.toolbar.item_gap, "toolbar.item_gap", &mut missing);
-        let toolbar_font = require_font_opt(&self.toolbar.font, "toolbar.font", &mut missing);
+        let toolbar_font = require_font_opt(&self.toolbar.font, "toolbar.font", dpi, &mut missing);
 
         // --- status_bar ---
 
         let status_bar_font =
-            require_font_opt(&self.status_bar.font, "status_bar.font", &mut missing);
+            require_font_opt(&self.status_bar.font, "status_bar.font", dpi, &mut missing);
 
         // --- list ---
 
@@ -891,7 +935,7 @@ impl ThemeVariant {
             &mut missing,
         );
         let dialog_title_font =
-            require_font_opt(&self.dialog.title_font, "dialog.title_font", &mut missing);
+            require_font_opt(&self.dialog.title_font, "dialog.title_font", dpi, &mut missing);
 
         // --- spinner ---
 
@@ -1046,7 +1090,7 @@ impl ThemeVariant {
             "checkbox.disabled_opacity",
             &mut missing,
         );
-        let checkbox_font = require_font_opt(&self.checkbox.font, "checkbox.font", &mut missing);
+        let checkbox_font = require_font_opt(&self.checkbox.font, "checkbox.font", dpi, &mut missing);
         let checkbox_border_spec =
             require_border(&self.checkbox.border, "checkbox.border", &mut missing);
         let checkbox_disabled_text_color = require(
@@ -1094,7 +1138,7 @@ impl ThemeVariant {
         );
 
         // tab (excluded from border_inheritance -- all border sub-fields are platform-specific)
-        let tab_font = require_font_opt(&self.tab.font, "tab.font", &mut missing);
+        let tab_font = require_font_opt(&self.tab.font, "tab.font", dpi, &mut missing);
         // tab border: no inheritance, all sub-fields optional (preset provides if available)
         let tab_border_spec = border_all_optional(&self.tab.border);
 
@@ -1114,7 +1158,7 @@ impl ThemeVariant {
             "sidebar.hover_background",
             &mut missing,
         );
-        let sidebar_font = require_font_opt(&self.sidebar.font, "sidebar.font", &mut missing);
+        let sidebar_font = require_font_opt(&self.sidebar.font, "sidebar.font", dpi, &mut missing);
         let sidebar_border_spec =
             require_border_partial(&self.sidebar.border, "sidebar.border", &mut missing);
 
@@ -1138,9 +1182,9 @@ impl ThemeVariant {
             require_border_partial(&self.status_bar.border, "status_bar.border", &mut missing);
 
         // list
-        let list_item_font = require_font_opt(&self.list.item_font, "list.item_font", &mut missing);
+        let list_item_font = require_font_opt(&self.list.item_font, "list.item_font", dpi, &mut missing);
         let list_header_font =
-            require_font_opt(&self.list.header_font, "list.header_font", &mut missing);
+            require_font_opt(&self.list.header_font, "list.header_font", dpi, &mut missing);
         let list_hover_background = require(
             &self.list.hover_background,
             "list.hover_background",
@@ -1159,7 +1203,7 @@ impl ThemeVariant {
         let list_border_spec = require_border(&self.list.border, "list.border", &mut missing);
 
         // popover
-        let popover_font = require_font_opt(&self.popover.font, "popover.font", &mut missing);
+        let popover_font = require_font_opt(&self.popover.font, "popover.font", dpi, &mut missing);
         let popover_border_spec =
             require_border(&self.popover.border, "popover.border", &mut missing);
 
@@ -1196,11 +1240,11 @@ impl ThemeVariant {
             &mut missing,
         );
         let dialog_body_font =
-            require_font_opt(&self.dialog.body_font, "dialog.body_font", &mut missing);
+            require_font_opt(&self.dialog.body_font, "dialog.body_font", dpi, &mut missing);
         let dialog_border_spec = require_border(&self.dialog.border, "dialog.border", &mut missing);
 
         // link
-        let link_font = require_font_opt(&self.link.font, "link.font", &mut missing);
+        let link_font = require_font_opt(&self.link.font, "link.font", dpi, &mut missing);
         let link_hover_text_color = require(
             &self.link.hover_text_color,
             "link.hover_text_color",
@@ -1233,7 +1277,7 @@ impl ThemeVariant {
             "combo_box.disabled_text_color",
             &mut missing,
         );
-        let combo_box_font = require_font_opt(&self.combo_box.font, "combo_box.font", &mut missing);
+        let combo_box_font = require_font_opt(&self.combo_box.font, "combo_box.font", dpi, &mut missing);
         let combo_box_border_spec =
             require_border(&self.combo_box.border, "combo_box.border", &mut missing);
 
@@ -1261,6 +1305,7 @@ impl ThemeVariant {
         let segmented_control_font = require_font_opt(
             &self.segmented_control.font,
             "segmented_control.font",
+            dpi,
             &mut missing,
         );
         let segmented_control_border_spec = require_border(
@@ -1273,7 +1318,7 @@ impl ThemeVariant {
         let card_border_spec = border_all_optional(&self.card.border);
 
         // expander
-        let expander_font = require_font_opt(&self.expander.font, "expander.font", &mut missing);
+        let expander_font = require_font_opt(&self.expander.font, "expander.font", dpi, &mut missing);
         let expander_border_spec =
             require_border(&self.expander.border, "expander.border", &mut missing);
 
