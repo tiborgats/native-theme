@@ -411,7 +411,7 @@ mod tests {
         let entry = TextScaleEntry {
             size: Some(FontSize::Px(12.0)),
             weight: Some(400),
-            line_height: Some(1.4),
+            line_height: Some(FontSize::Px(1.4)),
         };
         let toml_str = toml::to_string(&entry).unwrap();
         let deserialized: TextScaleEntry = toml::from_str(&toml_str).unwrap();
@@ -428,12 +428,12 @@ mod tests {
         let overlay = TextScaleEntry {
             size: None,
             weight: Some(700),
-            line_height: Some(1.5),
+            line_height: Some(FontSize::Px(1.5)),
         };
         base.merge(&overlay);
         assert_eq!(base.size, Some(FontSize::Px(12.0))); // preserved
         assert_eq!(base.weight, Some(700)); // overlay wins
-        assert_eq!(base.line_height, Some(1.5)); // overlay sets
+        assert_eq!(base.line_height, Some(FontSize::Px(1.5))); // overlay sets
     }
 
     // === TextScale tests ===
@@ -461,22 +461,22 @@ mod tests {
             caption: Some(TextScaleEntry {
                 size: Some(FontSize::Px(11.0)),
                 weight: Some(400),
-                line_height: Some(1.3),
+                line_height: Some(FontSize::Px(1.3)),
             }),
             section_heading: Some(TextScaleEntry {
                 size: Some(FontSize::Px(14.0)),
                 weight: Some(600),
-                line_height: Some(1.4),
+                line_height: Some(FontSize::Px(1.4)),
             }),
             dialog_title: Some(TextScaleEntry {
                 size: Some(FontSize::Px(16.0)),
                 weight: Some(700),
-                line_height: Some(1.2),
+                line_height: Some(FontSize::Px(1.2)),
             }),
             display: Some(TextScaleEntry {
                 size: Some(FontSize::Px(24.0)),
                 weight: Some(300),
-                line_height: Some(1.1),
+                line_height: Some(FontSize::Px(1.1)),
             }),
         };
         let toml_str = toml::to_string(&ts).unwrap();
@@ -498,7 +498,7 @@ mod tests {
             caption: Some(TextScaleEntry {
                 size: None,
                 weight: Some(600),
-                line_height: Some(1.3),
+                line_height: Some(FontSize::Px(1.3)),
             }),
             ..Default::default()
         };
@@ -506,7 +506,7 @@ mod tests {
         let cap = base.caption.as_ref().unwrap();
         assert_eq!(cap.size, Some(FontSize::Px(11.0))); // base preserved
         assert_eq!(cap.weight, Some(600)); // overlay wins
-        assert_eq!(cap.line_height, Some(1.3)); // overlay sets
+        assert_eq!(cap.line_height, Some(FontSize::Px(1.3))); // overlay sets
     }
 
     #[test]
@@ -712,7 +712,7 @@ mod tests {
         let entry = TextScaleEntry {
             size: Some(FontSize::Pt(9.0)),
             weight: Some(400),
-            line_height: Some(12.6),
+            line_height: Some(FontSize::Pt(12.6)),
         };
         let toml_str = toml::to_string(&entry).expect("serialize");
         assert!(toml_str.contains("size_pt"));
@@ -725,7 +725,7 @@ mod tests {
         let entry = TextScaleEntry {
             size: Some(FontSize::Px(14.0)),
             weight: Some(400),
-            line_height: Some(18.0),
+            line_height: Some(FontSize::Px(18.0)),
         };
         let toml_str = toml::to_string(&entry).expect("serialize");
         assert!(toml_str.contains("size_px"));
