@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.5
 milestone_name: Schema Overhaul & Quality
-status: complete
-stopped_at: Phase 58 verified and complete — font_dpi DPI conversion fix shipped
-last_updated: "2026-04-08T01:25:33.104Z"
+status: executing
+stopped_at: Completed 59-01-PLAN.md
+last_updated: "2026-04-08T14:17:10.050Z"
 last_activity: 2026-04-08
 progress:
-  total_phases: 10
+  total_phases: 11
   completed_phases: 10
-  total_plans: 33
-  completed_plans: 33
-  percent: 100
+  total_plans: 36
+  completed_plans: 34
+  percent: 94
 ---
 
 # Project State
@@ -21,13 +21,13 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-06)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 58 complete — font pt/px DPI conversion fix verified
+**Current focus:** Phase 59 — FontSize enum type system refactoring (Plan 01 of 03 complete)
 
 ## Current Position
 
-Phase: 58 of 58 (Font pt/px DPI Conversion Fix) — COMPLETE
-Plan: 3 of 3 complete
-Status: Verified (7/7 must-haves passed)
+Phase: 59 (Implement Chapter 2 of docs/todo_v0.5.5_pt-px.md)
+Plan: 1 of 3 complete
+Status: Executing — Plan 01 complete, Plans 02-03 remaining
 Last activity: 2026-04-08
 
 ## Performance Metrics
@@ -84,10 +84,14 @@ Recent: Clean break for renames (no serde aliases -- pre-1.0, presets bundled, ~
 - [Phase 58]: read_xft_dpi() in lib.rs for cross-feature accessibility; KDE forceFontDPI sets font_dpi not text_scaling_factor (Fix 5)
 - [Phase 58]: Pipeline propagation extracts font_dpi from reader via or_else chain, applies to both variants before resolution
 - [Phase 58]: read_xft_dpi() gated on kde/portal features (not just target_os) to match callers
+- [Phase 59]: FontSize enum has no Serialize/Deserialize -- serde mapping lives on parent proxy structs (FontSpecRaw, TextScaleEntryRaw)
+- [Phase 59]: line_height stays f32 (layout metric, not font size) -- converted alongside size when unit is points in validate
+- [Phase 59]: Phase 1.5 (resolve_font_dpi_conversion) fully deleted -- pt-to-px conversion moved to validate via FontSize::to_px(dpi)
 
 ### Roadmap Evolution
 
 - Phase 58 added: implement docs/todo_v0.5.5_size-fix.md
+- Phase 59 added: Implement chapter 2 of docs/todo_v0.5.5_pt-px.md
 
 ### Pending Todos
 
@@ -101,6 +105,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-08T01:25:33.101Z
-Stopped at: Completed 58-03-PLAN.md
+Last session: 2026-04-08T14:15:53Z
+Stopped at: Completed 59-01-PLAN.md
 Resume file: None
