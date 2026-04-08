@@ -33,7 +33,11 @@
 # Widgets reference this as `font = "font"` or with a named prefix like
 # `title_bar_font = "font"`, `body_font = "font"`, `item_font = "font"`, etc.
 family                       = "string"
-size                         = "f32"
+# Exactly one of size_pt or size_px must be set.
+#   size_pt -- typographic points (1/72 inch), used by platform presets
+#   size_px -- logical pixels, used by community presets
+size_pt                      = "f32"
+size_px                      = "f32"
 weight                       = "u16"
 style                        = "enum"   # Normal | Italic | Oblique
 color                        = "color"
@@ -61,7 +65,9 @@ panel                        = "f32"
 
 [_structures.TextScaleEntry]
 # One entry in the text scale ramp (§2.19).
-size                         = "f32"
+# Exactly one of size_pt or size_px must be set (same as Font.size_*).
+size_pt                      = "f32"
+size_px                      = "f32"
 weight                       = "u16"
 line_height                  = "f32"    # computed from defaults.line_height * size when None
 
