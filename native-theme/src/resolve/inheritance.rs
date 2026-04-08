@@ -3,6 +3,13 @@
 use crate::model::border::BorderSpec;
 use crate::model::{DialogButtonOrder, FontSpec, TextScaleEntry, ThemeVariant};
 
+/// Convert a font size from typographic points to logical pixels.
+fn convert_pt_to_px(size: &mut Option<f32>, dpi: f32) {
+    if let Some(s) = size {
+        *s *= dpi / 72.0;
+    }
+}
+
 /// Resolve a per-widget font from defaults.
 /// If the widget font is None, clone defaults entirely.
 /// If the widget font is Some but has None sub-fields, fill from defaults.
@@ -151,6 +158,73 @@ impl ThemeVariant {
                 d.border.padding_vertical = d.border.corner_radius.map(|_| 0.0_f32);
             }
         }
+    }
+
+    // --- Phase 1.5: Font DPI conversion (pt -> px) ---
+
+    /// Convert font sizes from typographic points to logical pixels using `font_dpi`.
+    ///
+    /// When `self.defaults.font_dpi` is `Some(dpi)` with `dpi > 0`, all font sizes
+    /// and text scale entries are converted via `px = pt * dpi / 72`. After conversion,
+    /// `font_dpi` is cleared to `None` to prevent double-conversion if `resolve()` is
+    /// called again (idempotency guard).
+    ///
+    /// When `font_dpi` is `None` (default for non-platform presets), this is a no-op:
+    /// sizes are assumed to already be in logical pixels.
+    pub(crate) fn resolve_font_dpi_conversion(&mut self) {
+        let dpi = match self.defaults.font_dpi {
+            Some(d) if d > 0.0 => d,
+            Some(_) | None => return, // None = sizes already in px; <= 0 = invalid (T-58-02)
+        };
+
+        // defaults.font, defaults.mono_font
+        convert_pt_to_px(&mut self.defaults.font.size, dpi);
+        convert_pt_to_px(&mut self.defaults.mono_font.size, dpi);
+
+        // All 19 per-widget fonts (only convert size sub-field if the font is Some)
+        for font in [
+            &mut self.window.title_bar_font,
+            &mut self.button.font,
+            &mut self.input.font,
+            &mut self.checkbox.font,
+            &mut self.menu.font,
+            &mut self.tooltip.font,
+            &mut self.tab.font,
+            &mut self.sidebar.font,
+            &mut self.toolbar.font,
+            &mut self.status_bar.font,
+            &mut self.list.item_font,
+            &mut self.list.header_font,
+            &mut self.popover.font,
+            &mut self.dialog.title_font,
+            &mut self.dialog.body_font,
+            &mut self.combo_box.font,
+            &mut self.segmented_control.font,
+            &mut self.expander.font,
+            &mut self.link.font,
+        ]
+        .into_iter()
+        .flatten()
+        {
+            convert_pt_to_px(&mut font.size, dpi);
+        }
+
+        // text_scale entries (both size and line_height)
+        for e in [
+            &mut self.text_scale.caption,
+            &mut self.text_scale.section_heading,
+            &mut self.text_scale.dialog_title,
+            &mut self.text_scale.display,
+        ]
+        .into_iter()
+        .flatten()
+        {
+            convert_pt_to_px(&mut e.size, dpi);
+            convert_pt_to_px(&mut e.line_height, dpi);
+        }
+
+        // Clear font_dpi after conversion (idempotency guard)
+        self.defaults.font_dpi = None;
     }
 
     // --- Phase 2: Safety nets ---

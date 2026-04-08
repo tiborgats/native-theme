@@ -25,6 +25,7 @@ impl ThemeVariant {
     ///
     /// 1. **Defaults internal chains** -- accent derives selection, focus_ring_color;
     ///    selection derives selection_inactive.
+    /// 1.5. **Font DPI conversion** -- pt->px using font_dpi.
     /// 2. **Safety nets** -- platform-divergent fields get a reasonable fallback.
     /// 3. **Widget-from-defaults** -- colors, geometry, fonts, text scale entries
     ///    all inherit from defaults.
@@ -32,6 +33,7 @@ impl ThemeVariant {
     /// 5. **Icon set** -- fills icon_set from the compile-time system default.
     pub fn resolve(&mut self) {
         self.resolve_defaults_internal();
+        self.resolve_font_dpi_conversion(); // Phase 1.5: pt->px using font_dpi
         self.resolve_safety_nets();
         self.resolve_widgets_from_defaults();
         self.resolve_widget_to_widget();
