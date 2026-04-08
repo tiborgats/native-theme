@@ -110,14 +110,14 @@ fn logfont_to_fontspec_raw(
     let face_end = face_name.iter().position(|&c| c == 0).unwrap_or(32);
     let family = String::from_utf16_lossy(&face_name[..face_end]);
     let points = if dpi == 0 {
-        0
+        0.0
     } else {
-        (lf_height.unsigned_abs() * 72) / dpi
+        lf_height.unsigned_abs() as f32 * 72.0 / dpi as f32
     };
     let weight = (lf_weight.clamp(100, 900)) as u16;
     FontSpec {
         family: Some(family),
-        size: Some(points as f32),
+        size: Some(points),
         weight: Some(weight),
         ..Default::default()
     }
@@ -166,7 +166,7 @@ fn read_all_system_fonts(dpi: u32) -> AllFonts {
 /// Returns the system DPI (96 = standard 100% scaling).
 #[cfg(all(target_os = "windows", feature = "windows"))]
 #[allow(unsafe_code)]
-fn read_dpi() -> u32 {
+pub(crate) fn read_dpi() -> u32 {
     unsafe { GetDpiForSystem() }
 }
 
@@ -542,10 +542,10 @@ fn build_theme(
         variant.defaults.reduce_motion = a.reduce_motion;
     }
 
-    // Windows uses 96 DPI as its logical coordinate base.
-    // The logfont_to_fontspec_raw function converts lfHeight to points via
-    // |lfHeight| * 72 / dpi. Setting font_dpi=96 converts back correctly.
-    variant.defaults.font_dpi = Some(96.0);
+    // Use the actual system DPI from GetDpiForSystem() for pt-to-px conversion.
+    // logfont_to_fontspec_raw converts lfHeight to points via |lfHeight| * 72 / dpi.
+    // The resolution step converts back: pt * font_dpi / 72.
+    variant.defaults.font_dpi = Some(dpi as f32);
 
     if dark {
         crate::ThemeSpec {

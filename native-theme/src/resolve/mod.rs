@@ -60,8 +60,12 @@ impl ThemeVariant {
     ///
     /// Convenience method that calls [`resolve()`](Self::resolve) followed by
     /// [`resolve_platform_defaults()`](Self::resolve_platform_defaults).
-    /// This is equivalent to the full resolution that
-    /// [`into_resolved()`](Self::into_resolved) performs before validation.
+    ///
+    /// **Note:** this does *not* auto-detect `font_dpi`. If `font_dpi` is
+    /// `None`, font sizes remain in their TOML unit (points). To get
+    /// automatic DPI detection + conversion, use
+    /// [`into_resolved()`](Self::into_resolved) or set `font_dpi` before
+    /// calling this method.
     pub fn resolve_all(&mut self) {
         self.resolve();
         self.resolve_platform_defaults();
@@ -92,6 +96,13 @@ impl ThemeVariant {
     /// ```
     #[must_use = "this returns the resolved theme and consumes self"]
     pub fn into_resolved(mut self) -> crate::Result<ResolvedThemeVariant> {
+        // Auto-detect font_dpi from the OS when not already set (e.g. by an
+        // OS reader or TOML overlay). This ensures standalone preset loading
+        // applies the correct pt-to-px conversion for the current display.
+        // Done here (not in resolve_all) to preserve resolve_all idempotency.
+        if self.defaults.font_dpi.is_none() {
+            self.defaults.font_dpi = Some(crate::detect_system_font_dpi());
+        }
         self.resolve_all();
         self.validate()
     }

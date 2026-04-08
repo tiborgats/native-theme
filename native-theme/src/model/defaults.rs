@@ -115,11 +115,15 @@ pub struct ThemeDefaults {
     // ---- Font DPI ----
     /// Font DPI for pt-to-px conversion. When `Some(dpi)`, font sizes
     /// in this variant are in typographic points and will be converted
-    /// during resolution: `px = pt * font_dpi / 72`. When `None`, sizes
-    /// are already in logical pixels (no conversion applied).
+    /// during resolution: `px = pt * font_dpi / 72`. When `None`,
+    /// [`into_resolved()`](crate::ThemeVariant::into_resolved) auto-detects
+    /// the DPI from the OS.
     ///
-    /// OS readers auto-detect this from system settings. Users can
-    /// override via TOML overlay or the Rust API.
+    /// This is a **runtime** value — not stored in TOML presets. OS readers
+    /// auto-detect it from system settings. Applications can override it
+    /// via the Rust API (e.g. when a window moves between monitors with
+    /// different DPIs).
+    #[serde(skip)]
     pub font_dpi: Option<f32>,
 
     // ---- Accessibility ----
@@ -167,7 +171,6 @@ impl ThemeDefaults {
         "focus_ring_width",
         "focus_ring_offset",
         "icon_sizes",
-        "font_dpi",
         "text_scaling_factor",
         "reduce_motion",
         "high_contrast",

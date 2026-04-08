@@ -132,15 +132,21 @@ fn read_gsetting(schema: &str, key: &str) -> Option<String> {
     }
 }
 
-/// Detect font DPI from X resources.
+/// Detect font DPI from X resources and display hardware.
 ///
-/// GNOME uses Xft.dpi from X resources for font rendering DPI.
-/// Falls back to the X11-standard 96 DPI if xrdb is unavailable.
+/// Detection chain (first positive value wins):
+/// 1. `Xft.dpi` from X resources (via `xrdb -query`)
+/// 2. Physical DPI from display hardware (via `xrandr`)
+/// 3. Fallback: 96.0
 fn detect_font_dpi() -> f32 {
     if let Some(dpi) = crate::read_xft_dpi() {
         return dpi;
     }
-    // X11-standard fallback (same as KDE detect_font_dpi fallback)
+    // Physical DPI from display hardware (xrandr)
+    if let Some(dpi) = crate::detect_physical_dpi() {
+        return dpi;
+    }
+    // X11-standard fallback
     96.0
 }
 

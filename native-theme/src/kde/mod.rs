@@ -74,7 +74,8 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ThemeSpec>
 /// Detection chain (first positive value wins):
 /// 1. `forceFontDPI` from kdeglobals `[General]` or kcmfontsrc
 /// 2. `Xft.dpi` from X resources (via `xrdb -query`)
-/// 3. Fallback: 96.0
+/// 3. Physical DPI from display hardware (via `xrandr`)
+/// 4. Fallback: 96.0
 fn detect_font_dpi(ini: &configparser::ini::Ini) -> f32 {
     // Check forceFontDPI from kdeglobals [General], then kcmfontsrc
     let dpi_str = ini
@@ -89,6 +90,11 @@ fn detect_font_dpi(ini: &configparser::ini::Ini) -> f32 {
 
     // Fallback to Xft.dpi from X resources
     if let Some(dpi) = crate::read_xft_dpi() {
+        return dpi;
+    }
+
+    // Physical DPI from display hardware (xrandr)
+    if let Some(dpi) = crate::detect_physical_dpi() {
         return dpi;
     }
 
@@ -117,7 +123,7 @@ fn populate_accessibility(ini: &configparser::ini::Ini, variant: &mut crate::The
 /// Read a single key from `$XDG_CONFIG_HOME/kcmfontsrc` (or `~/.config/kcmfontsrc`).
 ///
 /// Returns `None` if the file is missing, unreadable, or the key is not found.
-fn read_kcmfontsrc_key(section: &str, key: &str) -> Option<String> {
+pub(crate) fn read_kcmfontsrc_key(section: &str, key: &str) -> Option<String> {
     let path = if let Ok(config_home) = std::env::var("XDG_CONFIG_HOME") {
         if config_home.is_empty() {
             None

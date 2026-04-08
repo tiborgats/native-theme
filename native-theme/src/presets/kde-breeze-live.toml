@@ -30,14 +30,14 @@ weight = 400
 line_height = 11.2
 
 [light.text_scale.section_heading]
-size = 10.0
-weight = 700
-line_height = 13.6
-
-[light.text_scale.dialog_title]
 size = 12.0
 weight = 700
 line_height = 16.3
+
+[light.text_scale.dialog_title]
+size = 13.5
+weight = 700
+line_height = 18.4
 
 [light.text_scale.display]
 size = 20.0
@@ -189,14 +189,14 @@ weight = 400
 line_height = 11.2
 
 [dark.text_scale.section_heading]
-size = 10.0
-weight = 700
-line_height = 13.6
-
-[dark.text_scale.dialog_title]
 size = 12.0
 weight = 700
 line_height = 16.3
+
+[dark.text_scale.dialog_title]
+size = 13.5
+weight = 700
+line_height = 18.4
 
 [dark.text_scale.display]
 size = 20.0

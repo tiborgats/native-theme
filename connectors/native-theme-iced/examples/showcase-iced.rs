@@ -216,9 +216,8 @@ impl Eq for ThemeChoice {}
 /// but we never panic).
 fn load_adwaita_fallback(is_dark: bool) -> Option<(native_theme::ResolvedThemeVariant, Theme)> {
     let nt = ThemeSpec::preset("adwaita").ok()?;
-    let mut variant = nt.pick_variant(is_dark)?.clone();
-    variant.resolve_all();
-    let r = variant.validate().ok()?;
+    let variant = nt.pick_variant(is_dark)?.clone();
+    let r = variant.into_resolved().ok()?;
     let t = native_theme_iced::to_theme(&r, &nt.name);
     Some((r, t))
 }
@@ -829,9 +828,8 @@ impl State {
                     Ok(nt) => match nt.pick_variant(self.is_dark) {
                         Some(variant) => {
                             has_toml_icon_theme = variant.icon_theme.is_some();
-                            let mut v = variant.clone();
-                            v.resolve_all();
-                            match v.validate() {
+                            let v = variant.clone();
+                            match v.into_resolved() {
                                 Ok(resolved) => {
                                     self.current_resolved = resolved;
                                     self.current_theme = native_theme_iced::to_theme(

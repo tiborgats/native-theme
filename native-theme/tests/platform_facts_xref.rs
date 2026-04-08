@@ -103,9 +103,9 @@ fn windows_11_matches_platform_facts() {
         .expect("windows-11 should have light variant");
 
     // Font: documented as "Segoe UI, 9pt" in platform-facts.md
-    // Preset uses size 14.0 (logical px), font weight 400
+    // Preset uses size 10.5 pt (WinUI3 14 epx * 72/96), font weight 400
     assert_eq!(light.defaults.font.family.as_deref(), Some("Segoe UI"));
-    assert_eq!(light.defaults.font.size, Some(14.0));
+    assert_eq!(light.defaults.font.size, Some(10.5));
     assert_eq!(light.defaults.font.weight, Some(400));
 
     // Line height: 1.43 (from Segoe UI metrics)

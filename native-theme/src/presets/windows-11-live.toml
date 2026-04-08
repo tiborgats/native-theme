@@ -1,5 +1,6 @@
 # Windows 11 live preset - geometry/metrics only (no colors, fonts, or icons)
 # Used by the OS-first pipeline as merge base; OS reader provides colors/fonts.
+# Font sizes are in typographic points (converted to px via font_dpi during resolution).
 name = "Windows 11"
 
 # === Light variant ===
@@ -25,18 +26,18 @@ dialog = 22.0
 panel = 20.0
 
 [light.text_scale.caption]
-size = 12.0
+size = 9.0
 
 [light.text_scale.section_heading]
-size = 20.0
+size = 15.0
 weight = 600
 
 [light.text_scale.dialog_title]
-size = 28.0
+size = 21.0
 weight = 600
 
 [light.text_scale.display]
-size = 68.0
+size = 51.0
 weight = 600
 
 [light.button]
@@ -179,18 +180,18 @@ dialog = 22.0
 panel = 20.0
 
 [dark.text_scale.caption]
-size = 12.0
+size = 9.0
 
 [dark.text_scale.section_heading]
-size = 20.0
+size = 15.0
 weight = 600
 
 [dark.text_scale.dialog_title]
-size = 28.0
+size = 21.0
 weight = 600
 
 [dark.text_scale.display]
-size = 68.0
+size = 51.0
 weight = 600
 
 [dark.button]

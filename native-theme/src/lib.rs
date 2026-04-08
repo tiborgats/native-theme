@@ -399,6 +399,232 @@ pub(crate) fn read_xft_dpi() -> Option<f32> {
     }
 }
 
+/// Detect physical DPI from display hardware via `xrandr`.
+///
+/// Parses the primary connected output's resolution and physical dimensions
+/// to compute DPI. Falls back to the first connected output if no primary
+/// is found. Returns `None` if `xrandr` is unavailable, times out (2 seconds),
+/// or the output cannot be parsed.
+///
+/// This is a last-resort fallback: prefer `forceFontDPI` (KDE), `Xft.dpi`
+/// (X resources), or `GetDpiForSystem` (Windows) before calling this.
+#[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
+pub(crate) fn detect_physical_dpi() -> Option<f32> {
+    use std::io::Read;
+    use std::time::{Duration, Instant};
+
+    let deadline = Instant::now() + Duration::from_secs(2);
+    let mut child = std::process::Command::new("xrandr")
+        .stdout(std::process::Stdio::piped())
+        .stderr(std::process::Stdio::null())
+        .spawn()
+        .ok()?;
+
+    loop {
+        match child.try_wait() {
+            Ok(Some(status)) if status.success() => {
+                let mut buf = String::new();
+                if let Some(mut stdout) = child.stdout.take() {
+                    let _ = stdout.read_to_string(&mut buf);
+                }
+                return parse_xrandr_dpi(&buf);
+            }
+            Ok(Some(_)) => return None,
+            Ok(None) => {
+                if Instant::now() >= deadline {
+                    let _ = child.kill();
+                    return None;
+                }
+                std::thread::sleep(Duration::from_millis(50));
+            }
+            Err(_) => return None,
+        }
+    }
+}
+
+/// Parse DPI from xrandr output.
+///
+/// Looks for lines like:
+/// ```text
+/// DP-1 connected primary 3840x2160+0+0 (...) 700mm x 390mm
+/// ```
+/// Extracts the current resolution from the mode string and the physical
+/// dimensions from the trailing `NNNmm x NNNmm`, then computes average DPI.
+#[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
+fn parse_xrandr_dpi(output: &str) -> Option<f32> {
+    // Prefer the primary output; fall back to the first connected output.
+    let line = output
+        .lines()
+        .find(|l| l.contains(" connected") && l.contains("primary"))
+        .or_else(|| {
+            output
+                .lines()
+                .find(|l| l.contains(" connected") && !l.contains("disconnected"))
+        })?;
+
+    // Resolution: "3840x2160+0+0" (digits x digits + offset)
+    let res_token = line
+        .split_whitespace()
+        .find(|s| s.contains('x') && s.contains('+'))?;
+    let (w_str, rest) = res_token.split_once('x')?;
+    let h_str = rest.split('+').next()?;
+    let w_px: f32 = w_str.parse().ok()?;
+    let h_px: f32 = h_str.parse().ok()?;
+
+    // Physical size: "700mm x 390mm" at the end of the line
+    let words: Vec<&str> = line.split_whitespace().collect();
+    let mut w_mm = None;
+    let mut h_mm = None;
+    for i in 1..words.len().saturating_sub(1) {
+        if words[i] == "x" {
+            w_mm = words[i - 1]
+                .strip_suffix("mm")
+                .and_then(|n| n.parse::<f32>().ok());
+            h_mm = words[i + 1]
+                .strip_suffix("mm")
+                .and_then(|n| n.parse::<f32>().ok());
+        }
+    }
+    let w_mm = w_mm.filter(|&v| v > 0.0)?;
+    let h_mm = h_mm.filter(|&v| v > 0.0)?;
+
+    let h_dpi = w_px / (w_mm / 25.4);
+    let v_dpi = h_px / (h_mm / 25.4);
+    let avg = (h_dpi + v_dpi) / 2.0;
+
+    if avg > 0.0 { Some(avg) } else { None }
+}
+
+#[cfg(all(test, target_os = "linux", any(feature = "kde", feature = "portal")))]
+#[allow(clippy::unwrap_used)]
+mod xrandr_dpi_tests {
+    use super::parse_xrandr_dpi;
+
+    #[test]
+    fn primary_4k_display() {
+        // Real xrandr output: 4K display at 700mm wide
+        let output = "Screen 0: minimum 16 x 16, current 3840 x 2160, maximum 32767 x 32767\n\
+                       DP-1 connected primary 3840x2160+0+0 (normal left inverted right x axis y axis) 700mm x 390mm\n\
+                          3840x2160     60.00*+\n";
+        let dpi = parse_xrandr_dpi(output).unwrap();
+        // 3840/(700/25.4) = 139.3, 2160/(390/25.4) = 140.7, avg ~140
+        assert!((dpi - 140.0).abs() < 1.0, "expected ~140 DPI, got {dpi}");
+    }
+
+    #[test]
+    fn standard_1080p_display() {
+        let output = "DP-2 connected primary 1920x1080+0+0 (normal) 530mm x 300mm\n";
+        let dpi = parse_xrandr_dpi(output).unwrap();
+        // 1920/(530/25.4) = 92.0, 1080/(300/25.4) = 91.4, avg ~91.7
+        assert!((dpi - 92.0).abs() < 1.0, "expected ~92 DPI, got {dpi}");
+    }
+
+    #[test]
+    fn no_primary_falls_back_to_first_connected() {
+        let output = "HDMI-1 connected 1920x1080+0+0 (normal) 480mm x 270mm\n\
+                       DP-1 disconnected\n";
+        let dpi = parse_xrandr_dpi(output).unwrap();
+        assert!(dpi > 90.0 && dpi < 110.0, "expected ~100 DPI, got {dpi}");
+    }
+
+    #[test]
+    fn disconnected_only_returns_none() {
+        let output = "DP-1 disconnected\nHDMI-1 disconnected\n";
+        assert!(parse_xrandr_dpi(output).is_none());
+    }
+
+    #[test]
+    fn missing_physical_dimensions_returns_none() {
+        // No "NNNmm x NNNmm" in the line
+        let output = "DP-1 connected primary 1920x1080+0+0 (normal)\n";
+        assert!(parse_xrandr_dpi(output).is_none());
+    }
+
+    #[test]
+    fn zero_mm_returns_none() {
+        let output = "DP-1 connected primary 1920x1080+0+0 (normal) 0mm x 0mm\n";
+        assert!(parse_xrandr_dpi(output).is_none());
+    }
+
+    #[test]
+    fn empty_output_returns_none() {
+        assert!(parse_xrandr_dpi("").is_none());
+    }
+}
+
+/// Detect the font DPI for the current system.
+///
+/// Used by [`ThemeVariant::into_resolved()`] as a fallback when no OS reader
+/// has provided `font_dpi`. Returns the platform-appropriate DPI for
+/// converting typographic points to logical pixels.
+///
+/// - **Linux (KDE)**: `forceFontDPI` from kdeglobals/kcmfontsrc → `Xft.dpi` → xrandr → 96.0
+/// - **Linux (other)**: `Xft.dpi` → xrandr → 96.0
+/// - **macOS**: 72.0 (Apple coordinate system: 1pt = 1px)
+/// - **Windows**: `GetDpiForSystem()` → 96.0
+/// - **Other**: 96.0
+#[allow(unreachable_code)]
+pub(crate) fn detect_system_font_dpi() -> f32 {
+    #[cfg(target_os = "macos")]
+    {
+        return 72.0;
+    }
+
+    #[cfg(all(target_os = "windows", feature = "windows"))]
+    {
+        return crate::windows::read_dpi() as f32;
+    }
+
+    // KDE: check forceFontDPI first (same chain as the KDE reader)
+    #[cfg(all(target_os = "linux", feature = "kde"))]
+    {
+        if let Some(dpi) = read_kde_force_font_dpi() {
+            return dpi;
+        }
+    }
+
+    #[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
+    {
+        if let Some(dpi) = read_xft_dpi() {
+            return dpi;
+        }
+        if let Some(dpi) = detect_physical_dpi() {
+            return dpi;
+        }
+    }
+
+    96.0
+}
+
+/// Read KDE's `forceFontDPI` from kdeglobals or kcmfontsrc.
+///
+/// This mirrors the first step of [`crate::kde::detect_font_dpi()`] so that
+/// standalone preset loading (via [`ThemeVariant::into_resolved()`]) uses the
+/// same DPI as the full KDE reader pipeline.
+#[cfg(all(target_os = "linux", feature = "kde"))]
+fn read_kde_force_font_dpi() -> Option<f32> {
+    // Try kdeglobals [General] forceFontDPI
+    let path = crate::kde::kdeglobals_path();
+    if let Ok(content) = std::fs::read_to_string(&path) {
+        let mut ini = crate::kde::create_kde_parser();
+        if ini.read(content).is_ok()
+            && let Some(dpi_str) = ini.get("General", "forceFontDPI")
+            && let Ok(dpi) = dpi_str.trim().parse::<f32>()
+            && dpi > 0.0
+        {
+            return Some(dpi);
+        }
+    }
+    // Try kcmfontsrc [General] forceFontDPI
+    if let Some(dpi_str) = crate::kde::read_kcmfontsrc_key("General", "forceFontDPI")
+        && let Ok(dpi) = dpi_str.trim().parse::<f32>()
+        && dpi > 0.0
+    {
+        return Some(dpi);
+    }
+    None
+}
+
 /// Inner detection logic for [`system_is_dark()`].
 ///
 /// Separated from the public function to allow caching via `OnceLock`.

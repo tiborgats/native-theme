@@ -1661,10 +1661,8 @@ impl Showcase {
             if let Some(variant) = nt.pick_variant(self.is_dark) {
                 // Check icon_theme before resolution fills it in
                 self.has_toml_icon_theme = variant.icon_theme.is_some();
-                let mut v = variant.clone();
-                // Issue 59: use resolve_all() to include platform defaults
-                v.resolve_all();
-                let resolved = match v.validate() {
+                let v = variant.clone();
+                let resolved = match v.into_resolved() {
                     Ok(r) => r,
                     Err(e) => {
                         self.show_theme_error(&format!("Theme '{name}' validation failed: {e}"));

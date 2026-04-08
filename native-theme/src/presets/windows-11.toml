@@ -1,5 +1,6 @@
 # Windows 11 Fluent Design theme
 # Source: WinUI3 XAML theme resources, Fluent Design System
+# Font sizes are in typographic points (converted to px via font_dpi during resolution).
 name = "Windows 11"
 
 # === Light variant ===
@@ -51,12 +52,12 @@ opacity = 0.14
 shadow_enabled = true
 [light.defaults.font]
 family = "Segoe UI"
-size = 14.0
+size = 10.5
 weight = 400
 
 [light.defaults.mono_font]
 family = "Cascadia Mono"
-size = 14.0
+size = 10.5
 weight = 400
 
 [light.defaults.icon_sizes]
@@ -67,18 +68,18 @@ dialog = 22.0
 panel = 20.0
 
 [light.text_scale.caption]
-size = 12.0
+size = 9.0
 
 [light.text_scale.section_heading]
-size = 20.0
+size = 15.0
 weight = 600
 
 [light.text_scale.dialog_title]
-size = 28.0
+size = 21.0
 weight = 600
 
 [light.text_scale.display]
-size = 68.0
+size = 51.0
 weight = 600
 
 [light.button]
@@ -275,7 +276,7 @@ button_gap = 8.0
 icon_size = 32.0
 
 [light.dialog.title_font]
-size = 20.0
+size = 15.0
 weight = 600
 
 [light.link]
@@ -388,12 +389,12 @@ opacity = 0.14
 shadow_enabled = true
 [dark.defaults.font]
 family = "Segoe UI"
-size = 14.0
+size = 10.5
 weight = 400
 
 [dark.defaults.mono_font]
 family = "Cascadia Mono"
-size = 14.0
+size = 10.5
 weight = 400
 
 [dark.defaults.icon_sizes]
@@ -404,18 +405,18 @@ dialog = 22.0
 panel = 20.0
 
 [dark.text_scale.caption]
-size = 12.0
+size = 9.0
 
 [dark.text_scale.section_heading]
-size = 20.0
+size = 15.0
 weight = 600
 
 [dark.text_scale.dialog_title]
-size = 28.0
+size = 21.0
 weight = 600
 
 [dark.text_scale.display]
-size = 68.0
+size = 51.0
 weight = 600
 
 [dark.button]
@@ -612,7 +613,7 @@ button_gap = 8.0
 icon_size = 32.0
 
 [dark.dialog.title_font]
-size = 20.0
+size = 15.0
 weight = 600
 
 [dark.link]
