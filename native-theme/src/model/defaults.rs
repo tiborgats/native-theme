@@ -202,6 +202,7 @@ mod tests {
     use super::*;
     use crate::Rgba;
     use crate::model::border::BorderSpec;
+    use crate::model::font::FontSize;
     use crate::model::{FontSpec, IconSizes};
 
     // === default / is_empty ===
@@ -339,7 +340,7 @@ mod tests {
         let mut base = ThemeDefaults {
             font: FontSpec {
                 family: Some("Noto Sans".into()),
-                size: Some(11.0),
+                size: Some(FontSize::Px(11.0)),
                 weight: None,
                 ..Default::default()
             },
@@ -356,7 +357,7 @@ mod tests {
         };
         base.merge(&overlay);
         assert_eq!(base.font.family.as_deref(), Some("Noto Sans")); // preserved
-        assert_eq!(base.font.size, Some(11.0)); // preserved
+        assert_eq!(base.font.size, Some(FontSize::Px(11.0))); // preserved
         assert_eq!(base.font.weight, Some(700)); // overlay wins
     }
 
@@ -459,7 +460,7 @@ mod tests {
         let d = ThemeDefaults {
             mono_font: FontSpec {
                 family: Some("JetBrains Mono".into()),
-                size: Some(12.0),
+                size: Some(FontSize::Px(12.0)),
                 ..Default::default()
             },
             ..Default::default()

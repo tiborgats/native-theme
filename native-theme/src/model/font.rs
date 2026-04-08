@@ -278,6 +278,7 @@ impl_merge!(TextScale {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+    use super::FontSize;
 
     // === FontSpec tests ===
 
@@ -298,7 +299,7 @@ mod tests {
     #[test]
     fn font_spec_not_empty_when_size_set() {
         let fs = FontSpec {
-            size: Some(14.0),
+            size: Some(FontSize::Px(14.0)),
             ..Default::default()
         };
         assert!(!fs.is_empty());
@@ -317,7 +318,7 @@ mod tests {
     fn font_spec_toml_round_trip() {
         let fs = FontSpec {
             family: Some("Inter".into()),
-            size: Some(14.0),
+            size: Some(FontSize::Px(14.0)),
             weight: Some(400),
             ..Default::default()
         };
@@ -345,7 +346,7 @@ mod tests {
     fn font_spec_merge_overlay_family_replaces_base() {
         let mut base = FontSpec {
             family: Some("Noto Sans".into()),
-            size: Some(12.0),
+            size: Some(FontSize::Px(12.0)),
             weight: None,
             ..Default::default()
         };
@@ -358,21 +359,21 @@ mod tests {
         base.merge(&overlay);
         assert_eq!(base.family.as_deref(), Some("Inter"));
         // base size preserved since overlay size is None
-        assert_eq!(base.size, Some(12.0));
+        assert_eq!(base.size, Some(FontSize::Px(12.0)));
     }
 
     #[test]
     fn font_spec_merge_none_preserves_base() {
         let mut base = FontSpec {
             family: Some("Noto Sans".into()),
-            size: Some(12.0),
+            size: Some(FontSize::Px(12.0)),
             weight: Some(400),
             ..Default::default()
         };
         let overlay = FontSpec::default();
         base.merge(&overlay);
         assert_eq!(base.family.as_deref(), Some("Noto Sans"));
-        assert_eq!(base.size, Some(12.0));
+        assert_eq!(base.size, Some(FontSize::Px(12.0)));
         assert_eq!(base.weight, Some(400));
     }
 
@@ -386,7 +387,7 @@ mod tests {
     #[test]
     fn text_scale_entry_toml_round_trip() {
         let entry = TextScaleEntry {
-            size: Some(12.0),
+            size: Some(FontSize::Px(12.0)),
             weight: Some(400),
             line_height: Some(1.4),
         };
@@ -398,7 +399,7 @@ mod tests {
     #[test]
     fn text_scale_entry_merge_overlay_wins() {
         let mut base = TextScaleEntry {
-            size: Some(12.0),
+            size: Some(FontSize::Px(12.0)),
             weight: Some(400),
             line_height: None,
         };
@@ -408,7 +409,7 @@ mod tests {
             line_height: Some(1.5),
         };
         base.merge(&overlay);
-        assert_eq!(base.size, Some(12.0)); // preserved
+        assert_eq!(base.size, Some(FontSize::Px(12.0))); // preserved
         assert_eq!(base.weight, Some(700)); // overlay wins
         assert_eq!(base.line_height, Some(1.5)); // overlay sets
     }
@@ -424,7 +425,7 @@ mod tests {
     fn text_scale_not_empty_when_entry_set() {
         let ts = TextScale {
             caption: Some(TextScaleEntry {
-                size: Some(11.0),
+                size: Some(FontSize::Px(11.0)),
                 ..Default::default()
             }),
             ..Default::default()
@@ -436,22 +437,22 @@ mod tests {
     fn text_scale_toml_round_trip() {
         let ts = TextScale {
             caption: Some(TextScaleEntry {
-                size: Some(11.0),
+                size: Some(FontSize::Px(11.0)),
                 weight: Some(400),
                 line_height: Some(1.3),
             }),
             section_heading: Some(TextScaleEntry {
-                size: Some(14.0),
+                size: Some(FontSize::Px(14.0)),
                 weight: Some(600),
                 line_height: Some(1.4),
             }),
             dialog_title: Some(TextScaleEntry {
-                size: Some(16.0),
+                size: Some(FontSize::Px(16.0)),
                 weight: Some(700),
                 line_height: Some(1.2),
             }),
             display: Some(TextScaleEntry {
-                size: Some(24.0),
+                size: Some(FontSize::Px(24.0)),
                 weight: Some(300),
                 line_height: Some(1.1),
             }),
@@ -465,7 +466,7 @@ mod tests {
     fn text_scale_merge_some_plus_some_merges_inner() {
         let mut base = TextScale {
             caption: Some(TextScaleEntry {
-                size: Some(11.0),
+                size: Some(FontSize::Px(11.0)),
                 weight: Some(400),
                 line_height: None,
             }),
@@ -481,7 +482,7 @@ mod tests {
         };
         base.merge(&overlay);
         let cap = base.caption.as_ref().unwrap();
-        assert_eq!(cap.size, Some(11.0)); // base preserved
+        assert_eq!(cap.size, Some(FontSize::Px(11.0))); // base preserved
         assert_eq!(cap.weight, Some(600)); // overlay wins
         assert_eq!(cap.line_height, Some(1.3)); // overlay sets
     }
@@ -491,21 +492,21 @@ mod tests {
         let mut base = TextScale::default();
         let overlay = TextScale {
             section_heading: Some(TextScaleEntry {
-                size: Some(14.0),
+                size: Some(FontSize::Px(14.0)),
                 ..Default::default()
             }),
             ..Default::default()
         };
         base.merge(&overlay);
         assert!(base.section_heading.is_some());
-        assert_eq!(base.section_heading.unwrap().size, Some(14.0));
+        assert_eq!(base.section_heading.unwrap().size, Some(FontSize::Px(14.0)));
     }
 
     #[test]
     fn text_scale_merge_none_preserves_base_entry() {
         let mut base = TextScale {
             display: Some(TextScaleEntry {
-                size: Some(24.0),
+                size: Some(FontSize::Px(24.0)),
                 ..Default::default()
             }),
             ..Default::default()
@@ -513,7 +514,7 @@ mod tests {
         let overlay = TextScale::default();
         base.merge(&overlay);
         assert!(base.display.is_some());
-        assert_eq!(base.display.unwrap().size, Some(24.0));
+        assert_eq!(base.display.unwrap().size, Some(FontSize::Px(24.0)));
     }
 
     // === FontStyle tests ===
@@ -548,7 +549,7 @@ mod tests {
     fn font_spec_with_style_and_color_round_trip() {
         let fs = FontSpec {
             family: Some("Inter".into()),
-            size: Some(14.0),
+            size: Some(FontSize::Px(14.0)),
             weight: Some(400),
             style: Some(FontStyle::Italic),
             color: Some(crate::Rgba::rgb(255, 0, 0)),

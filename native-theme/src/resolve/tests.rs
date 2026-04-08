@@ -1,5 +1,6 @@
 use super::*;
 use crate::Rgba;
+use crate::model::font::FontSize;
 use crate::model::{DialogButtonOrder, FontSpec, TextScaleEntry};
 
 /// Helper: build a ThemeVariant with all defaults.* fields populated.
@@ -55,7 +56,7 @@ fn variant_with_defaults() -> ThemeVariant {
 
     v.defaults.font = FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         color: Some(c3), // foreground
         ..Default::default()
@@ -63,7 +64,7 @@ fn variant_with_defaults() -> ThemeVariant {
     v.defaults.line_height = Some(1.4);
     v.defaults.mono_font = FontSpec {
         family: Some("JetBrains Mono".into()),
-        size: Some(13.0),
+        size: Some(FontSize::Px(13.0)),
         weight: Some(400),
         color: Some(c3), // foreground
         ..Default::default()
@@ -335,7 +336,7 @@ fn resolve_phase1_5_per_widget_font_converted() {
     let mut v = variant_with_dpi(Some(TEST_DPI_STANDARD), 10.0);
     // button has explicit size
     v.button.font = Some(FontSpec {
-        size: Some(11.0),
+        size: Some(FontSize::Px(11.0)),
         ..Default::default()
     });
     // menu has no font set at all -- it stays None through DPI conversion
@@ -403,14 +404,14 @@ fn resolve_phase3_font_subfield_inheritance() {
     let mut v = ThemeVariant::default();
     v.defaults.font = FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     };
     // Menu has a font with only size set
     v.menu.font = Some(FontSpec {
         family: None,
-        size: Some(12.0),
+        size: Some(FontSize::Px(12.0)),
         weight: None,
         ..Default::default()
     });
@@ -422,7 +423,7 @@ fn resolve_phase3_font_subfield_inheritance() {
         Some("Inter"),
         "family from defaults"
     );
-    assert_eq!(menu_font.size, Some(12.0), "explicit size preserved");
+    assert_eq!(menu_font.size, Some(FontSize::Px(12.0)), "explicit size preserved");
     assert_eq!(menu_font.weight, Some(400), "weight from defaults");
 }
 
@@ -431,7 +432,7 @@ fn resolve_phase3_font_entire_inheritance() {
     let mut v = ThemeVariant::default();
     v.defaults.font = FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     };
@@ -441,7 +442,7 @@ fn resolve_phase3_font_entire_inheritance() {
 
     let button_font = v.button.font.as_ref().unwrap();
     assert_eq!(button_font.family.as_deref(), Some("Inter"));
-    assert_eq!(button_font.size, Some(14.0));
+    assert_eq!(button_font.size, Some(FontSize::Px(14.0)));
     assert_eq!(button_font.weight, Some(400));
 }
 
@@ -452,7 +453,7 @@ fn resolve_phase3_text_scale_inheritance() {
     let mut v = ThemeVariant::default();
     v.defaults.font = FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     };
@@ -469,7 +470,7 @@ fn resolve_phase3_text_scale_inheritance() {
     if let Some(ref cap) = v.text_scale.caption {
         assert_eq!(
             cap.size,
-            Some(14.0),
+            Some(FontSize::Px(14.0)),
             "caption size inherits defaults.font.size"
         );
         assert_eq!(
@@ -492,7 +493,7 @@ fn resolve_phase3_text_scale_inheritance() {
     if let Some(ref sh) = v.text_scale.section_heading {
         assert_eq!(
             sh.size,
-            Some(14.0),
+            Some(FontSize::Px(14.0)),
             "section_heading size inherits defaults.font.size"
         );
         assert_eq!(
@@ -507,7 +508,7 @@ fn resolve_phase3_text_scale_inheritance() {
     if let Some(ref dt) = v.text_scale.dialog_title {
         assert_eq!(
             dt.size,
-            Some(14.0),
+            Some(FontSize::Px(14.0)),
             "dialog_title size inherits defaults.font.size"
         );
         assert_eq!(
@@ -522,7 +523,7 @@ fn resolve_phase3_text_scale_inheritance() {
     if let Some(ref disp) = v.text_scale.display {
         assert_eq!(
             disp.size,
-            Some(14.0),
+            Some(FontSize::Px(14.0)),
             "display size inherits defaults.font.size"
         );
         assert_eq!(
@@ -642,7 +643,7 @@ fn resolve_all_font_carrying_widgets_get_resolved_fonts() {
     let mut v = ThemeVariant::default();
     v.defaults.font = FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     };
@@ -671,7 +672,7 @@ fn resolve_all_font_carrying_widgets_get_resolved_fonts() {
     ] {
         let f = font.as_ref().unwrap();
         assert_eq!(f.family.as_deref(), Some("Inter"), "{name} family");
-        assert_eq!(f.size, Some(14.0), "{name} size");
+        assert_eq!(f.size, Some(FontSize::Px(14.0)), "{name} size");
         assert_eq!(f.weight, Some(400), "{name} weight");
     }
 }
@@ -710,7 +711,7 @@ fn fully_populated_variant() -> ThemeVariant {
     v.window.border.get_or_insert_default().shadow_enabled = Some(true);
     v.window.title_bar_font = Some(FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     });
@@ -738,7 +739,7 @@ fn fully_populated_variant() -> ThemeVariant {
     v.button.border.get_or_insert_default().shadow_enabled = Some(false);
     v.button.font = Some(FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     });
@@ -764,7 +765,7 @@ fn fully_populated_variant() -> ThemeVariant {
     v.input.border.get_or_insert_default().shadow_enabled = Some(false);
     v.input.font = Some(FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     });
@@ -783,7 +784,7 @@ fn fully_populated_variant() -> ThemeVariant {
     v.checkbox.unchecked_border_color = Some(c);
     v.checkbox.font = Some(FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     });
@@ -805,7 +806,7 @@ fn fully_populated_variant() -> ThemeVariant {
     v.menu.disabled_text_color = Some(c);
     v.menu.font = Some(FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     });
@@ -821,7 +822,7 @@ fn fully_populated_variant() -> ThemeVariant {
     v.tooltip.border.get_or_insert_default().shadow_enabled = Some(false);
     v.tooltip.font = Some(FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     });
@@ -872,7 +873,7 @@ fn fully_populated_variant() -> ThemeVariant {
     v.tab.border.get_or_insert_default().padding_vertical = Some(6.0);
     v.tab.font = Some(FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     });
@@ -884,7 +885,7 @@ fn fully_populated_variant() -> ThemeVariant {
     v.sidebar.hover_background = Some(c);
     v.sidebar.font = Some(FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     });
@@ -902,7 +903,7 @@ fn fully_populated_variant() -> ThemeVariant {
     v.toolbar.border.get_or_insert_default().shadow_enabled = Some(false);
     v.toolbar.font = Some(FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     });
@@ -913,7 +914,7 @@ fn fully_populated_variant() -> ThemeVariant {
     v.status_bar.border.get_or_insert_default().line_width = Some(1.0);
     v.status_bar.font = Some(FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     });
@@ -931,13 +932,13 @@ fn fully_populated_variant() -> ThemeVariant {
     v.list.disabled_text_color = Some(c);
     v.list.item_font = Some(FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     });
     v.list.header_font = Some(FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     });
@@ -950,7 +951,7 @@ fn fully_populated_variant() -> ThemeVariant {
     v.popover.background_color = Some(c);
     v.popover.font = Some(FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     });
@@ -998,13 +999,13 @@ fn fully_populated_variant() -> ThemeVariant {
     v.dialog.button_order = Some(DialogButtonOrder::PrimaryRight);
     v.dialog.title_font = Some(FontSpec {
         family: Some("Inter".into()),
-        size: Some(16.0),
+        size: Some(FontSize::Px(16.0)),
         weight: Some(700),
         ..Default::default()
     });
     v.dialog.body_font = Some(FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     });
@@ -1027,7 +1028,7 @@ fn fully_populated_variant() -> ThemeVariant {
     v.combo_box.disabled_background = Some(c);
     v.combo_box.font = Some(FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     });
@@ -1046,7 +1047,7 @@ fn fully_populated_variant() -> ThemeVariant {
     v.segmented_control.hover_background = Some(c);
     v.segmented_control.font = Some(FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     });
@@ -1077,7 +1078,7 @@ fn fully_populated_variant() -> ThemeVariant {
     v.expander.arrow_color = Some(c);
     v.expander.font = Some(FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     });
@@ -1089,7 +1090,7 @@ fn fully_populated_variant() -> ThemeVariant {
     // link
     v.link.font = Some(FontSpec {
         family: Some("Inter".into()),
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(400),
         ..Default::default()
     });
@@ -1103,22 +1104,22 @@ fn fully_populated_variant() -> ThemeVariant {
 
     // text_scale (all 4 entries fully populated)
     v.text_scale.caption = Some(crate::model::TextScaleEntry {
-        size: Some(11.0),
+        size: Some(FontSize::Px(11.0)),
         weight: Some(400),
         line_height: Some(15.4),
     });
     v.text_scale.section_heading = Some(crate::model::TextScaleEntry {
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         weight: Some(600),
         line_height: Some(19.6),
     });
     v.text_scale.dialog_title = Some(crate::model::TextScaleEntry {
-        size: Some(16.0),
+        size: Some(FontSize::Px(16.0)),
         weight: Some(700),
         line_height: Some(22.4),
     });
     v.text_scale.display = Some(crate::model::TextScaleEntry {
-        size: Some(24.0),
+        size: Some(FontSize::Px(24.0)),
         weight: Some(300),
         line_height: Some(33.6),
     });
@@ -1483,7 +1484,7 @@ fn test_gnome_resolve_validate() {
     // Simulate GNOME reader font output (gsettings font-name on a GNOME system).
     variant.defaults.font = FontSpec {
         family: Some("Cantarell".to_string()),
-        size: Some(11.0),
+        size: Some(FontSize::Px(11.0)),
         weight: Some(400),
         ..Default::default()
     };
@@ -1541,7 +1542,7 @@ fn validate_catches_negative_radius() {
 #[test]
 fn validate_catches_zero_font_size() {
     let mut v = fully_populated_variant();
-    v.defaults.font.size = Some(0.0);
+    v.defaults.font.size = Some(FontSize::Px(0.0));
 
     let result = v.validate();
     assert!(result.is_err());
@@ -1627,7 +1628,7 @@ fn validate_reports_multiple_range_errors_together() {
     let mut v = fully_populated_variant();
     v.defaults.border.corner_radius = Some(-1.0);
     v.defaults.disabled_opacity = Some(2.0);
-    v.defaults.font.size = Some(0.0);
+    v.defaults.font.size = Some(FontSize::Px(0.0));
     v.defaults.font.weight = Some(50);
 
     let result = v.validate();
@@ -1669,7 +1670,7 @@ fn validate_allows_zero_radius_and_frame_width() {
 #[test]
 fn validate_catches_negative_font_size() {
     let mut v = fully_populated_variant();
-    v.defaults.font.size = Some(-1.0);
+    v.defaults.font.size = Some(FontSize::Px(-1.0));
 
     let result = v.validate();
     assert!(result.is_err());
@@ -1749,7 +1750,7 @@ fn validate_catches_nan_values() {
 #[test]
 fn validate_catches_infinity() {
     let mut v = fully_populated_variant();
-    v.defaults.font.size = Some(f32::INFINITY);
+    v.defaults.font.size = Some(FontSize::Px(f32::INFINITY));
 
     let result = v.validate();
     assert!(result.is_err());

@@ -806,6 +806,7 @@ mod tests {
     use super::*;
     use crate::Rgba;
     use crate::model::border::{BorderSpec, ResolvedBorderSpec};
+    use crate::model::font::FontSize;
     use crate::model::{DialogButtonOrder, FontSpec};
 
     // Define a test widget pair using the macro (validates macro itself still works)
@@ -866,7 +867,7 @@ mod tests {
     fn generated_option_struct_not_empty_when_font_set() {
         let w = TestWidget {
             font: Some(FontSpec {
-                size: Some(14.0),
+                size: Some(FontSize::Px(14.0)),
                 ..Default::default()
             }),
             ..Default::default()
@@ -924,7 +925,7 @@ mod tests {
         let mut base = TestWidget {
             font: Some(FontSpec {
                 family: Some("Noto Sans".into()),
-                size: Some(12.0),
+                size: Some(FontSize::Px(12.0)),
                 weight: None,
                 ..Default::default()
             }),
@@ -942,7 +943,7 @@ mod tests {
         base.merge(&overlay);
         let font = base.font.as_ref().unwrap();
         assert_eq!(font.family.as_deref(), Some("Noto Sans")); // preserved
-        assert_eq!(font.size, Some(12.0)); // preserved
+        assert_eq!(font.size, Some(FontSize::Px(12.0))); // preserved
         assert_eq!(font.weight, Some(700)); // overlay sets
     }
 
@@ -952,7 +953,7 @@ mod tests {
         let overlay = TestWidget {
             font: Some(FontSpec {
                 family: Some("Inter".into()),
-                size: Some(14.0),
+                size: Some(FontSize::Px(14.0)),
                 weight: Some(400),
                 ..Default::default()
             }),
@@ -961,7 +962,7 @@ mod tests {
         base.merge(&overlay);
         let font = base.font.as_ref().unwrap();
         assert_eq!(font.family.as_deref(), Some("Inter"));
-        assert_eq!(font.size, Some(14.0));
+        assert_eq!(font.size, Some(FontSize::Px(14.0)));
         assert_eq!(font.weight, Some(400));
     }
 
@@ -970,7 +971,7 @@ mod tests {
         let mut base = TestWidget {
             font: Some(FontSpec {
                 family: Some("Inter".into()),
-                size: Some(14.0),
+                size: Some(FontSize::Px(14.0)),
                 weight: Some(400),
                 ..Default::default()
             }),
@@ -1016,14 +1017,14 @@ mod tests {
     fn impl_merge_optional_nested_some_none_preserves_base() {
         let mut base = WithFont {
             font: Some(FontSpec {
-                size: Some(12.0),
+                size: Some(FontSize::Px(12.0)),
                 ..Default::default()
             }),
             ..Default::default()
         };
         let overlay = WithFont::default();
         base.merge(&overlay);
-        assert_eq!(base.font.as_ref().unwrap().size, Some(12.0));
+        assert_eq!(base.font.as_ref().unwrap().size, Some(FontSize::Px(12.0)));
     }
 
     #[test]
@@ -1045,7 +1046,7 @@ mod tests {
         let mut base = WithFont {
             font: Some(FontSpec {
                 family: Some("Noto".into()),
-                size: Some(11.0),
+                size: Some(FontSize::Px(11.0)),
                 weight: None,
                 ..Default::default()
             }),
@@ -1054,7 +1055,7 @@ mod tests {
         let overlay = WithFont {
             font: Some(FontSpec {
                 family: None,
-                size: Some(14.0),
+                size: Some(FontSize::Px(14.0)),
                 weight: Some(400),
                 ..Default::default()
             }),
@@ -1063,7 +1064,7 @@ mod tests {
         base.merge(&overlay);
         let f = base.font.as_ref().unwrap();
         assert_eq!(f.family.as_deref(), Some("Noto")); // preserved
-        assert_eq!(f.size, Some(14.0)); // overlay wins
+        assert_eq!(f.size, Some(FontSize::Px(14.0))); // overlay wins
         assert_eq!(f.weight, Some(400)); // overlay sets
     }
 
@@ -1087,7 +1088,7 @@ mod tests {
     fn impl_merge_optional_nested_is_not_empty_when_populated() {
         let w = WithFont {
             font: Some(FontSpec {
-                size: Some(14.0),
+                size: Some(FontSize::Px(14.0)),
                 ..Default::default()
             }),
             ..Default::default()
@@ -1117,7 +1118,7 @@ mod tests {
         let mut base = ButtonTheme {
             font: Some(FontSpec {
                 family: Some("Noto Sans".into()),
-                size: Some(11.0),
+                size: Some(FontSize::Px(11.0)),
                 weight: None,
                 ..Default::default()
             }),
@@ -1143,7 +1144,7 @@ mod tests {
             background_color: Some(Rgba::rgb(200, 200, 200)),
             font: Some(FontSpec {
                 family: Some("Inter".into()),
-                size: Some(14.0),
+                size: Some(FontSize::Px(14.0)),
                 weight: Some(400),
                 ..Default::default()
             }),
@@ -1369,7 +1370,7 @@ mod tests {
         let s = StatusBarTheme {
             background_color: Some(Rgba::rgb(240, 240, 240)),
             font: Some(FontSpec {
-                size: Some(11.0),
+                size: Some(FontSize::Px(11.0)),
                 ..Default::default()
             }),
             ..Default::default()
@@ -1472,7 +1473,7 @@ mod tests {
         };
         let overlay = DualNestedTestWidget {
             font: Some(FontSpec {
-                size: Some(14.0),
+                size: Some(FontSize::Px(14.0)),
                 ..Default::default()
             }),
             ..Default::default()
@@ -1480,7 +1481,7 @@ mod tests {
         base.merge(&overlay);
         let font = base.font.as_ref().unwrap();
         assert_eq!(font.family.as_deref(), Some("Noto Sans")); // preserved
-        assert_eq!(font.size, Some(14.0)); // overlay sets
+        assert_eq!(font.size, Some(FontSize::Px(14.0))); // overlay sets
     }
 
     #[test]
@@ -1490,7 +1491,7 @@ mod tests {
             min_height: Some(32.0),
             font: Some(FontSpec {
                 family: Some("Inter".into()),
-                size: Some(14.0),
+                size: Some(FontSize::Px(14.0)),
                 weight: Some(400),
                 ..Default::default()
             }),

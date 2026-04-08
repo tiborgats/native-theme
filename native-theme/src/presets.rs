@@ -545,9 +545,10 @@ accent_color = "#00ff00"
 
         // Set partial font on menu
         use crate::model::FontSpec;
+        use crate::model::font::FontSize;
         light.menu.font = Some(FontSpec {
             family: None,
-            size: Some(12.0),
+            size: Some(FontSize::Px(12.0)),
             weight: None,
             ..Default::default()
         });
