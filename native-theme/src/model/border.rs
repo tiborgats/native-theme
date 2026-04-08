@@ -14,18 +14,23 @@ pub struct BorderSpec {
     /// Border color.
     pub color: Option<Rgba>,
     /// Corner radius in logical pixels.
+    #[serde(rename = "corner_radius_px")]
     pub corner_radius: Option<f32>,
     /// Large corner radius in logical pixels (defaults only).
+    #[serde(rename = "corner_radius_lg_px")]
     pub corner_radius_lg: Option<f32>,
     /// Border stroke width in logical pixels.
+    #[serde(rename = "line_width_px")]
     pub line_width: Option<f32>,
     /// Border alpha multiplier 0.0–1.0 (defaults only).
     pub opacity: Option<f32>,
     /// Whether the bordered element has a drop shadow.
     pub shadow_enabled: Option<bool>,
     /// Horizontal padding inside the border in logical pixels.
+    #[serde(rename = "padding_horizontal_px")]
     pub padding_horizontal: Option<f32>,
     /// Vertical padding inside the border in logical pixels.
+    #[serde(rename = "padding_vertical_px")]
     pub padding_vertical: Option<f32>,
 }
 
@@ -33,13 +38,13 @@ impl BorderSpec {
     /// All serialized field names for BorderSpec, for TOML linting.
     pub const FIELD_NAMES: &[&str] = &[
         "color",
-        "corner_radius",
-        "corner_radius_lg",
-        "line_width",
+        "corner_radius_px",
+        "corner_radius_lg_px",
+        "line_width_px",
         "opacity",
         "shadow_enabled",
-        "padding_horizontal",
-        "padding_vertical",
+        "padding_horizontal_px",
+        "padding_vertical_px",
     ];
 }
 

@@ -103,8 +103,10 @@ pub struct ThemeDefaults {
     /// Focus indicator outline color.
     pub focus_ring_color: Option<Rgba>,
     /// Focus indicator outline width.
+    #[serde(rename = "focus_ring_width_px")]
     pub focus_ring_width: Option<f32>,
     /// Gap between element edge and focus indicator.
+    #[serde(rename = "focus_ring_offset_px")]
     pub focus_ring_offset: Option<f32>,
 
     // ---- Icon sizes ----
@@ -168,8 +170,8 @@ impl ThemeDefaults {
         "border",
         "disabled_opacity",
         "focus_ring_color",
-        "focus_ring_width",
-        "focus_ring_offset",
+        "focus_ring_width_px",
+        "focus_ring_offset_px",
         "icon_sizes",
         "text_scaling_factor",
         "reduce_motion",

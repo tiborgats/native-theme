@@ -11,20 +11,25 @@ use serde::{Deserialize, Serialize};
 #[serde(default)]
 pub struct IconSizes {
     /// Icon size for toolbar buttons (e.g., 24px).
+    #[serde(rename = "toolbar_px")]
     pub toolbar: Option<f32>,
     /// Small icon size for inline use (e.g., 16px).
+    #[serde(rename = "small_px")]
     pub small: Option<f32>,
     /// Large icon size for menus/lists (e.g., 32px).
+    #[serde(rename = "large_px")]
     pub large: Option<f32>,
     /// Icon size for dialog buttons (e.g., 22px).
+    #[serde(rename = "dialog_px")]
     pub dialog: Option<f32>,
     /// Icon size for panel headers (e.g., 20px).
+    #[serde(rename = "panel_px")]
     pub panel: Option<f32>,
 }
 
 impl IconSizes {
     /// All serialized field names for TOML linting (issue 3b).
-    pub const FIELD_NAMES: &[&str] = &["toolbar", "small", "large", "dialog", "panel"];
+    pub const FIELD_NAMES: &[&str] = &["toolbar_px", "small_px", "large_px", "dialog_px", "panel_px"];
 }
 
 impl_merge!(IconSizes {
