@@ -34,8 +34,8 @@ accent_text_color = "#fcfcfc"
 
 disabled_opacity = 0.5
 line_height = 1.36
-focus_ring_width = 1.0
-focus_ring_offset = 2.0
+focus_ring_width_px = 1.0
+focus_ring_offset_px = 2.0
 text_scaling_factor = 1.0
 reduce_motion = false
 high_contrast = false
@@ -44,9 +44,9 @@ reduce_transparency = false
 
 [light.defaults.border]
 color = "#bcc0bf"
-corner_radius = 5.0
-corner_radius_lg = 8.0
-line_width = 1.0
+corner_radius_px = 5.0
+corner_radius_lg_px = 8.0
+line_width_px = 1.0
 opacity = 0.2
 shadow_enabled = true
 [light.defaults.font]
@@ -60,11 +60,11 @@ size_pt =10.0
 weight = 400
 
 [light.defaults.icon_sizes]
-toolbar = 22.0
-small = 16.0
-large = 48.0
-dialog = 32.0
-panel = 48.0
+toolbar_px = 22.0
+small_px = 16.0
+large_px = 48.0
+dialog_px = 32.0
+panel_px = 48.0
 
 [light.text_scale.caption]
 size_pt =8.2
@@ -92,9 +92,9 @@ inactive_title_bar_text_color = "#232629"
 
 [light.button]
 background_color = "#fcfcfc"
-min_width = 80.0
-min_height = 32.0
-icon_text_gap = 4.0
+min_width_px = 80.0
+min_height_px = 32.0
+icon_text_gap_px = 4.0
 hover_background = "#93cee9"
 hover_text_color = "#232629"
 active_background = "#3daee9"
@@ -104,14 +104,14 @@ disabled_text_color = "#bcc0bf"
 
 
 [light.button.border]
-padding_horizontal = 6.0
-padding_vertical = 5.0
+padding_horizontal_px = 6.0
+padding_vertical_px = 5.0
 
 [light.button.font]
 color = "#232629"
 [light.input]
 background_color = "#ffffff"
-min_height = 32.0
+min_height_px = 32.0
 hover_border_color = "#3daee9"
 focus_border_color = "#3daee9"
 disabled_background = "#f0f0f0"
@@ -119,14 +119,14 @@ disabled_text_color = "#bcc0bf"
 
 
 [light.input.border]
-padding_horizontal = 6.0
-padding_vertical = 3.0
+padding_horizontal_px = 6.0
+padding_vertical_px = 3.0
 
 [light.input.font]
 color = "#232629"
 [light.checkbox]
-indicator_width = 20.0
-label_gap = 4.0
+indicator_width_px = 20.0
+label_gap_px = 4.0
 hover_background = "#93cee9"
 disabled_background = "#f0f0f0"
 disabled_text_color = "#bcc0bf"
@@ -135,39 +135,39 @@ unchecked_border_color = "#bcc0bf"
 
 [light.tooltip]
 background_color = "#f7f7f7"
-max_width = 300.0
+max_width_px = 300.0
 
 
 [light.tooltip.border]
-padding_horizontal = 3.0
-padding_vertical = 3.0
+padding_horizontal_px = 3.0
+padding_vertical_px = 3.0
 
 [light.tooltip.font]
 color = "#232629"
 [light.scrollbar]
-groove_width = 21.0
-min_thumb_length = 20.0
-thumb_width = 8.0
+groove_width_px = 21.0
+min_thumb_length_px = 20.0
+thumb_width_px = 8.0
 overlay_mode = false
 thumb_hover_color = "#93cee9"
 thumb_active_color = "#3daee9"
 
 [light.slider]
-track_height = 6.0
-thumb_diameter = 20.0
-tick_mark_length = 8.0
+track_height_px = 6.0
+thumb_diameter_px = 20.0
+tick_mark_length_px = 8.0
 thumb_hover_color = "#93cee9"
 disabled_fill_color = "#bcc0bf"
 disabled_track_color = "#dee0e2"
 disabled_thumb_color = "#dee0e2"
 
 [light.progress_bar]
-track_height = 6.0
-min_width = 6.0
+track_height_px = 6.0
+min_width_px = 6.0
 
 [light.tab]
-min_width = 80.0
-min_height = 30.0
+min_width_px = 80.0
+min_height_px = 30.0
 active_background = "#eff0f1"
 active_text_color = "#232629"
 hover_background = "#dee0e2"
@@ -175,33 +175,33 @@ hover_text_color = "#232629"
 
 
 [light.tab.border]
-padding_horizontal = 8.0
-padding_vertical = 4.0
+padding_horizontal_px = 8.0
+padding_vertical_px = 4.0
 [light.menu]
-row_height = 28.0
-icon_text_gap = 8.0
+row_height_px = 28.0
+icon_text_gap_px = 8.0
 hover_background = "#3daee9"
 hover_text_color = "#fcfcfc"
 disabled_text_color = "#bcc0bf"
 
 
 [light.menu.border]
-padding_horizontal = 4.0
-padding_vertical = 4.0
+padding_horizontal_px = 4.0
+padding_vertical_px = 4.0
 [light.list]
 alternate_row_background = "#f5f6f7"
-row_height = 28.0
+row_height_px = 28.0
 hover_background = "#93cee9"
 hover_text_color = "#232629"
 disabled_text_color = "#bcc0bf"
 
 
 [light.list.border]
-padding_horizontal = 2.0
-padding_vertical = 1.0
+padding_horizontal_px = 2.0
+padding_vertical_px = 1.0
 [light.toolbar]
-bar_height = 40.0
-item_gap = 0.0
+bar_height_px = 40.0
+item_gap_px = 0.0
 
 [light.sidebar]
 background_color = "#dee0e2"
@@ -220,16 +220,16 @@ color = "#232629"
 line_color = "#c4c8c6"
 
 [light.splitter]
-divider_width = 1.0
+divider_width_px = 1.0
 hover_color = "#bcc0bf"
 
 [light.switch]
 unchecked_background = "#bcc0bf"
 thumb_background = "#fcfcfc"
-track_width = 36.0
-track_height = 18.0
-thumb_diameter = 18.0
-track_radius = 9.0
+track_width_px = 36.0
+track_height_px = 18.0
+thumb_diameter_px = 18.0
+track_radius_px = 9.0
 hover_checked_background = "#2e9ad6"
 hover_unchecked_background = "#a8acab"
 disabled_checked_background = "#3daee980"
@@ -238,12 +238,12 @@ disabled_thumb_color = "#fcfcfc80"
 
 [light.dialog]
 button_order = "primary_left"
-min_width = 320.0
-max_width = 560.0
-min_height = 140.0
-max_height = 600.0
-button_gap = 6.0
-icon_size =32.0
+min_width_px = 320.0
+max_width_px = 560.0
+min_height_px = 140.0
+max_height_px = 600.0
+button_gap_px = 6.0
+icon_size_px =32.0
 
 [light.link]
 underline_enabled = true
@@ -254,37 +254,37 @@ active_text_color = "#2980b9"
 disabled_text_color = "#bcc0bf"
 
 [light.spinner]
-diameter = 36.0
-min_diameter = 16.0
-stroke_width = 2.0
+diameter_px = 36.0
+min_diameter_px = 16.0
+stroke_width_px = 2.0
 
 [light.combo_box]
-min_height = 32.0
-min_width = 120.0
-arrow_icon_size =20.0
-arrow_area_width = 20.0
+min_height_px = 32.0
+min_width_px = 120.0
+arrow_icon_size_px =20.0
+arrow_area_width_px = 20.0
 hover_background = "#93cee9"
 disabled_background = "#f0f0f0"
 disabled_text_color = "#bcc0bf"
 
 
 [light.combo_box.border]
-padding_horizontal = 6.0
+padding_horizontal_px = 6.0
 [light.segmented_control]
-segment_height = 30.0
-separator_width = 1.0
+segment_height_px = 30.0
+separator_width_px = 1.0
 active_background = "#3daee9"
 active_text_color = "#fcfcfc"
 hover_background = "#dee0e2"
 
 
 [light.segmented_control.border]
-padding_horizontal = 8.0
+padding_horizontal_px = 8.0
 [light.card]
 
 [light.expander]
-header_height = 40.0
-arrow_icon_size =10.0
+header_height_px = 40.0
+arrow_icon_size_px =10.0
 hover_background = "#dee0e2"
 arrow_color = "#232629"
 
@@ -320,8 +320,8 @@ accent_text_color = "#fcfcfc"
 
 disabled_opacity = 0.5
 line_height = 1.36
-focus_ring_width = 1.0
-focus_ring_offset = 2.0
+focus_ring_width_px = 1.0
+focus_ring_offset_px = 2.0
 text_scaling_factor = 1.0
 reduce_motion = false
 high_contrast = false
@@ -330,9 +330,9 @@ reduce_transparency = false
 
 [dark.defaults.border]
 color = "#4d545b"
-corner_radius = 5.0
-corner_radius_lg = 8.0
-line_width = 1.0
+corner_radius_px = 5.0
+corner_radius_lg_px = 8.0
+line_width_px = 1.0
 opacity = 0.2
 shadow_enabled = true
 [dark.defaults.font]
@@ -346,11 +346,11 @@ size_pt =10.0
 weight = 400
 
 [dark.defaults.icon_sizes]
-toolbar = 22.0
-small = 16.0
-large = 48.0
-dialog = 32.0
-panel = 48.0
+toolbar_px = 22.0
+small_px = 16.0
+large_px = 48.0
+dialog_px = 32.0
+panel_px = 48.0
 
 [dark.text_scale.caption]
 size_pt =8.2
@@ -378,9 +378,9 @@ inactive_title_bar_text_color = "#a1a4a6"
 
 [dark.button]
 background_color = "#31363b"
-min_width = 80.0
-min_height = 32.0
-icon_text_gap = 4.0
+min_width_px = 80.0
+min_height_px = 32.0
+icon_text_gap_px = 4.0
 hover_background = "#93cee9"
 hover_text_color = "#fcfcfc"
 active_background = "#3daee9"
@@ -390,14 +390,14 @@ disabled_text_color = "#4d545b"
 
 
 [dark.button.border]
-padding_horizontal = 6.0
-padding_vertical = 5.0
+padding_horizontal_px = 6.0
+padding_vertical_px = 5.0
 
 [dark.button.font]
 color = "#fcfcfc"
 [dark.input]
 background_color = "#1b1e20"
-min_height = 32.0
+min_height_px = 32.0
 hover_border_color = "#3daee9"
 focus_border_color = "#3daee9"
 disabled_background = "#282c30"
@@ -405,14 +405,14 @@ disabled_text_color = "#4d545b"
 
 
 [dark.input.border]
-padding_horizontal = 6.0
-padding_vertical = 3.0
+padding_horizontal_px = 6.0
+padding_vertical_px = 3.0
 
 [dark.input.font]
 color = "#fcfcfc"
 [dark.checkbox]
-indicator_width = 20.0
-label_gap = 4.0
+indicator_width_px = 20.0
+label_gap_px = 4.0
 hover_background = "#93cee9"
 disabled_background = "#3a3f44"
 disabled_text_color = "#4d545b"
@@ -421,39 +421,39 @@ unchecked_border_color = "#4d545b"
 
 [dark.tooltip]
 background_color = "#31363b"
-max_width = 300.0
+max_width_px = 300.0
 
 
 [dark.tooltip.border]
-padding_horizontal = 3.0
-padding_vertical = 3.0
+padding_horizontal_px = 3.0
+padding_vertical_px = 3.0
 
 [dark.tooltip.font]
 color = "#fcfcfc"
 [dark.scrollbar]
-groove_width = 21.0
-min_thumb_length = 20.0
-thumb_width = 8.0
+groove_width_px = 21.0
+min_thumb_length_px = 20.0
+thumb_width_px = 8.0
 overlay_mode = false
 thumb_hover_color = "#93cee9"
 thumb_active_color = "#3daee9"
 
 [dark.slider]
-track_height = 6.0
-thumb_diameter = 20.0
-tick_mark_length = 8.0
+track_height_px = 6.0
+thumb_diameter_px = 20.0
+tick_mark_length_px = 8.0
 thumb_hover_color = "#93cee9"
 disabled_fill_color = "#4d545b"
 disabled_track_color = "#2d3035"
 disabled_thumb_color = "#2d3035"
 
 [dark.progress_bar]
-track_height = 6.0
-min_width = 6.0
+track_height_px = 6.0
+min_width_px = 6.0
 
 [dark.tab]
-min_width = 80.0
-min_height = 30.0
+min_width_px = 80.0
+min_height_px = 30.0
 active_background = "#232629"
 active_text_color = "#fcfcfc"
 hover_background = "#31363b"
@@ -461,33 +461,33 @@ hover_text_color = "#fcfcfc"
 
 
 [dark.tab.border]
-padding_horizontal = 8.0
-padding_vertical = 4.0
+padding_horizontal_px = 8.0
+padding_vertical_px = 4.0
 [dark.menu]
-row_height = 28.0
-icon_text_gap = 8.0
+row_height_px = 28.0
+icon_text_gap_px = 8.0
 hover_background = "#3daee9"
 hover_text_color = "#fcfcfc"
 disabled_text_color = "#4d545b"
 
 
 [dark.menu.border]
-padding_horizontal = 4.0
-padding_vertical = 4.0
+padding_horizontal_px = 4.0
+padding_vertical_px = 4.0
 [dark.list]
 alternate_row_background = "#2a2e32"
-row_height = 28.0
+row_height_px = 28.0
 hover_background = "#2e4a5e"
 hover_text_color = "#fcfcfc"
 disabled_text_color = "#4d545b"
 
 
 [dark.list.border]
-padding_horizontal = 2.0
-padding_vertical = 1.0
+padding_horizontal_px = 2.0
+padding_vertical_px = 1.0
 [dark.toolbar]
-bar_height = 40.0
-item_gap = 0.0
+bar_height_px = 40.0
+item_gap_px = 0.0
 
 [dark.sidebar]
 background_color = "#272c31"
@@ -506,16 +506,16 @@ color = "#fcfcfc"
 line_color = "#3e4550"
 
 [dark.splitter]
-divider_width = 1.0
+divider_width_px = 1.0
 hover_color = "#4d545b"
 
 [dark.switch]
 unchecked_background = "#4d545b"
 thumb_background = "#fcfcfc"
-track_width = 36.0
-track_height = 18.0
-thumb_diameter = 18.0
-track_radius = 9.0
+track_width_px = 36.0
+track_height_px = 18.0
+thumb_diameter_px = 18.0
+track_radius_px = 9.0
 hover_checked_background = "#2e9ad6"
 hover_unchecked_background = "#596068"
 disabled_checked_background = "#3daee980"
@@ -524,12 +524,12 @@ disabled_thumb_color = "#fcfcfc80"
 
 [dark.dialog]
 button_order = "primary_left"
-min_width = 320.0
-max_width = 560.0
-min_height = 140.0
-max_height = 600.0
-button_gap = 6.0
-icon_size =32.0
+min_width_px = 320.0
+max_width_px = 560.0
+min_height_px = 140.0
+max_height_px = 600.0
+button_gap_px = 6.0
+icon_size_px =32.0
 
 [dark.link]
 underline_enabled = true
@@ -540,43 +540,43 @@ active_text_color = "#1d99f3"
 disabled_text_color = "#4d545b"
 
 [dark.spinner]
-diameter = 36.0
-min_diameter = 16.0
-stroke_width = 2.0
+diameter_px = 36.0
+min_diameter_px = 16.0
+stroke_width_px = 2.0
 
 [dark.combo_box]
-min_height = 32.0
-min_width = 120.0
-arrow_icon_size =20.0
-arrow_area_width = 20.0
+min_height_px = 32.0
+min_width_px = 120.0
+arrow_icon_size_px =20.0
+arrow_area_width_px = 20.0
 hover_background = "#93cee9"
 disabled_background = "#3a3f44"
 disabled_text_color = "#4d545b"
 
 
 [dark.combo_box.border]
-padding_horizontal = 6.0
+padding_horizontal_px = 6.0
 [dark.segmented_control]
-segment_height = 30.0
-separator_width = 1.0
+segment_height_px = 30.0
+separator_width_px = 1.0
 active_background = "#3daee9"
 active_text_color = "#fcfcfc"
 hover_background = "#31363b"
 
 
 [dark.segmented_control.border]
-padding_horizontal = 8.0
+padding_horizontal_px = 8.0
 [dark.card]
 
 [dark.expander]
-header_height = 40.0
-arrow_icon_size =10.0
+header_height_px = 40.0
+arrow_icon_size_px =10.0
 hover_background = "#31363b"
 arrow_color = "#fcfcfc"
 
 
 [layout]
-widget_gap = 6.0
-container_margin = 6.0
-window_margin = 10.0
-section_gap = 18.0
+widget_gap_px = 6.0
+container_margin_px = 6.0
+window_margin_px = 10.0
+section_gap_px = 18.0

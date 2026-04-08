@@ -34,8 +34,8 @@ accent_text_color = "#ffffff"
 
 disabled_opacity = 0.3
 line_height = 1.19
-focus_ring_width = 3.0
-focus_ring_offset = -1.0
+focus_ring_width_px = 3.0
+focus_ring_offset_px = -1.0
 text_scaling_factor = 1.0
 reduce_motion = false
 high_contrast = false
@@ -44,9 +44,9 @@ reduce_transparency = false
 
 [light.defaults.border]
 color = "#d5d5d5"
-corner_radius = 5.0
-corner_radius_lg = 10.0
-line_width = 0.5
+corner_radius_px = 5.0
+corner_radius_lg_px = 10.0
+line_width_px = 0.5
 opacity = 0.2
 shadow_enabled = true
 [light.defaults.font]
@@ -61,17 +61,17 @@ weight = 400
 
 [light.defaults.icon_sizes]
 # toolbar icon_sizes = 24 matches the small toolbar icon mode. Large mode uses 32.
-toolbar = 24.0
-small = 16.0
-large = 32.0
-dialog = 22.0
-panel = 20.0
+toolbar_px = 24.0
+small_px = 16.0
+large_px = 32.0
+dialog_px = 22.0
+panel_px = 20.0
 
 [light.button]
 background_color = "#e8e8ed"
-min_width = 64.0
-min_height = 22.0
-icon_text_gap = 4.0
+min_width_px = 64.0
+min_height_px = 22.0
+icon_text_gap_px = 4.0
 # Interactive state colors (platform-facts.md section 2.3 macOS)
 hover_background = "#e0e0e5"
 hover_text_color = "#1d1d1f"
@@ -84,14 +84,14 @@ disabled_background = "#e8e8ed80"
 
 
 [light.button.border]
-padding_horizontal = 8.0
-padding_vertical = 3.0
+padding_horizontal_px = 8.0
+padding_vertical_px = 3.0
 
 [light.button.font]
 color = "#1d1d1f"
 [light.input]
 background_color = "#ffffff"
-min_height = 22.0
+min_height_px = 22.0
 # Interactive state colors (platform-facts.md section 2.4 macOS)
 disabled_text_color = "#c7c7cc"
 # soft_option: NSTextField hover ring -- accent-derived border
@@ -103,14 +103,14 @@ disabled_background = "#ffffff80"
 
 
 [light.input.border]
-padding_horizontal = 4.0
-padding_vertical = 3.0
+padding_horizontal_px = 4.0
+padding_vertical_px = 3.0
 
 [light.input.font]
 color = "#1d1d1f"
 [light.checkbox]
-indicator_width = 14.0
-label_gap = 4.0
+indicator_width_px = 14.0
+label_gap_px = 4.0
 # Interactive state colors (platform-facts.md section 2.5 macOS)
 disabled_text_color = "#c7c7cc"
 # soft_option: checkbox hover state -- subtle highlight
@@ -124,20 +124,20 @@ unchecked_border_color = "#86868b"
 
 [light.tooltip]
 background_color = "#2c2c2e"
-max_width = 300.0
+max_width_px = 300.0
 
 
 [light.tooltip.border]
-padding_horizontal = 4.0
-padding_vertical = 4.0
+padding_horizontal_px = 4.0
+padding_vertical_px = 4.0
 
 [light.tooltip.font]
 color = "#ffffff"
 [light.scrollbar]
-groove_width = 16.0
-thumb_width = 7.0
+groove_width_px = 16.0
+thumb_width_px = 7.0
 overlay_mode = true
-min_thumb_length = 40.0
+min_thumb_length_px = 40.0
 # Interactive state colors (platform-facts.md section 2.8 macOS)
 # measured Sonoma scrollbar thumb hover -- NOT defaults.muted_color
 thumb_hover_color = "#60606080"
@@ -145,9 +145,9 @@ thumb_hover_color = "#60606080"
 thumb_active_color = "#50505090"
 
 [light.slider]
-track_height = 5.0
-thumb_diameter = 21.0
-tick_mark_length = 8.0
+track_height_px = 5.0
+thumb_diameter_px = 21.0
+tick_mark_length_px = 8.0
 # soft_option interactive state colors (platform-facts.md section 2.9 macOS)
 # slider knob hover -- slightly darker surface
 thumb_hover_color = "#e0e0e0"
@@ -159,12 +159,12 @@ disabled_track_color = "#86868b50"
 disabled_thumb_color = "#ffffff80"
 
 [light.progress_bar]
-track_height = 6.0
-min_width = 100.0
+track_height_px = 6.0
+min_width_px = 100.0
 
 [light.tab]
-min_width = 64.0
-min_height = 24.0
+min_width_px = 64.0
+min_height_px = 24.0
 # Interactive state colors (platform-facts.md section 2.11 macOS)
 active_background = "#f0f0f0"
 active_text_color = "#1d1d1f"
@@ -174,11 +174,11 @@ hover_background = "#e8e8ed"
 
 
 [light.tab.border]
-padding_horizontal = 12.0
-padding_vertical = 4.0
+padding_horizontal_px = 12.0
+padding_vertical_px = 4.0
 [light.menu]
-row_height = 22.0
-icon_text_gap = 4.0
+row_height_px = 22.0
+icon_text_gap_px = 4.0
 # Interactive state colors (platform-facts.md section 2.6 macOS)
 # selectedContentBackgroundColor = accent color
 hover_background = "#007aff"
@@ -188,11 +188,11 @@ disabled_text_color = "#c7c7cc"
 
 
 [light.menu.border]
-padding_horizontal = 12.0
-padding_vertical = 3.0
+padding_horizontal_px = 12.0
+padding_vertical_px = 3.0
 [light.list]
 alternate_row_background = "#f5f5fa"
-row_height = 24.0
+row_height_px = 24.0
 # Interactive state colors (platform-facts.md section 2.15 macOS)
 # selectedContentBackgroundColor at reduced opacity
 hover_background = "#007aff18"
@@ -201,11 +201,11 @@ disabled_text_color = "#c7c7cc"
 
 
 [light.list.border]
-padding_horizontal = 4.0
-padding_vertical = 4.0
+padding_horizontal_px = 4.0
+padding_vertical_px = 4.0
 [light.toolbar]
-bar_height = 38.0
-item_gap = 8.0
+bar_height_px = 38.0
+item_gap_px = 8.0
 
 [light.sidebar]
 background_color = "#e8e8ed"
@@ -226,7 +226,7 @@ color = "#1d1d1f"
 line_color = "#d5d5d5"
 
 [light.splitter]
-divider_width = 6.0
+divider_width_px = 6.0
 # Interactive state colors (platform-facts.md section 2.17 macOS)
 # splitter.divider_color = separatorColor = border.color
 hover_color = "#d5d5d5"
@@ -234,10 +234,10 @@ hover_color = "#d5d5d5"
 [light.switch]
 unchecked_background = "#d5d5d5"
 thumb_background = "#ffffff"
-track_width = 38.0
-track_height = 22.0
-thumb_diameter = 18.0
-track_radius = 11.0
+track_width_px = 38.0
+track_height_px = 22.0
+thumb_diameter_px = 18.0
+track_radius_px = 11.0
 # soft_option interactive state colors (macOS NSSwitch)
 # NSSwitch hover checked -- slightly brighter accent
 hover_checked_background = "#1a8aff"
@@ -252,12 +252,12 @@ disabled_thumb_color = "#ffffff80"
 
 [light.dialog]
 button_order = "primary_right"
-min_width = 320.0
-max_width = 560.0
-min_height = 140.0
-max_height = 600.0
-button_gap = 12.0
-icon_size =64.0
+min_width_px = 320.0
+max_width_px = 560.0
+min_height_px = 140.0
+max_height_px = 600.0
+button_gap_px = 12.0
+icon_size_px =64.0
 
 [light.link]
 underline_enabled = true
@@ -269,15 +269,15 @@ active_text_color = "#007aff"
 disabled_text_color = "#c7c7cc"
 
 [light.spinner]
-diameter = 32.0
-min_diameter = 10.0
-stroke_width = 2.0
+diameter_px = 32.0
+min_diameter_px = 10.0
+stroke_width_px = 2.0
 
 [light.combo_box]
-min_height = 21.0
-min_width = 120.0
-arrow_icon_size =17.0
-arrow_area_width = 17.0
+min_height_px = 21.0
+min_width_px = 120.0
+arrow_icon_size_px =17.0
+arrow_area_width_px = 17.0
 # Interactive state colors (platform-facts.md section 2.24 macOS)
 disabled_text_color = "#c7c7cc"
 # soft_option: NSPopUpButton hover -- subtle highlight
@@ -287,10 +287,10 @@ disabled_background = "#e8e8ed80"
 
 
 [light.combo_box.border]
-padding_horizontal = 9.0
+padding_horizontal_px = 9.0
 [light.segmented_control]
-segment_height = 24.0
-separator_width = 1.0
+segment_height_px = 24.0
+separator_width_px = 1.0
 # Interactive state colors (platform-facts.md section 2.25 macOS)
 # selectedContentBackgroundColor
 active_background = "#007aff"
@@ -301,12 +301,12 @@ hover_background = "#e0e0e5"
 
 
 [light.segmented_control.border]
-padding_horizontal = 9.0
+padding_horizontal_px = 9.0
 [light.card]
 
 [light.expander]
-header_height = 40.0
-arrow_icon_size =13.0
+header_height_px = 40.0
+arrow_icon_size_px =13.0
 # soft_option interactive state colors (macOS disclosure)
 # disclosure hover -- subtle highlight
 hover_background = "#e0e0e5"
@@ -366,8 +366,8 @@ accent_text_color = "#ffffff"
 
 disabled_opacity = 0.3
 line_height = 1.19
-focus_ring_width = 3.0
-focus_ring_offset = -1.0
+focus_ring_width_px = 3.0
+focus_ring_offset_px = -1.0
 text_scaling_factor = 1.0
 reduce_motion = false
 high_contrast = false
@@ -376,9 +376,9 @@ reduce_transparency = false
 
 [dark.defaults.border]
 color = "#3d3d3d"
-corner_radius = 5.0
-corner_radius_lg = 10.0
-line_width = 0.5
+corner_radius_px = 5.0
+corner_radius_lg_px = 10.0
+line_width_px = 0.5
 opacity = 0.2
 shadow_enabled = true
 [dark.defaults.font]
@@ -393,17 +393,17 @@ weight = 400
 
 [dark.defaults.icon_sizes]
 # toolbar icon_sizes = 24 matches the small toolbar icon mode. Large mode uses 32.
-toolbar = 24.0
-small = 16.0
-large = 32.0
-dialog = 22.0
-panel = 20.0
+toolbar_px = 24.0
+small_px = 16.0
+large_px = 32.0
+dialog_px = 22.0
+panel_px = 20.0
 
 [dark.button]
 background_color = "#3a3a3c"
-min_width = 64.0
-min_height = 22.0
-icon_text_gap = 4.0
+min_width_px = 64.0
+min_height_px = 22.0
+icon_text_gap_px = 4.0
 # Interactive state colors (platform-facts.md section 2.3 macOS)
 hover_background = "#444446"
 hover_text_color = "#ffffff"
@@ -416,14 +416,14 @@ disabled_background = "#3a3a3c80"
 
 
 [dark.button.border]
-padding_horizontal = 8.0
-padding_vertical = 3.0
+padding_horizontal_px = 8.0
+padding_vertical_px = 3.0
 
 [dark.button.font]
 color = "#ffffff"
 [dark.input]
 background_color = "#2d2d2d"
-min_height = 22.0
+min_height_px = 22.0
 # Interactive state colors (platform-facts.md section 2.4 macOS)
 disabled_text_color = "#48484a"
 # soft_option: NSTextField hover ring -- accent-derived border
@@ -435,14 +435,14 @@ disabled_background = "#2d2d2d80"
 
 
 [dark.input.border]
-padding_horizontal = 4.0
-padding_vertical = 3.0
+padding_horizontal_px = 4.0
+padding_vertical_px = 3.0
 
 [dark.input.font]
 color = "#ffffff"
 [dark.checkbox]
-indicator_width = 14.0
-label_gap = 4.0
+indicator_width_px = 14.0
+label_gap_px = 4.0
 # Interactive state colors (platform-facts.md section 2.5 macOS)
 disabled_text_color = "#48484a"
 # soft_option: checkbox hover state -- subtle highlight
@@ -456,20 +456,20 @@ unchecked_border_color = "#98989d"
 
 [dark.tooltip]
 background_color = "#3a3a3c"
-max_width = 300.0
+max_width_px = 300.0
 
 
 [dark.tooltip.border]
-padding_horizontal = 4.0
-padding_vertical = 4.0
+padding_horizontal_px = 4.0
+padding_vertical_px = 4.0
 
 [dark.tooltip.font]
 color = "#ffffff"
 [dark.scrollbar]
-groove_width = 16.0
-thumb_width = 7.0
+groove_width_px = 16.0
+thumb_width_px = 7.0
 overlay_mode = true
-min_thumb_length = 40.0
+min_thumb_length_px = 40.0
 # Interactive state colors (platform-facts.md section 2.8 macOS)
 # measured Sonoma scrollbar thumb hover -- NOT defaults.muted_color
 thumb_hover_color = "#a0a0a080"
@@ -477,9 +477,9 @@ thumb_hover_color = "#a0a0a080"
 thumb_active_color = "#b0b0b090"
 
 [dark.slider]
-track_height = 5.0
-thumb_diameter = 21.0
-tick_mark_length = 8.0
+track_height_px = 5.0
+thumb_diameter_px = 21.0
+tick_mark_length_px = 8.0
 # soft_option interactive state colors (platform-facts.md section 2.9 macOS)
 # slider knob hover -- slightly brighter surface
 thumb_hover_color = "#3a3a3c"
@@ -491,12 +491,12 @@ disabled_track_color = "#98989d50"
 disabled_thumb_color = "#2d2d2d80"
 
 [dark.progress_bar]
-track_height = 6.0
-min_width = 100.0
+track_height_px = 6.0
+min_width_px = 100.0
 
 [dark.tab]
-min_width = 64.0
-min_height = 24.0
+min_width_px = 64.0
+min_height_px = 24.0
 # Interactive state colors (platform-facts.md section 2.11 macOS)
 active_background = "#1e1e1e"
 active_text_color = "#ffffff"
@@ -506,11 +506,11 @@ hover_background = "#3a3a3c"
 
 
 [dark.tab.border]
-padding_horizontal = 12.0
-padding_vertical = 4.0
+padding_horizontal_px = 12.0
+padding_vertical_px = 4.0
 [dark.menu]
-row_height = 22.0
-icon_text_gap = 4.0
+row_height_px = 22.0
+icon_text_gap_px = 4.0
 # Interactive state colors (platform-facts.md section 2.6 macOS)
 # selectedContentBackgroundColor = accent color
 hover_background = "#0a84ff"
@@ -520,11 +520,11 @@ disabled_text_color = "#48484a"
 
 
 [dark.menu.border]
-padding_horizontal = 12.0
-padding_vertical = 3.0
+padding_horizontal_px = 12.0
+padding_vertical_px = 3.0
 [dark.list]
 alternate_row_background = "#252527"
-row_height = 24.0
+row_height_px = 24.0
 # Interactive state colors (platform-facts.md section 2.15 macOS)
 # selectedContentBackgroundColor at reduced opacity
 hover_background = "#0a84ff18"
@@ -533,11 +533,11 @@ disabled_text_color = "#48484a"
 
 
 [dark.list.border]
-padding_horizontal = 4.0
-padding_vertical = 4.0
+padding_horizontal_px = 4.0
+padding_vertical_px = 4.0
 [dark.toolbar]
-bar_height = 38.0
-item_gap = 8.0
+bar_height_px = 38.0
+item_gap_px = 8.0
 
 [dark.sidebar]
 background_color = "#262626"
@@ -558,7 +558,7 @@ color = "#ffffff"
 line_color = "#3d3d3d"
 
 [dark.splitter]
-divider_width = 6.0
+divider_width_px = 6.0
 # Interactive state colors (platform-facts.md section 2.17 macOS)
 # splitter.divider_color = separatorColor = border.color
 hover_color = "#3d3d3d"
@@ -566,10 +566,10 @@ hover_color = "#3d3d3d"
 [dark.switch]
 unchecked_background = "#3d3d3d"
 thumb_background = "#ffffff"
-track_width = 38.0
-track_height = 22.0
-thumb_diameter = 18.0
-track_radius = 11.0
+track_width_px = 38.0
+track_height_px = 22.0
+thumb_diameter_px = 18.0
+track_radius_px = 11.0
 # soft_option interactive state colors (macOS NSSwitch)
 # NSSwitch hover checked -- slightly brighter accent
 hover_checked_background = "#2e94ff"
@@ -584,12 +584,12 @@ disabled_thumb_color = "#ffffff80"
 
 [dark.dialog]
 button_order = "primary_right"
-min_width = 320.0
-max_width = 560.0
-min_height = 140.0
-max_height = 600.0
-button_gap = 12.0
-icon_size =64.0
+min_width_px = 320.0
+max_width_px = 560.0
+min_height_px = 140.0
+max_height_px = 600.0
+button_gap_px = 12.0
+icon_size_px =64.0
 
 [dark.link]
 underline_enabled = true
@@ -601,15 +601,15 @@ active_text_color = "#0a84ff"
 disabled_text_color = "#48484a"
 
 [dark.spinner]
-diameter = 32.0
-min_diameter = 10.0
-stroke_width = 2.0
+diameter_px = 32.0
+min_diameter_px = 10.0
+stroke_width_px = 2.0
 
 [dark.combo_box]
-min_height = 21.0
-min_width = 120.0
-arrow_icon_size =17.0
-arrow_area_width = 17.0
+min_height_px = 21.0
+min_width_px = 120.0
+arrow_icon_size_px =17.0
+arrow_area_width_px = 17.0
 # Interactive state colors (platform-facts.md section 2.24 macOS)
 disabled_text_color = "#48484a"
 # soft_option: NSPopUpButton hover -- subtle highlight
@@ -619,10 +619,10 @@ disabled_background = "#3a3a3c80"
 
 
 [dark.combo_box.border]
-padding_horizontal = 9.0
+padding_horizontal_px = 9.0
 [dark.segmented_control]
-segment_height = 24.0
-separator_width = 1.0
+segment_height_px = 24.0
+separator_width_px = 1.0
 # Interactive state colors (platform-facts.md section 2.25 macOS)
 # selectedContentBackgroundColor
 active_background = "#0a84ff"
@@ -633,12 +633,12 @@ hover_background = "#444446"
 
 
 [dark.segmented_control.border]
-padding_horizontal = 9.0
+padding_horizontal_px = 9.0
 [dark.card]
 
 [dark.expander]
-header_height = 40.0
-arrow_icon_size =13.0
+header_height_px = 40.0
+arrow_icon_size_px =13.0
 # soft_option interactive state colors (macOS disclosure)
 # disclosure hover -- subtle highlight
 hover_background = "#444446"
@@ -668,7 +668,7 @@ size_pt =26.0
 
 
 [layout]
-widget_gap = 8.0
-container_margin = 8.0
-window_margin = 20.0
-section_gap = 20.0
+widget_gap_px = 8.0
+container_margin_px = 8.0
+window_margin_px = 20.0
+section_gap_px = 20.0

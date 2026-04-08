@@ -7,22 +7,22 @@ name = "macOS Sonoma"
 [light.defaults]
 disabled_opacity = 0.3
 line_height = 1.19
-focus_ring_width = 3.0
-focus_ring_offset = -1.0
+focus_ring_width_px = 3.0
+focus_ring_offset_px = -1.0
 
 
 [light.defaults.border]
-corner_radius = 5.0
-corner_radius_lg = 10.0
-line_width = 0.5
+corner_radius_px = 5.0
+corner_radius_lg_px = 10.0
+line_width_px = 0.5
 opacity = 0.2
 shadow_enabled = true
 [light.defaults.icon_sizes]
-toolbar = 24.0
-small = 16.0
-large = 32.0
-dialog = 22.0
-panel = 20.0
+toolbar_px = 24.0
+small_px = 16.0
+large_px = 32.0
+dialog_px = 22.0
+panel_px = 20.0
 
 [light.text_scale.caption]
 size_pt =10.7
@@ -45,143 +45,143 @@ weight = 700
 line_height = 30.9
 
 [light.button]
-min_width = 64.0
-min_height = 22.0
-icon_text_gap = 4.0
+min_width_px = 64.0
+min_height_px = 22.0
+icon_text_gap_px = 4.0
 
 
 [light.button.border]
-padding_horizontal = 8.0
-padding_vertical = 3.0
+padding_horizontal_px = 8.0
+padding_vertical_px = 3.0
 [light.input]
-min_height = 22.0
+min_height_px = 22.0
 
 
 [light.input.border]
-padding_horizontal = 4.0
-padding_vertical = 3.0
+padding_horizontal_px = 4.0
+padding_vertical_px = 3.0
 [light.checkbox]
-indicator_width = 14.0
-label_gap = 4.0
+indicator_width_px = 14.0
+label_gap_px = 4.0
 
 [light.tooltip]
-max_width = 300.0
+max_width_px = 300.0
 
 
 [light.tooltip.border]
-padding_horizontal = 4.0
-padding_vertical = 4.0
+padding_horizontal_px = 4.0
+padding_vertical_px = 4.0
 [light.scrollbar]
-groove_width = 16.0
-thumb_width = 7.0
+groove_width_px = 16.0
+thumb_width_px = 7.0
 overlay_mode = true
-min_thumb_length = 40.0
+min_thumb_length_px = 40.0
 
 [light.slider]
-track_height = 5.0
-thumb_diameter = 21.0
-tick_mark_length = 8.0
+track_height_px = 5.0
+thumb_diameter_px = 21.0
+tick_mark_length_px = 8.0
 
 [light.progress_bar]
-track_height = 6.0
-min_width = 100.0
+track_height_px = 6.0
+min_width_px = 100.0
 
 [light.tab]
-min_width = 64.0
-min_height = 24.0
+min_width_px = 64.0
+min_height_px = 24.0
 
 
 [light.tab.border]
-padding_horizontal = 12.0
-padding_vertical = 4.0
+padding_horizontal_px = 12.0
+padding_vertical_px = 4.0
 [light.menu]
-row_height = 22.0
-icon_text_gap = 4.0
+row_height_px = 22.0
+icon_text_gap_px = 4.0
 
 
 [light.menu.border]
-padding_horizontal = 12.0
-padding_vertical = 3.0
+padding_horizontal_px = 12.0
+padding_vertical_px = 3.0
 [light.list]
-row_height = 24.0
+row_height_px = 24.0
 
 
 [light.list.border]
-padding_horizontal = 4.0
-padding_vertical = 4.0
+padding_horizontal_px = 4.0
+padding_vertical_px = 4.0
 [light.toolbar]
-bar_height = 38.0
-item_gap = 8.0
+bar_height_px = 38.0
+item_gap_px = 8.0
 
 [light.splitter]
-divider_width = 6.0
+divider_width_px = 6.0
 
 [light.switch]
-track_width = 38.0
-track_height = 22.0
-thumb_diameter = 18.0
-track_radius = 11.0
+track_width_px = 38.0
+track_height_px = 22.0
+thumb_diameter_px = 18.0
+track_radius_px = 11.0
 
 [light.dialog]
 button_order = "primary_right"
-min_width = 320.0
-max_width = 560.0
-min_height = 140.0
-max_height = 600.0
-button_gap = 12.0
-icon_size =64.0
+min_width_px = 320.0
+max_width_px = 560.0
+min_height_px = 140.0
+max_height_px = 600.0
+button_gap_px = 12.0
+icon_size_px =64.0
 
 [light.link]
 underline_enabled = true
 
 [light.spinner]
-diameter = 32.0
-min_diameter = 10.0
-stroke_width = 2.0
+diameter_px = 32.0
+min_diameter_px = 10.0
+stroke_width_px = 2.0
 
 [light.combo_box]
-min_height = 21.0
-min_width = 120.0
-arrow_icon_size =17.0
-arrow_area_width = 17.0
+min_height_px = 21.0
+min_width_px = 120.0
+arrow_icon_size_px =17.0
+arrow_area_width_px = 17.0
 
 
 [light.combo_box.border]
-padding_horizontal = 9.0
+padding_horizontal_px = 9.0
 [light.segmented_control]
-segment_height = 24.0
-separator_width = 1.0
+segment_height_px = 24.0
+separator_width_px = 1.0
 
 
 [light.segmented_control.border]
-padding_horizontal = 9.0
+padding_horizontal_px = 9.0
 [light.card]
 
 [light.expander]
-header_height = 40.0
-arrow_icon_size =13.0
+header_height_px = 40.0
+arrow_icon_size_px =13.0
 
 # === Dark variant ===
 
 [dark.defaults]
 disabled_opacity = 0.3
 line_height = 1.19
-focus_ring_width = 3.0
-focus_ring_offset = -1.0
+focus_ring_width_px = 3.0
+focus_ring_offset_px = -1.0
 
 
 [dark.defaults.border]
-corner_radius = 5.0
-corner_radius_lg = 10.0
-line_width = 0.5
+corner_radius_px = 5.0
+corner_radius_lg_px = 10.0
+line_width_px = 0.5
 opacity = 0.2
 shadow_enabled = true
 [dark.defaults.icon_sizes]
-toolbar = 24.0
-small = 16.0
-large = 32.0
-dialog = 22.0
-panel = 20.0
+toolbar_px = 24.0
+small_px = 16.0
+large_px = 32.0
+dialog_px = 22.0
+panel_px = 20.0
 
 [dark.text_scale.caption]
 size_pt =10.7
@@ -204,118 +204,118 @@ weight = 700
 line_height = 30.9
 
 [dark.button]
-min_width = 64.0
-min_height = 22.0
-icon_text_gap = 4.0
+min_width_px = 64.0
+min_height_px = 22.0
+icon_text_gap_px = 4.0
 
 
 [dark.button.border]
-padding_horizontal = 8.0
-padding_vertical = 3.0
+padding_horizontal_px = 8.0
+padding_vertical_px = 3.0
 [dark.input]
-min_height = 22.0
+min_height_px = 22.0
 
 
 [dark.input.border]
-padding_horizontal = 4.0
-padding_vertical = 3.0
+padding_horizontal_px = 4.0
+padding_vertical_px = 3.0
 [dark.checkbox]
-indicator_width = 14.0
-label_gap = 4.0
+indicator_width_px = 14.0
+label_gap_px = 4.0
 
 [dark.tooltip]
-max_width = 300.0
+max_width_px = 300.0
 
 
 [dark.tooltip.border]
-padding_horizontal = 4.0
-padding_vertical = 4.0
+padding_horizontal_px = 4.0
+padding_vertical_px = 4.0
 [dark.scrollbar]
-groove_width = 16.0
-thumb_width = 7.0
+groove_width_px = 16.0
+thumb_width_px = 7.0
 overlay_mode = true
-min_thumb_length = 40.0
+min_thumb_length_px = 40.0
 
 [dark.slider]
-track_height = 5.0
-thumb_diameter = 21.0
-tick_mark_length = 8.0
+track_height_px = 5.0
+thumb_diameter_px = 21.0
+tick_mark_length_px = 8.0
 
 [dark.progress_bar]
-track_height = 6.0
-min_width = 100.0
+track_height_px = 6.0
+min_width_px = 100.0
 
 [dark.tab]
-min_width = 64.0
-min_height = 24.0
+min_width_px = 64.0
+min_height_px = 24.0
 
 
 [dark.tab.border]
-padding_horizontal = 12.0
-padding_vertical = 4.0
+padding_horizontal_px = 12.0
+padding_vertical_px = 4.0
 [dark.menu]
-row_height = 22.0
-icon_text_gap = 4.0
+row_height_px = 22.0
+icon_text_gap_px = 4.0
 
 
 [dark.menu.border]
-padding_horizontal = 12.0
-padding_vertical = 3.0
+padding_horizontal_px = 12.0
+padding_vertical_px = 3.0
 [dark.list]
-row_height = 24.0
+row_height_px = 24.0
 
 
 [dark.list.border]
-padding_horizontal = 4.0
-padding_vertical = 4.0
+padding_horizontal_px = 4.0
+padding_vertical_px = 4.0
 [dark.toolbar]
-bar_height = 38.0
-item_gap = 8.0
+bar_height_px = 38.0
+item_gap_px = 8.0
 
 [dark.splitter]
-divider_width = 6.0
+divider_width_px = 6.0
 
 [dark.switch]
-track_width = 38.0
-track_height = 22.0
-thumb_diameter = 18.0
-track_radius = 11.0
+track_width_px = 38.0
+track_height_px = 22.0
+thumb_diameter_px = 18.0
+track_radius_px = 11.0
 
 [dark.dialog]
 button_order = "primary_right"
-min_width = 320.0
-max_width = 560.0
-min_height = 140.0
-max_height = 600.0
-button_gap = 12.0
-icon_size =64.0
+min_width_px = 320.0
+max_width_px = 560.0
+min_height_px = 140.0
+max_height_px = 600.0
+button_gap_px = 12.0
+icon_size_px =64.0
 
 [dark.link]
 underline_enabled = true
 
 [dark.spinner]
-diameter = 32.0
-min_diameter = 10.0
-stroke_width = 2.0
+diameter_px = 32.0
+min_diameter_px = 10.0
+stroke_width_px = 2.0
 
 [dark.combo_box]
-min_height = 21.0
-min_width = 120.0
-arrow_icon_size =17.0
-arrow_area_width = 17.0
+min_height_px = 21.0
+min_width_px = 120.0
+arrow_icon_size_px =17.0
+arrow_area_width_px = 17.0
 
 
 [dark.combo_box.border]
-padding_horizontal = 9.0
+padding_horizontal_px = 9.0
 [dark.segmented_control]
-segment_height = 24.0
-separator_width = 1.0
+segment_height_px = 24.0
+separator_width_px = 1.0
 
 
 [dark.segmented_control.border]
-padding_horizontal = 9.0
+padding_horizontal_px = 9.0
 [dark.card]
 
 [dark.expander]
-header_height = 40.0
-arrow_icon_size =13.0
+header_height_px = 40.0
+arrow_icon_size_px =13.0
