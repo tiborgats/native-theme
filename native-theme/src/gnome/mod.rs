@@ -419,6 +419,7 @@ pub(crate) async fn detect_portal_backend() -> Option<super::LinuxDesktop> {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+    use crate::model::font::FontSize;
 
     // === parse_gnome_font_to_fontspec with weight extraction ===
 
@@ -426,7 +427,7 @@ mod tests {
     fn fontspec_bold_weight() {
         let fs = parse_gnome_font_to_fontspec("Cantarell Bold 11").unwrap();
         assert_eq!(fs.family.as_deref(), Some("Cantarell"));
-        assert_eq!(fs.size, Some(11.0));
+        assert_eq!(fs.size, Some(FontSize::Pt(11.0)));
         assert_eq!(fs.weight, Some(700));
     }
 
@@ -434,7 +435,7 @@ mod tests {
     fn fontspec_light_weight() {
         let fs = parse_gnome_font_to_fontspec("Inter Light 10").unwrap();
         assert_eq!(fs.family.as_deref(), Some("Inter"));
-        assert_eq!(fs.size, Some(10.0));
+        assert_eq!(fs.size, Some(FontSize::Pt(10.0)));
         assert_eq!(fs.weight, Some(300));
     }
 
@@ -442,7 +443,7 @@ mod tests {
     fn fontspec_semi_bold_weight() {
         let fs = parse_gnome_font_to_fontspec("Noto Sans Semi-Bold 12").unwrap();
         assert_eq!(fs.family.as_deref(), Some("Noto Sans"));
-        assert_eq!(fs.size, Some(12.0));
+        assert_eq!(fs.size, Some(FontSize::Pt(12.0)));
         assert_eq!(fs.weight, Some(600));
     }
 
@@ -450,7 +451,7 @@ mod tests {
     fn fontspec_no_modifier_defaults_to_regular() {
         let fs = parse_gnome_font_to_fontspec("Cantarell 11").unwrap();
         assert_eq!(fs.family.as_deref(), Some("Cantarell"));
-        assert_eq!(fs.size, Some(11.0));
+        assert_eq!(fs.size, Some(FontSize::Pt(11.0)));
         assert_eq!(fs.weight, Some(400));
     }
 
@@ -458,7 +459,7 @@ mod tests {
     fn fontspec_medium_weight() {
         let fs = parse_gnome_font_to_fontspec("Inter Medium 10.5").unwrap();
         assert_eq!(fs.family.as_deref(), Some("Inter"));
-        assert_eq!(fs.size, Some(10.5));
+        assert_eq!(fs.size, Some(FontSize::Pt(10.5)));
         assert_eq!(fs.weight, Some(500));
     }
 
@@ -466,7 +467,7 @@ mod tests {
     fn fontspec_heavy_weight() {
         let fs = parse_gnome_font_to_fontspec("'Fira Sans Heavy 14'").unwrap();
         assert_eq!(fs.family.as_deref(), Some("Fira Sans"));
-        assert_eq!(fs.size, Some(14.0));
+        assert_eq!(fs.size, Some(FontSize::Pt(14.0)));
         assert_eq!(fs.weight, Some(900));
     }
 
@@ -474,7 +475,7 @@ mod tests {
     fn fontspec_thin_weight() {
         let fs = parse_gnome_font_to_fontspec("Roboto Thin 12").unwrap();
         assert_eq!(fs.family.as_deref(), Some("Roboto"));
-        assert_eq!(fs.size, Some(12.0));
+        assert_eq!(fs.size, Some(FontSize::Pt(12.0)));
         assert_eq!(fs.weight, Some(100));
     }
 
@@ -482,7 +483,7 @@ mod tests {
     fn fontspec_extra_bold_weight() {
         let fs = parse_gnome_font_to_fontspec("Source Sans Extra-Bold 11").unwrap();
         assert_eq!(fs.family.as_deref(), Some("Source Sans"));
-        assert_eq!(fs.size, Some(11.0));
+        assert_eq!(fs.size, Some(FontSize::Pt(11.0)));
         assert_eq!(fs.weight, Some(800));
     }
 
@@ -490,7 +491,7 @@ mod tests {
     fn fontspec_ultra_light_weight() {
         let fs = parse_gnome_font_to_fontspec("Noto Sans Ultra-Light 10").unwrap();
         assert_eq!(fs.family.as_deref(), Some("Noto Sans"));
-        assert_eq!(fs.size, Some(10.0));
+        assert_eq!(fs.size, Some(FontSize::Pt(10.0)));
         assert_eq!(fs.weight, Some(200));
     }
 

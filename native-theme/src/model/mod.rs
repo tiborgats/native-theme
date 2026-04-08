@@ -1155,7 +1155,7 @@ accent_color = "#ff0000"
 background_color = "#ffffff"
 [light.defaults.font]
 family = "Inter"
-size = 14.0
+size_px = 14.0
 [light.button]
 min_height = 32.0
 "##;

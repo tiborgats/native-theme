@@ -513,6 +513,7 @@ pub fn from_macos() -> crate::Result<crate::ThemeSpec> {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+    use crate::model::font::FontSize;
 
     fn sample_widget_fonts() -> WidgetFontData {
         use crate::model::font::FontSize;
@@ -643,13 +644,13 @@ mod tests {
 
         let light = theme.light.as_ref().unwrap();
         assert_eq!(light.defaults.font.family.as_deref(), Some("SF Pro"));
-        assert_eq!(light.defaults.font.size, Some(13.0));
+        assert_eq!(light.defaults.font.size, Some(FontSize::Pt(13.0)));
         assert_eq!(light.defaults.mono_font.family.as_deref(), Some("SF Mono"));
-        assert_eq!(light.defaults.mono_font.size, Some(13.0));
+        assert_eq!(light.defaults.mono_font.size, Some(FontSize::Pt(13.0)));
 
         let dark = theme.dark.as_ref().unwrap();
         assert_eq!(dark.defaults.font.family.as_deref(), Some("SF Pro"));
-        assert_eq!(dark.defaults.font.size, Some(13.0));
+        assert_eq!(dark.defaults.font.size, Some(FontSize::Pt(13.0)));
     }
 
     #[test]
@@ -742,12 +743,12 @@ mod tests {
         let light = theme.light.as_ref().unwrap();
         assert_eq!(
             light.menu.font.as_ref().unwrap().size,
-            Some(14.0),
+            Some(FontSize::Pt(14.0)),
             "menu font size"
         );
         assert_eq!(
             light.tooltip.font.as_ref().unwrap().size,
-            Some(11.0),
+            Some(FontSize::Pt(11.0)),
             "tooltip font size"
         );
         assert_eq!(

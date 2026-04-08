@@ -30,11 +30,13 @@ fn arb_font_style() -> impl Strategy<Value = FontStyle> {
 prop_compose! {
     fn arb_font_spec()(
         family in proptest::option::of("[a-zA-Z ]{1,20}"),
-        size in proptest::option::of(1.0f32..200.0),
+        size_raw in proptest::option::of(1.0f32..200.0),
+        use_pt in any::<bool>(),
         weight in proptest::option::of(100u16..900u16),
         style in proptest::option::of(arb_font_style()),
         color in proptest::option::of(arb_rgba()),
     ) -> FontSpec {
+        let size = size_raw.map(|v| if use_pt { FontSize::Pt(v) } else { FontSize::Px(v) });
         FontSpec { family, size, weight, style, color }
     }
 }
@@ -71,10 +73,12 @@ prop_compose! {
 
 prop_compose! {
     fn arb_text_scale_entry()(
-        size in proptest::option::of(1.0f32..200.0),
+        size_raw in proptest::option::of(1.0f32..200.0),
+        use_pt in any::<bool>(),
         weight in proptest::option::of(100u16..900u16),
         line_height in proptest::option::of(0.5f32..3.0),
     ) -> TextScaleEntry {
+        let size = size_raw.map(|v| if use_pt { FontSize::Pt(v) } else { FontSize::Px(v) });
         TextScaleEntry { size, weight, line_height }
     }
 }

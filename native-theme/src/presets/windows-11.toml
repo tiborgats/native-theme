@@ -272,7 +272,7 @@ max_width = 548.0
 min_height = 184.0
 max_height = 756.0
 button_gap = 8.0
-icon_size_pt =32.0
+icon_size =32.0
 
 [light.dialog.title_font]
 size_pt =15.0
@@ -295,7 +295,7 @@ stroke_width = 4.0
 [light.combo_box]
 min_height = 32.0
 min_width = 64.0
-arrow_icon_size_pt =12.0
+arrow_icon_size =12.0
 arrow_area_width = 38.0
 # Interactive state colors (platform-facts.md section 2.24 Windows)
 disabled_text_color = "#c5c5c5"
@@ -325,7 +325,7 @@ padding_horizontal = 12.0
 
 [light.expander]
 header_height = 48.0
-arrow_icon_size_pt =12.0
+arrow_icon_size =12.0
 # soft_option interactive state colors (Windows Fluent Expander)
 # Fluent Expander hover
 hover_background = "#0000000a"
@@ -609,7 +609,7 @@ max_width = 548.0
 min_height = 184.0
 max_height = 756.0
 button_gap = 8.0
-icon_size_pt =32.0
+icon_size =32.0
 
 [dark.dialog.title_font]
 size_pt =15.0
@@ -632,7 +632,7 @@ stroke_width = 4.0
 [dark.combo_box]
 min_height = 32.0
 min_width = 64.0
-arrow_icon_size_pt =12.0
+arrow_icon_size =12.0
 arrow_area_width = 38.0
 # Interactive state colors (platform-facts.md section 2.24 Windows)
 disabled_text_color = "#454545"
@@ -662,7 +662,7 @@ padding_horizontal = 12.0
 
 [dark.expander]
 header_height = 48.0
-arrow_icon_size_pt =12.0
+arrow_icon_size =12.0
 # soft_option interactive state colors (Windows Fluent Expander)
 # Fluent Expander hover
 hover_background = "#ffffff0f"

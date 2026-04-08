@@ -377,6 +377,7 @@ pub(crate) fn is_dark_theme(ini: &configparser::ini::Ini) -> bool {
 mod tests {
     use super::*;
     use crate::Rgba;
+    use crate::model::font::FontSize;
 
     // === parse_rgb tests ===
 
@@ -659,9 +660,9 @@ BackgroundNormal=49,54,59
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let variant = theme.dark.as_ref().unwrap();
         assert_eq!(variant.defaults.font.family.as_deref(), Some("Noto Sans"));
-        assert_eq!(variant.defaults.font.size, Some(10.0));
+        assert_eq!(variant.defaults.font.size, Some(FontSize::Pt(10.0)));
         assert_eq!(variant.defaults.mono_font.family.as_deref(), Some("Hack"));
-        assert_eq!(variant.defaults.mono_font.size, Some(10.0));
+        assert_eq!(variant.defaults.mono_font.size, Some(FontSize::Pt(10.0)));
     }
 
     #[test]
@@ -1063,7 +1064,7 @@ Name=whatever
         let v = theme.dark.as_ref().unwrap();
         let mf = v.menu.font.as_ref().expect("menu.font should be set");
         assert_eq!(mf.family.as_deref(), Some("Noto Sans"));
-        assert_eq!(mf.size, Some(9.0));
+        assert_eq!(mf.size, Some(FontSize::Pt(9.0)));
     }
 
     #[test]
@@ -1072,7 +1073,7 @@ Name=whatever
         let v = theme.dark.as_ref().unwrap();
         let tf = v.toolbar.font.as_ref().expect("toolbar.font should be set");
         assert_eq!(tf.family.as_deref(), Some("Noto Sans"));
-        assert_eq!(tf.size, Some(8.0));
+        assert_eq!(tf.size, Some(FontSize::Pt(8.0)));
     }
 
     #[test]
@@ -1085,7 +1086,7 @@ Name=whatever
             .as_ref()
             .expect("title_bar_font should be set");
         assert_eq!(tbf.family.as_deref(), Some("Noto Sans"));
-        assert_eq!(tbf.size, Some(10.0));
+        assert_eq!(tbf.size, Some(FontSize::Pt(10.0)));
         assert_eq!(tbf.weight, Some(700)); // Qt5 75 -> CSS 700
     }
 

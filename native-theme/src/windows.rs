@@ -620,6 +620,7 @@ pub fn from_windows() -> crate::Result<crate::ThemeSpec> {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+    use crate::model::font::FontSize;
 
     /// Helper: create default AllFonts for tests that don't care about fonts.
     fn default_fonts() -> AllFonts {
@@ -727,7 +728,7 @@ mod tests {
         }
         let fs = logfont_to_fontspec_raw(&face, -16, 400, 96);
         assert_eq!(fs.family.as_deref(), Some("Segoe UI"));
-        assert_eq!(fs.size, Some(12.0)); // abs(16) * 72 / 96 = 12
+        assert_eq!(fs.size, Some(FontSize::Pt(12.0))); // abs(16) * 72 / 96 = 12
         assert_eq!(fs.weight, Some(400));
     }
 
@@ -930,7 +931,7 @@ mod tests {
         let menu_font = variant.menu.font.as_ref().expect("menu.font");
         assert_eq!(menu_font.family.as_deref(), Some("Segoe UI"));
         let status_font = variant.status_bar.font.as_ref().expect("status_bar.font");
-        assert_eq!(status_font.size, Some(8.0));
+        assert_eq!(status_font.size, Some(FontSize::Pt(8.0)));
     }
 
     #[test]
@@ -951,7 +952,7 @@ mod tests {
         );
         let variant = theme.light.as_ref().expect("light variant");
         assert_eq!(variant.defaults.font.family.as_deref(), Some("Segoe UI"));
-        assert_eq!(variant.defaults.font.size, Some(9.0));
+        assert_eq!(variant.defaults.font.size, Some(FontSize::Pt(9.0)));
     }
 
     // === SysColors per-widget tests (WIN-03) ===

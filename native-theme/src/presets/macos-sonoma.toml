@@ -257,7 +257,7 @@ max_width = 560.0
 min_height = 140.0
 max_height = 600.0
 button_gap = 12.0
-icon_size_pt =64.0
+icon_size =64.0
 
 [light.link]
 underline_enabled = true
@@ -276,7 +276,7 @@ stroke_width = 2.0
 [light.combo_box]
 min_height = 21.0
 min_width = 120.0
-arrow_icon_size_pt =17.0
+arrow_icon_size =17.0
 arrow_area_width = 17.0
 # Interactive state colors (platform-facts.md section 2.24 macOS)
 disabled_text_color = "#c7c7cc"
@@ -306,7 +306,7 @@ padding_horizontal = 9.0
 
 [light.expander]
 header_height = 40.0
-arrow_icon_size_pt =13.0
+arrow_icon_size =13.0
 # soft_option interactive state colors (macOS disclosure)
 # disclosure hover -- subtle highlight
 hover_background = "#e0e0e5"
@@ -589,7 +589,7 @@ max_width = 560.0
 min_height = 140.0
 max_height = 600.0
 button_gap = 12.0
-icon_size_pt =64.0
+icon_size =64.0
 
 [dark.link]
 underline_enabled = true
@@ -608,7 +608,7 @@ stroke_width = 2.0
 [dark.combo_box]
 min_height = 21.0
 min_width = 120.0
-arrow_icon_size_pt =17.0
+arrow_icon_size =17.0
 arrow_area_width = 17.0
 # Interactive state colors (platform-facts.md section 2.24 macOS)
 disabled_text_color = "#48484a"
@@ -638,7 +638,7 @@ padding_horizontal = 9.0
 
 [dark.expander]
 header_height = 40.0
-arrow_icon_size_pt =13.0
+arrow_icon_size =13.0
 # soft_option interactive state colors (macOS disclosure)
 # disclosure hover -- subtle highlight
 hover_background = "#444446"

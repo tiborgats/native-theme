@@ -588,4 +588,111 @@ mod tests {
         assert_eq!(base.color, Some(crate::Rgba::rgb(0, 0, 0))); // base preserved
         assert_eq!(base.family.as_deref(), Some("Noto Sans")); // base preserved
     }
+
+    // === FontSize tests ===
+
+    #[test]
+    fn pt_to_px_at_96_dpi() {
+        assert_eq!(FontSize::Pt(10.0).to_px(96.0), 10.0 * 96.0 / 72.0);
+    }
+
+    #[test]
+    fn px_ignores_dpi() {
+        assert_eq!(FontSize::Px(14.0).to_px(96.0), 14.0);
+        assert_eq!(FontSize::Px(14.0).to_px(144.0), 14.0);
+    }
+
+    #[test]
+    fn pt_to_px_at_72_dpi_is_identity() {
+        assert_eq!(FontSize::Pt(10.0).to_px(72.0), 10.0);
+    }
+
+    #[test]
+    fn raw_extracts_value() {
+        assert_eq!(FontSize::Pt(10.0).raw(), 10.0);
+        assert_eq!(FontSize::Px(14.0).raw(), 14.0);
+    }
+
+    #[test]
+    fn font_size_default_is_px_zero() {
+        assert_eq!(FontSize::default(), FontSize::Px(0.0));
+    }
+
+    // === Serde round-trip tests ===
+
+    #[test]
+    fn fontspec_toml_round_trip_size_pt() {
+        let fs = FontSpec {
+            family: Some("Inter".into()),
+            size: Some(FontSize::Pt(10.0)),
+            weight: Some(400),
+            ..Default::default()
+        };
+        let toml_str = toml::to_string(&fs).expect("serialize");
+        assert!(toml_str.contains("size_pt"), "should contain size_pt: {toml_str}");
+        assert!(!toml_str.contains("size_px"), "should not contain size_px: {toml_str}");
+        let deserialized: FontSpec = toml::from_str(&toml_str).expect("deserialize");
+        assert_eq!(deserialized, fs);
+    }
+
+    #[test]
+    fn fontspec_toml_round_trip_size_px() {
+        let fs = FontSpec {
+            size: Some(FontSize::Px(14.0)),
+            ..Default::default()
+        };
+        let toml_str = toml::to_string(&fs).expect("serialize");
+        assert!(toml_str.contains("size_px"), "should contain size_px: {toml_str}");
+        assert!(!toml_str.contains("size_pt"), "should not contain size_pt: {toml_str}");
+        let deserialized: FontSpec = toml::from_str(&toml_str).expect("deserialize");
+        assert_eq!(deserialized, fs);
+    }
+
+    #[test]
+    fn fontspec_toml_rejects_both_pt_and_px() {
+        let toml_str = "size_pt = 10.0\nsize_px = 14.0\n";
+        assert!(toml::from_str::<FontSpec>(toml_str).is_err());
+    }
+
+    #[test]
+    fn fontspec_toml_rejects_bare_size() {
+        let toml_str = "size = 10.0\n";
+        // With #[serde(default)], the bare `size` key is NOT a recognized field
+        // in FontSpecRaw. It deserializes to FontSpec with size=None.
+        // The TOML linter (lint_toml) catches `size` as unknown separately.
+        let result: FontSpec = toml::from_str(toml_str).expect("deserialize");
+        assert!(result.size.is_none(), "bare 'size' should not set FontSpec.size");
+    }
+
+    #[test]
+    fn fontspec_toml_no_size_is_valid() {
+        let fs: FontSpec = toml::from_str(r#"family = "Inter""#).expect("deserialize");
+        assert!(fs.size.is_none());
+    }
+
+    #[test]
+    fn text_scale_entry_toml_round_trip_size_pt() {
+        let entry = TextScaleEntry {
+            size: Some(FontSize::Pt(9.0)),
+            weight: Some(400),
+            line_height: Some(12.6),
+        };
+        let toml_str = toml::to_string(&entry).expect("serialize");
+        assert!(toml_str.contains("size_pt"));
+        let deserialized: TextScaleEntry = toml::from_str(&toml_str).expect("deserialize");
+        assert_eq!(deserialized, entry);
+    }
+
+    #[test]
+    fn text_scale_entry_toml_round_trip_size_px() {
+        let entry = TextScaleEntry {
+            size: Some(FontSize::Px(14.0)),
+            weight: Some(400),
+            line_height: Some(18.0),
+        };
+        let toml_str = toml::to_string(&entry).expect("serialize");
+        assert!(toml_str.contains("size_px"));
+        let deserialized: TextScaleEntry = toml::from_str(&toml_str).expect("deserialize");
+        assert_eq!(deserialized, entry);
+    }
 }

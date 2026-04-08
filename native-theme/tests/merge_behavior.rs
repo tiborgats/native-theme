@@ -139,7 +139,7 @@ fn merge_native_theme_deep_merge_variants() {
 fn merge_fonts_defaults_spacing() {
     // FontSpec
     let mut base_font = FontSpec {
-        size: Some(12.0),
+        size: Some(FontSize::Px(12.0)),
         ..Default::default()
     };
     let overlay_font = FontSpec {
@@ -152,7 +152,7 @@ fn merge_fonts_defaults_spacing() {
         Some("Inter"),
         "overlay family replaces"
     );
-    assert_eq!(base_font.size, Some(12.0), "base size preserved");
+    assert_eq!(base_font.size, Some(FontSize::Px(12.0)), "base size preserved");
 
     // ThemeDefaults (geometry fields via border sub-struct)
     let mut base_defaults = ThemeDefaults {
@@ -291,7 +291,7 @@ fn is_empty_false_after_setting_field() {
     assert!(!icons.is_empty());
 
     let tse = TextScaleEntry {
-        size: Some(14.0),
+        size: Some(FontSize::Px(14.0)),
         ..Default::default()
     };
     assert!(!tse.is_empty());
@@ -306,7 +306,7 @@ fn is_empty_false_after_setting_field() {
     // A TextScaleEntry with at least one populated sub-field is not empty.
     let ts = TextScale {
         caption: Some(TextScaleEntry {
-            size: Some(12.0),
+            size: Some(FontSize::Px(12.0)),
             ..Default::default()
         }),
         ..Default::default()
@@ -388,7 +388,7 @@ fn is_empty_false_after_setting_field() {
 
     let w = StatusBarTheme {
         font: Some(FontSpec {
-            size: Some(12.0),
+            size: Some(FontSize::Px(12.0)),
             ..Default::default()
         }),
         ..Default::default()
@@ -528,9 +528,9 @@ fn realistic_theme_layering_scenario() {
 
     // Populate base fonts
     light.defaults.font.family = Some("Noto Sans".into());
-    light.defaults.font.size = Some(10.0);
+    light.defaults.font.size = Some(FontSize::Px(10.0));
     light.defaults.mono_font.family = Some("Hack".into());
-    light.defaults.mono_font.size = Some(10.0);
+    light.defaults.mono_font.size = Some(FontSize::Px(10.0));
 
     // Populate base geometry
     light.defaults.border.corner_radius = Some(4.0);
@@ -580,7 +580,7 @@ fn realistic_theme_layering_scenario() {
     assert_eq!(result.defaults.text_color, Some(Rgba::rgb(35, 38, 41)));
     assert_eq!(result.defaults.danger_color, Some(Rgba::rgb(218, 68, 83)));
     assert_eq!(result.defaults.link_color, Some(Rgba::rgb(41, 128, 185)));
-    assert_eq!(result.defaults.font.size, Some(10.0));
+    assert_eq!(result.defaults.font.size, Some(FontSize::Px(10.0)));
     assert_eq!(result.defaults.mono_font.family.as_deref(), Some("Hack"));
     assert_eq!(result.defaults.border.corner_radius, Some(4.0));
     // REMOVED(spacing): assert_eq!(result.defaults.spacing.m, Some(12.0));

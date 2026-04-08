@@ -239,126 +239,116 @@ fn resolve_phase2_safety_nets() {
     );
 }
 
-// ===== Phase 1.5: Font DPI conversion =====
+// ===== Font DPI conversion (via validate) =====
 //
-// These tests verify the resolve_font_dpi_conversion() method using
-// values from docs/todo_v0.5.5_size-fix.md (Fix 3) and the plan's
-// <behavior> section. DPI values (96, 72) are standard screen reference
-// values from the CSS/Web spec and Apple's coordinate system.
+// These tests verify that FontSize::Pt values are correctly converted to
+// logical pixels during validate(). This replaces the old Phase 1.5
+// resolve_font_dpi_conversion() tests -- conversion now happens in validate
+// via FontSize::to_px(dpi), not in-place mutation during resolve.
 
 /// Standard screen DPI (CSS reference pixel).
 const TEST_DPI_STANDARD: f32 = 96.0;
 /// Apple coordinate system DPI (1pt = 1px identity).
 const TEST_DPI_APPLE: f32 = 72.0;
 
-/// Build a variant with font_dpi and font size pre-configured.
-fn variant_with_dpi(dpi: Option<f32>, font_size: f32) -> ThemeVariant {
-    let mut v = ThemeVariant::default();
-    v.defaults.font_dpi = dpi;
-    v.defaults.font.size = Some(font_size);
-    v
-}
-
 #[test]
-fn resolve_phase1_5_font_dpi_96_converts_pt_to_px() {
+fn validate_converts_pt_to_px_at_96_dpi() {
     // 10pt at 96 DPI -> 10 * 96/72 = 13.333...px
-    let mut v = variant_with_dpi(Some(TEST_DPI_STANDARD), 10.0);
-    v.resolve_font_dpi_conversion();
-    let result = v.defaults.font.size.expect("size should be set");
+    let mut v = fully_populated_variant();
+    v.defaults.font_dpi = Some(TEST_DPI_STANDARD);
+    v.defaults.font.size = Some(FontSize::Pt(10.0));
+    v.defaults.mono_font.size = Some(FontSize::Pt(10.0));
+    let resolved = v.validate().expect("should validate");
+    let size = resolved.defaults.font.size;
     assert!(
-        (result - 13.333).abs() < 0.01,
-        "10pt at 96 DPI should be ~13.333px, got {result}"
+        (size - 13.333).abs() < 0.01,
+        "10pt at 96 DPI should be ~13.333px, got {size}"
     );
 }
 
 #[test]
-fn resolve_phase1_5_font_dpi_none_no_conversion() {
-    // font_dpi=None -> sizes stay unchanged
-    let mut v = variant_with_dpi(None, 14.0);
-    v.resolve_font_dpi_conversion();
-    assert_eq!(
-        v.defaults.font.size,
-        Some(14.0),
-        "font_dpi=None should leave size unchanged"
-    );
+fn validate_px_ignores_dpi() {
+    // FontSize::Px(14.0) stays 14.0 regardless of dpi
+    let mut v = fully_populated_variant();
+    v.defaults.font_dpi = Some(TEST_DPI_STANDARD);
+    v.defaults.font.size = Some(FontSize::Px(14.0));
+    v.defaults.mono_font.size = Some(FontSize::Px(13.0));
+    let resolved = v.validate().expect("should validate");
+    assert_eq!(resolved.defaults.font.size, 14.0);
 }
 
 #[test]
-fn resolve_phase1_5_font_dpi_72_identity() {
+fn validate_pt_at_72_dpi_is_identity() {
     // 72 DPI (macOS): 13pt * 72/72 = 13px (identity)
-    let mut v = variant_with_dpi(Some(TEST_DPI_APPLE), 13.0);
-    v.resolve_font_dpi_conversion();
-    let result = v.defaults.font.size.expect("size should be set");
+    let mut v = fully_populated_variant();
+    v.defaults.font_dpi = Some(TEST_DPI_APPLE);
+    v.defaults.font.size = Some(FontSize::Pt(13.0));
+    v.defaults.mono_font.size = Some(FontSize::Pt(13.0));
+    let resolved = v.validate().expect("should validate");
     assert!(
-        (result - 13.0).abs() < 0.01,
-        "13pt at 72 DPI should stay 13.0px, got {result}"
+        (resolved.defaults.font.size - 13.0).abs() < 0.01,
+        "13pt at 72 DPI should stay 13.0px"
     );
 }
 
 #[test]
-fn resolve_phase1_5_text_scale_converted() {
-    // text_scale caption size and line_height both get converted
-    let mut v = variant_with_dpi(Some(TEST_DPI_STANDARD), 10.0);
+fn validate_text_scale_pt_converted() {
+    // text_scale caption: size_pt + line_height both converted
+    let mut v = fully_populated_variant();
+    v.defaults.font_dpi = Some(TEST_DPI_STANDARD);
+    v.defaults.font.size = Some(FontSize::Pt(10.0));
+    v.defaults.mono_font.size = Some(FontSize::Pt(10.0));
     v.text_scale.caption = Some(TextScaleEntry {
-        size: Some(9.0),
+        size: Some(FontSize::Pt(9.0)),
+        weight: Some(400),
         line_height: Some(12.6),
-        ..Default::default()
     });
-    v.resolve_font_dpi_conversion();
-    let cap = v.text_scale.caption.as_ref().expect("caption should exist");
-    let size = cap.size.expect("size should be set");
-    let lh = cap.line_height.expect("line_height should be set");
+    let resolved = v.validate().expect("should validate");
+    let cap = &resolved.text_scale.caption;
     assert!(
-        (size - 12.0).abs() < 0.01,
-        "9pt at 96 DPI should be 12.0px, got {size}"
+        (cap.size - 12.0).abs() < 0.01,
+        "9pt at 96 DPI should be 12.0px, got {}",
+        cap.size
     );
     assert!(
-        (lh - 16.8).abs() < 0.01,
-        "12.6pt line_height at 96 DPI should be 16.8px, got {lh}"
+        (cap.line_height - 16.8).abs() < 0.01,
+        "12.6 line_height at 96 DPI should be 16.8px, got {}",
+        cap.line_height
     );
 }
 
 #[test]
-fn resolve_phase1_5_clears_font_dpi_after_conversion() {
-    // Idempotency guard: font_dpi is set to None after conversion
-    let mut v = variant_with_dpi(Some(TEST_DPI_STANDARD), 10.0);
-    v.resolve_font_dpi_conversion();
-    assert!(
-        v.defaults.font_dpi.is_none(),
-        "font_dpi should be cleared after conversion"
-    );
-}
-
-#[test]
-fn resolve_phase1_5_per_widget_font_converted() {
-    // Per-widget font with explicit size gets converted;
-    // per-widget font without a font set is unaffected
-    let mut v = variant_with_dpi(Some(TEST_DPI_STANDARD), 10.0);
-    // button has explicit size
-    v.button.font = Some(FontSpec {
-        size: Some(FontSize::Px(11.0)),
-        ..Default::default()
-    });
-    // menu has no font set at all -- it stays None through DPI conversion
-    assert!(v.menu.font.is_none());
-    v.resolve_font_dpi_conversion();
-
-    // button font: 11pt * 96/72 = 14.666...px
-    let btn_size = v
-        .button
-        .font
-        .as_ref()
-        .expect("button font exists")
-        .size
-        .expect("size set");
+fn validate_per_widget_font_pt_converted() {
+    // Per-widget font with FontSize::Pt gets converted in validate
+    let mut v = fully_populated_variant();
+    v.defaults.font_dpi = Some(TEST_DPI_STANDARD);
+    v.defaults.font.size = Some(FontSize::Pt(10.0));
+    v.defaults.mono_font.size = Some(FontSize::Pt(10.0));
+    // Override only the size on the existing button font (preserve family/weight/color)
+    if let Some(ref mut bf) = v.button.font {
+        bf.size = Some(FontSize::Pt(11.0));
+    }
+    let resolved = v.validate().expect("should validate");
+    let btn_size = resolved.button.font.size;
     assert!(
         (btn_size - 14.666).abs() < 0.01,
         "11pt at 96 DPI should be ~14.666px, got {btn_size}"
     );
-    // menu font unchanged (still None -- DPI conversion only touches existing fonts)
+}
+
+#[test]
+fn validate_no_dpi_uses_default_96() {
+    // font_dpi=None -> DEFAULT_FONT_DPI (96) is used as fallback in validate
+    let mut v = fully_populated_variant();
+    v.defaults.font_dpi = None;
+    v.defaults.font.size = Some(FontSize::Pt(10.0));
+    v.defaults.mono_font.size = Some(FontSize::Pt(10.0));
+    let resolved = v.validate().expect("should validate");
+    let size = resolved.defaults.font.size;
+    // With DEFAULT_FONT_DPI=96: 10 * 96/72 = 13.333
     assert!(
-        v.menu.font.is_none(),
-        "menu font should remain None through DPI conversion"
+        (size - 13.333).abs() < 0.01,
+        "10pt with default 96 DPI should be ~13.333px, got {size}"
     );
 }
 

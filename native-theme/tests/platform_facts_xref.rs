@@ -30,7 +30,7 @@ fn kde_breeze_matches_platform_facts() {
 
     // Font: documented as "Noto Sans, 10pt, 400" in platform-facts.md
     assert_eq!(light.defaults.font.family.as_deref(), Some("Noto Sans"));
-    assert_eq!(light.defaults.font.size, Some(10.0));
+    assert_eq!(light.defaults.font.size, Some(FontSize::Pt(10.0)));
     assert_eq!(light.defaults.font.weight, Some(400));
 
     // Line height: documented as 1.36 (from Noto Sans metrics)
@@ -69,7 +69,7 @@ fn adwaita_matches_platform_facts() {
 
     // Font: documented as "Adwaita Sans 11" in platform-facts.md
     assert_eq!(light.defaults.font.family.as_deref(), Some("Adwaita Sans"));
-    assert_eq!(light.defaults.font.size, Some(11.0));
+    assert_eq!(light.defaults.font.size, Some(FontSize::Pt(11.0)));
     assert_eq!(light.defaults.font.weight, Some(400));
 
     // Line height: documented as 1.21 (from Inter/Adwaita Sans metrics)
@@ -105,7 +105,7 @@ fn windows_11_matches_platform_facts() {
     // Font: documented as "Segoe UI, 9pt" in platform-facts.md
     // Preset uses size 10.5 pt (WinUI3 14 epx * 72/96), font weight 400
     assert_eq!(light.defaults.font.family.as_deref(), Some("Segoe UI"));
-    assert_eq!(light.defaults.font.size, Some(10.5));
+    assert_eq!(light.defaults.font.size, Some(FontSize::Pt(10.5)));
     assert_eq!(light.defaults.font.weight, Some(400));
 
     // Line height: 1.43 (from Segoe UI metrics)
@@ -140,7 +140,7 @@ fn macos_sonoma_matches_platform_facts() {
 
     // Font: documented as "SF Pro, 13pt, Regular (400)" in platform-facts.md
     assert_eq!(light.defaults.font.family.as_deref(), Some("SF Pro"));
-    assert_eq!(light.defaults.font.size, Some(13.0));
+    assert_eq!(light.defaults.font.size, Some(FontSize::Pt(13.0)));
     assert_eq!(light.defaults.font.weight, Some(400));
 
     // Line height: 1.19 (from SF Pro metrics)

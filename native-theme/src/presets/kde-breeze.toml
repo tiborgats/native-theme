@@ -243,7 +243,7 @@ max_width = 560.0
 min_height = 140.0
 max_height = 600.0
 button_gap = 6.0
-icon_size_pt =32.0
+icon_size =32.0
 
 [light.link]
 underline_enabled = true
@@ -261,7 +261,7 @@ stroke_width = 2.0
 [light.combo_box]
 min_height = 32.0
 min_width = 120.0
-arrow_icon_size_pt =20.0
+arrow_icon_size =20.0
 arrow_area_width = 20.0
 hover_background = "#93cee9"
 disabled_background = "#f0f0f0"
@@ -284,7 +284,7 @@ padding_horizontal = 8.0
 
 [light.expander]
 header_height = 40.0
-arrow_icon_size_pt =10.0
+arrow_icon_size =10.0
 hover_background = "#dee0e2"
 arrow_color = "#232629"
 
@@ -529,7 +529,7 @@ max_width = 560.0
 min_height = 140.0
 max_height = 600.0
 button_gap = 6.0
-icon_size_pt =32.0
+icon_size =32.0
 
 [dark.link]
 underline_enabled = true
@@ -547,7 +547,7 @@ stroke_width = 2.0
 [dark.combo_box]
 min_height = 32.0
 min_width = 120.0
-arrow_icon_size_pt =20.0
+arrow_icon_size =20.0
 arrow_area_width = 20.0
 hover_background = "#93cee9"
 disabled_background = "#3a3f44"
@@ -570,7 +570,7 @@ padding_horizontal = 8.0
 
 [dark.expander]
 header_height = 40.0
-arrow_icon_size_pt =10.0
+arrow_icon_size =10.0
 hover_background = "#31363b"
 arrow_color = "#fcfcfc"
 

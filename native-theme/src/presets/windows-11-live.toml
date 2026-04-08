@@ -124,7 +124,7 @@ max_width = 548.0
 min_height = 184.0
 max_height = 756.0
 button_gap = 8.0
-icon_size_pt =32.0
+icon_size =32.0
 
 [light.link]
 underline_enabled = true
@@ -137,7 +137,7 @@ stroke_width = 4.0
 [light.combo_box]
 min_height = 32.0
 min_width = 64.0
-arrow_icon_size_pt =12.0
+arrow_icon_size =12.0
 arrow_area_width = 38.0
 
 
@@ -154,7 +154,7 @@ padding_horizontal = 12.0
 
 [light.expander]
 header_height = 48.0
-arrow_icon_size_pt =12.0
+arrow_icon_size =12.0
 
 # === Dark variant ===
 
@@ -278,7 +278,7 @@ max_width = 548.0
 min_height = 184.0
 max_height = 756.0
 button_gap = 8.0
-icon_size_pt =32.0
+icon_size =32.0
 
 [dark.link]
 underline_enabled = true
@@ -291,7 +291,7 @@ stroke_width = 4.0
 [dark.combo_box]
 min_height = 32.0
 min_width = 64.0
-arrow_icon_size_pt =12.0
+arrow_icon_size =12.0
 arrow_area_width = 38.0
 
 
@@ -308,4 +308,4 @@ padding_horizontal = 12.0
 
 [dark.expander]
 header_height = 48.0
-arrow_icon_size_pt =12.0
+arrow_icon_size =12.0

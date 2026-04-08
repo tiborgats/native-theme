@@ -75,9 +75,9 @@ fn fully_populated_variant(offset: u8) -> ThemeVariant {
 
     // Fonts (via FontSpec on defaults)
     v.defaults.font.family = Some("Noto Sans".into());
-    v.defaults.font.size = Some(10.0);
+    v.defaults.font.size = Some(FontSize::Px(10.0));
     v.defaults.mono_font.family = Some("Hack".into());
-    v.defaults.mono_font.size = Some(10.0);
+    v.defaults.mono_font.size = Some(FontSize::Px(10.0));
 
     // Missing fields added for issue 24n
     v.defaults.accent_text_color = Some(c(252, 252, 252));

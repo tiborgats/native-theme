@@ -155,8 +155,8 @@ fn all_presets_have_valid_fonts() {
                     panic!("preset '{name}' {label} missing defaults.font.size")
                 });
             assert!(
-                size > 0.0,
-                "preset '{name}' {label} font size must be > 0, got {size}"
+                size.raw() > 0.0,
+                "preset '{name}' {label} font size must be > 0, got {size:?}"
             );
             // font.weight should be set (issue 9a)
             assert!(
@@ -170,8 +170,8 @@ fn all_presets_have_valid_fonts() {
             );
             if let Some(mono_size) = variant.defaults.mono_font.size {
                 assert!(
-                    mono_size > 0.0,
-                    "preset '{name}' {label} mono font size must be > 0, got {mono_size}"
+                    mono_size.raw() > 0.0,
+                    "preset '{name}' {label} mono font size must be > 0, got {mono_size:?}"
                 );
             }
         }
