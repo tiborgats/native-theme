@@ -283,3 +283,21 @@ Note: Phase 55 depends only on Phase 50 and can run in parallel with 51-54 if de
 | 55. Correctness, Safety, and CI | v0.5.5 | 3/3 | Complete   | 2026-04-07 |
 | 56. Testing | v0.5.5 | 2/2 | Complete   | 2026-04-07 |
 | 57. Verification and Documentation | v0.5.5 | 3/3 | Complete   | 2026-04-07 |
+
+### Phase 58: Font pt/px DPI Conversion Fix
+**Goal**: Font sizes from OS readers are correctly converted from typographic points to logical pixels using a new font_dpi field, with DPI auto-detected per platform, KDE text_scaling_factor semantics fixed, and all doc comments updated
+**Depends on**: Phase 57
+**Requirements**: FIX-1, FIX-2, FIX-3, FIX-4, FIX-5, FIX-7, FIX-8
+**Success Criteria** (what must be TRUE):
+  1. `ThemeDefaults.font_dpi: Option<f32>` and `ResolvedThemeDefaults.font_dpi: f32` exist, serializable via TOML
+  2. `resolve_font_dpi_conversion()` runs as Phase 1.5 (between defaults-internal and safety-nets), converting all font sizes via `px = pt * font_dpi / 72`
+  3. All four OS readers detect and set font_dpi: KDE (forceFontDPI/Xft.dpi/96), GNOME (Xft.dpi/96), macOS (72), Windows (96)
+  4. KDE `text_scaling_factor` is NOT derived from `forceFontDPI` (Fix 5 — semantics fix)
+  5. `run_pipeline()` propagates font_dpi from the reader to the inactive variant before resolution
+  6. All doc comments updated: FontSpec.size explains pt/px semantics, connector comments no longer say "no pt-to-px conversion"
+  7. Proptest strategy includes font_dpi; `pre-release-check.sh` passes
+**Plans**: 3 plans
+Plans:
+- [ ] 58-01-PLAN.md — Data model (font_dpi field) and resolution engine (resolve_font_dpi_conversion)
+- [ ] 58-02-PLAN.md — OS reader font_dpi detection (KDE, GNOME, macOS, Windows) and KDE text_scaling_factor fix
+- [ ] 58-03-PLAN.md — Pipeline propagation, doc comment updates, proptest, and final verification
