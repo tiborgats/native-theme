@@ -25,7 +25,7 @@ impl ThemeVariant {
     ///
     /// 1. **Defaults internal chains** -- accent derives selection, focus_ring_color;
     ///    selection derives selection_inactive.
-    /// 1.5. **Font DPI conversion** -- pt->px using font_dpi.
+    ///    1.5. **Font DPI conversion** -- pt->px using font_dpi.
     /// 2. **Safety nets** -- platform-divergent fields get a reasonable fallback.
     /// 3. **Widget-from-defaults** -- colors, geometry, fonts, text scale entries
     ///    all inherit from defaults.

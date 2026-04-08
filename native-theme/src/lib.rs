@@ -355,7 +355,7 @@ pub(crate) fn run_gsettings_with_timeout(args: &[&str]) -> Option<String> {
 ///
 /// Returns `None` if xrdb is not installed, times out (2 seconds),
 /// or the output does not contain a valid positive `Xft.dpi` value.
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", any(feature = "kde", feature = "portal")))]
 pub(crate) fn read_xft_dpi() -> Option<f32> {
     use std::io::Read;
     use std::time::{Duration, Instant};
@@ -862,7 +862,12 @@ fn run_pipeline(
         .light
         .as_ref()
         .and_then(|v| v.defaults.font_dpi)
-        .or_else(|| reader_output.dark.as_ref().and_then(|v| v.defaults.font_dpi))
+        .or_else(|| {
+            reader_output
+                .dark
+                .as_ref()
+                .and_then(|v| v.defaults.font_dpi)
+        })
     {
         if light_variant.defaults.font_dpi.is_none() {
             light_variant.defaults.font_dpi = Some(reader_dpi);
