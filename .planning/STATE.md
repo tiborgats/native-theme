@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.5
 milestone_name: Schema Overhaul & Quality
 status: executing
-stopped_at: Completed 59-01-PLAN.md
-last_updated: "2026-04-08T14:17:10.050Z"
+stopped_at: Completed 59-02-PLAN.md
+last_updated: "2026-04-08T14:23:20.228Z"
 last_activity: 2026-04-08
 progress:
   total_phases: 11
   completed_phases: 10
   total_plans: 36
-  completed_plans: 34
-  percent: 94
+  completed_plans: 35
+  percent: 97
 ---
 
 # Project State
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-04-06)
 ## Current Position
 
 Phase: 59 (Implement Chapter 2 of docs/todo_v0.5.5_pt-px.md)
-Plan: 1 of 3 complete
-Status: Executing — Plan 01 complete, Plans 02-03 remaining
+Plan: 2 of 3 complete
+Status: Ready to execute
 Last activity: 2026-04-08
 
 ## Performance Metrics
@@ -87,6 +87,7 @@ Recent: Clean break for renames (no serde aliases -- pre-1.0, presets bundled, ~
 - [Phase 59]: FontSize enum has no Serialize/Deserialize -- serde mapping lives on parent proxy structs (FontSpecRaw, TextScaleEntryRaw)
 - [Phase 59]: line_height stays f32 (layout metric, not font size) -- converted alongside size when unit is points in validate
 - [Phase 59]: Phase 1.5 (resolve_font_dpi_conversion) fully deleted -- pt-to-px conversion moved to validate via FontSize::to_px(dpi)
+- [Phase 59]: Windows unit comments removed since _pt suffix is self-documenting
 
 ### Roadmap Evolution
 
@@ -105,6 +106,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-08T14:15:53Z
-Stopped at: Completed 59-01-PLAN.md
+Last session: 2026-04-08T14:23:20.225Z
+Stopped at: Completed 59-02-PLAN.md
 Resume file: None
