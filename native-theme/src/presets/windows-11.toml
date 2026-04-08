@@ -1,6 +1,5 @@
 # Windows 11 Fluent Design theme
 # Source: WinUI3 XAML theme resources, Fluent Design System
-# Font sizes are in typographic points (converted to px via font_dpi during resolution).
 name = "Windows 11"
 
 # === Light variant ===
@@ -52,12 +51,12 @@ opacity = 0.14
 shadow_enabled = true
 [light.defaults.font]
 family = "Segoe UI"
-size = 10.5
+size_pt =10.5
 weight = 400
 
 [light.defaults.mono_font]
 family = "Cascadia Mono"
-size = 10.5
+size_pt =10.5
 weight = 400
 
 [light.defaults.icon_sizes]
@@ -68,18 +67,18 @@ dialog = 22.0
 panel = 20.0
 
 [light.text_scale.caption]
-size = 9.0
+size_pt =9.0
 
 [light.text_scale.section_heading]
-size = 15.0
+size_pt =15.0
 weight = 600
 
 [light.text_scale.dialog_title]
-size = 21.0
+size_pt =21.0
 weight = 600
 
 [light.text_scale.display]
-size = 51.0
+size_pt =51.0
 weight = 600
 
 [light.button]
@@ -273,10 +272,10 @@ max_width = 548.0
 min_height = 184.0
 max_height = 756.0
 button_gap = 8.0
-icon_size = 32.0
+icon_size_pt =32.0
 
 [light.dialog.title_font]
-size = 15.0
+size_pt =15.0
 weight = 600
 
 [light.link]
@@ -296,7 +295,7 @@ stroke_width = 4.0
 [light.combo_box]
 min_height = 32.0
 min_width = 64.0
-arrow_icon_size = 12.0
+arrow_icon_size_pt =12.0
 arrow_area_width = 38.0
 # Interactive state colors (platform-facts.md section 2.24 Windows)
 disabled_text_color = "#c5c5c5"
@@ -326,7 +325,7 @@ padding_horizontal = 12.0
 
 [light.expander]
 header_height = 48.0
-arrow_icon_size = 12.0
+arrow_icon_size_pt =12.0
 # soft_option interactive state colors (Windows Fluent Expander)
 # Fluent Expander hover
 hover_background = "#0000000a"
@@ -389,12 +388,12 @@ opacity = 0.14
 shadow_enabled = true
 [dark.defaults.font]
 family = "Segoe UI"
-size = 10.5
+size_pt =10.5
 weight = 400
 
 [dark.defaults.mono_font]
 family = "Cascadia Mono"
-size = 10.5
+size_pt =10.5
 weight = 400
 
 [dark.defaults.icon_sizes]
@@ -405,18 +404,18 @@ dialog = 22.0
 panel = 20.0
 
 [dark.text_scale.caption]
-size = 9.0
+size_pt =9.0
 
 [dark.text_scale.section_heading]
-size = 15.0
+size_pt =15.0
 weight = 600
 
 [dark.text_scale.dialog_title]
-size = 21.0
+size_pt =21.0
 weight = 600
 
 [dark.text_scale.display]
-size = 51.0
+size_pt =51.0
 weight = 600
 
 [dark.button]
@@ -610,10 +609,10 @@ max_width = 548.0
 min_height = 184.0
 max_height = 756.0
 button_gap = 8.0
-icon_size = 32.0
+icon_size_pt =32.0
 
 [dark.dialog.title_font]
-size = 15.0
+size_pt =15.0
 weight = 600
 
 [dark.link]
@@ -633,7 +632,7 @@ stroke_width = 4.0
 [dark.combo_box]
 min_height = 32.0
 min_width = 64.0
-arrow_icon_size = 12.0
+arrow_icon_size_pt =12.0
 arrow_area_width = 38.0
 # Interactive state colors (platform-facts.md section 2.24 Windows)
 disabled_text_color = "#454545"
@@ -663,7 +662,7 @@ padding_horizontal = 12.0
 
 [dark.expander]
 header_height = 48.0
-arrow_icon_size = 12.0
+arrow_icon_size_pt =12.0
 # soft_option interactive state colors (Windows Fluent Expander)
 # Fluent Expander hover
 hover_background = "#ffffff0f"

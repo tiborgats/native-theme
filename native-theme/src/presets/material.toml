@@ -51,12 +51,12 @@ opacity = 0.12
 shadow_enabled = true
 [light.defaults.font]
 family = "Roboto"
-size = 14.0
+size_px =14.0
 weight = 400
 
 [light.defaults.mono_font]
 family = "Roboto Mono"
-size = 14.0
+size_px =14.0
 weight = 400
 
 [light.defaults.icon_sizes]
@@ -67,22 +67,22 @@ dialog = 22.0
 panel = 20.0
 
 [light.text_scale.caption]
-size = 11.0
+size_px =11.0
 weight = 400
 line_height = 16.0
 
 [light.text_scale.section_heading]
-size = 16.0
+size_px =16.0
 weight = 500
 line_height = 24.0
 
 [light.text_scale.dialog_title]
-size = 24.0
+size_px =24.0
 weight = 400
 line_height = 32.0
 
 [light.text_scale.display]
-size = 36.0
+size_px =36.0
 weight = 400
 line_height = 44.0
 
@@ -239,7 +239,7 @@ max_width = 560.0
 min_height = 140.0
 max_height = 600.0
 button_gap = 8.0
-icon_size = 32.0
+icon_size_px =32.0
 
 [light.link]
 underline_enabled = false
@@ -257,7 +257,7 @@ stroke_width = 3.0
 [light.combo_box]
 min_height = 40.0
 min_width = 120.0
-arrow_icon_size = 12.0
+arrow_icon_size_px =12.0
 arrow_area_width = 28.0
 hover_background = "#1c1b1f14"
 disabled_background = "#1c1b1f0a"
@@ -280,7 +280,7 @@ padding_horizontal = 16.0
 
 [light.expander]
 header_height = 48.0
-arrow_icon_size = 12.0
+arrow_icon_size_px =12.0
 hover_background = "#1c1b1f14"
 arrow_color = "#49454f"
 
@@ -337,12 +337,12 @@ opacity = 0.12
 shadow_enabled = true
 [dark.defaults.font]
 family = "Roboto"
-size = 14.0
+size_px =14.0
 weight = 400
 
 [dark.defaults.mono_font]
 family = "Roboto Mono"
-size = 14.0
+size_px =14.0
 weight = 400
 
 [dark.defaults.icon_sizes]
@@ -353,22 +353,22 @@ dialog = 22.0
 panel = 20.0
 
 [dark.text_scale.caption]
-size = 11.0
+size_px =11.0
 weight = 400
 line_height = 16.0
 
 [dark.text_scale.section_heading]
-size = 16.0
+size_px =16.0
 weight = 500
 line_height = 24.0
 
 [dark.text_scale.dialog_title]
-size = 24.0
+size_px =24.0
 weight = 400
 line_height = 32.0
 
 [dark.text_scale.display]
-size = 36.0
+size_px =36.0
 weight = 400
 line_height = 44.0
 
@@ -525,7 +525,7 @@ max_width = 560.0
 min_height = 140.0
 max_height = 600.0
 button_gap = 8.0
-icon_size = 32.0
+icon_size_px =32.0
 
 [dark.link]
 underline_enabled = false
@@ -543,7 +543,7 @@ stroke_width = 3.0
 [dark.combo_box]
 min_height = 40.0
 min_width = 120.0
-arrow_icon_size = 12.0
+arrow_icon_size_px =12.0
 arrow_area_width = 28.0
 hover_background = "#e6e1e514"
 disabled_background = "#e6e1e50a"
@@ -566,7 +566,7 @@ padding_horizontal = 16.0
 
 [dark.expander]
 header_height = 48.0
-arrow_icon_size = 12.0
+arrow_icon_size_px =12.0
 hover_background = "#e6e1e514"
 arrow_color = "#cac4d0"
 

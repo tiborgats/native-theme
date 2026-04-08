@@ -25,22 +25,22 @@ dialog = 22.0
 panel = 20.0
 
 [light.text_scale.caption]
-size = 10.7
+size_pt =10.7
 weight = 400
 line_height = 12.7
 
 [light.text_scale.section_heading]
-size = 13.0
+size_pt =13.0
 weight = 700
 line_height = 15.5
 
 [light.text_scale.dialog_title]
-size = 15.6
+size_pt =15.6
 weight = 700
 line_height = 18.6
 
 [light.text_scale.display]
-size = 26.0
+size_pt =26.0
 weight = 700
 line_height = 30.9
 
@@ -129,7 +129,7 @@ max_width = 560.0
 min_height = 140.0
 max_height = 600.0
 button_gap = 12.0
-icon_size = 64.0
+icon_size_pt =64.0
 
 [light.link]
 underline_enabled = true
@@ -142,7 +142,7 @@ stroke_width = 2.0
 [light.combo_box]
 min_height = 21.0
 min_width = 120.0
-arrow_icon_size = 17.0
+arrow_icon_size_pt =17.0
 arrow_area_width = 17.0
 
 
@@ -159,7 +159,7 @@ padding_horizontal = 9.0
 
 [light.expander]
 header_height = 40.0
-arrow_icon_size = 13.0
+arrow_icon_size_pt =13.0
 
 # === Dark variant ===
 
@@ -184,22 +184,22 @@ dialog = 22.0
 panel = 20.0
 
 [dark.text_scale.caption]
-size = 10.7
+size_pt =10.7
 weight = 400
 line_height = 12.7
 
 [dark.text_scale.section_heading]
-size = 13.0
+size_pt =13.0
 weight = 700
 line_height = 15.5
 
 [dark.text_scale.dialog_title]
-size = 15.6
+size_pt =15.6
 weight = 700
 line_height = 18.6
 
 [dark.text_scale.display]
-size = 26.0
+size_pt =26.0
 weight = 700
 line_height = 30.9
 
@@ -288,7 +288,7 @@ max_width = 560.0
 min_height = 140.0
 max_height = 600.0
 button_gap = 12.0
-icon_size = 64.0
+icon_size_pt =64.0
 
 [dark.link]
 underline_enabled = true
@@ -301,7 +301,7 @@ stroke_width = 2.0
 [dark.combo_box]
 min_height = 21.0
 min_width = 120.0
-arrow_icon_size = 17.0
+arrow_icon_size_pt =17.0
 arrow_area_width = 17.0
 
 
@@ -318,4 +318,4 @@ padding_horizontal = 9.0
 
 [dark.expander]
 header_height = 40.0
-arrow_icon_size = 13.0
+arrow_icon_size_pt =13.0
