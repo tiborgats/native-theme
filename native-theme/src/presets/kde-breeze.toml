@@ -104,8 +104,9 @@ disabled_text_color = "#bcc0bf"
 
 
 [light.button.border]
+color = "#d1d1d2"
 padding_horizontal_px = 6.0
-padding_vertical_px = 5.0
+padding_vertical_px = 6.0
 
 [light.button.font]
 color = "#232629"
@@ -377,7 +378,7 @@ inactive_title_bar_background = "#2d3035"
 inactive_title_bar_text_color = "#a1a4a6"
 
 [dark.button]
-background_color = "#31363b"
+background_color = "#292c30"
 min_width_px = 80.0
 min_height_px = 32.0
 icon_text_gap_px = 4.0
@@ -390,8 +391,9 @@ disabled_text_color = "#4d545b"
 
 
 [dark.button.border]
+color = "#535659"
 padding_horizontal_px = 6.0
-padding_vertical_px = 5.0
+padding_vertical_px = 6.0
 
 [dark.button.font]
 color = "#fcfcfc"

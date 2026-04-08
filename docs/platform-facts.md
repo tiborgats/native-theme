@@ -1153,12 +1153,12 @@ against the `danger_color` color if using it as a fill).
 | `background_color`        | `controlColor`             | `COLOR_BTNFACE`          | `[Colors:Button] BackgroundNormal` | libadwaita `.button` bg      |
 | `font`              | ← `defaults.font`            | ← `defaults.font`          | ← `defaults.font`                   | ← `defaults.font`            |
 | `font.color`        | `controlTextColor`         | `COLOR_BTNTEXT`          | `[Colors:Button] ForegroundNormal` | libadwaita `.button` fg      |
-| `border.color`            | ← `defaults.border.color`          | ← `defaults.border.color`        | ← `defaults.border.color`                 | ← `defaults.border.color`          |
+| `border.color`            | ← `defaults.border.color`          | ← `defaults.border.color`        | `KColorUtils::mix(ButtonBG, ButtonFG, frameContrast=0.2)` — Plasma 6: #535659 | ← `defaults.border.color`          |
 | `border.line_width`      | ← `defaults.border.line_width`     | ← `defaults.border.line_width`   | ← `defaults.border.line_width`            | ← `defaults.border.line_width`     |
 | `min_width`         | **(none)** — sizes to content | **(none)** — sizes to content | `Button_MinWidth` = 80              | **(Adwaita CSS)**: none       |
 | `min_height`        | NSButton intrinsic: 22        | WinUI3: 27 (derived: 14 text + 5+6 pad + 2 border; no explicit MinHeight resource) | **(none)** — sizes to content        | **(Adwaita CSS)**: CSS min-height: 24 (outer-box: 34) |
 | `border.padding_horizontal`| NSButton: ~8 **(WebKit)**     | WinUI3: 11                  | `Button_MarginWidth` = 6            | **(Adwaita CSS)**: 10         |
-| `border.padding_vertical`  | 3 **(measured)** (22−16)/2    | WinUI3: 5 top / 6 bottom   | 5 **(measured)** Breeze frame+margin | **(Adwaita CSS)**: 5          |
+| `border.padding_vertical`  | 3 **(measured)** (22−16)/2    | WinUI3: 5 top / 6 bottom   | `Button_MarginWidth` = 6 (same as horizontal) | **(Adwaita CSS)**: 5          |
 | `border.corner_radius`            | ← `defaults.border.corner_radius`          | ← `defaults.border.corner_radius`        | ← `defaults.border.corner_radius`                 | ← `defaults.border.corner_radius`          |
 | `icon_text_gap`      | 4 **(measured)** AppKit       | WinUI3: 8                   | `Button_ItemSpacing` = 4            | **(Adwaita CSS)**: 8          |
 | `primary_background`        | ← `defaults.accent_color`          | ← `defaults.accent_color`        | ← `defaults.accent_color`                 | ← `defaults.accent_color`          |

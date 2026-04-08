@@ -52,7 +52,7 @@ icon_text_gap_px = 4.0
 
 [light.button.border]
 padding_horizontal_px = 6.0
-padding_vertical_px = 5.0
+padding_vertical_px = 6.0
 [light.input]
 min_height_px = 32.0
 
@@ -211,7 +211,7 @@ icon_text_gap_px = 4.0
 
 [dark.button.border]
 padding_horizontal_px = 6.0
-padding_vertical_px = 5.0
+padding_vertical_px = 6.0
 [dark.input]
 min_height_px = 32.0
 
