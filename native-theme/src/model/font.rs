@@ -191,7 +191,13 @@ pub struct TextScaleEntry {
 
 impl TextScaleEntry {
     /// All serialized field names for TOML linting.
-    pub const FIELD_NAMES: &[&str] = &["size_pt", "size_px", "weight", "line_height_pt", "line_height_px"];
+    pub const FIELD_NAMES: &[&str] = &[
+        "size_pt",
+        "size_px",
+        "weight",
+        "line_height_pt",
+        "line_height_px",
+    ];
 }
 
 /// Serde proxy for TextScaleEntry. Maps `FontSize` to two mutually-exclusive keys.
@@ -227,13 +233,13 @@ impl TryFrom<TextScaleEntryRaw> for TextScaleEntry {
                 );
             }
         };
-        if let (Some(s), Some(lh)) = (&size, &line_height) {
-            if s.is_pt() != lh.is_pt() {
-                return Err(
-                    "text_scale: size and line_height must use the same unit suffix (_pt or _px)"
-                        .into(),
-                );
-            }
+        if let (Some(s), Some(lh)) = (&size, &line_height)
+            && s.is_pt() != lh.is_pt()
+        {
+            return Err(
+                "text_scale: size and line_height must use the same unit suffix (_pt or _px)"
+                    .into(),
+            );
         }
         Ok(TextScaleEntry {
             size,

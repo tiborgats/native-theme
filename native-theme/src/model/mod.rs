@@ -1138,8 +1138,7 @@ name = "Custom"
 [light.defaults]
 accent_color = "#ff00ff"
 "##;
-        let theme =
-            ThemeSpec::from_toml_with_base(overlay_toml, "material").expect("should merge");
+        let theme = ThemeSpec::from_toml_with_base(overlay_toml, "material").expect("should merge");
         // The overlay accent_color should replace the preset's
         let light = theme.light.as_ref().expect("light variant should exist");
         assert_eq!(
@@ -1185,7 +1184,7 @@ background_color = "#ffffff"
 family = "Inter"
 size_px = 14.0
 [light.button]
-min_height = 32.0
+min_height_px = 32.0
 "##;
         let warnings = ThemeSpec::lint_toml(toml).unwrap();
         assert!(

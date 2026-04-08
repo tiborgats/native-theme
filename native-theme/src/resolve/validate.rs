@@ -107,13 +107,10 @@ fn require_text_scale_entry(
                 missing.push(format!("{prefix}.size"));
                 0.0
             });
-            let line_height = e
-                .line_height
-                .map(|fs| fs.to_px(dpi))
-                .unwrap_or_else(|| {
-                    missing.push(format!("{prefix}.line_height"));
-                    0.0
-                });
+            let line_height = e.line_height.map(|fs| fs.to_px(dpi)).unwrap_or_else(|| {
+                missing.push(format!("{prefix}.line_height"));
+                0.0
+            });
             let weight = require(&e.weight, &format!("{prefix}.weight"), missing);
             ResolvedTextScaleEntry {
                 size,
