@@ -271,6 +271,7 @@ fn check_min_max(
 /// Used by `define_widget_pair!` generated `validate_widget()` methods
 /// to dispatch to the correct extraction function without knowing the
 /// concrete type at macro expansion time.
+#[allow(dead_code)]
 pub(crate) trait ValidateNested {
     /// The resolved (non-Option) output type.
     type Resolved;

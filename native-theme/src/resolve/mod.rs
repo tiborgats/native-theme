@@ -5,7 +5,7 @@
 // - validate: Field extraction, range checks, ResolvedThemeVariant construction
 
 mod inheritance;
-mod validate;
+pub(crate) mod validate;
 
 use crate::model::ThemeVariant;
 use crate::model::resolved::ResolvedThemeVariant;
