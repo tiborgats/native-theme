@@ -28,6 +28,12 @@
 //! // }
 //! ```
 
+#[cfg(all(feature = "watch", feature = "kde", target_os = "linux"))]
+mod kde;
+
+#[cfg(all(feature = "watch", feature = "portal", target_os = "linux"))]
+mod gnome;
+
 use std::sync::mpsc;
 use std::thread::JoinHandle;
 
