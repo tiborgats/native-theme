@@ -193,11 +193,13 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeVariant {
     let mut variant = crate::ThemeVariant::default();
 
     // Apply accent color with range validation
-    if let Some((r, g, b)) = data.accent_rgb {
-        if (0.0..=1.0).contains(&r) && (0.0..=1.0).contains(&g) && (0.0..=1.0).contains(&b) {
-            let rgba = crate::Rgba::from_f32(r as f32, g as f32, b as f32, 1.0);
-            apply_accent(&mut variant, &rgba);
-        }
+    if let Some((r, g, b)) = data.accent_rgb
+        && (0.0..=1.0).contains(&r)
+        && (0.0..=1.0).contains(&g)
+        && (0.0..=1.0).contains(&b)
+    {
+        let rgba = crate::Rgba::from_f32(r as f32, g as f32, b as f32, 1.0);
+        apply_accent(&mut variant, &rgba);
     }
 
     // High contrast: portal value first
@@ -205,32 +207,32 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeVariant {
         variant.defaults.high_contrast = Some(true);
     }
     // gsettings fallback for high-contrast
-    if variant.defaults.high_contrast.is_none() {
-        if let Some(hc) = data.gsettings_high_contrast {
-            variant.defaults.high_contrast = Some(hc);
-        }
+    if variant.defaults.high_contrast.is_none()
+        && let Some(hc) = data.gsettings_high_contrast
+    {
+        variant.defaults.high_contrast = Some(hc);
     }
 
     // ── Fonts (GNOME-01) ────────────────────────────────────────────────
     // Primary UI font
-    if let Some(ref font_str) = data.font_name {
-        if let Some(fs) = parse_gnome_font_to_fontspec(font_str) {
-            variant.defaults.font = fs;
-        }
+    if let Some(ref font_str) = data.font_name
+        && let Some(fs) = parse_gnome_font_to_fontspec(font_str)
+    {
+        variant.defaults.font = fs;
     }
 
     // Monospace font
-    if let Some(ref mono_str) = data.monospace_font_name {
-        if let Some(fs) = parse_gnome_font_to_fontspec(mono_str) {
-            variant.defaults.mono_font = fs;
-        }
+    if let Some(ref mono_str) = data.monospace_font_name
+        && let Some(fs) = parse_gnome_font_to_fontspec(mono_str)
+    {
+        variant.defaults.mono_font = fs;
     }
 
     // Titlebar font (GNOME-01 extension)
-    if let Some(ref tb_str) = data.titlebar_font {
-        if let Some(fs) = parse_gnome_font_to_fontspec(tb_str) {
-            variant.window.title_bar_font = Some(fs);
-        }
+    if let Some(ref tb_str) = data.titlebar_font
+        && let Some(fs) = parse_gnome_font_to_fontspec(tb_str)
+    {
+        variant.window.title_bar_font = Some(fs);
     }
 
     // ── Accessibility (GNOME-03 / GNOME-05) ─────────────────────────────
@@ -247,11 +249,11 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeVariant {
         variant.defaults.reduce_motion = Some(rm);
     }
     // gsettings fallback: enable-animations (only if portal didn't provide a value)
-    if variant.defaults.reduce_motion.is_none() {
-        if let Some(animations_enabled) = data.gsettings_enable_animations {
-            // enable-animations=false means reduce_motion=true
-            variant.defaults.reduce_motion = Some(!animations_enabled);
-        }
+    if variant.defaults.reduce_motion.is_none()
+        && let Some(animations_enabled) = data.gsettings_enable_animations
+    {
+        // enable-animations=false means reduce_motion=true
+        variant.defaults.reduce_motion = Some(!animations_enabled);
     }
 
     // overlay-scrolling -> scrollbar.overlay_mode (GNOME-03)
@@ -321,9 +323,9 @@ pub(crate) fn build_gnome_variant(
     reduced_motion: Option<ReducedMotion>,
 ) -> crate::ThemeVariant {
     // Convert ashpd types to primitives
-    let accent_rgb = accent.as_ref().and_then(|c| {
+    let accent_rgb = accent.as_ref().map(|c| {
         let (r, g, b) = (c.red(), c.green(), c.blue());
-        Some((r, g, b))
+        (r, g, b)
     });
 
     let high_contrast = matches!(contrast, Contrast::High);
@@ -335,8 +337,7 @@ pub(crate) fn build_gnome_variant(
 
     // Read gsettings values (I/O stays here, not in pure function)
     let font_name = read_gsetting("org.gnome.desktop.interface", "font-name");
-    let monospace_font_name =
-        read_gsetting("org.gnome.desktop.interface", "monospace-font-name");
+    let monospace_font_name = read_gsetting("org.gnome.desktop.interface", "monospace-font-name");
     let titlebar_font = read_gsetting("org.gnome.desktop.wm.preferences", "titlebar-font");
 
     let text_scaling_factor = read_gsetting("org.gnome.desktop.interface", "text-scaling-factor")
@@ -362,13 +363,11 @@ pub(crate) fn build_gnome_variant(
             }
         });
 
-    let overlay_scrolling =
-        read_gsetting("org.gnome.desktop.interface", "overlay-scrolling").and_then(|s| {
-            match s.as_str() {
-                "true" => Some(true),
-                "false" => Some(false),
-                _ => None,
-            }
+    let overlay_scrolling = read_gsetting("org.gnome.desktop.interface", "overlay-scrolling")
+        .and_then(|s| match s.as_str() {
+            "true" => Some(true),
+            "false" => Some(false),
+            _ => None,
         });
 
     let icon_theme = read_gsetting("org.gnome.desktop.interface", "icon-theme");
@@ -985,10 +984,7 @@ mod tests {
         let variant = theme.light.as_ref().expect("light variant");
         assert_eq!(variant.defaults.font.family.as_deref(), Some("Inter"));
         assert_eq!(variant.defaults.font.weight, Some(700));
-        assert_eq!(
-            variant.defaults.font.size,
-            Some(FontSize::Pt(12.0))
-        );
+        assert_eq!(variant.defaults.font.size, Some(FontSize::Pt(12.0)));
     }
 
     #[test]

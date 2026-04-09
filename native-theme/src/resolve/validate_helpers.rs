@@ -239,7 +239,13 @@ pub(crate) fn check_positive(value: f32, path: &str, errors: &mut Vec<String>) {
 }
 
 /// Check that an `f32` value is finite and falls within an inclusive range.
-pub(crate) fn check_range_f32(value: f32, min: f32, max: f32, path: &str, errors: &mut Vec<String>) {
+pub(crate) fn check_range_f32(
+    value: f32,
+    min: f32,
+    max: f32,
+    path: &str,
+    errors: &mut Vec<String>,
+) {
     if !value.is_finite() || value < min || value > max {
         errors.push(format!(
             "{path} must be a finite number between {min} and {max}, got {value}"
@@ -248,7 +254,13 @@ pub(crate) fn check_range_f32(value: f32, min: f32, max: f32, path: &str, errors
 }
 
 /// Check that a `u16` value falls within an inclusive range.
-pub(crate) fn check_range_u16(value: u16, min: u16, max: u16, path: &str, errors: &mut Vec<String>) {
+pub(crate) fn check_range_u16(
+    value: u16,
+    min: u16,
+    max: u16,
+    path: &str,
+    errors: &mut Vec<String>,
+) {
     if value < min || value > max {
         errors.push(format!("{path} must be {min}..={max}, got {value}"));
     }

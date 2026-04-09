@@ -344,22 +344,25 @@ fn custom_accent_fixture() {
 | A3 | Fixture files should combine kdeglobals content (General, KDE, Icons) with color scheme sections, rather than being pure `.colors` files | Fixture Inventory | Medium -- if fixtures only contain color sections, font/DPI tests won't work |
 | A4 | Making `from_kde_content_pure` (or equivalent) `pub` is acceptable since `kde` module is already `pub` | Architecture Patterns | Low -- doesn't expose anything that isn't conceptually public already |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Naming: `from_kde_content` vs `parse_kdeglobals`**
    - What we know: The design doc calls it `parse_kdeglobals`. The existing function is named `from_kde_content`. Both mean the same thing.
    - What's unclear: Whether to rename the existing function or add a new one alongside it.
    - Recommendation: Keep `from_kde_content` as the I/O wrapper (unchanged behavior), add `from_kde_content_pure` as the testable pure function. This avoids breaking existing callers. Alternatively, rename to `parse_kdeglobals` if preferred for clarity -- either works since it's `pub(crate)`.
+   - RESOLVED: Use `from_kde_content_pure` name. Plan 63-01 Task 1 specifies this.
 
 2. **Icon sizes in pure path**
    - What we know: `parse_icon_sizes_from_index_theme()` does filesystem I/O. The pure function should not call it.
    - What's unclear: Should the pure function skip icon sizes entirely, or should there be a `parse_icon_sizes_from_content` that accepts pre-read content?
    - Recommendation: The pure function extracts the icon theme NAME but leaves `icon_sizes` as default. `from_kde()` handles the filesystem lookup afterward. This matches the existing `parse_icon_sizes_from_content()` function which already exists and is pure -- it just needs to be wired through the pure path if content is provided.
+   - RESOLVED: Skip icon sizes in pure path (extract theme name only). Plan 63-01 Task 1 specifies this.
 
 3. **`forceFontDPI` parsing in pure path**
    - What we know: The INI's `[General] forceFontDPI` is pure to extract. The kcmfontsrc fallback is I/O.
    - What's unclear: Should the pure function set `font_dpi` from forceFontDPI, or should it always use the caller-provided DPI?
    - Recommendation: The pure function should parse `forceFontDPI` from the INI content. If present and valid, use it. If not present, use the caller-provided fallback DPI (or None). This way, the high-dpi.ini fixture test works by including `forceFontDPI=192` in the INI.
+   - RESOLVED: Prefer caller `font_dpi` if `Some`, else extract `forceFontDPI` from INI, else `None`. Plan 63-01 Task 1 specifies this.
 
 ## Environment Availability
 

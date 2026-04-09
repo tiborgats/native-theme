@@ -20,6 +20,8 @@
 # AI/tool configuration
 .agent/
 .claude/
+.mempalace/
+.mcp.json
 .codex/
 .cursor/
 .gemini/

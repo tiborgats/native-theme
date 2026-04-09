@@ -890,8 +890,18 @@ use crate::resolve::validate_helpers::{
 
 impl ResolvedWindowTheme {
     pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
-        check_positive(self.title_bar_font.size, &format!("{prefix}.title_bar_font.size"), errors);
-        check_range_u16(self.title_bar_font.weight, 100, 900, &format!("{prefix}.title_bar_font.weight"), errors);
+        check_positive(
+            self.title_bar_font.size,
+            &format!("{prefix}.title_bar_font.size"),
+            errors,
+        );
+        check_range_u16(
+            self.title_bar_font.weight,
+            100,
+            900,
+            &format!("{prefix}.title_bar_font.weight"),
+            errors,
+        );
     }
 }
 
@@ -899,39 +909,93 @@ impl ResolvedButtonTheme {
     pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
         check_non_negative(self.min_width, &format!("{prefix}.min_width"), errors);
         check_non_negative(self.min_height, &format!("{prefix}.min_height"), errors);
-        check_non_negative(self.icon_text_gap, &format!("{prefix}.icon_text_gap"), errors);
-        check_range_f32(self.disabled_opacity, 0.0, 1.0, &format!("{prefix}.disabled_opacity"), errors);
+        check_non_negative(
+            self.icon_text_gap,
+            &format!("{prefix}.icon_text_gap"),
+            errors,
+        );
+        check_range_f32(
+            self.disabled_opacity,
+            0.0,
+            1.0,
+            &format!("{prefix}.disabled_opacity"),
+            errors,
+        );
         check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(self.font.weight, 100, 900, &format!("{prefix}.font.weight"), errors);
+        check_range_u16(
+            self.font.weight,
+            100,
+            900,
+            &format!("{prefix}.font.weight"),
+            errors,
+        );
     }
 }
 
 impl ResolvedInputTheme {
     pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
         check_non_negative(self.min_height, &format!("{prefix}.min_height"), errors);
-        check_range_f32(self.disabled_opacity, 0.0, 1.0, &format!("{prefix}.disabled_opacity"), errors);
+        check_range_f32(
+            self.disabled_opacity,
+            0.0,
+            1.0,
+            &format!("{prefix}.disabled_opacity"),
+            errors,
+        );
         check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(self.font.weight, 100, 900, &format!("{prefix}.font.weight"), errors);
+        check_range_u16(
+            self.font.weight,
+            100,
+            900,
+            &format!("{prefix}.font.weight"),
+            errors,
+        );
     }
 }
 
 impl ResolvedCheckboxTheme {
     pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
-        check_non_negative(self.indicator_width, &format!("{prefix}.indicator_width"), errors);
+        check_non_negative(
+            self.indicator_width,
+            &format!("{prefix}.indicator_width"),
+            errors,
+        );
         check_non_negative(self.label_gap, &format!("{prefix}.label_gap"), errors);
-        check_range_f32(self.disabled_opacity, 0.0, 1.0, &format!("{prefix}.disabled_opacity"), errors);
+        check_range_f32(
+            self.disabled_opacity,
+            0.0,
+            1.0,
+            &format!("{prefix}.disabled_opacity"),
+            errors,
+        );
         check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(self.font.weight, 100, 900, &format!("{prefix}.font.weight"), errors);
+        check_range_u16(
+            self.font.weight,
+            100,
+            900,
+            &format!("{prefix}.font.weight"),
+            errors,
+        );
     }
 }
 
 impl ResolvedMenuTheme {
     pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
         check_non_negative(self.row_height, &format!("{prefix}.row_height"), errors);
-        check_non_negative(self.icon_text_gap, &format!("{prefix}.icon_text_gap"), errors);
+        check_non_negative(
+            self.icon_text_gap,
+            &format!("{prefix}.icon_text_gap"),
+            errors,
+        );
         check_non_negative(self.icon_size, &format!("{prefix}.icon_size"), errors);
         check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(self.font.weight, 100, 900, &format!("{prefix}.font.weight"), errors);
+        check_range_u16(
+            self.font.weight,
+            100,
+            900,
+            &format!("{prefix}.font.weight"),
+            errors,
+        );
     }
 }
 
@@ -939,14 +1003,24 @@ impl ResolvedTooltipTheme {
     pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
         check_non_negative(self.max_width, &format!("{prefix}.max_width"), errors);
         check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(self.font.weight, 100, 900, &format!("{prefix}.font.weight"), errors);
+        check_range_u16(
+            self.font.weight,
+            100,
+            900,
+            &format!("{prefix}.font.weight"),
+            errors,
+        );
     }
 }
 
 impl ResolvedScrollbarTheme {
     pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
         check_non_negative(self.groove_width, &format!("{prefix}.groove_width"), errors);
-        check_non_negative(self.min_thumb_length, &format!("{prefix}.min_thumb_length"), errors);
+        check_non_negative(
+            self.min_thumb_length,
+            &format!("{prefix}.min_thumb_length"),
+            errors,
+        );
         check_non_negative(self.thumb_width, &format!("{prefix}.thumb_width"), errors);
     }
 }
@@ -954,9 +1028,23 @@ impl ResolvedScrollbarTheme {
 impl ResolvedSliderTheme {
     pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
         check_non_negative(self.track_height, &format!("{prefix}.track_height"), errors);
-        check_non_negative(self.thumb_diameter, &format!("{prefix}.thumb_diameter"), errors);
-        check_non_negative(self.tick_mark_length, &format!("{prefix}.tick_mark_length"), errors);
-        check_range_f32(self.disabled_opacity, 0.0, 1.0, &format!("{prefix}.disabled_opacity"), errors);
+        check_non_negative(
+            self.thumb_diameter,
+            &format!("{prefix}.thumb_diameter"),
+            errors,
+        );
+        check_non_negative(
+            self.tick_mark_length,
+            &format!("{prefix}.tick_mark_length"),
+            errors,
+        );
+        check_range_f32(
+            self.disabled_opacity,
+            0.0,
+            1.0,
+            &format!("{prefix}.disabled_opacity"),
+            errors,
+        );
     }
 }
 
@@ -972,14 +1060,26 @@ impl ResolvedTabTheme {
         check_non_negative(self.min_width, &format!("{prefix}.min_width"), errors);
         check_non_negative(self.min_height, &format!("{prefix}.min_height"), errors);
         check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(self.font.weight, 100, 900, &format!("{prefix}.font.weight"), errors);
+        check_range_u16(
+            self.font.weight,
+            100,
+            900,
+            &format!("{prefix}.font.weight"),
+            errors,
+        );
     }
 }
 
 impl ResolvedSidebarTheme {
     pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
         check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(self.font.weight, 100, 900, &format!("{prefix}.font.weight"), errors);
+        check_range_u16(
+            self.font.weight,
+            100,
+            900,
+            &format!("{prefix}.font.weight"),
+            errors,
+        );
     }
 }
 
@@ -989,37 +1089,79 @@ impl ResolvedToolbarTheme {
         check_non_negative(self.item_gap, &format!("{prefix}.item_gap"), errors);
         check_non_negative(self.icon_size, &format!("{prefix}.icon_size"), errors);
         check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(self.font.weight, 100, 900, &format!("{prefix}.font.weight"), errors);
+        check_range_u16(
+            self.font.weight,
+            100,
+            900,
+            &format!("{prefix}.font.weight"),
+            errors,
+        );
     }
 }
 
 impl ResolvedStatusBarTheme {
     pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
         check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(self.font.weight, 100, 900, &format!("{prefix}.font.weight"), errors);
+        check_range_u16(
+            self.font.weight,
+            100,
+            900,
+            &format!("{prefix}.font.weight"),
+            errors,
+        );
     }
 }
 
 impl ResolvedListTheme {
     pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
         check_non_negative(self.row_height, &format!("{prefix}.row_height"), errors);
-        check_positive(self.item_font.size, &format!("{prefix}.item_font.size"), errors);
-        check_range_u16(self.item_font.weight, 100, 900, &format!("{prefix}.item_font.weight"), errors);
-        check_positive(self.header_font.size, &format!("{prefix}.header_font.size"), errors);
-        check_range_u16(self.header_font.weight, 100, 900, &format!("{prefix}.header_font.weight"), errors);
+        check_positive(
+            self.item_font.size,
+            &format!("{prefix}.item_font.size"),
+            errors,
+        );
+        check_range_u16(
+            self.item_font.weight,
+            100,
+            900,
+            &format!("{prefix}.item_font.weight"),
+            errors,
+        );
+        check_positive(
+            self.header_font.size,
+            &format!("{prefix}.header_font.size"),
+            errors,
+        );
+        check_range_u16(
+            self.header_font.weight,
+            100,
+            900,
+            &format!("{prefix}.header_font.weight"),
+            errors,
+        );
     }
 }
 
 impl ResolvedPopoverTheme {
     pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
         check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(self.font.weight, 100, 900, &format!("{prefix}.font.weight"), errors);
+        check_range_u16(
+            self.font.weight,
+            100,
+            900,
+            &format!("{prefix}.font.weight"),
+            errors,
+        );
     }
 }
 
 impl ResolvedSplitterTheme {
     pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
-        check_non_negative(self.divider_width, &format!("{prefix}.divider_width"), errors);
+        check_non_negative(
+            self.divider_width,
+            &format!("{prefix}.divider_width"),
+            errors,
+        );
     }
 }
 
@@ -1033,9 +1175,19 @@ impl ResolvedSwitchTheme {
     pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
         check_non_negative(self.track_width, &format!("{prefix}.track_width"), errors);
         check_non_negative(self.track_height, &format!("{prefix}.track_height"), errors);
-        check_non_negative(self.thumb_diameter, &format!("{prefix}.thumb_diameter"), errors);
+        check_non_negative(
+            self.thumb_diameter,
+            &format!("{prefix}.thumb_diameter"),
+            errors,
+        );
         check_non_negative(self.track_radius, &format!("{prefix}.track_radius"), errors);
-        check_range_f32(self.disabled_opacity, 0.0, 1.0, &format!("{prefix}.disabled_opacity"), errors);
+        check_range_f32(
+            self.disabled_opacity,
+            0.0,
+            1.0,
+            &format!("{prefix}.disabled_opacity"),
+            errors,
+        );
     }
 }
 
@@ -1047,12 +1199,44 @@ impl ResolvedDialogTheme {
         check_non_negative(self.max_height, &format!("{prefix}.max_height"), errors);
         check_non_negative(self.button_gap, &format!("{prefix}.button_gap"), errors);
         check_non_negative(self.icon_size, &format!("{prefix}.icon_size"), errors);
-        check_positive(self.title_font.size, &format!("{prefix}.title_font.size"), errors);
-        check_range_u16(self.title_font.weight, 100, 900, &format!("{prefix}.title_font.weight"), errors);
-        check_positive(self.body_font.size, &format!("{prefix}.body_font.size"), errors);
-        check_range_u16(self.body_font.weight, 100, 900, &format!("{prefix}.body_font.weight"), errors);
-        check_min_max(self.min_width, self.max_width, &format!("{prefix}.min_width"), &format!("{prefix}.max_width"), errors);
-        check_min_max(self.min_height, self.max_height, &format!("{prefix}.min_height"), &format!("{prefix}.max_height"), errors);
+        check_positive(
+            self.title_font.size,
+            &format!("{prefix}.title_font.size"),
+            errors,
+        );
+        check_range_u16(
+            self.title_font.weight,
+            100,
+            900,
+            &format!("{prefix}.title_font.weight"),
+            errors,
+        );
+        check_positive(
+            self.body_font.size,
+            &format!("{prefix}.body_font.size"),
+            errors,
+        );
+        check_range_u16(
+            self.body_font.weight,
+            100,
+            900,
+            &format!("{prefix}.body_font.weight"),
+            errors,
+        );
+        check_min_max(
+            self.min_width,
+            self.max_width,
+            &format!("{prefix}.min_width"),
+            &format!("{prefix}.max_width"),
+            errors,
+        );
+        check_min_max(
+            self.min_height,
+            self.max_height,
+            &format!("{prefix}.min_height"),
+            &format!("{prefix}.max_height"),
+            errors,
+        );
     }
 }
 
@@ -1067,7 +1251,13 @@ impl ResolvedSpinnerTheme {
 impl ResolvedLinkTheme {
     pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
         check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(self.font.weight, 100, 900, &format!("{prefix}.font.weight"), errors);
+        check_range_u16(
+            self.font.weight,
+            100,
+            900,
+            &format!("{prefix}.font.weight"),
+            errors,
+        );
     }
 }
 
@@ -1075,30 +1265,84 @@ impl ResolvedComboBoxTheme {
     pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
         check_non_negative(self.min_height, &format!("{prefix}.min_height"), errors);
         check_non_negative(self.min_width, &format!("{prefix}.min_width"), errors);
-        check_non_negative(self.arrow_icon_size, &format!("{prefix}.arrow_icon_size"), errors);
-        check_non_negative(self.arrow_area_width, &format!("{prefix}.arrow_area_width"), errors);
-        check_range_f32(self.disabled_opacity, 0.0, 1.0, &format!("{prefix}.disabled_opacity"), errors);
+        check_non_negative(
+            self.arrow_icon_size,
+            &format!("{prefix}.arrow_icon_size"),
+            errors,
+        );
+        check_non_negative(
+            self.arrow_area_width,
+            &format!("{prefix}.arrow_area_width"),
+            errors,
+        );
+        check_range_f32(
+            self.disabled_opacity,
+            0.0,
+            1.0,
+            &format!("{prefix}.disabled_opacity"),
+            errors,
+        );
         check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(self.font.weight, 100, 900, &format!("{prefix}.font.weight"), errors);
+        check_range_u16(
+            self.font.weight,
+            100,
+            900,
+            &format!("{prefix}.font.weight"),
+            errors,
+        );
     }
 }
 
 impl ResolvedSegmentedControlTheme {
     pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
-        check_non_negative(self.segment_height, &format!("{prefix}.segment_height"), errors);
-        check_non_negative(self.separator_width, &format!("{prefix}.separator_width"), errors);
-        check_range_f32(self.disabled_opacity, 0.0, 1.0, &format!("{prefix}.disabled_opacity"), errors);
+        check_non_negative(
+            self.segment_height,
+            &format!("{prefix}.segment_height"),
+            errors,
+        );
+        check_non_negative(
+            self.separator_width,
+            &format!("{prefix}.separator_width"),
+            errors,
+        );
+        check_range_f32(
+            self.disabled_opacity,
+            0.0,
+            1.0,
+            &format!("{prefix}.disabled_opacity"),
+            errors,
+        );
         check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(self.font.weight, 100, 900, &format!("{prefix}.font.weight"), errors);
+        check_range_u16(
+            self.font.weight,
+            100,
+            900,
+            &format!("{prefix}.font.weight"),
+            errors,
+        );
     }
 }
 
 impl ResolvedExpanderTheme {
     pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
-        check_non_negative(self.header_height, &format!("{prefix}.header_height"), errors);
-        check_non_negative(self.arrow_icon_size, &format!("{prefix}.arrow_icon_size"), errors);
+        check_non_negative(
+            self.header_height,
+            &format!("{prefix}.header_height"),
+            errors,
+        );
+        check_non_negative(
+            self.arrow_icon_size,
+            &format!("{prefix}.arrow_icon_size"),
+            errors,
+        );
         check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(self.font.weight, 100, 900, &format!("{prefix}.font.weight"), errors);
+        check_range_u16(
+            self.font.weight,
+            100,
+            900,
+            &format!("{prefix}.font.weight"),
+            errors,
+        );
     }
 }
 

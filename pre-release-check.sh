@@ -265,8 +265,14 @@ for crate in $WORKSPACE_CRATES; do
     fi
 done
 
-# Build examples for each crate
+# Build examples for each crate (skip crates with no examples/ directory)
 for crate in $WORKSPACE_CRATES; do
+    crate_dir=$(cargo metadata --no-deps --format-version 1 2>/dev/null \
+        | jq -r --arg name "$crate" '.packages[] | select(.name == $name) | .manifest_path' \
+        | xargs dirname)
+    if [ ! -d "$crate_dir/examples" ]; then
+        continue
+    fi
     if [ "$crate" = "native-theme-gpui" ]; then
         run_check_soft "Building examples ($crate)" cargo build -p "$crate" --examples
     else

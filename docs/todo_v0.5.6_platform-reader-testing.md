@@ -42,11 +42,73 @@ What's NOT tested: the code that reads OS configuration and populates
 
 ---
 
-## Approach: fixture-based unit tests
+## Options
 
-Each platform reader should be refactored to separate **data parsing** from
-**data acquisition**. The parser is testable with fixture data; the acquisition
-layer is a thin wrapper that reads from the OS and passes data to the parser.
+### Option A: Trait-based mocking
+
+Define a trait for each platform's data source (e.g., `trait KdeConfigSource`,
+`trait PortalSource`) and inject a mock implementation in tests.
+
+**Pros:**
+- Standard Rust testing pattern. Familiar to contributors.
+- Can mock error conditions (D-Bus timeout, file permission denied).
+
+**Cons:**
+- Requires restructuring every reader around a trait it doesn't naturally need.
+  The KDE reader reads one file; the GNOME reader makes ~8 async calls.
+  Wrapping each in a trait adds indirection for test-only purposes.
+- Mock implementations must mirror the real API surface — a maintenance
+  burden that grows with every new field or portal key.
+- Doesn't help test the actual parsing logic in isolation — the mock returns
+  already-parsed values, skipping the fragile string/INI/D-Bus parsing.
+
+### Option B: Fixture-based unit tests (recommended)
+
+Separate **data parsing** from **data acquisition** in each reader. The
+parser is a pure function testable with fixture data; the acquisition layer
+is a thin wrapper that reads from the OS and passes raw data to the parser.
+
+**Pros:**
+- Tests the actual parsing code — the fragile part (INI color extraction,
+  Qt font string parsing, D-Bus value conversion).
+- Fixtures are real data: captured from actual KDE/GNOME/Windows/macOS
+  sessions, so they test realistic inputs.
+- No new traits, no indirection. The refactor just moves the existing
+  function boundary.
+- Fixture files are self-documenting (read the INI, see what the test expects).
+
+**Cons:**
+- Cannot test the I/O layer itself (file reading, D-Bus connection).
+  But that layer is thin (~5 lines per reader) and covered by platform CI.
+- Fixtures can go stale if OS config formats change. Mitigated by capturing
+  from current OS versions.
+- GNOME reader: the `PortalData` intermediate struct adds a type that exists
+  only for testability. Acceptable cost.
+
+### Option C: Snapshot / golden-file testing
+
+Run each reader on a real system, serialize the ThemeSpec output to JSON,
+and commit it as a golden file. Tests re-run the reader and diff against
+the golden file.
+
+**Pros:**
+- Tests the full pipeline end-to-end.
+- Detects any output change, including regressions and intentional changes.
+
+**Cons:**
+- Requires a real KDE/GNOME/macOS/Windows session — cannot run in CI.
+- Golden files must be updated manually after every intentional change.
+- Only tests one configuration per golden file (the maintainer's).
+  Edge cases (missing groups, malformed values) are never covered.
+
+### Why Option B
+
+Option A tests mocks, not code. Option C can't run in CI. Option B tests
+the actual parsing logic with controlled inputs — the right layer to verify.
+
+---
+
+## Per-reader design
 
 ### KDE reader (`kde/`)
 
@@ -124,17 +186,19 @@ from_gnome() → query portal → build_gnome_spec(PortalData) → merge with ad
                                Testable with constructed PortalData
 ```
 
-Define a `PortalData` struct:
+Define a `PortalData` struct using primitive types (not ashpd types) so
+tests compile without the `portal` feature:
 
 ```rust
 /// Collected portal + gsettings data, separated from D-Bus I/O.
+/// Uses primitive types so tests don't depend on ashpd.
 pub(crate) struct PortalData {
-    pub color_scheme: Option<ColorScheme>,   // light/dark/prefer-dark
+    pub color_scheme: Option<u32>,              // 0=none, 1=dark, 2=light (XDG spec)
     pub accent_color: Option<(f64, f64, f64)>,  // RGB 0.0-1.0
-    pub contrast: Option<Contrast>,
+    pub contrast: Option<u32>,                  // 0=none, 1=more
     pub reduce_motion: Option<bool>,
-    pub font_name: Option<String>,           // "Cantarell 11"
-    pub monospace_font: Option<String>,      // "Source Code Pro 10"
+    pub font_name: Option<String>,              // "Cantarell 11"
+    pub monospace_font: Option<String>,         // "Source Code Pro 10"
     pub document_font: Option<String>,
     pub text_scaling_factor: Option<f64>,
     pub icon_theme: Option<String>,

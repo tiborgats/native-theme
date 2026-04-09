@@ -68,8 +68,8 @@ static CACHED_IS_DARK: std::sync::RwLock<Option<bool>> = std::sync::RwLock::new(
 ///
 /// For live dark-mode tracking, subscribe to OS appearance-change events
 /// (D-Bus `SettingChanged` on Linux, `NSAppearance` KVO on macOS,
-/// `UISettings.ColorValuesChanged` on Windows) and call [`SystemTheme::from_system()`]
-/// to get a fresh [`SystemTheme`] with updated resolved variants.
+/// `UISettings.ColorValuesChanged` on Windows) and call [`crate::SystemTheme::from_system()`]
+/// to get a fresh [`crate::SystemTheme`] with updated resolved variants.
 ///
 /// # Platform Behavior
 ///
@@ -98,7 +98,7 @@ pub fn system_is_dark() -> bool {
 }
 
 /// Reset all process-wide caches so the next call to [`system_is_dark()`],
-/// [`prefers_reduced_motion()`], or [`system_icon_theme()`] re-queries the OS.
+/// [`prefers_reduced_motion()`], or [`crate::system_icon_theme()`] re-queries the OS.
 ///
 /// Call this when you detect that the user has changed system settings (e.g.,
 /// dark mode toggle, icon theme switch, accessibility preferences).
@@ -676,7 +676,7 @@ fn detect_reduced_motion_inner() -> bool {
 // === Crate-internal accessors ===
 
 /// Run `gsettings get <schema> <key>` with timeout.
-#[cfg(target_os = "linux")]
+#[cfg(all(target_os = "linux", feature = "portal"))]
 pub(crate) fn gsettings_get(schema: &str, key: &str) -> Option<String> {
     run_gsettings_with_timeout(&["get", schema, key])
 }

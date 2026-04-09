@@ -2,12 +2,14 @@
 // and ResolvedThemeVariant construction.
 // Helper functions, range-check utilities, and ValidateNested trait live in validate_helpers.rs.
 
-use super::validate_helpers::{self, require, require_font, require_text_scale_entry, DEFAULT_FONT_DPI};
+use super::validate_helpers::{
+    self, DEFAULT_FONT_DPI, require, require_font, require_text_scale_entry,
+};
 use crate::error::ThemeResolutionError;
+use crate::model::ThemeVariant;
 use crate::model::resolved::{
     ResolvedIconSizes, ResolvedTextScale, ResolvedThemeDefaults, ResolvedThemeVariant,
 };
-use crate::model::ThemeVariant;
 
 impl ThemeVariant {
     /// Convert this ThemeVariant into a [`ResolvedThemeVariant`] with all fields guaranteed.

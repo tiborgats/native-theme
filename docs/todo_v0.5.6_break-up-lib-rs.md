@@ -39,104 +39,110 @@ icon loader, or a new SystemTheme method all edit the same file.
 
 ---
 
-## Proposed module split
+## Options
 
-### 1. `src/detect.rs` (~500 lines)
+### Option A: Keep monolith, add section comments
 
-Everything related to querying OS state without constructing a full theme:
+Leave everything in lib.rs. Add `// ── Detection ───` region markers
+and fold-friendly comments for editor navigation.
 
-- `LinuxDesktop` enum + `detect_linux_de()` + `xdg_current_desktop()`
-- `CACHED_IS_DARK` + `system_is_dark()` + `detect_is_dark()` + `detect_is_dark_inner()`
-- `CACHED_REDUCED_MOTION` + `prefers_reduced_motion()` + `detect_reduced_motion()` + `detect_reduced_motion_inner()`
-- `run_gsettings_with_timeout()` (used by detect + gnome reader)
-- `read_xft_dpi()`, `detect_physical_dpi()`, `parse_xrandr_dpi()`, `detect_system_font_dpi()`, `read_kde_force_font_dpi()`
-- `invalidate_caches()`
-- All associated tests (`xrandr_dpi_tests`, `detect_tests`)
+**Pros:**
+- Zero risk. No code moves, no import changes.
+- No macro scoping concerns.
 
-Public items: `LinuxDesktop`, `detect_linux_de`, `system_is_dark`, `detect_is_dark`,
-`prefers_reduced_motion`, `detect_reduced_motion`, `invalidate_caches`.
+**Cons:**
+- Doesn't fix single-responsibility violation — every change still edits lib.rs.
+- 2,767 lines is hard to navigate even with markers.
+- Tests for unrelated subsystems (DPI detection, icon loading) are interleaved.
 
-Crate-internal items: `run_gsettings_with_timeout`, `xdg_current_desktop`,
-`detect_system_font_dpi`, `read_xft_dpi`, `detect_physical_dpi`.
+### Option B: Minimal 3-module split
 
-### 2. `src/system_theme.rs` (~450 lines)
+Extract only the two largest logical blocks:
 
-The SystemTheme struct and the OS-first pipeline:
+1. `src/detect.rs` (~500 lines) — all OS detection + caching + DPI
+2. `src/system_theme.rs` (~450 lines) — SystemTheme + pipeline + platform routing
 
-- `SystemTheme` struct definition
-- `SystemTheme::from_system()`, `from_system_async()`, `active()`, `pick()`, `with_overlay()`, `with_overlay_toml()`
-- `run_pipeline()` (private)
-- `from_system_inner()`, `from_linux()`, `from_system_async_inner()` (private)
-- `reader_is_dark()` (private)
-- `linux_preset_for_de()` (crate-internal, also used by platform_preset_name)
+Keep icon loading, platform_preset_name, and diagnose_platform_support
+in lib.rs (~470 lines remaining).
 
-### 3. `src/icon_loader.rs` (~270 lines)
+**Pros:**
+- Addresses the two biggest contributors to file size.
+- Fewer cross-module dependencies to manage.
+- lib.rs drops from 2,767 → ~470 lines (icon loading + re-exports + metadata).
 
-Icon loading dispatch (the functions that combine platform loaders + bundled icons):
+**Cons:**
+- Still leaves icon dispatch (270 lines) and platform diagnostics in lib.rs.
+- Doesn't fully separate concerns — "half refactored" state.
 
-- `load_icon()`
-- `load_icon_from_theme()`
-- `load_system_icon_by_name()`
-- `load_custom_icon()`
-- `loading_indicator()`
-- `is_freedesktop_theme_available()`
-- Associated tests (`icon_tests`)
+### Option C: Full 4-module split (recommended)
 
-### 4. `src/platform_info.rs` (~120 lines)
+Extract four focused modules:
 
-Platform metadata queries that don't construct themes:
+1. **`src/detect.rs`** (~500 lines) — OS state queries without constructing a theme:
+   - `LinuxDesktop` enum + `detect_linux_de()` + `xdg_current_desktop()`
+   - `CACHED_IS_DARK` + `system_is_dark()` + `detect_is_dark()` + `detect_is_dark_inner()`
+   - `CACHED_REDUCED_MOTION` + `prefers_reduced_motion()` + `detect_reduced_motion_inner()`
+   - `run_gsettings_with_timeout()`, `read_xft_dpi()`, `detect_physical_dpi()`,
+     `parse_xrandr_dpi()`, `detect_system_font_dpi()`, `read_kde_force_font_dpi()`
+   - `invalidate_caches()`
+   - All detection tests (xrandr_dpi_tests, detect_tests)
 
-- `platform_preset_name()`
-- `diagnose_platform_support()`
+2. **`src/system_theme.rs`** (~550 lines) — SystemTheme struct and OS-first pipeline:
+   - `SystemTheme` struct + impl (active, pick, with_overlay, from_system, from_system_async)
+   - `run_pipeline()`, `from_system_inner()`, `from_linux()`, `from_system_async_inner()`
+   - `reader_is_dark()`, `linux_preset_for_de()`
+   - `platform_preset_name()`, `diagnose_platform_support()`
 
-### 5. `src/macros.rs` (~70 lines)
+   `platform_preset_name` and `diagnose_platform_support` go here (not
+   their own module) because they share `linux_preset_for_de()` and
+   `detect_linux_de()` — a 2-function module isn't worth the overhead.
 
-The `impl_merge!` macro definition. Must be declared before any module that
-uses it (Rust macro scoping requires `#[macro_use] mod macros;` or
-`macro_rules!` before the using modules).
+3. **`src/icon_loader.rs`** (~270 lines) — icon loading dispatch:
+   - `load_icon()`, `load_icon_from_theme()`, `load_system_icon_by_name()`
+   - `load_custom_icon()`, `loading_indicator()`
+   - `is_freedesktop_theme_available()`
+   - Icon dispatch tests
 
-### 6. `src/lib.rs` after refactor (~200 lines)
+4. **`src/macros.rs`** (~70 lines) — `impl_merge!` macro definition.
+   Declared as `#[macro_use] mod macros;` before `mod model` in lib.rs
+   (Rust requires `macro_rules!` to be defined before use-site modules;
+   `#[macro_use]` makes it crate-visible).
 
-What remains in lib.rs:
+**lib.rs after refactor** (~200 lines): module doc, lints, ReadmeDoctests,
+module declarations, `pub use` re-exports, `pub type Result<T>`, `ENV_MUTEX`.
 
-- Module doc, lints, ReadmeDoctests
-- Module declarations (detect, system_theme, icon_loader, platform_info, macros, model, presets, resolve, kde, gnome, windows, macos, freedesktop, spinners, etc.)
-- `pub use` re-exports (unchanged)
-- `pub type Result<T>` alias
-- `ENV_MUTEX` (test-only)
+**Pros:**
+- Each module has a single responsibility and is independently navigable.
+- lib.rs drops from 2,767 → ~200 lines (pure root).
+- Tests colocate with the code they exercise.
+- New detection heuristics, SystemTheme methods, or icon loaders each
+  touch one file.
+
+**Cons:**
+- More cross-module `pub(crate)` imports to manage.
+- Must handle `impl_merge!` macro scoping carefully.
+- Small risk of import cycles (mitigated by crate-internal visibility).
+
+### Why Option C
+
+Option A doesn't solve the problem. Option B solves 70% of it with the
+same effort as Option C (the cross-module wiring is the hard part either
+way, and it's the same for 2 or 4 modules). Option C finishes the job.
 
 ---
 
-## Constraints
+## Cross-module crate-internal access
 
-### Macro scoping
-
-`impl_merge!` is used in `model/mod.rs`, `model/widgets/mod.rs`,
-`model/defaults.rs`, `model/font.rs`. Rust `macro_rules!` macros must
-be defined before the modules that use them. Options:
-
-- **Option A:** `#[macro_use] mod macros;` at the top of lib.rs before
-  `mod model`. The macro is file-scoped to the crate.
-- **Option B:** Move `impl_merge!` into its own `src/macros.rs` and
-  include via `#[macro_use]`. Same effect, cleaner file.
-- **Option C (proc-macro):** Replace `impl_merge!` with a derive macro
-  in `native-theme-build`. Overkill for this task — save for a separate
-  todo if desired.
-
-Recommendation: **Option B** — simplest, no behavior change.
-
-### Cross-module crate-internal access
-
-Several functions are `pub(crate)` and called across modules:
+Several functions are `pub(crate)` and called across the new modules:
 
 - `run_gsettings_with_timeout` — called by `detect.rs` and `gnome/mod.rs`
 - `xdg_current_desktop` — called by `detect.rs` and `system_theme.rs`
 - `detect_system_font_dpi` — called by `resolve/mod.rs`
-- `linux_preset_for_de` — called by `system_theme.rs` and `platform_info.rs`
+- `linux_preset_for_de` — called by `system_theme.rs`
 
 These stay `pub(crate)` and are imported with `use crate::detect::...`.
 
-### Public API stability
+## Public API stability
 
 The public API (function signatures, types, re-exports) must not change.
 All items currently exported from `lib.rs` remain exported from `lib.rs`

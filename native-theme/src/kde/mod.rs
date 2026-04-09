@@ -101,10 +101,10 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ThemeSpec>
     } else {
         theme.light.as_mut()
     };
-    if let Some(variant) = variant {
-        if let Some(ref theme_name) = variant.icon_theme {
-            variant.defaults.icon_sizes = parse_icon_sizes_from_index_theme(theme_name);
-        }
+    if let Some(variant) = variant
+        && let Some(ref theme_name) = variant.icon_theme
+    {
+        variant.defaults.icon_sizes = parse_icon_sizes_from_index_theme(theme_name);
     }
 
     Ok(theme)

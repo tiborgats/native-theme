@@ -27,7 +27,7 @@ for Linux, macOS, and Windows.
 
 ```toml
 [dependencies]
-native-theme = "0.5.5"
+native-theme = "0.5.6"
 ```
 
 Load a bundled preset:
@@ -71,8 +71,8 @@ theme.merge(&overrides);
 
 ```toml
 [dependencies]
-native-theme = "0.5.5"
-native-theme-gpui = "0.5.5"
+native-theme = "0.5.6"
+native-theme-gpui = "0.5.6"
 ```
 
 ```rust,ignore
@@ -98,8 +98,8 @@ cargo run -p native-theme-gpui --example showcase-gpui
 
 ```toml
 [dependencies]
-native-theme = "0.5.5"
-native-theme-iced = "0.5.5"
+native-theme = "0.5.6"
+native-theme-iced = "0.5.6"
 ```
 
 ```rust,ignore
@@ -190,7 +190,7 @@ No features are enabled by default. The preset API works without any features.
 
 ```toml
 [dependencies]
-native-theme = { version = "0.5.5", features = ["native"] }
+native-theme = { version = "0.5.6", features = ["native"] }
 ```
 
 ### Meta-features

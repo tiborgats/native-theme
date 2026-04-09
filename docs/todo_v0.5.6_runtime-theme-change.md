@@ -19,7 +19,7 @@ change notifications:
 | Platform | Signal | Payload |
 |----------|--------|---------|
 | Linux (GNOME/GTK) | `org.freedesktop.portal.Settings::SettingChanged` D-Bus signal | namespace, key, value |
-| Linux (KDE) | File watch on `~/.config/kdeglobals` | file changed |
+| Linux (KDE) | Same portal signal (Plasma 5.27+ implements XDG portal); file watch on `~/.config/kdeglobals` as fallback for older KDE | file changed |
 | macOS | `NSAppearance` KVO, `NSSystemColorsDidChangeNotification` | new appearance/colors |
 | Windows | `UISettings::ColorValuesChanged` event | (none — re-query) |
 
@@ -31,29 +31,16 @@ changes at runtime.
 
 ## Scope
 
-This document covers **dark mode change detection** as the minimum viable
-feature. Full theme change watching (accent color, font changes, icon theme
-changes) uses the same infrastructure but has broader implications.
+**Minimum:** Dark mode toggle detection. The user toggles light/dark mode
+in system settings; the app receives a notification.
 
-### Minimum scope: dark mode toggle
-
-The user toggles light/dark mode in system settings. The app receives a
-callback and can re-read the theme.
-
-### Extended scope (future)
-
-- Accent color changes (GNOME portal `accent-color` key, KDE kdeglobals
-  `[Colors:View] DecorationFocus`, Windows `UISettings` accent)
-- Font changes
-- Icon theme changes
-- High contrast toggle
-
-The extended scope uses the same watcher infrastructure. Once the watcher
-exists, adding more watched keys/signals is incremental.
+**Extended (future, same infrastructure):** Accent color, font, icon theme,
+high contrast changes. Once the watcher exists, watching additional keys
+is incremental.
 
 ---
 
-## API design
+## API design options
 
 ### Option A: Callback-based (recommended)
 
@@ -65,21 +52,7 @@ pub struct ThemeWatcher { /* platform handle */ }
 ///
 /// Calls `callback` on a background thread whenever the OS reports a
 /// theme-related change (dark mode toggle, accent color, etc.).
-///
-/// The callback receives a `ThemeChangeEvent` describing what changed.
-/// For a full re-read, call `SystemTheme::from_system()` inside the
-/// callback.
-///
 /// Drop the returned `ThemeWatcher` to stop watching.
-///
-/// # Platform behavior
-///
-/// - **Linux (GNOME):** Subscribes to `SettingChanged` on the
-///   `org.freedesktop.portal.Settings` D-Bus interface.
-/// - **Linux (KDE):** Watches `~/.config/kdeglobals` for modifications.
-/// - **macOS:** Observes `NSAppearance` changes via KVO.
-/// - **Windows:** Subscribes to `UISettings::ColorValuesChanged`.
-/// - **Other:** Returns `Err(Error::Unsupported)`.
 pub fn on_theme_change(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
 ) -> Result<ThemeWatcher>;
@@ -89,34 +62,49 @@ pub fn on_theme_change(
 pub enum ThemeChangeEvent {
     /// Dark/light mode changed. New value is `is_dark`.
     DarkModeChanged { is_dark: bool },
-    /// Accent color changed. Call `SystemTheme::from_system()` to get
-    /// the new color.
+    /// Accent color changed.
     AccentColorChanged,
     /// Something else changed (font, icon theme, etc.).
-    /// Call `SystemTheme::from_system()` for a full re-read.
     Other,
 }
 ```
 
-**Why callback-based:**
-- No async runtime dependency — the watcher spawns its own `std::thread`
-  (or uses OS event APIs directly)
-- Works with any GUI framework's event loop (just post to the UI thread
-  from the callback)
-- RAII cleanup via `Drop` on `ThemeWatcher`
+**Pros:**
+- No async runtime dependency — the watcher spawns its own `std::thread`.
+- Works with any GUI framework (callback posts to the framework's event loop).
+- RAII cleanup via `Drop` on `ThemeWatcher`.
+- Lowest common denominator — every consumer can use it regardless of
+  async runtime choice or framework.
 
-**Why not async Stream:**
-- Forces an async runtime choice on the consumer
-- The GNOME portal watcher already uses ashpd's async API internally,
-  but the consumer-facing API should not require tokio/async-io
-- A `Stream` adapter can be built on top of the callback API trivially:
-  ```rust
-  let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
-  let _watcher = on_theme_change(move |event| { let _ = tx.send(event); });
-  // rx is now an async stream
-  ```
+**Cons:**
+- Callback runs on background thread — consumer must marshal to UI thread.
+  This is standard for OS event APIs, but adds boilerplate.
+- No backpressure. If the consumer is slow, events queue up in the callback.
+- Consumers using async code must bridge manually (channel from callback
+  to async task).
 
-### Option B: Polling helper
+### Option B: Async Stream
+
+```rust
+/// Returns an async Stream of theme change events.
+pub fn theme_changes() -> impl Stream<Item = ThemeChangeEvent>;
+```
+
+**Pros:**
+- Natural for async consumers (tokio select!, iced Subscription, etc.).
+- Backpressure built in (Stream semantics).
+- Can be combined with other async streams in the framework's event loop.
+
+**Cons:**
+- Forces an async runtime dependency on the consumer. native-theme already
+  has this tension with portal-tokio vs portal-async-io — adding another
+  runtime-dependent API doubles the problem.
+- Not usable by synchronous GUI frameworks (egui, immediate-mode UIs)
+  without wrapping in a thread + channel — negating the benefit.
+- The watcher's actual I/O is trivial (one D-Bus signal subscription or
+  file watch). An async Stream is overkill for the underlying work.
+
+### Option C: Polling helper
 
 ```rust
 /// Start a polling thread that calls `detect_is_dark()` every `interval`
@@ -127,216 +115,218 @@ pub fn poll_dark_mode(
 ) -> ThemeWatcher;
 ```
 
-Simpler but wasteful (CPU, battery) and has latency equal to the poll
-interval. Acceptable as a fallback for platforms without native signals.
+**Pros:**
+- Simplest implementation. No platform-specific signal subscription.
+- Works on every platform without OS API integration.
+- No new dependencies.
 
-### Recommendation
+**Cons:**
+- Wasteful: wakes up every N seconds even when nothing changed.
+  Unacceptable for laptop battery life with short intervals.
+- Latency equals the poll interval. 1-second polling means up to 1 second
+  delay on theme change. Longer intervals increase delay.
+- Cannot detect accent color or font changes without re-reading the full
+  theme (expensive) every poll.
 
-Option A with Option B as internal fallback for unsupported platforms.
+### Why Option A
+
+Option B adds async runtime coupling for trivial I/O — wrong trade-off for
+a toolkit-agnostic library. Option C wastes resources and has inherent
+latency. Option A is the minimal, universal primitive. Async consumers can
+trivially wrap it:
+
+```rust
+let (tx, rx) = tokio::sync::mpsc::unbounded_channel();
+let _watcher = on_theme_change(move |event| { let _ = tx.send(event); });
+// rx is now an async stream of ThemeChangeEvent
+```
+
+Option C remains useful as an internal fallback for platforms where native
+signals are unavailable.
 
 ---
 
 ## Platform implementation
 
-### Linux (GNOME / portal-based DEs)
+### Linux (GNOME and modern KDE via portal)
 
-**Signal:** `org.freedesktop.portal.Settings` interface, `SettingChanged`
-signal on session bus.
+**Signal:** `org.freedesktop.portal.Settings::SettingChanged` D-Bus signal
+on the session bus. Available on GNOME and KDE Plasma 5.27+ (both implement
+the XDG Desktop Portal settings interface).
 
 **Watched keys:**
-- `org.freedesktop.appearance` / `color-scheme` — dark mode (1 = dark, 2 = light)
-- `org.freedesktop.appearance` / `accent-color` — accent (future scope)
+- `org.freedesktop.appearance` / `color-scheme` — 1=dark, 2=light
+- `org.freedesktop.appearance` / `accent-color` — (future scope)
 
-**Implementation:**
-
-Use `zbus` (already a transitive dependency via `ashpd`) to subscribe to
-the signal. Spawn a dedicated thread running a `zbus::blocking::Connection`
-event loop:
+**Implementation:** `zbus` is already a transitive dependency via `ashpd`.
+Use `zbus::blocking::Connection` on a dedicated thread:
 
 ```rust
 fn watch_portal(callback: impl Fn(ThemeChangeEvent) + Send + 'static) -> Result<ThemeWatcher> {
     let (stop_tx, stop_rx) = std::sync::mpsc::channel();
     let handle = std::thread::spawn(move || {
         let conn = zbus::blocking::Connection::session()?;
-        // Subscribe to SettingChanged signal
         let proxy = conn.object_proxy(
             "org.freedesktop.portal.Desktop",
             "/org/freedesktop/portal/desktop",
         )?;
-        // ... filter for appearance namespace, call callback on change ...
+        // Subscribe to SettingChanged, filter for appearance namespace
+        // Call callback(ThemeChangeEvent::DarkModeChanged { is_dark }) on match
+        // Check stop_rx between iterations
     });
     Ok(ThemeWatcher { stop: stop_tx, thread: handle })
 }
 ```
 
-No async runtime needed — `zbus::blocking` works in a plain thread.
+**Note:** `zbus::blocking` runs its own internal async reactor — no tokio
+or async-io dependency needed at the consumer level. Verify this works
+without the tokio feature on ashpd. If not, fall back to raw D-Bus via
+`dbus` crate (pure blocking, no async).
 
-### Linux (KDE)
+### Linux (KDE fallback for older Plasma)
 
-**Signal:** No D-Bus signal for kdeglobals changes. KDE modifies
-`~/.config/kdeglobals` when the user changes theme settings.
+KDE Plasma < 5.27 doesn't implement the XDG portal settings interface.
+Fallback: watch `~/.config/kdeglobals` for file modifications.
 
-**Implementation:** Use `notify` crate (inotify on Linux) to watch the
-file for `CLOSE_WRITE` events:
+**Implementation:** Use `notify` crate (inotify backend on Linux):
 
 ```rust
 fn watch_kdeglobals(callback: impl Fn(ThemeChangeEvent) + Send + 'static) -> Result<ThemeWatcher> {
     let path = kde::kdeglobals_path();
-    let (stop_tx, stop_rx) = std::sync::mpsc::channel();
     let handle = std::thread::spawn(move || {
         let (tx, rx) = std::sync::mpsc::channel();
         let mut watcher = notify::recommended_watcher(move |res| {
             if let Ok(event) = res { let _ = tx.send(event); }
         })?;
         watcher.watch(&path, RecursiveMode::NonRecursive)?;
-        loop {
-            match rx.recv_timeout(Duration::from_secs(1)) {
-                Ok(_) => {
-                    // Debounce: KDE writes multiple times in quick succession
-                    std::thread::sleep(Duration::from_millis(200));
-                    // Drain any pending events
-                    while rx.try_recv().is_ok() {}
-                    // Re-read and determine what changed
-                    let is_dark = detect_is_dark();
-                    callback(ThemeChangeEvent::DarkModeChanged { is_dark });
-                }
-                Err(RecvTimeoutError::Timeout) => {
-                    if stop_rx.try_recv().is_ok() { break; }
-                }
-                Err(_) => break,
-            }
-        }
+        // Debounce (200ms) — KDE writes multiple times per change
+        // Call callback with new is_dark value
     });
-    Ok(ThemeWatcher { stop: stop_tx, thread: handle })
+    Ok(ThemeWatcher { ... })
 }
 ```
+
+**Dispatch logic:** Try portal first. If the portal connection fails or
+`SettingChanged` never fires (no portal backend), fall back to file
+watching if `kde` feature is enabled.
 
 ### macOS
 
-**Signal:** `NSAppearance` change via Objective-C KVO (Key-Value Observing)
-on `NSApplication.effectiveAppearance`, or register for
-`AppleInterfaceThemeChangedNotification` distributed notification.
+**Signal:** `AppleInterfaceThemeChangedNotification` via
+`NSDistributedNotificationCenter`, or KVO on
+`NSApplication.effectiveAppearance`.
 
-**Implementation:**
-
-```rust
-fn watch_macos(callback: impl Fn(ThemeChangeEvent) + Send + 'static) -> Result<ThemeWatcher> {
-    let handle = std::thread::spawn(move || {
-        // Use distributed notification center for AppleInterfaceThemeChangedNotification
-        // This fires when the user toggles dark mode in System Settings
-        // objc2: register observer block, run CFRunLoop on this thread
-    });
-    Ok(ThemeWatcher { stop: ..., thread: handle })
-}
-```
-
-The macOS implementation requires running a `CFRunLoop` on the watcher
-thread to receive notifications.
+**Implementation:** Spawn a thread, create a `CFRunLoop`, register for
+the distributed notification. The `objc2` bindings (already a dependency
+with the `macos` feature) provide the necessary APIs.
 
 ### Windows
 
 **Signal:** `UISettings::ColorValuesChanged` event.
 
-**Implementation:**
+**Implementation:** Spawn a thread, create `UISettings`, subscribe to
+`ColorValuesChanged` with a `TypedEventHandler`. Run a message pump
+(`GetMessage`/`DispatchMessage` loop) to receive WinRT events.
 
-```rust
-fn watch_windows(callback: impl Fn(ThemeChangeEvent) + Send + 'static) -> Result<ThemeWatcher> {
-    let handle = std::thread::spawn(move || {
-        let settings = UISettings::new()?;
-        let token = settings.ColorValuesChanged(&TypedEventHandler::new(
-            move |_settings, _args| {
-                let is_dark = detect_is_dark();
-                callback(ThemeChangeEvent::DarkModeChanged { is_dark });
-                Ok(())
-            },
-        ))?;
-        // Run a message pump to keep receiving events
-        // ...
-        // On stop: settings.RemoveColorValuesChanged(token)
-    });
-    Ok(ThemeWatcher { stop: ..., thread: handle })
-}
-```
+**Threading note:** `UISettings` requires STA (single-threaded apartment).
+The watcher thread must call `CoInitializeEx(COINIT_APARTMENTTHREADED)`
+before creating UISettings.
 
 ---
 
 ## New dependencies
 
-| Crate | Platform | Purpose | Feature-gated |
-|-------|----------|---------|---------------|
-| `notify` ~7.0 | Linux (KDE) | inotify file watching for kdeglobals | `kde` feature |
-| `zbus` (already transitive via ashpd) | Linux (GNOME) | Blocking D-Bus signal subscription | `portal` feature |
+| Crate | Platform | Purpose | Already in tree? |
+|-------|----------|---------|-----------------|
+| `zbus` (blocking) | Linux (portal) | D-Bus signal subscription | Yes, via ashpd |
+| `notify` ~7.0 | Linux (KDE fallback) | inotify file watching | No — new dependency |
 
-`notify` is the only truly new dependency. On macOS and Windows, the
-existing `objc2` and `windows` crate bindings provide everything needed.
+`notify` is the only truly new dependency. It's pure Rust, no C deps.
+On macOS and Windows, the existing `objc2` and `windows` bindings provide
+everything needed.
 
 ---
 
-## Feature flag design
-
-Two options:
+## Feature flag options
 
 ### Option 1: Automatic with existing features
 
-The `on_theme_change()` function uses whatever platform features are
-already enabled. If `kde` is enabled, it watches kdeglobals. If `portal`
-is enabled, it subscribes to D-Bus. No new feature flag.
+`on_theme_change()` uses whatever platform features are already enabled.
+`kde` → file watcher available. `portal` → D-Bus watcher available.
+`macos` → KVO available. `windows` → UISettings event available.
 
-### Option 2: Separate `watch` feature
+**Pros:**
+- No new features to document or configure.
+- Users who enable `native` get watching for free.
+
+**Cons:**
+- `notify` crate (~5 transitive deps) is pulled in whenever `kde` is
+  enabled, even if the consumer never calls `on_theme_change()`.
+- Users who only want `from_kde()` pay the compile cost of `notify`.
+
+### Option 2: Separate `watch` feature (recommended)
 
 ```toml
 [features]
-watch = []  # enables on_theme_change()
-watch-kde = ["kde", "dep:notify"]
-watch-portal = ["portal"]  # zbus already available
+watch = []  # enables on_theme_change(); pulls in notify on Linux/KDE
 ```
 
-**Recommendation:** Option 1 for simplicity. The `notify` dependency is
-small (pure Rust, no C deps) and only pulled in when `kde` is already
-enabled.
+`on_theme_change()` is gated behind `#[cfg(feature = "watch")]`.
+
+**Pros:**
+- Opt-in: users who don't need runtime watching don't pay for `notify`.
+- Clear signal of intent — `watch` in Cargo.toml means the app wants
+  live change tracking.
+- Can be combined with any platform feature: `features = ["kde", "watch"]`.
+
+**Cons:**
+- One more feature flag to document (15 → 16).
+- Users might forget to enable it and wonder why `on_theme_change` doesn't
+  exist. Mitigated by a clear compile error message.
+
+### Why Option 2
+
+The `notify` crate is small but not free. Since most users of `from_kde()`
+are reading the theme at startup and don't need runtime watching, making
+it opt-in respects the zero-cost principle. The portal and macOS/Windows
+watchers don't add new deps (zbus/objc2/windows are already present), but
+gating them behind the same `watch` feature keeps the API surface consistent.
 
 ---
 
 ## Edge cases
 
-1. **Multiple rapid toggles:** Debounce events (200ms window). KDE writes
-   kdeglobals multiple times per theme change. GNOME portal may fire
-   multiple `SettingChanged` signals.
+1. **Debouncing:** KDE writes kdeglobals multiple times per theme change.
+   GNOME portal may fire multiple `SettingChanged` signals. Debounce with
+   a 200ms window — collapse rapid events into one callback invocation.
 
-2. **Watcher thread lifetime:** `ThemeWatcher` stops on Drop. If the user
-   forgets to hold the handle, the watcher stops immediately. Document
-   this clearly.
+2. **Watcher lifetime:** `ThemeWatcher` stops on Drop. If the consumer
+   doesn't hold the handle, the watcher dies immediately. Document this.
 
-3. **Thread safety:** Callback is `Send + 'static`. The callback runs on
-   the watcher thread, not the UI thread. Consumers must marshal to their
-   UI thread (e.g., `iced::Subscription`, `gpui::cx.emit()`).
+3. **Thread safety:** Callback runs on the watcher thread, not the UI thread.
+   Consumers must marshal to their event loop.
 
-4. **Startup race:** If the user toggles dark mode between app startup
-   and `on_theme_change()` registration, the app might miss the change.
-   Document that apps should read the initial theme BEFORE registering
-   the watcher.
+4. **Startup race:** A toggle between app startup and watcher registration
+   can be missed. Document: read theme first, then register watcher.
 
-5. **Nested environments:** Wayland on KDE fires both portal signals AND
-   writes kdeglobals. If both `kde` and `portal` features are enabled,
-   avoid double-firing by preferring the portal watcher (more reliable)
-   and skipping the file watcher.
+5. **KDE + portal overlap:** On modern KDE (Plasma 5.27+), both portal
+   signals and kdeglobals file changes fire. Prefer portal when available;
+   skip file watcher to avoid double-firing.
 
 ---
 
 ## Risk
 
-Medium. Platform-specific event subscription is inherently tricky:
-- macOS CFRunLoop management on a background thread
-- Windows COM threading model (STA vs MTA for UISettings events)
-- D-Bus signal matching and connection lifecycle
+Medium. Platform-specific event subscription involves:
+- macOS: CFRunLoop management on a background thread
+- Windows: COM apartment threading (STA required for UISettings)
+- D-Bus: signal matching and connection lifecycle
 
-Mitigation: start with the simplest platform (Linux portal via zbus
-blocking) and expand. Each platform implementation is independent.
+Mitigation: implement Linux portal first (simplest, zbus handles connection
+lifecycle). Each platform is independent — ship one at a time.
 
 ## Verification
 
-- Unit tests: mock `ThemeChangeEvent` dispatch and verify callback fires
-- Integration tests: manual verification on each platform (toggle dark mode,
-  observe callback)
-- Stress test: rapid toggle 10 times in 2 seconds, verify debounce works
-  and no events are lost
+- Unit tests: verify callback fires on simulated event dispatch
+- Integration tests: manual on each platform (toggle dark mode, observe callback)
+- Stress test: rapid toggle 10 times in 2 seconds, verify debounce and no lost events

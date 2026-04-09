@@ -612,17 +612,15 @@ After the split, these files need `crate::` path updates:
 
 **All other claims in this research were verified by direct codebase analysis** -- no user confirmation needed.
 
-## Open Questions
+## Open Questions (RESOLVED)
 
-1. **Accessor function naming for gsettings**
+1. **Accessor function naming for gsettings** — RESOLVED: Use `gsettings_get(schema, key)` per Plan 01 design.
    - What we know: `run_gsettings_with_timeout` is only called with `["get", ...]` args from gnome module.
-   - What's unclear: Whether future phases might need other gsettings subcommands.
-   - Recommendation: Create `gsettings_get(schema, key)` for now. If broader access is needed later, add more accessor functions. The private `run_gsettings_with_timeout` remains available for extension.
+   - Decision: Create `gsettings_get(schema, key)` for now. If broader access is needed later, add more accessor functions. The private `run_gsettings_with_timeout` remains available for extension.
 
-2. **dispatch_tests module name after move**
+2. **dispatch_tests module name after move** — RESOLVED: Keep whole in pipeline.rs per Plan 02 design.
    - What we know: dispatch_tests tests both `detect_linux_de()` (detection) and `from_linux()` (pipeline).
-   - What's unclear: Whether to split the test module or keep it whole.
-   - Recommendation: Keep the test module whole in pipeline.rs since the from_linux tests depend on detect_linux_de results and they test the integration between detection and pipeline dispatch. The detect_linux_de pure function tests (14 of them) could alternatively move to detect.rs for better locality. The planner should decide the cut point.
+   - Decision: Keep the test module whole in pipeline.rs since the from_linux tests depend on detect_linux_de results and they test the integration between detection and pipeline dispatch.
 
 ## Validation Architecture
 

@@ -213,9 +213,7 @@ mod tests {
         assert!(
             matches!(
                 &result,
-                Ok(_)
-                    | Err(crate::Error::Unsupported(_))
-                    | Err(crate::Error::Unavailable(_))
+                Ok(_) | Err(crate::Error::Unsupported(_)) | Err(crate::Error::Unavailable(_))
             ),
             "unexpected result: {result:?}"
         );
