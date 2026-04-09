@@ -34,6 +34,9 @@ mod kde;
 #[cfg(all(feature = "watch", feature = "portal", target_os = "linux"))]
 mod gnome;
 
+#[cfg(all(feature = "watch", feature = "macos", target_os = "macos"))]
+mod macos;
+
 use std::sync::mpsc;
 use std::thread::JoinHandle;
 
@@ -81,11 +84,24 @@ pub enum ThemeChangeEvent {
 /// // RIGHT -- watcher lives as long as `_watcher`:
 /// let _watcher = on_theme_change(|e| println!("{e:?}")).unwrap();
 /// ```
-#[derive(Debug)]
 #[must_use = "dropping ThemeWatcher stops the watcher immediately"]
 pub struct ThemeWatcher {
     shutdown_tx: Option<mpsc::Sender<()>>,
     thread: Option<JoinHandle<()>>,
+    platform_shutdown: Option<Box<dyn FnOnce() + Send>>,
+}
+
+impl std::fmt::Debug for ThemeWatcher {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.debug_struct("ThemeWatcher")
+            .field("shutdown_tx", &self.shutdown_tx)
+            .field("thread", &self.thread)
+            .field(
+                "platform_shutdown",
+                &self.platform_shutdown.as_ref().map(|_| "..."),
+            )
+            .finish()
+    }
 }
 
 impl ThemeWatcher {
@@ -97,12 +113,39 @@ impl ThemeWatcher {
         Self {
             shutdown_tx: Some(shutdown_tx),
             thread: Some(thread),
+            platform_shutdown: None,
+        }
+    }
+
+    /// Create a `ThemeWatcher` with an additional platform-specific shutdown
+    /// action.
+    ///
+    /// The `platform_shutdown` closure is called **before** the channel is
+    /// dropped, allowing platform backends to wake their blocked event loops
+    /// (e.g. `CFRunLoop::stop` on macOS, `PostThreadMessageW(WM_QUIT)` on
+    /// Windows) so the thread can observe the channel disconnect and exit.
+    #[allow(dead_code)] // Used by macOS/Windows backends behind cfg gates
+    pub(crate) fn with_platform_shutdown(
+        shutdown_tx: mpsc::Sender<()>,
+        thread: JoinHandle<()>,
+        platform_shutdown: Box<dyn FnOnce() + Send>,
+    ) -> Self {
+        Self {
+            shutdown_tx: Some(shutdown_tx),
+            thread: Some(thread),
+            platform_shutdown: Some(platform_shutdown),
         }
     }
 }
 
 impl Drop for ThemeWatcher {
     fn drop(&mut self) {
+        // Run the platform-specific shutdown action first (e.g. CFRunLoop::stop
+        // on macOS, PostThreadMessageW WM_QUIT on Windows) to wake the blocked
+        // event loop so it can observe the channel disconnect.
+        if let Some(shutdown_fn) = self.platform_shutdown.take() {
+            shutdown_fn();
+        }
         // Drop the sender to signal shutdown (receiver sees Disconnected).
         drop(self.shutdown_tx.take());
         // Join the background thread so it finishes cleanly.
@@ -155,7 +198,22 @@ pub fn on_theme_change(
         }
     }
 
-    #[cfg(not(target_os = "linux"))]
+    #[cfg(target_os = "macos")]
+    {
+        #[cfg(all(feature = "watch", feature = "macos"))]
+        {
+            return macos::watch_macos(callback);
+        }
+        #[cfg(not(all(feature = "watch", feature = "macos")))]
+        {
+            let _ = callback;
+            return Err(crate::Error::Unsupported(
+                "theme watching requires both 'watch' and 'macos' features",
+            ));
+        }
+    }
+
+    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
     {
         let _ = callback;
         Err(crate::Error::Unsupported(
@@ -187,19 +245,17 @@ mod tests {
         assert!(debug_str.contains("ColorSchemeChanged"));
     }
 
-    /// On non-Linux platforms, on_theme_change() always returns Unsupported.
-    #[cfg(not(target_os = "linux"))]
+    /// On unsupported platforms, on_theme_change() returns Unsupported.
+    #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
     #[test]
     fn on_theme_change_returns_unsupported() {
         let result = on_theme_change(|_| {});
         assert!(result.is_err());
         let err = result.unwrap_err();
-        match &err {
-            crate::Error::Unsupported(msg) => {
-                assert!(msg.contains("not yet implemented"), "got: {msg}");
-            }
-            other => panic!("expected Unsupported, got: {other:?}"),
-        }
+        assert!(
+            matches!(&err, crate::Error::Unsupported(_)),
+            "expected Unsupported, got: {err:?}"
+        );
     }
 
     /// On Linux, on_theme_change() dispatches based on the detected DE.
