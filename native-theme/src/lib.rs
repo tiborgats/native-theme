@@ -112,6 +112,9 @@ mod resolve;
     feature = "system-icons"
 ))]
 mod spinners;
+/// Runtime theme change watching.
+#[cfg(feature = "watch")]
+pub mod watch;
 /// Shared test infrastructure (ENV_MUTEX for env var serialization).
 #[cfg(test)]
 mod test_util;
@@ -181,6 +184,9 @@ pub use windows::from_windows;
 pub use winicons::load_windows_icon;
 #[cfg(all(target_os = "windows", feature = "system-icons"))]
 pub use winicons::load_windows_icon_by_name;
+
+#[cfg(feature = "watch")]
+pub use watch::{ThemeChangeEvent, ThemeWatcher, on_theme_change};
 
 #[cfg(target_os = "linux")]
 pub use detect::LinuxDesktop;

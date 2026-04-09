@@ -208,10 +208,9 @@ Plans:
   2. ThemeChanged enum exists as a signal-only type (no theme data inside -- callers re-run from_system() on signal)
   3. The `watch` feature flag gates the entire on_theme_change() API and the notify dependency
   4. Compiling without the `watch` feature produces no additional dependencies
-**Plans:** 2 plans
+**Plans:** 1 plan
 Plans:
-- [ ] 63-01-PLAN.md — Extract pure from_kde_content_pure function and create 7 fixture .ini files
-- [ ] 63-02-PLAN.md — Integration tests for all fixture scenarios
+- [ ] 65-01-PLAN.md — ThemeChangeEvent, ThemeWatcher, on_theme_change() stub with watch feature gate
 
 ### Phase 66: Linux Watchers
 **Goal**: Theme changes on KDE and GNOME desktops trigger ThemeChanged signals through the watcher API

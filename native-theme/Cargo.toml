@@ -22,6 +22,7 @@ linux = ["kde", "portal-tokio"]
 linux-async-io = ["kde", "portal-async-io"]
 native = ["linux", "macos", "windows"]
 native-async-io = ["linux-async-io", "macos", "windows"]
+watch = ["dep:notify"]
 material-icons = [] # Bundle Material Symbols SVGs as cross-platform fallback
 lucide-icons = [] # Bundle Lucide SVGs as optional icon set
 svg-rasterize = ["dep:resvg"] # Optional SVG-to-RGBA rasterization via resvg
@@ -77,6 +78,7 @@ ashpd = { version = "0.13.9", optional = true, default-features = false, feature
 ] }
 configparser = { version = "3.1.0", optional = true }
 freedesktop-icons = { version = "0.4", optional = true }
+notify = { version = "8.2", optional = true, default-features = false }
 
 [target.'cfg(target_os = "windows")'.dependencies]
 windows = { version = "0.62.2", optional = true, default-features = false, features = [
