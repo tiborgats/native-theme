@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.6
 milestone_name: Internal Quality & Runtime Watching
-status: verified
-stopped_at: Phase 66 verified — all 4/4 must-haves passed
-last_updated: "2026-04-09T19:38:34.508Z"
+status: verifying
+stopped_at: Completed 67-01-PLAN.md
+last_updated: "2026-04-09T21:18:53.720Z"
 last_activity: 2026-04-09
 progress:
   total_phases: 7
   completed_phases: 6
-  total_plans: 11
-  completed_plans: 11
-  percent: 100
+  total_plans: 13
+  completed_plans: 12
+  percent: 92
 ---
 
 # Project State
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 
 Phase: 66 of 67 (Linux Watchers)
 Plan: 2 of 2 in current phase (complete)
-Status: Phase complete — verified (4/4 must-haves)
+Status: Phase complete — ready for verification
 Last activity: 2026-04-09
 
 Progress: [█████████░] 91%
@@ -52,6 +52,7 @@ Progress: [█████████░] 91%
 | Phase 65-themewatcher-core-api P01 | 3min | 2 tasks | 4 files |
 | Phase 66-linux-watchers P01 | 8min | 2 tasks | 4 files |
 | Phase 66-linux-watchers P02 | 9min | 2 tasks | 2 files |
+| Phase 67-macos-windows-watchers P01 | 8min | 2 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,9 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [Phase 66-01]: Parent-directory inotify watching pattern for KDE (survives QSaveFile atomic renames)
 - [Phase 66-02]: cfg-gated match arms in on_theme_change: each DE variant gated by its feature so missing features fall through to Unsupported
 - [Phase 66-02]: Platform-split test: non-Linux asserts Unsupported; Linux accepts Ok/Unsupported/Unavailable for CI and real DE environments
+- [Phase 67-01]: ThemeWatcher extended with Box<dyn FnOnce() + Send> platform_shutdown for immediate wakeup on Drop
+- [Phase 67-01]: CFRunLoop::run() + stop() from Drop for instant macOS watcher shutdown (no timeout loop)
+- [Phase 67-01]: SendableCFRunLoop newtype for thread-safe CFRunLoop::stop() (Apple documents it as thread-safe)
 
 ### Roadmap Evolution
 
@@ -98,6 +102,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-09T19:38:34.505Z
-Stopped at: Completed 66-02-PLAN.md
+Last session: 2026-04-09T21:18:53.717Z
+Stopped at: Completed 67-01-PLAN.md
 Resume file: None

@@ -235,7 +235,7 @@ Plans:
   2. On Windows, changing the system theme triggers a ThemeChanged signal (UISettings::ColorValuesChanged with COM STA and message pump on watcher thread)
   3. Both watchers run on dedicated background threads without requiring the caller to provide an event loop
   4. Dropping the ThemeWatcher handle cleanly stops the background thread on both platforms
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
 - [ ] 63-01-PLAN.md — Extract pure from_kde_content_pure function and create 7 fixture .ini files
 - [ ] 63-02-PLAN.md — Integration tests for all fixture scenarios
@@ -262,4 +262,4 @@ Note: Phases 62, 63, and 64 can run in parallel after Phase 61 completes (62 dep
 | 64. Cross-Platform Reader Test Separation | v0.5.6 | 1/1 | Complete   | 2026-04-09 |
 | 65. ThemeWatcher Core API | v0.5.6 | 1/1 | Complete   | 2026-04-09 |
 | 66. Linux Watchers | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
-| 67. macOS and Windows Watchers | v0.5.6 | 0/0 | Not started | - |
+| 67. macOS and Windows Watchers | v0.5.6 | 1/2 | In Progress|  |
