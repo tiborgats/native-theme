@@ -132,7 +132,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 61: lib.rs Module Split** - Extract detect, pipeline, icons, and platform modules from the 2,767-line lib.rs monolith (completed 2026-04-09)
 - [x] **Phase 62: Validate Codegen** - Extend define_widget_pair! to generate validate extraction, reducing validate.rs from ~2,196 to ~500 lines (completed 2026-04-09)
 - [x] **Phase 63: KDE Reader Fixture Tests** - Separate KDE parsing from I/O and add fixture-based tests for all edge cases (completed 2026-04-09)
-- [ ] **Phase 64: Cross-Platform Reader Test Separation** - Separate GNOME, Windows, and macOS reader parsing from OS dependencies
+- [x] **Phase 64: Cross-Platform Reader Test Separation** - Separate GNOME, Windows, and macOS reader parsing from OS dependencies (completed 2026-04-09)
 - [ ] **Phase 65: ThemeWatcher Core API** - Define ThemeWatcher, ThemeChanged, on_theme_change() public API with watch feature flag
 - [ ] **Phase 66: Linux Watchers** - KDE inotify and GNOME portal watchers with debounce
 - [ ] **Phase 67: macOS and Windows Watchers** - macOS KVO and Windows UISettings event watchers
@@ -195,9 +195,9 @@ Plans:
   2. Windows reader has a build_windows_spec() function (or equivalent) that accepts primitive types (not windows crate types) and returns a ThemeVariant, testable on Linux and macOS
   3. macOS reader has a build_macos_spec() function (or equivalent) that accepts primitive types (not objc2 types) and returns a ThemeVariant, testable on Linux and Windows
   4. At least one test per reader exercises the pure parsing function with representative input values
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
-- [ ] 64-01-PLAN.md — GNOME pure function extraction + inline tests (Windows/macOS already satisfied)
+- [x] 64-01-PLAN.md — GNOME pure function extraction + inline tests (Windows/macOS already satisfied)
 
 ### Phase 65: ThemeWatcher Core API
 **Goal**: The public on_theme_change() API exists with ThemeWatcher RAII handle and ThemeChanged event type, feature-gated behind `watch`, with the notify dependency wired up
@@ -260,7 +260,7 @@ Note: Phases 62, 63, and 64 can run in parallel after Phase 61 completes (62 dep
 | 61. lib.rs Module Split | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
 | 62. Validate Codegen | v0.5.6 | 3/3 | Complete   | 2026-04-09 |
 | 63. KDE Reader Fixture Tests | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
-| 64. Cross-Platform Reader Test Separation | v0.5.6 | 0/0 | Not started | - |
+| 64. Cross-Platform Reader Test Separation | v0.5.6 | 1/1 | Complete   | 2026-04-09 |
 | 65. ThemeWatcher Core API | v0.5.6 | 0/0 | Not started | - |
 | 66. Linux Watchers | v0.5.6 | 0/0 | Not started | - |
 | 67. macOS and Windows Watchers | v0.5.6 | 0/0 | Not started | - |

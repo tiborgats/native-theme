@@ -18,9 +18,9 @@ Improve internal maintainability (module split, validate codegen, reader testing
 
 - [x] **TEST-01**: KDE reader separated into parse_kdeglobals(content: &str) pure function testable with fixture data
 - [x] **TEST-02**: KDE fixture tests cover: Breeze light/dark, custom accent, minimal config, missing groups, malformed values, high DPI
-- [ ] **TEST-03**: GNOME reader separated into build_gnome_spec(PortalData) with primitive types (no ashpd dependency in tests)
-- [ ] **TEST-04**: Windows reader separated into build_windows_spec(WindowsData) testable on any platform
-- [ ] **TEST-05**: macOS reader separated into build_macos_spec(MacOSData) testable on any platform
+- [x] **TEST-03**: GNOME reader separated into build_gnome_spec(PortalData) with primitive types (no ashpd dependency in tests)
+- [x] **TEST-04**: Windows reader separated into build_windows_spec(WindowsData) testable on any platform
+- [x] **TEST-05**: macOS reader separated into build_macos_spec(MacOSData) testable on any platform
 
 ### Runtime Theme Watching
 
@@ -68,9 +68,9 @@ Improve internal maintainability (module split, validate codegen, reader testing
 | STRUCT-04 | Phase 62 | Complete |
 | TEST-01 | Phase 63 | Complete |
 | TEST-02 | Phase 63 | Complete |
-| TEST-03 | Phase 64 | Pending |
-| TEST-04 | Phase 64 | Pending |
-| TEST-05 | Phase 64 | Pending |
+| TEST-03 | Phase 64 | Complete |
+| TEST-04 | Phase 64 | Complete |
+| TEST-05 | Phase 64 | Complete |
 | WATCH-01 | Phase 65 | Pending |
 | WATCH-02 | Phase 66 | Pending |
 | WATCH-03 | Phase 66 | Pending |

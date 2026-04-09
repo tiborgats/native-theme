@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v0.5.6
 milestone_name: Internal Quality & Runtime Watching
-status: verified
-stopped_at: Phase 63 verified — all 13/13 must-haves passed
-last_updated: "2026-04-09T16:23:10.730Z"
+status: verifying
+stopped_at: Completed 64-01-PLAN.md
+last_updated: "2026-04-09T17:16:54.047Z"
 last_activity: 2026-04-09
 progress:
   total_phases: 7
-  completed_phases: 3
-  total_plans: 7
-  completed_plans: 7
+  completed_phases: 4
+  total_plans: 8
+  completed_plans: 8
   percent: 100
 ---
 
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 
 Phase: 63 of 67 (KDE Reader Fixture Tests)
 Plan: 2 of 2 in current phase
-Status: Phase complete — verified (13/13 must-haves)
+Status: Phase complete — ready for verification
 Last activity: 2026-04-09
 
 Progress: [█████████░] 86%
@@ -48,6 +48,7 @@ Progress: [█████████░] 86%
 | Phase 62-validate-codegen P03 | 10min | 2 tasks | 4 files |
 | Phase 63-kde-reader-fixture-tests P01 | 4min | 2 tasks | 8 files |
 | Phase 63-kde-reader-fixture-tests P02 | 3min | 2 tasks | 1 files |
+| Phase 64 P01 | 5min | 2 tasks | 1 files |
 
 ## Accumulated Context
 
@@ -67,6 +68,8 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [Phase 63-01]: Removed populate_accessibility (inlined into from_kde_content_pure) for cleaner code
 - [Phase 63-01]: from_kde_content_pure uses Option<f32> for font_dpi: None falls back to INI-only extraction, no I/O chain
 - [Phase 63-02]: Split Breeze Dark into two tests: colors/fonts with caller DPI vs DPI-from-INI extraction
+- [Phase 64]: GnomePortalData.is_dark unused by build_gnome_variant_pure; only consumed by build_gnome_spec_pure for variant selection
+- [Phase 64]: Windows (TEST-04) and macOS (TEST-05) readers already satisfy cross-platform testability -- no code changes needed
 
 ### Roadmap Evolution
 
@@ -86,6 +89,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-09T16:23:10.727Z
-Stopped at: Completed 63-02-PLAN.md
+Last session: 2026-04-09T17:16:54.044Z
+Stopped at: Completed 64-01-PLAN.md
 Resume file: None
