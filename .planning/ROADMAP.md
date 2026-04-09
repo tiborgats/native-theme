@@ -14,7 +14,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - ✅ **v0.4.1 Release Prep** — Phases 33-43 (shipped 2026-03-21)
 - ✅ **v0.5.0 Per-Widget Architecture & Resolution Pipeline** — Phases 44-48 (shipped 2026-03-29)
 - ✅ **v0.5.5 Schema Overhaul & Quality** — Phases 49-60 (shipped 2026-04-09)
-- 🚧 **v0.5.6 Internal Quality & Runtime Watching** — Phases 61-67 (in progress)
+- ✅ **v0.5.6 Internal Quality & Runtime Watching** — Phases 61-67 (shipped 2026-04-09)
 
 ## Phases
 
@@ -237,8 +237,8 @@ Plans:
   4. Dropping the ThemeWatcher handle cleanly stops the background thread on both platforms
 **Plans:** 2/2 plans complete
 Plans:
-- [ ] 63-01-PLAN.md — Extract pure from_kde_content_pure function and create 7 fixture .ini files
-- [ ] 63-02-PLAN.md — Integration tests for all fixture scenarios
+- [x] 67-01-PLAN.md — macOS watcher backend + ThemeWatcher platform shutdown infrastructure
+- [x] 67-02-PLAN.md — Windows watcher backend with COM STA + UISettings::ColorValuesChanged
 
 ## Progress
 

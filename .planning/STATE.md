@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v0.5.6
 milestone_name: Internal Quality & Runtime Watching
-status: verifying
-stopped_at: Completed 67-02-PLAN.md
+status: verified
+stopped_at: Phase 67 verified — human_needed for runtime testing on macOS/Windows
 last_updated: "2026-04-09T21:24:19.154Z"
 last_activity: 2026-04-09
 progress:
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 66 complete — ready for Phase 67
+**Current focus:** Phase 67 complete — milestone v0.5.6 ready for human verification on macOS/Windows
 
 ## Current Position
 
-Phase: 66 of 67 (Linux Watchers)
+Phase: 67 of 67 (macOS and Windows Watchers)
 Plan: 2 of 2 in current phase (complete)
-Status: Phase complete — ready for verification
+Status: Phase complete — verified (human_needed for runtime testing)
 Last activity: 2026-04-09
 
-Progress: [█████████░] 91%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
