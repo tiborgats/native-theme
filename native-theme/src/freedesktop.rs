@@ -28,7 +28,7 @@ fn detect_theme() -> String {
 ///
 /// The symbolic-first order also naturally handles Adwaita, which stores
 /// most action icons only as `*-symbolic.svg`.
-fn find_icon(name: &str, theme: &str, size: u16) -> Option<PathBuf> {
+fn find_icon(name: &str, theme: &str, size: u16) -> Option<(PathBuf, bool)> {
     // First try: symbolic variant (e.g., "edit-copy-symbolic")
     // Symbolic icons are always single-frame, avoiding sprite sheets
     // in themes like Breeze that put animation strips under plain names.
@@ -39,14 +39,17 @@ fn find_icon(name: &str, theme: &str, size: u16) -> Option<PathBuf> {
         .force_svg()
         .find()
     {
-        return Some(path);
+        return Some((path, true));
     }
     // Second try: plain name (e.g., "edit-copy")
+    // If the name itself already ends with "-symbolic" (caller passed it
+    // explicitly via load_freedesktop_icon_by_name), mark as symbolic.
     freedesktop_icons::lookup(name)
         .with_theme(theme)
         .with_size(size)
         .force_svg()
         .find()
+        .map(|path| (path, name.ends_with("-symbolic")))
 }
 
 /// Load a freedesktop icon for the given role.
@@ -65,8 +68,13 @@ fn find_icon(name: &str, theme: &str, size: u16) -> Option<PathBuf> {
 pub fn load_freedesktop_icon(role: IconRole, size: u16) -> Option<IconData> {
     let theme = detect_theme();
     let name = icon_name(role, IconSet::Freedesktop)?;
-    let path = find_icon(name, &theme, size)?;
+    let (path, is_symbolic) = find_icon(name, &theme, size)?;
     let bytes = std::fs::read(&path).ok()?;
+    let bytes = if is_symbolic {
+        normalize_gtk_symbolic(bytes)
+    } else {
+        bytes
+    };
     Some(IconData::Svg(bytes))
 }
 
@@ -87,8 +95,13 @@ pub fn load_freedesktop_icon(role: IconRole, size: u16) -> Option<IconData> {
 /// that load the same icon repeatedly should cache the returned `IconData`.
 #[must_use]
 pub fn load_freedesktop_icon_by_name(name: &str, theme: &str, size: u16) -> Option<IconData> {
-    let path = find_icon(name, theme, size)?;
+    let (path, is_symbolic) = find_icon(name, theme, size)?;
     let bytes = std::fs::read(&path).ok()?;
+    let bytes = if is_symbolic {
+        normalize_gtk_symbolic(bytes)
+    } else {
+        bytes
+    };
     Some(IconData::Svg(bytes))
 }
 
@@ -204,10 +217,62 @@ pub(crate) fn load_freedesktop_spinner() -> Option<AnimatedIcon> {
     None
 }
 
+/// The GTK symbolic icon foreground placeholder colors.
+///
+/// GTK's icon rendering pipeline replaces these at paint time.
+/// We normalize them to `currentColor` so that downstream colorize
+/// logic (which already handles `currentColor`) can apply the correct
+/// foreground color for the active theme variant.
+///
+/// Measured from `/usr/share/icons/Adwaita/symbolic/`:
+/// - `#2e3436`: 483 fill attrs + 8 CSS style fills + 1 stroke (Tango Aluminium 6)
+/// - `#2e3434`: 118 files (68 primary, 50 with fill-opacity)
+/// - `#222222`: 27 occurrences (primary + dimmed)
+/// - `#474747`: 50 emote/legacy icons (monochrome, never mixed with above)
 const GTK_FG_COLORS: &[&str] = &["#2e3436", "#2e3434", "#222222", "#474747"];
 
+/// Normalize a GTK-convention symbolic SVG to use `currentColor`.
+///
+/// GTK symbolic icons use hardcoded dark fill colors (e.g., `#2e3436`)
+/// that GTK replaces at render time. Since native-theme returns raw SVG
+/// bytes, we normalize these placeholders to `currentColor` so that
+/// existing connector colorize logic handles the recoloring.
+///
+/// Handles three placement patterns found in Adwaita:
+/// - XML attributes: `fill="#2e3436"`, `stroke="#2e3436"`
+/// - CSS style attributes: `style="fill:#2e3436;..."`
+///
+/// Only foreground placeholder colors are replaced. Semantic colors
+/// (success green `#33d17a`, warning orange `#ff7800`, error red
+/// `#e01b24`/`#ed333b`) are preserved.
+///
+/// Returns the original bytes unchanged if the SVG already uses
+/// `currentColor` (Breeze-style) or is not valid UTF-8.
 fn normalize_gtk_symbolic(svg_bytes: Vec<u8>) -> Vec<u8> {
-    svg_bytes // stub: returns unchanged -- tests will fail
+    let Ok(svg_str) = std::str::from_utf8(&svg_bytes) else {
+        return svg_bytes;
+    };
+
+    // Already uses currentColor (Breeze convention) -- no normalization needed
+    if svg_str.contains("currentColor") {
+        return svg_bytes;
+    }
+
+    // Check if any GTK foreground colors are present
+    if !GTK_FG_COLORS.iter().any(|c| svg_str.contains(c)) {
+        return svg_bytes;
+    }
+
+    let mut result = svg_str.to_string();
+    for color in GTK_FG_COLORS {
+        // XML attributes: fill="..." and stroke="..."
+        result = result.replace(&format!("fill=\"{color}\""), "fill=\"currentColor\"");
+        result = result.replace(&format!("stroke=\"{color}\""), "stroke=\"currentColor\"");
+        // CSS style attributes: fill:#2e3436 (8 icons use this form)
+        result = result.replace(&format!("fill:{color}"), "fill:currentColor");
+        result = result.replace(&format!("stroke:{color}"), "stroke:currentColor");
+    }
+    result.into_bytes()
 }
 
 #[cfg(test)]
@@ -403,8 +468,7 @@ mod tests {
 
     #[test]
     fn normalize_gtk_symbolic_replaces_2e3434_preserves_opacity() {
-        let svg =
-            br##"<svg><path fill="#2e3434" fill-opacity="0.35" d="M0 0"/></svg>"##.to_vec();
+        let svg = br##"<svg><path fill="#2e3434" fill-opacity="0.35" d="M0 0"/></svg>"##.to_vec();
         let result = normalize_gtk_symbolic(svg);
         let s = std::str::from_utf8(&result).unwrap();
         assert!(s.contains(r#"fill="currentColor""#));
@@ -431,8 +495,7 @@ mod tests {
 
     #[test]
     fn normalize_gtk_symbolic_replaces_stroke() {
-        let svg =
-            br##"<svg><path stroke="#2e3436" fill="none" d="M1 1l14 14"/></svg>"##.to_vec();
+        let svg = br##"<svg><path stroke="#2e3436" fill="none" d="M1 1l14 14"/></svg>"##.to_vec();
         let result = normalize_gtk_symbolic(svg);
         let s = std::str::from_utf8(&result).unwrap();
         assert!(s.contains(r#"stroke="currentColor""#));
@@ -441,8 +504,7 @@ mod tests {
 
     #[test]
     fn normalize_gtk_symbolic_replaces_css_style_fill() {
-        let svg =
-            br##"<svg><path style="fill:#2e3436;fill-opacity:1" d="M0 0"/></svg>"##.to_vec();
+        let svg = br##"<svg><path style="fill:#2e3436;fill-opacity:1" d="M0 0"/></svg>"##.to_vec();
         let result = normalize_gtk_symbolic(svg);
         let s = std::str::from_utf8(&result).unwrap();
         assert!(s.contains("fill:currentColor"));
