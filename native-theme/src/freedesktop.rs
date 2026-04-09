@@ -204,6 +204,12 @@ pub(crate) fn load_freedesktop_spinner() -> Option<AnimatedIcon> {
     None
 }
 
+const GTK_FG_COLORS: &[&str] = &["#2e3436", "#2e3434", "#222222", "#474747"];
+
+fn normalize_gtk_symbolic(svg_bytes: Vec<u8>) -> Vec<u8> {
+    svg_bytes // stub: returns unchanged -- tests will fail
+}
+
 #[cfg(test)]
 #[cfg(feature = "system-icons")]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
@@ -382,5 +388,97 @@ mod tests {
     fn test_load_freedesktop_spinner_no_panic() {
         // Just verify the function doesn't panic -- result is theme-dependent
         let _result = load_freedesktop_spinner();
+    }
+
+    // === GTK symbolic icon normalization tests ===
+
+    #[test]
+    fn normalize_gtk_symbolic_replaces_2e3436() {
+        let svg = br##"<svg><path fill="#2e3436" d="M0 0"/></svg>"##.to_vec();
+        let result = normalize_gtk_symbolic(svg);
+        let s = std::str::from_utf8(&result).unwrap();
+        assert!(s.contains(r#"fill="currentColor""#));
+        assert!(!s.contains("#2e3436"));
+    }
+
+    #[test]
+    fn normalize_gtk_symbolic_replaces_2e3434_preserves_opacity() {
+        let svg =
+            br##"<svg><path fill="#2e3434" fill-opacity="0.35" d="M0 0"/></svg>"##.to_vec();
+        let result = normalize_gtk_symbolic(svg);
+        let s = std::str::from_utf8(&result).unwrap();
+        assert!(s.contains(r#"fill="currentColor""#));
+        assert!(s.contains(r#"fill-opacity="0.35""#));
+    }
+
+    #[test]
+    fn normalize_gtk_symbolic_replaces_222222() {
+        let svg = br##"<svg><path fill="#222222" d="M0 0"/></svg>"##.to_vec();
+        let result = normalize_gtk_symbolic(svg);
+        let s = std::str::from_utf8(&result).unwrap();
+        assert!(s.contains(r#"fill="currentColor""#));
+        assert!(!s.contains("#222222"));
+    }
+
+    #[test]
+    fn normalize_gtk_symbolic_replaces_474747() {
+        let svg = br##"<svg><path fill="#474747" d="M0 0"/></svg>"##.to_vec();
+        let result = normalize_gtk_symbolic(svg);
+        let s = std::str::from_utf8(&result).unwrap();
+        assert!(s.contains(r#"fill="currentColor""#));
+        assert!(!s.contains("#474747"));
+    }
+
+    #[test]
+    fn normalize_gtk_symbolic_replaces_stroke() {
+        let svg =
+            br##"<svg><path stroke="#2e3436" fill="none" d="M1 1l14 14"/></svg>"##.to_vec();
+        let result = normalize_gtk_symbolic(svg);
+        let s = std::str::from_utf8(&result).unwrap();
+        assert!(s.contains(r#"stroke="currentColor""#));
+        assert!(!s.contains("#2e3436"));
+    }
+
+    #[test]
+    fn normalize_gtk_symbolic_replaces_css_style_fill() {
+        let svg =
+            br##"<svg><path style="fill:#2e3436;fill-opacity:1" d="M0 0"/></svg>"##.to_vec();
+        let result = normalize_gtk_symbolic(svg);
+        let s = std::str::from_utf8(&result).unwrap();
+        assert!(s.contains("fill:currentColor"));
+        assert!(!s.contains("#2e3436"));
+    }
+
+    #[test]
+    fn normalize_gtk_symbolic_preserves_semantic_colors() {
+        let svg = br##"<svg><path fill="#2e3436"/><path fill="#ff7800"/><path fill="#33d17a"/><path fill="#e01b24"/></svg>"##.to_vec();
+        let result = normalize_gtk_symbolic(svg);
+        let s = std::str::from_utf8(&result).unwrap();
+        assert!(s.contains("currentColor"));
+        assert!(s.contains("#ff7800"), "warning color must be preserved");
+        assert!(s.contains("#33d17a"), "success color must be preserved");
+        assert!(s.contains("#e01b24"), "error color must be preserved");
+    }
+
+    #[test]
+    fn normalize_gtk_symbolic_skips_currentcolor_svgs() {
+        let svg = br##"<svg><defs><style>.ColorScheme-Text{color:#232629}</style></defs><path fill="currentColor"/></svg>"##.to_vec();
+        let original = svg.clone();
+        let result = normalize_gtk_symbolic(svg);
+        assert_eq!(
+            result, original,
+            "Breeze-style SVGs should pass through unchanged"
+        );
+    }
+
+    #[test]
+    fn normalize_gtk_symbolic_skips_non_gtk_svgs() {
+        let svg = br#"<svg><path fill="red"/></svg>"#.to_vec();
+        let original = svg.clone();
+        let result = normalize_gtk_symbolic(svg);
+        assert_eq!(
+            result, original,
+            "non-GTK SVGs should pass through unchanged"
+        );
     }
 }
