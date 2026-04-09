@@ -134,7 +134,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 63: KDE Reader Fixture Tests** - Separate KDE parsing from I/O and add fixture-based tests for all edge cases (completed 2026-04-09)
 - [x] **Phase 64: Cross-Platform Reader Test Separation** - Separate GNOME, Windows, and macOS reader parsing from OS dependencies (completed 2026-04-09)
 - [x] **Phase 65: ThemeWatcher Core API** - Define ThemeWatcher, ThemeChanged, on_theme_change() public API with watch feature flag (completed 2026-04-09)
-- [ ] **Phase 66: Linux Watchers** - KDE inotify and GNOME portal watchers with debounce
+- [x] **Phase 66: Linux Watchers** - KDE inotify and GNOME portal watchers with debounce (completed 2026-04-09)
 - [ ] **Phase 67: macOS and Windows Watchers** - macOS KVO and Windows UISettings event watchers
 
 ## Phase Details
@@ -221,10 +221,10 @@ Plans:
   2. On GNOME, toggling dark mode via Settings triggers a ThemeChanged signal (ashpd portal SettingChanged stream on background thread)
   3. The KDE watcher watches only specific files (kdeglobals, kcmfontsrc) -- not the entire ~/.config/ directory
   4. Multiple rapid KDE config writes (as happens during a theme switch) produce a single debounced signal, not a flood
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [x] 66-01-PLAN.md — KDE inotify watcher and GNOME D-Bus portal watcher backends
-- [ ] 66-02-PLAN.md — Wire on_theme_change() dispatch with DE detection and test suite
+- [x] 66-02-PLAN.md — Wire on_theme_change() dispatch with DE detection and test suite
 
 ### Phase 67: macOS and Windows Watchers
 **Goal**: Theme changes on macOS and Windows trigger ThemeChanged signals through the watcher API
@@ -261,5 +261,5 @@ Note: Phases 62, 63, and 64 can run in parallel after Phase 61 completes (62 dep
 | 63. KDE Reader Fixture Tests | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
 | 64. Cross-Platform Reader Test Separation | v0.5.6 | 1/1 | Complete   | 2026-04-09 |
 | 65. ThemeWatcher Core API | v0.5.6 | 1/1 | Complete   | 2026-04-09 |
-| 66. Linux Watchers | v0.5.6 | 1/2 | In Progress|  |
+| 66. Linux Watchers | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
 | 67. macOS and Windows Watchers | v0.5.6 | 0/0 | Not started | - |

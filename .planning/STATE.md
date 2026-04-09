@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.6
 milestone_name: Internal Quality & Runtime Watching
 status: executing
-stopped_at: Completed 66-01-PLAN.md
-last_updated: "2026-04-09T19:26:00Z"
+stopped_at: Completed 66-02-PLAN.md
+last_updated: "2026-04-09T19:38:34.508Z"
 last_activity: 2026-04-09
 progress:
   total_phases: 7
-  completed_phases: 5
+  completed_phases: 6
   total_plans: 11
-  completed_plans: 10
-  percent: 91
+  completed_plans: 11
+  percent: 100
 ---
 
 # Project State
@@ -26,8 +26,8 @@ See: .planning/PROJECT.md (updated 2026-04-09)
 ## Current Position
 
 Phase: 66 of 67 (Linux Watchers)
-Plan: 1 of 2 in current phase (complete)
-Status: Plan 01 complete — watcher backends implemented, Plan 02 pending (dispatch wiring)
+Plan: 2 of 2 in current phase (complete)
+Status: Ready to execute
 Last activity: 2026-04-09
 
 Progress: [█████████░] 91%
@@ -51,6 +51,7 @@ Progress: [█████████░] 91%
 | Phase 64 P01 | 5min | 2 tasks | 1 files |
 | Phase 65-themewatcher-core-api P01 | 3min | 2 tasks | 4 files |
 | Phase 66-linux-watchers P01 | 8min | 2 tasks | 4 files |
+| Phase 66-linux-watchers P02 | 9min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -76,6 +77,8 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [Phase 65-01]: notify crate placed under Linux-only target section (macOS/Windows use existing platform crates)
 - [Phase 66-01]: Added zbus as direct dep with blocking-api feature (ashpd does not enable it); watch feature gates both notify and zbus
 - [Phase 66-01]: Parent-directory inotify watching pattern for KDE (survives QSaveFile atomic renames)
+- [Phase 66-02]: cfg-gated match arms in on_theme_change: each DE variant gated by its feature so missing features fall through to Unsupported
+- [Phase 66-02]: Platform-split test: non-Linux asserts Unsupported; Linux accepts Ok/Unsupported/Unavailable for CI and real DE environments
 
 ### Roadmap Evolution
 
@@ -95,6 +98,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-09T19:26:00Z
-Stopped at: Completed 66-01-PLAN.md
+Last session: 2026-04-09T19:38:34.505Z
+Stopped at: Completed 66-02-PLAN.md
 Resume file: None
