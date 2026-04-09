@@ -10,12 +10,16 @@ pub mod metrics;
 use crate::Rgba;
 use crate::model::{DialogButtonOrder, IconSizes};
 
-/// Parse a KDE kdeglobals content string into a ThemeSpec.
+/// Parse KDE kdeglobals content into a ThemeSpec without any I/O.
 ///
-/// Builds a sparse ThemeVariant with per-widget colors, fonts with Qt5/Qt6
-/// weight conversion, text scale from Kirigami multipliers, accessibility
-/// flags, icon set, and Breeze widget sizing constants.
-pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ThemeSpec> {
+/// `font_dpi`: if `Some`, used directly for font DPI; if `None`, attempts to
+/// extract `forceFontDPI` from the INI content, falling back to `None` (no DPI set).
+/// Icon sizes are NOT populated (requires filesystem access) -- the caller
+/// (`from_kde_content` / `from_kde`) handles that after this returns.
+pub fn from_kde_content_pure(
+    content: &str,
+    font_dpi: Option<f32>,
+) -> crate::Result<crate::ThemeSpec> {
     let mut ini = create_kde_parser();
     ini.read(content.to_string())
         .map_err(crate::Error::Format)?;
@@ -27,17 +31,21 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ThemeSpec>
     fonts::populate_fonts(&ini, &mut variant);
     metrics::populate_widget_sizing(&mut variant);
 
-    // KDE-06: Accessibility flags
-    populate_accessibility(&ini, &mut variant);
+    // KDE-06: Accessibility flags (pure -- no I/O)
+    // AnimationDurationFactor from [KDE]
+    if let Some(anim_str) = ini.get("KDE", "AnimationDurationFactor")
+        && let Ok(value) = anim_str.trim().parse::<f32>()
+    {
+        variant.defaults.reduce_motion = Some(value == 0.0);
+    }
 
-    // KDE-05: Icon theme from [Icons] Theme
+    // Font DPI: use provided value, or try extracting forceFontDPI from INI content
+    variant.defaults.font_dpi = font_dpi.or_else(|| parse_force_font_dpi(&ini));
+
+    // KDE-05: Icon theme name from [Icons] Theme (no filesystem access for sizes)
     if let Some(theme_name) = ini.get("Icons", "Theme")
         && !theme_name.is_empty()
     {
-        // Icon sizes from index.theme
-        let sizes = parse_icon_sizes_from_index_theme(&theme_name);
-        variant.defaults.icon_sizes = sizes;
-
         variant.icon_theme = Some(theme_name);
     }
 
@@ -67,6 +75,48 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ThemeSpec>
     };
 
     Ok(theme)
+}
+
+/// Parse a KDE kdeglobals content string into a ThemeSpec.
+///
+/// Builds a sparse ThemeVariant with per-widget colors, fonts with Qt5/Qt6
+/// weight conversion, text scale from Kirigami multipliers, accessibility
+/// flags, icon set, and Breeze widget sizing constants.
+///
+/// Delegates to [`from_kde_content_pure`] for parsing, then performs I/O
+/// for full DPI detection and icon size lookup.
+pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ThemeSpec> {
+    let mut ini = create_kde_parser();
+    ini.read(content.to_string())
+        .map_err(crate::Error::Format)?;
+
+    // I/O: full DPI detection chain (forceFontDPI -> kcmfontsrc -> xrdb -> xrandr -> 96.0)
+    let font_dpi = detect_font_dpi(&ini);
+
+    let mut theme = from_kde_content_pure(content, Some(font_dpi))?;
+
+    // I/O: icon sizes from filesystem
+    let variant = if theme.dark.is_some() {
+        theme.dark.as_mut()
+    } else {
+        theme.light.as_mut()
+    };
+    if let Some(variant) = variant {
+        if let Some(ref theme_name) = variant.icon_theme {
+            variant.defaults.icon_sizes = parse_icon_sizes_from_index_theme(theme_name);
+        }
+    }
+
+    Ok(theme)
+}
+
+/// Extract forceFontDPI from the parsed INI content.
+/// Returns `Some(dpi)` if `[General]` `forceFontDPI` exists and is a valid positive f32.
+/// This is the pure (no I/O) portion of DPI detection.
+fn parse_force_font_dpi(ini: &configparser::ini::Ini) -> Option<f32> {
+    let dpi_str = ini.get("General", "forceFontDPI")?;
+    let dpi = dpi_str.trim().parse::<f32>().ok()?;
+    if dpi > 0.0 { Some(dpi) } else { None }
 }
 
 /// Detect font DPI from KDE settings.
@@ -100,24 +150,6 @@ fn detect_font_dpi(ini: &configparser::ini::Ini) -> f32 {
 
     // Default: standard 96 DPI
     96.0
-}
-
-/// Populate accessibility fields from KDE settings.
-///
-/// - AnimationDurationFactor=0 -> reduce_motion=true; >0 -> false; missing -> None
-/// - font_dpi detected via [`detect_font_dpi()`] (forceFontDPI / Xft.dpi / 96.0 fallback)
-fn populate_accessibility(ini: &configparser::ini::Ini, variant: &mut crate::ThemeVariant) {
-    // KDE-06: AnimationDurationFactor from [KDE]
-    if let Some(anim_str) = ini.get("KDE", "AnimationDurationFactor")
-        && let Ok(value) = anim_str.trim().parse::<f32>()
-    {
-        variant.defaults.reduce_motion = Some(value == 0.0);
-    }
-
-    // Font DPI for pt-to-px conversion (Fix 2 / Fix 5).
-    // forceFontDPI is a font rendering DPI, NOT an accessibility scaling factor.
-    // It must NOT be used to derive text_scaling_factor.
-    variant.defaults.font_dpi = Some(detect_font_dpi(ini));
 }
 
 /// Read a single key from `$XDG_CONFIG_HOME/kcmfontsrc` (or `~/.config/kcmfontsrc`).

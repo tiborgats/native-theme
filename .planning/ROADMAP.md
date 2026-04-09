@@ -181,7 +181,10 @@ Plans:
   2. Fixture .ini files exist for: Breeze light, Breeze dark, custom accent color, minimal config (only required groups), missing groups, malformed values, and high DPI configuration
   3. Each fixture has at least one test asserting specific field values in the parsed ThemeVariant output
   4. detect_font_dpi logic is separated into a pure INI-parsing function and an I/O function, with the pure part testable via fixture data
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 63-01-PLAN.md — Extract pure from_kde_content_pure function and create 7 fixture .ini files
+- [ ] 63-02-PLAN.md — Integration tests for all fixture scenarios
 
 ### Phase 64: Cross-Platform Reader Test Separation
 **Goal**: GNOME, Windows, and macOS reader parsing logic is separated from OS-specific API calls, making parsing testable on any platform
@@ -192,7 +195,10 @@ Plans:
   2. Windows reader has a build_windows_spec() function (or equivalent) that accepts primitive types (not windows crate types) and returns a ThemeVariant, testable on Linux and macOS
   3. macOS reader has a build_macos_spec() function (or equivalent) that accepts primitive types (not objc2 types) and returns a ThemeVariant, testable on Linux and Windows
   4. At least one test per reader exercises the pure parsing function with representative input values
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 63-01-PLAN.md — Extract pure from_kde_content_pure function and create 7 fixture .ini files
+- [ ] 63-02-PLAN.md — Integration tests for all fixture scenarios
 
 ### Phase 65: ThemeWatcher Core API
 **Goal**: The public on_theme_change() API exists with ThemeWatcher RAII handle and ThemeChanged event type, feature-gated behind `watch`, with the notify dependency wired up
@@ -203,7 +209,10 @@ Plans:
   2. ThemeChanged enum exists as a signal-only type (no theme data inside -- callers re-run from_system() on signal)
   3. The `watch` feature flag gates the entire on_theme_change() API and the notify dependency
   4. Compiling without the `watch` feature produces no additional dependencies
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 63-01-PLAN.md — Extract pure from_kde_content_pure function and create 7 fixture .ini files
+- [ ] 63-02-PLAN.md — Integration tests for all fixture scenarios
 
 ### Phase 66: Linux Watchers
 **Goal**: Theme changes on KDE and GNOME desktops trigger ThemeChanged signals through the watcher API
@@ -214,7 +223,10 @@ Plans:
   2. On GNOME, toggling dark mode via Settings triggers a ThemeChanged signal (ashpd portal SettingChanged stream on background thread)
   3. The KDE watcher watches only specific files (kdeglobals, kcmfontsrc) -- not the entire ~/.config/ directory
   4. Multiple rapid KDE config writes (as happens during a theme switch) produce a single debounced signal, not a flood
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 63-01-PLAN.md — Extract pure from_kde_content_pure function and create 7 fixture .ini files
+- [ ] 63-02-PLAN.md — Integration tests for all fixture scenarios
 
 ### Phase 67: macOS and Windows Watchers
 **Goal**: Theme changes on macOS and Windows trigger ThemeChanged signals through the watcher API
@@ -225,7 +237,10 @@ Plans:
   2. On Windows, changing the system theme triggers a ThemeChanged signal (UISettings::ColorValuesChanged with COM STA and message pump on watcher thread)
   3. Both watchers run on dedicated background threads without requiring the caller to provide an event loop
   4. Dropping the ThemeWatcher handle cleanly stops the background thread on both platforms
-**Plans**: TBD
+**Plans:** 2 plans
+Plans:
+- [ ] 63-01-PLAN.md — Extract pure from_kde_content_pure function and create 7 fixture .ini files
+- [ ] 63-02-PLAN.md — Integration tests for all fixture scenarios
 
 ## Progress
 
@@ -245,7 +260,7 @@ Note: Phases 62, 63, and 64 can run in parallel after Phase 61 completes (62 dep
 | 49-60 | v0.5.5 | 41/41 | Complete | 2026-04-09 |
 | 61. lib.rs Module Split | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
 | 62. Validate Codegen | v0.5.6 | 3/3 | Complete   | 2026-04-09 |
-| 63. KDE Reader Fixture Tests | v0.5.6 | 0/0 | Not started | - |
+| 63. KDE Reader Fixture Tests | v0.5.6 | 0/2 | Planned | - |
 | 64. Cross-Platform Reader Test Separation | v0.5.6 | 0/0 | Not started | - |
 | 65. ThemeWatcher Core API | v0.5.6 | 0/0 | Not started | - |
 | 66. Linux Watchers | v0.5.6 | 0/0 | Not started | - |
