@@ -86,16 +86,22 @@ macro_rules! impl_merge {
 
 /// Color types and sRGB utilities.
 pub mod color;
+/// OS detection: dark mode, reduced motion, DPI, desktop environment.
+mod detect;
 /// Error types for theme operations.
 pub mod error;
 /// GNOME portal theme reader.
 #[cfg(all(target_os = "linux", feature = "portal"))]
 pub mod gnome;
+/// Icon loading and dispatch.
+mod icons;
 /// KDE theme reader.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 pub mod kde;
 /// Theme data model types.
 pub mod model;
+/// Theme pipeline: reader -> preset merge -> resolve -> validate.
+mod pipeline;
 /// Bundled theme presets.
 pub mod presets;
 /// Theme resolution engine (inheritance + validation).
@@ -106,12 +112,6 @@ mod resolve;
     feature = "system-icons"
 ))]
 mod spinners;
-/// OS detection: dark mode, reduced motion, DPI, desktop environment.
-mod detect;
-/// Icon loading and dispatch.
-mod icons;
-/// Theme pipeline: reader -> preset merge -> resolve -> validate.
-mod pipeline;
 /// Shared test infrastructure (ENV_MUTEX for env var serialization).
 #[cfg(test)]
 mod test_util;

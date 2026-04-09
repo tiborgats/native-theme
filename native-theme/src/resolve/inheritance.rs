@@ -98,7 +98,9 @@ fn resolve_text_scale_entry(
 fn platform_button_order() -> DialogButtonOrder {
     #[cfg(target_os = "linux")]
     {
-        if crate::detect::detect_linux_de(&crate::detect::xdg_current_desktop()) == crate::detect::LinuxDesktop::Kde {
+        if crate::detect::detect_linux_de(&crate::detect::xdg_current_desktop())
+            == crate::detect::LinuxDesktop::Kde
+        {
             return DialogButtonOrder::PrimaryLeft;
         }
     }

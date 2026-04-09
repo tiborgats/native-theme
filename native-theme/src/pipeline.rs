@@ -1,12 +1,12 @@
 //! Theme pipeline: reader -> preset merge -> resolve -> validate.
 
-#[cfg(target_os = "linux")]
-use crate::detect::{detect_linux_de, system_is_dark, xdg_current_desktop, LinuxDesktop};
 #[cfg(not(target_os = "linux"))]
 use crate::detect::system_is_dark;
+#[cfg(target_os = "linux")]
+use crate::detect::{LinuxDesktop, detect_linux_de, system_is_dark, xdg_current_desktop};
 
-use crate::model::ThemeSpec;
 use crate::SystemTheme;
+use crate::model::ThemeSpec;
 
 /// Run the OS-first pipeline: merge reader output onto a platform
 /// preset, resolve both light and dark variants, validate.
@@ -660,7 +660,6 @@ mod dispatch_tests {
 mod pipeline_tests {
     use crate::color::Rgba;
     use crate::model::{ThemeDefaults, ThemeSpec, ThemeVariant};
-    use crate::SystemTheme;
 
     use super::{reader_is_dark, run_pipeline};
 

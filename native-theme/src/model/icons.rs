@@ -577,7 +577,9 @@ fn detect_linux_icon_theme() -> String {
         crate::detect::LinuxDesktop::Gnome | crate::detect::LinuxDesktop::Budgie => {
             gsettings_icon_theme("org.gnome.desktop.interface")
         }
-        crate::detect::LinuxDesktop::Cinnamon => gsettings_icon_theme("org.cinnamon.desktop.interface"),
+        crate::detect::LinuxDesktop::Cinnamon => {
+            gsettings_icon_theme("org.cinnamon.desktop.interface")
+        }
         crate::detect::LinuxDesktop::Xfce => detect_xfce_icon_theme(),
         crate::detect::LinuxDesktop::Mate => gsettings_icon_theme("org.mate.interface"),
         crate::detect::LinuxDesktop::LxQt => detect_lxqt_icon_theme(),

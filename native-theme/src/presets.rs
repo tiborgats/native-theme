@@ -134,7 +134,9 @@ fn detect_platform() -> &'static str {
     }
     #[cfg(target_os = "linux")]
     {
-        if crate::detect::detect_linux_de(&crate::detect::xdg_current_desktop()) == crate::detect::LinuxDesktop::Kde {
+        if crate::detect::detect_linux_de(&crate::detect::xdg_current_desktop())
+            == crate::detect::LinuxDesktop::Kde
+        {
             return "linux-kde";
         }
         "linux"

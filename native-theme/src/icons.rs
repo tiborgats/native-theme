@@ -1,9 +1,10 @@
 //! Icon loading and dispatch.
 
+#[allow(unused_imports)]
 use crate::model::icons::{icon_name, system_icon_theme};
-use crate::model::{
-    bundled_icon_by_name, bundled_icon_svg, AnimatedIcon, IconData, IconProvider, IconRole, IconSet,
-};
+use crate::model::{AnimatedIcon, IconData, IconProvider, IconRole, IconSet};
+#[allow(unused_imports)]
+use crate::model::{bundled_icon_by_name, bundled_icon_svg};
 
 /// Load an icon for the given role using the specified icon set.
 ///
