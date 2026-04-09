@@ -151,9 +151,9 @@ Phase details for milestones v0.1 through v0.5.5 are archived in `.planning/mile
   3. pipeline.rs exists with run_pipeline(), from_linux(), from_system_inner(), platform_preset_name() and all from_system() orchestration
   4. icons.rs exists with load_icon(), load_icon_from_theme(), and icon dispatch logic
   5. All existing tests pass unchanged -- zero behavior change, purely mechanical extraction
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
-- [ ] 61-01-PLAN.md — Extract detect.rs and test_util.rs, update cross-module callers
+- [x] 61-01-PLAN.md — Extract detect.rs and test_util.rs, update cross-module callers
 - [ ] 61-02-PLAN.md — Extract pipeline.rs and icons.rs, trim lib.rs to root module
 
 ### Phase 62: Validate Codegen
@@ -239,7 +239,7 @@ Note: Phases 62, 63, and 64 can run in parallel after Phase 61 completes (62 dep
 | 33-43 | v0.4.1 | 22/22 | Complete | 2026-03-21 |
 | 44-48 | v0.5.0 | 17/17 | Complete | 2026-03-29 |
 | 49-60 | v0.5.5 | 41/41 | Complete | 2026-04-09 |
-| 61. lib.rs Module Split | v0.5.6 | 0/2 | Not started | - |
+| 61. lib.rs Module Split | v0.5.6 | 1/2 | In Progress|  |
 | 62. Validate Codegen | v0.5.6 | 0/0 | Not started | - |
 | 63. KDE Reader Fixture Tests | v0.5.6 | 0/0 | Not started | - |
 | 64. Cross-Platform Reader Test Separation | v0.5.6 | 0/0 | Not started | - |
