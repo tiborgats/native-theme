@@ -133,7 +133,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 62: Validate Codegen** - Extend define_widget_pair! to generate validate extraction, reducing validate.rs from ~2,196 to ~500 lines (completed 2026-04-09)
 - [x] **Phase 63: KDE Reader Fixture Tests** - Separate KDE parsing from I/O and add fixture-based tests for all edge cases (completed 2026-04-09)
 - [x] **Phase 64: Cross-Platform Reader Test Separation** - Separate GNOME, Windows, and macOS reader parsing from OS dependencies (completed 2026-04-09)
-- [ ] **Phase 65: ThemeWatcher Core API** - Define ThemeWatcher, ThemeChanged, on_theme_change() public API with watch feature flag
+- [x] **Phase 65: ThemeWatcher Core API** - Define ThemeWatcher, ThemeChanged, on_theme_change() public API with watch feature flag (completed 2026-04-09)
 - [ ] **Phase 66: Linux Watchers** - KDE inotify and GNOME portal watchers with debounce
 - [ ] **Phase 67: macOS and Windows Watchers** - macOS KVO and Windows UISettings event watchers
 
@@ -208,9 +208,9 @@ Plans:
   2. ThemeChanged enum exists as a signal-only type (no theme data inside -- callers re-run from_system() on signal)
   3. The `watch` feature flag gates the entire on_theme_change() API and the notify dependency
   4. Compiling without the `watch` feature produces no additional dependencies
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
-- [ ] 65-01-PLAN.md — ThemeChangeEvent, ThemeWatcher, on_theme_change() stub with watch feature gate
+- [x] 65-01-PLAN.md — ThemeChangeEvent, ThemeWatcher, on_theme_change() stub with watch feature gate
 
 ### Phase 66: Linux Watchers
 **Goal**: Theme changes on KDE and GNOME desktops trigger ThemeChanged signals through the watcher API
@@ -260,6 +260,6 @@ Note: Phases 62, 63, and 64 can run in parallel after Phase 61 completes (62 dep
 | 62. Validate Codegen | v0.5.6 | 3/3 | Complete   | 2026-04-09 |
 | 63. KDE Reader Fixture Tests | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
 | 64. Cross-Platform Reader Test Separation | v0.5.6 | 1/1 | Complete   | 2026-04-09 |
-| 65. ThemeWatcher Core API | v0.5.6 | 0/0 | Not started | - |
+| 65. ThemeWatcher Core API | v0.5.6 | 1/1 | Complete   | 2026-04-09 |
 | 66. Linux Watchers | v0.5.6 | 0/0 | Not started | - |
 | 67. macOS and Windows Watchers | v0.5.6 | 0/0 | Not started | - |
