@@ -131,7 +131,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 - [x] **Phase 61: lib.rs Module Split** - Extract detect, pipeline, icons, and platform modules from the 2,767-line lib.rs monolith (completed 2026-04-09)
 - [x] **Phase 62: Validate Codegen** - Extend define_widget_pair! to generate validate extraction, reducing validate.rs from ~2,196 to ~500 lines (completed 2026-04-09)
-- [ ] **Phase 63: KDE Reader Fixture Tests** - Separate KDE parsing from I/O and add fixture-based tests for all edge cases
+- [x] **Phase 63: KDE Reader Fixture Tests** - Separate KDE parsing from I/O and add fixture-based tests for all edge cases (completed 2026-04-09)
 - [ ] **Phase 64: Cross-Platform Reader Test Separation** - Separate GNOME, Windows, and macOS reader parsing from OS dependencies
 - [ ] **Phase 65: ThemeWatcher Core API** - Define ThemeWatcher, ThemeChanged, on_theme_change() public API with watch feature flag
 - [ ] **Phase 66: Linux Watchers** - KDE inotify and GNOME portal watchers with debounce
@@ -181,10 +181,10 @@ Plans:
   2. Fixture .ini files exist for: Breeze light, Breeze dark, custom accent color, minimal config (only required groups), missing groups, malformed values, and high DPI configuration
   3. Each fixture has at least one test asserting specific field values in the parsed ThemeVariant output
   4. detect_font_dpi logic is separated into a pure INI-parsing function and an I/O function, with the pure part testable via fixture data
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [x] 63-01-PLAN.md — Extract pure from_kde_content_pure function and create 7 fixture .ini files
-- [ ] 63-02-PLAN.md — Integration tests for all fixture scenarios
+- [x] 63-02-PLAN.md — Integration tests for all fixture scenarios
 
 ### Phase 64: Cross-Platform Reader Test Separation
 **Goal**: GNOME, Windows, and macOS reader parsing logic is separated from OS-specific API calls, making parsing testable on any platform
@@ -197,7 +197,7 @@ Plans:
   4. At least one test per reader exercises the pure parsing function with representative input values
 **Plans:** 2 plans
 Plans:
-- [ ] 63-01-PLAN.md — Extract pure from_kde_content_pure function and create 7 fixture .ini files
+- [x] 63-01-PLAN.md — Extract pure from_kde_content_pure function and create 7 fixture .ini files
 - [ ] 63-02-PLAN.md — Integration tests for all fixture scenarios
 
 ### Phase 65: ThemeWatcher Core API
@@ -260,7 +260,7 @@ Note: Phases 62, 63, and 64 can run in parallel after Phase 61 completes (62 dep
 | 49-60 | v0.5.5 | 41/41 | Complete | 2026-04-09 |
 | 61. lib.rs Module Split | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
 | 62. Validate Codegen | v0.5.6 | 3/3 | Complete   | 2026-04-09 |
-| 63. KDE Reader Fixture Tests | v0.5.6 | 1/2 | In Progress|  |
+| 63. KDE Reader Fixture Tests | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
 | 64. Cross-Platform Reader Test Separation | v0.5.6 | 0/0 | Not started | - |
 | 65. ThemeWatcher Core API | v0.5.6 | 0/0 | Not started | - |
 | 66. Linux Watchers | v0.5.6 | 0/0 | Not started | - |
