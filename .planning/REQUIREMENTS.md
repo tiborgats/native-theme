@@ -16,8 +16,8 @@ Improve internal maintainability (module split, validate codegen, reader testing
 
 ### Platform Reader Testing
 
-- [ ] **TEST-01**: KDE reader separated into parse_kdeglobals(content: &str) pure function testable with fixture data
-- [ ] **TEST-02**: KDE fixture tests cover: Breeze light/dark, custom accent, minimal config, missing groups, malformed values, high DPI
+- [x] **TEST-01**: KDE reader separated into parse_kdeglobals(content: &str) pure function testable with fixture data
+- [x] **TEST-02**: KDE fixture tests cover: Breeze light/dark, custom accent, minimal config, missing groups, malformed values, high DPI
 - [ ] **TEST-03**: GNOME reader separated into build_gnome_spec(PortalData) with primitive types (no ashpd dependency in tests)
 - [ ] **TEST-04**: Windows reader separated into build_windows_spec(WindowsData) testable on any platform
 - [ ] **TEST-05**: macOS reader separated into build_macos_spec(MacOSData) testable on any platform
@@ -66,8 +66,8 @@ Improve internal maintainability (module split, validate codegen, reader testing
 | STRUCT-02 | Phase 62 | Pending |
 | STRUCT-03 | Phase 62 | Pending |
 | STRUCT-04 | Phase 62 | Complete |
-| TEST-01 | Phase 63 | Pending |
-| TEST-02 | Phase 63 | Pending |
+| TEST-01 | Phase 63 | Complete |
+| TEST-02 | Phase 63 | Complete |
 | TEST-03 | Phase 64 | Pending |
 | TEST-04 | Phase 64 | Pending |
 | TEST-05 | Phase 64 | Pending |
