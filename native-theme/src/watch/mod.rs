@@ -37,6 +37,9 @@ mod gnome;
 #[cfg(all(feature = "watch", feature = "macos", target_os = "macos"))]
 mod macos;
 
+#[cfg(all(feature = "watch", feature = "windows", target_os = "windows"))]
+mod windows;
+
 use std::sync::mpsc;
 use std::thread::JoinHandle;
 
@@ -209,6 +212,21 @@ pub fn on_theme_change(
             let _ = callback;
             return Err(crate::Error::Unsupported(
                 "theme watching requires both 'watch' and 'macos' features",
+            ));
+        }
+    }
+
+    #[cfg(target_os = "windows")]
+    {
+        #[cfg(all(feature = "watch", feature = "windows"))]
+        {
+            return windows::watch_windows(callback);
+        }
+        #[cfg(not(all(feature = "watch", feature = "windows")))]
+        {
+            let _ = callback;
+            return Err(crate::Error::Unsupported(
+                "theme watching requires both 'watch' and 'windows' features",
             ));
         }
     }

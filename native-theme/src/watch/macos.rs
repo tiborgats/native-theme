@@ -16,8 +16,7 @@ use block2::RcBlock;
 use objc2::runtime::ProtocolObject;
 use objc2_core_foundation::{CFRetained, CFRunLoop};
 use objc2_foundation::{
-    NSDistributedNotificationCenter, NSNotification, NSNotificationName, NSObjectProtocol,
-    NSString,
+    NSDistributedNotificationCenter, NSNotification, NSNotificationName, NSObjectProtocol, NSString,
 };
 
 use super::ThemeChangeEvent;
@@ -104,8 +103,8 @@ pub(crate) fn watch_macos(
         let observer: objc2::rc::Retained<ProtocolObject<dyn NSObjectProtocol>> = unsafe {
             center.addObserverForName_object_queue_usingBlock(
                 Some(name),
-                None,  // any sender
-                None,  // deliver on run loop thread
+                None, // any sender
+                None, // deliver on run loop thread
                 &block,
             )
         };
@@ -124,9 +123,9 @@ pub(crate) fn watch_macos(
     });
 
     // Receive the CFRunLoop handle from the background thread.
-    let sendable_loop = loop_rx.recv().map_err(|_| {
-        crate::Error::Unavailable("macOS watcher thread failed to start".into())
-    })?;
+    let sendable_loop = loop_rx
+        .recv()
+        .map_err(|_| crate::Error::Unavailable("macOS watcher thread failed to start".into()))?;
 
     // Build the platform shutdown closure: calls CFRunLoop::stop() to
     // unblock CFRunLoop::run() on the watcher thread.
