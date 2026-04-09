@@ -120,7 +120,7 @@ macro_rules! define_widget_pair {
             ) -> Self {
                 Self {
                     $($(
-                        $opt_field: crate::resolve::validate::require(
+                        $opt_field: crate::resolve::validate_helpers::require(
                             &source.$opt_field,
                             &format!("{}.{}", prefix, stringify!($opt_field)),
                             missing,
@@ -130,7 +130,7 @@ macro_rules! define_widget_pair {
                         $so_field: source.$so_field,
                     )*)?
                     $($(
-                        $on_field: <$on_opt_type as crate::resolve::validate::ValidateNested>::validate_nested(
+                        $on_field: <$on_opt_type as crate::resolve::validate_helpers::ValidateNested>::validate_nested(
                             &source.$on_field,
                             &format!("{}.{}", prefix, stringify!($on_field)),
                             _dpi,
@@ -138,14 +138,14 @@ macro_rules! define_widget_pair {
                         ),
                     )*)?
                     $($(
-                        $bp_field: crate::resolve::validate::require_border_partial(
+                        $bp_field: crate::resolve::validate_helpers::require_border_partial(
                             &source.$bp_field,
                             &format!("{}.{}", prefix, stringify!($bp_field)),
                             missing,
                         ),
                     )*)?
                     $($(
-                        $bo_field: crate::resolve::validate::border_all_optional(
+                        $bo_field: crate::resolve::validate_helpers::border_all_optional(
                             &source.$bo_field,
                         ),
                     )*)?

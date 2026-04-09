@@ -6,6 +6,7 @@
 
 mod inheritance;
 pub(crate) mod validate;
+pub(crate) mod validate_helpers;
 
 use crate::model::ThemeVariant;
 use crate::model::resolved::ResolvedThemeVariant;

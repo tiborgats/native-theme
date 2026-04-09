@@ -1,318 +1,14 @@
-// Theme validation: require fields, range-check values, produce ResolvedThemeVariant.
-
-use crate::error::ThemeResolutionError;
-use crate::model::border::{BorderSpec, ResolvedBorderSpec};
-
-/// Standard screen DPI (96 dots per inch). Used as the font_dpi fallback
-/// when no DPI was set on the unresolved variant (e.g. community presets
-/// loaded standalone without OS reader). This matches the CSS/Web reference
-/// pixel and the Windows default. Validation uses this to convert
-/// `FontSize::Pt` values to logical pixels via `FontSize::to_px(dpi)`.
-const DEFAULT_FONT_DPI: f32 = 96.0;
-use crate::model::resolved::{
-    ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedThemeDefaults,
-    ResolvedThemeVariant,
-};
-use crate::model::{FontSpec, ResolvedFontSpec, TextScaleEntry, ThemeVariant};
-
-// --- validate() helpers ---
-
-/// Extract a required field, recording the path if missing.
-///
-/// Returns the value if present, or `T::default()` as a placeholder if missing.
-/// The placeholder is never used: `validate()` returns `Err` before constructing
-/// `ResolvedThemeVariant` when any field was recorded as missing.
-pub(crate) fn require<T: Clone + Default>(
-    field: &Option<T>,
-    path: &str,
-    missing: &mut Vec<String>,
-) -> T {
-    match field {
-        Some(val) => val.clone(),
-        None => {
-            missing.push(path.to_string());
-            T::default()
-        }
-    }
-}
-
-/// Validate a FontSpec that is stored directly (not wrapped in Option).
-/// Checks each sub-field individually. Converts `FontSize` to `f32` px via `to_px(dpi)`.
-fn require_font(
-    font: &FontSpec,
-    prefix: &str,
-    dpi: f32,
-    missing: &mut Vec<String>,
-) -> ResolvedFontSpec {
-    let family = require(&font.family, &format!("{prefix}.family"), missing);
-    let size = font.size.map(|fs| fs.to_px(dpi)).unwrap_or_else(|| {
-        missing.push(format!("{prefix}.size"));
-        0.0
-    });
-    let weight = require(&font.weight, &format!("{prefix}.weight"), missing);
-    let color = require(&font.color, &format!("{prefix}.color"), missing);
-    ResolvedFontSpec {
-        family,
-        size,
-        weight,
-        style: font.style.unwrap_or_default(),
-        color,
-    }
-}
-
-/// Validate an `Option<FontSpec>` (widget font fields).
-/// If None, records the path as missing. Converts `FontSize` to `f32` px via `to_px(dpi)`.
-fn require_font_opt(
-    font: &Option<FontSpec>,
-    prefix: &str,
-    dpi: f32,
-    missing: &mut Vec<String>,
-) -> ResolvedFontSpec {
-    match font {
-        None => {
-            missing.push(prefix.to_string());
-            ResolvedFontSpec::default()
-        }
-        Some(f) => {
-            let family = require(&f.family, &format!("{prefix}.family"), missing);
-            let size = f.size.map(|fs| fs.to_px(dpi)).unwrap_or_else(|| {
-                missing.push(format!("{prefix}.size"));
-                0.0
-            });
-            let weight = require(&f.weight, &format!("{prefix}.weight"), missing);
-            let color = require(&f.color, &format!("{prefix}.color"), missing);
-            ResolvedFontSpec {
-                family,
-                size,
-                weight,
-                style: f.style.unwrap_or_default(),
-                color,
-            }
-        }
-    }
-}
-
-/// Validate an `Option<TextScaleEntry>`.
-/// Converts `FontSize` to `f32` px via `to_px(dpi)`. Also converts `line_height`
-/// when the sibling `size` is in points (same unit, same DPI factor).
-fn require_text_scale_entry(
-    entry: &Option<TextScaleEntry>,
-    prefix: &str,
-    dpi: f32,
-    missing: &mut Vec<String>,
-) -> ResolvedTextScaleEntry {
-    match entry {
-        None => {
-            missing.push(prefix.to_string());
-            ResolvedTextScaleEntry::default()
-        }
-        Some(e) => {
-            let size = e.size.map(|fs| fs.to_px(dpi)).unwrap_or_else(|| {
-                missing.push(format!("{prefix}.size"));
-                0.0
-            });
-            let line_height = e.line_height.map(|fs| fs.to_px(dpi)).unwrap_or_else(|| {
-                missing.push(format!("{prefix}.line_height"));
-                0.0
-            });
-            let weight = require(&e.weight, &format!("{prefix}.weight"), missing);
-            ResolvedTextScaleEntry {
-                size,
-                weight,
-                line_height,
-            }
-        }
-    }
-}
-
-/// Validate an `Option<BorderSpec>` (widget border fields).
-/// If None, records the path as missing. Requires the 4 sub-fields filled by
-/// border_inheritance (color, corner_radius, line_width, shadow_enabled).
-/// Padding sub-fields are sizing fields with no inheritance -- they use
-/// the preset value if present, otherwise default to `T::default()`.
-fn require_border(
-    border: &Option<BorderSpec>,
-    prefix: &str,
-    missing: &mut Vec<String>,
-) -> ResolvedBorderSpec {
-    match border {
-        None => {
-            missing.push(prefix.to_string());
-            ResolvedBorderSpec::default()
-        }
-        Some(b) => {
-            let color = require(&b.color, &format!("{prefix}.color"), missing);
-            let corner_radius = require(
-                &b.corner_radius,
-                &format!("{prefix}.corner_radius"),
-                missing,
-            );
-            let line_width = require(&b.line_width, &format!("{prefix}.line_width"), missing);
-            let shadow_enabled = require(
-                &b.shadow_enabled,
-                &format!("{prefix}.shadow_enabled"),
-                missing,
-            );
-            ResolvedBorderSpec {
-                color,
-                corner_radius,
-                corner_radius_lg: b.corner_radius_lg.unwrap_or_default(),
-                line_width,
-                opacity: b.opacity.unwrap_or_default(),
-                shadow_enabled,
-                padding_horizontal: b.padding_horizontal.unwrap_or_default(),
-                padding_vertical: b.padding_vertical.unwrap_or_default(),
-            }
-        }
-    }
-}
-
-/// Resolve a border for widgets excluded from border_inheritance (menu, tab, card).
-/// These widgets have no inheritance for any border sub-field; all sub-fields
-/// use the preset value if present, otherwise `T::default()`. No validation
-/// errors are recorded -- the border is entirely optional.
-pub(crate) fn border_all_optional(border: &Option<BorderSpec>) -> ResolvedBorderSpec {
-    match border {
-        None => ResolvedBorderSpec::default(),
-        Some(b) => ResolvedBorderSpec {
-            color: b.color.unwrap_or_default(),
-            corner_radius: b.corner_radius.unwrap_or_default(),
-            corner_radius_lg: b.corner_radius_lg.unwrap_or_default(),
-            line_width: b.line_width.unwrap_or_default(),
-            opacity: b.opacity.unwrap_or_default(),
-            shadow_enabled: b.shadow_enabled.unwrap_or_default(),
-            padding_horizontal: b.padding_horizontal.unwrap_or_default(),
-            padding_vertical: b.padding_vertical.unwrap_or_default(),
-        },
-    }
-}
-
-/// Validate a border for widgets with partial border inheritance (sidebar, status_bar).
-/// Only color + line_width are inherited; other sub-fields use defaults if not in preset.
-pub(crate) fn require_border_partial(
-    border: &Option<BorderSpec>,
-    prefix: &str,
-    missing: &mut Vec<String>,
-) -> ResolvedBorderSpec {
-    match border {
-        None => {
-            missing.push(prefix.to_string());
-            ResolvedBorderSpec::default()
-        }
-        Some(b) => {
-            let color = require(&b.color, &format!("{prefix}.color"), missing);
-            let line_width = require(&b.line_width, &format!("{prefix}.line_width"), missing);
-            ResolvedBorderSpec {
-                color,
-                corner_radius: b.corner_radius.unwrap_or_default(),
-                corner_radius_lg: b.corner_radius_lg.unwrap_or_default(),
-                line_width,
-                opacity: b.opacity.unwrap_or_default(),
-                shadow_enabled: b.shadow_enabled.unwrap_or_default(),
-                padding_horizontal: b.padding_horizontal.unwrap_or_default(),
-                padding_vertical: b.padding_vertical.unwrap_or_default(),
-            }
-        }
-    }
-}
-
-// --- Range-check helpers for validate() ---
+// Theme validation: orchestrate defaults extraction, per-widget dispatch, range checks,
+// and ResolvedThemeVariant construction.
 //
-// These push a descriptive message to the `missing` vec (reusing the same
-// error-collection pattern as require()) so that all problems — missing
-// fields AND out-of-range values — are reported in a single pass.
+// Helper functions, range-check utilities, and ValidateNested trait live in validate_helpers.rs.
 
-/// Check that an `f32` value is finite and non-negative (>= 0.0).
-fn check_non_negative(value: f32, path: &str, errors: &mut Vec<String>) {
-    if !value.is_finite() || value < 0.0 {
-        errors.push(format!(
-            "{path} must be a finite non-negative number, got {value}"
-        ));
-    }
-}
-
-/// Check that an `f32` value is finite and strictly positive (> 0.0).
-fn check_positive(value: f32, path: &str, errors: &mut Vec<String>) {
-    if !value.is_finite() || value <= 0.0 {
-        errors.push(format!(
-            "{path} must be a finite positive number, got {value}"
-        ));
-    }
-}
-
-/// Check that an `f32` value is finite and falls within an inclusive range.
-fn check_range_f32(value: f32, min: f32, max: f32, path: &str, errors: &mut Vec<String>) {
-    if !value.is_finite() || value < min || value > max {
-        errors.push(format!(
-            "{path} must be a finite number between {min} and {max}, got {value}"
-        ));
-    }
-}
-
-/// Check that a `u16` value falls within an inclusive range.
-fn check_range_u16(value: u16, min: u16, max: u16, path: &str, errors: &mut Vec<String>) {
-    if value < min || value > max {
-        errors.push(format!("{path} must be {min}..={max}, got {value}"));
-    }
-}
-
-/// Check that a min value does not exceed its corresponding max value.
-fn check_min_max(
-    min_val: f32,
-    max_val: f32,
-    min_name: &str,
-    max_name: &str,
-    errors: &mut Vec<String>,
-) {
-    if min_val > max_val {
-        errors.push(format!(
-            "{min_name} ({min_val}) must not exceed {max_name} ({max_val})"
-        ));
-    }
-}
-
-/// Trait for nested types that can be validated from an Option wrapper.
-/// Used by `define_widget_pair!` generated `validate_widget()` methods
-/// to dispatch to the correct extraction function without knowing the
-/// concrete type at macro expansion time.
-pub(crate) trait ValidateNested {
-    /// The resolved (non-Option) output type.
-    type Resolved;
-
-    /// Extract from `Option<Self>`, recording missing fields in `missing`.
-    fn validate_nested(
-        source: &Option<Self>,
-        prefix: &str,
-        dpi: f32,
-        missing: &mut Vec<String>,
-    ) -> Self::Resolved
-    where
-        Self: Sized;
-}
-
-impl ValidateNested for FontSpec {
-    type Resolved = ResolvedFontSpec;
-    fn validate_nested(
-        source: &Option<Self>,
-        prefix: &str,
-        dpi: f32,
-        missing: &mut Vec<String>,
-    ) -> ResolvedFontSpec {
-        require_font_opt(source, prefix, dpi, missing)
-    }
-}
-
-impl ValidateNested for BorderSpec {
-    type Resolved = ResolvedBorderSpec;
-    fn validate_nested(
-        source: &Option<Self>,
-        prefix: &str,
-        _dpi: f32,
-        missing: &mut Vec<String>,
-    ) -> ResolvedBorderSpec {
-        require_border(source, prefix, missing)
-    }
-}
+use super::validate_helpers::{self, require, require_font, require_text_scale_entry, DEFAULT_FONT_DPI};
+use crate::error::ThemeResolutionError;
+use crate::model::resolved::{
+    ResolvedIconSizes, ResolvedTextScale, ResolvedThemeDefaults, ResolvedThemeVariant,
+};
+use crate::model::ThemeVariant;
 
 impl ThemeVariant {
     // --- validate() ---
@@ -605,6 +301,77 @@ impl ThemeVariant {
             &mut missing,
         );
 
+        // --- construct defaults and text_scale structs ---
+        //
+        // Built here (before range checks) so check_defaults_ranges() can
+        // operate on the struct references, and the final construction can
+        // reuse them directly.
+
+        use crate::model::border::ResolvedBorderSpec;
+
+        let defaults = ResolvedThemeDefaults {
+            font: defaults_font,
+            line_height: defaults_line_height,
+            mono_font: defaults_mono_font,
+            background_color: defaults_background,
+            text_color: defaults_foreground,
+            accent_color: defaults_accent,
+            accent_text_color: defaults_accent_foreground,
+            surface_color: defaults_surface,
+            border: ResolvedBorderSpec {
+                color: defaults_border,
+                corner_radius: defaults_radius,
+                corner_radius_lg: defaults_radius_lg,
+                line_width: defaults_frame_width,
+                opacity: defaults_border_opacity,
+                shadow_enabled: defaults_shadow_enabled,
+                padding_horizontal: defaults_border_padding_h,
+                padding_vertical: defaults_border_padding_v,
+            },
+            muted_color: defaults_muted,
+            shadow_color: defaults_shadow,
+            link_color: defaults_link,
+            selection_background: defaults_selection,
+            selection_text_color: defaults_selection_foreground,
+            selection_inactive_background: defaults_selection_inactive,
+            text_selection_background: defaults_text_selection_background,
+            text_selection_color: defaults_text_selection_color,
+            disabled_text_color: defaults_disabled_foreground,
+            danger_color: defaults_danger,
+            danger_text_color: defaults_danger_foreground,
+            warning_color: defaults_warning,
+            warning_text_color: defaults_warning_foreground,
+            success_color: defaults_success,
+            success_text_color: defaults_success_foreground,
+            info_color: defaults_info,
+            info_text_color: defaults_info_foreground,
+            disabled_opacity: defaults_disabled_opacity,
+            focus_ring_color: defaults_focus_ring_color,
+            focus_ring_width: defaults_focus_ring_width,
+            focus_ring_offset: defaults_focus_ring_offset,
+            icon_sizes: ResolvedIconSizes {
+                toolbar: defaults_icon_sizes_toolbar,
+                small: defaults_icon_sizes_small,
+                large: defaults_icon_sizes_large,
+                dialog: defaults_icon_sizes_dialog,
+                panel: defaults_icon_sizes_panel,
+            },
+            font_dpi: defaults_font_dpi,
+            text_scaling_factor: defaults_text_scaling_factor,
+            reduce_motion: defaults_reduce_motion,
+            high_contrast: defaults_high_contrast,
+            reduce_transparency: defaults_reduce_transparency,
+        };
+        let text_scale = ResolvedTextScale {
+            caption: ts_caption,
+            section_heading: ts_section_heading,
+            dialog_title: ts_dialog_title,
+            display: ts_display,
+        };
+
+        // --- defaults and text_scale range checks ---
+        validate_helpers::check_defaults_ranges(&defaults, &text_scale, &mut missing);
+
         // --- per-widget extraction (generated by define_widget_pair!) ---
 
         use crate::model::widgets::*;
@@ -677,183 +444,12 @@ impl ThemeVariant {
         let icon_set = require(&self.icon_set, "icon_set", &mut missing);
         let icon_theme = require(&self.icon_theme, "icon_theme", &mut missing);
 
-        // --- range validation ---
-        //
-        // Operate on the already-extracted values from validate_widget()/require().
-        // If a field was missing, require() returned T::default() as placeholder —
-        // range-checking that placeholder is harmless because the missing-field error
-        // already captured the real problem.
+        // --- per-widget range checks ---
+        // (These will move to check_ranges() methods on each Resolved* struct in Task 2.)
 
-        // Fonts: size > 0, weight 100..=900
-        check_positive(defaults_font.size, "defaults.font.size", &mut missing);
-        check_range_u16(
-            defaults_font.weight,
-            100,
-            900,
-            "defaults.font.weight",
-            &mut missing,
-        );
-        check_positive(
-            defaults_mono_font.size,
-            "defaults.mono_font.size",
-            &mut missing,
-        );
-        check_range_u16(
-            defaults_mono_font.weight,
-            100,
-            900,
-            "defaults.mono_font.weight",
-            &mut missing,
-        );
-
-        // defaults: line_height > 0, text_scaling_factor > 0
-        check_positive(defaults_line_height, "defaults.line_height", &mut missing);
-        check_positive(
-            defaults_text_scaling_factor,
-            "defaults.text_scaling_factor",
-            &mut missing,
-        );
-
-        // defaults: radius, geometry >= 0
-        check_non_negative(
-            defaults_radius,
-            "defaults.border.corner_radius",
-            &mut missing,
-        );
-        check_non_negative(
-            defaults_radius_lg,
-            "defaults.border.corner_radius_lg",
-            &mut missing,
-        );
-        check_non_negative(
-            defaults_frame_width,
-            "defaults.border.line_width",
-            &mut missing,
-        );
-        check_non_negative(
-            defaults_focus_ring_width,
-            "defaults.focus_ring_width",
-            &mut missing,
-        );
-        // Note: focus_ring_offset is intentionally NOT range-checked — negative values
-        // mean an inset focus ring (e.g., adwaita uses -2.0, macOS uses -1.0).
-
-        // defaults: opacity 0..=1
-        check_range_f32(
-            defaults_disabled_opacity,
-            0.0,
-            1.0,
-            "defaults.disabled_opacity",
-            &mut missing,
-        );
-        check_range_f32(
-            defaults_border_opacity,
-            0.0,
-            1.0,
-            "defaults.border.opacity",
-            &mut missing,
-        );
-
-        // defaults: border padding >= 0
-        check_non_negative(
-            defaults_border_padding_h,
-            "defaults.border.padding_horizontal",
-            &mut missing,
-        );
-        check_non_negative(
-            defaults_border_padding_v,
-            "defaults.border.padding_vertical",
-            &mut missing,
-        );
-
-        // defaults: icon sizes >= 0
-        check_non_negative(
-            defaults_icon_sizes_toolbar,
-            "defaults.icon_sizes.toolbar",
-            &mut missing,
-        );
-        check_non_negative(
-            defaults_icon_sizes_small,
-            "defaults.icon_sizes.small",
-            &mut missing,
-        );
-        check_non_negative(
-            defaults_icon_sizes_large,
-            "defaults.icon_sizes.large",
-            &mut missing,
-        );
-        check_non_negative(
-            defaults_icon_sizes_dialog,
-            "defaults.icon_sizes.dialog",
-            &mut missing,
-        );
-        check_non_negative(
-            defaults_icon_sizes_panel,
-            "defaults.icon_sizes.panel",
-            &mut missing,
-        );
-
-        // text_scale: entry sizes > 0, line_height > 0
-        check_positive(ts_caption.size, "text_scale.caption.size", &mut missing);
-        check_positive(
-            ts_caption.line_height,
-            "text_scale.caption.line_height",
-            &mut missing,
-        );
-        check_range_u16(
-            ts_caption.weight,
-            100,
-            900,
-            "text_scale.caption.weight",
-            &mut missing,
-        );
-        check_positive(
-            ts_section_heading.size,
-            "text_scale.section_heading.size",
-            &mut missing,
-        );
-        check_positive(
-            ts_section_heading.line_height,
-            "text_scale.section_heading.line_height",
-            &mut missing,
-        );
-        check_range_u16(
-            ts_section_heading.weight,
-            100,
-            900,
-            "text_scale.section_heading.weight",
-            &mut missing,
-        );
-        check_positive(
-            ts_dialog_title.size,
-            "text_scale.dialog_title.size",
-            &mut missing,
-        );
-        check_positive(
-            ts_dialog_title.line_height,
-            "text_scale.dialog_title.line_height",
-            &mut missing,
-        );
-        check_range_u16(
-            ts_dialog_title.weight,
-            100,
-            900,
-            "text_scale.dialog_title.weight",
-            &mut missing,
-        );
-        check_positive(ts_display.size, "text_scale.display.size", &mut missing);
-        check_positive(
-            ts_display.line_height,
-            "text_scale.display.line_height",
-            &mut missing,
-        );
-        check_range_u16(
-            ts_display.weight,
-            100,
-            900,
-            "text_scale.display.weight",
-            &mut missing,
-        );
+        use validate_helpers::{
+            check_min_max, check_non_negative, check_positive, check_range_f32, check_range_u16,
+        };
 
         // window font: size > 0, weight 100..=900
         check_positive(
@@ -1226,65 +822,8 @@ impl ThemeVariant {
         // All fields present -- construct ResolvedThemeVariant.
 
         Ok(ResolvedThemeVariant {
-            defaults: ResolvedThemeDefaults {
-                font: defaults_font,
-                line_height: defaults_line_height,
-                mono_font: defaults_mono_font,
-                background_color: defaults_background,
-                text_color: defaults_foreground,
-                accent_color: defaults_accent,
-                accent_text_color: defaults_accent_foreground,
-                surface_color: defaults_surface,
-                border: ResolvedBorderSpec {
-                    color: defaults_border,
-                    corner_radius: defaults_radius,
-                    corner_radius_lg: defaults_radius_lg,
-                    line_width: defaults_frame_width,
-                    opacity: defaults_border_opacity,
-                    shadow_enabled: defaults_shadow_enabled,
-                    padding_horizontal: defaults_border_padding_h,
-                    padding_vertical: defaults_border_padding_v,
-                },
-                muted_color: defaults_muted,
-                shadow_color: defaults_shadow,
-                link_color: defaults_link,
-                selection_background: defaults_selection,
-                selection_text_color: defaults_selection_foreground,
-                selection_inactive_background: defaults_selection_inactive,
-                text_selection_background: defaults_text_selection_background,
-                text_selection_color: defaults_text_selection_color,
-                disabled_text_color: defaults_disabled_foreground,
-                danger_color: defaults_danger,
-                danger_text_color: defaults_danger_foreground,
-                warning_color: defaults_warning,
-                warning_text_color: defaults_warning_foreground,
-                success_color: defaults_success,
-                success_text_color: defaults_success_foreground,
-                info_color: defaults_info,
-                info_text_color: defaults_info_foreground,
-                disabled_opacity: defaults_disabled_opacity,
-                focus_ring_color: defaults_focus_ring_color,
-                focus_ring_width: defaults_focus_ring_width,
-                focus_ring_offset: defaults_focus_ring_offset,
-                icon_sizes: ResolvedIconSizes {
-                    toolbar: defaults_icon_sizes_toolbar,
-                    small: defaults_icon_sizes_small,
-                    large: defaults_icon_sizes_large,
-                    dialog: defaults_icon_sizes_dialog,
-                    panel: defaults_icon_sizes_panel,
-                },
-                font_dpi: defaults_font_dpi,
-                text_scaling_factor: defaults_text_scaling_factor,
-                reduce_motion: defaults_reduce_motion,
-                high_contrast: defaults_high_contrast,
-                reduce_transparency: defaults_reduce_transparency,
-            },
-            text_scale: ResolvedTextScale {
-                caption: ts_caption,
-                section_heading: ts_section_heading,
-                dialog_title: ts_dialog_title,
-                display: ts_display,
-            },
+            defaults,
+            text_scale,
             window,
             button,
             input,
