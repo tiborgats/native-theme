@@ -22,7 +22,7 @@ use crate::model::{FontSpec, ResolvedFontSpec, TextScaleEntry, ThemeVariant};
 /// Returns the value if present, or `T::default()` as a placeholder if missing.
 /// The placeholder is never used: `validate()` returns `Err` before constructing
 /// `ResolvedThemeVariant` when any field was recorded as missing.
-fn require<T: Clone + Default>(field: &Option<T>, path: &str, missing: &mut Vec<String>) -> T {
+pub(crate) fn require<T: Clone + Default>(field: &Option<T>, path: &str, missing: &mut Vec<String>) -> T {
     match field {
         Some(val) => val.clone(),
         None => {
@@ -167,7 +167,7 @@ fn require_border(
 /// These widgets have no inheritance for any border sub-field; all sub-fields
 /// use the preset value if present, otherwise `T::default()`. No validation
 /// errors are recorded -- the border is entirely optional.
-fn border_all_optional(border: &Option<BorderSpec>) -> ResolvedBorderSpec {
+pub(crate) fn border_all_optional(border: &Option<BorderSpec>) -> ResolvedBorderSpec {
     match border {
         None => ResolvedBorderSpec::default(),
         Some(b) => ResolvedBorderSpec {
@@ -185,7 +185,7 @@ fn border_all_optional(border: &Option<BorderSpec>) -> ResolvedBorderSpec {
 
 /// Validate a border for widgets with partial border inheritance (sidebar, status_bar).
 /// Only color + line_width are inherited; other sub-fields use defaults if not in preset.
-fn require_border_partial(
+pub(crate) fn require_border_partial(
     border: &Option<BorderSpec>,
     prefix: &str,
     missing: &mut Vec<String>,
@@ -264,6 +264,49 @@ fn check_min_max(
         errors.push(format!(
             "{min_name} ({min_val}) must not exceed {max_name} ({max_val})"
         ));
+    }
+}
+
+/// Trait for nested types that can be validated from an Option wrapper.
+/// Used by `define_widget_pair!` generated `validate_widget()` methods
+/// to dispatch to the correct extraction function without knowing the
+/// concrete type at macro expansion time.
+pub(crate) trait ValidateNested {
+    /// The resolved (non-Option) output type.
+    type Resolved;
+
+    /// Extract from `Option<Self>`, recording missing fields in `missing`.
+    fn validate_nested(
+        source: &Option<Self>,
+        prefix: &str,
+        dpi: f32,
+        missing: &mut Vec<String>,
+    ) -> Self::Resolved
+    where
+        Self: Sized;
+}
+
+impl ValidateNested for FontSpec {
+    type Resolved = ResolvedFontSpec;
+    fn validate_nested(
+        source: &Option<Self>,
+        prefix: &str,
+        dpi: f32,
+        missing: &mut Vec<String>,
+    ) -> ResolvedFontSpec {
+        require_font_opt(source, prefix, dpi, missing)
+    }
+}
+
+impl ValidateNested for BorderSpec {
+    type Resolved = ResolvedBorderSpec;
+    fn validate_nested(
+        source: &Option<Self>,
+        prefix: &str,
+        _dpi: f32,
+        missing: &mut Vec<String>,
+    ) -> ResolvedBorderSpec {
+        require_border(source, prefix, missing)
     }
 }
 
