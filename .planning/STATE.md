@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.6
 milestone_name: Internal Quality & Runtime Watching
 status: verifying
-stopped_at: Completed 67-01-PLAN.md
-last_updated: "2026-04-09T21:18:53.720Z"
+stopped_at: Completed 67-02-PLAN.md
+last_updated: "2026-04-09T21:24:19.154Z"
 last_activity: 2026-04-09
 progress:
   total_phases: 7
-  completed_phases: 6
+  completed_phases: 7
   total_plans: 13
-  completed_plans: 12
-  percent: 92
+  completed_plans: 13
+  percent: 100
 ---
 
 # Project State
@@ -53,6 +53,7 @@ Progress: [█████████░] 91%
 | Phase 66-linux-watchers P01 | 8min | 2 tasks | 4 files |
 | Phase 66-linux-watchers P02 | 9min | 2 tasks | 2 files |
 | Phase 67-macos-windows-watchers P01 | 8min | 2 tasks | 3 files |
+| Phase 67-02 P02 | 3min | 1 tasks | 3 files |
 
 ## Accumulated Context
 
@@ -83,6 +84,8 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [Phase 67-01]: ThemeWatcher extended with Box<dyn FnOnce() + Send> platform_shutdown for immediate wakeup on Drop
 - [Phase 67-01]: CFRunLoop::run() + stop() from Drop for instant macOS watcher shutdown (no timeout loop)
 - [Phase 67-01]: SendableCFRunLoop newtype for thread-safe CFRunLoop::stop() (Apple documents it as thread-safe)
+- [Phase 67-02]: GetCurrentThreadId via oneshot channel for PostThreadMessageW(WM_QUIT) shutdown from any thread
+- [Phase 67-02]: COM STA (COINIT_APARTMENTTHREADED) required for WinRT UISettings on background thread
 
 ### Roadmap Evolution
 
@@ -102,6 +105,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-09T21:18:53.717Z
-Stopped at: Completed 67-01-PLAN.md
+Last session: 2026-04-09T21:24:19.151Z
+Stopped at: Completed 67-02-PLAN.md
 Resume file: None
