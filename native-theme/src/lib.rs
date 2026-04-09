@@ -1153,7 +1153,7 @@ mod dispatch_tests {
     #[test]
     #[allow(unsafe_code)]
     fn from_linux_non_kde_returns_adwaita() {
-        let _guard = crate::ENV_MUTEX.lock().unwrap();
+        let _guard = crate::test_util::ENV_MUTEX.lock().unwrap();
         // Temporarily set XDG_CURRENT_DESKTOP to GNOME so from_linux()
         // takes the preset fallback path.
         // SAFETY: ENV_MUTEX serializes env var access across parallel tests
@@ -1171,7 +1171,7 @@ mod dispatch_tests {
     #[cfg(feature = "kde")]
     #[allow(unsafe_code)]
     fn from_linux_unknown_de_with_kdeglobals_fallback() {
-        let _guard = crate::ENV_MUTEX.lock().unwrap();
+        let _guard = crate::test_util::ENV_MUTEX.lock().unwrap();
         use std::io::Write;
 
         // Create a temp dir with a minimal kdeglobals file
@@ -1217,7 +1217,7 @@ mod dispatch_tests {
     #[test]
     #[allow(unsafe_code)]
     fn from_linux_unknown_de_without_kdeglobals_returns_adwaita() {
-        let _guard = crate::ENV_MUTEX.lock().unwrap();
+        let _guard = crate::test_util::ENV_MUTEX.lock().unwrap();
         // SAFETY: ENV_MUTEX serializes env var access across parallel tests
         let orig_xdg = std::env::var("XDG_CONFIG_HOME").ok();
         let orig_desktop = std::env::var("XDG_CURRENT_DESKTOP").ok();
@@ -1271,7 +1271,7 @@ mod dispatch_tests {
     #[test]
     #[allow(unsafe_code)]
     fn from_system_returns_result() {
-        let _guard = crate::ENV_MUTEX.lock().unwrap();
+        let _guard = crate::test_util::ENV_MUTEX.lock().unwrap();
         // On Linux (our test platform), from_system() should return a Result.
         // With GNOME set, it should return the Adwaita preset.
         // SAFETY: ENV_MUTEX serializes env var access across parallel tests
@@ -1723,7 +1723,7 @@ mod system_theme_tests {
     #[cfg(target_os = "linux")]
     #[allow(unsafe_code)]
     fn test_platform_preset_name_kde() {
-        let _guard = crate::ENV_MUTEX.lock().unwrap();
+        let _guard = crate::test_util::ENV_MUTEX.lock().unwrap();
         unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "KDE") };
         let name = platform_preset_name();
         unsafe { std::env::remove_var("XDG_CURRENT_DESKTOP") };
@@ -1734,7 +1734,7 @@ mod system_theme_tests {
     #[cfg(target_os = "linux")]
     #[allow(unsafe_code)]
     fn test_platform_preset_name_gnome() {
-        let _guard = crate::ENV_MUTEX.lock().unwrap();
+        let _guard = crate::test_util::ENV_MUTEX.lock().unwrap();
         unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "GNOME") };
         let name = platform_preset_name();
         unsafe { std::env::remove_var("XDG_CURRENT_DESKTOP") };

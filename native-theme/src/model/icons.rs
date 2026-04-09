@@ -570,18 +570,18 @@ pub fn detect_icon_theme() -> String {
 /// Linux icon theme detection, dispatched by desktop environment.
 #[cfg(target_os = "linux")]
 fn detect_linux_icon_theme() -> String {
-    let de = crate::detect_linux_de(&crate::xdg_current_desktop());
+    let de = crate::detect::detect_linux_de(&crate::detect::xdg_current_desktop());
 
     match de {
-        crate::LinuxDesktop::Kde => detect_kde_icon_theme(),
-        crate::LinuxDesktop::Gnome | crate::LinuxDesktop::Budgie => {
+        crate::detect::LinuxDesktop::Kde => detect_kde_icon_theme(),
+        crate::detect::LinuxDesktop::Gnome | crate::detect::LinuxDesktop::Budgie => {
             gsettings_icon_theme("org.gnome.desktop.interface")
         }
-        crate::LinuxDesktop::Cinnamon => gsettings_icon_theme("org.cinnamon.desktop.interface"),
-        crate::LinuxDesktop::Xfce => detect_xfce_icon_theme(),
-        crate::LinuxDesktop::Mate => gsettings_icon_theme("org.mate.interface"),
-        crate::LinuxDesktop::LxQt => detect_lxqt_icon_theme(),
-        crate::LinuxDesktop::Unknown => {
+        crate::detect::LinuxDesktop::Cinnamon => gsettings_icon_theme("org.cinnamon.desktop.interface"),
+        crate::detect::LinuxDesktop::Xfce => detect_xfce_icon_theme(),
+        crate::detect::LinuxDesktop::Mate => gsettings_icon_theme("org.mate.interface"),
+        crate::detect::LinuxDesktop::LxQt => detect_lxqt_icon_theme(),
+        crate::detect::LinuxDesktop::Unknown => {
             let kde = detect_kde_icon_theme();
             if kde != "hicolor" {
                 return kde;

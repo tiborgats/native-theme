@@ -698,63 +698,6 @@ pub(crate) fn system_font_dpi() -> f32 {
     detect_system_font_dpi()
 }
 
-#[cfg(all(test, target_os = "linux", any(feature = "kde", feature = "portal")))]
-#[allow(clippy::unwrap_used)]
-mod xrandr_dpi_tests {
-    use super::parse_xrandr_dpi;
-
-    #[test]
-    fn primary_4k_display() {
-        // Real xrandr output: 4K display at 700mm wide
-        let output = "Screen 0: minimum 16 x 16, current 3840 x 2160, maximum 32767 x 32767\n\
-                       DP-1 connected primary 3840x2160+0+0 (normal left inverted right x axis y axis) 700mm x 390mm\n\
-                          3840x2160     60.00*+\n";
-        let dpi = parse_xrandr_dpi(output).unwrap();
-        // 3840/(700/25.4) = 139.3, 2160/(390/25.4) = 140.7, avg ~140
-        assert!((dpi - 140.0).abs() < 1.0, "expected ~140 DPI, got {dpi}");
-    }
-
-    #[test]
-    fn standard_1080p_display() {
-        let output = "DP-2 connected primary 1920x1080+0+0 (normal) 530mm x 300mm\n";
-        let dpi = parse_xrandr_dpi(output).unwrap();
-        // 1920/(530/25.4) = 92.0, 1080/(300/25.4) = 91.4, avg ~91.7
-        assert!((dpi - 92.0).abs() < 1.0, "expected ~92 DPI, got {dpi}");
-    }
-
-    #[test]
-    fn no_primary_falls_back_to_first_connected() {
-        let output = "HDMI-1 connected 1920x1080+0+0 (normal) 480mm x 270mm\n\
-                       DP-1 disconnected\n";
-        let dpi = parse_xrandr_dpi(output).unwrap();
-        assert!(dpi > 90.0 && dpi < 110.0, "expected ~100 DPI, got {dpi}");
-    }
-
-    #[test]
-    fn disconnected_only_returns_none() {
-        let output = "DP-1 disconnected\nHDMI-1 disconnected\n";
-        assert!(parse_xrandr_dpi(output).is_none());
-    }
-
-    #[test]
-    fn missing_physical_dimensions_returns_none() {
-        // No "NNNmm x NNNmm" in the line
-        let output = "DP-1 connected primary 1920x1080+0+0 (normal)\n";
-        assert!(parse_xrandr_dpi(output).is_none());
-    }
-
-    #[test]
-    fn zero_mm_returns_none() {
-        let output = "DP-1 connected primary 1920x1080+0+0 (normal) 0mm x 0mm\n";
-        assert!(parse_xrandr_dpi(output).is_none());
-    }
-
-    #[test]
-    fn empty_output_returns_none() {
-        assert!(parse_xrandr_dpi("").is_none());
-    }
-}
-
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod reduced_motion_tests {

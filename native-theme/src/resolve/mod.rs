@@ -99,7 +99,7 @@ impl ThemeVariant {
         // applies the correct pt-to-px conversion for the current display.
         // Done here (not in resolve_all) to preserve resolve_all idempotency.
         if self.defaults.font_dpi.is_none() {
-            self.defaults.font_dpi = Some(crate::detect_system_font_dpi());
+            self.defaults.font_dpi = Some(crate::detect::system_font_dpi());
         }
         self.resolve_all();
         self.validate()

@@ -119,11 +119,11 @@ fn extract_weight_from_family(s: &str) -> (&str, u16) {
 
 /// Read a single gsettings value, returning None if gsettings is unavailable or fails.
 ///
-/// Uses [`crate::run_gsettings_with_timeout()`] to enforce a 2-second deadline,
+/// Uses [`crate::detect::gsettings_get()`] to enforce a 2-second deadline,
 /// preventing indefinite blocking when D-Bus is unresponsive.  Single-quote
 /// wrapping (gsettings string output format) is stripped from the result.
 fn read_gsetting(schema: &str, key: &str) -> Option<String> {
-    let raw = crate::run_gsettings_with_timeout(&["get", schema, key])?;
+    let raw = crate::detect::gsettings_get(schema, key)?;
     let trimmed = raw.trim_matches('\'').to_string();
     if trimmed.is_empty() {
         None
@@ -139,11 +139,11 @@ fn read_gsetting(schema: &str, key: &str) -> Option<String> {
 /// 2. Physical DPI from display hardware (via `xrandr`)
 /// 3. Fallback: 96.0
 fn detect_font_dpi() -> f32 {
-    if let Some(dpi) = crate::read_xft_dpi() {
+    if let Some(dpi) = crate::detect::xft_dpi() {
         return dpi;
     }
     // Physical DPI from display hardware (xrandr)
-    if let Some(dpi) = crate::detect_physical_dpi() {
+    if let Some(dpi) = crate::detect::physical_dpi() {
         return dpi;
     }
     // X11-standard fallback

@@ -89,12 +89,12 @@ fn detect_font_dpi(ini: &configparser::ini::Ini) -> f32 {
     }
 
     // Fallback to Xft.dpi from X resources
-    if let Some(dpi) = crate::read_xft_dpi() {
+    if let Some(dpi) = crate::detect::xft_dpi() {
         return dpi;
     }
 
     // Physical DPI from display hardware (xrandr)
-    if let Some(dpi) = crate::detect_physical_dpi() {
+    if let Some(dpi) = crate::detect::physical_dpi() {
         return dpi;
     }
 
@@ -426,7 +426,7 @@ mod tests {
     #[test]
     #[allow(unsafe_code)]
     fn kdeglobals_path_respects_xdg_config_home() {
-        let _guard = crate::ENV_MUTEX.lock().unwrap();
+        let _guard = crate::test_util::ENV_MUTEX.lock().unwrap();
         // SAFETY: ENV_MUTEX serializes env var access across parallel tests
         unsafe { std::env::set_var("XDG_CONFIG_HOME", "/tmp/test") };
         let path = kdeglobals_path();
@@ -437,7 +437,7 @@ mod tests {
     #[test]
     #[allow(unsafe_code)]
     fn kdeglobals_path_falls_back_to_home_config() {
-        let _guard = crate::ENV_MUTEX.lock().unwrap();
+        let _guard = crate::test_util::ENV_MUTEX.lock().unwrap();
         // SAFETY: ENV_MUTEX serializes env var access across parallel tests
         unsafe { std::env::remove_var("XDG_CONFIG_HOME") };
         let path = kdeglobals_path();
@@ -702,7 +702,7 @@ BackgroundNormal=49,54,59
     #[test]
     #[allow(unsafe_code)]
     fn test_missing_file() {
-        let _guard = crate::ENV_MUTEX.lock().unwrap();
+        let _guard = crate::test_util::ENV_MUTEX.lock().unwrap();
         // SAFETY: ENV_MUTEX serializes env var access across parallel tests
         let original_xdg = std::env::var("XDG_CONFIG_HOME").ok();
         unsafe { std::env::set_var("XDG_CONFIG_HOME", "/tmp/nonexistent_kde_test_dir_12345") };
