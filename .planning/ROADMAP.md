@@ -13,7 +13,8 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - ✅ **v0.4.0 Animated Icons** — Phases 27-32 (shipped 2026-03-18)
 - ✅ **v0.4.1 Release Prep** — Phases 33-43 (shipped 2026-03-21)
 - ✅ **v0.5.0 Per-Widget Architecture & Resolution Pipeline** — Phases 44-48 (shipped 2026-03-29)
-- ✅ **v0.5.5 Schema Overhaul & Quality** — Phases 49-57 (shipped 2026-04-07)
+- ✅ **v0.5.5 Schema Overhaul & Quality** — Phases 49-60 (shipped 2026-04-09)
+- 🚧 **v0.5.6 Internal Quality & Runtime Watching** — Phases 61-67 (in progress)
 
 ## Phases
 
@@ -108,162 +109,122 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 </details>
 
-### v0.5.5 Schema Overhaul & Quality (Phases 49-57)
+<details>
+<summary>v0.5.5 Schema Overhaul & Quality (Phases 49-60) — SHIPPED 2026-04-09</summary>
 
-- [x] **Phase 49: Additive Type Definitions** - Define BorderSpec, FontStyle, FontSpec extensions, and LayoutTheme as non-breaking additions (completed 2026-04-06)
-- [x] **Phase 50: Atomic Schema Commit** - All ~70 renames + BorderSpec integration + font.color + foreground removal + ThemeSpacing removal + all 17 preset rewrites in one commit (completed 2026-04-07)
-- [x] **Phase 51: Resolution Engine Overhaul** - resolve_border(), resolve_font() update, safety net removal, text_scale removal, inheritance bug fixes (completed 2026-04-07)
-- [x] **Phase 52: Interactive State Colors** - ~70 new hover/active/disabled/focus fields across 18 widgets with preset values (completed 2026-04-07)
-- [x] **Phase 53: Preset Completeness** - text_scale for 13 missing presets, interactive state color values for all 17 presets (completed 2026-04-07)
-- [x] **Phase 54: Connector Migration** - Both connectors updated for new schema, derive.rs replaced with direct theme reads (completed 2026-04-07)
-- [x] **Phase 55: Correctness, Safety, and CI** - Bug fixes, animation safety guards, CI improvements, gsettings timeout (completed 2026-04-07)
-- [x] **Phase 56: Testing** - Property-based tests and programmatic platform-facts cross-reference (completed 2026-04-07)
-- [x] **Phase 57: Verification and Documentation** - Full audit, spec-code sync, READMEs, CHANGELOG (completed 2026-04-07)
+- [x] Phase 49: Additive Type Definitions (3/3 plans) — completed 2026-04-06
+- [x] Phase 50: Atomic Schema Commit (4/4 plans) — completed 2026-04-07
+- [x] Phase 51: Resolution Engine Overhaul (5/5 plans) — completed 2026-04-07
+- [x] Phase 52: Interactive State Colors (2/2 plans) — completed 2026-04-07
+- [x] Phase 53: Preset Completeness (5/5 plans) — completed 2026-04-07
+- [x] Phase 54: Connector Migration (3/3 plans) — completed 2026-04-07
+- [x] Phase 55: Correctness, Safety, and CI (3/3 plans) — completed 2026-04-07
+- [x] Phase 56: Testing (2/2 plans) — completed 2026-04-07
+- [x] Phase 57: Verification and Documentation (3/3 plans) — completed 2026-04-07
+- [x] Phase 58: Font pt/px DPI Conversion Fix (3/3 plans) — completed 2026-04-08
+- [x] Phase 59: FontSize Compile-Time Unit Safety (3/3 plans) — completed 2026-04-08
+- [x] Phase 60: TOML Key Unit Suffixes (5/5 plans) — completed 2026-04-08
+
+</details>
+
+### v0.5.6 Internal Quality & Runtime Watching (Phases 61-67)
+
+- [ ] **Phase 61: lib.rs Module Split** - Extract detect, pipeline, icons, and platform modules from the 2,767-line lib.rs monolith
+- [ ] **Phase 62: Validate Codegen** - Extend define_widget_pair! to generate validate extraction, reducing validate.rs from ~2,196 to ~500 lines
+- [ ] **Phase 63: KDE Reader Fixture Tests** - Separate KDE parsing from I/O and add fixture-based tests for all edge cases
+- [ ] **Phase 64: Cross-Platform Reader Test Separation** - Separate GNOME, Windows, and macOS reader parsing from OS dependencies
+- [ ] **Phase 65: ThemeWatcher Core API** - Define ThemeWatcher, ThemeChanged, on_theme_change() public API with watch feature flag
+- [ ] **Phase 66: Linux Watchers** - KDE inotify and GNOME portal watchers with debounce
+- [ ] **Phase 67: macOS and Windows Watchers** - macOS KVO and Windows UISettings event watchers
 
 ## Phase Details
 
-Phase details for milestones v0.1 through v0.5.0 are archived in `.planning/milestones/`.
+Phase details for milestones v0.1 through v0.5.5 are archived in `.planning/milestones/`.
 
-### Phase 49: Additive Type Definitions
-**Goal**: All new types (BorderSpec, FontStyle, FontSpec.style, FontSpec.color, LayoutTheme) exist as compilable, testable Rust structs without breaking any existing code
-**Depends on**: Nothing (first phase of v0.5.5)
-**Requirements**: SCHEMA-01, SCHEMA-02, SCHEMA-03
+### Phase 61: lib.rs Module Split
+**Goal**: lib.rs is a clean ~250-line root module with impl_merge! macro, module declarations, and re-exports -- all detection, pipeline, icon dispatch, and platform code lives in focused modules
+**Depends on**: Nothing (first phase of v0.5.6)
+**Requirements**: STRUCT-01
 **Success Criteria** (what must be TRUE):
-  1. `BorderSpec` and `ResolvedBorderSpec` structs exist with all 6 fields (color, corner_radius, line_width, shadow_enabled, padding_horizontal, padding_vertical), and round-trip through TOML serde correctly
-  2. `FontStyle` enum (Normal, Italic, Oblique) exists with serde lowercase rename, and `FontSpec`/`ResolvedFontSpec` have `style` and `color` fields
-  3. `LayoutTheme` and `ResolvedLayoutTheme` exist via `define_widget_pair!` with 4 fields (widget_gap, container_margin, window_margin, section_gap)
-  4. `cargo expand` confirms `define_widget_pair!` correctly handles a widget with both `optional_nested font` and `optional_nested border` (tested on ButtonTheme definition)
-  5. `pre-release-check.sh` passes (VERIFY-01 gate)
-**Plans**: 3 plans
-Plans:
-- [x] 49-01-PLAN.md — BorderSpec and FontSpec type definitions
-- [x] 49-02-PLAN.md — LayoutTheme and define_widget_pair! macro support
-- [x] 49-03-PLAN.md — SC4 dual optional_nested verification
-
-### Phase 50: Atomic Schema Commit
-**Goal**: The entire data model matches property-registry.toml naming conventions, with BorderSpec sub-structs replacing flat border fields, font.color replacing foreground fields, ThemeSpacing removed, Layout widget added, and all 17 presets rewritten to the new TOML structure -- in a single atomic commit
-**Depends on**: Phase 49
-**Requirements**: SCHEMA-04, SCHEMA-06, SCHEMA-07, SCHEMA-08, PRESET-01
-**Success Criteria** (what must be TRUE):
-  1. Every field name in the Rust widget structs matches its corresponding entry in `property-registry.toml` (no RENAME mismatches remain from the REG-4 audit)
-  2. All 17 presets load via `from_toml()` without error and use `[widget.border]` nested table sections instead of flat border fields
-  3. No `foreground` fields exist on any widget struct -- text colors live in `font.color` (or named font like `item_font.color`, `header_font.color`)
-  4. `ThemeSpacing` struct is removed, `defaults.spacing` field is gone, and `[layout]` section exists in all 17 presets
-  5. `pre-release-check.sh` passes (VERIFY-01 gate)
-**Plans**: 4 plans
-Plans:
-- [x] 50-01-PLAN.md — Model layer struct renames, BorderSpec expansion, ThemeSpacing removal
-- [x] 50-02-PLAN.md — resolve.rs and validate.rs field reference renames
-- [x] 50-03-PLAN.md — OS readers, presets.rs, and all 20 TOML preset rewrites
-- [x] 50-04-PLAN.md — Connector field reference updates and final verification
-
-### Phase 51: Resolution Engine Overhaul
-**Goal**: resolve.rs correctly implements all inheritance rules from inheritance-rules.toml, with zero invented values -- all safety nets removed, text_scale computation removed, scrollbar.thumb_hover computation replaced, and inheritance bugs fixed
-**Depends on**: Phase 50
-**Requirements**: RESOLVE-01, RESOLVE-02, RESOLVE-03, RESOLVE-04, RESOLVE-05, RESOLVE-06, RESOLVE-07
-**Success Criteria** (what must be TRUE):
-  1. `resolve_border()` function exists and implements sub-field inheritance for all 13 widgets listed in `[border_inheritance]`, with corner_radius_lg exceptions for window/popover/dialog
-  2. `resolve_font()` handles all 5 sub-fields (family, size, weight, style, color), with the link.font.color exception inheriting from defaults.link_color
-  3. Zero hardcoded safety-net values remain in resolve.rs (no 1.2 line_height, no #ffffff accent_foreground, no rgba(0,0,0,64) shadow, no text_scale ratio computation) -- a preset with any missing required field causes a `validate()` error
-  4. All 3 inheritance bugs fixed: INH-1 (input.selection uses text_selection source), INH-2 (dialog.background_color has per-platform fallback), INH-3 (card border inheritance removed)
-  5. `pre-release-check.sh` passes with all 17 presets resolving successfully through the full pipeline (VERIFY-01 gate)
+  1. lib.rs is under 300 lines containing only impl_merge! macro, module declarations, re-exports, and the SystemTheme struct
+  2. detect.rs exists with system_is_dark(), detect_is_dark(), prefers_reduced_motion(), all OnceLock caches, gsettings helpers, xrandr/DPI detection
+  3. pipeline.rs exists with run_pipeline(), from_linux(), from_system_inner(), platform_preset_name() and all from_system() orchestration
+  4. icons.rs exists with load_icon(), load_icon_from_theme(), and icon dispatch logic
+  5. All existing tests pass unchanged -- zero behavior change, purely mechanical extraction
 **Plans**: TBD
 
-### Phase 52: Interactive State Colors
-**Goal**: All 18 widgets that need interactive state colors (hover, active, disabled, focus) have the fields defined in their structs, with inheritance rules in resolve.rs
-**Depends on**: Phase 51
-**Requirements**: SCHEMA-05
+### Phase 62: Validate Codegen
+**Goal**: define_widget_pair! generates per-widget validate extraction methods via ValidateNested trait dispatch, eliminating ~1,600 lines of repetitive boilerplate from validate.rs
+**Depends on**: Phase 61
+**Requirements**: STRUCT-02, STRUCT-03, STRUCT-04
 **Success Criteria** (what must be TRUE):
-  1. All ~70 interactive state color fields from the todo_v0.5.5.md audit exist on their respective widget structs (hover_background, hover_text_color, active_background, disabled_background, etc.)
-  2. Inheritance rules for state colors exist in resolve.rs (disabled_opacity inherits from defaults.disabled_opacity, hover_text_color inherits from font.color where documented)
-  3. All 17 presets compile and load with the new fields (fields are Option, so presets without values still load)
-  4. `pre-release-check.sh` passes (VERIFY-01 gate)
-**Plans**: 2 plans
-Plans:
-- [x] 52-01-PLAN.md — Batch 1: Button, Input, Checkbox, Scrollbar, Slider (18 fields)
-- [x] 52-02-PLAN.md — Batch 2: Tab, List, Splitter, Switch, ComboBox, SegCtrl, Expander, Link (19 fields)
+  1. ValidateNested trait exists with implementations for FontSpec and BorderSpec, enabling uniform type dispatch in macro-generated code
+  2. define_widget_pair! emits a validate_widget() method for each widget pair that extracts Option fields into Resolved fields with range checks
+  3. ThemeDefaults extraction remains hand-written in validate.rs (special DPI, text_scale, icon_sizes handling not suited to codegen)
+  4. validate.rs is under 500 lines total (range checks, construction, defaults extraction, error types)
+  5. All existing tests pass -- cargo expand on ButtonTheme confirms correct generated code before applying to all 25 widgets
+**Plans**: TBD
 
-### Phase 53: Preset Completeness
-**Goal**: All 17 presets have explicit values for text_scale entries and interactive state colors -- no preset relies on runtime computation or safety nets for any field
-**Depends on**: Phase 52
-**Requirements**: PRESET-02, PRESET-03
-**Success Criteria** (what must be TRUE):
-  1. All 17 presets have explicit `[light.text_scale]` and `[dark.text_scale]` sections with size and weight for all 4 entries (caption, section_heading, dialog_title, display) -- the 13 presets that were missing them now have real platform-appropriate values
-  2. All 17 presets have explicit interactive state color values (hover_background, active_background, disabled states) for every widget that defines those fields
-  3. Every preset passes the full resolve() -> validate() pipeline with zero inheritance fallbacks firing for state colors or text_scale
-  4. `pre-release-check.sh` passes (VERIFY-01 gate)
-**Plans**: 5 plans
-Plans:
-- [x] 53-01-PLAN.md — Adwaita + KDE Breeze text_scale and interactive state colors
-- [x] 53-02-PLAN.md — macOS Sonoma + Windows 11 interactive state colors
-- [x] 53-03-PLAN.md — iOS + Material + Catppuccin text_scale and interactive state colors
-- [x] 53-04-PLAN.md — Community presets (nord, dracula, gruvbox, solarized, tokyo-night, one-dark) text_scale and interactive state colors
-- [x] 53-05-PLAN.md — Comprehensive preset verification
-
-### Phase 54: Connector Migration
-**Goal**: Both connectors (gpui and iced) use the new field names, read from BorderSpec and font.color directly, and replace derive.rs color computations with direct theme field reads where the theme now provides explicit values
-**Depends on**: Phase 53
-**Requirements**: CONNECT-01, CONNECT-02, CONNECT-03
-**Success Criteria** (what must be TRUE):
-  1. Both connectors compile against the new ResolvedThemeVariant field names (background_color, text_color, border.corner_radius, font.color, etc.)
-  2. derive.rs hover/active/disabled computations are replaced with direct theme field reads for all fields the theme now provides (hover_background, active_background, disabled states)
-  3. Connector inconsistencies fixed: K-1 (display name uses spec.name), K-2 (gpui from_system returns is_dark), K-3 (iced gets contrast enforcement), K-4 (dead code removed), K-5 (unnecessary clone removed)
-  4. `pre-release-check.sh` passes (VERIFY-01 gate)
-**Plans**: 3 plans
-Plans:
-- [x] 54-01-PLAN.md — GPUI derive.rs replacement with direct theme reads + dead code removal (K-4)
-- [x] 54-02-PLAN.md — GPUI API fixes: display name (K-1), from_system 3-tuple (K-2), clone removal (K-5)
-- [x] 54-03-PLAN.md — Iced WCAG contrast enforcement for status foregrounds (K-3)
-
-### Phase 55: Correctness, Safety, and CI
-**Goal**: All correctness bugs, animation safety issues, and CI gaps identified in the audit are fixed
-**Depends on**: Phase 50 (uses new field names, but independent of resolve/preset/connector phases)
-**Requirements**: CORRECT-01, CORRECT-02, CORRECT-03, CORRECT-04, CORRECT-05, CI-01, CI-02, CI-03, CI-04, CI-05
-**Success Criteria** (what must be TRUE):
-  1. `detect_is_dark()` checks GTK_THEME env var and gtk-3.0/settings.ini as fallback for non-GNOME/non-KDE Linux desktops (C-1)
-  2. `detect_platform()` returns "ios" on `target_os = "ios"` (C-2), and `into_resolved()` has correct `#[must_use]` message (C-3)
-  3. Spinner safety guards in place: width/height > 0 check (S-1), empty frames guard (S-3), zero duration guard (S-4), single-quote viewBox handling (S-5)
-  4. gsettings commands have a timeout to prevent indefinite blocking (R-1)
-  5. CI publish workflow tests gpui connector (P-1), error handling improved (P-2), async-io variants tested (P-3), examples disambiguated (P-4), pre-release.sh has iteration timeout (P-5)
-**Plans**: 3 plans
-Plans:
-- [x] 55-01-PLAN.md — Correctness and reliability fixes (detect_is_dark, detect_platform, #[must_use], gsettings timeout)
-- [x] 55-02-PLAN.md — Spinner safety guards (viewBox parsing, dimension validation, empty frames, duration assertion)
-- [x] 55-03-PLAN.md — CI/publishing gaps (gpui gate, error handling, async-io variants, example rename, pre-release timeout)
-
-### Phase 56: Testing
-**Goal**: Property-based tests verify TOML round-trip and merge correctness, and a programmatic cross-reference catches drift between platform-facts.md and preset values
-**Depends on**: Phase 53
+### Phase 63: KDE Reader Fixture Tests
+**Goal**: KDE reader parsing is fully testable without a running KDE desktop, with fixture files covering all known edge cases
+**Depends on**: Nothing (independent of Phases 61-62)
 **Requirements**: TEST-01, TEST-02
 **Success Criteria** (what must be TRUE):
-  1. Property-based tests (proptest or quickcheck) exist for TOML round-trip serialization, Rgba hex parsing, and merge() semantics -- random theme values survive serialize -> deserialize -> compare
-  2. A test parses platform-facts.md and spot-checks key values against resolved presets for the 4 platform presets (windows-11, macos-sonoma, kde-breeze, adwaita), catching any drift between documentation and actual data
-**Plans**: 2 plans
-Plans:
-- [x] 56-01-PLAN.md — Property-based tests (proptest) for TOML round-trip and merge semantics
-- [x] 56-02-PLAN.md — Platform-facts cross-reference tests for 4 platform presets
+  1. A pure parse_kdeglobals(content: &str) function (or equivalent from_kde_content) exists that accepts raw INI text and returns a ThemeVariant without any filesystem or desktop environment access
+  2. Fixture .ini files exist for: Breeze light, Breeze dark, custom accent color, minimal config (only required groups), missing groups, malformed values, and high DPI configuration
+  3. Each fixture has at least one test asserting specific field values in the parsed ThemeVariant output
+  4. detect_font_dpi logic is separated into a pure INI-parsing function and an I/O function, with the pure part testable via fixture data
+**Plans**: TBD
 
-### Phase 57: Verification and Documentation
-**Goal**: Every item in the v0.5.5 audit is confirmed implemented, all spec docs are synchronized with the final code, and all READMEs and CHANGELOG reflect the new API surface
-**Depends on**: Phase 54, Phase 55, Phase 56
-**Requirements**: VERIFY-01, VERIFY-02, VERIFY-03, DOC-01, DOC-02, DOC-03, DOC-04, DOC-05
+### Phase 64: Cross-Platform Reader Test Separation
+**Goal**: GNOME, Windows, and macOS reader parsing logic is separated from OS-specific API calls, making parsing testable on any platform
+**Depends on**: Nothing (independent of Phases 61-63)
+**Requirements**: TEST-03, TEST-04, TEST-05
 **Success Criteria** (what must be TRUE):
-  1. Line-by-line review of `docs/todo_v0.5.5.md` confirms every actionable item is implemented, with each item checked off or annotated with the resolution
-  2. `property-registry.toml`, `inheritance-rules.toml`, and `platform-facts.md` match the final Rust struct definitions and resolve.rs implementation -- zero contradictions remain (VERIFY-03)
-  3. Widget struct doc comments are accurate (W-2 fixes), hardcoded connector opacity values are documented (K-6), all 4 READMEs updated for new API surface
-  4. CHANGELOG has complete breaking change list with migration notes for every renamed field, removed struct, and changed TOML format
-  5. `pre-release-check.sh` passes as final gate (VERIFY-01)
-**Plans**: 3 plans
-Plans:
-- [x] 57-01-PLAN.md — Verification audit (todo_v0.5.5.md, REQUIREMENTS.md), doc comment fixes (DOC-01), opacity documentation (DOC-02)
-- [x] 57-02-PLAN.md — Spec-code synchronization (VERIFY-03, DOC-03) and README updates (DOC-04)
-- [x] 57-03-PLAN.md — CHANGELOG entry (DOC-05) and final pre-release gate (VERIFY-01)
+  1. GNOME reader has a build_gnome_spec() function (or equivalent) that accepts primitive types (not ashpd types) and returns a ThemeVariant, testable without D-Bus or portal access
+  2. Windows reader has a build_windows_spec() function (or equivalent) that accepts primitive types (not windows crate types) and returns a ThemeVariant, testable on Linux and macOS
+  3. macOS reader has a build_macos_spec() function (or equivalent) that accepts primitive types (not objc2 types) and returns a ThemeVariant, testable on Linux and Windows
+  4. At least one test per reader exercises the pure parsing function with representative input values
+**Plans**: TBD
+
+### Phase 65: ThemeWatcher Core API
+**Goal**: The public on_theme_change() API exists with ThemeWatcher RAII handle and ThemeChanged event type, feature-gated behind `watch`, with the notify dependency wired up
+**Depends on**: Phase 61 (needs module structure for watch/ placement)
+**Requirements**: WATCH-01, WATCH-06
+**Success Criteria** (what must be TRUE):
+  1. on_theme_change() function exists that accepts a callback and returns a ThemeWatcher handle -- dropping the handle stops watching
+  2. ThemeChanged enum exists as a signal-only type (no theme data inside -- callers re-run from_system() on signal)
+  3. The `watch` feature flag gates the entire on_theme_change() API and the notify dependency
+  4. Compiling without the `watch` feature produces no additional dependencies
+**Plans**: TBD
+
+### Phase 66: Linux Watchers
+**Goal**: Theme changes on KDE and GNOME desktops trigger ThemeChanged signals through the watcher API
+**Depends on**: Phase 65
+**Requirements**: WATCH-02, WATCH-03
+**Success Criteria** (what must be TRUE):
+  1. On KDE, changing the color scheme in System Settings triggers a ThemeChanged signal within 1 second (inotify on kdeglobals with 300ms debounce)
+  2. On GNOME, toggling dark mode via Settings triggers a ThemeChanged signal (ashpd portal SettingChanged stream on background thread)
+  3. The KDE watcher watches only specific files (kdeglobals, kcmfontsrc) -- not the entire ~/.config/ directory
+  4. Multiple rapid KDE config writes (as happens during a theme switch) produce a single debounced signal, not a flood
+**Plans**: TBD
+
+### Phase 67: macOS and Windows Watchers
+**Goal**: Theme changes on macOS and Windows trigger ThemeChanged signals through the watcher API
+**Depends on**: Phase 65
+**Requirements**: WATCH-04, WATCH-05
+**Success Criteria** (what must be TRUE):
+  1. On macOS, toggling Appearance in System Settings triggers a ThemeChanged signal (NSDistributedNotificationCenter for AppleInterfaceThemeChangedNotification)
+  2. On Windows, changing the system theme triggers a ThemeChanged signal (UISettings::ColorValuesChanged with COM STA and message pump on watcher thread)
+  3. Both watchers run on dedicated background threads without requiring the caller to provide an event loop
+  4. Dropping the ThemeWatcher handle cleanly stops the background thread on both platforms
+**Plans**: TBD
 
 ## Progress
 
 **Execution Order:**
-Phases execute in numeric order: 49 -> 50 -> 51 -> 52 -> 53 -> 54 -> 55 -> 56 -> 57
-Note: Phase 55 depends only on Phase 50 and can run in parallel with 51-54 if desired.
+Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67
+Note: Phases 62, 63, and 64 can run in parallel after Phase 61 completes (62 depends on 61; 63 and 64 are fully independent). Phases 66 and 67 can run in parallel after Phase 65 completes.
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -274,70 +235,11 @@ Note: Phase 55 depends only on Phase 50 and can run in parallel with 51-54 if de
 | 27-32 | v0.4.0 | 8/8 | Complete | 2026-03-18 |
 | 33-43 | v0.4.1 | 22/22 | Complete | 2026-03-21 |
 | 44-48 | v0.5.0 | 17/17 | Complete | 2026-03-29 |
-| 49. Additive Type Definitions | v0.5.5 | 3/3 | Complete   | 2026-04-06 |
-| 50. Atomic Schema Commit | v0.5.5 | 4/4 | Complete   | 2026-04-07 |
-| 51. Resolution Engine Overhaul | v0.5.5 | 5/5 | Complete   | 2026-04-07 |
-| 52. Interactive State Colors | v0.5.5 | 2/2 | Complete   | 2026-04-07 |
-| 53. Preset Completeness | v0.5.5 | 5/5 | Complete   | 2026-04-07 |
-| 54. Connector Migration | v0.5.5 | 3/3 | Complete   | 2026-04-07 |
-| 55. Correctness, Safety, and CI | v0.5.5 | 3/3 | Complete   | 2026-04-07 |
-| 56. Testing | v0.5.5 | 2/2 | Complete   | 2026-04-07 |
-| 57. Verification and Documentation | v0.5.5 | 3/3 | Complete   | 2026-04-07 |
-| 58. Font pt/px DPI Conversion Fix | v0.5.5 | 3/3 | Complete   | 2026-04-08 |
-| 59. FontSize Compile-Time Unit Safety | v0.5.5 | 3/3 | Complete   | 2026-04-08 |
-| 60. TOML Key Unit Suffixes | v0.5.5 | 5/5 | Complete   | 2026-04-08 |
-
-### Phase 58: Font pt/px DPI Conversion Fix
-**Goal**: Font sizes from OS readers are correctly converted from typographic points to logical pixels using a new font_dpi field, with DPI auto-detected per platform, KDE text_scaling_factor semantics fixed, and all doc comments updated
-**Depends on**: Phase 57
-**Requirements**: FIX-1, FIX-2, FIX-3, FIX-4, FIX-5, FIX-7, FIX-8
-**Success Criteria** (what must be TRUE):
-  1. `ThemeDefaults.font_dpi: Option<f32>` and `ResolvedThemeDefaults.font_dpi: f32` exist, serializable via TOML
-  2. `resolve_font_dpi_conversion()` runs as Phase 1.5 (between defaults-internal and safety-nets), converting all font sizes via `px = pt * font_dpi / 72`
-  3. All four OS readers detect and set font_dpi: KDE (forceFontDPI/Xft.dpi/96), GNOME (Xft.dpi/96), macOS (72), Windows (96)
-  4. KDE `text_scaling_factor` is NOT derived from `forceFontDPI` (Fix 5 — semantics fix)
-  5. `run_pipeline()` propagates font_dpi from the reader to the inactive variant before resolution
-  6. All doc comments updated: FontSpec.size explains pt/px semantics, connector comments no longer say "no pt-to-px conversion"
-  7. Proptest strategy includes font_dpi; `pre-release-check.sh` passes
-**Plans**: 3 plans
-Plans:
-- [x] 58-01-PLAN.md — Data model (font_dpi field) and resolution engine (resolve_font_dpi_conversion)
-- [x] 58-02-PLAN.md — OS reader font_dpi detection (KDE, GNOME, macOS, Windows) and KDE text_scaling_factor fix
-- [x] 58-03-PLAN.md — Pipeline propagation, doc comment updates, proptest, and final verification
-
-### Phase 59: FontSize Compile-Time Unit Safety — completed 2026-04-08
-
-**Goal**: Font sizes use a `FontSize` enum (`Pt(f32)` / `Px(f32)`) with compile-time unit safety, TOML presets use explicit `size_pt` / `size_px` keys, and pt-to-px conversion moves from hidden in-place mutation to type transformation in validate
-**Depends on**: Phase 58
-**Success Criteria** (what must be TRUE):
-  1. `FontSize` enum exists with `Pt(f32)` and `Px(f32)` variants, publicly re-exported from `lib.rs`
-  2. `FontSpec.size` and `TextScaleEntry.size` are `Option<FontSize>` with serde proxy structs mapping to `size_pt`/`size_px` TOML keys
-  3. Phase 1.5 (`resolve_font_dpi_conversion`) is deleted -- conversion happens in `validate()` via `FontSize::to_px(dpi)`
-  4. All 4 OS readers wrap font sizes in `FontSize::Pt(...)`
-  5. All 20 TOML presets use `size_pt` (platform) or `size_px` (community) -- zero bare `size =` keys remain
-  6. `pre-release-check.sh` passes
-**Plans**: 3 plans
-
-Plans:
-- [x] 59-01-PLAN.md — Core type refactoring (FontSize enum, proxy structs, OS readers, resolve, validate)
-- [x] 59-02-PLAN.md — TOML preset renames (20 files) and property-registry.toml update
-- [x] 59-03-PLAN.md — Test updates, Phase 1.5 test rewrites, new FontSize tests, final verification
-
-### Phase 60: TOML Key Unit Suffixes — completed 2026-04-08
-
-**Goal**: All TOML keys for always-pixel dimensional fields have explicit _px suffix, line_height becomes FontSize with _pt/_px suffix in presets, define_widget_pair! macro supports rename syntax, property-registry.toml synced
-**Depends on**: Phase 59
-**Success Criteria** (what must be TRUE):
-  1. `TextScaleEntry.line_height` is `Option<FontSize>` with proxy struct support (`line_height_pt`/`line_height_px`)
-  2. `define_widget_pair!` macro supports `as "toml_name"` syntax; 63 dimensional fields have `#[serde(rename)]`
-  3. All 20 TOML presets use `_px` suffixed keys for always-pixel fields; platform presets use `line_height_pt`, community use `line_height_px`
-  4. All tests pass (451), clippy clean, property-registry.toml synced
-  5. `pre-release-check.sh` passes
-**Plans**: 5 plans
-
-Plans:
-- [x] 60-01-PLAN.md — TextScaleEntry.line_height to Option<FontSize> with proxy struct
-- [x] 60-02-PLAN.md — define_widget_pair! macro rename syntax + 63 serde renames
-- [x] 60-03-PLAN.md — TOML preset key renames (20 files, ~2800 keys)
-- [x] 60-04-PLAN.md — Test fixes, deferred test enablement, property-registry.toml sync
-- [x] 60-05-PLAN.md — Verification (pre-release-check.sh) and spec doc update
+| 49-60 | v0.5.5 | 41/41 | Complete | 2026-04-09 |
+| 61. lib.rs Module Split | v0.5.6 | 0/0 | Not started | - |
+| 62. Validate Codegen | v0.5.6 | 0/0 | Not started | - |
+| 63. KDE Reader Fixture Tests | v0.5.6 | 0/0 | Not started | - |
+| 64. Cross-Platform Reader Test Separation | v0.5.6 | 0/0 | Not started | - |
+| 65. ThemeWatcher Core API | v0.5.6 | 0/0 | Not started | - |
+| 66. Linux Watchers | v0.5.6 | 0/0 | Not started | - |
+| 67. macOS and Windows Watchers | v0.5.6 | 0/0 | Not started | - |

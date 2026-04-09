@@ -62,27 +62,27 @@ Improve internal maintainability (module split, validate codegen, reader testing
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| STRUCT-01 | TBD | Pending |
-| STRUCT-02 | TBD | Pending |
-| STRUCT-03 | TBD | Pending |
-| STRUCT-04 | TBD | Pending |
-| TEST-01 | TBD | Pending |
-| TEST-02 | TBD | Pending |
-| TEST-03 | TBD | Pending |
-| TEST-04 | TBD | Pending |
-| TEST-05 | TBD | Pending |
-| WATCH-01 | TBD | Pending |
-| WATCH-02 | TBD | Pending |
-| WATCH-03 | TBD | Pending |
-| WATCH-04 | TBD | Pending |
-| WATCH-05 | TBD | Pending |
-| WATCH-06 | TBD | Pending |
+| STRUCT-01 | Phase 61 | Pending |
+| STRUCT-02 | Phase 62 | Pending |
+| STRUCT-03 | Phase 62 | Pending |
+| STRUCT-04 | Phase 62 | Pending |
+| TEST-01 | Phase 63 | Pending |
+| TEST-02 | Phase 63 | Pending |
+| TEST-03 | Phase 64 | Pending |
+| TEST-04 | Phase 64 | Pending |
+| TEST-05 | Phase 64 | Pending |
+| WATCH-01 | Phase 65 | Pending |
+| WATCH-02 | Phase 66 | Pending |
+| WATCH-03 | Phase 66 | Pending |
+| WATCH-04 | Phase 67 | Pending |
+| WATCH-05 | Phase 67 | Pending |
+| WATCH-06 | Phase 65 | Pending |
 
 **Coverage:**
-- v0.5.6 requirements: 16 total
-- Mapped to phases: 0
-- Unmapped: 16 ⚠️
+- v0.5.6 requirements: 15 total
+- Mapped to phases: 15
+- Unmapped: 0
 
 ---
 *Requirements defined: 2026-04-09*
-*Last updated: 2026-04-09 after initial definition*
+*Last updated: 2026-04-09 after roadmap creation*
