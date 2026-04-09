@@ -93,7 +93,6 @@ impl ThemeWatcher {
     ///
     /// This constructor is `pub(crate)` for use by platform-specific backends
     /// (implemented in later phases).
-    #[allow(dead_code)] // Used by platform backends in Phase 66/67
     pub(crate) fn new(shutdown_tx: mpsc::Sender<()>, thread: JoinHandle<()>) -> Self {
         Self {
             shutdown_tx: Some(shutdown_tx),
@@ -133,15 +132,36 @@ impl Drop for ThemeWatcher {
 /// # Errors
 ///
 /// Returns [`Error::Unsupported`](crate::Error::Unsupported) if no
-/// platform-specific backend is available (the current state in Phase 65;
-/// backends are added in Phases 66 and 67).
+/// platform-specific backend is available for the current desktop
+/// environment or platform.
 pub fn on_theme_change(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
 ) -> crate::Result<ThemeWatcher> {
-    let _ = callback;
-    Err(crate::Error::Unsupported(
-        "theme watching requires platform-specific backends (not yet implemented)",
-    ))
+    #[cfg(target_os = "linux")]
+    {
+        let de = crate::detect_linux_de(&crate::detect::xdg_current_desktop());
+        match de {
+            #[cfg(all(feature = "kde", feature = "watch"))]
+            crate::LinuxDesktop::Kde => kde::watch_kde(callback),
+
+            #[cfg(all(feature = "portal", feature = "watch"))]
+            crate::LinuxDesktop::Gnome | crate::LinuxDesktop::Budgie => {
+                gnome::watch_gnome(callback)
+            }
+
+            _ => Err(crate::Error::Unsupported(
+                "theme watching not supported for this desktop environment",
+            )),
+        }
+    }
+
+    #[cfg(not(target_os = "linux"))]
+    {
+        let _ = callback;
+        Err(crate::Error::Unsupported(
+            "theme watching not yet implemented for this platform",
+        ))
+    }
 }
 
 #[cfg(test)]
@@ -167,6 +187,8 @@ mod tests {
         assert!(debug_str.contains("ColorSchemeChanged"));
     }
 
+    /// On non-Linux platforms, on_theme_change() always returns Unsupported.
+    #[cfg(not(target_os = "linux"))]
     #[test]
     fn on_theme_change_returns_unsupported() {
         let result = on_theme_change(|_| {});
@@ -174,10 +196,29 @@ mod tests {
         let err = result.unwrap_err();
         match &err {
             crate::Error::Unsupported(msg) => {
-                assert!(msg.contains("platform-specific backends"), "got: {msg}");
+                assert!(msg.contains("not yet implemented"), "got: {msg}");
             }
             other => panic!("expected Unsupported, got: {other:?}"),
         }
+    }
+
+    /// On Linux, on_theme_change() dispatches based on the detected DE.
+    /// In CI (no DE running), XDG_CURRENT_DESKTOP is usually empty/Unknown,
+    /// so we get Unsupported. On a real DE it may succeed or return
+    /// Unavailable. All three outcomes are valid.
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn on_theme_change_dispatches_or_returns_error() {
+        let result = on_theme_change(|_| {});
+        assert!(
+            matches!(
+                &result,
+                Ok(_)
+                    | Err(crate::Error::Unsupported(_))
+                    | Err(crate::Error::Unavailable(_))
+            ),
+            "unexpected result: {result:?}"
+        );
     }
 
     #[test]
