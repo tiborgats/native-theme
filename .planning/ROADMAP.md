@@ -195,10 +195,9 @@ Plans:
   2. Windows reader has a build_windows_spec() function (or equivalent) that accepts primitive types (not windows crate types) and returns a ThemeVariant, testable on Linux and macOS
   3. macOS reader has a build_macos_spec() function (or equivalent) that accepts primitive types (not objc2 types) and returns a ThemeVariant, testable on Linux and Windows
   4. At least one test per reader exercises the pure parsing function with representative input values
-**Plans:** 2 plans
+**Plans:** 1 plan
 Plans:
-- [x] 63-01-PLAN.md — Extract pure from_kde_content_pure function and create 7 fixture .ini files
-- [ ] 63-02-PLAN.md — Integration tests for all fixture scenarios
+- [ ] 64-01-PLAN.md — GNOME pure function extraction + inline tests (Windows/macOS already satisfied)
 
 ### Phase 65: ThemeWatcher Core API
 **Goal**: The public on_theme_change() API exists with ThemeWatcher RAII handle and ThemeChanged event type, feature-gated behind `watch`, with the notify dependency wired up
