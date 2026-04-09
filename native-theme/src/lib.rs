@@ -42,7 +42,7 @@ macro_rules! impl_merge {
             $(option { $($opt_field:ident),* $(,)? })?
             $(soft_option { $($so_field:ident),* $(,)? })?
             $(nested { $($nest_field:ident),* $(,)? })?
-            $(optional_nested { $($on_field:ident),* $(,)? })?
+            $(optional_nested { $($on_field:ident),* $(,)? })*
         }
     ) => {
         impl $struct_name {
@@ -69,7 +69,7 @@ macro_rules! impl_merge {
                         (None, Some(over)) => self.$on_field = Some(over.clone()),
                         _ => {}
                     }
-                )*)?
+                )*)*
             }
 
             /// Returns true if all fields are at their default (None/empty) state.
@@ -78,7 +78,7 @@ macro_rules! impl_merge {
                 $($(&& self.$opt_field.is_none())*)?
                 $($(&& self.$so_field.is_none())*)?
                 $($(&& self.$nest_field.is_empty())*)?
-                $($(&& self.$on_field.as_ref().map_or(true, |v| v.is_empty()))*)?
+                $($(&& self.$on_field.as_ref().map_or(true, |v| v.is_empty()))*)*
             }
         }
     };

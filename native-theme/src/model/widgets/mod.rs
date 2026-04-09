@@ -329,6 +329,8 @@ define_widget_pair! {
         optional_nested {
             /// Menu item font specification.
             font: [FontSpec, ResolvedFontSpec],
+        }
+        border_optional {
             /// Menu border specification.
             border: [BorderSpec, ResolvedBorderSpec],
         }
@@ -467,6 +469,8 @@ define_widget_pair! {
         optional_nested {
             /// Tab font specification.
             font: [FontSpec, ResolvedFontSpec],
+        }
+        border_optional {
             /// Tab border specification.
             border: [BorderSpec, ResolvedBorderSpec],
         }
@@ -491,6 +495,8 @@ define_widget_pair! {
         optional_nested {
             /// Sidebar font specification.
             font: [FontSpec, ResolvedFontSpec],
+        }
+        border_partial {
             /// Sidebar border specification.
             border: [BorderSpec, ResolvedBorderSpec],
         }
@@ -533,6 +539,8 @@ define_widget_pair! {
         optional_nested {
             /// Status bar font specification.
             font: [FontSpec, ResolvedFontSpec],
+        }
+        border_partial {
             /// Status bar border specification.
             border: [BorderSpec, ResolvedBorderSpec],
         }
@@ -792,7 +800,7 @@ define_widget_pair! {
             /// Card background fill.
             background_color: Rgba,
         }
-        optional_nested {
+        border_optional {
             /// Card border specification.
             border: [BorderSpec, ResolvedBorderSpec],
         }
