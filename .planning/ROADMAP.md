@@ -240,7 +240,7 @@ Note: Phases 62, 63, and 64 can run in parallel after Phase 61 completes (62 dep
 | 44-48 | v0.5.0 | 17/17 | Complete | 2026-03-29 |
 | 49-60 | v0.5.5 | 41/41 | Complete | 2026-04-09 |
 | 61. lib.rs Module Split | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
-| 62. Validate Codegen | v0.5.6 | 0/0 | Not started | - |
+| 62. Validate Codegen | v0.5.6 | 1/2 | In Progress|  |
 | 63. KDE Reader Fixture Tests | v0.5.6 | 0/0 | Not started | - |
 | 64. Cross-Platform Reader Test Separation | v0.5.6 | 0/0 | Not started | - |
 | 65. ThemeWatcher Core API | v0.5.6 | 0/0 | Not started | - |
