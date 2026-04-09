@@ -915,4 +915,135 @@ mod tests {
         assert_eq!(family, "Inter");
         assert_eq!(weight, 900);
     }
+
+    // === build_gnome_spec_pure tests (no ashpd types, no I/O) ===
+
+    /// Default GnomePortalData for testing (light, no accent, Cantarell 11, 96 DPI).
+    fn default_gnome_data() -> GnomePortalData {
+        GnomePortalData {
+            is_dark: false,
+            accent_rgb: None,
+            high_contrast: false,
+            reduce_motion: None,
+            font_name: Some("Cantarell 11".to_string()),
+            monospace_font_name: Some("Source Code Pro 10".to_string()),
+            titlebar_font: Some("Cantarell Bold 11".to_string()),
+            text_scaling_factor: Some(1.0),
+            font_dpi: 96.0,
+            overlay_scrolling: Some(true),
+            icon_theme: Some("Adwaita".to_string()),
+            gsettings_high_contrast: None,
+            gsettings_enable_animations: None,
+        }
+    }
+
+    #[test]
+    fn pure_light_scheme_produces_light_variant() {
+        let data = default_gnome_data();
+        let theme = build_gnome_spec_pure(&data).unwrap();
+        assert!(theme.light.is_some(), "light variant should be Some");
+        assert!(theme.dark.is_none(), "dark variant should be None");
+        assert_eq!(theme.name, "GNOME");
+    }
+
+    #[test]
+    fn pure_dark_scheme_produces_dark_variant() {
+        let mut data = default_gnome_data();
+        data.is_dark = true;
+        let theme = build_gnome_spec_pure(&data).unwrap();
+        assert!(theme.dark.is_some(), "dark variant should be Some");
+        assert!(theme.light.is_none(), "light variant should be None");
+        assert_eq!(theme.name, "GNOME");
+    }
+
+    #[test]
+    fn pure_accent_color_propagates_to_three_fields() {
+        let mut data = default_gnome_data();
+        data.accent_rgb = Some((0.2, 0.4, 0.8));
+        let theme = build_gnome_spec_pure(&data).unwrap();
+        let variant = theme.light.as_ref().expect("light variant");
+        let expected = crate::Rgba::from_f32(0.2, 0.4, 0.8, 1.0);
+        assert_eq!(variant.defaults.accent_color, Some(expected));
+        assert_eq!(variant.defaults.selection_background, Some(expected));
+        assert_eq!(variant.defaults.focus_ring_color, Some(expected));
+    }
+
+    #[test]
+    fn pure_high_contrast_sets_flag() {
+        let mut data = default_gnome_data();
+        data.high_contrast = true;
+        let theme = build_gnome_spec_pure(&data).unwrap();
+        let variant = theme.light.as_ref().expect("light variant");
+        assert_eq!(variant.defaults.high_contrast, Some(true));
+    }
+
+    #[test]
+    fn pure_fonts_parsed_correctly() {
+        let mut data = default_gnome_data();
+        data.font_name = Some("Inter Bold 12".to_string());
+        let theme = build_gnome_spec_pure(&data).unwrap();
+        let variant = theme.light.as_ref().expect("light variant");
+        assert_eq!(variant.defaults.font.family.as_deref(), Some("Inter"));
+        assert_eq!(variant.defaults.font.weight, Some(700));
+        assert_eq!(
+            variant.defaults.font.size,
+            Some(FontSize::Pt(12.0))
+        );
+    }
+
+    #[test]
+    fn pure_out_of_range_accent_ignored() {
+        // Build without accent to get baseline
+        let baseline_data = default_gnome_data();
+        let baseline_theme = build_gnome_spec_pure(&baseline_data).unwrap();
+        let baseline_variant = baseline_theme.light.as_ref().expect("light variant");
+        let baseline_accent = baseline_variant.defaults.accent_color;
+
+        // Build with out-of-range accent
+        let mut data = default_gnome_data();
+        data.accent_rgb = Some((1.5, 0.0, 0.0));
+        let theme = build_gnome_spec_pure(&data).unwrap();
+        let variant = theme.light.as_ref().expect("light variant");
+        // Out-of-range accent should NOT override -- result matches baseline
+        assert_eq!(variant.defaults.accent_color, baseline_accent);
+    }
+
+    #[test]
+    fn pure_gsettings_high_contrast_fallback() {
+        let mut data = default_gnome_data();
+        data.high_contrast = false;
+        data.gsettings_high_contrast = Some(true);
+        let theme = build_gnome_spec_pure(&data).unwrap();
+        let variant = theme.light.as_ref().expect("light variant");
+        assert_eq!(variant.defaults.high_contrast, Some(true));
+    }
+
+    #[test]
+    fn pure_reduce_motion_from_portal() {
+        let mut data = default_gnome_data();
+        data.reduce_motion = Some(true);
+        let theme = build_gnome_spec_pure(&data).unwrap();
+        let variant = theme.light.as_ref().expect("light variant");
+        assert_eq!(variant.defaults.reduce_motion, Some(true));
+    }
+
+    #[test]
+    fn pure_reduce_motion_gsettings_fallback() {
+        let mut data = default_gnome_data();
+        data.reduce_motion = None;
+        data.gsettings_enable_animations = Some(false);
+        let theme = build_gnome_spec_pure(&data).unwrap();
+        let variant = theme.light.as_ref().expect("light variant");
+        // enable-animations=false means reduce_motion=true
+        assert_eq!(variant.defaults.reduce_motion, Some(true));
+    }
+
+    #[test]
+    fn pure_overlay_scrolling() {
+        let mut data = default_gnome_data();
+        data.overlay_scrolling = Some(false);
+        let theme = build_gnome_spec_pure(&data).unwrap();
+        let variant = theme.light.as_ref().expect("light variant");
+        assert_eq!(variant.scrollbar.overlay_mode, Some(false));
+    }
 }
