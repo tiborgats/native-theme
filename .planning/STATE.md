@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.6
 milestone_name: Internal Quality & Runtime Watching
-status: verifying
-stopped_at: Completed 65-01-PLAN.md
-last_updated: "2026-04-09T17:46:49.469Z"
+status: executing
+stopped_at: Completed 66-01-PLAN.md
+last_updated: "2026-04-09T19:26:00Z"
 last_activity: 2026-04-09
 progress:
   total_phases: 7
   completed_phases: 5
-  total_plans: 9
-  completed_plans: 9
-  percent: 100
+  total_plans: 11
+  completed_plans: 10
+  percent: 91
 ---
 
 # Project State
@@ -21,16 +21,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-04-09)
 
 **Core value:** Any Rust GUI app can look native on any platform by loading a single theme file or reading live OS settings, without coupling to any specific toolkit.
-**Current focus:** Phase 64 complete — ready for Phase 65
+**Current focus:** Phase 66 in progress — Linux watcher backends
 
 ## Current Position
 
-Phase: 64 of 67 (Cross-Platform Reader Test Separation)
-Plan: 1 of 1 in current phase
-Status: Phase complete — ready for verification
+Phase: 66 of 67 (Linux Watchers)
+Plan: 1 of 2 in current phase (complete)
+Status: Plan 01 complete — watcher backends implemented, Plan 02 pending (dispatch wiring)
 Last activity: 2026-04-09
 
-Progress: [█████████░] 86%
+Progress: [█████████░] 91%
 
 ## Performance Metrics
 
@@ -50,6 +50,7 @@ Progress: [█████████░] 86%
 | Phase 63-kde-reader-fixture-tests P02 | 3min | 2 tasks | 1 files |
 | Phase 64 P01 | 5min | 2 tasks | 1 files |
 | Phase 65-themewatcher-core-api P01 | 3min | 2 tasks | 4 files |
+| Phase 66-linux-watchers P01 | 8min | 2 tasks | 4 files |
 
 ## Accumulated Context
 
@@ -73,6 +74,8 @@ All decisions logged in PROJECT.md Key Decisions table.
 - [Phase 64]: Windows (TEST-04) and macOS (TEST-05) readers already satisfy cross-platform testability -- no code changes needed
 - [Phase 65-01]: ThemeWatcher gets Debug derive (needed for Result::unwrap_err and general usability)
 - [Phase 65-01]: notify crate placed under Linux-only target section (macOS/Windows use existing platform crates)
+- [Phase 66-01]: Added zbus as direct dep with blocking-api feature (ashpd does not enable it); watch feature gates both notify and zbus
+- [Phase 66-01]: Parent-directory inotify watching pattern for KDE (survives QSaveFile atomic renames)
 
 ### Roadmap Evolution
 
@@ -92,6 +95,6 @@ None.
 
 ## Session Continuity
 
-Last session: 2026-04-09T17:46:49.466Z
-Stopped at: Completed 65-01-PLAN.md
+Last session: 2026-04-09T19:26:00Z
+Stopped at: Completed 66-01-PLAN.md
 Resume file: None

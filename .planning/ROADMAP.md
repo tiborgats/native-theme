@@ -221,10 +221,10 @@ Plans:
   2. On GNOME, toggling dark mode via Settings triggers a ThemeChanged signal (ashpd portal SettingChanged stream on background thread)
   3. The KDE watcher watches only specific files (kdeglobals, kcmfontsrc) -- not the entire ~/.config/ directory
   4. Multiple rapid KDE config writes (as happens during a theme switch) produce a single debounced signal, not a flood
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
-- [ ] 63-01-PLAN.md — Extract pure from_kde_content_pure function and create 7 fixture .ini files
-- [ ] 63-02-PLAN.md — Integration tests for all fixture scenarios
+- [x] 66-01-PLAN.md — KDE inotify watcher and GNOME D-Bus portal watcher backends
+- [ ] 66-02-PLAN.md — Wire on_theme_change() dispatch with DE detection and test suite
 
 ### Phase 67: macOS and Windows Watchers
 **Goal**: Theme changes on macOS and Windows trigger ThemeChanged signals through the watcher API
@@ -261,5 +261,5 @@ Note: Phases 62, 63, and 64 can run in parallel after Phase 61 completes (62 dep
 | 63. KDE Reader Fixture Tests | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
 | 64. Cross-Platform Reader Test Separation | v0.5.6 | 1/1 | Complete   | 2026-04-09 |
 | 65. ThemeWatcher Core API | v0.5.6 | 1/1 | Complete   | 2026-04-09 |
-| 66. Linux Watchers | v0.5.6 | 0/0 | Not started | - |
+| 66. Linux Watchers | v0.5.6 | 1/2 | In Progress|  |
 | 67. macOS and Windows Watchers | v0.5.6 | 0/0 | Not started | - |

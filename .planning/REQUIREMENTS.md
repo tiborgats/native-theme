@@ -25,8 +25,8 @@ Improve internal maintainability (module split, validate codegen, reader testing
 ### Runtime Theme Watching
 
 - [x] **WATCH-01**: on_theme_change() callback API with ThemeWatcher RAII handle — signal-only (ThemeChangeEvent), not theme-rebuilding
-- [ ] **WATCH-02**: Linux GNOME watcher via ashpd portal SettingChanged stream on background thread (no async runtime exposed to consumer)
-- [ ] **WATCH-03**: Linux KDE watcher via inotify (notify crate) on kdeglobals with 300ms debounce
+- [x] **WATCH-02**: Linux GNOME watcher via ashpd portal SettingChanged stream on background thread (no async runtime exposed to consumer)
+- [x] **WATCH-03**: Linux KDE watcher via inotify (notify crate) on kdeglobals with 300ms debounce
 - [ ] **WATCH-04**: macOS watcher via NSDistributedNotificationCenter for AppleInterfaceThemeChangedNotification with CFRunLoop on watcher thread
 - [ ] **WATCH-05**: Windows watcher via UISettings::ColorValuesChanged with COM STA initialization and message pump on watcher thread
 - [x] **WATCH-06**: `watch` feature flag gates on_theme_change() API and the `notify` dependency
@@ -72,8 +72,8 @@ Improve internal maintainability (module split, validate codegen, reader testing
 | TEST-04 | Phase 64 | Complete |
 | TEST-05 | Phase 64 | Complete |
 | WATCH-01 | Phase 65 | Complete |
-| WATCH-02 | Phase 66 | Pending |
-| WATCH-03 | Phase 66 | Pending |
+| WATCH-02 | Phase 66 | Complete |
+| WATCH-03 | Phase 66 | Complete |
 | WATCH-04 | Phase 67 | Pending |
 | WATCH-05 | Phase 67 | Pending |
 | WATCH-06 | Phase 65 | Complete |
