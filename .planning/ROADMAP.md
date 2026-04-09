@@ -243,10 +243,10 @@ Plans:
 ### Phase 68: GTK Symbolic Icon Recoloring
 **Goal**: GTK-convention symbolic SVGs are normalized to use `currentColor` so that dark-on-dark icons on GNOME/GTK desktops are correctly recolored by existing connector colorize logic
 **Depends on**: Phase 67
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 
 Plans:
-- [ ] 68-01-PLAN.md — Normalize GTK symbolic SVGs to currentColor with TDD (find_icon refactor, normalize_gtk_symbolic, 9 tests)
+- [x] 68-01-PLAN.md — Normalize GTK symbolic SVGs to currentColor with TDD (find_icon refactor, normalize_gtk_symbolic, 9 tests)
 
 ## Progress
 
@@ -271,4 +271,4 @@ Note: Phases 62, 63, and 64 can run in parallel after Phase 61 completes (62 dep
 | 65. ThemeWatcher Core API | v0.5.6 | 1/1 | Complete   | 2026-04-09 |
 | 66. Linux Watchers | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
 | 67. macOS and Windows Watchers | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
-| 68. GTK Symbolic Icon Recoloring | v0.5.6 | 0/1 | Planned   | - |
+| 68. GTK Symbolic Icon Recoloring | v0.5.6 | 1/1 | Complete   | 2026-04-09 |
