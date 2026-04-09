@@ -130,7 +130,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 ### v0.5.6 Internal Quality & Runtime Watching (Phases 61-67)
 
 - [x] **Phase 61: lib.rs Module Split** - Extract detect, pipeline, icons, and platform modules from the 2,767-line lib.rs monolith (completed 2026-04-09)
-- [ ] **Phase 62: Validate Codegen** - Extend define_widget_pair! to generate validate extraction, reducing validate.rs from ~2,196 to ~500 lines
+- [x] **Phase 62: Validate Codegen** - Extend define_widget_pair! to generate validate extraction, reducing validate.rs from ~2,196 to ~500 lines (completed 2026-04-09)
 - [ ] **Phase 63: KDE Reader Fixture Tests** - Separate KDE parsing from I/O and add fixture-based tests for all edge cases
 - [ ] **Phase 64: Cross-Platform Reader Test Separation** - Separate GNOME, Windows, and macOS reader parsing from OS dependencies
 - [ ] **Phase 65: ThemeWatcher Core API** - Define ThemeWatcher, ThemeChanged, on_theme_change() public API with watch feature flag
@@ -240,7 +240,7 @@ Note: Phases 62, 63, and 64 can run in parallel after Phase 61 completes (62 dep
 | 44-48 | v0.5.0 | 17/17 | Complete | 2026-03-29 |
 | 49-60 | v0.5.5 | 41/41 | Complete | 2026-04-09 |
 | 61. lib.rs Module Split | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
-| 62. Validate Codegen | v0.5.6 | 1/2 | In Progress|  |
+| 62. Validate Codegen | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
 | 63. KDE Reader Fixture Tests | v0.5.6 | 0/0 | Not started | - |
 | 64. Cross-Platform Reader Test Separation | v0.5.6 | 0/0 | Not started | - |
 | 65. ThemeWatcher Core API | v0.5.6 | 0/0 | Not started | - |
