@@ -129,7 +129,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 ### v0.5.6 Internal Quality & Runtime Watching (Phases 61-67)
 
-- [ ] **Phase 61: lib.rs Module Split** - Extract detect, pipeline, icons, and platform modules from the 2,767-line lib.rs monolith
+- [x] **Phase 61: lib.rs Module Split** - Extract detect, pipeline, icons, and platform modules from the 2,767-line lib.rs monolith (completed 2026-04-09)
 - [ ] **Phase 62: Validate Codegen** - Extend define_widget_pair! to generate validate extraction, reducing validate.rs from ~2,196 to ~500 lines
 - [ ] **Phase 63: KDE Reader Fixture Tests** - Separate KDE parsing from I/O and add fixture-based tests for all edge cases
 - [ ] **Phase 64: Cross-Platform Reader Test Separation** - Separate GNOME, Windows, and macOS reader parsing from OS dependencies
@@ -151,10 +151,10 @@ Phase details for milestones v0.1 through v0.5.5 are archived in `.planning/mile
   3. pipeline.rs exists with run_pipeline(), from_linux(), from_system_inner(), platform_preset_name() and all from_system() orchestration
   4. icons.rs exists with load_icon(), load_icon_from_theme(), and icon dispatch logic
   5. All existing tests pass unchanged -- zero behavior change, purely mechanical extraction
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [x] 61-01-PLAN.md — Extract detect.rs and test_util.rs, update cross-module callers
-- [ ] 61-02-PLAN.md — Extract pipeline.rs and icons.rs, trim lib.rs to root module
+- [x] 61-02-PLAN.md — Extract pipeline.rs and icons.rs, trim lib.rs to root module
 
 ### Phase 62: Validate Codegen
 **Goal**: define_widget_pair! generates per-widget validate extraction methods via ValidateNested trait dispatch, eliminating ~1,600 lines of repetitive boilerplate from validate.rs
@@ -239,7 +239,7 @@ Note: Phases 62, 63, and 64 can run in parallel after Phase 61 completes (62 dep
 | 33-43 | v0.4.1 | 22/22 | Complete | 2026-03-21 |
 | 44-48 | v0.5.0 | 17/17 | Complete | 2026-03-29 |
 | 49-60 | v0.5.5 | 41/41 | Complete | 2026-04-09 |
-| 61. lib.rs Module Split | v0.5.6 | 1/2 | In Progress|  |
+| 61. lib.rs Module Split | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
 | 62. Validate Codegen | v0.5.6 | 0/0 | Not started | - |
 | 63. KDE Reader Fixture Tests | v0.5.6 | 0/0 | Not started | - |
 | 64. Cross-Platform Reader Test Separation | v0.5.6 | 0/0 | Not started | - |
