@@ -150,114 +150,248 @@ fn detect_font_dpi() -> f32 {
     96.0
 }
 
+/// Portal + gsettings data using primitive types only.
+///
+/// Constructed from ashpd portal reads + gsettings in production,
+/// or directly in tests for deterministic verification.
+/// No ashpd types, no D-Bus access, no gsettings subprocess calls.
+pub struct GnomePortalData {
+    /// Whether the user prefers a dark color scheme.
+    pub is_dark: bool,
+    /// Accent color as (R, G, B) with components in 0.0..=1.0 (XDG portal spec).
+    /// None means no accent color set.
+    pub accent_rgb: Option<(f64, f64, f64)>,
+    /// Whether high contrast is requested (from portal Contrast::High).
+    pub high_contrast: bool,
+    /// Whether reduced motion is requested. None = not provided by portal.
+    pub reduce_motion: Option<bool>,
+    /// Primary UI font string in GNOME/Pango format (e.g. "Cantarell 11").
+    pub font_name: Option<String>,
+    /// Monospace font string (e.g. "Source Code Pro 10").
+    pub monospace_font_name: Option<String>,
+    /// Window titlebar font string.
+    pub titlebar_font: Option<String>,
+    /// Text scaling factor (e.g. 1.0, 1.25).
+    pub text_scaling_factor: Option<f32>,
+    /// Font DPI from X resources or display hardware.
+    pub font_dpi: f32,
+    /// Whether overlay scrollbars are enabled. None = not provided.
+    pub overlay_scrolling: Option<bool>,
+    /// Icon theme name (e.g. "Adwaita", "Papirus").
+    pub icon_theme: Option<String>,
+    /// High contrast from gsettings fallback (for GNOME < 44).
+    /// Only used when `high_contrast` is false (portal didn't report high contrast).
+    pub gsettings_high_contrast: Option<bool>,
+    /// Reduced motion from gsettings enable-animations fallback.
+    /// Only used when `reduce_motion` is None (portal didn't report).
+    pub gsettings_enable_animations: Option<bool>,
+}
+
+/// Build a sparse ThemeVariant from pre-read portal + gsettings data.
+/// Zero I/O -- all values are pre-read by the caller.
+fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeVariant {
+    let mut variant = crate::ThemeVariant::default();
+
+    // Apply accent color with range validation
+    if let Some((r, g, b)) = data.accent_rgb {
+        if (0.0..=1.0).contains(&r) && (0.0..=1.0).contains(&g) && (0.0..=1.0).contains(&b) {
+            let rgba = crate::Rgba::from_f32(r as f32, g as f32, b as f32, 1.0);
+            apply_accent(&mut variant, &rgba);
+        }
+    }
+
+    // High contrast: portal value first
+    if data.high_contrast {
+        variant.defaults.high_contrast = Some(true);
+    }
+    // gsettings fallback for high-contrast
+    if variant.defaults.high_contrast.is_none() {
+        if let Some(hc) = data.gsettings_high_contrast {
+            variant.defaults.high_contrast = Some(hc);
+        }
+    }
+
+    // ── Fonts (GNOME-01) ────────────────────────────────────────────────
+    // Primary UI font
+    if let Some(ref font_str) = data.font_name {
+        if let Some(fs) = parse_gnome_font_to_fontspec(font_str) {
+            variant.defaults.font = fs;
+        }
+    }
+
+    // Monospace font
+    if let Some(ref mono_str) = data.monospace_font_name {
+        if let Some(fs) = parse_gnome_font_to_fontspec(mono_str) {
+            variant.defaults.mono_font = fs;
+        }
+    }
+
+    // Titlebar font (GNOME-01 extension)
+    if let Some(ref tb_str) = data.titlebar_font {
+        if let Some(fs) = parse_gnome_font_to_fontspec(tb_str) {
+            variant.window.title_bar_font = Some(fs);
+        }
+    }
+
+    // ── Accessibility (GNOME-03 / GNOME-05) ─────────────────────────────
+    // Text scaling factor
+    if let Some(factor) = data.text_scaling_factor {
+        variant.defaults.text_scaling_factor = Some(factor);
+    }
+
+    // Font DPI
+    variant.defaults.font_dpi = Some(data.font_dpi);
+
+    // reduce_motion: portal first, gsettings fallback (GNOME-05)
+    if let Some(rm) = data.reduce_motion {
+        variant.defaults.reduce_motion = Some(rm);
+    }
+    // gsettings fallback: enable-animations (only if portal didn't provide a value)
+    if variant.defaults.reduce_motion.is_none() {
+        if let Some(animations_enabled) = data.gsettings_enable_animations {
+            // enable-animations=false means reduce_motion=true
+            variant.defaults.reduce_motion = Some(!animations_enabled);
+        }
+    }
+
+    // overlay-scrolling -> scrollbar.overlay_mode (GNOME-03)
+    if let Some(overlay) = data.overlay_scrolling {
+        variant.scrollbar.overlay_mode = Some(overlay);
+    }
+
+    // ── Icon theme (GNOME-04) ────────────────────────────────────────────
+    if let Some(ref icon_theme) = data.icon_theme {
+        variant.icon_theme = Some(icon_theme.clone());
+    }
+
+    // ── Dialog button order (project decision) ──────────────────────────
+    variant.dialog.button_order = Some(DialogButtonOrder::PrimaryRight);
+
+    variant
+}
+
+/// Build a GNOME ThemeSpec from pre-read portal + gsettings data.
+///
+/// This is the fully testable entry point: no D-Bus, no gsettings,
+/// no xrdb/xrandr. Loads the Adwaita preset as base, builds a sparse
+/// OS variant from the provided data, and merges it onto the base.
+pub fn build_gnome_spec_pure(data: &GnomePortalData) -> crate::Result<crate::ThemeSpec> {
+    let base = crate::ThemeSpec::preset("adwaita")?;
+    let is_dark = data.is_dark;
+
+    let mut variant = if is_dark {
+        base.dark.unwrap_or_default()
+    } else {
+        base.light.unwrap_or_default()
+    };
+
+    let os_variant = build_gnome_variant_pure(data);
+    variant.merge(&os_variant);
+
+    let theme = if is_dark {
+        crate::ThemeSpec {
+            name: "GNOME".to_string(),
+            light: None,
+            dark: Some(variant),
+            layout: crate::LayoutTheme::default(),
+        }
+    } else {
+        crate::ThemeSpec {
+            name: "GNOME".to_string(),
+            light: Some(variant),
+            dark: None,
+            layout: crate::LayoutTheme::default(),
+        }
+    };
+
+    Ok(theme)
+}
+
 /// Build a sparse ThemeVariant populated only with OS-readable fields.
 ///
 /// This function does NOT embed any Adwaita preset data -- it only sets
 /// fields that the GNOME desktop provides via gsettings and portal data.
 /// The caller merges this sparse variant onto an Adwaita base.
+///
+/// Converts ashpd types to primitives and delegates to [`build_gnome_variant_pure`].
 pub(crate) fn build_gnome_variant(
     scheme: ColorScheme,
     accent: Option<Color>,
     contrast: Contrast,
     reduced_motion: Option<ReducedMotion>,
 ) -> crate::ThemeVariant {
-    let mut variant = crate::ThemeVariant::default();
+    // Convert ashpd types to primitives
+    let accent_rgb = accent.as_ref().and_then(|c| {
+        let (r, g, b) = (c.red(), c.green(), c.blue());
+        Some((r, g, b))
+    });
 
-    // Apply accent color from portal if valid
-    if let Some(color) = accent
-        && let Some(rgba) = portal_color_to_rgba(&color)
-    {
-        apply_accent(&mut variant, &rgba);
-    }
+    let high_contrast = matches!(contrast, Contrast::High);
 
-    // High contrast: portal first (GNOME-05)
-    if matches!(contrast, Contrast::High) {
-        variant.defaults.high_contrast = Some(true);
-    }
-    // gsettings fallback for high-contrast (covers GNOME < 44 without portal support)
-    if variant.defaults.high_contrast.is_none()
-        && let Some(hc_str) = read_gsetting("org.gnome.desktop.a11y.interface", "high-contrast")
-    {
-        match hc_str.as_str() {
-            "true" => variant.defaults.high_contrast = Some(true),
-            "false" => variant.defaults.high_contrast = Some(false),
-            _ => {}
-        }
-    }
+    let reduce_motion = reduced_motion.map(|rm| match rm {
+        ReducedMotion::ReducedMotion => true,
+        ReducedMotion::NoPreference => false,
+    });
 
-    // ── Fonts (GNOME-01) ────────────────────────────────────────────────
-    // Primary UI font
-    if let Some(font_str) = read_gsetting("org.gnome.desktop.interface", "font-name")
-        && let Some(fs) = parse_gnome_font_to_fontspec(&font_str)
-    {
-        variant.defaults.font = fs;
-    }
+    // Read gsettings values (I/O stays here, not in pure function)
+    let font_name = read_gsetting("org.gnome.desktop.interface", "font-name");
+    let monospace_font_name =
+        read_gsetting("org.gnome.desktop.interface", "monospace-font-name");
+    let titlebar_font = read_gsetting("org.gnome.desktop.wm.preferences", "titlebar-font");
 
-    // Monospace font
-    if let Some(mono_str) = read_gsetting("org.gnome.desktop.interface", "monospace-font-name")
-        && let Some(fs) = parse_gnome_font_to_fontspec(&mono_str)
-    {
-        variant.defaults.mono_font = fs;
-    }
+    let text_scaling_factor = read_gsetting("org.gnome.desktop.interface", "text-scaling-factor")
+        .and_then(|s| s.parse::<f32>().ok());
 
-    // Titlebar font (GNOME-01 extension)
-    if let Some(tb_str) = read_gsetting("org.gnome.desktop.wm.preferences", "titlebar-font")
-        && let Some(fs) = parse_gnome_font_to_fontspec(&tb_str)
-    {
-        variant.window.title_bar_font = Some(fs);
-    }
+    let font_dpi = detect_font_dpi();
 
-    // ── Accessibility (GNOME-03 / GNOME-05) ─────────────────────────────
-    // Text scaling factor
-    if let Some(factor_str) = read_gsetting("org.gnome.desktop.interface", "text-scaling-factor")
-        && let Ok(factor) = factor_str.parse::<f32>()
-    {
-        variant.defaults.text_scaling_factor = Some(factor);
-    }
+    let gsettings_high_contrast =
+        read_gsetting("org.gnome.desktop.a11y.interface", "high-contrast").and_then(|s| {
+            match s.as_str() {
+                "true" => Some(true),
+                "false" => Some(false),
+                _ => None,
+            }
+        });
 
-    // Font DPI from Xft.dpi (GNOME uses X resources for font DPI).
-    // detect_font_dpi() handles the Xft.dpi -> 96.0 fallback chain.
-    variant.defaults.font_dpi = Some(detect_font_dpi());
+    let gsettings_enable_animations =
+        read_gsetting("org.gnome.desktop.interface", "enable-animations").and_then(|s| {
+            match s.as_str() {
+                "true" => Some(true),
+                "false" => Some(false),
+                _ => None,
+            }
+        });
 
-    // reduce_motion: portal first, gsettings fallback (GNOME-05)
-    if let Some(rm) = reduced_motion {
-        match rm {
-            ReducedMotion::ReducedMotion => variant.defaults.reduce_motion = Some(true),
-            ReducedMotion::NoPreference => variant.defaults.reduce_motion = Some(false),
-        }
-    }
-    // gsettings fallback: enable-animations (only if portal didn't provide a value)
-    if variant.defaults.reduce_motion.is_none()
-        && let Some(anim_str) = read_gsetting("org.gnome.desktop.interface", "enable-animations")
-    {
-        match anim_str.as_str() {
-            "false" => variant.defaults.reduce_motion = Some(true),
-            "true" => variant.defaults.reduce_motion = Some(false),
-            _ => {}
-        }
-    }
+    let overlay_scrolling =
+        read_gsetting("org.gnome.desktop.interface", "overlay-scrolling").and_then(|s| {
+            match s.as_str() {
+                "true" => Some(true),
+                "false" => Some(false),
+                _ => None,
+            }
+        });
 
-    // overlay-scrolling -> scrollbar.overlay_mode (GNOME-03)
-    if let Some(overlay_str) = read_gsetting("org.gnome.desktop.interface", "overlay-scrolling") {
-        match overlay_str.as_str() {
-            "true" => variant.scrollbar.overlay_mode = Some(true),
-            "false" => variant.scrollbar.overlay_mode = Some(false),
-            _ => {}
-        }
-    }
+    let icon_theme = read_gsetting("org.gnome.desktop.interface", "icon-theme");
 
-    // ── Icon theme (GNOME-04) ────────────────────────────────────────────
-    if let Some(icon_theme) = read_gsetting("org.gnome.desktop.interface", "icon-theme") {
-        variant.icon_theme = Some(icon_theme);
-    }
+    let data = GnomePortalData {
+        is_dark: false, // not used by build_gnome_variant_pure
+        accent_rgb,
+        high_contrast,
+        reduce_motion,
+        font_name,
+        monospace_font_name,
+        titlebar_font,
+        text_scaling_factor,
+        font_dpi,
+        overlay_scrolling,
+        icon_theme,
+        gsettings_high_contrast,
+        gsettings_enable_animations,
+    };
 
-    // ── Dialog button order (project decision) ──────────────────────────
-    variant.dialog.button_order = Some(DialogButtonOrder::PrimaryRight);
-
-    // Color scheme tag for the variant (not a field, but used for merge decision)
     let _ = scheme; // consumed by caller for light/dark selection
 
-    variant
+    build_gnome_variant_pure(&data)
 }
 
 /// Build a ThemeSpec from an Adwaita base, applying portal-provided
