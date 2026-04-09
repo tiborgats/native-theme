@@ -61,7 +61,7 @@ pub(crate) fn watch_kde(
                 Ok(Ok(event)) => {
                     let is_relevant = event.paths.iter().any(|p| {
                         p.file_name()
-                            .map_or(false, |n| watched_names.iter().any(|w| *w == n))
+                            .is_some_and(|n| watched_names.iter().any(|w| *w == n))
                     });
                     if is_relevant && last_fire.elapsed() >= debounce {
                         last_fire = Instant::now();
