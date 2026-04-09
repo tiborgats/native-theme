@@ -166,11 +166,11 @@ Plans:
   3. ThemeDefaults extraction remains hand-written in validate.rs (special DPI, text_scale, icon_sizes handling not suited to codegen)
   4. validate.rs is under 500 lines total (range checks, construction, defaults extraction, error types)
   5. All existing tests pass -- cargo expand on ButtonTheme confirms correct generated code before applying to all 25 widgets
-**Plans:** 3 plans (2 complete, 1 gap closure)
+**Plans:** 3/3 plans complete
 Plans:
 - [x] 62-01-PLAN.md — ValidateNested trait and macro codegen prototype
 - [x] 62-02-PLAN.md — Validate widget extraction rollout for all 25 widgets
-- [ ] 62-03-PLAN.md — Gap closure: extract helpers and per-widget range checks to hit <500 lines
+- [x] 62-03-PLAN.md — Gap closure: extract helpers and per-widget range checks to hit <500 lines
 
 ### Phase 63: KDE Reader Fixture Tests
 **Goal**: KDE reader parsing is fully testable without a running KDE desktop, with fixture files covering all known edge cases
@@ -244,7 +244,7 @@ Note: Phases 62, 63, and 64 can run in parallel after Phase 61 completes (62 dep
 | 44-48 | v0.5.0 | 17/17 | Complete | 2026-03-29 |
 | 49-60 | v0.5.5 | 41/41 | Complete | 2026-04-09 |
 | 61. lib.rs Module Split | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
-| 62. Validate Codegen | v0.5.6 | 2/3 | Gap closure | 2026-04-09 |
+| 62. Validate Codegen | v0.5.6 | 3/3 | Complete   | 2026-04-09 |
 | 63. KDE Reader Fixture Tests | v0.5.6 | 0/0 | Not started | - |
 | 64. Cross-Platform Reader Test Separation | v0.5.6 | 0/0 | Not started | - |
 | 65. ThemeWatcher Core API | v0.5.6 | 0/0 | Not started | - |

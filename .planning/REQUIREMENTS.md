@@ -12,7 +12,7 @@ Improve internal maintainability (module split, validate codegen, reader testing
 - [x] **STRUCT-01**: lib.rs broken into detect.rs, system_theme.rs, icon_loader.rs, macros.rs with lib.rs as pure root (~200 lines)
 - [ ] **STRUCT-02**: define_widget_pair! generates validate extraction methods for all 25 widget pairs via ValidateNested trait dispatch
 - [ ] **STRUCT-03**: ThemeDefaults extraction stays hand-written (special DPI, text_scale, icon_sizes handling)
-- [ ] **STRUCT-04**: validate.rs reduced to <500 lines (range checks + construction + defaults extraction)
+- [x] **STRUCT-04**: validate.rs reduced to <500 lines (range checks + construction + defaults extraction)
 
 ### Platform Reader Testing
 
@@ -65,7 +65,7 @@ Improve internal maintainability (module split, validate codegen, reader testing
 | STRUCT-01 | Phase 61 | Complete |
 | STRUCT-02 | Phase 62 | Pending |
 | STRUCT-03 | Phase 62 | Pending |
-| STRUCT-04 | Phase 62 | Pending |
+| STRUCT-04 | Phase 62 | Complete |
 | TEST-01 | Phase 63 | Pending |
 | TEST-02 | Phase 63 | Pending |
 | TEST-03 | Phase 64 | Pending |
