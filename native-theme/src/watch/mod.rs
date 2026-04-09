@@ -145,7 +145,10 @@ mod tests {
 
     #[test]
     fn theme_change_event_variants_are_distinct() {
-        assert_ne!(ThemeChangeEvent::ColorSchemeChanged, ThemeChangeEvent::Other);
+        assert_ne!(
+            ThemeChangeEvent::ColorSchemeChanged,
+            ThemeChangeEvent::Other
+        );
     }
 
     #[test]

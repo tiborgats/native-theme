@@ -112,12 +112,12 @@ mod resolve;
     feature = "system-icons"
 ))]
 mod spinners;
-/// Runtime theme change watching.
-#[cfg(feature = "watch")]
-pub mod watch;
 /// Shared test infrastructure (ENV_MUTEX for env var serialization).
 #[cfg(test)]
 mod test_util;
+/// Runtime theme change watching.
+#[cfg(feature = "watch")]
+pub mod watch;
 
 pub use color::{ParseColorError, Rgba};
 pub use error::{Error, ThemeResolutionError};
