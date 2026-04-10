@@ -19,15 +19,18 @@
 
 # AI/tool configuration
 .agent/
+.augment/
 .claude/
-.mempalace/
-.mcp.json
 .codex/
 .cursor/
 .gemini/
 .github/
+.kilo/
+.mempalace/
+.mcp.json
 .opencode/
 .planning/
+.trae/
 .windsurf/
 .paul
 
