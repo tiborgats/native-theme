@@ -1575,12 +1575,19 @@ impl Showcase {
         let app_menu_bar = AppMenuBar::new(window, cx);
 
         // Start theme watcher for runtime dark/light toggle detection.
+        // Skip in screenshot mode — the watcher's background thread cleanup
+        // races with the Cocoa runtime on macOS CI, causing SIGTRAP on exit.
         let theme_change_flag = Arc::new(AtomicBool::new(false));
-        let flag_clone = theme_change_flag.clone();
-        let _theme_watcher = native_theme::on_theme_change(move |_event| {
-            flag_clone.store(true, Ordering::Release);
-        })
-        .ok();
+        let is_screenshot = std::env::args().any(|a| a == "--screenshot");
+        let _theme_watcher = if is_screenshot {
+            None
+        } else {
+            let flag_clone = theme_change_flag.clone();
+            native_theme::on_theme_change(move |_event| {
+                flag_clone.store(true, Ordering::Release);
+            })
+            .ok()
+        };
 
         let fg = cx.theme().foreground;
         let mut showcase = Self {
