@@ -68,12 +68,10 @@ pub(crate) fn watch_windows(
         };
 
         // Create the event handler that fires the callback on color changes.
-        let handler = TypedEventHandler::new(
-            move |_sender, _args| {
-                callback(ThemeChangeEvent::ColorSchemeChanged);
-                Ok(())
-            },
-        );
+        let handler = TypedEventHandler::new(move |_sender, _args| {
+            callback(ThemeChangeEvent::ColorSchemeChanged);
+            Ok(())
+        });
 
         // Subscribe to ColorValuesChanged. On failure, clean up and return.
         let token = match settings.ColorValuesChanged(&handler) {
