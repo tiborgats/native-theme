@@ -833,7 +833,7 @@ pub fn custom_icon_to_image_source(
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<ImageSource> {
-    let data = load_custom_icon(provider, icon_set)?;
+    let data = load_custom_icon(provider, icon_set, None)?;
     to_image_source(&data, color, size)
 }
 
@@ -2204,7 +2204,7 @@ mod freedesktop_mapping_tests {
         let mut missing = Vec::new();
         for name in ALL_ICON_NAMES {
             let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Kde);
-            if native_theme::load_freedesktop_icon_by_name(fd_name, theme, 24).is_none() {
+            if native_theme::load_freedesktop_icon_by_name(fd_name, theme, 24, None).is_none() {
                 missing.push(format!("{} (not found)", fd_name));
             }
         }
@@ -2222,7 +2222,7 @@ mod freedesktop_mapping_tests {
         let mut missing = Vec::new();
         for name in ALL_ICON_NAMES {
             let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Gnome);
-            if native_theme::load_freedesktop_icon_by_name(fd_name, "Adwaita", 24).is_none() {
+            if native_theme::load_freedesktop_icon_by_name(fd_name, "Adwaita", 24, None).is_none() {
                 missing.push(format!("{} (not found)", fd_name));
             }
         }

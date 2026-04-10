@@ -421,11 +421,15 @@ fn load_all_icons(
         IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeIcons
     );
 
+    // Foreground color for GTK symbolic icon recoloring (Adwaita, Yaru, etc.)
+    let tc = resolved.defaults.text_color;
+    let fg = Some([tc.r, tc.g, tc.b]);
+
     // For system icon sets, pre-load the Material set so we can detect fallbacks
     let material_icons: Vec<Option<IconData>> = if is_system_set {
         IconRole::ALL
             .iter()
-            .map(|role| native_theme::load_icon(*role, IconSet::Material))
+            .map(|role| native_theme::load_icon(*role, IconSet::Material, None))
             .collect()
     } else {
         vec![]
@@ -437,9 +441,9 @@ fn load_all_icons(
         .map(|(i, &role)| {
             let data = match choice {
                 IconSetChoice::Default(theme) if set == IconSet::Freedesktop => {
-                    native_theme::load_icon_from_theme(role, set, theme)
+                    native_theme::load_icon_from_theme(role, set, theme, fg)
                 }
-                _ => native_theme::load_icon(role, set),
+                _ => native_theme::load_icon(role, set, fg),
             };
             let name = native_theme::icon_name(role, set);
             let source = match (&data, is_system_set) {
@@ -861,10 +865,12 @@ impl State {
             self.current_choice = ThemeChoice::OsTheme(self.default_label.clone());
         }
 
-        // Sync icon set: determine choice and available options from the theme
+        // Sync icon set: determine choice and available options from the theme.
+        // Always reload icons — the resolved text_color may have changed (light↔dark)
+        // even when the icon set choice is the same.
         let (new_choice, new_choices) =
             resolve_icon_choice(&self.current_resolved, has_toml_icon_theme);
-        if new_choice != self.icon_set_choice || new_choices != self.icon_set_choices {
+        {
             self.loaded_icons = load_all_icons(&new_choice, &self.current_resolved);
             let anim_set = match &new_choice {
                 IconSetChoice::Default(_) => self.current_resolved.icon_set,

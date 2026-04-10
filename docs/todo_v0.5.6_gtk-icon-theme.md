@@ -195,25 +195,15 @@ Document that GTK-convention icon themes need manual recoloring by the consumer.
 
 **Option D (new variant) is disproportionate.** It's a breaking API change that affects all consumers just to carry a boolean signal ("needs recoloring") that can be resolved at load time. The complexity fans out to every consumer. Eliminated.
 
-**Option C (fg_color parameter) is architecturally awkward.** The caller needs to know the foreground color before loading icons, but icon loading is typically part of theme initialization. It's also a breaking change. Eliminated.
+**Option B (connector-level fix)** seems simpler but has a fatal flaw: connectors cannot distinguish symbolic from non-symbolic icons. The `colorize_monochrome_svg` function would blindly replace `#2e3436` in ALL freedesktop SVGs, including non-symbolic multi-color icons that might legitimately use that color. The connector receives `IconData::Svg(bytes)` with no metadata about the icon's origin. Eliminated.
 
-### Remaining: Option A vs Option B
+### Remaining: Option A vs Option C
 
-**Option B (connector-level fix)** seems simpler but has a fatal flaw: connectors cannot distinguish symbolic from non-symbolic icons. The `colorize_monochrome_svg` function would blindly replace `#2e3436` in ALL freedesktop SVGs, including non-symbolic multi-color icons that might legitimately use that color. The connector receives `IconData::Svg(bytes)` with no metadata about the icon's origin.
+**Option A (normalize to `currentColor`)** was implemented first, but it has a critical flaw: showcase examples (and any app that renders system icons "as-is" without colorization) rely on SVGs being self-contained with the correct colors. Breeze icons are self-contained because `breeze-dark/` SVGs embed a CSS `<style>` block with `color: #fcfcfc` that the SVG renderer resolves `currentColor` through. Adwaita icons normalized to bare `currentColor` have no such CSS cascade, so SVG renderers default `currentColor` to black — invisible on dark backgrounds. The fix would require every consumer to always apply colorization to system icons, which contradicts the existing design where system icons are rendered as-is.
 
-**Option A (normalize in `freedesktop.rs`)** operates at the point where we KNOW whether the icon is symbolic (because `find_icon` explicitly tries the `-symbolic` suffix first). This is the only place in the pipeline with that information. Normalizing at this point:
+**Option C (fg_color parameter)** mirrors what GTK itself does: replace foreground placeholders with the widget's CSS `color` property (the text/foreground color) at load time. The caller provides the foreground color from the resolved theme (`defaults.text_color`), and the SVG is returned with the correct color baked in — self-contained, like Breeze icons. No connector colorization needed.
 
-1. **Eliminates the ambiguity problem** -- only `-symbolic` SVGs are modified
-2. **Normalizes GTK convention to Breeze convention** -- after normalization, all symbolic SVGs use `currentColor`, which is the universal standard
-3. **Leverages existing infrastructure** -- connectors already handle `currentColor`
-4. **Requires no API changes** -- the function signatures, return types, and `IconData` enum are unchanged
-5. **Is safe for direct users** -- `currentColor` defaults to black in SVG renderers, which is visually identical to `#2e3436` on light backgrounds
-
-### Why `currentColor` is the right replacement target (not a specific color)
-
-Replacing `#2e3436` directly with a specific foreground color (e.g., `#ffffff` for dark themes) would require knowing the theme variant at icon load time. But `load_freedesktop_icon` is a pure icon-loading function -- it shouldn't need theme context.
-
-`currentColor` is the CSS/SVG standard for "inherit the foreground color from context." By normalizing to `currentColor`, we make the SVG self-describing: it says "color me with whatever foreground you're using." The connector's existing colorize path handles the rest.
+The API change (`Option<[u8; 3]>` parameter) is small and the sole maintainer can update all callers. The chicken-and-egg concern from the original analysis ("you need the theme to colorize icons") is not a real problem: by the time an app loads icons, the theme is already resolved and the text color is known.
 
 ### Which foreground colors to replace
 
@@ -231,10 +221,7 @@ Replacing `#2e3436` directly with a specific foreground color (e.g., `#ffffff` f
 <!-- Before normalization -->
 <path fill="#2e3434" fill-opacity="0.34902"/>
 
-<!-- After normalization -->
-<path fill="currentColor" fill-opacity="0.34902"/>
-
-<!-- After connector colorize (dark theme, fg=#ffffff) -->
+<!-- After normalization (dark theme, fg=#ffffff) -->
 <path fill="#ffffff" fill-opacity="0.34902"/>
 ```
 
@@ -242,263 +229,55 @@ The `fill-opacity` attribute is separate from `fill` and is untouched by string 
 
 ### Conclusion
 
-**Option A is the best solution.** It fixes the problem at the source, requires no API changes, normalizes GTK symbolic icons to the universal `currentColor` standard, and leverages existing connector infrastructure.
+**Option C is the best solution.** It mirrors GTK's own recoloring mechanism (replace foreground placeholders with the widget's text color at load time), produces self-contained SVGs that render correctly without connector colorization, and works with the existing showcase design where system icons are rendered as-is.
 
 
-## 5. Implementation Proposal
+## 5. Implementation (actual)
 
-### Step 1: Refactor `find_icon` to return symbolic flag
+### Approach: Option C — `fg_color` parameter with direct color replacement
 
-**File:** `native-theme/src/freedesktop.rs`
+Instead of normalizing to `currentColor` (Option A), the load functions accept `fg_color: Option<[u8; 3]>` and replace GTK foreground placeholders with the caller's theme text color directly. This mirrors GTK's own behavior: replace placeholder fills with the widget's CSS `color` property at load time.
 
-Change `find_icon` return type from `Option<PathBuf>` to `Option<(PathBuf, bool)>` where the `bool` indicates whether the icon is symbolic.
+When `fg_color` is `None`, falls back to `currentColor` for backward compatibility.
 
-```rust
-fn find_icon(name: &str, theme: &str, size: u16) -> Option<(PathBuf, bool)> {
-    // First try: symbolic variant
-    let symbolic = format!("{name}-symbolic");
-    if let Some(path) = freedesktop_icons::lookup(&symbolic)
-        .with_theme(theme)
-        .with_size(size)
-        .force_svg()
-        .find()
-    {
-        return Some((path, true));
-    }
-    // Second try: plain name
-    // If the name itself already ends with "-symbolic" (caller passed it
-    // explicitly via load_freedesktop_icon_by_name), mark as symbolic.
-    freedesktop_icons::lookup(name)
-        .with_theme(theme)
-        .with_size(size)
-        .force_svg()
-        .find()
-        .map(|path| (path, name.ends_with("-symbolic")))
-}
-```
+### Changes
 
-### Step 2: Add `normalize_gtk_symbolic` function
+**`native-theme/src/freedesktop.rs`:**
+- `find_icon` returns `Option<(PathBuf, bool)>` (symbolic flag)
+- `normalize_gtk_symbolic(svg_bytes, replacement)` takes a replacement string (hex color or `currentColor`)
+- `load_freedesktop_icon(role, size, fg_color)` accepts `Option<[u8; 3]>`
+- `load_freedesktop_icon_by_name(name, theme, size, fg_color)` accepts `Option<[u8; 3]>`
+- `fg_to_replacement()` helper converts `Option<[u8; 3]>` to hex string or `"currentColor"`
 
-**File:** `native-theme/src/freedesktop.rs`
+**`native-theme/src/icons.rs`:**
+- `load_icon(role, set, fg_color)` threads `fg_color` to freedesktop path
+- `load_icon_from_theme(role, set, theme, fg_color)` threads `fg_color`
+- `load_system_icon_by_name(name, set, fg_color)` threads `fg_color`
+- `load_custom_icon(provider, set, fg_color)` threads `fg_color`
 
-```rust
-/// The GTK symbolic icon foreground placeholder colors.
-///
-/// GTK's icon rendering pipeline replaces these at paint time.
-/// We normalize them to `currentColor` so that downstream colorize
-/// logic (which already handles `currentColor`) can apply the correct
-/// foreground color for the active theme variant.
-///
-/// Measured from `/usr/share/icons/Adwaita/symbolic/`:
-/// - `#2e3436`: 483 fill attrs + 8 CSS style fills + 1 stroke (Tango Aluminium 6)
-/// - `#2e3434`: 118 files (68 primary, 50 with fill-opacity)
-/// - `#222222`: 27 occurrences (primary + dimmed)
-/// - `#474747`: 50 emote/legacy icons (monochrome, never mixed with above)
-const GTK_FG_COLORS: &[&str] = &["#2e3436", "#2e3434", "#222222", "#474747"];
-
-/// Normalize a GTK-convention symbolic SVG to use `currentColor`.
-///
-/// GTK symbolic icons use hardcoded dark fill colors (e.g., `#2e3436`)
-/// that GTK replaces at render time. Since native-theme returns raw SVG
-/// bytes, we normalize these placeholders to `currentColor` so that
-/// existing connector colorize logic handles the recoloring.
-///
-/// Handles three placement patterns found in Adwaita:
-/// - XML attributes: `fill="#2e3436"`, `stroke="#2e3436"`
-/// - CSS style attributes: `style="fill:#2e3436;..."`
-///
-/// Only foreground placeholder colors are replaced. Semantic colors
-/// (success green `#33d17a`, warning orange `#ff7800`, error red
-/// `#e01b24`/`#ed333b`) are preserved.
-///
-/// Returns the original bytes unchanged if the SVG already uses
-/// `currentColor` (Breeze-style) or is not valid UTF-8.
-fn normalize_gtk_symbolic(svg_bytes: Vec<u8>) -> Vec<u8> {
-    let Ok(svg_str) = std::str::from_utf8(&svg_bytes) else {
-        return svg_bytes;
-    };
-
-    // Already uses currentColor (Breeze convention) -- no normalization needed
-    if svg_str.contains("currentColor") {
-        return svg_bytes;
-    }
-
-    // Check if any GTK foreground colors are present
-    if !GTK_FG_COLORS.iter().any(|c| svg_str.contains(c)) {
-        return svg_bytes;
-    }
-
-    let mut result = svg_str.to_string();
-    for color in GTK_FG_COLORS {
-        // XML attributes: fill="..." and stroke="..."
-        result = result.replace(
-            &format!("fill=\"{color}\""),
-            "fill=\"currentColor\"",
-        );
-        result = result.replace(
-            &format!("stroke=\"{color}\""),
-            "stroke=\"currentColor\"",
-        );
-        // CSS style attributes: fill:#2e3436 (8 icons use this form)
-        result = result.replace(
-            &format!("fill:{color}"),
-            "fill:currentColor",
-        );
-        result = result.replace(
-            &format!("stroke:{color}"),
-            "stroke:currentColor",
-        );
-    }
-    result.into_bytes()
-}
-```
-
-### Step 3: Apply normalization in load functions
-
-**File:** `native-theme/src/freedesktop.rs`
-
-Update `load_freedesktop_icon` and `load_freedesktop_icon_by_name`:
-
-```rust
-pub fn load_freedesktop_icon(role: IconRole, size: u16) -> Option<IconData> {
-    let theme = detect_theme();
-    let name = icon_name(role, IconSet::Freedesktop)?;
-    let (path, is_symbolic) = find_icon(name, &theme, size)?;
-    let bytes = std::fs::read(&path).ok()?;
-    let bytes = if is_symbolic { normalize_gtk_symbolic(bytes) } else { bytes };
-    Some(IconData::Svg(bytes))
-}
-
-pub fn load_freedesktop_icon_by_name(name: &str, theme: &str, size: u16) -> Option<IconData> {
-    let (path, is_symbolic) = find_icon(name, theme, size)?;
-    let bytes = std::fs::read(&path).ok()?;
-    let bytes = if is_symbolic { normalize_gtk_symbolic(bytes) } else { bytes };
-    Some(IconData::Svg(bytes))
-}
-```
-
-### Step 4: Update connector documentation
-
-**Files:** `connectors/native-theme-iced/src/icons.rs`, `connectors/native-theme-gpui/src/icons.rs`
-
-Update the `to_svg_handle` / `to_image_source` doc comments:
-
-```
-Before: "Pass `None` for multi-color system icons to preserve their native palette."
-After:  "Pass the theme's foreground/icon color for monochrome and symbolic icons (Material,
-         Lucide, and freedesktop symbolic). Pass `None` only for multi-color non-symbolic
-         system icons to preserve their native palette."
-```
-
-### Step 5: Add tests
-
-**File:** `native-theme/src/freedesktop.rs`
-
-```rust
-#[test]
-fn normalize_gtk_symbolic_replaces_2e3436() {
-    let svg = br#"<svg><path fill="#2e3436" d="M0 0"/></svg>"#.to_vec();
-    let result = normalize_gtk_symbolic(svg);
-    let s = std::str::from_utf8(&result).unwrap();
-    assert!(s.contains(r#"fill="currentColor""#));
-    assert!(!s.contains("#2e3436"));
-}
-
-#[test]
-fn normalize_gtk_symbolic_replaces_2e3434_preserves_opacity() {
-    let svg = br#"<svg><path fill="#2e3434" fill-opacity="0.35" d="M0 0"/></svg>"#.to_vec();
-    let result = normalize_gtk_symbolic(svg);
-    let s = std::str::from_utf8(&result).unwrap();
-    assert!(s.contains(r#"fill="currentColor""#));
-    assert!(s.contains(r#"fill-opacity="0.35""#));
-}
-
-#[test]
-fn normalize_gtk_symbolic_replaces_222222() {
-    let svg = br#"<svg><path fill="#222222" d="M0 0"/></svg>"#.to_vec();
-    let result = normalize_gtk_symbolic(svg);
-    let s = std::str::from_utf8(&result).unwrap();
-    assert!(s.contains(r#"fill="currentColor""#));
-    assert!(!s.contains("#222222"));
-}
-
-#[test]
-fn normalize_gtk_symbolic_replaces_474747() {
-    let svg = br#"<svg><path fill="#474747" d="M0 0"/></svg>"#.to_vec();
-    let result = normalize_gtk_symbolic(svg);
-    let s = std::str::from_utf8(&result).unwrap();
-    assert!(s.contains(r#"fill="currentColor""#));
-    assert!(!s.contains("#474747"));
-}
-
-#[test]
-fn normalize_gtk_symbolic_replaces_stroke() {
-    let svg = br#"<svg><path stroke="#2e3436" fill="none" d="M1 1l14 14"/></svg>"#.to_vec();
-    let result = normalize_gtk_symbolic(svg);
-    let s = std::str::from_utf8(&result).unwrap();
-    assert!(s.contains(r#"stroke="currentColor""#));
-    assert!(!s.contains("#2e3436"));
-}
-
-#[test]
-fn normalize_gtk_symbolic_replaces_css_style_fill() {
-    let svg = br#"<svg><path style="fill:#2e3436;fill-opacity:1" d="M0 0"/></svg>"#.to_vec();
-    let result = normalize_gtk_symbolic(svg);
-    let s = std::str::from_utf8(&result).unwrap();
-    assert!(s.contains("fill:currentColor"));
-    assert!(!s.contains("#2e3436"));
-}
-
-#[test]
-fn normalize_gtk_symbolic_preserves_semantic_colors() {
-    let svg = br#"<svg><path fill="#2e3436"/><path fill="#ff7800"/><path fill="#33d17a"/><path fill="#e01b24"/></svg>"#.to_vec();
-    let result = normalize_gtk_symbolic(svg);
-    let s = std::str::from_utf8(&result).unwrap();
-    assert!(s.contains("currentColor"));
-    assert!(s.contains("#ff7800"), "warning color must be preserved");
-    assert!(s.contains("#33d17a"), "success color must be preserved");
-    assert!(s.contains("#e01b24"), "error color must be preserved");
-}
-
-#[test]
-fn normalize_gtk_symbolic_skips_currentcolor_svgs() {
-    let svg = br#"<svg><defs><style>.ColorScheme-Text{color:#232629}</style></defs><path fill="currentColor"/></svg>"#.to_vec();
-    let original = svg.clone();
-    let result = normalize_gtk_symbolic(svg);
-    assert_eq!(result, original, "Breeze-style SVGs should pass through unchanged");
-}
-
-#[test]
-fn normalize_gtk_symbolic_skips_non_gtk_svgs() {
-    let svg = br#"<svg><path fill="red"/></svg>"#.to_vec();
-    let original = svg.clone();
-    let result = normalize_gtk_symbolic(svg);
-    assert_eq!(result, original, "non-GTK SVGs should pass through unchanged");
-}
-```
+**Showcase examples:**
+- Extract `fg_color` from `resolved.defaults.text_color` (iced) or `original_font.color` (gpui)
+- Pass to all icon loading calls
+- System icons now have correct foreground baked in; no connector colorization needed
 
 ### What this does NOT change
 
 - The `IconData` enum
-- Any public function signatures
-- Any connector function signatures
 - Semantic icon colors (success, warning, error)
 - Non-symbolic freedesktop icons (gated by `is_symbolic` from `find_icon`)
 - Breeze-style icons (already use `currentColor`, detected and skipped)
-- Bundled icons (Material, Lucide) -- unaffected
-- macOS / Windows icon loading -- unaffected
-- `load_freedesktop_spinner` -- Adwaita has no `process-working` icon; themes that do (Breeze) already use `currentColor`
+- Bundled icons (Material, Lucide) -- `fg_color` ignored for non-freedesktop sets
+- macOS / Windows icon loading -- `fg_color` ignored
+- `load_freedesktop_spinner` -- not modified, uses direct `freedesktop_icons::lookup`
 
 ### Verification checklist
 
-1. Adwaita `edit-copy-symbolic.svg`: `fill="#2e3436"` becomes `fill="currentColor"`
-2. Breeze `edit-copy-symbolic.svg`: unchanged (already has `currentColor`)
-3. Adwaita `camera-switch-symbolic.svg`: primary `#2e3436` becomes `currentColor`, secondary `#2e3434 fill-opacity="0.34902"` becomes `currentColor fill-opacity="0.34902"`
-4. Adwaita `mail-mark-important-symbolic.svg`: `#2e3436` becomes `currentColor`, `#ff7800` stays `#ff7800`
-5. Adwaita `face-smile-symbolic.svg`: `#474747` becomes `currentColor`
-6. Adwaita `night-light-disabled-symbolic.svg`: `stroke="#2e3436"` becomes `stroke="currentColor"`
-7. Adwaita `view-sort-ascending-rtl-symbolic.svg`: `style="fill:#2e3436;..."` becomes `style="fill:currentColor;..."`
-8. Non-symbolic icon (e.g., Breeze `edit-copy.svg`): unchanged (is_symbolic=false)
-9. `load_freedesktop_icon_by_name("edit-copy-symbolic", ...)`: name ends with `-symbolic`, normalization applied
-10. `cargo test --features watch,kde,portal-tokio,system-icons` passes
-11. `./pre-release-check.sh` passes
+1. Adwaita `edit-copy-symbolic.svg` on dark: `fill="#2e3436"` becomes `fill="#ffffff"` (or whatever the theme text color is)
+2. Breeze `edit-copy-symbolic.svg`: unchanged (already has `currentColor` with CSS-defined color)
+3. Adwaita `camera-switch-symbolic.svg`: primary `#2e3436` replaced, secondary `#2e3434 fill-opacity="0.34902"` replaced with opacity preserved
+4. Adwaita `mail-mark-important-symbolic.svg`: foreground replaced, `#ff7800` stays `#ff7800`
+5. Adwaita `face-smile-symbolic.svg`: `#474747` replaced
+6. Non-symbolic icon: unchanged (is_symbolic=false)
+7. `fg_color=None`: falls back to `currentColor` (backward compatible)
+8. `cargo test --features watch,kde,portal-tokio,system-icons` passes
+9. `./pre-release-check.sh` passes

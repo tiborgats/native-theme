@@ -73,7 +73,7 @@ pub fn custom_icon_to_image_handle(
     provider: &(impl IconProvider + ?Sized),
     icon_set: native_theme::IconSet,
 ) -> Option<iced_core::image::Handle> {
-    let data = load_custom_icon(provider, icon_set)?;
+    let data = load_custom_icon(provider, icon_set, None)?;
     to_image_handle(&data)
 }
 
@@ -87,7 +87,7 @@ pub fn custom_icon_to_svg_handle(
     icon_set: native_theme::IconSet,
     color: Option<iced_core::Color>,
 ) -> Option<iced_core::svg::Handle> {
-    let data = load_custom_icon(provider, icon_set)?;
+    let data = load_custom_icon(provider, icon_set, None)?;
     to_svg_handle(&data, color)
 }
 
