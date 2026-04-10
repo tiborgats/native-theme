@@ -37,13 +37,13 @@ Or read the OS theme at runtime:
 ```rust,ignore
 use native_theme_gpui::from_system;
 
-let (theme, resolved) = from_system()?;
+let (theme, resolved, is_dark) = from_system()?;
 // `theme` is the gpui-component Theme, `resolved` has per-widget metrics
 ```
 
 ## What Gets Mapped
 
-The connector translates native-theme's 22 semantic color roles into
+The connector translates native-theme's 24 semantic color roles into
 gpui-component's 108-field `ThemeColor` struct. The mapping works in layers:
 
 - **Direct mappings** (~30 fields) -- background, foreground, accent, border,
@@ -116,7 +116,7 @@ call it on every frame tick.
 
 | Module | Purpose |
 |--------|---------|
-| `colors` | Maps 22 semantic colors to 108 ThemeColor fields |
+| `colors` | Maps 24 semantic colors to 108 ThemeColor fields |
 | `config` | Maps fonts and geometry to ThemeConfig |
 | `derive` | Hover/active state color derivation helpers |
 | `icons` | Icon role mapping, image source conversion, and animated icon playback |

@@ -6,7 +6,7 @@ Cross-platform native theme detection and loading for Rust GUI applications.
 
 ## Overview
 
-**native-theme** provides a toolkit-agnostic theme data model with 22 semantic
+**native-theme** provides a toolkit-agnostic theme data model with 24 semantic
 color roles, 25 per-widget resolved themes, bundled TOML presets, and optional
 OS theme reading. It gives your Rust GUI application access to consistent,
 structured theme data regardless of which toolkit you use.
@@ -34,9 +34,8 @@ For fully resolved themes (all fields guaranteed populated), use the
 resolve + validate pipeline:
 
 ```rust,ignore
-let mut variant = theme.pick_variant(true).unwrap().clone();
-variant.resolve();               // Apply inheritance rules
-let resolved = variant.validate().unwrap(); // -> ResolvedThemeVariant
+let variant = theme.into_variant(true).expect("preset has dark variant");
+let resolved = variant.into_resolved()?; // -> ResolvedThemeVariant
 let accent = resolved.defaults.accent_color; // Rgba (not Option)
 ```
 
@@ -104,10 +103,10 @@ toolkit-specific theme types:
 - `native-theme-gpui` -- gpui + gpui-component toolkit connector
 
 For other toolkits, map `ResolvedThemeVariant` fields directly. After
-resolve + validate, all fields are guaranteed populated:
+resolution, all fields are guaranteed populated:
 
 ```rust,ignore
-let resolved = variant.validate().unwrap(); // ResolvedThemeVariant
+let resolved = variant.into_resolved()?; // ResolvedThemeVariant
 let bg = resolved.defaults.background_color;     // Rgba
 let accent = resolved.defaults.accent_color;     // Rgba
 let font = &resolved.defaults.font.family;       // &String
@@ -140,7 +139,7 @@ native_theme_build::generate_icons("icons/icons.toml")
 include!(concat!(env!("OUT_DIR"), "/app_icon.rs"));
 
 use native_theme::{load_custom_icon, IconSet};
-let icon = load_custom_icon(&AppIcon::PlayPause, IconSet::Material);
+let icon = load_custom_icon(&AppIcon::PlayPause, IconSet::Material, None);
 ```
 
 See the [`native-theme-build` docs](https://docs.rs/native-theme-build) for the
@@ -197,6 +196,7 @@ Toolkit connectors provide playback helpers:
 | `system-icons` | Platform icon theme lookup with bundled fallback | All |
 | `material-icons` | Bundle Material Symbols SVGs | All |
 | `lucide-icons` | Bundle Lucide SVGs | All |
+| `watch` | Runtime theme change watching via filesystem/D-Bus | Linux |
 | `svg-rasterize` | SVG-to-RGBA rasterization via resvg | All |
 
 By default, no features are enabled. The preset API (`ThemeSpec::preset()`,

@@ -99,7 +99,7 @@
 //!
 //! // The generated enum implements IconProvider:
 //! use native_theme::load_custom_icon;
-//! let icon_data = load_custom_icon(&AppIcon::PlayPause, native_theme::IconSet::Material);
+//! let icon_data = load_custom_icon(&AppIcon::PlayPause, native_theme::IconSet::Material, None);
 //! ```
 //!
 //! # What Gets Generated

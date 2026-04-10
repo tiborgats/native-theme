@@ -48,7 +48,7 @@
 //!
 //! | Category | Mapped | Notes |
 //! |----------|--------|-------|
-//! | `defaults` colors | All 20+ | background, foreground, accent, danger, etc. |
+//! | `defaults` colors | All 24 | background, foreground, accent, danger, etc. |
 //! | `defaults` geometry | radius, radius_lg, shadow | Font family/size also mapped |
 //! | `button` | 4 of 14 | primary_background/foreground, background/foreground (colors only) |
 //! | `tab` | 5 of 9 | All colors, sizing not mapped |

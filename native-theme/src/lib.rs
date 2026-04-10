@@ -267,9 +267,9 @@ impl SystemTheme {
     /// let system = native_theme::SystemTheme::from_system().unwrap();
     /// let overlay = native_theme::ThemeSpec::from_toml(r##"
     ///     [light.defaults]
-    ///     accent = "#ff6600"
+    ///     accent_color = "#ff6600"
     ///     [dark.defaults]
-    ///     accent = "#ff6600"
+    ///     accent_color = "#ff6600"
     /// "##).unwrap();
     /// let customized = system.with_overlay(&overlay).unwrap();
     /// // customized.active().defaults.accent_color is now #ff6600

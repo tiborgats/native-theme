@@ -7,6 +7,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.5.6] - Unreleased
 
+### Added
+
+#### native-theme (core)
+- **Runtime theme watcher** (`watch` feature): `ThemeWatcher` struct, `ThemeChangeEvent` enum, and `on_theme_change()` async entry point for receiving live OS theme changes
+  - KDE backend: inotify watching on `~/.config/kdeglobals` with parent-directory watching and debounce
+  - GNOME backend: D-Bus portal `SettingChanged` signal via `zbus::blocking`
+  - macOS backend: `NSDistributedNotificationCenter` via CFRunLoop
+  - Windows backend: COM STA `UISettings.ColorValuesChanged` event
+- **GTK symbolic icon recoloring**: `fg_color: Option<[u8; 3]>` parameter added to `load_icon()`, `load_custom_icon()`, `load_icon_from_theme()`, and `load_system_icon_by_name()` for tinting monochrome SVGs
+- GTK symbolic icon normalization: viewBox/dimension inference, `currentColor` fill injection, class attribute stripping
+- `GnomePortalData` struct and `build_gnome_spec_pure()` pure function for testable GNOME reader
+- `from_kde_content_pure()` pure function for testable KDE reader
+- 7 KDE fixture `.ini` files for deterministic testing
+- 10 inline tests for `build_gnome_spec_pure`
+- KDE edge-case fixture tests
+- `ValidateNested` trait and `validate_widget!()` codegen in `define_widget_pair!` macro
+
+### Changed
+
+#### native-theme (core)
+- `lib.rs` module split: extracted `detect.rs`, `pipeline.rs`, `icons.rs` into standalone modules
+- `validate.rs` refactored: per-widget range checks moved to generated `check_ranges()` methods, helpers extracted to `validate_helpers.rs`
+- Widget validation now uses generated `validate_widget()` calls instead of hand-written extraction
+- Showcase examples now include runtime theme watcher integration
+- Documentation: color role count updated from 22 to 24, `watch` feature added to feature tables, stale API examples corrected
+
 ## [0.5.5] - 2026-04-09
 
 ### Breaking Changes
@@ -137,7 +163,7 @@ font = { color = "#000000" }
 ### Added
 
 #### native-theme (core)
-- `BorderSpec` / `ResolvedBorderSpec` sub-structs for typed border configuration (color, corner_radius, line_width, shadow_enabled, padding_horizontal, padding_vertical)
+- `BorderSpec` / `ResolvedBorderSpec` sub-structs for typed border configuration (color, corner_radius, corner_radius_lg, line_width, opacity, shadow_enabled, padding_horizontal, padding_vertical)
 - `FontStyle` enum (`Normal`, `Italic`, `Oblique`) with serde lowercase rename
 - `LayoutTheme` / `ResolvedLayoutTheme` replacing `ThemeSpacing` (widget_gap, container_margin, window_margin, section_gap)
 - ~70 interactive state color fields across 18 widgets (hover_background, hover_text_color, active_background, disabled_background, etc.)
@@ -222,7 +248,7 @@ font = { color = "#000000" }
    - `resolved.defaults.background` -> `resolved.defaults.background_color`
    - `resolved.button.foreground` -> `resolved.button.font.color`
 
-## [0.5.4] - 2026-04-03
+## [0.5.4] - 2026-04-04
 
 ### Added
 

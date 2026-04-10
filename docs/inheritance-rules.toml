@@ -320,8 +320,7 @@ gnome    = "preset"
 [no_inheritance]
 fields = [
     "switch.unchecked_background",     # each platform has distinct off-track color
-                                       # BUG: resolve.rs inherits from defaults.muted_color,
-                                       # contradicting this spec. Should be removed from resolve().
+                                       # (FIXED: resolve.rs no longer inherits from defaults.muted_color)
     "switch.track_radius",             # derived from half track height (pill shape)
     "link.underline_enabled",          # boolean convention differs per platform
     "link.background_color",           # only Windows HyperlinkButton has a value

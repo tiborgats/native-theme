@@ -45,7 +45,7 @@ Include and use the generated code:
 include!(concat!(env!("OUT_DIR"), "/app_icon.rs"));
 
 use native_theme::{load_custom_icon, IconSet};
-let icon_data = load_custom_icon(&AppIcon::PlayPause, IconSet::Material);
+let icon_data = load_custom_icon(&AppIcon::PlayPause, IconSet::Material, None);
 ```
 
 ## TOML Schema

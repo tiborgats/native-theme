@@ -16,7 +16,7 @@ This guide covers the update procedure for each platform.
 
 **Files to update:**
 
-- `native-theme/src/kde/metrics.rs` -- the `breeze_widget_metrics()` function
+- `native-theme/src/kde/metrics.rs` -- the `populate_widget_sizing()` function
   (button sizes, checkbox dimensions, scrollbar widths, etc.)
 - `native-theme/src/kde/mod.rs` -- KDE reader logic (rarely changes between versions)
 - `native-theme/src/presets/kde-breeze.toml` -- bundled preset data
@@ -25,13 +25,13 @@ This guide covers the update procedure for each platform.
 
 - Changed default values in `breezemetrics.h` for button height, checkbox size,
   scrollbar width, slider groove thickness, menu item height, etc.
-- New constants added to `breezemetrics.h` that map to existing `WidgetMetrics` fields.
+- New constants added to `breezemetrics.h` that map to existing per-widget sizing fields.
 - Changes to color group names or key names in `kdeglobals` format.
 
 **Process:**
 
 1. Clone or pull the latest Breeze source from <https://invent.kde.org/plasma/breeze>.
-2. Compare the new `kstyle/breezemetrics.h` with the values in `breeze_widget_metrics()`.
+2. Compare the new `kstyle/breezemetrics.h` with the values in `populate_widget_sizing()`.
 3. Update any changed constants in `native-theme/src/kde/metrics.rs`.
 4. Regenerate the preset TOML if widget_metrics values changed:
    `cargo test -p native-theme --features kde` to verify.

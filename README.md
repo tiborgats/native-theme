@@ -8,7 +8,7 @@ Cross-platform native theme detection and loading for Rust GUI applications.
 [![License: MIT OR Apache-2.0 OR 0BSD](https://img.shields.io/badge/license-MIT%20%7C%20Apache--2.0%20%7C%200BSD-blue.svg)](#license)
 [![MSRV: 1.94.0](https://img.shields.io/badge/MSRV-1.94.0-blue.svg)](https://blog.rust-lang.org/2026/03/05/Rust-1.94.0.html)
 
-A toolkit-agnostic theme data model with 22 semantic color roles, 25 per-widget
+A toolkit-agnostic theme data model with 24 semantic color roles, 25 per-widget
 themes, 16 bundled TOML presets (light + dark), and optional OS theme readers
 for Linux, macOS, and Windows.
 
@@ -81,11 +81,10 @@ use native_theme_gpui::to_theme;
 
 let nt = ThemeSpec::preset("dracula").unwrap();
 let is_dark = true;
-if let Some(variant) = nt.pick_variant(is_dark) {
-    let resolved = variant.clone().into_resolved().unwrap();
-    let theme = to_theme(&resolved, "My App", is_dark);
-    // Use as your gpui-component theme
-}
+let variant = nt.into_variant(is_dark).ok_or("no variant").unwrap();
+let resolved = variant.into_resolved().unwrap();
+let theme = to_theme(&resolved, "My App", is_dark);
+// Use as your gpui-component theme
 ```
 
 Run the gpui showcase (full widget gallery with color map inspector):
@@ -107,11 +106,10 @@ use native_theme::ThemeSpec;
 use native_theme_iced::to_theme;
 
 let nt = ThemeSpec::preset("dracula").unwrap();
-if let Some(variant) = nt.pick_variant(true) {
-    let resolved = variant.clone().into_resolved().unwrap();
-    let theme = to_theme(&resolved, "My App");
-    // Use as your iced application theme
-}
+let variant = nt.into_variant(true).ok_or("no variant").unwrap();
+let resolved = variant.into_resolved().unwrap();
+let theme = to_theme(&resolved, "My App");
+// Use as your iced application theme
 ```
 
 Run the iced showcase (full widget gallery with live theme switching):
@@ -214,6 +212,7 @@ macOS deps.
 | `portal-async-io` | GNOME portal reader (async-io) |
 | `macos` | macOS reader (NSAppearance) |
 | `windows` | Windows reader (UISettings) |
+| `watch` | Runtime theme change watching via filesystem/D-Bus |
 | `system-icons` | Platform icon theme lookup with bundled fallback |
 | `material-icons` | Bundle Material Symbols SVGs |
 | `lucide-icons` | Bundle Lucide SVGs |
