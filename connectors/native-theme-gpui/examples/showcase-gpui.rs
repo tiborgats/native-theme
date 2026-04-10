@@ -62,6 +62,8 @@ use gpui_component::{
     v_flex,
 };
 use std::collections::HashMap;
+use std::sync::Arc;
+use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use native_theme::{
@@ -890,6 +892,14 @@ struct Showcase {
 
     /// Error message from theme loading, displayed as a banner in the UI.
     error_message: Option<String>,
+
+    // Theme watcher (runtime dark/light toggle detection)
+    /// Flag set by the ThemeWatcher background thread when the OS theme changes.
+    theme_change_flag: Arc<AtomicBool>,
+    /// RAII guard keeping the theme watcher background thread alive.
+    _theme_watcher: Option<native_theme::ThemeWatcher>,
+    /// Set by the watcher polling task; checked in render() where window access is available.
+    pending_system_theme_change: bool,
 }
 
 impl Showcase {
@@ -1564,6 +1574,14 @@ impl Showcase {
         ]);
         let app_menu_bar = AppMenuBar::new(window, cx);
 
+        // Start theme watcher for runtime dark/light toggle detection.
+        let theme_change_flag = Arc::new(AtomicBool::new(false));
+        let flag_clone = theme_change_flag.clone();
+        let _theme_watcher = native_theme::on_theme_change(move |_event| {
+            flag_clone.store(true, Ordering::Release);
+        })
+        .ok();
+
         let fg = cx.theme().foreground;
         let mut showcase = Self {
             theme_select,
@@ -1628,10 +1646,14 @@ impl Showcase {
                 })
             },
             error_message: initial_error,
+            theme_change_flag,
+            _theme_watcher,
+            pending_system_theme_change: false,
         };
         showcase.rebuild_icon_caches(fg);
         showcase.rebuild_animation_caches();
         showcase.start_animation_timer(cx);
+        showcase.start_theme_watcher(cx);
         showcase
     }
 
@@ -1718,6 +1740,31 @@ impl Showcase {
         self.rebuild_icon_caches(fg);
         self.rebuild_animation_caches();
         self.start_animation_timer(cx);
+    }
+
+    /// Spawn a background task that polls the theme change flag and triggers
+    /// a theme rebuild when the OS color scheme changes at runtime.
+    fn start_theme_watcher(&self, cx: &mut Context<Self>) {
+        if self._theme_watcher.is_none() {
+            return;
+        }
+        let flag = self.theme_change_flag.clone();
+        cx.spawn(async move |this, cx| {
+            loop {
+                Timer::after(Duration::from_millis(500)).await;
+                if flag.swap(false, Ordering::AcqRel) {
+                    let Ok(()) = this.update(cx, |this, cx| {
+                        if matches!(this.color_mode, ColorMode::System) {
+                            this.pending_system_theme_change = true;
+                            cx.notify();
+                        }
+                    }) else {
+                        break;
+                    };
+                }
+            }
+        })
+        .detach();
     }
 
     fn set_color_mode(&mut self, mode: ColorMode, window: &mut Window, cx: &mut Context<Self>) {
@@ -5190,6 +5237,28 @@ impl Showcase {
 
 impl Render for Showcase {
     fn render(&mut self, window: &mut Window, cx: &mut Context<Self>) -> impl IntoElement {
+        // Apply deferred system theme change (set by the watcher polling task).
+        // Done here because apply_theme_by_name needs window access.
+        if self.pending_system_theme_change {
+            self.pending_system_theme_change = false;
+            native_theme::invalidate_caches();
+            self.is_dark = ColorMode::System.is_dark();
+            let name = self.current_theme_name.clone();
+            self.apply_theme_by_name(&name, window, cx);
+            // Rebuild the color mode dropdown items and selected value to
+            // reflect the new state (e.g. "System (Dark)" → "System (Light)").
+            let labels: Vec<SharedString> = [ColorMode::System, ColorMode::Light, ColorMode::Dark]
+                .iter()
+                .map(|m| SharedString::from(m.label()))
+                .collect();
+            let selected: SharedString = self.color_mode.label().into();
+            let delegate = SearchableVec::new(labels);
+            self.dark_mode_select.update(cx, |select, cx| {
+                select.set_items(delegate, window, cx);
+                select.set_selected_value(&selected, window, cx);
+            });
+        }
+
         let fi = format_font_info(&self.original_font, &self.original_mono_font);
         let theme = cx.theme().clone();
 

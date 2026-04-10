@@ -23,6 +23,7 @@ iced = { version = "0.14", features = ["svg", "image", "tokio"] }
 native-theme = { workspace = true, features = [
     "material-icons",
     "lucide-icons",
+    "watch",
 ] }
 image = { version = "0.25.10", default-features = false, features = ["png"] }
 

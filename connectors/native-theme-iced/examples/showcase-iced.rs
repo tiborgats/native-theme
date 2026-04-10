@@ -24,7 +24,8 @@ use native_theme::{
 use native_theme_iced::icons::{
     AnimatedSvgHandles, animated_frames_to_svg_handles, spin_rotation_radians, to_svg_handle,
 };
-use std::sync::OnceLock;
+use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::{Arc, OnceLock};
 use std::time::{Duration, Instant};
 
 // ---------------------------------------------------------------------------
@@ -615,6 +616,12 @@ struct State {
 
     /// Error message from theme loading, displayed as a banner in the UI.
     error_message: Option<String>,
+
+    // Theme watcher (runtime dark/light toggle detection)
+    /// Flag set by the ThemeWatcher background thread when the OS theme changes.
+    theme_change_flag: Arc<AtomicBool>,
+    /// RAII guard keeping the theme watcher background thread alive.
+    _theme_watcher: Option<native_theme::ThemeWatcher>,
 }
 
 impl Default for State {
@@ -689,6 +696,14 @@ impl Default for State {
 
         let default_label = format!("default ({})", system_preset);
 
+        // Start theme watcher for runtime dark/light toggle detection.
+        let theme_change_flag = Arc::new(AtomicBool::new(false));
+        let flag_clone = theme_change_flag.clone();
+        let _theme_watcher = native_theme::on_theme_change(move |_event| {
+            flag_clone.store(true, Ordering::Release);
+        })
+        .ok();
+
         let mut state = Self {
             current_choice: ThemeChoice::OsTheme(default_label.clone()),
             current_theme: theme,
@@ -728,6 +743,8 @@ impl Default for State {
             screenshot_path: None,
             screenshot_countdown: 0,
             error_message: initial_error,
+            theme_change_flag,
+            _theme_watcher,
         };
 
         // Apply CLI overrides (if any)
@@ -940,6 +957,9 @@ enum Message {
     // Screenshot
     ScreenshotTick,
     ScreenshotCaptured(Vec<u8>, u32, u32),
+
+    // Theme watcher
+    ThemeWatcherTick,
 }
 
 // ---------------------------------------------------------------------------
@@ -1240,6 +1260,12 @@ fn update_inner(state: &mut State, message: Message) {
             state.animation_start = astart;
             state.reduced_motion = rm;
             state.animated_static = ast;
+        }
+        Message::ThemeWatcherTick => {
+            if state.theme_change_flag.swap(false, Ordering::AcqRel) {
+                native_theme::invalidate_caches();
+                state.rebuild_theme();
+            }
         }
         Message::AnimationTick => {
             let tick_duration = Duration::from_millis(50);
@@ -3049,6 +3075,12 @@ fn subscription(state: &State) -> Subscription<Message> {
         && (!state.animated_frames.is_empty() || !state.animated_spins.is_empty())
     {
         subs.push(iced::time::every(Duration::from_millis(50)).map(|_| Message::AnimationTick));
+    }
+
+    // Theme watcher: poll the atomic flag set by on_theme_change() callback.
+    // Only active when color mode is System and the watcher started successfully.
+    if matches!(state.color_mode, ColorMode::System) && state._theme_watcher.is_some() {
+        subs.push(iced::time::every(Duration::from_millis(500)).map(|_| Message::ThemeWatcherTick));
     }
 
     // Screenshot countdown timer

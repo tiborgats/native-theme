@@ -34,6 +34,7 @@ native-theme = { workspace = true, features = ["windows"] }
 
 [dev-dependencies]
 gpui-component-assets = "0.5.1"
+native-theme = { workspace = true, features = ["watch"] }
 
 [target.'cfg(target_os = "macos")'.dev-dependencies]
 objc2 = "0.6.4"

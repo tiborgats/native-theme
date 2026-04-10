@@ -464,7 +464,23 @@ fn detect_is_dark_inner() -> bool {
             }
         }
 
-        // gsettings color-scheme (with 2-second timeout)
+        // On KDE, read kdeglobals directly — gsettings color-scheme is
+        // synced by xdg-desktop-portal-kde and can be stale or inverted.
+        #[cfg(feature = "kde")]
+        {
+            let de = detect_linux_de(&xdg_current_desktop());
+            if matches!(de, LinuxDesktop::Kde) {
+                let path = crate::kde::kdeglobals_path();
+                if let Ok(content) = std::fs::read_to_string(&path) {
+                    let mut ini = crate::kde::create_kde_parser();
+                    if ini.read(content).is_ok() {
+                        return crate::kde::is_dark_theme(&ini);
+                    }
+                }
+            }
+        }
+
+        // gsettings color-scheme (reliable on GNOME / GTK-based DEs)
         if let Some(val) =
             run_gsettings_with_timeout(&["get", "org.gnome.desktop.interface", "color-scheme"])
         {
@@ -476,7 +492,9 @@ fn detect_is_dark_inner() -> bool {
             }
         }
 
-        // Fallback: read KDE's kdeglobals background luminance
+        // Fallback: read KDE's kdeglobals background luminance (non-KDE DE
+        // or when the KDE feature is disabled and the gsettings check above
+        // returned no result).
         #[cfg(feature = "kde")]
         {
             let path = crate::kde::kdeglobals_path();
