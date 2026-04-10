@@ -13,7 +13,7 @@ use core::ptr::NonNull;
 use std::sync::mpsc;
 
 use block2::RcBlock;
-use objc2::runtime::ProtocolObject;
+use objc2::runtime::{AnyObject, ProtocolObject};
 use objc2_core_foundation::{CFRetained, CFRunLoop};
 use objc2_foundation::{
     NSDistributedNotificationCenter, NSNotification, NSNotificationName, NSObjectProtocol, NSString,
@@ -118,7 +118,8 @@ pub(crate) fn watch_macos(
         // addObserverForName_object_queue_usingBlock and conforms to
         // NSObjectProtocol. We cast to &AnyObject via AsRef.
         unsafe {
-            center.removeObserver(observer.as_ref().as_ref());
+            let observer_any: &AnyObject = (*observer).as_ref();
+            center.removeObserver(observer_any);
         }
     });
 
