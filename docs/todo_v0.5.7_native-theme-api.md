@@ -4123,3 +4123,610 @@ These are verified facts on the ground. Ship the P0 cohort as a
 coherent v0.5.7 release. The refinements in §31 (new options,
 strengthened recommendations, feature-flag cleanup) slot into
 this cohort without disrupting its shape.
+
+---
+
+## 32. Fifth-pass review: merged critical refinements
+
+This section records a fifth ultrathink pass under the explicit
+"backward compatibility does not matter; I want the perfect API"
+directive. It re-verifies prior claims against the current tree,
+corrects one self-mistake on the §12 crate-root count, surfaces
+additional options on §1, §4, §6, §8, §13, and §25, narrows the
+§2/§14 codegen scope to a concrete minimum-viable slice, and
+strengthens the M1+D5+A4 bundling and §6a cleanup checklists.
+
+This section runs parallel to **doc 2 §L** which hosts doc-2-specific
+fifth-pass findings (L1–L4 new issues, A2/A3 re-verification with a
+specific source-code self-admission, and cross-doc sequencing).
+
+### 32.1 Methodology
+
+Same approach as §30 and §31: independently re-read each existing
+recommendation without consulting prior merge-review notes, then
+reconciled. Every claim was independently verified against the
+current tree at exact file:line positions. The pass was conservative
+about adding new issues and aggressive about strengthening or
+narrowing recommendations that still hedge.
+
+### 32.2 Verification re-confirmations (and one self-correction)
+
+- **A2/A3 shared-vec pattern** — personally re-read
+  `native-theme/src/resolve/validate_helpers.rs:217-282`. The
+  comment at lines 218-221 explicitly acknowledges the conflation:
+  `"These push a descriptive message to the `errors` vec (reusing
+  the same error-collection pattern as require()) so that all
+  problems -- missing fields AND out-of-range values -- are reported
+  in a single pass."` `check_positive` at lines 233-238 pushes
+  strings like `"{path} must be a finite positive number, got
+  {value}"`; `require` at line 31 pushes just `path`. The
+  `ThemeResolutionError.missing_fields: Vec<String>` field holds
+  two distinct string shapes. **A2/A3 verified with higher
+  confidence than earlier passes.** See doc 2 §L.3 for the full
+  re-verification.
+
+- **§12 crate-root count self-correction.** During this pass I
+  initially estimated "~78 items" on a quick recount and flagged
+  §31.1's "~91" as inflated. On careful re-count of
+  `native-theme/src/lib.rs:122-203` (with the 52-item `pub use
+  model::{...}` block counted individually): 2 color + 2 error +
+  52 model + 4 model::icons helpers + 2 freedesktop + 2 gnome +
+  1 kde + 1 macos + 1 rasterize + 2 sficons + 1 windows + 2
+  winicons + 3 watch + 2 detect types + 5 detect fns + 6 icons
+  fns + 2 pipeline + 1 `Result` + 1 `SystemTheme` struct = **92
+  items** (within ±1 of §31.1's "~89-91"). **My "~78" estimate
+  was wrong; §31.1's count is accurate.** The argument for §12
+  partitioning is if anything stronger than earlier passes
+  suggested — 92 items is well beyond any reasonable flat-root
+  scanning threshold.
+
+- **M1 four-source cross-verification.** Re-ran
+  `grep button_order=` across `native-theme/src/presets/`. All
+  four macOS TOMLs (`macos-sonoma.toml:254,586` +
+  `macos-sonoma-live.toml:126,285`) carry `"primary_right"`.
+  Combined with `platform-facts.md:1481,1802` (Apple HIG citation)
+  and `resolve/inheritance.rs:108` (`PrimaryRight` for non-Linux),
+  **M1 is verified against four independent sources.**
+  `macos.rs:504-505` is the sole disagreement across the entire
+  tree. This is a higher bar than §30.3's three-source
+  verification.
+
+### 32.3 New options added to existing problems
+
+#### §1 — Option H: preserve `SystemTheme` unchanged
+
+§1 Option B is a five-rename package. The fifth rename (`SystemTheme
+→ DetectedTheme` or `ThemeBundle`) is the weakest link: both
+replacement names add a new word users must learn while `SystemTheme`
+is already exactly what the type represents (*the theme as the
+system currently has it*).
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| H | **Keep `SystemTheme` unchanged** while adopting B's other four renames (via §31.2 G: `ThemeSpec → Theme`, `ThemeVariant → ThemeMode`, `ResolvedThemeVariant → ResolvedTheme`, `ResolvedThemeDefaults → ResolvedDefaults`). | Zero rename churn on the type most users reach for at the top of `main.rs`. `SystemTheme` is already accurate — literally the detected system theme. `DetectedTheme` adds a preamble adjective for no semantic gain; `ThemeBundle` is actively misleading (the type's salient property is *"from the OS"*, not *"holds two variants"*). Saves one rename, one import update per user, and resolves §28 open question 1. | Readers who skim the crate root see a bare `SystemTheme` that lacks the parallel structure of the four `…Theme` renames. The parallelism win is cosmetic. |
+
+**Recommendation:** adopt **H**. Drop the fifth rename from §1
+Option B. Replace §28 open question 1 with a note that the rename
+was reconsidered and `SystemTheme` stays. This is the only rename
+in the original B that fails the "no rename without a semantic
+win" test.
+
+**Confidence:** medium-high. Taste call at the margin; the
+cost/benefit inverts once `SystemTheme` is evaluated on its own
+merits rather than by analogy to the other four.
+
+#### §4 — Option G: `pick(ColorMode)` replaces `pick(bool)`
+
+§4 Option C (drop `active()`, keep `pick(is_dark: bool)`) is
+correct on the staleness-trap axis but leaves a `bool` argument
+in the public API. `bool` arguments are a well-known anti-pattern
+at call sites:
+
+```rust
+sys.pick(true);   // true = dark? light? ambiguous at call site
+sys.pick(false);  // same question on every call
+```
+
+Under "perfect API" the fix is obvious: replace `bool` with a
+self-documenting enum. This composes naturally with §31.2 G's
+`ThemeVariant → ThemeMode` rename — once theme data is per-mode,
+the mode discriminator wants its own type too.
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| G | **`pick(mode: ColorMode)`** where `#[non_exhaustive] pub enum ColorMode { Light, Dark }`. `SystemTheme.is_dark: bool` becomes `SystemTheme.mode: ColorMode`. Callers write `sys.pick(ColorMode::Dark)` for explicit, `sys.pick(sys.mode)` for captured, `sys.pick(ColorMode::from_os())` for live. | Eliminates the `bool`-argument anti-pattern. Call sites are self-documenting. Parallels `DialogButtonOrder`, `FontStyle`, `IconSet` — already-enum types in the crate. Adding a third variant (e.g. `HighContrast`) via `#[non_exhaustive]` in a future release is non-breaking. `ColorMode::from_os()` is a cleaner replacement for the current `detect::system_is_dark() -> bool` at the call site. Matches GNOME `color-scheme` / macOS NSAppearance / Windows ColorMode terminology. | One more enum for users to learn. Eight extra characters per call site vs a `bool`. |
+
+**Final shape:**
+
+```rust
+#[non_exhaustive]
+pub enum ColorMode { Light, Dark }
+
+impl ColorMode {
+    /// Read the current OS color mode (live detection, no caching).
+    pub fn from_os() -> Self { ... }
+}
+
+pub struct SystemTheme {
+    pub mode: ColorMode,                    // was: is_dark: bool
+    pub light: ResolvedTheme,
+    pub dark: ResolvedTheme,
+    // ...
+}
+
+impl SystemTheme {
+    pub fn pick(&self, mode: ColorMode) -> &ResolvedTheme {
+        match mode {
+            ColorMode::Light => &self.light,
+            ColorMode::Dark  => &self.dark,
+        }
+    }
+    // No active() method. No is_dark: bool field.
+}
+```
+
+Call-site idioms (all three read cleanly; zero bool):
+- **Captured:** `sys.pick(sys.mode)`
+- **Live:** `sys.pick(ColorMode::from_os())`
+- **Explicit:** `sys.pick(ColorMode::Dark)`
+
+**Recommendation:** adopt **G** paired with §4 Option C's removal
+of `active()`. Name: `ColorMode` (not `Mode` — too ambiguous; not
+`ThemeMode` — collides with §31.2 G's `ThemeVariant → ThemeMode`
+rename).
+
+**Naming clarity:** `ThemeMode` is the data-per-mode type (what
+§31.2 G renames). `ColorMode` is the enum discriminator. The two
+never conflict because one is a struct-type and the other is an
+enum; users read `ThemeMode` as "one mode of a theme" and
+`ColorMode` as "a color mode selector."
+
+**Rationale against `Mode` alone:** "Mode" is the shortest but
+most ambiguous name possible in a Rust crate (file mode, debug
+mode, edit mode, etc.). Under "perfect API" the name should be
+unambiguous at the use site. `ColorMode` is one extra word but
+eliminates all collision risk.
+
+**Confidence:** high on the direction (`bool` arguments are a
+well-known anti-pattern; this is a textbook refactor under "no
+backward compat"). High on `ColorMode` as the name (GNOME /
+Windows terminology match, zero collision with other renames).
+
+**Cross-reference:** resolves §28 open question on naming. Adds
+one implicit open question: whether to also add `ColorMode::Auto`
+as a third variant for "follow system", for connectors that want
+to express "don't care; just do what the OS says" without the
+`from_os()` lookup. Lean: **no** — `Auto` is a rendering concept
+belonging to the connector, not a data concept belonging to
+`native-theme`. Defer to v0.5.8 if it ever becomes a real request.
+
+#### §6 — §6a is a four-item commit, not a one-line Clone drop
+
+§6a's merge-review addendum catalogues the stale `presets.rs:85-92`
+comment. This pass found two additional stale items that must be
+deleted in the same commit:
+
+1. **`native-theme/src/error.rs:73-79`** — doc comment on the
+   `Error` enum justifying `Clone` via a caching use case that
+   doesn't use `Clone`:
+   ```rust
+   /// This type is [`Clone`] so it can be stored in caches alongside
+   /// [`crate::ThemeSpec`]. The `Platform` and `Io` variants use [`Arc`]
+   /// internally to enable cloning without losing the original error chain.
+   ```
+   Same stale rationale as `presets.rs:85-87`. Deleted with §6a.
+
+2. **`native-theme/src/error.rs:239-250`** — `error_is_clone` test:
+   ```rust
+   #[test]
+   fn error_is_clone() {
+       fn assert_clone<T: Clone>() {}
+       assert_clone::<Error>();
+       // ... more Clone assertions
+   }
+   ```
+   Dropping `Clone` from `Error` makes this test fail to compile.
+   **Delete entirely** when §6a lands.
+
+3. **`native-theme/src/presets.rs:85-88`** — already in §6a's
+   merge-review addendum and doc 2 §I1.
+
+**§6a four-item commit contents:**
+
+| Item | File:line | Action |
+|---|---|---|
+| 1 | `error.rs:80` | Remove `Clone` from `#[derive(...)]` |
+| 2 | `error.rs:73-79` | Delete the stale doc comment |
+| 3 | `error.rs:239-250` | Delete the `error_is_clone` test |
+| 4 | `presets.rs:85-92` | Update cache to `Result<ThemeSpec, Error>`; delete stale comment |
+
+Ship as a single commit titled *"drop `Error: Clone` bound; remove
+stale caching justifications and tests."*
+
+**Confidence:** high. Four-item checklist, all verified, all
+mechanical. Cross-referenced from doc 2 §L1 (which adds L1 for the
+`error.rs:73-79` comment) and doc 2 §I1 (unchanged).
+
+#### §8 — refinement: `IconSize::Px(NonZeroU32)` + `#[non_exhaustive]`
+
+§30.2's §8 refinement introduces `IconSize` as a token enum with
+`Px(u32)` as the escape hatch. Two small strengthenings under
+"perfect API":
+
+| Refinement | Why |
+|---|---|
+| **`Px(NonZeroU32)`** instead of `Px(u32)` | Zero is never a valid icon size. The type should reject it at construction. Matches doc 2 §C3's `TransformAnimation::Spin { duration_ms: NonZeroU32 }` — another "zero is a category error" case already caught in doc 2. |
+| **`#[non_exhaustive]`** on the enum | Adding future token variants (e.g. `Jumbo`, `Display`) is non-breaking. Every public data enum in the crate should be `#[non_exhaustive]` under "perfect API" unless there is a specific reason not to be (`LinuxDesktop` in §19 is a canonical exception — tied to a finite real-world set of desktop environments, and even there §19 recommends adding the attribute). |
+
+**Final sketch (supersedes §30.2's):**
+
+```rust
+use std::num::NonZeroU32;
+
+#[non_exhaustive]
+pub enum IconSize {
+    Small,       // ~16 px on Freedesktop / .small on SF Symbols
+    Medium,      // ~24 px on Freedesktop / .medium on SF Symbols
+    Large,       // ~32 px on Freedesktop / .large on SF Symbols
+    ExtraLarge,  // ~48 px on Freedesktop / .xlarge on SF Symbols
+    Px(NonZeroU32),
+}
+
+impl IconSize {
+    /// Construct an explicit pixel size. Returns `None` if `value` is 0.
+    pub const fn px(value: u32) -> Option<Self> {
+        match NonZeroU32::new(value) {
+            Some(nz) => Some(Self::Px(nz)),
+            None     => None,
+        }
+    }
+}
+```
+
+The `px()` constructor returns `Option<Self>` — users cannot construct
+a zero-px icon at all without `unsafe`. No runtime panics possible.
+
+**Recommendation:** adopt both refinements. Zero downside; one
+extra line of code; type-level zero-rejection.
+
+**Confidence:** high.
+
+#### §25 — additional options under "perfect API" (none better than C)
+
+§25's recommendation hedges between C (rename to `resolve(dpi)`)
+and B (split by type). §31.6 notes the rustdoc already documents
+the asymmetry, softening the severity. Under "perfect API" three
+more options deserve listing:
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| F | **Split into two methods**: `to_px_from_pt(dpi)` (errors if Px) and `as_px()` (errors if Pt). Users match the variant before calling. | Type-level asymmetry is explicit | Verbose at the call site; the match-first pattern is friction for a one-liner. |
+| G | **Typestate**: `FontSize<PtUnit>` and `FontSize<PxUnit>` as generic markers. Pt-to-px is a typed conversion. | Fully type-safe | Generics in public signatures; serde round-trip breaks; overkill for a conversion helper. |
+| H | **Delete the enum**: `FontSize = f32 (pt only)`. Users who want pixels compute `pt * dpi / 72` at author time. | Eliminates the whole §25 problem. | Breaks any TOML preset that stores pixel-exact sizes. Semantic loss. |
+
+**Recommendation:** **keep §25 Option C** as drafted. F/G/H each
+trade a real cost (verbosity, generics, semantic loss) for a small
+clarity win. §31.6's severity-note is correct: the rustdoc already
+documents the asymmetry, and the signature surprise is bounded.
+
+**One low-cost improvement:** rename `to_px(dpi)` → `to_logical_px(dpi)`
+instead of §25 C's `resolve(dpi)`. "Logical pixels" is the term
+already used elsewhere in the crate (`ResolvedFontSpec::size` doc
+comments). Same effort as §25 C, slightly more descriptive.
+
+**Confidence:** high on keeping C; medium on the `to_logical_px`
+rename over `resolve`.
+
+#### §2 + §14 — K scope narrowing for v0.5.7
+
+§31.2 K recommends a narrow `#[derive(ThemeLayer)]` proc-macro.
+The scope under that recommendation is implicitly "everything
+B1/B6/B7 asks for." Under "perfect API" the scope should be
+**explicitly narrowed** to a minimum-viable slice for v0.5.7,
+with the broader scope deferred to v0.5.8.
+
+**Minimum-viable K for v0.5.7:**
+
+| Delivered | Mechanism | Replaces |
+|---|---|---|
+| `check_ranges` impls per widget | Derive generates from `#[theme(range = "0.0..=1.0")]` attributes | ~450 lines at `model/widgets/mod.rs:908-1347` |
+| `FIELD_NAMES` constants | Derive generates from the struct field list | `FIELD_NAMES` emission in `define_widget_pair!` |
+| `impl_merge!` body | Derive generates per-field `if other.foo.is_some() { self.foo = other.foo.clone() }` | `impl_merge!` macro body |
+| Border-kind dispatch (B6/B7) | `#[theme_layer(border_kind = "full" \| "partial" \| "none")]` attribute | Hand-coded decision in `define_widget_pair!` clauses |
+| `inventory::submit!` widget registry entry | One line per widget in the derive output | `VARIANT_KEYS` + `widget_fields` at `model/mod.rs:563-628` |
+
+**Explicitly deferred to v0.5.8 (do NOT ship in v0.5.7):**
+
+| Deferred | Why | v0.5.7 workaround |
+|---|---|---|
+| Paired struct generation (`XxxTheme` + `ResolvedXxxTheme` from one source) | Biggest scope risk; changes every widget at once | Keep `define_widget_pair!` for struct generation; derive only operates on the structs it produces |
+| Pattern-based cross-widget inheritance codegen | Attribute expressiveness unknown; cross-widget rules need design discussion | Keep `inheritance.rs` hand-maintained; per-field `#[theme(inherit_from = "...")]` only for simple per-field cases |
+| `BorderSpec` split via registry-driven type generation | Schema design required | Ship doc 2 B6 **by hand** (two hand-written types); migrate to generated in v0.5.8 |
+
+**Rationale for the narrowing:**
+
+1. **Risk containment.** Minimum-viable scope is a ~1-week job;
+   full scope is 2–4 weeks with multiple structural risks.
+2. **Incremental value.** The minimum-viable slice already
+   eliminates the worst drift hazards: ~215 `lint_toml` literals
+   + ~450 `check_ranges` lines + `VARIANT_KEYS`/`widget_fields`
+   double-maintenance. That is ~80% of the drift-risk reduction
+   for ~20% of the work.
+3. **Proof by construction.** If minimum-viable K ships
+   successfully in v0.5.7, the attribute-syntax design gets
+   validated against real usage before committing to harder
+   struct-generation work. If it surfaces unexpected blockers,
+   v0.5.7's doc 1 P0 + doc 2 P0 cohorts still ship without the
+   codegen dependency.
+4. **Fallback path.** If even minimum-viable K slips past the
+   v0.5.7 schedule, §14 Option F (`inventory` bridge alone) is
+   a ~20-line drop-in that eliminates the `VARIANT_KEYS` /
+   `widget_fields` drift for ~1/10 the effort.
+
+**Recommendation:** **adopt minimum-viable K for v0.5.7** with
+§14 F as the fallback bridge. Promote the deferred items to
+v0.5.8 as explicit backlog entries (not "TBD"). This is the
+sixth revision of the §2/§14 direction across passes; each
+previous pass sharpened the approach and this pass sharpens
+the scope.
+
+**Confidence:** high on the scope cut. Medium on the 1-week
+estimate — `impl_merge!` translation and attribute-syntax design
+are both "straightforward but might surface edge cases" work.
+
+#### §13 — cache-fill blocking design consideration
+
+§31.2 H (plain `RwLock<Option<T>>`) is correct on latency math.
+Doc 2 §I3 flags the `run_gsettings_with_timeout` 2-second worst
+case. These interact in a way that neither §31.2 nor §I3
+addresses:
+
+**The interaction:** when `DetectionContext::is_dark()` runs for
+the first time after process start (or after an `invalidate_*()`
+call), the thread calling it holds the write lock for the
+duration of the detection call. On cold Linux caches, that is
+**up to 2 seconds with the write lock held**. Any concurrent
+reader blocks for the full 2 seconds.
+
+For a GUI app where thread A renders frames (calling `is_dark()`
+every frame) and thread B just invalidated the cache after a
+theme-change event, thread A can stall for 2 s on the next frame
+read. That is a visible UI freeze.
+
+**Options:**
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| A | **Accept it.** Document "first call after invalidation may block up to 2 s on cold Linux." | Zero complexity | Visible stalls in GUI apps |
+| B | **Spawn detection on a dedicated background thread**; foreground returns a tentative value until detection completes. Use `Arc<Mutex<DetectionState>>` with `NotStarted`/`InProgress(JoinHandle)`/`Done(T)` states. | Foreground never blocks; stale value briefly visible, then updates | Complexity; thread spawn per invalidation; short window of stale reads |
+| C | **Hold only a read lock during detection**, re-acquire as write once the value is ready. Multiple readers can see `None` and race; winner publishes. | Simpler than B; foreground never blocks after the first reader | First `invalidate_*()` caller still sees "stale" until its own call returns; race between invalidation and detection is subtle |
+| D | **Cap the detection timeout at 250 ms** (down from 2 s). A cold `gsettings` over 250 ms is rare; treat as "unavailable" and fall through. | Bounds the worst case at 250 ms — below one 60 Hz frame | Risk of missing slow-but-successful responses on pathologically slow systems |
+| E | **Don't cache at all in `DetectionContext`** — every call does fresh detection. Punt caching to the caller. | Simplest; no cached state to invalidate | Per-frame `system_is_dark()` in connectors becomes 2 s per call on cold caches. Worse. |
+
+**Recommendation:** pair **C** (read-only lock during detection)
+with **D** (cap timeout at 250 ms). C eliminates the
+write-lock-hold-during-detection interaction; D bounds the
+absolute worst case to under a frame budget even in the
+pathological case. Together they keep the hot path responsive.
+
+**Position:** refinement inside §13 Option C (`DetectionContext`)
+as an implementation detail. Does not replace any earlier
+recommendation; adds a design consideration to resolve during
+implementation.
+
+**Confidence:** medium. The write-lock interaction is real (a
+consequence of `RwLock` semantics); the best mitigation depends
+on measured latency that should be gathered during
+implementation.
+
+### 32.4 Strengthened recommendations
+
+#### Ship M1 + D5 + A4 as a single atomic commit
+
+§30.3 and doc 2 K.4 recommend bundling M1 + D5. Doc 2 A4
+recommends moving `button_order` fallback from
+`resolve_safety_nets` to `resolve_platform_defaults`. Under
+"perfect API" all three touch one conceptual decision and should
+**ship as one atomic commit**:
+
+**Commit title:** *"delete reader-side `button_order` hardcodes;
+move platform fallback to `resolve_platform_defaults`; presets +
+resolver are authoritative"*
+
+**Commit contents:**
+
+1. Delete `native-theme/src/macos.rs:504-505` (M1 fix; including
+   the factually-wrong comment at line 504)
+2. Delete `native-theme/src/kde/mod.rs:52-53` (D5 fix)
+3. Move `button_order` fallback from
+   `native-theme/src/resolve/inheritance.rs:164-167`
+   (`resolve_safety_nets`) to
+   `native-theme/src/resolve/mod.rs:52-56`
+   (`resolve_platform_defaults`) (A4 fix)
+4. Update any reader-side tests that depended on the hardcodes
+   (spot-check `macos.rs:805+` test block and `kde/mod.rs` test
+   block; adjust assertions that verify the reader-side value)
+
+**Why single-commit:**
+
+- All three touch one conceptual decision (`button_order`
+  provenance: *who decides what it is*).
+- Splitting into three commits leaves intermediate states where
+  one source is "right" while another is in flux.
+- Single commit gives a clean revert if any edge case surfaces
+  during bisection.
+- Review burden is easier as one atomic architectural change.
+
+**Strengthened recommendation:** **mandatory single-commit
+shipping**. Tagged **P0** in §27 (already P0, now with explicit
+atomicity constraint). See doc 2 §L.4 for the broader ship-unit
+sequencing.
+
+**Confidence:** high. Single-commit atomicity is the correct
+granularity for an architectural-principle fix.
+
+#### §6a four-item commit per §32.3 above
+
+Already documented in §32.3 §6. Ship as a single commit titled
+*"drop `Error: Clone` bound; remove stale caching justifications
+and tests."*
+
+### 32.5 Priority rebalance
+
+No new P0 items introduced. §32.3 additions slot in as refinements
+to existing P0s:
+
+**P0 refinements (no tier change):**
+
+- §1 gets Option H (keep `SystemTheme`); resolves §28 open
+  question 1
+- §4 gets Option G (`pick(ColorMode)`); strengthens existing
+  drop-`active()` recommendation
+- §6 gains the three-deletion checklist (§32.3 §6 + §32.4)
+- §8 gains `NonZeroU32` + `#[non_exhaustive]` refinements
+
+**P1 refinements:**
+
+- §2 + §14 get explicit minimum-viable scope cut
+- §13 gets write-lock + timeout design considerations
+
+**Bundling strengthenings:**
+
+- M1 + D5 + A4 mandatory single commit (strengthens §30.3 + §31
+  which recommended M1+D5 only)
+- §6a four-item mandatory checklist (strengthens §6a which listed
+  only the Clone drop + `presets.rs` cleanup)
+
+**Nothing promoted or demoted.** The §31.5 cohort stands.
+
+### 32.6 Cross-document consistency
+
+Items in §32 that require coordinated doc 2 changes:
+
+- §32.3 §6 three-deletion checklist → doc 2 §L1 adds L1 for the
+  `error.rs:73-79` comment (new issue not in I1). Coordinate so
+  both doc references converge on the same four-item §6a commit.
+- §32.4 M1 + D5 + A4 bundling → doc 2 §L.4 endorses this
+  strengthening and extends the ship-unit sequencing.
+- §32.3 §2 K scope narrowing → doc 2 §K.2 delivers B1 + B6 + B7
+  via K. Narrowing means **B6 ships hand-written in v0.5.7**,
+  codegen migration deferred to v0.5.8. Doc 2 §L.5 re-tiers B6
+  accordingly.
+
+### 32.7 What this pass did NOT change
+
+Deliberately preserved from passes 1–4:
+
+- Every option letter A–F in the §1–§30 tables
+- Every pros/cons entry in existing option tables
+- §31 entries not explicitly extended in §32.3 / §32.4
+- §27 priority table entries not explicitly rebalanced in §32.5
+- §28 open questions list (§32.3 H resolves one item;
+  §32.3 G potentially adds one on `ColorMode::Auto`)
+- §30.3 M1 problem description and verification chain —
+  §32.4 only strengthens the atomicity constraint
+- §31.2 K as the codegen direction — §32.3 only narrows the
+  v0.5.7 scope
+- §31.10 P0 cohort endorsement — §32.2 re-confirms every item
+
+If §32 does not reference a prior recommendation, that
+recommendation is unchanged.
+
+### 32.8 Confidence statement (fifth pass)
+
+**High confidence:**
+
+- §32.2 verification re-confirms (including the self-correction
+  on §12 count — the §31.1 figure is accurate)
+- §32.3 §1 Option H (`SystemTheme` preservation) — pure
+  cost/benefit analysis under "perfect API"
+- §32.3 §4 Option G (`pick(ColorMode)`) — `bool`-argument
+  elimination is a textbook refactor
+- §32.3 §6 four-item checklist — all items personally verified
+- §32.3 §8 `NonZeroU32` + `#[non_exhaustive]` — zero-downside
+  additions
+- §32.3 §2+§14 minimum-viable scope — risk-containment reasoning
+  is sound
+- §32.4 M1 + D5 + A4 single-commit bundle — atomicity is the
+  correct granularity for an architectural-principle fix
+
+**Medium confidence:**
+
+- §32.3 §25 `to_logical_px` rename over `resolve` — marginal
+  taste call
+- §32.3 §13 write-lock + timeout design — the interaction is
+  real; best mitigation depends on measured latency
+
+**Explicit unknowns:**
+
+- Whether minimum-viable K's 1-week estimate holds up against
+  `impl_merge!` translation edge cases
+- Whether `ColorMode::Auto` will become a real request in
+  v0.5.8+ (deferred; lean: no)
+
+### 32.9 Endorsement of the v0.5.7 P0 cohort (fifth-pass confirmation)
+
+All items in §31.10's P0 list personally re-verified this pass.
+The §32 additions slot as refinements to existing P0s without
+disturbing the cohort's shape.
+
+**Final v0.5.7 P0 cohort, consolidated across all five passes:**
+
+1. M1 + D5 + A4 atomic commit (macOS/KDE button_order correctness
+   + resolve purity leak)
+2. A2 + A3 + §6 Option F restructure (validate orchestration +
+   Error shape)
+3. §6a four-item commit (drop Clone + three stale cleanups)
+4. §19 (`LinuxDesktop` `#[non_exhaustive]` + Wayland compositor
+   variants)
+5. C1 + C2 atomic commit (`ThemeChangeEvent` cleanup)
+6. §17 (remove `IconSet::default`)
+7. §1 Option B + §31.2 G + §32.3 H rename package:
+   `ThemeSpec → Theme`, `ThemeVariant → ThemeMode`,
+   `ResolvedThemeVariant → ResolvedTheme`,
+   `ResolvedThemeDefaults → ResolvedDefaults`;
+   `SystemTheme` unchanged.
+8. §4 Option C + §32.3 G (`pick(ColorMode)`, `SystemTheme.mode:
+   ColorMode`, drop `active()`)
+9. §12 + prelude (partition crate root; 92-item count verified)
+10. §20 (move `icon_set`/`icon_theme` to `Theme`)
+11. §16 (`Rgba` polish)
+12. §22 (feature-gate `on_theme_change`)
+13. §3 + doc 2 B5 atomic commit (`OverlaySource` +
+    `ResolutionContext`)
+14. Doc 2 B4 (`AccessibilityPreferences` on `SystemTheme`)
+15. Doc 2 B6 hand-written split (codegen deferred to v0.5.8)
+
+**P1 (concurrent with or after P0):**
+
+- Minimum-viable K codegen (doc 1 §32.3 §2+§14)
+- Doc 2 L2 `ENV_MUTEX` test simplification follow-up after A4
+- Doc 2 L3 `from_kde` visibility audit before C6
+- §7 `#[doc(hidden)] pub` demotion (doc 1 §31 B')
+- Doc 2 C3 `AnimatedIcon` newtype wrappers
+- Doc 2 C4 `Arc<str>` font family refactor
+
+**P2 (scheduled after P0/P1 lands):**
+
+- §5 G + §31.3 + doc 2 L4 feature-matrix cleanup (bundled; §5 G
+  gates §31.3 and L4)
+- §13 `DetectionContext` with write-lock + timeout mitigations
+- Doc 2 C5 `detect_linux_desktop()` no-arg convenience
+- Doc 2 C6 demotion (after L3 audit)
+- Doc 2 D3 lazy error-string allocation (subsumed by minimum-viable
+  K if it lands)
+- Doc 2 D4 `Cow<'static, str>` for bundled names
+
+**P3:**
+
+- §25 `to_logical_px` rename
+- Doc 2 D1 `FontSpec::style` asymmetry documentation
+- §26 prune preachy `must_use` messages
+- §18 drift-guard test for `IconSet::from_name`
+- §21 `ThemeWatcher` rename + doc
+- §24 `platform_preset_name` structured return
+- §23 `diagnose_platform_support` structured return
+
+These lists consolidate the P-tiering across all five passes.
+Ship P0 as v0.5.7; stage P1/P2/P3 across v0.5.8 / v0.5.9 per
+developer capacity.

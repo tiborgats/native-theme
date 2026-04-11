@@ -3250,3 +3250,679 @@ These are the ship-critical items from doc 2. Combined with
 doc 1's P0 cohort (see doc 1 §31.10), they form a coherent
 v0.5.7 release.
 
+---
+
+## L. Fifth-pass review: new issues and refinements
+
+This section records a fifth ultrathink pass under the explicit
+"backward compatibility does not matter; I want the perfect API"
+directive. It runs parallel to **doc 1 §32** which hosts
+doc-1-specific fifth-pass findings.
+
+This pass surfaced **four new issues** (L1–L4) not in any prior
+A–K section, re-verified A2/A3's shared-vec claim through a
+specific source-level self-admission that earlier passes did not
+quote, added coordination notes for the M1 + D5 + A4 atomic-commit
+bundling (previously only M1 + D5 were bundled), and proposed a
+detailed eleven-ship-unit sequencing plan for the v0.5.7 release.
+
+### L.1 Methodology
+
+Same approach as §J and §K: independently re-read each existing
+claim against the current tree, record only refinements that
+change recommendations or surface new items, and preserve all
+earlier content unchanged.
+
+New findings come from:
+
+1. Personal re-read of `native-theme/src/resolve/validate_helpers.rs:217-282`
+   (the `check_*` helpers) — turned up a source-level self-admission
+   of the A2/A3 conflation that earlier passes did not quote.
+2. Grep-based search for stale `Clone`-justification doc comments
+   across `error.rs` — turned up a second stale comment beyond I1.
+3. Re-read of `Cargo.toml:14-34` under §31.3's lens — turned up an
+   aggregator-coupling issue separate from the runtime-variant
+   duplication.
+4. Re-read of C6 demotion recommendation under the lens of `pub`
+   module vs feature-gated re-export — turned up a visibility
+   audit step that C6 does not mention.
+5. Re-read of A4 fix implications on tests — turned up a
+   `test_util::ENV_MUTEX` simplification follow-up.
+
+### L.2 New issues
+
+#### L1. `error.rs:73-79` is a second stale `Clone` justification (pair with I1)
+
+**File:** `native-theme/src/error.rs:73-79`
+
+**The comment:**
+
+```rust
+/// Errors that can occur when reading or processing theme data.
+///
+/// This type is [`Clone`] so it can be stored in caches alongside
+/// [`crate::ThemeSpec`]. The `Platform` and `Io` variants use [`Arc`]
+/// internally to enable cloning without losing the original error chain.
+///
+/// [`Arc`]: std::sync::Arc
+```
+
+This doc comment justifies the `Clone` derive on `Error` by
+pointing at a cache that never actually used `Clone` (the cache
+stores `Result<ThemeSpec, String>` per I1's find at
+`presets.rs:85-88`). **I1 catches the `presets.rs` comment but
+not this one.**
+
+Doc 1 §6a's recommendation to drop `Clone` therefore requires
+deleting **three** stale items, not two:
+
+1. `native-theme/src/error.rs:73-79` — this doc comment (**L1**)
+2. `native-theme/src/error.rs:239-250` — `error_is_clone` test
+   (cross-referenced from doc 1 §32.3 §6)
+3. `native-theme/src/presets.rs:85-92` — stale comment (**I1**,
+   plus cache type migration)
+
+All three live in the same commit as §6a's Clone drop. Doc 1
+§32.3 §6 documents this as a four-item commit (three deletions
+plus the actual Clone removal on `error.rs:80`).
+
+**Options:**
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| A | **Status quo** (keep the comment alongside §6a) | No change | Doc lies about why Clone exists; future maintainer will re-justify Clone on a false basis |
+| B | **Delete the comment entirely** when §6a lands | Minimum cleanup; aligns with I1's `presets.rs` deletion; consistent with doc 1 §32.3 §6 four-item checklist | None |
+| C | **Rewrite the comment** to describe the new shape (e.g. "Error is `#[non_exhaustive]`; add new variants via minor release") | Documentation gains context | More work; fills space for a self-documenting pattern |
+
+**Recommendation:** **B** (delete). The `#[non_exhaustive]` is
+already documented by the attribute itself. Any replacement comment
+would be filler. Ship as part of the §6a four-item commit.
+
+**Confidence:** high.
+
+#### L2. `test_util::ENV_MUTEX` test simplification follow-up post-A4
+
+**Files:**
+- `native-theme/src/test_util.rs` (defines `ENV_MUTEX`)
+- Multiple test sites that import and use it
+
+**The situation:**
+
+A4's recommendation moves `button_order` fallback out of
+`resolve_safety_nets` into `resolve_platform_defaults`. One
+consequence: `resolve()` becomes genuinely pure — no env var
+reads, no OS interaction. Tests that exercised `resolve()` and
+needed to serialize `XDG_CURRENT_DESKTOP` state via `ENV_MUTEX`
+no longer need that serialization.
+
+Concretely, tests that match the pattern:
+
+```rust
+let _guard = test_util::ENV_MUTEX.lock().unwrap();
+std::env::set_var("XDG_CURRENT_DESKTOP", "KDE");
+let mut variant = ...;
+variant.resolve();  // now pure; env var read is gone
+// assert on variant.dialog.button_order
+```
+
+are broken by A4 in a specific way: the test's intent was *"set
+env var, call resolve, observe env-driven behavior."* Post-A4,
+`resolve()` does not read the env var, so the set_var is dead
+code. The test must either:
+1. Switch to calling `into_resolved()` (which still goes through
+   `resolve_platform_defaults` and reads the env var), OR
+2. Drop the env var setup entirely and assert on a different
+   invariant.
+
+Either way, the `ENV_MUTEX` lock may no longer be needed for
+tests in category (2). This is not a bug — A4 changes the
+semantic contract of `resolve()`, and the tests should reflect
+that — but it is a cleanup opportunity the A4 plan does not
+mention.
+
+**Options:**
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| A | **Status quo** (ship A4, leave tests unchanged) | No follow-up work | Tests retain unnecessary `ENV_MUTEX` locks; future maintainers cannot tell which tests actually need the mutex and which do not; the `ENV_MUTEX` semantic ("serializes env var access") becomes "sometimes serializes, sometimes not, no way to tell" |
+| B | **Audit and simplify tests post-A4** as a follow-up commit: remove `ENV_MUTEX` locks from tests that no longer manipulate env vars; keep the mutex only for tests that deliberately exercise env-dependent code paths (`into_resolved()`, `platform_button_order()` inside `resolve_platform_defaults`) | Tests become clearer; `ENV_MUTEX` semantics become "actually needed when present"; future maintainers know what they are looking at | One follow-up commit; audit work |
+| C | **Delete `ENV_MUTEX` entirely if no tests need it post-A4** | Smallest test-util surface | Requires confirming zero remaining use sites; if even one test still needs env-var serialization the mutex must stay |
+
+**Recommendation:** **B**. Ship A4 as part of the M1 + D5 + A4
+atomic commit (doc 1 §32.4). Then ship a **follow-up cleanup
+commit** in the same release: *"post-A4: simplify tests that no
+longer need `ENV_MUTEX` serialization."* Do **not** bundle the
+test audit with A4 itself — the A4 bundle already touches four
+files (`macos.rs`, `kde/mod.rs`, `inheritance.rs`, `resolve/mod.rs`),
+and adding a cross-tree test audit makes the commit harder to
+review.
+
+**Priority:** tag as **P1 follow-up** in §E and doc 1 §27. Ships
+in v0.5.7 alongside A4 but as a separate commit.
+
+**Confidence:** high on the direction (A4 clearly makes some
+tests redundant). Medium on the exact count of affected tests —
+requires running the grep after A4 lands to get the real number.
+
+#### L3. `kde::from_kde` visibility audit prerequisite for C6
+
+**Files:**
+- `native-theme/src/kde/mod.rs:341` (`pub fn from_kde`)
+- `native-theme/src/lib.rs:171-172` (conditional re-export)
+- Possible consumers in the workspace
+
+**The situation:**
+
+C6 recommends demoting platform readers (including `from_kde`)
+from `pub` to `pub(crate)`. The function is declared `pub fn
+from_kde` inside the `kde` module, which is itself feature-gated.
+The crate-root re-export at `lib.rs:172` is behind
+`#[cfg(all(target_os = "linux", feature = "kde"))]`.
+
+The audit C6 does not mention: **are there any `use
+crate::kde::from_kde` paths inside the crate or workspace that
+would break when the function becomes `pub(crate)`?** Usually
+`pub(crate)` is a no-op for intra-crate callers. But integration
+tests under `native-theme/tests/` and the connectors under
+`connectors/` are *external* crates that can only see items
+declared `pub`. If any of them access `native_theme::kde::from_kde`
+(or the other readers), the C6 demotion breaks them.
+
+This is the same kind of audit doc 1 §31 B' performs implicitly
+via `#[doc(hidden)] pub`.
+
+**Options:**
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| A | **Demote without audit** | Minimum work | Breaks integration tests or connectors if any use the functions; surfaces as a compilation failure downstream |
+| B | **Audit first, then demote** per audit result | Confirmed safety | One-time grep pass (~1 minute) |
+| C | **Use `#[doc(hidden)] pub`** instead of `pub(crate)` (same pattern as doc 1 §31 B' for §7) | Downstream callers keep working; rustdoc discoverability still hidden | Not as strict as `pub(crate)`; item is still technically in the SemVer contract |
+
+**Recommendation:** **B audit, then A or C based on audit result.**
+Concretely:
+
+1. Run `grep -rn 'native_theme::kde::from_kde\|use native_theme::kde::\|crate::kde::from_kde' native-theme/ connectors/` across the workspace root.
+2. If zero hits outside `native-theme/src/pipeline.rs`: ship **A**
+   (plain `pub(crate)`).
+3. If any hit in `native-theme/tests/`: ship **C** (`#[doc(hidden)]
+   pub`) to preserve integration tests.
+4. If any hit in `connectors/`: that is a real downstream use case.
+   Do **not** demote. Instead, re-expose the function via a
+   signposted `native_theme::readers::*` module per doc 1 §12's
+   module partition, with `#[doc = "Raw platform reader output;
+   not for normal use — prefer SystemTheme::from_system()"]`.
+
+Apply the same audit pattern to `from_macos` (`macos.rs:397`),
+`from_windows` (`windows.rs:578`), `from_gnome` (`gnome/mod.rs:280`),
+`build_gnome_spec_pure` (`gnome/mod.rs:280`), and
+`from_kde_with_portal` (`gnome/mod.rs`).
+
+**Rationale:** C6 is a straightforward demotion *only if nothing
+outside the pipeline uses the functions*. The audit step is a
+~1-minute grep that either confirms safety (ship A) or surfaces
+a real consumer (ship C or re-expose). Either way, the outcome
+is better than "demote and hope."
+
+**Priority:** audit is a prerequisite to C6 (itself P1). Tag
+audit as **pre-C6 checklist item**, not its own priority tier.
+
+**Confidence:** high on the need for the audit; the exact outcome
+(A, C, or re-expose) depends on what the grep finds.
+
+#### L4. `Cargo.toml` `linux` aggregator couples KDE and portal
+
+**File:** `native-theme/Cargo.toml:14-24`
+
+**The situation:**
+
+```toml
+kde              = ["dep:configparser"]
+portal           = ["dep:ashpd"]
+portal-tokio     = ["portal", "ashpd/tokio"]
+portal-async-io  = ["portal", "ashpd/async-io"]
+windows          = ["dep:windows"]
+macos            = [...]
+linux            = ["kde", "portal-tokio"]
+linux-async-io   = ["kde", "portal-async-io"]
+native           = ["linux", "macos", "windows"]
+native-async-io  = ["linux-async-io", "macos", "windows"]
+```
+
+The `linux` aggregator forces both `kde` AND `portal-tokio`
+together. Consequences:
+
+1. A user wanting portal-only (GNOME via xdg-desktop-portal)
+   without KDE's `configparser` dep cannot use the `linux`
+   convenience aggregator.
+2. A user wanting KDE-only (reading `kdeglobals` directly without
+   the portal) cannot use `linux` either — they get `portal-tokio`
+   forced on them.
+3. When §31.3 lands (dropping the four `-async-io` variants via
+   §5 G), the `linux` definition collapses to `linux = ["kde",
+   "portal"]`, but the KDE↔portal coupling remains unchanged.
+
+The user's actual *"I want Linux theme detection"* intent is
+ambiguous: does it mean "all Linux desktops including KDE" or
+"the most common Linux desktops (GNOME via portal)"? Both are
+reasonable. The current `linux = ["kde", "portal-tokio"]` picks
+the first reading and forces users who wanted the second to
+explicitly enable `portal` only.
+
+This issue is independent of §31.3 (runtime-variant redundancy)
+but is in the same category: *feature-aggregator coupling should
+minimise unnecessary dependency bundling under "perfect API".*
+
+**Options:**
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| A | **Status quo** (after §31.3 drops `-async-io`): `linux = ["kde", "portal"]` | No additional change | KDE↔portal coupling persists |
+| B | **Split into sub-aggregators**: `linux-kde = ["kde"]`, `linux-portal = ["portal"]`, `linux = ["linux-kde", "linux-portal"]` | Explicit; users can pick `linux-kde` or `linux-portal` alone AND still have `linux` as a meta-aggregator | Three features in the matrix for what was one; users see more feature names |
+| C | **Drop the `linux` aggregator entirely**; users write `features = ["kde", "portal"]` explicitly | Cleanest possible surface; zero aggregator coupling | Loses the `--features linux` convenience |
+| D | **Redefine `linux` as "portal only"** (the minimum most Linux desktops need); add `linux-full = ["kde", "portal"]` for everything | Matches the common user intent | Silent semantic shift on an existing feature name — users who currently rely on `linux` for KDE detection get a silent break under "no backward compat" this is allowed, but the shift is still surprising |
+| E | **Rename `linux` to `linux-full`**; add a new `linux-portal = ["portal"]` convenience. Forces explicit choice. | No silent semantic shift; explicit naming | `linux-full` is slightly awkward; users still need to learn a new name |
+| F | **Status quo + rustdoc feature guide** that documents when to pick `kde`, `portal`, or `linux` | Minimum code change | Doesn't fix the underlying coupling; users still face the choice on every `cargo add` |
+
+**Recommendation:** **B** bundled with §31.3's `-async-io`
+cleanup. Final feature list after §5 G + §31.3 + L4:
+
+```toml
+kde            = ["dep:configparser"]
+portal         = ["dep:ashpd"]          # single runtime after §5 G
+windows        = ["dep:windows"]
+macos          = [...]
+linux-kde      = ["kde"]
+linux-portal   = ["portal"]
+linux          = ["linux-kde", "linux-portal"]
+native         = ["linux", "macos", "windows"]
+watch          = ["dep:notify", "dep:zbus"]
+material-icons = []
+lucide-icons   = []
+svg-rasterize  = ["dep:resvg"]
+system-icons   = [...]
+```
+
+**13 features** total (was 15). No runtime-coupling redundancy.
+Sub-aggregators allow mix-and-match.
+
+Usage patterns:
+- Everything on Linux: `features = ["linux"]` (convenience unchanged)
+- KDE only: `features = ["linux-kde"]` or `features = ["kde"]` (equivalent)
+- Portal only: `features = ["linux-portal"]` or `features = ["portal"]` (equivalent)
+- All platforms: `features = ["native"]` (convenience unchanged)
+
+**Rationale:**
+
+- **A** ships the coupling as a known limitation — wrong under
+  "perfect API."
+- **C** removes a working convenience with no replacement — too
+  austere.
+- **D** creates a silent semantic shift that breaks user
+  expectations in a subtle way (the cargo feature name is the
+  same but means something different).
+- **E** adds verbosity without the `linux-*` sub-aggregator
+  discoverability.
+- **F** documents the limitation instead of fixing it.
+- **B** delivers the full aggregator convenience AND the
+  independent knobs, at the cost of three features instead of
+  one. Under "perfect API" the three features buy a real
+  decoupling.
+
+**Bundling:** ship L4 with the §31.3 feature-matrix cleanup
+(which depends on §5 G). All feature-matrix work lives in one
+ship unit.
+
+**Flag for §F:** L4 hard-depends on §5 G the same way §31.3
+does. If §5 is rejected, L4 falls back to **F** (documentation
+only) until a clean runtime decoupling is available.
+
+**Confidence:** high on the direction (decoupling aggregators is
+a perfect-API win). Medium on the exact naming
+(`linux-kde`/`linux-portal` vs alternatives like `linux-files`/
+`linux-desktop-portal`).
+
+### L.3 Verification re-confirmations
+
+#### A2/A3 shared-vec with source-level self-admission
+
+The A2/A3 issue was described in earlier passes and verified in
+§K.1. This pass found a more pointed piece of evidence at
+`native-theme/src/resolve/validate_helpers.rs:217-221` that earlier
+passes did not quote:
+
+```rust
+// --- Range-check helpers for validate() ---
+//
+// These push a descriptive message to the `errors` vec (reusing the same
+// error-collection pattern as require()) so that all problems -- missing
+// fields AND out-of-range values -- are reported in a single pass.
+```
+
+**The code itself acknowledges** that:
+
+1. The same vec is reused for both categories (*"same error-collection
+   pattern as require()"*).
+2. The author intended the two categories to be reported together
+   (*"all problems... in a single pass"*).
+
+The doc-level claim at `error.rs:10-11` (*"Dot-separated paths of
+fields that remained `None` after resolution"*) **contradicts the
+actual implementation contract**. The doc says "fields that
+remained None"; the implementation code admits that range
+violations also flow through the same vec.
+
+Concretely, `check_positive` at `validate_helpers.rs:233-238`:
+
+```rust
+pub(crate) fn check_positive(value: f32, path: &str, errors: &mut Vec<String>) {
+    if !value.is_finite() || value <= 0.0 {
+        errors.push(format!(
+            "{path} must be a finite positive number, got {value}"
+        ));
+    }
+}
+```
+
+pushes strings like `"defaults.font.size must be a finite positive
+number, got 0"` — a range-violation message format — into the same
+vec that `require` populates with bare field paths like
+`"defaults.accent_color"`. The two string shapes are different;
+the user's error output mixes both.
+
+Also: the parameter name inside the helpers is `errors: &mut
+Vec<String>`, while at the call site in `validate.rs:429-452`
+the same vec is named `missing`. **The naming mismatch between
+call sites is itself evidence of the conflation** — the helper
+author thought of it as "errors" while the orchestration author
+thought of it as "missing fields."
+
+This is not merely conflation at the type level — it is a
+documented design intent at the helper module level that the
+public-facing doc does not reflect. A2/A3's fix (split the vec,
+make the categories distinct at the `Error` type level via doc 1
+§31.2 F) is now doubly justified:
+
+1. The `missing_fields` doc comment at `error.rs:10-11` is false.
+2. The `validate_helpers.rs:218-221` comment's "single pass" design
+   goal is still achievable **with** the split — multiple vecs
+   populated in one pass is still "one pass," just with
+   correctly-categorised output.
+
+**No option change.** Reconfirms A2's **B + C** recommendation
+(short-circuit on missing + separate vecs) and doc 1 §31.2 F's
+`Error::ResolutionIncomplete` + `Error::ResolutionInvalid` fold.
+
+**Confidence:** very high. The source code literally admits the
+behaviour described in the doc's claim. The Explore agent that
+initially disputed this finding during the fifth-pass verification
+was wrong; direct reading of `validate_helpers.rs:217-282` is
+unambiguous.
+
+#### B6 `require_border` silently preserves defaults-only fields
+
+**File:** `native-theme/src/resolve/validate_helpers.rs:131-166`
+
+Reading `require_border` directly shows the `Some(b) =>` branch:
+
+```rust
+ResolvedBorderSpec {
+    color,
+    corner_radius,
+    corner_radius_lg: b.corner_radius_lg.unwrap_or_default(),  // line 157
+    line_width,
+    opacity: b.opacity.unwrap_or_default(),                    // line 159
+    shadow_enabled,
+    padding_horizontal: b.padding_horizontal.unwrap_or_default(),  // line 161
+    padding_vertical: b.padding_vertical.unwrap_or_default(),      // line 162
+}
+```
+
+Four fields are extracted via `.unwrap_or_default()` — the
+widget-level border silently *accepts and preserves*
+`corner_radius_lg` and `opacity` values even though `border.rs:19,25`
+comments say they are "defaults only."
+
+The extraction path does not reject them; it quietly includes
+them in the resolved output. **B6's original framing is subtly
+wrong in a way that makes the problem slightly worse.**
+
+B6 says: *"Resolution silently discards the values."*
+
+More accurate framing: **resolution silently STORES the values
+in `ResolvedBorderSpec`, but no connector reads them at widget
+level.**
+
+Looking at `connectors/native-theme-gpui/src/lib.rs` and
+`connectors/native-theme-iced/src/lib.rs`, neither currently reads
+widget-level border `opacity` — they use `defaults.border.opacity`
+only. So a user who writes `[light.button.border] opacity = 0.5`
+in their TOML gets:
+
+1. The field parsed successfully by serde.
+2. The field preserved through merge.
+3. The field extracted into `ResolvedBorderSpec.opacity` via
+   `.unwrap_or_default()`.
+4. The field stored in the resolved struct.
+5. **No visual effect**, because no connector reads it at widget
+   level.
+
+This is worse than "silently discarded." A user verifying their
+TOML via `println!("{:?}", resolved.button.border)` will see the
+value present in the debug output and conclude the feature works,
+only to observe no visual change when rendering.
+
+**No option change to B6.** The type-split recommendation
+(`DefaultsBorderSpec` + `WidgetBorderSpec`) is still correct
+because it eliminates this drift by making the field
+unrepresentable at widget level — a missing field is a compile
+error, not a silently-stored-but-unused value.
+
+**Strengthening:** the B6 problem statement should be updated to
+reflect the "stored but unused" framing. This is a doc
+clarification, not a new option.
+
+**Confidence:** high. Verified directly in
+`validate_helpers.rs:141-165`.
+
+### L.4 Strengthened recommendations
+
+#### M1 + D5 + A4 mandatory single commit (cross-ref to doc 1 §32.4)
+
+Doc 1 §32.4 strengthens the M1 + D5 + A4 bundle to a mandatory
+atomic commit. Doc 2 concurs: these three fixes touch one
+conceptual decision (`button_order` provenance) and should ship
+together. See doc 1 §32.4 for the full rationale and commit
+contents.
+
+**Doc 2 contribution:** the atomic bundle also fixes doc 2 D2's
+"weird padding derivation rule" contingent on the B6 type split
+— not because D2 touches `button_order`, but because D2 and the
+M1/D5/A4 triad are both symptoms of the same architectural
+pressure (*readers and resolvers redundantly deciding the same
+data*). Shipping M1/D5/A4 atomically establishes the principle;
+B6 and D2 then fall out naturally when B6 lands in its own ship
+unit.
+
+**No new options.** Strengthens existing D5 and A4 recommendations
+to "mandatory atomic bundle with M1."
+
+#### §6a four-item commit (cross-ref to doc 1 §32.3 §6)
+
+Doc 1 §32.3 §6 documents §6a as a four-item commit. L1 (this
+section) adds the `error.rs:73-79` doc comment deletion to that
+commit. Ship as:
+
+| Item | File:line | Action |
+|---|---|---|
+| 1 | `error.rs:80` | Remove `Clone` from `#[derive(...)]` |
+| 2 | `error.rs:73-79` | Delete the stale doc comment (**L1**) |
+| 3 | `error.rs:239-250` | Delete the `error_is_clone` test |
+| 4 | `presets.rs:85-92` | Update cache to `Result<ThemeSpec, Error>`; delete stale comment (**I1**) |
+
+Single commit titled *"drop `Error: Clone` bound; remove stale
+caching justifications and tests."*
+
+### L.5 Ship-unit sequencing for v0.5.7
+
+Under "perfect API" the following eleven ship units sequence
+v0.5.7's P0 + P1 cohort. Each unit is a self-contained commit or
+small commit cluster; intra-unit atomicity is enforced where noted.
+
+| # | Priority | Atomic? | Commits | Touches |
+|---|---|---|---|---|
+| 1 | P0 | **Yes** | M1 + D5 + A4 | `macos.rs`, `kde/mod.rs`, `inheritance.rs`, `resolve/mod.rs` |
+| 2 | P0 | **Yes** | A2 + A3 + §6 Option F restructure | `validate.rs`, `validate_helpers.rs`, `error.rs` |
+| 3 | P0 | **Yes** | §6a four-item commit (L1 + I1 + test deletion + Clone drop) | `error.rs`, `presets.rs` |
+| 4 | P1 follow-up | No (after Unit 1) | **L2** test simplification post-A4 | test files using `ENV_MUTEX` |
+| 5 | P0 | No | C1 + C2 | `watch/mod.rs`, backend files |
+| 6 | P0 | No (several small commits) | §16, §17, §19, §22, §26 polish | `color.rs`, `model/icons.rs`, `detect.rs`, `watch/mod.rs`, various `#[must_use]` sites |
+| 7 | P0 | No (one large refactor commit) | §1 renames + §12 partition + §4 Option G + §20 | lib.rs, model module tree, detect module, connectors |
+| 8 | P0 | **Yes** | §3 + doc 2 B5 + B4 (`OverlaySource` + `ResolutionContext` + `AccessibilityPreferences`) | `lib.rs`, `resolve/mod.rs`, `model/defaults.rs`, `model/resolved.rs` |
+| 9 | P0 | No | Doc 2 B6 hand-written `BorderSpec` split + **L3** audit for C6 | `model/border.rs`, all `check_*` helpers |
+| 10 | P1 | No (one focused commit) | Minimum-viable K codegen (doc 1 §32.3 §2+§14) | new `native-theme-derive` crate, `widgets/mod.rs` |
+| 11 | P2 | **Yes** | §5 G + §31.3 + **L4** feature-matrix cleanup | `Cargo.toml`, `lib.rs`, `pipeline.rs` |
+
+**Atomicity notes:**
+
+- **Unit 1** (M1+D5+A4) must be atomic per doc 1 §32.4's
+  architectural-principle argument.
+- **Unit 2** must be atomic because A2's fix requires the new
+  `Error` shape from §6 F; shipping one without the other leaves
+  an intermediate state where `validate()` returns a structured
+  error into a string-based vec.
+- **Unit 3** must be atomic because dropping `Clone` without
+  also deleting the test breaks the build.
+- **Unit 8** must be atomic because §3's `OverlaySource` shape
+  directly embeds (or holds a reference to) the `ResolutionContext`
+  from B5. Split landing forces a double-edit.
+- **Unit 11** must be atomic because §5 G, §31.3, and L4 are
+  three sides of the same feature-matrix cleanup.
+
+**Non-atomic units** can be split into smaller commits if needed.
+Unit 6 (polish) can ship as 5 separate commits; Unit 7 can ship as
+2–3 commits (rename sweep, module partition, pick/ColorMode
+refactor).
+
+### L.6 Priority rebalance
+
+No new P0 items. §L additions slot in as follow-ups or
+prerequisites:
+
+**New P1 follow-up (within v0.5.7):**
+
+- **L2** test simplification after A4 — small, one commit, Unit 4
+  in the sequencing.
+
+**New P2 items:**
+
+- **L4** feature aggregator split — bundled with §31.3 (also P2)
+  and §5 G, Unit 11.
+
+**New prerequisite (not its own tier):**
+
+- **L3** audit — grep pass before C6's demotion, Unit 9 pre-step.
+
+**B6 priority correction:**
+
+- Doc 1 §32.3 §2+§14 scope cut means B6 ships **hand-written in
+  v0.5.7** (Unit 9), codegen migration deferred to v0.5.8. Doc 2
+  §K.6 had B6 shipping via K; this is now explicit B6 by-hand +
+  later K migration.
+
+**Everything else** from §E / §H / §K.6 is unchanged.
+
+### L.7 Confidence statement (fifth pass)
+
+**High confidence:**
+
+- L1 problem description (stale doc comment verified at
+  `error.rs:73-79`)
+- L2 direction (A4 clearly makes some tests redundant)
+- A2/A3 re-verification via `validate_helpers.rs:218-221`
+  source-level self-admission — the most definitive confirmation
+  yet
+- B6 "stored but unused" clarification (verified in
+  `validate_helpers.rs:141-165`)
+- L.4 strengthened bundling (M1+D5+A4 atomic + §6a four-item)
+- L.5 ship-unit sequencing atomicity constraints
+
+**Medium confidence:**
+
+- L3 audit outcome (A vs C vs re-expose) depends on grep findings
+- L4 naming (`linux-kde` / `linux-portal` vs alternatives) is a
+  taste call
+- L.5 Unit 10 (minimum-viable K) timing depends on the 1-week
+  estimate from doc 1 §32.3 §2+§14
+
+**Low confidence / explicit unknowns:**
+
+- Whether L2's test simplification produces one follow-up commit
+  or needs per-file splitting (depends on how many tests are
+  affected — unknown until A4 lands)
+- Whether L3's audit surfaces any connector-level consumers
+  (grep will answer this in ~1 minute)
+
+### L.8 What this pass did NOT change
+
+Deliberately preserved from §A–§K:
+
+- Every pros/cons entry in doc 2's existing A–K option tables
+- Every recommendation not explicitly strengthened or extended
+  in §L.2 / §L.4
+- §G post-script (v1.0 crate split direction reaffirmed)
+- §H cross-document P0 consolidation (supplemented via §L.5,
+  not replaced)
+- §F open questions list (L3's audit outcome and L4's `linux-*`
+  naming add two implicit unknowns; existing entries remain)
+- A1 STATUS block (A1 remains fully shipped and out of v0.5.7
+  scope)
+- §J.2 B4 refinement: `AccessibilityPreferences` on `SystemTheme`,
+  not in `ResolutionContext` — §L.5 Unit 8 preserves this
+  distinction in the atomic bundle
+
+If section L does not reference a prior recommendation, that
+recommendation is unchanged.
+
+### L.9 Endorsement of the doc 2 P0 cohort (fifth-pass confirmation)
+
+All items in §K.9's P0 list personally re-verified this pass
+against the current tree. The §L additions (L1–L4 new issues,
+A2/A3 re-verification via `validate_helpers.rs:218-221`, atomic
+bundling via §L.4, ship-unit sequencing via §L.5) slot as
+refinements and follow-ups to the existing cohort without
+disturbing its shape.
+
+Doc 2's P0 cohort for v0.5.7 (unchanged from §K.9, with §L.4
+bundling constraints applied):
+
+1. **A2** — verified orchestration bug; ships in Unit 2 with A3
+2. **A3** — verified dual-category pollution; ships in Unit 2
+   with A2 in doc 1 §31.2 F shape
+3. **A4** — verified `resolve()` doc-vs-code contradiction; ships
+   in Unit 1 atomically with M1 + D5 (per doc 1 §32.4)
+4. **B4** — verified accessibility pollution; ships in Unit 8
+   atomically with §3 + B5
+5. **B6** — verified type-vs-usage mismatch; ships hand-written
+   in Unit 9
+6. **C1** — verified `Other` has zero emitters; ships in Unit 5
+7. **C2** — verified `ColorSchemeChanged` lies on KDE/GNOME;
+   ships in Unit 5 with C1
+8. **D5 + M1** — verified against four independent sources (doc
+   1 §32.2); ships in Unit 1 atomically with A4
+
+**Plus §L refinements and additions:**
+
+9. **L1** — stale `error.rs:73-79` comment; ships in Unit 3 with
+   §6a
+10. **L2** — test simplification follow-up; ships in Unit 4 after
+    Unit 1
+11. **L3** — pre-C6 visibility audit; ships before Unit 9's C6
+    demotion
+12. **L4** — feature aggregator split; ships in Unit 11 with §5 G
+    + §31.3
+
+These are the ship-critical items from doc 2 for v0.5.7. Combined
+with doc 1's P0 cohort (see doc 1 §32.9), they form a coherent
+release ready for execution.
+
