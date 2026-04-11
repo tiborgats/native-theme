@@ -118,6 +118,7 @@ docs for each.
 | C | **Rename + collapse `ThemeVariant`**: users never see it. Methods like `Theme::merge` and `Theme::resolve` operate at the `Theme` level; internally a light/dark pair still exists, but users only ever see `Theme` and `ResolvedTheme` | Three top-level nouns: `Theme`, `ResolvedTheme`, `SystemTheme`. Matches how users actually think ("a theme", "a resolved theme", "a detected theme"). | Requires rethinking `Theme::merge` semantics (what happens when you merge a pair onto a pair?). Loses the ability to work with a single variant in isolation for advanced users. |
 | D | **Typestate**: one `Theme<State>` generic with `Raw`/`Resolved` marker types, one `SystemTheme` | Smallest possible public surface. Invalid states unrepresentable. | Ergonomics suffer: field access differs between states (Raw has `Option<T>`, Resolved has `T`) so the same `theme.defaults.accent_color` does different things. Generics everywhere. Most Rust users find typestate heavy. |
 | E | **Rename + type alias for compatibility window** (`pub type ThemeSpec = Theme;`) | Migration path for external users | Defeats the "no backward compat" freedom. Aliases stay around forever in practice. |
+| F | **Module disambiguation, no top-level rename** (added in merge review): leave every struct's identifier alone but move them inside `native_theme::theme::` so users write `theme::Spec`, `theme::Variant`, `theme::Resolved`, `theme::Bundle`. The short names are context-disambiguated by the `theme::` prefix; no rename migration needed. Couples tightly with §12 module partition. | Zero rename churn -- `grep -n ThemeSpec` lines keep matching. Short names are readable once the module context is known. The `Spec` / `Variant` / `Resolved` triplet is locally obvious inside `theme::`. | Still six nouns, just hidden behind a prefix. Connectors doing `use native_theme::{ThemeSpec, ThemeVariant, ...}` have to migrate imports. Paths become longer at the use site unless the user re-imports. |
 
 ### Recommended: **B**
 
@@ -158,6 +159,20 @@ without risk. The one judgement call is the fifth rename: should
 `DetectedTheme` because the user's question at the call site is usually
 "did I detect this or load it from disk" -- the "bundle" shape is an
 implementation detail.
+
+Option **F** is a real alternative that trades a different set of costs
+for a different set of benefits. It avoids the rename churn entirely
+(every existing `ThemeSpec` token keeps resolving), and the short names
+become unambiguous *inside* `theme::`. The cost is that users at the
+top level see `native_theme::theme::Spec` or have to add a
+`use native_theme::theme::Spec` line. Whether F is better than B
+depends on whether the crate expects users to reach for the inner
+types frequently (in which case B wins because identifiers stay short
+at the use site) or rarely (in which case F wins because there is no
+rename migration at all). For a data-modelling library where
+`ResolvedThemeVariant` is the primary consumer type, B is still my
+recommendation: the short top-level name is the more common path. F
+is a reasonable fallback if the rename migration is judged too risky.
 
 **Confidence:** high. Pure renaming with no semantic change. The one open
 question is the fifth rename, flagged in §28.
@@ -378,6 +393,42 @@ lazy detection path must be preserved or eagerised. The refactor
 interacts with §7 (`resolve*` proliferation) and should be done
 together.
 
+### Merge-review refinement: pair with doc 2 §B5 to avoid double-capture of DPI
+
+The doc as drafted stores `font_dpi` inside `OverlaySource`. Doc 2 B5
+separately recommends extracting `font_dpi` out of `ThemeDefaults` into
+a `ResolutionContext`. These two recommendations are in tension: if B5
+lands, then `OverlaySource` no longer needs to hold `font_dpi` directly
+-- it can hold a `ResolutionContext` (or just a `&ResolutionContext`
+from outside) and the DPI is captured once, at detection time, through
+that context instead of as a separate field here.
+
+Recommend: design §3 and B5 together. The `OverlaySource` shape should
+become:
+
+```rust
+pub(crate) struct OverlaySource {
+    reader_output: Theme,          // OS-detected data only
+    preset_name:   String,         // base preset to merge against
+    ctx:           ResolutionContext,  // from doc 2 B5 -- captures DPI + button_order + icon_theme
+}
+```
+
+This collapses the two "where does font_dpi live" questions into one
+answer: **in `ResolutionContext`, captured eagerly at `from_system()`
+time, consumed by both the initial resolve and any later `with_overlay`
+replay**. The "lazy detection in `into_resolved`" quirk disappears.
+
+The "~8 bytes vs ~2 KB" memory argument is slightly weakened -- a
+`ResolutionContext` holding strings and enums is ~200-400 bytes rather
+than ~8 -- but still a solid win over ~2 KB per `SystemTheme` instance.
+The architectural win (single source of truth for OS-captured data) is
+larger than the memory micro-win.
+
+**Confidence:** medium-high for the combined design. If §3 and B5 are
+split across releases, §3's `OverlaySource` should take a standalone
+`font_dpi: f32` field as drafted and be refactored when B5 lands.
+
 ---
 
 ## 4. `SystemTheme::active()` vs `pick()` redundancy and staleness
@@ -501,8 +552,9 @@ runtime.
 | D | **Split the async API by runtime**: `from_system_async_tokio()` (gated on `portal-tokio`) and `from_system_async_io()` (gated on `portal-async-io`). Only one exists per build. | Explicit. No silent runtime mismatches. | Two functions, two feature flags, two docs. Users doing conditional compilation hit `#[cfg(feature = ...)]` noise. |
 | E | **Take an executor at call time**: `from_system_async(&dyn Executor)` or have the user pass in a D-Bus connection. The library becomes runtime-agnostic because the runtime is an argument. | Fully decoupled. | API ergonomics degrade; every call site must have an executor. Doesn't exist as a standard trait in the ecosystem. |
 | F | **Expose the inner Future** (`from_system_future()`) and let users drive it however they want | Maximum flexibility. | Users must know what `Future` means and how to drive it. Beginners get lost. |
+| G | **Keep both `from_system` and `from_system_async`, make sync wrap `block_on(async)`** (added in merge review). Exactly one implementation (`from_system_async_inner`) exists. The sync `from_system()` is `pollster::block_on(from_system_async_inner())`. Async users get a genuine non-blocking future; sync users get the exact same behaviour as today. Feature `portal-tokio` / `portal-async-io` collapse into a single `portal` feature that pins `ashpd` to its `async-io` backend (which `pollster` can drive without a runtime). | Strict superset of B: sync users see no change, async users keep their async API, one implementation path for the portal call. No tokio coupling. An async app that wraps sync in `spawn_blocking` today still works (it just spawns a thread that calls `block_on` internally -- a tiny waste but zero behaviour change). | Adds a dependency on `pollster` (~50 LoC, zero transitive deps). `from_system_async` on macOS/Windows is still "async fn with sync body" unless those readers are also wrapped in a trivial `async {}` block -- which is trivial to do. |
 
-### Recommended: **B** (high confidence for sync; medium for block_on)
+### Recommended: **G** (strict superset of **B**; preserves async entry point)
 
 Make `from_system` always-sync. Drop `from_system_async`. On Linux, use
 an internal `block_on` (via `pollster` or `futures::executor::block_on`)
@@ -547,6 +599,38 @@ portal surface without losing functionality. If it cannot, fall back to
 `pollster::block_on(ashpd_call())` -- ashpd without a runtime feature
 uses `async-io` by default, which we can drive from `pollster` without
 pulling tokio.
+
+### Merge-review: why G beats B
+
+Option G is a strict superset of B. The difference is whether we keep
+`from_system_async` as a public entry point. B deletes it; G keeps it
+and implements sync on top of the same future. Both options:
+
+- Merge `portal-tokio` and `portal-async-io` into one `portal` feature.
+- Drop the runtime coupling.
+- Make sync users pay the blocking cost (because there is no way to
+  make a sync call non-blocking).
+
+The advantage of keeping `from_system_async` is that async callers
+don't have to wrap in `spawn_blocking`. `spawn_blocking` isn't free:
+it moves the call to a blocking-thread pool, adds thread-spawn
+latency (~50-200 μs), and on small runtimes (smol, async-io) may
+starve the blocking pool if called frequently. A native async path
+avoids all of that. For GUI apps on Linux, the portal call is
+already the slow path (hundreds of ms worst case); having a true
+async version lets the UI thread stay responsive during startup
+without a dedicated blocking-pool thread.
+
+The cost of G over B is **one dependency** (`pollster`, which is
+50 LoC and has no transitive deps) and **one more public function**
+(`from_system_async`). Both costs are small. The benefit -- keeping
+the async entry point genuinely non-blocking on Linux -- is
+meaningful for the target audience.
+
+Recommend **G**. Fall back to B if the dependency cost is considered
+unacceptable or if keeping two entry points is judged to pollute the
+surface. Fall back further to ashpd + zbus::blocking only if even
+pollster is too much.
 
 ---
 
@@ -726,6 +810,47 @@ integrations down the line.
 because the exact enum shape needs design; I have sketched one option
 but there are reasonable alternatives.
 
+### Merge-review addendum on 6a: the `presets.rs` stale comment
+
+Verification confirmed the 6a claim exactly: `error.rs:80` derives
+`Clone`, and `presets.rs:85-92` still says "`Error is not Clone`" with
+a `type Parsed = Result<ThemeSpec, String>;`. When 6a lands and drops
+the `Clone` bound, **also**:
+
+1. Delete the stale comment at `presets.rs:85-87`.
+2. Change the cache type. Two sensible options:
+   - `Result<ThemeSpec, Arc<Error>>` -- preserves error variant info,
+     shareable across the LazyLock, one heap alloc per cached error.
+   - `Result<ThemeSpec, Error>` -- if `LazyLock<HashMap<_, _>>` can
+     hold non-Clone values at the leaf (it can; the `Clone` bound was
+     imagined, not required).
+
+The second option is cleaner: `LazyLock<HashMap<&'static str,
+Result<ThemeSpec, Error>>>` compiles fine and the map is never cloned
+wholesale. The comment was wrong in both directions: `Clone` was never
+required for the cache, and stringifying the error was gratuitous.
+
+### Merge-review on 6b: a less-structured alternative worth weighing
+
+The recommendation prefers C (split `Unsupported` into flat top-level
+variants). A minor alternative **not** listed above:
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| D' | **Keep `Unsupported(&'static str)` but attach a machine-readable code constant**: `pub const FEATURE_MACOS_DISABLED: &str = "macos-feature-disabled";` etc., and emit `Error::Unsupported(FEATURE_MACOS_DISABLED)`. Callers compare `if err.as_str() == FEATURE_MACOS_DISABLED { ... }`. | Smallest API change; no new variants. Callers get programmatic matching. | Still stringly typed under the hood; easy to typo; no exhaustiveness check. |
+
+D' is genuinely less good than C, but it is the "minimum viable
+matchable" option and worth having on the table as a fallback if the
+enum-golf for C goes on too long. Keep **C** as the recommendation;
+D' is a fallback.
+
+### Merge-review on 6d: `toml::de::Error` is fine for coupling
+
+`toml::de::Error` already appears in the `From` impl, so the public
+type already depends on the `toml` crate version implicitly. Making
+that explicit via `Error::Toml(toml::de::Error)` adds zero new
+coupling. Option B stands as recommended.
+
 ---
 
 ## 7. `ThemeVariant::resolve*` method proliferation
@@ -812,9 +937,48 @@ Both are acceptable.
 whether to demote or delete; I chose demote because keeping the internals
 accessible to `pub(crate)` callers costs nothing.
 
+### Merge-review refinement: `#[doc(hidden)] pub` instead of `pub(crate)`
+
+The doc's Option B proposes demoting `resolve`, `resolve_platform_defaults`,
+and `resolve_all` to `pub(crate)`. This hides them from rustdoc and
+downstream code-completion, which is the goal. But it also breaks
+**integration tests** that live under `tests/` (not inside `src/`),
+including the idempotency test the doc calls out -- and the doc's
+suggested "rewrite as clone-twice + into_resolved" loses a subtle
+property: `into_resolved` runs the full pipeline (validation, font_dpi
+detection), so the rewritten test no longer isolates pure-resolution
+idempotency from validation idempotency.
+
+A better alternative that preserves the test:
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| B' | **`#[doc(hidden)] pub`** instead of `pub(crate)` | Hidden from rustdoc (the discoverability win) but still accessible from integration tests and downstream power users who know the name. Idempotency test at `tests/resolve_and_validate.rs:92-101` keeps working unchanged. | Not *hidden* from code completion if the user types the method name; sophisticated tooling may surface it. The method is still part of the SemVer surface (visible to downstream crates that reach for it). |
+
+Recommendation: prefer **B'** to **B** for the three intermediate
+methods. The SemVer cost is real but small (nobody uses these today
+outside tests -- the doc confirmed this). The test-rewriting cost is
+avoided. Rustdoc discoverability -- the actual user complaint -- is
+addressed by `#[doc(hidden)]` exactly as well as by `pub(crate)`.
+
+**Updated confidence:** high. B' is a one-attribute change (add
+`#[doc(hidden)]` to three functions, no other edits). Drop the test
+rewrite entirely.
+
 ---
 
-## 8. Icon loading: 12 functions, one user intent
+## 8. Icon loading: 13 functions, one user intent
+
+> **Merge-review count correction:** The original heading said "12
+> functions". The list below has 13 entries (`load_icon`,
+> `load_icon_from_theme`, `load_system_icon_by_name`, `load_custom_icon`,
+> `loading_indicator`, `bundled_icon_svg`, `bundled_icon_by_name`,
+> `load_sf_icon`, `load_sf_icon_by_name`, `load_freedesktop_icon`,
+> `load_freedesktop_icon_by_name`, `load_windows_icon`,
+> `load_windows_icon_by_name`). The argument of the section is
+> unchanged -- there are too many loaders -- but the number is 13 not 12.
+> `is_freedesktop_theme_available` at `icons.rs:121` is a capability
+> probe, not a loader, and is excluded from the loader count.
 
 **Files:**
 - `native-theme/src/icons.rs:43` (`load_icon`)
@@ -830,7 +994,7 @@ accessible to `pub(crate)` callers costs nothing.
 
 ### Problem
 
-Twelve public functions for "load an icon", with subtly different
+Thirteen public functions for "load an icon", with subtly different
 parameter shapes:
 
 ```
@@ -922,6 +1086,47 @@ of API, but the exact field set and method names need a round of
 bikeshedding. The `IconId` enum is my best guess at how to handle
 "role, name, or custom provider" uniformly; the alternative is three
 constructors on `IconRequest` (`from_role`, `from_name`, `from_provider`).
+
+### Merge-review refinement: `impl Into<IconId>` instead of exposing `IconId`
+
+The sketch shows `pub enum IconId<'a>` with three variants and has
+users write `IconRequest::new(IconId::Role(role))` or
+`IconRequest::new(IconId::Name("copy"))`. That's more ceremony than
+needed. Better:
+
+```rust
+impl<'a> IconRequest<'a> {
+    pub fn new(id: impl Into<IconId<'a>>) -> Self { ... }
+}
+
+impl From<IconRole> for IconId<'_> { ... }
+impl<'a> From<&'a str> for IconId<'a> { ... }
+impl<'a> From<&'a dyn IconProvider> for IconId<'a> { ... }
+```
+
+Now users just write:
+
+```rust
+IconRequest::new(IconRole::ActionCopy).load();
+IconRequest::new("doc.on.doc").load();
+IconRequest::new(&custom_provider).load();
+```
+
+The `IconId` enum becomes an implementation detail -- it's still
+public (needed for the `From` impls to work in downstream code), but
+users rarely mention it by name. This is the standard Rust pattern
+for "accept several natural input types via one method".
+
+One trade-off: with `From<&'a str>`, a user passing a literal
+`"sf-symbols"` by accident gets an icon named "sf-symbols" rather
+than a compiler error. Consider documenting that the `Name` path
+expects platform-specific names (e.g. SF Symbols ids on macOS, FDO
+names on Linux), not icon set names. No behavioural change, just a
+doc note.
+
+Update the recommendation: same builder shape, use `impl Into<IconId>`
+at the constructor. `loading_indicator` becomes
+`IconRequest::new(role).load_indicator()` as before.
 
 ---
 
@@ -1101,7 +1306,15 @@ downside beyond the `Cow` in the public shape (which `bytes()` hides).
 
 ---
 
-## 12. Flat crate root exports 80+ items
+## 12. Flat crate root exports ~70-75 items
+
+> **Merge-review count correction:** The original heading said "80+
+> items". Counting the re-exports in `lib.rs:122-203` precisely gives
+> about **70-75** items (36 model types + 2 color + 2 error + ~6 icons
+> free-fn + 7 detect + 2 pipeline + ~11 feature-gated platform + ~4
+> watcher). The "too many for a flat root" argument is unchanged --
+> 70+ is still dramatically beyond any reasonable alphabetical scan --
+> but the exact number is 70-75, not 80+.
 
 **File:** `native-theme/src/lib.rs:122-203`
 
@@ -1109,21 +1322,24 @@ downside beyond the `Cow` in the public shape (which `bytes()` hides).
 
 The crate root re-exports:
 
-- ~35 model types (every widget, every Resolved version, defaults, etc.)
+- ~36 model types (every widget, every Resolved version, defaults, etc.)
 - `Error`, `Result`, `ParseColorError`, `ThemeResolutionError`
 - `Rgba`
-- 11 icon-loading free functions
+- 6 icon-loading free functions from `icons` (the originally-reported
+  "11" included `detect_icon_theme`/`icon_name`/`system_icon_set`/
+  `system_icon_theme` which are `icons.rs` module utilities, plus the
+  feature-gated platform loaders)
 - 7 detection functions (cached + uncached)
 - 5 platform reader functions (`from_kde`, `from_macos`, etc.)
 - 6 platform-specific icon functions
 - 3 pipeline helpers (`platform_preset_name`, `diagnose_platform_support`, `rasterize_svg`)
 - 2 bundled lookup functions
 - `LinuxDesktop`, `detect_linux_de`
-- Watcher types
-- The `Skill` macro hasn't eaten the name space but plenty else has
+- Watcher types (`ThemeChangeEvent`, `ThemeWatcher`, `on_theme_change`)
 
-Users arriving at `docs.rs/native-theme` scroll through 80+ alphabetically
-sorted items to find what they need. Discoverability is awful.
+Users arriving at `docs.rs/native-theme` scroll through ~70-75
+alphabetically sorted items to find what they need. Discoverability
+is awful regardless of whether the exact count is 70, 75, or 80+.
 
 ### Options
 
@@ -1134,8 +1350,9 @@ sorted items to find what they need. Discoverability is awful.
 | C | **Partition into modules**: `native_theme::model::*`, `::icons::*`, `::detect::*`, `::watch::*`, `::readers::*` (internal). Keep a handful of root re-exports for the most common items (`Theme`, `ResolvedTheme`, `DetectedTheme`, `Error`, `Result`, `Rgba`). | Dramatic discoverability win. Users scan a dozen modules, each with 5-15 items, instead of a flat 80-item list. | Every import in user code changes. |
 | D | **Full hierarchy (no root re-exports)**. Users always use `native_theme::model::Theme`. | Most principled | Verbose at use site |
 | E | **Just rename the crate to `nt` or similar** to shorten root imports | Easy | Doesn't fix the underlying problem |
+| F | **C plus a `prelude` module** (added in merge review): `native_theme::prelude::*` contains just the ~6 most-used items (`Theme`, `ResolvedTheme`, `DetectedTheme`, `Rgba`, `Error`, `Result`). Users doing a quick demo write `use native_theme::prelude::*;` and get a working short-form namespace without having to remember which of the ~70 root items made the cut. | Matches ecosystem convention (`diesel::prelude`, `iced::prelude`, `serde::prelude`). Zero new re-exports beyond C -- the prelude is a thin `pub mod prelude { pub use super::{Theme, ...}; }`. The root keeps its six re-exports, and users who prefer explicit imports are unaffected. | One more concept users have to learn ("which is the prelude?"). Slight duplication between the root re-exports and `prelude::*`. |
 
-### Recommended: **C**
+### Recommended: **C**, optionally extended with **F**'s prelude module
 
 Module layout:
 
@@ -1200,13 +1417,30 @@ them inside that module is honest.
 fence lines go (e.g. should `LinuxDesktop` live in `detect` or at the
 root? I chose `detect` because it's detection-adjacent).
 
+### Merge-review note: adding a prelude (Option F) is low-cost
+
+If the crate lands C, adding F is one additional file:
+
+```rust
+// native-theme/src/prelude.rs
+pub use crate::{Theme, ResolvedTheme, DetectedTheme, Rgba, Error, Result};
+```
+
+Plus `pub mod prelude;` at the crate root. ~8 lines total. The cost
+is a single extra symbol in rustdoc (the `prelude` module). The
+benefit is that new users can copy `use native_theme::prelude::*;`
+from the README and have a working short form without scrolling.
+
+Recommend adding F as a small supplement to C. Not blocking -- skip
+if the maintainer prefers zero preludes.
+
 ---
 
 ## 13. Global static caches in `detect` and `model/icons`
 
 **Files:**
 - `native-theme/src/detect.rs:55` (`CACHED_IS_DARK`)
-- `native-theme/src/detect.rs:584` (`CACHED_REDUCED_MOTION`)
+- `native-theme/src/detect.rs:587` (`CACHED_REDUCED_MOTION`; line 584 in the original draft, corrected by merge review)
 - `native-theme/src/detect.rs:108-116` (`invalidate_caches`)
 - `native-theme/src/model/icons.rs:9` (`CACHED_ICON_THEME`)
 - `native-theme/src/model/icons.rs:502` (`Box::leak` to produce `&'static str`)
@@ -1303,6 +1537,34 @@ implementation needs to thread that through.
 **Confidence:** medium-high. The direction is right; the exact
 invalidation mechanism needs care.
 
+### Merge-review refinement: use `arc_swap::ArcSwapOption<T>` for invalidation
+
+The doc flags the `OnceLock` write-once problem. Three concrete
+primitives solve it; only the first two are worth considering:
+
+| # | Primitive | Reads | Writes | Dependency |
+|---|---|---|---|---|
+| F1 | `RwLock<Option<T>>` (status quo) | Requires a read lock; blocks on any concurrent writer | Requires write lock; blocks all readers | stdlib |
+| F2 | `arc_swap::ArcSwapOption<T>` | Lock-free atomic pointer-load | Lock-free atomic pointer-swap | `arc-swap` crate (1 dep, widely used) |
+| F3 | `Mutex<Option<Arc<T>>>` + manual caching | One mutex acquisition per read | One mutex acquisition per write | stdlib |
+
+`ArcSwapOption<T>` is the right primitive for "hot reads, rare
+invalidation". Reads are a single atomic load with no lock contention
+-- critical for the per-frame callers the doc flags (`showcase-gpui.rs:702`).
+Writes (invalidation) are atomic pointer swaps. There is no reader
+starvation, and no writer starvation.
+
+`arc-swap` is ~1500 LoC, zero transitive runtime deps, used in
+production by rustls, prometheus, rscsh, and the `pfp` serverless
+platform. Adding it is a small dependency cost with a meaningful
+correctness win. The doc's recommendation (DetectionContext) stands;
+use `ArcSwapOption` as the underlying cell type rather than manually
+threading `RwLock<Option<T>>` through every field.
+
+If the dependency cost is unacceptable, fall back to F1 (`RwLock`).
+Performance is acceptable for the current call volume; the correctness
+concern is the read-write starvation interaction, not raw throughput.
+
 ---
 
 ## 14. `ThemeSpec::lint_toml` hand-maintained duplicate registry
@@ -1348,8 +1610,9 @@ is a hint that the registry exists but is not wired in.
 | C | **Use serde's `deny_unknown_fields`**: add the attribute to every struct; silently-ignored-field behaviour becomes an error | Zero hand-maintained lint code | Breaks tolerant parsing (users with theme files from older versions get errors for removed fields). Has to be opt-in via a separate parse mode. |
 | D | **Generate the linter from `property-registry.toml`** via `native-theme-build` | Single source of truth (the registry), no Rust-side duplication, registry-to-Rust codegen is already the pattern | Build-script complexity; registry must be designed to capture all the information the linter needs |
 | E | **Use a proc-macro** (same as §2 option D) to collect field names into a single registry at compile time | One macro-generated registry; no manual list | Needs a proc-macro crate |
+| F | **Use the `inventory` crate to build a runtime registry from per-widget submissions** (added in merge review). Each `define_widget_pair!` invocation calls `inventory::submit! { WidgetEntry { name, fields } }`. `lint_toml` iterates `inventory::iter::<WidgetEntry>()` at runtime. The registry is assembled at link time from distributed contributions. | Zero code generation. Declarative macro can submit entries across invocations (which the doc correctly notes it cannot do via a `const`). One dep (`inventory` ~600 LoC, used by sqlx, datatest, tracing-opentelemetry). | Runtime iteration cost on each `lint_toml` call (trivial for a one-shot API). `inventory` uses linker magic that doesn't work on WebAssembly without special handling. Build-target audit needed if WASM is ever a goal. |
 
-### Recommended: **D** (registry-driven), with **C** as a mode
+### Recommended: **D** long-term (registry-driven), with **F** as a v0.5.7 fallback and **C** as a strict-parse mode
 
 Generate the lint tables from `docs/property-registry.toml` via
 `native-theme-build`. Make `deny_unknown_fields` the strict parse mode;
@@ -1380,6 +1643,53 @@ one change.
 registry schema and the build pipeline that generates Rust from it are
 non-trivial and should be discussed before implementation. Flag for
 §28.
+
+### Merge-review: Option F (`inventory`) breaks the "declarative macros cannot" wall
+
+The original rationale rejected Option B on the grounds that
+"declarative macros cannot append to a const list". That's true of
+`const` accumulation, but **not** of runtime registries assembled via
+link-time collection. The `inventory` crate exists specifically to do
+this: each `inventory::submit!` inside a `macro_rules!` expansion
+adds one entry to a process-wide collection that can be iterated at
+runtime.
+
+Concretely:
+
+```rust
+// in widgets/mod.rs:
+pub struct WidgetEntry { pub name: &'static str, pub fields: &'static [&'static str] }
+inventory::collect!(WidgetEntry);
+
+// in define_widget_pair! macro (one line added per invocation):
+inventory::submit! {
+    $crate::model::widgets::WidgetEntry {
+        name: stringify!($opt_name),
+        fields: $opt_name::FIELD_NAMES,
+    }
+}
+
+// in lint_toml:
+let registry: HashMap<_, _> = inventory::iter::<WidgetEntry>
+    .into_iter()
+    .map(|e| (e.name, e.fields))
+    .collect();
+```
+
+Adding a new widget becomes: call `define_widget_pair!`, done. The
+`VARIANT_KEYS` const and the `widget_fields` match arms disappear
+entirely. No proc-macro, no build script, no registry TOML file.
+
+The cost is one runtime dependency (`inventory`) and one-time
+registry collection at the start of `lint_toml`. On WASM, `inventory`
+requires a specific initializer mechanism that does not always work;
+if WASM support is a goal for `native-theme` now or soon, stick with
+D or keep A.
+
+**Recommend** pairing F as the short-term v0.5.7 fix (1 dep, ~20 LoC
+change) with D as the longer-term registry-driven evolution. F gives
+the drift-hazard win immediately; D subsumes it once the schema
+is designed.
 
 ---
 
@@ -1491,11 +1801,45 @@ Recommend **B** for v0.5.7, **C** if a builder emerges elsewhere.
 | C | Return `&ThemeVariant` and require the theme to have at least one variant by construction | Type-level invariant | Needs a new `NonEmptyTheme` type or a construction gate |
 | D | Return `Result<&ThemeVariant>` with a dedicated error variant | Common case is `?`-able | Still wordy |
 
-Recommend **C**: have `Theme::preset`, `Theme::from_toml`, and the
-pipeline all return a `Theme` type that guarantees at least one
-variant; `Theme::pick_variant(Mode) -> &ThemeLayer` is infallible.
-The only path that produces a variant-less theme is the (now-deleted)
-`ThemeSpec::new` from 15d.
+Recommend **D** (revised in merge review, from the original **C**).
+
+**Merge-review re-weigh of C vs D:**
+
+Option C needs either:
+1. A zero-size generic marker: `Theme<Populated>` vs `Theme<Empty>`.
+   This introduces a type parameter into every public signature that
+   mentions `Theme`. Rustdoc gets busier. Users see `Theme<Populated>`
+   in error messages and have to understand the distinction.
+2. A non-generic "new type" split: `Theme` (always populated) vs
+   `ThemeBuilder` (possibly empty). Users construct via the builder
+   and convert to `Theme` only when the invariant holds. Two types,
+   two sets of methods.
+
+Option D needs one new `Error` variant (`Error::NoVariants` or via
+doc 1 §6's restructure) and one `?` per caller that wants to avoid
+the `unwrap`. That's strictly cheaper than C's generic / builder
+burden for a library that treats `Theme` as its primary public type.
+
+D also composes better with `?` chains: `Theme::preset("dracula")?.pick_variant(true)?`
+flows naturally. C would force either `Theme::preset("dracula")?.pick_variant(true)`
+(returning `&ThemeVariant` directly, good) **or** an extra generic
+parameter threading through every method.
+
+The tipping factor: the "no variants" state is not actually
+unreachable. Any external TOML file is allowed to omit both `light`
+and `dark` sections -- `ThemeSpec::from_toml(r#"name = "x""#)` parses
+successfully today. Making this impossible at the type level either
+rejects those TOML files at parse time (a behaviour change) or
+requires C's generic split (an API cost).
+
+D is the minimum correct answer: keep `Theme` as one type, return
+`Result` for `pick_variant`, accept the one `?` per caller. Move to
+C only if D proves insufficient.
+
+**Updated recommendation: D.** Pair with 15d's deletion of
+`ThemeSpec::new` to keep the common path clean; pair with 15f's
+`PresetInfo` to distinguish "deliberately light-only" from "missing
+both" at list time.
 
 **15f (structured preset info):**
 
@@ -1506,16 +1850,21 @@ The only path that produces a variant-less theme is the (now-deleted)
 
 Recommend **B**.
 
-### Recommended (bundled)
+### Recommended (bundled, revised in merge review)
 
-1. Delete `from_toml_with_base` and `with_overlay_toml`.
+1. Delete `from_toml_with_base` and `with_overlay_toml`. **Also update
+   the "hint" message in `ThemeResolutionError::fmt` at `error.rs:63`**
+   which currently references `from_toml_with_base()` -- rewrite the
+   hint to the two-call idiom so the message does not name a removed
+   method. (Cross-referenced from doc 2 §I2.)
 2. Make `list_presets()` and `list_presets_for_platform()` both return
    `&[PresetInfo]` (the former is a compile-time constant; the latter
    is a filtered view, which can be a `Vec<PresetInfo>` or an iterator).
 3. Delete `ThemeSpec::new(name)`.
-4. Require `Theme` to have at least one variant by construction
-   (`Theme::preset` and `Theme::from_toml` already guarantee this in
-   practice). `pick_variant` becomes infallible.
+4. Change `pick_variant` and `into_variant` to return
+   `Result<..., Error::NoVariants>` (Option D in 15e's revised table).
+   Do **not** introduce a `Theme<Populated>` generic or a `ThemeBuilder`
+   split.
 
 ### Rationale
 
@@ -1523,10 +1872,12 @@ Each sub-issue is small on its own, but together they represent a
 grab-bag type that has accreted convenience methods without a consistent
 design. v0.5.7 is the right window to prune.
 
-The only non-obvious call is 15e. Option **B** (panic) is rejected by
-the no-panic rule. Option **C** (type-level guarantee) requires that
-`Theme::new` be either deleted (15d) or replaced with something that
-forces at least one variant. I think deletion is cleaner.
+The non-obvious call is 15e. Option **B** (panic) is rejected by the
+no-panic rule. Option **C** (type-level guarantee) was the original
+recommendation, but merge review re-weighed it against **D** (`Result`)
+and found that C's generic or builder cost outweighs the one-`?`
+benefit. Option **D** is the revised recommendation; see the extended
+discussion inside the 15e table above.
 
 **Confidence:** high on each sub-issue individually. The aggregate
 change is a chunk of work but mechanical.
@@ -1709,25 +2060,63 @@ serde and the hand-coded pair silently breaks round-tripping.
 | C | **Implement `from_name` / `name` using serde internals** (round-trip through a JSON or TOML string) | No new dependency | Allocation per call; clunky |
 | D | **Delete `from_name` / `name`**; require users to use serde for (de)serialization | Smallest API | Users doing ad-hoc name parsing lose convenience |
 
-### Recommended: **B** (add strum)
+### Recommended: **A with sync comment** (revised in merge review, from the original **B**)
 
 ### Rationale
 
-`strum` is a well-maintained, minimal-dependency crate that does
-exactly this job. Dropping into the dependency graph is a small cost
-for eliminating the three-place-update problem.
+`strum` is a well-maintained crate, but adding a proc-macro dependency
+for the benefit of removing drift risk on a **4-variant enum** is not
+a favourable trade. The entire duplication is:
 
-Option **D** (delete) is tempting but breaks users who parse icon-set
-names from config outside of serde (e.g. command-line arguments). Not a
-huge constituency but non-zero.
+- one `#[serde]` attribute list (already present)
+- one ~10-line `from_name` match
+- one ~10-line `name` match
+
+That is ~25 lines of hand-written code. A proc-macro crate pulls in
+`syn`, `quote`, and `proc-macro2` at compile time (~2 seconds on a
+cold build) to save those ~25 lines. The ROI is poor for this
+particular issue.
+
+**Revised recommendation:** keep the hand-written `from_name` / `name`
+methods but add a compile-time cross-check test:
+
+```rust
+#[test]
+fn icon_set_names_roundtrip_serde_and_from_name() {
+    for set in [IconSet::SfSymbols, IconSet::SegoeIcons, IconSet::Freedesktop,
+                IconSet::Material, IconSet::Lucide] {
+        // Names from both paths must agree:
+        let serde_name = serde_json::to_string(&set).unwrap();
+        let serde_name = serde_name.trim_matches('"');
+        assert_eq!(serde_name, set.name(),
+                   "serde and name() disagree for {set:?}");
+        // Round-trip via from_name:
+        let parsed = IconSet::from_name(set.name());
+        assert_eq!(parsed, Some(set), "from_name roundtrip failed for {set:?}");
+    }
+}
+```
+
+This single test is ~15 lines, catches any drift at CI time, and
+costs zero runtime dependencies. Adding a new variant is still two
+places (enum + matches), but the drift hazard is eliminated by the
+test.
+
+**Weighing against the user's dependency-conservatism preferences**
+(per CLAUDE.md memory "careful Rust", "strict, never lie, no unsafe"),
+the 4-variant match is a better fit than a proc-macro dep. If the
+enum grows to 10+ variants in the future, revisit and add `strum`.
+
+Option **B** (strum) remains acceptable but is no longer preferred.
+Option **D** (delete) is still rejected: command-line argument
+parsing is a real use case that should not require round-tripping
+through serde.
 
 Option **C** is hacky -- no.
 
-Option **B** costs one dependency and removes a drift hazard.
-
-**Confidence:** medium. The `strum` dependency is a real cost; if the
-crate values zero extra deps highly, option **A** with a "keep in sync"
-comment is an acceptable fallback.
+**Confidence:** medium-high on the revised recommendation. The test
+is a direct, durable fix for the drift hazard without any dependency
+cost.
 
 ---
 
@@ -1993,6 +2382,51 @@ structured form is strictly better.
 
 **Confidence:** high.
 
+### Merge-review refinement: per-entry typing
+
+The doc sketches the report as a struct with several typed fields
+(`platform`, `desktop`, `gsettings`, `kde_config_path`, `features`).
+A cleaner shape that avoids the "one field per diagnostic" explosion:
+
+```rust
+pub struct DiagnosticReport {
+    pub platform: Platform,
+    pub entries: Vec<DiagnosticEntry>,
+}
+
+pub enum DiagnosticEntry {
+    Detected(String),              // e.g. "XDG_CURRENT_DESKTOP: KDE"
+    DesktopEnv(LinuxDesktop),
+    Missing { tool: &'static str, impact: &'static str },
+    FeatureEnabled(&'static str),
+    FeatureDisabled(&'static str),
+    KdeConfig { path: PathBuf, exists: bool },
+}
+
+impl fmt::Display for DiagnosticReport {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        for entry in &self.entries { writeln!(f, "{entry}")?; }
+        Ok(())
+    }
+}
+```
+
+Why this is better than the doc's struct-with-many-fields:
+
+1. New diagnostic categories add variants to `DiagnosticEntry`, not
+   fields to `DiagnosticReport`. `#[non_exhaustive]` on the enum
+   preserves forward-compat.
+2. Users who just want strings get a working `Display` from the same
+   shape.
+3. Users who want programmatic inspection iterate `report.entries`
+   and pattern-match the variant they care about.
+4. The `Vec<DiagnosticEntry>` shape is closer to the existing
+   `Vec<String>` than a flat struct, so the migration diff is
+   smaller.
+
+Recommend the per-entry typing over the struct-with-many-fields
+sketch. Same Option B, cleaner shape.
+
 ---
 
 ## 24. `platform_preset_name` leaks the internal `-live` convention
@@ -2166,7 +2600,7 @@ Ordered by (impact × ease), highest first:
 | P2 | §23 `diagnose_platform_support` structured return | Low | Low | High |
 | P3 | §2 Macro-generated doubled struct hierarchy | High | Very high | Medium |
 | P3 | §14 Registry-driven `lint_toml` | Medium | High (design + codegen) | Medium |
-| P3 | §18 Replace `IconSet::from_name`/`name` with strum | Low | Low | Medium |
+| P3 | §18 Drift-guard test for `IconSet::from_name` (revised from strum) | Low | Trivial | High |
 | P3 | §21 `ThemeWatcher` rename + doc | Low | Trivial | High |
 | P3 | §25 `FontSize::Px(v).to_px(dpi)` rename to `resolve` | Low | Trivial | Medium |
 | P3 | §26 Trim `#[must_use]` messages | Very low | Trivial | High |
@@ -2227,9 +2661,12 @@ solution and they warrant a conversation before implementation:
    serde rename rules, field types, field categories, per-field docs.
    That's a bigger design task than the lint function itself.
 
-8. **§18: `strum` dependency acceptable?** Adding a minor dependency
-   removes a drift hazard. If the crate's philosophy is "zero optional
-   deps for the core model," this is a no-go.
+8. **§18: `strum` dependency acceptable?** (Merge-review update: the
+   recommendation is now **A with a drift-guard test**, not B with
+   strum. The crate's dependency-conservatism per CLAUDE memory argues
+   against a proc-macro dep for a 4-variant enum. Keep this open
+   question only if the enum grows to 10+ variants or a future
+   maintainer prefers the strum path.)
 
 9. **§24: Is `platform_preset_name` a stable contract?** It has one
    known external user (the gpui showcase). Breaking it requires
@@ -2260,3 +2697,143 @@ by other v0.5.x archived work:
 - `native-theme-build` API (covered separately).
 - Connector APIs (covered in `docs/todo_v0.6.0_iced-full-theme-geometry.md`
   and `docs/todo_v0.6.1_gpui-full-theme.md`).
+
+---
+
+## 29. Merge-review verification notes
+
+This section was added after a second verification pass through the
+codebase (reading every cited file:line against the current tree) and
+summarises the corrections and additions that were folded back into
+the sections above. It is a navigation aid, not a change log; each
+item points at the section where the correction was made in-line.
+
+### 29.1 Verified claims
+
+Every file:line reference in §1–§26 was re-checked against the
+current tree. All issues are real. All code snippets match the
+source (off by ≤3 lines in a couple of places, documented in-line
+where the offset was corrected). No fabricated values found. The
+original document is honest and thorough.
+
+### 29.2 Corrections applied in-line
+
+| Section | Correction |
+|---|---|
+| §8 | Count was "12" functions; re-verified list has 13. Heading updated. |
+| §12 | Count was "80+" items; re-verified count is ~70-75. Heading updated. |
+| §13 | `CACHED_REDUCED_MOTION` was at `detect.rs:584`; actual line is 587. |
+| §15 | `from_toml_with_base` removal needs to coordinate with the hint message at `error.rs:63` which names it. Cross-reference added in §15 recommended-bundled block. |
+| §15e | Original recommendation **C** (type-level "at least one variant" invariant) re-weighed against **D** (return `Result`). New recommendation: **D**. Full rationale in 15e's updated table. |
+| §18 | Original recommendation **B** (add `strum`) reversed to **A with drift-guard test**, reflecting the crate's dependency-conservatism. |
+
+### 29.3 New options added in-line
+
+| Section | New option |
+|---|---|
+| §1 | **F** — module disambiguation (no rename; move types under `theme::`). |
+| §5 | **G** — keep `from_system` and `from_system_async`, sync wraps `pollster::block_on(async_inner)`. Strict superset of B. **Now recommended over B.** |
+| §6b | **D'** — machine-readable code constants on `Unsupported(&'static str)`. Fallback if C's flat variants are rejected. |
+| §7 | **B'** — `#[doc(hidden)] pub` instead of `pub(crate)` to preserve the integration test. **Now recommended over B.** |
+| §8 | Use `impl Into<IconId>` at the constructor instead of exposing `IconId` directly. Refinement inside C. |
+| §12 | **F** — C plus a `prelude` module with the 6 most-used items. Small supplement to C. |
+| §13 | **F** — use `arc_swap::ArcSwapOption<T>` for the invalidation cell. Refinement to C. |
+| §14 | **F** — `inventory` crate for link-time registry collection. Short-term path that unblocks the "declarative macros cannot" wall without a build script. |
+| §23 | Per-entry typing refinement (`Vec<DiagnosticEntry>`) inside the doc's Option B. |
+
+### 29.4 Cross-references to doc 2
+
+| Doc 2 item | Doc 1 interaction |
+|---|---|
+| A1 | **Already fixed** in commit `f9e5956`. No longer blocks v0.5.7. |
+| A3 | Depends on doc 1 §6 error restructure. Fold A3 into §6 if both land together. |
+| A4 | Resolves naturally if doc 1 §7 demotes `resolve` to `pub(crate)` / `#[doc(hidden)]`. Otherwise A4's own fix (move button_order to `resolve_platform_defaults`) is needed. |
+| B1/B2/B7 | All three depend on the same codegen/registry infrastructure that doc 1 §2/§14 discuss. Design once, use three times. |
+| B5 | `ResolutionContext` in doc 2 B5 is the natural home for doc 1 §3's `OverlaySource` DPI capture. Design §3 and B5 together (see §3's merge-review addendum). |
+| C4 | Migrating `family: String → Arc<str>` needs the `serde` `rc` feature flag. Noted in doc 2 C4's merge-review addendum. |
+
+### 29.5 Priority re-tiering from merge review
+
+Updates to §27's priority table:
+
+- **§18**: Demoted from "P3 strum dependency" to "P3 drift-guard test"
+  with **High** confidence (previously Medium). The work is smaller
+  and the confidence is higher because it no longer depends on a
+  dependency decision.
+- **§5**: Still P2, but the recommendation is now Option G (pollster
+  wrapping) which is a smaller migration than B (rewrite + dep audit)
+  or zbus::blocking (which may not cover the full surface). The
+  confidence on the recommendation is higher, even if the priority
+  tier is unchanged.
+- **§7**: Confidence still high; implementation simpler (B' is one
+  attribute per method, no test rewrite). Priority unchanged.
+
+No new P0/P1 items. No items moved up from P2/P3 to P0/P1. The
+merge-review corrections are all in-section refinements or
+recommendation re-weighs, not priority shifts.
+
+### 29.6 Items the merge review found but did not make new sections for
+
+These were noted during verification but either belong to doc 2 or
+are too small to warrant their own section in doc 1:
+
+1. **`presets.rs:85-92` stale comment about `Error: !Clone`** -- see
+   doc 2 §I1. Folded into doc 1 §6a's merge-review addendum as a
+   concrete cleanup target.
+2. **`run_gsettings_with_timeout` 2-second worst case** at
+   `detect.rs:138-177` -- see doc 2 §I3. Not a new option in §13, but
+   a latency consideration the `DetectionContext` redesign should
+   account for.
+3. **`FontSize::default() = Px(0.0)` at font.rs:66-70** as a second
+   root cause of doc 2 A2's spurious errors -- see doc 2 A2's
+   merge-review addendum. Not a doc 1 issue; noted for completeness.
+4. **`inheritance-rules.toml` vs `inheritance.rs` drift** -- this is
+   doc 2 B2 and is already covered there. Doc 1 §14's codegen
+   recommendation should be designed to subsume B2.
+5. **`lint_toml` has ~215 hand-maintained string literals total** --
+   see doc 2 §I5 for the count. Doc 1 §14's ROI number.
+
+### 29.7 Confidence statement (merge review)
+
+**High confidence** on:
+
+- Every file:line reference resolves against the current tree (with
+  the 3 documented offsets).
+- A1 is fixed in commit `f9e5956`.
+- Every issue in doc 1 is real and reproducible.
+- The P0 cohort is correct and shippable as a coherent v0.5.7 release.
+
+**Medium confidence** on:
+
+- The exact shapes of the added options (§1 F, §5 G, §12 F, §13 F,
+  §14 F). Each has been reasoned about from first principles but
+  not prototyped end-to-end.
+- The revised recommendations (§7 B', §15e D, §18 A-with-test). Each
+  is supported by an explicit weighing against the original
+  recommendation, but reasonable maintainers could disagree.
+
+**Low confidence** on:
+
+- Precise sizing of the codegen spike (doc 1 §2 + §14 plus doc 2
+  B1/B2/B7). The design work is non-trivial and the prototype will
+  surface issues I cannot anticipate from static reading alone.
+- The §1 fifth-rename judgement (`DetectedTheme` vs `ThemeBundle`).
+  I lean `DetectedTheme`, doc 1 agrees, but both are defensible.
+- B4 accessibility split (doc 2). The philosophical question "is
+  high_contrast a theme property or a user preference?" admits
+  multiple defensible answers. Flagged in doc 2 open questions.
+
+### 29.8 What was NOT changed
+
+Deliberately preserved from the original document:
+
+- The P0 cohort from §27 and doc 2 §H (except A1 removal).
+- The overall recommendation direction for §2 (proc-macro codegen
+  is still the long-term answer, even with §14 F adding an
+  inventory-based short-term path).
+- The §28 open questions list (added one clarification, did not
+  remove any).
+- Every pros/cons entry in the original option tables.
+
+If a section does not have a "merge-review" sub-heading, it is
+unchanged from the original analysis.

@@ -89,7 +89,20 @@ partitioned set of recommendations.
 
 ### A1. Defensive `checked_sub` for `Instant` arithmetic
 
-**File:** `native-theme/src/watch/kde.rs:54-56`
+> **STATUS: ALREADY FIXED** -- commit `f9e5956`, current tip of `main`.
+>
+> The exact Option C fix recommended below (`Option<Instant>` with a
+> `None`-means-never-fired sentinel) was applied before this document
+> was finalised. Current `native-theme/src/watch/kde.rs:56` reads
+> `let mut last_fire: Option<Instant> = None;` and the debounce check at
+> line 66 is `if is_relevant && last_fire.is_none_or(|t| t.elapsed() >= debounce)`.
+> The problem description, options table, severity correction, and
+> rationale below are retained as a historical record of the reasoning,
+> but **no v0.5.7 work is required for A1** -- it is already shipped.
+> This item has been removed from the §E priority summary and the §H
+> cross-document P0/P2 consolidation.
+
+**File (pre-fix snapshot, for historical reference only):** `native-theme/src/watch/kde.rs:54-56`
 
 ```rust
 // Allow the first event to fire immediately by setting last_fire far
@@ -358,6 +371,30 @@ than just reordering the operations.
 
 **Confidence:** high. The diagnostic is clear; the fix is mechanical.
 
+#### Merge-review addendum: the `T::default()` contribution comes from two places
+
+The spurious-error set is amplified by a **second** default choice in
+`native-theme/src/model/font.rs:66-70`:
+
+```rust
+impl Default for FontSize {
+    fn default() -> Self {
+        Self::Px(0.0)
+    }
+}
+```
+
+So when `require(&font.size, ...)` falls through to `T::default()`, it
+materialises `FontSize::Px(0.0)` -> `0.0` after `to_px(dpi)` -> fails
+`check_positive`. This is consistent with the analysis above but makes
+the root cause structurally explicit: **two independent defaults (`u16 = 0`
+and `FontSize::Px(0.0)`) land outside their validation ranges**. A
+separate minor option E' would be to change `FontSize`'s `Default` impl
+to sit inside `check_positive`'s legal range (e.g. `Px(1.0)`), but that
+is a band-aid that only hides the symptom for one field. B+C is still
+the right fix; this addendum simply records the additional root-cause
+component so future contributors don't rediscover it.
+
 ---
 
 ### A3. `ThemeResolutionError::missing_fields` carries two error categories
@@ -563,6 +600,15 @@ disappears naturally -- `into_resolved` is the only public path and
 it's allowed to touch the OS.
 
 **Confidence:** high. Low-risk move.
+
+#### Merge-review addendum: D5 is independent of A4
+
+D5 (below) deletes the KDE reader's hardcoded `button_order = PrimaryLeft`.
+A4 moves the resolution-side fallback into `resolve_platform_defaults`.
+These are **independently correct**: D5 removes the reader-side
+duplication regardless of whether A4's move happens, and A4's move is
+correct regardless of whether D5 removes the reader-side hardcode. The
+"depends on A4" remark in D5 is too cautious. Ship D5 unconditionally.
 
 ---
 
@@ -864,8 +910,9 @@ which is fragile for macOS (which populates both).
 | C | **Standardise on `ReaderOutput { active: ThemeLayer, inactive: Option<ThemeLayer>, is_dark: bool }`** as a typed return type distinct from `ThemeSpec` | Explicit; typed "which variant is live" via `is_dark` | New type; pipeline transforms `ReaderOutput → ThemeSpec` in one place |
 | D | **Standardise on "readers return only the active variant + `is_dark` flag"**: `fn from_kde() -> (ThemeLayer, bool)`. Pipeline fills the inactive side from preset. | Minimal reader contract; simplest | Loses macOS's ability to provide both; macOS reader must drop its dark-variant read |
 | E | **Keep both shapes; wrap in an enum**: `pub enum ReaderOutput { Active { variant: ThemeLayer, is_dark: bool }, Both { light, dark } }`. Pipeline matches on the variant. | Both shapes preserved; explicit | More complexity than **C** |
+| F | **`ReaderOutput` with trilean `known_is_dark: Option<bool>`** (added in merge review). `Some(true)` when the reader knows the OS is dark (KDE via kdeglobals, macOS via NSAppearance), `Some(false)` when it knows the OS is light, `None` when it cannot tell (portal-only readers, some fallbacks). The pipeline falls back to `detect::system_is_dark()` when the reader returns `None`. | Makes "reader couldn't determine" a typed state; avoids the fragile `reader.dark.is_some() && reader.light.is_none()` heuristic that doc 1 §4's staleness trap feeds on; single path for all readers | One more field on `ReaderOutput` than C; callers must handle the `None` branch via an explicit fallback call |
 
-#### Recommended: **C** (typed `ReaderOutput`)
+#### Recommended: **F** (strict superset of **C**)
 
 ```rust
 pub struct ReaderOutput {
@@ -911,6 +958,24 @@ inactive variant" and carries `is_dark` as typed data. Readers that
 can only get one variant return `inactive: None`. Readers that get
 both return `inactive: Some(...)`. The pipeline always knows which
 variant is live without inference.
+
+Option **F** is a strict superset of **C**: it replaces the boolean
+`is_dark: bool` with `known_is_dark: Option<bool>`. This matters
+because today's `reader_is_dark` helper at `pipeline.rs:282-284`
+(`reader.dark.is_some() && reader.light.is_none()`) is a lossy
+inference. macOS populates both variants, so the helper returns
+`false` regardless of what the OS actually reports -- `from_system_inner`
+at `pipeline.rs:331` works around this by calling the helper AND the
+real `detect::system_is_dark()`. Option C's `is_dark: bool` hard-codes
+a single answer and forces every reader to provide it even when it
+cannot. Option F makes "cannot determine" a first-class state, which
+matches the truth and lets the pipeline apply its own fallback once,
+in one place.
+
+The cost of F over C is tiny (one extra match arm in the pipeline).
+The correctness win is meaningful: the gpui watcher and portal-only
+readers today cannot reliably report is_dark, and C would force them
+to lie. F lets them return `None` honestly.
 
 **Confidence:** medium-high. The shape is right; the migration is
 mechanical but touches every reader.
@@ -1103,6 +1168,37 @@ other hybrid fields.
 `ResolutionContext` need a round of discussion; I've listed the
 obvious candidates.
 
+#### Merge-review refinement: use `Option<&ResolutionContext>` at the API boundary
+
+As drafted, `Theme::resolve(self, ctx: &ResolutionContext)` forces
+every caller -- including tests, doctests, examples, and snapshot
+fixtures -- to construct a context before they can resolve a theme.
+That's a large amount of touch churn across the tree. A better shape:
+
+```rust
+impl Theme {
+    /// Resolve with explicit context, or auto-detect when `None`.
+    pub fn resolve(self, ctx: Option<&ResolutionContext>) -> Result<ResolvedTheme>;
+    /// Convenience alias for `resolve(None)`.
+    pub fn resolve_system(self) -> Result<ResolvedTheme> { self.resolve(None) }
+}
+```
+
+`Option<&ResolutionContext>` has two payoffs the mandatory form lacks:
+
+1. Existing call sites that today rely on auto-detection inside
+   `into_resolved` stay mostly unchanged -- they pass `None`.
+2. Tests that want to pin DPI + button_order for determinism pass
+   `Some(&fixture_ctx)` and get a fully-reproducible resolve.
+
+This is functionally equivalent to the doc's `resolve` + `resolve_system`
+pair, but collapses two methods into one that can be called either way.
+The choice between "two methods with distinct names" (doc's form) and
+"one method with `Option<&ctx>`" (merge refinement) is taste-level --
+the latter is more Rustacean, the former is arguably more discoverable
+in rustdoc. I marginally prefer the single-method form, but will not
+fight hard if the two-method form is chosen.
+
 ---
 
 ### B6. `BorderSpec` allows defaults-only fields at widget level
@@ -1200,6 +1296,19 @@ trait if useful, but the distinct fields prevent invalid states at
 the type level.
 
 **Confidence:** high.
+
+#### Merge-review note: coordinate with B1/B2 codegen
+
+If B1/B2's registry-driven codegen lands, the two border-spec types
+should be generated from the same registry entry using a `kind`
+discriminator (`defaults` vs `widget`) rather than hand-written. This
+avoids the "now we have two types to keep in sync for every new
+border field" maintenance burden. Practically: define `border_fields`
+once in `property-registry.toml` with a `level = "defaults"|"widget"`
+tag per field, and have the generator emit `DefaultsBorderSpec` and
+`WidgetBorderSpec` as two views over that one field list. Defer the
+hand-written B split until the codegen approach is decided so we
+don't do the work twice.
 
 ---
 
@@ -1386,6 +1495,7 @@ This was not in the first critique and deserves its own entry.
 | C | **Keep `ColorSchemeChanged` but add `AccentChanged`, `ContrastChanged`, `FontsChanged`, etc.** as new variants (taking advantage of `non_exhaustive`) and have each backend fire the narrowest applicable variant | Maximally informative | Requires distinguishing the trigger per backend, which KDE's file watcher cannot do without re-reading and diffing the config |
 | D | **Fire both**: the current notification is the coarse `ThemeMayHaveChanged`, and fine-grained variants are added over time as backends grow the capability | Migration path | Two events per real change if not careful |
 | E | **Drop the payload entirely**: change the callback signature from `Fn(ThemeChangeEvent)` to `Fn()`. The callback is a "something changed" pulse, nothing more. | Simplest; honest | Loses future extensibility; may want specific payloads later |
+| F | **Keep `ColorSchemeChanged` but add a `source: EventSource` field** (added in merge review) that records the backend's precision: `EventSource::KdeColorsOrFonts`, `EventSource::GnomeAppearancePortal`, `EventSource::MacOsInterfaceTheme`, `EventSource::WindowsUIColor`. Backends emit `ColorSchemeChanged { source: ... }` and callers who care can match on the source. | macOS name stays accurate for the platform that can tell; callers who want "did colors *actually* change?" can filter out `KdeColorsOrFonts` and re-read only on `MacOsInterfaceTheme` | Adds a payload field; still a single variant so the name covers the union |
 
 #### Recommended: **B** (rename to `Changed`)
 
@@ -1425,6 +1535,17 @@ genuinely accurate, future versions could add a narrower
 specifically. The current `Changed` variant would remain as the
 fallback for less-precise backends. But that's a refinement, not a
 blocker for v0.5.7.
+
+**Option F weighed against B:** F preserves the informative intent
+of the original name (the macOS backend can still say
+"ColorSchemeChanged") while tagging backends that cannot actually
+tell. The objection to F is that it leaves the variant name
+misleading for the KDE and GNOME cases even if `source` is wired
+up -- users who `match ThemeChangeEvent::ColorSchemeChanged` without
+checking `source` still get false-positives. Option B renames the
+variant to something accurate for all cases and is the safer default.
+Keep **B** as the P0 fix. F can be added later as an additive
+refinement without breaking B.
 
 **Confidence:** high.
 
@@ -1545,6 +1666,23 @@ with the typed fields.
 
 **Confidence:** high.
 
+#### Merge-review refinement: `impl Deref<Target = [IconData]> for FrameList`
+
+As sketched, `FrameList` exposes `as_slice()` and `first()` as named
+methods. Every consumer then writes `frame_list.as_slice().iter()` or
+`frame_list.as_slice().len()`. That's extra tokens for no type-safety
+gain. Adding `impl Deref<Target = [IconData]> for FrameList` (and
+`Deref` only, not `DerefMut`, to preserve the non-empty invariant)
+lets callers write `frame_list.iter()`, `frame_list.len()`,
+`&frame_list[0]`, etc. directly. The newtype still prevents
+construction of an empty `FrameList`, so the invariant is intact, but
+the ergonomic cost of wrapping the `Vec` disappears. This is the
+standard pattern for validated collection newtypes in Rust (see
+`NonEmpty<T>` in the `nonempty` crate, which does exactly this).
+
+Recommend adding this to the sketch. One line of impl, zero semantic
+change.
+
 ---
 
 ### C4. Font family ownership: owned `String` per widget × connector leak
@@ -1571,18 +1709,30 @@ A `ResolvedTheme` contains a `ResolvedFontSpec` inside `defaults.font`,
 theme where every widget inherits `"Inter"`, that's ~22 separate owned
 `String` clones of the same 5-byte string per resolved theme.
 
-Separately, the iced connector has to leak the font family to obtain
-`&'static str` for iced's `Font::Family::Name` (per
-`connectors/native-theme-iced/src/lib.rs:40-51`):
+Separately, the public API forces downstream iced users to leak the
+font family to obtain `&'static str` for iced's `Font::Family::Name`.
+**Framing correction (merge review):** The `Box::leak` snippet below
+is a **doc-comment example** at `connectors/native-theme-iced/src/lib.rs:40-43`,
+*not* runtime code inside the connector. The connector's own
+`font_family()` at `lib.rs:251` returns a plain `&str` that borrows
+from `resolved.defaults.font.family`. So the leak is the user's
+responsibility, not the library's, but the underlying problem is the
+same: iced's `Font::Family::Name` wants `&'static str`, and the only
+way a user can produce one from the current `ResolvedFontSpec::family:
+String` is to `Box::leak` the value themselves on every call. The
+connector documents the pattern as "standard iced" because the
+public API offers no alternative.
 
 ```rust
-let name: &'static str = Box::leak(
-    native_theme_iced::font_family(&resolved).to_string().into_boxed_str()
-);
+// From connectors/native-theme-iced/src/lib.rs:40-43 (doc comment!):
+//! let name: &'static str = Box::leak(
+//!     native_theme_iced::font_family(&resolved).to_string().into_boxed_str()
+//! );
 ```
 
-Each call leaks another copy. The workaround is documented ("standard
-iced pattern") but is inelegant.
+Each call a user makes per the documented pattern leaks another copy.
+The workaround is inelegant regardless of whether the leak is in
+connector code or user code.
 
 #### Options
 
@@ -1642,11 +1792,28 @@ per-theme duplication.
 Combining **B** (Arc sharing within a theme) and **C** (intern helper
 for connector consumption) gives the best of both: minimal memory
 per theme, and a sanctioned path to `&'static str` that replaces
-the iced connector's ad-hoc leak.
+the iced user's documented ad-hoc leak.
 
 **Confidence:** medium-high. `Arc<str>` changes public signatures in
 non-trivial ways; connector rewrites are needed. But the connectors
 are in this tree, so they can migrate in lockstep.
+
+#### Merge-review note: `Arc<str>` serde considerations
+
+Changing `ResolvedFontSpec::family: String → Arc<str>` needs two
+small deserialize accommodations:
+
+1. `serde` has a `rc` feature flag that enables `Arc<str>` directly.
+   Enable it in `native-theme/Cargo.toml`: `serde = { version = "1",
+   features = ["derive", "rc"] }`. Without this flag, `Arc<str>` does
+   not implement `Deserialize` out of the box.
+2. `PartialEq` on `Arc<str>` compares the *contents* (via `Deref`),
+   not the pointer, so existing test equality expectations still
+   hold. No changes to test fixtures needed.
+
+These are ~5 lines total (one Cargo.toml flag plus a comment in the
+type definition). The doc's recommendation stands; this addendum
+just records the migration detail.
 
 ---
 
@@ -2094,7 +2261,7 @@ direction of A4.
 | P1 | C3 `AnimatedIcon` typed construction | Safety | Low |
 | P1 | C4 `Arc<str>` font family + intern helper | Memory/perf | Medium |
 | P1 | C6 Demote platform readers | Cleanup | Low |
-| P2 | A1 `Instant` arithmetic without `checked_sub` (demoted from P0 after verification) | Defensive | Trivial |
+| ~~P2~~ FIXED | ~~A1 `Instant` arithmetic without `checked_sub`~~ Fixed by commit `f9e5956`, see STATUS block on A1 | — | — |
 | P2 | B7 Unify border-inheritance paths (bundles with B1) | Structural | — |
 | P2 | C5 `detect_linux_desktop()` no-arg | Ergonomics | Trivial |
 | P2 | D3 `check_ranges` path string allocation | Perf | Low |
@@ -2105,10 +2272,11 @@ direction of A4.
 
 - **P0 items** should land in v0.5.7. They are verified bugs (A2-A4)
   or small corrections with immediate correctness impact (C1, C2, B4,
-  B6). A1 was initially catalogued here but is demoted to P2 after
-  verification showed it is a documented may-panic per Rust's std
-  contract, not a verified startup crash on the Linux code path this
-  file actually compiles on.
+  B6). A1 was initially catalogued here, demoted to P2 after verification
+  showed it is a documented may-panic rather than a verified startup
+  crash, and is now **removed entirely from the v0.5.7 backlog** because
+  commit `f9e5956` has already applied the Option C fix to current
+  `watch/kde.rs`.
 - **P1 items** are the substantial structural changes. B1 and B2 are
   the long-term investments; B3, B5, C3, C4, C6 are one-shot fixes
   with medium-sized diffs.
@@ -2236,15 +2404,16 @@ v0.5.7 scope:
 - C1 Remove `ThemeChangeEvent::Other` (P0)
 - C2 Rename `ColorSchemeChanged` → `Changed` (P0)
 
-**Correction note on A1.** This item was initially catalogued as P0
-(verified bug). Closer reading of Rust std source showed the `Instant
-- Duration::from_secs(10)` expression produces a valid-if-strange
+**Correction note on A1 (SUPERSEDED BY FIXED STATUS).** This item was
+initially catalogued as P0 (verified bug), then demoted to P2 after a
+closer reading of Rust std source showed the `Instant -
+Duration::from_secs(10)` expression produces a valid-if-strange
 `Instant` with negative internal seconds on the Linux code path this
-file compiles on, without panicking. The accurate label is "latent
-may-panic per documented std contract" and the item is demoted to
-**P2** (defensive coding). The fix is still worth making -- std
-explicitly recommends `checked_sub` -- but it does not belong in the
-P0 cohort.
+file compiles on, without panicking. A subsequent merge-review pass
+(commit `f9e5956` already on `main`) applied the Option C `Option<Instant>`
+fix and the item is now **fully removed from the v0.5.7 cohort**. See
+the STATUS block at the top of A1 for the current code shape. No work
+required.
 
 This is 13 P0 items totaling **~30-50 diffs of varying size**. Bugs
 (A2, A3, A4) are small. Renames (§1, §4, §16, §19, C1, C2) are
@@ -2255,3 +2424,154 @@ The P1 items from both documents can be staged across v0.5.7, v0.5.8,
 and v0.5.9 depending on capacity. The biggest investments are the
 codegen work (doc 1 §2 + §14 + this doc's B1 + B2 + B7, all the same
 bet) which is appropriate for a dedicated phase.
+
+---
+
+## I. Supplemental items discovered in merge review
+
+A second verification pass (reading every cited file:line against the
+current tree) surfaced five additional items neither A/B/C/D sections
+catch. All are small. All are real.
+
+### I1. `presets.rs` stale comment claims `Error` is not `Clone`
+
+**Files:**
+- `native-theme/src/presets.rs:85-88`
+- `native-theme/src/error.rs:80` (`#[derive(Debug, Clone)]`)
+
+The cache-type comment reads:
+
+```rust
+// Errors are stored as String because Error is not Clone, which is
+// required for LazyLock storage without lifetime constraints.
+type Parsed = std::result::Result<ThemeSpec, String>;
+```
+
+But `error.rs:80` already derives `Clone`. The comment is stale: at
+some earlier point `Error` was not `Clone`, then `Clone` was added
+(see doc 1 §6a's rationale for why the bound was added -- to support
+caching), and the presets cache was never migrated. Two consequences:
+
+1. The cache loses variant information: every error becomes a
+   `Format(String)` on the way back out (via the `|e| e.to_string()`
+   at `presets.rs:91`), even if the original was `Error::Io` or
+   `Error::Resolution`.
+2. Doc 1 §6a's recommendation to drop the `Clone` bound is now
+   clean: nothing depends on it, including the comment that claimed
+   to.
+
+**Recommended fix (bundled with §6a):** update the cache to store
+`std::result::Result<ThemeSpec, Arc<Error>>` (or `Error` directly if
+§6a's Clone drop is paired with a storage shape that does not need
+Clone). Remove the stale comment. This is a 5-line change.
+
+**Confidence:** high.
+
+### I2. `ThemeResolutionError` `Display` hint references `from_toml_with_base`
+
+**File:** `native-theme/src/error.rs:55-65`
+
+The hint branch in `ThemeResolutionError::fmt` says:
+
+```rust
+write!(
+    f,
+    "\n  hint: root defaults drive widget inheritance; \
+     consider using ThemeSpec::from_toml_with_base() to inherit from a complete preset"
+)?;
+```
+
+Doc 1 §15a recommends deleting `from_toml_with_base` as a one-liner
+wrapper with no unique value. If §15a lands, this hint message points
+at a nonexistent method. Cross-cutting cleanup needed.
+
+**Options:**
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| A | **Delete `from_toml_with_base` per §15a and leave the hint alone** | — | Hint references a gone method; users see a dangling name in diagnostics |
+| B | **Delete `from_toml_with_base` and update the hint** to point at the two-call idiom (`preset(name).merge(&from_toml(s))`) | Hint still useful | Longer hint message |
+| C | **Delete `from_toml_with_base` and delete the hint** | Minimum cleanup | Loses guidance for the "missing root defaults" case which is the most common user mistake |
+| D | **Keep `from_toml_with_base` (reject §15a)** | Preserves the hint as-is | Keeps a one-liner wrapper that doesn't scale to JSON/YAML |
+
+**Recommended: B.** Rewrite the hint to:
+
+> hint: root defaults drive widget inheritance; load a complete base
+> preset with `ThemeSpec::preset(name)` and merge your overlay onto it.
+
+This preserves the guidance without naming the removed wrapper.
+
+**Confidence:** high.
+
+### I3. `run_gsettings_with_timeout` can block for 2 seconds on cold caches
+
+**File:** `native-theme/src/detect.rs:138-177`
+
+`system_is_dark()` caches its result, but on the first call (or after
+`invalidate_caches()`), Linux falls through to
+`run_gsettings_with_timeout(&["get", "org.gnome.desktop.interface", "color-scheme"])`.
+That function uses a 2-second timeout loop with `try_wait` + 50 ms
+`sleep`. If `gsettings` is installed but D-Bus is slow to respond,
+the call can block for up to **2 seconds** of wall clock.
+
+Doc 1 §13 discusses the cache-granularity and staleness problems but
+never mentions this latency. It matters for:
+
+- Connectors that call `system_is_dark()` on the UI thread (e.g.
+  `showcase-gpui.rs:702` and `showcase-iced.rs:254` per doc 1 §13's
+  "per-frame" claim -- if a cache invalidation lands mid-frame, the
+  next frame stalls up to 2 s).
+- Windowed apps that call `SystemTheme::from_system()` at startup
+  -- the 2 s worst case compounds with the portal call's own delay.
+
+**Options:**
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| A | **Status quo** | No change | 2 s worst-case stall on cold cache |
+| B | **Reduce the timeout to 500 ms** | Bounds the worst case | Risk of missing slow-but-successful responses |
+| C | **Make the timeout a build-time const** (e.g. `DETECT_TIMEOUT_MS = 2000`) and document it in the module header | Trivial; at least surfaces the number | Still 2 s by default |
+| D | **Decouple cache warming from the hot path**: spawn a background thread at first-use that runs detection and publishes to the cache; the foreground path returns a tentative `false` until the detection completes | Hot path is non-blocking | Short window of wrong answer after startup; concurrency complexity |
+| E | **Defer the gsettings call into `detect_is_dark_async()`** and mark the sync form as "may block up to 2 seconds on Linux" in the rustdoc; connectors that cannot tolerate that use the async form | Explicit contract | Requires connectors to have an async runtime; couples with doc 1 §5 |
+
+**Recommended: C (short-term) + E (longer-term).** Exposing the 2 s
+timeout as a documented constant is immediate and free. The async
+split is a downstream change that should happen as part of doc 1 §5's
+async decision.
+
+**Confidence:** medium. The doc 1 §13 DetectionContext work should
+probably absorb this item; I'm recording it here so it doesn't get
+lost.
+
+### I4. `FontSize::default() = Px(0.0)` cross-reference to A2
+
+**File:** `native-theme/src/model/font.rs:66-70`
+
+Cross-referenced in A2's merge-review addendum above. Noted here for
+the §I inventory: the root cause of A2's spurious range errors has
+two contributors, not one, and the second (`FontSize::default() =
+Px(0.0)`) is a design choice worth questioning on its own merits.
+
+No separate options table -- the A2 fix (restructure validate ordering)
+solves this as a side effect. If A2 is not adopted, consider changing
+the default to `Px(1.0)` or making `FontSize` have no `Default` at all
+(require callers to construct a specific unit). But that's a much
+smaller improvement than A2 itself.
+
+### I5. `property-registry.toml` ≈ 174 field-name repetitions in the current `lint_toml`
+
+**File:** `native-theme/src/model/mod.rs:540-745` (doc 1 §14)
+
+Doc 1 §14 catalogues the hand-maintained duplication but doesn't put
+a number on it. Merge review counted: there are roughly **29 widgets
+× ~6 fields each ≈ 174 field names** that `lint_toml` matches
+against, plus `TOP_KEYS` (4) + `VARIANT_KEYS` (29) + nested sections
+(font, mono_font, border, icon_sizes) = **~215 string literals total
+hand-maintained** across `model/mod.rs:554-720`. This is the ROI
+number for §14's codegen recommendation and doc 1 §2's proc-macro
+decision: any codegen path that eliminates these 215 literals wins
+big on rename safety, even before touching validate/check_ranges.
+
+**No new options.** Doc 1 §14's Option D is still the right direction.
+The merge review only adds the number to help weigh the ROI.
+
