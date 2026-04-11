@@ -140,7 +140,8 @@ fn run_gsettings_with_timeout(args: &[&str]) -> Option<String> {
     use std::io::Read;
     use std::time::{Duration, Instant};
 
-    let deadline = Instant::now() + Duration::from_secs(2);
+    let start = Instant::now();
+    let timeout = Duration::from_secs(2);
     let mut child = std::process::Command::new("gsettings")
         .args(args)
         .stdout(std::process::Stdio::piped())
@@ -164,7 +165,7 @@ fn run_gsettings_with_timeout(args: &[&str]) -> Option<String> {
             }
             Ok(Some(_)) => return None,
             Ok(None) => {
-                if Instant::now() >= deadline {
+                if start.elapsed() >= timeout {
                     let _ = child.kill();
                     return None;
                 }
@@ -184,7 +185,8 @@ fn read_xft_dpi() -> Option<f32> {
     use std::io::Read;
     use std::time::{Duration, Instant};
 
-    let deadline = Instant::now() + Duration::from_secs(2);
+    let start = Instant::now();
+    let timeout = Duration::from_secs(2);
     let mut child = std::process::Command::new("xrdb")
         .arg("-query")
         .stdout(std::process::Stdio::piped())
@@ -212,7 +214,7 @@ fn read_xft_dpi() -> Option<f32> {
             }
             Ok(Some(_)) => return None,
             Ok(None) => {
-                if Instant::now() >= deadline {
+                if start.elapsed() >= timeout {
                     let _ = child.kill();
                     return None;
                 }
@@ -237,7 +239,8 @@ fn detect_physical_dpi() -> Option<f32> {
     use std::io::Read;
     use std::time::{Duration, Instant};
 
-    let deadline = Instant::now() + Duration::from_secs(2);
+    let start = Instant::now();
+    let timeout = Duration::from_secs(2);
     let mut child = std::process::Command::new("xrandr")
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::null())
@@ -255,7 +258,7 @@ fn detect_physical_dpi() -> Option<f32> {
             }
             Ok(Some(_)) => return None,
             Ok(None) => {
-                if Instant::now() >= deadline {
+                if start.elapsed() >= timeout {
                     let _ = child.kill();
                     return None;
                 }

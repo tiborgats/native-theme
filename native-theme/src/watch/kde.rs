@@ -51,9 +51,9 @@ pub(crate) fn watch_kde(
             return;
         }
 
-        // Allow the first event to fire immediately by setting last_fire far
-        // in the past.
-        let mut last_fire = Instant::now() - Duration::from_secs(10);
+        // `None` means "never fired" — the first relevant event always
+        // fires immediately, regardless of watcher age.
+        let mut last_fire: Option<Instant> = None;
         let debounce = Duration::from_millis(300);
 
         loop {
@@ -63,8 +63,8 @@ pub(crate) fn watch_kde(
                         p.file_name()
                             .is_some_and(|n| watched_names.iter().any(|w| *w == n))
                     });
-                    if is_relevant && last_fire.elapsed() >= debounce {
-                        last_fire = Instant::now();
+                    if is_relevant && last_fire.is_none_or(|t| t.elapsed() >= debounce) {
+                        last_fire = Some(Instant::now());
                         callback(ThemeChangeEvent::ColorSchemeChanged);
                     }
                 }
