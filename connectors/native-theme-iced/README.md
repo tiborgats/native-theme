@@ -13,8 +13,8 @@ Add both crates to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-native-theme = "0.5.6"
-native-theme-iced = "0.5.6"
+native-theme = "0.5.7"
+native-theme-iced = "0.5.7"
 ```
 
 Then create an iced theme from any native-theme preset:

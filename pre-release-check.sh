@@ -138,15 +138,29 @@ else
 fi
 echo
 
-# Check for .unwrap() / .expect() in non-test production source code
+# Check for panic-inducing patterns in non-test production source code.
 # This is a BLOCKING check — runtime panics are forbidden in production code.
-print_step "Checking for .unwrap()/.expect() in production code"
+#
+# Detected patterns (outside #[cfg(test)] blocks):
+#   - .unwrap()              → use ? / match / unwrap_or_*
+#   - .expect(...)           → same
+#   - panic!(...)            → use Result/Option propagation
+#   - todo!(...)             → placeholder that must not ship
+#   - unreachable!(...)      → rewrite the code path so the compiler proves it unreachable
+#   - Instant::now() + / -   → use Instant::checked_add / checked_sub (std documents Sub<Duration>
+#                              for Instant as "may panic"; relying on current impl details is fragile)
+#
+# This check is regex-based and has known blind spots: operator panics
+# hidden in std beyond the Instant::now() pattern (e.g. u32 - u32
+# underflow, arr[i] out-of-bounds, Duration + Duration overflow) are
+# NOT caught here. For those, rely on code review, clippy, and tests.
+print_step "Checking for panic-inducing patterns in production code"
 PANIC_FOUND=0
 
 # Scan each source directory (excluding test files, examples, build scripts, and test modules)
 for src_dir in native-theme/src connectors/native-theme-gpui/src connectors/native-theme-iced/src; do
     if [ -d "$src_dir" ]; then
-        # Use a Python script to accurately detect unwrap/expect outside #[cfg(test)] blocks
+        # Use a Python script to accurately detect panics outside #[cfg(test)] blocks
         HITS=$(python3 -c "
 import sys, re
 
@@ -186,13 +200,25 @@ def scan_file(path):
         if in_test > 0:
             continue
 
-        # Skip comments
+        # Skip comments (single-line only; block comments via /* */ are not
+        # stripped, but the Rust convention in this crate is // doc comments)
         if s.startswith('//'):
             continue
 
-        # Check for panic-inducing patterns
-        if '.unwrap()' in line or re.search(r'\.expect\s*\(', line):
-            issues.append(f'{path}:{i}: {s}')
+        # Check for panic-inducing patterns. Each pattern is labelled so
+        # the error message tells the maintainer exactly which rule fired.
+        if '.unwrap()' in line:
+            issues.append(f'{path}:{i}: [.unwrap()] {s}')
+        elif re.search(r'\.expect\s*\(', line):
+            issues.append(f'{path}:{i}: [.expect()] {s}')
+        elif re.search(r'\bpanic!\s*\(', line):
+            issues.append(f'{path}:{i}: [panic!] {s}')
+        elif re.search(r'\btodo!\s*\(', line):
+            issues.append(f'{path}:{i}: [todo!] {s}')
+        elif re.search(r'\bunreachable!\s*\(', line):
+            issues.append(f'{path}:{i}: [unreachable!] {s}')
+        elif re.search(r'Instant::now\(\)\s*[-+]', line):
+            issues.append(f'{path}:{i}: [Instant::now() arithmetic; use checked_add/checked_sub] {s}')
 
     return issues
 
@@ -216,12 +242,14 @@ sys.exit(0 if not issues else 1)
 done
 
 if [ "$PANIC_FOUND" -eq 1 ]; then
-    print_error "Found .unwrap()/.expect() in production code! Runtime panics are FORBIDDEN."
-    print_error "Replace with proper error handling (Result/Option propagation)."
-    print_error "Note: .unwrap() in #[cfg(test)] modules is acceptable."
+    print_error "Found panic-inducing pattern(s) in production code! Runtime panics are FORBIDDEN."
+    print_error "Replace with proper error handling (Result/Option propagation, checked_* arithmetic)."
+    print_error "Note: these patterns are acceptable inside #[cfg(test)] modules."
+    print_error "Known blind spot: this check is regex-based and cannot see operator panics inside std"
+    print_error "beyond the Instant::now() idiom. Code review and clippy remain the primary safety net."
     exit 1
 else
-    print_success "No .unwrap()/.expect() found in production source code"
+    print_success "No panic-inducing patterns found in production source code"
 fi
 echo
 
