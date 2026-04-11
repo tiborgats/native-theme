@@ -2575,3 +2575,303 @@ big on rename safety, even before touching validate/check_ranges.
 **No new options.** Doc 1 §14's Option D is still the right direction.
 The merge review only adds the number to help weigh the ROI.
 
+---
+
+## J. Third-pass review: deep-ultrathink refinement under "no backward compat"
+
+This section records a third review pass performed under the
+explicit "backward compatibility does not matter; I want the perfect
+API" directive. Where earlier passes hedged under migration risk,
+this pass commits harder. New findings are recorded here so existing
+content is preserved unchanged.
+
+This section should be read alongside **doc 1 §30**, which covers
+doc-1-specific refinements and hosts M1 (a cross-document finding)
+that this document cross-references here.
+
+### J.1 Methodology
+
+Same approach as doc 1 §30: independently re-read each existing
+recommendation without first consulting earlier merge-review notes,
+then reconciled. Every new claim was independently verified against
+the current tree. The pass was **conservative about adding new
+issues** and **aggressive about strengthening recommendations**
+that were hedged for migration concerns.
+
+### J.2 New options and refinements per section
+
+#### B3 — refinement: use `Arc<str>` (or `Cow<'static, str>`) for `ReaderOutput::name`
+
+The merge-reviewed `ReaderOutput` struct in B3 Option F uses
+`name: String` while **C4 simultaneously recommends `Arc<str>`
+for font family names on consistency grounds.** Applying C4's
+reasoning symmetrically to B3: every reader produces a theme
+name, and for bundled / preset-based paths the name is a
+compile-time constant. Allocating a fresh `String` on every read
+is waste.
+
+**Refinement:**
+
+```rust
+pub struct ReaderOutput {
+    pub name: Arc<str>,                  // was: String
+    pub active: ThemeLayer,
+    pub inactive: Option<ThemeLayer>,
+    pub known_is_dark: Option<bool>,
+}
+```
+
+Pick one ownership type across the crate and use it consistently.
+Under "perfect API", **`Arc<str>` with `serde`'s `rc` feature** is
+the cleanest answer: it composes with C4's font-family interning,
+matches D4's `Cow<'static, str>` direction for `name`/`icon_theme`
+in `ThemeSpec`/`ResolvedThemeVariant`, and avoids the "one type
+uses `Arc<str>`, another uses `String`" inconsistency.
+
+The ownership-type question propagates to:
+- `SystemTheme::name` (doc 1 §3 + D4)
+- `ResolvedThemeVariant::icon_theme` (doc 1 §20 + D4)
+- `ReaderOutput::name` (this refinement)
+- `ResolvedFontSpec::family` (C4)
+
+**Recommendation:** use `Arc<str>` uniformly across all four.
+Enable `serde = { version = "1", features = ["derive", "rc"] }`.
+Touch all four fields in a single ownership-type refactor PR.
+
+**Confidence:** high. This is the standard Rust answer for
+"shared immutable string across many owners."
+
+#### B3 — Option G: define a `ThemeReader` trait alongside the data shape
+
+B3's existing options A-F all describe the **data shape** readers
+return. None describe the **reader interface**. Under "no backward
+compat" a cleaner internal architecture pairs F (data shape) with
+a reader trait:
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| G | **Define `trait ThemeReader { fn read(&self) -> Result<ReaderOutput, ReaderError>; }` internally**, with one impl per backend (`KdeReader`, `MacosReader`, `WindowsReader`, `GnomeReader`, ...), dispatched via an internal `select_reader() -> Option<Box<dyn ThemeReader>>` or a static sum type | Mock readers in tests become trivial (one trait impl). Static dispatch via enum gives zero overhead. Encapsulates the reader + `is_dark` fallback logic in one place. Aligns with C6 (demoted platform readers) by making the public surface a single entry point rather than N `from_*` functions. Eliminates the implicit reader contract B3 complains about. | Adds one trait to the internal surface (not exposed publicly). Existing readers must be converted from free functions to methods on `Self`. Slightly larger migration. |
+
+**Position:** G pairs naturally with F (data shape) — F defines
+*what* readers return, G defines *how* they are invoked. Adopting
+both gives the cleanest internal architecture.
+
+**Recommendation:** adopt **F for v0.5.7 (P0, already
+recommended)**; **defer G to v0.5.8** unless the C6 demotion work
+uncovers a compelling reason to land it sooner. F alone already
+eliminates the heterogeneous-contract complaint; G is polish
+on the internal seam.
+
+**Confidence:** medium. G is desirable but not urgent; F alone
+is the critical fix for the B3 problem.
+
+#### B5 — refinement: `ResolutionContext` constructor naming
+
+The merge-review addendum on B5 proposes `Option<&ResolutionContext>`
+at the API boundary. A small but important ergonomic refinement
+on constructor naming:
+
+```rust
+impl ResolutionContext {
+    /// Construct with all fields auto-detected from the current OS.
+    pub fn from_system() -> Self { /* queries detect::* */ }
+
+    /// Construct with explicit, deterministic values (96 DPI,
+    /// PrimaryRight, etc.) for tests, snapshot fixtures, and
+    /// caches where reproducibility matters.
+    pub fn for_tests() -> Self { /* hardcoded values */ }
+}
+
+impl Theme {
+    pub fn resolve(self, ctx: Option<&ResolutionContext>) -> Result<ResolvedTheme>;
+    pub fn resolve_system(self) -> Result<ResolvedTheme> { self.resolve(None) }
+}
+```
+
+The **`for_tests()`** name (or `test_defaults()` — bikeshed) is
+explicit about its purpose and is not a fake "default" pretending
+to be OS-detected. This avoids a trap where
+`ResolutionContext::default()` silently produces a 96-DPI value on
+a Retina display and the test passes with wrong pt-to-px math.
+
+Under "perfect API", **runtime-detected types should not have
+silent `Default` implementations**. Either the type implements
+`Default` truthfully (by calling OS detection) or it forces the
+user to choose a constructor explicitly.
+
+**Recommendation:**
+1. Do **not** implement `Default` for `ResolutionContext`.
+2. Expose `from_system()` for the auto-detect path.
+3. Expose `for_tests()` (or `deterministic()` or similar) for
+   the deterministic path. Name must signal intent.
+
+**Confidence:** high. The naming matters for test correctness.
+
+#### B4 — refinement: `AccessibilityPreferences` belongs on `SystemTheme`, not in `ResolutionContext`
+
+Doc 2 B5's merge-review addendum sketched a `ResolutionContext`
+containing `accessibility: AccessibilityPreferences` from B4.
+That is architecturally wrong under "perfect API":
+
+- `ResolutionContext` is a **resolution-time input**: values
+  needed to *compute* a `ResolvedTheme` from a `Theme` (DPI,
+  icon theme, button order convention).
+- `AccessibilityPreferences` is a **runtime state**: the user's
+  current accessibility settings, which affect how an app
+  *renders* a resolved theme (e.g., apply `text_scaling_factor`
+  to the final font size).
+
+Mixing these conflates "inputs needed to build the theme" with
+"runtime rendering hints" — the exact conflation B4 argues
+against when pulling accessibility fields off `ThemeDefaults`.
+
+**Recommendation:** keep `AccessibilityPreferences` on
+`SystemTheme` (doc 2 B4 Option B), **not** on
+`ResolutionContext`. The two types live at different pipeline
+stages:
+
+- `Theme::resolve(Some(&ResolutionContext::from_system()))` →
+  `ResolvedTheme` (no accessibility in the resolution step)
+- `SystemTheme { light, dark, accessibility, ... }` (accessibility
+  carried alongside the resolved variants, consumed by the
+  app at render time)
+
+The B5 addendum suggesting `ResolutionContext { accessibility: ... }`
+should be reverted to just `{ font_dpi, icon_theme, dialog_button_order }`.
+
+**Confidence:** high. This is a category error; B4's argument
+applies recursively.
+
+### J.3 Cross-reference to doc 1 §30.3 M1
+
+Doc 1 §30.3 documents **M1: macOS reader hardcodes wrong
+`DialogButtonOrder`** — a verified bug that is tightly coupled
+to this document's **D5** recommendation.
+
+**Summary for doc-2 readers:** `native-theme/src/macos.rs:504-505`
+hardcodes `Some(DialogButtonOrder::PrimaryLeft)` with the comment
+"macOS uses leading affirmative (OK/Cancel)." Both value and
+comment contradict:
+- `platform-facts.md:1481,1802` ("macOS primary rightmost" ✅ Apple HIG)
+- `macos-sonoma.toml:254,586` (`button_order = "primary_right"`)
+- `macos-sonoma-live.toml:126,285` (same)
+- `resolve/inheritance.rs:98-109` (`platform_button_order()` returns
+  `PrimaryRight` on non-Linux)
+
+**Implication for D5:** D5 as drafted proposes deleting KDE's
+reader-side `button_order` hardcode. The same architectural
+principle applies symmetrically to macOS, and deleting
+`macos.rs:504-505` *also fixes the verified bug* because the
+preset value (`primary_right`) then propagates correctly through
+the pipeline merge.
+
+**Action item for D5:** when D5 lands, extend it to cover
+`native-theme/src/macos.rs:504-505` as well. Ship D5 + M1
+bundled as a single commit: **"delete reader-side `button_order`
+hardcodes on all platforms; presets + resolver are authoritative."**
+
+See **doc 1 §30.3** for the full M1 options table, rationale,
+and three-source cross-verification.
+
+### J.4 Strengthened recommendations under "no backward compat"
+
+Consistent with doc 1 §30.4:
+
+#### B1 + B2 + B7: promote codegen to P0/P1 for v0.5.7
+
+Doc 1 §30.4 argues the registry-driven codegen path should be
+committed to in v0.5.7 rather than deferred. The blast radius
+(§I5's ~215 literals + ~450 lines `check_ranges` + ~280 lines
+`require()` + ~100 lines inheritance duplication + 108-line
+macro = ~1100 lines at drift risk) justifies the investment.
+
+**Strengthened recommendation:** promote doc 2 **B1 + B2 + B7**
+from P1 to **P0/P1 firm commitment** for v0.5.7, paired with
+doc 1 §2/§14.
+
+**Minimum viable version:** ship registry-driven codegen for
+`check_ranges`, `FIELD_NAMES`, and `lint_toml` tables only;
+defer widget struct generation to v0.5.8. This eliminates the
+~215 `lint_toml` literals and ~450 lines of `check_ranges`
+boilerplate — the worst drift hazards — without the larger
+struct-generation work.
+
+**Fallback:** doc 1 §14 Option F (`inventory` crate) as a
+~20-line bridge that unblocks the `lint_toml` drift hazard
+alone if even minimum-viable codegen is too large.
+
+#### B5: hard-pair with doc 1 §3 as a single ship-unit
+
+Doc 1 §30.4 makes this mandatory. Under "perfect API," split
+landing of §3 and B5 forces a double-edit of `OverlaySource`
+(first with standalone `font_dpi: f32`, then with
+`ctx: ResolutionContext`). The combined single-PR diff is
+smaller than two separate passes.
+
+**Strengthened recommendation:** merge doc 1 §3 + doc 2 B5
+into a single "`OverlaySource + ResolutionContext` refactor"
+ship-unit, tagged **P0** for v0.5.7.
+
+#### A3: fold into doc 1 §6's 4-variant hierarchy (Option E)
+
+Doc 1 §30.2 introduces Option E for §6: a 4-variant category
+hierarchy (`Error::Platform | Parse | Resolution | Io`) with
+nested sub-enums. Doc 2 A3 (missing_fields dual-category)
+folds naturally into this shape as:
+
+```rust
+Error::Resolution(ResolutionError::Incomplete { missing: Vec<FieldPath> })
+Error::Resolution(ResolutionError::Invalid    { errors:  Vec<RangeViolation> })
+```
+
+**Strengthened recommendation:** A3's fix *requires* doc 1 §6
+to land in the hierarchy form. If doc 1 §6 stays flat,
+A3 falls back to `Error::ResolutionIncomplete` and
+`Error::ResolutionInvalid` as separate top-level variants.
+Under "perfect API" the hierarchy is recommended.
+
+### J.5 Confidence statement
+
+**High confidence** on:
+- J.2 B3 `Arc<str>` for `name` is the right consistency move —
+  matches C4 / D4 under a single ownership-type refactor.
+- J.2 B5 `for_tests()` naming rule — runtime-detected types
+  must not have silent `Default` implementations.
+- J.2 B4 refinement: `AccessibilityPreferences` belongs on
+  `SystemTheme`, not in `ResolutionContext` (category error
+  otherwise).
+- J.3 M1 cross-reference: the macOS reader bug is verified and
+  bundles cleanly with D5.
+- J.4 strengthenings: all three are direct implications of
+  "perfect API" + the earlier merge-reviewed analysis.
+
+**Medium confidence** on:
+- J.2 B3 Option G (`ThemeReader` trait) is desirable but not
+  urgent; F alone is the critical B3 fix.
+- J.4 minimum-viable codegen scope fits v0.5.7 schedule.
+
+**Deferred / out of scope:**
+- A potential `windows.rs:517` `button_order` question (modern
+  WinUI vs classic Win32 tension in platform-facts) — needs a
+  platform-facts audit, not an API change. See doc 1 §30.3's
+  "out-of-scope note on Windows."
+- Doc 1 §30.2 §13 Option G (remove caching entirely) — v1.0
+  crate-split scope.
+
+### J.6 What this pass did NOT change
+
+Deliberately preserved from earlier passes:
+
+- Every existing pros/cons entry in doc 2's A-I option tables
+  and their merge-review additions.
+- Every existing recommendation not explicitly strengthened or
+  refined in J.2 / J.4.
+- Doc 2's §F open questions list (no items removed).
+- Doc 2's A1 STATUS block (A1 remains fully shipped and out of
+  v0.5.7 scope).
+- Doc 2's §G post-script ("two codebases pretending to be one")
+  — the v1.0 crate-split direction is reaffirmed, not modified.
+
+If section J does not reference a prior recommendation, it is
+unchanged from the earlier-pass analysis.
+

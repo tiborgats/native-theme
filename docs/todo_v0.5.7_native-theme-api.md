@@ -2837,3 +2837,515 @@ Deliberately preserved from the original document:
 
 If a section does not have a "merge-review" sub-heading, it is
 unchanged from the original analysis.
+
+---
+
+## 30. Third-pass review: deep-ultrathink refinement under "no backward compat"
+
+This section records a third pass performed under the explicit
+"backward compatibility does not matter; I want the perfect API"
+directive. Where earlier passes hedged under migration risk, this
+pass commits harder to the optimal answer. Where earlier passes
+already reached the optimal answer, no change is made and no new
+section is added.
+
+New options are appended to existing problems as Option **G**,
+**H**, etc. -- the existing option letters are not disturbed.
+Cross-cutting findings (a bug the earlier passes did not flag,
+priority rebalancing) follow in §30.3–§30.5.
+
+### 30.1 Methodology
+
+The pass re-read each existing recommendation without first
+consulting §29's merge-review notes, then reconciled. Where this
+pass reaches a different conclusion, the rationale is stated
+explicitly. Where this pass agrees with earlier passes, no change
+is made.
+
+The pass was **conservative about adding new issues** (the existing
+documents are already thorough) and **aggressive about strengthening
+recommendations** that were hedged for migration concerns. Every
+new claim was independently verified against the current tree;
+file:line references are exact.
+
+### 30.2 New options added to existing problems
+
+#### §2 — Option G: elide docs on Resolved variants via macro change
+
+The `define_widget_pair!` macro at `widgets/mod.rs:48-156` currently
+copies the Option struct's doc attributes to the Resolved struct via
+`$(#[doc = $opt_doc])*`. That is the "60+ duplicated doc blocks"
+complaint from §2's problem statement.
+
+An alternative that addresses **only** the doc-burden pain point
+without moving to full codegen infrastructure:
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| G | **Edit the macro to emit a single `/// See [`XxxTheme::field`] for documentation.` line on each resolved field instead of copying the full doc block** | Macro change is ~15 lines. Zero public-API change. Rustdoc becomes a pair of linked pages instead of a wall of duplicated text. Resolved variant's rustdoc shrinks by ~70%. Preserves every type name, test, and connector reference. | Does not fix rename-drift (still two structs). Does not fix `check_ranges` duplication. Does not eliminate the macro DSL burden. Strictly a partial fix to §2's doc-burden complaint. |
+
+**Position:** G is an 80/20 stepping stone that addresses the
+doc-burden pain immediately (~1-day change) while D (registry-driven
+codegen) remains the systemic fix. G and D are not mutually
+exclusive — ship G for immediate rustdoc quality, ship D for
+drift elimination.
+
+**Recommendation under "perfect API":** ship **both G and D**.
+G is a small-effort P0 for v0.5.7 (visible rustdoc quality
+improvement); D is the larger P1 investment (drift elimination,
+single source of truth). Under "no backward compat" both land
+in the same release; G unblocks the rustdoc win even if D slips.
+
+**Confidence:** high on G alone. Complements, does not replace,
+§2's merge-review content.
+
+#### §2 — Option H: proc-macro reading registry at expansion
+
+Doc 1 §2 Option D recommends `native-theme-build` as a build script.
+A structurally different variant worth listing for completeness:
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| H | **Proc-macro crate that reads `property-registry.toml` at macro-expansion time** (via `include_str!` or `std::fs::read_to_string` inside the proc-macro's `lib.rs`, tracked via `proc_macro::tracked_path::path` on nightly or a file-stamp workaround on stable) | Keeps generation inline with source (no materialised `.rs` files under `target/`). Macro output inspectable via `cargo expand`. Single file change per widget (edit the registry). Composes with the existing declarative macro by replacing its body, not its call sites. | `include_str!` inside a proc-macro requires careful path handling relative to `CARGO_MANIFEST_DIR`. Incremental compilation on registry edit needs `track_path` (nightly) or a stamp-file workaround. Error messages inside proc-macros are harder to pinpoint than build-script errors. Less common Rust idiom, harder for new contributors. |
+
+**Position vs D:** D (build script) has better traceability,
+inspectable generated code under `target/`, and mature tooling.
+H (proc-macro) has better locality (nothing materialised). For a
+schema like `property-registry.toml`, **D remains the recommended
+path**; H is listed so a maintainer can choose on taste without
+losing any correctness property.
+
+**Recommendation:** **keep D**, do not switch to H. H is a
+fallback if D's build-pipeline complexity blocks adoption.
+
+**Confidence:** high on the recommendation.
+
+#### §6 — alternative E: 4-variant category hierarchy as the bundled recommendation
+
+The existing §6 bundled recommendation fuses 6a/6b/6c/6d into a
+9-variant flat `Error` enum. A structurally different fusion:
+
+**Option E (meta-alternative to the bundled form):**
+
+```rust
+#[non_exhaustive]
+pub enum Error {
+    /// OS detection, reader, watcher, or compile-time feature failures.
+    Platform(PlatformError),
+    /// TOML / serde parse or preset-lookup errors.
+    Parse(ParseError),
+    /// Theme resolution left fields unfilled or out of range.
+    Resolution(ResolutionError),
+    /// File I/O (preserves `std::io::Error` source).
+    Io(std::io::Error),
+}
+
+#[non_exhaustive]
+pub enum PlatformError {
+    FeatureDisabled { name: &'static str, needed_for: &'static str },
+    PlatformUnsupported { platform: Platform },
+    WatchUnavailable { reason: &'static str },
+    ReaderFailed {
+        reader: &'static str,
+        source: Box<dyn std::error::Error + Send + Sync>,
+    },
+}
+
+#[non_exhaustive]
+pub enum ParseError {
+    Toml(toml::de::Error),
+    UnknownPreset { name: String, known: &'static [&'static str] },
+}
+
+#[non_exhaustive]
+pub enum ResolutionError {
+    Incomplete { missing: Vec<FieldPath> },
+    Invalid { errors: Vec<RangeViolation> },
+}
+```
+
+Side-by-side comparison:
+
+| | Flat (original bundled) | Hierarchy (E) |
+|---|---|---|
+| Top-level variant count | 9 | 4 |
+| Match on category | 9 arms (or `_` catch-all) | 4 arms |
+| Match on specific variant | 1 depth | 2 depth |
+| Adding a new platform sub-variant | Touches top-level `Error` | Touches `PlatformError` only |
+| Rustdoc top-level page | 9 variants | 4 variants + 4 linked sub-enums |
+| `From` impls | `From<toml::de::Error> for Error` direct | `From<toml::de::Error> for ParseError` + `From<ParseError> for Error` |
+| Std precedent | — | `io::Error` / `io::ErrorKind` pattern |
+
+**Rationale for preferring E under "perfect API":**
+
+Error handling in library consumers splits into two distinct modes:
+
+1. **Category-level matching** — "is this transient?", "is this a
+   user error?", "should I retry?". This is the **common path** and
+   it wants category-level distinctions, not variant enumeration.
+2. **Variant-level matching** — "was it specifically a missing
+   `accent_color`?". This is the **rare path** and tolerates more
+   verbosity.
+
+A 9-variant flat enum makes mode (1) require 9 match arms or a
+`_` catch-all; mode (2) is one match depth. A 4-variant hierarchy
+makes mode (1) a 4-arm match (scales) and mode (2) a 2-depth
+match (one extra `(...)` wrapper, common Rust).
+
+Under "perfect API" the hierarchy is strictly better for evolution:
+adding a new `PlatformError::XdgFailure` variant is local to
+`PlatformError`'s `#[non_exhaustive]` and does not touch the outer
+`Error`. The flat form grows the outer enum on every addition.
+
+**Recommendation:** **switch from the flat shape to E (4-variant
+hierarchy)**.
+
+**Downstream impact:**
+- Doc 2 A3's `missing_fields` dual-category fix folds naturally
+  into `Error::Resolution(ResolutionError::Incomplete { missing })`
+  and `Error::Resolution(ResolutionError::Invalid { errors })`.
+- Doc 2 I1's stale `presets.rs:85-88` comment is resolved by the
+  same Clone drop plus the new cache shape
+  `Result<ThemeSpec, Error>`.
+- Doc 2 I2's hint rewrite is independent and bundles with §15a.
+
+**Confidence:** medium-high. The flat form is acceptable; the
+hierarchy is strictly better for evolution. Under "perfect API"
+E is the recommendation.
+
+#### §8 — refinement: `IconSize` enum instead of raw `u32`
+
+The icon builder in §8 Option C sketches `IconRequest::size(u32)`
+taking a raw pixel value. A refinement:
+
+```rust
+#[non_exhaustive]
+pub enum IconSize {
+    Small,       // 16 on Freedesktop; .small on SF Symbols; Small on Fluent
+    Medium,      // 24 on Freedesktop; .medium on SF Symbols; Standard on Fluent
+    Large,       // 32 on Freedesktop; .large on SF Symbols; Large on Fluent
+    ExtraLarge,  // 48 on Freedesktop; .xlarge on SF Symbols
+    Px(u32),     // explicit escape hatch for exact sizing
+}
+```
+
+**Pros:**
+- Matches how native icon systems think — SF Symbols and Fluent
+  Icons both use size tokens, not raw pixels.
+- Freedesktop has standard sizes (16/22/24/32/48/64/128) that map
+  to tokens cleanly; raw `u32` forces users to memorise these.
+- `IconRequest::new(role).size(IconSize::Medium).load()` is more
+  meaningful than `.size(24)` at the call site.
+- `Px(u32)` preserves the exact-sizing escape hatch.
+
+**Cons:**
+- Two layers: users always ask "token or `Px`?" once.
+- Hardcoded token-to-pixel mapping may not match every app's
+  preferred sizing (but the escape hatch covers that).
+- More types in rustdoc.
+
+**Position:** This is a refinement *inside* §8 Option C (builder),
+not a new top-level option. The default in the short-form
+`load_icon(role, set)` becomes `IconSize::Medium`. The long-form
+builder exposes `IconRequest::size(IconSize)`.
+
+**Recommendation:** **adopt the enum**. The token-vs-raw question
+is one of the small differences between "works" and "feels native."
+Commit to tokens with a `Px` escape hatch.
+
+**Confidence:** medium. The exact token count (3/4/5) and variant
+names are bikeshed; any reasonable set that maps to concrete
+platform sizes works.
+
+#### §12 — Option G: one module per widget
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| G | **Partition widget types into one module per widget**: `theme::widgets::button::{ButtonTheme, ResolvedButtonTheme, FIELD_NAMES}` — 25 submodules | Each rustdoc page has 2 types instead of 50. Matches `serde_json`, `syn`, `tokio` organisation. Finding a widget is always `theme::widgets::{name}::`. | Every import gains one path segment. Users with multiple widget types write `use theme::widgets::{button, input, ...};` enumerations. Larger file count (one per widget module). |
+
+**Position:** G is technically more granular than §12 Option C's
+flat `theme::widgets::*`, but the marginal benefit is small. Users
+typically reference widget types by name (`ButtonTheme`), and
+`theme::widgets::ButtonTheme` already pinpoints them. Adding a
+`button::` segment improves discoverability only marginally while
+adding path verbosity to every import.
+
+**Recommendation:** **do not adopt G.** Keep §12 Option C's flat
+`theme::widgets::*` layout. G is overkill even under "perfect API".
+
+**Confidence:** high on the rejection.
+
+#### §13 — Option G: remove caching entirely
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| G | **Remove crate-level caching entirely.** Export only uncached `detect_is_dark()`, `detect_reduced_motion()`, `detect_icon_theme()`. Caller decides caching policy. | No global state in `native-theme`. Testability is trivial (every call pure). `invalidate_caches()` disappears. The 2 s `gsettings` timeout (doc 2 I3) becomes the caller's problem, which is honest: the caller knows the UI-thread situation. Matches the "data library" half of doc 2 §G's split. | Per-frame `system_is_dark()` in `showcase-gpui.rs:702` becomes 2 s worst-case on cold Linux. The showcase would need its own cache or a background thread. Every current caller must migrate to caller-owned caching. |
+
+**Position:** G is the "perfect API" answer under the assumption
+that `native-theme` is a data library, not a system-detection
+library. Doc 2 §G flags this direction as v1.0 scope (crate
+split into `-model` + `-system`).
+
+**Recommendation:** **defer G to v1.0 crate split.** Keep
+§13 Option C (`DetectionContext` + `ArcSwapOption`) for v0.5.7.
+Removing caching in v0.5.7 without the accompanying crate split
+would leave every connector to rebuild per-frame caching on its
+own, which is a larger migration than v0.5.7 should absorb.
+
+Once `-system` exists, G becomes the natural answer for its
+reduced scope.
+
+**Confidence:** high on the deferral. Direction is correct; timing
+is wrong.
+
+### 30.3 New issue M1: macOS reader hardcodes wrong `DialogButtonOrder`
+
+Both documents flagged reader correctness as explicitly out of scope
+(post-scripts in doc 1 and doc 2). One such issue is tightly coupled
+to doc 2 D5's architectural recommendation and therefore worth
+surfacing even under that scope exclusion — because the fix that
+D5 proposes on architectural grounds *also happens to fix a bug
+this pass verified against three independent sources*.
+
+**Files:**
+- `native-theme/src/macos.rs:504-505` — reader sets `PrimaryLeft`
+- `native-theme/src/presets/macos-sonoma.toml:254,586` — preset says `"primary_right"`
+- `native-theme/src/presets/macos-sonoma-live.toml:126,285` — live preset says `"primary_right"`
+- `docs/platform-facts.md:1481` — column header lists macOS under "primary rightmost"
+- `docs/platform-facts.md:1802` — "Dialog button order: macOS primary rightmost ✅ Apple HIG: 'A button that initiates an action is furthest to the right, Cancel to its left.'"
+- `native-theme/src/resolve/inheritance.rs:98-109` — `platform_button_order()` returns `PrimaryRight` on non-Linux
+
+#### Problem
+
+```rust
+// native-theme/src/macos.rs:504-505
+// macOS uses leading affirmative (OK/Cancel) dialog button order.
+v.dialog.button_order = Some(crate::DialogButtonOrder::PrimaryLeft);
+```
+
+Both the value and the comment are factually wrong:
+
+1. **Platform-facts contradicts it.** `platform-facts.md:1481`
+   lists macOS under "primary rightmost" with a ✅ confirmation
+   at line 1802 citing Apple HIG directly: *"A button that
+   initiates an action is furthest to the right, Cancel to its
+   left."*
+2. **The macOS presets contradict it.** Both `macos-sonoma.toml`
+   and `macos-sonoma-live.toml` carry `button_order = "primary_right"` —
+   the correct value per platform-facts.
+3. **The in-tree resolver contradicts it.** `platform_button_order()`
+   at `inheritance.rs:98-109` returns `PrimaryRight` on all non-Linux
+   platforms — the correct value for macOS.
+4. **The code comment misattributes the convention.** "Leading
+   affirmative (OK first)" is the KDE convention per platform-facts,
+   not macOS. macOS uses trailing affirmative.
+
+The reader hardcode **overrides the correct preset value** during
+merging. A user loading a `SystemTheme` on macOS via `from_system()`
+receives `PrimaryLeft` (wrong) regardless of what the preset says.
+
+The existing test at `macos.rs:805-815` only verifies
+`button_order.is_none()` on a freshly-built `ThemeVariant` *before*
+the reader runs — it does not check the concrete value after, so
+the bug is not caught.
+
+#### Options
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| A | **Status quo** | No change | Verified bug; reader disagrees with preset, platform-facts, and resolver |
+| B | **Correct the hardcoded value to `PrimaryRight` and fix the code comment** | Minimum diff; preserves the reader-level hardcode | Leaves the architectural duplication doc 2 D5 wants to eliminate |
+| C | **Delete the hardcode entirely**, extending doc 2 D5's principle to macOS. Preset value propagates via merge; if a custom TOML omits the field, resolver's `platform_button_order()` fills `PrimaryRight`. | Architecturally clean (single source of truth: preset + resolver). Symmetrically applies D5. Fixes the bug as a side effect. | A user loading a custom macOS TOML that omits `button_order` now depends on the resolver fallback (previously guaranteed by reader hardcode). |
+| D | **Keep the hardcode, fix only the comment** | No behaviour change | Value is still wrong; user-visible bug persists |
+
+#### Recommended: **C**
+
+Delete `native-theme/src/macos.rs:504-505`. The
+`macos-sonoma.toml` and `macos-sonoma-live.toml` presets already
+carry `button_order = "primary_right"`, which propagates through
+the pipeline merge. The reader hardcode is both wrong in value
+**and** architecturally redundant.
+
+**Ship M1 bundled with doc 2 D5.** Both become a single commit:
+"delete reader-side `button_order` hardcodes, let presets +
+resolver be authoritative on all platforms."
+
+#### Rationale
+
+Option **A** leaves a verified bug. Option **B** fixes the value
+but leaves the architectural duplication doc 2 D5 aims to eliminate;
+if D5 deletes KDE's hardcode while macOS keeps its own, readers
+become inconsistent in the wrong direction. Option **D** fixes
+the comment but not the behaviour; users still get wrong button
+order on macOS.
+
+Option **C** is the minimum change that restores correctness AND
+aligns with D5's principle. The only risk (users whose custom
+TOML omits `button_order`) is bounded by the resolver's fallback,
+which already returns `PrimaryRight` on macOS.
+
+**Confidence:** high. The bug is verified against three
+independent sources: platform-facts with Apple HIG citation, the
+bundled macOS preset TOMLs, and the resolver's platform default.
+The fix is mechanical (delete two lines + one comment).
+
+#### Out-of-scope note on Windows
+
+`native-theme/src/windows.rs:517` hardcodes `PrimaryRight`, which
+agrees with both `windows-11.toml` and `windows-11-live.toml`
+presets. However, `platform-facts.md:1481` lists Windows under
+"primary leftmost" (with a citation to the older MS Command
+Buttons guideline at line 1803). Modern WinUI 3 content dialogs
+use primary-right; the presets track modern practice while
+platform-facts tracks the older guideline.
+
+This is a **platform-facts vs. modern-practice tension**, not a
+reader bug: reader, preset, and resolver default all agree on
+`PrimaryRight` for Windows; only `platform-facts.md` disagrees,
+and its citation is the older guideline. Resolving the tension
+requires a platform-facts refresh — out of scope for an API
+critique.
+
+No Windows-reader action is recommended here. Flagged only so
+a future platform-facts update has a bookmark.
+
+### 30.4 Strengthened recommendations under "no backward compat"
+
+Three recommendations earlier passes marked as "medium confidence,
+defer if time is tight" should be committed to rather than
+deferred under the "perfect API" directive:
+
+#### §2 + §14 + doc 2 B1 + B2 + B7: registry-driven codegen — promote to P0/P1 for v0.5.7
+
+Earlier passes rated this as **P3** ("very large effort, medium
+confidence"). Under "perfect API":
+
+- **Blast radius is measured.** Doc 2 §I5 counts ~215
+  hand-maintained string literals in `lint_toml` alone. Add
+  ~450 lines of per-widget `check_ranges`, ~280 lines of
+  `require()` defaults extraction, ~100 lines of inheritance
+  rules duplicated between `inheritance-rules.toml` and
+  `inheritance.rs`, and the 108-line `define_widget_pair!`
+  declarative macro. **~1100 lines of hand-maintained code**
+  at drift risk on every widget addition.
+- **Drift compounds.** Each new widget costs 5+ file edits today.
+  Each future maintainer must learn the macro DSL cold.
+- **The registry is ~80 % designed.** `property-registry.toml`
+  already captures structure definitions, field types,
+  inheritance markers, and serde rename mapping. Only range-check
+  metadata per field and `border_kind` per widget are missing.
+- **v0.5.7 is the window.** The no-backward-compat gate does
+  not reopen for free.
+
+**Strengthened recommendation:** promote from **P3 to P1 for
+v0.5.7**, accept schedule risk.
+
+**Minimum viable D under schedule pressure:** ship the registry
+extension + codegen for `check_ranges`, `FIELD_NAMES`, and
+`lint_toml` tables only. Leave widget struct generation for
+v0.5.8. This eliminates the ~215 `lint_toml` literals and
+~450 lines of `check_ranges` — the biggest drift hazards —
+without the larger struct-generation lift.
+
+**Fallback if even minimum-viable D is too large:** ship doc 1
+§14 Option F (`inventory` crate, link-time registry collection)
+for v0.5.7 as a bridge. F eliminates the `VARIANT_KEYS` +
+`widget_fields` match-arm drift immediately via ~20 lines of
+changes and one dependency.
+
+**Combined v0.5.7 plan under "perfect API":**
+- §2 Option G (macro doc elision) — ship as small-effort P0 for
+  immediate rustdoc quality.
+- Minimum-viable D — ship as P1 structural codegen win.
+- §14 F (`inventory`) as fallback if minimum-viable D slips.
+
+#### §3 + doc 2 B5: pair them as a single ship-unit, mandatory
+
+Both earlier passes noted this coordination in merge-review
+addenda but neither made it mandatory in the priority table.
+Under "perfect API" this is **mandatory sequencing**: split
+landing forces a double-edit of `OverlaySource` (first with a
+standalone `font_dpi: f32`, then with `ctx: ResolutionContext`).
+The combined single-PR diff is smaller than two separate passes.
+
+**Strengthened recommendation:** merge §3 + B5 into a single
+"`OverlaySource` + `ResolutionContext` refactor" ship-unit. Tag
+as **P0** for v0.5.7. Do not allow split landing across releases.
+
+#### §6: commit to the 4-variant hierarchy (Option E above)
+
+Argued in §30.2's §6 subsection. Under "perfect API" the hierarchy
+is strictly better for evolution and category-level matching at
+the cost of one extra match depth for variant-specific code (the
+less common path).
+
+**Strengthened recommendation:** switch from the flat 9-variant
+form to the 4-variant hierarchy. Doc 2 A3 folds into
+`Error::Resolution(ResolutionError::Incomplete | Invalid)`.
+
+### 30.5 Updated priority rebalance
+
+Given §30.4's strengthenings, the v0.5.7 cohort updates as:
+
+**P0 additions / promotions:**
+- §3 + doc 2 B5 combined `OverlaySource + ResolutionContext`
+  refactor (was P1 in earlier passes)
+- §6 restructured using the 4-variant hierarchy (shape change,
+  effort unchanged)
+- M1 delete macOS reader `button_order` hardcode (bundle with
+  doc 2 D5)
+- §2 Option G macro doc elision (small-effort new item)
+
+**P1 additions / promotions:**
+- §2 + §14 + doc 2 B1/B2/B7 minimum-viable registry-driven
+  codegen (was P3):
+  - `check_ranges`, `FIELD_NAMES`, `lint_toml` tables from registry
+  - Widget struct generation deferred to v0.5.8
+
+The P0 cohort from earlier passes remains otherwise intact.
+The P1/P2/P3 items not strengthened in §30.4 remain at their
+earlier-pass priority.
+
+### 30.6 Confidence statement
+
+**High confidence** on:
+- Every file:line claim in §30.2 and §30.3 verified against the
+  current tree. M1 verified against three independent sources
+  (platform-facts with Apple HIG, bundled macOS presets,
+  resolver default).
+- §2 Option G (macro doc elision) is a safe ~1-day change.
+- §6 Option E (4-variant hierarchy) is strictly better for
+  evolution, even if the flat form is acceptable.
+- §3 + B5 pairing is mandatory under "perfect API".
+- §30.4 codegen promotion is correct given measured blast radius.
+
+**Medium confidence** on:
+- §2 + B1 minimum-viable-D scope fits v0.5.7 schedule (depends
+  on build-pipeline work that may surface unknown complexity).
+- §8 `IconSize` enum variant count and names (3 / 4 / 5 are
+  all reasonable).
+
+**Deferred / explicitly out of scope:**
+- §13 Option G (remove caching entirely) — correct for v1.0
+  crate split, premature for v0.5.7.
+- §12 Option G (one module per widget) — overkill even under
+  "perfect API".
+- Windows reader / platform-facts `button_order` tension —
+  flagged in §30.3 as a future platform-facts refresh, not an
+  API change.
+
+### 30.7 What this pass did NOT change
+
+Deliberately preserved from earlier passes:
+
+- Every existing pros/cons entry in the original option tables
+  and §29 merge-review tables.
+- Every existing recommendation that was not explicitly
+  strengthened or given a new alternative in §30.2 / §30.4.
+- The §28 open questions list (no items removed; §30.4 adds one
+  implicit open question about minimum-viable-D scope).
+- Doc 2's A1 STATUS block (A1 remains fully shipped and out of
+  v0.5.7 scope).
+
+If §30 does not reference a prior recommendation, it is unchanged
+from the earlier-pass analysis.
