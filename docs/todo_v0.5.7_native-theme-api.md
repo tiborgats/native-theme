@@ -3349,3 +3349,777 @@ Deliberately preserved from earlier passes:
 
 If §30 does not reference a prior recommendation, it is unchanged
 from the earlier-pass analysis.
+
+---
+
+## 31. Fourth-pass review: merged critical refinements
+
+This section records a fourth ultrathink pass performed under the
+explicit directive "backward compatibility does not matter; I want
+the perfect API." The pass re-verified every prior claim against
+the current tree (all still accurate), added new options where a
+cleaner shape exists, surfaced one missed issue (feature-flag
+matrix), and strengthened four prior recommendations that were
+hedged against migration cost.
+
+New options are appended as letters following the existing ones
+(so §1 gains **G**, §2 gains **K**, §6 gains **F**, §13 gains
+**H**) without disturbing earlier letter assignments. Where this
+pass supersedes a prior recommendation, the rationale is stated
+explicitly; earlier option tables are preserved for auditability.
+
+### 31.1 Verification pass (full re-check)
+
+Every file:line reference in §1–§30 was personally re-verified
+against the current tree. All claims pass within ≤5-line tolerance:
+
+- **§1** six type locations — VERIFIED
+- **§2** `define_widget_pair!` at `widgets/mod.rs:48-156` (109
+  lines), 26 invocations found (25 widgets + `LayoutTheme`) —
+  VERIFIED
+- **§3** `SystemTheme` pre-resolve fields at `lib.rs:215-232` —
+  VERIFIED
+- **§4** `active()` / `pick()` at `lib.rs:239-253` — VERIFIED
+- **§5** async dispatch at `lib.rs:372-386` — VERIFIED, non-Linux
+  path at line 385 is `pipeline::from_system_inner()` with no
+  `.await`, exactly as claimed
+- **§6** `error.rs` has 6 variants (Unsupported, Unavailable,
+  Format, Platform, Io, Resolution); tests at `error.rs:239-250`
+  explicitly assert `Error: Clone` — dropping Clone per §6a must
+  also delete these tests
+- **§7** four `resolve*` methods at documented lines — VERIFIED
+- **§8** 12 loaders + 1 probe at documented lines — VERIFIED (the
+  §8 merge-review corrected "12" to "13" by including the probe;
+  excluding it gives 12)
+- **§12** crate root count — **RE-CORRECTED: ~91 items**, not
+  "~70-75". The §29.2 merge-review correction was too conservative.
+  Hand-count at `lib.rs:122-206`: ~51 model re-exports + ~12
+  cfg-gated platform helpers + ~6 icon free-functions + ~5 detect
+  functions + 2 color + 2 error + 3 watch + 2 detect types + 4
+  pipeline/icons helpers + 1 `Result` alias + `SystemTheme` struct
+  defined at :215 ≈ **89-91 items**. The argument gets *stronger*,
+  not weaker — 91 is well past any reasonable flat-root threshold.
+- **§13** all three cache locations — VERIFIED
+- **§14** `VARIANT_KEYS` has exactly 29 entries at `mod.rs:563-593`
+  — VERIFIED
+- **§15** all sub-issues a–f — VERIFIED
+- **§19** `LinuxDesktop` has no `#[non_exhaustive]` — VERIFIED
+- **§20** `icon_set` / `icon_theme` on `ThemeVariant` at
+  `mod.rs:174,182` — VERIFIED
+- **§25** `to_px(dpi)` asymmetry — VERIFIED, and `font.rs:42-43`
+  **explicitly documents the asymmetry in the method rustdoc**
+  (`"- Px(v) -> v (dpi ignored)"`). See §31.6 for the severity
+  nuance this introduces.
+- **§30.3 M1** macOS `button_order` hardcode — VERIFIED against
+  three independent sources (`platform-facts.md:1481` dialog table
+  row `"primary rightmost"` for macOS; `macos-sonoma.toml:254,586`
+  + `macos-sonoma-live.toml:126,285` all reading `button_order =
+  "primary_right"`; `resolve/inheritance.rs:108` returning
+  `PrimaryRight` on non-Linux). The `macos.rs:504-505` hardcode is
+  **the only source disagreeing**. Bug is verified, reproducible,
+  and ships on every `SystemTheme::from_system()` call on macOS
+  today.
+
+**Additional verifications performed this pass:**
+
+- `Cargo.lock` shows `inventory` v0.3.24 and `strum`/`strum_macros`
+  already in the dep graph (pulled in by connectors). For
+  `native-theme` as a standalone crate, both are still new direct
+  deps; for the connector ecosystem they are zero marginal cost.
+- `cargo tree -p native-theme` shows only `serde`, `serde_with`,
+  `toml`, and platform-specific crates in the direct dep tree.
+  `syn` / `quote` / `proc-macro2` are already transitive via
+  `serde_derive` — **a new proc-macro crate for §2 K reuses them
+  at zero new-dep cost**.
+
+### 31.2 New options added to existing problems
+
+#### §1 — Option G: rename `ThemeVariant → ThemeMode` rather than `ThemeLayer`
+
+§1's recommended rename (Option B) names `ThemeVariant → ThemeLayer`.
+"Layer" communicates *stacking / composition* semantics, which is
+misleading here: a `ThemeVariant` is **one OS mode's data** (light
+OR dark). Stacking is what `with_overlay` does across variants, not
+what the variant itself represents. The name should communicate
+"this is one mode's concrete data", not "this is a stackable piece".
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| G | **`ThemeVariant → ThemeMode`** (drop-in replacement for B's `ThemeLayer`). All other renames in §1 Option B remain as written. | "Mode" matches established OS vocabulary: macOS "Appearance Mode" / "System Appearance Mode", Windows "Color Mode", GNOME `org.freedesktop.appearance.color-scheme`. Every reader of the code already knows the term from the OS they develop for. Reads naturally at the call site: `theme.mode_data(Mode::Dark)`, `theme.dark_mode`, `pick_mode(is_dark)`. Parallels `IconSet` / `IconData` (concrete-shape-per-category naming). Zero migration cost relative to B — both are pure renames of the same type. Communicates the invariant ("one mode's data") directly in the type name. | Creates a potential vocabulary conflict with a hypothetical future `ColorMode { Light, Dark, System }` enum (§4 Option E). Any such enum would need a different name (`ModeSelection`, `ModePreference`). "Mode" is slightly less unique than "Layer" in a codebase search — greping for "mode" has more false positives than greping for "layer". |
+
+**Position:** G is a strict refinement of B, not a replacement. B's
+other four renames (`ThemeSpec → Theme`, `ResolvedThemeVariant →
+ResolvedTheme`, `ResolvedThemeDefaults → ResolvedDefaults`,
+`SystemTheme → DetectedTheme`) remain as drafted.
+
+**Rationale under "perfect API":** a type's name should communicate
+its meaning. `ThemeLayer` implies composition / stacking, which is
+wrong. `ThemeMode` implies "state the OS is in", which is exactly
+right. The vocabulary-conflict cost (a future `ModeSelection` enum
+instead of `ColorMode`) is smaller than the semantic cost of a
+misleading name. Under "perfect API," accuracy wins ties.
+
+**Recommendation:** **adopt G**, replacing B's `ThemeLayer` with
+`ThemeMode`. All other §1 renames remain unchanged.
+
+**Confidence:** medium. Both names are defensible; `ThemeMode` is
+marginally better because it communicates the "one OS state's data"
+meaning directly and matches OS-level terminology.
+
+#### §2 — Option K: narrow `#[derive(ThemeLayer)]` proc-macro keeping Rust as source of truth
+
+§2 Option D recommends registry-driven codegen via
+`native-theme-build` reading `property-registry.toml` at build
+time. §30.2 adds Option G (macro doc elision) as a P0 partial fix
+and Option H (proc-macro reading registry at expansion). A
+structurally different path under "perfect API":
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| K | **Narrow `#[derive(ThemeLayer)]` proc-macro** in a new `native-theme-derive` crate. Reads the Rust struct definition directly. Emits the paired resolved struct, `FIELD_NAMES`, `impl_merge!` body, `check_ranges` impl, and (via integrated `inventory::submit!`) the §14 widget registry. Field metadata (ranges, required, inheritance-from, border_kind) lives in struct-level attributes — no external TOML schema. | **Single source of truth is the Rust struct itself.** No external schema to design. Zero new file formats. IDE support works out-of-the-box (rust-analyzer understands struct attributes). Review diffs stay in Rust (`git blame` tracks field changes at struct-definition time). Subsumes `define_widget_pair!`, duplicated docs, manual `check_ranges`, manual `FIELD_NAMES`, and (via `inventory::submit!`) solves **§14's drift hazard as a side-effect**. The proc-macro reuses `syn` / `quote` / `proc-macro2` already transitive via `serde_derive` — **~0 new direct deps for `native-theme`**. Proc-macro crate is ~800-1500 LoC, substantially less work than the full registry pipeline D requires. Preserves compile-time non-null guarantees that §2 B/C/E sacrifice. Inventory is already in the workspace's `Cargo.lock` (pulled by connector deps), so integration cost is minimal. | Field metadata lives in attributes, which are less expressive than a full TOML schema for cross-widget rules (cross-field inheritance, conditional validation). Non-Rust stakeholders (designers, platform auditors) cannot review a registry without reading Rust source. If multiple widgets need the same range-check logic, it must be expressed via attribute macros rather than schema-level rules (minor duplication). `inventory` uses linker-section magic that does not work on WebAssembly without special handling — but `native-theme` targets desktop platforms, so WASM is not a stated requirement. Does not cover `inheritance-rules.toml` as cleanly as D — attribute-based inheritance is per-field, not pattern-based. |
+
+**Example attribute surface:**
+
+```rust
+#[derive(ThemeLayer)]
+#[theme_layer(resolved = "ResolvedButtonTheme", border_kind = "full")]
+pub struct ButtonTheme {
+    #[theme(required)]
+    pub background_color: Option<Rgba>,
+
+    #[theme(required, range = "0.0..=1.0")]
+    pub disabled_opacity: Option<f32>,
+
+    #[theme(inherit_from = "defaults.background_color")]
+    pub primary_background: Option<Rgba>,
+
+    /// Minimum button width in logical pixels.
+    #[theme(required, check = "non_negative")]
+    pub min_width: Option<f32>,
+}
+```
+
+**Generated code (sketched):**
+
+```rust
+// Paired resolved struct with non-Option fields:
+pub struct ResolvedButtonTheme {
+    pub background_color: Rgba,
+    pub disabled_opacity: f32,
+    pub primary_background: Rgba,
+    pub min_width: f32,
+}
+
+impl ButtonTheme {
+    pub const FIELD_NAMES: &[&str] = &[
+        "background_color", "disabled_opacity",
+        "primary_background", "min_width",
+    ];
+}
+
+// The impl_merge! body is emitted inline (not a separate call):
+impl ButtonTheme {
+    pub fn merge(&mut self, overlay: &Self) { /* ... */ }
+    pub fn is_empty(&self) -> bool { /* ... */ }
+}
+
+impl ResolvedButtonTheme {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+        check_range_f32(self.disabled_opacity, 0.0, 1.0,
+                        prefix, "disabled_opacity", errors);
+        check_non_negative(self.min_width, prefix, "min_width", errors);
+    }
+}
+
+// Register in the inventory-backed widget registry for §14:
+inventory::submit! {
+    crate::model::widgets::WidgetEntry {
+        name: "button",
+        fields: ButtonTheme::FIELD_NAMES,
+    }
+}
+```
+
+**Position vs §2 Option D (registry-driven build script):**
+
+| | D (external TOML registry) | K (Rust struct attributes) |
+|---|---|---|
+| Single source of truth | TOML file | Rust struct |
+| New artifact types | `.toml` schema + generated `.rs` under `target/` | Only a new proc-macro crate |
+| Build pipeline | `build.rs` reads registry, writes Rust source, `include!` from `src/` | None beyond `cargo build` |
+| Field metadata expressiveness | High (full DSL) | Medium (attributes only) |
+| Non-Rust audit | Yes (TOML is reviewable) | No (requires reading `.rs`) |
+| IDE completion on fields | Indirect (needs schema→Rust roundtrip) | Native (rust-analyzer sees struct fields directly) |
+| Upfront design cost | High (schema design is the bottleneck) | Medium (attribute syntax is well-trodden) |
+| Upfront LoC | ~1000 (schema + codegen + build script + migration) | ~1500 (single proc-macro crate) |
+| Delivers §2 | Yes | Yes |
+| Delivers §14 | Via separate step or F (inventory) | Yes, in the same macro via integrated `inventory::submit!` |
+| Delivers doc 2 B1 (check_ranges boilerplate) | Yes | Yes |
+| Delivers doc 2 B2 (inheritance rules) | Yes (via TOML schema) | Partial (attribute-based inheritance handles simple cases; pattern-based rules fall back to `inheritance.rs`) |
+| Delivers doc 2 B6/B7 (BorderSpec split, border validation) | Yes | Yes via `border_kind` attribute |
+| v0.5.7 schedule fit | Tight | Achievable |
+| Risk that scope blows up | High (registry schema evolves over design) | Low (proc-macro is mechanical once attribute syntax freezes) |
+
+**Position vs §30.2 Option H (proc-macro reading TOML at expansion):**
+
+H is D's TOML storage with a proc-macro frontend — it keeps the
+dual-source structure (TOML as data, Rust struct derived from
+TOML) but moves the generation into proc-macro rather than a
+build script. K eliminates the TOML file entirely and uses Rust
+struct attributes as both data and schema.
+
+K wins on simplicity; H wins on inheritance-rule expressiveness
+if that matters.
+
+**Position vs §14 Option F (inventory as short-term bridge):**
+
+F adds `inventory::submit!` inside the existing declarative
+`define_widget_pair!` macro as a bridge that solves §14 without
+touching §2. K integrates the same `inventory::submit!` into the
+unified proc-macro derive, solving §2 and §14 together with no
+separate bridge step.
+
+K subsumes F entirely.
+
+**Position vs §30.2 Option G (macro doc elision):**
+
+§30.2 G is an 80/20 small-effort fix (edit `define_widget_pair!`
+to emit `/// See [\`XxxTheme::field\`]` on resolved fields instead
+of duplicating docs). K replaces `define_widget_pair!` outright,
+so the doc elision becomes moot — K naturally deduplicates docs
+because it generates resolved-field docs from the same source
+attribute as the Option-field docs.
+
+If K lands, §30.2 G is unnecessary. If K slips, §30.2 G is still
+worth shipping standalone.
+
+**Recommendation:** **ship K for v0.5.7** as the primary codegen
+path. K delivers §2 + §14 + doc 2 B1 in one coherent proc-macro
+crate. §14 F (inventory alone) becomes a fallback only if K slips
+past v0.5.7. §2 D / §30.2 H remain v1.0 fallbacks if attribute
+expressiveness proves insufficient for inheritance-rule edge
+cases.
+
+**Confidence:** high on the direction (Rust-struct-as-source is
+strictly better for a Rust-only toolchain). Medium on scope (the
+inheritance-rule expressiveness question is the main unknown; a
+prototype implementation against 2-3 widgets should surface this
+cheaply in a day or two before full commitment).
+
+**Flag for §28:** whether `inheritance-rules.toml`'s pattern-based
+rules (e.g. "every widget's `border.color` inherits from
+`defaults.border.color`") can be expressed via attribute-level
+`inherit_from` declarations without losing expressiveness. If not,
+K must either keep reading the TOML file (degenerating toward H)
+or accept partial coverage with hand-written inheritance logic.
+
+#### §6 — Option F: flat variants + `kind()` method matching std `io::Error` precedent
+
+§30.2 introduces Option E: 4-variant hierarchy (`Error::Platform |
+Parse | Resolution | Io`) with nested sub-enums. Under "perfect
+API" a third shape is genuinely superior because it matches an
+existing std precedent and avoids the match-depth tax:
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| F | **Flat 9-variant `Error` enum + `impl Error { pub fn kind(&self) -> ErrorKind }` method** exposing a lightweight `ErrorKind` categorizing enum (`Platform`, `Parse`, `Resolution`, `Io`). Callers that want category-level matching do `err.kind() == ErrorKind::Platform`. Callers that want variant-level matching do `match err { Error::FeatureDisabled { .. } => ..., _ => ... }` directly — no extra match depth. | **Matches `std::io::Error::kind()` precedent exactly.** Millions of Rust users already know this pattern. Zero match-depth tax on variant-specific handling (the common case). Category-level matching is one method call, no longer than hierarchy's `matches!(err, Error::Platform(_))`. Rustdoc top-level page lists 9 entries (manageable — `std::io::ErrorKind` has 40+). Compile-time enforcement of the `ErrorKind` mapping is free via an exhaustive `match` inside the crate-private `kind()` impl. Zero-depth variant matching is strictly the most common pattern in real library error handling per the §6 usage analysis in §30.2. | Two APIs (variant match + `kind()` method). Users may not discover `kind()` from rustdoc on first read without the doc example pointing at it. `ErrorKind` is a separate public type. Must document the precedent explicitly so users understand why both exist. |
+
+**Compile-time enforcement of the `ErrorKind` mapping:**
+
+```rust
+impl Error {
+    pub fn kind(&self) -> ErrorKind {
+        match self {
+            Error::FeatureDisabled { .. }      => ErrorKind::Platform,
+            Error::PlatformUnsupported { .. }  => ErrorKind::Platform,
+            Error::WatchUnavailable { .. }     => ErrorKind::Platform,
+            Error::ReaderFailed { .. }         => ErrorKind::Platform,
+            Error::UnknownPreset { .. }        => ErrorKind::Parse,
+            Error::Toml(_)                     => ErrorKind::Parse,
+            Error::ResolutionIncomplete { .. } => ErrorKind::Resolution,
+            Error::ResolutionInvalid { .. }    => ErrorKind::Resolution,
+            Error::Io(_)                       => ErrorKind::Io,
+        }
+    }
+}
+```
+
+This is an exhaustive `match` inside the defining crate, which is
+**not subject to `#[non_exhaustive]`'s wildcard requirement**. A new
+variant in `Error` that lacks a `kind()` branch is a compile error.
+Zero-cost drift prevention.
+
+**Access-pattern comparison against §30.2 Option E (hierarchy):**
+
+| Pattern | §30.2 E (hierarchy) | §31 F (flat + kind) |
+|---|---|---|
+| Variant-specific handling (common) | `match err { Error::Parse(ParseError::UnknownPreset { name, known }) => ..., _ => ... }` — **2 depth** | `match err { Error::UnknownPreset { name, known } => ..., _ => ... }` — **1 depth** |
+| Category-level policy (rare) | `if matches!(err, Error::Platform(_)) { retry(); }` | `if err.kind() == ErrorKind::Platform { retry(); }` |
+| `?` propagation | identical | identical |
+| Top-level error display | `match err { Error::Platform(p) => write!(f, "{p}"), ... }` — 4 arms + nested | `match err { ... }` — 9 arms OR `match err.kind() { ... }` — 4 arms |
+| Adding a new variant | Edit sub-enum only | Edit top-level + `kind()` match |
+| std precedent | None | `std::io::Error` + `ErrorKind` |
+
+**F is tied-or-better with E on every access pattern**, with the
+one cost being one extra public type (`ErrorKind`) and one extra
+method body (`kind()`). Both costs are trivial; the sync obligation
+is compile-time-checked.
+
+**Position vs §30.2 E:**
+
+E's argument is "category matching is cleaner". F delivers category
+matching via method call with **equivalent** cleanliness and
+**strictly better** variant matching. The match-depth tax E imposes
+on variant-specific handling (the common case per the §30.2 usage
+analysis) is not paid by F.
+
+**Recommendation under "perfect API":** **switch to F.** The std
+precedent (`io::Error::kind()`) is the strongest available argument
+— matching an established Rust idiom is itself a perfect-API virtue
+because it reduces learning cost for every user.
+
+Doc 2 A3 (missing_fields dual-category) folds into F as two flat
+top-level variants: `Error::ResolutionIncomplete { missing }` and
+`Error::ResolutionInvalid { errors }`, both mapping to
+`ErrorKind::Resolution` via `kind()`.
+
+**Confidence:** medium-high. Both E and F are defensible; F has
+the stronger std precedent and cleaner common-case matching.
+Under "perfect API" the std precedent is the tiebreaker.
+
+#### §13 — Option H: plain `RwLock<Option<T>>` is sufficient; skip `arc-swap`
+
+§30.2 refines §13 with Option F: use `arc_swap::ArcSwapOption<T>`
+for lock-free reads, citing per-frame caller latency concerns.
+Under rigorous latency analysis the dependency is not justified:
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| H | **`RwLock<Option<T>>`** wrapped in `DetectionContext` as §13 Option C drafts. **Do not** add `arc-swap`. | **Zero new deps.** Standard-library primitive. Uncontended `RwLock::read()` is ~15-25 ns on modern x86 (~0.0001% of a 16 ms frame at 60 Hz). Writer path (`invalidate_*`) blocks readers only for the duration of the write — typically <1 μs for an `Option<T>` swap. The inherent latency of **detection itself** (doc 2 §I3: `run_gsettings_with_timeout` worst case 2 seconds) is ~200,000× the lock overhead; optimising the lock primitive while keeping the 2 s subprocess call is micro-optimising the wrong thing. | Not *strictly* lock-free. Under pathological write contention, readers could serialize on the write lock (irrelevant in practice — invalidation fires ≤once per second at worst). |
+
+**Latency math against the stated hot path** (`showcase-gpui.rs:702`
+per-frame `system_is_dark()`):
+
+| Primitive | Read latency | Write latency | Measurable per frame? |
+|---|---|---|---|
+| `RwLock::read()` uncontended | ~15-25 ns | n/a | No (0.0001% of 16 ms) |
+| `ArcSwap::load_full()` uncontended | ~5-10 ns | n/a | No (0.00006% of 16 ms) |
+| Difference | ~10 ns | n/a | **Not measurable** |
+
+**Reality check against doc 2 §I3:**
+
+`run_gsettings_with_timeout` can block for up to 2 seconds on cold
+cache on Linux. This is the real latency dominant for theme
+detection. A ~10 ns difference in the lock primitive is a rounding
+error compared to 2 s of inherent subprocess I/O. The `arc-swap`
+optimisation applies to a layer that is 2e8 times faster than the
+underlying operation — there is no hot path that can possibly
+notice the difference.
+
+**Position vs §30.2 F (`ArcSwapOption`):**
+
+F's argument was "hot reads, rare invalidation → lock-free is
+strictly better." That reasoning applies to genuinely hot code
+(e.g. shared metric counters updated per-request at high rate).
+Theme detection is not hot by that standard: reads happen at
+frame rate (60-120 Hz), writes happen at user-action rate (≤1 Hz),
+and the backing OS call dominates the wall-clock cost.
+
+**Recommendation:** **adopt H (plain `RwLock`).** Keep `arc-swap`
+off the dep tree. Zero new dep is a perfect-API virtue: every
+dep added is friction for every user of the crate.
+
+**Confidence:** high. The latency numbers do not support the dep.
+
+### 31.3 New issue: feature-flag matrix has four redundant variants
+
+**File:** `native-theme/Cargo.toml:14-34`
+
+**Problem**
+
+The current feature definitions are:
+
+```toml
+[features]
+kde              = ["dep:configparser"]
+portal           = ["dep:ashpd"]
+portal-tokio     = ["portal", "ashpd/tokio"]
+portal-async-io  = ["portal", "ashpd/async-io"]
+windows          = ["dep:windows"]
+macos            = [...]
+linux            = ["kde", "portal-tokio"]
+linux-async-io   = ["kde", "portal-async-io"]
+native           = ["linux", "macos", "windows"]
+native-async-io  = ["linux-async-io", "macos", "windows"]
+watch            = ["dep:notify", "dep:zbus"]
+material-icons   = []
+lucide-icons     = []
+svg-rasterize    = ["dep:resvg"]
+system-icons     = [...]
+```
+
+Fifteen features, of which **four exist only to plumb an
+async-runtime choice** through a platform-group combination:
+`portal-tokio`, `portal-async-io`, `linux-async-io`,
+`native-async-io`. The runtime choice propagates up through two
+additional feature layers.
+
+Consequences:
+
+1. **User confusion at `cargo add` time.** A user running `cargo
+   add native-theme --features native` must understand (a) what
+   `native` means, (b) why `native-async-io` exists, (c) which
+   one to pick, (d) what happens if their dep graph unifies both.
+2. **Fragile feature unification.** If crate A enables
+   `native-theme/native` and crate B enables
+   `native-theme/native-async-io`, Cargo unifies to the union,
+   which forces `ashpd` to enable **both** `tokio` and `async-io`
+   features. `ashpd` may or may not handle this; the behaviour is
+   not documented.
+3. **Interaction with §5.** If §5 Option G lands (pollster wraps
+   async internally, no runtime coupling), the runtime choice
+   disappears entirely — and the `-async-io` variants become dead
+   features that still pollute the feature namespace until
+   explicitly removed.
+4. **Downstream API docs.** Every `#[cfg(feature = "...")]` gate
+   in the public surface must account for the runtime-variant
+   features as well as their base, multiplying the rustdoc feature
+   annotations.
+
+This issue is not called out in the existing critique. It surfaces
+naturally under the §5 discussion but is not itself listed as an
+item.
+
+**Options**
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| A | **Status quo.** Keep all 15 features. | No change. Every current user path continues working. | Feature explosion tax persists. User confusion remains. Feature unification hazard is unresolved. |
+| B | **Delete the four `-async-io` variants once §5 G lands.** `portal-tokio`, `portal-async-io`, `linux-async-io`, `native-async-io` are removed. `linux` and `native` survive without a runtime pin. Users who explicitly selected `-async-io` migrate to the plain variant. Feature count drops to 11. | Minimum change consistent with §5 G's runtime decoupling. Natural cleanup — when §5 eliminates the runtime choice, the features plumbing that choice become redundant. Preserves `linux` / `native` convenience aggregators. | **Hard depends on §5 G** — cannot land before the runtime coupling is eliminated. Users who currently type `--features "native-async-io"` see a build error and must migrate. |
+| C | **Collapse aggregators entirely**: keep only `kde`, `portal`, `macos`, `windows`, `watch`, `material-icons`, `lucide-icons`, `svg-rasterize`, `system-icons`. Drop `linux`, `native`, `linux-async-io`, `native-async-io`, `portal-tokio`, `portal-async-io`. Users write `features = ["kde", "portal", "macos", "windows"]` explicitly. | Cleanest possible surface. Zero aggregators to confuse. Each feature is one concept with one reason. | Users who currently type `--features native` must now spell out four features. More characters at install time. Loses the "everything on this platform" shortcut — a small convenience loss. |
+| D | **Keep aggregators (`linux`, `native`), drop only the `-async-io` variants.** Mid-ground between B and C. Feature count: 11. | Preserves the `--features native` convenience. Drops the runtime-coupling redundancy. | Still has two levels of feature indirection (`native → linux → kde + portal`). |
+| E | **Fully dynamic**: add a single `all-platforms` feature that pulls in everything platform-relevant. Keep the base features. Drop aggregators. | Single discoverable knob (`--features all-platforms`). | Loses the ability to do "everything on Linux only" via a single knob. |
+| F | **Status quo + documentation fix.** Keep the current features but add a clear feature-selection guide to the crate-level rustdoc that explains when to pick `-async-io` vs `tokio`. | Minimum code change. | Doesn't fix the underlying redundancy; users still face the choice on every `cargo add`. |
+
+**Recommended: B, bundled with §5 G**
+
+Drop the four `-async-io` variants when §5 Option G lands. Final
+feature list: `kde`, `portal`, `linux`, `macos`, `windows`,
+`native`, `watch`, `material-icons`, `lucide-icons`,
+`svg-rasterize`, `system-icons` — eleven features, no
+runtime-coupling redundancy.
+
+**Rationale**
+
+Option **A** / **F** leave the confusion in place. Option **C**
+is cleaner in absolute terms but sacrifices the `--features
+native` convenience for marginal gains; the aggregator is useful
+in practice. Option **D** is essentially the same as B after
+removal (the runtime-coupled variants are precisely the four that
+B drops). Option **E** trades the runtime-variant duplication for
+a different kind of coarseness (`all-platforms` flattens too
+much).
+
+B is the minimum change that eliminates the runtime-coupling
+redundancy without sacrificing the aggregator convenience. It
+pairs naturally with §5 G (the removal of runtime choice at the
+feature level **is** the user-visible consequence of §5 G at the
+code level).
+
+**Flag for §28:** B hard-depends on §5 G. If §5 is rejected or
+§5 G is replaced by a different runtime strategy, B cannot land
+in its current form. In that case, fall back to **F**
+(documentation-only) until a clean runtime decoupling is available.
+
+**Confidence:** high. Once §5 G is in place, the cleanup is
+mechanical.
+
+### 31.4 Strengthened recommendations
+
+#### §1: use `ThemeMode` (§31.2 G) as the variant rename
+
+Supersedes §1 Option B's `ThemeLayer`. Pure rename, zero migration
+cost relative to B.
+
+#### §2: ship Option K (narrow derive proc-macro) for v0.5.7
+
+Supersedes §2 Option D as the v0.5.7 recommendation. D is retained
+as a v1.0 fallback if inheritance-rule expressiveness proves
+insufficient for struct attributes. §30.2 G (macro doc elision)
+and §14 F (inventory bridge) are subsumed by K.
+
+**v0.5.7 codegen plan under "perfect API":**
+- Ship K (`native-theme-derive` proc-macro crate) delivering §2 +
+  §14 + doc 2 B1 + B6/B7 in one crate.
+- §30.2 G becomes unnecessary (K deduplicates docs naturally).
+- §14 F becomes unnecessary (K integrates `inventory::submit!`).
+- Defer §2 D (external TOML registry) to v1.0 if needed.
+
+#### §6: switch to Option F (flat + kind() method); supersedes §30.2 E
+
+Supersedes §30.2 Option E (4-variant hierarchy). F matches
+`std::io::Error::kind()` exactly, eliminates the match-depth tax,
+and keeps variant-specific handling flat.
+
+Doc 2 A3 folds into F as two top-level variants
+(`Error::ResolutionIncomplete` and `Error::ResolutionInvalid`),
+both mapping to `ErrorKind::Resolution` via `kind()`.
+
+#### §13: use plain `RwLock` (§31.2 H); supersedes §30.2 F
+
+Supersedes §30.2 Option F (ArcSwap refinement). Latency math does
+not justify the dep. Zero new deps is a perfect-API virtue.
+
+#### §31.3 feature matrix cleanup: P2, bundled with §5 G
+
+Drop `portal-tokio`, `portal-async-io`, `linux-async-io`,
+`native-async-io` when §5 G lands.
+
+#### §25: retain the rename recommendation; downgrade severity framing
+
+See §31.6 below. The rename stands; the "silent" framing is
+weakened because the rustdoc documents the asymmetry.
+
+### 31.5 Priority rebalance
+
+Updates to §27:
+
+**P0 (new or strengthened):**
+
+| Priority | Issue | Change |
+|---|---|---|
+| P0 | **§31.2 G** `ThemeMode` rename | Replaces §1 Option B's `ThemeLayer` at no additional cost |
+| P0 | **§6 Option F** (flat + kind() method) | Supersedes §30.2 E; same effort, strictly better shape |
+
+**P1 (promotions):**
+
+| Priority | Issue | Change |
+|---|---|---|
+| P1 | **§31.2 K** (narrow derive proc-macro) | Was §2 P3 "very high effort"; now P1 "achievable in v0.5.7 via narrow proc-macro". Delivers §2 + §14 + doc 2 B1/B6/B7 in one shipment. |
+
+**P2 (additions):**
+
+| Priority | Issue | Change |
+|---|---|---|
+| P2 | **§31.3** feature-flag matrix cleanup | Bundled with §5 G |
+
+**Superseded (kept for reference):**
+
+| Superseded | Replacement | Reason |
+|---|---|---|
+| §30.2 E (4-variant hierarchy) | §31.2 F (flat + kind()) | std precedent, zero match-depth tax |
+| §30.2 F (ArcSwap) | §31.2 H (RwLock) | latency math does not justify dep |
+| §2 D (build script registry) for v0.5.7 | §31.2 K (narrow derive) | Rust-as-source is simpler; attributes cover the common case |
+| §30.2 G (macro doc elision) | §31.2 K (subsumes it) | K deduplicates docs by generating from one source |
+| §14 F (inventory bridge alone) | §31.2 K (integrates inventory) | One macro, not two |
+
+**Unchanged from §27 / §29 / §30:**
+
+- M1 macOS button_order hardcode (§30.3): P0, verified, ship
+- All P0 items from doc 2 §H (A2/A3/A4/B4/B6/C1/C2)
+- §3 + doc 2 B5 combined ship-unit (P0, mandatory pairing)
+- §4 / §12 / §16 / §17 / §19 / §20 / §22 / §26 P0 items
+- §7 B' `#[doc(hidden)] pub` for resolve intermediates
+- §18 A-with-drift-test (see §31.7 for the non-regression rationale)
+
+### 31.6 §25 severity correction
+
+**File:** `native-theme/src/model/font.rs:40-49`
+
+§25 describes `FontSize::Px(v).to_px(dpi)` as "silently ignoring"
+the DPI parameter. Verified: `font.rs:47` reads `Self::Px(v) => v,`.
+
+**Severity nuance:** the method's own rustdoc at lines 42-43
+**explicitly documents the asymmetry** (as part of the method doc,
+not hidden in a comment):
+
+```rust
+/// Convert to logical pixels.
+///
+/// - `Pt(v)` -> `v * dpi / 72.0`
+/// - `Px(v)` -> `v` (dpi ignored)
+pub fn to_px(self, dpi: f32) -> f32 { ... }
+```
+
+The complaint is not "silent behaviour" — the behaviour is
+**explicitly documented** on the method itself. The real complaint
+is **signature surprise**: a user reading only the method signature
+(via rust-analyzer tooltip, or autocomplete hover, or cargo doc
+header) sees `to_px(self, dpi: f32) -> f32` and assumes `dpi` is
+used on both branches. Only reading the full rustdoc reveals the
+asymmetry.
+
+This is still a legitimate complaint — signatures should not
+require reading the full rustdoc to predict behaviour — but it
+is **weaker than the initial §25 framing suggested**. The word
+"silently" implies the behaviour is hidden, and it is not.
+
+**No option change.** §25 Option C (rename `to_px → resolve(dpi)`)
+remains the recommendation — the rename addresses the
+signature-surprise concern by signalling "this is a unit conversion
+step, not always pixel math". The severity tier stays P3.
+
+**Confidence:** high. The correction is factual (the rustdoc
+really does document the asymmetry), and the recommendation is
+unchanged.
+
+### 31.7 Issue non-regressions
+
+Three proposals I considered during the fourth pass but did NOT
+promote to new options:
+
+#### §8 struct-literal + `IconOptions` pattern — rejected after token-count analysis
+
+I initially considered proposing a struct-literal alternative to
+§8 Option C's builder:
+
+```rust
+// Struct-literal sketch:
+load_icon(role, set);
+load_icon_with(role, set, IconOptions { size: Small, ..Default::default() });
+```
+
+**Token-count analysis** against the builder:
+
+| Scenario | Builder | Struct literal | Winner |
+|---|---|---|---|
+| Zero options | `load_icon(role, set)` — 22 chars | `load_icon(role, set)` — 22 chars | Tie |
+| One option (`.size(Small)`) | `load_icon(role, set).size(Small)` — 35 chars | `load_icon_with(role, set, IconOptions { size: Small, ..Default::default() })` — 78 chars | **Builder by 43 chars** |
+| Three options | `...size(S).color(c).theme("A")` — 50 chars | `IconOptions { size: S, fg_color: Some(c), theme: Some("A"), ..Default::default() }` — 82 chars | **Builder by 32 chars** |
+| All options | comparable (~60-70 chars) | comparable (~80-90 chars) | Builder |
+
+**The builder is strictly shorter at every non-trivial usage**,
+and the struct-literal pattern only wins in zero-option cases
+where both use the shortcut. The `..Default::default()` suffix
+costs ~24 chars per call, which dominates the savings from
+omitting method-chain punctuation.
+
+**Recommendation:** **§8 Option C (builder) stands unchanged.**
+The struct-literal pattern is a worse fit for this API.
+
+#### §14 hand-maintained master slice — subsumed by §31.2 K
+
+I initially considered a lightweight Option for §14: a
+hand-maintained `const ALL_WIDGETS: &[(&str, &'static [&'static
+str])]` slice that `lint_toml` iterates instead of the current
+`VARIANT_KEYS` + `widget_fields` match. This collapses two drift
+sites into one.
+
+**Rejection rationale:** §31.2 K subsumes §14 entirely via
+integrated `inventory::submit!` from the proc-macro derive. A
+hand-maintained slice is still a drift hazard (one-site instead
+of two-site, but not zero). K eliminates hand-maintenance
+completely.
+
+If K slips past v0.5.7, fall back to §14 F (inventory bridge
+alone). The hand-maintained master slice is strictly worse than
+both K and F — it lives in the backlog as a "last-resort fallback
+if even inventory is unacceptable."
+
+#### §18 strum dependency revisit under "perfect API"
+
+I reconsidered whether the `#[derive(EnumString, IntoStaticStr)]`
+strum path should be preferred over the drift-guard test under
+"perfect API":
+
+- **Argument for strum:** `strum` / `strum_macros` are already in
+  `Cargo.lock` via connector dependencies, so connector users pay
+  no marginal cost. Strum is cleaner code (attribute-driven
+  generation vs hand-coded match). Under "perfect API" cleaner
+  code wins.
+- **Argument against strum:** For **standalone** `native-theme`
+  users (not using connectors), strum is still a new direct dep.
+  The drift-guard test has zero-dep cost and catches the same
+  drift class. The enum has only 5 variants; the hand-coded
+  match is 10 lines.
+
+**Tiebreaker:** zero new deps is a genuine perfect-API virtue that
+benefits the "standalone library" use case. The drift-guard test
+provides equivalent correctness at zero dep cost.
+
+**Recommendation:** **§18 A-with-drift-test stands.** If the enum
+grows to 10+ variants in a future release, revisit and adopt strum
+at that time.
+
+### 31.8 Confidence statement (fourth pass)
+
+**High confidence:**
+- All §31.1 verification results
+- §31.2 F (flat + kind() method) is the std-matching shape; precedent argument is airtight
+- §31.2 H (plain RwLock) — latency math is unambiguous
+- §31.3 feature-matrix cleanup bundled with §5 G
+- §31.6 §25 severity correction (rustdoc verified)
+- §31.7 §8 rejection (token counts confirmed)
+- §31.7 §14 rejection (subsumed by K)
+
+**Medium confidence:**
+- §31.2 G (`ThemeMode` over `ThemeLayer`) — taste call, both are
+  defensible; `ThemeMode` is marginally better per semantic
+  accuracy + OS-vocabulary precedent
+- §31.2 K direction (narrow derive proc-macro) — shape and scope
+  are right; medium confidence on the exact attribute-syntax
+  design surface, which needs a 1-2 day prototype against 2-3
+  real widgets to finalise
+- §31.2 K's ability to cover `inheritance-rules.toml` expressiveness
+  without degenerating — the main unknown
+
+**Low confidence / explicit unknowns:**
+- Exact `native-theme-derive` LoC estimate (800-1500 is a bounded
+  range but the lower bound depends on how much of `impl_merge!`'s
+  existing logic can be preserved vs rewritten)
+- Whether `inventory::submit!` inside a derive macro requires
+  workarounds for incremental compilation (the pattern is known
+  to work but has rough edges in older rustc releases)
+
+### 31.9 What this pass did NOT change
+
+Deliberately preserved from §1-§30:
+
+- Every option letter A-F in the existing §1-§30 tables
+- Every recommendation not explicitly strengthened or superseded
+  in §31.4
+- The §30.3 M1 macOS `button_order` bug — endorsed and unchanged
+- The §30 third-pass additions — retained; §31's refinements are
+  cumulative, not replacements
+- §28's open questions list — §31 adds three new entries implicitly
+  via the flagged unknowns in §31.8; existing entries remain
+- §27's priority table entries that are not explicitly
+  superseded in §31.5
+
+If §31 does not reference a prior recommendation, that
+recommendation is unchanged.
+
+### 31.10 Endorsement of the existing P0 cohort
+
+The fourth-pass review personally verified every P0 item against
+the current tree and endorses the following items for v0.5.7
+without reservation:
+
+1. **M1** (§30.3) — macOS reader `button_order = PrimaryLeft` is a
+   verified correctness bug with three-source contradiction. Ship
+   the 2-line fix bundled with D5.
+2. **§4** drop `active()`, keep `pick(is_dark)`. Verified landmine.
+3. **§6a** drop `Error::Clone` bound. Dead weight.
+4. **§12** partition crate root. Real count is ~91 items, well
+   past any reasonable threshold.
+5. **§17** remove `IconSet::default()`. The `#[default]` doc comment
+   itself admits the value is known-wrong on non-Linux.
+6. **§19** `LinuxDesktop` + `#[non_exhaustive]` + new Wayland
+   compositor variants.
+7. **§20** move `icon_set` / `icon_theme` to `Theme`.
+8. **§22** feature-gate `on_theme_change` at compile time.
+9. **Doc 2 A2/A3** `check_ranges` on placeholders — personally
+   verified orchestration at `validate.rs:428-458`, the shared
+   `missing` vec pattern is exactly as described.
+10. **Doc 2 A4** move `button_order` fallback to
+    `resolve_platform_defaults` — personally verified the
+    "pure transform" doc lie at `resolve/mod.rs:20-22`.
+11. **Doc 2 B4** split accessibility off `ThemeDefaults`.
+12. **Doc 2 B6** split `BorderSpec` into defaults/widget types.
+13. **Doc 2 C1/C2** remove `ThemeChangeEvent::Other`; rename
+    `ColorSchemeChanged → Changed`.
+
+These are verified facts on the ground. Ship the P0 cohort as a
+coherent v0.5.7 release. The refinements in §31 (new options,
+strengthened recommendations, feature-flag cleanup) slot into
+this cohort without disrupting its shape.

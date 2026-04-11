@@ -2875,3 +2875,378 @@ Deliberately preserved from earlier passes:
 If section J does not reference a prior recommendation, it is
 unchanged from the earlier-pass analysis.
 
+---
+
+## K. Fourth-pass review: merged critical refinements
+
+This section records a fourth ultrathink pass performed under the
+explicit "backward compatibility does not matter; I want the
+perfect API" directive. It runs parallel to **doc 1 §31**, which
+hosts doc-1-specific refinements that this document
+cross-references here.
+
+Every prior doc-2 claim was re-verified against the current tree
+and remains accurate. This section records only the refinements
+that change recommendations or surface new options; unchanged
+items are not repeated.
+
+### K.1 Verification pass (re-confirmed)
+
+Personal verification this pass against the current tree:
+
+- **A1** `watch/kde.rs:54-68` — still uses `Option<Instant>` +
+  `is_none_or`, exactly as the STATUS block describes. No
+  v0.5.7 work needed. ✅
+- **A2** `resolve/validate.rs:428-458` — **personally verified**
+  the orchestration pattern. Lines 428-452 run 24 `check_ranges`
+  calls passing `&mut missing` (the same vec populated by
+  earlier `require()` calls). Line 454 checks `if
+  !missing.is_empty()` *after* `check_ranges`. The bug is
+  reproducible: `require()` substitutes `T::default()` and
+  pushes a "missing" entry; the subsequent `check_ranges` then
+  runs on the placeholder and can push *additional* entries
+  for range violations of the placeholder. For
+  `font.weight: u16` with `u16::default() == 0` and range
+  `100..=900`, a spurious range error is produced alongside the
+  legitimate missing-field error. **Bug verified.**
+- **A3** `error.rs:9-12` + `validate.rs:429-452` — personally
+  verified that `missing_fields: Vec<String>` holds both
+  missing-field paths and range-violation strings. The
+  doc-level claim ("fields that remained None") contradicts
+  the actual contents. **Bug verified.**
+- **A4** `resolve/mod.rs:20-22` (doc says "pure data transform")
+  + `inheritance.rs:164-167` (`resolve_safety_nets` sets
+  `button_order` via `platform_button_order()`) +
+  `inheritance.rs:98-109` (`platform_button_order` reads
+  `xdg_current_desktop()`) + `detect.rs:28-30`
+  (`xdg_current_desktop` is `std::env::var("XDG_CURRENT_DESKTOP")`)
+  — **personally verified the full chain**. The "pure transform"
+  claim is false: `resolve()` does reach into env vars through
+  two levels of indirection. Architectural leak confirmed.
+- **B1** `resolve/validate.rs` (280 lines of `require()` calls)
+  + `model/widgets/mod.rs:908-1347` (~450 lines of per-widget
+  `check_ranges` impls) — verified. Drift hazard is real.
+- **B4** `model/defaults.rs:131-140` four accessibility fields
+  — verified. Mixing of user-preference state with theme data
+  confirmed.
+- **B6** `model/border.rs:13-35` — verified `corner_radius_lg`
+  and `opacity` are marked as "defaults only" in inline
+  comments but structurally allowed at widget level.
+  Type-vs-usage mismatch confirmed.
+- **C1** `watch/mod.rs:65-70` — `ThemeChangeEvent::Other` is
+  defined but grep shows zero production emissions. Only
+  appears in `watch/mod.rs:252` test. Dead variant confirmed.
+- **C2** `watch/kde.rs:66-69` — KDE watcher fires on *any*
+  `kdeglobals` or `kcmfontsrc` change, not just color. Name
+  `ColorSchemeChanged` is a lie on KDE. **Personally verified
+  the file-level event pattern.** Same conclusion for GNOME
+  portal watcher at `watch/gnome.rs:42-62` which fires on any
+  `org.freedesktop.appearance` key change (color-scheme,
+  accent-color, contrast).
+- **I1** `presets.rs:85-88` still contains the stale comment
+  ("Errors are stored as String because Error is not Clone")
+  while `error.rs:80` still derives `Clone`. The contradiction
+  is preserved in the current tree. **Verified drift.**
+- **I2** `error.rs:55-65` hint message still references
+  `ThemeSpec::from_toml_with_base()` — verified. If §15a
+  removes the method (doc 1), this hint must be updated
+  simultaneously (captured in doc 1 §15 merge-review).
+
+**Additional verification performed this pass:**
+
+- `Cargo.toml:14-34` feature matrix — personally counted 15
+  features, of which 4 are runtime-variant duplicates. See
+  **doc 1 §31.3** for the new issue this surfaces.
+- `Cargo.lock` shows `inventory` and `strum` already in the
+  workspace dep graph via connector crates. Direct
+  `native-theme` dep tree (`cargo tree -p native-theme`) shows
+  only `serde`, `serde_with`, `toml`, and platform deps — i.e.
+  `syn` / `quote` / `proc-macro2` are already transitive via
+  `serde_derive`, so a new `native-theme-derive` proc-macro
+  crate for doc 1 §31.2 K reuses them at zero new-dep cost.
+
+### K.2 Cross-reference to doc 1 §31 refinements
+
+Doc 1 §31 introduces four option letters that directly affect
+doc 2 recommendations. The cross-references below explain how
+doc 2 items update when the doc 1 refinements land.
+
+#### A3 now folds into doc 1 §31.2 Option F (flat + `kind()`), not §30.2 E
+
+A3's recommendation (D: fold into doc 1 §6's restructure) was
+predicated on §6 adopting **§30.2 Option E** (4-variant
+hierarchy). Doc 1 §31.2 **supersedes §30.2 E with Option F**
+(flat variants + `kind()` method matching `std::io::Error`).
+
+Under F, A3's fix becomes:
+
+```rust
+#[non_exhaustive]
+pub enum Error {
+    // ... other variants ...
+    /// Resolution left required fields unfilled.
+    ResolutionIncomplete { missing: Vec<FieldPath> },
+    /// Resolution produced values outside their valid ranges.
+    ResolutionInvalid { errors: Vec<RangeViolation> },
+    // ... other variants ...
+}
+
+impl Error {
+    pub fn kind(&self) -> ErrorKind {
+        match self {
+            // ...
+            Error::ResolutionIncomplete { .. } => ErrorKind::Resolution,
+            Error::ResolutionInvalid { .. }    => ErrorKind::Resolution,
+            // ...
+        }
+    }
+}
+```
+
+Two flat top-level variants (not nested under
+`Error::Resolution(ResolutionError::Incomplete | Invalid)`), both
+mapping to `ErrorKind::Resolution` via `kind()`. Callers that
+want "handle all resolution errors" do `if err.kind() ==
+ErrorKind::Resolution { ... }`. Callers that want a specific
+variant do flat matching with no extra depth.
+
+This is strictly better than A3's original nested form because:
+- Variant matching stays 1-depth (was 2-depth under §30.2 E)
+- Category matching is one method call (was one match-depth
+  under §30.2 E, which is equivalent)
+- Matches `std::io::Error::kind()` precedent
+
+**Updated A3 recommendation:** ship two flat variants
+(`ResolutionIncomplete`, `ResolutionInvalid`) as part of the
+doc 1 §31.2 F `Error` restructure. The sub-enum form from
+A3's original Option D sketch is superseded.
+
+**Confidence:** high — this is a mechanical consequence of the
+doc 1 §6 shape change.
+
+#### B1 + B2 + B7: ship via doc 1 §31.2 K (narrow derive proc-macro), not §2 D
+
+Doc 1 §31.2 **supersedes the registry-driven §2 Option D with
+Option K**: a narrow `#[derive(ThemeLayer)]` proc-macro that
+reads Rust struct definitions directly. This changes the doc-2
+codegen path materially:
+
+**Previous plan (§J.4 "promote B1+B2+B7 to P0/P1"):**
+- Build `native-theme-build` with external TOML registry
+- Design schema for fields, ranges, inheritance, border_kind
+- Codegen Rust from TOML
+- Migrate widgets gradually
+
+**Updated plan (via doc 1 §31.2 K):**
+- Build `native-theme-derive` proc-macro crate
+- Define attribute syntax on existing Rust struct definitions
+  (`#[theme(required, range = "...")]`,
+  `#[theme_layer(border_kind = "full")]`, etc.)
+- Macro emits paired Resolved struct, `FIELD_NAMES`,
+  `impl_merge!` body, `check_ranges` impl, and
+  `inventory::submit!` for §14 widget registry
+- No external TOML, no build script, Rust-only pipeline
+
+**What K delivers for doc 2:**
+
+| Doc 2 item | Delivered by K? |
+|---|---|
+| **B1** ~720 lines of validate/check_ranges boilerplate | **Yes** — generated from `#[theme(required, range = "0.0..=1.0")]` attributes |
+| **B2** inheritance rules duplicated TOML ↔ Rust | **Partial** — simple per-field inheritance via `#[theme(inherit_from = "...")]` attribute; pattern-based rules (e.g. "all widgets inherit `border.color` from `defaults.border.color`") still need `inheritance.rs` unless the attribute DSL is extended |
+| **B6** `BorderSpec` split into defaults vs widget | **Yes** — via `border_kind = "full" / "partial" / "none"` attribute per widget |
+| **B7** three parallel border-validation paths | **Yes** — generated from `border_kind` per widget, collapses the three hand-coded functions |
+
+**The B2 partial coverage is the main risk.** If inheritance rules
+cannot be expressed via per-field attributes, that portion of the
+codegen must fall back to one of:
+- Reading `inheritance-rules.toml` inside the proc-macro
+  (degenerating toward doc 1 §30.2 H)
+- Keeping `inheritance.rs` hand-maintained for the complex rules,
+  auto-generating only the simple per-field inheritance
+
+Either fallback is acceptable. The important part is that B1,
+B6, B7 are fully deliverable via K.
+
+**Updated recommendation for doc 2 B1+B2+B7:** ship as part of
+the doc 1 §31.2 K codegen crate. Fold B1 and B6+B7 into the
+proc-macro derive. Fold B2 into the derive to the extent
+attributes allow; keep `inheritance.rs` for the residue.
+
+**Priority:** B1 + B6 + B7 promote to **P1** for v0.5.7 (via
+K). B2 stays P1 but with partial delivery acknowledged.
+
+**Confidence:** high on B1 + B6 + B7 delivery via K. Medium on
+B2 (depends on attribute expressiveness, same unknown as doc 1
+§31.2 K's main flag).
+
+#### B5 `ResolutionContext` pairs with doc 1 §31.2 via §30 refinement chain
+
+Doc 1 §30.4 already mandates the §3 + B5 pairing as a single
+ship-unit. Doc 1 §31 does not change this pairing; it only
+refines the surrounding context (error shape via §31.2 F, codegen
+via §31.2 K). B5's `ResolutionContext` recommendation stands as
+written in J.2, with the constructor naming rule preserved
+(`from_system()` + `for_tests()`, no `Default` impl).
+
+**No change to B5.** Ship bundled with doc 1 §3 as a single
+commit.
+
+### K.3 B3 `ReaderOutput::name` consistency with §31.2 ownership types
+
+Doc 2 J.2 "B3 refinement" proposes `Arc<str>` for
+`ReaderOutput::name`, matching C4's `Arc<str>` direction for
+`ResolvedFontSpec::family`. Doc 1 §31 does not introduce
+competing ownership-type recommendations, so J.2's refinement
+stands without change.
+
+**Confirmation under "perfect API":** the single ownership-type
+refactor (C4 + B3 + D4 + doc 1 §20 `icon_theme`) via `Arc<str>`
+with `serde = { features = ["rc"] }` remains the correct path.
+Adopt uniformly across the crate.
+
+### K.4 Confirmation of the macOS M1 bug (doc 1 §30.3)
+
+Doc 1 §30.3 surfaces M1: `native-theme/src/macos.rs:504-505`
+hardcodes `Some(DialogButtonOrder::PrimaryLeft)` with an
+incorrect comment ("macOS uses leading affirmative"). The bug
+contradicts three independent sources.
+
+**Personal verification this pass (doc 2 side):**
+
+| Source | Says | Verified location |
+|---|---|---|
+| `macos.rs:505` (the bug) | `PrimaryLeft` | ✅ personally read |
+| `presets/macos-sonoma.toml` | `button_order = "primary_right"` (lines 254, 586) | ✅ `grep` confirmed |
+| `presets/macos-sonoma-live.toml` | `button_order = "primary_right"` (lines 126, 285) | ✅ `grep` confirmed |
+| `docs/platform-facts.md:1468-1481` | macOS column in dialog table reads "primary rightmost" | ✅ personally read, including table header |
+| `resolve/inheritance.rs:98-109` | `platform_button_order()` returns `PrimaryRight` on non-Linux | ✅ personally verified |
+
+**All three non-bug sources agree on `PrimaryRight`.** The reader
+hardcode is the sole disagreement. User-visible impact: every
+`SystemTheme::from_system()` on macOS returns a `SystemTheme`
+with wrong dialog button order.
+
+This bundles cleanly with **D5** (delete KDE reader
+`button_order` hardcode): both issues are resolved by deleting
+reader-side `button_order` hardcodes on *all* platforms and
+letting presets + resolver be authoritative.
+
+**Endorsement:** ship M1 (2-line deletion + comment fix) + D5
+(2-line deletion) as a single commit titled "delete reader-side
+`button_order` hardcodes; presets + resolver are authoritative."
+
+**Update to D5 recommendation:** the "depends on A4" caveat in
+D5's original text is too cautious. D5 (delete KDE reader
+hardcode) and A4 (move `button_order` fallback from
+`resolve_safety_nets` to `resolve_platform_defaults`) are
+**independently correct**. Ship D5 + M1 unconditionally. Ship
+A4 independently (it fixes the `resolve()` purity leak, which
+is a separate architectural concern).
+
+### K.5 Windows platform-facts tension (out of scope for v0.5.7)
+
+Doc 1 §30.3 "Out-of-scope note on Windows" flags that
+`windows.rs:517` hardcodes `PrimaryRight`, which agrees with
+the Windows presets and the resolver default — but
+`platform-facts.md:1481` lists Windows under "primary
+leftmost" per an older Microsoft Common Buttons guideline.
+
+**Personal verification this pass:** `platform-facts.md:1481`
+confirmed reading "primary leftmost" for Windows in the dialog
+table. The Windows reader, presets, and resolver default all
+agree on `PrimaryRight`. Only `platform-facts.md` disagrees,
+and its citation is the older Win7-era guideline.
+
+Modern WinUI 3 `ContentDialog` uses primary-right. The Windows
+code tracks modern practice; `platform-facts.md` tracks the
+older guideline. This is a **documentation vs. modern-practice
+tension**, not a code bug.
+
+**No v0.5.7 action recommended.** Platform-facts requires an
+independent refresh citing current MS Style Guide /
+WinUI 3 `ContentDialog` documentation. Flagged for a future
+platform-facts audit.
+
+### K.6 Priority rebalance (doc 2 updates)
+
+Updates to doc 2 §E / §H in light of doc 1 §31:
+
+**Promotions (new or strengthened):**
+
+| Priority | Issue | Change |
+|---|---|---|
+| P0 | **A3** as two flat variants in doc 1 §31.2 F | Superseded prior "nested under Resolution(...)" form |
+| P1 | **B1 + B6 + B7** ship via doc 1 §31.2 K | Was §J.4 "promote to P0/P1 via codegen"; now concretely "via narrow derive proc-macro K". Scope fits v0.5.7. |
+| P1 | **B2** ship partial delivery via K | Partial: simple inheritance via attributes, pattern rules stay in `inheritance.rs` until a follow-up |
+
+**No changes to:**
+
+- A2 (personally verified bug; fix is mechanical)
+- A4 (move `button_order` to `resolve_platform_defaults`)
+- B3 (`ReaderOutput` with `known_is_dark: Option<bool>`)
+- B4 (`AccessibilityPreferences` on `SystemTheme`, not in
+  `ResolutionContext`, per J.2)
+- B5 (bundled with doc 1 §3)
+- C1 / C2 / C3 / C4 / C5 / C6 (unchanged recommendations)
+- D1-D5 (D5 strengthened by K.4 bundling with M1; others unchanged)
+- I1-I5 (all still relevant)
+
+### K.7 Confidence statement (fourth pass)
+
+**High confidence:**
+- All K.1 verification results (personally re-checked against
+  the current tree)
+- K.2 A3 shape update (follows mechanically from doc 1 §31.2 F)
+- K.2 B1 + B6 + B7 delivery via doc 1 §31.2 K (direction is
+  right; scope is medium confidence)
+- K.4 M1 bundling with D5 unconditionally
+
+**Medium confidence:**
+- K.2 B2 partial delivery via K (depends on attribute-syntax
+  expressiveness for inheritance rules; same unknown as doc 1
+  §31.2 K's main flag)
+- K.6 priority promotions (depends on K landing cleanly within
+  v0.5.7 schedule)
+
+**Low confidence / explicit unknowns:**
+- Whether `#[theme(inherit_from = "defaults.border.color")]`
+  attributes can express *all* of `inheritance-rules.toml`'s
+  current rules, or whether pattern-based rules (e.g. "every
+  widget inherits border.color") need a different mechanism
+
+### K.8 What this pass did NOT change
+
+Deliberately preserved from §A-§J:
+
+- Every pros/cons entry in doc 2's existing option tables
+- Every recommendation not explicitly superseded in K.2 / K.6
+- §G post-script (v1.0 crate split direction reaffirmed)
+- §H cross-document P0 consolidation (updated only to replace
+  the A3 shape; everything else in §H stands)
+- §F open questions list (no items removed; K.7 adds one new
+  implicit unknown about attribute-syntax expressiveness)
+- Doc 2's A1 STATUS block (A1 remains fully shipped)
+
+If section K does not reference a prior recommendation, that
+recommendation is unchanged.
+
+### K.9 Endorsement of the doc 2 P0 cohort for v0.5.7
+
+The fourth-pass review personally verified every doc 2 P0 item
+and endorses them for v0.5.7 without reservation:
+
+1. **A2** — verified orchestration bug at `validate.rs:428-458`
+2. **A3** (in doc 1 §31.2 F shape) — verified dual-category
+   pollution in `ThemeResolutionError.missing_fields`
+3. **A4** — verified `resolve()` doc-vs-code contradiction
+4. **B4** — verified accessibility pollution in `ThemeDefaults`
+5. **B6** — verified type-vs-usage mismatch in `BorderSpec`
+6. **C1** — verified `Other` has zero emitters
+7. **C2** — verified `ColorSchemeChanged` lies on KDE / GNOME
+8. **D5 + M1** bundled (per K.4) — verified both hardcodes
+   against three independent sources each
+
+These are the ship-critical items from doc 2. Combined with
+doc 1's P0 cohort (see doc 1 §31.10), they form a coherent
+v0.5.7 release.
+
