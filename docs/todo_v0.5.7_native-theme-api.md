@@ -4730,3 +4730,643 @@ disturbing the cohort's shape.
 These lists consolidate the P-tiering across all five passes.
 Ship P0 as v0.5.7; stage P1/P2/P3 across v0.5.8 / v0.5.9 per
 developer capacity.
+
+---
+
+## 33. Sixth-pass review: verification-only refinements under "no backward compat"
+
+This section records a sixth ultrathink pass under the explicit
+"backward compatibility does not matter; I want the perfect API"
+directive. Unlike passes 2-5, which each surfaced new options or
+restructured recommendations, this pass is **verification-dominated**:
+every prior P0 claim was re-checked against the current tree via
+parallel verification agents plus direct re-reads, and only three
+small new findings (F1-F3) emerged. The existing P0 cohort is
+re-endorsed without structural changes.
+
+This section runs parallel to **doc 2 §M** which hosts
+doc-2-specific sixth-pass findings.
+
+### 33.1 Methodology
+
+Four parallel verification subagents were dispatched over the
+current tree:
+
+1. **P0 claim verifier** — re-checked every file:line reference in
+   §1-§32 against the tip of `main`, reporting `VERIFIED`, `DRIFT
+   (±N lines)`, `FALSE`, or `UNVERIFIABLE`.
+2. **Fresh-eyes auditor** — read the lib.rs, pipeline.rs, model/
+   tree, resolve/ tree, color.rs, and error.rs looking for
+   genuinely-new issues not in any prior A-L section across both
+   docs.
+3. **K feasibility stress-test** — read `define_widget_pair!` at
+   `widgets/mod.rs:48-156`, the check_ranges impls at lines
+   908-1347, the three border helpers, `inheritance.rs`, and
+   `inheritance-rules.toml` to evaluate whether Option K (narrow
+   derive proc-macro) can deliver the minimum-viable scope in the
+   1-week estimate §32.3 proposes.
+4. **Uncovered-module auditor** — audited pipeline.rs, test_util.rs,
+   sficons.rs, winicons.rs, freedesktop.rs, rasterize.rs,
+   spinners.rs, bundled.rs, presets.rs, model/animated.rs,
+   model/dialog_order.rs, model/icon_sizes.rs, kde submodules,
+   gnome/, watch/ backends, and other modules not heavily covered
+   in passes 1-5.
+
+Each subagent's findings were then verified directly against the
+tree before being folded into this section. Where a subagent's
+conclusion conflicted with a prior consensus, the direct re-read
+settled the question (see §33.4 for the one A2 false-alarm case).
+
+### 33.2 Verification results
+
+**Every prior P0 claim verified against the current tree.** The
+following claims were directly re-read this pass and stand at
+exact file:line positions (within ±5 lines where noted):
+
+| Claim | File:line | Verdict |
+|---|---|---|
+| M1 macOS button_order hardcode | `macos.rs:504-505` | ✅ exact |
+| A2 check_ranges on placeholders | `validate.rs:428-458` | ✅ exact — see §33.4 for the one false-alarm |
+| A4 purity leak | `resolve/mod.rs:20-22`, `inheritance.rs:164-167`, `inheritance.rs:98-109` | ✅ exact |
+| §6a Clone bound | `error.rs:80` `#[derive(Debug, Clone)]` | ✅ exact |
+| §6a stale doc comment | `error.rs:73-79` | ✅ exact |
+| §6a error_is_clone test | `error.rs:239-250` | ✅ exact |
+| §6a presets.rs stale comment | `presets.rs:85-92` | ✅ exact |
+| §4 active/pick redundancy | `lib.rs:239`, `lib.rs:251` | ✅ exact |
+| §3 SystemTheme pre-resolve fields | `lib.rs:215-232` with `pub(crate) light_variant`/`dark_variant` | ✅ exact |
+| D5 KDE button_order hardcode | `kde/mod.rs:52-53` | ✅ exact |
+| C1 ThemeChangeEvent::Other dead | `watch/mod.rs:65-70` definition; grep confirms zero production emitters | ✅ exact |
+| A1 already fixed | `watch/kde.rs:54-68` uses `Option<Instant>` + `is_none_or` | ✅ exact — matches commit `f9e5956` |
+| §19 LinuxDesktop missing `#[non_exhaustive]` | `detect.rs:6-23` | ✅ exact |
+| B1 check_ranges boilerplate | `widgets/mod.rs:908-1347` = 440 lines | ✅ within §32.2's "~440-450" |
+| §2 `define_widget_pair!` span | `widgets/mod.rs:48-156` = 109 lines | ✅ exact |
+| B6 defaults-only fields | `model/border.rs:19,25` inline "(defaults only)" comments | ✅ exact |
+| §12 crate-root count | 92 items | ✅ re-verified — see §33.3 for the breakdown |
+
+**No drift beyond the pre-existing merge-review corrections.** The
+document remains reliable at exact line positions.
+
+### 33.3 §12 crate-root count re-verification (direct count)
+
+§31.1 and §32.2 claim ~91-92 items. One sixth-pass verification
+agent reported 158, which I initially flagged as a drift. **Direct
+re-read of `lib.rs:122-206` settles the question: 92 items.**
+
+The breakdown:
+
+| Source | Count | Items |
+|---|---|---|
+| `pub use color::{...}` (line 122) | 2 | `ParseColorError`, `Rgba` |
+| `pub use error::{...}` (line 123) | 2 | `Error`, `ThemeResolutionError` |
+| `pub use model::{...}` (lines 124-134) | 52 | 25 widget types + 20 resolved/font/border types + 5 model helpers + 2 bundled functions |
+| `pub use model::icons::{...}` (line 136) | 4 | `detect_icon_theme`, `icon_name`, `system_icon_set`, `system_icon_theme` |
+| Platform-gated re-exports (lines 166-186) | 12 | `load_freedesktop_icon`, `load_freedesktop_icon_by_name`, `from_gnome`, `from_kde_with_portal`, `from_kde`, `from_macos`, `rasterize_svg`, `load_sf_icon`, `load_sf_icon_by_name`, `from_windows`, `load_windows_icon`, `load_windows_icon_by_name` |
+| `pub use watch::{...}` (line 189) | 3 | `ThemeChangeEvent`, `ThemeWatcher`, `on_theme_change` |
+| `pub use detect::{...}` (lines 192-198) | 7 | `LinuxDesktop`, `detect_linux_de`, `detect_is_dark`, `detect_reduced_motion`, `invalidate_caches`, `prefers_reduced_motion`, `system_is_dark` |
+| `pub use icons::{...}` (lines 199-202) | 6 | `is_freedesktop_theme_available`, `load_custom_icon`, `load_icon`, `load_icon_from_theme`, `load_system_icon_by_name`, `loading_indicator` |
+| `pub use pipeline::{...}` (line 203) | 2 | `diagnose_platform_support`, `platform_preset_name` |
+| `pub type Result<T>` (line 206) | 1 | `Result` alias |
+| `pub struct SystemTheme` (line 215) | 1 | struct definition itself |
+| **Total** | **92** | |
+
+The "158" verification-agent figure conflated duplicated symbols
+(e.g. counting `IconData`'s variants separately, or walking into
+nested `pub use` inside modules). The plain "names at crate root"
+count is **92** — consistent with §31.1 and §32.2.
+
+The §12 argument remains unaffected: 92 items is well past any
+reasonable flat-root scanning threshold. Partition the crate root
+per §12 Option C.
+
+**Confidence:** very high. Triple-verified (§31.1 + §32.2 + this
+pass).
+
+### 33.4 §14 / I5 lint_toml literal count — nuance correction
+
+Doc 2 §I5 claims "~215 string literals total hand-maintained"
+across `model/mod.rs:554-720`. The sixth-pass direct count reveals
+the number is **correct for the full codegen ROI** but **misleading
+if interpreted as "literals inside `lint_toml` itself"**. The split
+matters because the two numbers measure different things.
+
+**Direct count of string literals inside `lint_toml`** (`model/mod.rs:540-745`):
+
+| Source | Count |
+|---|---|
+| `TOP_KEYS` const (line 554) | 4 |
+| `VARIANT_KEYS` const (lines 563-593) | 29 |
+| `widget_fields` match arms (lines 600-626) | 25 widget names |
+| `lint_defaults` nested match (lines 662-666) | 4 ("font", "mono_font", "border", "icon_sizes") |
+| `lint_variant` match arms (lines 691-694) | 2 ("defaults", "text_scale") |
+| `lint_variant` nested match (lines 703-708) | 3 ("font"/`_font` literal/`"border"`) |
+| `variant_key` iter (line 729) | 2 ("light", "dark") |
+| Layout section lookup (line 736) | 1 ("layout") |
+| `format!` strings ("unknown field: ...") | ~8-10 |
+| **Total hand-maintained in lint_toml itself** | **~78-80** |
+
+The remaining ~135-140 literals that make up the §I5 "~215" figure
+live **inside `FIELD_NAMES` arrays generated by `define_widget_pair!`
+invocations in `widgets/mod.rs:164-906`**. Those are macro-generated
+from the struct field list, so a contributor editing widgets does
+not hand-maintain them directly — the macro emits them. But they
+are still "drift hazard" in the sense that the macro's field list
+is the only source and any misalignment between the option-struct
+field and the literal inside the macro expansion is undetectable
+at compile time.
+
+**Reconciled number under "perfect API" ROI framing**:
+
+- **~78-80 hand-written literals in `lint_toml` itself** — these
+  drift when a new widget or field is added without updating
+  `lint_toml`'s const arrays and match arms. This is the direct
+  drift hazard §14 complains about.
+- **~135-140 literals in `FIELD_NAMES` arrays via
+  `define_widget_pair!` expansions** — these are technically
+  generated by the declarative macro but still require the widget
+  author to list field names twice (once in the struct body, once
+  in the macro invocation's section separators) because the
+  declarative macro cannot introspect the struct.
+- **Total ~213-220** under the full-codegen framing, i.e. what a
+  proc-macro that reads the struct directly eliminates.
+
+**§I5's "~215" is therefore a defensible ROI figure for the K
+proc-macro recommendation** — K eliminates both the ~78 literals in
+`lint_toml` (via `inventory::submit!` registry + generated
+`widget_fields`) and the ~135 field-name duplications (via derive
+introspection of the struct). **But the "~215 in lint_toml" phrasing
+is wrong**; the literals live in two locations.
+
+**Action**: replace §I5's phrasing in a future revision with the
+split count. Both numbers are the right answer for different
+questions. The ROI for the proc-macro stands.
+
+**Confidence:** high. Numbers are counted directly.
+
+### 33.5 A2 one-pass false-alarm — resolved
+
+One verification agent in this pass reported A2 as FALSE, claiming
+that `validate.rs:428-458` runs the `if !missing.is_empty()` check
+**before** the `check_ranges` calls. Direct re-read of the exact
+lines contradicts this: the check at line 454 comes **after** the
+24 `check_ranges(...&mut missing)` calls at lines 429-452.
+
+The code, verbatim:
+
+```rust
+// validate.rs:428-458 (personally re-read this pass)
+// --- per-widget range checks ---
+window.check_ranges("window", &mut missing);
+button.check_ranges("button", &mut missing);
+// ... 22 more check_ranges calls, all with &mut missing ...
+link.check_ranges("link", &mut missing);
+
+if !missing.is_empty() {
+    return Err(crate::Error::Resolution(ThemeResolutionError {
+        missing_fields: missing,
+    }));
+}
+```
+
+All 24 `check_ranges` calls run before the emptiness check.
+`require()` has already pushed placeholder-substituted paths into
+`missing` at construction time (lines before 428). `check_ranges`
+then runs on the placeholder-defaulted `Resolved*Theme` structs and
+can push **additional** spurious entries for ranges like
+`font.weight: 0..=900` with `u16::default() == 0`.
+
+**A2 is real. The 5-pass consensus holds. The false-alarm was a
+single agent's misread.**
+
+**Confidence:** very high. Re-verified with direct Read at the
+exact line range.
+
+### 33.6 New minor findings (three P3 polish items)
+
+The fresh-eyes audit surfaced three small items that no prior pass
+covered. All are P3 polish and none affect the P0 cohort.
+
+#### F1. `IconRole::Display` delegates to `Debug::fmt` (CamelCase output)
+
+**File:** `native-theme/src/model/icons.rs:146-150`
+
+```rust
+impl std::fmt::Display for IconRole {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        std::fmt::Debug::fmt(self, f)
+    }
+}
+```
+
+`println!("{}", IconRole::DialogWarning)` produces
+`"DialogWarning"` (CamelCase Debug output). `IconRole` has 42
+variants but **no stable string representation** — there is no
+`name()` method, no serde rename, no kebab-case conversion. Unlike
+`IconSet` which exposes `from_name` / `name` for kebab-case
+round-tripping (`model/icons.rs:297-333`), `IconRole` offers only
+the Debug-derived Display.
+
+Consequences for users:
+
+1. Logs and error messages show `"DialogWarning"` instead of the
+   more conventional `"dialog-warning"`.
+2. Users building a `HashMap<IconRole, PlatformName>` or serializing
+   icon preferences to TOML must write their own kebab-case
+   conversion — the crate provides none.
+3. `Debug::fmt` output is explicitly not a stability contract in
+   Rust; a future variant rename silently changes the Display
+   output. A round-trip through a log file before a rename and
+   back after the rename breaks.
+
+**Options:**
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| A | **Status quo** | No change | Unstable Display; no kebab-case path |
+| B | **Remove `impl Display for IconRole` entirely**; users explicitly use `Debug` when they want Debug output | Honest; Debug is not stable by contract | Users lose a one-line `println!("{}", role)` convenience |
+| C | **Implement `Display` with kebab-case** (`DialogWarning → "dialog-warning"`) | Stable output; matches `IconSet::name()` style | Requires hand-written conversion OR strum/similar crate |
+| D | **Add `pub fn name(&self) -> &'static str`** returning kebab-case (mirroring `IconSet::name()`), keep Display = Debug | Parallels `IconSet::name()`; stable string for serialization / keys | One more method; Display still unstable |
+| E | **Combine C + D**: implement Display via a `name()` method that returns kebab-case | Both patterns work | Doubles the small surface |
+
+**Recommended: E** under "perfect API". The reasoning:
+
+- `IconSet` already has `name()` + serde kebab-case; parallelism is
+  valuable.
+- `Display` should be stable for a public enum with 42 variants —
+  deriving from `Debug` creates a silent time-bomb at every rename.
+- Method-style access (`role.name()`) composes with map keys and
+  serialization; Display-style access (`format!`) covers logs and
+  user-facing strings.
+- `Display::fmt` body is one line calling `write!(f, "{}", self.name())`.
+
+Implementation note: adding `name()` for 42 variants can use a
+`match` (~44 lines of hand-written mapping) or defer to a proc-macro
+(but that requires a new dep just for this — ROI is poor for 42
+variants, same as §18's conclusion).
+
+**Priority:** P3 polish. Recommend bundling with §18's IconSet
+drift-guard test as a single "icon enum stability" commit.
+
+**Confidence:** high. Direct re-read of `model/icons.rs:146-150`
+and `model/icons.rs:297-333` confirms the asymmetry.
+
+#### F2. `Rgba::to_f32_tuple` doc omits round-trip loss note
+
+**File:** `native-theme/src/color.rs:103-112`
+
+Sibling method `Rgba::to_f32_array` at `color.rs:89-101` documents
+round-trip loss explicitly:
+
+```rust
+/// Convert to `[r, g, b, a]` in the 0.0..=1.0 range (for toolkit interop).
+///
+/// Note: round-trip through `from_f32` -> `to_f32_array` is lossy due to
+/// u8 quantization (256 discrete steps per channel).
+#[must_use]
+pub fn to_f32_array(&self) -> [f32; 4] { ... }
+```
+
+`to_f32_tuple` at `color.rs:103-112` does not:
+
+```rust
+/// Convert to `(r, g, b, a)` tuple in the 0.0..=1.0 range.
+#[must_use]
+pub fn to_f32_tuple(&self) -> (f32, f32, f32, f32) { ... }
+```
+
+Both methods do the identical quantization. The doc asymmetry
+misleads readers into assuming the tuple form is lossless when it
+is not.
+
+**Interaction with §16:** doc 1 §16 recommends **deleting
+`to_f32_tuple` entirely** as a parallel accessor that adds
+surface without capability. If §16 lands, F2 dissolves — the
+method and its doc both disappear.
+
+**If §16 is deferred or rejected:** copy the round-trip note from
+`to_f32_array`'s doc to `to_f32_tuple`'s doc. 1-line change.
+
+**Options:**
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| A | **Status quo** | No change | Doc asymmetry persists |
+| B | **Delete `to_f32_tuple`** (§16's recommendation) | Smaller surface; asymmetry disappears | 1-line caller migration (destructure the array) |
+| C | **Add the round-trip note** | Minimum change if §16 is deferred | Still has two methods |
+
+**Recommended: B** under "perfect API" — §16 already took this
+position. F2 is a concurrent-discovery documentation symptom of the
+same issue.
+
+**Priority:** P3 polish — subsumed by §16 P0 item.
+
+**Confidence:** high. Direct re-read of `color.rs:89-112`.
+
+#### F3. `#[must_use]` message convention is mixed across the crate
+
+**Files:**
+- `native-theme/src/pipeline.rs:132` — `#[must_use]` (bare)
+- `native-theme/src/pipeline.rs:175` — `#[must_use]` (bare)
+- `native-theme/src/model/icons.rs:438` — `#[must_use = "this returns the current icon set for the platform"]`
+- `native-theme/src/model/icons.rs:477` — `#[must_use = "this returns the current icon theme name"]`
+
+Mixed convention: `platform_preset_name` and
+`diagnose_platform_support` use **bare** `#[must_use]`. `system_icon_set`
+and `system_icon_theme` use **custom messages**. `SystemTheme::from_system`
+at `lib.rs:353` uses the more preachy *"this returns the detected
+theme; it does not apply it"* (flagged in §26).
+
+**Consequences:**
+
+1. Inconsistent rustdoc output: two functions get a "returns..."
+   message, two get nothing, one gets a moralising message.
+2. A contributor editing one site does not know which convention
+   to apply.
+3. The custom messages for `system_icon_set` and `system_icon_theme`
+   are the same preachy pattern §26 already flags — they describe
+   what the function returns rather than why the attribute is
+   applied.
+
+**Options:**
+
+| # | Option | Pros | Cons |
+|---|---|---|---|
+| A | **Status quo** | No change | Inconsistent convention |
+| B | **All bare `#[must_use]`** across the crate | Uniform; terse; minimum surface | Loses the "returns... " hint for users who want it |
+| C | **All custom messages, neutral phrasing** | Consistent and slightly more helpful rustdoc | More text per attribute; room for preachy drift |
+| D | **Bare `#[must_use]` on value types; custom messages only when the hint is non-obvious** | Context-aware | Subjective — "non-obvious" varies by reviewer |
+
+**Recommended: B** under "perfect API". Reasoning:
+
+- After the §1 renames land (`ThemeSpec → Theme`, etc.), function
+  names become more self-descriptive. `Theme::from_system()` is
+  self-explanatory; `system_icon_theme()` is self-explanatory. A
+  custom message adds nothing over the function name.
+- §26 already recommends trimming custom messages. B extends that
+  uniformly to the whole crate.
+- Bare `#[must_use]` is the simplest convention; no drift hazard.
+- If a specific function genuinely needs a message (e.g. a warning
+  about side effects), that is an exception worth documenting at
+  the site.
+
+**Priority:** P3 polish. Bundle with §26 as a single "uniform
+`#[must_use]` convention" commit after §1 renames land.
+
+**Action list for the bundle:**
+
+1. `pipeline.rs:132` — keep bare
+2. `pipeline.rs:175` — keep bare
+3. `model/icons.rs:438` — drop the message
+4. `model/icons.rs:477` — drop the message
+5. `lib.rs:353` — drop the preachy `from_system` message (§26)
+6. `model/mod.rs:225` — drop `#[must_use]` from the `ThemeSpec`
+   struct (§26 Option B)
+
+**Confidence:** high. Direct grep + re-read of each site.
+
+### 33.7 K proc-macro feasibility re-verification
+
+The sixth-pass stress test (subagent 3) re-read `define_widget_pair!`
+at `widgets/mod.rs:48-156`, three widget invocations
+(`ButtonTheme`, `InputTheme`, `CheckboxTheme`), the check_ranges
+impls at lines 908-1347, the three border helpers, the inheritance
+rules in `inheritance.rs`, and `inheritance-rules.toml`. Findings:
+
+**What K unambiguously delivers:**
+
+- **Paired struct generation**: straightforward `syn`/`quote`
+  field-rename + Option-stripping emission. 1 day.
+- **`FIELD_NAMES` constants**: trivially generated from the field
+  list. 0.5 days.
+- **`impl_merge!` body inlining**: the existing `lib.rs:39-77`
+  macro logic (39 lines) translates directly to proc-macro output.
+  1 day.
+- **`check_ranges` impls**: 6 distinct check kinds
+  (`check_non_negative`, `check_positive`, `check_range_f32`,
+  `check_range_u16`, `check_min_max`, and a defaults-specific
+  variant). All parameterisable via `#[theme(range = "...")]` and
+  `#[theme(check = "non_negative")]` attributes. 1 day.
+- **Border-kind dispatch**: 13 full / 2 partial / 3 none —
+  classification consistent with `inheritance-rules.toml`
+  (`widgets_with_border = [window, button, input, checkbox,
+  tooltip, progress_bar, toolbar, list, popover, dialog, combo_box,
+  segmented_control, expander]` — 13 entries, exact match).
+  `border_kind = "full" | "partial" | "none"` as a class-level
+  attribute. 0.5 days.
+- **`inventory::submit!` widget registry entry**: 3 lines per
+  widget in the derive output. Solves §14 in the same macro. 0.5
+  days.
+
+**Subtotal: ~4.5 days of mechanical work.**
+
+**What K partially delivers (the unknown):**
+
+- **Simple per-field inheritance** (e.g. `button.primary_background`
+  ← `defaults.accent_color`): expressible via `#[theme(inherit_from
+  = "defaults.accent_color")]` attribute. Agent 3 estimates ~55 of
+  82 uniform rules are expressible this way.
+- **Pattern-based rules** (e.g. "all widgets in
+  `widgets_with_border` list inherit `border.color` from
+  `defaults.border.color`"): not expressible at per-field attribute
+  level because the rule operates on a widget class, not a field.
+  Must either:
+  - (a) Use a class-level attribute on the widget struct
+    (`#[theme_layer(inherit_borders_from_defaults = true)]`), which
+    requires the proc-macro to know "what it means to inherit
+    borders from defaults" — one code path shared across all full
+    widgets.
+  - (b) Fall back to hand-maintained `inheritance.rs` code for the
+    pattern rules.
+- **Cross-widget rules** (e.g. `button.hover_text_color` ←
+  `button.font.color`): these are widget-internal state chains
+  that the resolve pass handles imperatively. Keeping them in
+  `inheritance.rs` is fine; K does not need to subsume them.
+- **Per-platform fallbacks**: 6 rules (`input.caret_color`,
+  `scrollbar.track_color`, `spinner.fill_color`,
+  `popover.background_color`, `list.background_color`,
+  `dialog.background_color`). These are conditional by target_os
+  and stay in `inheritance.rs` or `resolve_platform_defaults`.
+
+**Agent 3's verdict:** K ships the minimum-viable scope in 6-7
+days (~1 week). Inheritance-rule expressiveness is the main
+unknown, recommending a 1-2 day prototype against 2-3 widgets
+before full commitment.
+
+**Transitive dependency check** (`Cargo.lock` + `cargo tree`):
+
+- `syn 2.0.117` — already present via `serde_derive`
+- `quote` — already present via `serde_derive`
+- `proc-macro2` — already present via `serde_derive`
+- `inventory 0.3.24` — already present via connector dependencies
+
+**Zero new direct dependencies for `native-theme` itself** if the
+new `native-theme-derive` crate uses the already-transitive versions.
+
+**Confidence:** high on the 1-week estimate. Medium on the
+inheritance-expressiveness unknown (same caveat as §31.2 and
+§32.3).
+
+### 33.8 Other modules audit — no new findings
+
+The fourth verification agent audited pipeline.rs, test_util.rs,
+sficons.rs, winicons.rs, freedesktop.rs, rasterize.rs, spinners.rs,
+bundled.rs, presets.rs, model/animated.rs, model/dialog_order.rs,
+model/icon_sizes.rs, kde submodules, gnome/, and watch/ backends
+for:
+
+- bugs (incorrect logic, wrong constants)
+- runtime panics (unwrap/expect/panic/unreachable in non-test code)
+- public-vs-private leakage
+- resource leaks
+- platform-facts.md contradictions
+- error handling gaps
+- dead code
+- doc/code mismatches
+
+**Result: zero new issues found.** All unwrap/expect calls are
+properly gated behind `#[cfg(test)]` or test module guards. No
+resource leaks, no platform-facts.md contradictions beyond those
+already catalogued (M1, D5, A4, etc.), no dead public code beyond
+C1, no doc/code mismatches beyond A4.
+
+**Interpretation:** the modules that passes 1-5 did not cover
+heavily are genuinely clean. The crate's correctness bar is
+high outside the structural-design issues already documented.
+This is an **endorsement of the crate's current quality floor**,
+not a hole in the audit process.
+
+### 33.9 Strengthened recommendations (minimal)
+
+No P0 changes. Three small additions:
+
+#### F1 — `IconRole::name()` method bundled with §18
+
+Add `pub fn name(&self) -> &'static str` returning kebab-case,
+plus `impl Display for IconRole { fmt via name() }`. Ship as
+part of the §18 icon enum stability commit. P3.
+
+#### F2 — `to_f32_tuple` deletion per §16
+
+No separate action. §16 already recommends deletion. F2 is a
+concurrent-discovery confirmation that the deletion is correct.
+
+#### F3 — Uniform `#[must_use]` convention across the crate
+
+Bundle with §26. Drop all custom messages; use bare
+`#[must_use]`. Six sites to touch (listed in §33.6 F3). P3.
+
+### 33.10 Priority rebalance
+
+No tier changes. Three additions:
+
+**P3 (polish cohort, bundle-able):**
+
+| Priority | Issue | Notes |
+|---|---|---|
+| P3 | **F1** `IconRole::name()` + stable `Display` | Bundle with §18 |
+| P3 | **F2** `to_f32_tuple` deletion | Subsumed by §16 |
+| P3 | **F3** uniform `#[must_use]` convention | Bundle with §26 |
+
+**Unchanged from §32.5:**
+
+- All P0 items (1-15 in §32.9)
+- All P1 items (minimum-viable K, §7, L2, L3, C3, C4)
+- All P2 items (§5 G + §31.3 + L4, §13, C5, C6, D3, D4)
+
+### 33.11 Confidence statement (sixth pass)
+
+**Very high confidence:**
+
+- Every prior P0 file:line claim verified against the current tree
+  (§33.2 table)
+- §12 count = 92 items (triple-verified: §31.1, §32.2, §33.3)
+- A2 bug re-verified (§33.5 direct re-read after one agent
+  misread)
+- §33.6 F1/F2/F3 findings are factual (direct re-read of each
+  site)
+- K proc-macro feasibility for minimum-viable scope (§33.7 Agent 3
+  + prior pass consensus)
+- No new issues in modules 1-5 passes did not heavily cover
+  (§33.8)
+
+**High confidence:**
+
+- §33.4 lint_toml literal count nuance (direct count of
+  `lint_toml` gives ~78; §I5's ~215 is correct for the full
+  codegen ROI scope including widget FIELD_NAMES)
+- F1 Option E recommendation (`name()` method + stable Display)
+- F3 bare `#[must_use]` convention under "perfect API"
+
+**Medium confidence:**
+
+- None introduced this pass. The only prior medium-confidence
+  items (§31.2 K inheritance expressiveness, §32.3 ColorMode
+  naming) are unchanged.
+
+**Deferred / out of scope:**
+
+- §33.4's phrasing fix to §I5 can be applied as a prose tweak in
+  a future doc pass; not a code change.
+
+### 33.12 What this pass did NOT change
+
+Deliberately preserved from passes 1-5:
+
+- Every P0 recommendation and its rationale
+- Every option table in §1-§32 (no entries added or removed)
+- §30.3 M1 verification chain (four sources: platform-facts +
+  two presets + resolver default; the macOS reader is the sole
+  disagreement) — re-endorsed
+- §31.2 K attribute syntax sketch — agent 3's stress-test agrees
+  with the 1-week estimate at medium confidence on inheritance
+  expressiveness
+- §31.2 F flat + `kind()` Error shape — re-endorsed
+- §32.3 G `pick(ColorMode)` — re-endorsed
+- §32.4 M1 + D5 + A4 atomic single-commit constraint — re-endorsed
+- §32.3 §6 four-item Clone-drop commit — re-endorsed
+- §32.9 v0.5.7 P0 cohort consolidation — re-endorsed without
+  reservation
+
+If §33 does not reference a prior recommendation, it is
+unchanged.
+
+### 33.13 Endorsement of the v0.5.7 P0 cohort (sixth-pass confirmation)
+
+All 15 P0 items in §32.9 personally re-verified this pass against
+the current tree via four parallel subagents plus direct re-reads.
+The §33 additions (F1/F2/F3 polish findings, lint_toml count
+nuance, A2 false-alarm resolution) are refinements at the P3
+polish tier and do not disturb the P0 cohort shape.
+
+**Final v0.5.7 P0 cohort, consolidated across all six passes:**
+
+Unchanged from §32.9. The sixth-pass audit found no new P0 items,
+no P0 demotions, no P0 blockers. The cohort is ready for execution.
+
+**Ship-unit sequencing** (cross-reference doc 2 §L.5):
+
+- **Unit 1 (atomic)**: M1 + D5 + A4 [P0]
+- **Unit 2 (atomic)**: A2 + A3 + §6 Option F restructure [P0]
+- **Unit 3 (atomic)**: §6a four-item commit (Clone drop + three
+  stale cleanups including L1) [P0]
+- **Unit 4 (P1 follow-up)**: L2 test simplification post-A4
+- **Unit 5**: C1 + C2 [P0]
+- **Unit 6**: §16 + §17 + §19 + §22 + §26 polish [P0] — now
+  includes F1/F2/F3 per §33.9
+- **Unit 7**: §1 renames + §12 partition + §4 Option G + §20 [P0]
+- **Unit 8 (atomic)**: §3 + doc 2 B5 + B4 [P0]
+- **Unit 9**: Doc 2 B6 hand-written + L3 audit for C6 [P0/P1]
+- **Unit 10**: Minimum-viable K codegen [P1]
+- **Unit 11 (atomic)**: §5 G + §31.3 + L4 feature-matrix cleanup
+  [P2]
+
+Sixth-pass note on Unit 6: F1 / F2 / F3 are P3 polish items that
+can either slot into Unit 6 (if the polish cohort is being shipped)
+or defer to a subsequent polish pass. They do not block v0.5.7.
+
+**Endorsement:** the P0 cohort ships coherently. Pass 5 (§32.9)
+authored the cohort; pass 6 (§33) verifies it without finding
+anything that warrants restructuring. **Ready for execution.**
+
+**Confidence:** very high. Six independent review passes have
+converged on the same P0 shape with progressive refinements
+rather than contradictions.
