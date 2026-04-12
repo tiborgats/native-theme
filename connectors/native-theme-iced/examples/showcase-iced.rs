@@ -330,16 +330,17 @@ impl IconSetChoice {
 ///
 /// When the TOML does not specify `icon_theme`, selects `System`.
 fn resolve_icon_choice(
-    resolved: &native_theme::theme::ResolvedTheme,
+    icon_set: IconSet,
+    icon_theme: &str,
     has_toml_icon_theme: bool,
 ) -> (IconSetChoice, Vec<IconSetChoice>) {
     if has_toml_icon_theme {
-        let available = match resolved.icon_set {
+        let available = match icon_set {
             // Bundled sets are always available
             IconSet::Material | IconSet::Lucide => true,
             // Freedesktop: check if the theme is installed
             IconSet::Freedesktop => {
-                native_theme::icons::is_freedesktop_theme_available(&resolved.icon_theme)
+                native_theme::icons::is_freedesktop_theme_available(icon_theme)
             }
             // Platform-native icon APIs are always available on their platform
             IconSet::SfSymbols | IconSet::SegoeIcons => true,
@@ -347,9 +348,9 @@ fn resolve_icon_choice(
             // are handled above; future additions default to unavailable.
             _ => false,
         };
-        let choices = IconSetChoice::choices(Some(&resolved.icon_theme));
+        let choices = IconSetChoice::choices(Some(icon_theme));
         let selected = if available {
-            IconSetChoice::Default(resolved.icon_theme.clone())
+            IconSetChoice::Default(icon_theme.to_string())
         } else {
             IconSetChoice::System
         };
@@ -419,9 +420,10 @@ struct LoadedIcon {
 fn load_all_icons(
     choice: &IconSetChoice,
     resolved: &native_theme::theme::ResolvedTheme,
+    theme_icon_set: IconSet,
 ) -> Vec<LoadedIcon> {
     let set = match choice {
-        IconSetChoice::Default(_) => resolved.icon_set,
+        IconSetChoice::Default(_) => theme_icon_set,
         IconSetChoice::System => native_theme::theme::system_icon_set(),
         IconSetChoice::Material => IconSet::Material,
         IconSetChoice::Lucide => IconSet::Lucide,
@@ -566,6 +568,10 @@ struct State {
     color_mode: AppColorMode,
     is_dark: bool,
     current_resolved: native_theme::theme::ResolvedTheme,
+    /// Icon set for the current theme (from Theme or SystemTheme, not ResolvedTheme).
+    current_icon_set: IconSet,
+    /// Icon theme name for the current theme.
+    current_icon_theme: String,
     /// Dynamic label for the default theme entry, updated on color mode change.
     default_label: String,
 
@@ -637,7 +643,7 @@ impl Default for State {
     fn default() -> Self {
         let color_mode = AppColorMode::System;
         let is_dark = color_mode.is_dark();
-        let (resolved, theme, initial_error, system_preset) =
+        let (resolved, theme, initial_error, system_preset, init_icon_set, init_icon_theme) =
             match native_theme::SystemTheme::from_system() {
                 Ok(system) => {
                     let r = system
@@ -649,7 +655,9 @@ impl Default for State {
                         .clone();
                     let t = native_theme_iced::to_theme(&r, &system.name);
                     let preset = system.preset.clone();
-                    (r, t, None, preset)
+                    let is = system.icon_set;
+                    let it = system.icon_theme.clone();
+                    (r, t, None, preset, is, it)
                 }
                 Err(e) => {
                     // Fallback: load adwaita preset through resolve pipeline
@@ -659,6 +667,8 @@ impl Default for State {
                             t,
                             Some(format!("OS theme failed: {e}. Using adwaita fallback.")),
                             "adwaita".to_string(),
+                            IconSet::Freedesktop,
+                            "Adwaita".to_string(),
                         ),
                         None => {
                             // This is the only safe fallback when both OS theme
@@ -690,11 +700,11 @@ impl Default for State {
         ];
 
         // All shipped presets specify icon_theme, so default is always available.
-        let (icon_set_choice, icon_set_choices) = resolve_icon_choice(&resolved, true);
-        let loaded_icons = load_all_icons(&icon_set_choice, &resolved);
+        let (icon_set_choice, icon_set_choices) = resolve_icon_choice(init_icon_set, &init_icon_theme, true);
+        let loaded_icons = load_all_icons(&icon_set_choice, &resolved, init_icon_set);
 
         let anim_set = match &icon_set_choice {
-            IconSetChoice::Default(_) => resolved.icon_set,
+            IconSetChoice::Default(_) => init_icon_set,
             IconSetChoice::System => native_theme::theme::system_icon_set(),
             IconSetChoice::Material => IconSet::Material,
             IconSetChoice::Lucide => IconSet::Lucide,
@@ -732,6 +742,8 @@ impl Default for State {
             color_mode,
             is_dark,
             current_resolved: resolved,
+            current_icon_set: init_icon_set,
+            current_icon_theme: init_icon_theme,
             default_label,
             active_tab: Tab::Buttons,
             widget_info: String::new(),
@@ -805,9 +817,9 @@ impl Default for State {
                     _ => IconSetChoice::System,
                 };
                 state.icon_set_choice = choice.clone();
-                state.loaded_icons = load_all_icons(&choice, &state.current_resolved);
+                state.loaded_icons = load_all_icons(&choice, &state.current_resolved, state.current_icon_set);
                 let anim_set = match &choice {
-                    IconSetChoice::Default(_) => state.current_resolved.icon_set,
+                    IconSetChoice::Default(_) => state.current_icon_set,
                     IconSetChoice::System => native_theme::theme::system_icon_set(),
                     IconSetChoice::Material => IconSet::Material,
                     IconSetChoice::Lucide => IconSet::Lucide,
@@ -847,6 +859,8 @@ impl State {
                     Ok(system) => {
                         // Platform presets always specify icon_theme.
                         has_toml_icon_theme = true;
+                        self.current_icon_set = system.icon_set;
+                        self.current_icon_theme = system.icon_theme.clone();
                         self.current_resolved = system
                             .pick(if self.is_dark {
                                 native_theme_iced::ColorMode::Dark
@@ -865,6 +879,8 @@ impl State {
                         if let Some((r, t)) = load_adwaita_fallback(self.is_dark) {
                             // Adwaita preset specifies icon_theme, matching the init path.
                             has_toml_icon_theme = true;
+                            self.current_icon_set = IconSet::Freedesktop;
+                            self.current_icon_theme = "Adwaita".to_string();
                             self.current_resolved = r;
                             self.current_theme = t;
                         }
@@ -880,7 +896,11 @@ impl State {
                         native_theme_iced::ColorMode::Light
                     }) {
                         Some(variant) => {
-                            has_toml_icon_theme = variant.icon_theme.is_some();
+                            has_toml_icon_theme = nt.icon_theme.is_some();
+                            self.current_icon_set = nt.icon_set
+                                .unwrap_or_else(native_theme::theme::system_icon_set);
+                            self.current_icon_theme = nt.icon_theme.clone()
+                                .unwrap_or_else(|| native_theme::theme::system_icon_theme().to_string());
                             let v = variant.clone();
                             match v.into_resolved() {
                                 Ok(resolved) => {
@@ -918,11 +938,11 @@ impl State {
         // Always reload icons — the resolved text_color may have changed (light↔dark)
         // even when the icon set choice is the same.
         let (new_choice, new_choices) =
-            resolve_icon_choice(&self.current_resolved, has_toml_icon_theme);
+            resolve_icon_choice(self.current_icon_set, &self.current_icon_theme, has_toml_icon_theme);
         {
-            self.loaded_icons = load_all_icons(&new_choice, &self.current_resolved);
+            self.loaded_icons = load_all_icons(&new_choice, &self.current_resolved, self.current_icon_set);
             let anim_set = match &new_choice {
-                IconSetChoice::Default(_) => self.current_resolved.icon_set,
+                IconSetChoice::Default(_) => self.current_icon_set,
                 IconSetChoice::System => native_theme::theme::system_icon_set(),
                 IconSetChoice::Material => IconSet::Material,
                 IconSetChoice::Lucide => IconSet::Lucide,
@@ -1274,11 +1294,11 @@ fn update_inner(state: &mut State, message: Message) {
         Message::VSliderChanged(v) => state.vslider_value = v,
         Message::ProgressChanged(v) => state.progress_value = v,
         Message::IconSetSelected(choice) => {
-            state.loaded_icons = load_all_icons(&choice, &state.current_resolved);
+            state.loaded_icons = load_all_icons(&choice, &state.current_resolved, state.current_icon_set);
 
             // Rebuild animation caches when icon set changes
             let anim_set = match &choice {
-                IconSetChoice::Default(_) => state.current_resolved.icon_set,
+                IconSetChoice::Default(_) => state.current_icon_set,
                 IconSetChoice::System => native_theme::theme::system_icon_set(),
                 IconSetChoice::Material => IconSet::Material,
                 IconSetChoice::Lucide => IconSet::Lucide,

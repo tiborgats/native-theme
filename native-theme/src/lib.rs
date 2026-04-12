@@ -351,8 +351,11 @@ impl SystemTheme {
     /// # Examples
     ///
     /// ```no_run
-    /// let system = native_theme::SystemTheme::from_system()?;
-    /// let active = system.pick(system.mode);
+    /// let sys = native_theme::SystemTheme::from_system()?;
+    /// let theme = sys.pick(sys.mode);
+    /// // Icon set and theme are on SystemTheme, shared across variants
+    /// let _icon_set = sys.icon_set;
+    /// let _icon_theme = &sys.icon_theme;
     /// # Ok::<(), native_theme::error::Error>(())
     /// ```
     pub fn from_system() -> crate::Result<Self> {

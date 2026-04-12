@@ -1291,8 +1291,8 @@ impl Showcase {
                 });
                 let font = resolved.defaults.font.clone();
                 let mono_font = resolved.defaults.mono_font.clone();
-                let icon_theme = resolved.icon_theme.clone();
-                let icon_set = resolved.icon_set;
+                let icon_theme = system.icon_theme.clone();
+                let icon_set = system.icon_set;
                 let theme = to_theme(resolved, &system.name, is_dark);
                 *Theme::global_mut(cx) = theme;
                 window.refresh();
@@ -1691,8 +1691,8 @@ impl Showcase {
                     });
                     self.original_font = resolved.defaults.font.clone();
                     self.original_mono_font = resolved.defaults.mono_font.clone();
-                    self.current_icon_theme = resolved.icon_theme.clone();
-                    self.current_icon_set = resolved.icon_set;
+                    self.current_icon_theme = system.icon_theme.clone();
+                    self.current_icon_set = system.icon_set;
                     // Platform presets always specify icon_theme
                     self.has_toml_icon_theme = true;
                     let theme = to_theme(resolved, &system.name, self.is_dark);
@@ -1719,8 +1719,12 @@ impl Showcase {
             } else {
                 native_theme_gpui::ColorMode::Light
             }) {
-                // Check icon_theme before resolution fills it in
-                self.has_toml_icon_theme = variant.icon_theme.is_some();
+                // Check icon_theme before resolution fills it in (now on Theme)
+                self.has_toml_icon_theme = nt.icon_theme.is_some();
+                let icon_set = nt.icon_set
+                    .unwrap_or_else(native_theme::theme::system_icon_set);
+                let icon_theme = nt.icon_theme.clone()
+                    .unwrap_or_else(|| native_theme::theme::system_icon_theme().to_string());
                 let v = variant.clone();
                 let resolved = match v.into_resolved() {
                     Ok(r) => r,
@@ -1731,8 +1735,8 @@ impl Showcase {
                 };
                 self.original_font = resolved.defaults.font.clone();
                 self.original_mono_font = resolved.defaults.mono_font.clone();
-                self.current_icon_theme = resolved.icon_theme.clone();
-                self.current_icon_set = resolved.icon_set;
+                self.current_icon_theme = icon_theme;
+                self.current_icon_set = icon_set;
                 let theme = to_theme(&resolved, name, self.is_dark);
                 *Theme::global_mut(cx) = theme;
                 window.refresh();

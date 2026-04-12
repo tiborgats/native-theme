@@ -256,6 +256,17 @@ pub struct Theme {
     /// `SfSymbols`, `SegoeIcons`). Shared across light and dark variants.
     /// When `None`, filled during resolution from
     /// [`system_icon_set()`](crate::theme::system_icon_set).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use native_theme::theme::{Theme, IconSet};
+    ///
+    /// let theme = Theme::preset("material")?;
+    /// assert_eq!(theme.icon_set, Some(IconSet::Material));
+    /// assert_eq!(theme.icon_theme.as_deref(), Some("material"));
+    /// # Ok::<(), native_theme::error::Error>(())
+    /// ```
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon_set: Option<IconSet>,
 
