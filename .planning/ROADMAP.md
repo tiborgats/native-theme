@@ -371,7 +371,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [ ] 75-01-PLAN.md — LinuxDesktop #[non_exhaustive] + Wayland compositor variants
-- [ ] 75-02-PLAN.md — Remove IconSet::default() and verify watch compile-gating
+- [x] 75-02-PLAN.md — Remove IconSet::default() and verify watch compile-gating
 **UI hint**: yes
 
 ### Phase 76: Type Vocabulary Rename and Crate Root Partition
@@ -607,7 +607,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 72. ENV_MUTEX Test Simplification | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 73. ThemeChangeEvent Cleanup | v0.5.7 | 1/1 | Complete   | 2026-04-12 |
 | 74. Rgba Polish and must_use Uniformity | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
-| 75. LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal | v0.5.7 | 0/0 | Not started | — |
+| 75. LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal | v0.5.7 | 1/2 | In Progress|  |
 | 76. Type Vocabulary Rename and Crate Root Partition | v0.5.7 | 0/0 | Not started | — |
 | 77. SystemTheme API and icon_set Relocation | v0.5.7 | 0/0 | Not started | — |
 | 78. OverlaySource, AccessibilityPreferences, font_dpi Relocation | v0.5.7 | 0/0 | Not started | — |

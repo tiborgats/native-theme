@@ -65,7 +65,7 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 
 - [x] **WATCH-01**: `ThemeChangeEvent::Other` removed — it has zero production emitters (doc 2 C1)
 - [x] **WATCH-02**: `ThemeChangeEvent::ColorSchemeChanged` renamed to `Changed` — the `ColorScheme` framing is platform-inaccurate on KDE/GNOME which signal broader changes (doc 2 C2)
-- [ ] **WATCH-03**: `on_theme_change` fails at compile-time (not runtime) on missing `watch` feature — API is feature-gated at type/function level (doc 1 §22)
+- [x] **WATCH-03**: `on_theme_change` fails at compile-time (not runtime) on missing `watch` feature — API is feature-gated at type/function level (doc 1 §22)
 
 ### Icons
 
@@ -73,7 +73,7 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 - [ ] **ICON-02**: `load_icon` freedesktop size-24 hardcode removed (covered by ICON-01 builder's `size()` method) (doc 1 §9)
 - [ ] **ICON-03**: `IconProvider::icon_svg` returns `Cow<'static, [u8]>` instead of `&'static [u8]` — removes lifetime lock (doc 1 §10)
 - [ ] **ICON-04**: `IconData::Svg` stores `Cow<'static, [u8]>` to avoid the `Vec<u8>` copy on bundled icon loads (doc 1 §11)
-- [ ] **ICON-05**: `IconSet::default()` removed — it was Freedesktop on all platforms, misleading on macOS/Windows (doc 1 §17)
+- [x] **ICON-05**: `IconSet::default()` removed — it was Freedesktop on all platforms, misleading on macOS/Windows (doc 1 §17)
 - [ ] **ICON-06**: Drift-guard test added for `IconSet::from_name`/`name` round-trip (doc 1 §18, revised from strum)
 - [ ] **ICON-07**: `IconRole::name()` method returning kebab-case added; `impl Display for IconRole` delegates to `name()` (not `Debug::fmt`) (doc 1 §33 F1)
 
