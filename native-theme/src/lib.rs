@@ -116,6 +116,13 @@ mod spinners;
 #[cfg(feature = "watch")]
 pub mod watch;
 
+/// Convenience re-exports for common usage.
+///
+/// `use native_theme::prelude::*` imports:
+/// [`Theme`](theme::Theme), [`ResolvedTheme`](theme::ResolvedTheme),
+/// [`SystemTheme`], [`Rgba`](color::Rgba), [`Error`](error::Error), and [`Result`].
+pub mod prelude;
+
 /// Theme data model: types, defaults, fonts, borders, widgets.
 ///
 /// Core types: [`Theme`](theme::Theme), [`ThemeMode`](theme::ThemeMode),
