@@ -94,8 +94,8 @@ impl ThemeVariant {
     ///
     /// # Errors
     ///
-    /// Returns [`crate::Error::Resolution`] if any fields remain `None` after
-    /// resolution (e.g., when accent color is missing and cannot be derived).
+    /// Returns [`crate::Error::ResolutionIncomplete`] if any fields remain `None`
+    /// after resolution, or [`crate::Error::ResolutionInvalid`] if range checks fail.
     ///
     /// # Examples
     ///
