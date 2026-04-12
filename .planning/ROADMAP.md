@@ -295,11 +295,13 @@ Plans:
 **Depends on**: Phase 68
 **Requirements**: ERR-01, CLEAN-01
 **Success Criteria** (what must be TRUE):
-  1. `error.rs` does not contain `#[derive(Clone)]` on the `Error` enum, and `fn assert_clone<T: Clone>()` compile-test fails if reintroduced
+  1. `error.rs` does not contain `#[derive(Clone)]` on the `Error` enum; the deleted `error_is_clone` test and grep-based verification (Clone count = 2, both on ThemeResolutionError) guard against reintroduction
   2. The `error_is_clone` test file is deleted and `cargo test` still passes on a fresh clone
   3. The stale `error.rs:73-79` and `presets.rs:85-92` doc comments describing Clone behaviour are gone (grep for "Clone" in those files returns zero matches)
   4. The four-item commit is a single atomic change — bisection cannot land on a revision where Clone is dropped but `error_is_clone` still exists
-**Plans**: TBD
+**Plans:** 1 plan
+Plans:
+- [ ] 70-01-PLAN.md — Drop Clone from Error enum and remove all stale byproducts
 
 ### Phase 71: Error Restructure and Validation Split
 **Goal**: `validate()` distinguishes missing fields from out-of-range values in its output, and the `Error` enum is restructured per §31.2 Option F so callers can match on `ReaderFailed` / `FeatureDisabled` / `WatchUnavailable` / `Resolution` with an `Error::kind()` helper for coarse dispatch
