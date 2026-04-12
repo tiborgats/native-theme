@@ -71,13 +71,7 @@ impl std::fmt::Display for ThemeResolutionError {
 impl std::error::Error for ThemeResolutionError {}
 
 /// Errors that can occur when reading or processing theme data.
-///
-/// This type is [`Clone`] so it can be stored in caches alongside
-/// [`crate::ThemeSpec`]. The `Platform` and `Io` variants use [`Arc`]
-/// internally to enable cloning without losing the original error chain.
-///
-/// [`Arc`]: std::sync::Arc
-#[derive(Debug, Clone)]
+#[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
     /// Operation not supported on the current platform.
@@ -233,20 +227,6 @@ mod tests {
     fn error_is_send_sync() {
         fn assert_send_sync<T: Send + Sync>() {}
         assert_send_sync::<Error>();
-    }
-
-    #[test]
-    fn error_is_clone() {
-        fn assert_clone<T: Clone>() {}
-        assert_clone::<Error>();
-
-        let io_err: Error = std::io::Error::other("clone me").into();
-        let cloned = io_err.clone();
-        assert_eq!(io_err.to_string(), cloned.to_string());
-
-        let platform_err = Error::Platform(std::sync::Arc::new(std::io::Error::other("p")));
-        let cloned_p = platform_err.clone();
-        assert_eq!(platform_err.to_string(), cloned_p.to_string());
     }
 
     #[test]
