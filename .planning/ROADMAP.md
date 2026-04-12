@@ -370,8 +370,8 @@ Plans:
   4. Matching on `LinuxDesktop` without a wildcard arm produces a "non-exhaustive patterns" compile error, which is the correct forward-compat behaviour
 **Plans**: 2 plans
 Plans:
-- [ ] 71-01-PLAN.md � Rewrite Error enum per Option F with ErrorKind and RangeViolation
-- [ ] 71-02-PLAN.md � Two-vec validation split and caller migration
+- [ ] 75-01-PLAN.md — LinuxDesktop #[non_exhaustive] + Wayland compositor variants
+- [ ] 75-02-PLAN.md — Remove IconSet::default() and verify watch compile-gating
 **UI hint**: yes
 
 ### Phase 76: Type Vocabulary Rename and Crate Root Partition
