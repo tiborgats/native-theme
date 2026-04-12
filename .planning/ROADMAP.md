@@ -144,7 +144,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 ### v0.5.7 API Overhaul (Phases 69-88)
 
-- [ ] **Phase 69: Resolver-Level button_order Unlock** — Ship-unit 1: delete macOS/KDE `button_order` hardcodes and move dispatch into the resolver so the `resolve()` docs stop lying
+- [x] **Phase 69: Resolver-Level button_order Unlock** — Ship-unit 1: delete macOS/KDE `button_order` hardcodes and move dispatch into the resolver so the `resolve()` docs stop lying (completed 2026-04-12)
 - [ ] **Phase 70: Drop Error::Clone Bound** — Ship-unit 3: four-item atomic removal of `#[derive(Clone)]`, stale doc comments, and the `error_is_clone` test
 - [ ] **Phase 71: Error Restructure and Validation Split** — Ship-unit 2: partition `validate()` output into `missing` vs `out_of_range` and restructure `Error` per §31.2 Option F
 - [ ] **Phase 72: ENV_MUTEX Test Simplification** — Ship-unit 4 (after 69): drop env-var-mocking serialization now that `resolve()` is pure
@@ -288,7 +288,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 69-01-PLAN.md — Remove reader hardcodes, move dispatch to resolve_platform_defaults
-- [ ] 69-02-PLAN.md — Strip live preset TOMLs, update rustdoc, create presets README
+- [x] 69-02-PLAN.md — Strip live preset TOMLs, update rustdoc, create presets README
 
 ### Phase 70: Drop Error::Clone Bound
 **Goal**: `Error` no longer implements `Clone`, and every byproduct of that bond — stale doc comments, stale tests, stale preset comments — is atomically removed in the same commit so the build never enters an intermediate broken state
@@ -545,7 +545,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 44-48 | v0.5.0 | 17/17 | Complete | 2026-03-29 |
 | 49-60 | v0.5.5 | 41/41 | Complete | 2026-04-09 |
 | 61-68 | v0.5.6 | 14/14 | Complete | 2026-04-10 |
-| 69. Resolver-Level button_order Unlock | v0.5.7 | 1/2 | In Progress|  |
+| 69. Resolver-Level button_order Unlock | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 70. Drop Error::Clone Bound | v0.5.7 | 0/0 | Not started | — |
 | 71. Error Restructure and Validation Split | v0.5.7 | 0/0 | Not started | — |
 | 72. ENV_MUTEX Test Simplification | v0.5.7 | 0/0 | Not started | — |
