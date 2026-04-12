@@ -328,8 +328,8 @@ Plans:
   4. A test-suite timing measurement shows no regression — parallel test execution is faster than the mutex-serialized baseline
 **Plans**: 2 plans
 Plans:
-- [x] 71-01-PLAN.md � Rewrite Error enum per Option F with ErrorKind and RangeViolation
-- [ ] 71-02-PLAN.md � Two-vec validation split and caller migration
+- [ ] 72-01-PLAN.md — Rewrite all ENV_MUTEX tests to pure equivalents
+- [ ] 72-02-PLAN.md — Delete test_util.rs and verify parallel test timing
 
 ### Phase 73: ThemeChangeEvent Cleanup
 **Goal**: The `ThemeChangeEvent` enum reflects what watchers actually emit — `Other` is gone (it had zero production emitters), and `ColorSchemeChanged` is renamed to `Changed` because KDE/GNOME watchers signal broader changes than just colour-scheme toggles
