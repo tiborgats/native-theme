@@ -385,8 +385,8 @@ Plans:
   4. `lib.rs` exposes exclusively `pub mod` declarations and the `prelude` — the 92 flat re-exports are gone; the old top-level items are reachable only via `native_theme::theme::`, `native_theme::watch::`, etc.
 **Plans**: 2 plans
 Plans:
-- [ ] 71-01-PLAN.md � Rewrite Error enum per Option F with ErrorKind and RangeViolation
-- [ ] 71-02-PLAN.md � Two-vec validation split and caller migration
+- [ ] 76-01-PLAN.md — Atomic type vocabulary rename (ThemeSpec->Theme, ThemeVariant->ThemeMode, etc.)
+- [ ] 76-02-PLAN.md — Crate root partition into submodules with prelude
 
 ### Phase 77: SystemTheme API and icon_set Relocation
 **Goal**: `SystemTheme::active()` is gone, replaced by `pick(ColorMode)` plus a public `mode: ColorMode` field, and `icon_set` / `icon_theme` live on `Theme` instead of their former (wrong) host type
