@@ -297,17 +297,10 @@ accent_color = "#00ff00"
         ];
         for (name, expected) in cases {
             let theme = preset(name).unwrap();
-            let light = theme.light.as_ref().unwrap();
             assert_eq!(
-                light.icon_set,
+                theme.icon_set,
                 Some(*expected),
-                "preset '{name}' light.icon_set should be Some({expected:?})"
-            );
-            let dark = theme.dark.as_ref().unwrap();
-            assert_eq!(
-                dark.icon_set,
-                Some(*expected),
-                "preset '{name}' dark.icon_set should be Some({expected:?})"
+                "preset '{name}' icon_set should be Some({expected:?})"
             );
         }
     }
@@ -328,48 +321,10 @@ accent_color = "#00ff00"
         ];
         for name in community {
             let theme = preset(name).unwrap();
-            let light = theme.light.as_ref().unwrap();
             assert_eq!(
-                light.icon_set,
+                theme.icon_set,
                 Some(crate::IconSet::Lucide),
-                "preset '{name}' light.icon_set should be Lucide"
-            );
-            let dark = theme.dark.as_ref().unwrap();
-            assert_eq!(
-                dark.icon_set,
-                Some(crate::IconSet::Lucide),
-                "preset '{name}' dark.icon_set should be Lucide"
-            );
-        }
-    }
-
-    #[test]
-    fn icon_set_community_presets_resolve_to_platform_value() {
-        let community = &[
-            "catppuccin-latte",
-            "catppuccin-frappe",
-            "catppuccin-macchiato",
-            "catppuccin-mocha",
-            "nord",
-            "dracula",
-            "gruvbox",
-            "solarized",
-            "tokyo-night",
-            "one-dark",
-        ];
-        for name in community {
-            let theme = preset(name).unwrap();
-            let mut light = theme.light.clone().unwrap();
-            light.resolve_all();
-            assert!(
-                light.icon_set.is_some(),
-                "preset '{name}' light.icon_set should be Some after resolve_all()"
-            );
-            let mut dark = theme.dark.clone().unwrap();
-            dark.resolve_all();
-            assert!(
-                dark.icon_set.is_some(),
-                "preset '{name}' dark.icon_set should be Some after resolve_all()"
+                "preset '{name}' icon_set should be Lucide"
             );
         }
     }
@@ -537,8 +492,8 @@ accent_color = "#00ff00"
             resolved.window.background_color,
             resolved.defaults.background_color
         );
-        // icon_set should be populated (Lucide for community presets)
-        assert_eq!(resolved.icon_set, crate::IconSet::Lucide);
+        // icon_set is now on Theme, not on ResolvedTheme
+        assert_eq!(theme.icon_set, Some(crate::IconSet::Lucide));
     }
 
     #[test]

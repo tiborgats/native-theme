@@ -39,32 +39,25 @@ impl ThemeMode {
     /// 3. **Widget-from-defaults** -- colors, geometry, fonts, text scale entries
     ///    all inherit from defaults.
     /// 4. **Widget-to-widget** -- inactive title bar fields fall back to active.
-    /// 5. **Icon set** -- fills icon_set from the compile-time system default.
     pub fn resolve(&mut self) {
         self.resolve_defaults_internal();
         self.resolve_safety_nets();
         self.resolve_widgets_from_defaults();
         self.resolve_widget_to_widget();
-
-        // Phase 5: icon_set fallback — fill from system default if not set
-        if self.icon_set.is_none() {
-            self.icon_set = Some(crate::model::icons::system_icon_set());
-        }
     }
 
     /// Fill platform-detected defaults that require OS interaction.
     ///
     /// Currently fills:
-    /// - `icon_theme` from the system icon theme if not already set
     /// - `dialog.button_order` from the detected desktop environment if not already set
     ///
     /// This is separated from [`resolve()`](Self::resolve) because it performs
     /// runtime OS detection (reading desktop environment settings), unlike the
     /// pure inheritance rules in resolve().
+    ///
+    /// Note: `icon_set` and `icon_theme` resolution is handled at the
+    /// [`Theme`](crate::Theme) / pipeline level, not per-variant.
     pub fn resolve_platform_defaults(&mut self) {
-        if self.icon_theme.is_none() {
-            self.icon_theme = Some(crate::model::icons::system_icon_theme().to_string());
-        }
         if self.dialog.button_order.is_none() {
             self.dialog.button_order = Some(inheritance::platform_button_order());
         }

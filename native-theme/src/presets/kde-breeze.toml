@@ -1,12 +1,10 @@
 # KDE Breeze theme - sourced from KDE/breeze repository
 # BreezeLight.colors and BreezeDark.colors
 name = "KDE Breeze"
-
-# === Light variant (BreezeLight.colors) ===
-
-[light]
 icon_set = "freedesktop"
 icon_theme = "breeze"
+
+# === Light variant (BreezeLight.colors) ===
 
 [light.defaults]
 accent_color = "#3daee9"
@@ -290,10 +288,6 @@ hover_background = "#dee0e2"
 arrow_color = "#232629"
 
 # === Dark variant (BreezeDark.colors) ===
-
-[dark]
-icon_set = "freedesktop"
-icon_theme = "breeze-dark"
 
 [dark.defaults]
 accent_color = "#3daee9"

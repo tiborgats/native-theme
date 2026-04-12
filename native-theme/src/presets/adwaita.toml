@@ -1,12 +1,10 @@
 # GNOME Adwaita theme - sourced from libadwaita CSS variables
 # Alpha/opacity colors pre-computed to solid hex values
 name = "Adwaita"
-
-# === Light variant ===
-
-[light]
 icon_set = "freedesktop"
 icon_theme = "Adwaita"
+
+# === Light variant ===
 
 [light.defaults]
 accent_color = "#3584e4"
@@ -299,10 +297,6 @@ arrow_color = "#2e3436"
 
 [light.expander.border]
 corner_radius_px = 6.0
-[dark]
-icon_set = "freedesktop"
-icon_theme = "Adwaita"
-
 [dark.defaults]
 accent_color = "#3584e4"
 background_color = "#222226"

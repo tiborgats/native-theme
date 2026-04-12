@@ -688,10 +688,6 @@ fn fully_populated_variant() -> ThemeMode {
     v.defaults.border.padding_horizontal = Some(0.0);
     v.defaults.border.padding_vertical = Some(0.0);
 
-    // icon_set / icon_theme
-    v.icon_set = Some(crate::IconSet::Freedesktop);
-    v.icon_theme = Some("breeze".into());
-
     // window
     v.window.background_color = Some(c);
     v.window.title_bar_font.get_or_insert_default().color = Some(c);
@@ -1158,16 +1154,15 @@ fn validate_fully_populated_returns_ok() {
     );
     let resolved = result.unwrap();
     assert_eq!(resolved.defaults.font.family, "Inter");
-    assert_eq!(resolved.icon_set, crate::IconSet::Freedesktop);
+    // icon_set is now on Theme/SystemTheme, not on ResolvedTheme
 }
 
 #[test]
-fn validate_missing_3_fields_returns_all_paths() {
+fn validate_missing_2_fields_returns_all_paths() {
     let mut v = fully_populated_variant();
-    // Remove 3 specific scalar fields (non-cascading)
+    // Remove 2 specific scalar fields (non-cascading)
     v.defaults.muted_color = None;
     v.defaults.link_color = None;
-    v.icon_set = None;
 
     let result = v.validate();
     assert!(result.is_err());
@@ -1177,13 +1172,12 @@ fn validate_missing_3_fields_returns_all_paths() {
     };
     assert_eq!(
         missing.len(),
-        3,
-        "should report exactly 3 missing fields, got: {:?}",
+        2,
+        "should report exactly 2 missing fields, got: {:?}",
         missing
     );
     assert!(missing.contains(&"defaults.muted_color".to_string()));
     assert!(missing.contains(&"defaults.link_color".to_string()));
-    assert!(missing.contains(&"icon_set".to_string()));
 }
 
 #[test]
@@ -1291,23 +1285,9 @@ fn validate_checks_text_scale_entries() {
 }
 
 #[test]
-fn validate_checks_icon_set() {
-    let mut v = fully_populated_variant();
-    v.icon_set = None;
-
-    let result = v.validate();
-    let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
-        return;
-    };
-    assert!(missing.contains(&"icon_set".to_string()));
-}
-
-#[test]
 fn validate_after_resolve_succeeds_for_derivable_fields() {
     // Start with defaults populated but widgets empty
     let mut v = variant_with_defaults();
-    // Add non-derivable widget sizing fields
-    v.icon_set = Some(crate::IconSet::Freedesktop);
 
     // Non-derivable fields that resolve() cannot fill:
     // button sizing
@@ -1419,7 +1399,7 @@ fn validate_after_resolve_succeeds_for_derivable_fields() {
 fn test_gnome_resolve_validate() {
     // Simulate GNOME reader pipeline: adwaita base + GNOME reader overlay.
     // On a non-GNOME system, build_gnome_variant() only sets dialog.button_order
-    // and icon_set (gsettings calls return None). We simulate the full merge.
+    // (gsettings calls return None). icon_set/icon_theme are now on Theme level.
     let adwaita = crate::Theme::preset("adwaita").unwrap();
 
     // Pick dark variant from adwaita (matches GNOME PreferDark path).
@@ -1430,8 +1410,6 @@ fn test_gnome_resolve_validate() {
 
     // Apply what build_gnome_variant() would set.
     variant.dialog.button_order = Some(DialogButtonOrder::PrimaryRight);
-    // icon_set comes from gsettings icon-theme; simulate typical GNOME value.
-    variant.icon_set = Some(crate::IconSet::Freedesktop);
 
     // Simulate GNOME reader font output (gsettings font-name on a GNOME system).
     variant.defaults.font = FontSpec {
@@ -1462,11 +1440,7 @@ fn test_gnome_resolve_validate() {
         DialogButtonOrder::PrimaryRight,
         "dialog button order should be trailing affirmative for GNOME"
     );
-    assert_eq!(
-        resolved.icon_set,
-        crate::IconSet::Freedesktop,
-        "icon_set should be from GNOME reader"
-    );
+    // icon_set is now on Theme/SystemTheme, not on ResolvedTheme
 }
 
 // ===== Range validation tests =====
@@ -1843,7 +1817,7 @@ fn title_bar_background_inherits_from_surface_not_background() {
 ///
 /// These fields have no resolve() rule; they MUST be set explicitly.
 fn set_widget_geometry(v: &mut ThemeMode) {
-    v.icon_set = Some(crate::IconSet::Freedesktop);
+    // icon_set is now on Theme, not ThemeMode
     // button
     v.button.min_width = Some(64.0);
     v.button.min_height = Some(28.0);

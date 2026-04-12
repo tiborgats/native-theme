@@ -1,12 +1,10 @@
 # iOS system theme
 # Source: Apple UIColor system colors, Human Interface Guidelines
 name = "iOS"
-
-# === Light variant ===
-
-[light]
 icon_set = "sf-symbols"
 icon_theme = "sf-symbols"
+
+# === Light variant ===
 
 [light.defaults]
 accent_color = "#007aff"
@@ -289,10 +287,6 @@ inactive_title_bar_background = "#f2f2f7"
 inactive_title_bar_text_color = "#000000"
 
 # === Dark variant ===
-
-[dark]
-icon_set = "sf-symbols"
-icon_theme = "sf-symbols"
 
 [dark.defaults]
 accent_color = "#0a84ff"

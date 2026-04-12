@@ -361,14 +361,12 @@ fn build_theme(
 
     let mut light_variant = widget_defaults.clone();
     light_variant.defaults = light_defaults;
-    light_variant.icon_set = Some(crate::IconSet::SfSymbols);
     light_variant.menu.font = Some(widget_fonts.menu_font.clone());
     light_variant.tooltip.font = Some(widget_fonts.tooltip_font.clone());
     light_variant.window.title_bar_font = Some(widget_fonts.title_bar_font.clone());
 
     let mut dark_variant = widget_defaults;
     dark_variant.defaults = dark_defaults;
-    dark_variant.icon_set = Some(crate::IconSet::SfSymbols);
     dark_variant.menu.font = Some(widget_fonts.menu_font.clone());
     dark_variant.tooltip.font = Some(widget_fonts.tooltip_font.clone());
     dark_variant.window.title_bar_font = Some(widget_fonts.title_bar_font.clone());
@@ -378,6 +376,8 @@ fn build_theme(
         light: Some(light_variant),
         dark: Some(dark_variant),
         layout: crate::LayoutTheme::default(),
+        icon_set: Some(crate::IconSet::SfSymbols),
+        icon_theme: None, // resolved from system at pipeline time
     }
 }
 
@@ -726,11 +726,8 @@ mod tests {
             &sample_widget_fonts(),
         );
 
-        let light = theme.light.as_ref().unwrap();
-        assert_eq!(light.icon_set, Some(crate::IconSet::SfSymbols));
-
-        let dark = theme.dark.as_ref().unwrap();
-        assert_eq!(dark.icon_set, Some(crate::IconSet::SfSymbols));
+        // icon_set is now on Theme, shared across variants
+        assert_eq!(theme.icon_set, Some(crate::IconSet::SfSymbols));
     }
 
     #[test]
@@ -862,11 +859,7 @@ mod tests {
             resolved.defaults.font.family, "SF Pro",
             "font family should be from macOS reader"
         );
-        assert_eq!(
-            resolved.icon_set,
-            crate::IconSet::SfSymbols,
-            "icon_set should be SfSymbols from macOS reader"
-        );
+        // icon_set is now on Theme/SystemTheme, not on ResolvedTheme
 
         // Test dark variant too.
         let mut dark = base

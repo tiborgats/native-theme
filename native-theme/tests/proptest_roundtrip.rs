@@ -392,8 +392,6 @@ fn arb_theme_variant() -> impl Strategy<Value = ThemeMode> {
         arb_input_theme(),
         arb_checkbox_theme(),
         arb_dialog_theme(),
-        proptest::option::of(arb_icon_set()),
-        proptest::option::of("[a-zA-Z]{1,15}"),
     )
         .prop_map(
             |(
@@ -404,8 +402,6 @@ fn arb_theme_variant() -> impl Strategy<Value = ThemeMode> {
                 input,
                 checkbox,
                 dialog,
-                icon_set,
-                icon_theme,
             )| {
                 ThemeMode {
                     defaults,
@@ -415,8 +411,6 @@ fn arb_theme_variant() -> impl Strategy<Value = ThemeMode> {
                     input,
                     checkbox,
                     dialog,
-                    icon_set,
-                    icon_theme,
                     // Remaining widgets use defaults -- exercises their empty round-trip paths
                     menu: MenuTheme::default(),
                     tooltip: TooltipTheme::default(),
@@ -455,8 +449,10 @@ fn arb_theme_spec() -> impl Strategy<Value = Theme> {
         any::<bool>(), // has_light
         any::<bool>(), // has_dark
         arb_layout_theme(),
+        proptest::option::of(arb_icon_set()),
+        proptest::option::of("[a-zA-Z]{1,15}"),
     )
-        .prop_map(|(name, variant, has_light, has_dark, layout)| Theme {
+        .prop_map(|(name, variant, has_light, has_dark, layout, icon_set, icon_theme)| Theme {
             name,
             light: if has_light {
                 Some(variant.clone())
@@ -465,6 +461,8 @@ fn arb_theme_spec() -> impl Strategy<Value = Theme> {
             },
             dark: if has_dark { Some(variant) } else { None },
             layout,
+            icon_set,
+            icon_theme,
         })
 }
 

@@ -227,6 +227,10 @@ pub struct SystemTheme {
     pub preset: String,
     /// The live preset name used internally (e.g., "kde-breeze-live").
     pub(crate) live_preset: String,
+    /// Which icon loading mechanism to use for this theme.
+    pub icon_set: IconSet,
+    /// The name of the visual icon theme (e.g. `"breeze"`, `"Adwaita"`).
+    pub icon_theme: String,
 }
 
 impl SystemTheme {
@@ -300,6 +304,8 @@ impl SystemTheme {
             dark_variant: dark,
             live_preset: self.live_preset.clone(),
             preset: self.preset.clone(),
+            icon_set: self.icon_set,
+            icon_theme: self.icon_theme.clone(),
         })
     }
 
@@ -420,6 +426,8 @@ mod system_theme_tests {
             dark_variant: preset.dark.unwrap(),
             live_preset: "catppuccin-mocha".into(),
             preset: "catppuccin-mocha".into(),
+            icon_set: IconSet::Lucide,
+            icon_theme: "lucide".into(),
         };
         assert_eq!(
             st.pick(st.mode).defaults.accent_color,
@@ -448,6 +456,8 @@ mod system_theme_tests {
             dark_variant: preset.dark.unwrap(),
             live_preset: "catppuccin-mocha".into(),
             preset: "catppuccin-mocha".into(),
+            icon_set: IconSet::Lucide,
+            icon_theme: "lucide".into(),
         };
         assert_eq!(
             st.pick(st.mode).defaults.accent_color,
@@ -476,6 +486,8 @@ mod system_theme_tests {
             dark_variant: preset.dark.unwrap(),
             live_preset: "catppuccin-mocha".into(),
             preset: "catppuccin-mocha".into(),
+            icon_set: IconSet::Lucide,
+            icon_theme: "lucide".into(),
         };
         assert_eq!(
             st.pick(ColorMode::Dark).defaults.accent_color,

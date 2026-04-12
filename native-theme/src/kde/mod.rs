@@ -16,10 +16,7 @@ use crate::model::IconSizes;
 /// extract `forceFontDPI` from the INI content, falling back to `None` (no DPI set).
 /// Icon sizes are NOT populated (requires filesystem access) -- the caller
 /// (`from_kde_content` / `from_kde`) handles that after this returns.
-pub fn from_kde_content_pure(
-    content: &str,
-    font_dpi: Option<f32>,
-) -> crate::Result<crate::Theme> {
+pub fn from_kde_content_pure(content: &str, font_dpi: Option<f32>) -> crate::Result<crate::Theme> {
     let mut ini = create_kde_parser();
     ini.read(content.to_string())
         .map_err(|e| crate::Error::ReaderFailed {
@@ -45,18 +42,16 @@ pub fn from_kde_content_pure(
     // Font DPI: use provided value, or try extracting forceFontDPI from INI content
     variant.defaults.font_dpi = font_dpi.or_else(|| parse_force_font_dpi(&ini));
 
-    // KDE-05: Icon theme name from [Icons] Theme (no filesystem access for sizes)
-    if let Some(theme_name) = ini.get("Icons", "Theme")
-        && !theme_name.is_empty()
-    {
-        variant.icon_theme = Some(theme_name);
-    }
-
     let dark = is_dark_theme(&ini);
 
     let name = ini
         .get("General", "ColorScheme")
         .unwrap_or_else(|| "KDE".to_string());
+
+    // KDE-05: Icon theme name from [Icons] Theme (shared across variants)
+    let icon_theme = ini
+        .get("Icons", "Theme")
+        .filter(|s| !s.is_empty());
 
     let theme = if dark {
         crate::Theme {
@@ -64,6 +59,8 @@ pub fn from_kde_content_pure(
             light: None,
             dark: Some(variant),
             layout: crate::LayoutTheme::default(),
+            icon_set: None,
+            icon_theme,
         }
     } else {
         crate::Theme {
@@ -71,6 +68,8 @@ pub fn from_kde_content_pure(
             light: Some(variant),
             dark: None,
             layout: crate::LayoutTheme::default(),
+            icon_set: None,
+            icon_theme,
         }
     };
 
@@ -98,16 +97,16 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::Theme> {
 
     let mut theme = from_kde_content_pure(content, Some(font_dpi))?;
 
-    // I/O: icon sizes from filesystem
-    let variant = if theme.dark.is_some() {
-        theme.dark.as_mut()
-    } else {
-        theme.light.as_mut()
-    };
-    if let Some(variant) = variant
-        && let Some(ref theme_name) = variant.icon_theme
-    {
-        variant.defaults.icon_sizes = parse_icon_sizes_from_index_theme(theme_name);
+    // I/O: icon sizes from filesystem (icon_theme is now on Theme)
+    if let Some(ref theme_name) = theme.icon_theme {
+        let variant = if theme.dark.is_some() {
+            theme.dark.as_mut()
+        } else {
+            theme.light.as_mut()
+        };
+        if let Some(variant) = variant {
+            variant.defaults.icon_sizes = parse_icon_sizes_from_index_theme(theme_name);
+        }
     }
 
     Ok(theme)
@@ -903,22 +902,22 @@ BackgroundNormal=49,54,59
     // === KDE-05: Icon set ===
 
     #[test]
-    fn test_icon_set_from_icons_theme() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
-        let v = theme.dark.as_ref().unwrap();
-        assert!(v.icon_set.is_none());
-        assert_eq!(v.icon_theme.as_deref(), Some("breeze-dark"));
+    fn test_icon_theme_from_icons_theme() {
+        let theme = from_kde_content(BREEZE_DARK_FULL).ok().unwrap_or_default();
+        // icon_set and icon_theme are now on Theme, not ThemeMode
+        assert!(theme.icon_set.is_none());
+        assert_eq!(theme.icon_theme.as_deref(), Some("breeze-dark"));
     }
 
     #[test]
-    fn test_icon_set_none_when_missing() {
+    fn test_icon_theme_none_when_missing() {
         let content = "\
 [Colors:Window]
 BackgroundNormal=49,54,59
 ";
-        let theme = from_kde_content(content).unwrap();
-        let v = theme.dark.as_ref().unwrap();
-        assert!(v.icon_set.is_none());
+        let theme = from_kde_content(content).ok().unwrap_or_default();
+        assert!(theme.icon_set.is_none());
+        assert!(theme.icon_theme.is_none());
     }
 
     // === KDE-05: Icon sizes from index.theme ===
@@ -1205,12 +1204,7 @@ Name=whatever
             "input.caret should be from KDE reader (DecorationFocus)"
         );
 
-        // icon_set should be freedesktop (from kde-breeze preset base)
-        assert_eq!(
-            resolved.icon_set,
-            crate::IconSet::Freedesktop,
-            "icon_set should be freedesktop for KDE"
-        );
+        // icon_set is now on Theme/SystemTheme, not on ResolvedTheme
 
         // dialog.button_order should be from KDE reader
         assert_eq!(

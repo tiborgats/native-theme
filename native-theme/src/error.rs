@@ -214,9 +214,6 @@ impl fmt::Display for Error {
 
 /// Categorize a field path into a human-readable group name.
 fn field_category(field: &str) -> &'static str {
-    if field == "icon_set" {
-        return "icon set";
-    }
     match field.split('.').next() {
         Some("defaults") => "root defaults",
         Some("text_scale") => "text scale",
@@ -408,12 +405,13 @@ mod tests {
     }
 
     #[test]
-    fn display_resolution_incomplete_icon_set_category() {
+    fn display_resolution_incomplete_widget_category() {
+        // icon_set is no longer validated per-variant; test a widget field instead
         let err = Error::ResolutionIncomplete {
-            missing: vec!["icon_set".into()],
+            missing: vec!["button.font.color".into()],
         };
         let msg = err.to_string();
-        assert!(msg.contains("[icon set]"), "got: {msg}");
+        assert!(msg.contains("[widget fields]"), "got: {msg}");
         assert!(!msg.contains("hint:"), "got: {msg}");
     }
 

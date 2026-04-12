@@ -5,10 +5,10 @@
 use super::validate_helpers::{
     self, DEFAULT_FONT_DPI, require, require_font, require_text_scale_entry,
 };
-use crate::model::{IconSet, ThemeMode};
 use crate::model::resolved::{
-    ResolvedIconSizes, ResolvedTextScale, ResolvedDefaults, ResolvedTheme,
+    ResolvedDefaults, ResolvedIconSizes, ResolvedTextScale, ResolvedTheme,
 };
+use crate::model::ThemeMode;
 
 impl ThemeMode {
     /// Convert this ThemeMode into a [`ResolvedTheme`] with all fields guaranteed.
@@ -420,16 +420,6 @@ impl ThemeMode {
             ResolvedExpanderTheme::validate_widget(&self.expander, "expander", dpi, &mut missing);
         let link = ResolvedLinkTheme::validate_widget(&self.link, "link", dpi, &mut missing);
 
-        let icon_set = match &self.icon_set {
-            Some(val) => *val,
-            None => {
-                missing.push("icon_set".to_string());
-                // Placeholder: never used because validate() short-circuits on missing.
-                IconSet::Freedesktop
-            }
-        };
-        let icon_theme = require(&self.icon_theme, "icon_theme", &mut missing);
-
         // --- Phase 1 short-circuit: if any fields are missing, return immediately ---
         // This is the BUG-01 fix: check_ranges never runs on placeholder data.
         if !missing.is_empty() {
@@ -498,8 +488,6 @@ impl ThemeMode {
             card,
             expander,
             link,
-            icon_set,
-            icon_theme,
         })
     }
 }

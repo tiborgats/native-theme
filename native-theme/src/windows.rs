@@ -553,6 +553,8 @@ fn build_theme(
             light: None,
             dark: Some(variant),
             layout: crate::LayoutTheme::default(),
+            icon_set: Some(crate::IconSet::SegoeIcons),
+            icon_theme: None,
         }
     } else {
         crate::Theme {
@@ -560,6 +562,8 @@ fn build_theme(
             light: Some(variant),
             dark: None,
             layout: crate::LayoutTheme::default(),
+            icon_set: Some(crate::IconSet::SegoeIcons),
+            icon_theme: None,
         }
     }
 }
@@ -1299,10 +1303,6 @@ mod tests {
             crate::DialogButtonOrder::PrimaryRight,
             "dialog button order should be trailing affirmative for Windows"
         );
-        assert_eq!(
-            resolved.icon_set,
-            crate::IconSet::SegoeIcons,
-            "icon_set should be SegoeIcons from Windows preset"
-        );
+        // icon_set is now on Theme/SystemTheme, not on ResolvedTheme
     }
 }

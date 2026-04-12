@@ -47,8 +47,8 @@ fn breeze_dark_fixture_colors_and_fonts() {
     // DPI: caller-provided 96.0, not INI's forceFontDPI=120
     assert_eq!(v.defaults.font_dpi, Some(96.0));
 
-    // Icon theme
-    assert_eq!(v.icon_theme.as_deref(), Some("breeze-dark"));
+    // Icon theme (now on Theme, not ThemeMode)
+    assert_eq!(theme.icon_theme.as_deref(), Some("breeze-dark"));
 
     // Icon sizes NOT populated in pure path
     assert!(v.defaults.icon_sizes.small.is_none());
@@ -187,8 +187,8 @@ fn minimal_config_fixture() {
     // No General font
     assert!(v.defaults.font.family.is_none());
 
-    // No Icons section
-    assert!(v.icon_theme.is_none());
+    // No Icons section (icon_theme is now on Theme)
+    assert!(theme.icon_theme.is_none());
 
     // No KDE section -> reduce_motion not set
     assert!(v.defaults.reduce_motion.is_none());

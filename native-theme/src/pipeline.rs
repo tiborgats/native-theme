@@ -84,6 +84,12 @@ pub(crate) fn run_pipeline(
     let light = light_variant.into_resolved()?;
     let dark = dark_variant.into_resolved()?;
 
+    // Resolve icon_set and icon_theme from Theme level (shared across variants)
+    let icon_set = merged.icon_set
+        .unwrap_or_else(|| crate::model::icons::system_icon_set());
+    let icon_theme = merged.icon_theme.clone()
+        .unwrap_or_else(|| crate::model::icons::system_icon_theme().to_string());
+
     Ok(SystemTheme {
         name,
         mode,
@@ -93,6 +99,8 @@ pub(crate) fn run_pipeline(
         dark_variant: dark_variant_pre,
         preset: full_preset_name.to_string(),
         live_preset: preset_name.to_string(),
+        icon_set,
+        icon_theme,
     })
 }
 
@@ -548,8 +556,12 @@ mod dispatch_tests {
     fn from_linux_non_kde_returns_adwaita() {
         // GNOME desktop produces an Adwaita-named theme via the pure pipeline
         let reader = Theme::preset("adwaita").unwrap();
-        let theme = run_pipeline(reader, linux_preset_for_de(LinuxDesktop::Gnome), crate::ColorMode::Light)
-            .expect("run_pipeline should succeed for GNOME preset");
+        let theme = run_pipeline(
+            reader,
+            linux_preset_for_de(LinuxDesktop::Gnome),
+            crate::ColorMode::Light,
+        )
+        .expect("run_pipeline should succeed for GNOME preset");
         assert_eq!(theme.name, "Adwaita");
     }
 
@@ -573,8 +585,12 @@ BackgroundAlternate=239,240,241
 ForegroundLink=41,128,185";
 
         let reader = crate::kde::from_kde_content_pure(MINIMAL_KDE_FIXTURE, None).unwrap();
-        let theme = run_pipeline(reader, linux_preset_for_de(LinuxDesktop::Kde), crate::ColorMode::Light)
-            .expect("run_pipeline should succeed with KDE reader output");
+        let theme = run_pipeline(
+            reader,
+            linux_preset_for_de(LinuxDesktop::Kde),
+            crate::ColorMode::Light,
+        )
+        .expect("run_pipeline should succeed with KDE reader output");
         assert_eq!(
             theme.name, "TestTheme",
             "should use KDE theme name from reader output"
@@ -585,8 +601,12 @@ ForegroundLink=41,128,185";
     fn from_linux_unknown_de_without_kdeglobals_returns_adwaita() {
         // Unknown DE without kdeglobals falls back to Adwaita preset
         let reader = Theme::preset("adwaita").unwrap();
-        let theme = run_pipeline(reader, linux_preset_for_de(LinuxDesktop::Unknown), crate::ColorMode::Light)
-            .expect("run_pipeline should succeed for Unknown DE fallback");
+        let theme = run_pipeline(
+            reader,
+            linux_preset_for_de(LinuxDesktop::Unknown),
+            crate::ColorMode::Light,
+        )
+        .expect("run_pipeline should succeed for Unknown DE fallback");
         assert_eq!(
             theme.name, "Adwaita",
             "should fall back to Adwaita without kdeglobals"

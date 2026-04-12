@@ -195,26 +195,9 @@ pub struct ThemeMode {
     /// Hyperlink colors and underline setting.
     #[serde(default, skip_serializing_if = "LinkTheme::is_empty")]
     pub link: LinkTheme,
-
-    /// Which icon loading mechanism to use (`Freedesktop`, `Material`, `Lucide`,
-    /// `SfSymbols`, `SegoeIcons`).  Determines *how* icons are looked up — e.g.
-    /// freedesktop theme directories vs. bundled SVG tables.
-    /// When `None`, filled by [`resolve()`](ThemeMode::resolve) from
-    /// [`system_icon_set()`](crate::system_icon_set).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub icon_set: Option<IconSet>,
-
-    /// The name of the visual icon theme that provides the actual icon files
-    /// (e.g. `"breeze"`, `"Adwaita"`, `"Lucide"`).  For `Freedesktop` this
-    /// selects the theme directory; for bundled sets it is a display label.
-    /// When `None`, filled by [`resolve_platform_defaults()`](ThemeMode::resolve_platform_defaults)
-    /// from [`system_icon_theme()`](crate::theme::system_icon_theme).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub icon_theme: Option<String>,
 }
 
 impl_merge!(ThemeMode {
-    option { icon_set, icon_theme }
     nested {
         defaults, text_scale, window, button, input, checkbox, menu,
         tooltip, scrollbar, slider, progress_bar, tab, sidebar,
@@ -268,6 +251,20 @@ pub struct Theme {
     /// Layout spacing constants (shared between light and dark variants).
     #[serde(default, skip_serializing_if = "LayoutTheme::is_empty")]
     pub layout: LayoutTheme,
+
+    /// Which icon loading mechanism to use (`Freedesktop`, `Material`, `Lucide`,
+    /// `SfSymbols`, `SegoeIcons`). Shared across light and dark variants.
+    /// When `None`, filled during resolution from
+    /// [`system_icon_set()`](crate::theme::system_icon_set).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon_set: Option<IconSet>,
+
+    /// The name of the visual icon theme (e.g. `"breeze"`, `"Adwaita"`, `"Lucide"`).
+    /// Shared across light and dark variants.
+    /// When `None`, filled during resolution from
+    /// [`system_icon_theme()`](crate::theme::system_icon_theme).
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon_theme: Option<String>,
 }
 
 impl Theme {
@@ -278,6 +275,8 @@ impl Theme {
             light: None,
             dark: None,
             layout: LayoutTheme::default(),
+            icon_set: None,
+            icon_theme: None,
         }
     }
 
@@ -303,6 +302,13 @@ impl Theme {
         }
 
         self.layout.merge(&overlay.layout);
+
+        if overlay.icon_set.is_some() {
+            self.icon_set = overlay.icon_set;
+        }
+        if overlay.icon_theme.is_some() {
+            self.icon_theme = overlay.icon_theme.clone();
+        }
     }
 
     /// Pick the appropriate variant for the given mode, with cross-fallback.
@@ -347,7 +353,11 @@ impl Theme {
 
     /// Returns true if the theme has no variants set.
     pub fn is_empty(&self) -> bool {
-        self.light.is_none() && self.dark.is_none() && self.layout.is_empty()
+        self.light.is_none()
+            && self.dark.is_none()
+            && self.layout.is_empty()
+            && self.icon_set.is_none()
+            && self.icon_theme.is_none()
     }
 
     /// Load a bundled theme preset by name.
@@ -578,7 +588,7 @@ impl Theme {
         };
 
         // Known top-level keys
-        const TOP_KEYS: &[&str] = &["name", "light", "dark", "layout"];
+        const TOP_KEYS: &[&str] = &["name", "light", "dark", "layout", "icon_set", "icon_theme"];
 
         for key in top_table.keys() {
             if !TOP_KEYS.contains(&key.as_str()) {
@@ -615,8 +625,6 @@ impl Theme {
             "card",
             "expander",
             "link",
-            "icon_set",
-            "icon_theme",
         ];
 
         // FontSpec, BorderSpec, TextScaleEntry, TextScale, and IconSizes
@@ -1086,65 +1094,61 @@ mod tests {
         assert!(theme.pick_variant(ColorMode::Light).is_none());
     }
 
-    // === icon_set tests ===
+    // === icon_set tests (on Theme, shared across variants) ===
 
     #[test]
     fn icon_set_default_is_none() {
-        assert!(ThemeMode::default().icon_set.is_none());
+        assert!(Theme::default().icon_set.is_none());
     }
 
     #[test]
     fn icon_set_merge_overlay() {
-        let mut base = ThemeMode::default();
-        let overlay = ThemeMode {
-            icon_set: Some(IconSet::Material),
-            ..Default::default()
-        };
+        let mut base = Theme::new("Base");
+        let mut overlay = Theme::new("Overlay");
+        overlay.icon_set = Some(IconSet::Material);
         base.merge(&overlay);
         assert_eq!(base.icon_set, Some(IconSet::Material));
     }
 
     #[test]
     fn icon_set_merge_none_preserves() {
-        let mut base = ThemeMode {
-            icon_set: Some(IconSet::SfSymbols),
-            ..Default::default()
-        };
-        let overlay = ThemeMode::default();
+        let mut base = Theme::new("Base");
+        base.icon_set = Some(IconSet::SfSymbols);
+        let overlay = Theme::new("Overlay");
         base.merge(&overlay);
         assert_eq!(base.icon_set, Some(IconSet::SfSymbols));
     }
 
     #[test]
     fn icon_set_is_empty_when_set() {
-        assert!(ThemeMode::default().is_empty());
-        let v = ThemeMode {
-            icon_set: Some(IconSet::Material),
-            ..Default::default()
-        };
-        assert!(!v.is_empty());
+        assert!(Theme::default().is_empty());
+        let mut t = Theme::new("Test");
+        t.icon_set = Some(IconSet::Material);
+        assert!(!t.is_empty());
     }
 
     #[test]
     fn icon_set_toml_round_trip() {
-        let variant = ThemeMode {
-            icon_set: Some(IconSet::Material),
-            ..Default::default()
-        };
-        let toml_str = toml::to_string(&variant).unwrap();
+        let mut theme = Theme::new("Test");
+        theme.icon_set = Some(IconSet::Material);
+        theme.icon_theme = Some("material".into());
+        let toml_str = theme.to_toml().unwrap();
         assert!(toml_str.contains("icon_set"));
-        let deserialized: ThemeMode = toml::from_str(&toml_str).unwrap();
+        let deserialized = Theme::from_toml(&toml_str).unwrap();
         assert_eq!(deserialized.icon_set, Some(IconSet::Material));
+        assert_eq!(deserialized.icon_theme.as_deref(), Some("material"));
     }
 
     #[test]
     fn icon_set_toml_absent_deserializes_to_none() {
         let toml_str = r##"
-[defaults]
+name = "Bare"
+[light.defaults]
 accent_color = "#ff0000"
 "##;
-        let variant: ThemeMode = toml::from_str(toml_str).unwrap();
-        assert!(variant.icon_set.is_none());
+        let theme = Theme::from_toml(toml_str).unwrap();
+        assert!(theme.icon_set.is_none());
+        assert!(theme.icon_theme.is_none());
     }
 
     #[test]

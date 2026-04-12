@@ -1,12 +1,10 @@
 # macOS Sonoma theme
 # Source: Apple Human Interface Guidelines, NSColor system colors
 name = "macOS Sonoma"
-
-# === Light variant ===
-
-[light]
 icon_set = "sf-symbols"
 icon_theme = "sf-symbols"
+
+# === Light variant ===
 
 [light.defaults]
 accent_color = "#007aff"
@@ -335,10 +333,6 @@ size_pt =22.0
 size_pt =26.0
 
 # === Dark variant ===
-
-[dark]
-icon_set = "sf-symbols"
-icon_theme = "sf-symbols"
 
 [dark.defaults]
 accent_color = "#0a84ff"
