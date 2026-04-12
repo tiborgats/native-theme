@@ -152,7 +152,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 74: Rgba Polish and must_use Uniformity** — Ship-unit 6 part A: delete `to_f32_tuple`, add default constants, and enforce bare `#[must_use]` across six sites (completed 2026-04-12)
 - [x] **Phase 75: LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal** — Ship-unit 6 part B: mark `LinuxDesktop` non-exhaustive with new compositor variants, make missing `watch` feature a compile error, delete the misleading `IconSet::default()` (completed 2026-04-12)
 - [x] **Phase 76: Type Vocabulary Rename and Crate Root Partition** — Ship-unit 7 part A: atomic rename of `ThemeSpec→Theme`, `ThemeVariant→ThemeMode`, etc. and partition 92-item flat crate root into submodules with a `prelude` (completed 2026-04-12)
-- [ ] **Phase 77: SystemTheme API and icon_set Relocation** — Ship-unit 7 part B: drop `SystemTheme::active()` in favour of `pick(ColorMode)` + exposed `mode` field, and move `icon_set`/`icon_theme` onto `Theme`
+- [x] **Phase 77: SystemTheme API and icon_set Relocation** — Ship-unit 7 part B: drop `SystemTheme::active()` in favour of `pick(ColorMode)` + exposed `mode` field, and move `icon_set`/`icon_theme` onto `Theme` (completed 2026-04-12)
 - [ ] **Phase 78: OverlaySource, AccessibilityPreferences, font_dpi Relocation** — Ship-unit 8 atomic: eliminate `SystemTheme` pre-resolve variant fields via `OverlaySource` replay, move accessibility off `ThemeDefaults` onto `SystemTheme`, move `font_dpi` into `ResolutionContext`
 - [ ] **Phase 79: BorderSpec Split and Platform Reader Visibility Audit** — Ship-unit 9: split `BorderSpec` along defaults-vs-widget, grep-audit connector callers of platform readers, demote `from_kde`/`from_gnome`/`from_windows`/`from_macos` to `pub(crate)`
 - [ ] **Phase 80: native-theme-derive Proc-Macro K Codegen** — Ship-unit 10: new `native-theme-derive` crate generating paired structs, `FIELD_NAMES`, `impl_merge!` bodies, `check_ranges`, `inventory::submit!` registry, and unified border inheritance attribute
@@ -400,7 +400,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 77-01-PLAN.md � ColorMode enum + drop active() + pick(ColorMode) API
-- [ ] 77-02-PLAN.md � icon_set/icon_theme relocation from ThemeMode to Theme
+- [x] 77-02-PLAN.md � icon_set/icon_theme relocation from ThemeMode to Theme
 
 ### Phase 78: OverlaySource, AccessibilityPreferences, font_dpi Relocation
 **Goal**: `SystemTheme` no longer carries pre-resolve variant fields — overlays are re-played from an `OverlaySource` via `ResolutionContext`; accessibility preferences live on `SystemTheme` as a structured `AccessibilityPreferences`; `font_dpi` moves out of `ThemeDefaults` into `ResolutionContext` runtime data
@@ -609,7 +609,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 74. Rgba Polish and must_use Uniformity | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 75. LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 76. Type Vocabulary Rename and Crate Root Partition | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
-| 77. SystemTheme API and icon_set Relocation | v0.5.7 | 1/2 | In Progress|  |
+| 77. SystemTheme API and icon_set Relocation | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 78. OverlaySource, AccessibilityPreferences, font_dpi Relocation | v0.5.7 | 0/0 | Not started | — |
 | 79. BorderSpec Split and Platform Reader Visibility Audit | v0.5.7 | 0/0 | Not started | — |
 | 80. native-theme-derive Proc-Macro K Codegen | v0.5.7 | 0/0 | Not started | — |

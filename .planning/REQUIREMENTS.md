@@ -37,7 +37,7 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 - [x] **MODEL-03**: `SystemTheme::active()` dropped; `pick(ColorMode)` keeps; `SystemTheme.mode: ColorMode` field exposed (doc 1 §4 Option C + §32.3 G)
 - [ ] **MODEL-04**: `ThemeVariant::resolve*` method intermediates demoted to `#[doc(hidden)] pub` (Option B' preserves integration tests) (doc 1 §7)
 - [ ] **MODEL-05**: `ThemeSpec` (→ `Theme`) method grab-bag cleanup; `from_toml_with_base` removal coordinates with `error.rs:63` hint message (doc 1 §15)
-- [ ] **MODEL-06**: `icon_set` and `icon_theme` fields moved from the wrong type onto `Theme` (doc 1 §20)
+- [x] **MODEL-06**: `icon_set` and `icon_theme` fields moved from the wrong type onto `Theme` (doc 1 §20)
 
 ### Accessibility & Runtime State
 

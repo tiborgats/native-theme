@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 77 — systemtheme-api-and-icon-set-relocation
-Plan: 1/2 complete
-Status: Plan 77-01 complete — ColorMode enum, SystemTheme API migrated
-Last activity: 2026-04-13 — Plan 77-01 executed (2 tasks, 2 commits)
+Plan: 2/2 complete
+Status: Phase 77 complete — icon_set/icon_theme relocated to Theme/SystemTheme
+Last activity: 2026-04-13 — Plan 77-02 executed (2 tasks, 2 commits)
 
-Progress: [██████████] 100% (29/30 plans complete)
+Progress: [██████████] 100% (30/30 plans complete)
 
 ## Accumulated Context
 
@@ -114,6 +114,10 @@ None. Phase 76 complete, ready to plan Phase 77.
 - [Phase 77-01]: GnomePortalData.is_dark kept as bool (internal D-Bus); conversion at pipeline boundary
 - [Phase 77-01]: Connector examples rename local ColorMode to AppColorMode to avoid collision
 - [Phase 77-01]: Connector from_preset/to_theme keep is_dark: bool params; convert internally to ColorMode
+- [Phase 77-02]: icon_set/icon_theme on Theme (shared); pipeline resolves with system_icon_set/system_icon_theme fallback
+- [Phase 77-02]: KDE Breeze preset uses "breeze" (light value) as shared icon_theme; KDE reader overrides at runtime
+- [Phase 77-02]: Connector examples maintain current_icon_set/current_icon_theme state parallel to current_resolved
+- [Phase 77-02]: resolve_icon_choice/load_all_icons take explicit icon_set/icon_theme params
 
 ### Blockers/Concerns
 
@@ -127,5 +131,5 @@ None. Phase 76 complete, ready to plan Phase 77.
 ## Session Continuity
 
 Last session: 2026-04-13
-Stopped at: Completed 77-01-PLAN.md — ready for 77-02
-Resume file: .planning/phases/77-systemtheme-api-and-icon-set-relocation/77-01-SUMMARY.md
+Stopped at: Completed 77-02-PLAN.md — Phase 77 complete
+Resume file: .planning/phases/77-systemtheme-api-and-icon-set-relocation/77-02-SUMMARY.md
