@@ -574,7 +574,6 @@ fn build_theme(
 ///
 /// Returns `Error::ReaderFailed` if UISettings cannot be created (pre-Windows 10).
 #[cfg(all(target_os = "windows", feature = "windows"))]
-#[must_use = "this returns the detected Windows theme; it does not apply it"]
 pub fn from_windows() -> crate::Result<crate::ThemeSpec> {
     let settings = UISettings::new().map_err(|e| crate::Error::ReaderFailed {
         reader: "windows",

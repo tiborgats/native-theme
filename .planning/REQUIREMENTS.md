@@ -86,7 +86,7 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 
 ### Color Polish
 
-- [ ] **COLOR-01**: `Rgba` polish — default constants, naming cleanup, `to_f32_tuple` deleted (F2 concurrent-discovery confirmation) (doc 1 §16 + §33 F2)
+- [x] **COLOR-01**: `Rgba` polish — default constants, naming cleanup, `to_f32_tuple` deleted (F2 concurrent-discovery confirmation) (doc 1 §16 + §33 F2)
 
 ### Detection Caching
 

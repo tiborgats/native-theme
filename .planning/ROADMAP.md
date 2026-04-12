@@ -356,7 +356,7 @@ Plans:
   4. A clippy lint (or grep audit) confirms no `#[must_use = "..."]` form remains anywhere in the crate
 **Plans**: 2 plans
 Plans:
-- [ ] 74-01-PLAN.md — Rgba constants (TRANSPARENT, BLACK, WHITE) and delete to_f32_tuple
+- [x] 74-01-PLAN.md — Rgba constants (TRANSPARENT, BLACK, WHITE) and delete to_f32_tuple
 - [ ] 74-02-PLAN.md — Uniform bare #[must_use] across the core crate (36 sites)
 
 ### Phase 75: LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal
@@ -606,7 +606,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 71. Error Restructure and Validation Split | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 72. ENV_MUTEX Test Simplification | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 73. ThemeChangeEvent Cleanup | v0.5.7 | 1/1 | Complete   | 2026-04-12 |
-| 74. Rgba Polish and must_use Uniformity | v0.5.7 | 0/0 | Not started | — |
+| 74. Rgba Polish and must_use Uniformity | v0.5.7 | 1/2 | In Progress|  |
 | 75. LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal | v0.5.7 | 0/0 | Not started | — |
 | 76. Type Vocabulary Rename and Crate Root Partition | v0.5.7 | 0/0 | Not started | — |
 | 77. SystemTheme API and icon_set Relocation | v0.5.7 | 0/0 | Not started | — |

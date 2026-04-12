@@ -85,7 +85,7 @@ pub enum ThemeChangeEvent {
 /// // RIGHT -- watcher lives as long as `_watcher`:
 /// let _watcher = on_theme_change(|e| println!("{e:?}")).unwrap();
 /// ```
-#[must_use = "dropping ThemeWatcher stops the watcher immediately"]
+#[must_use]
 pub struct ThemeWatcher {
     shutdown_tx: Option<mpsc::Sender<()>>,
     thread: Option<JoinHandle<()>>,

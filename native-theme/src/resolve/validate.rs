@@ -25,7 +25,6 @@ impl ThemeVariant {
     /// are still `None` after resolution. Returns
     /// [`crate::Error::ResolutionInvalid`] if all fields are present but
     /// some numeric values fall outside allowed ranges.
-    #[must_use = "this returns the validation result; handle the Result or propagate with ?"]
     pub fn validate(&self) -> crate::Result<ResolvedThemeVariant> {
         let mut missing = Vec::new();
         let dpi = self.defaults.font_dpi.unwrap_or(DEFAULT_FONT_DPI);

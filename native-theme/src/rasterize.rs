@@ -36,7 +36,6 @@ use resvg::usvg;
 /// }
 /// # }
 /// ```
-#[must_use = "this returns the rasterized icon data"]
 pub fn rasterize_svg(svg_bytes: &[u8], size: u32) -> crate::Result<IconData> {
     let options = usvg::Options::default();
     let tree =

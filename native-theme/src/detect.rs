@@ -83,7 +83,7 @@ static CACHED_IS_DARK: std::sync::RwLock<Option<bool>> = std::sync::RwLock::new(
 /// - **Windows:** Checks foreground color luminance from `UISettings` via
 ///   BT.601 coefficients (requires `windows` feature).
 /// - **Other platforms / missing features:** Returns `false` (light).
-#[must_use = "this returns whether the system uses dark mode"]
+#[must_use]
 pub fn system_is_dark() -> bool {
     if let Ok(guard) = CACHED_IS_DARK.read()
         && let Some(v) = *guard
@@ -122,7 +122,7 @@ pub fn invalidate_caches() {
 /// or implementing live dark-mode tracking.
 ///
 /// See [`system_is_dark()`] for platform behavior details.
-#[must_use = "this returns whether the system uses dark mode"]
+#[must_use]
 pub fn detect_is_dark() -> bool {
     detect_is_dark_inner()
 }
@@ -616,7 +616,7 @@ static CACHED_REDUCED_MOTION: std::sync::RwLock<Option<bool>> = std::sync::RwLoc
 /// // The function always returns a bool (false on unsupported platforms).
 /// assert!(reduced == true || reduced == false);
 /// ```
-#[must_use = "this returns whether reduced motion is preferred"]
+#[must_use]
 pub fn prefers_reduced_motion() -> bool {
     if let Ok(guard) = CACHED_REDUCED_MOTION.read()
         && let Some(v) = *guard
@@ -637,7 +637,7 @@ pub fn prefers_reduced_motion() -> bool {
 /// accessibility preference changes.
 ///
 /// See [`prefers_reduced_motion()`] for platform behavior details.
-#[must_use = "this returns whether reduced motion is preferred"]
+#[must_use]
 pub fn detect_reduced_motion() -> bool {
     detect_reduced_motion_inner()
 }

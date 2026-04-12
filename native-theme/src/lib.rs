@@ -272,7 +272,6 @@ impl SystemTheme {
     /// // customized.active().defaults.accent_color is now #ff6600
     /// // and all accent-derived fields are updated
     /// ```
-    #[must_use = "this returns a new theme with the overlay applied; it does not modify self"]
     pub fn with_overlay(&self, overlay: &ThemeSpec) -> crate::Result<Self> {
         // Start from pre-resolve variants (avoids double-resolve idempotency issue)
         let mut light = self.light_variant.clone();
@@ -305,7 +304,6 @@ impl SystemTheme {
     /// Apply an app overlay from a TOML string.
     ///
     /// Parses the TOML as a [`ThemeSpec`] and calls [`with_overlay`](Self::with_overlay).
-    #[must_use = "this returns a new theme with the overlay applied; it does not modify self"]
     pub fn with_overlay_toml(&self, toml: &str) -> crate::Result<Self> {
         let overlay = ThemeSpec::from_toml(toml)?;
         self.with_overlay(&overlay)
@@ -348,7 +346,6 @@ impl SystemTheme {
     /// let system = native_theme::SystemTheme::from_system().unwrap();
     /// let active = system.active();
     /// ```
-    #[must_use = "this returns the detected theme; it does not apply it"]
     pub fn from_system() -> crate::Result<Self> {
         pipeline::from_system_inner()
     }
@@ -368,7 +365,6 @@ impl SystemTheme {
     /// On non-Linux platforms, behaves identically to
     /// [`from_system()`](Self::from_system).
     #[cfg(target_os = "linux")]
-    #[must_use = "this returns the detected theme; it does not apply it"]
     pub async fn from_system_async() -> crate::Result<Self> {
         pipeline::from_system_async_inner().await
     }
@@ -378,7 +374,6 @@ impl SystemTheme {
     /// On non-Linux platforms, this is equivalent to calling
     /// [`from_system()`](Self::from_system).
     #[cfg(not(target_os = "linux"))]
-    #[must_use = "this returns the detected theme; it does not apply it"]
     pub async fn from_system_async() -> crate::Result<Self> {
         pipeline::from_system_inner()
     }

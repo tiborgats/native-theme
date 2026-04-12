@@ -393,7 +393,6 @@ fn build_theme(
 /// Returns `Error::ReaderFailed` if neither light nor dark appearance can be created
 /// (extremely unlikely on any macOS version that supports these APIs).
 #[cfg(all(target_os = "macos", feature = "macos"))]
-#[must_use = "this returns the detected macOS theme; it does not apply it"]
 pub fn from_macos() -> crate::Result<crate::ThemeSpec> {
     let light_name = NSString::from_str("NSAppearanceNameAqua");
     let dark_name = NSString::from_str("NSAppearanceNameDarkAqua");

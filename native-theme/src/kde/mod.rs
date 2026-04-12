@@ -340,7 +340,6 @@ fn find_index_theme_path(theme_name: &str) -> Option<std::path::PathBuf> {
 ///
 /// Parses `~/.config/kdeglobals` (respecting `XDG_CONFIG_HOME`) and maps
 /// KDE color groups and font strings to a `ThemeSpec`.
-#[must_use = "this returns the detected KDE theme; it does not apply it"]
 pub fn from_kde() -> crate::Result<crate::ThemeSpec> {
     let path = kdeglobals_path();
     let content = std::fs::read_to_string(&path).map_err(|e| crate::Error::ReaderFailed {

@@ -108,7 +108,6 @@ impl ThemeVariant {
     /// // All fields are now guaranteed populated
     /// let accent = resolved.defaults.accent_color;
     /// ```
-    #[must_use = "this returns the resolved theme and consumes self"]
     pub fn into_resolved(mut self) -> crate::Result<ResolvedThemeVariant> {
         // Auto-detect font_dpi from the OS when not already set (e.g. by an
         // OS reader or TOML overlay). This ensures standalone preset loading

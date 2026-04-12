@@ -233,7 +233,7 @@ impl IconRole {
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
-#[must_use = "loading icon data without using it is likely a bug"]
+#[must_use]
 pub enum IconData {
     /// SVG content as raw bytes (from freedesktop themes, bundled icon sets).
     Svg(Vec<u8>),
@@ -435,7 +435,7 @@ pub fn icon_name(role: IconRole, set: IconSet) -> Option<&'static str> {
 /// let set = system_icon_set();
 /// // On Linux, this returns Freedesktop
 /// ```
-#[must_use = "this returns the current icon set for the platform"]
+#[must_use]
 pub fn system_icon_set() -> IconSet {
     if cfg!(any(target_os = "macos", target_os = "ios")) {
         IconSet::SfSymbols
@@ -474,7 +474,7 @@ pub fn system_icon_set() -> IconSet {
 /// // On a KDE system with Breeze Dark: "breeze-dark"
 /// // On macOS: "sf-symbols"
 /// ```
-#[must_use = "this returns the current icon theme name"]
+#[must_use]
 pub fn system_icon_theme() -> &'static str {
     // Cached per-process. Call `invalidate_caches()` to force re-detection.
     // Use `detect_icon_theme()` for a fresh uncached reading.
@@ -538,7 +538,7 @@ pub(crate) fn invalidate_icon_theme_cache() {}
 /// settings).
 ///
 /// See [`system_icon_theme()`] for platform behavior details.
-#[must_use = "this returns the current icon theme name"]
+#[must_use]
 #[allow(unreachable_code)]
 pub fn detect_icon_theme() -> String {
     #[cfg(any(target_os = "macos", target_os = "ios"))]

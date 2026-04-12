@@ -222,7 +222,6 @@ impl_merge!(ThemeVariant {
 /// assert_eq!(base.name, "Catppuccin Mocha"); // base name is preserved
 /// ```
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
-#[must_use = "constructing a theme without using it is likely a bug"]
 pub struct ThemeSpec {
     /// Theme name (e.g., "Breeze", "Adwaita", "Windows 11").
     pub name: String,
@@ -280,7 +279,7 @@ impl ThemeSpec {
     /// When `is_dark` is true, prefers `dark` and falls back to `light`.
     /// When `is_dark` is false, prefers `light` and falls back to `dark`.
     /// Returns `None` only if the theme has no variants at all.
-    #[must_use = "this returns the selected variant; it does not apply it"]
+    #[must_use]
     pub fn pick_variant(&self, is_dark: bool) -> Option<&ThemeVariant> {
         if is_dark {
             self.dark.as_ref().or(self.light.as_ref())
@@ -305,7 +304,7 @@ impl ThemeSpec {
     /// let variant = theme.into_variant(true).unwrap();
     /// let resolved = variant.into_resolved().unwrap();
     /// ```
-    #[must_use = "this returns the extracted variant; it does not apply it"]
+    #[must_use]
     pub fn into_variant(self, is_dark: bool) -> Option<ThemeVariant> {
         if is_dark {
             self.dark.or(self.light)
@@ -332,7 +331,6 @@ impl ThemeSpec {
     /// let theme = native_theme::ThemeSpec::preset("catppuccin-mocha").unwrap();
     /// assert!(theme.light.is_some());
     /// ```
-    #[must_use = "this returns a theme preset; it does not apply it"]
     pub fn preset(name: &str) -> crate::Result<Self> {
         crate::presets::preset(name)
     }
@@ -416,7 +414,6 @@ impl ThemeSpec {
     /// let theme = native_theme::ThemeSpec::from_toml(toml).unwrap();
     /// assert_eq!(theme.name, "My Theme");
     /// ```
-    #[must_use = "this parses a TOML string into a theme; it does not apply it"]
     pub fn from_toml(toml_str: &str) -> crate::Result<Self> {
         crate::presets::from_toml(toml_str)
     }
@@ -462,7 +459,6 @@ impl ThemeSpec {
     /// ```no_run
     /// let theme = native_theme::ThemeSpec::from_file("my-theme.toml").unwrap();
     /// ```
-    #[must_use = "this loads a theme from a file; it does not apply it"]
     pub fn from_file(path: impl AsRef<std::path::Path>) -> crate::Result<Self> {
         crate::presets::from_file(path)
     }
@@ -474,7 +470,7 @@ impl ThemeSpec {
     /// let names = native_theme::ThemeSpec::list_presets();
     /// assert_eq!(names.len(), 16);
     /// ```
-    #[must_use = "this returns the list of preset names"]
+    #[must_use]
     pub fn list_presets() -> &'static [&'static str] {
         crate::presets::list_presets()
     }
@@ -491,7 +487,7 @@ impl ThemeSpec {
     /// // On Windows: includes windows-11 plus all community themes
     /// assert!(!names.is_empty());
     /// ```
-    #[must_use = "this returns the filtered list of preset names for this platform"]
+    #[must_use]
     pub fn list_presets_for_platform() -> Vec<&'static str> {
         crate::presets::list_presets_for_platform()
     }
@@ -507,7 +503,6 @@ impl ThemeSpec {
     /// let toml_str = theme.to_toml().unwrap();
     /// assert!(toml_str.contains("name = \"Catppuccin Mocha\""));
     /// ```
-    #[must_use = "this serializes the theme to TOML; it does not write to a file"]
     pub fn to_toml(&self) -> crate::Result<String> {
         crate::presets::to_toml(self)
     }

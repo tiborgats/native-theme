@@ -38,7 +38,7 @@ use crate::model::{bundled_icon_by_name, bundled_icon_svg};
 /// assert!(icon.is_some());
 /// # }
 /// ```
-#[must_use = "this returns the loaded icon data; it does not display it"]
+#[must_use]
 #[allow(unreachable_patterns, clippy::needless_return, unused_variables)]
 pub fn load_icon(role: IconRole, set: IconSet, fg_color: Option<[u8; 3]>) -> Option<IconData> {
     match set {
@@ -90,7 +90,7 @@ pub fn load_icon(role: IconRole, set: IconSet, fg_color: Option<[u8; 3]>) -> Opt
 /// assert!(icon.is_some());
 /// # }
 /// ```
-#[must_use = "this returns the loaded icon data; it does not display it"]
+#[must_use]
 #[allow(unreachable_patterns, clippy::needless_return, unused_variables)]
 pub fn load_icon_from_theme(
     role: IconRole,
@@ -175,7 +175,7 @@ pub fn is_freedesktop_theme_available(theme: &str) -> bool {
 /// assert!(icon.is_some());
 /// # }
 /// ```
-#[must_use = "this returns the loaded icon data; it does not display it"]
+#[must_use]
 #[allow(unreachable_patterns, unused_variables)]
 pub fn load_system_icon_by_name(
     name: &str,
@@ -228,7 +228,7 @@ pub fn load_system_icon_by_name(
 /// # #[cfg(feature = "lucide-icons")]
 /// # assert!(anim.is_some());
 /// ```
-#[must_use = "this returns animation data; it does not display anything"]
+#[must_use]
 pub fn loading_indicator(set: IconSet) -> Option<AnimatedIcon> {
     match set {
         #[cfg(all(target_os = "linux", feature = "system-icons"))]
@@ -266,7 +266,7 @@ pub fn loading_indicator(set: IconSet) -> Option<AnimatedIcon> {
 /// assert!(icon.is_some());
 /// # }
 /// ```
-#[must_use = "this returns the loaded icon data; it does not display it"]
+#[must_use]
 pub fn load_custom_icon(
     provider: &(impl IconProvider + ?Sized),
     set: IconSet,

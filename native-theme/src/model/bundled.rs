@@ -25,7 +25,7 @@ use super::icons::{IconRole, IconSet};
 /// let result = bundled_icon_svg(IconRole::ActionCopy, IconSet::SfSymbols);
 /// assert!(result.is_none());
 /// ```
-#[must_use = "this returns SVG bytes; it does not render the icon"]
+#[must_use]
 #[allow(unreachable_patterns, unused_variables)]
 pub fn bundled_icon_svg(role: IconRole, set: IconSet) -> Option<&'static [u8]> {
     match set {
@@ -191,7 +191,7 @@ fn lucide_svg(role: IconRole) -> Option<&'static [u8]> {
 /// let result = bundled_icon_by_name("check", IconSet::SfSymbols);
 /// assert!(result.is_none());
 /// ```
-#[must_use = "this returns SVG bytes; it does not render the icon"]
+#[must_use]
 #[allow(unreachable_patterns, unused_variables)]
 pub fn bundled_icon_by_name(name: &str, set: IconSet) -> Option<&'static [u8]> {
     match set {
