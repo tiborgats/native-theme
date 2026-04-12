@@ -58,7 +58,7 @@ pub(crate) fn watch_gnome(
 
             // We only need the notification, not the signal payload.
             let _ = signal;
-            callback(ThemeChangeEvent::ColorSchemeChanged);
+            callback(ThemeChangeEvent::Changed);
         }
     });
 

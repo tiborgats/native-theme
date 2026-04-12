@@ -68,7 +68,7 @@ pub(crate) fn watch_kde(
                     });
                     if is_relevant && last_fire.is_none_or(|t| t.elapsed() >= debounce) {
                         last_fire = Some(Instant::now());
-                        callback(ThemeChangeEvent::ColorSchemeChanged);
+                        callback(ThemeChangeEvent::Changed);
                     }
                 }
                 Ok(Err(_)) => {

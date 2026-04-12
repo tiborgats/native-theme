@@ -89,10 +89,10 @@ pub(crate) fn watch_macos(
             &NSString::from_str("AppleInterfaceThemeChangedNotification");
 
         // Create the observer block. The block captures `callback` and fires
-        // it with ColorSchemeChanged on each notification.
+        // it with Changed on each notification.
         let block: RcBlock<dyn Fn(NonNull<NSNotification>)> =
             RcBlock::new(move |_notification: NonNull<NSNotification>| {
-                callback(ThemeChangeEvent::ColorSchemeChanged);
+                callback(ThemeChangeEvent::Changed);
             });
 
         // Register the observer.
