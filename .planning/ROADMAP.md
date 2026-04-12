@@ -147,7 +147,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 69: Resolver-Level button_order Unlock** — Ship-unit 1: delete macOS/KDE `button_order` hardcodes and move dispatch into the resolver so the `resolve()` docs stop lying (completed 2026-04-12)
 - [x] **Phase 70: Drop Error::Clone Bound** — Ship-unit 3: four-item atomic removal of `#[derive(Clone)]`, stale doc comments, and the `error_is_clone` test (completed 2026-04-12)
 - [x] **Phase 71: Error Restructure and Validation Split** — Ship-unit 2: partition `validate()` output into `missing` vs `out_of_range` and restructure `Error` per §31.2 Option F (completed 2026-04-12)
-- [ ] **Phase 72: ENV_MUTEX Test Simplification** — Ship-unit 4 (after 69): drop env-var-mocking serialization now that `resolve()` is pure
+- [x] **Phase 72: ENV_MUTEX Test Simplification** — Ship-unit 4 (after 69): drop env-var-mocking serialization now that `resolve()` is pure (completed 2026-04-12)
 - [ ] **Phase 73: ThemeChangeEvent Cleanup** — Ship-unit 5: delete `Other` variant (zero emitters) and rename `ColorSchemeChanged` to `Changed`
 - [ ] **Phase 74: Rgba Polish and must_use Uniformity** — Ship-unit 6 part A: delete `to_f32_tuple`, add default constants, and enforce bare `#[must_use]` across six sites
 - [ ] **Phase 75: LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal** — Ship-unit 6 part B: mark `LinuxDesktop` non-exhaustive with new compositor variants, make missing `watch` feature a compile error, delete the misleading `IconSet::default()`
@@ -329,7 +329,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 72-01-PLAN.md — Rewrite all ENV_MUTEX tests to pure equivalents
-- [ ] 72-02-PLAN.md — Delete test_util.rs and verify parallel test timing
+- [x] 72-02-PLAN.md — Delete test_util.rs and verify parallel test timing
 
 ### Phase 73: ThemeChangeEvent Cleanup
 **Goal**: The `ThemeChangeEvent` enum reflects what watchers actually emit — `Other` is gone (it had zero production emitters), and `ColorSchemeChanged` is renamed to `Changed` because KDE/GNOME watchers signal broader changes than just colour-scheme toggles
@@ -604,7 +604,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 69. Resolver-Level button_order Unlock | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 70. Drop Error::Clone Bound | v0.5.7 | 1/1 | Complete   | 2026-04-12 |
 | 71. Error Restructure and Validation Split | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
-| 72. ENV_MUTEX Test Simplification | v0.5.7 | 1/2 | In Progress|  |
+| 72. ENV_MUTEX Test Simplification | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 73. ThemeChangeEvent Cleanup | v0.5.7 | 0/0 | Not started | — |
 | 74. Rgba Polish and must_use Uniformity | v0.5.7 | 0/0 | Not started | — |
 | 75. LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal | v0.5.7 | 0/0 | Not started | — |
