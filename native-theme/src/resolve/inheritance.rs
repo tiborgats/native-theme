@@ -95,7 +95,7 @@ fn resolve_text_scale_entry(
 ///
 /// On Linux/KDE, the convention is leading-affirmative (OK on the left).
 /// On Windows, GNOME, macOS, iOS the convention is trailing-affirmative.
-fn platform_button_order() -> DialogButtonOrder {
+pub(super) fn platform_button_order() -> DialogButtonOrder {
     #[cfg(target_os = "linux")]
     {
         if crate::detect::detect_linux_de(&crate::detect::xdg_current_desktop())
@@ -162,10 +162,6 @@ impl ThemeVariant {
     // --- Phase 2: Safety nets ---
 
     pub(crate) fn resolve_safety_nets(&mut self) {
-        // dialog.button_order <- platform convention
-        if self.dialog.button_order.is_none() {
-            self.dialog.button_order = Some(platform_button_order());
-        }
         // input.caret_color <- defaults.text_color
         if self.input.caret_color.is_none() {
             self.input.caret_color = self.defaults.text_color;

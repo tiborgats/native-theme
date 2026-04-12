@@ -53,6 +53,9 @@ impl ThemeVariant {
         if self.icon_theme.is_none() {
             self.icon_theme = Some(crate::model::icons::system_icon_theme().to_string());
         }
+        if self.dialog.button_order.is_none() {
+            self.dialog.button_order = Some(inheritance::platform_button_order());
+        }
     }
 
     /// Apply all inheritance rules and platform defaults.

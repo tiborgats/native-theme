@@ -202,10 +202,10 @@ fn resolve_phase2_safety_nets() {
         "disabled_text_color no longer fabricated"
     );
 
-    // Kept safety nets (per_platform rules, not invented values):
+    // dialog.button_order moved to resolve_platform_defaults (no longer in resolve()):
     assert!(
-        v.dialog.button_order.is_some(),
-        "dialog.button_order safety net"
+        v.dialog.button_order.is_none(),
+        "dialog.button_order no longer set by resolve() -- moved to resolve_platform_defaults"
     );
     assert_eq!(
         v.input.caret_color,
