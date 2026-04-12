@@ -356,8 +356,8 @@ Plans:
   4. A clippy lint (or grep audit) confirms no `#[must_use = "..."]` form remains anywhere in the crate
 **Plans**: 2 plans
 Plans:
-- [ ] 71-01-PLAN.md � Rewrite Error enum per Option F with ErrorKind and RangeViolation
-- [ ] 71-02-PLAN.md � Two-vec validation split and caller migration
+- [ ] 74-01-PLAN.md — Rgba constants (TRANSPARENT, BLACK, WHITE) and delete to_f32_tuple
+- [ ] 74-02-PLAN.md — Uniform bare #[must_use] across the core crate (36 sites)
 
 ### Phase 75: LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal
 **Goal**: `LinuxDesktop` gains `#[non_exhaustive]` and new Wayland compositor variants, `on_theme_change()` fails at compile time (not runtime) when the `watch` feature is disabled, and the misleading `IconSet::default()` (which was Freedesktop on every platform) is gone
