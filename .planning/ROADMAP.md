@@ -145,7 +145,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 ### v0.5.7 API Overhaul (Phases 69-88)
 
 - [x] **Phase 69: Resolver-Level button_order Unlock** — Ship-unit 1: delete macOS/KDE `button_order` hardcodes and move dispatch into the resolver so the `resolve()` docs stop lying (completed 2026-04-12)
-- [ ] **Phase 70: Drop Error::Clone Bound** — Ship-unit 3: four-item atomic removal of `#[derive(Clone)]`, stale doc comments, and the `error_is_clone` test
+- [x] **Phase 70: Drop Error::Clone Bound** — Ship-unit 3: four-item atomic removal of `#[derive(Clone)]`, stale doc comments, and the `error_is_clone` test (completed 2026-04-12)
 - [ ] **Phase 71: Error Restructure and Validation Split** — Ship-unit 2: partition `validate()` output into `missing` vs `out_of_range` and restructure `Error` per §31.2 Option F
 - [ ] **Phase 72: ENV_MUTEX Test Simplification** — Ship-unit 4 (after 69): drop env-var-mocking serialization now that `resolve()` is pure
 - [ ] **Phase 73: ThemeChangeEvent Cleanup** — Ship-unit 5: delete `Other` variant (zero emitters) and rename `ColorSchemeChanged` to `Changed`
@@ -299,9 +299,9 @@ Plans:
   2. The `error_is_clone` test file is deleted and `cargo test` still passes on a fresh clone
   3. The stale `error.rs:73-79` and `presets.rs:85-92` doc comments describing Clone behaviour are gone (grep for "Clone" in those files returns zero matches)
   4. The four-item commit is a single atomic change — bisection cannot land on a revision where Clone is dropped but `error_is_clone` still exists
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
-- [ ] 70-01-PLAN.md — Drop Clone from Error enum and remove all stale byproducts
+- [x] 70-01-PLAN.md — Drop Clone from Error enum and remove all stale byproducts
 
 ### Phase 71: Error Restructure and Validation Split
 **Goal**: `validate()` distinguishes missing fields from out-of-range values in its output, and the `Error` enum is restructured per §31.2 Option F so callers can match on `ReaderFailed` / `FeatureDisabled` / `WatchUnavailable` / `Resolution` with an `Error::kind()` helper for coarse dispatch
@@ -548,7 +548,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 49-60 | v0.5.5 | 41/41 | Complete | 2026-04-09 |
 | 61-68 | v0.5.6 | 14/14 | Complete | 2026-04-10 |
 | 69. Resolver-Level button_order Unlock | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
-| 70. Drop Error::Clone Bound | v0.5.7 | 0/0 | Not started | — |
+| 70. Drop Error::Clone Bound | v0.5.7 | 1/1 | Complete   | 2026-04-12 |
 | 71. Error Restructure and Validation Split | v0.5.7 | 0/0 | Not started | — |
 | 72. ENV_MUTEX Test Simplification | v0.5.7 | 0/0 | Not started | — |
 | 73. ThemeChangeEvent Cleanup | v0.5.7 | 0/0 | Not started | — |

@@ -27,7 +27,7 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 
 ### Error Type Restructure
 
-- [ ] **ERR-01**: `Error::Clone` bound dropped — four-item atomic commit: drop `#[derive(Clone)]`, delete stale `error.rs:73-79` doc comment, delete stale `presets.rs:85-92` comment, delete `error_is_clone` test (doc 1 §6a + doc 2 L1)
+- [x] **ERR-01**: `Error::Clone` bound dropped — four-item atomic commit: drop `#[derive(Clone)]`, delete stale `error.rs:73-79` doc comment, delete stale `presets.rs:85-92` comment, delete `error_is_clone` test (doc 1 §6a + doc 2 L1)
 - [ ] **ERR-02**: `Error` variants restructured per §31.2 Option F (flat + `kind()` method); `WatchUnavailable` / `FeatureDisabled` / `ReaderFailed` boundaries explicit; folds in A3's category separation (doc 1 §6b/c/d)
 
 ### Data Model Restructure
@@ -110,7 +110,7 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 
 ### Test & Doc Cleanup
 
-- [ ] **CLEAN-01**: Stale `error.rs:73-79` doc comment deleted — bundled atomically with ERR-01's four-item commit (doc 2 L1)
+- [x] **CLEAN-01**: Stale `error.rs:73-79` doc comment deleted — bundled atomically with ERR-01's four-item commit (doc 2 L1)
 - [ ] **CLEAN-02**: Redundant `ENV_MUTEX` tests simplified after BUG-03 lands — resolve becomes pure, so env-var-mocking tests no longer need mutex serialization (doc 2 L2)
 - [ ] **CLEAN-03**: `from_kde`/`from_gnome`/`from_windows`/`from_macos` visibility audit — grep pass for connector-level consumers before READER-02 demotion (doc 2 L3)
 
