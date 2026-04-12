@@ -285,7 +285,10 @@ Plans:
   2. A pure test asserts that `from_macos::build_theme(light, sonoma_defaults)` returns a `ThemeMode` whose `defaults.button_order` is `None` (not `Some("apple")`)
   3. After `resolve()` runs the `button_order` field is still `"kde"` on KDE and `"apple"` on macOS — dispatch moves from the readers into `resolve_platform_defaults` (or `resolve` intermediates are demoted)
   4. The `resolve()` rustdoc no longer claims "no OS detection" unless it is literally true for every code path reachable from that function
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 69-01-PLAN.md — Remove reader hardcodes, move dispatch to resolve_platform_defaults
+- [ ] 69-02-PLAN.md — Strip live preset TOMLs, update rustdoc, create presets README
 
 ### Phase 70: Drop Error::Clone Bound
 **Goal**: `Error` no longer implements `Clone`, and every byproduct of that bond — stale doc comments, stale tests, stale preset comments — is atomically removed in the same commit so the build never enters an intermediate broken state
@@ -542,7 +545,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 44-48 | v0.5.0 | 17/17 | Complete | 2026-03-29 |
 | 49-60 | v0.5.5 | 41/41 | Complete | 2026-04-09 |
 | 61-68 | v0.5.6 | 14/14 | Complete | 2026-04-10 |
-| 69. Resolver-Level button_order Unlock | v0.5.7 | 0/0 | Not started | — |
+| 69. Resolver-Level button_order Unlock | v0.5.7 | 0/2 | Planned | — |
 | 70. Drop Error::Clone Bound | v0.5.7 | 0/0 | Not started | — |
 | 71. Error Restructure and Validation Split | v0.5.7 | 0/0 | Not started | — |
 | 72. ENV_MUTEX Test Simplification | v0.5.7 | 0/0 | Not started | — |
