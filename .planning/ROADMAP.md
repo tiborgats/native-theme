@@ -385,7 +385,7 @@ Plans:
   4. `lib.rs` exposes exclusively `pub mod` declarations and the `prelude` — the 92 flat re-exports are gone; the old top-level items are reachable only via `native_theme::theme::`, `native_theme::watch::`, etc.
 **Plans**: 2 plans
 Plans:
-- [ ] 76-01-PLAN.md — Atomic type vocabulary rename (ThemeSpec->Theme, ThemeVariant->ThemeMode, etc.)
+- [x] 76-01-PLAN.md — Atomic type vocabulary rename (ThemeSpec->Theme, ThemeVariant->ThemeMode, etc.)
 - [ ] 76-02-PLAN.md — Crate root partition into submodules with prelude
 
 ### Phase 77: SystemTheme API and icon_set Relocation
@@ -608,7 +608,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 73. ThemeChangeEvent Cleanup | v0.5.7 | 1/1 | Complete   | 2026-04-12 |
 | 74. Rgba Polish and must_use Uniformity | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 75. LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
-| 76. Type Vocabulary Rename and Crate Root Partition | v0.5.7 | 0/0 | Not started | — |
+| 76. Type Vocabulary Rename and Crate Root Partition | v0.5.7 | 1/2 | In Progress|  |
 | 77. SystemTheme API and icon_set Relocation | v0.5.7 | 0/0 | Not started | — |
 | 78. OverlaySource, AccessibilityPreferences, font_dpi Relocation | v0.5.7 | 0/0 | Not started | — |
 | 79. BorderSpec Split and Platform Reader Visibility Audit | v0.5.7 | 0/0 | Not started | — |

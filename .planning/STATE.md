@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
-status: phase_complete
-stopped_at: Phase 75 complete — verified, ready for Phase 76
-last_updated: "2026-04-12T18:00:00.000Z"
-last_activity: 2026-04-12 — Phase 75 executed and verified (2 plans, 5 commits)
+status: in_progress
+stopped_at: Phase 76 plan 01 complete — type vocabulary rename done, plan 02 pending
+last_updated: "2026-04-12T17:15:00.000Z"
+last_activity: 2026-04-12 — Phase 76 plan 01 executed (type rename across 40 files, 2 commits)
 progress:
   total_phases: 28
   completed_phases: 15
-  total_plans: 26
-  completed_plans: 26
-  percent: 100
+  total_plans: 28
+  completed_plans: 27
+  percent: 96
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 75 — non-exhaustive-compile-gate-iconset-default (COMPLETE)
-Plan: 2/2 complete
-Status: Phase 75 complete — both plans executed
-Last activity: 2026-04-12 — Plan 75-01 executed (LinuxDesktop non_exhaustive + Wayland variants)
+Phase: 76 — type-vocabulary-rename-and-crate-root-partition
+Plan: 1/2 complete
+Status: Plan 01 (type rename) complete, plan 02 (crate root partition) pending
+Last activity: 2026-04-12 — Plan 76-01 executed (4 type renames across 40 files)
 
-Progress: [██████████] 100% (26/26 plans complete)
+Progress: [█████████▓] 96% (27/28 plans complete)
 
 ## Accumulated Context
 
@@ -104,6 +104,7 @@ None. Phase 75 complete, ready to plan Phase 76.
 - [Phase 73-01]: Updated on_theme_change() doctest to use ? instead of .expect() for zero-panic rules
 - [Phase 74-02]: Remove #[must_use] from Result-returning fns (double_must_use lint); bare #[must_use] only on non-Result returns
 - [Phase 75-02]: Inlined icon_set validation in validate.rs to avoid Default bound after removing Default from IconSet
+- [Phase 76-01]: gpui connector aliases gpui_component::{Theme,ThemeMode} as GpuiTheme/GpuiThemeMode to avoid collision with native_theme re-exports
 - [Phase 75-01]: Removed unreachable wildcard arms in same-crate matches (non_exhaustive only forces wildcards in external crates)
 - [Phase 75-01]: Wayland compositors use adwaita preset and org.gnome.desktop.interface gsettings for icon themes
 
@@ -119,5 +120,5 @@ None. Phase 75 complete, ready to plan Phase 76.
 ## Session Continuity
 
 Last session: 2026-04-12
-Stopped at: Phase 75 complete — all plans executed
-Resume file: .planning/phases/75-non-exhaustive-compile-gate-iconset-default/75-01-SUMMARY.md
+Stopped at: Phase 76 plan 01 complete — type vocabulary rename done
+Resume file: .planning/phases/76-type-vocabulary-rename-and-crate-root-partition/76-01-SUMMARY.md
