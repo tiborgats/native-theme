@@ -14,7 +14,8 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - ✅ **v0.4.1 Release Prep** — Phases 33-43 (shipped 2026-03-21)
 - ✅ **v0.5.0 Per-Widget Architecture & Resolution Pipeline** — Phases 44-48 (shipped 2026-03-29)
 - ✅ **v0.5.5 Schema Overhaul & Quality** — Phases 49-60 (shipped 2026-04-09)
-- ✅ **v0.5.6 Internal Quality & Runtime Watching** — Phases 61-67 (shipped 2026-04-09)
+- ✅ **v0.5.6 Internal Quality & Runtime Watching** — Phases 61-68 (shipped 2026-04-10)
+- 🚧 **v0.5.7 API Overhaul** — Phases 69-88 (in progress)
 
 ## Phases
 
@@ -127,15 +128,42 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 </details>
 
-### v0.5.6 Internal Quality & Runtime Watching (Phases 61-67)
+<details>
+<summary>v0.5.6 Internal Quality & Runtime Watching (Phases 61-68) — SHIPPED 2026-04-10</summary>
 
-- [x] **Phase 61: lib.rs Module Split** - Extract detect, pipeline, icons, and platform modules from the 2,767-line lib.rs monolith (completed 2026-04-09)
-- [x] **Phase 62: Validate Codegen** - Extend define_widget_pair! to generate validate extraction, reducing validate.rs from ~2,196 to ~500 lines (completed 2026-04-09)
-- [x] **Phase 63: KDE Reader Fixture Tests** - Separate KDE parsing from I/O and add fixture-based tests for all edge cases (completed 2026-04-09)
-- [x] **Phase 64: Cross-Platform Reader Test Separation** - Separate GNOME, Windows, and macOS reader parsing from OS dependencies (completed 2026-04-09)
-- [x] **Phase 65: ThemeWatcher Core API** - Define ThemeWatcher, ThemeChanged, on_theme_change() public API with watch feature flag (completed 2026-04-09)
-- [x] **Phase 66: Linux Watchers** - KDE inotify and GNOME portal watchers with debounce (completed 2026-04-09)
-- [x] **Phase 67: macOS and Windows Watchers** - macOS KVO and Windows UISettings event watchers (completed 2026-04-09)
+- [x] Phase 61: lib.rs Module Split (2/2 plans) — completed 2026-04-09
+- [x] Phase 62: Validate Codegen (3/3 plans) — completed 2026-04-09
+- [x] Phase 63: KDE Reader Fixture Tests (2/2 plans) — completed 2026-04-09
+- [x] Phase 64: Cross-Platform Reader Test Separation (1/1 plan) — completed 2026-04-09
+- [x] Phase 65: ThemeWatcher Core API (1/1 plan) — completed 2026-04-09
+- [x] Phase 66: Linux Watchers (2/2 plans) — completed 2026-04-09
+- [x] Phase 67: macOS and Windows Watchers (2/2 plans) — completed 2026-04-09
+- [x] Phase 68: GTK Symbolic Icon Recoloring (1/1 plan) — completed 2026-04-10
+
+</details>
+
+### v0.5.7 API Overhaul (Phases 69-88)
+
+- [ ] **Phase 69: Resolver-Level button_order Unlock** — Ship-unit 1: delete macOS/KDE `button_order` hardcodes and move dispatch into the resolver so the `resolve()` docs stop lying
+- [ ] **Phase 70: Drop Error::Clone Bound** — Ship-unit 3: four-item atomic removal of `#[derive(Clone)]`, stale doc comments, and the `error_is_clone` test
+- [ ] **Phase 71: Error Restructure and Validation Split** — Ship-unit 2: partition `validate()` output into `missing` vs `out_of_range` and restructure `Error` per §31.2 Option F
+- [ ] **Phase 72: ENV_MUTEX Test Simplification** — Ship-unit 4 (after 69): drop env-var-mocking serialization now that `resolve()` is pure
+- [ ] **Phase 73: ThemeChangeEvent Cleanup** — Ship-unit 5: delete `Other` variant (zero emitters) and rename `ColorSchemeChanged` to `Changed`
+- [ ] **Phase 74: Rgba Polish and must_use Uniformity** — Ship-unit 6 part A: delete `to_f32_tuple`, add default constants, and enforce bare `#[must_use]` across six sites
+- [ ] **Phase 75: LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal** — Ship-unit 6 part B: mark `LinuxDesktop` non-exhaustive with new compositor variants, make missing `watch` feature a compile error, delete the misleading `IconSet::default()`
+- [ ] **Phase 76: Type Vocabulary Rename and Crate Root Partition** — Ship-unit 7 part A: atomic rename of `ThemeSpec→Theme`, `ThemeVariant→ThemeMode`, etc. and partition 92-item flat crate root into submodules with a `prelude`
+- [ ] **Phase 77: SystemTheme API and icon_set Relocation** — Ship-unit 7 part B: drop `SystemTheme::active()` in favour of `pick(ColorMode)` + exposed `mode` field, and move `icon_set`/`icon_theme` onto `Theme`
+- [ ] **Phase 78: OverlaySource, AccessibilityPreferences, font_dpi Relocation** — Ship-unit 8 atomic: eliminate `SystemTheme` pre-resolve variant fields via `OverlaySource` replay, move accessibility off `ThemeDefaults` onto `SystemTheme`, move `font_dpi` into `ResolutionContext`
+- [ ] **Phase 79: BorderSpec Split and Platform Reader Visibility Audit** — Ship-unit 9: split `BorderSpec` along defaults-vs-widget, grep-audit connector callers of platform readers, demote `from_kde`/`from_gnome`/`from_windows`/`from_macos` to `pub(crate)`
+- [ ] **Phase 80: native-theme-derive Proc-Macro K Codegen** — Ship-unit 10: new `native-theme-derive` crate generating paired structs, `FIELD_NAMES`, `impl_merge!` bodies, `check_ranges`, `inventory::submit!` registry, and unified border inheritance attribute
+- [ ] **Phase 81: Feature-Matrix Cleanup and Unified from_system** — Ship-unit 11 atomic: unify `from_system`/`from_system_async` via `pollster::block_on`, split aggregators into `linux-kde`/`linux-portal`-style groups, simplify `Cargo.toml` feature graph
+- [ ] **Phase 82: Icon API Rework** — Collapse 13 icon-loading functions into `IconLoader` builder, migrate `IconProvider` and `IconData::Svg` to `Cow<'static, [u8]>`, add `IconRole::name()` / `Display`, add `IconSet` drift-guard test
+- [ ] **Phase 83: Detection Cache Layer** — Replace global `OnceLock` caches with `DetectionContext` backed by `arc_swap::ArcSwapOption`, add no-arg `detect_linux_desktop()` overload
+- [ ] **Phase 84: Reader Output Contract Homogenisation** — Unify single-vs-dual variant semantics across KDE/GNOME/Windows/macOS readers via a `ReaderOutput` type flowing through `run_pipeline` alongside `OverlaySource`
+- [ ] **Phase 85: Data Model Method and Doc Cleanup** — Demote `ThemeVariant::resolve*` intermediates to `#[doc(hidden)]`, `Theme` method grab-bag cleanup, document `ThemeWatcher` internals, rename `FontSize::Px::to_px` to `to_logical_px`
+- [ ] **Phase 86: Validation and Lint Codegen Polish** — Drive `lint_toml` from the `inventory::submit!` widget registry, stop `check_ranges` from eagerly `format!`-ing path strings
+- [ ] **Phase 87: Font Family Arc<str> and AnimatedIcon Invariants** — Migrate `FontSpec::family: String` to `Arc<str>` across widget × connector, wrap `AnimatedIcon` public fields in newtype constructors that enforce invariants
+- [ ] **Phase 88: Diagnostic and Preset-Polish Sweep** — `diagnose_platform_support` returns `Vec<DiagnosticEntry>`, `platform_preset_name` returns structured data, `FontSpec::style` default-consistency documented, `defaults.border.padding` rule corrected, bundled preset `name`/`icon_theme` become `Cow<'static, str>`
 
 ## Phase Details
 
@@ -248,11 +276,260 @@ Plans:
 Plans:
 - [x] 68-01-PLAN.md — Normalize GTK symbolic SVGs to currentColor with TDD (find_icon refactor, normalize_gtk_symbolic, 9 tests)
 
+### Phase 69: Resolver-Level button_order Unlock
+**Goal**: Callers of `from_kde` / `from_macos` no longer observe a hardcoded `button_order` in the pre-resolve `ThemeMode`, and `resolve()`'s documentation about "no OS detection" becomes literally true
+**Depends on**: Phase 68 (last v0.5.6 phase)
+**Requirements**: BUG-03, BUG-04, BUG-05
+**Success Criteria** (what must be TRUE):
+  1. A fixture test asserts that `from_kde_content_pure(breeze_light.ini)` returns a `ThemeMode` whose `defaults.button_order` is `None` (not `Some("kde")`)
+  2. A pure test asserts that `from_macos::build_theme(light, sonoma_defaults)` returns a `ThemeMode` whose `defaults.button_order` is `None` (not `Some("apple")`)
+  3. After `resolve()` runs the `button_order` field is still `"kde"` on KDE and `"apple"` on macOS — dispatch moves from the readers into `resolve_platform_defaults` (or `resolve` intermediates are demoted)
+  4. The `resolve()` rustdoc no longer claims "no OS detection" unless it is literally true for every code path reachable from that function
+**Plans**: TBD
+
+### Phase 70: Drop Error::Clone Bound
+**Goal**: `Error` no longer implements `Clone`, and every byproduct of that bond — stale doc comments, stale tests, stale preset comments — is atomically removed in the same commit so the build never enters an intermediate broken state
+**Depends on**: Phase 68
+**Requirements**: ERR-01, CLEAN-01
+**Success Criteria** (what must be TRUE):
+  1. `error.rs` does not contain `#[derive(Clone)]` on the `Error` enum, and `fn assert_clone<T: Clone>()` compile-test fails if reintroduced
+  2. The `error_is_clone` test file is deleted and `cargo test` still passes on a fresh clone
+  3. The stale `error.rs:73-79` and `presets.rs:85-92` doc comments describing Clone behaviour are gone (grep for "Clone" in those files returns zero matches)
+  4. The four-item commit is a single atomic change — bisection cannot land on a revision where Clone is dropped but `error_is_clone` still exists
+**Plans**: TBD
+
+### Phase 71: Error Restructure and Validation Split
+**Goal**: `validate()` distinguishes missing fields from out-of-range values in its output, and the `Error` enum is restructured per §31.2 Option F so callers can match on `ReaderFailed` / `FeatureDisabled` / `WatchUnavailable` / `Resolution` with an `Error::kind()` helper for coarse dispatch
+**Depends on**: Phase 70
+**Requirements**: BUG-01, BUG-02, ERR-02
+**Success Criteria** (what must be TRUE):
+  1. `ThemeResolutionError` (or its successor) carries two distinct vectors — `missing` and `out_of_range` — and `check_ranges` runs to completion even when `missing.is_empty()` is false
+  2. A unit test constructs a `ThemeMode` with both a missing field AND an out-of-range value and asserts both appear in the corresponding vectors (no cross-pollination)
+  3. `Error` variants conform to §31.2 Option F: flat list with explicit boundaries for reader failures, feature-disabled calls, and watcher unavailability; `Error::kind()` returns a coarse `ErrorKind` classifier
+  4. `from_system()` returns a `FeatureDisabled` error (not a `Format` error) when called without the right platform feature enabled
+**Plans**: TBD
+
+### Phase 72: ENV_MUTEX Test Simplification
+**Goal**: The test suite no longer relies on a global `ENV_MUTEX` to serialize env-var-mocking tests, because `resolve()` is now pure and does not read env vars
+**Depends on**: Phase 69 (needs BUG-03's "demote resolve intermediates" or "move button_order dispatch" to have landed)
+**Requirements**: CLEAN-02
+**Success Criteria** (what must be TRUE):
+  1. `grep -r ENV_MUTEX tests/` returns zero matches
+  2. Tests that previously required the mutex now run with `cargo test -- --test-threads=N` for any N without flakiness
+  3. The mutex helper module (`env_mutex.rs` or equivalent) is deleted
+  4. A test-suite timing measurement shows no regression — parallel test execution is faster than the mutex-serialized baseline
+**Plans**: TBD
+
+### Phase 73: ThemeChangeEvent Cleanup
+**Goal**: The `ThemeChangeEvent` enum reflects what watchers actually emit — `Other` is gone (it had zero production emitters), and `ColorSchemeChanged` is renamed to `Changed` because KDE/GNOME watchers signal broader changes than just colour-scheme toggles
+**Depends on**: Phase 68
+**Requirements**: WATCH-01, WATCH-02
+**Success Criteria** (what must be TRUE):
+  1. `ThemeChangeEvent::Other` no longer exists; `grep` in `src/` and `tests/` returns zero matches
+  2. The former `ColorSchemeChanged` variant is named `Changed` and the rename is reflected in doc comments, public API, and the `ThemeWatcher` callback signature
+  3. All four watcher backends (KDE inotify, GNOME portal, macOS NSDistributedNotificationCenter, Windows UISettings) emit the renamed `Changed` variant
+  4. A doctest on `on_theme_change()` pattern-matches on `ThemeChangeEvent::Changed` and compiles
+**Plans**: TBD
+
+### Phase 74: Rgba Polish and must_use Uniformity
+**Goal**: The `Rgba` type has default colour constants, the confusingly-named `to_f32_tuple` is gone, and every function/type on the short must-use list gets a bare `#[must_use]` attribute — uniform convention, no mixed `#[must_use = "..."]` strings
+**Depends on**: Phase 68
+**Requirements**: COLOR-01, POLISH-03
+**Success Criteria** (what must be TRUE):
+  1. `Rgba::TRANSPARENT`, `Rgba::BLACK`, `Rgba::WHITE` constants are defined and documented, with a doctest demonstrating their use
+  2. `Rgba::to_f32_tuple` no longer exists — callers use the canonical accessor (documented in the migration note)
+  3. The six call sites listed in the design doc (`pipeline.rs:132`, `pipeline.rs:175`, `model/icons.rs:438`, `model/icons.rs:477`, `lib.rs:353`, `model/mod.rs:225`) all carry a bare `#[must_use]` attribute
+  4. A clippy lint (or grep audit) confirms no `#[must_use = "..."]` form remains anywhere in the crate
+**Plans**: TBD
+
+### Phase 75: LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal
+**Goal**: `LinuxDesktop` gains `#[non_exhaustive]` and new Wayland compositor variants, `on_theme_change()` fails at compile time (not runtime) when the `watch` feature is disabled, and the misleading `IconSet::default()` (which was Freedesktop on every platform) is gone
+**Depends on**: Phase 68
+**Requirements**: LAYOUT-02, WATCH-03, ICON-05
+**Success Criteria** (what must be TRUE):
+  1. `LinuxDesktop` has `#[non_exhaustive]` and new variants: `Hyprland`, `Sway`, `River`, `Niri`, `CosmicDe` (or the subset confirmed in the design doc)
+  2. `cargo check --no-default-features` with a program that calls `on_theme_change()` fails with a compile error mentioning the `watch` feature — not a runtime `FeatureDisabled` error
+  3. `IconSet::default()` no longer exists; attempts to call it produce a "no method named default" compile error, and the migration guide documents `system_icon_set()` as the replacement
+  4. Matching on `LinuxDesktop` without a wildcard arm produces a "non-exhaustive patterns" compile error, which is the correct forward-compat behaviour
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 76: Type Vocabulary Rename and Crate Root Partition
+**Goal**: The v0.5.7 type vocabulary lands atomically (`ThemeSpec→Theme`, `ThemeVariant→ThemeMode`, `ResolvedThemeVariant→ResolvedTheme`, `ResolvedThemeDefaults→ResolvedDefaults`) alongside a crate-root partition that turns the 92-item flat `lib.rs` surface into `theme::`, `watch::`, `icons::`, `detect::` submodules plus a `prelude` exposing the 6 most-used items
+**Depends on**: Phase 68
+**Requirements**: NAME-01, LAYOUT-01
+**Success Criteria** (what must be TRUE):
+  1. `use native_theme::{Theme, ThemeMode, ResolvedTheme, ResolvedDefaults}` compiles; `use native_theme::{ThemeSpec, ThemeVariant, ResolvedThemeVariant, ResolvedThemeDefaults}` does not
+  2. Both connector crates (`native-theme-gpui`, `native-theme-iced`) compile against the renamed types without any compatibility shim
+  3. `native_theme::prelude::*` re-exports exactly the 6 items listed in design doc §12 Option C+F, and a `tests/prelude_smoke.rs` test asserts the set
+  4. `lib.rs` exposes exclusively `pub mod` declarations and the `prelude` — the 92 flat re-exports are gone; the old top-level items are reachable only via `native_theme::theme::`, `native_theme::watch::`, etc.
+**Plans**: TBD
+
+### Phase 77: SystemTheme API and icon_set Relocation
+**Goal**: `SystemTheme::active()` is gone, replaced by `pick(ColorMode)` plus a public `mode: ColorMode` field, and `icon_set` / `icon_theme` live on `Theme` instead of their former (wrong) host type
+**Depends on**: Phase 76
+**Requirements**: MODEL-03, MODEL-06
+**Success Criteria** (what must be TRUE):
+  1. `SystemTheme::active()` no longer exists; callers migrate to `pick(sys.mode)` which returns the light or dark `ResolvedTheme`
+  2. `system_theme.mode` is directly readable as a public field, verified by a doctest demonstrating `let dark = sys.pick(ColorMode::Dark);`
+  3. `theme.icon_set` and `theme.icon_theme` are accessible from `Theme`, not from the former host type, and all connector call sites use the new path
+  4. A doctest shows loading a preset, reading `theme.icon_set`, and passing it to the icon loader — zero reference to the old location
+**Plans**: TBD
+
+### Phase 78: OverlaySource, AccessibilityPreferences, font_dpi Relocation
+**Goal**: `SystemTheme` no longer carries pre-resolve variant fields — overlays are re-played from an `OverlaySource` via `ResolutionContext`; accessibility preferences live on `SystemTheme` as a structured `AccessibilityPreferences`; `font_dpi` moves out of `ThemeDefaults` into `ResolutionContext` runtime data
+**Depends on**: Phase 77 (builds on the renamed types and the `pick(ColorMode)` API)
+**Requirements**: MODEL-02, ACCESS-01, ACCESS-02
+**Success Criteria** (what must be TRUE):
+  1. `SystemTheme` has no `_variant` / pre-resolve overlay fields; `with_overlay()` rebuilds via `ResolutionContext` from a stored `OverlaySource`, verified by a round-trip test
+  2. `AccessibilityPreferences { text_scaling_factor, reduce_motion, high_contrast, reduce_transparency }` lives on `SystemTheme`, NOT in `ResolutionContext`, and all four fields are populated by every OS reader
+  3. `ResolutionContext` carries `font_dpi` as runtime data; `ThemeDefaults::font_dpi` is gone and `ResolvedDefaults::font_dpi` is gone too — grep returns zero matches in both types
+  4. All 17 presets continue to resolve successfully and produce identical `ResolvedTheme` outputs for tests that existed before the refactor
+**Plans**: TBD
+
+### Phase 79: BorderSpec Split and Platform Reader Visibility Audit
+**Goal**: `BorderSpec` is split along defaults-vs-widget lines (widget-level carries only `color`; defaults-level adds `width`, `corner_radius`, `padding`), and the platform readers (`from_kde`, `from_gnome`, `from_windows`, `from_macos`) are demoted to `pub(crate)` after a grep-based audit of connector consumers
+**Depends on**: Phase 78
+**Requirements**: BORDER-01, CLEAN-03, READER-02
+**Success Criteria** (what must be TRUE):
+  1. `BorderSpec` on widget structs exposes only `color`; the defaults-level `BorderDefaultsSpec` (or named equivalent) adds `width`, `corner_radius`, `padding`
+  2. A grep of `native-theme-gpui`, `native-theme-iced`, and every `examples/` file finds zero references to `from_kde` / `from_gnome` / `from_windows` / `from_macos` — all consumers went through `from_system`
+  3. Attempting `pub use native_theme::from_kde` from an external crate fails with a visibility error
+  4. The unified border-resolution pathway correctly populates widget borders from defaults-level values for all 17 presets
+**Plans**: TBD
+
+### Phase 80: native-theme-derive Proc-Macro K Codegen
+**Goal**: The doubled `Option<T>` / `Resolved<T>` struct hierarchy is generated from one source of truth by a new `native-theme-derive` proc-macro crate that also emits `FIELD_NAMES`, `impl_merge!` bodies, `check_ranges` impls from `#[theme(range = "...")]` and `#[theme(check = "non_negative")]` attributes, per-field `#[theme(inherit_from = "...")]` inheritance rules, `inventory::submit!` widget registry entries, and a `#[theme_layer(border_kind = "full" | "partial" | "none")]` unifier for the three parallel border-inheritance validation paths
+**Depends on**: Phase 79 (lands after the border split so codegen has a clean target) and Phase 71 (needs the new Error shape)
+**Requirements**: MODEL-01, VALID-01, VALID-02, BORDER-02
+**Success Criteria** (what must be TRUE):
+  1. `native-theme-derive` exists as a separate workspace crate (`proc-macro = true`) and produces the same `ButtonTheme` / `ResolvedButtonTheme` pair the hand-written version did — `cargo expand` confirms equivalence on at least one widget
+  2. `validate.rs` shrinks by at least 720 lines of hand-written range-check / construction boilerplate, and `grep -c fn check_ranges src/resolved/*.rs` drops to zero (all generated)
+  3. `inheritance.rs` duplication with `inheritance-rules.toml` is gone — ~55 of 82 rules live on per-field `#[theme(inherit_from = "...")]` attributes, and pattern-based rules that stay hand-written are documented in a comment block
+  4. The three parallel `require_border` / `border_all_optional` / `require_border_partial` paths collapse into a single generated path selected by `#[theme_layer(border_kind = "...")]`, with no behavioural change for any of the 17 presets
+**Plans**: TBD
+
+### Phase 81: Feature-Matrix Cleanup and Unified from_system
+**Goal**: `from_system_async` and `from_system` collapse to a single code path (`from_system_async` becomes the implementation, `from_system` wraps it with `pollster::block_on`), the `Cargo.toml` feature graph is simplified with clearer `linux-kde` / `linux-portal` aggregators, and these three changes ship atomically so no intermediate revision has a broken feature matrix
+**Depends on**: Phase 80 (ships last so it absorbs every other change)
+**Requirements**: FEATURE-01, FEATURE-02, FEATURE-03
+**Success Criteria** (what must be TRUE):
+  1. `src/lib.rs` has exactly one `async fn from_system_inner(...)` and two public wrappers — sync `from_system` (via `pollster::block_on`) and async `from_system_async` — with zero duplicated orchestration logic
+  2. `Cargo.toml` features include `linux-kde` and `linux-portal` (or the design-doc names), each aggregating the right target-specific dependencies, and the old opaque aggregators are gone
+  3. `cargo hack check --each-feature` (or equivalent) passes for every feature combination the CI matrix enumerates
+  4. A sync-only consumer (no tokio) can call `from_system()` without pulling an async runtime into its dependency graph — verified by a test harness built with `--no-default-features` and only sync features enabled
+**Plans**: TBD
+
+### Phase 82: Icon API Rework
+**Goal**: The 13 icon-loading functions collapse into a single `IconLoader::new().role(...).size(...).theme(...).load()` builder with an `impl Into<IconId>` constructor; `IconProvider::icon_svg` and `IconData::Svg` both migrate to `Cow<'static, [u8]>` to eliminate the `Vec<u8>` copy on bundled loads and remove the `&'static [u8]` lifetime lock; `IconRole` gains a kebab-case `name()` method with an `impl Display` delegate; a drift-guard test covers `IconSet::from_name` / `name` round-trip
+**Depends on**: Phase 68
+**Requirements**: ICON-01, ICON-02, ICON-03, ICON-04, ICON-06, ICON-07
+**Success Criteria** (what must be TRUE):
+  1. `IconLoader::new().role(IconRole::ActionSave).size(32).theme(IconSet::Freedesktop).load()` returns the expected `IconData` for every platform, and the old 13 standalone functions no longer exist as public API
+  2. `IconProvider::icon_svg` returns `Cow<'static, [u8]>`, and a test confirms bundled icon loads produce `Cow::Borrowed` (zero allocation) while runtime icons produce `Cow::Owned`
+  3. `IconRole::ActionSave.name()` returns `"action-save"` and `format!("{}", IconRole::ActionSave) == "action-save"` — `Display` delegates to `name()`, not `Debug::fmt`
+  4. A drift-guard test asserts `IconSet::from_name(set.name()) == Some(set)` for every variant — if a new variant is added without updating `from_name`, the test fails
+  5. The freedesktop size-24 hardcode is gone: `IconLoader::new().role(...).size(48).load()` on Linux requests a 48px icon from the freedesktop spec, not a 24px icon
+**Plans**: TBD
+
+### Phase 83: Detection Cache Layer
+**Goal**: Global `OnceLock` caches in `detect` and `model/icons` are replaced by a `DetectionContext` backed by `arc_swap::ArcSwapOption<T>` — callers get "cache on first read" for convenience and "force re-read on demand" for watchers that need fresh data; `detect_linux_desktop()` gains a no-arg convenience overload that removes the current two-call idiom
+**Depends on**: Phase 68
+**Requirements**: DETECT-01, DETECT-02
+**Success Criteria** (what must be TRUE):
+  1. `DetectionContext` struct exists, provides `linux_desktop()`, `is_dark()`, `prefers_reduced_motion()` with transparent first-call caching, and a `invalidate()` method that forces the next call to re-read
+  2. A test confirms `ctx.linux_desktop()` reads the environment once and returns the cached result on subsequent calls, and that after `ctx.invalidate_linux_desktop()` the next call re-reads
+  3. `detect_linux_desktop()` with no arguments compiles and returns a `LinuxDesktop` — no two-call `let env = ...; detect_linux_desktop(&env)` idiom required
+  4. A `grep -c OnceLock src/detect.rs src/model/icons.rs` returns zero — all global caching has moved to `DetectionContext`
+**Plans**: TBD
+
+### Phase 84: Reader Output Contract Homogenisation
+**Goal**: The four platform readers share a unified `ReaderOutput` contract that expresses single-vs-dual variant semantics explicitly — `ReaderOutput::Single(ThemeMode)` for GNOME/KDE/Windows (the OS only reports the active mode), `ReaderOutput::Dual { light, dark }` for macOS (both modes readable), and the type flows through `run_pipeline` alongside the `OverlaySource` added in Phase 78
+**Depends on**: Phase 78 (needs `OverlaySource` in place)
+**Requirements**: READER-01
+**Success Criteria** (what must be TRUE):
+  1. `ReaderOutput` enum exists with `Single(ThemeMode)` and `Dual { light: ThemeMode, dark: ThemeMode }` variants; all four platform readers return it
+  2. `run_pipeline` accepts `ReaderOutput` and `OverlaySource` and produces a `SystemTheme` without any per-platform branching logic in the pipeline itself
+  3. A test confirms that the macOS `Dual` path populates both `sys.light` and `sys.dark` from a single reader call, while the KDE `Single` path populates only the active mode
+  4. The previously-scattered "does this reader return both variants?" comments are gone — the type system expresses the contract
+**Plans**: TBD
+
+### Phase 85: Data Model Method and Doc Cleanup
+**Goal**: `ThemeMode::resolve*` intermediates are demoted to `#[doc(hidden)] pub` so integration tests still reach them but rustdoc stops advertising them; `Theme`'s method grab-bag is cleaned up (including the coordinated removal of `from_toml_with_base` and the `error.rs:63` hint message); `ThemeWatcher` internals and constructor split are documented with a rename if the old name no longer fits; `FontSize::Px(v).to_px(dpi)` is renamed to `to_logical_px` so the DPI parameter stops being silently ignored in the `Px` branch
+**Depends on**: Phase 77 (after the rename lands so docs reference the new names)
+**Requirements**: MODEL-04, MODEL-05, NAME-02, NAME-03
+**Success Criteria** (what must be TRUE):
+  1. `cargo doc --no-deps` for `native_theme::theme::ThemeMode` does not list the `resolve_*` intermediate methods, but `ThemeMode::resolve_intermediate_for_tests()` or equivalent still compiles from an integration test (`#[doc(hidden)] pub` confirmed)
+  2. `from_toml_with_base` is gone and the `error.rs:63` hint message no longer references it — the hint points callers to the new intended path
+  3. `FontSize::Px(v).to_logical_px(dpi)` exists, and a doctest asserts that the DPI parameter is still respected for the `Pt` branch while the `Px` branch returns `v` unchanged — the rename makes the asymmetry obvious at the call site
+  4. `ThemeWatcher`'s internals and constructor split have a module-level doc block explaining the RAII ownership model, the shutdown mechanism, and why the public constructor is the way it is
+**Plans**: TBD
+
+### Phase 86: Validation and Lint Codegen Polish
+**Goal**: `lint_toml` is driven by the `inventory::submit!` widget registry entries from Phase 80 instead of the ~215 hand-maintained string literals; `check_ranges` stops eager `format!` path-string construction so the fast path (everything in range) allocates zero path strings
+**Depends on**: Phase 80 (needs the `inventory::submit!` registry)
+**Requirements**: VALID-03, VALID-04
+**Success Criteria** (what must be TRUE):
+  1. `lint_toml` iterates `inventory::iter::<WidgetRegistration>()` to discover valid widget field names; a `grep -c "\"button\"\\|\"slider\"\\|\"textinput\"" src/lint_toml.rs` returns zero
+  2. Adding a new widget via the derive macro in Phase 80 automatically teaches `lint_toml` about it — verified by a test that registers a dummy widget and confirms `lint_toml` rejects an unknown field on the new widget
+  3. Benchmark (or counted allocation test) confirms that `check_ranges` on a valid `ThemeMode` allocates zero path strings — strings are allocated lazily only when a range error is reported
+  4. All existing range-check tests still pass with the lazy allocation path
+**Plans**: TBD
+
+### Phase 87: Font Family Arc<str> and AnimatedIcon Invariants
+**Goal**: `FontSpec::family` migrates from `String` to `Arc<str>` across the core widget × connector leak surface (needs `serde rc` feature flag; gpui and iced connector `.family` access updated in lockstep); `AnimatedIcon`'s public fields are replaced with newtype wrappers that enforce construction invariants, so users cannot construct an invalid `AnimatedIcon` by assigning to public fields
+**Depends on**: Phase 77 (after the type rename lands so `Theme`/`ThemeMode` paths are stable)
+**Requirements**: LAYOUT-03, LAYOUT-04
+**Success Criteria** (what must be TRUE):
+  1. `FontSpec::family` is `Arc<str>`, serde serialization uses the `rc` feature, and `cargo test --all-features` passes in core, `native-theme-gpui`, and `native-theme-iced`
+  2. A benchmark (or allocation-counting test) confirms that cloning a `FontSpec` across widgets no longer clones the underlying family string — the `Arc<str>` is shared
+  3. `AnimatedIcon::Frames { frames, duration, .. }` field access is replaced with a constructor (`AnimatedIcon::frames(frames, duration)?`) that returns `Result` on invalid input (e.g., empty frame list, zero duration)
+  4. Attempting `AnimatedIcon::Frames { frames: vec![], duration: Duration::ZERO, .. }` fails to compile because the fields are no longer directly accessible — invariants are enforced by construction
+**Plans**: TBD
+**UI hint**: yes
+
+### Phase 88: Diagnostic and Preset-Polish Sweep
+**Goal**: `diagnose_platform_support` returns a structured `Vec<DiagnosticEntry>` instead of a `Vec<String>`; `platform_preset_name` returns structured data instead of leaking the internal `-live` naming convention; `FontSpec::style` default-consistency is documented (or corrected); the `defaults.border.padding` derives-from-presence rule is documented or corrected as part of the BORDER-01 follow-up; bundled preset `name` and `icon_theme` are stored as `Cow<'static, str>` to avoid the owned-String allocation on every preset load
+**Depends on**: Phase 79 (after the BorderSpec split so POLISH-05 can document the final rule)
+**Requirements**: POLISH-01, POLISH-02, POLISH-04, POLISH-05, POLISH-06
+**Success Criteria** (what must be TRUE):
+  1. `diagnose_platform_support()` returns `Vec<DiagnosticEntry>` where each entry has a `name`, `status`, and optional `detail` field — a doctest shows formatting the output as a table
+  2. `platform_preset_name()` returns a struct with a `name: &'static str` and `is_live: bool` field — the `-live` suffix is no longer embedded in a concatenated string
+  3. A doctest loads `preset("default")` and confirms `preset.name.is_borrowed()` — bundled presets skip the owned-String allocation via `Cow::Borrowed`
+  4. The `FontSpec::style` default behaviour is either documented in a rustdoc block (if kept as-is) or corrected to error like its siblings (if changed); likewise `defaults.border.padding` derives-from-presence
+  5. A `grep -c "\\-live" src/` returns zero — the internal naming convention is no longer leaking into user-facing strings
+**Plans**: TBD
+
 ## Progress
 
-**Execution Order:**
-Phases execute in numeric order: 61 -> 62 -> 63 -> 64 -> 65 -> 66 -> 67
-Note: Phases 62, 63, and 64 can run in parallel after Phase 61 completes (62 depends on 61; 63 and 64 are fully independent). Phases 66 and 67 can run in parallel after Phase 65 completes.
+**Execution Order (v0.5.7):**
+
+Phases execute in numeric order 69 → 88 with the following parallelism hints:
+- Phases 69, 70, 73, 74, 75, 76, 82, 83 are independent of each other (only depend on Phase 68) and can run in parallel
+- Phase 72 must land after Phase 69 (the CLEAN-02 mutex simplification requires BUG-03's "resolve() is pure" guarantee)
+- Phase 71 must land after Phase 70 (Error restructure builds on the Clone removal)
+- Phase 77 must land after Phase 76 (API changes build on the rename)
+- Phase 78 must land after Phase 77 (OverlaySource/font_dpi relocation builds on `pick(ColorMode)` and `Theme.icon_set`)
+- Phase 79 must land after Phase 78 (border split lands on the post-accessibility model)
+- Phase 80 must land after Phases 79 and 71 (proc-macro needs the clean border target + the new Error shape)
+- Phase 81 must land after Phase 80 (feature-matrix cleanup absorbs every other change — ships last)
+- Phase 84 must land after Phase 78 (needs `OverlaySource` in place)
+- Phase 85, 87 must land after Phase 77 (after the rename)
+- Phase 86 must land after Phase 80 (needs the `inventory::submit!` registry)
+- Phase 88 must land after Phase 79 (POLISH-05 documents the final BorderSpec rule)
+
+**Ship-unit atomicity constraints honoured:**
+- Unit 1 (atomic): BUG-03 + BUG-04 + BUG-05 → Phase 69
+- Unit 2 (atomic): BUG-01 + BUG-02 + ERR-02 → Phase 71
+- Unit 3 (atomic): ERR-01 + CLEAN-01 → Phase 70
+- Unit 4 (after Unit 1): CLEAN-02 → Phase 72
+- Unit 5: WATCH-01 + WATCH-02 → Phase 73
+- Unit 6 (split): COLOR-01 + POLISH-03 → Phase 74; LAYOUT-02 + WATCH-03 + ICON-05 → Phase 75
+- Unit 7 (split): NAME-01 + LAYOUT-01 → Phase 76; MODEL-03 + MODEL-06 → Phase 77
+- Unit 8 (atomic): MODEL-02 + ACCESS-01 + ACCESS-02 → Phase 78
+- Unit 9: BORDER-01 + CLEAN-03 + READER-02 → Phase 79
+- Unit 10: MODEL-01 + VALID-01 + VALID-02 + BORDER-02 → Phase 80
+- Unit 11 (atomic): FEATURE-01 + FEATURE-02 + FEATURE-03 → Phase 81
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
@@ -264,11 +541,24 @@ Note: Phases 62, 63, and 64 can run in parallel after Phase 61 completes (62 dep
 | 33-43 | v0.4.1 | 22/22 | Complete | 2026-03-21 |
 | 44-48 | v0.5.0 | 17/17 | Complete | 2026-03-29 |
 | 49-60 | v0.5.5 | 41/41 | Complete | 2026-04-09 |
-| 61. lib.rs Module Split | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
-| 62. Validate Codegen | v0.5.6 | 3/3 | Complete   | 2026-04-09 |
-| 63. KDE Reader Fixture Tests | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
-| 64. Cross-Platform Reader Test Separation | v0.5.6 | 1/1 | Complete   | 2026-04-09 |
-| 65. ThemeWatcher Core API | v0.5.6 | 1/1 | Complete   | 2026-04-09 |
-| 66. Linux Watchers | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
-| 67. macOS and Windows Watchers | v0.5.6 | 2/2 | Complete   | 2026-04-09 |
-| 68. GTK Symbolic Icon Recoloring | v0.5.6 | 1/1 | Complete   | 2026-04-10 |
+| 61-68 | v0.5.6 | 14/14 | Complete | 2026-04-10 |
+| 69. Resolver-Level button_order Unlock | v0.5.7 | 0/0 | Not started | — |
+| 70. Drop Error::Clone Bound | v0.5.7 | 0/0 | Not started | — |
+| 71. Error Restructure and Validation Split | v0.5.7 | 0/0 | Not started | — |
+| 72. ENV_MUTEX Test Simplification | v0.5.7 | 0/0 | Not started | — |
+| 73. ThemeChangeEvent Cleanup | v0.5.7 | 0/0 | Not started | — |
+| 74. Rgba Polish and must_use Uniformity | v0.5.7 | 0/0 | Not started | — |
+| 75. LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal | v0.5.7 | 0/0 | Not started | — |
+| 76. Type Vocabulary Rename and Crate Root Partition | v0.5.7 | 0/0 | Not started | — |
+| 77. SystemTheme API and icon_set Relocation | v0.5.7 | 0/0 | Not started | — |
+| 78. OverlaySource, AccessibilityPreferences, font_dpi Relocation | v0.5.7 | 0/0 | Not started | — |
+| 79. BorderSpec Split and Platform Reader Visibility Audit | v0.5.7 | 0/0 | Not started | — |
+| 80. native-theme-derive Proc-Macro K Codegen | v0.5.7 | 0/0 | Not started | — |
+| 81. Feature-Matrix Cleanup and Unified from_system | v0.5.7 | 0/0 | Not started | — |
+| 82. Icon API Rework | v0.5.7 | 0/0 | Not started | — |
+| 83. Detection Cache Layer | v0.5.7 | 0/0 | Not started | — |
+| 84. Reader Output Contract Homogenisation | v0.5.7 | 0/0 | Not started | — |
+| 85. Data Model Method and Doc Cleanup | v0.5.7 | 0/0 | Not started | — |
+| 86. Validation and Lint Codegen Polish | v0.5.7 | 0/0 | Not started | — |
+| 87. Font Family Arc<str> and AnimatedIcon Invariants | v0.5.7 | 0/0 | Not started | — |
+| 88. Diagnostic and Preset-Polish Sweep | v0.5.7 | 0/0 | Not started | — |

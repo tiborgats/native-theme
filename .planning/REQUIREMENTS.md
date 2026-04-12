@@ -149,89 +149,115 @@ Per `docs/todo_v0.5.7_native-theme-api-2.md` §G post-script — the v0.5.7 work
 
 ## Traceability
 
-Which phases cover which requirements. Updated during roadmap creation.
+Which phases cover which requirements. Filled in during roadmap creation (2026-04-12).
 
 | Requirement | Priority | Source | Phase | Status |
 |-------------|----------|--------|-------|--------|
-| BUG-01 | P0 | doc 2 A2 | — | Pending |
-| BUG-02 | P0 | doc 2 A3 | — | Pending |
-| BUG-03 | P0 | doc 2 A4 | — | Pending |
-| BUG-04 | P0 | doc 2 D5 | — | Pending |
-| BUG-05 | P0 | doc 2 M1 | — | Pending |
-| NAME-01 | P0 | doc 1 §1 | — | Pending |
-| NAME-02 | P3 | doc 1 §21 | — | Pending |
-| NAME-03 | P3 | doc 1 §25 | — | Pending |
-| ERR-01 | P0 | doc 1 §6a + doc 2 L1 | — | Pending |
-| ERR-02 | P1 | doc 1 §6b/c/d | — | Pending |
-| MODEL-01 | P1 | doc 1 §2 | — | Pending |
-| MODEL-02 | P0 | doc 1 §3 | — | Pending |
-| MODEL-03 | P0 | doc 1 §4 | — | Pending |
-| MODEL-04 | P1 | doc 1 §7 | — | Pending |
-| MODEL-05 | P1 | doc 1 §15 | — | Pending |
-| MODEL-06 | P0 | doc 1 §20 | — | Pending |
-| ACCESS-01 | P0 | doc 2 B4 | — | Pending |
-| ACCESS-02 | P1 | doc 2 B5 | — | Pending |
-| BORDER-01 | P0 | doc 2 B6 | — | Pending |
-| BORDER-02 | P2 | doc 2 B7 | — | Pending |
-| VALID-01 | P1 | doc 2 B1 | — | Pending |
-| VALID-02 | P1 | doc 2 B2 | — | Pending |
-| VALID-03 | P3 | doc 1 §14 | — | Pending |
-| VALID-04 | P2 | doc 2 D3 | — | Pending |
-| READER-01 | P1 | doc 2 B3 | — | Pending |
-| READER-02 | P1 | doc 2 C6 | — | Pending |
-| WATCH-01 | P0 | doc 2 C1 | — | Pending |
-| WATCH-02 | P0 | doc 2 C2 | — | Pending |
-| WATCH-03 | P0 | doc 1 §22 | — | Pending |
-| ICON-01 | P1 | doc 1 §8 | — | Pending |
-| ICON-02 | P3 | doc 1 §9 | — | Pending |
-| ICON-03 | P2 | doc 1 §10 | — | Pending |
-| ICON-04 | P2 | doc 1 §11 | — | Pending |
-| ICON-05 | P0 | doc 1 §17 | — | Pending |
-| ICON-06 | P3 | doc 1 §18 | — | Pending |
-| ICON-07 | P3 | doc 1 §33 F1 | — | Pending |
-| LAYOUT-01 | P0 | doc 1 §12 | — | Pending |
-| LAYOUT-02 | P0 | doc 1 §19 | — | Pending |
-| LAYOUT-03 | P1 | doc 2 C3 | — | Pending |
-| LAYOUT-04 | P1 | doc 2 C4 | — | Pending |
-| COLOR-01 | P0 | doc 1 §16 | — | Pending |
-| DETECT-01 | P2 | doc 1 §13 | — | Pending |
-| DETECT-02 | P2 | doc 2 C5 | — | Pending |
-| FEATURE-01 | P2 | doc 1 §5 Option G | — | Pending |
-| FEATURE-02 | P2 | doc 2 L4 | — | Pending |
-| FEATURE-03 | P2 | doc 1 §31.3 | — | Pending |
-| POLISH-01 | P2 | doc 1 §23 | — | Pending |
-| POLISH-02 | P2 | doc 1 §24 | — | Pending |
-| POLISH-03 | P3 | doc 1 §26 + §33 F3 | — | Pending |
-| POLISH-04 | P3 | doc 2 D1 | — | Pending |
-| POLISH-05 | P3 | doc 2 D2 | — | Pending |
-| POLISH-06 | P2 | doc 2 D4 | — | Pending |
-| CLEAN-01 | P0 | doc 2 L1 | — | Pending |
-| CLEAN-02 | P1 | doc 2 L2 | — | Pending |
-| CLEAN-03 | P1 | doc 2 L3 | — | Pending |
+| BUG-01 | P0 | doc 2 A2 | Phase 71 | Pending |
+| BUG-02 | P0 | doc 2 A3 | Phase 71 | Pending |
+| BUG-03 | P0 | doc 2 A4 | Phase 69 | Pending |
+| BUG-04 | P0 | doc 2 D5 | Phase 69 | Pending |
+| BUG-05 | P0 | doc 2 M1 | Phase 69 | Pending |
+| NAME-01 | P0 | doc 1 §1 | Phase 76 | Pending |
+| NAME-02 | P3 | doc 1 §21 | Phase 85 | Pending |
+| NAME-03 | P3 | doc 1 §25 | Phase 85 | Pending |
+| ERR-01 | P0 | doc 1 §6a + doc 2 L1 | Phase 70 | Pending |
+| ERR-02 | P1 | doc 1 §6b/c/d | Phase 71 | Pending |
+| MODEL-01 | P1 | doc 1 §2 | Phase 80 | Pending |
+| MODEL-02 | P0 | doc 1 §3 | Phase 78 | Pending |
+| MODEL-03 | P0 | doc 1 §4 | Phase 77 | Pending |
+| MODEL-04 | P1 | doc 1 §7 | Phase 85 | Pending |
+| MODEL-05 | P1 | doc 1 §15 | Phase 85 | Pending |
+| MODEL-06 | P0 | doc 1 §20 | Phase 77 | Pending |
+| ACCESS-01 | P0 | doc 2 B4 | Phase 78 | Pending |
+| ACCESS-02 | P1 | doc 2 B5 | Phase 78 | Pending |
+| BORDER-01 | P0 | doc 2 B6 | Phase 79 | Pending |
+| BORDER-02 | P2 | doc 2 B7 | Phase 80 | Pending |
+| VALID-01 | P1 | doc 2 B1 | Phase 80 | Pending |
+| VALID-02 | P1 | doc 2 B2 | Phase 80 | Pending |
+| VALID-03 | P3 | doc 1 §14 | Phase 86 | Pending |
+| VALID-04 | P2 | doc 2 D3 | Phase 86 | Pending |
+| READER-01 | P1 | doc 2 B3 | Phase 84 | Pending |
+| READER-02 | P1 | doc 2 C6 | Phase 79 | Pending |
+| WATCH-01 | P0 | doc 2 C1 | Phase 73 | Pending |
+| WATCH-02 | P0 | doc 2 C2 | Phase 73 | Pending |
+| WATCH-03 | P0 | doc 1 §22 | Phase 75 | Pending |
+| ICON-01 | P1 | doc 1 §8 | Phase 82 | Pending |
+| ICON-02 | P3 | doc 1 §9 | Phase 82 | Pending |
+| ICON-03 | P2 | doc 1 §10 | Phase 82 | Pending |
+| ICON-04 | P2 | doc 1 §11 | Phase 82 | Pending |
+| ICON-05 | P0 | doc 1 §17 | Phase 75 | Pending |
+| ICON-06 | P3 | doc 1 §18 | Phase 82 | Pending |
+| ICON-07 | P3 | doc 1 §33 F1 | Phase 82 | Pending |
+| LAYOUT-01 | P0 | doc 1 §12 | Phase 76 | Pending |
+| LAYOUT-02 | P0 | doc 1 §19 | Phase 75 | Pending |
+| LAYOUT-03 | P1 | doc 2 C3 | Phase 87 | Pending |
+| LAYOUT-04 | P1 | doc 2 C4 | Phase 87 | Pending |
+| COLOR-01 | P0 | doc 1 §16 | Phase 74 | Pending |
+| DETECT-01 | P2 | doc 1 §13 | Phase 83 | Pending |
+| DETECT-02 | P2 | doc 2 C5 | Phase 83 | Pending |
+| FEATURE-01 | P2 | doc 1 §5 Option G | Phase 81 | Pending |
+| FEATURE-02 | P2 | doc 2 L4 | Phase 81 | Pending |
+| FEATURE-03 | P2 | doc 1 §31.3 | Phase 81 | Pending |
+| POLISH-01 | P2 | doc 1 §23 | Phase 88 | Pending |
+| POLISH-02 | P2 | doc 1 §24 | Phase 88 | Pending |
+| POLISH-03 | P3 | doc 1 §26 + §33 F3 | Phase 74 | Pending |
+| POLISH-04 | P3 | doc 2 D1 | Phase 88 | Pending |
+| POLISH-05 | P3 | doc 2 D2 | Phase 88 | Pending |
+| POLISH-06 | P2 | doc 2 D4 | Phase 88 | Pending |
+| CLEAN-01 | P0 | doc 2 L1 | Phase 70 | Pending |
+| CLEAN-02 | P1 | doc 2 L2 | Phase 72 | Pending |
+| CLEAN-03 | P1 | doc 2 L3 | Phase 79 | Pending |
 
 **Coverage:**
 - v0.5.7 requirements: 55 total
-- Mapped to phases: 0
-- Unmapped: 55 ⚠️ (to be filled by roadmapper)
+- Mapped to phases: 55
+- Unmapped: 0 ✓
+
+**Phase → Requirement counts:**
+
+| Phase | Ship Unit | Requirement Count | Requirements |
+|-------|-----------|-------------------|--------------|
+| 69 | 1 (atomic) | 3 | BUG-03, BUG-04, BUG-05 |
+| 70 | 3 (atomic) | 2 | ERR-01, CLEAN-01 |
+| 71 | 2 (atomic) | 3 | BUG-01, BUG-02, ERR-02 |
+| 72 | 4 | 1 | CLEAN-02 |
+| 73 | 5 | 2 | WATCH-01, WATCH-02 |
+| 74 | 6 (part A) | 2 | COLOR-01, POLISH-03 |
+| 75 | 6 (part B) | 3 | LAYOUT-02, WATCH-03, ICON-05 |
+| 76 | 7 (part A) | 2 | NAME-01, LAYOUT-01 |
+| 77 | 7 (part B) | 2 | MODEL-03, MODEL-06 |
+| 78 | 8 (atomic) | 3 | MODEL-02, ACCESS-01, ACCESS-02 |
+| 79 | 9 | 3 | BORDER-01, CLEAN-03, READER-02 |
+| 80 | 10 | 4 | MODEL-01, VALID-01, VALID-02, BORDER-02 |
+| 81 | 11 (atomic) | 3 | FEATURE-01, FEATURE-02, FEATURE-03 |
+| 82 | — | 6 | ICON-01, ICON-02, ICON-03, ICON-04, ICON-06, ICON-07 |
+| 83 | — | 2 | DETECT-01, DETECT-02 |
+| 84 | — | 1 | READER-01 |
+| 85 | — | 4 | MODEL-04, MODEL-05, NAME-02, NAME-03 |
+| 86 | — | 2 | VALID-03, VALID-04 |
+| 87 | — | 2 | LAYOUT-03, LAYOUT-04 |
+| 88 | — | 5 | POLISH-01, POLISH-02, POLISH-04, POLISH-05, POLISH-06 |
+| **Total** | — | **55** | — |
 
 **Ship-unit bundling constraints** (from doc 1 §33.13 + doc 2 §L.5):
 
-| Ship Unit | Atomic? | Requirements |
-|-----------|---------|--------------|
-| Unit 1 | **Yes** | BUG-03 + BUG-04 + BUG-05 (M1 + D5 + A4) |
-| Unit 2 | **Yes** | BUG-01 + BUG-02 + ERR-02 (A2 + A3 + §6 restructure) |
-| Unit 3 | **Yes** | ERR-01 + CLEAN-01 (§6a four-item) |
-| Unit 4 | No (after Unit 1) | CLEAN-02 (L2 test simplification) |
-| Unit 5 | No | WATCH-01 + WATCH-02 (C1 + C2) |
-| Unit 6 | No | COLOR-01 + ICON-05 + LAYOUT-02 + WATCH-03 + POLISH-03 (§16/17/19/22/26 polish) |
-| Unit 7 | No (large refactor) | NAME-01 + LAYOUT-01 + MODEL-03 + MODEL-06 (§1/12/4/20) |
-| Unit 8 | **Yes** | MODEL-02 + ACCESS-02 + ACCESS-01 (§3 + B5 + B4) |
-| Unit 9 | No | BORDER-01 + CLEAN-03 + READER-02 (B6 + L3 + C6) |
-| Unit 10 | No | MODEL-01 + VALID-01 + VALID-02 + BORDER-02 (minimum-viable K codegen) |
-| Unit 11 | **Yes** | FEATURE-01 + FEATURE-02 + FEATURE-03 (§5 G + L4 + §31.3) |
+| Ship Unit | Atomic? | Requirements | Phase |
+|-----------|---------|--------------|-------|
+| Unit 1 | **Yes** | BUG-03 + BUG-04 + BUG-05 (M1 + D5 + A4) | Phase 69 |
+| Unit 2 | **Yes** | BUG-01 + BUG-02 + ERR-02 (A2 + A3 + §6 restructure) | Phase 71 |
+| Unit 3 | **Yes** | ERR-01 + CLEAN-01 (§6a four-item) | Phase 70 |
+| Unit 4 | No (after Unit 1) | CLEAN-02 (L2 test simplification) | Phase 72 |
+| Unit 5 | No | WATCH-01 + WATCH-02 (C1 + C2) | Phase 73 |
+| Unit 6 | No | COLOR-01 + ICON-05 + LAYOUT-02 + WATCH-03 + POLISH-03 (§16/17/19/22/26 polish) | Phases 74, 75 |
+| Unit 7 | No (large refactor) | NAME-01 + LAYOUT-01 + MODEL-03 + MODEL-06 (§1/12/4/20) | Phases 76, 77 |
+| Unit 8 | **Yes** | MODEL-02 + ACCESS-02 + ACCESS-01 (§3 + B5 + B4) | Phase 78 |
+| Unit 9 | No | BORDER-01 + CLEAN-03 + READER-02 (B6 + L3 + C6) | Phase 79 |
+| Unit 10 | No | MODEL-01 + VALID-01 + VALID-02 + BORDER-02 (minimum-viable K codegen) | Phase 80 |
+| Unit 11 | **Yes** | FEATURE-01 + FEATURE-02 + FEATURE-03 (§5 G + L4 + §31.3) | Phase 81 |
 
-Requirements not assigned to a ship unit are P1/P2/P3 follow-ups handled as individual phases or bundled per roadmapper judgement.
+Requirements not assigned to a ship unit are P1/P2/P3 follow-ups bundled thematically in Phases 82–88.
 
 ---
 *Requirements defined: 2026-04-12*
-*Last updated: 2026-04-12 after v0.5.7 milestone start*
+*Last updated: 2026-04-12 — roadmap created, all 55 requirements mapped to Phases 69–88*
