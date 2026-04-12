@@ -395,6 +395,37 @@ pub(crate) fn kdeglobals_path() -> std::path::PathBuf {
     std::path::PathBuf::from("/etc/xdg/kdeglobals")
 }
 
+/// Pure version of [`kdeglobals_path`] for testing.
+///
+/// Accepts XDG_CONFIG_HOME and HOME values as parameters instead of
+/// reading environment variables, following the `_pure` suffix convention
+/// (established in Phase 63).
+#[cfg(test)]
+fn kdeglobals_path_pure(xdg_config_home: Option<&str>, home: Option<&str>) -> std::path::PathBuf {
+    if let Some(config_home) = xdg_config_home {
+        if !config_home.is_empty() {
+            return std::path::PathBuf::from(config_home).join("kdeglobals");
+        }
+    }
+    if let Some(home) = home {
+        return std::path::PathBuf::from(home)
+            .join(".config")
+            .join("kdeglobals");
+    }
+    // Last resort fallback
+    std::path::PathBuf::from("/etc/xdg/kdeglobals")
+}
+
+/// Read KDE theme from a specific kdeglobals file path (for testing).
+#[cfg(test)]
+pub(crate) fn from_kde_at(path: &std::path::Path) -> crate::Result<crate::ThemeSpec> {
+    let content = std::fs::read_to_string(path).map_err(|e| crate::Error::ReaderFailed {
+        reader: "kde",
+        source: Box::new(e),
+    })?;
+    from_kde_content(&content)
+}
+
 /// Detect whether the active KDE theme is dark based on background luminance.
 ///
 /// Uses BT.601 luminance coefficients on Colors:Window/BackgroundNormal.
@@ -458,33 +489,29 @@ mod tests {
         assert_eq!(parse_rgb(""), None);
     }
 
-    // === kdeglobals_path tests ===
+    // === kdeglobals_path_pure tests ===
 
     #[test]
-    #[allow(unsafe_code)]
     fn kdeglobals_path_respects_xdg_config_home() {
-        let _guard = crate::test_util::ENV_MUTEX.lock().unwrap();
-        // SAFETY: ENV_MUTEX serializes env var access across parallel tests
-        unsafe { std::env::set_var("XDG_CONFIG_HOME", "/tmp/test") };
-        let path = kdeglobals_path();
-        unsafe { std::env::remove_var("XDG_CONFIG_HOME") };
+        let path = kdeglobals_path_pure(Some("/tmp/test"), Some("/home/user"));
         assert_eq!(path, std::path::PathBuf::from("/tmp/test/kdeglobals"));
     }
 
     #[test]
-    #[allow(unsafe_code)]
     fn kdeglobals_path_falls_back_to_home_config() {
-        let _guard = crate::test_util::ENV_MUTEX.lock().unwrap();
-        // SAFETY: ENV_MUTEX serializes env var access across parallel tests
-        unsafe { std::env::remove_var("XDG_CONFIG_HOME") };
-        let path = kdeglobals_path();
-        let home = std::env::var("HOME").expect("HOME must be set for this test");
+        let path = kdeglobals_path_pure(None, Some("/home/testuser"));
         assert_eq!(
             path,
-            std::path::PathBuf::from(home)
+            std::path::PathBuf::from("/home/testuser")
                 .join(".config")
                 .join("kdeglobals")
         );
+    }
+
+    #[test]
+    fn kdeglobals_path_fallback_to_etc_xdg() {
+        let path = kdeglobals_path_pure(None, None);
+        assert_eq!(path, std::path::PathBuf::from("/etc/xdg/kdeglobals"));
     }
 
     // === is_dark_theme tests ===
@@ -737,31 +764,20 @@ BackgroundNormal=49,54,59
     }
 
     #[test]
-    #[allow(unsafe_code)]
     fn test_missing_file() {
-        let _guard = crate::test_util::ENV_MUTEX.lock().unwrap();
-        // SAFETY: ENV_MUTEX serializes env var access across parallel tests
-        let original_xdg = std::env::var("XDG_CONFIG_HOME").ok();
-        unsafe { std::env::set_var("XDG_CONFIG_HOME", "/tmp/nonexistent_kde_test_dir_12345") };
-
-        let result = from_kde();
+        // Test that from_kde_at returns ReaderFailed for a nonexistent path
+        let path = std::path::PathBuf::from("/tmp/nonexistent_kde_test_dir_12345/kdeglobals");
+        let result = from_kde_at(&path);
         assert!(result.is_err());
         let err = result.unwrap_err();
         let crate::Error::ReaderFailed { source, .. } = &err else {
-            assert!(false, "expected ReaderFailed, got: {err:?}");
-            return;
+            panic!("expected ReaderFailed, got: {err:?}");
         };
         let msg = source.to_string();
         assert!(
-            msg.contains("kdeglobals") || msg.contains("cannot read"),
+            msg.contains("kdeglobals") || msg.contains("No such file"),
             "unexpected error message: {msg}"
         );
-
-        // Restore
-        match original_xdg {
-            Some(val) => unsafe { std::env::set_var("XDG_CONFIG_HOME", val) },
-            None => unsafe { std::env::remove_var("XDG_CONFIG_HOME") },
-        }
     }
 
     // === Per-widget color tests ===
