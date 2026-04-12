@@ -501,8 +501,6 @@ pub fn from_macos() -> crate::Result<crate::ThemeSpec> {
             // NSFont.pointSize() returns Apple points where 1pt = 1 logical pixel,
             // so the formula pt * 72/72 = pt (identity) is correct.
             v.defaults.font_dpi = Some(72.0);
-            // macOS uses leading affirmative (OK/Cancel) dialog button order.
-            v.dialog.button_order = Some(crate::DialogButtonOrder::PrimaryLeft);
         }
     }
 

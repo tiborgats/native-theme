@@ -8,7 +8,7 @@ pub mod fonts;
 pub mod metrics;
 
 use crate::Rgba;
-use crate::model::{DialogButtonOrder, IconSizes};
+use crate::model::IconSizes;
 
 /// Parse KDE kdeglobals content into a ThemeSpec without any I/O.
 ///
@@ -48,9 +48,6 @@ pub fn from_kde_content_pure(
     {
         variant.icon_theme = Some(theme_name);
     }
-
-    // Dialog button order: KDE uses leading affirmative (per project decision)
-    variant.dialog.button_order = Some(DialogButtonOrder::PrimaryLeft);
 
     let dark = is_dark_theme(&ini);
 
