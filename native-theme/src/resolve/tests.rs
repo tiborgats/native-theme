@@ -1782,6 +1782,48 @@ fn validate_catches_negative_infinity() {
     );
 }
 
+// ===== Validation split tests (BUG-01, BUG-02) =====
+
+#[test]
+fn validate_missing_field_short_circuits_before_range_checks() {
+    // BUG-01 fix: when a field is missing AND another field is out-of-range,
+    // validate() must return ResolutionIncomplete (not ResolutionInvalid)
+    // because the short-circuit fires before check_ranges runs.
+    let mut v = fully_populated_variant();
+    v.defaults.accent_color = None; // missing field
+    v.defaults.font.weight = Some(0); // out of range (100..=900)
+
+    let result = v.validate();
+    assert!(result.is_err());
+    let missing = match result.unwrap_err() {
+        crate::Error::ResolutionIncomplete { missing } => missing,
+        other => panic!("expected ResolutionIncomplete, got: {other:?}"),
+    };
+    assert!(
+        missing.contains(&"defaults.accent_color".to_string()),
+        "missing should contain defaults.accent_color, got: {missing:?}"
+    );
+}
+
+#[test]
+fn validate_range_only_errors_produce_resolution_invalid() {
+    // BUG-02 fix: when all fields are present but one is out-of-range,
+    // validate() returns ResolutionInvalid with structured RangeViolation.
+    let mut v = fully_populated_variant();
+    v.defaults.font.weight = Some(0); // out of range (100..=900)
+
+    let result = v.validate();
+    assert!(result.is_err());
+    let errors = match result.unwrap_err() {
+        crate::Error::ResolutionInvalid { errors } => errors,
+        other => panic!("expected ResolutionInvalid, got: {other:?}"),
+    };
+    assert!(
+        errors.iter().any(|rv| rv.path.contains("defaults.font.weight")),
+        "should contain RangeViolation for defaults.font.weight, got: {errors:?}"
+    );
+}
+
 // ===== Derivation chain tests (issues 17a, 17b, 17c) =====
 
 #[test]
