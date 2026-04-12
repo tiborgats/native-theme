@@ -399,8 +399,8 @@ Plans:
   4. A doctest shows loading a preset, reading `theme.icon_set`, and passing it to the icon loader — zero reference to the old location
 **Plans**: 2 plans
 Plans:
-- [ ] 71-01-PLAN.md � Rewrite Error enum per Option F with ErrorKind and RangeViolation
-- [ ] 71-02-PLAN.md � Two-vec validation split and caller migration
+- [ ] 77-01-PLAN.md � ColorMode enum + drop active() + pick(ColorMode) API
+- [ ] 77-02-PLAN.md � icon_set/icon_theme relocation from ThemeMode to Theme
 
 ### Phase 78: OverlaySource, AccessibilityPreferences, font_dpi Relocation
 **Goal**: `SystemTheme` no longer carries pre-resolve variant fields — overlays are re-played from an `OverlaySource` via `ResolutionContext`; accessibility preferences live on `SystemTheme` as a structured `AccessibilityPreferences`; `font_dpi` moves out of `ThemeDefaults` into `ResolutionContext` runtime data
