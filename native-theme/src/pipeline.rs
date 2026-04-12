@@ -305,9 +305,15 @@ pub(crate) fn from_linux() -> crate::Result<SystemTheme> {
             // GNOME sync path: no portal, just adwaita preset
             run_pipeline(ThemeSpec::preset("adwaita")?, preset, is_dark)
         }
-        LinuxDesktop::Xfce | LinuxDesktop::Cinnamon | LinuxDesktop::Mate | LinuxDesktop::LxQt => {
-            run_pipeline(ThemeSpec::preset("adwaita")?, preset, is_dark)
-        }
+        LinuxDesktop::Xfce
+        | LinuxDesktop::Cinnamon
+        | LinuxDesktop::Mate
+        | LinuxDesktop::LxQt
+        | LinuxDesktop::Hyprland
+        | LinuxDesktop::Sway
+        | LinuxDesktop::River
+        | LinuxDesktop::Niri
+        | LinuxDesktop::CosmicDe => run_pipeline(ThemeSpec::preset("adwaita")?, preset, is_dark),
         LinuxDesktop::Unknown => {
             #[cfg(feature = "kde")]
             {
@@ -398,9 +404,15 @@ pub(crate) async fn from_system_async_inner() -> crate::Result<SystemTheme> {
         LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
             run_pipeline(ThemeSpec::preset("adwaita")?, preset, is_dark)
         }
-        LinuxDesktop::Xfce | LinuxDesktop::Cinnamon | LinuxDesktop::Mate | LinuxDesktop::LxQt => {
-            run_pipeline(ThemeSpec::preset("adwaita")?, preset, is_dark)
-        }
+        LinuxDesktop::Xfce
+        | LinuxDesktop::Cinnamon
+        | LinuxDesktop::Mate
+        | LinuxDesktop::LxQt
+        | LinuxDesktop::Hyprland
+        | LinuxDesktop::Sway
+        | LinuxDesktop::River
+        | LinuxDesktop::Niri
+        | LinuxDesktop::CosmicDe => run_pipeline(ThemeSpec::preset("adwaita")?, preset, is_dark),
         LinuxDesktop::Unknown => {
             // Use D-Bus portal backend detection to refine heuristic
             #[cfg(feature = "portal")]
@@ -565,21 +577,39 @@ ForegroundLink=41,128,185";
         );
     }
 
-    // -- LNXDE-03: Hyprland, Sway, COSMIC map to Unknown --
+    // -- LNXDE-03: Hyprland, Sway, COSMIC, River, Niri map to their own variants --
 
     #[test]
-    fn detect_hyprland_returns_unknown() {
-        assert_eq!(detect_linux_de("Hyprland"), LinuxDesktop::Unknown);
+    fn detect_hyprland() {
+        assert_eq!(detect_linux_de("Hyprland"), LinuxDesktop::Hyprland);
     }
 
     #[test]
-    fn detect_sway_returns_unknown() {
-        assert_eq!(detect_linux_de("sway"), LinuxDesktop::Unknown);
+    fn detect_sway() {
+        assert_eq!(detect_linux_de("sway"), LinuxDesktop::Sway);
     }
 
     #[test]
-    fn detect_cosmic_returns_unknown() {
-        assert_eq!(detect_linux_de("COSMIC"), LinuxDesktop::Unknown);
+    fn detect_cosmic() {
+        assert_eq!(detect_linux_de("COSMIC"), LinuxDesktop::CosmicDe);
+    }
+
+    #[test]
+    fn detect_river() {
+        assert_eq!(detect_linux_de("river"), LinuxDesktop::River);
+    }
+
+    #[test]
+    fn detect_niri() {
+        assert_eq!(detect_linux_de("niri"), LinuxDesktop::Niri);
+    }
+
+    #[test]
+    fn detect_cosmic_full_desktop() {
+        assert_eq!(
+            detect_linux_de("COSMIC:Freedesktop"),
+            LinuxDesktop::CosmicDe
+        );
     }
 
     // -- Pure pipeline smoke test (replaces from_system env var test) --
