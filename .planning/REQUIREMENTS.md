@@ -34,7 +34,7 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 
 - [ ] **MODEL-01**: Doubled `Option<T>` / `Resolved<T>` struct hierarchy generated from one source — new `native-theme-derive` proc-macro crate (Option K) emits paired structs, `FIELD_NAMES` constants, `impl_merge!` bodies, `check_ranges` impls, and `inventory::submit!` widget registry entries (doc 1 §2)
 - [ ] **MODEL-02**: `SystemTheme` pre-resolve variant fields eliminated via `OverlaySource` replay model; `with_overlay()` rebuilds via `ResolutionContext` instead of storing pre-resolve copies (doc 1 §3)
-- [ ] **MODEL-03**: `SystemTheme::active()` dropped; `pick(ColorMode)` keeps; `SystemTheme.mode: ColorMode` field exposed (doc 1 §4 Option C + §32.3 G)
+- [x] **MODEL-03**: `SystemTheme::active()` dropped; `pick(ColorMode)` keeps; `SystemTheme.mode: ColorMode` field exposed (doc 1 §4 Option C + §32.3 G)
 - [ ] **MODEL-04**: `ThemeVariant::resolve*` method intermediates demoted to `#[doc(hidden)] pub` (Option B' preserves integration tests) (doc 1 §7)
 - [ ] **MODEL-05**: `ThemeSpec` (→ `Theme`) method grab-bag cleanup; `from_toml_with_base` removal coordinates with `error.rs:63` hint message (doc 1 §15)
 - [ ] **MODEL-06**: `icon_set` and `icon_theme` fields moved from the wrong type onto `Theme` (doc 1 §20)

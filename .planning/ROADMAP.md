@@ -399,7 +399,7 @@ Plans:
   4. A doctest shows loading a preset, reading `theme.icon_set`, and passing it to the icon loader — zero reference to the old location
 **Plans**: 2 plans
 Plans:
-- [ ] 77-01-PLAN.md � ColorMode enum + drop active() + pick(ColorMode) API
+- [x] 77-01-PLAN.md � ColorMode enum + drop active() + pick(ColorMode) API
 - [ ] 77-02-PLAN.md � icon_set/icon_theme relocation from ThemeMode to Theme
 
 ### Phase 78: OverlaySource, AccessibilityPreferences, font_dpi Relocation
@@ -609,7 +609,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 74. Rgba Polish and must_use Uniformity | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 75. LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 76. Type Vocabulary Rename and Crate Root Partition | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
-| 77. SystemTheme API and icon_set Relocation | v0.5.7 | 0/0 | Not started | — |
+| 77. SystemTheme API and icon_set Relocation | v0.5.7 | 1/2 | In Progress|  |
 | 78. OverlaySource, AccessibilityPreferences, font_dpi Relocation | v0.5.7 | 0/0 | Not started | — |
 | 79. BorderSpec Split and Platform Reader Visibility Audit | v0.5.7 | 0/0 | Not started | — |
 | 80. native-theme-derive Proc-Macro K Codegen | v0.5.7 | 0/0 | Not started | — |

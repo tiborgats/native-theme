@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 76 — type-vocabulary-rename-and-crate-root-partition
-Plan: 2/2 complete
-Status: Phase 76 complete — verified (1 SC override: SC#1a contradicted SC#4, partition chosen)
-Last activity: 2026-04-12 — Phase 76 verified, ready for Phase 77
+Phase: 77 — systemtheme-api-and-icon-set-relocation
+Plan: 1/2 complete
+Status: Plan 77-01 complete — ColorMode enum, SystemTheme API migrated
+Last activity: 2026-04-13 — Plan 77-01 executed (2 tasks, 2 commits)
 
-Progress: [██████████] 100% (28/28 plans complete)
+Progress: [██████████] 100% (29/30 plans complete)
 
 ## Accumulated Context
 
@@ -110,6 +110,10 @@ None. Phase 76 complete, ready to plan Phase 77.
 - [Phase 76-02]: pub(crate) use re-exports preserve internal crate::Type paths without rewriting 30+ internal files
 - [Phase 76-02]: pub mod theme { pub use crate::model::*; } inline facade for clean public API
 - [Phase 76-02]: native-theme-build codegen emits module-qualified paths (theme::, detect::) in generated code
+- [Phase 77-01]: ColorMode enum in model/mod.rs, re-exported via pub mod theme and pub(crate) use
+- [Phase 77-01]: GnomePortalData.is_dark kept as bool (internal D-Bus); conversion at pipeline boundary
+- [Phase 77-01]: Connector examples rename local ColorMode to AppColorMode to avoid collision
+- [Phase 77-01]: Connector from_preset/to_theme keep is_dark: bool params; convert internally to ColorMode
 
 ### Blockers/Concerns
 
@@ -122,6 +126,6 @@ None. Phase 76 complete, ready to plan Phase 77.
 
 ## Session Continuity
 
-Last session: 2026-04-12
-Stopped at: Phase 76 complete — verified, ready for Phase 77
-Resume file: .planning/phases/76-type-vocabulary-rename-and-crate-root-partition/76-VERIFICATION.md
+Last session: 2026-04-13
+Stopped at: Completed 77-01-PLAN.md — ready for 77-02
+Resume file: .planning/phases/77-systemtheme-api-and-icon-set-relocation/77-01-SUMMARY.md
