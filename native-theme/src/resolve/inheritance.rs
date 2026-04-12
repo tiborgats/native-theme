@@ -2,7 +2,7 @@
 
 use crate::model::border::BorderSpec;
 use crate::model::font::FontSize;
-use crate::model::{DialogButtonOrder, FontSpec, TextScaleEntry, ThemeVariant};
+use crate::model::{DialogButtonOrder, FontSpec, TextScaleEntry, ThemeMode};
 
 /// Resolve a per-widget font from defaults.
 /// If the widget font is None, clone defaults entirely.
@@ -108,7 +108,7 @@ pub(super) fn platform_button_order() -> DialogButtonOrder {
     DialogButtonOrder::PrimaryRight
 }
 
-impl ThemeVariant {
+impl ThemeMode {
     // --- Phase 1: Defaults internal chains ---
 
     pub(crate) fn resolve_defaults_internal(&mut self) {

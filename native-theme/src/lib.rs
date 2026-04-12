@@ -123,10 +123,10 @@ pub use model::{
     DialogButtonOrder, DialogTheme, ExpanderTheme, FontSize, FontSpec, FontStyle, IconData,
     IconProvider, IconRole, IconSet, IconSizes, InputTheme, LayoutTheme, LinkTheme, ListTheme,
     MenuTheme, PopoverTheme, ProgressBarTheme, ResolvedBorderSpec, ResolvedFontSpec,
-    ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedThemeDefaults,
-    ResolvedThemeVariant, ScrollbarTheme, SegmentedControlTheme, SeparatorTheme, SidebarTheme,
+    ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedDefaults,
+    ResolvedTheme, ScrollbarTheme, SegmentedControlTheme, SeparatorTheme, SidebarTheme,
     SliderTheme, SpinnerTheme, SplitterTheme, StatusBarTheme, SwitchTheme, TabTheme, TextScale,
-    TextScaleEntry, ThemeDefaults, ThemeSpec, ThemeVariant, ToolbarTheme, TooltipTheme,
+    TextScaleEntry, ThemeDefaults, Theme, ThemeMode, ToolbarTheme, TooltipTheme,
     TransformAnimation, WindowTheme, bundled_icon_by_name, bundled_icon_svg,
 };
 // icon helper functions re-exported from this module
@@ -215,13 +215,13 @@ pub struct SystemTheme {
     /// Whether the OS is currently in dark mode.
     pub is_dark: bool,
     /// Resolved light variant (always populated).
-    pub light: ResolvedThemeVariant,
+    pub light: ResolvedTheme,
     /// Resolved dark variant (always populated).
-    pub dark: ResolvedThemeVariant,
+    pub dark: ResolvedTheme,
     /// Pre-resolve light variant (retained for overlay support).
-    pub(crate) light_variant: ThemeVariant,
+    pub(crate) light_variant: ThemeMode,
     /// Pre-resolve dark variant (retained for overlay support).
-    pub(crate) dark_variant: ThemeVariant,
+    pub(crate) dark_variant: ThemeMode,
     /// The platform preset used (e.g., "kde-breeze", "adwaita", "macos-sonoma").
     pub preset: String,
     /// The live preset name used internally (e.g., "kde-breeze-live").
@@ -233,7 +233,7 @@ impl SystemTheme {
     ///
     /// If `is_dark` is true, returns `&self.dark`; otherwise `&self.light`.
     #[must_use]
-    pub fn active(&self) -> &ResolvedThemeVariant {
+    pub fn active(&self) -> &ResolvedTheme {
         if self.is_dark {
             &self.dark
         } else {
@@ -245,14 +245,14 @@ impl SystemTheme {
     ///
     /// `pick(true)` returns `&self.dark`, `pick(false)` returns `&self.light`.
     #[must_use]
-    pub fn pick(&self, is_dark: bool) -> &ResolvedThemeVariant {
+    pub fn pick(&self, is_dark: bool) -> &ResolvedTheme {
         if is_dark { &self.dark } else { &self.light }
     }
 
     /// Apply an app-level TOML overlay and re-resolve.
     ///
-    /// Merges the overlay onto the pre-resolve [`ThemeVariant`] (not the
-    /// already-resolved [`ResolvedThemeVariant`]) so that changed source fields
+    /// Merges the overlay onto the pre-resolve [`ThemeMode`] (not the
+    /// already-resolved [`ResolvedTheme`]) so that changed source fields
     /// propagate correctly through `resolve()`. For example, changing
     /// `defaults.accent_color` in the overlay will cause `button.primary_background`,
     /// `checkbox.checked_background`, `slider.fill`, etc. to be re-derived from
@@ -262,7 +262,7 @@ impl SystemTheme {
     ///
     /// ```no_run
     /// let system = native_theme::SystemTheme::from_system().unwrap();
-    /// let overlay = native_theme::ThemeSpec::from_toml(r##"
+    /// let overlay = native_theme::Theme::from_toml(r##"
     ///     [light.defaults]
     ///     accent_color = "#ff6600"
     ///     [dark.defaults]
@@ -272,7 +272,7 @@ impl SystemTheme {
     /// // customized.active().defaults.accent_color is now #ff6600
     /// // and all accent-derived fields are updated
     /// ```
-    pub fn with_overlay(&self, overlay: &ThemeSpec) -> crate::Result<Self> {
+    pub fn with_overlay(&self, overlay: &Theme) -> crate::Result<Self> {
         // Start from pre-resolve variants (avoids double-resolve idempotency issue)
         let mut light = self.light_variant.clone();
         let mut dark = self.dark_variant.clone();
@@ -303,9 +303,9 @@ impl SystemTheme {
 
     /// Apply an app overlay from a TOML string.
     ///
-    /// Parses the TOML as a [`ThemeSpec`] and calls [`with_overlay`](Self::with_overlay).
+    /// Parses the TOML as a [`Theme`] and calls [`with_overlay`](Self::with_overlay).
     pub fn with_overlay_toml(&self, toml: &str) -> crate::Result<Self> {
-        let overlay = ThemeSpec::from_toml(toml)?;
+        let overlay = Theme::from_toml(toml)?;
         self.with_overlay(&overlay)
     }
 
@@ -317,7 +317,7 @@ impl SystemTheme {
     ///
     /// The return value goes through the full pipeline: reader output ->
     /// resolve -> validate -> [`SystemTheme`] with both light and dark
-    /// [`ResolvedThemeVariant`] variants.
+    /// [`ResolvedTheme`] variants.
     ///
     /// # Platform Behavior
     ///
@@ -396,7 +396,7 @@ mod system_theme_tests {
 
     #[test]
     fn test_system_theme_active_dark() {
-        let preset = ThemeSpec::preset("catppuccin-mocha").unwrap();
+        let preset = Theme::preset("catppuccin-mocha").unwrap();
         let mut light_v = preset.light.clone().unwrap();
         let mut dark_v = preset.dark.clone().unwrap();
         // Give them distinct accents so we can tell them apart
@@ -426,7 +426,7 @@ mod system_theme_tests {
 
     #[test]
     fn test_system_theme_active_light() {
-        let preset = ThemeSpec::preset("catppuccin-mocha").unwrap();
+        let preset = Theme::preset("catppuccin-mocha").unwrap();
         let mut light_v = preset.light.clone().unwrap();
         let mut dark_v = preset.dark.clone().unwrap();
         light_v.defaults.accent_color = Some(Rgba::rgb(0, 0, 255));
@@ -454,7 +454,7 @@ mod system_theme_tests {
 
     #[test]
     fn test_system_theme_pick() {
-        let preset = ThemeSpec::preset("catppuccin-mocha").unwrap();
+        let preset = Theme::preset("catppuccin-mocha").unwrap();
         let mut light_v = preset.light.clone().unwrap();
         let mut dark_v = preset.dark.clone().unwrap();
         light_v.defaults.accent_color = Some(Rgba::rgb(0, 0, 255));
@@ -513,7 +513,7 @@ mod overlay_tests {
 
     /// Helper: build a SystemTheme from a preset via pipeline::run_pipeline.
     fn default_system_theme() -> SystemTheme {
-        let reader = ThemeSpec::preset("catppuccin-mocha").unwrap();
+        let reader = Theme::preset("catppuccin-mocha").unwrap();
         pipeline::run_pipeline(reader, "catppuccin-mocha", false).unwrap()
     }
 
@@ -523,10 +523,10 @@ mod overlay_tests {
         let new_accent = Rgba::rgb(255, 0, 0);
 
         // Build overlay with accent on both light and dark
-        let mut overlay = ThemeSpec::default();
-        let mut light_v = ThemeVariant::default();
+        let mut overlay = Theme::default();
+        let mut light_v = ThemeMode::default();
         light_v.defaults.accent_color = Some(new_accent);
-        let mut dark_v = ThemeVariant::default();
+        let mut dark_v = ThemeMode::default();
         dark_v.defaults.accent_color = Some(new_accent);
         overlay.light = Some(light_v);
         overlay.dark = Some(dark_v);
@@ -554,8 +554,8 @@ mod overlay_tests {
         let original_bg = st.light.defaults.background_color;
 
         // Apply overlay changing only accent
-        let mut overlay = ThemeSpec::default();
-        let mut light_v = ThemeVariant::default();
+        let mut overlay = Theme::default();
+        let mut light_v = ThemeMode::default();
         light_v.defaults.accent_color = Some(Rgba::rgb(255, 0, 0));
         overlay.light = Some(light_v);
 
@@ -574,7 +574,7 @@ mod overlay_tests {
         let original_light_bg = st.light.defaults.background_color;
 
         // Empty overlay
-        let overlay = ThemeSpec::default();
+        let overlay = Theme::default();
         let result = st.with_overlay(&overlay).unwrap();
 
         assert_eq!(result.light.defaults.accent_color, original_light_accent);
@@ -588,10 +588,10 @@ mod overlay_tests {
         let red = Rgba::rgb(255, 0, 0);
         let green = Rgba::rgb(0, 255, 0);
 
-        let mut overlay = ThemeSpec::default();
-        let mut light_v = ThemeVariant::default();
+        let mut overlay = Theme::default();
+        let mut light_v = ThemeMode::default();
         light_v.defaults.accent_color = Some(red);
-        let mut dark_v = ThemeVariant::default();
+        let mut dark_v = ThemeMode::default();
         dark_v.defaults.accent_color = Some(green);
         overlay.light = Some(light_v);
         overlay.dark = Some(dark_v);
@@ -611,8 +611,8 @@ mod overlay_tests {
     fn test_overlay_font_family() {
         let st = default_system_theme();
 
-        let mut overlay = ThemeSpec::default();
-        let mut light_v = ThemeVariant::default();
+        let mut overlay = Theme::default();
+        let mut light_v = ThemeMode::default();
         light_v.defaults.font.family = Some("Comic Sans".into());
         overlay.light = Some(light_v);
 

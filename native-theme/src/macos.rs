@@ -252,9 +252,9 @@ fn read_per_widget_fonts() -> (crate::FontSpec, crate::FontSpec, crate::FontSpec
 /// Values based on AppKit intrinsic content sizes and Apple Human Interface
 /// Guidelines for standard control dimensions.
 #[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
-fn macos_widget_defaults() -> crate::ThemeVariant {
+fn macos_widget_defaults() -> crate::ThemeMode {
     use crate::model::border::BorderSpec;
-    crate::ThemeVariant {
+    crate::ThemeMode {
         button: crate::ButtonTheme {
             min_height: Some(22.0), // NSButton regular control size
             border: Some(BorderSpec {
@@ -345,7 +345,7 @@ struct WidgetFontData {
     title_bar_font: crate::FontSpec,
 }
 
-/// Testable core: assemble a ThemeSpec from pre-read color and font data.
+/// Testable core: assemble a Theme from pre-read color and font data.
 ///
 /// Takes pre-resolved ThemeDefaults for both light and dark variants, plus
 /// per-widget font data. Both variants are always
@@ -356,7 +356,7 @@ fn build_theme(
     light_defaults: crate::ThemeDefaults,
     dark_defaults: crate::ThemeDefaults,
     widget_fonts: &WidgetFontData,
-) -> crate::ThemeSpec {
+) -> crate::Theme {
     let widget_defaults = macos_widget_defaults();
 
     let mut light_variant = widget_defaults.clone();
@@ -373,7 +373,7 @@ fn build_theme(
     dark_variant.tooltip.font = Some(widget_fonts.tooltip_font.clone());
     dark_variant.window.title_bar_font = Some(widget_fonts.title_bar_font.clone());
 
-    crate::ThemeSpec {
+    crate::Theme {
         name: "macOS".to_string(),
         light: Some(light_variant),
         dark: Some(dark_variant),
@@ -393,7 +393,7 @@ fn build_theme(
 /// Returns `Error::ReaderFailed` if neither light nor dark appearance can be created
 /// (extremely unlikely on any macOS version that supports these APIs).
 #[cfg(all(target_os = "macos", feature = "macos"))]
-pub fn from_macos() -> crate::Result<crate::ThemeSpec> {
+pub fn from_macos() -> crate::Result<crate::Theme> {
     let light_name = NSString::from_str("NSAppearanceNameAqua");
     let dark_name = NSString::from_str("NSAppearanceNameDarkAqua");
 
@@ -832,7 +832,7 @@ mod tests {
     #[test]
     fn test_macos_resolve_validate() {
         // Load macOS-sonoma preset as base (provides full color/geometry/spacing).
-        let mut base = crate::ThemeSpec::preset("macos-sonoma").unwrap();
+        let mut base = crate::Theme::preset("macos-sonoma").unwrap();
         // Build reader output with sample data (simulates from_macos() on real hardware).
         let reader_output = build_theme(
             sample_light_defaults(),

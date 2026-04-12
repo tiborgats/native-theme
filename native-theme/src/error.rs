@@ -188,7 +188,7 @@ impl fmt::Display for Error {
                     write!(
                         f,
                         "\n  hint: root defaults drive widget inheritance; \
-                         consider using ThemeSpec::from_toml_with_base() to inherit from a complete preset"
+                         consider using Theme::from_toml_with_base() to inherit from a complete preset"
                     )?;
                 }
 

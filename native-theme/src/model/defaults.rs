@@ -118,7 +118,7 @@ pub struct ThemeDefaults {
     /// Font DPI for pt-to-px conversion. When `Some(dpi)`, font sizes
     /// in this variant are in typographic points and will be converted
     /// during resolution: `px = pt * font_dpi / 72`. When `None`,
-    /// [`into_resolved()`](crate::ThemeVariant::into_resolved) auto-detects
+    /// [`into_resolved()`](crate::ThemeMode::into_resolved) auto-detects
     /// the DPI from the OS.
     ///
     /// This is a **runtime** value — not stored in TOML presets. OS readers

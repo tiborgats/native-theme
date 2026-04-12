@@ -14,10 +14,10 @@ use native_theme::*;
 
 #[test]
 fn merge_overlay_replaces_none_with_some() {
-    let mut base = ThemeVariant::default();
+    let mut base = ThemeMode::default();
     base.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
 
-    let mut overlay = ThemeVariant::default();
+    let mut overlay = ThemeMode::default();
     overlay.defaults.accent_color = Some(Rgba::rgb(61, 174, 233));
     // overlay does NOT set background
 
@@ -39,10 +39,10 @@ fn merge_overlay_replaces_none_with_some() {
 
 #[test]
 fn merge_overlay_replaces_some_with_some() {
-    let mut base = ThemeVariant::default();
+    let mut base = ThemeMode::default();
     base.defaults.accent_color = Some(Rgba::rgb(255, 0, 0)); // red
 
-    let mut overlay = ThemeVariant::default();
+    let mut overlay = ThemeMode::default();
     overlay.defaults.accent_color = Some(Rgba::rgb(0, 0, 255)); // blue
 
     base.merge(&overlay);
@@ -56,14 +56,14 @@ fn merge_overlay_replaces_some_with_some() {
 
 #[test]
 fn merge_preserves_base_when_overlay_empty() {
-    let mut base = ThemeVariant::default();
+    let mut base = ThemeMode::default();
     base.defaults.accent_color = Some(Rgba::rgb(61, 174, 233));
     base.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
     base.defaults.font.family = Some("Noto Sans".into());
     base.defaults.border.corner_radius = Some(4.0);
     // REMOVED(spacing): base.defaults.spacing.m = Some(12.0);
 
-    let overlay = ThemeVariant::default(); // completely empty
+    let overlay = ThemeMode::default(); // completely empty
 
     base.merge(&overlay);
 
@@ -79,14 +79,14 @@ fn merge_preserves_base_when_overlay_empty() {
 
 #[test]
 fn merge_native_theme_light_dark() {
-    let mut base = ThemeSpec::new("Base");
-    let mut base_light = ThemeVariant::default();
+    let mut base = Theme::new("Base");
+    let mut base_light = ThemeMode::default();
     base_light.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
     base.light = Some(base_light);
     // base has no dark
 
-    let mut overlay = ThemeSpec::new("Overlay");
-    let mut overlay_dark = ThemeVariant::default();
+    let mut overlay = Theme::new("Overlay");
+    let mut overlay_dark = ThemeMode::default();
     overlay_dark.defaults.background_color = Some(Rgba::rgb(30, 30, 30));
     overlay.dark = Some(overlay_dark);
     // overlay has no light
@@ -113,13 +113,13 @@ fn merge_native_theme_light_dark() {
 
 #[test]
 fn merge_native_theme_deep_merge_variants() {
-    let mut base = ThemeSpec::new("Base");
-    let mut base_light = ThemeVariant::default();
+    let mut base = Theme::new("Base");
+    let mut base_light = ThemeMode::default();
     base_light.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
     base.light = Some(base_light);
 
-    let mut overlay = ThemeSpec::new("Overlay");
-    let mut overlay_light = ThemeVariant::default();
+    let mut overlay = Theme::new("Overlay");
+    let mut overlay_light = ThemeMode::default();
     overlay_light.defaults.accent_color = Some(Rgba::rgb(61, 174, 233));
     overlay.light = Some(overlay_light);
 
@@ -190,14 +190,14 @@ fn merge_fonts_defaults_spacing() {
 
 #[test]
 fn merge_chained_multiple_overlays() {
-    let mut base = ThemeVariant::default();
+    let mut base = ThemeMode::default();
     base.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
 
-    let mut overlay1 = ThemeVariant::default();
+    let mut overlay1 = ThemeMode::default();
     overlay1.defaults.accent_color = Some(Rgba::rgb(255, 0, 0)); // red accent
     overlay1.defaults.font.family = Some("Noto Sans".into());
 
-    let mut overlay2 = ThemeVariant::default();
+    let mut overlay2 = ThemeMode::default();
     overlay2.defaults.accent_color = Some(Rgba::rgb(0, 0, 255)); // blue accent (overwrites)
     overlay2.defaults.border.corner_radius = Some(8.0);
 
@@ -224,8 +224,8 @@ fn merge_chained_multiple_overlays() {
 #[test]
 fn is_empty_all_structs() {
     // Core structs
-    assert!(ThemeSpec::default().is_empty());
-    assert!(ThemeVariant::default().is_empty());
+    assert!(Theme::default().is_empty());
+    assert!(ThemeMode::default().is_empty());
     assert!(ThemeDefaults::default().is_empty());
     assert!(FontSpec::default().is_empty());
     // REMOVED(spacing): assert!(ThemeSpacing_DELETED::default().is_empty());
@@ -264,13 +264,13 @@ fn is_empty_all_structs() {
 #[test]
 fn is_empty_false_after_setting_field() {
     // Core structs
-    let spec = ThemeSpec {
-        light: Some(ThemeVariant::default()),
+    let spec = Theme {
+        light: Some(ThemeMode::default()),
         ..Default::default()
     };
     assert!(!spec.is_empty());
 
-    let mut variant = ThemeVariant::default();
+    let mut variant = ThemeMode::default();
     variant.defaults.background_color = Some(Rgba::rgb(0, 0, 0));
     assert!(!variant.is_empty());
 
@@ -481,8 +481,8 @@ fn trait_assertions_send_sync() {
     fn assert_send_sync<T: Send + Sync>() {}
 
     assert_send_sync::<Rgba>();
-    assert_send_sync::<ThemeSpec>();
-    assert_send_sync::<ThemeVariant>();
+    assert_send_sync::<Theme>();
+    assert_send_sync::<ThemeMode>();
     assert_send_sync::<ThemeDefaults>();
     assert_send_sync::<FontSpec>();
     // REMOVED(spacing): assert_send_sync::<ThemeSpacing_DELETED>();
@@ -494,8 +494,8 @@ fn trait_assertions_default_clone_debug() {
     fn assert_default_clone_debug<T: Default + Clone + std::fmt::Debug>() {}
 
     assert_default_clone_debug::<Rgba>();
-    assert_default_clone_debug::<ThemeSpec>();
-    assert_default_clone_debug::<ThemeVariant>();
+    assert_default_clone_debug::<Theme>();
+    assert_default_clone_debug::<ThemeMode>();
     assert_default_clone_debug::<ThemeDefaults>();
     assert_default_clone_debug::<FontSpec>();
     // REMOVED(spacing): assert_default_clone_debug::<ThemeSpacing_DELETED>();
@@ -512,8 +512,8 @@ fn trait_assertions_default_clone_debug() {
 #[test]
 fn realistic_theme_layering_scenario() {
     // Base preset: Breeze Light with many fields set
-    let mut base = ThemeSpec::new("Breeze Light");
-    let mut light = ThemeVariant::default();
+    let mut base = Theme::new("Breeze Light");
+    let mut light = ThemeMode::default();
 
     // Populate base default colors
     light.defaults.accent_color = Some(Rgba::rgb(61, 174, 233));
@@ -548,8 +548,8 @@ fn realistic_theme_layering_scenario() {
     base.light = Some(light);
 
     // User override: just accent color and font family
-    let mut user_override = ThemeSpec::new("User Override");
-    let mut user_light = ThemeVariant::default();
+    let mut user_override = Theme::new("User Override");
+    let mut user_light = ThemeMode::default();
     user_light.defaults.accent_color = Some(Rgba::rgb(156, 39, 176)); // purple accent
     user_light.defaults.font.family = Some("Inter".into()); // different font
     user_override.light = Some(user_light);

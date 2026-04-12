@@ -22,7 +22,7 @@ const PLATFORM_FACTS: &str = include_str!("../../docs/platform-facts.md");
 
 #[test]
 fn kde_breeze_matches_platform_facts() {
-    let theme = ThemeSpec::preset("kde-breeze").unwrap();
+    let theme = Theme::preset("kde-breeze").unwrap();
     let light = theme
         .light
         .as_ref()
@@ -61,7 +61,7 @@ fn kde_breeze_matches_platform_facts() {
 
 #[test]
 fn adwaita_matches_platform_facts() {
-    let theme = ThemeSpec::preset("adwaita").unwrap();
+    let theme = Theme::preset("adwaita").unwrap();
     let light = theme
         .light
         .as_ref()
@@ -96,7 +96,7 @@ fn adwaita_matches_platform_facts() {
 
 #[test]
 fn windows_11_matches_platform_facts() {
-    let theme = ThemeSpec::preset("windows-11").unwrap();
+    let theme = Theme::preset("windows-11").unwrap();
     let light = theme
         .light
         .as_ref()
@@ -132,7 +132,7 @@ fn windows_11_matches_platform_facts() {
 
 #[test]
 fn macos_sonoma_matches_platform_facts() {
-    let theme = ThemeSpec::preset("macos-sonoma").unwrap();
+    let theme = Theme::preset("macos-sonoma").unwrap();
     let light = theme
         .light
         .as_ref()
@@ -171,7 +171,7 @@ fn macos_sonoma_matches_platform_facts() {
 #[test]
 fn dark_variants_use_same_font_as_light() {
     for preset_name in &["kde-breeze", "adwaita", "windows-11", "macos-sonoma"] {
-        let theme = ThemeSpec::preset(preset_name).unwrap();
+        let theme = Theme::preset(preset_name).unwrap();
         let light = theme
             .light
             .as_ref()
@@ -199,7 +199,7 @@ fn dark_variants_use_same_font_as_light() {
 #[test]
 fn all_platform_presets_load_and_have_both_variants() {
     for preset_name in &["kde-breeze", "adwaita", "windows-11", "macos-sonoma"] {
-        let theme = ThemeSpec::preset(preset_name)
+        let theme = Theme::preset(preset_name)
             .unwrap_or_else(|e| panic!("Failed to load '{preset_name}': {e}"));
 
         assert!(

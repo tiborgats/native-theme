@@ -22,7 +22,7 @@ cargo add native-theme
 Load a preset and access theme fields:
 
 ```rust
-let theme = native_theme::ThemeSpec::preset("dracula").unwrap();
+let theme = native_theme::Theme::preset("dracula").unwrap();
 let dark = theme.dark.as_ref().unwrap();
 let accent = dark.defaults.accent_color.unwrap();   // Option<Rgba>
 let bg = dark.defaults.background_color.unwrap();   // Option<Rgba>
@@ -35,7 +35,7 @@ resolve + validate pipeline:
 
 ```rust,ignore
 let variant = theme.into_variant(true).expect("preset has dark variant");
-let resolved = variant.into_resolved()?; // -> ResolvedThemeVariant
+let resolved = variant.into_resolved()?; // -> ResolvedTheme
 let accent = resolved.defaults.accent_color; // Rgba (not Option)
 ```
 
@@ -46,9 +46,9 @@ The `merge()` method fills in only the fields present in the overlay,
 leaving everything else from the base preset intact.
 
 ```rust
-use native_theme::ThemeSpec;
-let mut theme = ThemeSpec::preset("nord").unwrap();
-let user_overrides = ThemeSpec::from_toml(r##"
+use native_theme::Theme;
+let mut theme = Theme::preset("nord").unwrap();
+let user_overrides = Theme::from_toml(r##"
 name = "My Custom Nord"
 [light.defaults]
 accent_color = "#ff6600"
@@ -59,12 +59,12 @@ theme.merge(&user_overrides);
 ## Runtime Workflow
 
 Use `from_system()` to read the current OS theme at runtime. It returns a
-`SystemTheme` with both light and dark `ResolvedThemeVariant` variants:
+`SystemTheme` with both light and dark `ResolvedTheme` variants:
 
 ```rust,ignore
 use native_theme::SystemTheme;
 let system = SystemTheme::from_system().unwrap();
-let active = system.active();            // &ResolvedThemeVariant for current OS mode
+let active = system.active();            // &ResolvedTheme for current OS mode
 let light = system.pick(false);          // Explicit variant selection
 let is_dark = system.is_dark;            // OS dark mode state
 ```
@@ -95,18 +95,18 @@ full theme reader pipeline.
 
 ## Toolkit Connectors
 
-Official connector crates handle the full mapping from `ThemeSpec` to
+Official connector crates handle the full mapping from `Theme` to
 toolkit-specific theme types:
 
 - [`native-theme-iced`](https://crates.io/crates/native-theme-iced) -- iced
   toolkit connector with Catalog support for all built-in widget styles
 - `native-theme-gpui` -- gpui + gpui-component toolkit connector
 
-For other toolkits, map `ResolvedThemeVariant` fields directly. After
+For other toolkits, map `ResolvedTheme` fields directly. After
 resolution, all fields are guaranteed populated:
 
 ```rust,ignore
-let resolved = variant.into_resolved()?; // ResolvedThemeVariant
+let resolved = variant.into_resolved()?; // ResolvedTheme
 let bg = resolved.defaults.background_color;     // Rgba
 let accent = resolved.defaults.accent_color;     // Rgba
 let font = &resolved.defaults.font.family;       // &String
@@ -199,14 +199,14 @@ Toolkit connectors provide playback helpers:
 | `watch` | Runtime theme change watching via filesystem/D-Bus | Linux |
 | `svg-rasterize` | SVG-to-RGBA rasterization via resvg | All |
 
-By default, no features are enabled. The preset API (`ThemeSpec::preset()`,
-`ThemeSpec::from_toml()`, `ThemeSpec::from_file()`, `ThemeSpec::list_presets()`,
+By default, no features are enabled. The preset API (`Theme::preset()`,
+`Theme::from_toml()`, `Theme::from_file()`, `Theme::list_presets()`,
 `.to_toml()`) works without any features.
 
 ## Available Presets
 
 All presets are embedded at compile time via `include_str!()` and available
-through `ThemeSpec::preset("name")`. Each provides both light and dark variants.
+through `Theme::preset("name")`. Each provides both light and dark variants.
 
 **Platform:** `kde-breeze`, `adwaita`, `windows-11`, `macos-sonoma`, `material`, `ios`
 
@@ -214,13 +214,13 @@ through `ThemeSpec::preset("name")`. Each provides both light and dark variants.
 `catppuccin-mocha`, `nord`, `dracula`, `gruvbox`, `solarized`, `tokyo-night`,
 `one-dark`
 
-Use `ThemeSpec::list_presets()` to get all 16 names programmatically, or
+Use `Theme::list_presets()` to get all 16 names programmatically, or
 `list_presets_for_platform()` for only those appropriate on the current OS.
 
 ## TOML Format
 
 Theme files use TOML. All fields are optional -- omit any you don't need.
-See the [`ThemeSpec::from_toml()`](https://docs.rs/native-theme/latest/native_theme/struct.ThemeSpec.html#method.from_toml)
+See the [`Theme::from_toml()`](https://docs.rs/native-theme/latest/native_theme/struct.Theme.html#method.from_toml)
 documentation for the full format reference.
 
 ## License

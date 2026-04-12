@@ -4,7 +4,7 @@
 //! that must hold for all inputs, catching edge cases deterministic tests miss.
 //!
 //! Strategy composition avoids `prop_flat_map` nesting to prevent stack overflow
-//! on the deeply nested ThemeVariant type. Instead, we generate flat vectors of
+//! on the deeply nested ThemeMode type. Instead, we generate flat vectors of
 //! random data and map them into the target structs in a single `prop_map` step.
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
@@ -380,9 +380,9 @@ prop_compose! {
     }
 }
 
-// ── ThemeVariant strategy ───────────────────────────────────────────────────
+// ── ThemeMode strategy ───────────────────────────────────────────────────
 
-fn arb_theme_variant() -> impl Strategy<Value = ThemeVariant> {
+fn arb_theme_variant() -> impl Strategy<Value = ThemeMode> {
     (
         arb_theme_defaults(),
         arb_text_scale(),
@@ -406,7 +406,7 @@ fn arb_theme_variant() -> impl Strategy<Value = ThemeVariant> {
                 icon_set,
                 icon_theme,
             )| {
-                ThemeVariant {
+                ThemeMode {
                     defaults,
                     text_scale,
                     window,
@@ -442,12 +442,12 @@ fn arb_theme_variant() -> impl Strategy<Value = ThemeVariant> {
         )
 }
 
-// ── ThemeSpec strategy ──────────────────────────────────────────────────────
+// ── Theme strategy ──────────────────────────────────────────────────────
 
-fn arb_theme_spec() -> impl Strategy<Value = ThemeSpec> {
+fn arb_theme_spec() -> impl Strategy<Value = Theme> {
     // Generate one variant and use booleans to place it in light/dark/both slots.
     // This keeps the proptest value tree shallow enough to avoid stack overflow
-    // while still exercising all ThemeSpec serialization paths.
+    // while still exercising all Theme serialization paths.
     (
         "[a-zA-Z ]{1,20}",
         arb_theme_variant(),
@@ -455,7 +455,7 @@ fn arb_theme_spec() -> impl Strategy<Value = ThemeSpec> {
         any::<bool>(), // has_dark
         arb_layout_theme(),
     )
-        .prop_map(|(name, variant, has_light, has_dark, layout)| ThemeSpec {
+        .prop_map(|(name, variant, has_light, has_dark, layout)| Theme {
             name,
             light: if has_light {
                 Some(variant.clone())
@@ -513,12 +513,12 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(64))]
     #[test]
     fn theme_variant_toml_round_trip(v in arb_theme_variant()) {
-        let mut theme = ThemeSpec::new("Test");
+        let mut theme = Theme::new("Test");
         theme.light = Some(v);
         let toml1 = toml::to_string_pretty(&theme).unwrap();
-        let round1: ThemeSpec = toml::from_str(&toml1).unwrap();
+        let round1: Theme = toml::from_str(&toml1).unwrap();
         let toml2 = toml::to_string_pretty(&round1).unwrap();
-        let round2: ThemeSpec = toml::from_str(&toml2).unwrap();
+        let round2: Theme = toml::from_str(&toml2).unwrap();
         prop_assert_eq!(round1, round2, "TOML round-trip must be idempotent");
     }
 }
@@ -528,9 +528,9 @@ proptest! {
     #[test]
     fn theme_spec_toml_round_trip(theme in arb_theme_spec()) {
         let toml1 = toml::to_string_pretty(&theme).unwrap();
-        let round1: ThemeSpec = toml::from_str(&toml1).unwrap();
+        let round1: Theme = toml::from_str(&toml1).unwrap();
         let toml2 = toml::to_string_pretty(&round1).unwrap();
-        let round2: ThemeSpec = toml::from_str(&toml2).unwrap();
+        let round2: Theme = toml::from_str(&toml2).unwrap();
         prop_assert_eq!(round1, round2, "TOML round-trip must be idempotent");
     }
 }
@@ -538,9 +538,9 @@ proptest! {
 // ── Property tests: Merge semantics ─────────────────────────────────────────
 
 // Merge properties tested at ThemeDefaults level (exercises all merge paths:
-// option, nested font/border/icon_sizes). ThemeVariant merge delegates to
+// option, nested font/border/icon_sizes). ThemeMode merge delegates to
 // ThemeDefaults merge + per-widget merge, which all use the same impl_merge!
-// macro -- no additional coverage from testing at ThemeVariant level.
+// macro -- no additional coverage from testing at ThemeMode level.
 
 proptest! {
     #[test]

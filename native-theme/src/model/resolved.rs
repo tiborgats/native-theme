@@ -1,7 +1,7 @@
 // Resolved (non-optional) theme types produced after theme resolution.
 //
 // These types mirror their Option-based counterparts in defaults.rs, font.rs,
-// icon_sizes.rs, and mod.rs (ThemeVariant), but with all fields
+// icon_sizes.rs, and mod.rs (ThemeMode), but with all fields
 // guaranteed populated. Produced by validate() after resolve().
 
 use super::border::ResolvedBorderSpec;
@@ -56,14 +56,14 @@ pub struct ResolvedTextScale {
     pub display: ResolvedTextScaleEntry,
 }
 
-// --- ResolvedThemeDefaults ---
+// --- ResolvedDefaults ---
 
 /// Fully resolved global theme defaults where every field is guaranteed populated.
 ///
 /// Mirrors [`crate::model::ThemeDefaults`] but with concrete (non-Option) types.
 /// Produced by the resolution/validation pipeline.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct ResolvedThemeDefaults {
+pub struct ResolvedDefaults {
     // ---- Base font ----
     /// Primary UI font.
     pub font: ResolvedFontSpec,
@@ -158,17 +158,17 @@ pub struct ResolvedThemeDefaults {
     pub reduce_transparency: bool,
 }
 
-// --- ResolvedThemeVariant ---
+// --- ResolvedTheme ---
 
 /// A fully resolved theme where every field is guaranteed populated.
 ///
 /// Produced by `validate()` after `resolve()`. Consumed by toolkit connectors.
-/// Mirrors [`crate::model::ThemeVariant`] but with concrete (non-Option) types
+/// Mirrors [`crate::model::ThemeMode`] but with concrete (non-Option) types
 /// for all 25 per-widget structs plus defaults and text scale.
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct ResolvedThemeVariant {
+pub struct ResolvedTheme {
     /// Global defaults.
-    pub defaults: ResolvedThemeDefaults,
+    pub defaults: ResolvedDefaults,
     /// Per-role text scale.
     pub text_scale: ResolvedTextScale,
 
@@ -287,9 +287,9 @@ mod tests {
         }
     }
 
-    fn sample_defaults() -> ResolvedThemeDefaults {
+    fn sample_defaults() -> ResolvedDefaults {
         let c = Rgba::rgb(128, 128, 128);
-        ResolvedThemeDefaults {
+        ResolvedDefaults {
             font: sample_font(),
             line_height: 1.4,
             mono_font: ResolvedFontSpec {
@@ -422,7 +422,7 @@ mod tests {
         assert!(dbg.contains("ResolvedTextScale"));
     }
 
-    // --- ResolvedThemeDefaults tests ---
+    // --- ResolvedDefaults tests ---
 
     #[test]
     fn resolved_defaults_all_fields_concrete() {
@@ -452,17 +452,17 @@ mod tests {
         let d2 = d.clone();
         assert_eq!(d, d2);
         let dbg = format!("{d:?}");
-        assert!(dbg.contains("ResolvedThemeDefaults"));
+        assert!(dbg.contains("ResolvedDefaults"));
     }
 
-    // --- ResolvedThemeVariant tests ---
-    // NOTE: These tests construct ResolvedThemeVariant with all 25 widget structs.
+    // --- ResolvedTheme tests ---
+    // NOTE: These tests construct ResolvedTheme with all 25 widget structs.
     // The widget Resolved* types will have new field names after Task 2,
     // but for now they reference the old names -- Plan 02 (resolve.rs) will
     // update all consumers. These tests are intentionally commented out until
     // the full atomic commit is assembled.
     //
-    // The structural tests for ResolvedThemeDefaults above verify the defaults
+    // The structural tests for ResolvedDefaults above verify the defaults
     // rename is correct.
 
     // --- Behavioral tests (issue 2d) ---

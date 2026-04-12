@@ -397,7 +397,7 @@ mod xrandr_dpi_tests {
 
 /// Detect the font DPI for the current system.
 ///
-/// Used by [`ThemeVariant::into_resolved()`] as a fallback when no OS reader
+/// Used by [`ThemeMode::into_resolved()`] as a fallback when no OS reader
 /// has provided `font_dpi`. Returns the platform-appropriate DPI for
 /// converting typographic points to logical pixels.
 ///
@@ -442,7 +442,7 @@ fn detect_system_font_dpi() -> f32 {
 /// Read KDE's `forceFontDPI` from kdeglobals or kcmfontsrc.
 ///
 /// This mirrors the first step of [`crate::kde::detect_font_dpi()`] so that
-/// standalone preset loading (via [`ThemeVariant::into_resolved()`]) uses the
+/// standalone preset loading (via [`ThemeMode::into_resolved()`]) uses the
 /// same DPI as the full KDE reader pipeline.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 fn read_kde_force_font_dpi() -> Option<f32> {

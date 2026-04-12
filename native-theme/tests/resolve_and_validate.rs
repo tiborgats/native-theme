@@ -1,7 +1,7 @@
 //! Integration tests for resolve(), validate(), and derivation chains.
 //!
 //! Tests: idempotency, from_toml_with_base, with_overlay re-derivation,
-//! pick_variant/into_variant fallback, ThemeVariant/ThemeSpec is_empty,
+//! pick_variant/into_variant fallback, ThemeMode/Theme is_empty,
 //! Rgba f32 quantization, live preset sync, lint_toml on all presets,
 //! and bundled SVG content validation.
 
@@ -15,8 +15,8 @@ use native_theme::*;
 
 #[test]
 fn resolve_idempotency_on_preset() {
-    for name in ThemeSpec::list_presets() {
-        let theme = ThemeSpec::preset(name).unwrap();
+    for name in Theme::list_presets() {
+        let theme = Theme::preset(name).unwrap();
         let mut variant = theme.light.clone().unwrap();
         variant.resolve_all();
         let first = variant.clone();
@@ -40,7 +40,7 @@ name = "Custom"
 [light.defaults]
 accent_color = "#ff0000"
 "##;
-    let theme = ThemeSpec::from_toml_with_base(custom_toml, "adwaita").unwrap();
+    let theme = Theme::from_toml_with_base(custom_toml, "adwaita").unwrap();
 
     // Base name preserved
     assert_eq!(theme.name, "Adwaita");
@@ -70,7 +70,7 @@ accent_color = "#ff0000"
 
 #[test]
 fn from_toml_with_base_invalid_base_returns_err() {
-    let result = ThemeSpec::from_toml_with_base("name = \"X\"", "no-such-preset");
+    let result = Theme::from_toml_with_base("name = \"X\"", "no-such-preset");
     assert!(result.is_err(), "invalid base name should return Err");
     let Error::UnknownPreset { name, .. } = result.unwrap_err() else {
         return;
@@ -79,12 +79,12 @@ fn from_toml_with_base_invalid_base_returns_err() {
 }
 
 // ---------------------------------------------------------------------------
-// Issue 7f: with_overlay() re-derivation (via ThemeSpec merge + resolve)
+// Issue 7f: with_overlay() re-derivation (via Theme merge + resolve)
 // ---------------------------------------------------------------------------
 
 #[test]
 fn overlay_accent_change_re_derives_widget_fields() {
-    let theme = ThemeSpec::preset("material").unwrap();
+    let theme = Theme::preset("material").unwrap();
     let mut variant = theme.dark.clone().unwrap();
     let original_accent = variant.defaults.accent_color.unwrap();
 
@@ -166,8 +166,8 @@ fn live_presets_geometry_matches_full_presets() {
     ];
 
     for (full_name, live_name) in pairs {
-        let full = ThemeSpec::preset(full_name).unwrap();
-        let live = ThemeSpec::preset(live_name).unwrap();
+        let full = Theme::preset(full_name).unwrap();
+        let live = Theme::preset(live_name).unwrap();
 
         for (label, full_var, live_var) in [
             (
@@ -247,10 +247,10 @@ fn live_presets_geometry_matches_full_presets() {
 
 #[test]
 fn lint_toml_all_presets_no_warnings() {
-    for name in ThemeSpec::list_presets() {
-        let theme = ThemeSpec::preset(name).unwrap();
+    for name in Theme::list_presets() {
+        let theme = Theme::preset(name).unwrap();
         let toml_str = theme.to_toml().unwrap();
-        let warnings = ThemeSpec::lint_toml(&toml_str).unwrap();
+        let warnings = Theme::lint_toml(&toml_str).unwrap();
         assert!(
             warnings.is_empty(),
             "preset '{name}' lint_toml() produced warnings: {warnings:?}"
@@ -265,8 +265,8 @@ fn lint_toml_all_presets_no_warnings() {
 #[test]
 fn pick_variant_falls_back_to_other() {
     // Theme with only light variant
-    let mut theme_light_only = ThemeSpec::new("Light Only");
-    let mut light = ThemeVariant::default();
+    let mut theme_light_only = Theme::new("Light Only");
+    let mut light = ThemeMode::default();
     light.defaults.accent_color = Some(Rgba::rgb(0, 0, 255));
     theme_light_only.light = Some(light);
 
@@ -283,8 +283,8 @@ fn pick_variant_falls_back_to_other() {
     );
 
     // Theme with only dark variant
-    let mut theme_dark_only = ThemeSpec::new("Dark Only");
-    let mut dark = ThemeVariant::default();
+    let mut theme_dark_only = Theme::new("Dark Only");
+    let mut dark = ThemeMode::default();
     dark.defaults.accent_color = Some(Rgba::rgb(255, 0, 0));
     theme_dark_only.dark = Some(dark);
 
@@ -304,8 +304,8 @@ fn pick_variant_falls_back_to_other() {
 #[test]
 fn into_variant_falls_back_to_other() {
     // Theme with only light variant
-    let mut theme = ThemeSpec::new("Light Only");
-    let mut light = ThemeVariant::default();
+    let mut theme = Theme::new("Light Only");
+    let mut light = ThemeMode::default();
     light.defaults.accent_color = Some(Rgba::rgb(0, 0, 255));
     theme.light = Some(light);
 
@@ -322,52 +322,52 @@ fn into_variant_falls_back_to_other() {
 
 #[test]
 fn pick_variant_returns_none_for_empty_theme() {
-    let theme = ThemeSpec::new("Empty");
+    let theme = Theme::new("Empty");
     assert!(theme.pick_variant(true).is_none());
     assert!(theme.pick_variant(false).is_none());
 }
 
 #[test]
 fn into_variant_returns_none_for_empty_theme() {
-    let theme1 = ThemeSpec::new("Empty");
+    let theme1 = Theme::new("Empty");
     assert!(theme1.into_variant(true).is_none());
-    let theme2 = ThemeSpec::new("Empty");
+    let theme2 = Theme::new("Empty");
     assert!(theme2.into_variant(false).is_none());
 }
 
 // ---------------------------------------------------------------------------
-// Issues 21h, 21i: ThemeVariant / ThemeSpec is_empty
+// Issues 21h, 21i: ThemeMode / Theme is_empty
 // ---------------------------------------------------------------------------
 
 #[test]
 fn default_theme_variant_is_empty() {
-    let v = ThemeVariant::default();
-    assert!(v.is_empty(), "default ThemeVariant should be empty");
+    let v = ThemeMode::default();
+    assert!(v.is_empty(), "default ThemeMode should be empty");
 }
 
 #[test]
 fn default_theme_spec_is_empty() {
-    let s = ThemeSpec::default();
-    assert!(s.is_empty(), "default ThemeSpec should be empty");
+    let s = Theme::default();
+    assert!(s.is_empty(), "default Theme should be empty");
 }
 
 #[test]
 fn theme_variant_with_one_field_is_not_empty() {
-    let mut v = ThemeVariant::default();
+    let mut v = ThemeMode::default();
     v.defaults.accent_color = Some(Rgba::rgb(0, 0, 255));
     assert!(
         !v.is_empty(),
-        "ThemeVariant with accent set should not be empty"
+        "ThemeMode with accent set should not be empty"
     );
 }
 
 #[test]
 fn theme_spec_with_one_variant_is_not_empty() {
-    let mut s = ThemeSpec::new("Test");
-    s.light = Some(ThemeVariant::default());
+    let mut s = Theme::new("Test");
+    s.light = Some(ThemeMode::default());
     assert!(
         !s.is_empty(),
-        "ThemeSpec with a light variant should not be empty"
+        "Theme with a light variant should not be empty"
     );
 }
 

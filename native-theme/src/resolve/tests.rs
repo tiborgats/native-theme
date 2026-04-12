@@ -3,8 +3,8 @@ use crate::Rgba;
 use crate::model::font::FontSize;
 use crate::model::{DialogButtonOrder, FontSpec, TextScaleEntry};
 
-/// Helper: build a ThemeVariant with all defaults.* fields populated.
-fn variant_with_defaults() -> ThemeVariant {
+/// Helper: build a ThemeMode with all defaults.* fields populated.
+fn variant_with_defaults() -> ThemeMode {
     let c1 = Rgba::rgb(0, 120, 215); // accent
     let c2 = Rgba::rgb(255, 255, 255); // background
     let c3 = Rgba::rgb(30, 30, 30); // foreground
@@ -23,7 +23,7 @@ fn variant_with_defaults() -> ThemeVariant {
     let c16 = Rgba::rgb(0, 120, 215); // info
     let c17 = Rgba::rgb(255, 255, 255); // info_foreground
 
-    let mut v = ThemeVariant::default();
+    let mut v = ThemeMode::default();
     v.defaults.accent_color = Some(c1);
     v.defaults.background_color = Some(c2);
     v.defaults.text_color = Some(c3);
@@ -96,7 +96,7 @@ fn variant_with_defaults() -> ThemeVariant {
 
 #[test]
 fn resolve_phase1_accent_fills_selection_and_focus_ring() {
-    let mut v = ThemeVariant::default();
+    let mut v = ThemeMode::default();
     v.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
     v.resolve();
     assert_eq!(
@@ -108,7 +108,7 @@ fn resolve_phase1_accent_fills_selection_and_focus_ring() {
 
 #[test]
 fn resolve_phase1_selection_fills_selection_inactive() {
-    let mut v = ThemeVariant::default();
+    let mut v = ThemeMode::default();
     v.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
     v.resolve();
     // selection_inactive should be set from selection (which was set from accent)
@@ -120,7 +120,7 @@ fn resolve_phase1_selection_fills_selection_inactive() {
 
 #[test]
 fn resolve_phase1_explicit_selection_preserved() {
-    let mut v = ThemeVariant::default();
+    let mut v = ThemeMode::default();
     v.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
     v.defaults.selection_background = Some(Rgba::rgb(100, 100, 100));
     v.resolve();
@@ -138,7 +138,7 @@ fn resolve_phase1_explicit_selection_preserved() {
 
 #[test]
 fn resolve_phase1_font_color_from_text_color() {
-    let mut v = ThemeVariant::default();
+    let mut v = ThemeMode::default();
     v.defaults.text_color = Some(Rgba::rgb(30, 30, 30));
     v.resolve();
     assert_eq!(
@@ -155,7 +155,7 @@ fn resolve_phase1_font_color_from_text_color() {
 
 #[test]
 fn resolve_phase1_font_color_explicit_preserved() {
-    let mut v = ThemeVariant::default();
+    let mut v = ThemeMode::default();
     v.defaults.text_color = Some(Rgba::rgb(30, 30, 30));
     v.defaults.font.color = Some(Rgba::rgb(50, 50, 50));
     v.resolve();
@@ -176,7 +176,7 @@ fn resolve_phase1_font_color_explicit_preserved() {
 
 #[test]
 fn resolve_phase2_safety_nets() {
-    let mut v = ThemeVariant::default();
+    let mut v = ThemeMode::default();
     v.defaults.text_color = Some(Rgba::rgb(30, 30, 30));
     v.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
     v.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
@@ -356,7 +356,7 @@ fn validate_no_dpi_uses_default_96() {
 
 #[test]
 fn resolve_phase3_accent_propagation() {
-    let mut v = ThemeVariant::default();
+    let mut v = ThemeMode::default();
     v.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
     v.resolve();
 
@@ -391,7 +391,7 @@ fn resolve_phase3_accent_propagation() {
 
 #[test]
 fn resolve_phase3_font_subfield_inheritance() {
-    let mut v = ThemeVariant::default();
+    let mut v = ThemeMode::default();
     v.defaults.font = FontSpec {
         family: Some("Inter".into()),
         size: Some(FontSize::Px(14.0)),
@@ -423,7 +423,7 @@ fn resolve_phase3_font_subfield_inheritance() {
 
 #[test]
 fn resolve_phase3_font_entire_inheritance() {
-    let mut v = ThemeVariant::default();
+    let mut v = ThemeMode::default();
     v.defaults.font = FontSpec {
         family: Some("Inter".into()),
         size: Some(FontSize::Px(14.0)),
@@ -444,7 +444,7 @@ fn resolve_phase3_font_entire_inheritance() {
 
 #[test]
 fn resolve_phase3_text_scale_inheritance() {
-    let mut v = ThemeVariant::default();
+    let mut v = ThemeMode::default();
     v.defaults.font = FontSpec {
         family: Some("Inter".into()),
         size: Some(FontSize::Px(14.0)),
@@ -557,7 +557,7 @@ fn resolve_phase3_color_inheritance() {
 
 #[test]
 fn resolve_phase4_inactive_title_bar_from_active() {
-    let mut v = ThemeVariant::default();
+    let mut v = ThemeMode::default();
     v.defaults.surface_color = Some(Rgba::rgb(240, 240, 240));
     v.defaults.text_color = Some(Rgba::rgb(30, 30, 30));
     v.resolve();
@@ -634,7 +634,7 @@ fn scrollbar_thumb_hover_inherits_muted_color() {
 
 #[test]
 fn resolve_all_font_carrying_widgets_get_resolved_fonts() {
-    let mut v = ThemeVariant::default();
+    let mut v = ThemeMode::default();
     v.defaults.font = FontSpec {
         family: Some("Inter".into()),
         size: Some(FontSize::Px(14.0)),
@@ -673,8 +673,8 @@ fn resolve_all_font_carrying_widgets_get_resolved_fonts() {
 
 // ===== validate() tests =====
 
-/// Build a fully-populated ThemeVariant (all fields Some) for validate() testing.
-fn fully_populated_variant() -> ThemeVariant {
+/// Build a fully-populated ThemeMode (all fields Some) for validate() testing.
+fn fully_populated_variant() -> ThemeMode {
     let mut v = variant_with_defaults();
     let c = Rgba::rgb(128, 128, 128);
 
@@ -1210,7 +1210,7 @@ fn validate_error_message_includes_count_and_paths() {
 #[test]
 fn validate_checks_all_defaults_fields() {
     // Default variant has ALL fields None, so validate should report many missing
-    let v = ThemeVariant::default();
+    let v = ThemeMode::default();
     let result = v.validate();
     assert!(result.is_err());
     let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
@@ -1233,7 +1233,7 @@ fn validate_checks_all_defaults_fields() {
 
 #[test]
 fn validate_checks_all_widget_structs() {
-    let v = ThemeVariant::default();
+    let v = ThemeMode::default();
     let result = v.validate();
     let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
         return;
@@ -1279,7 +1279,7 @@ fn validate_checks_all_widget_structs() {
 
 #[test]
 fn validate_checks_text_scale_entries() {
-    let v = ThemeVariant::default();
+    let v = ThemeMode::default();
     let result = v.validate();
     let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
         return;
@@ -1420,7 +1420,7 @@ fn test_gnome_resolve_validate() {
     // Simulate GNOME reader pipeline: adwaita base + GNOME reader overlay.
     // On a non-GNOME system, build_gnome_variant() only sets dialog.button_order
     // and icon_set (gsettings calls return None). We simulate the full merge.
-    let adwaita = crate::ThemeSpec::preset("adwaita").unwrap();
+    let adwaita = crate::Theme::preset("adwaita").unwrap();
 
     // Pick dark variant from adwaita (matches GNOME PreferDark path).
     let mut variant = adwaita
@@ -1777,8 +1777,8 @@ fn validate_range_only_errors_produce_resolution_invalid() {
 
 #[test]
 fn merge_preserves_base_name_when_overlay_name_empty() {
-    let mut base = crate::ThemeSpec::new("My Base");
-    let overlay = crate::ThemeSpec::new("");
+    let mut base = crate::Theme::new("My Base");
+    let overlay = crate::Theme::new("");
     base.merge(&overlay);
     assert_eq!(base.name, "My Base", "base name should be preserved");
 }
@@ -1787,8 +1787,8 @@ fn merge_preserves_base_name_when_overlay_name_empty() {
 fn merge_preserves_empty_base_name_over_nonempty_overlay() {
     // Issue 17a edge case: merge() never touches self.name, so an empty
     // base name is kept even when the overlay has a non-empty name.
-    let mut base = crate::ThemeSpec::new("");
-    let overlay = crate::ThemeSpec::new("Overlay Name");
+    let mut base = crate::Theme::new("");
+    let overlay = crate::Theme::new("Overlay Name");
     base.merge(&overlay);
     assert_eq!(
         base.name, "",
@@ -1798,7 +1798,7 @@ fn merge_preserves_empty_base_name_over_nonempty_overlay() {
 
 #[test]
 fn accent_derives_selection_then_selection_inactive() {
-    let mut v = ThemeVariant::default();
+    let mut v = ThemeMode::default();
     let accent = Rgba::rgb(0, 120, 215);
     v.defaults.accent_color = Some(accent);
     v.resolve();
@@ -1818,7 +1818,7 @@ fn accent_derives_selection_then_selection_inactive() {
 
 #[test]
 fn title_bar_background_inherits_from_surface_not_background() {
-    let mut v = ThemeVariant::default();
+    let mut v = ThemeMode::default();
     v.defaults.surface_color = Some(Rgba::rgb(240, 240, 240));
     v.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
     v.resolve();
@@ -1838,11 +1838,11 @@ fn title_bar_background_inherits_from_surface_not_background() {
 
 /// Verify that resolve() has rules for every derived field.
 ///
-/// Constructs a ThemeVariant with ONLY root fields (the ~46 defaults
+/// Constructs a ThemeMode with ONLY root fields (the ~46 defaults
 /// Helper: populate all non-derivable widget geometry/behavior fields.
 ///
 /// These fields have no resolve() rule; they MUST be set explicitly.
-fn set_widget_geometry(v: &mut ThemeVariant) {
+fn set_widget_geometry(v: &mut ThemeMode) {
     v.icon_set = Some(crate::IconSet::Freedesktop);
     // button
     v.button.min_width = Some(64.0);
@@ -1949,7 +1949,7 @@ fn set_widget_geometry(v: &mut ThemeVariant) {
 ///
 /// After calling this, resolve_all() must be able to reconstruct every
 /// cleared field from the remaining defaults.
-fn clear_derived_fields(v: &mut ThemeVariant) {
+fn clear_derived_fields(v: &mut ThemeMode) {
     // Widget colors and radii (derived from defaults)
     v.window.background_color = None;
     v.window.title_bar_font = None;
@@ -2101,7 +2101,7 @@ fn resolve_completeness_minimal_variant() {
 /// then verifies resolve() can reconstruct them.
 #[test]
 fn resolve_completeness_from_preset() {
-    let spec = crate::ThemeSpec::preset("material").unwrap();
+    let spec = crate::Theme::preset("material").unwrap();
     let mut v = spec.dark.expect("material should have dark variant");
 
     clear_derived_fields(&mut v);
@@ -2118,11 +2118,11 @@ fn resolve_completeness_from_preset() {
 #[test]
 fn validate_all_presets_pass_range_checks() {
     // Verify no false positives: all 16 presets pass validation including range checks
-    let names = crate::ThemeSpec::list_presets();
+    let names = crate::Theme::list_presets();
     assert!(names.len() >= 16, "expected at least 16 presets");
 
     for name in names {
-        let spec = crate::ThemeSpec::preset(name).unwrap();
+        let spec = crate::Theme::preset(name).unwrap();
         if let Some(light) = spec.light {
             let resolved = light.into_resolved();
             assert!(

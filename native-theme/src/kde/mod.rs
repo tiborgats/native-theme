@@ -1,4 +1,4 @@
-// KDE theme reader -- reads kdeglobals INI file and maps to ThemeSpec
+// KDE theme reader -- reads kdeglobals INI file and maps to Theme
 
 /// KDE color group parsing and mapping.
 pub mod colors;
@@ -10,7 +10,7 @@ pub mod metrics;
 use crate::Rgba;
 use crate::model::IconSizes;
 
-/// Parse KDE kdeglobals content into a ThemeSpec without any I/O.
+/// Parse KDE kdeglobals content into a Theme without any I/O.
 ///
 /// `font_dpi`: if `Some`, used directly for font DPI; if `None`, attempts to
 /// extract `forceFontDPI` from the INI content, falling back to `None` (no DPI set).
@@ -19,7 +19,7 @@ use crate::model::IconSizes;
 pub fn from_kde_content_pure(
     content: &str,
     font_dpi: Option<f32>,
-) -> crate::Result<crate::ThemeSpec> {
+) -> crate::Result<crate::Theme> {
     let mut ini = create_kde_parser();
     ini.read(content.to_string())
         .map_err(|e| crate::Error::ReaderFailed {
@@ -27,7 +27,7 @@ pub fn from_kde_content_pure(
             source: e.into(),
         })?;
 
-    let mut variant = crate::ThemeVariant::default();
+    let mut variant = crate::ThemeMode::default();
 
     // Populate colors, fonts, and widget sizing on the variant
     colors::populate_colors(&ini, &mut variant);
@@ -59,14 +59,14 @@ pub fn from_kde_content_pure(
         .unwrap_or_else(|| "KDE".to_string());
 
     let theme = if dark {
-        crate::ThemeSpec {
+        crate::Theme {
             name,
             light: None,
             dark: Some(variant),
             layout: crate::LayoutTheme::default(),
         }
     } else {
-        crate::ThemeSpec {
+        crate::Theme {
             name,
             light: Some(variant),
             dark: None,
@@ -77,15 +77,15 @@ pub fn from_kde_content_pure(
     Ok(theme)
 }
 
-/// Parse a KDE kdeglobals content string into a ThemeSpec.
+/// Parse a KDE kdeglobals content string into a Theme.
 ///
-/// Builds a sparse ThemeVariant with per-widget colors, fonts with Qt5/Qt6
+/// Builds a sparse ThemeMode with per-widget colors, fonts with Qt5/Qt6
 /// weight conversion, text scale from Kirigami multipliers, accessibility
 /// flags, icon set, and Breeze widget sizing constants.
 ///
 /// Delegates to [`from_kde_content_pure`] for parsing, then performs I/O
 /// for full DPI detection and icon size lookup.
-pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ThemeSpec> {
+pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::Theme> {
     let mut ini = create_kde_parser();
     ini.read(content.to_string())
         .map_err(|e| crate::Error::ReaderFailed {
@@ -339,8 +339,8 @@ fn find_index_theme_path(theme_name: &str) -> Option<std::path::PathBuf> {
 /// Read the current KDE theme from kdeglobals.
 ///
 /// Parses `~/.config/kdeglobals` (respecting `XDG_CONFIG_HOME`) and maps
-/// KDE color groups and font strings to a `ThemeSpec`.
-pub fn from_kde() -> crate::Result<crate::ThemeSpec> {
+/// KDE color groups and font strings to a `Theme`.
+pub fn from_kde() -> crate::Result<crate::Theme> {
     let path = kdeglobals_path();
     let content = std::fs::read_to_string(&path).map_err(|e| crate::Error::ReaderFailed {
         reader: "kde",
@@ -417,7 +417,7 @@ fn kdeglobals_path_pure(xdg_config_home: Option<&str>, home: Option<&str>) -> st
 
 /// Read KDE theme from a specific kdeglobals file path (for testing).
 #[cfg(test)]
-pub(crate) fn from_kde_at(path: &std::path::Path) -> crate::Result<crate::ThemeSpec> {
+pub(crate) fn from_kde_at(path: &std::path::Path) -> crate::Result<crate::Theme> {
     let content = std::fs::read_to_string(path).map_err(|e| crate::Error::ReaderFailed {
         reader: "kde",
         source: Box::new(e),
@@ -1149,7 +1149,7 @@ Name=whatever
     fn test_kde_resolve_validate() {
         // Load the KDE Breeze preset as a base (provides geometry, spacing, icon sizes,
         // and other fields that KDE's kdeglobals doesn't carry).
-        let mut base = crate::ThemeSpec::preset("kde-breeze").unwrap();
+        let mut base = crate::Theme::preset("kde-breeze").unwrap();
         let kde_theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
 
         // Merge KDE reader output on top of the base preset.
@@ -1165,7 +1165,7 @@ Name=whatever
         // Run the resolution pipeline.
         dark.resolve_all();
 
-        // Validate should produce Ok(ResolvedThemeVariant) with all fields filled.
+        // Validate should produce Ok(ResolvedTheme) with all fields filled.
         let resolved = dark.validate().unwrap_or_else(|e| {
             panic!("KDE resolve/validate pipeline failed: {e}");
         });

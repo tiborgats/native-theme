@@ -1,4 +1,4 @@
-// Theme model: ThemeVariant and ThemeSpec, plus sub-module re-exports
+// Theme model: ThemeMode and Theme, plus sub-module re-exports
 
 /// Animated icon types (frame sequences and transforms).
 pub mod animated;
@@ -32,8 +32,8 @@ pub use icons::{
     IconData, IconProvider, IconRole, IconSet, icon_name, system_icon_set, system_icon_theme,
 };
 pub use resolved::{
-    ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedThemeDefaults,
-    ResolvedThemeVariant,
+    ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedDefaults,
+    ResolvedTheme,
 };
 pub use widgets::*; // All 25 XxxTheme + ResolvedXxxTheme pairs
 
@@ -47,16 +47,16 @@ use serde::{Deserialize, Serialize};
 /// # Examples
 ///
 /// ```
-/// use native_theme::{ThemeVariant, Rgba};
+/// use native_theme::{ThemeMode, Rgba};
 ///
-/// let mut variant = ThemeVariant::default();
+/// let mut variant = ThemeMode::default();
 /// variant.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
 /// variant.defaults.font.family = Some("Inter".into());
 /// assert!(!variant.is_empty());
 /// ```
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
-pub struct ThemeVariant {
+pub struct ThemeMode {
     /// Global defaults inherited by all widgets.
     #[serde(default, skip_serializing_if = "ThemeDefaults::is_empty")]
     pub defaults: ThemeDefaults,
@@ -168,7 +168,7 @@ pub struct ThemeVariant {
     /// Which icon loading mechanism to use (`Freedesktop`, `Material`, `Lucide`,
     /// `SfSymbols`, `SegoeIcons`).  Determines *how* icons are looked up — e.g.
     /// freedesktop theme directories vs. bundled SVG tables.
-    /// When `None`, filled by [`resolve()`](ThemeVariant::resolve) from
+    /// When `None`, filled by [`resolve()`](ThemeMode::resolve) from
     /// [`system_icon_set()`](crate::system_icon_set).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon_set: Option<IconSet>,
@@ -176,13 +176,13 @@ pub struct ThemeVariant {
     /// The name of the visual icon theme that provides the actual icon files
     /// (e.g. `"breeze"`, `"Adwaita"`, `"Lucide"`).  For `Freedesktop` this
     /// selects the theme directory; for bundled sets it is a display label.
-    /// When `None`, filled by [`resolve_platform_defaults()`](ThemeVariant::resolve_platform_defaults)
+    /// When `None`, filled by [`resolve_platform_defaults()`](ThemeMode::resolve_platform_defaults)
     /// from [`system_icon_theme()`](crate::system_icon_theme).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon_theme: Option<String>,
 }
 
-impl_merge!(ThemeVariant {
+impl_merge!(ThemeMode {
     option { icon_set, icon_theme }
     nested {
         defaults, text_scale, window, button, input, checkbox, menu,
@@ -201,10 +201,10 @@ impl_merge!(ThemeVariant {
 /// # Examples
 ///
 /// ```
-/// use native_theme::ThemeSpec;
+/// use native_theme::Theme;
 ///
 /// // Load a bundled preset
-/// let theme = ThemeSpec::preset("dracula").unwrap();
+/// let theme = Theme::preset("dracula").unwrap();
 /// assert_eq!(theme.name, "Dracula");
 ///
 /// // Parse from a TOML string
@@ -213,33 +213,33 @@ impl_merge!(ThemeVariant {
 /// [light.defaults]
 /// accent_color = "#ff6600"
 /// "##;
-/// let custom = ThemeSpec::from_toml(toml).unwrap();
+/// let custom = Theme::from_toml(toml).unwrap();
 /// assert_eq!(custom.name, "Custom");
 ///
 /// // Merge themes (overlay wins for populated fields)
-/// let mut base = ThemeSpec::preset("catppuccin-mocha").unwrap();
+/// let mut base = Theme::preset("catppuccin-mocha").unwrap();
 /// base.merge(&custom);
 /// assert_eq!(base.name, "Catppuccin Mocha"); // base name is preserved
 /// ```
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
-pub struct ThemeSpec {
+pub struct Theme {
     /// Theme name (e.g., "Breeze", "Adwaita", "Windows 11").
     pub name: String,
 
     /// Light variant of the theme.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub light: Option<ThemeVariant>,
+    pub light: Option<ThemeMode>,
 
     /// Dark variant of the theme.
     #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub dark: Option<ThemeVariant>,
+    pub dark: Option<ThemeMode>,
 
     /// Layout spacing constants (shared between light and dark variants).
     #[serde(default, skip_serializing_if = "LayoutTheme::is_empty")]
     pub layout: LayoutTheme,
 }
 
-impl ThemeSpec {
+impl Theme {
     /// Create a new theme with the given name and no variants.
     pub fn new(name: impl Into<String>) -> Self {
         Self {
@@ -280,7 +280,7 @@ impl ThemeSpec {
     /// When `is_dark` is false, prefers `light` and falls back to `dark`.
     /// Returns `None` only if the theme has no variants at all.
     #[must_use]
-    pub fn pick_variant(&self, is_dark: bool) -> Option<&ThemeVariant> {
+    pub fn pick_variant(&self, is_dark: bool) -> Option<&ThemeMode> {
         if is_dark {
             self.dark.as_ref().or(self.light.as_ref())
         } else {
@@ -294,18 +294,18 @@ impl ThemeSpec {
     /// `light`). When false, returns `light` (falling back to `dark`).
     /// Returns `None` only if the theme has no variants at all.
     ///
-    /// Use this when you own the `ThemeSpec` and don't need it afterward.
+    /// Use this when you own the `Theme` and don't need it afterward.
     /// For read-only inspection, use [`pick_variant()`](Self::pick_variant).
     ///
     /// # Examples
     ///
     /// ```
-    /// let theme = native_theme::ThemeSpec::preset("dracula").unwrap();
+    /// let theme = native_theme::Theme::preset("dracula").unwrap();
     /// let variant = theme.into_variant(true).unwrap();
     /// let resolved = variant.into_resolved().unwrap();
     /// ```
     #[must_use]
-    pub fn into_variant(self, is_dark: bool) -> Option<ThemeVariant> {
+    pub fn into_variant(self, is_dark: bool) -> Option<ThemeMode> {
         if is_dark {
             self.dark.or(self.light)
         } else {
@@ -320,7 +320,7 @@ impl ThemeSpec {
 
     /// Load a bundled theme preset by name.
     ///
-    /// Returns the preset as a fully populated [`ThemeSpec`] with both
+    /// Returns the preset as a fully populated [`Theme`] with both
     /// light and dark variants.
     ///
     /// # Errors
@@ -328,14 +328,14 @@ impl ThemeSpec {
     ///
     /// # Examples
     /// ```
-    /// let theme = native_theme::ThemeSpec::preset("catppuccin-mocha").unwrap();
+    /// let theme = native_theme::Theme::preset("catppuccin-mocha").unwrap();
     /// assert!(theme.light.is_some());
     /// ```
     pub fn preset(name: &str) -> crate::Result<Self> {
         crate::presets::preset(name)
     }
 
-    /// Parse a TOML string into a [`ThemeSpec`].
+    /// Parse a TOML string into a [`Theme`].
     ///
     /// # TOML Format
     ///
@@ -411,7 +411,7 @@ impl ThemeSpec {
     /// [light.defaults]
     /// accent_color = "#ff0000"
     /// "##;
-    /// let theme = native_theme::ThemeSpec::from_toml(toml).unwrap();
+    /// let theme = native_theme::Theme::from_toml(toml).unwrap();
     /// assert_eq!(theme.name, "My Theme");
     /// ```
     pub fn from_toml(toml_str: &str) -> crate::Result<Self> {
@@ -432,7 +432,7 @@ impl ThemeSpec {
     /// # Examples
     ///
     /// ```
-    /// let theme = native_theme::ThemeSpec::from_toml_with_base(
+    /// let theme = native_theme::Theme::from_toml_with_base(
     ///     r##"name = "My Theme"
     /// [dark.defaults]
     /// accent_color = "#ff6600"
@@ -449,7 +449,7 @@ impl ThemeSpec {
         Ok(theme)
     }
 
-    /// Load a [`ThemeSpec`] from a TOML file.
+    /// Load a [`Theme`] from a TOML file.
     ///
     /// # Errors
     /// Returns [`crate::Error::Io`] if the file cannot be read, or
@@ -457,7 +457,7 @@ impl ThemeSpec {
     ///
     /// # Examples
     /// ```no_run
-    /// let theme = native_theme::ThemeSpec::from_file("my-theme.toml").unwrap();
+    /// let theme = native_theme::Theme::from_file("my-theme.toml").unwrap();
     /// ```
     pub fn from_file(path: impl AsRef<std::path::Path>) -> crate::Result<Self> {
         crate::presets::from_file(path)
@@ -467,7 +467,7 @@ impl ThemeSpec {
     ///
     /// # Examples
     /// ```
-    /// let names = native_theme::ThemeSpec::list_presets();
+    /// let names = native_theme::Theme::list_presets();
     /// assert_eq!(names.len(), 16);
     /// ```
     #[must_use]
@@ -482,7 +482,7 @@ impl ThemeSpec {
     ///
     /// # Examples
     /// ```
-    /// let names = native_theme::ThemeSpec::list_presets_for_platform();
+    /// let names = native_theme::Theme::list_presets_for_platform();
     /// // On Linux KDE: includes kde-breeze, adwaita, plus all community themes
     /// // On Windows: includes windows-11 plus all community themes
     /// assert!(!names.is_empty());
@@ -499,7 +499,7 @@ impl ThemeSpec {
     ///
     /// # Examples
     /// ```
-    /// let theme = native_theme::ThemeSpec::preset("catppuccin-mocha").unwrap();
+    /// let theme = native_theme::Theme::preset("catppuccin-mocha").unwrap();
     /// let toml_str = theme.to_toml().unwrap();
     /// assert!(toml_str.contains("name = \"Catppuccin Mocha\""));
     /// ```
@@ -524,7 +524,7 @@ impl ThemeSpec {
     /// # Examples
     ///
     /// ```
-    /// let warnings = native_theme::ThemeSpec::lint_toml(r##"
+    /// let warnings = native_theme::Theme::lint_toml(r##"
     /// name = "Test"
     /// [light.defaults]
     /// backround = "#ffffff"
@@ -746,34 +746,34 @@ mod tests {
     use super::*;
     use crate::Rgba;
 
-    // === ThemeVariant tests ===
+    // === ThemeMode tests ===
 
     #[test]
     fn theme_variant_default_is_empty() {
-        assert!(ThemeVariant::default().is_empty());
+        assert!(ThemeMode::default().is_empty());
     }
 
     #[test]
     fn theme_variant_not_empty_when_color_set() {
-        let mut v = ThemeVariant::default();
+        let mut v = ThemeMode::default();
         v.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
         assert!(!v.is_empty());
     }
 
     #[test]
     fn theme_variant_not_empty_when_font_set() {
-        let mut v = ThemeVariant::default();
+        let mut v = ThemeMode::default();
         v.defaults.font.family = Some("Inter".into());
         assert!(!v.is_empty());
     }
 
     #[test]
     fn theme_variant_merge_recursively() {
-        let mut base = ThemeVariant::default();
+        let mut base = ThemeMode::default();
         base.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
         base.defaults.font.family = Some("Noto Sans".into());
 
-        let mut overlay = ThemeVariant::default();
+        let mut overlay = ThemeMode::default();
         overlay.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
         overlay.defaults.border.corner_radius = Some(4.0);
 
@@ -794,7 +794,7 @@ mod tests {
 
     #[test]
     fn theme_variant_has_all_widgets() {
-        let mut v = ThemeVariant::default();
+        let mut v = ThemeMode::default();
         // Set a field on each of the 25 widgets
         v.window.background_color = Some(Rgba::rgb(255, 255, 255));
         v.button.min_height = Some(32.0);
@@ -852,12 +852,12 @@ mod tests {
 
     #[test]
     fn theme_variant_merge_per_widget() {
-        let mut base = ThemeVariant::default();
+        let mut base = ThemeMode::default();
         base.button.background_color = Some(Rgba::rgb(200, 200, 200));
         base.button.min_height = Some(28.0);
         base.tooltip.background_color = Some(Rgba::rgb(50, 50, 50));
 
-        let mut overlay = ThemeVariant::default();
+        let mut overlay = ThemeMode::default();
         overlay.button.background_color = Some(Rgba::rgb(255, 255, 255));
         overlay.button.min_width = Some(64.0);
 
@@ -873,11 +873,11 @@ mod tests {
         assert_eq!(base.tooltip.background_color, Some(Rgba::rgb(50, 50, 50)));
     }
 
-    // === ThemeSpec tests ===
+    // === Theme tests ===
 
     #[test]
     fn native_theme_new_constructor() {
-        let theme = ThemeSpec::new("Breeze");
+        let theme = Theme::new("Breeze");
         assert_eq!(theme.name, "Breeze");
         assert!(theme.light.is_none());
         assert!(theme.dark.is_none());
@@ -885,25 +885,25 @@ mod tests {
 
     #[test]
     fn native_theme_default_is_empty() {
-        let theme = ThemeSpec::default();
+        let theme = Theme::default();
         assert!(theme.is_empty());
         assert_eq!(theme.name, "");
     }
 
     #[test]
     fn native_theme_merge_keeps_base_name() {
-        let mut base = ThemeSpec::new("Base Theme");
-        let overlay = ThemeSpec::new("Overlay Theme");
+        let mut base = Theme::new("Base Theme");
+        let overlay = Theme::new("Overlay Theme");
         base.merge(&overlay);
         assert_eq!(base.name, "Base Theme");
     }
 
     #[test]
     fn native_theme_merge_overlay_light_into_none() {
-        let mut base = ThemeSpec::new("Theme");
+        let mut base = Theme::new("Theme");
 
-        let mut overlay = ThemeSpec::new("Overlay");
-        let mut light = ThemeVariant::default();
+        let mut overlay = Theme::new("Overlay");
+        let mut light = ThemeMode::default();
         light.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
         overlay.light = Some(light);
 
@@ -918,13 +918,13 @@ mod tests {
 
     #[test]
     fn native_theme_merge_both_light_variants() {
-        let mut base = ThemeSpec::new("Theme");
-        let mut base_light = ThemeVariant::default();
+        let mut base = Theme::new("Theme");
+        let mut base_light = ThemeMode::default();
         base_light.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
         base.light = Some(base_light);
 
-        let mut overlay = ThemeSpec::new("Overlay");
-        let mut overlay_light = ThemeVariant::default();
+        let mut overlay = Theme::new("Overlay");
+        let mut overlay_light = ThemeMode::default();
         overlay_light.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
         overlay.light = Some(overlay_light);
 
@@ -942,12 +942,12 @@ mod tests {
 
     #[test]
     fn native_theme_merge_base_light_only_preserved() {
-        let mut base = ThemeSpec::new("Theme");
-        let mut base_light = ThemeVariant::default();
+        let mut base = Theme::new("Theme");
+        let mut base_light = ThemeMode::default();
         base_light.defaults.font.family = Some("Inter".into());
         base.light = Some(base_light);
 
-        let overlay = ThemeSpec::new("Overlay"); // no light
+        let overlay = Theme::new("Overlay"); // no light
 
         base.merge(&overlay);
 
@@ -960,10 +960,10 @@ mod tests {
 
     #[test]
     fn native_theme_merge_dark_variant() {
-        let mut base = ThemeSpec::new("Theme");
+        let mut base = Theme::new("Theme");
 
-        let mut overlay = ThemeSpec::new("Overlay");
-        let mut dark = ThemeVariant::default();
+        let mut overlay = Theme::new("Overlay");
+        let mut dark = ThemeMode::default();
         dark.defaults.background_color = Some(Rgba::rgb(30, 30, 30));
         overlay.dark = Some(dark);
 
@@ -978,8 +978,8 @@ mod tests {
 
     #[test]
     fn native_theme_not_empty_with_light() {
-        let mut theme = ThemeSpec::new("Theme");
-        theme.light = Some(ThemeVariant::default());
+        let mut theme = Theme::new("Theme");
+        theme.light = Some(ThemeMode::default());
         assert!(!theme.is_empty());
     }
 
@@ -987,11 +987,11 @@ mod tests {
 
     #[test]
     fn pick_variant_dark_with_both_variants_returns_dark() {
-        let mut theme = ThemeSpec::new("Test");
-        let mut light = ThemeVariant::default();
+        let mut theme = Theme::new("Test");
+        let mut light = ThemeMode::default();
         light.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
         theme.light = Some(light);
-        let mut dark = ThemeVariant::default();
+        let mut dark = ThemeMode::default();
         dark.defaults.background_color = Some(Rgba::rgb(30, 30, 30));
         theme.dark = Some(dark);
 
@@ -1004,11 +1004,11 @@ mod tests {
 
     #[test]
     fn pick_variant_light_with_both_variants_returns_light() {
-        let mut theme = ThemeSpec::new("Test");
-        let mut light = ThemeVariant::default();
+        let mut theme = Theme::new("Test");
+        let mut light = ThemeMode::default();
         light.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
         theme.light = Some(light);
-        let mut dark = ThemeVariant::default();
+        let mut dark = ThemeMode::default();
         dark.defaults.background_color = Some(Rgba::rgb(30, 30, 30));
         theme.dark = Some(dark);
 
@@ -1021,8 +1021,8 @@ mod tests {
 
     #[test]
     fn pick_variant_dark_with_only_light_falls_back() {
-        let mut theme = ThemeSpec::new("Test");
-        let mut light = ThemeVariant::default();
+        let mut theme = Theme::new("Test");
+        let mut light = ThemeMode::default();
         light.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
         theme.light = Some(light);
 
@@ -1035,8 +1035,8 @@ mod tests {
 
     #[test]
     fn pick_variant_light_with_only_dark_falls_back() {
-        let mut theme = ThemeSpec::new("Test");
-        let mut dark = ThemeVariant::default();
+        let mut theme = Theme::new("Test");
+        let mut dark = ThemeMode::default();
         dark.defaults.background_color = Some(Rgba::rgb(30, 30, 30));
         theme.dark = Some(dark);
 
@@ -1049,7 +1049,7 @@ mod tests {
 
     #[test]
     fn pick_variant_with_no_variants_returns_none() {
-        let theme = ThemeSpec::new("Empty");
+        let theme = Theme::new("Empty");
         assert!(theme.pick_variant(true).is_none());
         assert!(theme.pick_variant(false).is_none());
     }
@@ -1058,13 +1058,13 @@ mod tests {
 
     #[test]
     fn icon_set_default_is_none() {
-        assert!(ThemeVariant::default().icon_set.is_none());
+        assert!(ThemeMode::default().icon_set.is_none());
     }
 
     #[test]
     fn icon_set_merge_overlay() {
-        let mut base = ThemeVariant::default();
-        let overlay = ThemeVariant {
+        let mut base = ThemeMode::default();
+        let overlay = ThemeMode {
             icon_set: Some(IconSet::Material),
             ..Default::default()
         };
@@ -1074,19 +1074,19 @@ mod tests {
 
     #[test]
     fn icon_set_merge_none_preserves() {
-        let mut base = ThemeVariant {
+        let mut base = ThemeMode {
             icon_set: Some(IconSet::SfSymbols),
             ..Default::default()
         };
-        let overlay = ThemeVariant::default();
+        let overlay = ThemeMode::default();
         base.merge(&overlay);
         assert_eq!(base.icon_set, Some(IconSet::SfSymbols));
     }
 
     #[test]
     fn icon_set_is_empty_when_set() {
-        assert!(ThemeVariant::default().is_empty());
-        let v = ThemeVariant {
+        assert!(ThemeMode::default().is_empty());
+        let v = ThemeMode {
             icon_set: Some(IconSet::Material),
             ..Default::default()
         };
@@ -1095,13 +1095,13 @@ mod tests {
 
     #[test]
     fn icon_set_toml_round_trip() {
-        let variant = ThemeVariant {
+        let variant = ThemeMode {
             icon_set: Some(IconSet::Material),
             ..Default::default()
         };
         let toml_str = toml::to_string(&variant).unwrap();
         assert!(toml_str.contains("icon_set"));
-        let deserialized: ThemeVariant = toml::from_str(&toml_str).unwrap();
+        let deserialized: ThemeMode = toml::from_str(&toml_str).unwrap();
         assert_eq!(deserialized.icon_set, Some(IconSet::Material));
     }
 
@@ -1111,17 +1111,17 @@ mod tests {
 [defaults]
 accent_color = "#ff0000"
 "##;
-        let variant: ThemeVariant = toml::from_str(toml_str).unwrap();
+        let variant: ThemeMode = toml::from_str(toml_str).unwrap();
         assert!(variant.icon_set.is_none());
     }
 
     #[test]
     fn native_theme_serde_toml_round_trip() {
         // Load a preset, serialize to TOML, deserialize back, and verify equality
-        let theme = ThemeSpec::preset("material").expect("material preset should load");
+        let theme = Theme::preset("material").expect("material preset should load");
         let toml_str = theme.to_toml().expect("should serialize");
-        let theme2 = ThemeSpec::from_toml(&toml_str).expect("should deserialize");
-        assert_eq!(theme, theme2, "round-trip should preserve ThemeSpec");
+        let theme2 = Theme::from_toml(&toml_str).expect("should deserialize");
+        assert_eq!(theme, theme2, "round-trip should preserve Theme");
     }
 
     // === from_toml_with_base tests ===
@@ -1133,7 +1133,7 @@ name = "Custom"
 [light.defaults]
 accent_color = "#ff00ff"
 "##;
-        let theme = ThemeSpec::from_toml_with_base(overlay_toml, "material").expect("should merge");
+        let theme = Theme::from_toml_with_base(overlay_toml, "material").expect("should merge");
         // The overlay accent_color should replace the preset's
         let light = theme.light.as_ref().expect("light variant should exist");
         assert_eq!(
@@ -1150,7 +1150,7 @@ accent_color = "#ff00ff"
 
     #[test]
     fn from_toml_with_base_unknown_preset_returns_error() {
-        let err = ThemeSpec::from_toml_with_base("name = \"X\"", "nonexistent").unwrap_err();
+        let err = Theme::from_toml_with_base("name = \"X\"", "nonexistent").unwrap_err();
         let crate::Error::UnknownPreset { name, .. } = err else {
             return;
         };
@@ -1159,7 +1159,7 @@ accent_color = "#ff00ff"
 
     #[test]
     fn from_toml_with_base_invalid_toml_returns_error() {
-        let err = ThemeSpec::from_toml_with_base("{{{{invalid", "material").unwrap_err();
+        let err = Theme::from_toml_with_base("{{{{invalid", "material").unwrap_err();
         assert!(
             matches!(err, crate::Error::Toml(_)),
             "expected Toml variant, got: {err:?}"
@@ -1181,7 +1181,7 @@ size_px = 14.0
 [light.button]
 min_height_px = 32.0
 "##;
-        let warnings = ThemeSpec::lint_toml(toml).unwrap();
+        let warnings = Theme::lint_toml(toml).unwrap();
         assert!(
             warnings.is_empty(),
             "Expected no warnings, got: {warnings:?}"
@@ -1194,7 +1194,7 @@ min_height_px = 32.0
 name = "Test"
 theme_version = 2
 "##;
-        let warnings = ThemeSpec::lint_toml(toml).unwrap();
+        let warnings = Theme::lint_toml(toml).unwrap();
         assert_eq!(warnings.len(), 1);
         assert!(warnings[0].contains("theme_version"));
     }
@@ -1206,7 +1206,7 @@ name = "Test"
 [light.defaults]
 backround = "#ffffff"
 "##;
-        let warnings = ThemeSpec::lint_toml(toml).unwrap();
+        let warnings = Theme::lint_toml(toml).unwrap();
         assert_eq!(warnings.len(), 1);
         assert!(warnings[0].contains("backround"));
         assert!(warnings[0].contains("light.defaults.backround"));
@@ -1219,7 +1219,7 @@ name = "Test"
 [dark.button]
 primary_bg = "#0078d7"
 "##;
-        let warnings = ThemeSpec::lint_toml(toml).unwrap();
+        let warnings = Theme::lint_toml(toml).unwrap();
         assert_eq!(warnings.len(), 1);
         assert!(warnings[0].contains("primary_bg"));
     }
@@ -1231,7 +1231,7 @@ name = "Test"
 [light.badges]
 color = "#ff0000"
 "##;
-        let warnings = ThemeSpec::lint_toml(toml).unwrap();
+        let warnings = Theme::lint_toml(toml).unwrap();
         assert_eq!(warnings.len(), 1);
         assert!(warnings[0].contains("badges"));
     }
@@ -1243,7 +1243,7 @@ name = "Test"
 [light.defaults.font]
 famly = "Inter"
 "##;
-        let warnings = ThemeSpec::lint_toml(toml).unwrap();
+        let warnings = Theme::lint_toml(toml).unwrap();
         assert_eq!(warnings.len(), 1);
         assert!(warnings[0].contains("famly"));
     }
@@ -1255,7 +1255,7 @@ name = "Test"
 [light.defaults.border]
 radiusss = 4.0
 "##;
-        let warnings = ThemeSpec::lint_toml(toml).unwrap();
+        let warnings = Theme::lint_toml(toml).unwrap();
         assert_eq!(warnings.len(), 1);
         assert!(warnings[0].contains("radiusss"));
     }
@@ -1267,7 +1267,7 @@ name = "Test"
 [light.text_scale.headline]
 size = 24.0
 "##;
-        let warnings = ThemeSpec::lint_toml(toml).unwrap();
+        let warnings = Theme::lint_toml(toml).unwrap();
         assert_eq!(warnings.len(), 1);
         assert!(warnings[0].contains("headline"));
     }
@@ -1279,7 +1279,7 @@ name = "Test"
 [light.text_scale.caption]
 font_size = 12.0
 "##;
-        let warnings = ThemeSpec::lint_toml(toml).unwrap();
+        let warnings = Theme::lint_toml(toml).unwrap();
         assert_eq!(warnings.len(), 1);
         assert!(warnings[0].contains("font_size"));
     }
@@ -1294,22 +1294,22 @@ backround = "#ffffff"
 [light.button]
 primay_bg = "#0078d7"
 "##;
-        let warnings = ThemeSpec::lint_toml(toml).unwrap();
+        let warnings = Theme::lint_toml(toml).unwrap();
         assert_eq!(warnings.len(), 3);
     }
 
     #[test]
     fn lint_toml_invalid_toml_returns_error() {
-        let result = ThemeSpec::lint_toml("{{{{invalid");
+        let result = Theme::lint_toml("{{{{invalid");
         assert!(result.is_err());
     }
 
     #[test]
     fn lint_toml_preset_has_no_warnings() {
         // Spot-check one preset for lint cleanliness via round-trip
-        let theme = ThemeSpec::preset("material").expect("material preset should load");
+        let theme = Theme::preset("material").expect("material preset should load");
         let toml_str = theme.to_toml().expect("should serialize");
-        let warnings = ThemeSpec::lint_toml(&toml_str).expect("should parse");
+        let warnings = Theme::lint_toml(&toml_str).expect("should parse");
         assert!(
             warnings.is_empty(),
             "material preset should have no lint warnings, got: {warnings:?}"
@@ -1318,16 +1318,16 @@ primay_bg = "#0078d7"
 
     #[test]
     fn lint_toml_all_presets_clean() {
-        for name in ThemeSpec::list_presets() {
+        for name in Theme::list_presets() {
             // Load the raw TOML source for each preset via include_str
             // by loading via preset() + to_toml() round-trip
-            let theme = ThemeSpec::preset(name).unwrap_or_else(|e| {
+            let theme = Theme::preset(name).unwrap_or_else(|e| {
                 panic!("preset {name} should load: {e}");
             });
             let toml_str = theme.to_toml().unwrap_or_else(|e| {
                 panic!("preset {name} should serialize: {e}");
             });
-            let warnings = ThemeSpec::lint_toml(&toml_str).unwrap_or_else(|e| {
+            let warnings = Theme::lint_toml(&toml_str).unwrap_or_else(|e| {
                 panic!("preset {name} should lint: {e}");
             });
             assert!(
@@ -1337,14 +1337,14 @@ primay_bg = "#0078d7"
         }
     }
 
-    // === ThemeSpec layout integration tests ===
+    // === Theme layout integration tests ===
 
     #[test]
     fn theme_spec_layout_merge() {
-        let mut base = ThemeSpec::new("Base");
+        let mut base = Theme::new("Base");
         base.layout.widget_gap = Some(6.0);
 
-        let mut overlay = ThemeSpec::new("Overlay");
+        let mut overlay = Theme::new("Overlay");
         overlay.layout.container_margin = Some(8.0);
 
         base.merge(&overlay);
@@ -1354,20 +1354,20 @@ primay_bg = "#0078d7"
 
     #[test]
     fn theme_spec_layout_toml_round_trip() {
-        let mut theme = ThemeSpec::new("Layout Test");
+        let mut theme = Theme::new("Layout Test");
         theme.layout.widget_gap = Some(8.0);
         theme.layout.container_margin = Some(12.0);
         theme.layout.window_margin = Some(16.0);
         theme.layout.section_gap = Some(24.0);
 
         let toml_str = theme.to_toml().unwrap();
-        let theme2 = ThemeSpec::from_toml(&toml_str).unwrap();
+        let theme2 = Theme::from_toml(&toml_str).unwrap();
         assert_eq!(theme.layout, theme2.layout);
     }
 
     #[test]
     fn theme_spec_is_empty_with_layout() {
-        let mut theme = ThemeSpec::new("Layout Only");
+        let mut theme = Theme::new("Layout Only");
         assert!(theme.is_empty()); // name doesn't count
         theme.layout.widget_gap = Some(8.0);
         assert!(!theme.is_empty());
@@ -1375,7 +1375,7 @@ primay_bg = "#0078d7"
 
     #[test]
     fn theme_spec_layout_top_level_toml() {
-        let mut theme = ThemeSpec::new("Top Level");
+        let mut theme = Theme::new("Top Level");
         theme.layout.widget_gap = Some(8.0);
 
         let toml_str = theme.to_toml().unwrap();

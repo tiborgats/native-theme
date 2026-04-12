@@ -1,22 +1,22 @@
 // Theme validation: orchestrate defaults extraction, per-widget dispatch, range checks,
-// and ResolvedThemeVariant construction.
+// and ResolvedTheme construction.
 // Helper functions, range-check utilities, and ValidateNested trait live in validate_helpers.rs.
 
 use super::validate_helpers::{
     self, DEFAULT_FONT_DPI, require, require_font, require_text_scale_entry,
 };
-use crate::model::{IconSet, ThemeVariant};
+use crate::model::{IconSet, ThemeMode};
 use crate::model::resolved::{
-    ResolvedIconSizes, ResolvedTextScale, ResolvedThemeDefaults, ResolvedThemeVariant,
+    ResolvedIconSizes, ResolvedTextScale, ResolvedDefaults, ResolvedTheme,
 };
 
-impl ThemeVariant {
-    /// Convert this ThemeVariant into a [`ResolvedThemeVariant`] with all fields guaranteed.
+impl ThemeMode {
+    /// Convert this ThemeMode into a [`ResolvedTheme`] with all fields guaranteed.
     ///
-    /// Should be called after [`resolve()`](ThemeVariant::resolve). Walks every field
+    /// Should be called after [`resolve()`](ThemeMode::resolve). Walks every field
     /// and collects missing (None) field paths, then validates that numeric values
     /// are within legal ranges (e.g., spacing >= 0, opacity 0..=1, font weight
-    /// 100..=900). Returns `Ok(ResolvedThemeVariant)` if all fields are populated
+    /// 100..=900). Returns `Ok(ResolvedTheme)` if all fields are populated
     /// and in range.
     ///
     /// # Errors
@@ -25,7 +25,7 @@ impl ThemeVariant {
     /// are still `None` after resolution. Returns
     /// [`crate::Error::ResolutionInvalid`] if all fields are present but
     /// some numeric values fall outside allowed ranges.
-    pub fn validate(&self) -> crate::Result<ResolvedThemeVariant> {
+    pub fn validate(&self) -> crate::Result<ResolvedTheme> {
         let mut missing = Vec::new();
         let dpi = self.defaults.font_dpi.unwrap_or(DEFAULT_FONT_DPI);
 
@@ -293,7 +293,7 @@ impl ThemeVariant {
 
         // --- construct defaults and text_scale structs (before range checks) ---
         use crate::model::border::ResolvedBorderSpec;
-        let defaults = ResolvedThemeDefaults {
+        let defaults = ResolvedDefaults {
             font: defaults_font,
             line_height: defaults_line_height,
             mono_font: defaults_mono_font,
@@ -470,7 +470,7 @@ impl ThemeVariant {
             });
         }
 
-        Ok(ResolvedThemeVariant {
+        Ok(ResolvedTheme {
             defaults,
             text_scale,
             window,

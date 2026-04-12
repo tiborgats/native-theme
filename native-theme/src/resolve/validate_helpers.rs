@@ -19,7 +19,7 @@ pub(crate) const DEFAULT_FONT_DPI: f32 = 96.0;
 ///
 /// Returns the value if present, or `T::default()` as a placeholder if missing.
 /// The placeholder is never used: `validate()` returns `Err` before constructing
-/// `ResolvedThemeVariant` when any field was recorded as missing.
+/// `ResolvedTheme` when any field was recorded as missing.
 pub(crate) fn require<T: Clone + Default>(
     field: &Option<T>,
     path: &str,
@@ -353,7 +353,7 @@ impl ValidateNested for BorderSpec {
 /// This centralizes all the range-check calls for the global defaults
 /// and the text_scale entries that were previously inline in validate().
 pub(crate) fn check_defaults_ranges(
-    defaults: &crate::model::resolved::ResolvedThemeDefaults,
+    defaults: &crate::model::resolved::ResolvedDefaults,
     text_scale: &crate::model::resolved::ResolvedTextScale,
     errors: &mut Vec<crate::error::RangeViolation>,
 ) {

@@ -6,21 +6,21 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use native_theme::ThemeSpec;
+use native_theme::Theme;
 
 #[test]
 fn all_presets_parse_without_error() {
-    for name in ThemeSpec::list_presets() {
-        let _theme = ThemeSpec::preset(name)
+    for name in Theme::list_presets() {
+        let _theme = Theme::preset(name)
             .unwrap_or_else(|e| panic!("preset '{name}' failed to parse: {e}"));
     }
 }
 
 #[test]
 fn all_presets_have_both_variants() {
-    for name in ThemeSpec::list_presets() {
+    for name in Theme::list_presets() {
         let theme =
-            ThemeSpec::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+            Theme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         assert!(
             theme.light.is_some(),
             "preset '{name}' missing light variant"
@@ -31,9 +31,9 @@ fn all_presets_have_both_variants() {
 
 #[test]
 fn all_presets_have_core_colors() {
-    for name in ThemeSpec::list_presets() {
+    for name in Theme::list_presets() {
         let theme =
-            ThemeSpec::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+            Theme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         let light = theme
             .light
             .as_ref()
@@ -73,9 +73,9 @@ fn all_presets_have_core_colors() {
 
 #[test]
 fn all_presets_have_status_colors() {
-    for name in ThemeSpec::list_presets() {
+    for name in Theme::list_presets() {
         let theme =
-            ThemeSpec::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+            Theme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         let light = theme.light.as_ref().unwrap();
         let dark = theme.dark.as_ref().unwrap();
 
@@ -109,9 +109,9 @@ fn all_presets_have_status_colors() {
 
 #[test]
 fn all_presets_have_interactive_colors() {
-    for name in ThemeSpec::list_presets() {
+    for name in Theme::list_presets() {
         let theme =
-            ThemeSpec::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+            Theme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         let light = theme.light.as_ref().unwrap();
         let dark = theme.dark.as_ref().unwrap();
 
@@ -137,9 +137,9 @@ fn all_presets_have_interactive_colors() {
 
 #[test]
 fn all_presets_have_valid_fonts() {
-    for name in ThemeSpec::list_presets() {
+    for name in Theme::list_presets() {
         let theme =
-            ThemeSpec::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+            Theme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         for (label, variant) in [
             ("light", theme.light.as_ref()),
             ("dark", theme.dark.as_ref()),
@@ -180,9 +180,9 @@ fn all_presets_have_valid_fonts() {
 
 #[test]
 fn all_presets_have_geometry() {
-    for name in ThemeSpec::list_presets() {
+    for name in Theme::list_presets() {
         let theme =
-            ThemeSpec::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+            Theme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         for (label, variant) in [
             ("light", theme.light.as_ref()),
             ("dark", theme.dark.as_ref()),
@@ -216,9 +216,9 @@ fn all_presets_have_geometry() {
 
 #[test]
 fn all_presets_have_spacing() {
-    for name in ThemeSpec::list_presets() {
+    for name in Theme::list_presets() {
         let theme =
-            ThemeSpec::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+            Theme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         for (label, variant) in [
             ("light", theme.light.as_ref()),
             ("dark", theme.dark.as_ref()),
@@ -233,13 +233,13 @@ fn all_presets_have_spacing() {
 
 #[test]
 fn all_presets_round_trip_toml() {
-    for name in ThemeSpec::list_presets() {
+    for name in Theme::list_presets() {
         let theme =
-            ThemeSpec::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+            Theme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         let toml_str = theme
             .to_toml()
             .unwrap_or_else(|e| panic!("preset '{name}' to_toml failed: {e}"));
-        let reparsed = ThemeSpec::from_toml(&toml_str)
+        let reparsed = Theme::from_toml(&toml_str)
             .unwrap_or_else(|e| panic!("preset '{name}' round-trip from_toml failed: {e}"));
 
         // Core accent must survive the round-trip
@@ -274,18 +274,18 @@ fn all_presets_round_trip_toml() {
 #[test]
 fn list_presets_returns_sixteen_entries() {
     assert_eq!(
-        ThemeSpec::list_presets().len(),
+        Theme::list_presets().len(),
         16,
         "expected 16 presets, got {}",
-        ThemeSpec::list_presets().len()
+        Theme::list_presets().len()
     );
 }
 
 #[test]
 fn dark_backgrounds_are_darker() {
-    for name in ThemeSpec::list_presets() {
+    for name in Theme::list_presets() {
         let theme =
-            ThemeSpec::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
+            Theme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         let light_bg = theme
             .light
             .as_ref()
@@ -316,7 +316,7 @@ fn dark_backgrounds_are_darker() {
 
 #[test]
 fn preset_names_are_correct() {
-    let names = ThemeSpec::list_presets();
+    let names = Theme::list_presets();
     assert!(
         names.contains(&"kde-breeze"),
         "list_presets() missing 'kde-breeze'"

@@ -866,8 +866,8 @@ define_widget_pair! {
 define_widget_pair! {
     /// Layout spacing constants shared between light and dark variants.
     ///
-    /// Unlike other widget themes, LayoutTheme lives on [`crate::ThemeSpec`] (top-level)
-    /// rather than [`crate::ThemeVariant`] because spacing is variant-independent.
+    /// Unlike other widget themes, LayoutTheme lives on [`crate::Theme`] (top-level)
+    /// rather than [`crate::ThemeMode`] because spacing is variant-independent.
     LayoutTheme / ResolvedLayoutTheme {
         option {
             /// Space between adjacent widgets in logical pixels.

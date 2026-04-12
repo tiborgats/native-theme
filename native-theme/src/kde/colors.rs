@@ -1,5 +1,5 @@
-// KDE color group parsing -> populate per-widget fields on ThemeVariant
-// Maps semantic color roles from KDE INI color groups directly to ThemeVariant.
+// KDE color group parsing -> populate per-widget fields on ThemeMode
+// Maps semantic color roles from KDE INI color groups directly to ThemeMode.
 
 use crate::Rgba;
 
@@ -9,12 +9,12 @@ fn get_color(ini: &configparser::ini::Ini, section: &str, key: &str) -> Option<R
     super::parse_rgb(&value)
 }
 
-/// Populate a ThemeVariant with colors from KDE INI color groups.
+/// Populate a ThemeMode with colors from KDE INI color groups.
 ///
 /// Maps all standard KDE color groups (View, Window, Button, Selection,
 /// Tooltip, Complementary, Header, WM) to per-widget fields on the variant.
 /// Missing INI keys result in None fields (no hardcoded fallbacks).
-pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate::ThemeVariant) {
+pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate::ThemeMode) {
     let window_fg = get_color(ini, "Colors:Window", "ForegroundNormal");
 
     // === defaults-level colors ===
@@ -118,7 +118,7 @@ pub(crate) fn populate_colors(ini: &configparser::ini::Ini, variant: &mut crate:
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use crate::ThemeVariant;
+    use crate::ThemeMode;
 
     /// Full Breeze Dark kdeglobals fixture with all 6 color groups + WM + Header.
     const BREEZE_DARK: &str = "\
@@ -180,10 +180,10 @@ inactiveBackground=42,46,50
 inactiveForeground=161,169,177
 ";
 
-    fn populate_fixture(content: &str) -> ThemeVariant {
+    fn populate_fixture(content: &str) -> ThemeMode {
         let mut ini = super::super::create_kde_parser();
         ini.read(content.to_string()).unwrap();
-        let mut variant = ThemeVariant::default();
+        let mut variant = ThemeMode::default();
         populate_colors(&ini, &mut variant);
         variant
     }
@@ -430,7 +430,7 @@ ForegroundNormal=252,252,252
     #[test]
     fn test_empty_ini() {
         let ini = super::super::create_kde_parser();
-        let mut variant = ThemeVariant::default();
+        let mut variant = ThemeMode::default();
         populate_colors(&ini, &mut variant);
         assert!(variant.defaults.accent_color.is_none());
         assert!(variant.defaults.background_color.is_none());

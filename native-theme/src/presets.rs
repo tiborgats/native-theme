@@ -7,7 +7,7 @@
 //! (geometry-only, used by the OS-first pipeline) and functions for
 //! loading themes from TOML strings and files.
 
-use crate::{Error, Result, ThemeSpec};
+use crate::{Error, Result, Theme};
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::LazyLock;
@@ -82,7 +82,7 @@ const PRESET_NAMES: &[&str] = &[
     "one-dark",
 ];
 
-type Parsed = std::result::Result<ThemeSpec, String>;
+type Parsed = std::result::Result<Theme, String>;
 
 fn parse(toml_str: &str) -> Parsed {
     from_toml(toml_str).map_err(|e| e.to_string())
@@ -95,7 +95,7 @@ static CACHE: LazyLock<HashMap<&str, Parsed>> = LazyLock::new(|| {
         .collect()
 });
 
-pub(crate) fn preset(name: &str) -> Result<ThemeSpec> {
+pub(crate) fn preset(name: &str) -> Result<Theme> {
     match CACHE.get(name) {
         None => Err(Error::UnknownPreset {
             name: name.to_string(),
@@ -179,17 +179,17 @@ pub(crate) fn list_presets_for_platform() -> Vec<&'static str> {
         .collect()
 }
 
-pub(crate) fn from_toml(toml_str: &str) -> Result<ThemeSpec> {
-    let theme: ThemeSpec = toml::from_str(toml_str)?;
+pub(crate) fn from_toml(toml_str: &str) -> Result<Theme> {
+    let theme: Theme = toml::from_str(toml_str)?;
     Ok(theme)
 }
 
-pub(crate) fn from_file(path: impl AsRef<Path>) -> Result<ThemeSpec> {
+pub(crate) fn from_file(path: impl AsRef<Path>) -> Result<Theme> {
     let contents = std::fs::read_to_string(path)?;
     from_toml(&contents)
 }
 
-pub(crate) fn to_toml(theme: &ThemeSpec) -> Result<String> {
+pub(crate) fn to_toml(theme: &Theme) -> Result<String> {
     let s = toml::to_string_pretty(theme)?;
     Ok(s)
 }
@@ -247,7 +247,7 @@ accent_color = "#ff0000"
         let theme = preset("catppuccin-mocha").unwrap();
         let toml_str = to_toml(&theme).unwrap();
 
-        // Must be parseable back into a ThemeSpec
+        // Must be parseable back into a Theme
         let reparsed = from_toml(&toml_str).unwrap();
         assert_eq!(reparsed.name, theme.name);
         assert!(reparsed.light.is_some());

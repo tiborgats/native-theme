@@ -1,4 +1,4 @@
-// Qt font string parsing with weight extraction -> populate per-widget fonts on ThemeVariant
+// Qt font string parsing with weight extraction -> populate per-widget fonts on ThemeMode
 
 /// Convert a Qt5 weight (0-100 scale) to CSS weight (100-900).
 ///
@@ -62,7 +62,7 @@ pub(crate) fn parse_qt_font_with_weight(font_str: &str) -> Option<crate::FontSpe
     })
 }
 
-/// Populate per-widget font fields on a ThemeVariant from KDE INI.
+/// Populate per-widget font fields on a ThemeMode from KDE INI.
 ///
 /// Reads font keys from [General] and [WM] sections:
 /// - defaults.font from [General] font
@@ -72,7 +72,7 @@ pub(crate) fn parse_qt_font_with_weight(font_str: &str) -> Option<crate::FontSpe
 /// - window.title_bar_font from [WM] activeFont (KDE-01)
 ///
 /// Missing keys result in None fields (no hardcoded fallbacks).
-pub(crate) fn populate_fonts(ini: &configparser::ini::Ini, variant: &mut crate::ThemeVariant) {
+pub(crate) fn populate_fonts(ini: &configparser::ini::Ini, variant: &mut crate::ThemeMode) {
     if let Some(font_str) = ini.get("General", "font")
         && let Some(spec) = parse_qt_font_with_weight(&font_str)
     {
@@ -115,7 +115,7 @@ pub(crate) fn populate_fonts(ini: &configparser::ini::Ini, variant: &mut crate::
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use crate::ThemeVariant;
+    use crate::ThemeMode;
     use crate::model::font::FontSize;
 
     // === qt5_to_css_weight boundary tests ===
@@ -231,7 +231,7 @@ mod tests {
         let mut ini = super::super::create_kde_parser();
         ini.read("[General]\nfont=Noto Sans,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\n".to_string())
             .unwrap();
-        let mut variant = ThemeVariant::default();
+        let mut variant = ThemeMode::default();
         populate_fonts(&ini, &mut variant);
         assert_eq!(variant.defaults.font.family.as_deref(), Some("Noto Sans"));
         assert_eq!(variant.defaults.font.size, Some(FontSize::Pt(10.0)));
@@ -243,7 +243,7 @@ mod tests {
         let mut ini = super::super::create_kde_parser();
         ini.read("[General]\nfixed=Hack,10,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\n".to_string())
             .unwrap();
-        let mut variant = ThemeVariant::default();
+        let mut variant = ThemeMode::default();
         populate_fonts(&ini, &mut variant);
         assert_eq!(variant.defaults.mono_font.family.as_deref(), Some("Hack"));
         assert_eq!(variant.defaults.mono_font.size, Some(FontSize::Pt(10.0)));
@@ -254,7 +254,7 @@ mod tests {
         let mut ini = super::super::create_kde_parser();
         ini.read("[General]\nmenuFont=Noto Sans,9,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\n".to_string())
             .unwrap();
-        let mut variant = ThemeVariant::default();
+        let mut variant = ThemeMode::default();
         populate_fonts(&ini, &mut variant);
         let menu_font = variant.menu.font.unwrap();
         assert_eq!(menu_font.family.as_deref(), Some("Noto Sans"));
@@ -266,7 +266,7 @@ mod tests {
         let mut ini = super::super::create_kde_parser();
         ini.read("[General]\ntoolBarFont=Noto Sans,9,-1,5,400,0,0,0,0,0,0,0,0,0,0,1\n".to_string())
             .unwrap();
-        let mut variant = ThemeVariant::default();
+        let mut variant = ThemeMode::default();
         populate_fonts(&ini, &mut variant);
         let toolbar_font = variant.toolbar.font.unwrap();
         assert_eq!(toolbar_font.family.as_deref(), Some("Noto Sans"));
@@ -278,7 +278,7 @@ mod tests {
         let mut ini = super::super::create_kde_parser();
         ini.read("[WM]\nactiveFont=Noto Sans,10,-1,5,75,0,0,0,0,0\n".to_string())
             .unwrap();
-        let mut variant = ThemeVariant::default();
+        let mut variant = ThemeMode::default();
         populate_fonts(&ini, &mut variant);
         let tbf = variant.window.title_bar_font.unwrap();
         assert_eq!(tbf.family.as_deref(), Some("Noto Sans"));
@@ -289,7 +289,7 @@ mod tests {
     #[test]
     fn populate_fonts_missing_section_leaves_none() {
         let ini = super::super::create_kde_parser();
-        let mut variant = ThemeVariant::default();
+        let mut variant = ThemeMode::default();
         populate_fonts(&ini, &mut variant);
         assert!(variant.defaults.font.family.is_none());
         assert!(variant.defaults.font.size.is_none());
@@ -313,7 +313,7 @@ mod tests {
                 .to_string(),
         )
         .unwrap();
-        let mut variant = ThemeVariant::default();
+        let mut variant = ThemeMode::default();
         populate_fonts(&ini, &mut variant);
 
         assert_eq!(variant.defaults.font.family.as_deref(), Some("Noto Sans"));

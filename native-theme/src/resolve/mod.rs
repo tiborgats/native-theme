@@ -5,22 +5,22 @@
 // 2. resolve_platform_defaults() -- fills fields that require OS detection:
 //    icon_theme (from system icon settings) and button_order (from detected
 //    desktop environment).
-// 3. validate() -- extracts Option<T> -> T, producing ResolvedThemeVariant.
+// 3. validate() -- extracts Option<T> -> T, producing ResolvedTheme.
 //
 // Convenience: resolve_all() = 1+2, into_resolved() = 1+2+3.
 //
 // Split into submodules:
 // - inheritance: Phase 1-5 resolution rules (fill None fields from defaults/other widgets)
-// - validate: Field extraction, range checks, ResolvedThemeVariant construction
+// - validate: Field extraction, range checks, ResolvedTheme construction
 
 mod inheritance;
 pub(crate) mod validate;
 pub(crate) mod validate_helpers;
 
-use crate::model::ThemeVariant;
-use crate::model::resolved::ResolvedThemeVariant;
+use crate::model::ThemeMode;
+use crate::model::resolved::ResolvedTheme;
 
-impl ThemeVariant {
+impl ThemeMode {
     /// Apply all ~91 inheritance rules in 5-phase order (pure data transform).
     ///
     /// After calling resolve(), most Option fields that were None will be filled
@@ -87,8 +87,8 @@ impl ThemeVariant {
 
     /// Resolve all inheritance rules and validate in one step.
     ///
-    /// This is the recommended way to convert a `ThemeVariant` into a
-    /// [`ResolvedThemeVariant`]. It calls [`resolve_all()`](Self::resolve_all)
+    /// This is the recommended way to convert a `ThemeMode` into a
+    /// [`ResolvedTheme`]. It calls [`resolve_all()`](Self::resolve_all)
     /// followed by [`validate()`](Self::validate), ensuring no fields are left
     /// unresolved.
     ///
@@ -100,15 +100,15 @@ impl ThemeVariant {
     /// # Examples
     ///
     /// ```
-    /// use native_theme::ThemeSpec;
+    /// use native_theme::Theme;
     ///
-    /// let theme = ThemeSpec::preset("dracula").unwrap();
+    /// let theme = Theme::preset("dracula").unwrap();
     /// let variant = theme.dark.unwrap();
     /// let resolved = variant.into_resolved().unwrap();
     /// // All fields are now guaranteed populated
     /// let accent = resolved.defaults.accent_color;
     /// ```
-    pub fn into_resolved(mut self) -> crate::Result<ResolvedThemeVariant> {
+    pub fn into_resolved(mut self) -> crate::Result<ResolvedTheme> {
         // Auto-detect font_dpi from the OS when not already set (e.g. by an
         // OS reader or TOML overlay). This ensures standalone preset loading
         // applies the correct pt-to-px conversion for the current display.

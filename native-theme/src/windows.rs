@@ -180,7 +180,7 @@ fn read_frame_width(dpi: u32) -> f32 {
 /// Read DPI-aware scrollbar and widget metrics.
 #[cfg(all(target_os = "windows", feature = "windows"))]
 #[allow(unsafe_code)]
-fn read_widget_sizing(dpi: u32, variant: &mut crate::ThemeVariant) {
+fn read_widget_sizing(dpi: u32, variant: &mut crate::ThemeMode) {
     unsafe {
         variant.scrollbar.groove_width = Some(GetSystemMetricsForDpi(SM_CXVSCROLL, dpi) as f32);
         variant.scrollbar.min_thumb_length = Some(GetSystemMetricsForDpi(SM_CYVTHUMB, dpi) as f32);
@@ -240,7 +240,7 @@ fn read_widget_sizing(dpi: u32, variant: &mut crate::ThemeVariant) {
 
 /// Apply WinUI3 Fluent Design widget sizing constants (non-Windows testable version).
 #[cfg(not(all(target_os = "windows", feature = "windows")))]
-fn read_widget_sizing(_dpi: u32, variant: &mut crate::ThemeVariant) {
+fn read_widget_sizing(_dpi: u32, variant: &mut crate::ThemeMode) {
     variant.scrollbar.groove_width = Some(17.0);
     variant.scrollbar.min_thumb_length = Some(40.0);
     variant.menu.row_height = Some(32.0);
@@ -333,8 +333,8 @@ fn read_sys_colors() -> SysColors {
     }
 }
 
-/// Apply SysColors to the per-widget fields on a ThemeVariant.
-fn apply_sys_colors(variant: &mut crate::ThemeVariant, colors: &SysColors) {
+/// Apply SysColors to the per-widget fields on a ThemeMode.
+fn apply_sys_colors(variant: &mut crate::ThemeMode, colors: &SysColors) {
     variant.button.background_color = Some(colors.btn_face);
     variant.button.font.get_or_insert_default().color = Some(colors.btn_text);
     variant.menu.background_color = Some(colors.menu_bg);
@@ -448,7 +448,7 @@ fn read_icon_sizes(dpi: u32) -> (f32, f32) {
 }
 
 /// Testable core: given raw color values, accent shades, fonts, and sizing data,
-/// build a `ThemeSpec` with a sparse `ThemeVariant`.
+/// build a `Theme` with a sparse `ThemeMode`.
 ///
 /// Determines light/dark variant based on foreground luminance, then populates
 /// the appropriate variant with defaults-level colors, per-widget fonts, spacing,
@@ -467,7 +467,7 @@ fn build_theme(
     icon_sizes: Option<(f32, f32)>,
     accessibility: Option<&AccessibilityData>,
     dpi: u32,
-) -> crate::ThemeSpec {
+) -> crate::Theme {
     let dark = is_dark_mode(&fg);
 
     // Primary button background: In light mode use AccentDark1 (shades[0]), in dark mode
@@ -478,7 +478,7 @@ fn build_theme(
         accent_shades[0].unwrap_or(accent)
     };
 
-    let mut variant = crate::ThemeVariant::default();
+    let mut variant = crate::ThemeMode::default();
 
     // --- Defaults-level colors ---
     variant.defaults.accent_color = Some(accent);
@@ -548,14 +548,14 @@ fn build_theme(
     variant.defaults.font_dpi = Some(dpi as f32);
 
     if dark {
-        crate::ThemeSpec {
+        crate::Theme {
             name: "Windows".to_string(),
             light: None,
             dark: Some(variant),
             layout: crate::LayoutTheme::default(),
         }
     } else {
-        crate::ThemeSpec {
+        crate::Theme {
             name: "Windows".to_string(),
             light: Some(variant),
             dark: None,
@@ -574,7 +574,7 @@ fn build_theme(
 ///
 /// Returns `Error::ReaderFailed` if UISettings cannot be created (pre-Windows 10).
 #[cfg(all(target_os = "windows", feature = "windows"))]
-pub fn from_windows() -> crate::Result<crate::ThemeSpec> {
+pub fn from_windows() -> crate::Result<crate::Theme> {
     let settings = UISettings::new().map_err(|e| crate::Error::ReaderFailed {
         reader: "windows",
         source: format!("UISettings unavailable: {e}").into(),
@@ -674,7 +674,7 @@ mod tests {
     }
 
     /// Helper: build a theme in light mode with minimal args.
-    fn light_theme() -> crate::ThemeSpec {
+    fn light_theme() -> crate::Theme {
         build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0), // black fg = light mode
@@ -691,7 +691,7 @@ mod tests {
     }
 
     /// Helper: build a theme in dark mode with minimal args.
-    fn dark_theme() -> crate::ThemeSpec {
+    fn dark_theme() -> crate::Theme {
         build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(255, 255, 255), // white fg = dark mode
@@ -862,7 +862,7 @@ mod tests {
             None,
             96,
         );
-        // In light mode, AccentDark1 is not directly used in ThemeVariant (old primary_background
+        // In light mode, AccentDark1 is not directly used in ThemeMode (old primary_background
         // is no longer a field). But the logic still selects primary_background -- which is not set on the
         // new model. This is fine: the resolve() pipeline handles it.
         // Just verify the core defaults are set.
@@ -1251,9 +1251,9 @@ mod tests {
 
     #[test]
     fn build_theme_returns_native_theme_with_theme_variant() {
-        // Verify the output type is correct (ThemeSpec with ThemeVariant, not old types)
+        // Verify the output type is correct (Theme with ThemeMode, not old types)
         let theme = light_theme();
-        let variant: &crate::ThemeVariant = theme.light.as_ref().unwrap();
+        let variant: &crate::ThemeMode = theme.light.as_ref().unwrap();
         // Access new per-widget fields to prove they exist
         let _ = variant.defaults.accent_color;
         let _ = variant.window.title_bar_font;
@@ -1268,7 +1268,7 @@ mod tests {
     #[test]
     fn test_windows_resolve_validate() {
         // Load windows-11 preset as base (provides full color/geometry/spacing).
-        let mut base = crate::ThemeSpec::preset("windows-11").unwrap();
+        let mut base = crate::Theme::preset("windows-11").unwrap();
         // Build reader output (light mode, sample data).
         let reader_output = light_theme();
         // Merge reader output on top of preset.

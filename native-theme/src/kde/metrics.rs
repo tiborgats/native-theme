@@ -1,11 +1,11 @@
 // KDE Breeze widget metrics from breezemetrics.h constants
-// Populates per-widget sizing fields directly on ThemeVariant.
+// Populates per-widget sizing fields directly on ThemeMode.
 
 /// Populate per-widget sizing fields with Breeze metrics constants.
 ///
 /// All values are in logical pixels (integers from breezemetrics.h, cast to f32).
 /// Each value is annotated with the corresponding breezemetrics.h constant name.
-pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeVariant) {
+pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeMode) {
     // Button
     variant.button.min_width = Some(80.0); // Button_MinWidth
     variant
@@ -101,32 +101,32 @@ pub(crate) fn populate_widget_sizing(variant: &mut crate::ThemeVariant) {
 #[cfg(test)]
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
-    use crate::ThemeVariant;
+    use crate::ThemeMode;
 
     #[test]
     fn breeze_metrics_populates_button_min_width() {
-        let mut v = ThemeVariant::default();
+        let mut v = ThemeMode::default();
         super::populate_widget_sizing(&mut v);
         assert_eq!(v.button.min_width, Some(80.0), "Button_MinWidth");
     }
 
     #[test]
     fn breeze_metrics_populates_checkbox_indicator_width() {
-        let mut v = ThemeVariant::default();
+        let mut v = ThemeMode::default();
         super::populate_widget_sizing(&mut v);
         assert_eq!(v.checkbox.indicator_width, Some(20.0), "CheckBox_Size");
     }
 
     #[test]
     fn breeze_metrics_populates_scrollbar_groove_width() {
-        let mut v = ThemeVariant::default();
+        let mut v = ThemeMode::default();
         super::populate_widget_sizing(&mut v);
         assert_eq!(v.scrollbar.groove_width, Some(21.0), "ScrollBar_Extend");
     }
 
     #[test]
     fn breeze_metrics_populates_slider_thumb() {
-        let mut v = ThemeVariant::default();
+        let mut v = ThemeMode::default();
         super::populate_widget_sizing(&mut v);
         assert_eq!(
             v.slider.thumb_diameter,
@@ -137,7 +137,7 @@ mod tests {
 
     #[test]
     fn breeze_metrics_populates_splitter() {
-        let mut v = ThemeVariant::default();
+        let mut v = ThemeMode::default();
         super::populate_widget_sizing(&mut v);
         assert_eq!(
             v.splitter.divider_width,
@@ -148,7 +148,7 @@ mod tests {
 
     #[test]
     fn breeze_metrics_variant_not_empty() {
-        let mut v = ThemeVariant::default();
+        let mut v = ThemeMode::default();
         super::populate_widget_sizing(&mut v);
         assert!(
             !v.is_empty(),

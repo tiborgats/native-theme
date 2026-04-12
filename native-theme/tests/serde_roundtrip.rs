@@ -9,13 +9,13 @@
 use native_theme::*;
 
 // ---------------------------------------------------------------------------
-// Helper: build a fully populated ThemeVariant with distinct values
+// Helper: build a fully populated ThemeMode with distinct values
 // ---------------------------------------------------------------------------
 
-fn fully_populated_variant(offset: u8) -> ThemeVariant {
+fn fully_populated_variant(offset: u8) -> ThemeMode {
     let c = |r: u8, g: u8, b: u8| Rgba::rgb(r.wrapping_add(offset), g, b);
 
-    let mut v = ThemeVariant::default();
+    let mut v = ThemeMode::default();
 
     // Core defaults (colors)
     v.defaults.accent_color = Some(c(61, 174, 233));
@@ -113,36 +113,36 @@ fn fully_populated_variant(offset: u8) -> ThemeVariant {
 
 #[test]
 fn round_trip_full_theme() {
-    let mut theme = ThemeSpec::new("Test Theme");
+    let mut theme = Theme::new("Test Theme");
     theme.light = Some(fully_populated_variant(0));
     theme.dark = Some(fully_populated_variant(10));
 
     let toml_str = toml::to_string_pretty(&theme).unwrap();
-    let deserialized: ThemeSpec = toml::from_str(&toml_str).unwrap();
+    let deserialized: Theme = toml::from_str(&toml_str).unwrap();
 
     // Full structural equality (issue 9e/24w)
     assert_eq!(
         theme, deserialized,
-        "round-trip should produce structurally identical ThemeSpec"
+        "round-trip should produce structurally identical Theme"
     );
 }
 
 /// Round-trip test using an actual preset (issue 24w: ensures all widget sections are covered).
 #[test]
 fn round_trip_actual_preset() {
-    let theme = ThemeSpec::preset("kde-breeze").unwrap();
+    let theme = Theme::preset("kde-breeze").unwrap();
     let toml_str = toml::to_string_pretty(&theme).unwrap();
-    let deserialized: ThemeSpec = toml::from_str(&toml_str).unwrap();
+    let deserialized: Theme = toml::from_str(&toml_str).unwrap();
     assert_eq!(
         theme, deserialized,
-        "kde-breeze preset round-trip should produce structurally identical ThemeSpec"
+        "kde-breeze preset round-trip should produce structurally identical Theme"
     );
 }
 
 #[test]
 fn round_trip_preserves_all_color_fields() {
     // Construct a variant with many color fields set to unique values
-    let mut v = ThemeVariant::default();
+    let mut v = ThemeMode::default();
 
     // Defaults core colors
     v.defaults.accent_color = Some(Rgba::rgb(1, 0, 0));
@@ -198,11 +198,11 @@ fn round_trip_preserves_all_color_fields() {
     // Per-widget: separator
     v.separator.line_color = Some(Rgba::rgb(33, 0, 0));
 
-    let mut theme = ThemeSpec::new("All Colors");
+    let mut theme = Theme::new("All Colors");
     theme.light = Some(v);
 
     let toml_str = toml::to_string_pretty(&theme).unwrap();
-    let de: ThemeSpec = toml::from_str(&toml_str).unwrap();
+    let de: Theme = toml::from_str(&toml_str).unwrap();
     let de_v = de.light.as_ref().unwrap();
     let orig_v = theme.light.as_ref().unwrap();
 
@@ -325,7 +325,7 @@ name = "Minimal"
 accent_color = "#3daee9"
 "##;
 
-    let theme: ThemeSpec = toml::from_str(toml_str).unwrap();
+    let theme: Theme = toml::from_str(toml_str).unwrap();
 
     assert_eq!(theme.name, "Minimal");
     assert_eq!(
@@ -359,7 +359,7 @@ accent_color = "#3daee9"
 fn very_sparse_toml_name_only() {
     let toml_str = r#"name = "Empty""#;
 
-    let theme: ThemeSpec = toml::from_str(toml_str).unwrap();
+    let theme: Theme = toml::from_str(toml_str).unwrap();
 
     assert_eq!(theme.name, "Empty");
     assert!(theme.light.is_none());
@@ -372,8 +372,8 @@ fn very_sparse_toml_name_only() {
 
 #[test]
 fn serialization_skips_none_fields() {
-    let mut theme = ThemeSpec::new("Skip Test");
-    let mut light = ThemeVariant::default();
+    let mut theme = Theme::new("Skip Test");
+    let mut light = ThemeMode::default();
     light.defaults.accent_color = Some(Rgba::rgb(61, 174, 233));
     theme.light = Some(light);
 
@@ -405,8 +405,8 @@ fn serialization_skips_none_fields() {
 
 #[test]
 fn toml_structure_is_human_readable() {
-    let mut theme = ThemeSpec::new("Readable");
-    let mut light = ThemeVariant::default();
+    let mut theme = Theme::new("Readable");
+    let mut light = ThemeMode::default();
     light.defaults.accent_color = Some(Rgba::rgb(61, 174, 233));
     light.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
     light.defaults.font.family = Some("Noto Sans".into());
@@ -453,7 +453,7 @@ accent_color = "#3daee9"
 shadow_color = "#00000040"
 "##;
 
-    let theme: ThemeSpec = toml::from_str(toml_str).unwrap();
+    let theme: Theme = toml::from_str(toml_str).unwrap();
     let light = theme.light.as_ref().unwrap();
 
     // accent: #3daee9 -> r=61, g=174, b=233, a=255 (no alpha => opaque)

@@ -1,6 +1,6 @@
 # Bundled Presets
 
-TOML theme specifications loaded via `ThemeSpec::preset("name")`. Each file
+TOML theme specifications loaded via `Theme::preset("name")`. Each file
 defines a complete or near-complete theme with light and dark variants.
 
 ## Two-tier system
