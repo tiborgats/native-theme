@@ -120,7 +120,7 @@ mod test_util;
 pub mod watch;
 
 pub use color::{ParseColorError, Rgba};
-pub use error::{Error, ThemeResolutionError};
+pub use error::{Error, ErrorKind, RangeViolation};
 pub use model::{
     AnimatedIcon, BorderSpec, ButtonTheme, CardTheme, CheckboxTheme, ComboBoxTheme,
     DialogButtonOrder, DialogTheme, ExpanderTheme, FontSize, FontSpec, FontStyle, IconData,
@@ -336,13 +336,14 @@ impl SystemTheme {
     ///   `portal-tokio` or `portal-async-io` feature).
     /// - **Windows:** Calls `from_windows()` when the `windows` feature is enabled,
     ///   merges with `windows-11` preset.
-    /// - **Other platforms:** Returns `Error::Unsupported`.
+    /// - **Other platforms:** Returns `Error::PlatformUnsupported`.
     ///
     /// # Errors
     ///
-    /// - `Error::Unsupported` if the platform has no reader or the required feature
+    /// - `Error::FeatureDisabled` if the platform has a reader but the required feature
     ///   is not enabled.
-    /// - `Error::Unavailable` if the platform reader cannot access theme data.
+    /// - `Error::PlatformUnsupported` if the platform has no reader at all.
+    /// - `Error::ReaderFailed` if the platform reader cannot access theme data.
     ///
     /// # Examples
     ///
