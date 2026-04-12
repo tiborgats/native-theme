@@ -5,7 +5,7 @@
 use super::validate_helpers::{
     self, DEFAULT_FONT_DPI, require, require_font, require_text_scale_entry,
 };
-use crate::model::ThemeVariant;
+use crate::model::{IconSet, ThemeVariant};
 use crate::model::resolved::{
     ResolvedIconSizes, ResolvedTextScale, ResolvedThemeDefaults, ResolvedThemeVariant,
 };
@@ -420,7 +420,14 @@ impl ThemeVariant {
             ResolvedExpanderTheme::validate_widget(&self.expander, "expander", dpi, &mut missing);
         let link = ResolvedLinkTheme::validate_widget(&self.link, "link", dpi, &mut missing);
 
-        let icon_set = require(&self.icon_set, "icon_set", &mut missing);
+        let icon_set = match &self.icon_set {
+            Some(val) => *val,
+            None => {
+                missing.push("icon_set".to_string());
+                // Placeholder: never used because validate() short-circuits on missing.
+                IconSet::Freedesktop
+            }
+        };
         let icon_theme = require(&self.icon_theme, "icon_theme", &mut missing);
 
         // --- Phase 1 short-circuit: if any fields are missing, return immediately ---

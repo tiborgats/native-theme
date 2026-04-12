@@ -11,6 +11,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 #### native-theme (core)
 - `Rgba::to_f32_tuple` -- use `to_f32_array()` and destructure (`let [r, g, b, a] = color.to_f32_array();`) if a tuple is needed
+- `IconSet::default()` -- use `system_icon_set()` for the platform-appropriate icon set
 
 ## [0.5.6] - 2026-04-10
 

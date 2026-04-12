@@ -271,7 +271,7 @@ pub enum IconData {
 /// // Unknown names return None
 /// assert_eq!(IconSet::from_name("unknown"), None);
 /// ```
-#[derive(Debug, Clone, Copy, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
 #[serde(rename_all = "kebab-case")]
 #[non_exhaustive]
 pub enum IconSet {
@@ -281,12 +281,6 @@ pub enum IconSet {
     #[serde(rename = "segoe-fluent")]
     SegoeIcons,
     /// freedesktop Icon Naming Specification (Linux).
-    ///
-    /// This is the `#[default]` variant, so `IconSet::default()` returns
-    /// `Freedesktop`. This serves as a serialization-friendly fallback, not
-    /// a platform-correct value. The `resolve()` pipeline handles
-    /// platform-correct icon set selection.
-    #[default]
     Freedesktop,
     /// Google Material Symbols.
     Material,
@@ -574,7 +568,13 @@ fn detect_linux_icon_theme() -> String {
 
     match de {
         crate::detect::LinuxDesktop::Kde => detect_kde_icon_theme(),
-        crate::detect::LinuxDesktop::Gnome | crate::detect::LinuxDesktop::Budgie => {
+        crate::detect::LinuxDesktop::Gnome
+        | crate::detect::LinuxDesktop::Budgie
+        | crate::detect::LinuxDesktop::Hyprland
+        | crate::detect::LinuxDesktop::Sway
+        | crate::detect::LinuxDesktop::River
+        | crate::detect::LinuxDesktop::Niri
+        | crate::detect::LinuxDesktop::CosmicDe => {
             gsettings_icon_theme("org.gnome.desktop.interface")
         }
         crate::detect::LinuxDesktop::Cinnamon => {
