@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
-status: phase_complete
-stopped_at: Phase 71 complete — verified, ready to plan Phase 72
-last_updated: "2026-04-12T14:40:00.000Z"
-last_activity: 2026-04-12
+status: completed
+stopped_at: Completed 72-01-PLAN.md
+last_updated: "2026-04-12T13:26:46.598Z"
+last_activity: 2026-04-12 — Phase 72 Plan 01 executed
 progress:
   total_phases: 28
   completed_phases: 11
-  total_plans: 19
-  completed_plans: 19
-  percent: 100
+  total_plans: 21
+  completed_plans: 20
+  percent: 95
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 71 — error-restructure-and-validation-split (COMPLETE, verified)
-Plan: 2/2 complete, verified 7/7 must-haves
-Status: Phase 71 complete — ready to plan Phase 72
-Last activity: 2026-04-12 — Phase 71 executed and verified
+Phase: 72 — env-mutex-test-simplification
+Plan: 1/2 complete
+Status: Plan 01 complete, Plan 02 pending
+Last activity: 2026-04-12 — Phase 72 Plan 01 executed
 
-Progress: [██░░░░░░░░] 15% (3/20 phases complete)
+Progress: [██████████] 95% (20/21 plans complete)
 
 ## Accumulated Context
 
@@ -89,7 +89,7 @@ v0.5.6 decisions worth carrying into v0.5.7 planning:
 
 ### Pending Todos
 
-None. Phase 71 complete, ready for Phase 72.
+None. Phase 72 Plan 01 complete, Plan 02 pending.
 
 ### v0.5.7 Decisions
 
@@ -98,6 +98,8 @@ None. Phase 71 complete, ready for Phase 72.
 - [Phase 71-01]: PlatformUnsupported uses &'static str (no Platform enum in crate yet)
 - [Phase 71-02]: check_positive uses f64::MIN_POSITIVE for RangeViolation min bound
 - [Phase 71-02]: Connector crates (gpui, iced) migrated to Error::ReaderFailed alongside core crate
+- [Phase 72-01]: linux_preset_for_de promoted to pub(crate) for cross-module test access
+- [Phase 72-01]: Added #[allow(dead_code)] on ENV_MUTEX pending Plan 02 removal
 
 ### Blockers/Concerns
 
@@ -110,6 +112,6 @@ None. Phase 71 complete, ready for Phase 72.
 
 ## Session Continuity
 
-Last session: 2026-04-12
-Stopped at: Phase 71 complete — verified, ready to plan Phase 72
-Resume file: .planning/ROADMAP.md (Phase 72 section)
+Last session: 2026-04-12T13:26:46.595Z
+Stopped at: Completed 72-01-PLAN.md
+Resume file: None

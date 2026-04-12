@@ -112,9 +112,6 @@ mod resolve;
     feature = "system-icons"
 ))]
 mod spinners;
-/// Shared test infrastructure.
-#[cfg(test)]
-mod test_util;
 /// Runtime theme change watching.
 #[cfg(feature = "watch")]
 pub mod watch;

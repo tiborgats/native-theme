@@ -328,7 +328,7 @@ Plans:
   4. A test-suite timing measurement shows no regression — parallel test execution is faster than the mutex-serialized baseline
 **Plans**: 2 plans
 Plans:
-- [ ] 72-01-PLAN.md — Rewrite all ENV_MUTEX tests to pure equivalents
+- [x] 72-01-PLAN.md — Rewrite all ENV_MUTEX tests to pure equivalents
 - [ ] 72-02-PLAN.md — Delete test_util.rs and verify parallel test timing
 
 ### Phase 73: ThemeChangeEvent Cleanup
@@ -604,7 +604,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 69. Resolver-Level button_order Unlock | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 70. Drop Error::Clone Bound | v0.5.7 | 1/1 | Complete   | 2026-04-12 |
 | 71. Error Restructure and Validation Split | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
-| 72. ENV_MUTEX Test Simplification | v0.5.7 | 0/0 | Not started | — |
+| 72. ENV_MUTEX Test Simplification | v0.5.7 | 1/2 | In Progress|  |
 | 73. ThemeChangeEvent Cleanup | v0.5.7 | 0/0 | Not started | — |
 | 74. Rgba Polish and must_use Uniformity | v0.5.7 | 0/0 | Not started | — |
 | 75. LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal | v0.5.7 | 0/0 | Not started | — |
