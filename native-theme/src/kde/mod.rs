@@ -1063,12 +1063,12 @@ Name=whatever
     // === Dialog button order ===
 
     #[test]
-    fn test_dialog_button_order_leading_affirmative() {
+    fn test_dialog_button_order_not_set_by_reader() {
         let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
         assert_eq!(
-            v.dialog.button_order,
-            Some(crate::DialogButtonOrder::PrimaryLeft)
+            v.dialog.button_order, None,
+            "reader must not hardcode button_order -- resolver handles it"
         );
     }
 
