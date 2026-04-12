@@ -1,18 +1,18 @@
-//! ResolvedThemeVariant -> gpui_component::theme::ThemeConfig mapping.
+//! ResolvedTheme -> gpui_component::theme::ThemeConfig mapping.
 //!
 //! Maps native-theme's resolved font and geometry settings to gpui-component's
 //! `ThemeConfig`, which controls per-theme font family, font size, radius,
 //! shadow settings, and optionally all 108 color fields as hex strings.
 
 use gpui::SharedString;
-use gpui_component::theme::{ThemeConfig, ThemeConfigColors, ThemeMode};
-use native_theme::ResolvedThemeVariant;
+use gpui_component::theme::{ThemeConfig, ThemeConfigColors, ThemeMode as GpuiThemeMode};
+use native_theme::ResolvedTheme;
 
 use crate::colors::{hsla_to_hex, to_theme_color};
 
-/// Build a [`ThemeConfig`] from a [`ResolvedThemeVariant`].
+/// Build a [`ThemeConfig`] from a [`ResolvedTheme`].
 ///
-/// Maps ResolvedThemeDefaults font/geometry fields to font_family/mono_font_family/
+/// Maps ResolvedDefaults font/geometry fields to font_family/mono_font_family/
 /// font_size/mono_font_size, radius/radius_lg/shadow. ResolvedFontSpec sizes are
 /// in logical pixels (conversion from platform points is handled by the resolution step).
 ///
@@ -26,9 +26,9 @@ use crate::colors::{hsla_to_hex, to_theme_color};
 /// `default_light()` based on `is_dark`. Custom syntax colors require the full
 /// `HighlightTheme` API.
 pub fn to_theme_config(
-    resolved: &ResolvedThemeVariant,
+    resolved: &ResolvedTheme,
     name: &str,
-    mode: ThemeMode,
+    mode: GpuiThemeMode,
 ) -> ThemeConfig {
     let d = &resolved.defaults;
     let is_dark = mode.is_dark();
@@ -186,11 +186,11 @@ fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> Theme
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use native_theme::ThemeSpec;
+    use native_theme::Theme;
 
     /// Issue 1: fixed to use `into_variant(true)` for catppuccin-mocha (dark theme).
-    fn test_resolved() -> native_theme::ResolvedThemeVariant {
-        let nt = ThemeSpec::preset("catppuccin-mocha").expect("preset must exist");
+    fn test_resolved() -> native_theme::ResolvedTheme {
+        let nt = Theme::preset("catppuccin-mocha").expect("preset must exist");
         let variant = nt
             .into_variant(true)
             .expect("preset must have dark variant");
@@ -202,10 +202,10 @@ mod tests {
     #[test]
     fn to_theme_config_from_resolved() {
         let resolved = test_resolved();
-        let config = to_theme_config(&resolved, "Test Theme", ThemeMode::Dark);
+        let config = to_theme_config(&resolved, "Test Theme", GpuiThemeMode::Dark);
 
         assert_eq!(config.name.to_string(), "Test Theme");
-        assert_eq!(config.mode, ThemeMode::Dark);
+        assert_eq!(config.mode, GpuiThemeMode::Dark);
 
         // Font family should be populated
         assert!(config.font_family.is_some(), "font_family should be set");
@@ -236,14 +236,14 @@ mod tests {
     #[test]
     fn to_theme_config_dark_mode() {
         let resolved = test_resolved();
-        let config = to_theme_config(&resolved, "Dark", ThemeMode::Dark);
-        assert_eq!(config.mode, ThemeMode::Dark);
+        let config = to_theme_config(&resolved, "Dark", GpuiThemeMode::Dark);
+        assert_eq!(config.mode, GpuiThemeMode::Dark);
     }
 
     #[test]
     fn font_size_is_not_converted_from_points() {
         let resolved = test_resolved();
-        let config = to_theme_config(&resolved, "SizeCheck", ThemeMode::Dark);
+        let config = to_theme_config(&resolved, "SizeCheck", GpuiThemeMode::Dark);
 
         // The old code applied pt * (96.0/72.0) conversion. ResolvedFontSpec sizes
         // are already logical pixels, so font_size should equal the resolved value directly.
@@ -262,7 +262,7 @@ mod tests {
     #[test]
     fn theme_config_colors_populated() {
         let resolved = test_resolved();
-        let config = to_theme_config(&resolved, "Colors", ThemeMode::Dark);
+        let config = to_theme_config(&resolved, "Colors", GpuiThemeMode::Dark);
         assert!(
             config.colors.background.is_some(),
             "colors.background should be populated"
@@ -291,7 +291,7 @@ mod tests {
         // We can't easily set a negative radius in a resolved theme (validation
         // prevents it), so just verify the formula works on the positive path.
         let resolved = test_resolved();
-        let config = to_theme_config(&resolved, "Clamp", ThemeMode::Dark);
+        let config = to_theme_config(&resolved, "Clamp", GpuiThemeMode::Dark);
         assert!(config.radius.unwrap() < 1000, "radius should be reasonable");
     }
 
@@ -299,12 +299,12 @@ mod tests {
     #[test]
     fn radius_matches_known_preset_value() {
         // Adwaita has radius=9.0 in the preset TOML — verify the config reflects it
-        let nt = ThemeSpec::preset("adwaita").expect("adwaita preset must exist");
+        let nt = Theme::preset("adwaita").expect("adwaita preset must exist");
         let variant = nt
             .into_variant(false)
             .expect("adwaita must have light variant");
         let resolved = variant.into_resolved().expect("must validate");
-        let config = to_theme_config(&resolved, "adwaita", ThemeMode::Light);
+        let config = to_theme_config(&resolved, "adwaita", GpuiThemeMode::Light);
         assert_eq!(
             config.radius,
             Some(9),
@@ -316,13 +316,13 @@ mod tests {
     #[test]
     fn multi_preset_config() {
         let presets = [
-            ("catppuccin-mocha", ThemeMode::Dark),
-            ("catppuccin-latte", ThemeMode::Light),
-            ("dracula", ThemeMode::Dark),
-            ("adwaita", ThemeMode::Light),
+            ("catppuccin-mocha", GpuiThemeMode::Dark),
+            ("catppuccin-latte", GpuiThemeMode::Light),
+            ("dracula", GpuiThemeMode::Dark),
+            ("adwaita", GpuiThemeMode::Light),
         ];
         for (name, mode) in presets {
-            let nt = ThemeSpec::preset(name).expect("preset must exist");
+            let nt = Theme::preset(name).expect("preset must exist");
             let is_dark = mode.is_dark();
             let variant = nt.into_variant(is_dark).expect("variant must exist");
             let resolved = variant.into_resolved().expect("must validate");

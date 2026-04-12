@@ -1,11 +1,11 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use native_theme::ThemeSpec;
+use native_theme::Theme;
 use native_theme_iced::{from_preset, to_theme};
 
 #[test]
 fn all_presets_produce_valid_light_themes() {
-    for name in ThemeSpec::list_presets() {
+    for name in Theme::list_presets() {
         let result = from_preset(name, false);
         assert!(
             result.is_ok(),
@@ -17,7 +17,7 @@ fn all_presets_produce_valid_light_themes() {
 
 #[test]
 fn all_presets_produce_valid_dark_themes() {
-    for name in ThemeSpec::list_presets() {
+    for name in Theme::list_presets() {
         let result = from_preset(name, true);
         assert!(
             result.is_ok(),
@@ -35,7 +35,7 @@ fn from_system_returns_result() {
 
 #[test]
 fn to_theme_produces_non_default_palette() {
-    let nt = ThemeSpec::preset("catppuccin-mocha").unwrap();
+    let nt = Theme::preset("catppuccin-mocha").unwrap();
     let resolved = nt.into_variant(true).unwrap().into_resolved().unwrap();
     let theme = to_theme(&resolved, "catppuccin-mocha");
 

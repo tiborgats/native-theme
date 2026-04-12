@@ -1,4 +1,4 @@
-//! Maps [`native_theme::ResolvedThemeVariant`] colors to an [`iced_core::theme::Palette`].
+//! Maps [`native_theme::ResolvedTheme`] colors to an [`iced_core::theme::Palette`].
 //!
 //! The palette has 6 fields: background, text, primary, success, warning, danger.
 //! Each is mapped directly from the corresponding resolved theme color -- no
@@ -13,7 +13,7 @@ use native_theme::Rgba;
 
 /// Convert a [`native_theme::Rgba`] to [`iced_core::Color`].
 ///
-/// Useful for power users who need to map arbitrary `ResolvedThemeVariant`
+/// Useful for power users who need to map arbitrary `ResolvedTheme`
 /// fields to iced colors beyond what [`to_palette()`] covers. The alpha
 /// channel is preserved faithfully.
 #[must_use]
@@ -22,7 +22,7 @@ pub fn to_color(rgba: Rgba) -> iced_core::Color {
     iced_core::Color { r, g, b, a }
 }
 
-/// Build an iced [`iced_core::theme::Palette`] from a [`native_theme::ResolvedThemeVariant`].
+/// Build an iced [`iced_core::theme::Palette`] from a [`native_theme::ResolvedTheme`].
 ///
 /// Maps the 6 palette fields directly from resolved defaults:
 /// - `background` <- `resolved.defaults.background_color`
@@ -32,7 +32,7 @@ pub fn to_color(rgba: Rgba) -> iced_core::Color {
 /// - `warning` <- `resolved.defaults.warning_color`
 /// - `danger` <- `resolved.defaults.danger_color`
 #[must_use]
-pub fn to_palette(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::theme::Palette {
+pub fn to_palette(resolved: &native_theme::ResolvedTheme) -> iced_core::theme::Palette {
     let d = &resolved.defaults;
 
     iced_core::theme::Palette {
@@ -49,7 +49,7 @@ pub fn to_palette(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::t
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use native_theme::ThemeSpec;
+    use native_theme::Theme;
 
     #[test]
     fn to_color_converts_rgba() {
@@ -82,7 +82,7 @@ mod tests {
 
     #[test]
     fn to_palette_maps_all_fields_from_resolved() {
-        let resolved = ThemeSpec::preset("catppuccin-mocha")
+        let resolved = Theme::preset("catppuccin-mocha")
             .unwrap()
             .into_variant(false)
             .unwrap()
@@ -105,7 +105,7 @@ mod tests {
 
     #[test]
     fn to_palette_dark_variant_has_dark_background() {
-        let resolved = ThemeSpec::preset("catppuccin-mocha")
+        let resolved = Theme::preset("catppuccin-mocha")
             .unwrap()
             .into_variant(true)
             .unwrap()
@@ -121,7 +121,7 @@ mod tests {
     #[test]
     fn to_palette_multiple_presets() {
         for name in ["catppuccin-mocha", "dracula", "nord", "gruvbox"] {
-            let resolved = ThemeSpec::preset(name)
+            let resolved = Theme::preset(name)
                 .unwrap()
                 .into_variant(true)
                 .unwrap()

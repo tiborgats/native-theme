@@ -3,7 +3,7 @@
 [gpui](https://gpui.rs/) + [gpui-component](https://crates.io/crates/gpui-component)
 toolkit connector for [native-theme](https://crates.io/crates/native-theme).
 
-Maps [`native_theme::ResolvedThemeVariant`](https://docs.rs/native-theme) data to
+Maps [`native_theme::ResolvedTheme`](https://docs.rs/native-theme) data to
 gpui-component's theming system, producing a fully configured `Theme` with
 correct colors, fonts, geometry, and icons for all gpui-component widgets.
 
@@ -20,11 +20,11 @@ native-theme-gpui = "0.5.7"
 Then create a gpui-component theme from any native-theme preset:
 
 ```rust,ignore
-use native_theme::ThemeSpec;
+use native_theme::Theme;
 use native_theme_gpui::to_theme;
 
 // Load a preset and resolve it
-let nt = ThemeSpec::preset("dracula")?;
+let nt = Theme::preset("dracula")?;
 let is_dark = true;
 let variant = nt.into_variant(is_dark).ok_or("no variant")?;
 let resolved = variant.into_resolved()?;

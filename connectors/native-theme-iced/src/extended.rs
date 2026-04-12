@@ -1,8 +1,8 @@
-//! Extended palette overrides from [`native_theme::ResolvedThemeVariant`] fields.
+//! Extended palette overrides from [`native_theme::ResolvedTheme`] fields.
 //!
 //! After iced generates an `Extended` palette from the base `Palette`,
 //! this module overrides specific sub-palette entries with native-theme
-//! values. All fields are guaranteed populated in ResolvedThemeVariant, so
+//! values. All fields are guaranteed populated in ResolvedTheme, so
 //! overrides are always applied unconditionally.
 
 use crate::palette::to_color;
@@ -10,7 +10,7 @@ use native_theme::Rgba;
 
 /// Captured color values for Extended palette overrides.
 ///
-/// Holds the `Rgba` values extracted from `ResolvedThemeVariant` that
+/// Holds the `Rgba` values extracted from `ResolvedTheme` that
 /// `to_theme()` captures into its closure. Using a struct instead of
 /// individual parameters keeps the API clean.
 ///
@@ -124,15 +124,15 @@ pub(crate) fn apply_overrides(
 mod tests {
     use super::*;
     use iced_core::theme::palette::Extended;
-    use native_theme::ThemeSpec;
+    use native_theme::Theme;
 
     fn make_extended() -> Extended {
         let palette = iced_core::theme::Palette::DARK;
         Extended::generate(palette)
     }
 
-    fn make_resolved_preset(name: &str, is_dark: bool) -> native_theme::ResolvedThemeVariant {
-        ThemeSpec::preset(name)
+    fn make_resolved_preset(name: &str, is_dark: bool) -> native_theme::ResolvedTheme {
+        Theme::preset(name)
             .unwrap()
             .into_variant(is_dark)
             .unwrap()
@@ -140,11 +140,11 @@ mod tests {
             .unwrap()
     }
 
-    fn make_resolved(is_dark: bool) -> native_theme::ResolvedThemeVariant {
+    fn make_resolved(is_dark: bool) -> native_theme::ResolvedTheme {
         make_resolved_preset("catppuccin-mocha", is_dark)
     }
 
-    fn colors_from_resolved(r: &native_theme::ResolvedThemeVariant) -> OverrideColors {
+    fn colors_from_resolved(r: &native_theme::ResolvedTheme) -> OverrideColors {
         OverrideColors {
             btn_bg: r.button.background_color,
             btn_fg: r.button.font.color,
@@ -160,7 +160,7 @@ mod tests {
         }
     }
 
-    fn apply_from_resolved(ext: &mut Extended, r: &native_theme::ResolvedThemeVariant) {
+    fn apply_from_resolved(ext: &mut Extended, r: &native_theme::ResolvedTheme) {
         apply_overrides(ext, &colors_from_resolved(r));
     }
 
@@ -305,7 +305,7 @@ mod tests {
     #[test]
     fn apply_overrides_multiple_presets() {
         for name in ["catppuccin-mocha", "dracula", "nord"] {
-            let resolved = ThemeSpec::preset(name)
+            let resolved = Theme::preset(name)
                 .unwrap()
                 .into_variant(true)
                 .unwrap()

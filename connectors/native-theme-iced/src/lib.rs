@@ -1,6 +1,6 @@
 //! iced toolkit connector for native-theme.
 //!
-//! Maps [`native_theme::ResolvedThemeVariant`] data to iced's theming system.
+//! Maps [`native_theme::ResolvedTheme`] data to iced's theming system.
 //!
 //! # Quick Start
 //!
@@ -23,10 +23,10 @@
 //! For full control over the resolve/validate/convert pipeline:
 //!
 //! ```rust
-//! use native_theme::ThemeSpec;
+//! use native_theme::Theme;
 //! use native_theme_iced::to_theme;
 //!
-//! let nt = ThemeSpec::preset("catppuccin-mocha").unwrap();
+//! let nt = Theme::preset("catppuccin-mocha").unwrap();
 //! let resolved = nt.into_variant(false).unwrap().into_resolved().unwrap();
 //! let theme = to_theme(&resolved, "My App");
 //! ```
@@ -56,7 +56,7 @@
 //!
 //! # Theme Field Coverage
 //!
-//! The connector maps a subset of [`ResolvedThemeVariant`] to iced's theming system:
+//! The connector maps a subset of [`ResolvedTheme`] to iced's theming system:
 //!
 //! | Target | Fields | Source |
 //! |--------|--------|--------|
@@ -70,7 +70,7 @@
 //! Per-widget geometry beyond padding/radius (e.g., min-width, disabled-opacity)
 //! is not mapped because iced applies these via inline widget configuration,
 //! not through the theme system. Users can read these directly from the
-//! `ResolvedThemeVariant` they pass to [`to_theme()`].
+//! `ResolvedTheme` they pass to [`to_theme()`].
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
@@ -84,13 +84,13 @@ pub mod palette;
 // Re-export native-theme types that appear in public signatures.
 pub use native_theme::{
     AnimatedIcon, DialogButtonOrder, Error, IconData, IconProvider, IconRole, IconSet,
-    ResolvedThemeVariant, Result, Rgba, SystemTheme, ThemeSpec, ThemeVariant, TransformAnimation,
+    ResolvedTheme, Result, Rgba, SystemTheme, Theme, ThemeMode, TransformAnimation,
 };
 
 #[cfg(target_os = "linux")]
 pub use native_theme::LinuxDesktop;
 
-/// Create an iced [`iced_core::theme::Theme`] from a [`native_theme::ResolvedThemeVariant`].
+/// Create an iced [`iced_core::theme::Theme`] from a [`native_theme::ResolvedTheme`].
 ///
 /// Builds a custom theme using `Theme::custom_with_fn()`, which:
 /// 1. Maps the 6 Palette fields from resolved theme colors via [`palette::to_palette()`]
@@ -111,13 +111,13 @@ pub use native_theme::LinuxDesktop;
 /// [`info_color()`] and [`info_foreground_color()`] helpers to access them.
 #[must_use = "this returns the theme; it does not apply it"]
 pub fn to_theme(
-    resolved: &native_theme::ResolvedThemeVariant,
+    resolved: &native_theme::ResolvedTheme,
     name: &str,
 ) -> iced_core::theme::Theme {
     let pal = palette::to_palette(resolved);
 
     // Capture only the Rgba values (Copy, 4 bytes each) instead of
-    // cloning the entire ResolvedThemeVariant (~2KB with heap data).
+    // cloning the entire ResolvedTheme (~2KB with heap data).
     let colors = extended::OverrideColors {
         btn_bg: resolved.button.background_color,
         btn_fg: resolved.button.font.color,
@@ -142,7 +142,7 @@ pub fn to_theme(
 /// Load a bundled preset and convert it to an iced [`Theme`](iced_core::theme::Theme) in one call.
 ///
 /// Handles the full pipeline: load preset, pick variant, resolve, validate, convert.
-/// The `ThemeSpec` display name is used as the theme display name.
+/// The `Theme` display name is used as the theme display name.
 ///
 /// # Errors
 ///
@@ -151,8 +151,8 @@ pub fn to_theme(
 pub fn from_preset(
     name: &str,
     is_dark: bool,
-) -> native_theme::Result<(iced_core::theme::Theme, native_theme::ResolvedThemeVariant)> {
-    let spec = native_theme::ThemeSpec::preset(name)?;
+) -> native_theme::Result<(iced_core::theme::Theme, native_theme::ResolvedTheme)> {
+    let spec = native_theme::Theme::preset(name)?;
     let display_name = spec.name.clone();
     let mode = if is_dark { "dark" } else { "light" };
     let variant = spec
@@ -181,7 +181,7 @@ pub fn from_preset(
 #[must_use = "this returns the theme; it does not apply it"]
 pub fn from_system() -> native_theme::Result<(
     iced_core::theme::Theme,
-    native_theme::ResolvedThemeVariant,
+    native_theme::ResolvedTheme,
     bool,
 )> {
     let sys = native_theme::SystemTheme::from_system()?;
@@ -194,16 +194,16 @@ pub fn from_system() -> native_theme::Result<(
 
 /// Extension trait for converting a [`SystemTheme`] to an iced theme.
 pub trait SystemThemeExt {
-    /// Convert this system theme to an iced [`iced_core::theme::Theme`] and its [`ResolvedThemeVariant`].
+    /// Convert this system theme to an iced [`iced_core::theme::Theme`] and its [`ResolvedTheme`].
     ///
     /// Returns both the iced theme and the resolved variant, so callers can
     /// access per-widget metrics without re-resolving.
     #[must_use = "this returns the theme; it does not apply it"]
-    fn to_iced_theme(&self) -> (iced_core::theme::Theme, native_theme::ResolvedThemeVariant);
+    fn to_iced_theme(&self) -> (iced_core::theme::Theme, native_theme::ResolvedTheme);
 }
 
 impl SystemThemeExt for native_theme::SystemTheme {
-    fn to_iced_theme(&self) -> (iced_core::theme::Theme, native_theme::ResolvedThemeVariant) {
+    fn to_iced_theme(&self) -> (iced_core::theme::Theme, native_theme::ResolvedTheme) {
         let resolved = self.active().clone();
         let theme = to_theme(&resolved, &self.name);
         (theme, resolved)
@@ -214,7 +214,7 @@ impl SystemThemeExt for native_theme::SystemTheme {
 ///
 /// Maps `padding_vertical` to top/bottom and `padding_horizontal` to left/right.
 #[must_use]
-pub fn button_padding(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::Padding {
+pub fn button_padding(resolved: &native_theme::ResolvedTheme) -> iced_core::Padding {
     iced_core::Padding::from([
         resolved.button.border.padding_vertical,
         resolved.button.border.padding_horizontal,
@@ -225,7 +225,7 @@ pub fn button_padding(resolved: &native_theme::ResolvedThemeVariant) -> iced_cor
 ///
 /// Maps `border.padding_vertical` to top/bottom and `border.padding_horizontal` to left/right.
 #[must_use]
-pub fn input_padding(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::Padding {
+pub fn input_padding(resolved: &native_theme::ResolvedTheme) -> iced_core::Padding {
     iced_core::Padding::from([
         resolved.input.border.padding_vertical,
         resolved.input.border.padding_horizontal,
@@ -234,25 +234,25 @@ pub fn input_padding(resolved: &native_theme::ResolvedThemeVariant) -> iced_core
 
 /// Returns the standard border radius from the resolved theme.
 #[must_use]
-pub fn border_radius(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
+pub fn border_radius(resolved: &native_theme::ResolvedTheme) -> f32 {
     resolved.defaults.border.corner_radius
 }
 
 /// Returns the large border radius from the resolved theme.
 #[must_use]
-pub fn border_radius_lg(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
+pub fn border_radius_lg(resolved: &native_theme::ResolvedTheme) -> f32 {
     resolved.defaults.border.corner_radius_lg
 }
 
 /// Returns the scrollbar groove width from the resolved theme.
 #[must_use]
-pub fn scrollbar_width(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
+pub fn scrollbar_width(resolved: &native_theme::ResolvedTheme) -> f32 {
     resolved.scrollbar.groove_width
 }
 
 /// Returns the primary UI font family name from the resolved theme.
 #[must_use]
-pub fn font_family(resolved: &native_theme::ResolvedThemeVariant) -> &str {
+pub fn font_family(resolved: &native_theme::ResolvedTheme) -> &str {
     &resolved.defaults.font.family
 }
 
@@ -261,13 +261,13 @@ pub fn font_family(resolved: &native_theme::ResolvedThemeVariant) -> &str {
 /// ResolvedFontSpec.size is in logical pixels (conversion from platform points
 /// is handled by the resolution step).
 #[must_use]
-pub fn font_size(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
+pub fn font_size(resolved: &native_theme::ResolvedTheme) -> f32 {
     resolved.defaults.font.size
 }
 
 /// Returns the monospace font family name from the resolved theme.
 #[must_use]
-pub fn mono_font_family(resolved: &native_theme::ResolvedThemeVariant) -> &str {
+pub fn mono_font_family(resolved: &native_theme::ResolvedTheme) -> &str {
     &resolved.defaults.mono_font.family
 }
 
@@ -276,49 +276,49 @@ pub fn mono_font_family(resolved: &native_theme::ResolvedThemeVariant) -> &str {
 /// ResolvedFontSpec.size is in logical pixels (conversion from platform points
 /// is handled by the resolution step).
 #[must_use]
-pub fn mono_font_size(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
+pub fn mono_font_size(resolved: &native_theme::ResolvedTheme) -> f32 {
     resolved.defaults.mono_font.size
 }
 
 /// Returns the primary UI font weight (CSS 100-900) from the resolved theme.
 #[must_use]
-pub fn font_weight(resolved: &native_theme::ResolvedThemeVariant) -> u16 {
+pub fn font_weight(resolved: &native_theme::ResolvedTheme) -> u16 {
     resolved.defaults.font.weight
 }
 
 /// Returns the monospace font weight (CSS 100-900) from the resolved theme.
 #[must_use]
-pub fn mono_font_weight(resolved: &native_theme::ResolvedThemeVariant) -> u16 {
+pub fn mono_font_weight(resolved: &native_theme::ResolvedTheme) -> u16 {
     resolved.defaults.mono_font.weight
 }
 
 /// Returns the border/divider color from the resolved theme.
 #[must_use]
-pub fn border_color(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::Color {
+pub fn border_color(resolved: &native_theme::ResolvedTheme) -> iced_core::Color {
     palette::to_color(resolved.defaults.border.color)
 }
 
 /// Returns the disabled control opacity from the resolved theme.
 #[must_use]
-pub fn disabled_opacity(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
+pub fn disabled_opacity(resolved: &native_theme::ResolvedTheme) -> f32 {
     resolved.defaults.disabled_opacity
 }
 
 /// Returns the focus ring indicator color from the resolved theme.
 #[must_use]
-pub fn focus_ring_color(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::Color {
+pub fn focus_ring_color(resolved: &native_theme::ResolvedTheme) -> iced_core::Color {
     palette::to_color(resolved.defaults.focus_ring_color)
 }
 
 /// Returns the hyperlink color from the resolved theme.
 #[must_use]
-pub fn link_color(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::Color {
+pub fn link_color(resolved: &native_theme::ResolvedTheme) -> iced_core::Color {
     palette::to_color(resolved.defaults.link_color)
 }
 
 /// Returns the selection highlight background color from the resolved theme.
 #[must_use]
-pub fn selection_color(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::Color {
+pub fn selection_color(resolved: &native_theme::ResolvedTheme) -> iced_core::Color {
     palette::to_color(resolved.defaults.selection_background)
 }
 
@@ -327,13 +327,13 @@ pub fn selection_color(resolved: &native_theme::ResolvedThemeVariant) -> iced_co
 /// Note: iced has no `info` family in its Extended palette, so this color
 /// is not mapped automatically. Use this helper to access it directly.
 #[must_use]
-pub fn info_color(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::Color {
+pub fn info_color(resolved: &native_theme::ResolvedTheme) -> iced_core::Color {
     palette::to_color(resolved.defaults.info_color)
 }
 
 /// Returns the text color for info-colored backgrounds from the resolved theme.
 #[must_use]
-pub fn info_foreground_color(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::Color {
+pub fn info_foreground_color(resolved: &native_theme::ResolvedTheme) -> iced_core::Color {
     palette::to_color(resolved.defaults.info_text_color)
 }
 
@@ -342,14 +342,14 @@ pub fn info_foreground_color(resolved: &native_theme::ResolvedThemeVariant) -> i
 /// The warning base color is already mapped to `palette.warning`. This returns
 /// the text color intended for use on warning-colored backgrounds.
 #[must_use]
-pub fn warning_foreground_color(resolved: &native_theme::ResolvedThemeVariant) -> iced_core::Color {
+pub fn warning_foreground_color(resolved: &native_theme::ResolvedTheme) -> iced_core::Color {
     palette::to_color(resolved.defaults.warning_text_color)
 }
 
 /// Returns a reference to the per-context icon sizes from the resolved theme.
 #[must_use]
 pub fn icon_sizes(
-    resolved: &native_theme::ResolvedThemeVariant,
+    resolved: &native_theme::ResolvedTheme,
 ) -> &native_theme::ResolvedIconSizes {
     &resolved.defaults.icon_sizes
 }
@@ -364,7 +364,7 @@ pub fn icon_sizes(
 /// For absolute pixels (layout math), multiply by the appropriate
 /// font size: `line_height_multiplier(&r) * font_size(&r)`.
 #[must_use]
-pub fn line_height_multiplier(resolved: &native_theme::ResolvedThemeVariant) -> f32 {
+pub fn line_height_multiplier(resolved: &native_theme::ResolvedTheme) -> f32 {
     resolved.defaults.line_height
 }
 
@@ -401,10 +401,10 @@ pub fn to_iced_weight(css_weight: u16) -> iced_core::font::Weight {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use native_theme::ThemeSpec;
+    use native_theme::Theme;
 
-    fn make_resolved_preset(name: &str, is_dark: bool) -> native_theme::ResolvedThemeVariant {
-        ThemeSpec::preset(name)
+    fn make_resolved_preset(name: &str, is_dark: bool) -> native_theme::ResolvedTheme {
+        Theme::preset(name)
             .unwrap()
             .into_variant(is_dark)
             .unwrap()
@@ -412,7 +412,7 @@ mod tests {
             .unwrap()
     }
 
-    fn make_resolved(is_dark: bool) -> native_theme::ResolvedThemeVariant {
+    fn make_resolved(is_dark: bool) -> native_theme::ResolvedTheme {
         make_resolved_preset("catppuccin-mocha", is_dark)
     }
 
@@ -456,13 +456,13 @@ mod tests {
 
     #[test]
     fn to_theme_different_presets_differ() {
-        let r1 = ThemeSpec::preset("catppuccin-mocha")
+        let r1 = Theme::preset("catppuccin-mocha")
             .unwrap()
             .into_variant(true)
             .unwrap()
             .into_resolved()
             .unwrap();
-        let r2 = ThemeSpec::preset("dracula")
+        let r2 = Theme::preset("dracula")
             .unwrap()
             .into_variant(true)
             .unwrap()
@@ -798,9 +798,9 @@ mod tests {
 
     #[test]
     fn all_presets_produce_valid_themes() {
-        for name in ThemeSpec::list_presets() {
+        for name in Theme::list_presets() {
             for is_dark in [false, true] {
-                let spec = ThemeSpec::preset(name).unwrap();
+                let spec = Theme::preset(name).unwrap();
                 if let Some(variant) = spec.into_variant(is_dark) {
                     let resolved = variant.into_resolved().unwrap();
                     let theme = to_theme(&resolved, name);

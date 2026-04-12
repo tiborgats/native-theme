@@ -67,7 +67,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use native_theme::{
-    AnimatedIcon, IconData, IconRole, IconSet, ThemeSpec, TransformAnimation, bundled_icon_by_name,
+    AnimatedIcon, IconData, IconRole, IconSet, TransformAnimation, bundled_icon_by_name,
     icon_name as native_icon_name, is_freedesktop_theme_available, load_icon, load_icon_from_theme,
     loading_indicator, platform_preset_name, prefers_reduced_motion, system_icon_set,
     system_icon_theme, system_is_dark,
@@ -182,7 +182,7 @@ fn theme_names() -> Vec<SharedString> {
     let default_label = format!("default ({})", display);
     let mut names: Vec<SharedString> = vec![default_label.into()];
     names.extend(
-        ThemeSpec::list_presets_for_platform()
+        native_theme::Theme::list_presets_for_platform()
             .iter()
             .map(|s| SharedString::from(s.to_string())),
     );
@@ -1690,7 +1690,7 @@ impl Showcase {
                 }
             }
         } else {
-            let nt = match ThemeSpec::preset(name) {
+            let nt = match native_theme::Theme::preset(name) {
                 Ok(t) => t,
                 Err(e) => {
                     self.show_theme_error(&format!("Failed to load preset '{name}': {e}"));

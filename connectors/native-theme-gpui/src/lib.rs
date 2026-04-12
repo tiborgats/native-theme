@@ -1,6 +1,6 @@
 //! gpui toolkit connector for native-theme.
 //!
-//! Maps [`native_theme::ResolvedThemeVariant`] data to gpui-component's theming system.
+//! Maps [`native_theme::ResolvedTheme`] data to gpui-component's theming system.
 //!
 //! # Quick Start
 //!
@@ -23,10 +23,10 @@
 //! For full control over the resolve/validate/convert pipeline:
 //!
 //! ```ignore
-//! use native_theme::ThemeSpec;
+//! use native_theme::Theme;
 //! use native_theme_gpui::to_theme;
 //!
-//! let nt = ThemeSpec::preset("catppuccin-mocha")?;
+//! let nt = Theme::preset("catppuccin-mocha")?;
 //! let variant = nt.into_variant(true).ok_or("no dark variant")?;
 //! let resolved = variant.into_resolved()?;
 //! let theme = to_theme(&resolved, "Catppuccin Mocha", true);
@@ -43,7 +43,7 @@
 //!
 //! # Theme Field Coverage
 //!
-//! The connector maps a subset of [`ResolvedThemeVariant`] fields to gpui-component's
+//! The connector maps a subset of [`ResolvedTheme`] fields to gpui-component's
 //! `ThemeColor` (108 color fields) and `ThemeConfig` (font/geometry).
 //!
 //! | Category | Mapped | Notes |
@@ -65,7 +65,7 @@
 //! **Why the gap:** gpui-component's `ThemeColor` is a flat color bag with no per-widget
 //! geometry. The connector cannot map most sizing/spacing data because the target type
 //! has no corresponding fields. Users who need per-widget geometry can read it directly
-//! from the `ResolvedThemeVariant` they passed to [`to_theme()`].
+//! from the `ResolvedTheme` they passed to [`to_theme()`].
 
 #![warn(missing_docs)]
 #![forbid(unsafe_code)]
@@ -82,7 +82,7 @@ pub mod icons;
 // Issue 8 + 48: re-export Result, Rgba, Error, DialogButtonOrder
 pub use native_theme::{
     AnimatedIcon, DialogButtonOrder, Error, IconData, IconProvider, IconRole, IconSet,
-    ResolvedThemeVariant, Result, Rgba, SystemTheme, ThemeSpec, ThemeVariant, TransformAnimation,
+    ResolvedTheme, Result, Rgba, SystemTheme, Theme, ThemeMode, TransformAnimation,
 };
 
 #[cfg(target_os = "linux")]
@@ -90,12 +90,12 @@ pub use native_theme::LinuxDesktop;
 
 use gpui::{SharedString, px};
 use gpui_component::scroll::ScrollbarShow;
-use gpui_component::theme::{Theme, ThemeMode};
+use gpui_component::theme::{Theme as GpuiTheme, ThemeMode as GpuiThemeMode};
 use std::rc::Rc;
 
-/// Convert a [`ResolvedThemeVariant`] into a gpui-component [`Theme`].
+/// Convert a [`ResolvedTheme`] into a gpui-component [`GpuiTheme`].
 ///
-/// Builds a complete Theme by:
+/// Builds a complete GpuiTheme by:
 /// 1. Mapping all 108 ThemeColor fields via `colors::to_theme_color`
 /// 2. Setting font, geometry, and mode fields directly on the Theme
 /// 3. Storing a ThemeConfig in light_theme/dark_theme Rc for gpui-component switching
@@ -113,16 +113,16 @@ use std::rc::Rc;
 /// Note: `is_dark` is an explicit parameter here, unlike the iced connector
 /// which derives it from background luminance. Planned for unification in v0.6.0.
 #[must_use = "this returns the theme; it does not apply it"]
-pub fn to_theme(resolved: &ResolvedThemeVariant, name: &str, is_dark: bool) -> Theme {
+pub fn to_theme(resolved: &ResolvedTheme, name: &str, is_dark: bool) -> GpuiTheme {
     let theme_color = colors::to_theme_color(resolved, is_dark);
     let mode = if is_dark {
-        ThemeMode::Dark
+        GpuiThemeMode::Dark
     } else {
-        ThemeMode::Light
+        GpuiThemeMode::Light
     };
     let d = &resolved.defaults;
 
-    let mut theme = Theme::from(&theme_color);
+    let mut theme = GpuiTheme::from(&theme_color);
     // Issue 53: Theme.transparent is set by Theme::from() to
     // Hsla::transparent_black() and is intentionally left unchanged.
     // It's used internally by gpui-component for transparent overlays.
@@ -153,7 +153,7 @@ pub fn to_theme(resolved: &ResolvedThemeVariant, name: &str, is_dark: bool) -> T
 
     // Store config for gpui-component's theme switching
     let config: Rc<_> = Rc::new(config::to_theme_config(resolved, name, mode));
-    if mode == ThemeMode::Dark {
+    if mode == GpuiThemeMode::Dark {
         theme.dark_theme = config;
     } else {
         theme.light_theme = config;
@@ -161,12 +161,12 @@ pub fn to_theme(resolved: &ResolvedThemeVariant, name: &str, is_dark: bool) -> T
     theme
 }
 
-/// Load a bundled preset and convert it to a gpui-component [`Theme`] in one call.
+/// Load a bundled preset and convert it to a gpui-component [`GpuiTheme`] in one call.
 ///
 /// This is the primary entry point for most users. It handles the full pipeline:
 /// load preset, pick variant, resolve, validate, and convert to gpui Theme.
 ///
-/// Returns both the gpui Theme and the [`ResolvedThemeVariant`] so callers can
+/// Returns both the gpui Theme and the [`ResolvedTheme`] so callers can
 /// access per-widget metrics (button padding, scrollbar width, etc.) that the
 /// flat `ThemeColor` cannot represent.
 ///
@@ -186,8 +186,8 @@ pub fn to_theme(resolved: &ResolvedThemeVariant, name: &str, is_dark: bool) -> T
 pub fn from_preset(
     name: &str,
     is_dark: bool,
-) -> native_theme::Result<(Theme, ResolvedThemeVariant)> {
-    let spec = ThemeSpec::preset(name)?;
+) -> native_theme::Result<(GpuiTheme, ResolvedTheme)> {
+    let spec = Theme::preset(name)?;
     let display_name = spec.name.clone();
     let mode_str = if is_dark { "dark" } else { "light" };
     let variant = spec
@@ -201,12 +201,12 @@ pub fn from_preset(
     Ok((theme, resolved))
 }
 
-/// Detect the OS theme and convert it to a gpui-component [`Theme`] in one call.
+/// Detect the OS theme and convert it to a gpui-component [`GpuiTheme`] in one call.
 ///
 /// Combines [`SystemTheme::from_system()`](native_theme::SystemTheme::from_system)
 /// with [`to_theme()`] using the system-detected name and dark-mode preference.
 ///
-/// Returns both the gpui Theme and the [`ResolvedThemeVariant`] so callers can
+/// Returns both the gpui Theme and the [`ResolvedTheme`] so callers can
 /// access per-widget metrics that the flat `ThemeColor` cannot represent.
 ///
 /// **Ownership note** (Issue 19/31): this function takes ownership of the
@@ -230,7 +230,7 @@ pub fn from_preset(
 /// let (theme, resolved, is_dark) = native_theme_gpui::from_system()?;
 /// ```
 #[must_use = "this returns the theme; it does not apply it"]
-pub fn from_system() -> native_theme::Result<(Theme, ResolvedThemeVariant, bool)> {
+pub fn from_system() -> native_theme::Result<(GpuiTheme, ResolvedTheme, bool)> {
     let sys = SystemTheme::from_system()?;
     let is_dark = sys.is_dark;
     let name = sys.name; // K-5: move instead of clone
@@ -239,7 +239,7 @@ pub fn from_system() -> native_theme::Result<(Theme, ResolvedThemeVariant, bool)
     Ok((theme, resolved, is_dark))
 }
 
-/// Extension trait for converting a [`SystemTheme`] to a gpui-component [`Theme`].
+/// Extension trait for converting a [`SystemTheme`] to a gpui-component [`GpuiTheme`].
 ///
 /// Useful when you already have a `SystemTheme` and want method syntax:
 ///
@@ -250,16 +250,16 @@ pub fn from_system() -> native_theme::Result<(Theme, ResolvedThemeVariant, bool)
 /// let theme = sys.to_gpui_theme();
 /// ```
 pub trait SystemThemeExt {
-    /// Convert this system theme to a gpui-component [`Theme`].
+    /// Convert this system theme to a gpui-component [`GpuiTheme`].
     ///
     /// Uses the active variant (based on `is_dark`), the theme name,
     /// and the dark-mode flag from the `SystemTheme`.
     #[must_use = "this returns the theme; it does not apply it"]
-    fn to_gpui_theme(&self) -> Theme;
+    fn to_gpui_theme(&self) -> GpuiTheme;
 }
 
 impl SystemThemeExt for SystemTheme {
-    fn to_gpui_theme(&self) -> Theme {
+    fn to_gpui_theme(&self) -> GpuiTheme {
         to_theme(self.active(), &self.name, self.is_dark)
     }
 }
@@ -268,14 +268,14 @@ impl SystemThemeExt for SystemTheme {
 // Helper functions (Issues 15, 17, 25, 32, 36, 37, 47, 48, 13)
 // ---------------------------------------------------------------------------
 
-/// Derive `is_dark` from a [`ResolvedThemeVariant`]'s background lightness.
+/// Derive `is_dark` from a [`ResolvedTheme`]'s background lightness.
 ///
 /// Returns `true` when the background lightness is below 0.5. This is a
 /// convenience for callers that do not have an explicit dark-mode flag.
 /// Some presets (e.g. solarized, gruvbox) have borderline values where the
 /// auto-detected result may differ from the user's intent.
 #[must_use]
-pub fn is_dark_resolved(resolved: &ResolvedThemeVariant) -> bool {
+pub fn is_dark_resolved(resolved: &ResolvedTheme) -> bool {
     colors::rgba_to_hsla(resolved.defaults.background_color).l < 0.5
 }
 
@@ -285,25 +285,25 @@ pub fn is_dark_resolved(resolved: &ResolvedThemeVariant) -> bool {
 ///
 /// Equivalent to [`is_dark_resolved()`] -- delegates to background lightness.
 #[must_use]
-pub fn is_dark(resolved: &ResolvedThemeVariant) -> bool {
+pub fn is_dark(resolved: &ResolvedTheme) -> bool {
     is_dark_resolved(resolved)
 }
 
 /// Whether the user/theme has requested reduced motion.
 #[must_use]
-pub fn is_reduced_motion(resolved: &ResolvedThemeVariant) -> bool {
+pub fn is_reduced_motion(resolved: &ResolvedTheme) -> bool {
     resolved.defaults.reduce_motion
 }
 
 /// Whether the theme is in high-contrast mode.
 #[must_use]
-pub fn is_high_contrast(resolved: &ResolvedThemeVariant) -> bool {
+pub fn is_high_contrast(resolved: &ResolvedTheme) -> bool {
     resolved.defaults.high_contrast
 }
 
 /// Whether the user/theme has requested reduced transparency.
 #[must_use]
-pub fn is_reduced_transparency(resolved: &ResolvedThemeVariant) -> bool {
+pub fn is_reduced_transparency(resolved: &ResolvedTheme) -> bool {
     resolved.defaults.reduce_transparency
 }
 
@@ -311,31 +311,31 @@ pub fn is_reduced_transparency(resolved: &ResolvedThemeVariant) -> bool {
 
 /// Frame/border width from the resolved theme defaults.
 #[must_use]
-pub fn frame_width(resolved: &ResolvedThemeVariant) -> f32 {
+pub fn frame_width(resolved: &ResolvedTheme) -> f32 {
     resolved.defaults.border.line_width
 }
 
 /// Disabled control opacity from the resolved theme defaults.
 #[must_use]
-pub fn disabled_opacity(resolved: &ResolvedThemeVariant) -> f32 {
+pub fn disabled_opacity(resolved: &ResolvedTheme) -> f32 {
     resolved.defaults.disabled_opacity
 }
 
 /// Border opacity multiplier from the resolved theme defaults.
 #[must_use]
-pub fn border_opacity(resolved: &ResolvedThemeVariant) -> f32 {
+pub fn border_opacity(resolved: &ResolvedTheme) -> f32 {
     resolved.defaults.border.opacity
 }
 
 /// Whether drop shadows are enabled.
 #[must_use]
-pub fn shadow_enabled(resolved: &ResolvedThemeVariant) -> bool {
+pub fn shadow_enabled(resolved: &ResolvedTheme) -> bool {
     resolved.defaults.border.shadow_enabled
 }
 
 /// Text scaling factor (1.0 = no scaling).
 #[must_use]
-pub fn text_scaling_factor(resolved: &ResolvedThemeVariant) -> f32 {
+pub fn text_scaling_factor(resolved: &ResolvedTheme) -> f32 {
     resolved.defaults.text_scaling_factor
 }
 
@@ -345,7 +345,7 @@ pub fn text_scaling_factor(resolved: &ResolvedThemeVariant) -> f32 {
 ///
 /// Returns icon sizes for toolbar, small, large, dialog, and panel contexts.
 #[must_use]
-pub fn icon_sizes(resolved: &ResolvedThemeVariant) -> &native_theme::ResolvedIconSizes {
+pub fn icon_sizes(resolved: &ResolvedTheme) -> &native_theme::ResolvedIconSizes {
     &resolved.defaults.icon_sizes
 }
 
@@ -353,7 +353,7 @@ pub fn icon_sizes(resolved: &ResolvedThemeVariant) -> &native_theme::ResolvedIco
 ///
 /// Returns the 4-entry text scale (caption, section_heading, dialog_title, display).
 #[must_use]
-pub fn text_scale(resolved: &ResolvedThemeVariant) -> &native_theme::ResolvedTextScale {
+pub fn text_scale(resolved: &ResolvedTheme) -> &native_theme::ResolvedTextScale {
     &resolved.text_scale
 }
 
@@ -361,7 +361,7 @@ pub fn text_scale(resolved: &ResolvedThemeVariant) -> &native_theme::ResolvedTex
 
 /// Line height multiplier from the resolved theme defaults.
 #[must_use]
-pub fn line_height_multiplier(resolved: &ResolvedThemeVariant) -> f32 {
+pub fn line_height_multiplier(resolved: &ResolvedTheme) -> f32 {
     resolved.defaults.line_height
 }
 
@@ -371,7 +371,7 @@ pub fn line_height_multiplier(resolved: &ResolvedThemeVariant) -> f32 {
 ///
 /// Returns the CSS font weight value (100-900).
 #[must_use]
-pub fn font_weight(resolved: &ResolvedThemeVariant) -> u16 {
+pub fn font_weight(resolved: &ResolvedTheme) -> u16 {
     resolved.defaults.font.weight
 }
 
@@ -381,7 +381,7 @@ pub fn font_weight(resolved: &ResolvedThemeVariant) -> u16 {
 ///
 /// Returns the CSS font weight value (100-900).
 #[must_use]
-pub fn mono_font_weight(resolved: &ResolvedThemeVariant) -> u16 {
+pub fn mono_font_weight(resolved: &ResolvedTheme) -> u16 {
     resolved.defaults.mono_font.weight
 }
 
@@ -393,7 +393,7 @@ pub fn mono_font_weight(resolved: &ResolvedThemeVariant) -> u16 {
 /// or trailing (right) side of a dialog. KDE uses leading-affirmative;
 /// most other platforms use trailing-affirmative.
 #[must_use]
-pub fn dialog_button_order(resolved: &ResolvedThemeVariant) -> DialogButtonOrder {
+pub fn dialog_button_order(resolved: &ResolvedTheme) -> DialogButtonOrder {
     resolved.dialog.button_order
 }
 
@@ -403,49 +403,49 @@ pub fn dialog_button_order(resolved: &ResolvedThemeVariant) -> DialogButtonOrder
 ///
 /// Returns the horizontal padding from the dialog's border spec.
 #[must_use]
-pub fn dialog_content_padding(resolved: &ResolvedThemeVariant) -> f32 {
+pub fn dialog_content_padding(resolved: &ResolvedTheme) -> f32 {
     resolved.dialog.border.padding_horizontal
 }
 
 /// Dialog button gap in logical pixels.
 #[must_use]
-pub fn dialog_button_spacing(resolved: &ResolvedThemeVariant) -> f32 {
+pub fn dialog_button_spacing(resolved: &ResolvedTheme) -> f32 {
     resolved.dialog.button_gap
 }
 
 /// Scrollbar groove width in logical pixels.
 #[must_use]
-pub fn scrollbar_width(resolved: &ResolvedThemeVariant) -> f32 {
+pub fn scrollbar_width(resolved: &ResolvedTheme) -> f32 {
     resolved.scrollbar.groove_width
 }
 
 /// Selection text color (foreground for selected content).
 #[must_use]
-pub fn selection_foreground(resolved: &ResolvedThemeVariant) -> Rgba {
+pub fn selection_foreground(resolved: &ResolvedTheme) -> Rgba {
     resolved.defaults.selection_text_color
 }
 
 /// Selection background when window is unfocused.
 #[must_use]
-pub fn selection_inactive(resolved: &ResolvedThemeVariant) -> Rgba {
+pub fn selection_inactive(resolved: &ResolvedTheme) -> Rgba {
     resolved.defaults.selection_inactive_background
 }
 
 /// Foreground color for disabled elements.
 #[must_use]
-pub fn disabled_foreground(resolved: &ResolvedThemeVariant) -> Rgba {
+pub fn disabled_foreground(resolved: &ResolvedTheme) -> Rgba {
     resolved.defaults.disabled_text_color
 }
 
 /// Focus ring stroke width in logical pixels.
 #[must_use]
-pub fn focus_ring_width(resolved: &ResolvedThemeVariant) -> f32 {
+pub fn focus_ring_width(resolved: &ResolvedTheme) -> f32 {
     resolved.defaults.focus_ring_width
 }
 
 /// Gap between element edge and focus ring.
 #[must_use]
-pub fn focus_ring_offset(resolved: &ResolvedThemeVariant) -> f32 {
+pub fn focus_ring_offset(resolved: &ResolvedTheme) -> f32 {
     resolved.defaults.focus_ring_offset
 }
 
@@ -455,8 +455,8 @@ mod tests {
     use super::*;
 
     /// Issue 1: fixed to use into_variant(true) for catppuccin-mocha (dark theme).
-    fn test_resolved() -> ResolvedThemeVariant {
-        let nt = ThemeSpec::preset("catppuccin-mocha").expect("preset must exist");
+    fn test_resolved() -> ResolvedTheme {
+        let nt = Theme::preset("catppuccin-mocha").expect("preset must exist");
         let variant = nt
             .into_variant(true)
             .expect("preset must have dark variant");
@@ -476,7 +476,7 @@ mod tests {
 
     #[test]
     fn to_theme_dark_mode() {
-        let nt = ThemeSpec::preset("catppuccin-mocha").expect("preset must exist");
+        let nt = Theme::preset("catppuccin-mocha").expect("preset must exist");
         let variant = nt
             .into_variant(true)
             .expect("preset must have dark variant");
@@ -536,19 +536,19 @@ mod tests {
         let dark_theme = to_theme(&resolved, "Dark", true);
         assert_eq!(
             dark_theme.highlight_theme.appearance,
-            ThemeMode::Dark,
+            GpuiThemeMode::Dark,
             "dark theme should use dark highlight"
         );
 
         let light_resolved = {
-            let spec = ThemeSpec::preset("catppuccin-latte").expect("preset must exist");
+            let spec = Theme::preset("catppuccin-latte").expect("preset must exist");
             let variant = spec.into_variant(false).expect("light variant");
             variant.into_resolved().expect("must validate")
         };
         let light_theme = to_theme(&light_resolved, "Light", false);
         assert_eq!(
             light_theme.highlight_theme.appearance,
-            ThemeMode::Light,
+            GpuiThemeMode::Light,
             "light theme should use light highlight"
         );
     }
@@ -571,7 +571,7 @@ mod tests {
     #[test]
     fn from_preset_returns_resolved() {
         let (_theme, resolved) = from_preset("catppuccin-mocha", true).expect("preset should load");
-        // ResolvedThemeVariant should have populated defaults
+        // ResolvedTheme should have populated defaults
         assert!(resolved.defaults.font.size > 0.0);
     }
 
@@ -753,7 +753,7 @@ mod tests {
 
     #[test]
     fn all_presets_dark_mode_no_panic() {
-        let presets = ThemeSpec::list_presets();
+        let presets = Theme::list_presets();
         for name in presets {
             let result = from_preset(name, true);
             assert!(
@@ -766,7 +766,7 @@ mod tests {
 
     #[test]
     fn all_presets_light_mode_no_panic() {
-        let presets = ThemeSpec::list_presets();
+        let presets = Theme::list_presets();
         for name in presets {
             let result = from_preset(name, false);
             assert!(

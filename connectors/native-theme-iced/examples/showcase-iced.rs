@@ -18,7 +18,7 @@ use iced::{Color, Element, Fill, Length, Padding, Theme};
 
 use iced::Subscription;
 use native_theme::{
-    AnimatedIcon, IconData, IconRole, IconSet, ThemeSpec, TransformAnimation, loading_indicator,
+    AnimatedIcon, IconData, IconRole, IconSet, TransformAnimation, loading_indicator,
     prefers_reduced_motion,
 };
 use native_theme_iced::icons::{
@@ -215,8 +215,8 @@ impl Eq for ThemeChoice {}
 ///
 /// Returns `None` if any step fails (should not happen for bundled data,
 /// but we never panic).
-fn load_adwaita_fallback(is_dark: bool) -> Option<(native_theme::ResolvedThemeVariant, Theme)> {
-    let nt = ThemeSpec::preset("adwaita").ok()?;
+fn load_adwaita_fallback(is_dark: bool) -> Option<(native_theme::ResolvedTheme, Theme)> {
+    let nt = native_theme::Theme::preset("adwaita").ok()?;
     let variant = nt.pick_variant(is_dark)?.clone();
     let r = variant.into_resolved().ok()?;
     let t = native_theme_iced::to_theme(&r, &nt.name);
@@ -226,7 +226,7 @@ fn load_adwaita_fallback(is_dark: bool) -> Option<(native_theme::ResolvedThemeVa
 fn theme_choices(default_label: &str) -> Vec<ThemeChoice> {
     let mut choices = vec![ThemeChoice::OsTheme(default_label.to_string())];
     choices.extend(
-        ThemeSpec::list_presets_for_platform()
+        native_theme::Theme::list_presets_for_platform()
             .iter()
             .map(|name| ThemeChoice::Preset((*name).to_string())),
     );
@@ -321,7 +321,7 @@ impl IconSetChoice {
 ///
 /// When the TOML does not specify `icon_theme`, selects `System`.
 fn resolve_icon_choice(
-    resolved: &native_theme::ResolvedThemeVariant,
+    resolved: &native_theme::ResolvedTheme,
     has_toml_icon_theme: bool,
 ) -> (IconSetChoice, Vec<IconSetChoice>) {
     if has_toml_icon_theme {
@@ -409,7 +409,7 @@ struct LoadedIcon {
 /// Pre-load all 42 icons for the given choice, tracking source.
 fn load_all_icons(
     choice: &IconSetChoice,
-    resolved: &native_theme::ResolvedThemeVariant,
+    resolved: &native_theme::ResolvedTheme,
 ) -> Vec<LoadedIcon> {
     let set = match choice {
         IconSetChoice::Default(_) => resolved.icon_set,
@@ -556,7 +556,7 @@ struct State {
     current_theme: Theme,
     color_mode: ColorMode,
     is_dark: bool,
-    current_resolved: native_theme::ResolvedThemeVariant,
+    current_resolved: native_theme::ResolvedTheme,
     /// Dynamic label for the default theme entry, updated on color mode change.
     default_label: String,
 
@@ -650,7 +650,7 @@ impl Default for State {
                             // detection and the bundled adwaita preset fail.
                             // With bundled data this case is near-impossible.
                             // process::exit avoids constructing a dummy
-                            // ResolvedThemeVariant (30+ required fields).
+                            // ResolvedTheme (30+ required fields).
                             eprintln!(
                                 "Fatal: OS theme failed ({e}) and adwaita fallback \
                                  also failed. Cannot start."
@@ -852,7 +852,7 @@ impl State {
             }
             ThemeChoice::Preset(name) => {
                 let name = name.clone();
-                match ThemeSpec::preset(&name) {
+                match native_theme::Theme::preset(&name) {
                     Ok(nt) => match nt.pick_variant(self.is_dark) {
                         Some(variant) => {
                             has_toml_icon_theme = variant.icon_theme.is_some();
@@ -1548,7 +1548,7 @@ fn widget_tooltip(
 }
 
 /// Format the resolved theme font settings for display.
-fn format_font_info(resolved: &native_theme::ResolvedThemeVariant) -> String {
+fn format_font_info(resolved: &native_theme::ResolvedTheme) -> String {
     let ff = &resolved.defaults.font.family;
     let fs = format!("{:.0}px", resolved.defaults.font.size);
     let mf = &resolved.defaults.mono_font.family;
@@ -2378,7 +2378,7 @@ fn view_display<'a>(state: &'a State, radius: f32) -> Element<'a, Message> {
             text(font_info).size(ts.caption.size),
             text(format!(
                 "Available presets: {} | All presets have both light and dark variants.",
-                ThemeSpec::list_presets().len(),
+                native_theme::Theme::list_presets().len(),
             ))
             .size(ts.caption.size),
         ]

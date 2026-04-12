@@ -3,7 +3,7 @@
 [iced](https://iced.rs/) toolkit connector for
 [native-theme](https://crates.io/crates/native-theme).
 
-Maps [`native_theme::ResolvedThemeVariant`](https://docs.rs/native-theme) data to
+Maps [`native_theme::ResolvedTheme`](https://docs.rs/native-theme) data to
 iced's theming system, producing a fully configured `iced::Theme` with correct
 colors for all built-in widget styles via iced's Catalog system.
 
@@ -20,11 +20,11 @@ native-theme-iced = "0.5.7"
 Then create an iced theme from any native-theme preset:
 
 ```rust,ignore
-use native_theme::ThemeSpec;
+use native_theme::Theme;
 use native_theme_iced::to_theme;
 
 // Load a preset and resolve it
-let nt = ThemeSpec::preset("dracula").unwrap();
+let nt = Theme::preset("dracula").unwrap();
 let resolved = nt.into_variant(true).unwrap().into_resolved().unwrap();
 let theme = to_theme(&resolved, "My App");
 // Use `theme` as your iced application theme
@@ -59,7 +59,7 @@ per-widget rather than through the Catalog:
 - `line_height_multiplier(resolved)` -- line height multiplier (e.g. 1.4)
 - `to_iced_weight(css_weight)` -- converts CSS weight to iced `Weight` enum
 
-All helpers take a `&ResolvedThemeVariant` reference (except `to_iced_weight`
+All helpers take a `&ResolvedTheme` reference (except `to_iced_weight`
 which takes a `u16`).
 
 ## Modules

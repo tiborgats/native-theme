@@ -1,4 +1,4 @@
-//! ResolvedThemeVariant -> gpui_component::theme::ThemeColor mapping (108 fields).
+//! ResolvedTheme -> gpui_component::theme::ThemeColor mapping (108 fields).
 //!
 //! Maps native-theme's per-widget resolved fields to gpui-component's 108-field
 //! ThemeColor struct. Direct mappings cover ~40 fields; the remaining ~68 are
@@ -7,7 +7,7 @@
 
 use gpui::Hsla;
 use gpui_component::theme::ThemeColor;
-use native_theme::ResolvedThemeVariant;
+use native_theme::ResolvedTheme;
 
 use crate::derive::{active_color, contrast_ratio, hover_color, light_variant};
 
@@ -64,7 +64,7 @@ fn ensure_status_contrast(fg: Hsla, bg: Hsla) -> Hsla {
     }
 }
 
-/// Pre-converted HSLA colors extracted from a [`ResolvedThemeVariant`].
+/// Pre-converted HSLA colors extracted from a [`ResolvedTheme`].
 ///
 /// Built once in [`to_theme_color()`] and passed by reference to all
 /// assign helper functions, replacing 10-15 parameter signatures.
@@ -128,9 +128,9 @@ struct ResolvedColors {
     link_hover_bg: Hsla,
 }
 
-/// Build a complete [`ThemeColor`] from a [`ResolvedThemeVariant`].
+/// Build a complete [`ThemeColor`] from a [`ResolvedTheme`].
 ///
-/// Maps all 108 fields: ~40 directly from ResolvedThemeVariant per-widget structs,
+/// Maps all 108 fields: ~40 directly from ResolvedTheme per-widget structs,
 /// the rest derived via shade generation following gpui-component's own
 /// fallback logic.
 ///
@@ -141,7 +141,7 @@ struct ResolvedColors {
 /// Callers can derive `is_dark` from `resolved.defaults.background_color` lightness
 /// when the caller does not have an explicit dark-mode flag:
 /// `let is_dark = rgba_to_hsla(resolved.defaults.background_color).l < 0.5;`
-pub fn to_theme_color(resolved: &ResolvedThemeVariant, is_dark: bool) -> ThemeColor {
+pub fn to_theme_color(resolved: &ResolvedTheme, is_dark: bool) -> ThemeColor {
     let d = &resolved.defaults;
     let bg = rgba_to_hsla(d.background_color);
     let fg = rgba_to_hsla(d.text_color);
@@ -360,7 +360,7 @@ fn assign_charts(tc: &mut ThemeColor, c: &ResolvedColors) {
 fn assign_misc(
     tc: &mut ThemeColor,
     c: &ResolvedColors,
-    resolved: &ResolvedThemeVariant,
+    resolved: &ResolvedTheme,
     is_dark: bool,
 ) {
     tc.popover = c.popover;
@@ -470,14 +470,14 @@ fn assign_base_colors(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use native_theme::ThemeSpec;
+    use native_theme::Theme;
 
-    /// Create a dark ResolvedThemeVariant for catppuccin-mocha.
+    /// Create a dark ResolvedTheme for catppuccin-mocha.
     ///
     /// Issue 1: fixed to use `into_variant(true)` -- catppuccin-mocha is a dark
     /// theme, so loading with `false` would pick the light fallback.
-    fn test_resolved() -> ResolvedThemeVariant {
-        let nt = ThemeSpec::preset("catppuccin-mocha").expect("preset must exist");
+    fn test_resolved() -> ResolvedTheme {
+        let nt = Theme::preset("catppuccin-mocha").expect("preset must exist");
         let variant = nt
             .into_variant(true)
             .expect("preset must have dark variant");
@@ -486,9 +486,9 @@ mod tests {
             .expect("resolved preset must validate")
     }
 
-    /// Create a light ResolvedThemeVariant for catppuccin-latte.
-    fn test_resolved_light() -> ResolvedThemeVariant {
-        let nt = ThemeSpec::preset("catppuccin-latte").expect("preset must exist");
+    /// Create a light ResolvedTheme for catppuccin-latte.
+    fn test_resolved_light() -> ResolvedTheme {
+        let nt = Theme::preset("catppuccin-latte").expect("preset must exist");
         let variant = nt
             .into_variant(false)
             .expect("preset must have light variant");
@@ -1050,7 +1050,7 @@ mod tests {
             "one-dark",
         ];
         for name in presets {
-            let nt = ThemeSpec::preset(name).expect("preset must exist");
+            let nt = Theme::preset(name).expect("preset must exist");
             let variant = nt
                 .into_variant(true)
                 .expect("preset must have dark variant");
@@ -1069,7 +1069,7 @@ mod tests {
             "gruvbox",
         ];
         for name in presets {
-            let nt = ThemeSpec::preset(name).expect("preset must exist");
+            let nt = Theme::preset(name).expect("preset must exist");
             let variant = nt
                 .into_variant(false)
                 .expect("preset must have light variant");
