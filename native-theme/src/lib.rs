@@ -190,7 +190,7 @@ pub(crate) use icons::{
 pub(crate) use model::icons::{detect_icon_theme, icon_name, system_icon_set, system_icon_theme};
 #[allow(unused_imports)]
 pub(crate) use model::{
-    AnimatedIcon, BorderSpec, ButtonTheme, CardTheme, CheckboxTheme, ComboBoxTheme,
+    AnimatedIcon, BorderSpec, ButtonTheme, CardTheme, CheckboxTheme, ColorMode, ComboBoxTheme,
     DialogButtonOrder, DialogTheme, ExpanderTheme, FontSize, FontSpec, FontStyle, IconData,
     IconProvider, IconRole, IconSet, IconSizes, InputTheme, LayoutTheme, LinkTheme, ListTheme,
     MenuTheme, PopoverTheme, ProgressBarTheme, ResolvedBorderSpec, ResolvedDefaults,
@@ -213,8 +213,8 @@ pub(crate) use pipeline::{diagnose_platform_support, platform_preset_name};
 pub struct SystemTheme {
     /// Theme name (from reader or preset).
     pub name: String,
-    /// Whether the OS is currently in dark mode.
-    pub is_dark: bool,
+    /// The OS color mode preference (light or dark).
+    pub mode: ColorMode,
     /// Resolved light variant (always populated).
     pub light: ResolvedTheme,
     /// Resolved dark variant (always populated).
@@ -230,24 +230,24 @@ pub struct SystemTheme {
 }
 
 impl SystemTheme {
-    /// Returns the OS-active resolved variant.
+    /// Pick a resolved variant by color mode.
     ///
-    /// If `is_dark` is true, returns `&self.dark`; otherwise `&self.light`.
+    /// # Examples
+    ///
+    /// ```no_run
+    /// use native_theme::theme::ColorMode;
+    ///
+    /// let sys = native_theme::SystemTheme::from_system()?;
+    /// let dark = sys.pick(ColorMode::Dark);
+    /// let active = sys.pick(sys.mode);
+    /// # Ok::<(), native_theme::error::Error>(())
+    /// ```
     #[must_use]
-    pub fn active(&self) -> &ResolvedTheme {
-        if self.is_dark {
-            &self.dark
-        } else {
-            &self.light
+    pub fn pick(&self, mode: ColorMode) -> &ResolvedTheme {
+        match mode {
+            ColorMode::Light => &self.light,
+            ColorMode::Dark => &self.dark,
         }
-    }
-
-    /// Pick a resolved variant by explicit preference.
-    ///
-    /// `pick(true)` returns `&self.dark`, `pick(false)` returns `&self.light`.
-    #[must_use]
-    pub fn pick(&self, is_dark: bool) -> &ResolvedTheme {
-        if is_dark { &self.dark } else { &self.light }
     }
 
     /// Apply an app-level TOML overlay and re-resolve.
@@ -262,16 +262,17 @@ impl SystemTheme {
     /// # Examples
     ///
     /// ```no_run
-    /// let system = native_theme::SystemTheme::from_system().unwrap();
+    /// let system = native_theme::SystemTheme::from_system()?;
     /// let overlay = native_theme::theme::Theme::from_toml(r##"
     ///     [light.defaults]
     ///     accent_color = "#ff6600"
     ///     [dark.defaults]
     ///     accent_color = "#ff6600"
-    /// "##).unwrap();
-    /// let customized = system.with_overlay(&overlay).unwrap();
-    /// // customized.active().defaults.accent_color is now #ff6600
+    /// "##)?;
+    /// let customized = system.with_overlay(&overlay)?;
+    /// // customized.pick(customized.mode).defaults.accent_color is now #ff6600
     /// // and all accent-derived fields are updated
+    /// # Ok::<(), native_theme::error::Error>(())
     /// ```
     pub fn with_overlay(&self, overlay: &Theme) -> crate::Result<Self> {
         // Start from pre-resolve variants (avoids double-resolve idempotency issue)
@@ -292,7 +293,7 @@ impl SystemTheme {
 
         Ok(SystemTheme {
             name: self.name.clone(),
-            is_dark: self.is_dark,
+            mode: self.mode,
             light: resolved_light,
             dark: resolved_dark,
             light_variant: light,
@@ -344,8 +345,9 @@ impl SystemTheme {
     /// # Examples
     ///
     /// ```no_run
-    /// let system = native_theme::SystemTheme::from_system().unwrap();
-    /// let active = system.active();
+    /// let system = native_theme::SystemTheme::from_system()?;
+    /// let active = system.pick(system.mode);
+    /// # Ok::<(), native_theme::error::Error>(())
     /// ```
     pub fn from_system() -> crate::Result<Self> {
         pipeline::from_system_inner()
@@ -396,7 +398,7 @@ mod system_theme_tests {
     // --- SystemTheme::active() / pick() tests ---
 
     #[test]
-    fn test_system_theme_active_dark() {
+    fn test_system_theme_pick_dark_mode() {
         let preset = Theme::preset("catppuccin-mocha").unwrap();
         let mut light_v = preset.light.clone().unwrap();
         let mut dark_v = preset.dark.clone().unwrap();
@@ -411,7 +413,7 @@ mod system_theme_tests {
 
         let st = SystemTheme {
             name: "test".into(),
-            is_dark: true,
+            mode: ColorMode::Dark,
             light: light_resolved.clone(),
             dark: dark_resolved.clone(),
             light_variant: preset.light.unwrap(),
@@ -420,13 +422,13 @@ mod system_theme_tests {
             preset: "catppuccin-mocha".into(),
         };
         assert_eq!(
-            st.active().defaults.accent_color,
+            st.pick(st.mode).defaults.accent_color,
             dark_resolved.defaults.accent_color
         );
     }
 
     #[test]
-    fn test_system_theme_active_light() {
+    fn test_system_theme_pick_light_mode() {
         let preset = Theme::preset("catppuccin-mocha").unwrap();
         let mut light_v = preset.light.clone().unwrap();
         let mut dark_v = preset.dark.clone().unwrap();
@@ -439,7 +441,7 @@ mod system_theme_tests {
 
         let st = SystemTheme {
             name: "test".into(),
-            is_dark: false,
+            mode: ColorMode::Light,
             light: light_resolved.clone(),
             dark: dark_resolved.clone(),
             light_variant: preset.light.unwrap(),
@@ -448,13 +450,13 @@ mod system_theme_tests {
             preset: "catppuccin-mocha".into(),
         };
         assert_eq!(
-            st.active().defaults.accent_color,
+            st.pick(st.mode).defaults.accent_color,
             light_resolved.defaults.accent_color
         );
     }
 
     #[test]
-    fn test_system_theme_pick() {
+    fn test_system_theme_pick_explicit() {
         let preset = Theme::preset("catppuccin-mocha").unwrap();
         let mut light_v = preset.light.clone().unwrap();
         let mut dark_v = preset.dark.clone().unwrap();
@@ -467,7 +469,7 @@ mod system_theme_tests {
 
         let st = SystemTheme {
             name: "test".into(),
-            is_dark: false,
+            mode: ColorMode::Light,
             light: light_resolved.clone(),
             dark: dark_resolved.clone(),
             light_variant: preset.light.unwrap(),
@@ -476,11 +478,11 @@ mod system_theme_tests {
             preset: "catppuccin-mocha".into(),
         };
         assert_eq!(
-            st.pick(true).defaults.accent_color,
+            st.pick(ColorMode::Dark).defaults.accent_color,
             dark_resolved.defaults.accent_color
         );
         assert_eq!(
-            st.pick(false).defaults.accent_color,
+            st.pick(ColorMode::Light).defaults.accent_color,
             light_resolved.defaults.accent_color
         );
     }
@@ -515,7 +517,7 @@ mod overlay_tests {
     /// Helper: build a SystemTheme from a preset via pipeline::run_pipeline.
     fn default_system_theme() -> SystemTheme {
         let reader = Theme::preset("catppuccin-mocha").unwrap();
-        pipeline::run_pipeline(reader, "catppuccin-mocha", false).unwrap()
+        pipeline::run_pipeline(reader, "catppuccin-mocha", ColorMode::Light).unwrap()
     }
 
     #[test]

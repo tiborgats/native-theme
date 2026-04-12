@@ -46,8 +46,8 @@ Read the OS theme at runtime (returns a fully resolved `SystemTheme`):
 ```rust,ignore
 use native_theme::SystemTheme;
 
-let system = SystemTheme::from_system().unwrap();
-let active = system.active(); // &ResolvedThemeVariant for current OS mode
+let system = SystemTheme::from_system()?;
+let active = system.pick(system.mode); // &ResolvedTheme for current OS mode
 let accent = active.defaults.accent_color;  // Rgba (not Option)
 ```
 
@@ -80,10 +80,9 @@ use native_theme::ThemeSpec;
 use native_theme_gpui::to_theme;
 
 let nt = ThemeSpec::preset("dracula").unwrap();
-let is_dark = true;
-let variant = nt.into_variant(is_dark).ok_or("no variant").unwrap();
+let variant = nt.into_variant(native_theme::theme::ColorMode::Dark).ok_or("no variant").unwrap();
 let resolved = variant.into_resolved().unwrap();
-let theme = to_theme(&resolved, "My App", is_dark);
+let theme = to_theme(&resolved, "My App", true);
 // Use as your gpui-component theme
 ```
 
@@ -106,7 +105,7 @@ use native_theme::ThemeSpec;
 use native_theme_iced::to_theme;
 
 let nt = ThemeSpec::preset("dracula").unwrap();
-let variant = nt.into_variant(true).ok_or("no variant").unwrap();
+let variant = nt.into_variant(native_theme::theme::ColorMode::Dark).ok_or("no variant").unwrap();
 let resolved = variant.into_resolved().unwrap();
 let theme = to_theme(&resolved, "My App");
 // Use as your iced application theme

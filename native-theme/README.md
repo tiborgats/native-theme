@@ -34,7 +34,8 @@ For fully resolved themes (all fields guaranteed populated), use the
 resolve + validate pipeline:
 
 ```rust,ignore
-let variant = theme.into_variant(true).expect("preset has dark variant");
+use native_theme::theme::ColorMode;
+let variant = theme.into_variant(ColorMode::Dark).ok_or("no variant")?;
 let resolved = variant.into_resolved()?; // -> ResolvedTheme
 let accent = resolved.defaults.accent_color; // Rgba (not Option)
 ```
@@ -63,10 +64,11 @@ Use `from_system()` to read the current OS theme at runtime. It returns a
 
 ```rust,ignore
 use native_theme::SystemTheme;
-let system = SystemTheme::from_system().unwrap();
-let active = system.active();            // &ResolvedTheme for current OS mode
-let light = system.pick(false);          // Explicit variant selection
-let is_dark = system.is_dark;            // OS dark mode state
+use native_theme::theme::ColorMode;
+let system = SystemTheme::from_system()?;
+let active = system.pick(system.mode);   // &ResolvedTheme for current OS mode
+let light = system.pick(ColorMode::Light); // Explicit variant selection
+let is_dark = system.mode.is_dark();     // OS dark mode state
 ```
 
 Apply user overrides on top of the OS theme:

@@ -272,11 +272,11 @@ fn pick_variant_falls_back_to_other() {
     light.defaults.accent_color = Some(Rgba::rgb(0, 0, 255));
     theme_light_only.light = Some(light);
 
-    // pick_variant(true) should fall back to light
-    let picked = theme_light_only.pick_variant(true);
+    // pick_variant(Dark) should fall back to light
+    let picked = theme_light_only.pick_variant(ColorMode::Dark);
     assert!(
         picked.is_some(),
-        "pick_variant(true) should fall back to light variant"
+        "pick_variant(Dark) should fall back to light variant"
     );
     assert_eq!(
         picked.unwrap().defaults.accent_color,
@@ -290,11 +290,11 @@ fn pick_variant_falls_back_to_other() {
     dark.defaults.accent_color = Some(Rgba::rgb(255, 0, 0));
     theme_dark_only.dark = Some(dark);
 
-    // pick_variant(false) should fall back to dark
-    let picked = theme_dark_only.pick_variant(false);
+    // pick_variant(Light) should fall back to dark
+    let picked = theme_dark_only.pick_variant(ColorMode::Light);
     assert!(
         picked.is_some(),
-        "pick_variant(false) should fall back to dark variant"
+        "pick_variant(Light) should fall back to dark variant"
     );
     assert_eq!(
         picked.unwrap().defaults.accent_color,
@@ -311,10 +311,10 @@ fn into_variant_falls_back_to_other() {
     light.defaults.accent_color = Some(Rgba::rgb(0, 0, 255));
     theme.light = Some(light);
 
-    let variant = theme.into_variant(true);
+    let variant = theme.into_variant(ColorMode::Dark);
     assert!(
         variant.is_some(),
-        "into_variant(true) should fall back to light"
+        "into_variant(Dark) should fall back to light"
     );
     assert_eq!(
         variant.unwrap().defaults.accent_color,
@@ -325,16 +325,16 @@ fn into_variant_falls_back_to_other() {
 #[test]
 fn pick_variant_returns_none_for_empty_theme() {
     let theme = Theme::new("Empty");
-    assert!(theme.pick_variant(true).is_none());
-    assert!(theme.pick_variant(false).is_none());
+    assert!(theme.pick_variant(ColorMode::Dark).is_none());
+    assert!(theme.pick_variant(ColorMode::Light).is_none());
 }
 
 #[test]
 fn into_variant_returns_none_for_empty_theme() {
     let theme1 = Theme::new("Empty");
-    assert!(theme1.into_variant(true).is_none());
+    assert!(theme1.into_variant(ColorMode::Dark).is_none());
     let theme2 = Theme::new("Empty");
-    assert!(theme2.into_variant(false).is_none());
+    assert!(theme2.into_variant(ColorMode::Light).is_none());
 }
 
 // ---------------------------------------------------------------------------

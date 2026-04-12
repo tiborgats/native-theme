@@ -9,7 +9,7 @@ fn prelude_reexports_expected_items() {
     // Each binding confirms the item is accessible via the prelude.
     // The type annotation confirms it is the correct type.
     let _theme: Theme = Theme::preset("catppuccin-mocha").unwrap();
-    let _mode = _theme.into_variant(true).unwrap();
+    let _mode = _theme.into_variant(native_theme::theme::ColorMode::Dark).unwrap();
     let _resolved: ResolvedTheme = _mode.into_resolved().unwrap();
     let _rgba: Rgba = Rgba::rgb(255, 0, 0);
     let _err: Result<()> = Ok(());

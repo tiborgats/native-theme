@@ -1,5 +1,36 @@
 // Theme model: ThemeMode and Theme, plus sub-module re-exports
 
+/// Light or dark color mode preference.
+///
+/// Used by [`SystemTheme`](crate::SystemTheme) to indicate the OS color
+/// mode and by [`SystemTheme::pick()`](crate::SystemTheme::pick) to select
+/// a resolved variant.
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::theme::ColorMode;
+///
+/// let mode = ColorMode::Dark;
+/// assert!(mode.is_dark());
+/// ```
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
+#[non_exhaustive]
+pub enum ColorMode {
+    /// Light appearance.
+    Light,
+    /// Dark appearance.
+    Dark,
+}
+
+impl ColorMode {
+    /// Returns `true` if this is dark mode.
+    #[must_use]
+    pub fn is_dark(self) -> bool {
+        matches!(self, Self::Dark)
+    }
+}
+
 /// Animated icon types (frame sequences and transforms).
 pub mod animated;
 /// Border specification sub-struct for widget border properties.
@@ -276,22 +307,21 @@ impl Theme {
 
     /// Pick the appropriate variant for the given mode, with cross-fallback.
     ///
-    /// When `is_dark` is true, prefers `dark` and falls back to `light`.
-    /// When `is_dark` is false, prefers `light` and falls back to `dark`.
+    /// When `mode` is [`ColorMode::Dark`], prefers `dark` and falls back to `light`.
+    /// When `mode` is [`ColorMode::Light`], prefers `light` and falls back to `dark`.
     /// Returns `None` only if the theme has no variants at all.
     #[must_use]
-    pub fn pick_variant(&self, is_dark: bool) -> Option<&ThemeMode> {
-        if is_dark {
-            self.dark.as_ref().or(self.light.as_ref())
-        } else {
-            self.light.as_ref().or(self.dark.as_ref())
+    pub fn pick_variant(&self, mode: ColorMode) -> Option<&ThemeMode> {
+        match mode {
+            ColorMode::Dark => self.dark.as_ref().or(self.light.as_ref()),
+            ColorMode::Light => self.light.as_ref().or(self.dark.as_ref()),
         }
     }
 
     /// Extract a variant by consuming the theme, avoiding a clone.
     ///
-    /// When `is_dark` is true, returns the `dark` variant (falling back to
-    /// `light`). When false, returns `light` (falling back to `dark`).
+    /// When `mode` is [`ColorMode::Dark`], returns the `dark` variant (falling back to
+    /// `light`). When [`ColorMode::Light`], returns `light` (falling back to `dark`).
     /// Returns `None` only if the theme has no variants at all.
     ///
     /// Use this when you own the `Theme` and don't need it afterward.
@@ -300,16 +330,18 @@ impl Theme {
     /// # Examples
     ///
     /// ```
-    /// let theme = native_theme::theme::Theme::preset("dracula").unwrap();
-    /// let variant = theme.into_variant(true).unwrap();
-    /// let resolved = variant.into_resolved().unwrap();
+    /// use native_theme::theme::ColorMode;
+    ///
+    /// let theme = native_theme::theme::Theme::preset("dracula")?;
+    /// let variant = theme.into_variant(ColorMode::Dark).ok_or("no variant")?;
+    /// let resolved = variant.into_resolved()?;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     #[must_use]
-    pub fn into_variant(self, is_dark: bool) -> Option<ThemeMode> {
-        if is_dark {
-            self.dark.or(self.light)
-        } else {
-            self.light.or(self.dark)
+    pub fn into_variant(self, mode: ColorMode) -> Option<ThemeMode> {
+        match mode {
+            ColorMode::Dark => self.dark.or(self.light),
+            ColorMode::Light => self.light.or(self.dark),
         }
     }
 
@@ -995,7 +1027,7 @@ mod tests {
         dark.defaults.background_color = Some(Rgba::rgb(30, 30, 30));
         theme.dark = Some(dark);
 
-        let picked = theme.pick_variant(true).unwrap();
+        let picked = theme.pick_variant(ColorMode::Dark).unwrap();
         assert_eq!(
             picked.defaults.background_color,
             Some(Rgba::rgb(30, 30, 30))
@@ -1012,7 +1044,7 @@ mod tests {
         dark.defaults.background_color = Some(Rgba::rgb(30, 30, 30));
         theme.dark = Some(dark);
 
-        let picked = theme.pick_variant(false).unwrap();
+        let picked = theme.pick_variant(ColorMode::Light).unwrap();
         assert_eq!(
             picked.defaults.background_color,
             Some(Rgba::rgb(255, 255, 255))
@@ -1026,7 +1058,7 @@ mod tests {
         light.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
         theme.light = Some(light);
 
-        let picked = theme.pick_variant(true).unwrap();
+        let picked = theme.pick_variant(ColorMode::Dark).unwrap();
         assert_eq!(
             picked.defaults.background_color,
             Some(Rgba::rgb(255, 255, 255))
@@ -1040,7 +1072,7 @@ mod tests {
         dark.defaults.background_color = Some(Rgba::rgb(30, 30, 30));
         theme.dark = Some(dark);
 
-        let picked = theme.pick_variant(false).unwrap();
+        let picked = theme.pick_variant(ColorMode::Light).unwrap();
         assert_eq!(
             picked.defaults.background_color,
             Some(Rgba::rgb(30, 30, 30))
@@ -1050,8 +1082,8 @@ mod tests {
     #[test]
     fn pick_variant_with_no_variants_returns_none() {
         let theme = Theme::new("Empty");
-        assert!(theme.pick_variant(true).is_none());
-        assert!(theme.pick_variant(false).is_none());
+        assert!(theme.pick_variant(ColorMode::Dark).is_none());
+        assert!(theme.pick_variant(ColorMode::Light).is_none());
     }
 
     // === icon_set tests ===
