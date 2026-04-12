@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
-status: executing
-stopped_at: Completed 74-01-PLAN.md
-last_updated: "2026-04-12T14:49:26.000Z"
-last_activity: 2026-04-12 — Phase 74 plan 01 executed
+status: verifying
+stopped_at: Completed 74-02-PLAN.md
+last_updated: "2026-04-12T14:55:44.973Z"
+last_activity: 2026-04-12 — Phase 74 plan 02 executed
 progress:
   total_phases: 28
-  completed_phases: 13
+  completed_phases: 14
   total_plans: 24
-  completed_plans: 23
-  percent: 96
+  completed_plans: 24
+  percent: 100
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 74 — rgba-polish-and-must-use-uniformity
-Plan: 1/2 complete
-Status: Plan 01 executed, plan 02 pending
-Last activity: 2026-04-12 — Phase 74 plan 01 executed
+Phase: 74 — rgba-polish-and-must-use-uniformity (COMPLETE)
+Plan: 2/2 complete
+Status: Phase 74 complete — both plans executed, verified
+Last activity: 2026-04-12 — Phase 74 plan 02 executed
 
-Progress: [██████████] 96% (23/24 plans complete)
+Progress: [██████████] 100% (24/24 plans complete)
 
 ## Accumulated Context
 
@@ -89,7 +89,7 @@ v0.5.6 decisions worth carrying into v0.5.7 planning:
 
 ### Pending Todos
 
-None. Phase 73 complete, ready for Phase 74.
+None. Phase 74 complete, ready for Phase 75.
 
 ### v0.5.7 Decisions
 
@@ -102,6 +102,7 @@ None. Phase 73 complete, ready for Phase 74.
 - [Phase 72-01]: Added #[allow(dead_code)] on ENV_MUTEX pending Plan 02 removal
 - [Phase 73-01]: Kept #[non_exhaustive] and wildcard arm in doc example despite single variant
 - [Phase 73-01]: Updated on_theme_change() doctest to use ? instead of .expect() for zero-panic rules
+- [Phase 74-02]: Remove #[must_use] from Result-returning fns (double_must_use lint); bare #[must_use] only on non-Result returns
 
 ### Blockers/Concerns
 
@@ -114,6 +115,6 @@ None. Phase 73 complete, ready for Phase 74.
 
 ## Session Continuity
 
-Last session: 2026-04-12
-Stopped at: Completed 74-01-PLAN.md
-Resume file: .planning/phases/74-rgba-polish-and-must-use-uniformity/74-02-PLAN.md
+Last session: 2026-04-12T14:55:44.969Z
+Stopped at: Completed 74-02-PLAN.md
+Resume file: None
