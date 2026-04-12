@@ -56,17 +56,15 @@ use std::thread::JoinHandle;
 ///
 /// ```ignore
 /// match event {
-///     ThemeChangeEvent::ColorSchemeChanged => { /* ... */ }
+///     ThemeChangeEvent::Changed => { /* ... */ }
 ///     _ => { /* handle future variants */ }
 /// }
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum ThemeChangeEvent {
-    /// The OS color scheme (light/dark) changed.
-    ColorSchemeChanged,
-    /// An unclassified theme change occurred.
-    Other,
+    /// The OS theme changed.
+    Changed,
 }
 
 /// RAII guard that keeps a theme watcher alive.
@@ -166,13 +164,19 @@ impl Drop for ThemeWatcher {
 ///
 /// ```no_run
 /// use std::sync::mpsc;
+/// use native_theme::ThemeChangeEvent;
 ///
 /// let (tx, rx) = mpsc::channel();
 /// let _watcher = native_theme::on_theme_change(move |event| {
 ///     let _ = tx.send(event);
-/// }).expect("theme watching not supported");
+/// })?;
 ///
-/// // On UI thread: poll rx.try_recv()
+/// // On UI thread:
+/// // match rx.try_recv() {
+/// //     Ok(ThemeChangeEvent::Changed) => { /* re-read theme */ }
+/// //     _ => {}
+/// // }
+/// # Ok::<(), native_theme::Error>(())
 /// ```
 ///
 /// # Errors
@@ -248,21 +252,13 @@ mod tests {
     use super::*;
 
     #[test]
-    fn theme_change_event_variants_are_distinct() {
-        assert_ne!(
-            ThemeChangeEvent::ColorSchemeChanged,
-            ThemeChangeEvent::Other
-        );
-    }
-
-    #[test]
     fn theme_change_event_is_debug_clone_eq() {
-        let event = ThemeChangeEvent::ColorSchemeChanged;
+        let event = ThemeChangeEvent::Changed;
         let cloned = event.clone();
         assert_eq!(event, cloned);
         // Debug
         let debug_str = format!("{:?}", event);
-        assert!(debug_str.contains("ColorSchemeChanged"));
+        assert!(debug_str.contains("Changed"));
     }
 
     /// On unsupported platforms, on_theme_change() returns PlatformUnsupported.
