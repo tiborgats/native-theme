@@ -161,6 +161,16 @@ impl ThemeVariant {
 
     // --- Phase 2: Safety nets ---
 
+    /// Phase 2: Safety nets -- fill widget fields that derive from defaults but
+    /// are not part of the standard defaults-to-widget inheritance chain.
+    ///
+    /// These are deterministic derivations (no OS detection):
+    /// - `input.caret_color` from `defaults.text_color`
+    /// - `scrollbar.track_color` from `defaults.background_color`
+    /// - `spinner.fill_color` from `defaults.accent_color`
+    /// - `popover.background_color` from `defaults.background_color`
+    /// - `list.background_color` from `defaults.background_color`
+    /// - `dialog.background_color` from `defaults.background_color`
     pub(crate) fn resolve_safety_nets(&mut self) {
         // input.caret_color <- defaults.text_color
         if self.input.caret_color.is_none() {

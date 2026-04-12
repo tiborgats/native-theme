@@ -1,4 +1,13 @@
-// Resolution engine: resolve() fills inheritance rules, validate() produces ResolvedThemeVariant.
+// Resolution engine: three-stage pipeline.
+//
+// 1. resolve() -- pure data transform: fills None fields from defaults and
+//    related widgets via ~91 inheritance rules. No OS detection, no I/O.
+// 2. resolve_platform_defaults() -- fills fields that require OS detection:
+//    icon_theme (from system icon settings) and button_order (from detected
+//    desktop environment).
+// 3. validate() -- extracts Option<T> -> T, producing ResolvedThemeVariant.
+//
+// Convenience: resolve_all() = 1+2, into_resolved() = 1+2+3.
 //
 // Split into submodules:
 // - inheritance: Phase 1-5 resolution rules (fill None fields from defaults/other widgets)
@@ -45,7 +54,10 @@ impl ThemeVariant {
 
     /// Fill platform-detected defaults that require OS interaction.
     ///
-    /// Currently fills `icon_theme` from the system icon theme if not already set.
+    /// Currently fills:
+    /// - `icon_theme` from the system icon theme if not already set
+    /// - `dialog.button_order` from the detected desktop environment if not already set
+    ///
     /// This is separated from [`resolve()`](Self::resolve) because it performs
     /// runtime OS detection (reading desktop environment settings), unlike the
     /// pure inheritance rules in resolve().
