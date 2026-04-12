@@ -118,7 +118,7 @@ thumb_diameter_px = 12.0
 track_radius_px = 10.0
 
 [light.dialog]
-button_order = "primary_right"
+# button_order: provided by platform reader via resolve_platform_defaults
 min_width_px = 320.0
 max_width_px = 548.0
 min_height_px = 184.0
@@ -272,7 +272,7 @@ thumb_diameter_px = 12.0
 track_radius_px = 10.0
 
 [dark.dialog]
-button_order = "primary_right"
+# button_order: provided by platform reader via resolve_platform_defaults
 min_width_px = 320.0
 max_width_px = 548.0
 min_height_px = 184.0

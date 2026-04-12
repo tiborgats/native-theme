@@ -15,9 +15,9 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 
 - [ ] **BUG-01**: `check_ranges` stops running on `T::default()` placeholder data from `require()` fallback — short-circuit on `missing.is_empty() == false` OR two-vec split so range errors don't pollute `missing_fields` (doc 2 A2)
 - [ ] **BUG-02**: `ThemeResolutionError::missing_fields` stops carrying two error categories (missing vs out-of-range) — folded into the `Error` restructure (doc 2 A3)
-- [ ] **BUG-03**: `resolve()` documentation no longer lies about "no OS detection" — either move `button_order` OS-dispatch to `resolve_platform_defaults` only OR demote `resolve` intermediates so the doc claim is true (doc 2 A4)
-- [ ] **BUG-04**: `from_kde_content_pure` no longer hardcodes `button_order = "kde"` — resolver handles it (doc 2 D5)
-- [ ] **BUG-05**: `from_macos::build_theme` no longer hardcodes `button_order = "apple"` — resolver handles it (doc 2 M1)
+- [x] **BUG-03**: `resolve()` documentation no longer lies about "no OS detection" — either move `button_order` OS-dispatch to `resolve_platform_defaults` only OR demote `resolve` intermediates so the doc claim is true (doc 2 A4)
+- [x] **BUG-04**: `from_kde_content_pure` no longer hardcodes `button_order = "kde"` — resolver handles it (doc 2 D5)
+- [x] **BUG-05**: `from_macos::build_theme` no longer hardcodes `button_order = "apple"` — resolver handles it (doc 2 M1)
 
 ### Type Vocabulary Renames
 

@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
-status: ready_to_plan
-stopped_at: Phase 69 — ready to plan
-last_updated: "2026-04-12T00:00:00.000Z"
-last_activity: 2026-04-12
+status: executing
+stopped_at: Completed 69-01-PLAN.md
+last_updated: "2026-04-12T09:46:59.763Z"
+last_activity: 2026-04-12 — Completed 69-01 (reader button_order removal + resolve pipeline fix)
 progress:
-  total_phases: 20
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 28
+  completed_phases: 8
+  total_plans: 16
+  completed_plans: 15
+  percent: 94
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 69 — ready to plan (first v0.5.7 phase)
-Plan: —
-Status: Ready to plan Phase 69
-Last activity: 2026-04-12 — Roadmap created (20 phases, 55 requirements, 100% coverage)
+Phase: 69 — resolver-button-order-unlock
+Plan: 1 of 2 complete
+Status: Executing Phase 69
+Last activity: 2026-04-12 — Completed 69-01 (reader button_order removal + resolve pipeline fix)
 
-Progress: [░░░░░░░░░░] 0% (0/20 phases complete)
+Progress: [█████████░] 94% (15/16 plans complete)
 
 ## Accumulated Context
 
@@ -39,6 +39,7 @@ Progress: [░░░░░░░░░░] 0% (0/20 phases complete)
 All decisions logged in PROJECT.md Key Decisions table.
 
 v0.5.6 decisions worth carrying into v0.5.7 planning:
+
 - [Phase 61-01]: detect.rs narrow pub(crate) accessors pattern established
 - [Phase 62-01]: `pub(crate)` visibility on resolve::validate for macro-generated code
 - [Phase 62-02]: impl_merge! supports repeated optional_nested blocks for mixed border categories
@@ -54,12 +55,14 @@ v0.5.6 decisions worth carrying into v0.5.7 planning:
 ### v0.5.7 Roadmap Summary
 
 **Source documents** (pre-milestone design work, 9,700+ lines, six verification passes):
+
 - `docs/todo_v0.5.7_native-theme-api.md` — API critique §1-§33 (doc 1)
 - `docs/todo_v0.5.7_native-theme-api-2.md` — Bugs/structural/API-shape §A-§M (doc 2)
 
 **Roadmap:** 20 phases (69–88), 55 requirements, 100% coverage, granularity=fine.
 
 **Ship unit mapping:**
+
 - Phase 69 — Unit 1 atomic: BUG-03 + BUG-04 + BUG-05 (resolver button_order unlock)
 - Phase 70 — Unit 3 atomic: ERR-01 + CLEAN-01 (drop Error::Clone)
 - Phase 71 — Unit 2 atomic: BUG-01 + BUG-02 + ERR-02 (validation split + Error restructure)
@@ -75,6 +78,7 @@ v0.5.6 decisions worth carrying into v0.5.7 planning:
 - Phase 81 — Unit 11 atomic: FEATURE-01 + FEATURE-02 + FEATURE-03 (feature-matrix cleanup)
 
 **Non-ship-unit bundles:**
+
 - Phase 82 — Icon API rework: ICON-01, ICON-02, ICON-03, ICON-04, ICON-06, ICON-07
 - Phase 83 — Detection cache layer: DETECT-01, DETECT-02
 - Phase 84 — Reader output contract homogenisation: READER-01
@@ -98,6 +102,6 @@ None. Ready to plan Phase 69.
 
 ## Session Continuity
 
-Last session: 2026-04-12T00:00:00.000Z
-Stopped at: Phase 69 — ready to plan
-Resume file: .planning/ROADMAP.md (Phase 69 section)
+Last session: 2026-04-12T09:46:59.760Z
+Stopped at: Completed 69-01-PLAN.md
+Resume file: None

@@ -287,7 +287,7 @@ Plans:
   4. The `resolve()` rustdoc no longer claims "no OS detection" unless it is literally true for every code path reachable from that function
 **Plans**: 2 plans
 Plans:
-- [ ] 69-01-PLAN.md — Remove reader hardcodes, move dispatch to resolve_platform_defaults
+- [x] 69-01-PLAN.md — Remove reader hardcodes, move dispatch to resolve_platform_defaults
 - [ ] 69-02-PLAN.md — Strip live preset TOMLs, update rustdoc, create presets README
 
 ### Phase 70: Drop Error::Clone Bound
@@ -545,7 +545,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 44-48 | v0.5.0 | 17/17 | Complete | 2026-03-29 |
 | 49-60 | v0.5.5 | 41/41 | Complete | 2026-04-09 |
 | 61-68 | v0.5.6 | 14/14 | Complete | 2026-04-10 |
-| 69. Resolver-Level button_order Unlock | v0.5.7 | 0/2 | Planned | — |
+| 69. Resolver-Level button_order Unlock | v0.5.7 | 1/2 | In Progress|  |
 | 70. Drop Error::Clone Bound | v0.5.7 | 0/0 | Not started | — |
 | 71. Error Restructure and Validation Split | v0.5.7 | 0/0 | Not started | — |
 | 72. ENV_MUTEX Test Simplification | v0.5.7 | 0/0 | Not started | — |
