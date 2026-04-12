@@ -150,7 +150,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 72: ENV_MUTEX Test Simplification** — Ship-unit 4 (after 69): drop env-var-mocking serialization now that `resolve()` is pure (completed 2026-04-12)
 - [x] **Phase 73: ThemeChangeEvent Cleanup** — Ship-unit 5: delete `Other` variant (zero emitters) and rename `ColorSchemeChanged` to `Changed` (completed 2026-04-12)
 - [x] **Phase 74: Rgba Polish and must_use Uniformity** — Ship-unit 6 part A: delete `to_f32_tuple`, add default constants, and enforce bare `#[must_use]` across six sites (completed 2026-04-12)
-- [ ] **Phase 75: LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal** — Ship-unit 6 part B: mark `LinuxDesktop` non-exhaustive with new compositor variants, make missing `watch` feature a compile error, delete the misleading `IconSet::default()`
+- [x] **Phase 75: LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal** — Ship-unit 6 part B: mark `LinuxDesktop` non-exhaustive with new compositor variants, make missing `watch` feature a compile error, delete the misleading `IconSet::default()` (completed 2026-04-12)
 - [ ] **Phase 76: Type Vocabulary Rename and Crate Root Partition** — Ship-unit 7 part A: atomic rename of `ThemeSpec→Theme`, `ThemeVariant→ThemeMode`, etc. and partition 92-item flat crate root into submodules with a `prelude`
 - [ ] **Phase 77: SystemTheme API and icon_set Relocation** — Ship-unit 7 part B: drop `SystemTheme::active()` in favour of `pick(ColorMode)` + exposed `mode` field, and move `icon_set`/`icon_theme` onto `Theme`
 - [ ] **Phase 78: OverlaySource, AccessibilityPreferences, font_dpi Relocation** — Ship-unit 8 atomic: eliminate `SystemTheme` pre-resolve variant fields via `OverlaySource` replay, move accessibility off `ThemeDefaults` onto `SystemTheme`, move `font_dpi` into `ResolutionContext`
@@ -370,7 +370,7 @@ Plans:
   4. Matching on `LinuxDesktop` without a wildcard arm produces a "non-exhaustive patterns" compile error, which is the correct forward-compat behaviour
 **Plans**: 2 plans
 Plans:
-- [ ] 75-01-PLAN.md — LinuxDesktop #[non_exhaustive] + Wayland compositor variants
+- [x] 75-01-PLAN.md — LinuxDesktop #[non_exhaustive] + Wayland compositor variants
 - [x] 75-02-PLAN.md — Remove IconSet::default() and verify watch compile-gating
 **UI hint**: yes
 
@@ -607,7 +607,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 72. ENV_MUTEX Test Simplification | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 73. ThemeChangeEvent Cleanup | v0.5.7 | 1/1 | Complete   | 2026-04-12 |
 | 74. Rgba Polish and must_use Uniformity | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
-| 75. LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal | v0.5.7 | 1/2 | In Progress|  |
+| 75. LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 76. Type Vocabulary Rename and Crate Root Partition | v0.5.7 | 0/0 | Not started | — |
 | 77. SystemTheme API and icon_set Relocation | v0.5.7 | 0/0 | Not started | — |
 | 78. OverlaySource, AccessibilityPreferences, font_dpi Relocation | v0.5.7 | 0/0 | Not started | — |

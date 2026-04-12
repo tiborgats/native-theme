@@ -80,7 +80,7 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 ### Crate Root Layout
 
 - [ ] **LAYOUT-01**: 92-item flat crate root partitioned into submodules (`theme::`, `watch::`, `icons::`, `detect::`, etc.) with a `prelude` module exposing the 6 most-used items (doc 1 §12 Option C+F)
-- [ ] **LAYOUT-02**: `LinuxDesktop` marked `#[non_exhaustive]`; new Wayland compositor variants added (Hyprland, Sway, River, Niri, etc.) (doc 1 §19)
+- [x] **LAYOUT-02**: `LinuxDesktop` marked `#[non_exhaustive]`; new Wayland compositor variants added (Hyprland, Sway, River, Niri, etc.) (doc 1 §19)
 - [ ] **LAYOUT-03**: `AnimatedIcon` public fields replaced with newtype wrappers that enforce construction invariants (no invalid public-field states possible) (doc 2 C3)
 - [ ] **LAYOUT-04**: Font `family: String` migrated to `Arc<str>` across widget × connector leak; needs `serde rc` feature flag; gpui and iced connector `.family` access migrated in lockstep (doc 2 C4)
 

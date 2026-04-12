@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 75 — non-exhaustive-compile-gate-iconset-default (IN PROGRESS)
-Plan: 1/2 complete
-Status: Plan 75-02 complete — IconSet::default() removed, watch gate verified
-Last activity: 2026-04-12 — Plan 75-02 executed
+Phase: 75 — non-exhaustive-compile-gate-iconset-default (COMPLETE)
+Plan: 2/2 complete
+Status: Phase 75 complete — both plans executed
+Last activity: 2026-04-12 — Plan 75-01 executed (LinuxDesktop non_exhaustive + Wayland variants)
 
-Progress: [█████████░] 96% (25/26 plans complete)
+Progress: [██████████] 100% (26/26 plans complete)
 
 ## Accumulated Context
 
@@ -104,6 +104,8 @@ None. Phase 75 planned, ready to execute.
 - [Phase 73-01]: Updated on_theme_change() doctest to use ? instead of .expect() for zero-panic rules
 - [Phase 74-02]: Remove #[must_use] from Result-returning fns (double_must_use lint); bare #[must_use] only on non-Result returns
 - [Phase 75-02]: Inlined icon_set validation in validate.rs to avoid Default bound after removing Default from IconSet
+- [Phase 75-01]: Removed unreachable wildcard arms in same-crate matches (non_exhaustive only forces wildcards in external crates)
+- [Phase 75-01]: Wayland compositors use adwaita preset and org.gnome.desktop.interface gsettings for icon themes
 
 ### Blockers/Concerns
 
@@ -117,5 +119,5 @@ None. Phase 75 planned, ready to execute.
 ## Session Continuity
 
 Last session: 2026-04-12
-Stopped at: Plan 75-02 complete — IconSet::default() removed, watch gate verified
-Resume file: .planning/phases/75-non-exhaustive-compile-gate-iconset-default/75-01-PLAN.md
+Stopped at: Phase 75 complete — all plans executed
+Resume file: .planning/phases/75-non-exhaustive-compile-gate-iconset-default/75-01-SUMMARY.md
