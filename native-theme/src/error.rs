@@ -1,137 +1,264 @@
 // Error enum with Display, std::error::Error, and From conversions
+//
+// Option F: flat 9-variant Error + ErrorKind + RangeViolation
 
-/// Error returned when theme resolution finds missing fields.
+use std::fmt;
+
+/// A range-violation error for a single theme property.
 ///
-/// Contains a list of field paths (e.g., `"defaults.accent_color"`, `"button.font.family"`)
-/// that were still `None` after resolution. Used by `validate()` to report exactly
-/// which fields need to be supplied before a [`crate::model::ResolvedThemeVariant`] can be built.
+/// Produced during validation when a resolved numeric property falls outside
+/// its allowed range.
 #[derive(Debug, Clone)]
-pub struct ThemeResolutionError {
-    /// Dot-separated paths of fields that remained `None` after resolution.
-    pub missing_fields: Vec<String>,
+pub struct RangeViolation {
+    /// Dot-separated path of the property (e.g. `"button.min_width"`).
+    pub path: String,
+    /// The actual value found.
+    pub value: f64,
+    /// Lower bound (inclusive), or `None` for open-ended.
+    pub min: Option<f64>,
+    /// Upper bound (inclusive), or `None` for open-ended.
+    pub max: Option<f64>,
 }
 
-impl ThemeResolutionError {
-    /// Categorize a field path into a human-readable group name.
-    fn field_category(field: &str) -> &'static str {
-        if field == "icon_set" {
-            return "icon set";
-        }
-        match field.split('.').next() {
-            Some("defaults") => "root defaults",
-            Some("text_scale") => "text scale",
-            _ => "widget fields",
-        }
-    }
-}
-
-impl std::fmt::Display for ThemeResolutionError {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl fmt::Display for RangeViolation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        let lo = self
+            .min
+            .map_or_else(|| "-inf".to_owned(), |v| v.to_string());
+        let hi = self
+            .max
+            .map_or_else(|| "inf".to_owned(), |v| v.to_string());
         write!(
             f,
-            "theme resolution failed: {} missing field(s):",
-            self.missing_fields.len()
-        )?;
-
-        // Group fields by category, preserving insertion order within each group.
-        let categories: &[&str] = &["root defaults", "text scale", "widget fields", "icon set"];
-        for &cat in categories {
-            let fields: Vec<&str> = self
-                .missing_fields
-                .iter()
-                .filter(|f| Self::field_category(f) == cat)
-                .map(|s| s.as_str())
-                .collect();
-            if fields.is_empty() {
-                continue;
-            }
-            write!(f, "\n  [{cat}]")?;
-            for field in &fields {
-                write!(f, "\n    - {field}")?;
-            }
-        }
-
-        // Hint when root defaults are missing (the most common user mistake).
-        let has_root = self
-            .missing_fields
-            .iter()
-            .any(|f| Self::field_category(f) == "root defaults");
-        if has_root {
-            write!(
-                f,
-                "\n  hint: root defaults drive widget inheritance; \
-                 consider using ThemeSpec::from_toml_with_base() to inherit from a complete preset"
-            )?;
-        }
-
-        Ok(())
+            "{} must be {}..={}, got {}",
+            self.path, lo, hi, self.value
+        )
     }
 }
 
-impl std::error::Error for ThemeResolutionError {}
+/// Coarse error category returned by [`Error::kind()`].
+///
+/// Follows the `std::io::ErrorKind` precedent: callers can match on the kind
+/// for broad dispatch without inspecting each variant.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum ErrorKind {
+    /// Platform feature not available or not supported.
+    Platform,
+    /// Parsing or lookup failure (TOML, preset name).
+    Parse,
+    /// Theme resolution failure (missing fields, range violations).
+    Resolution,
+    /// File I/O error.
+    Io,
+}
 
 /// Errors that can occur when reading or processing theme data.
+///
+/// This is a flat enum with 9 variants. Use [`Error::kind()`] for coarse
+/// dispatch without matching every variant.
 #[derive(Debug)]
 #[non_exhaustive]
 pub enum Error {
-    /// Operation not supported on the current platform.
-    Unsupported(&'static str),
+    /// A feature is compiled in but disabled at runtime or not applicable.
+    FeatureDisabled {
+        /// Feature name (e.g. `"kde"`, `"portal"`).
+        name: &'static str,
+        /// What the feature is needed for (e.g. `"KDE theme detection"`).
+        needed_for: &'static str,
+    },
 
-    /// Data source exists but cannot be read right now.
-    Unavailable(String),
+    /// The current platform is not supported.
+    PlatformUnsupported {
+        /// Platform identifier (e.g. `"wasm"`, `"freebsd"`).
+        platform: &'static str,
+    },
+
+    /// A preset name was not found in the bundled set.
+    UnknownPreset {
+        /// The requested preset name.
+        name: String,
+        /// Available preset names.
+        known: &'static [&'static str],
+    },
+
+    /// File-system watching is not available.
+    WatchUnavailable {
+        /// Why watching is unavailable.
+        reason: &'static str,
+    },
 
     /// TOML parsing or serialization error.
-    Format(String),
+    Toml(toml::de::Error),
 
-    /// Wrapped platform-specific error.
-    Platform(std::sync::Arc<dyn std::error::Error + Send + Sync>),
+    /// File I/O error.
+    Io(std::io::Error),
 
-    /// File I/O error (preserves the original `std::io::Error`).
-    Io(std::sync::Arc<std::io::Error>),
+    /// Theme resolution found missing fields that could not be inherited.
+    ResolutionIncomplete {
+        /// Dot-separated paths of fields still `None` after resolution.
+        missing: Vec<String>,
+    },
 
-    /// Theme resolution/validation found missing fields.
-    Resolution(ThemeResolutionError),
+    /// Theme resolution found numeric values outside allowed ranges.
+    ResolutionInvalid {
+        /// One entry per out-of-range property.
+        errors: Vec<RangeViolation>,
+    },
+
+    /// A platform reader failed with a platform-specific error.
+    ReaderFailed {
+        /// Reader name (e.g. `"kde"`, `"gnome-portal"`, `"windows"`).
+        reader: &'static str,
+        /// The underlying error.
+        source: Box<dyn std::error::Error + Send + Sync>,
+    },
 }
 
-impl std::fmt::Display for Error {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+impl Error {
+    /// Returns the coarse [`ErrorKind`] for this error.
+    ///
+    /// Useful for broad dispatch (e.g. "is this a platform problem or a
+    /// parse problem?") without matching every variant.
+    #[must_use]
+    pub fn kind(&self) -> ErrorKind {
         match self {
-            Error::Unsupported(reason) => write!(f, "not supported: {reason}"),
-            Error::Unavailable(msg) => write!(f, "theme data unavailable: {msg}"),
-            Error::Format(msg) => write!(f, "theme format error: {msg}"),
-            Error::Platform(err) => write!(f, "platform error: {err}"),
-            Error::Io(err) => write!(f, "I/O error: {err}"),
-            Error::Resolution(e) => write!(f, "{e}"),
+            Error::FeatureDisabled { .. } => ErrorKind::Platform,
+            Error::PlatformUnsupported { .. } => ErrorKind::Platform,
+            Error::WatchUnavailable { .. } => ErrorKind::Platform,
+            Error::ReaderFailed { .. } => ErrorKind::Platform,
+            Error::UnknownPreset { .. } => ErrorKind::Parse,
+            Error::Toml(_) => ErrorKind::Parse,
+            Error::Io(_) => ErrorKind::Io,
+            Error::ResolutionIncomplete { .. } => ErrorKind::Resolution,
+            Error::ResolutionInvalid { .. } => ErrorKind::Resolution,
         }
+    }
+}
+
+impl fmt::Display for Error {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Error::FeatureDisabled { name, needed_for } => {
+                write!(f, "feature \"{name}\" is required for {needed_for}")
+            }
+            Error::PlatformUnsupported { platform } => {
+                write!(f, "platform not supported: {platform}")
+            }
+            Error::UnknownPreset { name, known } => {
+                write!(f, "unknown preset \"{name}\"; available: {}", known.join(", "))
+            }
+            Error::WatchUnavailable { reason } => {
+                write!(f, "theme watching unavailable: {reason}")
+            }
+            Error::Toml(err) => write!(f, "TOML error: {err}"),
+            Error::Io(err) => write!(f, "I/O error: {err}"),
+            Error::ResolutionIncomplete { missing } => {
+                write!(
+                    f,
+                    "theme resolution failed: {} missing field(s):",
+                    missing.len()
+                )?;
+
+                // Group fields by category, preserving insertion order within each group.
+                let categories: &[&str] =
+                    &["root defaults", "text scale", "widget fields", "icon set"];
+                for &cat in categories {
+                    let fields: Vec<&str> = missing
+                        .iter()
+                        .filter(|field| field_category(field) == cat)
+                        .map(|s| s.as_str())
+                        .collect();
+                    if fields.is_empty() {
+                        continue;
+                    }
+                    write!(f, "\n  [{cat}]")?;
+                    for field in &fields {
+                        write!(f, "\n    - {field}")?;
+                    }
+                }
+
+                // Hint when root defaults are missing (the most common user mistake).
+                let has_root = missing
+                    .iter()
+                    .any(|field| field_category(field) == "root defaults");
+                if has_root {
+                    write!(
+                        f,
+                        "\n  hint: root defaults drive widget inheritance; \
+                         consider using ThemeSpec::from_toml_with_base() to inherit from a complete preset"
+                    )?;
+                }
+
+                Ok(())
+            }
+            Error::ResolutionInvalid { errors } => {
+                write!(
+                    f,
+                    "theme resolution failed: {} range violation(s):",
+                    errors.len()
+                )?;
+                for violation in errors {
+                    write!(f, "\n  - {violation}")?;
+                }
+                Ok(())
+            }
+            Error::ReaderFailed { reader, source } => {
+                write!(f, "{reader} reader failed: {source}")
+            }
+        }
+    }
+}
+
+/// Categorize a field path into a human-readable group name.
+fn field_category(field: &str) -> &'static str {
+    if field == "icon_set" {
+        return "icon set";
+    }
+    match field.split('.').next() {
+        Some("defaults") => "root defaults",
+        Some("text_scale") => "text scale",
+        _ => "widget fields",
     }
 }
 
 impl std::error::Error for Error {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
-            Error::Platform(err) => Some(err.as_ref()),
-            Error::Io(err) => Some(err.as_ref()),
-            Error::Resolution(e) => Some(e),
-            _ => None,
+            Error::Toml(err) => Some(err),
+            Error::Io(err) => Some(err),
+            Error::ReaderFailed { source, .. } => Some(source.as_ref()),
+            Error::FeatureDisabled { .. }
+            | Error::PlatformUnsupported { .. }
+            | Error::UnknownPreset { .. }
+            | Error::WatchUnavailable { .. }
+            | Error::ResolutionIncomplete { .. }
+            | Error::ResolutionInvalid { .. } => None,
         }
     }
 }
 
 impl From<toml::de::Error> for Error {
     fn from(err: toml::de::Error) -> Self {
-        Error::Format(err.to_string())
+        Error::Toml(err)
     }
 }
 
 impl From<toml::ser::Error> for Error {
     fn from(err: toml::ser::Error) -> Self {
-        Error::Format(err.to_string())
+        // Serialization errors are stringified because Error::Toml wraps only
+        // toml::de::Error. This preserves the existing From<toml::ser::Error>
+        // conversion used by presets::to_toml().
+        Error::ReaderFailed {
+            reader: "toml-serializer",
+            source: Box::new(err),
+        }
     }
 }
 
 impl From<std::io::Error> for Error {
     fn from(err: std::io::Error) -> Self {
-        Error::Io(std::sync::Arc::new(err))
+        Error::Io(err)
     }
 }
 
@@ -140,88 +267,84 @@ impl From<std::io::Error> for Error {
 mod tests {
     use super::*;
 
+    // === ErrorKind dispatch tests ===
+
     #[test]
-    fn unsupported_display() {
-        let err = Error::Unsupported("KDE theme detection requires the `kde` feature");
-        let msg = err.to_string();
-        assert!(msg.contains("not supported"), "got: {msg}");
-        assert!(msg.contains("kde"), "got: {msg}");
+    fn kind_platform_for_feature_disabled() {
+        let err = Error::FeatureDisabled {
+            name: "kde",
+            needed_for: "KDE theme detection",
+        };
+        assert_eq!(err.kind(), ErrorKind::Platform);
     }
 
     #[test]
-    fn unavailable_display() {
-        let err = Error::Unavailable("file not found".into());
-        let msg = err.to_string();
-        assert!(msg.contains("unavailable"), "got: {msg}");
-        assert!(msg.contains("file not found"), "got: {msg}");
+    fn kind_platform_for_platform_unsupported() {
+        let err = Error::PlatformUnsupported { platform: "wasm" };
+        assert_eq!(err.kind(), ErrorKind::Platform);
     }
 
     #[test]
-    fn format_display() {
-        let err = Error::Format("invalid TOML".into());
-        let msg = err.to_string();
-        assert!(msg.contains("format error"), "got: {msg}");
-        assert!(msg.contains("invalid TOML"), "got: {msg}");
+    fn kind_platform_for_watch_unavailable() {
+        let err = Error::WatchUnavailable {
+            reason: "notify crate not compiled",
+        };
+        assert_eq!(err.kind(), ErrorKind::Platform);
     }
 
     #[test]
-    fn platform_display() {
-        let inner = std::io::Error::other("dbus failure");
-        let err = Error::Platform(std::sync::Arc::new(inner));
-        let msg = err.to_string();
-        assert!(msg.contains("platform error"), "got: {msg}");
-        assert!(msg.contains("dbus failure"), "got: {msg}");
+    fn kind_platform_for_reader_failed() {
+        let err = Error::ReaderFailed {
+            reader: "kde",
+            source: Box::new(std::io::Error::other("dbus down")),
+        };
+        assert_eq!(err.kind(), ErrorKind::Platform);
     }
 
     #[test]
-    fn platform_source_returns_inner() {
-        let inner = std::io::Error::other("inner error");
-        let err = Error::Platform(std::sync::Arc::new(inner));
-        let source = std::error::Error::source(&err);
-        assert!(source.is_some());
-        assert!(source.unwrap().to_string().contains("inner error"));
+    fn kind_parse_for_unknown_preset() {
+        let err = Error::UnknownPreset {
+            name: "foobar".into(),
+            known: &["adwaita", "kde-breeze"],
+        };
+        assert_eq!(err.kind(), ErrorKind::Parse);
     }
 
     #[test]
-    fn source_is_none_for_unsupported_unavailable_format() {
-        assert!(
-            std::error::Error::source(&Error::Unsupported("test")).is_none(),
-            "Unsupported should return None from source()"
-        );
-        assert!(
-            std::error::Error::source(&Error::Unavailable("x".into())).is_none(),
-            "Unavailable should return None from source()"
-        );
-        assert!(
-            std::error::Error::source(&Error::Format("x".into())).is_none(),
-            "Format should return None from source()"
-        );
+    fn kind_parse_for_toml() {
+        let toml_err: Result<toml::Value, toml::de::Error> = toml::from_str("=invalid");
+        let err = Error::Toml(toml_err.unwrap_err());
+        assert_eq!(err.kind(), ErrorKind::Parse);
     }
 
     #[test]
-    fn source_is_some_for_io_and_platform() {
-        let io_err = Error::Io(std::sync::Arc::new(std::io::Error::other("io failure")));
-        assert!(
-            std::error::Error::source(&io_err).is_some(),
-            "Io should return Some from source()"
-        );
-
-        let platform_err = Error::Platform(std::sync::Arc::new(std::io::Error::other(
-            "platform failure",
-        )));
-        assert!(
-            std::error::Error::source(&platform_err).is_some(),
-            "Platform should return Some from source()"
-        );
-
-        let resolution_err = Error::Resolution(ThemeResolutionError {
-            missing_fields: vec!["test".into()],
-        });
-        assert!(
-            std::error::Error::source(&resolution_err).is_some(),
-            "Resolution should return Some from source()"
-        );
+    fn kind_resolution_for_incomplete() {
+        let err = Error::ResolutionIncomplete {
+            missing: vec!["defaults.accent_color".into()],
+        };
+        assert_eq!(err.kind(), ErrorKind::Resolution);
     }
+
+    #[test]
+    fn kind_resolution_for_invalid() {
+        let err = Error::ResolutionInvalid {
+            errors: vec![RangeViolation {
+                path: "button.min_width".into(),
+                value: -5.0,
+                min: Some(0.0),
+                max: None,
+            }],
+        };
+        assert_eq!(err.kind(), ErrorKind::Resolution);
+    }
+
+    #[test]
+    fn kind_io_for_io() {
+        let err = Error::Io(std::io::Error::other("disk failure"));
+        assert_eq!(err.kind(), ErrorKind::Io);
+    }
+
+    // === Send + Sync ===
 
     #[test]
     fn error_is_send_sync() {
@@ -229,52 +352,29 @@ mod tests {
         assert_send_sync::<Error>();
     }
 
-    #[test]
-    fn from_toml_de_error() {
-        // Create a toml deserialization error by parsing invalid TOML
-        let toml_err: Result<toml::Value, toml::de::Error> = toml::from_str("=invalid");
-        let err: Error = toml_err.unwrap_err().into();
-        match &err {
-            Error::Format(msg) => assert!(!msg.is_empty()),
-            other => panic!("expected Format variant, got: {other:?}"),
-        }
-    }
+    // === Display tests ===
 
     #[test]
-    fn from_io_error() {
-        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "missing file");
-        let err: Error = io_err.into();
-        match &err {
-            Error::Io(e) => {
-                assert_eq!(e.kind(), std::io::ErrorKind::NotFound);
-                assert!(e.to_string().contains("missing file"));
-            }
-            other => panic!("expected Io variant, got: {other:?}"),
-        }
-    }
-
-    // === ThemeResolutionError tests ===
-
-    #[test]
-    fn theme_resolution_error_construction() {
-        let e = ThemeResolutionError {
-            missing_fields: vec!["defaults.accent_color".into(), "button.font.family".into()],
+    fn display_feature_disabled_includes_name_and_needed_for() {
+        let err = Error::FeatureDisabled {
+            name: "kde",
+            needed_for: "KDE theme detection",
         };
-        assert_eq!(e.missing_fields.len(), 2);
-        assert_eq!(e.missing_fields[0], "defaults.accent_color");
-        assert_eq!(e.missing_fields[1], "button.font.family");
+        let msg = err.to_string();
+        assert!(msg.contains("kde"), "got: {msg}");
+        assert!(msg.contains("KDE theme detection"), "got: {msg}");
     }
 
     #[test]
-    fn theme_resolution_error_display_categorizes_fields() {
-        let e = ThemeResolutionError {
-            missing_fields: vec![
+    fn display_resolution_incomplete_categorizes_fields() {
+        let err = Error::ResolutionIncomplete {
+            missing: vec![
                 "defaults.accent_color".into(),
                 "button.font.color".into(),
                 "window.border.corner_radius".into(),
             ],
         };
-        let msg = e.to_string();
+        let msg = err.to_string();
         assert!(msg.contains("3 missing field(s)"), "got: {msg}");
         assert!(msg.contains("[root defaults]"), "got: {msg}");
         assert!(msg.contains("defaults.accent_color"), "got: {msg}");
@@ -286,97 +386,257 @@ mod tests {
     }
 
     #[test]
-    fn theme_resolution_error_display_no_hint_without_root_defaults() {
-        let e = ThemeResolutionError {
-            missing_fields: vec!["button.font.color".into()],
+    fn display_resolution_incomplete_no_hint_without_root_defaults() {
+        let err = Error::ResolutionIncomplete {
+            missing: vec!["button.font.color".into()],
         };
-        let msg = e.to_string();
+        let msg = err.to_string();
         assert!(msg.contains("[widget fields]"), "got: {msg}");
         assert!(!msg.contains("hint:"), "got: {msg}");
     }
 
     #[test]
-    fn theme_resolution_error_display_groups_text_scale() {
-        let e = ThemeResolutionError {
-            missing_fields: vec!["text_scale.caption".into(), "defaults.font.family".into()],
+    fn display_resolution_incomplete_groups_text_scale() {
+        let err = Error::ResolutionIncomplete {
+            missing: vec!["text_scale.caption".into(), "defaults.font.family".into()],
         };
-        let msg = e.to_string();
+        let msg = err.to_string();
         assert!(msg.contains("[text scale]"), "got: {msg}");
         assert!(msg.contains("[root defaults]"), "got: {msg}");
     }
 
     #[test]
-    fn theme_resolution_error_display_icon_set_category() {
-        let e = ThemeResolutionError {
-            missing_fields: vec!["icon_set".into()],
+    fn display_resolution_incomplete_icon_set_category() {
+        let err = Error::ResolutionIncomplete {
+            missing: vec!["icon_set".into()],
         };
-        let msg = e.to_string();
+        let msg = err.to_string();
         assert!(msg.contains("[icon set]"), "got: {msg}");
         assert!(!msg.contains("hint:"), "got: {msg}");
     }
 
     #[test]
-    fn theme_resolution_error_implements_std_error() {
-        let e = ThemeResolutionError {
-            missing_fields: vec!["defaults.accent_color".into()],
+    fn display_resolution_invalid_lists_violations() {
+        let err = Error::ResolutionInvalid {
+            errors: vec![
+                RangeViolation {
+                    path: "button.min_width".into(),
+                    value: -5.0,
+                    min: Some(0.0),
+                    max: None,
+                },
+                RangeViolation {
+                    path: "slider.track_height".into(),
+                    value: 200.0,
+                    min: Some(1.0),
+                    max: Some(100.0),
+                },
+            ],
         };
-        // This compiles only if ThemeResolutionError: std::error::Error
-        let _: &dyn std::error::Error = &e;
+        let msg = err.to_string();
+        assert!(msg.contains("2 range violation(s)"), "got: {msg}");
+        assert!(msg.contains("button.min_width"), "got: {msg}");
+        assert!(msg.contains("-5"), "got: {msg}");
+        assert!(msg.contains("slider.track_height"), "got: {msg}");
+        assert!(msg.contains("200"), "got: {msg}");
     }
 
     #[test]
-    fn theme_resolution_error_is_clone() {
-        let e = ThemeResolutionError {
-            missing_fields: vec!["defaults.accent_color".into()],
+    fn display_unknown_preset_shows_name_and_available() {
+        let err = Error::UnknownPreset {
+            name: "foobar".into(),
+            known: &["adwaita", "kde-breeze"],
         };
-        let e2 = e.clone();
-        assert_eq!(e.missing_fields, e2.missing_fields);
+        let msg = err.to_string();
+        assert!(msg.contains("foobar"), "got: {msg}");
+        assert!(msg.contains("adwaita"), "got: {msg}");
+        assert!(msg.contains("kde-breeze"), "got: {msg}");
     }
 
-    // === Error::Resolution variant tests ===
+    // === source() tests ===
 
     #[test]
-    fn error_resolution_variant_wraps_theme_resolution_error() {
-        let inner = ThemeResolutionError {
-            missing_fields: vec!["defaults.accent_color".into()],
+    fn source_some_for_io() {
+        let err = Error::Io(std::io::Error::other("disk failure"));
+        assert!(
+            std::error::Error::source(&err).is_some(),
+            "Io should return Some from source()"
+        );
+    }
+
+    #[test]
+    fn source_some_for_reader_failed() {
+        let err = Error::ReaderFailed {
+            reader: "kde",
+            source: Box::new(std::io::Error::other("dbus down")),
         };
-        let err = Error::Resolution(inner);
+        let source = std::error::Error::source(&err);
+        assert!(source.is_some(), "ReaderFailed should return Some from source()");
+        assert!(source.unwrap().to_string().contains("dbus down"));
+    }
+
+    #[test]
+    fn source_some_for_toml() {
+        let toml_err: Result<toml::Value, toml::de::Error> = toml::from_str("=invalid");
+        let err = Error::Toml(toml_err.unwrap_err());
+        assert!(
+            std::error::Error::source(&err).is_some(),
+            "Toml should return Some from source()"
+        );
+    }
+
+    #[test]
+    fn source_none_for_feature_disabled() {
+        let err = Error::FeatureDisabled {
+            name: "kde",
+            needed_for: "detection",
+        };
+        assert!(std::error::Error::source(&err).is_none());
+    }
+
+    #[test]
+    fn source_none_for_platform_unsupported() {
+        let err = Error::PlatformUnsupported { platform: "wasm" };
+        assert!(std::error::Error::source(&err).is_none());
+    }
+
+    #[test]
+    fn source_none_for_watch_unavailable() {
+        let err = Error::WatchUnavailable {
+            reason: "not compiled",
+        };
+        assert!(std::error::Error::source(&err).is_none());
+    }
+
+    #[test]
+    fn source_none_for_unknown_preset() {
+        let err = Error::UnknownPreset {
+            name: "x".into(),
+            known: &[],
+        };
+        assert!(std::error::Error::source(&err).is_none());
+    }
+
+    #[test]
+    fn source_none_for_resolution_incomplete() {
+        let err = Error::ResolutionIncomplete {
+            missing: vec!["a".into()],
+        };
+        assert!(std::error::Error::source(&err).is_none());
+    }
+
+    #[test]
+    fn source_none_for_resolution_invalid() {
+        let err = Error::ResolutionInvalid {
+            errors: vec![RangeViolation {
+                path: "x".into(),
+                value: 0.0,
+                min: None,
+                max: None,
+            }],
+        };
+        assert!(std::error::Error::source(&err).is_none());
+    }
+
+    // === From impls ===
+
+    #[test]
+    fn from_toml_de_error_produces_toml_variant() {
+        let toml_err: Result<toml::Value, toml::de::Error> = toml::from_str("=invalid");
+        let err: Error = toml_err.unwrap_err().into();
         match &err {
-            Error::Resolution(e) => assert_eq!(e.missing_fields.len(), 1),
-            other => panic!("expected Resolution variant, got: {other:?}"),
+            Error::Toml(_) => {} // correct
+            other => panic!("expected Toml variant, got: {other:?}"),
         }
     }
 
     #[test]
-    fn error_resolution_display_delegates_to_inner() {
-        let inner = ThemeResolutionError {
-            missing_fields: vec![
-                "defaults.accent_color".into(),
-                "window.border.corner_radius".into(),
-            ],
-        };
-        let err = Error::Resolution(inner);
-        let msg = err.to_string();
-        assert!(msg.contains("2 missing field(s)"), "got: {msg}");
-        assert!(msg.contains("defaults.accent_color"), "got: {msg}");
-        assert!(msg.contains("window.border.corner_radius"), "got: {msg}");
+    fn from_io_error_produces_io_variant_no_arc() {
+        let io_err = std::io::Error::new(std::io::ErrorKind::NotFound, "missing file");
+        let err: Error = io_err.into();
+        match &err {
+            Error::Io(e) => {
+                assert_eq!(e.kind(), std::io::ErrorKind::NotFound);
+                assert!(e.to_string().contains("missing file"));
+            }
+            other => panic!("expected Io variant, got: {other:?}"),
+        }
+    }
+
+    // === Derive checks ===
+
+    #[test]
+    fn error_kind_derives() {
+        // Debug
+        let k = ErrorKind::Platform;
+        let dbg = format!("{k:?}");
+        assert!(dbg.contains("Platform"));
+
+        // Clone + Copy
+        let k2 = k;
+        let k3 = k2;
+        assert_eq!(k, k3);
+
+        // PartialEq + Eq
+        assert_eq!(ErrorKind::Parse, ErrorKind::Parse);
+        assert_ne!(ErrorKind::Io, ErrorKind::Resolution);
     }
 
     #[test]
-    fn error_resolution_source_returns_inner() {
-        let inner = ThemeResolutionError {
-            missing_fields: vec!["defaults.accent_color".into()],
+    fn range_violation_derives_debug_clone() {
+        let v = RangeViolation {
+            path: "x".into(),
+            value: 1.0,
+            min: Some(0.0),
+            max: Some(10.0),
         };
-        let err = Error::Resolution(inner);
-        let source = std::error::Error::source(&err);
-        assert!(
-            source.is_some(),
-            "source() should return Some for Resolution variant"
-        );
-        let source_msg = source.unwrap().to_string();
-        assert!(
-            source_msg.contains("1 missing field(s)"),
-            "got: {source_msg}"
-        );
+        // Debug
+        let dbg = format!("{v:?}");
+        assert!(dbg.contains("RangeViolation"));
+
+        // Clone
+        let v2 = v.clone();
+        assert_eq!(v2.path, "x");
+        assert!((v2.value - 1.0).abs() < f64::EPSILON);
+    }
+
+    // === RangeViolation Display ===
+
+    #[test]
+    fn range_violation_display_both_bounds() {
+        let v = RangeViolation {
+            path: "button.min_width".into(),
+            value: -5.0,
+            min: Some(0.0),
+            max: Some(1000.0),
+        };
+        let msg = v.to_string();
+        assert!(msg.contains("button.min_width"), "got: {msg}");
+        assert!(msg.contains("0..=1000"), "got: {msg}");
+        assert!(msg.contains("-5"), "got: {msg}");
+    }
+
+    #[test]
+    fn range_violation_display_open_max() {
+        let v = RangeViolation {
+            path: "x".into(),
+            value: -1.0,
+            min: Some(0.0),
+            max: None,
+        };
+        let msg = v.to_string();
+        assert!(msg.contains("0..=inf"), "got: {msg}");
+    }
+
+    #[test]
+    fn range_violation_display_open_min() {
+        let v = RangeViolation {
+            path: "x".into(),
+            value: 999.0,
+            min: None,
+            max: Some(100.0),
+        };
+        let msg = v.to_string();
+        assert!(msg.contains("-inf..=100"), "got: {msg}");
     }
 }
