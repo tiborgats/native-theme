@@ -2,6 +2,7 @@
 
 /// Desktop environments recognized on Linux.
 #[cfg(target_os = "linux")]
+#[non_exhaustive]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub enum LinuxDesktop {
     /// KDE Plasma desktop.
@@ -18,6 +19,16 @@ pub enum LinuxDesktop {
     LxQt,
     /// Budgie desktop.
     Budgie,
+    /// Hyprland Wayland compositor.
+    Hyprland,
+    /// Sway Wayland compositor (i3-compatible).
+    Sway,
+    /// River Wayland compositor.
+    River,
+    /// Niri scrollable Wayland compositor.
+    Niri,
+    /// COSMIC desktop environment (System76).
+    CosmicDe,
     /// Unrecognized or unset desktop environment.
     Unknown,
 }
@@ -46,6 +57,11 @@ pub fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
             "X-Cinnamon" | "Cinnamon" => return LinuxDesktop::Cinnamon,
             "MATE" => return LinuxDesktop::Mate,
             "LXQt" => return LinuxDesktop::LxQt,
+            "Hyprland" => return LinuxDesktop::Hyprland,
+            "sway" => return LinuxDesktop::Sway,
+            "river" => return LinuxDesktop::River,
+            "niri" => return LinuxDesktop::Niri,
+            "COSMIC" => return LinuxDesktop::CosmicDe,
             _ => {}
         }
     }
