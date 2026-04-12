@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
-status: in_progress
-stopped_at: Phase 76 complete — type vocabulary rename + crate root partition done
-last_updated: "2026-04-12T17:15:00.000Z"
-last_activity: 2026-04-12 — Phase 76 plan 02 executed (crate root partition, 36 files, 2 commits)
+status: phase_complete
+stopped_at: Phase 76 complete — verified, ready for Phase 77
+last_updated: "2026-04-12T18:30:00.000Z"
+last_activity: 2026-04-12 — Phase 76 executed and verified (2 plans, 6 commits)
 progress:
   total_phases: 28
   completed_phases: 15
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 Phase: 76 — type-vocabulary-rename-and-crate-root-partition
 Plan: 2/2 complete
-Status: Phase 76 complete (type rename + crate root partition)
-Last activity: 2026-04-12 — Plan 76-02 executed (crate root partition, 36 files, prelude module)
+Status: Phase 76 complete — verified (1 SC override: SC#1a contradicted SC#4, partition chosen)
+Last activity: 2026-04-12 — Phase 76 verified, ready for Phase 77
 
 Progress: [██████████] 100% (28/28 plans complete)
 
@@ -89,7 +89,7 @@ v0.5.6 decisions worth carrying into v0.5.7 planning:
 
 ### Pending Todos
 
-None. Phase 75 complete, ready to plan Phase 76.
+None. Phase 76 complete, ready to plan Phase 77.
 
 ### v0.5.7 Decisions
 
@@ -123,5 +123,5 @@ None. Phase 75 complete, ready to plan Phase 76.
 ## Session Continuity
 
 Last session: 2026-04-12
-Stopped at: Phase 76 complete — type vocabulary rename + crate root partition done
-Resume file: .planning/phases/76-type-vocabulary-rename-and-crate-root-partition/76-02-SUMMARY.md
+Stopped at: Phase 76 complete — verified, ready for Phase 77
+Resume file: .planning/phases/76-type-vocabulary-rename-and-crate-root-partition/76-VERIFICATION.md
