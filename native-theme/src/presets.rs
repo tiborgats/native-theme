@@ -97,9 +97,15 @@ static CACHE: LazyLock<HashMap<&str, Parsed>> = LazyLock::new(|| {
 
 pub(crate) fn preset(name: &str) -> Result<ThemeSpec> {
     match CACHE.get(name) {
-        None => Err(Error::UnknownPreset { name: name.to_string(), known: PRESET_NAMES }),
+        None => Err(Error::UnknownPreset {
+            name: name.to_string(),
+            known: PRESET_NAMES,
+        }),
         Some(Ok(theme)) => Ok(theme.clone()),
-        Some(Err(msg)) => Err(Error::ReaderFailed { reader: "preset_cache", source: format!("bundled preset '{name}': {msg}").into() }),
+        Some(Err(msg)) => Err(Error::ReaderFailed {
+            reader: "preset_cache",
+            source: format!("bundled preset '{name}': {msg}").into(),
+        }),
     }
 }
 

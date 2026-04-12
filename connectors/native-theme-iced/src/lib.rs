@@ -155,11 +155,15 @@ pub fn from_preset(
     let spec = native_theme::ThemeSpec::preset(name)?;
     let display_name = spec.name.clone();
     let mode = if is_dark { "dark" } else { "light" };
-    let variant = spec.into_variant(is_dark).ok_or_else(|| {
-        native_theme::Error::Format(format!(
-            "preset '{name}' has no usable variant (requested {mode}, fallback also empty)"
-        ))
-    })?;
+    let variant = spec
+        .into_variant(is_dark)
+        .ok_or_else(|| native_theme::Error::ReaderFailed {
+            reader: "iced_connector",
+            source: format!(
+                "preset '{name}' has no usable variant (requested {mode}, fallback also empty)"
+            )
+            .into(),
+        })?;
     let resolved = variant.into_resolved()?;
     let theme = to_theme(&resolved, &display_name);
     Ok((theme, resolved))

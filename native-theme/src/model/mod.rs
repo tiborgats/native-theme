@@ -540,8 +540,8 @@ impl ThemeSpec {
     pub fn lint_toml(toml_str: &str) -> crate::Result<Vec<String>> {
         use crate::model::defaults::ThemeDefaults;
 
-        let value: toml::Value = toml::from_str(toml_str)
-            .map_err(|e: toml::de::Error| crate::Error::Toml(e))?;
+        let value: toml::Value =
+            toml::from_str(toml_str).map_err(|e: toml::de::Error| crate::Error::Toml(e))?;
 
         let mut warnings = Vec::new();
 

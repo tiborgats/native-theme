@@ -124,9 +124,10 @@ pub(crate) fn watch_macos(
     });
 
     // Receive the CFRunLoop handle from the background thread.
-    let sendable_loop = loop_rx
-        .recv()
-        .map_err(|_| crate::Error::ReaderFailed { reader: "macos_watcher", source: "macOS watcher thread failed to start".into() })?;
+    let sendable_loop = loop_rx.recv().map_err(|_| crate::Error::ReaderFailed {
+        reader: "macos_watcher",
+        source: "macOS watcher thread failed to start".into(),
+    })?;
 
     // Build the platform shutdown closure: calls CFRunLoop::stop() to
     // unblock CFRunLoop::run() on the watcher thread.

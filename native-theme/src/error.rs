@@ -25,9 +25,7 @@ impl fmt::Display for RangeViolation {
         let lo = self
             .min
             .map_or_else(|| "-inf".to_owned(), |v| v.to_string());
-        let hi = self
-            .max
-            .map_or_else(|| "inf".to_owned(), |v| v.to_string());
+        let hi = self.max.map_or_else(|| "inf".to_owned(), |v| v.to_string());
         write!(
             f,
             "{} must be {}..={}, got {}",
@@ -146,7 +144,11 @@ impl fmt::Display for Error {
                 write!(f, "platform not supported: {platform}")
             }
             Error::UnknownPreset { name, known } => {
-                write!(f, "unknown preset \"{name}\"; available: {}", known.join(", "))
+                write!(
+                    f,
+                    "unknown preset \"{name}\"; available: {}",
+                    known.join(", ")
+                )
             }
             Error::WatchUnavailable { reason } => {
                 write!(f, "theme watching unavailable: {reason}")
@@ -471,7 +473,10 @@ mod tests {
             source: Box::new(std::io::Error::other("dbus down")),
         };
         let source = std::error::Error::source(&err);
-        assert!(source.is_some(), "ReaderFailed should return Some from source()");
+        assert!(
+            source.is_some(),
+            "ReaderFailed should return Some from source()"
+        );
         assert!(source.unwrap().to_string().contains("dbus down"));
     }
 

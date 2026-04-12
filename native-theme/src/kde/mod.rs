@@ -22,7 +22,10 @@ pub fn from_kde_content_pure(
 ) -> crate::Result<crate::ThemeSpec> {
     let mut ini = create_kde_parser();
     ini.read(content.to_string())
-        .map_err(|e| crate::Error::ReaderFailed { reader: "kde", source: e.into() })?;
+        .map_err(|e| crate::Error::ReaderFailed {
+            reader: "kde",
+            source: e.into(),
+        })?;
 
     let mut variant = crate::ThemeVariant::default();
 
@@ -85,7 +88,10 @@ pub fn from_kde_content_pure(
 pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::ThemeSpec> {
     let mut ini = create_kde_parser();
     ini.read(content.to_string())
-        .map_err(|e| crate::Error::ReaderFailed { reader: "kde", source: e.into() })?;
+        .map_err(|e| crate::Error::ReaderFailed {
+            reader: "kde",
+            source: e.into(),
+        })?;
 
     // I/O: full DPI detection chain (forceFontDPI -> kcmfontsrc -> xrdb -> xrandr -> 96.0)
     let font_dpi = detect_font_dpi(&ini);
@@ -337,8 +343,10 @@ fn find_index_theme_path(theme_name: &str) -> Option<std::path::PathBuf> {
 #[must_use = "this returns the detected KDE theme; it does not apply it"]
 pub fn from_kde() -> crate::Result<crate::ThemeSpec> {
     let path = kdeglobals_path();
-    let content = std::fs::read_to_string(&path)
-        .map_err(|e| crate::Error::ReaderFailed { reader: "kde", source: format!("cannot read {}: {e}", path.display()).into() })?;
+    let content = std::fs::read_to_string(&path).map_err(|e| crate::Error::ReaderFailed {
+        reader: "kde",
+        source: format!("cannot read {}: {e}", path.display()).into(),
+    })?;
     from_kde_content(&content)
 }
 

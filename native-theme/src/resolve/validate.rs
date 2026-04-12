@@ -459,7 +459,9 @@ impl ThemeVariant {
         link.check_ranges("link", &mut range_errors);
 
         if !range_errors.is_empty() {
-            return Err(crate::Error::ResolutionInvalid { errors: range_errors });
+            return Err(crate::Error::ResolutionInvalid {
+                errors: range_errors,
+            });
         }
 
         Ok(ResolvedThemeVariant {

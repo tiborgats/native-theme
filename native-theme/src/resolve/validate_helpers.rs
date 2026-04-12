@@ -220,7 +220,11 @@ pub(crate) fn require_border_partial(
 // violations are reported as structured data, separate from missing fields.
 
 /// Check that an `f32` value is finite and non-negative (>= 0.0).
-pub(crate) fn check_non_negative(value: f32, path: &str, errors: &mut Vec<crate::error::RangeViolation>) {
+pub(crate) fn check_non_negative(
+    value: f32,
+    path: &str,
+    errors: &mut Vec<crate::error::RangeViolation>,
+) {
     if !value.is_finite() || value < 0.0 {
         errors.push(crate::error::RangeViolation {
             path: path.to_string(),
@@ -232,7 +236,11 @@ pub(crate) fn check_non_negative(value: f32, path: &str, errors: &mut Vec<crate:
 }
 
 /// Check that an `f32` value is finite and strictly positive (> 0.0).
-pub(crate) fn check_positive(value: f32, path: &str, errors: &mut Vec<crate::error::RangeViolation>) {
+pub(crate) fn check_positive(
+    value: f32,
+    path: &str,
+    errors: &mut Vec<crate::error::RangeViolation>,
+) {
     if !value.is_finite() || value <= 0.0 {
         errors.push(crate::error::RangeViolation {
             path: path.to_string(),

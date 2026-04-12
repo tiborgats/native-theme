@@ -1181,12 +1181,8 @@ fn validate_missing_3_fields_returns_all_paths() {
         "should report exactly 3 missing fields, got: {:?}",
         missing
     );
-    assert!(
-        missing.contains(&"defaults.muted_color".to_string())
-    );
-    assert!(
-        missing.contains(&"defaults.link_color".to_string())
-    );
+    assert!(missing.contains(&"defaults.muted_color".to_string()));
+    assert!(missing.contains(&"defaults.link_color".to_string()));
     assert!(missing.contains(&"icon_set".to_string()));
 }
 
@@ -1202,7 +1198,9 @@ fn validate_error_message_includes_count_and_paths() {
         return;
     };
     // ResolutionIncomplete Display includes count and paths
-    let err = crate::Error::ResolutionIncomplete { missing: missing.clone() };
+    let err = crate::Error::ResolutionIncomplete {
+        missing: missing.clone(),
+    };
     let msg = err.to_string();
     assert!(msg.contains("2 missing field(s)"), "got: {msg}");
     assert!(msg.contains("defaults.muted_color"), "got: {msg}");
@@ -1224,27 +1222,13 @@ fn validate_checks_all_defaults_fields() {
         "should include defaults.* fields in missing"
     );
     // Check a representative set of defaults fields
-    assert!(
-        missing.contains(&"defaults.font.family".to_string())
-    );
-    assert!(
-        missing.contains(&"defaults.background_color".to_string())
-    );
-    assert!(
-        missing.contains(&"defaults.accent_color".to_string())
-    );
-    assert!(
-        missing.contains(&"defaults.border.corner_radius".to_string())
-    );
-    assert!(
-        missing.contains(&"defaults.text_selection_background".to_string())
-    );
-    assert!(
-        missing.contains(&"defaults.icon_sizes.toolbar".to_string())
-    );
-    assert!(
-        missing.contains(&"defaults.text_scaling_factor".to_string())
-    );
+    assert!(missing.contains(&"defaults.font.family".to_string()));
+    assert!(missing.contains(&"defaults.background_color".to_string()));
+    assert!(missing.contains(&"defaults.accent_color".to_string()));
+    assert!(missing.contains(&"defaults.border.corner_radius".to_string()));
+    assert!(missing.contains(&"defaults.text_selection_background".to_string()));
+    assert!(missing.contains(&"defaults.icon_sizes.toolbar".to_string()));
+    assert!(missing.contains(&"defaults.text_scaling_factor".to_string()));
 }
 
 #[test]
@@ -1300,18 +1284,10 @@ fn validate_checks_text_scale_entries() {
     let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
         return;
     };
-    assert!(
-        missing.contains(&"text_scale.caption".to_string())
-    );
-    assert!(
-        missing.contains(&"text_scale.section_heading".to_string())
-    );
-    assert!(
-        missing.contains(&"text_scale.dialog_title".to_string())
-    );
-    assert!(
-        missing.contains(&"text_scale.display".to_string())
-    );
+    assert!(missing.contains(&"text_scale.caption".to_string()));
+    assert!(missing.contains(&"text_scale.section_heading".to_string()));
+    assert!(missing.contains(&"text_scale.dialog_title".to_string()));
+    assert!(missing.contains(&"text_scale.display".to_string()));
 }
 
 #[test]
@@ -1506,7 +1482,9 @@ fn validate_catches_negative_radius() {
         return;
     };
     assert!(
-        errors.iter().any(|rv| rv.path.contains("defaults.border.corner_radius")),
+        errors
+            .iter()
+            .any(|rv| rv.path.contains("defaults.border.corner_radius")),
         "should report negative defaults.border.corner_radius, got: {:?}",
         errors
     );
@@ -1523,7 +1501,9 @@ fn validate_catches_zero_font_size() {
         return;
     };
     assert!(
-        errors.iter().any(|rv| rv.path.contains("defaults.font.size")),
+        errors
+            .iter()
+            .any(|rv| rv.path.contains("defaults.font.size")),
         "should report zero defaults.font.size, got: {:?}",
         errors
     );
@@ -1542,17 +1522,23 @@ fn validate_catches_opacity_out_of_range() {
         return;
     };
     assert!(
-        errors.iter().any(|rv| rv.path.contains("defaults.disabled_opacity")),
+        errors
+            .iter()
+            .any(|rv| rv.path.contains("defaults.disabled_opacity")),
         "should report out-of-range disabled_opacity, got: {:?}",
         errors
     );
     assert!(
-        errors.iter().any(|rv| rv.path.contains("defaults.border.opacity")),
+        errors
+            .iter()
+            .any(|rv| rv.path.contains("defaults.border.opacity")),
         "should report out-of-range border_opacity, got: {:?}",
         errors
     );
     assert!(
-        errors.iter().any(|rv| rv.path.contains("button.disabled_opacity")),
+        errors
+            .iter()
+            .any(|rv| rv.path.contains("button.disabled_opacity")),
         "should report out-of-range button.disabled_opacity, got: {:?}",
         errors
     );
@@ -1570,12 +1556,18 @@ fn validate_catches_invalid_font_weight() {
         return;
     };
     assert!(
-        errors.iter().any(|rv| rv.path.contains("defaults.font.weight") && (rv.value - 50.0).abs() < f64::EPSILON),
+        errors
+            .iter()
+            .any(|rv| rv.path.contains("defaults.font.weight")
+                && (rv.value - 50.0).abs() < f64::EPSILON),
         "should report out-of-range font weight 50, got: {:?}",
         errors
     );
     assert!(
-        errors.iter().any(|rv| rv.path.contains("defaults.mono_font.weight") && (rv.value - 1000.0).abs() < f64::EPSILON),
+        errors
+            .iter()
+            .any(|rv| rv.path.contains("defaults.mono_font.weight")
+                && (rv.value - 1000.0).abs() < f64::EPSILON),
         "should report out-of-range mono_font weight 1000, got: {:?}",
         errors
     );
@@ -1635,7 +1627,9 @@ fn validate_catches_negative_font_size() {
         return;
     };
     assert!(
-        errors.iter().any(|rv| rv.path.contains("defaults.font.size")),
+        errors
+            .iter()
+            .any(|rv| rv.path.contains("defaults.font.size")),
         "should report negative font.size, got: {:?}",
         errors
     );
@@ -1652,7 +1646,9 @@ fn validate_catches_disabled_opacity_above_one() {
         return;
     };
     assert!(
-        errors.iter().any(|rv| rv.path.contains("defaults.disabled_opacity")),
+        errors
+            .iter()
+            .any(|rv| rv.path.contains("defaults.disabled_opacity")),
         "should report disabled_opacity=2.0 out of 0..=1 range, got: {:?}",
         errors
     );
@@ -1669,7 +1665,9 @@ fn validate_catches_font_weight_zero() {
         return;
     };
     assert!(
-        errors.iter().any(|rv| rv.path.contains("defaults.font.weight")),
+        errors
+            .iter()
+            .any(|rv| rv.path.contains("defaults.font.weight")),
         "should report font.weight=0 out of 100..=900 range, got: {:?}",
         errors
     );
@@ -1686,7 +1684,9 @@ fn validate_catches_nan_values() {
         return;
     };
     assert!(
-        errors.iter().any(|rv| rv.path.contains("defaults.border.corner_radius")),
+        errors
+            .iter()
+            .any(|rv| rv.path.contains("defaults.border.corner_radius")),
         "should report NaN defaults.border.corner_radius, got: {:?}",
         errors
     );
@@ -1703,7 +1703,9 @@ fn validate_catches_infinity() {
         return;
     };
     assert!(
-        errors.iter().any(|rv| rv.path.contains("defaults.font.size")),
+        errors
+            .iter()
+            .any(|rv| rv.path.contains("defaults.font.size")),
         "should report infinite font.size, got: {:?}",
         errors
     );
@@ -1721,7 +1723,9 @@ fn validate_catches_negative_infinity() {
         return;
     };
     assert!(
-        errors.iter().any(|rv| rv.path.contains("defaults.border.line_width")),
+        errors
+            .iter()
+            .any(|rv| rv.path.contains("defaults.border.line_width")),
         "should report -inf border.line_width, got: {:?}",
         errors
     );
@@ -1762,7 +1766,9 @@ fn validate_range_only_errors_produce_resolution_invalid() {
         return;
     };
     assert!(
-        errors.iter().any(|rv| rv.path.contains("defaults.font.weight")),
+        errors
+            .iter()
+            .any(|rv| rv.path.contains("defaults.font.weight")),
         "should contain RangeViolation for defaults.font.weight, got: {errors:?}"
     );
 }

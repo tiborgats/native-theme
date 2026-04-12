@@ -576,21 +576,32 @@ fn build_theme(
 #[cfg(all(target_os = "windows", feature = "windows"))]
 #[must_use = "this returns the detected Windows theme; it does not apply it"]
 pub fn from_windows() -> crate::Result<crate::ThemeSpec> {
-    let settings = UISettings::new()
-        .map_err(|e| crate::Error::ReaderFailed { reader: "windows", source: format!("UISettings unavailable: {e}").into() })?;
+    let settings = UISettings::new().map_err(|e| crate::Error::ReaderFailed {
+        reader: "windows",
+        source: format!("UISettings unavailable: {e}").into(),
+    })?;
 
     let accent = settings
         .GetColorValue(UIColorType::Accent)
         .map(win_color_to_rgba)
-        .map_err(|e| crate::Error::ReaderFailed { reader: "windows", source: format!("GetColorValue(Accent) failed: {e}").into() })?;
+        .map_err(|e| crate::Error::ReaderFailed {
+            reader: "windows",
+            source: format!("GetColorValue(Accent) failed: {e}").into(),
+        })?;
     let fg = settings
         .GetColorValue(UIColorType::Foreground)
         .map(win_color_to_rgba)
-        .map_err(|e| crate::Error::ReaderFailed { reader: "windows", source: format!("GetColorValue(Foreground) failed: {e}").into() })?;
+        .map_err(|e| crate::Error::ReaderFailed {
+            reader: "windows",
+            source: format!("GetColorValue(Foreground) failed: {e}").into(),
+        })?;
     let bg = settings
         .GetColorValue(UIColorType::Background)
         .map(win_color_to_rgba)
-        .map_err(|e| crate::Error::ReaderFailed { reader: "windows", source: format!("GetColorValue(Background) failed: {e}").into() })?;
+        .map_err(|e| crate::Error::ReaderFailed {
+            reader: "windows",
+            source: format!("GetColorValue(Background) failed: {e}").into(),
+        })?;
 
     let accent_shades = read_accent_shades(&settings);
     let dpi = read_dpi();
