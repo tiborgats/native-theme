@@ -390,7 +390,7 @@ fn build_theme(
 ///
 /// # Errors
 ///
-/// Returns `Error::Unavailable` if neither light nor dark appearance can be created
+/// Returns `Error::ReaderFailed` if neither light nor dark appearance can be created
 /// (extremely unlikely on any macOS version that supports these APIs).
 #[cfg(all(target_os = "macos", feature = "macos"))]
 #[must_use = "this returns the detected macOS theme; it does not apply it"]
@@ -402,9 +402,10 @@ pub fn from_macos() -> crate::Result<crate::ThemeSpec> {
     let dark_appearance = NSAppearance::appearanceNamed(&dark_name);
 
     if light_appearance.is_none() && dark_appearance.is_none() {
-        return Err(crate::Error::Unavailable(
-            "neither light nor dark NSAppearance could be created".to_string(),
-        ));
+        return Err(crate::Error::ReaderFailed {
+            reader: "macos",
+            source: "neither light nor dark NSAppearance could be created".into(),
+        });
     }
 
     // Read appearance-independent data once.

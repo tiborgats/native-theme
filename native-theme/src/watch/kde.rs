@@ -20,7 +20,7 @@ pub(crate) fn watch_kde(
     let kdeglobals = crate::kde::kdeglobals_path();
     let config_dir = kdeglobals
         .parent()
-        .ok_or_else(|| crate::Error::Unavailable("no parent directory for kdeglobals path".into()))?
+        .ok_or_else(|| crate::Error::ReaderFailed { reader: "kde_watcher", source: "no parent directory for kdeglobals path".into() })?
         .to_path_buf();
 
     let watched_names: &[&std::ffi::OsStr] = &[

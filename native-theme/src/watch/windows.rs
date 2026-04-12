@@ -107,7 +107,7 @@ pub(crate) fn watch_windows(
 
     // Receive the thread ID from the background thread.
     let thread_id = tid_rx.recv().map_err(|_| {
-        crate::Error::Unavailable("failed to start Windows theme watcher thread".into())
+        crate::Error::ReaderFailed { reader: "windows_watcher", source: "failed to start Windows theme watcher thread".into() }
     })?;
 
     // Build the platform shutdown closure: posts WM_QUIT to the watcher

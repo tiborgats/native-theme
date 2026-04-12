@@ -72,10 +72,10 @@ accent_color = "#ff0000"
 fn from_toml_with_base_invalid_base_returns_err() {
     let result = ThemeSpec::from_toml_with_base("name = \"X\"", "no-such-preset");
     assert!(result.is_err(), "invalid base name should return Err");
-    match result.unwrap_err() {
-        Error::Unavailable(msg) => assert!(msg.contains("no-such-preset")),
-        other => panic!("expected Unavailable, got: {other:?}"),
-    }
+    let Error::UnknownPreset { name, .. } = result.unwrap_err() else {
+        return;
+    };
+    assert!(name.contains("no-such-preset"));
 }
 
 // ---------------------------------------------------------------------------

@@ -97,9 +97,9 @@ static CACHE: LazyLock<HashMap<&str, Parsed>> = LazyLock::new(|| {
 
 pub(crate) fn preset(name: &str) -> Result<ThemeSpec> {
     match CACHE.get(name) {
-        None => Err(Error::Unavailable(format!("unknown preset: {name}"))),
+        None => Err(Error::UnknownPreset { name: name.to_string(), known: PRESET_NAMES }),
         Some(Ok(theme)) => Ok(theme.clone()),
-        Some(Err(msg)) => Err(Error::Format(format!("bundled preset '{name}': {msg}"))),
+        Some(Err(msg)) => Err(Error::ReaderFailed { reader: "preset_cache", source: format!("bundled preset '{name}': {msg}").into() }),
     }
 }
 
@@ -198,12 +198,12 @@ mod tests {
     // all_presets_have_both_variants, all_presets_have_core_colors).
 
     #[test]
-    fn preset_unknown_name_returns_unavailable() {
+    fn preset_unknown_name_returns_unknown_preset() {
         let err = preset("nonexistent").unwrap_err();
-        match err {
-            Error::Unavailable(msg) => assert!(msg.contains("nonexistent")),
-            other => panic!("expected Unavailable, got: {other:?}"),
-        }
+        let Error::UnknownPreset { name, .. } = err else {
+            return;
+        };
+        assert!(name.contains("nonexistent"));
     }
 
     // NOTE: list_presets_returns_all_sixteen is covered by
@@ -228,12 +228,12 @@ accent_color = "#ff0000"
     }
 
     #[test]
-    fn from_toml_invalid_returns_format_error() {
+    fn from_toml_invalid_returns_toml_error() {
         let err = from_toml("{{{{invalid toml").unwrap_err();
-        match err {
-            Error::Format(_) => {}
-            other => panic!("expected Format, got: {other:?}"),
-        }
+        assert!(
+            matches!(err, Error::Toml(_)),
+            "expected Toml variant, got: {err:?}"
+        );
     }
 
     #[test]

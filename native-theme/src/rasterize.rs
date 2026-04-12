@@ -15,7 +15,7 @@ use resvg::usvg;
 ///
 /// # Errors
 ///
-/// Returns [`crate::Error::Format`] if the SVG cannot be parsed or
+/// Returns [`crate::Error::ReaderFailed`] if the SVG cannot be parsed or
 /// the size is zero / pixmap allocation fails.
 ///
 /// # Examples
@@ -40,7 +40,7 @@ use resvg::usvg;
 pub fn rasterize_svg(svg_bytes: &[u8], size: u32) -> crate::Result<IconData> {
     let options = usvg::Options::default();
     let tree = usvg::Tree::from_data(svg_bytes, &options)
-        .map_err(|e| crate::Error::Format(format!("SVG parse error: {e}")))?;
+        .map_err(|e| crate::Error::ReaderFailed { reader: "svg_rasterizer", source: Box::new(e) })?;
 
     let original_size = tree.size();
     let scale_x = size as f32 / original_size.width();
@@ -54,7 +54,7 @@ pub fn rasterize_svg(svg_bytes: &[u8], size: u32) -> crate::Result<IconData> {
     let offset_y = (size as f32 - scaled_h) / 2.0;
 
     let mut pixmap = tiny_skia::Pixmap::new(size, size)
-        .ok_or_else(|| crate::Error::Format(format!("invalid rasterization size {size}x{size}")))?;
+        .ok_or_else(|| crate::Error::ReaderFailed { reader: "svg_rasterizer", source: format!("invalid rasterization size {size}x{size}").into() })?;
     let transform =
         tiny_skia::Transform::from_translate(offset_x, offset_y).post_scale(scale, scale);
     resvg::render(&tree, transform, &mut pixmap.as_mut());

@@ -177,7 +177,7 @@ impl Drop for ThemeWatcher {
 ///
 /// # Errors
 ///
-/// Returns [`Error::Unsupported`](crate::Error::Unsupported) if no
+/// Returns [`Error::WatchUnavailable`](crate::Error::WatchUnavailable) if no
 /// platform-specific backend is available for the current desktop
 /// environment or platform.
 pub fn on_theme_change(
@@ -195,9 +195,9 @@ pub fn on_theme_change(
                 gnome::watch_gnome(callback)
             }
 
-            _ => Err(crate::Error::Unsupported(
-                "theme watching not supported for this desktop environment",
-            )),
+            _ => Err(crate::Error::WatchUnavailable {
+                reason: "theme watching not supported for this desktop environment",
+            }),
         }
     }
 
@@ -210,9 +210,10 @@ pub fn on_theme_change(
         #[cfg(not(all(feature = "watch", feature = "macos")))]
         {
             let _ = callback;
-            return Err(crate::Error::Unsupported(
-                "theme watching requires both 'watch' and 'macos' features",
-            ));
+            return Err(crate::Error::FeatureDisabled {
+                name: "watch+macos",
+                needed_for: "macOS theme watching",
+            });
         }
     }
 
@@ -225,18 +226,19 @@ pub fn on_theme_change(
         #[cfg(not(all(feature = "watch", feature = "windows")))]
         {
             let _ = callback;
-            return Err(crate::Error::Unsupported(
-                "theme watching requires both 'watch' and 'windows' features",
-            ));
+            return Err(crate::Error::FeatureDisabled {
+                name: "watch+windows",
+                needed_for: "Windows theme watching",
+            });
         }
     }
 
     #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
     {
         let _ = callback;
-        Err(crate::Error::Unsupported(
-            "theme watching not yet implemented for this platform",
-        ))
+        Err(crate::Error::PlatformUnsupported {
+            platform: "unsupported",
+        })
     }
 }
 
@@ -263,7 +265,7 @@ mod tests {
         assert!(debug_str.contains("ColorSchemeChanged"));
     }
 
-    /// On unsupported platforms, on_theme_change() returns Unsupported.
+    /// On unsupported platforms, on_theme_change() returns PlatformUnsupported.
     #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
     #[test]
     fn on_theme_change_returns_unsupported() {
@@ -271,15 +273,15 @@ mod tests {
         assert!(result.is_err());
         let err = result.unwrap_err();
         assert!(
-            matches!(&err, crate::Error::Unsupported(_)),
-            "expected Unsupported, got: {err:?}"
+            matches!(&err, crate::Error::PlatformUnsupported { .. }),
+            "expected PlatformUnsupported, got: {err:?}"
         );
     }
 
     /// On Linux, on_theme_change() dispatches based on the detected DE.
     /// In CI (no DE running), XDG_CURRENT_DESKTOP is usually empty/Unknown,
-    /// so we get Unsupported. On a real DE it may succeed or return
-    /// Unavailable. All three outcomes are valid.
+    /// so we get WatchUnavailable. On a real DE it may succeed or return
+    /// ReaderFailed. All outcomes are valid.
     #[cfg(target_os = "linux")]
     #[test]
     fn on_theme_change_dispatches_or_returns_error() {
@@ -287,7 +289,11 @@ mod tests {
         assert!(
             matches!(
                 &result,
-                Ok(_) | Err(crate::Error::Unsupported(_)) | Err(crate::Error::Unavailable(_))
+                Ok(_)
+                    | Err(crate::Error::WatchUnavailable { .. })
+                    | Err(crate::Error::FeatureDisabled { .. })
+                    | Err(crate::Error::PlatformUnsupported { .. })
+                    | Err(crate::Error::ReaderFailed { .. })
             ),
             "unexpected result: {result:?}"
         );

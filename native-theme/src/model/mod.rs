@@ -325,7 +325,7 @@ impl ThemeSpec {
     /// light and dark variants.
     ///
     /// # Errors
-    /// Returns [`crate::Error::Unavailable`] if the preset name is not recognized.
+    /// Returns [`crate::Error::UnknownPreset`] if the preset name is not recognized.
     ///
     /// # Examples
     /// ```
@@ -404,7 +404,7 @@ impl ThemeSpec {
     /// ```
     ///
     /// # Errors
-    /// Returns [`crate::Error::Format`] if the TOML is invalid.
+    /// Returns [`crate::Error::Toml`] if the TOML is invalid.
     ///
     /// # Examples
     /// ```
@@ -429,8 +429,8 @@ impl ThemeSpec {
     ///
     /// # Errors
     ///
-    /// Returns [`crate::Error::Unavailable`] if the base preset name is not
-    /// recognized, or [`crate::Error::Format`] if the custom TOML is invalid.
+    /// Returns [`crate::Error::UnknownPreset`] if the base preset name is not
+    /// recognized, or [`crate::Error::Toml`] if the custom TOML is invalid.
     ///
     /// # Examples
     ///
@@ -456,7 +456,7 @@ impl ThemeSpec {
     ///
     /// # Errors
     /// Returns [`crate::Error::Io`] if the file cannot be read, or
-    /// [`crate::Error::Format`] if the TOML content is invalid.
+    /// [`crate::Error::Toml`] if the TOML content is invalid.
     ///
     /// # Examples
     /// ```no_run
@@ -499,7 +499,7 @@ impl ThemeSpec {
     /// Serialize this theme to a TOML string.
     ///
     /// # Errors
-    /// Returns [`crate::Error::Format`] if serialization fails.
+    /// Returns [`crate::Error::ReaderFailed`] if serialization fails.
     ///
     /// # Examples
     /// ```
@@ -541,7 +541,7 @@ impl ThemeSpec {
         use crate::model::defaults::ThemeDefaults;
 
         let value: toml::Value = toml::from_str(toml_str)
-            .map_err(|e: toml::de::Error| crate::Error::Format(e.to_string()))?;
+            .map_err(|e: toml::de::Error| crate::Error::Toml(e))?;
 
         let mut warnings = Vec::new();
 
@@ -1156,19 +1156,19 @@ accent_color = "#ff00ff"
     #[test]
     fn from_toml_with_base_unknown_preset_returns_error() {
         let err = ThemeSpec::from_toml_with_base("name = \"X\"", "nonexistent").unwrap_err();
-        match err {
-            crate::Error::Unavailable(msg) => assert!(msg.contains("nonexistent")),
-            other => panic!("expected Unavailable, got: {other:?}"),
-        }
+        let crate::Error::UnknownPreset { name, .. } = err else {
+            return;
+        };
+        assert!(name.contains("nonexistent"));
     }
 
     #[test]
     fn from_toml_with_base_invalid_toml_returns_error() {
         let err = ThemeSpec::from_toml_with_base("{{{{invalid", "material").unwrap_err();
-        match err {
-            crate::Error::Format(_) => {}
-            other => panic!("expected Format, got: {other:?}"),
-        }
+        assert!(
+            matches!(err, crate::Error::Toml(_)),
+            "expected Toml variant, got: {err:?}"
+        );
     }
 
     // === lint_toml tests ===

@@ -333,9 +333,10 @@ pub(crate) fn from_system_inner() -> crate::Result<SystemTheme> {
         }
 
         #[cfg(not(feature = "macos"))]
-        return Err(crate::Error::Unsupported(
-            "macOS theme detection requires the `macos` feature",
-        ));
+        return Err(crate::Error::FeatureDisabled {
+            name: "macos",
+            needed_for: "macOS theme detection",
+        });
     }
 
     #[cfg(target_os = "windows")]
@@ -348,9 +349,10 @@ pub(crate) fn from_system_inner() -> crate::Result<SystemTheme> {
         }
 
         #[cfg(not(feature = "windows"))]
-        return Err(crate::Error::Unsupported(
-            "Windows theme detection requires the `windows` feature",
-        ));
+        return Err(crate::Error::FeatureDisabled {
+            name: "windows",
+            needed_for: "Windows theme detection",
+        });
     }
 
     #[cfg(target_os = "linux")]
@@ -360,9 +362,9 @@ pub(crate) fn from_system_inner() -> crate::Result<SystemTheme> {
 
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
-        Err(crate::Error::Unsupported(
-            "no theme reader available for this platform",
-        ))
+        Err(crate::Error::PlatformUnsupported {
+            platform: "unsupported",
+        })
     }
 }
 
