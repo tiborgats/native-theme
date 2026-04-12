@@ -125,6 +125,7 @@ mod tests {
     use super::*;
     use iced_core::theme::palette::Extended;
     use native_theme::theme::Theme;
+    use crate::ColorMode;
 
     fn make_extended() -> Extended {
         let palette = iced_core::theme::Palette::DARK;
@@ -134,7 +135,7 @@ mod tests {
     fn make_resolved_preset(name: &str, is_dark: bool) -> native_theme::theme::ResolvedTheme {
         Theme::preset(name)
             .unwrap()
-            .into_variant(is_dark)
+            .into_variant(if is_dark { ColorMode::Dark } else { ColorMode::Light })
             .unwrap()
             .into_resolved()
             .unwrap()
@@ -307,7 +308,7 @@ mod tests {
         for name in ["catppuccin-mocha", "dracula", "nord"] {
             let resolved = Theme::preset(name)
                 .unwrap()
-                .into_variant(true)
+                .into_variant(ColorMode::Dark)
                 .unwrap()
                 .into_resolved()
                 .unwrap();

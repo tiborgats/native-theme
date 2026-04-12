@@ -692,31 +692,31 @@ impl Render for WidgetInfoPanel {
 // ---------------------------------------------------------------------------
 
 #[derive(Clone, Copy, Debug, PartialEq)]
-enum ColorMode {
+enum AppColorMode {
     System,
     Light,
     Dark,
 }
 
-impl ColorMode {
+impl AppColorMode {
     /// Resolve to a concrete is_dark bool.
     fn is_dark(self) -> bool {
         match self {
-            ColorMode::Light => false,
-            ColorMode::Dark => true,
-            ColorMode::System => system_is_dark(),
+            AppColorMode::Light => false,
+            AppColorMode::Dark => true,
+            AppColorMode::System => system_is_dark(),
         }
     }
 
     /// Display label for the combobox, with system preference in parentheses.
     fn label(self) -> String {
         match self {
-            ColorMode::System => {
+            AppColorMode::System => {
                 let actual = if system_is_dark() { "Dark" } else { "Light" };
                 format!("System ({actual})")
             }
-            ColorMode::Light => "Light".into(),
-            ColorMode::Dark => "Dark".into(),
+            AppColorMode::Light => "Light".into(),
+            AppColorMode::Dark => "Dark".into(),
         }
     }
 }
@@ -813,7 +813,7 @@ struct Showcase {
     /// Dynamic label for the "default" theme entry, updated on color mode change.
     default_label: String,
     is_dark: bool,
-    color_mode: ColorMode,
+    color_mode: AppColorMode,
     dark_mode_select: Entity<SelectState<SearchableVec<SharedString>>>,
     /// Original native-theme font spec, for display purposes.
     original_font: native_theme::theme::ResolvedFontSpec,
@@ -1185,12 +1185,15 @@ impl Showcase {
         .detach();
 
         // Color mode selector (System / Light / Dark)
-        let color_mode = ColorMode::System;
-        let color_mode_labels: Vec<SharedString> =
-            [ColorMode::System, ColorMode::Light, ColorMode::Dark]
-                .iter()
-                .map(|m| SharedString::from(m.label()))
-                .collect();
+        let color_mode = AppColorMode::System;
+        let color_mode_labels: Vec<SharedString> = [
+            AppColorMode::System,
+            AppColorMode::Light,
+            AppColorMode::Dark,
+        ]
+        .iter()
+        .map(|m| SharedString::from(m.label()))
+        .collect();
         let dark_mode_delegate = SearchableVec::new(color_mode_labels);
         let dark_mode_select = cx.new(|cx| {
             SelectState::new(
@@ -1212,11 +1215,11 @@ impl Showcase {
                 if let SelectEvent::Confirm(Some(value)) = event {
                     let val = value.to_string();
                     let mode = if val.starts_with("System") {
-                        ColorMode::System
+                        AppColorMode::System
                     } else if val == "Light" {
-                        ColorMode::Light
+                        AppColorMode::Light
                     } else {
-                        ColorMode::Dark
+                        AppColorMode::Dark
                     };
                     this.set_color_mode(mode, window, cx);
                 }
@@ -1281,7 +1284,11 @@ impl Showcase {
             initial_error,
         ) = match native_theme::SystemTheme::from_system() {
             Ok(system) => {
-                let resolved = system.pick(is_dark);
+                let resolved = system.pick(if is_dark {
+                    native_theme_gpui::ColorMode::Dark
+                } else {
+                    native_theme_gpui::ColorMode::Light
+                });
                 let font = resolved.defaults.font.clone();
                 let mono_font = resolved.defaults.mono_font.clone();
                 let icon_theme = resolved.icon_theme.clone();
@@ -1677,7 +1684,11 @@ impl Showcase {
         if name == "default" {
             match native_theme::SystemTheme::from_system() {
                 Ok(system) => {
-                    let resolved = system.pick(self.is_dark);
+                    let resolved = system.pick(if self.is_dark {
+                        native_theme_gpui::ColorMode::Dark
+                    } else {
+                        native_theme_gpui::ColorMode::Light
+                    });
                     self.original_font = resolved.defaults.font.clone();
                     self.original_mono_font = resolved.defaults.mono_font.clone();
                     self.current_icon_theme = resolved.icon_theme.clone();
@@ -1703,7 +1714,11 @@ impl Showcase {
                 }
             };
 
-            if let Some(variant) = nt.pick_variant(self.is_dark) {
+            if let Some(variant) = nt.pick_variant(if self.is_dark {
+                native_theme_gpui::ColorMode::Dark
+            } else {
+                native_theme_gpui::ColorMode::Light
+            }) {
                 // Check icon_theme before resolution fills it in
                 self.has_toml_icon_theme = variant.icon_theme.is_some();
                 let v = variant.clone();
@@ -1766,7 +1781,7 @@ impl Showcase {
                 Timer::after(Duration::from_millis(500)).await;
                 if flag.swap(false, Ordering::AcqRel) {
                     let Ok(()) = this.update(cx, |this, cx| {
-                        if matches!(this.color_mode, ColorMode::System) {
+                        if matches!(this.color_mode, AppColorMode::System) {
                             this.pending_system_theme_change = true;
                             cx.notify();
                         }
@@ -1779,7 +1794,7 @@ impl Showcase {
         .detach();
     }
 
-    fn set_color_mode(&mut self, mode: ColorMode, window: &mut Window, cx: &mut Context<Self>) {
+    fn set_color_mode(&mut self, mode: AppColorMode, window: &mut Window, cx: &mut Context<Self>) {
         self.color_mode = mode;
         self.is_dark = mode.is_dark();
         let name = self.current_theme_name.clone();
@@ -5254,15 +5269,19 @@ impl Render for Showcase {
         if self.pending_system_theme_change {
             self.pending_system_theme_change = false;
             native_theme::detect::invalidate_caches();
-            self.is_dark = ColorMode::System.is_dark();
+            self.is_dark = AppColorMode::System.is_dark();
             let name = self.current_theme_name.clone();
             self.apply_theme_by_name(&name, window, cx);
             // Rebuild the color mode dropdown items and selected value to
             // reflect the new state (e.g. "System (Dark)" → "System (Light)").
-            let labels: Vec<SharedString> = [ColorMode::System, ColorMode::Light, ColorMode::Dark]
-                .iter()
-                .map(|m| SharedString::from(m.label()))
-                .collect();
+            let labels: Vec<SharedString> = [
+                AppColorMode::System,
+                AppColorMode::Light,
+                AppColorMode::Dark,
+            ]
+            .iter()
+            .map(|m| SharedString::from(m.label()))
+            .collect();
             let selected: SharedString = self.color_mode.label().into();
             let delegate = SearchableVec::new(labels);
             self.dark_mode_select.update(cx, |select, cx| {
@@ -5819,9 +5838,9 @@ fn main() {
                         // Override color mode if --variant was specified
                         if let Some(is_dark) = variant_override {
                             let mode = if is_dark {
-                                ColorMode::Dark
+                                AppColorMode::Dark
                             } else {
-                                ColorMode::Light
+                                AppColorMode::Light
                             };
                             s.color_mode = mode;
                             s.is_dark = is_dark;

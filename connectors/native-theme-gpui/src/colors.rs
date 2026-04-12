@@ -466,6 +466,7 @@ fn assign_base_colors(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
 mod tests {
     use super::*;
     use native_theme::theme::Theme;
+    use crate::ColorMode;
 
     /// Create a dark ResolvedTheme for catppuccin-mocha.
     ///
@@ -474,7 +475,7 @@ mod tests {
     fn test_resolved() -> ResolvedTheme {
         let nt = Theme::preset("catppuccin-mocha").expect("preset must exist");
         let variant = nt
-            .into_variant(true)
+            .into_variant(ColorMode::Dark)
             .expect("preset must have dark variant");
         variant
             .into_resolved()
@@ -485,7 +486,7 @@ mod tests {
     fn test_resolved_light() -> ResolvedTheme {
         let nt = Theme::preset("catppuccin-latte").expect("preset must exist");
         let variant = nt
-            .into_variant(false)
+            .into_variant(ColorMode::Light)
             .expect("preset must have light variant");
         variant
             .into_resolved()
@@ -1047,7 +1048,7 @@ mod tests {
         for name in presets {
             let nt = Theme::preset(name).expect("preset must exist");
             let variant = nt
-                .into_variant(true)
+                .into_variant(ColorMode::Dark)
                 .expect("preset must have dark variant");
             let resolved = variant.into_resolved().expect("must validate");
             let _tc = to_theme_color(&resolved, true);
@@ -1066,7 +1067,7 @@ mod tests {
         for name in presets {
             let nt = Theme::preset(name).expect("preset must exist");
             let variant = nt
-                .into_variant(false)
+                .into_variant(ColorMode::Light)
                 .expect("preset must have light variant");
             let resolved = variant.into_resolved().expect("must validate");
             let _tc = to_theme_color(&resolved, false);

@@ -27,7 +27,7 @@
 //! use native_theme_gpui::to_theme;
 //!
 //! let nt = Theme::preset("catppuccin-mocha")?;
-//! let variant = nt.into_variant(true).ok_or("no dark variant")?;
+//! let variant = nt.into_variant(ColorMode::Dark).ok_or("no dark variant")?;
 //! let resolved = variant.into_resolved()?;
 //! let theme = to_theme(&resolved, "Catppuccin Mocha", true);
 //! ```
@@ -83,8 +83,8 @@ pub mod icons;
 pub use native_theme::color::Rgba;
 pub use native_theme::error::Error;
 pub use native_theme::theme::{
-    AnimatedIcon, DialogButtonOrder, IconData, IconProvider, IconRole, IconSet, ResolvedTheme,
-    Theme, ThemeMode, TransformAnimation,
+    AnimatedIcon, ColorMode, DialogButtonOrder, IconData, IconProvider, IconRole, IconSet,
+    ResolvedTheme, Theme, ThemeMode, TransformAnimation,
 };
 pub use native_theme::{Result, SystemTheme};
 
@@ -191,7 +191,7 @@ pub fn from_preset(name: &str, is_dark: bool) -> Result<(GpuiTheme, ResolvedThem
     let display_name = spec.name.clone();
     let mode_str = if is_dark { "dark" } else { "light" };
     let variant = spec
-        .into_variant(is_dark)
+        .into_variant(if is_dark { ColorMode::Dark } else { ColorMode::Light })
         .ok_or_else(|| Error::ReaderFailed {
             reader: "gpui_connector",
             source: format!("preset '{name}' has no {mode_str} variant").into(),
@@ -232,7 +232,7 @@ pub fn from_preset(name: &str, is_dark: bool) -> Result<(GpuiTheme, ResolvedThem
 #[must_use = "this returns the theme; it does not apply it"]
 pub fn from_system() -> Result<(GpuiTheme, ResolvedTheme, bool)> {
     let sys = SystemTheme::from_system()?;
-    let is_dark = sys.is_dark;
+    let is_dark = sys.mode.is_dark();
     let name = sys.name; // K-5: move instead of clone
     let resolved = if is_dark { sys.dark } else { sys.light };
     let theme = to_theme(&resolved, &name, is_dark);
@@ -252,15 +252,15 @@ pub fn from_system() -> Result<(GpuiTheme, ResolvedTheme, bool)> {
 pub trait SystemThemeExt {
     /// Convert this system theme to a gpui-component [`GpuiTheme`].
     ///
-    /// Uses the active variant (based on `is_dark`), the theme name,
-    /// and the dark-mode flag from the `SystemTheme`.
+    /// Uses the OS-active variant (based on `mode`), the theme name,
+    /// and the color mode from the `SystemTheme`.
     #[must_use = "this returns the theme; it does not apply it"]
     fn to_gpui_theme(&self) -> GpuiTheme;
 }
 
 impl SystemThemeExt for SystemTheme {
     fn to_gpui_theme(&self) -> GpuiTheme {
-        to_theme(self.active(), &self.name, self.is_dark)
+        to_theme(self.pick(self.mode), &self.name, self.mode.is_dark())
     }
 }
 
@@ -458,7 +458,7 @@ mod tests {
     fn test_resolved() -> ResolvedTheme {
         let nt = Theme::preset("catppuccin-mocha").expect("preset must exist");
         let variant = nt
-            .into_variant(true)
+            .into_variant(ColorMode::Dark)
             .expect("preset must have dark variant");
         variant
             .into_resolved()
@@ -478,7 +478,7 @@ mod tests {
     fn to_theme_dark_mode() {
         let nt = Theme::preset("catppuccin-mocha").expect("preset must exist");
         let variant = nt
-            .into_variant(true)
+            .into_variant(ColorMode::Dark)
             .expect("preset must have dark variant");
         let resolved = variant
             .into_resolved()
@@ -542,7 +542,7 @@ mod tests {
 
         let light_resolved = {
             let spec = Theme::preset("catppuccin-latte").expect("preset must exist");
-            let variant = spec.into_variant(false).expect("light variant");
+            let variant = spec.into_variant(ColorMode::Light).expect("light variant");
             variant.into_resolved().expect("must validate")
         };
         let light_theme = to_theme(&light_resolved, "Light", false);
@@ -600,8 +600,8 @@ mod tests {
         let theme = sys.to_gpui_theme();
         assert_eq!(
             theme.is_dark(),
-            sys.is_dark,
-            "to_gpui_theme() is_dark should match SystemTheme.is_dark"
+            sys.mode.is_dark(),
+            "to_gpui_theme() is_dark should match SystemTheme.mode"
         );
     }
 
@@ -628,7 +628,7 @@ mod tests {
             return;
         };
         let via_convenience = sys.to_gpui_theme();
-        let via_manual = to_theme(sys.active(), &sys.name, sys.is_dark);
+        let via_manual = to_theme(sys.pick(sys.mode), &sys.name, sys.mode.is_dark());
         // Both paths should produce identical results
         assert_eq!(
             via_convenience.is_dark(),
@@ -639,7 +639,7 @@ mod tests {
         // from_system() may return Err on systems without a desktop (CI),
         // but if we reach here, the active variant should have at least
         // accent or background populated.
-        let resolved = sys.active();
+        let resolved = sys.pick(sys.mode);
         assert!(
             resolved.defaults.accent_color != Rgba::default()
                 || resolved.defaults.background_color != Rgba::default(),

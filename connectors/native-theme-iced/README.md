@@ -20,12 +20,12 @@ native-theme-iced = "0.5.7"
 Then create an iced theme from any native-theme preset:
 
 ```rust,ignore
-use native_theme::Theme;
+use native_theme::theme::{ColorMode, Theme};
 use native_theme_iced::to_theme;
 
 // Load a preset and resolve it
-let nt = Theme::preset("dracula").unwrap();
-let resolved = nt.into_variant(true).unwrap().into_resolved().unwrap();
+let nt = Theme::preset("dracula")?;
+let resolved = nt.into_variant(ColorMode::Dark).ok_or("no variant")?.into_resolved()?;
 let theme = to_theme(&resolved, "My App");
 // Use `theme` as your iced application theme
 ```
@@ -36,8 +36,8 @@ Or read the OS theme at runtime:
 use native_theme::SystemTheme;
 use native_theme_iced::to_theme;
 
-let system = SystemTheme::from_system().unwrap();
-let theme = to_theme(system.active(), "System Theme");
+let system = SystemTheme::from_system()?;
+let theme = to_theme(system.pick(system.mode), "System Theme");
 ```
 
 ## Widget Metrics

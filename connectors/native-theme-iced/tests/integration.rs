@@ -1,6 +1,6 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use native_theme::theme::Theme;
+use native_theme::theme::{ColorMode, Theme};
 use native_theme_iced::{from_preset, to_theme};
 
 #[test]
@@ -36,7 +36,7 @@ fn from_system_returns_result() {
 #[test]
 fn to_theme_produces_non_default_palette() {
     let nt = Theme::preset("catppuccin-mocha").unwrap();
-    let resolved = nt.into_variant(true).unwrap().into_resolved().unwrap();
+    let resolved = nt.into_variant(ColorMode::Dark).unwrap().into_resolved().unwrap();
     let theme = to_theme(&resolved, "catppuccin-mocha");
 
     let palette = theme.palette();

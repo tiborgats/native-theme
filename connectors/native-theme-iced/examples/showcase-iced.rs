@@ -216,7 +216,13 @@ impl Eq for ThemeChoice {}
 /// but we never panic).
 fn load_adwaita_fallback(is_dark: bool) -> Option<(native_theme::theme::ResolvedTheme, Theme)> {
     let nt = native_theme::theme::Theme::preset("adwaita").ok()?;
-    let variant = nt.pick_variant(is_dark)?.clone();
+    let variant = nt
+        .pick_variant(if is_dark {
+            native_theme_iced::ColorMode::Dark
+        } else {
+            native_theme_iced::ColorMode::Light
+        })?
+        .clone();
     let r = variant.into_resolved().ok()?;
     let t = native_theme_iced::to_theme(&r, &nt.name);
     Some((r, t))
@@ -237,33 +243,37 @@ fn theme_choices(default_label: &str) -> Vec<ThemeChoice> {
 // ---------------------------------------------------------------------------
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-enum ColorMode {
+enum AppColorMode {
     System,
     Light,
     Dark,
 }
 
-impl ColorMode {
-    const ALL: &[ColorMode] = &[ColorMode::System, ColorMode::Light, ColorMode::Dark];
+impl AppColorMode {
+    const ALL: &[AppColorMode] = &[
+        AppColorMode::System,
+        AppColorMode::Light,
+        AppColorMode::Dark,
+    ];
 
     fn is_dark(self) -> bool {
         match self {
-            ColorMode::Light => false,
-            ColorMode::Dark => true,
-            ColorMode::System => native_theme::detect::system_is_dark(),
+            AppColorMode::Light => false,
+            AppColorMode::Dark => true,
+            AppColorMode::System => native_theme::detect::system_is_dark(),
         }
     }
 }
 
-impl std::fmt::Display for ColorMode {
+impl std::fmt::Display for AppColorMode {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            ColorMode::System => {
+            AppColorMode::System => {
                 let actual = if self.is_dark() { "Dark" } else { "Light" };
                 write!(f, "System ({actual})")
             }
-            ColorMode::Light => write!(f, "Light"),
-            ColorMode::Dark => write!(f, "Dark"),
+            AppColorMode::Light => write!(f, "Light"),
+            AppColorMode::Dark => write!(f, "Dark"),
         }
     }
 }
@@ -553,7 +563,7 @@ struct State {
     // Theme
     current_choice: ThemeChoice,
     current_theme: Theme,
-    color_mode: ColorMode,
+    color_mode: AppColorMode,
     is_dark: bool,
     current_resolved: native_theme::theme::ResolvedTheme,
     /// Dynamic label for the default theme entry, updated on color mode change.
@@ -625,12 +635,18 @@ struct State {
 
 impl Default for State {
     fn default() -> Self {
-        let color_mode = ColorMode::System;
+        let color_mode = AppColorMode::System;
         let is_dark = color_mode.is_dark();
         let (resolved, theme, initial_error, system_preset) =
             match native_theme::SystemTheme::from_system() {
                 Ok(system) => {
-                    let r = system.pick(is_dark).clone();
+                    let r = system
+                        .pick(if is_dark {
+                            native_theme_iced::ColorMode::Dark
+                        } else {
+                            native_theme_iced::ColorMode::Light
+                        })
+                        .clone();
                     let t = native_theme_iced::to_theme(&r, &system.name);
                     let preset = system.preset.clone();
                     (r, t, None, preset)
@@ -758,9 +774,9 @@ impl Default for State {
             // Override color mode first so theme resolution uses the right variant
             if let Some(ref v) = cli.variant {
                 state.color_mode = if v == "dark" {
-                    ColorMode::Dark
+                    AppColorMode::Dark
                 } else {
-                    ColorMode::Light
+                    AppColorMode::Light
                 };
                 state.is_dark = state.color_mode.is_dark();
             }
@@ -831,7 +847,13 @@ impl State {
                     Ok(system) => {
                         // Platform presets always specify icon_theme.
                         has_toml_icon_theme = true;
-                        self.current_resolved = system.pick(self.is_dark).clone();
+                        self.current_resolved = system
+                            .pick(if self.is_dark {
+                                native_theme_iced::ColorMode::Dark
+                            } else {
+                                native_theme_iced::ColorMode::Light
+                            })
+                            .clone();
                         self.current_theme =
                             native_theme_iced::to_theme(&self.current_resolved, &system.name);
                         self.default_label = format!("default ({})", system.preset);
@@ -852,7 +874,11 @@ impl State {
             ThemeChoice::Preset(name) => {
                 let name = name.clone();
                 match native_theme::theme::Theme::preset(&name) {
-                    Ok(nt) => match nt.pick_variant(self.is_dark) {
+                    Ok(nt) => match nt.pick_variant(if self.is_dark {
+                        native_theme_iced::ColorMode::Dark
+                    } else {
+                        native_theme_iced::ColorMode::Light
+                    }) {
                         Some(variant) => {
                             has_toml_icon_theme = variant.icon_theme.is_some();
                             let v = variant.clone();
@@ -926,7 +952,7 @@ enum Message {
 
     // Theme
     ThemeSelected(ThemeChoice),
-    ColorModeSelected(ColorMode),
+    ColorModeSelected(AppColorMode),
 
     // Widget Info hover
     WidgetHovered(String),
@@ -1323,7 +1349,7 @@ fn view(state: &State) -> Element<'_, Message> {
         let color_mode_section = column![
             text("Color Mode").size(ts.caption.size),
             pick_list(
-                ColorMode::ALL.to_vec(),
+                AppColorMode::ALL.to_vec(),
                 Some(&state.color_mode),
                 Message::ColorModeSelected,
             )
@@ -3085,7 +3111,7 @@ fn subscription(state: &State) -> Subscription<Message> {
 
     // Theme watcher: poll the atomic flag set by on_theme_change() callback.
     // Only active when color mode is System and the watcher started successfully.
-    if matches!(state.color_mode, ColorMode::System) && state._theme_watcher.is_some() {
+    if matches!(state.color_mode, AppColorMode::System) && state._theme_watcher.is_some() {
         subs.push(iced::time::every(Duration::from_millis(500)).map(|_| Message::ThemeWatcherTick));
     }
 

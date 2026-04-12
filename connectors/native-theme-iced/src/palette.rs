@@ -50,6 +50,7 @@ pub fn to_palette(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::t
 mod tests {
     use super::*;
     use native_theme::theme::Theme;
+    use crate::ColorMode;
 
     #[test]
     fn to_color_converts_rgba() {
@@ -84,7 +85,7 @@ mod tests {
     fn to_palette_maps_all_fields_from_resolved() {
         let resolved = Theme::preset("catppuccin-mocha")
             .unwrap()
-            .into_variant(false)
+            .into_variant(ColorMode::Light)
             .unwrap()
             .into_resolved()
             .unwrap();
@@ -107,7 +108,7 @@ mod tests {
     fn to_palette_dark_variant_has_dark_background() {
         let resolved = Theme::preset("catppuccin-mocha")
             .unwrap()
-            .into_variant(true)
+            .into_variant(ColorMode::Dark)
             .unwrap()
             .into_resolved()
             .unwrap();
@@ -123,7 +124,7 @@ mod tests {
         for name in ["catppuccin-mocha", "dracula", "nord", "gruvbox"] {
             let resolved = Theme::preset(name)
                 .unwrap()
-                .into_variant(true)
+                .into_variant(ColorMode::Dark)
                 .unwrap()
                 .into_resolved()
                 .unwrap();
