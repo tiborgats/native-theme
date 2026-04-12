@@ -69,6 +69,40 @@ impl Rgba {
         Self { r, g, b, a }
     }
 
+    /// Transparent black `(0, 0, 0, 0)` -- the zero colour.
+    ///
+    /// This is the same value as `Rgba::default()`.
+    ///
+    /// ```
+    /// use native_theme::Rgba;
+    ///
+    /// assert_eq!(Rgba::TRANSPARENT, Rgba::rgba(0, 0, 0, 0));
+    /// assert_eq!(Rgba::BLACK, Rgba::rgba(0, 0, 0, 255));
+    /// assert_eq!(Rgba::WHITE, Rgba::rgba(255, 255, 255, 255));
+    /// ```
+    pub const TRANSPARENT: Self = Self {
+        r: 0,
+        g: 0,
+        b: 0,
+        a: 0,
+    };
+
+    /// Opaque black `(0, 0, 0, 255)`.
+    pub const BLACK: Self = Self {
+        r: 0,
+        g: 0,
+        b: 0,
+        a: 255,
+    };
+
+    /// Opaque white `(255, 255, 255, 255)`.
+    pub const WHITE: Self = Self {
+        r: 255,
+        g: 255,
+        b: 255,
+        a: 255,
+    };
+
     /// Create a color from floating-point components in the 0.0..=1.0 range.
     ///
     /// Values are clamped to 0.0..=1.0 before conversion.
@@ -98,17 +132,6 @@ impl Rgba {
             self.b as f32 / 255.0,
             self.a as f32 / 255.0,
         ]
-    }
-
-    /// Convert to `(r, g, b, a)` tuple in the 0.0..=1.0 range.
-    #[must_use]
-    pub fn to_f32_tuple(&self) -> (f32, f32, f32, f32) {
-        (
-            self.r as f32 / 255.0,
-            self.g as f32 / 255.0,
-            self.b as f32 / 255.0,
-            self.a as f32 / 255.0,
-        )
     }
 }
 
@@ -426,15 +449,5 @@ mod tests {
         let c = Rgba::from_f32(-0.5, 1.5, 0.0, 0.0);
         assert_eq!(c.r, 0);
         assert_eq!(c.g, 255);
-    }
-
-    // === to_f32_tuple test ===
-
-    #[test]
-    fn to_f32_tuple_matches_array() {
-        let c = Rgba::rgb(128, 64, 32);
-        let arr = c.to_f32_array();
-        let tup = c.to_f32_tuple();
-        assert_eq!(tup, (arr[0], arr[1], arr[2], arr[3]));
     }
 }
