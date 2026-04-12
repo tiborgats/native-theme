@@ -14,7 +14,7 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 ### Verified Bugs
 
 - [ ] **BUG-01**: `check_ranges` stops running on `T::default()` placeholder data from `require()` fallback — short-circuit on `missing.is_empty() == false` OR two-vec split so range errors don't pollute `missing_fields` (doc 2 A2)
-- [ ] **BUG-02**: `ThemeResolutionError::missing_fields` stops carrying two error categories (missing vs out-of-range) — folded into the `Error` restructure (doc 2 A3)
+- [x] **BUG-02**: `ThemeResolutionError::missing_fields` stops carrying two error categories (missing vs out-of-range) — folded into the `Error` restructure (doc 2 A3)
 - [x] **BUG-03**: `resolve()` documentation no longer lies about "no OS detection" — either move `button_order` OS-dispatch to `resolve_platform_defaults` only OR demote `resolve` intermediates so the doc claim is true (doc 2 A4)
 - [x] **BUG-04**: `from_kde_content_pure` no longer hardcodes `button_order = "kde"` — resolver handles it (doc 2 D5)
 - [x] **BUG-05**: `from_macos::build_theme` no longer hardcodes `button_order = "apple"` — resolver handles it (doc 2 M1)
@@ -28,7 +28,7 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 ### Error Type Restructure
 
 - [x] **ERR-01**: `Error::Clone` bound dropped — four-item atomic commit: drop `#[derive(Clone)]`, delete stale `error.rs:73-79` doc comment, delete stale `presets.rs:85-92` comment, delete `error_is_clone` test (doc 1 §6a + doc 2 L1)
-- [ ] **ERR-02**: `Error` variants restructured per §31.2 Option F (flat + `kind()` method); `WatchUnavailable` / `FeatureDisabled` / `ReaderFailed` boundaries explicit; folds in A3's category separation (doc 1 §6b/c/d)
+- [x] **ERR-02**: `Error` variants restructured per §31.2 Option F (flat + `kind()` method); `WatchUnavailable` / `FeatureDisabled` / `ReaderFailed` boundaries explicit; folds in A3's category separation (doc 1 §6b/c/d)
 
 ### Data Model Restructure
 

@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
-status: phase_complete
-stopped_at: Phase 70 complete — verified, ready to plan Phase 71
-last_updated: "2026-04-12T11:10:00.000Z"
-last_activity: 2026-04-12
+status: executing
+stopped_at: Completed 71-01-PLAN.md
+last_updated: "2026-04-12T12:22:20.473Z"
+last_activity: 2026-04-12 — Phase 71 Plan 01 executed
 progress:
   total_phases: 28
   completed_phases: 10
-  total_plans: 17
-  completed_plans: 17
-  percent: 100
+  total_plans: 19
+  completed_plans: 18
+  percent: 95
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 70 — drop-error-clone-bound (COMPLETE, verified)
-Plan: 1/1 complete, verified 4/4 must-haves
-Status: Phase 70 complete — ready to plan Phase 71
-Last activity: 2026-04-12 — Phase 70 executed and verified
+Phase: 71 — error-restructure-and-validation-split
+Plan: 1/2 complete (71-01 done, 71-02 pending)
+Status: Executing Phase 71 — Plan 01 complete, Plan 02 pending
+Last activity: 2026-04-12 — Phase 71 Plan 01 executed
 
-Progress: [█░░░░░░░░░] 10% (2/20 phases complete)
+Progress: [██████████] 95% (18/19 plans complete)
 
 ## Accumulated Context
 
@@ -89,7 +89,13 @@ v0.5.6 decisions worth carrying into v0.5.7 planning:
 
 ### Pending Todos
 
-None. Ready to plan Phase 71.
+None. Ready for Phase 71 Plan 02.
+
+### v0.5.7 Decisions
+
+- [Phase 71-01]: Kept Vec<String> for ResolutionIncomplete::missing (not Vec<FieldPath>) for Phase 71 compatibility
+- [Phase 71-01]: Preserved From<toml::ser::Error> via ReaderFailed variant (presets::to_toml needs it)
+- [Phase 71-01]: PlatformUnsupported uses &'static str (no Platform enum in crate yet)
 
 ### Blockers/Concerns
 
@@ -102,6 +108,6 @@ None. Ready to plan Phase 71.
 
 ## Session Continuity
 
-Last session: 2026-04-12
-Stopped at: Phase 70 complete — verified, ready to plan Phase 71
-Resume file: .planning/ROADMAP.md (Phase 71 section)
+Last session: 2026-04-12T12:22:20.470Z
+Stopped at: Completed 71-01-PLAN.md
+Resume file: None
