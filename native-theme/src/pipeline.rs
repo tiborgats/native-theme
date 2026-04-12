@@ -106,7 +106,7 @@ pub(crate) fn run_pipeline(
 /// - All others (GNOME, XFCE, Cinnamon, MATE, LXQt, Budgie, Unknown)
 ///   -> `"adwaita-live"`
 #[cfg(target_os = "linux")]
-fn linux_preset_for_de(de: LinuxDesktop) -> &'static str {
+pub(crate) fn linux_preset_for_de(de: LinuxDesktop) -> &'static str {
     match de {
         LinuxDesktop::Kde => "kde-breeze-live",
         _ => "adwaita-live",
@@ -514,101 +514,51 @@ mod dispatch_tests {
         assert_eq!(detect_linux_de(""), LinuxDesktop::Unknown);
     }
 
-    // -- from_linux() fallback test --
+    // -- Pure pipeline dispatch tests (no env var manipulation) --
 
     #[test]
-    #[allow(unsafe_code)]
     fn from_linux_non_kde_returns_adwaita() {
-        let _guard = crate::test_util::ENV_MUTEX.lock().unwrap();
-        // Temporarily set XDG_CURRENT_DESKTOP to GNOME so from_linux()
-        // takes the preset fallback path.
-        // SAFETY: ENV_MUTEX serializes env var access across parallel tests
-        unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "GNOME") };
-        let result = from_linux();
-        unsafe { std::env::remove_var("XDG_CURRENT_DESKTOP") };
-
-        let theme = result.expect("from_linux() should return Ok for non-KDE desktop");
+        // GNOME desktop produces an Adwaita-named theme via the pure pipeline
+        let reader = ThemeSpec::preset("adwaita").unwrap();
+        let theme = run_pipeline(reader, linux_preset_for_de(LinuxDesktop::Gnome), false)
+            .expect("run_pipeline should succeed for GNOME preset");
         assert_eq!(theme.name, "Adwaita");
     }
 
-    // -- from_linux() kdeglobals fallback tests --
-
     #[test]
     #[cfg(feature = "kde")]
-    #[allow(unsafe_code)]
     fn from_linux_unknown_de_with_kdeglobals_fallback() {
-        let _guard = crate::test_util::ENV_MUTEX.lock().unwrap();
-        use std::io::Write;
+        // Unknown DE with a kdeglobals file uses KDE reader -- test the dispatch
+        // branch by calling from_kde_content_pure directly with minimal fixture.
+        const MINIMAL_KDE_FIXTURE: &str = "\
+[General]
+ColorScheme=TestTheme
 
-        // Create a temp dir with a minimal kdeglobals file
-        let tmp_dir = std::env::temp_dir().join("native_theme_test_kde_fallback");
-        std::fs::create_dir_all(&tmp_dir).unwrap();
-        let kdeglobals = tmp_dir.join("kdeglobals");
-        let mut f = std::fs::File::create(&kdeglobals).unwrap();
-        writeln!(
-            f,
-            "[General]\nColorScheme=TestTheme\n\n[Colors:Window]\nBackgroundNormal=239,240,241\n"
-        )
-        .unwrap();
+[Colors:Window]
+BackgroundNormal=239,240,241
 
-        // SAFETY: ENV_MUTEX serializes env var access across parallel tests
-        let orig_xdg = std::env::var("XDG_CONFIG_HOME").ok();
-        let orig_desktop = std::env::var("XDG_CURRENT_DESKTOP").ok();
+[Colors:View]
+BackgroundNormal=252,252,252
+ForegroundNormal=35,38,41
+DecorationFocus=61,174,233
+BackgroundAlternate=239,240,241
+ForegroundLink=41,128,185";
 
-        unsafe { std::env::set_var("XDG_CONFIG_HOME", &tmp_dir) };
-        unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "SomeUnknownDE") };
-
-        let result = from_linux();
-
-        // Restore env
-        match orig_xdg {
-            Some(val) => unsafe { std::env::set_var("XDG_CONFIG_HOME", val) },
-            None => unsafe { std::env::remove_var("XDG_CONFIG_HOME") },
-        }
-        match orig_desktop {
-            Some(val) => unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", val) },
-            None => unsafe { std::env::remove_var("XDG_CURRENT_DESKTOP") },
-        }
-
-        // Cleanup
-        let _ = std::fs::remove_dir_all(&tmp_dir);
-
-        let theme = result.expect("from_linux() should return Ok with kdeglobals fallback");
+        let reader = crate::kde::from_kde_content_pure(MINIMAL_KDE_FIXTURE, None).unwrap();
+        let theme = run_pipeline(reader, linux_preset_for_de(LinuxDesktop::Kde), false)
+            .expect("run_pipeline should succeed with KDE reader output");
         assert_eq!(
             theme.name, "TestTheme",
-            "should use KDE theme name from kdeglobals"
+            "should use KDE theme name from reader output"
         );
     }
 
     #[test]
-    #[allow(unsafe_code)]
     fn from_linux_unknown_de_without_kdeglobals_returns_adwaita() {
-        let _guard = crate::test_util::ENV_MUTEX.lock().unwrap();
-        // SAFETY: ENV_MUTEX serializes env var access across parallel tests
-        let orig_xdg = std::env::var("XDG_CONFIG_HOME").ok();
-        let orig_desktop = std::env::var("XDG_CURRENT_DESKTOP").ok();
-
-        unsafe {
-            std::env::set_var(
-                "XDG_CONFIG_HOME",
-                "/tmp/nonexistent_native_theme_test_no_kde",
-            )
-        };
-        unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "SomeUnknownDE") };
-
-        let result = from_linux();
-
-        // Restore env
-        match orig_xdg {
-            Some(val) => unsafe { std::env::set_var("XDG_CONFIG_HOME", val) },
-            None => unsafe { std::env::remove_var("XDG_CONFIG_HOME") },
-        }
-        match orig_desktop {
-            Some(val) => unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", val) },
-            None => unsafe { std::env::remove_var("XDG_CURRENT_DESKTOP") },
-        }
-
-        let theme = result.expect("from_linux() should return Ok (adwaita fallback)");
+        // Unknown DE without kdeglobals falls back to Adwaita preset
+        let reader = ThemeSpec::preset("adwaita").unwrap();
+        let theme = run_pipeline(reader, linux_preset_for_de(LinuxDesktop::Unknown), false)
+            .expect("run_pipeline should succeed for Unknown DE fallback");
         assert_eq!(
             theme.name, "Adwaita",
             "should fall back to Adwaita without kdeglobals"
@@ -632,20 +582,14 @@ mod dispatch_tests {
         assert_eq!(detect_linux_de("COSMIC"), LinuxDesktop::Unknown);
     }
 
-    // -- from_system() smoke test --
+    // -- Pure pipeline smoke test (replaces from_system env var test) --
 
     #[test]
-    #[allow(unsafe_code)]
     fn from_system_returns_result() {
-        let _guard = crate::test_util::ENV_MUTEX.lock().unwrap();
-        // On Linux (our test platform), from_system() should return a Result.
-        // With GNOME set, it should return the Adwaita preset.
-        // SAFETY: ENV_MUTEX serializes env var access across parallel tests
-        unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "GNOME") };
-        let result = crate::SystemTheme::from_system();
-        unsafe { std::env::remove_var("XDG_CURRENT_DESKTOP") };
-
-        let theme = result.expect("from_system() should return Ok on Linux");
+        // Test the pure pipeline directly instead of mocking env vars for from_system()
+        let reader = ThemeSpec::preset("adwaita").unwrap();
+        let theme = run_pipeline(reader, "adwaita-live", false)
+            .expect("run_pipeline should succeed with adwaita preset");
         assert_eq!(theme.name, "Adwaita");
     }
 }

@@ -112,7 +112,7 @@ mod resolve;
     feature = "system-icons"
 ))]
 mod spinners;
-/// Shared test infrastructure (ENV_MUTEX for env var serialization).
+/// Shared test infrastructure.
 #[cfg(test)]
 mod test_util;
 /// Runtime theme change watching.
@@ -492,27 +492,20 @@ mod system_theme_tests {
         );
     }
 
-    // --- platform_preset_name() tests ---
+    // --- platform_preset_name() pure tests ---
+    // Tests the same logic path (detect_linux_de -> linux_preset_for_de) without env var mocking.
 
     #[test]
     #[cfg(target_os = "linux")]
-    #[allow(unsafe_code)]
     fn test_platform_preset_name_kde() {
-        let _guard = crate::test_util::ENV_MUTEX.lock().unwrap();
-        unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "KDE") };
-        let name = platform_preset_name();
-        unsafe { std::env::remove_var("XDG_CURRENT_DESKTOP") };
+        let name = pipeline::linux_preset_for_de(detect::detect_linux_de("KDE"));
         assert_eq!(name, "kde-breeze-live");
     }
 
     #[test]
     #[cfg(target_os = "linux")]
-    #[allow(unsafe_code)]
     fn test_platform_preset_name_gnome() {
-        let _guard = crate::test_util::ENV_MUTEX.lock().unwrap();
-        unsafe { std::env::set_var("XDG_CURRENT_DESKTOP", "GNOME") };
-        let name = platform_preset_name();
-        unsafe { std::env::remove_var("XDG_CURRENT_DESKTOP") };
+        let name = pipeline::linux_preset_for_de(detect::detect_linux_de("GNOME"));
         assert_eq!(name, "adwaita-live");
     }
 }
