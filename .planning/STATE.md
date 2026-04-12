@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
 status: in_progress
-stopped_at: Phase 76 plan 01 complete — type vocabulary rename done, plan 02 pending
+stopped_at: Phase 76 complete — type vocabulary rename + crate root partition done
 last_updated: "2026-04-12T17:15:00.000Z"
-last_activity: 2026-04-12 — Phase 76 plan 01 executed (type rename across 40 files, 2 commits)
+last_activity: 2026-04-12 — Phase 76 plan 02 executed (crate root partition, 36 files, 2 commits)
 progress:
   total_phases: 28
   completed_phases: 15
   total_plans: 28
-  completed_plans: 27
-  percent: 96
+  completed_plans: 28
+  percent: 100
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 76 — type-vocabulary-rename-and-crate-root-partition
-Plan: 1/2 complete
-Status: Plan 01 (type rename) complete, plan 02 (crate root partition) pending
-Last activity: 2026-04-12 — Plan 76-01 executed (4 type renames across 40 files)
+Plan: 2/2 complete
+Status: Phase 76 complete (type rename + crate root partition)
+Last activity: 2026-04-12 — Plan 76-02 executed (crate root partition, 36 files, prelude module)
 
-Progress: [█████████▓] 96% (27/28 plans complete)
+Progress: [██████████] 100% (28/28 plans complete)
 
 ## Accumulated Context
 
@@ -107,6 +107,9 @@ None. Phase 75 complete, ready to plan Phase 76.
 - [Phase 76-01]: gpui connector aliases gpui_component::{Theme,ThemeMode} as GpuiTheme/GpuiThemeMode to avoid collision with native_theme re-exports
 - [Phase 75-01]: Removed unreachable wildcard arms in same-crate matches (non_exhaustive only forces wildcards in external crates)
 - [Phase 75-01]: Wayland compositors use adwaita preset and org.gnome.desktop.interface gsettings for icon themes
+- [Phase 76-02]: pub(crate) use re-exports preserve internal crate::Type paths without rewriting 30+ internal files
+- [Phase 76-02]: pub mod theme { pub use crate::model::*; } inline facade for clean public API
+- [Phase 76-02]: native-theme-build codegen emits module-qualified paths (theme::, detect::) in generated code
 
 ### Blockers/Concerns
 
@@ -120,5 +123,5 @@ None. Phase 75 complete, ready to plan Phase 76.
 ## Session Continuity
 
 Last session: 2026-04-12
-Stopped at: Phase 76 plan 01 complete — type vocabulary rename done
-Resume file: .planning/phases/76-type-vocabulary-rename-and-crate-root-partition/76-01-SUMMARY.md
+Stopped at: Phase 76 complete — type vocabulary rename + crate root partition done
+Resume file: .planning/phases/76-type-vocabulary-rename-and-crate-root-partition/76-02-SUMMARY.md
