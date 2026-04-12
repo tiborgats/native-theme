@@ -308,11 +308,14 @@ Plans:
 **Depends on**: Phase 70
 **Requirements**: BUG-01, BUG-02, ERR-02
 **Success Criteria** (what must be TRUE):
-  1. `ThemeResolutionError` (or its successor) carries two distinct vectors â€” `missing` and `out_of_range` â€” and `check_ranges` runs to completion even when `missing.is_empty()` is false
-  2. A unit test constructs a `ThemeMode` with both a missing field AND an out-of-range value and asserts both appear in the corresponding vectors (no cross-pollination)
+  1. `ThemeResolutionError` is deleted; its successor Error variants `ResolutionIncomplete { missing }` and `ResolutionInvalid { errors }` carry the two categories separately. `validate()` short-circuits on missing before running `check_ranges`, so range checks only run on fully-populated data (no spurious errors from `T::default()` placeholders).
+  2. A unit test constructs a `ThemeMode` with both a missing field AND an out-of-range value: the result is `ResolutionIncomplete` containing only the missing path (no spurious range violation). A second test with NO missing fields but an out-of-range value produces `ResolutionInvalid` with the `RangeViolation` entry.
   3. `Error` variants conform to Â§31.2 Option F: flat list with explicit boundaries for reader failures, feature-disabled calls, and watcher unavailability; `Error::kind()` returns a coarse `ErrorKind` classifier
   4. `from_system()` returns a `FeatureDisabled` error (not a `Format` error) when called without the right platform feature enabled
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 71-01-PLAN.md â€” Rewrite Error enum per Option F with ErrorKind and RangeViolation
+- [ ] 71-02-PLAN.md â€” Two-vec validation split and caller migration
 
 ### Phase 72: ENV_MUTEX Test Simplification
 **Goal**: The test suite no longer relies on a global `ENV_MUTEX` to serialize env-var-mocking tests, because `resolve()` is now pure and does not read env vars
@@ -323,7 +326,10 @@ Plans:
   2. Tests that previously required the mutex now run with `cargo test -- --test-threads=N` for any N without flakiness
   3. The mutex helper module (`env_mutex.rs` or equivalent) is deleted
   4. A test-suite timing measurement shows no regression â€” parallel test execution is faster than the mutex-serialized baseline
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 71-01-PLAN.md — Rewrite Error enum per Option F with ErrorKind and RangeViolation
+- [ ] 71-02-PLAN.md — Two-vec validation split and caller migration
 
 ### Phase 73: ThemeChangeEvent Cleanup
 **Goal**: The `ThemeChangeEvent` enum reflects what watchers actually emit â€” `Other` is gone (it had zero production emitters), and `ColorSchemeChanged` is renamed to `Changed` because KDE/GNOME watchers signal broader changes than just colour-scheme toggles
@@ -334,7 +340,10 @@ Plans:
   2. The former `ColorSchemeChanged` variant is named `Changed` and the rename is reflected in doc comments, public API, and the `ThemeWatcher` callback signature
   3. All four watcher backends (KDE inotify, GNOME portal, macOS NSDistributedNotificationCenter, Windows UISettings) emit the renamed `Changed` variant
   4. A doctest on `on_theme_change()` pattern-matches on `ThemeChangeEvent::Changed` and compiles
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 71-01-PLAN.md — Rewrite Error enum per Option F with ErrorKind and RangeViolation
+- [ ] 71-02-PLAN.md — Two-vec validation split and caller migration
 
 ### Phase 74: Rgba Polish and must_use Uniformity
 **Goal**: The `Rgba` type has default colour constants, the confusingly-named `to_f32_tuple` is gone, and every function/type on the short must-use list gets a bare `#[must_use]` attribute â€” uniform convention, no mixed `#[must_use = "..."]` strings
@@ -345,7 +354,10 @@ Plans:
   2. `Rgba::to_f32_tuple` no longer exists â€” callers use the canonical accessor (documented in the migration note)
   3. The six call sites listed in the design doc (`pipeline.rs:132`, `pipeline.rs:175`, `model/icons.rs:438`, `model/icons.rs:477`, `lib.rs:353`, `model/mod.rs:225`) all carry a bare `#[must_use]` attribute
   4. A clippy lint (or grep audit) confirms no `#[must_use = "..."]` form remains anywhere in the crate
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 71-01-PLAN.md — Rewrite Error enum per Option F with ErrorKind and RangeViolation
+- [ ] 71-02-PLAN.md — Two-vec validation split and caller migration
 
 ### Phase 75: LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal
 **Goal**: `LinuxDesktop` gains `#[non_exhaustive]` and new Wayland compositor variants, `on_theme_change()` fails at compile time (not runtime) when the `watch` feature is disabled, and the misleading `IconSet::default()` (which was Freedesktop on every platform) is gone
@@ -356,7 +368,10 @@ Plans:
   2. `cargo check --no-default-features` with a program that calls `on_theme_change()` fails with a compile error mentioning the `watch` feature â€” not a runtime `FeatureDisabled` error
   3. `IconSet::default()` no longer exists; attempts to call it produce a "no method named default" compile error, and the migration guide documents `system_icon_set()` as the replacement
   4. Matching on `LinuxDesktop` without a wildcard arm produces a "non-exhaustive patterns" compile error, which is the correct forward-compat behaviour
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 71-01-PLAN.md — Rewrite Error enum per Option F with ErrorKind and RangeViolation
+- [ ] 71-02-PLAN.md — Two-vec validation split and caller migration
 **UI hint**: yes
 
 ### Phase 76: Type Vocabulary Rename and Crate Root Partition
@@ -368,7 +383,10 @@ Plans:
   2. Both connector crates (`native-theme-gpui`, `native-theme-iced`) compile against the renamed types without any compatibility shim
   3. `native_theme::prelude::*` re-exports exactly the 6 items listed in design doc Â§12 Option C+F, and a `tests/prelude_smoke.rs` test asserts the set
   4. `lib.rs` exposes exclusively `pub mod` declarations and the `prelude` â€” the 92 flat re-exports are gone; the old top-level items are reachable only via `native_theme::theme::`, `native_theme::watch::`, etc.
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 71-01-PLAN.md — Rewrite Error enum per Option F with ErrorKind and RangeViolation
+- [ ] 71-02-PLAN.md — Two-vec validation split and caller migration
 
 ### Phase 77: SystemTheme API and icon_set Relocation
 **Goal**: `SystemTheme::active()` is gone, replaced by `pick(ColorMode)` plus a public `mode: ColorMode` field, and `icon_set` / `icon_theme` live on `Theme` instead of their former (wrong) host type
@@ -379,7 +397,10 @@ Plans:
   2. `system_theme.mode` is directly readable as a public field, verified by a doctest demonstrating `let dark = sys.pick(ColorMode::Dark);`
   3. `theme.icon_set` and `theme.icon_theme` are accessible from `Theme`, not from the former host type, and all connector call sites use the new path
   4. A doctest shows loading a preset, reading `theme.icon_set`, and passing it to the icon loader â€” zero reference to the old location
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 71-01-PLAN.md — Rewrite Error enum per Option F with ErrorKind and RangeViolation
+- [ ] 71-02-PLAN.md — Two-vec validation split and caller migration
 
 ### Phase 78: OverlaySource, AccessibilityPreferences, font_dpi Relocation
 **Goal**: `SystemTheme` no longer carries pre-resolve variant fields â€” overlays are re-played from an `OverlaySource` via `ResolutionContext`; accessibility preferences live on `SystemTheme` as a structured `AccessibilityPreferences`; `font_dpi` moves out of `ThemeDefaults` into `ResolutionContext` runtime data
@@ -390,7 +411,10 @@ Plans:
   2. `AccessibilityPreferences { text_scaling_factor, reduce_motion, high_contrast, reduce_transparency }` lives on `SystemTheme`, NOT in `ResolutionContext`, and all four fields are populated by every OS reader
   3. `ResolutionContext` carries `font_dpi` as runtime data; `ThemeDefaults::font_dpi` is gone and `ResolvedDefaults::font_dpi` is gone too â€” grep returns zero matches in both types
   4. All 17 presets continue to resolve successfully and produce identical `ResolvedTheme` outputs for tests that existed before the refactor
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 71-01-PLAN.md — Rewrite Error enum per Option F with ErrorKind and RangeViolation
+- [ ] 71-02-PLAN.md — Two-vec validation split and caller migration
 
 ### Phase 79: BorderSpec Split and Platform Reader Visibility Audit
 **Goal**: `BorderSpec` is split along defaults-vs-widget lines (widget-level carries only `color`; defaults-level adds `width`, `corner_radius`, `padding`), and the platform readers (`from_kde`, `from_gnome`, `from_windows`, `from_macos`) are demoted to `pub(crate)` after a grep-based audit of connector consumers
@@ -401,7 +425,10 @@ Plans:
   2. A grep of `native-theme-gpui`, `native-theme-iced`, and every `examples/` file finds zero references to `from_kde` / `from_gnome` / `from_windows` / `from_macos` â€” all consumers went through `from_system`
   3. Attempting `pub use native_theme::from_kde` from an external crate fails with a visibility error
   4. The unified border-resolution pathway correctly populates widget borders from defaults-level values for all 17 presets
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 71-01-PLAN.md — Rewrite Error enum per Option F with ErrorKind and RangeViolation
+- [ ] 71-02-PLAN.md — Two-vec validation split and caller migration
 
 ### Phase 80: native-theme-derive Proc-Macro K Codegen
 **Goal**: The doubled `Option<T>` / `Resolved<T>` struct hierarchy is generated from one source of truth by a new `native-theme-derive` proc-macro crate that also emits `FIELD_NAMES`, `impl_merge!` bodies, `check_ranges` impls from `#[theme(range = "...")]` and `#[theme(check = "non_negative")]` attributes, per-field `#[theme(inherit_from = "...")]` inheritance rules, `inventory::submit!` widget registry entries, and a `#[theme_layer(border_kind = "full" | "partial" | "none")]` unifier for the three parallel border-inheritance validation paths
@@ -412,7 +439,10 @@ Plans:
   2. `validate.rs` shrinks by at least 720 lines of hand-written range-check / construction boilerplate, and `grep -c fn check_ranges src/resolved/*.rs` drops to zero (all generated)
   3. `inheritance.rs` duplication with `inheritance-rules.toml` is gone â€” ~55 of 82 rules live on per-field `#[theme(inherit_from = "...")]` attributes, and pattern-based rules that stay hand-written are documented in a comment block
   4. The three parallel `require_border` / `border_all_optional` / `require_border_partial` paths collapse into a single generated path selected by `#[theme_layer(border_kind = "...")]`, with no behavioural change for any of the 17 presets
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 71-01-PLAN.md — Rewrite Error enum per Option F with ErrorKind and RangeViolation
+- [ ] 71-02-PLAN.md — Two-vec validation split and caller migration
 
 ### Phase 81: Feature-Matrix Cleanup and Unified from_system
 **Goal**: `from_system_async` and `from_system` collapse to a single code path (`from_system_async` becomes the implementation, `from_system` wraps it with `pollster::block_on`), the `Cargo.toml` feature graph is simplified with clearer `linux-kde` / `linux-portal` aggregators, and these three changes ship atomically so no intermediate revision has a broken feature matrix
@@ -423,7 +453,10 @@ Plans:
   2. `Cargo.toml` features include `linux-kde` and `linux-portal` (or the design-doc names), each aggregating the right target-specific dependencies, and the old opaque aggregators are gone
   3. `cargo hack check --each-feature` (or equivalent) passes for every feature combination the CI matrix enumerates
   4. A sync-only consumer (no tokio) can call `from_system()` without pulling an async runtime into its dependency graph â€” verified by a test harness built with `--no-default-features` and only sync features enabled
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 71-01-PLAN.md — Rewrite Error enum per Option F with ErrorKind and RangeViolation
+- [ ] 71-02-PLAN.md — Two-vec validation split and caller migration
 
 ### Phase 82: Icon API Rework
 **Goal**: The 13 icon-loading functions collapse into a single `IconLoader::new().role(...).size(...).theme(...).load()` builder with an `impl Into<IconId>` constructor; `IconProvider::icon_svg` and `IconData::Svg` both migrate to `Cow<'static, [u8]>` to eliminate the `Vec<u8>` copy on bundled loads and remove the `&'static [u8]` lifetime lock; `IconRole` gains a kebab-case `name()` method with an `impl Display` delegate; a drift-guard test covers `IconSet::from_name` / `name` round-trip
@@ -435,7 +468,10 @@ Plans:
   3. `IconRole::ActionSave.name()` returns `"action-save"` and `format!("{}", IconRole::ActionSave) == "action-save"` â€” `Display` delegates to `name()`, not `Debug::fmt`
   4. A drift-guard test asserts `IconSet::from_name(set.name()) == Some(set)` for every variant â€” if a new variant is added without updating `from_name`, the test fails
   5. The freedesktop size-24 hardcode is gone: `IconLoader::new().role(...).size(48).load()` on Linux requests a 48px icon from the freedesktop spec, not a 24px icon
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 71-01-PLAN.md — Rewrite Error enum per Option F with ErrorKind and RangeViolation
+- [ ] 71-02-PLAN.md — Two-vec validation split and caller migration
 
 ### Phase 83: Detection Cache Layer
 **Goal**: Global `OnceLock` caches in `detect` and `model/icons` are replaced by a `DetectionContext` backed by `arc_swap::ArcSwapOption<T>` â€” callers get "cache on first read" for convenience and "force re-read on demand" for watchers that need fresh data; `detect_linux_desktop()` gains a no-arg convenience overload that removes the current two-call idiom
@@ -446,7 +482,10 @@ Plans:
   2. A test confirms `ctx.linux_desktop()` reads the environment once and returns the cached result on subsequent calls, and that after `ctx.invalidate_linux_desktop()` the next call re-reads
   3. `detect_linux_desktop()` with no arguments compiles and returns a `LinuxDesktop` â€” no two-call `let env = ...; detect_linux_desktop(&env)` idiom required
   4. A `grep -c OnceLock src/detect.rs src/model/icons.rs` returns zero â€” all global caching has moved to `DetectionContext`
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 71-01-PLAN.md — Rewrite Error enum per Option F with ErrorKind and RangeViolation
+- [ ] 71-02-PLAN.md — Two-vec validation split and caller migration
 
 ### Phase 84: Reader Output Contract Homogenisation
 **Goal**: The four platform readers share a unified `ReaderOutput` contract that expresses single-vs-dual variant semantics explicitly â€” `ReaderOutput::Single(ThemeMode)` for GNOME/KDE/Windows (the OS only reports the active mode), `ReaderOutput::Dual { light, dark }` for macOS (both modes readable), and the type flows through `run_pipeline` alongside the `OverlaySource` added in Phase 78
@@ -457,7 +496,10 @@ Plans:
   2. `run_pipeline` accepts `ReaderOutput` and `OverlaySource` and produces a `SystemTheme` without any per-platform branching logic in the pipeline itself
   3. A test confirms that the macOS `Dual` path populates both `sys.light` and `sys.dark` from a single reader call, while the KDE `Single` path populates only the active mode
   4. The previously-scattered "does this reader return both variants?" comments are gone â€” the type system expresses the contract
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 71-01-PLAN.md — Rewrite Error enum per Option F with ErrorKind and RangeViolation
+- [ ] 71-02-PLAN.md — Two-vec validation split and caller migration
 
 ### Phase 85: Data Model Method and Doc Cleanup
 **Goal**: `ThemeMode::resolve*` intermediates are demoted to `#[doc(hidden)] pub` so integration tests still reach them but rustdoc stops advertising them; `Theme`'s method grab-bag is cleaned up (including the coordinated removal of `from_toml_with_base` and the `error.rs:63` hint message); `ThemeWatcher` internals and constructor split are documented with a rename if the old name no longer fits; `FontSize::Px(v).to_px(dpi)` is renamed to `to_logical_px` so the DPI parameter stops being silently ignored in the `Px` branch
@@ -468,7 +510,10 @@ Plans:
   2. `from_toml_with_base` is gone and the `error.rs:63` hint message no longer references it â€” the hint points callers to the new intended path
   3. `FontSize::Px(v).to_logical_px(dpi)` exists, and a doctest asserts that the DPI parameter is still respected for the `Pt` branch while the `Px` branch returns `v` unchanged â€” the rename makes the asymmetry obvious at the call site
   4. `ThemeWatcher`'s internals and constructor split have a module-level doc block explaining the RAII ownership model, the shutdown mechanism, and why the public constructor is the way it is
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 71-01-PLAN.md — Rewrite Error enum per Option F with ErrorKind and RangeViolation
+- [ ] 71-02-PLAN.md — Two-vec validation split and caller migration
 
 ### Phase 86: Validation and Lint Codegen Polish
 **Goal**: `lint_toml` is driven by the `inventory::submit!` widget registry entries from Phase 80 instead of the ~215 hand-maintained string literals; `check_ranges` stops eager `format!` path-string construction so the fast path (everything in range) allocates zero path strings
@@ -479,7 +524,10 @@ Plans:
   2. Adding a new widget via the derive macro in Phase 80 automatically teaches `lint_toml` about it â€” verified by a test that registers a dummy widget and confirms `lint_toml` rejects an unknown field on the new widget
   3. Benchmark (or counted allocation test) confirms that `check_ranges` on a valid `ThemeMode` allocates zero path strings â€” strings are allocated lazily only when a range error is reported
   4. All existing range-check tests still pass with the lazy allocation path
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 71-01-PLAN.md — Rewrite Error enum per Option F with ErrorKind and RangeViolation
+- [ ] 71-02-PLAN.md — Two-vec validation split and caller migration
 
 ### Phase 87: Font Family Arc<str> and AnimatedIcon Invariants
 **Goal**: `FontSpec::family` migrates from `String` to `Arc<str>` across the core widget Ã— connector leak surface (needs `serde rc` feature flag; gpui and iced connector `.family` access updated in lockstep); `AnimatedIcon`'s public fields are replaced with newtype wrappers that enforce construction invariants, so users cannot construct an invalid `AnimatedIcon` by assigning to public fields
@@ -490,7 +538,10 @@ Plans:
   2. A benchmark (or allocation-counting test) confirms that cloning a `FontSpec` across widgets no longer clones the underlying family string â€” the `Arc<str>` is shared
   3. `AnimatedIcon::Frames { frames, duration, .. }` field access is replaced with a constructor (`AnimatedIcon::frames(frames, duration)?`) that returns `Result` on invalid input (e.g., empty frame list, zero duration)
   4. Attempting `AnimatedIcon::Frames { frames: vec![], duration: Duration::ZERO, .. }` fails to compile because the fields are no longer directly accessible â€” invariants are enforced by construction
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 71-01-PLAN.md — Rewrite Error enum per Option F with ErrorKind and RangeViolation
+- [ ] 71-02-PLAN.md — Two-vec validation split and caller migration
 **UI hint**: yes
 
 ### Phase 88: Diagnostic and Preset-Polish Sweep
@@ -503,7 +554,10 @@ Plans:
   3. A doctest loads `preset("default")` and confirms `preset.name.is_borrowed()` â€” bundled presets skip the owned-String allocation via `Cow::Borrowed`
   4. The `FontSpec::style` default behaviour is either documented in a rustdoc block (if kept as-is) or corrected to error like its siblings (if changed); likewise `defaults.border.padding` derives-from-presence
   5. A `grep -c "\\-live" src/` returns zero â€” the internal naming convention is no longer leaking into user-facing strings
-**Plans**: TBD
+**Plans**: 2 plans
+Plans:
+- [ ] 71-01-PLAN.md — Rewrite Error enum per Option F with ErrorKind and RangeViolation
+- [ ] 71-02-PLAN.md — Two-vec validation split and caller migration
 
 ## Progress
 
