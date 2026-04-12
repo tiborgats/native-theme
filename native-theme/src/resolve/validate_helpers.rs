@@ -216,25 +216,30 @@ pub(crate) fn require_border_partial(
 
 // --- Range-check helpers for validate() ---
 //
-// These push a descriptive message to the `errors` vec (reusing the same
-// error-collection pattern as require()) so that all problems -- missing
-// fields AND out-of-range values -- are reported in a single pass.
+// These push `RangeViolation` structs to the `errors` vec so that range
+// violations are reported as structured data, separate from missing fields.
 
 /// Check that an `f32` value is finite and non-negative (>= 0.0).
-pub(crate) fn check_non_negative(value: f32, path: &str, errors: &mut Vec<String>) {
+pub(crate) fn check_non_negative(value: f32, path: &str, errors: &mut Vec<crate::error::RangeViolation>) {
     if !value.is_finite() || value < 0.0 {
-        errors.push(format!(
-            "{path} must be a finite non-negative number, got {value}"
-        ));
+        errors.push(crate::error::RangeViolation {
+            path: path.to_string(),
+            value: value as f64,
+            min: Some(0.0),
+            max: None,
+        });
     }
 }
 
 /// Check that an `f32` value is finite and strictly positive (> 0.0).
-pub(crate) fn check_positive(value: f32, path: &str, errors: &mut Vec<String>) {
+pub(crate) fn check_positive(value: f32, path: &str, errors: &mut Vec<crate::error::RangeViolation>) {
     if !value.is_finite() || value <= 0.0 {
-        errors.push(format!(
-            "{path} must be a finite positive number, got {value}"
-        ));
+        errors.push(crate::error::RangeViolation {
+            path: path.to_string(),
+            value: value as f64,
+            min: Some(f64::MIN_POSITIVE),
+            max: None,
+        });
     }
 }
 
@@ -244,12 +249,15 @@ pub(crate) fn check_range_f32(
     min: f32,
     max: f32,
     path: &str,
-    errors: &mut Vec<String>,
+    errors: &mut Vec<crate::error::RangeViolation>,
 ) {
     if !value.is_finite() || value < min || value > max {
-        errors.push(format!(
-            "{path} must be a finite number between {min} and {max}, got {value}"
-        ));
+        errors.push(crate::error::RangeViolation {
+            path: path.to_string(),
+            value: value as f64,
+            min: Some(min as f64),
+            max: Some(max as f64),
+        });
     }
 }
 
@@ -259,10 +267,15 @@ pub(crate) fn check_range_u16(
     min: u16,
     max: u16,
     path: &str,
-    errors: &mut Vec<String>,
+    errors: &mut Vec<crate::error::RangeViolation>,
 ) {
     if value < min || value > max {
-        errors.push(format!("{path} must be {min}..={max}, got {value}"));
+        errors.push(crate::error::RangeViolation {
+            path: path.to_string(),
+            value: value as f64,
+            min: Some(min as f64),
+            max: Some(max as f64),
+        });
     }
 }
 
@@ -271,13 +284,16 @@ pub(crate) fn check_min_max(
     min_val: f32,
     max_val: f32,
     min_name: &str,
-    max_name: &str,
-    errors: &mut Vec<String>,
+    _max_name: &str,
+    errors: &mut Vec<crate::error::RangeViolation>,
 ) {
     if min_val > max_val {
-        errors.push(format!(
-            "{min_name} ({min_val}) must not exceed {max_name} ({max_val})"
-        ));
+        errors.push(crate::error::RangeViolation {
+            path: min_name.to_string(),
+            value: min_val as f64,
+            min: None,
+            max: Some(max_val as f64),
+        });
     }
 }
 
@@ -331,7 +347,7 @@ impl ValidateNested for BorderSpec {
 pub(crate) fn check_defaults_ranges(
     defaults: &crate::model::resolved::ResolvedThemeDefaults,
     text_scale: &crate::model::resolved::ResolvedTextScale,
-    errors: &mut Vec<String>,
+    errors: &mut Vec<crate::error::RangeViolation>,
 ) {
     // Fonts: size > 0, weight 100..=900
     check_positive(defaults.font.size, "defaults.font.size", errors);

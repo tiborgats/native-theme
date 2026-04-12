@@ -889,7 +889,7 @@ use crate::resolve::validate_helpers::{
 };
 
 impl ResolvedWindowTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_positive(
             self.title_bar_font.size,
             &format!("{prefix}.title_bar_font.size"),
@@ -906,7 +906,7 @@ impl ResolvedWindowTheme {
 }
 
 impl ResolvedButtonTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_non_negative(self.min_width, &format!("{prefix}.min_width"), errors);
         check_non_negative(self.min_height, &format!("{prefix}.min_height"), errors);
         check_non_negative(
@@ -933,7 +933,7 @@ impl ResolvedButtonTheme {
 }
 
 impl ResolvedInputTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_non_negative(self.min_height, &format!("{prefix}.min_height"), errors);
         check_range_f32(
             self.disabled_opacity,
@@ -954,7 +954,7 @@ impl ResolvedInputTheme {
 }
 
 impl ResolvedCheckboxTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_non_negative(
             self.indicator_width,
             &format!("{prefix}.indicator_width"),
@@ -980,7 +980,7 @@ impl ResolvedCheckboxTheme {
 }
 
 impl ResolvedMenuTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_non_negative(self.row_height, &format!("{prefix}.row_height"), errors);
         check_non_negative(
             self.icon_text_gap,
@@ -1000,7 +1000,7 @@ impl ResolvedMenuTheme {
 }
 
 impl ResolvedTooltipTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_non_negative(self.max_width, &format!("{prefix}.max_width"), errors);
         check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
         check_range_u16(
@@ -1014,7 +1014,7 @@ impl ResolvedTooltipTheme {
 }
 
 impl ResolvedScrollbarTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_non_negative(self.groove_width, &format!("{prefix}.groove_width"), errors);
         check_non_negative(
             self.min_thumb_length,
@@ -1026,7 +1026,7 @@ impl ResolvedScrollbarTheme {
 }
 
 impl ResolvedSliderTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_non_negative(self.track_height, &format!("{prefix}.track_height"), errors);
         check_non_negative(
             self.thumb_diameter,
@@ -1049,14 +1049,14 @@ impl ResolvedSliderTheme {
 }
 
 impl ResolvedProgressBarTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_non_negative(self.track_height, &format!("{prefix}.track_height"), errors);
         check_non_negative(self.min_width, &format!("{prefix}.min_width"), errors);
     }
 }
 
 impl ResolvedTabTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_non_negative(self.min_width, &format!("{prefix}.min_width"), errors);
         check_non_negative(self.min_height, &format!("{prefix}.min_height"), errors);
         check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
@@ -1071,7 +1071,7 @@ impl ResolvedTabTheme {
 }
 
 impl ResolvedSidebarTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
         check_range_u16(
             self.font.weight,
@@ -1084,7 +1084,7 @@ impl ResolvedSidebarTheme {
 }
 
 impl ResolvedToolbarTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_non_negative(self.bar_height, &format!("{prefix}.bar_height"), errors);
         check_non_negative(self.item_gap, &format!("{prefix}.item_gap"), errors);
         check_non_negative(self.icon_size, &format!("{prefix}.icon_size"), errors);
@@ -1100,7 +1100,7 @@ impl ResolvedToolbarTheme {
 }
 
 impl ResolvedStatusBarTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
         check_range_u16(
             self.font.weight,
@@ -1113,7 +1113,7 @@ impl ResolvedStatusBarTheme {
 }
 
 impl ResolvedListTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_non_negative(self.row_height, &format!("{prefix}.row_height"), errors);
         check_positive(
             self.item_font.size,
@@ -1143,7 +1143,7 @@ impl ResolvedListTheme {
 }
 
 impl ResolvedPopoverTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
         check_range_u16(
             self.font.weight,
@@ -1156,7 +1156,7 @@ impl ResolvedPopoverTheme {
 }
 
 impl ResolvedSplitterTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_non_negative(
             self.divider_width,
             &format!("{prefix}.divider_width"),
@@ -1166,13 +1166,13 @@ impl ResolvedSplitterTheme {
 }
 
 impl ResolvedSeparatorTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_non_negative(self.line_width, &format!("{prefix}.line_width"), errors);
     }
 }
 
 impl ResolvedSwitchTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_non_negative(self.track_width, &format!("{prefix}.track_width"), errors);
         check_non_negative(self.track_height, &format!("{prefix}.track_height"), errors);
         check_non_negative(
@@ -1192,7 +1192,7 @@ impl ResolvedSwitchTheme {
 }
 
 impl ResolvedDialogTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_non_negative(self.min_width, &format!("{prefix}.min_width"), errors);
         check_non_negative(self.max_width, &format!("{prefix}.max_width"), errors);
         check_non_negative(self.min_height, &format!("{prefix}.min_height"), errors);
@@ -1241,7 +1241,7 @@ impl ResolvedDialogTheme {
 }
 
 impl ResolvedSpinnerTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_non_negative(self.diameter, &format!("{prefix}.diameter"), errors);
         check_non_negative(self.min_diameter, &format!("{prefix}.min_diameter"), errors);
         check_non_negative(self.stroke_width, &format!("{prefix}.stroke_width"), errors);
@@ -1249,7 +1249,7 @@ impl ResolvedSpinnerTheme {
 }
 
 impl ResolvedLinkTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
         check_range_u16(
             self.font.weight,
@@ -1262,7 +1262,7 @@ impl ResolvedLinkTheme {
 }
 
 impl ResolvedComboBoxTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_non_negative(self.min_height, &format!("{prefix}.min_height"), errors);
         check_non_negative(self.min_width, &format!("{prefix}.min_width"), errors);
         check_non_negative(
@@ -1294,7 +1294,7 @@ impl ResolvedComboBoxTheme {
 }
 
 impl ResolvedSegmentedControlTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_non_negative(
             self.segment_height,
             &format!("{prefix}.segment_height"),
@@ -1324,7 +1324,7 @@ impl ResolvedSegmentedControlTheme {
 }
 
 impl ResolvedExpanderTheme {
-    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<String>) {
+    pub(crate) fn check_ranges(&self, prefix: &str, errors: &mut Vec<crate::error::RangeViolation>) {
         check_non_negative(
             self.header_height,
             &format!("{prefix}.header_height"),

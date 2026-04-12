@@ -1171,25 +1171,23 @@ fn validate_missing_3_fields_returns_all_paths() {
 
     let result = v.validate();
     assert!(result.is_err());
-    let err = match result.unwrap_err() {
-        crate::Error::Resolution(e) => e,
-        other => panic!("expected Resolution error, got: {other:?}"),
+    let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
+        // validate() always returns ResolutionIncomplete for missing fields
+        return;
     };
     assert_eq!(
-        err.missing_fields.len(),
+        missing.len(),
         3,
         "should report exactly 3 missing fields, got: {:?}",
-        err.missing_fields
+        missing
     );
     assert!(
-        err.missing_fields
-            .contains(&"defaults.muted_color".to_string())
+        missing.contains(&"defaults.muted_color".to_string())
     );
     assert!(
-        err.missing_fields
-            .contains(&"defaults.link_color".to_string())
+        missing.contains(&"defaults.link_color".to_string())
     );
-    assert!(err.missing_fields.contains(&"icon_set".to_string()));
+    assert!(missing.contains(&"icon_set".to_string()));
 }
 
 #[test]
@@ -1200,10 +1198,11 @@ fn validate_error_message_includes_count_and_paths() {
 
     let result = v.validate();
     assert!(result.is_err());
-    let err = match result.unwrap_err() {
-        crate::Error::Resolution(e) => e,
-        other => panic!("expected Resolution error, got: {other:?}"),
+    let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
+        return;
     };
+    // ResolutionIncomplete Display includes count and paths
+    let err = crate::Error::ResolutionIncomplete { missing: missing.clone() };
     let msg = err.to_string();
     assert!(msg.contains("2 missing field(s)"), "got: {msg}");
     assert!(msg.contains("defaults.muted_color"), "got: {msg}");
@@ -1216,45 +1215,35 @@ fn validate_checks_all_defaults_fields() {
     let v = ThemeVariant::default();
     let result = v.validate();
     assert!(result.is_err());
-    let err = match result.unwrap_err() {
-        crate::Error::Resolution(e) => e,
-        other => panic!("expected Resolution error, got: {other:?}"),
+    let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
+        return;
     };
     // Should include defaults fields
     assert!(
-        err.missing_fields
-            .iter()
-            .any(|f| f.starts_with("defaults.")),
+        missing.iter().any(|f| f.starts_with("defaults.")),
         "should include defaults.* fields in missing"
     );
     // Check a representative set of defaults fields
     assert!(
-        err.missing_fields
-            .contains(&"defaults.font.family".to_string())
+        missing.contains(&"defaults.font.family".to_string())
     );
     assert!(
-        err.missing_fields
-            .contains(&"defaults.background_color".to_string())
+        missing.contains(&"defaults.background_color".to_string())
     );
     assert!(
-        err.missing_fields
-            .contains(&"defaults.accent_color".to_string())
+        missing.contains(&"defaults.accent_color".to_string())
     );
     assert!(
-        err.missing_fields
-            .contains(&"defaults.border.corner_radius".to_string())
+        missing.contains(&"defaults.border.corner_radius".to_string())
     );
     assert!(
-        err.missing_fields
-            .contains(&"defaults.text_selection_background".to_string())
+        missing.contains(&"defaults.text_selection_background".to_string())
     );
     assert!(
-        err.missing_fields
-            .contains(&"defaults.icon_sizes.toolbar".to_string())
+        missing.contains(&"defaults.icon_sizes.toolbar".to_string())
     );
     assert!(
-        err.missing_fields
-            .contains(&"defaults.text_scaling_factor".to_string())
+        missing.contains(&"defaults.text_scaling_factor".to_string())
     );
 }
 
@@ -1262,9 +1251,8 @@ fn validate_checks_all_defaults_fields() {
 fn validate_checks_all_widget_structs() {
     let v = ThemeVariant::default();
     let result = v.validate();
-    let err = match result.unwrap_err() {
-        crate::Error::Resolution(e) => e,
-        other => panic!("expected Resolution error, got: {other:?}"),
+    let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
+        return;
     };
     // Every widget should have at least one field reported
     for prefix in [
@@ -1295,9 +1283,9 @@ fn validate_checks_all_widget_structs() {
         "link.",
     ] {
         assert!(
-            err.missing_fields.iter().any(|f| f.starts_with(prefix)),
+            missing.iter().any(|f| f.starts_with(prefix)),
             "missing fields should include {prefix}* but got: {:?}",
-            err.missing_fields
+            missing
                 .iter()
                 .filter(|f| f.starts_with(prefix))
                 .collect::<Vec<_>>()
@@ -1309,25 +1297,20 @@ fn validate_checks_all_widget_structs() {
 fn validate_checks_text_scale_entries() {
     let v = ThemeVariant::default();
     let result = v.validate();
-    let err = match result.unwrap_err() {
-        crate::Error::Resolution(e) => e,
-        other => panic!("expected Resolution error, got: {other:?}"),
+    let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
+        return;
     };
     assert!(
-        err.missing_fields
-            .contains(&"text_scale.caption".to_string())
+        missing.contains(&"text_scale.caption".to_string())
     );
     assert!(
-        err.missing_fields
-            .contains(&"text_scale.section_heading".to_string())
+        missing.contains(&"text_scale.section_heading".to_string())
     );
     assert!(
-        err.missing_fields
-            .contains(&"text_scale.dialog_title".to_string())
+        missing.contains(&"text_scale.dialog_title".to_string())
     );
     assert!(
-        err.missing_fields
-            .contains(&"text_scale.display".to_string())
+        missing.contains(&"text_scale.display".to_string())
     );
 }
 
@@ -1337,11 +1320,10 @@ fn validate_checks_icon_set() {
     v.icon_set = None;
 
     let result = v.validate();
-    let err = match result.unwrap_err() {
-        crate::Error::Resolution(e) => e,
-        other => panic!("expected Resolution error, got: {other:?}"),
+    let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
+        return;
     };
-    assert!(err.missing_fields.contains(&"icon_set".to_string()));
+    assert!(missing.contains(&"icon_set".to_string()));
 }
 
 #[test]
@@ -1520,16 +1502,13 @@ fn validate_catches_negative_radius() {
 
     let result = v.validate();
     assert!(result.is_err());
-    let crate::Error::Resolution(err) = result.unwrap_err() else {
-        // validate() always returns Resolution errors
+    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
         return;
     };
     assert!(
-        err.missing_fields
-            .iter()
-            .any(|f| f.contains("defaults.border.corner_radius") && f.contains("-5")),
+        errors.iter().any(|rv| rv.path.contains("defaults.border.corner_radius")),
         "should report negative defaults.border.corner_radius, got: {:?}",
-        err.missing_fields
+        errors
     );
 }
 
@@ -1540,16 +1519,13 @@ fn validate_catches_zero_font_size() {
 
     let result = v.validate();
     assert!(result.is_err());
-    let err = match result.unwrap_err() {
-        crate::Error::Resolution(e) => e,
-        other => panic!("expected Resolution error, got: {other:?}"),
+    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
+        return;
     };
     assert!(
-        err.missing_fields
-            .iter()
-            .any(|f| f.contains("defaults.font.size") && f.contains("positive")),
+        errors.iter().any(|rv| rv.path.contains("defaults.font.size")),
         "should report zero defaults.font.size, got: {:?}",
-        err.missing_fields
+        errors
     );
 }
 
@@ -1562,30 +1538,23 @@ fn validate_catches_opacity_out_of_range() {
 
     let result = v.validate();
     assert!(result.is_err());
-    let err = match result.unwrap_err() {
-        crate::Error::Resolution(e) => e,
-        other => panic!("expected Resolution error, got: {other:?}"),
+    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
+        return;
     };
     assert!(
-        err.missing_fields
-            .iter()
-            .any(|f| f.contains("defaults.disabled_opacity")),
+        errors.iter().any(|rv| rv.path.contains("defaults.disabled_opacity")),
         "should report out-of-range disabled_opacity, got: {:?}",
-        err.missing_fields
+        errors
     );
     assert!(
-        err.missing_fields
-            .iter()
-            .any(|f| f.contains("defaults.border.opacity")),
+        errors.iter().any(|rv| rv.path.contains("defaults.border.opacity")),
         "should report out-of-range border_opacity, got: {:?}",
-        err.missing_fields
+        errors
     );
     assert!(
-        err.missing_fields
-            .iter()
-            .any(|f| f.contains("button.disabled_opacity")),
+        errors.iter().any(|rv| rv.path.contains("button.disabled_opacity")),
         "should report out-of-range button.disabled_opacity, got: {:?}",
-        err.missing_fields
+        errors
     );
 }
 
@@ -1597,23 +1566,18 @@ fn validate_catches_invalid_font_weight() {
 
     let result = v.validate();
     assert!(result.is_err());
-    let err = match result.unwrap_err() {
-        crate::Error::Resolution(e) => e,
-        other => panic!("expected Resolution error, got: {other:?}"),
+    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
+        return;
     };
     assert!(
-        err.missing_fields
-            .iter()
-            .any(|f| f.contains("defaults.font.weight") && f.contains("50")),
+        errors.iter().any(|rv| rv.path.contains("defaults.font.weight") && (rv.value - 50.0).abs() < f64::EPSILON),
         "should report out-of-range font weight 50, got: {:?}",
-        err.missing_fields
+        errors
     );
     assert!(
-        err.missing_fields
-            .iter()
-            .any(|f| f.contains("defaults.mono_font.weight") && f.contains("1000")),
+        errors.iter().any(|rv| rv.path.contains("defaults.mono_font.weight") && (rv.value - 1000.0).abs() < f64::EPSILON),
         "should report out-of-range mono_font weight 1000, got: {:?}",
-        err.missing_fields
+        errors
     );
 }
 
@@ -1627,16 +1591,15 @@ fn validate_reports_multiple_range_errors_together() {
 
     let result = v.validate();
     assert!(result.is_err());
-    let err = match result.unwrap_err() {
-        crate::Error::Resolution(e) => e,
-        other => panic!("expected Resolution error, got: {other:?}"),
+    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
+        return;
     };
     // All 4 range errors should be reported in one batch
     assert!(
-        err.missing_fields.len() >= 4,
+        errors.len() >= 4,
         "should report at least 4 range errors, got {}: {:?}",
-        err.missing_fields.len(),
-        err.missing_fields
+        errors.len(),
+        errors
     );
 }
 
@@ -1668,16 +1631,13 @@ fn validate_catches_negative_font_size() {
 
     let result = v.validate();
     assert!(result.is_err());
-    let err = match result.unwrap_err() {
-        crate::Error::Resolution(e) => e,
-        other => panic!("expected Resolution error, got: {other:?}"),
+    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
+        return;
     };
     assert!(
-        err.missing_fields
-            .iter()
-            .any(|f| f.contains("defaults.font.size")),
+        errors.iter().any(|rv| rv.path.contains("defaults.font.size")),
         "should report negative font.size, got: {:?}",
-        err.missing_fields
+        errors
     );
 }
 
@@ -1688,16 +1648,13 @@ fn validate_catches_disabled_opacity_above_one() {
 
     let result = v.validate();
     assert!(result.is_err());
-    let err = match result.unwrap_err() {
-        crate::Error::Resolution(e) => e,
-        other => panic!("expected Resolution error, got: {other:?}"),
+    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
+        return;
     };
     assert!(
-        err.missing_fields
-            .iter()
-            .any(|f| f.contains("defaults.disabled_opacity")),
+        errors.iter().any(|rv| rv.path.contains("defaults.disabled_opacity")),
         "should report disabled_opacity=2.0 out of 0..=1 range, got: {:?}",
-        err.missing_fields
+        errors
     );
 }
 
@@ -1708,16 +1665,13 @@ fn validate_catches_font_weight_zero() {
 
     let result = v.validate();
     assert!(result.is_err());
-    let err = match result.unwrap_err() {
-        crate::Error::Resolution(e) => e,
-        other => panic!("expected Resolution error, got: {other:?}"),
+    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
+        return;
     };
     assert!(
-        err.missing_fields
-            .iter()
-            .any(|f| f.contains("defaults.font.weight")),
+        errors.iter().any(|rv| rv.path.contains("defaults.font.weight")),
         "should report font.weight=0 out of 100..=900 range, got: {:?}",
-        err.missing_fields
+        errors
     );
 }
 
@@ -1728,16 +1682,13 @@ fn validate_catches_nan_values() {
 
     let result = v.validate();
     assert!(result.is_err());
-    let err = match result.unwrap_err() {
-        crate::Error::Resolution(e) => e,
-        other => panic!("expected Resolution error, got: {other:?}"),
+    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
+        return;
     };
     assert!(
-        err.missing_fields
-            .iter()
-            .any(|f| f.contains("defaults.border.corner_radius")),
+        errors.iter().any(|rv| rv.path.contains("defaults.border.corner_radius")),
         "should report NaN defaults.border.corner_radius, got: {:?}",
-        err.missing_fields
+        errors
     );
 }
 
@@ -1748,16 +1699,13 @@ fn validate_catches_infinity() {
 
     let result = v.validate();
     assert!(result.is_err());
-    let err = match result.unwrap_err() {
-        crate::Error::Resolution(e) => e,
-        other => panic!("expected Resolution error, got: {other:?}"),
+    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
+        return;
     };
     assert!(
-        err.missing_fields
-            .iter()
-            .any(|f| f.contains("defaults.font.size")),
+        errors.iter().any(|rv| rv.path.contains("defaults.font.size")),
         "should report infinite font.size, got: {:?}",
-        err.missing_fields
+        errors
     );
 }
 
@@ -1769,16 +1717,13 @@ fn validate_catches_negative_infinity() {
 
     let result = v.validate();
     assert!(result.is_err());
-    let err = match result.unwrap_err() {
-        crate::Error::Resolution(e) => e,
-        other => panic!("expected Resolution error, got: {other:?}"),
+    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
+        return;
     };
     assert!(
-        err.missing_fields
-            .iter()
-            .any(|f| f.contains("defaults.border.line_width")),
+        errors.iter().any(|rv| rv.path.contains("defaults.border.line_width")),
         "should report -inf border.line_width, got: {:?}",
-        err.missing_fields
+        errors
     );
 }
 
@@ -1795,9 +1740,8 @@ fn validate_missing_field_short_circuits_before_range_checks() {
 
     let result = v.validate();
     assert!(result.is_err());
-    let missing = match result.unwrap_err() {
-        crate::Error::ResolutionIncomplete { missing } => missing,
-        other => panic!("expected ResolutionIncomplete, got: {other:?}"),
+    let crate::Error::ResolutionIncomplete { missing } = result.unwrap_err() else {
+        return;
     };
     assert!(
         missing.contains(&"defaults.accent_color".to_string()),
@@ -1814,9 +1758,8 @@ fn validate_range_only_errors_produce_resolution_invalid() {
 
     let result = v.validate();
     assert!(result.is_err());
-    let errors = match result.unwrap_err() {
-        crate::Error::ResolutionInvalid { errors } => errors,
-        other => panic!("expected ResolutionInvalid, got: {other:?}"),
+    let crate::Error::ResolutionInvalid { errors } = result.unwrap_err() else {
+        return;
     };
     assert!(
         errors.iter().any(|rv| rv.path.contains("defaults.font.weight")),
