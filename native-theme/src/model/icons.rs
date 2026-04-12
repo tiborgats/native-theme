@@ -30,7 +30,7 @@ use serde::{Deserialize, Serialize};
 /// # Examples
 ///
 /// ```
-/// use native_theme::IconRole;
+/// use native_theme::theme::IconRole;
 ///
 /// let role = IconRole::ActionSave;
 /// match role {
@@ -214,7 +214,7 @@ impl IconRole {
 /// # Examples
 ///
 /// ```
-/// use native_theme::IconData;
+/// use native_theme::theme::IconData;
 ///
 /// let svg = IconData::Svg(b"<svg></svg>".to_vec());
 /// match svg {
@@ -258,7 +258,7 @@ pub enum IconData {
 /// # Examples
 ///
 /// ```
-/// use native_theme::IconSet;
+/// use native_theme::theme::IconSet;
 ///
 /// let set = IconSet::from_name("sf-symbols").unwrap();
 /// assert_eq!(set, IconSet::SfSymbols);
@@ -347,7 +347,7 @@ impl IconSet {
 /// # Examples
 ///
 /// ```
-/// use native_theme::{IconProvider, IconSet};
+/// use native_theme::theme::{IconProvider, IconSet};
 ///
 /// #[derive(Debug)]
 /// enum MyIcon { Play, Pause }
@@ -394,7 +394,7 @@ impl IconProvider for IconRole {
 /// # Examples
 ///
 /// ```
-/// use native_theme::{IconSet, IconRole, icon_name};
+/// use native_theme::theme::{IconSet, IconRole, icon_name};
 ///
 /// assert_eq!(icon_name(IconRole::ActionCopy, IconSet::SfSymbols), Some("doc.on.doc"));
 /// assert_eq!(icon_name(IconRole::ActionCopy, IconSet::Freedesktop), Some("edit-copy"));
@@ -424,7 +424,7 @@ pub fn icon_name(role: IconRole, set: IconSet) -> Option<&'static str> {
 /// # Examples
 ///
 /// ```
-/// use native_theme::{IconSet, system_icon_set};
+/// use native_theme::theme::{IconSet, system_icon_set};
 ///
 /// let set = system_icon_set();
 /// // On Linux, this returns Freedesktop
@@ -462,7 +462,7 @@ pub fn system_icon_set() -> IconSet {
 /// # Examples
 ///
 /// ```
-/// use native_theme::system_icon_theme;
+/// use native_theme::theme::system_icon_theme;
 ///
 /// let theme = system_icon_theme();
 /// // On a KDE system with Breeze Dark: "breeze-dark"

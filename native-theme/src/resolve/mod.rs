@@ -100,7 +100,7 @@ impl ThemeMode {
     /// # Examples
     ///
     /// ```
-    /// use native_theme::Theme;
+    /// use native_theme::theme::Theme;
     ///
     /// let theme = Theme::preset("dracula").unwrap();
     /// let variant = theme.dark.unwrap();

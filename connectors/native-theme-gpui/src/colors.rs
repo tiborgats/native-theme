@@ -7,14 +7,14 @@
 
 use gpui::Hsla;
 use gpui_component::theme::ThemeColor;
-use native_theme::ResolvedTheme;
+use native_theme::theme::ResolvedTheme;
 
 use crate::derive::{active_color, contrast_ratio, hover_color, light_variant};
 
-/// Convert a `native_theme::Rgba` to `gpui::Hsla`.
+/// Convert a `native_theme::color::Rgba` to `gpui::Hsla`.
 ///
 /// The input is clamped to [0.0, 1.0] per channel before conversion.
-pub(crate) fn rgba_to_hsla(rgba: native_theme::Rgba) -> Hsla {
+pub(crate) fn rgba_to_hsla(rgba: native_theme::color::Rgba) -> Hsla {
     let [r, g, b, a] = rgba.to_f32_array();
     let gpui_rgba = gpui::Rgba {
         r: r.clamp(0.0, 1.0),
@@ -357,12 +357,7 @@ fn assign_charts(tc: &mut ThemeColor, c: &ResolvedColors) {
     };
 }
 
-fn assign_misc(
-    tc: &mut ThemeColor,
-    c: &ResolvedColors,
-    resolved: &ResolvedTheme,
-    is_dark: bool,
-) {
+fn assign_misc(tc: &mut ThemeColor, c: &ResolvedColors, resolved: &ResolvedTheme, is_dark: bool) {
     tc.popover = c.popover;
     tc.popover_foreground = c.popover_fg;
 
@@ -470,7 +465,7 @@ fn assign_base_colors(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use native_theme::Theme;
+    use native_theme::theme::Theme;
 
     /// Create a dark ResolvedTheme for catppuccin-mocha.
     ///
@@ -499,7 +494,7 @@ mod tests {
 
     #[test]
     fn rgba_to_hsla_converts_red() {
-        let red = native_theme::Rgba::rgb(255, 0, 0);
+        let red = native_theme::color::Rgba::rgb(255, 0, 0);
         let result = rgba_to_hsla(red);
         // Red should have hue ~0 (or near 0/1), high saturation
         assert!(
@@ -512,7 +507,7 @@ mod tests {
 
     #[test]
     fn rgba_to_hsla_converts_green() {
-        let green = native_theme::Rgba::rgb(0, 255, 0);
+        let green = native_theme::color::Rgba::rgb(0, 255, 0);
         let result = rgba_to_hsla(green);
         // Green hue ~0.333
         assert!(
@@ -524,7 +519,7 @@ mod tests {
 
     #[test]
     fn rgba_to_hsla_converts_blue() {
-        let blue = native_theme::Rgba::rgb(0, 0, 255);
+        let blue = native_theme::color::Rgba::rgb(0, 0, 255);
         let result = rgba_to_hsla(blue);
         // Blue hue ~0.667
         assert!(
@@ -538,7 +533,7 @@ mod tests {
     #[test]
     fn rgba_to_hsla_clamps_out_of_range() {
         // Verify no panic on values that would be out of [0,1] range
-        let c = native_theme::Rgba::from_f32(1.5, -0.1, 0.5, 2.0);
+        let c = native_theme::color::Rgba::from_f32(1.5, -0.1, 0.5, 2.0);
         let result = rgba_to_hsla(c);
         assert!(result.a <= 1.0, "alpha should be clamped to 1.0");
     }

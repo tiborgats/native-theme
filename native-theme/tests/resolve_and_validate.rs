@@ -7,7 +7,9 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use native_theme::*;
+use native_theme::color::Rgba;
+use native_theme::error::Error;
+use native_theme::theme::*;
 
 // ---------------------------------------------------------------------------
 // Issue 2j: resolve() idempotency

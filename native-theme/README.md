@@ -22,7 +22,7 @@ cargo add native-theme
 Load a preset and access theme fields:
 
 ```rust
-let theme = native_theme::Theme::preset("dracula").unwrap();
+let theme = native_theme::theme::Theme::preset("dracula").unwrap();
 let dark = theme.dark.as_ref().unwrap();
 let accent = dark.defaults.accent_color.unwrap();   // Option<Rgba>
 let bg = dark.defaults.background_color.unwrap();   // Option<Rgba>
@@ -46,7 +46,7 @@ The `merge()` method fills in only the fields present in the overlay,
 leaving everything else from the base preset intact.
 
 ```rust
-use native_theme::Theme;
+use native_theme::theme::Theme;
 let mut theme = Theme::preset("nord").unwrap();
 let user_overrides = Theme::from_toml(r##"
 name = "My Custom Nord"
@@ -138,7 +138,8 @@ native_theme_build::generate_icons("icons/icons.toml")
 // src/lib.rs
 include!(concat!(env!("OUT_DIR"), "/app_icon.rs"));
 
-use native_theme::{load_custom_icon, IconSet};
+use native_theme::icons::load_custom_icon;
+use native_theme::theme::IconSet;
 let icon = load_custom_icon(&AppIcon::PlayPause, IconSet::Material, None);
 ```
 
@@ -158,7 +159,9 @@ matching the requested icon set (Material, Lucide, macOS, Windows, Adwaita,
 or a freedesktop theme's `process-working` animation):
 
 ```rust,ignore
-use native_theme::{loading_indicator, prefers_reduced_motion, AnimatedIcon, IconSet};
+use native_theme::icons::loading_indicator;
+use native_theme::detect::prefers_reduced_motion;
+use native_theme::theme::{AnimatedIcon, IconSet};
 
 if let Some(anim) = loading_indicator(IconSet::Material) {
     if prefers_reduced_motion() {

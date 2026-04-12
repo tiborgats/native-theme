@@ -87,21 +87,21 @@ macro_rules! impl_merge {
 /// Color types and sRGB utilities.
 pub mod color;
 /// OS detection: dark mode, reduced motion, DPI, desktop environment.
-mod detect;
+pub mod detect;
 /// Error types for theme operations.
 pub mod error;
 /// GNOME portal theme reader.
 #[cfg(all(target_os = "linux", feature = "portal"))]
 pub mod gnome;
 /// Icon loading and dispatch.
-mod icons;
+pub mod icons;
 /// KDE theme reader.
 #[cfg(all(target_os = "linux", feature = "kde"))]
 pub mod kde;
 /// Theme data model types.
 pub mod model;
 /// Theme pipeline: reader -> preset merge -> resolve -> validate.
-mod pipeline;
+pub mod pipeline;
 /// Bundled theme presets.
 pub mod presets;
 /// Theme resolution engine (inheritance + validation).
@@ -116,21 +116,15 @@ mod spinners;
 #[cfg(feature = "watch")]
 pub mod watch;
 
-pub use color::{ParseColorError, Rgba};
-pub use error::{Error, ErrorKind, RangeViolation};
-pub use model::{
-    AnimatedIcon, BorderSpec, ButtonTheme, CardTheme, CheckboxTheme, ComboBoxTheme,
-    DialogButtonOrder, DialogTheme, ExpanderTheme, FontSize, FontSpec, FontStyle, IconData,
-    IconProvider, IconRole, IconSet, IconSizes, InputTheme, LayoutTheme, LinkTheme, ListTheme,
-    MenuTheme, PopoverTheme, ProgressBarTheme, ResolvedBorderSpec, ResolvedFontSpec,
-    ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedDefaults,
-    ResolvedTheme, ScrollbarTheme, SegmentedControlTheme, SeparatorTheme, SidebarTheme,
-    SliderTheme, SpinnerTheme, SplitterTheme, StatusBarTheme, SwitchTheme, TabTheme, TextScale,
-    TextScaleEntry, ThemeDefaults, Theme, ThemeMode, ToolbarTheme, TooltipTheme,
-    TransformAnimation, WindowTheme, bundled_icon_by_name, bundled_icon_svg,
-};
-// icon helper functions re-exported from this module
-pub use model::icons::{detect_icon_theme, icon_name, system_icon_set, system_icon_theme};
+/// Theme data model: types, defaults, fonts, borders, widgets.
+///
+/// Core types: [`Theme`](theme::Theme), [`ThemeMode`](theme::ThemeMode),
+/// [`ResolvedTheme`](theme::ResolvedTheme), [`ResolvedDefaults`](theme::ResolvedDefaults).
+///
+/// Re-exports from the internal model module.
+pub mod theme {
+    pub use crate::model::*;
+}
 
 /// Freedesktop icon theme lookup (Linux).
 #[cfg(all(target_os = "linux", feature = "system-icons"))]
@@ -159,48 +153,48 @@ pub mod winicons;
 #[allow(dead_code, unused_imports)]
 pub(crate) mod winicons;
 
-#[cfg(all(target_os = "linux", feature = "system-icons"))]
-pub use freedesktop::{load_freedesktop_icon, load_freedesktop_icon_by_name};
-#[cfg(all(target_os = "linux", feature = "portal"))]
-pub use gnome::from_gnome;
-#[cfg(all(target_os = "linux", feature = "portal", feature = "kde"))]
-pub use gnome::from_kde_with_portal;
-#[cfg(all(target_os = "linux", feature = "kde"))]
-pub use kde::from_kde;
-#[cfg(all(target_os = "macos", feature = "macos"))]
-pub use macos::from_macos;
-#[cfg(feature = "svg-rasterize")]
-pub use rasterize::rasterize_svg;
-#[cfg(all(target_os = "macos", feature = "system-icons"))]
-pub use sficons::load_sf_icon;
-#[cfg(all(target_os = "macos", feature = "system-icons"))]
-pub use sficons::load_sf_icon_by_name;
-#[cfg(all(target_os = "windows", feature = "windows"))]
-pub use windows::from_windows;
-#[cfg(all(target_os = "windows", feature = "system-icons"))]
-pub use winicons::load_windows_icon;
-#[cfg(all(target_os = "windows", feature = "system-icons"))]
-pub use winicons::load_windows_icon_by_name;
+/// Convenience Result type alias for this crate.
+pub type Result<T> = std::result::Result<T, error::Error>;
 
-#[cfg(feature = "watch")]
-pub use watch::{ThemeChangeEvent, ThemeWatcher, on_theme_change};
-
+// Internal re-exports: keep crate::Type paths working for internal modules
+// without exposing them in the public API. External users access types via
+// native_theme::theme::*, native_theme::icons::*, native_theme::detect::*, etc.
+#[allow(unused_imports)]
+pub(crate) use color::{ParseColorError, Rgba};
 #[cfg(target_os = "linux")]
-pub use detect::LinuxDesktop;
+#[allow(unused_imports)]
+pub(crate) use detect::LinuxDesktop;
 #[cfg(target_os = "linux")]
-pub use detect::detect_linux_de;
-pub use detect::{
+#[allow(unused_imports)]
+pub(crate) use detect::detect_linux_de;
+#[allow(unused_imports)]
+pub(crate) use detect::{
     detect_is_dark, detect_reduced_motion, invalidate_caches, prefers_reduced_motion,
     system_is_dark,
 };
-pub use icons::{
+#[allow(unused_imports)]
+pub(crate) use error::{Error, ErrorKind, RangeViolation};
+#[allow(unused_imports)]
+pub(crate) use icons::{
     is_freedesktop_theme_available, load_custom_icon, load_icon, load_icon_from_theme,
     load_system_icon_by_name, loading_indicator,
 };
-pub use pipeline::{diagnose_platform_support, platform_preset_name};
-
-/// Convenience Result type alias for this crate.
-pub type Result<T> = std::result::Result<T, Error>;
+#[allow(unused_imports)]
+pub(crate) use model::icons::{detect_icon_theme, icon_name, system_icon_set, system_icon_theme};
+#[allow(unused_imports)]
+pub(crate) use model::{
+    AnimatedIcon, BorderSpec, ButtonTheme, CardTheme, CheckboxTheme, ComboBoxTheme,
+    DialogButtonOrder, DialogTheme, ExpanderTheme, FontSize, FontSpec, FontStyle, IconData,
+    IconProvider, IconRole, IconSet, IconSizes, InputTheme, LayoutTheme, LinkTheme, ListTheme,
+    MenuTheme, PopoverTheme, ProgressBarTheme, ResolvedBorderSpec, ResolvedDefaults,
+    ResolvedFontSpec, ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme,
+    ScrollbarTheme, SegmentedControlTheme, SeparatorTheme, SidebarTheme, SliderTheme, SpinnerTheme,
+    SplitterTheme, StatusBarTheme, SwitchTheme, TabTheme, TextScale, TextScaleEntry, Theme,
+    ThemeDefaults, ThemeMode, ToolbarTheme, TooltipTheme, TransformAnimation, WindowTheme,
+    bundled_icon_by_name, bundled_icon_svg,
+};
+#[allow(unused_imports)]
+pub(crate) use pipeline::{diagnose_platform_support, platform_preset_name};
 
 /// Result of the OS-first pipeline. Holds both resolved variants.
 ///
@@ -262,7 +256,7 @@ impl SystemTheme {
     ///
     /// ```no_run
     /// let system = native_theme::SystemTheme::from_system().unwrap();
-    /// let overlay = native_theme::Theme::from_toml(r##"
+    /// let overlay = native_theme::theme::Theme::from_toml(r##"
     ///     [light.defaults]
     ///     accent_color = "#ff6600"
     ///     [dark.defaults]

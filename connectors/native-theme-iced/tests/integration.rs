@@ -1,6 +1,6 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use native_theme::Theme;
+use native_theme::theme::Theme;
 use native_theme_iced::{from_preset, to_theme};
 
 #[test]

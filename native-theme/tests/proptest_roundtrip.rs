@@ -9,7 +9,8 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use native_theme::*;
+use native_theme::color::Rgba;
+use native_theme::theme::*;
 use proptest::prelude::*;
 
 // ── Leaf strategies ─────────────────────────────────────────────────────────

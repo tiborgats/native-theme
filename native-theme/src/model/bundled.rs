@@ -19,7 +19,7 @@ use super::icons::{IconRole, IconSet};
 /// # Examples
 ///
 /// ```
-/// use native_theme::{IconSet, IconRole, bundled_icon_svg};
+/// use native_theme::theme::{IconSet, IconRole, bundled_icon_svg};
 ///
 /// // Without features enabled, bundled icons return None
 /// let result = bundled_icon_svg(IconRole::ActionCopy, IconSet::SfSymbols);
@@ -185,7 +185,7 @@ fn lucide_svg(role: IconRole) -> Option<&'static [u8]> {
 /// # Examples
 ///
 /// ```
-/// use native_theme::{IconSet, bundled_icon_by_name};
+/// use native_theme::theme::{IconSet, bundled_icon_by_name};
 ///
 /// // Without features enabled, bundled icons return None
 /// let result = bundled_icon_by_name("check", IconSet::SfSymbols);

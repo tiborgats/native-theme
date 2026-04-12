@@ -627,7 +627,7 @@ static CACHED_REDUCED_MOTION: std::sync::RwLock<Option<bool>> = std::sync::RwLoc
 /// # Examples
 ///
 /// ```
-/// let reduced = native_theme::prefers_reduced_motion();
+/// let reduced = native_theme::detect::prefers_reduced_motion();
 /// // On this platform, the result depends on OS accessibility settings.
 /// // The function always returns a bool (false on unsupported platforms).
 /// assert!(reduced == true || reduced == false);

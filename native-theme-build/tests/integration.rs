@@ -87,7 +87,7 @@ fn happy_path_has_icon_provider_impl() {
     assert!(
         output
             .code
-            .contains("impl native_theme::IconProvider for SampleIcon"),
+            .contains("impl native_theme::theme::IconProvider for SampleIcon"),
         "should have IconProvider impl"
     );
 }
@@ -97,14 +97,14 @@ fn happy_path_icon_name_material() {
     let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
 
     assert!(
-        output
-            .code
-            .contains("(Self::PlayPause, native_theme::IconSet::Material) => Some(\"play_pause\")"),
+        output.code.contains(
+            "(Self::PlayPause, native_theme::theme::IconSet::Material) => Some(\"play_pause\")"
+        ),
         "should have Material icon_name arm for PlayPause"
     );
     assert!(
         output.code.contains(
-            "(Self::SkipForward, native_theme::IconSet::Material) => Some(\"skip_next\")"
+            "(Self::SkipForward, native_theme::theme::IconSet::Material) => Some(\"skip_next\")"
         ),
         "should have Material icon_name arm for SkipForward"
     );
@@ -115,14 +115,14 @@ fn happy_path_icon_name_sf_symbols() {
     let output = generate_fixture(&fixtures_dir().join("sample-icons.toml"));
 
     assert!(
-        output
-            .code
-            .contains("(Self::PlayPause, native_theme::IconSet::SfSymbols) => Some(\"play.fill\")"),
+        output.code.contains(
+            "(Self::PlayPause, native_theme::theme::IconSet::SfSymbols) => Some(\"play.fill\")"
+        ),
         "should have SfSymbols icon_name arm for PlayPause"
     );
     assert!(
         output.code.contains(
-            "(Self::SkipForward, native_theme::IconSet::SfSymbols) => Some(\"forward.fill\")"
+            "(Self::SkipForward, native_theme::theme::IconSet::SfSymbols) => Some(\"forward.fill\")"
         ),
         "should have SfSymbols icon_name arm for SkipForward"
     );
@@ -425,14 +425,16 @@ reveal = { kde = "view-visible", default = "view-reveal" }
         output.code
     );
     assert!(
-        output.code.contains("native_theme::detect_linux_de("),
+        output
+            .code
+            .contains("native_theme::detect::detect_linux_de("),
         "should call detect_linux_de. code:\n{}",
         output.code
     );
     assert!(
         output
             .code
-            .contains("native_theme::LinuxDesktop::Kde => Some(\"view-visible\")"),
+            .contains("native_theme::detect::LinuxDesktop::Kde => Some(\"view-visible\")"),
         "should have KDE-specific arm. code:\n{}",
         output.code
     );

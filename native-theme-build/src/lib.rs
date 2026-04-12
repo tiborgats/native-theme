@@ -2257,7 +2257,7 @@ bundled-themes = ["material"]
         assert!(
             result
                 .code
-                .contains("impl my_crate::native_theme::IconProvider"),
+                .contains("impl my_crate::native_theme::theme::IconProvider"),
             "should use custom crate path in impl. code:\n{}",
             result.code
         );

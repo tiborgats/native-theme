@@ -6,7 +6,8 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use native_theme::*;
+use native_theme::color::Rgba;
+use native_theme::theme::*;
 
 // ---------------------------------------------------------------------------
 // Helper: build a fully populated ThemeMode with distinct values

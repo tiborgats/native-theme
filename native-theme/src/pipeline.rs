@@ -167,7 +167,7 @@ pub fn platform_preset_name() -> &'static str {
 /// # Examples
 ///
 /// ```
-/// let diagnostics = native_theme::diagnose_platform_support();
+/// let diagnostics = native_theme::pipeline::diagnose_platform_support();
 /// for line in &diagnostics {
 ///     println!("{}", line);
 /// }
@@ -635,7 +635,7 @@ ForegroundLink=41,128,185";
 )]
 mod pipeline_tests {
     use crate::color::Rgba;
-    use crate::model::{ThemeDefaults, Theme, ThemeMode};
+    use crate::model::{Theme, ThemeDefaults, ThemeMode};
 
     use super::{reader_is_dark, run_pipeline};
 

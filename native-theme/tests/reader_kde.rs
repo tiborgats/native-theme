@@ -6,9 +6,10 @@
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 #![cfg(feature = "kde")]
 
+use native_theme::color::Rgba;
 use native_theme::kde::from_kde_content_pure;
 use native_theme::model::font::FontSize;
-use native_theme::{DialogButtonOrder, Rgba};
+use native_theme::theme::DialogButtonOrder;
 
 // === Breeze Dark (full fixture) ===
 

@@ -1,4 +1,4 @@
-//! Maps [`native_theme::ResolvedTheme`] colors to an [`iced_core::theme::Palette`].
+//! Maps [`native_theme::theme::ResolvedTheme`] colors to an [`iced_core::theme::Palette`].
 //!
 //! The palette has 6 fields: background, text, primary, success, warning, danger.
 //! Each is mapped directly from the corresponding resolved theme color -- no
@@ -9,7 +9,7 @@
 //! (e.g., `shadow`, `selection_inactive`) may carry meaningful alpha values;
 //! use [`to_color()`] to convert them when needed.
 
-use native_theme::Rgba;
+use native_theme::color::Rgba;
 
 /// Convert a [`native_theme::Rgba`] to [`iced_core::Color`].
 ///
@@ -22,7 +22,7 @@ pub fn to_color(rgba: Rgba) -> iced_core::Color {
     iced_core::Color { r, g, b, a }
 }
 
-/// Build an iced [`iced_core::theme::Palette`] from a [`native_theme::ResolvedTheme`].
+/// Build an iced [`iced_core::theme::Palette`] from a [`native_theme::theme::ResolvedTheme`].
 ///
 /// Maps the 6 palette fields directly from resolved defaults:
 /// - `background` <- `resolved.defaults.background_color`
@@ -32,7 +32,7 @@ pub fn to_color(rgba: Rgba) -> iced_core::Color {
 /// - `warning` <- `resolved.defaults.warning_color`
 /// - `danger` <- `resolved.defaults.danger_color`
 #[must_use]
-pub fn to_palette(resolved: &native_theme::ResolvedTheme) -> iced_core::theme::Palette {
+pub fn to_palette(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::theme::Palette {
     let d = &resolved.defaults;
 
     iced_core::theme::Palette {
@@ -49,7 +49,7 @@ pub fn to_palette(resolved: &native_theme::ResolvedTheme) -> iced_core::theme::P
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use native_theme::Theme;
+    use native_theme::theme::Theme;
 
     #[test]
     fn to_color_converts_rgba() {

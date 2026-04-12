@@ -6,7 +6,7 @@
 
 use gpui::SharedString;
 use gpui_component::theme::{ThemeConfig, ThemeConfigColors, ThemeMode as GpuiThemeMode};
-use native_theme::ResolvedTheme;
+use native_theme::theme::ResolvedTheme;
 
 use crate::colors::{hsla_to_hex, to_theme_color};
 
@@ -25,11 +25,7 @@ use crate::colors::{hsla_to_hex, to_theme_color};
 /// directly in `to_theme()` using `HighlightTheme::default_dark()` or
 /// `default_light()` based on `is_dark`. Custom syntax colors require the full
 /// `HighlightTheme` API.
-pub fn to_theme_config(
-    resolved: &ResolvedTheme,
-    name: &str,
-    mode: GpuiThemeMode,
-) -> ThemeConfig {
+pub fn to_theme_config(resolved: &ResolvedTheme, name: &str, mode: GpuiThemeMode) -> ThemeConfig {
     let d = &resolved.defaults;
     let is_dark = mode.is_dark();
 
@@ -186,10 +182,10 @@ fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> Theme
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use native_theme::Theme;
+    use native_theme::theme::Theme;
 
     /// Issue 1: fixed to use `into_variant(true)` for catppuccin-mocha (dark theme).
-    fn test_resolved() -> native_theme::ResolvedTheme {
+    fn test_resolved() -> native_theme::theme::ResolvedTheme {
         let nt = Theme::preset("catppuccin-mocha").expect("preset must exist");
         let variant = nt
             .into_variant(true)

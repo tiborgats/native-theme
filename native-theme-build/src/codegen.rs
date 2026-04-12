@@ -38,7 +38,7 @@ pub(crate) fn theme_name_to_icon_set(name: &str) -> Option<&'static str> {
 
 /// Returns the fully-qualified icon set path with crate prefix.
 pub(crate) fn theme_name_to_qualified_icon_set(name: &str, crate_path: &str) -> Option<String> {
-    theme_name_to_icon_set(name).map(|variant| format!("{crate_path}::{variant}"))
+    theme_name_to_icon_set(name).map(|variant| format!("{crate_path}::theme::{variant}"))
 }
 
 /// Maps a lowercase TOML DE key to its `LinuxDesktop::Variant` path (without crate prefix).
@@ -53,7 +53,7 @@ pub(crate) fn de_key_to_variant(key: &str) -> Option<&'static str> {
 
 /// Returns the fully-qualified DE variant path with crate prefix.
 pub(crate) fn de_key_to_qualified_variant(key: &str, crate_path: &str) -> Option<String> {
-    de_key_to_variant(key).map(|variant| format!("{crate_path}::{variant}"))
+    de_key_to_variant(key).map(|variant| format!("{crate_path}::detect::{variant}"))
 }
 
 /// Generates a complete Rust source file implementing a custom icon enum with `IconProvider`.
@@ -66,7 +66,7 @@ pub(crate) fn de_key_to_qualified_variant(key: &str, crate_path: &str) -> Option
 /// - `impl {crate_path}::IconProvider` with `icon_name()` and `icon_svg()` match arms
 ///
 /// For DE-aware mapping values, `icon_name()` emits cfg-gated runtime dispatch
-/// using `{crate_path}::detect_linux_de()`. On non-Linux, the default value is used.
+/// using `{crate_path}::detect::detect_linux_de()`. On non-Linux, the default value is used.
 ///
 /// When any DE-aware mapping exists, a `OnceLock`-based cache is emitted at the
 /// start of `icon_name()` to avoid re-reading `XDG_CURRENT_DESKTOP` on every call.
@@ -133,7 +133,10 @@ pub(crate) fn generate_code(
     let _ = writeln!(out);
 
     // IconProvider impl
-    let _ = writeln!(out, "impl {crate_path}::IconProvider for {enum_name} {{");
+    let _ = writeln!(
+        out,
+        "impl {crate_path}::theme::IconProvider for {enum_name} {{"
+    );
 
     // icon_name()
     generate_icon_name(&mut out, config, mappings, crate_path, &role_variants);
@@ -206,7 +209,7 @@ fn generate_icon_name(
 ) {
     let _ = writeln!(
         out,
-        "    fn icon_name(&self, set: {crate_path}::IconSet) -> Option<&str> {{"
+        "    fn icon_name(&self, set: {crate_path}::theme::IconSet) -> Option<&str> {{"
     );
 
     // Issue 6: OnceLock DE caching -- if ANY mapping is DE-aware, emit a
@@ -226,11 +229,11 @@ fn generate_icon_name(
         );
         let _ = writeln!(
             out,
-            "            static CACHED_DE: std::sync::OnceLock<{crate_path}::LinuxDesktop> = std::sync::OnceLock::new();"
+            "            static CACHED_DE: std::sync::OnceLock<{crate_path}::detect::LinuxDesktop> = std::sync::OnceLock::new();"
         );
         let _ = writeln!(
             out,
-            "            *CACHED_DE.get_or_init(|| {crate_path}::detect_linux_de(&std::env::var(\"XDG_CURRENT_DESKTOP\").unwrap_or_default()))"
+            "            *CACHED_DE.get_or_init(|| {crate_path}::detect::detect_linux_de(&std::env::var(\"XDG_CURRENT_DESKTOP\").unwrap_or_default()))"
         );
         let _ = writeln!(out, "        }};");
     }
@@ -354,7 +357,7 @@ fn generate_icon_svg(
 ) {
     let _ = writeln!(
         out,
-        "    fn icon_svg(&self, set: {crate_path}::IconSet) -> Option<&'static [u8]> {{"
+        "    fn icon_svg(&self, set: {crate_path}::theme::IconSet) -> Option<&'static [u8]> {{"
     );
     let _ = writeln!(out, "        match (self, set) {{");
 
@@ -532,11 +535,11 @@ play-pause = { kde = "media-playback-start", default = "play" }
     fn theme_name_qualified_includes_crate_path() {
         assert_eq!(
             theme_name_to_qualified_icon_set("material", "native_theme"),
-            Some("native_theme::IconSet::Material".to_string())
+            Some("native_theme::theme::IconSet::Material".to_string())
         );
         assert_eq!(
             theme_name_to_qualified_icon_set("material", "my_crate"),
-            Some("my_crate::IconSet::Material".to_string())
+            Some("my_crate::theme::IconSet::Material".to_string())
         );
     }
 
@@ -593,7 +596,7 @@ play-pause = { kde = "media-playback-start", default = "play" }
     fn generated_code_has_icon_provider_impl() {
         let (config, mappings) = sample_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
-        assert!(output.contains("impl native_theme::IconProvider for AppIcon"));
+        assert!(output.contains("impl native_theme::theme::IconProvider for AppIcon"));
     }
 
     #[test]
@@ -603,13 +606,13 @@ play-pause = { kde = "media-playback-start", default = "play" }
         // material bundled theme should have icon_name arms
         assert!(
             output.contains(
-                "(Self::PlayPause, native_theme::IconSet::Material) => Some(\"play_pause\")"
+                "(Self::PlayPause, native_theme::theme::IconSet::Material) => Some(\"play_pause\")"
             ),
             "missing material play-pause icon_name arm. output:\n{output}"
         );
         assert!(
             output.contains(
-                "(Self::SkipForward, native_theme::IconSet::Material) => Some(\"skip_next\")"
+                "(Self::SkipForward, native_theme::theme::IconSet::Material) => Some(\"skip_next\")"
             ),
             "missing material skip-forward icon_name arm"
         );
@@ -622,13 +625,13 @@ play-pause = { kde = "media-playback-start", default = "play" }
         // sf-symbols system theme should also have icon_name arms
         assert!(
             output.contains(
-                "(Self::PlayPause, native_theme::IconSet::SfSymbols) => Some(\"play.fill\")"
+                "(Self::PlayPause, native_theme::theme::IconSet::SfSymbols) => Some(\"play.fill\")"
             ),
             "missing sf-symbols play-pause icon_name arm. output:\n{output}"
         );
         assert!(
             output.contains(
-                "(Self::SkipForward, native_theme::IconSet::SfSymbols) => Some(\"forward.fill\")"
+                "(Self::SkipForward, native_theme::theme::IconSet::SfSymbols) => Some(\"forward.fill\")"
             ),
             "missing sf-symbols skip-forward icon_name arm"
         );
@@ -740,11 +743,11 @@ play-pause = { kde = "media-playback-start", default = "play" }
     fn de_key_qualified_includes_crate_path() {
         assert_eq!(
             de_key_to_qualified_variant("kde", "native_theme"),
-            Some("native_theme::LinuxDesktop::Kde".to_string())
+            Some("native_theme::detect::LinuxDesktop::Kde".to_string())
         );
         assert_eq!(
             de_key_to_qualified_variant("kde", "my_crate"),
-            Some("my_crate::LinuxDesktop::Kde".to_string())
+            Some("my_crate::detect::LinuxDesktop::Kde".to_string())
         );
         assert_eq!(de_key_to_qualified_variant("default", "native_theme"), None);
     }
@@ -769,7 +772,9 @@ play-pause = { kde = "media-playback-start", default = "play" }
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
         // Phase 24: KDE-specific arm "media-playback-start" SHOULD now appear
         assert!(
-            output.contains("native_theme::LinuxDesktop::Kde => Some(\"media-playback-start\")"),
+            output.contains(
+                "native_theme::detect::LinuxDesktop::Kde => Some(\"media-playback-start\")"
+            ),
             "DE-aware codegen should generate KDE-specific arm. output:\n{output}"
         );
     }
@@ -801,7 +806,7 @@ play-pause = { kde = "media-playback-start", default = "play" }
         let (config, mappings) = de_aware_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
         assert!(
-            output.contains("native_theme::detect_linux_de("),
+            output.contains("native_theme::detect::detect_linux_de("),
             "DE-aware codegen should call detect_linux_de. output:\n{output}"
         );
     }
@@ -862,7 +867,7 @@ play-pause = { default = "play" }
         // DeAware with only a default key (no DE overrides) should optimize to a simple arm
         assert!(
             output.contains(
-                "(Self::PlayPause, native_theme::IconSet::Freedesktop) => Some(\"play\"),"
+                "(Self::PlayPause, native_theme::theme::IconSet::Freedesktop) => Some(\"play\"),"
             ),
             "DE-aware with only default should produce simple arm. output:\n{output}"
         );
@@ -880,7 +885,7 @@ play-pause = { default = "play" }
         // The material theme has Simple("play_pause") -- should still produce a simple arm
         assert!(
             output.contains(
-                "(Self::PlayPause, native_theme::IconSet::Material) => Some(\"play_pause\"),"
+                "(Self::PlayPause, native_theme::theme::IconSet::Material) => Some(\"play_pause\"),"
             ),
             "Simple mapping values should produce simple arms (no regression). output:\n{output}"
         );
@@ -1009,11 +1014,11 @@ system-themes = ["sf-symbols"]
         let (config, mappings) = sample_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "my_crate", &[]);
         assert!(
-            output.contains("impl my_crate::IconProvider for AppIcon"),
+            output.contains("impl my_crate::theme::IconProvider for AppIcon"),
             "should use custom crate path in impl. output:\n{output}"
         );
         assert!(
-            output.contains("my_crate::IconSet"),
+            output.contains("my_crate::theme::IconSet"),
             "should use custom crate path for IconSet. output:\n{output}"
         );
         assert!(
@@ -1027,11 +1032,11 @@ system-themes = ["sf-symbols"]
         let (config, mappings) = de_aware_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "my_crate", &[]);
         assert!(
-            output.contains("my_crate::detect_linux_de("),
+            output.contains("my_crate::detect::detect_linux_de("),
             "DE-aware codegen should use custom crate path. output:\n{output}"
         );
         assert!(
-            output.contains("my_crate::LinuxDesktop"),
+            output.contains("my_crate::detect::LinuxDesktop"),
             "DE-aware codegen should use custom crate path for LinuxDesktop. output:\n{output}"
         );
     }
@@ -1100,13 +1105,13 @@ system-themes = ["sf-symbols"]
         // Verify specific bundled theme match arms exist in icon_svg
         assert!(
             output.contains(
-                "(Self::PlayPause, native_theme::IconSet::Material) => Some(include_bytes!"
+                "(Self::PlayPause, native_theme::theme::IconSet::Material) => Some(include_bytes!"
             ),
             "should have icon_svg arm for PlayPause/Material. output:\n{output}"
         );
         assert!(
             output.contains(
-                "(Self::SkipForward, native_theme::IconSet::Material) => Some(include_bytes!"
+                "(Self::SkipForward, native_theme::theme::IconSet::Material) => Some(include_bytes!"
             ),
             "should have icon_svg arm for SkipForward/Material. output:\n{output}"
         );
@@ -1120,7 +1125,7 @@ system-themes = ["sf-symbols"]
         let (config, mappings) = sample_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
         assert!(
-            output.contains("native_theme::IconProvider"),
+            output.contains("native_theme::theme::IconProvider"),
             "default crate path should be 'native_theme'"
         );
     }
@@ -1200,7 +1205,7 @@ play-pause = { kde = "play", gnome = "play", default = "play" }
         );
         assert!(
             output.contains(
-                "(Self::PlayPause, native_theme::IconSet::Freedesktop) => Some(\"play\"),"
+                "(Self::PlayPause, native_theme::theme::IconSet::Freedesktop) => Some(\"play\"),"
             ),
             "should produce simple arm. output:\n{output}"
         );

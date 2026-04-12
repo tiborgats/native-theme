@@ -213,14 +213,14 @@ mod tests {
         assert!(!is_known_theme(""));
     }
 
-    // === Drift detection: THEME_TABLE vs native_theme::IconSet ===
+    // === Drift detection: THEME_TABLE vs native_theme::theme::IconSet ===
 
     /// Verify every THEME_TABLE entry resolves to a real IconSet variant
     /// and that the variant path string matches the Debug representation.
     #[test]
     fn theme_table_entries_match_icon_set_variants() {
         for (toml_key, variant_str) in THEME_TABLE {
-            let icon_set = native_theme::IconSet::from_name(toml_key).unwrap_or_else(|| {
+            let icon_set = native_theme::theme::IconSet::from_name(toml_key).unwrap_or_else(|| {
                 panic!(
                     "THEME_TABLE key \"{toml_key}\" does not match any IconSet variant \
                      (IconSet::from_name returned None)"
@@ -242,12 +242,12 @@ mod tests {
     /// the developer to update both THEME_TABLE and this test.
     #[test]
     fn theme_table_covers_all_icon_set_variants() {
-        let all_variants: &[native_theme::IconSet] = &[
-            native_theme::IconSet::SfSymbols,
-            native_theme::IconSet::SegoeIcons,
-            native_theme::IconSet::Freedesktop,
-            native_theme::IconSet::Material,
-            native_theme::IconSet::Lucide,
+        let all_variants: &[native_theme::theme::IconSet] = &[
+            native_theme::theme::IconSet::SfSymbols,
+            native_theme::theme::IconSet::SegoeIcons,
+            native_theme::theme::IconSet::Freedesktop,
+            native_theme::theme::IconSet::Material,
+            native_theme::theme::IconSet::Lucide,
         ];
 
         assert_eq!(
@@ -276,7 +276,7 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn de_table_entries_match_linux_desktop_variants() {
-        use native_theme::{LinuxDesktop, detect_linux_de};
+        use native_theme::detect::{LinuxDesktop, detect_linux_de};
 
         // Map from TOML key to the XDG_CURRENT_DESKTOP value that produces
         // each LinuxDesktop variant.
@@ -322,7 +322,7 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn de_table_covers_all_linux_desktop_variants() {
-        use native_theme::LinuxDesktop;
+        use native_theme::detect::LinuxDesktop;
 
         // All non-Unknown variants. If a new variant is added to LinuxDesktop,
         // update this list AND DE_TABLE.

@@ -29,7 +29,8 @@ use crate::model::{bundled_icon_by_name, bundled_icon_svg};
 /// # Examples
 ///
 /// ```
-/// use native_theme::{load_icon, IconRole, IconSet};
+/// use native_theme::icons::load_icon;
+/// use native_theme::theme::{IconRole, IconSet};
 ///
 /// // With material-icons feature enabled
 /// # #[cfg(feature = "material-icons")]
@@ -81,7 +82,8 @@ pub fn load_icon(role: IconRole, set: IconSet, fg_color: Option<[u8; 3]>) -> Opt
 /// # Examples
 ///
 /// ```
-/// use native_theme::{load_icon_from_theme, IconRole, IconSet};
+/// use native_theme::icons::load_icon_from_theme;
+/// use native_theme::theme::{IconRole, IconSet};
 ///
 /// # #[cfg(feature = "material-icons")]
 /// # {
@@ -167,7 +169,8 @@ pub fn is_freedesktop_theme_available(theme: &str) -> bool {
 /// # Examples
 ///
 /// ```
-/// use native_theme::{load_system_icon_by_name, IconSet};
+/// use native_theme::icons::load_system_icon_by_name;
+/// use native_theme::theme::IconSet;
 ///
 /// # #[cfg(feature = "material-icons")]
 /// # {
@@ -224,7 +227,7 @@ pub fn load_system_icon_by_name(
 ///
 /// ```
 /// // Result depends on enabled features and platform
-/// let anim = native_theme::loading_indicator(native_theme::IconSet::Lucide);
+/// let anim = native_theme::icons::loading_indicator(native_theme::theme::IconSet::Lucide);
 /// # #[cfg(feature = "lucide-icons")]
 /// # assert!(anim.is_some());
 /// ```
@@ -257,7 +260,8 @@ pub fn loading_indicator(set: IconSet) -> Option<AnimatedIcon> {
 /// # Examples
 ///
 /// ```
-/// use native_theme::{load_custom_icon, IconRole, IconSet};
+/// use native_theme::icons::load_custom_icon;
+/// use native_theme::theme::{IconRole, IconSet};
 ///
 /// // IconRole implements IconProvider, so it works with load_custom_icon
 /// # #[cfg(feature = "material-icons")]

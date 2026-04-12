@@ -6,7 +6,9 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use native_theme::*;
+use native_theme::color::Rgba;
+use native_theme::error::Error;
+use native_theme::theme::*;
 
 // ---------------------------------------------------------------------------
 // merge() overlay semantics
@@ -160,14 +162,14 @@ fn merge_fonts_defaults_spacing() {
 
     // ThemeDefaults (geometry fields via border sub-struct)
     let mut base_defaults = ThemeDefaults {
-        border: native_theme::BorderSpec {
+        border: BorderSpec {
             line_width: Some(1.0),
             ..Default::default()
         },
         ..Default::default()
     };
     let overlay_defaults = ThemeDefaults {
-        border: native_theme::BorderSpec {
+        border: BorderSpec {
             corner_radius: Some(8.0),
             ..Default::default()
         },

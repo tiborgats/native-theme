@@ -24,7 +24,7 @@ use std::str::FromStr;
 /// # Examples
 ///
 /// ```
-/// use native_theme::Rgba;
+/// use native_theme::color::Rgba;
 ///
 /// // Create an opaque color
 /// let blue = Rgba::rgb(0, 120, 215);
@@ -74,7 +74,7 @@ impl Rgba {
     /// This is the same value as `Rgba::default()`.
     ///
     /// ```
-    /// use native_theme::Rgba;
+    /// use native_theme::color::Rgba;
     ///
     /// assert_eq!(Rgba::TRANSPARENT, Rgba::rgba(0, 0, 0, 0));
     /// assert_eq!(Rgba::BLACK, Rgba::rgba(0, 0, 0, 255));

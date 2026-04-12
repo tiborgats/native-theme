@@ -16,7 +16,8 @@
 
 #![allow(clippy::unwrap_used, clippy::expect_used)]
 
-use native_theme::*;
+use native_theme::color::Rgba;
+use native_theme::theme::*;
 
 const PLATFORM_FACTS: &str = include_str!("../../docs/platform-facts.md");
 

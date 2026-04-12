@@ -66,14 +66,19 @@ use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
-use native_theme::{
-    AnimatedIcon, IconData, IconRole, IconSet, TransformAnimation, bundled_icon_by_name,
-    icon_name as native_icon_name, is_freedesktop_theme_available, load_icon, load_icon_from_theme,
-    loading_indicator, platform_preset_name, prefers_reduced_motion, system_icon_set,
-    system_icon_theme, system_is_dark,
-};
 #[cfg(target_os = "linux")]
-use native_theme::{detect_linux_de, load_freedesktop_icon_by_name};
+use native_theme::detect::detect_linux_de;
+use native_theme::detect::{prefers_reduced_motion, system_is_dark};
+#[cfg(target_os = "linux")]
+use native_theme::freedesktop::load_freedesktop_icon_by_name;
+use native_theme::icons::{
+    is_freedesktop_theme_available, load_icon, load_icon_from_theme, loading_indicator,
+};
+use native_theme::pipeline::platform_preset_name;
+use native_theme::theme::{
+    AnimatedIcon, IconData, IconRole, IconSet, TransformAnimation, bundled_icon_by_name,
+    icon_name as native_icon_name, system_icon_set, system_icon_theme,
+};
 #[cfg(target_os = "linux")]
 use native_theme_gpui::icons::freedesktop_name_for_gpui_icon;
 use native_theme_gpui::icons::{
@@ -150,8 +155,8 @@ fn widget_tooltip(
 
 /// Format original native-theme font settings (in logical pixels) for display.
 fn format_font_info(
-    font: &native_theme::ResolvedFontSpec,
-    mono_font: &native_theme::ResolvedFontSpec,
+    font: &native_theme::theme::ResolvedFontSpec,
+    mono_font: &native_theme::theme::ResolvedFontSpec,
 ) -> String {
     format!(
         "\nTheme fonts:\n  Font: {} {}px\n  Mono: {} {}px",
@@ -182,7 +187,7 @@ fn theme_names() -> Vec<SharedString> {
     let default_label = format!("default ({})", display);
     let mut names: Vec<SharedString> = vec![default_label.into()];
     names.extend(
-        native_theme::Theme::list_presets_for_platform()
+        native_theme::theme::Theme::list_presets_for_platform()
             .iter()
             .map(|s| SharedString::from(s.to_string())),
     );
@@ -811,9 +816,9 @@ struct Showcase {
     color_mode: ColorMode,
     dark_mode_select: Entity<SelectState<SearchableVec<SharedString>>>,
     /// Original native-theme font spec, for display purposes.
-    original_font: native_theme::ResolvedFontSpec,
+    original_font: native_theme::theme::ResolvedFontSpec,
     /// Original native-theme mono font spec, for display purposes.
-    original_mono_font: native_theme::ResolvedFontSpec,
+    original_mono_font: native_theme::theme::ResolvedFontSpec,
 
     active_tab: usize,
 
@@ -897,7 +902,7 @@ struct Showcase {
     /// Flag set by the ThemeWatcher background thread when the OS theme changes.
     theme_change_flag: Arc<AtomicBool>,
     /// RAII guard keeping the theme watcher background thread alive.
-    _theme_watcher: Option<native_theme::ThemeWatcher>,
+    _theme_watcher: Option<native_theme::watch::ThemeWatcher>,
     /// Set by the watcher polling task; checked in render() where window access is available.
     pending_system_theme_change: bool,
 }
@@ -1291,19 +1296,19 @@ impl Showcase {
             Err(e) => {
                 // Fall back to gpui-component built-in theme so the window still renders
                 Theme::sync_system_appearance(Some(window), cx);
-                let font = native_theme::ResolvedFontSpec {
+                let font = native_theme::theme::ResolvedFontSpec {
                     family: "(default)".into(),
                     size: 0.0,
                     weight: 400,
-                    style: native_theme::FontStyle::Normal,
-                    color: native_theme::Rgba::default(),
+                    style: native_theme::theme::FontStyle::Normal,
+                    color: native_theme::color::Rgba::default(),
                 };
-                let mono_font = native_theme::ResolvedFontSpec {
+                let mono_font = native_theme::theme::ResolvedFontSpec {
                     family: "(default)".into(),
                     size: 0.0,
                     weight: 400,
-                    style: native_theme::FontStyle::Normal,
-                    color: native_theme::Rgba::default(),
+                    style: native_theme::theme::FontStyle::Normal,
+                    color: native_theme::color::Rgba::default(),
                 };
                 let preset = platform_preset_name();
                 let display = preset.strip_suffix("-live").unwrap_or(preset);
@@ -1583,7 +1588,7 @@ impl Showcase {
             None
         } else {
             let flag_clone = theme_change_flag.clone();
-            native_theme::on_theme_change(move |_event| {
+            native_theme::watch::on_theme_change(move |_event| {
                 flag_clone.store(true, Ordering::Release);
             })
             .ok()
@@ -1690,7 +1695,7 @@ impl Showcase {
                 }
             }
         } else {
-            let nt = match native_theme::Theme::preset(name) {
+            let nt = match native_theme::theme::Theme::preset(name) {
                 Ok(t) => t,
                 Err(e) => {
                     self.show_theme_error(&format!("Failed to load preset '{name}': {e}"));
@@ -5248,7 +5253,7 @@ impl Render for Showcase {
         // Done here because apply_theme_by_name needs window access.
         if self.pending_system_theme_change {
             self.pending_system_theme_change = false;
-            native_theme::invalidate_caches();
+            native_theme::detect::invalidate_caches();
             self.is_dark = ColorMode::System.is_dark();
             let name = self.current_theme_name.clone();
             self.apply_theme_by_name(&name, window, cx);

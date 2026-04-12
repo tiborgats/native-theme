@@ -5,7 +5,8 @@
 //! images (`iced::widget::Svg`), this module provides separate conversion
 //! functions for each variant.
 
-use native_theme::{AnimatedIcon, IconData, IconProvider, load_custom_icon};
+use native_theme::icons::load_custom_icon;
+use native_theme::theme::{AnimatedIcon, IconData, IconProvider};
 
 /// Converted animation frames with timing metadata.
 ///
@@ -71,7 +72,7 @@ pub fn to_svg_handle(
 #[must_use]
 pub fn custom_icon_to_image_handle(
     provider: &(impl IconProvider + ?Sized),
-    icon_set: native_theme::IconSet,
+    icon_set: native_theme::theme::IconSet,
 ) -> Option<iced_core::image::Handle> {
     let data = load_custom_icon(provider, icon_set, None)?;
     to_image_handle(&data)
@@ -84,7 +85,7 @@ pub fn custom_icon_to_image_handle(
 #[must_use]
 pub fn custom_icon_to_svg_handle(
     provider: &(impl IconProvider + ?Sized),
-    icon_set: native_theme::IconSet,
+    icon_set: native_theme::theme::IconSet,
     color: Option<iced_core::Color>,
 ) -> Option<iced_core::svg::Handle> {
     let data = load_custom_icon(provider, icon_set, None)?;
@@ -118,7 +119,7 @@ pub fn custom_icon_to_svg_handle(
 /// ```no_run
 /// use native_theme_iced::icons::animated_frames_to_svg_handles;
 ///
-/// if let Some(anim) = native_theme::loading_indicator(native_theme::IconSet::Material) {
+/// if let Some(anim) = native_theme::icons::loading_indicator(native_theme::theme::IconSet::Material) {
 ///     if let Some(anim_handles) = animated_frames_to_svg_handles(&anim, None) {
 ///         // Cache `anim_handles`, then in subscription():
 ///         // iced::time::every(Duration::from_millis(anim_handles.frame_duration_ms as u64))
@@ -159,7 +160,7 @@ pub fn animated_frames_to_svg_handles(
 ///
 /// Returns a [`Radians`](iced_core::Radians) value representing the current
 /// rotation based on `elapsed` time and `duration_ms` (the full rotation
-/// period from [`native_theme::TransformAnimation::Spin`]).
+/// period from [`native_theme::theme::TransformAnimation::Spin`]).
 ///
 /// The angle wraps around via modulo, so values of `elapsed` greater than
 /// `duration_ms` cycle correctly.
@@ -316,7 +317,7 @@ fn colorize_monochrome_svg(svg_bytes: &[u8], color: iced_core::Color) -> Vec<u8>
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use native_theme::IconData;
+    use native_theme::theme::IconData;
 
     #[test]
     fn to_image_handle_with_rgba_returns_some() {
@@ -395,11 +396,11 @@ mod tests {
     #[derive(Debug)]
     struct TestSvgProvider;
 
-    impl native_theme::IconProvider for TestSvgProvider {
-        fn icon_name(&self, _set: native_theme::IconSet) -> Option<&str> {
+    impl native_theme::theme::IconProvider for TestSvgProvider {
+        fn icon_name(&self, _set: native_theme::theme::IconSet) -> Option<&str> {
             None
         }
-        fn icon_svg(&self, _set: native_theme::IconSet) -> Option<&'static [u8]> {
+        fn icon_svg(&self, _set: native_theme::theme::IconSet) -> Option<&'static [u8]> {
             Some(b"<svg xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='12' r='10'/></svg>")
         }
     }
@@ -407,11 +408,11 @@ mod tests {
     #[derive(Debug)]
     struct EmptyProvider;
 
-    impl native_theme::IconProvider for EmptyProvider {
-        fn icon_name(&self, _set: native_theme::IconSet) -> Option<&str> {
+    impl native_theme::theme::IconProvider for EmptyProvider {
+        fn icon_name(&self, _set: native_theme::theme::IconSet) -> Option<&str> {
             None
         }
-        fn icon_svg(&self, _set: native_theme::IconSet) -> Option<&'static [u8]> {
+        fn icon_svg(&self, _set: native_theme::theme::IconSet) -> Option<&'static [u8]> {
             None
         }
     }
@@ -419,14 +420,18 @@ mod tests {
     #[test]
     fn custom_icon_to_image_handle_with_svg_provider_returns_none() {
         // SVG data is not RGBA, so to_image_handle returns None
-        let result = custom_icon_to_image_handle(&TestSvgProvider, native_theme::IconSet::Material);
+        let result =
+            custom_icon_to_image_handle(&TestSvgProvider, native_theme::theme::IconSet::Material);
         assert!(result.is_none());
     }
 
     #[test]
     fn custom_icon_to_svg_handle_with_svg_provider_returns_some() {
-        let result =
-            custom_icon_to_svg_handle(&TestSvgProvider, native_theme::IconSet::Material, None);
+        let result = custom_icon_to_svg_handle(
+            &TestSvgProvider,
+            native_theme::theme::IconSet::Material,
+            None,
+        );
         assert!(result.is_some());
     }
 
@@ -435,7 +440,7 @@ mod tests {
         let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
         let result = custom_icon_to_svg_handle(
             &TestSvgProvider,
-            native_theme::IconSet::Material,
+            native_theme::theme::IconSet::Material,
             Some(color),
         );
         assert!(result.is_some());
@@ -443,21 +448,23 @@ mod tests {
 
     #[test]
     fn custom_icon_to_image_handle_with_empty_provider_returns_none() {
-        let result = custom_icon_to_image_handle(&EmptyProvider, native_theme::IconSet::Material);
+        let result =
+            custom_icon_to_image_handle(&EmptyProvider, native_theme::theme::IconSet::Material);
         assert!(result.is_none());
     }
 
     #[test]
     fn custom_icon_to_svg_handle_with_empty_provider_returns_none() {
         let result =
-            custom_icon_to_svg_handle(&EmptyProvider, native_theme::IconSet::Material, None);
+            custom_icon_to_svg_handle(&EmptyProvider, native_theme::theme::IconSet::Material, None);
         assert!(result.is_none());
     }
 
     #[test]
     fn custom_icon_helpers_accept_dyn_provider() {
-        let boxed: Box<dyn native_theme::IconProvider> = Box::new(TestSvgProvider);
-        let result = custom_icon_to_svg_handle(&*boxed, native_theme::IconSet::Material, None);
+        let boxed: Box<dyn native_theme::theme::IconProvider> = Box::new(TestSvgProvider);
+        let result =
+            custom_icon_to_svg_handle(&*boxed, native_theme::theme::IconSet::Material, None);
         assert!(result.is_some());
     }
 
@@ -497,7 +504,7 @@ mod tests {
     fn animated_frames_transform_returns_none() {
         let anim = AnimatedIcon::Transform {
             icon: IconData::Svg(b"<svg></svg>".to_vec()),
-            animation: native_theme::TransformAnimation::Spin { duration_ms: 1000 },
+            animation: native_theme::theme::TransformAnimation::Spin { duration_ms: 1000 },
         };
         let result = animated_frames_to_svg_handles(&anim, None);
         assert!(result.is_none());

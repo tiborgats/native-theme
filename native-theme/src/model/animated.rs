@@ -13,7 +13,7 @@ use super::icons::IconData;
 /// # Examples
 ///
 /// ```
-/// use native_theme::TransformAnimation;
+/// use native_theme::theme::TransformAnimation;
 ///
 /// let spin = TransformAnimation::Spin { duration_ms: 1000 };
 /// ```
@@ -35,7 +35,7 @@ pub enum TransformAnimation {
 /// # Examples
 ///
 /// ```
-/// use native_theme::{AnimatedIcon, IconData, TransformAnimation};
+/// use native_theme::theme::{AnimatedIcon, IconData, TransformAnimation};
 ///
 /// // Frame-based animation (e.g., sprite sheet)
 /// let frames_anim = AnimatedIcon::Frames {
@@ -81,7 +81,7 @@ impl AnimatedIcon {
     /// # Examples
     ///
     /// ```
-    /// use native_theme::{AnimatedIcon, IconData};
+    /// use native_theme::theme::{AnimatedIcon, IconData};
     ///
     /// let anim = AnimatedIcon::new_frames(
     ///     vec![IconData::Svg(b"<svg>f1</svg>".to_vec())],
@@ -112,7 +112,7 @@ impl AnimatedIcon {
     /// # Examples
     ///
     /// ```
-    /// use native_theme::{AnimatedIcon, IconData, TransformAnimation};
+    /// use native_theme::theme::{AnimatedIcon, IconData, TransformAnimation};
     ///
     /// let frames = AnimatedIcon::Frames {
     ///     frames: vec![IconData::Svg(b"<svg>f1</svg>".to_vec())],

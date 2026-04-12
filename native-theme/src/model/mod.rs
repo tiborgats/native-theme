@@ -32,8 +32,7 @@ pub use icons::{
     IconData, IconProvider, IconRole, IconSet, icon_name, system_icon_set, system_icon_theme,
 };
 pub use resolved::{
-    ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedDefaults,
-    ResolvedTheme,
+    ResolvedDefaults, ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme,
 };
 pub use widgets::*; // All 25 XxxTheme + ResolvedXxxTheme pairs
 
@@ -47,7 +46,8 @@ use serde::{Deserialize, Serialize};
 /// # Examples
 ///
 /// ```
-/// use native_theme::{ThemeMode, Rgba};
+/// use native_theme::theme::ThemeMode;
+/// use native_theme::color::Rgba;
 ///
 /// let mut variant = ThemeMode::default();
 /// variant.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
@@ -177,7 +177,7 @@ pub struct ThemeMode {
     /// (e.g. `"breeze"`, `"Adwaita"`, `"Lucide"`).  For `Freedesktop` this
     /// selects the theme directory; for bundled sets it is a display label.
     /// When `None`, filled by [`resolve_platform_defaults()`](ThemeMode::resolve_platform_defaults)
-    /// from [`system_icon_theme()`](crate::system_icon_theme).
+    /// from [`system_icon_theme()`](crate::theme::system_icon_theme).
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon_theme: Option<String>,
 }
@@ -201,7 +201,7 @@ impl_merge!(ThemeMode {
 /// # Examples
 ///
 /// ```
-/// use native_theme::Theme;
+/// use native_theme::theme::Theme;
 ///
 /// // Load a bundled preset
 /// let theme = Theme::preset("dracula").unwrap();
@@ -300,7 +300,7 @@ impl Theme {
     /// # Examples
     ///
     /// ```
-    /// let theme = native_theme::Theme::preset("dracula").unwrap();
+    /// let theme = native_theme::theme::Theme::preset("dracula").unwrap();
     /// let variant = theme.into_variant(true).unwrap();
     /// let resolved = variant.into_resolved().unwrap();
     /// ```
@@ -328,7 +328,7 @@ impl Theme {
     ///
     /// # Examples
     /// ```
-    /// let theme = native_theme::Theme::preset("catppuccin-mocha").unwrap();
+    /// let theme = native_theme::theme::Theme::preset("catppuccin-mocha").unwrap();
     /// assert!(theme.light.is_some());
     /// ```
     pub fn preset(name: &str) -> crate::Result<Self> {
@@ -411,7 +411,7 @@ impl Theme {
     /// [light.defaults]
     /// accent_color = "#ff0000"
     /// "##;
-    /// let theme = native_theme::Theme::from_toml(toml).unwrap();
+    /// let theme = native_theme::theme::Theme::from_toml(toml).unwrap();
     /// assert_eq!(theme.name, "My Theme");
     /// ```
     pub fn from_toml(toml_str: &str) -> crate::Result<Self> {
@@ -432,7 +432,7 @@ impl Theme {
     /// # Examples
     ///
     /// ```
-    /// let theme = native_theme::Theme::from_toml_with_base(
+    /// let theme = native_theme::theme::Theme::from_toml_with_base(
     ///     r##"name = "My Theme"
     /// [dark.defaults]
     /// accent_color = "#ff6600"
@@ -457,7 +457,7 @@ impl Theme {
     ///
     /// # Examples
     /// ```no_run
-    /// let theme = native_theme::Theme::from_file("my-theme.toml").unwrap();
+    /// let theme = native_theme::theme::Theme::from_file("my-theme.toml").unwrap();
     /// ```
     pub fn from_file(path: impl AsRef<std::path::Path>) -> crate::Result<Self> {
         crate::presets::from_file(path)
@@ -467,7 +467,7 @@ impl Theme {
     ///
     /// # Examples
     /// ```
-    /// let names = native_theme::Theme::list_presets();
+    /// let names = native_theme::theme::Theme::list_presets();
     /// assert_eq!(names.len(), 16);
     /// ```
     #[must_use]
@@ -482,7 +482,7 @@ impl Theme {
     ///
     /// # Examples
     /// ```
-    /// let names = native_theme::Theme::list_presets_for_platform();
+    /// let names = native_theme::theme::Theme::list_presets_for_platform();
     /// // On Linux KDE: includes kde-breeze, adwaita, plus all community themes
     /// // On Windows: includes windows-11 plus all community themes
     /// assert!(!names.is_empty());
@@ -499,7 +499,7 @@ impl Theme {
     ///
     /// # Examples
     /// ```
-    /// let theme = native_theme::Theme::preset("catppuccin-mocha").unwrap();
+    /// let theme = native_theme::theme::Theme::preset("catppuccin-mocha").unwrap();
     /// let toml_str = theme.to_toml().unwrap();
     /// assert!(toml_str.contains("name = \"Catppuccin Mocha\""));
     /// ```
@@ -524,7 +524,7 @@ impl Theme {
     /// # Examples
     ///
     /// ```
-    /// let warnings = native_theme::Theme::lint_toml(r##"
+    /// let warnings = native_theme::theme::Theme::lint_toml(r##"
     /// name = "Test"
     /// [light.defaults]
     /// backround = "#ffffff"

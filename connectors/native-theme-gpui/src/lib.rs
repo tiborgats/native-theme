@@ -23,7 +23,7 @@
 //! For full control over the resolve/validate/convert pipeline:
 //!
 //! ```ignore
-//! use native_theme::Theme;
+//! use native_theme::theme::Theme;
 //! use native_theme_gpui::to_theme;
 //!
 //! let nt = Theme::preset("catppuccin-mocha")?;
@@ -80,13 +80,16 @@ pub mod icons;
 // Re-export native-theme types that appear in public signatures so downstream
 // crates don't need native-theme as a direct dependency.
 // Issue 8 + 48: re-export Result, Rgba, Error, DialogButtonOrder
-pub use native_theme::{
-    AnimatedIcon, DialogButtonOrder, Error, IconData, IconProvider, IconRole, IconSet,
-    ResolvedTheme, Result, Rgba, SystemTheme, Theme, ThemeMode, TransformAnimation,
+pub use native_theme::color::Rgba;
+pub use native_theme::error::Error;
+pub use native_theme::theme::{
+    AnimatedIcon, DialogButtonOrder, IconData, IconProvider, IconRole, IconSet, ResolvedTheme,
+    Theme, ThemeMode, TransformAnimation,
 };
+pub use native_theme::{Result, SystemTheme};
 
 #[cfg(target_os = "linux")]
-pub use native_theme::LinuxDesktop;
+pub use native_theme::detect::LinuxDesktop;
 
 use gpui::{SharedString, px};
 use gpui_component::scroll::ScrollbarShow;
@@ -183,16 +186,13 @@ pub fn to_theme(resolved: &ResolvedTheme, name: &str, is_dark: bool) -> GpuiThem
 /// let (light_theme, _) = native_theme_gpui::from_preset("catppuccin-latte", false)?;
 /// ```
 #[must_use = "this returns the theme; it does not apply it"]
-pub fn from_preset(
-    name: &str,
-    is_dark: bool,
-) -> native_theme::Result<(GpuiTheme, ResolvedTheme)> {
+pub fn from_preset(name: &str, is_dark: bool) -> Result<(GpuiTheme, ResolvedTheme)> {
     let spec = Theme::preset(name)?;
     let display_name = spec.name.clone();
     let mode_str = if is_dark { "dark" } else { "light" };
     let variant = spec
         .into_variant(is_dark)
-        .ok_or_else(|| native_theme::Error::ReaderFailed {
+        .ok_or_else(|| Error::ReaderFailed {
             reader: "gpui_connector",
             source: format!("preset '{name}' has no {mode_str} variant").into(),
         })?;
@@ -230,7 +230,7 @@ pub fn from_preset(
 /// let (theme, resolved, is_dark) = native_theme_gpui::from_system()?;
 /// ```
 #[must_use = "this returns the theme; it does not apply it"]
-pub fn from_system() -> native_theme::Result<(GpuiTheme, ResolvedTheme, bool)> {
+pub fn from_system() -> Result<(GpuiTheme, ResolvedTheme, bool)> {
     let sys = SystemTheme::from_system()?;
     let is_dark = sys.is_dark;
     let name = sys.name; // K-5: move instead of clone
@@ -345,7 +345,7 @@ pub fn text_scaling_factor(resolved: &ResolvedTheme) -> f32 {
 ///
 /// Returns icon sizes for toolbar, small, large, dialog, and panel contexts.
 #[must_use]
-pub fn icon_sizes(resolved: &ResolvedTheme) -> &native_theme::ResolvedIconSizes {
+pub fn icon_sizes(resolved: &ResolvedTheme) -> &native_theme::theme::ResolvedIconSizes {
     &resolved.defaults.icon_sizes
 }
 
@@ -353,7 +353,7 @@ pub fn icon_sizes(resolved: &ResolvedTheme) -> &native_theme::ResolvedIconSizes 
 ///
 /// Returns the 4-entry text scale (caption, section_heading, dialog_title, display).
 #[must_use]
-pub fn text_scale(resolved: &ResolvedTheme) -> &native_theme::ResolvedTextScale {
+pub fn text_scale(resolved: &ResolvedTheme) -> &native_theme::theme::ResolvedTextScale {
     &resolved.text_scale
 }
 
@@ -641,8 +641,8 @@ mod tests {
         // accent or background populated.
         let resolved = sys.active();
         assert!(
-            resolved.defaults.accent_color != native_theme::Rgba::default()
-                || resolved.defaults.background_color != native_theme::Rgba::default(),
+            resolved.defaults.accent_color != Rgba::default()
+                || resolved.defaults.background_color != Rgba::default(),
             "resolved variant should have at least accent or background populated"
         );
     }

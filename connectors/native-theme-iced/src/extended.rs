@@ -1,4 +1,4 @@
-//! Extended palette overrides from [`native_theme::ResolvedTheme`] fields.
+//! Extended palette overrides from [`native_theme::theme::ResolvedTheme`] fields.
 //!
 //! After iced generates an `Extended` palette from the base `Palette`,
 //! this module overrides specific sub-palette entries with native-theme
@@ -6,7 +6,7 @@
 //! overrides are always applied unconditionally.
 
 use crate::palette::to_color;
-use native_theme::Rgba;
+use native_theme::color::Rgba;
 
 /// Captured color values for Extended palette overrides.
 ///
@@ -124,14 +124,14 @@ pub(crate) fn apply_overrides(
 mod tests {
     use super::*;
     use iced_core::theme::palette::Extended;
-    use native_theme::Theme;
+    use native_theme::theme::Theme;
 
     fn make_extended() -> Extended {
         let palette = iced_core::theme::Palette::DARK;
         Extended::generate(palette)
     }
 
-    fn make_resolved_preset(name: &str, is_dark: bool) -> native_theme::ResolvedTheme {
+    fn make_resolved_preset(name: &str, is_dark: bool) -> native_theme::theme::ResolvedTheme {
         Theme::preset(name)
             .unwrap()
             .into_variant(is_dark)
@@ -140,11 +140,11 @@ mod tests {
             .unwrap()
     }
 
-    fn make_resolved(is_dark: bool) -> native_theme::ResolvedTheme {
+    fn make_resolved(is_dark: bool) -> native_theme::theme::ResolvedTheme {
         make_resolved_preset("catppuccin-mocha", is_dark)
     }
 
-    fn colors_from_resolved(r: &native_theme::ResolvedTheme) -> OverrideColors {
+    fn colors_from_resolved(r: &native_theme::theme::ResolvedTheme) -> OverrideColors {
         OverrideColors {
             btn_bg: r.button.background_color,
             btn_fg: r.button.font.color,
@@ -160,7 +160,7 @@ mod tests {
         }
     }
 
-    fn apply_from_resolved(ext: &mut Extended, r: &native_theme::ResolvedTheme) {
+    fn apply_from_resolved(ext: &mut Extended, r: &native_theme::theme::ResolvedTheme) {
         apply_overrides(ext, &colors_from_resolved(r));
     }
 

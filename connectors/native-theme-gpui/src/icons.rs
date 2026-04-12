@@ -11,7 +11,7 @@
 //! | [`to_image_source`] | Convert [`IconData`] → [`ImageSource`] with optional color/size |
 //! | [`into_image_source`] | Consuming variant of [`to_image_source`] (avoids clone) |
 //! | [`custom_icon_to_image_source`] | Load + convert via [`IconProvider`] |
-//! | [`bundled_icon_to_image_source`] | Convert [`IconName`] + [`native_theme::IconSet`] → [`ImageSource`] in one call |
+//! | [`bundled_icon_to_image_source`] | Convert [`IconName`] + [`native_theme::theme::IconSet`] → [`ImageSource`] in one call |
 //! | [`animated_frames_to_image_sources`] | Convert animation frames → [`AnimatedImageSources`] |
 //! | [`with_spin_animation`] | Wrap an SVG element with spin animation |
 
@@ -19,7 +19,8 @@ use gpui::{
     Animation, AnimationExt, Hsla, Image, ImageFormat, ImageSource, Svg, Transformation, percentage,
 };
 use gpui_component::IconName;
-use native_theme::{AnimatedIcon, IconData, IconProvider, IconRole, load_custom_icon};
+use native_theme::icons::load_custom_icon;
+use native_theme::theme::{AnimatedIcon, IconData, IconProvider, IconRole};
 use std::sync::Arc;
 use std::time::Duration;
 
@@ -63,7 +64,7 @@ impl std::fmt::Debug for AnimatedImageSources {
 /// # Examples
 ///
 /// ```ignore
-/// use native_theme::IconRole;
+/// use native_theme::theme::IconRole;
 /// use native_theme_gpui::icons::icon_name;
 ///
 /// assert_eq!(icon_name(IconRole::DialogWarning), Some(IconName::TriangleAlert));
@@ -130,7 +131,7 @@ pub fn icon_name(role: IconRole) -> Option<IconName> {
 /// Map a gpui-component [`IconName`] to its canonical Lucide icon name.
 ///
 /// Returns the kebab-case Lucide name for use with
-/// [`native_theme::bundled_icon_by_name`].
+/// [`native_theme::theme::bundled_icon_by_name`].
 ///
 /// Covers all 86 gpui-component `IconName` variants.
 #[must_use]
@@ -228,7 +229,7 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> &'static str {
 /// Map a gpui-component [`IconName`] to its canonical Material icon name.
 ///
 /// Returns the snake_case Material Symbols name for use with
-/// [`native_theme::bundled_icon_by_name`].
+/// [`native_theme::theme::bundled_icon_by_name`].
 ///
 /// Covers all 86 gpui-component `IconName` variants.
 ///
@@ -359,9 +360,9 @@ pub fn material_name_for_gpui_icon(icon: IconName) -> &'static str {
 #[must_use]
 pub fn freedesktop_name_for_gpui_icon(
     icon: IconName,
-    de: native_theme::LinuxDesktop,
+    de: native_theme::detect::LinuxDesktop,
 ) -> &'static str {
-    use native_theme::LinuxDesktop;
+    use native_theme::detect::LinuxDesktop;
 
     // GTK-based DEs follow GNOME/Adwaita naming; Qt-based follow KDE/Breeze
     let is_gtk = matches!(
@@ -759,7 +760,7 @@ const MAX_ICON_SIZE: u32 = 512;
 /// # Examples
 ///
 /// ```ignore
-/// use native_theme::IconData;
+/// use native_theme::theme::IconData;
 /// use native_theme_gpui::icons::to_image_source;
 ///
 /// let svg = IconData::Svg(b"<svg></svg>".to_vec());
@@ -829,7 +830,7 @@ pub fn into_image_source(
 #[must_use]
 pub fn custom_icon_to_image_source(
     provider: &(impl IconProvider + ?Sized),
-    icon_set: native_theme::IconSet,
+    icon_set: native_theme::theme::IconSet,
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<ImageSource> {
@@ -840,9 +841,9 @@ pub fn custom_icon_to_image_source(
 /// Load a gpui-component icon from a bundled icon set and convert to an [`ImageSource`].
 ///
 /// Combines the icon-name mapping and loading steps into a single call for
-/// bundled icon sets. Supports [`native_theme::IconSet::Lucide`] and [`native_theme::IconSet::Material`].
+/// bundled icon sets. Supports [`native_theme::theme::IconSet::Lucide`] and [`native_theme::theme::IconSet::Material`].
 /// Returns `None` for other icon sets (use [`to_image_source`] with
-/// [`native_theme::load_freedesktop_icon_by_name`] for freedesktop system icons).
+/// [`native_theme::freedesktop::load_freedesktop_icon_by_name`] for freedesktop system icons).
 ///
 /// See [`to_image_source()`] for details on the `color` and `size` parameters.
 ///
@@ -850,7 +851,7 @@ pub fn custom_icon_to_image_source(
 ///
 /// ```ignore
 /// use gpui_component::IconName;
-/// use native_theme::IconSet;
+/// use native_theme::theme::IconSet;
 /// use native_theme_gpui::icons::bundled_icon_to_image_source;
 ///
 /// let source = bundled_icon_to_image_source(IconName::Search, IconSet::Lucide, None, None);
@@ -858,16 +859,16 @@ pub fn custom_icon_to_image_source(
 #[must_use]
 pub fn bundled_icon_to_image_source(
     icon: IconName,
-    icon_set: native_theme::IconSet,
+    icon_set: native_theme::theme::IconSet,
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<ImageSource> {
     let name = match icon_set {
-        native_theme::IconSet::Lucide => lucide_name_for_gpui_icon(icon),
-        native_theme::IconSet::Material => material_name_for_gpui_icon(icon),
+        native_theme::theme::IconSet::Lucide => lucide_name_for_gpui_icon(icon),
+        native_theme::theme::IconSet::Material => material_name_for_gpui_icon(icon),
         _ => return None,
     };
-    let svg = native_theme::bundled_icon_by_name(name, icon_set)?;
+    let svg = native_theme::theme::bundled_icon_by_name(name, icon_set)?;
     // Issue 27: pass &[u8] directly without copying to IconData::Svg
     svg_bytes_to_image_source(svg, color, size)
 }
@@ -875,7 +876,7 @@ pub fn bundled_icon_to_image_source(
 /// Convert raw SVG bytes to an [`ImageSource`].
 ///
 /// This is a convenience wrapper for callers that already have SVG bytes
-/// (e.g. from [`native_theme::bundled_icon_by_name`]) and want to skip
+/// (e.g. from [`native_theme::theme::bundled_icon_by_name`]) and want to skip
 /// the `IconData` intermediate.
 ///
 /// See [`to_image_source()`] for details on the `color` and `size` parameters.
@@ -976,7 +977,7 @@ pub fn animated_frames_to_image_sources(
 /// milliseconds, repeating infinitely. Uses linear easing for constant-speed
 /// rotation suitable for loading spinners.
 ///
-/// `duration_ms` comes from [`native_theme::TransformAnimation::Spin`].
+/// `duration_ms` comes from [`native_theme::theme::TransformAnimation::Spin`].
 /// `animation_id` must be unique among sibling animated elements (accepts
 /// `&'static str`, integer IDs, or any `impl Into<ElementId>`).
 ///
@@ -1954,11 +1955,11 @@ mod tests {
     #[derive(Debug)]
     struct TestCustomIcon;
 
-    impl native_theme::IconProvider for TestCustomIcon {
-        fn icon_name(&self, _set: native_theme::IconSet) -> Option<&str> {
+    impl native_theme::theme::IconProvider for TestCustomIcon {
+        fn icon_name(&self, _set: native_theme::theme::IconSet) -> Option<&str> {
             None // No system name -- forces bundled SVG path
         }
-        fn icon_svg(&self, _set: native_theme::IconSet) -> Option<&'static [u8]> {
+        fn icon_svg(&self, _set: native_theme::theme::IconSet) -> Option<&'static [u8]> {
             Some(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10'/></svg>")
         }
     }
@@ -1967,11 +1968,11 @@ mod tests {
     #[derive(Debug)]
     struct EmptyProvider;
 
-    impl native_theme::IconProvider for EmptyProvider {
-        fn icon_name(&self, _set: native_theme::IconSet) -> Option<&str> {
+    impl native_theme::theme::IconProvider for EmptyProvider {
+        fn icon_name(&self, _set: native_theme::theme::IconSet) -> Option<&str> {
             None
         }
-        fn icon_svg(&self, _set: native_theme::IconSet) -> Option<&'static [u8]> {
+        fn icon_svg(&self, _set: native_theme::theme::IconSet) -> Option<&'static [u8]> {
             None
         }
     }
@@ -1980,7 +1981,7 @@ mod tests {
     fn custom_icon_to_image_source_with_svg_provider_returns_some() {
         let result = custom_icon_to_image_source(
             &TestCustomIcon,
-            native_theme::IconSet::Material,
+            native_theme::theme::IconSet::Material,
             None,
             None,
         );
@@ -1991,7 +1992,7 @@ mod tests {
     fn custom_icon_to_image_source_with_empty_provider_returns_none() {
         let result = custom_icon_to_image_source(
             &EmptyProvider,
-            native_theme::IconSet::Material,
+            native_theme::theme::IconSet::Material,
             None,
             None,
         );
@@ -2008,7 +2009,7 @@ mod tests {
         };
         let result = custom_icon_to_image_source(
             &TestCustomIcon,
-            native_theme::IconSet::Material,
+            native_theme::theme::IconSet::Material,
             Some(color),
             None,
         );
@@ -2017,9 +2018,13 @@ mod tests {
 
     #[test]
     fn custom_icon_to_image_source_accepts_dyn_provider() {
-        let boxed: Box<dyn native_theme::IconProvider> = Box::new(TestCustomIcon);
-        let result =
-            custom_icon_to_image_source(&*boxed, native_theme::IconSet::Material, None, None);
+        let boxed: Box<dyn native_theme::theme::IconProvider> = Box::new(TestCustomIcon);
+        let result = custom_icon_to_image_source(
+            &*boxed,
+            native_theme::theme::IconSet::Material,
+            None,
+            None,
+        );
         assert!(result.is_some());
     }
 
@@ -2029,7 +2034,7 @@ mod tests {
     fn bundled_icon_lucide_returns_some() {
         let result = bundled_icon_to_image_source(
             IconName::Search,
-            native_theme::IconSet::Lucide,
+            native_theme::theme::IconSet::Lucide,
             None,
             None,
         );
@@ -2040,7 +2045,7 @@ mod tests {
     fn bundled_icon_material_returns_some() {
         let result = bundled_icon_to_image_source(
             IconName::Search,
-            native_theme::IconSet::Material,
+            native_theme::theme::IconSet::Material,
             None,
             None,
         );
@@ -2051,7 +2056,7 @@ mod tests {
     fn bundled_icon_freedesktop_returns_none() {
         let result = bundled_icon_to_image_source(
             IconName::Search,
-            native_theme::IconSet::Freedesktop,
+            native_theme::theme::IconSet::Freedesktop,
             None,
             None,
         );
@@ -2071,7 +2076,7 @@ mod tests {
         };
         let result = bundled_icon_to_image_source(
             IconName::Check,
-            native_theme::IconSet::Lucide,
+            native_theme::theme::IconSet::Lucide,
             Some(color),
             None,
         );
@@ -2103,7 +2108,7 @@ mod tests {
                 b"<svg xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='12' r='10'/></svg>"
                     .to_vec(),
             ),
-            animation: native_theme::TransformAnimation::Spin { duration_ms: 1000 },
+            animation: native_theme::theme::TransformAnimation::Spin { duration_ms: 1000 },
         };
         let result = animated_frames_to_image_sources(&anim, None, None);
         assert!(result.is_none());
@@ -2134,7 +2139,7 @@ mod tests {
 mod freedesktop_mapping_tests {
     use super::tests::ALL_ICON_NAMES;
     use super::*;
-    use native_theme::LinuxDesktop;
+    use native_theme::detect::LinuxDesktop;
 
     #[test]
     fn all_86_gpui_icons_have_mapping_on_kde() {
@@ -2194,7 +2199,7 @@ mod freedesktop_mapping_tests {
 
     #[test]
     fn all_kde_names_resolve_in_breeze() {
-        let theme = native_theme::system_icon_theme();
+        let theme = native_theme::theme::system_icon_theme();
         // Only meaningful on a KDE system with Breeze installed
         if !theme.to_lowercase().contains("breeze") {
             eprintln!("Skipping: system theme is '{}', not Breeze", theme);
@@ -2204,7 +2209,9 @@ mod freedesktop_mapping_tests {
         let mut missing = Vec::new();
         for name in ALL_ICON_NAMES {
             let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Kde);
-            if native_theme::load_freedesktop_icon_by_name(fd_name, theme, 24, None).is_none() {
+            if native_theme::freedesktop::load_freedesktop_icon_by_name(fd_name, theme, 24, None)
+                .is_none()
+            {
                 missing.push(format!("{} (not found)", fd_name));
             }
         }
@@ -2222,7 +2229,11 @@ mod freedesktop_mapping_tests {
         let mut missing = Vec::new();
         for name in ALL_ICON_NAMES {
             let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Gnome);
-            if native_theme::load_freedesktop_icon_by_name(fd_name, "Adwaita", 24, None).is_none() {
+            if native_theme::freedesktop::load_freedesktop_icon_by_name(
+                fd_name, "Adwaita", 24, None,
+            )
+            .is_none()
+            {
                 missing.push(format!("{} (not found)", fd_name));
             }
         }
