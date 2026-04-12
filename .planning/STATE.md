@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
-status: phase_complete
-stopped_at: Phase 72 complete — verified, ready to plan Phase 73
-last_updated: "2026-04-12T13:33:31.711Z"
-last_activity: 2026-04-12 — Phase 72 complete (Plan 02 executed)
+status: completed
+stopped_at: Completed 73-01-PLAN.md
+last_updated: "2026-04-12T14:03:53.439Z"
+last_activity: 2026-04-12 — Phase 73 plan 01 executed
 progress:
   total_phases: 28
-  completed_phases: 12
-  total_plans: 21
-  completed_plans: 21
+  completed_phases: 13
+  total_plans: 22
+  completed_plans: 22
   percent: 100
 ---
 
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 72 — env-mutex-test-simplification (COMPLETE, verified)
-Plan: 2/2 complete, verified 4/4 must-haves
-Status: Phase 72 complete — ready to plan Phase 73
-Last activity: 2026-04-12 — Phase 72 executed and verified
+Phase: 73 — themechangeevent-cleanup (COMPLETE)
+Plan: 1/1 complete
+Status: Phase 73 complete — ready for Phase 74
+Last activity: 2026-04-12 — Phase 73 plan 01 executed
 
-Progress: [██░░░░░░░░] 20% (4/20 phases complete)
+Progress: [███░░░░░░░] 25% (5/20 phases complete)
 
 ## Accumulated Context
 
@@ -89,7 +89,7 @@ v0.5.6 decisions worth carrying into v0.5.7 planning:
 
 ### Pending Todos
 
-None. Phase 72 complete, ready for Phase 73.
+None. Phase 73 complete, ready for Phase 74.
 
 ### v0.5.7 Decisions
 
@@ -100,6 +100,8 @@ None. Phase 72 complete, ready for Phase 73.
 - [Phase 71-02]: Connector crates (gpui, iced) migrated to Error::ReaderFailed alongside core crate
 - [Phase 72-01]: linux_preset_for_de promoted to pub(crate) for cross-module test access
 - [Phase 72-01]: Added #[allow(dead_code)] on ENV_MUTEX pending Plan 02 removal
+- [Phase 73-01]: Kept #[non_exhaustive] and wildcard arm in doc example despite single variant
+- [Phase 73-01]: Updated on_theme_change() doctest to use ? instead of .expect() for zero-panic rules
 
 ### Blockers/Concerns
 
@@ -112,6 +114,6 @@ None. Phase 72 complete, ready for Phase 73.
 
 ## Session Continuity
 
-Last session: 2026-04-12
-Stopped at: Phase 72 complete — verified, ready to plan Phase 73
-Resume file: .planning/ROADMAP.md (Phase 73 section)
+Last session: 2026-04-12T14:03:53.436Z
+Stopped at: Completed 73-01-PLAN.md
+Resume file: None

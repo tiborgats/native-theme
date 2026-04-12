@@ -63,8 +63,8 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 
 ### Watchers & Events
 
-- [ ] **WATCH-01**: `ThemeChangeEvent::Other` removed — it has zero production emitters (doc 2 C1)
-- [ ] **WATCH-02**: `ThemeChangeEvent::ColorSchemeChanged` renamed to `Changed` — the `ColorScheme` framing is platform-inaccurate on KDE/GNOME which signal broader changes (doc 2 C2)
+- [x] **WATCH-01**: `ThemeChangeEvent::Other` removed — it has zero production emitters (doc 2 C1)
+- [x] **WATCH-02**: `ThemeChangeEvent::ColorSchemeChanged` renamed to `Changed` — the `ColorScheme` framing is platform-inaccurate on KDE/GNOME which signal broader changes (doc 2 C2)
 - [ ] **WATCH-03**: `on_theme_change` fails at compile-time (not runtime) on missing `watch` feature — API is feature-gated at type/function level (doc 1 §22)
 
 ### Icons

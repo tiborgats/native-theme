@@ -148,7 +148,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 70: Drop Error::Clone Bound** — Ship-unit 3: four-item atomic removal of `#[derive(Clone)]`, stale doc comments, and the `error_is_clone` test (completed 2026-04-12)
 - [x] **Phase 71: Error Restructure and Validation Split** — Ship-unit 2: partition `validate()` output into `missing` vs `out_of_range` and restructure `Error` per §31.2 Option F (completed 2026-04-12)
 - [x] **Phase 72: ENV_MUTEX Test Simplification** — Ship-unit 4 (after 69): drop env-var-mocking serialization now that `resolve()` is pure (completed 2026-04-12)
-- [ ] **Phase 73: ThemeChangeEvent Cleanup** — Ship-unit 5: delete `Other` variant (zero emitters) and rename `ColorSchemeChanged` to `Changed`
+- [x] **Phase 73: ThemeChangeEvent Cleanup** — Ship-unit 5: delete `Other` variant (zero emitters) and rename `ColorSchemeChanged` to `Changed` (completed 2026-04-12)
 - [ ] **Phase 74: Rgba Polish and must_use Uniformity** — Ship-unit 6 part A: delete `to_f32_tuple`, add default constants, and enforce bare `#[must_use]` across six sites
 - [ ] **Phase 75: LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal** — Ship-unit 6 part B: mark `LinuxDesktop` non-exhaustive with new compositor variants, make missing `watch` feature a compile error, delete the misleading `IconSet::default()`
 - [ ] **Phase 76: Type Vocabulary Rename and Crate Root Partition** — Ship-unit 7 part A: atomic rename of `ThemeSpec→Theme`, `ThemeVariant→ThemeMode`, etc. and partition 92-item flat crate root into submodules with a `prelude`
@@ -605,7 +605,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 70. Drop Error::Clone Bound | v0.5.7 | 1/1 | Complete   | 2026-04-12 |
 | 71. Error Restructure and Validation Split | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 72. ENV_MUTEX Test Simplification | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
-| 73. ThemeChangeEvent Cleanup | v0.5.7 | 0/0 | Not started | — |
+| 73. ThemeChangeEvent Cleanup | v0.5.7 | 1/1 | Complete   | 2026-04-12 |
 | 74. Rgba Polish and must_use Uniformity | v0.5.7 | 0/0 | Not started | — |
 | 75. LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal | v0.5.7 | 0/0 | Not started | — |
 | 76. Type Vocabulary Rename and Crate Root Partition | v0.5.7 | 0/0 | Not started | — |
