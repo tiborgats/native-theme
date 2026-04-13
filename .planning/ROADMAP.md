@@ -627,7 +627,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 82. Icon API Rework | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 83. Detection Cache Layer | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 84. Reader Output Contract Homogenisation | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
-| 85. Data Model Method and Doc Cleanup | v0.5.7 | 0/0 | Not started | — |
+| 85. Data Model Method and Doc Cleanup | v0.5.7 | 1/2 | In Progress|  |
 | 86. Validation and Lint Codegen Polish | v0.5.7 | 0/0 | Not started | — |
 | 87. Font Family Arc<str> and AnimatedIcon Invariants | v0.5.7 | 0/0 | Not started | — |
 | 88. Diagnostic and Preset-Polish Sweep | v0.5.7 | 0/0 | Not started | — |

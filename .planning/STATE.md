@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 84 — reader-output-contract-homogenisation
-Plan: 2/2 complete
-Status: Phase 84 verified — 4/4 must-haves confirmed
-Last activity: 2026-04-13 — Phase 84 verified (4/4 must-haves confirmed)
+Phase: 85 — data-model-method-and-doc-cleanup
+Plan: 1/2 complete
+Status: in-progress
+Last activity: 2026-04-13 — Completed 85-01 (doc(hidden) + from_toml_with_base removal)
 
-Progress: [██████████] 100% (46/46 plans complete)
+Progress: [██████████] 100% (47/48 plans complete)
 
 ## Accumulated Context
 
@@ -184,6 +184,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T20:07:08Z
-Stopped at: Completed 84-02-PLAN.md
+Last session: 2026-04-13T20:52:17Z
+Stopped at: Completed 85-01-PLAN.md
 Resume file: None
