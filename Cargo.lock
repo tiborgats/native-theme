@@ -4348,6 +4348,7 @@ dependencies = [
 name = "native-theme"
 version = "0.5.7"
 dependencies = [
+ "arc-swap",
  "ashpd 0.13.9",
  "block2 0.6.2",
  "configparser",

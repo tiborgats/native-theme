@@ -1,5 +1,8 @@
 //! OS detection: dark mode, reduced motion, DPI, desktop environment.
 
+use arc_swap::ArcSwapOption;
+use std::sync::Arc;
+
 /// Desktop environments recognized on Linux.
 #[cfg(target_os = "linux")]
 #[non_exhaustive]
@@ -95,8 +98,6 @@ pub fn parse_linux_desktop(xdg_current_desktop: &str) -> LinuxDesktop {
     LinuxDesktop::Unknown
 }
 
-static CACHED_IS_DARK: std::sync::RwLock<Option<bool>> = std::sync::RwLock::new(None);
-
 /// Detect whether the system is using a dark color scheme.
 ///
 /// Uses synchronous, platform-specific checks so the result is available
@@ -128,16 +129,7 @@ static CACHED_IS_DARK: std::sync::RwLock<Option<bool>> = std::sync::RwLock::new(
 /// - **Other platforms / missing features:** Returns `false` (light).
 #[must_use]
 pub fn system_is_dark() -> bool {
-    if let Ok(guard) = CACHED_IS_DARK.read()
-        && let Some(v) = *guard
-    {
-        return v;
-    }
-    let value = detect_is_dark_inner();
-    if let Ok(mut guard) = CACHED_IS_DARK.write() {
-        *guard = Some(value);
-    }
-    value
+    system().is_dark()
 }
 
 /// Reset all process-wide caches so the next call to [`system_is_dark()`],
@@ -149,13 +141,7 @@ pub fn system_is_dark() -> bool {
 /// The `detect_*()` family of functions are unaffected — they always query
 /// the OS directly.
 pub fn invalidate_caches() {
-    if let Ok(mut g) = CACHED_IS_DARK.write() {
-        *g = None;
-    }
-    if let Ok(mut g) = CACHED_REDUCED_MOTION.write() {
-        *g = None;
-    }
-    crate::model::icons::invalidate_icon_theme_cache();
+    system().invalidate_all();
 }
 
 /// Detect whether the system is using a dark color scheme without caching.
@@ -627,8 +613,6 @@ fn detect_is_dark_inner() -> bool {
     }
 }
 
-static CACHED_REDUCED_MOTION: std::sync::RwLock<Option<bool>> = std::sync::RwLock::new(None);
-
 /// Query whether the user prefers reduced motion.
 ///
 /// Returns `true` when the OS accessibility setting indicates animations
@@ -661,16 +645,7 @@ static CACHED_REDUCED_MOTION: std::sync::RwLock<Option<bool>> = std::sync::RwLoc
 /// ```
 #[must_use]
 pub fn prefers_reduced_motion() -> bool {
-    if let Ok(guard) = CACHED_REDUCED_MOTION.read()
-        && let Some(v) = *guard
-    {
-        return v;
-    }
-    let value = detect_reduced_motion_inner();
-    if let Ok(mut guard) = CACHED_REDUCED_MOTION.write() {
-        *guard = Some(value);
-    }
-    value
+    system().prefers_reduced_motion()
 }
 
 /// Detect whether the user prefers reduced motion without caching.
@@ -737,6 +712,154 @@ fn detect_reduced_motion_inner() -> bool {
     }
 }
 
+// === DetectionContext ===
+
+/// Process-wide detection cache.
+///
+/// Provides "cache on first read" semantics for OS detection queries
+/// (`is_dark`, `reduced_motion`, `icon_theme`, `linux_desktop`) and
+/// per-field invalidation for watchers that need fresh data.
+///
+/// Obtain the process-wide instance via [`system()`].
+///
+/// # Thread Safety
+///
+/// All reads and invalidations are lock-free (backed by
+/// [`arc_swap::ArcSwapOption`]).
+pub struct DetectionContext {
+    is_dark: ArcSwapOption<bool>,
+    reduced_motion: ArcSwapOption<bool>,
+    icon_theme: ArcSwapOption<String>,
+    #[cfg(target_os = "linux")]
+    linux_desktop: ArcSwapOption<LinuxDesktop>,
+}
+
+impl DetectionContext {
+    /// Create an empty context with no cached values.
+    fn new() -> Self {
+        Self {
+            is_dark: ArcSwapOption::empty(),
+            reduced_motion: ArcSwapOption::empty(),
+            icon_theme: ArcSwapOption::empty(),
+            #[cfg(target_os = "linux")]
+            linux_desktop: ArcSwapOption::empty(),
+        }
+    }
+
+    /// Whether the system is using a dark color scheme (cached).
+    ///
+    /// The first call queries the OS and caches the result.
+    /// Subsequent calls return the cached value.
+    /// Call [`invalidate_is_dark()`](Self::invalidate_is_dark) to
+    /// force a re-read on the next call.
+    #[must_use]
+    pub fn is_dark(&self) -> bool {
+        if let Some(v) = self.is_dark.load().as_deref() {
+            return *v;
+        }
+        let value = detect_is_dark_inner();
+        self.is_dark.store(Some(Arc::new(value)));
+        value
+    }
+
+    /// Whether the user prefers reduced motion (cached).
+    ///
+    /// The first call queries the OS and caches the result.
+    /// Call [`invalidate_reduced_motion()`](Self::invalidate_reduced_motion)
+    /// to force a re-read.
+    #[must_use]
+    pub fn prefers_reduced_motion(&self) -> bool {
+        if let Some(v) = self.reduced_motion.load().as_deref() {
+            return *v;
+        }
+        let value = detect_reduced_motion_inner();
+        self.reduced_motion.store(Some(Arc::new(value)));
+        value
+    }
+
+    /// The current icon theme name (cached).
+    ///
+    /// Returns a clone of the cached `String`. The first call
+    /// detects the theme from the OS; subsequent calls return the
+    /// cached value. Call
+    /// [`invalidate_icon_theme()`](Self::invalidate_icon_theme) to
+    /// force a re-read.
+    #[must_use]
+    pub fn icon_theme(&self) -> Arc<String> {
+        if let Some(v) = self.icon_theme.load_full() {
+            return v;
+        }
+        let value = Arc::new(detect_icon_theme_inner());
+        self.icon_theme.store(Some(Arc::clone(&value)));
+        value
+    }
+
+    /// The current Linux desktop environment (cached).
+    ///
+    /// The first call reads `XDG_CURRENT_DESKTOP` and caches the
+    /// result. Call
+    /// [`invalidate_linux_desktop()`](Self::invalidate_linux_desktop)
+    /// to force a re-read.
+    #[cfg(target_os = "linux")]
+    #[must_use]
+    pub fn linux_desktop(&self) -> LinuxDesktop {
+        if let Some(v) = self.linux_desktop.load().as_deref() {
+            return *v;
+        }
+        let value = detect_linux_desktop();
+        self.linux_desktop.store(Some(Arc::new(value)));
+        value
+    }
+
+    /// Clear the cached dark-mode value.
+    pub fn invalidate_is_dark(&self) {
+        self.is_dark.store(None);
+    }
+
+    /// Clear the cached reduced-motion value.
+    pub fn invalidate_reduced_motion(&self) {
+        self.reduced_motion.store(None);
+    }
+
+    /// Clear the cached icon theme.
+    pub fn invalidate_icon_theme(&self) {
+        self.icon_theme.store(None);
+    }
+
+    /// Clear the cached Linux desktop environment.
+    #[cfg(target_os = "linux")]
+    pub fn invalidate_linux_desktop(&self) {
+        self.linux_desktop.store(None);
+    }
+
+    /// Clear all cached values.
+    pub fn invalidate_all(&self) {
+        self.invalidate_is_dark();
+        self.invalidate_reduced_motion();
+        self.invalidate_icon_theme();
+        #[cfg(target_os = "linux")]
+        self.invalidate_linux_desktop();
+    }
+}
+
+/// Return the process-wide default [`DetectionContext`].
+///
+/// This is a lazily-initialized singleton. The first call creates it;
+/// all subsequent calls return the same instance.
+pub fn system() -> &'static DetectionContext {
+    static INSTANCE: std::sync::OnceLock<DetectionContext> = std::sync::OnceLock::new();
+    INSTANCE.get_or_init(DetectionContext::new)
+}
+
+/// Inner icon theme detection, delegating to platform-specific logic.
+///
+/// On Linux, dispatches by desktop environment. On macOS/Windows/other,
+/// returns the compile-time constant.
+#[allow(unreachable_code)]
+fn detect_icon_theme_inner() -> String {
+    crate::model::icons::detect_icon_theme()
+}
+
 // === Crate-internal accessors ===
 
 /// Run `gsettings get <schema> <key>` with timeout.
@@ -798,5 +921,73 @@ mod reduced_motion_tests {
     fn detect_reduced_motion_inner_windows() {
         let result = detect_reduced_motion_inner();
         let _ = result;
+    }
+}
+
+#[cfg(test)]
+mod detection_context_tests {
+    use super::*;
+
+    #[test]
+    fn system_returns_same_instance() {
+        let a = system() as *const DetectionContext;
+        let b = system() as *const DetectionContext;
+        assert_eq!(a, b);
+    }
+
+    #[test]
+    fn is_dark_caches_result() {
+        let ctx = DetectionContext::new();
+        let first = ctx.is_dark();
+        let second = ctx.is_dark();
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn invalidate_is_dark_clears_cache() {
+        let ctx = DetectionContext::new();
+        let _ = ctx.is_dark(); // populate cache
+        ctx.invalidate_is_dark();
+        // After invalidation, next call re-queries (we just verify it doesn't panic)
+        let _ = ctx.is_dark();
+    }
+
+    #[test]
+    fn prefers_reduced_motion_caches_result() {
+        let ctx = DetectionContext::new();
+        let first = ctx.prefers_reduced_motion();
+        let second = ctx.prefers_reduced_motion();
+        assert_eq!(first, second);
+    }
+
+    #[test]
+    fn invalidate_all_clears_all_caches() {
+        let ctx = DetectionContext::new();
+        let _ = ctx.is_dark();
+        let _ = ctx.prefers_reduced_motion();
+        let _ = ctx.icon_theme();
+        ctx.invalidate_all();
+        // Re-read all without panic
+        let _ = ctx.is_dark();
+        let _ = ctx.prefers_reduced_motion();
+        let _ = ctx.icon_theme();
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn linux_desktop_caches_result() {
+        let ctx = DetectionContext::new();
+        let first = ctx.linux_desktop();
+        let second = ctx.linux_desktop();
+        assert_eq!(first, second);
+    }
+
+    #[cfg(target_os = "linux")]
+    #[test]
+    fn invalidate_linux_desktop_clears_cache() {
+        let ctx = DetectionContext::new();
+        let _ = ctx.linux_desktop();
+        ctx.invalidate_linux_desktop();
+        let _ = ctx.linux_desktop(); // re-reads without panic
     }
 }

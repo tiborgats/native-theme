@@ -32,6 +32,7 @@ system-icons = [
 ]
 
 [dependencies]
+arc-swap = "1.9"
 inventory = "0.3"
 native-theme-derive = { path = "../native-theme-derive" }
 resvg = { version = "0.47", optional = true, default-features = false }
