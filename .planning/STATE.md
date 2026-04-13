@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 79 — borderspec-split-and-platform-reader-visibility-audit
-Plan: 2/2 complete
-Status: Phase 79 complete — BorderSpec split and platform reader visibility audit done
-Last activity: 2026-04-13 — Phase 79 Plan 01 executed (2 tasks, 2 commits)
+Phase: 80 — native-theme-derive-proc-macro-k-codegen
+Plan: 1/2 complete
+Status: Plan 01 complete — ThemeWidget derive crate with ButtonTheme prototype
+Last activity: 2026-04-13 — Phase 80 Plan 01 executed (3 tasks, 3 commits)
 
-Progress: [██████████] 100% (36/36 plans complete)
+Progress: [██████████] 100% (37/38 plans complete)
 
 ## Accumulated Context
 
@@ -135,6 +135,10 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 79-01]: WidgetBorderSpec sets corner_radius_lg=0.0 and opacity=0.0 in resolved output (defaults-only fields)
 - [Phase 79-01]: D2 padding-derives-from-presence rule removed -- DefaultsBorderSpec has no padding fields
 - [Phase 79-01]: Proptest strategies split into arb_defaults_border_spec and arb_widget_border_spec
+- [Phase 80-01]: Field category defaults to "option" when no #[theme(category = ...)] attribute present
+- [Phase 80-01]: ResolvedFontSpec nested fields auto-emit check_positive(size) and check_range_u16(weight) without explicit attributes
+- [Phase 80-01]: Derive macro does NOT re-emit the Option struct -- user writes serde/Default derives manually
+- [Phase 80-01]: inherit_from and border_kind parsed but gated with #[expect(dead_code)] for Plan 02
 
 ### Blockers/Concerns
 
@@ -147,6 +151,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T08:28:16Z
-Stopped at: Completed 79-01-PLAN.md (Phase 79 fully complete)
+Last session: 2026-04-13T09:22:45Z
+Stopped at: Completed 80-01-PLAN.md
 Resume file: None

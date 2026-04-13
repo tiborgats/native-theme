@@ -449,9 +449,9 @@ Plans:
   2. `validate.rs` shrinks by at least 720 lines of hand-written range-check / construction boilerplate, and `grep -c fn check_ranges src/resolved/*.rs` drops to zero (all generated)
   3. `inheritance.rs` duplication with `inheritance-rules.toml` is gone — ~55 of 82 rules live on per-field `#[theme(inherit_from = "...")]` attributes, and pattern-based rules that stay hand-written are documented in a comment block
   4. The three parallel `require_border` / `border_all_optional` / `require_border_partial` paths collapse into a single generated path selected by `#[theme_layer(border_kind = "...")]`, with no behavioural change for any of the 17 presets
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
-- [ ] 80-01-PLAN.md — Create native-theme-derive proc-macro crate and prototype on ButtonTheme
+- [x] 80-01-PLAN.md — Create native-theme-derive proc-macro crate and prototype on ButtonTheme
 - [ ] 80-02-PLAN.md — Migrate all 25 widgets, wire inheritance attributes, and inventory registry
 
 ### Phase 81: Feature-Matrix Cleanup and Unified from_system
@@ -622,7 +622,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 77. SystemTheme API and icon_set Relocation | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 78. OverlaySource, AccessibilityPreferences, font_dpi Relocation | v0.5.7 | 4/4 | Complete   | 2026-04-13 |
 | 79. BorderSpec Split and Platform Reader Visibility Audit | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
-| 80. native-theme-derive Proc-Macro K Codegen | v0.5.7 | 0/0 | Not started | — |
+| 80. native-theme-derive Proc-Macro K Codegen | v0.5.7 | 1/2 | In Progress|  |
 | 81. Feature-Matrix Cleanup and Unified from_system | v0.5.7 | 0/0 | Not started | — |
 | 82. Icon API Rework | v0.5.7 | 0/0 | Not started | — |
 | 83. Detection Cache Layer | v0.5.7 | 0/0 | Not started | — |

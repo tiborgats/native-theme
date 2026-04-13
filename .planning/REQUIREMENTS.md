@@ -32,7 +32,7 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 
 ### Data Model Restructure
 
-- [ ] **MODEL-01**: Doubled `Option<T>` / `Resolved<T>` struct hierarchy generated from one source — new `native-theme-derive` proc-macro crate (Option K) emits paired structs, `FIELD_NAMES` constants, `impl_merge!` bodies, `check_ranges` impls, and `inventory::submit!` widget registry entries (doc 1 §2)
+- [x] **MODEL-01**: Doubled `Option<T>` / `Resolved<T>` struct hierarchy generated from one source — new `native-theme-derive` proc-macro crate (Option K) emits paired structs, `FIELD_NAMES` constants, `impl_merge!` bodies, `check_ranges` impls, and `inventory::submit!` widget registry entries (doc 1 §2)
 - [x] **MODEL-02**: `SystemTheme` pre-resolve variant fields eliminated via `OverlaySource` replay model; `with_overlay()` rebuilds via `ResolutionContext` instead of storing pre-resolve copies (doc 1 §3)
 - [x] **MODEL-03**: `SystemTheme::active()` dropped; `pick(ColorMode)` keeps; `SystemTheme.mode: ColorMode` field exposed (doc 1 §4 Option C + §32.3 G)
 - [ ] **MODEL-04**: `ThemeVariant::resolve*` method intermediates demoted to `#[doc(hidden)] pub` (Option B' preserves integration tests) (doc 1 §7)
@@ -47,11 +47,11 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 ### Border Model
 
 - [x] **BORDER-01**: `BorderSpec` split along defaults-vs-widget — widget-level has `color`, defaults-level adds `width`, `corner_radius`, `padding`; ships hand-written in v0.5.7 with codegen migration deferred to v0.5.8 (doc 2 B6)
-- [ ] **BORDER-02**: Three parallel border-inheritance validation paths (`require_border` / `border_all_optional` / `require_border_partial`) unified via `#[theme_layer(border_kind = "full" | "partial" | "none")]` class-level attribute (doc 2 B7, subsumed by MODEL-01 K)
+- [x] **BORDER-02**: Three parallel border-inheritance validation paths (`require_border` / `border_all_optional` / `require_border_partial`) unified via `#[theme_layer(border_kind = "full" | "partial" | "none")]` class-level attribute (doc 2 B7, subsumed by MODEL-01 K)
 
 ### Validation & Codegen
 
-- [ ] **VALID-01**: ~720 lines of hand-written validate/range-check boilerplate generated from `#[theme(range = "...")]` and `#[theme(check = "non_negative")]` attributes via `native-theme-derive` (doc 2 B1)
+- [x] **VALID-01**: ~720 lines of hand-written validate/range-check boilerplate generated from `#[theme(range = "...")]` and `#[theme(check = "non_negative")]` attributes via `native-theme-derive` (doc 2 B1)
 - [ ] **VALID-02**: Inheritance rules deduplicated between `inheritance-rules.toml` and `inheritance.rs` — per-field `#[theme(inherit_from = "...")]` attributes cover the ~55 of 82 expressible uniform rules; pattern-based rules stay hand-written (doc 2 B2)
 - [ ] **VALID-03**: `lint_toml` driven by `inventory::submit!` widget registry entries instead of ~215 hand-maintained string literals (doc 1 §14)
 - [ ] **VALID-04**: `check_ranges` stops eager `format!` path-string construction; allocate path strings lazily (doc 2 D3)
