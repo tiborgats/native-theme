@@ -5,7 +5,7 @@
 //! images (`iced::widget::Svg`), this module provides separate conversion
 //! functions for each variant.
 
-use native_theme::icons::load_custom_icon;
+use native_theme::icons::IconLoader;
 use native_theme::theme::{AnimatedIcon, IconData, IconProvider};
 
 /// Converted animation frames with timing metadata.
@@ -74,7 +74,7 @@ pub fn custom_icon_to_image_handle(
     provider: &(impl IconProvider + ?Sized),
     icon_set: native_theme::theme::IconSet,
 ) -> Option<iced_core::image::Handle> {
-    let data = load_custom_icon(provider, icon_set, None)?;
+    let data = load_custom_via_builder(provider, icon_set)?;
     to_image_handle(&data)
 }
 
@@ -88,8 +88,30 @@ pub fn custom_icon_to_svg_handle(
     icon_set: native_theme::theme::IconSet,
     color: Option<iced_core::Color>,
 ) -> Option<iced_core::svg::Handle> {
-    let data = load_custom_icon(provider, icon_set, None)?;
+    let data = load_custom_via_builder(provider, icon_set)?;
     to_svg_handle(&data, color)
+}
+
+/// Internal helper: load an icon from a provider using [`IconLoader`].
+///
+/// Uses the provider's `icon_name` and `icon_svg` methods directly, then
+/// dispatches through `IconLoader` for system lookups. This preserves
+/// the `?Sized` bound on the public API.
+fn load_custom_via_builder(
+    provider: &(impl IconProvider + ?Sized),
+    icon_set: native_theme::theme::IconSet,
+) -> Option<IconData> {
+    // Step 1: Try system loader with provider's name mapping
+    if let Some(name) = provider.icon_name(icon_set) {
+        if let Some(data) = IconLoader::new(name).set(icon_set).load() {
+            return Some(data);
+        }
+    }
+    // Step 2: Try bundled SVG from provider
+    if let Some(svg) = provider.icon_svg(icon_set) {
+        return Some(IconData::Svg(svg));
+    }
+    None
 }
 
 /// Convert all frames of an [`AnimatedIcon::Frames`] to iced SVG handles.
@@ -119,7 +141,7 @@ pub fn custom_icon_to_svg_handle(
 /// ```no_run
 /// use native_theme_iced::icons::animated_frames_to_svg_handles;
 ///
-/// if let Some(anim) = native_theme::icons::loading_indicator(native_theme::theme::IconSet::Material) {
+/// if let Some(anim) = native_theme::icons::IconLoader::new(native_theme::theme::IconRole::StatusBusy).set(native_theme::theme::IconSet::Material).load_indicator() {
 ///     if let Some(anim_handles) = animated_frames_to_svg_handles(&anim, None) {
 ///         // Cache `anim_handles`, then in subscription():
 ///         // iced::time::every(Duration::from_millis(anim_handles.frame_duration_ms as u64))

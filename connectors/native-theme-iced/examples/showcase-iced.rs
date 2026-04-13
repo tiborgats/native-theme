@@ -18,7 +18,7 @@ use iced::{Color, Element, Fill, Length, Padding, Theme};
 
 use iced::Subscription;
 use native_theme::detect::prefers_reduced_motion;
-use native_theme::icons::loading_indicator;
+use native_theme::icons::IconLoader;
 use native_theme::theme::{AnimatedIcon, IconData, IconRole, IconSet, TransformAnimation};
 use native_theme_iced::icons::{
     AnimatedSvgHandles, animated_frames_to_svg_handles, spin_rotation_radians, to_svg_handle,
@@ -439,7 +439,7 @@ fn load_all_icons(
     let material_icons: Vec<Option<IconData>> = if is_system_set {
         IconRole::ALL
             .iter()
-            .map(|role| native_theme::icons::load_icon(*role, IconSet::Material, None))
+            .map(|role| IconLoader::new(*role).set(IconSet::Material).load())
             .collect()
     } else {
         vec![]
@@ -451,9 +451,13 @@ fn load_all_icons(
         .map(|(i, &role)| {
             let data = match choice {
                 IconSetChoice::Default(theme) if set == IconSet::Freedesktop => {
-                    native_theme::icons::load_icon_from_theme(role, set, theme, fg)
+                    IconLoader::new(role)
+                        .set(set)
+                        .theme(theme)
+                        .color_opt(fg)
+                        .load()
                 }
-                _ => native_theme::icons::load_icon(role, set, fg),
+                _ => IconLoader::new(role).set(set).color_opt(fg).load(),
             };
             let name = native_theme::theme::icon_name(role, set);
             let source = match (&data, is_system_set) {
@@ -511,7 +515,10 @@ fn build_animation_caches(
 
     let set_name = icon_set.name().to_string();
     {
-        if let Some(anim) = loading_indicator(icon_set) {
+        if let Some(anim) = IconLoader::new(IconRole::StatusBusy)
+            .set(icon_set)
+            .load_indicator()
+        {
             // Cache static first-frame for reduced motion
             if let Some(frame_data) = anim.first_frame()
                 && let Some(handle) = to_svg_handle(frame_data, None)

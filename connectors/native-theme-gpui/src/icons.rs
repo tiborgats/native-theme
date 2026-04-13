@@ -19,7 +19,7 @@ use gpui::{
     Animation, AnimationExt, Hsla, Image, ImageFormat, ImageSource, Svg, Transformation, percentage,
 };
 use gpui_component::IconName;
-use native_theme::icons::load_custom_icon;
+use native_theme::icons::IconLoader;
 use native_theme::theme::{AnimatedIcon, IconData, IconProvider, IconRole};
 use std::sync::Arc;
 use std::time::Duration;
@@ -821,7 +821,7 @@ pub fn into_image_source(
 
 /// Load a custom icon from an [`IconProvider`] and convert to a gpui [`ImageSource`].
 ///
-/// Equivalent to calling [`load_custom_icon()`](native_theme::load_custom_icon)
+/// Equivalent to calling [`IconLoader::new(provider).set(icon_set).load()`](native_theme::icons::IconLoader)
 /// followed by [`to_image_source()`], composing the loading and conversion steps.
 ///
 /// Returns `None` if the provider has no icon for the given set or if
@@ -835,8 +835,30 @@ pub fn custom_icon_to_image_source(
     color: Option<Hsla>,
     size: Option<u32>,
 ) -> Option<ImageSource> {
-    let data = load_custom_icon(provider, icon_set, None)?;
+    let data = load_custom_via_builder(provider, icon_set)?;
     to_image_source(&data, color, size)
+}
+
+/// Internal helper: load an icon from a provider using [`IconLoader`].
+///
+/// Uses the provider's `icon_name` and `icon_svg` methods directly, then
+/// dispatches through `IconLoader` for system lookups. This preserves
+/// the `?Sized` bound on the public API.
+fn load_custom_via_builder(
+    provider: &(impl IconProvider + ?Sized),
+    icon_set: native_theme::theme::IconSet,
+) -> Option<IconData> {
+    // Step 1: Try system loader with provider's name mapping
+    if let Some(name) = provider.icon_name(icon_set) {
+        if let Some(data) = IconLoader::new(name).set(icon_set).load() {
+            return Some(data);
+        }
+    }
+    // Step 2: Try bundled SVG from provider
+    if let Some(svg) = provider.icon_svg(icon_set) {
+        return Some(IconData::Svg(svg));
+    }
+    None
 }
 
 /// Load a gpui-component icon from a bundled icon set and convert to an [`ImageSource`].

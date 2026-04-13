@@ -216,12 +216,11 @@ impl<'a> IconLoader<'a> {
     /// Internal: load via custom IconProvider.
     fn load_custom(self, provider: &dyn IconProvider) -> Option<IconData> {
         // Step 1: Try system loader with provider's name mapping
-        if let Some(name) = provider.icon_name(self.set) {
-            if let Some(data) =
+        if let Some(name) = provider.icon_name(self.set)
+            && let Some(data) =
                 load_system_icon_by_name_inner(name, self.set, self.size, self.fg_color)
-            {
-                return Some(data);
-            }
+        {
+            return Some(data);
         }
 
         // Step 2: Try bundled SVG from provider
@@ -451,7 +450,11 @@ mod load_icon_tests {
         // Material has 42 of 42 roles mapped, all return Some
         let mut some_count = 0;
         for role in IconRole::ALL {
-            if IconLoader::new(role).set(IconSet::Material).load().is_some() {
+            if IconLoader::new(role)
+                .set(IconSet::Material)
+                .load()
+                .is_some()
+            {
                 some_count += 1;
             }
         }
@@ -540,9 +543,7 @@ mod load_system_icon_by_name_tests {
         // On Linux, SfSymbols set is not available (cfg-gated to macOS)
         #[cfg(not(target_os = "macos"))]
         {
-            let result = IconLoader::new("doc.on.doc")
-                .set(IconSet::SfSymbols)
-                .load();
+            let result = IconLoader::new("doc.on.doc").set(IconSet::SfSymbols).load();
             assert!(
                 result.is_none(),
                 "SF Symbols should return None on non-macOS"
@@ -616,9 +617,7 @@ mod load_custom_icon_tests {
 
         // Just verify it doesn't panic -- the actual set chosen depends on platform
         let provider: &dyn IconProvider = &NullProvider;
-        let _result = IconLoader::new(provider)
-            .set(IconSet::Freedesktop)
-            .load();
+        let _result = IconLoader::new(provider).set(IconSet::Freedesktop).load();
     }
 
     #[test]
