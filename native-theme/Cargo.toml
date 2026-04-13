@@ -13,25 +13,23 @@ description = "Cross-platform native theme detection and loading for Rust GUI ap
 
 [features]
 kde = ["dep:configparser"]
-portal = ["dep:ashpd"]
-portal-tokio = ["portal", "ashpd/tokio"]
-portal-async-io = ["portal", "ashpd/async-io"]
+portal = ["dep:ashpd", "ashpd/async-io"]
 windows = ["dep:windows"]
 macos = ["dep:objc2", "dep:objc2-foundation", "dep:objc2-app-kit", "dep:block2"]
-linux = ["kde", "portal-tokio"]
-linux-async-io = ["kde", "portal-async-io"]
+linux-kde = ["kde"]
+linux-portal = ["portal"]
+linux = ["linux-kde", "linux-portal"]
 native = ["linux", "macos", "windows"]
-native-async-io = ["linux-async-io", "macos", "windows"]
 watch = ["dep:notify", "dep:zbus"]
-material-icons = [] # Bundle Material Symbols SVGs as cross-platform fallback
-lucide-icons = [] # Bundle Lucide SVGs as optional icon set
-svg-rasterize = ["dep:resvg"] # Optional SVG-to-RGBA rasterization via resvg
+material-icons = []
+lucide-icons = []
+svg-rasterize = ["dep:resvg"]
 system-icons = [
     "dep:freedesktop-icons",
     "dep:objc2-core-foundation",
     "dep:objc2-core-graphics",
     "material-icons",
-] # Platform icon theme lookup with bundled fallback
+]
 
 [dependencies]
 inventory = "0.3"
@@ -88,6 +86,7 @@ ashpd = { version = "0.13.9", optional = true, default-features = false, feature
 configparser = { version = "3.1.0", optional = true }
 freedesktop-icons = { version = "0.4", optional = true }
 notify = { version = "8.2", optional = true, default-features = false }
+pollster = "0.4"
 zbus = { version = "5.14", optional = true, default-features = false, features = [
     "blocking-api",
 ] }
