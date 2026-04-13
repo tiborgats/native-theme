@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
 status: in-progress
-stopped_at: Phase 84 verified — 4/4 must-haves confirmed
-last_updated: "2026-04-13T20:45:00.000Z"
-last_activity: 2026-04-13 — Phase 84 verified (4/4 must-haves confirmed)
+stopped_at: Phase 85 verified — 8/8 must-haves confirmed
+last_updated: "2026-04-13T21:15:00.000Z"
+last_activity: 2026-04-13 — Phase 85 verified (8/8 must-haves confirmed)
 progress:
   total_phases: 28
-  completed_phases: 24
-  total_plans: 46
-  completed_plans: 46
+  completed_phases: 25
+  total_plans: 48
+  completed_plans: 48
   percent: 100
 ---
 
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 Phase: 85 — data-model-method-and-doc-cleanup
 Plan: 2/2 complete
-Status: Phase 85 complete
-Last activity: 2026-04-13 — Completed 85-02 (FontSize rename + ThemeWatcher docs)
+Status: Phase 85 verified — 8/8 must-haves confirmed
+Last activity: 2026-04-13 — Phase 85 verified (8/8 must-haves confirmed)
 
 Progress: [██████████] 100% (48/48 plans complete)
 
@@ -186,6 +186,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T20:53:31Z
-Stopped at: Completed 85-02-PLAN.md
+Last session: 2026-04-13T21:15:00Z
+Stopped at: Phase 85 verified — 8/8 must-haves confirmed
 Resume file: None
