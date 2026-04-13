@@ -159,7 +159,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 81: Feature-Matrix Cleanup and Unified from_system** — Ship-unit 11 atomic: unify `from_system`/`from_system_async` via `pollster::block_on`, split aggregators into `linux-kde`/`linux-portal`-style groups, simplify `Cargo.toml` feature graph (completed 2026-04-13)
 - [x] **Phase 82: Icon API Rework** — Collapse 13 icon-loading functions into `IconLoader` builder, migrate `IconProvider` and `IconData::Svg` to `Cow<'static, [u8]>`, add `IconRole::name()` / `Display`, add `IconSet` drift-guard test (completed 2026-04-13)
 - [x] **Phase 83: Detection Cache Layer** — Replace global `OnceLock` caches with `DetectionContext` backed by `arc_swap::ArcSwapOption`, add no-arg `detect_linux_desktop()` overload (completed 2026-04-13)
-- [ ] **Phase 84: Reader Output Contract Homogenisation** — Unify single-vs-dual variant semantics across KDE/GNOME/Windows/macOS readers via a `ReaderOutput` type flowing through `run_pipeline` alongside `OverlaySource`
+- [x] **Phase 84: Reader Output Contract Homogenisation** — Unify single-vs-dual variant semantics across KDE/GNOME/Windows/macOS readers via a `ReaderOutput` type flowing through `run_pipeline` alongside `OverlaySource` (completed 2026-04-13)
 - [ ] **Phase 85: Data Model Method and Doc Cleanup** — Demote `ThemeVariant::resolve*` intermediates to `#[doc(hidden)]`, `Theme` method grab-bag cleanup, document `ThemeWatcher` internals, rename `FontSize::Px::to_px` to `to_logical_px`
 - [ ] **Phase 86: Validation and Lint Codegen Polish** — Drive `lint_toml` from the `inventory::submit!` widget registry, stop `check_ranges` from eagerly `format!`-ing path strings
 - [ ] **Phase 87: Font Family Arc<str> and AnimatedIcon Invariants** — Migrate `FontSpec::family: String` to `Arc<str>` across widget × connector, wrap `AnimatedIcon` public fields in newtype constructors that enforce invariants
@@ -509,7 +509,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [x] 84-01-PLAN.md — Define ReaderOutput enum, rewrite pipeline core (run_pipeline, with_overlay, OverlaySource)
-- [ ] 84-02-PLAN.md — Migrate all four readers to return ReaderOutput, add contract test, remove variant-ambiguity comments
+- [x] 84-02-PLAN.md — Migrate all four readers to return ReaderOutput, add contract test, remove variant-ambiguity comments
 
 ### Phase 85: Data Model Method and Doc Cleanup
 **Goal**: `ThemeMode::resolve*` intermediates are demoted to `#[doc(hidden)] pub` so integration tests still reach them but rustdoc stops advertising them; `Theme`'s method grab-bag is cleaned up (including the coordinated removal of `from_toml_with_base` and the `error.rs:63` hint message); `ThemeWatcher` internals and constructor split are documented with a rename if the old name no longer fits; `FontSize::Px(v).to_px(dpi)` is renamed to `to_logical_px` so the DPI parameter stops being silently ignored in the `Px` branch
@@ -626,7 +626,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 81. Feature-Matrix Cleanup and Unified from_system | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 82. Icon API Rework | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 83. Detection Cache Layer | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
-| 84. Reader Output Contract Homogenisation | v0.5.7 | 1/2 | In Progress|  |
+| 84. Reader Output Contract Homogenisation | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 85. Data Model Method and Doc Cleanup | v0.5.7 | 0/0 | Not started | — |
 | 86. Validation and Lint Codegen Polish | v0.5.7 | 0/0 | Not started | — |
 | 87. Font Family Arc<str> and AnimatedIcon Invariants | v0.5.7 | 0/0 | Not started | — |

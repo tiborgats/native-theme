@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
 status: in-progress
-stopped_at: Completed 84-01-PLAN.md
-last_updated: "2026-04-13T19:43:22.000Z"
-last_activity: 2026-04-13 — Phase 84 Plan 01 complete (ReaderOutput enum + pipeline core)
+stopped_at: Completed 84-02-PLAN.md
+last_updated: "2026-04-13T20:07:08.000Z"
+last_activity: 2026-04-13 — Phase 84 complete (all readers return ReaderResult, contract tests)
 progress:
   total_phases: 28
-  completed_phases: 23
+  completed_phases: 24
   total_plans: 46
-  completed_plans: 45
-  percent: 97
+  completed_plans: 46
+  percent: 100
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 84 — reader-output-contract-homogenisation
-Plan: 1/2 complete
-Status: in-progress
-Last activity: 2026-04-13 — Plan 01 complete (ReaderOutput enum + pipeline core rewrite)
+Plan: 2/2 complete
+Status: complete
+Last activity: 2026-04-13 — Plan 02 complete (all readers return ReaderResult, contract tests)
 
-Progress: [██████████] 100% (45/46 plans complete)
+Progress: [██████████] 100% (46/46 plans complete)
 
 ## Accumulated Context
 
@@ -95,6 +95,10 @@ v0.5.6 decisions worth carrying into v0.5.7 planning:
 - [Phase 84-01]: theme_to_reader_output bridge for incremental reader migration; Plan 02 eliminates it
 - [Phase 84-01]: run_pipeline 8 params with #[allow(clippy::too_many_arguments)] -- reader metadata passed separately alongside ReaderOutput
 - [Phase 84-01]: overlay_tests return Result<()> for zero-panic test consistency
+- [Phase 84-02]: ReaderResult struct replaces 8-param run_pipeline -- bundles ReaderOutput + name + icon_set + layout + font_dpi + accessibility
+- [Phase 84-02]: from_kde_content_pure unchanged (pub, returns Theme tuple) -- integration tests depend on it
+- [Phase 84-02]: preset_as_reader helper consolidates 10 fallback call sites into single function
+- [Phase 84-02]: #[allow(dead_code)] on Dual variant -- only used in macOS-gated code, invisible on Linux
 
 ### Pending Todos
 
@@ -180,6 +184,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T19:43:22Z
-Stopped at: Completed 84-01-PLAN.md
+Last session: 2026-04-13T20:07:08Z
+Stopped at: Completed 84-02-PLAN.md
 Resume file: None
