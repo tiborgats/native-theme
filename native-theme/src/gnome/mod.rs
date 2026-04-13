@@ -473,23 +473,23 @@ pub async fn from_gnome() -> crate::Result<crate::Theme> {
 ///
 /// Requires both `kde` and `portal` features.
 #[cfg(feature = "kde")]
-pub async fn from_kde_with_portal() -> crate::Result<crate::Theme> {
-    let mut base = crate::kde::from_kde()?;
+pub async fn from_kde_with_portal() -> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
+    let (mut base, kde_dpi, kde_acc) = crate::kde::from_kde()?;
 
     // Try to get accent color from portal
     let settings = match ashpd::desktop::settings::Settings::new().await {
         Ok(s) => s,
-        Err(_) => return Ok(base),
+        Err(_) => return Ok((base, kde_dpi, kde_acc)),
     };
 
     let accent = match settings.accent_color().await {
         Ok(color) => color,
-        Err(_) => return Ok(base),
+        Err(_) => return Ok((base, kde_dpi, kde_acc)),
     };
 
     let rgba = match portal_color_to_rgba(&accent) {
         Some(r) => r,
-        None => return Ok(base),
+        None => return Ok((base, kde_dpi, kde_acc)),
     };
 
     // Build overlay with accent applied to the same variant(s) as base
@@ -507,7 +507,7 @@ pub async fn from_kde_with_portal() -> crate::Result<crate::Theme> {
     }
 
     base.merge(&overlay);
-    Ok(base)
+    Ok((base, kde_dpi, kde_acc))
 }
 
 /// Detect which desktop portal backend is running via D-Bus activatable names.

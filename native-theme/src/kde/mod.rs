@@ -92,7 +92,9 @@ pub fn from_kde_content_pure(
 ///
 /// Delegates to [`from_kde_content_pure`] for parsing, then performs I/O
 /// for full DPI detection and icon size lookup.
-pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::Theme> {
+pub(crate) fn from_kde_content(
+    content: &str,
+) -> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
     let mut ini = create_kde_parser();
     ini.read(content.to_string())
         .map_err(|e| crate::Error::ReaderFailed {
@@ -103,7 +105,7 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::Theme> {
     // I/O: full DPI detection chain (forceFontDPI -> kcmfontsrc -> xrdb -> xrandr -> 96.0)
     let font_dpi = detect_font_dpi(&ini);
 
-    let (mut theme, _dpi, _accessibility) = from_kde_content_pure(content, Some(font_dpi))?;
+    let (mut theme, _dpi, accessibility) = from_kde_content_pure(content, Some(font_dpi))?;
 
     // I/O: icon sizes from filesystem (icon_theme is now on Theme)
     if let Some(ref theme_name) = theme.icon_theme {
@@ -117,7 +119,7 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::Theme> {
         }
     }
 
-    Ok(theme)
+    Ok((theme, Some(font_dpi), accessibility))
 }
 
 /// Extract forceFontDPI from the parsed INI content.
@@ -347,7 +349,7 @@ fn find_index_theme_path(theme_name: &str) -> Option<std::path::PathBuf> {
 ///
 /// Parses `~/.config/kdeglobals` (respecting `XDG_CONFIG_HOME`) and maps
 /// KDE color groups and font strings to a `Theme`.
-pub fn from_kde() -> crate::Result<crate::Theme> {
+pub fn from_kde() -> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
     let path = kdeglobals_path();
     let content = std::fs::read_to_string(&path).map_err(|e| crate::Error::ReaderFailed {
         reader: "kde",

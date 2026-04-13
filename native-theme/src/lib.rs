@@ -609,7 +609,7 @@ mod overlay_tests {
     /// Helper: build a SystemTheme from a preset via pipeline::run_pipeline.
     fn default_system_theme() -> SystemTheme {
         let reader = Theme::preset("catppuccin-mocha").unwrap();
-        pipeline::run_pipeline(reader, "catppuccin-mocha", ColorMode::Light).unwrap()
+        pipeline::run_pipeline(reader, "catppuccin-mocha", ColorMode::Light, AccessibilityPreferences::default(), None).unwrap()
     }
 
     #[test]
