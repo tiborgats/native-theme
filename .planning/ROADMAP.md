@@ -469,15 +469,15 @@ Plans:
 - [x] 81-02-PLAN.md — Update CI matrix and full feature-combination verification
 
 ### Phase 82: Icon API Rework
-**Goal**: The 13 icon-loading functions collapse into a single `IconLoader::new().role(...).size(...).theme(...).load()` builder with an `impl Into<IconId>` constructor; `IconProvider::icon_svg` and `IconData::Svg` both migrate to `Cow<'static, [u8]>` to eliminate the `Vec<u8>` copy on bundled loads and remove the `&'static [u8]` lifetime lock; `IconRole` gains a kebab-case `name()` method with an `impl Display` delegate; a drift-guard test covers `IconSet::from_name` / `name` round-trip
+**Goal**: The 13 icon-loading functions collapse into a single `IconLoader::new(impl Into<IconId>).set(...).size(...).load()` builder (doc 1 §8 Option C); `IconProvider::icon_svg` and `IconData::Svg` both migrate to `Cow<'static, [u8]>` to eliminate the `Vec<u8>` copy on bundled loads and remove the `&'static [u8]` lifetime lock; `IconRole` gains a kebab-case `name()` method with an `impl Display` delegate; a drift-guard test covers `IconSet::from_name` / `name` round-trip
 **Depends on**: Phase 68
 **Requirements**: ICON-01, ICON-02, ICON-03, ICON-04, ICON-06, ICON-07
 **Success Criteria** (what must be TRUE):
-  1. `IconLoader::new().role(IconRole::ActionSave).size(32).theme(IconSet::Freedesktop).load()` returns the expected `IconData` for every platform, and the old 13 standalone functions no longer exist as public API
+  1. `IconLoader::new(IconRole::ActionSave).set(IconSet::Freedesktop).size(32).load()` returns the expected `IconData` for every platform, and the old 13 standalone functions no longer exist as public API
   2. `IconProvider::icon_svg` returns `Cow<'static, [u8]>`, and a test confirms bundled icon loads produce `Cow::Borrowed` (zero allocation) while runtime icons produce `Cow::Owned`
   3. `IconRole::ActionSave.name()` returns `"action-save"` and `format!("{}", IconRole::ActionSave) == "action-save"` — `Display` delegates to `name()`, not `Debug::fmt`
   4. A drift-guard test asserts `IconSet::from_name(set.name()) == Some(set)` for every variant — if a new variant is added without updating `from_name`, the test fails
-  5. The freedesktop size-24 hardcode is gone: `IconLoader::new().role(...).size(48).load()` on Linux requests a 48px icon from the freedesktop spec, not a 24px icon
+  5. The freedesktop size-24 hardcode is gone: `IconLoader::new(IconRole::ActionSave).set(IconSet::Freedesktop).size(48).load()` on Linux requests a 48px icon from the freedesktop spec, not a 24px icon
 **Plans**: 2 plans
 Plans:
 - [ ] 71-01-PLAN.md � Rewrite Error enum per Option F with ErrorKind and RangeViolation
@@ -624,7 +624,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 79. BorderSpec Split and Platform Reader Visibility Audit | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 80. native-theme-derive Proc-Macro K Codegen | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 81. Feature-Matrix Cleanup and Unified from_system | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
-| 82. Icon API Rework | v0.5.7 | 0/0 | Not started | — |
+| 82. Icon API Rework | v0.5.7 | 1/2 | In Progress|  |
 | 83. Detection Cache Layer | v0.5.7 | 0/0 | Not started | — |
 | 84. Reader Output Contract Homogenisation | v0.5.7 | 0/0 | Not started | — |
 | 85. Data Model Method and Doc Cleanup | v0.5.7 | 0/0 | Not started | — |

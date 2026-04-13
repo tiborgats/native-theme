@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
-status: completed
-stopped_at: Completed phase 81 — verified
-last_updated: "2026-04-13T13:12:19.300Z"
-last_activity: 2026-04-13 — Phase 81 Plan 02 executed (2 tasks, 2 commits)
+status: in-progress
+stopped_at: Completed 82-01-PLAN.md
+last_updated: "2026-04-13T14:46:33.000Z"
+last_activity: 2026-04-13 — Phase 82 Plan 01 executed (2 tasks, 2 commits)
 progress:
   total_phases: 28
   completed_phases: 21
-  total_plans: 40
-  completed_plans: 40
-  percent: 100
+  total_plans: 42
+  completed_plans: 41
+  percent: 97
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 81 — feature-matrix-cleanup-and-unified-from-system
-Plan: 2/2 complete
-Status: Phase 81 verified — all 4 success criteria passed
-Last activity: 2026-04-13 — Phase 81 verified (4/4 must-haves confirmed)
+Phase: 82 — icon-api-rework
+Plan: 1/2 complete
+Status: Plan 01 complete, Plan 02 remaining
+Last activity: 2026-04-13 — Phase 82 Plan 01 executed (2 tasks, 2 commits)
 
-Progress: [██████████] 100% (40/40 plans complete)
+Progress: [█████████▊] 97% (41/42 plans complete)
 
 ## Accumulated Context
 
@@ -152,6 +152,9 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 81-01]: linux-kde and linux-portal sub-aggregators enable fine-grained feature selection
 - [Phase 81-02]: 12 CI matrix entries: no-features, kde, portal, linux-kde, linux-portal, linux, native, icons, Windows(2), macOS(2)
 - [Phase 81-02]: sync_consumer_no_async_runtime gated on cfg(target_os=linux) + cfg(feature=kde) to exercise pollster::block_on path
+- [Phase 82-01]: bundled_icon_svg stays returning Option<&'static [u8]> -- Cow wrapping at call site avoids churn in 400-line match blocks
+- [Phase 82-01]: IconRole::name() uses explicit match (not derive macro) for compile-time guaranteed kebab-case strings
+- [Phase 82-01]: iced connector uses cow.to_vec()/cow.into_owned() for from_memory() compatibility
 
 ### Blockers/Concerns
 
@@ -164,6 +167,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T13:12:19.296Z
-Stopped at: Completed 81-02-PLAN.md
+Last session: 2026-04-13T14:46:33.000Z
+Stopped at: Completed 82-01-PLAN.md
 Resume file: None
