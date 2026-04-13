@@ -154,7 +154,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 76: Type Vocabulary Rename and Crate Root Partition** — Ship-unit 7 part A: atomic rename of `ThemeSpec→Theme`, `ThemeVariant→ThemeMode`, etc. and partition 92-item flat crate root into submodules with a `prelude` (completed 2026-04-12)
 - [x] **Phase 77: SystemTheme API and icon_set Relocation** — Ship-unit 7 part B: drop `SystemTheme::active()` in favour of `pick(ColorMode)` + exposed `mode` field, and move `icon_set`/`icon_theme` onto `Theme` (completed 2026-04-13)
 - [x] **Phase 78: OverlaySource, AccessibilityPreferences, font_dpi Relocation** — Ship-unit 8 atomic: eliminate `SystemTheme` pre-resolve variant fields via `OverlaySource` replay, move accessibility off `ThemeDefaults` onto `SystemTheme`, move `font_dpi` into `ResolutionContext` (completed 2026-04-13)
-- [ ] **Phase 79: BorderSpec Split and Platform Reader Visibility Audit** — Ship-unit 9: split `BorderSpec` along defaults-vs-widget, grep-audit connector callers of platform readers, demote `from_kde`/`from_gnome`/`from_windows`/`from_macos` to `pub(crate)`
+- [x] **Phase 79: BorderSpec Split and Platform Reader Visibility Audit** — Ship-unit 9: split `BorderSpec` along defaults-vs-widget, grep-audit connector callers of platform readers, demote `from_kde`/`from_gnome`/`from_windows`/`from_macos` to `pub(crate)` (completed 2026-04-13)
 - [ ] **Phase 80: native-theme-derive Proc-Macro K Codegen** — Ship-unit 10: new `native-theme-derive` crate generating paired structs, `FIELD_NAMES`, `impl_merge!` bodies, `check_ranges`, `inventory::submit!` registry, and unified border inheritance attribute
 - [ ] **Phase 81: Feature-Matrix Cleanup and Unified from_system** — Ship-unit 11 atomic: unify `from_system`/`from_system_async` via `pollster::block_on`, split aggregators into `linux-kde`/`linux-portal`-style groups, simplify `Cargo.toml` feature graph
 - [ ] **Phase 82: Icon API Rework** — Collapse 13 icon-loading functions into `IconLoader` builder, migrate `IconProvider` and `IconData::Svg` to `Cow<'static, [u8]>`, add `IconRole::name()` / `Display`, add `IconSet` drift-guard test
@@ -437,7 +437,7 @@ Plans:
   4. The unified border-resolution pathway correctly populates widget borders from defaults-level values for all 17 presets
 **Plans**: 2 plans
 Plans:
-- [ ] 79-01-PLAN.md — Split BorderSpec into DefaultsBorderSpec and WidgetBorderSpec
+- [x] 79-01-PLAN.md — Split BorderSpec into DefaultsBorderSpec and WidgetBorderSpec
 - [x] 79-02-PLAN.md — L3 visibility audit and platform reader demotion to pub(crate)
 
 ### Phase 80: native-theme-derive Proc-Macro K Codegen
@@ -621,7 +621,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 76. Type Vocabulary Rename and Crate Root Partition | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 77. SystemTheme API and icon_set Relocation | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 78. OverlaySource, AccessibilityPreferences, font_dpi Relocation | v0.5.7 | 4/4 | Complete   | 2026-04-13 |
-| 79. BorderSpec Split and Platform Reader Visibility Audit | v0.5.7 | 1/2 | In Progress|  |
+| 79. BorderSpec Split and Platform Reader Visibility Audit | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 80. native-theme-derive Proc-Macro K Codegen | v0.5.7 | 0/0 | Not started | — |
 | 81. Feature-Matrix Cleanup and Unified from_system | v0.5.7 | 0/0 | Not started | — |
 | 82. Icon API Rework | v0.5.7 | 0/0 | Not started | — |

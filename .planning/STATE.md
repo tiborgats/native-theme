@@ -4,14 +4,14 @@ milestone: v0.5.7
 milestone_name: API Overhaul
 status: completed
 stopped_at: Completed 79-02-PLAN.md
-last_updated: "2026-04-13T08:18:55.544Z"
+last_updated: "2026-04-13T08:29:49.335Z"
 last_activity: 2026-04-13 — Phase 79 Plan 02 executed (1 task, 1 commit)
 progress:
   total_phases: 28
-  completed_phases: 18
+  completed_phases: 19
   total_plans: 36
-  completed_plans: 35
-  percent: 97
+  completed_plans: 36
+  percent: 100
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 Phase: 79 — borderspec-split-and-platform-reader-visibility-audit
 Plan: 2/2 complete
-Status: Phase 79 Plan 02 complete — platform reader I/O functions demoted to pub(crate)
-Last activity: 2026-04-13 — Phase 79 Plan 02 executed (1 task, 1 commit)
+Status: Phase 79 complete — BorderSpec split and platform reader visibility audit done
+Last activity: 2026-04-13 — Phase 79 Plan 01 executed (2 tasks, 2 commits)
 
-Progress: [██████████] 97% (35/36 plans complete)
+Progress: [██████████] 100% (36/36 plans complete)
 
 ## Accumulated Context
 
@@ -132,6 +132,9 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 78-03]: reduce_transparency=false default in config-only to_theme_config path (no accessibility data available)
 - [Phase 79-02]: L3 audit confirmed zero external consumers; all 6 platform reader I/O functions demoted to pub(crate)
 - [Phase 79-02]: from_kde_content_pure stays pub -- integration tests in native-theme/tests/reader_kde.rs depend on it
+- [Phase 79-01]: WidgetBorderSpec sets corner_radius_lg=0.0 and opacity=0.0 in resolved output (defaults-only fields)
+- [Phase 79-01]: D2 padding-derives-from-presence rule removed -- DefaultsBorderSpec has no padding fields
+- [Phase 79-01]: Proptest strategies split into arb_defaults_border_spec and arb_widget_border_spec
 
 ### Blockers/Concerns
 
@@ -144,6 +147,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T08:18:55.541Z
-Stopped at: Completed 79-02-PLAN.md
+Last session: 2026-04-13T08:28:16Z
+Stopped at: Completed 79-01-PLAN.md (Phase 79 fully complete)
 Resume file: None

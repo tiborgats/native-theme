@@ -46,7 +46,7 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 
 ### Border Model
 
-- [ ] **BORDER-01**: `BorderSpec` split along defaults-vs-widget — widget-level has `color`, defaults-level adds `width`, `corner_radius`, `padding`; ships hand-written in v0.5.7 with codegen migration deferred to v0.5.8 (doc 2 B6)
+- [x] **BORDER-01**: `BorderSpec` split along defaults-vs-widget — widget-level has `color`, defaults-level adds `width`, `corner_radius`, `padding`; ships hand-written in v0.5.7 with codegen migration deferred to v0.5.8 (doc 2 B6)
 - [ ] **BORDER-02**: Three parallel border-inheritance validation paths (`require_border` / `border_all_optional` / `require_border_partial`) unified via `#[theme_layer(border_kind = "full" | "partial" | "none")]` class-level attribute (doc 2 B7, subsumed by MODEL-01 K)
 
 ### Validation & Codegen
