@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
 status: in-progress
-stopped_at: Phase 86 verified — 4/4 must-haves confirmed
-last_updated: "2026-04-13T21:55:00Z"
-last_activity: 2026-04-13 — Phase 86 verified (4/4 must-haves confirmed)
+stopped_at: Completed 87-03-PLAN.md
+last_updated: "2026-04-13T22:55:50.603Z"
+last_activity: 2026-04-14 — 87-03 connector and platform Arc<str> migration complete
 progress:
   total_phases: 28
-  completed_phases: 26
-  total_plans: 50
-  completed_plans: 50
+  completed_phases: 27
+  total_plans: 53
+  completed_plans: 53
   percent: 100
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 87 — font-family-arc-str-and-animatedicon-invariants
-Plan: 2/3 (87-01, 87-02 complete)
+Plan: 3/3 (87-01, 87-02, 87-03 complete)
 Status: in-progress
-Last activity: 2026-04-14 — 87-01 AnimatedIcon private fields and FrameList newtype complete
+Last activity: 2026-04-14 — 87-03 connector and platform Arc<str> migration complete
 
-Progress: [██████████] 100% (52/53 plans complete)
+Progress: [██████████] 100% (53/53 plans complete)
 
 ## Accumulated Context
 
@@ -194,6 +194,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T22:44:03Z
-Stopped at: Completed 87-01-PLAN.md
+Last session: 2026-04-13T22:55:50.599Z
+Stopped at: Completed 87-03-PLAN.md
 Resume file: None
