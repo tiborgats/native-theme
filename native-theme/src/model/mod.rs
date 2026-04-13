@@ -564,71 +564,17 @@ impl Theme {
             }
         }
 
-        // Variant-level known keys: widget names + special fields
-        const VARIANT_KEYS: &[&str] = &[
-            "defaults",
-            "text_scale",
-            "window",
-            "button",
-            "input",
-            "checkbox",
-            "menu",
-            "tooltip",
-            "scrollbar",
-            "slider",
-            "progress_bar",
-            "tab",
-            "sidebar",
-            "toolbar",
-            "status_bar",
-            "list",
-            "popover",
-            "splitter",
-            "separator",
-            "switch",
-            "dialog",
-            "spinner",
-            "combo_box",
-            "segmented_control",
-            "card",
-            "expander",
-            "link",
-        ];
+        // Structural variant-level keys that are NOT widgets
+        const STRUCTURAL_KEYS: &[&str] = &["defaults", "text_scale"];
+
+        // Build widget registry from inventory (auto-discovered from #[derive(ThemeWidget)])
+        let widget_registry: std::collections::HashMap<&str, &[&str]> =
+            inventory::iter::<crate::resolve::WidgetFieldInfo>()
+                .map(|info| (info.widget_name, info.field_names))
+                .collect();
 
         // FontSpec, DefaultsBorderSpec, WidgetBorderSpec, TextScaleEntry, TextScale, and IconSizes
         // all use their own FIELD_NAMES constants (issue 3b).
-
-        /// Look up the known field names for a given widget section key.
-        fn widget_fields(section: &str) -> Option<&'static [&'static str]> {
-            match section {
-                "window" => Some(WindowTheme::FIELD_NAMES),
-                "button" => Some(ButtonTheme::FIELD_NAMES),
-                "input" => Some(InputTheme::FIELD_NAMES),
-                "checkbox" => Some(CheckboxTheme::FIELD_NAMES),
-                "menu" => Some(MenuTheme::FIELD_NAMES),
-                "tooltip" => Some(TooltipTheme::FIELD_NAMES),
-                "scrollbar" => Some(ScrollbarTheme::FIELD_NAMES),
-                "slider" => Some(SliderTheme::FIELD_NAMES),
-                "progress_bar" => Some(ProgressBarTheme::FIELD_NAMES),
-                "tab" => Some(TabTheme::FIELD_NAMES),
-                "sidebar" => Some(SidebarTheme::FIELD_NAMES),
-                "toolbar" => Some(ToolbarTheme::FIELD_NAMES),
-                "status_bar" => Some(StatusBarTheme::FIELD_NAMES),
-                "list" => Some(ListTheme::FIELD_NAMES),
-                "popover" => Some(PopoverTheme::FIELD_NAMES),
-                "splitter" => Some(SplitterTheme::FIELD_NAMES),
-                "separator" => Some(SeparatorTheme::FIELD_NAMES),
-                "switch" => Some(SwitchTheme::FIELD_NAMES),
-                "dialog" => Some(DialogTheme::FIELD_NAMES),
-                "spinner" => Some(SpinnerTheme::FIELD_NAMES),
-                "combo_box" => Some(ComboBoxTheme::FIELD_NAMES),
-                "segmented_control" => Some(SegmentedControlTheme::FIELD_NAMES),
-                "card" => Some(CardTheme::FIELD_NAMES),
-                "expander" => Some(ExpanderTheme::FIELD_NAMES),
-                "link" => Some(LinkTheme::FIELD_NAMES),
-                _ => None,
-            }
-        }
 
         // Lint a text_scale section
         fn lint_text_scale(
@@ -677,25 +623,33 @@ impl Theme {
             }
         }
 
-        // Lint a variant section (light or dark)
+        // Lint a variant section (light or dark).
+        // Accepts the widget registry for inventory-driven field lookup.
         fn lint_variant(
             table: &toml::map::Map<String, toml::Value>,
             prefix: &str,
             warnings: &mut Vec<String>,
+            widget_registry: &std::collections::HashMap<&str, &[&str]>,
         ) {
             for key in table.keys() {
-                if !VARIANT_KEYS.contains(&key.as_str()) {
+                let key_str = key.as_str();
+
+                // Check structural keys first, then widget registry
+                let is_structural = STRUCTURAL_KEYS.contains(&key_str);
+                let widget_fields = widget_registry.get(key_str);
+
+                if !is_structural && widget_fields.is_none() {
                     warnings.push(format!("unknown field: {prefix}.{key}"));
                     continue;
                 }
 
                 if let Some(toml::Value::Table(sub)) = table.get(key) {
                     let sub_prefix = format!("{prefix}.{key}");
-                    match key.as_str() {
+                    match key_str {
                         "defaults" => lint_defaults(sub, &sub_prefix, warnings),
                         "text_scale" => lint_text_scale(sub, &sub_prefix, warnings),
                         _ => {
-                            if let Some(fields) = widget_fields(key) {
+                            if let Some(fields) = widget_fields {
                                 for skey in sub.keys() {
                                     if !fields.contains(&skey.as_str()) {
                                         warnings
@@ -731,7 +685,7 @@ impl Theme {
         // Lint light and dark variant sections
         for variant_key in &["light", "dark"] {
             if let Some(toml::Value::Table(variant_table)) = top_table.get(*variant_key) {
-                lint_variant(variant_table, variant_key, &mut warnings);
+                lint_variant(variant_table, variant_key, &mut warnings, &widget_registry);
             }
         }
 

@@ -17,7 +17,6 @@ pub(crate) mod validate;
 pub(crate) mod validate_helpers;
 
 /// Widget field metadata for TOML linting. Populated by `#[derive(ThemeWidget)]`.
-#[expect(dead_code)] // Fields read by TOML linting (Phase 86)
 pub(crate) struct WidgetFieldInfo {
     /// Snake_case widget name (e.g., "button", "segmented_control").
     pub widget_name: &'static str,
