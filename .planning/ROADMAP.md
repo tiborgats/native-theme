@@ -463,10 +463,10 @@ Plans:
   2. `Cargo.toml` features include `linux-kde` and `linux-portal` (or the design-doc names), each aggregating the right target-specific dependencies, and the old opaque aggregators are gone
   3. `cargo hack check --each-feature` (or equivalent) passes for every feature combination the CI matrix enumerates
   4. A sync-only consumer (no tokio) can call `from_system()` without pulling an async runtime into its dependency graph — verified by a test harness built with `--no-default-features` and only sync features enabled
-**Plans**: 2 plans
+**Plans:** 2 plans
 Plans:
-- [ ] 71-01-PLAN.md � Rewrite Error enum per Option F with ErrorKind and RangeViolation
-- [ ] 71-02-PLAN.md � Two-vec validation split and caller migration
+- [ ] 81-01-PLAN.md — Unify from_system/from_system_async code paths, restructure Cargo.toml feature graph
+- [ ] 81-02-PLAN.md — Update CI matrix and full feature-combination verification
 
 ### Phase 82: Icon API Rework
 **Goal**: The 13 icon-loading functions collapse into a single `IconLoader::new().role(...).size(...).theme(...).load()` builder with an `impl Into<IconId>` constructor; `IconProvider::icon_svg` and `IconData::Svg` both migrate to `Cow<'static, [u8]>` to eliminate the `Vec<u8>` copy on bundled loads and remove the `&'static [u8]` lifetime lock; `IconRole` gains a kebab-case `name()` method with an `impl Display` delegate; a drift-guard test covers `IconSet::from_name` / `name` round-trip
