@@ -589,8 +589,8 @@ fn build_theme(
 /// Internal entry point used by the pipeline. External consumers should
 /// use [`SystemTheme::from_system()`](crate::SystemTheme::from_system).
 #[cfg(all(target_os = "windows", feature = "windows"))]
-pub(crate) fn from_windows() -> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)>
-{
+pub(crate) fn from_windows()
+-> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
     let settings = UISettings::new().map_err(|e| crate::Error::ReaderFailed {
         reader: "windows",
         source: format!("UISettings unavailable: {e}").into(),

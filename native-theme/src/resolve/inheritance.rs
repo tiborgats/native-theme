@@ -1,6 +1,6 @@
 // Resolution inheritance phases: fills None fields from defaults and widget-to-widget chains.
 
-use crate::model::border::BorderSpec;
+use crate::model::border::{DefaultsBorderSpec, WidgetBorderSpec};
 use crate::model::font::FontSize;
 use crate::model::{DialogButtonOrder, FontSpec, TextScaleEntry, ThemeMode};
 
@@ -38,11 +38,11 @@ fn resolve_font(widget_font: &mut Option<FontSpec>, defaults_font: &FontSpec) {
 /// `use_lg_radius`: if true, uses corner_radius_lg instead of corner_radius.
 /// padding_horizontal and padding_vertical are NOT inherited (sizing fields).
 fn resolve_border(
-    widget_border: &mut Option<BorderSpec>,
-    defaults_border: &BorderSpec,
+    widget_border: &mut Option<WidgetBorderSpec>,
+    defaults_border: &DefaultsBorderSpec,
     use_lg_radius: bool,
 ) {
-    let border = widget_border.get_or_insert_with(BorderSpec::default);
+    let border = widget_border.get_or_insert_with(WidgetBorderSpec::default);
     if border.color.is_none() {
         border.color = defaults_border.color;
     }
@@ -141,21 +141,6 @@ impl ThemeMode {
         // defaults.mono_font.color <- defaults.font.color (MUST run AFTER font.color is set)
         if d.mono_font.color.is_none() {
             d.mono_font.color = d.font.color;
-        }
-        // defaults.border padding -- defaults-level border carries no meaningful
-        // padding; per-widget border specs carry the actual padding values.
-        // Derive from line_width presence to ensure the field is populated.
-        if d.border.padding_horizontal.is_none() {
-            d.border.padding_horizontal = d.border.line_width.map(|_| 0.0_f32);
-            if d.border.padding_horizontal.is_none() {
-                d.border.padding_horizontal = d.border.corner_radius.map(|_| 0.0_f32);
-            }
-        }
-        if d.border.padding_vertical.is_none() {
-            d.border.padding_vertical = d.border.line_width.map(|_| 0.0_f32);
-            if d.border.padding_vertical.is_none() {
-                d.border.padding_vertical = d.border.corner_radius.map(|_| 0.0_f32);
-            }
         }
     }
 
@@ -483,7 +468,10 @@ impl ThemeMode {
 
         // Partial border: sidebar (color + line_width only)
         {
-            let border = self.sidebar.border.get_or_insert_with(BorderSpec::default);
+            let border = self
+                .sidebar
+                .border
+                .get_or_insert_with(WidgetBorderSpec::default);
             if border.color.is_none() {
                 border.color = defaults_border.color;
             }
@@ -497,7 +485,7 @@ impl ThemeMode {
             let border = self
                 .status_bar
                 .border
-                .get_or_insert_with(BorderSpec::default);
+                .get_or_insert_with(WidgetBorderSpec::default);
             if border.color.is_none() {
                 border.color = defaults_border.color;
             }

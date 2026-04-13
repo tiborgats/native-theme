@@ -1,7 +1,7 @@
 // ThemeDefaults: global properties shared across widgets
 
 use crate::Rgba;
-use crate::model::border::BorderSpec;
+use crate::model::border::DefaultsBorderSpec;
 use crate::model::{FontSpec, IconSizes};
 use serde::{Deserialize, Serialize};
 
@@ -94,8 +94,8 @@ pub struct ThemeDefaults {
 
     // ---- Global geometry ----
     /// Border sub-struct (color, corner_radius, line_width, etc.).
-    #[serde(default, skip_serializing_if = "BorderSpec::is_empty")]
-    pub border: BorderSpec,
+    #[serde(default, skip_serializing_if = "DefaultsBorderSpec::is_empty")]
+    pub border: DefaultsBorderSpec,
     /// Opacity for disabled controls (0.0–1.0).
     pub disabled_opacity: Option<f32>,
 
@@ -173,7 +173,7 @@ impl_merge!(ThemeDefaults {
 mod tests {
     use super::*;
     use crate::Rgba;
-    use crate::model::border::BorderSpec;
+    use crate::model::border::DefaultsBorderSpec;
     use crate::model::font::FontSize;
     use crate::model::{FontSpec, IconSizes};
 
@@ -249,7 +249,7 @@ mod tests {
     #[test]
     fn not_empty_when_border_set() {
         let d = ThemeDefaults {
-            border: BorderSpec {
+            border: DefaultsBorderSpec {
                 corner_radius: Some(4.0),
                 ..Default::default()
             },
@@ -331,14 +331,14 @@ mod tests {
     #[test]
     fn merge_border_nested_merges_recursively() {
         let mut base = ThemeDefaults {
-            border: BorderSpec {
+            border: DefaultsBorderSpec {
                 corner_radius: Some(4.0),
                 ..Default::default()
             },
             ..Default::default()
         };
         let overlay = ThemeDefaults {
-            border: BorderSpec {
+            border: DefaultsBorderSpec {
                 line_width: Some(1.0),
                 ..Default::default()
             },
@@ -444,7 +444,7 @@ mod tests {
     #[test]
     fn toml_border_sub_table() {
         let d = ThemeDefaults {
-            border: BorderSpec {
+            border: DefaultsBorderSpec {
                 corner_radius: Some(4.0),
                 line_width: Some(1.0),
                 ..Default::default()

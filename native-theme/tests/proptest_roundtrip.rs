@@ -43,19 +43,33 @@ prop_compose! {
 }
 
 prop_compose! {
-    fn arb_border_spec()(
+    fn arb_defaults_border_spec()(
         color in proptest::option::of(arb_rgba()),
         corner_radius in proptest::option::of(0.0f32..100.0),
         corner_radius_lg in proptest::option::of(0.0f32..100.0),
         line_width in proptest::option::of(0.0f32..10.0),
         opacity in proptest::option::of(0.0f32..1.0),
         shadow_enabled in proptest::option::of(any::<bool>()),
+    ) -> DefaultsBorderSpec {
+        DefaultsBorderSpec {
+            color, corner_radius, corner_radius_lg, line_width,
+            opacity, shadow_enabled,
+        }
+    }
+}
+
+prop_compose! {
+    fn arb_widget_border_spec()(
+        color in proptest::option::of(arb_rgba()),
+        corner_radius in proptest::option::of(0.0f32..100.0),
+        line_width in proptest::option::of(0.0f32..10.0),
+        shadow_enabled in proptest::option::of(any::<bool>()),
         padding_horizontal in proptest::option::of(0.0f32..100.0),
         padding_vertical in proptest::option::of(0.0f32..100.0),
-    ) -> BorderSpec {
-        BorderSpec {
-            color, corner_radius, corner_radius_lg, line_width,
-            opacity, shadow_enabled, padding_horizontal, padding_vertical,
+    ) -> WidgetBorderSpec {
+        WidgetBorderSpec {
+            color, corner_radius, line_width,
+            shadow_enabled, padding_horizontal, padding_vertical,
         }
     }
 }
@@ -105,7 +119,7 @@ fn arb_theme_defaults() -> impl Strategy<Value = ThemeDefaults> {
     (
         arb_font_spec(),
         arb_font_spec(),
-        arb_border_spec(),
+        arb_defaults_border_spec(),
         arb_icon_sizes(),
         // 6 scalar Option fields
         proptest::option::of(0.5f32..3.0),  // line_height
@@ -182,7 +196,7 @@ fn arb_window_theme() -> impl Strategy<Value = WindowTheme> {
         proptest::option::of(arb_rgba()),
         proptest::option::of(arb_rgba()),
         proptest::option::of(arb_font_spec()),
-        proptest::option::of(arb_border_spec()),
+        proptest::option::of(arb_widget_border_spec()),
     )
         .prop_map(
             |(
@@ -215,7 +229,7 @@ fn arb_button_theme() -> impl Strategy<Value = ButtonTheme> {
         proptest::option::of(0.0f32..50.0),
         proptest::option::of(0.0f32..1.0),
         proptest::option::of(arb_font_spec()),
-        proptest::option::of(arb_border_spec()),
+        proptest::option::of(arb_widget_border_spec()),
     )
         .prop_map(
             |(colors, min_w, min_h, gap, dis_op, font, border)| ButtonTheme {
@@ -244,7 +258,7 @@ fn arb_input_theme() -> impl Strategy<Value = InputTheme> {
         proptest::option::of(1.0f32..200.0),
         proptest::option::of(0.0f32..1.0),
         proptest::option::of(arb_font_spec()),
-        proptest::option::of(arb_border_spec()),
+        proptest::option::of(arb_widget_border_spec()),
     )
         .prop_map(|(colors, min_h, dis_op, font, border)| InputTheme {
             background_color: colors[0],
@@ -270,7 +284,7 @@ fn arb_checkbox_theme() -> impl Strategy<Value = CheckboxTheme> {
         proptest::option::of(0.0f32..50.0),
         proptest::option::of(0.0f32..1.0),
         proptest::option::of(arb_font_spec()),
-        proptest::option::of(arb_border_spec()),
+        proptest::option::of(arb_widget_border_spec()),
     )
         .prop_map(|(colors, ind_w, gap, dis_op, font, border)| CheckboxTheme {
             background_color: colors[0],
@@ -308,7 +322,7 @@ fn arb_dialog_theme() -> impl Strategy<Value = DialogTheme> {
         proptest::option::of(arb_dialog_button_order()),
         proptest::option::of(arb_font_spec()),
         proptest::option::of(arb_font_spec()),
-        proptest::option::of(arb_border_spec()),
+        proptest::option::of(arb_widget_border_spec()),
     )
         .prop_map(
             |(
@@ -467,9 +481,18 @@ proptest! {
 
 proptest! {
     #[test]
-    fn border_spec_toml_round_trip(bs in arb_border_spec()) {
+    fn defaults_border_spec_toml_round_trip(bs in arb_defaults_border_spec()) {
         let toml_str = toml::to_string(&bs).unwrap();
-        let deserialized: BorderSpec = toml::from_str(&toml_str).unwrap();
+        let deserialized: DefaultsBorderSpec = toml::from_str(&toml_str).unwrap();
+        prop_assert_eq!(bs, deserialized);
+    }
+}
+
+proptest! {
+    #[test]
+    fn widget_border_spec_toml_round_trip(bs in arb_widget_border_spec()) {
+        let toml_str = toml::to_string(&bs).unwrap();
+        let deserialized: WidgetBorderSpec = toml::from_str(&toml_str).unwrap();
         prop_assert_eq!(bs, deserialized);
     }
 }

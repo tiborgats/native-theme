@@ -684,8 +684,6 @@ fn fully_populated_variant() -> ThemeMode {
     v.defaults.text_selection_background = Some(Rgba::rgb(0, 120, 215));
     v.defaults.text_selection_color = Some(Rgba::rgb(255, 255, 255));
     v.defaults.focus_ring_color = Some(Rgba::rgb(0, 120, 215));
-    v.defaults.border.padding_horizontal = Some(0.0);
-    v.defaults.border.padding_vertical = Some(0.0);
 
     // window
     v.window.background_color = Some(c);

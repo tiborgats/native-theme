@@ -3,7 +3,7 @@
 // Extracted from validate.rs to keep the orchestration module focused on
 // defaults extraction, per-widget dispatch, and construction.
 
-use crate::model::border::{BorderSpec, ResolvedBorderSpec};
+use crate::model::border::{ResolvedBorderSpec, WidgetBorderSpec};
 use crate::model::{FontSpec, ResolvedFontSpec};
 
 /// Standard screen DPI (96 dots per inch). Used as the font_dpi fallback
@@ -123,13 +123,14 @@ pub(crate) fn require_text_scale_entry(
     }
 }
 
-/// Validate an `Option<BorderSpec>` (widget border fields).
+/// Validate an `Option<WidgetBorderSpec>` (widget border fields).
 /// If None, records the path as missing. Requires the 4 sub-fields filled by
 /// border_inheritance (color, corner_radius, line_width, shadow_enabled).
 /// Padding sub-fields are sizing fields with no inheritance -- they use
 /// the preset value if present, otherwise default to `T::default()`.
+/// `corner_radius_lg` and `opacity` are defaults-only; set to 0.0 here.
 pub(crate) fn require_border(
-    border: &Option<BorderSpec>,
+    border: &Option<WidgetBorderSpec>,
     prefix: &str,
     missing: &mut Vec<String>,
 ) -> ResolvedBorderSpec {
@@ -154,9 +155,9 @@ pub(crate) fn require_border(
             ResolvedBorderSpec {
                 color,
                 corner_radius,
-                corner_radius_lg: b.corner_radius_lg.unwrap_or_default(),
+                corner_radius_lg: 0.0,
                 line_width,
-                opacity: b.opacity.unwrap_or_default(),
+                opacity: 0.0,
                 shadow_enabled,
                 padding_horizontal: b.padding_horizontal.unwrap_or_default(),
                 padding_vertical: b.padding_vertical.unwrap_or_default(),
@@ -169,15 +170,16 @@ pub(crate) fn require_border(
 /// These widgets have no inheritance for any border sub-field; all sub-fields
 /// use the preset value if present, otherwise `T::default()`. No validation
 /// errors are recorded -- the border is entirely optional.
-pub(crate) fn border_all_optional(border: &Option<BorderSpec>) -> ResolvedBorderSpec {
+/// `corner_radius_lg` and `opacity` are defaults-only; set to 0.0 here.
+pub(crate) fn border_all_optional(border: &Option<WidgetBorderSpec>) -> ResolvedBorderSpec {
     match border {
         None => ResolvedBorderSpec::default(),
         Some(b) => ResolvedBorderSpec {
             color: b.color.unwrap_or_default(),
             corner_radius: b.corner_radius.unwrap_or_default(),
-            corner_radius_lg: b.corner_radius_lg.unwrap_or_default(),
+            corner_radius_lg: 0.0,
             line_width: b.line_width.unwrap_or_default(),
-            opacity: b.opacity.unwrap_or_default(),
+            opacity: 0.0,
             shadow_enabled: b.shadow_enabled.unwrap_or_default(),
             padding_horizontal: b.padding_horizontal.unwrap_or_default(),
             padding_vertical: b.padding_vertical.unwrap_or_default(),
@@ -187,8 +189,9 @@ pub(crate) fn border_all_optional(border: &Option<BorderSpec>) -> ResolvedBorder
 
 /// Validate a border for widgets with partial border inheritance (sidebar, status_bar).
 /// Only color + line_width are inherited; other sub-fields use defaults if not in preset.
+/// `corner_radius_lg` and `opacity` are defaults-only; set to 0.0 here.
 pub(crate) fn require_border_partial(
-    border: &Option<BorderSpec>,
+    border: &Option<WidgetBorderSpec>,
     prefix: &str,
     missing: &mut Vec<String>,
 ) -> ResolvedBorderSpec {
@@ -203,9 +206,9 @@ pub(crate) fn require_border_partial(
             ResolvedBorderSpec {
                 color,
                 corner_radius: b.corner_radius.unwrap_or_default(),
-                corner_radius_lg: b.corner_radius_lg.unwrap_or_default(),
+                corner_radius_lg: 0.0,
                 line_width,
-                opacity: b.opacity.unwrap_or_default(),
+                opacity: 0.0,
                 shadow_enabled: b.shadow_enabled.unwrap_or_default(),
                 padding_horizontal: b.padding_horizontal.unwrap_or_default(),
                 padding_vertical: b.padding_vertical.unwrap_or_default(),
@@ -336,7 +339,7 @@ impl ValidateNested for FontSpec {
     }
 }
 
-impl ValidateNested for BorderSpec {
+impl ValidateNested for WidgetBorderSpec {
     type Resolved = ResolvedBorderSpec;
     fn validate_nested(
         source: &Option<Self>,

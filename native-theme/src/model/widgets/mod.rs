@@ -1,7 +1,7 @@
 // Per-widget struct pairs and macros
 
 use crate::Rgba;
-use crate::model::border::{BorderSpec, ResolvedBorderSpec};
+use crate::model::border::{ResolvedBorderSpec, WidgetBorderSpec};
 use crate::model::{DialogButtonOrder, FontSpec, ResolvedFontSpec};
 
 /// Helper macro for FIELD_NAMES: emits the TOML key name for an option field.
@@ -174,7 +174,7 @@ define_widget_pair! {
             /// Title bar font specification.
             title_bar_font: [FontSpec, ResolvedFontSpec],
             /// Window border specification.
-            border: [BorderSpec, ResolvedBorderSpec],
+            border: [WidgetBorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -218,7 +218,7 @@ define_widget_pair! {
             /// Button label font specification.
             font: [FontSpec, ResolvedFontSpec],
             /// Button border specification.
-            border: [BorderSpec, ResolvedBorderSpec],
+            border: [WidgetBorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -258,7 +258,7 @@ define_widget_pair! {
             /// Input text font specification.
             font: [FontSpec, ResolvedFontSpec],
             /// Input border specification.
-            border: [BorderSpec, ResolvedBorderSpec],
+            border: [WidgetBorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -298,7 +298,7 @@ define_widget_pair! {
             /// Checkbox label font specification.
             font: [FontSpec, ResolvedFontSpec],
             /// Checkbox border specification.
-            border: [BorderSpec, ResolvedBorderSpec],
+            border: [WidgetBorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -332,7 +332,7 @@ define_widget_pair! {
         }
         border_optional {
             /// Menu border specification.
-            border: [BorderSpec, ResolvedBorderSpec],
+            border: [WidgetBorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -352,7 +352,7 @@ define_widget_pair! {
             /// Tooltip font specification.
             font: [FontSpec, ResolvedFontSpec],
             /// Tooltip border specification.
-            border: [BorderSpec, ResolvedBorderSpec],
+            border: [WidgetBorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -436,7 +436,7 @@ define_widget_pair! {
         }
         optional_nested {
             /// Progress bar border specification.
-            border: [BorderSpec, ResolvedBorderSpec],
+            border: [WidgetBorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -472,7 +472,7 @@ define_widget_pair! {
         }
         border_optional {
             /// Tab border specification.
-            border: [BorderSpec, ResolvedBorderSpec],
+            border: [WidgetBorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -498,7 +498,7 @@ define_widget_pair! {
         }
         border_partial {
             /// Sidebar border specification.
-            border: [BorderSpec, ResolvedBorderSpec],
+            border: [WidgetBorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -522,7 +522,7 @@ define_widget_pair! {
             /// Toolbar label font specification.
             font: [FontSpec, ResolvedFontSpec],
             /// Toolbar border specification.
-            border: [BorderSpec, ResolvedBorderSpec],
+            border: [WidgetBorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -542,7 +542,7 @@ define_widget_pair! {
         }
         border_partial {
             /// Status bar border specification.
-            border: [BorderSpec, ResolvedBorderSpec],
+            border: [WidgetBorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -580,7 +580,7 @@ define_widget_pair! {
             /// Column header font specification.
             header_font: [FontSpec, ResolvedFontSpec],
             /// List border specification.
-            border: [BorderSpec, ResolvedBorderSpec],
+            border: [WidgetBorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -598,7 +598,7 @@ define_widget_pair! {
             /// Popover font specification.
             font: [FontSpec, ResolvedFontSpec],
             /// Popover border specification.
-            border: [BorderSpec, ResolvedBorderSpec],
+            border: [WidgetBorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -700,7 +700,7 @@ define_widget_pair! {
             /// Dialog body font specification.
             body_font: [FontSpec, ResolvedFontSpec],
             /// Dialog border specification.
-            border: [BorderSpec, ResolvedBorderSpec],
+            border: [WidgetBorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -754,7 +754,7 @@ define_widget_pair! {
             /// ComboBox font specification.
             font: [FontSpec, ResolvedFontSpec],
             /// ComboBox border specification.
-            border: [BorderSpec, ResolvedBorderSpec],
+            border: [WidgetBorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -786,7 +786,7 @@ define_widget_pair! {
             /// Segmented control font specification.
             font: [FontSpec, ResolvedFontSpec],
             /// Segmented control border specification.
-            border: [BorderSpec, ResolvedBorderSpec],
+            border: [WidgetBorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -802,7 +802,7 @@ define_widget_pair! {
         }
         border_optional {
             /// Card border specification.
-            border: [BorderSpec, ResolvedBorderSpec],
+            border: [WidgetBorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -828,7 +828,7 @@ define_widget_pair! {
             /// Expander font specification.
             font: [FontSpec, ResolvedFontSpec],
             /// Expander border specification.
-            border: [BorderSpec, ResolvedBorderSpec],
+            border: [WidgetBorderSpec, ResolvedBorderSpec],
         }
     }
 }
@@ -1447,7 +1447,7 @@ impl ResolvedExpanderTheme {
 mod tests {
     use super::*;
     use crate::Rgba;
-    use crate::model::border::{BorderSpec, ResolvedBorderSpec};
+    use crate::model::border::{ResolvedBorderSpec, WidgetBorderSpec};
     use crate::model::font::FontSize;
     use crate::model::{DialogButtonOrder, FontSpec};
 
@@ -1790,7 +1790,7 @@ mod tests {
                 weight: Some(400),
                 ..Default::default()
             }),
-            border: Some(BorderSpec {
+            border: Some(WidgetBorderSpec {
                 corner_radius: Some(4.0),
                 ..Default::default()
             }),
@@ -1812,7 +1812,7 @@ mod tests {
                 weight: Some(700),
                 ..Default::default()
             }),
-            border: Some(BorderSpec {
+            border: Some(WidgetBorderSpec {
                 corner_radius: Some(4.0),
                 shadow_enabled: Some(true),
                 ..Default::default()
@@ -1956,7 +1956,7 @@ mod tests {
                 family: Some("Noto Sans".into()),
                 ..Default::default()
             }),
-            border: Some(BorderSpec {
+            border: Some(WidgetBorderSpec {
                 color: Some(Rgba::rgb(180, 180, 180)),
                 corner_radius: Some(4.0),
                 ..Default::default()
@@ -1987,7 +1987,7 @@ mod tests {
     fn card_theme_with_border() {
         let c = CardTheme {
             background_color: Some(Rgba::rgb(255, 255, 255)),
-            border: Some(BorderSpec {
+            border: Some(WidgetBorderSpec {
                 corner_radius: Some(8.0),
                 shadow_enabled: Some(true),
                 ..Default::default()
@@ -2032,7 +2032,7 @@ mod tests {
             }
             optional_nested {
                 font: [FontSpec, ResolvedFontSpec],
-                border: [BorderSpec, ResolvedBorderSpec],
+                border: [WidgetBorderSpec, ResolvedBorderSpec],
             }
         }
     }
@@ -2066,7 +2066,7 @@ mod tests {
     #[test]
     fn dual_nested_not_empty_when_border_set() {
         let w = DualNestedTestWidget {
-            border: Some(BorderSpec {
+            border: Some(WidgetBorderSpec {
                 color: Some(Rgba::rgb(100, 100, 100)),
                 ..Default::default()
             }),
@@ -2085,7 +2085,7 @@ mod tests {
             ..Default::default()
         };
         let overlay = DualNestedTestWidget {
-            border: Some(BorderSpec {
+            border: Some(WidgetBorderSpec {
                 corner_radius: Some(4.0),
                 ..Default::default()
             }),
@@ -2137,7 +2137,7 @@ mod tests {
                 weight: Some(400),
                 ..Default::default()
             }),
-            border: Some(BorderSpec {
+            border: Some(WidgetBorderSpec {
                 color: Some(Rgba::rgb(180, 180, 180)),
                 corner_radius: Some(4.0),
                 line_width: Some(1.0),
@@ -2176,12 +2176,10 @@ mod tests {
                 style: Some(crate::model::font::FontStyle::Normal),
                 color: Some(Rgba::rgb(0, 0, 0)),
             }),
-            border: Some(BorderSpec {
+            border: Some(WidgetBorderSpec {
                 color: Some(Rgba::rgb(100, 100, 100)),
                 corner_radius: Some(4.0),
-                corner_radius_lg: Some(8.0),
                 line_width: Some(1.0),
-                opacity: Some(0.8),
                 shadow_enabled: Some(false),
                 padding_horizontal: Some(12.0),
                 padding_vertical: Some(6.0),

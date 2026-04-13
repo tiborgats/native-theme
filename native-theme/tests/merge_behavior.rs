@@ -162,14 +162,14 @@ fn merge_fonts_defaults_spacing() {
 
     // ThemeDefaults (geometry fields via border sub-struct)
     let mut base_defaults = ThemeDefaults {
-        border: BorderSpec {
+        border: DefaultsBorderSpec {
             line_width: Some(1.0),
             ..Default::default()
         },
         ..Default::default()
     };
     let overlay_defaults = ThemeDefaults {
-        border: BorderSpec {
+        border: DefaultsBorderSpec {
             corner_radius: Some(8.0),
             ..Default::default()
         },

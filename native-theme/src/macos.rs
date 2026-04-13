@@ -253,11 +253,11 @@ fn read_per_widget_fonts() -> (crate::FontSpec, crate::FontSpec, crate::FontSpec
 /// Guidelines for standard control dimensions.
 #[cfg_attr(not(all(target_os = "macos", feature = "macos")), allow(dead_code))]
 fn macos_widget_defaults() -> crate::ThemeMode {
-    use crate::model::border::BorderSpec;
+    use crate::model::border::WidgetBorderSpec;
     crate::ThemeMode {
         button: crate::ButtonTheme {
             min_height: Some(22.0), // NSButton regular control size
-            border: Some(BorderSpec {
+            border: Some(WidgetBorderSpec {
                 padding_horizontal: Some(12.0),
                 ..Default::default()
             }),
@@ -270,7 +270,7 @@ fn macos_widget_defaults() -> crate::ThemeMode {
         },
         input: crate::InputTheme {
             min_height: Some(22.0), // NSTextField regular
-            border: Some(BorderSpec {
+            border: Some(WidgetBorderSpec {
                 padding_horizontal: Some(4.0),
                 ..Default::default()
             }),
@@ -292,7 +292,7 @@ fn macos_widget_defaults() -> crate::ThemeMode {
         },
         tab: crate::TabTheme {
             min_height: Some(24.0), // NSTabView
-            border: Some(BorderSpec {
+            border: Some(WidgetBorderSpec {
                 padding_horizontal: Some(12.0),
                 ..Default::default()
             }),
@@ -300,14 +300,14 @@ fn macos_widget_defaults() -> crate::ThemeMode {
         },
         menu: crate::MenuTheme {
             row_height: Some(22.0), // Standard menu item
-            border: Some(BorderSpec {
+            border: Some(WidgetBorderSpec {
                 padding_horizontal: Some(12.0),
                 ..Default::default()
             }),
             ..Default::default()
         },
         tooltip: crate::TooltipTheme {
-            border: Some(BorderSpec {
+            border: Some(WidgetBorderSpec {
                 padding_horizontal: Some(4.0),
                 padding_vertical: Some(4.0),
                 ..Default::default()
@@ -316,7 +316,7 @@ fn macos_widget_defaults() -> crate::ThemeMode {
         },
         list: crate::ListTheme {
             row_height: Some(24.0), // NSTableView row
-            border: Some(BorderSpec {
+            border: Some(WidgetBorderSpec {
                 padding_horizontal: Some(4.0),
                 ..Default::default()
             }),
@@ -396,7 +396,8 @@ fn build_theme(
 /// Internal entry point used by the pipeline. External consumers should
 /// use [`SystemTheme::from_system()`](crate::SystemTheme::from_system).
 #[cfg(all(target_os = "macos", feature = "macos"))]
-pub(crate) fn from_macos() -> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
+pub(crate) fn from_macos()
+-> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
     let light_name = NSString::from_str("NSAppearanceNameAqua");
     let dark_name = NSString::from_str("NSAppearanceNameDarkAqua");
 
@@ -553,7 +554,7 @@ mod tests {
             background_color: Some(crate::Rgba::rgb(246, 246, 246)),
             text_color: Some(crate::Rgba::rgb(0, 0, 0)),
             surface_color: Some(crate::Rgba::rgb(255, 255, 255)),
-            border: crate::model::border::BorderSpec {
+            border: crate::model::border::DefaultsBorderSpec {
                 color: Some(crate::Rgba::rgb(200, 200, 200)),
                 ..Default::default()
             },
@@ -580,7 +581,7 @@ mod tests {
             background_color: Some(crate::Rgba::rgb(30, 30, 30)),
             text_color: Some(crate::Rgba::rgb(255, 255, 255)),
             surface_color: Some(crate::Rgba::rgb(44, 44, 46)),
-            border: crate::model::border::BorderSpec {
+            border: crate::model::border::DefaultsBorderSpec {
                 color: Some(crate::Rgba::rgb(56, 56, 58)),
                 ..Default::default()
             },

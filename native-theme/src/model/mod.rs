@@ -53,7 +53,7 @@ pub mod resolved;
 pub mod widgets;
 
 pub use animated::{AnimatedIcon, TransformAnimation};
-pub use border::{BorderSpec, ResolvedBorderSpec};
+pub use border::{DefaultsBorderSpec, ResolvedBorderSpec, WidgetBorderSpec};
 pub use bundled::{bundled_icon_by_name, bundled_icon_svg};
 pub use defaults::ThemeDefaults;
 pub use dialog_order::DialogButtonOrder;
@@ -707,7 +707,7 @@ impl Theme {
                 if let Some(toml::Value::Table(sub)) = table.get(key) {
                     let known = match key.as_str() {
                         "font" | "mono_font" => FontSpec::FIELD_NAMES,
-                        "border" => BorderSpec::FIELD_NAMES,
+                        "border" => DefaultsBorderSpec::FIELD_NAMES,
                         "icon_sizes" => IconSizes::FIELD_NAMES,
                         _ => continue,
                     };
@@ -750,7 +750,7 @@ impl Theme {
                                             s if s == "font" || s.ends_with("_font") => {
                                                 Some(FontSpec::FIELD_NAMES)
                                             }
-                                            "border" => Some(BorderSpec::FIELD_NAMES),
+                                            "border" => Some(WidgetBorderSpec::FIELD_NAMES),
                                             _ => None,
                                         };
                                         if let Some(known) = nested_known {

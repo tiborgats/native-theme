@@ -191,15 +191,15 @@ pub(crate) use icons::{
 pub(crate) use model::icons::{detect_icon_theme, icon_name, system_icon_set, system_icon_theme};
 #[allow(unused_imports)]
 pub(crate) use model::{
-    AnimatedIcon, BorderSpec, ButtonTheme, CardTheme, CheckboxTheme, ColorMode, ComboBoxTheme,
-    DialogButtonOrder, DialogTheme, ExpanderTheme, FontSize, FontSpec, FontStyle, IconData,
-    IconProvider, IconRole, IconSet, IconSizes, InputTheme, LayoutTheme, LinkTheme, ListTheme,
-    MenuTheme, PopoverTheme, ProgressBarTheme, ResolvedBorderSpec, ResolvedDefaults,
-    ResolvedFontSpec, ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme,
-    ScrollbarTheme, SegmentedControlTheme, SeparatorTheme, SidebarTheme, SliderTheme, SpinnerTheme,
-    SplitterTheme, StatusBarTheme, SwitchTheme, TabTheme, TextScale, TextScaleEntry, Theme,
-    ThemeDefaults, ThemeMode, ToolbarTheme, TooltipTheme, TransformAnimation, WindowTheme,
-    bundled_icon_by_name, bundled_icon_svg,
+    AnimatedIcon, ButtonTheme, CardTheme, CheckboxTheme, ColorMode, ComboBoxTheme,
+    DefaultsBorderSpec, DialogButtonOrder, DialogTheme, ExpanderTheme, FontSize, FontSpec,
+    FontStyle, IconData, IconProvider, IconRole, IconSet, IconSizes, InputTheme, LayoutTheme,
+    LinkTheme, ListTheme, MenuTheme, PopoverTheme, ProgressBarTheme, ResolvedBorderSpec,
+    ResolvedDefaults, ResolvedFontSpec, ResolvedIconSizes, ResolvedTextScale,
+    ResolvedTextScaleEntry, ResolvedTheme, ScrollbarTheme, SegmentedControlTheme, SeparatorTheme,
+    SidebarTheme, SliderTheme, SpinnerTheme, SplitterTheme, StatusBarTheme, SwitchTheme, TabTheme,
+    TextScale, TextScaleEntry, Theme, ThemeDefaults, ThemeMode, ToolbarTheme, TooltipTheme,
+    TransformAnimation, WidgetBorderSpec, WindowTheme, bundled_icon_by_name, bundled_icon_svg,
 };
 #[allow(unused_imports)]
 pub(crate) use pipeline::{diagnose_platform_support, platform_preset_name};
@@ -609,7 +609,14 @@ mod overlay_tests {
     /// Helper: build a SystemTheme from a preset via pipeline::run_pipeline.
     fn default_system_theme() -> SystemTheme {
         let reader = Theme::preset("catppuccin-mocha").unwrap();
-        pipeline::run_pipeline(reader, "catppuccin-mocha", ColorMode::Light, AccessibilityPreferences::default(), None).unwrap()
+        pipeline::run_pipeline(
+            reader,
+            "catppuccin-mocha",
+            ColorMode::Light,
+            AccessibilityPreferences::default(),
+            None,
+        )
+        .unwrap()
     }
 
     #[test]

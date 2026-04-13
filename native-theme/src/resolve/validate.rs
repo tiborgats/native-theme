@@ -209,16 +209,6 @@ impl ThemeMode {
             &mut missing,
         );
 
-        let defaults_border_padding_h = require(
-            &self.defaults.border.padding_horizontal,
-            "defaults.border.padding_horizontal",
-            &mut missing,
-        );
-        let defaults_border_padding_v = require(
-            &self.defaults.border.padding_vertical,
-            "defaults.border.padding_vertical",
-            &mut missing,
-        );
         let defaults_text_selection_background = require(
             &self.defaults.text_selection_background,
             "defaults.text_selection_background",
@@ -299,8 +289,8 @@ impl ThemeMode {
                 line_width: defaults_frame_width,
                 opacity: defaults_border_opacity,
                 shadow_enabled: defaults_shadow_enabled,
-                padding_horizontal: defaults_border_padding_h,
-                padding_vertical: defaults_border_padding_v,
+                padding_horizontal: 0.0,
+                padding_vertical: 0.0,
             },
             muted_color: defaults_muted,
             shadow_color: defaults_shadow,
