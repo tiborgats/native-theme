@@ -4353,6 +4353,7 @@ dependencies = [
  "block2 0.6.2",
  "configparser",
  "freedesktop-icons",
+ "inventory",
  "native-theme-derive",
  "notify 8.2.0",
  "objc2 0.6.4",

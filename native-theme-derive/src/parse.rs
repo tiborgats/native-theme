@@ -40,7 +40,6 @@ pub(crate) struct FieldMeta {
     pub serde_rename: Option<String>,
     pub range_check: Option<RangeCheck>,
     pub min_max_pair: Option<Ident>,
-    #[expect(dead_code)] // Used in Plan 02 for inheritance codegen
     pub inherit_from: Option<String>,
     pub doc_attrs: Vec<Attribute>,
 }
@@ -59,15 +58,18 @@ pub(crate) enum BorderKind {
 /// Struct-level attributes parsed from `#[theme_layer(...)]`.
 #[derive(Debug, Clone)]
 pub(crate) struct LayerMeta {
-    #[expect(dead_code)] // Used in Plan 02 for per-widget border dispatch
+    #[expect(dead_code)] // Parsed for future struct-level border dispatch; per-field categories handle validation
     pub border_kind: BorderKind,
     pub resolved_name: Option<Ident>,
+    /// Skip inventory::submit! generation (for non-per-variant widgets like LayoutTheme).
+    pub skip_inventory: bool,
 }
 
 /// Parse `#[theme_layer(...)]` attributes from the struct.
 pub(crate) fn parse_layer_attrs(attrs: &[Attribute]) -> Result<LayerMeta> {
     let mut border_kind = BorderKind::Full;
     let mut resolved_name = None;
+    let mut skip_inventory = false;
 
     for attr in attrs {
         if !attr.path().is_ident("theme_layer") {
@@ -94,6 +96,9 @@ pub(crate) fn parse_layer_attrs(attrs: &[Attribute]) -> Result<LayerMeta> {
                 let lit: LitStr = value.parse()?;
                 resolved_name = Some(Ident::new(&lit.value(), lit.span()));
                 Ok(())
+            } else if meta.path.is_ident("skip_inventory") {
+                skip_inventory = true;
+                Ok(())
             } else {
                 Err(meta.error("unknown theme_layer attribute"))
             }
@@ -103,6 +108,7 @@ pub(crate) fn parse_layer_attrs(attrs: &[Attribute]) -> Result<LayerMeta> {
     Ok(LayerMeta {
         border_kind,
         resolved_name,
+        skip_inventory,
     })
 }
 
