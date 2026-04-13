@@ -66,7 +66,7 @@ pub(crate) fn de_key_to_qualified_variant(key: &str, crate_path: &str) -> Option
 /// - `impl {crate_path}::IconProvider` with `icon_name()` and `icon_svg()` match arms
 ///
 /// For DE-aware mapping values, `icon_name()` emits cfg-gated runtime dispatch
-/// using `{crate_path}::detect::detect_linux_de()`. On non-Linux, the default value is used.
+/// using `{crate_path}::detect::parse_linux_desktop()`. On non-Linux, the default value is used.
 ///
 /// When any DE-aware mapping exists, a `OnceLock`-based cache is emitted at the
 /// start of `icon_name()` to avoid re-reading `XDG_CURRENT_DESKTOP` on every call.
@@ -233,7 +233,7 @@ fn generate_icon_name(
         );
         let _ = writeln!(
             out,
-            "            *CACHED_DE.get_or_init(|| {crate_path}::detect::detect_linux_de(&std::env::var(\"XDG_CURRENT_DESKTOP\").unwrap_or_default()))"
+            "            *CACHED_DE.get_or_init(|| {crate_path}::detect::parse_linux_desktop(&std::env::var(\"XDG_CURRENT_DESKTOP\").unwrap_or_default()))"
         );
         let _ = writeln!(out, "        }};");
     }
@@ -802,12 +802,12 @@ play-pause = { kde = "media-playback-start", default = "play" }
     }
 
     #[test]
-    fn generated_code_de_aware_calls_detect_linux_de() {
+    fn generated_code_de_aware_calls_parse_linux_desktop() {
         let (config, mappings) = de_aware_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
         assert!(
-            output.contains("native_theme::detect::detect_linux_de("),
-            "DE-aware codegen should call detect_linux_de. output:\n{output}"
+            output.contains("native_theme::detect::parse_linux_desktop("),
+            "DE-aware codegen should call parse_linux_desktop. output:\n{output}"
         );
     }
 
@@ -871,10 +871,10 @@ play-pause = { default = "play" }
             ),
             "DE-aware with only default should produce simple arm. output:\n{output}"
         );
-        // Should NOT contain cfg gating or detect_linux_de for this mapping
+        // Should NOT contain cfg gating or parse_linux_desktop for this mapping
         assert!(
-            !output.contains("detect_linux_de"),
-            "DE-aware with only default should not use detect_linux_de. output:\n{output}"
+            !output.contains("parse_linux_desktop"),
+            "DE-aware with only default should not use parse_linux_desktop. output:\n{output}"
         );
     }
 
@@ -1032,7 +1032,7 @@ system-themes = ["sf-symbols"]
         let (config, mappings) = de_aware_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "my_crate", &[]);
         assert!(
-            output.contains("my_crate::detect::detect_linux_de("),
+            output.contains("my_crate::detect::parse_linux_desktop("),
             "DE-aware codegen should use custom crate path. output:\n{output}"
         );
         assert!(
@@ -1200,7 +1200,7 @@ play-pause = { kde = "play", gnome = "play", default = "play" }
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
         // All DE overrides equal default, should collapse to simple arm
         assert!(
-            !output.contains("detect_linux_de"),
+            !output.contains("parse_linux_desktop"),
             "all-same DE-aware should collapse. output:\n{output}"
         );
         assert!(

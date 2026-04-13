@@ -174,7 +174,7 @@ pub(crate) use color::{ParseColorError, Rgba};
 pub(crate) use detect::LinuxDesktop;
 #[cfg(target_os = "linux")]
 #[allow(unused_imports)]
-pub(crate) use detect::detect_linux_de;
+pub(crate) use detect::detect_linux_desktop;
 #[allow(unused_imports)]
 pub(crate) use detect::{
     detect_is_dark, detect_reduced_motion, invalidate_caches, prefers_reduced_motion,
@@ -577,7 +577,7 @@ mod system_theme_tests {
     }
 
     // --- platform_preset_name() pure tests ---
-    // Tests the same logic path (detect_linux_de -> linux_preset_for_de) without env var mocking.
+    // Tests the same logic path (parse_linux_desktop -> linux_preset_for_de) without env var mocking.
 
     /// Prove that the sync `from_system()` API works without any async runtime.
     /// On Linux with KDE feature: exercises pollster::block_on(from_system_inner()).
@@ -596,14 +596,14 @@ mod system_theme_tests {
     #[test]
     #[cfg(target_os = "linux")]
     fn test_platform_preset_name_kde() {
-        let name = pipeline::linux_preset_for_de(detect::detect_linux_de("KDE"));
+        let name = pipeline::linux_preset_for_de(detect::parse_linux_desktop("KDE"));
         assert_eq!(name, "kde-breeze-live");
     }
 
     #[test]
     #[cfg(target_os = "linux")]
     fn test_platform_preset_name_gnome() {
-        let name = pipeline::linux_preset_for_de(detect::detect_linux_de("GNOME"));
+        let name = pipeline::linux_preset_for_de(detect::parse_linux_desktop("GNOME"));
         assert_eq!(name, "adwaita-live");
     }
 }

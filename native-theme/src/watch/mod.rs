@@ -189,7 +189,7 @@ pub fn on_theme_change(
 ) -> crate::Result<ThemeWatcher> {
     #[cfg(target_os = "linux")]
     {
-        let de = crate::detect_linux_de(&crate::detect::xdg_current_desktop());
+        let de = crate::detect_linux_desktop();
         match de {
             #[cfg(all(feature = "kde", feature = "watch"))]
             crate::LinuxDesktop::Kde => kde::watch_kde(callback),

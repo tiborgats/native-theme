@@ -1,7 +1,7 @@
 //! Theme pipeline: reader -> preset merge -> resolve -> validate.
 
 #[cfg(target_os = "linux")]
-use crate::detect::{LinuxDesktop, detect_linux_de, system_is_dark, xdg_current_desktop};
+use crate::detect::{LinuxDesktop, detect_linux_desktop, parse_linux_desktop, system_is_dark};
 
 use crate::model::Theme;
 use crate::{OverlaySource, SystemTheme};
@@ -148,7 +148,7 @@ pub fn platform_preset_name() -> &'static str {
     }
     #[cfg(target_os = "linux")]
     {
-        linux_preset_for_de(detect_linux_de(&xdg_current_desktop()))
+        linux_preset_for_de(detect_linux_desktop())
     }
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
@@ -190,7 +190,7 @@ pub fn diagnose_platform_support() -> Vec<String> {
         // Check XDG_CURRENT_DESKTOP
         match std::env::var("XDG_CURRENT_DESKTOP") {
             Ok(val) if !val.is_empty() => {
-                let de = detect_linux_de(&val);
+                let de = parse_linux_desktop(&val);
                 diagnostics.push(format!("XDG_CURRENT_DESKTOP: {val}"));
                 diagnostics.push(format!("Detected DE: {de:?}"));
             }
@@ -347,7 +347,7 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
         } else {
             crate::ColorMode::Light
         };
-        let de = detect_linux_de(&xdg_current_desktop());
+        let de = detect_linux_desktop();
         let preset = linux_preset_for_de(de);
         match de {
             #[cfg(feature = "kde")]
@@ -481,66 +481,66 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
 mod dispatch_tests {
     use super::*;
 
-    // -- detect_linux_de() pure function tests --
+    // -- parse_linux_desktop() pure function tests --
 
     #[test]
     fn detect_kde_simple() {
-        assert_eq!(detect_linux_de("KDE"), LinuxDesktop::Kde);
+        assert_eq!(parse_linux_desktop("KDE"), LinuxDesktop::Kde);
     }
 
     #[test]
     fn detect_kde_colon_separated_after() {
-        assert_eq!(detect_linux_de("ubuntu:KDE"), LinuxDesktop::Kde);
+        assert_eq!(parse_linux_desktop("ubuntu:KDE"), LinuxDesktop::Kde);
     }
 
     #[test]
     fn detect_kde_colon_separated_before() {
-        assert_eq!(detect_linux_de("KDE:plasma"), LinuxDesktop::Kde);
+        assert_eq!(parse_linux_desktop("KDE:plasma"), LinuxDesktop::Kde);
     }
 
     #[test]
     fn detect_gnome_simple() {
-        assert_eq!(detect_linux_de("GNOME"), LinuxDesktop::Gnome);
+        assert_eq!(parse_linux_desktop("GNOME"), LinuxDesktop::Gnome);
     }
 
     #[test]
     fn detect_gnome_ubuntu() {
-        assert_eq!(detect_linux_de("ubuntu:GNOME"), LinuxDesktop::Gnome);
+        assert_eq!(parse_linux_desktop("ubuntu:GNOME"), LinuxDesktop::Gnome);
     }
 
     #[test]
     fn detect_xfce() {
-        assert_eq!(detect_linux_de("XFCE"), LinuxDesktop::Xfce);
+        assert_eq!(parse_linux_desktop("XFCE"), LinuxDesktop::Xfce);
     }
 
     #[test]
     fn detect_cinnamon() {
-        assert_eq!(detect_linux_de("X-Cinnamon"), LinuxDesktop::Cinnamon);
+        assert_eq!(parse_linux_desktop("X-Cinnamon"), LinuxDesktop::Cinnamon);
     }
 
     #[test]
     fn detect_cinnamon_short() {
-        assert_eq!(detect_linux_de("Cinnamon"), LinuxDesktop::Cinnamon);
+        assert_eq!(parse_linux_desktop("Cinnamon"), LinuxDesktop::Cinnamon);
     }
 
     #[test]
     fn detect_mate() {
-        assert_eq!(detect_linux_de("MATE"), LinuxDesktop::Mate);
+        assert_eq!(parse_linux_desktop("MATE"), LinuxDesktop::Mate);
     }
 
     #[test]
     fn detect_lxqt() {
-        assert_eq!(detect_linux_de("LXQt"), LinuxDesktop::LxQt);
+        assert_eq!(parse_linux_desktop("LXQt"), LinuxDesktop::LxQt);
     }
 
     #[test]
     fn detect_budgie() {
-        assert_eq!(detect_linux_de("Budgie:GNOME"), LinuxDesktop::Budgie);
+        assert_eq!(parse_linux_desktop("Budgie:GNOME"), LinuxDesktop::Budgie);
     }
 
     #[test]
     fn detect_empty_string() {
-        assert_eq!(detect_linux_de(""), LinuxDesktop::Unknown);
+        assert_eq!(parse_linux_desktop(""), LinuxDesktop::Unknown);
     }
 
     // -- Pure pipeline dispatch tests (no env var manipulation) --
@@ -617,33 +617,33 @@ ForegroundLink=41,128,185";
 
     #[test]
     fn detect_hyprland() {
-        assert_eq!(detect_linux_de("Hyprland"), LinuxDesktop::Hyprland);
+        assert_eq!(parse_linux_desktop("Hyprland"), LinuxDesktop::Hyprland);
     }
 
     #[test]
     fn detect_sway() {
-        assert_eq!(detect_linux_de("sway"), LinuxDesktop::Sway);
+        assert_eq!(parse_linux_desktop("sway"), LinuxDesktop::Sway);
     }
 
     #[test]
     fn detect_cosmic() {
-        assert_eq!(detect_linux_de("COSMIC"), LinuxDesktop::CosmicDe);
+        assert_eq!(parse_linux_desktop("COSMIC"), LinuxDesktop::CosmicDe);
     }
 
     #[test]
     fn detect_river() {
-        assert_eq!(detect_linux_de("river"), LinuxDesktop::River);
+        assert_eq!(parse_linux_desktop("river"), LinuxDesktop::River);
     }
 
     #[test]
     fn detect_niri() {
-        assert_eq!(detect_linux_de("niri"), LinuxDesktop::Niri);
+        assert_eq!(parse_linux_desktop("niri"), LinuxDesktop::Niri);
     }
 
     #[test]
     fn detect_cosmic_full_desktop() {
         assert_eq!(
-            detect_linux_de("COSMIC:Freedesktop"),
+            parse_linux_desktop("COSMIC:Freedesktop"),
             LinuxDesktop::CosmicDe
         );
     }

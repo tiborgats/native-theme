@@ -276,7 +276,7 @@ mod tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn de_table_entries_match_linux_desktop_variants() {
-        use native_theme::detect::{LinuxDesktop, detect_linux_de};
+        use native_theme::detect::{LinuxDesktop, parse_linux_desktop};
 
         // Map from TOML key to the XDG_CURRENT_DESKTOP value that produces
         // each LinuxDesktop variant.
@@ -301,7 +301,7 @@ mod tests {
                     )
                 });
 
-            let desktop = detect_linux_de(xdg.1);
+            let desktop = parse_linux_desktop(xdg.1);
             assert_ne!(
                 desktop,
                 LinuxDesktop::Unknown,
@@ -313,7 +313,7 @@ mod tests {
             assert_eq!(
                 *variant_str, expected,
                 "DE_TABLE variant string for \"{toml_key}\" is \"{variant_str}\", \
-                 but detect_linux_de produces {expected}"
+                 but parse_linux_desktop produces {expected}"
             );
         }
     }

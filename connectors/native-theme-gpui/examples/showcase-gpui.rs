@@ -67,7 +67,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 #[cfg(target_os = "linux")]
-use native_theme::detect::detect_linux_de;
+use native_theme::detect::parse_linux_desktop;
 use native_theme::detect::{prefers_reduced_motion, system_is_dark};
 use native_theme::icons::{IconLoader, is_freedesktop_theme_available};
 use native_theme::pipeline::platform_preset_name;
@@ -521,12 +521,16 @@ fn load_gpui_icons(
     // Use the CLI override first, then the default_theme, then system fallback.
     #[cfg(target_os = "linux")]
     let (linux_de, fd_theme) = if is_system_set && icon_set == IconSet::Freedesktop {
-        let de_str = std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default();
         let theme = cli_override
             .or(default_theme)
             .map(|s| s.to_string())
             .unwrap_or_else(|| system_icon_theme().to_string());
-        (Some(detect_linux_de(&de_str)), Some(theme))
+        (
+            Some(parse_linux_desktop(
+                &std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default(),
+            )),
+            Some(theme),
+        )
     } else {
         (None, None)
     };

@@ -649,7 +649,7 @@ pub fn detect_icon_theme() -> String {
 /// Linux icon theme detection, dispatched by desktop environment.
 #[cfg(target_os = "linux")]
 fn detect_linux_icon_theme() -> String {
-    let de = crate::detect::detect_linux_de(&crate::detect::xdg_current_desktop());
+    let de = crate::detect::detect_linux_desktop();
 
     match de {
         crate::detect::LinuxDesktop::Kde => detect_kde_icon_theme(),

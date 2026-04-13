@@ -74,7 +74,7 @@ pub fn detect_linux_desktop() -> LinuxDesktop {
 /// before GNOME because Budgie sets `Budgie:GNOME`.
 #[cfg(target_os = "linux")]
 #[must_use]
-pub(crate) fn parse_linux_desktop(xdg_current_desktop: &str) -> LinuxDesktop {
+pub fn parse_linux_desktop(xdg_current_desktop: &str) -> LinuxDesktop {
     for component in xdg_current_desktop.split(':') {
         match component {
             "KDE" => return LinuxDesktop::Kde,

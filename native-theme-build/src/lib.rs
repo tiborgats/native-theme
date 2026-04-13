@@ -2939,7 +2939,7 @@ system-themes = ["freedesktop"]
         assert!(result.errors.is_empty(), "errors: {:?}", result.errors);
         // Should collapse to a simple arm since all values equal default
         assert!(
-            !result.code.contains("detect_linux_de"),
+            !result.code.contains("parse_linux_desktop"),
             "all-same DE-aware should collapse to simple arm. code:\n{}",
             result.code
         );
