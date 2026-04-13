@@ -14,6 +14,7 @@ impl ThemeMode {
     /// Convert this ThemeMode into a [`ResolvedTheme`] using the default DPI (96.0).
     ///
     /// Convenience wrapper around [`validate_with_dpi(DEFAULT_FONT_DPI)`](Self::validate_with_dpi).
+    #[doc(hidden)]
     pub fn validate(&self) -> crate::Result<ResolvedTheme> {
         self.validate_with_dpi(DEFAULT_FONT_DPI)
     }
@@ -37,6 +38,7 @@ impl ThemeMode {
     /// are still `None` after resolution. Returns
     /// [`crate::Error::ResolutionInvalid`] if all fields are present but
     /// some numeric values fall outside allowed ranges.
+    #[doc(hidden)]
     pub fn validate_with_dpi(&self, font_dpi: f32) -> crate::Result<ResolvedTheme> {
         let mut missing = Vec::new();
         let dpi = font_dpi;

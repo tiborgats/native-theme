@@ -48,6 +48,7 @@ impl ThemeMode {
     /// 3. **Widget-from-defaults** -- colors, geometry, fonts, text scale entries
     ///    all inherit from defaults.
     /// 4. **Widget-to-widget** -- inactive title bar fields fall back to active.
+    #[doc(hidden)]
     pub fn resolve(&mut self) {
         self.resolve_defaults_internal();
         self.resolve_safety_nets();
@@ -67,6 +68,7 @@ impl ThemeMode {
     /// Note: `icon_set` resolution is handled at the
     /// [`Theme`](crate::Theme) / pipeline level. `icon_theme` is per-variant
     /// on [`ThemeDefaults`](crate::ThemeDefaults) and resolved in the pipeline.
+    #[doc(hidden)]
     pub fn resolve_platform_defaults(&mut self) {
         if self.dialog.button_order.is_none() {
             self.dialog.button_order = Some(inheritance::platform_button_order());
@@ -82,6 +84,7 @@ impl ThemeMode {
     /// [`validate_with_dpi()`](Self::validate_with_dpi) or use
     /// [`into_resolved()`](Self::into_resolved) which accepts an optional
     /// DPI parameter.
+    #[doc(hidden)]
     pub fn resolve_all(&mut self) {
         self.resolve();
         self.resolve_platform_defaults();
