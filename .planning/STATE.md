@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
 status: in-progress
-stopped_at: Phase 85 verified — 8/8 must-haves confirmed
-last_updated: "2026-04-13T21:15:00.000Z"
-last_activity: 2026-04-13 — Phase 85 verified (8/8 must-haves confirmed)
+stopped_at: Completed 86-01-PLAN.md
+last_updated: "2026-04-13T21:43:34.857Z"
+last_activity: 2026-04-13 — Phase 86 Plan 01 complete (inventory-driven lint_toml)
 progress:
   total_phases: 28
   completed_phases: 25
-  total_plans: 48
-  completed_plans: 48
-  percent: 100
+  total_plans: 50
+  completed_plans: 49
+  percent: 98
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 85 — data-model-method-and-doc-cleanup
-Plan: 2/2 complete
-Status: Phase 85 verified — 8/8 must-haves confirmed
-Last activity: 2026-04-13 — Phase 85 verified (8/8 must-haves confirmed)
+Phase: 86 — validation-and-lint-codegen-polish
+Plan: 1/2 complete
+Status: Plan 01 complete, Plan 02 pending
+Last activity: 2026-04-13 — Phase 86 Plan 01 complete (inventory-driven lint_toml)
 
-Progress: [██████████] 100% (48/48 plans complete)
+Progress: [█████████▉] 98% (49/50 plans complete)
 
 ## Accumulated Context
 
@@ -174,6 +174,7 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 82-02]: Connector ?Sized functions use load_custom_via_builder helper (calls provider methods directly + IconLoader for system dispatch) to avoid unsized-to-trait-object coercion
 - [Phase 82-02]: is_freedesktop_theme_available stays public (capability probe, not a loader)
 - [Phase 82-02]: CLI theme override uses IconLoader::new(name).set(Freedesktop).theme(t) instead of direct load_freedesktop_icon_by_name
+- [Phase 86-01]: lint_toml uses inventory::iter::<WidgetFieldInfo>() HashMap for widget discovery; STRUCTURAL_KEYS retains only defaults and text_scale
 
 ### Blockers/Concerns
 
@@ -186,6 +187,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T21:15:00Z
-Stopped at: Phase 85 verified — 8/8 must-haves confirmed
+Last session: 2026-04-13T21:43:34.853Z
+Stopped at: Completed 86-01-PLAN.md
 Resume file: None

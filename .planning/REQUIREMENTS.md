@@ -53,7 +53,7 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 
 - [x] **VALID-01**: ~720 lines of hand-written validate/range-check boilerplate generated from `#[theme(range = "...")]` and `#[theme(check = "non_negative")]` attributes via `native-theme-derive` (doc 2 B1)
 - [x] **VALID-02**: Inheritance rules deduplicated between `inheritance-rules.toml` and `inheritance.rs` — per-field `#[theme(inherit_from = "...")]` attributes cover the ~55 of 82 expressible uniform rules; pattern-based rules stay hand-written (doc 2 B2)
-- [ ] **VALID-03**: `lint_toml` driven by `inventory::submit!` widget registry entries instead of ~215 hand-maintained string literals (doc 1 §14)
+- [x] **VALID-03**: `lint_toml` driven by `inventory::submit!` widget registry entries instead of ~215 hand-maintained string literals (doc 1 §14)
 - [ ] **VALID-04**: `check_ranges` stops eager `format!` path-string construction; allocate path strings lazily (doc 2 D3)
 
 ### Platform Readers
