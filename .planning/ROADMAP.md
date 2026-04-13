@@ -156,7 +156,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 78: OverlaySource, AccessibilityPreferences, font_dpi Relocation** — Ship-unit 8 atomic: eliminate `SystemTheme` pre-resolve variant fields via `OverlaySource` replay, move accessibility off `ThemeDefaults` onto `SystemTheme`, move `font_dpi` into `ResolutionContext` (completed 2026-04-13)
 - [x] **Phase 79: BorderSpec Split and Platform Reader Visibility Audit** — Ship-unit 9: split `BorderSpec` along defaults-vs-widget, grep-audit connector callers of platform readers, demote `from_kde`/`from_gnome`/`from_windows`/`from_macos` to `pub(crate)` (completed 2026-04-13)
 - [x] **Phase 80: native-theme-derive Proc-Macro K Codegen** — Ship-unit 10: new `native-theme-derive` crate generating paired structs, `FIELD_NAMES`, `impl_merge!` bodies, `check_ranges`, `inventory::submit!` registry, and unified border inheritance attribute (completed 2026-04-13)
-- [ ] **Phase 81: Feature-Matrix Cleanup and Unified from_system** — Ship-unit 11 atomic: unify `from_system`/`from_system_async` via `pollster::block_on`, split aggregators into `linux-kde`/`linux-portal`-style groups, simplify `Cargo.toml` feature graph
+- [x] **Phase 81: Feature-Matrix Cleanup and Unified from_system** — Ship-unit 11 atomic: unify `from_system`/`from_system_async` via `pollster::block_on`, split aggregators into `linux-kde`/`linux-portal`-style groups, simplify `Cargo.toml` feature graph (completed 2026-04-13)
 - [ ] **Phase 82: Icon API Rework** — Collapse 13 icon-loading functions into `IconLoader` builder, migrate `IconProvider` and `IconData::Svg` to `Cow<'static, [u8]>`, add `IconRole::name()` / `Display`, add `IconSet` drift-guard test
 - [ ] **Phase 83: Detection Cache Layer** — Replace global `OnceLock` caches with `DetectionContext` backed by `arc_swap::ArcSwapOption`, add no-arg `detect_linux_desktop()` overload
 - [ ] **Phase 84: Reader Output Contract Homogenisation** — Unify single-vs-dual variant semantics across KDE/GNOME/Windows/macOS readers via a `ReaderOutput` type flowing through `run_pipeline` alongside `OverlaySource`
@@ -463,10 +463,10 @@ Plans:
   2. `Cargo.toml` features include `linux-kde` and `linux-portal` (or the design-doc names), each aggregating the right target-specific dependencies, and the old opaque aggregators are gone
   3. `cargo hack check --each-feature` (or equivalent) passes for every feature combination the CI matrix enumerates
   4. A sync-only consumer (no tokio) can call `from_system()` without pulling an async runtime into its dependency graph — verified by a test harness built with `--no-default-features` and only sync features enabled
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [x] 81-01-PLAN.md — Unify from_system/from_system_async code paths, restructure Cargo.toml feature graph
-- [ ] 81-02-PLAN.md — Update CI matrix and full feature-combination verification
+- [x] 81-02-PLAN.md — Update CI matrix and full feature-combination verification
 
 ### Phase 82: Icon API Rework
 **Goal**: The 13 icon-loading functions collapse into a single `IconLoader::new().role(...).size(...).theme(...).load()` builder with an `impl Into<IconId>` constructor; `IconProvider::icon_svg` and `IconData::Svg` both migrate to `Cow<'static, [u8]>` to eliminate the `Vec<u8>` copy on bundled loads and remove the `&'static [u8]` lifetime lock; `IconRole` gains a kebab-case `name()` method with an `impl Display` delegate; a drift-guard test covers `IconSet::from_name` / `name` round-trip
@@ -623,7 +623,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 78. OverlaySource, AccessibilityPreferences, font_dpi Relocation | v0.5.7 | 4/4 | Complete   | 2026-04-13 |
 | 79. BorderSpec Split and Platform Reader Visibility Audit | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 80. native-theme-derive Proc-Macro K Codegen | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
-| 81. Feature-Matrix Cleanup and Unified from_system | v0.5.7 | 1/2 | In Progress|  |
+| 81. Feature-Matrix Cleanup and Unified from_system | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 82. Icon API Rework | v0.5.7 | 0/0 | Not started | — |
 | 83. Detection Cache Layer | v0.5.7 | 0/0 | Not started | — |
 | 84. Reader Output Contract Homogenisation | v0.5.7 | 0/0 | Not started | — |

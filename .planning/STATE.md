@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
-status: in-progress
-stopped_at: Completed 81-01-PLAN.md
-last_updated: "2026-04-13T13:06:05.913Z"
-last_activity: 2026-04-13 — Phase 81 Plan 01 executed (2 tasks, 2 commits)
+status: verifying
+stopped_at: Completed 81-02-PLAN.md
+last_updated: "2026-04-13T13:12:19.300Z"
+last_activity: 2026-04-13 — Phase 81 Plan 02 executed (2 tasks, 2 commits)
 progress:
   total_phases: 28
-  completed_phases: 20
+  completed_phases: 21
   total_plans: 40
-  completed_plans: 39
-  percent: 98
+  completed_plans: 40
+  percent: 100
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 81 — feature-matrix-cleanup-and-unified-from-system
-Plan: 1/2 complete
-Status: Plan 01 done -- unified from_system, feature graph restructured
-Last activity: 2026-04-13 — Phase 81 Plan 01 executed (2 tasks, 2 commits)
+Plan: 2/2 complete
+Status: Phase 81 complete -- feature graph restructured, CI matrix updated, sync verification test added
+Last activity: 2026-04-13 — Phase 81 Plan 02 executed (2 tasks, 2 commits)
 
-Progress: [██████████] 98% (39/40 plans complete)
+Progress: [██████████] 100% (40/40 plans complete)
 
 ## Accumulated Context
 
@@ -150,6 +150,8 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 81-01]: Non-Linux from_system() uses Waker::noop() single-poll -- zero-dep, correct for zero-.await futures
 - [Phase 81-01]: portal activates ashpd/async-io directly (no separate runtime-variant features)
 - [Phase 81-01]: linux-kde and linux-portal sub-aggregators enable fine-grained feature selection
+- [Phase 81-02]: 12 CI matrix entries: no-features, kde, portal, linux-kde, linux-portal, linux, native, icons, Windows(2), macOS(2)
+- [Phase 81-02]: sync_consumer_no_async_runtime gated on cfg(target_os=linux) + cfg(feature=kde) to exercise pollster::block_on path
 
 ### Blockers/Concerns
 
@@ -162,6 +164,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T13:05:17Z
-Stopped at: Completed 81-01-PLAN.md
+Last session: 2026-04-13T13:12:19.296Z
+Stopped at: Completed 81-02-PLAN.md
 Resume file: None
