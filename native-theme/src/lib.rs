@@ -750,11 +750,7 @@ mod overlay_tests {
             font_dpi: None,
             accessibility: AccessibilityPreferences::default(),
         };
-        pipeline::run_pipeline(
-            reader,
-            "catppuccin-mocha",
-            ColorMode::Light,
-        )
+        pipeline::run_pipeline(reader, "catppuccin-mocha", ColorMode::Light)
     }
 
     #[test]

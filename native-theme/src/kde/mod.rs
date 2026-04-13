@@ -374,15 +374,15 @@ pub(crate) fn from_kde() -> crate::Result<crate::ReaderResult> {
         crate::ReaderOutput::Single { mode, .. } => &mut **mode,
         crate::ReaderOutput::Dual { light, .. } => &mut **light,
     };
-    if mode.defaults.icon_theme.is_none() {
-        if let Some(parent) = path.parent() {
-            let defaults_path = parent.join("kdedefaults").join("kdeglobals");
-            if let Ok(defaults_content) = std::fs::read_to_string(&defaults_path) {
-                let mut defaults_ini = create_kde_parser();
-                if defaults_ini.read(defaults_content).is_ok() {
-                    mode.defaults.icon_theme =
-                        defaults_ini.get("Icons", "Theme").filter(|s| !s.is_empty());
-                }
+    if mode.defaults.icon_theme.is_none()
+        && let Some(parent) = path.parent()
+    {
+        let defaults_path = parent.join("kdedefaults").join("kdeglobals");
+        if let Ok(defaults_content) = std::fs::read_to_string(&defaults_path) {
+            let mut defaults_ini = create_kde_parser();
+            if defaults_ini.read(defaults_content).is_ok() {
+                mode.defaults.icon_theme =
+                    defaults_ini.get("Icons", "Theme").filter(|s| !s.is_empty());
             }
         }
     }
@@ -465,7 +465,9 @@ pub(crate) fn from_kde_at(path: &std::path::Path) -> crate::Result<crate::Theme>
         source: Box::new(e),
     })?;
     let result = from_kde_content(&content)?;
-    Ok(result.output.to_theme(&result.name, result.icon_set, &result.layout))
+    Ok(result
+        .output
+        .to_theme(&result.name, result.icon_set, &result.layout))
 }
 
 /// Detect whether the active KDE theme is dark based on background luminance.
@@ -731,7 +733,10 @@ BackgroundNormal=49,54,59
     fn test_dark_theme_detection() {
         let result = from_kde_content(BREEZE_DARK_FULL).unwrap();
         assert!(
-            matches!(result.output, crate::ReaderOutput::Single { is_dark: true, .. }),
+            matches!(
+                result.output,
+                crate::ReaderOutput::Single { is_dark: true, .. }
+            ),
             "dark variant should be populated"
         );
     }
@@ -740,7 +745,10 @@ BackgroundNormal=49,54,59
     fn test_light_theme_detection() {
         let result = from_kde_content(BREEZE_LIGHT_FULL).unwrap();
         assert!(
-            matches!(result.output, crate::ReaderOutput::Single { is_dark: false, .. }),
+            matches!(
+                result.output,
+                crate::ReaderOutput::Single { is_dark: false, .. }
+            ),
             "light variant should be populated"
         );
     }
@@ -785,7 +793,10 @@ BackgroundNormal=49,54,59
             "minimal fixture should not panic: {result:?}"
         );
         let r = result.unwrap();
-        assert!(matches!(r.output, crate::ReaderOutput::Single { is_dark: true, .. }));
+        assert!(matches!(
+            r.output,
+            crate::ReaderOutput::Single { is_dark: true, .. }
+        ));
     }
 
     #[test]
@@ -1194,7 +1205,9 @@ Name=whatever
         // and other fields that KDE's kdeglobals doesn't carry).
         let mut base = crate::Theme::preset("kde-breeze").unwrap();
         let result = from_kde_content(BREEZE_DARK_FULL).unwrap();
-        let kde_theme = result.output.to_theme(&result.name, result.icon_set, &result.layout);
+        let kde_theme = result
+            .output
+            .to_theme(&result.name, result.icon_set, &result.layout);
 
         // Merge KDE reader output on top of the base preset.
         // The KDE variant is dark-only; merge will clone it into the base.

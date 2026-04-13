@@ -276,9 +276,7 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
 ///
 /// Internal entry point used by the pipeline. External consumers should
 /// use [`SystemTheme::from_system()`](crate::SystemTheme::from_system).
-pub(crate) fn build_gnome_spec_pure(
-    data: &GnomePortalData,
-) -> crate::Result<crate::ReaderResult> {
+pub(crate) fn build_gnome_spec_pure(data: &GnomePortalData) -> crate::Result<crate::ReaderResult> {
     let base = crate::Theme::preset("adwaita")?;
     let is_dark = data.is_dark;
 
@@ -766,7 +764,10 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.name, "GNOME");
-        assert!(matches!(result.output, crate::ReaderOutput::Single { is_dark: true, .. }));
+        assert!(matches!(
+            result.output,
+            crate::ReaderOutput::Single { is_dark: true, .. }
+        ));
     }
 
     #[test]
@@ -780,7 +781,10 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.name, "GNOME");
-        assert!(matches!(result.output, crate::ReaderOutput::Single { is_dark: false, .. }));
+        assert!(matches!(
+            result.output,
+            crate::ReaderOutput::Single { is_dark: false, .. }
+        ));
     }
 
     #[test]
@@ -794,7 +798,10 @@ mod tests {
         )
         .unwrap();
         assert_eq!(result.name, "GNOME");
-        assert!(matches!(result.output, crate::ReaderOutput::Single { is_dark: false, .. }));
+        assert!(matches!(
+            result.output,
+            crate::ReaderOutput::Single { is_dark: false, .. }
+        ));
     }
 
     // === accent color tests ===
@@ -950,7 +957,10 @@ mod tests {
     fn pure_light_scheme_produces_light_variant() {
         let data = default_gnome_data();
         let result = build_gnome_spec_pure(&data).unwrap();
-        assert!(matches!(result.output, crate::ReaderOutput::Single { is_dark: false, .. }));
+        assert!(matches!(
+            result.output,
+            crate::ReaderOutput::Single { is_dark: false, .. }
+        ));
         assert_eq!(result.name, "GNOME");
     }
 
@@ -959,7 +969,10 @@ mod tests {
         let mut data = default_gnome_data();
         data.is_dark = true;
         let result = build_gnome_spec_pure(&data).unwrap();
-        assert!(matches!(result.output, crate::ReaderOutput::Single { is_dark: true, .. }));
+        assert!(matches!(
+            result.output,
+            crate::ReaderOutput::Single { is_dark: true, .. }
+        ));
         assert_eq!(result.name, "GNOME");
     }
 

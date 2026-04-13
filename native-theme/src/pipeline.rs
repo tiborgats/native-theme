@@ -9,6 +9,9 @@ use crate::{OverlaySource, ReaderOutput, ReaderResult, SystemTheme};
 /// Run the OS-first pipeline: merge reader output onto a platform
 /// preset, resolve both light and dark variants, validate.
 ///
+/// Accepts a [`ReaderResult`] containing the reader's variant data
+/// and metadata (name, icon_set, layout, font_dpi, accessibility).
+///
 /// `ReaderOutput::Single` readers provide one variant; the pipeline
 /// fills the other from the full platform preset. `ReaderOutput::Dual`
 /// readers provide both; the pipeline uses both after merging.
@@ -339,7 +342,11 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
             let result = crate::macos::from_macos()?;
             let mode = match &result.output {
                 ReaderOutput::Single { is_dark, .. } => {
-                    if *is_dark { crate::ColorMode::Dark } else { crate::ColorMode::Light }
+                    if *is_dark {
+                        crate::ColorMode::Dark
+                    } else {
+                        crate::ColorMode::Light
+                    }
                 }
                 ReaderOutput::Dual { .. } => crate::ColorMode::Light,
             };
@@ -360,7 +367,11 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
             let result = crate::windows::from_windows()?;
             let mode = match &result.output {
                 ReaderOutput::Single { is_dark, .. } => {
-                    if *is_dark { crate::ColorMode::Dark } else { crate::ColorMode::Light }
+                    if *is_dark {
+                        crate::ColorMode::Dark
+                    } else {
+                        crate::ColorMode::Light
+                    }
                 }
                 ReaderOutput::Dual { .. } => crate::ColorMode::Light,
             };
@@ -430,18 +441,15 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
                         return match detected {
                             #[cfg(feature = "kde")]
                             LinuxDesktop::Kde => {
-                                let result =
-                                    crate::gnome::from_kde_with_portal().await?;
+                                let result = crate::gnome::from_kde_with_portal().await?;
                                 run_pipeline(result, detected_preset, mode)
                             }
                             #[cfg(not(feature = "kde"))]
-                            LinuxDesktop::Kde => {
-                                run_pipeline(
-                                    preset_as_reader("adwaita", mode)?,
-                                    "adwaita-live",
-                                    mode,
-                                )
-                            }
+                            LinuxDesktop::Kde => run_pipeline(
+                                preset_as_reader("adwaita", mode)?,
+                                "adwaita-live",
+                                mode,
+                            ),
                             LinuxDesktop::Gnome => {
                                 let result = crate::gnome::from_gnome().await?;
                                 run_pipeline(result, detected_preset, mode)
@@ -464,11 +472,7 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
                     let path = crate::kde::kdeglobals_path();
                     if path.exists() {
                         let result = crate::kde::from_kde()?;
-                        return run_pipeline(
-                            result,
-                            linux_preset_for_de(LinuxDesktop::Kde),
-                            mode,
-                        );
+                        return run_pipeline(result, linux_preset_for_de(LinuxDesktop::Kde), mode);
                     }
                 }
                 run_pipeline(preset_as_reader("adwaita", mode)?, preset, mode)
@@ -680,12 +684,8 @@ ForegroundLink=41,128,185";
     fn from_system_returns_result() {
         // Test the pure pipeline directly instead of mocking env vars for from_system()
         let result = preset_as_reader("adwaita", crate::ColorMode::Light).unwrap();
-        let theme = run_pipeline(
-            result,
-            "adwaita-live",
-            crate::ColorMode::Light,
-        )
-        .expect("run_pipeline should succeed with adwaita preset");
+        let theme = run_pipeline(result, "adwaita-live", crate::ColorMode::Light)
+            .expect("run_pipeline should succeed with adwaita preset");
         assert_eq!(theme.name, "Adwaita");
     }
 }
@@ -700,9 +700,9 @@ ForegroundLink=41,128,185";
     clippy::field_reassign_with_default
 )]
 mod pipeline_tests {
-    use crate::{ReaderOutput, ReaderResult};
     use crate::color::Rgba;
     use crate::model::{LayoutTheme, Theme, ThemeMode};
+    use crate::{ReaderOutput, ReaderResult};
 
     use super::run_pipeline;
 
@@ -727,11 +727,7 @@ mod pipeline_tests {
     #[test]
     fn test_run_pipeline_produces_both_variants() {
         let reader = reader_from_preset("catppuccin-mocha");
-        let result = run_pipeline(
-            reader,
-            "catppuccin-mocha",
-            crate::ColorMode::Light,
-        );
+        let result = run_pipeline(reader, "catppuccin-mocha", crate::ColorMode::Light);
         assert!(result.is_ok(), "run_pipeline should succeed");
         let st = result.unwrap();
         // Both light and dark exist as ResolvedTheme (non-Option)
@@ -759,11 +755,7 @@ mod pipeline_tests {
             accessibility: crate::AccessibilityPreferences::default(),
         };
 
-        let result = run_pipeline(
-            reader,
-            "catppuccin-mocha",
-            crate::ColorMode::Light,
-        );
+        let result = run_pipeline(reader, "catppuccin-mocha", crate::ColorMode::Light);
         assert!(result.is_ok(), "run_pipeline should succeed");
         let st = result.unwrap();
         // The reader's accent should win over the preset's accent
@@ -796,11 +788,7 @@ mod pipeline_tests {
             accessibility: crate::AccessibilityPreferences::default(),
         };
 
-        let result = run_pipeline(
-            reader,
-            "kde-breeze-live",
-            crate::ColorMode::Dark,
-        );
+        let result = run_pipeline(reader, "kde-breeze-live", crate::ColorMode::Dark);
         assert!(
             result.is_ok(),
             "run_pipeline should succeed with single variant"
@@ -836,12 +824,7 @@ mod pipeline_tests {
             accessibility: crate::AccessibilityPreferences::default(),
         };
 
-        let st = run_pipeline(
-            reader,
-            "kde-breeze-live",
-            crate::ColorMode::Dark,
-        )
-        .unwrap();
+        let st = run_pipeline(reader, "kde-breeze-live", crate::ColorMode::Dark).unwrap();
 
         // The light variant should have colors from the full "kde-breeze" preset
         let full_light = full.light.unwrap();
@@ -864,16 +847,83 @@ mod pipeline_tests {
         // Simulates GNOME sync fallback: adwaita used as both reader and preset.
         // Double-merge is harmless: merge is idempotent for matching values.
         let reader = reader_from_preset("adwaita");
-        let result = run_pipeline(
-            reader,
-            "adwaita",
-            crate::ColorMode::Light,
-        );
+        let result = run_pipeline(reader, "adwaita", crate::ColorMode::Light);
         assert!(
             result.is_ok(),
             "double-merge with same preset should succeed"
         );
         let st = result.unwrap();
         assert_eq!(st.name, "Adwaita");
+    }
+
+    // --- Single/Dual contract tests ---
+
+    #[test]
+    fn test_single_variant_fills_inactive_from_preset() {
+        // Simulate KDE-style single-variant reader: only dark variant provided.
+        // The pipeline should fill light from the full preset.
+        let full = Theme::preset("kde-breeze").unwrap();
+        let dark_v = full.dark.clone().unwrap();
+        let reader = ReaderResult {
+            output: ReaderOutput::Single {
+                mode: Box::new(dark_v),
+                is_dark: true,
+            },
+            name: "Breeze Dark".to_string(),
+            icon_set: full.icon_set,
+            layout: full.layout.clone(),
+            font_dpi: None,
+            accessibility: crate::AccessibilityPreferences::default(),
+        };
+
+        let st = run_pipeline(reader, "kde-breeze-live", crate::ColorMode::Dark).unwrap();
+
+        // Dark variant should have reader's data (merged with preset).
+        // Light variant should come from the full preset (kde-breeze, not live).
+        let full_light = Theme::preset("kde-breeze").unwrap().light.unwrap();
+        assert_eq!(
+            st.light.defaults.accent_color,
+            full_light.defaults.accent_color.unwrap(),
+            "Single: inactive light variant should come from full preset"
+        );
+        assert_eq!(st.mode, crate::ColorMode::Dark);
+    }
+
+    #[test]
+    fn test_dual_variant_uses_both_from_reader() {
+        // Simulate macOS-style dual-variant reader: both variants provided.
+        // The pipeline should use BOTH reader variants (merged with preset).
+        let full = Theme::preset("macos-sonoma").unwrap();
+        let custom_light_accent = Rgba::rgb(42, 100, 200);
+        let custom_dark_accent = Rgba::rgb(200, 50, 50);
+
+        let mut light_v = full.light.clone().unwrap();
+        light_v.defaults.accent_color = Some(custom_light_accent);
+        let mut dark_v = full.dark.clone().unwrap();
+        dark_v.defaults.accent_color = Some(custom_dark_accent);
+
+        let reader = ReaderResult {
+            output: ReaderOutput::Dual {
+                light: Box::new(light_v),
+                dark: Box::new(dark_v),
+            },
+            name: "macOS Sonoma".to_string(),
+            icon_set: full.icon_set,
+            layout: full.layout.clone(),
+            font_dpi: Some(72.0),
+            accessibility: crate::AccessibilityPreferences::default(),
+        };
+
+        let st = run_pipeline(reader, "macos-sonoma-live", crate::ColorMode::Light).unwrap();
+
+        // Both variants should reflect the reader's custom accents (merged).
+        assert_eq!(
+            st.light.defaults.accent_color, custom_light_accent,
+            "Dual: light variant should have reader's light accent"
+        );
+        assert_eq!(
+            st.dark.defaults.accent_color, custom_dark_accent,
+            "Dual: dark variant should have reader's dark accent"
+        );
     }
 }

@@ -1188,7 +1188,10 @@ mod tests {
         );
         // Accessibility fields are no longer on ThemeDefaults;
         // they live on AccessibilityPreferences (constructed by pipeline).
-        assert!(matches!(theme.output, crate::ReaderOutput::Single { is_dark: false, .. }));
+        assert!(matches!(
+            theme.output,
+            crate::ReaderOutput::Single { is_dark: false, .. }
+        ));
     }
 
     // === Dialog button order test ===
