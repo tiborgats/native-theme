@@ -623,7 +623,7 @@ fn load_gpui_icons(
                 if let Some(lname) = lookup_name
                     && let Some(svg_bytes) = bundled_icon_by_name(lname, icon_set)
                 {
-                    let data = Some(IconData::Svg(svg_bytes.to_vec()));
+                    let data = Some(IconData::Svg(std::borrow::Cow::Borrowed(svg_bytes)));
                     return (*name, icon.clone(), None, data, IconSource::Bundled);
                 }
             }

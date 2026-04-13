@@ -14,7 +14,8 @@ use super::icons::{IconRole, IconSet};
 /// - The feature flag for the requested set is not enabled
 ///
 /// Returns `Some(&[u8])` containing valid SVG bytes when the feature
-/// is enabled. Callers typically convert to `IconData::Svg(bytes.to_vec())`.
+/// is enabled. Callers should wrap in `Cow::Borrowed` for zero-copy
+/// `IconData::Svg(Cow::Borrowed(bytes))` instead of `.to_vec()`.
 ///
 /// # Examples
 ///

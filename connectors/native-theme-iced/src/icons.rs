@@ -53,11 +53,11 @@ pub fn to_svg_handle(
     color: Option<iced_core::Color>,
 ) -> Option<iced_core::svg::Handle> {
     match data {
-        IconData::Svg(bytes) => {
-            let final_bytes = if let Some(c) = color {
-                colorize_monochrome_svg(bytes, c)
+        IconData::Svg(cow) => {
+            let final_bytes: Vec<u8> = if let Some(c) = color {
+                colorize_monochrome_svg(cow, c)
             } else {
-                bytes.clone()
+                cow.to_vec()
             };
             Some(iced_core::svg::Handle::from_memory(final_bytes))
         }
@@ -210,11 +210,11 @@ pub fn into_svg_handle(
     color: Option<iced_core::Color>,
 ) -> Option<iced_core::svg::Handle> {
     match data {
-        IconData::Svg(bytes) => {
-            let final_bytes = if let Some(c) = color {
-                colorize_monochrome_svg(&bytes, c)
+        IconData::Svg(cow) => {
+            let final_bytes: Vec<u8> = if let Some(c) = color {
+                colorize_monochrome_svg(&cow, c)
             } else {
-                bytes
+                cow.into_owned()
             };
             Some(iced_core::svg::Handle::from_memory(final_bytes))
         }
@@ -331,13 +331,13 @@ mod tests {
 
     #[test]
     fn to_image_handle_with_svg_returns_none() {
-        let data = IconData::Svg(b"<svg></svg>".to_vec());
+        let data = IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>"));
         assert!(to_image_handle(&data).is_none());
     }
 
     #[test]
     fn to_svg_handle_with_svg_returns_some() {
-        let data = IconData::Svg(b"<svg></svg>".to_vec());
+        let data = IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>"));
         assert!(to_svg_handle(&data, None).is_some());
     }
 
@@ -353,8 +353,9 @@ mod tests {
 
     #[test]
     fn to_svg_handle_colored_replaces_current_color() {
-        let svg = b"<svg><path stroke=\"currentColor\" fill=\"currentColor\"/></svg>".to_vec();
-        let data = IconData::Svg(svg);
+        let data = IconData::Svg(std::borrow::Cow::Borrowed(
+            b"<svg><path stroke=\"currentColor\" fill=\"currentColor\"/></svg>",
+        ));
         let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
 
         let handle = to_svg_handle(&data, Some(color));
@@ -400,8 +401,13 @@ mod tests {
         fn icon_name(&self, _set: native_theme::theme::IconSet) -> Option<&str> {
             None
         }
-        fn icon_svg(&self, _set: native_theme::theme::IconSet) -> Option<&'static [u8]> {
-            Some(b"<svg xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='12' r='10'/></svg>")
+        fn icon_svg(
+            &self,
+            _set: native_theme::theme::IconSet,
+        ) -> Option<std::borrow::Cow<'static, [u8]>> {
+            Some(std::borrow::Cow::Borrowed(
+                b"<svg xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='12' r='10'/></svg>",
+            ))
         }
     }
 
@@ -412,7 +418,10 @@ mod tests {
         fn icon_name(&self, _set: native_theme::theme::IconSet) -> Option<&str> {
             None
         }
-        fn icon_svg(&self, _set: native_theme::theme::IconSet) -> Option<&'static [u8]> {
+        fn icon_svg(
+            &self,
+            _set: native_theme::theme::IconSet,
+        ) -> Option<std::borrow::Cow<'static, [u8]>> {
             None
         }
     }
@@ -488,8 +497,8 @@ mod tests {
     fn animated_frames_returns_handles() {
         let anim = AnimatedIcon::Frames {
             frames: vec![
-                IconData::Svg(b"<svg></svg>".to_vec()),
-                IconData::Svg(b"<svg></svg>".to_vec()),
+                IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>")),
+                IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>")),
             ],
             frame_duration_ms: 80,
         };
@@ -503,7 +512,7 @@ mod tests {
     #[test]
     fn animated_frames_transform_returns_none() {
         let anim = AnimatedIcon::Transform {
-            icon: IconData::Svg(b"<svg></svg>".to_vec()),
+            icon: IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>")),
             animation: native_theme::theme::TransformAnimation::Spin { duration_ms: 1000 },
         };
         let result = animated_frames_to_svg_handles(&anim, None);
@@ -594,13 +603,13 @@ mod tests {
 
     #[test]
     fn into_image_handle_with_svg_returns_none() {
-        let data = IconData::Svg(b"<svg></svg>".to_vec());
+        let data = IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>"));
         assert!(into_image_handle(data).is_none());
     }
 
     #[test]
     fn into_svg_handle_with_svg() {
-        let data = IconData::Svg(b"<svg></svg>".to_vec());
+        let data = IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>"));
         assert!(into_svg_handle(data, None).is_some());
     }
 
@@ -618,13 +627,13 @@ mod tests {
     fn animated_frames_mixed_svg_rgba_filters_rgba() {
         let anim = AnimatedIcon::Frames {
             frames: vec![
-                IconData::Svg(b"<svg></svg>".to_vec()),
+                IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>")),
                 IconData::Rgba {
                     width: 16,
                     height: 16,
                     data: vec![0u8; 16 * 16 * 4],
                 },
-                IconData::Svg(b"<svg></svg>".to_vec()),
+                IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>")),
             ],
             frame_duration_ms: 80,
         };
@@ -732,9 +741,9 @@ mod tests {
     #[test]
     fn animated_frames_with_color_colorizes_frames() {
         let anim = AnimatedIcon::Frames {
-            frames: vec![IconData::Svg(
-                b"<svg><path fill=\"currentColor\"/></svg>".to_vec(),
-            )],
+            frames: vec![IconData::Svg(std::borrow::Cow::Borrowed(
+                b"<svg><path fill=\"currentColor\"/></svg>",
+            ))],
             frame_duration_ms: 80,
         };
         let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);

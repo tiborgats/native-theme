@@ -762,8 +762,9 @@ const MAX_ICON_SIZE: u32 = 512;
 /// ```ignore
 /// use native_theme::theme::IconData;
 /// use native_theme_gpui::icons::to_image_source;
+/// use std::borrow::Cow;
 ///
-/// let svg = IconData::Svg(b"<svg></svg>".to_vec());
+/// let svg = IconData::Svg(Cow::Borrowed(b"<svg></svg>"));
 /// let source = to_image_source(&svg, None, None);         // uncolorized, 48px
 /// let colored = to_image_source(&svg, Some(color), None);  // colorized, 48px
 /// let sized = to_image_source(&svg, None, Some(96));       // uncolorized, 96px
@@ -1608,7 +1609,7 @@ mod tests {
     fn to_image_source_svg_returns_bmp_rasterized() {
         // Valid SVG that resvg can parse
         let svg = IconData::Svg(
-            b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>".to_vec(),
+            std::borrow::Cow::Borrowed(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>"),
         );
         let source = to_image_source(&svg, None, None).expect("valid SVG should convert");
         // SVGs are rasterized to BMP to work around gpui's RGBA/BGRA bug
@@ -1647,7 +1648,7 @@ mod tests {
     #[test]
     fn to_image_source_with_color() {
         let svg = IconData::Svg(
-            b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M0 0' stroke='currentColor'/></svg>".to_vec(),
+            std::borrow::Cow::Borrowed(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M0 0' stroke='currentColor'/></svg>"),
         );
         let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
         let result = to_image_source(&svg, Some(color), None);
@@ -1657,7 +1658,7 @@ mod tests {
     #[test]
     fn to_image_source_with_custom_size() {
         let svg = IconData::Svg(
-            b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>".to_vec(),
+            std::borrow::Cow::Borrowed(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>"),
         );
         let result = to_image_source(&svg, None, Some(32));
         assert!(result.is_some(), "custom size SVG should convert");
@@ -1667,7 +1668,7 @@ mod tests {
     #[test]
     fn to_image_source_clamps_oversized() {
         let svg = IconData::Svg(
-            b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>".to_vec(),
+            std::borrow::Cow::Borrowed(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>"),
         );
         // Should not panic or OOM with a huge size -- gets clamped to 512
         let result = to_image_source(&svg, None, Some(99999));
@@ -1677,7 +1678,7 @@ mod tests {
     #[test]
     fn to_image_source_clamps_zero_size() {
         let svg = IconData::Svg(
-            b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>".to_vec(),
+            std::borrow::Cow::Borrowed(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>"),
         );
         // Size 0 should clamp to 1
         let result = to_image_source(&svg, None, Some(0));
@@ -1920,7 +1921,7 @@ mod tests {
     #[test]
     fn into_image_source_svg_returns_some() {
         let svg = IconData::Svg(
-            b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>".to_vec(),
+            std::borrow::Cow::Borrowed(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>"),
         );
         let result = into_image_source(svg, None, None);
         assert!(result.is_some(), "valid SVG should convert");
@@ -1942,7 +1943,7 @@ mod tests {
     #[test]
     fn into_image_source_with_color() {
         let svg = IconData::Svg(
-            b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M0 0' stroke='currentColor'/></svg>".to_vec(),
+            std::borrow::Cow::Borrowed(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><path d='M0 0' stroke='currentColor'/></svg>"),
         );
         let color = gpui::hsla(0.0, 1.0, 0.5, 1.0);
         let result = into_image_source(svg, Some(color), None);
@@ -1959,8 +1960,11 @@ mod tests {
         fn icon_name(&self, _set: native_theme::theme::IconSet) -> Option<&str> {
             None // No system name -- forces bundled SVG path
         }
-        fn icon_svg(&self, _set: native_theme::theme::IconSet) -> Option<&'static [u8]> {
-            Some(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10'/></svg>")
+        fn icon_svg(
+            &self,
+            _set: native_theme::theme::IconSet,
+        ) -> Option<std::borrow::Cow<'static, [u8]>> {
+            Some(std::borrow::Cow::Borrowed(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10'/></svg>"))
         }
     }
 
@@ -1972,7 +1976,10 @@ mod tests {
         fn icon_name(&self, _set: native_theme::theme::IconSet) -> Option<&str> {
             None
         }
-        fn icon_svg(&self, _set: native_theme::theme::IconSet) -> Option<&'static [u8]> {
+        fn icon_svg(
+            &self,
+            _set: native_theme::theme::IconSet,
+        ) -> Option<std::borrow::Cow<'static, [u8]>> {
             None
         }
     }
@@ -2089,9 +2096,9 @@ mod tests {
     fn animated_frames_returns_sources() {
         let anim = AnimatedIcon::Frames {
             frames: vec![
-                IconData::Svg(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>".to_vec()),
-                IconData::Svg(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='8' fill='blue'/></svg>".to_vec()),
-                IconData::Svg(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='6' fill='green'/></svg>".to_vec()),
+                IconData::Svg(std::borrow::Cow::Borrowed(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>")),
+                IconData::Svg(std::borrow::Cow::Borrowed(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='8' fill='blue'/></svg>")),
+                IconData::Svg(std::borrow::Cow::Borrowed(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='6' fill='green'/></svg>")),
             ],
             frame_duration_ms: 80,
         };
@@ -2104,10 +2111,9 @@ mod tests {
     #[test]
     fn animated_frames_transform_returns_none() {
         let anim = AnimatedIcon::Transform {
-            icon: IconData::Svg(
-                b"<svg xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='12' r='10'/></svg>"
-                    .to_vec(),
-            ),
+            icon: IconData::Svg(std::borrow::Cow::Borrowed(
+                b"<svg xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='12' r='10'/></svg>",
+            )),
             animation: native_theme::theme::TransformAnimation::Spin { duration_ms: 1000 },
         };
         let result = animated_frames_to_image_sources(&anim, None, None);

@@ -1,6 +1,9 @@
 //! Icon loading and dispatch.
 
 #[allow(unused_imports)]
+use std::borrow::Cow;
+
+#[allow(unused_imports)]
 use crate::model::icons::{icon_name, system_icon_theme};
 use crate::model::{AnimatedIcon, IconData, IconProvider, IconRole, IconSet};
 #[allow(unused_imports)]
@@ -54,12 +57,12 @@ pub fn load_icon(role: IconRole, set: IconSet, fg_color: Option<[u8; 3]>) -> Opt
 
         #[cfg(feature = "material-icons")]
         IconSet::Material => {
-            bundled_icon_svg(role, IconSet::Material).map(|b| IconData::Svg(b.to_vec()))
+            bundled_icon_svg(role, IconSet::Material).map(|b| IconData::Svg(Cow::Borrowed(b)))
         }
 
         #[cfg(feature = "lucide-icons")]
         IconSet::Lucide => {
-            bundled_icon_svg(role, IconSet::Lucide).map(|b| IconData::Svg(b.to_vec()))
+            bundled_icon_svg(role, IconSet::Lucide).map(|b| IconData::Svg(Cow::Borrowed(b)))
         }
 
         // Non-matching platform or unknown set: no cross-set fallback
@@ -200,12 +203,12 @@ pub fn load_system_icon_by_name(
 
         #[cfg(feature = "material-icons")]
         IconSet::Material => {
-            bundled_icon_by_name(name, IconSet::Material).map(|b| IconData::Svg(b.to_vec()))
+            bundled_icon_by_name(name, IconSet::Material).map(|b| IconData::Svg(Cow::Borrowed(b)))
         }
 
         #[cfg(feature = "lucide-icons")]
         IconSet::Lucide => {
-            bundled_icon_by_name(name, IconSet::Lucide).map(|b| IconData::Svg(b.to_vec()))
+            bundled_icon_by_name(name, IconSet::Lucide).map(|b| IconData::Svg(Cow::Borrowed(b)))
         }
 
         _ => None,
@@ -285,7 +288,7 @@ pub fn load_custom_icon(
 
     // Step 2: Try bundled SVG from provider
     if let Some(svg) = provider.icon_svg(set) {
-        return Some(IconData::Svg(svg.to_vec()));
+        return Some(IconData::Svg(svg));
     }
 
     // No cross-set fallback -- return None
@@ -307,9 +310,9 @@ mod load_icon_tests {
         let result = load_icon(IconRole::ActionCopy, IconSet::Material, None);
         assert!(result.is_some(), "material ActionCopy should return Some");
         match result.unwrap() {
-            IconData::Svg(bytes) => {
-                let content = std::str::from_utf8(&bytes).expect("should be valid UTF-8");
-                assert!(content.contains("<svg"), "should contain SVG data");
+            IconData::Svg(ref cow) => {
+                let s = String::from_utf8_lossy(cow);
+                assert!(s.contains("<svg"), "should contain SVG data");
             }
             _ => panic!("expected IconData::Svg for bundled material icon"),
         }
@@ -321,9 +324,9 @@ mod load_icon_tests {
         let result = load_icon(IconRole::ActionCopy, IconSet::Lucide, None);
         assert!(result.is_some(), "lucide ActionCopy should return Some");
         match result.unwrap() {
-            IconData::Svg(bytes) => {
-                let content = std::str::from_utf8(&bytes).expect("should be valid UTF-8");
-                assert!(content.contains("<svg"), "should contain SVG data");
+            IconData::Svg(ref cow) => {
+                let s = String::from_utf8_lossy(cow);
+                assert!(s.contains("<svg"), "should contain SVG data");
             }
             _ => panic!("expected IconData::Svg for bundled lucide icon"),
         }
@@ -380,6 +383,16 @@ mod load_icon_tests {
         // SfSymbols on Linux without system-icons: falls through to wildcard -> None
         let _result = load_icon(IconRole::ActionCopy, IconSet::SfSymbols, None);
         // Just verifying it doesn't panic
+    }
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn bundled_icon_load_produces_cow_borrowed() {
+        let result = load_icon(IconRole::ActionCopy, IconSet::Material, None);
+        assert!(
+            matches!(result, Some(IconData::Svg(Cow::Borrowed(_)))),
+            "bundled icon should produce Some(IconData::Svg(Cow::Borrowed(_)))"
+        );
     }
 }
 
@@ -462,7 +475,7 @@ mod load_custom_icon_tests {
             fn icon_name(&self, _set: IconSet) -> Option<&str> {
                 None
             }
-            fn icon_svg(&self, _set: IconSet) -> Option<&'static [u8]> {
+            fn icon_svg(&self, _set: IconSet) -> Option<Cow<'static, [u8]>> {
                 None
             }
         }
@@ -483,7 +496,7 @@ mod load_custom_icon_tests {
             fn icon_name(&self, _set: IconSet) -> Option<&str> {
                 None
             }
-            fn icon_svg(&self, _set: IconSet) -> Option<&'static [u8]> {
+            fn icon_svg(&self, _set: IconSet) -> Option<Cow<'static, [u8]>> {
                 None
             }
         }
@@ -513,8 +526,8 @@ mod load_custom_icon_tests {
             fn icon_name(&self, _set: IconSet) -> Option<&str> {
                 None
             }
-            fn icon_svg(&self, _set: IconSet) -> Option<&'static [u8]> {
-                Some(b"<svg>test</svg>")
+            fn icon_svg(&self, _set: IconSet) -> Option<Cow<'static, [u8]>> {
+                Some(Cow::Borrowed(b"<svg>test</svg>"))
             }
         }
 
@@ -524,8 +537,8 @@ mod load_custom_icon_tests {
             "provider with icon_svg should return Some"
         );
         match result.unwrap() {
-            IconData::Svg(bytes) => {
-                assert_eq!(bytes, b"<svg>test</svg>");
+            IconData::Svg(ref cow) => {
+                assert_eq!(cow.as_ref(), b"<svg>test</svg>");
             }
             _ => panic!("expected IconData::Svg"),
         }
@@ -611,8 +624,8 @@ mod spinner_rasterize_tests {
         let anim = crate::spinners::lucide_spinner();
         if let AnimatedIcon::Frames { frames, .. } = &anim {
             let first = frames.first().expect("should have at least one frame");
-            if let IconData::Svg(bytes) = first {
-                let result = crate::rasterize::rasterize_svg(bytes, 24);
+            if let IconData::Svg(ref cow) = first {
+                let result = crate::rasterize::rasterize_svg(cow, 24);
                 assert!(result.is_ok(), "lucide loader should rasterize");
                 if let Ok(IconData::Rgba { data, .. }) = &result {
                     assert!(

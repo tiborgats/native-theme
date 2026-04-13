@@ -357,7 +357,7 @@ fn generate_icon_svg(
 ) {
     let _ = writeln!(
         out,
-        "    fn icon_svg(&self, set: {crate_path}::theme::IconSet) -> Option<&'static [u8]> {{"
+        "    fn icon_svg(&self, set: {crate_path}::theme::IconSet) -> Option<std::borrow::Cow<'static, [u8]>> {{"
     );
     let _ = writeln!(out, "        match (self, set) {{");
 
@@ -392,12 +392,12 @@ fn generate_icon_svg(
                     if is_absolute_base {
                         let _ = writeln!(
                             out,
-                            "            (Self::{variant}, {icon_set}) => Some(include_bytes!(\"{base_dir}/{theme_name}/{escaped_icon}.svg\")),"
+                            "            (Self::{variant}, {icon_set}) => Some(std::borrow::Cow::Borrowed(include_bytes!(\"{base_dir}/{theme_name}/{escaped_icon}.svg\"))),"
                         );
                     } else {
                         let _ = writeln!(
                             out,
-                            "            (Self::{variant}, {icon_set}) => Some(include_bytes!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"{sep}{base_dir}/{theme_name}/{escaped_icon}.svg\"))),"
+                            "            (Self::{variant}, {icon_set}) => Some(std::borrow::Cow::Borrowed(include_bytes!(concat!(env!(\"CARGO_MANIFEST_DIR\"), \"{sep}{base_dir}/{theme_name}/{escaped_icon}.svg\")))),"
                         );
                     }
                 }
@@ -655,8 +655,8 @@ play-pause = { kde = "media-playback-start", default = "play" }
         let (config, mappings) = sample_config_and_mappings();
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
         assert!(
-            output.contains(r#"include_bytes!(concat!(env!("CARGO_MANIFEST_DIR")"#),
-            "missing include_bytes! with CARGO_MANIFEST_DIR"
+            output.contains(r#"Cow::Borrowed(include_bytes!(concat!(env!("CARGO_MANIFEST_DIR")"#),
+            "missing Cow::Borrowed(include_bytes!) with CARGO_MANIFEST_DIR"
         );
     }
 
@@ -681,7 +681,7 @@ play-pause = { kde = "media-playback-start", default = "play" }
         let output = generate_code(&config, &mappings, "icons", "native_theme", &[]);
         // System themes (sf-symbols) should NOT produce icon_svg match arms
         assert!(
-            !output.contains("SfSymbols) => Some(include_bytes!"),
+            !output.contains("SfSymbols) => Some(std::borrow::Cow::Borrowed(include_bytes!"),
             "system themes should not produce include_bytes! arms"
         );
     }
@@ -1105,13 +1105,13 @@ system-themes = ["sf-symbols"]
         // Verify specific bundled theme match arms exist in icon_svg
         assert!(
             output.contains(
-                "(Self::PlayPause, native_theme::theme::IconSet::Material) => Some(include_bytes!"
+                "(Self::PlayPause, native_theme::theme::IconSet::Material) => Some(std::borrow::Cow::Borrowed(include_bytes!"
             ),
             "should have icon_svg arm for PlayPause/Material. output:\n{output}"
         );
         assert!(
             output.contains(
-                "(Self::SkipForward, native_theme::theme::IconSet::Material) => Some(include_bytes!"
+                "(Self::SkipForward, native_theme::theme::IconSet::Material) => Some(std::borrow::Cow::Borrowed(include_bytes!"
             ),
             "should have icon_svg arm for SkipForward/Material. output:\n{output}"
         );

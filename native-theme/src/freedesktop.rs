@@ -5,6 +5,8 @@
 // crate. Returns None when the role has no freedesktop mapping or the
 // icon is not found in the active theme.
 
+use std::borrow::Cow;
+
 use crate::model::animated::{AnimatedIcon, TransformAnimation};
 use crate::{IconData, IconRole, IconSet, icon_name};
 use std::path::PathBuf;
@@ -86,7 +88,7 @@ pub fn load_freedesktop_icon(
     } else {
         bytes
     };
-    Some(IconData::Svg(bytes))
+    Some(IconData::Svg(Cow::Owned(bytes)))
 }
 
 /// Load a freedesktop icon by name from the given theme.
@@ -122,7 +124,7 @@ pub fn load_freedesktop_icon_by_name(
     } else {
         bytes
     };
-    Some(IconData::Svg(bytes))
+    Some(IconData::Svg(Cow::Owned(bytes)))
 }
 
 /// Convert an optional RGB foreground color to a replacement string
@@ -218,13 +220,16 @@ pub(crate) fn load_freedesktop_spinner() -> Option<AnimatedIcon> {
         let bytes = std::fs::read(&path).ok()?;
         if let Some(frames) = parse_sprite_sheet(&bytes) {
             return Some(AnimatedIcon::Frames {
-                frames: frames.into_iter().map(IconData::Svg).collect(),
+                frames: frames
+                    .into_iter()
+                    .map(|b| IconData::Svg(Cow::Owned(b)))
+                    .collect(),
                 frame_duration_ms: 80,
             });
         }
         // Not a sprite sheet -- treat as single frame with spin
         return Some(AnimatedIcon::Transform {
-            icon: IconData::Svg(bytes),
+            icon: IconData::Svg(Cow::Owned(bytes)),
             animation: TransformAnimation::Spin { duration_ms: 1000 },
         });
     }
@@ -238,7 +243,7 @@ pub(crate) fn load_freedesktop_spinner() -> Option<AnimatedIcon> {
     {
         let bytes = std::fs::read(&path).ok()?;
         return Some(AnimatedIcon::Transform {
-            icon: IconData::Svg(bytes),
+            icon: IconData::Svg(Cow::Owned(bytes)),
             animation: TransformAnimation::Spin { duration_ms: 1000 },
         });
     }
@@ -323,14 +328,11 @@ mod tests {
         let result = load_freedesktop_icon(IconRole::DialogError, 24, None);
         assert!(result.is_some(), "DialogError should resolve to an icon");
         match result.unwrap() {
-            IconData::Svg(bytes) => {
-                let content = std::str::from_utf8(&bytes).expect("SVG should be valid UTF-8");
-                assert!(
-                    content.contains("<svg"),
-                    "Icon data should contain <svg tag"
-                );
+            IconData::Svg(ref cow) => {
+                let s = String::from_utf8_lossy(cow);
+                assert!(s.contains("<svg"), "Icon data should contain <svg tag");
             }
-            _ => panic!("Expected SVG data"),
+            other => assert!(false, "Expected SVG data, got {other:?}"),
         }
     }
 

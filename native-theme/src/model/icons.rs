@@ -429,6 +429,7 @@ impl IconSet {
 ///
 /// ```
 /// use native_theme::theme::{IconProvider, IconSet};
+/// use std::borrow::Cow;
 ///
 /// #[derive(Debug)]
 /// enum MyIcon { Play, Pause }

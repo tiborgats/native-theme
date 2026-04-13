@@ -9,6 +9,8 @@
 // renderer-dependent rotation artifacts (gpui can't rotate BMP images; iced's pixel
 // rotation produces noisy edges on high-viewBox SVGs like Material's 960-unit path).
 
+use std::borrow::Cow;
+
 use crate::model::animated::AnimatedIcon;
 use crate::model::icons::IconData;
 
@@ -28,12 +30,12 @@ const SPIN_FRAME_DURATION_MS: u32 = 42;
 fn svg_to_spin_frames(svg_bytes: &[u8]) -> Vec<IconData> {
     let svg_str = match std::str::from_utf8(svg_bytes) {
         Ok(s) => s,
-        Err(_) => return vec![IconData::Svg(svg_bytes.to_vec())],
+        Err(_) => return vec![IconData::Svg(Cow::Owned(svg_bytes.to_vec()))],
     };
 
     // Extract <svg ...> tag attributes and inner content
     let Some(svg_open_end) = svg_str.find('>') else {
-        return vec![IconData::Svg(svg_bytes.to_vec())];
+        return vec![IconData::Svg(Cow::Owned(svg_bytes.to_vec()))];
     };
     let svg_tag = &svg_str[..svg_open_end];
 
@@ -42,13 +44,13 @@ fn svg_to_spin_frames(svg_bytes: &[u8]) -> Vec<IconData> {
     // a panic on the `&svg_tag[4..]` slice below if ever called with
     // arbitrary input.
     if svg_tag.len() < 4 {
-        return vec![IconData::Svg(svg_bytes.to_vec())];
+        return vec![IconData::Svg(Cow::Owned(svg_bytes.to_vec()))];
     }
 
     // Find the closing </svg> to extract inner content
     let inner_start = svg_open_end + 1;
     let Some(close_pos) = svg_str.rfind("</svg>") else {
-        return vec![IconData::Svg(svg_bytes.to_vec())];
+        return vec![IconData::Svg(Cow::Owned(svg_bytes.to_vec()))];
     };
     let inner_content = &svg_str[inner_start..close_pos];
 
@@ -91,7 +93,7 @@ fn svg_to_spin_frames(svg_bytes: &[u8]) -> Vec<IconData> {
     };
 
     if !valid_viewbox {
-        return vec![IconData::Svg(svg_bytes.to_vec())];
+        return vec![IconData::Svg(Cow::Owned(svg_bytes.to_vec()))];
     }
 
     let mut frames = Vec::with_capacity(SPIN_FRAME_COUNT as usize);
@@ -105,12 +107,12 @@ fn svg_to_spin_frames(svg_bytes: &[u8]) -> Vec<IconData> {
              </svg>",
             svg_tag_rest = &svg_tag[4..], // skip "<svg" prefix, keep attributes
         );
-        frames.push(IconData::Svg(rotated.into_bytes()));
+        frames.push(IconData::Svg(Cow::Owned(rotated.into_bytes())));
     }
 
     // Guard: if frame generation somehow produced nothing, return static frame
     if frames.is_empty() {
-        return vec![IconData::Svg(svg_bytes.to_vec())];
+        return vec![IconData::Svg(Cow::Owned(svg_bytes.to_vec()))];
     }
 
     frames

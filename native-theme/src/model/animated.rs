@@ -36,19 +36,20 @@ pub enum TransformAnimation {
 ///
 /// ```
 /// use native_theme::theme::{AnimatedIcon, IconData, TransformAnimation};
+/// use std::borrow::Cow;
 ///
 /// // Frame-based animation (e.g., sprite sheet)
 /// let frames_anim = AnimatedIcon::Frames {
 ///     frames: vec![
-///         IconData::Svg(b"<svg>frame1</svg>".to_vec()),
-///         IconData::Svg(b"<svg>frame2</svg>".to_vec()),
+///         IconData::Svg(Cow::Borrowed(b"<svg>frame1</svg>")),
+///         IconData::Svg(Cow::Borrowed(b"<svg>frame2</svg>")),
 ///     ],
 ///     frame_duration_ms: 83,
 /// };
 ///
 /// // Transform-based animation (e.g., spinning icon)
 /// let spin_anim = AnimatedIcon::Transform {
-///     icon: IconData::Svg(b"<svg>spinner</svg>".to_vec()),
+///     icon: IconData::Svg(Cow::Borrowed(b"<svg>spinner</svg>")),
 ///     animation: TransformAnimation::Spin { duration_ms: 1000 },
 /// };
 /// ```
@@ -82,16 +83,17 @@ impl AnimatedIcon {
     ///
     /// ```
     /// use native_theme::theme::{AnimatedIcon, IconData};
+    /// use std::borrow::Cow;
     ///
     /// let anim = AnimatedIcon::new_frames(
-    ///     vec![IconData::Svg(b"<svg>f1</svg>".to_vec())],
+    ///     vec![IconData::Svg(Cow::Borrowed(b"<svg>f1</svg>"))],
     ///     83,
     /// );
     /// assert!(anim.is_some());
     ///
     /// // Empty frames or zero duration returns None:
     /// assert!(AnimatedIcon::new_frames(vec![], 83).is_none());
-    /// assert!(AnimatedIcon::new_frames(vec![IconData::Svg(vec![])], 0).is_none());
+    /// assert!(AnimatedIcon::new_frames(vec![IconData::Svg(Cow::Borrowed(b""))], 0).is_none());
     /// ```
     #[must_use]
     pub fn new_frames(frames: Vec<IconData>, frame_duration_ms: u32) -> Option<Self> {
@@ -113,15 +115,16 @@ impl AnimatedIcon {
     ///
     /// ```
     /// use native_theme::theme::{AnimatedIcon, IconData, TransformAnimation};
+    /// use std::borrow::Cow;
     ///
     /// let frames = AnimatedIcon::Frames {
-    ///     frames: vec![IconData::Svg(b"<svg>f1</svg>".to_vec())],
+    ///     frames: vec![IconData::Svg(Cow::Borrowed(b"<svg>f1</svg>"))],
     ///     frame_duration_ms: 83,
     /// };
     /// assert!(frames.first_frame().is_some());
     ///
     /// let transform = AnimatedIcon::Transform {
-    ///     icon: IconData::Svg(b"<svg>spinner</svg>".to_vec()),
+    ///     icon: IconData::Svg(Cow::Borrowed(b"<svg>spinner</svg>")),
     ///     animation: TransformAnimation::Spin { duration_ms: 1000 },
     /// };
     /// assert!(transform.first_frame().is_some());
@@ -139,13 +142,14 @@ impl AnimatedIcon {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+    use std::borrow::Cow;
 
     // === Construction tests ===
 
     #[test]
     fn frames_variant_constructs() {
         let icon = AnimatedIcon::Frames {
-            frames: vec![IconData::Svg(b"<svg>f1</svg>".to_vec())],
+            frames: vec![IconData::Svg(Cow::Borrowed(b"<svg>f1</svg>"))],
             frame_duration_ms: 83,
         };
         assert!(matches!(
@@ -160,7 +164,7 @@ mod tests {
     #[test]
     fn transform_variant_constructs() {
         let icon = AnimatedIcon::Transform {
-            icon: IconData::Svg(b"<svg>spinner</svg>".to_vec()),
+            icon: IconData::Svg(Cow::Borrowed(b"<svg>spinner</svg>")),
             animation: TransformAnimation::Spin { duration_ms: 1000 },
         };
         assert!(matches!(
@@ -188,7 +192,7 @@ mod tests {
     #[test]
     fn animated_icon_is_clone_debug_eq_not_copy() {
         let icon = AnimatedIcon::Frames {
-            frames: vec![IconData::Svg(b"<svg/>".to_vec())],
+            frames: vec![IconData::Svg(Cow::Borrowed(b"<svg/>"))],
             frame_duration_ms: 100,
         };
         let cloned = icon.clone(); // Clone
@@ -201,8 +205,8 @@ mod tests {
 
     #[test]
     fn first_frame_frames_with_items() {
-        let f0 = IconData::Svg(b"<svg>frame0</svg>".to_vec());
-        let f1 = IconData::Svg(b"<svg>frame1</svg>".to_vec());
+        let f0 = IconData::Svg(Cow::Borrowed(b"<svg>frame0</svg>"));
+        let f1 = IconData::Svg(Cow::Borrowed(b"<svg>frame1</svg>"));
         let icon = AnimatedIcon::Frames {
             frames: vec![f0.clone(), f1],
             frame_duration_ms: 100,
@@ -221,7 +225,7 @@ mod tests {
 
     #[test]
     fn first_frame_transform() {
-        let data = IconData::Svg(b"<svg>spin</svg>".to_vec());
+        let data = IconData::Svg(Cow::Borrowed(b"<svg>spin</svg>"));
         let icon = AnimatedIcon::Transform {
             icon: data.clone(),
             animation: TransformAnimation::Spin { duration_ms: 1000 },
@@ -233,7 +237,8 @@ mod tests {
 
     #[test]
     fn new_frames_valid() {
-        let anim = AnimatedIcon::new_frames(vec![IconData::Svg(b"<svg>f1</svg>".to_vec())], 83);
+        let anim =
+            AnimatedIcon::new_frames(vec![IconData::Svg(Cow::Borrowed(b"<svg>f1</svg>"))], 83);
         assert!(anim.is_some());
     }
 
@@ -244,7 +249,7 @@ mod tests {
 
     #[test]
     fn new_frames_rejects_zero_duration() {
-        let frames = vec![IconData::Svg(b"<svg>f1</svg>".to_vec())];
+        let frames = vec![IconData::Svg(Cow::Borrowed(b"<svg>f1</svg>"))];
         assert!(AnimatedIcon::new_frames(frames, 0).is_none());
     }
 }
