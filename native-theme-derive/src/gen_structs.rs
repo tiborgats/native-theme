@@ -99,16 +99,13 @@ fn gen_field_names(fields: &[FieldMeta]) -> TokenStream {
 
 /// Extract T from Option<T>. Falls back to the original type if not Option.
 fn extract_option_inner(ty: &syn::Type) -> syn::Type {
-    if let syn::Type::Path(type_path) = ty {
-        if let Some(seg) = type_path.path.segments.last() {
-            if seg.ident == "Option" {
-                if let syn::PathArguments::AngleBracketed(args) = &seg.arguments {
-                    if let Some(syn::GenericArgument::Type(inner)) = args.args.first() {
-                        return inner.clone();
-                    }
-                }
-            }
-        }
+    if let syn::Type::Path(type_path) = ty
+        && let Some(seg) = type_path.path.segments.last()
+        && seg.ident == "Option"
+        && let syn::PathArguments::AngleBracketed(args) = &seg.arguments
+        && let Some(syn::GenericArgument::Type(inner)) = args.args.first()
+    {
+        return inner.clone();
     }
     // Not Option<T>, return as-is
     ty.clone()

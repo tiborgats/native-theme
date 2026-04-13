@@ -4,7 +4,7 @@
 // merge/is_empty, validate_widget, and check_ranges from field attributes.
 
 use proc_macro::TokenStream;
-use syn::{parse_macro_input, DeriveInput};
+use syn::{DeriveInput, parse_macro_input};
 
 mod gen_merge;
 mod gen_ranges;
@@ -54,7 +54,7 @@ fn derive_inner(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
             return Err(syn::Error::new_spanned(
                 &input.ident,
                 "ThemeWidget can only be derived on structs",
-            ))
+            ));
         }
     };
 

@@ -7,11 +7,7 @@ use syn::Ident;
 use crate::parse::{FieldCategory, FieldMeta, LayerMeta, RangeCheck};
 
 /// Generate `check_ranges()` impl block on the Resolved struct.
-pub(crate) fn gen_ranges(
-    opt_name: &Ident,
-    fields: &[FieldMeta],
-    layer: &LayerMeta,
-) -> TokenStream {
+pub(crate) fn gen_ranges(opt_name: &Ident, fields: &[FieldMeta], layer: &LayerMeta) -> TokenStream {
     let resolved_name = layer
         .resolved_name
         .clone()
@@ -107,23 +103,23 @@ fn gen_check_stmts(fields: &[FieldMeta]) -> TokenStream {
         }
 
         // Auto-emit font range checks for nested ResolvedFontSpec fields
-        if let FieldCategory::Nested { resolved_ty } = &f.category {
-            if is_resolved_font_spec(resolved_ty) {
-                stmts.push(quote! {
-                    crate::resolve::validate_helpers::check_positive(
-                        self.#ident.size,
-                        &format!("{prefix}.{}.size", #field_name),
-                        errors,
-                    );
-                    crate::resolve::validate_helpers::check_range_u16(
-                        self.#ident.weight,
-                        100,
-                        900,
-                        &format!("{prefix}.{}.weight", #field_name),
-                        errors,
-                    );
-                });
-            }
+        if let FieldCategory::Nested { resolved_ty } = &f.category
+            && is_resolved_font_spec(resolved_ty)
+        {
+            stmts.push(quote! {
+                crate::resolve::validate_helpers::check_positive(
+                    self.#ident.size,
+                    &format!("{prefix}.{}.size", #field_name),
+                    errors,
+                );
+                crate::resolve::validate_helpers::check_range_u16(
+                    self.#ident.weight,
+                    100,
+                    900,
+                    &format!("{prefix}.{}.weight", #field_name),
+                    errors,
+                );
+            });
         }
     }
 
@@ -132,10 +128,10 @@ fn gen_check_stmts(fields: &[FieldMeta]) -> TokenStream {
 
 /// Check if a type path refers to ResolvedFontSpec.
 fn is_resolved_font_spec(ty: &syn::Type) -> bool {
-    if let syn::Type::Path(type_path) = ty {
-        if let Some(seg) = type_path.path.segments.last() {
-            return seg.ident == "ResolvedFontSpec";
-        }
+    if let syn::Type::Path(type_path) = ty
+        && let Some(seg) = type_path.path.segments.last()
+    {
+        return seg.ident == "ResolvedFontSpec";
     }
     false
 }

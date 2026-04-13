@@ -1,7 +1,7 @@
 // Field metadata extraction from #[theme(...)] and #[theme_layer(...)] attributes.
 
 use proc_macro2::Span;
-use syn::{Attribute, Error, Field, Ident, LitStr, Meta, Result, Type};
+use syn::{Attribute, Error, Field, Ident, LitStr, Result, Type};
 
 /// How a field participates in validation and merge.
 #[derive(Debug, Clone)]
@@ -40,6 +40,7 @@ pub(crate) struct FieldMeta {
     pub serde_rename: Option<String>,
     pub range_check: Option<RangeCheck>,
     pub min_max_pair: Option<Ident>,
+    #[expect(dead_code)] // Used in Plan 02 for inheritance codegen
     pub inherit_from: Option<String>,
     pub doc_attrs: Vec<Attribute>,
 }
@@ -58,6 +59,7 @@ pub(crate) enum BorderKind {
 /// Struct-level attributes parsed from `#[theme_layer(...)]`.
 #[derive(Debug, Clone)]
 pub(crate) struct LayerMeta {
+    #[expect(dead_code)] // Used in Plan 02 for per-widget border dispatch
     pub border_kind: BorderKind,
     pub resolved_name: Option<Ident>,
 }
@@ -108,7 +110,12 @@ pub(crate) fn parse_layer_attrs(attrs: &[Attribute]) -> Result<LayerMeta> {
 pub(crate) fn parse_fields(fields: &syn::Fields) -> Result<Vec<FieldMeta>> {
     let named = match fields {
         syn::Fields::Named(named) => named,
-        _ => return Err(Error::new(Span::call_site(), "ThemeWidget requires named fields")),
+        _ => {
+            return Err(Error::new(
+                Span::call_site(),
+                "ThemeWidget requires named fields",
+            ));
+        }
     };
 
     named.named.iter().map(parse_one_field).collect()
@@ -162,7 +169,7 @@ fn parse_one_field(field: &Field) -> Result<FieldMeta> {
                             return Err(Error::new(
                                 lit.span(),
                                 format!("unknown category: \"{other}\""),
-                            ))
+                            ));
                         }
                     });
                     Ok(())
@@ -200,7 +207,7 @@ fn parse_one_field(field: &Field) -> Result<FieldMeta> {
                             return Err(Error::new(
                                 lit.span(),
                                 format!("unknown check: \"{other}\""),
-                            ))
+                            ));
                         }
                     });
                     Ok(())
@@ -280,7 +287,10 @@ fn parse_range_f64(lit: &LitStr) -> Result<(f64, f64)> {
     let s = lit.value();
     let parts: Vec<&str> = s.split("..=").collect();
     if parts.len() != 2 {
-        return Err(Error::new(lit.span(), "expected range format: \"MIN..=MAX\""));
+        return Err(Error::new(
+            lit.span(),
+            "expected range format: \"MIN..=MAX\"",
+        ));
     }
     let min: f64 = parts[0]
         .trim()
