@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
 status: in-progress
-stopped_at: Completed 86-01-PLAN.md
-last_updated: "2026-04-13T21:43:34.857Z"
-last_activity: 2026-04-13 — Phase 86 Plan 01 complete (inventory-driven lint_toml)
+stopped_at: Completed 86-02-PLAN.md — Phase 86 complete
+last_updated: "2026-04-13T21:43:03Z"
+last_activity: 2026-04-13 — Phase 86 Plan 02 complete (lazy path strings in check_ranges)
 progress:
   total_phases: 28
-  completed_phases: 25
+  completed_phases: 26
   total_plans: 50
-  completed_plans: 49
-  percent: 98
+  completed_plans: 50
+  percent: 100
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 86 — validation-and-lint-codegen-polish
-Plan: 1/2 complete
-Status: Plan 01 complete, Plan 02 pending
-Last activity: 2026-04-13 — Phase 86 Plan 01 complete (inventory-driven lint_toml)
+Plan: 2/2 complete
+Status: Phase 86 complete
+Last activity: 2026-04-13 — Phase 86 Plan 02 complete (lazy path strings in check_ranges)
 
-Progress: [█████████▉] 98% (49/50 plans complete)
+Progress: [██████████] 100% (50/50 plans complete)
 
 ## Accumulated Context
 
@@ -101,6 +101,8 @@ v0.5.6 decisions worth carrying into v0.5.7 planning:
 - [Phase 84-02]: #[allow(dead_code)] on Dual variant -- only used in macOS-gated code, invisible on Linux
 - [Phase 85-02]: FontSize doctest uses native_theme::theme::FontSize path (pub(crate) at crate root, pub via theme module)
 - [Phase 85-02]: watch/mod.rs module example uses ? instead of .expect() for zero-panic compliance
+- [Phase 86-02]: check_* helpers accept (prefix, field) separately; format! only in error branches for zero-alloc happy path
+- [Phase 86-02]: Font nested checks inlined in generated code to avoid sub-prefix allocation
 
 ### Pending Todos
 
@@ -187,6 +189,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T21:43:34.853Z
-Stopped at: Completed 86-01-PLAN.md
+Last session: 2026-04-13T21:43:03Z
+Stopped at: Completed 86-02-PLAN.md — Phase 86 complete
 Resume file: None
