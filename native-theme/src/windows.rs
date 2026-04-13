@@ -467,7 +467,7 @@ fn build_theme(
     icon_sizes: Option<(f32, f32)>,
     accessibility: Option<&AccessibilityData>,
     dpi: u32,
-) -> crate::Theme {
+) -> (crate::Theme, Option<f32>, crate::AccessibilityPreferences) {
     let dark = is_dark_mode(&fg);
 
     // Primary button background: In light mode use AccentDark1 (shades[0]), in dark mode
@@ -535,12 +535,26 @@ fn build_theme(
         variant.defaults.icon_sizes.large = Some(large);
     }
 
-    // NOTE: Accessibility fields and font_dpi are no longer on ThemeDefaults.
-    // They are extracted separately by the pipeline caller (see pipeline.rs).
-    let _ = accessibility; // consumed by caller
-    let _ = dpi; // consumed by caller
+    // Build AccessibilityPreferences from Windows AccessibilityData
+    let acc = if let Some(a) = accessibility {
+        let mut ap = crate::AccessibilityPreferences::default();
+        if let Some(tsf) = a.text_scaling_factor {
+            ap.text_scaling_factor = tsf;
+        }
+        if let Some(rm) = a.reduce_motion {
+            ap.reduce_motion = rm;
+        }
+        if let Some(hc) = a.high_contrast {
+            ap.high_contrast = hc;
+        }
+        // reduce_transparency keeps default -- Windows does not expose this setting
+        ap
+    } else {
+        crate::AccessibilityPreferences::default()
+    };
+    let font_dpi = Some(dpi as f32);
 
-    if dark {
+    let theme = if dark {
         crate::Theme {
             name: "Windows".to_string(),
             light: None,
@@ -558,7 +572,8 @@ fn build_theme(
             icon_set: Some(crate::IconSet::SegoeIcons),
             icon_theme: None,
         }
-    }
+    };
+    (theme, font_dpi, acc)
 }
 
 /// Read the current Windows theme from UISettings, SystemParametersInfoW,
@@ -571,7 +586,8 @@ fn build_theme(
 ///
 /// Returns `Error::ReaderFailed` if UISettings cannot be created (pre-Windows 10).
 #[cfg(all(target_os = "windows", feature = "windows"))]
-pub fn from_windows() -> crate::Result<crate::Theme> {
+pub fn from_windows() -> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)>
+{
     let settings = UISettings::new().map_err(|e| crate::Error::ReaderFailed {
         reader: "windows",
         source: format!("UISettings unavailable: {e}").into(),
@@ -672,7 +688,7 @@ mod tests {
 
     /// Helper: build a theme in light mode with minimal args.
     fn light_theme() -> crate::Theme {
-        build_theme(
+        let (theme, _dpi, _acc) = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0), // black fg = light mode
             crate::Rgba::rgb(255, 255, 255),
@@ -684,12 +700,13 @@ mod tests {
             None,
             None,
             96,
-        )
+        );
+        theme
     }
 
     /// Helper: build a theme in dark mode with minimal args.
     fn dark_theme() -> crate::Theme {
-        build_theme(
+        let (theme, _dpi, _acc) = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(255, 255, 255), // white fg = dark mode
             crate::Rgba::rgb(0, 0, 0),
@@ -701,7 +718,8 @@ mod tests {
             None,
             None,
             96,
-        )
+        );
+        theme
     }
 
     // === is_dark_mode tests ===
@@ -814,7 +832,7 @@ mod tests {
         let accent = crate::Rgba::rgb(0, 120, 215);
         let fg = crate::Rgba::rgb(0, 0, 0);
         let bg = crate::Rgba::rgb(255, 255, 255);
-        let theme = build_theme(
+        let (theme, _dpi, _acc) = build_theme(
             accent,
             fg,
             bg,
@@ -846,7 +864,7 @@ mod tests {
         let dark1 = crate::Rgba::rgb(0, 90, 170);
         let mut shades = [None; 6];
         shades[0] = Some(dark1);
-        let theme = build_theme(
+        let (theme, _dpi, _acc) = build_theme(
             accent,
             crate::Rgba::rgb(0, 0, 0),
             crate::Rgba::rgb(255, 255, 255),
@@ -873,7 +891,7 @@ mod tests {
         let light1 = crate::Rgba::rgb(60, 160, 240);
         let mut shades = [None; 6];
         shades[3] = Some(light1);
-        let theme = build_theme(
+        let (theme, _dpi, _acc) = build_theme(
             accent,
             crate::Rgba::rgb(255, 255, 255),
             crate::Rgba::rgb(0, 0, 0),
@@ -895,7 +913,7 @@ mod tests {
     #[test]
     fn build_theme_sets_title_bar_font() {
         let fonts = named_fonts();
-        let theme = build_theme(
+        let (theme, _dpi, _acc) = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),
             crate::Rgba::rgb(255, 255, 255),
@@ -921,7 +939,7 @@ mod tests {
     #[test]
     fn build_theme_sets_menu_and_status_bar_fonts() {
         let fonts = named_fonts();
-        let theme = build_theme(
+        let (theme, _dpi, _acc) = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),
             crate::Rgba::rgb(255, 255, 255),
@@ -944,7 +962,7 @@ mod tests {
     #[test]
     fn build_theme_sets_defaults_font_from_msg_font() {
         let fonts = named_fonts();
-        let theme = build_theme(
+        let (theme, _dpi, _acc) = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),
             crate::Rgba::rgb(255, 255, 255),
@@ -986,7 +1004,7 @@ mod tests {
     #[test]
     fn build_theme_with_sys_colors_populates_widgets() {
         let colors = sample_sys_colors();
-        let theme = build_theme(
+        let (theme, _dpi, _acc) = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),
             crate::Rgba::rgb(255, 255, 255),
@@ -1074,7 +1092,7 @@ mod tests {
     #[test]
     fn build_theme_with_dwm_color_sets_title_bar_background() {
         let dwm_color = crate::Rgba::rgba(0, 120, 215, 200);
-        let theme = build_theme(
+        let (theme, _dpi, _acc) = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),
             crate::Rgba::rgb(255, 255, 255),
@@ -1094,7 +1112,7 @@ mod tests {
     #[test]
     fn build_theme_with_inactive_title_bar() {
         let inactive = crate::Rgba::rgb(200, 200, 200);
-        let theme = build_theme(
+        let (theme, _dpi, _acc) = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),
             crate::Rgba::rgb(255, 255, 255),
@@ -1115,7 +1133,7 @@ mod tests {
 
     #[test]
     fn build_theme_with_icon_sizes() {
-        let theme = build_theme(
+        let (theme, _dpi, _acc) = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),
             crate::Rgba::rgb(255, 255, 255),
@@ -1142,7 +1160,7 @@ mod tests {
             high_contrast: Some(true),
             reduce_motion: Some(false),
         };
-        let theme = build_theme(
+        let (theme, _dpi, _acc) = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),
             crate::Rgba::rgb(255, 255, 255),
@@ -1203,7 +1221,7 @@ mod tests {
     #[test]
     fn build_theme_surface_equals_bg() {
         let bg = crate::Rgba::rgb(255, 255, 255);
-        let theme = build_theme(
+        let (theme, _dpi, _acc) = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),
             bg,
@@ -1222,7 +1240,7 @@ mod tests {
 
     #[test]
     fn build_theme_disabled_foreground_is_midpoint() {
-        let theme = build_theme(
+        let (theme, _dpi, _acc) = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),       // fg
             crate::Rgba::rgb(255, 255, 255), // bg

@@ -304,10 +304,22 @@ pub(crate) fn from_linux() -> crate::Result<SystemTheme> {
             run_pipeline(reader, preset, mode, acc, dpi)
         }
         #[cfg(not(feature = "kde"))]
-        LinuxDesktop::Kde => run_pipeline(Theme::preset("adwaita")?, "adwaita-live", mode, crate::AccessibilityPreferences::default(), None),
+        LinuxDesktop::Kde => run_pipeline(
+            Theme::preset("adwaita")?,
+            "adwaita-live",
+            mode,
+            crate::AccessibilityPreferences::default(),
+            None,
+        ),
         LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
             // GNOME sync path: no portal, just adwaita preset
-            run_pipeline(Theme::preset("adwaita")?, preset, mode, crate::AccessibilityPreferences::default(), None)
+            run_pipeline(
+                Theme::preset("adwaita")?,
+                preset,
+                mode,
+                crate::AccessibilityPreferences::default(),
+                None,
+            )
         }
         LinuxDesktop::Xfce
         | LinuxDesktop::Cinnamon
@@ -317,17 +329,35 @@ pub(crate) fn from_linux() -> crate::Result<SystemTheme> {
         | LinuxDesktop::Sway
         | LinuxDesktop::River
         | LinuxDesktop::Niri
-        | LinuxDesktop::CosmicDe => run_pipeline(Theme::preset("adwaita")?, preset, mode, crate::AccessibilityPreferences::default(), None),
+        | LinuxDesktop::CosmicDe => run_pipeline(
+            Theme::preset("adwaita")?,
+            preset,
+            mode,
+            crate::AccessibilityPreferences::default(),
+            None,
+        ),
         LinuxDesktop::Unknown => {
             #[cfg(feature = "kde")]
             {
                 let path = crate::kde::kdeglobals_path();
                 if path.exists() {
                     let (reader, dpi, acc) = crate::kde::from_kde()?;
-                    return run_pipeline(reader, linux_preset_for_de(LinuxDesktop::Kde), mode, acc, dpi);
+                    return run_pipeline(
+                        reader,
+                        linux_preset_for_de(LinuxDesktop::Kde),
+                        mode,
+                        acc,
+                        dpi,
+                    );
                 }
             }
-            run_pipeline(Theme::preset("adwaita")?, preset, mode, crate::AccessibilityPreferences::default(), None)
+            run_pipeline(
+                Theme::preset("adwaita")?,
+                preset,
+                mode,
+                crate::AccessibilityPreferences::default(),
+                None,
+            )
         }
     }
 }
@@ -337,14 +367,13 @@ pub(crate) fn from_system_inner() -> crate::Result<SystemTheme> {
     {
         #[cfg(feature = "macos")]
         {
-            let reader = crate::macos::from_macos()?;
-            // TODO(78-04-task2): from_macos will return tuple
+            let (reader, dpi, acc) = crate::macos::from_macos()?;
             let mode = if reader_is_dark(&reader) {
                 crate::ColorMode::Dark
             } else {
                 crate::ColorMode::Light
             };
-            return run_pipeline(reader, "macos-sonoma-live", mode, crate::AccessibilityPreferences::default(), None);
+            return run_pipeline(reader, "macos-sonoma-live", mode, acc, dpi);
         }
 
         #[cfg(not(feature = "macos"))]
@@ -358,14 +387,13 @@ pub(crate) fn from_system_inner() -> crate::Result<SystemTheme> {
     {
         #[cfg(feature = "windows")]
         {
-            let reader = crate::windows::from_windows()?;
-            // TODO(78-04-task2): from_windows will return tuple
+            let (reader, dpi, acc) = crate::windows::from_windows()?;
             let mode = if reader_is_dark(&reader) {
                 crate::ColorMode::Dark
             } else {
                 crate::ColorMode::Light
             };
-            return run_pipeline(reader, "windows-11-live", mode, crate::AccessibilityPreferences::default(), None);
+            return run_pipeline(reader, "windows-11-live", mode, acc, dpi);
         }
 
         #[cfg(not(feature = "windows"))]
@@ -412,17 +440,26 @@ pub(crate) async fn from_system_async_inner() -> crate::Result<SystemTheme> {
             }
         }
         #[cfg(not(feature = "kde"))]
-        LinuxDesktop::Kde => run_pipeline(Theme::preset("adwaita")?, "adwaita-live", mode, crate::AccessibilityPreferences::default(), None),
+        LinuxDesktop::Kde => run_pipeline(
+            Theme::preset("adwaita")?,
+            "adwaita-live",
+            mode,
+            crate::AccessibilityPreferences::default(),
+            None,
+        ),
         #[cfg(feature = "portal")]
         LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
-            // TODO(78-04-task2): from_gnome will return tuple
-            let reader = crate::gnome::from_gnome().await?;
-            run_pipeline(reader, preset, mode, crate::AccessibilityPreferences::default(), None)
+            let (reader, dpi, acc) = crate::gnome::from_gnome().await?;
+            run_pipeline(reader, preset, mode, acc, dpi)
         }
         #[cfg(not(feature = "portal"))]
-        LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
-            run_pipeline(Theme::preset("adwaita")?, preset, mode, crate::AccessibilityPreferences::default(), None)
-        }
+        LinuxDesktop::Gnome | LinuxDesktop::Budgie => run_pipeline(
+            Theme::preset("adwaita")?,
+            preset,
+            mode,
+            crate::AccessibilityPreferences::default(),
+            None,
+        ),
         LinuxDesktop::Xfce
         | LinuxDesktop::Cinnamon
         | LinuxDesktop::Mate
@@ -431,7 +468,13 @@ pub(crate) async fn from_system_async_inner() -> crate::Result<SystemTheme> {
         | LinuxDesktop::Sway
         | LinuxDesktop::River
         | LinuxDesktop::Niri
-        | LinuxDesktop::CosmicDe => run_pipeline(Theme::preset("adwaita")?, preset, mode, crate::AccessibilityPreferences::default(), None),
+        | LinuxDesktop::CosmicDe => run_pipeline(
+            Theme::preset("adwaita")?,
+            preset,
+            mode,
+            crate::AccessibilityPreferences::default(),
+            None,
+        ),
         LinuxDesktop::Unknown => {
             // Use D-Bus portal backend detection to refine heuristic
             #[cfg(feature = "portal")]
@@ -445,18 +488,27 @@ pub(crate) async fn from_system_async_inner() -> crate::Result<SystemTheme> {
                             run_pipeline(reader, detected_preset, mode, acc, dpi)
                         }
                         #[cfg(not(feature = "kde"))]
-                        LinuxDesktop::Kde => {
-                            run_pipeline(Theme::preset("adwaita")?, "adwaita-live", mode, crate::AccessibilityPreferences::default(), None)
-                        }
+                        LinuxDesktop::Kde => run_pipeline(
+                            Theme::preset("adwaita")?,
+                            "adwaita-live",
+                            mode,
+                            crate::AccessibilityPreferences::default(),
+                            None,
+                        ),
                         LinuxDesktop::Gnome => {
-                            // TODO(78-04-task2): from_gnome will return tuple
-                            let reader = crate::gnome::from_gnome().await?;
-                            run_pipeline(reader, detected_preset, mode, crate::AccessibilityPreferences::default(), None)
+                            let (reader, dpi, acc) = crate::gnome::from_gnome().await?;
+                            run_pipeline(reader, detected_preset, mode, acc, dpi)
                         }
                         _ => {
                             // detect_portal_backend only returns Kde or Gnome;
                             // fall back to Adwaita if the set ever grows.
-                            run_pipeline(Theme::preset("adwaita")?, detected_preset, mode, crate::AccessibilityPreferences::default(), None)
+                            run_pipeline(
+                                Theme::preset("adwaita")?,
+                                detected_preset,
+                                mode,
+                                crate::AccessibilityPreferences::default(),
+                                None,
+                            )
                         }
                     };
                 }
@@ -467,10 +519,22 @@ pub(crate) async fn from_system_async_inner() -> crate::Result<SystemTheme> {
                 let path = crate::kde::kdeglobals_path();
                 if path.exists() {
                     let (reader, dpi, acc) = crate::kde::from_kde()?;
-                    return run_pipeline(reader, linux_preset_for_de(LinuxDesktop::Kde), mode, acc, dpi);
+                    return run_pipeline(
+                        reader,
+                        linux_preset_for_de(LinuxDesktop::Kde),
+                        mode,
+                        acc,
+                        dpi,
+                    );
                 }
             }
-            run_pipeline(Theme::preset("adwaita")?, preset, mode, crate::AccessibilityPreferences::default(), None)
+            run_pipeline(
+                Theme::preset("adwaita")?,
+                preset,
+                mode,
+                crate::AccessibilityPreferences::default(),
+                None,
+            )
         }
     }
 }
@@ -657,8 +721,14 @@ ForegroundLink=41,128,185";
     fn from_system_returns_result() {
         // Test the pure pipeline directly instead of mocking env vars for from_system()
         let reader = Theme::preset("adwaita").unwrap();
-        let theme = run_pipeline(reader, "adwaita-live", crate::ColorMode::Light, crate::AccessibilityPreferences::default(), None)
-            .expect("run_pipeline should succeed with adwaita preset");
+        let theme = run_pipeline(
+            reader,
+            "adwaita-live",
+            crate::ColorMode::Light,
+            crate::AccessibilityPreferences::default(),
+            None,
+        )
+        .expect("run_pipeline should succeed with adwaita preset");
         assert_eq!(theme.name, "Adwaita");
     }
 }
@@ -683,7 +753,13 @@ mod pipeline_tests {
     #[test]
     fn test_run_pipeline_produces_both_variants() {
         let reader = Theme::preset("catppuccin-mocha").unwrap();
-        let result = run_pipeline(reader, "catppuccin-mocha", crate::ColorMode::Light, crate::AccessibilityPreferences::default(), None);
+        let result = run_pipeline(
+            reader,
+            "catppuccin-mocha",
+            crate::ColorMode::Light,
+            crate::AccessibilityPreferences::default(),
+            None,
+        );
         assert!(result.is_ok(), "run_pipeline should succeed");
         let st = result.unwrap();
         // Both light and dark exist as ResolvedTheme (non-Option)
@@ -702,7 +778,13 @@ mod pipeline_tests {
         variant.defaults.accent_color = Some(custom_accent);
         reader.light = Some(variant);
 
-        let result = run_pipeline(reader, "catppuccin-mocha", crate::ColorMode::Light, crate::AccessibilityPreferences::default(), None);
+        let result = run_pipeline(
+            reader,
+            "catppuccin-mocha",
+            crate::ColorMode::Light,
+            crate::AccessibilityPreferences::default(),
+            None,
+        );
         assert!(result.is_ok(), "run_pipeline should succeed");
         let st = result.unwrap();
         // The reader's accent should win over the preset's accent
@@ -726,7 +808,13 @@ mod pipeline_tests {
         reader.dark = Some(dark_v);
         reader.light = None;
 
-        let result = run_pipeline(reader, "kde-breeze-live", crate::ColorMode::Dark, crate::AccessibilityPreferences::default(), None);
+        let result = run_pipeline(
+            reader,
+            "kde-breeze-live",
+            crate::ColorMode::Dark,
+            crate::AccessibilityPreferences::default(),
+            None,
+        );
         assert!(
             result.is_ok(),
             "run_pipeline should succeed with single variant"
@@ -753,7 +841,14 @@ mod pipeline_tests {
         reader.dark = Some(full.dark.clone().unwrap());
         reader.light = None;
 
-        let st = run_pipeline(reader, "kde-breeze-live", crate::ColorMode::Dark, crate::AccessibilityPreferences::default(), None).unwrap();
+        let st = run_pipeline(
+            reader,
+            "kde-breeze-live",
+            crate::ColorMode::Dark,
+            crate::AccessibilityPreferences::default(),
+            None,
+        )
+        .unwrap();
 
         // The light variant should have colors from the full "kde-breeze" preset
         let full_light = full.light.unwrap();
@@ -776,7 +871,13 @@ mod pipeline_tests {
         // Simulates GNOME sync fallback: adwaita used as both reader and preset.
         // Double-merge is harmless: merge is idempotent for matching values.
         let reader = Theme::preset("adwaita").unwrap();
-        let result = run_pipeline(reader, "adwaita", crate::ColorMode::Light, crate::AccessibilityPreferences::default(), None);
+        let result = run_pipeline(
+            reader,
+            "adwaita",
+            crate::ColorMode::Light,
+            crate::AccessibilityPreferences::default(),
+            None,
+        );
         assert!(
             result.is_ok(),
             "double-merge with same preset should succeed"

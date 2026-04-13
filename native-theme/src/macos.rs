@@ -393,7 +393,7 @@ fn build_theme(
 /// Returns `Error::ReaderFailed` if neither light nor dark appearance can be created
 /// (extremely unlikely on any macOS version that supports these APIs).
 #[cfg(all(target_os = "macos", feature = "macos"))]
-pub fn from_macos() -> crate::Result<crate::Theme> {
+pub fn from_macos() -> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
     let light_name = NSString::from_str("NSAppearanceNameAqua");
     let dark_name = NSString::from_str("NSAppearanceNameDarkAqua");
 
@@ -491,20 +491,26 @@ pub fn from_macos() -> crate::Result<crate::Theme> {
     // Accessibility flags (appearance-independent).
     let (reduce_motion, high_contrast, reduce_transparency, text_scaling_factor) =
         read_accessibility();
-    for variant in [&mut theme.light, &mut theme.dark] {
-        if let Some(v) = variant {
-            v.defaults.reduce_motion = reduce_motion;
-            v.defaults.high_contrast = high_contrast;
-            v.defaults.reduce_transparency = reduce_transparency;
-            v.defaults.text_scaling_factor = text_scaling_factor;
-            // macOS coordinate system uses 72 DPI as its base.
-            // NSFont.pointSize() returns Apple points where 1pt = 1 logical pixel,
-            // so the formula pt * 72/72 = pt (identity) is correct.
-            v.defaults.font_dpi = Some(72.0);
-        }
+    let mut acc = crate::AccessibilityPreferences::default();
+    if let Some(rm) = reduce_motion {
+        acc.reduce_motion = rm;
+    }
+    if let Some(hc) = high_contrast {
+        acc.high_contrast = hc;
+    }
+    if let Some(rt) = reduce_transparency {
+        acc.reduce_transparency = rt;
+    }
+    if let Some(tsf) = text_scaling_factor {
+        acc.text_scaling_factor = tsf;
     }
 
-    Ok(theme)
+    // macOS coordinate system uses 72 DPI as its base.
+    // NSFont.pointSize() returns Apple points where 1pt = 1 logical pixel,
+    // so the formula pt * 72/72 = pt (identity) is correct.
+    let font_dpi = Some(72.0_f32);
+
+    Ok((theme, font_dpi, acc))
 }
 
 #[cfg(test)]
