@@ -52,7 +52,9 @@ pub mod resolved;
 /// Per-widget struct pairs and macros.
 pub mod widgets;
 
-pub use animated::{AnimatedIcon, TransformAnimation};
+pub use animated::{
+    AnimatedIcon, EmptyFrameListError, FrameList, FramesData, TransformAnimation, TransformData,
+};
 pub use border::{DefaultsBorderSpec, ResolvedBorderSpec, WidgetBorderSpec};
 pub use bundled::{bundled_icon_by_name, bundled_icon_svg};
 pub use defaults::ThemeDefaults;

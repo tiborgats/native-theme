@@ -548,10 +548,11 @@ Plans:
   2. A benchmark (or allocation-counting test) confirms that cloning a `FontSpec` across widgets no longer clones the underlying family string — the `Arc<str>` is shared
   3. `AnimatedIcon::Frames { frames, duration, .. }` field access is replaced with a constructor (`AnimatedIcon::frames(frames, duration)?`) that returns `Result` on invalid input (e.g., empty frame list, zero duration)
   4. Attempting `AnimatedIcon::Frames { frames: vec![], duration: Duration::ZERO, .. }` fails to compile because the fields are no longer directly accessible — invariants are enforced by construction
-**Plans**: 2 plans
+**Plans**: 3 plans
 Plans:
 - [ ] 87-01-PLAN.md � AnimatedIcon newtype wrappers and construction invariants
-- [ ] 87-02-PLAN.md � FontSpec family migration from String to Arc<str>
+- [ ] 87-02-PLAN.md — FontSpec core type definitions: Arc<str> family
+- [ ] 87-03-PLAN.md — FontSpec connector and platform migration to Arc<str>
 **UI hint**: yes
 
 ### Phase 88: Diagnostic and Preset-Polish Sweep
