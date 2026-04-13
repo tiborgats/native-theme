@@ -73,7 +73,7 @@ fn find_icon(name: &str, theme: &str, size: u16) -> Option<(PathBuf, bool)> {
 /// that load the same icon repeatedly (e.g. per-frame in a GUI) should
 /// cache the returned `IconData` themselves.
 #[must_use]
-pub fn load_freedesktop_icon(
+pub(crate) fn load_freedesktop_icon(
     role: IconRole,
     size: u16,
     fg_color: Option<[u8; 3]>,
@@ -110,7 +110,7 @@ pub fn load_freedesktop_icon(
 /// **Performance note:** Each call reads the icon file from disk. Callers
 /// that load the same icon repeatedly should cache the returned `IconData`.
 #[must_use]
-pub fn load_freedesktop_icon_by_name(
+pub(crate) fn load_freedesktop_icon_by_name(
     name: &str,
     theme: &str,
     size: u16,

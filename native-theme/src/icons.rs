@@ -4,114 +4,233 @@
 use std::borrow::Cow;
 
 #[allow(unused_imports)]
-use crate::model::icons::{icon_name, system_icon_theme};
+use crate::model::icons::{icon_name, system_icon_set, system_icon_theme};
 use crate::model::{AnimatedIcon, IconData, IconProvider, IconRole, IconSet};
 #[allow(unused_imports)]
 use crate::model::{bundled_icon_by_name, bundled_icon_svg};
 
-/// Load an icon for the given role using the specified icon set.
+/// Identifies what icon to load: a semantic role, a platform-specific name,
+/// or a custom provider.
 ///
-/// Dispatches to the appropriate platform loader or bundled icon set
-/// based on the [`IconSet`] variant:
-///
-/// - [`IconSet::Freedesktop`] -- freedesktop theme lookup at 24 px using the
-///   system's installed icon theme (requires `system-icons` feature, Linux only)
-/// - [`IconSet::SfSymbols`] -- SF Symbols lookup
-///   (requires `system-icons` feature, macOS only)
-/// - [`IconSet::SegoeIcons`] -- Segoe Fluent lookup
-///   (requires `system-icons` feature, Windows only)
-/// - [`IconSet::Material`] -- bundled Material SVG
-///   (requires `material-icons` feature)
-/// - [`IconSet::Lucide`] -- bundled Lucide SVG
-///   (requires `lucide-icons` feature)
-///
-/// Returns `None` when the required feature is not enabled, the platform
-/// doesn't match, or the role has no icon in the requested set.
-/// There is **no cross-set fallback** -- each set is self-contained.
+/// Constructed via [`From`] impls -- users rarely reference this type directly.
+/// Pass an [`IconRole`], `&str`, or `&dyn IconProvider` to
+/// [`IconLoader::new()`].
 ///
 /// # Examples
 ///
 /// ```
-/// use native_theme::icons::load_icon;
-/// use native_theme::theme::{IconRole, IconSet};
+/// use native_theme::icons::IconId;
+/// use native_theme::theme::IconRole;
 ///
-/// // With material-icons feature enabled
-/// # #[cfg(feature = "material-icons")]
-/// # {
-/// let icon = load_icon(IconRole::ActionCopy, IconSet::Material, None);
-/// assert!(icon.is_some());
-/// # }
+/// // All of these work via Into<IconId>:
+/// let _: IconId = IconRole::ActionSave.into();
+/// let _: IconId = "edit-copy".into();
 /// ```
-#[must_use]
-#[allow(unreachable_patterns, clippy::needless_return, unused_variables)]
-pub fn load_icon(role: IconRole, set: IconSet, fg_color: Option<[u8; 3]>) -> Option<IconData> {
-    match set {
-        #[cfg(all(target_os = "linux", feature = "system-icons"))]
-        IconSet::Freedesktop => crate::freedesktop::load_freedesktop_icon(role, 24, fg_color),
+#[derive(Debug)]
+#[non_exhaustive]
+pub enum IconId<'a> {
+    /// Load by semantic role (most common).
+    Role(IconRole),
+    /// Load by platform-specific name string.
+    Name(&'a str),
+    /// Load via a custom [`IconProvider`] implementation.
+    Custom(&'a dyn IconProvider),
+}
 
-        #[cfg(all(target_os = "macos", feature = "system-icons"))]
-        IconSet::SfSymbols => crate::sficons::load_sf_icon(role),
-
-        #[cfg(all(target_os = "windows", feature = "system-icons"))]
-        IconSet::SegoeIcons => crate::winicons::load_windows_icon(role),
-
-        #[cfg(feature = "material-icons")]
-        IconSet::Material => {
-            bundled_icon_svg(role, IconSet::Material).map(|b| IconData::Svg(Cow::Borrowed(b)))
-        }
-
-        #[cfg(feature = "lucide-icons")]
-        IconSet::Lucide => {
-            bundled_icon_svg(role, IconSet::Lucide).map(|b| IconData::Svg(Cow::Borrowed(b)))
-        }
-
-        // Non-matching platform or unknown set: no cross-set fallback
-        _ => None,
+impl From<IconRole> for IconId<'_> {
+    fn from(role: IconRole) -> Self {
+        IconId::Role(role)
     }
 }
 
-/// Load an icon using a specific freedesktop icon theme instead of the
-/// system default.
+impl<'a> From<&'a str> for IconId<'a> {
+    fn from(name: &'a str) -> Self {
+        IconId::Name(name)
+    }
+}
+
+impl<'a> From<&'a dyn IconProvider> for IconId<'a> {
+    fn from(provider: &'a dyn IconProvider) -> Self {
+        IconId::Custom(provider)
+    }
+}
+
+/// Builder for loading icons with optional configuration.
 ///
-/// For [`IconSet::Freedesktop`], loads from the `preferred_theme` directory
-/// (e.g. `"Adwaita"`, `"breeze"`). For bundled icon sets ([`IconSet::Material`],
-/// [`IconSet::Lucide`]), `preferred_theme` is ignored --- the icons are compiled
-/// in and always available.
-///
-/// Use [`is_freedesktop_theme_available()`] first to check whether the theme
-/// is installed. If the theme is not installed, freedesktop lookups will fall
-/// through to `hicolor` and may return unexpected icons.
-///
-/// # Examples
+/// Replaces the 13 standalone icon-loading functions with a single
+/// fluent API. The common case stays short:
 ///
 /// ```
-/// use native_theme::icons::load_icon_from_theme;
+/// use native_theme::icons::IconLoader;
 /// use native_theme::theme::{IconRole, IconSet};
 ///
 /// # #[cfg(feature = "material-icons")]
 /// # {
-/// // Bundled sets ignore the theme parameter
-/// let icon = load_icon_from_theme(IconRole::ActionCopy, IconSet::Material, "anything", None);
+/// let icon = IconLoader::new(IconRole::ActionCopy)
+///     .set(IconSet::Material)
+///     .load();
 /// assert!(icon.is_some());
 /// # }
 /// ```
+///
+/// Advanced usage with all options:
+///
+/// ```ignore
+/// let icon = IconLoader::new(IconRole::ActionSave)
+///     .set(IconSet::Freedesktop)
+///     .size(48)
+///     .color([0, 0, 0])
+///     .theme("Adwaita")
+///     .load();
+/// ```
+#[derive(Debug)]
 #[must_use]
-#[allow(unreachable_patterns, clippy::needless_return, unused_variables)]
-pub fn load_icon_from_theme(
-    role: IconRole,
+pub struct IconLoader<'a> {
+    id: IconId<'a>,
     set: IconSet,
-    preferred_theme: &str,
+    /// Requested icon size in pixels. Only affects freedesktop lookups.
+    pub(crate) size: u16,
     fg_color: Option<[u8; 3]>,
-) -> Option<IconData> {
-    match set {
-        #[cfg(all(target_os = "linux", feature = "system-icons"))]
-        IconSet::Freedesktop => {
-            let name = icon_name(role, IconSet::Freedesktop)?;
-            crate::freedesktop::load_freedesktop_icon_by_name(name, preferred_theme, 24, fg_color)
+    freedesktop_theme: Option<&'a str>,
+}
+
+impl<'a> IconLoader<'a> {
+    /// Create a new icon loader for the given icon identifier.
+    ///
+    /// Accepts [`IconRole`], `&str` (platform-specific name), or
+    /// `&dyn IconProvider` via [`Into<IconId>`].
+    ///
+    /// Defaults:
+    /// - `set`: [`system_icon_set()`] (platform-appropriate)
+    /// - `size`: 24
+    /// - `fg_color`: `None`
+    /// - `freedesktop_theme`: `None` (uses system theme)
+    pub fn new(id: impl Into<IconId<'a>>) -> Self {
+        Self {
+            id: id.into(),
+            set: system_icon_set(),
+            size: 24,
+            fg_color: None,
+            freedesktop_theme: None,
+        }
+    }
+
+    /// Set the icon set to load from.
+    ///
+    /// Overrides the default platform-detected icon set.
+    pub fn set(mut self, set: IconSet) -> Self {
+        self.set = set;
+        self
+    }
+
+    /// Set the requested icon size in pixels.
+    ///
+    /// Used by freedesktop theme lookups. Bundled SVG sets (Material, Lucide)
+    /// and platform APIs (SF Symbols, Segoe Fluent) ignore this value
+    /// since they provide scalable or render-time-sized icons.
+    ///
+    /// Default: 24.
+    pub fn size(mut self, size: u16) -> Self {
+        self.size = size;
+        self
+    }
+
+    /// Set the foreground color for GTK symbolic icon colorization.
+    ///
+    /// When loading freedesktop icons with `-symbolic` suffix, the SVG's
+    /// hardcoded foreground placeholders are replaced with this color.
+    /// Pass `None` (the default) to fall back to `currentColor`.
+    ///
+    /// Ignored for non-freedesktop icon sets.
+    pub fn color(mut self, rgb: [u8; 3]) -> Self {
+        self.fg_color = Some(rgb);
+        self
+    }
+
+    /// Set the foreground color if `Some`, or leave as default (`None`).
+    ///
+    /// Convenience method for call sites that have an `Option<[u8; 3]>`.
+    pub fn color_opt(mut self, rgb: Option<[u8; 3]>) -> Self {
+        self.fg_color = rgb;
+        self
+    }
+
+    /// Set the freedesktop icon theme to load from.
+    ///
+    /// Overrides the system-detected icon theme. Only affects
+    /// [`IconSet::Freedesktop`] lookups. Ignored for bundled and
+    /// platform icon sets.
+    ///
+    /// Use [`is_freedesktop_theme_available()`] to check whether a theme
+    /// is installed before specifying it.
+    pub fn theme(mut self, theme: &'a str) -> Self {
+        self.freedesktop_theme = Some(theme);
+        self
+    }
+
+    /// Load the icon, returning its data.
+    ///
+    /// Dispatches to the appropriate platform loader or bundled icon set.
+    /// Returns `None` when the icon is not found, the required feature is
+    /// not enabled, or the platform doesn't match the requested set.
+    ///
+    /// **No cross-set fallback** -- each set is self-contained.
+    #[must_use]
+    pub fn load(self) -> Option<IconData> {
+        match self.id {
+            IconId::Role(role) => self.load_role(role),
+            IconId::Name(name) => self.load_by_name(name),
+            IconId::Custom(provider) => self.load_custom(provider),
+        }
+    }
+
+    /// Load the animated loading/spinner indicator for the current icon set.
+    ///
+    /// Ignores the `id` field -- the indicator is per-set, not per-role.
+    ///
+    /// # Dispatch
+    ///
+    /// - [`IconSet::Material`] -- bundled spinner with continuous spin
+    /// - [`IconSet::Lucide`] -- bundled spinner with continuous spin
+    /// - [`IconSet::Freedesktop`] -- `process-working` sprite sheet from active theme
+    /// - Other sets -- `None`
+    #[must_use]
+    pub fn load_indicator(self) -> Option<AnimatedIcon> {
+        loading_indicator_inner(self.set)
+    }
+
+    /// Internal: load by role, dispatching to platform or bundled loaders.
+    fn load_role(self, role: IconRole) -> Option<IconData> {
+        // If a freedesktop theme override is specified, use it
+        if let Some(theme) = self.freedesktop_theme {
+            return load_icon_from_theme_inner(role, self.set, theme, self.size, self.fg_color);
+        }
+        load_icon_inner(role, self.set, self.size, self.fg_color)
+    }
+
+    /// Internal: load by platform-specific name string.
+    fn load_by_name(self, name: &str) -> Option<IconData> {
+        load_system_icon_by_name_inner(name, self.set, self.size, self.fg_color)
+    }
+
+    /// Internal: load via custom IconProvider.
+    fn load_custom(self, provider: &dyn IconProvider) -> Option<IconData> {
+        // Step 1: Try system loader with provider's name mapping
+        if let Some(name) = provider.icon_name(self.set) {
+            if let Some(data) =
+                load_system_icon_by_name_inner(name, self.set, self.size, self.fg_color)
+            {
+                return Some(data);
+            }
         }
 
-        // Bundled and platform sets --- preferred_theme is irrelevant
-        _ => load_icon(role, set, fg_color),
+        // Step 2: Try bundled SVG from provider
+        if let Some(svg) = provider.icon_svg(self.set) {
+            return Some(IconData::Svg(svg));
+        }
+
+        // No cross-set fallback
+        None
     }
 }
 
@@ -158,41 +277,79 @@ pub fn is_freedesktop_theme_available(theme: &str) -> bool {
     }
 }
 
-/// Load a system icon by its platform-specific name string.
-///
-/// Dispatches to the appropriate platform loader based on the icon set:
-/// - [`IconSet::Freedesktop`] -- freedesktop icon theme lookup (system theme)
-/// - [`IconSet::SfSymbols`] -- macOS SF Symbols
-/// - [`IconSet::SegoeIcons`] -- Windows Segoe Fluent / stock icons
-/// - [`IconSet::Material`] / [`IconSet::Lucide`] -- bundled SVG lookup by name
-///
-/// Returns `None` if the icon is not found on the current platform or
-/// the icon set is not available.
-///
-/// # Examples
-///
-/// ```
-/// use native_theme::icons::load_system_icon_by_name;
-/// use native_theme::theme::IconSet;
-///
-/// # #[cfg(feature = "material-icons")]
-/// # {
-/// let icon = load_system_icon_by_name("content_copy", IconSet::Material, None);
-/// assert!(icon.is_some());
-/// # }
-/// ```
-#[must_use]
+// =============================================================================
+// Internal dispatch functions (previously public, now private)
+// =============================================================================
+
+/// Internal: load by role, dispatching to platform or bundled loaders.
+/// The `size` parameter flows through to freedesktop (ICON-02: no hardcoded 24).
+#[allow(unreachable_patterns, clippy::needless_return, unused_variables)]
+fn load_icon_inner(
+    role: IconRole,
+    set: IconSet,
+    size: u16,
+    fg_color: Option<[u8; 3]>,
+) -> Option<IconData> {
+    match set {
+        #[cfg(all(target_os = "linux", feature = "system-icons"))]
+        IconSet::Freedesktop => crate::freedesktop::load_freedesktop_icon(role, size, fg_color),
+
+        #[cfg(all(target_os = "macos", feature = "system-icons"))]
+        IconSet::SfSymbols => crate::sficons::load_sf_icon(role),
+
+        #[cfg(all(target_os = "windows", feature = "system-icons"))]
+        IconSet::SegoeIcons => crate::winicons::load_windows_icon(role),
+
+        #[cfg(feature = "material-icons")]
+        IconSet::Material => {
+            bundled_icon_svg(role, IconSet::Material).map(|b| IconData::Svg(Cow::Borrowed(b)))
+        }
+
+        #[cfg(feature = "lucide-icons")]
+        IconSet::Lucide => {
+            bundled_icon_svg(role, IconSet::Lucide).map(|b| IconData::Svg(Cow::Borrowed(b)))
+        }
+
+        // Non-matching platform or unknown set: no cross-set fallback
+        _ => None,
+    }
+}
+
+/// Internal: load from a specific freedesktop theme, falling back to
+/// `load_icon_inner` for non-freedesktop sets.
+#[allow(unreachable_patterns, clippy::needless_return, unused_variables)]
+fn load_icon_from_theme_inner(
+    role: IconRole,
+    set: IconSet,
+    preferred_theme: &str,
+    size: u16,
+    fg_color: Option<[u8; 3]>,
+) -> Option<IconData> {
+    match set {
+        #[cfg(all(target_os = "linux", feature = "system-icons"))]
+        IconSet::Freedesktop => {
+            let name = icon_name(role, IconSet::Freedesktop)?;
+            crate::freedesktop::load_freedesktop_icon_by_name(name, preferred_theme, size, fg_color)
+        }
+
+        // Bundled and platform sets --- preferred_theme is irrelevant
+        _ => load_icon_inner(role, set, size, fg_color),
+    }
+}
+
+/// Internal: load by platform-specific name string.
 #[allow(unreachable_patterns, unused_variables)]
-pub fn load_system_icon_by_name(
+fn load_system_icon_by_name_inner(
     name: &str,
     set: IconSet,
+    size: u16,
     fg_color: Option<[u8; 3]>,
 ) -> Option<IconData> {
     match set {
         #[cfg(all(target_os = "linux", feature = "system-icons"))]
         IconSet::Freedesktop => {
             let theme = system_icon_theme();
-            crate::freedesktop::load_freedesktop_icon_by_name(name, theme, 24, fg_color)
+            crate::freedesktop::load_freedesktop_icon_by_name(name, theme, size, fg_color)
         }
 
         #[cfg(all(target_os = "macos", feature = "system-icons"))]
@@ -215,27 +372,9 @@ pub fn load_system_icon_by_name(
     }
 }
 
-/// Return the loading/spinner animation for the given icon set.
-///
-/// This is the animated-icon counterpart of [`load_icon()`].
-///
-/// # Dispatch
-///
-/// - [`IconSet::Material`] -- `progress_activity.svg` with continuous spin transform (1000ms)
-/// - [`IconSet::Lucide`] -- `loader.svg` with continuous spin transform (1000ms)
-/// - [`IconSet::Freedesktop`] -- loads `process-working` sprite sheet from active icon theme
-/// - Other sets -- `None`
-///
-/// # Examples
-///
-/// ```
-/// // Result depends on enabled features and platform
-/// let anim = native_theme::icons::loading_indicator(native_theme::theme::IconSet::Lucide);
-/// # #[cfg(feature = "lucide-icons")]
-/// # assert!(anim.is_some());
-/// ```
-#[must_use]
-pub fn loading_indicator(set: IconSet) -> Option<AnimatedIcon> {
+/// Internal: loading/spinner animation for the given icon set.
+#[allow(unreachable_patterns)]
+fn loading_indicator_inner(set: IconSet) -> Option<AnimatedIcon> {
     match set {
         #[cfg(all(target_os = "linux", feature = "system-icons"))]
         IconSet::Freedesktop => crate::freedesktop::load_freedesktop_spinner(),
@@ -250,51 +389,6 @@ pub fn loading_indicator(set: IconSet) -> Option<AnimatedIcon> {
     }
 }
 
-/// Load an icon from any [`IconProvider`], dispatching through the standard
-/// platform loading chain.
-///
-/// # Fallback chain
-///
-/// 1. Provider's [`icon_name()`](IconProvider::icon_name) -- passed to platform
-///    system loader via [`load_system_icon_by_name()`]
-/// 2. Provider's [`icon_svg()`](IconProvider::icon_svg) -- bundled SVG data
-/// 3. `None` -- **no cross-set fallback** (mixing icon sets is forbidden)
-///
-/// # Examples
-///
-/// ```
-/// use native_theme::icons::load_custom_icon;
-/// use native_theme::theme::{IconRole, IconSet};
-///
-/// // IconRole implements IconProvider, so it works with load_custom_icon
-/// # #[cfg(feature = "material-icons")]
-/// # {
-/// let icon = load_custom_icon(&IconRole::ActionCopy, IconSet::Material, None);
-/// assert!(icon.is_some());
-/// # }
-/// ```
-#[must_use]
-pub fn load_custom_icon(
-    provider: &(impl IconProvider + ?Sized),
-    set: IconSet,
-    fg_color: Option<[u8; 3]>,
-) -> Option<IconData> {
-    // Step 1: Try system loader with provider's name mapping
-    if let Some(name) = provider.icon_name(set)
-        && let Some(data) = load_system_icon_by_name(name, set, fg_color)
-    {
-        return Some(data);
-    }
-
-    // Step 2: Try bundled SVG from provider
-    if let Some(svg) = provider.icon_svg(set) {
-        return Some(IconData::Svg(svg));
-    }
-
-    // No cross-set fallback -- return None
-    None
-}
-
 // =============================================================================
 // Tests
 // =============================================================================
@@ -307,7 +401,9 @@ mod load_icon_tests {
     #[test]
     #[cfg(feature = "material-icons")]
     fn load_icon_material_returns_svg() {
-        let result = load_icon(IconRole::ActionCopy, IconSet::Material, None);
+        let result = IconLoader::new(IconRole::ActionCopy)
+            .set(IconSet::Material)
+            .load();
         assert!(result.is_some(), "material ActionCopy should return Some");
         match result.unwrap() {
             IconData::Svg(ref cow) => {
@@ -321,7 +417,9 @@ mod load_icon_tests {
     #[test]
     #[cfg(feature = "lucide-icons")]
     fn load_icon_lucide_returns_svg() {
-        let result = load_icon(IconRole::ActionCopy, IconSet::Lucide, None);
+        let result = IconLoader::new(IconRole::ActionCopy)
+            .set(IconSet::Lucide)
+            .load();
         assert!(result.is_some(), "lucide ActionCopy should return Some");
         match result.unwrap() {
             IconData::Svg(ref cow) => {
@@ -338,7 +436,9 @@ mod load_icon_tests {
         // On Linux (test platform), unknown theme resolves to system_icon_set() = Freedesktop.
         // Without system-icons feature, Freedesktop falls through to wildcard -> None.
         // No cross-set Material fallback.
-        let result = load_icon(IconRole::ActionCopy, IconSet::Freedesktop, None);
+        let result = IconLoader::new(IconRole::ActionCopy)
+            .set(IconSet::Freedesktop)
+            .load();
         // Without system-icons, this falls to wildcard which returns None
         // With system-icons, this dispatches to load_freedesktop_icon which may return Some
         // Either way, no panic
@@ -351,7 +451,7 @@ mod load_icon_tests {
         // Material has 42 of 42 roles mapped, all return Some
         let mut some_count = 0;
         for role in IconRole::ALL {
-            if load_icon(role, IconSet::Material, None).is_some() {
+            if IconLoader::new(role).set(IconSet::Material).load().is_some() {
                 some_count += 1;
             }
         }
@@ -367,7 +467,7 @@ mod load_icon_tests {
     fn load_icon_all_roles_lucide() {
         let mut some_count = 0;
         for role in IconRole::ALL {
-            if load_icon(role, IconSet::Lucide, None).is_some() {
+            if IconLoader::new(role).set(IconSet::Lucide).load().is_some() {
                 some_count += 1;
             }
         }
@@ -381,14 +481,18 @@ mod load_icon_tests {
     #[test]
     fn load_icon_unrecognized_set_no_features() {
         // SfSymbols on Linux without system-icons: falls through to wildcard -> None
-        let _result = load_icon(IconRole::ActionCopy, IconSet::SfSymbols, None);
+        let _result = IconLoader::new(IconRole::ActionCopy)
+            .set(IconSet::SfSymbols)
+            .load();
         // Just verifying it doesn't panic
     }
 
     #[test]
     #[cfg(feature = "material-icons")]
     fn bundled_icon_load_produces_cow_borrowed() {
-        let result = load_icon(IconRole::ActionCopy, IconSet::Material, None);
+        let result = IconLoader::new(IconRole::ActionCopy)
+            .set(IconSet::Material)
+            .load();
         assert!(
             matches!(result, Some(IconData::Svg(Cow::Borrowed(_)))),
             "bundled icon should produce Some(IconData::Svg(Cow::Borrowed(_)))"
@@ -404,7 +508,9 @@ mod load_system_icon_by_name_tests {
     #[test]
     #[cfg(feature = "material-icons")]
     fn system_icon_by_name_material() {
-        let result = load_system_icon_by_name("content_copy", IconSet::Material, None);
+        let result = IconLoader::new("content_copy")
+            .set(IconSet::Material)
+            .load();
         assert!(
             result.is_some(),
             "content_copy should be found in Material set"
@@ -415,7 +521,7 @@ mod load_system_icon_by_name_tests {
     #[test]
     #[cfg(feature = "lucide-icons")]
     fn system_icon_by_name_lucide() {
-        let result = load_system_icon_by_name("copy", IconSet::Lucide, None);
+        let result = IconLoader::new("copy").set(IconSet::Lucide).load();
         assert!(result.is_some(), "copy should be found in Lucide set");
         assert!(matches!(result.unwrap(), IconData::Svg(_)));
     }
@@ -423,7 +529,9 @@ mod load_system_icon_by_name_tests {
     #[test]
     #[cfg(feature = "material-icons")]
     fn system_icon_by_name_unknown_returns_none() {
-        let result = load_system_icon_by_name("nonexistent_xyz", IconSet::Material, None);
+        let result = IconLoader::new("nonexistent_xyz")
+            .set(IconSet::Material)
+            .load();
         assert!(result.is_none(), "nonexistent name should return None");
     }
 
@@ -432,7 +540,9 @@ mod load_system_icon_by_name_tests {
         // On Linux, SfSymbols set is not available (cfg-gated to macOS)
         #[cfg(not(target_os = "macos"))]
         {
-            let result = load_system_icon_by_name("doc.on.doc", IconSet::SfSymbols, None);
+            let result = IconLoader::new("doc.on.doc")
+                .set(IconSet::SfSymbols)
+                .load();
             assert!(
                 result.is_none(),
                 "SF Symbols should return None on non-macOS"
@@ -449,7 +559,8 @@ mod load_custom_icon_tests {
     #[test]
     #[cfg(feature = "material-icons")]
     fn custom_icon_with_icon_role_material() {
-        let result = load_custom_icon(&IconRole::ActionCopy, IconSet::Material, None);
+        let provider: &dyn IconProvider = &IconRole::ActionCopy;
+        let result = IconLoader::new(provider).set(IconSet::Material).load();
         assert!(
             result.is_some(),
             "IconRole::ActionCopy should load via material"
@@ -459,7 +570,8 @@ mod load_custom_icon_tests {
     #[test]
     #[cfg(feature = "lucide-icons")]
     fn custom_icon_with_icon_role_lucide() {
-        let result = load_custom_icon(&IconRole::ActionCopy, IconSet::Lucide, None);
+        let provider: &dyn IconProvider = &IconRole::ActionCopy;
+        let result = IconLoader::new(provider).set(IconSet::Lucide).load();
         assert!(
             result.is_some(),
             "IconRole::ActionCopy should load via lucide"
@@ -480,7 +592,8 @@ mod load_custom_icon_tests {
             }
         }
 
-        let result = load_custom_icon(&NullProvider, IconSet::Material, None);
+        let provider: &dyn IconProvider = &NullProvider;
+        let result = IconLoader::new(provider).set(IconSet::Material).load();
         assert!(
             result.is_none(),
             "NullProvider should return None (no cross-set fallback)"
@@ -502,14 +615,18 @@ mod load_custom_icon_tests {
         }
 
         // Just verify it doesn't panic -- the actual set chosen depends on platform
-        let _result = load_custom_icon(&NullProvider, IconSet::Freedesktop, None);
+        let provider: &dyn IconProvider = &NullProvider;
+        let _result = IconLoader::new(provider)
+            .set(IconSet::Freedesktop)
+            .load();
     }
 
     #[test]
     #[cfg(feature = "material-icons")]
     fn custom_icon_via_dyn_dispatch() {
         let boxed: Box<dyn IconProvider> = Box::new(IconRole::ActionCopy);
-        let result = load_custom_icon(&*boxed, IconSet::Material, None);
+        let provider: &dyn IconProvider = &*boxed;
+        let result = IconLoader::new(provider).set(IconSet::Material).load();
         assert!(
             result.is_some(),
             "dyn dispatch through Box<dyn IconProvider> should work"
@@ -531,7 +648,8 @@ mod load_custom_icon_tests {
             }
         }
 
-        let result = load_custom_icon(&SvgOnlyProvider, IconSet::Material, None);
+        let provider: &dyn IconProvider = &SvgOnlyProvider;
+        let result = IconLoader::new(provider).set(IconSet::Material).load();
         assert!(
             result.is_some(),
             "provider with icon_svg should return Some"
@@ -550,12 +668,14 @@ mod load_custom_icon_tests {
 mod loading_indicator_tests {
     use super::*;
 
-    // === Dispatch tests (through loading_indicator public API) ===
+    // === Dispatch tests (through IconLoader API) ===
 
     #[test]
     #[cfg(feature = "lucide-icons")]
     fn loading_indicator_lucide_returns_frames() {
-        let anim = loading_indicator(IconSet::Lucide);
+        let anim = IconLoader::new(IconRole::StatusBusy)
+            .set(IconSet::Lucide)
+            .load_indicator();
         assert!(anim.is_some(), "lucide should return Some");
         let anim = anim.unwrap();
         assert!(
@@ -577,7 +697,9 @@ mod loading_indicator_tests {
     #[test]
     #[cfg(all(target_os = "linux", feature = "system-icons"))]
     fn loading_indicator_freedesktop_depends_on_theme() {
-        let anim = loading_indicator(IconSet::Freedesktop);
+        let anim = IconLoader::new(IconRole::StatusBusy)
+            .set(IconSet::Freedesktop)
+            .load_indicator();
         // Result depends on installed icon theme -- Some if process-working exists
         if let Some(anim) = anim {
             match anim {
@@ -597,7 +719,9 @@ mod loading_indicator_tests {
     /// Freedesktop spinner depends on platform and icon theme.
     #[test]
     fn loading_indicator_freedesktop_does_not_panic() {
-        let _result = loading_indicator(IconSet::Freedesktop);
+        let _result = IconLoader::new(IconRole::StatusBusy)
+            .set(IconSet::Freedesktop)
+            .load_indicator();
     }
 
     // === Direct spinner construction tests (any platform) ===
@@ -610,6 +734,58 @@ mod loading_indicator_tests {
             matches!(anim, AnimatedIcon::Frames { .. }),
             "lucide should be pre-rotated Frames"
         );
+    }
+}
+
+// === New builder API tests ===
+
+#[cfg(test)]
+#[allow(clippy::unwrap_used, clippy::expect_used)]
+mod icon_loader_tests {
+    use super::*;
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn icon_loader_basic_role() {
+        let icon = IconLoader::new(IconRole::ActionCopy)
+            .set(IconSet::Material)
+            .load();
+        assert!(icon.is_some());
+    }
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn icon_loader_by_name() {
+        let icon = IconLoader::new("content_copy")
+            .set(IconSet::Material)
+            .load();
+        assert!(icon.is_some());
+    }
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn icon_loader_custom_provider() {
+        let provider: &dyn IconProvider = &IconRole::ActionCopy;
+        let icon = IconLoader::new(provider).set(IconSet::Material).load();
+        assert!(icon.is_some());
+    }
+
+    #[test]
+    fn icon_loader_size_is_not_hardcoded() {
+        // Verify the size field is used (not hardcoded 24)
+        let loader = IconLoader::new(IconRole::ActionSave)
+            .set(IconSet::Freedesktop)
+            .size(48);
+        assert_eq!(loader.size, 48);
+    }
+
+    #[test]
+    #[cfg(feature = "material-icons")]
+    fn icon_loader_load_indicator() {
+        let anim = IconLoader::new(IconRole::StatusBusy)
+            .set(IconSet::Material)
+            .load_indicator();
+        assert!(anim.is_some());
     }
 }
 

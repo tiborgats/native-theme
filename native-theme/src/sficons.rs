@@ -99,7 +99,7 @@ fn rasterize(cg_image: &CGImage, width: u32, height: u32) -> Option<Vec<u8>> {
 /// let icon = load_sf_icon_by_name("arrow.right");
 /// ```
 #[must_use]
-pub fn load_sf_icon_by_name(name: &str) -> Option<IconData> {
+pub(crate) fn load_sf_icon_by_name(name: &str) -> Option<IconData> {
     let size = DEFAULT_ICON_SIZE;
     let image = load_symbol(name, size as f64)?;
     let cg_image = extract_cgimage(&image)?;
@@ -121,7 +121,7 @@ pub fn load_sf_icon_by_name(name: &str) -> Option<IconData> {
 /// Returns `None` if the role has no SF Symbols mapping or the symbol
 /// cannot be loaded on this macOS version.
 #[must_use]
-pub fn load_sf_icon(role: IconRole) -> Option<IconData> {
+pub(crate) fn load_sf_icon(role: IconRole) -> Option<IconData> {
     let name = icon_name(role, IconSet::SfSymbols)?;
     let size = DEFAULT_ICON_SIZE;
     let image = load_symbol(name, size as f64)?;

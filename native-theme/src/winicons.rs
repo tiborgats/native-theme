@@ -365,7 +365,7 @@ fn load_glyph_icon(codepoint: u32, size: i32) -> Option<IconData> {
 /// Returns `None` if the role has no Segoe mapping or the icon cannot
 /// be loaded on this system.
 #[must_use]
-pub fn load_windows_icon(role: IconRole) -> Option<IconData> {
+pub(crate) fn load_windows_icon(role: IconRole) -> Option<IconData> {
     #[cfg(target_os = "windows")]
     if let Some(name) = icon_name(role, IconSet::SegoeIcons) {
         if name.starts_with("SIID_") {
@@ -416,7 +416,7 @@ fn parse_hex_codepoint(name: &str) -> Option<u32> {
 /// Returns `None` if the name doesn't match any known format or
 /// the icon cannot be loaded on this system.
 #[must_use]
-pub fn load_windows_icon_by_name(name: &str) -> Option<IconData> {
+pub(crate) fn load_windows_icon_by_name(name: &str) -> Option<IconData> {
     #[cfg(target_os = "windows")]
     {
         if name.starts_with("SIID_") {
