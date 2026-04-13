@@ -638,7 +638,7 @@ impl Theme {
             "link",
         ];
 
-        // FontSpec, BorderSpec, TextScaleEntry, TextScale, and IconSizes
+        // FontSpec, DefaultsBorderSpec, WidgetBorderSpec, TextScaleEntry, TextScale, and IconSizes
         // all use their own FIELD_NAMES constants (issue 3b).
 
         /// Look up the known field names for a given widget section key.
