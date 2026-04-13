@@ -536,8 +536,8 @@ Plans:
   4. All existing range-check tests still pass with the lazy allocation path
 **Plans**: 2 plans
 Plans:
-- [ ] 71-01-PLAN.md � Rewrite Error enum per Option F with ErrorKind and RangeViolation
-- [ ] 71-02-PLAN.md � Two-vec validation split and caller migration
+- [ ] 86-01-PLAN.md — Rewrite lint_toml to use inventory widget registry
+- [ ] 86-02-PLAN.md — Lazy path-string allocation in check_ranges
 
 ### Phase 87: Font Family Arc<str> and AnimatedIcon Invariants
 **Goal**: `FontSpec::family` migrates from `String` to `Arc<str>` across the core widget × connector leak surface (needs `serde rc` feature flag; gpui and iced connector `.family` access updated in lockstep); `AnimatedIcon`'s public fields are replaced with newtype wrappers that enforce construction invariants, so users cannot construct an invalid `AnimatedIcon` by assigning to public fields
