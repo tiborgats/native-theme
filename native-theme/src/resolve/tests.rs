@@ -1150,7 +1150,7 @@ fn validate_fully_populated_returns_ok() {
         result.err()
     );
     let resolved = result.unwrap();
-    assert_eq!(resolved.defaults.font.family, "Inter");
+    assert_eq!(resolved.defaults.font.family.as_ref(), "Inter");
     // icon_set is now on Theme/SystemTheme, not on ResolvedTheme
 }
 
@@ -1409,7 +1409,7 @@ fn test_gnome_resolve_validate() {
 
     // Simulate GNOME reader font output (gsettings font-name on a GNOME system).
     variant.defaults.font = FontSpec {
-        family: Some("Cantarell".to_string()),
+        family: Some("Cantarell".into()),
         size: Some(FontSize::Px(11.0)),
         weight: Some(400),
         ..Default::default()
@@ -1428,7 +1428,7 @@ fn test_gnome_resolve_validate() {
         "accent should be from adwaita preset"
     );
     assert_eq!(
-        resolved.defaults.font.family, "Cantarell",
+        resolved.defaults.font.family.as_ref(), "Cantarell",
         "font family should be from GNOME reader overlay"
     );
     assert_eq!(

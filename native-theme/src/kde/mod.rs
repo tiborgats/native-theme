@@ -1237,7 +1237,7 @@ Name=whatever
 
         // font.family from [General] font
         assert_eq!(
-            resolved.defaults.font.family, "Noto Sans",
+            resolved.defaults.font.family.as_ref(), "Noto Sans",
             "font family should be from KDE reader"
         );
 

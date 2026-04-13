@@ -207,7 +207,7 @@ fn nsfont_weight_to_css(font: &NSFont) -> Option<u16> {
 #[cfg(all(target_os = "macos", feature = "macos"))]
 fn fontspec_from_nsfont(font: &NSFont) -> crate::FontSpec {
     crate::FontSpec {
-        family: font.familyName().map(|n| n.to_string()),
+        family: font.familyName().map(|n| std::sync::Arc::from(n.to_string())),
         size: Some(crate::model::font::FontSize::Pt(font.pointSize() as f32)),
         weight: nsfont_weight_to_css(font),
         ..Default::default()
@@ -537,19 +537,19 @@ mod tests {
         use crate::model::font::FontSize;
         WidgetFontData {
             menu_font: crate::FontSpec {
-                family: Some("SF Pro".to_string()),
+                family: Some("SF Pro".into()),
                 size: Some(FontSize::Pt(14.0)),
                 weight: Some(400),
                 ..Default::default()
             },
             tooltip_font: crate::FontSpec {
-                family: Some("SF Pro".to_string()),
+                family: Some("SF Pro".into()),
                 size: Some(FontSize::Pt(11.0)),
                 weight: Some(400),
                 ..Default::default()
             },
             title_bar_font: crate::FontSpec {
-                family: Some("SF Pro".to_string()),
+                family: Some("SF Pro".into()),
                 size: Some(FontSize::Pt(13.0)),
                 weight: Some(700),
                 ..Default::default()
@@ -569,13 +569,13 @@ mod tests {
                 ..Default::default()
             },
             font: crate::FontSpec {
-                family: Some("SF Pro".to_string()),
+                family: Some("SF Pro".into()),
                 size: Some(FontSize::Pt(13.0)),
                 weight: None,
                 ..Default::default()
             },
             mono_font: crate::FontSpec {
-                family: Some("SF Mono".to_string()),
+                family: Some("SF Mono".into()),
                 size: Some(FontSize::Pt(13.0)),
                 weight: None,
                 ..Default::default()
@@ -596,7 +596,7 @@ mod tests {
                 ..Default::default()
             },
             font: crate::FontSpec {
-                family: Some("SF Pro".to_string()),
+                family: Some("SF Pro".into()),
                 size: Some(FontSize::Pt(13.0)),
                 weight: None,
                 ..Default::default()
@@ -644,13 +644,13 @@ mod tests {
         use crate::model::font::FontSize;
         let defaults = crate::ThemeDefaults {
             font: crate::FontSpec {
-                family: Some("SF Pro".to_string()),
+                family: Some("SF Pro".into()),
                 size: Some(FontSize::Pt(13.0)),
                 weight: None,
                 ..Default::default()
             },
             mono_font: crate::FontSpec {
-                family: Some("SF Mono".to_string()),
+                family: Some("SF Mono".into()),
                 size: Some(FontSize::Pt(13.0)),
                 weight: None,
                 ..Default::default()
@@ -874,7 +874,7 @@ mod tests {
             "accent should be from macOS reader"
         );
         assert_eq!(
-            resolved.defaults.font.family, "SF Pro",
+            resolved.defaults.font.family.as_ref(), "SF Pro",
             "font family should be from macOS reader"
         );
         // icon_set is now on Theme/SystemTheme, not on ResolvedTheme

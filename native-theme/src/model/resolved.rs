@@ -396,8 +396,8 @@ mod tests {
     fn resolved_defaults_all_fields_concrete() {
         let d = sample_defaults();
         // Fonts
-        assert_eq!(d.font.family, "Inter");
-        assert_eq!(d.mono_font.family, "JetBrains Mono");
+        assert_eq!(d.font.family.as_ref(), "Inter");
+        assert_eq!(d.mono_font.family.as_ref(), "JetBrains Mono");
         assert_eq!(d.line_height, 1.4);
         // Some colors
         assert_eq!(d.background_color, Rgba::rgb(128, 128, 128));

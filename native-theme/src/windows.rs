@@ -116,7 +116,7 @@ fn logfont_to_fontspec_raw(
     };
     let weight = (lf_weight.clamp(100, 900)) as u16;
     FontSpec {
-        family: Some(family),
+        family: Some(family.into()),
         size: Some(crate::model::font::FontSize::Pt(points)),
         weight: Some(weight),
         ..Default::default()
@@ -655,25 +655,25 @@ mod tests {
         use crate::model::font::FontSize;
         AllFonts {
             msg: FontSpec {
-                family: Some("Segoe UI".to_string()),
+                family: Some("Segoe UI".into()),
                 size: Some(FontSize::Pt(9.0)),
                 weight: Some(400),
                 ..Default::default()
             },
             caption: FontSpec {
-                family: Some("Segoe UI".to_string()),
+                family: Some("Segoe UI".into()),
                 size: Some(FontSize::Pt(9.0)),
                 weight: Some(700),
                 ..Default::default()
             },
             menu: FontSpec {
-                family: Some("Segoe UI".to_string()),
+                family: Some("Segoe UI".into()),
                 size: Some(FontSize::Pt(9.0)),
                 weight: Some(400),
                 ..Default::default()
             },
             status: FontSpec {
-                family: Some("Segoe UI".to_string()),
+                family: Some("Segoe UI".into()),
                 size: Some(FontSize::Pt(8.0)),
                 weight: Some(400),
                 ..Default::default()
@@ -1321,7 +1321,7 @@ mod tests {
             "accent should be from Windows reader"
         );
         assert_eq!(
-            resolved.defaults.font.family, "Segoe UI",
+            resolved.defaults.font.family.as_ref(), "Segoe UI",
             "font family should be from Windows reader"
         );
         assert_eq!(

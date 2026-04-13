@@ -20,7 +20,7 @@ categories = ["gui", "config", "os"]
 
 [workspace.dependencies]
 native-theme = { path = "native-theme", version = "0.5.7" }
-serde = { version = "1.0.228", features = ["derive"] }
+serde = { version = "1.0.228", features = ["derive", "rc"] }
 serde_with = "3.18.0"
 toml = "1.1.2"
 

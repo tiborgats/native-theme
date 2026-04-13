@@ -38,6 +38,7 @@ prop_compose! {
         color in proptest::option::of(arb_rgba()),
     ) -> FontSpec {
         let size = size_raw.map(|v| if use_pt { FontSize::Pt(v) } else { FontSize::Px(v) });
+        let family = family.map(std::sync::Arc::from);
         FontSpec { family, size, weight, style, color }
     }
 }

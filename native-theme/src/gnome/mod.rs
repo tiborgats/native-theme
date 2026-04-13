@@ -93,7 +93,7 @@ pub(crate) fn parse_gnome_font_to_fontspec(s: &str) -> Option<FontSpec> {
     }
 
     Some(FontSpec {
-        family: Some(family.to_string()),
+        family: Some(family.into()),
         size: Some(crate::model::font::FontSize::Pt(size)),
         weight: Some(weight),
         ..Default::default()

@@ -1,5 +1,7 @@
 // Font specification and text scale types
 
+use std::sync::Arc;
+
 use crate::Rgba;
 use serde::{Deserialize, Serialize};
 
@@ -96,7 +98,7 @@ impl Default for FontSize {
 #[serde(try_from = "FontSpecRaw", into = "FontSpecRaw")]
 pub struct FontSpec {
     /// Font family name (e.g., "Inter", "Noto Sans").
-    pub family: Option<String>,
+    pub family: Option<Arc<str>>,
     /// Font size with explicit unit (points or pixels).
     ///
     /// In TOML, set as `size_pt` (typographic points) or `size_px` (logical
@@ -121,7 +123,7 @@ impl FontSpec {
 #[derive(Default, Serialize, Deserialize)]
 #[serde(default)]
 struct FontSpecRaw {
-    family: Option<String>,
+    family: Option<Arc<str>>,
     size_pt: Option<f32>,
     size_px: Option<f32>,
     weight: Option<u16>,
@@ -177,7 +179,7 @@ impl_merge!(FontSpec {
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ResolvedFontSpec {
     /// Font family name.
-    pub family: String,
+    pub family: Arc<str>,
     /// Font size in logical pixels. Converted from platform points during
     /// resolution if `font_dpi` was set on the source `ThemeDefaults`.
     pub size: f32,
@@ -562,6 +564,25 @@ mod tests {
         base.merge(&overlay);
         assert!(base.display.is_some());
         assert_eq!(base.display.unwrap().size, Some(FontSize::Px(24.0)));
+    }
+
+    // === Arc<str> sharing test ===
+
+    #[test]
+    fn resolved_font_clone_shares_family_arc() {
+        let font = ResolvedFontSpec {
+            family: Arc::from("Inter"),
+            size: 14.0,
+            weight: 400,
+            style: FontStyle::Normal,
+            color: crate::Rgba::rgb(0, 0, 0),
+        };
+        let cloned = font.clone();
+        // str data pointers are identical -- same Arc allocation, not a deep copy
+        assert!(std::ptr::eq(
+            font.family.as_ref() as *const str,
+            cloned.family.as_ref() as *const str,
+        ));
     }
 
     // === FontStyle tests ===

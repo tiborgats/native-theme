@@ -857,7 +857,7 @@ mod overlay_tests {
         overlay.light = Some(light_v);
 
         let result = st.with_overlay(&overlay)?;
-        assert_eq!(result.light.defaults.font.family, "Comic Sans");
+        assert_eq!(result.light.defaults.font.family.as_ref(), "Comic Sans");
         Ok(())
     }
 

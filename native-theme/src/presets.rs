@@ -476,7 +476,7 @@ accent_color = "#00ff00"
         light.resolve_all();
         let resolved = light.validate().unwrap();
 
-        assert_eq!(resolved.defaults.font.family, "Inter");
+        assert_eq!(resolved.defaults.font.family.as_ref(), "Inter");
         assert_eq!(resolved.defaults.font.size, 14.0);
         assert_eq!(resolved.defaults.font.weight, 400);
         assert_eq!(resolved.defaults.line_height, 1.2);
@@ -515,7 +515,7 @@ accent_color = "#00ff00"
 
         // menu font should have inherited family/weight from defaults
         assert_eq!(
-            resolved.menu.font.family, "Inter",
+            resolved.menu.font.family.as_ref(), "Inter",
             "menu font family should inherit from defaults"
         );
         assert_eq!(

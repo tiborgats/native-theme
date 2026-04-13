@@ -909,7 +909,7 @@ mod tests {
             style: crate::model::font::FontStyle::Normal,
             color: crate::Rgba::rgb(0, 0, 0),
         };
-        assert_eq!(rfs.family, "Inter");
+        assert_eq!(rfs.family.as_ref(), "Inter");
         assert_eq!(rfs.size, 14.0);
         assert_eq!(rfs.weight, 400);
     }
@@ -965,7 +965,7 @@ mod tests {
         };
         assert_eq!(resolved.size, 24.0);
         assert_eq!(resolved.label, "Click me");
-        assert_eq!(resolved.font.family, "Inter");
+        assert_eq!(resolved.font.family.as_ref(), "Inter");
     }
 
     // === merge tests for generated structs ===
@@ -1625,7 +1625,7 @@ mod tests {
         assert!(missing.is_empty(), "unexpected missing: {missing:?}");
         assert_eq!(resolved.background_color, Rgba::rgb(200, 200, 200));
         assert_eq!(resolved.min_width, 80.0);
-        assert_eq!(resolved.font.family, "Inter");
+        assert_eq!(resolved.font.family.as_ref(), "Inter");
         assert_eq!(resolved.font.size, 14.0);
         assert_eq!(resolved.border.corner_radius, 4.0);
         // soft_option fields pass through as Option

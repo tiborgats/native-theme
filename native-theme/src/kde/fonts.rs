@@ -31,8 +31,8 @@ pub(crate) fn parse_qt_font_with_weight(font_str: &str) -> Option<crate::FontSpe
     if fields.len() < 5 {
         return None;
     }
-    let family = fields[0].trim().to_string();
-    if family.is_empty() {
+    let family_str = fields[0].trim();
+    if family_str.is_empty() {
         return None;
     }
     let size = fields[1].trim().parse::<f32>().ok()?;
@@ -55,7 +55,7 @@ pub(crate) fn parse_qt_font_with_weight(font_str: &str) -> Option<crate::FontSpe
     };
 
     Some(crate::FontSpec {
-        family: Some(family),
+        family: Some(family_str.into()),
         size: Some(crate::model::font::FontSize::Pt(size)),
         weight: Some(css_weight),
         ..Default::default()
