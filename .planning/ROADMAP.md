@@ -550,8 +550,8 @@ Plans:
   4. Attempting `AnimatedIcon::Frames { frames: vec![], duration: Duration::ZERO, .. }` fails to compile because the fields are no longer directly accessible â€” invariants are enforced by construction
 **Plans**: 2 plans
 Plans:
-- [ ] 71-01-PLAN.md ï¿½ Rewrite Error enum per Option F with ErrorKind and RangeViolation
-- [ ] 71-02-PLAN.md ï¿½ Two-vec validation split and caller migration
+- [ ] 87-01-PLAN.md — AnimatedIcon newtype wrappers and construction invariants
+- [ ] 87-02-PLAN.md — FontSpec family migration from String to Arc<str>
 **UI hint**: yes
 
 ### Phase 88: Diagnostic and Preset-Polish Sweep
