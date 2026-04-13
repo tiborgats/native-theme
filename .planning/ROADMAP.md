@@ -550,7 +550,7 @@ Plans:
   4. Attempting `AnimatedIcon::Frames { frames: vec![], duration: Duration::ZERO, .. }` fails to compile because the fields are no longer directly accessible — invariants are enforced by construction
 **Plans**: 3 plans
 Plans:
-- [ ] 87-01-PLAN.md � AnimatedIcon newtype wrappers and construction invariants
+- [x] 87-01-PLAN.md � AnimatedIcon newtype wrappers and construction invariants
 - [x] 87-02-PLAN.md — FontSpec core type definitions: Arc<str> family
 - [ ] 87-03-PLAN.md — FontSpec connector and platform migration to Arc<str>
 **UI hint**: yes
@@ -630,5 +630,5 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 84. Reader Output Contract Homogenisation | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 85. Data Model Method and Doc Cleanup | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 86. Validation and Lint Codegen Polish | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
-| 87. Font Family Arc<str> and AnimatedIcon Invariants | v0.5.7 | 1/3 | In Progress|  |
+| 87. Font Family Arc<str> and AnimatedIcon Invariants | v0.5.7 | 2/3 | In Progress|  |
 | 88. Diagnostic and Preset-Polish Sweep | v0.5.7 | 0/0 | Not started | — |

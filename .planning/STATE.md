@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 87 — font-family-arc-str-and-animatedicon-invariants
-Plan: 1/3 (87-02 complete)
+Plan: 2/3 (87-01, 87-02 complete)
 Status: in-progress
-Last activity: 2026-04-13 — 87-02 FontSpec family Arc<str> migration complete
+Last activity: 2026-04-14 — 87-01 AnimatedIcon private fields and FrameList newtype complete
 
-Progress: [██████████] 100% (51/53 plans complete)
+Progress: [██████████] 100% (52/53 plans complete)
 
 ## Accumulated Context
 
@@ -103,6 +103,10 @@ v0.5.6 decisions worth carrying into v0.5.7 planning:
 - [Phase 85-02]: watch/mod.rs module example uses ? instead of .expect() for zero-panic compliance
 - [Phase 86-02]: check_* helpers accept (prefix, field) separately; format! only in error branches for zero-alloc happy path
 - [Phase 86-02]: Font nested checks inlined in generated code to avoid sub-prefix allocation
+- [Phase 87-01]: FrameList newtype with custom Deserialize rejects empty arrays at deserialization boundary (T-87-01 mitigation)
+- [Phase 87-01]: FramesData/TransformData wrapper structs make AnimatedIcon variant fields private outside the crate
+- [Phase 87-01]: Duration constants remain u32 with NonZeroU32::new() at call site via ? (avoids hook-blocked .unwrap() in const context)
+- [Phase 87-01]: frames_or_spin_fallback takes &'static [u8] for lifetime compatibility with include_bytes!()
 - [Phase 87-02]: FontSpec::family and ResolvedFontSpec::family migrated from String to Arc<str>; serde rc feature enabled; .as_ref() for Arc<str>-to-&str comparisons
 
 ### Pending Todos
@@ -190,6 +194,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T22:36:42Z
-Stopped at: Completed 87-02-PLAN.md
+Last session: 2026-04-13T22:44:03Z
+Stopped at: Completed 87-01-PLAN.md
 Resume file: None
