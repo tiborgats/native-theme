@@ -2,6 +2,7 @@
 members = [
     "native-theme",
     "native-theme-build",
+    "native-theme-derive",
     "connectors/native-theme-gpui",
     "connectors/native-theme-iced",
 ]

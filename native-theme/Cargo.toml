@@ -34,6 +34,7 @@ system-icons = [
 ] # Platform icon theme lookup with bundled fallback
 
 [dependencies]
+native-theme-derive = { path = "../native-theme-derive" }
 resvg = { version = "0.47", optional = true, default-features = false }
 serde.workspace = true
 serde_with.workspace = true

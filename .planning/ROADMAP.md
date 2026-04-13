@@ -449,10 +449,10 @@ Plans:
   2. `validate.rs` shrinks by at least 720 lines of hand-written range-check / construction boilerplate, and `grep -c fn check_ranges src/resolved/*.rs` drops to zero (all generated)
   3. `inheritance.rs` duplication with `inheritance-rules.toml` is gone — ~55 of 82 rules live on per-field `#[theme(inherit_from = "...")]` attributes, and pattern-based rules that stay hand-written are documented in a comment block
   4. The three parallel `require_border` / `border_all_optional` / `require_border_partial` paths collapse into a single generated path selected by `#[theme_layer(border_kind = "...")]`, with no behavioural change for any of the 17 presets
-**Plans**: 2 plans
+**Plans:** 2 plans
 Plans:
-- [ ] 71-01-PLAN.md � Rewrite Error enum per Option F with ErrorKind and RangeViolation
-- [ ] 71-02-PLAN.md � Two-vec validation split and caller migration
+- [ ] 80-01-PLAN.md — Create native-theme-derive proc-macro crate and prototype on ButtonTheme
+- [ ] 80-02-PLAN.md — Migrate all 25 widgets, wire inheritance attributes, and inventory registry
 
 ### Phase 81: Feature-Matrix Cleanup and Unified from_system
 **Goal**: `from_system_async` and `from_system` collapse to a single code path (`from_system_async` becomes the implementation, `from_system` wraps it with `pollster::block_on`), the `Cargo.toml` feature graph is simplified with clearer `linux-kde` / `linux-portal` aggregators, and these three changes ship atomically so no intermediate revision has a broken feature matrix
