@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 78 — overlaysource-accessibilitypreferences-font-dpi-relocation
-Plan: 3/4 complete
-Status: In progress — gpui connector compile fix done, core crate fix remaining
-Last activity: 2026-04-13 — Phase 78 Plan 03 executed (1 task, 1 commit)
+Plan: 4/4 complete
+Status: Phase 78 complete — all OS readers wire accessibility through pipeline
+Last activity: 2026-04-13 — Phase 78 Plan 04 executed (2 tasks, 2 commits)
 
-Progress: [██████████] 97% (33/34 plans complete)
+Progress: [██████████] 100% (34/34 plans complete)
 
 ## Accumulated Context
 
@@ -125,6 +125,10 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 78-01]: Pipeline uses AccessibilityPreferences::default() temporarily; Plan 02 wires real OS values
 - [Phase 78-02]: OverlaySource cloned unchanged on with_overlay -- base reader data and preset don't change when overlay applied
 - [Phase 78-02]: unwrap_or on strip_suffix("-live") kept for non-live presets (e.g. user presets or catppuccin-mocha in tests)
+- [Phase 78-04]: accessibility_from_gnome_data() helper DRYs AccessibilityPreferences extraction from GnomePortalData
+- [Phase 78-04]: macOS font_dpi = Some(72.0) -- Apple points = logical pixels, 72 DPI base
+- [Phase 78-04]: GNOME and Windows reduce_transparency defaults to false (neither OS exposes this setting)
+- [Phase 78-04]: from_kde_content returns outer I/O-detected font_dpi, not inner pure parser dpi
 - [Phase 78-03]: reduce_transparency=false default in config-only to_theme_config path (no accessibility data available)
 
 ### Blockers/Concerns
@@ -138,6 +142,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T01:51:42.741Z
-Stopped at: Completed 78-03-PLAN.md
+Last session: 2026-04-13T01:59:05Z
+Stopped at: Completed 78-04-PLAN.md
 Resume file: None
