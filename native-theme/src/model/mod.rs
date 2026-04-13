@@ -458,36 +458,6 @@ impl Theme {
         crate::presets::from_toml(toml_str)
     }
 
-    /// Parse custom TOML and merge onto a base preset.
-    ///
-    /// This is the recommended way to create custom themes. The base preset
-    /// provides geometry, spacing, and widget defaults. The custom TOML
-    /// overrides colors, fonts, and any other fields.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`crate::Error::UnknownPreset`] if the base preset name is not
-    /// recognized, or [`crate::Error::Toml`] if the custom TOML is invalid.
-    ///
-    /// # Examples
-    ///
-    /// ```
-    /// let theme = native_theme::theme::Theme::from_toml_with_base(
-    ///     r##"name = "My Theme"
-    /// [dark.defaults]
-    /// accent_color = "#ff6600"
-    /// background_color = "#1e1e1e"
-    /// text_color = "#e0e0e0""##,
-    ///     "material",
-    /// ).unwrap();
-    /// assert!(theme.dark.is_some());
-    /// ```
-    pub fn from_toml_with_base(toml_str: &str, base: &str) -> crate::Result<Self> {
-        let mut theme = Self::preset(base)?;
-        let overlay = Self::from_toml(toml_str)?;
-        theme.merge(&overlay);
-        Ok(theme)
-    }
 
     /// Load a [`Theme`] from a TOML file.
     ///
@@ -1167,48 +1137,6 @@ accent_color = "#ff0000"
         let toml_str = theme.to_toml().expect("should serialize");
         let theme2 = Theme::from_toml(&toml_str).expect("should deserialize");
         assert_eq!(theme, theme2, "round-trip should preserve Theme");
-    }
-
-    // === from_toml_with_base tests ===
-
-    #[test]
-    fn from_toml_with_base_merges_colors_onto_preset() {
-        let overlay_toml = r##"
-name = "Custom"
-[light.defaults]
-accent_color = "#ff00ff"
-"##;
-        let theme = Theme::from_toml_with_base(overlay_toml, "material").expect("should merge");
-        // The overlay accent_color should replace the preset's
-        let light = theme.light.as_ref().expect("light variant should exist");
-        assert_eq!(
-            light.defaults.accent_color,
-            Some(crate::Rgba::rgb(255, 0, 255)),
-            "overlay accent_color should replace preset"
-        );
-        // Other preset fields should be preserved (font is set in material)
-        assert!(
-            light.defaults.font.family.is_some(),
-            "preset font family should be preserved after merge"
-        );
-    }
-
-    #[test]
-    fn from_toml_with_base_unknown_preset_returns_error() {
-        let err = Theme::from_toml_with_base("name = \"X\"", "nonexistent").unwrap_err();
-        let crate::Error::UnknownPreset { name, .. } = err else {
-            return;
-        };
-        assert!(name.contains("nonexistent"));
-    }
-
-    #[test]
-    fn from_toml_with_base_invalid_toml_returns_error() {
-        let err = Theme::from_toml_with_base("{{{{invalid", "material").unwrap_err();
-        assert!(
-            matches!(err, crate::Error::Toml(_)),
-            "expected Toml variant, got: {err:?}"
-        );
     }
 
     // === lint_toml tests ===

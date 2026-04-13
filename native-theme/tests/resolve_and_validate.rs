@@ -1,6 +1,6 @@
 //! Integration tests for resolve(), validate(), and derivation chains.
 //!
-//! Tests: idempotency, from_toml_with_base, with_overlay re-derivation,
+//! Tests: idempotency, preset+merge overlay, with_overlay re-derivation,
 //! pick_variant/into_variant fallback, ThemeMode/Theme is_empty,
 //! Rgba f32 quantization, live preset sync, lint_toml on all presets,
 //! and bundled SVG content validation.
@@ -31,18 +31,20 @@ fn resolve_idempotency_on_preset() {
 }
 
 // ---------------------------------------------------------------------------
-// Issues 2h, 9d: from_toml_with_base()
+// Issues 2h, 9d: preset + merge overlay
 // ---------------------------------------------------------------------------
 
 #[test]
-fn from_toml_with_base_overlay_merges_correctly() {
+fn preset_merge_overlay_merges_correctly() {
     let custom_toml = r##"
 name = "Custom"
 
 [light.defaults]
 accent_color = "#ff0000"
 "##;
-    let theme = Theme::from_toml_with_base(custom_toml, "adwaita").unwrap();
+    let mut theme = Theme::preset("adwaita").expect("adwaita preset");
+    let overlay = Theme::from_toml(custom_toml).expect("overlay parse");
+    theme.merge(&overlay);
 
     // Base name preserved
     assert_eq!(theme.name, "Adwaita");
@@ -60,20 +62,19 @@ accent_color = "#ff0000"
         light.defaults.font.family.is_some(),
         "base font.family should survive overlay"
     );
-    // REMOVED: spacing assertion (ThemeSpacing deleted in Plan 01)
 
     // Resolved version should validate
     let mut resolved_variant = light.clone();
     resolved_variant.resolve_all();
     resolved_variant.validate().unwrap_or_else(|e| {
-        panic!("from_toml_with_base overlay should resolve+validate: {e}");
+        panic!("preset+merge overlay should resolve+validate: {e}");
     });
 }
 
 #[test]
-fn from_toml_with_base_invalid_base_returns_err() {
-    let result = Theme::from_toml_with_base("name = \"X\"", "no-such-preset");
-    assert!(result.is_err(), "invalid base name should return Err");
+fn preset_unknown_preset_returns_err() {
+    let result = Theme::preset("no-such-preset");
+    assert!(result.is_err(), "unknown preset name should return Err");
     let Error::UnknownPreset { name, .. } = result.unwrap_err() else {
         return;
     };

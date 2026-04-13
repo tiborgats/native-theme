@@ -188,7 +188,7 @@ impl fmt::Display for Error {
                     write!(
                         f,
                         "\n  hint: root defaults drive widget inheritance; \
-                         consider using Theme::from_toml_with_base() to inherit from a complete preset"
+                         consider using Theme::preset(name) and then Theme::merge() to inherit from a complete preset"
                     )?;
                 }
 
@@ -381,7 +381,7 @@ mod tests {
         assert!(msg.contains("button.font.color"), "got: {msg}");
         assert!(msg.contains("window.border.corner_radius"), "got: {msg}");
         assert!(msg.contains("hint:"), "got: {msg}");
-        assert!(msg.contains("from_toml_with_base"), "got: {msg}");
+        assert!(msg.contains("preset"), "got: {msg}");
     }
 
     #[test]
