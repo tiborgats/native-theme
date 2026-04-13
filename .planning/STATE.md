@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 80 — native-theme-derive-proc-macro-k-codegen
-Plan: 1/2 complete
-Status: Plan 01 complete — ThemeWidget derive crate with ButtonTheme prototype
-Last activity: 2026-04-13 — Phase 80 Plan 01 executed (3 tasks, 3 commits)
+Plan: 2/2 complete
+Status: Phase 80 complete — all widgets migrated to derive, inheritance attribute-driven
+Last activity: 2026-04-13 — Phase 80 Plan 02 executed (2 tasks, 2 commits)
 
-Progress: [██████████] 100% (37/38 plans complete)
+Progress: [██████████] 100% (38/38 plans complete)
 
 ## Accumulated Context
 
@@ -139,6 +139,10 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 80-01]: ResolvedFontSpec nested fields auto-emit check_positive(size) and check_range_u16(weight) without explicit attributes
 - [Phase 80-01]: Derive macro does NOT re-emit the Option struct -- user writes serde/Default derives manually
 - [Phase 80-01]: inherit_from and border_kind parsed but gated with #[expect(dead_code)] for Plan 02
+- [Phase 80-02]: 67 inherit_from attributes migrate all uniform inheritance rules to derive attributes
+- [Phase 80-02]: Safety nets (6 rules) and widget-to-widget chains (7 rules) stay hand-written in inheritance.rs
+- [Phase 80-02]: LayoutTheme and test widgets use #[theme_layer(skip_inventory)] for non-per-variant structs
+- [Phase 80-02]: border_kind classification: menu/tab/card=none, sidebar/status_bar=partial, rest=full(default)
 
 ### Blockers/Concerns
 
@@ -151,6 +155,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T09:22:45Z
-Stopped at: Completed 80-01-PLAN.md
+Last session: 2026-04-13T09:35:43Z
+Stopped at: Completed 80-02-PLAN.md
 Resume file: None

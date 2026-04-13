@@ -155,7 +155,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 77: SystemTheme API and icon_set Relocation** — Ship-unit 7 part B: drop `SystemTheme::active()` in favour of `pick(ColorMode)` + exposed `mode` field, and move `icon_set`/`icon_theme` onto `Theme` (completed 2026-04-13)
 - [x] **Phase 78: OverlaySource, AccessibilityPreferences, font_dpi Relocation** — Ship-unit 8 atomic: eliminate `SystemTheme` pre-resolve variant fields via `OverlaySource` replay, move accessibility off `ThemeDefaults` onto `SystemTheme`, move `font_dpi` into `ResolutionContext` (completed 2026-04-13)
 - [x] **Phase 79: BorderSpec Split and Platform Reader Visibility Audit** — Ship-unit 9: split `BorderSpec` along defaults-vs-widget, grep-audit connector callers of platform readers, demote `from_kde`/`from_gnome`/`from_windows`/`from_macos` to `pub(crate)` (completed 2026-04-13)
-- [ ] **Phase 80: native-theme-derive Proc-Macro K Codegen** — Ship-unit 10: new `native-theme-derive` crate generating paired structs, `FIELD_NAMES`, `impl_merge!` bodies, `check_ranges`, `inventory::submit!` registry, and unified border inheritance attribute
+- [x] **Phase 80: native-theme-derive Proc-Macro K Codegen** — Ship-unit 10: new `native-theme-derive` crate generating paired structs, `FIELD_NAMES`, `impl_merge!` bodies, `check_ranges`, `inventory::submit!` registry, and unified border inheritance attribute (completed 2026-04-13)
 - [ ] **Phase 81: Feature-Matrix Cleanup and Unified from_system** — Ship-unit 11 atomic: unify `from_system`/`from_system_async` via `pollster::block_on`, split aggregators into `linux-kde`/`linux-portal`-style groups, simplify `Cargo.toml` feature graph
 - [ ] **Phase 82: Icon API Rework** — Collapse 13 icon-loading functions into `IconLoader` builder, migrate `IconProvider` and `IconData::Svg` to `Cow<'static, [u8]>`, add `IconRole::name()` / `Display`, add `IconSet` drift-guard test
 - [ ] **Phase 83: Detection Cache Layer** — Replace global `OnceLock` caches with `DetectionContext` backed by `arc_swap::ArcSwapOption`, add no-arg `detect_linux_desktop()` overload
@@ -449,10 +449,10 @@ Plans:
   2. `validate.rs` shrinks by at least 720 lines of hand-written range-check / construction boilerplate, and `grep -c fn check_ranges src/resolved/*.rs` drops to zero (all generated)
   3. `inheritance.rs` duplication with `inheritance-rules.toml` is gone — ~55 of 82 rules live on per-field `#[theme(inherit_from = "...")]` attributes, and pattern-based rules that stay hand-written are documented in a comment block
   4. The three parallel `require_border` / `border_all_optional` / `require_border_partial` paths collapse into a single generated path selected by `#[theme_layer(border_kind = "...")]`, with no behavioural change for any of the 17 presets
-**Plans:** 1/2 plans executed
+**Plans:** 2/2 plans complete
 Plans:
 - [x] 80-01-PLAN.md — Create native-theme-derive proc-macro crate and prototype on ButtonTheme
-- [ ] 80-02-PLAN.md — Migrate all 25 widgets, wire inheritance attributes, and inventory registry
+- [x] 80-02-PLAN.md — Migrate all 25 widgets, wire inheritance attributes, and inventory registry
 
 ### Phase 81: Feature-Matrix Cleanup and Unified from_system
 **Goal**: `from_system_async` and `from_system` collapse to a single code path (`from_system_async` becomes the implementation, `from_system` wraps it with `pollster::block_on`), the `Cargo.toml` feature graph is simplified with clearer `linux-kde` / `linux-portal` aggregators, and these three changes ship atomically so no intermediate revision has a broken feature matrix
@@ -622,7 +622,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 77. SystemTheme API and icon_set Relocation | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 78. OverlaySource, AccessibilityPreferences, font_dpi Relocation | v0.5.7 | 4/4 | Complete   | 2026-04-13 |
 | 79. BorderSpec Split and Platform Reader Visibility Audit | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
-| 80. native-theme-derive Proc-Macro K Codegen | v0.5.7 | 1/2 | In Progress|  |
+| 80. native-theme-derive Proc-Macro K Codegen | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 81. Feature-Matrix Cleanup and Unified from_system | v0.5.7 | 0/0 | Not started | — |
 | 82. Icon API Rework | v0.5.7 | 0/0 | Not started | — |
 | 83. Detection Cache Layer | v0.5.7 | 0/0 | Not started | — |
