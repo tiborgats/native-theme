@@ -40,6 +40,33 @@ pub(crate) fn xdg_current_desktop() -> String {
     std::env::var("XDG_CURRENT_DESKTOP").unwrap_or_default()
 }
 
+/// Detect the current Linux desktop environment.
+///
+/// Reads `XDG_CURRENT_DESKTOP` and returns the recognized desktop.
+/// Returns [`LinuxDesktop::Unknown`] if the variable is unset or
+/// contains no recognized value.
+///
+/// For testable parsing without environment access, use the
+/// `pub(crate)` [`parse_linux_desktop()`] function instead.
+///
+/// # Examples
+///
+/// ```no_run
+/// use native_theme::detect::{detect_linux_desktop, LinuxDesktop};
+///
+/// let de = detect_linux_desktop();
+/// match de {
+///     LinuxDesktop::Kde => println!("KDE Plasma"),
+///     LinuxDesktop::Gnome => println!("GNOME"),
+///     _ => println!("Other: {de:?}"),
+/// }
+/// ```
+#[cfg(target_os = "linux")]
+#[must_use]
+pub fn detect_linux_desktop() -> LinuxDesktop {
+    parse_linux_desktop(&xdg_current_desktop())
+}
+
 /// Parse `XDG_CURRENT_DESKTOP` (a colon-separated list) and return
 /// the recognized desktop environment.
 ///
@@ -47,7 +74,7 @@ pub(crate) fn xdg_current_desktop() -> String {
 /// before GNOME because Budgie sets `Budgie:GNOME`.
 #[cfg(target_os = "linux")]
 #[must_use]
-pub fn detect_linux_de(xdg_current_desktop: &str) -> LinuxDesktop {
+pub(crate) fn parse_linux_desktop(xdg_current_desktop: &str) -> LinuxDesktop {
     for component in xdg_current_desktop.split(':') {
         match component {
             "KDE" => return LinuxDesktop::Kde,
@@ -470,7 +497,7 @@ fn read_kde_force_font_dpi() -> Option<f32> {
 
 /// Inner detection logic for [`system_is_dark()`].
 ///
-/// Separated from the public function to allow caching via `OnceLock`.
+/// Separated from the public function to allow caching.
 #[allow(unreachable_code)]
 fn detect_is_dark_inner() -> bool {
     #[cfg(target_os = "linux")]
@@ -487,7 +514,7 @@ fn detect_is_dark_inner() -> bool {
         // synced by xdg-desktop-portal-kde and can be stale or inverted.
         #[cfg(feature = "kde")]
         {
-            let de = detect_linux_de(&xdg_current_desktop());
+            let de = parse_linux_desktop(&xdg_current_desktop());
             if matches!(de, LinuxDesktop::Kde) {
                 let path = crate::kde::kdeglobals_path();
                 if let Ok(content) = std::fs::read_to_string(&path) {
@@ -660,7 +687,7 @@ pub fn detect_reduced_motion() -> bool {
 
 /// Inner detection logic for [`prefers_reduced_motion()`].
 ///
-/// Separated from the public function to allow caching via `OnceLock`.
+/// Separated from the public function to allow caching.
 #[allow(unreachable_code)]
 fn detect_reduced_motion_inner() -> bool {
     #[cfg(target_os = "linux")]
@@ -743,7 +770,7 @@ mod reduced_motion_tests {
     #[test]
     fn prefers_reduced_motion_smoke_test() {
         // Smoke test: function should not panic on any platform.
-        // Cannot assert a specific value because OnceLock caches the first call
+        // Cannot assert a specific value because caching preserves the first call
         // and CI environments have varying accessibility settings.
         let _result = prefers_reduced_motion();
     }
@@ -751,7 +778,7 @@ mod reduced_motion_tests {
     #[cfg(target_os = "linux")]
     #[test]
     fn detect_reduced_motion_inner_linux() {
-        // Bypass OnceLock to test actual detection logic.
+        // Bypass caching to test actual detection logic.
         // On CI without gsettings, returns false (animations enabled).
         // On developer machines, depends on accessibility settings.
         let result = detect_reduced_motion_inner();
