@@ -565,10 +565,10 @@ Plans:
   3. A doctest loads `preset("default")` and confirms `preset.name.is_borrowed()` — bundled presets skip the owned-String allocation via `Cow::Borrowed`
   4. The `FontSpec::style` default behaviour is either documented in a rustdoc block (if kept as-is) or corrected to error like its siblings (if changed); likewise `defaults.border.padding` derives-from-presence
   5. A `grep -c "\\-live" src/` returns zero — the internal naming convention is no longer leaking into user-facing strings
-**Plans**: 2 plans
+**Plans:** 2 plans
 Plans:
-- [ ] 71-01-PLAN.md � Rewrite Error enum per Option F with ErrorKind and RangeViolation
-- [ ] 71-02-PLAN.md � Two-vec validation split and caller migration
+- [ ] 88-01-PLAN.md — DiagnosticEntry and PlatformPreset structured return types
+- [ ] 88-02-PLAN.md — Cow migration for preset name/icon_theme and documentation polish
 
 ## Progress
 
