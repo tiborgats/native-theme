@@ -34,7 +34,7 @@ pub fn to_theme_config(resolved: &ResolvedTheme, name: &str, mode: GpuiThemeMode
     let radius_lg = d.border.corner_radius_lg.max(0.0).round() as usize;
 
     // Issue 5: populate ThemeConfigColors from computed ThemeColor
-    let tc = to_theme_color(resolved, is_dark);
+    let tc = to_theme_color(resolved, is_dark, false);
     let colors = theme_color_to_config_colors(&tc);
 
     ThemeConfig {

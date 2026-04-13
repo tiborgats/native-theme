@@ -219,7 +219,7 @@ pub fn to_theme_color(
     assign_list_table(&mut tc, &c, is_dark);
     assign_tab_sidebar(&mut tc, &c);
     assign_charts(&mut tc, &c);
-    assign_misc(&mut tc, &c, resolved, is_dark);
+    assign_misc(&mut tc, &c, resolved, is_dark, reduce_transparency);
     assign_base_colors(&mut tc, &c, is_dark);
 
     tc
@@ -361,7 +361,13 @@ fn assign_charts(tc: &mut ThemeColor, c: &ResolvedColors) {
     };
 }
 
-fn assign_misc(tc: &mut ThemeColor, c: &ResolvedColors, resolved: &ResolvedTheme, is_dark: bool) {
+fn assign_misc(
+    tc: &mut ThemeColor,
+    c: &ResolvedColors,
+    resolved: &ResolvedTheme,
+    is_dark: bool,
+    reduce_transparency: bool,
+) {
     tc.popover = c.popover;
     tc.popover_foreground = c.popover_fg;
 

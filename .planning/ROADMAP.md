@@ -411,10 +411,16 @@ Plans:
   2. `AccessibilityPreferences { text_scaling_factor, reduce_motion, high_contrast, reduce_transparency }` lives on `SystemTheme`, NOT in `ResolutionContext`, and all four fields are populated by every OS reader
   3. `ResolutionContext` carries `font_dpi` as runtime data; `ThemeDefaults::font_dpi` is gone and `ResolvedDefaults::font_dpi` is gone too — grep returns zero matches in both types
   4. All 17 presets continue to resolve successfully and produce identical `ResolvedTheme` outputs for tests that existed before the refactor
-**Plans**: 2 plans
+**Plans**: 4 plans
 Plans:
 - [x] 78-01-PLAN.md — AccessibilityPreferences extraction + font_dpi removal from ThemeDefaults
 - [x] 78-02-PLAN.md — OverlaySource replaces light_variant/dark_variant on SystemTheme
+- [ ] 78-03-PLAN.md — Fix gpui connector compile errors (gap closure)
+- [ ] 78-04-PLAN.md — Wire OS accessibility values through pipeline (gap closure)
+
+
+
+
 
 
 
