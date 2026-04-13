@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
 status: in-progress
-stopped_at: Completed 84-02-PLAN.md
-last_updated: "2026-04-13T20:07:08.000Z"
-last_activity: 2026-04-13 — Phase 84 complete (all readers return ReaderResult, contract tests)
+stopped_at: Phase 84 verified — 4/4 must-haves confirmed
+last_updated: "2026-04-13T20:45:00.000Z"
+last_activity: 2026-04-13 — Phase 84 verified (4/4 must-haves confirmed)
 progress:
   total_phases: 28
   completed_phases: 24
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 Phase: 84 — reader-output-contract-homogenisation
 Plan: 2/2 complete
-Status: complete
-Last activity: 2026-04-13 — Plan 02 complete (all readers return ReaderResult, contract tests)
+Status: Phase 84 verified — 4/4 must-haves confirmed
+Last activity: 2026-04-13 — Phase 84 verified (4/4 must-haves confirmed)
 
 Progress: [██████████] 100% (46/46 plans complete)
 
