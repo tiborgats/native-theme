@@ -2,8 +2,8 @@
 gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
-status: verifying
-stopped_at: Completed 81-02-PLAN.md
+status: completed
+stopped_at: Completed phase 81 — verified
 last_updated: "2026-04-13T13:12:19.300Z"
 last_activity: 2026-04-13 — Phase 81 Plan 02 executed (2 tasks, 2 commits)
 progress:
@@ -27,8 +27,8 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 Phase: 81 — feature-matrix-cleanup-and-unified-from-system
 Plan: 2/2 complete
-Status: Phase 81 complete -- feature graph restructured, CI matrix updated, sync verification test added
-Last activity: 2026-04-13 — Phase 81 Plan 02 executed (2 tasks, 2 commits)
+Status: Phase 81 verified — all 4 success criteria passed
+Last activity: 2026-04-13 — Phase 81 verified (4/4 must-haves confirmed)
 
 Progress: [██████████] 100% (40/40 plans complete)
 
