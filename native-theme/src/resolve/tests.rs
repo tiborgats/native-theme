@@ -2111,3 +2111,60 @@ fn validate_all_presets_pass_range_checks() {
         }
     }
 }
+
+#[test]
+fn check_ranges_happy_path_zero_errors() {
+    // VALID-04: Verify that check_ranges on a valid theme produces zero errors,
+    // confirming the happy path runs to completion without allocating path strings.
+    //
+    // The lazy-path-string refactor ensures that format! is only called inside
+    // error branches of each check_* helper. Since a valid theme triggers no
+    // errors, no format! calls execute and zero path strings are allocated.
+    let theme = crate::Theme::preset("adwaita").expect("adwaita preset should load");
+    let light = theme.light.expect("adwaita should have light variant");
+    let resolved = light.into_resolved(None).expect("adwaita should validate");
+
+    let mut errors = Vec::new();
+
+    // Defaults + text_scale
+    super::validate_helpers::check_defaults_ranges(
+        &resolved.defaults,
+        &resolved.text_scale,
+        &mut errors,
+    );
+
+    // All per-widget check_ranges
+    resolved.window.check_ranges("window", &mut errors);
+    resolved.button.check_ranges("button", &mut errors);
+    resolved.input.check_ranges("input", &mut errors);
+    resolved.checkbox.check_ranges("checkbox", &mut errors);
+    resolved.menu.check_ranges("menu", &mut errors);
+    resolved.tooltip.check_ranges("tooltip", &mut errors);
+    resolved.scrollbar.check_ranges("scrollbar", &mut errors);
+    resolved.slider.check_ranges("slider", &mut errors);
+    resolved
+        .progress_bar
+        .check_ranges("progress_bar", &mut errors);
+    resolved.tab.check_ranges("tab", &mut errors);
+    resolved.sidebar.check_ranges("sidebar", &mut errors);
+    resolved.toolbar.check_ranges("toolbar", &mut errors);
+    resolved.status_bar.check_ranges("status_bar", &mut errors);
+    resolved.list.check_ranges("list", &mut errors);
+    resolved.popover.check_ranges("popover", &mut errors);
+    resolved.splitter.check_ranges("splitter", &mut errors);
+    resolved.separator.check_ranges("separator", &mut errors);
+    resolved.switch.check_ranges("switch", &mut errors);
+    resolved.dialog.check_ranges("dialog", &mut errors);
+    resolved.spinner.check_ranges("spinner", &mut errors);
+    resolved.combo_box.check_ranges("combo_box", &mut errors);
+    resolved
+        .segmented_control
+        .check_ranges("segmented_control", &mut errors);
+    resolved.expander.check_ranges("expander", &mut errors);
+    resolved.link.check_ranges("link", &mut errors);
+
+    assert!(
+        errors.is_empty(),
+        "valid theme should have zero range errors: {errors:?}"
+    );
+}
