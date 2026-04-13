@@ -28,8 +28,8 @@
 //!
 //! let nt = Theme::preset("catppuccin-mocha")?;
 //! let variant = nt.into_variant(ColorMode::Dark).ok_or("no dark variant")?;
-//! let resolved = variant.into_resolved()?;
-//! let theme = to_theme(&resolved, "Catppuccin Mocha", true);
+//! let resolved = variant.into_resolved(None)?;
+//! let theme = to_theme(&resolved, "Catppuccin Mocha", true, false);
 //! ```
 //!
 //! # Single-Mode Behavior
@@ -116,8 +116,13 @@ use std::rc::Rc;
 /// Note: `is_dark` is an explicit parameter here, unlike the iced connector
 /// which derives it from background luminance. Planned for unification in v0.6.0.
 #[must_use = "this returns the theme; it does not apply it"]
-pub fn to_theme(resolved: &ResolvedTheme, name: &str, is_dark: bool) -> GpuiTheme {
-    let theme_color = colors::to_theme_color(resolved, is_dark);
+pub fn to_theme(
+    resolved: &ResolvedTheme,
+    name: &str,
+    is_dark: bool,
+    reduce_transparency: bool,
+) -> GpuiTheme {
+    let theme_color = colors::to_theme_color(resolved, is_dark, reduce_transparency);
     let mode = if is_dark {
         GpuiThemeMode::Dark
     } else {
@@ -191,13 +196,17 @@ pub fn from_preset(name: &str, is_dark: bool) -> Result<(GpuiTheme, ResolvedThem
     let display_name = spec.name.clone();
     let mode_str = if is_dark { "dark" } else { "light" };
     let variant = spec
-        .into_variant(if is_dark { ColorMode::Dark } else { ColorMode::Light })
+        .into_variant(if is_dark {
+            ColorMode::Dark
+        } else {
+            ColorMode::Light
+        })
         .ok_or_else(|| Error::ReaderFailed {
             reader: "gpui_connector",
             source: format!("preset '{name}' has no {mode_str} variant").into(),
         })?;
-    let resolved = variant.into_resolved()?;
-    let theme = to_theme(&resolved, &display_name, is_dark);
+    let resolved = variant.into_resolved(None)?;
+    let theme = to_theme(&resolved, &display_name, is_dark, false);
     Ok((theme, resolved))
 }
 
@@ -233,9 +242,10 @@ pub fn from_preset(name: &str, is_dark: bool) -> Result<(GpuiTheme, ResolvedThem
 pub fn from_system() -> Result<(GpuiTheme, ResolvedTheme, bool)> {
     let sys = SystemTheme::from_system()?;
     let is_dark = sys.mode.is_dark();
+    let reduce_transparency = sys.accessibility.reduce_transparency;
     let name = sys.name; // K-5: move instead of clone
     let resolved = if is_dark { sys.dark } else { sys.light };
-    let theme = to_theme(&resolved, &name, is_dark);
+    let theme = to_theme(&resolved, &name, is_dark, reduce_transparency);
     Ok((theme, resolved, is_dark))
 }
 
@@ -260,7 +270,12 @@ pub trait SystemThemeExt {
 
 impl SystemThemeExt for SystemTheme {
     fn to_gpui_theme(&self) -> GpuiTheme {
-        to_theme(self.pick(self.mode), &self.name, self.mode.is_dark())
+        to_theme(
+            self.pick(self.mode),
+            &self.name,
+            self.mode.is_dark(),
+            self.accessibility.reduce_transparency,
+        )
     }
 }
 
@@ -289,22 +304,22 @@ pub fn is_dark(resolved: &ResolvedTheme) -> bool {
     is_dark_resolved(resolved)
 }
 
-/// Whether the user/theme has requested reduced motion.
+/// Whether the user/OS has requested reduced motion.
 #[must_use]
-pub fn is_reduced_motion(resolved: &ResolvedTheme) -> bool {
-    resolved.defaults.reduce_motion
+pub fn is_reduced_motion(sys: &SystemTheme) -> bool {
+    sys.accessibility.reduce_motion
 }
 
-/// Whether the theme is in high-contrast mode.
+/// Whether the OS reports a high-contrast mode is active.
 #[must_use]
-pub fn is_high_contrast(resolved: &ResolvedTheme) -> bool {
-    resolved.defaults.high_contrast
+pub fn is_high_contrast(sys: &SystemTheme) -> bool {
+    sys.accessibility.high_contrast
 }
 
-/// Whether the user/theme has requested reduced transparency.
+/// Whether the user/OS has requested reduced transparency.
 #[must_use]
-pub fn is_reduced_transparency(resolved: &ResolvedTheme) -> bool {
-    resolved.defaults.reduce_transparency
+pub fn is_reduced_transparency(sys: &SystemTheme) -> bool {
+    sys.accessibility.reduce_transparency
 }
 
 // --- Issue 15: Defaults field accessors ---
@@ -335,8 +350,8 @@ pub fn shadow_enabled(resolved: &ResolvedTheme) -> bool {
 
 /// Text scaling factor (1.0 = no scaling).
 #[must_use]
-pub fn text_scaling_factor(resolved: &ResolvedTheme) -> f32 {
-    resolved.defaults.text_scaling_factor
+pub fn text_scaling_factor(sys: &SystemTheme) -> f32 {
+    sys.accessibility.text_scaling_factor
 }
 
 // --- Issue 17: Spacing / icon-size / text-scale accessors ---
@@ -461,14 +476,14 @@ mod tests {
             .into_variant(ColorMode::Dark)
             .expect("preset must have dark variant");
         variant
-            .into_resolved()
+            .into_resolved(None)
             .expect("resolved preset must validate")
     }
 
     #[test]
     fn to_theme_produces_valid_theme() {
         let resolved = test_resolved();
-        let theme = to_theme(&resolved, "Test", true);
+        let theme = to_theme(&resolved, "Test", true, false);
 
         // Theme should have the correct mode
         assert!(theme.is_dark());
@@ -481,9 +496,9 @@ mod tests {
             .into_variant(ColorMode::Dark)
             .expect("preset must have dark variant");
         let resolved = variant
-            .into_resolved()
+            .into_resolved(None)
             .expect("resolved preset must validate");
-        let theme = to_theme(&resolved, "DarkTest", true);
+        let theme = to_theme(&resolved, "DarkTest", true, false);
 
         assert!(theme.is_dark());
     }
@@ -491,7 +506,7 @@ mod tests {
     #[test]
     fn to_theme_applies_font_and_geometry() {
         let resolved = test_resolved();
-        let theme = to_theme(&resolved, "Test", true);
+        let theme = to_theme(&resolved, "Test", true, false);
 
         assert_eq!(theme.font_family.to_string(), resolved.defaults.font.family);
         assert_eq!(theme.font_size, px(resolved.defaults.font.size));
@@ -515,7 +530,7 @@ mod tests {
     #[test]
     fn scrollbar_show_from_overlay_mode() {
         let resolved = test_resolved();
-        let theme = to_theme(&resolved, "Scroll", true);
+        let theme = to_theme(&resolved, "Scroll", true, false);
         if resolved.scrollbar.overlay_mode {
             assert!(
                 matches!(theme.scrollbar_show, ScrollbarShow::Scrolling),
@@ -533,7 +548,7 @@ mod tests {
     #[test]
     fn highlight_theme_matches_is_dark() {
         let resolved = test_resolved();
-        let dark_theme = to_theme(&resolved, "Dark", true);
+        let dark_theme = to_theme(&resolved, "Dark", true, false);
         assert_eq!(
             dark_theme.highlight_theme.appearance,
             GpuiThemeMode::Dark,
@@ -543,9 +558,9 @@ mod tests {
         let light_resolved = {
             let spec = Theme::preset("catppuccin-latte").expect("preset must exist");
             let variant = spec.into_variant(ColorMode::Light).expect("light variant");
-            variant.into_resolved().expect("must validate")
+            variant.into_resolved(None).expect("must validate")
         };
-        let light_theme = to_theme(&light_resolved, "Light", false);
+        let light_theme = to_theme(&light_resolved, "Light", false, false);
         assert_eq!(
             light_theme.highlight_theme.appearance,
             GpuiThemeMode::Light,
@@ -628,7 +643,12 @@ mod tests {
             return;
         };
         let via_convenience = sys.to_gpui_theme();
-        let via_manual = to_theme(sys.pick(sys.mode), &sys.name, sys.mode.is_dark());
+        let via_manual = to_theme(
+            sys.pick(sys.mode),
+            &sys.name,
+            sys.mode.is_dark(),
+            sys.accessibility.reduce_transparency,
+        );
         // Both paths should produce identical results
         assert_eq!(
             via_convenience.is_dark(),
@@ -662,11 +682,14 @@ mod tests {
 
     #[test]
     fn accessibility_helpers() {
-        let resolved = test_resolved();
-        // Just verify they return without panic and give sensible values
-        let _ = is_reduced_motion(&resolved);
-        let _ = is_high_contrast(&resolved);
-        let _ = is_reduced_transparency(&resolved);
+        // Accessibility helpers now take &SystemTheme; skip on CI if unavailable
+        let Ok(sys) = SystemTheme::from_system() else {
+            return;
+        };
+        let _ = is_reduced_motion(&sys);
+        let _ = is_high_contrast(&sys);
+        let _ = is_reduced_transparency(&sys);
+        let _ = text_scaling_factor(&sys);
     }
 
     #[test]
@@ -676,7 +699,6 @@ mod tests {
         assert!(disabled_opacity(&resolved) >= 0.0);
         assert!(disabled_opacity(&resolved) <= 1.0);
         assert!(border_opacity(&resolved) >= 0.0);
-        assert!(text_scaling_factor(&resolved) > 0.0);
     }
 
     #[test]

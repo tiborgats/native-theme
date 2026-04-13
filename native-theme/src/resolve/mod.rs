@@ -109,7 +109,7 @@ impl ThemeMode {
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn into_resolved(mut self, font_dpi: Option<f32>) -> crate::Result<ResolvedTheme> {
-        let dpi = font_dpi.unwrap_or_else(|| crate::detect::system_font_dpi());
+        let dpi = font_dpi.unwrap_or_else(crate::detect::system_font_dpi);
         self.resolve_all();
         self.validate_with_dpi(dpi)
     }

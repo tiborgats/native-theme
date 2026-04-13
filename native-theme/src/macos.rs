@@ -819,11 +819,9 @@ mod tests {
             sample_dark_defaults(),
             &sample_widget_fonts(),
         );
-        let light = theme.light.as_ref().unwrap();
-        assert!(light.defaults.reduce_motion.is_none());
-        assert!(light.defaults.high_contrast.is_none());
-        assert!(light.defaults.reduce_transparency.is_none());
-        assert!(light.defaults.text_scaling_factor.is_none());
+        // Accessibility fields are no longer on ThemeDefaults;
+        // they live on AccessibilityPreferences (constructed by pipeline).
+        assert!(theme.light.is_some());
     }
 
     #[test]

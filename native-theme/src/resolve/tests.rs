@@ -252,7 +252,9 @@ fn validate_converts_pt_to_px_at_96_dpi() {
     let mut v = fully_populated_variant();
     v.defaults.font.size = Some(FontSize::Pt(10.0));
     v.defaults.mono_font.size = Some(FontSize::Pt(10.0));
-    let resolved = v.validate_with_dpi(TEST_DPI_STANDARD).expect("should validate");
+    let resolved = v
+        .validate_with_dpi(TEST_DPI_STANDARD)
+        .expect("should validate");
     let size = resolved.defaults.font.size;
     assert!(
         (size - 13.333).abs() < 0.01,
@@ -266,7 +268,9 @@ fn validate_px_ignores_dpi() {
     let mut v = fully_populated_variant();
     v.defaults.font.size = Some(FontSize::Px(14.0));
     v.defaults.mono_font.size = Some(FontSize::Px(13.0));
-    let resolved = v.validate_with_dpi(TEST_DPI_STANDARD).expect("should validate");
+    let resolved = v
+        .validate_with_dpi(TEST_DPI_STANDARD)
+        .expect("should validate");
     assert_eq!(resolved.defaults.font.size, 14.0);
 }
 
@@ -276,7 +280,9 @@ fn validate_pt_at_72_dpi_is_identity() {
     let mut v = fully_populated_variant();
     v.defaults.font.size = Some(FontSize::Pt(13.0));
     v.defaults.mono_font.size = Some(FontSize::Pt(13.0));
-    let resolved = v.validate_with_dpi(TEST_DPI_APPLE).expect("should validate");
+    let resolved = v
+        .validate_with_dpi(TEST_DPI_APPLE)
+        .expect("should validate");
     assert!(
         (resolved.defaults.font.size - 13.0).abs() < 0.01,
         "13pt at 72 DPI should stay 13.0px"
@@ -294,7 +300,9 @@ fn validate_text_scale_pt_converted() {
         weight: Some(400),
         line_height: Some(FontSize::Pt(12.6)),
     });
-    let resolved = v.validate_with_dpi(TEST_DPI_STANDARD).expect("should validate");
+    let resolved = v
+        .validate_with_dpi(TEST_DPI_STANDARD)
+        .expect("should validate");
     let cap = &resolved.text_scale.caption;
     assert!(
         (cap.size - 12.0).abs() < 0.01,
@@ -318,7 +326,9 @@ fn validate_per_widget_font_pt_converted() {
     if let Some(ref mut bf) = v.button.font {
         bf.size = Some(FontSize::Pt(11.0));
     }
-    let resolved = v.validate_with_dpi(TEST_DPI_STANDARD).expect("should validate");
+    let resolved = v
+        .validate_with_dpi(TEST_DPI_STANDARD)
+        .expect("should validate");
     let btn_size = resolved.button.font.size;
     assert!(
         (btn_size - 14.666).abs() < 0.01,

@@ -535,17 +535,10 @@ fn build_theme(
         variant.defaults.icon_sizes.large = Some(large);
     }
 
-    // --- Accessibility (WIN-04) ---
-    if let Some(a) = accessibility {
-        variant.defaults.text_scaling_factor = a.text_scaling_factor;
-        variant.defaults.high_contrast = a.high_contrast;
-        variant.defaults.reduce_motion = a.reduce_motion;
-    }
-
-    // Use the actual system DPI from GetDpiForSystem() for pt-to-px conversion.
-    // logfont_to_fontspec_raw converts lfHeight to points via |lfHeight| * 72 / dpi.
-    // The resolution step converts back: pt * font_dpi / 72.
-    variant.defaults.font_dpi = Some(dpi as f32);
+    // NOTE: Accessibility fields and font_dpi are no longer on ThemeDefaults.
+    // They are extracted separately by the pipeline caller (see pipeline.rs).
+    let _ = accessibility; // consumed by caller
+    let _ = dpi; // consumed by caller
 
     if dark {
         crate::Theme {
@@ -1162,10 +1155,9 @@ mod tests {
             Some(&accessibility),
             96,
         );
-        let variant = theme.light.as_ref().expect("light variant");
-        assert_eq!(variant.defaults.text_scaling_factor, Some(1.5));
-        assert_eq!(variant.defaults.high_contrast, Some(true));
-        assert_eq!(variant.defaults.reduce_motion, Some(false));
+        // Accessibility fields are no longer on ThemeDefaults;
+        // they live on AccessibilityPreferences (constructed by pipeline).
+        assert!(theme.light.is_some());
     }
 
     // === Dialog button order test ===
@@ -1265,7 +1257,7 @@ mod tests {
         let _ = variant.status_bar.font;
         let _ = variant.button.background_color;
         let _ = variant.defaults.icon_sizes.small;
-        let _ = variant.defaults.reduce_motion;
+        let _ = variant.defaults.icon_sizes.toolbar;
         let _ = variant.dialog.button_order;
     }
 

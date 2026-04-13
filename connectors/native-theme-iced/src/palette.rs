@@ -49,8 +49,8 @@ pub fn to_palette(resolved: &native_theme::theme::ResolvedTheme) -> iced_core::t
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use native_theme::theme::Theme;
     use crate::ColorMode;
+    use native_theme::theme::Theme;
 
     #[test]
     fn to_color_converts_rgba() {
@@ -87,7 +87,7 @@ mod tests {
             .unwrap()
             .into_variant(ColorMode::Light)
             .unwrap()
-            .into_resolved()
+            .into_resolved(None)
             .unwrap();
 
         let palette = to_palette(&resolved);
@@ -110,7 +110,7 @@ mod tests {
             .unwrap()
             .into_variant(ColorMode::Dark)
             .unwrap()
-            .into_resolved()
+            .into_resolved(None)
             .unwrap();
 
         let palette = to_palette(&resolved);
@@ -126,7 +126,7 @@ mod tests {
                 .unwrap()
                 .into_variant(ColorMode::Dark)
                 .unwrap()
-                .into_resolved()
+                .into_resolved(None)
                 .unwrap();
             let palette = to_palette(&resolved);
             // Exact match for all presets

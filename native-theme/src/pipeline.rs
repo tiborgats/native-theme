@@ -66,9 +66,12 @@ pub(crate) fn run_pipeline(
     let dark = dark_variant.into_resolved(None)?;
 
     // Resolve icon_set and icon_theme from Theme level (shared across variants)
-    let icon_set = merged.icon_set
-        .unwrap_or_else(|| crate::model::icons::system_icon_set());
-    let icon_theme = merged.icon_theme.clone()
+    let icon_set = merged
+        .icon_set
+        .unwrap_or_else(crate::model::icons::system_icon_set);
+    let icon_theme = merged
+        .icon_theme
+        .clone()
         .unwrap_or_else(|| crate::model::icons::system_icon_theme().to_string());
 
     Ok(SystemTheme {
@@ -566,7 +569,8 @@ DecorationFocus=61,174,233
 BackgroundAlternate=239,240,241
 ForegroundLink=41,128,185";
 
-        let reader = crate::kde::from_kde_content_pure(MINIMAL_KDE_FIXTURE, None).unwrap();
+        let (reader, _dpi, _acc) =
+            crate::kde::from_kde_content_pure(MINIMAL_KDE_FIXTURE, None).unwrap();
         let theme = run_pipeline(
             reader,
             linux_preset_for_de(LinuxDesktop::Kde),

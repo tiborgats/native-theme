@@ -36,7 +36,11 @@ fn from_system_returns_result() {
 #[test]
 fn to_theme_produces_non_default_palette() {
     let nt = Theme::preset("catppuccin-mocha").unwrap();
-    let resolved = nt.into_variant(ColorMode::Dark).unwrap().into_resolved().unwrap();
+    let resolved = nt
+        .into_variant(ColorMode::Dark)
+        .unwrap()
+        .into_resolved(None)
+        .unwrap();
     let theme = to_theme(&resolved, "catppuccin-mocha");
 
     let palette = theme.palette();

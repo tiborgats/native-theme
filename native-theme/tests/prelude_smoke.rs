@@ -1,6 +1,6 @@
 //! Smoke test: verify the prelude re-exports exactly the expected set.
 
-/// Verify that `use native_theme::prelude::*` brings exactly the 6 expected items
+/// Verify that `use native_theme::prelude::*` brings exactly the 7 expected items
 /// into scope and they are the correct types.
 #[test]
 fn prelude_reexports_expected_items() {
@@ -9,10 +9,13 @@ fn prelude_reexports_expected_items() {
     // Each binding confirms the item is accessible via the prelude.
     // The type annotation confirms it is the correct type.
     let _theme: Theme = Theme::preset("catppuccin-mocha").unwrap();
-    let _mode = _theme.into_variant(native_theme::theme::ColorMode::Dark).unwrap();
-    let _resolved: ResolvedTheme = _mode.into_resolved().unwrap();
+    let _mode = _theme
+        .into_variant(native_theme::theme::ColorMode::Dark)
+        .unwrap();
+    let _resolved: ResolvedTheme = _mode.into_resolved(None).unwrap();
     let _rgba: Rgba = Rgba::rgb(255, 0, 0);
     let _err: Result<()> = Ok(());
+    let _accessibility: AccessibilityPreferences = AccessibilityPreferences::default();
 
     // SystemTheme::from_system() may fail on CI, just verify the type exists.
     fn _assert_system_theme_type(_s: &SystemTheme) {}
@@ -28,10 +31,11 @@ fn prelude_does_not_export_unexpected_items() {
     // Import only the prelude
     use native_theme::prelude::*;
 
-    // These 6 items should be accessible:
+    // These 7 items should be accessible:
     let _ = std::any::type_name::<Theme>();
     let _ = std::any::type_name::<ResolvedTheme>();
     let _ = std::any::type_name::<SystemTheme>();
+    let _ = std::any::type_name::<AccessibilityPreferences>();
     let _ = std::any::type_name::<Rgba>();
     let _ = std::any::type_name::<Error>();
 

@@ -137,7 +137,6 @@ pub struct ResolvedDefaults {
     // ---- Icon sizes ----
     /// Per-context icon sizes.
     pub icon_sizes: ResolvedIconSizes,
-
 }
 
 // --- ResolvedTheme ---

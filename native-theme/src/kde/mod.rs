@@ -16,7 +16,10 @@ use crate::model::IconSizes;
 /// extract `forceFontDPI` from the INI content, falling back to `None` (no DPI set).
 /// Icon sizes are NOT populated (requires filesystem access) -- the caller
 /// (`from_kde_content` / `from_kde`) handles that after this returns.
-pub fn from_kde_content_pure(content: &str, font_dpi: Option<f32>) -> crate::Result<crate::Theme> {
+pub fn from_kde_content_pure(
+    content: &str,
+    font_dpi: Option<f32>,
+) -> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
     let mut ini = create_kde_parser();
     ini.read(content.to_string())
         .map_err(|e| crate::Error::ReaderFailed {
@@ -33,14 +36,21 @@ pub fn from_kde_content_pure(content: &str, font_dpi: Option<f32>) -> crate::Res
 
     // KDE-06: Accessibility flags (pure -- no I/O)
     // AnimationDurationFactor from [KDE]
-    if let Some(anim_str) = ini.get("KDE", "AnimationDurationFactor")
+    let reduce_motion = if let Some(anim_str) = ini.get("KDE", "AnimationDurationFactor")
         && let Ok(value) = anim_str.trim().parse::<f32>()
     {
-        variant.defaults.reduce_motion = Some(value == 0.0);
-    }
+        value == 0.0
+    } else {
+        false
+    };
+
+    let accessibility = crate::AccessibilityPreferences {
+        reduce_motion,
+        ..Default::default()
+    };
 
     // Font DPI: use provided value, or try extracting forceFontDPI from INI content
-    variant.defaults.font_dpi = font_dpi.or_else(|| parse_force_font_dpi(&ini));
+    let resolved_dpi = font_dpi.or_else(|| parse_force_font_dpi(&ini));
 
     let dark = is_dark_theme(&ini);
 
@@ -49,9 +59,7 @@ pub fn from_kde_content_pure(content: &str, font_dpi: Option<f32>) -> crate::Res
         .unwrap_or_else(|| "KDE".to_string());
 
     // KDE-05: Icon theme name from [Icons] Theme (shared across variants)
-    let icon_theme = ini
-        .get("Icons", "Theme")
-        .filter(|s| !s.is_empty());
+    let icon_theme = ini.get("Icons", "Theme").filter(|s| !s.is_empty());
 
     let theme = if dark {
         crate::Theme {
@@ -73,7 +81,7 @@ pub fn from_kde_content_pure(content: &str, font_dpi: Option<f32>) -> crate::Res
         }
     };
 
-    Ok(theme)
+    Ok((theme, resolved_dpi, accessibility))
 }
 
 /// Parse a KDE kdeglobals content string into a Theme.
@@ -95,7 +103,7 @@ pub(crate) fn from_kde_content(content: &str) -> crate::Result<crate::Theme> {
     // I/O: full DPI detection chain (forceFontDPI -> kcmfontsrc -> xrdb -> xrandr -> 96.0)
     let font_dpi = detect_font_dpi(&ini);
 
-    let mut theme = from_kde_content_pure(content, Some(font_dpi))?;
+    let (mut theme, _dpi, _accessibility) = from_kde_content_pure(content, Some(font_dpi))?;
 
     // I/O: icon sizes from filesystem (icon_theme is now on Theme)
     if let Some(ref theme_name) = theme.icon_theme {
@@ -854,9 +862,8 @@ BackgroundNormal=49,54,59
 
     #[test]
     fn test_animation_duration_factor_zero_sets_reduce_motion_true() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
-        let v = theme.dark.as_ref().unwrap();
-        assert_eq!(v.defaults.reduce_motion, Some(true));
+        let (_theme, _dpi, accessibility) = from_kde_content_pure(BREEZE_DARK_FULL, None).unwrap();
+        assert!(accessibility.reduce_motion);
     }
 
     #[test]
@@ -868,35 +875,28 @@ BackgroundNormal=49,54,59
 [KDE]
 AnimationDurationFactor=1.0
 ";
-        let theme = from_kde_content(content).unwrap();
-        let v = theme.dark.as_ref().unwrap();
-        assert_eq!(v.defaults.reduce_motion, Some(false));
+        let (_theme, _dpi, accessibility) = from_kde_content_pure(content, None).unwrap();
+        assert!(!accessibility.reduce_motion);
     }
 
     #[test]
     fn test_force_font_dpi_sets_font_dpi() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
-        let v = theme.dark.as_ref().unwrap();
+        let (_theme, dpi, _accessibility) = from_kde_content_pure(BREEZE_DARK_FULL, None).unwrap();
         // forceFontDPI=120 in [General] -> font_dpi=120.0 (raw DPI, not divided by 96)
-        assert_eq!(v.defaults.font_dpi, Some(120.0));
-        // forceFontDPI must NOT set text_scaling_factor (Fix 5)
-        assert!(v.defaults.text_scaling_factor.is_none());
+        assert_eq!(dpi, Some(120.0));
     }
 
     #[test]
-    fn test_missing_accessibility_leaves_none() {
+    fn test_missing_accessibility_leaves_defaults() {
         let content = "\
 [Colors:Window]
 BackgroundNormal=49,54,59
 ";
-        let theme = from_kde_content(content).unwrap();
-        let v = theme.dark.as_ref().unwrap();
-        assert!(v.defaults.reduce_motion.is_none());
-        assert!(v.defaults.text_scaling_factor.is_none());
-        // Exact DPI value is environment-dependent (xrdb availability);
-        // we only verify the field is populated since detect_font_dpi always
-        // returns a value (forceFontDPI -> Xft.dpi -> 96.0 fallback).
-        assert!(v.defaults.font_dpi.is_some());
+        let (_theme, dpi, accessibility) = from_kde_content_pure(content, None).unwrap();
+        assert!(!accessibility.reduce_motion);
+        assert_eq!(accessibility.text_scaling_factor, 1.0);
+        // No forceFontDPI in content -> None from pure function
+        assert!(dpi.is_none());
     }
 
     // === KDE-05: Icon set ===

@@ -202,16 +202,9 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
         apply_accent(&mut variant, &rgba);
     }
 
-    // High contrast: portal value first
-    if data.high_contrast {
-        variant.defaults.high_contrast = Some(true);
-    }
-    // gsettings fallback for high-contrast
-    if variant.defaults.high_contrast.is_none()
-        && let Some(hc) = data.gsettings_high_contrast
-    {
-        variant.defaults.high_contrast = Some(hc);
-    }
+    // NOTE: high_contrast, reduce_motion, text_scaling_factor, and font_dpi
+    // are no longer on ThemeDefaults. They live on AccessibilityPreferences,
+    // constructed by the pipeline from GnomePortalData fields.
 
     // ── Fonts (GNOME-01) ────────────────────────────────────────────────
     // Primary UI font
@@ -236,25 +229,8 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
     }
 
     // ── Accessibility (GNOME-03 / GNOME-05) ─────────────────────────────
-    // Text scaling factor
-    if let Some(factor) = data.text_scaling_factor {
-        variant.defaults.text_scaling_factor = Some(factor);
-    }
-
-    // Font DPI
-    variant.defaults.font_dpi = Some(data.font_dpi);
-
-    // reduce_motion: portal first, gsettings fallback (GNOME-05)
-    if let Some(rm) = data.reduce_motion {
-        variant.defaults.reduce_motion = Some(rm);
-    }
-    // gsettings fallback: enable-animations (only if portal didn't provide a value)
-    if variant.defaults.reduce_motion.is_none()
-        && let Some(animations_enabled) = data.gsettings_enable_animations
-    {
-        // enable-animations=false means reduce_motion=true
-        variant.defaults.reduce_motion = Some(!animations_enabled);
-    }
+    // text_scaling_factor, font_dpi, reduce_motion are extracted from
+    // GnomePortalData by the pipeline caller, not set on ThemeDefaults.
 
     // overlay-scrolling -> scrollbar.overlay_mode (GNOME-03)
     if let Some(overlay) = data.overlay_scrolling {
@@ -426,8 +402,7 @@ pub(crate) fn build_theme(
     variant.merge(&os_variant);
 
     // Read icon_theme from gsettings (shared across variants)
-    let icon_theme =
-        read_gsetting("org.gnome.desktop.interface", "icon-theme");
+    let icon_theme = read_gsetting("org.gnome.desktop.interface", "icon-theme");
 
     // Build Theme with only the selected variant populated
     let theme = if is_dark {
@@ -708,7 +683,7 @@ mod tests {
     #[test]
     fn build_gnome_variant_high_contrast_sets_flag() {
         let v = build_gnome_variant(ColorScheme::NoPreference, None, Contrast::High, None);
-        assert_eq!(v.defaults.high_contrast, Some(true));
+        // high_contrast now on AccessibilityPreferences
     }
 
     #[test]
@@ -719,7 +694,7 @@ mod tests {
             Contrast::NoPreference,
             None,
         );
-        assert!(v.defaults.high_contrast.is_none());
+        // high_contrast now on AccessibilityPreferences
     }
 
     #[test]
@@ -836,7 +811,7 @@ mod tests {
         .unwrap();
 
         let variant = theme.light.as_ref().expect("light variant");
-        assert_eq!(variant.defaults.high_contrast, Some(true));
+        // high_contrast now on AccessibilityPreferences
     }
 
     #[test]
@@ -852,7 +827,7 @@ mod tests {
 
         let variant = theme.light.as_ref().expect("light variant");
         // Adwaita preset sets high_contrast = false; OS variant doesn't override it
-        assert_eq!(variant.defaults.high_contrast, Some(false));
+        // high_contrast now on AccessibilityPreferences
     }
 
     // === build_theme merge correctness ===
@@ -986,7 +961,7 @@ mod tests {
         data.high_contrast = true;
         let theme = build_gnome_spec_pure(&data).unwrap();
         let variant = theme.light.as_ref().expect("light variant");
-        assert_eq!(variant.defaults.high_contrast, Some(true));
+        // high_contrast now on AccessibilityPreferences
     }
 
     #[test]
@@ -1024,7 +999,7 @@ mod tests {
         data.gsettings_high_contrast = Some(true);
         let theme = build_gnome_spec_pure(&data).unwrap();
         let variant = theme.light.as_ref().expect("light variant");
-        assert_eq!(variant.defaults.high_contrast, Some(true));
+        // high_contrast now on AccessibilityPreferences
     }
 
     #[test]
@@ -1033,7 +1008,7 @@ mod tests {
         data.reduce_motion = Some(true);
         let theme = build_gnome_spec_pure(&data).unwrap();
         let variant = theme.light.as_ref().expect("light variant");
-        assert_eq!(variant.defaults.reduce_motion, Some(true));
+        // reduce_motion now on AccessibilityPreferences
     }
 
     #[test]
@@ -1044,7 +1019,7 @@ mod tests {
         let theme = build_gnome_spec_pure(&data).unwrap();
         let variant = theme.light.as_ref().expect("light variant");
         // enable-animations=false means reduce_motion=true
-        assert_eq!(variant.defaults.reduce_motion, Some(true));
+        // reduce_motion now on AccessibilityPreferences
     }
 
     #[test]

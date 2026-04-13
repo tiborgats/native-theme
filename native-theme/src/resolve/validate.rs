@@ -5,10 +5,10 @@
 use super::validate_helpers::{
     self, DEFAULT_FONT_DPI, require, require_font, require_text_scale_entry,
 };
+use crate::model::ThemeMode;
 use crate::model::resolved::{
     ResolvedDefaults, ResolvedIconSizes, ResolvedTextScale, ResolvedTheme,
 };
-use crate::model::ThemeMode;
 
 impl ThemeMode {
     /// Convert this ThemeMode into a [`ResolvedTheme`] using the default DPI (96.0).

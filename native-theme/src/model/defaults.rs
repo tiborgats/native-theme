@@ -113,7 +113,6 @@ pub struct ThemeDefaults {
     /// Per-context icon sizes.
     #[serde(default, skip_serializing_if = "IconSizes::is_empty")]
     pub icon_sizes: IconSizes,
-
 }
 
 impl ThemeDefaults {
@@ -460,5 +459,4 @@ mod tests {
         let d2: ThemeDefaults = toml::from_str(&toml_str).unwrap();
         assert_eq!(d, d2);
     }
-
 }

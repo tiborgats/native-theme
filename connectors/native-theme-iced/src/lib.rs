@@ -27,7 +27,7 @@
 //! use native_theme_iced::to_theme;
 //!
 //! let nt = Theme::preset("catppuccin-mocha").unwrap();
-//! let resolved = nt.into_variant(ColorMode::Light).unwrap().into_resolved().unwrap();
+//! let resolved = nt.into_variant(ColorMode::Light).unwrap().into_resolved(None).unwrap();
 //! let theme = to_theme(&resolved, "My App");
 //! ```
 //!
@@ -159,7 +159,11 @@ pub fn from_preset(
     let display_name = spec.name.clone();
     let mode = if is_dark { "dark" } else { "light" };
     let variant = spec
-        .into_variant(if is_dark { ColorMode::Dark } else { ColorMode::Light })
+        .into_variant(if is_dark {
+            ColorMode::Dark
+        } else {
+            ColorMode::Light
+        })
         .ok_or_else(|| Error::ReaderFailed {
             reader: "iced_connector",
             source: format!(
@@ -167,7 +171,7 @@ pub fn from_preset(
             )
             .into(),
         })?;
-    let resolved = variant.into_resolved()?;
+    let resolved = variant.into_resolved(None)?;
     let theme = to_theme(&resolved, &display_name);
     Ok((theme, resolved))
 }
@@ -409,9 +413,13 @@ mod tests {
     fn make_resolved_preset(name: &str, is_dark: bool) -> native_theme::theme::ResolvedTheme {
         Theme::preset(name)
             .unwrap()
-            .into_variant(if is_dark { ColorMode::Dark } else { ColorMode::Light })
+            .into_variant(if is_dark {
+                ColorMode::Dark
+            } else {
+                ColorMode::Light
+            })
             .unwrap()
-            .into_resolved()
+            .into_resolved(None)
             .unwrap()
     }
 
@@ -463,13 +471,13 @@ mod tests {
             .unwrap()
             .into_variant(ColorMode::Dark)
             .unwrap()
-            .into_resolved()
+            .into_resolved(None)
             .unwrap();
         let r2 = Theme::preset("dracula")
             .unwrap()
             .into_variant(ColorMode::Dark)
             .unwrap()
-            .into_resolved()
+            .into_resolved(None)
             .unwrap();
 
         let t1 = to_theme(&r1, "mocha");
@@ -804,8 +812,12 @@ mod tests {
         for name in Theme::list_presets() {
             for is_dark in [false, true] {
                 let spec = Theme::preset(name).unwrap();
-                if let Some(variant) = spec.into_variant(if is_dark { ColorMode::Dark } else { ColorMode::Light }) {
-                    let resolved = variant.into_resolved().unwrap();
+                if let Some(variant) = spec.into_variant(if is_dark {
+                    ColorMode::Dark
+                } else {
+                    ColorMode::Light
+                }) {
+                    let resolved = variant.into_resolved(None).unwrap();
                     let theme = to_theme(&resolved, name);
                     let palette = theme.palette();
                     // Basic sanity: all palette colors have valid alpha

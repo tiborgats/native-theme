@@ -182,8 +182,8 @@ fn theme_color_to_config_colors(tc: &gpui_component::theme::ThemeColor) -> Theme
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use native_theme::theme::Theme;
     use crate::ColorMode;
+    use native_theme::theme::Theme;
 
     /// Issue 1: fixed to use `into_variant(true)` for catppuccin-mocha (dark theme).
     fn test_resolved() -> native_theme::theme::ResolvedTheme {
@@ -192,7 +192,7 @@ mod tests {
             .into_variant(ColorMode::Dark)
             .expect("preset must have dark variant");
         variant
-            .into_resolved()
+            .into_resolved(None)
             .expect("resolved preset must validate")
     }
 
@@ -300,7 +300,7 @@ mod tests {
         let variant = nt
             .into_variant(ColorMode::Light)
             .expect("adwaita must have light variant");
-        let resolved = variant.into_resolved().expect("must validate");
+        let resolved = variant.into_resolved(None).expect("must validate");
         let config = to_theme_config(&resolved, "adwaita", GpuiThemeMode::Light);
         assert_eq!(
             config.radius,
@@ -321,8 +321,14 @@ mod tests {
         for (name, mode) in presets {
             let nt = Theme::preset(name).expect("preset must exist");
             let is_dark = mode.is_dark();
-            let variant = nt.into_variant(if is_dark { ColorMode::Dark } else { ColorMode::Light }).expect("variant must exist");
-            let resolved = variant.into_resolved().expect("must validate");
+            let variant = nt
+                .into_variant(if is_dark {
+                    ColorMode::Dark
+                } else {
+                    ColorMode::Light
+                })
+                .expect("variant must exist");
+            let resolved = variant.into_resolved(None).expect("must validate");
             let config = to_theme_config(&resolved, name, mode);
             assert_eq!(config.mode, mode, "mode mismatch for {name}");
             assert!(

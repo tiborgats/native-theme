@@ -123,9 +123,9 @@ pub(crate) fn apply_overrides(
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+    use crate::ColorMode;
     use iced_core::theme::palette::Extended;
     use native_theme::theme::Theme;
-    use crate::ColorMode;
 
     fn make_extended() -> Extended {
         let palette = iced_core::theme::Palette::DARK;
@@ -135,9 +135,13 @@ mod tests {
     fn make_resolved_preset(name: &str, is_dark: bool) -> native_theme::theme::ResolvedTheme {
         Theme::preset(name)
             .unwrap()
-            .into_variant(if is_dark { ColorMode::Dark } else { ColorMode::Light })
+            .into_variant(if is_dark {
+                ColorMode::Dark
+            } else {
+                ColorMode::Light
+            })
             .unwrap()
-            .into_resolved()
+            .into_resolved(None)
             .unwrap()
     }
 
@@ -310,7 +314,7 @@ mod tests {
                 .unwrap()
                 .into_variant(ColorMode::Dark)
                 .unwrap()
-                .into_resolved()
+                .into_resolved(None)
                 .unwrap();
             let mut extended = make_extended();
             apply_from_resolved(&mut extended, &resolved);

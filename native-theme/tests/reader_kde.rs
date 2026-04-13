@@ -16,7 +16,7 @@ use native_theme::theme::DialogButtonOrder;
 #[test]
 fn breeze_dark_fixture_colors_and_fonts() {
     let content = include_str!("fixtures/kde/breeze-dark.ini");
-    let theme = from_kde_content_pure(content, Some(96.0)).unwrap();
+    let (theme, font_dpi, accessibility) = from_kde_content_pure(content, Some(96.0)).unwrap();
 
     // Dark theme, not light
     assert!(theme.dark.is_some());
@@ -42,10 +42,10 @@ fn breeze_dark_fixture_colors_and_fonts() {
     assert_eq!(v.defaults.mono_font.family.as_deref(), Some("Hack"));
 
     // Accessibility: AnimationDurationFactor=0 -> reduce_motion=true
-    assert_eq!(v.defaults.reduce_motion, Some(true));
+    assert!(accessibility.reduce_motion);
 
     // DPI: caller-provided 96.0, not INI's forceFontDPI=120
-    assert_eq!(v.defaults.font_dpi, Some(96.0));
+    assert_eq!(font_dpi, Some(96.0));
 
     // Icon theme (now on Theme, not ThemeMode)
     assert_eq!(theme.icon_theme.as_deref(), Some("breeze-dark"));
@@ -85,9 +85,9 @@ fn breeze_dark_fixture_colors_and_fonts() {
 fn breeze_dark_fixture_dpi_from_ini() {
     let content = include_str!("fixtures/kde/breeze-dark.ini");
     // Pass None to let INI extraction (forceFontDPI=120) be used
-    let theme = from_kde_content_pure(content, None).unwrap();
+    let (theme, font_dpi, accessibility) = from_kde_content_pure(content, None).unwrap();
     let v = theme.dark.as_ref().unwrap();
-    assert_eq!(v.defaults.font_dpi, Some(120.0));
+    assert_eq!(font_dpi, Some(120.0));
 }
 
 // === Breeze Light ===
@@ -95,7 +95,7 @@ fn breeze_dark_fixture_dpi_from_ini() {
 #[test]
 fn breeze_light_fixture() {
     let content = include_str!("fixtures/kde/breeze-light.ini");
-    let theme = from_kde_content_pure(content, Some(96.0)).unwrap();
+    let (theme, font_dpi, accessibility) = from_kde_content_pure(content, Some(96.0)).unwrap();
 
     // Light theme, not dark
     assert!(theme.light.is_some());
@@ -114,7 +114,7 @@ fn breeze_light_fixture() {
     assert_eq!(v.sidebar.background_color, Some(Rgba::rgb(42, 46, 50)));
 
     // AnimationDurationFactor=1.0 -> reduce_motion=false
-    assert_eq!(v.defaults.reduce_motion, Some(false));
+    assert!(!accessibility.reduce_motion);
 }
 
 // === Custom Accent (orange) ===
@@ -122,7 +122,7 @@ fn breeze_light_fixture() {
 #[test]
 fn custom_accent_fixture() {
     let content = include_str!("fixtures/kde/custom-accent.ini");
-    let theme = from_kde_content_pure(content, Some(96.0)).unwrap();
+    let (theme, font_dpi, accessibility) = from_kde_content_pure(content, Some(96.0)).unwrap();
     let v = theme.dark.as_ref().unwrap();
 
     // Orange accent (246,116,0) replaces default Breeze blue
@@ -143,14 +143,14 @@ fn custom_accent_fixture() {
 fn high_dpi_fixture() {
     let content = include_str!("fixtures/kde/high-dpi.ini");
     // Pass None to let INI extraction of forceFontDPI=192
-    let theme = from_kde_content_pure(content, None).unwrap();
+    let (theme, font_dpi, accessibility) = from_kde_content_pure(content, None).unwrap();
     let v = theme.dark.as_ref().unwrap();
 
-    assert_eq!(v.defaults.font_dpi, Some(192.0));
+    assert_eq!(font_dpi, Some(192.0));
     // forceFontDPI must NOT set text_scaling_factor (Fix 5 from research)
-    assert!(v.defaults.text_scaling_factor.is_none());
+    assert_eq!(accessibility.text_scaling_factor, 1.0);
     // AnimationDurationFactor=1.0 -> reduce_motion=false
-    assert_eq!(v.defaults.reduce_motion, Some(false));
+    assert!(!accessibility.reduce_motion);
 }
 
 // === Minimal Config (only Colors:Window) ===
@@ -158,7 +158,7 @@ fn high_dpi_fixture() {
 #[test]
 fn minimal_config_fixture() {
     let content = include_str!("fixtures/kde/minimal.ini");
-    let theme = from_kde_content_pure(content, Some(96.0)).unwrap();
+    let (theme, font_dpi, accessibility) = from_kde_content_pure(content, Some(96.0)).unwrap();
 
     // Dark theme (BackgroundNormal=49,54,59 is dark)
     assert!(theme.dark.is_some());
@@ -191,7 +191,7 @@ fn minimal_config_fixture() {
     assert!(theme.icon_theme.is_none());
 
     // No KDE section -> reduce_motion not set
-    assert!(v.defaults.reduce_motion.is_none());
+    assert!(!accessibility.reduce_motion);
 }
 
 // === Missing Groups (Window + View + Button only) ===
@@ -199,7 +199,7 @@ fn minimal_config_fixture() {
 #[test]
 fn missing_groups_fixture() {
     let content = include_str!("fixtures/kde/missing-groups.ini");
-    let theme = from_kde_content_pure(content, Some(96.0)).unwrap();
+    let (theme, font_dpi, accessibility) = from_kde_content_pure(content, Some(96.0)).unwrap();
     let v = theme.dark.as_ref().unwrap();
 
     // Present groups work
@@ -230,7 +230,7 @@ fn missing_groups_fixture() {
 #[test]
 fn malformed_values_fixture() {
     let content = include_str!("fixtures/kde/malformed-values.ini");
-    let theme = from_kde_content_pure(content, Some(96.0)).unwrap();
+    let (theme, font_dpi, accessibility) = from_kde_content_pure(content, Some(96.0)).unwrap();
     let v = theme.dark.as_ref().unwrap();
 
     // Valid Window BackgroundNormal parses
@@ -262,7 +262,7 @@ fn malformed_values_fixture() {
 fn malformed_values_fixture_dpi_fallback() {
     let content = include_str!("fixtures/kde/malformed-values.ini");
     // Pass None: forceFontDPI="not_a_number" can't parse -> font_dpi is None
-    let theme = from_kde_content_pure(content, None).unwrap();
+    let (theme, font_dpi, accessibility) = from_kde_content_pure(content, None).unwrap();
     let v = theme.dark.as_ref().unwrap();
-    assert!(v.defaults.font_dpi.is_none());
+    assert!(font_dpi.is_none());
 }

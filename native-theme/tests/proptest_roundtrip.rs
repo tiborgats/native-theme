@@ -112,16 +112,11 @@ fn arb_theme_defaults() -> impl Strategy<Value = ThemeDefaults> {
         proptest::option::of(0.0f32..1.0),  // disabled_opacity
         proptest::option::of(0.0f32..10.0), // focus_ring_width
         proptest::option::of(0.0f32..10.0), // focus_ring_offset
-        proptest::option::of(0.5f32..3.0),  // text_scaling_factor
     )
         .prop_flat_map(|parts| {
             (
                 Just(parts),
                 proptest::collection::vec(proptest::option::of(arb_rgba()), 24..=24),
-                proptest::option::of(any::<bool>()),
-                proptest::option::of(any::<bool>()),
-                proptest::option::of(any::<bool>()),
-                proptest::option::of(48.0f32..288.0), // font_dpi (valid DPI range)
             )
         })
         .prop_map(
@@ -135,13 +130,8 @@ fn arb_theme_defaults() -> impl Strategy<Value = ThemeDefaults> {
                     disabled_opacity,
                     focus_ring_width,
                     focus_ring_offset,
-                    text_scaling_factor,
                 ),
                 colors,
-                reduce_motion,
-                high_contrast,
-                reduce_transparency,
-                font_dpi,
             )| {
                 ThemeDefaults {
                     font,
@@ -175,11 +165,6 @@ fn arb_theme_defaults() -> impl Strategy<Value = ThemeDefaults> {
                     focus_ring_color: colors[22],
                     focus_ring_width,
                     focus_ring_offset,
-                    font_dpi,
-                    text_scaling_factor,
-                    reduce_motion,
-                    high_contrast,
-                    reduce_transparency,
                 }
             },
         )
@@ -394,15 +379,7 @@ fn arb_theme_variant() -> impl Strategy<Value = ThemeMode> {
         arb_dialog_theme(),
     )
         .prop_map(
-            |(
-                defaults,
-                text_scale,
-                window,
-                button,
-                input,
-                checkbox,
-                dialog,
-            )| {
+            |(defaults, text_scale, window, button, input, checkbox, dialog)| {
                 ThemeMode {
                     defaults,
                     text_scale,
@@ -452,18 +429,20 @@ fn arb_theme_spec() -> impl Strategy<Value = Theme> {
         proptest::option::of(arb_icon_set()),
         proptest::option::of("[a-zA-Z]{1,15}"),
     )
-        .prop_map(|(name, variant, has_light, has_dark, layout, icon_set, icon_theme)| Theme {
-            name,
-            light: if has_light {
-                Some(variant.clone())
-            } else {
-                None
+        .prop_map(
+            |(name, variant, has_light, has_dark, layout, icon_set, icon_theme)| Theme {
+                name,
+                light: if has_light {
+                    Some(variant.clone())
+                } else {
+                    None
+                },
+                dark: if has_dark { Some(variant) } else { None },
+                layout,
+                icon_set,
+                icon_theme,
             },
-            dark: if has_dark { Some(variant) } else { None },
-            layout,
-            icon_set,
-            icon_theme,
-        })
+        )
 }
 
 // ── Property tests: Round-trips ─────────────────────────────────────────────

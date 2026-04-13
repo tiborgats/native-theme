@@ -141,7 +141,11 @@ struct ResolvedColors {
 /// Callers can derive `is_dark` from `resolved.defaults.background_color` lightness
 /// when the caller does not have an explicit dark-mode flag:
 /// `let is_dark = rgba_to_hsla(resolved.defaults.background_color).l < 0.5;`
-pub fn to_theme_color(resolved: &ResolvedTheme, is_dark: bool) -> ThemeColor {
+pub fn to_theme_color(
+    resolved: &ResolvedTheme,
+    is_dark: bool,
+    reduce_transparency: bool,
+) -> ThemeColor {
     let d = &resolved.defaults;
     let bg = rgba_to_hsla(d.background_color);
     let fg = rgba_to_hsla(d.text_color);
@@ -379,7 +383,7 @@ fn assign_misc(tc: &mut ThemeColor, c: &ResolvedColors, resolved: &ResolvedTheme
     // Issue 6: respect reduce_transparency. When the user requests reduced
     // transparency, use a fully opaque overlay instead of semi-transparent.
     let shadow = rgba_to_hsla(resolved.defaults.shadow_color);
-    let overlay_alpha = if resolved.defaults.reduce_transparency {
+    let overlay_alpha = if reduce_transparency {
         1.0
     } else if is_dark {
         0.5
@@ -465,8 +469,8 @@ fn assign_base_colors(tc: &mut ThemeColor, c: &ResolvedColors, is_dark: bool) {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
-    use native_theme::theme::Theme;
     use crate::ColorMode;
+    use native_theme::theme::Theme;
 
     /// Create a dark ResolvedTheme for catppuccin-mocha.
     ///
@@ -478,7 +482,7 @@ mod tests {
             .into_variant(ColorMode::Dark)
             .expect("preset must have dark variant");
         variant
-            .into_resolved()
+            .into_resolved(None)
             .expect("resolved preset must validate")
     }
 
@@ -489,7 +493,7 @@ mod tests {
             .into_variant(ColorMode::Light)
             .expect("preset must have light variant");
         variant
-            .into_resolved()
+            .into_resolved(None)
             .expect("resolved preset must validate")
     }
 
@@ -555,7 +559,7 @@ mod tests {
     #[test]
     fn to_theme_color_produces_nondefault() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
         let default = ThemeColor::default();
 
         // Direct-mapped fields should differ from default
@@ -593,7 +597,7 @@ mod tests {
     #[test]
     fn hover_states_differ_from_base() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
 
         assert_ne!(
             tc.primary_hover, tc.primary,
@@ -622,7 +626,7 @@ mod tests {
     #[test]
     fn direct_theme_reads_match_resolved_fields() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
 
         // 1. secondary_hover from button.hover_background
         assert_eq!(
@@ -666,7 +670,7 @@ mod tests {
     #[test]
     fn per_widget_fields_used() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
 
         // Scrollbar thumb should match resolved scrollbar
         let expected_thumb = rgba_to_hsla(resolved.scrollbar.thumb_color);
@@ -721,7 +725,7 @@ mod tests {
     #[test]
     fn accent_foreground_uses_theme_value() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
 
         // accent_foreground should come from d.accent_foreground, not from fg
         let expected = rgba_to_hsla(resolved.defaults.accent_text_color);
@@ -739,8 +743,8 @@ mod tests {
     #[test]
     fn is_dark_passed_not_derived() {
         let resolved = test_resolved();
-        let tc_light = to_theme_color(&resolved, false);
-        let tc_dark = to_theme_color(&resolved, true);
+        let tc_light = to_theme_color(&resolved, false, false);
+        let tc_dark = to_theme_color(&resolved, true, false);
 
         // active_color uses different darkening for light vs dark:
         // light darkens by 10%, dark darkens by 20%.
@@ -754,7 +758,7 @@ mod tests {
     #[test]
     fn link_hover_differs_from_link() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
 
         assert_ne!(
             tc.link_hover, tc.link,
@@ -769,7 +773,7 @@ mod tests {
     #[test]
     fn selection_not_clamped() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
 
         // The theme's selection color should be used as-is, not alpha-clamped to 0.3
         let expected = rgba_to_hsla(resolved.defaults.selection_background);
@@ -782,7 +786,7 @@ mod tests {
     #[test]
     fn chart_colors_have_hue_separation() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
 
         let hues = [
             tc.chart_1.h,
@@ -815,7 +819,7 @@ mod tests {
     #[test]
     fn magenta_uses_theme_saturation() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
 
         let accent = rgba_to_hsla(resolved.defaults.accent_color);
         let expected_s = accent.s.min(0.85);
@@ -836,7 +840,7 @@ mod tests {
     #[test]
     fn overlay_uses_shadow_color() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
 
         let shadow = rgba_to_hsla(resolved.defaults.shadow_color);
         assert!(
@@ -871,7 +875,7 @@ mod tests {
     #[test]
     fn coverage_tab_fields_mapped() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
         let d = ThemeColor::default();
         let mapped = [
             tc.tab != d.tab,
@@ -889,7 +893,7 @@ mod tests {
     #[test]
     fn coverage_sidebar_fields_mapped() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
         let d = ThemeColor::default();
         // sidebar, sidebar_foreground, sidebar_accent, sidebar_accent_foreground,
         // sidebar_border, sidebar_primary, sidebar_primary_foreground
@@ -913,7 +917,7 @@ mod tests {
     #[test]
     fn coverage_list_table_fields_mapped() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
         let d = ThemeColor::default();
         let mapped = [
             tc.list != d.list,
@@ -943,7 +947,7 @@ mod tests {
     #[test]
     fn coverage_scrollbar_slider_fields_mapped() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
         let d = ThemeColor::default();
         let mapped = [
             tc.scrollbar != d.scrollbar,
@@ -964,7 +968,7 @@ mod tests {
     #[test]
     fn coverage_chart_fields_mapped() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
         let d = ThemeColor::default();
         let mapped = [
             tc.chart_1 != d.chart_1,
@@ -983,7 +987,7 @@ mod tests {
     #[test]
     fn muted_fg_differs_from_muted_bg() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
         assert_ne!(
             tc.muted, tc.muted_foreground,
             "muted (bg) and muted_foreground should be different"
@@ -994,7 +998,7 @@ mod tests {
     #[test]
     fn light_variants_lighter_on_dark_theme() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
         assert!(
             tc.red_light.l > tc.red.l,
             "red_light (l={:.3}) should be lighter than red (l={:.3}) on dark theme",
@@ -1011,7 +1015,7 @@ mod tests {
     #[test]
     fn list_active_is_not_nearly_transparent() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
         // The old code forced alpha to 0.2 which made list_active invisible.
         // The new code should produce a color with a > 0.5 (near-opaque from blend).
         assert!(
@@ -1025,7 +1029,7 @@ mod tests {
     #[test]
     fn status_foreground_has_sufficient_contrast() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
         // All status foregrounds should have at least 4.5:1 contrast
         assert!(
             contrast_ratio(tc.danger_foreground, tc.danger) >= MIN_STATUS_CONTRAST
@@ -1050,8 +1054,8 @@ mod tests {
             let variant = nt
                 .into_variant(ColorMode::Dark)
                 .expect("preset must have dark variant");
-            let resolved = variant.into_resolved().expect("must validate");
-            let _tc = to_theme_color(&resolved, true);
+            let resolved = variant.into_resolved(None).expect("must validate");
+            let _tc = to_theme_color(&resolved, true, false);
         }
     }
 
@@ -1069,8 +1073,8 @@ mod tests {
             let variant = nt
                 .into_variant(ColorMode::Light)
                 .expect("preset must have light variant");
-            let resolved = variant.into_resolved().expect("must validate");
-            let _tc = to_theme_color(&resolved, false);
+            let resolved = variant.into_resolved(None).expect("must validate");
+            let _tc = to_theme_color(&resolved, false, false);
         }
     }
 
@@ -1078,7 +1082,7 @@ mod tests {
     #[test]
     fn tab_sidebar_window_fields_populated() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
         let default = ThemeColor::default();
 
         // Tab fields
@@ -1118,7 +1122,7 @@ mod tests {
     #[test]
     fn list_active_border_and_table_active_border_populated() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
         let default = ThemeColor::default();
 
         assert_ne!(
@@ -1135,7 +1139,7 @@ mod tests {
     #[test]
     fn light_theme_light_variants_blend_toward_bg() {
         let resolved = test_resolved_light();
-        let tc = to_theme_color(&resolved, false);
+        let tc = to_theme_color(&resolved, false, false);
         // On a light theme, red_light should be lighter than red (blended toward white bg)
         assert!(
             tc.red_light.l > tc.red.l,
@@ -1149,7 +1153,7 @@ mod tests {
     #[test]
     fn tab_sidebar_fields_match_resolved_sources() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
 
         // Tab fields from resolved.tab.*
         assert_eq!(tc.tab, rgba_to_hsla(resolved.tab.background_color));
@@ -1196,7 +1200,7 @@ mod tests {
     #[test]
     fn list_active_border_exact_blend_value() {
         let resolved = test_resolved();
-        let tc = to_theme_color(&resolved, true);
+        let tc = to_theme_color(&resolved, true, false);
 
         let bg = rgba_to_hsla(resolved.defaults.background_color);
         let primary = rgba_to_hsla(resolved.button.primary_background);

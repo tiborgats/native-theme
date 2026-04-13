@@ -485,8 +485,7 @@ accent_color = "#00ff00"
         assert_eq!(resolved.defaults.border.corner_radius, 8.0);
         assert_eq!(resolved.defaults.focus_ring_width, 2.0);
         assert_eq!(resolved.defaults.icon_sizes.toolbar, 24.0);
-        assert_eq!(resolved.defaults.text_scaling_factor, 1.0);
-        assert!(!resolved.defaults.reduce_motion);
+        assert_eq!(resolved.defaults.icon_sizes.toolbar, 24.0);
         // Window inherits from defaults
         assert_eq!(
             resolved.window.background_color,

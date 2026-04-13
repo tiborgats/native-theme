@@ -34,10 +34,6 @@ disabled_opacity = 0.3
 line_height = 1.19
 focus_ring_width_px = 3.0
 focus_ring_offset_px = -1.0
-text_scaling_factor = 1.0
-reduce_motion = false
-high_contrast = false
-reduce_transparency = false
 
 
 [light.defaults.border]
@@ -362,10 +358,6 @@ disabled_opacity = 0.3
 line_height = 1.19
 focus_ring_width_px = 3.0
 focus_ring_offset_px = -1.0
-text_scaling_factor = 1.0
-reduce_motion = false
-high_contrast = false
-reduce_transparency = false
 
 
 [dark.defaults.border]
