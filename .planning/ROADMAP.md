@@ -160,7 +160,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 82: Icon API Rework** — Collapse 13 icon-loading functions into `IconLoader` builder, migrate `IconProvider` and `IconData::Svg` to `Cow<'static, [u8]>`, add `IconRole::name()` / `Display`, add `IconSet` drift-guard test (completed 2026-04-13)
 - [x] **Phase 83: Detection Cache Layer** — Replace global `OnceLock` caches with `DetectionContext` backed by `arc_swap::ArcSwapOption`, add no-arg `detect_linux_desktop()` overload (completed 2026-04-13)
 - [x] **Phase 84: Reader Output Contract Homogenisation** — Unify single-vs-dual variant semantics across KDE/GNOME/Windows/macOS readers via a `ReaderOutput` type flowing through `run_pipeline` alongside `OverlaySource` (completed 2026-04-13)
-- [ ] **Phase 85: Data Model Method and Doc Cleanup** — Demote `ThemeVariant::resolve*` intermediates to `#[doc(hidden)]`, `Theme` method grab-bag cleanup, document `ThemeWatcher` internals, rename `FontSize::Px::to_px` to `to_logical_px`
+- [x] **Phase 85: Data Model Method and Doc Cleanup** — Demote `ThemeVariant::resolve*` intermediates to `#[doc(hidden)]`, `Theme` method grab-bag cleanup, document `ThemeWatcher` internals, rename `FontSize::Px::to_px` to `to_logical_px` (completed 2026-04-13)
 - [ ] **Phase 86: Validation and Lint Codegen Polish** — Drive `lint_toml` from the `inventory::submit!` widget registry, stop `check_ranges` from eagerly `format!`-ing path strings
 - [ ] **Phase 87: Font Family Arc<str> and AnimatedIcon Invariants** — Migrate `FontSpec::family: String` to `Arc<str>` across widget × connector, wrap `AnimatedIcon` public fields in newtype constructors that enforce invariants
 - [ ] **Phase 88: Diagnostic and Preset-Polish Sweep** — `diagnose_platform_support` returns `Vec<DiagnosticEntry>`, `platform_preset_name` returns structured data, `FontSpec::style` default-consistency documented, `defaults.border.padding` rule corrected, bundled preset `name`/`icon_theme` become `Cow<'static, str>`
@@ -627,7 +627,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 82. Icon API Rework | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 83. Detection Cache Layer | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 84. Reader Output Contract Homogenisation | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
-| 85. Data Model Method and Doc Cleanup | v0.5.7 | 1/2 | In Progress|  |
+| 85. Data Model Method and Doc Cleanup | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 86. Validation and Lint Codegen Polish | v0.5.7 | 0/0 | Not started | — |
 | 87. Font Family Arc<str> and AnimatedIcon Invariants | v0.5.7 | 0/0 | Not started | — |
 | 88. Diagnostic and Preset-Polish Sweep | v0.5.7 | 0/0 | Not started | — |

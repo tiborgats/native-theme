@@ -22,8 +22,8 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 ### Type Vocabulary Renames
 
 - [x] **NAME-01**: Type rename package ships atomically: `ThemeSpec→Theme`, `ThemeVariant→ThemeMode`, `ResolvedThemeVariant→ResolvedTheme`, `ResolvedThemeDefaults→ResolvedDefaults`; `SystemTheme` unchanged (doc 1 §1 Option B)
-- [ ] **NAME-02**: `ThemeWatcher` struct internals + constructor split documented; rename if needed (doc 1 §21)
-- [ ] **NAME-03**: `FontSize::Px(v).to_px(dpi)` renamed to `to_logical_px` — DPI parameter is no longer silently ignored in the `Px` branch (doc 1 §25)
+- [x] **NAME-02**: `ThemeWatcher` struct internals + constructor split documented; rename if needed (doc 1 §21)
+- [x] **NAME-03**: `FontSize::Px(v).to_px(dpi)` renamed to `to_logical_px` — DPI parameter is no longer silently ignored in the `Px` branch (doc 1 §25)
 
 ### Error Type Restructure
 

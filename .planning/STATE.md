@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 85 — data-model-method-and-doc-cleanup
-Plan: 1/2 complete
-Status: in-progress
-Last activity: 2026-04-13 — Completed 85-01 (doc(hidden) + from_toml_with_base removal)
+Plan: 2/2 complete
+Status: Phase 85 complete
+Last activity: 2026-04-13 — Completed 85-02 (FontSize rename + ThemeWatcher docs)
 
-Progress: [██████████] 100% (47/48 plans complete)
+Progress: [██████████] 100% (48/48 plans complete)
 
 ## Accumulated Context
 
@@ -99,6 +99,8 @@ v0.5.6 decisions worth carrying into v0.5.7 planning:
 - [Phase 84-02]: from_kde_content_pure unchanged (pub, returns Theme tuple) -- integration tests depend on it
 - [Phase 84-02]: preset_as_reader helper consolidates 10 fallback call sites into single function
 - [Phase 84-02]: #[allow(dead_code)] on Dual variant -- only used in macOS-gated code, invisible on Linux
+- [Phase 85-02]: FontSize doctest uses native_theme::theme::FontSize path (pub(crate) at crate root, pub via theme module)
+- [Phase 85-02]: watch/mod.rs module example uses ? instead of .expect() for zero-panic compliance
 
 ### Pending Todos
 
@@ -184,6 +186,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T20:52:17Z
-Stopped at: Completed 85-01-PLAN.md
+Last session: 2026-04-13T20:53:31Z
+Stopped at: Completed 85-02-PLAN.md
 Resume file: None
