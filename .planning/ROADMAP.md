@@ -508,8 +508,8 @@ Plans:
   4. The previously-scattered "does this reader return both variants?" comments are gone — the type system expresses the contract
 **Plans**: 2 plans
 Plans:
-- [ ] 71-01-PLAN.md � Rewrite Error enum per Option F with ErrorKind and RangeViolation
-- [ ] 71-02-PLAN.md � Two-vec validation split and caller migration
+- [ ] 84-01-PLAN.md — Define ReaderOutput enum, rewrite pipeline core (run_pipeline, with_overlay, OverlaySource)
+- [ ] 84-02-PLAN.md — Migrate all four readers to return ReaderOutput, add contract test, remove variant-ambiguity comments
 
 ### Phase 85: Data Model Method and Doc Cleanup
 **Goal**: `ThemeMode::resolve*` intermediates are demoted to `#[doc(hidden)] pub` so integration tests still reach them but rustdoc stops advertising them; `Theme`'s method grab-bag is cleaned up (including the coordinated removal of `from_toml_with_base` and the `error.rs:63` hint message); `ThemeWatcher` internals and constructor split are documented with a rename if the old name no longer fits; `FontSize::Px(v).to_px(dpi)` is renamed to `to_logical_px` so the DPI parameter stops being silently ignored in the `Px` branch

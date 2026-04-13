@@ -230,6 +230,63 @@ impl Default for AccessibilityPreferences {
     }
 }
 
+/// Output contract for platform readers.
+///
+/// Expresses single-vs-dual variant semantics explicitly:
+/// - `Single`: KDE, GNOME, and Windows readers report only the OS-active mode.
+///   The pipeline fills the inactive variant from the platform preset.
+/// - `Dual`: macOS reads both light and dark appearances in a single call.
+///   The pipeline uses both reader-provided variants directly.
+#[derive(Clone, Debug)]
+pub(crate) enum ReaderOutput {
+    /// Reader provides only the OS-active variant. The pipeline fills the
+    /// inactive variant from the platform preset.
+    Single {
+        /// The reader-provided variant (OS-active).
+        mode: Box<ThemeMode>,
+        /// Which color mode this variant represents.
+        is_dark: bool,
+    },
+    /// Reader provides both light and dark variants (macOS).
+    Dual {
+        /// The light variant from the reader.
+        light: Box<ThemeMode>,
+        /// The dark variant from the reader.
+        dark: Box<ThemeMode>,
+    },
+}
+
+impl ReaderOutput {
+    /// Reconstruct a [`Theme`] from this reader output (for overlay replay
+    /// and merge compatibility).
+    pub(crate) fn to_theme(
+        &self,
+        name: &str,
+        icon_set: Option<IconSet>,
+        layout: &LayoutTheme,
+    ) -> Theme {
+        let (light, dark) = match self {
+            ReaderOutput::Single { mode, is_dark } => {
+                if *is_dark {
+                    (None, Some(ThemeMode::clone(mode)))
+                } else {
+                    (Some(ThemeMode::clone(mode)), None)
+                }
+            }
+            ReaderOutput::Dual { light, dark } => {
+                (Some(ThemeMode::clone(light)), Some(ThemeMode::clone(dark)))
+            }
+        };
+        Theme {
+            name: name.to_string(),
+            light,
+            dark,
+            layout: layout.clone(),
+            icon_set,
+        }
+    }
+}
+
 /// Data needed to replay the merge+resolve pipeline for overlay support.
 ///
 /// Stores the original reader output and preset name so that
@@ -237,8 +294,14 @@ impl Default for AccessibilityPreferences {
 /// on demand instead of storing ~2KB of ThemeMode clones.
 #[derive(Clone, Debug)]
 pub(crate) struct OverlaySource {
-    /// The raw OS-detected theme data (before merge with preset).
-    pub(crate) reader_output: Theme,
+    /// The reader's variant data for replay.
+    pub(crate) reader_output: ReaderOutput,
+    /// Theme name from reader.
+    pub(crate) name: String,
+    /// Shared icon_set from reader.
+    pub(crate) icon_set: Option<IconSet>,
+    /// Shared layout from reader.
+    pub(crate) layout: LayoutTheme,
     /// The live preset name (e.g. "kde-breeze-live").
     pub(crate) preset_name: String,
     /// Font DPI captured at detection time (None = auto-detect).
@@ -330,19 +393,34 @@ impl SystemTheme {
             .unwrap_or(&src.preset_name);
         let full_preset = Theme::preset(full_preset_name)?;
 
+        // Reconstruct a Theme from the type-safe ReaderOutput for merge
+        let reader_as_theme = src
+            .reader_output
+            .to_theme(&src.name, src.icon_set, &src.layout);
+
         let mut merged = full_preset.clone();
         merged.merge(&live_preset);
-        merged.merge(&src.reader_output);
+        merged.merge(&reader_as_theme);
 
-        let mut light = if src.reader_output.light.is_some() {
-            merged.light.unwrap_or_default()
-        } else {
-            full_preset.light.unwrap_or_default()
-        };
-        let mut dark = if src.reader_output.dark.is_some() {
-            merged.dark.unwrap_or_default()
-        } else {
-            full_preset.dark.unwrap_or_default()
+        // Match on ReaderOutput for type-safe variant selection
+        let (mut light, mut dark) = match &src.reader_output {
+            ReaderOutput::Single { is_dark, .. } => {
+                if *is_dark {
+                    (
+                        full_preset.light.unwrap_or_default(),
+                        merged.dark.unwrap_or_default(),
+                    )
+                } else {
+                    (
+                        merged.light.unwrap_or_default(),
+                        full_preset.dark.unwrap_or_default(),
+                    )
+                }
+            }
+            ReaderOutput::Dual { .. } => (
+                merged.light.unwrap_or_default(),
+                merged.dark.unwrap_or_default(),
+            ),
         };
 
         // Apply the user overlay on top
@@ -488,7 +566,13 @@ mod system_theme_tests {
             light: light_resolved.clone(),
             dark: dark_resolved.clone(),
             overlay_source: OverlaySource {
-                reader_output: Theme::default(),
+                reader_output: ReaderOutput::Dual {
+                    light: Box::new(ThemeMode::default()),
+                    dark: Box::new(ThemeMode::default()),
+                },
+                name: String::new(),
+                icon_set: None,
+                layout: LayoutTheme::default(),
                 preset_name: "catppuccin-mocha".into(),
                 font_dpi: None,
             },
@@ -522,7 +606,13 @@ mod system_theme_tests {
             light: light_resolved.clone(),
             dark: dark_resolved.clone(),
             overlay_source: OverlaySource {
-                reader_output: Theme::default(),
+                reader_output: ReaderOutput::Dual {
+                    light: Box::new(ThemeMode::default()),
+                    dark: Box::new(ThemeMode::default()),
+                },
+                name: String::new(),
+                icon_set: None,
+                layout: LayoutTheme::default(),
                 preset_name: "catppuccin-mocha".into(),
                 font_dpi: None,
             },
@@ -556,7 +646,13 @@ mod system_theme_tests {
             light: light_resolved.clone(),
             dark: dark_resolved.clone(),
             overlay_source: OverlaySource {
-                reader_output: Theme::default(),
+                reader_output: ReaderOutput::Dual {
+                    light: Box::new(ThemeMode::default()),
+                    dark: Box::new(ThemeMode::default()),
+                },
+                name: String::new(),
+                icon_set: None,
+                layout: LayoutTheme::default(),
                 preset_name: "catppuccin-mocha".into(),
                 font_dpi: None,
             },
@@ -618,21 +714,28 @@ mod overlay_tests {
     use super::*;
 
     /// Helper: build a SystemTheme from a preset via pipeline::run_pipeline.
-    fn default_system_theme() -> SystemTheme {
-        let reader = Theme::preset("catppuccin-mocha").unwrap();
+    /// Uses test-only Result handling (module has #[allow(clippy::unwrap_used)]).
+    fn default_system_theme() -> crate::Result<SystemTheme> {
+        let preset = Theme::preset("catppuccin-mocha")?;
+        let ro = ReaderOutput::Dual {
+            light: Box::new(preset.light.clone().unwrap_or_default()),
+            dark: Box::new(preset.dark.clone().unwrap_or_default()),
+        };
         pipeline::run_pipeline(
-            reader,
+            ro,
+            preset.name,
+            preset.icon_set,
+            preset.layout,
             "catppuccin-mocha",
             ColorMode::Light,
             AccessibilityPreferences::default(),
             None,
         )
-        .unwrap()
     }
 
     #[test]
-    fn test_overlay_accent_propagates() {
-        let st = default_system_theme();
+    fn test_overlay_accent_propagates() -> crate::Result<()> {
+        let st = default_system_theme()?;
         let new_accent = Rgba::rgb(255, 0, 0);
 
         // Build overlay with accent on both light and dark
@@ -644,7 +747,7 @@ mod overlay_tests {
         overlay.light = Some(light_v);
         overlay.dark = Some(dark_v);
 
-        let result = st.with_overlay(&overlay).unwrap();
+        let result = st.with_overlay(&overlay)?;
 
         // Accent itself
         assert_eq!(result.light.defaults.accent_color, new_accent);
@@ -659,11 +762,12 @@ mod overlay_tests {
             result.light.spinner.fill_color, new_accent,
             "spinner.fill should re-derive from new accent"
         );
+        Ok(())
     }
 
     #[test]
-    fn test_overlay_preserves_unrelated_fields() {
-        let st = default_system_theme();
+    fn test_overlay_preserves_unrelated_fields() -> crate::Result<()> {
+        let st = default_system_theme()?;
         let original_bg = st.light.defaults.background_color;
 
         // Apply overlay changing only accent
@@ -672,32 +776,34 @@ mod overlay_tests {
         light_v.defaults.accent_color = Some(Rgba::rgb(255, 0, 0));
         overlay.light = Some(light_v);
 
-        let result = st.with_overlay(&overlay).unwrap();
+        let result = st.with_overlay(&overlay)?;
         assert_eq!(
             result.light.defaults.background_color, original_bg,
             "background should be unchanged"
         );
+        Ok(())
     }
 
     #[test]
-    fn test_overlay_empty_noop() {
-        let st = default_system_theme();
+    fn test_overlay_empty_noop() -> crate::Result<()> {
+        let st = default_system_theme()?;
         let original_light_accent = st.light.defaults.accent_color;
         let original_dark_accent = st.dark.defaults.accent_color;
         let original_light_bg = st.light.defaults.background_color;
 
         // Empty overlay
         let overlay = Theme::default();
-        let result = st.with_overlay(&overlay).unwrap();
+        let result = st.with_overlay(&overlay)?;
 
         assert_eq!(result.light.defaults.accent_color, original_light_accent);
         assert_eq!(result.dark.defaults.accent_color, original_dark_accent);
         assert_eq!(result.light.defaults.background_color, original_light_bg);
+        Ok(())
     }
 
     #[test]
-    fn test_overlay_both_variants() {
-        let st = default_system_theme();
+    fn test_overlay_both_variants() -> crate::Result<()> {
+        let st = default_system_theme()?;
         let red = Rgba::rgb(255, 0, 0);
         let green = Rgba::rgb(0, 255, 0);
 
@@ -709,7 +815,7 @@ mod overlay_tests {
         overlay.light = Some(light_v);
         overlay.dark = Some(dark_v);
 
-        let result = st.with_overlay(&overlay).unwrap();
+        let result = st.with_overlay(&overlay)?;
         assert_eq!(
             result.light.defaults.accent_color, red,
             "light accent = red"
@@ -718,39 +824,40 @@ mod overlay_tests {
             result.dark.defaults.accent_color, green,
             "dark accent = green"
         );
+        Ok(())
     }
 
     #[test]
-    fn test_overlay_font_family() {
-        let st = default_system_theme();
+    fn test_overlay_font_family() -> crate::Result<()> {
+        let st = default_system_theme()?;
 
         let mut overlay = Theme::default();
         let mut light_v = ThemeMode::default();
         light_v.defaults.font.family = Some("Comic Sans".into());
         overlay.light = Some(light_v);
 
-        let result = st.with_overlay(&overlay).unwrap();
+        let result = st.with_overlay(&overlay)?;
         assert_eq!(result.light.defaults.font.family, "Comic Sans");
+        Ok(())
     }
 
     #[test]
-    fn test_overlay_toml_convenience() {
-        let st = default_system_theme();
-        let result = st
-            .with_overlay_toml(
-                r##"
+    fn test_overlay_toml_convenience() -> crate::Result<()> {
+        let st = default_system_theme()?;
+        let result = st.with_overlay_toml(
+            r##"
             name = "overlay"
             [light.defaults]
             accent_color = "#ff0000"
         "##,
-            )
-            .unwrap();
+        )?;
         assert_eq!(result.light.defaults.accent_color, Rgba::rgb(255, 0, 0));
+        Ok(())
     }
 
     #[test]
-    fn test_overlay_roundtrip_via_overlay_source() {
-        let st = default_system_theme();
+    fn test_overlay_roundtrip_via_overlay_source() -> crate::Result<()> {
+        let st = default_system_theme()?;
         // Apply overlay and verify accent propagates
         let new_accent = Rgba::rgb(255, 0, 0);
         let mut overlay = Theme::default();
@@ -758,21 +865,23 @@ mod overlay_tests {
         light_v.defaults.accent_color = Some(new_accent);
         overlay.light = Some(light_v);
 
-        let result = st.with_overlay(&overlay).unwrap();
+        let result = st.with_overlay(&overlay)?;
         assert_eq!(result.light.defaults.accent_color, new_accent);
         // The dark variant should be unchanged from original
         assert_eq!(
             result.dark.defaults.accent_color,
             st.dark.defaults.accent_color
         );
+        Ok(())
     }
 
     #[test]
-    fn test_overlay_source_no_variant_fields() {
+    fn test_overlay_source_no_variant_fields() -> crate::Result<()> {
         // Verify overlay_source exists on SystemTheme (compile-time structural check).
         // If light_variant or dark_variant fields still existed, this test would
         // need updating -- documenting the structural change.
-        let st = default_system_theme();
+        let st = default_system_theme()?;
         let _ = &st.overlay_source; // overlay_source exists
+        Ok(())
     }
 }
