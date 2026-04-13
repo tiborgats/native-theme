@@ -58,7 +58,8 @@ pub(crate) enum BorderKind {
 /// Struct-level attributes parsed from `#[theme_layer(...)]`.
 #[derive(Debug, Clone)]
 pub(crate) struct LayerMeta {
-    #[expect(dead_code)] // Parsed for future struct-level border dispatch; per-field categories handle validation
+    #[expect(dead_code)]
+    // Parsed for future struct-level border dispatch; per-field categories handle validation
     pub border_kind: BorderKind,
     pub resolved_name: Option<Ident>,
     /// Skip inventory::submit! generation (for non-per-variant widgets like LayoutTheme).

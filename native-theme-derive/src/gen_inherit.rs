@@ -12,7 +12,11 @@ use crate::parse::{FieldMeta, LayerMeta};
 ///   if self.field.is_none() { self.field = defaults.X; }
 ///
 /// Two-level paths like "defaults.border.color" generate `defaults.border.color`.
-pub(crate) fn gen_inherit(opt_name: &Ident, fields: &[FieldMeta], _layer: &LayerMeta) -> TokenStream {
+pub(crate) fn gen_inherit(
+    opt_name: &Ident,
+    fields: &[FieldMeta],
+    _layer: &LayerMeta,
+) -> TokenStream {
     let stmts = gen_inherit_stmts(fields);
 
     quote! {
@@ -51,9 +55,7 @@ fn gen_inherit_stmts(fields: &[FieldMeta]) -> TokenStream {
 /// The leading "defaults." is stripped because the method parameter is already
 /// named `defaults`.
 fn parse_defaults_path(path: &str) -> TokenStream {
-    let stripped = path
-        .strip_prefix("defaults.")
-        .unwrap_or(path);
+    let stripped = path.strip_prefix("defaults.").unwrap_or(path);
 
     let segments: Vec<Ident> = stripped
         .split('.')

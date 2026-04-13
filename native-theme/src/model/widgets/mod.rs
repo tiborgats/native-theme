@@ -1,186 +1,36 @@
-// Per-widget struct pairs and macros
+// Per-widget struct pairs: all 25 per-variant widgets + LayoutTheme use #[derive(ThemeWidget)].
 
 use crate::Rgba;
 use crate::model::border::{ResolvedBorderSpec, WidgetBorderSpec};
 use crate::model::{DialogButtonOrder, FontSpec, ResolvedFontSpec};
 use native_theme_derive::ThemeWidget;
 
-/// Helper macro for FIELD_NAMES: emits the TOML key name for an option field.
-/// With a rename literal, returns the literal; without, returns `stringify!(field)`.
-#[doc(hidden)]
-macro_rules! __field_name {
-    ($field:ident) => {
-        stringify!($field)
-    };
-    ($field:ident, $rename:literal) => {
-        $rename
-    };
-}
-pub(crate) use __field_name;
+// ── 2.2 Window / Application Chrome ────────────────────────────────────────
 
-/// Generates a paired Option-based theme struct and a Resolved struct from a single definition.
-///
-/// # Usage
-///
-/// ```ignore
-/// define_widget_pair! {
-///     /// Doc comment
-///     ButtonTheme / ResolvedButtonTheme {
-///         option {
-///             color: crate::Rgba,
-///             size as "size_px": f32,
-///         }
-///         optional_nested {
-///             font: [crate::model::FontSpec, ResolvedFontSpec],
-///         }
-///     }
-/// }
-/// ```
-///
-/// This generates:
-/// - `ButtonTheme` with all `option` fields as `Option<T>` and all `optional_nested` fields
-///   as `Option<FontSpec>` (the first type in the pair). Derives: Clone, Debug, Default,
-///   PartialEq, Serialize, Deserialize. Attributes: skip_serializing_none, serde(default).
-///   Fields with `as "name"` get `#[serde(rename = "name")]` on the Option struct only.
-/// - `ResolvedButtonTheme` with all `option` fields as plain `T` and all `optional_nested`
-///   fields as `ResolvedFontSpec` (the second type in the pair). Derives: Clone, Debug, PartialEq.
-///   Resolved structs never get serde renames.
-/// - `impl_merge!` invocation for `ButtonTheme` using the `optional_nested` clause for font fields.
-macro_rules! define_widget_pair {
-    (
-        $(#[$attr:meta])*
-        $opt_name:ident / $resolved_name:ident {
-            $(option {
-                $($(#[doc = $opt_doc:expr])* $opt_field:ident $(as $opt_rename:literal)? : $opt_type:ty),* $(,)?
-            })?
-            $(soft_option {
-                $($(#[doc = $so_doc:expr])* $so_field:ident : $so_type:ty),* $(,)?
-            })?
-            $(optional_nested {
-                $($(#[doc = $on_doc:expr])* $on_field:ident : [$on_opt_type:ty, $on_res_type:ty]),* $(,)?
-            })?
-            $(border_partial {
-                $($(#[doc = $bp_doc:expr])* $bp_field:ident : [$bp_opt_type:ty, $bp_res_type:ty]),* $(,)?
-            })?
-            $(border_optional {
-                $($(#[doc = $bo_doc:expr])* $bo_field:ident : [$bo_opt_type:ty, $bo_res_type:ty]),* $(,)?
-            })?
-        }
-    ) => {
-        $(#[$attr])*
-        #[serde_with::skip_serializing_none]
-        #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
-        #[serde(default)]
-        pub struct $opt_name {
-            $($($(#[doc = $opt_doc])* $(#[serde(rename = $opt_rename)])? pub $opt_field: Option<$opt_type>,)*)?
-            $($($(#[doc = $so_doc])* pub $so_field: Option<$so_type>,)*)?
-            $($($(#[doc = $on_doc])* pub $on_field: Option<$on_opt_type>,)*)?
-            $($($(#[doc = $bp_doc])* pub $bp_field: Option<$bp_opt_type>,)*)?
-            $($($(#[doc = $bo_doc])* pub $bo_field: Option<$bo_opt_type>,)*)?
-        }
-
-        $(#[$attr])*
-        #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
-        #[non_exhaustive]
-        pub struct $resolved_name {
-            $($($(#[doc = $opt_doc])* pub $opt_field: $opt_type,)*)?
-            $($($(#[doc = $so_doc])* pub $so_field: Option<$so_type>,)*)?
-            $($($(#[doc = $on_doc])* pub $on_field: $on_res_type,)*)?
-            $($($(#[doc = $bp_doc])* pub $bp_field: $bp_res_type,)*)?
-            $($($(#[doc = $bo_doc])* pub $bo_field: $bo_res_type,)*)?
-        }
-
-        impl $opt_name {
-            /// All serialized field names for this widget theme, for TOML linting.
-            pub const FIELD_NAMES: &[&str] = &[
-                $($($crate::model::widgets::__field_name!($opt_field $(, $opt_rename)?),)*)?
-                $($(stringify!($so_field),)*)?
-                $($(stringify!($on_field),)*)?
-                $($(stringify!($bp_field),)*)?
-                $($(stringify!($bo_field),)*)?
-            ];
-        }
-
-        impl_merge!($opt_name {
-            $(option { $($opt_field),* })?
-            $(soft_option { $($so_field),* })?
-            $(optional_nested { $($on_field),* })?
-            $(optional_nested { $($bp_field),* })?
-            $(optional_nested { $($bo_field),* })?
-        });
-
-        #[allow(dead_code)] // LayoutTheme is top-level, not per-variant
-        impl $resolved_name {
-            /// Extract and validate fields from the Option-based source struct.
-            /// Generated by `define_widget_pair!` -- field paths use `stringify!()`.
-            pub(crate) fn validate_widget(
-                source: &$opt_name,
-                prefix: &str,
-                _dpi: f32,
-                missing: &mut Vec<String>,
-            ) -> Self {
-                Self {
-                    $($(
-                        $opt_field: crate::resolve::validate_helpers::require(
-                            &source.$opt_field,
-                            &format!("{}.{}", prefix, stringify!($opt_field)),
-                            missing,
-                        ),
-                    )*)?
-                    $($(
-                        $so_field: source.$so_field,
-                    )*)?
-                    $($(
-                        $on_field: <$on_opt_type as crate::resolve::validate_helpers::ValidateNested>::validate_nested(
-                            &source.$on_field,
-                            &format!("{}.{}", prefix, stringify!($on_field)),
-                            _dpi,
-                            missing,
-                        ),
-                    )*)?
-                    $($(
-                        $bp_field: crate::resolve::validate_helpers::require_border_partial(
-                            &source.$bp_field,
-                            &format!("{}.{}", prefix, stringify!($bp_field)),
-                            missing,
-                        ),
-                    )*)?
-                    $($(
-                        $bo_field: crate::resolve::validate_helpers::border_all_optional(
-                            &source.$bo_field,
-                        ),
-                    )*)?
-                }
-            }
-        }
-    };
+/// Window chrome: background, title bar colors, inactive states, geometry.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct WindowTheme {
+    /// Main window background fill.
+    #[theme(inherit_from = "defaults.background_color")]
+    pub background_color: Option<Rgba>,
+    /// Active title bar background fill.
+    #[theme(inherit_from = "defaults.surface_color")]
+    pub title_bar_background: Option<Rgba>,
+    /// Title bar background when the window is unfocused.
+    pub inactive_title_bar_background: Option<Rgba>,
+    /// Title bar text color when the window is unfocused.
+    pub inactive_title_bar_text_color: Option<Rgba>,
+    /// Title bar font specification.
+    #[theme(nested, resolved_type = "ResolvedFontSpec")]
+    pub title_bar_font: Option<FontSpec>,
+    /// Window border specification.
+    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    pub border: Option<WidgetBorderSpec>,
 }
 
-// ── §2.2 Window / Application Chrome ────────────────────────────────────────
-
-define_widget_pair! {
-    /// Window chrome: background, title bar colors, inactive states, geometry.
-    WindowTheme / ResolvedWindowTheme {
-        option {
-            /// Main window background fill.
-            background_color: Rgba,
-            /// Active title bar background fill.
-            title_bar_background: Rgba,
-            /// Title bar background when the window is unfocused.
-            inactive_title_bar_background: Rgba,
-            /// Title bar text color when the window is unfocused.
-            inactive_title_bar_text_color: Rgba,
-        }
-        optional_nested {
-            /// Title bar font specification.
-            title_bar_font: [FontSpec, ResolvedFontSpec],
-            /// Window border specification.
-            border: [WidgetBorderSpec, ResolvedBorderSpec],
-        }
-    }
-}
-
-// ── §2.3 Button ──────────────────────────────────────────────────────────────
+// ── 2.3 Button ──────────────────────────────────────────────────────────────
 
 /// Push button: colors, sizing, spacing, geometry.
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
@@ -188,10 +38,13 @@ define_widget_pair! {
 #[serde(default)]
 pub struct ButtonTheme {
     /// Default button background fill.
+    #[theme(inherit_from = "defaults.background_color")]
     pub background_color: Option<Rgba>,
     /// Primary / accent button background fill.
+    #[theme(inherit_from = "defaults.accent_color")]
     pub primary_background: Option<Rgba>,
     /// Primary / accent button text/icon color.
+    #[theme(inherit_from = "defaults.accent_text_color")]
     pub primary_text_color: Option<Rgba>,
     /// Minimum button width in logical pixels.
     #[serde(rename = "min_width_px")]
@@ -206,15 +59,17 @@ pub struct ButtonTheme {
     #[theme(check = "non_negative")]
     pub icon_text_gap: Option<f32>,
     /// Opacity multiplier when the button is disabled (0.0-1.0).
-    #[theme(range = "0.0..=1.0")]
+    #[theme(range = "0.0..=1.0", inherit_from = "defaults.disabled_opacity")]
     pub disabled_opacity: Option<f32>,
     /// Button background on hover.
+    #[theme(inherit_from = "defaults.background_color")]
     pub hover_background: Option<Rgba>,
     /// Button text color on hover.
     pub hover_text_color: Option<Rgba>,
     /// Button text color when pressed/active.
     pub active_text_color: Option<Rgba>,
     /// Button text color when disabled.
+    #[theme(inherit_from = "defaults.disabled_text_color")]
     pub disabled_text_color: Option<Rgba>,
     /// Button background when pressed/active.
     #[theme(category = "soft_option")]
@@ -230,1194 +85,793 @@ pub struct ButtonTheme {
     pub border: Option<WidgetBorderSpec>,
 }
 
-// ── §2.4 Text Input ──────────────────────────────────────────────────────────
+// ── 2.4 Text Input ──────────────────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Single-line and multi-line text input fields.
-    InputTheme / ResolvedInputTheme {
-        option {
-            /// Input field background fill.
-            background_color: Rgba,
-            /// Placeholder text color.
-            placeholder_color: Rgba,
-            /// Text cursor (caret) color.
-            caret_color: Rgba,
-            /// Text selection highlight color.
-            selection_background: Rgba,
-            /// Text color inside the selection highlight.
-            selection_text_color: Rgba,
-            /// Minimum field height in logical pixels.
-            min_height as "min_height_px": f32,
-            /// Opacity multiplier when disabled (0.0-1.0).
-            disabled_opacity: f32,
-            /// Input text color when disabled.
-            disabled_text_color: Rgba,
-        }
-        soft_option {
-            /// Border color when the input is hovered.
-            hover_border_color: Rgba,
-            /// Border color when the input has focus.
-            focus_border_color: Rgba,
-            /// Input background when disabled.
-            disabled_background: Rgba,
-        }
-        optional_nested {
-            /// Input text font specification.
-            font: [FontSpec, ResolvedFontSpec],
-            /// Input border specification.
-            border: [WidgetBorderSpec, ResolvedBorderSpec],
-        }
-    }
+/// Single-line and multi-line text input fields.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct InputTheme {
+    /// Input field background fill.
+    #[theme(inherit_from = "defaults.background_color")]
+    pub background_color: Option<Rgba>,
+    /// Placeholder text color.
+    #[theme(inherit_from = "defaults.muted_color")]
+    pub placeholder_color: Option<Rgba>,
+    /// Text cursor (caret) color.
+    pub caret_color: Option<Rgba>,
+    /// Text selection highlight color.
+    #[theme(inherit_from = "defaults.text_selection_background")]
+    pub selection_background: Option<Rgba>,
+    /// Text color inside the selection highlight.
+    #[theme(inherit_from = "defaults.text_selection_color")]
+    pub selection_text_color: Option<Rgba>,
+    /// Minimum field height in logical pixels.
+    #[serde(rename = "min_height_px")]
+    #[theme(check = "non_negative")]
+    pub min_height: Option<f32>,
+    /// Opacity multiplier when disabled (0.0-1.0).
+    #[theme(range = "0.0..=1.0", inherit_from = "defaults.disabled_opacity")]
+    pub disabled_opacity: Option<f32>,
+    /// Input text color when disabled.
+    #[theme(inherit_from = "defaults.disabled_text_color")]
+    pub disabled_text_color: Option<Rgba>,
+    /// Border color when the input is hovered.
+    #[theme(category = "soft_option")]
+    pub hover_border_color: Option<Rgba>,
+    /// Border color when the input has focus.
+    #[theme(category = "soft_option")]
+    pub focus_border_color: Option<Rgba>,
+    /// Input background when disabled.
+    #[theme(category = "soft_option")]
+    pub disabled_background: Option<Rgba>,
+    /// Input text font specification.
+    #[theme(nested, resolved_type = "ResolvedFontSpec")]
+    pub font: Option<FontSpec>,
+    /// Input border specification.
+    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    pub border: Option<WidgetBorderSpec>,
 }
 
-// ── §2.5 Checkbox / Radio Button ────────────────────────────────────────────
+// ── 2.5 Checkbox / Radio Button ────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Checkbox and radio button theme: colors, indicator, label font, border, and interactive states.
-    CheckboxTheme / ResolvedCheckboxTheme {
-        option {
-            /// Checkbox background color.
-            background_color: Rgba,
-            /// Indicator background when checked.
-            checked_background: Rgba,
-            /// Indicator (check mark / radio dot) color.
-            indicator_color: Rgba,
-            /// Indicator (check mark / radio dot) width in logical pixels.
-            indicator_width as "indicator_width_px": f32,
-            /// Space between indicator and label.
-            label_gap as "label_gap_px": f32,
-            /// Opacity multiplier when disabled (0.0-1.0).
-            disabled_opacity: f32,
-            /// Checkbox label text color when disabled.
-            disabled_text_color: Rgba,
-        }
-        soft_option {
-            /// Checkbox background on hover.
-            hover_background: Rgba,
-            /// Checkbox background when disabled.
-            disabled_background: Rgba,
-            /// Indicator background when unchecked.
-            unchecked_background: Rgba,
-            /// Border color when unchecked.
-            unchecked_border_color: Rgba,
-        }
-        optional_nested {
-            /// Checkbox label font specification.
-            font: [FontSpec, ResolvedFontSpec],
-            /// Checkbox border specification.
-            border: [WidgetBorderSpec, ResolvedBorderSpec],
-        }
-    }
+/// Checkbox and radio button theme: colors, indicator, label font, border, and interactive states.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct CheckboxTheme {
+    /// Checkbox background color.
+    #[theme(inherit_from = "defaults.background_color")]
+    pub background_color: Option<Rgba>,
+    /// Indicator background when checked.
+    #[theme(inherit_from = "defaults.accent_color")]
+    pub checked_background: Option<Rgba>,
+    /// Indicator (check mark / radio dot) color.
+    #[theme(inherit_from = "defaults.text_color")]
+    pub indicator_color: Option<Rgba>,
+    /// Indicator (check mark / radio dot) width in logical pixels.
+    #[serde(rename = "indicator_width_px")]
+    #[theme(check = "non_negative")]
+    pub indicator_width: Option<f32>,
+    /// Space between indicator and label.
+    #[serde(rename = "label_gap_px")]
+    #[theme(check = "non_negative")]
+    pub label_gap: Option<f32>,
+    /// Opacity multiplier when disabled (0.0-1.0).
+    #[theme(range = "0.0..=1.0", inherit_from = "defaults.disabled_opacity")]
+    pub disabled_opacity: Option<f32>,
+    /// Checkbox label text color when disabled.
+    #[theme(inherit_from = "defaults.disabled_text_color")]
+    pub disabled_text_color: Option<Rgba>,
+    /// Checkbox background on hover.
+    #[theme(category = "soft_option")]
+    pub hover_background: Option<Rgba>,
+    /// Checkbox background when disabled.
+    #[theme(category = "soft_option")]
+    pub disabled_background: Option<Rgba>,
+    /// Indicator background when unchecked.
+    #[theme(category = "soft_option")]
+    pub unchecked_background: Option<Rgba>,
+    /// Border color when unchecked.
+    #[theme(category = "soft_option")]
+    pub unchecked_border_color: Option<Rgba>,
+    /// Checkbox label font specification.
+    #[theme(nested, resolved_type = "ResolvedFontSpec")]
+    pub font: Option<FontSpec>,
+    /// Checkbox border specification.
+    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    pub border: Option<WidgetBorderSpec>,
 }
 
-// ── §2.6 Menu ────────────────────────────────────────────────────────────────
+// ── 2.6 Menu ────────────────────────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Popup and context menu appearance.
-    MenuTheme / ResolvedMenuTheme {
-        option {
-            /// Menu panel background fill.
-            background_color: Rgba,
-            /// Separator line color between menu items.
-            separator_color: Rgba,
-            /// Height of a single menu item row.
-            row_height as "row_height_px": f32,
-            /// Space between a menu item's icon and its label.
-            icon_text_gap as "icon_text_gap_px": f32,
-            /// Menu item icon size in logical pixels.
-            icon_size as "icon_size_px": f32,
-            /// Menu item background on hover.
-            hover_background: Rgba,
-            /// Menu item text color on hover.
-            hover_text_color: Rgba,
-            /// Disabled menu item text color.
-            disabled_text_color: Rgba,
-        }
-        optional_nested {
-            /// Menu item font specification.
-            font: [FontSpec, ResolvedFontSpec],
-        }
-        border_optional {
-            /// Menu border specification.
-            border: [WidgetBorderSpec, ResolvedBorderSpec],
-        }
-    }
+/// Popup and context menu appearance.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+#[theme_layer(border_kind = "none")]
+pub struct MenuTheme {
+    /// Menu panel background fill.
+    #[theme(inherit_from = "defaults.background_color")]
+    pub background_color: Option<Rgba>,
+    /// Separator line color between menu items.
+    #[theme(inherit_from = "defaults.border.color")]
+    pub separator_color: Option<Rgba>,
+    /// Height of a single menu item row.
+    #[serde(rename = "row_height_px")]
+    #[theme(check = "non_negative")]
+    pub row_height: Option<f32>,
+    /// Space between a menu item's icon and its label.
+    #[serde(rename = "icon_text_gap_px")]
+    #[theme(check = "non_negative")]
+    pub icon_text_gap: Option<f32>,
+    /// Menu item icon size in logical pixels.
+    #[serde(rename = "icon_size_px")]
+    #[theme(check = "non_negative", inherit_from = "defaults.icon_sizes.toolbar")]
+    pub icon_size: Option<f32>,
+    /// Menu item background on hover.
+    #[theme(inherit_from = "defaults.selection_background")]
+    pub hover_background: Option<Rgba>,
+    /// Menu item text color on hover.
+    #[theme(inherit_from = "defaults.selection_text_color")]
+    pub hover_text_color: Option<Rgba>,
+    /// Disabled menu item text color.
+    #[theme(inherit_from = "defaults.disabled_text_color")]
+    pub disabled_text_color: Option<Rgba>,
+    /// Menu item font specification.
+    #[theme(nested, resolved_type = "ResolvedFontSpec")]
+    pub font: Option<FontSpec>,
+    /// Menu border specification.
+    #[theme(border_optional, resolved_type = "ResolvedBorderSpec")]
+    pub border: Option<WidgetBorderSpec>,
 }
 
-// ── §2.7 Tooltip ─────────────────────────────────────────────────────────────
+// ── 2.7 Tooltip ─────────────────────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Tooltip popup appearance.
-    TooltipTheme / ResolvedTooltipTheme {
-        option {
-            /// Tooltip background fill.
-            background_color: Rgba,
-            /// Maximum tooltip width before wrapping.
-            max_width as "max_width_px": f32,
-        }
-        optional_nested {
-            /// Tooltip font specification.
-            font: [FontSpec, ResolvedFontSpec],
-            /// Tooltip border specification.
-            border: [WidgetBorderSpec, ResolvedBorderSpec],
-        }
-    }
+/// Tooltip popup appearance.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct TooltipTheme {
+    /// Tooltip background fill.
+    #[theme(inherit_from = "defaults.background_color")]
+    pub background_color: Option<Rgba>,
+    /// Maximum tooltip width before wrapping.
+    #[serde(rename = "max_width_px")]
+    #[theme(check = "non_negative")]
+    pub max_width: Option<f32>,
+    /// Tooltip font specification.
+    #[theme(nested, resolved_type = "ResolvedFontSpec")]
+    pub font: Option<FontSpec>,
+    /// Tooltip border specification.
+    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    pub border: Option<WidgetBorderSpec>,
 }
 
-// ── §2.8 Scrollbar ───────────────────────────────────────────────────────────
+// ── 2.8 Scrollbar ───────────────────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Scrollbar colors and geometry.
-    ScrollbarTheme / ResolvedScrollbarTheme {
-        option {
-            /// Scrollbar track (gutter) color.
-            track_color: Rgba,
-            /// Scrollbar thumb color.
-            thumb_color: Rgba,
-            /// Thumb color on hover.
-            thumb_hover_color: Rgba,
-            /// Scrollbar groove width in logical pixels.
-            groove_width as "groove_width_px": f32,
-            /// Minimum thumb length in logical pixels.
-            min_thumb_length as "min_thumb_length_px": f32,
-            /// Width of the thumb rail within the scrollbar.
-            thumb_width as "thumb_width_px": f32,
-            /// Whether the scrollbar overlays content instead of taking layout space.
-            overlay_mode: bool,
-        }
-        soft_option {
-            /// Thumb color when pressed/dragging.
-            thumb_active_color: Rgba,
-        }
-    }
+/// Scrollbar colors and geometry.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct ScrollbarTheme {
+    /// Scrollbar track (gutter) color.
+    pub track_color: Option<Rgba>,
+    /// Scrollbar thumb color.
+    #[theme(inherit_from = "defaults.muted_color")]
+    pub thumb_color: Option<Rgba>,
+    /// Thumb color on hover.
+    #[theme(inherit_from = "defaults.muted_color")]
+    pub thumb_hover_color: Option<Rgba>,
+    /// Scrollbar groove width in logical pixels.
+    #[serde(rename = "groove_width_px")]
+    #[theme(check = "non_negative")]
+    pub groove_width: Option<f32>,
+    /// Minimum thumb length in logical pixels.
+    #[serde(rename = "min_thumb_length_px")]
+    #[theme(check = "non_negative")]
+    pub min_thumb_length: Option<f32>,
+    /// Width of the thumb rail within the scrollbar.
+    #[serde(rename = "thumb_width_px")]
+    #[theme(check = "non_negative")]
+    pub thumb_width: Option<f32>,
+    /// Whether the scrollbar overlays content instead of taking layout space.
+    pub overlay_mode: Option<bool>,
+    /// Thumb color when pressed/dragging.
+    #[theme(category = "soft_option")]
+    pub thumb_active_color: Option<Rgba>,
 }
 
-// ── §2.9 Slider ──────────────────────────────────────────────────────────────
+// ── 2.9 Slider ──────────────────────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Slider control colors and geometry.
-    SliderTheme / ResolvedSliderTheme {
-        option {
-            /// Filled portion of the slider track.
-            fill_color: Rgba,
-            /// Unfilled track color.
-            track_color: Rgba,
-            /// Thumb (handle) color.
-            thumb_color: Rgba,
-            /// Track height in logical pixels.
-            track_height as "track_height_px": f32,
-            /// Thumb diameter in logical pixels.
-            thumb_diameter as "thumb_diameter_px": f32,
-            /// Tick mark length in logical pixels.
-            tick_mark_length as "tick_mark_length_px": f32,
-            /// Opacity multiplier when disabled (0.0-1.0).
-            disabled_opacity: f32,
-        }
-        soft_option {
-            /// Thumb color on hover.
-            thumb_hover_color: Rgba,
-            /// Filled track color when disabled.
-            disabled_fill_color: Rgba,
-            /// Unfilled track color when disabled.
-            disabled_track_color: Rgba,
-            /// Thumb color when disabled.
-            disabled_thumb_color: Rgba,
-        }
-    }
+/// Slider control colors and geometry.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct SliderTheme {
+    /// Filled portion of the slider track.
+    #[theme(inherit_from = "defaults.accent_color")]
+    pub fill_color: Option<Rgba>,
+    /// Unfilled track color.
+    #[theme(inherit_from = "defaults.muted_color")]
+    pub track_color: Option<Rgba>,
+    /// Thumb (handle) color.
+    #[theme(inherit_from = "defaults.surface_color")]
+    pub thumb_color: Option<Rgba>,
+    /// Track height in logical pixels.
+    #[serde(rename = "track_height_px")]
+    #[theme(check = "non_negative")]
+    pub track_height: Option<f32>,
+    /// Thumb diameter in logical pixels.
+    #[serde(rename = "thumb_diameter_px")]
+    #[theme(check = "non_negative")]
+    pub thumb_diameter: Option<f32>,
+    /// Tick mark length in logical pixels.
+    #[serde(rename = "tick_mark_length_px")]
+    #[theme(check = "non_negative")]
+    pub tick_mark_length: Option<f32>,
+    /// Opacity multiplier when disabled (0.0-1.0).
+    #[theme(range = "0.0..=1.0", inherit_from = "defaults.disabled_opacity")]
+    pub disabled_opacity: Option<f32>,
+    /// Thumb color on hover.
+    #[theme(category = "soft_option")]
+    pub thumb_hover_color: Option<Rgba>,
+    /// Filled track color when disabled.
+    #[theme(category = "soft_option")]
+    pub disabled_fill_color: Option<Rgba>,
+    /// Unfilled track color when disabled.
+    #[theme(category = "soft_option")]
+    pub disabled_track_color: Option<Rgba>,
+    /// Thumb color when disabled.
+    #[theme(category = "soft_option")]
+    pub disabled_thumb_color: Option<Rgba>,
 }
 
-// ── §2.10 Progress Bar ───────────────────────────────────────────────────────
+// ── 2.10 Progress Bar ───────────────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Progress bar colors and geometry.
-    ProgressBarTheme / ResolvedProgressBarTheme {
-        option {
-            /// Filled progress bar color.
-            fill_color: Rgba,
-            /// Background track color.
-            track_color: Rgba,
-            /// Bar height in logical pixels.
-            track_height as "track_height_px": f32,
-            /// Minimum bar width in logical pixels.
-            min_width as "min_width_px": f32,
-        }
-        optional_nested {
-            /// Progress bar border specification.
-            border: [WidgetBorderSpec, ResolvedBorderSpec],
-        }
-    }
+/// Progress bar colors and geometry.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct ProgressBarTheme {
+    /// Filled progress bar color.
+    #[theme(inherit_from = "defaults.accent_color")]
+    pub fill_color: Option<Rgba>,
+    /// Background track color.
+    #[theme(inherit_from = "defaults.muted_color")]
+    pub track_color: Option<Rgba>,
+    /// Bar height in logical pixels.
+    #[serde(rename = "track_height_px")]
+    #[theme(check = "non_negative")]
+    pub track_height: Option<f32>,
+    /// Minimum bar width in logical pixels.
+    #[serde(rename = "min_width_px")]
+    #[theme(check = "non_negative")]
+    pub min_width: Option<f32>,
+    /// Progress bar border specification.
+    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    pub border: Option<WidgetBorderSpec>,
 }
 
-// ── §2.11 Tab Bar ─────────────────────────────────────────────────────────────
+// ── 2.11 Tab Bar ─────────────────────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Tab bar colors and sizing.
-    TabTheme / ResolvedTabTheme {
-        option {
-            /// Inactive tab background.
-            background_color: Rgba,
-            /// Active (selected) tab background.
-            active_background: Rgba,
-            /// Active (selected) tab text color.
-            active_text_color: Rgba,
-            /// Tab bar strip background.
-            bar_background: Rgba,
-            /// Minimum tab width in logical pixels.
-            min_width as "min_width_px": f32,
-            /// Minimum tab height in logical pixels.
-            min_height as "min_height_px": f32,
-            /// Tab text color on hover.
-            hover_text_color: Rgba,
-        }
-        soft_option {
-            /// Tab background on hover.
-            hover_background: Rgba,
-        }
-        optional_nested {
-            /// Tab font specification.
-            font: [FontSpec, ResolvedFontSpec],
-        }
-        border_optional {
-            /// Tab border specification.
-            border: [WidgetBorderSpec, ResolvedBorderSpec],
-        }
-    }
+/// Tab bar colors and sizing.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+#[theme_layer(border_kind = "none")]
+pub struct TabTheme {
+    /// Inactive tab background.
+    #[theme(inherit_from = "defaults.background_color")]
+    pub background_color: Option<Rgba>,
+    /// Active (selected) tab background.
+    #[theme(inherit_from = "defaults.background_color")]
+    pub active_background: Option<Rgba>,
+    /// Active (selected) tab text color.
+    #[theme(inherit_from = "defaults.text_color")]
+    pub active_text_color: Option<Rgba>,
+    /// Tab bar strip background.
+    #[theme(inherit_from = "defaults.background_color")]
+    pub bar_background: Option<Rgba>,
+    /// Minimum tab width in logical pixels.
+    #[serde(rename = "min_width_px")]
+    #[theme(check = "non_negative")]
+    pub min_width: Option<f32>,
+    /// Minimum tab height in logical pixels.
+    #[serde(rename = "min_height_px")]
+    #[theme(check = "non_negative")]
+    pub min_height: Option<f32>,
+    /// Tab text color on hover.
+    pub hover_text_color: Option<Rgba>,
+    /// Tab background on hover.
+    #[theme(category = "soft_option")]
+    pub hover_background: Option<Rgba>,
+    /// Tab font specification.
+    #[theme(nested, resolved_type = "ResolvedFontSpec")]
+    pub font: Option<FontSpec>,
+    /// Tab border specification.
+    #[theme(border_optional, resolved_type = "ResolvedBorderSpec")]
+    pub border: Option<WidgetBorderSpec>,
 }
 
-// ── §2.12 Sidebar ─────────────────────────────────────────────────────────────
+// ── 2.12 Sidebar ─────────────────────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Sidebar panel background, selection, and hover colors.
-    SidebarTheme / ResolvedSidebarTheme {
-        option {
-            /// Sidebar panel background fill.
-            background_color: Rgba,
-            /// Selected item background color.
-            selection_background: Rgba,
-            /// Selected item text color.
-            selection_text_color: Rgba,
-            /// Hovered item background color.
-            hover_background: Rgba,
-        }
-        optional_nested {
-            /// Sidebar font specification.
-            font: [FontSpec, ResolvedFontSpec],
-        }
-        border_partial {
-            /// Sidebar border specification.
-            border: [WidgetBorderSpec, ResolvedBorderSpec],
-        }
-    }
+/// Sidebar panel background, selection, and hover colors.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+#[theme_layer(border_kind = "partial")]
+pub struct SidebarTheme {
+    /// Sidebar panel background fill.
+    #[theme(inherit_from = "defaults.background_color")]
+    pub background_color: Option<Rgba>,
+    /// Selected item background color.
+    #[theme(inherit_from = "defaults.selection_background")]
+    pub selection_background: Option<Rgba>,
+    /// Selected item text color.
+    #[theme(inherit_from = "defaults.selection_text_color")]
+    pub selection_text_color: Option<Rgba>,
+    /// Hovered item background color.
+    #[theme(inherit_from = "defaults.background_color")]
+    pub hover_background: Option<Rgba>,
+    /// Sidebar font specification.
+    #[theme(nested, resolved_type = "ResolvedFontSpec")]
+    pub font: Option<FontSpec>,
+    /// Sidebar border specification.
+    #[theme(border_partial, resolved_type = "ResolvedBorderSpec")]
+    pub border: Option<WidgetBorderSpec>,
 }
 
-// ── §2.13 Toolbar ─────────────────────────────────────────────────────────────
+// ── 2.13 Toolbar ─────────────────────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Toolbar sizing, spacing, and font.
-    ToolbarTheme / ResolvedToolbarTheme {
-        option {
-            /// Toolbar background color.
-            background_color: Rgba,
-            /// Toolbar height in logical pixels.
-            bar_height as "bar_height_px": f32,
-            /// Horizontal space between toolbar items.
-            item_gap as "item_gap_px": f32,
-            /// Toolbar icon size in logical pixels.
-            icon_size as "icon_size_px": f32,
-        }
-        optional_nested {
-            /// Toolbar label font specification.
-            font: [FontSpec, ResolvedFontSpec],
-            /// Toolbar border specification.
-            border: [WidgetBorderSpec, ResolvedBorderSpec],
-        }
-    }
+/// Toolbar sizing, spacing, and font.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct ToolbarTheme {
+    /// Toolbar background color.
+    #[theme(inherit_from = "defaults.background_color")]
+    pub background_color: Option<Rgba>,
+    /// Toolbar height in logical pixels.
+    #[serde(rename = "bar_height_px")]
+    #[theme(check = "non_negative")]
+    pub bar_height: Option<f32>,
+    /// Horizontal space between toolbar items.
+    #[serde(rename = "item_gap_px")]
+    #[theme(check = "non_negative")]
+    pub item_gap: Option<f32>,
+    /// Toolbar icon size in logical pixels.
+    #[serde(rename = "icon_size_px")]
+    #[theme(check = "non_negative", inherit_from = "defaults.icon_sizes.toolbar")]
+    pub icon_size: Option<f32>,
+    /// Toolbar label font specification.
+    #[theme(nested, resolved_type = "ResolvedFontSpec")]
+    pub font: Option<FontSpec>,
+    /// Toolbar border specification.
+    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    pub border: Option<WidgetBorderSpec>,
 }
 
-// ── §2.14 Status Bar ──────────────────────────────────────────────────────────
+// ── 2.14 Status Bar ──────────────────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Status bar font and background.
-    StatusBarTheme / ResolvedStatusBarTheme {
-        option {
-            /// Status bar background color.
-            background_color: Rgba,
-        }
-        optional_nested {
-            /// Status bar font specification.
-            font: [FontSpec, ResolvedFontSpec],
-        }
-        border_partial {
-            /// Status bar border specification.
-            border: [WidgetBorderSpec, ResolvedBorderSpec],
-        }
-    }
+/// Status bar font and background.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+#[theme_layer(border_kind = "partial")]
+pub struct StatusBarTheme {
+    /// Status bar background color.
+    #[theme(inherit_from = "defaults.background_color")]
+    pub background_color: Option<Rgba>,
+    /// Status bar font specification.
+    #[theme(nested, resolved_type = "ResolvedFontSpec")]
+    pub font: Option<FontSpec>,
+    /// Status bar border specification.
+    #[theme(border_partial, resolved_type = "ResolvedBorderSpec")]
+    pub border: Option<WidgetBorderSpec>,
 }
 
-// ── §2.15 List / Table ────────────────────────────────────────────────────────
+// ── 2.15 List / Table ────────────────────────────────────────────────────────
 
-define_widget_pair! {
-    /// List and table colors and row geometry.
-    ListTheme / ResolvedListTheme {
-        option {
-            /// List background fill.
-            background_color: Rgba,
-            /// Alternate row background for striped lists.
-            alternate_row_background: Rgba,
-            /// Selected row highlight color.
-            selection_background: Rgba,
-            /// Text color inside a selected row.
-            selection_text_color: Rgba,
-            /// Column header background fill.
-            header_background: Rgba,
-            /// Grid line color between rows/columns.
-            grid_color: Rgba,
-            /// Row height in logical pixels.
-            row_height as "row_height_px": f32,
-            /// Hovered row background color.
-            hover_background: Rgba,
-            /// Hovered row text color.
-            hover_text_color: Rgba,
-            /// Disabled row text color.
-            disabled_text_color: Rgba,
-        }
-        optional_nested {
-            /// List item font specification.
-            item_font: [FontSpec, ResolvedFontSpec],
-            /// Column header font specification.
-            header_font: [FontSpec, ResolvedFontSpec],
-            /// List border specification.
-            border: [WidgetBorderSpec, ResolvedBorderSpec],
-        }
-    }
+/// List and table colors and row geometry.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct ListTheme {
+    /// List background fill.
+    pub background_color: Option<Rgba>,
+    /// Alternate row background for striped lists.
+    pub alternate_row_background: Option<Rgba>,
+    /// Selected row highlight color.
+    #[theme(inherit_from = "defaults.selection_background")]
+    pub selection_background: Option<Rgba>,
+    /// Text color inside a selected row.
+    #[theme(inherit_from = "defaults.selection_text_color")]
+    pub selection_text_color: Option<Rgba>,
+    /// Column header background fill.
+    #[theme(inherit_from = "defaults.surface_color")]
+    pub header_background: Option<Rgba>,
+    /// Grid line color between rows/columns.
+    #[theme(inherit_from = "defaults.border.color")]
+    pub grid_color: Option<Rgba>,
+    /// Row height in logical pixels.
+    #[serde(rename = "row_height_px")]
+    #[theme(check = "non_negative")]
+    pub row_height: Option<f32>,
+    /// Hovered row background color.
+    #[theme(inherit_from = "defaults.background_color")]
+    pub hover_background: Option<Rgba>,
+    /// Hovered row text color.
+    pub hover_text_color: Option<Rgba>,
+    /// Disabled row text color.
+    #[theme(inherit_from = "defaults.disabled_text_color")]
+    pub disabled_text_color: Option<Rgba>,
+    /// List item font specification.
+    #[theme(nested, resolved_type = "ResolvedFontSpec")]
+    pub item_font: Option<FontSpec>,
+    /// Column header font specification.
+    #[theme(nested, resolved_type = "ResolvedFontSpec")]
+    pub header_font: Option<FontSpec>,
+    /// List border specification.
+    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    pub border: Option<WidgetBorderSpec>,
 }
 
-// ── §2.16 Popover / Dropdown ──────────────────────────────────────────────────
+// ── 2.16 Popover / Dropdown ──────────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Popover / dropdown panel appearance.
-    PopoverTheme / ResolvedPopoverTheme {
-        option {
-            /// Panel background fill.
-            background_color: Rgba,
-        }
-        optional_nested {
-            /// Popover font specification.
-            font: [FontSpec, ResolvedFontSpec],
-            /// Popover border specification.
-            border: [WidgetBorderSpec, ResolvedBorderSpec],
-        }
-    }
+/// Popover / dropdown panel appearance.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct PopoverTheme {
+    /// Panel background fill.
+    pub background_color: Option<Rgba>,
+    /// Popover font specification.
+    #[theme(nested, resolved_type = "ResolvedFontSpec")]
+    pub font: Option<FontSpec>,
+    /// Popover border specification.
+    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    pub border: Option<WidgetBorderSpec>,
 }
 
-// ── §2.17 Splitter ────────────────────────────────────────────────────────────
+// ── 2.17 Splitter ────────────────────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Splitter handle width and color.
-    SplitterTheme / ResolvedSplitterTheme {
-        option {
-            /// Handle width in logical pixels.
-            divider_width as "divider_width_px": f32,
-            /// Divider color.
-            divider_color: Rgba,
-            /// Divider color on hover.
-            hover_color: Rgba,
-        }
-    }
+/// Splitter handle width and color.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct SplitterTheme {
+    /// Handle width in logical pixels.
+    #[serde(rename = "divider_width_px")]
+    #[theme(check = "non_negative")]
+    pub divider_width: Option<f32>,
+    /// Divider color.
+    #[theme(inherit_from = "defaults.border.color")]
+    pub divider_color: Option<Rgba>,
+    /// Divider color on hover.
+    pub hover_color: Option<Rgba>,
 }
 
-// ── §2.18 Separator ───────────────────────────────────────────────────────────
+// ── 2.18 Separator ───────────────────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Separator line color and width.
-    SeparatorTheme / ResolvedSeparatorTheme {
-        option {
-            /// Separator line color.
-            line_color: Rgba,
-            /// Separator line width in logical pixels.
-            line_width as "line_width_px": f32,
-        }
-    }
+/// Separator line color and width.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct SeparatorTheme {
+    /// Separator line color.
+    #[theme(inherit_from = "defaults.border.color")]
+    pub line_color: Option<Rgba>,
+    /// Separator line width in logical pixels.
+    #[serde(rename = "line_width_px")]
+    #[theme(check = "non_negative", inherit_from = "defaults.border.line_width")]
+    pub line_width: Option<f32>,
 }
 
-// ── §2.21 Switch / Toggle ─────────────────────────────────────────────────────
+// ── 2.21 Switch / Toggle ─────────────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Toggle switch track, thumb, geometry, and interactive states.
-    SwitchTheme / ResolvedSwitchTheme {
-        option {
-            /// Track background when the switch is on.
-            checked_background: Rgba,
-            /// Track background when the switch is off.
-            unchecked_background: Rgba,
-            /// Thumb (knob) color.
-            thumb_background: Rgba,
-            /// Track width in logical pixels.
-            track_width as "track_width_px": f32,
-            /// Track height in logical pixels.
-            track_height as "track_height_px": f32,
-            /// Thumb diameter in logical pixels.
-            thumb_diameter as "thumb_diameter_px": f32,
-            /// Track corner radius in logical pixels.
-            track_radius as "track_radius_px": f32,
-            /// Opacity multiplier when disabled (0.0-1.0).
-            disabled_opacity: f32,
-        }
-        soft_option {
-            /// Track hover color when checked (on).
-            hover_checked_background: Rgba,
-            /// Track hover color when unchecked (off).
-            hover_unchecked_background: Rgba,
-            /// Track color when disabled and checked.
-            disabled_checked_background: Rgba,
-            /// Track color when disabled and unchecked.
-            disabled_unchecked_background: Rgba,
-            /// Thumb color when disabled.
-            disabled_thumb_color: Rgba,
-        }
-    }
+/// Toggle switch track, thumb, geometry, and interactive states.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct SwitchTheme {
+    /// Track background when the switch is on.
+    #[theme(inherit_from = "defaults.accent_color")]
+    pub checked_background: Option<Rgba>,
+    /// Track background when the switch is off.
+    pub unchecked_background: Option<Rgba>,
+    /// Thumb (knob) color.
+    #[theme(inherit_from = "defaults.surface_color")]
+    pub thumb_background: Option<Rgba>,
+    /// Track width in logical pixels.
+    #[serde(rename = "track_width_px")]
+    #[theme(check = "non_negative")]
+    pub track_width: Option<f32>,
+    /// Track height in logical pixels.
+    #[serde(rename = "track_height_px")]
+    #[theme(check = "non_negative")]
+    pub track_height: Option<f32>,
+    /// Thumb diameter in logical pixels.
+    #[serde(rename = "thumb_diameter_px")]
+    #[theme(check = "non_negative")]
+    pub thumb_diameter: Option<f32>,
+    /// Track corner radius in logical pixels.
+    #[serde(rename = "track_radius_px")]
+    #[theme(check = "non_negative")]
+    pub track_radius: Option<f32>,
+    /// Opacity multiplier when disabled (0.0-1.0).
+    #[theme(range = "0.0..=1.0", inherit_from = "defaults.disabled_opacity")]
+    pub disabled_opacity: Option<f32>,
+    /// Track hover color when checked (on).
+    #[theme(category = "soft_option")]
+    pub hover_checked_background: Option<Rgba>,
+    /// Track hover color when unchecked (off).
+    #[theme(category = "soft_option")]
+    pub hover_unchecked_background: Option<Rgba>,
+    /// Track color when disabled and checked.
+    #[theme(category = "soft_option")]
+    pub disabled_checked_background: Option<Rgba>,
+    /// Track color when disabled and unchecked.
+    #[theme(category = "soft_option")]
+    pub disabled_unchecked_background: Option<Rgba>,
+    /// Thumb color when disabled.
+    #[theme(category = "soft_option")]
+    pub disabled_thumb_color: Option<Rgba>,
 }
 
-// ── §2.22 Dialog ──────────────────────────────────────────────────────────────
+// ── 2.22 Dialog ──────────────────────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Dialog sizing, spacing, button order, fonts, border, and background.
-    DialogTheme / ResolvedDialogTheme {
-        option {
-            /// Dialog background color.
-            background_color: Rgba,
-            /// Minimum dialog width in logical pixels.
-            min_width as "min_width_px": f32,
-            /// Maximum dialog width in logical pixels.
-            max_width as "max_width_px": f32,
-            /// Minimum dialog height in logical pixels.
-            min_height as "min_height_px": f32,
-            /// Maximum dialog height in logical pixels.
-            max_height as "max_height_px": f32,
-            /// Horizontal space between dialog buttons.
-            button_gap as "button_gap_px": f32,
-            /// Icon size for dialog type icons (warning, error, etc.).
-            icon_size as "icon_size_px": f32,
-            /// Platform button order convention (e.g., OK/Cancel vs Cancel/OK).
-            button_order: DialogButtonOrder,
-        }
-        optional_nested {
-            /// Dialog title font specification.
-            title_font: [FontSpec, ResolvedFontSpec],
-            /// Dialog body font specification.
-            body_font: [FontSpec, ResolvedFontSpec],
-            /// Dialog border specification.
-            border: [WidgetBorderSpec, ResolvedBorderSpec],
-        }
-    }
+/// Dialog sizing, spacing, button order, fonts, border, and background.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct DialogTheme {
+    /// Dialog background color.
+    pub background_color: Option<Rgba>,
+    /// Minimum dialog width in logical pixels.
+    #[serde(rename = "min_width_px")]
+    #[theme(check = "non_negative", min_max_pair = "max_width")]
+    pub min_width: Option<f32>,
+    /// Maximum dialog width in logical pixels.
+    #[serde(rename = "max_width_px")]
+    #[theme(check = "non_negative")]
+    pub max_width: Option<f32>,
+    /// Minimum dialog height in logical pixels.
+    #[serde(rename = "min_height_px")]
+    #[theme(check = "non_negative", min_max_pair = "max_height")]
+    pub min_height: Option<f32>,
+    /// Maximum dialog height in logical pixels.
+    #[serde(rename = "max_height_px")]
+    #[theme(check = "non_negative")]
+    pub max_height: Option<f32>,
+    /// Horizontal space between dialog buttons.
+    #[serde(rename = "button_gap_px")]
+    #[theme(check = "non_negative")]
+    pub button_gap: Option<f32>,
+    /// Icon size for dialog type icons (warning, error, etc.).
+    #[serde(rename = "icon_size_px")]
+    #[theme(check = "non_negative")]
+    pub icon_size: Option<f32>,
+    /// Platform button order convention (e.g., OK/Cancel vs Cancel/OK).
+    pub button_order: Option<DialogButtonOrder>,
+    /// Dialog title font specification.
+    #[theme(nested, resolved_type = "ResolvedFontSpec")]
+    pub title_font: Option<FontSpec>,
+    /// Dialog body font specification.
+    #[theme(nested, resolved_type = "ResolvedFontSpec")]
+    pub body_font: Option<FontSpec>,
+    /// Dialog border specification.
+    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    pub border: Option<WidgetBorderSpec>,
 }
 
-// ── §2.23 Spinner / Progress Ring ─────────────────────────────────────────────
+// ── 2.23 Spinner / Progress Ring ─────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Spinner / indeterminate progress indicator.
-    SpinnerTheme / ResolvedSpinnerTheme {
-        option {
-            /// Spinner arc fill color.
-            fill_color: Rgba,
-            /// Spinner outer diameter in logical pixels.
-            diameter as "diameter_px": f32,
-            /// Minimum rendered size in logical pixels.
-            min_diameter as "min_diameter_px": f32,
-            /// Arc stroke width in logical pixels.
-            stroke_width as "stroke_width_px": f32,
-        }
-    }
+/// Spinner / indeterminate progress indicator.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct SpinnerTheme {
+    /// Spinner arc fill color.
+    pub fill_color: Option<Rgba>,
+    /// Spinner outer diameter in logical pixels.
+    #[serde(rename = "diameter_px")]
+    #[theme(check = "non_negative")]
+    pub diameter: Option<f32>,
+    /// Minimum rendered size in logical pixels.
+    #[serde(rename = "min_diameter_px")]
+    #[theme(check = "non_negative")]
+    pub min_diameter: Option<f32>,
+    /// Arc stroke width in logical pixels.
+    #[serde(rename = "stroke_width_px")]
+    #[theme(check = "non_negative")]
+    pub stroke_width: Option<f32>,
 }
 
-// ── §2.24 ComboBox / Dropdown Trigger ─────────────────────────────────────────
+// ── 2.24 ComboBox / Dropdown Trigger ─────────────────────────────────────────
 
-define_widget_pair! {
-    /// ComboBox / dropdown trigger sizing.
-    ComboBoxTheme / ResolvedComboBoxTheme {
-        option {
-            /// ComboBox background color.
-            background_color: Rgba,
-            /// Minimum trigger height in logical pixels.
-            min_height as "min_height_px": f32,
-            /// Minimum trigger width in logical pixels.
-            min_width as "min_width_px": f32,
-            /// Dropdown arrow size in logical pixels.
-            arrow_icon_size as "arrow_icon_size_px": f32,
-            /// Width of the arrow clickable area.
-            arrow_area_width as "arrow_area_width_px": f32,
-            /// Opacity multiplier when disabled (0.0-1.0).
-            disabled_opacity: f32,
-            /// ComboBox text color when disabled.
-            disabled_text_color: Rgba,
-        }
-        soft_option {
-            /// ComboBox background on hover.
-            hover_background: Rgba,
-            /// ComboBox background when disabled.
-            disabled_background: Rgba,
-        }
-        optional_nested {
-            /// ComboBox font specification.
-            font: [FontSpec, ResolvedFontSpec],
-            /// ComboBox border specification.
-            border: [WidgetBorderSpec, ResolvedBorderSpec],
-        }
-    }
+/// ComboBox / dropdown trigger sizing.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct ComboBoxTheme {
+    /// ComboBox background color.
+    #[theme(inherit_from = "defaults.background_color")]
+    pub background_color: Option<Rgba>,
+    /// Minimum trigger height in logical pixels.
+    #[serde(rename = "min_height_px")]
+    #[theme(check = "non_negative")]
+    pub min_height: Option<f32>,
+    /// Minimum trigger width in logical pixels.
+    #[serde(rename = "min_width_px")]
+    #[theme(check = "non_negative")]
+    pub min_width: Option<f32>,
+    /// Dropdown arrow size in logical pixels.
+    #[serde(rename = "arrow_icon_size_px")]
+    #[theme(check = "non_negative")]
+    pub arrow_icon_size: Option<f32>,
+    /// Width of the arrow clickable area.
+    #[serde(rename = "arrow_area_width_px")]
+    #[theme(check = "non_negative")]
+    pub arrow_area_width: Option<f32>,
+    /// Opacity multiplier when disabled (0.0-1.0).
+    #[theme(range = "0.0..=1.0", inherit_from = "defaults.disabled_opacity")]
+    pub disabled_opacity: Option<f32>,
+    /// ComboBox text color when disabled.
+    #[theme(inherit_from = "defaults.disabled_text_color")]
+    pub disabled_text_color: Option<Rgba>,
+    /// ComboBox background on hover.
+    #[theme(category = "soft_option")]
+    pub hover_background: Option<Rgba>,
+    /// ComboBox background when disabled.
+    #[theme(category = "soft_option")]
+    pub disabled_background: Option<Rgba>,
+    /// ComboBox font specification.
+    #[theme(nested, resolved_type = "ResolvedFontSpec")]
+    pub font: Option<FontSpec>,
+    /// ComboBox border specification.
+    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    pub border: Option<WidgetBorderSpec>,
 }
 
-// ── §2.25 Segmented Control ───────────────────────────────────────────────────
+// ── 2.25 Segmented Control ───────────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Segmented control sizing (macOS-primary; KDE uses tab bar metrics as proxy).
-    SegmentedControlTheme / ResolvedSegmentedControlTheme {
-        option {
-            /// Segmented control background color.
-            background_color: Rgba,
-            /// Active segment background.
-            active_background: Rgba,
-            /// Active segment text color.
-            active_text_color: Rgba,
-            /// Segment height in logical pixels.
-            segment_height as "segment_height_px": f32,
-            /// Width of the separator between segments.
-            separator_width as "separator_width_px": f32,
-            /// Opacity multiplier when disabled (0.0-1.0).
-            disabled_opacity: f32,
-        }
-        soft_option {
-            /// Segment background on hover.
-            hover_background: Rgba,
-        }
-        optional_nested {
-            /// Segmented control font specification.
-            font: [FontSpec, ResolvedFontSpec],
-            /// Segmented control border specification.
-            border: [WidgetBorderSpec, ResolvedBorderSpec],
-        }
-    }
+/// Segmented control sizing (macOS-primary; KDE uses tab bar metrics as proxy).
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct SegmentedControlTheme {
+    /// Segmented control background color.
+    #[theme(inherit_from = "defaults.background_color")]
+    pub background_color: Option<Rgba>,
+    /// Active segment background.
+    #[theme(inherit_from = "defaults.accent_color")]
+    pub active_background: Option<Rgba>,
+    /// Active segment text color.
+    #[theme(inherit_from = "defaults.accent_text_color")]
+    pub active_text_color: Option<Rgba>,
+    /// Segment height in logical pixels.
+    #[serde(rename = "segment_height_px")]
+    #[theme(check = "non_negative")]
+    pub segment_height: Option<f32>,
+    /// Width of the separator between segments.
+    #[serde(rename = "separator_width_px")]
+    #[theme(check = "non_negative")]
+    pub separator_width: Option<f32>,
+    /// Opacity multiplier when disabled (0.0-1.0).
+    #[theme(range = "0.0..=1.0", inherit_from = "defaults.disabled_opacity")]
+    pub disabled_opacity: Option<f32>,
+    /// Segment background on hover.
+    #[theme(category = "soft_option")]
+    pub hover_background: Option<Rgba>,
+    /// Segmented control font specification.
+    #[theme(nested, resolved_type = "ResolvedFontSpec")]
+    pub font: Option<FontSpec>,
+    /// Segmented control border specification.
+    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    pub border: Option<WidgetBorderSpec>,
 }
 
-// ── §2.26 Card / Container ────────────────────────────────────────────────────
+// ── 2.26 Card / Container ────────────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Card / container colors and geometry.
-    CardTheme / ResolvedCardTheme {
-        option {
-            /// Card background fill.
-            background_color: Rgba,
-        }
-        border_optional {
-            /// Card border specification.
-            border: [WidgetBorderSpec, ResolvedBorderSpec],
-        }
-    }
+/// Card / container colors and geometry.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+#[theme_layer(border_kind = "none")]
+pub struct CardTheme {
+    /// Card background fill.
+    #[theme(inherit_from = "defaults.surface_color")]
+    pub background_color: Option<Rgba>,
+    /// Card border specification.
+    #[theme(border_optional, resolved_type = "ResolvedBorderSpec")]
+    pub border: Option<WidgetBorderSpec>,
 }
 
-// ── §2.27 Expander / Disclosure ───────────────────────────────────────────────
+// ── 2.27 Expander / Disclosure ───────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Expander / disclosure row geometry.
-    ExpanderTheme / ResolvedExpanderTheme {
-        option {
-            /// Collapsed header row height in logical pixels.
-            header_height as "header_height_px": f32,
-            /// Disclosure arrow size in logical pixels.
-            arrow_icon_size as "arrow_icon_size_px": f32,
-        }
-        soft_option {
-            /// Expander header background on hover.
-            hover_background: Rgba,
-            /// Disclosure arrow/chevron color.
-            arrow_color: Rgba,
-        }
-        optional_nested {
-            /// Expander font specification.
-            font: [FontSpec, ResolvedFontSpec],
-            /// Expander border specification.
-            border: [WidgetBorderSpec, ResolvedBorderSpec],
-        }
-    }
+/// Expander / disclosure row geometry.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct ExpanderTheme {
+    /// Collapsed header row height in logical pixels.
+    #[serde(rename = "header_height_px")]
+    #[theme(check = "non_negative")]
+    pub header_height: Option<f32>,
+    /// Disclosure arrow size in logical pixels.
+    #[serde(rename = "arrow_icon_size_px")]
+    #[theme(check = "non_negative")]
+    pub arrow_icon_size: Option<f32>,
+    /// Expander header background on hover.
+    #[theme(category = "soft_option")]
+    pub hover_background: Option<Rgba>,
+    /// Disclosure arrow/chevron color.
+    #[theme(category = "soft_option")]
+    pub arrow_color: Option<Rgba>,
+    /// Expander font specification.
+    #[theme(nested, resolved_type = "ResolvedFontSpec")]
+    pub font: Option<FontSpec>,
+    /// Expander border specification.
+    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    pub border: Option<WidgetBorderSpec>,
 }
 
-// ── §2.28 Link ────────────────────────────────────────────────────────────────
+// ── 2.28 Link ────────────────────────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Hyperlink colors and underline setting.
-    LinkTheme / ResolvedLinkTheme {
-        option {
-            /// Visited link text color.
-            visited_text_color: Rgba,
-            /// Whether links are underlined.
-            underline_enabled: bool,
-            /// Link background fill (typically transparent).
-            background_color: Rgba,
-            /// Link background on hover.
-            hover_background: Rgba,
-            /// Link text color on hover.
-            hover_text_color: Rgba,
-            /// Link text color when pressed/active.
-            active_text_color: Rgba,
-            /// Link text color when disabled.
-            disabled_text_color: Rgba,
-        }
-        optional_nested {
-            /// Link font specification.
-            font: [FontSpec, ResolvedFontSpec],
-        }
-    }
+/// Hyperlink colors and underline setting.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct LinkTheme {
+    /// Visited link text color.
+    #[theme(inherit_from = "defaults.link_color")]
+    pub visited_text_color: Option<Rgba>,
+    /// Whether links are underlined.
+    pub underline_enabled: Option<bool>,
+    /// Link background fill (typically transparent).
+    pub background_color: Option<Rgba>,
+    /// Link background on hover.
+    pub hover_background: Option<Rgba>,
+    /// Link text color on hover.
+    pub hover_text_color: Option<Rgba>,
+    /// Link text color when pressed/active.
+    pub active_text_color: Option<Rgba>,
+    /// Link text color when disabled.
+    #[theme(inherit_from = "defaults.disabled_text_color")]
+    pub disabled_text_color: Option<Rgba>,
+    /// Link font specification.
+    #[theme(nested, resolved_type = "ResolvedFontSpec")]
+    pub font: Option<FontSpec>,
 }
 
 // -- Layout (top-level, not per-variant) ------------------------------------------
 
-define_widget_pair! {
-    /// Layout spacing constants shared between light and dark variants.
-    ///
-    /// Unlike other widget themes, LayoutTheme lives on [`crate::Theme`] (top-level)
-    /// rather than [`crate::ThemeMode`] because spacing is variant-independent.
-    LayoutTheme / ResolvedLayoutTheme {
-        option {
-            /// Space between adjacent widgets in logical pixels.
-            widget_gap as "widget_gap_px": f32,
-            /// Padding inside containers in logical pixels.
-            container_margin as "container_margin_px": f32,
-            /// Padding inside the main window in logical pixels.
-            window_margin as "window_margin_px": f32,
-            /// Space between major content sections in logical pixels.
-            section_gap as "section_gap_px": f32,
-        }
-    }
-}
-
-// --- Per-widget range checks (called from validate()) ---
-
-use crate::resolve::validate_helpers::{
-    check_min_max, check_non_negative, check_positive, check_range_f32, check_range_u16,
-};
-
-impl ResolvedWindowTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_positive(
-            self.title_bar_font.size,
-            &format!("{prefix}.title_bar_font.size"),
-            errors,
-        );
-        check_range_u16(
-            self.title_bar_font.weight,
-            100,
-            900,
-            &format!("{prefix}.title_bar_font.weight"),
-            errors,
-        );
-    }
-}
-
-// ResolvedButtonTheme::check_ranges() is generated by #[derive(ThemeWidget)]
-
-impl ResolvedInputTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_non_negative(self.min_height, &format!("{prefix}.min_height"), errors);
-        check_range_f32(
-            self.disabled_opacity,
-            0.0,
-            1.0,
-            &format!("{prefix}.disabled_opacity"),
-            errors,
-        );
-        check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(
-            self.font.weight,
-            100,
-            900,
-            &format!("{prefix}.font.weight"),
-            errors,
-        );
-    }
-}
-
-impl ResolvedCheckboxTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_non_negative(
-            self.indicator_width,
-            &format!("{prefix}.indicator_width"),
-            errors,
-        );
-        check_non_negative(self.label_gap, &format!("{prefix}.label_gap"), errors);
-        check_range_f32(
-            self.disabled_opacity,
-            0.0,
-            1.0,
-            &format!("{prefix}.disabled_opacity"),
-            errors,
-        );
-        check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(
-            self.font.weight,
-            100,
-            900,
-            &format!("{prefix}.font.weight"),
-            errors,
-        );
-    }
-}
-
-impl ResolvedMenuTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_non_negative(self.row_height, &format!("{prefix}.row_height"), errors);
-        check_non_negative(
-            self.icon_text_gap,
-            &format!("{prefix}.icon_text_gap"),
-            errors,
-        );
-        check_non_negative(self.icon_size, &format!("{prefix}.icon_size"), errors);
-        check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(
-            self.font.weight,
-            100,
-            900,
-            &format!("{prefix}.font.weight"),
-            errors,
-        );
-    }
-}
-
-impl ResolvedTooltipTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_non_negative(self.max_width, &format!("{prefix}.max_width"), errors);
-        check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(
-            self.font.weight,
-            100,
-            900,
-            &format!("{prefix}.font.weight"),
-            errors,
-        );
-    }
-}
-
-impl ResolvedScrollbarTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_non_negative(self.groove_width, &format!("{prefix}.groove_width"), errors);
-        check_non_negative(
-            self.min_thumb_length,
-            &format!("{prefix}.min_thumb_length"),
-            errors,
-        );
-        check_non_negative(self.thumb_width, &format!("{prefix}.thumb_width"), errors);
-    }
-}
-
-impl ResolvedSliderTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_non_negative(self.track_height, &format!("{prefix}.track_height"), errors);
-        check_non_negative(
-            self.thumb_diameter,
-            &format!("{prefix}.thumb_diameter"),
-            errors,
-        );
-        check_non_negative(
-            self.tick_mark_length,
-            &format!("{prefix}.tick_mark_length"),
-            errors,
-        );
-        check_range_f32(
-            self.disabled_opacity,
-            0.0,
-            1.0,
-            &format!("{prefix}.disabled_opacity"),
-            errors,
-        );
-    }
-}
-
-impl ResolvedProgressBarTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_non_negative(self.track_height, &format!("{prefix}.track_height"), errors);
-        check_non_negative(self.min_width, &format!("{prefix}.min_width"), errors);
-    }
-}
-
-impl ResolvedTabTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_non_negative(self.min_width, &format!("{prefix}.min_width"), errors);
-        check_non_negative(self.min_height, &format!("{prefix}.min_height"), errors);
-        check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(
-            self.font.weight,
-            100,
-            900,
-            &format!("{prefix}.font.weight"),
-            errors,
-        );
-    }
-}
-
-impl ResolvedSidebarTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(
-            self.font.weight,
-            100,
-            900,
-            &format!("{prefix}.font.weight"),
-            errors,
-        );
-    }
-}
-
-impl ResolvedToolbarTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_non_negative(self.bar_height, &format!("{prefix}.bar_height"), errors);
-        check_non_negative(self.item_gap, &format!("{prefix}.item_gap"), errors);
-        check_non_negative(self.icon_size, &format!("{prefix}.icon_size"), errors);
-        check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(
-            self.font.weight,
-            100,
-            900,
-            &format!("{prefix}.font.weight"),
-            errors,
-        );
-    }
-}
-
-impl ResolvedStatusBarTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(
-            self.font.weight,
-            100,
-            900,
-            &format!("{prefix}.font.weight"),
-            errors,
-        );
-    }
-}
-
-impl ResolvedListTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_non_negative(self.row_height, &format!("{prefix}.row_height"), errors);
-        check_positive(
-            self.item_font.size,
-            &format!("{prefix}.item_font.size"),
-            errors,
-        );
-        check_range_u16(
-            self.item_font.weight,
-            100,
-            900,
-            &format!("{prefix}.item_font.weight"),
-            errors,
-        );
-        check_positive(
-            self.header_font.size,
-            &format!("{prefix}.header_font.size"),
-            errors,
-        );
-        check_range_u16(
-            self.header_font.weight,
-            100,
-            900,
-            &format!("{prefix}.header_font.weight"),
-            errors,
-        );
-    }
-}
-
-impl ResolvedPopoverTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(
-            self.font.weight,
-            100,
-            900,
-            &format!("{prefix}.font.weight"),
-            errors,
-        );
-    }
-}
-
-impl ResolvedSplitterTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_non_negative(
-            self.divider_width,
-            &format!("{prefix}.divider_width"),
-            errors,
-        );
-    }
-}
-
-impl ResolvedSeparatorTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_non_negative(self.line_width, &format!("{prefix}.line_width"), errors);
-    }
-}
-
-impl ResolvedSwitchTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_non_negative(self.track_width, &format!("{prefix}.track_width"), errors);
-        check_non_negative(self.track_height, &format!("{prefix}.track_height"), errors);
-        check_non_negative(
-            self.thumb_diameter,
-            &format!("{prefix}.thumb_diameter"),
-            errors,
-        );
-        check_non_negative(self.track_radius, &format!("{prefix}.track_radius"), errors);
-        check_range_f32(
-            self.disabled_opacity,
-            0.0,
-            1.0,
-            &format!("{prefix}.disabled_opacity"),
-            errors,
-        );
-    }
-}
-
-impl ResolvedDialogTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_non_negative(self.min_width, &format!("{prefix}.min_width"), errors);
-        check_non_negative(self.max_width, &format!("{prefix}.max_width"), errors);
-        check_non_negative(self.min_height, &format!("{prefix}.min_height"), errors);
-        check_non_negative(self.max_height, &format!("{prefix}.max_height"), errors);
-        check_non_negative(self.button_gap, &format!("{prefix}.button_gap"), errors);
-        check_non_negative(self.icon_size, &format!("{prefix}.icon_size"), errors);
-        check_positive(
-            self.title_font.size,
-            &format!("{prefix}.title_font.size"),
-            errors,
-        );
-        check_range_u16(
-            self.title_font.weight,
-            100,
-            900,
-            &format!("{prefix}.title_font.weight"),
-            errors,
-        );
-        check_positive(
-            self.body_font.size,
-            &format!("{prefix}.body_font.size"),
-            errors,
-        );
-        check_range_u16(
-            self.body_font.weight,
-            100,
-            900,
-            &format!("{prefix}.body_font.weight"),
-            errors,
-        );
-        check_min_max(
-            self.min_width,
-            self.max_width,
-            &format!("{prefix}.min_width"),
-            &format!("{prefix}.max_width"),
-            errors,
-        );
-        check_min_max(
-            self.min_height,
-            self.max_height,
-            &format!("{prefix}.min_height"),
-            &format!("{prefix}.max_height"),
-            errors,
-        );
-    }
-}
-
-impl ResolvedSpinnerTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_non_negative(self.diameter, &format!("{prefix}.diameter"), errors);
-        check_non_negative(self.min_diameter, &format!("{prefix}.min_diameter"), errors);
-        check_non_negative(self.stroke_width, &format!("{prefix}.stroke_width"), errors);
-    }
-}
-
-impl ResolvedLinkTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(
-            self.font.weight,
-            100,
-            900,
-            &format!("{prefix}.font.weight"),
-            errors,
-        );
-    }
-}
-
-impl ResolvedComboBoxTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_non_negative(self.min_height, &format!("{prefix}.min_height"), errors);
-        check_non_negative(self.min_width, &format!("{prefix}.min_width"), errors);
-        check_non_negative(
-            self.arrow_icon_size,
-            &format!("{prefix}.arrow_icon_size"),
-            errors,
-        );
-        check_non_negative(
-            self.arrow_area_width,
-            &format!("{prefix}.arrow_area_width"),
-            errors,
-        );
-        check_range_f32(
-            self.disabled_opacity,
-            0.0,
-            1.0,
-            &format!("{prefix}.disabled_opacity"),
-            errors,
-        );
-        check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(
-            self.font.weight,
-            100,
-            900,
-            &format!("{prefix}.font.weight"),
-            errors,
-        );
-    }
-}
-
-impl ResolvedSegmentedControlTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_non_negative(
-            self.segment_height,
-            &format!("{prefix}.segment_height"),
-            errors,
-        );
-        check_non_negative(
-            self.separator_width,
-            &format!("{prefix}.separator_width"),
-            errors,
-        );
-        check_range_f32(
-            self.disabled_opacity,
-            0.0,
-            1.0,
-            &format!("{prefix}.disabled_opacity"),
-            errors,
-        );
-        check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(
-            self.font.weight,
-            100,
-            900,
-            &format!("{prefix}.font.weight"),
-            errors,
-        );
-    }
-}
-
-impl ResolvedExpanderTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_non_negative(
-            self.header_height,
-            &format!("{prefix}.header_height"),
-            errors,
-        );
-        check_non_negative(
-            self.arrow_icon_size,
-            &format!("{prefix}.arrow_icon_size"),
-            errors,
-        );
-        check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(
-            self.font.weight,
-            100,
-            900,
-            &format!("{prefix}.font.weight"),
-            errors,
-        );
-    }
+/// Layout spacing constants shared between light and dark variants.
+///
+/// Unlike other widget themes, LayoutTheme lives on [`crate::Theme`] (top-level)
+/// rather than [`crate::ThemeMode`] because spacing is variant-independent.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+#[theme_layer(skip_inventory)]
+pub struct LayoutTheme {
+    /// Space between adjacent widgets in logical pixels.
+    #[serde(rename = "widget_gap_px")]
+    #[theme(check = "non_negative")]
+    pub widget_gap: Option<f32>,
+    /// Padding inside containers in logical pixels.
+    #[serde(rename = "container_margin_px")]
+    #[theme(check = "non_negative")]
+    pub container_margin: Option<f32>,
+    /// Padding inside the main window in logical pixels.
+    #[serde(rename = "window_margin_px")]
+    #[theme(check = "non_negative")]
+    pub window_margin: Option<f32>,
+    /// Space between major content sections in logical pixels.
+    #[serde(rename = "section_gap_px")]
+    #[theme(check = "non_negative")]
+    pub section_gap: Option<f32>,
 }
 
 #[cfg(test)]
@@ -1429,18 +883,19 @@ mod tests {
     use crate::model::font::FontSize;
     use crate::model::{DialogButtonOrder, FontSpec};
 
-    // Define a test widget pair using the macro (validates macro itself still works)
-    define_widget_pair! {
-        /// Test widget for macro verification.
-        TestWidget / ResolvedTestWidget {
-            option {
-                size: f32,
-                label: String,
-            }
-            optional_nested {
-                font: [FontSpec, ResolvedFontSpec],
-            }
-        }
+    // Test widget using derive (validates derive macro works in test context)
+    /// Test widget for macro verification.
+    #[derive(
+        Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget,
+    )]
+    #[serde_with::skip_serializing_none]
+    #[serde(default)]
+    #[theme_layer(skip_inventory)]
+    pub struct TestWidget {
+        pub size: Option<f32>,
+        pub label: Option<String>,
+        #[theme(nested, resolved_type = "ResolvedFontSpec")]
+        pub font: Option<FontSpec>,
     }
 
     // === ResolvedFontSpec tests ===
@@ -1459,7 +914,7 @@ mod tests {
         assert_eq!(rfs.weight, 400);
     }
 
-    // === define_widget_pair! generated struct tests ===
+    // === derive(ThemeWidget) generated struct tests ===
 
     #[test]
     fn generated_option_struct_has_option_fields() {
@@ -2000,19 +1455,21 @@ mod tests {
 
     // === SC4: Dual optional_nested (font + border) test widget ===
 
-    // SC4: Verify define_widget_pair! handles dual optional_nested (font + border)
-    define_widget_pair! {
-        /// Test widget with both font and border nested sub-structs.
-        DualNestedTestWidget / ResolvedDualNestedTestWidget {
-            option {
-                background: Rgba,
-                min_height: f32,
-            }
-            optional_nested {
-                font: [FontSpec, ResolvedFontSpec],
-                border: [WidgetBorderSpec, ResolvedBorderSpec],
-            }
-        }
+    // SC4: Verify derive handles dual optional_nested (font + border)
+    /// Test widget with both font and border nested sub-structs.
+    #[derive(
+        Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget,
+    )]
+    #[serde_with::skip_serializing_none]
+    #[serde(default)]
+    #[theme_layer(skip_inventory)]
+    pub struct DualNestedTestWidget {
+        pub background: Option<Rgba>,
+        pub min_height: Option<f32>,
+        #[theme(nested, resolved_type = "ResolvedFontSpec")]
+        pub font: Option<FontSpec>,
+        #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+        pub border: Option<WidgetBorderSpec>,
     }
 
     #[test]
