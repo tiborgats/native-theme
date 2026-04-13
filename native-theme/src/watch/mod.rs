@@ -5,6 +5,39 @@
 //! the returned [`ThemeWatcher`] keeps the watcher alive via RAII semantics
 //! -- dropping it stops the watcher and joins the background thread.
 //!
+//! # RAII ownership model
+//!
+//! [`ThemeWatcher`] is an RAII guard. Dropping it stops the watcher and
+//! joins the background thread. You **must** bind it to a variable -- if
+//! you discard the return value, the watcher is dropped immediately and
+//! no events are ever delivered.
+//!
+//! # Shutdown mechanism
+//!
+//! When a `ThemeWatcher` is dropped, shutdown proceeds in three phases:
+//!
+//! 1. **Platform-specific wakeup** -- if a platform shutdown closure was
+//!    registered (see constructor split below), it runs first. This wakes
+//!    the background thread's event loop so it can observe the disconnect.
+//! 2. **Channel disconnect** -- the shutdown channel sender is dropped,
+//!    causing the receiver in the background thread to see `Disconnected`
+//!    on its next `recv()` or `try_recv()`.
+//! 3. **Thread join** -- `JoinHandle::join()` blocks until the background
+//!    thread exits, ensuring clean shutdown before the guard is gone.
+//!
+//! # Constructor split
+//!
+//! There are two `pub(crate)` constructors, chosen by the platform backend:
+//!
+//! - [`ThemeWatcher::new(tx, handle)`] -- for backends where dropping the
+//!   channel sender is sufficient to wake the background thread. Used on
+//!   Linux: KDE inotify polls the channel, GNOME D-Bus does likewise.
+//! - [`ThemeWatcher::with_platform_shutdown(tx, handle, closure)`] -- for
+//!   backends where the event loop blocks on a platform API that does not
+//!   poll the channel. The closure calls the platform-specific wakeup
+//!   (`CFRunLoop::stop` on macOS, `PostThreadMessageW(WM_QUIT)` on
+//!   Windows) so the thread can observe the channel disconnect and exit.
+//!
 //! # Signal-only events
 //!
 //! [`ThemeChangeEvent`] carries no theme data. When you receive an event,
@@ -19,13 +52,14 @@
 //! let (tx, rx) = mpsc::channel();
 //! let _watcher = native_theme::on_theme_change(move |event| {
 //!     let _ = tx.send(event);
-//! }).expect("theme watching not supported on this platform");
+//! })?;
 //!
 //! // On your UI thread:
 //! // if let Ok(event) = rx.try_recv() {
-//! //     let theme = native_theme::SystemTheme::from_system().unwrap();
+//! //     let theme = native_theme::SystemTheme::from_system()?;
 //! //     // re-apply theme ...
 //! // }
+//! # Ok::<(), native_theme::Error>(())
 //! ```
 
 #[cfg(all(feature = "watch", feature = "kde", target_os = "linux"))]
