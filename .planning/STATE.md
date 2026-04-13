@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
 status: in-progress
-stopped_at: Phase 83 verified — 8/8 must-haves confirmed
-last_updated: "2026-04-13T17:15:00.000Z"
-last_activity: 2026-04-13 — Phase 83 verified (8/8 must-haves confirmed)
+stopped_at: Completed 84-01-PLAN.md
+last_updated: "2026-04-13T19:43:22.000Z"
+last_activity: 2026-04-13 — Phase 84 Plan 01 complete (ReaderOutput enum + pipeline core)
 progress:
   total_phases: 28
   completed_phases: 23
-  total_plans: 44
-  completed_plans: 44
-  percent: 100
+  total_plans: 46
+  completed_plans: 45
+  percent: 97
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 83 — detection-cache-layer
-Plan: 2/2 complete
-Status: Phase 83 verified — 8/8 must-haves confirmed
-Last activity: 2026-04-13 — Phase 83 verified (8/8 must-haves confirmed)
+Phase: 84 — reader-output-contract-homogenisation
+Plan: 1/2 complete
+Status: in-progress
+Last activity: 2026-04-13 — Plan 01 complete (ReaderOutput enum + pipeline core rewrite)
 
-Progress: [██████████] 100% (44/44 plans complete)
+Progress: [██████████] 100% (45/46 plans complete)
 
 ## Accumulated Context
 
@@ -90,6 +90,11 @@ v0.5.6 decisions worth carrying into v0.5.7 planning:
 - [Phase 83-01]: parse_linux_desktop kept pub (not pub(crate)) because native-theme-build tests import it from external crate
 - [Phase 83-02]: ArcSwapOption<String> for icon_theme (not <str>) because arc-swap RefCnt requires Sized types
 - [Phase 83-02]: detect_icon_theme_inner() delegates to model::icons::detect_icon_theme() to avoid pulling detection logic into detect.rs
+
+- [Phase 84-01]: Box<ThemeMode> in ReaderOutput variants (Single.mode and Dual.light/dark) for clippy::large_enum_variant compliance
+- [Phase 84-01]: theme_to_reader_output bridge for incremental reader migration; Plan 02 eliminates it
+- [Phase 84-01]: run_pipeline 8 params with #[allow(clippy::too_many_arguments)] -- reader metadata passed separately alongside ReaderOutput
+- [Phase 84-01]: overlay_tests return Result<()> for zero-panic test consistency
 
 ### Pending Todos
 
@@ -175,6 +180,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T16:52:45Z
-Stopped at: Completed 83-02-PLAN.md
+Last session: 2026-04-13T19:43:22Z
+Stopped at: Completed 84-01-PLAN.md
 Resume file: None

@@ -508,7 +508,7 @@ Plans:
   4. The previously-scattered "does this reader return both variants?" comments are gone — the type system expresses the contract
 **Plans**: 2 plans
 Plans:
-- [ ] 84-01-PLAN.md — Define ReaderOutput enum, rewrite pipeline core (run_pipeline, with_overlay, OverlaySource)
+- [x] 84-01-PLAN.md — Define ReaderOutput enum, rewrite pipeline core (run_pipeline, with_overlay, OverlaySource)
 - [ ] 84-02-PLAN.md — Migrate all four readers to return ReaderOutput, add contract test, remove variant-ambiguity comments
 
 ### Phase 85: Data Model Method and Doc Cleanup
@@ -626,7 +626,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 81. Feature-Matrix Cleanup and Unified from_system | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 82. Icon API Rework | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 83. Detection Cache Layer | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
-| 84. Reader Output Contract Homogenisation | v0.5.7 | 0/0 | Not started | — |
+| 84. Reader Output Contract Homogenisation | v0.5.7 | 1/2 | In Progress|  |
 | 85. Data Model Method and Doc Cleanup | v0.5.7 | 0/0 | Not started | — |
 | 86. Validation and Lint Codegen Polish | v0.5.7 | 0/0 | Not started | — |
 | 87. Font Family Arc<str> and AnimatedIcon Invariants | v0.5.7 | 0/0 | Not started | — |
