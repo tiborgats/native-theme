@@ -438,7 +438,7 @@ Plans:
 **Plans**: 2 plans
 Plans:
 - [ ] 79-01-PLAN.md — Split BorderSpec into DefaultsBorderSpec and WidgetBorderSpec
-- [ ] 79-02-PLAN.md — L3 visibility audit and platform reader demotion to pub(crate)
+- [x] 79-02-PLAN.md — L3 visibility audit and platform reader demotion to pub(crate)
 
 ### Phase 80: native-theme-derive Proc-Macro K Codegen
 **Goal**: The doubled `Option<T>` / `Resolved<T>` struct hierarchy is generated from one source of truth by a new `native-theme-derive` proc-macro crate that also emits `FIELD_NAMES`, `impl_merge!` bodies, `check_ranges` impls from `#[theme(range = "...")]` and `#[theme(check = "non_negative")]` attributes, per-field `#[theme(inherit_from = "...")]` inheritance rules, `inventory::submit!` widget registry entries, and a `#[theme_layer(border_kind = "full" | "partial" | "none")]` unifier for the three parallel border-inheritance validation paths
@@ -621,7 +621,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 76. Type Vocabulary Rename and Crate Root Partition | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 77. SystemTheme API and icon_set Relocation | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 78. OverlaySource, AccessibilityPreferences, font_dpi Relocation | v0.5.7 | 4/4 | Complete   | 2026-04-13 |
-| 79. BorderSpec Split and Platform Reader Visibility Audit | v0.5.7 | 0/0 | Not started | — |
+| 79. BorderSpec Split and Platform Reader Visibility Audit | v0.5.7 | 1/2 | In Progress|  |
 | 80. native-theme-derive Proc-Macro K Codegen | v0.5.7 | 0/0 | Not started | — |
 | 81. Feature-Matrix Cleanup and Unified from_system | v0.5.7 | 0/0 | Not started | — |
 | 82. Icon API Rework | v0.5.7 | 0/0 | Not started | — |

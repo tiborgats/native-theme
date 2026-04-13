@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
-status: executing
-stopped_at: Completed 78-03-PLAN.md
-last_updated: "2026-04-13T01:51:42.744Z"
-last_activity: 2026-04-13 — Phase 78 Plan 03 executed (1 task, 1 commit)
+status: completed
+stopped_at: Completed 79-02-PLAN.md
+last_updated: "2026-04-13T08:18:55.544Z"
+last_activity: 2026-04-13 — Phase 79 Plan 02 executed (1 task, 1 commit)
 progress:
   total_phases: 28
-  completed_phases: 17
-  total_plans: 34
-  completed_plans: 33
+  completed_phases: 18
+  total_plans: 36
+  completed_plans: 35
   percent: 97
 ---
 
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 78 — overlaysource-accessibilitypreferences-font-dpi-relocation
-Plan: 4/4 complete
-Status: Phase 78 complete — all OS readers wire accessibility through pipeline
-Last activity: 2026-04-13 — Phase 78 Plan 04 executed (2 tasks, 2 commits)
+Phase: 79 — borderspec-split-and-platform-reader-visibility-audit
+Plan: 2/2 complete
+Status: Phase 79 Plan 02 complete — platform reader I/O functions demoted to pub(crate)
+Last activity: 2026-04-13 — Phase 79 Plan 02 executed (1 task, 1 commit)
 
-Progress: [██████████] 100% (34/34 plans complete)
+Progress: [██████████] 97% (35/36 plans complete)
 
 ## Accumulated Context
 
@@ -130,6 +130,8 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 78-04]: GNOME and Windows reduce_transparency defaults to false (neither OS exposes this setting)
 - [Phase 78-04]: from_kde_content returns outer I/O-detected font_dpi, not inner pure parser dpi
 - [Phase 78-03]: reduce_transparency=false default in config-only to_theme_config path (no accessibility data available)
+- [Phase 79-02]: L3 audit confirmed zero external consumers; all 6 platform reader I/O functions demoted to pub(crate)
+- [Phase 79-02]: from_kde_content_pure stays pub -- integration tests in native-theme/tests/reader_kde.rs depend on it
 
 ### Blockers/Concerns
 
@@ -142,6 +144,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T01:59:05Z
-Stopped at: Completed 78-04-PLAN.md
+Last session: 2026-04-13T08:18:55.541Z
+Stopped at: Completed 79-02-PLAN.md
 Resume file: None

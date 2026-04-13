@@ -59,7 +59,7 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 ### Platform Readers
 
 - [ ] **READER-01**: `ReaderOutput` contract homogenised across KDE/GNOME/Windows/macOS — unified single-vs-dual variant semantics; type flows through `run_pipeline` alongside `OverlaySource` from MODEL-02 (doc 2 B3)
-- [ ] **READER-02**: `from_kde`/`from_gnome`/`from_windows`/`from_macos` demoted to `pub(crate)` after L3 visibility audit (doc 2 C6)
+- [x] **READER-02**: `from_kde`/`from_gnome`/`from_windows`/`from_macos` demoted to `pub(crate)` after L3 visibility audit (doc 2 C6)
 
 ### Watchers & Events
 
