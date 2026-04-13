@@ -971,23 +971,20 @@ pub fn animated_frames_to_image_sources(
     size: Option<u32>,
 ) -> Option<AnimatedImageSources> {
     match anim {
-        AnimatedIcon::Frames {
-            frames,
-            frame_duration_ms,
-        } => {
-            if frames.is_empty() {
-                return None;
-            }
+        AnimatedIcon::Frames(data) => {
+            // FrameList is guaranteed non-empty by construction, so no
+            // is_empty() check needed.
             // Issue 4: use map + collect::<Option<Vec<_>>> so the whole
             // animation fails if any frame fails. This prevents timing
             // glitches from silently dropped frames.
-            let sources: Option<Vec<ImageSource>> = frames
+            let sources: Option<Vec<ImageSource>> = data
+                .frames()
                 .iter()
                 .map(|f| to_image_source(f, color, size))
                 .collect();
             sources.map(|s| AnimatedImageSources {
                 sources: s,
-                frame_duration_ms: *frame_duration_ms,
+                frame_duration_ms: data.frame_duration_ms().get(),
             })
         }
         _ => None,
@@ -2116,14 +2113,15 @@ mod tests {
 
     #[test]
     fn animated_frames_returns_sources() {
-        let anim = AnimatedIcon::Frames {
-            frames: vec![
+        let anim = AnimatedIcon::frames(
+            vec![
                 IconData::Svg(std::borrow::Cow::Borrowed(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10' fill='red'/></svg>")),
                 IconData::Svg(std::borrow::Cow::Borrowed(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='8' fill='blue'/></svg>")),
                 IconData::Svg(std::borrow::Cow::Borrowed(b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='6' fill='green'/></svg>")),
             ],
-            frame_duration_ms: 80,
-        };
+            std::num::NonZeroU32::new(80).expect("test constant"),
+        )
+        .expect("non-empty frames");
         let result = animated_frames_to_image_sources(&anim, None, None);
         let ais = result.expect("Frames variant should return Some");
         assert_eq!(ais.sources.len(), 3);
@@ -2132,24 +2130,26 @@ mod tests {
 
     #[test]
     fn animated_frames_transform_returns_none() {
-        let anim = AnimatedIcon::Transform {
-            icon: IconData::Svg(std::borrow::Cow::Borrowed(
+        let anim = AnimatedIcon::transform(
+            IconData::Svg(std::borrow::Cow::Borrowed(
                 b"<svg xmlns='http://www.w3.org/2000/svg'><circle cx='12' cy='12' r='10'/></svg>",
             )),
-            animation: native_theme::theme::TransformAnimation::Spin { duration_ms: 1000 },
-        };
+            native_theme::theme::TransformAnimation::Spin {
+                duration_ms: std::num::NonZeroU32::new(1000).expect("test constant"),
+            },
+        );
         let result = animated_frames_to_image_sources(&anim, None, None);
         assert!(result.is_none());
     }
 
     #[test]
     fn animated_frames_empty_returns_none() {
-        let anim = AnimatedIcon::Frames {
-            frames: vec![],
-            frame_duration_ms: 80,
-        };
-        let result = animated_frames_to_image_sources(&anim, None, None);
-        assert!(result.is_none());
+        // Empty FrameList is rejected at construction, so this test verifies that.
+        let result = AnimatedIcon::frames(
+            vec![],
+            std::num::NonZeroU32::new(80).expect("test constant"),
+        );
+        assert!(result.is_err());
     }
 
     #[test]

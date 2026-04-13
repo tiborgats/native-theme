@@ -583,12 +583,13 @@ if let Some(anim) = loading_indicator("material") {
         // Render a single static frame
     } else {
         match &anim {
-            AnimatedIcon::Frames { frames, frame_duration_ms, .. } => {
-                // Cycle through frames on a timer
+            AnimatedIcon::Frames(data) => {
+                // Cycle through data.frames() on a timer (data.frame_duration_ms().get() ms)
             }
-            AnimatedIcon::Transform { icon, animation } => {
-                // Apply continuous rotation to the icon
+            AnimatedIcon::Transform(data) => {
+                // Apply continuous rotation to data.icon() via data.animation()
             }
+            _ => {}
         }
     }
 }

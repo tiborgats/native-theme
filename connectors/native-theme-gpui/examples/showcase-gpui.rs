@@ -1005,14 +1005,12 @@ impl Showcase {
                 .load_indicator()
         {
             match &anim {
-                AnimatedIcon::Frames {
-                    frame_duration_ms, ..
-                } => {
+                AnimatedIcon::Frames(data) => {
                     if let Some(anim_sources) =
                         animated_frames_to_image_sources(&anim, Some(fg), None)
                     {
-                        if let Some(first) = anim.first_frame()
-                            && let Some(first_source) = to_image_source(first, Some(fg), None)
+                        if let Some(first_source) =
+                            to_image_source(anim.first_frame(), Some(fg), None)
                         {
                             self.animated_static_sources.push((
                                 set_name.to_string(),
@@ -1020,23 +1018,24 @@ impl Showcase {
                                 "Frames",
                             ));
                         }
-                        self.animated_frame_durations.push(*frame_duration_ms);
+                        self.animated_frame_durations
+                            .push(data.frame_duration_ms().get());
                         self.animated_frame_sources
                             .push((set_name.to_string(), anim_sources.sources));
                     }
                 }
-                AnimatedIcon::Transform { icon, animation } => {
-                    if let Some(source) = to_image_source(icon, None, None) {
+                AnimatedIcon::Transform(data) => {
+                    if let Some(source) = to_image_source(data.icon(), None, None) {
                         self.animated_static_sources.push((
                             set_name.to_string(),
                             source.clone(),
                             "Transform",
                         ));
-                        if let TransformAnimation::Spin { duration_ms } = animation {
+                        if let TransformAnimation::Spin { duration_ms } = data.animation() {
                             self.animated_spin_sources.push((
                                 set_name.to_string(),
                                 source,
-                                *duration_ms,
+                                duration_ms.get(),
                             ));
                         }
                     }

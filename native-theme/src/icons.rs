@@ -678,16 +678,12 @@ mod loading_indicator_tests {
         assert!(anim.is_some(), "lucide should return Some");
         let anim = anim.unwrap();
         assert!(
-            matches!(anim, AnimatedIcon::Frames { .. }),
+            matches!(anim, AnimatedIcon::Frames(_)),
             "lucide should be pre-rotated Frames"
         );
-        if let AnimatedIcon::Frames {
-            frames,
-            frame_duration_ms,
-        } = &anim
-        {
-            assert_eq!(frames.len(), 24);
-            assert_eq!(*frame_duration_ms, 42);
+        if let AnimatedIcon::Frames(data) = &anim {
+            assert_eq!(data.frames().len(), 24);
+            assert_eq!(data.frame_duration_ms().get(), 42);
         }
     }
 
@@ -702,15 +698,16 @@ mod loading_indicator_tests {
         // Result depends on installed icon theme -- Some if process-working exists
         if let Some(anim) = anim {
             match anim {
-                AnimatedIcon::Frames { frames, .. } => {
+                AnimatedIcon::Frames(data) => {
                     assert!(
-                        !frames.is_empty(),
+                        !data.frames().is_empty(),
                         "Frames variant should have at least one frame"
                     );
                 }
-                AnimatedIcon::Transform { .. } => {
+                AnimatedIcon::Transform(_) => {
                     // Single-frame theme icon with Spin -- valid result
                 }
+                _ => {}
             }
         }
     }
@@ -730,7 +727,7 @@ mod loading_indicator_tests {
     fn lucide_spinner_is_frames() {
         let anim = crate::spinners::lucide_spinner();
         assert!(
-            matches!(anim, AnimatedIcon::Frames { .. }),
+            matches!(anim, AnimatedIcon::Frames(_)),
             "lucide should be pre-rotated Frames"
         );
     }
@@ -797,9 +794,9 @@ mod spinner_rasterize_tests {
     #[cfg(feature = "lucide-icons")]
     fn lucide_spinner_icon_rasterizes() {
         let anim = crate::spinners::lucide_spinner();
-        if let AnimatedIcon::Frames { frames, .. } = &anim {
-            let first = frames.first().expect("should have at least one frame");
-            if let IconData::Svg(ref cow) = first {
+        if let AnimatedIcon::Frames(data) = &anim {
+            let first = data.frames().first();
+            if let IconData::Svg(cow) = first {
                 let result = crate::rasterize::rasterize_svg(cow, 24);
                 assert!(result.is_ok(), "lucide loader should rasterize");
                 if let Ok(IconData::Rgba { data, .. }) = &result {

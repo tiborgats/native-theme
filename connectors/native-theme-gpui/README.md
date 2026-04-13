@@ -93,17 +93,18 @@ use native_theme_gpui::icons::{animated_frames_to_image_sources, with_spin_anima
 if let Some(anim) = loading_indicator(IconSet::Material) {
     if prefers_reduced_motion() {
         // Static fallback for accessibility
-        let static_icon = anim.first_frame().and_then(|f| to_image_source(f, None, None));
+        let static_icon = to_image_source(anim.first_frame(), None, None);
     } else {
         match &anim {
-            AnimatedIcon::Frames { .. } => {
+            AnimatedIcon::Frames(data) => {
                 // Cache this -- do not call on every frame tick
                 let sources = animated_frames_to_image_sources(&anim, None, None);
             }
-            AnimatedIcon::Transform { icon, .. } => {
+            AnimatedIcon::Transform(data) => {
                 let spinner = gpui::svg().path("spinner.svg");
                 let element = with_spin_animation(spinner, "loading", 1000);
             }
+            _ => {}
         }
     }
 }

@@ -520,25 +520,21 @@ fn build_animation_caches(
             .load_indicator()
         {
             // Cache static first-frame for reduced motion
-            if let Some(frame_data) = anim.first_frame()
-                && let Some(handle) = to_svg_handle(frame_data, None)
-            {
+            if let Some(handle) = to_svg_handle(anim.first_frame(), None) {
                 animated_static.push((set_name.clone(), handle));
             }
 
             match &anim {
-                AnimatedIcon::Frames { .. } => {
+                AnimatedIcon::Frames(_) => {
                     if let Some(anim_handles) = animated_frames_to_svg_handles(&anim, None) {
                         animated_frames.push((set_name.clone(), anim_handles));
                     }
                 }
-                AnimatedIcon::Transform {
-                    icon,
-                    animation: TransformAnimation::Spin { duration_ms },
-                    ..
-                } => {
-                    if let Some(handle) = to_svg_handle(icon, None) {
-                        animated_spins.push((set_name.clone(), handle, *duration_ms));
+                AnimatedIcon::Transform(data) => {
+                    if let TransformAnimation::Spin { duration_ms } = data.animation() {
+                        if let Some(handle) = to_svg_handle(data.icon(), None) {
+                            animated_spins.push((set_name.clone(), handle, duration_ms.get()));
+                        }
                     }
                 }
                 _ => {} // Future AnimatedIcon variants

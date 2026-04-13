@@ -157,11 +157,9 @@ pub fn animated_frames_to_svg_handles(
     color: Option<iced_core::Color>,
 ) -> Option<AnimatedSvgHandles> {
     match anim {
-        AnimatedIcon::Frames {
-            frames,
-            frame_duration_ms,
-        } => {
-            let handles: Vec<_> = frames
+        AnimatedIcon::Frames(data) => {
+            let handles: Vec<_> = data
+                .frames()
                 .iter()
                 .filter_map(|f| to_svg_handle(f, color))
                 .collect();
@@ -170,7 +168,7 @@ pub fn animated_frames_to_svg_handles(
             } else {
                 Some(AnimatedSvgHandles {
                     handles,
-                    frame_duration_ms: *frame_duration_ms,
+                    frame_duration_ms: data.frame_duration_ms().get(),
                 })
             }
         }
@@ -517,13 +515,14 @@ mod tests {
 
     #[test]
     fn animated_frames_returns_handles() {
-        let anim = AnimatedIcon::Frames {
-            frames: vec![
+        let anim = AnimatedIcon::frames(
+            vec![
                 IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>")),
                 IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>")),
             ],
-            frame_duration_ms: 80,
-        };
+            std::num::NonZeroU32::new(80).expect("test constant"),
+        )
+        .expect("non-empty frames");
         let result = animated_frames_to_svg_handles(&anim, None);
         assert!(result.is_some());
         let anim_handles = result.unwrap();
@@ -533,34 +532,37 @@ mod tests {
 
     #[test]
     fn animated_frames_transform_returns_none() {
-        let anim = AnimatedIcon::Transform {
-            icon: IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>")),
-            animation: native_theme::theme::TransformAnimation::Spin { duration_ms: 1000 },
-        };
+        let anim = AnimatedIcon::transform(
+            IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>")),
+            native_theme::theme::TransformAnimation::Spin {
+                duration_ms: std::num::NonZeroU32::new(1000).expect("test constant"),
+            },
+        );
         let result = animated_frames_to_svg_handles(&anim, None);
         assert!(result.is_none());
     }
 
     #[test]
     fn animated_frames_empty_returns_none() {
-        let anim = AnimatedIcon::Frames {
-            frames: vec![],
-            frame_duration_ms: 80,
-        };
-        let result = animated_frames_to_svg_handles(&anim, None);
-        assert!(result.is_none());
+        // Empty FrameList is rejected at construction, so this test verifies that.
+        let result = AnimatedIcon::frames(
+            vec![],
+            std::num::NonZeroU32::new(80).expect("test constant"),
+        );
+        assert!(result.is_err());
     }
 
     #[test]
     fn animated_frames_rgba_only_returns_none() {
-        let anim = AnimatedIcon::Frames {
-            frames: vec![IconData::Rgba {
+        let anim = AnimatedIcon::frames(
+            vec![IconData::Rgba {
                 width: 16,
                 height: 16,
                 data: vec![0u8; 16 * 16 * 4],
             }],
-            frame_duration_ms: 80,
-        };
+            std::num::NonZeroU32::new(80).expect("test constant"),
+        )
+        .expect("non-empty frames");
         let result = animated_frames_to_svg_handles(&anim, None);
         assert!(result.is_none());
     }
@@ -647,8 +649,8 @@ mod tests {
 
     #[test]
     fn animated_frames_mixed_svg_rgba_filters_rgba() {
-        let anim = AnimatedIcon::Frames {
-            frames: vec![
+        let anim = AnimatedIcon::frames(
+            vec![
                 IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>")),
                 IconData::Rgba {
                     width: 16,
@@ -657,8 +659,9 @@ mod tests {
                 },
                 IconData::Svg(std::borrow::Cow::Borrowed(b"<svg></svg>")),
             ],
-            frame_duration_ms: 80,
-        };
+            std::num::NonZeroU32::new(80).expect("test constant"),
+        )
+        .expect("non-empty frames");
         let result = animated_frames_to_svg_handles(&anim, None);
         assert!(result.is_some());
         let handles = result.unwrap();
@@ -762,12 +765,13 @@ mod tests {
 
     #[test]
     fn animated_frames_with_color_colorizes_frames() {
-        let anim = AnimatedIcon::Frames {
-            frames: vec![IconData::Svg(std::borrow::Cow::Borrowed(
+        let anim = AnimatedIcon::frames(
+            vec![IconData::Svg(std::borrow::Cow::Borrowed(
                 b"<svg><path fill=\"currentColor\"/></svg>",
             ))],
-            frame_duration_ms: 80,
-        };
+            std::num::NonZeroU32::new(80).expect("test constant"),
+        )
+        .expect("non-empty frames");
         let color = iced_core::Color::from_rgb(1.0, 0.0, 0.0);
         let result = animated_frames_to_svg_handles(&anim, Some(color));
         assert!(result.is_some(), "should produce handles with color");

@@ -10,14 +10,15 @@
 // rotation produces noisy edges on high-viewBox SVGs like Material's 960-unit path).
 
 use std::borrow::Cow;
+use std::num::NonZeroU32;
 
-use crate::model::animated::AnimatedIcon;
+use crate::model::animated::{AnimatedIcon, TransformAnimation};
 use crate::model::icons::IconData;
 
 /// Number of rotation frames per spin cycle.
 const SPIN_FRAME_COUNT: u32 = 24;
 
-/// Duration of each frame in milliseconds (24 frames × 42ms ≈ 1008ms ≈ 1s cycle).
+/// Duration of each frame in milliseconds (24 frames x 42ms = 1008ms ~ 1s cycle).
 ///
 /// Must be > 0; a zero duration would cause infinite-loop or division-by-zero in renderers.
 const SPIN_FRAME_DURATION_MS: u32 = 42;
@@ -118,24 +119,42 @@ fn svg_to_spin_frames(svg_bytes: &[u8]) -> Vec<IconData> {
     frames
 }
 
+/// Build an `AnimatedIcon` from pre-rotated frames, falling back to a
+/// transform-based spin if frame construction fails (e.g. empty vec,
+/// which should not happen with bundled SVGs but is handled gracefully).
+fn frames_or_spin_fallback(svg_bytes: &'static [u8]) -> AnimatedIcon {
+    let frames = svg_to_spin_frames(svg_bytes);
+    // SPIN_FRAME_DURATION_MS is compile-time asserted > 0 above.
+    let Some(dur) = NonZeroU32::new(SPIN_FRAME_DURATION_MS) else {
+        // Fallback: transform spin (compile-time assert prevents this path)
+        return AnimatedIcon::transform(
+            IconData::Svg(Cow::Borrowed(svg_bytes)),
+            TransformAnimation::Spin {
+                duration_ms: NonZeroU32::MIN,
+            },
+        );
+    };
+    match AnimatedIcon::frames(frames, dur) {
+        Ok(anim) => anim,
+        Err(_) => AnimatedIcon::transform(
+            IconData::Svg(Cow::Borrowed(svg_bytes)),
+            TransformAnimation::Spin { duration_ms: dur },
+        ),
+    }
+}
+
 /// Material Design progress_activity icon as pre-rotated frames.
 #[cfg(feature = "material-icons")]
 pub(crate) fn material_spinner() -> AnimatedIcon {
     let svg_bytes = include_bytes!("../icons/material/progress_activity.svg");
-    AnimatedIcon::Frames {
-        frames: svg_to_spin_frames(svg_bytes),
-        frame_duration_ms: SPIN_FRAME_DURATION_MS,
-    }
+    frames_or_spin_fallback(svg_bytes)
 }
 
 /// Lucide loader icon as pre-rotated frames.
 #[cfg(feature = "lucide-icons")]
 pub(crate) fn lucide_spinner() -> AnimatedIcon {
     let svg_bytes = include_bytes!("../icons/lucide/loader.svg");
-    AnimatedIcon::Frames {
-        frames: svg_to_spin_frames(svg_bytes),
-        frame_duration_ms: SPIN_FRAME_DURATION_MS,
-    }
+    frames_or_spin_fallback(svg_bytes)
 }
 
 #[cfg(test)]
@@ -181,16 +200,12 @@ mod tests {
     fn material_spinner_is_frames() {
         let anim = material_spinner();
         assert!(
-            matches!(anim, AnimatedIcon::Frames { .. }),
+            matches!(anim, AnimatedIcon::Frames(_)),
             "material spinner should be Frames, not Transform"
         );
-        if let AnimatedIcon::Frames {
-            frames,
-            frame_duration_ms,
-        } = &anim
-        {
-            assert_eq!(frames.len(), 24);
-            assert_eq!(*frame_duration_ms, 42);
+        if let AnimatedIcon::Frames(data) = &anim {
+            assert_eq!(data.frames().len(), 24);
+            assert_eq!(data.frame_duration_ms().get(), 42);
         }
     }
 
@@ -198,14 +213,10 @@ mod tests {
     #[test]
     fn lucide_spinner_is_frames() {
         let anim = lucide_spinner();
-        assert!(matches!(anim, AnimatedIcon::Frames { .. }));
-        if let AnimatedIcon::Frames {
-            frames,
-            frame_duration_ms,
-        } = &anim
-        {
-            assert_eq!(frames.len(), 24);
-            assert_eq!(*frame_duration_ms, 42);
+        assert!(matches!(anim, AnimatedIcon::Frames(_)));
+        if let AnimatedIcon::Frames(data) = &anim {
+            assert_eq!(data.frames().len(), 24);
+            assert_eq!(data.frame_duration_ms().get(), 42);
         }
     }
 

@@ -59,16 +59,22 @@ impl FrameList {
     }
 
     /// Returns the first frame (infallible -- list is guaranteed non-empty).
-    #[must_use]
     pub fn first(&self) -> &IconData {
         // Invariant: FrameList is only constructible via new() which rejects empty,
         // or via custom Deserialize which also rejects empty.
-        debug_assert!(!self.0.is_empty(), "FrameList invariant violated: empty list");
+        debug_assert!(
+            !self.0.is_empty(),
+            "FrameList invariant violated: empty list"
+        );
         &self.0[0]
     }
 
-    /// Returns the number of frames.
+    /// Returns the number of frames (always >= 1).
+    ///
+    /// `is_empty()` is intentionally not provided because a `FrameList` is
+    /// guaranteed non-empty by construction.
     #[must_use]
+    #[allow(clippy::len_without_is_empty)]
     pub fn len(&self) -> usize {
         self.0.len()
     }
@@ -89,8 +95,7 @@ impl<'de> serde::Deserialize<'de> for FrameList {
         D: serde::Deserializer<'de>,
     {
         let frames = Vec::<IconData>::deserialize(deserializer)?;
-        FrameList::new(frames)
-            .map_err(|_| serde::de::Error::custom("frame list must not be empty"))
+        FrameList::new(frames).map_err(|_| serde::de::Error::custom("frame list must not be empty"))
     }
 }
 
@@ -146,7 +151,6 @@ pub struct TransformData {
 
 impl TransformData {
     /// The icon being animated.
-    #[must_use]
     pub fn icon(&self) -> &IconData {
         &self.icon
     }
@@ -294,7 +298,6 @@ impl AnimatedIcon {
     /// let first: &IconData = spin.first_frame();
     /// assert!(matches!(first, IconData::Svg(_)));
     /// ```
-    #[must_use]
     pub fn first_frame(&self) -> &IconData {
         match self {
             AnimatedIcon::Frames(data) => data.frames.first(),
@@ -339,7 +342,10 @@ impl AnimatedIcon {
     }
 
     /// Deprecated: Use [`AnimatedIcon::frames()`] instead.
-    #[deprecated(since = "0.5.7", note = "use AnimatedIcon::frames() which returns Result")]
+    #[deprecated(
+        since = "0.5.7",
+        note = "use AnimatedIcon::frames() which returns Result"
+    )]
     #[must_use]
     pub fn new_frames(frames: Vec<IconData>, frame_duration_ms: u32) -> Option<Self> {
         let dur = NonZeroU32::new(frame_duration_ms)?;
@@ -640,9 +646,8 @@ mod tests {
         let anim = TransformAnimation::Spin {
             duration_ms: nz(500),
         };
-        if let TransformAnimation::Spin { duration_ms } = anim {
-            assert_eq!(duration_ms.get(), 500);
-        }
+        let TransformAnimation::Spin { duration_ms } = anim;
+        assert_eq!(duration_ms.get(), 500);
     }
 
     // === FramesData and TransformData accessor tests ===

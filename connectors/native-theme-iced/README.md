@@ -97,7 +97,7 @@ if let Some(anim) = loading_indicator(IconSet::Material) {
         let static_icon = anim.first_frame();
     } else {
         match &anim {
-            AnimatedIcon::Frames { frame_duration_ms, .. } => {
+            AnimatedIcon::Frames(data) => {
                 // Cache this -- do not call on every frame tick
                 if let Some(anim_handles) = animated_frames_to_svg_handles(&anim, None) {
                     // Use iced::time::every(Duration::from_millis(anim_handles.frame_duration_ms as u64))
@@ -105,10 +105,11 @@ if let Some(anim) = loading_indicator(IconSet::Material) {
                     // In view: Svg::new(anim_handles.handles[frame_index].clone())
                 }
             }
-            AnimatedIcon::Transform { icon, animation } => {
+            AnimatedIcon::Transform(data) => {
                 let angle = spin_rotation_radians(elapsed, 1000);
                 // Svg::new(handle).rotation(Rotation::Floating(angle))
             }
+            _ => {}
         }
     }
 }

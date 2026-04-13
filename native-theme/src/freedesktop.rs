@@ -6,10 +6,17 @@
 // icon is not found in the active theme.
 
 use std::borrow::Cow;
+use std::num::NonZeroU32;
 
 use crate::model::animated::{AnimatedIcon, TransformAnimation};
 use crate::{IconData, IconRole, IconSet, icon_name};
 use std::path::PathBuf;
+
+/// Frame duration for freedesktop sprite sheet animations (80ms per frame).
+const FREEDESKTOP_FRAME_DURATION_MS: u32 = 80;
+
+/// Spin duration for single-frame icons animated with rotation (1 second).
+const FREEDESKTOP_SPIN_DURATION_MS: u32 = 1000;
 
 /// Detect the current freedesktop icon theme name.
 ///
@@ -217,20 +224,22 @@ pub(crate) fn load_freedesktop_spinner() -> Option<AnimatedIcon> {
         .find()
     {
         let bytes = std::fs::read(&path).ok()?;
+        let frame_dur = NonZeroU32::new(FREEDESKTOP_FRAME_DURATION_MS)?;
+        let spin_dur = NonZeroU32::new(FREEDESKTOP_SPIN_DURATION_MS)?;
         if let Some(frames) = parse_sprite_sheet(&bytes) {
-            return Some(AnimatedIcon::Frames {
-                frames: frames
-                    .into_iter()
-                    .map(|b| IconData::Svg(Cow::Owned(b)))
-                    .collect(),
-                frame_duration_ms: 80,
-            });
+            let frame_icons: Vec<IconData> = frames
+                .into_iter()
+                .map(|b| IconData::Svg(Cow::Owned(b)))
+                .collect();
+            return AnimatedIcon::frames(frame_icons, frame_dur).ok();
         }
         // Not a sprite sheet -- treat as single frame with spin
-        return Some(AnimatedIcon::Transform {
-            icon: IconData::Svg(Cow::Owned(bytes)),
-            animation: TransformAnimation::Spin { duration_ms: 1000 },
-        });
+        return Some(AnimatedIcon::transform(
+            IconData::Svg(Cow::Owned(bytes)),
+            TransformAnimation::Spin {
+                duration_ms: spin_dur,
+            },
+        ));
     }
 
     // Second pass: symbolic name (always single frame)
@@ -241,10 +250,13 @@ pub(crate) fn load_freedesktop_spinner() -> Option<AnimatedIcon> {
         .find()
     {
         let bytes = std::fs::read(&path).ok()?;
-        return Some(AnimatedIcon::Transform {
-            icon: IconData::Svg(Cow::Owned(bytes)),
-            animation: TransformAnimation::Spin { duration_ms: 1000 },
-        });
+        let spin_dur = NonZeroU32::new(FREEDESKTOP_SPIN_DURATION_MS)?;
+        return Some(AnimatedIcon::transform(
+            IconData::Svg(Cow::Owned(bytes)),
+            TransformAnimation::Spin {
+                duration_ms: spin_dur,
+            },
+        ));
     }
 
     None
