@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
 status: in-progress
-stopped_at: Completed 83-01-PLAN.md
-last_updated: "2026-04-13T16:43:09.000Z"
-last_activity: 2026-04-13 — Phase 83 Plan 01 complete (detect_linux_desktop rename)
+stopped_at: Phase 83 verified — 8/8 must-haves confirmed
+last_updated: "2026-04-13T17:15:00.000Z"
+last_activity: 2026-04-13 — Phase 83 verified (8/8 must-haves confirmed)
 progress:
   total_phases: 28
-  completed_phases: 22
+  completed_phases: 23
   total_plans: 44
-  completed_plans: 43
-  percent: 97
+  completed_plans: 44
+  percent: 100
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 83 — detection-cache-layer
-Plan: 1/2 complete
-Status: Plan 01 complete (detect_linux_desktop rename)
-Last activity: 2026-04-13 — Phase 83 Plan 01 complete
+Plan: 2/2 complete
+Status: Phase 83 verified — 8/8 must-haves confirmed
+Last activity: 2026-04-13 — Phase 83 verified (8/8 must-haves confirmed)
 
-Progress: [█████████▉] 97% (43/44 plans complete)
+Progress: [██████████] 100% (44/44 plans complete)
 
 ## Accumulated Context
 
@@ -88,6 +88,8 @@ v0.5.6 decisions worth carrying into v0.5.7 planning:
 - Phase 88 — Diagnostic and preset-polish sweep: POLISH-01, POLISH-02, POLISH-04, POLISH-05, POLISH-06
 
 - [Phase 83-01]: parse_linux_desktop kept pub (not pub(crate)) because native-theme-build tests import it from external crate
+- [Phase 83-02]: ArcSwapOption<String> for icon_theme (not <str>) because arc-swap RefCnt requires Sized types
+- [Phase 83-02]: detect_icon_theme_inner() delegates to model::icons::detect_icon_theme() to avoid pulling detection logic into detect.rs
 
 ### Pending Todos
 
@@ -173,6 +175,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T16:43:09Z
-Stopped at: Completed 83-01-PLAN.md
+Last session: 2026-04-13T16:52:45Z
+Stopped at: Completed 83-02-PLAN.md
 Resume file: None

@@ -90,7 +90,7 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 
 ### Detection Caching
 
-- [ ] **DETECT-01**: Global `OnceLock` caches in `detect` and `model/icons` replaced by `DetectionContext` with invalidation; `arc_swap::ArcSwapOption<T>` supports both "cache on first read" and "force re-read on demand" (doc 1 §13 Option C+F)
+- [x] **DETECT-01**: Global `OnceLock` caches in `detect` and `model/icons` replaced by `DetectionContext` with invalidation; `arc_swap::ArcSwapOption<T>` supports both "cache on first read" and "force re-read on demand" (doc 1 §13 Option C+F)
 - [x] **DETECT-02**: `detect_linux_desktop()` no-arg convenience overload added — current `&str` signature forces a two-call idiom (doc 2 C5)
 
 ### Feature Flags & Async

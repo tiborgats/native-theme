@@ -158,7 +158,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 80: native-theme-derive Proc-Macro K Codegen** — Ship-unit 10: new `native-theme-derive` crate generating paired structs, `FIELD_NAMES`, `impl_merge!` bodies, `check_ranges`, `inventory::submit!` registry, and unified border inheritance attribute (completed 2026-04-13)
 - [x] **Phase 81: Feature-Matrix Cleanup and Unified from_system** — Ship-unit 11 atomic: unify `from_system`/`from_system_async` via `pollster::block_on`, split aggregators into `linux-kde`/`linux-portal`-style groups, simplify `Cargo.toml` feature graph (completed 2026-04-13)
 - [x] **Phase 82: Icon API Rework** — Collapse 13 icon-loading functions into `IconLoader` builder, migrate `IconProvider` and `IconData::Svg` to `Cow<'static, [u8]>`, add `IconRole::name()` / `Display`, add `IconSet` drift-guard test (completed 2026-04-13)
-- [ ] **Phase 83: Detection Cache Layer** — Replace global `OnceLock` caches with `DetectionContext` backed by `arc_swap::ArcSwapOption`, add no-arg `detect_linux_desktop()` overload
+- [x] **Phase 83: Detection Cache Layer** — Replace global `OnceLock` caches with `DetectionContext` backed by `arc_swap::ArcSwapOption`, add no-arg `detect_linux_desktop()` overload (completed 2026-04-13)
 - [ ] **Phase 84: Reader Output Contract Homogenisation** — Unify single-vs-dual variant semantics across KDE/GNOME/Windows/macOS readers via a `ReaderOutput` type flowing through `run_pipeline` alongside `OverlaySource`
 - [ ] **Phase 85: Data Model Method and Doc Cleanup** — Demote `ThemeVariant::resolve*` intermediates to `#[doc(hidden)]`, `Theme` method grab-bag cleanup, document `ThemeWatcher` internals, rename `FontSize::Px::to_px` to `to_logical_px`
 - [ ] **Phase 86: Validation and Lint Codegen Polish** — Drive `lint_toml` from the `inventory::submit!` widget registry, stop `check_ranges` from eagerly `format!`-ing path strings
@@ -494,8 +494,8 @@ Plans:
   4. A `grep -c OnceLock src/detect.rs src/model/icons.rs` returns zero — all global caching has moved to `DetectionContext`
 **Plans**: 2 plans
 Plans:
-- [ ] 71-01-PLAN.md � Rewrite Error enum per Option F with ErrorKind and RangeViolation
-- [ ] 71-02-PLAN.md � Two-vec validation split and caller migration
+- [x] 83-01-PLAN.md — Rename detect_linux_de to detect_linux_desktop with no-arg convenience
+- [x] 83-02-PLAN.md — DetectionContext struct with ArcSwapOption lock-free caching
 
 ### Phase 84: Reader Output Contract Homogenisation
 **Goal**: The four platform readers share a unified `ReaderOutput` contract that expresses single-vs-dual variant semantics explicitly — `ReaderOutput::Single(ThemeMode)` for GNOME/KDE/Windows (the OS only reports the active mode), `ReaderOutput::Dual { light, dark }` for macOS (both modes readable), and the type flows through `run_pipeline` alongside the `OverlaySource` added in Phase 78
@@ -625,7 +625,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 80. native-theme-derive Proc-Macro K Codegen | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 81. Feature-Matrix Cleanup and Unified from_system | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 82. Icon API Rework | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
-| 83. Detection Cache Layer | v0.5.7 | 1/2 | In Progress|  |
+| 83. Detection Cache Layer | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 84. Reader Output Contract Homogenisation | v0.5.7 | 0/0 | Not started | — |
 | 85. Data Model Method and Doc Cleanup | v0.5.7 | 0/0 | Not started | — |
 | 86. Validation and Lint Codegen Polish | v0.5.7 | 0/0 | Not started | — |
