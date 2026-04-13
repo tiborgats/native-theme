@@ -69,8 +69,8 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 
 ### Icons
 
-- [ ] **ICON-01**: 13 icon-loading functions collapsed into one builder API — `IconLoader::new(impl Into<IconId>).set(...).size(...).load()` (doc 1 §8 Option C)
-- [ ] **ICON-02**: `load_icon` freedesktop size-24 hardcode removed (covered by ICON-01 builder's `size()` method) (doc 1 §9)
+- [x] **ICON-01**: 13 icon-loading functions collapsed into one builder API — `IconLoader::new(impl Into<IconId>).set(...).size(...).load()` (doc 1 §8 Option C)
+- [x] **ICON-02**: `load_icon` freedesktop size-24 hardcode removed (covered by ICON-01 builder's `size()` method) (doc 1 §9)
 - [x] **ICON-03**: `IconProvider::icon_svg` returns `Cow<'static, [u8]>` instead of `&'static [u8]` — removes lifetime lock (doc 1 §10)
 - [x] **ICON-04**: `IconData::Svg` stores `Cow<'static, [u8]>` to avoid the `Vec<u8>` copy on bundled icon loads (doc 1 §11)
 - [x] **ICON-05**: `IconSet::default()` removed — it was Freedesktop on all platforms, misleading on macOS/Windows (doc 1 §17)

@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
-status: in-progress
-stopped_at: Completed 82-01-PLAN.md
-last_updated: "2026-04-13T14:46:33.000Z"
-last_activity: 2026-04-13 — Phase 82 Plan 01 executed (2 tasks, 2 commits)
+status: completed
+stopped_at: Completed 82-02-PLAN.md
+last_updated: "2026-04-13T15:00:13.102Z"
+last_activity: 2026-04-13 — Phase 82 Plan 02 executed (2 tasks, 2 commits)
 progress:
   total_phases: 28
-  completed_phases: 21
+  completed_phases: 22
   total_plans: 42
-  completed_plans: 41
-  percent: 97
+  completed_plans: 42
+  percent: 100
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 82 — icon-api-rework
-Plan: 1/2 complete
-Status: Plan 01 complete, Plan 02 remaining
-Last activity: 2026-04-13 — Phase 82 Plan 01 executed (2 tasks, 2 commits)
+Plan: 2/2 complete
+Status: Phase 82 complete
+Last activity: 2026-04-13 — Phase 82 Plan 02 executed (2 tasks, 2 commits)
 
-Progress: [█████████▊] 97% (41/42 plans complete)
+Progress: [██████████] 100% (42/42 plans complete)
 
 ## Accumulated Context
 
@@ -155,6 +155,10 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 82-01]: bundled_icon_svg stays returning Option<&'static [u8]> -- Cow wrapping at call site avoids churn in 400-line match blocks
 - [Phase 82-01]: IconRole::name() uses explicit match (not derive macro) for compile-time guaranteed kebab-case strings
 - [Phase 82-01]: iced connector uses cow.to_vec()/cow.into_owned() for from_memory() compatibility
+- [Phase 82-02]: IconLoader defaults to system_icon_set() and size 24; callers only override what they need
+- [Phase 82-02]: Connector ?Sized functions use load_custom_via_builder helper (calls provider methods directly + IconLoader for system dispatch) to avoid unsized-to-trait-object coercion
+- [Phase 82-02]: is_freedesktop_theme_available stays public (capability probe, not a loader)
+- [Phase 82-02]: CLI theme override uses IconLoader::new(name).set(Freedesktop).theme(t) instead of direct load_freedesktop_icon_by_name
 
 ### Blockers/Concerns
 
@@ -167,6 +171,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T14:46:33.000Z
-Stopped at: Completed 82-01-PLAN.md
+Last session: 2026-04-13T14:59:01Z
+Stopped at: Completed 82-02-PLAN.md
 Resume file: None

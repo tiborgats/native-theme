@@ -157,7 +157,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 79: BorderSpec Split and Platform Reader Visibility Audit** — Ship-unit 9: split `BorderSpec` along defaults-vs-widget, grep-audit connector callers of platform readers, demote `from_kde`/`from_gnome`/`from_windows`/`from_macos` to `pub(crate)` (completed 2026-04-13)
 - [x] **Phase 80: native-theme-derive Proc-Macro K Codegen** — Ship-unit 10: new `native-theme-derive` crate generating paired structs, `FIELD_NAMES`, `impl_merge!` bodies, `check_ranges`, `inventory::submit!` registry, and unified border inheritance attribute (completed 2026-04-13)
 - [x] **Phase 81: Feature-Matrix Cleanup and Unified from_system** — Ship-unit 11 atomic: unify `from_system`/`from_system_async` via `pollster::block_on`, split aggregators into `linux-kde`/`linux-portal`-style groups, simplify `Cargo.toml` feature graph (completed 2026-04-13)
-- [ ] **Phase 82: Icon API Rework** — Collapse 13 icon-loading functions into `IconLoader` builder, migrate `IconProvider` and `IconData::Svg` to `Cow<'static, [u8]>`, add `IconRole::name()` / `Display`, add `IconSet` drift-guard test
+- [x] **Phase 82: Icon API Rework** — Collapse 13 icon-loading functions into `IconLoader` builder, migrate `IconProvider` and `IconData::Svg` to `Cow<'static, [u8]>`, add `IconRole::name()` / `Display`, add `IconSet` drift-guard test (completed 2026-04-13)
 - [ ] **Phase 83: Detection Cache Layer** — Replace global `OnceLock` caches with `DetectionContext` backed by `arc_swap::ArcSwapOption`, add no-arg `detect_linux_desktop()` overload
 - [ ] **Phase 84: Reader Output Contract Homogenisation** — Unify single-vs-dual variant semantics across KDE/GNOME/Windows/macOS readers via a `ReaderOutput` type flowing through `run_pipeline` alongside `OverlaySource`
 - [ ] **Phase 85: Data Model Method and Doc Cleanup** — Demote `ThemeVariant::resolve*` intermediates to `#[doc(hidden)]`, `Theme` method grab-bag cleanup, document `ThemeWatcher` internals, rename `FontSize::Px::to_px` to `to_logical_px`
@@ -624,7 +624,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 79. BorderSpec Split and Platform Reader Visibility Audit | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 80. native-theme-derive Proc-Macro K Codegen | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 81. Feature-Matrix Cleanup and Unified from_system | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
-| 82. Icon API Rework | v0.5.7 | 1/2 | In Progress|  |
+| 82. Icon API Rework | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 83. Detection Cache Layer | v0.5.7 | 0/0 | Not started | — |
 | 84. Reader Output Contract Homogenisation | v0.5.7 | 0/0 | Not started | — |
 | 85. Data Model Method and Doc Cleanup | v0.5.7 | 0/0 | Not started | — |
