@@ -2,11 +2,11 @@
 # Source: https://www.nordtheme.com/docs/colors-and-palettes/
 name = "Nord"
 icon_set = "lucide"
-icon_theme = "lucide"
 
 # === Light variant (Snow Storm backgrounds + Frost/Aurora accents) ===
 
 [light.defaults]
+icon_theme = "lucide"
 accent_color = "#5e81ac"
 background_color = "#eceff4"
 text_color = "#2e3440"
@@ -280,6 +280,7 @@ inactive_title_bar_text_color = "#2e3440"
 # === Dark variant (Polar Night backgrounds + Frost/Aurora accents) ===
 
 [dark.defaults]
+icon_theme = "lucide"
 accent_color = "#88c0d0"
 background_color = "#2e3440"
 text_color = "#d8dee9"

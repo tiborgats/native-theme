@@ -3,8 +3,7 @@
 // 1. resolve() -- pure data transform: fills None fields from defaults and
 //    related widgets via ~91 inheritance rules. No OS detection, no I/O.
 // 2. resolve_platform_defaults() -- fills fields that require OS detection:
-//    icon_theme (from system icon settings) and button_order (from detected
-//    desktop environment).
+//    button_order (from detected desktop environment).
 // 3. validate() -- extracts Option<T> -> T, producing ResolvedTheme.
 //
 // Convenience: resolve_all() = 1+2, into_resolved() = 1+2+3.
@@ -65,8 +64,9 @@ impl ThemeMode {
     /// runtime OS detection (reading desktop environment settings), unlike the
     /// pure inheritance rules in resolve().
     ///
-    /// Note: `icon_set` and `icon_theme` resolution is handled at the
-    /// [`Theme`](crate::Theme) / pipeline level, not per-variant.
+    /// Note: `icon_set` resolution is handled at the
+    /// [`Theme`](crate::Theme) / pipeline level. `icon_theme` is per-variant
+    /// on [`ThemeDefaults`](crate::ThemeDefaults) and resolved in the pipeline.
     pub fn resolve_platform_defaults(&mut self) {
         if self.dialog.button_order.is_none() {
             self.dialog.button_order = Some(inheritance::platform_button_order());

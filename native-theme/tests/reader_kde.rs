@@ -47,14 +47,14 @@ fn breeze_dark_fixture_colors_and_fonts() {
     // DPI: caller-provided 96.0, not INI's forceFontDPI=120
     assert_eq!(font_dpi, Some(96.0));
 
-    // Icon theme (now on Theme, not ThemeMode)
-    assert_eq!(theme.icon_theme.as_deref(), Some("breeze-dark"));
+    // Icon theme (per-variant on defaults)
+    assert_eq!(v.defaults.icon_theme.as_deref(), Some("breeze-dark"));
 
     // Icon sizes NOT populated in pure path
     assert!(v.defaults.icon_sizes.small.is_none());
 
-    // Dialog button order: KDE uses PrimaryLeft
-    assert_eq!(v.dialog.button_order, Some(DialogButtonOrder::PrimaryLeft));
+    // Dialog button order: not set by reader (resolver handles it)
+    assert!(v.dialog.button_order.is_none());
 
     // Per-widget: Button
     assert_eq!(v.button.background_color, Some(Rgba::rgb(49, 54, 59)));
@@ -187,8 +187,8 @@ fn minimal_config_fixture() {
     // No General font
     assert!(v.defaults.font.family.is_none());
 
-    // No Icons section (icon_theme is now on Theme)
-    assert!(theme.icon_theme.is_none());
+    // No Icons section (icon_theme is on variant defaults)
+    assert!(v.defaults.icon_theme.is_none());
 
     // No KDE section -> reduce_motion not set
     assert!(!accessibility.reduce_motion);

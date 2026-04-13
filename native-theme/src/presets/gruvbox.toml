@@ -2,11 +2,11 @@
 # Source: https://github.com/morhetz/gruvbox
 name = "Gruvbox"
 icon_set = "lucide"
-icon_theme = "lucide"
 
 # === Light variant (Gruvbox Light medium contrast) ===
 
 [light.defaults]
+icon_theme = "lucide"
 accent_color = "#076678"
 background_color = "#fbf1c7"
 text_color = "#3c3836"
@@ -280,6 +280,7 @@ inactive_title_bar_text_color = "#3c3836"
 # === Dark variant (Gruvbox Dark medium contrast) ===
 
 [dark.defaults]
+icon_theme = "lucide"
 accent_color = "#83a598"
 background_color = "#282828"
 text_color = "#ebdbb2"

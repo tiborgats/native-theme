@@ -179,6 +179,7 @@ fn arb_theme_defaults() -> impl Strategy<Value = ThemeDefaults> {
                     focus_ring_color: colors[22],
                     focus_ring_width,
                     focus_ring_offset,
+                    icon_theme: None,
                 }
             },
         )
@@ -441,10 +442,9 @@ fn arb_theme_spec() -> impl Strategy<Value = Theme> {
         any::<bool>(), // has_dark
         arb_layout_theme(),
         proptest::option::of(arb_icon_set()),
-        proptest::option::of("[a-zA-Z]{1,15}"),
     )
         .prop_map(
-            |(name, variant, has_light, has_dark, layout, icon_set, icon_theme)| Theme {
+            |(name, variant, has_light, has_dark, layout, icon_set)| Theme {
                 name,
                 light: if has_light {
                     Some(variant.clone())
@@ -454,7 +454,6 @@ fn arb_theme_spec() -> impl Strategy<Value = Theme> {
                 dark: if has_dark { Some(variant) } else { None },
                 layout,
                 icon_set,
-                icon_theme,
             },
         )
 }

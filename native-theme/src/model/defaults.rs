@@ -113,6 +113,9 @@ pub struct ThemeDefaults {
     /// Per-context icon sizes.
     #[serde(default, skip_serializing_if = "IconSizes::is_empty")]
     pub icon_sizes: IconSizes,
+
+    /// Visual icon theme name for this variant (e.g., `"breeze-dark"`, `"Adwaita"`).
+    pub icon_theme: Option<String>,
 }
 
 impl ThemeDefaults {
@@ -149,6 +152,7 @@ impl ThemeDefaults {
         "focus_ring_width_px",
         "focus_ring_offset_px",
         "icon_sizes",
+        "icon_theme",
     ];
 }
 
@@ -163,7 +167,8 @@ impl_merge!(ThemeDefaults {
         disabled_text_color,
         danger_color, danger_text_color, warning_color, warning_text_color,
         success_color, success_text_color, info_color, info_text_color,
-        disabled_opacity, focus_ring_color, focus_ring_width, focus_ring_offset
+        disabled_opacity, focus_ring_color, focus_ring_width, focus_ring_offset,
+        icon_theme
     }
     nested { font, mono_font, border, icon_sizes }
 });
@@ -209,6 +214,7 @@ mod tests {
         assert!(d.focus_ring_width.is_none());
         assert!(d.focus_ring_offset.is_none());
         assert!(d.line_height.is_none());
+        assert!(d.icon_theme.is_none());
     }
 
     #[test]

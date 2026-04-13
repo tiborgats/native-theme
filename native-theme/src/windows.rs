@@ -561,7 +561,6 @@ fn build_theme(
             dark: Some(variant),
             layout: crate::LayoutTheme::default(),
             icon_set: Some(crate::IconSet::SegoeIcons),
-            icon_theme: None,
         }
     } else {
         crate::Theme {
@@ -570,7 +569,6 @@ fn build_theme(
             dark: None,
             layout: crate::LayoutTheme::default(),
             icon_set: Some(crate::IconSet::SegoeIcons),
-            icon_theme: None,
         }
     };
     (theme, font_dpi, acc)

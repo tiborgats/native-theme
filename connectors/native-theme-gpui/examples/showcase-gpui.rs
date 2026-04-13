@@ -1729,12 +1729,13 @@ impl Showcase {
             } else {
                 native_theme_gpui::ColorMode::Light
             }) {
-                // Check icon_theme before resolution fills it in (now on Theme)
-                self.has_toml_icon_theme = nt.icon_theme.is_some();
+                // icon_theme is per-variant on defaults
+                self.has_toml_icon_theme = variant.defaults.icon_theme.is_some();
                 let icon_set = nt
                     .icon_set
                     .unwrap_or_else(native_theme::theme::system_icon_set);
-                let icon_theme = nt
+                let icon_theme = variant
+                    .defaults
                     .icon_theme
                     .clone()
                     .unwrap_or_else(|| native_theme::theme::system_icon_theme().to_string());

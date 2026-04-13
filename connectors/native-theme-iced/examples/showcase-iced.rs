@@ -896,13 +896,15 @@ impl State {
                         native_theme_iced::ColorMode::Light
                     }) {
                         Some(variant) => {
-                            has_toml_icon_theme = nt.icon_theme.is_some();
+                            // icon_theme is per-variant on defaults
+                            has_toml_icon_theme = variant.defaults.icon_theme.is_some();
                             self.current_icon_set = nt
                                 .icon_set
                                 .unwrap_or_else(native_theme::theme::system_icon_set);
-                            self.current_icon_theme = nt.icon_theme.clone().unwrap_or_else(|| {
-                                native_theme::theme::system_icon_theme().to_string()
-                            });
+                            self.current_icon_theme =
+                                variant.defaults.icon_theme.clone().unwrap_or_else(|| {
+                                    native_theme::theme::system_icon_theme().to_string()
+                                });
                             let v = variant.clone();
                             match v.into_resolved(None) {
                                 Ok(resolved) => {

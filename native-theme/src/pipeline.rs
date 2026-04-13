@@ -48,6 +48,25 @@ pub(crate) fn run_pipeline(
         reader_output.name.clone()
     };
 
+    // Resolve icon_set from Theme level (shared across variants)
+    let icon_set = merged
+        .icon_set
+        .unwrap_or_else(crate::model::icons::system_icon_set);
+
+    // Resolve icon_theme from the active variant's defaults (per-variant).
+    // Must read before variants are consumed by unwrap_or_default().
+    let icon_theme = {
+        let active = if mode == crate::ColorMode::Dark {
+            &merged.dark
+        } else {
+            &merged.light
+        };
+        active
+            .as_ref()
+            .and_then(|v| v.defaults.icon_theme.clone())
+            .unwrap_or_else(|| crate::model::icons::system_icon_theme().to_string())
+    };
+
     // For the variant the reader provided: use merged (live geometry + reader colors)
     // For the variant the reader didn't provide: use FULL preset (has colors).
     // unwrap_or_default() yields an empty ThemeMode -- valid for merge.
@@ -65,15 +84,6 @@ pub(crate) fn run_pipeline(
 
     let light = light_variant.into_resolved(font_dpi)?;
     let dark = dark_variant.into_resolved(font_dpi)?;
-
-    // Resolve icon_set and icon_theme from Theme level (shared across variants)
-    let icon_set = merged
-        .icon_set
-        .unwrap_or_else(crate::model::icons::system_icon_set);
-    let icon_theme = merged
-        .icon_theme
-        .clone()
-        .unwrap_or_else(|| crate::model::icons::system_icon_theme().to_string());
 
     // Build OverlaySource from the original reader data + pipeline parameters
     let overlay_source = OverlaySource {

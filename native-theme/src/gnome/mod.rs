@@ -260,7 +260,7 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
     }
 
     // ── Icon theme (GNOME-04) ────────────────────────────────────────────
-    // icon_theme is now set at Theme level in build_gnome_spec_pure()
+    // icon_theme is set on variant.defaults in build_gnome_spec_pure()
 
     // ── Dialog button order (project decision) ──────────────────────────
     variant.dialog.button_order = Some(DialogButtonOrder::PrimaryRight);
@@ -293,8 +293,8 @@ pub(crate) fn build_gnome_spec_pure(
 
     let acc = accessibility_from_gnome_data(data);
 
-    // Icon theme at Theme level (shared across variants)
-    let icon_theme = data.icon_theme.clone();
+    // Icon theme on variant defaults (per-variant)
+    variant.defaults.icon_theme = data.icon_theme.clone();
 
     let theme = if is_dark {
         crate::Theme {
@@ -303,7 +303,6 @@ pub(crate) fn build_gnome_spec_pure(
             dark: Some(variant),
             layout: crate::LayoutTheme::default(),
             icon_set: None,
-            icon_theme,
         }
     } else {
         crate::Theme {
@@ -312,7 +311,6 @@ pub(crate) fn build_gnome_spec_pure(
             dark: None,
             layout: crate::LayoutTheme::default(),
             icon_set: None,
-            icon_theme,
         }
     };
 
@@ -432,8 +430,8 @@ pub(crate) fn build_theme(
     let (os_variant, acc, font_dpi) = build_gnome_variant(scheme, accent, contrast, reduced_motion);
     variant.merge(&os_variant);
 
-    // Read icon_theme from gsettings (shared across variants)
-    let icon_theme = read_gsetting("org.gnome.desktop.interface", "icon-theme");
+    // Read icon_theme from gsettings (per-variant)
+    variant.defaults.icon_theme = read_gsetting("org.gnome.desktop.interface", "icon-theme");
 
     // Build Theme with only the selected variant populated
     let theme = if is_dark {
@@ -443,7 +441,6 @@ pub(crate) fn build_theme(
             dark: Some(variant),
             layout: crate::LayoutTheme::default(),
             icon_set: None,
-            icon_theme,
         }
     } else {
         crate::Theme {
@@ -452,7 +449,6 @@ pub(crate) fn build_theme(
             dark: None,
             layout: crate::LayoutTheme::default(),
             icon_set: None,
-            icon_theme,
         }
     };
 

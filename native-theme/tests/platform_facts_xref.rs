@@ -45,9 +45,23 @@ fn kde_breeze_matches_platform_facts() {
     // Accent color: #3daee9 (KDE Breeze highlight blue)
     assert_eq!(light.defaults.accent_color, Some(Rgba::rgb(61, 174, 233)));
 
-    // Icon set and theme (now on Theme, shared across variants)
+    // Icon set (on Theme, shared across variants)
     assert_eq!(theme.icon_set, Some(IconSet::Freedesktop));
-    assert_eq!(theme.icon_theme.as_deref(), Some("breeze"));
+    // Icon theme (per-variant on defaults)
+    assert_eq!(
+        theme
+            .light
+            .as_ref()
+            .and_then(|v| v.defaults.icon_theme.as_deref()),
+        Some("breeze")
+    );
+    assert_eq!(
+        theme
+            .dark
+            .as_ref()
+            .and_then(|v| v.defaults.icon_theme.as_deref()),
+        Some("breeze-dark")
+    );
 
     // Verify platform-facts.md mentions these values (catches doc drift)
     assert!(
@@ -84,9 +98,16 @@ fn adwaita_matches_platform_facts() {
     // Accent color: #3584e4 (GNOME blue)
     assert_eq!(light.defaults.accent_color, Some(Rgba::rgb(53, 132, 228)));
 
-    // Icon set and theme (now on Theme, shared across variants)
+    // Icon set (on Theme, shared across variants)
     assert_eq!(theme.icon_set, Some(IconSet::Freedesktop));
-    assert_eq!(theme.icon_theme.as_deref(), Some("Adwaita"));
+    // Icon theme (per-variant on defaults)
+    assert_eq!(
+        theme
+            .light
+            .as_ref()
+            .and_then(|v| v.defaults.icon_theme.as_deref()),
+        Some("Adwaita")
+    );
 
     // Verify platform-facts.md mentions these values
     assert!(
@@ -120,9 +141,16 @@ fn windows_11_matches_platform_facts() {
     // Accent color: #0078d4 (Windows blue)
     assert_eq!(light.defaults.accent_color, Some(Rgba::rgb(0, 120, 212)));
 
-    // Icon set and theme (now on Theme, shared across variants)
+    // Icon set (on Theme, shared across variants)
     assert_eq!(theme.icon_set, Some(IconSet::SegoeIcons));
-    assert_eq!(theme.icon_theme.as_deref(), Some("segoe-fluent"));
+    // Icon theme (per-variant on defaults)
+    assert_eq!(
+        theme
+            .light
+            .as_ref()
+            .and_then(|v| v.defaults.icon_theme.as_deref()),
+        Some("segoe-fluent")
+    );
 
     // Verify platform-facts.md mentions these values
     assert!(

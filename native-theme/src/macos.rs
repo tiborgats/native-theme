@@ -377,7 +377,6 @@ fn build_theme(
         dark: Some(dark_variant),
         layout: crate::LayoutTheme::default(),
         icon_set: Some(crate::IconSet::SfSymbols),
-        icon_theme: None, // resolved from system at pipeline time
     }
 }
 

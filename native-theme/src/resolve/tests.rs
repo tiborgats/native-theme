@@ -1395,7 +1395,7 @@ fn validate_after_resolve_succeeds_for_derivable_fields() {
 fn test_gnome_resolve_validate() {
     // Simulate GNOME reader pipeline: adwaita base + GNOME reader overlay.
     // On a non-GNOME system, build_gnome_variant() only sets dialog.button_order
-    // (gsettings calls return None). icon_set/icon_theme are now on Theme level.
+    // (gsettings calls return None). icon_set is on Theme, icon_theme is per-variant.
     let adwaita = crate::Theme::preset("adwaita").unwrap();
 
     // Pick dark variant from adwaita (matches GNOME PreferDark path).

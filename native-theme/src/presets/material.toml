@@ -2,11 +2,11 @@
 # Source: m3.material.io baseline color scheme
 name = "Material"
 icon_set = "material"
-icon_theme = "material"
 
 # === Light variant ===
 
 [light.defaults]
+icon_theme = "material"
 accent_color = "#6750a4"
 background_color = "#fffbfe"
 text_color = "#1c1b1f"
@@ -285,6 +285,7 @@ inactive_title_bar_text_color = "#1c1b1f"
 # === Dark variant ===
 
 [dark.defaults]
+icon_theme = "material"
 accent_color = "#d0bcff"
 background_color = "#1c1b1f"
 text_color = "#e6e1e5"

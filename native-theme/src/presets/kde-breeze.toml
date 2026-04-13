@@ -2,11 +2,11 @@
 # BreezeLight.colors and BreezeDark.colors
 name = "KDE Breeze"
 icon_set = "freedesktop"
-icon_theme = "breeze"
 
 # === Light variant (BreezeLight.colors) ===
 
 [light.defaults]
+icon_theme = "breeze"
 accent_color = "#3daee9"
 background_color = "#eff0f1"
 text_color = "#232629"
@@ -286,6 +286,7 @@ arrow_color = "#232629"
 # === Dark variant (BreezeDark.colors) ===
 
 [dark.defaults]
+icon_theme = "breeze-dark"
 accent_color = "#3daee9"
 background_color = "#232629"
 text_color = "#fcfcfc"

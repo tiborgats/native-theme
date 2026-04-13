@@ -2,11 +2,11 @@
 # Source: https://catppuccin.com/palette/
 name = "Catppuccin Frappe"
 icon_set = "lucide"
-icon_theme = "lucide"
 
 # === Light variant (derived - Latte base with Frappe accents) ===
 
 [light.defaults]
+icon_theme = "lucide"
 accent_color = "#8caaee"
 background_color = "#eff1f5"
 text_color = "#4c4f69"
@@ -280,6 +280,7 @@ inactive_title_bar_text_color = "#4c4f69"
 # === Dark variant (Frappe palette - primary) ===
 
 [dark.defaults]
+icon_theme = "lucide"
 accent_color = "#8caaee"
 background_color = "#303446"
 text_color = "#c6d0f5"

@@ -264,18 +264,10 @@ pub struct Theme {
     ///
     /// let theme = Theme::preset("material")?;
     /// assert_eq!(theme.icon_set, Some(IconSet::Material));
-    /// assert_eq!(theme.icon_theme.as_deref(), Some("material"));
     /// # Ok::<(), native_theme::error::Error>(())
     /// ```
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon_set: Option<IconSet>,
-
-    /// The name of the visual icon theme (e.g. `"breeze"`, `"Adwaita"`, `"Lucide"`).
-    /// Shared across light and dark variants.
-    /// When `None`, filled during resolution from
-    /// [`system_icon_theme()`](crate::theme::system_icon_theme).
-    #[serde(default, skip_serializing_if = "Option::is_none")]
-    pub icon_theme: Option<String>,
 }
 
 impl Theme {
@@ -287,7 +279,6 @@ impl Theme {
             dark: None,
             layout: LayoutTheme::default(),
             icon_set: None,
-            icon_theme: None,
         }
     }
 
@@ -316,9 +307,6 @@ impl Theme {
 
         if overlay.icon_set.is_some() {
             self.icon_set = overlay.icon_set;
-        }
-        if overlay.icon_theme.is_some() {
-            self.icon_theme = overlay.icon_theme.clone();
         }
     }
 
@@ -368,7 +356,6 @@ impl Theme {
             && self.dark.is_none()
             && self.layout.is_empty()
             && self.icon_set.is_none()
-            && self.icon_theme.is_none()
     }
 
     /// Load a bundled theme preset by name.
@@ -599,7 +586,7 @@ impl Theme {
         };
 
         // Known top-level keys
-        const TOP_KEYS: &[&str] = &["name", "light", "dark", "layout", "icon_set", "icon_theme"];
+        const TOP_KEYS: &[&str] = &["name", "light", "dark", "layout", "icon_set"];
 
         for key in top_table.keys() {
             if !TOP_KEYS.contains(&key.as_str()) {
@@ -1142,12 +1129,23 @@ mod tests {
     fn icon_set_toml_round_trip() {
         let mut theme = Theme::new("Test");
         theme.icon_set = Some(IconSet::Material);
-        theme.icon_theme = Some("material".into());
+        let mut light = ThemeMode::default();
+        light.defaults.icon_theme = Some("material".into());
+        theme.light = Some(light);
         let toml_str = theme.to_toml().unwrap();
         assert!(toml_str.contains("icon_set"));
         let deserialized = Theme::from_toml(&toml_str).unwrap();
         assert_eq!(deserialized.icon_set, Some(IconSet::Material));
-        assert_eq!(deserialized.icon_theme.as_deref(), Some("material"));
+        assert_eq!(
+            deserialized
+                .light
+                .as_ref()
+                .unwrap()
+                .defaults
+                .icon_theme
+                .as_deref(),
+            Some("material")
+        );
     }
 
     #[test]
@@ -1159,7 +1157,7 @@ accent_color = "#ff0000"
 "##;
         let theme = Theme::from_toml(toml_str).unwrap();
         assert!(theme.icon_set.is_none());
-        assert!(theme.icon_theme.is_none());
+        assert!(theme.light.as_ref().unwrap().defaults.icon_theme.is_none());
     }
 
     #[test]

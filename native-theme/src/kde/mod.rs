@@ -58,8 +58,8 @@ pub fn from_kde_content_pure(
         .get("General", "ColorScheme")
         .unwrap_or_else(|| "KDE".to_string());
 
-    // KDE-05: Icon theme name from [Icons] Theme (shared across variants)
-    let icon_theme = ini.get("Icons", "Theme").filter(|s| !s.is_empty());
+    // KDE-05: Icon theme name from [Icons] Theme (per-variant)
+    variant.defaults.icon_theme = ini.get("Icons", "Theme").filter(|s| !s.is_empty());
 
     let theme = if dark {
         crate::Theme {
@@ -68,7 +68,6 @@ pub fn from_kde_content_pure(
             dark: Some(variant),
             layout: crate::LayoutTheme::default(),
             icon_set: None,
-            icon_theme,
         }
     } else {
         crate::Theme {
@@ -77,7 +76,6 @@ pub fn from_kde_content_pure(
             dark: None,
             layout: crate::LayoutTheme::default(),
             icon_set: None,
-            icon_theme,
         }
     };
 
@@ -107,16 +105,16 @@ pub(crate) fn from_kde_content(
 
     let (mut theme, _dpi, accessibility) = from_kde_content_pure(content, Some(font_dpi))?;
 
-    // I/O: icon sizes from filesystem (icon_theme is now on Theme)
-    if let Some(ref theme_name) = theme.icon_theme {
-        let variant = if theme.dark.is_some() {
-            theme.dark.as_mut()
-        } else {
-            theme.light.as_mut()
-        };
-        if let Some(variant) = variant {
-            variant.defaults.icon_sizes = parse_icon_sizes_from_index_theme(theme_name);
-        }
+    // I/O: icon sizes from filesystem (icon_theme is on variant defaults)
+    let variant = if theme.dark.is_some() {
+        theme.dark.as_mut()
+    } else {
+        theme.light.as_mut()
+    };
+    if let Some(variant) = variant
+        && let Some(ref theme_name) = variant.defaults.icon_theme
+    {
+        variant.defaults.icon_sizes = parse_icon_sizes_from_index_theme(theme_name);
     }
 
     Ok((theme, Some(font_dpi), accessibility))
@@ -359,7 +357,29 @@ pub(crate) fn from_kde()
         reader: "kde",
         source: format!("cannot read {}: {e}", path.display()).into(),
     })?;
-    from_kde_content(&content)
+    let (mut theme, dpi, acc) = from_kde_content(&content)?;
+
+    // Cascade: if kdeglobals lacks [Icons] Theme, check kdedefaults/kdeglobals
+    let variant = if theme.dark.is_some() {
+        theme.dark.as_mut()
+    } else {
+        theme.light.as_mut()
+    };
+    if let Some(variant) = variant
+        && variant.defaults.icon_theme.is_none()
+        && let Some(parent) = path.parent()
+    {
+        let defaults_path = parent.join("kdedefaults").join("kdeglobals");
+        if let Ok(defaults_content) = std::fs::read_to_string(&defaults_path) {
+            let mut defaults_ini = create_kde_parser();
+            if defaults_ini.read(defaults_content).is_ok() {
+                variant.defaults.icon_theme =
+                    defaults_ini.get("Icons", "Theme").filter(|s| !s.is_empty());
+            }
+        }
+    }
+
+    Ok((theme, dpi, acc))
 }
 
 /// Create a configparser Ini instance configured for KDE files.
@@ -435,7 +455,8 @@ pub(crate) fn from_kde_at(path: &std::path::Path) -> crate::Result<crate::Theme>
         reader: "kde",
         source: Box::new(e),
     })?;
-    from_kde_content(&content)
+    let (theme, _dpi, _acc) = from_kde_content(&content)?;
+    Ok(theme)
 }
 
 /// Detect whether the active KDE theme is dark based on background luminance.
@@ -691,7 +712,7 @@ BackgroundNormal=49,54,59
 
     #[test]
     fn test_dark_theme_detection() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let (theme, _dpi, _acc) = from_kde_content(BREEZE_DARK_FULL).unwrap();
         assert!(theme.dark.is_some(), "dark variant should be populated");
         assert!(
             theme.light.is_none(),
@@ -701,7 +722,7 @@ BackgroundNormal=49,54,59
 
     #[test]
     fn test_light_theme_detection() {
-        let theme = from_kde_content(BREEZE_LIGHT_FULL).unwrap();
+        let (theme, _dpi, _acc) = from_kde_content(BREEZE_LIGHT_FULL).unwrap();
         assert!(theme.light.is_some(), "light variant should be populated");
         assert!(
             theme.dark.is_none(),
@@ -711,20 +732,20 @@ BackgroundNormal=49,54,59
 
     #[test]
     fn test_theme_name_from_colorscheme() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let (theme, _dpi, _acc) = from_kde_content(BREEZE_DARK_FULL).unwrap();
         assert_eq!(theme.name, "BreezeDark");
     }
 
     #[test]
     fn test_theme_name_fallback() {
         let content = "[Colors:Window]\nBackgroundNormal=49,54,59\n";
-        let theme = from_kde_content(content).unwrap();
+        let (theme, _dpi, _acc) = from_kde_content(content).unwrap();
         assert_eq!(theme.name, "KDE");
     }
 
     #[test]
     fn test_colors_populated() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let (theme, _dpi, _acc) = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let variant = theme.dark.as_ref().unwrap();
         assert!(variant.defaults.accent_color.is_some());
         assert!(variant.defaults.background_color.is_some());
@@ -733,7 +754,7 @@ BackgroundNormal=49,54,59
 
     #[test]
     fn test_fonts_populated() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let (theme, _dpi, _acc) = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let variant = theme.dark.as_ref().unwrap();
         assert_eq!(variant.defaults.font.family.as_deref(), Some("Noto Sans"));
         assert_eq!(variant.defaults.font.size, Some(FontSize::Pt(10.0)));
@@ -748,13 +769,13 @@ BackgroundNormal=49,54,59
             result.is_ok(),
             "minimal fixture should not panic: {result:?}"
         );
-        let theme = result.unwrap();
+        let (theme, _dpi, _acc) = result.unwrap();
         assert!(theme.dark.is_some());
     }
 
     #[test]
     fn test_from_kde_content_populates_widget_sizing() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let (theme, _dpi, _acc) = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let variant = theme.dark.as_ref().unwrap();
         assert_eq!(variant.button.min_width, Some(80.0), "Button_MinWidth");
         assert_eq!(
@@ -771,7 +792,7 @@ BackgroundNormal=49,54,59
             result.is_ok(),
             "empty content should produce Ok: {result:?}"
         );
-        let theme = result.unwrap();
+        let (theme, _dpi, _acc) = result.unwrap();
         assert_eq!(theme.name, "KDE");
     }
 
@@ -796,7 +817,7 @@ BackgroundNormal=49,54,59
 
     #[test]
     fn test_button_colors_populated() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let (theme, _dpi, _acc) = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
         assert_eq!(v.button.background_color, Some(Rgba::rgb(49, 54, 59)));
         assert_eq!(
@@ -807,7 +828,7 @@ BackgroundNormal=49,54,59
 
     #[test]
     fn test_tooltip_colors_populated() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let (theme, _dpi, _acc) = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
         assert_eq!(v.tooltip.background_color, Some(Rgba::rgb(49, 54, 59)));
         assert_eq!(
@@ -818,7 +839,7 @@ BackgroundNormal=49,54,59
 
     #[test]
     fn test_sidebar_colors_populated() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let (theme, _dpi, _acc) = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
         assert_eq!(v.sidebar.background_color, Some(Rgba::rgb(42, 46, 50)));
         assert_eq!(
@@ -829,7 +850,7 @@ BackgroundNormal=49,54,59
 
     #[test]
     fn test_wm_title_bar_colors() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let (theme, _dpi, _acc) = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
         assert_eq!(v.window.title_bar_background, Some(Rgba::rgb(49, 54, 59)));
         assert_eq!(
@@ -848,8 +869,8 @@ BackgroundNormal=49,54,59
 
     #[test]
     fn test_list_header_colors() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
-        let v = theme.dark.as_ref().unwrap();
+        let (theme, _dpi2, _acc2) = from_kde_content(BREEZE_DARK_FULL).expect("parse");
+        let v = theme.dark.as_ref().expect("dark");
         assert_eq!(v.list.header_background, Some(Rgba::rgb(35, 38, 41)));
         assert_eq!(
             v.list.header_font.as_ref().and_then(|f| f.color),
@@ -859,8 +880,8 @@ BackgroundNormal=49,54,59
 
     #[test]
     fn test_link_visited() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
-        let v = theme.dark.as_ref().unwrap();
+        let (theme, _dpi2, _acc2) = from_kde_content(BREEZE_DARK_FULL).expect("parse");
+        let v = theme.dark.as_ref().expect("dark");
         assert_eq!(v.link.visited_text_color, Some(Rgba::rgb(155, 89, 182)));
     }
 
@@ -909,10 +930,19 @@ BackgroundNormal=49,54,59
 
     #[test]
     fn test_icon_theme_from_icons_theme() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).ok().unwrap_or_default();
-        // icon_set and icon_theme are now on Theme, not ThemeMode
+        let theme = from_kde_content(BREEZE_DARK_FULL)
+            .map(|(t, _, _)| t)
+            .ok()
+            .unwrap_or_default();
+        // icon_set is on Theme, icon_theme is now on variant defaults
         assert!(theme.icon_set.is_none());
-        assert_eq!(theme.icon_theme.as_deref(), Some("breeze-dark"));
+        assert_eq!(
+            theme
+                .dark
+                .as_ref()
+                .and_then(|v| v.defaults.icon_theme.as_deref()),
+            Some("breeze-dark")
+        );
     }
 
     #[test]
@@ -921,9 +951,18 @@ BackgroundNormal=49,54,59
 [Colors:Window]
 BackgroundNormal=49,54,59
 ";
-        let theme = from_kde_content(content).ok().unwrap_or_default();
+        let theme = from_kde_content(content)
+            .map(|(t, _, _)| t)
+            .ok()
+            .unwrap_or_default();
         assert!(theme.icon_set.is_none());
-        assert!(theme.icon_theme.is_none());
+        assert!(
+            theme
+                .dark
+                .as_ref()
+                .and_then(|v| v.defaults.icon_theme.as_deref())
+                .is_none()
+        );
     }
 
     // === KDE-05: Icon sizes from index.theme ===
@@ -1064,7 +1103,7 @@ Name=whatever
         // This test checks that from_kde_content wires icon sizes from index.theme.
         // On systems with breeze-dark installed, icon_sizes will be populated.
         // On systems without it, icon_sizes will be None. Both are valid.
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let (theme, _dpi, _acc) = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
 
         if v.defaults.icon_sizes.small.is_some() {
@@ -1090,7 +1129,7 @@ Name=whatever
 
     #[test]
     fn test_dialog_button_order_not_set_by_reader() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let (theme, _dpi, _acc) = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
         assert_eq!(
             v.dialog.button_order, None,
@@ -1102,14 +1141,14 @@ Name=whatever
 
     #[test]
     fn test_widget_sizing_checkbox_indicator() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let (theme, _dpi, _acc) = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
         assert_eq!(v.checkbox.indicator_width, Some(20.0));
     }
 
     #[test]
     fn test_widget_sizing_splitter() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let (theme, _dpi, _acc) = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
         assert_eq!(v.splitter.divider_width, Some(1.0));
     }
@@ -1118,7 +1157,7 @@ Name=whatever
 
     #[test]
     fn test_menu_font_from_menufont() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let (theme, _dpi, _acc) = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
         let mf = v.menu.font.as_ref().expect("menu.font should be set");
         assert_eq!(mf.family.as_deref(), Some("Noto Sans"));
@@ -1127,7 +1166,7 @@ Name=whatever
 
     #[test]
     fn test_toolbar_font_from_toolbarfont() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let (theme, _dpi, _acc) = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
         let tf = v.toolbar.font.as_ref().expect("toolbar.font should be set");
         assert_eq!(tf.family.as_deref(), Some("Noto Sans"));
@@ -1136,7 +1175,7 @@ Name=whatever
 
     #[test]
     fn test_title_bar_font_from_wm_activefont() {
-        let theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let (theme, _dpi, _acc) = from_kde_content(BREEZE_DARK_FULL).unwrap();
         let v = theme.dark.as_ref().unwrap();
         let tbf = v
             .window
@@ -1155,7 +1194,7 @@ Name=whatever
         // Load the KDE Breeze preset as a base (provides geometry, spacing, icon sizes,
         // and other fields that KDE's kdeglobals doesn't carry).
         let mut base = crate::Theme::preset("kde-breeze").unwrap();
-        let kde_theme = from_kde_content(BREEZE_DARK_FULL).unwrap();
+        let (kde_theme, _dpi, _acc) = from_kde_content(BREEZE_DARK_FULL).unwrap();
 
         // Merge KDE reader output on top of the base preset.
         // The KDE variant is dark-only; merge will clone it into the base.

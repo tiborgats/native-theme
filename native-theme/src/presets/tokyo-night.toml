@@ -2,11 +2,11 @@
 # Source: https://github.com/folke/tokyonight.nvim
 name = "Tokyo Night"
 icon_set = "lucide"
-icon_theme = "lucide"
 
 # === Light variant (Tokyo Night Day) ===
 
 [light.defaults]
+icon_theme = "lucide"
 accent_color = "#2e7de9"
 background_color = "#e1e2e7"
 text_color = "#3760bf"
@@ -280,6 +280,7 @@ inactive_title_bar_text_color = "#3760bf"
 # === Dark variant (Tokyo Night) ===
 
 [dark.defaults]
+icon_theme = "lucide"
 accent_color = "#7aa2f7"
 background_color = "#1a1b26"
 text_color = "#a9b1d6"

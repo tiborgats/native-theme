@@ -327,8 +327,8 @@ fields = [
     "link.hover_background",           # only Windows SubtleFillColorSecondary
     "scrollbar.overlay_mode",          # boolean: macOS/GNOME overlay, Win/KDE persistent
     "dialog.button_order",             # enum: macOS/GNOME trailing, Win/KDE leading
-    "icon_set",                        # OS reader detects or TOML specifies
-    "icon_theme",                      # OS reader detects or TOML specifies
+    "icon_set",                        # OS reader detects or TOML specifies (on Theme)
+    "icon_theme",                      # OS reader detects or TOML specifies (per-variant on defaults)
     # batch 1 interactive state colors (Phase 52, plan 01)
     "button.active_background",        # platform-specific pressed state
     "button.disabled_background",      # platform-specific disabled bg
