@@ -143,6 +143,9 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 80-02]: Safety nets (6 rules) and widget-to-widget chains (7 rules) stay hand-written in inheritance.rs
 - [Phase 80-02]: LayoutTheme and test widgets use #[theme_layer(skip_inventory)] for non-per-variant structs
 - [Phase 80-02]: border_kind classification: menu/tab/card=none, sidebar/status_bar=partial, rest=full(default)
+- [Phase 80-fix]: icon_theme relocated from Theme (shared) to ThemeDefaults (per-variant) -- KDE dark uses "breeze-dark", light uses "breeze"
+- [Phase 80-fix]: KDE reader cascades to kdedefaults/kdeglobals for icon_theme when main kdeglobals lacks [Icons] section (Plasma 6)
+- [Phase 80-fix]: Pre-existing kde/mod.rs test compilation with --features kde fixed (from_kde_content tuple destructuring)
 
 ### Blockers/Concerns
 
