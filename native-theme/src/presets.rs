@@ -515,7 +515,8 @@ accent_color = "#00ff00"
 
         // menu font should have inherited family/weight from defaults
         assert_eq!(
-            resolved.menu.font.family.as_ref(), "Inter",
+            resolved.menu.font.family.as_ref(),
+            "Inter",
             "menu font family should inherit from defaults"
         );
         assert_eq!(

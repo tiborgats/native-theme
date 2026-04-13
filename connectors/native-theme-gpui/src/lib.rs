@@ -508,11 +508,14 @@ mod tests {
         let resolved = test_resolved();
         let theme = to_theme(&resolved, "Test", true, false);
 
-        assert_eq!(theme.font_family.to_string(), resolved.defaults.font.family);
+        assert_eq!(
+            theme.font_family.as_ref(),
+            resolved.defaults.font.family.as_ref()
+        );
         assert_eq!(theme.font_size, px(resolved.defaults.font.size));
         assert_eq!(
-            theme.mono_font_family.to_string(),
-            resolved.defaults.mono_font.family
+            theme.mono_font_family.as_ref(),
+            resolved.defaults.mono_font.family.as_ref()
         );
         assert_eq!(theme.mono_font_size, px(resolved.defaults.mono_font.size));
         assert_eq!(

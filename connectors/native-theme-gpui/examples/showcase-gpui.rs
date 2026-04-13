@@ -5957,7 +5957,8 @@ fn main() {
                                 "material" => "Material (bundled)".into(),
                                 "lucide" => "Lucide (bundled)".into(),
                                 "freedesktop" => {
-                                    let theme = cli_args.icon_theme.as_deref().unwrap_or(sys_theme);
+                                    let theme =
+                                        cli_args.icon_theme.as_deref().unwrap_or(&sys_theme);
                                     format!("system ({})", theme).into()
                                 }
                                 _ => s.default_icon_label().into(),

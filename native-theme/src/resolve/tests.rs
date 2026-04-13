@@ -1428,7 +1428,8 @@ fn test_gnome_resolve_validate() {
         "accent should be from adwaita preset"
     );
     assert_eq!(
-        resolved.defaults.font.family.as_ref(), "Cantarell",
+        resolved.defaults.font.family.as_ref(),
+        "Cantarell",
         "font family should be from GNOME reader overlay"
     );
     assert_eq!(

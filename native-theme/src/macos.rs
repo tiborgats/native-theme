@@ -207,7 +207,9 @@ fn nsfont_weight_to_css(font: &NSFont) -> Option<u16> {
 #[cfg(all(target_os = "macos", feature = "macos"))]
 fn fontspec_from_nsfont(font: &NSFont) -> crate::FontSpec {
     crate::FontSpec {
-        family: font.familyName().map(|n| std::sync::Arc::from(n.to_string())),
+        family: font
+            .familyName()
+            .map(|n| std::sync::Arc::from(n.to_string())),
         size: Some(crate::model::font::FontSize::Pt(font.pointSize() as f32)),
         weight: nsfont_weight_to_css(font),
         ..Default::default()
@@ -874,7 +876,8 @@ mod tests {
             "accent should be from macOS reader"
         );
         assert_eq!(
-            resolved.defaults.font.family.as_ref(), "SF Pro",
+            resolved.defaults.font.family.as_ref(),
+            "SF Pro",
             "font family should be from macOS reader"
         );
         // icon_set is now on Theme/SystemTheme, not on ResolvedTheme

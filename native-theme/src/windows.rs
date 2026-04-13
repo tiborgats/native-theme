@@ -1321,7 +1321,8 @@ mod tests {
             "accent should be from Windows reader"
         );
         assert_eq!(
-            resolved.defaults.font.family.as_ref(), "Segoe UI",
+            resolved.defaults.font.family.as_ref(),
+            "Segoe UI",
             "font family should be from Windows reader"
         );
         assert_eq!(
