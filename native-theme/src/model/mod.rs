@@ -458,7 +458,6 @@ impl Theme {
         crate::presets::from_toml(toml_str)
     }
 
-
     /// Load a [`Theme`] from a TOML file.
     ///
     /// # Errors
@@ -1260,6 +1259,41 @@ primay_bg = "#0078d7"
             assert!(
                 warnings.is_empty(),
                 "preset {name} should have no lint warnings, got: {warnings:?}"
+            );
+        }
+    }
+
+    #[test]
+    fn lint_toml_rejects_unknown_field_on_registered_widget() {
+        // Verify that lint_toml discovers widget field names from inventory.
+        // If a field name is not in the registered FIELD_NAMES for a widget,
+        // lint_toml should report it as unknown.
+        let toml = r##"
+name = "Test"
+[light.button]
+nonexistent_field = "#ff0000"
+"##;
+        let warnings = Theme::lint_toml(toml).unwrap();
+        assert_eq!(warnings.len(), 1);
+        assert!(warnings[0].contains("nonexistent_field"));
+        assert!(warnings[0].contains("light.button"));
+    }
+
+    #[test]
+    fn lint_toml_recognizes_all_registered_widgets() {
+        // Every widget registered via inventory::submit! should be accepted
+        // as a valid variant-level section key.
+        for entry in inventory::iter::<crate::resolve::WidgetFieldInfo> {
+            let toml_str = format!(
+                "name = \"Test\"\n[light.{}]\n",
+                entry.widget_name,
+            );
+            let warnings = Theme::lint_toml(&toml_str).unwrap();
+            assert!(
+                warnings.is_empty(),
+                "widget '{}' should be recognized, got: {:?}",
+                entry.widget_name,
+                warnings,
             );
         }
     }

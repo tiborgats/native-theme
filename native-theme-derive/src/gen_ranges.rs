@@ -32,6 +32,9 @@ pub(crate) fn gen_ranges(opt_name: &Ident, fields: &[FieldMeta], layer: &LayerMe
 }
 
 /// Generate range check statements from field metadata.
+///
+/// All generated code defers `format!` to error branches only -- the happy path
+/// (all values in range) allocates zero path strings.
 fn gen_check_stmts(fields: &[FieldMeta]) -> TokenStream {
     let mut stmts = Vec::new();
 
@@ -46,7 +49,8 @@ fn gen_check_stmts(fields: &[FieldMeta]) -> TokenStream {
                     stmts.push(quote! {
                         crate::resolve::validate_helpers::check_non_negative(
                             self.#ident,
-                            &format!("{prefix}.{}", #field_name),
+                            prefix,
+                            #field_name,
                             errors,
                         );
                     });
@@ -55,7 +59,8 @@ fn gen_check_stmts(fields: &[FieldMeta]) -> TokenStream {
                     stmts.push(quote! {
                         crate::resolve::validate_helpers::check_positive(
                             self.#ident,
-                            &format!("{prefix}.{}", #field_name),
+                            prefix,
+                            #field_name,
                             errors,
                         );
                     });
@@ -68,7 +73,8 @@ fn gen_check_stmts(fields: &[FieldMeta]) -> TokenStream {
                             self.#ident,
                             #min_lit,
                             #max_lit,
-                            &format!("{prefix}.{}", #field_name),
+                            prefix,
+                            #field_name,
                             errors,
                         );
                     });
@@ -81,7 +87,8 @@ fn gen_check_stmts(fields: &[FieldMeta]) -> TokenStream {
                             self.#ident,
                             #min_lit,
                             #max_lit,
-                            &format!("{prefix}.{}", #field_name),
+                            prefix,
+                            #field_name,
                             errors,
                         );
                     });
@@ -96,30 +103,40 @@ fn gen_check_stmts(fields: &[FieldMeta]) -> TokenStream {
                 crate::resolve::validate_helpers::check_min_max(
                     self.#ident,
                     self.#pair_ident,
-                    &format!("{prefix}.{}", #field_name),
-                    &format!("{prefix}.{}", #pair_name),
+                    prefix,
+                    #field_name,
+                    #pair_name,
                     errors,
                 );
             });
         }
 
-        // Auto-emit font range checks for nested ResolvedFontSpec fields
+        // Auto-emit font range checks for nested ResolvedFontSpec fields.
+        // Inlines the check logic so that format! only runs in error branches,
+        // avoiding sub-prefix allocation on the happy path.
         if let FieldCategory::Nested { resolved_ty } = &f.category
             && is_resolved_font_spec(resolved_ty)
         {
             stmts.push(quote! {
-                crate::resolve::validate_helpers::check_positive(
-                    self.#ident.size,
-                    &format!("{prefix}.{}.size", #field_name),
-                    errors,
-                );
-                crate::resolve::validate_helpers::check_range_u16(
-                    self.#ident.weight,
-                    100,
-                    900,
-                    &format!("{prefix}.{}.weight", #field_name),
-                    errors,
-                );
+                {
+                    let font = &self.#ident;
+                    if !font.size.is_finite() || font.size <= 0.0 {
+                        errors.push(crate::error::RangeViolation {
+                            path: format!("{prefix}.{}.size", #field_name),
+                            value: font.size as f64,
+                            min: Some(f64::MIN_POSITIVE),
+                            max: None,
+                        });
+                    }
+                    if font.weight < 100 || font.weight > 900 {
+                        errors.push(crate::error::RangeViolation {
+                            path: format!("{prefix}.{}.weight", #field_name),
+                            value: font.weight as f64,
+                            min: Some(100.0),
+                            max: Some(900.0),
+                        });
+                    }
+                }
             });
         }
     }

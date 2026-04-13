@@ -43,10 +43,13 @@ pub(crate) fn require_font(
     missing: &mut Vec<String>,
 ) -> ResolvedFontSpec {
     let family = require(&font.family, &format!("{prefix}.family"), missing);
-    let size = font.size.map(|fs| fs.to_logical_px(dpi)).unwrap_or_else(|| {
-        missing.push(format!("{prefix}.size"));
-        0.0
-    });
+    let size = font
+        .size
+        .map(|fs| fs.to_logical_px(dpi))
+        .unwrap_or_else(|| {
+            missing.push(format!("{prefix}.size"));
+            0.0
+        });
     let weight = require(&font.weight, &format!("{prefix}.weight"), missing);
     let color = require(&font.color, &format!("{prefix}.color"), missing);
     ResolvedFontSpec {
@@ -109,10 +112,13 @@ pub(crate) fn require_text_scale_entry(
                 missing.push(format!("{prefix}.size"));
                 0.0
             });
-            let line_height = e.line_height.map(|fs| fs.to_logical_px(dpi)).unwrap_or_else(|| {
-                missing.push(format!("{prefix}.line_height"));
-                0.0
-            });
+            let line_height = e
+                .line_height
+                .map(|fs| fs.to_logical_px(dpi))
+                .unwrap_or_else(|| {
+                    missing.push(format!("{prefix}.line_height"));
+                    0.0
+                });
             let weight = require(&e.weight, &format!("{prefix}.weight"), missing);
             crate::model::resolved::ResolvedTextScaleEntry {
                 size,
@@ -382,29 +388,77 @@ pub(crate) fn check_defaults_ranges(
 ) {
     // Fonts: size > 0, weight 100..=900
     check_positive(defaults.font.size, "defaults.font", "size", errors);
-    check_range_u16(defaults.font.weight, 100, 900, "defaults.font", "weight", errors);
-    check_positive(defaults.mono_font.size, "defaults.mono_font", "size", errors);
-    check_range_u16(defaults.mono_font.weight, 100, 900, "defaults.mono_font", "weight", errors);
+    check_range_u16(
+        defaults.font.weight,
+        100,
+        900,
+        "defaults.font",
+        "weight",
+        errors,
+    );
+    check_positive(
+        defaults.mono_font.size,
+        "defaults.mono_font",
+        "size",
+        errors,
+    );
+    check_range_u16(
+        defaults.mono_font.weight,
+        100,
+        900,
+        "defaults.mono_font",
+        "weight",
+        errors,
+    );
 
     // defaults: line_height > 0
     check_positive(defaults.line_height, "defaults", "line_height", errors);
 
     // defaults: radius, geometry >= 0
-    check_non_negative(defaults.border.corner_radius, "defaults.border", "corner_radius", errors);
+    check_non_negative(
+        defaults.border.corner_radius,
+        "defaults.border",
+        "corner_radius",
+        errors,
+    );
     check_non_negative(
         defaults.border.corner_radius_lg,
         "defaults.border",
         "corner_radius_lg",
         errors,
     );
-    check_non_negative(defaults.border.line_width, "defaults.border", "line_width", errors);
-    check_non_negative(defaults.focus_ring_width, "defaults", "focus_ring_width", errors);
+    check_non_negative(
+        defaults.border.line_width,
+        "defaults.border",
+        "line_width",
+        errors,
+    );
+    check_non_negative(
+        defaults.focus_ring_width,
+        "defaults",
+        "focus_ring_width",
+        errors,
+    );
     // Note: focus_ring_offset is intentionally NOT range-checked -- negative values
     // mean an inset focus ring (e.g., adwaita uses -2.0, macOS uses -1.0).
 
     // defaults: opacity 0..=1
-    check_range_f32(defaults.disabled_opacity, 0.0, 1.0, "defaults", "disabled_opacity", errors);
-    check_range_f32(defaults.border.opacity, 0.0, 1.0, "defaults.border", "opacity", errors);
+    check_range_f32(
+        defaults.disabled_opacity,
+        0.0,
+        1.0,
+        "defaults",
+        "disabled_opacity",
+        errors,
+    );
+    check_range_f32(
+        defaults.border.opacity,
+        0.0,
+        1.0,
+        "defaults.border",
+        "opacity",
+        errors,
+    );
 
     // defaults: border padding >= 0
     check_non_negative(
@@ -421,17 +475,64 @@ pub(crate) fn check_defaults_ranges(
     );
 
     // defaults: icon sizes >= 0
-    check_non_negative(defaults.icon_sizes.toolbar, "defaults.icon_sizes", "toolbar", errors);
-    check_non_negative(defaults.icon_sizes.small, "defaults.icon_sizes", "small", errors);
-    check_non_negative(defaults.icon_sizes.large, "defaults.icon_sizes", "large", errors);
-    check_non_negative(defaults.icon_sizes.dialog, "defaults.icon_sizes", "dialog", errors);
-    check_non_negative(defaults.icon_sizes.panel, "defaults.icon_sizes", "panel", errors);
+    check_non_negative(
+        defaults.icon_sizes.toolbar,
+        "defaults.icon_sizes",
+        "toolbar",
+        errors,
+    );
+    check_non_negative(
+        defaults.icon_sizes.small,
+        "defaults.icon_sizes",
+        "small",
+        errors,
+    );
+    check_non_negative(
+        defaults.icon_sizes.large,
+        "defaults.icon_sizes",
+        "large",
+        errors,
+    );
+    check_non_negative(
+        defaults.icon_sizes.dialog,
+        "defaults.icon_sizes",
+        "dialog",
+        errors,
+    );
+    check_non_negative(
+        defaults.icon_sizes.panel,
+        "defaults.icon_sizes",
+        "panel",
+        errors,
+    );
 
     // text_scale: entry sizes > 0, line_height > 0
-    check_positive(text_scale.caption.size, "text_scale.caption", "size", errors);
-    check_positive(text_scale.caption.line_height, "text_scale.caption", "line_height", errors);
-    check_range_u16(text_scale.caption.weight, 100, 900, "text_scale.caption", "weight", errors);
-    check_positive(text_scale.section_heading.size, "text_scale.section_heading", "size", errors);
+    check_positive(
+        text_scale.caption.size,
+        "text_scale.caption",
+        "size",
+        errors,
+    );
+    check_positive(
+        text_scale.caption.line_height,
+        "text_scale.caption",
+        "line_height",
+        errors,
+    );
+    check_range_u16(
+        text_scale.caption.weight,
+        100,
+        900,
+        "text_scale.caption",
+        "weight",
+        errors,
+    );
+    check_positive(
+        text_scale.section_heading.size,
+        "text_scale.section_heading",
+        "size",
+        errors,
+    );
     check_positive(
         text_scale.section_heading.line_height,
         "text_scale.section_heading",
@@ -446,7 +547,12 @@ pub(crate) fn check_defaults_ranges(
         "weight",
         errors,
     );
-    check_positive(text_scale.dialog_title.size, "text_scale.dialog_title", "size", errors);
+    check_positive(
+        text_scale.dialog_title.size,
+        "text_scale.dialog_title",
+        "size",
+        errors,
+    );
     check_positive(
         text_scale.dialog_title.line_height,
         "text_scale.dialog_title",
@@ -461,7 +567,24 @@ pub(crate) fn check_defaults_ranges(
         "weight",
         errors,
     );
-    check_positive(text_scale.display.size, "text_scale.display", "size", errors);
-    check_positive(text_scale.display.line_height, "text_scale.display", "line_height", errors);
-    check_range_u16(text_scale.display.weight, 100, 900, "text_scale.display", "weight", errors);
+    check_positive(
+        text_scale.display.size,
+        "text_scale.display",
+        "size",
+        errors,
+    );
+    check_positive(
+        text_scale.display.line_height,
+        "text_scale.display",
+        "line_height",
+        errors,
+    );
+    check_range_u16(
+        text_scale.display.weight,
+        100,
+        900,
+        "text_scale.display",
+        "weight",
+        errors,
+    );
 }
