@@ -437,8 +437,8 @@ Plans:
   4. The unified border-resolution pathway correctly populates widget borders from defaults-level values for all 17 presets
 **Plans**: 2 plans
 Plans:
-- [ ] 71-01-PLAN.md � Rewrite Error enum per Option F with ErrorKind and RangeViolation
-- [ ] 71-02-PLAN.md � Two-vec validation split and caller migration
+- [ ] 79-01-PLAN.md — Split BorderSpec into DefaultsBorderSpec and WidgetBorderSpec
+- [ ] 79-02-PLAN.md — L3 visibility audit and platform reader demotion to pub(crate)
 
 ### Phase 80: native-theme-derive Proc-Macro K Codegen
 **Goal**: The doubled `Option<T>` / `Resolved<T>` struct hierarchy is generated from one source of truth by a new `native-theme-derive` proc-macro crate that also emits `FIELD_NAMES`, `impl_merge!` bodies, `check_ranges` impls from `#[theme(range = "...")]` and `#[theme(check = "non_negative")]` attributes, per-field `#[theme(inherit_from = "...")]` inheritance rules, `inventory::submit!` widget registry entries, and a `#[theme_layer(border_kind = "full" | "partial" | "none")]` unifier for the three parallel border-inheritance validation paths
