@@ -5,8 +5,8 @@ use crate::detect::system_is_dark;
 #[cfg(target_os = "linux")]
 use crate::detect::{LinuxDesktop, detect_linux_de, system_is_dark, xdg_current_desktop};
 
-use crate::SystemTheme;
 use crate::model::Theme;
+use crate::{OverlaySource, SystemTheme};
 
 /// Run the OS-first pipeline: merge reader output onto a platform
 /// preset, resolve both light and dark variants, validate.
@@ -19,6 +19,9 @@ pub(crate) fn run_pipeline(
     preset_name: &str,
     mode: crate::ColorMode,
 ) -> crate::Result<SystemTheme> {
+    // Clone reader output before it gets consumed by merge -- needed for OverlaySource
+    let reader_output_for_overlay = reader_output.clone();
+
     let live_preset = Theme::preset(preset_name)?;
 
     // For the inactive variant, load the full preset (with colors).
@@ -58,10 +61,6 @@ pub(crate) fn run_pipeline(
         full_preset.dark.unwrap_or_default()
     };
 
-    // Clone pre-resolve variants for overlay support (Plan 02)
-    let light_variant_pre = light_variant.clone();
-    let dark_variant_pre = dark_variant.clone();
-
     let light = light_variant.into_resolved(None)?;
     let dark = dark_variant.into_resolved(None)?;
 
@@ -74,13 +73,19 @@ pub(crate) fn run_pipeline(
         .clone()
         .unwrap_or_else(|| crate::model::icons::system_icon_theme().to_string());
 
+    // Build OverlaySource from the original reader data + pipeline parameters
+    let overlay_source = OverlaySource {
+        reader_output: reader_output_for_overlay,
+        preset_name: preset_name.to_string(),
+        font_dpi: None,
+    };
+
     Ok(SystemTheme {
         name,
         mode,
         light,
         dark,
-        light_variant: light_variant_pre,
-        dark_variant: dark_variant_pre,
+        overlay_source,
         preset: full_preset_name.to_string(),
         live_preset: preset_name.to_string(),
         icon_set,

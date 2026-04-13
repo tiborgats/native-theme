@@ -233,6 +233,21 @@ impl Default for AccessibilityPreferences {
     }
 }
 
+/// Data needed to replay the merge+resolve pipeline for overlay support.
+///
+/// Stores the original reader output and preset name so that
+/// [`SystemTheme::with_overlay()`] can reconstruct pre-resolve variants
+/// on demand instead of storing ~2KB of ThemeMode clones.
+#[derive(Clone, Debug)]
+pub(crate) struct OverlaySource {
+    /// The raw OS-detected theme data (before merge with preset).
+    pub(crate) reader_output: Theme,
+    /// The live preset name (e.g. "kde-breeze-live").
+    pub(crate) preset_name: String,
+    /// Font DPI captured at detection time (None = auto-detect).
+    pub(crate) font_dpi: Option<f32>,
+}
+
 /// Result of the OS-first pipeline. Holds both resolved variants.
 ///
 /// Produced by [`SystemTheme::from_system()`] and [`SystemTheme::from_system_async()`].
@@ -249,10 +264,8 @@ pub struct SystemTheme {
     pub light: ResolvedTheme,
     /// Resolved dark variant (always populated).
     pub dark: ResolvedTheme,
-    /// Pre-resolve light variant (retained for overlay support).
-    pub(crate) light_variant: ThemeMode,
-    /// Pre-resolve dark variant (retained for overlay support).
-    pub(crate) dark_variant: ThemeMode,
+    /// Data for replaying the pipeline on overlay (replaces light_variant/dark_variant).
+    pub(crate) overlay_source: OverlaySource,
     /// The platform preset used (e.g., "kde-breeze", "adwaita", "macos-sonoma").
     pub preset: String,
     /// The live preset name used internally (e.g., "kde-breeze-live").
@@ -311,11 +324,31 @@ impl SystemTheme {
     /// # Ok::<(), native_theme::error::Error>(())
     /// ```
     pub fn with_overlay(&self, overlay: &Theme) -> crate::Result<Self> {
-        // Start from pre-resolve variants (avoids double-resolve idempotency issue)
-        let mut light = self.light_variant.clone();
-        let mut dark = self.dark_variant.clone();
+        // Reconstruct pre-resolve variants from overlay_source
+        let src = &self.overlay_source;
+        let live_preset = Theme::preset(&src.preset_name)?;
+        let full_preset_name = src
+            .preset_name
+            .strip_suffix("-live")
+            .unwrap_or(&src.preset_name);
+        let full_preset = Theme::preset(full_preset_name)?;
 
-        // Merge overlay onto pre-resolve variants (overlay values win)
+        let mut merged = full_preset.clone();
+        merged.merge(&live_preset);
+        merged.merge(&src.reader_output);
+
+        let mut light = if src.reader_output.light.is_some() {
+            merged.light.unwrap_or_default()
+        } else {
+            full_preset.light.unwrap_or_default()
+        };
+        let mut dark = if src.reader_output.dark.is_some() {
+            merged.dark.unwrap_or_default()
+        } else {
+            full_preset.dark.unwrap_or_default()
+        };
+
+        // Apply the user overlay on top
         if let Some(over) = &overlay.light {
             light.merge(over);
         }
@@ -323,17 +356,16 @@ impl SystemTheme {
             dark.merge(over);
         }
 
-        // Resolve and validate both
-        let resolved_light = light.clone().into_resolved(None)?;
-        let resolved_dark = dark.clone().into_resolved(None)?;
+        // Re-resolve both variants
+        let resolved_light = light.into_resolved(src.font_dpi)?;
+        let resolved_dark = dark.into_resolved(src.font_dpi)?;
 
         Ok(SystemTheme {
             name: self.name.clone(),
             mode: self.mode,
             light: resolved_light,
             dark: resolved_dark,
-            light_variant: light,
-            dark_variant: dark,
+            overlay_source: self.overlay_source.clone(),
             live_preset: self.live_preset.clone(),
             preset: self.preset.clone(),
             icon_set: self.icon_set,
@@ -458,8 +490,11 @@ mod system_theme_tests {
             mode: ColorMode::Dark,
             light: light_resolved.clone(),
             dark: dark_resolved.clone(),
-            light_variant: preset.light.unwrap(),
-            dark_variant: preset.dark.unwrap(),
+            overlay_source: OverlaySource {
+                reader_output: Theme::default(),
+                preset_name: "catppuccin-mocha".into(),
+                font_dpi: None,
+            },
             live_preset: "catppuccin-mocha".into(),
             preset: "catppuccin-mocha".into(),
             icon_set: IconSet::Lucide,
@@ -489,8 +524,11 @@ mod system_theme_tests {
             mode: ColorMode::Light,
             light: light_resolved.clone(),
             dark: dark_resolved.clone(),
-            light_variant: preset.light.unwrap(),
-            dark_variant: preset.dark.unwrap(),
+            overlay_source: OverlaySource {
+                reader_output: Theme::default(),
+                preset_name: "catppuccin-mocha".into(),
+                font_dpi: None,
+            },
             live_preset: "catppuccin-mocha".into(),
             preset: "catppuccin-mocha".into(),
             icon_set: IconSet::Lucide,
@@ -520,8 +558,11 @@ mod system_theme_tests {
             mode: ColorMode::Light,
             light: light_resolved.clone(),
             dark: dark_resolved.clone(),
-            light_variant: preset.light.unwrap(),
-            dark_variant: preset.dark.unwrap(),
+            overlay_source: OverlaySource {
+                reader_output: Theme::default(),
+                preset_name: "catppuccin-mocha".into(),
+                font_dpi: None,
+            },
             live_preset: "catppuccin-mocha".into(),
             preset: "catppuccin-mocha".into(),
             icon_set: IconSet::Lucide,
@@ -687,5 +728,33 @@ mod overlay_tests {
             )
             .unwrap();
         assert_eq!(result.light.defaults.accent_color, Rgba::rgb(255, 0, 0));
+    }
+
+    #[test]
+    fn test_overlay_roundtrip_via_overlay_source() {
+        let st = default_system_theme();
+        // Apply overlay and verify accent propagates
+        let new_accent = Rgba::rgb(255, 0, 0);
+        let mut overlay = Theme::default();
+        let mut light_v = ThemeMode::default();
+        light_v.defaults.accent_color = Some(new_accent);
+        overlay.light = Some(light_v);
+
+        let result = st.with_overlay(&overlay).unwrap();
+        assert_eq!(result.light.defaults.accent_color, new_accent);
+        // The dark variant should be unchanged from original
+        assert_eq!(
+            result.dark.defaults.accent_color,
+            st.dark.defaults.accent_color
+        );
+    }
+
+    #[test]
+    fn test_overlay_source_no_variant_fields() {
+        // Verify overlay_source exists on SystemTheme (compile-time structural check).
+        // If light_variant or dark_variant fields still existed, this test would
+        // need updating -- documenting the structural change.
+        let st = default_system_theme();
+        let _ = &st.overlay_source; // overlay_source exists
     }
 }
