@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 77 — systemtheme-api-and-icon-set-relocation
-Plan: 2/2 complete
-Status: Phase 77 complete — verified (11/11 must-haves, 824 tests pass)
-Last activity: 2026-04-13 — Phase 77 executed and verified (2 plans, 6 commits)
+Phase: 78 — overlaysource-accessibilitypreferences-font-dpi-relocation
+Plan: 1/2 complete
+Status: Plan 01 complete — AccessibilityPreferences + font_dpi relocation
+Last activity: 2026-04-13 — Phase 78 Plan 01 executed (2 tasks, 2 commits)
 
-Progress: [██████████] 100% (30/30 plans complete)
+Progress: [██████████] 100% (31/32 plans complete)
 
 ## Accumulated Context
 
@@ -89,7 +89,7 @@ v0.5.6 decisions worth carrying into v0.5.7 planning:
 
 ### Pending Todos
 
-None. Phase 77 complete, ready to plan Phase 78.
+None. Phase 78 Plan 01 complete, ready for Plan 02.
 
 ### v0.5.7 Decisions
 
@@ -118,6 +118,11 @@ None. Phase 77 complete, ready to plan Phase 78.
 - [Phase 77-02]: KDE Breeze preset uses "breeze" (light value) as shared icon_theme; KDE reader overrides at runtime
 - [Phase 77-02]: Connector examples maintain current_icon_set/current_icon_theme state parallel to current_resolved
 - [Phase 77-02]: resolve_icon_choice/load_all_icons take explicit icon_set/icon_theme params
+- [Phase 78-01]: validate() convenience wrapper retained alongside validate_with_dpi() to avoid 40+ call site changes
+- [Phase 78-01]: from_kde_content_pure returns (Theme, Option<f32>, AccessibilityPreferences) tuple
+- [Phase 78-01]: GPUI to_theme/to_theme_color accept reduce_transparency: bool parameter
+- [Phase 78-01]: GPUI accessibility helpers changed from &ResolvedTheme to &SystemTheme
+- [Phase 78-01]: Pipeline uses AccessibilityPreferences::default() temporarily; Plan 02 wires real OS values
 
 ### Blockers/Concerns
 
@@ -131,5 +136,5 @@ None. Phase 77 complete, ready to plan Phase 78.
 ## Session Continuity
 
 Last session: 2026-04-13
-Stopped at: Phase 77 complete — verified, ready for Phase 78
-Resume file: .planning/phases/77-systemtheme-api-and-icon-set-relocation/77-VERIFICATION.md
+Stopped at: Phase 78 Plan 01 complete — ready for Plan 02
+Resume file: .planning/phases/78-overlaysource-accessibilitypreferences-font-dpi-relocation/78-01-SUMMARY.md

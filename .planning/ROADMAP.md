@@ -413,7 +413,7 @@ Plans:
   4. All 17 presets continue to resolve successfully and produce identical `ResolvedTheme` outputs for tests that existed before the refactor
 **Plans**: 2 plans
 Plans:
-- [ ] 78-01-PLAN.md — AccessibilityPreferences extraction + font_dpi removal from ThemeDefaults
+- [x] 78-01-PLAN.md — AccessibilityPreferences extraction + font_dpi removal from ThemeDefaults
 - [ ] 78-02-PLAN.md — OverlaySource replaces light_variant/dark_variant on SystemTheme
 
 
@@ -614,7 +614,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 75. LinuxDesktop non_exhaustive, Compile-Gated Watchers, IconSet::default Removal | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 76. Type Vocabulary Rename and Crate Root Partition | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
 | 77. SystemTheme API and icon_set Relocation | v0.5.7 | 2/2 | Complete   | 2026-04-12 |
-| 78. OverlaySource, AccessibilityPreferences, font_dpi Relocation | v0.5.7 | 0/0 | Not started | — |
+| 78. OverlaySource, AccessibilityPreferences, font_dpi Relocation | v0.5.7 | 1/2 | In Progress|  |
 | 79. BorderSpec Split and Platform Reader Visibility Audit | v0.5.7 | 0/0 | Not started | — |
 | 80. native-theme-derive Proc-Macro K Codegen | v0.5.7 | 0/0 | Not started | — |
 | 81. Feature-Matrix Cleanup and Unified from_system | v0.5.7 | 0/0 | Not started | — |

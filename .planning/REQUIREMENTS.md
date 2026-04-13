@@ -41,8 +41,8 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 
 ### Accessibility & Runtime State
 
-- [ ] **ACCESS-01**: Accessibility fields (`text_scaling_factor`, `reduce_motion`, `high_contrast`, `reduce_transparency`) extracted from `ThemeDefaults` into `AccessibilityPreferences` struct; lives on `SystemTheme`, NOT in `ResolutionContext` (doc 2 B4)
-- [ ] **ACCESS-02**: `font_dpi` moved from `ThemeDefaults` into `ResolutionContext` runtime-data struct (doc 2 B5)
+- [x] **ACCESS-01**: Accessibility fields (`text_scaling_factor`, `reduce_motion`, `high_contrast`, `reduce_transparency`) extracted from `ThemeDefaults` into `AccessibilityPreferences` struct; lives on `SystemTheme`, NOT in `ResolutionContext` (doc 2 B4)
+- [x] **ACCESS-02**: `font_dpi` moved from `ThemeDefaults` into `ResolutionContext` runtime-data struct (doc 2 B5)
 
 ### Border Model
 
