@@ -223,14 +223,18 @@ pub(crate) fn require_border_partial(
 // violations are reported as structured data, separate from missing fields.
 
 /// Check that an `f32` value is finite and non-negative (>= 0.0).
+///
+/// Path string (`"{prefix}.{field}"`) is only formatted in the error branch,
+/// so the happy path (value in range) allocates zero strings.
 pub(crate) fn check_non_negative(
     value: f32,
-    path: &str,
+    prefix: &str,
+    field: &str,
     errors: &mut Vec<crate::error::RangeViolation>,
 ) {
     if !value.is_finite() || value < 0.0 {
         errors.push(crate::error::RangeViolation {
-            path: path.to_string(),
+            path: format!("{prefix}.{field}"),
             value: value as f64,
             min: Some(0.0),
             max: None,
@@ -239,14 +243,18 @@ pub(crate) fn check_non_negative(
 }
 
 /// Check that an `f32` value is finite and strictly positive (> 0.0).
+///
+/// Path string (`"{prefix}.{field}"`) is only formatted in the error branch,
+/// so the happy path (value in range) allocates zero strings.
 pub(crate) fn check_positive(
     value: f32,
-    path: &str,
+    prefix: &str,
+    field: &str,
     errors: &mut Vec<crate::error::RangeViolation>,
 ) {
     if !value.is_finite() || value <= 0.0 {
         errors.push(crate::error::RangeViolation {
-            path: path.to_string(),
+            path: format!("{prefix}.{field}"),
             value: value as f64,
             min: Some(f64::MIN_POSITIVE),
             max: None,
@@ -255,16 +263,20 @@ pub(crate) fn check_positive(
 }
 
 /// Check that an `f32` value is finite and falls within an inclusive range.
+///
+/// Path string (`"{prefix}.{field}"`) is only formatted in the error branch,
+/// so the happy path (value in range) allocates zero strings.
 pub(crate) fn check_range_f32(
     value: f32,
     min: f32,
     max: f32,
-    path: &str,
+    prefix: &str,
+    field: &str,
     errors: &mut Vec<crate::error::RangeViolation>,
 ) {
     if !value.is_finite() || value < min || value > max {
         errors.push(crate::error::RangeViolation {
-            path: path.to_string(),
+            path: format!("{prefix}.{field}"),
             value: value as f64,
             min: Some(min as f64),
             max: Some(max as f64),
@@ -273,16 +285,20 @@ pub(crate) fn check_range_f32(
 }
 
 /// Check that a `u16` value falls within an inclusive range.
+///
+/// Path string (`"{prefix}.{field}"`) is only formatted in the error branch,
+/// so the happy path (value in range) allocates zero strings.
 pub(crate) fn check_range_u16(
     value: u16,
     min: u16,
     max: u16,
-    path: &str,
+    prefix: &str,
+    field: &str,
     errors: &mut Vec<crate::error::RangeViolation>,
 ) {
     if value < min || value > max {
         errors.push(crate::error::RangeViolation {
-            path: path.to_string(),
+            path: format!("{prefix}.{field}"),
             value: value as f64,
             min: Some(min as f64),
             max: Some(max as f64),
@@ -291,16 +307,20 @@ pub(crate) fn check_range_u16(
 }
 
 /// Check that a min value does not exceed its corresponding max value.
+///
+/// Path string (`"{prefix}.{min_field}"`) is only formatted in the error branch,
+/// so the happy path (min <= max) allocates zero strings.
 pub(crate) fn check_min_max(
     min_val: f32,
     max_val: f32,
-    min_name: &str,
-    _max_name: &str,
+    prefix: &str,
+    min_field: &str,
+    _max_field: &str,
     errors: &mut Vec<crate::error::RangeViolation>,
 ) {
     if min_val > max_val {
         errors.push(crate::error::RangeViolation {
-            path: min_name.to_string(),
+            path: format!("{prefix}.{min_field}"),
             value: min_val as f64,
             min: None,
             max: Some(max_val as f64),
@@ -361,164 +381,87 @@ pub(crate) fn check_defaults_ranges(
     errors: &mut Vec<crate::error::RangeViolation>,
 ) {
     // Fonts: size > 0, weight 100..=900
-    check_positive(defaults.font.size, "defaults.font.size", errors);
-    check_range_u16(
-        defaults.font.weight,
-        100,
-        900,
-        "defaults.font.weight",
-        errors,
-    );
-    check_positive(defaults.mono_font.size, "defaults.mono_font.size", errors);
-    check_range_u16(
-        defaults.mono_font.weight,
-        100,
-        900,
-        "defaults.mono_font.weight",
-        errors,
-    );
+    check_positive(defaults.font.size, "defaults.font", "size", errors);
+    check_range_u16(defaults.font.weight, 100, 900, "defaults.font", "weight", errors);
+    check_positive(defaults.mono_font.size, "defaults.mono_font", "size", errors);
+    check_range_u16(defaults.mono_font.weight, 100, 900, "defaults.mono_font", "weight", errors);
 
     // defaults: line_height > 0
-    check_positive(defaults.line_height, "defaults.line_height", errors);
+    check_positive(defaults.line_height, "defaults", "line_height", errors);
 
     // defaults: radius, geometry >= 0
-    check_non_negative(
-        defaults.border.corner_radius,
-        "defaults.border.corner_radius",
-        errors,
-    );
+    check_non_negative(defaults.border.corner_radius, "defaults.border", "corner_radius", errors);
     check_non_negative(
         defaults.border.corner_radius_lg,
-        "defaults.border.corner_radius_lg",
+        "defaults.border",
+        "corner_radius_lg",
         errors,
     );
-    check_non_negative(
-        defaults.border.line_width,
-        "defaults.border.line_width",
-        errors,
-    );
-    check_non_negative(
-        defaults.focus_ring_width,
-        "defaults.focus_ring_width",
-        errors,
-    );
+    check_non_negative(defaults.border.line_width, "defaults.border", "line_width", errors);
+    check_non_negative(defaults.focus_ring_width, "defaults", "focus_ring_width", errors);
     // Note: focus_ring_offset is intentionally NOT range-checked -- negative values
     // mean an inset focus ring (e.g., adwaita uses -2.0, macOS uses -1.0).
 
     // defaults: opacity 0..=1
-    check_range_f32(
-        defaults.disabled_opacity,
-        0.0,
-        1.0,
-        "defaults.disabled_opacity",
-        errors,
-    );
-    check_range_f32(
-        defaults.border.opacity,
-        0.0,
-        1.0,
-        "defaults.border.opacity",
-        errors,
-    );
+    check_range_f32(defaults.disabled_opacity, 0.0, 1.0, "defaults", "disabled_opacity", errors);
+    check_range_f32(defaults.border.opacity, 0.0, 1.0, "defaults.border", "opacity", errors);
 
     // defaults: border padding >= 0
     check_non_negative(
         defaults.border.padding_horizontal,
-        "defaults.border.padding_horizontal",
+        "defaults.border",
+        "padding_horizontal",
         errors,
     );
     check_non_negative(
         defaults.border.padding_vertical,
-        "defaults.border.padding_vertical",
+        "defaults.border",
+        "padding_vertical",
         errors,
     );
 
     // defaults: icon sizes >= 0
-    check_non_negative(
-        defaults.icon_sizes.toolbar,
-        "defaults.icon_sizes.toolbar",
-        errors,
-    );
-    check_non_negative(
-        defaults.icon_sizes.small,
-        "defaults.icon_sizes.small",
-        errors,
-    );
-    check_non_negative(
-        defaults.icon_sizes.large,
-        "defaults.icon_sizes.large",
-        errors,
-    );
-    check_non_negative(
-        defaults.icon_sizes.dialog,
-        "defaults.icon_sizes.dialog",
-        errors,
-    );
-    check_non_negative(
-        defaults.icon_sizes.panel,
-        "defaults.icon_sizes.panel",
-        errors,
-    );
+    check_non_negative(defaults.icon_sizes.toolbar, "defaults.icon_sizes", "toolbar", errors);
+    check_non_negative(defaults.icon_sizes.small, "defaults.icon_sizes", "small", errors);
+    check_non_negative(defaults.icon_sizes.large, "defaults.icon_sizes", "large", errors);
+    check_non_negative(defaults.icon_sizes.dialog, "defaults.icon_sizes", "dialog", errors);
+    check_non_negative(defaults.icon_sizes.panel, "defaults.icon_sizes", "panel", errors);
 
     // text_scale: entry sizes > 0, line_height > 0
-    check_positive(text_scale.caption.size, "text_scale.caption.size", errors);
-    check_positive(
-        text_scale.caption.line_height,
-        "text_scale.caption.line_height",
-        errors,
-    );
-    check_range_u16(
-        text_scale.caption.weight,
-        100,
-        900,
-        "text_scale.caption.weight",
-        errors,
-    );
-    check_positive(
-        text_scale.section_heading.size,
-        "text_scale.section_heading.size",
-        errors,
-    );
+    check_positive(text_scale.caption.size, "text_scale.caption", "size", errors);
+    check_positive(text_scale.caption.line_height, "text_scale.caption", "line_height", errors);
+    check_range_u16(text_scale.caption.weight, 100, 900, "text_scale.caption", "weight", errors);
+    check_positive(text_scale.section_heading.size, "text_scale.section_heading", "size", errors);
     check_positive(
         text_scale.section_heading.line_height,
-        "text_scale.section_heading.line_height",
+        "text_scale.section_heading",
+        "line_height",
         errors,
     );
     check_range_u16(
         text_scale.section_heading.weight,
         100,
         900,
-        "text_scale.section_heading.weight",
+        "text_scale.section_heading",
+        "weight",
         errors,
     );
-    check_positive(
-        text_scale.dialog_title.size,
-        "text_scale.dialog_title.size",
-        errors,
-    );
+    check_positive(text_scale.dialog_title.size, "text_scale.dialog_title", "size", errors);
     check_positive(
         text_scale.dialog_title.line_height,
-        "text_scale.dialog_title.line_height",
+        "text_scale.dialog_title",
+        "line_height",
         errors,
     );
     check_range_u16(
         text_scale.dialog_title.weight,
         100,
         900,
-        "text_scale.dialog_title.weight",
+        "text_scale.dialog_title",
+        "weight",
         errors,
     );
-    check_positive(text_scale.display.size, "text_scale.display.size", errors);
-    check_positive(
-        text_scale.display.line_height,
-        "text_scale.display.line_height",
-        errors,
-    );
-    check_range_u16(
-        text_scale.display.weight,
-        100,
-        900,
-        "text_scale.display.weight",
-        errors,
-    );
+    check_positive(text_scale.display.size, "text_scale.display", "size", errors);
+    check_positive(text_scale.display.line_height, "text_scale.display", "line_height", errors);
+    check_range_u16(text_scale.display.weight, 100, 900, "text_scale.display", "weight", errors);
 }
