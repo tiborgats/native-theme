@@ -582,6 +582,20 @@ mod system_theme_tests {
     // --- platform_preset_name() pure tests ---
     // Tests the same logic path (detect_linux_de -> linux_preset_for_de) without env var mocking.
 
+    /// Prove that the sync `from_system()` API works without any async runtime.
+    /// On Linux with KDE feature: exercises pollster::block_on(from_system_inner()).
+    /// This acts as a compile-time and runtime gate that the sync path works.
+    #[test]
+    #[cfg(target_os = "linux")]
+    #[cfg(feature = "kde")]
+    fn sync_consumer_no_async_runtime() {
+        // Call the actual from_system() entry point.
+        // This exercises the pollster::block_on(pipeline::from_system_inner()) path.
+        // We don't assert Ok because the test environment may lack KDE config files,
+        // but the call must not panic and must return a Result (not hang or deadlock).
+        let _result = SystemTheme::from_system();
+    }
+
     #[test]
     #[cfg(target_os = "linux")]
     fn test_platform_preset_name_kde() {
