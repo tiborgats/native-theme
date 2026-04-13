@@ -397,11 +397,9 @@ impl SystemTheme {
     /// - **macOS:** Calls `from_macos()` when the `macos` feature is enabled.
     ///   Reads both light and dark variants via NSAppearance, merges with
     ///   `macos-sonoma` preset.
-    /// - **Linux (KDE):** Calls `from_kde()` when `XDG_CURRENT_DESKTOP` contains
-    ///   "KDE" and the `kde` feature is enabled, merges with `kde-breeze` preset.
-    /// - **Linux (other):** Uses the `adwaita` preset. For live GNOME portal
-    ///   data, use [`from_system_async()`](Self::from_system_async) (requires
-    ///   `portal-tokio` or `portal-async-io` feature).
+    /// - **Linux:** Uses `pollster::block_on` to drive the async inner
+    ///   implementation, which handles portal D-Bus calls when the `portal`
+    ///   feature is enabled.
     /// - **Windows:** Calls `from_windows()` when the `windows` feature is enabled,
     ///   merges with `windows-11` preset.
     /// - **Other platforms:** Returns `Error::PlatformUnsupported`.
@@ -423,36 +421,38 @@ impl SystemTheme {
     /// let _icon_theme = &sys.icon_theme;
     /// # Ok::<(), native_theme::error::Error>(())
     /// ```
+    #[cfg(target_os = "linux")]
     pub fn from_system() -> crate::Result<Self> {
-        pipeline::from_system_inner()
+        pollster::block_on(pipeline::from_system_inner())
     }
 
-    /// Async version of [`from_system()`](Self::from_system) that uses D-Bus
-    /// portal backend detection to improve desktop environment heuristics on
-    /// Linux.
+    /// Load the OS theme synchronously (non-Linux).
     ///
-    /// When `XDG_CURRENT_DESKTOP` is unset or unrecognized, queries the
-    /// D-Bus session bus for portal backend activatable names to determine
-    /// whether KDE or GNOME portal is running, then dispatches to the
-    /// appropriate reader.
-    ///
-    /// Returns a [`SystemTheme`] with both resolved light and dark variants,
-    /// same as [`from_system()`](Self::from_system).
-    ///
-    /// On non-Linux platforms, behaves identically to
-    /// [`from_system()`](Self::from_system).
-    #[cfg(target_os = "linux")]
-    pub async fn from_system_async() -> crate::Result<Self> {
-        pipeline::from_system_async_inner().await
+    /// On macOS and Windows the async inner has zero `.await` points, so a
+    /// noop-waker single-poll is sufficient -- no async runtime needed.
+    #[cfg(not(target_os = "linux"))]
+    pub fn from_system() -> crate::Result<Self> {
+        let waker = std::task::Waker::noop();
+        let mut cx = std::task::Context::from_waker(&waker);
+        let mut fut = std::pin::pin!(pipeline::from_system_inner());
+        match fut.as_mut().poll(&mut cx) {
+            std::task::Poll::Ready(result) => result,
+            std::task::Poll::Pending => Err(crate::Error::PlatformUnsupported {
+                platform: "unexpected async suspension",
+            }),
+        }
     }
 
     /// Async version of [`from_system()`](Self::from_system).
     ///
-    /// On non-Linux platforms, this is equivalent to calling
-    /// [`from_system()`](Self::from_system).
-    #[cfg(not(target_os = "linux"))]
+    /// On Linux, this enables portal D-Bus calls (e.g. GNOME settings portal,
+    /// KDE portal backend detection) via `.await`. On macOS and Windows, the
+    /// future completes immediately -- no actual async operations occur.
+    ///
+    /// Returns a [`SystemTheme`] with both resolved light and dark variants,
+    /// same as [`from_system()`](Self::from_system).
     pub async fn from_system_async() -> crate::Result<Self> {
-        pipeline::from_system_inner()
+        pipeline::from_system_inner().await
     }
 }
 
