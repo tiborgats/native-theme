@@ -395,8 +395,7 @@ fn build_theme(
 /// Internal entry point used by the pipeline. External consumers should
 /// use [`SystemTheme::from_system()`](crate::SystemTheme::from_system).
 #[cfg(all(target_os = "macos", feature = "macos"))]
-pub(crate) fn from_macos()
--> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
+pub(crate) fn from_macos() -> crate::Result<crate::ReaderResult> {
     let light_name = NSString::from_str("NSAppearanceNameAqua");
     let dark_name = NSString::from_str("NSAppearanceNameDarkAqua");
 
@@ -513,7 +512,19 @@ pub(crate) fn from_macos()
     // so the formula pt * 72/72 = pt (identity) is correct.
     let font_dpi = Some(72.0_f32);
 
-    Ok((theme, font_dpi, acc))
+    let output = crate::ReaderOutput::Dual {
+        light: Box::new(theme.light.unwrap_or_default()),
+        dark: Box::new(theme.dark.unwrap_or_default()),
+    };
+
+    Ok(crate::ReaderResult {
+        output,
+        name: theme.name,
+        icon_set: theme.icon_set,
+        layout: theme.layout,
+        font_dpi,
+        accessibility: acc,
+    })
 }
 
 #[cfg(test)]

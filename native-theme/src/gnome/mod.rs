@@ -268,7 +268,7 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
     variant
 }
 
-/// Build a GNOME Theme from pre-read portal + gsettings data.
+/// Build a GNOME ReaderResult from pre-read portal + gsettings data.
 ///
 /// This is the fully testable entry point: no D-Bus, no gsettings,
 /// no xrdb/xrandr. Loads the Adwaita preset as base, builds a sparse
@@ -278,7 +278,7 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
 /// use [`SystemTheme::from_system()`](crate::SystemTheme::from_system).
 pub(crate) fn build_gnome_spec_pure(
     data: &GnomePortalData,
-) -> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
+) -> crate::Result<crate::ReaderResult> {
     let base = crate::Theme::preset("adwaita")?;
     let is_dark = data.is_dark;
 
@@ -296,25 +296,19 @@ pub(crate) fn build_gnome_spec_pure(
     // Icon theme on variant defaults (per-variant)
     variant.defaults.icon_theme = data.icon_theme.clone();
 
-    let theme = if is_dark {
-        crate::Theme {
-            name: "GNOME".to_string(),
-            light: None,
-            dark: Some(variant),
-            layout: crate::LayoutTheme::default(),
-            icon_set: None,
-        }
-    } else {
-        crate::Theme {
-            name: "GNOME".to_string(),
-            light: Some(variant),
-            dark: None,
-            layout: crate::LayoutTheme::default(),
-            icon_set: None,
-        }
+    let output = crate::ReaderOutput::Single {
+        mode: Box::new(variant),
+        is_dark,
     };
 
-    Ok((theme, Some(data.font_dpi), acc))
+    Ok(crate::ReaderResult {
+        output,
+        name: "GNOME".to_string(),
+        icon_set: None,
+        layout: crate::LayoutTheme::default(),
+        font_dpi: Some(data.font_dpi),
+        accessibility: acc,
+    })
 }
 
 /// Build a sparse ThemeMode populated only with OS-readable fields.
@@ -403,7 +397,7 @@ pub(crate) fn build_gnome_variant(
     (build_gnome_variant_pure(&data), acc, dpi)
 }
 
-/// Build a Theme from an Adwaita base, applying portal-provided
+/// Build a ReaderResult from an Adwaita base, applying portal-provided
 /// color scheme, accent color, contrast, and reduced-motion settings
 /// plus OS-readable fields.
 ///
@@ -414,7 +408,7 @@ pub(crate) fn build_theme(
     accent: Option<Color>,
     contrast: Contrast,
     reduced_motion: Option<ReducedMotion>,
-) -> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
+) -> crate::Result<crate::ReaderResult> {
     let is_dark = matches!(scheme, ColorScheme::PreferDark);
 
     // Pick the appropriate variant from the Adwaita base.
@@ -433,26 +427,19 @@ pub(crate) fn build_theme(
     // Read icon_theme from gsettings (per-variant)
     variant.defaults.icon_theme = read_gsetting("org.gnome.desktop.interface", "icon-theme");
 
-    // Build Theme with only the selected variant populated
-    let theme = if is_dark {
-        crate::Theme {
-            name: "GNOME".to_string(),
-            light: None,
-            dark: Some(variant),
-            layout: crate::LayoutTheme::default(),
-            icon_set: None,
-        }
-    } else {
-        crate::Theme {
-            name: "GNOME".to_string(),
-            light: Some(variant),
-            dark: None,
-            layout: crate::LayoutTheme::default(),
-            icon_set: None,
-        }
+    let output = crate::ReaderOutput::Single {
+        mode: Box::new(variant),
+        is_dark,
     };
 
-    Ok((theme, Some(font_dpi), acc))
+    Ok(crate::ReaderResult {
+        output,
+        name: "GNOME".to_string(),
+        icon_set: None,
+        layout: crate::LayoutTheme::default(),
+        font_dpi: Some(font_dpi),
+        accessibility: acc,
+    })
 }
 
 /// Read the current GNOME theme from the XDG Desktop Portal.
@@ -465,8 +452,7 @@ pub(crate) fn build_theme(
 ///
 /// Internal entry point used by the pipeline. External consumers should
 /// use [`SystemTheme::from_system_async()`](crate::SystemTheme::from_system_async).
-pub(crate) async fn from_gnome()
--> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
+pub(crate) async fn from_gnome() -> crate::Result<crate::ReaderResult> {
     let base = crate::Theme::preset("adwaita")?;
 
     // Try to connect to the portal. If unavailable, return Adwaita defaults.
@@ -497,7 +483,7 @@ pub(crate) async fn from_gnome()
 /// Reads the KDE kdeglobals file as the base theme via [`crate::kde::from_kde()`],
 /// then attempts to read the accent color from the XDG Desktop Portal. If the
 /// portal provides a valid accent color, it is applied to accent, selection,
-/// and focus_ring_color fields via [`crate::Theme::merge`].
+/// and focus_ring_color fields on the reader's variant.
 ///
 /// Falls back to the KDE-only base if the portal is unavailable or provides
 /// no accent color.
@@ -507,42 +493,37 @@ pub(crate) async fn from_gnome()
 /// Internal entry point used by the pipeline. External consumers should
 /// use [`SystemTheme::from_system_async()`](crate::SystemTheme::from_system_async).
 #[cfg(feature = "kde")]
-pub(crate) async fn from_kde_with_portal()
--> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
-    let (mut base, kde_dpi, kde_acc) = crate::kde::from_kde()?;
+pub(crate) async fn from_kde_with_portal() -> crate::Result<crate::ReaderResult> {
+    let mut result = crate::kde::from_kde()?;
 
     // Try to get accent color from portal
     let settings = match ashpd::desktop::settings::Settings::new().await {
         Ok(s) => s,
-        Err(_) => return Ok((base, kde_dpi, kde_acc)),
+        Err(_) => return Ok(result),
     };
 
     let accent = match settings.accent_color().await {
         Ok(color) => color,
-        Err(_) => return Ok((base, kde_dpi, kde_acc)),
+        Err(_) => return Ok(result),
     };
 
     let rgba = match portal_color_to_rgba(&accent) {
         Some(r) => r,
-        None => return Ok((base, kde_dpi, kde_acc)),
+        None => return Ok(result),
     };
 
-    // Build overlay with accent applied to the same variant(s) as base
-    let mut overlay = crate::Theme::new("");
-
-    if base.light.is_some() {
-        let mut variant = crate::ThemeMode::default();
-        apply_accent(&mut variant, &rgba);
-        overlay.light = Some(variant);
-    }
-    if base.dark.is_some() {
-        let mut variant = crate::ThemeMode::default();
-        apply_accent(&mut variant, &rgba);
-        overlay.dark = Some(variant);
+    // Apply accent to the reader's variant
+    match &mut result.output {
+        crate::ReaderOutput::Single { mode, .. } => {
+            apply_accent(mode, &rgba);
+        }
+        crate::ReaderOutput::Dual { light, dark } => {
+            apply_accent(light, &rgba);
+            apply_accent(dark, &rgba);
+        }
     }
 
-    base.merge(&overlay);
-    Ok((base, kde_dpi, kde_acc))
+    Ok(result)
 }
 
 /// Detect which desktop portal backend is running via D-Bus activatable names.
@@ -766,9 +747,17 @@ mod tests {
         crate::Theme::preset("adwaita").unwrap()
     }
 
+    /// Helper: extract the ThemeMode from a ReaderResult for test assertions.
+    fn reader_mode(result: &crate::ReaderResult) -> &crate::ThemeMode {
+        match &result.output {
+            crate::ReaderOutput::Single { mode, .. } => mode,
+            crate::ReaderOutput::Dual { light, .. } => light,
+        }
+    }
+
     #[test]
     fn dark_scheme_produces_dark_variant_only() {
-        let (theme, _dpi, _acc) = build_theme(
+        let result = build_theme(
             adwaita_base(),
             ColorScheme::PreferDark,
             None,
@@ -776,14 +765,13 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(theme.name, "GNOME");
-        assert!(theme.dark.is_some(), "dark variant should be Some");
-        assert!(theme.light.is_none(), "light variant should be None");
+        assert_eq!(result.name, "GNOME");
+        assert!(matches!(result.output, crate::ReaderOutput::Single { is_dark: true, .. }));
     }
 
     #[test]
     fn light_scheme_produces_light_variant_only() {
-        let (theme, _dpi, _acc) = build_theme(
+        let result = build_theme(
             adwaita_base(),
             ColorScheme::PreferLight,
             None,
@@ -791,14 +779,13 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(theme.name, "GNOME");
-        assert!(theme.light.is_some(), "light variant should be Some");
-        assert!(theme.dark.is_none(), "dark variant should be None");
+        assert_eq!(result.name, "GNOME");
+        assert!(matches!(result.output, crate::ReaderOutput::Single { is_dark: false, .. }));
     }
 
     #[test]
     fn no_preference_defaults_to_light() {
-        let (theme, _dpi, _acc) = build_theme(
+        let result = build_theme(
             adwaita_base(),
             ColorScheme::NoPreference,
             None,
@@ -806,9 +793,8 @@ mod tests {
             None,
         )
         .unwrap();
-        assert_eq!(theme.name, "GNOME");
-        assert!(theme.light.is_some(), "light variant should be Some");
-        assert!(theme.dark.is_none(), "dark variant should be None");
+        assert_eq!(result.name, "GNOME");
+        assert!(matches!(result.output, crate::ReaderOutput::Single { is_dark: false, .. }));
     }
 
     // === accent color tests ===
@@ -816,7 +802,7 @@ mod tests {
     #[test]
     fn valid_accent_propagates_to_three_fields() {
         let accent = Color::new(0.2, 0.4, 0.8);
-        let (theme, _dpi, _acc) = build_theme(
+        let result = build_theme(
             adwaita_base(),
             ColorScheme::NoPreference,
             Some(accent),
@@ -825,7 +811,7 @@ mod tests {
         )
         .unwrap();
 
-        let variant = theme.light.as_ref().expect("light variant");
+        let variant = reader_mode(&result);
         let expected = crate::Rgba::from_f32(0.2, 0.4, 0.8, 1.0);
 
         assert_eq!(variant.defaults.accent_color, Some(expected));
@@ -837,7 +823,7 @@ mod tests {
 
     #[test]
     fn high_contrast_sets_flag_on_theme_variant() {
-        let (theme, _dpi, _acc) = build_theme(
+        let result = build_theme(
             adwaita_base(),
             ColorScheme::NoPreference,
             None,
@@ -846,13 +832,13 @@ mod tests {
         )
         .unwrap();
 
-        let variant = theme.light.as_ref().expect("light variant");
+        let _variant = reader_mode(&result);
         // high_contrast now on AccessibilityPreferences
     }
 
     #[test]
     fn normal_contrast_preserves_adwaita_default() {
-        let (theme, _dpi, _acc) = build_theme(
+        let result = build_theme(
             adwaita_base(),
             ColorScheme::NoPreference,
             None,
@@ -861,7 +847,7 @@ mod tests {
         )
         .unwrap();
 
-        let variant = theme.light.as_ref().expect("light variant");
+        let _variant = reader_mode(&result);
         // Adwaita preset sets high_contrast = false; OS variant doesn't override it
         // high_contrast now on AccessibilityPreferences
     }
@@ -873,7 +859,7 @@ mod tests {
         let base = adwaita_base();
         let base_light = base.light.as_ref().unwrap().clone();
 
-        let (theme, _dpi, _acc) = build_theme(
+        let result = build_theme(
             adwaita_base(),
             ColorScheme::NoPreference,
             None,
@@ -882,7 +868,7 @@ mod tests {
         )
         .unwrap();
 
-        let variant = theme.light.as_ref().expect("light variant");
+        let variant = reader_mode(&result);
         // Adwaita colors should be preserved since OS variant doesn't set colors
         assert_eq!(
             variant.defaults.background_color,
@@ -893,7 +879,7 @@ mod tests {
 
     #[test]
     fn build_theme_dialog_order_set() {
-        let (theme, _dpi, _acc) = build_theme(
+        let result = build_theme(
             adwaita_base(),
             ColorScheme::NoPreference,
             None,
@@ -902,7 +888,7 @@ mod tests {
         )
         .unwrap();
 
-        let variant = theme.light.as_ref().expect("light variant");
+        let variant = reader_mode(&result);
         assert_eq!(
             variant.dialog.button_order,
             Some(DialogButtonOrder::PrimaryRight),
@@ -963,28 +949,26 @@ mod tests {
     #[test]
     fn pure_light_scheme_produces_light_variant() {
         let data = default_gnome_data();
-        let (theme, _dpi, _acc) = build_gnome_spec_pure(&data).unwrap();
-        assert!(theme.light.is_some(), "light variant should be Some");
-        assert!(theme.dark.is_none(), "dark variant should be None");
-        assert_eq!(theme.name, "GNOME");
+        let result = build_gnome_spec_pure(&data).unwrap();
+        assert!(matches!(result.output, crate::ReaderOutput::Single { is_dark: false, .. }));
+        assert_eq!(result.name, "GNOME");
     }
 
     #[test]
     fn pure_dark_scheme_produces_dark_variant() {
         let mut data = default_gnome_data();
         data.is_dark = true;
-        let (theme, _dpi, _acc) = build_gnome_spec_pure(&data).unwrap();
-        assert!(theme.dark.is_some(), "dark variant should be Some");
-        assert!(theme.light.is_none(), "light variant should be None");
-        assert_eq!(theme.name, "GNOME");
+        let result = build_gnome_spec_pure(&data).unwrap();
+        assert!(matches!(result.output, crate::ReaderOutput::Single { is_dark: true, .. }));
+        assert_eq!(result.name, "GNOME");
     }
 
     #[test]
     fn pure_accent_color_propagates_to_three_fields() {
         let mut data = default_gnome_data();
         data.accent_rgb = Some((0.2, 0.4, 0.8));
-        let (theme, _dpi, _acc) = build_gnome_spec_pure(&data).unwrap();
-        let variant = theme.light.as_ref().expect("light variant");
+        let result = build_gnome_spec_pure(&data).unwrap();
+        let variant = reader_mode(&result);
         let expected = crate::Rgba::from_f32(0.2, 0.4, 0.8, 1.0);
         assert_eq!(variant.defaults.accent_color, Some(expected));
         assert_eq!(variant.defaults.selection_background, Some(expected));
@@ -995,8 +979,8 @@ mod tests {
     fn pure_high_contrast_sets_flag() {
         let mut data = default_gnome_data();
         data.high_contrast = true;
-        let (theme, _dpi, _acc) = build_gnome_spec_pure(&data).unwrap();
-        let variant = theme.light.as_ref().expect("light variant");
+        let result = build_gnome_spec_pure(&data).unwrap();
+        let _variant = reader_mode(&result);
         // high_contrast now on AccessibilityPreferences
     }
 
@@ -1004,8 +988,8 @@ mod tests {
     fn pure_fonts_parsed_correctly() {
         let mut data = default_gnome_data();
         data.font_name = Some("Inter Bold 12".to_string());
-        let (theme, _dpi, _acc) = build_gnome_spec_pure(&data).unwrap();
-        let variant = theme.light.as_ref().expect("light variant");
+        let result = build_gnome_spec_pure(&data).unwrap();
+        let variant = reader_mode(&result);
         assert_eq!(variant.defaults.font.family.as_deref(), Some("Inter"));
         assert_eq!(variant.defaults.font.weight, Some(700));
         assert_eq!(variant.defaults.font.size, Some(FontSize::Pt(12.0)));
@@ -1015,15 +999,15 @@ mod tests {
     fn pure_out_of_range_accent_ignored() {
         // Build without accent to get baseline
         let baseline_data = default_gnome_data();
-        let (baseline_theme, _base_dpi, _base_acc) = build_gnome_spec_pure(&baseline_data).unwrap();
-        let baseline_variant = baseline_theme.light.as_ref().expect("light variant");
+        let baseline_result = build_gnome_spec_pure(&baseline_data).unwrap();
+        let baseline_variant = reader_mode(&baseline_result);
         let baseline_accent = baseline_variant.defaults.accent_color;
 
         // Build with out-of-range accent
         let mut data = default_gnome_data();
         data.accent_rgb = Some((1.5, 0.0, 0.0));
-        let (theme, _dpi, _acc) = build_gnome_spec_pure(&data).unwrap();
-        let variant = theme.light.as_ref().expect("light variant");
+        let result = build_gnome_spec_pure(&data).unwrap();
+        let variant = reader_mode(&result);
         // Out-of-range accent should NOT override -- result matches baseline
         assert_eq!(variant.defaults.accent_color, baseline_accent);
     }
@@ -1033,8 +1017,8 @@ mod tests {
         let mut data = default_gnome_data();
         data.high_contrast = false;
         data.gsettings_high_contrast = Some(true);
-        let (theme, _dpi, _acc) = build_gnome_spec_pure(&data).unwrap();
-        let variant = theme.light.as_ref().expect("light variant");
+        let result = build_gnome_spec_pure(&data).unwrap();
+        let _variant = reader_mode(&result);
         // high_contrast now on AccessibilityPreferences
     }
 
@@ -1042,8 +1026,8 @@ mod tests {
     fn pure_reduce_motion_from_portal() {
         let mut data = default_gnome_data();
         data.reduce_motion = Some(true);
-        let (theme, _dpi, _acc) = build_gnome_spec_pure(&data).unwrap();
-        let variant = theme.light.as_ref().expect("light variant");
+        let result = build_gnome_spec_pure(&data).unwrap();
+        let _variant = reader_mode(&result);
         // reduce_motion now on AccessibilityPreferences
     }
 
@@ -1052,8 +1036,8 @@ mod tests {
         let mut data = default_gnome_data();
         data.reduce_motion = None;
         data.gsettings_enable_animations = Some(false);
-        let (theme, _dpi, _acc) = build_gnome_spec_pure(&data).unwrap();
-        let variant = theme.light.as_ref().expect("light variant");
+        let result = build_gnome_spec_pure(&data).unwrap();
+        let _variant = reader_mode(&result);
         // enable-animations=false means reduce_motion=true
         // reduce_motion now on AccessibilityPreferences
     }
@@ -1062,8 +1046,8 @@ mod tests {
     fn pure_overlay_scrolling() {
         let mut data = default_gnome_data();
         data.overlay_scrolling = Some(false);
-        let (theme, _dpi, _acc) = build_gnome_spec_pure(&data).unwrap();
-        let variant = theme.light.as_ref().expect("light variant");
+        let result = build_gnome_spec_pure(&data).unwrap();
+        let variant = reader_mode(&result);
         assert_eq!(variant.scrollbar.overlay_mode, Some(false));
     }
 }

@@ -467,7 +467,7 @@ fn build_theme(
     icon_sizes: Option<(f32, f32)>,
     accessibility: Option<&AccessibilityData>,
     dpi: u32,
-) -> (crate::Theme, Option<f32>, crate::AccessibilityPreferences) {
+) -> crate::ReaderResult {
     let dark = is_dark_mode(&fg);
 
     // Primary button background: In light mode use AccentDark1 (shades[0]), in dark mode
@@ -554,24 +554,19 @@ fn build_theme(
     };
     let font_dpi = Some(dpi as f32);
 
-    let theme = if dark {
-        crate::Theme {
-            name: "Windows".to_string(),
-            light: None,
-            dark: Some(variant),
-            layout: crate::LayoutTheme::default(),
-            icon_set: Some(crate::IconSet::SegoeIcons),
-        }
-    } else {
-        crate::Theme {
-            name: "Windows".to_string(),
-            light: Some(variant),
-            dark: None,
-            layout: crate::LayoutTheme::default(),
-            icon_set: Some(crate::IconSet::SegoeIcons),
-        }
+    let output = crate::ReaderOutput::Single {
+        mode: Box::new(variant),
+        is_dark: dark,
     };
-    (theme, font_dpi, acc)
+
+    crate::ReaderResult {
+        output,
+        name: "Windows".to_string(),
+        icon_set: Some(crate::IconSet::SegoeIcons),
+        layout: crate::LayoutTheme::default(),
+        font_dpi,
+        accessibility: acc,
+    }
 }
 
 /// Read the current Windows theme from UISettings, SystemParametersInfoW,
@@ -587,8 +582,7 @@ fn build_theme(
 /// Internal entry point used by the pipeline. External consumers should
 /// use [`SystemTheme::from_system()`](crate::SystemTheme::from_system).
 #[cfg(all(target_os = "windows", feature = "windows"))]
-pub(crate) fn from_windows()
--> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
+pub(crate) fn from_windows() -> crate::Result<crate::ReaderResult> {
     let settings = UISettings::new().map_err(|e| crate::Error::ReaderFailed {
         reader: "windows",
         source: format!("UISettings unavailable: {e}").into(),
@@ -687,9 +681,17 @@ mod tests {
         }
     }
 
-    /// Helper: build a theme in light mode with minimal args.
-    fn light_theme() -> crate::Theme {
-        let (theme, _dpi, _acc) = build_theme(
+    /// Helper: extract the ThemeMode from a ReaderResult for test assertions.
+    fn reader_mode(result: &crate::ReaderResult) -> &crate::ThemeMode {
+        match &result.output {
+            crate::ReaderOutput::Single { mode, .. } => mode,
+            crate::ReaderOutput::Dual { light, .. } => light,
+        }
+    }
+
+    /// Helper: build a ReaderResult in light mode with minimal args.
+    fn light_reader() -> crate::ReaderResult {
+        build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0), // black fg = light mode
             crate::Rgba::rgb(255, 255, 255),
@@ -701,13 +703,18 @@ mod tests {
             None,
             None,
             96,
-        );
-        theme
+        )
     }
 
-    /// Helper: build a theme in dark mode with minimal args.
-    fn dark_theme() -> crate::Theme {
-        let (theme, _dpi, _acc) = build_theme(
+    /// Helper: reconstruct a Theme from light_reader for tests needing Theme fields.
+    fn light_theme() -> crate::Theme {
+        let r = light_reader();
+        r.output.to_theme(&r.name, r.icon_set, &r.layout)
+    }
+
+    /// Helper: build a ReaderResult in dark mode with minimal args.
+    fn dark_reader() -> crate::ReaderResult {
+        build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(255, 255, 255), // white fg = dark mode
             crate::Rgba::rgb(0, 0, 0),
@@ -719,8 +726,13 @@ mod tests {
             None,
             None,
             96,
-        );
-        theme
+        )
+    }
+
+    /// Helper: reconstruct a Theme from dark_reader for tests needing Theme fields.
+    fn dark_theme() -> crate::Theme {
+        let r = dark_reader();
+        r.output.to_theme(&r.name, r.icon_set, &r.layout)
     }
 
     // === is_dark_mode tests ===
@@ -833,7 +845,7 @@ mod tests {
         let accent = crate::Rgba::rgb(0, 120, 215);
         let fg = crate::Rgba::rgb(0, 0, 0);
         let bg = crate::Rgba::rgb(255, 255, 255);
-        let (theme, _dpi, _acc) = build_theme(
+        let theme = build_theme(
             accent,
             fg,
             bg,
@@ -846,7 +858,7 @@ mod tests {
             None,
             96,
         );
-        let variant = theme.light.as_ref().expect("light variant");
+        let variant = reader_mode(&theme);
         assert_eq!(variant.defaults.accent_color, Some(accent));
         assert_eq!(variant.defaults.text_color, Some(fg));
         assert_eq!(variant.defaults.background_color, Some(bg));
@@ -865,7 +877,7 @@ mod tests {
         let dark1 = crate::Rgba::rgb(0, 90, 170);
         let mut shades = [None; 6];
         shades[0] = Some(dark1);
-        let (theme, _dpi, _acc) = build_theme(
+        let theme = build_theme(
             accent,
             crate::Rgba::rgb(0, 0, 0),
             crate::Rgba::rgb(255, 255, 255),
@@ -882,7 +894,7 @@ mod tests {
         // is no longer a field). But the logic still selects primary_background -- which is not set on the
         // new model. This is fine: the resolve() pipeline handles it.
         // Just verify the core defaults are set.
-        let variant = theme.light.as_ref().expect("light variant");
+        let variant = reader_mode(&theme);
         assert_eq!(variant.defaults.accent_color, Some(accent));
     }
 
@@ -892,7 +904,7 @@ mod tests {
         let light1 = crate::Rgba::rgb(60, 160, 240);
         let mut shades = [None; 6];
         shades[3] = Some(light1);
-        let (theme, _dpi, _acc) = build_theme(
+        let theme = build_theme(
             accent,
             crate::Rgba::rgb(255, 255, 255),
             crate::Rgba::rgb(0, 0, 0),
@@ -905,7 +917,7 @@ mod tests {
             None,
             96,
         );
-        let variant = theme.dark.as_ref().expect("dark variant");
+        let variant = reader_mode(&theme);
         assert_eq!(variant.defaults.accent_color, Some(accent));
     }
 
@@ -914,7 +926,7 @@ mod tests {
     #[test]
     fn build_theme_sets_title_bar_font() {
         let fonts = named_fonts();
-        let (theme, _dpi, _acc) = build_theme(
+        let theme = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),
             crate::Rgba::rgb(255, 255, 255),
@@ -927,7 +939,7 @@ mod tests {
             None,
             96,
         );
-        let variant = theme.light.as_ref().expect("light variant");
+        let variant = reader_mode(&theme);
         let title_font = variant
             .window
             .title_bar_font
@@ -940,7 +952,7 @@ mod tests {
     #[test]
     fn build_theme_sets_menu_and_status_bar_fonts() {
         let fonts = named_fonts();
-        let (theme, _dpi, _acc) = build_theme(
+        let theme = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),
             crate::Rgba::rgb(255, 255, 255),
@@ -953,7 +965,7 @@ mod tests {
             None,
             96,
         );
-        let variant = theme.light.as_ref().expect("light variant");
+        let variant = reader_mode(&theme);
         let menu_font = variant.menu.font.as_ref().expect("menu.font");
         assert_eq!(menu_font.family.as_deref(), Some("Segoe UI"));
         let status_font = variant.status_bar.font.as_ref().expect("status_bar.font");
@@ -963,7 +975,7 @@ mod tests {
     #[test]
     fn build_theme_sets_defaults_font_from_msg_font() {
         let fonts = named_fonts();
-        let (theme, _dpi, _acc) = build_theme(
+        let theme = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),
             crate::Rgba::rgb(255, 255, 255),
@@ -976,7 +988,7 @@ mod tests {
             None,
             96,
         );
-        let variant = theme.light.as_ref().expect("light variant");
+        let variant = reader_mode(&theme);
         assert_eq!(variant.defaults.font.family.as_deref(), Some("Segoe UI"));
         assert_eq!(variant.defaults.font.size, Some(FontSize::Pt(9.0)));
     }
@@ -1005,7 +1017,7 @@ mod tests {
     #[test]
     fn build_theme_with_sys_colors_populates_widgets() {
         let colors = sample_sys_colors();
-        let (theme, _dpi, _acc) = build_theme(
+        let theme = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),
             crate::Rgba::rgb(255, 255, 255),
@@ -1018,7 +1030,7 @@ mod tests {
             None,
             96,
         );
-        let variant = theme.light.as_ref().expect("light variant");
+        let variant = reader_mode(&theme);
         assert_eq!(
             variant.button.background_color,
             Some(crate::Rgba::rgb(240, 240, 240))
@@ -1080,8 +1092,8 @@ mod tests {
 
     #[test]
     fn build_theme_sets_focus_ring_width() {
-        let theme = light_theme();
-        let variant = theme.light.as_ref().expect("light variant");
+        let result = light_reader();
+        let variant = reader_mode(&result);
         assert!(
             variant.defaults.focus_ring_width.is_some(),
             "focus_ring_width should be set from SM_CXFOCUSBORDER"
@@ -1093,7 +1105,7 @@ mod tests {
     #[test]
     fn build_theme_with_dwm_color_sets_title_bar_background() {
         let dwm_color = crate::Rgba::rgba(0, 120, 215, 200);
-        let (theme, _dpi, _acc) = build_theme(
+        let theme = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),
             crate::Rgba::rgb(255, 255, 255),
@@ -1106,14 +1118,14 @@ mod tests {
             None,
             96,
         );
-        let variant = theme.light.as_ref().expect("light variant");
+        let variant = reader_mode(&theme);
         assert_eq!(variant.window.title_bar_background, Some(dwm_color));
     }
 
     #[test]
     fn build_theme_with_inactive_title_bar() {
         let inactive = crate::Rgba::rgb(200, 200, 200);
-        let (theme, _dpi, _acc) = build_theme(
+        let theme = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),
             crate::Rgba::rgb(255, 255, 255),
@@ -1126,7 +1138,7 @@ mod tests {
             None,
             96,
         );
-        let variant = theme.light.as_ref().expect("light variant");
+        let variant = reader_mode(&theme);
         assert_eq!(variant.window.inactive_title_bar_background, Some(inactive));
     }
 
@@ -1134,7 +1146,7 @@ mod tests {
 
     #[test]
     fn build_theme_with_icon_sizes() {
-        let (theme, _dpi, _acc) = build_theme(
+        let theme = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),
             crate::Rgba::rgb(255, 255, 255),
@@ -1147,7 +1159,7 @@ mod tests {
             None,
             96,
         );
-        let variant = theme.light.as_ref().expect("light variant");
+        let variant = reader_mode(&theme);
         assert_eq!(variant.defaults.icon_sizes.small, Some(16.0));
         assert_eq!(variant.defaults.icon_sizes.large, Some(32.0));
     }
@@ -1161,7 +1173,7 @@ mod tests {
             high_contrast: Some(true),
             reduce_motion: Some(false),
         };
-        let (theme, _dpi, _acc) = build_theme(
+        let theme = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),
             crate::Rgba::rgb(255, 255, 255),
@@ -1176,15 +1188,15 @@ mod tests {
         );
         // Accessibility fields are no longer on ThemeDefaults;
         // they live on AccessibilityPreferences (constructed by pipeline).
-        assert!(theme.light.is_some());
+        assert!(matches!(theme.output, crate::ReaderOutput::Single { is_dark: false, .. }));
     }
 
     // === Dialog button order test ===
 
     #[test]
     fn build_theme_sets_dialog_primary_right() {
-        let theme = light_theme();
-        let variant = theme.light.as_ref().expect("light variant");
+        let result = light_reader();
+        let variant = reader_mode(&result);
         assert_eq!(
             variant.dialog.button_order,
             Some(crate::model::DialogButtonOrder::PrimaryRight)
@@ -1195,8 +1207,8 @@ mod tests {
 
     #[test]
     fn build_theme_sets_geometry_defaults() {
-        let theme = light_theme();
-        let variant = theme.light.as_ref().expect("light variant");
+        let result = light_reader();
+        let variant = reader_mode(&result);
         assert_eq!(variant.defaults.border.corner_radius, Some(4.0));
         assert_eq!(variant.defaults.border.corner_radius_lg, Some(8.0));
         assert_eq!(variant.defaults.border.shadow_enabled, Some(true));
@@ -1206,8 +1218,8 @@ mod tests {
 
     #[test]
     fn build_theme_includes_widget_sizing() {
-        let theme = light_theme();
-        let variant = theme.light.as_ref().expect("light variant");
+        let result = light_reader();
+        let variant = reader_mode(&result);
         assert_eq!(variant.button.min_height, Some(32.0));
         assert_eq!(variant.checkbox.indicator_width, Some(20.0));
         assert_eq!(variant.input.min_height, Some(32.0));
@@ -1222,7 +1234,7 @@ mod tests {
     #[test]
     fn build_theme_surface_equals_bg() {
         let bg = crate::Rgba::rgb(255, 255, 255);
-        let (theme, _dpi, _acc) = build_theme(
+        let theme = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),
             bg,
@@ -1235,13 +1247,13 @@ mod tests {
             None,
             96,
         );
-        let variant = theme.light.as_ref().expect("light variant");
+        let variant = reader_mode(&theme);
         assert_eq!(variant.defaults.surface_color, Some(bg));
     }
 
     #[test]
     fn build_theme_disabled_foreground_is_midpoint() {
-        let (theme, _dpi, _acc) = build_theme(
+        let theme = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),       // fg
             crate::Rgba::rgb(255, 255, 255), // bg
@@ -1254,7 +1266,7 @@ mod tests {
             None,
             96,
         );
-        let variant = theme.light.as_ref().expect("light variant");
+        let variant = reader_mode(&theme);
         // midpoint of (0,0,0) and (255,255,255) = (127,127,127)
         assert_eq!(
             variant.defaults.disabled_text_color,

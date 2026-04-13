@@ -230,6 +230,27 @@ impl Default for AccessibilityPreferences {
     }
 }
 
+/// Complete reader result for the pipeline.
+///
+/// Bundles the type-safe [`ReaderOutput`] with reader metadata
+/// (name, icon_set, layout, font_dpi, accessibility) so that
+/// `run_pipeline` accepts a single struct instead of many arguments.
+#[derive(Clone, Debug)]
+pub(crate) struct ReaderResult {
+    /// The reader's variant data.
+    pub(crate) output: ReaderOutput,
+    /// Theme name from reader (e.g. "BreezeDark", "GNOME", "macOS").
+    pub(crate) name: String,
+    /// Shared icon_set from reader.
+    pub(crate) icon_set: Option<IconSet>,
+    /// Shared layout from reader.
+    pub(crate) layout: LayoutTheme,
+    /// Font DPI captured at detection time (None = auto-detect).
+    pub(crate) font_dpi: Option<f32>,
+    /// OS-detected accessibility preferences.
+    pub(crate) accessibility: AccessibilityPreferences,
+}
+
 /// Output contract for platform readers.
 ///
 /// Expresses single-vs-dual variant semantics explicitly:
@@ -248,6 +269,7 @@ pub(crate) enum ReaderOutput {
         is_dark: bool,
     },
     /// Reader provides both light and dark variants (macOS).
+    #[allow(dead_code)]
     Dual {
         /// The light variant from the reader.
         light: Box<ThemeMode>,
@@ -717,19 +739,21 @@ mod overlay_tests {
     /// Uses test-only Result handling (module has #[allow(clippy::unwrap_used)]).
     fn default_system_theme() -> crate::Result<SystemTheme> {
         let preset = Theme::preset("catppuccin-mocha")?;
-        let ro = ReaderOutput::Dual {
-            light: Box::new(preset.light.clone().unwrap_or_default()),
-            dark: Box::new(preset.dark.clone().unwrap_or_default()),
+        let reader = ReaderResult {
+            output: ReaderOutput::Dual {
+                light: Box::new(preset.light.clone().unwrap_or_default()),
+                dark: Box::new(preset.dark.clone().unwrap_or_default()),
+            },
+            name: preset.name,
+            icon_set: preset.icon_set,
+            layout: preset.layout,
+            font_dpi: None,
+            accessibility: AccessibilityPreferences::default(),
         };
         pipeline::run_pipeline(
-            ro,
-            preset.name,
-            preset.icon_set,
-            preset.layout,
+            reader,
             "catppuccin-mocha",
             ColorMode::Light,
-            AccessibilityPreferences::default(),
-            None,
         )
     }
 
