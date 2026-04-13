@@ -3,6 +3,7 @@
 use crate::Rgba;
 use crate::model::border::{ResolvedBorderSpec, WidgetBorderSpec};
 use crate::model::{DialogButtonOrder, FontSpec, ResolvedFontSpec};
+use native_theme_derive::ThemeWidget;
 
 /// Helper macro for FIELD_NAMES: emits the TOML key name for an option field.
 /// With a rename literal, returns the literal; without, returns `stringify!(field)`.
@@ -181,46 +182,52 @@ define_widget_pair! {
 
 // ── §2.3 Button ──────────────────────────────────────────────────────────────
 
-define_widget_pair! {
-    /// Push button: colors, sizing, spacing, geometry.
-    ButtonTheme / ResolvedButtonTheme {
-        option {
-            /// Default button background fill.
-            background_color: Rgba,
-            /// Primary / accent button background fill.
-            primary_background: Rgba,
-            /// Primary / accent button text/icon color.
-            primary_text_color: Rgba,
-            /// Minimum button width in logical pixels.
-            min_width as "min_width_px": f32,
-            /// Minimum button height in logical pixels.
-            min_height as "min_height_px": f32,
-            /// Space between icon and label.
-            icon_text_gap as "icon_text_gap_px": f32,
-            /// Opacity multiplier when the button is disabled (0.0-1.0).
-            disabled_opacity: f32,
-            /// Button background on hover.
-            hover_background: Rgba,
-            /// Button text color on hover.
-            hover_text_color: Rgba,
-            /// Button text color when pressed/active.
-            active_text_color: Rgba,
-            /// Button text color when disabled.
-            disabled_text_color: Rgba,
-        }
-        soft_option {
-            /// Button background when pressed/active.
-            active_background: Rgba,
-            /// Button background when disabled.
-            disabled_background: Rgba,
-        }
-        optional_nested {
-            /// Button label font specification.
-            font: [FontSpec, ResolvedFontSpec],
-            /// Button border specification.
-            border: [WidgetBorderSpec, ResolvedBorderSpec],
-        }
-    }
+/// Push button: colors, sizing, spacing, geometry.
+#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+#[serde_with::skip_serializing_none]
+#[serde(default)]
+pub struct ButtonTheme {
+    /// Default button background fill.
+    pub background_color: Option<Rgba>,
+    /// Primary / accent button background fill.
+    pub primary_background: Option<Rgba>,
+    /// Primary / accent button text/icon color.
+    pub primary_text_color: Option<Rgba>,
+    /// Minimum button width in logical pixels.
+    #[serde(rename = "min_width_px")]
+    #[theme(check = "non_negative")]
+    pub min_width: Option<f32>,
+    /// Minimum button height in logical pixels.
+    #[serde(rename = "min_height_px")]
+    #[theme(check = "non_negative")]
+    pub min_height: Option<f32>,
+    /// Space between icon and label.
+    #[serde(rename = "icon_text_gap_px")]
+    #[theme(check = "non_negative")]
+    pub icon_text_gap: Option<f32>,
+    /// Opacity multiplier when the button is disabled (0.0-1.0).
+    #[theme(range = "0.0..=1.0")]
+    pub disabled_opacity: Option<f32>,
+    /// Button background on hover.
+    pub hover_background: Option<Rgba>,
+    /// Button text color on hover.
+    pub hover_text_color: Option<Rgba>,
+    /// Button text color when pressed/active.
+    pub active_text_color: Option<Rgba>,
+    /// Button text color when disabled.
+    pub disabled_text_color: Option<Rgba>,
+    /// Button background when pressed/active.
+    #[theme(category = "soft_option")]
+    pub active_background: Option<Rgba>,
+    /// Button background when disabled.
+    #[theme(category = "soft_option")]
+    pub disabled_background: Option<Rgba>,
+    /// Button label font specification.
+    #[theme(nested, resolved_type = "ResolvedFontSpec")]
+    pub font: Option<FontSpec>,
+    /// Button border specification.
+    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+    pub border: Option<WidgetBorderSpec>,
 }
 
 // ── §2.4 Text Input ──────────────────────────────────────────────────────────
@@ -909,36 +916,7 @@ impl ResolvedWindowTheme {
     }
 }
 
-impl ResolvedButtonTheme {
-    pub(crate) fn check_ranges(
-        &self,
-        prefix: &str,
-        errors: &mut Vec<crate::error::RangeViolation>,
-    ) {
-        check_non_negative(self.min_width, &format!("{prefix}.min_width"), errors);
-        check_non_negative(self.min_height, &format!("{prefix}.min_height"), errors);
-        check_non_negative(
-            self.icon_text_gap,
-            &format!("{prefix}.icon_text_gap"),
-            errors,
-        );
-        check_range_f32(
-            self.disabled_opacity,
-            0.0,
-            1.0,
-            &format!("{prefix}.disabled_opacity"),
-            errors,
-        );
-        check_positive(self.font.size, &format!("{prefix}.font.size"), errors);
-        check_range_u16(
-            self.font.weight,
-            100,
-            900,
-            &format!("{prefix}.font.weight"),
-            errors,
-        );
-    }
-}
+// ResolvedButtonTheme::check_ranges() is generated by #[derive(ThemeWidget)]
 
 impl ResolvedInputTheme {
     pub(crate) fn check_ranges(

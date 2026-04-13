@@ -7,7 +7,9 @@ use proc_macro::TokenStream;
 use syn::{parse_macro_input, DeriveInput};
 
 mod gen_merge;
+mod gen_ranges;
 mod gen_structs;
+mod gen_validate;
 mod parse;
 
 /// Derive macro that generates a companion Resolved struct and impl blocks
@@ -67,9 +69,13 @@ fn derive_inner(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
     // Generate code
     let structs = gen_structs::gen_structs(opt_name, &fields, &layer, &doc_attrs);
     let merge = gen_merge::gen_merge(opt_name, &fields);
+    let validate = gen_validate::gen_validate(opt_name, &fields, &layer);
+    let ranges = gen_ranges::gen_ranges(opt_name, &fields, &layer);
 
     Ok(quote::quote! {
         #structs
         #merge
+        #validate
+        #ranges
     })
 }
