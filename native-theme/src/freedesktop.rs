@@ -15,10 +15,9 @@ use std::path::PathBuf;
 ///
 /// Delegates to [`crate::system_icon_theme()`] which handles DE-specific
 /// detection (KDE reads kdeglobals, GNOME uses gsettings, etc.). The result
-/// is computed fresh on each call (no caching). Callers that need the theme
-/// name repeatedly should cache the result themselves.
+/// is cached by [`DetectionContext`](crate::detect::DetectionContext).
 fn detect_theme() -> String {
-    crate::system_icon_theme().to_string()
+    crate::system_icon_theme()
 }
 
 /// Look up an icon by freedesktop name using a two-pass strategy.

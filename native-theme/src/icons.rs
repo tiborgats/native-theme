@@ -348,7 +348,7 @@ fn load_system_icon_by_name_inner(
         #[cfg(all(target_os = "linux", feature = "system-icons"))]
         IconSet::Freedesktop => {
             let theme = system_icon_theme();
-            crate::freedesktop::load_freedesktop_icon_by_name(name, theme, size, fg_color)
+            crate::freedesktop::load_freedesktop_icon_by_name(name, &theme, size, fg_color)
         }
 
         #[cfg(all(target_os = "macos", feature = "system-icons"))]

@@ -62,7 +62,7 @@ pub(crate) fn run_pipeline(
         active
             .as_ref()
             .and_then(|v| v.defaults.icon_theme.clone())
-            .unwrap_or_else(|| crate::model::icons::system_icon_theme().to_string())
+            .unwrap_or_else(crate::model::icons::system_icon_theme)
     };
 
     // For the variant the reader provided: use merged (live geometry + reader colors)
