@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
-status: phase_complete
-stopped_at: Phase 77 complete — verified, ready for Phase 78
-last_updated: "2026-04-13T12:00:00.000Z"
-last_activity: 2026-04-13 — Phase 77 executed and verified (2 plans, 6 commits)
+status: completed
+stopped_at: Completed 78-02-PLAN.md
+last_updated: "2026-04-13T01:15:56.734Z"
+last_activity: 2026-04-13 — Phase 78 Plan 02 executed (1 task, 1 commit)
 progress:
   total_phases: 28
-  completed_phases: 16
-  total_plans: 30
-  completed_plans: 30
+  completed_phases: 18
+  total_plans: 32
+  completed_plans: 32
   percent: 100
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 78 — overlaysource-accessibilitypreferences-font-dpi-relocation
-Plan: 1/2 complete
-Status: Plan 01 complete — AccessibilityPreferences + font_dpi relocation
-Last activity: 2026-04-13 — Phase 78 Plan 01 executed (2 tasks, 2 commits)
+Plan: 2/2 complete
+Status: Phase 78 complete — OverlaySource replaces pre-resolve variant fields
+Last activity: 2026-04-13 — Phase 78 Plan 02 executed (1 task, 1 commit)
 
-Progress: [██████████] 100% (31/32 plans complete)
+Progress: [██████████] 100% (32/32 plans complete)
 
 ## Accumulated Context
 
@@ -89,7 +89,7 @@ v0.5.6 decisions worth carrying into v0.5.7 planning:
 
 ### Pending Todos
 
-None. Phase 78 Plan 01 complete, ready for Plan 02.
+None. Phase 78 complete, ready for Phase 79.
 
 ### v0.5.7 Decisions
 
@@ -123,6 +123,8 @@ None. Phase 78 Plan 01 complete, ready for Plan 02.
 - [Phase 78-01]: GPUI to_theme/to_theme_color accept reduce_transparency: bool parameter
 - [Phase 78-01]: GPUI accessibility helpers changed from &ResolvedTheme to &SystemTheme
 - [Phase 78-01]: Pipeline uses AccessibilityPreferences::default() temporarily; Plan 02 wires real OS values
+- [Phase 78-02]: OverlaySource cloned unchanged on with_overlay -- base reader data and preset don't change when overlay applied
+- [Phase 78-02]: unwrap_or on strip_suffix("-live") kept for non-live presets (e.g. user presets or catppuccin-mocha in tests)
 
 ### Blockers/Concerns
 
@@ -135,6 +137,6 @@ None. Phase 78 Plan 01 complete, ready for Plan 02.
 
 ## Session Continuity
 
-Last session: 2026-04-13
-Stopped at: Phase 78 Plan 01 complete — ready for Plan 02
-Resume file: .planning/phases/78-overlaysource-accessibilitypreferences-font-dpi-relocation/78-01-SUMMARY.md
+Last session: 2026-04-13T01:15:56.731Z
+Stopped at: Completed 78-02-PLAN.md
+Resume file: None
