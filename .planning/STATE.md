@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
-status: completed
-stopped_at: Completed phase 82 — verified
-last_updated: "2026-04-13T15:30:00.000Z"
-last_activity: 2026-04-13 — Phase 82 verified (4/5 must-haves confirmed, 1 human-approved)
+status: in-progress
+stopped_at: Completed 83-01-PLAN.md
+last_updated: "2026-04-13T16:43:09.000Z"
+last_activity: 2026-04-13 — Phase 83 Plan 01 complete (detect_linux_desktop rename)
 progress:
   total_phases: 28
   completed_phases: 22
-  total_plans: 42
-  completed_plans: 42
-  percent: 100
+  total_plans: 44
+  completed_plans: 43
+  percent: 97
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 82 — icon-api-rework
-Plan: 2/2 complete
-Status: Phase 82 verified — 4/5 must-haves confirmed, 1 human-approved
-Last activity: 2026-04-13 — Phase 82 verified (4/5 must-haves confirmed, 1 human-approved)
+Phase: 83 — detection-cache-layer
+Plan: 1/2 complete
+Status: Plan 01 complete (detect_linux_desktop rename)
+Last activity: 2026-04-13 — Phase 83 Plan 01 complete
 
-Progress: [██████████] 100% (42/42 plans complete)
+Progress: [█████████▉] 97% (43/44 plans complete)
 
 ## Accumulated Context
 
@@ -86,6 +86,8 @@ v0.5.6 decisions worth carrying into v0.5.7 planning:
 - Phase 86 — Validation and lint codegen polish: VALID-03, VALID-04
 - Phase 87 — Font family Arc<str> and AnimatedIcon invariants: LAYOUT-03, LAYOUT-04
 - Phase 88 — Diagnostic and preset-polish sweep: POLISH-01, POLISH-02, POLISH-04, POLISH-05, POLISH-06
+
+- [Phase 83-01]: parse_linux_desktop kept pub (not pub(crate)) because native-theme-build tests import it from external crate
 
 ### Pending Todos
 
@@ -171,6 +173,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T14:59:01Z
-Stopped at: Completed 82-02-PLAN.md
+Last session: 2026-04-13T16:43:09Z
+Stopped at: Completed 83-01-PLAN.md
 Resume file: None
