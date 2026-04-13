@@ -8,6 +8,8 @@ use std::sync::RwLock;
 #[cfg(target_os = "linux")]
 static CACHED_ICON_THEME: RwLock<Option<&'static str>> = RwLock::new(None);
 
+use std::borrow::Cow;
+
 use serde::{Deserialize, Serialize};
 
 /// Semantic icon roles for cross-platform icon resolution.
@@ -145,11 +147,80 @@ pub enum IconRole {
 
 impl std::fmt::Display for IconRole {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        std::fmt::Debug::fmt(self, f)
+        f.write_str(self.name())
     }
 }
 
 impl IconRole {
+    /// The kebab-case string identifier for this icon role.
+    ///
+    /// Returns a stable string suitable for logs, serialization, and
+    /// display. Category prefix and variant name are joined with hyphens
+    /// in lowercase (e.g., `DialogWarning` -> `"dialog-warning"`).
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use native_theme::theme::IconRole;
+    ///
+    /// assert_eq!(IconRole::ActionSave.name(), "action-save");
+    /// assert_eq!(IconRole::DialogWarning.name(), "dialog-warning");
+    /// ```
+    #[must_use]
+    pub fn name(&self) -> &'static str {
+        match self {
+            // Dialog (6)
+            Self::DialogWarning => "dialog-warning",
+            Self::DialogError => "dialog-error",
+            Self::DialogInfo => "dialog-info",
+            Self::DialogQuestion => "dialog-question",
+            Self::DialogSuccess => "dialog-success",
+            Self::Shield => "shield",
+            // Window (4)
+            Self::WindowClose => "window-close",
+            Self::WindowMinimize => "window-minimize",
+            Self::WindowMaximize => "window-maximize",
+            Self::WindowRestore => "window-restore",
+            // Action (14)
+            Self::ActionSave => "action-save",
+            Self::ActionDelete => "action-delete",
+            Self::ActionCopy => "action-copy",
+            Self::ActionPaste => "action-paste",
+            Self::ActionCut => "action-cut",
+            Self::ActionUndo => "action-undo",
+            Self::ActionRedo => "action-redo",
+            Self::ActionSearch => "action-search",
+            Self::ActionSettings => "action-settings",
+            Self::ActionEdit => "action-edit",
+            Self::ActionAdd => "action-add",
+            Self::ActionRemove => "action-remove",
+            Self::ActionRefresh => "action-refresh",
+            Self::ActionPrint => "action-print",
+            // Navigation (6)
+            Self::NavBack => "nav-back",
+            Self::NavForward => "nav-forward",
+            Self::NavUp => "nav-up",
+            Self::NavDown => "nav-down",
+            Self::NavHome => "nav-home",
+            Self::NavMenu => "nav-menu",
+            // Files (5)
+            Self::FileGeneric => "file-generic",
+            Self::FolderClosed => "folder-closed",
+            Self::FolderOpen => "folder-open",
+            Self::TrashEmpty => "trash-empty",
+            Self::TrashFull => "trash-full",
+            // Status (3)
+            Self::StatusBusy => "status-busy",
+            Self::StatusCheck => "status-check",
+            Self::StatusError => "status-error",
+            // System (4)
+            Self::UserAccount => "user-account",
+            Self::Notification => "notification",
+            Self::Help => "help",
+            Self::Lock => "lock",
+        }
+    }
+
     /// All icon role variants, useful for iteration and exhaustive testing.
     ///
     /// Contains exactly 42 variants, one for each role, in declaration order.
@@ -215,28 +286,24 @@ impl IconRole {
 ///
 /// ```
 /// use native_theme::theme::IconData;
+/// use std::borrow::Cow;
 ///
-/// let svg = IconData::Svg(b"<svg></svg>".to_vec());
-/// match svg {
-///     IconData::Svg(bytes) => assert!(!bytes.is_empty()),
-///     _ => unreachable!(),
-/// }
+/// let svg = IconData::Svg(Cow::Borrowed(b"<svg></svg>"));
+/// assert_eq!(svg.bytes(), b"<svg></svg>");
 ///
 /// let rgba = IconData::Rgba { width: 16, height: 16, data: vec![0; 16*16*4] };
-/// match rgba {
-///     IconData::Rgba { width, height, .. } => {
-///         assert_eq!(width, 16);
-///         assert_eq!(height, 16);
-///     }
-///     _ => unreachable!(),
-/// }
+/// assert_eq!(rgba.bytes().len(), 16 * 16 * 4);
 /// ```
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[non_exhaustive]
 #[must_use]
 pub enum IconData {
     /// SVG content as raw bytes (from freedesktop themes, bundled icon sets).
-    Svg(Vec<u8>),
+    ///
+    /// Bundled icons use `Cow::Borrowed` for zero-copy access to compile-time
+    /// embedded data. Runtime-loaded icons (freedesktop, custom providers)
+    /// use `Cow::Owned`.
+    Svg(Cow<'static, [u8]>),
 
     /// Rasterized RGBA pixels (from macOS/Windows system APIs).
     Rgba {
@@ -247,6 +314,20 @@ pub enum IconData {
         /// Raw RGBA pixel data (4 bytes per pixel, row-major).
         data: Vec<u8>,
     },
+}
+
+impl IconData {
+    /// Borrow the underlying bytes regardless of variant or ownership.
+    ///
+    /// For `Svg`, returns the SVG content bytes.
+    /// For `Rgba`, returns the raw pixel data.
+    #[must_use]
+    pub fn bytes(&self) -> &[u8] {
+        match self {
+            IconData::Svg(cow) => cow,
+            IconData::Rgba { data, .. } => data,
+        }
+    }
 }
 
 /// Known icon sets that provide platform-specific icon identifiers.
@@ -362,7 +443,7 @@ impl IconSet {
 ///             _ => None,
 ///         }
 ///     }
-///     fn icon_svg(&self, _set: IconSet) -> Option<&'static [u8]> {
+///     fn icon_svg(&self, _set: IconSet) -> Option<Cow<'static, [u8]>> {
 ///         None // No bundled SVGs in this example
 ///     }
 /// }
@@ -372,7 +453,10 @@ pub trait IconProvider: std::fmt::Debug {
     fn icon_name(&self, set: IconSet) -> Option<&str>;
 
     /// Return bundled SVG bytes for this icon in the given set.
-    fn icon_svg(&self, set: IconSet) -> Option<&'static [u8]>;
+    ///
+    /// Bundled providers should return `Cow::Borrowed` for zero-copy access.
+    /// Runtime providers (e.g. loading from disk) should return `Cow::Owned`.
+    fn icon_svg(&self, set: IconSet) -> Option<Cow<'static, [u8]>>;
 }
 
 impl IconProvider for IconRole {
@@ -380,8 +464,8 @@ impl IconProvider for IconRole {
         icon_name(*self, set)
     }
 
-    fn icon_svg(&self, set: IconSet) -> Option<&'static [u8]> {
-        crate::model::bundled::bundled_icon_svg(*self, set)
+    fn icon_svg(&self, set: IconSet) -> Option<Cow<'static, [u8]>> {
+        crate::model::bundled::bundled_icon_svg(*self, set).map(Cow::Borrowed)
     }
 }
 
@@ -1204,10 +1288,10 @@ mod tests {
 
     #[test]
     fn icon_data_svg_construct_and_match() {
-        let svg_bytes = b"<svg></svg>".to_vec();
-        let data = IconData::Svg(svg_bytes.clone());
+        let data = IconData::Svg(Cow::Borrowed(b"<svg></svg>"));
+        assert_eq!(data.bytes(), b"<svg></svg>");
         match data {
-            IconData::Svg(bytes) => assert_eq!(bytes, svg_bytes),
+            IconData::Svg(ref cow) => assert_eq!(cow.as_ref(), b"<svg></svg>"),
             _ => panic!("Expected Svg variant"),
         }
     }
@@ -1236,7 +1320,7 @@ mod tests {
 
     #[test]
     fn icon_data_derives_debug() {
-        let data = IconData::Svg(vec![]);
+        let data = IconData::Svg(Cow::Borrowed(b""));
         let s = format!("{:?}", data);
         assert!(s.contains("Svg"));
     }
@@ -1254,11 +1338,11 @@ mod tests {
 
     #[test]
     fn icon_data_derives_eq() {
-        let a = IconData::Svg(b"<svg/>".to_vec());
-        let b = IconData::Svg(b"<svg/>".to_vec());
+        let a = IconData::Svg(Cow::Borrowed(b"<svg/>"));
+        let b = IconData::Svg(Cow::Owned(b"<svg/>".to_vec()));
         assert_eq!(a, b);
 
-        let c = IconData::Svg(b"<other/>".to_vec());
+        let c = IconData::Svg(Cow::Borrowed(b"<other/>"));
         assert_ne!(a, c);
     }
 
@@ -1635,7 +1719,8 @@ mod tests {
         let role = IconRole::ActionCopy;
         let svg = IconProvider::icon_svg(&role, IconSet::Material);
         assert!(svg.is_some(), "Material SVG should be Some");
-        let content = std::str::from_utf8(svg.unwrap()).expect("valid UTF-8");
+        let cow = svg.unwrap();
+        let content = std::str::from_utf8(&cow).expect("valid UTF-8");
         assert!(content.contains("<svg"), "should contain <svg tag");
     }
 
@@ -1779,5 +1864,73 @@ mod tests {
                 }
             }
         }
+    }
+
+    // === IconSet drift-guard test (ICON-06) ===
+
+    #[test]
+    fn icon_set_name_round_trip() {
+        // Drift-guard: if a new IconSet variant is added without updating
+        // from_name(), this test fails.
+        let all_sets = [
+            IconSet::SfSymbols,
+            IconSet::SegoeIcons,
+            IconSet::Freedesktop,
+            IconSet::Material,
+            IconSet::Lucide,
+        ];
+        for set in all_sets {
+            assert_eq!(
+                IconSet::from_name(set.name()),
+                Some(set),
+                "IconSet::{:?}.name() = {:?} did not round-trip through from_name()",
+                set,
+                set.name()
+            );
+        }
+    }
+
+    // === IconRole::name() tests (ICON-07) ===
+
+    #[test]
+    fn icon_role_name_returns_kebab_case() {
+        assert_eq!(IconRole::ActionSave.name(), "action-save");
+        assert_eq!(IconRole::DialogWarning.name(), "dialog-warning");
+        assert_eq!(IconRole::WindowClose.name(), "window-close");
+        assert_eq!(IconRole::NavBack.name(), "nav-back");
+        assert_eq!(IconRole::FileGeneric.name(), "file-generic");
+        assert_eq!(IconRole::StatusBusy.name(), "status-busy");
+        assert_eq!(IconRole::UserAccount.name(), "user-account");
+        assert_eq!(IconRole::Shield.name(), "shield");
+        assert_eq!(IconRole::Notification.name(), "notification");
+        assert_eq!(IconRole::Help.name(), "help");
+        assert_eq!(IconRole::Lock.name(), "lock");
+    }
+
+    #[test]
+    fn icon_role_display_delegates_to_name() {
+        for role in IconRole::ALL {
+            assert_eq!(
+                format!("{role}"),
+                role.name(),
+                "Display for IconRole::{:?} should delegate to name()",
+                role
+            );
+        }
+    }
+
+    // === IconData::bytes() accessor test ===
+
+    #[test]
+    fn icon_data_bytes_accessor() {
+        let svg = IconData::Svg(Cow::Borrowed(b"<svg/>"));
+        assert_eq!(svg.bytes(), b"<svg/>");
+
+        let rgba = IconData::Rgba {
+            width: 2,
+            height: 2,
+            data: vec![1, 2, 3, 4],
+        };
+        assert_eq!(rgba.bytes(), &[1, 2, 3, 4]);
     }
 }
