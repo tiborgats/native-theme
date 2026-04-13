@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
-status: completed
-stopped_at: Completed 79-02-PLAN.md
-last_updated: "2026-04-13T08:29:49.335Z"
-last_activity: 2026-04-13 — Phase 79 Plan 02 executed (1 task, 1 commit)
+status: in-progress
+stopped_at: Completed 81-01-PLAN.md
+last_updated: "2026-04-13T13:06:05.913Z"
+last_activity: 2026-04-13 — Phase 81 Plan 01 executed (2 tasks, 2 commits)
 progress:
   total_phases: 28
-  completed_phases: 19
-  total_plans: 36
-  completed_plans: 36
-  percent: 100
+  completed_phases: 20
+  total_plans: 40
+  completed_plans: 39
+  percent: 98
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 80 — native-theme-derive-proc-macro-k-codegen
-Plan: 2/2 complete
-Status: Phase 80 complete — all widgets migrated to derive, inheritance attribute-driven
-Last activity: 2026-04-13 — Phase 80 Plan 02 executed (2 tasks, 2 commits)
+Phase: 81 — feature-matrix-cleanup-and-unified-from-system
+Plan: 1/2 complete
+Status: Plan 01 done -- unified from_system, feature graph restructured
+Last activity: 2026-04-13 — Phase 81 Plan 01 executed (2 tasks, 2 commits)
 
-Progress: [██████████] 100% (38/38 plans complete)
+Progress: [██████████] 98% (39/40 plans complete)
 
 ## Accumulated Context
 
@@ -146,6 +146,10 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 80-fix]: icon_theme relocated from Theme (shared) to ThemeDefaults (per-variant) -- KDE dark uses "breeze-dark", light uses "breeze"
 - [Phase 80-fix]: KDE reader cascades to kdedefaults/kdeglobals for icon_theme when main kdeglobals lacks [Icons] section (Plasma 6)
 - [Phase 80-fix]: Pre-existing kde/mod.rs test compilation with --features kde fixed (from_kde_content tuple destructuring)
+- [Phase 81-01]: pollster is non-optional on Linux (not gated behind portal) -- from_system() always needs block_on
+- [Phase 81-01]: Non-Linux from_system() uses Waker::noop() single-poll -- zero-dep, correct for zero-.await futures
+- [Phase 81-01]: portal activates ashpd/async-io directly (no separate runtime-variant features)
+- [Phase 81-01]: linux-kde and linux-portal sub-aggregators enable fine-grained feature selection
 
 ### Blockers/Concerns
 
@@ -158,6 +162,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T09:35:43Z
-Stopped at: Completed 80-02-PLAN.md
+Last session: 2026-04-13T13:05:17Z
+Stopped at: Completed 81-01-PLAN.md
 Resume file: None

@@ -95,8 +95,8 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 
 ### Feature Flags & Async
 
-- [ ] **FEATURE-01**: `from_system_async` and `from_system` unified via `pollster::block_on(async_inner)` — one code path, no async runtime exposed to sync consumers (doc 1 §5 Option G)
-- [ ] **FEATURE-02**: Feature aggregators split into clearer `linux-kde`/`linux-portal`-style groupings (doc 2 L4)
+- [x] **FEATURE-01**: `from_system_async` and `from_system` unified via `pollster::block_on(async_inner)` — one code path, no async runtime exposed to sync consumers (doc 1 §5 Option G)
+- [x] **FEATURE-02**: Feature aggregators split into clearer `linux-kde`/`linux-portal`-style groupings (doc 2 L4)
 - [ ] **FEATURE-03**: Feature-matrix cleanup bundled atomically with FEATURE-01 and FEATURE-02 — `Cargo.toml` feature graph simplified (doc 1 §31.3)
 
 ### Polish & Documentation

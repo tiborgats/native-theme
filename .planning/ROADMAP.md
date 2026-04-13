@@ -463,9 +463,9 @@ Plans:
   2. `Cargo.toml` features include `linux-kde` and `linux-portal` (or the design-doc names), each aggregating the right target-specific dependencies, and the old opaque aggregators are gone
   3. `cargo hack check --each-feature` (or equivalent) passes for every feature combination the CI matrix enumerates
   4. A sync-only consumer (no tokio) can call `from_system()` without pulling an async runtime into its dependency graph — verified by a test harness built with `--no-default-features` and only sync features enabled
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 Plans:
-- [ ] 81-01-PLAN.md — Unify from_system/from_system_async code paths, restructure Cargo.toml feature graph
+- [x] 81-01-PLAN.md — Unify from_system/from_system_async code paths, restructure Cargo.toml feature graph
 - [ ] 81-02-PLAN.md — Update CI matrix and full feature-combination verification
 
 ### Phase 82: Icon API Rework
@@ -623,7 +623,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 78. OverlaySource, AccessibilityPreferences, font_dpi Relocation | v0.5.7 | 4/4 | Complete   | 2026-04-13 |
 | 79. BorderSpec Split and Platform Reader Visibility Audit | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 80. native-theme-derive Proc-Macro K Codegen | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
-| 81. Feature-Matrix Cleanup and Unified from_system | v0.5.7 | 0/0 | Not started | — |
+| 81. Feature-Matrix Cleanup and Unified from_system | v0.5.7 | 1/2 | In Progress|  |
 | 82. Icon API Rework | v0.5.7 | 0/0 | Not started | — |
 | 83. Detection Cache Layer | v0.5.7 | 0/0 | Not started | — |
 | 84. Reader Output Contract Homogenisation | v0.5.7 | 0/0 | Not started | — |
