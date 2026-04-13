@@ -239,7 +239,7 @@ fn resolve_phase2_safety_nets() {
 // These tests verify that FontSize::Pt values are correctly converted to
 // logical pixels during validate(). This replaces the old Phase 1.5
 // resolve_font_dpi_conversion() tests -- conversion now happens in validate
-// via FontSize::to_px(dpi), not in-place mutation during resolve.
+// via FontSize::to_logical_px(dpi), not in-place mutation during resolve.
 
 /// Standard screen DPI (CSS reference pixel).
 const TEST_DPI_STANDARD: f32 = 96.0;
@@ -247,7 +247,7 @@ const TEST_DPI_STANDARD: f32 = 96.0;
 const TEST_DPI_APPLE: f32 = 72.0;
 
 #[test]
-fn validate_converts_pt_to_px_at_96_dpi() {
+fn validate_converts_pt_to_logical_px_at_96_dpi() {
     // 10pt at 96 DPI -> 10 * 96/72 = 13.333...px
     let mut v = fully_populated_variant();
     v.defaults.font.size = Some(FontSize::Pt(10.0));

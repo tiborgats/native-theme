@@ -24,7 +24,7 @@ pub enum FontStyle {
 /// `Serialize`/`Deserialize` impl.
 ///
 /// During validation, all `FontSize` values are converted to logical pixels
-/// via `FontSize::to_px(dpi)`, producing a plain `f32` for the resolved model.
+/// via `FontSize::to_logical_px(dpi)`, producing a plain `f32` for the resolved model.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub enum FontSize {
     /// Typographic points (1/72 inch). Used by platform presets where the OS
@@ -39,9 +39,28 @@ pub enum FontSize {
 impl FontSize {
     /// Convert to logical pixels.
     ///
-    /// - `Pt(v)` -> `v * dpi / 72.0`
-    /// - `Px(v)` -> `v` (dpi ignored)
-    pub fn to_px(self, dpi: f32) -> f32 {
+    /// - `Pt(v)` -> `v * dpi / 72.0` (DPI matters)
+    /// - `Px(v)` -> `v` (already logical pixels, DPI ignored)
+    ///
+    /// The name `to_logical_px` makes the asymmetry explicit: `Px` values
+    /// are already in logical pixels, so the DPI parameter has no effect.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use native_theme::theme::FontSize;
+    ///
+    /// // Pt branch: DPI affects the result
+    /// let pt_size = FontSize::Pt(10.0);
+    /// assert_eq!(pt_size.to_logical_px(96.0), 10.0 * 96.0 / 72.0);
+    /// assert_eq!(pt_size.to_logical_px(72.0), 10.0); // identity at 72 DPI
+    ///
+    /// // Px branch: DPI is ignored, value returned unchanged
+    /// let px_size = FontSize::Px(14.0);
+    /// assert_eq!(px_size.to_logical_px(96.0), 14.0);
+    /// assert_eq!(px_size.to_logical_px(144.0), 14.0); // same regardless of DPI
+    /// ```
+    pub fn to_logical_px(self, dpi: f32) -> f32 {
         match self {
             Self::Pt(v) => v * dpi / 72.0,
             Self::Px(v) => v,
@@ -82,7 +101,7 @@ pub struct FontSpec {
     ///
     /// In TOML, set as `size_pt` (typographic points) or `size_px` (logical
     /// pixels). Converted to `f32` logical pixels during validation via
-    /// `FontSize::to_px(dpi)`.
+    /// `FontSize::to_logical_px(dpi)`.
     pub size: Option<FontSize>,
     /// CSS font weight (100–900).
     pub weight: Option<u16>,
@@ -620,19 +639,19 @@ mod tests {
     // === FontSize tests ===
 
     #[test]
-    fn pt_to_px_at_96_dpi() {
-        assert_eq!(FontSize::Pt(10.0).to_px(96.0), 10.0 * 96.0 / 72.0);
+    fn pt_to_logical_px_at_96_dpi() {
+        assert_eq!(FontSize::Pt(10.0).to_logical_px(96.0), 10.0 * 96.0 / 72.0);
     }
 
     #[test]
     fn px_ignores_dpi() {
-        assert_eq!(FontSize::Px(14.0).to_px(96.0), 14.0);
-        assert_eq!(FontSize::Px(14.0).to_px(144.0), 14.0);
+        assert_eq!(FontSize::Px(14.0).to_logical_px(96.0), 14.0);
+        assert_eq!(FontSize::Px(14.0).to_logical_px(144.0), 14.0);
     }
 
     #[test]
-    fn pt_to_px_at_72_dpi_is_identity() {
-        assert_eq!(FontSize::Pt(10.0).to_px(72.0), 10.0);
+    fn pt_to_logical_px_at_72_dpi_is_identity() {
+        assert_eq!(FontSize::Pt(10.0).to_logical_px(72.0), 10.0);
     }
 
     #[test]

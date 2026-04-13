@@ -10,7 +10,7 @@ use crate::model::{FontSpec, ResolvedFontSpec};
 /// when no DPI was set on the unresolved variant (e.g. community presets
 /// loaded standalone without OS reader). This matches the CSS/Web reference
 /// pixel and the Windows default. Validation uses this to convert
-/// `FontSize::Pt` values to logical pixels via `FontSize::to_px(dpi)`.
+/// `FontSize::Pt` values to logical pixels via `FontSize::to_logical_px(dpi)`.
 pub(crate) const DEFAULT_FONT_DPI: f32 = 96.0;
 
 // --- validate() helpers ---
@@ -35,7 +35,7 @@ pub(crate) fn require<T: Clone + Default>(
 }
 
 /// Validate a FontSpec that is stored directly (not wrapped in Option).
-/// Checks each sub-field individually. Converts `FontSize` to `f32` px via `to_px(dpi)`.
+/// Checks each sub-field individually. Converts `FontSize` to `f32` px via `to_logical_px(dpi)`.
 pub(crate) fn require_font(
     font: &FontSpec,
     prefix: &str,
@@ -43,7 +43,7 @@ pub(crate) fn require_font(
     missing: &mut Vec<String>,
 ) -> ResolvedFontSpec {
     let family = require(&font.family, &format!("{prefix}.family"), missing);
-    let size = font.size.map(|fs| fs.to_px(dpi)).unwrap_or_else(|| {
+    let size = font.size.map(|fs| fs.to_logical_px(dpi)).unwrap_or_else(|| {
         missing.push(format!("{prefix}.size"));
         0.0
     });
@@ -59,7 +59,7 @@ pub(crate) fn require_font(
 }
 
 /// Validate an `Option<FontSpec>` (widget font fields).
-/// If None, records the path as missing. Converts `FontSize` to `f32` px via `to_px(dpi)`.
+/// If None, records the path as missing. Converts `FontSize` to `f32` px via `to_logical_px(dpi)`.
 pub(crate) fn require_font_opt(
     font: &Option<FontSpec>,
     prefix: &str,
@@ -73,7 +73,7 @@ pub(crate) fn require_font_opt(
         }
         Some(f) => {
             let family = require(&f.family, &format!("{prefix}.family"), missing);
-            let size = f.size.map(|fs| fs.to_px(dpi)).unwrap_or_else(|| {
+            let size = f.size.map(|fs| fs.to_logical_px(dpi)).unwrap_or_else(|| {
                 missing.push(format!("{prefix}.size"));
                 0.0
             });
@@ -91,7 +91,7 @@ pub(crate) fn require_font_opt(
 }
 
 /// Validate an `Option<TextScaleEntry>`.
-/// Converts `FontSize` to `f32` px via `to_px(dpi)`. Also converts `line_height`
+/// Converts `FontSize` to `f32` px via `to_logical_px(dpi)`. Also converts `line_height`
 /// when the sibling `size` is in points (same unit, same DPI factor).
 pub(crate) fn require_text_scale_entry(
     entry: &Option<crate::model::TextScaleEntry>,
@@ -105,11 +105,11 @@ pub(crate) fn require_text_scale_entry(
             crate::model::resolved::ResolvedTextScaleEntry::default()
         }
         Some(e) => {
-            let size = e.size.map(|fs| fs.to_px(dpi)).unwrap_or_else(|| {
+            let size = e.size.map(|fs| fs.to_logical_px(dpi)).unwrap_or_else(|| {
                 missing.push(format!("{prefix}.size"));
                 0.0
             });
-            let line_height = e.line_height.map(|fs| fs.to_px(dpi)).unwrap_or_else(|| {
+            let line_height = e.line_height.map(|fs| fs.to_logical_px(dpi)).unwrap_or_else(|| {
                 missing.push(format!("{prefix}.line_height"));
                 0.0
             });
