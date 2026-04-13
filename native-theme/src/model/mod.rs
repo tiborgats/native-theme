@@ -1284,10 +1284,7 @@ nonexistent_field = "#ff0000"
         // Every widget registered via inventory::submit! should be accepted
         // as a valid variant-level section key.
         for entry in inventory::iter::<crate::resolve::WidgetFieldInfo> {
-            let toml_str = format!(
-                "name = \"Test\"\n[light.{}]\n",
-                entry.widget_name,
-            );
+            let toml_str = format!("name = \"Test\"\n[light.{}]\n", entry.widget_name,);
             let warnings = Theme::lint_toml(&toml_str).unwrap();
             assert!(
                 warnings.is_empty(),
