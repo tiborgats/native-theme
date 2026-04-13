@@ -138,24 +138,6 @@ pub struct ResolvedDefaults {
     /// Per-context icon sizes.
     pub icon_sizes: ResolvedIconSizes,
 
-    // ---- Font DPI ----
-    /// Font DPI used for pt-to-px conversion during resolution.
-    /// Defaults to 96.0 when not set on the unresolved variant.
-    pub font_dpi: f32,
-
-    // ---- Accessibility ----
-    /// Text scaling factor -- an accessibility multiplier for enlarged text
-    /// (1.0 = no scaling). Connectors and apps should multiply `font.size` by
-    /// this factor when the user's preference for larger text should be honored.
-    /// This is independent of `font_dpi` (which handles DPI-based
-    /// point-to-pixel conversion).
-    pub text_scaling_factor: f32,
-    /// Whether the user has requested reduced motion.
-    pub reduce_motion: bool,
-    /// Whether a high-contrast mode is active.
-    pub high_contrast: bool,
-    /// Whether the user has requested reduced transparency.
-    pub reduce_transparency: bool,
 }
 
 // --- ResolvedTheme ---
@@ -319,11 +301,6 @@ mod tests {
             focus_ring_width: 2.0,
             focus_ring_offset: 1.0,
             icon_sizes: sample_icon_sizes(),
-            font_dpi: 96.0,
-            text_scaling_factor: 1.0,
-            reduce_motion: false,
-            high_contrast: false,
-            reduce_transparency: false,
         }
     }
 
@@ -433,9 +410,6 @@ mod tests {
         assert_eq!(d.focus_ring_width, 2.0);
         // Icon sizes
         assert_eq!(d.icon_sizes.toolbar, 24.0);
-        // Accessibility
-        assert_eq!(d.text_scaling_factor, 1.0);
-        assert_eq!(d.reduce_motion, false);
     }
 
     #[test]

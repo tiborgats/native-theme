@@ -46,43 +46,24 @@ pub(crate) fn run_pipeline(
     // For the variant the reader provided: use merged (live geometry + reader colors)
     // For the variant the reader didn't provide: use FULL preset (has colors).
     // unwrap_or_default() yields an empty ThemeMode -- valid for merge.
-    let mut light_variant = if reader_output.light.is_some() {
+    let light_variant = if reader_output.light.is_some() {
         merged.light.unwrap_or_default()
     } else {
         full_preset.light.unwrap_or_default()
     };
 
-    let mut dark_variant = if reader_output.dark.is_some() {
+    let dark_variant = if reader_output.dark.is_some() {
         merged.dark.unwrap_or_default()
     } else {
         full_preset.dark.unwrap_or_default()
     };
 
-    // Propagate font_dpi from the reader to both variants so the
-    // pt->px conversion uses the system-detected DPI for both.
-    // The active variant already has font_dpi via merge; the inactive
-    // variant comes from the full preset (no reader data) and needs it.
-    let reader_dpi = reader_output
-        .light
-        .as_ref()
-        .and_then(|v| v.defaults.font_dpi)
-        .or_else(|| {
-            reader_output
-                .dark
-                .as_ref()
-                .and_then(|v| v.defaults.font_dpi)
-        });
-    if let Some(dpi) = reader_dpi {
-        light_variant.defaults.font_dpi = light_variant.defaults.font_dpi.or(Some(dpi));
-        dark_variant.defaults.font_dpi = dark_variant.defaults.font_dpi.or(Some(dpi));
-    }
-
     // Clone pre-resolve variants for overlay support (Plan 02)
     let light_variant_pre = light_variant.clone();
     let dark_variant_pre = dark_variant.clone();
 
-    let light = light_variant.into_resolved()?;
-    let dark = dark_variant.into_resolved()?;
+    let light = light_variant.into_resolved(None)?;
+    let dark = dark_variant.into_resolved(None)?;
 
     // Resolve icon_set and icon_theme from Theme level (shared across variants)
     let icon_set = merged.icon_set
@@ -101,6 +82,7 @@ pub(crate) fn run_pipeline(
         live_preset: preset_name.to_string(),
         icon_set,
         icon_theme,
+        accessibility: crate::AccessibilityPreferences::default(),
     })
 }
 
@@ -671,7 +653,7 @@ ForegroundLink=41,128,185";
 )]
 mod pipeline_tests {
     use crate::color::Rgba;
-    use crate::model::{Theme, ThemeDefaults, ThemeMode};
+    use crate::model::{Theme, ThemeMode};
 
     use super::{reader_is_dark, run_pipeline};
 
@@ -784,44 +766,9 @@ mod pipeline_tests {
 
     // --- run_pipeline font_dpi propagation ---
 
-    #[test]
-    fn test_run_pipeline_propagates_font_dpi_to_inactive_variant() {
-        // Create a reader that provides only dark variant with font_dpi=120
-        // (simulating a platform reader that detected this DPI from the OS)
-        let mut reader = Theme::default();
-        reader.dark = Some(ThemeMode {
-            defaults: ThemeDefaults {
-                font_dpi: Some(120.0),
-                ..Default::default()
-            },
-            ..Default::default()
-        });
-
-        let st = run_pipeline(reader, "kde-breeze-live", crate::ColorMode::Dark).unwrap();
-        // The light variant (inactive, from full preset) should have gotten
-        // font_dpi propagated and used for conversion.
-        //
-        // After resolution, font_dpi is consumed (cleared during conversion,
-        // then filled with DEFAULT_FONT_DPI in validate.rs), so we cannot
-        // check font_dpi directly. Instead, verify the conversion effect:
-        // the preset's default font size is in points. With font_dpi=120:
-        //   px = pt * 120 / 72 = pt * 1.6667
-        //
-        // The Breeze preset default font size is 10.0 pt.
-        // With DPI 120: 10.0 * 120/72 = 16.667 px
-        // Without propagation (no conversion): 10.0 px
-        let resolved_size = st.light.defaults.font.size;
-        assert!(
-            resolved_size > 10.0,
-            "inactive variant font size should be DPI-converted (got {resolved_size}, expected > 10.0)"
-        );
-        // Check it matches the expected conversion
-        let expected = 10.0 * 120.0 / 72.0; // ~16.667
-        assert!(
-            (resolved_size - expected).abs() < 0.1,
-            "font size should be 10pt * 120/72 = {expected:.1}px, got {resolved_size}"
-        );
-    }
+    // NOTE: test_run_pipeline_propagates_font_dpi_to_inactive_variant removed.
+    // font_dpi is no longer on ThemeDefaults; it will be threaded through
+    // run_pipeline as an explicit parameter in Task 2.
 
     // --- reader_is_dark() tests ---
 

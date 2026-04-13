@@ -120,7 +120,8 @@ pub mod watch;
 ///
 /// `use native_theme::prelude::*` imports:
 /// [`Theme`](theme::Theme), [`ResolvedTheme`](theme::ResolvedTheme),
-/// [`SystemTheme`], [`Rgba`](color::Rgba), [`Error`](error::Error), and [`Result`].
+/// [`SystemTheme`], [`AccessibilityPreferences`],
+/// [`Rgba`](color::Rgba), [`Error`](error::Error), and [`Result`].
 pub mod prelude;
 
 /// Theme data model: types, defaults, fonts, borders, widgets.
@@ -203,6 +204,35 @@ pub(crate) use model::{
 #[allow(unused_imports)]
 pub(crate) use pipeline::{diagnose_platform_support, platform_preset_name};
 
+/// OS-detected accessibility preferences.
+///
+/// A single copy lives on [`SystemTheme`], shared across light and dark
+/// variants. These are runtime values detected from the OS -- not stored
+/// in TOML presets.
+#[derive(Clone, Debug, PartialEq)]
+pub struct AccessibilityPreferences {
+    /// Text scaling factor (1.0 = no scaling). Multiply font sizes by
+    /// this factor when honoring the user's preference for larger text.
+    pub text_scaling_factor: f32,
+    /// Whether the user has requested reduced motion.
+    pub reduce_motion: bool,
+    /// Whether a high-contrast mode is active.
+    pub high_contrast: bool,
+    /// Whether the user has requested reduced transparency.
+    pub reduce_transparency: bool,
+}
+
+impl Default for AccessibilityPreferences {
+    fn default() -> Self {
+        Self {
+            text_scaling_factor: 1.0,
+            reduce_motion: false,
+            high_contrast: false,
+            reduce_transparency: false,
+        }
+    }
+}
+
 /// Result of the OS-first pipeline. Holds both resolved variants.
 ///
 /// Produced by [`SystemTheme::from_system()`] and [`SystemTheme::from_system_async()`].
@@ -231,6 +261,8 @@ pub struct SystemTheme {
     pub icon_set: IconSet,
     /// The name of the visual icon theme (e.g. `"breeze"`, `"Adwaita"`).
     pub icon_theme: String,
+    /// OS-detected accessibility preferences (shared across variants).
+    pub accessibility: AccessibilityPreferences,
 }
 
 impl SystemTheme {
@@ -292,8 +324,8 @@ impl SystemTheme {
         }
 
         // Resolve and validate both
-        let resolved_light = light.clone().into_resolved()?;
-        let resolved_dark = dark.clone().into_resolved()?;
+        let resolved_light = light.clone().into_resolved(None)?;
+        let resolved_dark = dark.clone().into_resolved(None)?;
 
         Ok(SystemTheme {
             name: self.name.clone(),
@@ -306,6 +338,7 @@ impl SystemTheme {
             preset: self.preset.clone(),
             icon_set: self.icon_set,
             icon_theme: self.icon_theme.clone(),
+            accessibility: self.accessibility.clone(),
         })
     }
 
@@ -431,6 +464,7 @@ mod system_theme_tests {
             preset: "catppuccin-mocha".into(),
             icon_set: IconSet::Lucide,
             icon_theme: "lucide".into(),
+            accessibility: AccessibilityPreferences::default(),
         };
         assert_eq!(
             st.pick(st.mode).defaults.accent_color,
@@ -461,6 +495,7 @@ mod system_theme_tests {
             preset: "catppuccin-mocha".into(),
             icon_set: IconSet::Lucide,
             icon_theme: "lucide".into(),
+            accessibility: AccessibilityPreferences::default(),
         };
         assert_eq!(
             st.pick(st.mode).defaults.accent_color,
@@ -491,6 +526,7 @@ mod system_theme_tests {
             preset: "catppuccin-mocha".into(),
             icon_set: IconSet::Lucide,
             icon_theme: "lucide".into(),
+            accessibility: AccessibilityPreferences::default(),
         };
         assert_eq!(
             st.pick(ColorMode::Dark).defaults.accent_color,

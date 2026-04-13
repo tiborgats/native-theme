@@ -413,8 +413,12 @@ Plans:
   4. All 17 presets continue to resolve successfully and produce identical `ResolvedTheme` outputs for tests that existed before the refactor
 **Plans**: 2 plans
 Plans:
-- [ ] 71-01-PLAN.md � Rewrite Error enum per Option F with ErrorKind and RangeViolation
-- [ ] 71-02-PLAN.md � Two-vec validation split and caller migration
+- [ ] 78-01-PLAN.md — AccessibilityPreferences extraction + font_dpi removal from ThemeDefaults
+- [ ] 78-02-PLAN.md — OverlaySource replaces light_variant/dark_variant on SystemTheme
+
+
+
+
 
 ### Phase 79: BorderSpec Split and Platform Reader Visibility Audit
 **Goal**: `BorderSpec` is split along defaults-vs-widget lines (widget-level carries only `color`; defaults-level adds `width`, `corner_radius`, `padding`), and the platform readers (`from_kde`, `from_gnome`, `from_windows`, `from_macos`) are demoted to `pub(crate)` after a grep-based audit of connector consumers

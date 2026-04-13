@@ -11,6 +11,13 @@ use crate::model::resolved::{
 use crate::model::ThemeMode;
 
 impl ThemeMode {
+    /// Convert this ThemeMode into a [`ResolvedTheme`] using the default DPI (96.0).
+    ///
+    /// Convenience wrapper around [`validate_with_dpi(DEFAULT_FONT_DPI)`](Self::validate_with_dpi).
+    pub fn validate(&self) -> crate::Result<ResolvedTheme> {
+        self.validate_with_dpi(DEFAULT_FONT_DPI)
+    }
+
     /// Convert this ThemeMode into a [`ResolvedTheme`] with all fields guaranteed.
     ///
     /// Should be called after [`resolve()`](ThemeMode::resolve). Walks every field
@@ -19,15 +26,20 @@ impl ThemeMode {
     /// 100..=900). Returns `Ok(ResolvedTheme)` if all fields are populated
     /// and in range.
     ///
+    /// # Arguments
+    ///
+    /// * `font_dpi` -- Font DPI for pt-to-px conversion (e.g. 96.0 on
+    ///   Linux/Windows, 72.0 on macOS).
+    ///
     /// # Errors
     ///
     /// Returns [`crate::Error::ResolutionIncomplete`] if any required fields
     /// are still `None` after resolution. Returns
     /// [`crate::Error::ResolutionInvalid`] if all fields are present but
     /// some numeric values fall outside allowed ranges.
-    pub fn validate(&self) -> crate::Result<ResolvedTheme> {
+    pub fn validate_with_dpi(&self, font_dpi: f32) -> crate::Result<ResolvedTheme> {
         let mut missing = Vec::new();
-        let dpi = self.defaults.font_dpi.unwrap_or(DEFAULT_FONT_DPI);
+        let dpi = font_dpi;
 
         // --- defaults extraction ---
         let defaults_font = require_font(&self.defaults.font, "defaults.font", dpi, &mut missing);
@@ -244,28 +256,6 @@ impl ThemeMode {
             &mut missing,
         );
 
-        let defaults_font_dpi = dpi;
-        let defaults_text_scaling_factor = require(
-            &self.defaults.text_scaling_factor,
-            "defaults.text_scaling_factor",
-            &mut missing,
-        );
-        let defaults_reduce_motion = require(
-            &self.defaults.reduce_motion,
-            "defaults.reduce_motion",
-            &mut missing,
-        );
-        let defaults_high_contrast = require(
-            &self.defaults.high_contrast,
-            "defaults.high_contrast",
-            &mut missing,
-        );
-        let defaults_reduce_transparency = require(
-            &self.defaults.reduce_transparency,
-            "defaults.reduce_transparency",
-            &mut missing,
-        );
-
         let ts_caption = require_text_scale_entry(
             &self.text_scale.caption,
             "text_scale.caption",
@@ -340,11 +330,6 @@ impl ThemeMode {
                 dialog: defaults_icon_sizes_dialog,
                 panel: defaults_icon_sizes_panel,
             },
-            font_dpi: defaults_font_dpi,
-            text_scaling_factor: defaults_text_scaling_factor,
-            reduce_motion: defaults_reduce_motion,
-            high_contrast: defaults_high_contrast,
-            reduce_transparency: defaults_reduce_transparency,
         };
         let text_scale = ResolvedTextScale {
             caption: ts_caption,

@@ -351,7 +351,7 @@ impl Theme {
     ///
     /// let theme = native_theme::theme::Theme::preset("dracula")?;
     /// let variant = theme.into_variant(ColorMode::Dark).ok_or("no variant")?;
-    /// let resolved = variant.into_resolved()?;
+    /// let resolved = variant.into_resolved(None)?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     #[must_use]

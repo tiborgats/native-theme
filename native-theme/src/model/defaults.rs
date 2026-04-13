@@ -114,29 +114,6 @@ pub struct ThemeDefaults {
     #[serde(default, skip_serializing_if = "IconSizes::is_empty")]
     pub icon_sizes: IconSizes,
 
-    // ---- Font DPI ----
-    /// Font DPI for pt-to-px conversion. When `Some(dpi)`, font sizes
-    /// in this variant are in typographic points and will be converted
-    /// during resolution: `px = pt * font_dpi / 72`. When `None`,
-    /// [`into_resolved()`](crate::ThemeMode::into_resolved) auto-detects
-    /// the DPI from the OS.
-    ///
-    /// This is a **runtime** value — not stored in TOML presets. OS readers
-    /// auto-detect it from system settings. Applications can override it
-    /// via the Rust API (e.g. when a window moves between monitors with
-    /// different DPIs).
-    #[serde(skip)]
-    pub font_dpi: Option<f32>,
-
-    // ---- Accessibility ----
-    /// Text scaling factor (1.0 = no scaling).
-    pub text_scaling_factor: Option<f32>,
-    /// Whether the user has requested reduced motion.
-    pub reduce_motion: Option<bool>,
-    /// Whether a high-contrast mode is active.
-    pub high_contrast: Option<bool>,
-    /// Whether the user has requested reduced transparency.
-    pub reduce_transparency: Option<bool>,
 }
 
 impl ThemeDefaults {
@@ -173,10 +150,6 @@ impl ThemeDefaults {
         "focus_ring_width_px",
         "focus_ring_offset_px",
         "icon_sizes",
-        "text_scaling_factor",
-        "reduce_motion",
-        "high_contrast",
-        "reduce_transparency",
     ];
 }
 
@@ -191,9 +164,7 @@ impl_merge!(ThemeDefaults {
         disabled_text_color,
         danger_color, danger_text_color, warning_color, warning_text_color,
         success_color, success_text_color, info_color, info_text_color,
-        disabled_opacity, focus_ring_color, focus_ring_width, focus_ring_offset,
-        font_dpi,
-        text_scaling_factor, reduce_motion, high_contrast, reduce_transparency
+        disabled_opacity, focus_ring_color, focus_ring_width, focus_ring_offset
     }
     nested { font, mono_font, border, icon_sizes }
 });
@@ -238,12 +209,7 @@ mod tests {
         assert!(d.focus_ring_color.is_none());
         assert!(d.focus_ring_width.is_none());
         assert!(d.focus_ring_offset.is_none());
-        assert!(d.text_scaling_factor.is_none());
-        assert!(d.reduce_motion.is_none());
-        assert!(d.high_contrast.is_none());
-        assert!(d.reduce_transparency.is_none());
         assert!(d.line_height.is_none());
-        assert!(d.font_dpi.is_none());
     }
 
     #[test]
@@ -495,17 +461,4 @@ mod tests {
         assert_eq!(d, d2);
     }
 
-    #[test]
-    fn accessibility_fields_round_trip() {
-        let d = ThemeDefaults {
-            text_scaling_factor: Some(1.25),
-            reduce_motion: Some(true),
-            high_contrast: Some(false),
-            reduce_transparency: Some(true),
-            ..Default::default()
-        };
-        let toml_str = toml::to_string(&d).unwrap();
-        let d2: ThemeDefaults = toml::from_str(&toml_str).unwrap();
-        assert_eq!(d, d2);
-    }
 }

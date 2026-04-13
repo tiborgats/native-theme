@@ -68,11 +68,10 @@ impl ThemeMode {
     /// Convenience method that calls [`resolve()`](Self::resolve) followed by
     /// [`resolve_platform_defaults()`](Self::resolve_platform_defaults).
     ///
-    /// **Note:** this does *not* auto-detect `font_dpi`. If `font_dpi` is
-    /// `None`, validation will use `DEFAULT_FONT_DPI` (96.0) for pt-to-px
-    /// conversion. To get automatic DPI detection, use
-    /// [`into_resolved()`](Self::into_resolved) or set `font_dpi` before
-    /// calling this method.
+    /// **Note:** this does *not* handle `font_dpi`. Pass the DPI value to
+    /// [`validate_with_dpi()`](Self::validate_with_dpi) or use
+    /// [`into_resolved()`](Self::into_resolved) which accepts an optional
+    /// DPI parameter.
     pub fn resolve_all(&mut self) {
         self.resolve();
         self.resolve_platform_defaults();
@@ -82,8 +81,15 @@ impl ThemeMode {
     ///
     /// This is the recommended way to convert a `ThemeMode` into a
     /// [`ResolvedTheme`]. It calls [`resolve_all()`](Self::resolve_all)
-    /// followed by [`validate()`](Self::validate), ensuring no fields are left
-    /// unresolved.
+    /// followed by [`validate_with_dpi()`](Self::validate_with_dpi),
+    /// ensuring no fields are left unresolved.
+    ///
+    /// # Arguments
+    ///
+    /// * `font_dpi` -- Font DPI for pt-to-px conversion. Pass `None` to
+    ///   auto-detect from the OS (typically 96 on Linux/Windows, 72 on macOS).
+    ///   OS readers pass `Some(detected_dpi)` so standalone preset loading
+    ///   applies the correct conversion.
     ///
     /// # Errors
     ///
@@ -95,22 +101,17 @@ impl ThemeMode {
     /// ```
     /// use native_theme::theme::Theme;
     ///
-    /// let theme = Theme::preset("dracula").unwrap();
-    /// let variant = theme.dark.unwrap();
-    /// let resolved = variant.into_resolved().unwrap();
+    /// let theme = Theme::preset("dracula")?;
+    /// let variant = theme.dark.ok_or("no dark variant")?;
+    /// let resolved = variant.into_resolved(None)?;
     /// // All fields are now guaranteed populated
     /// let accent = resolved.defaults.accent_color;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn into_resolved(mut self) -> crate::Result<ResolvedTheme> {
-        // Auto-detect font_dpi from the OS when not already set (e.g. by an
-        // OS reader or TOML overlay). This ensures standalone preset loading
-        // applies the correct pt-to-px conversion for the current display.
-        // Done here (not in resolve_all) to preserve resolve_all idempotency.
-        if self.defaults.font_dpi.is_none() {
-            self.defaults.font_dpi = Some(crate::detect::system_font_dpi());
-        }
+    pub fn into_resolved(mut self, font_dpi: Option<f32>) -> crate::Result<ResolvedTheme> {
+        let dpi = font_dpi.unwrap_or_else(|| crate::detect::system_font_dpi());
         self.resolve_all();
-        self.validate()
+        self.validate_with_dpi(dpi)
     }
 }
 

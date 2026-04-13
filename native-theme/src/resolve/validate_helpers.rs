@@ -375,13 +375,8 @@ pub(crate) fn check_defaults_ranges(
         errors,
     );
 
-    // defaults: line_height > 0, text_scaling_factor > 0
+    // defaults: line_height > 0
     check_positive(defaults.line_height, "defaults.line_height", errors);
-    check_positive(
-        defaults.text_scaling_factor,
-        "defaults.text_scaling_factor",
-        errors,
-    );
 
     // defaults: radius, geometry >= 0
     check_non_negative(

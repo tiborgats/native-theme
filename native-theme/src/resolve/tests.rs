@@ -84,11 +84,6 @@ fn variant_with_defaults() -> ThemeMode {
     v.defaults.icon_sizes.dialog = Some(22.0);
     v.defaults.icon_sizes.panel = Some(20.0);
 
-    v.defaults.text_scaling_factor = Some(1.0);
-    v.defaults.reduce_motion = Some(false);
-    v.defaults.high_contrast = Some(false);
-    v.defaults.reduce_transparency = Some(false);
-
     v
 }
 
@@ -255,10 +250,9 @@ const TEST_DPI_APPLE: f32 = 72.0;
 fn validate_converts_pt_to_px_at_96_dpi() {
     // 10pt at 96 DPI -> 10 * 96/72 = 13.333...px
     let mut v = fully_populated_variant();
-    v.defaults.font_dpi = Some(TEST_DPI_STANDARD);
     v.defaults.font.size = Some(FontSize::Pt(10.0));
     v.defaults.mono_font.size = Some(FontSize::Pt(10.0));
-    let resolved = v.validate().expect("should validate");
+    let resolved = v.validate_with_dpi(TEST_DPI_STANDARD).expect("should validate");
     let size = resolved.defaults.font.size;
     assert!(
         (size - 13.333).abs() < 0.01,
@@ -270,10 +264,9 @@ fn validate_converts_pt_to_px_at_96_dpi() {
 fn validate_px_ignores_dpi() {
     // FontSize::Px(14.0) stays 14.0 regardless of dpi
     let mut v = fully_populated_variant();
-    v.defaults.font_dpi = Some(TEST_DPI_STANDARD);
     v.defaults.font.size = Some(FontSize::Px(14.0));
     v.defaults.mono_font.size = Some(FontSize::Px(13.0));
-    let resolved = v.validate().expect("should validate");
+    let resolved = v.validate_with_dpi(TEST_DPI_STANDARD).expect("should validate");
     assert_eq!(resolved.defaults.font.size, 14.0);
 }
 
@@ -281,10 +274,9 @@ fn validate_px_ignores_dpi() {
 fn validate_pt_at_72_dpi_is_identity() {
     // 72 DPI (macOS): 13pt * 72/72 = 13px (identity)
     let mut v = fully_populated_variant();
-    v.defaults.font_dpi = Some(TEST_DPI_APPLE);
     v.defaults.font.size = Some(FontSize::Pt(13.0));
     v.defaults.mono_font.size = Some(FontSize::Pt(13.0));
-    let resolved = v.validate().expect("should validate");
+    let resolved = v.validate_with_dpi(TEST_DPI_APPLE).expect("should validate");
     assert!(
         (resolved.defaults.font.size - 13.0).abs() < 0.01,
         "13pt at 72 DPI should stay 13.0px"
@@ -295,7 +287,6 @@ fn validate_pt_at_72_dpi_is_identity() {
 fn validate_text_scale_pt_converted() {
     // text_scale caption: size_pt + line_height both converted
     let mut v = fully_populated_variant();
-    v.defaults.font_dpi = Some(TEST_DPI_STANDARD);
     v.defaults.font.size = Some(FontSize::Pt(10.0));
     v.defaults.mono_font.size = Some(FontSize::Pt(10.0));
     v.text_scale.caption = Some(TextScaleEntry {
@@ -303,7 +294,7 @@ fn validate_text_scale_pt_converted() {
         weight: Some(400),
         line_height: Some(FontSize::Pt(12.6)),
     });
-    let resolved = v.validate().expect("should validate");
+    let resolved = v.validate_with_dpi(TEST_DPI_STANDARD).expect("should validate");
     let cap = &resolved.text_scale.caption;
     assert!(
         (cap.size - 12.0).abs() < 0.01,
@@ -321,14 +312,13 @@ fn validate_text_scale_pt_converted() {
 fn validate_per_widget_font_pt_converted() {
     // Per-widget font with FontSize::Pt gets converted in validate
     let mut v = fully_populated_variant();
-    v.defaults.font_dpi = Some(TEST_DPI_STANDARD);
     v.defaults.font.size = Some(FontSize::Pt(10.0));
     v.defaults.mono_font.size = Some(FontSize::Pt(10.0));
     // Override only the size on the existing button font (preserve family/weight/color)
     if let Some(ref mut bf) = v.button.font {
         bf.size = Some(FontSize::Pt(11.0));
     }
-    let resolved = v.validate().expect("should validate");
+    let resolved = v.validate_with_dpi(TEST_DPI_STANDARD).expect("should validate");
     let btn_size = resolved.button.font.size;
     assert!(
         (btn_size - 14.666).abs() < 0.01,
@@ -338,9 +328,8 @@ fn validate_per_widget_font_pt_converted() {
 
 #[test]
 fn validate_no_dpi_uses_default_96() {
-    // font_dpi=None -> DEFAULT_FONT_DPI (96) is used as fallback in validate
+    // validate() without explicit DPI uses DEFAULT_FONT_DPI (96)
     let mut v = fully_populated_variant();
-    v.defaults.font_dpi = None;
     v.defaults.font.size = Some(FontSize::Pt(10.0));
     v.defaults.mono_font.size = Some(FontSize::Pt(10.0));
     let resolved = v.validate().expect("should validate");
@@ -1222,7 +1211,6 @@ fn validate_checks_all_defaults_fields() {
     assert!(missing.contains(&"defaults.border.corner_radius".to_string()));
     assert!(missing.contains(&"defaults.text_selection_background".to_string()));
     assert!(missing.contains(&"defaults.icon_sizes.toolbar".to_string()));
-    assert!(missing.contains(&"defaults.text_scaling_factor".to_string()));
 }
 
 #[test]
@@ -2098,7 +2086,7 @@ fn validate_all_presets_pass_range_checks() {
     for name in names {
         let spec = crate::Theme::preset(name).unwrap();
         if let Some(light) = spec.light {
-            let resolved = light.into_resolved();
+            let resolved = light.into_resolved(None);
             assert!(
                 resolved.is_ok(),
                 "preset '{name}' light variant failed: {:?}",
@@ -2106,7 +2094,7 @@ fn validate_all_presets_pass_range_checks() {
             );
         }
         if let Some(dark) = spec.dark {
-            let resolved = dark.into_resolved();
+            let resolved = dark.into_resolved(None);
             assert!(
                 resolved.is_ok(),
                 "preset '{name}' dark variant failed: {:?}",
