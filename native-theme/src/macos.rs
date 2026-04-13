@@ -392,8 +392,11 @@ fn build_theme(
 ///
 /// Returns `Error::ReaderFailed` if neither light nor dark appearance can be created
 /// (extremely unlikely on any macOS version that supports these APIs).
+///
+/// Internal entry point used by the pipeline. External consumers should
+/// use [`SystemTheme::from_system()`](crate::SystemTheme::from_system).
 #[cfg(all(target_os = "macos", feature = "macos"))]
-pub fn from_macos() -> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
+pub(crate) fn from_macos() -> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
     let light_name = NSString::from_str("NSAppearanceNameAqua");
     let dark_name = NSString::from_str("NSAppearanceNameDarkAqua");
 

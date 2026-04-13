@@ -349,7 +349,10 @@ fn find_index_theme_path(theme_name: &str) -> Option<std::path::PathBuf> {
 ///
 /// Parses `~/.config/kdeglobals` (respecting `XDG_CONFIG_HOME`) and maps
 /// KDE color groups and font strings to a `Theme`.
-pub fn from_kde() -> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
+///
+/// Internal entry point used by the pipeline. External consumers should
+/// use [`SystemTheme::from_system()`](crate::SystemTheme::from_system).
+pub(crate) fn from_kde() -> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
     let path = kdeglobals_path();
     let content = std::fs::read_to_string(&path).map_err(|e| crate::Error::ReaderFailed {
         reader: "kde",

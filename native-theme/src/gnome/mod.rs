@@ -273,7 +273,10 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
 /// This is the fully testable entry point: no D-Bus, no gsettings,
 /// no xrdb/xrandr. Loads the Adwaita preset as base, builds a sparse
 /// OS variant from the provided data, and merges it onto the base.
-pub fn build_gnome_spec_pure(
+///
+/// Internal entry point used by the pipeline. External consumers should
+/// use [`SystemTheme::from_system()`](crate::SystemTheme::from_system).
+pub(crate) fn build_gnome_spec_pure(
     data: &GnomePortalData,
 ) -> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
     let base = crate::Theme::preset("adwaita")?;
@@ -463,7 +466,10 @@ pub(crate) fn build_theme(
 ///
 /// Falls back to bundled Adwaita defaults when the portal is unavailable
 /// (no D-Bus session, sandboxed environment, or old portal version).
-pub async fn from_gnome()
+///
+/// Internal entry point used by the pipeline. External consumers should
+/// use [`SystemTheme::from_system_async()`](crate::SystemTheme::from_system_async).
+pub(crate) async fn from_gnome()
 -> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
     let base = crate::Theme::preset("adwaita")?;
 
@@ -501,8 +507,11 @@ pub async fn from_gnome()
 /// no accent color.
 ///
 /// Requires both `kde` and `portal` features.
+///
+/// Internal entry point used by the pipeline. External consumers should
+/// use [`SystemTheme::from_system_async()`](crate::SystemTheme::from_system_async).
 #[cfg(feature = "kde")]
-pub async fn from_kde_with_portal()
+pub(crate) async fn from_kde_with_portal()
 -> crate::Result<(crate::Theme, Option<f32>, crate::AccessibilityPreferences)> {
     let (mut base, kde_dpi, kde_acc) = crate::kde::from_kde()?;
 
