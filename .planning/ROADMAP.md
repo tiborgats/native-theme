@@ -15,7 +15,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - ✅ **v0.5.0 Per-Widget Architecture & Resolution Pipeline** — Phases 44-48 (shipped 2026-03-29)
 - ✅ **v0.5.5 Schema Overhaul & Quality** — Phases 49-60 (shipped 2026-04-09)
 - ✅ **v0.5.6 Internal Quality & Runtime Watching** — Phases 61-68 (shipped 2026-04-10)
-- 🚧 **v0.5.7 API Overhaul** — Phases 69-88 (in progress)
+- ✅ **v0.5.7 API Overhaul** — Phases 69-88 (shipped 2026-04-14)
 
 ## Phases
 
@@ -163,7 +163,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 85: Data Model Method and Doc Cleanup** — Demote `ThemeVariant::resolve*` intermediates to `#[doc(hidden)]`, `Theme` method grab-bag cleanup, document `ThemeWatcher` internals, rename `FontSize::Px::to_px` to `to_logical_px` (completed 2026-04-13)
 - [x] **Phase 86: Validation and Lint Codegen Polish** — Drive `lint_toml` from the `inventory::submit!` widget registry, stop `check_ranges` from eagerly `format!`-ing path strings (completed 2026-04-13)
 - [x] **Phase 87: Font Family Arc<str> and AnimatedIcon Invariants** — Migrate `FontSpec::family: String` to `Arc<str>` across widget × connector, wrap `AnimatedIcon` public fields in newtype constructors that enforce invariants (completed 2026-04-13)
-- [x] **Phase 88: Diagnostic and Preset-Polish Sweep** — `diagnose_platform_support` returns `Vec<DiagnosticEntry>`, `platform_preset_name` returns structured data, `FontSpec::style` default-consistency documented, `defaults.border.padding` rule corrected, bundled preset `name`/`icon_theme` become `Cow<'static, str>`
+- [x] **Phase 88: Diagnostic and Preset-Polish Sweep** — `diagnose_platform_support` returns `Vec<DiagnosticEntry>`, `platform_preset_name` returns structured data, `FontSpec::style` default-consistency documented, `defaults.border.padding` rule corrected, bundled preset `name`/`icon_theme` become `Cow<'static, str>` (completed 2026-04-14)
 
 ## Phase Details
 
