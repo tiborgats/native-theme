@@ -562,7 +562,7 @@ Plans:
 **Success Criteria** (what must be TRUE):
   1. `diagnose_platform_support()` returns `Vec<DiagnosticEntry>` where each entry has a `name`, `status`, and optional `detail` field — a doctest shows formatting the output as a table
   2. `platform_preset_name()` returns a struct with a `name: &'static str` and `is_live: bool` field — the `-live` suffix is no longer embedded in a concatenated string
-  3. A doctest loads `preset("default")` and confirms `preset.name.is_borrowed()` — bundled presets skip the owned-String allocation via `Cow::Borrowed`
+  3. A doctest loads `preset("dracula")` and confirms `preset.name.is_borrowed()` — bundled presets skip the owned-String allocation via `Cow::Borrowed`
   4. The `FontSpec::style` default behaviour is either documented in a rustdoc block (if kept as-is) or corrected to error like its siblings (if changed); likewise `defaults.border.padding` derives-from-presence
   5. `platform_preset_name().name` never contains `-live` — the suffix is internal to `live_name()` and preset entry keys, not exposed in user-facing return values
 **Plans:** 2 plans

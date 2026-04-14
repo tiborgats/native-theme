@@ -446,7 +446,7 @@ fn arb_theme_spec() -> impl Strategy<Value = Theme> {
     )
         .prop_map(
             |(name, variant, has_light, has_dark, layout, icon_set)| Theme {
-                name,
+                name: std::borrow::Cow::Owned(name),
                 light: if has_light {
                     Some(variant.clone())
                 } else {

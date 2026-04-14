@@ -1331,7 +1331,7 @@ impl Showcase {
                 });
                 let font = resolved.defaults.font.clone();
                 let mono_font = resolved.defaults.mono_font.clone();
-                let icon_theme = system.icon_theme.clone();
+                let icon_theme = system.icon_theme.clone().into_owned();
                 let icon_set = system.icon_set;
                 let theme = to_theme(
                     resolved,
@@ -1735,7 +1735,7 @@ impl Showcase {
                     });
                     self.original_font = resolved.defaults.font.clone();
                     self.original_mono_font = resolved.defaults.mono_font.clone();
-                    self.current_icon_theme = system.icon_theme.clone();
+                    self.current_icon_theme = system.icon_theme.clone().into_owned();
                     self.current_icon_set = system.icon_set;
                     // Platform presets always specify icon_theme
                     self.has_toml_icon_theme = true;
@@ -1776,8 +1776,9 @@ impl Showcase {
                 let icon_theme = variant
                     .defaults
                     .icon_theme
-                    .clone()
-                    .unwrap_or_else(|| native_theme::theme::system_icon_theme().to_string());
+                    .as_deref()
+                    .map(|s| s.to_string())
+                    .unwrap_or_else(native_theme::theme::system_icon_theme);
                 let v = variant.clone();
                 let resolved = match v.into_resolved(None) {
                     Ok(r) => r,

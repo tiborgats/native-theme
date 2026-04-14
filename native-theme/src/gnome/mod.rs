@@ -292,7 +292,7 @@ pub(crate) fn build_gnome_spec_pure(data: &GnomePortalData) -> crate::Result<cra
     let acc = accessibility_from_gnome_data(data);
 
     // Icon theme on variant defaults (per-variant)
-    variant.defaults.icon_theme = data.icon_theme.clone();
+    variant.defaults.icon_theme = data.icon_theme.clone().map(std::borrow::Cow::Owned);
 
     let output = crate::ReaderOutput::Single {
         mode: Box::new(variant),
@@ -301,7 +301,7 @@ pub(crate) fn build_gnome_spec_pure(data: &GnomePortalData) -> crate::Result<cra
 
     Ok(crate::ReaderResult {
         output,
-        name: "GNOME".to_string(),
+        name: "GNOME".into(),
         icon_set: None,
         layout: crate::LayoutTheme::default(),
         font_dpi: Some(data.font_dpi),
@@ -423,7 +423,8 @@ pub(crate) fn build_theme(
     variant.merge(&os_variant);
 
     // Read icon_theme from gsettings (per-variant)
-    variant.defaults.icon_theme = read_gsetting("org.gnome.desktop.interface", "icon-theme");
+    variant.defaults.icon_theme =
+        read_gsetting("org.gnome.desktop.interface", "icon-theme").map(std::borrow::Cow::Owned);
 
     let output = crate::ReaderOutput::Single {
         mode: Box::new(variant),
@@ -432,7 +433,7 @@ pub(crate) fn build_theme(
 
     Ok(crate::ReaderResult {
         output,
-        name: "GNOME".to_string(),
+        name: "GNOME".into(),
         icon_set: None,
         layout: crate::LayoutTheme::default(),
         font_dpi: Some(font_dpi),

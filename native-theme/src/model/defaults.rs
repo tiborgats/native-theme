@@ -1,5 +1,7 @@
 // ThemeDefaults: global properties shared across widgets
 
+use std::borrow::Cow;
+
 use crate::Rgba;
 use crate::model::border::DefaultsBorderSpec;
 use crate::model::{FontSpec, IconSizes};
@@ -115,7 +117,7 @@ pub struct ThemeDefaults {
     pub icon_sizes: IconSizes,
 
     /// Visual icon theme name for this variant (e.g., `"breeze-dark"`, `"Adwaita"`).
-    pub icon_theme: Option<String>,
+    pub icon_theme: Option<Cow<'static, str>>,
 }
 
 impl ThemeDefaults {

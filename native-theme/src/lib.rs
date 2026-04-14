@@ -161,6 +161,8 @@ pub mod winicons;
 #[allow(dead_code, unused_imports)]
 pub(crate) mod winicons;
 
+use std::borrow::Cow;
+
 /// Convenience Result type alias for this crate.
 pub type Result<T> = std::result::Result<T, error::Error>;
 
@@ -241,7 +243,7 @@ pub(crate) struct ReaderResult {
     /// The reader's variant data.
     pub(crate) output: ReaderOutput,
     /// Theme name from reader (e.g. "BreezeDark", "GNOME", "macOS").
-    pub(crate) name: String,
+    pub(crate) name: Cow<'static, str>,
     /// Shared icon_set from reader.
     pub(crate) icon_set: Option<IconSet>,
     /// Shared layout from reader.
@@ -301,7 +303,7 @@ impl ReaderOutput {
             }
         };
         Theme {
-            name: name.to_string(),
+            name: std::borrow::Cow::Owned(name.to_string()),
             light,
             dark,
             layout: layout.clone(),
@@ -320,7 +322,7 @@ pub(crate) struct OverlaySource {
     /// The reader's variant data for replay.
     pub(crate) reader_output: ReaderOutput,
     /// Theme name from reader.
-    pub(crate) name: String,
+    pub(crate) name: Cow<'static, str>,
     /// Shared icon_set from reader.
     pub(crate) icon_set: Option<IconSet>,
     /// Shared layout from reader.
@@ -340,7 +342,7 @@ pub(crate) struct OverlaySource {
 #[derive(Clone, Debug)]
 pub struct SystemTheme {
     /// Theme name (from reader or preset).
-    pub name: String,
+    pub name: Cow<'static, str>,
     /// The OS color mode preference (light or dark).
     pub mode: ColorMode,
     /// Resolved light variant (always populated).
@@ -356,7 +358,7 @@ pub struct SystemTheme {
     /// Which icon loading mechanism to use for this theme.
     pub icon_set: IconSet,
     /// The name of the visual icon theme (e.g. `"breeze"`, `"Adwaita"`).
-    pub icon_theme: String,
+    pub icon_theme: Cow<'static, str>,
     /// OS-detected accessibility preferences (shared across variants).
     pub accessibility: AccessibilityPreferences,
 }
@@ -593,7 +595,7 @@ mod system_theme_tests {
                     light: Box::new(ThemeMode::default()),
                     dark: Box::new(ThemeMode::default()),
                 },
-                name: String::new(),
+                name: Cow::Borrowed(""),
                 icon_set: None,
                 layout: LayoutTheme::default(),
                 preset_name: "catppuccin-mocha".into(),
@@ -633,7 +635,7 @@ mod system_theme_tests {
                     light: Box::new(ThemeMode::default()),
                     dark: Box::new(ThemeMode::default()),
                 },
-                name: String::new(),
+                name: Cow::Borrowed(""),
                 icon_set: None,
                 layout: LayoutTheme::default(),
                 preset_name: "catppuccin-mocha".into(),
@@ -673,7 +675,7 @@ mod system_theme_tests {
                     light: Box::new(ThemeMode::default()),
                     dark: Box::new(ThemeMode::default()),
                 },
-                name: String::new(),
+                name: Cow::Borrowed(""),
                 icon_set: None,
                 layout: LayoutTheme::default(),
                 preset_name: "catppuccin-mocha".into(),

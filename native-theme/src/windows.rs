@@ -561,7 +561,7 @@ fn build_theme(
 
     crate::ReaderResult {
         output,
-        name: "Windows".to_string(),
+        name: "Windows".into(),
         icon_set: Some(crate::IconSet::SegoeIcons),
         layout: crate::LayoutTheme::default(),
         font_dpi,

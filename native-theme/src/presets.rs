@@ -7,10 +7,12 @@
 //! (geometry-only, used by the OS-first pipeline) and functions for
 //! loading themes from TOML strings and files.
 
-use crate::{Error, Result, Theme};
+use std::borrow::Cow;
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::LazyLock;
+
+use crate::{Error, Result, Theme};
 
 /// All preset entries (name + embedded TOML source), parsed once into a HashMap.
 ///
@@ -82,6 +84,35 @@ const PRESET_NAMES: &[&str] = &[
     "one-dark",
 ];
 
+/// Known display names for bundled presets (borrowed from static strings).
+///
+/// After TOML deserialization the `Theme.name` field is `Cow::Owned` because
+/// TOML parsing cannot borrow into static memory. This map lets the cache
+/// replace the owned name with a `Cow::Borrowed` reference, avoiding a
+/// per-load `String` allocation for bundled preset names.
+const PRESET_DISPLAY_NAMES: &[(&str, &str)] = &[
+    ("kde-breeze", "KDE Breeze"),
+    ("kde-breeze-live", "KDE Breeze"),
+    ("adwaita", "Adwaita"),
+    ("adwaita-live", "Adwaita"),
+    ("windows-11", "Windows 11"),
+    ("windows-11-live", "Windows 11"),
+    ("macos-sonoma", "macOS Sonoma"),
+    ("macos-sonoma-live", "macOS Sonoma"),
+    ("material", "Material"),
+    ("ios", "iOS"),
+    ("catppuccin-latte", "Catppuccin Latte"),
+    ("catppuccin-frappe", "Catppuccin Frappe"),
+    ("catppuccin-macchiato", "Catppuccin Macchiato"),
+    ("catppuccin-mocha", "Catppuccin Mocha"),
+    ("nord", "Nord"),
+    ("dracula", "Dracula"),
+    ("gruvbox", "Gruvbox"),
+    ("solarized", "Solarized"),
+    ("tokyo-night", "Tokyo Night"),
+    ("one-dark", "One Dark"),
+];
+
 type Parsed = std::result::Result<Theme, String>;
 
 fn parse(toml_str: &str) -> Parsed {
@@ -91,7 +122,16 @@ fn parse(toml_str: &str) -> Parsed {
 static CACHE: LazyLock<HashMap<&str, Parsed>> = LazyLock::new(|| {
     PRESET_ENTRIES
         .iter()
-        .map(|(name, toml_str)| (*name, parse(toml_str)))
+        .map(|(key, toml_str)| {
+            let mut result = parse(toml_str);
+            // Replace the TOML-deserialized owned name with a borrowed static string
+            if let Ok(ref mut theme) = result
+                && let Some((_, display_name)) = PRESET_DISPLAY_NAMES.iter().find(|(k, _)| k == key)
+            {
+                theme.name = Cow::Borrowed(display_name);
+            }
+            (*key, result)
+        })
         .collect()
 });
 

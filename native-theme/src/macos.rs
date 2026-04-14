@@ -374,7 +374,7 @@ fn build_theme(
     dark_variant.window.title_bar_font = Some(widget_fonts.title_bar_font.clone());
 
     crate::Theme {
-        name: "macOS".to_string(),
+        name: "macOS".into(),
         light: Some(light_variant),
         dark: Some(dark_variant),
         layout: crate::LayoutTheme::default(),

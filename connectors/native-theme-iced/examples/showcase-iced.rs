@@ -657,7 +657,7 @@ impl Default for State {
                     let t = native_theme_iced::to_theme(&r, &system.name);
                     let preset = system.preset.clone();
                     let is = system.icon_set;
-                    let it = system.icon_theme.clone();
+                    let it = system.icon_theme.into_owned();
                     (r, t, None, preset, is, it)
                 }
                 Err(e) => {
@@ -863,7 +863,7 @@ impl State {
                         // Platform presets always specify icon_theme.
                         has_toml_icon_theme = true;
                         self.current_icon_set = system.icon_set;
-                        self.current_icon_theme = system.icon_theme.clone();
+                        self.current_icon_theme = system.icon_theme.clone().into_owned();
                         self.current_resolved = system
                             .pick(if self.is_dark {
                                 native_theme_iced::ColorMode::Dark
@@ -904,10 +904,12 @@ impl State {
                             self.current_icon_set = nt
                                 .icon_set
                                 .unwrap_or_else(native_theme::theme::system_icon_set);
-                            self.current_icon_theme =
-                                variant.defaults.icon_theme.clone().unwrap_or_else(|| {
-                                    native_theme::theme::system_icon_theme().to_string()
-                                });
+                            self.current_icon_theme = variant
+                                .defaults
+                                .icon_theme
+                                .as_deref()
+                                .map(|s| s.to_string())
+                                .unwrap_or_else(|| native_theme::theme::system_icon_theme());
                             let v = variant.clone();
                             match v.into_resolved(None) {
                                 Ok(resolved) => {

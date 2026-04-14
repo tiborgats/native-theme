@@ -59,11 +59,14 @@ pub fn from_kde_content_pure(
         .unwrap_or_else(|| "KDE".to_string());
 
     // KDE-05: Icon theme name from [Icons] Theme (per-variant)
-    variant.defaults.icon_theme = ini.get("Icons", "Theme").filter(|s| !s.is_empty());
+    variant.defaults.icon_theme = ini
+        .get("Icons", "Theme")
+        .filter(|s| !s.is_empty())
+        .map(std::borrow::Cow::Owned);
 
     let theme = if dark {
         crate::Theme {
-            name,
+            name: std::borrow::Cow::Owned(name),
             light: None,
             dark: Some(variant),
             layout: crate::LayoutTheme::default(),
@@ -71,7 +74,7 @@ pub fn from_kde_content_pure(
         }
     } else {
         crate::Theme {
-            name,
+            name: std::borrow::Cow::Owned(name),
             light: Some(variant),
             dark: None,
             layout: crate::LayoutTheme::default(),
@@ -381,8 +384,10 @@ pub(crate) fn from_kde() -> crate::Result<crate::ReaderResult> {
         if let Ok(defaults_content) = std::fs::read_to_string(&defaults_path) {
             let mut defaults_ini = create_kde_parser();
             if defaults_ini.read(defaults_content).is_ok() {
-                mode.defaults.icon_theme =
-                    defaults_ini.get("Icons", "Theme").filter(|s| !s.is_empty());
+                mode.defaults.icon_theme = defaults_ini
+                    .get("Icons", "Theme")
+                    .filter(|s| !s.is_empty())
+                    .map(std::borrow::Cow::Owned);
             }
         }
     }

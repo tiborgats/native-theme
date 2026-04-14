@@ -69,6 +69,8 @@ pub use resolved::{
 };
 pub use widgets::*; // All 25 XxxTheme + ResolvedXxxTheme pairs
 
+use std::borrow::Cow;
+
 use serde::{Deserialize, Serialize};
 
 /// A single light or dark theme variant containing all visual properties.
@@ -237,10 +239,15 @@ impl_merge!(ThemeMode {
 /// base.merge(&custom);
 /// assert_eq!(base.name, "Catppuccin Mocha"); // base name is preserved
 /// ```
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct Theme {
     /// Theme name (e.g., "Breeze", "Adwaita", "Windows 11").
-    pub name: String,
+    ///
+    /// Uses `Cow<'static, str>` so bundled presets can store borrowed
+    /// `&'static str` values without per-load `String` allocations.
+    /// User-provided names (from TOML files or runtime detection)
+    /// are `Cow::Owned`.
+    pub name: Cow<'static, str>,
 
     /// Light variant of the theme.
     #[serde(default, skip_serializing_if = "Option::is_none")]
@@ -272,9 +279,21 @@ pub struct Theme {
     pub icon_set: Option<IconSet>,
 }
 
+impl Default for Theme {
+    fn default() -> Self {
+        Self {
+            name: Cow::Borrowed(""),
+            light: None,
+            dark: None,
+            layout: LayoutTheme::default(),
+            icon_set: None,
+        }
+    }
+}
+
 impl Theme {
     /// Create a new theme with the given name and no variants.
-    pub fn new(name: impl Into<String>) -> Self {
+    pub fn new(name: impl Into<Cow<'static, str>>) -> Self {
         Self {
             name: name.into(),
             light: None,
@@ -370,8 +389,18 @@ impl Theme {
     ///
     /// # Examples
     /// ```
-    /// let theme = native_theme::theme::Theme::preset("catppuccin-mocha").unwrap();
+    /// let theme = native_theme::theme::Theme::preset("catppuccin-mocha")?;
     /// assert!(theme.light.is_some());
+    /// # Ok::<(), native_theme::error::Error>(())
+    /// ```
+    ///
+    /// Bundled preset names are `Cow::Borrowed` (no allocation):
+    /// ```
+    /// use native_theme::theme::Theme;
+    ///
+    /// let theme = Theme::preset("dracula")?;
+    /// assert!(matches!(theme.name, std::borrow::Cow::Borrowed(_)));
+    /// # Ok::<(), native_theme::error::Error>(())
     /// ```
     pub fn preset(name: &str) -> crate::Result<Self> {
         crate::presets::preset(name)

@@ -65,7 +65,7 @@ pub(crate) fn run_pipeline(
 
     // Resolve icon_theme from the active variant's defaults (per-variant).
     // Must read before variants are consumed by unwrap_or_default().
-    let icon_theme = {
+    let icon_theme: std::borrow::Cow<'static, str> = {
         let active = if mode == crate::ColorMode::Dark {
             &merged.dark
         } else {
@@ -74,7 +74,7 @@ pub(crate) fn run_pipeline(
         active
             .as_ref()
             .and_then(|v| v.defaults.icon_theme.clone())
-            .unwrap_or_else(crate::model::icons::system_icon_theme)
+            .unwrap_or_else(|| std::borrow::Cow::Owned(crate::model::icons::system_icon_theme()))
     };
 
     // Match on ReaderOutput for type-safe variant selection:
@@ -1029,7 +1029,7 @@ mod pipeline_tests {
                 mode: Box::new(dark_v),
                 is_dark: true,
             },
-            name: String::new(),
+            name: std::borrow::Cow::Borrowed(""),
             icon_set: None,
             layout: LayoutTheme::default(),
             font_dpi: None,
@@ -1065,7 +1065,7 @@ mod pipeline_tests {
                 mode: Box::new(full.dark.clone().unwrap_or_default()),
                 is_dark: true,
             },
-            name: String::new(),
+            name: std::borrow::Cow::Borrowed(""),
             icon_set: None,
             layout: LayoutTheme::default(),
             font_dpi: None,
@@ -1117,7 +1117,7 @@ mod pipeline_tests {
                 mode: Box::new(dark_v),
                 is_dark: true,
             },
-            name: "Breeze Dark".to_string(),
+            name: "Breeze Dark".into(),
             icon_set: full.icon_set,
             layout: full.layout.clone(),
             font_dpi: None,
@@ -1155,7 +1155,7 @@ mod pipeline_tests {
                 light: Box::new(light_v),
                 dark: Box::new(dark_v),
             },
-            name: "macOS Sonoma".to_string(),
+            name: "macOS Sonoma".into(),
             icon_set: full.icon_set,
             layout: full.layout.clone(),
             font_dpi: Some(72.0),
