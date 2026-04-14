@@ -1,5 +1,7 @@
 //! Theme pipeline: reader -> preset merge -> resolve -> validate.
 
+use std::fmt;
+
 #[cfg(target_os = "linux")]
 use crate::detect::{LinuxDesktop, detect_linux_desktop, parse_linux_desktop, system_is_dark};
 
@@ -125,47 +127,270 @@ pub(crate) fn run_pipeline(
     })
 }
 
-/// Map a Linux desktop environment to its matching live preset name.
+// =============================================================================
+// Structured return types
+// =============================================================================
+
+/// A single diagnostic observation about platform theme support.
+///
+/// Returned by [`diagnose_platform_support()`]. Each variant represents
+/// a specific category of diagnostic information. Use `Display` to get
+/// a human-readable string, or pattern-match for programmatic inspection.
+///
+/// For simple tabular output, use the [`name()`](Self::name),
+/// [`status()`](Self::status), and [`detail()`](Self::detail) accessors:
+///
+/// ```
+/// let diagnostics = native_theme::pipeline::diagnose_platform_support();
+/// for entry in &diagnostics {
+///     print!("{}: {}", entry.name(), entry.status());
+///     if let Some(detail) = entry.detail() {
+///         print!(" ({})", detail);
+///     }
+///     println!();
+/// }
+/// ```
+#[derive(Clone, Debug, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum DiagnosticEntry {
+    /// Platform identification (e.g. "Linux", "macOS", "Windows").
+    Platform(&'static str),
+    /// Detected desktop environment (Linux only).
+    #[cfg(target_os = "linux")]
+    DesktopEnv(crate::detect::LinuxDesktop),
+    /// An environment variable was read successfully.
+    EnvVar {
+        /// Variable name (e.g. `"XDG_CURRENT_DESKTOP"`).
+        name: &'static str,
+        /// Variable value as read from the environment.
+        value: String,
+    },
+    /// An environment variable was missing or empty.
+    EnvVarMissing(&'static str),
+    /// An external tool was found and operational.
+    ToolAvailable {
+        /// Tool binary name (e.g. `"gsettings"`).
+        name: &'static str,
+        /// Version string reported by the tool.
+        version: String,
+    },
+    /// An external tool was found but returned an error.
+    ToolError(&'static str),
+    /// An external tool was not found on PATH.
+    ToolMissing {
+        /// Tool binary name.
+        name: &'static str,
+        /// Human-readable description of what is lost.
+        impact: &'static str,
+    },
+    /// A config file was found at the given path.
+    ConfigFound {
+        /// Logical config name (e.g. `"KDE kdeglobals"`).
+        name: &'static str,
+        /// Filesystem path where the file was found.
+        path: std::path::PathBuf,
+    },
+    /// A config file was not found at the expected path.
+    ConfigMissing {
+        /// Logical config name.
+        name: &'static str,
+        /// Filesystem path that was checked.
+        path: std::path::PathBuf,
+    },
+    /// A cargo feature is enabled.
+    FeatureEnabled(&'static str),
+    /// A cargo feature is disabled.
+    FeatureDisabled {
+        /// Feature name (e.g. `"KDE"`, `"Portal"`).
+        feature: &'static str,
+        /// Human-readable description of what is lost.
+        impact: &'static str,
+    },
+}
+
+impl DiagnosticEntry {
+    /// A short label identifying what is being diagnosed.
+    ///
+    /// Examples: `"Platform"`, `"XDG_CURRENT_DESKTOP"`, `"gsettings"`,
+    /// `"KDE kdeglobals"`, `"Portal support"`.
+    #[must_use]
+    pub fn name(&self) -> &str {
+        match self {
+            Self::Platform(_) => "Platform",
+            #[cfg(target_os = "linux")]
+            Self::DesktopEnv(_) => "Detected DE",
+            Self::EnvVar { name, .. } | Self::EnvVarMissing(name) => name,
+            Self::ToolAvailable { name, .. }
+            | Self::ToolError(name)
+            | Self::ToolMissing { name, .. } => name,
+            Self::ConfigFound { name, .. } | Self::ConfigMissing { name, .. } => name,
+            Self::FeatureEnabled(feature) | Self::FeatureDisabled { feature, .. } => feature,
+        }
+    }
+
+    /// A short status string: the detected value or a state like
+    /// `"not set"`, `"available"`, `"found"`, `"enabled"`, etc.
+    #[must_use]
+    pub fn status(&self) -> &str {
+        match self {
+            Self::Platform(p) => p,
+            #[cfg(target_os = "linux")]
+            Self::DesktopEnv(_) => "detected",
+            Self::EnvVar { value, .. } => value.as_str(),
+            Self::EnvVarMissing(_) => "not set",
+            Self::ToolAvailable { .. } => "available",
+            Self::ToolError(_) => "found but returned error",
+            Self::ToolMissing { .. } => "not found",
+            Self::ConfigFound { .. } => "found",
+            Self::ConfigMissing { .. } => "not found",
+            Self::FeatureEnabled(_) => "enabled",
+            Self::FeatureDisabled { .. } => "disabled",
+        }
+    }
+
+    /// Optional extra detail (version string, file path, impact note, DE variant).
+    #[must_use]
+    pub fn detail(&self) -> Option<String> {
+        match self {
+            #[cfg(target_os = "linux")]
+            Self::DesktopEnv(de) => Some(format!("{de:?}")),
+            Self::ToolAvailable { version, .. } => Some(version.clone()),
+            Self::ToolMissing { impact, .. } => Some((*impact).to_string()),
+            Self::FeatureDisabled { impact, .. } => Some((*impact).to_string()),
+            Self::ConfigFound { path, .. } | Self::ConfigMissing { path, .. } => {
+                Some(path.display().to_string())
+            }
+            _ => None,
+        }
+    }
+}
+
+impl fmt::Display for DiagnosticEntry {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Platform(p) => write!(f, "Platform: {p}"),
+            #[cfg(target_os = "linux")]
+            Self::DesktopEnv(de) => write!(f, "Detected DE: {de:?}"),
+            Self::EnvVar { name, value } => write!(f, "{name}: {value}"),
+            Self::EnvVarMissing(name) => write!(f, "{name}: not set"),
+            Self::ToolAvailable { name, version } => {
+                write!(f, "{name}: available ({version})")
+            }
+            Self::ToolError(name) => write!(f, "{name}: found but returned error"),
+            Self::ToolMissing { name, impact } => write!(f, "{name}: not found ({impact})"),
+            Self::ConfigFound { name, path } => {
+                write!(f, "{name}: found at {}", path.display())
+            }
+            Self::ConfigMissing { name, path } => {
+                write!(f, "{name}: not found at {}", path.display())
+            }
+            Self::FeatureEnabled(feature) => write!(f, "{feature} support: enabled"),
+            Self::FeatureDisabled { feature, impact } => {
+                write!(f, "{feature} support: disabled ({impact})")
+            }
+        }
+    }
+}
+
+/// Structured information about the platform's default preset.
+///
+/// Returned by [`platform_preset_name()`]. The `name` field is the
+/// user-facing preset name (e.g. `"macos-sonoma"`). The `is_live` field
+/// indicates whether the preset is a live (geometry-only) preset used
+/// by the OS-first pipeline.
+///
+/// `Display` returns the user-facing name.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PlatformPreset {
+    /// User-facing preset name (e.g. "kde-breeze", "adwaita", "macos-sonoma").
+    pub name: &'static str,
+    /// Whether this is a live preset (geometry-only merge base for OS readers).
+    pub is_live: bool,
+}
+
+impl PlatformPreset {
+    /// Returns the internal live preset name (e.g. `"kde-breeze-live"`)
+    /// when `is_live` is true, or the plain name when not.
+    ///
+    /// This is used internally by the pipeline to look up the correct
+    /// preset entry; callers should use [`name`](Self::name) for display.
+    #[must_use]
+    pub fn live_name(&self) -> String {
+        if self.is_live {
+            format!("{}-live", self.name)
+        } else {
+            self.name.to_string()
+        }
+    }
+}
+
+impl fmt::Display for PlatformPreset {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.name)
+    }
+}
+
+/// Map a Linux desktop environment to its matching platform preset.
 ///
 /// This is the single source of truth for the DE-to-preset mapping used
 /// by [`from_system_inner()`] and [`platform_preset_name()`].
 ///
-/// - KDE -> `"kde-breeze-live"`
+/// - KDE -> `PlatformPreset { name: "kde-breeze", is_live: true }`
 /// - All others (GNOME, XFCE, Cinnamon, MATE, LXQt, Budgie, Unknown)
-///   -> `"adwaita-live"`
+///   -> `PlatformPreset { name: "adwaita", is_live: true }`
 #[cfg(target_os = "linux")]
-pub(crate) fn linux_preset_for_de(de: LinuxDesktop) -> &'static str {
+pub(crate) fn linux_preset_for_de(de: LinuxDesktop) -> PlatformPreset {
     match de {
-        LinuxDesktop::Kde => "kde-breeze-live",
-        _ => "adwaita-live",
+        LinuxDesktop::Kde => PlatformPreset {
+            name: "kde-breeze",
+            is_live: true,
+        },
+        _ => PlatformPreset {
+            name: "adwaita",
+            is_live: true,
+        },
     }
 }
 
-/// Map the current platform to its matching live preset name.
+/// Map the current platform to its matching platform preset.
 ///
 /// Live presets contain only geometry/metrics (no colors, fonts, or icons)
-/// and are used as the merge base in the OS-first pipeline.
+/// and are used as the merge base in the OS-first pipeline. Use
+/// [`PlatformPreset::live_name()`] to get the internal live preset key.
 ///
-/// - macOS -> `"macos-sonoma-live"`
-/// - Windows -> `"windows-11-live"`
-/// - Linux KDE -> `"kde-breeze-live"`
-/// - Linux other/GNOME -> `"adwaita-live"`
-/// - Unknown platform -> `"adwaita-live"`
+/// - macOS -> `PlatformPreset { name: "macos-sonoma", is_live: true }`
+/// - Windows -> `PlatformPreset { name: "windows-11", is_live: true }`
+/// - Linux KDE -> `PlatformPreset { name: "kde-breeze", is_live: true }`
+/// - Linux other/GNOME -> `PlatformPreset { name: "adwaita", is_live: true }`
+/// - Unknown platform -> `PlatformPreset { name: "adwaita", is_live: true }`
 ///
-/// Returns the live preset name for the current platform.
+/// Returns a [`PlatformPreset`] with the user-facing preset name and
+/// whether it is a live (geometry-only) preset. Showcase UIs use
+/// `preset.name` to build the "default (...)" label.
 ///
-/// This is the public API for what [`SystemTheme::from_system()`] uses internally.
-/// Showcase UIs use this to build the "default (...)" label.
+/// # Examples
+///
+/// ```
+/// let preset = native_theme::pipeline::platform_preset_name();
+/// println!("Platform preset: {}", preset.name);
+/// assert!(!preset.name.contains("-live"));
+/// ```
 #[allow(unreachable_code)]
 #[must_use]
-pub fn platform_preset_name() -> &'static str {
+pub fn platform_preset_name() -> PlatformPreset {
     #[cfg(target_os = "macos")]
     {
-        return "macos-sonoma-live";
+        return PlatformPreset {
+            name: "macos-sonoma",
+            is_live: true,
+        };
     }
     #[cfg(target_os = "windows")]
     {
-        return "windows-11-live";
+        return PlatformPreset {
+            name: "windows-11",
+            is_live: true,
+        };
     }
     #[cfg(target_os = "linux")]
     {
@@ -173,15 +398,22 @@ pub fn platform_preset_name() -> &'static str {
     }
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
-        "adwaita-live"
+        PlatformPreset {
+            name: "adwaita",
+            is_live: true,
+        }
     }
 }
 
 /// Check whether OS theme detection is available on this platform.
 ///
-/// Returns a list of human-readable diagnostic messages describing what
-/// detection capabilities are available and what might be missing. Useful
-/// for debugging theme detection failures in end-user applications.
+/// Returns a list of [`DiagnosticEntry`] values describing what detection
+/// capabilities are available and what might be missing. Useful for
+/// debugging theme detection failures in end-user applications.
+///
+/// Each entry can be printed directly via its `Display` impl, or
+/// inspected programmatically via [`DiagnosticEntry::name()`],
+/// [`DiagnosticEntry::status()`], and [`DiagnosticEntry::detail()`].
 ///
 /// # Platform Behavior
 ///
@@ -196,28 +428,31 @@ pub fn platform_preset_name() -> &'static str {
 ///
 /// ```
 /// let diagnostics = native_theme::pipeline::diagnose_platform_support();
-/// for line in &diagnostics {
-///     println!("{}", line);
+/// for entry in &diagnostics {
+///     println!("{entry}");
 /// }
 /// ```
 #[must_use]
-pub fn diagnose_platform_support() -> Vec<String> {
+pub fn diagnose_platform_support() -> Vec<DiagnosticEntry> {
     let mut diagnostics = Vec::new();
 
     #[cfg(target_os = "linux")]
     {
-        diagnostics.push("Platform: Linux".to_string());
+        diagnostics.push(DiagnosticEntry::Platform("Linux"));
 
         // Check XDG_CURRENT_DESKTOP
         match std::env::var("XDG_CURRENT_DESKTOP") {
             Ok(val) if !val.is_empty() => {
                 let de = parse_linux_desktop(&val);
-                diagnostics.push(format!("XDG_CURRENT_DESKTOP: {val}"));
-                diagnostics.push(format!("Detected DE: {de:?}"));
+                diagnostics.push(DiagnosticEntry::EnvVar {
+                    name: "XDG_CURRENT_DESKTOP",
+                    value: val,
+                });
+                diagnostics.push(DiagnosticEntry::DesktopEnv(de));
             }
             _ => {
-                diagnostics.push("XDG_CURRENT_DESKTOP: not set".to_string());
-                diagnostics.push("Detected DE: Unknown (env var missing)".to_string());
+                diagnostics.push(DiagnosticEntry::EnvVarMissing("XDG_CURRENT_DESKTOP"));
+                diagnostics.push(DiagnosticEntry::DesktopEnv(LinuxDesktop::Unknown));
             }
         }
 
@@ -227,17 +462,20 @@ pub fn diagnose_platform_support() -> Vec<String> {
             .output()
         {
             Ok(output) if output.status.success() => {
-                let version = String::from_utf8_lossy(&output.stdout);
-                diagnostics.push(format!("gsettings: available ({})", version.trim()));
+                let version = String::from_utf8_lossy(&output.stdout).trim().to_string();
+                diagnostics.push(DiagnosticEntry::ToolAvailable {
+                    name: "gsettings",
+                    version,
+                });
             }
             Ok(_) => {
-                diagnostics.push("gsettings: found but returned error".to_string());
+                diagnostics.push(DiagnosticEntry::ToolError("gsettings"));
             }
             Err(_) => {
-                diagnostics.push(
-                    "gsettings: not found (dark mode and icon theme detection may be limited)"
-                        .to_string(),
-                );
+                diagnostics.push(DiagnosticEntry::ToolMissing {
+                    name: "gsettings",
+                    impact: "dark mode and icon theme detection may be limited",
+                });
             }
         }
 
@@ -246,54 +484,70 @@ pub fn diagnose_platform_support() -> Vec<String> {
         {
             let path = crate::kde::kdeglobals_path();
             if path.exists() {
-                diagnostics.push(format!("KDE kdeglobals: found at {}", path.display()));
+                diagnostics.push(DiagnosticEntry::ConfigFound {
+                    name: "KDE kdeglobals",
+                    path,
+                });
             } else {
-                diagnostics.push(format!("KDE kdeglobals: not found at {}", path.display()));
+                diagnostics.push(DiagnosticEntry::ConfigMissing {
+                    name: "KDE kdeglobals",
+                    path,
+                });
             }
         }
 
         #[cfg(not(feature = "kde"))]
         {
-            diagnostics.push("KDE support: disabled (kde feature not enabled)".to_string());
+            diagnostics.push(DiagnosticEntry::FeatureDisabled {
+                feature: "KDE",
+                impact: "kde feature not enabled",
+            });
         }
 
         // Report portal feature status
         #[cfg(feature = "portal")]
-        diagnostics.push("Portal support: enabled".to_string());
+        diagnostics.push(DiagnosticEntry::FeatureEnabled("Portal"));
 
         #[cfg(not(feature = "portal"))]
-        diagnostics.push("Portal support: disabled (portal feature not enabled)".to_string());
+        diagnostics.push(DiagnosticEntry::FeatureDisabled {
+            feature: "Portal",
+            impact: "portal feature not enabled",
+        });
     }
 
     #[cfg(target_os = "macos")]
     {
-        diagnostics.push("Platform: macOS".to_string());
+        diagnostics.push(DiagnosticEntry::Platform("macOS"));
 
         #[cfg(feature = "macos")]
-        diagnostics.push("macOS theme detection: enabled (macos feature active)".to_string());
+        diagnostics.push(DiagnosticEntry::FeatureEnabled("macOS theme detection"));
 
         #[cfg(not(feature = "macos"))]
-        diagnostics.push(
-            "macOS theme detection: limited (macos feature not enabled, using subprocess fallback)"
-                .to_string(),
-        );
+        diagnostics.push(DiagnosticEntry::FeatureDisabled {
+            feature: "macOS theme detection",
+            impact: "macos feature not enabled, using subprocess fallback",
+        });
     }
 
     #[cfg(target_os = "windows")]
     {
-        diagnostics.push("Platform: Windows".to_string());
+        diagnostics.push(DiagnosticEntry::Platform("Windows"));
 
         #[cfg(feature = "windows")]
-        diagnostics.push("Windows theme detection: enabled (windows feature active)".to_string());
+        diagnostics.push(DiagnosticEntry::FeatureEnabled("Windows theme detection"));
 
         #[cfg(not(feature = "windows"))]
-        diagnostics
-            .push("Windows theme detection: disabled (windows feature not enabled)".to_string());
+        diagnostics.push(DiagnosticEntry::FeatureDisabled {
+            feature: "Windows theme detection",
+            impact: "windows feature not enabled",
+        });
     }
 
     #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
     {
-        diagnostics.push("Platform: unsupported (no native theme detection available)".to_string());
+        diagnostics.push(DiagnosticEntry::Platform(
+            "unsupported (no native theme detection available)",
+        ));
     }
 
     diagnostics
@@ -394,18 +648,19 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
         };
         let de = detect_linux_desktop();
         let preset = linux_preset_for_de(de);
+        let preset_live = preset.live_name();
         match de {
             #[cfg(feature = "kde")]
             LinuxDesktop::Kde => {
                 #[cfg(feature = "portal")]
                 {
                     let result = crate::gnome::from_kde_with_portal().await?;
-                    run_pipeline(result, preset, mode)
+                    run_pipeline(result, &preset_live, mode)
                 }
                 #[cfg(not(feature = "portal"))]
                 {
                     let result = crate::kde::from_kde()?;
-                    run_pipeline(result, preset, mode)
+                    run_pipeline(result, &preset_live, mode)
                 }
             }
             #[cfg(not(feature = "kde"))]
@@ -415,11 +670,11 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
             #[cfg(feature = "portal")]
             LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
                 let result = crate::gnome::from_gnome().await?;
-                run_pipeline(result, preset, mode)
+                run_pipeline(result, &preset_live, mode)
             }
             #[cfg(not(feature = "portal"))]
             LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
-                run_pipeline(preset_as_reader("adwaita", mode)?, preset, mode)
+                run_pipeline(preset_as_reader("adwaita", mode)?, &preset_live, mode)
             }
             LinuxDesktop::Xfce
             | LinuxDesktop::Cinnamon
@@ -430,7 +685,7 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
             | LinuxDesktop::River
             | LinuxDesktop::Niri
             | LinuxDesktop::CosmicDe => {
-                run_pipeline(preset_as_reader("adwaita", mode)?, preset, mode)
+                run_pipeline(preset_as_reader("adwaita", mode)?, &preset_live, mode)
             }
             LinuxDesktop::Unknown => {
                 // Use D-Bus portal backend detection to refine heuristic
@@ -438,11 +693,12 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
                 {
                     if let Some(detected) = crate::gnome::detect_portal_backend().await {
                         let detected_preset = linux_preset_for_de(detected);
+                        let detected_live = detected_preset.live_name();
                         return match detected {
                             #[cfg(feature = "kde")]
                             LinuxDesktop::Kde => {
                                 let result = crate::gnome::from_kde_with_portal().await?;
-                                run_pipeline(result, detected_preset, mode)
+                                run_pipeline(result, &detected_live, mode)
                             }
                             #[cfg(not(feature = "kde"))]
                             LinuxDesktop::Kde => run_pipeline(
@@ -452,14 +708,14 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
                             ),
                             LinuxDesktop::Gnome => {
                                 let result = crate::gnome::from_gnome().await?;
-                                run_pipeline(result, detected_preset, mode)
+                                run_pipeline(result, &detected_live, mode)
                             }
                             _ => {
                                 // detect_portal_backend only returns Kde or Gnome;
                                 // fall back to Adwaita if the set ever grows.
                                 run_pipeline(
                                     preset_as_reader("adwaita", mode)?,
-                                    detected_preset,
+                                    &detected_live,
                                     mode,
                                 )
                             }
@@ -472,10 +728,11 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
                     let path = crate::kde::kdeglobals_path();
                     if path.exists() {
                         let result = crate::kde::from_kde()?;
-                        return run_pipeline(result, linux_preset_for_de(LinuxDesktop::Kde), mode);
+                        let kde_live = linux_preset_for_de(LinuxDesktop::Kde).live_name();
+                        return run_pipeline(result, &kde_live, mode);
                     }
                 }
-                run_pipeline(preset_as_reader("adwaita", mode)?, preset, mode)
+                run_pipeline(preset_as_reader("adwaita", mode)?, &preset_live, mode)
             }
         }
     }
@@ -562,21 +819,18 @@ mod dispatch_tests {
     // -- Pure pipeline dispatch tests (no env var manipulation) --
 
     #[test]
-    fn from_linux_non_kde_returns_adwaita() {
+    fn from_linux_non_kde_returns_adwaita() -> crate::Result<()> {
         // GNOME desktop produces an Adwaita-named theme via the pure pipeline
-        let result = preset_as_reader("adwaita", crate::ColorMode::Light).unwrap();
-        let theme = run_pipeline(
-            result,
-            linux_preset_for_de(LinuxDesktop::Gnome),
-            crate::ColorMode::Light,
-        )
-        .expect("run_pipeline should succeed for GNOME preset");
+        let preset = linux_preset_for_de(LinuxDesktop::Gnome);
+        let result = preset_as_reader("adwaita", crate::ColorMode::Light)?;
+        let theme = run_pipeline(result, &preset.live_name(), crate::ColorMode::Light)?;
         assert_eq!(theme.name, "Adwaita");
+        Ok(())
     }
 
     #[test]
     #[cfg(feature = "kde")]
-    fn from_linux_unknown_de_with_kdeglobals_fallback() {
+    fn from_linux_unknown_de_with_kdeglobals_fallback() -> crate::Result<()> {
         // Unknown DE with a kdeglobals file uses KDE reader -- test the dispatch
         // branch by calling from_kde_content_pure directly with minimal fixture.
         const MINIMAL_KDE_FIXTURE: &str = "\
@@ -594,7 +848,7 @@ BackgroundAlternate=239,240,241
 ForegroundLink=41,128,185";
 
         let (reader_theme, dpi, acc) =
-            crate::kde::from_kde_content_pure(MINIMAL_KDE_FIXTURE, None).unwrap();
+            crate::kde::from_kde_content_pure(MINIMAL_KDE_FIXTURE, None)?;
         let is_dark = reader_theme.dark.is_some() && reader_theme.light.is_none();
         let output = if is_dark {
             ReaderOutput::Single {
@@ -615,32 +869,26 @@ ForegroundLink=41,128,185";
             font_dpi: dpi,
             accessibility: acc,
         };
-        let theme = run_pipeline(
-            result,
-            linux_preset_for_de(LinuxDesktop::Kde),
-            crate::ColorMode::Light,
-        )
-        .expect("run_pipeline should succeed with KDE reader output");
+        let preset = linux_preset_for_de(LinuxDesktop::Kde);
+        let theme = run_pipeline(result, &preset.live_name(), crate::ColorMode::Light)?;
         assert_eq!(
             theme.name, "TestTheme",
             "should use KDE theme name from reader output"
         );
+        Ok(())
     }
 
     #[test]
-    fn from_linux_unknown_de_without_kdeglobals_returns_adwaita() {
+    fn from_linux_unknown_de_without_kdeglobals_returns_adwaita() -> crate::Result<()> {
         // Unknown DE without kdeglobals falls back to Adwaita preset
-        let result = preset_as_reader("adwaita", crate::ColorMode::Light).unwrap();
-        let theme = run_pipeline(
-            result,
-            linux_preset_for_de(LinuxDesktop::Unknown),
-            crate::ColorMode::Light,
-        )
-        .expect("run_pipeline should succeed for Unknown DE fallback");
+        let preset = linux_preset_for_de(LinuxDesktop::Unknown);
+        let result = preset_as_reader("adwaita", crate::ColorMode::Light)?;
+        let theme = run_pipeline(result, &preset.live_name(), crate::ColorMode::Light)?;
         assert_eq!(
             theme.name, "Adwaita",
             "should fall back to Adwaita without kdeglobals"
         );
+        Ok(())
     }
 
     // -- LNXDE-03: Hyprland, Sway, COSMIC, River, Niri map to their own variants --

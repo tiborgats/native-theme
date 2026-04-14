@@ -198,6 +198,7 @@ pub(crate) use model::{
     TextScale, TextScaleEntry, Theme, ThemeDefaults, ThemeMode, ToolbarTheme, TooltipTheme,
     TransformAnimation, WidgetBorderSpec, WindowTheme, bundled_icon_by_name, bundled_icon_svg,
 };
+pub use pipeline::{DiagnosticEntry, PlatformPreset};
 #[allow(unused_imports)]
 pub(crate) use pipeline::{diagnose_platform_support, platform_preset_name};
 
@@ -714,15 +715,19 @@ mod system_theme_tests {
     #[test]
     #[cfg(target_os = "linux")]
     fn test_platform_preset_name_kde() {
-        let name = pipeline::linux_preset_for_de(detect::parse_linux_desktop("KDE"));
-        assert_eq!(name, "kde-breeze-live");
+        let preset = pipeline::linux_preset_for_de(detect::parse_linux_desktop("KDE"));
+        assert_eq!(preset.name, "kde-breeze");
+        assert!(preset.is_live);
+        assert_eq!(preset.live_name(), "kde-breeze-live");
     }
 
     #[test]
     #[cfg(target_os = "linux")]
     fn test_platform_preset_name_gnome() {
-        let name = pipeline::linux_preset_for_de(detect::parse_linux_desktop("GNOME"));
-        assert_eq!(name, "adwaita-live");
+        let preset = pipeline::linux_preset_for_de(detect::parse_linux_desktop("GNOME"));
+        assert_eq!(preset.name, "adwaita");
+        assert!(preset.is_live);
+        assert_eq!(preset.live_name(), "adwaita-live");
     }
 }
 
