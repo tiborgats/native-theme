@@ -7,6 +7,9 @@ rust-version.workspace = true
 repository.workspace = true
 homepage.workspace = true
 description = "Proc-macro derive for native-theme widget struct pairs"
+readme = "README.md"
+keywords = ["theme", "derive", "proc-macro", "gui", "widget"]
+categories = ["gui", "development-tools::procedural-macro-helpers"]
 
 [lib]
 proc-macro = true

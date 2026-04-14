@@ -98,8 +98,9 @@
 //! include!(concat!(env!("OUT_DIR"), "/app_icon.rs"));
 //!
 //! // The generated enum implements IconProvider:
-//! use native_theme::load_custom_icon;
-//! let icon_data = load_custom_icon(&AppIcon::PlayPause, native_theme::IconSet::Material, None);
+//! use native_theme::icons::IconLoader;
+//! use native_theme::theme::IconSet;
+//! let icon_data = IconLoader::new(&AppIcon::PlayPause).set(IconSet::Material).load();
 //! ```
 //!
 //! # What Gets Generated

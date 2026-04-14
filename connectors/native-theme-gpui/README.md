@@ -20,15 +20,15 @@ native-theme-gpui = "0.5.7"
 Then create a gpui-component theme from any native-theme preset:
 
 ```rust,ignore
-use native_theme::Theme;
+use native_theme::theme::{ColorMode, Theme};
 use native_theme_gpui::to_theme;
 
 // Load a preset and resolve it
 let nt = Theme::preset("dracula")?;
 let is_dark = true;
-let variant = nt.into_variant(is_dark).ok_or("no variant")?;
-let resolved = variant.into_resolved()?;
-let theme = to_theme(&resolved, "My App", is_dark);
+let variant = nt.into_variant(ColorMode::Dark).ok_or("no variant")?;
+let resolved = variant.into_resolved(None)?;
+let theme = to_theme(&resolved, "My App", is_dark, false);
 // Use `theme` in your gpui-component application
 ```
 
@@ -81,16 +81,18 @@ This works with any type implementing `IconProvider`.
 ## Animated Icons
 
 The connector provides helpers for displaying animated icons from
-[`loading_indicator()`](https://docs.rs/native-theme/latest/native_theme/fn.loading_indicator.html):
+[`IconLoader::load_indicator()`](https://docs.rs/native-theme/latest/native_theme/icons/struct.IconLoader.html):
 
-- `animated_frames_to_image_sources()` -- converts `AnimatedIcon::Frames` to a `Vec<ImageSource>` for frame-based playback
+- `animated_frames_to_image_sources()` -- converts `AnimatedIcon::Frames` to an `Option<AnimatedImageSources>` for frame-based playback
 - `with_spin_animation()` -- wraps an `Svg` element with continuous rotation for `AnimatedIcon::Transform` playback
 
 ```rust,ignore
-use native_theme::{loading_indicator, prefers_reduced_motion, AnimatedIcon, IconSet};
+use native_theme::theme::{AnimatedIcon, IconRole, IconSet};
+use native_theme::icons::IconLoader;
+use native_theme::detect::prefers_reduced_motion;
 use native_theme_gpui::icons::{animated_frames_to_image_sources, with_spin_animation, to_image_source};
 
-if let Some(anim) = loading_indicator(IconSet::Material) {
+if let Some(anim) = IconLoader::new(IconRole::StatusBusy).set(IconSet::Material).load_indicator() {
     if prefers_reduced_motion() {
         // Static fallback for accessibility
         let static_icon = to_image_source(anim.first_frame(), None, None);
@@ -110,17 +112,17 @@ if let Some(anim) = loading_indicator(IconSet::Material) {
 }
 ```
 
-Cache the `Vec<ImageSource>` from `animated_frames_to_image_sources()` -- do not
+Cache the `AnimatedImageSources` from `animated_frames_to_image_sources()` -- do not
 call it on every frame tick.
 
 ## Modules
 
 | Module | Purpose |
 |--------|---------|
-| `colors` | Maps 24 semantic colors to 108 ThemeColor fields |
-| `config` | Maps fonts and geometry to ThemeConfig |
-| `derive` | Hover/active state color derivation helpers |
 | `icons` | Icon role mapping, image source conversion, and animated icon playback |
+
+Internal modules (`pub(crate)`): `colors` (108-field ThemeColor mapping),
+`config` (fonts and geometry), `derive` (hover/active state derivation).
 
 ## Example
 

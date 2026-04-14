@@ -50,16 +50,16 @@
 //! |----------|--------|-------|
 //! | `defaults` colors | All 24 | background, foreground, accent, danger, etc. |
 //! | `defaults` geometry | radius, radius_lg, shadow | Font family/size also mapped |
-//! | `button` | 4 of 14 | primary_background/foreground, background/foreground (colors only) |
-//! | `tab` | 5 of 9 | All colors, sizing not mapped |
+//! | `button` | 4 of 15 | primary_background/foreground, background/foreground (colors only) |
+//! | `tab` | 5 of 10 | All colors, sizing not mapped |
 //! | `sidebar` | 2 of 2 | background, foreground |
-//! | `window` | 2 of 10 | title_bar_background, border |
-//! | `input` | 2 of 12 | border, caret |
-//! | `scrollbar` | 3 of 7 | track, thumb, thumb_hover |
+//! | `window` | 2 of 6 | title_bar_background, border |
+//! | `input` | 2 of 13 | border, caret |
+//! | `scrollbar` | 3 of 8 | track, thumb, thumb_hover |
 //! | `slider`, `switch` | 2 each | fill/thumb colors |
 //! | `progress_bar` | 1 of 5 | fill |
-//! | `list` | 1 of 11 | alternate_row |
-//! | `popover` | 2 of 4 | background, foreground |
+//! | `list` | 1 of 13 | alternate_row |
+//! | `popover` | 1 of 3 | background |
 //! | 14 other widgets | 0 fields | checkbox, menu, tooltip, dialog, etc. |
 //!
 //! **Why the gap:** gpui-component's `ThemeColor` is a flat color bag with no per-widget

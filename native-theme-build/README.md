@@ -35,7 +35,8 @@ use native_theme_build::UnwrapOrExit;
 fn main() {
     native_theme_build::generate_icons("icons/icons.toml")
         .unwrap_or_exit()
-        .emit_cargo_directives();
+        .emit_cargo_directives()
+        .expect("failed to write generated code");
 }
 ```
 
@@ -44,8 +45,9 @@ Include and use the generated code:
 ```rust,ignore
 include!(concat!(env!("OUT_DIR"), "/app_icon.rs"));
 
-use native_theme::{load_custom_icon, IconSet};
-let icon_data = load_custom_icon(&AppIcon::PlayPause, IconSet::Material, None);
+use native_theme::icons::IconLoader;
+use native_theme::theme::IconSet;
+let icon_data = IconLoader::new(&AppIcon::PlayPause).set(IconSet::Material).load();
 ```
 
 ## TOML Schema
@@ -108,7 +110,8 @@ fn main() {
         .enum_name("AppIcon")
         .generate()
         .unwrap_or_exit()
-        .emit_cargo_directives();
+        .emit_cargo_directives()
+        .expect("failed to write generated code");
 }
 ```
 
@@ -120,8 +123,8 @@ the generated code to `OUT_DIR`.
 
 The output is a single `.rs` file containing:
 
-- A `#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]` enum with one
-  variant per role.
+- A `#[non_exhaustive] #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]`
+  enum with one variant per role.
 - An `IconProvider` implementation with `icon_name()` returning the
   platform-specific identifier and `icon_svg()` returning
   `include_bytes!(...)` data for bundled themes.

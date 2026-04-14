@@ -25,7 +25,7 @@ use native_theme_iced::to_theme;
 
 // Load a preset and resolve it
 let nt = Theme::preset("dracula")?;
-let resolved = nt.into_variant(ColorMode::Dark).ok_or("no variant")?.into_resolved()?;
+let resolved = nt.into_variant(ColorMode::Dark).ok_or("no variant")?.into_resolved(None)?;
 let theme = to_theme(&resolved, "My App");
 // Use `theme` as your iced application theme
 ```
@@ -67,7 +67,7 @@ which takes a `u16`).
 | Module | Purpose |
 |--------|---------|
 | `palette` | Maps native-theme colors to iced's 6-field Palette |
-| `extended` | Overrides iced's Extended palette for secondary and background.weak |
+| `extended` | (internal) Overrides iced's Extended palette for secondary and background.weak |
 | `icons` | Icon role mapping, SVG widget helpers, and animated icon playback |
 
 ## Custom Icons
@@ -82,16 +82,18 @@ These work with any type implementing `IconProvider`.
 ## Animated Icons
 
 The connector provides helpers for displaying animated icons from
-[`loading_indicator()`](https://docs.rs/native-theme/latest/native_theme/fn.loading_indicator.html):
+[`IconLoader::load_indicator()`](https://docs.rs/native-theme/latest/native_theme/icons/struct.IconLoader.html):
 
-- `animated_frames_to_svg_handles()` -- converts `AnimatedIcon::Frames` to a `Vec<svg::Handle>` for frame-based playback
+- `animated_frames_to_svg_handles()` -- converts `AnimatedIcon::Frames` to an `AnimatedSvgHandles` struct for frame-based playback
 - `spin_rotation_radians()` -- computes the current rotation angle for `AnimatedIcon::Transform` playback
 
 ```rust,ignore
-use native_theme::{loading_indicator, prefers_reduced_motion, AnimatedIcon, IconSet};
+use native_theme::theme::{AnimatedIcon, IconRole, IconSet};
+use native_theme::icons::IconLoader;
+use native_theme::detect::prefers_reduced_motion;
 use native_theme_iced::icons::{animated_frames_to_svg_handles, spin_rotation_radians};
 
-if let Some(anim) = loading_indicator(IconSet::Material) {
+if let Some(anim) = IconLoader::new(IconRole::StatusBusy).set(IconSet::Material).load_indicator() {
     if prefers_reduced_motion() {
         // Static fallback for accessibility
         let static_icon = anim.first_frame();

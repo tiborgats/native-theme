@@ -36,7 +36,7 @@ resolve + validate pipeline:
 ```rust,ignore
 use native_theme::theme::ColorMode;
 let variant = theme.into_variant(ColorMode::Dark).ok_or("no variant")?;
-let resolved = variant.into_resolved()?; // -> ResolvedTheme
+let resolved = variant.into_resolved(None)?; // -> ResolvedTheme
 let accent = resolved.defaults.accent_color; // Rgba (not Option)
 ```
 
@@ -84,14 +84,13 @@ let customized = system.with_overlay_toml(r#"
 
 - **Linux (KDE):** Reads live theme from `~/.config/kdeglobals` (requires `kde` feature).
 - **Linux (GNOME/other):** Returns the bundled Adwaita preset. For live
-  portal data (accent color, dark mode preference, contrast setting), call
-  `from_gnome().await` directly -- this requires the `portal-tokio` or
-  `portal-async-io` feature.
+  portal data (accent color, dark mode preference, contrast setting), enable
+  the `portal` feature.
 - **macOS:** Reads system appearance via NSAppearance (requires `macos` feature).
 - **Windows:** Reads accent colors and system metrics (requires `windows` feature).
-- **Other platforms:** Returns `Error::Unsupported`.
+- **Other platforms:** Returns `Error::PlatformUnsupported`.
 
-`system_is_dark()` provides a lightweight cached check for the OS dark mode
+`detect::system_is_dark()` provides a lightweight cached check for the OS dark mode
 preference on all platforms (Linux, macOS, and Windows), without running the
 full theme reader pipeline.
 
@@ -108,10 +107,10 @@ For other toolkits, map `ResolvedTheme` fields directly. After
 resolution, all fields are guaranteed populated:
 
 ```rust,ignore
-let resolved = variant.into_resolved()?; // ResolvedTheme
+let resolved = variant.into_resolved(None)?; // ResolvedTheme
 let bg = resolved.defaults.background_color;     // Rgba
 let accent = resolved.defaults.accent_color;     // Rgba
-let font = &resolved.defaults.font.family;       // &String
+let font = &resolved.defaults.font.family;       // &Arc<str>
 let radius = resolved.defaults.border.corner_radius; // f32
 ```
 
@@ -128,21 +127,22 @@ freedesktop, SF Symbols, Segoe Fluent).
 1. Define icons in a TOML file with per-set name mappings and bundled SVGs
 2. Add `native-theme-build` as a build dependency
 3. Call `generate_icons()` in `build.rs` to generate a Rust enum implementing `IconProvider`
-4. Include the generated code and use `load_custom_icon()` to load icons at runtime
+4. Include the generated code and use `IconLoader` to load icons at runtime
 
 ```rust,ignore
 // build.rs
 use native_theme_build::UnwrapOrExit;
 native_theme_build::generate_icons("icons/icons.toml")
     .unwrap_or_exit()
-    .emit_cargo_directives();
+    .emit_cargo_directives()
+    .expect("failed to write generated code");
 
 // src/lib.rs
 include!(concat!(env!("OUT_DIR"), "/app_icon.rs"));
 
-use native_theme::icons::load_custom_icon;
+use native_theme::icons::IconLoader;
 use native_theme::theme::IconSet;
-let icon = load_custom_icon(&AppIcon::PlayPause, IconSet::Material, None);
+let icon = IconLoader::new(&AppIcon::PlayPause).set(IconSet::Material).load();
 ```
 
 See the [`native-theme-build` docs](https://docs.rs/native-theme-build) for the
@@ -156,16 +156,16 @@ full TOML schema, builder API, and DE-aware mapping support.
   <img src="https://raw.githubusercontent.com/tiborgats/native-theme/main/docs/assets/spinner-lucide.gif" alt="Lucide spinner" height="80">
 </p>
 
-`loading_indicator()` returns a platform-native loading spinner animation
-matching the requested icon set (Material, Lucide, macOS, Windows, Adwaita,
-or a freedesktop theme's `process-working` animation):
+`IconLoader::load_indicator()` returns a platform-native loading spinner
+animation matching the requested icon set (Material, Lucide, or a freedesktop
+theme's `process-working` animation):
 
 ```rust,ignore
-use native_theme::icons::loading_indicator;
+use native_theme::icons::IconLoader;
 use native_theme::detect::prefers_reduced_motion;
-use native_theme::theme::{AnimatedIcon, IconSet};
+use native_theme::theme::{AnimatedIcon, IconRole, IconSet};
 
-if let Some(anim) = loading_indicator(IconSet::Material) {
+if let Some(anim) = IconLoader::new(IconRole::StatusBusy).set(IconSet::Material).load_indicator() {
     if prefers_reduced_motion() {
         // Respect OS accessibility settings with a static fallback
         let static_icon = anim.first_frame();
@@ -193,12 +193,10 @@ Toolkit connectors provide playback helpers:
 
 | Feature | Enables | Platform |
 |---------|---------|----------|
-| `kde` | `from_kde()` sync KDE reader | Linux |
-| `portal` | Base for GNOME portal reader | Linux |
-| `portal-tokio` | `from_gnome()` with tokio runtime | Linux |
-| `portal-async-io` | `from_gnome()` with async-io runtime | Linux |
-| `windows` | `from_windows()` Windows reader | Windows |
-| `macos` | `from_macos()` macOS reader | macOS |
+| `kde` | KDE theme reader (`~/.config/kdeglobals`) | Linux |
+| `portal` | GNOME portal reader (async-io via ashpd) | Linux |
+| `windows` | Windows reader (UISettings) | Windows |
+| `macos` | macOS reader (NSAppearance) | macOS |
 | `system-icons` | Platform icon theme lookup with bundled fallback | All |
 | `material-icons` | Bundle Material Symbols SVGs | All |
 | `lucide-icons` | Bundle Lucide SVGs | All |
@@ -221,7 +219,7 @@ through `Theme::preset("name")`. Each provides both light and dark variants.
 `one-dark`
 
 Use `Theme::list_presets()` to get all 16 names programmatically, or
-`list_presets_for_platform()` for only those appropriate on the current OS.
+`Theme::list_presets_for_platform()` for only those appropriate on the current OS.
 
 ## TOML Format
 

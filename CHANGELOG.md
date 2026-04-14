@@ -7,11 +7,120 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.5.7] - Unreleased
 
+> **Major API overhaul.** This release renames the four core vocabulary types,
+> restructures the crate into public submodules, replaces free icon-loading
+> functions with a builder API, migrates strings to zero-copy types, and
+> replaces the `define_widget_pair!` macro with a proc-macro derive.
+
+### Breaking Changes
+
+#### Type renames
+
+| Old | New |
+|-----|-----|
+| `ThemeSpec` | `Theme` |
+| `ThemeVariant` | `ThemeMode` |
+| `ResolvedThemeVariant` | `ResolvedTheme` |
+| `ResolvedThemeDefaults` | `ResolvedDefaults` |
+
+#### Module restructure
+
+The crate root is now partitioned into public submodules. Most types that were
+previously re-exported at the crate root are now accessed through their module:
+
+- `native_theme::theme::*` -- `Theme`, `ThemeMode`, `ResolvedTheme`, `ResolvedDefaults`, `IconSet`, `IconRole`, `AnimatedIcon`, etc.
+- `native_theme::icons::*` -- `IconLoader`
+- `native_theme::detect::*` -- `system_is_dark()`, `prefers_reduced_motion()`, `LinuxDesktop`, etc.
+- `native_theme::color::*` -- `Rgba`
+- `native_theme::error::*` -- `Error`, `ErrorKind`
+- `native_theme::prelude` -- convenience re-exports (`Theme`, `ResolvedTheme`, `SystemTheme`, `Rgba`, `Error`, `Result`)
+
+#### Icon loading API
+
+The 13 standalone icon-loading functions (`load_icon`, `load_custom_icon`,
+`load_icon_from_theme`, `load_system_icon_by_name`, `loading_indicator`, etc.)
+are replaced by `IconLoader`, a single fluent builder:
+
+```rust,ignore
+// Before
+let icon = load_icon(IconRole::ActionCopy, IconSet::Material, None);
+let anim = loading_indicator(IconSet::Material);
+
+// After
+let icon = IconLoader::new(IconRole::ActionCopy).set(IconSet::Material).load();
+let anim = IconLoader::new(IconRole::StatusBusy).set(IconSet::Material).load_indicator();
+```
+
+#### String type migrations
+
+- `Theme.name`, `SystemTheme.name`, `SystemTheme.icon_theme` -- `String` → `Cow<'static, str>`
+- `FontSpec.family`, `ResolvedFontSpec.family` -- `Option<String>`/`String` → `Option<Arc<str>>`/`Arc<str>`
+- `IconData::Svg` -- `Svg(Vec<u8>)` → `Svg(Cow<'static, [u8]>)`
+- `IconProvider::icon_svg()` return type -- `Option<&'static [u8]>` → `Option<Cow<'static, [u8]>>`
+
+#### Error restructure
+
+`Error` is now a flat, `#[non_exhaustive]` enum with 9 variants. `Error::kind()`
+returns `ErrorKind` for coarse dispatch.
+
+#### Other breaking changes
+
+- `ColorMode` enum replaces `is_dark: bool` on `SystemTheme`; `SystemTheme.mode` is now `ColorMode`, `pick()` takes `ColorMode`
+- `into_resolved()` now takes `font_dpi: Option<f32>` argument
+- `BorderSpec` split into `DefaultsBorderSpec` (for `ThemeDefaults`) and `WidgetBorderSpec` (for per-widget use)
+- `AnimatedIcon` variant fields made private via `FramesData`/`TransformData` wrappers; duration fields now `NonZeroU32`
+- `ThemeChangeEvent::ColorSchemeChanged` renamed to `ThemeChangeEvent::Changed`; `Other` variant removed
+- `FontSize::to_px()` renamed to `FontSize::to_logical_px()`
+- `detect_linux_de()` split into `parse_linux_desktop()` (pure) and `detect_linux_desktop()` (reads env)
+- `icon_set` and `icon_theme` relocated from `ThemeMode` to `Theme`/`ThemeDefaults`
+- `from_toml_with_base()` removed
+- Platform reader functions (`from_kde`, `from_gnome`, `from_macos`, `from_windows`) demoted from `pub` to `pub(crate)`
+- Feature flags `portal-tokio` and `portal-async-io` replaced by single `portal` feature (async-io only)
+- `from_system()` and `from_system_async()` unified; `from_system()` uses `pollster` for sync-over-async on Linux
+
+### Added
+
+#### native-theme-derive (new crate)
+
+- `#[derive(ThemeWidget)]` proc macro replaces the old `define_widget_pair!` macro,
+  generating paired Option/Resolved struct hierarchies, merge logic, validation,
+  range checks, and field-level inheritance
+
+#### native-theme (core)
+
+- `IconLoader` builder struct for all icon loading operations
+- `ColorMode` enum (`Light`, `Dark`) with `is_dark()` method
+- `AccessibilityPreferences` struct on `SystemTheme` (text_scaling_factor, reduce_transparency, reduce_motion)
+- `DiagnosticEntry` enum and `PlatformPreset` struct for diagnostic reporting
+- `FrameList` newtype wrapping `Vec<IconData>` with non-empty guarantee
+- `DetectionContext` struct with `ArcSwapOption` caches for is_dark, reduced_motion, icon_theme
+- `prelude` module with 7 convenience re-exports
+- `IconRole::name()` method
+- `Rgba` named constants: `TRANSPARENT`, `BLACK`, `WHITE`
+- `#[non_exhaustive]` on `LinuxDesktop` enum; new variants: `Hyprland`, `Sway`, `River`, `Niri`
+- `ThemeMode::resolve_platform_defaults()` for DE-aware `button_order` resolution
+- `#[doc(hidden)]` on pipeline intermediates (`ThemeMode::resolve()`, `resolve_all()`, `validate()`, etc.)
+- Uniform bare `#[must_use]` convention across the crate
+- `inventory`-driven widget registration replacing hand-maintained `VARIANT_KEYS`/`widget_fields()`
+
+#### native-theme-build
+
+- Generated code paths updated for type renames and `Cow<'static, [u8]>` icon data
+
+#### Connectors
+
+- Both `native-theme-gpui` and `native-theme-iced` updated for all type renames, `ColorMode` API, `Arc<str>` font families, and `Cow` icon data
+
 ### Removed
 
 #### native-theme (core)
-- `Rgba::to_f32_tuple` -- use `to_f32_array()` and destructure (`let [r, g, b, a] = color.to_f32_array();`) if a tuple is needed
+
+- `Rgba::to_f32_tuple` -- use `to_f32_array()` and destructure
 - `IconSet::default()` -- use `system_icon_set()` for the platform-appropriate icon set
+- `define_widget_pair!` macro -- replaced by `#[derive(ThemeWidget)]` proc macro
+- `from_toml_with_base()` -- use `Theme::preset()` + `merge()` instead
+- `ThemeChangeEvent::Other` variant
+- `ENV_MUTEX` test infrastructure (`test_util.rs`)
 
 ## [0.5.6] - 2026-04-10
 

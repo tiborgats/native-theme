@@ -33,9 +33,9 @@ native-theme = "0.5.7"
 Load a bundled preset:
 
 ```rust
-use native_theme::ThemeSpec;
+use native_theme::theme::Theme;
 
-let theme = ThemeSpec::preset("dracula").unwrap();
+let theme = Theme::preset("dracula").unwrap();
 let dark = theme.dark.as_ref().unwrap();
 let accent = dark.defaults.accent_color.unwrap();
 let [r, g, b, a] = accent.to_f32_array();
@@ -54,10 +54,10 @@ let accent = active.defaults.accent_color;  // Rgba (not Option)
 Layer user overrides on top of a preset:
 
 ```rust
-use native_theme::ThemeSpec;
+use native_theme::theme::Theme;
 
-let mut theme = ThemeSpec::preset("nord").unwrap();
-let overrides = ThemeSpec::from_toml(r#"
+let mut theme = Theme::preset("nord").unwrap();
+let overrides = Theme::from_toml(r#"
 name = "My Nord"
 [light.defaults]
 accent_color = "#ff6600"
@@ -76,13 +76,13 @@ native-theme-gpui = "0.5.7"
 ```
 
 ```rust,ignore
-use native_theme::ThemeSpec;
+use native_theme::theme::{ColorMode, Theme};
 use native_theme_gpui::to_theme;
 
-let nt = ThemeSpec::preset("dracula").unwrap();
-let variant = nt.into_variant(native_theme::theme::ColorMode::Dark).ok_or("no variant").unwrap();
-let resolved = variant.into_resolved().unwrap();
-let theme = to_theme(&resolved, "My App", true);
+let nt = Theme::preset("dracula").unwrap();
+let variant = nt.into_variant(ColorMode::Dark).ok_or("no variant").unwrap();
+let resolved = variant.into_resolved(None).unwrap();
+let theme = to_theme(&resolved, "My App", true, false);
 // Use as your gpui-component theme
 ```
 
@@ -101,12 +101,12 @@ native-theme-iced = "0.5.7"
 ```
 
 ```rust,ignore
-use native_theme::ThemeSpec;
+use native_theme::theme::{ColorMode, Theme};
 use native_theme_iced::to_theme;
 
-let nt = ThemeSpec::preset("dracula").unwrap();
-let variant = nt.into_variant(native_theme::theme::ColorMode::Dark).ok_or("no variant").unwrap();
-let resolved = variant.into_resolved().unwrap();
+let nt = Theme::preset("dracula").unwrap();
+let variant = nt.into_variant(ColorMode::Dark).ok_or("no variant").unwrap();
+let resolved = variant.into_resolved(None).unwrap();
 let theme = to_theme(&resolved, "My App");
 // Use as your iced application theme
 ```
@@ -119,7 +119,7 @@ cargo run -p native-theme-iced --example showcase-iced
 
 ### Other toolkits
 
-Map `ResolvedThemeVariant` fields to your toolkit's types directly. After resolving,
+Map `ResolvedTheme` fields to your toolkit's types directly. After resolving,
 all color, font, geometry, and spacing fields are guaranteed populated. See the
 [API docs](https://docs.rs/native-theme) for details.
 
@@ -134,9 +134,11 @@ all color, font, geometry, and spacing fields are guaranteed populated. See the
 Platform-native loading spinners with accessibility support:
 
 ```rust,ignore
-use native_theme::{loading_indicator, prefers_reduced_motion, AnimatedIcon, IconSet};
+use native_theme::theme::{AnimatedIcon, IconRole, IconSet};
+use native_theme::icons::IconLoader;
+use native_theme::detect::prefers_reduced_motion;
 
-if let Some(anim) = loading_indicator(IconSet::Material) {
+if let Some(anim) = IconLoader::new(IconRole::StatusBusy).set(IconSet::Material).load_indicator() {
     if prefers_reduced_motion() {
         // Respect OS accessibility settings with a static fallback
         let static_icon = anim.first_frame();
@@ -164,21 +166,21 @@ toolkit-specific playback helpers.
 
 ## Platform Support
 
-| Platform | Reader | Feature |
-|----------|--------|---------|
-| Linux (KDE) | `from_kde()` | `kde` |
-| Linux (GNOME/GTK) | `from_gnome()` | `portal-tokio` or `portal-async-io` |
-| macOS | `from_macos()` | `macos` |
-| Windows | `from_windows()` | `windows` |
+| Platform | Feature |
+|----------|---------|
+| Linux (KDE) | `kde` |
+| Linux (GNOME/GTK) | `portal` |
+| macOS | `macos` |
+| Windows | `windows` |
 
-`from_system()` auto-detects the platform and desktop environment via
-`XDG_CURRENT_DESKTOP`, returning a `SystemTheme` with both light and dark
-`ResolvedThemeVariant` variants. Falls back to bundled presets when a reader is
+`SystemTheme::from_system()` auto-detects the platform and desktop environment
+via `XDG_CURRENT_DESKTOP`, returning a `SystemTheme` with both light and dark
+`ResolvedTheme` variants. Falls back to bundled presets when a reader is
 unavailable. GTK-based desktops (GNOME, XFCE, Cinnamon, MATE, Budgie, LXQt)
 are all handled by the portal reader.
 
-`system_is_dark()` provides a lightweight cached check for the OS dark mode
-preference on all platforms (Linux, macOS, and Windows).
+`detect::system_is_dark()` provides a lightweight cached check for the OS dark
+mode preference on all platforms (Linux, macOS, and Windows).
 
 ## Feature Flags
 
@@ -195,10 +197,8 @@ native-theme = { version = "0.5.7", features = ["native"] }
 
 | Feature | Enables |
 |---------|---------|
-| `native` | All platform readers (tokio async runtime) |
-| `native-async-io` | All platform readers (async-io runtime) |
-| `linux` | KDE + GNOME portal (tokio) |
-| `linux-async-io` | KDE + GNOME portal (async-io) |
+| `native` | All platform readers (`kde` + `portal` + `macos` + `windows`) |
+| `linux` | `kde` + `portal` |
 
 OS-specific dependencies are target-gated, so `native` on macOS only compiles
 macOS deps.
@@ -208,8 +208,7 @@ macOS deps.
 | Feature | Description |
 |---------|-------------|
 | `kde` | KDE theme reader (`~/.config/kdeglobals`) |
-| `portal-tokio` | GNOME portal reader (tokio) |
-| `portal-async-io` | GNOME portal reader (async-io) |
+| `portal` | GNOME portal reader (async-io via ashpd) |
 | `macos` | macOS reader (NSAppearance) |
 | `windows` | Windows reader (UISettings) |
 | `watch` | Runtime theme change watching via filesystem/D-Bus |
@@ -227,7 +226,7 @@ macOS deps.
 | Platform | `kde-breeze`, `adwaita`, `windows-11`, `macos-sonoma`, `material`, `ios` |
 | Community | `catppuccin-latte`, `catppuccin-frappe`, `catppuccin-macchiato`, `catppuccin-mocha`, `nord`, `dracula`, `gruvbox`, `solarized`, `tokyo-night`, `one-dark` |
 
-Use `ThemeSpec::list_presets_for_platform()` to get only the presets
+Use `theme::Theme::list_presets_for_platform()` to get only the presets
 appropriate for the current OS.
 
 ## License
