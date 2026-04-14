@@ -849,10 +849,10 @@ fn load_custom_via_builder(
     icon_set: native_theme::theme::IconSet,
 ) -> Option<IconData> {
     // Step 1: Try system loader with provider's name mapping
-    if let Some(name) = provider.icon_name(icon_set) {
-        if let Some(data) = IconLoader::new(name).set(icon_set).load() {
-            return Some(data);
-        }
+    if let Some(name) = provider.icon_name(icon_set)
+        && let Some(data) = IconLoader::new(name).set(icon_set).load()
+    {
+        return Some(data);
     }
     // Step 2: Try bundled SVG from provider
     if let Some(svg) = provider.icon_svg(icon_set) {
@@ -946,7 +946,7 @@ fn svg_bytes_to_image_source(
 /// SVG rasterization is expensive. Index into the cached `Vec` using a
 /// timer-driven frame counter.
 ///
-/// Callers should check [`native_theme::prefers_reduced_motion()`] and fall
+/// Callers should check [`native_theme::detect::prefers_reduced_motion()`] and fall
 /// back to [`AnimatedIcon::first_frame()`] for a static display when the user
 /// has requested reduced motion.
 ///
@@ -1004,7 +1004,7 @@ pub fn animated_frames_to_image_sources(
 /// This is pure data construction -- no gpui render context is needed to call
 /// this function. Only `paint()` on the resulting element requires a window.
 ///
-/// Callers should check [`native_theme::prefers_reduced_motion()`] and fall
+/// Callers should check [`native_theme::detect::prefers_reduced_motion()`] and fall
 /// back to a static icon when the user has requested reduced motion.
 ///
 /// A `duration_ms` of 0 produces a zero-duration animation -- caller's
@@ -2237,7 +2237,7 @@ mod freedesktop_mapping_tests {
         let mut missing = Vec::new();
         for name in ALL_ICON_NAMES {
             let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Kde);
-            if native_theme::freedesktop::load_freedesktop_icon_by_name(fd_name, theme, 24, None)
+            if native_theme::freedesktop::load_freedesktop_icon_by_name(fd_name, &theme, 24, None)
                 .is_none()
             {
                 missing.push(format!("{} (not found)", fd_name));

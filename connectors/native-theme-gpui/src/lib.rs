@@ -1,6 +1,6 @@
 //! gpui toolkit connector for native-theme.
 //!
-//! Maps [`native_theme::ResolvedTheme`] data to gpui-component's theming system.
+//! Maps [`native_theme::theme::ResolvedTheme`] data to gpui-component's theming system.
 //!
 //! # Quick Start
 //!

@@ -1,6 +1,6 @@
 //! Icon conversion helpers for iced.
 //!
-//! Converts [`native_theme::IconData`] variants into iced-compatible handles.
+//! Converts [`native_theme::theme::IconData`] variants into iced-compatible handles.
 //! Since iced separates raster images (`iced::widget::Image`) from SVG
 //! images (`iced::widget::Svg`), this module provides separate conversion
 //! functions for each variant.
@@ -102,10 +102,10 @@ fn load_custom_via_builder(
     icon_set: native_theme::theme::IconSet,
 ) -> Option<IconData> {
     // Step 1: Try system loader with provider's name mapping
-    if let Some(name) = provider.icon_name(icon_set) {
-        if let Some(data) = IconLoader::new(name).set(icon_set).load() {
-            return Some(data);
-        }
+    if let Some(name) = provider.icon_name(icon_set)
+        && let Some(data) = IconLoader::new(name).set(icon_set).load()
+    {
+        return Some(data);
     }
     // Step 2: Try bundled SVG from provider
     if let Some(svg) = provider.icon_svg(icon_set) {
@@ -132,7 +132,7 @@ fn load_custom_via_builder(
 /// Index into the cached `handles` using an `iced::time::every()` subscription
 /// that increments a frame counter.
 ///
-/// Callers should check [`native_theme::prefers_reduced_motion()`] and fall
+/// Callers should check [`native_theme::detect::prefers_reduced_motion()`] and fall
 /// back to [`AnimatedIcon::first_frame()`] for a static display when the user
 /// has requested reduced motion.
 ///
@@ -189,7 +189,7 @@ pub fn animated_frames_to_svg_handles(
 /// `Rotation::Floating` (not `Rotation::Solid`) to avoid layout jitter
 /// during rotation.
 ///
-/// Callers should check [`native_theme::prefers_reduced_motion()`] and
+/// Callers should check [`native_theme::detect::prefers_reduced_motion()`] and
 /// skip animation when the user has requested reduced motion.
 ///
 /// # Examples

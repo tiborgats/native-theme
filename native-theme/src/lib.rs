@@ -126,8 +126,8 @@ pub mod prelude;
 
 /// Theme data model: types, defaults, fonts, borders, widgets.
 ///
-/// Core types: [`Theme`](theme::Theme), [`ThemeMode`](theme::ThemeMode),
-/// [`ResolvedTheme`](theme::ResolvedTheme), [`ResolvedDefaults`](theme::ResolvedDefaults).
+/// Core types: [`Theme`], [`ThemeMode`],
+/// [`ResolvedTheme`], [`ResolvedDefaults`].
 ///
 /// Re-exports from the internal model module.
 pub mod theme {

@@ -531,10 +531,10 @@ fn build_animation_caches(
                     }
                 }
                 AnimatedIcon::Transform(data) => {
-                    if let TransformAnimation::Spin { duration_ms } = data.animation() {
-                        if let Some(handle) = to_svg_handle(data.icon(), None) {
-                            animated_spins.push((set_name.clone(), handle, duration_ms.get()));
-                        }
+                    if let TransformAnimation::Spin { duration_ms } = data.animation()
+                        && let Some(handle) = to_svg_handle(data.icon(), None)
+                    {
+                        animated_spins.push((set_name.clone(), handle, duration_ms.get()));
                     }
                 }
                 _ => {} // Future AnimatedIcon variants
@@ -909,7 +909,7 @@ impl State {
                                 .icon_theme
                                 .as_deref()
                                 .map(|s| s.to_string())
-                                .unwrap_or_else(|| native_theme::theme::system_icon_theme());
+                                .unwrap_or_else(native_theme::theme::system_icon_theme);
                             let v = variant.clone();
                             match v.into_resolved(None) {
                                 Ok(resolved) => {

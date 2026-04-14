@@ -11,7 +11,7 @@
 
 use native_theme::color::Rgba;
 
-/// Convert a [`native_theme::Rgba`] to [`iced_core::Color`].
+/// Convert a [`native_theme::color::Rgba`] to [`iced_core::Color`].
 ///
 /// Useful for power users who need to map arbitrary `ResolvedTheme`
 /// fields to iced colors beyond what [`to_palette()`] covers. The alpha

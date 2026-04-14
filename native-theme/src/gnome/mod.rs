@@ -273,10 +273,8 @@ fn build_gnome_variant_pure(data: &GnomePortalData) -> crate::ThemeMode {
 /// This is the fully testable entry point: no D-Bus, no gsettings,
 /// no xrdb/xrandr. Loads the Adwaita preset as base, builds a sparse
 /// OS variant from the provided data, and merges it onto the base.
-///
-/// Internal entry point used by the pipeline. External consumers should
-/// use [`SystemTheme::from_system()`](crate::SystemTheme::from_system).
-pub(crate) fn build_gnome_spec_pure(data: &GnomePortalData) -> crate::Result<crate::ReaderResult> {
+#[cfg(test)]
+fn build_gnome_spec_pure(data: &GnomePortalData) -> crate::Result<crate::ReaderResult> {
     let base = crate::Theme::preset("adwaita")?;
     let is_dark = data.is_dark;
 

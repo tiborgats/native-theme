@@ -317,11 +317,10 @@ for crate in $WORKSPACE_CRATES; do
     fi
 done
 
-# Validate package before publishing (only the crate going to crates.io)
-run_check "Validating package (dry run)" cargo publish -p native-theme --dry-run --allow-dirty
-run_check "Validating package (dry run, build crate)" cargo publish -p native-theme-build --dry-run --allow-dirty
-run_check_soft "Validating package (dry run, iced connector)" cargo publish -p native-theme-iced --dry-run --allow-dirty
-run_check_soft "Validating package (dry run, gpui connector)" cargo publish -p native-theme-gpui --dry-run --allow-dirty
+# Validate packages before publishing (cargo package resolves workspace path deps locally)
+run_check "Validating packages (core)" cargo package -p native-theme-derive -p native-theme -p native-theme-build --allow-dirty
+run_check_soft "Validating package (iced connector)" cargo package -p native-theme-derive -p native-theme -p native-theme-iced --allow-dirty
+run_check_soft "Validating package (gpui connector)" cargo package -p native-theme-derive -p native-theme -p native-theme-gpui --allow-dirty
 
 # Check for security vulnerabilities
 print_step "Running security audit"
