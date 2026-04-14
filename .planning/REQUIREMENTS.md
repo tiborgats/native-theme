@@ -104,9 +104,9 @@ Scope per user directive (2026-04-12): **all P0, P1, P2, P3 items from both docu
 - [x] **POLISH-01**: `diagnose_platform_support` returns `Vec<DiagnosticEntry>` instead of `Vec<String>` (doc 1 §23 Option B)
 - [x] **POLISH-02**: `platform_preset_name` returns structured data instead of leaking internal `-live` naming convention (doc 1 §24)
 - [x] **POLISH-03**: `#[must_use]` convention trimmed to uniform bare `#[must_use]` across the crate — six call sites updated: `pipeline.rs:132`, `pipeline.rs:175`, `model/icons.rs:438`, `model/icons.rs:477`, `lib.rs:353` (`from_system`), `model/mod.rs:225` (`ThemeSpec` struct) (doc 1 §26 + §33 F3)
-- [ ] **POLISH-04**: `FontSpec::style` default-consistency documented — current behaviour silently defaults while sibling fields error (doc 2 D1)
-- [ ] **POLISH-05**: `defaults.border.padding` derives-from-presence rule documented or corrected (symptom of BORDER-01) (doc 2 D2)
-- [ ] **POLISH-06**: Bundled preset `name` and `icon_theme` stored as `Cow<'static, str>` to avoid owned-String allocation (doc 2 D4)
+- [x] **POLISH-04**: `FontSpec::style` default-consistency documented — current behaviour silently defaults while sibling fields error (doc 2 D1)
+- [x] **POLISH-05**: `defaults.border.padding` derives-from-presence rule documented or corrected (symptom of BORDER-01) (doc 2 D2)
+- [x] **POLISH-06**: Bundled preset `name` and `icon_theme` stored as `Cow<'static, str>` to avoid owned-String allocation (doc 2 D4)
 
 ### Test & Doc Cleanup
 

@@ -163,7 +163,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 85: Data Model Method and Doc Cleanup** — Demote `ThemeVariant::resolve*` intermediates to `#[doc(hidden)]`, `Theme` method grab-bag cleanup, document `ThemeWatcher` internals, rename `FontSize::Px::to_px` to `to_logical_px` (completed 2026-04-13)
 - [x] **Phase 86: Validation and Lint Codegen Polish** — Drive `lint_toml` from the `inventory::submit!` widget registry, stop `check_ranges` from eagerly `format!`-ing path strings (completed 2026-04-13)
 - [x] **Phase 87: Font Family Arc<str> and AnimatedIcon Invariants** — Migrate `FontSpec::family: String` to `Arc<str>` across widget × connector, wrap `AnimatedIcon` public fields in newtype constructors that enforce invariants (completed 2026-04-13)
-- [ ] **Phase 88: Diagnostic and Preset-Polish Sweep** — `diagnose_platform_support` returns `Vec<DiagnosticEntry>`, `platform_preset_name` returns structured data, `FontSpec::style` default-consistency documented, `defaults.border.padding` rule corrected, bundled preset `name`/`icon_theme` become `Cow<'static, str>`
+- [x] **Phase 88: Diagnostic and Preset-Polish Sweep** — `diagnose_platform_support` returns `Vec<DiagnosticEntry>`, `platform_preset_name` returns structured data, `FontSpec::style` default-consistency documented, `defaults.border.padding` rule corrected, bundled preset `name`/`icon_theme` become `Cow<'static, str>`
 
 ## Phase Details
 
@@ -568,7 +568,7 @@ Plans:
 **Plans:** 2 plans
 Plans:
 - [x] 88-01-PLAN.md — DiagnosticEntry and PlatformPreset structured return types
-- [ ] 88-02-PLAN.md — Cow migration for preset name/icon_theme and documentation polish
+- [x] 88-02-PLAN.md — Cow migration for preset name/icon_theme and documentation polish
 
 ## Progress
 

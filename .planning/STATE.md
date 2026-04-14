@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 88 — diagnostic-and-preset-polish-sweep
-Plan: 1/2 complete
-Status: in-progress
-Last activity: 2026-04-14 — Completed 88-01 (DiagnosticEntry + PlatformPreset)
+Plan: 2/2 complete
+Status: complete
+Last activity: 2026-04-14 — Completed 88-02 (Cow migration + documentation polish)
 
-Progress: [██████████] 100% (54/55 plans complete)
+Progress: [██████████] 100% (55/55 plans complete)
 
 ## Accumulated Context
 
@@ -113,6 +113,10 @@ v0.5.6 decisions worth carrying into v0.5.7 planning:
 - [Phase 88-01]: PlatformPreset.live_name() returns String (dynamic -live suffix append)
 - [Phase 88-01]: ROADMAP SC-5 scoped to user-facing return values -- -live must exist in source for internal use
 - [Phase 88-01]: Diagnostic feature labels use short names ("KDE", "Portal") for name() accessor consistency
+- [Phase 88-02]: Theme.name as Cow<'static, str> with manual Default impl using Cow::Borrowed("")
+- [Phase 88-02]: PRESET_DISPLAY_NAMES const table maps preset keys to display names for post-parse Cow::Borrowed replacement
+- [Phase 88-02]: Connector showcases convert Cow to owned String via .into_owned() for local String fields
+- [Phase 88-02]: ROADMAP SC-3 updated from preset("default") to preset("dracula") since no "default" preset exists
 
 ### Pending Todos
 
@@ -199,6 +203,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-14T00:13:31Z
-Stopped at: Completed 88-01-PLAN.md
+Last session: 2026-04-14T00:32:21Z
+Stopped at: Completed 88-02-PLAN.md (Phase 88 complete, all 55 plans done)
 Resume file: None
