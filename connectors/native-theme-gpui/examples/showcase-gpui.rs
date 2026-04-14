@@ -179,8 +179,7 @@ fn widget_tooltip_themed(
 
 fn theme_names() -> Vec<SharedString> {
     let preset = platform_preset_name();
-    let display = preset.strip_suffix("-live").unwrap_or(preset);
-    let default_label = format!("default ({})", display);
+    let default_label = format!("default ({})", preset.name);
     let mut names: Vec<SharedString> = vec![default_label.into()];
     names.extend(
         native_theme::theme::Theme::list_presets_for_platform()
@@ -1364,8 +1363,7 @@ impl Showcase {
                     color: native_theme::color::Rgba::default(),
                 };
                 let preset = platform_preset_name();
-                let display = preset.strip_suffix("-live").unwrap_or(preset);
-                let label = format!("default ({})", display);
+                let label = format!("default ({})", preset.name);
                 let icon_theme = system_icon_theme().to_string();
                 let icon_set = system_icon_set();
                 (
