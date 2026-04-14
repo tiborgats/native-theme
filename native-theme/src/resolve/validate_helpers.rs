@@ -56,6 +56,11 @@ pub(crate) fn require_font(
         family,
         size,
         weight,
+        // `style` is inherently optional: `FontStyle::Normal` is the universally-safe
+        // default when a theme omits italic/oblique. Unlike `family`, `size`, `weight`,
+        // and `color` -- which have no safe universal default -- `style` can always
+        // fall back to Normal without producing an incorrect rendering. This asymmetry
+        // is intentional (doc 2 D1).
         style: font.style.unwrap_or_default(),
         color,
     }
@@ -86,6 +91,8 @@ pub(crate) fn require_font_opt(
                 family,
                 size,
                 weight,
+                // `style` is inherently optional: `FontStyle::Normal` is the universally-safe
+                // default when a theme omits italic/oblique (see require_font for full rationale).
                 style: f.style.unwrap_or_default(),
                 color,
             }

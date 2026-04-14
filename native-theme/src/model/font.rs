@@ -90,10 +90,16 @@ impl Default for FontSize {
     }
 }
 
-/// Font specification: family name, size, and weight.
+/// Font specification: family name, size, weight, style, and color.
 ///
-/// All fields are optional to support partial overlays — a FontSpec with
+/// All fields are optional to support partial overlays -- a FontSpec with
 /// only `size` set will only override the size when merged.
+///
+/// **Default behavior asymmetry:** During validation, `family`, `size`,
+/// `weight`, and `color` are required (missing values produce a validation
+/// error). `style` silently defaults to [`FontStyle::Normal`] because
+/// Normal is the universally-safe default -- no theme ever intends to
+/// leave style undefined in a way that would produce incorrect rendering.
 #[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
 #[serde(try_from = "FontSpecRaw", into = "FontSpecRaw")]
 pub struct FontSpec {

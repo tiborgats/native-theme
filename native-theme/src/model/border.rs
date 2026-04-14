@@ -6,8 +6,15 @@ use serde::{Deserialize, Serialize};
 /// Defaults-level border specification: color, geometry, and opacity.
 ///
 /// Used on [`ThemeDefaults`](crate::model::ThemeDefaults) for global border
-/// properties that are inherited by per-widget borders. Does not include
-/// padding fields -- those live on [`WidgetBorderSpec`].
+/// properties that are inherited by per-widget borders.
+///
+/// **No padding fields:** Padding (`padding_horizontal`, `padding_vertical`)
+/// lives exclusively on [`WidgetBorderSpec`] because padding is a widget-level
+/// layout concern, not a global default. This split (Phase 79, BORDER-01)
+/// eliminated the former "derives-from-presence" rule where the resolver
+/// would fill padding with `0.0` based on whether `line_width` or
+/// `corner_radius` was set -- a confusing proxy heuristic that is no longer
+/// needed.
 ///
 /// All fields are optional to support partial overlays -- a DefaultsBorderSpec
 /// with only `color` set will only override the color when merged.
@@ -51,8 +58,12 @@ impl_merge!(DefaultsBorderSpec {
 /// Widget-level border specification: color, geometry, and padding.
 ///
 /// Used on per-widget structs for border properties specific to individual
-/// widgets. Unlike [`DefaultsBorderSpec`], does not include `corner_radius_lg`
-/// or `opacity` (those are defaults-only).
+/// widgets. Unlike [`DefaultsBorderSpec`], includes `padding_horizontal`
+/// and `padding_vertical` (widget-level layout) but omits `corner_radius_lg`
+/// and `opacity` (defaults-only geometry).
+///
+/// Padding fields are widget-only because different widgets need different
+/// internal padding even when sharing the same border geometry from defaults.
 ///
 /// All fields are optional to support partial overlays.
 #[serde_with::skip_serializing_none]
