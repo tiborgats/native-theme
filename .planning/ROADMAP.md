@@ -567,7 +567,7 @@ Plans:
   5. `platform_preset_name().name` never contains `-live` — the suffix is internal to `live_name()` and preset entry keys, not exposed in user-facing return values
 **Plans:** 2 plans
 Plans:
-- [ ] 88-01-PLAN.md — DiagnosticEntry and PlatformPreset structured return types
+- [x] 88-01-PLAN.md — DiagnosticEntry and PlatformPreset structured return types
 - [ ] 88-02-PLAN.md — Cow migration for preset name/icon_theme and documentation polish
 
 ## Progress

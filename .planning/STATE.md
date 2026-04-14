@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 87 — font-family-arc-str-and-animatedicon-invariants
-Plan: 3/3 complete
-Status: Phase 87 verified — 4/4 must-haves confirmed
-Last activity: 2026-04-14 — Phase 87 verified (4/4 must-haves confirmed)
+Phase: 88 — diagnostic-and-preset-polish-sweep
+Plan: 1/2 complete
+Status: in-progress
+Last activity: 2026-04-14 — Completed 88-01 (DiagnosticEntry + PlatformPreset)
 
-Progress: [██████████] 100% (53/53 plans complete)
+Progress: [██████████] 100% (54/55 plans complete)
 
 ## Accumulated Context
 
@@ -108,6 +108,11 @@ v0.5.6 decisions worth carrying into v0.5.7 planning:
 - [Phase 87-01]: Duration constants remain u32 with NonZeroU32::new() at call site via ? (avoids hook-blocked .unwrap() in const context)
 - [Phase 87-01]: frames_or_spin_fallback takes &'static [u8] for lifetime compatibility with include_bytes!()
 - [Phase 87-02]: FontSpec::family and ResolvedFontSpec::family migrated from String to Arc<str>; serde rc feature enabled; .as_ref() for Arc<str>-to-&str comparisons
+
+- [Phase 88-01]: DiagnosticEntry::DesktopEnv gated with #[cfg(target_os = "linux")] since LinuxDesktop only exists on Linux
+- [Phase 88-01]: PlatformPreset.live_name() returns String (dynamic -live suffix append)
+- [Phase 88-01]: ROADMAP SC-5 scoped to user-facing return values -- -live must exist in source for internal use
+- [Phase 88-01]: Diagnostic feature labels use short names ("KDE", "Portal") for name() accessor consistency
 
 ### Pending Todos
 
@@ -194,6 +199,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-13T22:55:50.599Z
-Stopped at: Completed 87-03-PLAN.md
+Last session: 2026-04-14T00:13:31Z
+Stopped at: Completed 88-01-PLAN.md
 Resume file: None
