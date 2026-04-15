@@ -50,7 +50,7 @@
 //! use std::sync::mpsc;
 //!
 //! let (tx, rx) = mpsc::channel();
-//! let _watcher = native_theme::on_theme_change(move |event| {
+//! let _watcher = native_theme::watch::on_theme_change(move |event| {
 //!     let _ = tx.send(event);
 //! })?;
 //!
@@ -59,7 +59,7 @@
 //! //     let theme = native_theme::SystemTheme::from_system()?;
 //! //     // re-apply theme ...
 //! // }
-//! # Ok::<(), native_theme::Error>(())
+//! # Ok::<(), native_theme::error::Error>(())
 //! ```
 
 #[cfg(all(feature = "watch", feature = "kde", target_os = "linux"))]
@@ -198,10 +198,10 @@ impl Drop for ThemeWatcher {
 ///
 /// ```no_run
 /// use std::sync::mpsc;
-/// use native_theme::ThemeChangeEvent;
+/// use native_theme::watch::ThemeChangeEvent;
 ///
 /// let (tx, rx) = mpsc::channel();
-/// let _watcher = native_theme::on_theme_change(move |event| {
+/// let _watcher = native_theme::watch::on_theme_change(move |event| {
 ///     let _ = tx.send(event);
 /// })?;
 ///
@@ -210,7 +210,7 @@ impl Drop for ThemeWatcher {
 /// //     Ok(ThemeChangeEvent::Changed) => { /* re-read theme */ }
 /// //     _ => {}
 /// // }
-/// # Ok::<(), native_theme::Error>(())
+/// # Ok::<(), native_theme::error::Error>(())
 /// ```
 ///
 /// # Errors
