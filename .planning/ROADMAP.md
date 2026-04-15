@@ -164,7 +164,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 86: Validation and Lint Codegen Polish** — Drive `lint_toml` from the `inventory::submit!` widget registry, stop `check_ranges` from eagerly `format!`-ing path strings (completed 2026-04-13)
 - [x] **Phase 87: Font Family Arc<str> and AnimatedIcon Invariants** — Migrate `FontSpec::family: String` to `Arc<str>` across widget × connector, wrap `AnimatedIcon` public fields in newtype constructors that enforce invariants (completed 2026-04-13)
 - [x] **Phase 88: Diagnostic and Preset-Polish Sweep** — `diagnose_platform_support` returns `Vec<DiagnosticEntry>`, `platform_preset_name` returns structured data, `FontSpec::style` default-consistency documented, `defaults.border.padding` rule corrected, bundled preset `name`/`icon_theme` become `Cow<'static, str>` (completed 2026-04-14)
-- [ ] **Phase 89: Post-Partition Doctest Path Fixes** — Fix 6 stale doctest API paths in watch/mod.rs and rasterize.rs, remove dangling doc link to deleted load_custom_icon (gap closure from milestone audit)
+- [x] **Phase 89: Post-Partition Doctest Path Fixes** — Fix 6 stale doctest API paths in watch/mod.rs and rasterize.rs, remove dangling doc link to deleted load_custom_icon (gap closure from milestone audit) (completed 2026-04-15)
 
 ## Phase Details
 
@@ -581,9 +581,9 @@ Plans:
   2. `rasterize.rs` doctest uses `native_theme::theme::IconData` — not `native_theme::IconData`
   3. `model/icons.rs` has zero references to `crate::load_custom_icon` in doc comments
   4. `cargo doc -p native-theme --no-deps` produces zero warnings about broken intra-doc links
-**Plans:** 1 plan
+**Plans:** 1/1 plans complete
 Plans:
-- [ ] 89-01-PLAN.md — Fix stale doctest paths and dangling doc link
+- [x] 89-01-PLAN.md — Fix stale doctest paths and dangling doc link
 
 ## Progress
 
