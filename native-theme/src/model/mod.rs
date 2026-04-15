@@ -59,7 +59,10 @@ pub use border::{DefaultsBorderSpec, ResolvedBorderSpec, WidgetBorderSpec};
 pub use bundled::{bundled_icon_by_name, bundled_icon_svg};
 pub use defaults::ThemeDefaults;
 pub use dialog_order::DialogButtonOrder;
-pub use font::{FontSize, FontSpec, FontStyle, ResolvedFontSpec, TextScale, TextScaleEntry};
+pub use font::{
+    FontSize, FontSpec, FontStyle, ResolvedFontSpec, TextScale, TextScaleEntry,
+    intern_font_family,
+};
 pub use icon_sizes::IconSizes;
 pub use icons::{
     IconData, IconProvider, IconRole, IconSet, icon_name, system_icon_set, system_icon_theme,

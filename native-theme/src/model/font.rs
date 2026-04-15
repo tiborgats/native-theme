@@ -1,9 +1,56 @@
 // Font specification and text scale types
 
-use std::sync::Arc;
+use std::collections::HashSet;
+use std::sync::{Arc, Mutex};
 
 use crate::Rgba;
 use serde::{Deserialize, Serialize};
+
+/// Global font family intern cache.
+///
+/// Stores `Arc<str>` values so that repeated calls with the same family name
+/// return clones of the same `Arc`, avoiding redundant allocations.
+static FONT_FAMILY_CACHE: std::sync::LazyLock<Mutex<HashSet<Arc<str>>>> =
+    std::sync::LazyLock::new(|| Mutex::new(HashSet::new()));
+
+/// Intern a font family name, returning a deduplicated `Arc<str>`.
+///
+/// If the same family name has been interned before, returns a clone of the
+/// existing `Arc<str>` (same allocation, bumped reference count). Otherwise,
+/// creates a new `Arc<str>` and caches it for future lookups.
+///
+/// This is useful for connectors that resolve fonts repeatedly -- calling
+/// `intern_font_family("Inter")` 100 times allocates only once.
+///
+/// # Examples
+///
+/// ```
+/// use std::sync::Arc;
+/// use native_theme::theme::intern_font_family;
+///
+/// let a = intern_font_family("Inter");
+/// let b = intern_font_family("Inter");
+/// assert!(Arc::ptr_eq(&a, &b)); // Same allocation
+/// ```
+///
+/// # Panics
+///
+/// This function does not panic. If the internal mutex is poisoned (which
+/// can only happen if a thread panicked while holding it), a fresh `Arc<str>`
+/// is returned without caching.
+pub fn intern_font_family(family: &str) -> Arc<str> {
+    if let Ok(mut cache) = FONT_FAMILY_CACHE.lock() {
+        if let Some(existing) = cache.get(family) {
+            return Arc::clone(existing);
+        }
+        let arc: Arc<str> = Arc::from(family);
+        cache.insert(Arc::clone(&arc));
+        arc
+    } else {
+        // Mutex poisoned -- degrade gracefully without caching
+        Arc::from(family)
+    }
+}
 
 /// Font style: upright, italic, or oblique.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
