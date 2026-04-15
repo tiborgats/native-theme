@@ -2089,10 +2089,11 @@ fn resolve_completeness_from_preset() {
 #[test]
 fn validate_all_presets_pass_range_checks() {
     // Verify no false positives: all 16 presets pass validation including range checks
-    let names = crate::Theme::list_presets();
-    assert!(names.len() >= 16, "expected at least 16 presets");
+    let presets = crate::Theme::list_presets();
+    assert!(presets.len() >= 16, "expected at least 16 presets");
 
-    for name in names {
+    for info in presets {
+        let name = info.key;
         let spec = crate::Theme::preset(name).unwrap();
         if let Some(light) = spec.light {
             let resolved = light.into_resolved(None);

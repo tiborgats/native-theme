@@ -219,7 +219,7 @@ through `Theme::preset("name")`. Each provides both light and dark variants.
 `catppuccin-mocha`, `nord`, `dracula`, `gruvbox`, `solarized`, `tokyo-night`,
 `one-dark`
 
-Use `Theme::list_presets()` to get all 16 names programmatically, or
+Use `Theme::list_presets()` to get all 16 presets with structured metadata, or
 `Theme::list_presets_for_platform()` for only those appropriate on the current OS.
 
 ## TOML Format

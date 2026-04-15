@@ -17,7 +17,8 @@ use native_theme::theme::*;
 
 #[test]
 fn resolve_idempotency_on_preset() {
-    for name in Theme::list_presets() {
+    for info in Theme::list_presets() {
+        let name = info.key;
         let theme = Theme::preset(name).unwrap();
         let mut variant = theme.light.clone().unwrap();
         variant.resolve_all();
@@ -250,7 +251,8 @@ fn live_presets_geometry_matches_full_presets() {
 
 #[test]
 fn lint_toml_all_presets_no_warnings() {
-    for name in Theme::list_presets() {
+    for info in Theme::list_presets() {
+        let name = info.key;
         let theme = Theme::preset(name).unwrap();
         let toml_str = theme.to_toml().unwrap();
         let warnings = Theme::lint_toml(&toml_str).unwrap();

@@ -113,6 +113,49 @@ const PRESET_DISPLAY_NAMES: &[(&str, &str)] = &[
     ("one-dark", "One Dark"),
 ];
 
+/// Structured information about a bundled preset.
+///
+/// Returned by [`Theme::list_presets()`] and [`Theme::list_presets_for_platform()`]
+/// to provide richer metadata than bare preset names.
+#[derive(Clone, Debug, PartialEq, Eq)]
+pub struct PresetInfo {
+    /// Machine-readable preset key (e.g. `"catppuccin-mocha"`, `"kde-breeze"`).
+    /// Pass this to [`Theme::preset()`] to load the preset.
+    pub key: &'static str,
+    /// Human-readable display name (e.g. `"Catppuccin Mocha"`, `"KDE Breeze"`).
+    pub display_name: &'static str,
+    /// Target platform tags (e.g. `&["linux-kde"]`). Empty for community themes
+    /// that work on all platforms.
+    pub platforms: &'static [&'static str],
+    /// Whether the preset provides only a light variant (no dark variant).
+    pub light_only: bool,
+}
+
+/// Structured metadata for all 16 user-facing presets.
+///
+/// Combines data from [`PRESET_NAMES`], [`PRESET_DISPLAY_NAMES`], and
+/// [`PLATFORM_SPECIFIC`] into a single array for richer preset enumeration.
+const PRESET_INFOS: &[PresetInfo] = &[
+    // Platform presets
+    PresetInfo { key: "kde-breeze", display_name: "KDE Breeze", platforms: &["linux-kde"], light_only: false },
+    PresetInfo { key: "adwaita", display_name: "Adwaita", platforms: &["linux"], light_only: false },
+    PresetInfo { key: "windows-11", display_name: "Windows 11", platforms: &["windows"], light_only: false },
+    PresetInfo { key: "macos-sonoma", display_name: "macOS Sonoma", platforms: &["macos"], light_only: false },
+    PresetInfo { key: "material", display_name: "Material", platforms: &[], light_only: false },
+    PresetInfo { key: "ios", display_name: "iOS", platforms: &["macos", "ios"], light_only: false },
+    // Community presets
+    PresetInfo { key: "catppuccin-latte", display_name: "Catppuccin Latte", platforms: &[], light_only: false },
+    PresetInfo { key: "catppuccin-frappe", display_name: "Catppuccin Frappe", platforms: &[], light_only: false },
+    PresetInfo { key: "catppuccin-macchiato", display_name: "Catppuccin Macchiato", platforms: &[], light_only: false },
+    PresetInfo { key: "catppuccin-mocha", display_name: "Catppuccin Mocha", platforms: &[], light_only: false },
+    PresetInfo { key: "nord", display_name: "Nord", platforms: &[], light_only: false },
+    PresetInfo { key: "dracula", display_name: "Dracula", platforms: &[], light_only: false },
+    PresetInfo { key: "gruvbox", display_name: "Gruvbox", platforms: &[], light_only: false },
+    PresetInfo { key: "solarized", display_name: "Solarized", platforms: &[], light_only: false },
+    PresetInfo { key: "tokyo-night", display_name: "Tokyo Night", platforms: &[], light_only: false },
+    PresetInfo { key: "one-dark", display_name: "One Dark", platforms: &[], light_only: false },
+];
+
 /// Cached parse result. Uses `String` for the error type (not `Error`) because:
 /// - `Error` does not implement `Clone`, which is needed for cache retrieval
 /// - Preset parse errors are rare (bundled TOML is validated at dev time)
@@ -153,18 +196,9 @@ pub(crate) fn preset(name: &str) -> Result<Theme> {
     }
 }
 
-pub(crate) fn list_presets() -> &'static [&'static str] {
-    PRESET_NAMES
+pub(crate) fn list_presets() -> &'static [PresetInfo] {
+    PRESET_INFOS
 }
-
-/// Platform-specific preset names that should only appear on their native platform.
-const PLATFORM_SPECIFIC: &[(&str, &[&str])] = &[
-    ("kde-breeze", &["linux-kde"]),
-    ("adwaita", &["linux"]),
-    ("windows-11", &["windows"]),
-    ("macos-sonoma", &["macos"]),
-    ("ios", &["macos", "ios"]),
-];
 
 /// Detect the current platform tag for preset filtering.
 ///
@@ -201,23 +235,20 @@ fn detect_platform() -> &'static str {
     }
 }
 
-/// Returns preset names appropriate for the current platform.
+/// Returns preset info appropriate for the current platform.
 ///
 /// Platform-specific presets (kde-breeze, adwaita, windows-11, macos-sonoma, ios)
 /// are only included on their native platform. Community themes are always included.
-pub(crate) fn list_presets_for_platform() -> Vec<&'static str> {
+pub(crate) fn list_presets_for_platform() -> Vec<PresetInfo> {
     let platform = detect_platform();
 
-    PRESET_NAMES
+    PRESET_INFOS
         .iter()
-        .filter(|name| {
-            if let Some((_, platforms)) = PLATFORM_SPECIFIC.iter().find(|(n, _)| n == *name) {
-                platforms.iter().any(|p| platform.starts_with(p))
-            } else {
-                true // Community themes always visible
-            }
+        .filter(|info| {
+            info.platforms.is_empty()
+                || info.platforms.iter().any(|p| platform.starts_with(p))
         })
-        .copied()
+        .cloned()
         .collect()
 }
 
@@ -383,8 +414,8 @@ accent_color = "#00ff00"
     #[test]
     fn preset_names_match_list() {
         // Every name in list_presets() must be loadable via preset()
-        for name in list_presets() {
-            assert!(preset(name).is_ok(), "preset '{name}' not loadable");
+        for info in list_presets() {
+            assert!(preset(info.key).is_ok(), "preset '{}' not loadable", info.key);
         }
     }
 
@@ -436,7 +467,8 @@ accent_color = "#00ff00"
 
     #[test]
     fn all_presets_resolve_validate() {
-        for name in list_presets() {
+        for info in list_presets() {
+            let name = info.key;
             let theme = preset(name).unwrap();
             if let Some(mut light) = theme.light.clone() {
                 light.resolve_all();
@@ -695,10 +727,10 @@ accent_color = "#00ff00"
         let all = list_presets();
         let filtered = list_presets_for_platform();
         // Filtered list should be a subset of all presets
-        for name in &filtered {
+        for info in &filtered {
             assert!(
-                all.contains(name),
-                "filtered preset '{name}' not in full list"
+                all.iter().any(|a| a.key == info.key),
+                "filtered preset '{}' not in full list", info.key
             );
         }
         // Community themes should always be present
@@ -716,13 +748,13 @@ accent_color = "#00ff00"
         ];
         for name in community {
             assert!(
-                filtered.contains(name),
+                filtered.iter().any(|info| info.key == *name),
                 "community preset '{name}' should always be in filtered list"
             );
         }
         // material is cross-platform, always present
         assert!(
-            filtered.contains(&"material"),
+            filtered.iter().any(|info| info.key == "material"),
             "material should always be in filtered list"
         );
     }

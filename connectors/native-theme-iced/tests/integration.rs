@@ -5,7 +5,8 @@ use native_theme_iced::{from_preset, to_theme};
 
 #[test]
 fn all_presets_produce_valid_light_themes() {
-    for name in Theme::list_presets() {
+    for info in Theme::list_presets() {
+        let name = info.key;
         let result = from_preset(name, false);
         assert!(
             result.is_ok(),
@@ -17,7 +18,8 @@ fn all_presets_produce_valid_light_themes() {
 
 #[test]
 fn all_presets_produce_valid_dark_themes() {
-    for name in Theme::list_presets() {
+    for info in Theme::list_presets() {
+        let name = info.key;
         let result = from_preset(name, true);
         assert!(
             result.is_ok(),

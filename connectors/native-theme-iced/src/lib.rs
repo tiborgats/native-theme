@@ -798,7 +798,8 @@ mod tests {
 
     #[test]
     fn all_presets_produce_valid_themes() {
-        for name in Theme::list_presets() {
+        for info in Theme::list_presets() {
+            let name = info.key;
             for is_dark in [false, true] {
                 let spec = Theme::preset(name).unwrap();
                 if let Ok(variant) = spec.into_variant(if is_dark {

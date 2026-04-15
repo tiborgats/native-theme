@@ -503,19 +503,25 @@ impl Theme {
         crate::presets::from_file(path)
     }
 
-    /// List all available bundled preset names.
+    /// List all available bundled presets with structured metadata.
+    ///
+    /// Returns a static slice of [`PresetInfo`](crate::presets::PresetInfo) entries,
+    /// one per bundled preset. Each entry carries the machine-readable key,
+    /// human-readable display name, target platform tags, and a `light_only` flag.
     ///
     /// # Examples
     /// ```
-    /// let names = native_theme::theme::Theme::list_presets();
-    /// assert_eq!(names.len(), 16);
+    /// let presets = native_theme::theme::Theme::list_presets();
+    /// assert_eq!(presets.len(), 16);
+    /// assert_eq!(presets[0].key, "kde-breeze");
+    /// assert_eq!(presets[0].display_name, "KDE Breeze");
     /// ```
     #[must_use]
-    pub fn list_presets() -> &'static [&'static str] {
+    pub fn list_presets() -> &'static [crate::presets::PresetInfo] {
         crate::presets::list_presets()
     }
 
-    /// List preset names appropriate for the current platform.
+    /// List presets appropriate for the current platform, with structured metadata.
     ///
     /// Platform-specific presets (kde-breeze, adwaita, windows-11, macos-sonoma, ios)
     /// are only included on their native platform. Community themes are always included.
@@ -526,13 +532,13 @@ impl Theme {
     ///
     /// # Examples
     /// ```
-    /// let names = native_theme::theme::Theme::list_presets_for_platform();
+    /// let presets = native_theme::theme::Theme::list_presets_for_platform();
     /// // On Linux KDE: includes kde-breeze, adwaita, plus all community themes
     /// // On Windows: includes windows-11 plus all community themes
-    /// assert!(!names.is_empty());
+    /// assert!(!presets.is_empty());
     /// ```
     #[must_use]
-    pub fn list_presets_for_platform() -> Vec<&'static str> {
+    pub fn list_presets_for_platform() -> Vec<crate::presets::PresetInfo> {
         crate::presets::list_presets_for_platform()
     }
 
@@ -1271,7 +1277,8 @@ primay_bg = "#0078d7"
 
     #[test]
     fn lint_toml_all_presets_clean() {
-        for name in Theme::list_presets() {
+        for info in Theme::list_presets() {
+            let name = info.key;
             // Load the raw TOML source for each preset via include_str
             // by loading via preset() + to_toml() round-trip
             let theme = Theme::preset(name).unwrap_or_else(|e| {

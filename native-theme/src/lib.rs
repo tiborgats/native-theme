@@ -132,6 +132,7 @@ pub mod prelude;
 /// Re-exports from the internal model module.
 pub mod theme {
     pub use crate::model::*;
+    pub use crate::presets::PresetInfo;
 }
 
 /// Freedesktop icon theme lookup (Linux).

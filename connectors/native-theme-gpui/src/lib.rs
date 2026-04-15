@@ -775,7 +775,8 @@ mod tests {
     #[test]
     fn all_presets_dark_mode_no_panic() {
         let presets = Theme::list_presets();
-        for name in presets {
+        for info in presets {
+            let name = info.key;
             let result = from_preset(name, true);
             assert!(
                 result.is_ok(),
@@ -788,7 +789,8 @@ mod tests {
     #[test]
     fn all_presets_light_mode_no_panic() {
         let presets = Theme::list_presets();
-        for name in presets {
+        for info in presets {
+            let name = info.key;
             let result = from_preset(name, false);
             assert!(
                 result.is_ok(),

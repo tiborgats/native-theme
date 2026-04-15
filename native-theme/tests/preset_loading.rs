@@ -10,7 +10,8 @@ use native_theme::theme::Theme;
 
 #[test]
 fn all_presets_parse_without_error() {
-    for name in Theme::list_presets() {
+    for info in Theme::list_presets() {
+        let name = info.key;
         let _theme =
             Theme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed to parse: {e}"));
     }
@@ -18,7 +19,8 @@ fn all_presets_parse_without_error() {
 
 #[test]
 fn all_presets_have_both_variants() {
-    for name in Theme::list_presets() {
+    for info in Theme::list_presets() {
+        let name = info.key;
         let theme = Theme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         assert!(
             theme.light.is_some(),
@@ -30,7 +32,8 @@ fn all_presets_have_both_variants() {
 
 #[test]
 fn all_presets_have_core_colors() {
-    for name in Theme::list_presets() {
+    for info in Theme::list_presets() {
+        let name = info.key;
         let theme = Theme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         let light = theme
             .light
@@ -71,7 +74,8 @@ fn all_presets_have_core_colors() {
 
 #[test]
 fn all_presets_have_status_colors() {
-    for name in Theme::list_presets() {
+    for info in Theme::list_presets() {
+        let name = info.key;
         let theme = Theme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         let light = theme.light.as_ref().unwrap();
         let dark = theme.dark.as_ref().unwrap();
@@ -106,7 +110,8 @@ fn all_presets_have_status_colors() {
 
 #[test]
 fn all_presets_have_interactive_colors() {
-    for name in Theme::list_presets() {
+    for info in Theme::list_presets() {
+        let name = info.key;
         let theme = Theme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         let light = theme.light.as_ref().unwrap();
         let dark = theme.dark.as_ref().unwrap();
@@ -133,7 +138,8 @@ fn all_presets_have_interactive_colors() {
 
 #[test]
 fn all_presets_have_valid_fonts() {
-    for name in Theme::list_presets() {
+    for info in Theme::list_presets() {
+        let name = info.key;
         let theme = Theme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         for (label, variant) in [
             ("light", theme.light.as_ref()),
@@ -175,7 +181,8 @@ fn all_presets_have_valid_fonts() {
 
 #[test]
 fn all_presets_have_geometry() {
-    for name in Theme::list_presets() {
+    for info in Theme::list_presets() {
+        let name = info.key;
         let theme = Theme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         for (label, variant) in [
             ("light", theme.light.as_ref()),
@@ -210,7 +217,8 @@ fn all_presets_have_geometry() {
 
 #[test]
 fn all_presets_have_spacing() {
-    for name in Theme::list_presets() {
+    for info in Theme::list_presets() {
+        let name = info.key;
         let theme = Theme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         for (label, variant) in [
             ("light", theme.light.as_ref()),
@@ -226,7 +234,8 @@ fn all_presets_have_spacing() {
 
 #[test]
 fn all_presets_round_trip_toml() {
-    for name in Theme::list_presets() {
+    for info in Theme::list_presets() {
+        let name = info.key;
         let theme = Theme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         let toml_str = theme
             .to_toml()
@@ -275,7 +284,8 @@ fn list_presets_returns_sixteen_entries() {
 
 #[test]
 fn dark_backgrounds_are_darker() {
-    for name in Theme::list_presets() {
+    for info in Theme::list_presets() {
+        let name = info.key;
         let theme = Theme::preset(name).unwrap_or_else(|e| panic!("preset '{name}' failed: {e}"));
         let light_bg = theme
             .light
@@ -307,63 +317,40 @@ fn dark_backgrounds_are_darker() {
 
 #[test]
 fn preset_names_are_correct() {
-    let names = Theme::list_presets();
+    let presets = Theme::list_presets();
+    let has_key = |k: &str| presets.iter().any(|info| info.key == k);
+    assert!(has_key("kde-breeze"), "list_presets() missing 'kde-breeze'");
+    assert!(has_key("adwaita"), "list_presets() missing 'adwaita'");
+    assert!(has_key("windows-11"), "list_presets() missing 'windows-11'");
     assert!(
-        names.contains(&"kde-breeze"),
-        "list_presets() missing 'kde-breeze'"
-    );
-    assert!(
-        names.contains(&"adwaita"),
-        "list_presets() missing 'adwaita'"
-    );
-    assert!(
-        names.contains(&"windows-11"),
-        "list_presets() missing 'windows-11'"
-    );
-    assert!(
-        names.contains(&"macos-sonoma"),
+        has_key("macos-sonoma"),
         "list_presets() missing 'macos-sonoma'"
     );
+    assert!(has_key("material"), "list_presets() missing 'material'");
+    assert!(has_key("ios"), "list_presets() missing 'ios'");
     assert!(
-        names.contains(&"material"),
-        "list_presets() missing 'material'"
-    );
-    assert!(names.contains(&"ios"), "list_presets() missing 'ios'");
-    assert!(
-        names.contains(&"catppuccin-latte"),
+        has_key("catppuccin-latte"),
         "list_presets() missing 'catppuccin-latte'"
     );
     assert!(
-        names.contains(&"catppuccin-frappe"),
+        has_key("catppuccin-frappe"),
         "list_presets() missing 'catppuccin-frappe'"
     );
     assert!(
-        names.contains(&"catppuccin-macchiato"),
+        has_key("catppuccin-macchiato"),
         "list_presets() missing 'catppuccin-macchiato'"
     );
     assert!(
-        names.contains(&"catppuccin-mocha"),
+        has_key("catppuccin-mocha"),
         "list_presets() missing 'catppuccin-mocha'"
     );
-    assert!(names.contains(&"nord"), "list_presets() missing 'nord'");
+    assert!(has_key("nord"), "list_presets() missing 'nord'");
+    assert!(has_key("dracula"), "list_presets() missing 'dracula'");
+    assert!(has_key("gruvbox"), "list_presets() missing 'gruvbox'");
+    assert!(has_key("solarized"), "list_presets() missing 'solarized'");
     assert!(
-        names.contains(&"dracula"),
-        "list_presets() missing 'dracula'"
-    );
-    assert!(
-        names.contains(&"gruvbox"),
-        "list_presets() missing 'gruvbox'"
-    );
-    assert!(
-        names.contains(&"solarized"),
-        "list_presets() missing 'solarized'"
-    );
-    assert!(
-        names.contains(&"tokyo-night"),
+        has_key("tokyo-night"),
         "list_presets() missing 'tokyo-night'"
     );
-    assert!(
-        names.contains(&"one-dark"),
-        "list_presets() missing 'one-dark'"
-    );
+    assert!(has_key("one-dark"), "list_presets() missing 'one-dark'");
 }
