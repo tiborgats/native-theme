@@ -1867,6 +1867,30 @@ mod tests {
         }
     }
 
+    // === IconSet serde-vs-name cross-check (GAP-5) ===
+
+    #[test]
+    fn icon_set_serde_matches_name() {
+        let all_sets = [
+            IconSet::SfSymbols,
+            IconSet::SegoeIcons,
+            IconSet::Freedesktop,
+            IconSet::Material,
+            IconSet::Lucide,
+        ];
+        for set in all_sets {
+            let serialized = serde_json::to_string(&set)
+                .unwrap_or_else(|e| panic!("failed to serialize {set:?}: {e}"));
+            let trimmed = serialized.trim_matches('"');
+            assert_eq!(
+                trimmed,
+                set.name(),
+                "serde serialization of {set:?} ({trimmed:?}) does not match name() ({:?})",
+                set.name()
+            );
+        }
+    }
+
     // === IconData::bytes() accessor test ===
 
     #[test]
