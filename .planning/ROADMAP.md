@@ -676,3 +676,15 @@ Plans:
 - [x] 91-01-PLAN.md -- Delete with_overlay_toml, add PresetInfo struct
 - [x] 91-02-PLAN.md -- Unify border validation dispatch via border_kind attribute
 - [x] 91-03-PLAN.md -- Replace defaults extraction boilerplate with declarative macros
+
+### Phase 92: implement the chosen solutions described in docs/todo_v0.5.7_icon-theme.md
+
+**Goal:** Fix "system" icon theme selection reverting and add installed themes to dropdown (both showcases)
+**Depends on:** Phase 91
+**Plans:** 1/4 plans executed
+
+Plans:
+- [x] 92-01-PLAN.md -- Library: IconSetChoice enum, default_icon_choice(), list_freedesktop_themes()
+- [ ] 92-02-PLAN.md -- Iced showcase: import library type, guard rebuild_theme(), add installed themes
+- [ ] 92-03-PLAN.md -- GPUI showcase: replace boolean with library type, guard reapplication, add installed themes
+- [ ] 92-04-PLAN.md -- Full workspace verification and pre-release check

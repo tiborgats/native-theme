@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
-status: completed
-stopped_at: Phase 91 verified and complete (all 3 plans done, 5/5 must-haves verified)
-last_updated: "2026-04-15T14:20:00Z"
-last_activity: 2026-04-15 — Phase 91 verified (PresetInfo, border unification, require macros)
+status: in-progress
+stopped_at: Completed 92-01-PLAN.md
+last_updated: "2026-04-15T23:28:13.897Z"
+last_activity: 2026-04-15 — Phase 91 verified complete (5/5 must-haves confirmed)
 progress:
-  total_phases: 31
-  completed_phases: 31
-  total_plans: 65
-  completed_plans: 65
+  total_phases: 29
+  completed_phases: 29
+  total_plans: 56
+  completed_plans: 56
   percent: 100
 ---
 
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 91 — resolve-remaining-todo-doc-gaps
-Plan: 3/3 complete
-Status: complete
-Last activity: 2026-04-15 — Phase 91 verified complete (5/5 must-haves confirmed)
+Phase: 92 — implement-the-chosen-solutions-described-in-docs-todo-v0-5-7-icon-theme-md
+Plan: 1/4 complete
+Status: in-progress
+Last activity: 2026-04-15 — Phase 92 Plan 01 complete (IconSetChoice enum + helpers + list_freedesktop_themes)
 
-Progress: [██████████] 100% (65/65 plans complete)
+Progress: [██████████] 100% (66/66 plans complete)
 
 ## Accumulated Context
 
@@ -194,11 +194,13 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 90-01]: Manual impl Default for Rgba (returns TRANSPARENT) instead of removing Default entirely -- ResolvedBorderSpec, ResolvedFontSpec, require() helper, and ThemeWidget derive all need Rgba: Default
 - [Phase 90-04]: Theme::new() deleted; callers use struct literal with Default. NoVariant error categorized as ErrorKind::Resolution. Connector from_preset functions propagate NoVariant via ? instead of custom error wrappers
 - [Phase 91-02]: is_border_type() detects border fields by resolved type last segment (ResolvedBorderSpec); struct-level border_kind is single source of truth for validation dispatch
+- [Phase 92-01]: map_while(Result::ok) instead of filter_map for BufRead::lines() per clippy::lines_filter_map_ok
 
 ### Roadmap Evolution
 
 - Phase 90 added: resolve remaining v0.5.7 API overhaul gaps
 - Phase 91 added: resolve remaining TODO doc gaps (15b, 15f, B1-require, B7, C6)
+- Phase 92 added: implement the chosen solutions described in docs/todo_v0.5.7_icon-theme.md
 
 ### Blockers/Concerns
 
@@ -211,6 +213,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-15T14:02:08Z
-Stopped at: Completed 91-01-PLAN.md
+Last session: 2026-04-15T23:23:57Z
+Stopped at: Completed 92-01-PLAN.md
 Resume file: None
