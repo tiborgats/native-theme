@@ -117,6 +117,11 @@ pub struct ThemeDefaults {
     pub icon_sizes: IconSizes,
 
     /// Visual icon theme name for this variant (e.g., `"breeze-dark"`, `"Adwaita"`).
+    ///
+    /// This field lives on `ThemeDefaults` (per-variant) rather than on `Theme` (shared)
+    /// because some platforms use different icon themes per color mode. For example,
+    /// KDE Plasma uses `"breeze"` for light mode and `"breeze-dark"` for dark mode.
+    /// See doc 1 section 20 and Phase 80-fix decision for rationale.
     pub icon_theme: Option<Cow<'static, str>>,
 }
 

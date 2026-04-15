@@ -3,6 +3,13 @@
 use arc_swap::ArcSwapOption;
 use std::sync::Arc;
 
+/// Timeout for subprocess commands (gsettings, xrdb, xrandr).
+///
+/// Prevents D-Bus-dependent tools from blocking indefinitely when the
+/// session bus is unresponsive or the display server is unavailable.
+#[cfg(target_os = "linux")]
+const SUBPROCESS_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(2);
+
 /// Desktop environments recognized on Linux.
 #[cfg(target_os = "linux")]
 #[non_exhaustive]
@@ -170,7 +177,7 @@ fn run_gsettings_with_timeout(args: &[&str]) -> Option<String> {
     use std::time::{Duration, Instant};
 
     let start = Instant::now();
-    let timeout = Duration::from_secs(2);
+    let timeout = SUBPROCESS_TIMEOUT;
     let mut child = std::process::Command::new("gsettings")
         .args(args)
         .stdout(std::process::Stdio::piped())
@@ -215,7 +222,7 @@ fn read_xft_dpi() -> Option<f32> {
     use std::time::{Duration, Instant};
 
     let start = Instant::now();
-    let timeout = Duration::from_secs(2);
+    let timeout = SUBPROCESS_TIMEOUT;
     let mut child = std::process::Command::new("xrdb")
         .arg("-query")
         .stdout(std::process::Stdio::piped())
@@ -269,7 +276,7 @@ fn detect_physical_dpi() -> Option<f32> {
     use std::time::{Duration, Instant};
 
     let start = Instant::now();
-    let timeout = Duration::from_secs(2);
+    let timeout = SUBPROCESS_TIMEOUT;
     let mut child = std::process::Command::new("xrandr")
         .stdout(std::process::Stdio::piped())
         .stderr(std::process::Stdio::null())
