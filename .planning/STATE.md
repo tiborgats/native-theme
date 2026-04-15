@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 90 — resolve-remaining-v0-5-7-api-overhaul-gaps
-Plan: 5/6 (90-05 complete)
+Plan: 5/6 (90-01, 90-05 complete)
 Status: in-progress
-Last activity: 2026-04-15 — Completed 90-05 (intern_font_family with global dedup cache)
+Last activity: 2026-04-15 — Completed 90-01 (Rgba API polish: new() rename, manual Default, detect.rs doc fix)
 
 Progress: [██████████] 100% (56/56 plans complete)
 
@@ -191,6 +191,7 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 82-02]: is_freedesktop_theme_available stays public (capability probe, not a loader)
 - [Phase 82-02]: CLI theme override uses IconLoader::new(name).set(Freedesktop).theme(t) instead of direct load_freedesktop_icon_by_name
 - [Phase 86-01]: lint_toml uses inventory::iter::<WidgetFieldInfo>() HashMap for widget discovery; STRUCTURAL_KEYS retains only defaults and text_scale
+- [Phase 90-01]: Manual impl Default for Rgba (returns TRANSPARENT) instead of removing Default entirely -- ResolvedBorderSpec, ResolvedFontSpec, require() helper, and ThemeWidget derive all need Rgba: Default
 
 ### Roadmap Evolution
 
@@ -207,6 +208,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-15T11:15:16.608Z
-Stopped at: Completed 90-05-PLAN.md
+Last session: 2026-04-15T11:15:22Z
+Stopped at: Completed 90-01-PLAN.md (Rgba API polish)
 Resume file: None
