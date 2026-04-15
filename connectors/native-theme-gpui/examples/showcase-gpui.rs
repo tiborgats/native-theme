@@ -184,7 +184,7 @@ fn theme_names() -> Vec<SharedString> {
     names.extend(
         native_theme::theme::Theme::list_presets_for_platform()
             .iter()
-            .map(|s| SharedString::from(s.to_string())),
+            .map(|s| SharedString::from(s.key)),
     );
     names
 }

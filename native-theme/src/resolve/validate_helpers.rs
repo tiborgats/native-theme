@@ -136,97 +136,95 @@ pub(crate) fn require_text_scale_entry(
     }
 }
 
-/// Validate an `Option<WidgetBorderSpec>` (widget border fields).
-/// If None, records the path as missing. Requires the 4 sub-fields filled by
-/// border_inheritance (color, corner_radius, line_width, shadow_enabled).
-/// Padding sub-fields are sizing fields with no inheritance -- they use
-/// the preset value if present, otherwise default to `T::default()`.
-/// `corner_radius_lg` and `opacity` are defaults-only; set to 0.0 here.
-pub(crate) fn require_border(
-    border: &Option<WidgetBorderSpec>,
-    prefix: &str,
-    missing: &mut Vec<String>,
-) -> ResolvedBorderSpec {
-    match border {
-        None => {
-            missing.push(prefix.to_string());
-            ResolvedBorderSpec::default()
-        }
-        Some(b) => {
-            let color = require(&b.color, &format!("{prefix}.color"), missing);
-            let corner_radius = require(
-                &b.corner_radius,
-                &format!("{prefix}.corner_radius"),
-                missing,
-            );
-            let line_width = require(&b.line_width, &format!("{prefix}.line_width"), missing);
-            let shadow_enabled = require(
-                &b.shadow_enabled,
-                &format!("{prefix}.shadow_enabled"),
-                missing,
-            );
-            ResolvedBorderSpec {
-                color,
-                corner_radius,
-                corner_radius_lg: 0.0,
-                line_width,
-                opacity: 0.0,
-                shadow_enabled,
-                padding_horizontal: b.padding_horizontal.unwrap_or_default(),
-                padding_vertical: b.padding_vertical.unwrap_or_default(),
-            }
-        }
-    }
+/// Which border sub-fields are required vs optional for a given widget.
+///
+/// Drives `validate_border()` dispatch. Each widget declares its border kind
+/// via `#[theme_layer(border_kind = "...")]` on the struct; the proc-macro
+/// emits the corresponding `BorderKind` variant in generated `validate_widget()`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum BorderKind {
+    /// All 4 inherited sub-fields required (color, corner_radius, line_width, shadow_enabled).
+    /// Used by: window, button, input, checkbox, tooltip, progress_bar, toolbar,
+    /// list, popover, dialog, combo_box, segmented_control, expander.
+    Full,
+    /// Only color + line_width required; corner_radius and shadow_enabled optional.
+    /// Used by: sidebar, status_bar.
+    Partial,
+    /// All sub-fields optional — no validation errors recorded.
+    /// Used by: menu, tab, card.
+    None,
 }
 
-/// Resolve a border for widgets excluded from border_inheritance (menu, tab, card).
-/// These widgets have no inheritance for any border sub-field; all sub-fields
-/// use the preset value if present, otherwise `T::default()`. No validation
-/// errors are recorded -- the border is entirely optional.
-/// `corner_radius_lg` and `opacity` are defaults-only; set to 0.0 here.
-pub(crate) fn border_all_optional(border: &Option<WidgetBorderSpec>) -> ResolvedBorderSpec {
-    match border {
-        None => ResolvedBorderSpec::default(),
-        Some(b) => ResolvedBorderSpec {
-            color: b.color.unwrap_or_default(),
-            corner_radius: b.corner_radius.unwrap_or_default(),
-            corner_radius_lg: 0.0,
-            line_width: b.line_width.unwrap_or_default(),
-            opacity: 0.0,
-            shadow_enabled: b.shadow_enabled.unwrap_or_default(),
-            padding_horizontal: b.padding_horizontal.unwrap_or_default(),
-            padding_vertical: b.padding_vertical.unwrap_or_default(),
-        },
-    }
-}
-
-/// Validate a border for widgets with partial border inheritance (sidebar, status_bar).
-/// Only color + line_width are inherited; other sub-fields use defaults if not in preset.
-/// `corner_radius_lg` and `opacity` are defaults-only; set to 0.0 here.
-pub(crate) fn require_border_partial(
+/// Validate an `Option<WidgetBorderSpec>` according to its `BorderKind`.
+///
+/// - `Full`: requires color, corner_radius, line_width, shadow_enabled.
+/// - `Partial`: requires color and line_width only.
+/// - `None`: all sub-fields optional, no missing-field errors.
+///
+/// Padding sub-fields are sizing fields with no inheritance — they use
+/// the preset value if present, otherwise `T::default()`.
+/// `corner_radius_lg` and `opacity` are defaults-only; always 0.0 at widget level.
+pub(crate) fn validate_border(
     border: &Option<WidgetBorderSpec>,
     prefix: &str,
+    kind: BorderKind,
     missing: &mut Vec<String>,
 ) -> ResolvedBorderSpec {
-    match border {
-        None => {
-            missing.push(prefix.to_string());
-            ResolvedBorderSpec::default()
-        }
-        Some(b) => {
-            let color = require(&b.color, &format!("{prefix}.color"), missing);
-            let line_width = require(&b.line_width, &format!("{prefix}.line_width"), missing);
-            ResolvedBorderSpec {
-                color,
+    match kind {
+        BorderKind::None => match border {
+            Option::None => ResolvedBorderSpec::default(),
+            Some(b) => ResolvedBorderSpec {
+                color: b.color.unwrap_or_default(),
                 corner_radius: b.corner_radius.unwrap_or_default(),
                 corner_radius_lg: 0.0,
-                line_width,
+                line_width: b.line_width.unwrap_or_default(),
                 opacity: 0.0,
                 shadow_enabled: b.shadow_enabled.unwrap_or_default(),
                 padding_horizontal: b.padding_horizontal.unwrap_or_default(),
                 padding_vertical: b.padding_vertical.unwrap_or_default(),
+            },
+        },
+        BorderKind::Full | BorderKind::Partial => match border {
+            Option::None => {
+                missing.push(prefix.to_string());
+                ResolvedBorderSpec::default()
             }
-        }
+            Some(b) => {
+                let color = require(&b.color, &format!("{prefix}.color"), missing);
+                let line_width = require(&b.line_width, &format!("{prefix}.line_width"), missing);
+
+                let (corner_radius, shadow_enabled) = if kind == BorderKind::Full {
+                    (
+                        require(
+                            &b.corner_radius,
+                            &format!("{prefix}.corner_radius"),
+                            missing,
+                        ),
+                        require(
+                            &b.shadow_enabled,
+                            &format!("{prefix}.shadow_enabled"),
+                            missing,
+                        ),
+                    )
+                } else {
+                    (
+                        b.corner_radius.unwrap_or_default(),
+                        b.shadow_enabled.unwrap_or_default(),
+                    )
+                };
+
+                ResolvedBorderSpec {
+                    color,
+                    corner_radius,
+                    corner_radius_lg: 0.0,
+                    line_width,
+                    opacity: 0.0,
+                    shadow_enabled,
+                    padding_horizontal: b.padding_horizontal.unwrap_or_default(),
+                    padding_vertical: b.padding_vertical.unwrap_or_default(),
+                }
+            }
+        },
     }
 }
 
@@ -380,7 +378,7 @@ impl ValidateNested for WidgetBorderSpec {
         _dpi: f32,
         missing: &mut Vec<String>,
     ) -> ResolvedBorderSpec {
-        require_border(source, prefix, missing)
+        validate_border(source, prefix, BorderKind::Full, missing)
     }
 }
 

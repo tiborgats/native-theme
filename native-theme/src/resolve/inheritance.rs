@@ -375,6 +375,7 @@ impl ThemeMode {
 }
 
 #[cfg(test)]
+#[allow(clippy::expect_used)]
 mod tests {
     /// Verify that every rule in inheritance-rules.toml [defaults_internal] section
     /// is covered by the hand-written implementation in this file.
@@ -425,24 +426,400 @@ mod tests {
         }
     }
 
-    /// Verify border_inheritance and font_inheritance sections have matching
-    /// coverage in the Rust implementation (widget lists).
-    #[test]
-    fn inheritance_rules_toml_covers_structured_inheritance() {
+    /// Helper: parse inheritance-rules.toml once.
+    fn load_rules_toml() -> toml::Table {
         let toml_str = include_str!("../../../docs/inheritance-rules.toml");
-        let table: toml::Table = toml_str.parse().expect("valid TOML");
+        toml_str.parse().expect("valid TOML")
+    }
 
-        // Verify sections exist (structural check)
-        assert!(
-            table.contains_key("border_inheritance"),
-            "TOML must have [border_inheritance] section"
+    /// Helper: extract a string array from a TOML value.
+    fn toml_string_array(val: &toml::Value) -> Vec<String> {
+        val.as_array()
+            .expect("expected array")
+            .iter()
+            .map(|v| v.as_str().expect("expected string").to_string())
+            .collect()
+    }
+
+    /// Helper: assert bidirectional coverage between a TOML key set and an explicit list.
+    fn assert_bidirectional(section_name: &str, toml_keys: &[String], implemented: &[&str]) {
+        for key in toml_keys {
+            assert!(
+                implemented.contains(&key.as_str()),
+                "[{section_name}] TOML has '{key}' but it is not in the implemented list. \
+                 Either implement the rule or add it to the test."
+            );
+        }
+        for &target in implemented {
+            assert!(
+                toml_keys.iter().any(|k| k == target),
+                "[{section_name}] implementation claims '{target}' but it is not in the TOML."
+            );
+        }
+    }
+
+    // --- [border_inheritance] bidirectional ---
+
+    #[test]
+    fn border_inheritance_widgets_match_toml() {
+        let table = load_rules_toml();
+        let section = table
+            .get("border_inheritance")
+            .and_then(|v| v.as_table())
+            .expect("[border_inheritance] section exists");
+
+        // Full border widgets (resolve_border with full inheritance)
+        let toml_widgets = toml_string_array(
+            section
+                .get("widgets_with_border")
+                .expect("widgets_with_border key"),
         );
-        assert!(
-            table.contains_key("font_inheritance"),
-            "TOML must have [font_inheritance] section"
+
+        // These are the widgets that resolve_border_inheritance() calls resolve_border() on.
+        let implemented_widgets: &[&str] = &[
+            "window",
+            "button",
+            "input",
+            "checkbox",
+            "tooltip",
+            "progress_bar",
+            "toolbar",
+            "list",
+            "popover",
+            "dialog",
+            "combo_box",
+            "segmented_control",
+            "expander",
+        ];
+        assert_bidirectional(
+            "border_inheritance.widgets_with_border",
+            &toml_widgets,
+            implemented_widgets,
         );
-        // The test verifies structural presence; the proc-macro handles
-        // uniform rules, so we only need to confirm the TOML sections
-        // that map to hand-written code still exist.
+    }
+
+    #[test]
+    fn border_inheritance_lg_widgets_match_toml() {
+        let table = load_rules_toml();
+        let section = table
+            .get("border_inheritance")
+            .and_then(|v| v.as_table())
+            .expect("[border_inheritance] section exists");
+
+        let toml_lg = toml_string_array(
+            section
+                .get("corner_radius_lg_widgets")
+                .expect("corner_radius_lg_widgets key"),
+        );
+
+        // These are the widgets where resolve_border() is called with use_lg_radius = true.
+        let implemented_lg: &[&str] = &["window", "popover", "dialog"];
+        assert_bidirectional(
+            "border_inheritance.corner_radius_lg_widgets",
+            &toml_lg,
+            implemented_lg,
+        );
+    }
+
+    // --- [font_inheritance] bidirectional ---
+
+    #[test]
+    fn font_inheritance_widgets_match_toml() {
+        let table = load_rules_toml();
+        let section = table
+            .get("font_inheritance")
+            .and_then(|v| v.as_table())
+            .expect("[font_inheritance] section exists");
+
+        let toml_fonts = toml_string_array(
+            section
+                .get("widgets_with_font")
+                .expect("widgets_with_font key"),
+        );
+
+        // These are the widget font paths that resolve_font_inheritance() calls resolve_font() on.
+        let implemented_fonts: &[&str] = &[
+            "window.title_bar_font",
+            "button.font",
+            "input.font",
+            "checkbox.font",
+            "menu.font",
+            "tooltip.font",
+            "tab.font",
+            "sidebar.font",
+            "toolbar.font",
+            "status_bar.font",
+            "list.item_font",
+            "list.header_font",
+            "popover.font",
+            "dialog.body_font",
+            "dialog.title_font",
+            "combo_box.font",
+            "segmented_control.font",
+            "expander.font",
+            "link.font",
+        ];
+        assert_bidirectional(
+            "font_inheritance.widgets_with_font",
+            &toml_fonts,
+            implemented_fonts,
+        );
+    }
+
+    // --- [per_platform] bidirectional (safety nets) ---
+
+    #[test]
+    fn per_platform_rules_match_safety_nets() {
+        let table = load_rules_toml();
+        let section = table
+            .get("per_platform")
+            .and_then(|v| v.as_table())
+            .expect("[per_platform] section exists");
+
+        let toml_keys: Vec<String> = section.keys().cloned().collect();
+
+        // These are the fields that resolve_safety_nets() fills.
+        let implemented_safety_nets: &[&str] = &[
+            "input.caret_color",
+            "scrollbar.track_color",
+            "spinner.fill_color",
+            "popover.background_color",
+            "list.background_color",
+            "dialog.background_color",
+        ];
+        assert_bidirectional("per_platform", &toml_keys, implemented_safety_nets);
+    }
+
+    // --- [text_scale_inheritance] bidirectional ---
+
+    #[test]
+    fn text_scale_entries_match_toml() {
+        let table = load_rules_toml();
+        let section = table
+            .get("text_scale_inheritance")
+            .and_then(|v| v.as_table())
+            .expect("[text_scale_inheritance] section exists");
+
+        let toml_entries = toml_string_array(section.get("entries").expect("entries key"));
+
+        // These are the entries that resolve_text_scale() processes.
+        let implemented_entries: &[&str] =
+            &["caption", "section_heading", "dialog_title", "display"];
+        assert_bidirectional(
+            "text_scale_inheritance.entries",
+            &toml_entries,
+            implemented_entries,
+        );
+    }
+
+    // --- [uniform] bidirectional ---
+    //
+    // The [uniform] section contains rules implemented across multiple phases:
+    //   - proc-macro-generated rules (via #[theme(inherit_from = "...")]) — Phase 3
+    //   - widget-to-widget rules — Phase 4
+    //   - partial border rules (sidebar/status_bar) — Phase 3
+    //   - font color override (link.font.color) — Phase 3
+    //   - safety-net-adjacent (scrollbar.thumb_*) — Phase 3
+
+    #[test]
+    fn uniform_rules_all_accounted_for() {
+        let table = load_rules_toml();
+        let section = table
+            .get("uniform")
+            .and_then(|v| v.as_table())
+            .expect("[uniform] section exists");
+
+        let toml_keys: Vec<String> = section.keys().cloned().collect();
+
+        // Every [uniform] rule must appear in exactly one of these implementation categories.
+        // Each rule is listed under its implementation method in inheritance.rs.
+
+        // Category 1: proc-macro generated via #[theme(inherit_from = "defaults.*")]
+        // These are implemented by resolve_from_defaults() on each widget struct.
+        let proc_macro_rules: &[&str] = &[
+            // window (§2.2)
+            "window.background_color",
+            "window.title_bar_background",
+            // button (§2.3)
+            "button.background_color",
+            "button.primary_background",
+            "button.primary_text_color",
+            "button.disabled_opacity",
+            "button.hover_background",
+            "button.disabled_text_color",
+            // input (§2.4)
+            "input.background_color",
+            "input.placeholder_color",
+            "input.selection_background",
+            "input.selection_text_color",
+            "input.disabled_opacity",
+            "input.disabled_text_color",
+            // checkbox (§2.5)
+            "checkbox.background_color",
+            "checkbox.checked_background",
+            "checkbox.indicator_color",
+            "checkbox.disabled_opacity",
+            "checkbox.disabled_text_color",
+            // menu (§2.6)
+            "menu.background_color",
+            "menu.separator_color",
+            "menu.icon_size",
+            "menu.hover_background",
+            "menu.hover_text_color",
+            "menu.disabled_text_color",
+            // tooltip (§2.7)
+            "tooltip.background_color",
+            // scrollbar (§2.8)
+            "scrollbar.thumb_color",
+            "scrollbar.thumb_hover_color",
+            // slider (§2.9)
+            "slider.fill_color",
+            "slider.track_color",
+            "slider.thumb_color",
+            "slider.disabled_opacity",
+            // progress_bar (§2.10)
+            "progress_bar.fill_color",
+            "progress_bar.track_color",
+            // tab (§2.11)
+            "tab.background_color",
+            "tab.active_background",
+            "tab.active_text_color",
+            "tab.bar_background",
+            // sidebar (§2.12)
+            "sidebar.background_color",
+            "sidebar.selection_background",
+            "sidebar.selection_text_color",
+            "sidebar.hover_background",
+            // toolbar (§2.13)
+            "toolbar.background_color",
+            "toolbar.icon_size",
+            // status_bar (§2.14)
+            "status_bar.background_color",
+            // list (§2.15)
+            "list.selection_background",
+            "list.selection_text_color",
+            "list.header_background",
+            "list.grid_color",
+            "list.hover_background",
+            "list.disabled_text_color",
+            // switch (§2.21)
+            "switch.checked_background",
+            "switch.thumb_background",
+            "switch.disabled_opacity",
+            // combo_box (§2.24)
+            "combo_box.background_color",
+            "combo_box.disabled_opacity",
+            "combo_box.disabled_text_color",
+            // segmented_control (§2.25)
+            "segmented_control.background_color",
+            "segmented_control.active_background",
+            "segmented_control.active_text_color",
+            "segmented_control.disabled_opacity",
+            // card (§2.26)
+            "card.background_color",
+            // splitter (§2.17)
+            "splitter.divider_color",
+            // separator (§2.18)
+            "separator.line_color",
+            "separator.line_width",
+            // link (§2.28)
+            "link.visited_text_color",
+            "link.disabled_text_color",
+        ];
+
+        // Category 2: widget-to-widget chains (resolve_widget_to_widget, Phase 4)
+        let widget_to_widget_rules: &[&str] = &[
+            "window.inactive_title_bar_background",
+            "window.inactive_title_bar_text_color",
+            "button.hover_text_color",
+            "button.active_text_color",
+            "tab.hover_text_color",
+            "list.hover_text_color",
+            "splitter.hover_color",
+            "link.hover_text_color",
+            "link.active_text_color",
+        ];
+
+        // Category 3: partial border rules (resolve_border_inheritance, Phase 3)
+        let partial_border_rules: &[&str] = &[
+            "sidebar.border.color",
+            "sidebar.border.line_width",
+            "status_bar.border.color",
+            "status_bar.border.line_width",
+        ];
+
+        // Category 4: font color override (resolve_font_inheritance, Phase 3)
+        let font_override_rules: &[&str] = &["link.font.color"];
+
+        // Category 5: widget-to-widget via list (resolve_widget_to_widget, Phase 4)
+        let list_alternate_rule: &[&str] = &["list.alternate_row_background"];
+
+        // Combine all categories
+        let mut all_implemented: Vec<&str> = Vec::new();
+        all_implemented.extend_from_slice(proc_macro_rules);
+        all_implemented.extend_from_slice(widget_to_widget_rules);
+        all_implemented.extend_from_slice(partial_border_rules);
+        all_implemented.extend_from_slice(font_override_rules);
+        all_implemented.extend_from_slice(list_alternate_rule);
+
+        assert_bidirectional("uniform", &toml_keys, &all_implemented);
+    }
+
+    // --- [no_inheritance] negative check ---
+    //
+    // Fields in [no_inheritance] must NEVER appear as inheritance targets in any
+    // of the implemented rule lists above.
+
+    #[test]
+    fn no_inheritance_fields_are_not_inherited() {
+        let table = load_rules_toml();
+        let section = table
+            .get("no_inheritance")
+            .and_then(|v| v.as_table())
+            .expect("[no_inheritance] section exists");
+
+        let no_inherit_fields = toml_string_array(section.get("fields").expect("fields key"));
+
+        // Gather ALL implemented inheritance targets across all phases.
+        // If any no_inheritance field appears here, we have a bug.
+        let all_inherited_targets: &[&str] = &[
+            // defaults_internal (Phase 1)
+            "defaults.selection_background",
+            "defaults.focus_ring_color",
+            "defaults.selection_inactive_background",
+            "defaults.text_selection_background",
+            "defaults.text_selection_color",
+            "defaults.font.color",
+            "defaults.mono_font.color",
+            // safety nets (Phase 2) — target fields
+            "input.caret_color",
+            "scrollbar.track_color",
+            "spinner.fill_color",
+            "popover.background_color",
+            "list.background_color",
+            "dialog.background_color",
+            // widget-to-widget (Phase 4)
+            "window.inactive_title_bar_background",
+            "window.inactive_title_bar_text_color",
+            "button.hover_text_color",
+            "button.active_text_color",
+            "tab.hover_text_color",
+            "list.hover_text_color",
+            "splitter.hover_color",
+            "link.hover_text_color",
+            "link.active_text_color",
+            "list.alternate_row_background",
+            // link.font.color override
+            "link.font.color",
+        ];
+
+        for field in &no_inherit_fields {
+            assert!(
+                !all_inherited_targets.contains(&field.as_str()),
+                "[no_inheritance] field '{field}' is listed as no-inherit but appears \
+                 in an inheritance target list. Either remove the inheritance rule or \
+                 remove the field from [no_inheritance]."
+            );
+        }
     }
 }

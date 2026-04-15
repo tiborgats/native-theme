@@ -137,23 +137,103 @@ pub struct PresetInfo {
 /// [`PLATFORM_SPECIFIC`] into a single array for richer preset enumeration.
 const PRESET_INFOS: &[PresetInfo] = &[
     // Platform presets
-    PresetInfo { key: "kde-breeze", display_name: "KDE Breeze", platforms: &["linux-kde"], light_only: false },
-    PresetInfo { key: "adwaita", display_name: "Adwaita", platforms: &["linux"], light_only: false },
-    PresetInfo { key: "windows-11", display_name: "Windows 11", platforms: &["windows"], light_only: false },
-    PresetInfo { key: "macos-sonoma", display_name: "macOS Sonoma", platforms: &["macos"], light_only: false },
-    PresetInfo { key: "material", display_name: "Material", platforms: &[], light_only: false },
-    PresetInfo { key: "ios", display_name: "iOS", platforms: &["macos", "ios"], light_only: false },
+    PresetInfo {
+        key: "kde-breeze",
+        display_name: "KDE Breeze",
+        platforms: &["linux-kde"],
+        light_only: false,
+    },
+    PresetInfo {
+        key: "adwaita",
+        display_name: "Adwaita",
+        platforms: &["linux"],
+        light_only: false,
+    },
+    PresetInfo {
+        key: "windows-11",
+        display_name: "Windows 11",
+        platforms: &["windows"],
+        light_only: false,
+    },
+    PresetInfo {
+        key: "macos-sonoma",
+        display_name: "macOS Sonoma",
+        platforms: &["macos"],
+        light_only: false,
+    },
+    PresetInfo {
+        key: "material",
+        display_name: "Material",
+        platforms: &[],
+        light_only: false,
+    },
+    PresetInfo {
+        key: "ios",
+        display_name: "iOS",
+        platforms: &["macos", "ios"],
+        light_only: false,
+    },
     // Community presets
-    PresetInfo { key: "catppuccin-latte", display_name: "Catppuccin Latte", platforms: &[], light_only: false },
-    PresetInfo { key: "catppuccin-frappe", display_name: "Catppuccin Frappe", platforms: &[], light_only: false },
-    PresetInfo { key: "catppuccin-macchiato", display_name: "Catppuccin Macchiato", platforms: &[], light_only: false },
-    PresetInfo { key: "catppuccin-mocha", display_name: "Catppuccin Mocha", platforms: &[], light_only: false },
-    PresetInfo { key: "nord", display_name: "Nord", platforms: &[], light_only: false },
-    PresetInfo { key: "dracula", display_name: "Dracula", platforms: &[], light_only: false },
-    PresetInfo { key: "gruvbox", display_name: "Gruvbox", platforms: &[], light_only: false },
-    PresetInfo { key: "solarized", display_name: "Solarized", platforms: &[], light_only: false },
-    PresetInfo { key: "tokyo-night", display_name: "Tokyo Night", platforms: &[], light_only: false },
-    PresetInfo { key: "one-dark", display_name: "One Dark", platforms: &[], light_only: false },
+    PresetInfo {
+        key: "catppuccin-latte",
+        display_name: "Catppuccin Latte",
+        platforms: &[],
+        light_only: false,
+    },
+    PresetInfo {
+        key: "catppuccin-frappe",
+        display_name: "Catppuccin Frappe",
+        platforms: &[],
+        light_only: false,
+    },
+    PresetInfo {
+        key: "catppuccin-macchiato",
+        display_name: "Catppuccin Macchiato",
+        platforms: &[],
+        light_only: false,
+    },
+    PresetInfo {
+        key: "catppuccin-mocha",
+        display_name: "Catppuccin Mocha",
+        platforms: &[],
+        light_only: false,
+    },
+    PresetInfo {
+        key: "nord",
+        display_name: "Nord",
+        platforms: &[],
+        light_only: false,
+    },
+    PresetInfo {
+        key: "dracula",
+        display_name: "Dracula",
+        platforms: &[],
+        light_only: false,
+    },
+    PresetInfo {
+        key: "gruvbox",
+        display_name: "Gruvbox",
+        platforms: &[],
+        light_only: false,
+    },
+    PresetInfo {
+        key: "solarized",
+        display_name: "Solarized",
+        platforms: &[],
+        light_only: false,
+    },
+    PresetInfo {
+        key: "tokyo-night",
+        display_name: "Tokyo Night",
+        platforms: &[],
+        light_only: false,
+    },
+    PresetInfo {
+        key: "one-dark",
+        display_name: "One Dark",
+        platforms: &[],
+        light_only: false,
+    },
 ];
 
 /// Cached parse result. Uses `String` for the error type (not `Error`) because:
@@ -245,8 +325,7 @@ pub(crate) fn list_presets_for_platform() -> Vec<PresetInfo> {
     PRESET_INFOS
         .iter()
         .filter(|info| {
-            info.platforms.is_empty()
-                || info.platforms.iter().any(|p| platform.starts_with(p))
+            info.platforms.is_empty() || info.platforms.iter().any(|p| platform.starts_with(p))
         })
         .cloned()
         .collect()
@@ -415,7 +494,11 @@ accent_color = "#00ff00"
     fn preset_names_match_list() {
         // Every name in list_presets() must be loadable via preset()
         for info in list_presets() {
-            assert!(preset(info.key).is_ok(), "preset '{}' not loadable", info.key);
+            assert!(
+                preset(info.key).is_ok(),
+                "preset '{}' not loadable",
+                info.key
+            );
         }
     }
 
@@ -730,7 +813,8 @@ accent_color = "#00ff00"
         for info in &filtered {
             assert!(
                 all.iter().any(|a| a.key == info.key),
-                "filtered preset '{}' not in full list", info.key
+                "filtered preset '{}' not in full list",
+                info.key
             );
         }
         // Community themes should always be present

@@ -1748,7 +1748,10 @@ fn validate_range_only_errors_produce_resolution_invalid() {
 
 #[test]
 fn merge_preserves_base_name_when_overlay_name_empty() {
-    let mut base = crate::Theme { name: "My Base".into(), ..crate::Theme::default() };
+    let mut base = crate::Theme {
+        name: "My Base".into(),
+        ..crate::Theme::default()
+    };
     let overlay = crate::Theme::default();
     base.merge(&overlay);
     assert_eq!(base.name, "My Base", "base name should be preserved");
@@ -1759,7 +1762,10 @@ fn merge_preserves_empty_base_name_over_nonempty_overlay() {
     // Issue 17a edge case: merge() never touches self.name, so an empty
     // base name is kept even when the overlay has a non-empty name.
     let mut base = crate::Theme::default();
-    let overlay = crate::Theme { name: "Overlay Name".into(), ..crate::Theme::default() };
+    let overlay = crate::Theme {
+        name: "Overlay Name".into(),
+        ..crate::Theme::default()
+    };
     base.merge(&overlay);
     assert_eq!(
         base.name, "",

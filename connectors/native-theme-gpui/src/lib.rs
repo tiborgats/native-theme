@@ -195,12 +195,11 @@ pub fn to_theme(
 pub fn from_preset(name: &str, is_dark: bool) -> Result<(GpuiTheme, ResolvedTheme)> {
     let spec = Theme::preset(name)?;
     let display_name = spec.name.clone();
-    let variant = spec
-        .into_variant(if is_dark {
-            ColorMode::Dark
-        } else {
-            ColorMode::Light
-        })?;
+    let variant = spec.into_variant(if is_dark {
+        ColorMode::Dark
+    } else {
+        ColorMode::Light
+    })?;
     let resolved = variant.into_resolved(None)?;
     let theme = to_theme(&resolved, &display_name, is_dark, false);
     Ok((theme, resolved))

@@ -154,12 +154,11 @@ pub fn from_preset(
 ) -> Result<(iced_core::theme::Theme, native_theme::theme::ResolvedTheme)> {
     let spec = native_theme::theme::Theme::preset(name)?;
     let display_name = spec.name.clone();
-    let variant = spec
-        .into_variant(if is_dark {
-            ColorMode::Dark
-        } else {
-            ColorMode::Light
-        })?;
+    let variant = spec.into_variant(if is_dark {
+        ColorMode::Dark
+    } else {
+        ColorMode::Light
+    })?;
     let resolved = variant.into_resolved(None)?;
     let theme = to_theme(&resolved, &display_name);
     Ok((theme, resolved))

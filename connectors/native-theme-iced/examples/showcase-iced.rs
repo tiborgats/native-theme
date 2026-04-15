@@ -234,7 +234,7 @@ fn theme_choices(default_label: &str) -> Vec<ThemeChoice> {
     choices.extend(
         native_theme::theme::Theme::list_presets_for_platform()
             .iter()
-            .map(|name| ThemeChoice::Preset((*name).to_string())),
+            .map(|info| ThemeChoice::Preset(info.key.to_string())),
     );
     choices
 }
@@ -928,9 +928,7 @@ impl State {
                             }
                         }
                         Err(e) => {
-                            self.error_message = Some(format!(
-                                "Theme '{name}': {e}"
-                            ));
+                            self.error_message = Some(format!("Theme '{name}': {e}"));
                         }
                     },
                     Err(e) => {

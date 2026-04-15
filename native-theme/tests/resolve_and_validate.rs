@@ -270,7 +270,10 @@ fn lint_toml_all_presets_no_warnings() {
 #[test]
 fn pick_variant_falls_back_to_other() {
     // Theme with only light variant
-    let mut theme_light_only = Theme { name: "Light Only".into(), ..Theme::default() };
+    let mut theme_light_only = Theme {
+        name: "Light Only".into(),
+        ..Theme::default()
+    };
     let mut light = ThemeMode::default();
     light.defaults.accent_color = Some(Rgba::rgb(0, 0, 255));
     theme_light_only.light = Some(light);
@@ -288,7 +291,10 @@ fn pick_variant_falls_back_to_other() {
     );
 
     // Theme with only dark variant
-    let mut theme_dark_only = Theme { name: "Dark Only".into(), ..Theme::default() };
+    let mut theme_dark_only = Theme {
+        name: "Dark Only".into(),
+        ..Theme::default()
+    };
     let mut dark = ThemeMode::default();
     dark.defaults.accent_color = Some(Rgba::rgb(255, 0, 0));
     theme_dark_only.dark = Some(dark);
@@ -309,7 +315,10 @@ fn pick_variant_falls_back_to_other() {
 #[test]
 fn into_variant_falls_back_to_other() {
     // Theme with only light variant
-    let mut theme = Theme { name: "Light Only".into(), ..Theme::default() };
+    let mut theme = Theme {
+        name: "Light Only".into(),
+        ..Theme::default()
+    };
     let mut light = ThemeMode::default();
     light.defaults.accent_color = Some(Rgba::rgb(0, 0, 255));
     theme.light = Some(light);
@@ -327,16 +336,25 @@ fn into_variant_falls_back_to_other() {
 
 #[test]
 fn pick_variant_returns_err_for_empty_theme() {
-    let theme = Theme { name: "Empty".into(), ..Theme::default() };
+    let theme = Theme {
+        name: "Empty".into(),
+        ..Theme::default()
+    };
     assert!(theme.pick_variant(ColorMode::Dark).is_err());
     assert!(theme.pick_variant(ColorMode::Light).is_err());
 }
 
 #[test]
 fn into_variant_returns_err_for_empty_theme() {
-    let theme1 = Theme { name: "Empty".into(), ..Theme::default() };
+    let theme1 = Theme {
+        name: "Empty".into(),
+        ..Theme::default()
+    };
     assert!(theme1.into_variant(ColorMode::Dark).is_err());
-    let theme2 = Theme { name: "Empty".into(), ..Theme::default() };
+    let theme2 = Theme {
+        name: "Empty".into(),
+        ..Theme::default()
+    };
     assert!(theme2.into_variant(ColorMode::Light).is_err());
 }
 
@@ -368,7 +386,10 @@ fn theme_variant_with_one_field_is_not_empty() {
 
 #[test]
 fn theme_spec_with_one_variant_is_not_empty() {
-    let mut s = Theme { name: "Test".into(), ..Theme::default() };
+    let mut s = Theme {
+        name: "Test".into(),
+        ..Theme::default()
+    };
     s.light = Some(ThemeMode::default());
     assert!(
         !s.is_empty(),

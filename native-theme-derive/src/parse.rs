@@ -12,7 +12,7 @@ pub(crate) enum FieldCategory {
     SoftOption,
     /// Nested validated type (font, border).
     /// Border fields are dispatched via struct-level `border_kind` in gen_validate.
-    Nested { resolved_ty: Type },
+    Nested { resolved_ty: Box<Type> },
 }
 
 /// What range check to emit for a field.
@@ -180,7 +180,7 @@ fn parse_one_field(field: &Field) -> Result<FieldMeta> {
                     // Mark as nested; resolved_type parsed separately
                     if category.is_none() {
                         category = Some(FieldCategory::Nested {
-                            resolved_ty: ty.clone(), // placeholder, replaced below
+                            resolved_ty: Box::new(ty.clone()), // placeholder, replaced below
                         });
                     }
                     Ok(())
@@ -246,13 +246,13 @@ fn parse_one_field(field: &Field) -> Result<FieldMeta> {
         match category {
             Some(FieldCategory::Nested { .. }) => {
                 category = Some(FieldCategory::Nested {
-                    resolved_ty: rt.clone(),
+                    resolved_ty: Box::new(rt.clone()),
                 });
             }
             None => {
                 // resolved_type without nested: treat as nested
                 category = Some(FieldCategory::Nested {
-                    resolved_ty: rt.clone(),
+                    resolved_ty: Box::new(rt.clone()),
                 });
             }
             _ => {} // option/soft_option ignore resolved_type

@@ -60,8 +60,7 @@ pub use bundled::{bundled_icon_by_name, bundled_icon_svg};
 pub use defaults::ThemeDefaults;
 pub use dialog_order::DialogButtonOrder;
 pub use font::{
-    FontSize, FontSpec, FontStyle, ResolvedFontSpec, TextScale, TextScaleEntry,
-    intern_font_family,
+    FontSize, FontSpec, FontStyle, ResolvedFontSpec, TextScale, TextScaleEntry, intern_font_family,
 };
 pub use icon_sizes::IconSizes;
 pub use icons::{
@@ -886,17 +885,29 @@ mod tests {
 
     #[test]
     fn native_theme_merge_keeps_base_name() {
-        let mut base = Theme { name: "Base Theme".into(), ..Theme::default() };
-        let overlay = Theme { name: "Overlay Theme".into(), ..Theme::default() };
+        let mut base = Theme {
+            name: "Base Theme".into(),
+            ..Theme::default()
+        };
+        let overlay = Theme {
+            name: "Overlay Theme".into(),
+            ..Theme::default()
+        };
         base.merge(&overlay);
         assert_eq!(base.name, "Base Theme");
     }
 
     #[test]
     fn native_theme_merge_overlay_light_into_none() {
-        let mut base = Theme { name: "Theme".into(), ..Theme::default() };
+        let mut base = Theme {
+            name: "Theme".into(),
+            ..Theme::default()
+        };
 
-        let mut overlay = Theme { name: "Overlay".into(), ..Theme::default() };
+        let mut overlay = Theme {
+            name: "Overlay".into(),
+            ..Theme::default()
+        };
         let mut light = ThemeMode::default();
         light.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
         overlay.light = Some(light);
@@ -912,12 +923,18 @@ mod tests {
 
     #[test]
     fn native_theme_merge_both_light_variants() {
-        let mut base = Theme { name: "Theme".into(), ..Theme::default() };
+        let mut base = Theme {
+            name: "Theme".into(),
+            ..Theme::default()
+        };
         let mut base_light = ThemeMode::default();
         base_light.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
         base.light = Some(base_light);
 
-        let mut overlay = Theme { name: "Overlay".into(), ..Theme::default() };
+        let mut overlay = Theme {
+            name: "Overlay".into(),
+            ..Theme::default()
+        };
         let mut overlay_light = ThemeMode::default();
         overlay_light.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
         overlay.light = Some(overlay_light);
@@ -936,12 +953,18 @@ mod tests {
 
     #[test]
     fn native_theme_merge_base_light_only_preserved() {
-        let mut base = Theme { name: "Theme".into(), ..Theme::default() };
+        let mut base = Theme {
+            name: "Theme".into(),
+            ..Theme::default()
+        };
         let mut base_light = ThemeMode::default();
         base_light.defaults.font.family = Some("Inter".into());
         base.light = Some(base_light);
 
-        let overlay = Theme { name: "Overlay".into(), ..Theme::default() }; // no light
+        let overlay = Theme {
+            name: "Overlay".into(),
+            ..Theme::default()
+        }; // no light
 
         base.merge(&overlay);
 
@@ -954,9 +977,15 @@ mod tests {
 
     #[test]
     fn native_theme_merge_dark_variant() {
-        let mut base = Theme { name: "Theme".into(), ..Theme::default() };
+        let mut base = Theme {
+            name: "Theme".into(),
+            ..Theme::default()
+        };
 
-        let mut overlay = Theme { name: "Overlay".into(), ..Theme::default() };
+        let mut overlay = Theme {
+            name: "Overlay".into(),
+            ..Theme::default()
+        };
         let mut dark = ThemeMode::default();
         dark.defaults.background_color = Some(Rgba::rgb(30, 30, 30));
         overlay.dark = Some(dark);
@@ -972,7 +1001,10 @@ mod tests {
 
     #[test]
     fn native_theme_not_empty_with_light() {
-        let mut theme = Theme { name: "Theme".into(), ..Theme::default() };
+        let mut theme = Theme {
+            name: "Theme".into(),
+            ..Theme::default()
+        };
         theme.light = Some(ThemeMode::default());
         assert!(!theme.is_empty());
     }
@@ -981,7 +1013,10 @@ mod tests {
 
     #[test]
     fn pick_variant_dark_with_both_variants_returns_dark() {
-        let mut theme = Theme { name: "Test".into(), ..Theme::default() };
+        let mut theme = Theme {
+            name: "Test".into(),
+            ..Theme::default()
+        };
         let mut light = ThemeMode::default();
         light.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
         theme.light = Some(light);
@@ -998,7 +1033,10 @@ mod tests {
 
     #[test]
     fn pick_variant_light_with_both_variants_returns_light() {
-        let mut theme = Theme { name: "Test".into(), ..Theme::default() };
+        let mut theme = Theme {
+            name: "Test".into(),
+            ..Theme::default()
+        };
         let mut light = ThemeMode::default();
         light.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
         theme.light = Some(light);
@@ -1015,7 +1053,10 @@ mod tests {
 
     #[test]
     fn pick_variant_dark_with_only_light_falls_back() {
-        let mut theme = Theme { name: "Test".into(), ..Theme::default() };
+        let mut theme = Theme {
+            name: "Test".into(),
+            ..Theme::default()
+        };
         let mut light = ThemeMode::default();
         light.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
         theme.light = Some(light);
@@ -1029,7 +1070,10 @@ mod tests {
 
     #[test]
     fn pick_variant_light_with_only_dark_falls_back() {
-        let mut theme = Theme { name: "Test".into(), ..Theme::default() };
+        let mut theme = Theme {
+            name: "Test".into(),
+            ..Theme::default()
+        };
         let mut dark = ThemeMode::default();
         dark.defaults.background_color = Some(Rgba::rgb(30, 30, 30));
         theme.dark = Some(dark);
@@ -1043,7 +1087,10 @@ mod tests {
 
     #[test]
     fn pick_variant_with_no_variants_returns_err() {
-        let theme = Theme { name: "Empty".into(), ..Theme::default() };
+        let theme = Theme {
+            name: "Empty".into(),
+            ..Theme::default()
+        };
         assert!(theme.pick_variant(ColorMode::Dark).is_err());
         assert!(theme.pick_variant(ColorMode::Light).is_err());
     }
@@ -1057,8 +1104,14 @@ mod tests {
 
     #[test]
     fn icon_set_merge_overlay() {
-        let mut base = Theme { name: "Base".into(), ..Theme::default() };
-        let mut overlay = Theme { name: "Overlay".into(), ..Theme::default() };
+        let mut base = Theme {
+            name: "Base".into(),
+            ..Theme::default()
+        };
+        let mut overlay = Theme {
+            name: "Overlay".into(),
+            ..Theme::default()
+        };
         overlay.icon_set = Some(IconSet::Material);
         base.merge(&overlay);
         assert_eq!(base.icon_set, Some(IconSet::Material));
@@ -1066,9 +1119,15 @@ mod tests {
 
     #[test]
     fn icon_set_merge_none_preserves() {
-        let mut base = Theme { name: "Base".into(), ..Theme::default() };
+        let mut base = Theme {
+            name: "Base".into(),
+            ..Theme::default()
+        };
         base.icon_set = Some(IconSet::SfSymbols);
-        let overlay = Theme { name: "Overlay".into(), ..Theme::default() };
+        let overlay = Theme {
+            name: "Overlay".into(),
+            ..Theme::default()
+        };
         base.merge(&overlay);
         assert_eq!(base.icon_set, Some(IconSet::SfSymbols));
     }
@@ -1076,14 +1135,20 @@ mod tests {
     #[test]
     fn icon_set_is_empty_when_set() {
         assert!(Theme::default().is_empty());
-        let mut t = Theme { name: "Test".into(), ..Theme::default() };
+        let mut t = Theme {
+            name: "Test".into(),
+            ..Theme::default()
+        };
         t.icon_set = Some(IconSet::Material);
         assert!(!t.is_empty());
     }
 
     #[test]
     fn icon_set_toml_round_trip() {
-        let mut theme = Theme { name: "Test".into(), ..Theme::default() };
+        let mut theme = Theme {
+            name: "Test".into(),
+            ..Theme::default()
+        };
         theme.icon_set = Some(IconSet::Material);
         let mut light = ThemeMode::default();
         light.defaults.icon_theme = Some("material".into());
@@ -1333,10 +1398,16 @@ nonexistent_field = "#ff0000"
 
     #[test]
     fn theme_spec_layout_merge() {
-        let mut base = Theme { name: "Base".into(), ..Theme::default() };
+        let mut base = Theme {
+            name: "Base".into(),
+            ..Theme::default()
+        };
         base.layout.widget_gap = Some(6.0);
 
-        let mut overlay = Theme { name: "Overlay".into(), ..Theme::default() };
+        let mut overlay = Theme {
+            name: "Overlay".into(),
+            ..Theme::default()
+        };
         overlay.layout.container_margin = Some(8.0);
 
         base.merge(&overlay);
@@ -1346,7 +1417,10 @@ nonexistent_field = "#ff0000"
 
     #[test]
     fn theme_spec_layout_toml_round_trip() {
-        let mut theme = Theme { name: "Layout Test".into(), ..Theme::default() };
+        let mut theme = Theme {
+            name: "Layout Test".into(),
+            ..Theme::default()
+        };
         theme.layout.widget_gap = Some(8.0);
         theme.layout.container_margin = Some(12.0);
         theme.layout.window_margin = Some(16.0);
@@ -1359,7 +1433,10 @@ nonexistent_field = "#ff0000"
 
     #[test]
     fn theme_spec_is_empty_with_layout() {
-        let mut theme = Theme { name: "Layout Only".into(), ..Theme::default() };
+        let mut theme = Theme {
+            name: "Layout Only".into(),
+            ..Theme::default()
+        };
         assert!(theme.is_empty()); // name doesn't count
         theme.layout.widget_gap = Some(8.0);
         assert!(!theme.is_empty());
@@ -1367,7 +1444,10 @@ nonexistent_field = "#ff0000"
 
     #[test]
     fn theme_spec_layout_top_level_toml() {
-        let mut theme = Theme { name: "Top Level".into(), ..Theme::default() };
+        let mut theme = Theme {
+            name: "Top Level".into(),
+            ..Theme::default()
+        };
         theme.layout.widget_gap = Some(8.0);
 
         let toml_str = theme.to_toml().unwrap();
