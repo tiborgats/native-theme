@@ -15,7 +15,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - ✅ **v0.5.0 Per-Widget Architecture & Resolution Pipeline** — Phases 44-48 (shipped 2026-03-29)
 - ✅ **v0.5.5 Schema Overhaul & Quality** — Phases 49-60 (shipped 2026-04-09)
 - ✅ **v0.5.6 Internal Quality & Runtime Watching** — Phases 61-68 (shipped 2026-04-10)
-- 🚧 **v0.5.7 API Overhaul** — Phases 69-89 (in progress)
+- 🚧 **v0.5.7 API Overhaul** — Phases 69-90 (in progress)
 
 ## Phases
 
@@ -652,6 +652,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 
 **Goal:** Resolve all remaining v0.5.7 API overhaul gaps from todo docs (12 issues across Rgba polish, ThemeWatcher rename, Theme method cleanup, inheritance drift test, intern_font_family, watch compile gates)
 **Depends on:** Phase 89
+**Status:** Complete (2026-04-15)
 **Plans:** 6/6 plans complete
 
 Plans:
@@ -661,3 +662,5 @@ Plans:
 - [x] 90-04-PLAN.md -- Theme::new() deletion, pick/into_variant Result, preset cache doc
 - [x] 90-05-PLAN.md -- intern_font_family helper with global dedup cache
 - [x] 90-06-PLAN.md -- Inheritance drift test, kde pub doc, watch compile gates
+
+Accepted deviation: Rgba retains Default via manual impl returning TRANSPARENT (30+ types require the bound). GAP-4a intent achieved.
