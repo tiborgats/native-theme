@@ -12,13 +12,13 @@ use super::ThemeChangeEvent;
 /// async runtime (tokio) is exposed to the consumer.
 ///
 /// The signal iterator is blocking -- it waits for the next D-Bus signal.
-/// Shutdown is primarily triggered by dropping the [`ThemeWatcher`], which
+/// Shutdown is primarily triggered by dropping the [`ThemeSubscription`], which
 /// drops the `shutdown_tx` sender. Between signals, we also check the
 /// shutdown channel via `try_recv()` as a best-effort early exit.
 #[allow(dead_code)] // Dispatched from on_theme_change() in Phase 66 Plan 02
 pub(crate) fn watch_gnome(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
-) -> crate::Result<super::ThemeWatcher> {
+) -> crate::Result<super::ThemeSubscription> {
     let (shutdown_tx, shutdown_rx) = mpsc::channel::<()>();
 
     let thread = std::thread::spawn(move || {
@@ -62,5 +62,5 @@ pub(crate) fn watch_gnome(
         }
     });
 
-    Ok(super::ThemeWatcher::new(shutdown_tx, thread))
+    Ok(super::ThemeSubscription::new(shutdown_tx, thread, None))
 }

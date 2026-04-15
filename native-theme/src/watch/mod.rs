@@ -2,22 +2,22 @@
 //!
 //! This module provides the public API for monitoring OS theme changes at
 //! runtime. Call [`on_theme_change()`] with a callback to start watching;
-//! the returned [`ThemeWatcher`] keeps the watcher alive via RAII semantics
+//! the returned [`ThemeSubscription`] keeps the watcher alive via RAII semantics
 //! -- dropping it stops the watcher and joins the background thread.
 //!
 //! # RAII ownership model
 //!
-//! [`ThemeWatcher`] is an RAII guard. Dropping it stops the watcher and
+//! [`ThemeSubscription`] is an RAII guard. Dropping it stops the watcher and
 //! joins the background thread. You **must** bind it to a variable -- if
 //! you discard the return value, the watcher is dropped immediately and
 //! no events are ever delivered.
 //!
 //! # Shutdown mechanism
 //!
-//! When a `ThemeWatcher` is dropped, shutdown proceeds in three phases:
+//! When a `ThemeSubscription` is dropped, shutdown proceeds in three phases:
 //!
 //! 1. **Platform-specific wakeup** -- if a platform shutdown closure was
-//!    registered (see constructor split below), it runs first. This wakes
+//!    registered (see constructor below), it runs first. This wakes
 //!    the background thread's event loop so it can observe the disconnect.
 //! 2. **Channel disconnect** -- the shutdown channel sender is dropped,
 //!    causing the receiver in the background thread to see `Disconnected`
@@ -25,18 +25,15 @@
 //! 3. **Thread join** -- `JoinHandle::join()` blocks until the background
 //!    thread exits, ensuring clean shutdown before the guard is gone.
 //!
-//! # Constructor split
+//! # Constructor
 //!
-//! There are two `pub(crate)` constructors, chosen by the platform backend:
+//! There is a single `pub(crate)` constructor:
 //!
-//! - [`ThemeWatcher::new(tx, handle)`] -- for backends where dropping the
-//!   channel sender is sufficient to wake the background thread. Used on
-//!   Linux: KDE inotify polls the channel, GNOME D-Bus does likewise.
-//! - [`ThemeWatcher::with_platform_shutdown(tx, handle, closure)`] -- for
-//!   backends where the event loop blocks on a platform API that does not
-//!   poll the channel. The closure calls the platform-specific wakeup
-//!   (`CFRunLoop::stop` on macOS, `PostThreadMessageW(WM_QUIT)` on
-//!   Windows) so the thread can observe the channel disconnect and exit.
+//! - [`ThemeSubscription::new(tx, handle, platform_shutdown)`] -- the optional
+//!   `platform_shutdown` closure wakes the background thread's event loop on
+//!   platforms where dropping the channel sender alone is not sufficient
+//!   (`CFRunLoop::stop` on macOS, `PostThreadMessageW(WM_QUIT)` on Windows).
+//!   Pass `None` on Linux where inotify/D-Bus poll the channel directly.
 //!
 //! # Signal-only events
 //!
@@ -107,6 +104,10 @@ pub enum ThemeChangeEvent {
 /// channel sender is dropped (signaling shutdown via disconnection) and
 /// the background thread is joined.
 ///
+/// Note: `ThemeSubscription` is `Send` but not `Sync`. The background thread
+/// handle and shutdown channel are not safe to share across threads, but the
+/// guard can be moved to a different thread if needed.
+///
 /// # Important
 ///
 /// You **must** bind this to a variable. If you discard it, the watcher
@@ -120,15 +121,15 @@ pub enum ThemeChangeEvent {
 /// let _watcher = on_theme_change(|e| println!("{e:?}")).unwrap();
 /// ```
 #[must_use]
-pub struct ThemeWatcher {
+pub struct ThemeSubscription {
     shutdown_tx: Option<mpsc::Sender<()>>,
     thread: Option<JoinHandle<()>>,
     platform_shutdown: Option<Box<dyn FnOnce() + Send>>,
 }
 
-impl std::fmt::Debug for ThemeWatcher {
+impl std::fmt::Debug for ThemeSubscription {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_struct("ThemeWatcher")
+        f.debug_struct("ThemeSubscription")
             .field("shutdown_tx", &self.shutdown_tx)
             .field("thread", &self.thread)
             .field(
@@ -139,41 +140,28 @@ impl std::fmt::Debug for ThemeWatcher {
     }
 }
 
-impl ThemeWatcher {
-    /// Create a new `ThemeWatcher` from a shutdown channel and thread handle.
+impl ThemeSubscription {
+    /// Create a new `ThemeSubscription` from a shutdown channel, thread handle,
+    /// and optional platform-specific shutdown action.
     ///
-    /// This constructor is `pub(crate)` for use by platform-specific backends
-    /// (implemented in later phases).
-    pub(crate) fn new(shutdown_tx: mpsc::Sender<()>, thread: JoinHandle<()>) -> Self {
-        Self {
-            shutdown_tx: Some(shutdown_tx),
-            thread: Some(thread),
-            platform_shutdown: None,
-        }
-    }
-
-    /// Create a `ThemeWatcher` with an additional platform-specific shutdown
-    /// action.
-    ///
-    /// The `platform_shutdown` closure is called **before** the channel is
-    /// dropped, allowing platform backends to wake their blocked event loops
-    /// (e.g. `CFRunLoop::stop` on macOS, `PostThreadMessageW(WM_QUIT)` on
-    /// Windows) so the thread can observe the channel disconnect and exit.
-    #[allow(dead_code)] // Used by macOS/Windows backends behind cfg gates
-    pub(crate) fn with_platform_shutdown(
+    /// The `platform_shutdown` closure (if `Some`) is called **before** the
+    /// channel is dropped during `Drop`, allowing platform backends to wake
+    /// their blocked event loops so the thread can observe the disconnect.
+    /// Pass `None` on Linux where the channel disconnect alone suffices.
+    pub(crate) fn new(
         shutdown_tx: mpsc::Sender<()>,
         thread: JoinHandle<()>,
-        platform_shutdown: Box<dyn FnOnce() + Send>,
+        platform_shutdown: Option<Box<dyn FnOnce() + Send>>,
     ) -> Self {
         Self {
             shutdown_tx: Some(shutdown_tx),
             thread: Some(thread),
-            platform_shutdown: Some(platform_shutdown),
+            platform_shutdown,
         }
     }
 }
 
-impl Drop for ThemeWatcher {
+impl Drop for ThemeSubscription {
     fn drop(&mut self) {
         // Run the platform-specific shutdown action first (e.g. CFRunLoop::stop
         // on macOS, PostThreadMessageW WM_QUIT on Windows) to wake the blocked
@@ -220,7 +208,7 @@ impl Drop for ThemeWatcher {
 /// environment or platform.
 pub fn on_theme_change(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
-) -> crate::Result<ThemeWatcher> {
+) -> crate::Result<ThemeSubscription> {
     #[cfg(target_os = "linux")]
     {
         let de = crate::detect_linux_desktop();
@@ -330,7 +318,7 @@ mod tests {
     }
 
     #[test]
-    fn theme_watcher_drop_signals_shutdown() {
+    fn theme_subscription_drop_signals_shutdown() {
         use std::sync::mpsc;
         use std::thread;
 
@@ -340,15 +328,15 @@ mod tests {
             let _ = rx.recv();
         });
 
-        let watcher = ThemeWatcher::new(tx, thread_handle);
+        let watcher = ThemeSubscription::new(tx, thread_handle, None);
         // Drop the watcher -- should signal shutdown and join thread
         drop(watcher);
         // If we get here, the thread was joined successfully (did not hang)
     }
 
     #[test]
-    fn theme_watcher_is_send() {
+    fn theme_subscription_is_send() {
         fn assert_send<T: Send>() {}
-        assert_send::<ThemeWatcher>();
+        assert_send::<ThemeSubscription>();
     }
 }

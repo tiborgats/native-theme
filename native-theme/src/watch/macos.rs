@@ -3,7 +3,7 @@
 //! Observes `AppleInterfaceThemeChangedNotification` via a block-based observer
 //! registered with the default distributed notification center. A CFRunLoop on
 //! the background thread processes notification delivery. Shutdown is handled
-//! by calling `CFRunLoop::stop()` from the `ThemeWatcher` Drop handler.
+//! by calling `CFRunLoop::stop()` from the `ThemeSubscription` Drop handler.
 
 // Objective-C FFI via objc2 -- no safe alternative for platform bindings.
 // This follows the same pattern as src/macos.rs (the theme reader).
@@ -62,7 +62,7 @@ impl SendableCFRunLoop {
 /// whenever the user toggles Appearance in System Settings.
 pub(crate) fn watch_macos(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
-) -> crate::Result<super::ThemeWatcher> {
+) -> crate::Result<super::ThemeSubscription> {
     let (shutdown_tx, _shutdown_rx) = mpsc::channel::<()>();
 
     // Channel for the background thread to send its CFRunLoop handle back.
@@ -110,7 +110,7 @@ pub(crate) fn watch_macos(
         };
 
         // Run the CFRunLoop. This blocks until CFRunLoop::stop() is called
-        // from the platform_shutdown closure in ThemeWatcher::drop().
+        // from the platform_shutdown closure in ThemeSubscription::drop().
         CFRunLoop::run();
 
         // After the run loop stops, unregister the observer.
@@ -137,9 +137,9 @@ pub(crate) fn watch_macos(
         unsafe { sendable_loop.stop() };
     });
 
-    Ok(super::ThemeWatcher::with_platform_shutdown(
+    Ok(super::ThemeSubscription::new(
         shutdown_tx,
         thread,
-        platform_shutdown,
+        Some(platform_shutdown),
     ))
 }

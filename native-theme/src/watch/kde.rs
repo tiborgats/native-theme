@@ -16,7 +16,7 @@ use super::ThemeChangeEvent;
 #[allow(dead_code)] // Dispatched from on_theme_change() in Phase 66 Plan 02
 pub(crate) fn watch_kde(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
-) -> crate::Result<super::ThemeWatcher> {
+) -> crate::Result<super::ThemeSubscription> {
     let kdeglobals = crate::kde::kdeglobals_path();
     let config_dir = kdeglobals
         .parent()
@@ -89,5 +89,5 @@ pub(crate) fn watch_kde(
         }
     });
 
-    Ok(super::ThemeWatcher::new(shutdown_tx, thread))
+    Ok(super::ThemeSubscription::new(shutdown_tx, thread, None))
 }

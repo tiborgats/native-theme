@@ -4,7 +4,7 @@
 //! `GetMessageW`/`DispatchMessageW` message pump. The `UISettings`
 //! `ColorValuesChanged` event fires whenever the user changes the system
 //! color scheme. Shutdown is handled by posting `WM_QUIT` to the watcher
-//! thread via `PostThreadMessageW` from the `ThemeWatcher` Drop handler.
+//! thread via `PostThreadMessageW` from the `ThemeSubscription` Drop handler.
 
 // Windows FFI via the `windows` crate -- no safe alternative for COM/WinRT bindings.
 // This follows the same pattern as src/windows.rs (the theme reader).
@@ -31,7 +31,7 @@ use super::ThemeChangeEvent;
 /// (e.g. the user switches between light and dark mode).
 pub(crate) fn watch_windows(
     callback: impl Fn(ThemeChangeEvent) + Send + 'static,
-) -> crate::Result<super::ThemeWatcher> {
+) -> crate::Result<super::ThemeSubscription> {
     let (shutdown_tx, _shutdown_rx) = mpsc::channel::<()>();
 
     // Channel for the background thread to send back its OS thread ID.
@@ -122,9 +122,9 @@ pub(crate) fn watch_windows(
         }
     });
 
-    Ok(super::ThemeWatcher::with_platform_shutdown(
+    Ok(super::ThemeSubscription::new(
         shutdown_tx,
         thread,
-        platform_shutdown,
+        Some(platform_shutdown),
     ))
 }
