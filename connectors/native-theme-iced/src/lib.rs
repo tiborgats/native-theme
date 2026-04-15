@@ -154,19 +154,11 @@ pub fn from_preset(
 ) -> Result<(iced_core::theme::Theme, native_theme::theme::ResolvedTheme)> {
     let spec = native_theme::theme::Theme::preset(name)?;
     let display_name = spec.name.clone();
-    let mode = if is_dark { "dark" } else { "light" };
     let variant = spec
         .into_variant(if is_dark {
             ColorMode::Dark
         } else {
             ColorMode::Light
-        })
-        .ok_or_else(|| Error::ReaderFailed {
-            reader: "iced_connector",
-            source: format!(
-                "preset '{name}' has no usable variant (requested {mode}, fallback also empty)"
-            )
-            .into(),
         })?;
     let resolved = variant.into_resolved(None)?;
     let theme = to_theme(&resolved, &display_name);
@@ -809,7 +801,7 @@ mod tests {
         for name in Theme::list_presets() {
             for is_dark in [false, true] {
                 let spec = Theme::preset(name).unwrap();
-                if let Some(variant) = spec.into_variant(if is_dark {
+                if let Ok(variant) = spec.into_variant(if is_dark {
                     ColorMode::Dark
                 } else {
                     ColorMode::Light

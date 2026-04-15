@@ -221,7 +221,8 @@ fn load_adwaita_fallback(is_dark: bool) -> Option<(native_theme::theme::Resolved
             native_theme_iced::ColorMode::Dark
         } else {
             native_theme_iced::ColorMode::Light
-        })?
+        })
+        .ok()?
         .clone();
     let r = variant.into_resolved(None).ok()?;
     let t = native_theme_iced::to_theme(&r, &nt.name);
@@ -898,7 +899,7 @@ impl State {
                     } else {
                         native_theme_iced::ColorMode::Light
                     }) {
-                        Some(variant) => {
+                        Ok(variant) => {
                             // icon_theme is per-variant on defaults
                             has_toml_icon_theme = variant.defaults.icon_theme.is_some();
                             self.current_icon_set = nt
@@ -926,10 +927,9 @@ impl State {
                                 }
                             }
                         }
-                        None => {
+                        Err(e) => {
                             self.error_message = Some(format!(
-                                "Theme '{name}' has no {} variant",
-                                if self.is_dark { "dark" } else { "light" }
+                                "Theme '{name}': {e}"
                             ));
                         }
                     },

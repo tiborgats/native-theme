@@ -26,7 +26,7 @@ use native_theme_gpui::to_theme;
 // Load a preset and resolve it
 let nt = Theme::preset("dracula")?;
 let is_dark = true;
-let variant = nt.into_variant(ColorMode::Dark).ok_or("no variant")?;
+let variant = nt.into_variant(ColorMode::Dark)?;
 let resolved = variant.into_resolved(None)?;
 let theme = to_theme(&resolved, "My App", is_dark, false);
 // Use `theme` in your gpui-component application

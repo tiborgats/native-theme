@@ -1763,7 +1763,7 @@ impl Showcase {
                 }
             };
 
-            if let Some(variant) = nt.pick_variant(if self.is_dark {
+            if let Ok(variant) = nt.pick_variant(if self.is_dark {
                 native_theme_gpui::ColorMode::Dark
             } else {
                 native_theme_gpui::ColorMode::Light

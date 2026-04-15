@@ -113,6 +113,10 @@ const PRESET_DISPLAY_NAMES: &[(&str, &str)] = &[
     ("one-dark", "One Dark"),
 ];
 
+/// Cached parse result. Uses `String` for the error type (not `Error`) because:
+/// - `Error` does not implement `Clone`, which is needed for cache retrieval
+/// - Preset parse errors are rare (bundled TOML is validated at dev time)
+/// - The string-erased error message is sufficient for user diagnostics
 type Parsed = std::result::Result<Theme, String>;
 
 fn parse(toml_str: &str) -> Parsed {

@@ -80,7 +80,7 @@ use native_theme::theme::{ColorMode, Theme};
 use native_theme_gpui::to_theme;
 
 let nt = Theme::preset("dracula").unwrap();
-let variant = nt.into_variant(ColorMode::Dark).ok_or("no variant").unwrap();
+let variant = nt.into_variant(ColorMode::Dark).unwrap();
 let resolved = variant.into_resolved(None).unwrap();
 let theme = to_theme(&resolved, "My App", true, false);
 // Use as your gpui-component theme
@@ -105,7 +105,7 @@ use native_theme::theme::{ColorMode, Theme};
 use native_theme_iced::to_theme;
 
 let nt = Theme::preset("dracula").unwrap();
-let variant = nt.into_variant(ColorMode::Dark).ok_or("no variant").unwrap();
+let variant = nt.into_variant(ColorMode::Dark).unwrap();
 let resolved = variant.into_resolved(None).unwrap();
 let theme = to_theme(&resolved, "My App");
 // Use as your iced application theme

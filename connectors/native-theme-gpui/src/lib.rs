@@ -27,7 +27,7 @@
 //! use native_theme_gpui::to_theme;
 //!
 //! let nt = Theme::preset("catppuccin-mocha")?;
-//! let variant = nt.into_variant(ColorMode::Dark).ok_or("no dark variant")?;
+//! let variant = nt.into_variant(ColorMode::Dark)?;
 //! let resolved = variant.into_resolved(None)?;
 //! let theme = to_theme(&resolved, "Catppuccin Mocha", true, false);
 //! ```
@@ -195,16 +195,11 @@ pub fn to_theme(
 pub fn from_preset(name: &str, is_dark: bool) -> Result<(GpuiTheme, ResolvedTheme)> {
     let spec = Theme::preset(name)?;
     let display_name = spec.name.clone();
-    let mode_str = if is_dark { "dark" } else { "light" };
     let variant = spec
         .into_variant(if is_dark {
             ColorMode::Dark
         } else {
             ColorMode::Light
-        })
-        .ok_or_else(|| Error::ReaderFailed {
-            reader: "gpui_connector",
-            source: format!("preset '{name}' has no {mode_str} variant").into(),
         })?;
     let resolved = variant.into_resolved(None)?;
     let theme = to_theme(&resolved, &display_name, is_dark, false);

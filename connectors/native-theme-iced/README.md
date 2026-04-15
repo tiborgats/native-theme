@@ -25,7 +25,7 @@ use native_theme_iced::to_theme;
 
 // Load a preset and resolve it
 let nt = Theme::preset("dracula")?;
-let resolved = nt.into_variant(ColorMode::Dark).ok_or("no variant")?.into_resolved(None)?;
+let resolved = nt.into_variant(ColorMode::Dark)?.into_resolved(None)?;
 let theme = to_theme(&resolved, "My App");
 // Use `theme` as your iced application theme
 ```
