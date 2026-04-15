@@ -404,6 +404,7 @@ macro_rules! validate_defaults {
         border_required { $($br_field:ident),* $(,)? }
         icon_sizes { $($is_field:ident),* $(,)? }
     ) => {{
+        use $crate::resolve::validate_helpers::{require, require_font};
         // Pattern B: font fields (non-Option FontSpec -> ResolvedFontSpec)
         $(
             let $font_field = require_font(
@@ -438,8 +439,8 @@ macro_rules! validate_defaults {
             );
         )*
 
-        use crate::model::border::ResolvedBorderSpec;
-        use crate::model::resolved::{ResolvedDefaults, ResolvedIconSizes};
+        use $crate::model::border::ResolvedBorderSpec;
+        use $crate::model::resolved::{ResolvedDefaults, ResolvedIconSizes};
         ResolvedDefaults {
             $($font_field,)*
             $($opt_field,)*
@@ -461,6 +462,7 @@ pub(crate) use validate_defaults;
 /// Each field is an `Option<TextScaleEntry>` extracted via `require_text_scale_entry()`.
 macro_rules! validate_text_scale {
     ($src:expr, $dpi:expr, $missing:expr; $($field:ident),* $(,)?) => {{
+        use $crate::resolve::validate_helpers::require_text_scale_entry;
         $(
             let $field = require_text_scale_entry(
                 &$src.text_scale.$field,
@@ -469,7 +471,7 @@ macro_rules! validate_text_scale {
                 $missing,
             );
         )*
-        crate::model::resolved::ResolvedTextScale { $($field),* }
+        $crate::model::resolved::ResolvedTextScale { $($field),* }
     }};
 }
 pub(crate) use validate_text_scale;
