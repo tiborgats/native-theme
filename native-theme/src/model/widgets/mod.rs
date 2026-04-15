@@ -222,7 +222,7 @@ pub struct MenuTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
     /// Menu border specification.
-    #[theme(border_optional, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -390,7 +390,7 @@ pub struct TabTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
     /// Tab border specification.
-    #[theme(border_optional, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -418,7 +418,7 @@ pub struct SidebarTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
     /// Sidebar border specification.
-    #[theme(border_partial, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -467,7 +467,7 @@ pub struct StatusBarTheme {
     #[theme(nested, resolved_type = "ResolvedFontSpec")]
     pub font: Option<FontSpec>,
     /// Status bar border specification.
-    #[theme(border_partial, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
     pub border: Option<WidgetBorderSpec>,
 }
 
@@ -784,7 +784,7 @@ pub struct CardTheme {
     #[theme(inherit_from = "defaults.surface_color")]
     pub background_color: Option<Rgba>,
     /// Card border specification.
-    #[theme(border_optional, resolved_type = "ResolvedBorderSpec")]
+    #[theme(nested, resolved_type = "ResolvedBorderSpec")]
     pub border: Option<WidgetBorderSpec>,
 }
 
