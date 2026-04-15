@@ -18,7 +18,9 @@ use iced::{Color, Element, Fill, Length, Padding, Theme};
 
 use iced::Subscription;
 use native_theme::detect::prefers_reduced_motion;
-use native_theme::icons::IconLoader;
+use native_theme::icons::{
+    IconLoader, IconSetChoice, default_icon_choice, list_freedesktop_themes,
+};
 use native_theme::theme::{AnimatedIcon, IconData, IconRole, IconSet, TransformAnimation};
 use native_theme_iced::icons::{
     AnimatedSvgHandles, animated_frames_to_svg_handles, spin_rotation_radians, to_svg_handle,
@@ -280,83 +282,29 @@ impl std::fmt::Display for AppColorMode {
 }
 
 // ---------------------------------------------------------------------------
-// Icon set choice
+// Icon set choice (uses library type: native_theme::icons::IconSetChoice)
 // ---------------------------------------------------------------------------
 
-#[derive(Debug, Clone, PartialEq, Eq)]
-enum IconSetChoice {
-    /// Theme's preferred icon theme from TOML.
-    Default(String),
-    /// System platform icons.
-    System,
-    Material,
-    Lucide,
-}
-
-impl std::fmt::Display for IconSetChoice {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            IconSetChoice::Default(name) => write!(f, "default ({name})"),
-            IconSetChoice::System => {
-                let name = native_theme::theme::system_icon_theme();
-                write!(f, "system ({name})")
-            }
-            IconSetChoice::Material => write!(f, "Material"),
-            IconSetChoice::Lucide => write!(f, "Lucide"),
-        }
-    }
-}
-
-impl IconSetChoice {
-    /// Build the available choices for the pick list.
-    fn choices(default_icon_theme: Option<&str>) -> Vec<IconSetChoice> {
-        let mut v = Vec::with_capacity(4);
-        if let Some(name) = default_icon_theme {
-            v.push(IconSetChoice::Default(name.to_string()));
-        }
-        v.push(IconSetChoice::System);
-        v.push(IconSetChoice::Material);
-        v.push(IconSetChoice::Lucide);
-        v
-    }
-}
-
-/// Determine the icon set choice and available choices for a resolved theme.
+/// Build the available icon set choices for the dropdown.
 ///
-/// When the TOML specifies `icon_theme` (`has_toml_icon_theme = true`):
-/// - If the theme is available (bundled sets are always available; freedesktop
-///   themes are checked via `is_freedesktop_theme_available`), selects
-///   `Default(<icon_theme>)`.
-/// - If not available, falls back to `System`.
-///
-/// When the TOML does not specify `icon_theme`, selects `System`.
-fn resolve_icon_choice(
+/// Includes `Default(X)` (if icon_theme is specified), `System`, all installed
+/// freedesktop themes, and the bundled sets (Material, Lucide).
+fn build_icon_choices(
     icon_set: IconSet,
-    icon_theme: &str,
-    has_toml_icon_theme: bool,
-) -> (IconSetChoice, Vec<IconSetChoice>) {
-    if has_toml_icon_theme {
-        let available = match icon_set {
-            // Bundled sets are always available
-            IconSet::Material | IconSet::Lucide => true,
-            // Freedesktop: check if the theme is installed
-            IconSet::Freedesktop => native_theme::icons::is_freedesktop_theme_available(icon_theme),
-            // Platform-native icon APIs are always available on their platform
-            IconSet::SfSymbols | IconSet::SegoeIcons => true,
-            // Required by #[non_exhaustive] on IconSet. All current variants
-            // are handled above; future additions default to unavailable.
-            _ => false,
-        };
-        let choices = IconSetChoice::choices(Some(icon_theme));
-        let selected = if available {
-            IconSetChoice::Default(icon_theme.to_string())
-        } else {
-            IconSetChoice::System
-        };
-        (selected, choices)
-    } else {
-        (IconSetChoice::System, IconSetChoice::choices(None))
+    icon_theme: Option<&str>,
+    installed_themes: &[String],
+) -> Vec<IconSetChoice> {
+    let mut items = Vec::new();
+    if let choice @ IconSetChoice::Default(_) = default_icon_choice(icon_set, icon_theme) {
+        items.push(choice);
     }
+    items.push(IconSetChoice::System);
+    for name in installed_themes {
+        items.push(IconSetChoice::Freedesktop(name.clone()));
+    }
+    items.push(IconSetChoice::Material);
+    items.push(IconSetChoice::Lucide);
+    items
 }
 
 // ---------------------------------------------------------------------------
@@ -421,12 +369,8 @@ fn load_all_icons(
     resolved: &native_theme::theme::ResolvedTheme,
     theme_icon_set: IconSet,
 ) -> Vec<LoadedIcon> {
-    let set = match choice {
-        IconSetChoice::Default(_) => theme_icon_set,
-        IconSetChoice::System => native_theme::theme::system_icon_set(),
-        IconSetChoice::Material => IconSet::Material,
-        IconSetChoice::Lucide => IconSet::Lucide,
-    };
+    let set = choice.effective_icon_set(theme_icon_set);
+    let theme = choice.freedesktop_theme();
     let is_system_set = matches!(
         set,
         IconSet::Freedesktop | IconSet::SfSymbols | IconSet::SegoeIcons
@@ -450,15 +394,14 @@ fn load_all_icons(
         .iter()
         .enumerate()
         .map(|(i, &role)| {
-            let data = match choice {
-                IconSetChoice::Default(theme) if set == IconSet::Freedesktop => {
-                    IconLoader::new(role)
-                        .set(set)
-                        .theme(theme)
-                        .color_opt(fg)
-                        .load()
-                }
-                _ => IconLoader::new(role).set(set).color_opt(fg).load(),
+            let data = if let Some(t) = theme.filter(|_| set == IconSet::Freedesktop) {
+                IconLoader::new(role)
+                    .set(set)
+                    .theme(t)
+                    .color_opt(fg)
+                    .load()
+            } else {
+                IconLoader::new(role).set(set).color_opt(fg).load()
             };
             let name = native_theme::theme::icon_name(role, set);
             let source = match (&data, is_system_set) {
@@ -610,6 +553,8 @@ struct State {
     icon_set_choice: IconSetChoice,
     icon_set_choices: Vec<IconSetChoice>,
     loaded_icons: Vec<LoadedIcon>,
+    /// Cached list of installed freedesktop icon themes (populated once at init).
+    installed_themes: Vec<String>,
 
     // Animated Icons state
     /// Cached SVG handles for frame-based animations: (set_name, AnimatedSvgHandles).
@@ -701,17 +646,15 @@ impl Default for State {
             "Zig".to_string(),
         ];
 
-        // All shipped presets specify icon_theme, so default is always available.
-        let (icon_set_choice, icon_set_choices) =
-            resolve_icon_choice(init_icon_set, &init_icon_theme, true);
+        // Populate installed freedesktop themes once at init.
+        let installed_themes = list_freedesktop_themes();
+        let init_icon_theme_opt: Option<&str> = Some(&init_icon_theme);
+        let icon_set_choice = default_icon_choice(init_icon_set, init_icon_theme_opt);
+        let icon_set_choices =
+            build_icon_choices(init_icon_set, init_icon_theme_opt, &installed_themes);
         let loaded_icons = load_all_icons(&icon_set_choice, &resolved, init_icon_set);
 
-        let anim_set = match &icon_set_choice {
-            IconSetChoice::Default(_) => init_icon_set,
-            IconSetChoice::System => native_theme::theme::system_icon_set(),
-            IconSetChoice::Material => IconSet::Material,
-            IconSetChoice::Lucide => IconSet::Lucide,
-        };
+        let anim_set = icon_set_choice.effective_icon_set(init_icon_set);
         let (
             animated_frames,
             animated_frame_indices,
@@ -770,6 +713,7 @@ impl Default for State {
             icon_set_choice,
             icon_set_choices,
             loaded_icons,
+            installed_themes,
             animated_frames,
             animated_frame_indices,
             animated_frame_elapsed,
@@ -817,17 +761,13 @@ impl Default for State {
                 let choice = match set_name.as_str() {
                     "material" => IconSetChoice::Material,
                     "lucide" => IconSetChoice::Lucide,
-                    _ => IconSetChoice::System,
+                    "system" => IconSetChoice::System,
+                    other => IconSetChoice::Freedesktop(other.to_string()),
                 };
                 state.icon_set_choice = choice.clone();
                 state.loaded_icons =
                     load_all_icons(&choice, &state.current_resolved, state.current_icon_set);
-                let anim_set = match &choice {
-                    IconSetChoice::Default(_) => state.current_icon_set,
-                    IconSetChoice::System => native_theme::theme::system_icon_set(),
-                    IconSetChoice::Material => IconSet::Material,
-                    IconSetChoice::Lucide => IconSet::Lucide,
-                };
+                let anim_set = choice.effective_icon_set(state.current_icon_set);
                 let (frames, indices, elapsed, spins, start, rm, statics) =
                     build_animation_caches(anim_set);
                 state.animated_frames = frames;
@@ -854,17 +794,16 @@ impl State {
     fn rebuild_theme(&mut self) {
         self.is_dark = self.color_mode.is_dark();
         let is_default = matches!(self.current_choice, ThemeChoice::OsTheme(_));
-        // Track whether the TOML specified icon_theme (before resolution fills it).
-        // Defaults to false — only set true when a successful theme load confirms icon_theme presence.
-        let mut has_toml_icon_theme = false;
+        // Track icon_theme as Option<&str> — None means the TOML didn't specify one.
+        let mut icon_theme_opt: Option<String> = None;
         match &self.current_choice {
             ThemeChoice::OsTheme(_) => {
                 match native_theme::SystemTheme::from_system() {
                     Ok(system) => {
                         // Platform presets always specify icon_theme.
-                        has_toml_icon_theme = true;
                         self.current_icon_set = system.icon_set;
                         self.current_icon_theme = system.icon_theme.clone().into_owned();
+                        icon_theme_opt = Some(self.current_icon_theme.clone());
                         self.current_resolved = system
                             .pick(if self.is_dark {
                                 native_theme_iced::ColorMode::Dark
@@ -881,10 +820,9 @@ impl State {
                         self.error_message =
                             Some(format!("OS theme failed: {e}. Using adwaita fallback."));
                         if let Some((r, t)) = load_adwaita_fallback(self.is_dark) {
-                            // Adwaita preset specifies icon_theme, matching the init path.
-                            has_toml_icon_theme = true;
                             self.current_icon_set = IconSet::Freedesktop;
                             self.current_icon_theme = "Adwaita".to_string();
+                            icon_theme_opt = Some("Adwaita".to_string());
                             self.current_resolved = r;
                             self.current_theme = t;
                         }
@@ -901,7 +839,8 @@ impl State {
                     }) {
                         Ok(variant) => {
                             // icon_theme is per-variant on defaults
-                            has_toml_icon_theme = variant.defaults.icon_theme.is_some();
+                            icon_theme_opt =
+                                variant.defaults.icon_theme.as_deref().map(|s| s.to_string());
                             self.current_icon_set = nt
                                 .icon_set
                                 .unwrap_or_else(native_theme::theme::system_icon_set);
@@ -941,26 +880,27 @@ impl State {
             self.current_choice = ThemeChoice::OsTheme(self.default_label.clone());
         }
 
-        // Sync icon set: determine choice and available options from the theme.
+        // Only re-derive the choice when the user is in "follow preset" mode.
+        // All other variants (System, Freedesktop, Material, Lucide) represent
+        // an explicit user choice that must be preserved across theme re-applications.
+        let it_opt = icon_theme_opt.as_deref();
+        if self.icon_set_choice.follows_preset() {
+            self.icon_set_choice = default_icon_choice(self.current_icon_set, it_opt);
+        }
+        // Always rebuild the choices list (theme name in "default (X)" may have changed).
+        self.icon_set_choices =
+            build_icon_choices(self.current_icon_set, it_opt, &self.installed_themes);
+
         // Always reload icons — the resolved text_color may have changed (light↔dark)
         // even when the icon set choice is the same.
-        let (new_choice, new_choices) = resolve_icon_choice(
-            self.current_icon_set,
-            &self.current_icon_theme,
-            has_toml_icon_theme,
-        );
         {
-            self.loaded_icons =
-                load_all_icons(&new_choice, &self.current_resolved, self.current_icon_set);
-            let anim_set = match &new_choice {
-                IconSetChoice::Default(_) => self.current_icon_set,
-                IconSetChoice::System => native_theme::theme::system_icon_set(),
-                IconSetChoice::Material => IconSet::Material,
-                IconSetChoice::Lucide => IconSet::Lucide,
-            };
+            self.loaded_icons = load_all_icons(
+                &self.icon_set_choice,
+                &self.current_resolved,
+                self.current_icon_set,
+            );
+            let anim_set = self.icon_set_choice.effective_icon_set(self.current_icon_set);
             let (af, afi, afe, asp, astart, rm, ast) = build_animation_caches(anim_set);
-            self.icon_set_choice = new_choice;
-            self.icon_set_choices = new_choices;
             self.animated_frames = af;
             self.animated_frame_indices = afi;
             self.animated_frame_elapsed = afe;
@@ -1309,12 +1249,7 @@ fn update_inner(state: &mut State, message: Message) {
                 load_all_icons(&choice, &state.current_resolved, state.current_icon_set);
 
             // Rebuild animation caches when icon set changes
-            let anim_set = match &choice {
-                IconSetChoice::Default(_) => state.current_icon_set,
-                IconSetChoice::System => native_theme::theme::system_icon_set(),
-                IconSetChoice::Material => IconSet::Material,
-                IconSetChoice::Lucide => IconSet::Lucide,
-            };
+            let anim_set = choice.effective_icon_set(state.current_icon_set);
             let (af, afi, afe, asp, astart, rm, ast) = build_animation_caches(anim_set);
             state.icon_set_choice = choice;
             state.animated_frames = af;
