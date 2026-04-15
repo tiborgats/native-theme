@@ -384,6 +384,96 @@ impl ValidateNested for WidgetBorderSpec {
     }
 }
 
+// --- Declarative macros for defaults/text_scale extraction ---
+
+/// Extract all defaults fields and construct `ResolvedDefaults` in one invocation.
+///
+/// Handles four extraction patterns:
+/// - **font**: non-Option `FontSpec` fields via `require_font()`
+/// - **option**: `Option<T>` fields via `require()`
+/// - **border_required**: `Option<T>` fields nested under `defaults.border` via `require()`
+/// - **icon_sizes**: `Option<T>` fields nested under `defaults.icon_sizes` via `require()`
+///
+/// Border padding fields (`padding_horizontal`, `padding_vertical`) default to `0.0`
+/// and are not extracted via `require()`.
+macro_rules! validate_defaults {
+    (
+        $src:expr, $dpi:expr, $missing:expr;
+        font { $($font_field:ident),* $(,)? }
+        option { $($opt_field:ident),* $(,)? }
+        border_required { $($br_field:ident),* $(,)? }
+        icon_sizes { $($is_field:ident),* $(,)? }
+    ) => {{
+        // Pattern B: font fields (non-Option FontSpec -> ResolvedFontSpec)
+        $(
+            let $font_field = require_font(
+                &$src.defaults.$font_field,
+                concat!("defaults.", stringify!($font_field)),
+                $dpi,
+                $missing,
+            );
+        )*
+        // Pattern A: simple Option<T> fields
+        $(
+            let $opt_field = require(
+                &$src.defaults.$opt_field,
+                concat!("defaults.", stringify!($opt_field)),
+                $missing,
+            );
+        )*
+        // Pattern C: border sub-fields (require'd)
+        $(
+            let $br_field = require(
+                &$src.defaults.border.$br_field,
+                concat!("defaults.border.", stringify!($br_field)),
+                $missing,
+            );
+        )*
+        // Pattern D: icon_sizes sub-fields
+        $(
+            let $is_field = require(
+                &$src.defaults.icon_sizes.$is_field,
+                concat!("defaults.icon_sizes.", stringify!($is_field)),
+                $missing,
+            );
+        )*
+
+        use crate::model::border::ResolvedBorderSpec;
+        use crate::model::resolved::{ResolvedDefaults, ResolvedIconSizes};
+        ResolvedDefaults {
+            $($font_field,)*
+            $($opt_field,)*
+            border: ResolvedBorderSpec {
+                $($br_field,)*
+                padding_horizontal: 0.0,
+                padding_vertical: 0.0,
+            },
+            icon_sizes: ResolvedIconSizes {
+                $($is_field,)*
+            },
+        }
+    }};
+}
+pub(crate) use validate_defaults;
+
+/// Extract all text_scale fields and construct `ResolvedTextScale` in one invocation.
+///
+/// Each field is an `Option<TextScaleEntry>` extracted via `require_text_scale_entry()`.
+macro_rules! validate_text_scale {
+    ($src:expr, $dpi:expr, $missing:expr; $($field:ident),* $(,)?) => {{
+        $(
+            let $field = require_text_scale_entry(
+                &$src.text_scale.$field,
+                concat!("text_scale.", stringify!($field)),
+                $dpi,
+                $missing,
+            );
+        )*
+        crate::model::resolved::ResolvedTextScale { $($field),* }
+    }};
+}
+pub(crate) use validate_text_scale;
+
 /// Validate defaults and text_scale range checks.
 ///
 /// This centralizes all the range-check calls for the global defaults
