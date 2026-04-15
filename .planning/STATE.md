@@ -28,9 +28,9 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 Phase: 91 — resolve-remaining-todo-doc-gaps
 Plan: 3/3 complete
 Status: in-progress
-Last activity: 2026-04-15 — Completed 91-03 (require boilerplate declarative macros)
+Last activity: 2026-04-15 — Completed 91-02 (unify border inheritance paths)
 
-Progress: [█████████░] 97% (63/65 plans complete)
+Progress: [█████████░] 98% (64/65 plans complete)
 
 ## Accumulated Context
 
@@ -193,6 +193,7 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 86-01]: lint_toml uses inventory::iter::<WidgetFieldInfo>() HashMap for widget discovery; STRUCTURAL_KEYS retains only defaults and text_scale
 - [Phase 90-01]: Manual impl Default for Rgba (returns TRANSPARENT) instead of removing Default entirely -- ResolvedBorderSpec, ResolvedFontSpec, require() helper, and ThemeWidget derive all need Rgba: Default
 - [Phase 90-04]: Theme::new() deleted; callers use struct literal with Default. NoVariant error categorized as ErrorKind::Resolution. Connector from_preset functions propagate NoVariant via ? instead of custom error wrappers
+- [Phase 91-02]: is_border_type() detects border fields by resolved type last segment (ResolvedBorderSpec); struct-level border_kind is single source of truth for validation dispatch
 
 ### Roadmap Evolution
 
@@ -210,6 +211,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-15T13:58:48Z
-Stopped at: Completed 91-03-PLAN.md
+Last session: 2026-04-15T14:00:00Z
+Stopped at: Completed 91-02-PLAN.md
 Resume file: None

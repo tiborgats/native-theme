@@ -669,9 +669,9 @@ Accepted deviation: Rgba retains Default via manual impl returning TRANSPARENT (
 
 **Goal:** Close remaining gaps from TODO doc audit: delete with_overlay_toml convenience wrapper (15b), add PresetInfo struct for richer preset enumeration (15f), replace hand-written defaults extraction boilerplate with declarative macros (B1), unify border-inheritance validation via struct-level border_kind dispatch (B7). Document from_kde_content_pure pub visibility as intentional deviation (C6).
 **Depends on:** Phase 90
-**Plans:** 1/3 plans executed
+**Plans:** 2/3 plans executed
 
 Plans:
 - [ ] 91-01-PLAN.md -- Delete with_overlay_toml, add PresetInfo struct
-- [ ] 91-02-PLAN.md -- Unify border validation dispatch via border_kind attribute
+- [x] 91-02-PLAN.md -- Unify border validation dispatch via border_kind attribute
 - [x] 91-03-PLAN.md -- Replace defaults extraction boilerplate with declarative macros
