@@ -665,8 +665,8 @@ mod tests {
         // accent or background populated.
         let resolved = sys.pick(sys.mode);
         assert!(
-            resolved.defaults.accent_color != Rgba::default()
-                || resolved.defaults.background_color != Rgba::default(),
+            resolved.defaults.accent_color != Rgba::TRANSPARENT
+                || resolved.defaults.background_color != Rgba::TRANSPARENT,
             "resolved variant should have at least accent or background populated"
         );
     }

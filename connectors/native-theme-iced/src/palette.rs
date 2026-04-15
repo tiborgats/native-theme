@@ -71,7 +71,7 @@ mod tests {
 
     #[test]
     fn to_color_preserves_alpha() {
-        let result = to_color(Rgba::rgba(0, 0, 0, 128));
+        let result = to_color(Rgba::new(0, 0, 0, 128));
         let expected_alpha = 128.0 / 255.0;
         assert!(
             (result.a - expected_alpha).abs() < 1e-6,

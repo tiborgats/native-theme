@@ -60,7 +60,7 @@ struct AccessibilityData {
 /// Convert a `windows::UI::Color` to our `Rgba` type.
 #[cfg(all(target_os = "windows", feature = "windows"))]
 fn win_color_to_rgba(c: ::windows::UI::Color) -> crate::Rgba {
-    crate::Rgba::rgba(c.R, c.G, c.B, c.A)
+    crate::Rgba::new(c.R, c.G, c.B, c.A)
 }
 
 /// Detect dark mode from the system foreground color luminance.
@@ -363,7 +363,7 @@ fn read_dwm_colorization() -> Option<crate::Rgba> {
     let r = ((colorization >> 16) & 0xFF) as u8;
     let g = ((colorization >> 8) & 0xFF) as u8;
     let b = (colorization & 0xFF) as u8;
-    Some(crate::Rgba::rgba(r, g, b, a))
+    Some(crate::Rgba::new(r, g, b, a))
 }
 
 /// Convert a DWM colorization u32 (0xAARRGGBB) to Rgba. Testable helper.
@@ -372,7 +372,7 @@ fn dwm_color_to_rgba(c: u32) -> crate::Rgba {
     let r = ((c >> 16) & 0xFF) as u8;
     let g = ((c >> 8) & 0xFF) as u8;
     let b = (c & 0xFF) as u8;
-    crate::Rgba::rgba(r, g, b, a)
+    crate::Rgba::new(r, g, b, a)
 }
 
 /// Read inactive title bar colors from GetSysColor.
@@ -1104,7 +1104,7 @@ mod tests {
 
     #[test]
     fn build_theme_with_dwm_color_sets_title_bar_background() {
-        let dwm_color = crate::Rgba::rgba(0, 120, 215, 200);
+        let dwm_color = crate::Rgba::new(0, 120, 215, 200);
         let theme = build_theme(
             crate::Rgba::rgb(0, 120, 215),
             crate::Rgba::rgb(0, 0, 0),

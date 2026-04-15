@@ -39,11 +39,7 @@ use std::str::FromStr;
 /// assert_eq!(arr, [1.0, 0.0, 0.0, 1.0]);
 /// ```
 ///
-/// # Default
-///
-/// `Rgba::default()` is transparent black `(0, 0, 0, 0)`, not opaque black.
-/// Use `Rgba::rgb(0, 0, 0)` for opaque black.
-#[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub struct Rgba {
     /// Red component (0-255).
     pub r: u8,
@@ -55,6 +51,15 @@ pub struct Rgba {
     pub a: u8,
 }
 
+/// Returns [`Rgba::TRANSPARENT`] `(0, 0, 0, 0)`.
+///
+/// Prefer [`Rgba::TRANSPARENT`] or [`Rgba::rgb`]/[`Rgba::new`] for clarity.
+impl Default for Rgba {
+    fn default() -> Self {
+        Self::TRANSPARENT
+    }
+}
+
 impl Rgba {
     /// Create an opaque color (alpha = 255).
     #[must_use]
@@ -62,23 +67,20 @@ impl Rgba {
         Self { r, g, b, a: 255 }
     }
 
-    /// Create a color with explicit alpha.
+    /// Create a color with explicit red, green, blue, and alpha components.
     #[must_use]
-    #[allow(clippy::self_named_constructors)]
-    pub const fn rgba(r: u8, g: u8, b: u8, a: u8) -> Self {
+    pub const fn new(r: u8, g: u8, b: u8, a: u8) -> Self {
         Self { r, g, b, a }
     }
 
     /// Transparent black `(0, 0, 0, 0)` -- the zero colour.
     ///
-    /// This is the same value as `Rgba::default()`.
-    ///
     /// ```
     /// use native_theme::color::Rgba;
     ///
-    /// assert_eq!(Rgba::TRANSPARENT, Rgba::rgba(0, 0, 0, 0));
-    /// assert_eq!(Rgba::BLACK, Rgba::rgba(0, 0, 0, 255));
-    /// assert_eq!(Rgba::WHITE, Rgba::rgba(255, 255, 255, 255));
+    /// assert_eq!(Rgba::TRANSPARENT, Rgba::new(0, 0, 0, 0));
+    /// assert_eq!(Rgba::BLACK, Rgba::new(0, 0, 0, 255));
+    /// assert_eq!(Rgba::WHITE, Rgba::new(255, 255, 255, 255));
     /// ```
     pub const TRANSPARENT: Self = Self {
         r: 0,
@@ -198,7 +200,7 @@ impl FromStr for Rgba {
                     .map_err(|e| ParseColorError(format!("invalid blue component: {e}")))?;
                 let a = u8::from_str_radix(&hex[3..4], 16)
                     .map_err(|e| ParseColorError(format!("invalid alpha component: {e}")))?;
-                Ok(Rgba::rgba(r * 17, g * 17, b * 17, a * 17))
+                Ok(Rgba::new(r * 17, g * 17, b * 17, a * 17))
             }
             // #RRGGBB
             6 => {
@@ -220,7 +222,7 @@ impl FromStr for Rgba {
                     .map_err(|e| ParseColorError(format!("invalid blue component: {e}")))?;
                 let a = u8::from_str_radix(&hex[6..8], 16)
                     .map_err(|e| ParseColorError(format!("invalid alpha component: {e}")))?;
-                Ok(Rgba::rgba(r, g, b, a))
+                Ok(Rgba::new(r, g, b, a))
             }
             other => Err(ParseColorError(format!(
                 "invalid hex color length {other}: expected 3, 4, 6, or 8 hex digits"
@@ -286,7 +288,7 @@ mod tests {
 
     #[test]
     fn rgba_constructor_sets_all_fields() {
-        let c = Rgba::rgba(61, 174, 233, 128);
+        let c = Rgba::new(61, 174, 233, 128);
         assert_eq!(
             c,
             Rgba {
@@ -309,7 +311,7 @@ mod tests {
     #[test]
     fn parse_8_digit_hex_with_hash() {
         let c: Rgba = "#3daee980".parse().unwrap();
-        assert_eq!(c, Rgba::rgba(61, 174, 233, 128));
+        assert_eq!(c, Rgba::new(61, 174, 233, 128));
     }
 
     #[test]
@@ -327,7 +329,7 @@ mod tests {
     #[test]
     fn parse_4_digit_shorthand() {
         let c: Rgba = "#abcd".parse().unwrap();
-        assert_eq!(c, Rgba::rgba(0xaa, 0xbb, 0xcc, 0xdd));
+        assert_eq!(c, Rgba::new(0xaa, 0xbb, 0xcc, 0xdd));
     }
 
     #[test]
@@ -360,7 +362,7 @@ mod tests {
 
     #[test]
     fn display_includes_alpha_when_not_255() {
-        assert_eq!(Rgba::rgba(61, 174, 233, 128).to_string(), "#3daee980");
+        assert_eq!(Rgba::new(61, 174, 233, 128).to_string(), "#3daee980");
     }
 
     // === Serde round-trip tests ===
@@ -381,7 +383,7 @@ mod tests {
             color: Rgba,
         }
         let w = Wrapper {
-            color: Rgba::rgba(61, 174, 233, 128),
+            color: Rgba::new(61, 174, 233, 128),
         };
         let toml_str = toml::to_string(&w).unwrap();
         let deserialized: Wrapper = toml::from_str(&toml_str).unwrap();
@@ -398,7 +400,7 @@ mod tests {
 
     #[test]
     fn to_f32_array_white_transparent() {
-        let arr = Rgba::rgba(255, 255, 255, 0).to_f32_array();
+        let arr = Rgba::new(255, 255, 255, 0).to_f32_array();
         assert_eq!(arr, [1.0, 1.0, 1.0, 0.0]);
     }
 
@@ -409,20 +411,6 @@ mod tests {
         let a = Rgba::rgb(1, 2, 3);
         let b = a; // Copy
         assert_eq!(a, b); // a still accessible after copy
-    }
-
-    #[test]
-    fn rgba_default_is_transparent_black() {
-        let d = Rgba::default();
-        assert_eq!(
-            d,
-            Rgba {
-                r: 0,
-                g: 0,
-                b: 0,
-                a: 0
-            }
-        );
     }
 
     #[test]

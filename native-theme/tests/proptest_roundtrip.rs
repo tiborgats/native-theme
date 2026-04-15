@@ -17,7 +17,7 @@ use proptest::prelude::*;
 
 fn arb_rgba() -> impl Strategy<Value = Rgba> {
     (any::<u8>(), any::<u8>(), any::<u8>(), any::<u8>())
-        .prop_map(|(r, g, b, a)| Rgba::rgba(r, g, b, a))
+        .prop_map(|(r, g, b, a)| Rgba::new(r, g, b, a))
 }
 
 fn arb_font_style() -> impl Strategy<Value = FontStyle> {

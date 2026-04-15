@@ -1353,14 +1353,14 @@ impl Showcase {
                     size: 0.0,
                     weight: 400,
                     style: native_theme::theme::FontStyle::Normal,
-                    color: native_theme::color::Rgba::default(),
+                    color: native_theme::color::Rgba::TRANSPARENT,
                 };
                 let mono_font = native_theme::theme::ResolvedFontSpec {
                     family: "(default)".into(),
                     size: 0.0,
                     weight: 400,
                     style: native_theme::theme::FontStyle::Normal,
-                    color: native_theme::color::Rgba::default(),
+                    color: native_theme::color::Rgba::TRANSPARENT,
                 };
                 let preset = platform_preset_name();
                 let label = format!("default ({})", preset.name);

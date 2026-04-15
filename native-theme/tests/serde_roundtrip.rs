@@ -25,7 +25,7 @@ fn fully_populated_variant(offset: u8) -> ThemeMode {
     v.defaults.surface_color = Some(c(239, 240, 241));
     v.defaults.border.color = Some(c(188, 190, 191));
     v.defaults.muted_color = Some(c(127, 140, 141));
-    v.defaults.shadow_color = Some(Rgba::rgba(0u8.wrapping_add(offset), 0, 0, 64));
+    v.defaults.shadow_color = Some(Rgba::new(0u8.wrapping_add(offset), 0, 0, 64));
 
     // Status colors
     v.defaults.danger_color = Some(c(218, 68, 83));
@@ -461,7 +461,7 @@ shadow_color = "#00000040"
     assert_eq!(light.defaults.accent_color, Some(Rgba::rgb(61, 174, 233)));
 
     // shadow: #00000040 -> r=0, g=0, b=0, a=0x40=64
-    assert_eq!(light.defaults.shadow_color, Some(Rgba::rgba(0, 0, 0, 64)));
+    assert_eq!(light.defaults.shadow_color, Some(Rgba::new(0, 0, 0, 64)));
 
     // Serialize back and verify hex strings are lowercase
     let re_serialized = toml::to_string_pretty(&theme).unwrap();

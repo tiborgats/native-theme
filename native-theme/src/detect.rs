@@ -50,7 +50,7 @@ pub(crate) fn xdg_current_desktop() -> String {
 /// contains no recognized value.
 ///
 /// For testable parsing without environment access, use the
-/// `pub(crate)` [`parse_linux_desktop()`] function instead.
+/// `pub` [`parse_linux_desktop()`] function instead.
 ///
 /// # Examples
 ///
