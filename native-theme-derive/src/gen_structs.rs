@@ -65,9 +65,7 @@ fn gen_resolved_fields(fields: &[FieldMeta]) -> TokenStream {
                         pub #ident: Option<#inner>,
                     }
                 }
-                FieldCategory::Nested { resolved_ty }
-                | FieldCategory::BorderPartial { resolved_ty }
-                | FieldCategory::BorderOptional { resolved_ty } => {
+                FieldCategory::Nested { resolved_ty } => {
                     quote! {
                         #(#docs)*
                         pub #ident: #resolved_ty,

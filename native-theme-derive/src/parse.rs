@@ -10,12 +10,9 @@ pub(crate) enum FieldCategory {
     Option,
     /// Soft-optional field: `Option<T>` in both source and resolved (pass-through).
     SoftOption,
-    /// Nested validated type (font, border with full validation).
+    /// Nested validated type (font, border).
+    /// Border fields are dispatched via struct-level `border_kind` in gen_validate.
     Nested { resolved_ty: Type },
-    /// Border with partial inheritance (color + line_width required, rest optional).
-    BorderPartial { resolved_ty: Type },
-    /// Border with no required fields (entirely optional).
-    BorderOptional { resolved_ty: Type },
 }
 
 /// What range check to emit for a field.
@@ -58,8 +55,7 @@ pub(crate) enum BorderKind {
 /// Struct-level attributes parsed from `#[theme_layer(...)]`.
 #[derive(Debug, Clone)]
 pub(crate) struct LayerMeta {
-    #[expect(dead_code)]
-    // Parsed for future struct-level border dispatch; per-field categories handle validation
+    /// Border validation mode -- drives dispatch in gen_validate for border fields.
     pub border_kind: BorderKind,
     pub resolved_name: Option<Ident>,
     /// Skip inventory::submit! generation (for non-per-variant widgets like LayoutTheme).
@@ -189,15 +185,13 @@ fn parse_one_field(field: &Field) -> Result<FieldMeta> {
                     }
                     Ok(())
                 } else if meta.path.is_ident("border_partial") {
-                    category = Some(FieldCategory::BorderPartial {
-                        resolved_ty: ty.clone(), // placeholder
-                    });
-                    Ok(())
+                    Err(meta.error(
+                        "border_partial is no longer needed -- use #[theme_layer(border_kind = \"partial\")] on the struct instead",
+                    ))
                 } else if meta.path.is_ident("border_optional") {
-                    category = Some(FieldCategory::BorderOptional {
-                        resolved_ty: ty.clone(), // placeholder
-                    });
-                    Ok(())
+                    Err(meta.error(
+                        "border_optional is no longer needed -- use #[theme_layer(border_kind = \"none\")] on the struct instead",
+                    ))
                 } else if meta.path.is_ident("resolved_type") {
                     let value = meta.value()?;
                     let lit: LitStr = value.parse()?;
@@ -255,18 +249,8 @@ fn parse_one_field(field: &Field) -> Result<FieldMeta> {
                     resolved_ty: rt.clone(),
                 });
             }
-            Some(FieldCategory::BorderPartial { .. }) => {
-                category = Some(FieldCategory::BorderPartial {
-                    resolved_ty: rt.clone(),
-                });
-            }
-            Some(FieldCategory::BorderOptional { .. }) => {
-                category = Some(FieldCategory::BorderOptional {
-                    resolved_ty: rt.clone(),
-                });
-            }
             None => {
-                // resolved_type without nested/border_partial/border_optional: treat as nested
+                // resolved_type without nested: treat as nested
                 category = Some(FieldCategory::Nested {
                     resolved_ty: rt.clone(),
                 });
@@ -329,4 +313,73 @@ fn parse_range_u16(lit: &LitStr) -> Result<(u16, u16)> {
         .parse()
         .map_err(|_| Error::new(lit.span(), "invalid max value in range"))?;
     Ok((min, max))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    /// Helper: parse a single field by wrapping it in a struct and extracting.
+    fn parse_field_from_tokens(tokens: proc_macro2::TokenStream) -> Result<FieldMeta> {
+        let wrapper = quote::quote! {
+            struct Wrapper { #tokens }
+        };
+        let item: syn::ItemStruct = syn::parse2(wrapper)?;
+        let field = item
+            .fields
+            .iter()
+            .next()
+            .ok_or_else(|| Error::new(Span::call_site(), "no field in wrapper struct"))?;
+        parse_one_field(field)
+    }
+
+    #[test]
+    fn nested_field_is_parsed_as_nested() {
+        let tokens = quote::quote! {
+            #[theme(nested, resolved_type = "ResolvedBorderSpec")]
+            pub border: Option<WidgetBorderSpec>
+        };
+        let meta = parse_field_from_tokens(tokens).expect("should parse");
+        assert!(
+            matches!(meta.category, FieldCategory::Nested { .. }),
+            "expected Nested, got {:?}",
+            meta.category
+        );
+    }
+
+    #[test]
+    fn border_partial_attribute_produces_error() {
+        let tokens = quote::quote! {
+            #[theme(border_partial, resolved_type = "ResolvedBorderSpec")]
+            pub border: Option<WidgetBorderSpec>
+        };
+        let result = parse_field_from_tokens(tokens);
+        assert!(
+            result.is_err(),
+            "border_partial should produce a compile error"
+        );
+        let err_msg = result.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("border_partial is no longer needed"),
+            "error message should guide to border_kind, got: {err_msg}"
+        );
+    }
+
+    #[test]
+    fn border_optional_attribute_produces_error() {
+        let tokens = quote::quote! {
+            #[theme(border_optional, resolved_type = "ResolvedBorderSpec")]
+            pub border: Option<WidgetBorderSpec>
+        };
+        let result = parse_field_from_tokens(tokens);
+        assert!(
+            result.is_err(),
+            "border_optional should produce a compile error"
+        );
+        let err_msg = result.unwrap_err().to_string();
+        assert!(
+            err_msg.contains("border_optional is no longer needed"),
+            "error message should guide to border_kind, got: {err_msg}"
+        );
+    }
 }

@@ -42,9 +42,7 @@ fn gen_merge_stmts(fields: &[FieldMeta]) -> TokenStream {
                         }
                     }
                 }
-                FieldCategory::Nested { .. }
-                | FieldCategory::BorderPartial { .. }
-                | FieldCategory::BorderOptional { .. } => {
+                FieldCategory::Nested { .. } => {
                     quote! {
                         match (&mut self.#ident, &overlay.#ident) {
                             (Some(base), Some(over)) => base.merge(over),
@@ -70,9 +68,7 @@ fn gen_is_empty_expr(fields: &[FieldMeta]) -> TokenStream {
                 FieldCategory::Option | FieldCategory::SoftOption => {
                     quote! { && self.#ident.is_none() }
                 }
-                FieldCategory::Nested { .. }
-                | FieldCategory::BorderPartial { .. }
-                | FieldCategory::BorderOptional { .. } => {
+                FieldCategory::Nested { .. } => {
                     quote! { && self.#ident.as_ref().map_or(true, |v| v.is_empty()) }
                 }
             }

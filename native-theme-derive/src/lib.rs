@@ -26,8 +26,6 @@ mod parse;
 ///
 /// - `#[theme(category = "option"|"soft_option")]` -- field merge/validation category (default: "option")
 /// - `#[theme(nested, resolved_type = "ResolvedFontSpec")]` -- nested validated type
-/// - `#[theme(border_partial, resolved_type = "ResolvedBorderSpec")]` -- border with partial inheritance
-/// - `#[theme(border_optional, resolved_type = "ResolvedBorderSpec")]` -- border with no required fields
 /// - `#[theme(check = "non_negative"|"positive")]` -- range check
 /// - `#[theme(range = "0.0..=1.0")]` -- f32 range check
 /// - `#[theme(range_u16 = "100..=900")]` -- u16 range check

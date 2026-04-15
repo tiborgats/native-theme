@@ -4,7 +4,7 @@ use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::Ident;
 
-use crate::parse::{FieldCategory, FieldMeta, LayerMeta};
+use crate::parse::{BorderKind, FieldCategory, FieldMeta, LayerMeta};
 
 /// Generate `validate_widget()` impl block on the Resolved struct.
 pub(crate) fn gen_validate(
@@ -17,7 +17,7 @@ pub(crate) fn gen_validate(
         .clone()
         .unwrap_or_else(|| format_ident!("Resolved{}", opt_name));
 
-    let field_inits = gen_field_inits(fields);
+    let field_inits = gen_field_inits(fields, layer);
 
     quote! {
         #[allow(dead_code)]
@@ -39,8 +39,18 @@ pub(crate) fn gen_validate(
     }
 }
 
+/// Check if a resolved type's last path segment is "ResolvedBorderSpec".
+fn is_border_type(ty: &syn::Type) -> bool {
+    if let syn::Type::Path(type_path) = ty {
+        if let Some(seg) = type_path.path.segments.last() {
+            return seg.ident == "ResolvedBorderSpec";
+        }
+    }
+    false
+}
+
 /// Generate field initialization expressions for validate_widget().
-fn gen_field_inits(fields: &[FieldMeta]) -> TokenStream {
+fn gen_field_inits(fields: &[FieldMeta], layer: &LayerMeta) -> TokenStream {
     let inits: Vec<TokenStream> = fields
         .iter()
         .map(|f| {
@@ -62,32 +72,50 @@ fn gen_field_inits(fields: &[FieldMeta]) -> TokenStream {
                         #ident: source.#ident,
                     }
                 }
-                FieldCategory::Nested { .. } => {
-                    // Extract the Option<T> inner type for the ValidateNested call
-                    let opt_ty = extract_option_inner_ty(&f.ty);
-                    quote! {
-                        #ident: <#opt_ty as crate::resolve::validate_helpers::ValidateNested>::validate_nested(
-                            &source.#ident,
-                            &format!("{}.{}", prefix, #field_name),
-                            _dpi,
-                            missing,
-                        ),
-                    }
-                }
-                FieldCategory::BorderPartial { .. } => {
-                    quote! {
-                        #ident: crate::resolve::validate_helpers::require_border_partial(
-                            &source.#ident,
-                            &format!("{}.{}", prefix, #field_name),
-                            missing,
-                        ),
-                    }
-                }
-                FieldCategory::BorderOptional { .. } => {
-                    quote! {
-                        #ident: crate::resolve::validate_helpers::border_all_optional(
-                            &source.#ident,
-                        ),
+                FieldCategory::Nested { resolved_ty } => {
+                    // For border fields, dispatch based on struct-level border_kind.
+                    // For non-border nested fields (fonts, etc.), always use ValidateNested.
+                    if is_border_type(resolved_ty) {
+                        match layer.border_kind {
+                            BorderKind::None => {
+                                quote! {
+                                    #ident: crate::resolve::validate_helpers::border_all_optional(
+                                        &source.#ident,
+                                    ),
+                                }
+                            }
+                            BorderKind::Partial => {
+                                quote! {
+                                    #ident: crate::resolve::validate_helpers::require_border_partial(
+                                        &source.#ident,
+                                        &format!("{}.{}", prefix, #field_name),
+                                        missing,
+                                    ),
+                                }
+                            }
+                            BorderKind::Full => {
+                                let opt_ty = extract_option_inner_ty(&f.ty);
+                                quote! {
+                                    #ident: <#opt_ty as crate::resolve::validate_helpers::ValidateNested>::validate_nested(
+                                        &source.#ident,
+                                        &format!("{}.{}", prefix, #field_name),
+                                        _dpi,
+                                        missing,
+                                    ),
+                                }
+                            }
+                        }
+                    } else {
+                        // Non-border nested field: always use ValidateNested
+                        let opt_ty = extract_option_inner_ty(&f.ty);
+                        quote! {
+                            #ident: <#opt_ty as crate::resolve::validate_helpers::ValidateNested>::validate_nested(
+                                &source.#ident,
+                                &format!("{}.{}", prefix, #field_name),
+                                _dpi,
+                                missing,
+                            ),
+                        }
                     }
                 }
             }
