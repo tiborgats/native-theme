@@ -213,10 +213,10 @@ pub fn on_theme_change(
     {
         let de = crate::detect_linux_desktop();
         match de {
-            #[cfg(all(feature = "kde", feature = "watch"))]
+            #[cfg(feature = "kde")]
             crate::LinuxDesktop::Kde => kde::watch_kde(callback),
 
-            #[cfg(all(feature = "portal", feature = "watch"))]
+            #[cfg(feature = "portal")]
             crate::LinuxDesktop::Gnome | crate::LinuxDesktop::Budgie => {
                 gnome::watch_gnome(callback)
             }
@@ -229,32 +229,30 @@ pub fn on_theme_change(
 
     #[cfg(target_os = "macos")]
     {
-        #[cfg(all(feature = "watch", feature = "macos"))]
+        #[cfg(feature = "macos")]
         {
             return macos::watch_macos(callback);
         }
-        #[cfg(not(all(feature = "watch", feature = "macos")))]
+        #[cfg(not(feature = "macos"))]
         {
             let _ = callback;
-            return Err(crate::Error::FeatureDisabled {
-                name: "watch+macos",
-                needed_for: "macOS theme watching",
+            return Err(crate::Error::WatchUnavailable {
+                reason: "enable the 'macos' feature for macOS theme watching",
             });
         }
     }
 
     #[cfg(target_os = "windows")]
     {
-        #[cfg(all(feature = "watch", feature = "windows"))]
+        #[cfg(feature = "windows")]
         {
             return windows::watch_windows(callback);
         }
-        #[cfg(not(all(feature = "watch", feature = "windows")))]
+        #[cfg(not(feature = "windows"))]
         {
             let _ = callback;
-            return Err(crate::Error::FeatureDisabled {
-                name: "watch+windows",
-                needed_for: "Windows theme watching",
+            return Err(crate::Error::WatchUnavailable {
+                reason: "enable the 'windows' feature for Windows theme watching",
             });
         }
     }
@@ -309,7 +307,6 @@ mod tests {
                 &result,
                 Ok(_)
                     | Err(crate::Error::WatchUnavailable { .. })
-                    | Err(crate::Error::FeatureDisabled { .. })
                     | Err(crate::Error::PlatformUnsupported { .. })
                     | Err(crate::Error::ReaderFailed { .. })
             ),

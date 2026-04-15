@@ -12,6 +12,10 @@ use crate::model::IconSizes;
 
 /// Parse KDE kdeglobals content into a Theme without any I/O.
 ///
+/// This function is intentionally `pub` (not `pub(crate)`) because integration tests
+/// in `tests/reader_kde.rs` import it from outside the crate. See doc 1 section C6
+/// and Phase 79-02 decision for rationale.
+///
 /// `font_dpi`: if `Some`, used directly for font DPI; if `None`, attempts to
 /// extract `forceFontDPI` from the INI content, falling back to `None` (no DPI set).
 /// Icon sizes are NOT populated (requires filesystem access) -- the caller
