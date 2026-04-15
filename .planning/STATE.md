@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
-status: complete
-stopped_at: Phase 88 verified — 11/11 must-haves confirmed, milestone complete
-last_updated: "2026-04-14T14:00:00Z"
-last_activity: 2026-04-14 — Phase 88 verified (11/11 must-haves confirmed)
+status: in_progress
+stopped_at: Phase 89 added — gap closure phase from milestone audit
+last_updated: "2026-04-15T00:00:00Z"
+last_activity: 2026-04-15 — Phase 89 added (post-partition doctest path fixes)
 progress:
-  total_phases: 28
+  total_phases: 29
   completed_phases: 28
-  total_plans: 55
+  total_plans: 56
   completed_plans: 55
-  percent: 100
+  percent: 98
 ---
 
 # Project State

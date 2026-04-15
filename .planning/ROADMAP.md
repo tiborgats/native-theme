@@ -15,7 +15,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - ✅ **v0.5.0 Per-Widget Architecture & Resolution Pipeline** — Phases 44-48 (shipped 2026-03-29)
 - ✅ **v0.5.5 Schema Overhaul & Quality** — Phases 49-60 (shipped 2026-04-09)
 - ✅ **v0.5.6 Internal Quality & Runtime Watching** — Phases 61-68 (shipped 2026-04-10)
-- ✅ **v0.5.7 API Overhaul** — Phases 69-88 (shipped 2026-04-14)
+- 🚧 **v0.5.7 API Overhaul** — Phases 69-89 (in progress)
 
 ## Phases
 
@@ -142,7 +142,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 
 </details>
 
-### v0.5.7 API Overhaul (Phases 69-88)
+### v0.5.7 API Overhaul (Phases 69-89)
 
 - [x] **Phase 69: Resolver-Level button_order Unlock** — Ship-unit 1: delete macOS/KDE `button_order` hardcodes and move dispatch into the resolver so the `resolve()` docs stop lying (completed 2026-04-12)
 - [x] **Phase 70: Drop Error::Clone Bound** — Ship-unit 3: four-item atomic removal of `#[derive(Clone)]`, stale doc comments, and the `error_is_clone` test (completed 2026-04-12)
@@ -164,6 +164,7 @@ native-theme delivers a toolkit-agnostic Rust crate for unified OS theme data. T
 - [x] **Phase 86: Validation and Lint Codegen Polish** — Drive `lint_toml` from the `inventory::submit!` widget registry, stop `check_ranges` from eagerly `format!`-ing path strings (completed 2026-04-13)
 - [x] **Phase 87: Font Family Arc<str> and AnimatedIcon Invariants** — Migrate `FontSpec::family: String` to `Arc<str>` across widget × connector, wrap `AnimatedIcon` public fields in newtype constructors that enforce invariants (completed 2026-04-13)
 - [x] **Phase 88: Diagnostic and Preset-Polish Sweep** — `diagnose_platform_support` returns `Vec<DiagnosticEntry>`, `platform_preset_name` returns structured data, `FontSpec::style` default-consistency documented, `defaults.border.padding` rule corrected, bundled preset `name`/`icon_theme` become `Cow<'static, str>` (completed 2026-04-14)
+- [ ] **Phase 89: Post-Partition Doctest Path Fixes** — Fix 6 stale doctest API paths in watch/mod.rs and rasterize.rs, remove dangling doc link to deleted load_custom_icon (gap closure from milestone audit)
 
 ## Phase Details
 
@@ -569,6 +570,20 @@ Plans:
 Plans:
 - [x] 88-01-PLAN.md — DiagnosticEntry and PlatformPreset structured return types
 - [x] 88-02-PLAN.md — Cow migration for preset name/icon_theme and documentation polish
+
+### Phase 89: Post-Partition Doctest Path Fixes
+**Goal**: Fix 6 stale doctest API paths in `watch/mod.rs` and `rasterize.rs` that use pre-Phase-76 flat crate root paths instead of module-qualified paths, and remove 1 dangling doc link to a deleted function in `model/icons.rs`
+**Depends on**: Phase 88
+**Requirements**: Gap closure (audit tech debt)
+**Gap Closure**: Closes stale doctest paths from v0.5.7-MILESTONE-AUDIT.md
+**Success Criteria** (what must be TRUE):
+  1. `watch/mod.rs` module doctest and `on_theme_change` fn doctest use `native_theme::watch::on_theme_change`, `native_theme::watch::ThemeChangeEvent`, and `native_theme::error::Error` — not flat crate root paths
+  2. `rasterize.rs` doctest uses `native_theme::theme::IconData` — not `native_theme::IconData`
+  3. `model/icons.rs` has zero references to `crate::load_custom_icon` in doc comments
+  4. `cargo doc -p native-theme --no-deps` produces zero warnings about broken intra-doc links
+**Plans:** 1 plan
+Plans:
+- [ ] 89-01-PLAN.md — Fix stale doctest paths and dangling doc link
 
 ## Progress
 
