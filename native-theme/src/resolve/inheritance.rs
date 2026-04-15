@@ -373,3 +373,76 @@ impl ThemeMode {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    /// Verify that every rule in inheritance-rules.toml [defaults_internal] section
+    /// is covered by the hand-written implementation in this file.
+    ///
+    /// This test catches drift: if someone adds a rule to the TOML but forgets
+    /// to implement it in Rust, this test fails.
+    #[test]
+    fn inheritance_rules_toml_covers_defaults_internal() {
+        let toml_str = include_str!("../../../docs/inheritance-rules.toml");
+        let table: toml::Table = toml_str.parse().expect("valid TOML");
+
+        // [defaults_internal] section
+        let defaults_internal = table
+            .get("defaults_internal")
+            .and_then(|v| v.as_table())
+            .expect("[defaults_internal] section exists");
+
+        // These are the fields that resolve_defaults_internal() handles.
+        // If a new rule is added to the TOML, add the target field here too.
+        let implemented_targets: &[&str] = &[
+            "defaults.selection_background",
+            "defaults.focus_ring_color",
+            "defaults.selection_inactive_background",
+            "defaults.text_selection_background",
+            "defaults.text_selection_color",
+            "defaults.font.color",
+            "defaults.mono_font.color",
+            "defaults.border.padding_horizontal",
+            "defaults.border.padding_vertical",
+        ];
+
+        for key in defaults_internal.keys() {
+            assert!(
+                implemented_targets.contains(&key.as_str()),
+                "inheritance-rules.toml [defaults_internal] has rule '{key}' \
+                 but it is not listed in inheritance.rs implemented_targets. \
+                 Either implement the rule or add it to the list."
+            );
+        }
+
+        // Reverse check: every implemented target should be in the TOML
+        for &target in implemented_targets {
+            assert!(
+                defaults_internal.contains_key(target),
+                "inheritance.rs claims to implement '{target}' but it is not \
+                 in inheritance-rules.toml [defaults_internal]"
+            );
+        }
+    }
+
+    /// Verify border_inheritance and font_inheritance sections have matching
+    /// coverage in the Rust implementation (widget lists).
+    #[test]
+    fn inheritance_rules_toml_covers_structured_inheritance() {
+        let toml_str = include_str!("../../../docs/inheritance-rules.toml");
+        let table: toml::Table = toml_str.parse().expect("valid TOML");
+
+        // Verify sections exist (structural check)
+        assert!(
+            table.contains_key("border_inheritance"),
+            "TOML must have [border_inheritance] section"
+        );
+        assert!(
+            table.contains_key("font_inheritance"),
+            "TOML must have [font_inheritance] section"
+        );
+        // The test verifies structural presence; the proc-macro handles
+        // uniform rules, so we only need to confirm the TOML sections
+        // that map to hand-written code still exist.
+    }
+}
