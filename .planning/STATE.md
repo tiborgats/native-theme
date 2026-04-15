@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
-status: in-progress
-stopped_at: Completed 91-03-PLAN.md
-last_updated: "2026-04-15T13:58:48Z"
-last_activity: 2026-04-15 — Phase 91 plan 03 complete (require boilerplate macro)
+status: completed
+stopped_at: Completed 91-01-PLAN.md (all phase 91 plans done)
+last_updated: "2026-04-15T14:02:08Z"
+last_activity: 2026-04-15 — Phase 91 complete (all 3 plans: PresetInfo, border unification, require macro)
 progress:
   total_phases: 31
-  completed_phases: 30
+  completed_phases: 31
   total_plans: 65
-  completed_plans: 63
-  percent: 97
+  completed_plans: 65
+  percent: 100
 ---
 
 # Project State
@@ -27,10 +27,10 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 Phase: 91 — resolve-remaining-todo-doc-gaps
 Plan: 3/3 complete
-Status: in-progress
-Last activity: 2026-04-15 — Completed 91-02 (unify border inheritance paths)
+Status: complete
+Last activity: 2026-04-15 — Completed 91-01 (delete with_overlay_toml, add PresetInfo)
 
-Progress: [█████████░] 98% (64/65 plans complete)
+Progress: [██████████] 100% (65/65 plans complete)
 
 ## Accumulated Context
 
@@ -211,6 +211,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-15T14:00:00Z
-Stopped at: Completed 91-02-PLAN.md
+Last session: 2026-04-15T14:02:08Z
+Stopped at: Completed 91-01-PLAN.md
 Resume file: None
