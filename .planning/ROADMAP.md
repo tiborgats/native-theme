@@ -669,6 +669,7 @@ Accepted deviation: Rgba retains Default via manual impl returning TRANSPARENT (
 
 **Goal:** Close remaining gaps from TODO doc audit: delete with_overlay_toml convenience wrapper (15b), add PresetInfo struct for richer preset enumeration (15f), replace hand-written defaults extraction boilerplate with declarative macros (B1), unify border-inheritance validation via struct-level border_kind dispatch (B7). Document from_kde_content_pure pub visibility as intentional deviation (C6).
 **Depends on:** Phase 90
+**Status:** complete (2026-04-15)
 **Plans:** 3/3 plans complete
 
 Plans:
