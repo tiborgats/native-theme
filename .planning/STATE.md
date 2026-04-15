@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 90 — resolve-remaining-v0-5-7-api-overhaul-gaps
-Plan: 6/6 (90-01, 90-02, 90-03, 90-05, 90-06 complete)
+Plan: 6/6 (90-01, 90-02, 90-03, 90-04, 90-05, 90-06 complete)
 Status: in-progress
-Last activity: 2026-04-15 — Completed 90-06 (inheritance drift test, KDE pub doc, watch cfg gates)
+Last activity: 2026-04-15 — Completed 90-04 (NoVariant error, pick/into_variant Result, Theme::new() removal)
 
 Progress: [██████████] 100% (56/56 plans complete)
 
@@ -192,6 +192,7 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 82-02]: CLI theme override uses IconLoader::new(name).set(Freedesktop).theme(t) instead of direct load_freedesktop_icon_by_name
 - [Phase 86-01]: lint_toml uses inventory::iter::<WidgetFieldInfo>() HashMap for widget discovery; STRUCTURAL_KEYS retains only defaults and text_scale
 - [Phase 90-01]: Manual impl Default for Rgba (returns TRANSPARENT) instead of removing Default entirely -- ResolvedBorderSpec, ResolvedFontSpec, require() helper, and ThemeWidget derive all need Rgba: Default
+- [Phase 90-04]: Theme::new() deleted; callers use struct literal with Default. NoVariant error categorized as ErrorKind::Resolution. Connector from_preset functions propagate NoVariant via ? instead of custom error wrappers
 
 ### Roadmap Evolution
 
@@ -208,6 +209,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-15T11:29:45.089Z
-Stopped at: Completed 90-06-PLAN.md
+Last session: 2026-04-15T11:45:55Z
+Stopped at: Completed 90-04-PLAN.md
 Resume file: None
