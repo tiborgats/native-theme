@@ -48,7 +48,9 @@ icon theme".
    The preset re-sets `current_icon_theme = "Adwaita"`, `has_toml_icon_theme =
    true`.  The block at line 1802 fires because `use_default_icon_set == true`.
    `default_icon_label()` (line 1137) sees the Adwaita freedesktop theme is
-   installed, returns `"default (Adwaita)"`.  The dropdown is overwritten.
+   installed, returns `"default (Adwaita)"`.  **Both the dropdown label and
+   the loaded icons** are overwritten — the icons switch from breeze-dark back
+   to Adwaita.
 
 **Why other icon themes survive:** Lucide and Material set
 `use_default_icon_set = false` (line 1483), so the block at 1802 is skipped
@@ -79,7 +81,9 @@ returns `IconSetChoice::Default("Adwaita")` (because the Adwaita TOML specifies
 `icon_theme`), overwriting the user's intent.
 
 The trigger is the same: the theme watcher fires `ThemeWatcherTick` (line 1328)
-which calls `rebuild_theme()` (line 1331).
+which calls `rebuild_theme()` (line 1331).  The iced subscription is gated on
+`color_mode == System` (line 3146), so this only fires in System color mode —
+the same condition as the GPUI showcase.
 
 ### Affected code locations
 
@@ -90,10 +94,10 @@ which calls `rebuild_theme()` (line 1331).
 | `use_default_icon_set` field | 908 |
 | Both intents collapsed into one bool | 1483 |
 | Initial value `true` | 1687 |
-| Reapplication block that overwrites | 1802-1823 |
-| `default_icon_label()` always returns "default" | 1137-1154 |
-| `resolve_default_icon_set()` ignores "system" | 1094-1109 |
-| `resolve_default_icon_theme()` ignores "system" | 1116-1131 |
+| Reapplication block (overwrites choice AND icons) | 1802-1823 |
+| `default_icon_label()` returns preset-derived label | 1137-1154 |
+| `resolve_default_icon_set()` always uses preset | 1094-1109 |
+| `resolve_default_icon_theme()` always uses preset | 1116-1131 |
 | Theme watcher polling loop | 1837-1852 |
 | Render-time deferred reapplication | 5327-5332 |
 
@@ -107,6 +111,7 @@ which calls `rebuild_theme()` (line 1331).
 | `rebuild_theme()` unconditional overwrite | 947-962 |
 | User's explicit selection handler | 1307-1327 |
 | Theme watcher tick handler | 1328-1332 |
+| Watcher subscription gated on `color_mode == System` | 3146 |
 
 **Shared** (`watch/kde.rs`):
 
@@ -122,7 +127,8 @@ Move `IconSetChoice` to the `native-theme` library (or introduce a new one that
 covers all variants).  Both showcases import the same type.  The critical fix:
 on theme re-application, only overwrite the icon choice when the current mode is
 `Default` (meaning "follow the preset").  All other modes represent explicit
-user intent and are preserved.
+user intent and are preserved.  Icons are always reloaded regardless of mode
+(text color may change on dark/light switch).
 
 **Pros:**
 - Models the domain correctly: there are distinct intents (default, system,
@@ -136,13 +142,19 @@ user intent and are preserved.
 - `System` variant can correctly respond to system icon theme changes at
   runtime (user switches breeze -> breeze-dark in KDE settings while the app
   is running — the "system" label updates, but the choice stays `System`).
+- Helper methods (`effective_icon_set()`, `freedesktop_theme()`,
+  `follows_preset()`) eliminate ad-hoc string parsing and boolean checks.
+- The user explicitly asked for a "user-friendly API" — a shared library type
+  is the direct answer.
 
 **Cons:**
 - Larger change surface: GPUI needs the bool replaced (6 sites), iced needs
   `rebuild_theme()` guarded (1 site) and its local enum replaced with the
   library import.
-- The `Default(String)` / `Freedesktop(String)` variants allocate.  Negligible
-  for a UI event.
+- The `Default(String)` / `Freedesktop(String)` variants allocate a `String`.
+  Negligible for a UI event that happens on user interaction.
+- Adds public API surface to the `native-theme` library.  However, the type is
+  self-contained and unlikely to need breaking changes.
 
 #### Option B: Add a second boolean `user_chose_system: bool` (GPUI only)
 
@@ -152,6 +164,7 @@ showcase separately.
 
 **Pros:**
 - Small, localised change for GPUI.
+- Easy to understand in isolation.
 
 **Cons:**
 - Two booleans create 4 states, only 3 are valid (`use_default_icon_set=false,
@@ -161,7 +174,7 @@ showcase separately.
 - Easy to forget to set one flag when setting the other.
 - Fixes each showcase independently — no shared API, duplicated semantics.
 - Does not address the iced showcase at all (it already has an enum but doesn't
-  respect it).
+  respect it — this option only covers GPUI).
 
 #### Option C: Track the user's last selected dropdown label
 
@@ -171,6 +184,7 @@ update if they differ.
 
 **Pros:**
 - Conceptually simple.
+- Small change.
 
 **Cons:**
 - String comparison against display labels is fragile (format changes break it).
@@ -195,10 +209,13 @@ reapplication block if they're identical.
 - Does not fix the root cause.  If the preset's icon theme *does* change (e.g.
   switching from Adwaita to Breeze theme), the user's "system" choice would
   still be overwritten.
-- Masks the bug for the common case but fails for edge cases.
+- Masks the bug for the common case (same theme, same icon info) but fails for
+  edge cases (dark/light toggle that changes icon theme, theme switch).
 - The watcher path calls `invalidate_caches()` before reapplication, which
   could cause the preset to resolve differently even for the same theme name
   (e.g. dark/light flip).  Diffing becomes unreliable.
+- Would also incorrectly skip icon reloading when only text color changed
+  (dark ↔ light), breaking icon recoloring.
 - No path to support Issue 2.
 
 #### Option E: Remove the dropdown/choice update from the reapplication entirely
@@ -207,7 +224,7 @@ In GPUI: delete lines 1816-1822.  In iced: remove lines 962-963 from
 `rebuild_theme()`.  Only reload icons, don't touch the selection state.
 
 **Pros:**
-- Simplest possible fix.
+- Simplest possible fix: delete a few lines.
 
 **Cons:**
 - Breaks the "default" intent: when the user has "default" selected and
@@ -219,6 +236,38 @@ In GPUI: delete lines 1816-1822.  In iced: remove lines 962-963 from
   in the list — undefined dropdown state.
 - Does not address the icon-loading half of the reapplication block, which
   still uses preset-derived resolution instead of respecting "system".
+  The user would see "system (breeze-dark)" in the dropdown but the actual
+  icons rendered would be Adwaita's.
+
+#### Option F: Fix each showcase locally, no library changes
+
+For iced: keep the existing local `IconSetChoice` enum, add a
+`Freedesktop(String)` variant, add a `follows_preset()` guard in
+`rebuild_theme()`.
+
+For GPUI: introduce a local `IconSetMode` enum replacing the
+`use_default_icon_set: bool`.
+
+Each showcase implements its own enum and guard logic independently.  No changes
+to the `native-theme` library.
+
+**Pros:**
+- No library API surface change.
+- Each showcase can evolve independently.
+- Smaller PRs — showcase changes don't require a library release.
+
+**Cons:**
+- Duplicated type and semantics between two showcases.  Both define a nearly
+  identical enum with identical invariants — a textbook duplication smell.
+- `list_freedesktop_themes()` (needed for Issue 2) must either go in the
+  library anyway or be duplicated in each showcase.  If it goes in the library,
+  the enum should go there too for consistency.
+- If a third consumer (or a user's own app) needs the same pattern, they must
+  reinvent it.
+- Divergence risk: the enums may evolve differently, confusing contributors
+  who work in both showcases.
+- The user explicitly requested a "user-friendly API," which implies a shared,
+  reusable type.
 
 ### Verdict: Issue 1
 
@@ -230,10 +279,11 @@ It is the only option that:
 3. Prevents invalid state at the type level.
 4. Naturally supports Issue 2 without further refactoring.
 5. Correctly handles the `System` variant's runtime re-derivation.
+6. Satisfies the "user-friendly API" requirement.
 
-The extra change surface (GPUI: 6 sites, iced: 2 sites) is proportional to the
-semantic improvement.  Options B-E are either fragile, incomplete, or break
-other functionality.
+Options B-E are either fragile, incomplete, or break other functionality.
+Option F is viable but wastes the opportunity to provide a clean shared API
+and forces duplication.
 
 ---
 
@@ -281,7 +331,7 @@ cannot select an alternative installed freedesktop theme without using the
 
 ### Solution options for theme discovery
 
-#### Option A: Add `list_freedesktop_themes()` to the library, populate dropdown
+#### Option A: Add `list_freedesktop_themes()` with `index.theme` existence check only
 
 Add a public function to `icons.rs` that scans `$XDG_DATA_DIRS/icons/` and
 `$XDG_DATA_HOME/icons/` for subdirectories containing `index.theme`.  Filter
@@ -295,53 +345,63 @@ Both showcases call this once and populate their dropdowns with the results.
   available icon themes.
 - Follows the same pattern as the existing `is_freedesktop_theme_available()`.
 - Users see all their installed themes without needing CLI flags.
+- Simplest scanning logic: just check if `index.theme` exists.
 
 **Cons:**
-- Directory scanning is IO.  (Fast in practice: typically <50 entries, only
-  checking directory existence + `index.theme`.)
-- May list themes that have no application icons (e.g. cursor-only themes).
-  The user would select one and see no icons — confusing.
+- Includes cursor-only themes.  On a typical KDE system, `/usr/share/icons/`
+  contains cursor-only themes such as `breeze_cursors`, `Breeze_Light`, and
+  `capitaine-cursors` — all with an `index.theme` but no application icons.
+  Selecting one would show zero icons, confusing the user.
 
-#### Option B: Scan and filter by parsing `index.theme` files
+#### Option B: Scan and filter by full `index.theme` parsing
 
-Like Option A, but read each theme's `index.theme` to check whether it declares
-`Directories=` entries with `Context=Actions`, `Context=Applications`, etc.
-Filter out cursor-only themes and incomplete themes.
+Like Option A, but read each theme's `index.theme` and parse it to check
+whether it declares `Directories=` entries with `Context=Actions`,
+`Context=Applications`, etc.  Filter out cursor-only themes and incomplete
+themes.
 
 **Pros:**
-- Cleaner list: only themes that actually have application icons are shown.
+- Cleanest list: only themes that actually have application icons are shown.
 - Better user experience: every listed theme will produce visible results.
 
 **Cons:**
-- Significantly more IO and parsing: reading and parsing ~30-50 INI-like files
-  on each scan.
+- Significantly more IO and parsing: reading and parsing ~30-50 INI-like files,
+  iterating their `Directories=` list, and checking `Context=` per entry.
 - Fragile: `index.theme` format varies across themes.  Some themes use
   non-standard keys.  The parser would need to be robust.
-- Complex filtering logic for diminishing returns (most installed themes are
-  real icon themes, not cursor-only).
-- Cursor-only themes are rare in `$XDG_DATA_DIRS/icons/`; most live in
-  `$XDG_DATA_DIRS/cursors/` or `~/.local/share/icons/` with only a `cursors/`
-  subdirectory.  A simple heuristic (Option C) handles them without full
-  parsing.
+- Complex filtering logic for diminishing returns.
+- Overkill: the distinction between "has any icons" and "cursor-only" can be
+  made with a much simpler check (Option C).
 
-#### Option C: Scan with lightweight heuristic filter
+#### Option C: Scan with `Directories=` line check
 
-Like Option A, but apply a cheap heuristic to exclude non-icon themes: check
-whether the theme directory contains *any* subdirectory other than `cursors/`.
-Real icon themes have directories like `16x16/`, `22x22/`, `scalable/`,
-`actions/`, etc.
+Like Option A, but after confirming `index.theme` exists, read its first few
+lines to check whether it contains a `Directories=` line.  The freedesktop Icon
+Theme Specification requires `Directories=` in the `[Icon Theme]` group for
+real icon themes.  Cursor-only themes (e.g. `breeze_cursors`, `Breeze_Light`,
+`capitaine-cursors`) omit it — they only provide a `[Icon Theme]` header with
+`Name=` and inherit cursor data.
+
+Verified on the actual system:
+- `breeze_cursors/index.theme`: no `Directories=` line (cursor-only)
+- `Breeze_Light/index.theme`: no `Directories=` line (cursor-only)
+- `breeze/index.theme`: has `Directories=actions/12,actions/16,...` (real theme)
 
 **Pros:**
-- Fast: one `read_dir` per theme, no file parsing.
-- Filters out the most common false positive (cursor-only themes) without
-  complex logic.
-- Handles the practical reality: real icon themes always have size/category
-  directories; cursor-only themes only have `cursors/`.
+- Simple: one line scan per theme file — no full INI parsing needed.
+- Spec-conformant: based on the freedesktop Icon Theme Specification, not
+  filesystem layout heuristics.
+- Reliable: correctly filters out all cursor-only themes tested
+  (`breeze_cursors`, `Breeze_Light`, `capitaine-cursors`,
+  `capitaine-cursors-light`) while keeping all real icon themes.
+- Fast: reads only until the `Directories=` line is found (typically within
+  the first 20 lines) or EOF.
 
 **Cons:**
-- Heuristic can produce false positives for unusual theme layouts, but the
-  consequence is just showing a theme that has few/no app icons — not a crash.
-- Adds an extra `read_dir` per theme compared to Option A.
+- Slightly more IO than Option A (reads a few lines of each `index.theme`
+  instead of just checking its existence), but still fast.
+- Theoretically, a cursor-only theme could include a `Directories=` line
+  pointing only to cursor directories.  Extremely unlikely in practice.
 
 #### Option D: No scanning — only "system" and a text input
 
@@ -351,7 +411,7 @@ where the user can type any freedesktop theme name (e.g. "char-white").
 **Pros:**
 - Zero IO overhead.
 - No filtering question.
-- Works for any theme, even non-standard ones.
+- Works for any theme, even non-standard ones not in XDG paths.
 
 **Cons:**
 - Terrible discoverability: the user must already know the exact installed
@@ -372,7 +432,7 @@ Call `list_freedesktop_themes()` every time the dropdown items list is rebuilt
 
 **Cons:**
 - Repeated IO on every theme switch.  While fast, it's unnecessary since
-  installed themes don't change during a session.
+  installed themes rarely change during a session.
 
 #### Option E2: Scan once at startup, cache the list
 
@@ -381,7 +441,7 @@ result.  Dropdown rebuilds use the cache.
 
 **Pros:**
 - No repeated IO.
-- Startup cost is negligible (single `read_dir` per XDG data dir).
+- Startup cost is negligible.
 
 **Cons:**
 - Does not pick up icon themes installed while the app is running (extremely
@@ -395,11 +455,16 @@ Append all discovered themes to the existing flat list.
 
 **Pros:**
 - Simplest dropdown change: just push more items onto the vec.
+- Works with both GPUI's `SearchableVec<SharedString>` and iced's `pick_list`
+  without widget modifications.
+- The `Display` impl on `IconSetChoice` provides visual distinction through
+  naming conventions: installed themes show bare names ("breeze", "char-white"),
+  while bundled themes show "Material (bundled)", "Lucide (bundled)", and
+  meta-selections show "default (...)", "system (...)".
 
 **Cons:**
-- Long list becomes hard to navigate.  On a system with 20+ icon themes, the
-  user must scan through all entries with no visual separation.
-- Unclear which items are installed freedesktop themes vs. bundled themes.
+- On systems with many installed themes (20+), the list is long.
+- No visual grouping between installed and bundled entries.
 
 #### Option G: Grouped dropdown with section labels
 
@@ -429,25 +494,29 @@ Material (bundled)
 - Requires the dropdown widget to support non-selectable separator items, or
   a workaround (e.g. items with a special prefix that the handler ignores).
 - The GPUI `SearchableVec<SharedString>` delegate and the iced `pick_list`
-  may not support heterogeneous items natively.
+  may not support heterogeneous items natively.  Would require widget-level
+  changes or a custom delegate — scope creep beyond the icon theme fix.
 
 ### Verdict: Issue 2
 
-**Option C (heuristic filter) + Option E2 (cache at startup) + Option F (flat
-list with clear naming).**
+**Option C (Directories= check) + Option E2 (cache at startup) + Option F
+(flat list).**
 
-1. **Option C over A or B:** The heuristic filter (skip directories that
-   *only* contain `cursors/`) catches the main false positive with negligible
-   cost.  Full `index.theme` parsing (Option B) is over-engineered.
+1. **Option C over A or B:** The `Directories=` line check is the sweet spot —
+   spec-conformant, simple (one line scan, no parsing), and verified to
+   correctly filter out all cursor-only themes on the actual system.  Option A
+   produces false positives.  Option B is overkill.
 
 2. **Option E2 (cache):** Scan once at startup.  Icon themes are not installed
    while the app is running in any normal workflow.
 
 3. **Option F over G (flat list):** The grouped dropdown (Option G) is better
-   UX, but depends on widget support for non-selectable separators.  A flat
-   list with clear naming conventions is acceptable and works with both GPUI
-   and iced widgets as-is.  Grouping can be added later as a presentation
-   improvement without changing the underlying data model.
+   UX, but requires widget support for non-selectable separators that neither
+   GPUI nor iced provides out of the box.  A flat list works with current
+   widgets and the `Display` naming convention (`"breeze"` vs
+   `"Material (bundled)"`) provides sufficient visual distinction.  Grouping
+   can be added later as a presentation improvement without changing the
+   underlying data model or API.
 
 4. **Option D (text input) is rejected:** It defeats the purpose.  The whole
    point is discoverability.
@@ -480,6 +549,10 @@ pub enum IconSetChoice {
     /// icon set is `Freedesktop`.
     ///
     /// This is the ONLY variant that gets overwritten on theme change.
+    /// It is only constructed via `default_icon_choice()`, which
+    /// guarantees the theme is available (bundled sets are always
+    /// available; freedesktop themes are checked via
+    /// `is_freedesktop_theme_available` before returning this variant).
     Default(String),
 
     /// Use the OS-configured icon theme.
@@ -523,8 +596,12 @@ impl Display for IconSetChoice {
 }
 ```
 
-Note: the GPUI showcase has an additional "gpui-component built-in (Lucide)"
-entry that is framework-specific.  This can be handled locally in the showcase
+Note: the `System` variant calls `system_icon_theme()` on each display, which
+reads system configuration.  This is acceptable for dropdown labels (infrequent
+rendering) but should not be called in tight loops.
+
+The GPUI showcase has an additional "gpui-component built-in (Lucide)" entry
+that is framework-specific.  This can be handled locally in the showcase
 without polluting the library type.
 
 ### Helper methods
@@ -532,6 +609,10 @@ without polluting the library type.
 ```rust
 impl IconSetChoice {
     /// The effective `IconSet` loading mechanism for this choice.
+    ///
+    /// For `Default`, returns the theme's icon set (caller passes it in).
+    /// For `Freedesktop`, always returns `IconSet::Freedesktop`.
+    /// For others, returns the corresponding bundled or system set.
     pub fn effective_icon_set(&self, theme_icon_set: IconSet) -> IconSet {
         match self {
             Self::Default(_) => theme_icon_set,
@@ -544,8 +625,13 @@ impl IconSetChoice {
 
     /// The freedesktop theme name to pass to `IconLoader::theme()`, if any.
     ///
-    /// Returns `Some` for `Default` (when the set is freedesktop) and
-    /// `Freedesktop`.  Returns `None` for `System`, `Material`, `Lucide`.
+    /// Returns `Some(name)` for `Default` and `Freedesktop` variants.
+    /// Returns `None` for `System`, `Material`, `Lucide`.
+    ///
+    /// The caller is responsible for only passing the result to
+    /// `IconLoader::theme()` when the effective icon set is
+    /// `IconSet::Freedesktop`.  For bundled sets (Material, Lucide),
+    /// the theme name is not used by the loader.
     pub fn freedesktop_theme(&self) -> Option<&str> {
         match self {
             Self::Default(name) | Self::Freedesktop(name) => Some(name),
@@ -605,10 +691,15 @@ pub fn default_icon_choice(
 /// List installed freedesktop icon themes.
 ///
 /// Scans `$XDG_DATA_DIRS/icons/` and `$XDG_DATA_HOME/icons/` for
-/// subdirectories containing `index.theme` and at least one non-cursor
-/// subdirectory.  Excludes `hicolor` and `default`.  Returns a sorted,
-/// deduplicated list of theme directory names.
+/// subdirectories containing an `index.theme` file with a `Directories=`
+/// line (per the freedesktop Icon Theme Specification).  This filters
+/// out cursor-only themes that lack application icons.
 ///
+/// Excludes `hicolor` (mandatory fallback) and `default` (typically a
+/// symlink).  Returns a sorted, deduplicated list of theme directory
+/// names.
+///
+/// Silently skips entries on IO errors (e.g. permission denied).
 /// Returns an empty `Vec` on non-Linux platforms.
 pub fn list_freedesktop_themes() -> Vec<String>
 ```
@@ -619,25 +710,26 @@ pub fn list_freedesktop_themes() -> Vec<String>
 
 ```rust
 // After loading the new theme's icon_set / icon_theme / has_toml_icon_theme:
+
+// 1. Only re-derive the choice when the user is in "follow preset" mode.
 if self.icon_set_choice.follows_preset() {
-    // User wants "follow the preset" — re-derive.
     self.icon_set_choice = default_icon_choice(icon_set, &icon_theme, has_toml);
-    reload_icons(&self.icon_set_choice, ...);
     update_dropdown(&self.icon_set_choice, ...);
-} else if matches!(self.icon_set_choice, IconSetChoice::System) {
-    // User wants "system" — icons may need reloading if system theme changed,
-    // but the choice stays System.
-    reload_icons(&self.icon_set_choice, ...);
-    update_dropdown_label(&self.icon_set_choice, ...);  // "system (Y)" may have changed
 }
-// For Freedesktop(_), Material, Lucide: do nothing.  User's choice is preserved.
+
+// 2. ALWAYS reload icons — text color changes on dark/light switch affect
+//    icon recoloring (fg_rgb parameter), even for explicit user choices.
+reload_icons(&self.icon_set_choice, ...);
 ```
+
+This is the critical fix: step 1 is conditional (only `Default`), step 2 is
+unconditional (all modes).  The existing code does both unconditionally,
+causing the overwrite bug.
 
 **Dropdown construction pattern (both showcases):**
 
 ```rust
 fn icon_set_dropdown_items(
-    choice: &IconSetChoice,
     icon_set: IconSet,
     icon_theme: &str,
     has_toml: bool,
@@ -673,23 +765,27 @@ let set = choice.effective_icon_set(theme_icon_set);
 let theme = choice.freedesktop_theme();
 // theme is Some("Adwaita") for Default, Some("char-white") for Freedesktop,
 // None for System/Material/Lucide.
-let data = IconLoader::new(role)
-    .set(set)
-    .theme_opt(theme)     // hypothetical; or conditional .theme() call
-    .color_opt(fg)
-    .load();
+let data = if let Some(theme) = theme.filter(|_| set == IconSet::Freedesktop) {
+    IconLoader::new(role).set(set).theme(theme).color_opt(fg).load()
+} else {
+    IconLoader::new(role).set(set).color_opt(fg).load()
+};
 ```
+
+Note: the `--icon-theme` CLI override is orthogonal to `IconSetChoice`.  It is
+passed separately to the icon loader and takes priority within the freedesktop
+set, regardless of the user's dropdown choice.
 
 ### What each showcase deletes
 
-**GPUI showcase** — removes these functions entirely:
+**GPUI showcase** — removes these items entirely:
 - `use_default_icon_set` field (replaced by `IconSetChoice`)
 - `resolve_default_icon_set()` (replaced by `choice.effective_icon_set()`)
 - `resolve_default_icon_theme()` (replaced by `choice.freedesktop_theme()`)
 - `default_icon_label()` (replaced by `choice.to_string()` via `Display`)
 - `icon_set_internal_name()` string parsing (replaced by enum matching)
 
-**Iced showcase** — removes these functions entirely:
+**Iced showcase** — removes these items entirely:
 - Local `IconSetChoice` enum (replaced by library import)
 - `resolve_icon_choice()` (replaced by `default_icon_choice()` + conditional
   overwrite)
@@ -712,7 +808,8 @@ let data = IconLoader::new(role)
 5. **Iced showcase:**
    - Replace local `IconSetChoice` with library import.
    - Remove local `resolve_icon_choice()`.
-   - Guard `rebuild_theme()` icon block with `follows_preset()` check.
+   - Guard `rebuild_theme()`: only overwrite `icon_set_choice` when
+     `follows_preset()` is true.  Always reload icons unconditionally.
    - Add `installed_themes: Vec<String>` field, populated once at init.
    - Update `IconSetChoice::choices()` to include installed themes.
    - Handle `Freedesktop(name)` in the icon set selection message.
@@ -721,7 +818,8 @@ let data = IconLoader::new(role)
    - Replace `use_default_icon_set: bool` with `IconSetChoice` from library.
    - Remove `resolve_default_icon_set()`, `resolve_default_icon_theme()`,
      `default_icon_label()`, and `icon_set_internal_name()`.
-   - Rewrite the reapplication block at line 1802 to use `follows_preset()`.
+   - Rewrite the reapplication block at line 1802: only update choice and
+     dropdown when `follows_preset()`.  Always reload icons.
    - Add `installed_themes: Vec<String>` field, populated once in `new()`.
    - Update `icon_set_dropdown_names()` to include installed themes.
    - Handle `Freedesktop(name)` in the icon set selection handler.
@@ -734,3 +832,5 @@ let data = IconLoader::new(role)
      selections.
    - The installed themes list shows all real icon themes (no cursor-only
      themes, no hicolor).
+   - Dark/light toggle recolors icons correctly for all choices (the icon
+     reload is unconditional, only the choice update is conditional).
