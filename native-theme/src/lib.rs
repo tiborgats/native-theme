@@ -474,14 +474,6 @@ impl SystemTheme {
         })
     }
 
-    /// Apply an app overlay from a TOML string.
-    ///
-    /// Parses the TOML as a [`Theme`] and calls [`with_overlay`](Self::with_overlay).
-    pub fn with_overlay_toml(&self, toml: &str) -> crate::Result<Self> {
-        let overlay = Theme::from_toml(toml)?;
-        self.with_overlay(&overlay)
-    }
-
     /// Load the OS theme synchronously.
     ///
     /// Detects the platform and desktop environment, reads the current theme
@@ -734,7 +726,7 @@ mod system_theme_tests {
 }
 
 // =============================================================================
-// Tests -- with_overlay / with_overlay_toml
+// Tests -- with_overlay
 // =============================================================================
 
 #[cfg(test)]
@@ -865,20 +857,6 @@ mod overlay_tests {
 
         let result = st.with_overlay(&overlay)?;
         assert_eq!(result.light.defaults.font.family.as_ref(), "Comic Sans");
-        Ok(())
-    }
-
-    #[test]
-    fn test_overlay_toml_convenience() -> crate::Result<()> {
-        let st = default_system_theme()?;
-        let result = st.with_overlay_toml(
-            r##"
-            name = "overlay"
-            [light.defaults]
-            accent_color = "#ff0000"
-        "##,
-        )?;
-        assert_eq!(result.light.defaults.accent_color, Rgba::rgb(255, 0, 0));
         Ok(())
     }
 

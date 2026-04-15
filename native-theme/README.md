@@ -74,10 +74,11 @@ let is_dark = system.mode.is_dark();     // OS dark mode state
 Apply user overrides on top of the OS theme:
 
 ```ignore
-let customized = system.with_overlay_toml(r#"
+let overlay = Theme::from_toml(r#"
     [light.defaults]
     accent_color = "#ff6600"
-"#).unwrap();
+"#)?;
+let customized = system.with_overlay(&overlay)?;
 ```
 
 **Platform behavior:**
