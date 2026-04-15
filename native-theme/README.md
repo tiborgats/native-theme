@@ -35,7 +35,7 @@ resolve + validate pipeline:
 
 ```rust,ignore
 use native_theme::theme::ColorMode;
-let variant = theme.into_variant(ColorMode::Dark).ok_or("no variant")?;
+let variant = theme.into_variant(ColorMode::Dark)?;
 let resolved = variant.into_resolved(None)?; // -> ResolvedTheme
 let accent = resolved.defaults.accent_color; // Rgba (not Option)
 ```

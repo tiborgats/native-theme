@@ -81,13 +81,13 @@ fn merge_preserves_base_when_overlay_empty() {
 
 #[test]
 fn merge_native_theme_light_dark() {
-    let mut base = Theme::new("Base");
+    let mut base = Theme { name: "Base".into(), ..Theme::default() };
     let mut base_light = ThemeMode::default();
     base_light.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
     base.light = Some(base_light);
     // base has no dark
 
-    let mut overlay = Theme::new("Overlay");
+    let mut overlay = Theme { name: "Overlay".into(), ..Theme::default() };
     let mut overlay_dark = ThemeMode::default();
     overlay_dark.defaults.background_color = Some(Rgba::rgb(30, 30, 30));
     overlay.dark = Some(overlay_dark);
@@ -115,12 +115,12 @@ fn merge_native_theme_light_dark() {
 
 #[test]
 fn merge_native_theme_deep_merge_variants() {
-    let mut base = Theme::new("Base");
+    let mut base = Theme { name: "Base".into(), ..Theme::default() };
     let mut base_light = ThemeMode::default();
     base_light.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
     base.light = Some(base_light);
 
-    let mut overlay = Theme::new("Overlay");
+    let mut overlay = Theme { name: "Overlay".into(), ..Theme::default() };
     let mut overlay_light = ThemeMode::default();
     overlay_light.defaults.accent_color = Some(Rgba::rgb(61, 174, 233));
     overlay.light = Some(overlay_light);
@@ -514,7 +514,7 @@ fn trait_assertions_default_clone_debug() {
 #[test]
 fn realistic_theme_layering_scenario() {
     // Base preset: Breeze Light with many fields set
-    let mut base = Theme::new("Breeze Light");
+    let mut base = Theme { name: "Breeze Light".into(), ..Theme::default() };
     let mut light = ThemeMode::default();
 
     // Populate base default colors
@@ -550,7 +550,7 @@ fn realistic_theme_layering_scenario() {
     base.light = Some(light);
 
     // User override: just accent color and font family
-    let mut user_override = Theme::new("User Override");
+    let mut user_override = Theme { name: "User Override".into(), ..Theme::default() };
     let mut user_light = ThemeMode::default();
     user_light.defaults.accent_color = Some(Rgba::rgb(156, 39, 176)); // purple accent
     user_light.defaults.font.family = Some("Inter".into()); // different font

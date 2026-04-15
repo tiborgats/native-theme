@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
 status: in-progress
-stopped_at: Completed 90-02-PLAN.md
-last_updated: "2026-04-15T11:20:43.707Z"
-last_activity: 2026-04-15 — Completed 90-02 (IconSet serde cross-check, icon_theme doc, timeout constant)
+stopped_at: Completed 90-06-PLAN.md
+last_updated: "2026-04-15T11:29:45.093Z"
+last_activity: 2026-04-15 — Completed 90-06 (inheritance drift test, KDE pub doc, watch cfg gates)
 progress:
   total_phases: 29
   completed_phases: 29
@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 90 — resolve-remaining-v0-5-7-api-overhaul-gaps
-Plan: 5/6 (90-01, 90-02, 90-03, 90-05 complete)
+Plan: 6/6 (90-01, 90-02, 90-03, 90-05, 90-06 complete)
 Status: in-progress
-Last activity: 2026-04-15 — Completed 90-03 (ThemeWatcher -> ThemeSubscription rename + constructor collapse)
+Last activity: 2026-04-15 — Completed 90-06 (inheritance drift test, KDE pub doc, watch cfg gates)
 
 Progress: [██████████] 100% (56/56 plans complete)
 
@@ -208,6 +208,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-15T11:23:43Z
-Stopped at: Completed 90-03-PLAN.md
+Last session: 2026-04-15T11:29:45.089Z
+Stopped at: Completed 90-06-PLAN.md
 Resume file: None

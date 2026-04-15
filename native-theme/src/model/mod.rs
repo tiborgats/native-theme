@@ -295,17 +295,6 @@ impl Default for Theme {
 }
 
 impl Theme {
-    /// Create a new theme with the given name and no variants.
-    pub fn new(name: impl Into<Cow<'static, str>>) -> Self {
-        Self {
-            name: name.into(),
-            light: None,
-            dark: None,
-            layout: LayoutTheme::default(),
-            icon_set: None,
-        }
-    }
-
     /// Merge an overlay theme into this theme.
     ///
     /// The base name is kept. For each variant (light/dark):
@@ -338,23 +327,31 @@ impl Theme {
     ///
     /// When `mode` is [`ColorMode::Dark`], prefers `dark` and falls back to `light`.
     /// When `mode` is [`ColorMode::Light`], prefers `light` and falls back to `dark`.
-    /// Returns `None` only if the theme has no variants at all.
-    #[must_use]
-    pub fn pick_variant(&self, mode: ColorMode) -> Option<&ThemeMode> {
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NoVariant`](crate::Error::NoVariant) if the theme has
+    /// no variants at all.
+    pub fn pick_variant(&self, mode: ColorMode) -> crate::Result<&ThemeMode> {
         match mode {
             ColorMode::Dark => self.dark.as_ref().or(self.light.as_ref()),
             ColorMode::Light => self.light.as_ref().or(self.dark.as_ref()),
         }
+        .ok_or(crate::Error::NoVariant { mode })
     }
 
     /// Extract a variant by consuming the theme, avoiding a clone.
     ///
     /// When `mode` is [`ColorMode::Dark`], returns the `dark` variant (falling back to
     /// `light`). When [`ColorMode::Light`], returns `light` (falling back to `dark`).
-    /// Returns `None` only if the theme has no variants at all.
     ///
     /// Use this when you own the `Theme` and don't need it afterward.
     /// For read-only inspection, use [`pick_variant()`](Self::pick_variant).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NoVariant`](crate::Error::NoVariant) if the theme has
+    /// no variants at all.
     ///
     /// # Examples
     ///
@@ -362,16 +359,16 @@ impl Theme {
     /// use native_theme::theme::ColorMode;
     ///
     /// let theme = native_theme::theme::Theme::preset("dracula")?;
-    /// let variant = theme.into_variant(ColorMode::Dark).ok_or("no variant")?;
+    /// let variant = theme.into_variant(ColorMode::Dark)?;
     /// let resolved = variant.into_resolved(None)?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    #[must_use]
-    pub fn into_variant(self, mode: ColorMode) -> Option<ThemeMode> {
+    pub fn into_variant(self, mode: ColorMode) -> crate::Result<ThemeMode> {
         match mode {
             ColorMode::Dark => self.dark.or(self.light),
             ColorMode::Light => self.light.or(self.dark),
         }
+        .ok_or(crate::Error::NoVariant { mode })
     }
 
     /// Returns true if the theme has no variants set.
@@ -522,6 +519,10 @@ impl Theme {
     ///
     /// Platform-specific presets (kde-breeze, adwaita, windows-11, macos-sonoma, ios)
     /// are only included on their native platform. Community themes are always included.
+    ///
+    /// Note: Unlike [`list_presets()`](Self::list_presets) which returns a static slice,
+    /// this method returns `Vec` because it filters the preset list at runtime based
+    /// on the detected platform.
     ///
     /// # Examples
     /// ```
@@ -871,14 +872,6 @@ mod tests {
     // === Theme tests ===
 
     #[test]
-    fn native_theme_new_constructor() {
-        let theme = Theme::new("Breeze");
-        assert_eq!(theme.name, "Breeze");
-        assert!(theme.light.is_none());
-        assert!(theme.dark.is_none());
-    }
-
-    #[test]
     fn native_theme_default_is_empty() {
         let theme = Theme::default();
         assert!(theme.is_empty());
@@ -887,17 +880,17 @@ mod tests {
 
     #[test]
     fn native_theme_merge_keeps_base_name() {
-        let mut base = Theme::new("Base Theme");
-        let overlay = Theme::new("Overlay Theme");
+        let mut base = Theme { name: "Base Theme".into(), ..Theme::default() };
+        let overlay = Theme { name: "Overlay Theme".into(), ..Theme::default() };
         base.merge(&overlay);
         assert_eq!(base.name, "Base Theme");
     }
 
     #[test]
     fn native_theme_merge_overlay_light_into_none() {
-        let mut base = Theme::new("Theme");
+        let mut base = Theme { name: "Theme".into(), ..Theme::default() };
 
-        let mut overlay = Theme::new("Overlay");
+        let mut overlay = Theme { name: "Overlay".into(), ..Theme::default() };
         let mut light = ThemeMode::default();
         light.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
         overlay.light = Some(light);
@@ -913,12 +906,12 @@ mod tests {
 
     #[test]
     fn native_theme_merge_both_light_variants() {
-        let mut base = Theme::new("Theme");
+        let mut base = Theme { name: "Theme".into(), ..Theme::default() };
         let mut base_light = ThemeMode::default();
         base_light.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
         base.light = Some(base_light);
 
-        let mut overlay = Theme::new("Overlay");
+        let mut overlay = Theme { name: "Overlay".into(), ..Theme::default() };
         let mut overlay_light = ThemeMode::default();
         overlay_light.defaults.accent_color = Some(Rgba::rgb(0, 120, 215));
         overlay.light = Some(overlay_light);
@@ -937,12 +930,12 @@ mod tests {
 
     #[test]
     fn native_theme_merge_base_light_only_preserved() {
-        let mut base = Theme::new("Theme");
+        let mut base = Theme { name: "Theme".into(), ..Theme::default() };
         let mut base_light = ThemeMode::default();
         base_light.defaults.font.family = Some("Inter".into());
         base.light = Some(base_light);
 
-        let overlay = Theme::new("Overlay"); // no light
+        let overlay = Theme { name: "Overlay".into(), ..Theme::default() }; // no light
 
         base.merge(&overlay);
 
@@ -955,9 +948,9 @@ mod tests {
 
     #[test]
     fn native_theme_merge_dark_variant() {
-        let mut base = Theme::new("Theme");
+        let mut base = Theme { name: "Theme".into(), ..Theme::default() };
 
-        let mut overlay = Theme::new("Overlay");
+        let mut overlay = Theme { name: "Overlay".into(), ..Theme::default() };
         let mut dark = ThemeMode::default();
         dark.defaults.background_color = Some(Rgba::rgb(30, 30, 30));
         overlay.dark = Some(dark);
@@ -973,7 +966,7 @@ mod tests {
 
     #[test]
     fn native_theme_not_empty_with_light() {
-        let mut theme = Theme::new("Theme");
+        let mut theme = Theme { name: "Theme".into(), ..Theme::default() };
         theme.light = Some(ThemeMode::default());
         assert!(!theme.is_empty());
     }
@@ -982,7 +975,7 @@ mod tests {
 
     #[test]
     fn pick_variant_dark_with_both_variants_returns_dark() {
-        let mut theme = Theme::new("Test");
+        let mut theme = Theme { name: "Test".into(), ..Theme::default() };
         let mut light = ThemeMode::default();
         light.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
         theme.light = Some(light);
@@ -999,7 +992,7 @@ mod tests {
 
     #[test]
     fn pick_variant_light_with_both_variants_returns_light() {
-        let mut theme = Theme::new("Test");
+        let mut theme = Theme { name: "Test".into(), ..Theme::default() };
         let mut light = ThemeMode::default();
         light.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
         theme.light = Some(light);
@@ -1016,7 +1009,7 @@ mod tests {
 
     #[test]
     fn pick_variant_dark_with_only_light_falls_back() {
-        let mut theme = Theme::new("Test");
+        let mut theme = Theme { name: "Test".into(), ..Theme::default() };
         let mut light = ThemeMode::default();
         light.defaults.background_color = Some(Rgba::rgb(255, 255, 255));
         theme.light = Some(light);
@@ -1030,7 +1023,7 @@ mod tests {
 
     #[test]
     fn pick_variant_light_with_only_dark_falls_back() {
-        let mut theme = Theme::new("Test");
+        let mut theme = Theme { name: "Test".into(), ..Theme::default() };
         let mut dark = ThemeMode::default();
         dark.defaults.background_color = Some(Rgba::rgb(30, 30, 30));
         theme.dark = Some(dark);
@@ -1043,10 +1036,10 @@ mod tests {
     }
 
     #[test]
-    fn pick_variant_with_no_variants_returns_none() {
-        let theme = Theme::new("Empty");
-        assert!(theme.pick_variant(ColorMode::Dark).is_none());
-        assert!(theme.pick_variant(ColorMode::Light).is_none());
+    fn pick_variant_with_no_variants_returns_err() {
+        let theme = Theme { name: "Empty".into(), ..Theme::default() };
+        assert!(theme.pick_variant(ColorMode::Dark).is_err());
+        assert!(theme.pick_variant(ColorMode::Light).is_err());
     }
 
     // === icon_set tests (on Theme, shared across variants) ===
@@ -1058,8 +1051,8 @@ mod tests {
 
     #[test]
     fn icon_set_merge_overlay() {
-        let mut base = Theme::new("Base");
-        let mut overlay = Theme::new("Overlay");
+        let mut base = Theme { name: "Base".into(), ..Theme::default() };
+        let mut overlay = Theme { name: "Overlay".into(), ..Theme::default() };
         overlay.icon_set = Some(IconSet::Material);
         base.merge(&overlay);
         assert_eq!(base.icon_set, Some(IconSet::Material));
@@ -1067,9 +1060,9 @@ mod tests {
 
     #[test]
     fn icon_set_merge_none_preserves() {
-        let mut base = Theme::new("Base");
+        let mut base = Theme { name: "Base".into(), ..Theme::default() };
         base.icon_set = Some(IconSet::SfSymbols);
-        let overlay = Theme::new("Overlay");
+        let overlay = Theme { name: "Overlay".into(), ..Theme::default() };
         base.merge(&overlay);
         assert_eq!(base.icon_set, Some(IconSet::SfSymbols));
     }
@@ -1077,14 +1070,14 @@ mod tests {
     #[test]
     fn icon_set_is_empty_when_set() {
         assert!(Theme::default().is_empty());
-        let mut t = Theme::new("Test");
+        let mut t = Theme { name: "Test".into(), ..Theme::default() };
         t.icon_set = Some(IconSet::Material);
         assert!(!t.is_empty());
     }
 
     #[test]
     fn icon_set_toml_round_trip() {
-        let mut theme = Theme::new("Test");
+        let mut theme = Theme { name: "Test".into(), ..Theme::default() };
         theme.icon_set = Some(IconSet::Material);
         let mut light = ThemeMode::default();
         light.defaults.icon_theme = Some("material".into());
@@ -1333,10 +1326,10 @@ nonexistent_field = "#ff0000"
 
     #[test]
     fn theme_spec_layout_merge() {
-        let mut base = Theme::new("Base");
+        let mut base = Theme { name: "Base".into(), ..Theme::default() };
         base.layout.widget_gap = Some(6.0);
 
-        let mut overlay = Theme::new("Overlay");
+        let mut overlay = Theme { name: "Overlay".into(), ..Theme::default() };
         overlay.layout.container_margin = Some(8.0);
 
         base.merge(&overlay);
@@ -1346,7 +1339,7 @@ nonexistent_field = "#ff0000"
 
     #[test]
     fn theme_spec_layout_toml_round_trip() {
-        let mut theme = Theme::new("Layout Test");
+        let mut theme = Theme { name: "Layout Test".into(), ..Theme::default() };
         theme.layout.widget_gap = Some(8.0);
         theme.layout.container_margin = Some(12.0);
         theme.layout.window_margin = Some(16.0);
@@ -1359,7 +1352,7 @@ nonexistent_field = "#ff0000"
 
     #[test]
     fn theme_spec_is_empty_with_layout() {
-        let mut theme = Theme::new("Layout Only");
+        let mut theme = Theme { name: "Layout Only".into(), ..Theme::default() };
         assert!(theme.is_empty()); // name doesn't count
         theme.layout.widget_gap = Some(8.0);
         assert!(!theme.is_empty());
@@ -1367,7 +1360,7 @@ nonexistent_field = "#ff0000"
 
     #[test]
     fn theme_spec_layout_top_level_toml() {
-        let mut theme = Theme::new("Top Level");
+        let mut theme = Theme { name: "Top Level".into(), ..Theme::default() };
         theme.layout.widget_gap = Some(8.0);
 
         let toml_str = theme.to_toml().unwrap();

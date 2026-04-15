@@ -86,6 +86,16 @@ pub enum Error {
         reason: &'static str,
     },
 
+    /// The theme has no variant for the requested color mode.
+    ///
+    /// Returned by [`Theme::pick_variant()`](crate::Theme::pick_variant) and
+    /// [`Theme::into_variant()`](crate::Theme::into_variant) when the theme
+    /// has neither a light nor a dark variant set.
+    NoVariant {
+        /// The color mode that was requested.
+        mode: crate::theme::ColorMode,
+    },
+
     /// TOML parsing or serialization error.
     Toml(toml::de::Error),
 
@@ -124,6 +134,7 @@ impl Error {
             Error::FeatureDisabled { .. } => ErrorKind::Platform,
             Error::PlatformUnsupported { .. } => ErrorKind::Platform,
             Error::WatchUnavailable { .. } => ErrorKind::Platform,
+            Error::NoVariant { .. } => ErrorKind::Resolution,
             Error::ReaderFailed { .. } => ErrorKind::Platform,
             Error::UnknownPreset { .. } => ErrorKind::Parse,
             Error::Toml(_) => ErrorKind::Parse,
@@ -152,6 +163,9 @@ impl fmt::Display for Error {
             }
             Error::WatchUnavailable { reason } => {
                 write!(f, "theme watching unavailable: {reason}")
+            }
+            Error::NoVariant { mode } => {
+                write!(f, "theme has no variant for {mode:?}")
             }
             Error::Toml(err) => write!(f, "TOML error: {err}"),
             Error::Io(err) => write!(f, "I/O error: {err}"),
@@ -231,6 +245,7 @@ impl std::error::Error for Error {
             | Error::PlatformUnsupported { .. }
             | Error::UnknownPreset { .. }
             | Error::WatchUnavailable { .. }
+            | Error::NoVariant { .. }
             | Error::ResolutionIncomplete { .. }
             | Error::ResolutionInvalid { .. } => None,
         }

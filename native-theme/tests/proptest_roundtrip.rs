@@ -514,7 +514,7 @@ proptest! {
     #![proptest_config(ProptestConfig::with_cases(64))]
     #[test]
     fn theme_variant_toml_round_trip(v in arb_theme_variant()) {
-        let mut theme = Theme::new("Test");
+        let mut theme = Theme { name: "Test".into(), ..Theme::default() };
         theme.light = Some(v);
         let toml1 = toml::to_string_pretty(&theme).unwrap();
         let round1: Theme = toml::from_str(&toml1).unwrap();

@@ -114,7 +114,7 @@ fn fully_populated_variant(offset: u8) -> ThemeMode {
 
 #[test]
 fn round_trip_full_theme() {
-    let mut theme = Theme::new("Test Theme");
+    let mut theme = Theme { name: "Test Theme".into(), ..Theme::default() };
     theme.light = Some(fully_populated_variant(0));
     theme.dark = Some(fully_populated_variant(10));
 
@@ -199,7 +199,7 @@ fn round_trip_preserves_all_color_fields() {
     // Per-widget: separator
     v.separator.line_color = Some(Rgba::rgb(33, 0, 0));
 
-    let mut theme = Theme::new("All Colors");
+    let mut theme = Theme { name: "All Colors".into(), ..Theme::default() };
     theme.light = Some(v);
 
     let toml_str = toml::to_string_pretty(&theme).unwrap();
@@ -373,7 +373,7 @@ fn very_sparse_toml_name_only() {
 
 #[test]
 fn serialization_skips_none_fields() {
-    let mut theme = Theme::new("Skip Test");
+    let mut theme = Theme { name: "Skip Test".into(), ..Theme::default() };
     let mut light = ThemeMode::default();
     light.defaults.accent_color = Some(Rgba::rgb(61, 174, 233));
     theme.light = Some(light);
@@ -406,7 +406,7 @@ fn serialization_skips_none_fields() {
 
 #[test]
 fn toml_structure_is_human_readable() {
-    let mut theme = Theme::new("Readable");
+    let mut theme = Theme { name: "Readable".into(), ..Theme::default() };
     let mut light = ThemeMode::default();
     light.defaults.accent_color = Some(Rgba::rgb(61, 174, 233));
     light.defaults.background_color = Some(Rgba::rgb(255, 255, 255));

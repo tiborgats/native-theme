@@ -652,7 +652,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 
 **Goal:** Resolve all remaining v0.5.7 API overhaul gaps from todo docs (12 issues across Rgba polish, ThemeWatcher rename, Theme method cleanup, inheritance drift test, intern_font_family, watch compile gates)
 **Depends on:** Phase 89
-**Plans:** 4/6 plans executed
+**Plans:** 5/6 plans executed
 
 Plans:
 - [x] 90-01-PLAN.md -- Rgba Default removal, rgba()->new() rename, detect.rs doc fix
@@ -660,4 +660,4 @@ Plans:
 - [x] 90-03-PLAN.md -- ThemeWatcher -> ThemeSubscription rename + constructor collapse
 - [ ] 90-04-PLAN.md -- Theme::new() deletion, pick/into_variant Result, preset cache doc
 - [x] 90-05-PLAN.md -- intern_font_family helper with global dedup cache
-- [ ] 90-06-PLAN.md -- Inheritance drift test, kde pub doc, watch compile gates
+- [x] 90-06-PLAN.md -- Inheritance drift test, kde pub doc, watch compile gates
