@@ -24,7 +24,7 @@ use resvg::usvg;
 /// # #[cfg(feature = "svg-rasterize")]
 /// # {
 /// use native_theme::rasterize::rasterize_svg;
-/// use native_theme::IconData;
+/// use native_theme::theme::IconData;
 ///
 /// let svg = b"<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'><circle cx='12' cy='12' r='10'/></svg>";
 /// let result = rasterize_svg(svg, 24);
