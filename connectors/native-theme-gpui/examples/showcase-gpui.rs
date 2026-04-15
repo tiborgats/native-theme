@@ -69,7 +69,9 @@ use std::time::Duration;
 #[cfg(target_os = "linux")]
 use native_theme::detect::parse_linux_desktop;
 use native_theme::detect::{prefers_reduced_motion, system_is_dark};
-use native_theme::icons::{IconLoader, is_freedesktop_theme_available};
+use native_theme::icons::{
+    IconLoader, IconSetChoice, default_icon_choice, list_freedesktop_themes,
+};
 use native_theme::pipeline::platform_preset_name;
 use native_theme::theme::{
     AnimatedIcon, IconData, IconRole, IconSet, TransformAnimation, bundled_icon_by_name,
@@ -229,6 +231,32 @@ enum IconSource {
 }
 
 /// Pre-load all 42 icons for the given icon set, tracking source.
+/// Parse a dropdown display string back into an `IconSetChoice`.
+///
+/// The GPUI dropdown gives us a display string, and we need to reconstruct
+/// the corresponding `IconSetChoice`.  The "gpui-component built-in (Lucide)"
+/// entry is GPUI-specific and maps to `Lucide` (the caller handles the
+/// gpui-builtin distinction separately via display string check).
+fn parse_icon_set_choice(display: &str) -> IconSetChoice {
+    if let Some(inner) = display
+        .strip_prefix("default (")
+        .and_then(|s| s.strip_suffix(')'))
+    {
+        IconSetChoice::Default(inner.to_string())
+    } else if display.starts_with("system (") {
+        IconSetChoice::System
+    } else if display == "gpui-component built-in (Lucide)"
+        || display == "Lucide (bundled)"
+    {
+        IconSetChoice::Lucide
+    } else if display == "Material (bundled)" {
+        IconSetChoice::Material
+    } else {
+        // Bare name = installed freedesktop theme (e.g. "breeze", "Papirus")
+        IconSetChoice::Freedesktop(display.to_string())
+    }
+}
+
 ///
 /// `default_theme`: when this is `Some(theme_name)` and `icon_set` is
 /// `Freedesktop`, icons are loaded via `IconLoader` with `.theme()` so they come
@@ -904,8 +932,10 @@ struct Showcase {
     gpui_icon_sources: Vec<Option<ImageSource>>,
     /// Foreground color used when building the image source caches.
     icon_cache_fg: Hsla,
-    /// Whether the icon set follows the theme's default.
-    use_default_icon_set: bool,
+    /// The user's icon set selection intent (library type).
+    icon_set_choice: IconSetChoice,
+    /// Cached list of installed freedesktop icon themes (populated once at init).
+    installed_themes: Vec<String>,
     /// The current resolved theme's preferred icon theme (e.g. "breeze", "Lucide").
     current_icon_theme: String,
     /// The current resolved theme's icon set (loading mechanism).
@@ -1085,86 +1115,31 @@ impl Showcase {
         self.animation_timer = Some(task);
     }
 
-    /// The effective icon set for the "default" selection.
-    ///
-    /// When the TOML specified `icon_theme` and the theme is available, returns
-    /// the theme's `icon_set`.  When the freedesktop theme is not installed,
-    /// falls back to the system icon set.  When the TOML did not specify
-    /// `icon_theme`, returns the system icon set directly.
-    fn resolve_default_icon_set(&self) -> IconSet {
-        if !self.has_toml_icon_theme {
-            return system_icon_set();
-        }
-        match self.current_icon_set {
-            IconSet::Material | IconSet::Lucide => self.current_icon_set,
-            IconSet::Freedesktop => {
-                if is_freedesktop_theme_available(&self.current_icon_theme) {
-                    self.current_icon_set
-                } else {
-                    system_icon_set()
-                }
-            }
-            _ => self.current_icon_set,
-        }
-    }
-
-    /// The effective icon theme name for the "default" selection.
-    ///
-    /// Returns `Some(theme_name)` when the TOML's icon_theme is available
-    /// (meaning `IconLoader` with `.theme()` should be used).  Returns `None` when
-    /// falling back to system or when using a bundled set (which ignores theme).
-    fn resolve_default_icon_theme(&self) -> Option<&str> {
-        if !self.has_toml_icon_theme {
-            return None;
-        }
-        match self.current_icon_set {
-            IconSet::Material | IconSet::Lucide => None,
-            IconSet::Freedesktop => {
-                if is_freedesktop_theme_available(&self.current_icon_theme) {
-                    Some(&self.current_icon_theme)
-                } else {
-                    None
-                }
-            }
-            _ => None,
-        }
-    }
-
-    /// Build the "default" label for the icon set dropdown.
-    ///
-    /// When the TOML's icon_theme is available: "default (<icon_theme>)".
-    /// When falling back to system: "system (<system_icon_theme>)".
-    fn default_icon_label(&self) -> String {
-        if self.has_toml_icon_theme {
-            let available = match self.current_icon_set {
-                IconSet::Material | IconSet::Lucide => true,
-                IconSet::Freedesktop => is_freedesktop_theme_available(&self.current_icon_theme),
-                _ => false,
-            };
-            if available {
-                format!("default ({})", self.current_icon_theme)
-            } else {
-                let sys = system_icon_theme();
-                format!("system ({})", sys)
-            }
-        } else {
-            let sys = system_icon_theme();
-            format!("system ({})", sys)
-        }
-    }
-
     /// Build the list of icon set dropdown names.
     fn icon_set_dropdown_names(&self) -> Vec<SharedString> {
-        let mut names: Vec<SharedString> = Vec::with_capacity(5);
-        // Only show "default (<icon_theme>)" when the TOML specified one
-        if self.has_toml_icon_theme {
-            names.push(format!("default ({})", self.current_icon_theme).into());
+        let icon_theme_opt = if self.has_toml_icon_theme {
+            Some(self.current_icon_theme.as_str())
+        } else {
+            None
+        };
+        let mut names: Vec<SharedString> = Vec::new();
+        // "default (X)" -- only when TOML specifies icon_theme and it's available
+        if let choice @ IconSetChoice::Default(_) =
+            default_icon_choice(self.current_icon_set, icon_theme_opt)
+        {
+            names.push(choice.to_string().into());
         }
-        let sys = system_icon_theme();
-        names.push(format!("system ({})", sys).into());
+        // "system (Y)" -- always
+        names.push(IconSetChoice::System.to_string().into());
+        // Installed freedesktop themes
+        for name in &self.installed_themes {
+            names.push(IconSetChoice::Freedesktop(name.clone()).to_string().into());
+        }
+        // GPUI-specific built-in
         names.push("gpui-component built-in (Lucide)".into());
-        names.push("Lucide (bundled)".into());
-        names.push("Material (bundled)".into());
+        // Bundled
+        names.push(IconSetChoice::Lucide.to_string().into());
+        names.push(IconSetChoice::Material.to_string().into());
         names
     }
 
@@ -1172,23 +1147,6 @@ impl Showcase {
     fn theme_internal_name(display: &str) -> String {
         if display.starts_with("default (") {
             "default".to_string()
-        } else {
-            display.to_string()
-        }
-    }
-
-    /// Convert a display name from the icon theme selector to the internal icon set name.
-    fn icon_set_internal_name(display: &str) -> String {
-        if display.starts_with("default (") {
-            "default".to_string()
-        } else if display.starts_with("system (") {
-            "system".to_string()
-        } else if display == "gpui-component built-in (Lucide)" {
-            "gpui-builtin".to_string()
-        } else if display == "Lucide (bundled)" {
-            "lucide".to_string()
-        } else if display == "Material (bundled)" {
-            "material".to_string()
         } else {
             display.to_string()
         }
@@ -1377,39 +1335,20 @@ impl Showcase {
                 )
             }
         };
-        // Build a temporary Showcase-like state to compute the initial default.
-        // We need the availability check logic, so we inline the logic here.
-        let initial_default_theme: Option<String> = if initial_has_toml_icon_theme {
-            match initial_icon_set {
-                IconSet::Material | IconSet::Lucide => None,
-                IconSet::Freedesktop => {
-                    if is_freedesktop_theme_available(&initial_icon_theme) {
-                        Some(initial_icon_theme.clone())
-                    } else {
-                        None
-                    }
-                }
-                _ => None,
-            }
+        // Use the library's IconSetChoice to compute the initial icon selection.
+        let icon_theme_opt = if initial_has_toml_icon_theme {
+            Some(initial_icon_theme.as_str())
         } else {
             None
         };
-        let initial_effective_set = if initial_has_toml_icon_theme {
-            match initial_icon_set {
-                IconSet::Material | IconSet::Lucide => initial_icon_set,
-                IconSet::Freedesktop => {
-                    if is_freedesktop_theme_available(&initial_icon_theme) {
-                        initial_icon_set
-                    } else {
-                        system_icon_set()
-                    }
-                }
-                _ => initial_icon_set,
-            }
-        } else {
-            system_icon_set()
-        };
+        let initial_icon_set_choice =
+            default_icon_choice(initial_icon_set, icon_theme_opt);
+        let initial_effective_set =
+            initial_icon_set_choice.effective_icon_set(initial_icon_set);
+        let initial_default_theme =
+            initial_icon_set_choice.freedesktop_theme().map(|s| s.to_string());
         let initial_resolved_name = initial_effective_set.name().to_string();
+        let installed_themes = list_freedesktop_themes();
         let fc = original_font.color;
         let fg = Some([fc.r, fc.g, fc.b]);
         let loaded_icons = load_all_icons(
@@ -1425,34 +1364,27 @@ impl Showcase {
             fg,
         );
 
-        // Icon theme selector – build dropdown list
-        // The "default" label depends on whether the TOML specified icon_theme
-        // and whether that theme is available.
-        let initial_icon_label = if initial_has_toml_icon_theme {
-            let available = match initial_icon_set {
-                IconSet::Material | IconSet::Lucide => true,
-                IconSet::Freedesktop => is_freedesktop_theme_available(&initial_icon_theme),
-                _ => false,
-            };
-            if available {
-                format!("default ({})", initial_icon_theme)
-            } else {
-                let sys = system_icon_theme();
-                format!("system ({})", sys)
-            }
-        } else {
-            let sys = system_icon_theme();
-            format!("system ({})", sys)
-        };
-        let mut icon_theme_names: Vec<SharedString> = Vec::with_capacity(5);
-        if initial_has_toml_icon_theme {
-            icon_theme_names.push(format!("default ({})", initial_icon_theme).into());
+        // Icon theme selector -- build dropdown list using IconSetChoice
+        let initial_icon_label = initial_icon_set_choice.to_string();
+        let mut icon_theme_names: Vec<SharedString> = Vec::new();
+        // "default (X)" -- only when TOML specifies icon_theme and it's available
+        if let choice @ IconSetChoice::Default(_) =
+            default_icon_choice(initial_icon_set, icon_theme_opt)
+        {
+            icon_theme_names.push(choice.to_string().into());
         }
-        let sys_theme = system_icon_theme();
-        icon_theme_names.push(format!("system ({})", sys_theme).into());
+        // "system (Y)" -- always
+        icon_theme_names.push(IconSetChoice::System.to_string().into());
+        // Installed freedesktop themes
+        for name in &installed_themes {
+            icon_theme_names
+                .push(IconSetChoice::Freedesktop(name.clone()).to_string().into());
+        }
+        // GPUI-specific built-in
         icon_theme_names.push("gpui-component built-in (Lucide)".into());
-        icon_theme_names.push("Lucide (bundled)".into());
-        icon_theme_names.push("Material (bundled)".into());
+        // Bundled
+        icon_theme_names.push(IconSetChoice::Lucide.to_string().into());
+        icon_theme_names.push(IconSetChoice::Material.to_string().into());
 
         // Find the index of the initial selection label
         let initial_icon_idx = icon_theme_names
@@ -1479,34 +1411,37 @@ impl Showcase {
              cx| {
                 if let SelectEvent::Confirm(Some(value)) = event {
                     let display = value.to_string();
-                    let internal = Self::icon_set_internal_name(&display);
-                    this.use_default_icon_set = internal == "default" || internal == "system";
-                    let (effective_name, effective_enum, default_theme) = match internal.as_str() {
-                        "default" => {
-                            let set = this.resolve_default_icon_set();
-                            let theme = this.resolve_default_icon_theme().map(|s| s.to_string());
-                            (set.name().to_string(), Some(set), theme)
-                        }
-                        "system" => {
-                            let set = system_icon_set();
-                            (set.name().to_string(), Some(set), None)
-                        }
-                        _ => {
-                            let set = IconSet::from_name(&internal);
-                            (internal, set, None)
-                        }
+                    let is_gpui_builtin = display == "gpui-component built-in (Lucide)";
+                    this.icon_set_choice = parse_icon_set_choice(&display);
+                    let effective =
+                        this.icon_set_choice.effective_icon_set(this.current_icon_set);
+                    let default_theme =
+                        this.icon_set_choice.freedesktop_theme().map(|s| s.to_string());
+                    this.icon_set_name = effective.name().to_string();
+                    // For gpui-builtin, icon_set_enum is None (uses gpui-component's
+                    // built-in icons rather than native-theme's loader).
+                    this.icon_set_enum = if is_gpui_builtin {
+                        None
+                    } else {
+                        Some(effective)
                     };
-                    this.icon_set_name = effective_name;
-                    this.icon_set_enum = effective_enum;
                     let cli_ref = this.icon_theme_override.as_deref();
                     let fc = this.original_font.color;
                     let fg_rgb = Some([fc.r, fc.g, fc.b]);
-                    if let Some(set) = effective_enum {
-                        this.loaded_icons =
-                            load_all_icons(set, default_theme.as_deref(), cli_ref, fg_rgb);
+                    if !is_gpui_builtin {
+                        this.loaded_icons = load_all_icons(
+                            effective,
+                            default_theme.as_deref(),
+                            cli_ref,
+                            fg_rgb,
+                        );
                     }
-                    this.gpui_icons =
-                        load_gpui_icons(effective_enum, default_theme.as_deref(), cli_ref, fg_rgb);
+                    this.gpui_icons = load_gpui_icons(
+                        this.icon_set_enum,
+                        default_theme.as_deref(),
+                        cli_ref,
+                        fg_rgb,
+                    );
                     let fg = cx.theme().foreground;
                     this.rebuild_icon_caches(fg);
                     this.rebuild_animation_caches();
@@ -1684,7 +1619,8 @@ impl Showcase {
             loaded_icon_sources: Vec::new(),
             gpui_icon_sources: Vec::new(),
             icon_cache_fg: fg,
-            use_default_icon_set: true,
+            icon_set_choice: initial_icon_set_choice,
+            installed_themes,
             current_icon_theme: initial_icon_theme,
             current_icon_set: initial_icon_set,
             has_toml_icon_theme: initial_has_toml_icon_theme,
@@ -1798,12 +1734,33 @@ impl Showcase {
             }
         }
 
-        // Reload icons when the theme's preferred icon set changes
-        if self.use_default_icon_set {
-            let effective = self.resolve_default_icon_set();
-            let default_theme = self.resolve_default_icon_theme().map(|s| s.to_string());
+        // Only re-derive icon choice when user is in "follow preset" mode
+        if self.icon_set_choice.follows_preset() {
+            let icon_theme_opt = if self.has_toml_icon_theme {
+                Some(self.current_icon_theme.as_str())
+            } else {
+                None
+            };
+            self.icon_set_choice =
+                default_icon_choice(self.current_icon_set, icon_theme_opt);
+            let effective = self.icon_set_choice.effective_icon_set(self.current_icon_set);
             self.icon_set_name = effective.name().to_string();
             self.icon_set_enum = Some(effective);
+
+            // Update the icon theme dropdown to reflect the new effective icon theme
+            let selected_label: SharedString = self.icon_set_choice.to_string().into();
+            let icon_names = self.icon_set_dropdown_names();
+            let new_delegate = SearchableVec::new(icon_names);
+            self.icon_set_select.update(cx, |select, cx| {
+                select.set_items(new_delegate, window, cx);
+                select.set_selected_value(&selected_label, window, cx);
+            });
+        }
+        // ALWAYS reload icons regardless of choice (text color changes on dark/light)
+        {
+            let effective = self.icon_set_choice.effective_icon_set(self.current_icon_set);
+            let default_theme =
+                self.icon_set_choice.freedesktop_theme().map(|s| s.to_string());
             let cli_ref = self.icon_theme_override.as_deref();
             let fc = self.original_font.color;
             let fg_rgb = Some([fc.r, fc.g, fc.b]);
@@ -1811,15 +1768,6 @@ impl Showcase {
                 load_all_icons(effective, default_theme.as_deref(), cli_ref, fg_rgb);
             self.gpui_icons =
                 load_gpui_icons(Some(effective), default_theme.as_deref(), cli_ref, fg_rgb);
-
-            // Update the icon theme dropdown to reflect the new effective icon theme
-            let selected_label: SharedString = self.default_icon_label().into();
-            let icon_names = self.icon_set_dropdown_names();
-            let new_delegate = SearchableVec::new(icon_names);
-            self.icon_set_select.update(cx, |select, cx| {
-                select.set_items(new_delegate, window, cx);
-                select.set_selected_value(&selected_label, window, cx);
-            });
         }
         let fg = cx.theme().foreground;
         self.rebuild_icon_caches(fg);
@@ -5934,35 +5882,44 @@ fn main() {
 
                         // Override icon set if --icon-set was specified
                         if let Some(ref set_name) = cli_args.icon_set {
-                            s.use_default_icon_set = false;
-                            let set_enum = IconSet::from_name(set_name);
-                            s.icon_set_name = set_name.clone();
-                            s.icon_set_enum = set_enum;
+                            // Map CLI set name to an IconSetChoice
+                            s.icon_set_choice = match set_name.as_str() {
+                                "material" => IconSetChoice::Material,
+                                "lucide" => IconSetChoice::Lucide,
+                                "freedesktop" => IconSetChoice::System,
+                                _ => IconSetChoice::System,
+                            };
+                            let effective =
+                                s.icon_set_choice.effective_icon_set(s.current_icon_set);
+                            let default_theme = s
+                                .icon_set_choice
+                                .freedesktop_theme()
+                                .map(|t| t.to_string());
+                            s.icon_set_name = effective.name().to_string();
+                            s.icon_set_enum = Some(effective);
                             let cli_ref = s.icon_theme_override.as_deref();
                             let fc = s.original_font.color;
                             let fg_rgb = Some([fc.r, fc.g, fc.b]);
-                            if let Some(set) = set_enum {
-                                s.loaded_icons = load_all_icons(set, None, cli_ref, fg_rgb);
-                            }
-                            s.gpui_icons = load_gpui_icons(set_enum, None, cli_ref, fg_rgb);
+                            s.loaded_icons = load_all_icons(
+                                effective,
+                                default_theme.as_deref(),
+                                cli_ref,
+                                fg_rgb,
+                            );
+                            s.gpui_icons = load_gpui_icons(
+                                Some(effective),
+                                default_theme.as_deref(),
+                                cli_ref,
+                                fg_rgb,
+                            );
                             let fg = cx.theme().foreground;
                             s.rebuild_icon_caches(fg);
                             s.rebuild_animation_caches();
                             s.start_animation_timer(cx);
 
                             // Update the icon theme selector dropdown
-                            let sys_theme = system_icon_theme();
-                            let icon_display: SharedString = match set_name.as_str() {
-                                "material" => "Material (bundled)".into(),
-                                "lucide" => "Lucide (bundled)".into(),
-                                "freedesktop" => {
-                                    let theme =
-                                        cli_args.icon_theme.as_deref().unwrap_or(&sys_theme);
-                                    format!("system ({})", theme).into()
-                                }
-                                _ => s.default_icon_label().into(),
-                            };
-                            // Build dropdown and select the override entry
+                            let icon_display: SharedString =
+                                s.icon_set_choice.to_string().into();
                             let mut icon_names = s.icon_set_dropdown_names();
                             // Add the override display name if not already in list
                             if !icon_names.contains(&icon_display) {
