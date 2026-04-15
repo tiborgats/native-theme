@@ -33,26 +33,23 @@
 //!
 //! # Font Configuration
 //!
-//! To use theme fonts with iced widgets, leak the family name to obtain
-//! the `&'static str` required by [`iced_core::font::Family::Name`]:
+//! Font family names use `Arc<str>`. For iced's `&'static str` requirement,
+//! use `intern_font_family` to deduplicate allocations:
 //!
 //! ```rust,no_run
-//! let (_, resolved) = native_theme_iced::from_preset("catppuccin-mocha", true).unwrap();
-//! let name: &'static str = Box::leak(
-//!     native_theme_iced::font_family(&resolved).to_string().into_boxed_str()
+//! use native_theme::theme::intern_font_family;
+//!
+//! let (_, resolved) = native_theme_iced::from_preset("catppuccin-mocha", true)?;
+//! let family: std::sync::Arc<str> = intern_font_family(
+//!     native_theme_iced::font_family(&resolved),
 //! );
-//! let font = iced_core::Font {
-//!     family: iced_core::font::Family::Name(name),
-//!     weight: native_theme_iced::to_iced_weight(
-//!         native_theme_iced::font_weight(&resolved)
-//!     ),
-//!     ..Default::default()
-//! };
+//! // For iced Font, convert Arc<str> to a String:
+//! let font_family: String = family.to_string();
+//! # Ok::<(), native_theme::error::Error>(())
 //! ```
 //!
-//! This is the standard iced pattern for runtime font names. Each leak is
-//! ~10-20 bytes and persists for the app lifetime. Call once at theme init,
-//! not per-frame.
+//! `intern_font_family` returns the same `Arc<str>` for repeated calls with
+//! the same family name, so resolving fonts many times allocates only once.
 //!
 //! # Theme Field Coverage
 //!
