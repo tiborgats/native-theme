@@ -681,10 +681,10 @@ Plans:
 
 **Goal:** Fix "system" icon theme selection reverting and add installed themes to dropdown (both showcases)
 **Depends on:** Phase 91
-**Plans:** 2/4 plans executed
+**Plans:** 3/4 plans executed
 
 Plans:
 - [x] 92-01-PLAN.md -- Library: IconSetChoice enum, default_icon_choice(), list_freedesktop_themes()
 - [x] 92-02-PLAN.md -- Iced showcase: import library type, guard rebuild_theme(), add installed themes
-- [ ] 92-03-PLAN.md -- GPUI showcase: replace boolean with library type, guard reapplication, add installed themes
+- [x] 92-03-PLAN.md -- GPUI showcase: replace boolean with library type, guard reapplication, add installed themes
 - [ ] 92-04-PLAN.md -- Full workspace verification and pre-release check
