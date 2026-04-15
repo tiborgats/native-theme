@@ -1,5 +1,7 @@
 //! Icon loading and dispatch.
 
+use std::fmt;
+
 #[allow(unused_imports)]
 use std::borrow::Cow;
 
@@ -273,6 +275,240 @@ pub fn is_freedesktop_theme_available(theme: &str) -> bool {
     #[cfg(not(target_os = "linux"))]
     {
         false
+    }
+}
+
+// =============================================================================
+// IconSetChoice: user's icon set selection intent
+// =============================================================================
+
+/// The user's icon set selection mode.
+///
+/// Represents the user's intent for which icons to display.  The key
+/// invariant: only [`Default`](Self::Default) is re-derived on theme changes.
+/// All other variants represent an explicit user choice that is preserved
+/// across theme re-applications.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum IconSetChoice {
+    /// Follow the theme preset's recommendation.
+    ///
+    /// The `String` is the preset's `icon_theme` name (e.g. "Adwaita"),
+    /// used for display ("default (Adwaita)") and for loading when the
+    /// icon set is `Freedesktop`.
+    ///
+    /// This is the ONLY variant that gets overwritten on theme change.
+    /// It is only constructed via [`default_icon_choice()`], which
+    /// guarantees the theme is available (bundled sets are always
+    /// available; freedesktop themes are checked via
+    /// [`is_freedesktop_theme_available`] before returning this variant).
+    Default(String),
+
+    /// Use the OS-configured icon theme.
+    ///
+    /// Resolved at load time via [`system_icon_set()`](crate::model::icons::system_icon_set).
+    /// The display label ("system (breeze-dark)") is computed dynamically
+    /// from [`system_icon_theme()`](crate::model::icons::system_icon_theme),
+    /// so it tracks runtime OS theme changes.
+    System,
+
+    /// User explicitly picked a specific installed freedesktop icon theme.
+    ///
+    /// The `String` is the theme directory name (e.g. "char-white",
+    /// "breeze", "Papirus").  Loaded via `IconSet::Freedesktop` with
+    /// `.theme(name)`.
+    Freedesktop(String),
+
+    /// Google Material Symbols (bundled).
+    Material,
+
+    /// Lucide Icons (bundled).
+    Lucide,
+}
+
+impl fmt::Display for IconSetChoice {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Default(name) => write!(f, "default ({name})"),
+            Self::System => {
+                let name = system_icon_theme();
+                write!(f, "system ({name})")
+            }
+            Self::Freedesktop(name) => write!(f, "{name}"),
+            Self::Material => write!(f, "Material (bundled)"),
+            Self::Lucide => write!(f, "Lucide (bundled)"),
+        }
+    }
+}
+
+impl IconSetChoice {
+    /// The effective [`IconSet`] loading mechanism for this choice.
+    ///
+    /// For [`Default`](Self::Default), returns the theme's icon set
+    /// (caller passes it in).
+    /// For [`Freedesktop`](Self::Freedesktop), always returns
+    /// [`IconSet::Freedesktop`].
+    /// For others, returns the corresponding bundled or system set.
+    #[must_use]
+    pub fn effective_icon_set(&self, theme_icon_set: IconSet) -> IconSet {
+        match self {
+            Self::Default(_) => theme_icon_set,
+            Self::System => system_icon_set(),
+            Self::Freedesktop(_) => IconSet::Freedesktop,
+            Self::Material => IconSet::Material,
+            Self::Lucide => IconSet::Lucide,
+        }
+    }
+
+    /// The freedesktop theme name to pass to [`IconLoader::theme()`], if any.
+    ///
+    /// Returns `Some(name)` for [`Default`](Self::Default) and
+    /// [`Freedesktop`](Self::Freedesktop) variants.
+    /// Returns `None` for [`System`](Self::System), [`Material`](Self::Material),
+    /// [`Lucide`](Self::Lucide).
+    ///
+    /// The caller is responsible for only passing the result to
+    /// [`IconLoader::theme()`] when the effective icon set is
+    /// [`IconSet::Freedesktop`].  For bundled sets (Material, Lucide),
+    /// the theme name is not used by the loader.
+    #[must_use]
+    pub fn freedesktop_theme(&self) -> Option<&str> {
+        match self {
+            Self::Default(name) | Self::Freedesktop(name) => Some(name),
+            Self::System | Self::Material | Self::Lucide => None,
+        }
+    }
+
+    /// Whether this choice should be re-derived when the theme changes.
+    ///
+    /// Only [`Default`](Self::Default) follows the preset.  All others
+    /// are explicit user choices that must be preserved.
+    #[must_use]
+    pub fn follows_preset(&self) -> bool {
+        matches!(self, Self::Default(_))
+    }
+}
+
+/// Determine the default icon set choice for a theme.
+///
+/// When the TOML specifies `icon_theme` (`Some`) and the theme is
+/// available (bundled sets are always available; freedesktop themes are
+/// checked via [`is_freedesktop_theme_available`]), returns
+/// [`IconSetChoice::Default(icon_theme)`](IconSetChoice::Default).
+///
+/// When the TOML does not specify `icon_theme` (`None`), or the
+/// specified freedesktop theme is not installed, returns
+/// [`IconSetChoice::System`].
+#[must_use]
+pub fn default_icon_choice(icon_set: IconSet, icon_theme: Option<&str>) -> IconSetChoice {
+    let Some(theme) = icon_theme else {
+        return IconSetChoice::System;
+    };
+    // All five IconSet variants listed explicitly -- no wildcard.
+    // Adding a new variant produces a compiler error, forcing the author
+    // to decide whether the new set's theme is "always available" or
+    // needs a runtime check.
+    let available = match icon_set {
+        IconSet::Material | IconSet::Lucide => true,
+        IconSet::Freedesktop => is_freedesktop_theme_available(theme),
+        IconSet::SfSymbols | IconSet::SegoeIcons => true,
+    };
+    if available {
+        IconSetChoice::Default(theme.to_string())
+    } else {
+        IconSetChoice::System
+    }
+}
+
+/// List installed freedesktop icon themes.
+///
+/// Scans `$XDG_DATA_DIRS/icons/` and `$XDG_DATA_HOME/icons/` for
+/// subdirectories containing an `index.theme` file with a `Directories=`
+/// line (per the freedesktop Icon Theme Specification).  This filters
+/// out cursor-only themes that lack application icons.
+///
+/// Excludes `hicolor` (mandatory fallback) and `default` (typically a
+/// symlink).  Returns a sorted, deduplicated list of theme directory
+/// names.
+///
+/// Silently skips entries on IO errors (e.g. permission denied).
+/// Returns an empty `Vec` on non-Linux platforms.
+///
+/// Note: themes installed via Flatpak or Snap may reside outside
+/// standard XDG paths and will not be discovered.
+#[must_use]
+pub fn list_freedesktop_themes() -> Vec<String> {
+    #[cfg(target_os = "linux")]
+    {
+        use std::collections::BTreeSet;
+        use std::io::BufRead;
+
+        let mut themes = BTreeSet::new();
+
+        // Collect icon base directories from XDG paths.
+        let mut icon_dirs = Vec::new();
+
+        let data_dirs = std::env::var("XDG_DATA_DIRS")
+            .unwrap_or_else(|_| "/usr/share:/usr/local/share".to_string());
+        for dir in data_dirs.split(':') {
+            if !dir.is_empty() {
+                icon_dirs.push(std::path::PathBuf::from(dir).join("icons"));
+            }
+        }
+
+        let data_home = std::env::var("XDG_DATA_HOME").unwrap_or_else(|_| {
+            std::env::var("HOME")
+                .map(|h| format!("{h}/.local/share"))
+                .unwrap_or_default()
+        });
+        if !data_home.is_empty() {
+            icon_dirs.push(std::path::PathBuf::from(&data_home).join("icons"));
+        }
+
+        for icon_dir in &icon_dirs {
+            let entries = match std::fs::read_dir(icon_dir) {
+                Ok(e) => e,
+                Err(_) => continue,
+            };
+            for entry in entries.filter_map(|e| e.ok()) {
+                let path = entry.path();
+                if !path.is_dir() {
+                    continue;
+                }
+                let name = match entry.file_name().into_string() {
+                    Ok(n) => n,
+                    Err(_) => continue,
+                };
+
+                // Exclude hicolor (mandatory fallback) and default (symlink).
+                if name == "hicolor" || name == "default" {
+                    continue;
+                }
+
+                let index_path = path.join("index.theme");
+                let file = match std::fs::File::open(&index_path) {
+                    Ok(f) => f,
+                    Err(_) => continue,
+                };
+
+                // Check if index.theme contains a Directories= line.
+                // Cursor-only themes omit this line.
+                let reader = std::io::BufReader::new(file);
+                let has_directories = reader
+                    .lines()
+                    .map_while(Result::ok)
+                    .any(|line| line.starts_with("Directories="));
+
+                if has_directories {
+                    themes.insert(name);
+                }
+            }
+        }
+
+        themes.into_iter().collect()
+    }
+    #[cfg(not(target_os = "linux"))]
+    {
+        Vec::new()
     }
 }
 
@@ -811,5 +1047,133 @@ mod spinner_rasterize_tests {
         } else {
             panic!("lucide spinner should be Frames");
         }
+    }
+}
+
+// =============================================================================
+// IconSetChoice tests
+// =============================================================================
+
+#[cfg(test)]
+mod icon_set_choice_tests {
+    use super::*;
+
+    #[test]
+    fn test_icon_set_choice_display_default() {
+        let choice = IconSetChoice::Default("Adwaita".to_string());
+        assert_eq!(choice.to_string(), "default (Adwaita)");
+    }
+
+    #[test]
+    fn test_icon_set_choice_display_material() {
+        assert_eq!(IconSetChoice::Material.to_string(), "Material (bundled)");
+    }
+
+    #[test]
+    fn test_icon_set_choice_display_lucide() {
+        assert_eq!(IconSetChoice::Lucide.to_string(), "Lucide (bundled)");
+    }
+
+    #[test]
+    fn test_icon_set_choice_display_freedesktop() {
+        let choice = IconSetChoice::Freedesktop("breeze".to_string());
+        assert_eq!(choice.to_string(), "breeze");
+    }
+
+    #[test]
+    fn test_icon_set_choice_follows_preset() {
+        assert!(IconSetChoice::Default("Adwaita".to_string()).follows_preset());
+        assert!(!IconSetChoice::System.follows_preset());
+        assert!(!IconSetChoice::Freedesktop("breeze".to_string()).follows_preset());
+        assert!(!IconSetChoice::Material.follows_preset());
+        assert!(!IconSetChoice::Lucide.follows_preset());
+    }
+
+    #[test]
+    fn test_icon_set_choice_effective_icon_set() {
+        // Default returns whatever the theme specifies
+        let choice = IconSetChoice::Default("Adwaita".to_string());
+        assert_eq!(
+            choice.effective_icon_set(IconSet::Freedesktop),
+            IconSet::Freedesktop
+        );
+        assert_eq!(
+            choice.effective_icon_set(IconSet::Material),
+            IconSet::Material
+        );
+
+        // System returns the platform's icon set
+        let sys = IconSetChoice::System.effective_icon_set(IconSet::Material);
+        assert_eq!(sys, system_icon_set());
+
+        // Freedesktop always returns Freedesktop
+        let choice = IconSetChoice::Freedesktop("breeze".to_string());
+        assert_eq!(
+            choice.effective_icon_set(IconSet::Material),
+            IconSet::Freedesktop
+        );
+
+        // Bundled sets return themselves
+        assert_eq!(
+            IconSetChoice::Material.effective_icon_set(IconSet::Freedesktop),
+            IconSet::Material
+        );
+        assert_eq!(
+            IconSetChoice::Lucide.effective_icon_set(IconSet::Freedesktop),
+            IconSet::Lucide
+        );
+    }
+
+    #[test]
+    fn test_icon_set_choice_freedesktop_theme() {
+        assert_eq!(
+            IconSetChoice::Default("Adwaita".to_string()).freedesktop_theme(),
+            Some("Adwaita")
+        );
+        assert_eq!(
+            IconSetChoice::Freedesktop("breeze".to_string()).freedesktop_theme(),
+            Some("breeze")
+        );
+        assert_eq!(IconSetChoice::System.freedesktop_theme(), None);
+        assert_eq!(IconSetChoice::Material.freedesktop_theme(), None);
+        assert_eq!(IconSetChoice::Lucide.freedesktop_theme(), None);
+    }
+
+    #[test]
+    fn test_default_icon_choice_none() {
+        // When icon_theme is None, always returns System regardless of icon_set
+        assert_eq!(
+            default_icon_choice(IconSet::Freedesktop, None),
+            IconSetChoice::System
+        );
+        assert_eq!(
+            default_icon_choice(IconSet::Material, None),
+            IconSetChoice::System
+        );
+    }
+
+    #[test]
+    fn test_default_icon_choice_bundled() {
+        // Material and Lucide are always available
+        assert_eq!(
+            default_icon_choice(IconSet::Material, Some("any-theme")),
+            IconSetChoice::Default("any-theme".to_string())
+        );
+        assert_eq!(
+            default_icon_choice(IconSet::Lucide, Some("any-theme")),
+            IconSetChoice::Default("any-theme".to_string())
+        );
+    }
+
+    #[test]
+    fn test_list_freedesktop_themes_no_panic() {
+        // Just verify it doesn't panic -- result varies by platform
+        let themes = list_freedesktop_themes();
+        // On Linux, should return a non-empty list on most desktop systems.
+        // On other platforms, returns empty vec.
+        #[cfg(not(target_os = "linux"))]
+        assert!(themes.is_empty());
+        // Suppress unused variable warning
+        let _ = themes;
     }
 }
