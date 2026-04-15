@@ -187,6 +187,7 @@ pub(crate) use detect::{
 pub(crate) use error::{Error, ErrorKind, RangeViolation};
 #[allow(unused_imports)]
 pub(crate) use icons::{IconId, IconLoader, is_freedesktop_theme_available};
+pub use icons::{IconSetChoice, default_icon_choice, list_freedesktop_themes};
 #[allow(unused_imports)]
 pub(crate) use model::icons::{detect_icon_theme, icon_name, system_icon_set, system_icon_theme};
 #[allow(unused_imports)]
@@ -201,7 +202,6 @@ pub(crate) use model::{
     TextScale, TextScaleEntry, Theme, ThemeDefaults, ThemeMode, ToolbarTheme, TooltipTheme,
     TransformAnimation, WidgetBorderSpec, WindowTheme, bundled_icon_by_name, bundled_icon_svg,
 };
-pub use icons::{IconSetChoice, default_icon_choice, list_freedesktop_themes};
 pub use pipeline::{DiagnosticEntry, PlatformPreset};
 #[allow(unused_imports)]
 pub(crate) use pipeline::{diagnose_platform_support, platform_preset_name};

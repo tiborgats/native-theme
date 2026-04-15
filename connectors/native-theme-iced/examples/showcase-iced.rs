@@ -395,11 +395,7 @@ fn load_all_icons(
         .enumerate()
         .map(|(i, &role)| {
             let data = if let Some(t) = theme.filter(|_| set == IconSet::Freedesktop) {
-                IconLoader::new(role)
-                    .set(set)
-                    .theme(t)
-                    .color_opt(fg)
-                    .load()
+                IconLoader::new(role).set(set).theme(t).color_opt(fg).load()
             } else {
                 IconLoader::new(role).set(set).color_opt(fg).load()
             };
@@ -839,8 +835,11 @@ impl State {
                     }) {
                         Ok(variant) => {
                             // icon_theme is per-variant on defaults
-                            icon_theme_opt =
-                                variant.defaults.icon_theme.as_deref().map(|s| s.to_string());
+                            icon_theme_opt = variant
+                                .defaults
+                                .icon_theme
+                                .as_deref()
+                                .map(|s| s.to_string());
                             self.current_icon_set = nt
                                 .icon_set
                                 .unwrap_or_else(native_theme::theme::system_icon_set);
@@ -899,7 +898,9 @@ impl State {
                 &self.current_resolved,
                 self.current_icon_set,
             );
-            let anim_set = self.icon_set_choice.effective_icon_set(self.current_icon_set);
+            let anim_set = self
+                .icon_set_choice
+                .effective_icon_set(self.current_icon_set);
             let (af, afi, afe, asp, astart, rm, ast) = build_animation_caches(anim_set);
             self.animated_frames = af;
             self.animated_frame_indices = afi;

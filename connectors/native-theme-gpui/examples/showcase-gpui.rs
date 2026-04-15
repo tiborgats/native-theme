@@ -245,9 +245,7 @@ fn parse_icon_set_choice(display: &str) -> IconSetChoice {
         IconSetChoice::Default(inner.to_string())
     } else if display.starts_with("system (") {
         IconSetChoice::System
-    } else if display == "gpui-component built-in (Lucide)"
-        || display == "Lucide (bundled)"
-    {
+    } else if display == "gpui-component built-in (Lucide)" || display == "Lucide (bundled)" {
         IconSetChoice::Lucide
     } else if display == "Material (bundled)" {
         IconSetChoice::Material
@@ -1341,12 +1339,11 @@ impl Showcase {
         } else {
             None
         };
-        let initial_icon_set_choice =
-            default_icon_choice(initial_icon_set, icon_theme_opt);
-        let initial_effective_set =
-            initial_icon_set_choice.effective_icon_set(initial_icon_set);
-        let initial_default_theme =
-            initial_icon_set_choice.freedesktop_theme().map(|s| s.to_string());
+        let initial_icon_set_choice = default_icon_choice(initial_icon_set, icon_theme_opt);
+        let initial_effective_set = initial_icon_set_choice.effective_icon_set(initial_icon_set);
+        let initial_default_theme = initial_icon_set_choice
+            .freedesktop_theme()
+            .map(|s| s.to_string());
         let initial_resolved_name = initial_effective_set.name().to_string();
         let installed_themes = list_freedesktop_themes();
         let fc = original_font.color;
@@ -1377,8 +1374,7 @@ impl Showcase {
         icon_theme_names.push(IconSetChoice::System.to_string().into());
         // Installed freedesktop themes
         for name in &installed_themes {
-            icon_theme_names
-                .push(IconSetChoice::Freedesktop(name.clone()).to_string().into());
+            icon_theme_names.push(IconSetChoice::Freedesktop(name.clone()).to_string().into());
         }
         // GPUI-specific built-in
         icon_theme_names.push("gpui-component built-in (Lucide)".into());
@@ -1413,10 +1409,13 @@ impl Showcase {
                     let display = value.to_string();
                     let is_gpui_builtin = display == "gpui-component built-in (Lucide)";
                     this.icon_set_choice = parse_icon_set_choice(&display);
-                    let effective =
-                        this.icon_set_choice.effective_icon_set(this.current_icon_set);
-                    let default_theme =
-                        this.icon_set_choice.freedesktop_theme().map(|s| s.to_string());
+                    let effective = this
+                        .icon_set_choice
+                        .effective_icon_set(this.current_icon_set);
+                    let default_theme = this
+                        .icon_set_choice
+                        .freedesktop_theme()
+                        .map(|s| s.to_string());
                     this.icon_set_name = effective.name().to_string();
                     // For gpui-builtin, icon_set_enum is None (uses gpui-component's
                     // built-in icons rather than native-theme's loader).
@@ -1429,12 +1428,8 @@ impl Showcase {
                     let fc = this.original_font.color;
                     let fg_rgb = Some([fc.r, fc.g, fc.b]);
                     if !is_gpui_builtin {
-                        this.loaded_icons = load_all_icons(
-                            effective,
-                            default_theme.as_deref(),
-                            cli_ref,
-                            fg_rgb,
-                        );
+                        this.loaded_icons =
+                            load_all_icons(effective, default_theme.as_deref(), cli_ref, fg_rgb);
                     }
                     this.gpui_icons = load_gpui_icons(
                         this.icon_set_enum,
@@ -1741,9 +1736,10 @@ impl Showcase {
             } else {
                 None
             };
-            self.icon_set_choice =
-                default_icon_choice(self.current_icon_set, icon_theme_opt);
-            let effective = self.icon_set_choice.effective_icon_set(self.current_icon_set);
+            self.icon_set_choice = default_icon_choice(self.current_icon_set, icon_theme_opt);
+            let effective = self
+                .icon_set_choice
+                .effective_icon_set(self.current_icon_set);
             self.icon_set_name = effective.name().to_string();
             self.icon_set_enum = Some(effective);
 
@@ -1758,9 +1754,13 @@ impl Showcase {
         }
         // ALWAYS reload icons regardless of choice (text color changes on dark/light)
         {
-            let effective = self.icon_set_choice.effective_icon_set(self.current_icon_set);
-            let default_theme =
-                self.icon_set_choice.freedesktop_theme().map(|s| s.to_string());
+            let effective = self
+                .icon_set_choice
+                .effective_icon_set(self.current_icon_set);
+            let default_theme = self
+                .icon_set_choice
+                .freedesktop_theme()
+                .map(|s| s.to_string());
             let cli_ref = self.icon_theme_override.as_deref();
             let fc = self.original_font.color;
             let fg_rgb = Some([fc.r, fc.g, fc.b]);
@@ -5891,10 +5891,8 @@ fn main() {
                             };
                             let effective =
                                 s.icon_set_choice.effective_icon_set(s.current_icon_set);
-                            let default_theme = s
-                                .icon_set_choice
-                                .freedesktop_theme()
-                                .map(|t| t.to_string());
+                            let default_theme =
+                                s.icon_set_choice.freedesktop_theme().map(|t| t.to_string());
                             s.icon_set_name = effective.name().to_string();
                             s.icon_set_enum = Some(effective);
                             let cli_ref = s.icon_theme_override.as_deref();
@@ -5918,8 +5916,7 @@ fn main() {
                             s.start_animation_timer(cx);
 
                             // Update the icon theme selector dropdown
-                            let icon_display: SharedString =
-                                s.icon_set_choice.to_string().into();
+                            let icon_display: SharedString = s.icon_set_choice.to_string().into();
                             let mut icon_names = s.icon_set_dropdown_names();
                             // Add the override display name if not already in list
                             if !icon_names.contains(&icon_display) {
