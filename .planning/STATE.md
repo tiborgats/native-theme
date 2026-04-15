@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 90 — resolve-remaining-v0-5-7-api-overhaul-gaps
-Plan: 5/6 (90-01, 90-02, 90-05 complete)
+Plan: 5/6 (90-01, 90-02, 90-03, 90-05 complete)
 Status: in-progress
-Last activity: 2026-04-15 — Completed 90-02 (IconSet serde cross-check, icon_theme doc, timeout constant)
+Last activity: 2026-04-15 — Completed 90-03 (ThemeWatcher -> ThemeSubscription rename + constructor collapse)
 
 Progress: [██████████] 100% (56/56 plans complete)
 
@@ -208,6 +208,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-15T11:20:43.703Z
-Stopped at: Completed 90-02-PLAN.md
+Last session: 2026-04-15T11:23:43Z
+Stopped at: Completed 90-03-PLAN.md
 Resume file: None
