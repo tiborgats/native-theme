@@ -26,9 +26,9 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 92 — implement-the-chosen-solutions-described-in-docs-todo-v0-5-7-icon-theme-md
-Plan: 1/4 complete
+Plan: 2/4 complete
 Status: in-progress
-Last activity: 2026-04-15 — Phase 92 Plan 01 complete (IconSetChoice enum + helpers + list_freedesktop_themes)
+Last activity: 2026-04-15 — Phase 92 Plan 02 complete (iced showcase IconSetChoice migration + follows_preset guard)
 
 Progress: [██████████] 100% (66/66 plans complete)
 
@@ -213,6 +213,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-15T23:23:57Z
-Stopped at: Completed 92-01-PLAN.md
+Last session: 2026-04-15T23:34:39Z
+Stopped at: Completed 92-02-PLAN.md
 Resume file: None
