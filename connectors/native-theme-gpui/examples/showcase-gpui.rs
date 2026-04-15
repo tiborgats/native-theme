@@ -938,10 +938,10 @@ struct Showcase {
     error_message: Option<String>,
 
     // Theme watcher (runtime dark/light toggle detection)
-    /// Flag set by the ThemeWatcher background thread when the OS theme changes.
+    /// Flag set by the ThemeSubscription background thread when the OS theme changes.
     theme_change_flag: Arc<AtomicBool>,
     /// RAII guard keeping the theme watcher background thread alive.
-    _theme_watcher: Option<native_theme::watch::ThemeWatcher>,
+    _theme_watcher: Option<native_theme::watch::ThemeSubscription>,
     /// Set by the watcher polling task; checked in render() where window access is available.
     pending_system_theme_change: bool,
 }
