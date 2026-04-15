@@ -23,7 +23,7 @@
 //! For full control over the resolve/validate/convert pipeline:
 //!
 //! ```ignore
-//! use native_theme::theme::Theme;
+//! use native_theme::theme::{ColorMode, Theme};
 //! use native_theme_gpui::to_theme;
 //!
 //! let nt = Theme::preset("catppuccin-mocha")?;
@@ -50,17 +50,18 @@
 //! |----------|--------|-------|
 //! | `defaults` colors | All 24 | background, foreground, accent, danger, etc. |
 //! | `defaults` geometry | radius, radius_lg, shadow | Font family/size also mapped |
-//! | `button` | 4 of 15 | primary_background/foreground, background/foreground (colors only) |
+//! | `button` | 6 of 15 | primary bg/fg, bg/fg, hover_bg, active_bg |
 //! | `tab` | 5 of 10 | All colors, sizing not mapped |
-//! | `sidebar` | 2 of 2 | background, foreground |
+//! | `sidebar` | 2 of 6 | background, font.color |
 //! | `window` | 2 of 6 | title_bar_background, border |
 //! | `input` | 2 of 13 | border, caret |
 //! | `scrollbar` | 3 of 8 | track, thumb, thumb_hover |
 //! | `slider`, `switch` | 2 each | fill/thumb colors |
 //! | `progress_bar` | 1 of 5 | fill |
-//! | `list` | 1 of 13 | alternate_row |
-//! | `popover` | 1 of 3 | background |
-//! | 14 other widgets | 0 fields | checkbox, menu, tooltip, dialog, etc. |
+//! | `list` | 3 of 13 | alternate_row, hover_bg, selection_bg |
+//! | `popover` | 2 of 3 | background, font.color |
+//! | `link` | 1 of 9 | hover_background |
+//! | 13 other widgets | 0 fields | checkbox, menu, tooltip, dialog, etc. |
 //!
 //! **Why the gap:** gpui-component's `ThemeColor` is a flat color bag with no per-widget
 //! geometry. The connector cannot map most sizing/spacing data because the target type

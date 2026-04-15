@@ -65,7 +65,7 @@
 //! | Widget metrics | button/input padding, border radius, scrollbar width | Per-widget resolved fields |
 //! | Typography | font family/size/weight, mono family/size/weight, line height | `defaults.font.*`, `defaults.mono_font.*` |
 //! | Color helpers | border, link, selection, info, info_foreground, warning_foreground, focus_ring | `defaults.*` |
-//! | Geometry helpers | layout spacing (4 fields), disabled_opacity | `layout.*`, `defaults.*` |
+//! | Geometry helpers | disabled_opacity | `defaults.*` |
 //!
 //! Per-widget geometry beyond padding/radius (e.g., min-width, disabled-opacity)
 //! is not mapped because iced applies these via inline widget configuration,

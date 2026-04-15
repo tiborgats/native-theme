@@ -33,7 +33,7 @@ previously re-exported at the crate root are now accessed through their module:
 - `native_theme::detect::*` -- `system_is_dark()`, `prefers_reduced_motion()`, `LinuxDesktop`, etc.
 - `native_theme::color::*` -- `Rgba`
 - `native_theme::error::*` -- `Error`, `ErrorKind`
-- `native_theme::prelude` -- convenience re-exports (`Theme`, `ResolvedTheme`, `SystemTheme`, `Rgba`, `Error`, `Result`)
+- `native_theme::prelude` -- convenience re-exports (`Theme`, `ResolvedTheme`, `SystemTheme`, `AccessibilityPreferences`, `Rgba`, `Error`, `Result`)
 
 #### Icon loading API
 
@@ -53,7 +53,7 @@ let anim = IconLoader::new(IconRole::StatusBusy).set(IconSet::Material).load_ind
 
 #### String type migrations
 
-- `Theme.name`, `SystemTheme.name`, `SystemTheme.icon_theme` -- `String` → `Cow<'static, str>`
+- `Theme.name`, `SystemTheme.name`, `ThemeDefaults.icon_theme` -- `String`/`Option<String>` → `Cow<'static, str>`/`Option<Cow<'static, str>>`
 - `FontSpec.family`, `ResolvedFontSpec.family` -- `Option<String>`/`String` → `Option<Arc<str>>`/`Arc<str>`
 - `IconData::Svg` -- `Svg(Vec<u8>)` → `Svg(Cow<'static, [u8]>)`
 - `IconProvider::icon_svg()` return type -- `Option<&'static [u8]>` → `Option<Cow<'static, [u8]>>`
@@ -90,14 +90,14 @@ returns `ErrorKind` for coarse dispatch.
 
 - `IconLoader` builder struct for all icon loading operations
 - `ColorMode` enum (`Light`, `Dark`) with `is_dark()` method
-- `AccessibilityPreferences` struct on `SystemTheme` (text_scaling_factor, reduce_transparency, reduce_motion)
+- `AccessibilityPreferences` struct on `SystemTheme` (text_scaling_factor, reduce_motion, high_contrast, reduce_transparency)
 - `DiagnosticEntry` enum and `PlatformPreset` struct for diagnostic reporting
 - `FrameList` newtype wrapping `Vec<IconData>` with non-empty guarantee
 - `DetectionContext` struct with `ArcSwapOption` caches for is_dark, reduced_motion, icon_theme
 - `prelude` module with 7 convenience re-exports
 - `IconRole::name()` method
 - `Rgba` named constants: `TRANSPARENT`, `BLACK`, `WHITE`
-- `#[non_exhaustive]` on `LinuxDesktop` enum; new variants: `Hyprland`, `Sway`, `River`, `Niri`
+- `#[non_exhaustive]` on `LinuxDesktop` enum; new variants: `CosmicDe`, `Hyprland`, `Sway`, `River`, `Niri`
 - `ThemeMode::resolve_platform_defaults()` for DE-aware `button_order` resolution
 - `#[doc(hidden)]` on pipeline intermediates (`ThemeMode::resolve()`, `resolve_all()`, `validate()`, etc.)
 - Uniform bare `#[must_use]` convention across the crate
