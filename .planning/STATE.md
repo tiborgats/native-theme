@@ -2,10 +2,10 @@
 gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
-status: completed
-stopped_at: Completed 89-01-PLAN.md (Phase 89 complete, all 56 plans done)
-last_updated: "2026-04-15T07:31:08Z"
-last_activity: 2026-04-15 — Completed 89-01 (post-partition doctest path fixes)
+status: in-progress
+stopped_at: Completed 90-05-PLAN.md
+last_updated: "2026-04-15T11:15:16.612Z"
+last_activity: 2026-04-15 — Completed 90-05 (intern_font_family with global dedup cache)
 progress:
   total_phases: 29
   completed_phases: 29
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 89 — post-partition-doctest-path-fixes
-Plan: 1/1 complete
-Status: complete
-Last activity: 2026-04-15 — Completed 89-01 (post-partition doctest path fixes)
+Phase: 90 — resolve-remaining-v0-5-7-api-overhaul-gaps
+Plan: 5/6 (90-05 complete)
+Status: in-progress
+Last activity: 2026-04-15 — Completed 90-05 (intern_font_family with global dedup cache)
 
 Progress: [██████████] 100% (56/56 plans complete)
 
@@ -192,6 +192,10 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 82-02]: CLI theme override uses IconLoader::new(name).set(Freedesktop).theme(t) instead of direct load_freedesktop_icon_by_name
 - [Phase 86-01]: lint_toml uses inventory::iter::<WidgetFieldInfo>() HashMap for widget discovery; STRUCTURAL_KEYS retains only defaults and text_scale
 
+### Roadmap Evolution
+
+- Phase 90 added: resolve remaining v0.5.7 API overhaul gaps
+
 ### Blockers/Concerns
 
 - `AccessibilityPreferences` relocation from `ThemeDefaults` to `SystemTheme` (Phase 78) is a cross-cutting refactor; touches resolve engine, connectors, and all presets
@@ -203,6 +207,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-15T07:31:08Z
-Stopped at: Completed 89-01-PLAN.md (Phase 89 complete, all 56 plans done)
+Last session: 2026-04-15T11:15:16.608Z
+Stopped at: Completed 90-05-PLAN.md
 Resume file: None
