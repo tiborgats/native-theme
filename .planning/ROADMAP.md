@@ -677,11 +677,11 @@ Plans:
 - [x] 91-02-PLAN.md -- Unify border validation dispatch via border_kind attribute
 - [x] 91-03-PLAN.md -- Replace defaults extraction boilerplate with declarative macros
 
-### Phase 92: implement the chosen solutions described in docs/todo_v0.5.7_icon-theme.md
+### Phase 92: implement the chosen solutions described in docs/todo_v0.5.7_icon-theme.md — completed 2026-04-16
 
 **Goal:** Fix "system" icon theme selection reverting and add installed themes to dropdown (both showcases)
 **Depends on:** Phase 91
-**Plans:** 4/4 plans complete
+**Plans:** 4/4 plans complete — verified 2026-04-16
 
 Plans:
 - [x] 92-01-PLAN.md -- Library: IconSetChoice enum, default_icon_choice(), list_freedesktop_themes()
