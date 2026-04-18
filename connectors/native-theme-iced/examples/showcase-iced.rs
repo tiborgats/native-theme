@@ -1261,11 +1261,9 @@ fn update_inner(state: &mut State, message: Message) {
             state.reduced_motion = rm;
             state.animated_static = ast;
         }
-        Message::ThemeWatcherTick => {
-            if state.theme_change_flag.swap(false, Ordering::AcqRel) {
-                native_theme::detect::invalidate_caches();
-                state.rebuild_theme();
-            }
+        Message::ThemeWatcherTick if state.theme_change_flag.swap(false, Ordering::AcqRel) => {
+            native_theme::detect::invalidate_caches();
+            state.rebuild_theme();
         }
         Message::AnimationTick => {
             let tick_duration = Duration::from_millis(50);
