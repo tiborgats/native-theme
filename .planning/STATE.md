@@ -3,14 +3,14 @@ gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
 status: in-progress
-stopped_at: Phase 93 Plan 04 complete (Theme.icon_theme three-tier precedence + 15 preset migration)
-last_updated: "2026-04-19T14:42:22Z"
-last_activity: 2026-04-19 — Phase 93 Plan 04 committed (0f3f2f0 RED tests, 558dc07 Task 1 GREEN Theme.icon_theme field + pipeline resolver, e35bfc9 Task 2 preset migration)
+stopped_at: Phase 93 Plan 05 complete (ThemeFields derive + FieldInfo inventory unified lint_toml)
+last_updated: "2026-04-19T15:03:40Z"
+last_activity: 2026-04-19 — Phase 93 Plan 05 committed (4431782 feat ThemeFields derive + FieldInfo registry, 7ab1c58 RED baseline tests, 922ee29 refactor apply derive + delete 7 FIELD_NAMES + rewrite lint_toml)
 progress:
   total_phases: 30
   completed_phases: 29
-  total_plans: 59
-  completed_plans: 59
+  total_plans: 60
+  completed_plans: 60
   percent: 100
 ---
 
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 93 — docs-todo-v0-5-7-gaps-md
-Plan: 4/5 complete (93-01, 93-02, 93-03, 93-04 done; 93-05 pending)
-Status: in-progress
-Last activity: 2026-04-19 — Phase 93 Plan 04 complete (G4: `Theme.icon_theme: Option<Cow<'static, str>>` shared field added; `ThemeDefaults.icon_theme` redocumented as per-variant override; pipeline resolver rewrites to three-tier precedence; 15 bundled presets migrated to top-level `icon_theme`; 3 live shadows gain top-level `icon_theme`; kde-breeze preserved per-variant; Phase 80-fix KDE invariant preserved via tier 1)
+Plan: 5/5 complete (93-01, 93-02, 93-03, 93-04, 93-05 all done)
+Status: in-progress (all plans complete; awaiting phase verifier)
+Last activity: 2026-04-19 — Phase 93 Plan 05 complete (G5: `ThemeFields` proc-macro derive added to `native-theme-derive`; sister `FieldInfo` inventory-collected struct added to `native-theme::resolve`; 7 hand-authored `FIELD_NAMES` constants deleted across font.rs/border.rs/defaults.rs/icon_sizes.rs; 8 structs derive `ThemeFields` (FontSpec, TextScaleEntry, TextScale, DefaultsBorderSpec, WidgetBorderSpec, ThemeDefaults, IconSizes, LayoutTheme); FontSpec + TextScaleEntry use `#[theme_layer(fields = "...")]` explicit override for their serde-proxy wire formats; `lint_toml` unified over both WidgetFieldInfo and FieldInfo inventories; Rule-2 fix in native-theme-derive::parse_one_field tolerates unknown serde sub-attributes)
 
-Progress: [██████████] 100% (59/59 plans complete for wave-1 prior milestones; 93-05 outstanding)
+Progress: [██████████] 100% (60/60 plans complete — Phase 93 all 5 plans closed)
 
 ## Accumulated Context
 
@@ -211,6 +211,12 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 93-04]: 3 live shadows (adwaita-live, macos-sonoma-live, windows-11-live) gain a top-level icon_theme matching their base. Safety net for any pipeline path that might use only a live preset without a full-preset merge behind it.
 - [Phase 93-04]: Test updates to match migration: platform_facts_xref.rs adwaita/windows-11 assertions rewritten to Theme-level; proptest arb_theme_spec strategy extended to generate Theme.icon_theme so round-trip covers Some/None for the new field.
 - [Phase 93-04]: Rule 3 deviation -- three exhaustive Theme literals (lib.rs::to_theme, kde/mod.rs::build_theme twice, macos.rs::to_theme) required icon_theme: None field additions beyond the three sites listed in the plan body. E0063 would have blocked compilation otherwise.
+- [Phase 93-05]: `ThemeFields` proc-macro derive (in native-theme-derive) registers plain structs into a sister `FieldInfo` inventory alongside the existing `WidgetFieldInfo` registry. Emission style matches the existing widget derive (direct `inventory::submit!(...)` at item level; no anonymous const wrapper).
+- [Phase 93-05]: FontSpec and TextScaleEntry declare `#[theme_layer(fields = "...")]` explicit-override attribute because they serialize through private `FontSpecRaw` / `TextScaleEntryRaw` serde proxies whose wire field names (`size_pt`/`size_px`, `line_height_pt`/`line_height_px`) differ from the user-facing struct fields. Alternative (parsing the `try_from = "..."` attribute and fetching the proxy's AST) rejected -- proc-macros cannot access sibling-type ASTs; explicit declaration keeps the wire contract visible at the struct level.
+- [Phase 93-05]: LayoutTheme dual-derives `ThemeWidget` + `ThemeFields` while retaining `#[theme_layer(skip_inventory)]`. skip_inventory prevents registration in WidgetFieldInfo (correct: LayoutTheme is NOT a per-variant widget -- it lives on Theme, not ThemeMode); ThemeFields registers it in the non-widget struct registry under key "LayoutTheme" so lint_toml can look up its 4 `_px` field names.
+- [Phase 93-05]: lint_toml rewritten to build both `widget_registry: HashMap<&str, &[&str]>` (from `inventory::iter::<WidgetFieldInfo>()`) and `struct_registry: HashMap<&str, &[&str]>` (from `inventory::iter::<FieldInfo>()`) at function entry, then consume both via closure captures. Former free functions lint_text_scale/lint_defaults/lint_variant converted to closures. Missing struct entry -> silent skip (matches pre-existing `continue;` behaviour; no new Error variant).
+- [Phase 93-05]: Rule 2 auto-fix in native-theme-derive::parse_one_field -- `parse_nested_meta` on `#[serde(...)]` attributes previously only recognised `rename` and ignored other sub-attributes without consuming their values. On structs with non-Option fields carrying `#[serde(default, skip_serializing_if = "...")]` (e.g. `ThemeDefaults.font`, `ThemeDefaults.border`), this produced a misleading `expected ','` error that appeared to originate in `serde_with::skip_serializing_none`. parse_one_field now optionally consumes the value expression of unknown serde sub-attrs.
+- [Phase 93-05]: Gap-doc correction -- the §G5 target list named `ResolvedFontSpec` but that struct has no FIELD_NAMES constant today and is not consumed by lint_toml (output type, connector-facing). Not migrated. Final migration set is 7 structs + LayoutTheme (8 total).
 
 ### Roadmap Evolution
 
@@ -230,6 +236,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-19T14:42:22Z
-Stopped at: Completed 93-04-PLAN.md
+Last session: 2026-04-19T15:03:40Z
+Stopped at: Completed 93-05-PLAN.md (G5 closed; Phase 93 all 5 plans complete)
 Resume file: None

@@ -62,3 +62,22 @@ The 2 failing doctests are the `model::bundled::bundled_icon_svg` and
 `model::bundled::bundled_icon_by_name` examples that still reference the
 now-private `use native_theme::theme::bundled_icon_svg` / `use
 native_theme::theme::bundled_icon_by_name` paths.
+
+## Logged during Plan 05 (G5) execution
+
+### pre-release-check.sh still blocked by 93-03 dead-code item
+
+**Observation:** Running `./pre-release-check.sh` after Plan 05 still
+fails at the `cargo clippy -p native-theme --all-targets -- -D warnings`
+step for the SAME reason logged under Plan 02: `bundled_icon_by_name`
+is never used. Plan 05 did not introduce the issue and did not fix it
+(SCOPE BOUNDARY). Plan 05's own lib-targeted clippy
+(`cargo clippy -p native-theme --all-features --lib -- -D warnings`)
+is green. 791 lib tests + 79 integration tests all pass.
+
+### Doctest failures in model/bundled.rs persist
+
+**Observation:** Same 2 doctest failures on
+`model::bundled::bundled_icon_svg` and
+`model::bundled::bundled_icon_by_name` continue from Plan 01/04. Out of
+scope for Plan 05's G5 deliverable.
