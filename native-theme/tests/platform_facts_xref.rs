@@ -100,13 +100,16 @@ fn adwaita_matches_platform_facts() {
 
     // Icon set (on Theme, shared across variants)
     assert_eq!(theme.icon_set, Some(IconSet::Freedesktop));
-    // Icon theme (per-variant on defaults)
-    assert_eq!(
+    // Icon theme (G4: now Theme-level, shared across variants)
+    assert_eq!(theme.icon_theme.as_deref(), Some("Adwaita"));
+    // Per-variant defaults.icon_theme is None (Theme-level value wins via tier 2)
+    assert!(
         theme
             .light
             .as_ref()
-            .and_then(|v| v.defaults.icon_theme.as_deref()),
-        Some("Adwaita")
+            .and_then(|v| v.defaults.icon_theme.as_ref())
+            .is_none(),
+        "adwaita should not carry per-variant icon_theme after G4 migration"
     );
 
     // Verify platform-facts.md mentions these values
@@ -143,13 +146,16 @@ fn windows_11_matches_platform_facts() {
 
     // Icon set (on Theme, shared across variants)
     assert_eq!(theme.icon_set, Some(IconSet::SegoeIcons));
-    // Icon theme (per-variant on defaults)
-    assert_eq!(
+    // Icon theme (G4: now Theme-level, shared across variants)
+    assert_eq!(theme.icon_theme.as_deref(), Some("segoe-fluent"));
+    // Per-variant defaults.icon_theme is None (Theme-level value wins via tier 2)
+    assert!(
         theme
             .light
             .as_ref()
-            .and_then(|v| v.defaults.icon_theme.as_deref()),
-        Some("segoe-fluent")
+            .and_then(|v| v.defaults.icon_theme.as_ref())
+            .is_none(),
+        "windows-11 should not carry per-variant icon_theme after G4 migration"
     );
 
     // Verify platform-facts.md mentions these values

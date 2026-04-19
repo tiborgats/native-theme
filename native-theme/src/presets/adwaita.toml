@@ -2,11 +2,11 @@
 # Alpha/opacity colors pre-computed to solid hex values
 name = "Adwaita"
 icon_set = "freedesktop"
+icon_theme = "Adwaita"
 
 # === Light variant ===
 
 [light.defaults]
-icon_theme = "Adwaita"
 accent_color = "#3584e4"
 background_color = "#fafafb"
 text_color = "#2e3436"
@@ -294,7 +294,6 @@ arrow_color = "#2e3436"
 [light.expander.border]
 corner_radius_px = 6.0
 [dark.defaults]
-icon_theme = "Adwaita"
 accent_color = "#3584e4"
 background_color = "#222226"
 text_color = "#ffffff"

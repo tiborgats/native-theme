@@ -1,6 +1,10 @@
 # macOS Sonoma live preset - geometry/metrics only (no colors, fonts, or icons)
 # Used by the OS-first pipeline as merge base; OS reader provides colors/fonts.
+#
+# icon_theme is supplied at the Theme level so the live merge base carries
+# the same default as the full `macos-sonoma` preset (see docs/todo_v0.5.7_gaps.md G4).
 name = "macOS Sonoma"
+icon_theme = "sf-symbols"
 
 # === Light variant ===
 

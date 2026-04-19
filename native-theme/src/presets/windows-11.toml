@@ -2,11 +2,11 @@
 # Source: WinUI3 XAML theme resources, Fluent Design System
 name = "Windows 11"
 icon_set = "segoe-fluent"
+icon_theme = "segoe-fluent"
 
 # === Light variant ===
 
 [light.defaults]
-icon_theme = "segoe-fluent"
 accent_color = "#0078d4"
 background_color = "#f3f3f3"
 text_color = "#1a1a1a"
@@ -336,7 +336,6 @@ inactive_title_bar_text_color = "#1a1a1a99"
 # === Dark variant ===
 
 [dark.defaults]
-icon_theme = "segoe-fluent"
 accent_color = "#0078d4"
 background_color = "#202020"
 text_color = "#ffffff"

@@ -2,11 +2,11 @@
 # Source: https://ethanschoonover.com/solarized/
 name = "Solarized"
 icon_set = "lucide"
+icon_theme = "lucide"
 
 # === Light variant (Solarized Light) ===
 
 [light.defaults]
-icon_theme = "lucide"
 accent_color = "#268bd2"
 background_color = "#fdf6e3"
 text_color = "#657b83"
@@ -280,7 +280,6 @@ inactive_title_bar_text_color = "#657b83"
 # === Dark variant (Solarized Dark) ===
 
 [dark.defaults]
-icon_theme = "lucide"
 accent_color = "#268bd2"
 background_color = "#002b36"
 text_color = "#839496"
