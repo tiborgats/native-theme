@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
 status: in-progress
-stopped_at: Phase 93 Plan 02 complete (LinuxDesktop::Wayfire variant added; wlroots fallback route extended)
-last_updated: "2026-04-19T14:17:42Z"
-last_activity: 2026-04-19 — Phase 93 Plan 02 committed (421c3cc G2: LinuxDesktop::Wayfire variant + parse arm + pipeline/icons arms + 2 tests)
+stopped_at: Phase 93 Plan 01 complete (Rgba Default removed; validate_helpers require() bound chain broken)
+last_updated: "2026-04-19T14:45:00Z"
+last_activity: 2026-04-19 — Phase 93 Plan 01 committed (0da8da1 RED tests, 266d4d2 Task 1 GREEN, e66cd7b Task 2: Rgba+3 Resolved-leaf Defaults removed)
 progress:
   total_phases: 30
   completed_phases: 29
   total_plans: 59
-  completed_plans: 58
-  percent: 98
+  completed_plans: 59
+  percent: 100
 ---
 
 # Project State
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 93 — docs-todo-v0-5-7-gaps-md
-Plan: 4/5 complete (93-02 and 93-03 done; 93-01 in-progress in parallel; 93-04/05 pending)
+Plan: 3/5 complete (93-01, 93-02, 93-03 done; 93-04/05 pending)
 Status: in-progress
-Last activity: 2026-04-19 — Phase 93 Plan 02 complete (G2: LinuxDesktop::Wayfire variant added; `parse_linux_desktop("Wayfire")` mapped; pipeline + icons wlroots arms extended)
+Last activity: 2026-04-19 — Phase 93 Plan 01 complete (G1: `impl Default for Rgba` removed; `ResolvedBorderSpec` / `ResolvedFontSpec` / `ResolvedTextScaleEntry` Default derives removed; `validate_helpers::require` rewritten with explicit fallback parameter; `native-theme-derive::gen_validate` emits per-field sentinels)
 
-Progress: [██████████] 98% (58/59 plans complete; 93-01 and 93-04/05 outstanding)
+Progress: [██████████] 100% (59/59 plans complete for 93 wave 1; 93-04/05 outstanding)
 
 ## Accumulated Context
 
@@ -198,6 +198,14 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 93-02]: LinuxDesktop::Wayfire inserted between Niri and CosmicDe (preserves "wlroots compositors then other desktops" grouping); XDG token is exact-case "Wayfire" (no case-insensitive fallback, matches Hyprland/Budgie/COSMIC style)
 - [Phase 93-02]: Wayfire routed through the shared wlroots fallback arm (adwaita preset + portal) rather than getting a dedicated arm -- same rationale as Sway/River/Niri (wlroots compositor, no native theme engine, consumes GTK/portal config)
 - [Phase 93-02]: Rule 3 deviation -- model/icons.rs detect_linux_icon_theme's exhaustive match also required a Wayfire arm (dispatched to org.gnome.desktop.interface gsettings alongside the other wlroots compositors); plan body only listed detect.rs and pipeline.rs but compile-required arm was mandatory
+- [Phase 93-03]: bundled_icon_svg, bundled_icon_by_name, load_freedesktop_icon_by_name demoted to pub(crate); model/mod.rs re-export pub(crate) use; internal crate::bundled_icon_* paths preserved via lib.rs pub(crate) use re-export
+- [Phase 93-03]: Bundled-set None assertion test split into per-OS checks (SfSymbols on non-macos, SegoeIcons on non-windows); Freedesktop no longer asserts None because IconLoader intentionally loads via filesystem on Linux with system-icons
+- [Phase 93-03]: IconLoader::new(name).set(IconSet::Freedesktop).theme(t).size(24).load() as canonical freedesktop-by-name migration pattern; GPUI connector internal helper and showcase example migrated; bundled_icon_by_name name-lookup calls rewritten as IconLoader::new(name).set(icon_set).load() returning Option<IconData> directly (no manual IconData::Svg wrap)
+- [Phase 93-01]: `require<T: Clone>` gains explicit `fallback: T` parameter (Default bound removed); call sites supply zero-value sentinels directly. Reverses Phase 90-01 "manual impl Default for Rgba" decision -- the Default bound chain is now broken at its source in validate_helpers.
+- [Phase 93-01]: validate_defaults! macro split into `option_color` (Rgba fields) + `option_f32` (geometry fields) groups; `border_required` takes `field: fallback_expr` pairs. Encoding the type group at call site keeps sentinel construction local and explicit (alternative would have been a crate-private Default-equivalent trait, which would reintroduce the bound chain).
+- [Phase 93-01]: native-theme-derive::gen_validate `fallback_for_ty` maps Option-inner types to zero-value sentinels (Rgba->TRANSPARENT, f32->0.0, u16->0, bool->false, Arc->empty Arc<str>, String->String::new(), DialogButtonOrder->PrimaryRight); unknown types emit compile_error!.
+- [Phase 93-01]: `impl Default for Rgba` deleted (§16 footgun). 3 hand-written Resolved leaves (ResolvedBorderSpec, ResolvedFontSpec, ResolvedTextScaleEntry) drop Default from derive lists. 26 generated widget structs already lacked Default (ThemeWidget macro never emitted it). ResolvedDefaults/ResolvedTheme/ResolvedTextScale/ResolvedIconSizes likewise unchanged.
+- [Phase 93-01]: Integration test trait_assertions_default_clone_debug: Rgba now asserts Clone+Debug only (no Default). Theme/ThemeMode/ThemeDefaults/FontSpec still assert full Default+Clone+Debug set.
 
 ### Roadmap Evolution
 
@@ -217,6 +225,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-15T23:45:22.668Z
-Stopped at: Completed 92-04-PLAN.md
+Last session: 2026-04-19T14:45:00Z
+Stopped at: Completed 93-01-PLAN.md
 Resume file: None
