@@ -379,6 +379,9 @@ fn build_theme(
         dark: Some(dark_variant),
         layout: crate::LayoutTheme::default(),
         icon_set: Some(crate::IconSet::SfSymbols),
+        // macOS uses the same icon theme ("sf-symbols") for both variants; the
+        // Theme-level field is populated via the merged macos-sonoma preset.
+        icon_theme: None,
     }
 }
 

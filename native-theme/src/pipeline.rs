@@ -63,7 +63,10 @@ pub(crate) fn run_pipeline(
         .icon_set
         .unwrap_or_else(crate::model::icons::system_icon_set);
 
-    // Resolve icon_theme from the active variant's defaults (per-variant).
+    // Resolve icon_theme with three-tier precedence (per §G4 / doc 1 §20 Option C):
+    //   Tier 1: per-variant override (`ThemeMode::defaults.icon_theme`)
+    //   Tier 2: shared Theme-level value (`Theme::icon_theme`)
+    //   Tier 3: runtime system detect
     // Must read before variants are consumed by unwrap_or_default().
     let icon_theme: std::borrow::Cow<'static, str> = {
         let active = if mode == crate::ColorMode::Dark {
@@ -73,8 +76,10 @@ pub(crate) fn run_pipeline(
         };
         active
             .as_ref()
-            .and_then(|v| v.defaults.icon_theme.clone())
+            .and_then(|v| v.defaults.icon_theme.clone()) // tier 1: per-variant override
+            .or_else(|| merged.icon_theme.clone()) // tier 2: Theme-level shared
             .unwrap_or_else(|| std::borrow::Cow::Owned(crate::model::icons::system_icon_theme()))
+        // tier 3: system
     };
 
     // Match on ReaderOutput for type-safe variant selection:
@@ -1335,18 +1340,17 @@ mod pipeline_tests {
     #[test]
     fn lint_toml_accepts_top_level_icon_theme() {
         // lint_toml() must NOT warn about icon_theme at the top level.
-        let toml_str = r#"
+        // Raw string uses ##"..."## because the TOML body contains `"#` hex colors.
+        let toml_str = r##"
 name = "Test"
 icon_theme = "lucide"
 
 [light.defaults]
 accent_color = "#0066cc"
-"#;
+"##;
         let warnings = Theme::lint_toml(toml_str).expect("lint");
         assert!(
-            !warnings
-                .iter()
-                .any(|w| w.contains("icon_theme")),
+            !warnings.iter().any(|w| w.contains("icon_theme")),
             "lint_toml must not flag top-level icon_theme as unknown; warnings: {warnings:?}"
         );
     }

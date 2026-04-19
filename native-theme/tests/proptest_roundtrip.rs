@@ -443,9 +443,10 @@ fn arb_theme_spec() -> impl Strategy<Value = Theme> {
         any::<bool>(), // has_dark
         arb_layout_theme(),
         proptest::option::of(arb_icon_set()),
+        proptest::option::of("[a-zA-Z-]{1,20}"),
     )
         .prop_map(
-            |(name, variant, has_light, has_dark, layout, icon_set)| Theme {
+            |(name, variant, has_light, has_dark, layout, icon_set, icon_theme)| Theme {
                 name: std::borrow::Cow::Owned(name),
                 light: if has_light {
                     Some(variant.clone())
@@ -455,6 +456,7 @@ fn arb_theme_spec() -> impl Strategy<Value = Theme> {
                 dark: if has_dark { Some(variant) } else { None },
                 layout,
                 icon_set,
+                icon_theme: icon_theme.map(std::borrow::Cow::Owned),
             },
         )
 }

@@ -75,6 +75,10 @@ pub fn from_kde_content_pure(
             dark: Some(variant),
             layout: crate::LayoutTheme::default(),
             icon_set: None,
+            // KDE sets icon_theme per-variant (breeze / breeze-dark) on
+            // variant.defaults.icon_theme; the Theme-level field is left None
+            // so tier 1 (per-variant) always wins.
+            icon_theme: None,
         }
     } else {
         crate::Theme {
@@ -83,6 +87,7 @@ pub fn from_kde_content_pure(
             dark: None,
             layout: crate::LayoutTheme::default(),
             icon_set: None,
+            icon_theme: None,
         }
     };
 

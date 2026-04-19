@@ -310,6 +310,11 @@ impl ReaderOutput {
             dark,
             layout: layout.clone(),
             icon_set,
+            // Readers keep Theme-level icon_theme = None and rely on either
+            // the preset's value (tier 2) or system detect (tier 3). Readers
+            // that need to override per color mode use ThemeDefaults::icon_theme
+            // on the variant (tier 1, e.g. the KDE reader for breeze/breeze-dark).
+            icon_theme: None,
         }
     }
 }

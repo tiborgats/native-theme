@@ -116,12 +116,22 @@ pub struct ThemeDefaults {
     #[serde(default, skip_serializing_if = "IconSizes::is_empty")]
     pub icon_sizes: IconSizes,
 
-    /// Visual icon theme name for this variant (e.g., `"breeze-dark"`, `"Adwaita"`).
+    /// Visual icon theme name for this variant — OVERRIDE of
+    /// [`crate::Theme::icon_theme`].
     ///
-    /// This field lives on `ThemeDefaults` (per-variant) rather than on `Theme` (shared)
-    /// because some platforms use different icon themes per color mode. For example,
-    /// KDE Plasma uses `"breeze"` for light mode and `"breeze-dark"` for dark mode.
-    /// See doc 1 section 20 and Phase 80-fix decision for rationale.
+    /// When a theme uses the same icon theme for both light and dark variants,
+    /// prefer declaring it at [`crate::Theme::icon_theme`] (shared across
+    /// variants). Set this per-variant override only when the value differs
+    /// by color mode — for example KDE Plasma's `"breeze"` (light) vs
+    /// `"breeze-dark"` (dark).
+    ///
+    /// Precedence at resolve time:
+    /// 1. `ThemeDefaults::icon_theme` (this field, per-variant override) — if set
+    /// 2. [`crate::Theme::icon_theme`] (shared across variants) — if set
+    /// 3. [`crate::model::icons::system_icon_theme()`] (runtime fallback)
+    ///
+    /// See doc 1 §20, `docs/todo_v0.5.7_gaps.md` §G4, and the Phase 80-fix
+    /// decision for the full rationale.
     pub icon_theme: Option<Cow<'static, str>>,
 }
 

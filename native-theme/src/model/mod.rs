@@ -280,6 +280,23 @@ pub struct Theme {
     /// ```
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub icon_set: Option<IconSet>,
+
+    /// Visual icon theme name (shared across light and dark variants).
+    ///
+    /// Acts as the default when a variant's
+    /// [`ThemeDefaults::icon_theme`](crate::model::ThemeDefaults::icon_theme)
+    /// is `None`. Variants that need a different icon theme per color mode
+    /// (e.g. KDE Plasma: `"breeze"` light / `"breeze-dark"` dark) set the
+    /// override on [`ThemeDefaults::icon_theme`].
+    ///
+    /// Precedence at resolve time:
+    /// 1. [`ThemeMode::defaults.icon_theme`](crate::model::ThemeDefaults::icon_theme) — per-variant override (if set)
+    /// 2. `Theme::icon_theme` — this field (if set)
+    /// 3. [`system_icon_theme()`](crate::model::icons::system_icon_theme) — runtime fallback
+    ///
+    /// See doc 1 §20 and `docs/todo_v0.5.7_gaps.md` §G4 for the design rationale.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub icon_theme: Option<Cow<'static, str>>,
 }
 
 impl Default for Theme {
@@ -290,6 +307,7 @@ impl Default for Theme {
             dark: None,
             layout: LayoutTheme::default(),
             icon_set: None,
+            icon_theme: None,
         }
     }
 }
@@ -320,6 +338,10 @@ impl Theme {
 
         if overlay.icon_set.is_some() {
             self.icon_set = overlay.icon_set;
+        }
+
+        if overlay.icon_theme.is_some() {
+            self.icon_theme.clone_from(&overlay.icon_theme);
         }
     }
 
@@ -377,6 +399,7 @@ impl Theme {
             && self.dark.is_none()
             && self.layout.is_empty()
             && self.icon_set.is_none()
+            && self.icon_theme.is_none()
     }
 
     /// Load a bundled theme preset by name.
@@ -596,7 +619,7 @@ impl Theme {
         };
 
         // Known top-level keys
-        const TOP_KEYS: &[&str] = &["name", "light", "dark", "layout", "icon_set"];
+        const TOP_KEYS: &[&str] = &["name", "light", "dark", "layout", "icon_set", "icon_theme"];
 
         for key in top_table.keys() {
             if !TOP_KEYS.contains(&key.as_str()) {
