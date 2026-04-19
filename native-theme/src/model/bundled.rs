@@ -19,19 +19,17 @@ use super::icons::{IconRole, IconSet};
 ///
 /// # Examples
 ///
-/// This is a crate-internal helper. The public replacement is
-/// [`crate::icons::IconLoader`]; external callers should not reach this
-/// function directly. The builder below demonstrates the equivalent
-/// public-API call:
+/// This is a crate-internal helper. The public replacement is the
+/// typed per-set loader API in [`crate::icons`]; external callers should
+/// not reach this function directly. The snippet below demonstrates the
+/// equivalent public-API call:
 ///
 /// ```
-/// use native_theme::icons::IconLoader;
-/// use native_theme::theme::{IconRole, IconSet};
+/// use native_theme::icons::SfSymbolsLoader;
+/// use native_theme::theme::IconRole;
 ///
 /// // SfSymbols is not a bundled set on non-macOS targets; the loader returns None.
-/// let result = IconLoader::new(IconRole::ActionCopy)
-///     .set(IconSet::SfSymbols)
-///     .load();
+/// let result = SfSymbolsLoader::new(IconRole::ActionCopy).load();
 /// assert!(result.is_none());
 /// ```
 #[must_use]
@@ -193,17 +191,14 @@ fn lucide_svg(role: IconRole) -> Option<&'static [u8]> {
 ///
 /// # Examples
 ///
-/// This is a crate-internal helper. The public replacement is
-/// [`crate::icons::IconLoader`] constructed from a string name:
+/// This is a crate-internal helper. The public replacement is a typed
+/// per-set loader from [`crate::icons`] constructed with a string name:
 ///
 /// ```
-/// use native_theme::icons::IconLoader;
-/// use native_theme::theme::IconSet;
+/// use native_theme::icons::SfSymbolsLoader;
 ///
 /// // SfSymbols is not a bundled set; no in-crate name lookup succeeds.
-/// let result = IconLoader::new("check")
-///     .set(IconSet::SfSymbols)
-///     .load();
+/// let result = SfSymbolsLoader::new("check").load();
 /// assert!(result.is_none());
 /// ```
 #[must_use]

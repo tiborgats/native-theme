@@ -19,7 +19,9 @@ use gpui::{
     Animation, AnimationExt, Hsla, Image, ImageFormat, ImageSource, Svg, Transformation, percentage,
 };
 use gpui_component::IconName;
-use native_theme::icons::IconLoader;
+#[cfg(all(test, target_os = "linux"))]
+use native_theme::icons::FreedesktopLoader;
+use native_theme::icons::load_icon;
 use native_theme::theme::{AnimatedIcon, IconData, IconProvider, IconRole};
 use std::sync::Arc;
 use std::time::Duration;
@@ -131,7 +133,7 @@ pub fn icon_name(role: IconRole) -> Option<IconName> {
 /// Map a gpui-component [`IconName`] to its canonical Lucide icon name.
 ///
 /// Returns the kebab-case Lucide name for use with
-/// [`native_theme::icons::IconLoader::new`].
+/// [`native_theme::icons::LucideLoader::new`].
 ///
 /// Covers all 86 gpui-component `IconName` variants.
 #[must_use]
@@ -229,7 +231,7 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> &'static str {
 /// Map a gpui-component [`IconName`] to its canonical Material icon name.
 ///
 /// Returns the snake_case Material Symbols name for use with
-/// [`native_theme::icons::IconLoader`].
+/// [`native_theme::icons::MaterialLoader`].
 ///
 /// Covers all 86 gpui-component `IconName` variants.
 ///
@@ -821,7 +823,7 @@ pub fn into_image_source(
 
 /// Load a custom icon from an [`IconProvider`] and convert to a gpui [`ImageSource`].
 ///
-/// Equivalent to calling [`IconLoader::new(provider).set(icon_set).load()`](native_theme::icons::IconLoader)
+/// Equivalent to calling [`load_icon(provider, icon_set)`](native_theme::icons::load_icon)
 /// followed by [`to_image_source()`], composing the loading and conversion steps.
 ///
 /// Returns `None` if the provider has no icon for the given set or if
@@ -839,10 +841,10 @@ pub fn custom_icon_to_image_source(
     to_image_source(&data, color, size)
 }
 
-/// Internal helper: load an icon from a provider using [`IconLoader`].
+/// Internal helper: load an icon from a provider using the typed per-set loaders.
 ///
 /// Uses the provider's `icon_name` and `icon_svg` methods directly, then
-/// dispatches through `IconLoader` for system lookups. This preserves
+/// dispatches through [`load_icon`] for system lookups. This preserves
 /// the `?Sized` bound on the public API.
 fn load_custom_via_builder(
     provider: &(impl IconProvider + ?Sized),
@@ -850,7 +852,7 @@ fn load_custom_via_builder(
 ) -> Option<IconData> {
     // Step 1: Try system loader with provider's name mapping
     if let Some(name) = provider.icon_name(icon_set)
-        && let Some(data) = IconLoader::new(name).set(icon_set).load()
+        && let Some(data) = load_icon(name, icon_set)
     {
         return Some(data);
     }
@@ -866,7 +868,7 @@ fn load_custom_via_builder(
 /// Combines the icon-name mapping and loading steps into a single call for
 /// bundled icon sets. Supports [`native_theme::theme::IconSet::Lucide`] and [`native_theme::theme::IconSet::Material`].
 /// Returns `None` for other icon sets (use [`to_image_source`] with
-/// [`native_theme::icons::IconLoader`] for freedesktop system icons).
+/// [`native_theme::icons::FreedesktopLoader`] for freedesktop system icons).
 ///
 /// See [`to_image_source()`] for details on the `color` and `size` parameters.
 ///
@@ -891,10 +893,10 @@ pub fn bundled_icon_to_image_source(
         native_theme::theme::IconSet::Material => material_name_for_gpui_icon(icon),
         _ => return None,
     };
-    // G3 (Phase 93-03): IconLoader builder replaces the demoted bundled_icon_by_name.
+    // G3 (Phase 93-03): per-set loader replaces the demoted bundled_icon_by_name.
     // Bundled icon sets always return IconData::Svg with Cow::Borrowed to static bytes,
     // so cow.as_ref() is a zero-copy borrow back to &'static [u8].
-    let data = IconLoader::new(name).set(icon_set).load()?;
+    let data = load_icon(name, icon_set)?;
     let IconData::Svg(cow) = data else {
         return None;
     };
@@ -905,7 +907,7 @@ pub fn bundled_icon_to_image_source(
 /// Convert raw SVG bytes to an [`ImageSource`].
 ///
 /// This is a convenience wrapper for callers that already have SVG bytes
-/// (e.g. from [`native_theme::icons::IconLoader`]) and want to skip
+/// (e.g. from a typed per-set loader in [`native_theme::icons`]) and want to skip
 /// the `IconData` intermediate.
 ///
 /// See [`to_image_source()`] for details on the `color` and `size` parameters.
@@ -2243,8 +2245,7 @@ mod freedesktop_mapping_tests {
         let mut missing = Vec::new();
         for name in ALL_ICON_NAMES {
             let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Kde);
-            if native_theme::icons::IconLoader::new(fd_name)
-                .set(native_theme::theme::IconSet::Freedesktop)
+            if FreedesktopLoader::new(fd_name)
                 .theme(&theme)
                 .size(24)
                 .load()
@@ -2267,8 +2268,7 @@ mod freedesktop_mapping_tests {
         let mut missing = Vec::new();
         for name in ALL_ICON_NAMES {
             let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Gnome);
-            if native_theme::icons::IconLoader::new(fd_name)
-                .set(native_theme::theme::IconSet::Freedesktop)
+            if FreedesktopLoader::new(fd_name)
                 .theme("Adwaita")
                 .size(24)
                 .load()

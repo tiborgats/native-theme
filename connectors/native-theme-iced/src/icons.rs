@@ -5,7 +5,7 @@
 //! images (`iced::widget::Svg`), this module provides separate conversion
 //! functions for each variant.
 
-use native_theme::icons::IconLoader;
+use native_theme::icons::load_icon;
 use native_theme::theme::{AnimatedIcon, IconData, IconProvider};
 
 /// Converted animation frames with timing metadata.
@@ -92,10 +92,10 @@ pub fn custom_icon_to_svg_handle(
     to_svg_handle(&data, color)
 }
 
-/// Internal helper: load an icon from a provider using [`IconLoader`].
+/// Internal helper: load an icon from a provider using [`load_icon`].
 ///
 /// Uses the provider's `icon_name` and `icon_svg` methods directly, then
-/// dispatches through `IconLoader` for system lookups. This preserves
+/// dispatches through [`load_icon`] for system lookups. This preserves
 /// the `?Sized` bound on the public API.
 fn load_custom_via_builder(
     provider: &(impl IconProvider + ?Sized),
@@ -103,7 +103,7 @@ fn load_custom_via_builder(
 ) -> Option<IconData> {
     // Step 1: Try system loader with provider's name mapping
     if let Some(name) = provider.icon_name(icon_set)
-        && let Some(data) = IconLoader::new(name).set(icon_set).load()
+        && let Some(data) = load_icon(name, icon_set)
     {
         return Some(data);
     }
@@ -141,7 +141,7 @@ fn load_custom_via_builder(
 /// ```no_run
 /// use native_theme_iced::icons::animated_frames_to_svg_handles;
 ///
-/// if let Some(anim) = native_theme::icons::IconLoader::new(native_theme::theme::IconRole::StatusBusy).set(native_theme::theme::IconSet::Material).load_indicator() {
+/// if let Some(anim) = native_theme::icons::MaterialLoader::load_indicator() {
 ///     if let Some(anim_handles) = animated_frames_to_svg_handles(&anim, None) {
 ///         // Cache `anim_handles`, then in subscription():
 ///         // iced::time::every(Duration::from_millis(anim_handles.frame_duration_ms as u64))

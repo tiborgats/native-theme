@@ -19,7 +19,8 @@ use iced::{Color, Element, Fill, Length, Padding, Theme};
 use iced::Subscription;
 use native_theme::detect::prefers_reduced_motion;
 use native_theme::icons::{
-    IconLoader, IconSetChoice, default_icon_choice, list_freedesktop_themes,
+    FreedesktopLoader, IconSetChoice, LucideLoader, MaterialLoader, SegoeIconsLoader,
+    SfSymbolsLoader, default_icon_choice, list_freedesktop_themes, load_icon_indicator,
 };
 use native_theme::theme::{AnimatedIcon, IconData, IconRole, IconSet, TransformAnimation};
 use native_theme_iced::icons::{
@@ -384,7 +385,7 @@ fn load_all_icons(
     let material_icons: Vec<Option<IconData>> = if is_system_set {
         IconRole::ALL
             .iter()
-            .map(|role| IconLoader::new(*role).set(IconSet::Material).load())
+            .map(|role| MaterialLoader::new(*role).load())
             .collect()
     } else {
         vec![]
@@ -394,10 +395,19 @@ fn load_all_icons(
         .iter()
         .enumerate()
         .map(|(i, &role)| {
-            let data = if let Some(t) = theme.filter(|_| set == IconSet::Freedesktop) {
-                IconLoader::new(role).set(set).theme(t).color_opt(fg).load()
-            } else {
-                IconLoader::new(role).set(set).color_opt(fg).load()
+            let data = match set {
+                IconSet::Freedesktop => {
+                    let mut l = FreedesktopLoader::new(role).color_opt(fg);
+                    if let Some(t) = theme {
+                        l = l.theme(t);
+                    }
+                    l.load()
+                }
+                IconSet::Material => MaterialLoader::new(role).load(),
+                IconSet::Lucide => LucideLoader::new(role).load(),
+                IconSet::SfSymbols => SfSymbolsLoader::new(role).load(),
+                IconSet::SegoeIcons => SegoeIconsLoader::new(role).load(),
+                _ => None,
             };
             let name = native_theme::theme::icon_name(role, set);
             let source = match (&data, is_system_set) {
@@ -455,10 +465,7 @@ fn build_animation_caches(
 
     let set_name = icon_set.name().to_string();
     {
-        if let Some(anim) = IconLoader::new(IconRole::StatusBusy)
-            .set(icon_set)
-            .load_indicator()
-        {
+        if let Some(anim) = load_icon_indicator(icon_set) {
             // Cache static first-frame for reduced motion
             if let Some(handle) = to_svg_handle(anim.first_frame(), None) {
                 animated_static.push((set_name.clone(), handle));

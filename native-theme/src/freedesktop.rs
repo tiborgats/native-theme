@@ -8,8 +8,8 @@
 use std::borrow::Cow;
 use std::num::NonZeroU32;
 
+use crate::IconData;
 use crate::model::animated::{AnimatedIcon, TransformAnimation};
-use crate::{IconData, IconRole, IconSet, icon_name};
 use std::path::PathBuf;
 
 /// Frame duration for freedesktop sprite sheet animations (80ms per frame).
@@ -62,54 +62,17 @@ fn find_icon(name: &str, theme: &str, size: u16) -> Option<(PathBuf, bool)> {
 
 /// Load a freedesktop icon for the given role.
 ///
-/// Resolves the role to a freedesktop icon name, looks it up in the
-/// user's active icon theme (with `-symbolic` suffix fallback), and
-/// returns the SVG bytes as `IconData::Svg`.
-///
-/// For GTK-convention symbolic icons (Adwaita, Yaru, elementary), the
-/// hardcoded foreground placeholders are replaced with `fg_color` so
-/// the SVG renders correctly on both light and dark themes. Pass
-/// `None` to fall back to `currentColor` (requires connector
-/// colorization).
-///
-/// Returns `None` if the role has no freedesktop mapping or the icon
-/// is not found in the active theme.
-///
-/// **Performance note:** Each call reads the icon file from disk. Callers
-/// that load the same icon repeatedly (e.g. per-frame in a GUI) should
-/// cache the returned `IconData` themselves.
-#[must_use]
-pub(crate) fn load_freedesktop_icon(
-    role: IconRole,
-    size: u16,
-    fg_color: Option<[u8; 3]>,
-) -> Option<IconData> {
-    let theme = detect_theme();
-    let name = icon_name(role, IconSet::Freedesktop)?;
-    let (path, is_symbolic) = find_icon(name, &theme, size)?;
-    let bytes = std::fs::read(&path).ok()?;
-    let bytes = if is_symbolic {
-        let replacement = fg_to_replacement(fg_color);
-        normalize_gtk_symbolic(bytes, &replacement)
-    } else {
-        bytes
-    };
-    Some(IconData::Svg(Cow::Owned(bytes)))
-}
-
 /// Load a freedesktop icon by name from the given theme.
 ///
 /// Looks up the name in the specified theme directory (with `-symbolic`
 /// suffix fallback for Adwaita-style themes), reads the SVG file, and
 /// returns it as `IconData::Svg`.
 ///
-/// Unlike [`load_freedesktop_icon`] which takes an `IconRole`, this
-/// function takes an arbitrary freedesktop icon name string. This is
-/// used by connectors to load toolkit-specific icons beyond the 42
-/// `IconRole` variants.
-///
-/// For GTK-convention symbolic icons, pass `fg_color` to bake the
-/// correct foreground into the SVG (see [`load_freedesktop_icon`]).
+/// For GTK-convention symbolic icons (Adwaita, Yaru, elementary), the
+/// hardcoded foreground placeholders are replaced with `fg_color` so
+/// the SVG renders correctly on both light and dark themes. Pass
+/// `None` to fall back to `currentColor` (requires connector
+/// colorization).
 ///
 /// Returns `None` if the icon is not found in the theme.
 ///
@@ -213,12 +176,19 @@ fn parse_sprite_sheet(svg_bytes: &[u8]) -> Option<Vec<Vec<u8>>> {
 /// 2. If found but single-frame (parse_sprite_sheet returns None) -> Transform::Spin
 /// 3. Try "process-working-symbolic" at size 22 -- single frame -> Transform::Spin
 /// 4. Return None if neither found (caller falls back to bundled Adwaita)
-pub(crate) fn load_freedesktop_spinner() -> Option<AnimatedIcon> {
-    let theme = detect_theme();
+pub(crate) fn load_freedesktop_spinner(theme: Option<&str>) -> Option<AnimatedIcon> {
+    let detected;
+    let theme: &str = match theme {
+        Some(t) => t,
+        None => {
+            detected = detect_theme();
+            &detected
+        }
+    };
 
     // First pass: plain name (finds sprite sheets in animations/ dirs)
     if let Some(path) = freedesktop_icons::lookup("process-working")
-        .with_theme(&theme)
+        .with_theme(theme)
         .with_size(22)
         .force_svg()
         .find()
@@ -244,7 +214,7 @@ pub(crate) fn load_freedesktop_spinner() -> Option<AnimatedIcon> {
 
     // Second pass: symbolic name (always single frame)
     if let Some(path) = freedesktop_icons::lookup("process-working-symbolic")
-        .with_theme(&theme)
+        .with_theme(theme)
         .with_size(22)
         .force_svg()
         .find()
@@ -332,11 +302,14 @@ fn normalize_gtk_symbolic(svg_bytes: Vec<u8>, replacement: &str) -> Vec<u8> {
 #[allow(clippy::unwrap_used, clippy::expect_used)]
 mod tests {
     use super::*;
+    use crate::{IconRole, IconSet, icon_name};
 
     #[test]
     #[ignore = "requires a freedesktop icon theme installed (not available on CI)"]
     fn load_icon_returns_some_for_dialog_error() {
-        let result = load_freedesktop_icon(IconRole::DialogError, 24, None);
+        let theme = detect_theme();
+        let name = icon_name(IconRole::DialogError, IconSet::Freedesktop).unwrap();
+        let result = load_freedesktop_icon_by_name(name, &theme, 24, None);
         assert!(result.is_some(), "DialogError should resolve to an icon");
         match result.unwrap() {
             IconData::Svg(ref cow) => {
@@ -352,14 +325,19 @@ mod tests {
         // Notification is mapped to "notification-active" (KDE convention).
         // Result depends on whether the active theme ships this icon.
         // This test verifies the loader does not panic and does not fall back to Material.
-        let _result = load_freedesktop_icon(IconRole::Notification, 24, None);
+        let theme = detect_theme();
+        if let Some(name) = icon_name(IconRole::Notification, IconSet::Freedesktop) {
+            let _result = load_freedesktop_icon_by_name(name, &theme, 24, None);
+        }
         // No assertion on Some/None -- theme-dependent
     }
 
     #[test]
     #[ignore = "requires a freedesktop icon theme installed (not available on CI)"]
     fn load_icon_returns_svg_variant() {
-        let result = load_freedesktop_icon(IconRole::ActionCopy, 24, None);
+        let theme = detect_theme();
+        let name = icon_name(IconRole::ActionCopy, IconSet::Freedesktop).unwrap();
+        let result = load_freedesktop_icon_by_name(name, &theme, 24, None);
         assert!(result.is_some(), "ActionCopy should resolve to an icon");
         assert!(
             matches!(result.unwrap(), IconData::Svg(_)),
@@ -501,7 +479,7 @@ mod tests {
     #[test]
     fn test_load_freedesktop_spinner_no_panic() {
         // Just verify the function doesn't panic -- result is theme-dependent
-        let _result = load_freedesktop_spinner();
+        let _result = load_freedesktop_spinner(None);
     }
 
     // === GTK symbolic icon normalization tests ===

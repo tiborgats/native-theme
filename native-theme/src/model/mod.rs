@@ -56,7 +56,7 @@ pub use animated::{
     AnimatedIcon, EmptyFrameListError, FrameList, FramesData, TransformAnimation, TransformData,
 };
 pub use border::{DefaultsBorderSpec, ResolvedBorderSpec, WidgetBorderSpec};
-// G3 (Phase 93-03): demoted to pub(crate). Use IconLoader builder externally.
+// G3 (Phase 93-03): demoted to pub(crate). Use the per-set loaders in `crate::icons` externally.
 pub(crate) use bundled::{bundled_icon_by_name, bundled_icon_svg};
 pub use defaults::ThemeDefaults;
 pub use dialog_order::DialogButtonOrder;

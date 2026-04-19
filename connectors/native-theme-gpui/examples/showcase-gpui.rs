@@ -70,7 +70,8 @@ use std::time::Duration;
 use native_theme::detect::parse_linux_desktop;
 use native_theme::detect::{prefers_reduced_motion, system_is_dark};
 use native_theme::icons::{
-    IconLoader, IconSetChoice, default_icon_choice, list_freedesktop_themes,
+    FreedesktopLoader, IconSetChoice, LucideLoader, MaterialLoader, SegoeIconsLoader,
+    SfSymbolsLoader, default_icon_choice, list_freedesktop_themes, load_icon, load_icon_indicator,
 };
 use native_theme::pipeline::platform_preset_name;
 use native_theme::theme::{
@@ -257,9 +258,9 @@ fn parse_icon_set_choice(display: &str) -> IconSetChoice {
 
 ///
 /// `default_theme`: when this is `Some(theme_name)` and `icon_set` is
-/// `Freedesktop`, icons are loaded via `IconLoader` with `.theme()` so they come
+/// `Freedesktop`, icons are loaded via `FreedesktopLoader` with `.theme()` so they come
 /// from the specific theme rather than the system default.  This is used for
-/// the "default" dropdown selection.  `None` means use the plain `IconLoader::new(role).load()`.
+/// the "default" dropdown selection.  `None` means use the plain `load_icon(role, icon_set)`.
 ///
 /// `cli_override`: CLI `--icon-theme` override, takes priority when the user
 /// explicitly selects the system icon set entry.
@@ -278,7 +279,7 @@ fn load_all_icons(
     let material_icons: Vec<Option<IconData>> = if is_system_set {
         IconRole::ALL
             .iter()
-            .map(|role| IconLoader::new(*role).set(IconSet::Material).load())
+            .map(|role| MaterialLoader::new(*role).load())
             .collect()
     } else {
         vec![]
@@ -289,44 +290,46 @@ fn load_all_icons(
         .enumerate()
         .map(|(i, role)| {
             // When a CLI override is specified and we're using freedesktop,
-            // load from that specific theme via IconLoader with .theme().
+            // load from that specific theme via FreedesktopLoader with .theme().
             // When a default theme is specified (from the TOML), use
-            // IconLoader with .theme() which handles freedesktop themes properly.
+            // FreedesktopLoader with .theme() which handles freedesktop themes properly.
             #[cfg(target_os = "linux")]
-            let data = if let Some(theme) =
-                cli_override.filter(|_| icon_set == IconSet::Freedesktop)
-            {
-                native_icon_name(*role, IconSet::Freedesktop).and_then(|name| {
-                    IconLoader::new(name)
-                        .set(IconSet::Freedesktop)
-                        .theme(theme)
-                        .color_opt(fg_color)
-                        .load()
-                })
-            } else if let Some(theme) = default_theme.filter(|_| icon_set == IconSet::Freedesktop) {
-                IconLoader::new(*role)
-                    .set(icon_set)
-                    .theme(theme)
-                    .color_opt(fg_color)
-                    .load()
-            } else {
-                IconLoader::new(*role)
-                    .set(icon_set)
-                    .color_opt(fg_color)
-                    .load()
+            let data = match icon_set {
+                IconSet::Freedesktop => {
+                    let mut l = FreedesktopLoader::new(*role).color_opt(fg_color);
+                    if let Some(t) = cli_override.or(default_theme) {
+                        // cli_override takes priority; name-based lookup via native_icon_name
+                        // is only needed when overriding explicitly
+                        if cli_override.is_some() {
+                            if let Some(name) = native_icon_name(*role, IconSet::Freedesktop) {
+                                l = FreedesktopLoader::new(name).theme(t).color_opt(fg_color);
+                            }
+                        } else {
+                            l = l.theme(t);
+                        }
+                    }
+                    l.load()
+                }
+                IconSet::Material => MaterialLoader::new(*role).load(),
+                IconSet::Lucide => LucideLoader::new(*role).load(),
+                IconSet::SfSymbols => SfSymbolsLoader::new(*role).load(),
+                IconSet::SegoeIcons => SegoeIconsLoader::new(*role).load(),
+                _ => None,
             };
             #[cfg(not(target_os = "linux"))]
-            let data = if let Some(theme) = default_theme {
-                IconLoader::new(*role)
-                    .set(icon_set)
-                    .theme(theme)
-                    .color_opt(fg_color)
-                    .load()
-            } else {
-                IconLoader::new(*role)
-                    .set(icon_set)
-                    .color_opt(fg_color)
-                    .load()
+            let data = match icon_set {
+                IconSet::Freedesktop => {
+                    let mut l = FreedesktopLoader::new(*role).color_opt(fg_color);
+                    if let Some(t) = default_theme {
+                        l = l.theme(t);
+                    }
+                    l.load()
+                }
+                IconSet::Material => MaterialLoader::new(*role).load(),
+                IconSet::Lucide => LucideLoader::new(*role).load(),
+                IconSet::SfSymbols => SfSymbolsLoader::new(*role).load(),
+                IconSet::SegoeIcons => SegoeIconsLoader::new(*role).load(),
+                _ => None,
             };
 
             let source = match (&data, is_system_set) {
@@ -512,7 +515,7 @@ type IconEntry = (
 /// Pre-load native-theme icons for gpui-component IconName variants.
 ///
 /// `default_theme`: when `Some(theme)` and icon_set is Freedesktop, uses
-/// `IconLoader` with `.theme()` to load from the specified theme (for the "default"
+/// `FreedesktopLoader` with `.theme()` to load from the specified theme (for the "default"
 /// dropdown selection).
 ///
 /// `cli_override`: CLI `--icon-theme` override that takes priority (for explicit
@@ -570,7 +573,7 @@ fn load_gpui_icons(
             .filter_map(|(name, _)| role_for_gpui_icon(name))
             .collect::<std::collections::HashSet<_>>()
             .into_iter()
-            .map(|r| (r, IconLoader::new(r).set(IconSet::Material).load()))
+            .map(|r| (r, MaterialLoader::new(r).load()))
             .collect()
     } else {
         HashMap::new()
@@ -584,40 +587,47 @@ fn load_gpui_icons(
             // Try loading by IconRole first (existing path)
             if let Some(r) = role {
                 // When a CLI override is specified and we're using freedesktop,
-                // load from that specific theme via IconLoader with .theme().
+                // load from that specific theme via FreedesktopLoader with .theme().
                 // When a default theme is specified (from the TOML), use
-                // IconLoader with .theme().
+                // FreedesktopLoader with .theme().
                 #[cfg(target_os = "linux")]
-                let data = if let Some(theme) =
-                    cli_override.filter(|_| icon_set == IconSet::Freedesktop)
-                {
-                    native_icon_name(r, IconSet::Freedesktop).and_then(|n| {
-                        IconLoader::new(n)
-                            .set(IconSet::Freedesktop)
-                            .theme(theme)
-                            .color_opt(fg_color)
-                            .load()
-                    })
-                } else if let Some(theme) =
-                    default_theme.filter(|_| icon_set == IconSet::Freedesktop)
-                {
-                    IconLoader::new(r)
-                        .set(icon_set)
-                        .theme(theme)
-                        .color_opt(fg_color)
-                        .load()
-                } else {
-                    IconLoader::new(r).set(icon_set).color_opt(fg_color).load()
+                let data = match icon_set {
+                    IconSet::Freedesktop => {
+                        if let Some(theme) = cli_override {
+                            native_icon_name(r, IconSet::Freedesktop).and_then(|n| {
+                                FreedesktopLoader::new(n)
+                                    .theme(theme)
+                                    .color_opt(fg_color)
+                                    .load()
+                            })
+                        } else {
+                            let mut l = FreedesktopLoader::new(r).color_opt(fg_color);
+                            if let Some(theme) = default_theme {
+                                l = l.theme(theme);
+                            }
+                            l.load()
+                        }
+                    }
+                    IconSet::Material => MaterialLoader::new(r).load(),
+                    IconSet::Lucide => LucideLoader::new(r).load(),
+                    IconSet::SfSymbols => SfSymbolsLoader::new(r).load(),
+                    IconSet::SegoeIcons => SegoeIconsLoader::new(r).load(),
+                    _ => None,
                 };
                 #[cfg(not(target_os = "linux"))]
-                let data = if let Some(theme) = default_theme {
-                    IconLoader::new(r)
-                        .set(icon_set)
-                        .theme(theme)
-                        .color_opt(fg_color)
-                        .load()
-                } else {
-                    IconLoader::new(r).set(icon_set).color_opt(fg_color).load()
+                let data = match icon_set {
+                    IconSet::Freedesktop => {
+                        let mut l = FreedesktopLoader::new(r).color_opt(fg_color);
+                        if let Some(theme) = default_theme {
+                            l = l.theme(theme);
+                        }
+                        l.load()
+                    }
+                    IconSet::Material => MaterialLoader::new(r).load(),
+                    IconSet::Lucide => LucideLoader::new(r).load(),
+                    IconSet::SfSymbols => SfSymbolsLoader::new(r).load(),
+                    IconSet::SegoeIcons => SegoeIconsLoader::new(r).load(),
+                    _ => None,
                 };
                 let source = match &data {
                     None => IconSource::NotFound,
@@ -643,8 +653,7 @@ fn load_gpui_icons(
                     && let (Some(de), Some(theme)) = (&linux_de, &fd_theme)
                 {
                     let fd_name = freedesktop_name_for_gpui_icon(icon.clone(), *de);
-                    if let Some(fd_data) = IconLoader::new(fd_name)
-                        .set(IconSet::Freedesktop)
+                    if let Some(fd_data) = FreedesktopLoader::new(fd_name)
                         .theme(theme)
                         .color_opt(fg_color)
                         .load()
@@ -667,8 +676,7 @@ fn load_gpui_icons(
             #[cfg(target_os = "linux")]
             if let (Some(de), Some(theme)) = (&linux_de, &fd_theme) {
                 let fd_name = freedesktop_name_for_gpui_icon(icon.clone(), *de);
-                if let Some(data) = IconLoader::new(fd_name)
-                    .set(IconSet::Freedesktop)
+                if let Some(data) = FreedesktopLoader::new(fd_name)
                     .theme(theme)
                     .color_opt(fg_color)
                     .load()
@@ -686,7 +694,7 @@ fn load_gpui_icons(
                     _ => None,
                 };
                 if let Some(lname) = lookup_name
-                    && let Some(data) = IconLoader::new(lname).set(icon_set).load()
+                    && let Some(data) = load_icon(lname, icon_set)
                 {
                     return (*name, icon.clone(), None, Some(data), IconSource::Bundled);
                 }
@@ -1010,7 +1018,7 @@ impl Showcase {
             .collect();
     }
 
-    /// Rebuild cached animated icon data from `IconLoader::load_indicator()`.
+    /// Rebuild cached animated icon data from `load_icon_indicator()`.
     ///
     /// Called at init and whenever the icon set changes so that animated icon
     /// rendering can use pre-built `ImageSource` objects without re-rasterizing
@@ -1026,9 +1034,7 @@ impl Showcase {
         // gpui-builtin is not a native-theme icon set; load_indicator would
         // fall back to the system set, showing the wrong spinner.
         if let Some(icon_set) = self.icon_set_enum
-            && let Some(anim) = IconLoader::new(IconRole::StatusBusy)
-                .set(icon_set)
-                .load_indicator()
+            && let Some(anim) = load_icon_indicator(icon_set)
         {
             match &anim {
                 AnimatedIcon::Frames(data) => {

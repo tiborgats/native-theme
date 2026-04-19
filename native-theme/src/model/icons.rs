@@ -404,7 +404,7 @@ impl IconSet {
 /// Trait for types that map icon identifiers to platform-specific names and SVG data.
 ///
 /// Implement this trait on an enum to make its variants loadable via
-/// [`IconLoader`](crate::icons::IconLoader). The typical pattern is
+/// the typed per-set loaders in [`crate::icons`]. The typical pattern is
 /// for each enum variant to represent an icon role, with `icon_name()` returning
 /// the platform-specific identifier and `icon_svg()` returning embedded SVG bytes.
 ///

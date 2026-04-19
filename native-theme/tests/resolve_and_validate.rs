@@ -402,16 +402,16 @@ fn theme_spec_with_one_variant_is_not_empty() {
 // ---------------------------------------------------------------------------
 
 // G3 (Phase 93-03): migrated from the demoted `bundled_icon_svg` (now pub(crate))
-// to the public `IconLoader` builder. Bundled icon sets always return
+// to the public typed per-set loaders. Bundled icon sets always return
 // `IconData::Svg` with `Cow::Borrowed` to static bytes, so `cow.as_ref()` is
 // a zero-copy view back to `&'static [u8]`.
 
 #[test]
 #[cfg(feature = "material-icons")]
 fn bundled_material_svg_starts_with_svg_tag() {
-    use native_theme::icons::IconLoader;
+    use native_theme::icons::MaterialLoader;
     for role in IconRole::ALL {
-        if let Some(data) = IconLoader::new(role).set(IconSet::Material).load() {
+        if let Some(data) = MaterialLoader::new(role).load() {
             let IconData::Svg(cow) = data else { continue };
             let svg_bytes: &[u8] = cow.as_ref();
             let content = std::str::from_utf8(svg_bytes).unwrap_or_else(|_| {
@@ -429,9 +429,9 @@ fn bundled_material_svg_starts_with_svg_tag() {
 #[test]
 #[cfg(feature = "lucide-icons")]
 fn bundled_lucide_svg_starts_with_svg_tag() {
-    use native_theme::icons::IconLoader;
+    use native_theme::icons::LucideLoader;
     for role in IconRole::ALL {
-        if let Some(data) = IconLoader::new(role).set(IconSet::Lucide).load() {
+        if let Some(data) = LucideLoader::new(role).load() {
             let IconData::Svg(cow) = data else { continue };
             let svg_bytes: &[u8] = cow.as_ref();
             let content = std::str::from_utf8(svg_bytes).unwrap_or_else(|_| {
@@ -451,22 +451,19 @@ fn bundled_lucide_svg_starts_with_svg_tag() {
 // ---------------------------------------------------------------------------
 //
 // G3 (Phase 93-03): the original test asserted that `bundled_icon_svg`
-// (bundled lookup) has no entries for non-bundled sets. With IconLoader,
-// the equivalent observable behaviour is that platform-native sets
+// (bundled lookup) has no entries for non-bundled sets. With the per-set
+// loaders, the equivalent observable behaviour is that platform-native sets
 // (SfSymbols, SegoeIcons) return None on the wrong OS. Freedesktop is
-// no longer asserted None here because on Linux with `system-icons` IconLoader
-// intentionally DOES load freedesktop icons via the filesystem.
+// no longer asserted None here because on Linux with `system-icons`
+// FreedesktopLoader intentionally DOES load icons via the filesystem.
 
 #[test]
 #[cfg(not(target_os = "macos"))]
 fn sf_symbols_returns_none_on_non_macos() {
-    use native_theme::icons::IconLoader;
+    use native_theme::icons::SfSymbolsLoader;
     for role in IconRole::ALL {
         assert!(
-            IconLoader::new(role)
-                .set(IconSet::SfSymbols)
-                .load()
-                .is_none(),
+            SfSymbolsLoader::new(role).load().is_none(),
             "SfSymbols should not load on non-macOS for {role:?}"
         );
     }
@@ -475,13 +472,10 @@ fn sf_symbols_returns_none_on_non_macos() {
 #[test]
 #[cfg(not(target_os = "windows"))]
 fn segoe_icons_returns_none_on_non_windows() {
-    use native_theme::icons::IconLoader;
+    use native_theme::icons::SegoeIconsLoader;
     for role in IconRole::ALL {
         assert!(
-            IconLoader::new(role)
-                .set(IconSet::SegoeIcons)
-                .load()
-                .is_none(),
+            SegoeIconsLoader::new(role).load().is_none(),
             "SegoeIcons should not load on non-Windows for {role:?}"
         );
     }

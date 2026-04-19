@@ -186,7 +186,10 @@ pub(crate) use detect::{
 #[allow(unused_imports)]
 pub(crate) use error::{Error, ErrorKind, RangeViolation};
 #[allow(unused_imports)]
-pub(crate) use icons::{IconId, IconLoader, is_freedesktop_theme_available};
+pub(crate) use icons::{
+    FreedesktopLoader, IconId, LucideLoader, MaterialLoader, SegoeIconsLoader, SfSymbolsLoader,
+    is_freedesktop_theme_available, load_icon, load_icon_indicator,
+};
 pub use icons::{IconSetChoice, default_icon_choice, list_freedesktop_themes};
 #[allow(unused_imports)]
 pub(crate) use model::icons::{detect_icon_theme, icon_name, system_icon_set, system_icon_theme};
