@@ -2176,3 +2176,90 @@ fn check_ranges_happy_path_zero_errors() {
         "valid theme should have zero range errors: {errors:?}"
     );
 }
+
+// ===== G1 (Phase 93-01) — `require` no-Default-bound regression tests =====
+//
+// These tests exercise `validate_helpers::require` on a type that does NOT
+// implement `Default`. Before Phase 93-01, `require<T: Clone + Default>`
+// could not be called with such a type and this module would not compile.
+// After the fix, `require<T: Clone>` accepts an explicit `fallback: T`.
+
+#[test]
+fn require_accepts_type_without_default_when_value_present() {
+    // A local type deliberately without `Default`.
+    #[derive(Clone, Debug, PartialEq)]
+    struct NoDefault(u32);
+
+    let field: Option<NoDefault> = Some(NoDefault(42));
+    let mut missing = Vec::new();
+    let fallback = NoDefault(0);
+    let out = super::validate_helpers::require(&field, "x.y", &mut missing, fallback);
+    assert_eq!(out, NoDefault(42));
+    assert!(missing.is_empty());
+}
+
+#[test]
+fn require_records_missing_and_returns_fallback_for_type_without_default() {
+    #[derive(Clone, Debug, PartialEq)]
+    struct NoDefault(u32);
+
+    let field: Option<NoDefault> = None;
+    let mut missing = Vec::new();
+    let fallback = NoDefault(99);
+    let out = super::validate_helpers::require(&field, "x.y", &mut missing, fallback);
+    assert_eq!(out, NoDefault(99));
+    assert_eq!(missing, vec!["x.y".to_string()]);
+}
+
+#[test]
+fn require_rgba_fallback_is_transparent_when_missing() {
+    // Rgba still implements Default today, but after G1 completes it will not.
+    // Passing Rgba::TRANSPARENT as an explicit fallback must work in both worlds.
+    let field: Option<Rgba> = None;
+    let mut missing = Vec::new();
+    let out = super::validate_helpers::require(
+        &field,
+        "defaults.accent_color",
+        &mut missing,
+        Rgba::TRANSPARENT,
+    );
+    assert_eq!(out, Rgba::TRANSPARENT);
+    assert_eq!(missing, vec!["defaults.accent_color".to_string()]);
+}
+
+#[test]
+fn validate_border_sentinel_on_none_with_border_kind_none() {
+    // Ensures validate_border returns a zero/TRANSPARENT sentinel (no T::default()
+    // required for Rgba/ResolvedBorderSpec) when the widget's border is None
+    // under BorderKind::None.
+    let mut missing = Vec::new();
+    let out = super::validate_helpers::validate_border(
+        &None,
+        "menu.border",
+        super::validate_helpers::BorderKind::None,
+        &mut missing,
+    );
+    // BorderKind::None with None border: no missing recorded, sentinel returned.
+    assert!(missing.is_empty());
+    assert_eq!(out.color, Rgba::TRANSPARENT);
+    assert_eq!(out.corner_radius, 0.0);
+    assert_eq!(out.line_width, 0.0);
+    assert_eq!(out.opacity, 0.0);
+    assert!(!out.shadow_enabled);
+}
+
+#[test]
+fn validate_border_records_missing_and_returns_sentinel_for_full_kind() {
+    let mut missing = Vec::new();
+    let out = super::validate_helpers::validate_border(
+        &None,
+        "button.border",
+        super::validate_helpers::BorderKind::Full,
+        &mut missing,
+    );
+    assert_eq!(missing, vec!["button.border".to_string()]);
+    assert_eq!(out.color, Rgba::TRANSPARENT);
+    assert_eq!(out.corner_radius, 0.0);
+    assert_eq!(out.line_width, 0.0);
+    assert!(!out.shadow_enabled);
+}
