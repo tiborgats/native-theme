@@ -1087,12 +1087,18 @@ impl Showcase {
             return;
         }
 
-        let min_duration = self
+        // Invariant: animated_frame_durations is pushed in lockstep with
+        // animated_frame_sources (see rebuild_animation_caches). If sources
+        // is non-empty, durations is non-empty, so min() returns Some.
+        let Some(min_duration) = self
             .animated_frame_durations
             .iter()
             .copied()
             .min()
-            .unwrap_or(83) as u64;
+            .map(u64::from)
+        else {
+            return;
+        };
 
         let task = cx.spawn(async move |this, cx| {
             loop {
