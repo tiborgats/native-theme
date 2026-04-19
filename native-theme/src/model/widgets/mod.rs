@@ -3,7 +3,7 @@
 use crate::Rgba;
 use crate::model::border::{ResolvedBorderSpec, WidgetBorderSpec};
 use crate::model::{DialogButtonOrder, FontSpec, ResolvedFontSpec};
-use native_theme_derive::ThemeWidget;
+use native_theme_derive::{ThemeFields, ThemeWidget};
 
 // ── 2.2 Window / Application Chrome ────────────────────────────────────────
 
@@ -851,7 +851,13 @@ pub struct LinkTheme {
 ///
 /// Unlike other widget themes, LayoutTheme lives on [`crate::Theme`] (top-level)
 /// rather than [`crate::ThemeMode`] because spacing is variant-independent.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
+// Phase 93-05 G5: LayoutTheme keeps `skip_inventory` so it does NOT register
+// in the per-variant WidgetFieldInfo registry (it is top-level, not per-variant),
+// but also derives ThemeFields so lint_toml can look up its fields in the
+// non-widget FieldInfo registry under the key "LayoutTheme".
+#[derive(
+    Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget, ThemeFields,
+)]
 #[serde_with::skip_serializing_none]
 #[serde(default)]
 #[theme_layer(skip_inventory)]

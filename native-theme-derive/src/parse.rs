@@ -172,15 +172,27 @@ fn parse_one_field(field: &Field) -> Result<FieldMeta> {
             continue;
         }
 
-        // Extract serde rename
+        // Extract serde rename. Tolerate any other serde sub-attributes
+        // (e.g. `default`, `skip_serializing_if = "..."`, `try_from = "..."`)
+        // by consuming their values when present -- otherwise
+        // `parse_nested_meta` fails to find the following `,` separator.
         if attr.path().is_ident("serde") {
             attr.parse_nested_meta(|meta| {
                 if meta.path.is_ident("rename") {
                     let value = meta.value()?;
                     let lit: LitStr = value.parse()?;
                     serde_rename = Some(lit.value());
+                    Ok(())
+                } else {
+                    // Unknown serde sub-attribute: consume its value if any,
+                    // otherwise move on. `meta.value()` succeeds when an `=` is
+                    // present; it fails for flag-style entries like `default`.
+                    if let Ok(v) = meta.value() {
+                        // Consume the expression without interpreting it.
+                        let _: syn::Expr = v.parse()?;
+                    }
+                    Ok(())
                 }
-                Ok(())
             })?;
             continue;
         }

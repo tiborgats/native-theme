@@ -206,19 +206,14 @@ fn derive_fields_inner(input: DeriveInput) -> syn::Result<proc_macro2::TokenStre
     let entries: Vec<proc_macro2::TokenStream> =
         field_names.iter().map(|n| quote::quote! { #n, }).collect();
 
-    // Emit inside an anonymous const to avoid polluting the user's namespace.
-    // The inventory registry path `crate::resolve::FieldInfo` works because
-    // this derive is only ever consumed inside the `native_theme` crate --
-    // mirrors the existing widget derive at line 106 above which also
-    // references `crate::resolve::WidgetFieldInfo`.
+    // Emit at item level directly -- mirrors the pattern used by the widget
+    // derive at line 111 above. The inventory registry path
+    // `crate::resolve::FieldInfo` works because this derive is only ever
+    // consumed inside the `native_theme` crate.
     Ok(quote::quote! {
-        const _: () = {
-            inventory::submit! {
-                crate::resolve::FieldInfo {
-                    struct_name: #struct_name_str,
-                    field_names: &[#(#entries)*],
-                }
-            }
-        };
+        inventory::submit!(crate::resolve::FieldInfo {
+            struct_name: #struct_name_str,
+            field_names: &[#(#entries)*],
+        });
     })
 }

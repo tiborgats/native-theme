@@ -5,6 +5,7 @@ use std::borrow::Cow;
 use crate::Rgba;
 use crate::model::border::DefaultsBorderSpec;
 use crate::model::{FontSpec, IconSizes};
+use native_theme_derive::ThemeFields;
 use serde::{Deserialize, Serialize};
 
 /// Global theme defaults shared across all widgets.
@@ -31,7 +32,7 @@ use serde::{Deserialize, Serialize};
 /// When resolving a widget's properties, `None` on the widget struct
 /// means "inherit from `ThemeDefaults`".
 #[serde_with::skip_serializing_none]
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, ThemeFields)]
 #[serde(default)]
 pub struct ThemeDefaults {
     // ---- Base font ----
@@ -135,43 +136,10 @@ pub struct ThemeDefaults {
     pub icon_theme: Option<Cow<'static, str>>,
 }
 
-impl ThemeDefaults {
-    /// All serialized field names for ThemeDefaults, for TOML linting.
-    pub const FIELD_NAMES: &[&str] = &[
-        "font",
-        "line_height",
-        "mono_font",
-        "background_color",
-        "text_color",
-        "accent_color",
-        "accent_text_color",
-        "surface_color",
-        "muted_color",
-        "shadow_color",
-        "link_color",
-        "selection_background",
-        "selection_text_color",
-        "selection_inactive_background",
-        "text_selection_background",
-        "text_selection_color",
-        "disabled_text_color",
-        "danger_color",
-        "danger_text_color",
-        "warning_color",
-        "warning_text_color",
-        "success_color",
-        "success_text_color",
-        "info_color",
-        "info_text_color",
-        "border",
-        "disabled_opacity",
-        "focus_ring_color",
-        "focus_ring_width_px",
-        "focus_ring_offset_px",
-        "icon_sizes",
-        "icon_theme",
-    ];
-}
+// Phase 93-05 G5: ThemeDefaults::FIELD_NAMES was a hand-authored 32-entry
+// mirror of the serde field names. Removed -- #[derive(ThemeFields)] above
+// registers the same list automatically into `crate::resolve::FieldInfo`,
+// consumed by `lint_toml`. See docs/todo_v0.5.7_gaps.md §G5.
 
 impl_merge!(ThemeDefaults {
     option {

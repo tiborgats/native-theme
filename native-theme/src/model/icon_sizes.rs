@@ -1,5 +1,6 @@
 // Icon size configuration
 
+use native_theme_derive::ThemeFields;
 use serde::{Deserialize, Serialize};
 
 /// Per-context icon sizes in logical pixels.
@@ -7,7 +8,7 @@ use serde::{Deserialize, Serialize};
 /// Defines the expected icon size for each visual context. All fields are
 /// optional to support partial overlays.
 #[serde_with::skip_serializing_none]
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, ThemeFields)]
 #[serde(default)]
 pub struct IconSizes {
     /// Icon size for toolbar buttons (e.g., 24px).
@@ -25,17 +26,6 @@ pub struct IconSizes {
     /// Icon size for panel headers (e.g., 20px).
     #[serde(rename = "panel_px")]
     pub panel: Option<f32>,
-}
-
-impl IconSizes {
-    /// All serialized field names for TOML linting (issue 3b).
-    pub const FIELD_NAMES: &[&str] = &[
-        "toolbar_px",
-        "small_px",
-        "large_px",
-        "dialog_px",
-        "panel_px",
-    ];
 }
 
 impl_merge!(IconSizes {

@@ -1,6 +1,7 @@
 // Border specification sub-structs for defaults-level and widget-level border properties
 
 use crate::Rgba;
+use native_theme_derive::ThemeFields;
 use serde::{Deserialize, Serialize};
 
 /// Defaults-level border specification: color, geometry, and opacity.
@@ -19,7 +20,7 @@ use serde::{Deserialize, Serialize};
 /// All fields are optional to support partial overlays -- a DefaultsBorderSpec
 /// with only `color` set will only override the color when merged.
 #[serde_with::skip_serializing_none]
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, ThemeFields)]
 #[serde(default)]
 pub struct DefaultsBorderSpec {
     /// Border color.
@@ -39,18 +40,6 @@ pub struct DefaultsBorderSpec {
     pub shadow_enabled: Option<bool>,
 }
 
-impl DefaultsBorderSpec {
-    /// All serialized field names for DefaultsBorderSpec, for TOML linting.
-    pub const FIELD_NAMES: &[&str] = &[
-        "color",
-        "corner_radius_px",
-        "corner_radius_lg_px",
-        "line_width_px",
-        "opacity",
-        "shadow_enabled",
-    ];
-}
-
 impl_merge!(DefaultsBorderSpec {
     option { color, corner_radius, corner_radius_lg, line_width, opacity, shadow_enabled }
 });
@@ -67,7 +56,7 @@ impl_merge!(DefaultsBorderSpec {
 ///
 /// All fields are optional to support partial overlays.
 #[serde_with::skip_serializing_none]
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, ThemeFields)]
 #[serde(default)]
 pub struct WidgetBorderSpec {
     /// Border color.
@@ -86,18 +75,6 @@ pub struct WidgetBorderSpec {
     /// Vertical padding inside the border in logical pixels.
     #[serde(rename = "padding_vertical_px")]
     pub padding_vertical: Option<f32>,
-}
-
-impl WidgetBorderSpec {
-    /// All serialized field names for WidgetBorderSpec, for TOML linting.
-    pub const FIELD_NAMES: &[&str] = &[
-        "color",
-        "corner_radius_px",
-        "line_width_px",
-        "shadow_enabled",
-        "padding_horizontal_px",
-        "padding_vertical_px",
-    ];
 }
 
 impl_merge!(WidgetBorderSpec {

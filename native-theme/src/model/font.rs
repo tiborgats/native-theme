@@ -4,6 +4,7 @@ use std::collections::HashSet;
 use std::sync::{Arc, Mutex};
 
 use crate::Rgba;
+use native_theme_derive::ThemeFields;
 use serde::{Deserialize, Serialize};
 
 /// Global font family intern cache.
@@ -147,8 +148,13 @@ impl Default for FontSize {
 /// error). `style` silently defaults to [`FontStyle::Normal`] because
 /// Normal is the universally-safe default -- no theme ever intends to
 /// leave style undefined in a way that would produce incorrect rendering.
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, ThemeFields)]
 #[serde(try_from = "FontSpecRaw", into = "FontSpecRaw")]
+// Phase 93-05 G5: serde serializes via FontSpecRaw which maps `size: FontSize`
+// to two mutually-exclusive keys (`size_pt` / `size_px`). The ThemeFields
+// derive's introspection path cannot see the proxy, so declare the wire-format
+// field names explicitly here. Keep in sync with FontSpecRaw below.
+#[theme_layer(fields = "family, size_pt, size_px, weight, style, color")]
 pub struct FontSpec {
     /// Font family name (e.g., "Inter", "Noto Sans").
     pub family: Option<Arc<str>>,
@@ -164,11 +170,6 @@ pub struct FontSpec {
     pub style: Option<FontStyle>,
     /// Font color.
     pub color: Option<Rgba>,
-}
-
-impl FontSpec {
-    /// All serialized field names for FontSpec, for TOML linting.
-    pub const FIELD_NAMES: &[&str] = &["family", "size_pt", "size_px", "weight", "style", "color"];
 }
 
 /// Serde proxy for FontSpec. Maps `FontSize` to two mutually-exclusive keys.
@@ -253,8 +254,12 @@ pub struct ResolvedFontSpec {
 ///
 /// Used to define typographic roles (caption, heading, etc.) with
 /// consistent sizing and spacing.
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, ThemeFields)]
 #[serde(try_from = "TextScaleEntryRaw", into = "TextScaleEntryRaw")]
+// Phase 93-05 G5: serde proxy through TextScaleEntryRaw maps `size` and
+// `line_height` each to two mutually-exclusive keys. Wire format declared
+// explicitly. Keep in sync with TextScaleEntryRaw below.
+#[theme_layer(fields = "size_pt, size_px, weight, line_height_pt, line_height_px")]
 pub struct TextScaleEntry {
     /// Font size with explicit unit (points or pixels).
     ///
@@ -266,17 +271,6 @@ pub struct TextScaleEntry {
     /// Line height with explicit unit. When `None`, `resolve()` computes it
     /// as `defaults.line_height * size.raw()`, preserving the unit of `size`.
     pub line_height: Option<FontSize>,
-}
-
-impl TextScaleEntry {
-    /// All serialized field names for TOML linting.
-    pub const FIELD_NAMES: &[&str] = &[
-        "size_pt",
-        "size_px",
-        "weight",
-        "line_height_pt",
-        "line_height_px",
-    ];
 }
 
 /// Serde proxy for TextScaleEntry. Maps `FontSize` to two mutually-exclusive keys.
@@ -359,7 +353,7 @@ impl_merge!(TextScaleEntry {
 /// Each field is an optional `TextScaleEntry` so that a partial overlay
 /// can override only specific roles.
 #[serde_with::skip_serializing_none]
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize, ThemeFields)]
 #[serde(default)]
 pub struct TextScale {
     /// Caption / small label text.
@@ -370,11 +364,6 @@ pub struct TextScale {
     pub dialog_title: Option<TextScaleEntry>,
     /// Large display / hero text.
     pub display: Option<TextScaleEntry>,
-}
-
-impl TextScale {
-    /// All serialized field names for TOML linting (issue 3b).
-    pub const FIELD_NAMES: &[&str] = &["caption", "section_heading", "dialog_title", "display"];
 }
 
 impl_merge!(TextScale {

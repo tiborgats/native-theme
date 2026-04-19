@@ -606,8 +606,6 @@ impl Theme {
     /// assert!(warnings[0].contains("backround"));
     /// ```
     pub fn lint_toml(toml_str: &str) -> crate::Result<Vec<String>> {
-        use crate::model::defaults::ThemeDefaults;
-
         let value: toml::Value =
             toml::from_str(toml_str).map_err(|e: toml::de::Error| crate::Error::Toml(e))?;
 
@@ -630,53 +628,71 @@ impl Theme {
         // Structural variant-level keys that are NOT widgets
         const STRUCTURAL_KEYS: &[&str] = &["defaults", "text_scale"];
 
-        // Build widget registry from inventory (auto-discovered from #[derive(ThemeWidget)])
+        // Phase 93-05 G5: build BOTH field registries from inventory.
+        // - widget_registry: one entry per per-variant widget (ButtonTheme ->
+        //   "button", etc.) populated by #[derive(ThemeWidget)].
+        // - struct_registry: one entry per plain struct (FontSpec, IconSizes,
+        //   ThemeDefaults, LayoutTheme, ...) populated by #[derive(ThemeFields)].
         let widget_registry: std::collections::HashMap<&str, &[&str]> =
             inventory::iter::<crate::resolve::WidgetFieldInfo>()
                 .map(|info| (info.widget_name, info.field_names))
                 .collect();
+        let struct_registry: std::collections::HashMap<&str, &[&str]> =
+            inventory::iter::<crate::resolve::FieldInfo>()
+                .map(|info| (info.struct_name, info.field_names))
+                .collect();
 
-        // FontSpec, DefaultsBorderSpec, WidgetBorderSpec, TextScaleEntry, TextScale, and IconSizes
-        // all use their own FIELD_NAMES constants (issue 3b).
+        // Helper: fetch a plain-struct field list by type name. Returns None
+        // when the struct did not opt in to ThemeFields -- sub-table linting
+        // is silently skipped in that case, matching the former `continue;`
+        // behaviour when a sub-table's type wasn't recognised.
+        let get_struct_fields =
+            |name: &str| -> Option<&[&str]> { struct_registry.get(name).copied() };
 
         // Lint a text_scale section
-        fn lint_text_scale(
-            table: &toml::map::Map<String, toml::Value>,
-            prefix: &str,
-            warnings: &mut Vec<String>,
-        ) {
+        let lint_text_scale = |table: &toml::map::Map<String, toml::Value>,
+                               prefix: &str,
+                               warnings: &mut Vec<String>| {
+            let Some(scale_fields) = get_struct_fields("TextScale") else {
+                return;
+            };
+            let entry_fields = get_struct_fields("TextScaleEntry");
             for key in table.keys() {
-                if !TextScale::FIELD_NAMES.contains(&key.as_str()) {
+                if !scale_fields.contains(&key.as_str()) {
                     warnings.push(format!("unknown field: {prefix}.{key}"));
-                } else if let Some(toml::Value::Table(entry_table)) = table.get(key) {
+                } else if let Some(toml::Value::Table(entry_table)) = table.get(key)
+                    && let Some(entry_fields) = entry_fields
+                {
                     for ekey in entry_table.keys() {
-                        if !TextScaleEntry::FIELD_NAMES.contains(&ekey.as_str()) {
+                        if !entry_fields.contains(&ekey.as_str()) {
                             warnings.push(format!("unknown field: {prefix}.{key}.{ekey}"));
                         }
                     }
                 }
             }
-        }
+        };
 
         // Lint a defaults section (with nested font, mono_font, border, icon_sizes)
-        fn lint_defaults(
-            table: &toml::map::Map<String, toml::Value>,
-            prefix: &str,
-            warnings: &mut Vec<String>,
-        ) {
+        let lint_defaults = |table: &toml::map::Map<String, toml::Value>,
+                             prefix: &str,
+                             warnings: &mut Vec<String>| {
+            let Some(defaults_fields) = get_struct_fields("ThemeDefaults") else {
+                return;
+            };
             for key in table.keys() {
-                if !ThemeDefaults::FIELD_NAMES.contains(&key.as_str()) {
+                if !defaults_fields.contains(&key.as_str()) {
                     warnings.push(format!("unknown field: {prefix}.{key}"));
                     continue;
                 }
                 // Check sub-tables for nested struct fields
                 if let Some(toml::Value::Table(sub)) = table.get(key) {
                     let known = match key.as_str() {
-                        "font" | "mono_font" => FontSpec::FIELD_NAMES,
-                        "border" => DefaultsBorderSpec::FIELD_NAMES,
-                        "icon_sizes" => IconSizes::FIELD_NAMES,
+                        "font" | "mono_font" => get_struct_fields("FontSpec"),
+                        "border" => get_struct_fields("DefaultsBorderSpec"),
+                        "icon_sizes" => get_struct_fields("IconSizes"),
                         _ => continue,
                     };
+                    let Some(known) = known else { continue };
                     for skey in sub.keys() {
                         if !known.contains(&skey.as_str()) {
                             warnings.push(format!("unknown field: {prefix}.{key}.{skey}"));
@@ -684,16 +700,12 @@ impl Theme {
                     }
                 }
             }
-        }
+        };
 
         // Lint a variant section (light or dark).
-        // Accepts the widget registry for inventory-driven field lookup.
-        fn lint_variant(
-            table: &toml::map::Map<String, toml::Value>,
-            prefix: &str,
-            warnings: &mut Vec<String>,
-            widget_registry: &std::collections::HashMap<&str, &[&str]>,
-        ) {
+        let lint_variant = |table: &toml::map::Map<String, toml::Value>,
+                            prefix: &str,
+                            warnings: &mut Vec<String>| {
             for key in table.keys() {
                 let key_str = key.as_str();
 
@@ -722,9 +734,9 @@ impl Theme {
                                     if let Some(toml::Value::Table(nested)) = sub.get(skey) {
                                         let nested_known = match skey.as_str() {
                                             s if s == "font" || s.ends_with("_font") => {
-                                                Some(FontSpec::FIELD_NAMES)
+                                                get_struct_fields("FontSpec")
                                             }
-                                            "border" => Some(WidgetBorderSpec::FIELD_NAMES),
+                                            "border" => get_struct_fields("WidgetBorderSpec"),
                                             _ => None,
                                         };
                                         if let Some(known) = nested_known {
@@ -743,19 +755,23 @@ impl Theme {
                     }
                 }
             }
-        }
+        };
 
         // Lint light and dark variant sections
         for variant_key in &["light", "dark"] {
             if let Some(toml::Value::Table(variant_table)) = top_table.get(*variant_key) {
-                lint_variant(variant_table, variant_key, &mut warnings, &widget_registry);
+                lint_variant(variant_table, variant_key, &mut warnings);
             }
         }
 
-        // Lint top-level [layout] section
-        if let Some(toml::Value::Table(layout_table)) = top_table.get("layout") {
+        // Lint top-level [layout] section. LayoutTheme is a "widget" at the
+        // macro level (for its Resolved-pair codegen) but skips the widget
+        // inventory -- its fields are in the struct registry instead.
+        if let Some(toml::Value::Table(layout_table)) = top_table.get("layout")
+            && let Some(layout_fields) = get_struct_fields("LayoutTheme")
+        {
             for key in layout_table.keys() {
-                if !LayoutTheme::FIELD_NAMES.contains(&key.as_str()) {
+                if !layout_fields.contains(&key.as_str()) {
                     warnings.push(format!("unknown field: layout.{key}"));
                 }
             }
