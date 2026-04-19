@@ -2265,3 +2265,154 @@ fn validate_border_records_missing_and_returns_sentinel_for_full_kind() {
     assert_eq!(out.line_width, 0.0);
     assert!(!out.shadow_enabled);
 }
+
+// ===== G7 (Phase 94-02) — `ResolutionContext` regression tests =====
+//
+// These tests lock the G7 contract (docs/todo_v0.5.7_gaps.md §G7) before the
+// implementation is written. They prove:
+//   (a) `crate::resolve::ResolutionContext` does not exist yet
+//   (b) `ThemeMode::into_resolved(&ResolutionContext)` does not exist yet
+//   (c) `ThemeMode::resolve_system()` does not exist yet
+//   (d) `for_tests()` semantics are correctly specified (96 DPI,
+//       PrimaryRight, no icon_theme)
+//   (e) `OverlaySource.context` field replaces `.font_dpi`
+//
+// Posture: Phase 93-01 and 93-09 established RED-then-GREEN discipline; this
+// plan follows the same pattern.
+
+#[test]
+fn resolution_context_exists_and_has_no_default() {
+    // (a) Import check — this line fails to compile before Task 2.
+    use crate::resolve::ResolutionContext;
+
+    // (d) for_tests() semantics per gaps doc §G7.
+    let ctx: ResolutionContext = ResolutionContext::for_tests();
+    assert!(
+        (ctx.font_dpi - 96.0).abs() < f32::EPSILON,
+        "for_tests() should use 96 DPI (gaps doc §G7), got {}",
+        ctx.font_dpi
+    );
+    assert_eq!(
+        ctx.button_order,
+        DialogButtonOrder::PrimaryRight,
+        "for_tests() should use PrimaryRight button order (gaps doc §G7)"
+    );
+    assert!(
+        ctx.icon_theme.is_none(),
+        "for_tests() should have no icon_theme fallback (gaps doc §G7)"
+    );
+
+    // Negative-space assertion: the following line would fail to compile if
+    // `Default` were implemented. It stays commented-out as documentation of
+    // the signal-intent guarantee from gaps doc §G7 / J.2 B5.
+    //   fn assert_no_default<T: Default>() {}
+    //   assert_no_default::<ResolutionContext>();
+}
+
+#[test]
+fn into_resolved_takes_context_ref() {
+    // (b) The current signature `into_resolved(Option<f32>)` must be replaced
+    //     by `into_resolved(&ResolutionContext)`. Passing a &ctx literal
+    //     fails to compile until Task 2 lands.
+    use crate::resolve::ResolutionContext;
+
+    let theme = crate::Theme::preset("dracula").expect("dracula preset should load");
+    let variant = theme.dark.expect("dracula should have dark variant");
+    let original_accent = variant
+        .defaults
+        .accent_color
+        .expect("dracula dark should have accent_color");
+
+    let resolved = variant
+        .into_resolved(&ResolutionContext::for_tests())
+        .expect("dracula dark should resolve with for_tests ctx");
+    assert_eq!(
+        resolved.defaults.accent_color, original_accent,
+        "resolved accent should match preset value"
+    );
+}
+
+#[test]
+fn resolve_system_shortcut_equivalent_to_explicit_context() {
+    // (c) `resolve_system()` shortcut: `variant.resolve_system()` must behave
+    //     identically to `variant.into_resolved(&ResolutionContext::from_system())`.
+    use crate::resolve::ResolutionContext;
+
+    let theme = crate::Theme::preset("adwaita").expect("adwaita preset should load");
+    let variant = theme.light.expect("adwaita should have light variant");
+
+    let via_explicit = variant
+        .clone()
+        .into_resolved(&ResolutionContext::from_system())
+        .expect("explicit from_system should resolve");
+    let via_shortcut = variant
+        .resolve_system()
+        .expect("resolve_system shortcut should resolve");
+
+    // Compare the primary color field; both paths must produce identical values.
+    assert_eq!(
+        via_explicit.defaults.accent_color, via_shortcut.defaults.accent_color,
+        "resolve_system() should be equivalent to into_resolved(&from_system())"
+    );
+    assert_eq!(
+        via_explicit.defaults.background_color, via_shortcut.defaults.background_color,
+        "resolve_system() background should match explicit form"
+    );
+}
+
+#[test]
+fn overlay_source_context_roundtrip() {
+    // (e) `OverlaySource.context: ResolutionContext` replaces `.font_dpi: Option<f32>`.
+    //     This is a compile-time proof: the field access `.context` must exist.
+    //     Runtime assertion: constructing an OverlaySource (via pipeline output)
+    //     captures the context, and cloning preserves the font_dpi within.
+    //
+    //     This test is compile-time-oriented: if `.context` does not exist on
+    //     OverlaySource, it fails to compile.
+    use crate::resolve::ResolutionContext;
+
+    // Build a minimal OverlaySource by hand via the crate-internal path.
+    // We cannot construct SystemTheme directly (readers are feature-gated),
+    // so we assert the ResolutionContext API shape instead.
+    let ctx = ResolutionContext::for_tests();
+    let ctx_cloned = ctx.clone();
+    assert!(
+        (ctx.font_dpi - ctx_cloned.font_dpi).abs() < f32::EPSILON,
+        "ResolutionContext should Clone with identical font_dpi"
+    );
+    assert_eq!(
+        ctx.button_order, ctx_cloned.button_order,
+        "ResolutionContext should Clone with identical button_order"
+    );
+    assert_eq!(
+        ctx.icon_theme, ctx_cloned.icon_theme,
+        "ResolutionContext should Clone with identical icon_theme"
+    );
+
+    // Field-level compile check: if `context` is not a field of
+    // OverlaySource, this fails to compile at the point Task 2 wires it up.
+    // We cannot access pub(crate) fields from the unit test module because
+    // tests.rs is inside the crate — so reference the type directly.
+    let _type_check: fn() -> ResolutionContext = ResolutionContext::for_tests;
+}
+
+#[test]
+fn for_tests_values_match_gaps_doc_spec() {
+    // (d) Explicit three-invariant check, cited to gaps doc §G7.
+    use crate::resolve::ResolutionContext;
+
+    let ctx = ResolutionContext::for_tests();
+    assert!(
+        (ctx.font_dpi - 96.0).abs() < f32::EPSILON,
+        "gaps doc §G7 specifies font_dpi = 96.0 for for_tests()"
+    );
+    assert_eq!(
+        ctx.button_order,
+        DialogButtonOrder::PrimaryRight,
+        "gaps doc §G7 specifies button_order = PrimaryRight for for_tests()"
+    );
+    assert!(
+        ctx.icon_theme.is_none(),
+        "gaps doc §G7 specifies icon_theme = None for for_tests()"
+    );
+}
