@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
 status: in-progress
-stopped_at: Phase 93 Plan 07 complete (G11 principled deviation — naga/--workspace doc closure)
-last_updated: "2026-04-19T18:28:22Z"
-last_activity: 2026-04-19 — Phase 93 Plan 07 committed (a6e8d4e docs document naga/--workspace principled deviation G11; two-file atomic commit of docs/todo_v0.5.7_gaps.md new G11 section + .planning deferred-items.md cross-reference; no code changes, no Co-Authored-By trailer)
+stopped_at: Phase 93 Plan 06 complete (G3 follow-up — demoted-fn doctest rewrite + dead_code cfg_attr)
+last_updated: "2026-04-19T18:32:18Z"
+last_activity: 2026-04-19 — Phase 93 Plan 06 committed (7611d53 fix close G3 follow-up: two doctest rewrites in bundled.rs switch from now-private native_theme::theme::bundled_icon_{svg,by_name} imports to public IconLoader builder + one #[cfg_attr(not(any(feature="material-icons", feature="lucide-icons")), allow(dead_code))] on bundled_icon_by_name that fires only when both feature-gated callers at icons.rs:598,603 are cfg'd out; single atomic commit with exact plan template message, no Co-Authored-By trailer, one file modified +24/-6). Post-fix: `cargo test --doc` goes 48p/2f → 50p/0f; `cargo clippy -p native-theme --all-targets -- -D warnings` exits 0 (was failing with dead_code error on bundled_icon_by_name). pre-release-check.sh advances from failing at step 15 (clippy native-theme) to failing at step 23 (Validating packages core) — the former failure locus that Plan 93-06 was chartered to unblock IS unblocked; new failure locus is a pre-existing unpublished-derive issue from Plan 93-05 documented as Deferred Issue #2 in 93-06-SUMMARY.md. Previously, Plan 07 committed (a6e8d4e docs naga/--workspace G11 principled deviation).
 progress:
   total_phases: 30
   completed_phases: 29
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 93 — docs-todo-v0-5-7-gaps-md
-Plan: 7/7 complete (93-01, 93-02, 93-03, 93-04, 93-05, 93-06 parallel, 93-07 this plan)
-Status: in-progress (plan 93-07 complete; awaiting plan 93-06 complete + phase re-verification)
-Last activity: 2026-04-19 — Phase 93 Plan 07 complete (G11 principled deviation; docs/todo_v0.5.7_gaps.md gains §G11 section enumerating Options A/B/C/D and justifying Option D — align plan acceptance criterion with `./pre-release-check.sh` per-crate posture; Option A non-viable because naga 27.0.4 does not exist on crates.io; Option B weak because scope narrowing reads as hiding the problem; Option C worse because excluding native-theme-gpui from [workspace] members breaks developer ergonomics; root cause cited as codespan-reporting 0.12.0 removing impl WriteColor for String which naga 27.0.3 relies on; re-evaluation trigger captured for when gpui-component upgrades; .planning deferred-items.md gains APPEND-ONLY cross-reference pointing at G11)
+Plan: 7/7 complete (93-01, 93-02, 93-03, 93-04, 93-05, 93-06, 93-07 all done)
+Status: in-progress (all plans complete; awaiting phase re-verification)
+Last activity: 2026-04-19 — Phase 93 Plan 06 complete (G3 follow-up: three targeted edits to native-theme/src/model/bundled.rs — two doctest rewrites switching from the now-private pub(crate) function imports to the public IconLoader builder pattern established in Plan 93-03, plus one conditional #[cfg_attr(not(any(feature="material-icons", feature="lucide-icons")), allow(dead_code))] attribute on bundled_icon_by_name whose predicate exactly mirrors the cfg union of the function's two feature-gated callers at icons.rs:598,603; option A selected for both fixes over delete/unconditional-allow alternatives because it preserves a runnable doctest example showing the correct public-API replacement and keeps the dead_code suppression self-unmasking if callers get un-gated later; single atomic commit 7611d53 with exact plan template message, zero Co-Authored-By trailer, +24/-6 to one file; post-fix cargo test --doc goes 48p/2f → 50p/0f, cargo clippy -p native-theme --all-targets -- -D warnings exits 0, pre-release-check.sh advances 8 steps past the former failure locus into a separate pre-existing cargo package step which fails for an unpublished-derive reason documented as Plan 93-06 Deferred Issue #2 and traceable to Plan 93-05's ThemeFields derive addition not yet being on crates.io). Plan 07 had committed earlier (a6e8d4e docs naga/--workspace G11 principled deviation — docs-only).
 
-Progress: [██████████] 100% (60/60 plans complete — Phase 93 all 5 P1 plans closed + 93-07 doc closure committed; 93-06 code-change runs in parallel wave 4)
+Progress: [██████████] 100% (60/60 plans complete — Phase 93 all 7 plans closed: 5 P1 plans + 93-06 G3-follow-up code fix + 93-07 G11 principled doc deviation)
 
 ## Accumulated Context
 
@@ -222,6 +222,11 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 93-07]: Root cause lives outside native-theme (naga 27.0.3 references `codespan_reporting::term::emit` with `&mut String` writer; codespan-reporting 0.12.0 at Cargo.lock:1064-1067 dropped `impl WriteColor for String` that the 0.11.x series provided). Fix belongs to gpui-component or naga upstream; native-theme has no path to resolve without forking.
 - [Phase 93-07]: Re-evaluation trigger documented inline in G11 (runnable command chain: `cargo update -p gpui-component && cargo test --workspace --all-features`). When gpui-component ships a release past naga 27.0.3 (or pins codespan-reporting 0.11.x), the --workspace criterion is restorable.
 - [Phase 93-07]: Two-file atomic commit discipline — docs/todo_v0.5.7_gaps.md (previously untracked; first commit to git history) + .planning deferred-items.md cross-reference committed together as `a6e8d4e docs(93-07)`. No Co-Authored-By trailer (user memory rule). Zero source code changes. APPEND-ONLY rule honoured: deferred-items.md git diff shows 0 `^-` true-deletion lines; gaps.md is a new tracked file (vacuously append-only) but all pre-existing local content was preserved verbatim.
+- [Phase 93-06]: Option A (rewrite doctests to `IconLoader`) selected over Option B (delete the doctests) for Gaps 1 and 2. Doctests on pub(crate) functions serve maintainers reading `cargo doc --document-private-items`; showing the public replacement API directly teaches the correct external-caller pattern while remaining a compiling runnable example. Option B would leave the docstrings runnable-example-free.
+- [Phase 93-06]: Option A (conditional `#[cfg_attr(not(any(feature = "material-icons", feature = "lucide-icons")), allow(dead_code))]`) selected over Options B (gate the function itself with the same #[cfg] union as callers) and C (delete + inline at call sites) for Gap 3. Option B rejected because it would ALSO gate out the unconditional `#[cfg(test)]` tests `by_name_non_bundled_sets_return_none` and `by_name_unknown_name_returns_none` at bundled.rs:691-702 which call the function and must remain live in the default test build. Option C rejected because it would lose 7 internal test call sites covering by-name dispatch. The conditional `cfg_attr` keeps the function always-compiled/always-testable while silencing the lint exactly when it is provably dead.
+- [Phase 93-06]: Conditional (not unconditional) `allow(dead_code)` — the cfg_attr predicate `not(any(material-icons, lucide-icons))` is the exact complement of the caller cfg union `any(material-icons, lucide-icons)` at icons.rs:598,603. If either caller gets un-gated in the future, the allow stops firing and real dead-code regressions are unmasked. An unconditional `#[allow(dead_code)]` would silence the lint forever, masking future regressions.
+- [Phase 93-06]: `./pre-release-check.sh` runs clippy WITHOUT `--all-features` (line 283: `cargo clippy -p "$crate" --all-targets -- -D warnings`). This is the release gate. The plan's verify step 4 asks for `--all-features` clippy green as a belt-and-suspenders check; pre-existing failures in spinners.rs, freedesktop.rs, reader_kde.rs are OUT of Plan 93-06's one-file scope per SCOPE BOUNDARY rule and NOT part of the release gate.
+- [Phase 93-06]: Post-edit pre-release-check.sh failure locus moved from step 15 ("Running clippy (native-theme)", line 283 — the step Plan 93-06 was chartered to unblock) to step 23 ("Validating packages (core)", line 321). Step 23 failure is pre-existing at parent commit 51c386b (verified by `git checkout 51c386b -- . && cargo package ...` reproducing the same 54 errors) and is caused by Plan 93-05's `ThemeFields` derive addition not yet being published to crates.io. Fix is `cargo publish -p native-theme-derive v0.5.7` which is a release action requiring EXPLICIT user approval per user memory rule `feedback_never_bypass_checkpoints.md`. Out of scope for any automated plan execution.
 
 ### Roadmap Evolution
 
@@ -241,6 +246,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-19T18:28:22Z
-Stopped at: Completed 93-07-PLAN.md (G11 principled-deviation doc closure; commit a6e8d4e)
+Last session: 2026-04-19T18:32:18Z
+Stopped at: Completed 93-06-PLAN.md (G3 follow-up: doctest rewrite + dead_code cfg_attr; commit 7611d53). Phase 93 now has all 7 plans (93-01..07) closed and is ready for re-verification.
 Resume file: None
