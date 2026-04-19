@@ -25,6 +25,22 @@ pub(crate) struct WidgetFieldInfo {
 }
 inventory::collect!(WidgetFieldInfo);
 
+/// Non-widget (plain struct) field metadata for TOML linting.
+///
+/// Populated by `#[derive(ThemeFields)]` on plain structs like `FontSpec`,
+/// `IconSizes`, `ThemeDefaults`, etc. Consumed by `lint_toml` to detect
+/// unknown keys in sub-tables. See `docs/todo_v0.5.7_gaps.md` §G5 for
+/// rationale — this sister registry to `WidgetFieldInfo` eliminates the
+/// hand-authored `FIELD_NAMES` constants that previously duplicated
+/// struct field lists.
+pub(crate) struct FieldInfo {
+    /// Pascal-case type name (e.g. "FontSpec", "IconSizes", "ThemeDefaults").
+    pub struct_name: &'static str,
+    /// All serialized TOML field names for this struct.
+    pub field_names: &'static [&'static str],
+}
+inventory::collect!(FieldInfo);
+
 use crate::model::ThemeMode;
 use crate::model::resolved::ResolvedTheme;
 

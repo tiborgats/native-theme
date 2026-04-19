@@ -1,7 +1,12 @@
-// native-theme-derive: proc-macro crate for ThemeWidget derive.
+// native-theme-derive: proc-macro crate for ThemeWidget and ThemeFields derives.
 //
-// Generates paired Option/Resolved struct hierarchies, FIELD_NAMES,
+// `ThemeWidget` generates paired Option/Resolved struct hierarchies, FIELD_NAMES,
 // merge/is_empty, validate_widget, and check_ranges from field attributes.
+//
+// `ThemeFields` (Phase 93-05 G5) generates a single `inventory::submit!` call
+// that registers a plain struct's serialized field names in the
+// `crate::resolve::FieldInfo` registry for TOML linting. Replaces the
+// hand-authored `FIELD_NAMES` constants on non-widget model types.
 
 use proc_macro::TokenStream;
 use syn::{DeriveInput, parse_macro_input};
@@ -120,4 +125,100 @@ fn to_snake_case(s: &str) -> String {
         result.push(ch.to_ascii_lowercase());
     }
     result
+}
+
+/// Derive macro that registers a plain struct's serialized field names in the
+/// `crate::resolve::FieldInfo` inventory for TOML linting (Phase 93-05 G5).
+///
+/// By default the macro introspects the struct's fields and honours any
+/// `#[serde(rename = "...")]` attributes (so `corner_radius` annotated with
+/// `#[serde(rename = "corner_radius_px")]` is registered under the wire name).
+///
+/// # Struct-level attributes
+///
+/// - `#[theme_layer(fields = "a, b_px, c")]` -- explicit field-name list.
+///   Use this for serde-proxy structs (like `FontSpec`, which serializes
+///   through a private `FontSpecRaw` proxy) where the user-facing struct's
+///   field names do not match the wire format.
+///
+/// # Example
+///
+/// ```ignore
+/// use native_theme_derive::ThemeFields;
+///
+/// // Introspection path: serde renames picked up automatically.
+/// #[derive(ThemeFields, serde::Serialize, serde::Deserialize)]
+/// pub struct Simple {
+///     pub a: i32,
+///     #[serde(rename = "bar")]
+///     pub b: i32,
+/// }
+/// // Registers { struct_name: "Simple", field_names: &["a", "bar"] }.
+///
+/// // Explicit-override path: used when serde proxy field names differ.
+/// #[derive(ThemeFields, serde::Serialize, serde::Deserialize)]
+/// #[serde(try_from = "HasProxyRaw", into = "HasProxyRaw")]
+/// #[theme_layer(fields = "x, y_px, z")]
+/// pub struct HasProxy { /* ... */ }
+/// ```
+///
+/// This derive emits ONLY an `inventory::submit!` call; it does not emit a
+/// `FIELD_NAMES` associated constant. To also get widget-style codegen
+/// (Resolved pair + merge + validate + `FIELD_NAMES`), combine with
+/// `#[derive(ThemeWidget)]`.
+#[proc_macro_derive(ThemeFields, attributes(theme_layer))]
+pub fn derive_theme_fields(input: TokenStream) -> TokenStream {
+    let input = parse_macro_input!(input as DeriveInput);
+
+    match derive_fields_inner(input) {
+        Ok(tokens) => tokens.into(),
+        Err(err) => err.to_compile_error().into(),
+    }
+}
+
+fn derive_fields_inner(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
+    let struct_name = &input.ident;
+    let layer = parse::parse_layer_attrs(&input.attrs)?;
+
+    let field_names: Vec<String> = if let Some(ref explicit) = layer.explicit_fields {
+        explicit.clone()
+    } else {
+        let data = match &input.data {
+            syn::Data::Struct(s) => s,
+            _ => {
+                return Err(syn::Error::new_spanned(
+                    &input.ident,
+                    "ThemeFields can only be derived on structs",
+                ));
+            }
+        };
+        parse::parse_fields(&data.fields)?
+            .iter()
+            .map(|f| {
+                f.serde_rename
+                    .clone()
+                    .unwrap_or_else(|| f.ident.to_string())
+            })
+            .collect()
+    };
+
+    let struct_name_str = struct_name.to_string();
+    let entries: Vec<proc_macro2::TokenStream> =
+        field_names.iter().map(|n| quote::quote! { #n, }).collect();
+
+    // Emit inside an anonymous const to avoid polluting the user's namespace.
+    // The inventory registry path `crate::resolve::FieldInfo` works because
+    // this derive is only ever consumed inside the `native_theme` crate --
+    // mirrors the existing widget derive at line 106 above which also
+    // references `crate::resolve::WidgetFieldInfo`.
+    Ok(quote::quote! {
+        const _: () = {
+            inventory::submit! {
+                crate::resolve::FieldInfo {
+                    struct_name: #struct_name_str,
+                    field_names: &[#(#entries)*],
+                }
+            }
+        };
+    })
 }

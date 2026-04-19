@@ -60,6 +60,14 @@ pub(crate) struct LayerMeta {
     pub resolved_name: Option<Ident>,
     /// Skip inventory::submit! generation (for non-per-variant widgets like LayoutTheme).
     pub skip_inventory: bool,
+    /// Explicit field-name override from `#[theme_layer(fields = "a, b_px, c")]`.
+    ///
+    /// When present, the `ThemeFields` derive uses this list verbatim instead
+    /// of introspecting struct fields. Used for serde-proxy structs like
+    /// `FontSpec` (which serializes through `FontSpecRaw` and therefore emits
+    /// `size_pt`/`size_px` rather than `size`) where the user-facing struct's
+    /// field names do not match the wire format.
+    pub explicit_fields: Option<Vec<String>>,
 }
 
 /// Parse `#[theme_layer(...)]` attributes from the struct.
@@ -67,6 +75,7 @@ pub(crate) fn parse_layer_attrs(attrs: &[Attribute]) -> Result<LayerMeta> {
     let mut border_kind = BorderKind::Full;
     let mut resolved_name = None;
     let mut skip_inventory = false;
+    let mut explicit_fields: Option<Vec<String>> = None;
 
     for attr in attrs {
         if !attr.path().is_ident("theme_layer") {
@@ -96,6 +105,22 @@ pub(crate) fn parse_layer_attrs(attrs: &[Attribute]) -> Result<LayerMeta> {
             } else if meta.path.is_ident("skip_inventory") {
                 skip_inventory = true;
                 Ok(())
+            } else if meta.path.is_ident("fields") {
+                let value = meta.value()?;
+                let lit: LitStr = value.parse()?;
+                let parsed: Vec<String> = lit
+                    .value()
+                    .split(',')
+                    .map(|s| s.trim().to_string())
+                    .collect();
+                if parsed.is_empty() || parsed.iter().any(String::is_empty) {
+                    return Err(Error::new(
+                        lit.span(),
+                        "fields list must be comma-separated non-empty names",
+                    ));
+                }
+                explicit_fields = Some(parsed);
+                Ok(())
             } else {
                 Err(meta.error("unknown theme_layer attribute"))
             }
@@ -106,6 +131,7 @@ pub(crate) fn parse_layer_attrs(attrs: &[Attribute]) -> Result<LayerMeta> {
         border_kind,
         resolved_name,
         skip_inventory,
+        explicit_fields,
     })
 }
 
@@ -380,6 +406,90 @@ mod tests {
         assert!(
             err_msg.contains("border_optional is no longer needed"),
             "error message should guide to border_kind, got: {err_msg}"
+        );
+    }
+
+    // === explicit_fields parsing (Phase 93-05 G5) ===
+
+    /// Helper to parse struct-level `#[theme_layer(...)]` attributes from a token stream.
+    fn parse_layer_from_tokens(tokens: proc_macro2::TokenStream) -> Result<LayerMeta> {
+        let wrapper = quote::quote! {
+            #tokens
+            struct Wrapper { x: i32 }
+        };
+        let item: syn::ItemStruct = syn::parse2(wrapper)?;
+        parse_layer_attrs(&item.attrs)
+    }
+
+    #[test]
+    fn explicit_fields_absent_means_none() {
+        let tokens = quote::quote! {};
+        let layer = parse_layer_from_tokens(tokens).expect("should parse");
+        assert!(layer.explicit_fields.is_none());
+    }
+
+    #[test]
+    fn explicit_fields_parsed_as_trimmed_list() {
+        let tokens = quote::quote! {
+            #[theme_layer(fields = "family, size_pt, size_px, weight, style, color")]
+        };
+        let layer = parse_layer_from_tokens(tokens).expect("should parse");
+        assert_eq!(
+            layer.explicit_fields.as_deref(),
+            Some(
+                [
+                    "family".to_string(),
+                    "size_pt".to_string(),
+                    "size_px".to_string(),
+                    "weight".to_string(),
+                    "style".to_string(),
+                    "color".to_string()
+                ]
+                .as_slice()
+            )
+        );
+    }
+
+    #[test]
+    fn explicit_fields_single_name_ok() {
+        let tokens = quote::quote! {
+            #[theme_layer(fields = "only")]
+        };
+        let layer = parse_layer_from_tokens(tokens).expect("should parse");
+        assert_eq!(
+            layer.explicit_fields.as_deref(),
+            Some(["only".to_string()].as_slice())
+        );
+    }
+
+    #[test]
+    fn explicit_fields_empty_string_rejected() {
+        let tokens = quote::quote! {
+            #[theme_layer(fields = "")]
+        };
+        let result = parse_layer_from_tokens(tokens);
+        assert!(result.is_err(), "empty fields string must error");
+    }
+
+    #[test]
+    fn explicit_fields_trailing_comma_rejected() {
+        let tokens = quote::quote! {
+            #[theme_layer(fields = "a, b,")]
+        };
+        let result = parse_layer_from_tokens(tokens);
+        assert!(result.is_err(), "trailing comma produces empty entry");
+    }
+
+    #[test]
+    fn explicit_fields_coexists_with_skip_inventory() {
+        let tokens = quote::quote! {
+            #[theme_layer(skip_inventory, fields = "a, b")]
+        };
+        let layer = parse_layer_from_tokens(tokens).expect("should parse");
+        assert!(layer.skip_inventory);
+        assert_eq!(
+            layer.explicit_fields.as_deref(),
+            Some(["a".to_string(), "b".to_string()].as_slice())
         );
     }
 }
