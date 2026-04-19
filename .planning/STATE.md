@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
 status: in-progress
-stopped_at: Phase 93 Plan 05 complete (ThemeFields derive + FieldInfo inventory unified lint_toml)
-last_updated: "2026-04-19T15:03:40Z"
-last_activity: 2026-04-19 — Phase 93 Plan 05 committed (4431782 feat ThemeFields derive + FieldInfo registry, 7ab1c58 RED baseline tests, 922ee29 refactor apply derive + delete 7 FIELD_NAMES + rewrite lint_toml)
+stopped_at: Phase 93 Plan 07 complete (G11 principled deviation — naga/--workspace doc closure)
+last_updated: "2026-04-19T18:28:22Z"
+last_activity: 2026-04-19 — Phase 93 Plan 07 committed (a6e8d4e docs document naga/--workspace principled deviation G11; two-file atomic commit of docs/todo_v0.5.7_gaps.md new G11 section + .planning deferred-items.md cross-reference; no code changes, no Co-Authored-By trailer)
 progress:
   total_phases: 30
   completed_phases: 29
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 93 — docs-todo-v0-5-7-gaps-md
-Plan: 5/5 complete (93-01, 93-02, 93-03, 93-04, 93-05 all done)
-Status: in-progress (all plans complete; awaiting phase verifier)
-Last activity: 2026-04-19 — Phase 93 Plan 05 complete (G5: `ThemeFields` proc-macro derive added to `native-theme-derive`; sister `FieldInfo` inventory-collected struct added to `native-theme::resolve`; 7 hand-authored `FIELD_NAMES` constants deleted across font.rs/border.rs/defaults.rs/icon_sizes.rs; 8 structs derive `ThemeFields` (FontSpec, TextScaleEntry, TextScale, DefaultsBorderSpec, WidgetBorderSpec, ThemeDefaults, IconSizes, LayoutTheme); FontSpec + TextScaleEntry use `#[theme_layer(fields = "...")]` explicit override for their serde-proxy wire formats; `lint_toml` unified over both WidgetFieldInfo and FieldInfo inventories; Rule-2 fix in native-theme-derive::parse_one_field tolerates unknown serde sub-attributes)
+Plan: 7/7 complete (93-01, 93-02, 93-03, 93-04, 93-05, 93-06 parallel, 93-07 this plan)
+Status: in-progress (plan 93-07 complete; awaiting plan 93-06 complete + phase re-verification)
+Last activity: 2026-04-19 — Phase 93 Plan 07 complete (G11 principled deviation; docs/todo_v0.5.7_gaps.md gains §G11 section enumerating Options A/B/C/D and justifying Option D — align plan acceptance criterion with `./pre-release-check.sh` per-crate posture; Option A non-viable because naga 27.0.4 does not exist on crates.io; Option B weak because scope narrowing reads as hiding the problem; Option C worse because excluding native-theme-gpui from [workspace] members breaks developer ergonomics; root cause cited as codespan-reporting 0.12.0 removing impl WriteColor for String which naga 27.0.3 relies on; re-evaluation trigger captured for when gpui-component upgrades; .planning deferred-items.md gains APPEND-ONLY cross-reference pointing at G11)
 
-Progress: [██████████] 100% (60/60 plans complete — Phase 93 all 5 plans closed)
+Progress: [██████████] 100% (60/60 plans complete — Phase 93 all 5 P1 plans closed + 93-07 doc closure committed; 93-06 code-change runs in parallel wave 4)
 
 ## Accumulated Context
 
@@ -217,6 +217,11 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 93-05]: lint_toml rewritten to build both `widget_registry: HashMap<&str, &[&str]>` (from `inventory::iter::<WidgetFieldInfo>()`) and `struct_registry: HashMap<&str, &[&str]>` (from `inventory::iter::<FieldInfo>()`) at function entry, then consume both via closure captures. Former free functions lint_text_scale/lint_defaults/lint_variant converted to closures. Missing struct entry -> silent skip (matches pre-existing `continue;` behaviour; no new Error variant).
 - [Phase 93-05]: Rule 2 auto-fix in native-theme-derive::parse_one_field -- `parse_nested_meta` on `#[serde(...)]` attributes previously only recognised `rename` and ignored other sub-attributes without consuming their values. On structs with non-Option fields carrying `#[serde(default, skip_serializing_if = "...")]` (e.g. `ThemeDefaults.font`, `ThemeDefaults.border`), this produced a misleading `expected ','` error that appeared to originate in `serde_with::skip_serializing_none`. parse_one_field now optionally consumes the value expression of unknown serde sub-attrs.
 - [Phase 93-05]: Gap-doc correction -- the §G5 target list named `ResolvedFontSpec` but that struct has no FIELD_NAMES constant today and is not consumed by lint_toml (output type, connector-facing). Not migrated. Final migration set is 7 structs + LayoutTheme (8 total).
+- [Phase 93-07]: Option D (principled deviation) selected over Options A/B/C for closing G-3b (cargo test --workspace fails due to upstream naga 27.0.3 / codespan-reporting 0.12.0 incompatibility via gpui-component v0.5.1). Option A impossible (naga 27.0.4 does not exist on crates.io, verified via `cargo info naga@27.0.4` returning "could not find"; next release is 28.x which gpui-component's 27.x pin rejects via semver). Option B weak (scope narrowing reads as hiding the problem). Option C worse (excluding native-theme-gpui from [workspace] members breaks developer ergonomics and propagates upstream defect into project layout).
+- [Phase 93-07]: Phase 93 acceptance-criterion realignment — must_have truth #5 (`cargo test --workspace --all-features` passes) is replaced by per-crate equivalent tied to `./pre-release-check.sh` lines 267-294 (cargo test -p native-theme + per-crate for each workspace member, with native-theme-gpui treated as soft per run_check_soft at pre-release-check.sh:290). This matches the release gate the script has enforced since Phase 14-03 (2026-03-09).
+- [Phase 93-07]: Root cause lives outside native-theme (naga 27.0.3 references `codespan_reporting::term::emit` with `&mut String` writer; codespan-reporting 0.12.0 at Cargo.lock:1064-1067 dropped `impl WriteColor for String` that the 0.11.x series provided). Fix belongs to gpui-component or naga upstream; native-theme has no path to resolve without forking.
+- [Phase 93-07]: Re-evaluation trigger documented inline in G11 (runnable command chain: `cargo update -p gpui-component && cargo test --workspace --all-features`). When gpui-component ships a release past naga 27.0.3 (or pins codespan-reporting 0.11.x), the --workspace criterion is restorable.
+- [Phase 93-07]: Two-file atomic commit discipline — docs/todo_v0.5.7_gaps.md (previously untracked; first commit to git history) + .planning deferred-items.md cross-reference committed together as `a6e8d4e docs(93-07)`. No Co-Authored-By trailer (user memory rule). Zero source code changes. APPEND-ONLY rule honoured: deferred-items.md git diff shows 0 `^-` true-deletion lines; gaps.md is a new tracked file (vacuously append-only) but all pre-existing local content was preserved verbatim.
 
 ### Roadmap Evolution
 
@@ -236,6 +241,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-19T15:03:40Z
-Stopped at: Completed 93-05-PLAN.md (G5 closed; Phase 93 all 5 plans complete)
+Last session: 2026-04-19T18:28:22Z
+Stopped at: Completed 93-07-PLAN.md (G11 principled-deviation doc closure; commit a6e8d4e)
 Resume file: None

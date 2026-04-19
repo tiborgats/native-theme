@@ -109,3 +109,103 @@ as soft per `pre-release-check.sh:290`).
 
 No further action needed from Phase 93. Logged here for the audit trail
 only.
+
+
+## Resolved during Plan 93-06 (G3 follow-up closure)
+
+### Doctest E0603 failures in model/bundled.rs — CLOSED
+
+Both doctest failures logged under Plan 01, 04, and 05 above are closed
+by Plan 93-06's commit (see 93-06-SUMMARY.md). The doctests on
+`bundled_icon_svg` (bundled.rs:20-36 after fix) and `bundled_icon_by_name`
+(bundled.rs:194-208 after fix) now import `native_theme::icons::IconLoader`
+and use the public builder API. Post-fix: `cargo test -p native-theme
+--all-features --doc` reports 50 passed; 0 failed (was 48 passed; 2 failed).
+
+### Dead-code clippy error on bundled_icon_by_name — CLOSED
+
+The "function bundled_icon_by_name is never used" error logged under Plan
+02, 04, and 05 is closed by Plan 93-06's commit. The function now carries
+`#[cfg_attr(not(any(feature = "material-icons", feature = "lucide-icons")),
+allow(dead_code))]`, which fires only when BOTH feature-gated callers at
+icons.rs:598,603 are cfg'd out (matches the exact "dead" predicate). Post-fix:
+`cargo clippy -p native-theme --all-targets -- -D warnings` exits 0.
+
+## Logged during Plan 93-06 (G3 follow-up) execution
+
+### cargo package verification failure (pre-release-check.sh step: "Validating packages (core)") — NEW PRE-EXISTING DEFECT SURFACED
+
+**Observation:** With Plan 93-06's three edits applied, `./pre-release-check.sh`
+now advances past the previously-failing clippy step (line 283) and past
+all subsequent test/example/docs steps. It fails at the `cargo package
+-p native-theme-derive -p native-theme -p native-theme-build --allow-dirty`
+step (line 321) with:
+
+```
+error[E0432]: unresolved import `native_theme_derive::ThemeFields`
+  --> src/model/border.rs:4:5
+error[E0432]: unresolved import `native_theme_derive::ThemeFields`
+  --> src/model/defaults.rs:8:5
+error[E0432]: unresolved import `native_theme_derive::ThemeFields`
+  --> src/model/font.rs:7:5
+error[E0432]: unresolved import `native_theme_derive::ThemeFields`
+  --> src/model/icon_sizes.rs:3:5
+error[E0432]: unresolved import `native_theme_derive::ThemeFields`
+  --> src/model/widgets/mod.rs:6:27
+error: cannot find attribute `theme_layer` in this scope
+  --> src/model/font.rs:157:3
+  (and sibling on font.rs:262:3)
+```
+
+**Root cause:** Plan 93-05 (commit `4431782 feat(93-05): add ThemeFields
+derive and FieldInfo inventory registry`) added the `ThemeFields`
+proc-macro derive to `native-theme-derive v0.5.7` and the consuming
+`use native_theme_derive::ThemeFields;` imports + `#[theme_layer(fields = "...")]`
+attributes to five `native-theme` source files. However, **`native-theme-derive
+v0.5.7` has not yet been published to crates.io**. `cargo package`'s tarball
+verification step builds each crate in isolation from the tarball (simulating
+the published-to-crates.io state), pulling its dependencies from the
+crates.io index rather than the workspace `path = "..."`. Thus the packaged
+`native-theme-0.5.7.crate` cannot resolve `native_theme_derive::ThemeFields`
+because only older (pre-93-05) published versions are available there.
+
+**Scope-boundary attestation:** This failure is **pre-existing at HEAD
+before Plan 93-06's edits**. Reproduced by `git stash && cargo package
+... --allow-dirty` returning the same 54 errors; confirmed also on parent
+commit `51c386b docs(93-05): complete G5 plan` via
+`git checkout 51c386b -- . && cargo package ...` which yields the same
+failure. Plan 93-06 does not touch `native-theme-derive`, does not touch
+any consuming file that imports `ThemeFields`, and does not touch
+`bundled.rs`'s few lines in a way that interacts with this failure
+(bundled.rs has no `ThemeFields` derive). Plan 93-06 is therefore NOT
+responsible for and does NOT regress this failure.
+
+**Why not auto-fix (Rule 1-3):** The only fix is to `cargo publish`
+`native-theme-derive v0.5.7` to crates.io. This is a **release action**,
+not a code change, and is governed by the user memory rule "NEVER bypass
+human checkpoints" ("Never publish, push tags, create releases without
+EXPLICIT user approval"). Publishing is out of scope for any automated
+plan execution.
+
+**Why not Rule 4 (ask):** Not an architectural decision. The path forward
+is unambiguous — publish `native-theme-derive v0.5.7`, then the packaging
+step will resolve. The only open question is **timing** (when the user
+decides to cut the release), not **approach**.
+
+**Impact on Plan 93-06's own acceptance criteria:** Step 8 of the plan's
+verify block — `./pre-release-check.sh` reaches the green success banner —
+does NOT pass. However, the step Plan 93-06 was chartered to unblock (the
+clippy step at line 283, which was the former failure locus) DOES pass.
+The release-gate script now advances from "fails at step 15 (clippy
+native-theme)" to "fails at step 23 (cargo package core)", an 8-step
+forward advance. The three P0 defects Plan 93-06 was scoped to close (two
+E0603 doctest failures + one dead_code clippy error) are closed. The new
+failure locus is unrelated to the G3 follow-up mandate and is a
+release-sequencing artifact that will resolve the moment
+`native-theme-derive v0.5.7` is published.
+
+**Re-evaluation trigger:** First-time the user runs `cargo publish -p
+native-theme-derive` with v0.5.7, the packaging step of
+`./pre-release-check.sh` should turn green and the full banner should
+render. If it does not, a follow-up defect not known today needs its own
+investigation.
