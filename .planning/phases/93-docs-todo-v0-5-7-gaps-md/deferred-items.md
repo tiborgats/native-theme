@@ -81,3 +81,31 @@ is green. 791 lib tests + 79 integration tests all pass.
 `model::bundled::bundled_icon_svg` and
 `model::bundled::bundled_icon_by_name` continue from Plan 01/04. Out of
 scope for Plan 05's G5 deliverable.
+
+
+## Resolved during Plan 93-07 (gap closure)
+
+### naga v27.0.3 workspace build error — CLOSED as principled deviation
+
+The "naga v27.0.3 workspace build error" note above (originally logged
+during Plan 01 execution) is now documented as a **principled deviation**
+rather than a deferral. See `docs/todo_v0.5.7_gaps.md` G11 section for:
+
+- The exact error signature and root cause (`codespan-reporting 0.12.0`
+  removed `impl WriteColor for String` that `naga 27.0.3` relied on).
+- Why Option A (`cargo update -p naga --precise 27.0.4`) is not viable
+  (`naga 27.0.4` does not exist on crates.io as of 2026-04-19).
+- Why Option D (align plan acceptance criterion with `pre-release-check.sh`'s
+  per-crate posture) was selected over Options B (narrow scope) and C
+  (exclude connector from workspace).
+- The re-evaluation trigger — when gpui-component ships a release past
+  naga 27.0.3 or pins codespan-reporting 0.11.x, the `--workspace`
+  acceptance criterion can be restored.
+
+The plan's must_have truth around workspace-scope tests is updated to
+match the pre-release script's per-crate posture (`cargo test -p native-theme`
++ per-crate for each workspace member, with `native-theme-gpui` treated
+as soft per `pre-release-check.sh:290`).
+
+No further action needed from Phase 93. Logged here for the audit trail
+only.
