@@ -78,6 +78,44 @@ returns `ErrorKind` for coarse dispatch.
 - Feature flags `portal-tokio` and `portal-async-io` replaced by single `portal` feature (async-io only)
 - `from_system()` and `from_system_async()` unified; `from_system()` uses `pollster` for sync-over-async on Linux
 
+#### Icon loading API — typed per-set loaders (Phase 93-09)
+
+The `IconLoader` builder introduced earlier in this release is itself replaced
+by five typed per-set loader structs. Phase 93-03 exposed a silent-ignore bug
+where `IconLoader::new(name).set(Freedesktop).theme("Adwaita").load()` silently
+dropped `.theme()` for string-name lookups; this migration makes that class of
+bug impossible by construction — calling a set-specific method on the wrong
+loader is now a compile error, not a silent no-op.
+
+```rust,ignore
+// Before (IconLoader)
+let icon = IconLoader::new(IconRole::ActionCopy).set(IconSet::Material).load();
+let fd   = IconLoader::new("edit-copy").set(IconSet::Freedesktop).theme("Adwaita").size(24).color([0,0,0]).load();
+let anim = IconLoader::new(IconRole::StatusBusy).set(IconSet::Material).load_indicator();
+
+// After (typed per-set loaders)
+let icon = MaterialLoader::new(IconRole::ActionCopy).load();
+let fd   = FreedesktopLoader::new("edit-copy").theme("Adwaita").size(24).color([0,0,0]).load();
+let anim = MaterialLoader::load_indicator();
+```
+
+| Old | New |
+|-----|-----|
+| `IconLoader::new(id).set(IconSet::Freedesktop).theme("X").size(24).color(c).load()` | `FreedesktopLoader::new(id).theme("X").size(24).color(c).load()` |
+| `IconLoader::new(id).set(IconSet::Material).load()` | `MaterialLoader::new(id).load()` |
+| `IconLoader::new(id).set(IconSet::Lucide).load()` | `LucideLoader::new(id).load()` |
+| `IconLoader::new(id).set(IconSet::SfSymbols).load()` | `SfSymbolsLoader::new(id).load()` |
+| `IconLoader::new(id).set(IconSet::SegoeIcons).load()` | `SegoeIconsLoader::new(id).load()` |
+| `IconLoader::new(id).set(set).load()` (runtime set) | `load_icon(id, set)` (free fn) |
+| `IconLoader::new(id).set(set).load_indicator()` (runtime set) | `load_icon_indicator(set)` (free fn) |
+
+`FreedesktopLoader::load_indicator(theme: Option<&str>)`, `MaterialLoader::load_indicator()`, and `LucideLoader::load_indicator()` are associated functions (no `self`). `SfSymbolsLoader` and `SegoeIconsLoader` do not have `load_indicator` — those sets have no animated spinner, and calling it is a compile error rather than a silent `None`.
+
+As a secondary fix, `freedesktop::load_freedesktop_spinner` now accepts
+`theme: Option<&str>` to honor theme overrides for animated spinners,
+closing a latent silent-drop that existed since the original freedesktop
+spinner support.
+
 ### Added
 
 #### native-theme-derive (new crate)

@@ -80,19 +80,20 @@ This works with any type implementing `IconProvider`.
 
 ## Animated Icons
 
-The connector provides helpers for displaying animated icons from
-[`IconLoader::load_indicator()`](https://docs.rs/native-theme/latest/native_theme/icons/struct.IconLoader.html):
+The connector provides helpers for displaying animated icons from a
+typed per-set loader's `load_indicator()` associated function (e.g.
+[`MaterialLoader::load_indicator()`](https://docs.rs/native-theme/latest/native_theme/icons/struct.MaterialLoader.html)):
 
 - `animated_frames_to_image_sources()` -- converts `AnimatedIcon::Frames` to an `Option<AnimatedImageSources>` for frame-based playback
 - `with_spin_animation()` -- wraps an `Svg` element with continuous rotation for `AnimatedIcon::Transform` playback
 
 ```rust,ignore
-use native_theme::theme::{AnimatedIcon, IconRole, IconSet};
-use native_theme::icons::IconLoader;
+use native_theme::theme::AnimatedIcon;
+use native_theme::icons::MaterialLoader;
 use native_theme::detect::prefers_reduced_motion;
 use native_theme_gpui::icons::{animated_frames_to_image_sources, with_spin_animation, to_image_source};
 
-if let Some(anim) = IconLoader::new(IconRole::StatusBusy).set(IconSet::Material).load_indicator() {
+if let Some(anim) = MaterialLoader::load_indicator() {
     if prefers_reduced_motion() {
         // Static fallback for accessibility
         let static_icon = to_image_source(anim.first_frame(), None, None);
