@@ -1188,4 +1188,166 @@ mod pipeline_tests {
             "Dual: dark variant should have reader's dark accent"
         );
     }
+
+    // --- Phase 93-04 G4: Theme.icon_theme + three-tier precedence ---
+    //
+    // Per docs/todo_v0.5.7_gaps.md §G4 and doc 1 §20 Option C:
+    //   Tier 1 (highest): ThemeMode::defaults.icon_theme (per-variant override)
+    //   Tier 2:           Theme::icon_theme (shared across variants)
+    //   Tier 3 (fallback): system_icon_theme() (runtime detect)
+
+    /// Helper: construct a ReaderResult that carries only the active variant
+    /// (light) with no per-variant icon_theme. The pipeline must then consult
+    /// the preset's Theme-level icon_theme (tier 2) or system detect (tier 3).
+    fn reader_with_empty_variant(is_dark: bool) -> ReaderResult {
+        ReaderResult {
+            output: ReaderOutput::Single {
+                mode: Box::new(ThemeMode::default()),
+                is_dark,
+            },
+            name: std::borrow::Cow::Borrowed(""),
+            icon_set: None,
+            layout: LayoutTheme::default(),
+            font_dpi: None,
+            accessibility: crate::AccessibilityPreferences::default(),
+        }
+    }
+
+    #[test]
+    fn icon_theme_tier2_theme_level_used_when_per_variant_none() {
+        // Adwaita preset (after G4 migration) carries icon_theme = "Adwaita"
+        // at the Theme level, and None on both variant defaults.
+        // With a reader that provides an empty variant (no per-variant override),
+        // the resolver must fall through to tier 2 and produce "Adwaita".
+        let reader = reader_with_empty_variant(false);
+        let st = run_pipeline(reader, "adwaita", crate::ColorMode::Light).unwrap();
+        assert_eq!(
+            st.icon_theme.as_ref(),
+            "Adwaita",
+            "tier 2: Theme.icon_theme should be used when per-variant is None"
+        );
+    }
+
+    #[test]
+    fn icon_theme_tier1_per_variant_wins_over_theme_level() {
+        // Construct a reader whose active variant explicitly sets a per-variant
+        // icon_theme override. Even with a preset that carries a Theme-level
+        // icon_theme, the per-variant override must win.
+        let mut variant = ThemeMode::default();
+        variant.defaults.icon_theme = Some(std::borrow::Cow::Borrowed("custom-override"));
+        let reader = ReaderResult {
+            output: ReaderOutput::Single {
+                mode: Box::new(variant),
+                is_dark: false,
+            },
+            name: std::borrow::Cow::Borrowed(""),
+            icon_set: None,
+            layout: LayoutTheme::default(),
+            font_dpi: None,
+            accessibility: crate::AccessibilityPreferences::default(),
+        };
+        // Adwaita preset has Theme.icon_theme = "Adwaita" after migration.
+        let st = run_pipeline(reader, "adwaita", crate::ColorMode::Light).unwrap();
+        assert_eq!(
+            st.icon_theme.as_ref(),
+            "custom-override",
+            "tier 1: per-variant icon_theme override must win over Theme-level"
+        );
+    }
+
+    #[test]
+    fn icon_theme_kde_per_variant_values_still_win() {
+        // Regression guard for Phase 80-fix: KDE Breeze uses per-variant icon_theme
+        // values ("breeze" light / "breeze-dark" dark) that MUST continue to win
+        // over any Theme-level value. The kde-breeze preset keeps per-variant-only.
+        let kde_full = Theme::preset("kde-breeze").unwrap();
+        // Simulate KDE reader providing the dark variant with its per-variant value.
+        let dark_v = kde_full.dark.clone().unwrap();
+        assert_eq!(
+            dark_v.defaults.icon_theme.as_deref(),
+            Some("breeze-dark"),
+            "precondition: kde-breeze dark variant must carry breeze-dark"
+        );
+        let reader = ReaderResult {
+            output: ReaderOutput::Single {
+                mode: Box::new(dark_v),
+                is_dark: true,
+            },
+            name: std::borrow::Cow::Borrowed(""),
+            icon_set: None,
+            layout: LayoutTheme::default(),
+            font_dpi: None,
+            accessibility: crate::AccessibilityPreferences::default(),
+        };
+        let st = run_pipeline(reader, "kde-breeze-live", crate::ColorMode::Dark).unwrap();
+        assert_eq!(
+            st.icon_theme.as_ref(),
+            "breeze-dark",
+            "KDE per-variant icon_theme must still win (Phase 80-fix invariant)"
+        );
+    }
+
+    #[test]
+    fn theme_icon_theme_round_trips_when_some() {
+        // Serialize a Theme with icon_theme: Some(...) and assert the
+        // deserialized round-trip preserves the value.
+        let theme = Theme {
+            name: std::borrow::Cow::Borrowed("RoundTrip"),
+            light: Some(ThemeMode::default()),
+            dark: None,
+            layout: LayoutTheme::default(),
+            icon_set: None,
+            icon_theme: Some(std::borrow::Cow::Borrowed("lucide")),
+        };
+        let toml_str = theme.to_toml().expect("serialize");
+        let reparsed = Theme::from_toml(&toml_str).expect("deserialize");
+        assert_eq!(
+            reparsed.icon_theme.as_deref(),
+            Some("lucide"),
+            "Theme.icon_theme must round-trip through TOML"
+        );
+        // Verify the serialized form contains the key at the top level.
+        assert!(
+            toml_str.contains("icon_theme = \"lucide\""),
+            "serialized TOML should contain top-level icon_theme, got:\n{toml_str}"
+        );
+    }
+
+    #[test]
+    fn theme_icon_theme_skipped_when_none() {
+        // Serialize a Theme with icon_theme: None and assert the TOML does NOT
+        // emit the key (skip_serializing_if = Option::is_none).
+        let theme = Theme {
+            name: std::borrow::Cow::Borrowed("NoIcon"),
+            light: Some(ThemeMode::default()),
+            dark: None,
+            layout: LayoutTheme::default(),
+            icon_set: None,
+            icon_theme: None,
+        };
+        let toml_str = theme.to_toml().expect("serialize");
+        assert!(
+            !toml_str.contains("icon_theme"),
+            "serialized TOML should NOT contain icon_theme when None, got:\n{toml_str}"
+        );
+    }
+
+    #[test]
+    fn lint_toml_accepts_top_level_icon_theme() {
+        // lint_toml() must NOT warn about icon_theme at the top level.
+        let toml_str = r#"
+name = "Test"
+icon_theme = "lucide"
+
+[light.defaults]
+accent_color = "#0066cc"
+"#;
+        let warnings = Theme::lint_toml(toml_str).expect("lint");
+        assert!(
+            !warnings
+                .iter()
+                .any(|w| w.contains("icon_theme")),
+            "lint_toml must not flag top-level icon_theme as unknown; warnings: {warnings:?}"
+        );
+    }
 }
