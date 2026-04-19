@@ -108,7 +108,12 @@ impl_merge!(WidgetBorderSpec {
 ///
 /// Unlike [`DefaultsBorderSpec`] and [`WidgetBorderSpec`], all fields are
 /// required (non-optional) because resolution has already filled in all defaults.
-#[derive(Clone, Debug, Default, PartialEq, Serialize, Deserialize)]
+///
+/// Phase 93-01 (G1): no `Default` derive. `ResolvedBorderSpec` must be
+/// constructed from a fully populated unresolved source; any "zero"
+/// instance is a placeholder sentinel built manually (see
+/// `resolve::validate_helpers::resolved_border_spec_sentinel`).
+#[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 pub struct ResolvedBorderSpec {
     /// Border color.
     pub color: Rgba,
@@ -267,11 +272,29 @@ mod tests {
         assert_eq!(base.corner_radius, Some(4.0));
     }
 
-    // === ResolvedBorderSpec tests (unchanged) ===
+    // === ResolvedBorderSpec tests ===
+
+    // Phase 93-01 (G1): the former `resolved_border_spec_default` test was
+    // removed because `ResolvedBorderSpec` no longer derives `Default`.
+    // The sentinel zero value is constructed in
+    // `resolve::validate_helpers::resolved_border_spec_sentinel` and is
+    // exercised by the G1 regression tests in `resolve::tests`.
 
     #[test]
-    fn resolved_border_spec_default() {
-        let rbs = ResolvedBorderSpec::default();
+    fn resolved_border_spec_struct_literal_compiles() {
+        // Field-name compile guard: any rename/remove breaks this struct
+        // literal. Values reproduce the pre-G1 `::default()` output for
+        // documentation only.
+        let rbs = ResolvedBorderSpec {
+            color: Rgba::new(0, 0, 0, 0),
+            corner_radius: 0.0,
+            corner_radius_lg: 0.0,
+            line_width: 0.0,
+            opacity: 0.0,
+            shadow_enabled: false,
+            padding_horizontal: 0.0,
+            padding_vertical: 0.0,
+        };
         assert_eq!(rbs.padding_horizontal, 0.0);
         assert_eq!(rbs.padding_vertical, 0.0);
         assert_eq!(rbs.corner_radius, 0.0);

@@ -28,7 +28,12 @@ pub struct ResolvedIconSizes {
 // --- ResolvedTextScaleEntry ---
 
 /// A single resolved text scale entry with guaranteed size, weight, and line height.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
+///
+/// Phase 93-01 (G1): no `Default` derive. Constructed from a populated
+/// `TextScaleEntry` during resolution; the missing-field sentinel is
+/// written inline in
+/// [`crate::resolve::validate_helpers::require_text_scale_entry`].
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ResolvedTextScaleEntry {
     /// Font size in logical pixels (converted from points during resolution
     /// if `font_dpi` was set).

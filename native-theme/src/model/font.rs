@@ -229,7 +229,12 @@ impl_merge!(FontSpec {
 ///
 /// Unlike [`FontSpec`], all fields are required (non-optional)
 /// because resolution has already filled in all defaults.
-#[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize)]
+///
+/// Phase 93-01 (G1): no `Default` derive. `ResolvedFontSpec` is always
+/// constructed from a fully populated unresolved source; any "zero"
+/// instance is a placeholder sentinel built manually (see
+/// `resolve::validate_helpers::resolved_font_spec_sentinel`).
+#[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ResolvedFontSpec {
     /// Font family name.
     pub family: Arc<str>,

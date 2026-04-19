@@ -506,8 +506,13 @@ fn trait_assertions_send_sync() {
 #[test]
 fn trait_assertions_default_clone_debug() {
     fn assert_default_clone_debug<T: Default + Clone + std::fmt::Debug>() {}
+    fn assert_clone_debug<T: Clone + std::fmt::Debug>() {}
 
-    assert_default_clone_debug::<Rgba>();
+    // Phase 93-01 (G1): `Rgba` intentionally does NOT implement `Default`
+    // any more (§16 footgun). Callers use `Rgba::TRANSPARENT`,
+    // `Rgba::BLACK`, `Rgba::WHITE`, `Rgba::rgb`, or `Rgba::new`. The trait
+    // contract checked here is now Clone + Debug only.
+    assert_clone_debug::<Rgba>();
     assert_default_clone_debug::<Theme>();
     assert_default_clone_debug::<ThemeMode>();
     assert_default_clone_debug::<ThemeDefaults>();
