@@ -1,10 +1,19 @@
 // Generation of resolve_from_defaults() from #[theme(inherit_from = "...")] attributes.
+// Phase 94-01 G6 extends this module with:
+//   - gen_border_inherit: emits resolve_border_from_defaults() for widgets declaring
+//                         #[theme_inherit(border_kind = "full" | "full_lg" | "partial")]
+//   - gen_font_inherit:   emits resolve_font_from_defaults() for widgets declaring
+//                         #[theme_inherit(font = "<field>")]
+//
+// Both emit parallel inventory::submit! registrations into the new
+// BorderInheritanceInfo / FontInheritanceInfo registries so runtime drift
+// tests can introspect the post-G6 rule set without hand-maintained lists.
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
 use syn::Ident;
 
-use crate::parse::{FieldMeta, LayerMeta};
+use crate::parse::{BorderInheritanceKind, FieldMeta, InheritMeta, LayerMeta};
 
 /// Generate `resolve_from_defaults()` impl block on the Option struct.
 ///
@@ -63,4 +72,218 @@ fn parse_defaults_path(path: &str) -> TokenStream {
         .collect();
 
     quote! { defaults.#(#segments).* }
+}
+
+// ═════════════════════════════════════════════════════════════════════════════
+// Phase 94-01 G6 emitters
+// ═════════════════════════════════════════════════════════════════════════════
+
+/// Derive a snake_case widget name from a widget struct identifier.
+///
+/// Strips trailing "Theme" (`ButtonTheme` -> `Button`) then emits snake_case.
+/// Mirrors the helper in lib.rs::to_snake_case but is duplicated here to
+/// avoid crossing module boundaries for a 15-line helper.
+fn widget_name_from_ident(opt_name: &Ident) -> String {
+    let s = opt_name.to_string();
+    let base = s.strip_suffix("Theme").unwrap_or(&s);
+    let mut out = String::with_capacity(base.len() + 4);
+    for (i, ch) in base.chars().enumerate() {
+        if ch.is_uppercase() && i > 0 {
+            out.push('_');
+        }
+        out.push(ch.to_ascii_lowercase());
+    }
+    out
+}
+
+/// Generate `resolve_border_from_defaults()` impl block + inventory registration
+/// for widgets that declare `#[theme_inherit(border_kind = "...")]`.
+///
+/// Emits an impl block exposing a `resolve_border_from_defaults(&mut self, &DefaultsBorderSpec)`
+/// method whose body mirrors the former hand-written `resolve_border()` helper
+/// in `native-theme/src/resolve/inheritance.rs`, plus an `inventory::submit!`
+/// registration into `crate::resolve::BorderInheritanceInfo`.
+///
+/// If `inherit.border_kind.is_none()`: returns an empty token stream (no method,
+/// no registration). Widgets without border inheritance (menu, tab, card,
+/// scrollbar, slider, splitter, separator, switch, spinner, link) do not get
+/// the method at all; callers in `inheritance.rs` only dispatch on widgets
+/// that declare the attribute.
+pub(crate) fn gen_border_inherit(opt_name: &Ident, inherit: &InheritMeta) -> TokenStream {
+    let Some(kind) = inherit.border_kind else {
+        return TokenStream::new();
+    };
+
+    let widget_name = widget_name_from_ident(opt_name);
+    let kind_str = match kind {
+        BorderInheritanceKind::Full => "full",
+        BorderInheritanceKind::FullLg => "full_lg",
+        BorderInheritanceKind::Partial => "partial",
+    };
+
+    // Body: inherit from defaults_border into self.border, filling None sub-fields.
+    // `full` and `full_lg` differ only by the corner_radius source field.
+    let body = match kind {
+        BorderInheritanceKind::Full => quote! {
+            let border = self
+                .border
+                .get_or_insert_with(crate::model::border::WidgetBorderSpec::default);
+            if border.color.is_none() {
+                border.color = defaults_border.color;
+            }
+            if border.corner_radius.is_none() {
+                border.corner_radius = defaults_border.corner_radius;
+            }
+            if border.line_width.is_none() {
+                border.line_width = defaults_border.line_width;
+            }
+            if border.shadow_enabled.is_none() {
+                border.shadow_enabled = defaults_border.shadow_enabled;
+            }
+        },
+        BorderInheritanceKind::FullLg => quote! {
+            let border = self
+                .border
+                .get_or_insert_with(crate::model::border::WidgetBorderSpec::default);
+            if border.color.is_none() {
+                border.color = defaults_border.color;
+            }
+            if border.corner_radius.is_none() {
+                border.corner_radius = defaults_border.corner_radius_lg;
+            }
+            if border.line_width.is_none() {
+                border.line_width = defaults_border.line_width;
+            }
+            if border.shadow_enabled.is_none() {
+                border.shadow_enabled = defaults_border.shadow_enabled;
+            }
+        },
+        BorderInheritanceKind::Partial => quote! {
+            let border = self
+                .border
+                .get_or_insert_with(crate::model::border::WidgetBorderSpec::default);
+            if border.color.is_none() {
+                border.color = defaults_border.color;
+            }
+            if border.line_width.is_none() {
+                border.line_width = defaults_border.line_width;
+            }
+        },
+    };
+
+    quote! {
+        impl #opt_name {
+            /// Fill `None` border sub-fields from `defaults.border`.
+            /// Generated by `#[derive(ThemeWidget)]` from `#[theme_inherit(border_kind = "...")]`.
+            pub(crate) fn resolve_border_from_defaults(
+                &mut self,
+                defaults_border: &crate::model::border::DefaultsBorderSpec,
+            ) {
+                #body
+            }
+        }
+
+        inventory::submit!(crate::resolve::BorderInheritanceInfo {
+            widget_name: #widget_name,
+            kind: #kind_str,
+        });
+    }
+}
+
+/// Generate `resolve_font_from_defaults()` impl block + inventory registration
+/// for widgets that declare one or more `#[theme_inherit(font = "<field>")]`.
+///
+/// Emits an impl block exposing a `resolve_font_from_defaults(&mut self, &FontSpec)`
+/// method. The body iterates over every declared font field in declaration
+/// order (1 or 2 entries), calling the same "clone whole font if None, else
+/// fill None sub-fields" logic that the former hand-written `resolve_font()`
+/// helper performed.
+///
+/// Each font field emits a separate `inventory::submit!` into
+/// `crate::resolve::FontInheritanceInfo` so widgets with two font fields
+/// (list, dialog) produce two registry rows.
+///
+/// If `inherit.font.is_empty()`: returns an empty token stream (no method,
+/// no registration). Widgets without font inheritance (scrollbar, slider,
+/// progress_bar, splitter, separator, switch, spinner, card) do not get
+/// the method at all.
+///
+/// Note on the link.font.color override: the override `link.font.color =
+/// defaults.link_color` stays hand-written in `resolve_font_inheritance`
+/// AFTER the generated dispatch. This method emits the standard color
+/// inherit from `defaults_font.color`; the caller re-writes it afterwards.
+/// See plan 94-01 objective for the scope-boundary rationale.
+pub(crate) fn gen_font_inherit(opt_name: &Ident, inherit: &InheritMeta) -> TokenStream {
+    if inherit.font.is_empty() {
+        return TokenStream::new();
+    }
+
+    let widget_name = widget_name_from_ident(opt_name);
+
+    // For each declared font field, emit a block that handles None-or-Some.
+    let blocks: Vec<TokenStream> = inherit
+        .font
+        .iter()
+        .map(|field_ident| {
+            quote! {
+                match &mut self.#field_ident {
+                    None => {
+                        self.#field_ident = Some(defaults_font.clone());
+                    }
+                    Some(font) => {
+                        if font.family.is_none() {
+                            font.family = defaults_font.family.clone();
+                        }
+                        if font.size.is_none() {
+                            font.size = defaults_font.size;
+                        }
+                        if font.weight.is_none() {
+                            font.weight = defaults_font.weight;
+                        }
+                        if font.style.is_none() {
+                            font.style = defaults_font.style;
+                        }
+                        if font.color.is_none() {
+                            font.color = defaults_font.color;
+                        }
+                    }
+                }
+            }
+        })
+        .collect();
+
+    // One inventory::submit! per font field. widget_name+font_field as two
+    // &'static strs — the registry schema keeps a single struct per row so
+    // the "widgets_with_font" TOML entry ("widget.font_field") can be
+    // reconstructed by joining the two fields with a dot.
+    let submissions: Vec<TokenStream> = inherit
+        .font
+        .iter()
+        .map(|field_ident| {
+            let field_str = field_ident.to_string();
+            quote! {
+                inventory::submit!(crate::resolve::FontInheritanceInfo {
+                    widget_name: #widget_name,
+                    font_field: #field_str,
+                });
+            }
+        })
+        .collect();
+
+    quote! {
+        impl #opt_name {
+            /// Fill `None` font sub-fields from `defaults.font` for every
+            /// font field on this widget.
+            /// Generated by `#[derive(ThemeWidget)]` from
+            /// `#[theme_inherit(font = "...")]` attributes.
+            pub(crate) fn resolve_font_from_defaults(
+                &mut self,
+                defaults_font: &crate::model::FontSpec,
+            ) {
+                #(#blocks)*
+            }
+        }
+
+        #(#submissions)*
+    }
 }

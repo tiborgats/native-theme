@@ -41,6 +41,53 @@ pub(crate) struct FieldInfo {
 }
 inventory::collect!(FieldInfo);
 
+/// Border inheritance registry (Phase 94-01 G6).
+///
+/// Populated by `#[derive(ThemeWidget)]` for widgets that declare
+/// `#[theme_inherit(border_kind = "full" | "full_lg" | "partial")]`. Each
+/// declaration produces one row in this registry.
+///
+/// Consumed by the inverted drift test
+/// `border_inheritance_toml_matches_macro_emit` in `inheritance.rs::tests`
+/// which asserts `docs/inheritance-rules.toml [border_inheritance]` matches
+/// the registry byte-for-byte (macro is the source of truth post-G6;
+/// TOML is a generated-documentation output).
+///
+/// Sister registry to [`WidgetFieldInfo`] / [`FieldInfo`] — same
+/// inventory-crate pattern (`inventory::submit!` from the derive output).
+pub(crate) struct BorderInheritanceInfo {
+    /// Snake_case widget name (e.g., "button", "segmented_control").
+    pub widget_name: &'static str,
+    /// Inheritance kind: `"full"`, `"full_lg"`, or `"partial"`.
+    ///
+    /// Uses a plain `&'static str` instead of an enum to keep the
+    /// inventory schema dependency-free — `BorderInheritanceKind` lives
+    /// in `native-theme-derive` which the runtime crate cannot import.
+    pub kind: &'static str,
+}
+inventory::collect!(BorderInheritanceInfo);
+
+/// Font inheritance registry (Phase 94-01 G6).
+///
+/// Populated by `#[derive(ThemeWidget)]` for widgets that declare one or
+/// more `#[theme_inherit(font = "<field>")]` attributes. Each attribute
+/// produces one row in this registry; widgets like `list` (item_font +
+/// header_font) and `dialog` (title_font + body_font) contribute two rows.
+///
+/// Consumed by the inverted drift test
+/// `font_inheritance_toml_matches_macro_emit` in `inheritance.rs::tests`
+/// which asserts `docs/inheritance-rules.toml [font_inheritance]` matches
+/// the registry byte-for-byte.
+pub(crate) struct FontInheritanceInfo {
+    /// Snake_case widget name (e.g., "button", "list", "dialog", "link").
+    pub widget_name: &'static str,
+    /// Name of the font field on the widget Option struct
+    /// (e.g., `"font"`, `"title_bar_font"`, `"item_font"`, `"header_font"`,
+    /// `"title_font"`, `"body_font"`).
+    pub font_field: &'static str,
+}
+inventory::collect!(FontInheritanceInfo);
+
 use crate::model::ThemeMode;
 use crate::model::resolved::ResolvedTheme;
 

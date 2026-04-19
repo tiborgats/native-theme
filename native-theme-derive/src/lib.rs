@@ -26,6 +26,10 @@ mod parse;
 /// - `#[theme_layer(border_kind = "full"|"partial"|"none")]` -- border validation mode
 /// - `#[theme_layer(resolved_name = "CustomName")]` -- override resolved struct name
 /// - `#[theme_layer(skip_inventory)]` -- skip inventory::submit! for non-per-variant widgets
+/// - `#[theme_inherit(border_kind = "full"|"full_lg"|"partial")]` -- border INHERITANCE mode
+///   (Phase 94-01 G6; parallel to theme_layer.border_kind which drives validation)
+/// - `#[theme_inherit(font = "<field>")]` -- font field that inherits from `defaults.font`
+///   (repeatable: list declares item_font + header_font, dialog declares title_font + body_font)
 ///
 /// # Field-level attributes
 ///
@@ -36,7 +40,7 @@ mod parse;
 /// - `#[theme(range_u16 = "100..=900")]` -- u16 range check
 /// - `#[theme(min_max_pair = "other_field")]` -- min/max pair validation
 /// - `#[theme(inherit_from = "defaults.accent_color")]` -- uniform inheritance source from defaults
-#[proc_macro_derive(ThemeWidget, attributes(theme, theme_layer))]
+#[proc_macro_derive(ThemeWidget, attributes(theme, theme_layer, theme_inherit))]
 pub fn derive_theme_widget(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
 
@@ -49,8 +53,9 @@ pub fn derive_theme_widget(input: TokenStream) -> TokenStream {
 fn derive_inner(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
     let opt_name = &input.ident;
 
-    // Parse struct-level attributes
+    // Parse struct-level attributes (both families, parse orthogonally)
     let layer = parse::parse_layer_attrs(&input.attrs)?;
+    let inherit_meta = parse::parse_inherit_attrs(&input.attrs)?;
 
     // Parse field metadata
     let fields = match &input.data {
@@ -77,6 +82,8 @@ fn derive_inner(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
     let validate = gen_validate::gen_validate(opt_name, &fields, &layer);
     let ranges = gen_ranges::gen_ranges(opt_name, &fields, &layer);
     let inherit = gen_inherit::gen_inherit(opt_name, &fields, &layer);
+    let border_inherit = gen_inherit::gen_border_inherit(opt_name, &inherit_meta);
+    let font_inherit = gen_inherit::gen_font_inherit(opt_name, &inherit_meta);
     let inventory = gen_inventory_submit(opt_name, &layer);
 
     Ok(quote::quote! {
@@ -85,6 +92,8 @@ fn derive_inner(input: DeriveInput) -> syn::Result<proc_macro2::TokenStream> {
         #validate
         #ranges
         #inherit
+        #border_inherit
+        #font_inherit
         #inventory
     })
 }

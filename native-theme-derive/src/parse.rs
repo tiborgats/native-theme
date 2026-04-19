@@ -52,6 +52,31 @@ pub(crate) enum BorderKind {
     None,
 }
 
+/// Class-level border INHERITANCE mode from `#[theme_inherit(border_kind = "...")]`.
+///
+/// Parallel to [`BorderKind`] but a DIFFERENT concern: this enum drives which
+/// fields the generated `resolve_border_from_defaults()` method inherits from
+/// `DefaultsBorderSpec`. `BorderKind` drives VALIDATION dispatch; this drives
+/// RESOLUTION. They live on different attributes (`theme_layer` vs
+/// `theme_inherit`) and must stay independent to avoid conflating the two
+/// concerns.
+///
+/// Per-widget assignments (Phase 94-01 G6):
+/// - `Full`:    10 widgets — button, input, checkbox, tooltip, progress_bar,
+///              toolbar, list, combo_box, segmented_control, expander.
+/// - `FullLg`:  3 widgets  — window, popover, dialog (use `corner_radius_lg`).
+/// - `Partial`: 2 widgets  — sidebar, status_bar (color + line_width only).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum BorderInheritanceKind {
+    /// All 4 sub-fields inherited: color, corner_radius, line_width, shadow_enabled.
+    Full,
+    /// All 4 sub-fields inherited; `corner_radius` comes from
+    /// `defaults.border.corner_radius_lg` instead of `defaults.border.corner_radius`.
+    FullLg,
+    /// Only 2 sub-fields inherited: color, line_width.
+    Partial,
+}
+
 /// Struct-level attributes parsed from `#[theme_layer(...)]`.
 #[derive(Debug, Clone)]
 pub(crate) struct LayerMeta {
@@ -133,6 +158,89 @@ pub(crate) fn parse_layer_attrs(attrs: &[Attribute]) -> Result<LayerMeta> {
         skip_inventory,
         explicit_fields,
     })
+}
+
+/// Struct-level INHERITANCE metadata parsed from `#[theme_inherit(...)]`.
+///
+/// Parallel to (but not nested inside) [`LayerMeta`]. Lives on a separate
+/// attribute because validation-side concerns (`#[theme_layer]`) and
+/// resolution-side concerns (`#[theme_inherit]`) stay orthogonal.
+///
+/// Multiple `#[theme_inherit]` attributes on the same struct are additive —
+/// list declares both `item_font` and `header_font`, dialog declares both
+/// `title_font` and `body_font`. At most one `border_kind` across all
+/// attributes (border inheritance is single-valued per widget).
+#[derive(Debug, Clone, Default)]
+pub(crate) struct InheritMeta {
+    /// Border inheritance mode, if the struct declares `border_kind = "..."`.
+    pub border_kind: Option<BorderInheritanceKind>,
+    /// Font field names to inherit from `defaults.font`. 0, 1, or 2 entries.
+    pub font: Vec<Ident>,
+}
+
+/// Parse all `#[theme_inherit(...)]` attributes on the struct.
+///
+/// Accumulates results additively across multiple attributes. Grammar:
+/// ```text
+/// #[theme_inherit(border_kind = "full" | "full_lg" | "partial")]
+/// #[theme_inherit(font = "font")]
+/// #[theme_inherit(font = "title_font")]  // dialog's second font attr
+/// ```
+///
+/// Both keys are optional within an attribute; the two keys may co-occur:
+/// `#[theme_inherit(border_kind = "full", font = "font")]`.
+pub(crate) fn parse_inherit_attrs(attrs: &[Attribute]) -> Result<InheritMeta> {
+    let mut meta = InheritMeta::default();
+
+    for attr in attrs {
+        if !attr.path().is_ident("theme_inherit") {
+            continue;
+        }
+        attr.parse_nested_meta(|nested| {
+            if nested.path.is_ident("border_kind") {
+                let value = nested.value()?;
+                let lit: LitStr = value.parse()?;
+                let kind = match lit.value().as_str() {
+                    "full" => BorderInheritanceKind::Full,
+                    "full_lg" => BorderInheritanceKind::FullLg,
+                    "partial" => BorderInheritanceKind::Partial,
+                    other => {
+                        return Err(Error::new(
+                            lit.span(),
+                            format!(
+                                "unknown theme_inherit border_kind: \"{other}\", \
+                                 expected \"full\", \"full_lg\", or \"partial\""
+                            ),
+                        ));
+                    }
+                };
+                meta.border_kind = Some(kind);
+                Ok(())
+            } else if nested.path.is_ident("font") {
+                let value = nested.value()?;
+                let lit: LitStr = value.parse()?;
+                let ident_str = lit.value();
+                // Valid Rust identifier check: syn::parse_str::<Ident> rejects
+                // reserved words + empty + invalid starting chars.
+                let ident: Ident = syn::parse_str(&ident_str).map_err(|_| {
+                    Error::new(
+                        lit.span(),
+                        format!(
+                            "theme_inherit font = \"{ident_str}\" is not a valid \
+                             Rust identifier for a struct field name"
+                        ),
+                    )
+                })?;
+                meta.font.push(ident);
+                Ok(())
+            } else {
+                Err(nested
+                    .error("unknown theme_inherit attribute, expected \"border_kind\" or \"font\""))
+            }
+        })?;
+    }
+
+    Ok(meta)
 }
 
 /// Parse all fields of the input struct into `FieldMeta` entries.
@@ -502,6 +610,135 @@ mod tests {
         assert_eq!(
             layer.explicit_fields.as_deref(),
             Some(["a".to_string(), "b".to_string()].as_slice())
+        );
+    }
+
+    // === theme_inherit parsing (Phase 94-01 G6) ===
+
+    /// Helper: parse `#[theme_inherit(...)]` attributes from a token stream.
+    fn parse_inherit_from_tokens(tokens: proc_macro2::TokenStream) -> Result<InheritMeta> {
+        let wrapper = quote::quote! {
+            #tokens
+            struct Wrapper { x: i32 }
+        };
+        let item: syn::ItemStruct = syn::parse2(wrapper)?;
+        parse_inherit_attrs(&item.attrs)
+    }
+
+    #[test]
+    fn theme_inherit_absent_means_default() {
+        let tokens = quote::quote! {};
+        let inherit = parse_inherit_from_tokens(tokens).expect("should parse");
+        assert!(inherit.border_kind.is_none());
+        assert!(inherit.font.is_empty());
+    }
+
+    #[test]
+    fn theme_inherit_border_full_parsed() {
+        let tokens = quote::quote! {
+            #[theme_inherit(border_kind = "full")]
+        };
+        let inherit = parse_inherit_from_tokens(tokens).expect("should parse");
+        assert_eq!(inherit.border_kind, Some(BorderInheritanceKind::Full));
+        assert!(inherit.font.is_empty());
+    }
+
+    #[test]
+    fn theme_inherit_border_full_lg_parsed() {
+        let tokens = quote::quote! {
+            #[theme_inherit(border_kind = "full_lg")]
+        };
+        let inherit = parse_inherit_from_tokens(tokens).expect("should parse");
+        assert_eq!(inherit.border_kind, Some(BorderInheritanceKind::FullLg));
+    }
+
+    #[test]
+    fn theme_inherit_border_partial_parsed() {
+        let tokens = quote::quote! {
+            #[theme_inherit(border_kind = "partial")]
+        };
+        let inherit = parse_inherit_from_tokens(tokens).expect("should parse");
+        assert_eq!(inherit.border_kind, Some(BorderInheritanceKind::Partial));
+    }
+
+    #[test]
+    fn theme_inherit_font_single_parsed() {
+        let tokens = quote::quote! {
+            #[theme_inherit(font = "font")]
+        };
+        let inherit = parse_inherit_from_tokens(tokens).expect("should parse");
+        let names: Vec<String> = inherit.font.iter().map(|i| i.to_string()).collect();
+        assert_eq!(names, vec!["font".to_string()]);
+    }
+
+    #[test]
+    fn theme_inherit_font_multiple_attributes_additive() {
+        // List declares TWO font attributes: item_font + header_font.
+        let tokens = quote::quote! {
+            #[theme_inherit(border_kind = "full", font = "item_font")]
+            #[theme_inherit(font = "header_font")]
+        };
+        let inherit = parse_inherit_from_tokens(tokens).expect("should parse");
+        assert_eq!(inherit.border_kind, Some(BorderInheritanceKind::Full));
+        let names: Vec<String> = inherit.font.iter().map(|i| i.to_string()).collect();
+        assert_eq!(
+            names,
+            vec!["item_font".to_string(), "header_font".to_string()]
+        );
+    }
+
+    #[test]
+    fn theme_inherit_border_and_font_combined() {
+        let tokens = quote::quote! {
+            #[theme_inherit(border_kind = "full", font = "font")]
+        };
+        let inherit = parse_inherit_from_tokens(tokens).expect("should parse");
+        assert_eq!(inherit.border_kind, Some(BorderInheritanceKind::Full));
+        let names: Vec<String> = inherit.font.iter().map(|i| i.to_string()).collect();
+        assert_eq!(names, vec!["font".to_string()]);
+    }
+
+    #[test]
+    fn theme_inherit_unknown_key_errors() {
+        let tokens = quote::quote! {
+            #[theme_inherit(bogus = "x")]
+        };
+        let result = parse_inherit_from_tokens(tokens);
+        assert!(result.is_err(), "unknown key must error");
+        let err = result.unwrap_err().to_string();
+        assert!(
+            err.contains("unknown theme_inherit"),
+            "error should mention unknown theme_inherit, got: {err}"
+        );
+    }
+
+    #[test]
+    fn theme_inherit_unknown_border_kind_errors() {
+        let tokens = quote::quote! {
+            #[theme_inherit(border_kind = "weird")]
+        };
+        let result = parse_inherit_from_tokens(tokens);
+        assert!(result.is_err(), "unknown border_kind must error");
+        let err = result.unwrap_err().to_string();
+        assert!(
+            err.contains("\"full\"") && err.contains("\"full_lg\"") && err.contains("\"partial\""),
+            "error should list allowed values, got: {err}"
+        );
+    }
+
+    #[test]
+    fn theme_inherit_dialog_two_font_fields() {
+        // Dialog declares title_font + body_font.
+        let tokens = quote::quote! {
+            #[theme_inherit(border_kind = "full_lg", font = "title_font")]
+            #[theme_inherit(font = "body_font")]
+        };
+        let inherit = parse_inherit_from_tokens(tokens).expect("should parse");
+        assert_eq!(inherit.border_kind, Some(BorderInheritanceKind::FullLg));
+        let names: Vec<String> = inherit.font.iter().map(|i| i.to_string()).collect();
+        assert_eq!(
+            names,
+            vec!["title_font".to_string(), "body_font".to_string()]
         );
     }
 }
