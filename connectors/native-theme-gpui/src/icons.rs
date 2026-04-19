@@ -891,9 +891,15 @@ pub fn bundled_icon_to_image_source(
         native_theme::theme::IconSet::Material => material_name_for_gpui_icon(icon),
         _ => return None,
     };
-    let svg = native_theme::theme::bundled_icon_by_name(name, icon_set)?;
+    // G3 (Phase 93-03): IconLoader builder replaces the demoted bundled_icon_by_name.
+    // Bundled icon sets always return IconData::Svg with Cow::Borrowed to static bytes,
+    // so cow.as_ref() is a zero-copy borrow back to &'static [u8].
+    let data = IconLoader::new(name).set(icon_set).load()?;
+    let IconData::Svg(cow) = data else {
+        return None;
+    };
     // Issue 27: pass &[u8] directly without copying to IconData::Svg
-    svg_bytes_to_image_source(svg, color, size)
+    svg_bytes_to_image_source(cow.as_ref(), color, size)
 }
 
 /// Convert raw SVG bytes to an [`ImageSource`].
@@ -2237,7 +2243,11 @@ mod freedesktop_mapping_tests {
         let mut missing = Vec::new();
         for name in ALL_ICON_NAMES {
             let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Kde);
-            if native_theme::freedesktop::load_freedesktop_icon_by_name(fd_name, &theme, 24, None)
+            if native_theme::icons::IconLoader::new(fd_name)
+                .set(native_theme::theme::IconSet::Freedesktop)
+                .theme(&theme)
+                .size(24)
+                .load()
                 .is_none()
             {
                 missing.push(format!("{} (not found)", fd_name));
@@ -2257,10 +2267,12 @@ mod freedesktop_mapping_tests {
         let mut missing = Vec::new();
         for name in ALL_ICON_NAMES {
             let fd_name = freedesktop_name_for_gpui_icon(name.clone(), LinuxDesktop::Gnome);
-            if native_theme::freedesktop::load_freedesktop_icon_by_name(
-                fd_name, "Adwaita", 24, None,
-            )
-            .is_none()
+            if native_theme::icons::IconLoader::new(fd_name)
+                .set(native_theme::theme::IconSet::Freedesktop)
+                .theme("Adwaita")
+                .size(24)
+                .load()
+                .is_none()
             {
                 missing.push(format!("{} (not found)", fd_name));
             }

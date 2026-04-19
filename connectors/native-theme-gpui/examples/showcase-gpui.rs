@@ -74,8 +74,8 @@ use native_theme::icons::{
 };
 use native_theme::pipeline::platform_preset_name;
 use native_theme::theme::{
-    AnimatedIcon, IconData, IconRole, IconSet, TransformAnimation, bundled_icon_by_name,
-    icon_name as native_icon_name, system_icon_set, system_icon_theme,
+    AnimatedIcon, IconData, IconRole, IconSet, TransformAnimation, icon_name as native_icon_name,
+    system_icon_set, system_icon_theme,
 };
 #[cfg(target_os = "linux")]
 use native_theme_gpui::icons::freedesktop_name_for_gpui_icon;
@@ -686,10 +686,9 @@ fn load_gpui_icons(
                     _ => None,
                 };
                 if let Some(lname) = lookup_name
-                    && let Some(svg_bytes) = bundled_icon_by_name(lname, icon_set)
+                    && let Some(data) = IconLoader::new(lname).set(icon_set).load()
                 {
-                    let data = Some(IconData::Svg(std::borrow::Cow::Borrowed(svg_bytes)));
-                    return (*name, icon.clone(), None, data, IconSource::Bundled);
+                    return (*name, icon.clone(), None, Some(data), IconSource::Bundled);
                 }
             }
 
