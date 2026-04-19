@@ -1483,4 +1483,143 @@ nonexistent_field = "#ff0000"
         assert!(!toml_str.contains("[light.layout]"));
         assert!(!toml_str.contains("[dark.layout]"));
     }
+
+    // === Phase 93-05 G5: ThemeFields inventory baseline-equality tests ===
+    //
+    // Each struct that is expected to register via #[derive(ThemeFields)]
+    // must produce a FieldInfo entry whose `field_names` matches the
+    // pre-migration hand-authored FIELD_NAMES list bit-for-bit. Failure means
+    // either the derive emission path is wrong (serde rename drift) or
+    // the derive was not applied to the struct.
+
+    fn field_info_entry(name: &'static str) -> Option<&'static [&'static str]> {
+        inventory::iter::<crate::resolve::FieldInfo>()
+            .find(|info| info.struct_name == name)
+            .map(|info| info.field_names)
+    }
+
+    #[test]
+    fn font_spec_field_info_matches_baseline() {
+        let baseline: &[&str] = &["family", "size_pt", "size_px", "weight", "style", "color"];
+        assert_eq!(field_info_entry("FontSpec"), Some(baseline));
+    }
+
+    #[test]
+    fn text_scale_entry_field_info_matches_baseline() {
+        let baseline: &[&str] = &[
+            "size_pt",
+            "size_px",
+            "weight",
+            "line_height_pt",
+            "line_height_px",
+        ];
+        assert_eq!(field_info_entry("TextScaleEntry"), Some(baseline));
+    }
+
+    #[test]
+    fn text_scale_field_info_matches_baseline() {
+        let baseline: &[&str] = &["caption", "section_heading", "dialog_title", "display"];
+        assert_eq!(field_info_entry("TextScale"), Some(baseline));
+    }
+
+    #[test]
+    fn defaults_border_spec_field_info_matches_baseline() {
+        let baseline: &[&str] = &[
+            "color",
+            "corner_radius_px",
+            "corner_radius_lg_px",
+            "line_width_px",
+            "opacity",
+            "shadow_enabled",
+        ];
+        assert_eq!(field_info_entry("DefaultsBorderSpec"), Some(baseline));
+    }
+
+    #[test]
+    fn widget_border_spec_field_info_matches_baseline() {
+        let baseline: &[&str] = &[
+            "color",
+            "corner_radius_px",
+            "line_width_px",
+            "shadow_enabled",
+            "padding_horizontal_px",
+            "padding_vertical_px",
+        ];
+        assert_eq!(field_info_entry("WidgetBorderSpec"), Some(baseline));
+    }
+
+    #[test]
+    fn theme_defaults_field_info_matches_baseline() {
+        let baseline: &[&str] = &[
+            "font",
+            "line_height",
+            "mono_font",
+            "background_color",
+            "text_color",
+            "accent_color",
+            "accent_text_color",
+            "surface_color",
+            "muted_color",
+            "shadow_color",
+            "link_color",
+            "selection_background",
+            "selection_text_color",
+            "selection_inactive_background",
+            "text_selection_background",
+            "text_selection_color",
+            "disabled_text_color",
+            "danger_color",
+            "danger_text_color",
+            "warning_color",
+            "warning_text_color",
+            "success_color",
+            "success_text_color",
+            "info_color",
+            "info_text_color",
+            "border",
+            "disabled_opacity",
+            "focus_ring_color",
+            "focus_ring_width_px",
+            "focus_ring_offset_px",
+            "icon_sizes",
+            "icon_theme",
+        ];
+        assert_eq!(field_info_entry("ThemeDefaults"), Some(baseline));
+    }
+
+    #[test]
+    fn icon_sizes_field_info_matches_baseline() {
+        let baseline: &[&str] = &[
+            "toolbar_px",
+            "small_px",
+            "large_px",
+            "dialog_px",
+            "panel_px",
+        ];
+        assert_eq!(field_info_entry("IconSizes"), Some(baseline));
+    }
+
+    #[test]
+    fn layout_theme_field_info_matches_baseline() {
+        let baseline: &[&str] = &[
+            "widget_gap_px",
+            "container_margin_px",
+            "window_margin_px",
+            "section_gap_px",
+        ];
+        assert_eq!(field_info_entry("LayoutTheme"), Some(baseline));
+    }
+
+    #[test]
+    fn widget_registry_still_has_all_widgets() {
+        // Regression guard: the existing WidgetFieldInfo inventory must remain
+        // populated after ThemeFields migration. LayoutTheme is NOT a widget
+        // (it uses `skip_inventory`), so we expect at least the 25 per-variant
+        // widgets registered through ThemeWidget.
+        let widget_count = inventory::iter::<crate::resolve::WidgetFieldInfo>().count();
+        assert!(
+            widget_count >= 25,
+            "expected >=25 widgets in WidgetFieldInfo, got {widget_count}"
+        );
+    }
 }
