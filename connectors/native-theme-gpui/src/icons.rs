@@ -131,7 +131,7 @@ pub fn icon_name(role: IconRole) -> Option<IconName> {
 /// Map a gpui-component [`IconName`] to its canonical Lucide icon name.
 ///
 /// Returns the kebab-case Lucide name for use with
-/// [`native_theme::theme::bundled_icon_by_name`].
+/// [`native_theme::icons::IconLoader::new`].
 ///
 /// Covers all 86 gpui-component `IconName` variants.
 #[must_use]
@@ -229,7 +229,7 @@ pub fn lucide_name_for_gpui_icon(icon: IconName) -> &'static str {
 /// Map a gpui-component [`IconName`] to its canonical Material icon name.
 ///
 /// Returns the snake_case Material Symbols name for use with
-/// [`native_theme::theme::bundled_icon_by_name`].
+/// [`native_theme::icons::IconLoader`].
 ///
 /// Covers all 86 gpui-component `IconName` variants.
 ///
@@ -866,7 +866,7 @@ fn load_custom_via_builder(
 /// Combines the icon-name mapping and loading steps into a single call for
 /// bundled icon sets. Supports [`native_theme::theme::IconSet::Lucide`] and [`native_theme::theme::IconSet::Material`].
 /// Returns `None` for other icon sets (use [`to_image_source`] with
-/// [`native_theme::freedesktop::load_freedesktop_icon_by_name`] for freedesktop system icons).
+/// [`native_theme::icons::IconLoader`] for freedesktop system icons).
 ///
 /// See [`to_image_source()`] for details on the `color` and `size` parameters.
 ///
@@ -905,7 +905,7 @@ pub fn bundled_icon_to_image_source(
 /// Convert raw SVG bytes to an [`ImageSource`].
 ///
 /// This is a convenience wrapper for callers that already have SVG bytes
-/// (e.g. from [`native_theme::theme::bundled_icon_by_name`]) and want to skip
+/// (e.g. from [`native_theme::icons::IconLoader`]) and want to skip
 /// the `IconData` intermediate.
 ///
 /// See [`to_image_source()`] for details on the `color` and `size` parameters.
