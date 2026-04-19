@@ -37,6 +37,8 @@ pub enum LinuxDesktop {
     River,
     /// Niri scrollable Wayland compositor.
     Niri,
+    /// Wayfire scene-graph Wayland compositor (wlroots-based).
+    Wayfire,
     /// COSMIC desktop environment (System76).
     CosmicDe,
     /// Unrecognized or unset desktop environment.
@@ -98,6 +100,7 @@ pub fn parse_linux_desktop(xdg_current_desktop: &str) -> LinuxDesktop {
             "sway" => return LinuxDesktop::Sway,
             "river" => return LinuxDesktop::River,
             "niri" => return LinuxDesktop::Niri,
+            "Wayfire" => return LinuxDesktop::Wayfire,
             "COSMIC" => return LinuxDesktop::CosmicDe,
             _ => {}
         }

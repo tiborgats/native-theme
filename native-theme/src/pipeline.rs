@@ -684,6 +684,7 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
             | LinuxDesktop::Sway
             | LinuxDesktop::River
             | LinuxDesktop::Niri
+            | LinuxDesktop::Wayfire
             | LinuxDesktop::CosmicDe => {
                 run_pipeline(preset_as_reader("adwaita", mode)?, &preset_live, mode)
             }
@@ -916,6 +917,19 @@ ForegroundLink=41,128,185";
     #[test]
     fn detect_niri() {
         assert_eq!(parse_linux_desktop("niri"), LinuxDesktop::Niri);
+    }
+
+    #[test]
+    fn parses_xdg_wayfire() {
+        assert_eq!(parse_linux_desktop("Wayfire"), LinuxDesktop::Wayfire);
+        assert_eq!(parse_linux_desktop("Wayfire:GNOME"), LinuxDesktop::Wayfire);
+    }
+
+    #[test]
+    fn parses_xdg_empty_is_unknown() {
+        // Regression guard -- empty XDG_CURRENT_DESKTOP must keep mapping to Unknown
+        // even after the Wayfire variant addition.
+        assert_eq!(parse_linux_desktop(""), LinuxDesktop::Unknown);
     }
 
     #[test]

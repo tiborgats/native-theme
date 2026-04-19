@@ -606,6 +606,7 @@ fn detect_linux_icon_theme() -> String {
         | crate::detect::LinuxDesktop::Sway
         | crate::detect::LinuxDesktop::River
         | crate::detect::LinuxDesktop::Niri
+        | crate::detect::LinuxDesktop::Wayfire
         | crate::detect::LinuxDesktop::CosmicDe => {
             gsettings_icon_theme("org.gnome.desktop.interface")
         }
