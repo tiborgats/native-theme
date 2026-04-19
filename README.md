@@ -229,6 +229,12 @@ macOS deps.
 Use `theme::Theme::list_presets_for_platform()` to get only the presets
 appropriate for the current OS.
 
+## Release
+
+See [RELEASING.md](RELEASING.md) for the ordered publish workflow, the
+`--no-verify` bootstrap rationale for first-ever publication, and the
+post-bootstrap cleanup condition.
+
 ## License
 
 Licensed under either of

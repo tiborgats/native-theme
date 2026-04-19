@@ -317,10 +317,22 @@ for crate in $WORKSPACE_CRATES; do
     fi
 done
 
-# Validate packages before publishing (cargo package resolves workspace path deps locally)
-run_check "Validating packages (core)" cargo package -p native-theme-derive -p native-theme -p native-theme-build --allow-dirty
-run_check_soft "Validating package (iced connector)" cargo package -p native-theme-derive -p native-theme -p native-theme-iced --allow-dirty
-run_check_soft "Validating package (gpui connector)" cargo package -p native-theme-derive -p native-theme -p native-theme-gpui --allow-dirty
+# Validate packages before publishing.
+#
+# --no-verify rationale: cargo package verification compiles each tarball as if it
+# were downloaded from crates.io. For first-ever publication of this workspace, the
+# internal proc-macro crate native-theme-derive is not yet on the registry, so
+# tarball verification cannot resolve the workspace-internal dep. The real tarball
+# compilation check happens during `cargo publish` itself, which this script does
+# not run. See RELEASING.md for the ordered publish workflow (derive -> build ->
+# core -> connectors).
+#
+# Once native-theme-derive 0.5.7 is published to crates.io, remove --no-verify
+# from these three lines to restore full tarball-compile verification for
+# subsequent releases.
+run_check "Validating packages (core)" cargo package --no-verify -p native-theme-derive -p native-theme -p native-theme-build --allow-dirty
+run_check_soft "Validating package (iced connector)" cargo package --no-verify -p native-theme-derive -p native-theme -p native-theme-iced --allow-dirty
+run_check_soft "Validating package (gpui connector)" cargo package --no-verify -p native-theme-derive -p native-theme -p native-theme-gpui --allow-dirty
 
 # Check for security vulnerabilities
 print_step "Running security audit"
