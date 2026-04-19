@@ -19,11 +19,19 @@ use super::icons::{IconRole, IconSet};
 ///
 /// # Examples
 ///
-/// ```
-/// use native_theme::theme::{IconSet, IconRole, bundled_icon_svg};
+/// This is a crate-internal helper. The public replacement is
+/// [`crate::icons::IconLoader`]; external callers should not reach this
+/// function directly. The builder below demonstrates the equivalent
+/// public-API call:
 ///
-/// // Without features enabled, bundled icons return None
-/// let result = bundled_icon_svg(IconRole::ActionCopy, IconSet::SfSymbols);
+/// ```
+/// use native_theme::icons::IconLoader;
+/// use native_theme::theme::{IconRole, IconSet};
+///
+/// // SfSymbols is not a bundled set on non-macOS targets; the loader returns None.
+/// let result = IconLoader::new(IconRole::ActionCopy)
+///     .set(IconSet::SfSymbols)
+///     .load();
 /// assert!(result.is_none());
 /// ```
 #[must_use]
@@ -185,15 +193,25 @@ fn lucide_svg(role: IconRole) -> Option<&'static [u8]> {
 ///
 /// # Examples
 ///
-/// ```
-/// use native_theme::theme::{IconSet, bundled_icon_by_name};
+/// This is a crate-internal helper. The public replacement is
+/// [`crate::icons::IconLoader`] constructed from a string name:
 ///
-/// // Without features enabled, bundled icons return None
-/// let result = bundled_icon_by_name("check", IconSet::SfSymbols);
+/// ```
+/// use native_theme::icons::IconLoader;
+/// use native_theme::theme::IconSet;
+///
+/// // SfSymbols is not a bundled set; no in-crate name lookup succeeds.
+/// let result = IconLoader::new("check")
+///     .set(IconSet::SfSymbols)
+///     .load();
 /// assert!(result.is_none());
 /// ```
 #[must_use]
 #[allow(unreachable_patterns, unused_variables)]
+#[cfg_attr(
+    not(any(feature = "material-icons", feature = "lucide-icons")),
+    allow(dead_code)
+)]
 pub(crate) fn bundled_icon_by_name(name: &str, set: IconSet) -> Option<&'static [u8]> {
     match set {
         #[cfg(feature = "material-icons")]
