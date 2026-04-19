@@ -696,9 +696,9 @@ Plans:
 
 ### Phase 93: docs/todo_v0.5.7_gaps.md — P1 Polish Sweep (G1-G5, plus G3 follow-up + G11 deviation)
 
-**Goal:** Close P1 polish gaps G1-G5 from `docs/todo_v0.5.7_gaps.md` so the v0.5.7 public surface ships with zero half-baked or deferred items. Verifier pass added G3-follow-up (Plan 06) and G11 principled deviation (Plan 07).
+**Goal:** Close P1 polish gaps G1-G5 from `docs/todo_v0.5.7_gaps.md` so the v0.5.7 public surface ships with zero half-baked or deferred items. Verifier pass added G3-follow-up (Plan 06), G11 principled deviation (Plan 07), and G11-followup release-gate bootstrap fix (Plan 08). Status: passed 2026-04-19.
 **Depends on:** Phase 92
-**Plans:** 7 plans (waves: 1=three parallel, 2=one, 3=one, 4=two parallel gap-closures)
+**Plans:** 8 plans (waves: 1=three parallel, 2=one, 3=one, 4=two parallel gap-closures, 5=release-gate bootstrap fix)
 
 Plans:
 - [x] 93-01-PLAN.md — G1: Remove `Rgba::Default` and break the `require<T:Default>` bound chain (wave 1)
@@ -708,3 +708,4 @@ Plans:
 - [x] 93-05-PLAN.md — G5: `#[derive(ThemeFields)]` for 7 non-widget structs + LayoutTheme; unify `lint_toml` over inventory registries (wave 3, depends on 93-01 + 93-03 + 93-04)
 - [x] 93-06-PLAN.md — G3 follow-up: rewrite bundled.rs doctests to use `IconLoader` + add conditional `#[cfg_attr(not(any(material-icons, lucide-icons)), allow(dead_code))]` on `bundled_icon_by_name` (wave 4, depends on 93-01..05)
 - [x] 93-07-PLAN.md — G11 principled deviation: document naga/--workspace incompatibility and realign Phase 93 acceptance with `./pre-release-check.sh` per-crate posture (wave 4, docs-only, disjoint files from 93-06)
+- [x] 93-08-PLAN.md — G11-followup: pre-release-check.sh bootstrap fix (`--no-verify` on the three `cargo package` invocations) + RELEASING.md documenting ordered-publish workflow + VERIFICATION.md correction (status: passed) (wave 5, depends on 93-06 + 93-07)
