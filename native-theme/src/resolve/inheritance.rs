@@ -782,44 +782,557 @@ mod tests {
 
         // Gather ALL implemented inheritance targets across all phases.
         // If any no_inheritance field appears here, we have a bug.
-        let all_inherited_targets: &[&str] = &[
+        let mut all_inherited_targets: Vec<String> = vec![
             // defaults_internal (Phase 1)
-            "defaults.selection_background",
-            "defaults.focus_ring_color",
-            "defaults.selection_inactive_background",
-            "defaults.text_selection_background",
-            "defaults.text_selection_color",
-            "defaults.font.color",
-            "defaults.mono_font.color",
+            "defaults.selection_background".into(),
+            "defaults.focus_ring_color".into(),
+            "defaults.selection_inactive_background".into(),
+            "defaults.text_selection_background".into(),
+            "defaults.text_selection_color".into(),
+            "defaults.font.color".into(),
+            "defaults.mono_font.color".into(),
             // safety nets (Phase 2) — target fields
-            "input.caret_color",
-            "scrollbar.track_color",
-            "spinner.fill_color",
-            "popover.background_color",
-            "list.background_color",
-            "dialog.background_color",
+            "input.caret_color".into(),
+            "scrollbar.track_color".into(),
+            "spinner.fill_color".into(),
+            "popover.background_color".into(),
+            "list.background_color".into(),
+            "dialog.background_color".into(),
             // widget-to-widget (Phase 4)
-            "window.inactive_title_bar_background",
-            "window.inactive_title_bar_text_color",
-            "button.hover_text_color",
-            "button.active_text_color",
-            "tab.hover_text_color",
-            "list.hover_text_color",
-            "splitter.hover_color",
-            "link.hover_text_color",
-            "link.active_text_color",
-            "list.alternate_row_background",
+            "window.inactive_title_bar_background".into(),
+            "window.inactive_title_bar_text_color".into(),
+            "button.hover_text_color".into(),
+            "button.active_text_color".into(),
+            "tab.hover_text_color".into(),
+            "list.hover_text_color".into(),
+            "splitter.hover_color".into(),
+            "link.hover_text_color".into(),
+            "link.active_text_color".into(),
+            "list.alternate_row_background".into(),
             // link.font.color override
-            "link.font.color",
+            "link.font.color".into(),
         ];
+
+        // Post-G6 extension: dynamically pull border + font inheritance targets
+        // from the BorderInheritanceInfo / FontInheritanceInfo registries so the
+        // negative check auto-extends when new widgets declare #[theme_inherit].
+        //
+        // Compile-probe: referencing these types guarantees the test fails at
+        // COMPILE TIME (not as a silent-green PASS) before Task 2 ships the
+        // registry types. See Phase 93-09 IconLoader silent-ignore precedent.
+        let _border_registry_type_probe: Option<&crate::resolve::BorderInheritanceInfo> = None;
+        let _font_registry_type_probe: Option<&crate::resolve::FontInheritanceInfo> = None;
+        for info in inventory::iter::<crate::resolve::BorderInheritanceInfo>() {
+            // widget.border.color / .corner_radius / .line_width / .shadow_enabled
+            all_inherited_targets.push(format!("{}.border.color", info.widget_name));
+            all_inherited_targets.push(format!("{}.border.line_width", info.widget_name));
+            // full + full_lg widgets also target corner_radius and shadow_enabled;
+            // partial widgets target only color + line_width (both already added).
+            if info.kind == "full" || info.kind == "full_lg" {
+                all_inherited_targets.push(format!("{}.border.corner_radius", info.widget_name));
+                all_inherited_targets.push(format!("{}.border.shadow_enabled", info.widget_name));
+            }
+        }
+        for info in inventory::iter::<crate::resolve::FontInheritanceInfo>() {
+            // widget.<font_field>.family / .size / .weight / .style / .color
+            let prefix = format!("{}.{}", info.widget_name, info.font_field);
+            for sub in ["family", "size", "weight", "style", "color"] {
+                all_inherited_targets.push(format!("{prefix}.{sub}"));
+            }
+        }
 
         for field in &no_inherit_fields {
             assert!(
-                !all_inherited_targets.contains(&field.as_str()),
+                !all_inherited_targets.iter().any(|t| t == field),
                 "[no_inheritance] field '{field}' is listed as no-inherit but appears \
                  in an inheritance target list. Either remove the inheritance rule or \
                  remove the field from [no_inheritance]."
             );
         }
+    }
+
+    // ═════════════════════════════════════════════════════════════════════════
+    // G6 RED tests (Phase 94-01 Task 1) — regression guards for the new codegen
+    // path that migrates 34 inheritance rules from hand-written code to
+    // `#[theme_inherit(...)]` struct-level attributes on the widget structs.
+    //
+    // Before Task 2+3 land, these tests MUST fail AT COMPILE TIME (not with
+    // runtime empty-vec PASS). Structural compile-probes are spelled out
+    // explicitly below. Silent-green PASS via empty inventory is the bug class
+    // Phase 93-09 (IconLoader typed-per-set refactor) was chartered to prevent;
+    // the `let _registry_type_exists: Option<&crate::resolve::X> = None;` line
+    // AND the `assert!(!generated.is_empty(), ...)` runtime guard are the two
+    // independent defences that together rule out the silent-green failure mode.
+    //
+    // See .planning/phases/94-.../94-01-PLAN.md <task name="Task 1"> <behavior>.
+    // ═════════════════════════════════════════════════════════════════════════
+
+    /// Sentinel helper: a non-default DefaultsBorderSpec with unique values
+    /// for every field, used to distinguish "inherited from defaults" from
+    /// "pre-existing widget value" in the dispatch tests below.
+    fn sentinel_defaults_border() -> crate::model::border::DefaultsBorderSpec {
+        crate::model::border::DefaultsBorderSpec {
+            color: Some(crate::Rgba::new(255, 0, 0, 255)), // RED
+            corner_radius: Some(9.0),
+            corner_radius_lg: Some(13.0),
+            line_width: Some(2.0),
+            opacity: Some(1.0),
+            shadow_enabled: Some(true),
+        }
+    }
+
+    /// Sentinel helper: a non-default FontSpec with unique values for every
+    /// sub-field, used to verify the font codegen populates every sub-field.
+    fn sentinel_defaults_font() -> crate::model::FontSpec {
+        crate::model::FontSpec {
+            family: Some(std::sync::Arc::from("TestMono")),
+            size: Some(crate::model::font::FontSize::Pt(13.0)),
+            weight: Some(500),
+            style: Some(crate::model::font::FontStyle::Italic),
+            color: Some(crate::Rgba::new(0, 0, 255, 255)), // BLUE
+        }
+    }
+
+    /// Test 1 (RED): the generated `resolve_border_from_defaults` methods
+    /// must exist on every widget that declares `#[theme_inherit(border_kind)]`.
+    ///
+    /// Before Task 2 lands: compile fails with "no method named
+    /// resolve_border_from_defaults found for struct ButtonTheme ...".
+    /// After Task 3 lands: all 15 widgets populate their border correctly.
+    #[test]
+    fn border_codegen_dispatch_matches_runtime() {
+        let mut mode = crate::model::ThemeMode::default();
+        mode.defaults.border = sentinel_defaults_border();
+
+        // Direct-invoke compile-probe: referencing the method on one widget
+        // forces Task 2 to exist. If the method is missing, this line fails
+        // to compile. (Empty-vec / runtime fallbacks cannot silently PASS.)
+        mode.button
+            .resolve_border_from_defaults(&mode.defaults.border);
+        let button_border = mode
+            .button
+            .border
+            .as_ref()
+            .expect("button.border populated");
+        assert_eq!(button_border.color, Some(crate::Rgba::new(255, 0, 0, 255)));
+        assert_eq!(button_border.corner_radius, Some(9.0));
+        assert_eq!(button_border.line_width, Some(2.0));
+        assert_eq!(button_border.shadow_enabled, Some(true));
+
+        // End-to-end dispatch: resolve_border_inheritance must call the generated
+        // methods on all 15 widgets. Reset and re-run via the public entry.
+        let mut mode = crate::model::ThemeMode::default();
+        mode.defaults.border = sentinel_defaults_border();
+        mode.resolve_border_inheritance();
+
+        // 10 "full" widgets: color, corner_radius, line_width, shadow_enabled all
+        // inherited from defaults.border (non-lg variant).
+        let full_widgets: &[(&str, &Option<crate::model::border::WidgetBorderSpec>)] = &[
+            ("button", &mode.button.border),
+            ("input", &mode.input.border),
+            ("checkbox", &mode.checkbox.border),
+            ("tooltip", &mode.tooltip.border),
+            ("progress_bar", &mode.progress_bar.border),
+            ("toolbar", &mode.toolbar.border),
+            ("list", &mode.list.border),
+            ("combo_box", &mode.combo_box.border),
+            ("segmented_control", &mode.segmented_control.border),
+            ("expander", &mode.expander.border),
+        ];
+        for (name, border_opt) in full_widgets {
+            let b = border_opt
+                .as_ref()
+                .unwrap_or_else(|| panic!("{name}.border must be populated"));
+            assert_eq!(
+                b.color,
+                Some(crate::Rgba::new(255, 0, 0, 255)),
+                "{name}.border.color"
+            );
+            assert_eq!(b.corner_radius, Some(9.0), "{name}.border.corner_radius");
+            assert_eq!(b.line_width, Some(2.0), "{name}.border.line_width");
+            assert_eq!(b.shadow_enabled, Some(true), "{name}.border.shadow_enabled");
+        }
+
+        // 3 "full_lg" widgets: corner_radius comes from corner_radius_lg (13.0), not 9.0.
+        let lg_widgets: &[(&str, &Option<crate::model::border::WidgetBorderSpec>)] = &[
+            ("window", &mode.window.border),
+            ("popover", &mode.popover.border),
+            ("dialog", &mode.dialog.border),
+        ];
+        for (name, border_opt) in lg_widgets {
+            let b = border_opt
+                .as_ref()
+                .unwrap_or_else(|| panic!("{name}.border must be populated"));
+            assert_eq!(
+                b.color,
+                Some(crate::Rgba::new(255, 0, 0, 255)),
+                "{name}.border.color"
+            );
+            assert_eq!(
+                b.corner_radius,
+                Some(13.0),
+                "{name}.border.corner_radius (lg)"
+            );
+            assert_eq!(b.line_width, Some(2.0), "{name}.border.line_width");
+            assert_eq!(b.shadow_enabled, Some(true), "{name}.border.shadow_enabled");
+        }
+
+        // 2 "partial" widgets: only color + line_width inherited; corner_radius
+        // and shadow_enabled remain None.
+        let partial_widgets: &[(&str, &Option<crate::model::border::WidgetBorderSpec>)] = &[
+            ("sidebar", &mode.sidebar.border),
+            ("status_bar", &mode.status_bar.border),
+        ];
+        for (name, border_opt) in partial_widgets {
+            let b = border_opt
+                .as_ref()
+                .unwrap_or_else(|| panic!("{name}.border must be populated"));
+            assert_eq!(
+                b.color,
+                Some(crate::Rgba::new(255, 0, 0, 255)),
+                "{name}.border.color"
+            );
+            assert_eq!(b.line_width, Some(2.0), "{name}.border.line_width");
+            assert_eq!(
+                b.corner_radius, None,
+                "{name}.border.corner_radius (partial)"
+            );
+            assert_eq!(
+                b.shadow_enabled, None,
+                "{name}.border.shadow_enabled (partial)"
+            );
+        }
+    }
+
+    /// Test 2 (RED): the generated `resolve_font_from_defaults` methods must
+    /// exist on every widget that declares `#[theme_inherit(font = "...")]`.
+    ///
+    /// Before Task 2 lands: compile fails with "no method named
+    /// resolve_font_from_defaults found for struct ButtonTheme ...".
+    /// After Task 3 lands: all 19 widget fonts populate correctly, including
+    /// list (two fonts), dialog (two fonts), and link (color-override exception).
+    #[test]
+    fn font_codegen_dispatch_matches_runtime() {
+        let mut mode = crate::model::ThemeMode::default();
+        mode.defaults.font = sentinel_defaults_font();
+        // Ensure link.font.color override has a distinct value to verify.
+        mode.defaults.link_color = Some(crate::Rgba::new(0, 255, 0, 255)); // GREEN
+
+        // Direct-invoke compile-probe on Button.
+        mode.button.resolve_font_from_defaults(&mode.defaults.font);
+        let button_font = mode.button.font.as_ref().expect("button.font populated");
+        assert_eq!(
+            button_font.family.as_deref(),
+            Some("TestMono"),
+            "button.font.family"
+        );
+        assert_eq!(
+            button_font.size,
+            Some(crate::model::font::FontSize::Pt(13.0)),
+            "button.font.size"
+        );
+        assert_eq!(button_font.weight, Some(500), "button.font.weight");
+        assert_eq!(
+            button_font.style,
+            Some(crate::model::font::FontStyle::Italic),
+            "button.font.style"
+        );
+        assert_eq!(
+            button_font.color,
+            Some(crate::Rgba::new(0, 0, 255, 255)),
+            "button.font.color"
+        );
+
+        // End-to-end dispatch via resolve_font_inheritance.
+        let mut mode = crate::model::ThemeMode::default();
+        mode.defaults.font = sentinel_defaults_font();
+        mode.defaults.link_color = Some(crate::Rgba::new(0, 255, 0, 255)); // GREEN
+        mode.resolve_font_inheritance();
+
+        // Helper: assert a font matches the sentinel values (with configurable expected color).
+        let assert_font =
+            |font: &crate::model::FontSpec, name: &str, expected_color: crate::Rgba| {
+                assert_eq!(font.family.as_deref(), Some("TestMono"), "{name}.family");
+                assert_eq!(
+                    font.size,
+                    Some(crate::model::font::FontSize::Pt(13.0)),
+                    "{name}.size"
+                );
+                assert_eq!(font.weight, Some(500), "{name}.weight");
+                assert_eq!(
+                    font.style,
+                    Some(crate::model::font::FontStyle::Italic),
+                    "{name}.style"
+                );
+                assert_eq!(font.color, Some(expected_color), "{name}.color");
+            };
+
+        let blue = crate::Rgba::new(0, 0, 255, 255);
+        // 15 widgets use the .font field populated from defaults.font.
+        assert_font(
+            mode.window
+                .title_bar_font
+                .as_ref()
+                .expect("window.title_bar_font populated"),
+            "window.title_bar_font",
+            blue,
+        );
+        assert_font(
+            mode.button.font.as_ref().expect("button.font"),
+            "button.font",
+            blue,
+        );
+        assert_font(
+            mode.input.font.as_ref().expect("input.font"),
+            "input.font",
+            blue,
+        );
+        assert_font(
+            mode.checkbox.font.as_ref().expect("checkbox.font"),
+            "checkbox.font",
+            blue,
+        );
+        assert_font(
+            mode.menu.font.as_ref().expect("menu.font"),
+            "menu.font",
+            blue,
+        );
+        assert_font(
+            mode.tooltip.font.as_ref().expect("tooltip.font"),
+            "tooltip.font",
+            blue,
+        );
+        assert_font(mode.tab.font.as_ref().expect("tab.font"), "tab.font", blue);
+        assert_font(
+            mode.sidebar.font.as_ref().expect("sidebar.font"),
+            "sidebar.font",
+            blue,
+        );
+        assert_font(
+            mode.toolbar.font.as_ref().expect("toolbar.font"),
+            "toolbar.font",
+            blue,
+        );
+        assert_font(
+            mode.status_bar.font.as_ref().expect("status_bar.font"),
+            "status_bar.font",
+            blue,
+        );
+        assert_font(
+            mode.popover.font.as_ref().expect("popover.font"),
+            "popover.font",
+            blue,
+        );
+        assert_font(
+            mode.combo_box.font.as_ref().expect("combo_box.font"),
+            "combo_box.font",
+            blue,
+        );
+        assert_font(
+            mode.segmented_control
+                .font
+                .as_ref()
+                .expect("segmented_control.font"),
+            "segmented_control.font",
+            blue,
+        );
+        assert_font(
+            mode.expander.font.as_ref().expect("expander.font"),
+            "expander.font",
+            blue,
+        );
+
+        // List has TWO font fields: item_font AND header_font.
+        assert_font(
+            mode.list
+                .item_font
+                .as_ref()
+                .expect("list.item_font populated"),
+            "list.item_font",
+            blue,
+        );
+        assert_font(
+            mode.list
+                .header_font
+                .as_ref()
+                .expect("list.header_font populated"),
+            "list.header_font",
+            blue,
+        );
+
+        // Dialog has TWO font fields: title_font AND body_font.
+        assert_font(
+            mode.dialog
+                .title_font
+                .as_ref()
+                .expect("dialog.title_font populated"),
+            "dialog.title_font",
+            blue,
+        );
+        assert_font(
+            mode.dialog
+                .body_font
+                .as_ref()
+                .expect("dialog.body_font populated"),
+            "dialog.body_font",
+            blue,
+        );
+
+        // Link has the color override exception: link.font.color = defaults.link_color
+        // (GREEN), NOT defaults.font.color (BLUE). Other sub-fields inherit normally.
+        let link_font = mode.link.font.as_ref().expect("link.font populated");
+        assert_eq!(
+            link_font.family.as_deref(),
+            Some("TestMono"),
+            "link.font.family"
+        );
+        assert_eq!(
+            link_font.size,
+            Some(crate::model::font::FontSize::Pt(13.0)),
+            "link.font.size"
+        );
+        assert_eq!(link_font.weight, Some(500), "link.font.weight");
+        assert_eq!(
+            link_font.style,
+            Some(crate::model::font::FontStyle::Italic),
+            "link.font.style"
+        );
+        assert_eq!(
+            link_font.color,
+            Some(crate::Rgba::new(0, 255, 0, 255)),
+            "link.font.color (OVERRIDE: from link_color, NOT font.color)"
+        );
+    }
+
+    /// Test 3 (RED): the `BorderInheritanceInfo` inventory registry must
+    /// exist and be populated post-Task-3.
+    ///
+    /// The compile-probe `let _registry_type_exists: Option<&crate::resolve::BorderInheritanceInfo> = None;`
+    /// guarantees the test FAILS at COMPILE TIME before Task 2 defines the type.
+    /// The `assert!(!generated.is_empty(), ...)` guard guarantees silent-green
+    /// PASS via empty inventory is rejected post-Task-3 (Phase 93-09 precedent).
+    #[test]
+    fn border_inheritance_registry_is_populated_and_matches_toml() {
+        // Compile-probe: references the type path directly. Before Task 2,
+        // this line fails to compile with `unresolved path`.
+        let _registry_type_exists: Option<&crate::resolve::BorderInheritanceInfo> = None;
+
+        // Collect widget names for full + full_lg + partial kinds (the
+        // widgets_with_border TOML array covers all border-inheriting widgets).
+        let mut generated: Vec<&str> = inventory::iter::<crate::resolve::BorderInheritanceInfo>()
+            .map(|i| i.widget_name)
+            .collect();
+        generated.sort();
+        generated.dedup();
+
+        // Silent-green guard: post-Task-3 the inventory must be non-empty.
+        // An empty vec passing byte-equal against empty toml_sorted would
+        // silently PASS — reject that failure mode explicitly.
+        assert!(
+            !generated.is_empty(),
+            "BorderInheritanceInfo inventory is empty post-Task-3. Silent-green bug: \
+             either widget structs are missing #[theme_inherit(border_kind=...)] \
+             attributes (Task 3 Step A) or the proc-macro is not emitting \
+             inventory::submit! (Task 2 Step B.3)."
+        );
+        assert!(
+            generated.len() >= 15,
+            "Expected >=15 border widgets (13 full + 2 partial, full_lg subset of full), got {}",
+            generated.len()
+        );
+
+        let table = load_rules_toml();
+        let section = table
+            .get("border_inheritance")
+            .and_then(|v| v.as_table())
+            .expect("[border_inheritance] section exists");
+
+        // full + full_lg widgets from TOML
+        let mut toml_full: Vec<String> = toml_string_array(
+            section
+                .get("widgets_with_border")
+                .expect("widgets_with_border key"),
+        );
+        toml_full.sort();
+
+        // Generated full + full_lg widgets from inventory (kind = "full" | "full_lg")
+        let mut gen_full: Vec<String> = inventory::iter::<crate::resolve::BorderInheritanceInfo>()
+            .filter(|i| i.kind == "full" || i.kind == "full_lg")
+            .map(|i| i.widget_name.to_string())
+            .collect();
+        gen_full.sort();
+        gen_full.dedup();
+
+        assert_eq!(
+            gen_full, toml_full,
+            "widgets_with_border in docs/inheritance-rules.toml diverges from \
+             macro-emitted BorderInheritanceInfo registry."
+        );
+
+        // corner_radius_lg widgets from TOML
+        let mut toml_lg: Vec<String> = toml_string_array(
+            section
+                .get("corner_radius_lg_widgets")
+                .expect("corner_radius_lg_widgets key"),
+        );
+        toml_lg.sort();
+
+        let mut gen_lg: Vec<String> = inventory::iter::<crate::resolve::BorderInheritanceInfo>()
+            .filter(|i| i.kind == "full_lg")
+            .map(|i| i.widget_name.to_string())
+            .collect();
+        gen_lg.sort();
+        gen_lg.dedup();
+
+        assert_eq!(
+            gen_lg, toml_lg,
+            "corner_radius_lg_widgets diverges from BorderInheritanceInfo (kind=\"full_lg\")"
+        );
+    }
+
+    /// Test 4 (RED): the `FontInheritanceInfo` inventory registry must exist
+    /// and be populated post-Task-3.
+    ///
+    /// Symmetric to Test 3 for font inheritance. Compile-probe plus non-empty
+    /// assertion rules out silent-green PASS via empty inventory.
+    #[test]
+    fn font_inheritance_registry_is_populated_and_matches_toml() {
+        // Compile-probe.
+        let _registry_type_exists: Option<&crate::resolve::FontInheritanceInfo> = None;
+
+        let mut generated: Vec<String> = inventory::iter::<crate::resolve::FontInheritanceInfo>()
+            .map(|i| format!("{}.{}", i.widget_name, i.font_field))
+            .collect();
+        generated.sort();
+
+        // Silent-green guard.
+        assert!(
+            !generated.is_empty(),
+            "FontInheritanceInfo inventory is empty post-Task-3. Silent-green bug."
+        );
+        assert!(
+            generated.len() >= 19,
+            "Expected >=19 font widgets (15 single + 2 list-double + 2 dialog-double), got {}",
+            generated.len()
+        );
+
+        let table = load_rules_toml();
+        let section = table
+            .get("font_inheritance")
+            .and_then(|v| v.as_table())
+            .expect("[font_inheritance] section exists");
+
+        let mut toml_fonts: Vec<String> = toml_string_array(
+            section
+                .get("widgets_with_font")
+                .expect("widgets_with_font key"),
+        );
+        toml_fonts.sort();
+
+        assert_eq!(
+            generated, toml_fonts,
+            "widgets_with_font in docs/inheritance-rules.toml diverges from \
+             macro-emitted FontInheritanceInfo registry."
+        );
     }
 }
