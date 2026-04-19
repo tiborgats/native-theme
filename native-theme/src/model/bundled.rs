@@ -28,7 +28,7 @@ use super::icons::{IconRole, IconSet};
 /// ```
 #[must_use]
 #[allow(unreachable_patterns, unused_variables)]
-pub fn bundled_icon_svg(role: IconRole, set: IconSet) -> Option<&'static [u8]> {
+pub(crate) fn bundled_icon_svg(role: IconRole, set: IconSet) -> Option<&'static [u8]> {
     match set {
         #[cfg(feature = "material-icons")]
         IconSet::Material => material_svg(role),
@@ -194,7 +194,7 @@ fn lucide_svg(role: IconRole) -> Option<&'static [u8]> {
 /// ```
 #[must_use]
 #[allow(unreachable_patterns, unused_variables)]
-pub fn bundled_icon_by_name(name: &str, set: IconSet) -> Option<&'static [u8]> {
+pub(crate) fn bundled_icon_by_name(name: &str, set: IconSet) -> Option<&'static [u8]> {
     match set {
         #[cfg(feature = "material-icons")]
         IconSet::Material => material_svg_by_name(name),

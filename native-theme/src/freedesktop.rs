@@ -116,7 +116,7 @@ pub(crate) fn load_freedesktop_icon(
 /// **Performance note:** Each call reads the icon file from disk. Callers
 /// that load the same icon repeatedly should cache the returned `IconData`.
 #[must_use]
-pub fn load_freedesktop_icon_by_name(
+pub(crate) fn load_freedesktop_icon_by_name(
     name: &str,
     theme: &str,
     size: u16,
