@@ -647,6 +647,11 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 86. Validation and Lint Codegen Polish | v0.5.7 | 2/2 | Complete   | 2026-04-13 |
 | 87. Font Family Arc<str> and AnimatedIcon Invariants | v0.5.7 | 3/3 | Complete   | 2026-04-13 |
 | 88. Diagnostic and Preset-Polish Sweep | v0.5.7 | 0/0 | Not started | — |
+| 89. Fix Stale Doctest Paths and Dangling Doc Link | v0.5.7 | 1/1 | Complete | 2026-04-15 |
+| 90. Remaining v0.5.7 API Overhaul Gaps | v0.5.7 | 6/6 | Complete | 2026-04-15 |
+| 91. Resolve Remaining TODO Doc Gaps | v0.5.7 | 3/3 | Complete | 2026-04-15 |
+| 92. Icon Theme Selection and Showcase Fixes | v0.5.7 | 4/4 | Complete | 2026-04-16 |
+| 93. docs/todo_v0.5.7_gaps.md — P1 Polish Sweep (G1-G5) | v0.5.7 | 1/5 | In progress | — |
 
 ### Phase 90: resolve remaining v0.5.7 API overhaul gaps
 
@@ -688,3 +693,16 @@ Plans:
 - [x] 92-02-PLAN.md -- Iced showcase: import library type, guard rebuild_theme(), add installed themes
 - [x] 92-03-PLAN.md -- GPUI showcase: replace boolean with library type, guard reapplication, add installed themes
 - [x] 92-04-PLAN.md -- Full workspace verification and pre-release check
+
+### Phase 93: docs/todo_v0.5.7_gaps.md — P1 Polish Sweep (G1-G5)
+
+**Goal:** Close P1 polish gaps G1-G5 from `docs/todo_v0.5.7_gaps.md` so the v0.5.7 public surface ships with zero half-baked or deferred items.
+**Depends on:** Phase 92
+**Plans:** 5 plans (waves: 1=three parallel, 2=one, 3=one)
+
+Plans:
+- [ ] 93-01-PLAN.md — G1: Remove `Rgba::Default` and break the `require<T:Default>` bound chain (wave 1)
+- [x] 93-02-PLAN.md — G2: Add `LinuxDesktop::Wayfire` variant and route through adwaita+portal fallback (wave 1)
+- [x] 93-03-PLAN.md — G3: Demote `bundled_icon_svg`/`bundled_icon_by_name`/`load_freedesktop_icon_by_name` to `pub(crate)` and migrate connector + showcase to `IconLoader` (wave 1)
+- [ ] 93-04-PLAN.md — G4: `icon_theme` on `Theme` with per-variant override; migrate 15 presets to top-level (wave 2, depends on 93-02 + 93-03)
+- [ ] 93-05-PLAN.md — G5: `#[derive(ThemeFields)]` for 7 non-widget structs + LayoutTheme; unify `lint_toml` over inventory registries (wave 3, depends on 93-01 + 93-03 + 93-04)

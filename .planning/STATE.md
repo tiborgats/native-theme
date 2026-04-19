@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
-status: completed
-stopped_at: Phase 92 verified and complete (4 plans done, 7/7 must-haves verified)
-last_updated: "2026-04-16T00:30:00Z"
-last_activity: 2026-04-16 — Phase 92 verified (IconSetChoice, iced/GPUI showcase fixes, workspace clean)
+status: in-progress
+stopped_at: Phase 93 Plan 02 complete (LinuxDesktop::Wayfire variant added; wlroots fallback route extended)
+last_updated: "2026-04-19T14:17:42Z"
+last_activity: 2026-04-19 — Phase 93 Plan 02 committed (421c3cc G2: LinuxDesktop::Wayfire variant + parse arm + pipeline/icons arms + 2 tests)
 progress:
-  total_phases: 29
+  total_phases: 30
   completed_phases: 29
-  total_plans: 56
-  completed_plans: 56
-  percent: 100
+  total_plans: 59
+  completed_plans: 58
+  percent: 98
 ---
 
 # Project State
@@ -25,12 +25,12 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 
 ## Current Position
 
-Phase: 92 — implement-the-chosen-solutions-described-in-docs-todo-v0-5-7-icon-theme-md
-Plan: 4/4 complete
-Status: verified
-Last activity: 2026-04-16 — Phase 92 verified (IconSetChoice enum, iced/GPUI showcase fixes, 7/7 must-haves)
+Phase: 93 — docs-todo-v0-5-7-gaps-md
+Plan: 4/5 complete (93-02 and 93-03 done; 93-01 in-progress in parallel; 93-04/05 pending)
+Status: in-progress
+Last activity: 2026-04-19 — Phase 93 Plan 02 complete (G2: LinuxDesktop::Wayfire variant added; `parse_linux_desktop("Wayfire")` mapped; pipeline + icons wlroots arms extended)
 
-Progress: [██████████] 100% (66/66 plans complete)
+Progress: [██████████] 98% (58/59 plans complete; 93-01 and 93-04/05 outstanding)
 
 ## Accumulated Context
 
@@ -195,12 +195,16 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 90-04]: Theme::new() deleted; callers use struct literal with Default. NoVariant error categorized as ErrorKind::Resolution. Connector from_preset functions propagate NoVariant via ? instead of custom error wrappers
 - [Phase 91-02]: is_border_type() detects border fields by resolved type last segment (ResolvedBorderSpec); struct-level border_kind is single source of truth for validation dispatch
 - [Phase 92-01]: map_while(Result::ok) instead of filter_map for BufRead::lines() per clippy::lines_filter_map_ok
+- [Phase 93-02]: LinuxDesktop::Wayfire inserted between Niri and CosmicDe (preserves "wlroots compositors then other desktops" grouping); XDG token is exact-case "Wayfire" (no case-insensitive fallback, matches Hyprland/Budgie/COSMIC style)
+- [Phase 93-02]: Wayfire routed through the shared wlroots fallback arm (adwaita preset + portal) rather than getting a dedicated arm -- same rationale as Sway/River/Niri (wlroots compositor, no native theme engine, consumes GTK/portal config)
+- [Phase 93-02]: Rule 3 deviation -- model/icons.rs detect_linux_icon_theme's exhaustive match also required a Wayfire arm (dispatched to org.gnome.desktop.interface gsettings alongside the other wlroots compositors); plan body only listed detect.rs and pipeline.rs but compile-required arm was mandatory
 
 ### Roadmap Evolution
 
 - Phase 90 added: resolve remaining v0.5.7 API overhaul gaps
 - Phase 91 added: resolve remaining TODO doc gaps (15b, 15f, B1-require, B7, C6)
 - Phase 92 added: implement the chosen solutions described in docs/todo_v0.5.7_icon-theme.md
+- Phase 93 added: docs/todo_v0.5.7_gaps.md
 
 ### Blockers/Concerns
 
