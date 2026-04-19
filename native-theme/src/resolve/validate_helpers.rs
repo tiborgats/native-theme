@@ -2,9 +2,16 @@
 //
 // Extracted from validate.rs to keep the orchestration module focused on
 // defaults extraction, per-widget dispatch, and construction.
+//
+// Phase 93-01 (G1): `require<T: Clone>` takes an explicit `fallback: T`
+// instead of requiring `T: Default`, breaking the bound chain that forced
+// `impl Default for Rgba`. See `fn require` below for details.
 
+use crate::Rgba;
 use crate::model::border::{ResolvedBorderSpec, WidgetBorderSpec};
+use crate::model::font::FontStyle;
 use crate::model::{FontSpec, ResolvedFontSpec};
+use std::sync::Arc;
 
 /// Standard screen DPI (96 dots per inch). Used as the font_dpi fallback
 /// when no DPI was set on the unresolved variant (e.g. community presets
@@ -13,23 +20,67 @@ use crate::model::{FontSpec, ResolvedFontSpec};
 /// `FontSize::Pt` values to logical pixels via `FontSize::to_logical_px(dpi)`.
 pub(crate) const DEFAULT_FONT_DPI: f32 = 96.0;
 
+/// Empty `Arc<str>` placeholder used as the sentinel for missing font-family
+/// fields. Never observed by user code: `validate()` returns `Err` whenever
+/// any field was recorded as missing.
+fn empty_arc_str() -> Arc<str> {
+    Arc::<str>::from("")
+}
+
+/// Construct the zero-value sentinel for `ResolvedFontSpec`. Fields mirror
+/// the pre-G1 `ResolvedFontSpec::default()` output (empty family, 0.0 size,
+/// 0 weight, `FontStyle::Normal`, `Rgba::TRANSPARENT`).
+fn resolved_font_spec_sentinel() -> ResolvedFontSpec {
+    ResolvedFontSpec {
+        family: empty_arc_str(),
+        size: 0.0,
+        weight: 0,
+        style: FontStyle::Normal,
+        color: Rgba::TRANSPARENT,
+    }
+}
+
+/// Construct the zero-value sentinel for `ResolvedBorderSpec`. Fields mirror
+/// the pre-G1 `ResolvedBorderSpec::default()` output (TRANSPARENT color,
+/// 0.0 geometry, false shadow).
+fn resolved_border_spec_sentinel() -> ResolvedBorderSpec {
+    ResolvedBorderSpec {
+        color: Rgba::TRANSPARENT,
+        corner_radius: 0.0,
+        corner_radius_lg: 0.0,
+        line_width: 0.0,
+        opacity: 0.0,
+        shadow_enabled: false,
+        padding_horizontal: 0.0,
+        padding_vertical: 0.0,
+    }
+}
+
 // --- validate() helpers ---
 
 /// Extract a required field, recording the path if missing.
 ///
-/// Returns the value if present, or `T::default()` as a placeholder if missing.
-/// The placeholder is never used: `validate()` returns `Err` before constructing
-/// `ResolvedTheme` when any field was recorded as missing.
-pub(crate) fn require<T: Clone + Default>(
+/// Returns the value if present, or the caller-supplied `fallback` as a
+/// placeholder if missing. The placeholder is never observed: `validate()`
+/// returns `Err` before constructing `ResolvedTheme` whenever any field was
+/// recorded as missing.
+///
+/// Callers supply `fallback` as an explicit sentinel (e.g.
+/// [`crate::color::Rgba::TRANSPARENT`], `0.0_f32`, `false`). This lets the
+/// function stay bound-free (`T: Clone` only) -- in particular, no `Default`
+/// bound is required on `T`, so types like [`crate::color::Rgba`] do not
+/// need `impl Default`.
+pub(crate) fn require<T: Clone>(
     field: &Option<T>,
     path: &str,
     missing: &mut Vec<String>,
+    fallback: T,
 ) -> T {
     match field {
         Some(val) => val.clone(),
         None => {
             missing.push(path.to_string());
-            T::default()
+            fallback
         }
     }
 }
@@ -42,7 +93,12 @@ pub(crate) fn require_font(
     dpi: f32,
     missing: &mut Vec<String>,
 ) -> ResolvedFontSpec {
-    let family = require(&font.family, &format!("{prefix}.family"), missing);
+    let family = require(
+        &font.family,
+        &format!("{prefix}.family"),
+        missing,
+        empty_arc_str(),
+    );
     let size = font
         .size
         .map(|fs| fs.to_logical_px(dpi))
@@ -50,8 +106,19 @@ pub(crate) fn require_font(
             missing.push(format!("{prefix}.size"));
             0.0
         });
-    let weight = require(&font.weight, &format!("{prefix}.weight"), missing);
-    let color = require(&font.color, &format!("{prefix}.color"), missing);
+    let weight_fallback: u16 = 0;
+    let weight = require(
+        &font.weight,
+        &format!("{prefix}.weight"),
+        missing,
+        weight_fallback,
+    );
+    let color = require(
+        &font.color,
+        &format!("{prefix}.color"),
+        missing,
+        Rgba::TRANSPARENT,
+    );
     ResolvedFontSpec {
         family,
         size,
@@ -61,7 +128,7 @@ pub(crate) fn require_font(
         // and `color` -- which have no safe universal default -- `style` can always
         // fall back to Normal without producing an incorrect rendering. This asymmetry
         // is intentional (doc 2 D1).
-        style: font.style.unwrap_or_default(),
+        style: font.style.unwrap_or(FontStyle::Normal),
         color,
     }
 }
@@ -77,23 +144,39 @@ pub(crate) fn require_font_opt(
     match font {
         None => {
             missing.push(prefix.to_string());
-            ResolvedFontSpec::default()
+            resolved_font_spec_sentinel()
         }
         Some(f) => {
-            let family = require(&f.family, &format!("{prefix}.family"), missing);
+            let family = require(
+                &f.family,
+                &format!("{prefix}.family"),
+                missing,
+                empty_arc_str(),
+            );
             let size = f.size.map(|fs| fs.to_logical_px(dpi)).unwrap_or_else(|| {
                 missing.push(format!("{prefix}.size"));
                 0.0
             });
-            let weight = require(&f.weight, &format!("{prefix}.weight"), missing);
-            let color = require(&f.color, &format!("{prefix}.color"), missing);
+            let weight_fallback: u16 = 0;
+            let weight = require(
+                &f.weight,
+                &format!("{prefix}.weight"),
+                missing,
+                weight_fallback,
+            );
+            let color = require(
+                &f.color,
+                &format!("{prefix}.color"),
+                missing,
+                Rgba::TRANSPARENT,
+            );
             ResolvedFontSpec {
                 family,
                 size,
                 weight,
                 // `style` is inherently optional: `FontStyle::Normal` is the universally-safe
                 // default when a theme omits italic/oblique (see require_font for full rationale).
-                style: f.style.unwrap_or_default(),
+                style: f.style.unwrap_or(FontStyle::Normal),
                 color,
             }
         }
@@ -112,7 +195,11 @@ pub(crate) fn require_text_scale_entry(
     match entry {
         None => {
             missing.push(prefix.to_string());
-            crate::model::resolved::ResolvedTextScaleEntry::default()
+            crate::model::resolved::ResolvedTextScaleEntry {
+                size: 0.0,
+                weight: 0,
+                line_height: 0.0,
+            }
         }
         Some(e) => {
             let size = e.size.map(|fs| fs.to_logical_px(dpi)).unwrap_or_else(|| {
@@ -126,7 +213,13 @@ pub(crate) fn require_text_scale_entry(
                     missing.push(format!("{prefix}.line_height"));
                     0.0
                 });
-            let weight = require(&e.weight, &format!("{prefix}.weight"), missing);
+            let weight_fallback: u16 = 0;
+            let weight = require(
+                &e.weight,
+                &format!("{prefix}.weight"),
+                missing,
+                weight_fallback,
+            );
             crate::model::resolved::ResolvedTextScaleEntry {
                 size,
                 weight,
@@ -161,9 +254,9 @@ pub(crate) enum BorderKind {
 /// - `Partial`: requires color and line_width only.
 /// - `None`: all sub-fields optional, no missing-field errors.
 ///
-/// Padding sub-fields are sizing fields with no inheritance — they use
-/// the preset value if present, otherwise `T::default()`.
-/// `corner_radius_lg` and `opacity` are defaults-only; always 0.0 at widget level.
+/// Padding sub-fields are sizing fields with no inheritance — the preset
+/// value is used when present, otherwise zero. `corner_radius_lg` and
+/// `opacity` are defaults-only; always 0.0 at widget level.
 pub(crate) fn validate_border(
     border: &Option<WidgetBorderSpec>,
     prefix: &str,
@@ -172,9 +265,13 @@ pub(crate) fn validate_border(
 ) -> ResolvedBorderSpec {
     match kind {
         BorderKind::None => match border {
-            Option::None => ResolvedBorderSpec::default(),
+            Option::None => resolved_border_spec_sentinel(),
             Some(b) => ResolvedBorderSpec {
-                color: b.color.unwrap_or_default(),
+                // `b.color: Option<Rgba>`. Once `impl Default for Rgba` is
+                // removed in Task 2, `Option::unwrap_or_default()` can no
+                // longer synthesise an Rgba. Pass TRANSPARENT explicitly
+                // (same value as the old `Rgba::default()`).
+                color: b.color.unwrap_or(Rgba::TRANSPARENT),
                 corner_radius: b.corner_radius.unwrap_or_default(),
                 corner_radius_lg: 0.0,
                 line_width: b.line_width.unwrap_or_default(),
@@ -187,23 +284,37 @@ pub(crate) fn validate_border(
         BorderKind::Full | BorderKind::Partial => match border {
             Option::None => {
                 missing.push(prefix.to_string());
-                ResolvedBorderSpec::default()
+                resolved_border_spec_sentinel()
             }
             Some(b) => {
-                let color = require(&b.color, &format!("{prefix}.color"), missing);
-                let line_width = require(&b.line_width, &format!("{prefix}.line_width"), missing);
+                let color = require(
+                    &b.color,
+                    &format!("{prefix}.color"),
+                    missing,
+                    Rgba::TRANSPARENT,
+                );
+                let zero_width: f32 = 0.0;
+                let line_width = require(
+                    &b.line_width,
+                    &format!("{prefix}.line_width"),
+                    missing,
+                    zero_width,
+                );
 
                 let (corner_radius, shadow_enabled) = if kind == BorderKind::Full {
+                    let zero_radius: f32 = 0.0;
                     (
                         require(
                             &b.corner_radius,
                             &format!("{prefix}.corner_radius"),
                             missing,
+                            zero_radius,
                         ),
                         require(
                             &b.shadow_enabled,
                             &format!("{prefix}.shadow_enabled"),
                             missing,
+                            false,
                         ),
                     )
                 } else {
@@ -386,11 +497,23 @@ impl ValidateNested for WidgetBorderSpec {
 
 /// Extract all defaults fields and construct `ResolvedDefaults` in one invocation.
 ///
-/// Handles four extraction patterns:
-/// - **font**: non-Option `FontSpec` fields via `require_font()`
-/// - **option**: `Option<T>` fields via `require()`
-/// - **border_required**: `Option<T>` fields nested under `defaults.border` via `require()`
-/// - **icon_sizes**: `Option<T>` fields nested under `defaults.icon_sizes` via `require()`
+/// Handles five extraction patterns:
+/// - **font**: non-Option `FontSpec` fields via `require_font()`.
+/// - **option_color**: `Option<Rgba>` fields via `require()` with
+///   `Rgba::TRANSPARENT` fallback.
+/// - **option_f32**: `Option<f32>` fields via `require()` with `0.0_f32`
+///   fallback.
+/// - **border_required**: `Option<T>` fields nested under `defaults.border`
+///   with per-field fallback expressions supplied at the call site
+///   (Rgba / f32 / bool).
+/// - **icon_sizes**: `Option<f32>` fields nested under `defaults.icon_sizes`
+///   via `require()` with `0.0_f32` fallback.
+///
+/// The split between `option_color` and `option_f32` is intentional: after
+/// G1 removes `impl Default for Rgba`, there is no uniform way for the
+/// macro to synthesise a per-field fallback without a sealed
+/// `Default`-equivalent trait. Encoding the type group at the macro call
+/// site keeps the fallback sentinel construction local and explicit.
 ///
 /// Border padding fields (`padding_horizontal`, `padding_vertical`) default to `0.0`
 /// and are not extracted via `require()`.
@@ -398,8 +521,9 @@ macro_rules! validate_defaults {
     (
         $src:expr, $dpi:expr, $missing:expr;
         font { $($font_field:ident),* $(,)? }
-        option { $($opt_field:ident),* $(,)? }
-        border_required { $($br_field:ident),* $(,)? }
+        option_color { $($color_field:ident),* $(,)? }
+        option_f32 { $($f32_field:ident),* $(,)? }
+        border_required { $($br_field:ident : $br_fallback:expr),* $(,)? }
         icon_sizes { $($is_field:ident),* $(,)? }
     ) => {{
         use $crate::resolve::validate_helpers::{require, require_font};
@@ -412,28 +536,40 @@ macro_rules! validate_defaults {
                 $missing,
             );
         )*
-        // Pattern A: simple Option<T> fields
+        // Pattern A1: Option<Rgba> fields
         $(
-            let $opt_field = require(
-                &$src.defaults.$opt_field,
-                concat!("defaults.", stringify!($opt_field)),
+            let $color_field = require(
+                &$src.defaults.$color_field,
+                concat!("defaults.", stringify!($color_field)),
                 $missing,
+                $crate::color::Rgba::TRANSPARENT,
             );
         )*
-        // Pattern C: border sub-fields (require'd)
+        // Pattern A2: Option<f32> fields
+        $(
+            let $f32_field = require(
+                &$src.defaults.$f32_field,
+                concat!("defaults.", stringify!($f32_field)),
+                $missing,
+                0.0_f32,
+            );
+        )*
+        // Pattern C: border sub-fields (require'd, with explicit per-field fallback)
         $(
             let $br_field = require(
                 &$src.defaults.border.$br_field,
                 concat!("defaults.border.", stringify!($br_field)),
                 $missing,
+                $br_fallback,
             );
         )*
-        // Pattern D: icon_sizes sub-fields
+        // Pattern D: icon_sizes sub-fields (Option<f32>)
         $(
             let $is_field = require(
                 &$src.defaults.icon_sizes.$is_field,
                 concat!("defaults.icon_sizes.", stringify!($is_field)),
                 $missing,
+                0.0_f32,
             );
         )*
 
@@ -441,7 +577,8 @@ macro_rules! validate_defaults {
         use $crate::model::resolved::{ResolvedDefaults, ResolvedIconSizes};
         ResolvedDefaults {
             $($font_field,)*
-            $($opt_field,)*
+            $($color_field,)*
+            $($f32_field,)*
             border: ResolvedBorderSpec {
                 $($br_field,)*
                 padding_horizontal: 0.0,

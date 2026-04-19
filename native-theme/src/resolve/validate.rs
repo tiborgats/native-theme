@@ -43,8 +43,7 @@ impl ThemeMode {
         let defaults = validate_defaults!(
             self, dpi, &mut missing;
             font { font, mono_font }
-            option {
-                line_height,
+            option_color {
                 background_color,
                 text_color,
                 accent_color,
@@ -67,12 +66,22 @@ impl ThemeMode {
                 success_text_color,
                 info_color,
                 info_text_color,
-                disabled_opacity,
                 focus_ring_color,
+            }
+            option_f32 {
+                line_height,
+                disabled_opacity,
                 focus_ring_width,
                 focus_ring_offset,
             }
-            border_required { color, corner_radius, corner_radius_lg, line_width, opacity, shadow_enabled }
+            border_required {
+                color: crate::color::Rgba::TRANSPARENT,
+                corner_radius: 0.0f32,
+                corner_radius_lg: 0.0f32,
+                line_width: 0.0f32,
+                opacity: 0.0f32,
+                shadow_enabled: false,
+            }
             icon_sizes { toolbar, small, large, dialog, panel }
         );
         let text_scale = validate_text_scale!(

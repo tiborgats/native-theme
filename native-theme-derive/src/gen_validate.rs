@@ -2,7 +2,7 @@
 
 use proc_macro2::TokenStream;
 use quote::{format_ident, quote};
-use syn::Ident;
+use syn::{Ident, Type};
 
 use crate::parse::{BorderKind, FieldCategory, FieldMeta, LayerMeta};
 
@@ -59,11 +59,18 @@ fn gen_field_inits(fields: &[FieldMeta], layer: &LayerMeta) -> TokenStream {
 
             match &f.category {
                 FieldCategory::Option => {
+                    // Determine the fallback sentinel based on the inner type of
+                    // `Option<T>`. Supported inner types: Rgba, f32, u16, bool,
+                    // Arc<str>. Unknown types produce a compile error so the
+                    // caller knows to add a mapping here.
+                    let inner = extract_option_inner_ty(&f.ty);
+                    let fallback = fallback_for_ty(&inner, &field_name);
                     quote! {
                         #ident: crate::resolve::validate_helpers::require(
                             &source.#ident,
                             &format!("{}.{}", prefix, #field_name),
                             missing,
+                            #fallback,
                         ),
                     }
                 }
@@ -106,6 +113,58 @@ fn gen_field_inits(fields: &[FieldMeta], layer: &LayerMeta) -> TokenStream {
         .collect();
 
     quote! { #(#inits)* }
+}
+
+/// Map a field's inner type (`T` in `Option<T>`) to a fallback sentinel
+/// expression for `validate_helpers::require`.
+///
+/// Supported inner types:
+/// - `Rgba`  -> `crate::color::Rgba::TRANSPARENT`
+/// - `f32`   -> `0.0f32`
+/// - `u16`   -> `0u16`
+/// - `bool`  -> `false`
+/// - `Arc<str>` -> `std::sync::Arc::<str>::from("")`
+/// - `DialogButtonOrder` -> `crate::model::DialogButtonOrder::PrimaryRight`
+///   (matches the type's own `#[default]` variant)
+///
+/// Unknown types emit a `compile_error!` that names the offending field so
+/// maintainers know to extend this mapping.
+fn fallback_for_ty(ty: &Type, field_name: &str) -> TokenStream {
+    // Case 1: `syn::Type::Path` – look at the last segment for the short name.
+    if let Type::Path(type_path) = ty
+        && let Some(seg) = type_path.path.segments.last()
+    {
+        let name = seg.ident.to_string();
+        return match name.as_str() {
+            "Rgba" => quote! { crate::color::Rgba::TRANSPARENT },
+            "f32" => quote! { 0.0f32 },
+            "u16" => quote! { 0u16 },
+            "bool" => quote! { false },
+            "Arc" => quote! { std::sync::Arc::<str>::from("") },
+            "String" => quote! { String::new() },
+            "DialogButtonOrder" => {
+                quote! { crate::model::DialogButtonOrder::PrimaryRight }
+            }
+            other => {
+                let msg = format!(
+                    "ThemeWidget derive: field `{}` has unsupported Option inner type `{}` \
+                     for the G1 fallback mapping. Add a branch to \
+                     `native-theme-derive::gen_validate::fallback_for_ty` that maps this type \
+                     to its zero-value sentinel.",
+                    field_name, other
+                );
+                quote! { compile_error!(#msg) }
+            }
+        };
+    }
+    // Non-path types (tuples, arrays, refs, etc.) are not supported.
+    let msg = format!(
+        "ThemeWidget derive: field `{}` has a non-path Option inner type. \
+         Only simple named types (Rgba, f32, u16, bool, Arc<str>) are supported \
+         as G1 fallback sentinels.",
+        field_name
+    );
+    quote! { compile_error!(#msg) }
 }
 
 /// Extract T from Option<T>. Returns the type as-is if not Option.
