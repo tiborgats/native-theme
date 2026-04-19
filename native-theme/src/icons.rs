@@ -634,6 +634,32 @@ mod load_icon_tests {
     use super::*;
 
     #[test]
+    #[cfg(all(target_os = "linux", feature = "system-icons"))]
+    fn icon_loader_theme_override_honored_for_name_lookup() {
+        // REGRESSION (Phase 93-03): IconLoader::new(&str).set(Freedesktop).theme("Adwaita").load()
+        // silently ignores .theme() because the dispatch for IconId::Name does not read
+        // self.freedesktop_theme. On KDE Plasma the system theme is Breeze, so lookups
+        // that should target Adwaita fall through to Breeze and 12 icons that exist in
+        // Adwaita (but not in Breeze) return None.
+        //
+        // Expected to FAIL at this commit. Plan 93-09 eliminates the silent-ignore design
+        // by splitting IconLoader into typed-per-set loaders; this test migrates to
+        // `FreedesktopLoader::new("format-text-rich").theme("Adwaita").load()` at the
+        // refactor commit and passes.
+        //
+        // Requires the Adwaita icon theme installed on the test host (standard on Linux).
+        let result = IconLoader::new("format-text-rich")
+            .set(IconSet::Freedesktop)
+            .theme("Adwaita")
+            .size(24)
+            .load();
+        assert!(
+            result.is_some(),
+            "theme('Adwaita') must resolve 'format-text-rich' in Adwaita, regardless of system theme"
+        );
+    }
+
+    #[test]
     #[cfg(feature = "material-icons")]
     fn load_icon_material_returns_svg() {
         let result = IconLoader::new(IconRole::ActionCopy)
