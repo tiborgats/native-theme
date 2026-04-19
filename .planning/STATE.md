@@ -3,9 +3,9 @@ gsd_state_version: 1.0
 milestone: v0.5.7
 milestone_name: API Overhaul
 status: in-progress
-stopped_at: Phase 93 Plan 01 complete (Rgba Default removed; validate_helpers require() bound chain broken)
-last_updated: "2026-04-19T14:45:00Z"
-last_activity: 2026-04-19 — Phase 93 Plan 01 committed (0da8da1 RED tests, 266d4d2 Task 1 GREEN, e66cd7b Task 2: Rgba+3 Resolved-leaf Defaults removed)
+stopped_at: Phase 93 Plan 04 complete (Theme.icon_theme three-tier precedence + 15 preset migration)
+last_updated: "2026-04-19T14:42:22Z"
+last_activity: 2026-04-19 — Phase 93 Plan 04 committed (0f3f2f0 RED tests, 558dc07 Task 1 GREEN Theme.icon_theme field + pipeline resolver, e35bfc9 Task 2 preset migration)
 progress:
   total_phases: 30
   completed_phases: 29
@@ -26,11 +26,11 @@ See: .planning/PROJECT.md (updated 2026-04-12)
 ## Current Position
 
 Phase: 93 — docs-todo-v0-5-7-gaps-md
-Plan: 3/5 complete (93-01, 93-02, 93-03 done; 93-04/05 pending)
+Plan: 4/5 complete (93-01, 93-02, 93-03, 93-04 done; 93-05 pending)
 Status: in-progress
-Last activity: 2026-04-19 — Phase 93 Plan 01 complete (G1: `impl Default for Rgba` removed; `ResolvedBorderSpec` / `ResolvedFontSpec` / `ResolvedTextScaleEntry` Default derives removed; `validate_helpers::require` rewritten with explicit fallback parameter; `native-theme-derive::gen_validate` emits per-field sentinels)
+Last activity: 2026-04-19 — Phase 93 Plan 04 complete (G4: `Theme.icon_theme: Option<Cow<'static, str>>` shared field added; `ThemeDefaults.icon_theme` redocumented as per-variant override; pipeline resolver rewrites to three-tier precedence; 15 bundled presets migrated to top-level `icon_theme`; 3 live shadows gain top-level `icon_theme`; kde-breeze preserved per-variant; Phase 80-fix KDE invariant preserved via tier 1)
 
-Progress: [██████████] 100% (59/59 plans complete for 93 wave 1; 93-04/05 outstanding)
+Progress: [██████████] 100% (59/59 plans complete for wave-1 prior milestones; 93-05 outstanding)
 
 ## Accumulated Context
 
@@ -206,6 +206,11 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 - [Phase 93-01]: native-theme-derive::gen_validate `fallback_for_ty` maps Option-inner types to zero-value sentinels (Rgba->TRANSPARENT, f32->0.0, u16->0, bool->false, Arc->empty Arc<str>, String->String::new(), DialogButtonOrder->PrimaryRight); unknown types emit compile_error!.
 - [Phase 93-01]: `impl Default for Rgba` deleted (§16 footgun). 3 hand-written Resolved leaves (ResolvedBorderSpec, ResolvedFontSpec, ResolvedTextScaleEntry) drop Default from derive lists. 26 generated widget structs already lacked Default (ThemeWidget macro never emitted it). ResolvedDefaults/ResolvedTheme/ResolvedTextScale/ResolvedIconSizes likewise unchanged.
 - [Phase 93-01]: Integration test trait_assertions_default_clone_debug: Rgba now asserts Clone+Debug only (no Default). Theme/ThemeMode/ThemeDefaults/FontSpec still assert full Default+Clone+Debug set.
+- [Phase 93-04]: Theme.icon_theme: Option<Cow<'static, str>> added (shared across variants) with skip_serializing_if; Default impl, merge(), is_empty(), and TOP_KEYS all updated. Pipeline resolver rewritten to three-tier precedence (per-variant override -> Theme-level shared -> system detect). ThemeDefaults.icon_theme rustdoc rewritten to describe its role as per-variant override. Reverses Phase 80-fix ONLY in that it ADDS the Theme-level field; the per-variant field stays as-is and still wins at tier 1.
+- [Phase 93-04]: 15 bundled presets migrated to top-level icon_theme (adwaita, catppuccin-{frappe,latte,macchiato,mocha}, dracula, gruvbox, ios, macos-sonoma, material, nord, one-dark, solarized, tokyo-night, windows-11). kde-breeze stays per-variant-only (breeze vs breeze-dark genuinely differ); kde-breeze-live stays geometry-only (KDE reader supplies runtime value).
+- [Phase 93-04]: 3 live shadows (adwaita-live, macos-sonoma-live, windows-11-live) gain a top-level icon_theme matching their base. Safety net for any pipeline path that might use only a live preset without a full-preset merge behind it.
+- [Phase 93-04]: Test updates to match migration: platform_facts_xref.rs adwaita/windows-11 assertions rewritten to Theme-level; proptest arb_theme_spec strategy extended to generate Theme.icon_theme so round-trip covers Some/None for the new field.
+- [Phase 93-04]: Rule 3 deviation -- three exhaustive Theme literals (lib.rs::to_theme, kde/mod.rs::build_theme twice, macos.rs::to_theme) required icon_theme: None field additions beyond the three sites listed in the plan body. E0063 would have blocked compilation otherwise.
 
 ### Roadmap Evolution
 
@@ -225,6 +230,6 @@ Phase 78 Plan 04 remaining (core crate compile fixes in gnome/mod.rs, pipeline.r
 
 ## Session Continuity
 
-Last session: 2026-04-19T14:45:00Z
-Stopped at: Completed 93-01-PLAN.md
+Last session: 2026-04-19T14:42:22Z
+Stopped at: Completed 93-04-PLAN.md
 Resume file: None

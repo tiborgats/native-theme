@@ -704,5 +704,5 @@ Plans:
 - [x] 93-01-PLAN.md — G1: Remove `Rgba::Default` and break the `require<T:Default>` bound chain (wave 1)
 - [x] 93-02-PLAN.md — G2: Add `LinuxDesktop::Wayfire` variant and route through adwaita+portal fallback (wave 1)
 - [x] 93-03-PLAN.md — G3: Demote `bundled_icon_svg`/`bundled_icon_by_name`/`load_freedesktop_icon_by_name` to `pub(crate)` and migrate connector + showcase to `IconLoader` (wave 1)
-- [ ] 93-04-PLAN.md — G4: `icon_theme` on `Theme` with per-variant override; migrate 15 presets to top-level (wave 2, depends on 93-02 + 93-03)
+- [x] 93-04-PLAN.md — G4: `icon_theme` on `Theme` with per-variant override; migrate 15 presets to top-level (wave 2, depends on 93-02 + 93-03)
 - [ ] 93-05-PLAN.md — G5: `#[derive(ThemeFields)]` for 7 non-widget structs + LayoutTheme; unify `lint_toml` over inventory registries (wave 3, depends on 93-01 + 93-03 + 93-04)

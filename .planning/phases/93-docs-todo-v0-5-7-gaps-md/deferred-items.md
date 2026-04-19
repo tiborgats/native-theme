@@ -38,3 +38,27 @@ longer has any internal caller (all call sites migrated to `IconLoader`).
 is never used`. Fix belongs to Plan 93-03 follow-up or Plan 93-fix: either
 delete the function outright, or add `#[allow(dead_code)]` if internal
 reuse is expected later. Out of scope for Plan 93-02.
+
+## Logged during Plan 04 (G4) execution
+
+### pre-release-check.sh blocked by 93-03 dead-code item
+
+**Observation:** Running `./pre-release-check.sh` after Plan 04 fails at
+the `cargo clippy -p native-theme --all-targets -- -D warnings` step for
+the exact same reason logged under Plan 02 above: `bundled_icon_by_name`
+is never used. Plan 04 did not introduce the issue and did not fix it
+(SCOPE BOUNDARY). All other steps of the script pass through successfully
+(fmt, builds, checks for native-theme + both connectors). Once Plan 93-fix
+or a 93-03 follow-up removes or annotates the unused function, the full
+`pre-release-check.sh` will be green for Plan 04 output.
+
+### Doctest failures in model/bundled.rs (still present)
+
+**Observation:** The two doctest failures logged under Plan 01 persist.
+Plan 04's `cargo test -p native-theme --all-features` output shows the
+doctest run fails with 48 passed / 2 failed / 10 ignored. All lib tests
+(782/782) and integration tests (79/79 across 8 test binaries) pass.
+The 2 failing doctests are the `model::bundled::bundled_icon_svg` and
+`model::bundled::bundled_icon_by_name` examples that still reference the
+now-private `use native_theme::theme::bundled_icon_svg` / `use
+native_theme::theme::bundled_icon_by_name` paths.
