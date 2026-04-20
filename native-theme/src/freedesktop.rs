@@ -10,7 +10,7 @@ use std::num::NonZeroU32;
 
 use crate::IconData;
 use crate::model::animated::{AnimatedIcon, TransformAnimation};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 
 /// Frame duration for freedesktop sprite sheet animations (80ms per frame).
 const FREEDESKTOP_FRAME_DURATION_MS: u32 = 80;
@@ -60,21 +60,23 @@ fn find_icon(name: &str, theme: &str, size: u16) -> Option<(PathBuf, bool)> {
         .map(|path| (path, name.ends_with("-symbolic")))
 }
 
-/// Load a freedesktop icon for the given role.
-///
 /// Load a freedesktop icon by name from the given theme.
 ///
 /// Looks up the name in the specified theme directory (with `-symbolic`
-/// suffix fallback for Adwaita-style themes), reads the SVG file, and
-/// returns it as `IconData::Svg`.
+/// suffix fallback for Adwaita-style themes), then dispatches on file
+/// extension:
 ///
-/// For GTK-convention symbolic icons (Adwaita, Yaru, elementary), the
-/// hardcoded foreground placeholders are replaced with `fg_color` so
-/// the SVG renders correctly on both light and dark themes. Pass
-/// `None` to fall back to `currentColor` (requires connector
-/// colorization).
+/// - `.svg` → returns [`IconData::Svg`]. For GTK-convention symbolic
+///   icons (Adwaita, Yaru, elementary), hardcoded foreground placeholders
+///   are replaced with `fg_color` so the SVG renders correctly on both
+///   light and dark themes. Pass `None` to fall back to `currentColor`
+///   (requires connector colorization).
+/// - `.png` → decodes the PNG to RGBA and returns [`IconData::Rgba`]
+///   (raster-only legacy themes like `AdwaitaLegacy`).
+/// - Any other extension → `None`.
 ///
-/// Returns `None` if the icon is not found in the theme.
+/// Returns `None` if the icon is not found in the theme or if the
+/// decoded file cannot be parsed.
 ///
 /// **Performance note:** Each call reads the icon file from disk. Callers
 /// that load the same icon repeatedly should cache the returned `IconData`.
@@ -86,14 +88,105 @@ pub(crate) fn load_freedesktop_icon_by_name(
     fg_color: Option<[u8; 3]>,
 ) -> Option<IconData> {
     let (path, is_symbolic) = find_icon(name, theme, size)?;
-    let bytes = std::fs::read(&path).ok()?;
-    let bytes = if is_symbolic {
-        let replacement = fg_to_replacement(fg_color);
-        normalize_gtk_symbolic(bytes, &replacement)
-    } else {
-        bytes
+    load_icon_file(&path, is_symbolic, fg_color)
+}
+
+/// Read and decode an icon file, branching on its extension.
+///
+/// Split out from [`load_freedesktop_icon_by_name`] so format handling
+/// is testable without the freedesktop-icons lookup and is easy to
+/// extend (e.g. future XPM support).
+fn load_icon_file(path: &Path, is_symbolic: bool, fg_color: Option<[u8; 3]>) -> Option<IconData> {
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .map(str::to_ascii_lowercase);
+    match ext.as_deref() {
+        Some("svg") => {
+            let bytes = std::fs::read(path).ok()?;
+            let bytes = if is_symbolic {
+                let replacement = fg_to_replacement(fg_color);
+                normalize_gtk_symbolic(bytes, &replacement)
+            } else {
+                bytes
+            };
+            Some(IconData::Svg(Cow::Owned(bytes)))
+        }
+        Some("png") => {
+            let bytes = std::fs::read(path).ok()?;
+            decode_png_to_rgba(&bytes)
+        }
+        _ => None,
+    }
+}
+
+/// Decode a PNG byte slice to an 8-bit RGBA [`IconData`].
+///
+/// Uses `png` crate transformations to normalise palette, grayscale, and
+/// 16-bit inputs to 8-bit. Non-RGBA outputs (RGB, Grayscale, GrayscaleAlpha)
+/// are expanded to RGBA in-place so downstream renderers only ever see
+/// 4-byte-per-pixel data.
+///
+/// Returns `None` if the input is not a valid PNG, decoding fails, or
+/// the output buffer shape does not match `width * height * 4`.
+fn decode_png_to_rgba(bytes: &[u8]) -> Option<IconData> {
+    let mut decoder = png::Decoder::new(std::io::Cursor::new(bytes));
+    decoder.set_transformations(
+        png::Transformations::EXPAND | png::Transformations::STRIP_16 | png::Transformations::ALPHA,
+    );
+    let mut reader = decoder.read_info().ok()?;
+    let mut buf = vec![0u8; reader.output_buffer_size()];
+    let info = reader.next_frame(&mut buf).ok()?;
+    buf.truncate(info.buffer_size());
+
+    let (width, height) = (info.width, info.height);
+    let pixel_count = (width as usize).checked_mul(height as usize)?;
+    let rgba_len = pixel_count.checked_mul(4)?;
+
+    let rgba = match info.color_type {
+        png::ColorType::Rgba => buf,
+        png::ColorType::Rgb => expand_to_rgba(&buf, 3, |p, out| {
+            out.extend_from_slice(&[p[0], p[1], p[2], 0xff]);
+        })?,
+        png::ColorType::GrayscaleAlpha => expand_to_rgba(&buf, 2, |p, out| {
+            out.extend_from_slice(&[p[0], p[0], p[0], p[1]]);
+        })?,
+        png::ColorType::Grayscale => expand_to_rgba(&buf, 1, |p, out| {
+            out.extend_from_slice(&[p[0], p[0], p[0], 0xff]);
+        })?,
+        // Indexed is converted to RGB/RGBA by EXPAND + ALPHA transformations,
+        // so we should never see it here. Treat as unsupported if we do.
+        png::ColorType::Indexed => return None,
     };
-    Some(IconData::Svg(Cow::Owned(bytes)))
+
+    if rgba.len() != rgba_len {
+        return None;
+    }
+    Some(IconData::Rgba {
+        width,
+        height,
+        data: rgba,
+    })
+}
+
+/// Expand a packed pixel buffer to RGBA using the caller-provided per-pixel writer.
+///
+/// `sample_stride` is the number of bytes per pixel in the input (1 for
+/// Grayscale, 2 for GrayscaleAlpha, 3 for Rgb). Returns `None` if `buf`
+/// length is not a multiple of `sample_stride`.
+fn expand_to_rgba<F>(buf: &[u8], sample_stride: usize, mut write: F) -> Option<Vec<u8>>
+where
+    F: FnMut(&[u8], &mut Vec<u8>),
+{
+    if !buf.len().is_multiple_of(sample_stride) {
+        return None;
+    }
+    let pixel_count = buf.len() / sample_stride;
+    let mut out = Vec::with_capacity(pixel_count * 4);
+    for chunk in buf.chunks_exact(sample_stride) {
+        write(chunk, &mut out);
+    }
+    Some(out)
 }
 
 /// Convert an optional RGB foreground color to a replacement string
@@ -569,5 +662,125 @@ mod tests {
             result, original,
             "non-GTK SVGs should pass through unchanged"
         );
+    }
+
+    // === PNG decode path (for raster-only legacy themes like AdwaitaLegacy) ===
+
+    /// Encode a minimal in-memory PNG with a known pixel pattern for
+    /// round-trip tests. Returns `None` on encode error.
+    fn encode_test_png(
+        width: u32,
+        height: u32,
+        color: png::ColorType,
+        pixels: &[u8],
+    ) -> Option<Vec<u8>> {
+        let mut out = Vec::new();
+        let mut encoder = png::Encoder::new(&mut out, width, height);
+        encoder.set_color(color);
+        encoder.set_depth(png::BitDepth::Eight);
+        let mut writer = encoder.write_header().ok()?;
+        writer.write_image_data(pixels).ok()?;
+        drop(writer);
+        Some(out)
+    }
+
+    #[test]
+    fn decode_png_to_rgba_roundtrips_2x2_rgba() {
+        // Known pixel pattern: 4 distinct RGBA pixels
+        let pixels: [u8; 16] = [
+            0xff, 0x00, 0x00, 0xff, // red, opaque
+            0x00, 0xff, 0x00, 0x80, // green, half-alpha
+            0x00, 0x00, 0xff, 0xff, // blue, opaque
+            0x11, 0x22, 0x33, 0x44, // arbitrary
+        ];
+        let bytes = encode_test_png(2, 2, png::ColorType::Rgba, &pixels).expect("test PNG encode");
+
+        let result = decode_png_to_rgba(&bytes);
+        match result {
+            Some(IconData::Rgba {
+                width,
+                height,
+                data,
+            }) => {
+                assert_eq!(width, 2);
+                assert_eq!(height, 2);
+                assert_eq!(data, pixels.to_vec());
+            }
+            other => panic!("expected Rgba, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn decode_png_to_rgba_expands_rgb_to_rgba() {
+        // RGB (no alpha) input must come out as RGBA with alpha=0xff.
+        let pixels: [u8; 6] = [
+            0xab, 0xcd, 0xef, // pixel 0
+            0x11, 0x22, 0x33, // pixel 1
+        ];
+        let bytes = encode_test_png(2, 1, png::ColorType::Rgb, &pixels).expect("test PNG encode");
+
+        match decode_png_to_rgba(&bytes) {
+            Some(IconData::Rgba {
+                width,
+                height,
+                data,
+            }) => {
+                assert_eq!((width, height), (2, 1));
+                assert_eq!(data, vec![0xab, 0xcd, 0xef, 0xff, 0x11, 0x22, 0x33, 0xff]);
+            }
+            other => panic!("expected Rgba, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn decode_png_to_rgba_expands_grayscale_to_rgba() {
+        let pixels: [u8; 2] = [0x40, 0xc0];
+        let bytes =
+            encode_test_png(2, 1, png::ColorType::Grayscale, &pixels).expect("test PNG encode");
+
+        match decode_png_to_rgba(&bytes) {
+            Some(IconData::Rgba { data, .. }) => {
+                assert_eq!(data, vec![0x40, 0x40, 0x40, 0xff, 0xc0, 0xc0, 0xc0, 0xff]);
+            }
+            other => panic!("expected Rgba, got {other:?}"),
+        }
+    }
+
+    #[test]
+    fn decode_png_to_rgba_rejects_non_png_bytes() {
+        assert!(decode_png_to_rgba(b"not a png at all").is_none());
+        assert!(decode_png_to_rgba(&[]).is_none());
+    }
+
+    #[test]
+    #[ignore = "requires AdwaitaLegacy icon theme installed (GNOME legacy raster theme)"]
+    fn load_icon_from_png_only_theme_returns_rgba() {
+        // AdwaitaLegacy is a PNG-only legacy theme. The loader must decode
+        // PNG to Rgba, not wrap raw PNG bytes inside IconData::Svg.
+        let result = load_freedesktop_icon_by_name("edit-copy", "AdwaitaLegacy", 24, None);
+        let data = result.expect("edit-copy exists in AdwaitaLegacy 24x24/legacy");
+        match data {
+            IconData::Rgba {
+                width,
+                height,
+                data,
+            } => {
+                assert!(width > 0 && height > 0);
+                assert_eq!(
+                    data.len(),
+                    (width as usize) * (height as usize) * 4,
+                    "RGBA byte count must match width*height*4"
+                );
+            }
+            IconData::Svg(bytes) => {
+                let head: Vec<u8> = bytes.iter().take(8).copied().collect();
+                panic!(
+                    "expected Rgba, got Svg with {} bytes starting {:x?} \
+                     (PNG magic is 89 50 4e 47)",
+                    bytes.len(),
+                    head
+                );
+            }
+        }
     }
 }
