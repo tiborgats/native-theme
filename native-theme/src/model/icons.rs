@@ -894,7 +894,10 @@ fn freedesktop_name(role: IconRole) -> Option<&'static str> {
         IconRole::DialogError => "dialog-error",
         IconRole::DialogInfo => "dialog-information",
         IconRole::DialogQuestion => "dialog-question",
-        IconRole::DialogSuccess => "emblem-ok-symbolic",
+        // Icon Naming Spec 0.8.90 standard name; Adwaita + Breeze both ship
+        // `object-select-symbolic`. "emblem-ok" (a legacy GNOME-only emblem,
+        // not in the spec) was tried first but is absent from Adwaita.
+        IconRole::DialogSuccess => "object-select-symbolic",
         IconRole::Shield => "security-high",
 
         // Window Controls
@@ -1501,6 +1504,17 @@ mod tests {
         assert_eq!(
             icon_name(IconRole::Notification, IconSet::Freedesktop),
             Some("notification-active")
+        );
+    }
+
+    #[test]
+    fn icon_name_freedesktop_dialog_success() {
+        // Must be the Icon Naming Spec 0.8.90 standard name "object-select"
+        // (Adwaita ships it; "emblem-ok" is a legacy GNOME emblem that
+        // Adwaita does not ship and is not in the spec).
+        assert_eq!(
+            icon_name(IconRole::DialogSuccess, IconSet::Freedesktop),
+            Some("object-select-symbolic")
         );
     }
 
