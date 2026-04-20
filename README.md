@@ -28,7 +28,7 @@ dependency for the common case.
 
 ## How the 5 crates fit together
 
-<img alt="native-theme crate relations" src="https://raw.githubusercontent.com/tiborgats/native-theme/main/docs/assets/crate-relations.svg" width="640"/>
+![native-theme crate relations](docs/assets/crate-relations.svg)
 
 - Solid arrow — runtime dependency
 - Dashed arrow — optional or internal
