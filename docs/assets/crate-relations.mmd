@@ -1,0 +1,25 @@
+%%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}}}%%
+flowchart TB
+    App([Your Rust App])
+
+    subgraph ws[native-theme workspace]
+        direction TB
+        NT["<b>native-theme</b><br/>runtime core<br/>Theme, ResolvedTheme, presets"]
+        NTG["<b>native-theme-gpui</b><br/>GPUI connector"]
+        NTI["<b>native-theme-iced</b><br/>iced connector"]
+        NTB["<b>native-theme-build</b><br/>custom icon codegen<br/>(optional, build.rs)"]
+        NTD["<b>native-theme-derive</b><br/>proc-macro<br/>(internal)"]
+    end
+
+    App -->|depends on| NTG
+    App -->|or| NTI
+    App -.->|optional| NTB
+
+    NTG --> NT
+    NTI --> NT
+    NT -.-> NTD
+
+    classDef internal fill:#f0f0f0,stroke:#999,stroke-dasharray: 4 2
+    classDef optional fill:#fff8e0,stroke:#c8a000
+    class NTD internal
+    class NTB optional
