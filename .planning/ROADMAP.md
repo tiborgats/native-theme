@@ -652,6 +652,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 91. Resolve Remaining TODO Doc Gaps | v0.5.7 | 3/3 | Complete | 2026-04-15 |
 | 92. Icon Theme Selection and Showcase Fixes | v0.5.7 | 4/4 | Complete | 2026-04-16 |
 | 93. docs/todo_v0.5.7_gaps.md — P1 Polish Sweep (G1-G5, plus G3 follow-up + G11 deviation) | v0.5.7 | 7/7 | Complete | 2026-04-19 |
+| 94. docs/todo_v0.5.7_gaps.md — Close Remaining G6-G8 (Border Inheritance Codegen, ResolutionContext, ThemeReader Trait) | v0.5.7 | 2/3 | In Progress | — |
 
 ### Phase 90: resolve remaining v0.5.7 API overhaul gaps
 
@@ -718,6 +719,6 @@ Plans:
 **Plans:** 3 plans (wave 1: 94-01 + 94-02 parallel; wave 2: 94-03 serial on 94-02's pipeline.rs shape)
 
 Plans:
-- [ ] 94-01-PLAN.md — G6: Border + font inheritance codegen via `#[derive(ThemeWidget)] #[theme_inherit(...)]` with inverted-drift test (wave 1)
+- [x] 94-01-PLAN.md — G6: Border + font inheritance codegen via `#[derive(ThemeWidget)] #[theme_inherit(...)]` with inverted-drift test (wave 1, completed 2026-04-20)
 - [x] 94-02-PLAN.md — G7: `ResolutionContext` struct with `from_system()`/`for_tests()` + NO `Default` impl; `ThemeMode::into_resolved(&ctx)` replaces `Option<f32>`; `resolve_system()` zero-arg shortcut; 43 call sites migrated (wave 1, completed 2026-04-20)
 - [ ] 94-03-PLAN.md — G8: `ThemeReader` trait unifying platform readers (KDE/GNOME/macOS/Windows) behind common interface (wave 2, depends on 94-02)
