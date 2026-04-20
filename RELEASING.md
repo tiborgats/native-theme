@@ -101,6 +101,70 @@ From the next release onwards, the script will perform full tarball-verify
 against the live registry because the prior version of `native-theme-derive`
 is now resolvable from crates.io.
 
+## Known upstream tool-chain deviations (v0.5.7+)
+
+This section lists current principled deviations from the
+"cargo test --workspace --all-features" ideal that are in effect
+because of upstream issues outside this project's control. Each
+deviation has a specific re-evaluation trigger; when the upstream
+state changes, run the trigger command and delete the deviation
+entry from this section.
+
+### G11 · `cargo test --workspace --all-features` → per-crate posture (active since 2026-04-19)
+
+**Status:** active. Accepted `2026-04-19T18:28:22Z` by `tiborgats`.
+
+**Why:** `cargo test --workspace --all-features` fails to compile
+due to `naga 27.0.3` (transitively via `gpui-component v0.5.1`) being
+written against `codespan-reporting 0.11.x`'s `impl WriteColor for String`,
+which `codespan-reporting 0.12.0` (workspace `Cargo.lock:1064-1067`)
+removed. `naga 27.0.4` does not exist on crates.io; `naga 28.x`
+would require a `gpui-component` version bump that hasn't shipped.
+
+**Current release gate (what this script actually enforces):**
+
+```bash
+./pre-release-check.sh
+```
+
+The script runs `cargo test -p <crate>` per workspace crate
+(the per-crate test loop starts at `pre-release-check.sh` line 288,
+immediately below the `# Run all tests` comment at line 287, and ends
+at line 294) and treats `native-theme-gpui` as soft via
+`run_check_soft` (a failure becomes a warning, not a blocker). This
+per-crate posture has been the release gate since Phase 14-03
+(2026-03-09).
+
+**Re-evaluation trigger command:**
+
+```bash
+cargo update -p gpui-component && cargo test --workspace --all-features
+```
+
+Run this when `gpui-component` ships a release that either (a) bumps
+`naga` past 27.0.3 to a `codespan-reporting 0.12.0`-compatible version,
+or (b) pins `codespan-reporting 0.11.x` in its own `Cargo.toml`.
+If both succeed, this deviation is obsolete — delete this G11 entry.
+
+Track upstream state at:
+
+- `https://github.com/gfx-rs/wgpu/issues` (naga is part of wgpu)
+- `https://github.com/zed-industries/zed` (gpui-component's upstream)
+
+**Detailed records:**
+
+- `docs/todo_v0.5.7_gaps.md:546-614` (§G11 — the definitive technical analysis of Options A/B/C/D).
+- `.planning/phases/93-docs-todo-v0-5-7-gaps-md/93-G11-DEVIATION.md` (Phase-93-cross-plan annotation).
+- `.planning/phases/93-docs-todo-v0-5-7-gaps-md/93-VERIFICATION.md` frontmatter `overrides` block (formal acceptance record).
+
+**Note on the existing inline reference at `RELEASING.md:30`:** the
+Pre-publication-checks prose already mentions §G11 inline (the
+soft-check rationale for `native-theme-gpui`). This top-level section
+does NOT replace that inline mention — both are retained. The inline
+reference is first-contact context for someone reading the release
+procedure top-to-bottom; this section is the structured, greppable
+landing for anyone searching for deviations directly.
+
 ## Version bumps
 
 Workspace version is declared once in the root `Cargo.toml` under
