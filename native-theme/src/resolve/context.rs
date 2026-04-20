@@ -54,7 +54,7 @@ impl ResolutionContext {
     /// Build the context by auto-detecting from the current OS.
     ///
     /// Calls:
-    /// - [`crate::detect::system_font_dpi`] for `font_dpi`
+    /// - `crate::detect::system_font_dpi` for `font_dpi` (private)
     /// - `crate::resolve::inheritance::platform_button_order` for
     ///   `button_order`
     /// - [`crate::model::icons::system_icon_theme`] for `icon_theme`

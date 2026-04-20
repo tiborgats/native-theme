@@ -32,7 +32,7 @@ pub struct ResolvedIconSizes {
 /// Phase 93-01 (G1): no `Default` derive. Constructed from a populated
 /// `TextScaleEntry` during resolution; the missing-field sentinel is
 /// written inline in
-/// [`crate::resolve::validate_helpers::require_text_scale_entry`].
+/// `crate::resolve::validate_helpers::require_text_scale_entry` (private).
 #[derive(Clone, Debug, PartialEq, serde::Serialize, serde::Deserialize)]
 pub struct ResolvedTextScaleEntry {
     /// Font size in logical pixels (converted from points during resolution
