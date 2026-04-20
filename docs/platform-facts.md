@@ -1501,6 +1501,10 @@ Button order convention differs significantly across platforms.
 macOS primary action = rightmost. Windows primary = leftmost. KDE:
 Help/Reset left-aligned, then stretch, then OK/Apply/Cancel right-aligned
 (OK left of Cancel). GNOME: cancel left, affirmative right.
+Modern WinUI 3 ContentDialog preserves this convention: PrimaryButton
+(the "do it" action) is leftmost; CloseButton (the safe action) is
+rightmost (Microsoft WinUI 3 Dialog controls, ms.date 2025-08-05,
+verified 2026-04-20).
 
 Dialog internal spacing (title-to-body, body-to-buttons) is baked into
 each platform's dialog template, not exposed as a single adjustable gap.
