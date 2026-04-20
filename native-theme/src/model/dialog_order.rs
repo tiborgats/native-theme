@@ -6,16 +6,21 @@ use serde::{Deserialize, Serialize};
 ///
 /// This is a **platform convention**, not visual styling. Different desktop
 /// environments place the confirmation button at different ends of the
-/// button row (KDE: leading/left, Windows/GNOME/macOS: trailing/right).
+/// button row (Windows/KDE: leading/left, GNOME/macOS/iOS: trailing/right).
 /// It is part of the theme model because "native feel" includes layout
 /// conventions that vary by platform, and it is overridable in theme presets.
+///
+/// Windows uses primary-leftmost per the Microsoft Common Buttons guideline
+/// (Win7) and modern WinUI 3 ContentDialog ("PrimaryButton ... Appears as
+/// the leftmost button"). See `docs/platform-facts.md:1481, 1500-1507,
+/// 1807-1808` for the authoritative citations.
 #[derive(Clone, Copy, Debug, Default, PartialEq, Eq, Hash, Serialize, Deserialize)]
 pub enum DialogButtonOrder {
-    /// Primary button at the trailing (right) end -- Windows, GNOME, macOS, iOS style.
+    /// Primary button at the trailing (right) end -- GNOME, macOS, iOS style.
     #[default]
     #[serde(rename = "primary_right")]
     PrimaryRight,
-    /// Primary button at the leading (left) end -- KDE style.
+    /// Primary button at the leading (left) end -- Windows, KDE style.
     #[serde(rename = "primary_left")]
     PrimaryLeft,
 }

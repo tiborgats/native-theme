@@ -54,8 +54,11 @@ fn resolve_text_scale_entry(
 
 /// Return the platform-appropriate dialog button order.
 ///
-/// On Linux/KDE, the convention is leading-affirmative (OK on the left).
-/// On Windows, GNOME, macOS, iOS the convention is trailing-affirmative.
+/// On Windows and Linux/KDE the convention is leading-affirmative (OK on the
+/// left). On GNOME, macOS, and iOS the convention is trailing-affirmative.
+/// Windows uses primary-leftmost per the Microsoft Common Buttons guideline
+/// and modern WinUI 3 ContentDialog — see
+/// `docs/platform-facts.md:1481, 1500-1507, 1807-1808`.
 pub(crate) fn platform_button_order() -> DialogButtonOrder {
     #[cfg(target_os = "linux")]
     {
@@ -63,7 +66,11 @@ pub(crate) fn platform_button_order() -> DialogButtonOrder {
             return DialogButtonOrder::PrimaryLeft;
         }
     }
-    // Windows, GNOME, macOS, iOS all use primary-right
+    #[cfg(target_os = "windows")]
+    {
+        return DialogButtonOrder::PrimaryLeft;
+    }
+    // GNOME, macOS, iOS use primary-right (trailing-affirmative)
     DialogButtonOrder::PrimaryRight
 }
 

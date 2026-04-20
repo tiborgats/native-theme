@@ -513,8 +513,13 @@ fn build_theme(
     // --- Widget sizing ---
     read_widget_sizing(dpi, &mut variant);
 
-    // --- Dialog button order (Windows convention) ---
-    variant.dialog.button_order = Some(crate::model::DialogButtonOrder::PrimaryRight);
+    // --- Dialog button order (Windows convention: primary leftmost) ---
+    //
+    // Per Microsoft Common Buttons guideline (Win7) and modern WinUI 3
+    // ContentDialog ("PrimaryButton ... Appears as the leftmost button"),
+    // Windows dialogs place the affirmative action on the LEFT of the
+    // button row. See `docs/platform-facts.md:1481, 1500-1507, 1807-1808`.
+    variant.dialog.button_order = Some(crate::model::DialogButtonOrder::PrimaryLeft);
 
     // --- DWM title bar color (WIN-02) ---
     if let Some(color) = dwm_title_bar {
@@ -1212,12 +1217,12 @@ mod tests {
     // === Dialog button order test ===
 
     #[test]
-    fn build_theme_sets_dialog_primary_right() {
+    fn build_theme_sets_dialog_primary_left() {
         let result = light_reader();
         let variant = reader_mode(&result);
         assert_eq!(
             variant.dialog.button_order,
-            Some(crate::model::DialogButtonOrder::PrimaryRight)
+            Some(crate::model::DialogButtonOrder::PrimaryLeft)
         );
     }
 
@@ -1342,8 +1347,8 @@ mod tests {
         );
         assert_eq!(
             resolved.dialog.button_order,
-            crate::DialogButtonOrder::PrimaryRight,
-            "dialog button order should be trailing affirmative for Windows"
+            crate::DialogButtonOrder::PrimaryLeft,
+            "dialog button order should be leading-affirmative (primary leftmost) for Windows per MS Common Buttons / WinUI 3 guidance"
         );
         // icon_set is now on Theme/SystemTheme, not on ResolvedTheme
     }

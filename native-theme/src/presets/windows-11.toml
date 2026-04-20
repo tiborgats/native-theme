@@ -260,7 +260,9 @@ disabled_unchecked_background = "#c5c5c550"
 disabled_thumb_color = "#ffffff80"
 
 [light.dialog]
-button_order = "primary_right"
+# Windows uses primary-leftmost per MS Common Buttons guideline (Win7) and
+# modern WinUI 3 ContentDialog. See docs/platform-facts.md:1481, 1807-1808.
+button_order = "primary_left"
 min_width_px = 320.0
 max_width_px = 548.0
 min_height_px = 184.0
@@ -589,7 +591,9 @@ disabled_unchecked_background = "#45454550"
 disabled_thumb_color = "#ffffff80"
 
 [dark.dialog]
-button_order = "primary_right"
+# Windows uses primary-leftmost per MS Common Buttons guideline (Win7) and
+# modern WinUI 3 ContentDialog. See docs/platform-facts.md:1481, 1807-1808.
+button_order = "primary_left"
 min_width_px = 320.0
 max_width_px = 548.0
 min_height_px = 184.0
