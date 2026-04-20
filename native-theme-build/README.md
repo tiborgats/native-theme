@@ -3,21 +3,34 @@
 Build-time code generation for [native-theme](https://crates.io/crates/native-theme)
 custom icon roles.
 
-This crate reads TOML icon definitions at build time and generates a Rust enum
-that implements `native_theme::theme::IconProvider`. The generated enum maps each icon
-role to platform-specific identifiers (SF Symbols, Segoe Fluent, freedesktop,
-Material, Lucide) and optionally embeds bundled SVG data via `include_bytes!`.
+## What it does
 
-## Quick Start
+Reads a TOML file describing your app's custom icon roles at build time and
+generates a Rust enum that implements `native_theme::theme::IconProvider`. The
+generated enum maps each role to its platform-specific identifier (SF Symbols,
+Segoe Fluent, freedesktop, Material, Lucide) and optionally embeds bundled SVG
+data via `include_bytes!`.
+
+Use this when your app needs domain-specific icons (for example `PlayPause`,
+`SkipForward`, `GitBranch`) that aren't in `native-theme`'s built-in `IconRole`.
+If the bundled `IconRole` variants cover your needs, you don't need this crate.
+
+## How it fits
+
+This crate is a *build-time* dependency. Your final binary links against
+`native-theme` only — nothing from `native-theme-build` is at runtime. You add
+it to `[build-dependencies]` and call it from `build.rs`.
+
+## Quick start
 
 Add the build dependency:
 
 ```toml
 [build-dependencies]
-native-theme-build = "0.5.7"
+native-theme-build = "0.5"
 ```
 
-Create an icon definition TOML:
+Describe your icons in TOML:
 
 ```toml
 # icons/icons.toml
@@ -27,7 +40,7 @@ bundled-themes = ["material"]
 system-themes = ["sf-symbols", "segoe-fluent", "freedesktop"]
 ```
 
-Call `generate_icons()` in your `build.rs`:
+Generate the enum in `build.rs`:
 
 ```rust,ignore
 use native_theme_build::UnwrapOrExit;
@@ -40,47 +53,46 @@ fn main() {
 }
 ```
 
-Include and use the generated code:
+Include and use it in your app:
 
 ```rust,ignore
 include!(concat!(env!("OUT_DIR"), "/app_icon.rs"));
 
-use native_theme::icons::IconLoader;
-use native_theme::theme::IconSet;
-let icon_data = IconLoader::new(&AppIcon::PlayPause).set(IconSet::Material).load();
+use native_theme::icons::MaterialLoader;
+
+let icon = MaterialLoader::new(&AppIcon::PlayPause).load();
 ```
 
-## TOML Schema
+## Core concepts
 
-The master TOML file declares the icon set name, roles, and which themes to support:
+- **Role** — a semantic name (`PlayPause`). Declared in `roles = [...]`; becomes a PascalCase enum variant.
+- **Bundled theme** — SVG assets that ship inside your binary via `include_bytes!`. Declared in `bundled-themes`.
+- **System theme** — identifier-only mapping. The actual icon is looked up at runtime by the OS (SF Symbols on macOS, Segoe Fluent on Windows, freedesktop on Linux). Declared in `system-themes`.
+- **Generated enum** — produced at build time into `$OUT_DIR`. Implements `native_theme::theme::IconProvider`, so it plugs into every per-set loader (`MaterialLoader::new(&icon)`, `FreedesktopLoader::new(&icon)`, …).
 
-- **`name`** -- used to derive the generated enum name (`AppIcon`).
-- **`roles`** -- kebab-case role names; each becomes a PascalCase enum variant.
-- **`bundled-themes`** -- themes whose SVGs are embedded via `include_bytes!`.
-- **`system-themes`** -- themes resolved at runtime by the OS (no embedded SVGs).
+## Common recipes
 
-## Directory Layout
+### Directory layout
 
 ```text
 icons/
-  icons.toml           # Master TOML (the file passed to generate_icons)
+  icons.toml           # master TOML passed to generate_icons()
   material/
-    mapping.toml       # Role -> SVG filename mappings
+    mapping.toml       # role → SVG filename
     play_pause.svg
     skip_next.svg
     volume_up.svg
   sf-symbols/
-    mapping.toml       # Role -> SF Symbol name mappings
+    mapping.toml       # role → SF Symbol name
   segoe-fluent/
-    mapping.toml       # Role -> Segoe codepoint mappings
+    mapping.toml       # role → Segoe codepoint
   freedesktop/
-    mapping.toml       # Role -> freedesktop icon name mappings
+    mapping.toml       # role → freedesktop icon name
 ```
 
-## Mapping Format
+### Mapping format
 
-Each theme directory contains a `mapping.toml` that maps roles to
-theme-specific identifiers. Simple form:
+Simple form:
 
 ```toml
 play-pause = "play_pause"
@@ -88,7 +100,7 @@ skip-forward = "skip_next"
 volume-up = "volume_up"
 ```
 
-DE-aware form (for freedesktop themes that vary by desktop environment):
+DE-aware form (freedesktop only — different desktop environments use different names):
 
 ```toml
 play-pause = { kde = "media-playback-start", default = "media-play" }
@@ -96,9 +108,9 @@ play-pause = { kde = "media-playback-start", default = "media-play" }
 
 A `default` key is required for every DE-aware entry.
 
-## Builder API
+### Multi-file builder
 
-For projects with multiple TOML files or custom enum names:
+For projects with several TOML files or a custom enum name:
 
 ```rust,ignore
 use native_theme_build::UnwrapOrExit;
@@ -115,33 +127,29 @@ fn main() {
 }
 ```
 
-Both APIs resolve paths relative to `CARGO_MANIFEST_DIR`, emit
-`cargo::rerun-if-changed` directives for all referenced files, and write
-the generated code to `OUT_DIR`.
+Paths are resolved relative to `CARGO_MANIFEST_DIR`. Both APIs emit
+`cargo::rerun-if-changed` directives so edits to any TOML or SVG trigger a
+rebuild.
 
-## What Gets Generated
+### What compile-time validation catches
 
-The output is a single `.rs` file containing:
+- A role is missing from a mapping file (every role must be present in every theme)
+- An SVG file is missing for a bundled theme
+- A role name appears in a mapping file but is not declared in the master TOML
+- A role is declared in two TOML files (multi-source builder)
+- A DE-aware entry is missing its `default` key
 
-- A `#[non_exhaustive] #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]`
-  enum with one variant per role.
-- An `IconProvider` implementation with `icon_name()` returning the
-  platform-specific identifier and `icon_svg()` returning
-  `include_bytes!(...)` data for bundled themes.
+Each of these emits a build error pointing at the offending file and line.
 
-## Validation
+## Links
 
-Build errors are emitted at compile time for:
-
-- Missing roles in mapping files (every role must be present in every theme).
-- Missing SVG files for bundled themes.
-- Unknown role names in mapping files (not declared in the master TOML).
-- Duplicate roles across multiple TOML files (builder API).
-- Missing `default` key in DE-aware mapping entries.
+- [API reference on docs.rs](https://docs.rs/native-theme-build)
+- [`native-theme` crate](../native-theme/) — the runtime side
+- [CHANGELOG](../CHANGELOG.md)
 
 ## License
 
-Licensed under either of
+Licensed under any of
 
 - [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
 - [MIT License](http://opensource.org/licenses/MIT)
