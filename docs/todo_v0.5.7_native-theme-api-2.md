@@ -2641,6 +2641,30 @@ Touch all four fields in a single ownership-type refactor PR.
 **Confidence:** high. This is the standard Rust answer for
 "shared immutable string across many owners."
 
+**Post-script 2026-04-20 — principled deviation per `docs/todo_v0.5.7_gaps.md` §G9:**
+
+The uniform-`Arc<str>` recommendation above was NOT adopted for the
+`SystemTheme::name` and `SystemTheme::icon_theme` axis. An audit
+(recorded in `docs/todo_v0.5.7_gaps.md:449-506` as §G9) counted the
+unique values these fields take in practice and concluded there is
+**no dedup benefit**: each resolved theme carries exactly one `name`
+(and KDE's two icon-theme names across light/dark are the maximum for
+any platform — every other platform has one). Bundled preset names
+are `&'static str` literals, so `Cow::Borrowed(static_lit)` costs
+zero allocations and zero refcounts; `Arc::from(static_lit)` would
+pay one allocation per unique string at construction time for a
+dedup that structurally cannot fire.
+
+The recommendation is retained for `ResolvedFontSpec::family` — the
+one axis where dedup genuinely applies (26 widgets × connectors
+share font families). See `docs/todo_v0.5.7_gaps.md` §G9 for the
+audit detail and `native-theme/src/lib.rs` `SystemTheme::name`
+rustdoc for the in-source record.
+
+**Net result:** `name` / `icon_theme` stay `Cow<'static, str>`;
+`family` stays `Arc<str>`. Mixed ownership is intentional, not
+accidental inconsistency.
+
 #### B3 — Option G: define a `ThemeReader` trait alongside the data shape
 
 B3's existing options A-F all describe the **data shape** readers
@@ -3103,6 +3127,19 @@ stands without change.
 refactor (C4 + B3 + D4 + doc 1 §20 `icon_theme`) via `Arc<str>`
 with `serde = { features = ["rc"] }` remains the correct path.
 Adopt uniformly across the crate.
+
+**Post-script 2026-04-20 — principled deviation per `docs/todo_v0.5.7_gaps.md` §G9:**
+
+"Adopt uniformly across the crate" was softened in the G9 audit
+(recorded in `docs/todo_v0.5.7_gaps.md:449-506`). The uniform
+`Arc<str>` path was adopted ONLY for `ResolvedFontSpec::family`
+(real dedup across 26 widgets × connectors). For `SystemTheme::name`,
+`SystemTheme::icon_theme`, `Theme::name`, and `ThemeDefaults::icon_theme`
+the audit demonstrated no dedup benefit, and `Cow<'static, str>` was
+retained to preserve the zero-allocation fast path on bundled
+`&'static str` preset literals. See §J.2 B3 refinement post-script
+above for the symmetrical record and `docs/todo_v0.5.7_gaps.md` §G9
+for the definitive audit.
 
 ### K.4 Confirmation of the macOS M1 bug (doc 1 §30.3)
 

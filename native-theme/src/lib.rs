@@ -368,6 +368,31 @@ pub(crate) struct OverlaySource {
 #[derive(Clone, Debug)]
 pub struct SystemTheme {
     /// Theme name (from reader or preset).
+    ///
+    /// # Ownership type — principled deviation from doc 2 §J.2 / §K.3
+    ///
+    /// This field uses `Cow<'static, str>`, not `Arc<str>`. Doc 2 §J.2
+    /// ("B3 refinement: use `Arc<str>` for `ReaderOutput::name`") and
+    /// §K.3 recommend uniform `Arc<str>` across `name`, `icon_theme`,
+    /// `ReaderOutput::name`, and `ResolvedFontSpec::family`. The audit in
+    /// `docs/todo_v0.5.7_gaps.md` §G9 (lines 449-506) concluded that the
+    /// uniform recommendation should be adopted ONLY for
+    /// [`ResolvedFontSpec::family`](crate::model::font::ResolvedFontSpec)
+    /// (where 26 widgets × connectors genuinely share font families), and
+    /// should be REVERSED for `name` / `icon_theme` because:
+    ///
+    /// - Each resolved theme carries exactly ONE `name` — no dedup benefit.
+    /// - Bundled preset names are `&'static str` literals; `Cow::Borrowed(static_lit)`
+    ///   is zero allocation, zero refcount. `Arc<str>` would require at least one
+    ///   allocation per unique string at construction time, paying allocation cost
+    ///   for a dedup benefit that is structurally absent.
+    ///
+    /// The same reasoning applies symmetrically to
+    /// [`SystemTheme::icon_theme`](Self::icon_theme),
+    /// [`Theme::name`](crate::theme::Theme), and
+    /// [`ThemeDefaults::icon_theme`](crate::model::defaults::ThemeDefaults).
+    ///
+    /// See `docs/todo_v0.5.7_gaps.md` §G9 for the full audit.
     pub name: Cow<'static, str>,
     /// The OS color mode preference (light or dark).
     pub mode: ColorMode,
@@ -384,6 +409,14 @@ pub struct SystemTheme {
     /// Which icon loading mechanism to use for this theme.
     pub icon_set: IconSet,
     /// The name of the visual icon theme (e.g. `"breeze"`, `"Adwaita"`).
+    ///
+    /// # Ownership type
+    ///
+    /// `Cow<'static, str>` is used here per the same principled deviation
+    /// documented on [`SystemTheme::name`](Self::name) — see `docs/todo_v0.5.7_gaps.md`
+    /// §G9. Each resolved theme carries a single icon-theme name (KDE has
+    /// exactly two across light/dark variants — `"breeze"` / `"breeze-dark"`;
+    /// other platforms have one), so the `Arc<str>` dedup benefit does not apply.
     pub icon_theme: Cow<'static, str>,
     /// OS-detected accessibility preferences (shared across variants).
     pub accessibility: AccessibilityPreferences,
