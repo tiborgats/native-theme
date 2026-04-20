@@ -1,35 +1,38 @@
 # native-theme-gpui
 
 [gpui](https://gpui.rs/) + [gpui-component](https://crates.io/crates/gpui-component)
-toolkit connector for [native-theme](https://crates.io/crates/native-theme).
+connector for [`native-theme`](../../native-theme/).
 
-Maps [`native_theme::ResolvedTheme`](https://docs.rs/native-theme) data to
-gpui-component's theming system, producing a fully configured `Theme` with
-correct colors, fonts, geometry, and icons for all gpui-component widgets.
+## What it does
 
-## Usage
+Turns a `native_theme::ResolvedTheme` into a fully configured
+`gpui_component::theme::Theme` — colors (108 fields), fonts, geometry, shadows,
+and icon mappings all wired up for every gpui-component widget.
+
+## How it fits
+
+Depend on this crate — it pulls `native-theme` in transitively. The
+workspace-level README at the repo root has a diagram showing where each
+crate sits.
+
+## Quick start
 
 Add both crates to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-native-theme = "0.5.7"
-native-theme-gpui = "0.5.7"
+native-theme = "0.5"
+native-theme-gpui = "0.5"
 ```
 
-Then create a gpui-component theme from any native-theme preset:
+Load a bundled preset:
 
 ```rust,ignore
-use native_theme::theme::{ColorMode, Theme};
-use native_theme_gpui::to_theme;
+use native_theme_gpui::from_preset;
 
-// Load a preset and resolve it
-let nt = Theme::preset("dracula")?;
-let is_dark = true;
-let variant = nt.into_variant(ColorMode::Dark)?;
-let resolved = variant.resolve_system()?;
-let theme = to_theme(&resolved, "My App", is_dark, false);
-// Use `theme` in your gpui-component application
+let (theme, resolved) = from_preset("dracula", true)?;
+// `theme` is the gpui-component Theme; `resolved` has the raw native-theme data
+//                                     ^ is_dark
 ```
 
 Or read the OS theme at runtime:
@@ -38,54 +41,43 @@ Or read the OS theme at runtime:
 use native_theme_gpui::from_system;
 
 let (theme, resolved, is_dark) = from_system()?;
-// `theme` is the gpui-component Theme, `resolved` has per-widget metrics
 ```
 
-## What Gets Mapped
+## Core concepts
 
-The connector translates native-theme's 24 semantic color roles into
-gpui-component's 108-field `ThemeColor` struct. The mapping works in layers:
+- **`from_preset(name, is_dark)`** — load a bundled preset. `is_dark` is explicit because some presets (`solarized`, `gruvbox`) have ambiguous lightness.
+- **`from_system()`** — read the OS theme. Returns `(theme, resolved, is_dark)` so the third value tells you which variant the OS is currently using.
+- **`to_theme(&resolved, "App Name", is_dark, compact)`** — the underlying mapping function if you already have a `ResolvedTheme` from somewhere else.
 
-- **Direct mappings** (~30 fields) -- background, foreground, accent, border,
-  muted, input, ring, selection, link
-- **Derived fields** (~78 fields) -- hover/active states, chart colors, tab bar,
-  sidebar, scrollbar, and other widget-specific colors are generated from the
-  base roles via shade derivation and alpha blending
+## Common recipes
 
-Fonts and geometry (`family`, `size`, `radius`, `shadow`) are mapped to
-gpui-component's `ThemeConfig`. Font sizes from the resolved theme are in
-logical pixels and are passed through directly.
+### Apply user overrides to the OS theme
 
-## Icons
+```rust,ignore
+use native_theme::{SystemTheme, theme::Theme};
+use native_theme_gpui::to_theme;
 
-The connector maps native-theme's `IconRole` variants to gpui-component's
-`IconName` enum, covering 30 of 42 semantic roles (actions, navigation,
-status indicators, etc.).
+let sys = SystemTheme::from_system()?;
+let overlay = Theme::from_toml(r##"[light.defaults]
+accent_color = "#ff6600"
+"##)?;
+let customised = sys.with_overlay(&overlay)?;
+let active = customised.pick(customised.mode);
+let theme = to_theme(active, "My App", customised.mode.is_dark(), false);
+```
 
-It also provides reverse-mapping functions for loading icon assets from
-native-theme's icon bundles:
+### Custom icons
 
-- `lucide_name_for_gpui_icon()` -- maps gpui-component icon names to Lucide SVG filenames
-- `material_name_for_gpui_icon()` -- maps to Material Symbols icon names
-- `freedesktop_name_for_gpui_icon()` -- maps to FreeDesktop icon names (Linux)
-- `to_image_source()` -- converts native-theme `IconData` to gpui `ImageSource`
+For app-specific icons generated via [`native-theme-build`](../../native-theme-build/):
 
-### Custom Icons
+```rust,ignore
+use native_theme_gpui::icons::custom_icon_to_image_source;
+use native_theme::theme::IconSet;
 
-For app-specific icons defined via `native-theme-build`, the connector provides:
+let handle = custom_icon_to_image_source(&AppIcon::PlayPause, IconSet::Material, None, None);
+```
 
-- `custom_icon_to_image_source(provider, icon_set, color, size)` -- load a custom icon as a gpui `ImageSource`, with optional color tinting and size
-
-This works with any type implementing `IconProvider`.
-
-## Animated Icons
-
-The connector provides helpers for displaying animated icons from a
-typed per-set loader's `load_indicator()` associated function (e.g.
-[`MaterialLoader::load_indicator()`](https://docs.rs/native-theme/latest/native_theme/icons/struct.MaterialLoader.html)):
-
-- `animated_frames_to_image_sources()` -- converts `AnimatedIcon::Frames` to an `Option<AnimatedImageSources>` for frame-based playback
-- `with_spin_animation()` -- wraps an `Svg` element with continuous rotation for `AnimatedIcon::Transform` playback
+### Animated spinners
 
 ```rust,ignore
 use native_theme::theme::AnimatedIcon;
@@ -95,15 +87,14 @@ use native_theme_gpui::icons::{animated_frames_to_image_sources, with_spin_anima
 
 if let Some(anim) = MaterialLoader::load_indicator() {
     if prefers_reduced_motion() {
-        // Static fallback for accessibility
         let static_icon = to_image_source(anim.first_frame(), None, None);
     } else {
         match &anim {
-            AnimatedIcon::Frames(data) => {
-                // Cache this -- do not call on every frame tick
+            AnimatedIcon::Frames(_) => {
+                // Cache this — do not call on every frame tick.
                 let sources = animated_frames_to_image_sources(&anim, None, None);
             }
-            AnimatedIcon::Transform(data) => {
+            AnimatedIcon::Transform(_) => {
                 let spinner = gpui::svg().path("spinner.svg");
                 let element = with_spin_animation(spinner, "loading", 1000);
             }
@@ -113,29 +104,28 @@ if let Some(anim) = MaterialLoader::load_indicator() {
 }
 ```
 
-Cache the `AnimatedImageSources` from `animated_frames_to_image_sources()` -- do not
-call it on every frame tick.
+## What gets mapped
 
-## Modules
+- **All 108 `ThemeColor` fields.** ~30 direct mappings from the 24 semantic color roles; the other ~78 (hover/active states, chart colors, tab bar, sidebar, scrollbar, etc.) are derived via shade generation and alpha blending.
+- **Fonts and geometry** — `family`, `size`, `radius`, `shadow` — into `ThemeConfig`. Font sizes pass through in logical pixels.
+- **30 of 42 `IconRole` variants** mapped to gpui-component's `IconName` enum (actions, navigation, status indicators).
 
-| Module | Purpose |
-|--------|---------|
-| `icons` | Icon role mapping, image source conversion, and animated icon playback |
+Reverse-mapping helpers (gpui-component → native-theme asset) live in the
+`icons` module: `lucide_name_for_gpui_icon`, `material_name_for_gpui_icon`,
+`freedesktop_name_for_gpui_icon`, plus `to_image_source` for converting
+loaded `IconData` to `gpui::ImageSource`.
 
-Internal modules (`pub(crate)`): `colors` (108-field ThemeColor mapping),
-`config` (fonts and geometry), `derive` (hover/active state derivation).
-
-## Example
-
-Run the showcase widget gallery to explore all 16 presets interactively:
+## Showcase
 
 ```sh
 cargo run -p native-theme-gpui --example showcase-gpui
 ```
 
-The showcase displays all gpui-component widgets (buttons, inputs, tables,
-charts, overlays, etc.) themed with native-theme presets, with live theme
-switching and a color map inspector.
+Displays every gpui-component widget (buttons, inputs, tables, charts, overlays,
+etc.) themed with native-theme presets, with live theme switching and a color
+map inspector.
+
+## Gallery
 
 ### Linux
 
@@ -163,9 +153,15 @@ switching and a color map inspector.
 
 ![Windows 11 Dark](docs/assets/windows-windows-11-dark.png)
 
+## Links
+
+- [API reference on docs.rs](https://docs.rs/native-theme-gpui)
+- [Showcase source](examples/showcase-gpui.rs)
+- [CHANGELOG](../../CHANGELOG.md)
+
 ## License
 
-Licensed under either of
+Licensed under any of
 
 - [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
 - [MIT License](http://opensource.org/licenses/MIT)
