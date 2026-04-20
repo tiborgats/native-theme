@@ -1,92 +1,107 @@
 # native-theme-iced
 
-[iced](https://iced.rs/) toolkit connector for
-[native-theme](https://crates.io/crates/native-theme).
+[iced](https://iced.rs/) connector for [`native-theme`](../../native-theme/).
 
-Maps [`native_theme::ResolvedTheme`](https://docs.rs/native-theme) data to
-iced's theming system, producing a fully configured `iced::Theme` with correct
-colors for all built-in widget styles via iced's Catalog system.
+## What it does
 
-## Usage
+Turns a `native_theme::ResolvedTheme` into a configured `iced::Theme` (Palette
++ Extended palette) so iced's built-in Catalog-driven widget styles pick up
+your theme automatically. Provides widget-metric helpers (`button_padding`,
+`border_radius`, `font_size`, …) for the sizing iced applies per-widget rather
+than through the Catalog.
+
+## How it fits
+
+Depend on this crate — it pulls `native-theme` in transitively. The
+workspace-level README at the repo root has a diagram showing where each
+crate sits.
+
+Unlike the GPUI connector, iced applies geometry (padding, radii, spacing)
+via inline widget configuration, so this connector maps **colors only**. The
+metric helpers read those values off a `&ResolvedTheme` for you to pass into
+your widget builders.
+
+## Quick start
 
 Add both crates to your `Cargo.toml`:
 
 ```toml
 [dependencies]
-native-theme = "0.5.7"
-native-theme-iced = "0.5.7"
+native-theme = "0.5"
+native-theme-iced = "0.5"
 ```
 
-Then create an iced theme from any native-theme preset:
+Load a bundled preset:
 
 ```rust,ignore
-use native_theme::theme::{ColorMode, Theme};
-use native_theme_iced::to_theme;
+use native_theme_iced::from_preset;
 
-// Load a preset and resolve it
-let nt = Theme::preset("dracula")?;
-let resolved = nt.into_variant(ColorMode::Dark)?.resolve_system()?;
-let theme = to_theme(&resolved, "My App");
-// Use `theme` as your iced application theme
+let (theme, resolved) = from_preset("dracula", true)?;
+// `theme` is the iced Theme; `resolved` has metric fields for widget sizing.
+//                          ^ is_dark
 ```
 
 Or read the OS theme at runtime:
 
 ```rust,ignore
-use native_theme::SystemTheme;
-use native_theme_iced::to_theme;
+use native_theme_iced::from_system;
 
-let system = SystemTheme::from_system()?;
-let theme = to_theme(system.pick(system.mode), "System Theme");
+let (theme, resolved, is_dark) = from_system()?;
 ```
 
-## Widget Metrics
+## Core concepts
 
-The crate exposes helper functions for widget sizing that iced applies
-per-widget rather than through the Catalog:
+- **`from_preset(name, is_dark)`** — load a bundled preset. `is_dark` is explicit because some presets (`solarized`, `gruvbox`) have ambiguous lightness.
+- **`from_system()`** — read the OS theme. Returns `(theme, resolved, is_dark)` so the third value tells you which variant the OS is currently using.
+- **`to_theme(&resolved, "App Name")`** — the underlying mapping function if you already have a `ResolvedTheme` from somewhere else.
+- **Metric helpers** — free functions that read geometry off `&ResolvedTheme` for use with iced's inline widget configuration.
 
-- `button_padding(resolved)` -- horizontal and vertical padding
-- `input_padding(resolved)` -- text input padding
-- `border_radius(resolved)` -- standard corner radius
-- `border_radius_lg(resolved)` -- large corner radius (e.g., dialogs)
-- `scrollbar_width(resolved)` -- scrollbar track width
-- `font_family(resolved)` -- primary UI font family name
-- `font_size(resolved)` -- primary UI font size in logical pixels
-- `font_weight(resolved)` -- primary UI font weight (CSS 100-900)
-- `mono_font_family(resolved)` -- monospace font family name
-- `mono_font_size(resolved)` -- monospace font size in pixels
-- `mono_font_weight(resolved)` -- monospace font weight (CSS 100-900)
-- `line_height_multiplier(resolved)` -- line height multiplier (e.g. 1.4)
-- `to_iced_weight(css_weight)` -- converts CSS weight to iced `Weight` enum
+## Common recipes
 
-All helpers take a `&ResolvedTheme` reference (except `to_iced_weight`
-which takes a `u16`).
+### Use widget-metric helpers
 
-## Modules
+```rust,ignore
+use native_theme_iced::{button_padding, border_radius, font_family, font_size};
 
-| Module | Purpose |
-|--------|---------|
-| `palette` | Maps native-theme colors to iced's 6-field Palette |
-| `extended` | (internal) Overrides iced's Extended palette for secondary and background.weak |
-| `icons` | Icon role mapping, SVG widget helpers, and animated icon playback |
+// in your view:
+let padding = button_padding(&resolved);
+let radius  = border_radius(&resolved);
+// Apply with .padding(padding), .border(...) on your widget builders.
+```
 
-## Custom Icons
+Full helper list: `button_padding`, `input_padding`, `border_radius`,
+`border_radius_lg`, `scrollbar_width`, `font_family`, `font_size`,
+`font_weight`, `mono_font_family`, `mono_font_size`, `mono_font_weight`,
+`line_height_multiplier`, plus `to_iced_weight(css_weight)` for converting
+CSS weight values to iced's `Weight` enum.
 
-For app-specific icons defined via `native-theme-build`, the connector provides:
+### Apply user overrides to the OS theme
 
-- `custom_icon_to_image_handle(provider, icon_set)` -- load a custom icon as an iced image handle
-- `custom_icon_to_svg_handle(provider, icon_set, color)` -- load as an SVG handle (pass `None` for uncolored)
+```rust,ignore
+use native_theme::{SystemTheme, theme::Theme};
+use native_theme_iced::to_theme;
 
-These work with any type implementing `IconProvider`.
+let sys = SystemTheme::from_system()?;
+let overlay = Theme::from_toml(r##"[light.defaults]
+accent_color = "#ff6600"
+"##)?;
+let customised = sys.with_overlay(&overlay)?;
+let theme = to_theme(customised.pick(customised.mode), "My App");
+```
 
-## Animated Icons
+### Custom icons
 
-The connector provides helpers for displaying animated icons from a
-typed per-set loader's `load_indicator()` associated function (e.g.
-[`MaterialLoader::load_indicator()`](https://docs.rs/native-theme/latest/native_theme/icons/struct.MaterialLoader.html)):
+For app-specific icons generated via [`native-theme-build`](../../native-theme-build/):
 
-- `animated_frames_to_svg_handles()` -- converts `AnimatedIcon::Frames` to an `AnimatedSvgHandles` struct for frame-based playback
-- `spin_rotation_radians()` -- computes the current rotation angle for `AnimatedIcon::Transform` playback
+```rust,ignore
+use native_theme_iced::icons::{custom_icon_to_image_handle, custom_icon_to_svg_handle};
+use native_theme::theme::IconSet;
+
+let image = custom_icon_to_image_handle(&AppIcon::PlayPause, IconSet::Material);
+let svg   = custom_icon_to_svg_handle(&AppIcon::PlayPause, IconSet::Material, None);
+```
+
+### Animated spinners
 
 ```rust,ignore
 use native_theme::theme::AnimatedIcon;
@@ -96,20 +111,19 @@ use native_theme_iced::icons::{animated_frames_to_svg_handles, spin_rotation_rad
 
 if let Some(anim) = MaterialLoader::load_indicator() {
     if prefers_reduced_motion() {
-        // Static fallback for accessibility
-        let static_icon = anim.first_frame();
+        let _static_fallback = anim.first_frame();
     } else {
         match &anim {
-            AnimatedIcon::Frames(data) => {
-                // Cache this -- do not call on every frame tick
-                if let Some(anim_handles) = animated_frames_to_svg_handles(&anim, None) {
-                    // Use iced::time::every(Duration::from_millis(anim_handles.frame_duration_ms as u64))
-                    // to drive frame_index = (frame_index + 1) % anim_handles.handles.len()
-                    // In view: Svg::new(anim_handles.handles[frame_index].clone())
+            AnimatedIcon::Frames(_) => {
+                // Cache this — do not call on every frame tick.
+                if let Some(h) = animated_frames_to_svg_handles(&anim, None) {
+                    // Use iced::time::every(Duration::from_millis(h.frame_duration_ms as u64))
+                    // to drive: frame_index = (frame_index + 1) % h.handles.len();
+                    // In view: Svg::new(h.handles[frame_index].clone())
                 }
             }
-            AnimatedIcon::Transform(data) => {
-                let angle = spin_rotation_radians(elapsed, 1000);
+            AnimatedIcon::Transform(_) => {
+                let _angle = spin_rotation_radians(elapsed, 1000);
                 // Svg::new(handle).rotation(Rotation::Floating(angle))
             }
             _ => {}
@@ -118,17 +132,28 @@ if let Some(anim) = MaterialLoader::load_indicator() {
 }
 ```
 
-Cache the `AnimatedSvgHandles` from `animated_frames_to_svg_handles()` -- do not
-call it on every frame tick. Use `Rotation::Floating` (not `Rotation::Solid`)
-for spin animations to avoid layout jitter during rotation.
+Use `Rotation::Floating` (not `Rotation::Solid`) for spin animations so
+the widget's layout box stays constant during rotation.
 
-## Example
+## Modules
 
-Run the showcase widget gallery to explore all 16 presets interactively:
+| Module | Purpose |
+|--------|---------|
+| `palette` | Maps native-theme colors to iced's 6-field Palette |
+| `extended` | (internal) Overrides iced's Extended palette for secondary and `background.weak` |
+| `icons` | Icon role mapping, SVG widget helpers, and animated icon playback |
+
+## Showcase
 
 ```sh
 cargo run -p native-theme-iced --example showcase-iced
 ```
+
+Displays every iced widget (buttons, inputs, sliders, checkboxes, togglers, …)
+themed with native-theme presets, with live theme switching and a color map
+inspector.
+
+## Gallery
 
 ### Linux
 
@@ -149,13 +174,15 @@ cargo run -p native-theme-iced --example showcase-iced
 ![Windows 11 Light](docs/assets/windows-windows-11-light.png)
 ![Windows 11 Dark](docs/assets/windows-windows-11-dark.png)
 
-The showcase displays all iced widgets (buttons, inputs, sliders, checkboxes,
-togglers, etc.) themed with native-theme presets, with live theme switching
-and a color map inspector.
+## Links
+
+- [API reference on docs.rs](https://docs.rs/native-theme-iced)
+- [Showcase source](examples/showcase-iced.rs)
+- [CHANGELOG](../../CHANGELOG.md)
 
 ## License
 
-Licensed under either of
+Licensed under any of
 
 - [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
 - [MIT License](http://opensource.org/licenses/MIT)
