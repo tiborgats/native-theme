@@ -653,6 +653,7 @@ Phases execute in numeric order 69 → 88 with the following parallelism hints:
 | 92. Icon Theme Selection and Showcase Fixes | v0.5.7 | 4/4 | Complete | 2026-04-16 |
 | 93. docs/todo_v0.5.7_gaps.md — P1 Polish Sweep (G1-G5, plus G3 follow-up + G11 deviation) | v0.5.7 | 7/7 | Complete | 2026-04-19 |
 | 94. docs/todo_v0.5.7_gaps.md — Close Remaining G6-G8 (Border Inheritance Codegen, ResolutionContext, ThemeReader Trait) | v0.5.7 | 3/3 | Complete | 2026-04-20 |
+| 95. docs/todo_v0.5.7_gaps.md — Final G9+G10+G11 (Cow<'static, str> vs Arc<str> Ownership Deviation, Windows button_order WinUI 3 Citation Supplement, --workspace Per-Crate Deviation Formalisation) | v0.5.7 | 3/3 | Complete | 2026-04-20 |
 
 ### Phase 90: resolve remaining v0.5.7 API overhaul gaps
 
