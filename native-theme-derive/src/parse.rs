@@ -62,10 +62,10 @@ pub(crate) enum BorderKind {
 /// concerns.
 ///
 /// Per-widget assignments (Phase 94-01 G6):
-/// - `Full`:    10 widgets — button, input, checkbox, tooltip, progress_bar,
-///              toolbar, list, combo_box, segmented_control, expander.
-/// - `FullLg`:  3 widgets  — window, popover, dialog (use `corner_radius_lg`).
-/// - `Partial`: 2 widgets  — sidebar, status_bar (color + line_width only).
+/// - `Full`: 10 widgets — button, input, checkbox, tooltip, progress_bar,
+///   toolbar, list, combo_box, segmented_control, expander.
+/// - `FullLg`: 3 widgets — window, popover, dialog (use `corner_radius_lg`).
+/// - `Partial`: 2 widgets — sidebar, status_bar (color + line_width only).
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum BorderInheritanceKind {
     /// All 4 sub-fields inherited: color, corner_radius, line_width, shadow_enabled.

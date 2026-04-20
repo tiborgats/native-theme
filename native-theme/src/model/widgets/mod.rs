@@ -11,6 +11,7 @@ use native_theme_derive::{ThemeFields, ThemeWidget};
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
 #[serde(default)]
+#[theme_inherit(border_kind = "full_lg", font = "title_bar_font")]
 pub struct WindowTheme {
     /// Main window background fill.
     #[theme(inherit_from = "defaults.background_color")]
@@ -36,6 +37,7 @@ pub struct WindowTheme {
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
 #[serde(default)]
+#[theme_inherit(border_kind = "full", font = "font")]
 pub struct ButtonTheme {
     /// Default button background fill.
     #[theme(inherit_from = "defaults.background_color")]
@@ -91,6 +93,7 @@ pub struct ButtonTheme {
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
 #[serde(default)]
+#[theme_inherit(border_kind = "full", font = "font")]
 pub struct InputTheme {
     /// Input field background fill.
     #[theme(inherit_from = "defaults.background_color")]
@@ -139,6 +142,7 @@ pub struct InputTheme {
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
 #[serde(default)]
+#[theme_inherit(border_kind = "full", font = "font")]
 pub struct CheckboxTheme {
     /// Checkbox background color.
     #[theme(inherit_from = "defaults.background_color")]
@@ -190,6 +194,7 @@ pub struct CheckboxTheme {
 #[serde_with::skip_serializing_none]
 #[serde(default)]
 #[theme_layer(border_kind = "none")]
+#[theme_inherit(font = "font")]
 pub struct MenuTheme {
     /// Menu panel background fill.
     #[theme(inherit_from = "defaults.background_color")]
@@ -232,6 +237,7 @@ pub struct MenuTheme {
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
 #[serde(default)]
+#[theme_inherit(border_kind = "full", font = "font")]
 pub struct TooltipTheme {
     /// Tooltip background fill.
     #[theme(inherit_from = "defaults.background_color")]
@@ -333,6 +339,7 @@ pub struct SliderTheme {
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
 #[serde(default)]
+#[theme_inherit(border_kind = "full")]
 pub struct ProgressBarTheme {
     /// Filled progress bar color.
     #[theme(inherit_from = "defaults.accent_color")]
@@ -360,6 +367,7 @@ pub struct ProgressBarTheme {
 #[serde_with::skip_serializing_none]
 #[serde(default)]
 #[theme_layer(border_kind = "none")]
+#[theme_inherit(font = "font")]
 pub struct TabTheme {
     /// Inactive tab background.
     #[theme(inherit_from = "defaults.background_color")]
@@ -401,6 +409,7 @@ pub struct TabTheme {
 #[serde_with::skip_serializing_none]
 #[serde(default)]
 #[theme_layer(border_kind = "partial")]
+#[theme_inherit(border_kind = "partial", font = "font")]
 pub struct SidebarTheme {
     /// Sidebar panel background fill.
     #[theme(inherit_from = "defaults.background_color")]
@@ -428,6 +437,7 @@ pub struct SidebarTheme {
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
 #[serde(default)]
+#[theme_inherit(border_kind = "full", font = "font")]
 pub struct ToolbarTheme {
     /// Toolbar background color.
     #[theme(inherit_from = "defaults.background_color")]
@@ -459,6 +469,7 @@ pub struct ToolbarTheme {
 #[serde_with::skip_serializing_none]
 #[serde(default)]
 #[theme_layer(border_kind = "partial")]
+#[theme_inherit(border_kind = "partial", font = "font")]
 pub struct StatusBarTheme {
     /// Status bar background color.
     #[theme(inherit_from = "defaults.background_color")]
@@ -477,6 +488,8 @@ pub struct StatusBarTheme {
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
 #[serde(default)]
+#[theme_inherit(border_kind = "full", font = "item_font")]
+#[theme_inherit(font = "header_font")]
 pub struct ListTheme {
     /// List background fill.
     pub background_color: Option<Rgba>,
@@ -523,6 +536,7 @@ pub struct ListTheme {
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
 #[serde(default)]
+#[theme_inherit(border_kind = "full_lg", font = "font")]
 pub struct PopoverTheme {
     /// Panel background fill.
     pub background_color: Option<Rgba>,
@@ -625,6 +639,8 @@ pub struct SwitchTheme {
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
 #[serde(default)]
+#[theme_inherit(border_kind = "full_lg", font = "title_font")]
+#[theme_inherit(font = "body_font")]
 pub struct DialogTheme {
     /// Dialog background color.
     pub background_color: Option<Rgba>,
@@ -694,6 +710,7 @@ pub struct SpinnerTheme {
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
 #[serde(default)]
+#[theme_inherit(border_kind = "full", font = "font")]
 pub struct ComboBoxTheme {
     /// ComboBox background color.
     #[theme(inherit_from = "defaults.background_color")]
@@ -740,6 +757,7 @@ pub struct ComboBoxTheme {
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
 #[serde(default)]
+#[theme_inherit(border_kind = "full", font = "font")]
 pub struct SegmentedControlTheme {
     /// Segmented control background color.
     #[theme(inherit_from = "defaults.background_color")]
@@ -794,6 +812,7 @@ pub struct CardTheme {
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
 #[serde(default)]
+#[theme_inherit(border_kind = "full", font = "font")]
 pub struct ExpanderTheme {
     /// Collapsed header row height in logical pixels.
     #[serde(rename = "header_height_px")]
@@ -823,6 +842,7 @@ pub struct ExpanderTheme {
 #[derive(Clone, Debug, Default, PartialEq, serde::Serialize, serde::Deserialize, ThemeWidget)]
 #[serde_with::skip_serializing_none]
 #[serde(default)]
+#[theme_inherit(font = "font")]
 pub struct LinkTheme {
     /// Visited link text color.
     #[theme(inherit_from = "defaults.link_color")]

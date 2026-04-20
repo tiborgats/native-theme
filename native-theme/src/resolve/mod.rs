@@ -58,14 +58,24 @@ inventory::collect!(FieldInfo);
 ///
 /// Sister registry to [`WidgetFieldInfo`] / [`FieldInfo`] — same
 /// inventory-crate pattern (`inventory::submit!` from the derive output).
+///
+/// Fields carry `#[cfg_attr(not(test), allow(dead_code))]` because they are
+/// consumed only by the drift tests in `inheritance.rs::tests`
+/// (introspection via `inventory::iter`). A non-test build compiles the
+/// registry rows but never reads them — matching Phase 93-09's conditional
+/// `allow(dead_code)` pattern for self-unmasking (if a future non-test
+/// consumer lands, the allow stops firing and real dead-code regressions
+/// surface).
 pub(crate) struct BorderInheritanceInfo {
     /// Snake_case widget name (e.g., "button", "segmented_control").
+    #[cfg_attr(not(test), allow(dead_code))]
     pub widget_name: &'static str,
     /// Inheritance kind: `"full"`, `"full_lg"`, or `"partial"`.
     ///
     /// Uses a plain `&'static str` instead of an enum to keep the
     /// inventory schema dependency-free — `BorderInheritanceKind` lives
     /// in `native-theme-derive` which the runtime crate cannot import.
+    #[cfg_attr(not(test), allow(dead_code))]
     pub kind: &'static str,
 }
 inventory::collect!(BorderInheritanceInfo);
@@ -81,12 +91,17 @@ inventory::collect!(BorderInheritanceInfo);
 /// `font_inheritance_toml_matches_macro_emit` in `inheritance.rs::tests`
 /// which asserts `docs/inheritance-rules.toml [font_inheritance]` matches
 /// the registry byte-for-byte.
+///
+/// Fields carry `#[cfg_attr(not(test), allow(dead_code))]` — see
+/// [`BorderInheritanceInfo`] for rationale.
 pub(crate) struct FontInheritanceInfo {
     /// Snake_case widget name (e.g., "button", "list", "dialog", "link").
+    #[cfg_attr(not(test), allow(dead_code))]
     pub widget_name: &'static str,
     /// Name of the font field on the widget Option struct
     /// (e.g., `"font"`, `"title_bar_font"`, `"item_font"`, `"header_font"`,
     /// `"title_font"`, `"body_font"`).
+    #[cfg_attr(not(test), allow(dead_code))]
     pub font_field: &'static str,
 }
 inventory::collect!(FontInheritanceInfo);
