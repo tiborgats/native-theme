@@ -81,10 +81,12 @@ use native_theme_gpui::to_theme;
 
 let nt = Theme::preset("dracula").unwrap();
 let variant = nt.into_variant(ColorMode::Dark).unwrap();
-let resolved = variant.into_resolved(None).unwrap();
+let resolved = variant.resolve_system().unwrap();
 let theme = to_theme(&resolved, "My App", true, false);
 // Use as your gpui-component theme
 ```
+
+For deterministic DPI in tests, see `ResolutionContext::for_tests()`.
 
 Run the gpui showcase (full widget gallery with color map inspector):
 
@@ -106,7 +108,7 @@ use native_theme_iced::to_theme;
 
 let nt = Theme::preset("dracula").unwrap();
 let variant = nt.into_variant(ColorMode::Dark).unwrap();
-let resolved = variant.into_resolved(None).unwrap();
+let resolved = variant.resolve_system().unwrap();
 let theme = to_theme(&resolved, "My App");
 // Use as your iced application theme
 ```

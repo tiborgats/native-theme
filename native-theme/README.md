@@ -36,7 +36,7 @@ resolve + validate pipeline:
 ```rust,ignore
 use native_theme::theme::ColorMode;
 let variant = theme.into_variant(ColorMode::Dark)?;
-let resolved = variant.into_resolved(None)?; // -> ResolvedTheme
+let resolved = variant.resolve_system()?; // -> ResolvedTheme
 let accent = resolved.defaults.accent_color; // Rgba (not Option)
 ```
 
@@ -108,7 +108,7 @@ For other toolkits, map `ResolvedTheme` fields directly. After
 resolution, all fields are guaranteed populated:
 
 ```rust,ignore
-let resolved = variant.into_resolved(None)?; // ResolvedTheme
+let resolved = variant.resolve_system()?; // ResolvedTheme
 let bg = resolved.defaults.background_color;     // Rgba
 let accent = resolved.defaults.accent_color;     // Rgba
 let font = &resolved.defaults.font.family;       // &Arc<str>

@@ -33,7 +33,8 @@ previously re-exported at the crate root are now accessed through their module:
 - `native_theme::detect::*` -- `system_is_dark()`, `prefers_reduced_motion()`, `LinuxDesktop`, etc.
 - `native_theme::color::*` -- `Rgba`
 - `native_theme::error::*` -- `Error`, `ErrorKind`
-- `native_theme::prelude` -- convenience re-exports (`Theme`, `ResolvedTheme`, `SystemTheme`, `AccessibilityPreferences`, `Rgba`, `Error`, `Result`)
+- `native_theme::resolve::*` -- `ResolutionContext` (post-G7; inheritance and validate internals stay `pub(crate)`)
+- `native_theme::prelude` -- convenience re-exports (`Theme`, `ResolvedTheme`, `SystemTheme`, `AccessibilityPreferences`, `ResolutionContext`, `Rgba`, `Error`, `Result`)
 
 #### Icon loading API
 
@@ -66,7 +67,7 @@ returns `ErrorKind` for coarse dispatch.
 #### Other breaking changes
 
 - `ColorMode` enum replaces `is_dark: bool` on `SystemTheme`; `SystemTheme.mode` is now `ColorMode`, `pick()` takes `ColorMode`
-- `into_resolved()` now takes `font_dpi: Option<f32>` argument
+- `ThemeMode::into_resolved()` signature changed from `(font_dpi: Option<f32>)` to `(ctx: &ResolutionContext)` (see G7 ResolutionContext section below)
 - `BorderSpec` split into `DefaultsBorderSpec` (for `ThemeDefaults`) and `WidgetBorderSpec` (for per-widget use)
 - `AnimatedIcon` variant fields made private via `FramesData`/`TransformData` wrappers; duration fields now `NonZeroU32`
 - `ThemeChangeEvent::ColorSchemeChanged` renamed to `ThemeChangeEvent::Changed`; `Other` variant removed
@@ -116,6 +117,60 @@ As a secondary fix, `freedesktop::load_freedesktop_spinner` now accepts
 closing a latent silent-drop that existed since the original freedesktop
 spinner support.
 
+#### Resolution-time inputs — `ResolutionContext` (Phase 94-02, G7)
+
+The `font_dpi: Option<f32>` parameter on `ThemeMode::into_resolved`, the
+matching field on the internal `OverlaySource`, and the implicit
+`platform_button_order()` / `system_icon_theme()` calls inside
+`resolve_platform_defaults` / `run_pipeline` are consolidated into a
+first-class `ResolutionContext` struct that bundles the three
+resolution-time inputs captured from the OS.
+
+```rust,ignore
+// Before
+let resolved = variant.into_resolved(None)?;           // auto-detect DPI
+let resolved = variant.into_resolved(Some(96.0))?;     // explicit DPI
+
+// After
+use native_theme::ResolutionContext;
+
+let resolved = variant.resolve_system()?;              // OS-detected
+let resolved = variant.into_resolved(&ResolutionContext::from_system())?;
+let resolved = variant.into_resolved(&ResolutionContext::for_tests())?; // tests
+```
+
+`ResolutionContext` carries:
+- `font_dpi: f32` — not `Option<f32>`; the `None`→`system_font_dpi()` fallback
+  is resolved once at construction.
+- `button_order: DialogButtonOrder` — what `platform_button_order()` returned
+  at construction time.
+- `icon_theme: Option<Cow<'static, str>>` — runtime system fallback used by
+  the pipeline's three-tier icon_theme precedence (per-variant → Theme-level
+  → this fallback).
+
+Key design choices (per docs/todo_v0.5.7_gaps.md §G7 and doc 2 §J.2):
+
+- **No `impl Default`.** Runtime-detected types must signal intent at the
+  call site. Use `from_system()` for production or `for_tests()` for
+  deterministic test values (96 DPI, `PrimaryRight`, no `icon_theme`).
+- **`&ResolutionContext` parameter, not `Option<&ResolutionContext>`.** The
+  None-overload would reintroduce the silent-default anti-pattern. Explicit
+  shortcut `resolve_system()` covers the OS-detected path.
+- **`resolve_system()` placed on `ThemeMode`, not `Theme`** (deviation from
+  gap doc §G7 step 4). Rationale: `Theme` has both light and dark variants;
+  explicit variant selection via
+  `theme.into_variant(mode)?.resolve_system()` is unambiguous.
+- **`AccessibilityPreferences` stays on `SystemTheme`**, not on the
+  context (per ACCESS-01 / J.2 B4 refinement). Accessibility is a
+  render-time concern, not a resolve-time concern.
+
+Internal change: `OverlaySource.font_dpi: Option<f32>` replaced by
+`OverlaySource.context: ResolutionContext`. Consumers are not affected
+(the type has always been `pub(crate)`).
+
+Migration is mechanical across 43 call sites in 18 files. No deprecation
+shim — v0.5.7 is the no-backcompat window.
+
 ### Added
 
 #### native-theme-derive (new crate)
@@ -132,7 +187,7 @@ spinner support.
 - `DiagnosticEntry` enum and `PlatformPreset` struct for diagnostic reporting
 - `FrameList` newtype wrapping `Vec<IconData>` with non-empty guarantee
 - `DetectionContext` struct with `ArcSwapOption` caches for is_dark, reduced_motion, icon_theme
-- `prelude` module with 7 convenience re-exports
+- `prelude` module with 8 convenience re-exports (post-G7: `Theme`, `ResolvedTheme`, `SystemTheme`, `AccessibilityPreferences`, `ResolutionContext`, `Rgba`, `Error`, `Result`)
 - `IconRole::name()` method
 - `Rgba` named constants: `TRANSPARENT`, `BLACK`, `WHITE`
 - `#[non_exhaustive]` on `LinuxDesktop` enum; new variants: `CosmicDe`, `Hyprland`, `Sway`, `River`, `Niri`
