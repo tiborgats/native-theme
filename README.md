@@ -1,131 +1,57 @@
 # native-theme
 
-Cross-platform native theme detection and loading for Rust GUI applications.
-
 [![Crates.io](https://img.shields.io/crates/v/native-theme.svg)](https://crates.io/crates/native-theme)
 [![docs.rs](https://img.shields.io/docsrs/native-theme)](https://docs.rs/native-theme)
 [![CI](https://github.com/tiborgats/native-theme/actions/workflows/ci.yml/badge.svg)](https://github.com/tiborgats/native-theme/actions/workflows/ci.yml)
 [![License: MIT OR Apache-2.0 OR 0BSD](https://img.shields.io/badge/license-MIT%20%7C%20Apache--2.0%20%7C%200BSD-blue.svg)](#license)
 [![MSRV: 1.94.0](https://img.shields.io/badge/MSRV-1.94.0-blue.svg)](https://blog.rust-lang.org/2026/03/05/Rust-1.94.0.html)
 
-A toolkit-agnostic theme data model with 24 semantic color roles, 25 per-widget
-themes, 16 bundled TOML presets (light + dark), and optional OS theme readers
-for Linux, macOS, and Windows.
+Cross-platform native theme loading for Rust GUI applications. Reads OS themes
+on Linux (KDE, GNOME), macOS, and Windows, or loads any of 16 bundled presets
+(Catppuccin, Nord, Dracula, Tokyo Night, …), and hands your UI code a fully
+populated `ResolvedTheme`.
 
 ![gpui theme switching](docs/assets/gpui-theme-switching.gif)
 
 ![Iced theme switching](docs/assets/iced-theme-switching.gif)
 
-| Crate | Description |
-|-------|-------------|
-| [`native-theme`](native-theme/) | Core theme model, presets, and platform readers |
-| [`native-theme-gpui`](connectors/native-theme-gpui/) | [gpui](https://gpui.rs) + [gpui-component](https://crates.io/crates/gpui-component) connector |
-| [`native-theme-iced`](connectors/native-theme-iced/) | [iced](https://iced.rs) connector |
-| [`native-theme-build`](native-theme-build/) | Build-time code generation for custom icon roles |
+## Pick your path
 
-## Quick Start
+| Your GUI framework | Add this crate |
+|---|---|
+| [GPUI](https://www.gpui.rs) | [`native-theme-gpui`](connectors/native-theme-gpui/) |
+| [iced](https://iced.rs) | [`native-theme-iced`](connectors/native-theme-iced/) |
+| Writing a new framework connector | [`native-theme`](native-theme/) directly |
 
-```toml
-[dependencies]
-native-theme = "0.5.7"
-```
+The connectors pull `native-theme` in transitively, so you only add one
+dependency for the common case.
 
-Load a bundled preset:
+## How the 5 crates fit together
 
-```rust
-use native_theme::theme::Theme;
+<img alt="native-theme crate relations" src="https://raw.githubusercontent.com/tiborgats/native-theme/main/docs/assets/crate-relations.svg" width="640"/>
 
-let theme = Theme::preset("dracula").unwrap();
-let dark = theme.dark.as_ref().unwrap();
-let accent = dark.defaults.accent_color.unwrap();
-let [r, g, b, a] = accent.to_f32_array();
-```
+- Solid arrow — runtime dependency
+- Dashed arrow — optional or internal
+- Yellow node — optional build-time dependency (`native-theme-build`), used by apps that define custom icon roles
+- Grey dashed node — library-internal (`native-theme-derive`); never imported directly
 
-Read the OS theme at runtime (returns a fully resolved `SystemTheme`):
+## Core concepts in 60 seconds
 
-```rust,ignore
-use native_theme::SystemTheme;
+- **`Theme`** — the sparse, TOML-shaped definition a preset or file loads. Fields are `Option<T>` because presets may omit almost anything.
+- **`ResolvedTheme`** — the fully-populated variant `Theme::resolve(mode)` produces. Every field has a value. Your UI code reads from this.
+- **Preset** — a named, bundled theme (e.g. `catppuccin-mocha`, `kde-breeze`, `macos-sonoma`). Load with `Theme::preset("name")`.
+- **Connector** — a small crate that maps `ResolvedTheme` onto a GUI framework's native theming system. You depend on one of these.
 
-let system = SystemTheme::from_system()?;
-let active = system.pick(system.mode); // &ResolvedTheme for current OS mode
-let accent = active.defaults.accent_color;  // Rgba (not Option)
-```
+## See it in action
 
-Layer user overrides on top of a preset:
+- **GPUI** — full widget gallery with live theme switching
+  - Run: `cargo run -p native-theme-gpui --example showcase-gpui`
+  - Screenshots: [`native-theme-gpui/README.md`](connectors/native-theme-gpui/README.md#gallery)
+- **iced** — full widget gallery with live theme switching
+  - Run: `cargo run -p native-theme-iced --example showcase-iced`
+  - Screenshots: [`native-theme-iced/README.md`](connectors/native-theme-iced/README.md#gallery)
 
-```rust
-use native_theme::theme::Theme;
-
-let mut theme = Theme::preset("nord").unwrap();
-let overrides = Theme::from_toml(r#"
-name = "My Nord"
-[light.defaults]
-accent_color = "#ff6600"
-"#).unwrap();
-theme.merge(&overrides);
-```
-
-## Toolkit Connectors
-
-### gpui
-
-```toml
-[dependencies]
-native-theme = "0.5.7"
-native-theme-gpui = "0.5.7"
-```
-
-```rust,ignore
-use native_theme::theme::{ColorMode, Theme};
-use native_theme_gpui::to_theme;
-
-let nt = Theme::preset("dracula").unwrap();
-let variant = nt.into_variant(ColorMode::Dark).unwrap();
-let resolved = variant.resolve_system().unwrap();
-let theme = to_theme(&resolved, "My App", true, false);
-// Use as your gpui-component theme
-```
-
-For deterministic DPI in tests, see `ResolutionContext::for_tests()`.
-
-Run the gpui showcase (full widget gallery with color map inspector):
-
-```sh
-cargo run -p native-theme-gpui --example showcase-gpui
-```
-
-### iced
-
-```toml
-[dependencies]
-native-theme = "0.5.7"
-native-theme-iced = "0.5.7"
-```
-
-```rust,ignore
-use native_theme::theme::{ColorMode, Theme};
-use native_theme_iced::to_theme;
-
-let nt = Theme::preset("dracula").unwrap();
-let variant = nt.into_variant(ColorMode::Dark).unwrap();
-let resolved = variant.resolve_system().unwrap();
-let theme = to_theme(&resolved, "My App");
-// Use as your iced application theme
-```
-
-Run the iced showcase (full widget gallery with live theme switching):
-
-```sh
-cargo run -p native-theme-iced --example showcase-iced
-```
-
-### Other toolkits
-
-Map `ResolvedTheme` fields to your toolkit's types directly. After resolving,
-all color, font, geometry, and spacing fields are guaranteed populated. See the
-[API docs](https://docs.rs/native-theme) for details.
-
-## Animated Icons
+## Icon sets
 
 <p align="center">
   <img src="docs/assets/spinner-material.gif" alt="Material spinner" height="80">
@@ -133,113 +59,25 @@ all color, font, geometry, and spacing fields are guaranteed populated. See the
   <img src="docs/assets/spinner-lucide.gif" alt="Lucide spinner" height="80">
 </p>
 
-Platform-native loading spinners with accessibility support:
+Semantic icon roles (like `StatusBusy` or `DialogSuccess`) map to platform-appropriate glyphs:
 
-```rust,ignore
-use native_theme::theme::{AnimatedIcon, IconRole, IconSet};
-use native_theme::icons::IconLoader;
-use native_theme::detect::prefers_reduced_motion;
+- **Material Symbols** and **Lucide** bundled for offline use
+- **freedesktop** on Linux — reads the active icon theme (Breeze, Adwaita, …)
+- **SF Symbols** on macOS, **Segoe Fluent Icons** on Windows (platform lookups)
+- Animated indicators respect the OS `prefers-reduced-motion` preference
 
-if let Some(anim) = IconLoader::new(IconRole::StatusBusy).set(IconSet::Material).load_indicator() {
-    if prefers_reduced_motion() {
-        // Respect OS accessibility settings with a static fallback
-        let static_icon = anim.first_frame();
-    } else {
-        match &anim {
-            AnimatedIcon::Frames(data) => {
-                // Cycle through data.frames() on a timer (data.frame_duration_ms().get() ms)
-            }
-            AnimatedIcon::Transform(data) => {
-                // Apply continuous rotation to data.icon() via data.animation()
-            }
-            _ => {}
-        }
-    }
-}
-```
+See [`native-theme` crate docs](native-theme/) for the icon-loading API.
 
-Bundled spinner: Lucide loader (spin transform). On Linux, freedesktop
-`process-working` sprite sheets are loaded at runtime from the active
-icon theme (Breeze, Adwaita, etc.).
+## Project docs
 
-See the [gpui](connectors/native-theme-gpui/) and
-[iced](connectors/native-theme-iced/) connector READMEs for
-toolkit-specific playback helpers.
-
-## Platform Support
-
-| Platform | Feature |
-|----------|---------|
-| Linux (KDE) | `kde` |
-| Linux (GNOME/GTK) | `portal` |
-| macOS | `macos` |
-| Windows | `windows` |
-
-`SystemTheme::from_system()` auto-detects the platform and desktop environment
-via `XDG_CURRENT_DESKTOP`, returning a `SystemTheme` with both light and dark
-`ResolvedTheme` variants. Falls back to bundled presets when a reader is
-unavailable. GTK-based desktops (GNOME, XFCE, Cinnamon, MATE, Budgie, LXQt)
-are all handled by the portal reader.
-
-`detect::system_is_dark()` provides a lightweight cached check for the OS dark
-mode preference on all platforms (Linux, macOS, and Windows).
-
-## Feature Flags
-
-No features are enabled by default. The preset API works without any features.
-
-**Most apps just need one feature:**
-
-```toml
-[dependencies]
-native-theme = { version = "0.5.7", features = ["native"] }
-```
-
-### Meta-features
-
-| Feature | Enables |
-|---------|---------|
-| `native` | All platform readers (`kde` + `portal` + `macos` + `windows`) |
-| `linux` | `kde` + `portal` |
-
-OS-specific dependencies are target-gated, so `native` on macOS only compiles
-macOS deps.
-
-### Individual features
-
-| Feature | Description |
-|---------|-------------|
-| `kde` | KDE theme reader (`~/.config/kdeglobals`) |
-| `portal` | GNOME portal reader (async-io via ashpd) |
-| `macos` | macOS reader (NSAppearance) |
-| `windows` | Windows reader (UISettings) |
-| `watch` | Runtime theme change watching via filesystem/D-Bus |
-| `system-icons` | Platform icon theme lookup with bundled fallback |
-| `material-icons` | Bundle Material Symbols SVGs |
-| `lucide-icons` | Bundle Lucide SVGs |
-| `svg-rasterize` | SVG-to-RGBA rasterization via resvg |
-
-## Presets
-
-16 bundled presets, each with light and dark variants:
-
-| Category | Presets |
-|----------|--------|
-| Platform | `kde-breeze`, `adwaita`, `windows-11`, `macos-sonoma`, `material`, `ios` |
-| Community | `catppuccin-latte`, `catppuccin-frappe`, `catppuccin-macchiato`, `catppuccin-mocha`, `nord`, `dracula`, `gruvbox`, `solarized`, `tokyo-night`, `one-dark` |
-
-Use `theme::Theme::list_presets_for_platform()` to get only the presets
-appropriate for the current OS.
-
-## Release
-
-See [RELEASING.md](RELEASING.md) for the ordered publish workflow, the
-`--no-verify` bootstrap rationale for first-ever publication, and the
-post-bootstrap cleanup condition.
+- [CHANGELOG](CHANGELOG.md) — release notes per version
+- [CONTRIBUTING](CONTRIBUTING.md) — dev setup, commit conventions, PR workflow
+- [SECURITY](SECURITY.md) — vulnerability reporting policy
+- [ROADMAP](ROADMAP.md) — what's planned next
 
 ## License
 
-Licensed under either of
+Licensed under any of
 
 - [Apache License, Version 2.0](http://www.apache.org/licenses/LICENSE-2.0)
 - [MIT License](http://opensource.org/licenses/MIT)
