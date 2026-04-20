@@ -900,4 +900,27 @@ mod tests {
             "dark accent should be from macOS reader"
         );
     }
+
+    // === Plan 94-03 (G8): MacosReader ThemeReader impl ===
+    //
+    // Locks the G8 contract on the macOS side: a unit struct `MacosReader`
+    // exists at the module root and implements `crate::reader::ThemeReader`.
+    // Before Task 2 lands, this fails to compile (`no struct MacosReader` /
+    // `unresolved module crate::reader`).
+    //
+    // The trait object coercion is the structural object-safety probe. Body
+    // is gated on `cfg(all(target_os = "macos", feature = "macos"))` so that
+    // the non-macOS build only compile-checks the trait path reference.
+    #[test]
+    fn macos_reader_exists() {
+        // Reference the trait path once so name resolution fires on all
+        // targets regardless of whether the MacosReader struct is compiled.
+        let _: Option<&dyn crate::reader::ThemeReader> = None;
+
+        #[cfg(all(target_os = "macos", feature = "macos"))]
+        {
+            let r: Box<dyn crate::reader::ThemeReader> = Box::new(super::MacosReader);
+            let _ = &r;
+        }
+    }
 }

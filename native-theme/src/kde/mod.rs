@@ -1286,4 +1286,22 @@ Name=whatever
             "dialog button order should be leading affirmative for KDE"
         );
     }
+
+    // === Plan 94-03 (G8): KdeReader ThemeReader impl ===
+    //
+    // Locks the G8 contract on the KDE side: a unit struct `KdeReader` exists
+    // at the module root and implements `crate::reader::ThemeReader`. Before
+    // Task 2 lands, this fails to compile (`no struct KdeReader` / `unresolved
+    // module crate::reader`).
+    #[test]
+    fn kde_reader_exists_and_implements_theme_reader() {
+        // Object-safe coercion: proves the trait is consumable via dyn.
+        let r: Box<dyn crate::reader::ThemeReader> = Box::new(super::KdeReader);
+        // read() is async — drive it to completion on a simple pollster runtime.
+        // On systems without a readable kdeglobals the result may legitimately be
+        // Err(ReaderFailed); either outcome validates the trait dispatch path,
+        // the strictly-tested invariant is that `r.read()` type-checks and can
+        // be awaited without runtime panics.
+        let _: crate::Result<crate::ReaderResult> = pollster::block_on(r.read());
+    }
 }

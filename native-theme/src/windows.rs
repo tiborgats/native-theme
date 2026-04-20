@@ -1332,4 +1332,27 @@ mod tests {
         );
         // icon_set is now on Theme/SystemTheme, not on ResolvedTheme
     }
+
+    // === Plan 94-03 (G8): WindowsReader ThemeReader impl ===
+    //
+    // Locks the G8 contract on the Windows side: a unit struct `WindowsReader`
+    // exists at the module root and implements `crate::reader::ThemeReader`.
+    // Before Task 2 lands, this fails to compile (`no struct WindowsReader` /
+    // `unresolved module crate::reader`).
+    //
+    // The trait object coercion is the structural object-safety probe. Body
+    // is gated on `cfg(all(target_os = "windows", feature = "windows"))` so
+    // that the non-Windows build only compile-checks the trait path reference.
+    #[test]
+    fn windows_reader_exists() {
+        // Reference the trait path once so name resolution fires on all
+        // targets regardless of whether the WindowsReader struct is compiled.
+        let _: Option<&dyn crate::reader::ThemeReader> = None;
+
+        #[cfg(all(target_os = "windows", feature = "windows"))]
+        {
+            let r: Box<dyn crate::reader::ThemeReader> = Box::new(super::WindowsReader);
+            let _ = &r;
+        }
+    }
 }

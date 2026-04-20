@@ -1062,4 +1062,27 @@ mod tests {
         let variant = reader_mode(&result);
         assert_eq!(variant.scrollbar.overlay_mode, Some(false));
     }
+
+    // === Plan 94-03 (G8): GnomeReader + GnomePortalKdeReader ThemeReader impls ===
+    //
+    // Locks the G8 contract on the GNOME side: two unit structs `GnomeReader`
+    // and `GnomePortalKdeReader` (the latter gated on `feature = "kde"`) exist
+    // at the module root and implement `crate::reader::ThemeReader`. Before
+    // Task 2 lands, this fails to compile (`no struct GnomeReader` / `no struct
+    // GnomePortalKdeReader` / `unresolved module crate::reader`).
+    #[test]
+    fn gnome_reader_exists() {
+        // Compile-probe: construct trait objects for each reader available on
+        // this build. Do NOT invoke .read() — portal I/O is environment-
+        // dependent (D-Bus may be unavailable in the test sandbox) and the
+        // structural invariant (the trait coercion) is the load-bearing check.
+        let r: Box<dyn crate::reader::ThemeReader> = Box::new(super::GnomeReader);
+        let _ = &r;
+
+        #[cfg(feature = "kde")]
+        {
+            let rp: Box<dyn crate::reader::ThemeReader> = Box::new(super::GnomePortalKdeReader);
+            let _ = &rp;
+        }
+    }
 }
