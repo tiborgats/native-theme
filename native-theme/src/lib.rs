@@ -105,7 +105,13 @@ pub mod pipeline;
 /// Bundled theme presets.
 pub mod presets;
 /// Theme resolution engine (inheritance + validation).
-mod resolve;
+///
+/// Public surface: [`resolve::ResolutionContext`] — the resolution-time
+/// inputs struct consumed by
+/// [`ThemeMode::into_resolved`](crate::theme::ThemeMode::into_resolved).
+/// Inheritance rules, validation machinery, and the range-check helpers
+/// are all crate-internal (no stability guarantee).
+pub mod resolve;
 #[cfg(any(
     feature = "material-icons",
     feature = "lucide-icons",
@@ -206,6 +212,7 @@ pub(crate) use model::{
     TransformAnimation, WidgetBorderSpec, WindowTheme, bundled_icon_by_name, bundled_icon_svg,
 };
 pub use pipeline::{DiagnosticEntry, PlatformPreset};
+pub use resolve::ResolutionContext;
 #[allow(unused_imports)]
 pub(crate) use pipeline::{diagnose_platform_support, platform_preset_name};
 
@@ -339,8 +346,12 @@ pub(crate) struct OverlaySource {
     pub(crate) layout: LayoutTheme,
     /// The live preset name (e.g. "kde-breeze-live").
     pub(crate) preset_name: String,
-    /// Font DPI captured at detection time (None = auto-detect).
-    pub(crate) font_dpi: Option<f32>,
+    /// Resolution-time inputs captured at detection time. Replaces the
+    /// old `font_dpi: Option<f32>` field; the context bundles
+    /// `font_dpi` + `button_order` + `icon_theme` fallback and is cloned
+    /// into `with_overlay` replays so resolution is deterministic across
+    /// overlay applications.
+    pub(crate) context: crate::resolve::ResolutionContext,
 }
 
 /// Result of the OS-first pipeline. Holds both resolved variants.
@@ -466,9 +477,10 @@ impl SystemTheme {
             dark.merge(over);
         }
 
-        // Re-resolve both variants
-        let resolved_light = light.into_resolved(src.font_dpi)?;
-        let resolved_dark = dark.into_resolved(src.font_dpi)?;
+        // Re-resolve both variants using the captured context (avoids
+        // re-detecting DPI / button_order / icon_theme on replay).
+        let resolved_light = light.into_resolved(&src.context)?;
+        let resolved_dark = dark.into_resolved(&src.context)?;
 
         Ok(SystemTheme {
             name: self.name.clone(),
@@ -601,7 +613,7 @@ mod system_theme_tests {
                 icon_set: None,
                 layout: LayoutTheme::default(),
                 preset_name: "catppuccin-mocha".into(),
-                font_dpi: None,
+                context: crate::resolve::ResolutionContext::for_tests(),
             },
             live_preset: "catppuccin-mocha".into(),
             preset: "catppuccin-mocha".into(),
@@ -641,7 +653,7 @@ mod system_theme_tests {
                 icon_set: None,
                 layout: LayoutTheme::default(),
                 preset_name: "catppuccin-mocha".into(),
-                font_dpi: None,
+                context: crate::resolve::ResolutionContext::for_tests(),
             },
             live_preset: "catppuccin-mocha".into(),
             preset: "catppuccin-mocha".into(),
@@ -681,7 +693,7 @@ mod system_theme_tests {
                 icon_set: None,
                 layout: LayoutTheme::default(),
                 preset_name: "catppuccin-mocha".into(),
-                font_dpi: None,
+                context: crate::resolve::ResolutionContext::for_tests(),
             },
             live_preset: "catppuccin-mocha".into(),
             preset: "catppuccin-mocha".into(),

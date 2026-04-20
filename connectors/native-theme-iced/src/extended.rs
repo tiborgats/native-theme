@@ -141,7 +141,7 @@ mod tests {
                 ColorMode::Light
             })
             .unwrap()
-            .into_resolved(None)
+            .into_resolved(&native_theme::ResolutionContext::for_tests())
             .unwrap()
     }
 
@@ -314,7 +314,7 @@ mod tests {
                 .unwrap()
                 .into_variant(ColorMode::Dark)
                 .unwrap()
-                .into_resolved(None)
+                .into_resolved(&native_theme::ResolutionContext::for_tests())
                 .unwrap();
             let mut extended = make_extended();
             apply_from_resolved(&mut extended, &resolved);

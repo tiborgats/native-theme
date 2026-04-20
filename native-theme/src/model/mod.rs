@@ -382,7 +382,7 @@ impl Theme {
     ///
     /// let theme = native_theme::theme::Theme::preset("dracula")?;
     /// let variant = theme.into_variant(ColorMode::Dark)?;
-    /// let resolved = variant.into_resolved(None)?;
+    /// let resolved = variant.resolve_system()?;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
     pub fn into_variant(self, mode: ColorMode) -> crate::Result<ThemeMode> {

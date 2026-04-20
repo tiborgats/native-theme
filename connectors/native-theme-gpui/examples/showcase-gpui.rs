@@ -1722,7 +1722,7 @@ impl Showcase {
                     .map(|s| s.to_string())
                     .unwrap_or_else(native_theme::theme::system_icon_theme);
                 let v = variant.clone();
-                let resolved = match v.into_resolved(None) {
+                let resolved = match v.resolve_system() {
                     Ok(r) => r,
                     Err(e) => {
                         self.show_theme_error(&format!("Theme '{name}' validation failed: {e}"));

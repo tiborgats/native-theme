@@ -488,7 +488,7 @@ mod tests {
             .into_variant(ColorMode::Dark)
             .expect("preset must have dark variant");
         variant
-            .into_resolved(None)
+            .into_resolved(&native_theme::ResolutionContext::for_tests())
             .expect("resolved preset must validate")
     }
 
@@ -499,7 +499,7 @@ mod tests {
             .into_variant(ColorMode::Light)
             .expect("preset must have light variant");
         variant
-            .into_resolved(None)
+            .into_resolved(&native_theme::ResolutionContext::for_tests())
             .expect("resolved preset must validate")
     }
 
@@ -1060,7 +1060,7 @@ mod tests {
             let variant = nt
                 .into_variant(ColorMode::Dark)
                 .expect("preset must have dark variant");
-            let resolved = variant.into_resolved(None).expect("must validate");
+            let resolved = variant.into_resolved(&native_theme::ResolutionContext::for_tests()).expect("must validate");
             let _tc = to_theme_color(&resolved, true, false);
         }
     }
@@ -1079,7 +1079,7 @@ mod tests {
             let variant = nt
                 .into_variant(ColorMode::Light)
                 .expect("preset must have light variant");
-            let resolved = variant.into_resolved(None).expect("must validate");
+            let resolved = variant.into_resolved(&native_theme::ResolutionContext::for_tests()).expect("must validate");
             let _tc = to_theme_color(&resolved, false, false);
         }
     }

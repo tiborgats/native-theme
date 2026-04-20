@@ -2104,7 +2104,7 @@ fn validate_all_presets_pass_range_checks() {
         let name = info.key;
         let spec = crate::Theme::preset(name).unwrap();
         if let Some(light) = spec.light {
-            let resolved = light.into_resolved(None);
+            let resolved = light.into_resolved(&crate::resolve::ResolutionContext::for_tests());
             assert!(
                 resolved.is_ok(),
                 "preset '{name}' light variant failed: {:?}",
@@ -2112,7 +2112,7 @@ fn validate_all_presets_pass_range_checks() {
             );
         }
         if let Some(dark) = spec.dark {
-            let resolved = dark.into_resolved(None);
+            let resolved = dark.into_resolved(&crate::resolve::ResolutionContext::for_tests());
             assert!(
                 resolved.is_ok(),
                 "preset '{name}' dark variant failed: {:?}",
@@ -2132,7 +2132,7 @@ fn check_ranges_happy_path_zero_errors() {
     // errors, no format! calls execute and zero path strings are allocated.
     let theme = crate::Theme::preset("adwaita").expect("adwaita preset should load");
     let light = theme.light.expect("adwaita should have light variant");
-    let resolved = light.into_resolved(None).expect("adwaita should validate");
+    let resolved = light.into_resolved(&crate::resolve::ResolutionContext::for_tests()).expect("adwaita should validate");
 
     let mut errors = Vec::new();
 

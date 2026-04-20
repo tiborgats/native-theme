@@ -1,6 +1,6 @@
 //! Smoke test: verify the prelude re-exports exactly the expected set.
 
-/// Verify that `use native_theme::prelude::*` brings exactly the 7 expected items
+/// Verify that `use native_theme::prelude::*` brings exactly the 8 expected items
 /// into scope and they are the correct types.
 #[test]
 fn prelude_reexports_expected_items() {
@@ -12,7 +12,9 @@ fn prelude_reexports_expected_items() {
     let _mode = _theme
         .into_variant(native_theme::theme::ColorMode::Dark)
         .unwrap();
-    let _resolved: ResolvedTheme = _mode.into_resolved(None).unwrap();
+    let _resolved: ResolvedTheme = _mode
+        .into_resolved(&ResolutionContext::for_tests())
+        .unwrap();
     let _rgba: Rgba = Rgba::rgb(255, 0, 0);
     let _err: Result<()> = Ok(());
     let _accessibility: AccessibilityPreferences = AccessibilityPreferences::default();
@@ -31,11 +33,12 @@ fn prelude_does_not_export_unexpected_items() {
     // Import only the prelude
     use native_theme::prelude::*;
 
-    // These 7 items should be accessible:
+    // These 8 items should be accessible:
     let _ = std::any::type_name::<Theme>();
     let _ = std::any::type_name::<ResolvedTheme>();
     let _ = std::any::type_name::<SystemTheme>();
     let _ = std::any::type_name::<AccessibilityPreferences>();
+    let _ = std::any::type_name::<ResolutionContext>();
     let _ = std::any::type_name::<Rgba>();
     let _ = std::any::type_name::<Error>();
 

@@ -41,7 +41,7 @@ fn to_theme_produces_non_default_palette() {
     let resolved = nt
         .into_variant(ColorMode::Dark)
         .unwrap()
-        .into_resolved(None)
+        .into_resolved(&native_theme::ResolutionContext::for_tests())
         .unwrap();
     let theme = to_theme(&resolved, "catppuccin-mocha");
 

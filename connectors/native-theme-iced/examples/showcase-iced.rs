@@ -227,7 +227,7 @@ fn load_adwaita_fallback(is_dark: bool) -> Option<(native_theme::theme::Resolved
         })
         .ok()?
         .clone();
-    let r = variant.into_resolved(None).ok()?;
+    let r = variant.resolve_system().ok()?;
     let t = native_theme_iced::to_theme(&r, &nt.name);
     Some((r, t))
 }
@@ -857,7 +857,7 @@ impl State {
                                 .map(|s| s.to_string())
                                 .unwrap_or_else(native_theme::theme::system_icon_theme);
                             let v = variant.clone();
-                            match v.into_resolved(None) {
+                            match v.resolve_system() {
                                 Ok(resolved) => {
                                     self.current_resolved = resolved;
                                     self.current_theme = native_theme_iced::to_theme(

@@ -107,7 +107,7 @@ fn resolve_text_scale_entry(
 ///
 /// On Linux/KDE, the convention is leading-affirmative (OK on the left).
 /// On Windows, GNOME, macOS, iOS the convention is trailing-affirmative.
-pub(super) fn platform_button_order() -> DialogButtonOrder {
+pub(crate) fn platform_button_order() -> DialogButtonOrder {
     #[cfg(target_os = "linux")]
     {
         if crate::detect::detect_linux_desktop() == crate::detect::LinuxDesktop::Kde {

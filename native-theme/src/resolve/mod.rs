@@ -12,9 +12,12 @@
 // - inheritance: Phase 1-5 resolution rules (fill None fields from defaults/other widgets)
 // - validate: Field extraction, range checks, ResolvedTheme construction
 
-mod inheritance;
+pub(crate) mod context;
+pub(crate) mod inheritance;
 pub(crate) mod validate;
 pub(crate) mod validate_helpers;
+
+pub use context::ResolutionContext;
 
 /// Widget field metadata for TOML linting. Populated by `#[derive(ThemeWidget)]`.
 pub(crate) struct WidgetFieldInfo {
@@ -152,41 +155,102 @@ impl ThemeMode {
         self.resolve_platform_defaults();
     }
 
+    /// Apply inheritance rules using a pre-built [`ResolutionContext`].
+    ///
+    /// Replacement for [`resolve_all()`](Self::resolve_all) that reads
+    /// `ctx.button_order` instead of calling
+    /// `inheritance::platform_button_order` inline. Used by
+    /// [`into_resolved`](Self::into_resolved) so that platform detection
+    /// happens once per theme-build (in
+    /// [`ResolutionContext::from_system`](crate::resolve::ResolutionContext::from_system))
+    /// rather than inside each variant resolution.
+    ///
+    /// Note: `icon_theme` resolution lives in
+    /// [`pipeline::run_pipeline`](crate::pipeline) with three-tier
+    /// precedence. This method intentionally does not read
+    /// `ctx.icon_theme`.
+    #[doc(hidden)]
+    pub fn resolve_all_with_context(&mut self, ctx: &ResolutionContext) {
+        self.resolve();
+        if self.dialog.button_order.is_none() {
+            self.dialog.button_order = Some(ctx.button_order);
+        }
+    }
+
     /// Resolve all inheritance rules and validate in one step.
     ///
     /// This is the recommended way to convert a `ThemeMode` into a
-    /// [`ResolvedTheme`]. It calls [`resolve_all()`](Self::resolve_all)
-    /// followed by [`validate_with_dpi()`](Self::validate_with_dpi),
-    /// ensuring no fields are left unresolved.
+    /// [`ResolvedTheme`]. It applies every inheritance rule (including
+    /// the `ctx.button_order` platform default) followed by
+    /// [`validate_with_dpi()`](Self::validate_with_dpi), ensuring no
+    /// fields are left unresolved.
     ///
     /// # Arguments
     ///
-    /// * `font_dpi` -- Font DPI for pt-to-px conversion. Pass `None` to
-    ///   auto-detect from the OS (typically 96 on Linux/Windows, 72 on macOS).
-    ///   OS readers pass `Some(detected_dpi)` so standalone preset loading
-    ///   applies the correct conversion.
+    /// * `ctx` -- resolution-time inputs captured once per theme-build.
+    ///   Use [`ResolutionContext::from_system`](crate::resolve::ResolutionContext::from_system)
+    ///   for OS-detected values (Linux/Windows ≈ 96 DPI, macOS = 72 DPI,
+    ///   button order per desktop environment), or
+    ///   [`ResolutionContext::for_tests`](crate::resolve::ResolutionContext::for_tests)
+    ///   for deterministic test values (96 DPI, `PrimaryRight`,
+    ///   no `icon_theme`). The [`resolve_system()`](Self::resolve_system)
+    ///   shortcut wraps the `from_system()` case.
     ///
     /// # Errors
     ///
-    /// Returns [`crate::Error::ResolutionIncomplete`] if any fields remain `None`
-    /// after resolution, or [`crate::Error::ResolutionInvalid`] if range checks fail.
+    /// Returns [`crate::Error::ResolutionIncomplete`] if any fields
+    /// remain `None` after resolution, or
+    /// [`crate::Error::ResolutionInvalid`] if range checks fail.
     ///
     /// # Examples
     ///
     /// ```
+    /// use native_theme::resolve::ResolutionContext;
     /// use native_theme::theme::Theme;
     ///
     /// let theme = Theme::preset("dracula")?;
     /// let variant = theme.dark.ok_or("no dark variant")?;
-    /// let resolved = variant.into_resolved(None)?;
-    /// // All fields are now guaranteed populated
-    /// let accent = resolved.defaults.accent_color;
+    /// let resolved = variant.into_resolved(&ResolutionContext::from_system())?;
+    /// // Or use the zero-argument shortcut:
+    /// // let resolved = variant.resolve_system()?;
+    /// let _accent = resolved.defaults.accent_color;
     /// # Ok::<(), Box<dyn std::error::Error>>(())
     /// ```
-    pub fn into_resolved(mut self, font_dpi: Option<f32>) -> crate::Result<ResolvedTheme> {
-        let dpi = font_dpi.unwrap_or_else(crate::detect::system_font_dpi);
-        self.resolve_all();
-        self.validate_with_dpi(dpi)
+    pub fn into_resolved(mut self, ctx: &ResolutionContext) -> crate::Result<ResolvedTheme> {
+        self.resolve_all_with_context(ctx);
+        self.validate_with_dpi(ctx.font_dpi)
+    }
+
+    /// Resolve using the OS-detected context.
+    ///
+    /// Equivalent to
+    /// `self.into_resolved(&ResolutionContext::from_system())`.
+    ///
+    /// Placed on `ThemeMode` (not `Theme`) because `Theme` has both
+    /// light and dark variants — variant selection must be explicit via
+    /// [`Theme::into_variant`](crate::theme::Theme::into_variant). See
+    /// plan 94-02 objective for the deviation rationale from gap doc §G7
+    /// step 4.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::ResolutionIncomplete`] if any fields
+    /// remain `None` after resolution, or
+    /// [`crate::Error::ResolutionInvalid`] if range checks fail.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use native_theme::theme::{ColorMode, Theme};
+    ///
+    /// let theme = Theme::preset("dracula")?;
+    /// let variant = theme.into_variant(ColorMode::Dark)?;
+    /// let resolved = variant.resolve_system()?;
+    /// let _accent = resolved.defaults.accent_color;
+    /// # Ok::<(), Box<dyn std::error::Error>>(())
+    /// ```
+    pub fn resolve_system(self) -> crate::Result<ResolvedTheme> {
+        self.into_resolved(&ResolutionContext::from_system())
     }
 }
 

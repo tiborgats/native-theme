@@ -27,7 +27,7 @@
 //! use native_theme_iced::to_theme;
 //!
 //! let nt = Theme::preset("catppuccin-mocha").unwrap();
-//! let resolved = nt.into_variant(ColorMode::Light).unwrap().into_resolved(None).unwrap();
+//! let resolved = nt.into_variant(ColorMode::Light).unwrap().resolve_system().unwrap();
 //! let theme = to_theme(&resolved, "My App");
 //! ```
 //!
@@ -159,7 +159,7 @@ pub fn from_preset(
     } else {
         ColorMode::Light
     })?;
-    let resolved = variant.into_resolved(None)?;
+    let resolved = variant.resolve_system()?;
     let theme = to_theme(&resolved, &display_name);
     Ok((theme, resolved))
 }
@@ -407,7 +407,7 @@ mod tests {
                 ColorMode::Light
             })
             .unwrap()
-            .into_resolved(None)
+            .into_resolved(&native_theme::ResolutionContext::for_tests())
             .unwrap()
     }
 
@@ -459,13 +459,13 @@ mod tests {
             .unwrap()
             .into_variant(ColorMode::Dark)
             .unwrap()
-            .into_resolved(None)
+            .into_resolved(&native_theme::ResolutionContext::for_tests())
             .unwrap();
         let r2 = Theme::preset("dracula")
             .unwrap()
             .into_variant(ColorMode::Dark)
             .unwrap()
-            .into_resolved(None)
+            .into_resolved(&native_theme::ResolutionContext::for_tests())
             .unwrap();
 
         let t1 = to_theme(&r1, "mocha");
@@ -806,7 +806,7 @@ mod tests {
                 } else {
                     ColorMode::Light
                 }) {
-                    let resolved = variant.into_resolved(None).unwrap();
+                    let resolved = variant.into_resolved(&native_theme::ResolutionContext::for_tests()).unwrap();
                     let theme = to_theme(&resolved, name);
                     let palette = theme.palette();
                     // Basic sanity: all palette colors have valid alpha

@@ -63,10 +63,19 @@ pub(crate) fn run_pipeline(
         .icon_set
         .unwrap_or_else(crate::model::icons::system_icon_set);
 
+    // Build ONE resolution-time context for this theme-build. The reader
+    // may have supplied an authoritative font_dpi (e.g. KDE forceFontDPI);
+    // when it does we override ctx.font_dpi. button_order + icon_theme
+    // come from the from_system() defaults (platform-detected).
+    let mut ctx = crate::resolve::ResolutionContext::from_system();
+    if let Some(dpi) = font_dpi {
+        ctx.font_dpi = dpi;
+    }
+
     // Resolve icon_theme with three-tier precedence (per §G4 / doc 1 §20 Option C):
     //   Tier 1: per-variant override (`ThemeMode::defaults.icon_theme`)
     //   Tier 2: shared Theme-level value (`Theme::icon_theme`)
-    //   Tier 3: runtime system detect
+    //   Tier 3: runtime system detect (from `ctx.icon_theme`)
     // Must read before variants are consumed by unwrap_or_default().
     let icon_theme: std::borrow::Cow<'static, str> = {
         let active = if mode == crate::ColorMode::Dark {
@@ -78,8 +87,8 @@ pub(crate) fn run_pipeline(
             .as_ref()
             .and_then(|v| v.defaults.icon_theme.clone()) // tier 1: per-variant override
             .or_else(|| merged.icon_theme.clone()) // tier 2: Theme-level shared
+            .or_else(|| ctx.icon_theme.clone()) // tier 3: pre-detected system
             .unwrap_or_else(|| std::borrow::Cow::Owned(crate::model::icons::system_icon_theme()))
-        // tier 3: system
     };
 
     // Match on ReaderOutput for type-safe variant selection:
@@ -105,8 +114,8 @@ pub(crate) fn run_pipeline(
         ),
     };
 
-    let light = light_variant.into_resolved(font_dpi)?;
-    let dark = dark_variant.into_resolved(font_dpi)?;
+    let light = light_variant.into_resolved(&ctx)?;
+    let dark = dark_variant.into_resolved(&ctx)?;
 
     // Build OverlaySource from the original reader data + pipeline parameters
     let overlay_source = OverlaySource {
@@ -115,7 +124,7 @@ pub(crate) fn run_pipeline(
         icon_set: reader_icon_set,
         layout: reader_layout,
         preset_name: preset_name.to_string(),
-        font_dpi,
+        context: ctx,
     };
 
     Ok(SystemTheme {

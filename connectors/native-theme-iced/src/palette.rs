@@ -87,7 +87,7 @@ mod tests {
             .unwrap()
             .into_variant(ColorMode::Light)
             .unwrap()
-            .into_resolved(None)
+            .into_resolved(&native_theme::ResolutionContext::for_tests())
             .unwrap();
 
         let palette = to_palette(&resolved);
@@ -110,7 +110,7 @@ mod tests {
             .unwrap()
             .into_variant(ColorMode::Dark)
             .unwrap()
-            .into_resolved(None)
+            .into_resolved(&native_theme::ResolutionContext::for_tests())
             .unwrap();
 
         let palette = to_palette(&resolved);
@@ -126,7 +126,7 @@ mod tests {
                 .unwrap()
                 .into_variant(ColorMode::Dark)
                 .unwrap()
-                .into_resolved(None)
+                .into_resolved(&native_theme::ResolutionContext::for_tests())
                 .unwrap();
             let palette = to_palette(&resolved);
             // Exact match for all presets

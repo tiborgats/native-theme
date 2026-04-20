@@ -28,7 +28,7 @@
 //!
 //! let nt = Theme::preset("catppuccin-mocha")?;
 //! let variant = nt.into_variant(ColorMode::Dark)?;
-//! let resolved = variant.into_resolved(None)?;
+//! let resolved = variant.resolve_system()?;
 //! let theme = to_theme(&resolved, "Catppuccin Mocha", true, false);
 //! ```
 //!
@@ -200,7 +200,7 @@ pub fn from_preset(name: &str, is_dark: bool) -> Result<(GpuiTheme, ResolvedThem
     } else {
         ColorMode::Light
     })?;
-    let resolved = variant.into_resolved(None)?;
+    let resolved = variant.resolve_system()?;
     let theme = to_theme(&resolved, &display_name, is_dark, false);
     Ok((theme, resolved))
 }
@@ -471,7 +471,7 @@ mod tests {
             .into_variant(ColorMode::Dark)
             .expect("preset must have dark variant");
         variant
-            .into_resolved(None)
+            .into_resolved(&native_theme::ResolutionContext::for_tests())
             .expect("resolved preset must validate")
     }
 
@@ -491,7 +491,7 @@ mod tests {
             .into_variant(ColorMode::Dark)
             .expect("preset must have dark variant");
         let resolved = variant
-            .into_resolved(None)
+            .into_resolved(&native_theme::ResolutionContext::for_tests())
             .expect("resolved preset must validate");
         let theme = to_theme(&resolved, "DarkTest", true, false);
 
@@ -556,7 +556,7 @@ mod tests {
         let light_resolved = {
             let spec = Theme::preset("catppuccin-latte").expect("preset must exist");
             let variant = spec.into_variant(ColorMode::Light).expect("light variant");
-            variant.into_resolved(None).expect("must validate")
+            variant.into_resolved(&native_theme::ResolutionContext::for_tests()).expect("must validate")
         };
         let light_theme = to_theme(&light_resolved, "Light", false, false);
         assert_eq!(
