@@ -593,103 +593,66 @@ fn preset_as_reader(preset_name: &str, mode: crate::ColorMode) -> crate::Result<
     })
 }
 
-/// Single async implementation for all platforms. On Linux this may contain
-/// `.await` points (portal D-Bus calls); on macOS/Windows the future resolves
-/// immediately (no `.await` points).
+/// Platform + DE + feature cascade that picks the appropriate
+/// [`crate::reader::ThemeReader`] impl for the current system.
 ///
-/// Called by:
-/// - `from_system()` via `pollster::block_on` on Linux, noop-waker single-poll
-///   on non-Linux.
-/// - `from_system_async()` via `.await`.
+/// Returns `None` when no reader is available and the caller must fall back
+/// to a preset-only pipeline (non-KDE/GNOME Linux, unsupported platforms, or
+/// platforms whose reader feature is disabled). When `Some`, the companion
+/// `&'static str` is the `-live` preset name that should be passed to
+/// [`run_pipeline`] — the reader and the preset are tied because the preset
+/// is chosen from the detected DE.
+///
+/// Per plan 94-03 §G8: the `Box<dyn ThemeReader>` trait object is object-safe
+/// only because the trait carries a `#[async_trait::async_trait]` annotation
+/// (see [`crate::reader`] module docs for the full rationale).
 #[allow(unreachable_code)]
-pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
+#[allow(clippy::unnecessary_wraps)] // Option is part of the public contract.
+#[allow(clippy::needless_return)] // Explicit returns clarify cfg-gated dispatch.
+async fn select_reader() -> Option<(Box<dyn crate::reader::ThemeReader>, &'static str)> {
     #[cfg(target_os = "macos")]
     {
         #[cfg(feature = "macos")]
         {
-            let result = crate::macos::from_macos()?;
-            let mode = match &result.output {
-                ReaderOutput::Single { is_dark, .. } => {
-                    if *is_dark {
-                        crate::ColorMode::Dark
-                    } else {
-                        crate::ColorMode::Light
-                    }
-                }
-                ReaderOutput::Dual { .. } => crate::ColorMode::Light,
-            };
-            return run_pipeline(result, "macos-sonoma-live", mode);
+            return Some((Box::new(crate::macos::MacosReader), "macos-sonoma-live"));
         }
-
         #[cfg(not(feature = "macos"))]
-        return Err(crate::Error::FeatureDisabled {
-            name: "macos",
-            needed_for: "macOS theme detection",
-        });
+        return None;
     }
 
     #[cfg(target_os = "windows")]
     {
         #[cfg(feature = "windows")]
         {
-            let result = crate::windows::from_windows()?;
-            let mode = match &result.output {
-                ReaderOutput::Single { is_dark, .. } => {
-                    if *is_dark {
-                        crate::ColorMode::Dark
-                    } else {
-                        crate::ColorMode::Light
-                    }
-                }
-                ReaderOutput::Dual { .. } => crate::ColorMode::Light,
-            };
-            return run_pipeline(result, "windows-11-live", mode);
+            return Some((Box::new(crate::windows::WindowsReader), "windows-11-live"));
         }
-
         #[cfg(not(feature = "windows"))]
-        return Err(crate::Error::FeatureDisabled {
-            name: "windows",
-            needed_for: "Windows theme detection",
-        });
+        return None;
     }
 
     #[cfg(target_os = "linux")]
     {
-        let mode = if system_is_dark() {
-            crate::ColorMode::Dark
-        } else {
-            crate::ColorMode::Light
-        };
         let de = detect_linux_desktop();
-        let preset = linux_preset_for_de(de);
-        let preset_live = preset.live_name();
         match de {
-            #[cfg(feature = "kde")]
+            #[cfg(all(feature = "kde", feature = "portal"))]
             LinuxDesktop::Kde => {
-                #[cfg(feature = "portal")]
-                {
-                    let result = crate::gnome::from_kde_with_portal().await?;
-                    run_pipeline(result, &preset_live, mode)
-                }
-                #[cfg(not(feature = "portal"))]
-                {
-                    let result = crate::kde::from_kde()?;
-                    run_pipeline(result, &preset_live, mode)
-                }
+                return Some((
+                    Box::new(crate::gnome::GnomePortalKdeReader),
+                    "kde-breeze-live",
+                ));
+            }
+            #[cfg(all(feature = "kde", not(feature = "portal")))]
+            LinuxDesktop::Kde => {
+                return Some((Box::new(crate::kde::KdeReader), "kde-breeze-live"));
             }
             #[cfg(not(feature = "kde"))]
-            LinuxDesktop::Kde => {
-                run_pipeline(preset_as_reader("adwaita", mode)?, "adwaita-live", mode)
-            }
+            LinuxDesktop::Kde => return None,
             #[cfg(feature = "portal")]
             LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
-                let result = crate::gnome::from_gnome().await?;
-                run_pipeline(result, &preset_live, mode)
+                return Some((Box::new(crate::gnome::GnomeReader), "adwaita-live"));
             }
             #[cfg(not(feature = "portal"))]
-            LinuxDesktop::Gnome | LinuxDesktop::Budgie => {
-                run_pipeline(preset_as_reader("adwaita", mode)?, &preset_live, mode)
-            }
+            LinuxDesktop::Gnome | LinuxDesktop::Budgie => return None,
             LinuxDesktop::Xfce
             | LinuxDesktop::Cinnamon
             | LinuxDesktop::Mate
@@ -699,59 +662,103 @@ pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
             | LinuxDesktop::River
             | LinuxDesktop::Niri
             | LinuxDesktop::Wayfire
-            | LinuxDesktop::CosmicDe => {
-                run_pipeline(preset_as_reader("adwaita", mode)?, &preset_live, mode)
-            }
+            | LinuxDesktop::CosmicDe => return None,
             LinuxDesktop::Unknown => {
-                // Use D-Bus portal backend detection to refine heuristic
+                // Refine heuristic via D-Bus portal backend detection
                 #[cfg(feature = "portal")]
                 {
                     if let Some(detected) = crate::gnome::detect_portal_backend().await {
-                        let detected_preset = linux_preset_for_de(detected);
-                        let detected_live = detected_preset.live_name();
                         return match detected {
                             #[cfg(feature = "kde")]
-                            LinuxDesktop::Kde => {
-                                let result = crate::gnome::from_kde_with_portal().await?;
-                                run_pipeline(result, &detected_live, mode)
-                            }
+                            LinuxDesktop::Kde => Some((
+                                Box::new(crate::gnome::GnomePortalKdeReader),
+                                "kde-breeze-live",
+                            )),
                             #[cfg(not(feature = "kde"))]
-                            LinuxDesktop::Kde => run_pipeline(
-                                preset_as_reader("adwaita", mode)?,
-                                "adwaita-live",
-                                mode,
-                            ),
+                            LinuxDesktop::Kde => None,
                             LinuxDesktop::Gnome => {
-                                let result = crate::gnome::from_gnome().await?;
-                                run_pipeline(result, &detected_live, mode)
+                                Some((Box::new(crate::gnome::GnomeReader), "adwaita-live"))
                             }
-                            _ => {
-                                // detect_portal_backend only returns Kde or Gnome;
-                                // fall back to Adwaita if the set ever grows.
-                                run_pipeline(
-                                    preset_as_reader("adwaita", mode)?,
-                                    &detected_live,
-                                    mode,
-                                )
-                            }
+                            // detect_portal_backend only returns Kde or Gnome;
+                            // any future extension falls back to Adwaita preset.
+                            _ => None,
                         };
                     }
                 }
                 // Sync fallback: try kdeglobals, then Adwaita
                 #[cfg(feature = "kde")]
                 {
-                    let path = crate::kde::kdeglobals_path();
-                    if path.exists() {
-                        let result = crate::kde::from_kde()?;
-                        let kde_live = linux_preset_for_de(LinuxDesktop::Kde).live_name();
-                        return run_pipeline(result, &kde_live, mode);
+                    if crate::kde::kdeglobals_path().exists() {
+                        return Some((Box::new(crate::kde::KdeReader), "kde-breeze-live"));
                     }
                 }
-                run_pipeline(preset_as_reader("adwaita", mode)?, &preset_live, mode)
+                return None;
             }
         }
     }
 
+    #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
+    {
+        None
+    }
+}
+
+/// Single async implementation for all platforms. On Linux this may contain
+/// `.await` points (portal D-Bus calls); on macOS/Windows the future resolves
+/// immediately (no `.await` points).
+///
+/// Called by:
+/// - `from_system()` via `pollster::block_on` on Linux, noop-waker single-poll
+///   on non-Linux.
+/// - `from_system_async()` via `.await`.
+///
+/// Delegates platform detection to [`select_reader`]: when a reader is
+/// available, its output feeds [`run_pipeline`]; when no reader is available,
+/// falls back to a preset-only pipeline or returns a feature/platform error.
+#[allow(unreachable_code)]
+#[allow(clippy::needless_return)] // Explicit returns clarify cfg-gated fallback.
+pub(crate) async fn from_system_inner() -> crate::Result<SystemTheme> {
+    if let Some((reader, preset_live)) = select_reader().await {
+        let result = reader.read().await?;
+        let mode = match &result.output {
+            ReaderOutput::Single { is_dark, .. } => {
+                if *is_dark {
+                    crate::ColorMode::Dark
+                } else {
+                    crate::ColorMode::Light
+                }
+            }
+            ReaderOutput::Dual { .. } => crate::ColorMode::Light,
+        };
+        return run_pipeline(result, preset_live, mode);
+    }
+
+    // Preset-only fallback paths — no reader available for this
+    // platform+feature combination.
+    #[cfg(target_os = "macos")]
+    {
+        return Err(crate::Error::FeatureDisabled {
+            name: "macos",
+            needed_for: "macOS theme detection",
+        });
+    }
+    #[cfg(target_os = "windows")]
+    {
+        return Err(crate::Error::FeatureDisabled {
+            name: "windows",
+            needed_for: "Windows theme detection",
+        });
+    }
+    #[cfg(target_os = "linux")]
+    {
+        let mode = if system_is_dark() {
+            crate::ColorMode::Dark
+        } else {
+            crate::ColorMode::Light
+        };
+        let preset_live = linux_preset_for_de(detect_linux_desktop()).live_name();
+        return run_pipeline(preset_as_reader("adwaita", mode)?, &preset_live, mode);
+    }
     #[cfg(not(any(target_os = "linux", target_os = "windows", target_os = "macos")))]
     {
         Err(crate::Error::PlatformUnsupported {
@@ -1395,6 +1402,11 @@ mod theme_reader_trait_tests {
     fn theme_reader_trait_exists_and_is_object_safe() {
         // Plain function that requires its argument to be ?Sized — compile-time
         // proof that `Box<dyn ThemeReader>` is a valid trait object.
+        //
+        // `#[allow(dead_code)]` is required because on cfg permutations that
+        // exclude every concrete reader (e.g. linux without kde feature) the
+        // function is only name-resolved by the compiler but never called.
+        #[allow(dead_code)]
         fn assert_object_safe<T: ?Sized>(_: &T) {}
 
         // Use one of the concrete readers to construct the trait object on
@@ -1421,51 +1433,57 @@ mod theme_reader_trait_tests {
         let _: Option<&dyn crate::reader::ThemeReader> = None;
     }
 
-    /// `select_reader()` exists, is async, and returns an `Option<Box<dyn ThemeReader>>`.
+    /// `select_reader()` exists, is async, and returns an
+    /// `Option<(Box<dyn ThemeReader>, &'static str)>`.
     ///
-    /// On each platform with an available backend we expect `Some(_)`; on
-    /// platforms without one (non-Linux/macOS/Windows, or Linux with no
-    /// compiled-in backend) we expect `None`.
+    /// On each platform with an available backend we expect `Some((_, live_preset))`;
+    /// on platforms without one (non-Linux/macOS/Windows, or Linux with no
+    /// compiled-in backend, or Linux-other-DE without portal) we expect `None`.
+    ///
+    /// The companion `&'static str` is the `-live` preset name that `run_pipeline`
+    /// should use — kept in the same return type because the preset is chosen
+    /// from the DE detected by `select_reader` (KDE -> kde-breeze-live, GNOME ->
+    /// adwaita-live, macOS -> macos-sonoma-live, Windows -> windows-11-live).
     #[test]
     fn select_reader_returns_platform_specific_impl() {
-        // Call select_reader and observe the Option; the exact is_some/is_none
-        // expectation depends on features and platform and is asserted below
-        // under narrowly-guarded cfg arms. The load-bearing invariant is that
-        // the function exists, is callable from a sync context via
-        // `pollster::block_on`, and returns the expected concrete type.
-        let reader: Option<Box<dyn crate::reader::ThemeReader>> =
+        // Call select_reader and observe the Option. The structural invariant
+        // is that the function exists, is callable from a sync context via
+        // `pollster::block_on`, and returns the (reader, preset_live) tuple.
+        let picked: Option<(Box<dyn crate::reader::ThemeReader>, &'static str)> =
             pollster::block_on(super::select_reader());
 
-        #[cfg(all(target_os = "linux", feature = "kde"))]
-        {
-            // On Linux+kde builds we always have at least the KdeReader available
-            // as a fallback; select_reader() must therefore yield Some for any
-            // detectable DE path.
-            let _ = &reader;
-        }
         #[cfg(all(target_os = "macos", feature = "macos"))]
         {
-            assert!(
-                reader.is_some(),
-                "select_reader() must return Some on macOS+macos"
-            );
+            let (_reader, preset) = picked.expect("select_reader must return Some on macOS+macos");
+            assert_eq!(preset, "macos-sonoma-live");
         }
         #[cfg(all(target_os = "windows", feature = "windows"))]
         {
-            assert!(
-                reader.is_some(),
-                "select_reader() must return Some on windows+windows"
-            );
+            let (_reader, preset) =
+                picked.expect("select_reader must return Some on windows+windows");
+            assert_eq!(preset, "windows-11-live");
+        }
+        #[cfg(all(target_os = "linux", feature = "kde", feature = "portal"))]
+        {
+            // On linux+kde+portal, select_reader returns Some(GnomePortalKdeReader, "kde-breeze-live")
+            // whenever the active DE is KDE; for non-KDE DEs it may legitimately
+            // return None (preset fallback). Assert the tuple shape regardless.
+            if let Some((_reader, preset)) = &picked {
+                assert!(
+                    *preset == "kde-breeze-live" || *preset == "adwaita-live",
+                    "select_reader on linux must return a known -live preset, got: {preset}"
+                );
+            }
         }
         #[cfg(not(any(target_os = "linux", target_os = "macos", target_os = "windows")))]
         {
             assert!(
-                reader.is_none(),
+                picked.is_none(),
                 "select_reader() must return None on unsupported platforms"
             );
         }
-        // Keep `reader` alive across the cfg arms so the let-binding above is
-        // not flagged as unused on any build.
-        drop(reader);
+        // Consume `picked` so the let-binding above is not flagged as unused
+        // on any cfg permutation (e.g. linux without kde feature).
+        drop(picked);
     }
 }

@@ -371,37 +371,43 @@ fn find_index_theme_path(theme_name: &str) -> Option<std::path::PathBuf> {
 /// Parses `~/.config/kdeglobals` (respecting `XDG_CONFIG_HOME`) and maps
 /// KDE color groups and font strings to a [`ReaderResult`](crate::ReaderResult).
 ///
-/// Internal entry point used by the pipeline. External consumers should
-/// use [`SystemTheme::from_system()`](crate::SystemTheme::from_system).
-pub(crate) fn from_kde() -> crate::Result<crate::ReaderResult> {
-    let path = kdeglobals_path();
-    let content = std::fs::read_to_string(&path).map_err(|e| crate::Error::ReaderFailed {
-        reader: "kde",
-        source: format!("cannot read {}: {e}", path.display()).into(),
-    })?;
-    let mut result = from_kde_content(&content)?;
+/// Internal reader dispatched through the [`crate::reader::ThemeReader`] trait
+/// by [`pipeline::select_reader`]; external consumers should use
+/// [`SystemTheme::from_system()`](crate::SystemTheme::from_system).
+pub(crate) struct KdeReader;
 
-    // Cascade: if kdeglobals lacks [Icons] Theme, check kdedefaults/kdeglobals
-    let mode = match &mut result.output {
-        crate::ReaderOutput::Single { mode, .. } => &mut **mode,
-        crate::ReaderOutput::Dual { light, .. } => &mut **light,
-    };
-    if mode.defaults.icon_theme.is_none()
-        && let Some(parent) = path.parent()
-    {
-        let defaults_path = parent.join("kdedefaults").join("kdeglobals");
-        if let Ok(defaults_content) = std::fs::read_to_string(&defaults_path) {
-            let mut defaults_ini = create_kde_parser();
-            if defaults_ini.read(defaults_content).is_ok() {
-                mode.defaults.icon_theme = defaults_ini
-                    .get("Icons", "Theme")
-                    .filter(|s| !s.is_empty())
-                    .map(std::borrow::Cow::Owned);
+#[async_trait::async_trait]
+impl crate::reader::ThemeReader for KdeReader {
+    async fn read(&self) -> crate::Result<crate::ReaderResult> {
+        let path = kdeglobals_path();
+        let content = std::fs::read_to_string(&path).map_err(|e| crate::Error::ReaderFailed {
+            reader: "kde",
+            source: format!("cannot read {}: {e}", path.display()).into(),
+        })?;
+        let mut result = from_kde_content(&content)?;
+
+        // Cascade: if kdeglobals lacks [Icons] Theme, check kdedefaults/kdeglobals
+        let mode = match &mut result.output {
+            crate::ReaderOutput::Single { mode, .. } => &mut **mode,
+            crate::ReaderOutput::Dual { light, .. } => &mut **light,
+        };
+        if mode.defaults.icon_theme.is_none()
+            && let Some(parent) = path.parent()
+        {
+            let defaults_path = parent.join("kdedefaults").join("kdeglobals");
+            if let Ok(defaults_content) = std::fs::read_to_string(&defaults_path) {
+                let mut defaults_ini = create_kde_parser();
+                if defaults_ini.read(defaults_content).is_ok() {
+                    mode.defaults.icon_theme = defaults_ini
+                        .get("Icons", "Theme")
+                        .filter(|s| !s.is_empty())
+                        .map(std::borrow::Cow::Owned);
+                }
             }
         }
-    }
 
-    Ok(result)
+        Ok(result)
+    }
 }
 
 /// Create a configparser Ini instance configured for KDE files.

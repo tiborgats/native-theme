@@ -579,10 +579,25 @@ fn build_theme(
 ///
 /// Returns `Error::ReaderFailed` if UISettings cannot be created (pre-Windows 10).
 ///
-/// Internal entry point used by the pipeline. External consumers should
-/// use [`SystemTheme::from_system()`](crate::SystemTheme::from_system).
+/// Internal reader dispatched through the [`crate::reader::ThemeReader`] trait
+/// by [`pipeline::select_reader`]; external consumers should use
+/// [`SystemTheme::from_system()`](crate::SystemTheme::from_system).
+///
+/// The body contains no `.await` points — wrapping a sync implementation in
+/// an async trait method produces a future that resolves immediately.
 #[cfg(all(target_os = "windows", feature = "windows"))]
-pub(crate) fn from_windows() -> crate::Result<crate::ReaderResult> {
+pub(crate) struct WindowsReader;
+
+#[cfg(all(target_os = "windows", feature = "windows"))]
+#[async_trait::async_trait]
+impl crate::reader::ThemeReader for WindowsReader {
+    async fn read(&self) -> crate::Result<crate::ReaderResult> {
+        read_windows()
+    }
+}
+
+#[cfg(all(target_os = "windows", feature = "windows"))]
+fn read_windows() -> crate::Result<crate::ReaderResult> {
     let settings = UISettings::new().map_err(|e| crate::Error::ReaderFailed {
         reader: "windows",
         source: format!("UISettings unavailable: {e}").into(),

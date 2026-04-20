@@ -104,6 +104,11 @@ pub mod model;
 pub mod pipeline;
 /// Bundled theme presets.
 pub mod presets;
+/// Internal `ThemeReader` trait (see module docs for Option A rationale).
+///
+/// Consumed by `pipeline::select_reader` as `Box<dyn ThemeReader>`; the
+/// trait and every impl are `pub(crate)` — not part of the public API.
+mod reader;
 /// Theme resolution engine (inheritance + validation).
 ///
 /// Public surface: [`resolve::ResolutionContext`] — the resolution-time

@@ -447,80 +447,99 @@ pub(crate) fn build_theme(
 /// Falls back to bundled Adwaita defaults when the portal is unavailable
 /// (no D-Bus session, sandboxed environment, or old portal version).
 ///
-/// Internal entry point used by the pipeline. External consumers should
-/// use [`SystemTheme::from_system_async()`](crate::SystemTheme::from_system_async).
-pub(crate) async fn from_gnome() -> crate::Result<crate::ReaderResult> {
-    let base = crate::Theme::preset("adwaita")?;
+/// Internal reader dispatched through the [`crate::reader::ThemeReader`] trait
+/// by [`pipeline::select_reader`]; external consumers should use
+/// [`SystemTheme::from_system_async()`](crate::SystemTheme::from_system_async).
+pub(crate) struct GnomeReader;
 
-    // Try to connect to the portal. If unavailable, return Adwaita defaults.
-    let settings = match ashpd::desktop::settings::Settings::new().await {
-        Ok(s) => s,
-        Err(_) => {
-            return build_theme(
-                base,
-                ColorScheme::NoPreference,
-                None,
-                Contrast::NoPreference,
-                None,
-            );
-        }
-    };
+#[async_trait::async_trait]
+impl crate::reader::ThemeReader for GnomeReader {
+    async fn read(&self) -> crate::Result<crate::ReaderResult> {
+        let base = crate::Theme::preset("adwaita")?;
 
-    // Read the four appearance settings. Each can fail independently.
-    let scheme = settings.color_scheme().await.unwrap_or_default();
-    let accent = settings.accent_color().await.ok();
-    let contrast = settings.contrast().await.unwrap_or_default();
-    let reduced_motion = settings.reduced_motion().await.ok();
+        // Try to connect to the portal. If unavailable, return Adwaita defaults.
+        let settings = match ashpd::desktop::settings::Settings::new().await {
+            Ok(s) => s,
+            Err(_) => {
+                return build_theme(
+                    base,
+                    ColorScheme::NoPreference,
+                    None,
+                    Contrast::NoPreference,
+                    None,
+                );
+            }
+        };
 
-    build_theme(base, scheme, accent, contrast, reduced_motion)
+        // Read the four appearance settings. Each can fail independently.
+        let scheme = settings.color_scheme().await.unwrap_or_default();
+        let accent = settings.accent_color().await.ok();
+        let contrast = settings.contrast().await.unwrap_or_default();
+        let reduced_motion = settings.reduced_motion().await.ok();
+
+        build_theme(base, scheme, accent, contrast, reduced_motion)
+    }
 }
 
 /// Read KDE theme from kdeglobals, then overlay portal accent color if available.
 ///
-/// Reads the KDE kdeglobals file as the base theme via [`crate::kde::from_kde()`],
-/// then attempts to read the accent color from the XDG Desktop Portal. If the
-/// portal provides a valid accent color, it is applied to accent, selection,
-/// and focus_ring_color fields on the reader's variant.
+/// Reads the KDE kdeglobals file as the base theme via
+/// [`crate::kde::KdeReader`], then attempts to read the accent color from the
+/// XDG Desktop Portal. If the portal provides a valid accent color, it is
+/// applied to accent, selection, and focus_ring_color fields on the reader's
+/// variant.
 ///
 /// Falls back to the KDE-only base if the portal is unavailable or provides
 /// no accent color.
 ///
 /// Requires both `kde` and `portal` features.
 ///
-/// Internal entry point used by the pipeline. External consumers should
-/// use [`SystemTheme::from_system_async()`](crate::SystemTheme::from_system_async).
+/// Internal reader dispatched through the [`crate::reader::ThemeReader`] trait
+/// by [`pipeline::select_reader`]; external consumers should use
+/// [`SystemTheme::from_system_async()`](crate::SystemTheme::from_system_async).
 #[cfg(feature = "kde")]
-pub(crate) async fn from_kde_with_portal() -> crate::Result<crate::ReaderResult> {
-    let mut result = crate::kde::from_kde()?;
+pub(crate) struct GnomePortalKdeReader;
 
-    // Try to get accent color from portal
-    let settings = match ashpd::desktop::settings::Settings::new().await {
-        Ok(s) => s,
-        Err(_) => return Ok(result),
-    };
+#[cfg(feature = "kde")]
+#[async_trait::async_trait]
+impl crate::reader::ThemeReader for GnomePortalKdeReader {
+    async fn read(&self) -> crate::Result<crate::ReaderResult> {
+        // Base: invoke the KdeReader through the same trait surface so that
+        // any future KDE-side migration (e.g. extra I/O, extra parsing) is
+        // picked up here automatically without re-wiring the composite.
+        let mut result =
+            <crate::kde::KdeReader as crate::reader::ThemeReader>::read(&crate::kde::KdeReader)
+                .await?;
 
-    let accent = match settings.accent_color().await {
-        Ok(color) => color,
-        Err(_) => return Ok(result),
-    };
+        // Try to get accent color from portal
+        let settings = match ashpd::desktop::settings::Settings::new().await {
+            Ok(s) => s,
+            Err(_) => return Ok(result),
+        };
 
-    let rgba = match portal_color_to_rgba(&accent) {
-        Some(r) => r,
-        None => return Ok(result),
-    };
+        let accent = match settings.accent_color().await {
+            Ok(color) => color,
+            Err(_) => return Ok(result),
+        };
 
-    // Apply accent to the reader's variant
-    match &mut result.output {
-        crate::ReaderOutput::Single { mode, .. } => {
-            apply_accent(mode, &rgba);
+        let rgba = match portal_color_to_rgba(&accent) {
+            Some(r) => r,
+            None => return Ok(result),
+        };
+
+        // Apply accent to the reader's variant
+        match &mut result.output {
+            crate::ReaderOutput::Single { mode, .. } => {
+                apply_accent(mode, &rgba);
+            }
+            crate::ReaderOutput::Dual { light, dark } => {
+                apply_accent(light, &rgba);
+                apply_accent(dark, &rgba);
+            }
         }
-        crate::ReaderOutput::Dual { light, dark } => {
-            apply_accent(light, &rgba);
-            apply_accent(dark, &rgba);
-        }
+
+        Ok(result)
     }
-
-    Ok(result)
 }
 
 /// Detect which desktop portal backend is running via D-Bus activatable names.

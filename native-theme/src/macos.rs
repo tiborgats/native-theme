@@ -397,10 +397,25 @@ fn build_theme(
 /// Returns `Error::ReaderFailed` if neither light nor dark appearance can be created
 /// (extremely unlikely on any macOS version that supports these APIs).
 ///
-/// Internal entry point used by the pipeline. External consumers should
-/// use [`SystemTheme::from_system()`](crate::SystemTheme::from_system).
+/// Internal reader dispatched through the [`crate::reader::ThemeReader`] trait
+/// by [`pipeline::select_reader`]; external consumers should use
+/// [`SystemTheme::from_system()`](crate::SystemTheme::from_system).
+///
+/// The body contains no `.await` points — wrapping a sync implementation in
+/// an async trait method produces a future that resolves immediately.
 #[cfg(all(target_os = "macos", feature = "macos"))]
-pub(crate) fn from_macos() -> crate::Result<crate::ReaderResult> {
+pub(crate) struct MacosReader;
+
+#[cfg(all(target_os = "macos", feature = "macos"))]
+#[async_trait::async_trait]
+impl crate::reader::ThemeReader for MacosReader {
+    async fn read(&self) -> crate::Result<crate::ReaderResult> {
+        read_macos()
+    }
+}
+
+#[cfg(all(target_os = "macos", feature = "macos"))]
+fn read_macos() -> crate::Result<crate::ReaderResult> {
     let light_name = NSString::from_str("NSAppearanceNameAqua");
     let dark_name = NSString::from_str("NSAppearanceNameDarkAqua");
 
