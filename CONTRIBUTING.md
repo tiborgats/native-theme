@@ -1,22 +1,38 @@
 # Contributing to native-theme
 
-Thank you for your interest in contributing! This guide covers everything you
-need to get started.
+Thank you for your interest in contributing.
 
-## Quick Start
+## Quick start
 
 1. Fork and clone the repository
 2. Install Rust stable (MSRV: **1.94.0**, edition **2024**)
-3. Run the test suite:
+3. Verify the workspace builds and tests pass:
 
    ```bash
    cargo test --workspace
    ```
 
-## Development Workflow
+## Pre-commit gate — `./pre-release-check.sh`
 
-Before submitting a PR, run these checks locally. They match the CI pipeline
-that runs on every pull request.
+Before every commit, run the full pre-release check:
+
+```bash
+./pre-release-check.sh
+```
+
+This is the canonical quality gate. It runs (in order): panic detection in
+non-test code, `cargo fmt --check`, `cargo clippy --workspace --all-targets`,
+`cargo test --workspace`, `cargo doc`, and `cargo package` on every publishable
+crate. The script prints a single-line status per check; a soft warning
+(`⚠`) is tolerable for a WIP branch but must be resolved before opening a
+release PR; a hard failure (`❌`) exits non-zero and must be fixed.
+
+The script matches the CI pipeline that runs on every pull request, so
+passing it locally means CI will pass too.
+
+## Individual checks
+
+If you want to run pieces manually instead of the full script:
 
 ```bash
 # Format
@@ -35,39 +51,90 @@ cargo test --workspace
 RUSTDOCFLAGS="-Dwarnings" cargo doc --workspace --no-deps
 ```
 
-> **Note:** CI sets `RUSTFLAGS=-Dwarnings`, so any clippy warning is treated as
-> an error. Make sure your code is warning-free before pushing.
+CI sets `RUSTFLAGS=-Dwarnings`, so any clippy warning is treated as an error.
 
-## Project Structure
+## Project structure
 
 | Crate | Path | Description |
 |-------|------|-------------|
 | `native-theme` | `native-theme/` | Core theme model, presets, platform readers, icons, animations |
-| `native-theme-build` | `native-theme-build/` | Build-time TOML code generation for custom icon roles |
+| `native-theme-build` | `native-theme-build/` | Build-time code generation for custom icon roles |
+| `native-theme-derive` | `native-theme-derive/` | Proc-macro crate (internal; re-exported via `native-theme`) |
 | `native-theme-gpui` | `connectors/native-theme-gpui/` | gpui toolkit connector |
 | `native-theme-iced` | `connectors/native-theme-iced/` | iced toolkit connector |
 
-## Feature Flags
+## Feature flags
 
-The core `native-theme` crate has many feature flags:
+The core `native-theme` crate has several feature flags:
 
-- **Platform readers:** `kde`, `portal-tokio`, `portal-async-io`, `windows`,
-  `macos`, `linux`, `native`
+- **Platform readers:** `kde`, `portal`, `windows`, `macos`, `linux` (meta: kde+portal), `native` (meta: all)
 - **Icons:** `system-icons`, `material-icons`, `lucide-icons`
-- **Rendering:** `svg-rasterize`
+- **Watching:** `watch` (runtime theme change notifications)
+- **Rendering:** `svg-rasterize` (resvg-backed SVG→RGBA rasterization)
 
 Platform-specific features only compile on their target OS. See
-[`native-theme/Cargo.toml`](native-theme/Cargo.toml) for the full list.
+[`native-theme/Cargo.toml`](native-theme/Cargo.toml) for the full list and
+dependency gates.
 
-## Submitting Changes
+## Commit message conventions
 
-1. Fork the repository and create a feature branch
-2. Make your changes
-3. Run the CI commands listed above
-4. Push your branch and open a pull request
-5. All PRs run CI automatically -- you will see the results on the PR page
+Use conventional-commit-style prefixes. Common forms seen in this project:
+
+- `feat(scope): <summary>` — new user-facing feature or API addition
+- `fix(scope): <summary>` — bug fix
+- `refactor(scope): <summary>` — internal restructuring with no API change
+- `docs(scope): <summary>` — docs-only change
+- `test(scope): <summary>` — tests only
+- `chore(scope): <summary>` — build, tooling, deps
+- `ci(workflow): <summary>` — GitHub Actions changes
+
+The `scope` is usually the crate name (`native-theme`, `gpui`, `iced`,
+`readme`, `changelog`), a subsystem (`icons`, `api`, `watch/kde`), or during
+active phase-based work a phase identifier (`93-01`, `94-02`). When in doubt,
+match the style of recent commits:
+
+```bash
+git log --oneline -30
+```
+
+Pre-1.0, breaking changes in minor versions are allowed and expected — just
+ensure they appear in `CHANGELOG.md` under the `[Unreleased]` section.
+
+## Pull request workflow
+
+1. Fork the repository, branch off `main`
+2. Keep commits atomic (one concern per commit)
+3. Ensure `./pre-release-check.sh` passes on the last commit of your branch
+4. Open a PR with a clear title matching the conventional-commit style
+5. Reference related issues or design docs in the PR description
+6. CI runs automatically; results appear on the PR page
+
+## Where decisions live
+
+Design-level choices are captured in files under `docs/`:
+
+- [`docs/platform-facts.md`](docs/platform-facts.md) — canonical platform-native values (KDE Plasma, GNOME, macOS Sonoma/Tahoe, Windows 11, iOS), cited to official sources
+- [`docs/property-registry.toml`](docs/property-registry.toml) — semantic color and property registry
+- [`docs/inheritance-rules.toml`](docs/inheritance-rules.toml) — widget-field inheritance rules driving the resolution pipeline
+
+Do not invent platform-native values. When the authoritative reference is
+silent, flag it explicitly rather than guessing.
+
+## Regenerating visual assets
+
+Screenshots, theme-switching GIFs, spinner GIFs, and the workspace
+crate-relations diagram are generated by the scripts in `scripts/`. See
+[`scripts/README.md`](scripts/README.md) for the full pipeline. Release flow:
+
+```bash
+./scripts/pre-release.sh        # full screenshots + GIFs pipeline (needs gh, spectacle, Python+Pillow, ImageMagick)
+./scripts/render-diagrams.sh    # workspace crate-relations SVG (needs Node ≥ 18)
+```
+
+Each asset is generated into the crate it documents, so relative paths in
+per-crate READMEs resolve on GitHub, on crates.io, and offline.
 
 ## License
 
-By contributing, you agree that your contributions will be licensed under the
-project's triple license: **MIT OR Apache-2.0 OR 0BSD**.
+By contributing, you agree your contributions will be triple-licensed under
+**MIT OR Apache-2.0 OR 0BSD**.
