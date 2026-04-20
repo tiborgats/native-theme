@@ -541,6 +541,28 @@ recommended".
 **Confidence:** high on direction. Depends on locating the current
 WinUI 3 `ContentDialog` documentation URL.
 
+**Post-execution correction (2026-04-20, Phase 95 Plan 02 — append-only):**
+
+The `doc 2 §K.5` premise quoted at the top of this section is **inverted**.
+Live Microsoft WinUI 3 Dialog controls documentation (`ms.date 2025-08-05`,
+verified 2026-04-20) states `PrimaryButton` *"Appears as the leftmost
+button"* / `CloseButton` *"Appears as the rightmost button"*. Modern
+WinUI 3 **preserves** the Win7 Common Buttons convention — there is no
+doc-vs-modern-practice tension. Consequences:
+
+- `docs/platform-facts.md:1481` was **already correct** (`primary
+  leftmost`). The "Required fix" step 1 above would have introduced a
+  bug into the docs; steps 2-3 do not apply either.
+- Code sites now agree on `PrimaryLeft` (the line-number citations
+  above have drifted since writing): `native-theme/src/windows.rs:522`
+  (corrected in commit `ba4d2f3`),
+  `native-theme/src/presets/windows-11.toml:265, :596`,
+  `native-theme/src/resolve/inheritance.rs:71` (`platform_button_order`).
+- Phase 95 Plan 02 executed a *revised* scope: modern WinUI 3
+  continuity citation appended at `docs/platform-facts.md:1808` +
+  continuity prose at `:1504-1507`. Full recovery record:
+  `.planning/phases/95-the-remaining-g9-g10-g11-from-docs-todo-v0-5-7-gaps-md/95-02-SUMMARY.md`.
+
 ---
 
 ## G11 · Principled deviation — `cargo test --workspace` vs `./pre-release-check.sh` (P0 doc-only)
