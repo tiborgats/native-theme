@@ -722,3 +722,14 @@ Plans:
 - [x] 94-01-PLAN.md — G6: Border + font inheritance codegen via `#[derive(ThemeWidget)] #[theme_inherit(...)]` with inverted-drift test (wave 1, completed 2026-04-20)
 - [x] 94-02-PLAN.md — G7: `ResolutionContext` struct with `from_system()`/`for_tests()` + NO `Default` impl; `ThemeMode::into_resolved(&ctx)` replaces `Option<f32>`; `resolve_system()` zero-arg shortcut; 43 call sites migrated (wave 1, completed 2026-04-20)
 - [x] 94-03-PLAN.md — G8: `ThemeReader` trait unifying platform readers (KDE/GNOME/macOS/Windows) behind `#[async_trait::async_trait] pub(crate) trait ThemeReader: Send + Sync` + select_reader cascade; 5 free functions deleted; 5 pub(crate) unit-struct impls (KdeReader, GnomeReader, GnomePortalKdeReader, MacosReader, WindowsReader); pipeline dispatch collapsed from ~150-line cfg ladder to ~30-line if-let (wave 2, completed 2026-04-20)
+
+### Phase 95: The remaining (G9, G10, G11) from docs/todo_v0.5.7_gaps.md
+
+**Goal:** Close the final three gap-doc items G9 (Arc<str> vs Cow<'static, str> ownership-type principled deviation), G10 (Windows button_order platform-facts refresh citing modern WinUI 3 practice), and G11 (formalise the accepted --workspace → per-crate principled deviation across Phase 93 PLAN files + RELEASING.md). ALL THREE ARE DOCS-ONLY — zero code, preset, or Cargo changes.
+**Depends on:** Phase 94
+**Plans:** 3 plans (wave 1 — all three independent, disjoint file sets, autonomous: true, run in parallel)
+
+Plans:
+- [ ] 95-01-PLAN.md — G9: Add rustdoc on `SystemTheme::name`/`icon_theme` (lib.rs:371/387) documenting Cow<'static, str>→Arc<str> principled deviation + APPEND-ONLY post-scripts to doc 2 §J.2 and §K.3 (wave 1, autonomous, two files: native-theme/src/lib.rs + docs/todo_v0.5.7_native-theme-api-2.md)
+- [ ] 95-02-PLAN.md — G10: Refresh docs/platform-facts.md:1481 Windows column to modern WinUI 3 ContentDialog (primary rightmost) with live-verified URL + Historical note preserving Win7 Common Buttons guideline + grep-reconcile other primary-leftmost references (wave 1, autonomous, WebFetch URL verification built in per platform-fact skill no-invented-values rule, one file: docs/platform-facts.md)
+- [ ] 95-03-PLAN.md — G11: Formalise accepted --workspace → per-crate principled deviation via new `.planning/phases/93-.../93-G11-DEVIATION.md` cross-plan record + APPEND-ONLY annotation blocks on 5 Phase 93 PLAN files (93-01..05) + new "Known upstream tool-chain deviations (v0.5.7+)" section in RELEASING.md (wave 1, autonomous, seven files: 1 new + 6 existing, APPEND-ONLY on existing per user memory rule)
