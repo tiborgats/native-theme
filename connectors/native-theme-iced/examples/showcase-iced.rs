@@ -1,13 +1,34 @@
-//! Comprehensive widget showcase for native-theme-iced.
+//! native-theme-iced — comprehensive widget showcase and designer reference.
 //!
-//! Demonstrates every styled iced widget with full theme switching (17 presets,
-//! system/light/dark mode), native-theme metric helpers, icon gallery with icon
-//! theme switching and source tracking, and a theme map showing all palette colors.
-//! Features a left sidebar with theme controls and a hover-driven Widget Info
-//! inspector, plus a tabbed content area on the right — mirroring the gpui
-//! showcase layout.
+//! Demonstrates every styled iced widget with live theme switching across all
+//! bundled `native-theme` presets (system / light / dark), every `native-theme`
+//! metric helper, an icon gallery with icon-theme switching and source
+//! tracking, and a theme map showing all palette colors. Layout mirrors the
+//! gpui showcase: left sidebar with theme controls and a hover-driven Widget
+//! Info inspector; tabbed content area on the right.
 //!
-//! Run with: `cargo run -p native-theme-iced --example showcase-iced`
+//! # Running
+//!
+//! ```sh
+//! cargo run -p native-theme-iced --example showcase-iced
+//! ```
+//!
+//! # What to look for
+//!
+//! - Sidebar switches theme presets, color modes, and icon sets at runtime —
+//!   no restart needed. Watch how every widget re-themes together.
+//! - Hover the Widget Info inspector to see which `ResolvedTheme` fields
+//!   drive the widget currently under the mouse.
+//! - The Theme Map tab exposes iced's 6-field `Palette` plus `Extended`
+//!   palette values produced by `native-theme-iced`.
+//! - The Icons tab demonstrates icon loading across Material, Lucide, and
+//!   freedesktop sets, plus animated spinner playback with `Rotation::Floating`.
+//!
+//! # How this file is organised
+//!
+//! The source is split into section-divider blocks (`// ───────`) — one per
+//! widget category, tab, or view. Search for the dividers to jump between
+//! sections.
 
 use iced::widget::{
     button, checkbox, column, combo_box, container, mouse_area, pick_list, progress_bar, radio,
