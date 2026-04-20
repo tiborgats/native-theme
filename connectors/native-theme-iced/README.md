@@ -132,22 +132,22 @@ cargo run -p native-theme-iced --example showcase-iced
 
 ### Linux
 
-![KDE Breeze Dark](../../docs/assets/iced-linux-kde-breeze-dark.png)
-![KDE Breeze Light](../../docs/assets/iced-linux-kde-breeze-light.png)
-![Material Dark](../../docs/assets/iced-linux-material-dark.png)
-![Material Light](../../docs/assets/iced-linux-material-light.png)
-![Catppuccin Mocha Dark](../../docs/assets/iced-linux-catppuccin-mocha-dark.png)
-![Catppuccin Mocha Light](../../docs/assets/iced-linux-catppuccin-mocha-light.png)
+![KDE Breeze Dark](docs/assets/linux-kde-breeze-dark.png)
+![KDE Breeze Light](docs/assets/linux-kde-breeze-light.png)
+![Material Dark](docs/assets/linux-material-dark.png)
+![Material Light](docs/assets/linux-material-light.png)
+![Catppuccin Mocha Dark](docs/assets/linux-catppuccin-mocha-dark.png)
+![Catppuccin Mocha Light](docs/assets/linux-catppuccin-mocha-light.png)
 
 ### macOS
 
-![macOS Sonoma Light](../../docs/assets/iced-macos-macos-sonoma-light.png)
-![macOS Sonoma Dark](../../docs/assets/iced-macos-macos-sonoma-dark.png)
+![macOS Sonoma Light](docs/assets/macos-macos-sonoma-light.png)
+![macOS Sonoma Dark](docs/assets/macos-macos-sonoma-dark.png)
 
 ### Windows
 
-![Windows 11 Light](../../docs/assets/iced-windows-windows-11-light.png)
-![Windows 11 Dark](../../docs/assets/iced-windows-windows-11-dark.png)
+![Windows 11 Light](docs/assets/windows-windows-11-light.png)
+![Windows 11 Dark](docs/assets/windows-windows-11-dark.png)
 
 The showcase displays all iced widgets (buttons, inputs, sliders, checkboxes,
 togglers, etc.) themed with native-theme presets, with live theme switching

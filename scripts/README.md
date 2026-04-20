@@ -2,7 +2,14 @@
 
 Visual asset generation and release automation for native-theme.
 
-All scripts output to `docs/assets/` and are run from the project root.
+All scripts are run from the project root. Each asset is generated into the
+crate it documents so relative paths in per-crate READMEs resolve everywhere
+(offline, on GitHub, and in the published crate on crates.io / docs.rs):
+
+- Spinner GIFs → `native-theme/docs/assets/`
+- gpui screenshots + theme-switching GIF → `connectors/native-theme-gpui/docs/assets/`
+- iced screenshots + theme-switching GIF → `connectors/native-theme-iced/docs/assets/`
+- Workspace crate-relations diagram → `docs/assets/` (workspace-level)
 
 ## generate_assets.sh
 
@@ -16,21 +23,22 @@ spinner GIFs, iced screenshots, gpui screenshots, and theme-switching GIFs.
 ## generate_gifs.py
 
 Generates looping spinner GIF animations from the bundled Material and Lucide
-SVG icons. Each GIF shows the spinner centered on a styled card background
-(24 rotation frames, 42ms/frame).
+SVG icons into `native-theme/docs/assets/`. Each GIF shows the spinner centered
+on a styled card background (24 rotation frames, 42ms/frame).
 
-Also supports `--theme-switching` mode to assemble pre-captured PNG frames
-into an animated theme-switching GIF for the README hero section.
+Also supports `--theme-switching` mode to assemble pre-captured PNG frames into
+an animated theme-switching GIF. Callers pass the explicit per-connector output
+path via `--theme-switching-output`.
 
 Requires: Python 3, Pillow, ImageMagick 7
 
 ```sh
-# Spinner GIFs
+# Spinner GIFs (default output: native-theme/docs/assets/)
 python3 scripts/generate_gifs.py
 
 # Theme-switching GIF from captured frames
 python3 scripts/generate_gifs.py --theme-switching /path/to/frames \
-    --theme-switching-output docs/assets/iced-theme-switching.gif
+    --theme-switching-output connectors/native-theme-iced/docs/assets/theme-switching.gif
 ```
 
 ## generate_screenshots.sh
@@ -63,7 +71,9 @@ Requires: spectacle (KDE)
 Captures 4 theme presets from both iced and gpui showcases, then assembles
 each set into a looping theme-switching GIF via `generate_gifs.py`.
 
-Produces: `iced-theme-switching.gif` and `gpui-theme-switching.gif`.
+Produces:
+- `connectors/native-theme-iced/docs/assets/theme-switching.gif`
+- `connectors/native-theme-gpui/docs/assets/theme-switching.gif`
 
 Requires: spectacle (KDE), Python 3, Pillow
 
@@ -89,7 +99,8 @@ Requires: Node.js ≥ 18, network access (first run downloads `mmdc` on demand)
 
 Full pre-release asset pipeline. Triggers the CI screenshots workflow for
 macOS/Windows, generates all local Linux assets while CI runs, then downloads
-the CI artifacts into `docs/assets/`.
+the CI artifacts into the correct per-connector `docs/assets/` directory
+based on artifact name.
 
 Requires: gh CLI (authenticated), spectacle, Python 3, Pillow, ImageMagick 7
 

@@ -4,8 +4,8 @@ set -euo pipefail
 # Capture theme-switching GIFs for both iced and gpui showcases.
 #
 # Produces two GIFs:
-#   docs/assets/iced-theme-switching.gif  (via spectacle on KDE Wayland)
-#   docs/assets/gpui-theme-switching.gif  (via spectacle on KDE Wayland)
+#   connectors/native-theme-iced/docs/assets/theme-switching.gif  (via spectacle on KDE Wayland)
+#   connectors/native-theme-gpui/docs/assets/theme-switching.gif  (via spectacle on KDE Wayland)
 #
 # Both use spectacle for external window capture to include window
 # decorations (title bar, buttons, borders) in the frames.
@@ -14,7 +14,8 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-OUTPUT_DIR="$PROJECT_ROOT/docs/assets"
+ICED_OUTPUT_DIR="$PROJECT_ROOT/connectors/native-theme-iced/docs/assets"
+GPUI_OUTPUT_DIR="$PROJECT_ROOT/connectors/native-theme-gpui/docs/assets"
 ICED_FRAME_DIR="$(mktemp -d)"
 GPUI_FRAME_DIR="$(mktemp -d)"
 DELAY=3
@@ -29,7 +30,7 @@ THEMES=(
     "kde-breeze:light:freedesktop:breeze"
 )
 
-mkdir -p "$OUTPUT_DIR"
+mkdir -p "$ICED_OUTPUT_DIR" "$GPUI_OUTPUT_DIR"
 cd "$PROJECT_ROOT"
 
 # Kill any stale spectacle instances to avoid D-Bus singleton conflicts
@@ -74,9 +75,9 @@ echo ""
 echo "--- Assembling iced GIF ---"
 python3 "$SCRIPT_DIR/generate_gifs.py" \
     --theme-switching "$ICED_FRAME_DIR" \
-    --theme-switching-output "$OUTPUT_DIR/iced-theme-switching.gif"
+    --theme-switching-output "$ICED_OUTPUT_DIR/theme-switching.gif"
 echo ""
-ls -lh "$OUTPUT_DIR/iced-theme-switching.gif"
+ls -lh "$ICED_OUTPUT_DIR/theme-switching.gif"
 
 # ── gpui GIF ──────────────────────────────────────────────────────────
 
@@ -116,9 +117,9 @@ echo ""
 echo "--- Assembling gpui GIF ---"
 python3 "$SCRIPT_DIR/generate_gifs.py" \
     --theme-switching "$GPUI_FRAME_DIR" \
-    --theme-switching-output "$OUTPUT_DIR/gpui-theme-switching.gif"
+    --theme-switching-output "$GPUI_OUTPUT_DIR/theme-switching.gif"
 echo ""
-ls -lh "$OUTPUT_DIR/gpui-theme-switching.gif"
+ls -lh "$GPUI_OUTPUT_DIR/theme-switching.gif"
 
 # ── Cleanup ───────────────────────────────────────────────────────────
 

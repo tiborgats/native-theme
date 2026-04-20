@@ -57,7 +57,7 @@ jobs:
         run: cargo build -p native-theme-${{ matrix.toolkit }} --example showcase-${{ matrix.toolkit }} --release
 
       - name: Create output directory
-        run: mkdir -p docs/assets
+        run: mkdir -p connectors/native-theme-${{ matrix.toolkit }}/docs/assets
         shell: bash
 
       - name: Capture screenshots (macOS)
@@ -73,7 +73,7 @@ jobs:
             cargo run -p native-theme-${{ matrix.toolkit }} --example showcase-${{ matrix.toolkit }} --release -- \
               --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
               --tab buttons \
-              --screenshot "docs/assets/${{ matrix.toolkit }}-${{ matrix.os_name }}-${theme}-${variant}.png"
+              --screenshot "connectors/native-theme-${{ matrix.toolkit }}/docs/assets/${{ matrix.os_name }}-${theme}-${variant}.png"
           done
 
       - name: Capture screenshots (Windows)
@@ -90,11 +90,11 @@ jobs:
             cargo run -p native-theme-${{ matrix.toolkit }} --example showcase-${{ matrix.toolkit }} --release -- \
               --theme "$theme" --variant "$variant" --icon-set "$icon_set" \
               --tab buttons \
-              --screenshot "docs/assets/${{ matrix.toolkit }}-${{ matrix.os_name }}-${theme}-${variant}.png"
+              --screenshot "connectors/native-theme-${{ matrix.toolkit }}/docs/assets/${{ matrix.os_name }}-${theme}-${variant}.png"
           done
 
       - name: Upload screenshots
         uses: actions/upload-artifact@v7
         with:
           name: screenshots-${{ matrix.toolkit }}-${{ matrix.os_name }}
-          path: docs/assets/${{ matrix.toolkit }}-${{ matrix.os_name }}-*.png
+          path: connectors/native-theme-${{ matrix.toolkit }}/docs/assets/${{ matrix.os_name }}-*.png

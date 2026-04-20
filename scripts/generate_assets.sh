@@ -25,7 +25,16 @@ echo "--- Step 4: Generating theme-switching GIFs (iced + gpui) ---"
 bash "$SCRIPT_DIR/generate_theme_switching_gif.sh"
 echo ""
 
+PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+
 echo "=== All visual assets generated ==="
-echo "Output directory: $(dirname "$SCRIPT_DIR")/docs/assets/"
-ls -la "$(dirname "$SCRIPT_DIR")/docs/assets/" | head -20
-echo "... ($(ls "$(dirname "$SCRIPT_DIR")/docs/assets/" | wc -l) files total)"
+for dir in \
+    "$PROJECT_ROOT/native-theme/docs/assets" \
+    "$PROJECT_ROOT/connectors/native-theme-gpui/docs/assets" \
+    "$PROJECT_ROOT/connectors/native-theme-iced/docs/assets" \
+    "$PROJECT_ROOT/docs/assets"; do
+    if [ -d "$dir" ]; then
+        count=$(find "$dir" -maxdepth 1 -type f | wc -l)
+        echo "  $dir ($count files)"
+    fi
+done

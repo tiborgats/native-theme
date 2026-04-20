@@ -10,12 +10,12 @@ set -euo pipefail
 # NOTE: On macOS/Windows, you can use the showcase's built-in self-capture:
 #   cargo run -p native-theme-iced --example showcase-iced --release -- \
 #     --theme material --variant dark --icon-set material \
-#     --screenshot docs/assets/iced-macos-material-dark.png
+#     --screenshot connectors/native-theme-iced/docs/assets/macos-material-dark.png
 # This script uses spectacle for Linux (KDE Wayland) local captures.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-OUTPUT_DIR="$PROJECT_ROOT/docs/assets"
+OUTPUT_DIR="$PROJECT_ROOT/connectors/native-theme-iced/docs/assets"
 DELAY=3
 
 # Linux-native presets with matching icon sets (3 themes × dark+light)
@@ -58,7 +58,7 @@ total=${#THEMES[@]}
 
 for entry in "${THEMES[@]}"; do
     IFS=':' read -r theme variant icon_set <<< "$entry"
-    output_file="$OUTPUT_DIR/iced-linux-${theme}-${variant}.png"
+    output_file="$OUTPUT_DIR/linux-${theme}-${variant}.png"
     count=$((count + 1))
     echo "[$count/$total] Capturing: $theme $variant (icons: $icon_set) -> $(basename "$output_file")"
 
@@ -78,4 +78,4 @@ done
 
 echo ""
 echo "=== Screenshot generation complete ==="
-echo "Generated $(ls "$OUTPUT_DIR"/iced-linux-*.png 2>/dev/null | wc -l) screenshots in $OUTPUT_DIR"
+echo "Generated $(ls "$OUTPUT_DIR"/linux-*.png 2>/dev/null | wc -l) screenshots in $OUTPUT_DIR"

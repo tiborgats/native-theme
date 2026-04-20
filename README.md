@@ -11,9 +11,9 @@ on Linux (KDE, GNOME), macOS, and Windows, or loads any of 16 bundled presets
 (Catppuccin, Nord, Dracula, Tokyo Night, …), and hands your UI code a fully
 populated `ResolvedTheme`.
 
-![gpui theme switching](docs/assets/gpui-theme-switching.gif)
+![gpui theme switching](connectors/native-theme-gpui/docs/assets/theme-switching.gif)
 
-![Iced theme switching](docs/assets/iced-theme-switching.gif)
+![Iced theme switching](connectors/native-theme-iced/docs/assets/theme-switching.gif)
 
 ## Pick your path
 
@@ -54,9 +54,9 @@ dependency for the common case.
 ## Icon sets
 
 <p align="center">
-  <img src="docs/assets/spinner-material.gif" alt="Material spinner" height="80">
+  <img src="native-theme/docs/assets/spinner-material.gif" alt="Material spinner" height="80">
   &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="docs/assets/spinner-lucide.gif" alt="Lucide spinner" height="80">
+  <img src="native-theme/docs/assets/spinner-lucide.gif" alt="Lucide spinner" height="80">
 </p>
 
 Semantic icon roles (like `StatusBusy` or `DialogSuccess`) map to platform-appropriate glyphs:

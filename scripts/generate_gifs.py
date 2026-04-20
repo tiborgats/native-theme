@@ -1,14 +1,15 @@
 #!/usr/bin/env python3
 """Generate looping GIF animations from bundled spinner icons.
 
-Produces GIF files in docs/assets/ for genuine bundled spinners:
+Produces GIF files in native-theme/docs/assets/ for genuine bundled spinners:
   - material   (progress_activity.svg, 24 rotation frames, 42ms/frame)
   - lucide     (loader.svg, 24 rotation frames, 42ms/frame)
 
 Each GIF shows the spinner centered inside a styled card background.
 
 Also supports --theme-switching mode: assembles pre-captured PNG frames
-into an animated theme-switching GIF for the root README hero section.
+into an animated theme-switching GIF. Callers provide the exact output
+path (per-connector), so the default is nominal only.
 
 Requirements:
   - ImageMagick 7 (magick command) for SVG rasterization
@@ -312,8 +313,8 @@ def main():
     )
     parser.add_argument(
         "--output-dir",
-        default=os.path.join(PROJECT_ROOT, "docs", "assets"),
-        help="Output directory for GIF files (default: docs/assets/)",
+        default=os.path.join(PROJECT_ROOT, "native-theme", "docs", "assets"),
+        help="Output directory for spinner GIF files (default: native-theme/docs/assets/)",
     )
     parser.add_argument(
         "--theme-switching",
@@ -322,8 +323,13 @@ def main():
     )
     parser.add_argument(
         "--theme-switching-output",
-        default=os.path.join(PROJECT_ROOT, "docs", "assets", "theme-switching.gif"),
-        help="Output path for the theme-switching GIF (default: docs/assets/theme-switching.gif)",
+        default=os.path.join(
+            PROJECT_ROOT, "connectors", "native-theme-iced", "docs", "assets", "theme-switching.gif"
+        ),
+        help=(
+            "Output path for the theme-switching GIF. Callers should always "
+            "supply this explicitly per connector; the default is nominal."
+        ),
     )
     args = parser.parse_args()
 

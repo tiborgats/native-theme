@@ -5,7 +5,7 @@ set -euo pipefail
 #
 # Triggers CI for macOS/Windows screenshots first, then generates local
 # Linux assets in parallel while CI runs, and finally downloads the
-# CI results into docs/assets/.
+# CI results into the per-connector docs/assets/ directories.
 #
 # Prerequisites: gh CLI authenticated, spectacle installed (KDE Wayland)
 #
@@ -13,7 +13,9 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-OUTPUT_DIR="$PROJECT_ROOT/docs/assets"
+ICED_DIR="$PROJECT_ROOT/connectors/native-theme-iced/docs/assets"
+GPUI_DIR="$PROJECT_ROOT/connectors/native-theme-gpui/docs/assets"
+NT_DIR="$PROJECT_ROOT/native-theme/docs/assets"
 
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -153,14 +155,20 @@ gh run download "$RUN_ID" --dir "$TMPDIR"
 
 DOWNLOADED=0
 for artifact_dir in "$TMPDIR"/screenshots-iced-macos "$TMPDIR"/screenshots-gpui-macos "$TMPDIR"/screenshots-iced-windows "$TMPDIR"/screenshots-gpui-windows; do
-    if [ -d "$artifact_dir" ]; then
-        for f in "$artifact_dir"/*.png; do
-            [ -f "$f" ] || continue
-            cp "$f" "$OUTPUT_DIR/"
-            DOWNLOADED=$((DOWNLOADED + 1))
-            echo "  $(basename "$f")"
-        done
-    fi
+    [ -d "$artifact_dir" ] || continue
+    base=$(basename "$artifact_dir")   # e.g. screenshots-iced-macos
+    case "$base" in
+        screenshots-iced-*) dest="$ICED_DIR" ;;
+        screenshots-gpui-*) dest="$GPUI_DIR" ;;
+        *) fail "Unexpected artifact dir: $base" ;;
+    esac
+    mkdir -p "$dest"
+    for f in "$artifact_dir"/*.png; do
+        [ -f "$f" ] || continue
+        cp "$f" "$dest/"
+        DOWNLOADED=$((DOWNLOADED + 1))
+        echo "  $(basename "$f") → $(realpath --relative-to="$PROJECT_ROOT" "$dest")"
+    done
 done
 
 rm -rf "$TMPDIR"
@@ -175,19 +183,13 @@ ok "Downloaded $DOWNLOADED screenshots from CI"
 echo ""
 echo "=== Pre-release assets complete ==="
 echo ""
-TOTAL=$(ls "$OUTPUT_DIR"/*.png "$OUTPUT_DIR"/*.gif 2>/dev/null | wc -l)
-echo "Total assets in docs/assets/: $TOTAL files"
-echo ""
-echo "Linux screenshots:"
-ls -1 "$OUTPUT_DIR"/iced-linux-*.png "$OUTPUT_DIR"/gpui-linux-*.png 2>/dev/null | while read -r f; do echo "  $(basename "$f")"; done
-echo ""
-echo "macOS screenshots:"
-ls -1 "$OUTPUT_DIR"/iced-macos-*.png "$OUTPUT_DIR"/gpui-macos-*.png 2>/dev/null | while read -r f; do echo "  $(basename "$f")"; done
-echo ""
-echo "Windows screenshots:"
-ls -1 "$OUTPUT_DIR"/iced-windows-*.png "$OUTPUT_DIR"/gpui-windows-*.png 2>/dev/null | while read -r f; do echo "  $(basename "$f")"; done
-echo ""
-echo "GIFs:"
-ls -1 "$OUTPUT_DIR"/*.gif 2>/dev/null | while read -r f; do echo "  $(basename "$f")"; done
-echo ""
-info "Review the assets, then commit: git add docs/assets/ && git commit -m 'docs: update visual assets'"
+for dir in "$ICED_DIR" "$GPUI_DIR" "$NT_DIR"; do
+    [ -d "$dir" ] || continue
+    rel=$(realpath --relative-to="$PROJECT_ROOT" "$dir")
+    count=$(find "$dir" -maxdepth 1 -type f \( -name '*.png' -o -name '*.gif' \) 2>/dev/null | wc -l)
+    echo "$rel ($count files):"
+    (cd "$dir" && ls -1 *.png *.gif 2>/dev/null) | while read -r f; do echo "  $f"; done
+    echo ""
+done
+
+info "Review the assets, then commit: git add native-theme/docs/assets/ connectors/native-theme-*/docs/assets/ && git commit -m 'docs: update visual assets'"

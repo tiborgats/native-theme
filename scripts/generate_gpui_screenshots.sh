@@ -11,14 +11,14 @@ set -euo pipefail
 # NOTE: On macOS, you can use the showcase's built-in self-capture:
 #   cargo run -p native-theme-gpui --example showcase-gpui --release -- \
 #     --theme macos-sonoma --variant light --icon-set system \
-#     --screenshot docs/assets/gpui-macos-macos-sonoma-light.png
+#     --screenshot connectors/native-theme-gpui/docs/assets/macos-macos-sonoma-light.png
 #
 # Adwaita needs a GNOME environment (requires adwaita icon theme).
 # macOS Sonoma and Windows 11 are captured by CI on their native runners.
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
-OUTPUT_DIR="$PROJECT_ROOT/docs/assets"
+OUTPUT_DIR="$PROJECT_ROOT/connectors/native-theme-gpui/docs/assets"
 DELAY=3
 
 # Theme preset + variant + icon-set + icon-theme pairings
@@ -62,7 +62,7 @@ total=${#THEMES[@]}
 
 for entry in "${THEMES[@]}"; do
     IFS=':' read -r theme variant icon_set icon_theme <<< "$entry"
-    output_file="$OUTPUT_DIR/gpui-linux-${theme}-${variant}.png"
+    output_file="$OUTPUT_DIR/linux-${theme}-${variant}.png"
     count=$((count + 1))
     echo "[$count/$total] Capturing: $theme $variant (icons: $icon_set${icon_theme:+/$icon_theme}) -> $(basename "$output_file")"
 
@@ -86,4 +86,4 @@ done
 
 echo ""
 echo "=== Screenshot generation complete ==="
-echo "Generated $(ls "$OUTPUT_DIR"/gpui-linux-*.png 2>/dev/null | wc -l) screenshots in $OUTPUT_DIR"
+echo "Generated $(ls "$OUTPUT_DIR"/linux-*.png 2>/dev/null | wc -l) screenshots in $OUTPUT_DIR"
