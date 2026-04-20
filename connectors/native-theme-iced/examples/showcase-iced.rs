@@ -834,46 +834,28 @@ impl State {
             }
             ThemeChoice::Preset(name) => {
                 let name = name.clone();
+                let mode = if self.is_dark {
+                    native_theme_iced::ColorMode::Dark
+                } else {
+                    native_theme_iced::ColorMode::Light
+                };
                 match native_theme::theme::Theme::preset(&name) {
-                    Ok(nt) => match nt.pick_variant(if self.is_dark {
-                        native_theme_iced::ColorMode::Dark
-                    } else {
-                        native_theme_iced::ColorMode::Light
-                    }) {
-                        Ok(variant) => {
-                            // icon_theme is per-variant on defaults
-                            icon_theme_opt = variant
-                                .defaults
-                                .icon_theme
-                                .as_deref()
-                                .map(|s| s.to_string());
-                            self.current_icon_set = nt
-                                .icon_set
-                                .unwrap_or_else(native_theme::theme::system_icon_set);
-                            self.current_icon_theme = variant
-                                .defaults
-                                .icon_theme
-                                .as_deref()
-                                .map(|s| s.to_string())
-                                .unwrap_or_else(native_theme::theme::system_icon_theme);
-                            let v = variant.clone();
-                            match v.resolve_system() {
-                                Ok(resolved) => {
-                                    self.current_resolved = resolved;
-                                    self.current_theme = native_theme_iced::to_theme(
-                                        &self.current_resolved,
-                                        &nt.name,
-                                    );
-                                    self.error_message = None;
-                                }
-                                Err(e) => {
-                                    self.error_message =
-                                        Some(format!("Theme '{name}' validation failed: {e}"));
-                                }
-                            }
+                    Ok(nt) => match nt.resolve(mode) {
+                        Ok(r) => {
+                            let theme_name = nt.name.clone();
+                            let icon_theme_string = r.icon_theme.into_owned();
+                            icon_theme_opt =
+                                r.icon_theme_explicit.then(|| icon_theme_string.clone());
+                            self.current_icon_set = r.icon_set;
+                            self.current_icon_theme = icon_theme_string;
+                            self.current_resolved = r.variant;
+                            self.current_theme =
+                                native_theme_iced::to_theme(&self.current_resolved, &theme_name);
+                            self.error_message = None;
                         }
                         Err(e) => {
-                            self.error_message = Some(format!("Theme '{name}': {e}"));
+                            self.error_message =
+                                Some(format!("Theme '{name}' resolution failed: {e}"));
                         }
                     },
                     Err(e) => {

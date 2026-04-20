@@ -211,6 +211,57 @@ pub struct ResolvedTheme {
     pub link: super::widgets::ResolvedLinkTheme,
 }
 
+// --- Resolved ---
+
+/// A theme fully resolved for a specific color mode.
+///
+/// Returned by [`Theme::resolve`](super::Theme::resolve). Bundles everything
+/// a UI framework needs to render a window: the picked variant's resolved
+/// visual properties, the theme's icon set, and the icon theme name — each
+/// already passed through its precedence chain.
+///
+/// # Icon theme precedence
+///
+/// The [`icon_theme`](Self::icon_theme) field is filled by checking, in order:
+///
+/// 1. The picked variant's `defaults.icon_theme` (per-mode override, e.g.
+///    KDE Plasma's `"breeze"` light / `"breeze-dark"` dark).
+/// 2. The parent [`Theme::icon_theme`](super::Theme::icon_theme) (shared
+///    across light and dark).
+/// 3. [`system_icon_theme()`](super::system_icon_theme) (runtime detect).
+///
+/// The first value that is `Some` wins.
+/// [`icon_theme_explicit`](Self::icon_theme_explicit) reports whether the
+/// value came from the TOML (tiers 1 or 2) or from runtime detection
+/// (tier 3) — useful for UI code that labels the theme-author's choice as
+/// `default (X)`.
+///
+/// # Examples
+///
+/// ```
+/// use native_theme::theme::{ColorMode, Theme};
+///
+/// let theme = Theme::preset("material")?;
+/// let r = theme.resolve(ColorMode::Light)?;
+/// assert_eq!(r.icon_theme.as_ref(), "material");
+/// assert!(r.icon_theme_explicit);
+/// # Ok::<(), native_theme::error::Error>(())
+/// ```
+#[derive(Clone, Debug)]
+pub struct Resolved {
+    /// The picked variant's fully-resolved visual properties.
+    pub variant: ResolvedTheme,
+    /// The theme's icon set. Falls back to
+    /// [`system_icon_set()`](super::system_icon_set) when the TOML omits it.
+    pub icon_set: super::IconSet,
+    /// The icon theme name, resolved through the three-tier precedence
+    /// documented on the struct.
+    pub icon_theme: std::borrow::Cow<'static, str>,
+    /// `true` if [`icon_theme`](Self::icon_theme) came from the TOML (tiers 1
+    /// or 2); `false` if it was filled from runtime system detection (tier 3).
+    pub icon_theme_explicit: bool,
+}
+
 #[cfg(test)]
 #[allow(
     clippy::unwrap_used,

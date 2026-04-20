@@ -1705,39 +1705,27 @@ impl Showcase {
                 }
             };
 
-            if let Ok(variant) = nt.pick_variant(if self.is_dark {
+            let mode = if self.is_dark {
                 native_theme_gpui::ColorMode::Dark
             } else {
                 native_theme_gpui::ColorMode::Light
-            }) {
-                // icon_theme is per-variant on defaults
-                self.has_toml_icon_theme = variant.defaults.icon_theme.is_some();
-                let icon_set = nt
-                    .icon_set
-                    .unwrap_or_else(native_theme::theme::system_icon_set);
-                let icon_theme = variant
-                    .defaults
-                    .icon_theme
-                    .as_deref()
-                    .map(|s| s.to_string())
-                    .unwrap_or_else(native_theme::theme::system_icon_theme);
-                let v = variant.clone();
-                let resolved = match v.resolve_system() {
-                    Ok(r) => r,
-                    Err(e) => {
-                        self.show_theme_error(&format!("Theme '{name}' validation failed: {e}"));
-                        return;
-                    }
-                };
-                self.original_font = resolved.defaults.font.clone();
-                self.original_mono_font = resolved.defaults.mono_font.clone();
-                self.current_icon_theme = icon_theme;
-                self.current_icon_set = icon_set;
-                let theme = to_theme(&resolved, name, self.is_dark, false);
-                *Theme::global_mut(cx) = theme;
-                window.refresh();
-                self.error_message = None;
-            }
+            };
+            let r = match nt.resolve(mode) {
+                Ok(r) => r,
+                Err(e) => {
+                    self.show_theme_error(&format!("Theme '{name}' resolution failed: {e}"));
+                    return;
+                }
+            };
+            self.has_toml_icon_theme = r.icon_theme_explicit;
+            self.current_icon_set = r.icon_set;
+            self.current_icon_theme = r.icon_theme.into_owned();
+            self.original_font = r.variant.defaults.font.clone();
+            self.original_mono_font = r.variant.defaults.mono_font.clone();
+            let theme = to_theme(&r.variant, name, self.is_dark, false);
+            *Theme::global_mut(cx) = theme;
+            window.refresh();
+            self.error_message = None;
         }
 
         // Only re-derive icon choice when user is in "follow preset" mode

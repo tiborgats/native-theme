@@ -68,7 +68,8 @@ pub use icons::{
     IconData, IconProvider, IconRole, IconSet, icon_name, system_icon_set, system_icon_theme,
 };
 pub use resolved::{
-    ResolvedDefaults, ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry, ResolvedTheme,
+    Resolved, ResolvedDefaults, ResolvedIconSizes, ResolvedTextScale, ResolvedTextScaleEntry,
+    ResolvedTheme,
 };
 pub use widgets::*; // All 25 XxxTheme + ResolvedXxxTheme pairs
 
@@ -391,6 +392,76 @@ impl Theme {
             ColorMode::Light => self.light.or(self.dark),
         }
         .ok_or(crate::Error::NoVariant { mode })
+    }
+
+    /// Resolve this theme for a color mode into a ready-to-render bundle.
+    ///
+    /// Picks the variant (with cross-fallback), applies inheritance and
+    /// validation to produce a [`ResolvedTheme`], and resolves the shared
+    /// `icon_set` / `icon_theme` fields. This is the one-call path from a
+    /// parsed [`Theme`] to the values a UI framework needs.
+    ///
+    /// `icon_set` falls back to [`system_icon_set()`] when the TOML omits
+    /// it. `icon_theme` uses three-tier precedence:
+    ///
+    /// 1. The picked variant's `defaults.icon_theme` (per-mode override).
+    /// 2. [`Theme::icon_theme`] (shared across variants).
+    /// 3. [`system_icon_theme()`] (runtime detect).
+    ///
+    /// [`Resolved::icon_theme_explicit`] reports whether tiers 1 or 2
+    /// fired (value came from TOML) versus tier 3 (runtime fallback).
+    ///
+    /// Uses [`ResolutionContext::from_system`](crate::resolve::ResolutionContext::from_system)
+    /// for DPI and button-order. For custom contexts, construct the
+    /// variant manually and call
+    /// [`ThemeMode::into_resolved`](crate::theme::ThemeMode::into_resolved).
+    ///
+    /// # Errors
+    ///
+    /// Returns [`crate::Error::NoVariant`] when the theme has no variants,
+    /// or [`crate::Error::ResolutionIncomplete`] /
+    /// [`crate::Error::ResolutionInvalid`] when the picked variant cannot
+    /// be fully resolved.
+    ///
+    /// # Examples
+    ///
+    /// ```
+    /// use native_theme::theme::{ColorMode, Theme};
+    ///
+    /// // Theme-level `icon_theme` (tier 2) — applies to both modes.
+    /// let material = Theme::preset("material")?;
+    /// let r = material.resolve(ColorMode::Dark)?;
+    /// assert_eq!(r.icon_theme.as_ref(), "material");
+    /// assert!(r.icon_theme_explicit);
+    ///
+    /// // Per-variant `icon_theme` (tier 1) — differs by mode.
+    /// let breeze = Theme::preset("kde-breeze")?;
+    /// assert_eq!(breeze.resolve(ColorMode::Light)?.icon_theme.as_ref(), "breeze");
+    /// assert_eq!(breeze.resolve(ColorMode::Dark)?.icon_theme.as_ref(), "breeze-dark");
+    /// # Ok::<(), native_theme::error::Error>(())
+    /// ```
+    pub fn resolve(&self, mode: ColorMode) -> crate::Result<Resolved> {
+        let variant_ref = self.pick_variant(mode)?;
+
+        let tier1 = variant_ref.defaults.icon_theme.clone();
+        let tier2 = self.icon_theme.clone();
+        let icon_theme_explicit = tier1.is_some() || tier2.is_some();
+        let icon_theme = tier1
+            .or(tier2)
+            .unwrap_or_else(|| Cow::Owned(crate::model::icons::system_icon_theme()));
+
+        let icon_set = self
+            .icon_set
+            .unwrap_or_else(crate::model::icons::system_icon_set);
+
+        let variant = variant_ref.clone().resolve_system()?;
+
+        Ok(Resolved {
+            variant,
+            icon_set,
+            icon_theme,
+            icon_theme_explicit,
+        })
     }
 
     /// Returns true if the theme has no variants set.
@@ -1228,6 +1299,119 @@ accent_color = "#ff0000"
         let toml_str = theme.to_toml().expect("should serialize");
         let theme2 = Theme::from_toml(&toml_str).expect("should deserialize");
         assert_eq!(theme, theme2, "round-trip should preserve Theme");
+    }
+
+    // === Theme::resolve() tests ===
+
+    #[test]
+    fn resolve_material_uses_theme_level_icon_theme() {
+        // material.toml has `icon_theme = "material"` at the root (tier 2).
+        // The resolver must fill `icon_theme = "material"` for both modes.
+        let theme = Theme::preset("material").unwrap();
+        for mode in [ColorMode::Light, ColorMode::Dark] {
+            let r = theme.resolve(mode).unwrap();
+            assert_eq!(
+                r.icon_theme.as_ref(),
+                "material",
+                "material (tier 2) for {mode:?}"
+            );
+            assert!(
+                r.icon_theme_explicit,
+                "explicit flag must be true for {mode:?}"
+            );
+            assert_eq!(r.icon_set, IconSet::Material);
+        }
+    }
+
+    #[test]
+    fn resolve_kde_breeze_uses_per_variant_icon_theme() {
+        // kde-breeze.toml has `icon_theme` under each [light.defaults] /
+        // [dark.defaults] (tier 1). Light → "breeze", Dark → "breeze-dark".
+        let theme = Theme::preset("kde-breeze").unwrap();
+
+        let light = theme.resolve(ColorMode::Light).unwrap();
+        assert_eq!(light.icon_theme.as_ref(), "breeze");
+        assert!(light.icon_theme_explicit);
+
+        let dark = theme.resolve(ColorMode::Dark).unwrap();
+        assert_eq!(dark.icon_theme.as_ref(), "breeze-dark");
+        assert!(dark.icon_theme_explicit);
+
+        assert_eq!(light.icon_set, IconSet::Freedesktop);
+        assert_eq!(dark.icon_set, IconSet::Freedesktop);
+    }
+
+    #[test]
+    fn resolve_minimal_theme_falls_back_to_system_icon_theme() {
+        // No icon_theme anywhere → tier 3 fires. The exact string is
+        // OS-dependent, but icon_theme_explicit must be false.
+        let mut theme = Theme::preset("adwaita").unwrap();
+        theme.icon_theme = None;
+        if let Some(v) = theme.light.as_mut() {
+            v.defaults.icon_theme = None;
+        }
+        if let Some(v) = theme.dark.as_mut() {
+            v.defaults.icon_theme = None;
+        }
+        let r = theme.resolve(ColorMode::Light).unwrap();
+        assert!(
+            !r.icon_theme_explicit,
+            "tier 3 fallback must report explicit = false"
+        );
+        // Tier 3 string comes from runtime detection — just confirm non-empty.
+        assert!(!r.icon_theme.is_empty());
+    }
+
+    #[test]
+    fn resolve_tier1_wins_over_tier2() {
+        // When BOTH Theme::icon_theme (tier 2) and variant.defaults.icon_theme
+        // (tier 1) are set, tier 1 wins.
+        let mut theme = Theme::preset("adwaita").unwrap();
+        theme.icon_theme = Some(Cow::Borrowed("theme-level"));
+        theme.light.as_mut().unwrap().defaults.icon_theme = Some(Cow::Borrowed("per-variant"));
+        let r = theme.resolve(ColorMode::Light).unwrap();
+        assert_eq!(r.icon_theme.as_ref(), "per-variant");
+        assert!(r.icon_theme_explicit);
+    }
+
+    #[test]
+    fn resolve_cross_mode_fallback_picks_available_variant() {
+        // Theme with only a light variant, asked for dark → pick_variant
+        // cross-falls-back to light and reports light's icon_theme.
+        let mut theme = Theme::preset("adwaita").unwrap();
+        theme.dark = None;
+        theme.icon_theme = None;
+        theme.light.as_mut().unwrap().defaults.icon_theme = Some(Cow::Borrowed("only-one"));
+        let r = theme.resolve(ColorMode::Dark).unwrap();
+        assert_eq!(r.icon_theme.as_ref(), "only-one");
+        assert!(r.icon_theme_explicit);
+    }
+
+    #[test]
+    fn resolve_empty_theme_returns_no_variant_error() {
+        let theme = Theme {
+            name: "Empty".into(),
+            ..Theme::default()
+        };
+        assert!(matches!(
+            theme.resolve(ColorMode::Light),
+            Err(crate::Error::NoVariant {
+                mode: ColorMode::Light
+            })
+        ));
+    }
+
+    #[test]
+    fn resolve_all_presets_succeed() {
+        // Every bundled preset must resolve in both modes.
+        for info in Theme::list_presets() {
+            let theme = Theme::preset(info.key).unwrap();
+            for mode in [ColorMode::Light, ColorMode::Dark] {
+                theme.resolve(mode).unwrap_or_else(|e| {
+                    panic!("preset '{}' failed to resolve({mode:?}): {e}", info.key)
+                });
+            }
+        }
     }
 
     // === lint_toml tests ===
