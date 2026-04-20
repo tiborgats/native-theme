@@ -71,6 +71,20 @@ Requires: spectacle (KDE), Python 3, Pillow
 ./scripts/generate_theme_switching_gif.sh
 ```
 
+## render-diagrams.sh
+
+Regenerates SVG diagrams from Mermaid `.mmd` sources in `docs/assets/`.
+Uses `mermaid-cli` via `npx` — no global install required.
+
+Run after editing any `.mmd` file. The generated `.svg` is checked into
+git so contributors don't need Node installed to view diagrams.
+
+Requires: Node.js ≥ 18, network access (first run downloads `mmdc` on demand)
+
+```sh
+./scripts/render-diagrams.sh
+```
+
 ## pre-release.sh
 
 Full pre-release asset pipeline. Triggers the CI screenshots workflow for

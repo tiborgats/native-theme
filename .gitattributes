@@ -1,0 +1,2 @@
+# Treat rendered SVG diagrams as binary so PR diffs focus on .mmd sources.
+docs/assets/*.svg binary
