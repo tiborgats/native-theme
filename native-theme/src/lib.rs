@@ -212,9 +212,9 @@ pub(crate) use model::{
     TransformAnimation, WidgetBorderSpec, WindowTheme, bundled_icon_by_name, bundled_icon_svg,
 };
 pub use pipeline::{DiagnosticEntry, PlatformPreset};
-pub use resolve::ResolutionContext;
 #[allow(unused_imports)]
 pub(crate) use pipeline::{diagnose_platform_support, platform_preset_name};
+pub use resolve::ResolutionContext;
 
 /// OS-detected accessibility preferences.
 ///

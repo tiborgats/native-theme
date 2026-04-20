@@ -300,7 +300,9 @@ mod tests {
         let variant = nt
             .into_variant(ColorMode::Light)
             .expect("adwaita must have light variant");
-        let resolved = variant.into_resolved(&native_theme::ResolutionContext::for_tests()).expect("must validate");
+        let resolved = variant
+            .into_resolved(&native_theme::ResolutionContext::for_tests())
+            .expect("must validate");
         let config = to_theme_config(&resolved, "adwaita", GpuiThemeMode::Light);
         assert_eq!(
             config.radius,
@@ -328,7 +330,9 @@ mod tests {
                     ColorMode::Light
                 })
                 .expect("variant must exist");
-            let resolved = variant.into_resolved(&native_theme::ResolutionContext::for_tests()).expect("must validate");
+            let resolved = variant
+                .into_resolved(&native_theme::ResolutionContext::for_tests())
+                .expect("must validate");
             let config = to_theme_config(&resolved, name, mode);
             assert_eq!(config.mode, mode, "mode mismatch for {name}");
             assert!(

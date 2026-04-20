@@ -806,7 +806,9 @@ mod tests {
                 } else {
                     ColorMode::Light
                 }) {
-                    let resolved = variant.into_resolved(&native_theme::ResolutionContext::for_tests()).unwrap();
+                    let resolved = variant
+                        .into_resolved(&native_theme::ResolutionContext::for_tests())
+                        .unwrap();
                     let theme = to_theme(&resolved, name);
                     let palette = theme.palette();
                     // Basic sanity: all palette colors have valid alpha

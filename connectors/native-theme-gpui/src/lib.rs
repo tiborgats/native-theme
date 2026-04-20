@@ -556,7 +556,9 @@ mod tests {
         let light_resolved = {
             let spec = Theme::preset("catppuccin-latte").expect("preset must exist");
             let variant = spec.into_variant(ColorMode::Light).expect("light variant");
-            variant.into_resolved(&native_theme::ResolutionContext::for_tests()).expect("must validate")
+            variant
+                .into_resolved(&native_theme::ResolutionContext::for_tests())
+                .expect("must validate")
         };
         let light_theme = to_theme(&light_resolved, "Light", false, false);
         assert_eq!(

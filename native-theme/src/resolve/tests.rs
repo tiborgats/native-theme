@@ -2132,7 +2132,9 @@ fn check_ranges_happy_path_zero_errors() {
     // errors, no format! calls execute and zero path strings are allocated.
     let theme = crate::Theme::preset("adwaita").expect("adwaita preset should load");
     let light = theme.light.expect("adwaita should have light variant");
-    let resolved = light.into_resolved(&crate::resolve::ResolutionContext::for_tests()).expect("adwaita should validate");
+    let resolved = light
+        .into_resolved(&crate::resolve::ResolutionContext::for_tests())
+        .expect("adwaita should validate");
 
     let mut errors = Vec::new();
 

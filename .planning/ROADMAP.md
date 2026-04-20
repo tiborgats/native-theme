@@ -710,3 +710,14 @@ Plans:
 - [x] 93-07-PLAN.md — G11 principled deviation: document naga/--workspace incompatibility and realign Phase 93 acceptance with `./pre-release-check.sh` per-crate posture (wave 4, docs-only, disjoint files from 93-06)
 - [x] 93-08-PLAN.md — G11-followup: pre-release-check.sh bootstrap fix (`--no-verify` on the three `cargo package` invocations) + RELEASING.md documenting ordered-publish workflow + VERIFICATION.md correction (status: passed) (wave 5, depends on 93-06 + 93-07)
 - [x] 93-09-PLAN.md — G3 design-level followup: replace `IconLoader` with typed per-set loaders (`FreedesktopLoader`/`SfSymbolsLoader`/`SegoeIconsLoader`/`MaterialLoader`/`LucideLoader`) to eliminate the silent-ignore bug class exposed by Phase 93-03; `load_freedesktop_spinner` accepts `theme: Option<&str>`; `gnome_names_resolve_in_adwaita` regression fixed (152/0 vs prior 151/1) (wave 6, API-breaking, depends on 93-03 + 93-06 + 93-08)
+
+### Phase 94: docs/todo_v0.5.7_gaps.md — Close Remaining G6-G8 (Border Inheritance Codegen, ResolutionContext, ThemeReader Trait)
+
+**Goal:** Close the final three gap-doc items G6 (border/font inheritance codegen via `#[theme_inherit]`), G7 (first-class `ResolutionContext` struct replacing `font_dpi: Option<f32>` parameter threading), and G8 (`ThemeReader` trait for platform reader uniformity). Status: in progress.
+**Depends on:** Phase 93
+**Plans:** 3 plans (wave 1: 94-01 + 94-02 parallel; wave 2: 94-03 serial on 94-02's pipeline.rs shape)
+
+Plans:
+- [ ] 94-01-PLAN.md — G6: Border + font inheritance codegen via `#[derive(ThemeWidget)] #[theme_inherit(...)]` with inverted-drift test (wave 1)
+- [x] 94-02-PLAN.md — G7: `ResolutionContext` struct with `from_system()`/`for_tests()` + NO `Default` impl; `ThemeMode::into_resolved(&ctx)` replaces `Option<f32>`; `resolve_system()` zero-arg shortcut; 43 call sites migrated (wave 1, completed 2026-04-20)
+- [ ] 94-03-PLAN.md — G8: `ThemeReader` trait unifying platform readers (KDE/GNOME/macOS/Windows) behind common interface (wave 2, depends on 94-02)
