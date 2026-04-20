@@ -1,14 +1,34 @@
-//! native-theme-gpui Comprehensive Designer Reference Tool
+//! native-theme-gpui — comprehensive widget showcase and designer reference.
 //!
-//! A complete widget gallery with tooltip-based documentation for every
-//! theme-controlled property. Demonstrates all gpui-component widgets,
-//! all ThemeColor fields, all IconName variants, and full theme switching.
+//! A full gpui-component widget gallery with tooltip-based documentation for
+//! every theme-controlled property. Demonstrates all gpui-component widgets,
+//! every `ThemeColor` field, every `IconName` variant, and live theme
+//! switching across all bundled `native-theme` presets.
 //!
 //! # Running
 //!
 //! ```sh
 //! cargo run -p native-theme-gpui --example showcase-gpui
 //! ```
+//!
+//! # What to look for
+//!
+//! - Sidebar on the left switches theme presets, color modes, and icon sets
+//!   without restarting the app. Watch how the entire widget tree re-themes
+//!   on each change — no manual rewiring per widget.
+//! - Hover any widget to see tooltips explaining which `ResolvedTheme` fields
+//!   drive its appearance.
+//! - The Color Map tab exposes the full 108-field `ThemeColor` palette that
+//!   gpui-component exposes, with each field's current value and the
+//!   `native-theme` field it was derived from.
+//! - The Icons tab demonstrates `IconRole` mapping across Material, Lucide,
+//!   and freedesktop sets, plus animated spinner playback.
+//!
+//! # How this file is organised
+//!
+//! The source is split into section-divider blocks (`// ─────`) — one per
+//! widget category, tab, or view. Search for the dividers to jump between
+//! sections.
 
 use gpui::{
     Animation, AnimationExt, AnyElement, App, Application, Bounds, Context, Entity, Hsla,
