@@ -11,12 +11,10 @@ themes, and 16 bundled TOML presets. Reads OS themes from KDE Plasma, GNOME
 
 ## How it fits
 
-<img alt="native-theme crate relations" src="https://raw.githubusercontent.com/tiborgats/native-theme/main/docs/assets/crate-relations.svg" width="640"/>
-
-*Most apps use a connector —
+Most apps don't depend on this crate directly — they use a framework connector like
 [`native-theme-gpui`](../connectors/native-theme-gpui/) or
-[`native-theme-iced`](../connectors/native-theme-iced/). Depend on
-`native-theme` directly only if you are writing a new connector.*
+[`native-theme-iced`](../connectors/native-theme-iced/), which pull `native-theme` in
+transitively. Depend on `native-theme` directly only if you are writing a new connector.
 
 ## Quick start
 
@@ -116,9 +114,9 @@ Cached, does not run the full theme-reader pipeline.
 ## Icon sets
 
 <p align="center">
-  <img src="https://raw.githubusercontent.com/tiborgats/native-theme/main/docs/assets/spinner-material.gif" alt="Material spinner" height="80">
+  <img src="../docs/assets/spinner-material.gif" alt="Material spinner" height="80">
   &nbsp;&nbsp;&nbsp;&nbsp;
-  <img src="https://raw.githubusercontent.com/tiborgats/native-theme/main/docs/assets/spinner-lucide.gif" alt="Lucide spinner" height="80">
+  <img src="../docs/assets/spinner-lucide.gif" alt="Lucide spinner" height="80">
 </p>
 
 Semantic icon roles map to platform-appropriate glyphs via typed per-set loaders:
