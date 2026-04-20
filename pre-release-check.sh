@@ -500,11 +500,12 @@ fi
 
 print_section "Outdated dependencies"
 set +e
-OUTDATED_OUT=$(cargo outdated --workspace 2>&1)
+# --depth 1 restricts to direct workspace dependencies; without it, cargo
+# outdated walks transitive deps and reports confusing duplicate-version
+# artifacts (e.g. "Latest 0.12.3" for hashbrown 0.17.0) from unrelated
+# subgraphs.
+OUTDATED_OUT=$(cargo outdated --workspace --depth 1 2>&1)
 set -e
-# Count rows where "Project" version differs from "Compat" (the meaningful
-# outdated signal). Cargo outdated prints "Removed" for transitive deps whose
-# top-level projects no longer depend on them — skip those.
 OUTDATED_COUNT=$(printf "%s\n" "$OUTDATED_OUT" \
     | awk '$1 ~ /^[a-z]/ && $2 ~ /^[0-9]/ && $3 ~ /^[0-9]/ && $2 != $3 {c++} END {print c+0}')
 if [ "$OUTDATED_COUNT" -eq 0 ]; then
