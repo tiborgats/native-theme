@@ -11,6 +11,14 @@ categories = ["gui", "config"]
 readme = "README.md"
 description = "gpui toolkit connector for native-theme"
 
+[package.metadata.docs.rs]
+all-features = true
+targets = [
+    "x86_64-unknown-linux-gnu",
+    "x86_64-apple-darwin",
+    "x86_64-pc-windows-msvc",
+]
+
 [features]
 default = ["material-icons", "lucide-icons", "system-icons", "svg-rasterize"]
 material-icons = ["native-theme/material-icons"]

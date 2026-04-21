@@ -5,6 +5,12 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.8] - Unreleased
+
+### Changed
+
+- Declared explicit `[package.metadata.docs.rs]` targets (`x86_64-unknown-linux-gnu`, `x86_64-apple-darwin`, `x86_64-pc-windows-msvc`) with `all-features = true` on `native-theme`, `native-theme-gpui`, and `native-theme-iced`. Preserves multi-target API rendering on docs.rs after the 2026-05-01 policy change that reduces the default build set to a single target ([announcement](https://blog.rust-lang.org/2026/04/04/docsrs-only-default-targets/)). Platform-gated items such as `LinuxDesktop`, `winicons`, `sficons`, and the macOS/Windows readers remain visible across the three published target docs.
+
 ## [0.5.7] - 2026-04-21
 
 > **Major API overhaul.** This release renames the four core vocabulary types,
@@ -944,6 +950,7 @@ let busy = load_icon(IconRole::StatusBusy, "material");
 - `impl_merge!` macro for recursive Option-based theme merging
 - Deep merge support across all theme types
 
+[0.5.8]: https://github.com/tiborgats/native-theme/compare/v0.5.7...HEAD
 [0.5.7]: https://github.com/tiborgats/native-theme/compare/v0.5.6...v0.5.7
 [0.5.6]: https://github.com/tiborgats/native-theme/compare/v0.5.5...v0.5.6
 [0.5.5]: https://github.com/tiborgats/native-theme/compare/v0.5.4...v0.5.5
