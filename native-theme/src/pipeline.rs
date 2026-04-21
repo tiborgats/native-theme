@@ -1452,16 +1452,28 @@ mod theme_reader_trait_tests {
         let picked: Option<(Box<dyn crate::reader::ThemeReader>, &'static str)> =
             pollster::block_on(super::select_reader());
 
+        // Every cfg branch borrows `picked` (via `&picked`) rather than moving
+        // it, so the final `drop(picked)` consumes it uniformly on all
+        // permutations -- including linux-without-kde, which has no branch.
         #[cfg(all(target_os = "macos", feature = "macos"))]
         {
-            let (_reader, preset) = picked.expect("select_reader must return Some on macOS+macos");
-            assert_eq!(preset, "macos-sonoma-live");
+            assert!(
+                picked.is_some(),
+                "select_reader must return Some on macOS+macos"
+            );
+            if let Some((_reader, preset)) = &picked {
+                assert_eq!(*preset, "macos-sonoma-live");
+            }
         }
         #[cfg(all(target_os = "windows", feature = "windows"))]
         {
-            let (_reader, preset) =
-                picked.expect("select_reader must return Some on windows+windows");
-            assert_eq!(preset, "windows-11-live");
+            assert!(
+                picked.is_some(),
+                "select_reader must return Some on windows+windows"
+            );
+            if let Some((_reader, preset)) = &picked {
+                assert_eq!(*preset, "windows-11-live");
+            }
         }
         #[cfg(all(target_os = "linux", feature = "kde", feature = "portal"))]
         {
@@ -1482,8 +1494,6 @@ mod theme_reader_trait_tests {
                 "select_reader() must return None on unsupported platforms"
             );
         }
-        // Consume `picked` so the let-binding above is not flagged as unused
-        // on any cfg permutation (e.g. linux without kde feature).
         drop(picked);
     }
 }
