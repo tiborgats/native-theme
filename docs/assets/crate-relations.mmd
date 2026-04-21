@@ -1,25 +1,41 @@
-%%{init: {'flowchart': {'htmlLabels': true, 'curve': 'basis'}}}%%
-flowchart TB
-    App([Your Rust App])
+---
+config:
+  flowchart:
+    htmlLabels: true
+    curve: basis
+    nodeSpacing: 42
+    rankSpacing: 65
+    padding: 14
+  themeVariables:
+    fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+    fontSize: 14px
+---
+flowchart LR
+    App(["<b>Your Rust app</b>"])
 
-    subgraph ws[native-theme workspace]
-        direction TB
-        NT["<b>native-theme</b><br/>runtime core<br/>Theme, ResolvedTheme, presets"]
-        NTG["<b>native-theme-gpui</b><br/>GPUI connector"]
-        NTI["<b>native-theme-iced</b><br/>iced connector"]
-        NTB["<b>native-theme-build</b><br/>custom icon codegen<br/>(optional, build.rs)"]
-        NTD["<b>native-theme-derive</b><br/>proc-macro<br/>(internal)"]
-    end
+    NTG["<code><b>native-theme-gpui</b></code><br/><span style='color:#64748b;font-size:12px'>GPUI connector</span>"]
+    NTI["<code><b>native-theme-iced</b></code><br/><span style='color:#64748b;font-size:12px'>iced connector</span>"]
+    NTB["<code><b>native-theme-build</b></code><br/><span style='color:#64748b;font-size:12px'>custom icon codegen<br/>optional · build.rs</span>"]
+    NT["<code><b>native-theme</b></code><br/><span style='color:#64748b;font-size:12px'>runtime core<br/>Theme · ResolvedTheme · presets</span>"]
+    NTD["<code><b>native-theme-derive</b></code><br/><span style='color:#64748b;font-size:12px'>proc-macro<br/>(internal)</span>"]
 
-    App -->|depends on| NTG
-    App -->|or| NTI
-    App -.->|optional| NTB
-
+    App -->|"&nbsp; depends on &nbsp;"| NTG
+    App -->|"&nbsp; or &nbsp;"| NTI
+    App -.->|"&nbsp; optional &nbsp;"| NTB
     NTG --> NT
     NTI --> NT
-    NT -.-> NTD
+    NT -.->|"&nbsp; proc-macro &nbsp;"| NTD
 
-    classDef internal fill:#f0f0f0,stroke:#999,stroke-dasharray: 4 2
-    classDef optional fill:#fff8e0,stroke:#c8a000
-    class NTD internal
+    classDef app fill:#eff6ff,stroke:#2563eb,stroke-width:2px,color:#1e3a8a,rx:12,ry:12
+    classDef runtime fill:#f0f9ff,stroke:#0284c7,stroke-width:2px,color:#0c4a6e,rx:10,ry:10
+    classDef connector fill:#ecfdf5,stroke:#059669,stroke-width:2px,color:#064e3b,rx:10,ry:10
+    classDef optional fill:#fffbeb,stroke:#d97706,stroke-width:2px,color:#78350f,rx:10,ry:10
+    classDef internal fill:#f3f4f6,stroke:#9ca3af,stroke-dasharray:5 3,stroke-width:2px,color:#4b5563,rx:10,ry:10
+
+    class App app
+    class NT runtime
+    class NTG,NTI connector
     class NTB optional
+    class NTD internal
+
+    linkStyle default stroke:#64748b,stroke-width:2px
