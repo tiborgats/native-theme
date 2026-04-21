@@ -9,7 +9,7 @@ members = [
 resolver = "3"
 
 [workspace.package]
-version = "0.5.7"
+version = "0.5.8"
 edition = "2024"
 license = "MIT OR Apache-2.0 OR 0BSD"
 rust-version = "1.94.0"
@@ -19,7 +19,7 @@ keywords = ["theme", "gui", "native", "colors", "desktop"]
 categories = ["gui", "config", "os"]
 
 [workspace.dependencies]
-native-theme = { path = "native-theme", version = "0.5.7" }
+native-theme = { path = "native-theme", version = "0.5.8" }
 serde = { version = "1.0.228", features = ["derive", "rc"] }
 serde_with = "3.18.0"
 toml = "1.1.2"
