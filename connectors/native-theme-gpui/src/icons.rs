@@ -1121,22 +1121,33 @@ fn colorize_svg(svg_bytes: &[u8], color: Hsla) -> Vec<u8> {
     // 4. No currentColor or explicit black -- inject fill into root <svg> tag
     // (handles Material-style SVGs with implicit black fill)
     if let Some(pos) = svg_str.find("<svg")
-        && let Some(close) = svg_str[pos..].find('>')
+        && let Some(tail) = svg_str.get(pos..)
+        && let Some(close) = tail.find('>')
     {
-        let tag_end = pos + close;
-        let tag = &svg_str[pos..tag_end];
-        if !tag.contains("fill=") {
+        let tag_end = pos.saturating_add(close);
+        if let Some(tag) = svg_str.get(pos..tag_end)
+            && !tag.contains("fill=")
+        {
             // Handle self-closing tags: inject before '/' in '<svg .../>'
-            let inject_pos = if tag_end > 0 && svg_str.as_bytes()[tag_end - 1] == b'/' {
-                tag_end - 1
+            let is_self_closing = tag_end > 0
+                && svg_str
+                    .as_bytes()
+                    .get(tag_end.saturating_sub(1))
+                    .is_some_and(|&b| b == b'/');
+            let inject_pos = if is_self_closing {
+                tag_end.saturating_sub(1)
             } else {
                 tag_end
             };
-            let mut result = String::with_capacity(svg_str.len() + 20);
-            result.push_str(&svg_str[..inject_pos]);
-            result.push_str(&format!(" fill=\"{hex}\""));
-            result.push_str(&svg_str[inject_pos..]);
-            return result.into_bytes();
+            if let Some(before) = svg_str.get(..inject_pos)
+                && let Some(after) = svg_str.get(inject_pos..)
+            {
+                let mut result = String::with_capacity(svg_str.len().saturating_add(20));
+                result.push_str(before);
+                result.push_str(&format!(" fill=\"{hex}\""));
+                result.push_str(after);
+                return result.into_bytes();
+            }
         }
     }
 
@@ -1164,28 +1175,31 @@ fn encode_rgba_as_bmp(width: u32, height: u32, rgba: &[u8]) -> Option<Vec<u8>> {
     }
     let header_size: usize = 14; // BITMAPFILEHEADER
     let dib_header_size: usize = 108; // BITMAPV4HEADER
-    let file_size = u32::try_from(header_size + dib_header_size + pixel_data_size).ok()?;
+    let total_header = header_size.checked_add(dib_header_size)?;
+    let file_size = u32::try_from(total_header.checked_add(pixel_data_size)?).ok()?;
 
     let mut buf = Vec::with_capacity(file_size as usize);
 
     let dib_header_u32 = dib_header_size as u32;
     let pixel_data_u32 = pixel_data_size as u32;
+    let pixel_data_offset = u32::try_from(total_header).ok()?;
 
     // BITMAPFILEHEADER (14 bytes)
     buf.extend_from_slice(b"BM"); // signature
     buf.extend_from_slice(&file_size.to_le_bytes()); // file size
     buf.extend_from_slice(&0u16.to_le_bytes()); // reserved1
     buf.extend_from_slice(&0u16.to_le_bytes()); // reserved2
-    buf.extend_from_slice(&(header_size as u32 + dib_header_u32).to_le_bytes()); // pixel data offset
+    buf.extend_from_slice(&pixel_data_offset.to_le_bytes()); // pixel data offset
 
     // BITMAPV4HEADER (108 bytes)
     buf.extend_from_slice(&dib_header_u32.to_le_bytes()); // header size
     buf.extend_from_slice(&(width as i32).to_le_bytes()); // width
-    // Negative height = top-down (avoids flipping rows)
+    // Negative height = top-down (avoids flipping rows). Cap at i32::MAX so the
+    // `as i32` cast is lossless; wrapping_neg is safe for values <= i32::MAX.
     if height > i32::MAX as u32 {
         return None;
     }
-    buf.extend_from_slice(&(-(height as i32)).to_le_bytes()); // height (top-down)
+    buf.extend_from_slice(&(height as i32).wrapping_neg().to_le_bytes()); // height (top-down)
     buf.extend_from_slice(&1u16.to_le_bytes()); // planes
     buf.extend_from_slice(&32u16.to_le_bytes()); // bits per pixel
     buf.extend_from_slice(&3u32.to_le_bytes()); // compression = BI_BITFIELDS
@@ -1215,12 +1229,14 @@ fn encode_rgba_as_bmp(width: u32, height: u32, rgba: &[u8]) -> Option<Vec<u8>> {
     buf.extend_from_slice(&0u32.to_le_bytes());
     buf.extend_from_slice(&0u32.to_le_bytes());
 
-    // Pixel data: RGBA -> BGRA conversion for BMP
+    // Pixel data: RGBA -> BGRA conversion for BMP. `chunks_exact(4)` yields
+    // slices of exactly 4 bytes, so the destructuring pattern always matches.
     for pixel in rgba.chunks_exact(4) {
-        buf.push(pixel[2]); // B
-        buf.push(pixel[1]); // G
-        buf.push(pixel[0]); // R
-        buf.push(pixel[3]); // A
+        let [r, g, b, a] = pixel else { continue };
+        buf.push(*b);
+        buf.push(*g);
+        buf.push(*r);
+        buf.push(*a);
     }
 
     Some(buf)

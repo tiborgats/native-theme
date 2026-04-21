@@ -423,17 +423,17 @@ fn parse_one_field(field: &Field) -> Result<FieldMeta> {
 fn parse_range_f64(lit: &LitStr) -> Result<(f64, f64)> {
     let s = lit.value();
     let parts: Vec<&str> = s.split("..=").collect();
-    if parts.len() != 2 {
+    let [min_s, max_s] = parts.as_slice() else {
         return Err(Error::new(
             lit.span(),
             "expected range format: \"MIN..=MAX\"",
         ));
-    }
-    let min: f64 = parts[0]
+    };
+    let min: f64 = min_s
         .trim()
         .parse()
         .map_err(|_| Error::new(lit.span(), "invalid min value in range"))?;
-    let max: f64 = parts[1]
+    let max: f64 = max_s
         .trim()
         .parse()
         .map_err(|_| Error::new(lit.span(), "invalid max value in range"))?;
@@ -444,17 +444,17 @@ fn parse_range_f64(lit: &LitStr) -> Result<(f64, f64)> {
 fn parse_range_u16(lit: &LitStr) -> Result<(u16, u16)> {
     let s = lit.value();
     let parts: Vec<&str> = s.split("..=").collect();
-    if parts.len() != 2 {
+    let [min_s, max_s] = parts.as_slice() else {
         return Err(Error::new(
             lit.span(),
             "expected range format: \"MIN..=MAX\"",
         ));
-    }
-    let min: u16 = parts[0]
+    };
+    let min: u16 = min_s
         .trim()
         .parse()
         .map_err(|_| Error::new(lit.span(), "invalid min value in range"))?;
-    let max: u16 = parts[1]
+    let max: u16 = max_s
         .trim()
         .parse()
         .map_err(|_| Error::new(lit.span(), "invalid max value in range"))?;

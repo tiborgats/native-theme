@@ -103,7 +103,11 @@ fn bgra_to_rgba(pixels: &mut [u8]) {
 /// Produces white foreground (255,255,255) with alpha scaled from the
 /// 65-level grayscale: `alpha = min(255, gray * 255 / 64)`.
 fn gray8_to_rgba(gray: u8) -> [u8; 4] {
-    let alpha = ((gray as u32 * 255) / 64).min(255) as u8;
+    // gray is 0..=64 per GGO_GRAY8 contract. `u32::from(gray) * 255` max is 16320,
+    // no overflow risk. Division by literal 64 is arithmetically safe (non-zero
+    // constant); `.min(255)` caps the result so the `as u8` cast is exact.
+    #[allow(clippy::integer_division, clippy::arithmetic_side_effects)]
+    let alpha = (u32::from(gray).saturating_mul(255) / 64).min(255) as u8;
     [255, 255, 255, alpha]
 }
 

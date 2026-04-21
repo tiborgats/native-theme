@@ -86,7 +86,7 @@ fn parse_defaults_path(path: &str) -> TokenStream {
 fn widget_name_from_ident(opt_name: &Ident) -> String {
     let s = opt_name.to_string();
     let base = s.strip_suffix("Theme").unwrap_or(&s);
-    let mut out = String::with_capacity(base.len() + 4);
+    let mut out = String::with_capacity(base.len().saturating_add(4));
     for (i, ch) in base.chars().enumerate() {
         if ch.is_uppercase() && i > 0 {
             out.push('_');

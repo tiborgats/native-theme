@@ -341,14 +341,11 @@ fn parse_xrandr_dpi(output: &str) -> Option<f32> {
     let words: Vec<&str> = line.split_whitespace().collect();
     let mut w_mm = None;
     let mut h_mm = None;
-    for i in 1..words.len().saturating_sub(1) {
-        if words[i] == "x" {
-            w_mm = words[i - 1]
-                .strip_suffix("mm")
-                .and_then(|n| n.parse::<f32>().ok());
-            h_mm = words[i + 1]
-                .strip_suffix("mm")
-                .and_then(|n| n.parse::<f32>().ok());
+    for window in words.windows(3) {
+        let [prev, cur, next] = window else { continue };
+        if *cur == "x" {
+            w_mm = prev.strip_suffix("mm").and_then(|n| n.parse::<f32>().ok());
+            h_mm = next.strip_suffix("mm").and_then(|n| n.parse::<f32>().ok());
         }
     }
     let w_mm = w_mm.filter(|&v| v > 0.0)?;

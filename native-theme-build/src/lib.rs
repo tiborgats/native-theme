@@ -560,15 +560,15 @@ impl IconGenerator {
         }
 
         // If no explicit base_dir and multiple sources have different parent dirs, error
-        if self.base_dir.is_none() && base_dirs.len() > 1 {
-            let first = &base_dirs[0];
-            let divergent = base_dirs.iter().any(|d| d != first);
-            if divergent {
-                return Err(BuildErrors::io_other(
-                    "multiple source files have different parent directories; \
-                     use .base_dir() to specify a common base directory for theme resolution",
-                ));
-            }
+        if self.base_dir.is_none()
+            && base_dirs.len() > 1
+            && let Some(first) = base_dirs.first()
+            && base_dirs.iter().any(|d| d != first)
+        {
+            return Err(BuildErrors::io_other(
+                "multiple source files have different parent directories; \
+                 use .base_dir() to specify a common base directory for theme resolution",
+            ));
         }
 
         let result = run_pipeline(
@@ -767,7 +767,22 @@ fn run_pipeline(
 
     // Use the first base_dir as the reference for loading themes.
     // For multi-file, all configs sharing a theme must use the same base_dir.
-    let base_dir = &base_dirs[0];
+    let Some(base_dir) = base_dirs.first() else {
+        // Unreachable in practice: early return above covers `configs.is_empty()`,
+        // and the debug_assert validates `configs.len() == base_dirs.len()`. This
+        // branch keeps the function panic-free if the invariant is ever violated.
+        errors.push(BuildError::IoOther {
+            message: "internal: no base_dir available after config parse".into(),
+        });
+        return PipelineResult {
+            code: String::new(),
+            errors,
+            warnings,
+            rerun_paths,
+            size_report: None,
+            output_filename: String::new(),
+        };
+    };
 
     // Process bundled themes
     for theme_name in &merged.bundled_themes {
@@ -1002,16 +1017,23 @@ fn merge_configs(
     enum_name_override: Option<&str>,
     warnings: &mut Vec<String>,
 ) -> MasterConfig {
+    let first_config_name = configs
+        .first()
+        .map(|c| c.1.name.clone())
+        .unwrap_or_default();
     let name = enum_name_override
         .map(|s| s.to_string())
-        .unwrap_or_else(|| configs[0].1.name.clone());
+        .unwrap_or_else(|| first_config_name.clone());
 
     // Issue 84: Warn when multiple configs have different non-empty names
     // and no enum_name_override is set -- the user may not realize only the
     // first config's name is used.
-    if enum_name_override.is_none() && configs.len() > 1 {
-        let first_name = &configs[0].1.name;
-        for (path, config) in &configs[1..] {
+    if enum_name_override.is_none()
+        && configs.len() > 1
+        && let Some(rest) = configs.get(1..)
+    {
+        let first_name = &first_config_name;
+        for (path, config) in rest {
             if !config.name.is_empty() && config.name != *first_name {
                 warnings.push(format!(
                     "config \"{path}\" has name \"{}\" which differs from \

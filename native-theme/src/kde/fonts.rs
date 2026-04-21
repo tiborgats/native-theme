@@ -28,18 +28,15 @@ pub(crate) fn qt5_to_css_weight(qt5: i32) -> u16 {
 /// Returns None if fewer than 5 fields, empty family, or invalid/non-positive size.
 pub(crate) fn parse_qt_font_with_weight(font_str: &str) -> Option<crate::FontSpec> {
     let fields: Vec<&str> = font_str.split(',').collect();
-    if fields.len() < 5 {
-        return None;
-    }
-    let family_str = fields[0].trim();
+    let family_str = fields.first()?.trim();
     if family_str.is_empty() {
         return None;
     }
-    let size = fields[1].trim().parse::<f32>().ok()?;
+    let size = fields.get(1)?.trim().parse::<f32>().ok()?;
     if size <= 0.0 {
         return None;
     }
-    let raw_weight = fields[4].trim().parse::<i32>().ok()?;
+    let raw_weight = fields.get(4)?.trim().parse::<i32>().ok()?;
 
     // Reject corrupted font entries with negative weight
     if raw_weight < 0 {

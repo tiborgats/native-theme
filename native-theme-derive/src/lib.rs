@@ -126,7 +126,7 @@ fn gen_inventory_submit(
 
 /// Convert a PascalCase identifier to snake_case.
 fn to_snake_case(s: &str) -> String {
-    let mut result = String::with_capacity(s.len() + 4);
+    let mut result = String::with_capacity(s.len().saturating_add(4));
     for (i, ch) in s.chars().enumerate() {
         if ch.is_uppercase() && i > 0 {
             result.push('_');

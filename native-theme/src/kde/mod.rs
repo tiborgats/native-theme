@@ -260,7 +260,7 @@ pub(crate) fn parse_icon_sizes_from_content(ini: &configparser::ini::Ini) -> Ico
         .iter()
         .filter(|(_, ctx)| ctx == "Actions")
         .map(|(sz, _)| *sz)
-        .min_by_key(|sz| (*sz as i32 - 22).unsigned_abs())
+        .min_by_key(|sz| sz.abs_diff(22))
         .map(|sz| sz as f32);
 
     // large: smallest Applications entry >= 32 (or largest if none >= 32)
@@ -427,12 +427,12 @@ pub(crate) fn create_kde_parser() -> configparser::ini::Ini {
 /// Exactly 3 comma-separated u8 components required.
 pub(crate) fn parse_rgb(value: &str) -> Option<Rgba> {
     let parts: Vec<&str> = value.split(',').collect();
-    if parts.len() != 3 {
+    let [r_s, g_s, b_s] = parts.as_slice() else {
         return None;
-    }
-    let r = parts[0].trim().parse::<u8>().ok()?;
-    let g = parts[1].trim().parse::<u8>().ok()?;
-    let b = parts[2].trim().parse::<u8>().ok()?;
+    };
+    let r = r_s.trim().parse::<u8>().ok()?;
+    let g = g_s.trim().parse::<u8>().ok()?;
+    let b = b_s.trim().parse::<u8>().ok()?;
     Some(Rgba::rgb(r, g, b))
 }
 

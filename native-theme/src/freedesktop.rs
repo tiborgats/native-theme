@@ -135,7 +135,7 @@ fn decode_png_to_rgba(bytes: &[u8]) -> Option<IconData> {
         png::Transformations::EXPAND | png::Transformations::STRIP_16 | png::Transformations::ALPHA,
     );
     let mut reader = decoder.read_info().ok()?;
-    let mut buf = vec![0u8; reader.output_buffer_size()];
+    let mut buf = vec![0u8; reader.output_buffer_size()?];
     let info = reader.next_frame(&mut buf).ok()?;
     buf.truncate(info.buffer_size());
 
@@ -146,13 +146,20 @@ fn decode_png_to_rgba(bytes: &[u8]) -> Option<IconData> {
     let rgba = match info.color_type {
         png::ColorType::Rgba => buf,
         png::ColorType::Rgb => expand_to_rgba(&buf, 3, |p, out| {
-            out.extend_from_slice(&[p[0], p[1], p[2], 0xff]);
+            // `expand_to_rgba` passes chunks of exactly `sample_stride` bytes (3 here).
+            if let [r, g, b] = p {
+                out.extend_from_slice(&[*r, *g, *b, 0xff]);
+            }
         })?,
         png::ColorType::GrayscaleAlpha => expand_to_rgba(&buf, 2, |p, out| {
-            out.extend_from_slice(&[p[0], p[0], p[0], p[1]]);
+            if let [gray, alpha] = p {
+                out.extend_from_slice(&[*gray, *gray, *gray, *alpha]);
+            }
         })?,
         png::ColorType::Grayscale => expand_to_rgba(&buf, 1, |p, out| {
-            out.extend_from_slice(&[p[0], p[0], p[0], 0xff]);
+            if let [gray] = p {
+                out.extend_from_slice(&[*gray, *gray, *gray, 0xff]);
+            }
         })?,
         // Indexed is converted to RGB/RGBA by EXPAND + ALPHA transformations,
         // so we should never see it here. Treat as unsupported if we do.
@@ -178,11 +185,12 @@ fn expand_to_rgba<F>(buf: &[u8], sample_stride: usize, mut write: F) -> Option<V
 where
     F: FnMut(&[u8], &mut Vec<u8>),
 {
-    if !buf.len().is_multiple_of(sample_stride) {
+    if sample_stride == 0 || !buf.len().is_multiple_of(sample_stride) {
         return None;
     }
-    let pixel_count = buf.len() / sample_stride;
-    let mut out = Vec::with_capacity(pixel_count * 4);
+    // sample_stride > 0 verified above; checked_div cannot return None here.
+    let pixel_count = buf.len().checked_div(sample_stride)?;
+    let mut out = Vec::with_capacity(pixel_count.saturating_mul(4));
     for chunk in buf.chunks_exact(sample_stride) {
         write(chunk, &mut out);
     }
@@ -212,15 +220,16 @@ fn parse_sprite_sheet(svg_bytes: &[u8]) -> Option<Vec<Vec<u8>>> {
 
     // Find viewBox attribute (handle both double and single quotes)
     let (vb_attr_start, vb_val_start, quote) = if let Some(i) = svg_str.find("viewBox=\"") {
-        (i, i + 9, '"')
+        (i, i.saturating_add(9), '"')
     } else if let Some(i) = svg_str.find("viewBox='") {
-        (i, i + 9, '\'')
+        (i, i.saturating_add(9), '\'')
     } else {
         return None;
     };
 
-    let vb_val_end = svg_str[vb_val_start..].find(quote)? + vb_val_start;
-    let vb_value = &svg_str[vb_val_start..vb_val_end];
+    let tail = svg_str.get(vb_val_start..)?;
+    let vb_val_end = tail.find(quote)?.saturating_add(vb_val_start);
+    let vb_value = svg_str.get(vb_val_start..vb_val_end)?;
 
     // Split on whitespace or commas
     let parts: Vec<f64> = vb_value
@@ -229,11 +238,10 @@ fn parse_sprite_sheet(svg_bytes: &[u8]) -> Option<Vec<Vec<u8>>> {
         .filter_map(|s| s.parse().ok())
         .collect();
 
-    if parts.len() != 4 {
+    let [_, _, width, height] = parts.as_slice() else {
         return None;
-    }
-
-    let (width, height) = (parts[2], parts[3]);
+    };
+    let (width, height) = (*width, *height);
     if height <= width {
         return None; // Single-frame, not a sprite sheet
     }
@@ -249,7 +257,7 @@ fn parse_sprite_sheet(svg_bytes: &[u8]) -> Option<Vec<Vec<u8>>> {
     }
 
     // Build the full original viewBox attribute string for replacement
-    let original_vb_attr = &svg_str[vb_attr_start..vb_val_end + 1]; // includes closing quote
+    let original_vb_attr = svg_str.get(vb_attr_start..vb_val_end.saturating_add(1))?; // includes closing quote
 
     let frames = (0..frame_count)
         .map(|i| {

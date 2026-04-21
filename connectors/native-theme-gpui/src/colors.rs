@@ -339,23 +339,25 @@ fn assign_charts(tc: &mut ThemeColor, c: &ResolvedColors) {
     // produce distinguishable chart colors (Issue 16).
     let s = c.accent.s.max(0.3);
     tc.chart_1 = c.accent;
+    // `rem_euclid(1.0)` wraps hue into 0.0..1.0 without the sign-dependent semantics
+    // of `%` on floats, keeping the output in the canonical HSL hue range.
     tc.chart_2 = Hsla {
-        h: (c.accent.h + 0.2) % 1.0,
+        h: (c.accent.h + 0.2).rem_euclid(1.0),
         s,
         ..c.accent
     };
     tc.chart_3 = Hsla {
-        h: (c.accent.h + 0.4) % 1.0,
+        h: (c.accent.h + 0.4).rem_euclid(1.0),
         s,
         ..c.accent
     };
     tc.chart_4 = Hsla {
-        h: (c.accent.h + 0.6) % 1.0,
+        h: (c.accent.h + 0.6).rem_euclid(1.0),
         s,
         ..c.accent
     };
     tc.chart_5 = Hsla {
-        h: (c.accent.h + 0.8) % 1.0,
+        h: (c.accent.h + 0.8).rem_euclid(1.0),
         s,
         ..c.accent
     };

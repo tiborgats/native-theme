@@ -165,6 +165,26 @@ impl fmt::Display for ParseColorError {
 
 impl std::error::Error for ParseColorError {}
 
+/// Parse one ASCII hex digit byte to a nibble (0..=15).
+fn hex_nibble(b: u8, label: &str) -> Result<u8, ParseColorError> {
+    char::from(b)
+        .to_digit(16)
+        .and_then(|v| u8::try_from(v).ok())
+        .ok_or_else(|| ParseColorError(format!("invalid {label} hex digit {:?}", char::from(b))))
+}
+
+/// Combine two nibbles (high, low) into a byte. Inputs assumed 0..=15.
+fn hex_byte(hi: u8, lo: u8) -> u8 {
+    // wrapping_shl(4) on 0..=15 produces 0..=240 in u8; BitOr is not panic-prone.
+    hi.wrapping_shl(4) | (lo & 0x0f)
+}
+
+/// Expand a nibble to a byte by doubling it: `0xf -> 0xff`, `0xa -> 0xaa`.
+/// Equivalent to `n * 17` for `n` in 0..=15, but panic-free.
+fn double_nibble(n: u8) -> u8 {
+    n.wrapping_shl(4) | (n & 0x0f)
+}
+
 impl FromStr for Rgba {
     type Err = ParseColorError;
 
@@ -175,55 +195,53 @@ impl FromStr for Rgba {
             return Err(ParseColorError("empty hex color string".into()));
         }
 
-        // Hex digits are single-byte ASCII characters in UTF-8, so byte-position
-        // string slicing (e.g., &hex[1..3]) is safe and cannot split a codepoint.
-        match hex.len() {
-            // #RGB shorthand: each digit doubled (e.g., 'a' -> 0xaa = a * 17)
-            3 => {
-                let r = u8::from_str_radix(&hex[0..1], 16)
-                    .map_err(|e| ParseColorError(format!("invalid red component: {e}")))?;
-                let g = u8::from_str_radix(&hex[1..2], 16)
-                    .map_err(|e| ParseColorError(format!("invalid green component: {e}")))?;
-                let b = u8::from_str_radix(&hex[2..3], 16)
-                    .map_err(|e| ParseColorError(format!("invalid blue component: {e}")))?;
-                Ok(Rgba::rgb(r * 17, g * 17, b * 17))
+        // Destructure hex bytes directly. This is both UTF-8-safe (rejects any
+        // non-ASCII input implicitly, since each non-ASCII char occupies 2+ bytes
+        // and wouldn't match the single-byte slots) and avoids panic-prone string
+        // slicing / indexing.
+        match hex.as_bytes() {
+            // #RGB shorthand: each digit doubled (e.g., 'a' -> 0xaa)
+            [r, g, b] => {
+                let r = hex_nibble(*r, "red")?;
+                let g = hex_nibble(*g, "green")?;
+                let b = hex_nibble(*b, "blue")?;
+                Ok(Rgba::rgb(
+                    double_nibble(r),
+                    double_nibble(g),
+                    double_nibble(b),
+                ))
             }
             // #RGBA shorthand
-            4 => {
-                let r = u8::from_str_radix(&hex[0..1], 16)
-                    .map_err(|e| ParseColorError(format!("invalid red component: {e}")))?;
-                let g = u8::from_str_radix(&hex[1..2], 16)
-                    .map_err(|e| ParseColorError(format!("invalid green component: {e}")))?;
-                let b = u8::from_str_radix(&hex[2..3], 16)
-                    .map_err(|e| ParseColorError(format!("invalid blue component: {e}")))?;
-                let a = u8::from_str_radix(&hex[3..4], 16)
-                    .map_err(|e| ParseColorError(format!("invalid alpha component: {e}")))?;
-                Ok(Rgba::new(r * 17, g * 17, b * 17, a * 17))
+            [r, g, b, a] => {
+                let r = hex_nibble(*r, "red")?;
+                let g = hex_nibble(*g, "green")?;
+                let b = hex_nibble(*b, "blue")?;
+                let a = hex_nibble(*a, "alpha")?;
+                Ok(Rgba::new(
+                    double_nibble(r),
+                    double_nibble(g),
+                    double_nibble(b),
+                    double_nibble(a),
+                ))
             }
             // #RRGGBB
-            6 => {
-                let r = u8::from_str_radix(&hex[0..2], 16)
-                    .map_err(|e| ParseColorError(format!("invalid red component: {e}")))?;
-                let g = u8::from_str_radix(&hex[2..4], 16)
-                    .map_err(|e| ParseColorError(format!("invalid green component: {e}")))?;
-                let b = u8::from_str_radix(&hex[4..6], 16)
-                    .map_err(|e| ParseColorError(format!("invalid blue component: {e}")))?;
+            [r1, r2, g1, g2, b1, b2] => {
+                let r = hex_byte(hex_nibble(*r1, "red")?, hex_nibble(*r2, "red")?);
+                let g = hex_byte(hex_nibble(*g1, "green")?, hex_nibble(*g2, "green")?);
+                let b = hex_byte(hex_nibble(*b1, "blue")?, hex_nibble(*b2, "blue")?);
                 Ok(Rgba::rgb(r, g, b))
             }
             // #RRGGBBAA
-            8 => {
-                let r = u8::from_str_radix(&hex[0..2], 16)
-                    .map_err(|e| ParseColorError(format!("invalid red component: {e}")))?;
-                let g = u8::from_str_radix(&hex[2..4], 16)
-                    .map_err(|e| ParseColorError(format!("invalid green component: {e}")))?;
-                let b = u8::from_str_radix(&hex[4..6], 16)
-                    .map_err(|e| ParseColorError(format!("invalid blue component: {e}")))?;
-                let a = u8::from_str_radix(&hex[6..8], 16)
-                    .map_err(|e| ParseColorError(format!("invalid alpha component: {e}")))?;
+            [r1, r2, g1, g2, b1, b2, a1, a2] => {
+                let r = hex_byte(hex_nibble(*r1, "red")?, hex_nibble(*r2, "red")?);
+                let g = hex_byte(hex_nibble(*g1, "green")?, hex_nibble(*g2, "green")?);
+                let b = hex_byte(hex_nibble(*b1, "blue")?, hex_nibble(*b2, "blue")?);
+                let a = hex_byte(hex_nibble(*a1, "alpha")?, hex_nibble(*a2, "alpha")?);
                 Ok(Rgba::new(r, g, b, a))
             }
             other => Err(ParseColorError(format!(
-                "invalid hex color length {other}: expected 3, 4, 6, or 8 hex digits"
+                "invalid hex color length {}: expected 3, 4, 6, or 8 hex digits",
+                other.len()
             ))),
         }
     }
@@ -254,11 +272,20 @@ impl<'de> Deserialize<'de> for Rgba {
 #[allow(dead_code)]
 pub(crate) fn unpremultiply_alpha(buffer: &mut [u8]) {
     for pixel in buffer.chunks_exact_mut(4) {
-        let a = pixel[3] as u16;
-        if a > 0 && a < 255 {
-            pixel[0] = ((pixel[0] as u16 * 255) / a).min(255) as u8;
-            pixel[1] = ((pixel[1] as u16 * 255) / a).min(255) as u8;
-            pixel[2] = ((pixel[2] as u16 * 255) / a).min(255) as u8;
+        // Slice-pattern destructuring binds each byte without panic-prone indexing.
+        // `chunks_exact_mut(4)` guarantees length 4, so the pattern always matches.
+        let [r, g, b, a] = pixel else { continue };
+        let a_val = u16::from(*a);
+        // `a_val in 1..=254` guarantees the divisor is non-zero; `saturating_mul`
+        // cannot overflow u16 (max 255 * 255 = 65025 < 65535). The `.min(255)` cap
+        // makes the final `as u8` a lossless conversion (no truncation of high bits).
+        if (1..255).contains(&a_val) {
+            #[allow(clippy::integer_division, clippy::arithmetic_side_effects)]
+            {
+                *r = (u16::from(*r).saturating_mul(255) / a_val).min(255) as u8;
+                *g = (u16::from(*g).saturating_mul(255) / a_val).min(255) as u8;
+                *b = (u16::from(*b).saturating_mul(255) / a_val).min(255) as u8;
+            }
         }
     }
 }

@@ -107,8 +107,11 @@ fn logfont_to_fontspec_raw(
     lf_weight: i32,
     dpi: u32,
 ) -> FontSpec {
-    let face_end = face_name.iter().position(|&c| c == 0).unwrap_or(32);
-    let family = String::from_utf16_lossy(&face_name[..face_end]);
+    // Truncate at the NUL terminator without panic-prone slicing: `slice::split`
+    // on the sentinel yields the pre-NUL prefix as its first item, fallback to
+    // the full name if there is no NUL (per LOGFONTW's 32-char fixed buffer).
+    let trimmed = face_name.split(|&c| c == 0).next().unwrap_or(face_name);
+    let family = String::from_utf16_lossy(trimmed);
     let points = if dpi == 0 {
         0.0
     } else {
@@ -490,10 +493,10 @@ fn build_theme(
     variant.button.primary_background = Some(primary_bg);
     variant.button.primary_text_color = Some(fg);
 
-    // Disabled text color: midpoint between fg and bg
-    let disabled_r = ((fg.r as u16 + bg.r as u16) / 2) as u8;
-    let disabled_g = ((fg.g as u16 + bg.g as u16) / 2) as u8;
-    let disabled_b = ((fg.b as u16 + bg.b as u16) / 2) as u8;
+    // Disabled text color: midpoint between fg and bg (u8::midpoint is overflow-free).
+    let disabled_r = fg.r.midpoint(bg.r);
+    let disabled_g = fg.g.midpoint(bg.g);
+    let disabled_b = fg.b.midpoint(bg.b);
     variant.defaults.disabled_text_color =
         Some(crate::Rgba::rgb(disabled_r, disabled_g, disabled_b));
 

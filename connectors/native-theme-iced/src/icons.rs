@@ -206,7 +206,7 @@ pub fn spin_rotation_radians(elapsed: std::time::Duration, duration_ms: u32) -> 
     if duration_ms == 0 {
         return iced_core::Radians(0.0);
     }
-    let progress = (elapsed.as_millis() as f32 % duration_ms as f32) / duration_ms as f32;
+    let progress = (elapsed.as_millis() as f32).rem_euclid(duration_ms as f32) / duration_ms as f32;
     iced_core::Radians(progress * std::f32::consts::TAU)
 }
 
@@ -311,22 +311,33 @@ fn colorize_monochrome_svg(svg_bytes: &[u8], color: iced_core::Color) -> Vec<u8>
     // No currentColor or explicit black found -- inject fill into the root
     // <svg> tag (handles Material-style SVGs with implicit black fill).
     if let Some(pos) = svg_str.find("<svg")
-        && let Some(close) = svg_str[pos..].find('>')
+        && let Some(tail) = svg_str.get(pos..)
+        && let Some(close) = tail.find('>')
     {
-        let tag_end = pos + close;
-        let tag = &svg_str[pos..tag_end];
-        if !tag.contains("fill=") {
+        let tag_end = pos.saturating_add(close);
+        if let Some(tag) = svg_str.get(pos..tag_end)
+            && !tag.contains("fill=")
+        {
             // Handle self-closing tags: inject before '/' in '<svg .../>'
-            let inject_pos = if tag_end > 0 && svg_str.as_bytes()[tag_end - 1] == b'/' {
-                tag_end - 1
+            let is_self_closing = tag_end > 0
+                && svg_str
+                    .as_bytes()
+                    .get(tag_end.saturating_sub(1))
+                    .is_some_and(|&b| b == b'/');
+            let inject_pos = if is_self_closing {
+                tag_end.saturating_sub(1)
             } else {
                 tag_end
             };
-            let mut result = String::with_capacity(svg_str.len() + 20);
-            result.push_str(&svg_str[..inject_pos]);
-            result.push_str(&format!(" fill=\"{}\"", hex));
-            result.push_str(&svg_str[inject_pos..]);
-            return result.into_bytes();
+            if let Some(before) = svg_str.get(..inject_pos)
+                && let Some(after) = svg_str.get(inject_pos..)
+            {
+                let mut result = String::with_capacity(svg_str.len().saturating_add(20));
+                result.push_str(before);
+                result.push_str(&format!(" fill=\"{}\"", hex));
+                result.push_str(after);
+                return result.into_bytes();
+            }
         }
     }
 

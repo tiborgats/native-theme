@@ -60,13 +60,18 @@ impl FrameList {
 
     /// Returns the first frame (infallible -- list is guaranteed non-empty).
     pub fn first(&self) -> &IconData {
-        // Invariant: FrameList is only constructible via new() which rejects empty,
-        // or via custom Deserialize which also rejects empty.
+        // INVARIANT: FrameList is only constructible via new() which rejects empty,
+        // or via custom Deserialize which also rejects empty. Safe Rust cannot
+        // produce an empty FrameList; only unsafe transmute could violate it.
+        // The `debug_assert!` is defense in depth for debug builds.
         debug_assert!(
             !self.0.is_empty(),
             "FrameList invariant violated: empty list"
         );
-        &self.0[0]
+        #[allow(clippy::indexing_slicing)]
+        {
+            &self.0[0]
+        }
     }
 
     /// Returns the number of frames (always >= 1).

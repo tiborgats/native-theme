@@ -38,49 +38,57 @@ fn svg_to_spin_frames(svg_bytes: &[u8]) -> Vec<IconData> {
     let Some(svg_open_end) = svg_str.find('>') else {
         return vec![IconData::Svg(Cow::Owned(svg_bytes.to_vec()))];
     };
-    let svg_tag = &svg_str[..svg_open_end];
+    // `svg_open_end` is the byte position of ASCII '>', always a char boundary;
+    // `.get(..)` is panic-free if the invariant is ever violated.
+    let Some(svg_tag) = svg_str.get(..svg_open_end) else {
+        return vec![IconData::Svg(Cow::Owned(svg_bytes.to_vec()))];
+    };
 
     // S-2: guard against a malformed tag shorter than "<svg" (4 bytes).
     // Currently unreachable (only called with bundled SVGs), but prevents
-    // a panic on the `&svg_tag[4..]` slice below if ever called with
+    // a panic on the `svg_tag[4..]` slice below if ever called with
     // arbitrary input.
     if svg_tag.len() < 4 {
         return vec![IconData::Svg(Cow::Owned(svg_bytes.to_vec()))];
     }
 
     // Find the closing </svg> to extract inner content
-    let inner_start = svg_open_end + 1;
+    let inner_start = svg_open_end.saturating_add(1);
     let Some(close_pos) = svg_str.rfind("</svg>") else {
         return vec![IconData::Svg(Cow::Owned(svg_bytes.to_vec()))];
     };
-    let inner_content = &svg_str[inner_start..close_pos];
+    let Some(inner_content) = svg_str.get(inner_start..close_pos) else {
+        return vec![IconData::Svg(Cow::Owned(svg_bytes.to_vec()))];
+    };
 
     const { assert!(SPIN_FRAME_DURATION_MS > 0, "frame duration must be > 0") }
 
     // Extract viewBox to compute rotation center (handle both quote styles)
     let (cx, cy, valid_viewbox) = {
         let (vb_val_start, quote) = if let Some(i) = svg_tag.find("viewBox=\"") {
-            (i + 9, '"')
+            (i.saturating_add(9), '"')
         } else if let Some(i) = svg_tag.find("viewBox='") {
-            (i + 9, '\'')
+            (i.saturating_add(9), '\'')
         } else {
             (0, '"') // no viewBox found; falls through to default
         };
 
         if vb_val_start > 0 {
-            if let Some(vb_end) = svg_str[vb_val_start..].find(quote) {
-                let vb = &svg_str[vb_val_start..vb_val_start + vb_end];
+            if let Some(tail) = svg_str.get(vb_val_start..)
+                && let Some(vb_end) = tail.find(quote)
+                && let Some(vb) = svg_str.get(vb_val_start..vb_val_start.saturating_add(vb_end))
+            {
                 let parts: Vec<f64> = vb
                     .split(|c: char| c.is_whitespace() || c == ',')
                     .filter(|s| !s.is_empty())
                     .filter_map(|s| s.parse::<f64>().ok())
                     .collect();
-                if parts.len() == 4 {
-                    if parts[2] <= 0.0 || parts[3] <= 0.0 {
+                if let [p0, p1, p2, p3] = parts.as_slice() {
+                    if *p2 <= 0.0 || *p3 <= 0.0 {
                         // Invalid dimensions -- return static frame
                         (12.0, 12.0, false)
                     } else {
-                        (parts[0] + parts[2] / 2.0, parts[1] + parts[3] / 2.0, true)
+                        (p0 + p2 / 2.0, p1 + p3 / 2.0, true)
                     }
                 } else {
                     (12.0, 12.0, true)
@@ -98,6 +106,10 @@ fn svg_to_spin_frames(svg_bytes: &[u8]) -> Vec<IconData> {
     }
 
     let mut frames = Vec::with_capacity(SPIN_FRAME_COUNT as usize);
+    // `svg_tag.get(4..)` strips the "<svg" prefix; the `.len() < 4` guard above
+    // ensures at least 4 bytes exist, and all 4 are ASCII, so the byte slice is
+    // a char boundary. Fallback to the full tag if the invariant is violated.
+    let svg_tag_rest = svg_tag.get(4..).unwrap_or(svg_tag);
     for i in 0..SPIN_FRAME_COUNT {
         let angle = i as f64 * (360.0 / SPIN_FRAME_COUNT as f64);
         let rotated = format!(
@@ -106,7 +118,6 @@ fn svg_to_spin_frames(svg_bytes: &[u8]) -> Vec<IconData> {
              {inner_content}\
              </g>\
              </svg>",
-            svg_tag_rest = &svg_tag[4..], // skip "<svg" prefix, keep attributes
         );
         frames.push(IconData::Svg(Cow::Owned(rotated.into_bytes())));
     }

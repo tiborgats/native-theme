@@ -368,7 +368,7 @@ fn generate_icon_svg(
     // directly without wrapping in concat!(env!("CARGO_MANIFEST_DIR"), ...).
     let is_absolute_base = base_dir.starts_with('/')
         || base_dir.starts_with('\\')
-        || (base_dir.len() >= 2 && base_dir.as_bytes()[1] == b':');
+        || base_dir.as_bytes().get(1).is_some_and(|&b| b == b':');
 
     // Only bundled themes produce icon_svg arms
     for theme_name in &config.bundled_themes {

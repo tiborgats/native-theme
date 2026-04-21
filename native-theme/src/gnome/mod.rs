@@ -76,10 +76,9 @@ pub(crate) fn parse_gnome_font_to_fontspec(s: &str) -> Option<FontSpec> {
         return None;
     }
 
-    // Parse size from the end
-    let last_space = trimmed.rfind(' ')?;
-    let before_size = trimmed[..last_space].trim();
-    let size_str = &trimmed[last_space + 1..];
+    // Parse size from the end: split on the last space without manual slicing.
+    let (before_size, size_str) = trimmed.rsplit_once(' ')?;
+    let before_size = before_size.trim();
     let size: f32 = size_str.parse().ok()?;
     if before_size.is_empty() || size <= 0.0 {
         return None;
