@@ -47,12 +47,6 @@ Detailed design: [`docs/todo_v0.6.1_gpui-full-theme.md`](docs/todo_v0.6.1_gpui-f
 ## Beyond v0.6
 
 No milestone targets committed yet. Likely candidates:
-
-- Live theme-switching stability work on Windows (COM STA lifecycle)
+- egui, slint, other connectors
 - Expanded preset coverage (platform themes for more macOS / Windows versions)
 - Additional icon-set bundles if demand emerges
-- v1.0 stabilization once the v0.6 connector parity is achieved and the API
-  has stayed unchanged for a full minor version
-
-Ideas and discussion land in the `docs/` folder and in GitHub issues before
-being promoted to a roadmap line.
