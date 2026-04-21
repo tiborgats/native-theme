@@ -30,11 +30,6 @@ dependency for the common case.
 
 ![native-theme crate relations](docs/assets/crate-relations.svg)
 
-- Solid arrow — runtime dependency
-- Dashed arrow — optional or internal
-- Yellow node — optional build-time dependency (`native-theme-build`), used by apps that define custom icon roles
-- Grey dashed node — library-internal (`native-theme-derive`); never imported directly
-
 ## Core concepts in 60 seconds
 
 - **`Theme`** — the sparse, TOML-shaped definition a preset or file loads. Fields are `Option<T>` because presets may omit almost anything.
