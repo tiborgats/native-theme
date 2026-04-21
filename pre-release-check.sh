@@ -292,12 +292,12 @@ fi
 # Panic-pattern scan (BLOCKING — runtime panics are forbidden in production)
 #
 # Detected patterns (outside #[cfg(test)] blocks):
-#   .unwrap() · .expect(...) · panic!(...) · todo!(...) · unreachable!(...)
-#   Instant::now() + / - (use checked_add/checked_sub)
+#   .unwrap() · .expect(...) · panic!(...) · todo!(...) · unimplemented!(...)
+#   unreachable!(...) · Instant::now() + / - (use checked_add/checked_sub)
 #
-# Regex-based: has blind spots for std operator panics (u32 underflow,
-# slice indexing out-of-bounds, Duration overflow). Code review + clippy
-# are the primary safety net; this is a CI tripwire.
+# Regex-based tripwire only. The authoritative panic check is the
+# "Strict panic lints" section below, which runs clippy with the full
+# panic-prone lint set using type-aware analysis.
 PANIC_FOUND=0
 PANIC_HITS_ALL=""
 for src_dir in native-theme/src connectors/native-theme-gpui/src connectors/native-theme-iced/src; do
@@ -340,6 +340,8 @@ def scan_file(path):
             issues.append(f'{path}:{i}: [panic!] {s}')
         elif re.search(r'\btodo!\s*\(', line):
             issues.append(f'{path}:{i}: [todo!] {s}')
+        elif re.search(r'\bunimplemented!\s*\(', line):
+            issues.append(f'{path}:{i}: [unimplemented!] {s}')
         elif re.search(r'\bunreachable!\s*\(', line):
             issues.append(f'{path}:{i}: [unreachable!] {s}')
         elif re.search(r'Instant::now\(\)\s*[-+]', line):
@@ -411,6 +413,61 @@ for crate in $WORKSPACE_CRATES; do
         run_check "clippy ($crate)" cargo clippy -p "$crate" --all-targets -- -D warnings
     fi
 done
+
+# ─────────────────────────────────────────────────────────────────────────────
+# Section: strict panic lints (library code only)
+#
+# Runs clippy with type-aware panic-prone lints promoted to errors. Covers
+# every category of runtime panic the compiler/clippy can detect statically:
+#
+#   Explicit panics:    panic, todo, unimplemented, unreachable, manual_assert
+#   Fallible unwrap:    unwrap_used, expect_used, unwrap_in_result
+#   Slice/arr bounds:   indexing_slicing, string_slice
+#   Integer overflow:   arithmetic_side_effects
+#   Integer div/mod:    integer_division, modulo_arithmetic
+#   Process exit:       exit
+#   Result fn panics:   panic_in_result_fn
+#
+# Scope: library targets only (--lib). Tests and examples are exempt because
+# they legitimately use .unwrap() / asserts for failure clarity and demo brevity.
+# Bin targets (if any in the future) should be added to this list.
+#
+# `native-theme` is run with the full Linux feature set so feature-gated
+# modules (kde, portal, system-icons, freedesktop, spinners, watch) are
+# checked; plain `--lib` misses them.
+# ─────────────────────────────────────────────────────────────────────────────
+STRICT_PANIC_LINTS=(
+    -D clippy::unwrap_used
+    -D clippy::expect_used
+    -D clippy::unwrap_in_result
+    -D clippy::panic
+    -D clippy::panic_in_result_fn
+    -D clippy::todo
+    -D clippy::unimplemented
+    -D clippy::unreachable
+    -D clippy::manual_assert
+    -D clippy::indexing_slicing
+    -D clippy::string_slice
+    -D clippy::arithmetic_side_effects
+    -D clippy::integer_division
+    -D clippy::modulo_arithmetic
+    -D clippy::exit
+)
+NT_FEATURES="kde,portal,system-icons,material-icons,lucide-icons,watch,svg-rasterize"
+
+print_section "Strict panic lints (library code)"
+run_check "strict-panic (native-theme, Linux features)" \
+    cargo clippy -p native-theme --lib --features "$NT_FEATURES" -- "${STRICT_PANIC_LINTS[@]}"
+run_check "strict-panic (native-theme, no features)" \
+    cargo clippy -p native-theme --lib --no-default-features -- "${STRICT_PANIC_LINTS[@]}"
+run_check "strict-panic (native-theme-derive)" \
+    cargo clippy -p native-theme-derive --lib -- "${STRICT_PANIC_LINTS[@]}"
+run_check "strict-panic (native-theme-build)" \
+    cargo clippy -p native-theme-build --lib -- "${STRICT_PANIC_LINTS[@]}"
+run_check "strict-panic (native-theme-iced)" \
+    cargo clippy -p native-theme-iced --lib -- "${STRICT_PANIC_LINTS[@]}"
+run_check_soft "strict-panic (native-theme-gpui)" \
+    cargo clippy -p native-theme-gpui --lib -- "${STRICT_PANIC_LINTS[@]}"
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: tests
