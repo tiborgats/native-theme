@@ -1,7 +1,7 @@
 # native-theme-gpui
 
 [gpui](https://gpui.rs/) + [gpui-component](https://crates.io/crates/gpui-component)
-connector for [`native-theme`](../../native-theme/).
+connector for [`native-theme`](https://crates.io/crates/native-theme).
 
 ## What it does
 
@@ -68,7 +68,7 @@ let theme = to_theme(active, "My App", customised.mode.is_dark(), false);
 
 ### Custom icons
 
-For app-specific icons generated via [`native-theme-build`](../../native-theme-build/):
+For app-specific icons generated via [`native-theme-build`](https://crates.io/crates/native-theme-build):
 
 ```rust,ignore
 use native_theme_gpui::icons::custom_icon_to_image_source;
@@ -157,7 +157,7 @@ map inspector.
 
 - [API reference on docs.rs](https://docs.rs/native-theme-gpui)
 - [Showcase source](examples/showcase-gpui.rs)
-- [CHANGELOG](../../CHANGELOG.md)
+- [CHANGELOG](https://github.com/tiborgats/native-theme/blob/main/CHANGELOG.md)
 
 ## License
 

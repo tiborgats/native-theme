@@ -1,6 +1,6 @@
 # native-theme-iced
 
-[iced](https://iced.rs/) connector for [`native-theme`](../../native-theme/).
+[iced](https://iced.rs/) connector for [`native-theme`](https://crates.io/crates/native-theme).
 
 ## What it does
 
@@ -91,7 +91,7 @@ let theme = to_theme(customised.pick(customised.mode), "My App");
 
 ### Custom icons
 
-For app-specific icons generated via [`native-theme-build`](../../native-theme-build/):
+For app-specific icons generated via [`native-theme-build`](https://crates.io/crates/native-theme-build):
 
 ```rust,ignore
 use native_theme_iced::icons::{custom_icon_to_image_handle, custom_icon_to_svg_handle};
@@ -178,7 +178,7 @@ inspector.
 
 - [API reference on docs.rs](https://docs.rs/native-theme-iced)
 - [Showcase source](examples/showcase-iced.rs)
-- [CHANGELOG](../../CHANGELOG.md)
+- [CHANGELOG](https://github.com/tiborgats/native-theme/blob/main/CHANGELOG.md)
 
 ## License
 
