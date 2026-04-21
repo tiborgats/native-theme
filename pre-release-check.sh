@@ -524,17 +524,14 @@ done
 # the registry, so tarball verification cannot resolve the workspace-internal
 # dep. The real tarball compilation check happens during `cargo publish`
 # itself (not run here). See RELEASING.md for the ordered publish workflow.
-#
-# Once native-theme-derive 0.5.7 is published to crates.io, remove --no-verify
-# from these three lines to restore full tarball-compile verification.
 # ─────────────────────────────────────────────────────────────────────────────
 print_section "Packaging"
 run_check "package (core: derive · native-theme · build)" \
-    cargo package --no-verify -p native-theme-derive -p native-theme -p native-theme-build --allow-dirty
+    cargo package -p native-theme-derive -p native-theme -p native-theme-build --allow-dirty
 run_check_soft "package (native-theme-iced)" \
-    cargo package --no-verify -p native-theme-derive -p native-theme -p native-theme-iced --allow-dirty
+    cargo package -p native-theme-derive -p native-theme -p native-theme-iced --allow-dirty
 run_check_soft "package (native-theme-gpui)" \
-    cargo package --no-verify -p native-theme-derive -p native-theme -p native-theme-gpui --allow-dirty
+    cargo package -p native-theme-derive -p native-theme -p native-theme-gpui --allow-dirty
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Section: security & dependency freshness
