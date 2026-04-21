@@ -30,7 +30,7 @@ dependency for the common case.
 
 ![native-theme crate relations](docs/assets/crate-relations.svg)
 
-## Core concepts in 60 seconds
+## Core concepts
 
 - **`Theme`** — the sparse, TOML-shaped definition a preset or file loads. Fields are `Option<T>` because presets may omit almost anything.
 - **`ResolvedTheme`** — the fully-populated variant `Theme::resolve(mode)` produces. Every field has a value. Your UI code reads from this.
