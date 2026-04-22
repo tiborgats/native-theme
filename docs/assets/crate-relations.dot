@@ -1,0 +1,85 @@
+// native-theme workspace — crate relations (Graphviz draft)
+//
+// Rendered: dot -Tsvg crate-relations-gv.dot -o crate-relations-gv.svg
+//
+// Colors mirror crate-relations.mmd (Mermaid classDefs).
+// Typography: crate name monospace BOLD, subtitle sans-serif ITALIC 11pt #64748b.
+
+digraph crate_relations {
+    rankdir=LR;
+    bgcolor="transparent";
+    pad=0.3;
+    // Generous spacing so splines have room to actually curve visibly
+    nodesep=0.7;
+    ranksep=1.2;
+    splines=true;
+
+    // Defaults
+    node [shape=box, style="rounded,filled", fontname="sans-serif", fontsize=14,
+          penwidth=2, margin="0.25,0.12"];
+    edge [color="#475569", fontname="sans-serif", fontsize=11, fontcolor="#475569",
+          penwidth=2, arrowsize=0.8];
+
+    // App — blue palette, oval, no subtitle (matches Mermaid).
+    // Uses Fuzzy Bubbles (the same hand-drawn font D2 picks for sketch mode)
+    // to give this label a sketched-in feel against the otherwise clean
+    // sans-serif / monospace typography of the rest of the graph.
+    app [label=<<B>Your app</B>>, shape=oval, fontsize=16, fontname="Fuzzy Bubbles",
+         fillcolor="#eff6ff", color="#2563eb", fontcolor="#1e3a8a"];
+
+    // Switch pictogram
+    switch [label="⎇", shape=circle, fontsize=22, width=0.55, height=0.55, fixedsize=true,
+            fillcolor="#eff6ff", color="#2563eb", fontcolor="#1e3a8a"];
+
+    // Connectors — emerald palette, with subtitle
+    gpui  [label=<<FONT FACE="monospace"><B>native-theme-gpui</B></FONT><BR/><FONT POINT-SIZE="11" COLOR="#64748b"><I>GPUI connector</I></FONT>>,
+           fillcolor="#ecfdf5", color="#059669", fontcolor="#064e3b"];
+    iced  [label=<<FONT FACE="monospace"><B>native-theme-iced</B></FONT><BR/><FONT POINT-SIZE="11" COLOR="#64748b"><I>iced connector</I></FONT>>,
+           fillcolor="#ecfdf5", color="#059669", fontcolor="#064e3b"];
+
+    // Runtime core — gray palette (matches native-theme-derive), 3-line
+    // subtitle; extra margin gives 'Theme · ResolvedTheme' room so it
+    // doesn't hit the border.
+    core  [label=<<FONT FACE="monospace"><B>native-theme</B></FONT><BR/><FONT POINT-SIZE="11" COLOR="#64748b"><I>runtime core<BR/>Theme · ResolvedTheme<BR/>presets</I></FONT>>,
+           margin="0.35,0.12",
+           penwidth=2.5,
+           fillcolor="#f3f4f6", color="#9ca3af", fontcolor="#4b5563"];
+
+    // Derive — gray palette, dashed
+    derive [label=<<FONT FACE="monospace"><B>native-theme-derive</B></FONT><BR/><FONT POINT-SIZE="11" COLOR="#64748b"><I>proc-macro<BR/>(internal)</I></FONT>>,
+            style="rounded,filled,dashed",
+            fillcolor="#f3f4f6", color="#9ca3af", fontcolor="#4b5563"];
+
+    // Build — amber palette, dashed
+    build  [label=<<FONT FACE="monospace"><B>native-theme-build</B></FONT><BR/><FONT POINT-SIZE="11" COLOR="#64748b"><I>custom icon codegen<BR/>optional · build.rs</I></FONT>>,
+            style="rounded,filled,dashed",
+            fillcolor="#fffbeb", color="#d97706", fontcolor="#78350f"];
+
+    // Main flow — compass ports pick which end of each edge is angled.
+    //   * app -> switch, switch -> gpui: angled exit (source is a small
+    //     pictogram that reads as "radiating out"), horizontal entry.
+    //   * gpui, iced -> core: horizontal exit, angled entry into core's
+    //     NW / SW corners. Routing to different corners keeps the two
+    //     arrows from crossing in the gap between rank 2 and rank 3.
+    //   * app -> build: plain. Build sits only 49pt below app but 379pt
+    //     to the right (natural angle ~7°); a 45° :se tail tangent would
+    //     overshoot below the build box before hooking back up. The
+    //     default rendering is a gentle arc that matches the geometry.
+    //   * switch -> iced: plain — same y, a horizontal line is honest.
+    app:ne    -> switch;
+    switch:ne -> gpui;
+    switch    -> iced;
+    gpui      -> core:nw;
+    iced      -> core:sw;
+
+    // Optional path — dashed edge
+    // build shares rank 2 with gpui/iced so it sits in the same column
+    // (listed last so Graphviz stacks it below gpui and iced in LR layout)
+    { rank=same; gpui; iced; build; }
+    app -> build [style=dashed];
+
+    // derive below core, dashed arrow pointing from core DOWN to derive
+    // (native-theme → native-theme-derive, matches Mermaid direction)
+    { rank=same; core; derive; }
+    core -> derive [style=dashed];
+}
