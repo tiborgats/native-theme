@@ -32,7 +32,7 @@ digraph crate_relations {
             fillcolor="#eff6ff", color="#2563eb", fontcolor="#1e3a8a"];
 
     // Connectors — emerald palette, with subtitle
-    gpui  [label=<<FONT FACE="monospace"><B>native-theme-gpui</B></FONT><BR/><FONT POINT-SIZE="11" COLOR="#64748b"><I>GPUI connector</I></FONT>>,
+    gpui  [label=<<FONT FACE="monospace"><B>native-theme-gpui</B></FONT><BR/><FONT POINT-SIZE="11" COLOR="#64748b"><I>gpui connector</I></FONT>>,
            fillcolor="#ecfdf5", color="#059669", fontcolor="#064e3b"];
     iced  [label=<<FONT FACE="monospace"><B>native-theme-iced</B></FONT><BR/><FONT POINT-SIZE="11" COLOR="#64748b"><I>iced connector</I></FONT>>,
            fillcolor="#ecfdf5", color="#059669", fontcolor="#064e3b"];

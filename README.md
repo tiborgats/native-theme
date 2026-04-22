@@ -19,7 +19,7 @@ populated `ResolvedTheme`.
 
 | Your GUI framework | Add this crate |
 |---|---|
-| [GPUI](https://www.gpui.rs) | [`native-theme-gpui`](connectors/native-theme-gpui/) |
+| [gpui](https://www.gpui.rs) | [`native-theme-gpui`](connectors/native-theme-gpui/) |
 | [iced](https://iced.rs) | [`native-theme-iced`](connectors/native-theme-iced/) |
 | Writing a new framework connector | [`native-theme`](native-theme/) directly |
 
@@ -39,7 +39,7 @@ dependency for the common case.
 
 ## See it in action
 
-- **GPUI** — full widget gallery with live theme switching
+- **gpui** — full widget gallery with live theme switching
   - Run: `cargo run -p native-theme-gpui --example showcase-gpui`
   - Screenshots: [`native-theme-gpui/README.md`](connectors/native-theme-gpui/README.md#gallery)
 - **iced** — full widget gallery with live theme switching
