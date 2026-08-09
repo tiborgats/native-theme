@@ -29,10 +29,8 @@
 .mempalace/
 .mcp.json
 .opencode/
-.planning/
 .trae/
 .windsurf/
-.paul
 
 # Proptest regression files
 proptest-regressions/

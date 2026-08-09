@@ -227,33 +227,6 @@ else
     skipped "Antigravity" "not installed"
 fi
 
-# get-shit-done-cc (GSD)
-if need_cmd npm && need_cmd npx; then
-    checking "get-shit-done-cc"
-    cached_pkg=$(ls ~/.npm/_npx/*/node_modules/get-shit-done-cc/package.json 2>/dev/null | head -1 || echo "")
-    if [ -n "$cached_pkg" ] && [ -f "$cached_pkg" ]; then
-        v_before=$(grep '"version"' "$cached_pkg" | head -1 | grep -oP '[0-9]+\.[0-9]+\.[0-9]+' || echo "unknown")
-    else
-        v_before="not installed"
-    fi
-
-    v_latest=$(npm show get-shit-done-cc version 2>/dev/null || echo "")
-    if [ -z "$v_latest" ]; then
-        failed "get-shit-done-cc" "could not fetch latest version"
-    elif [ "$v_before" = "$v_latest" ]; then
-        current "get-shit-done-cc" "$v_before"
-    else
-        printf '\033[2K\033[1;34m⟳\033[0m get-shit-done-cc  %s → %s\n' "$v_before" "$v_latest"
-        if npx get-shit-done-cc@latest 2>&1 | tee -a "$LOG_FILE"; then
-            updated "get-shit-done-cc" "$v_before" "$v_latest"
-        else
-            failed "get-shit-done-cc" "update failed — see output above"
-        fi
-    fi
-else
-    skipped "get-shit-done-cc" "npm/npx not found"
-fi
-
 # --- Done -------------------------------------------------------------------
 
 echo
