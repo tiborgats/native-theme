@@ -39,7 +39,13 @@ actually happened when they were implemented.
 | v0.5.4 | `v0.5.4_native-theme.md`, `v0.5.4_native-theme-build.md`, `v0.5.4_native-theme-gpui.md`, `v0.5.4_native-theme-iced.md` |
 | v0.5.5 | `v0.5.5.md`, `v0.5.5_size-fix.md`, `v0.5.5_pt-px.md` |
 | v0.5.6 | `v0.5.6_break-up-lib-rs.md`, `v0.5.6_gtk-icon-theme.md`, `v0.5.6_platform-reader-testing.md`, `v0.5.6_runtime-theme-change.md`, `v0.5.6_validate-derive-macro.md` |
-| v0.5.7 | `v0.5.7_native-theme-api.md`, `v0.5.7_native-theme-api-2.md`, `v0.5.7_gaps.md`, `v0.5.7_icon-theme.md` |
+| v0.5.7 | `v0.5.7_native-theme-api.md`, `v0.5.7_native-theme-api-2.md`, `v0.5.7_gaps.md`, `v0.5.7_icon-theme.md`, `v0.5.7_docs-overhaul-design.md`, `v0.5.7_docs-overhaul-plan.md` |
+
+The v0.5.7 pair `v0.5.7_docs-overhaul-{design,plan}.md` is the exception to
+"inputs only": the plan carries an implementation record mapping each of its 16
+tasks to the commit that delivered it. It documented the pre-release
+documentation pass that produced the current READMEs, `ROADMAP.md`, the expanded
+`CONTRIBUTING.md` and `SECURITY.md`, and the crate-relations diagram.
 
 ## A note on accuracy
 
