@@ -167,18 +167,51 @@ defaults and are not affected by platform-specific changes.
 
 To add support for a new platform (e.g., a new Linux desktop environment):
 
+COSMIC is used as the running example below because it is the closest real case:
+`LinuxDesktop::CosmicDe` is already detected, but `select_reader()` returns
+`None` for it, so COSMIC currently falls through to the default preset.
+
 1. **Feature flag:** Add a new feature in `native-theme/Cargo.toml` with any
    required dependencies.
-2. **Reader module:** Create a new module (e.g., `native-theme/src/cosmic.rs`)
-   with a `from_cosmic()` function that returns `Result<ThemeSpec>`.
-3. **Widget metrics:** Add a `cosmic_widget_metrics()` function if the platform
-   has well-defined widget sizing constants.
+2. **Reader module:** Create a new module — a single `native-theme/src/cosmic.rs`,
+   or a `cosmic/` directory if it needs submodules the way `kde/` does. Define a
+   zero-size unit struct and implement the `ThemeReader` trait from
+   `native-theme/src/reader.rs`:
+
+   ```rust,ignore
+   #[async_trait::async_trait]
+   impl crate::reader::ThemeReader for CosmicReader {
+       async fn read(&self) -> crate::Result<crate::ReaderResult> { /* ... */ }
+   }
+   ```
+
+   The trait is `pub(crate)` and consumed as `Box<dyn ThemeReader>`, hence
+   `async_trait` rather than native async-fn-in-trait. A synchronous backend
+   does its work in the async body with no `.await` points; the future then
+   resolves immediately.
+
+   Return `ReaderOutput::Single` if the platform reports only the active mode —
+   the pipeline fills the other variant from the preset — or `ReaderOutput::Dual`
+   if it reports both, as macOS does.
+3. **Widget metrics:** If the platform has well-defined widget sizing constants,
+   add a `populate_widget_sizing(&mut ThemeMode)` function next to the reader.
+   See `native-theme/src/kde/metrics.rs` for the pattern.
 4. **Preset file:** Create `native-theme/src/presets/cosmic.toml` with default
-   light and dark variants.
-5. **Register preset:** Add the preset name to the `preset()` and `list_presets()`
-   functions in `native-theme/src/presets.rs`.
-6. **Update dispatch:** Add the platform to `from_system()` and
-   `from_system_async()` in `native-theme/src/lib.rs`.
+   light and dark variants. If the reader emits a live preset, add
+   `cosmic-live.toml` alongside it.
+5. **Register preset:** Add the entry to `PRESET_ENTRIES` in
+   `native-theme/src/presets.rs`, and to `PRESET_NAMES` if it should be
+   user-facing. `Theme::preset()` and `Theme::list_presets()` in
+   `native-theme/src/model/mod.rs` read from those tables — neither needs
+   editing.
+6. **Update dispatch:** Add a variant to `LinuxDesktop` in
+   `native-theme/src/detect.rs` if the desktop is not recognized yet, then give
+   it an arm in `select_reader()` in `native-theme/src/pipeline.rs` returning
+   your reader and its live-preset name. Gate the arm on your feature flag, and
+   keep a `#[cfg(not(feature = "..."))]` arm returning `None`.
+   `SystemTheme::from_system()` and `from_system_async()` in
+   `native-theme/src/lib.rs` both route through `pipeline::from_system_inner()`,
+   so neither needs a per-platform change.
 7. **Tests:** Add tests for the new reader and preset.
 8. **CI:** Add the platform to the CI matrix in `.github/workflows/ci.yml` if
    a runner is available.
