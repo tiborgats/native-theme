@@ -878,7 +878,7 @@ mod tests {
     // AND the `assert!(!generated.is_empty(), ...)` runtime guard are the two
     // independent defences that together rule out the silent-green failure mode.
     //
-    // See .planning/phases/94-.../94-01-PLAN.md <task name="Task 1"> <behavior>.
+    // See docs/archive/v0.5.7_planning-decision-log.md, phase 94 entries.
     // ═════════════════════════════════════════════════════════════════════════
 
     /// Sentinel helper: a non-default DefaultsBorderSpec with unique values
