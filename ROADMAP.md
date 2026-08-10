@@ -8,7 +8,28 @@ See also:
 - [CHANGELOG.md](CHANGELOG.md) — what has already shipped
 - [`docs/archive/`](docs/archive/) — detailed design docs and phase notes from completed milestones
 
-## v0.6.0 — Full theme geometry in the iced connector
+## v0.6.0 — egui connector
+
+There is no `native-theme-egui` crate yet. egui is the most structurally
+difficult connector target so far: it holds a **single global `Style`**, whose
+entire widget appearance is five `WidgetVisuals` states of six fields each,
+whereas `ResolvedTheme` carries 25 per-widget structs. Expanded to leaves that
+is 463 properties competing for one `Style`, and 100 egui fields are claimed by
+two or more native-theme widgets at once — `selection.bg_fill` alone has ten
+claimants. A connector that only writes the global `Style` can serve 33 of the
+463.
+
+**Planned deliverable:** a `native-theme-egui` crate that pre-builds a `Style`
+per widget role and per interaction variant, applied through egui's own seams
+(`UiBuilder::style`, `Ui::style_mut`, `Frame`), so per-widget geometry survives
+the contested-field collisions. Coverage is enforced by an audited manifest that
+a headless differential test checks against `ResolvedTheme`, rather than
+asserted in prose. Targets egui 0.36.1.
+
+Detailed design: [`docs/todo_v0.6.0_egui-connector-spec.md`](docs/todo_v0.6.0_egui-connector-spec.md)
+and [`docs/todo_v0.6.0_egui-connector-rationale.md`](docs/todo_v0.6.0_egui-connector-rationale.md).
+
+## v0.6.1 — Full theme geometry in the iced connector
 
 Right now `native-theme-iced` maps **colors only**: radii, border widths,
 padding, and shadows exist in `ResolvedTheme` but iced widgets ignore them
@@ -24,9 +45,9 @@ using `iced::Theme` as-is; geometry becomes a per-widget choice between
 iced's built-in style and the native-theme style at runtime (no Cargo
 feature flag, no wrapper type).
 
-Detailed design: [`docs/todo_v0.6.0_iced-full-theme-geometry.md`](docs/todo_v0.6.0_iced-full-theme-geometry.md).
+Detailed design: [`docs/todo_v0.6.1_iced-full-theme-geometry.md`](docs/todo_v0.6.1_iced-full-theme-geometry.md).
 
-## v0.6.1 — Full per-widget geometry in the gpui connector
+## v0.6.2 — Full per-widget geometry in the gpui connector
 
 `native-theme-gpui` maps the 108-field `ThemeColor` palette and global
 geometry (`radius`, `shadow`, `font_*`) well, but roughly **65 per-widget
@@ -42,11 +63,11 @@ splitters, separators, segmented controls, expanders, and layout metrics.
 This requires coordinated work with gpui-component to expose receiving
 fields; the design doc spells out the widget-by-widget gap analysis.
 
-Detailed design: [`docs/todo_v0.6.1_gpui-full-theme.md`](docs/todo_v0.6.1_gpui-full-theme.md).
+Detailed design: [`docs/todo_v0.6.2_gpui-full-theme.md`](docs/todo_v0.6.2_gpui-full-theme.md).
 
 ## Beyond v0.6
 
 No milestone targets committed yet. Likely candidates:
-- egui, slint, other connectors
+- slint, other connectors
 - Expanded preset coverage (platform themes for more macOS / Windows versions)
 - Additional icon-set bundles if demand emerges

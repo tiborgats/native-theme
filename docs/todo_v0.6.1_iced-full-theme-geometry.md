@@ -1,4 +1,4 @@
-# v0.5.3 — Iced Connector: Full Theme Geometry Support
+# v0.6.1 — Iced Connector: Full Theme Geometry Support
 
 ## Problem
 
