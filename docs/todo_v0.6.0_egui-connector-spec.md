@@ -18,9 +18,10 @@ should need no further design input. The companion rationale document —
 **Target version: egui 0.36.1** — the latest release at the time of writing
 (`egui/Cargo.toml:16`). Every `egui/…`, `epaint/…`, `ecolor/…` and `emath/…`
 path in this document is relative to that crate's own root and carries 0.36.1
-line numbers. egui 0.35.0 is cited **only** as churn evidence — in §12.3, in
-§14.2 and in §16 Q-3 — and is never a target. Every `native-theme/…`, `docs/…`
-and `connectors/…` path is relative to this repository's root.
+line numbers. egui 0.35.0 is cited **only** as churn evidence — in §12.3 and in
+§14.2, the only two places it appears — and is never a target. Every
+`native-theme/…`, `docs/…` and `connectors/…` path is relative to this
+repository's root.
 
 The version is pinned to one egui minor because the application's
 `egui::Style` must be *our* `egui::Style`: cargo cannot unify two
@@ -31,8 +32,8 @@ produce `expected egui::Style, found egui::Style`. §12 states the policy.
 
 > `native-theme-egui` gives an egui application an excellent global theme out
 > of the box and opt-in per-widget geometry: egui 0.36.1's `Style` has an
-> interaction-state axis and provably no widget-type axis, so the 33 DIRECT
-> fields reach every widget automatically and the 218 SCOPED fields reach the
+> interaction-state axis and provably no widget-type axis, so the 31 DIRECT
+> fields reach every widget automatically and the 210 SCOPED fields reach the
 > screen only where the application asks for them.
 
 That sentence is the crate's headline claim, verbatim, in the README's first
@@ -98,7 +99,8 @@ the single hardcoded `SELECTED_CLASS` (`:150`, declared `:225`). And
 `Widgets::style` (`style.rs:1272-1281`) can never return `open`; its only
 readers are direct field reads at `containers/window.rs:1427`,
 `containers/combo_box.rs:371` and `:450`, `widgets/color_picker.rs:117`, plus
-`menu_style`'s write at `containers/menu.rs:25` and `containers/menu.rs:383`.
+`menu_style`'s write at `containers/menu.rs:25` and `SubMenuButton::ui`'s
+read-then-copy-into-`inactive` at `containers/menu.rs:382-386`.
 
 ### 1.3 The contested-field evidence
 
@@ -110,12 +112,12 @@ values in it simultaneously. The full list is §5.11; these are the sharpest:
 | `Style.text_styles[*].family` | `epaint/src/text/fonts.rs:32` | 21 |
 | `Style.visuals.widgets.<state>.bg_stroke` | `style.rs:1304` | 19 |
 | `Style.spacing.interact_size.y` | `style.rs:408` | 13 |
-| `Style.visuals.selection.bg_fill` | `style.rs:1195` | 11 |
+| `Style.visuals.selection.bg_fill` | `style.rs:1195` | 12 |
 | `Style.visuals.widgets.<state>.corner_radius` | `style.rs:1307` | 11 |
-| `Style.visuals.widgets.inactive.fg_stroke.color` | `style.rs:1310` | 10 |
+| `Style.visuals.widgets.inactive.fg_stroke.color` | `style.rs:1310` | 11 |
 | `Style.visuals.widgets.hovered.weak_bg_fill` | `style.rs:1299` | 8 |
 | `Style.visuals.disabled_alpha` | `style.rs:1125` | 8 |
-| `Style.visuals.panel_fill` | `style.rs:1071` | 5 |
+| `Style.visuals.panel_fill` | `style.rs:1071` | 6 |
 
 `interact_size.y` alone must simultaneously serve `button.min_height`,
 `combo_box.min_height`, `menu.row_height`, `tab.min_height`, `list.row_height`,
@@ -143,14 +145,16 @@ reach `visuals.window_corner_radius`, `visuals.menu_corner_radius` or an
 Three distinct meanings, only two of which are reachable:
 
 1. **Every mappable leaf reaches *some* egui object.** Reachable. This is what
-   the crate delivers: 33 leaves on the global `Style`, 218 inside per-role
-   `Arc<Style>` values and per-surface `egui::Frame` values, 62 through a
-   documented formula, and the remaining 150 either exposed as a plain
-   accessor or honestly reported as lost.
+   the crate delivers: 31 leaves on the global `Style`, 210 inside per-role
+   `Arc<Style>` values and per-surface `egui::Frame` values, 54 through a
+   documented formula, and the remaining 168 either exposed as a plain
+   accessor or honestly reported as lost. These are §5.8's **effective**
+   figures — what this crate carries — not §5.7's matrix figures, which say
+   what egui 0.36.1 *can* express.
 2. **Every mappable leaf renders correctly without application cooperation.**
    **Not** reachable in 0.36.1. There is no hook that could make it so — see
    §1.2 and §14 item 1. An application that calls `install()` and nothing else
-   gets the 33 DIRECT leaves plus one elected winner per contested field.
+   gets the 31 DIRECT leaves plus one elected winner per contested field.
 3. **Every leaf renders correctly.** Not reachable in any egui version today:
    150 leaves have no expression at all, of which some are native-theme-side
    holes rather than egui limits (§5.7, §14).
@@ -165,10 +169,31 @@ enumerates (3)'s losses in §14 with the upstream change that would close each.
 `ctx.global_style()` (`ui.rs:135`). Everything built on `Area` — `Window`,
 `Popup`, `Tooltip`, `Modal`, menus, `ComboBox` popups — reads the **Context**
 style and ignores the calling `Ui`'s style entirely. Wrapping a scope around a
-`Window::show` has zero effect on that window's frame.
+`Window::show` has zero effect on that window's frame. The claim is checkable in
+one grep: `Ui::new(` has exactly **two** call sites across all eight vendored
+crates — `context.rs:801-807` (the root `Ui`) and `containers/area.rs:629` — and
+neither passes a `.style(..)`.
 
 The advice "wrap it in a scope" is therefore false for exactly the containers
 where a distinct look is most expected. §3.3 states which seam does reach them.
+
+**What *does* reach them: a scope placed inside the closure.** The closure an
+`Area`-based container hands the application receives a `Ui` that **descends
+from** the `Area`'s content `Ui` — `Window::show` threads `area_content_ui`
+through `Frame::show` → `Resize::show` → `CollapsingState::show_body_unindented`
+→ `ScrollArea::show`/`Frame::show` before it calls `add_contents`
+(`containers/window.rs:710`, `:719-752`), and `Modal::show` calls
+`area.show(ctx, ..)` and then `ui.scope_builder(.., |ui| frame.show(ui, content))`
+(`containers/modal.rs:92`, `:104-108`). A child `Ui` inherits its parent's
+`Arc<Style>` (`ui.rs:236`), and `Ui::set_style` (`ui.rs:386`, documented
+"Changes apply to this `Ui` and its subsequent children", `:383`) replaces it for
+that `Ui` and everything after it. So a role scope applied as the **first
+statement inside the closure** — `ui.native_set_style(role)` or
+`ui.native_scope(role, ..)` (§4.5) — reaches every widget the application adds
+there. It does **not** reach the chrome computed before the closure runs, and it
+does not reach the parts the container paints itself; §14 item 2 enumerates the
+residue. This is application cooperation, not a fourth seam: it is one line of
+application code, which is exactly what §1.4 meaning (2) says is unavoidable.
 
 ---
 
@@ -192,6 +217,17 @@ Two conventions that keep the tables honest:
 * **A contested field's elected winner is still marked SCOPED where the
   matrix that analysed it marked it SCOPED.** Marking the winner DIRECT would
   hide the contest, and the contest is the whole architectural argument.
+* **Base ownership and that convention, reconciled.** The DIRECT definition
+  and the rule above meet on base-owner rows, so the tables apply them in
+  exactly one way, stated here rather than left to be inferred: a `defaults.*`
+  leaf that §5.9 nominates as the base owner of a contested field is
+  **DIRECT** — it is written into the base style and renders with no
+  application cooperation. A *per-widget* leaf that wins a contested field is
+  **SCOPED** even where §5.9 names it the base owner, because what it displaces
+  is another widget's value and only a scope keeps the two apart. A base owner
+  of an **uncontested** field is DIRECT either way. §5.9 remains the authority
+  on which leaf owns which field; this rule only fixes the verdict that
+  follows from ownership.
 
 Two facts constrain every row and are stated once:
 
@@ -257,13 +293,39 @@ Two facts constrain every row and are stated once:
         │ that the app   │ │ scope(role)  │ │ Modal / menus / ComboBox  │
         │ never wraps    │ │ ui.native_   │ │ popups                    │
         │                │ │ set_style    │ │                           │
-        │ 33 DIRECT      │ │              │ │ role_modifier(..) +       │
-        │ + one elected  │ │ 218 SCOPED   │ │ surface_frame(..) passed  │
-        │   winner per   │ │ reachable    │ │ explicitly — a scope      │
-        │   contested    │ │ here         │ │ around them does NOTHING  │
-        │   field        │ │              │ │ (area.rs:611-629)         │
+        │ the DIRECT     │ │              │ │ carriers passed           │
+        │ leaves, plus   │ │ the SCOPED   │ │ explicitly, per container │
+        │ one elected    │ │ leaves of    │ │ (see below) — a scope     │
+        │ winner per     │ │ NON-Area     │ │ AROUND them does NOTHING  │
+        │ contested      │ │ widgets      │ │ (area.rs:611-629)         │
+        │ field          │ │              │ │                           │
+        │                │ │              │ │ the remaining SCOPED      │
+        │                │ │              │ │ leaves — surfaces         │
         └────────────────┘ └──────────────┘ └───────────────────────────┘
 ```
+
+The middle and right columns each carry part of the SCOPED total; neither
+carries all of it, and the third column's carriers are **not interchangeable**.
+Only four types in egui 0.36.1 accept a `StyleModifier` at all — `Popup::style`
+(`containers/popup.rs:417`), `MenuConfig::style` (`containers/menu.rs:107`),
+`MenuBar::style` (`:241`) and `ComboBox::popup_style`
+(`containers/combo_box.rs:199`) — exactly the four §3.2 lists:
+
+* **`Popup`, `Tooltip`, menus, `ComboBox` popups** take `role_modifier(..)`.
+  `Tooltip` reaches it through its public `popup` field
+  (`containers/tooltip.rs:9`), which is a `Popup`.
+* **`Window` and `Modal` accept no `StyleModifier`.** `Window` exposes only
+  `frame` (`containers/window.rs:265`) and `title_frame` (`:272`); `Modal`
+  exposes only `frame` (`containers/modal.rs:53`); `Area` has no style builder.
+  Their chrome therefore takes `surface_frame(..)`, and their **body** takes a
+  role scope applied as the first statement inside the closure (§1.5), which
+  reaches the widgets the application adds there but not the chrome computed
+  before the closure runs (§14 item 2).
+* **Panel chrome is a fourth case no column shows.** A `Panel`'s *contents* are
+  an ordinary `Ui` and belong to the middle column, but its fill, stroke, radius
+  and margins arrive only as an `egui::Frame` value on `Panel::frame`
+  (`containers/panel.rs:413`) or `CentralPanel::frame` (`:1206`) — §3.2's fourth
+  carrier.
 
 ### 3.2 The three delivery seams, and exactly what each reaches
 
@@ -281,8 +343,12 @@ by `Panel::frame` (`containers/panel.rs:413`), `CentralPanel::frame` (`:1206`),
 `Window::frame` (`containers/window.rs:265`), `Window::title_frame` (`:272`),
 `Modal::frame` (`containers/modal.rs:53`), `Popup::frame`
 (`containers/popup.rs:369`) and `Frame::show` (`containers/frame.rs:404`).
-This is the **only** way to theme container margins, because four of egui's
-eight `Frame` presets hardcode their inner margin and read no `Style::spacing`.
+This is the **only** way to theme container margins, because **five** of egui's
+eight `Frame` presets hardcode their inner margin and read no `Style::spacing` —
+`group`, `side_top_panel`, `central_panel`, `canvas`, and `dark_canvas`, which
+delegates to `canvas` (`containers/frame.rs:236-237`) and so inherits its
+`.inner_margin(2)`. Only `window` (`:198`), `menu` (`:207`) and `popup` (`:216`)
+read `style.spacing`; 5 + 3 = 8.
 All eight take a `&Style` and all eight read *something* from it; the column
 that matters is the last one:
 
@@ -327,22 +393,41 @@ digraph egui_seams {
 
     plain  [label="plain widgets\nButton, Label, Slider…", fillcolor="#f1f5f9", color="#64748b"];
     scoped [label="widgets inside\nnative_scope(role)",    fillcolor="#f1f5f9", color="#64748b"];
-    area   [label="Area-based\nWindow, Popup, Tooltip,\nModal, menus, ComboBox popup",
+    popups [label="Area-based, StyleModifier accepted\nPopup, Tooltip, menus, ComboBox popup",
+            fillcolor="#fef9c3", color="#ca8a04"];
+    winmod [label="Area-based, NO StyleModifier\nWindow, Modal",
             fillcolor="#fee2e2", color="#dc2626"];
     panels [label="Panel / CentralPanel\nUi::group",       fillcolor="#f1f5f9", color="#64748b"];
 
     atlas -> s1; atlas -> s2; atlas -> s3; atlas -> fr;
 
-    s1 -> plain  [label="33 DIRECT"];
-    s2 -> scoped [label="218 SCOPED"];
-    s3 -> area   [label="body style"];
-    fr -> area   [label="chrome"];
-    fr -> panels [label="margins, fill,\nstroke, radius"];
+    s1 -> plain  [label="DIRECT"];
+    s2 -> scoped [label="SCOPED, non-Area"];
+    s3 -> popups [label="SCOPED, body style"];
+    fr -> popups [label="SCOPED, chrome"];
+    fr -> winmod [label="SCOPED, chrome"];
+    fr -> panels [label="SCOPED, panel chrome"];
 
-    s2 -> area [label="NO EFFECT\narea.rs:611-629", style=dashed,
-                color="#dc2626", fontcolor="#dc2626"];
+    // A scope placed AROUND any Area-based container does nothing
+    // (area.rs:611-629). Window's and Modal's body is reached only by a role
+    // scope applied INSIDE the closure, which is seam S2 again (§1.5).
+    s2 -> popups [label="AROUND: NO EFFECT\narea.rs:611-629", style=dashed,
+                  color="#dc2626", fontcolor="#dc2626"];
+    s2 -> winmod [label="AROUND: NO EFFECT\nINSIDE the closure:\nSCOPED, body", style=dashed,
+                  color="#ca8a04", fontcolor="#ca8a04"];
+    s3 -> winmod [label="no acceptor exists\nwindow.rs:265, :272\nmodal.rs:53", style=dashed,
+                  color="#dc2626", fontcolor="#dc2626"];
 }
 ```
+
+The two Area nodes are separated because the seam differs: only `Popup::style`
+(`containers/popup.rs:417`), `MenuConfig::style` (`containers/menu.rs:107`),
+`MenuBar::style` (`:241`) and `ComboBox::popup_style`
+(`containers/combo_box.rs:199`) take a `StyleModifier` (§3.2). `Window` exposes
+`frame` (`containers/window.rs:265`) and `title_frame` (`:272`) and nothing
+else; `Modal` exposes `frame` (`containers/modal.rs:53`) and nothing else. Each
+SCOPED edge is labelled by kind rather than by count; §5.7 owns the counts and
+§5.8 reconciles them.
 
 ### 3.4 Why the per-role styles are pre-built
 
@@ -361,6 +446,19 @@ compile in exactly one of the two profiles. Construction always starts from
 construction is the no-hardcoded-values enforcement**: every field the theme
 does not supply keeps egui's own value by construction, and every numeric
 literal in the mapping code other than the three named in §6.17 is a bug.
+
+Two `Visuals` fields make that rule load-bearing rather than tidy, and neither
+appears in any §5 row. `dark_mode` (`style.rs:994`) and `text_options` (`:1000`)
+are written only by `Visuals::dark` (`:1499-1503`) and `Visuals::light`
+(`:1566-1570`), never from theme data, so **each colour scheme's style must
+start from its own `Theme::default_style()`**. Building the light style by
+cloning the dark one — an obvious-looking optimisation, since §2 says the two
+differ only in `visuals` — would silently carry `dark_mode: true` and the
+dark-mode colour-transfer function into the light theme. Both failures are
+invisible: `egui_extras`'s syntax highlighter picks its whole palette from
+`style.visuals.dark_mode` (`egui_extras/src/syntax_highlighting.rs:243`, `:280`),
+and `Context` copies `text_options` off the global style once per pass
+(`context.rs:578-581`). Nothing errors; the text just renders wrong.
 
 ---
 
@@ -383,6 +481,9 @@ never `{}`, which would be `E0046`.
 #![deny(clippy::expect_used)]
 #![deny(clippy::indexing_slicing)]
 #![deny(clippy::panic)]
+#![deny(clippy::unreachable)]
+#![deny(clippy::todo)]
+#![deny(clippy::unimplemented)]
 
 pub mod convert;
 pub mod fonts;
@@ -398,21 +499,59 @@ pub use native_theme;
 
 // ---- convenience re-exports ------------------------------------------------
 // RULE: the crate root re-exports no name that also exists at `egui`'s root.
-// Three native-theme names are therefore deliberately NOT here:
+// Four native-theme names are therefore deliberately NOT here:
 //   * `native_theme::color::Rgba`     -> `convert::Rgba`   (egui/src/lib.rs:442, opposite colour space)
 //   * `native_theme::theme::IconData` -> `icons::IconData` (egui/src/viewport.rs:183)
 //   * `native_theme::theme::Theme`    -> reachable as `native_theme::theme::Theme`
 //                                        (egui/src/lib.rs:483 already exports `Theme`)
+//   * `native_theme::SystemTheme`     -> reachable as `native_theme::SystemTheme`
+//                                        (egui/src/viewport.rs:1036, re-exported to egui's
+//                                         root by `viewport::*` at egui/src/lib.rs:493;
+//                                         it resolves as `crate::SystemTheme` inside egui at
+//                                         context.rs:251 and :2476)
 pub use native_theme::error::Error;
 pub use native_theme::theme::{
-    AnimatedIcon, ColorMode, DialogButtonOrder, IconProvider, IconRole, IconSet, LayoutTheme,
-    ResolvedTheme, ThemeMode, TransformAnimation,
+    AnimatedIcon, ColorMode, DialogButtonOrder, FontStyle, IconProvider, IconRole, IconSet,
+    LayoutTheme, ResolvedTheme, ThemeMode, TransformAnimation,
 };
-pub use native_theme::{AccessibilityPreferences, Result, SystemTheme};
+pub use native_theme::{AccessibilityPreferences, Result};
 
 #[cfg(target_os = "linux")]
 pub use native_theme::detect::LinuxDesktop;
 ```
+
+`FontStyle` is on the list because `FontPlan::face` and
+`FontPlan::variable_face` (§4.9) take one, so every application that supplies
+fonts needs it, and because it cannot collide: a recursive grep for `FontStyle`
+over `egui-0.36.1/src` and `epaint-0.36.1/src` returns **zero** hits.
+
+Dropping `SystemTheme` from the list does **not** change the four §4.7 accessors
+that take `&SystemTheme`; a crate-private `use native_theme::SystemTheme;`
+resolves them. Do not re-add the `pub` re-export to make them compile — that is
+the E0659 ambiguity the rule exists to prevent, for a downstream that globs both
+crates.
+
+**The `deny` list is a house convention, not a proof of the no-panic rule**, and
+the gap is worth writing down. Measured on rustc/clippy 1.97.1 with exactly the
+five original attributes, only slice indexing is rejected: `BTreeMap` and
+`HashMap` `Index`, `unreachable!`, `todo!`, `unimplemented!`, `assert!`,
+`assert_eq!`, integer overflow, integer division, a `u128 as u64` cast and
+`Duration::from_secs_f64` all compile clean. Three of those are lintable and are
+denied above — `clippy::unreachable`, `clippy::todo` and
+`clippy::unimplemented`, all three verified to fire. The remainder is banned by
+convention and enforced by review: `assert!`, `assert_eq!` and `debug_assert!`
+must not appear, and neither may `BTreeMap`/`HashMap` indexing, because
+`clippy::indexing_slicing` does not reach `Index` impls outside arrays, slices
+and `Vec`. `deny` rather than `forbid`, so an in-crate test can still `#[allow]`
+one. §13 T9 runs this same list.
+
+Explicit non-adoptions, recorded so they are not added later as an oversight:
+`clippy::arithmetic_side_effects` and `clippy::integer_division`, which fire on
+every integer operation including provably safe ones and fire on **no** float
+arithmetic at all (verified) — and float arithmetic is where §6's formulas live,
+whose totality §7.2's helpers establish directly; and
+`clippy::missing_panics_doc`, a documentation lint rather than a panic-freedom
+proof, which §7.5 argues instead.
 
 There is **no** `EGUI_VERSION` constant. A hand-maintained version string
 cannot be checked against the resolved dependency — `egui = "0.36.1"` accepts
@@ -426,7 +565,11 @@ any 0.36.x — and would eventually become a lie. The version policy lives in
 ///
 /// `Arc`-backed: cloning is one atomic increment, exactly like [`egui::Context`].
 /// `Send + Sync + 'static`, so it can be built on a watcher thread and published into
-/// [`egui::Context::data_mut`] (`egui/src/context.rs:1032`).
+/// [`egui::Context::data_mut`] (`egui/src/context.rs:1032`). This is the one load-bearing
+/// auto-trait claim in the crate, so its ground is named: the atlas holds nothing but
+/// `Arc<egui::Style>`, `egui::Frame`, [`Note`], [`AccessibilityPreferences`] and two
+/// [`ResolvedTheme`]s, and a `ResolvedTheme` is plain owned data with no interior mutability
+/// and no `Rc` (`native-theme/src/model/resolved.rs:155-212`).
 ///
 /// It carries, per `egui::Theme` (Light and Dark):
 /// * one base [`egui::Style`],
@@ -446,7 +589,10 @@ impl ThemeAtlas {
     ///
     /// Both are required: egui keeps a separate `Style` per `egui::Theme`
     /// (`egui/src/memory/mod.rs:196`, `:200`). Pass the same value twice if only one exists.
-    #[must_use]
+    ///
+    /// The `#[must_use]` carries a message because [`Builder`] is itself `#[must_use]`; a bare
+    /// one is `clippy::double_must_use`, which §13 T9 runs as an error.
+    #[must_use = "this starts the builder; call `build()` to produce the atlas"]
     pub fn builder<'a>(
         name: &'a str,
         light: &'a ResolvedTheme,
@@ -513,8 +659,29 @@ impl ThemeAtlas {
     ///
     /// **This does not reach `Area`-based containers** (`Window`, `Popup`, `Tooltip`,
     /// `Modal`, menus, `ComboBox` popups): `Area::Prepared::content_ui` builds its `Ui` with a
-    /// bare `UiBuilder::new()` (`egui/src/containers/area.rs:611-629`), so `Ui::new` falls back
-    /// to `ctx.global_style()` (`egui/src/ui.rs:135`). Use [`ThemeAtlas::role_modifier`] there.
+    /// bare `UiBuilder::new()` (`egui/src/containers/area.rs:611-629`) — it never calls
+    /// `.style(..)` — so `Ui::new` falls back to `ctx.global_style()` (`egui/src/ui.rs:135`).
+    ///
+    /// What to use instead depends on the container, and the two groups are **not**
+    /// interchangeable:
+    ///
+    /// * `Popup`, `Tooltip`, menus and `ComboBox` popups accept a `StyleModifier`: use
+    ///   [`ThemeAtlas::role_modifier`]. (`Tooltip` reaches `Popup::style` through its public
+    ///   `popup` field, `egui/src/containers/tooltip.rs:9`.)
+    /// * **`Window` and `Modal` accept no `StyleModifier` at all.** `Window` exposes only
+    ///   `frame` (`egui/src/containers/window.rs:265`) and `title_frame` (`:272`); `Modal`
+    ///   exposes only `frame` (`egui/src/containers/modal.rs:53`); `Area` has no style builder.
+    ///   Their **chrome** takes [`ThemeAtlas::surface_frame`], handed to those three methods.
+    ///   Their **body** takes a role scope applied as the first statement *inside* the closure
+    ///   — [`NativeThemeUiExt::native_set_style`] or [`NativeThemeUiExt::native_scope`] — which
+    ///   reaches the widgets the application adds inside the closure, because that closure
+    ///   receives a `Ui` descending from the `Area`'s content `Ui`
+    ///   (`egui/src/containers/window.rs:719-752`, `egui/src/containers/modal.rs:104-108`,
+    ///   inheritance at `egui/src/ui.rs:236`). It does not reach chrome computed before the
+    ///   closure runs, nor the parts the container paints itself — see §14 item 2.
+    ///
+    /// The four `StyleModifier` acceptors in egui 0.36.1 are listed in §3.2 and are the only
+    /// ones: a tree-wide grep finds no other.
     #[must_use]
     pub fn role_style_variant(
         &self,
@@ -559,8 +726,9 @@ impl ThemeAtlas {
     /// This is the **only** way to theme container margins: `Frame::group` hardcodes
     /// `.inner_margin(6)` (`egui/src/containers/frame.rs:180`), `Frame::side_top_panel`
     /// `Margin::symmetric(8, 2)` (`:187`), `Frame::central_panel` `.inner_margin(8)` (`:192`)
-    /// and `Frame::canvas` `.inner_margin(2)` (`:229`) — none reads `Style::spacing`.
-    #[must_use]
+    /// and `Frame::canvas` `.inner_margin(2)` (`:229`), inherited by `Frame::dark_canvas`
+    /// (`:236-237`) — none of the five reads `Style::spacing`.
+    #[must_use = "this returns the frame recipe; hand it to a container's `.frame(..)`"]
     pub fn surface_frame(&self, theme: egui::Theme, surface: Surface) -> egui::Frame;
 
     /// Non-fatal observations made while compiling this atlas: sanitised values, saturated
@@ -575,7 +743,13 @@ impl ThemeAtlas {
     /// Install with explicit options. Performs, in this order:
     ///
     /// 1. `ctx.set_fonts(..)` (`egui/src/context.rs:2103`) if a [`fonts::FontPlan`] was
-    ///    supplied. `set_fonts`, not `add_font`, because `add_font` de-duplicates by name only.
+    ///    supplied. The argument is
+    ///    `fonts::font_definitions(theme, egui::FontDefinitions::default(), plan)`: the base is
+    ///    **`egui::FontDefinitions::default()`**, named explicitly and never
+    ///    `FontDefinitions::empty()` (`epaint/src/text/fonts.rs:567`), because `default()` is
+    ///    what carries the `NotoEmoji-Regular` / `emoji-icon-font` fallback tails
+    ///    (`epaint/src/text/fonts.rs:540-556`). `set_fonts`, not `add_font`, because `add_font`
+    ///    de-duplicates by name only.
     /// 2. `ctx.set_style_of(egui::Theme::Dark, ..)` and `set_style_of(egui::Theme::Light, ..)`
     ///    (`egui/src/context.rs:2247`). Never `set_visuals` (`:2277`), `set_visuals_of`
     ///    (`:2264`) or `set_global_style` (`:2197`) — the first and third touch only the
@@ -603,6 +777,9 @@ impl ThemeAtlas {
     pub fn install_with(&self, ctx: &egui::Context, options: &InstallOptions);
 
     /// The atlas most recently published into this `Context` by [`ThemeAtlas::install`].
+    ///
+    /// Equivalent to [`NativeThemeContextExt::native_theme_opt`]; the two spellings exist so a
+    /// call site can read either way round, and neither is deprecated.
     #[must_use]
     pub fn from_ctx(ctx: &egui::Context) -> Option<Self>;
 }
@@ -672,19 +849,35 @@ pub struct InstallOptions {
 impl Default for InstallOptions { /* … */ }
 
 /// A non-fatal observation made while compiling a [`ThemeAtlas`].
+///
+/// `#[non_exhaustive]` on the *enum* keeps adding a variant non-breaking; it does **not**
+/// protect a variant's payload, which stays exhaustively patternable downstream (verified with
+/// a two-crate probe on rustc 1.97.1). Since the diagnostics channel is the surface most
+/// likely to be enriched, each struct variant carries its own `#[non_exhaustive]`, so a
+/// downstream `match` must spell `{ path, .. }` and adding a field stays additive.
+/// [`Surface::Panel`] and both [`fonts::FontBytes`] tuple variants are deliberately left
+/// exhaustive: `#[non_exhaustive]` on a *tuple* variant makes it unconstructible outside this
+/// crate (`E0603`, verified), and constructing them is the documented call shape.
 #[derive(Clone, Debug, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum Note {
     /// A theme value was non-finite and was replaced by the documented fallback.
     /// `path` is the native-theme field path, e.g. `"button.border.corner_radius"`.
+    #[non_exhaustive]
     ValueSanitised { path: &'static str },
-    /// A length saturated at the `i8` or `u8` bound of an epaint type. Real data loss.
+    /// A length saturated at the `i8` bound of an epaint type — in practice
+    /// `epaint::Margin`, the only `i8` sink this crate writes from theme data (§6.14 leaves
+    /// all shadow geometry to egui). **Real data loss.** `u8` saturation — corner radii — is
+    /// benign and is deliberately **not** reported; see §7.2.
+    #[non_exhaustive]
     ValueSaturated { path: &'static str },
     /// The theme asked for a font family for which the plan holds no bytes.
+    #[non_exhaustive]
     FontFamilyUnavailable { family: std::sync::Arc<str> },
     /// The theme asked for a weight the supplied face cannot express:
     /// `FontData::variation_axes()` (`epaint/src/text/fonts.rs:159-179`) reported no
     /// `wght` axis.
+    #[non_exhaustive]
     FontWeightAxisUnsupported { family: std::sync::Arc<str> },
 }
 
@@ -713,9 +906,14 @@ pub fn pin_color_scheme(ctx: &egui::Context, theme: egui::Theme);
 /// rule. When native-theme grows a widget, this enum grows one variant and `mapping.toml`
 /// grows one section; nothing else in this crate's API changes.
 ///
-/// Role names are **native-theme's vocabulary**. Container chrome is [`Surface`], whose names
-/// are egui's vocabulary. The two axes are deliberately spelled differently because they track
-/// two different moving sides.
+/// Role names are **native-theme's vocabulary**: each one is a `ResolvedTheme` field name.
+/// [`Surface`] is the other axis — container *chrome* — and its names are **attachment
+/// points**, not egui type names: egui 0.36.1 has no `Dialog`, `Popover` or `Card` type at all
+/// (a recursive grep over `egui-0.36.1/src` returns one hit, `viewport.rs:998`, an unrelated
+/// window-type hint), and six of `Surface`'s nine names — `Window`, `Dialog`, `Popover`,
+/// `Tooltip`, `Menu`, `Card` — are spelled identically to a `Role` variant. The two axes are
+/// separate because they track two different moving sides, not because they use different
+/// vocabularies.
 #[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
 #[non_exhaustive]
 pub enum Role {
@@ -767,7 +965,9 @@ impl RoleVariant {
 /// egui container.
 ///
 /// The rule: **exactly one variant per point in egui 0.36.1 at which an application can attach
-/// an [`egui::Frame`]**. egui has one `Panel` type (`egui/src/containers/panel.rs:206`) with
+/// an [`egui::Frame`]** — plus [`Surface::Menu`], whose frame is reached indirectly and which
+/// is the single documented exception. egui has one `Panel` type
+/// (`egui/src/containers/panel.rs:206`) with
 /// four constructors (`left` `:249`, `right` `:256`, `top` `:265`, `bottom` `:274`), so the
 /// panel case is one variant carrying the side. `egui::SidePanel` and `egui::TopBottomPanel`
 /// **do not exist** in 0.36.1 and must never be named in this crate or its docs.
@@ -786,7 +986,14 @@ pub enum Surface {
     /// (`egui/src/containers/tooltip.rs:9`), so `Tooltip::for_widget(&r).popup.frame(..)`
     /// works. `Response::on_hover_text` does **not** — see §14 item 3.
     Tooltip,
-    /// Menu popups, paired with [`ThemeAtlas::role_modifier`] for `Role::Menu`.
+    /// Menu popups. **The exception to the rule above: there is no menu `.frame(..)` to
+    /// attach to.** egui builds the menu frame itself — `SubMenu::show` constructs
+    /// `Frame::menu(ui.style())` (`egui/src/containers/menu.rs:432`) and hands it to
+    /// `Popup::frame` (`:509`) — and `MenuConfig` carries no frame field at all (`:65-76`).
+    /// The real carrier is therefore [`ThemeAtlas::role_modifier`] for `Role::Menu`, fed to
+    /// `MenuConfig::style` (`:107`), which changes the `Style` that `Frame::menu` then reads.
+    /// This variant exists so `mapping.toml` and the coverage docs have a name for that
+    /// chrome; it is not a second attachment point.
     Menu,
     /// `Ui::group` / `Frame::show` (`egui/src/containers/frame.rs:404`).
     Card,
@@ -841,6 +1048,10 @@ pub trait NativeThemeContextExt: sealed::Sealed {
 
     /// The installed atlas, or `None`. Use this when "nothing installed" is a real error for
     /// the application.
+    ///
+    /// Equivalent to [`ThemeAtlas::from_ctx`]. Note that an application which deliberately
+    /// installs [`ThemeAtlas::passthrough`] gets `Some` from both, not `None`: "installed" and
+    /// "changes something" are different questions.
     #[must_use]
     fn native_theme_opt(&self) -> Option<ThemeAtlas>;
 
@@ -856,6 +1067,15 @@ impl NativeThemeContextExt for egui::Context { /* … */ }
 ///
 /// `egui::Ui` derefs to `egui::Context` (`egui/src/ui.rs:91-98`), so [`NativeThemeContextExt`]
 /// methods are callable on a `Ui` too when both traits are in scope.
+///
+/// **Invariant, and it is not enforced by the seal:** the method-name sets of the two traits
+/// must stay **disjoint**. Because `Ui` derefs to `Context`, the receiver type wins method
+/// resolution, so adding a name to `NativeThemeUiExt` that already exists on
+/// `NativeThemeContextExt` does not produce an ambiguity error — it silently rebinds every
+/// existing `ui.<name>()` call site to the new method. Verified with a two-trait probe on
+/// rustc 1.97.1 — the `Ui` candidate won outright and the `Context` method became unreachable.
+/// Such an addition is therefore **breaking** despite §12.2 clause 6's seal, and clause 6 must
+/// carry the same rule.
 pub trait NativeThemeUiExt: sealed::Sealed {
     /// Run `add_contents` in a child `Ui` styled for `role`.
     ///
@@ -885,12 +1105,19 @@ pub trait NativeThemeUiExt: sealed::Sealed {
     /// **parent** `Ui` — `widgets.active.fg_stroke` (`egui/src/containers/panel.rs:906`),
     /// `widgets.hovered.fg_stroke` (`:908`), `widgets.noninteractive.bg_stroke` (`:911`) —
     /// so `Role::Splitter` must be live before the call, not inside the body.
+    ///
+    /// There is deliberately **no** `native_set_style_variant`, although
+    /// [`NativeThemeUiExt::native_scope`] does have one: no call shape has needed it. Spell it
+    /// `ui.set_style(atlas.role_style_variant(theme, role, variant))` (`egui/src/ui.rs:386`)
+    /// until one does. Adding the method later is additive on a sealed trait and would not be
+    /// a breaking change — provided the name does not already exist on
+    /// [`NativeThemeContextExt`], per the invariant above.
     fn native_set_style(&mut self, role: Role);
 
     /// `surface`'s [`egui::Frame`], read off the `Ui`'s own `egui::Theme` so neither the atlas
     /// nor the theme has to be threaded to the call site. Stock egui's frame when nothing is
     /// installed.
-    #[must_use]
+    #[must_use = "this returns the frame recipe; hand it to a container's `.frame(..)`"]
     fn native_frame(&self, surface: Surface) -> egui::Frame;
 }
 
@@ -927,7 +1154,7 @@ pub fn from_preset(name: &str, is_dark: bool) -> Result<(ThemeAtlas, ResolvedThe
 /// luminance guess.
 ///
 /// No [`LayoutTheme`] is available on this path: `SystemTheme`
-/// (`native-theme/src/lib.rs:369-424`) has no `layout` field. See §14 item 21.
+/// (`native-theme/src/lib.rs:369-423`) has no `layout` field. See §14 item 21.
 ///
 /// # Errors
 /// Propagates `SystemTheme::from_system`.
@@ -948,17 +1175,34 @@ pub trait SystemThemeExt: sealed::Sealed {
     fn to_egui_atlas(&self) -> ThemeAtlas;
 }
 
-impl SystemThemeExt for SystemTheme { /* … */ }
+impl SystemThemeExt for native_theme::SystemTheme { /* … */ }
 ```
 
-### 4.7 Free accessors — the useful half of UNMAPPABLE
+### 4.7 Free accessors — the values no `Style` field carries
 
-House shape, matching `connectors/native-theme-iced/src/lib.rs:212-393` and
-`connectors/native-theme-gpui/src/lib.rs:288-458`: free functions, `#[must_use]`,
+These are **not** simply "the useful half of UNMAPPABLE". An accessor exists
+wherever no `egui::Style` field carries the value *for that widget*, and there
+are three separate reasons for that: no sink exists at all (`switch_*`,
+`dialog_*`); a sink exists but the leaf **lost a contest** for it
+(`input_focus_border_color`, displaced from `Visuals::selection.stroke.color`,
+§14 item 20; `list_header_font`, §5.8 item 5); or a sink exists and **writing it
+was declined** by a locked decision (`focus_ring_color` / `focus_ring_width`,
+§5.8 item 1). Only the first reason is UNMAPPABLE by §2's definition.
+
+House shape, matching `connectors/native-theme-iced/src/lib.rs:212-364` and
+`connectors/native-theme-gpui/src/lib.rs:298-460`: free functions, `#[must_use]`,
 one expression each, no arithmetic, no invented defaults. Adding a free
 function is never a breaking change, which is not true of a struct field, an
 enum variant or a trait method — which is why the entire non-`Style` surface is
 free functions rather than a `Metrics` struct.
+
+Both ranges are narrowed on purpose, and the two exclusions are the point. They
+stop short of `to_iced_weight` (`connectors/native-theme-iced/src/lib.rs:380-393`),
+a CSS-weight-to-enum table this crate has no use for because egui takes the
+weight as a `wght` variation coordinate (§4.9); and they start after
+`is_dark_resolved` (`connectors/native-theme-gpui/src/lib.rs:288-290`), whose
+`< 0.5` luminance threshold is exactly the guess §4.6 rejects in favour of
+`sys.mode.is_dark()`.
 
 ```rust,ignore
 // --- colours egui has no slot for --------------------------------------------
@@ -996,8 +1240,14 @@ pub enum TextRole { Caption, SectionHeading, DialogTitle, Display }
 
 /// The `egui::FontId` for a text-scale role. `Caption` and `SectionHeading` are also installed
 /// into `TextStyle::Small` and `TextStyle::Heading`; `DialogTitle` and `Display` have no
-/// `TextStyle` slot and are reachable only here, through `RichText::font(..)`
-/// (`egui/src/widget_text.rs:186-192`).
+/// **stock** `TextStyle` slot and are reachable only here, through `RichText::font(..)`
+/// (`egui/src/widget_text.rs:190-198`).
+///
+/// A slot could have been minted — `TextStyle::Name(Arc<str>)` exists (`egui/src/style.rs:93`,
+/// stored in `Style::text_styles`, `:288`) — so this is a **declined** candidate, not an egui
+/// limitation. It is declined because `TextStyle::resolve` panics on a key absent from
+/// `text_styles` (`:111-119`) with no `cfg(debug_assertions)` guard, which would make a `Name`
+/// key a live panic in release for any `Style` this crate did not build. See §5.8 item 4.
 #[must_use] pub fn text_role_font(t: &ResolvedTheme, role: TextRole) -> egui::FontId;
 
 /// The absolute line height in logical pixels for a text-scale role
@@ -1021,7 +1271,14 @@ pub enum TextRole { Caption, SectionHeading, DialogTitle, Display }
 /// `= max(0.0, defaults.line_height * defaults.font.size − ctx.fonts_mut(row_height(body)))`.
 /// Takes `&egui::Ui` because `Context::fonts_mut` panics before the first pass
 /// (`egui/src/context.rs:1113-1121`, `expect("No fonts available until first call to
-/// Context::run()")`); a `&Ui` is static proof that a pass is in progress.
+/// Context::run()")`).
+///
+/// # Panics
+/// A `&Ui` is a strong **convention** that a pass is in progress, not a type-level proof:
+/// `Ui::new` is public (`egui/src/ui.rs:108`), so a caller can hand-build a `Ui` outside a
+/// pass and reach the `expect`. egui exposes no fallible font accessor to use instead —
+/// `Context::fonts` carries the identical `expect` (`egui/src/context.rs:1096-1106`) — so
+/// there is nothing to fall back to and the panic is inherited, not introduced.
 ///
 /// Exact for `TextStyle::Body` only, and read at exactly two sites:
 /// `WidgetText::into_galley_impl`'s `Self::Text` arm (`egui/src/widget_text.rs:775-776`) and
@@ -1041,7 +1298,7 @@ pub enum TextRole { Caption, SectionHeading, DialogTitle, Display }
 /// (`egui_extras/src/table.rs:976`, `:1027`, `:452`), where no `Style` value reaches it.
 #[must_use] pub fn list_row_height(t: &ResolvedTheme) -> f32;
 /// `list.header_font` family and size (`native-theme/src/model/widgets/mod.rs:527`) as an
-/// `egui::FontId`. Feed to `RichText::font(..)` (`egui/src/widget_text.rs:186-192`).
+/// `egui::FontId`. Feed to `RichText::font(..)` (`egui/src/widget_text.rs:190-198`).
 #[must_use] pub fn list_header_font(t: &ResolvedTheme) -> egui::FontId;
 /// `list.header_font.color`. Feed to `RichText::color(..)`; see §5.4.
 #[must_use] pub fn list_header_color(t: &ResolvedTheme) -> egui::Color32;
@@ -1094,6 +1351,8 @@ pub enum TextRole { Caption, SectionHeading, DialogTitle, Display }
 // --- accessibility: `&SystemTheme`, never `&ResolvedTheme` ---------------------
 // `AccessibilityPreferences` lives on `SystemTheme` (`native-theme/src/lib.rs:422`) and is
 // deliberately absent from `ResolutionContext` (`native-theme/src/resolve/context.rs:20-23`).
+// The bare `&SystemTheme` in these four signatures is resolved by a crate-private
+// `use native_theme::SystemTheme;`, NOT by a root re-export — §4.1 removes that one on purpose.
 #[must_use] pub fn is_reduced_motion(sys: &SystemTheme) -> bool;
 #[must_use] pub fn is_high_contrast(sys: &SystemTheme) -> bool;
 #[must_use] pub fn is_reduced_transparency(sys: &SystemTheme) -> bool;
@@ -1172,8 +1431,10 @@ pub use native_theme::color::Rgba;
 #[must_use] pub const fn denan(v: f32) -> f32;
 
 /// Saturating, rounding `f32` -> `u8`, for `epaint::CornerRadius` (four `u8`,
-/// `epaint/src/corner_radius.rs:13-25`) and `epaint::Shadow::{blur, spread}`
-/// (`epaint/src/shadow.rs:20`, `:23`).
+/// `epaint/src/corner_radius.rs:13-25`) — the crate's **only** `u8` sink written from theme
+/// data. `epaint::Shadow::{blur, spread}` (`epaint/src/shadow.rs:20`, `:23`) are cited for
+/// their representable range only; this crate never writes shadow geometry (§6.14,
+/// [`to_shadow`]).
 ///
 /// `NaN` -> 0; `v <= 0.0` -> 0; `v >= 255.0` -> 255; otherwise round-half-away-from-zero.
 /// Uses `f32::round`, **not** `round_ties_even`, so a value this crate converts and a value
@@ -1182,11 +1443,14 @@ pub use native_theme::color::Rgba;
 #[must_use] pub fn u8_from_f32_saturating(v: f32) -> u8;
 
 /// Saturating, rounding `f32` -> `i8`, for `epaint::Margin` (four `i8`,
-/// `epaint/src/margin.rs:15-20`) and `epaint::Shadow::offset` (`epaint/src/shadow.rs:15`).
+/// `epaint/src/margin.rs:15-20`) — the crate's **only** `i8` sink written from theme data.
+/// `epaint::Shadow::offset` (`epaint/src/shadow.rs:15`) is cited for its representable range
+/// only; this crate never writes shadow geometry (§6.14, [`to_shadow`]).
 ///
 /// `NaN` -> 0 (**not** −128: [`denan`] runs first); `v <= -128.0` -> −128; `v >= 127.0` -> 127.
 /// Saturation here is a **real** loss of theme data and emits a
-/// [`crate::Note::ValueSaturated`] at the call site.
+/// [`crate::Note::ValueSaturated`] at the call site. The helper stays pure and single-valued;
+/// the call site detects saturation itself with the predicate given in §7.2.
 #[must_use] pub fn i8_from_f32_saturating(v: f32) -> i8;
 
 /// Pass a finite `f32` through; substitute `fallback` for `NaN` and `±∞`.
@@ -1308,13 +1572,13 @@ impl FontPlan {
 
     /// Register one face. `family` is matched case-insensitively against
     /// `ResolvedFontSpec::family` (`native-theme/src/model/font.rs:241`). `weight` is a CSS
-    /// weight in `100..=900` (`native-theme/src/model/font.rs:246-247`); values outside that
+    /// weight in `100..=900` (`native-theme/src/model/font.rs:245-246`); values outside that
     /// range are clamped into it, never rejected.
     pub fn face(
         self,
         family: &str,
         weight: u16,
-        style: native_theme::theme::FontStyle,
+        style: crate::FontStyle,
         bytes: FontBytes,
     ) -> Self;
 
@@ -1334,7 +1598,7 @@ impl FontPlan {
     pub fn variable_face(
         self,
         family: &str,
-        style: native_theme::theme::FontStyle,
+        style: crate::FontStyle,
         bytes: FontBytes,
     ) -> Self;
 
@@ -1348,6 +1612,17 @@ impl FontPlan {
 /// result itself. `base` is the starting point — pass `egui::FontDefinitions::default()` to
 /// keep egui's emoji fallbacks. If the resulting chain would be empty (`default_fonts`
 /// disabled and no face supplied) the family is left exactly as `base` had it.
+///
+/// **How a chain is reached is part of the contract**, because `FontDefinitions`'s two fields
+/// are both `pub` (`epaint/src/text/fonts.rs:441`, `:449`) and a caller may hand in a `base`
+/// that binds neither family. Each chain is reached with
+/// `families.entry(family).or_default()` — **never** `get_mut` — so the result binds both
+/// `FontFamily::Proportional` and `FontFamily::Monospace` even when `base` did not, which is
+/// what keeps the unbound-family panic (`epaint/src/text/fonts.rs:1031`) unreachable. And
+/// every name prepended to a chain is inserted into `font_data` in the same call, which is
+/// what keeps the missing-font-data panic (`:1039`) unreachable. Both epaint constructors
+/// already bind both families — `default()` at `:540-556` and `empty()` at `:569-570` — so the
+/// `or_default` only matters for a hand-built `base`.
 #[must_use]
 pub fn font_definitions(
     theme: &ResolvedTheme,
@@ -1457,17 +1732,33 @@ impl IconKey {
     /// texture and therefore must not enter the URI.
     #[must_use] pub fn tint(self, tint: egui::Color32) -> Self;
     /// The URI this key produces. Always `bytes://native-theme/…`; for `IconData::Svg` it
-    /// always ends in `.svg`, required by `egui_extras::SvgLoader::is_supported`
-    /// (`egui_extras/src/loaders/svg_loader.rs:30-32`) and by `DefaultTextureLoader`'s
-    /// per-size cache (`egui/src/load/texture_loader.rs:152-154`). Never contains `#`, which
-    /// egui reserves for animated-image frame indices (`egui/src/widgets/image.rs:891-893`).
+    /// always ends in `.svg`, because `egui_extras`'s SVG loader returns
+    /// `LoadError::NotSupported` for any URI that does not
+    /// (`egui_extras/src/loaders/svg_loader.rs:58-61`, gating on the bare module-level
+    /// `fn is_supported` at `:30-32`); and by `DefaultTextureLoader`'s per-size cache
+    /// (`egui/src/load/texture_loader.rs:152-154`). Never contains `#`, which egui reserves
+    /// for animated-image frame indices (`egui/src/widgets/image.rs:891-893`).
+    ///
+    /// **That coupling has no mechanical protection, and the doc must not pretend otherwise.**
+    /// There is no `egui_extras::SvgLoader::is_supported`: `is_supported` is a private free
+    /// function outside the `impl SvgLoader` block (`:26-28` versus `:30-32`), and `SvgLoader`
+    /// is not re-exported at `egui_extras`'s root (`egui_extras/src/lib.rs:25-32` exports only
+    /// `DatePickerButton`, `Size`, `strip::*`, `table::*` and `install_image_loaders`), though
+    /// the module itself is public (`egui_extras/src/loaders.rs:121`, feature `svg`). Nothing
+    /// in this crate can reference it. It is therefore checked **end to end**, by a test that
+    /// calls `egui_extras::install_image_loaders` and asserts that a URI this method produced
+    /// loads through `Context::try_load_image` (`egui/src/context.rs:3858`); `egui_extras` is
+    /// already a dev-dependency with `features = ["svg"]` (§11).
     #[must_use] pub fn uri(&self, icon: &IconData) -> String;
 }
 
 /// Convert a decoded RGBA icon into an `egui::ColorImage`.
 ///
 /// Returns `None` — never panics — when `width == 0`, `height == 0`, when `width * height * 4`
-/// overflows `usize`, or when it does not equal `data.len()`. Mandatory:
+/// overflows `usize`, or when it does not equal `data.len()`. It does **not** test the image
+/// against `max_texture_side`: that is a `Context` property and this function takes no
+/// `Context`. The oversize test lives in [`to_image_source`] and [`to_image`], which do.
+/// Mandatory:
 /// `ColorImage::from_rgba_unmultiplied` carries an `assert_eq!` that fires in **release** too
 /// (`epaint/src/image.rs:113-120`). `from_rgba_unmultiplied` (not `..._premultiplied`) is
 /// correct because native-theme raster payloads are straight alpha
@@ -1481,9 +1772,43 @@ pub fn to_color_image(icon: &IconData) -> Option<egui::ColorImage>;
 /// * `IconData::Rgba` -> `ImageSource::Texture`, uploaded once via `Context::load_texture`
 ///   (`egui/src/context.rs:2387`) under the same URI and reused afterwards. `load_texture` is
 ///   documented as *not* immediate-mode safe (`egui/src/context.rs:2357-2358`), which is
-///   exactly why the URI, not the call site, is the cache key. The requested size is clamped
-///   against `ctx.input(|i| i.max_texture_side)` because `load_texture` `debug_assert!`s on it
-///   (`egui/src/context.rs:2396-2403`).
+///   exactly why the URI, not the call site, is the cache key.
+///
+/// # Oversize images are rejected, never resampled
+///
+/// `Context::load_texture` `debug_assert!`s that **both sides of the `ColorImage`** are at most
+/// `max_texture_side` (`egui/src/context.rs:2395-2403`). There is nothing to clamp: the
+/// signature is `(name, image, options)` (`:2387-2392`) — the size is a property of the image,
+/// not a parameter — and the image's dimensions come from `IconData::Rgba`'s baked-in `width`
+/// and `height` (`native-theme/src/model/icons.rs:303-310`). The abort is reachable from an
+/// ordinary 4096-px system icon on a `Context` still at the 2048 default
+/// (`egui/src/input_state/mod.rs:270`, `:351`).
+///
+/// So this is an **admissibility test, not a mitigation**: `to_image_source` and [`to_image`]
+/// read `let max = ctx.input(|i| i.max_texture_side);` and return `None` when `w > max` or
+/// `h > max`, exactly as [`to_color_image`] already returns `None` for a zero or mismatched
+/// buffer. Nothing is downscaled — resampling an icon would be an invented value.
+///
+/// No [`crate::Note`] variant is added for this case, and none may be: `Note` is an
+/// atlas-compile-time diagnostic reaching the caller only through [`ThemeAtlas::notes`], which
+/// these free functions have no access to. The `None` is the whole report.
+///
+/// # Lock discipline
+///
+/// **No function in this crate may call a second `Context` accessor from inside a `Context`
+/// accessor closure.** Every accessor funnels through one `RwLock` on one `ContextImpl`
+/// (`egui/src/context.rs:722`, `read` `:758`, `write` `:763`), and several that read like
+/// reads take the *write* lock — `Context::input` (`:990`) and `Context::data_mut` (`:1032`)
+/// both do. In debug builds epaint's `RwLock` panics after 10 s rather than blocking forever
+/// (`epaint/src/mutex.rs:5`, `:98-106`), so the failure is a hang followed by an abort.
+///
+/// The trap is directly on this function's path, because `Context::load_texture` itself calls
+/// `self.input(..)` (`:2395`): the natural cache-then-upload spelling
+/// `ctx.data_mut(|d| d.get_temp_mut_or_insert_with(id, || ctx.load_texture(..)))`
+/// (`egui/src/util/id_type_map.rs:514`) re-enters the lock and deadlocks. The specified
+/// implementation is three separate calls: read the cache in one `ctx.data_mut`, **drop the
+/// guard**, call `load_texture`, insert in a second `ctx.data_mut`. No test is specified for
+/// this — one would hang and then abort by construction; it is a review rule.
 ///
 /// # Texture ownership is part of the contract
 ///
@@ -1706,22 +2031,22 @@ fields, 50 leaves.
 | `defaults.font.size` | `text_styles[Body].size` (`style.rs:288`, `:76`) | DIRECT | base owner; egui default `13.0` (`:1418`) |
 | `defaults.font.weight` | `FontTweak::coords` `wght` (`epaint/src/text/fonts.rs:256`) | DERIVED | `FontId` has no weight field (`fonts.rs:27-34`; upstream's own `// TODO(emilk)` at `:33`). §8.3 |
 | `defaults.font.style` | matched face in the `FontPlan` | DERIVED | no italic anywhere in `Style`. §8.4 |
-| `defaults.font.color` | `widgets.noninteractive.fg_stroke.color` (`style.rs:1310`) | DIRECT | provably equal to `text_color` (`docs/platform-facts.md:1051-1052`) |
+| `defaults.font.color` | `widgets.noninteractive.fg_stroke.color` (`style.rs:1310`) | DIRECT | a copy of `defaults.text_color` whenever a theme omits it (`docs/inheritance-rules.toml:56`, enforced at `native-theme/src/resolve/inheritance.rs:103-106`), which every shipped preset does (`docs/platform-facts.md:1051-1052`); a theme that sets `color` under `[*.defaults.font]` explicitly loses it to the base owner `defaults.text_color` (§5.9) |
 | `defaults.line_height` | `spacing.extra_text_line_spacing` (`style.rs:423`) | DERIVED | multiplier → additive delta; needs a live pass. §6.15 |
 | `defaults.mono_font.family` | `FontDefinitions.families[Monospace]` head | DERIVED | prepend into the existing chain (`fonts.rs:540-548`) |
 | `defaults.mono_font.size` | `text_styles[Monospace].size` (`style.rs:79`) | DIRECT | the only uncontested text style |
 | `defaults.mono_font.weight` | `FontTweak::coords` `wght` on the mono entry | DERIVED | as `font.weight` |
 | `defaults.mono_font.style` | matched face | DERIVED | as `font.style` |
-| `defaults.mono_font.color` | `widgets.noninteractive.fg_stroke.color` | DIRECT | equal to `font.color` by inheritance (`docs/inheritance-rules.toml:57`) |
+| `defaults.mono_font.color` | `widgets.noninteractive.fg_stroke.color` | DIRECT | a copy of `defaults.font.color` whenever a theme omits it (`docs/inheritance-rules.toml:57`); a theme that sets `color` under `[*.defaults.mono_font]` explicitly loses it to the base owner `defaults.text_color` (§5.9) |
 | `defaults.background_color` | `visuals.panel_fill` (`style.rs:1071`) | DIRECT | read at `frame.rs:188`, `:192` |
 | `defaults.text_color` | `widgets.noninteractive.fg_stroke.color` | DIRECT | base owner; doc `style.rs:1253` |
 | `defaults.accent_color` | `visuals.selection.bg_fill` «scope» | SCOPED | egui has no accent field; inheritance source only |
 | `defaults.accent_text_color` | `visuals.selection.stroke.color` «scope» | SCOPED | same shape |
 | `defaults.surface_color` | `visuals.window_fill` (`style.rs:1062`) «Surface frames» | SCOPED | one field behind `Frame::window`/`menu`/`popup` (`frame.rs:201`, `:210`, `:219`) |
 | `defaults.muted_color` | `visuals.weak_text_color = Some(..)` (`style.rs:1026`) | DIRECT | base owner; makes `weak_text_alpha` dead by design (`:1019`) |
-| `defaults.shadow_color` | `visuals.window_shadow.color` + `popup_shadow.color` (`:1061`, `:1073`) | DIRECT | two sinks, one value, no rival |
+| `defaults.shadow_color` | `visuals.window_shadow.color` + `popup_shadow.color` (`:1061`, `:1073`) | DIRECT | two sinks, one value, no rival **on the colour** — the `border.shadow_enabled` gates claim the same two `Shadow` fields but not this sub-field (§5.9, and the shadow-counting convention in §5.11) |
 | `defaults.link_color` | `visuals.hyperlink_color` (`style.rs:1035`) | DIRECT | sole reader `widgets/hyperlink.rs:47` |
-| `defaults.selection_background` | `visuals.selection.bg_fill` (`style.rs:1195`) | DIRECT | base owner; 11 claimants |
+| `defaults.selection_background` | `visuals.selection.bg_fill` (`style.rs:1195`) | DIRECT | base owner; 12 claimants |
 | `defaults.selection_text_color` | `visuals.selection.stroke.color` (`:1198`) | DIRECT | base owner; keep `stroke.width` at egui's `1.0` (`:1619`) |
 | `defaults.selection_inactive_background` | — | UNMAPPABLE `egui-limited` | no unfocused-window styling anywhere in `Visuals` (`:988-1125`) |
 | `defaults.text_selection_background` | `visuals.selection.bg_fill` «Role::Input» | SCOPED | rival of `selection_background`; contest vacuous today |
@@ -1766,7 +2091,7 @@ fields, 50 leaves.
 | `text_scale.section_heading.size` | `text_styles[Heading].size` (`style.rs:87`) | DIRECT | base owner; readers `widget_text.rs:234`, `window.rs:1313`, `:1350` |
 | `text_scale.section_heading.weight` | `text_role_weight()` + `RichText::variation` | DERIVED | §5.8 item 3 |
 | `text_scale.section_heading.line_height` | — | UNMAPPABLE `egui-limited` | as above |
-| `text_scale.dialog_title.size` | `text_role_font()` + `RichText::font` (`widget_text.rs:186-192`) | DERIVED | egui has one `Heading`; §5.8 item 4 |
+| `text_scale.dialog_title.size` | `text_role_font()` + `RichText::font` (`widget_text.rs:190-198`) | DERIVED | egui has one `Heading`; §5.8 item 4 |
 | `text_scale.dialog_title.weight` | `text_role_weight()` + `RichText::variation` | DERIVED | §5.8 item 3 |
 | `text_scale.dialog_title.line_height` | — | UNMAPPABLE `egui-limited` | as above |
 | `text_scale.display.size` | `text_role_font()` + `RichText::font` | DERIVED | §5.8 item 4 |
@@ -1777,7 +2102,7 @@ fields, 50 leaves.
 
 `LayoutTheme` is `native-theme/src/model/widgets/mod.rs:884-901`. It lives on
 `native_theme::theme::Theme` (`native-theme/src/model/mod.rs:266`), **not** on
-`ResolvedTheme` and **not** on `SystemTheme` (`native-theme/src/lib.rs:369-424`),
+`ResolvedTheme` and **not** on `SystemTheme` (`native-theme/src/lib.rs:369-423`),
 so it is supplied through `Builder::layout` and is unavailable on the
 `from_system()` path (§14 item 21).
 
@@ -1808,8 +2133,8 @@ Five of these six are `Area`-based, so `native_scope` does not reach them
 | `window.title_bar_background` | `widgets.open.weak_bg_fill` (`window.rs:1427`) | SCOPED | applied only when the window is the topmost layer (`window.rs:660`, `:1426-1428`) |
 | `window.inactive_title_bar_background` | `Frame::fill` on `Window::title_frame` (`window.rs:272`) | SCOPED | no global field exists; requires `Surface::WindowTitleBar` |
 | `window.inactive_title_bar_text_color` | — | UNMAPPABLE `egui-limited` | `title_ui` never calls `AtomLayout::fallback_text_color`; colour is `visuals.text_color()` (`atom_layout.rs:300-301`) |
-| `window.title_bar_font.family` | `text_styles[Heading].family` «Surface::WindowTitleBar» | SCOPED | contested by `dialog.title_font` and `text_scale.section_heading` |
-| `window.title_bar_font.size` | `text_styles[Heading].size` | SCOPED | same claimants |
+| `window.title_bar_font.family` | `text_role_font()` + `RichText::font` on the title atoms (`widget_text.rs:190-198`) | DERIVED | family requires bytes (§8.2), and no `Style` route exists either: `Surface::WindowTitleBar` resolves to an `egui::Frame`, whose six fields carry no text style (`containers/frame.rs:96-141`), and `title_ui` runs on the `Area` content `Ui` **outside** `add_contents` (`window.rs:710`, `:719-752`) while `Window` accepts no `StyleModifier`. Route as for `.size` |
+| `window.title_bar_font.size` | `text_role_font()` + `RichText::font` on the title atoms | DERIVED | `Window::new` takes `impl IntoAtoms` (`window.rs:102`) and an explicit `RichText::font` overrides `AtomLayout::fallback_font(TextStyle::Heading)` (`window.rs:1350`, `atomics/atom_layout.rs:147`, `atomics/atom_kind.rs:135`, resolved at `widget_text.rs:425-436`) — the same route §5.1 grades DERIVED for `text_scale.dialog_title.size`. The leaf loses the global `text_styles[Heading]` contest to `text_scale.section_heading` (§5.9) |
 | `window.title_bar_font.weight` | — | UNMAPPABLE `egui-limited` | `FontId` has two fields (`epaint/src/text/fonts.rs:27-34`; upstream's own `// TODO(emilk)` at `:33`) |
 | `window.title_bar_font.style` | — | UNMAPPABLE `egui-limited` | same |
 | `window.title_bar_font.color` | — | UNMAPPABLE `egui-limited` | `FontId` carries no colour; egui has no per-role text colour |
@@ -1822,7 +2147,7 @@ Five of these six are `Area`-based, so `native_scope` does not reach them
 | `window.border.padding_horizontal` | `spacing.window_margin.left`/`.right` (`frame.rs:198`) | DIRECT | per side, do not halve; `i8` narrowing (§7) |
 | `window.border.padding_vertical` | `spacing.window_margin.top`/`.bottom` | DIRECT | `Window` transplants it onto `ScrollArea::content_margin` (`window.rs:634-635`, `:740`) |
 
-**Window: DIRECT 3 · SCOPED 7 · DERIVED 1 · UNMAPPABLE 6 = 17.**
+**Window: DIRECT 3 · SCOPED 5 · DERIVED 3 · UNMAPPABLE 6 = 17.**
 
 `ResolvedDialogTheme` — `native-theme/src/model/widgets/mod.rs:644-682`;
 egui counterpart `Modal` (`containers/modal.rs:22`), frame
@@ -1838,12 +2163,12 @@ egui counterpart `Modal` (`containers/modal.rs:22`), frame
 | `dialog.button_gap` | `spacing.item_spacing.x` (`style.rs:391`) | SCOPED | modal bodies are ordinary child `Ui`s (`modal.rs:104-108`), so `ui.style_mut()` works there |
 | `dialog.icon_size` | — | UNMAPPABLE `egui-limited` | `Spacing::icon_width` is checkbox/radio/arrow geometry; `dialog_icon_size()` accessor |
 | `dialog.button_order` | — | UNMAPPABLE `egui-limited` | egui has no dialog widget; `dialog_button_order()` accessor |
-| `dialog.title_font.family` | `text_styles[Heading].family` «Surface::Dialog» | SCOPED | contested by `window.title_bar_font`, `text_scale.section_heading` |
-| `dialog.title_font.size` | `text_styles[Heading].size` | SCOPED | same |
+| `dialog.title_font.family` | `text_styles[Heading].family` «Role::Dialog» | DERIVED | family requires bytes; §8.2. Carrier corrected: `Surface::Dialog` resolves to an `egui::Frame`, whose six fields carry no text style (`containers/frame.rs:96-141`); the modal title is drawn by the application inside the `Modal::show` closure (`modal.rs:104-108`), the same carrier as `dialog.button_gap` above. Contested by `window.title_bar_font`, `text_scale.section_heading` |
+| `dialog.title_font.size` | `text_styles[Heading].size` «Role::Dialog» | SCOPED | same carrier correction as `.family`; same claimants |
 | `dialog.title_font.weight` | — | UNMAPPABLE `egui-limited` | `fonts.rs:27-34` |
 | `dialog.title_font.style` | — | UNMAPPABLE `egui-limited` | same |
 | `dialog.title_font.color` | — | UNMAPPABLE `egui-limited` | one text-colour slot per modal, already taken by `body_font.color` |
-| `dialog.body_font.family` | `text_styles[Body].family` | SCOPED | contested by `popover.font`, `tooltip.font`, `defaults.font` |
+| `dialog.body_font.family` | `text_styles[Body].family` | DERIVED | contested by `popover.font`, `tooltip.font`, `defaults.font`; DERIVED because a family is bytes, not a name (§8.2) — a reason that applies to `.family` only, so the `.size` row below stays SCOPED |
 | `dialog.body_font.size` | `text_styles[Body].size` | SCOPED | same |
 | `dialog.body_font.weight` | — | UNMAPPABLE `egui-limited` | `fonts.rs:27-34` |
 | `dialog.body_font.style` | — | UNMAPPABLE `egui-limited` | same |
@@ -1857,7 +2182,7 @@ egui counterpart `Modal` (`containers/modal.rs:22`), frame
 | `dialog.border.padding_horizontal` | `Frame::inner_margin.left`/`.right`; global `menu_margin` (`frame.rs:216`) | SCOPED | per side |
 | `dialog.border.padding_vertical` | `Frame::inner_margin.top`/`.bottom` | SCOPED | per side |
 
-**Dialog: DIRECT 0 · SCOPED 14 · DERIVED 1 · UNMAPPABLE 11 = 26.**
+**Dialog: DIRECT 0 · SCOPED 12 · DERIVED 3 · UNMAPPABLE 11 = 26.**
 
 `ResolvedPopoverTheme` — `native-theme/src/model/widgets/mod.rs:540-549`;
 egui counterpart `Popup`, carriers `Popup::frame` (`popup.rs:369`) and
@@ -1867,7 +2192,7 @@ egui counterpart `Popup`, carriers `Popup::frame` (`popup.rs:369`) and
 | leaf | egui sink | verdict | note |
 |---|---|---|---|
 | `popover.background_color` | `Frame::fill`; global `window_fill` (`frame.rs:219`) | SCOPED | `window` wins the global |
-| `popover.font.family` | `text_styles[Body].family` | SCOPED | contested by `dialog.body_font`, `tooltip.font`, `defaults.font` |
+| `popover.font.family` | `text_styles[Body].family` | DERIVED | contested by `dialog.body_font`, `tooltip.font`, `defaults.font`; DERIVED because a family is bytes, not a name (§8.2) — `.family` only, so the `.size` row below stays SCOPED |
 | `popover.font.size` | `text_styles[Body].size` | SCOPED | same |
 | `popover.font.weight` | — | UNMAPPABLE `egui-limited` | `fonts.rs:27-34` |
 | `popover.font.style` | — | UNMAPPABLE `egui-limited` | same |
@@ -1881,7 +2206,7 @@ egui counterpart `Popup`, carriers `Popup::frame` (`popup.rs:369`) and
 | `popover.border.padding_horizontal` | `Frame::inner_margin.left`/`.right` | SCOPED | per side |
 | `popover.border.padding_vertical` | `Frame::inner_margin.top`/`.bottom` | SCOPED | per side |
 
-**Popover: DIRECT 0 · SCOPED 9 · DERIVED 1 · UNMAPPABLE 4 = 14.**
+**Popover: DIRECT 0 · SCOPED 8 · DERIVED 2 · UNMAPPABLE 4 = 14.**
 
 `ResolvedCardTheme` — `native-theme/src/model/widgets/mod.rs:800-807`,
 `#[theme_layer(border_kind = "none")]` at `:799` and **no `#[theme_inherit]`**.
@@ -1917,8 +2242,8 @@ falls through to the global style. `Tooltip::popup` is a public field
 | leaf | egui sink | verdict | note |
 |---|---|---|---|
 | `tooltip.background_color` | `Frame::fill` via `Tooltip::popup.frame(..)`; global `window_fill` | SCOPED | `window` wins the global |
-| `tooltip.max_width` | `spacing.tooltip_width` (`style.rs:447`) | DIRECT | **the only uncontested field in the whole surfaces group**; readers `tooltip.rs:26`, `:43`, `response.rs:713`, `:730`, `:753` |
-| `tooltip.font.family` | `text_styles[Body].family` | SCOPED | tooltip content is a plain `Label` (`response.rs:715`) |
+| `tooltip.max_width` | `spacing.tooltip_width` (`style.rs:447`) | DIRECT | one of three uncontested fields in the surfaces group, with `visuals.window_corner_radius` and `spacing.window_margin`, both owned by `window` (§5.9); readers `tooltip.rs:26`, `:43`, `response.rs:713`, `:730`, `:753` |
+| `tooltip.font.family` | `text_styles[Body].family` | DERIVED | tooltip content is a plain `Label` (`response.rs:715`); DERIVED because a family is bytes, not a name (§8.2) — `.family` only, so the `.size` row below stays SCOPED |
 | `tooltip.font.size` | `text_styles[Body].size` | SCOPED | same |
 | `tooltip.font.weight` | — | UNMAPPABLE `egui-limited` | `fonts.rs:27-34` |
 | `tooltip.font.style` | — | UNMAPPABLE `egui-limited` | same |
@@ -1932,7 +2257,7 @@ falls through to the global style. `Tooltip::popup` is a public field
 | `tooltip.border.padding_horizontal` | `Frame::inner_margin.left`/`.right` | SCOPED | the 4.0 pt anchor gap is hardcoded (`tooltip.rs:30`, `:42`); native-theme has no anchor gap, so nothing is lost there |
 | `tooltip.border.padding_vertical` | `Frame::inner_margin.top`/`.bottom` | SCOPED | per side |
 
-**Tooltip: DIRECT 1 · SCOPED 9 · DERIVED 1 · UNMAPPABLE 4 = 15.**
+**Tooltip: DIRECT 1 · SCOPED 8 · DERIVED 2 · UNMAPPABLE 4 = 15.**
 
 `ResolvedMenuTheme` — `native-theme/src/model/widgets/mod.rs:198-232`,
 `border_kind = "none"` at `:196` so an omitted `[menu.border]` legitimately
@@ -1941,7 +2266,15 @@ resolves to zeros (`validate_helpers.rs:46-57`, `:268`). **Menu items are
 `MenuConfig::default()` hardcodes `style: menu_style.into()` (`menu.rs:83`) and
 `MenuBar::default()` the same (`:226`), so without an application-supplied
 `MenuConfig::style` / `MenuBar::style`, `menu_style` (`menu.rs:22-29`) discards
-six of the connector's writes inside every menu.
+six of the connector's writes inside every menu (`:23`–`:28`). The same is true of
+`Response::context_menu`, which is `Popup::context_menu(self).show(..)`
+(`response.rs:1027-1029`) and takes no style argument at all: it delegates to
+`Popup::menu` (`popup.rs:237`), which hardcodes `.style(menu_style)` (`:241`), so
+`role_modifier(Role::Menu)` has **no supply point** on that one-line spelling. The
+escape hatches are `Popup::context_menu(&response).style(..).show(..)`
+(`popup.rs:248`, `:417`, `:508`) and
+`MenuButton::from_button(..).config(MenuConfig::new().style(..))` (`menu.rs:309`,
+`:302`, `:92`, `:107`).
 
 | leaf | egui sink | verdict | note |
 |---|---|---|---|
@@ -1953,7 +2286,7 @@ six of the connector's writes inside every menu.
 | `menu.hover_background` | `widgets.hovered.weak_bg_fill` (`style.rs:1299`) | SCOPED | via `button_style` (`widget_style.rs:159`) |
 | `menu.hover_text_color` | `widgets.hovered.fg_stroke.color` (`style.rs:1310`) | SCOPED | shared with check-mark and arrow strokes; no text-only slot |
 | `menu.disabled_text_color` | — | UNMAPPABLE `egui-limited` | no disabled state; a gamma multiply cannot reach an arbitrary hue |
-| `menu.font.family` | `text_styles[Button].family` | SCOPED | menu items are `Button`s (`button.rs:48-49`) |
+| `menu.font.family` | `text_styles[Button].family` | DERIVED | menu items are `Button`s (`button.rs:48-49`); DERIVED because a family is bytes, not a name (§8.2) — `.family` only, so the `.size` row below stays SCOPED |
 | `menu.font.size` | `text_styles[Button].size` | SCOPED | same |
 | `menu.font.weight` | — | UNMAPPABLE `egui-limited` | `fonts.rs:27-34` |
 | `menu.font.style` | — | UNMAPPABLE `egui-limited` | same |
@@ -1967,9 +2300,9 @@ six of the connector's writes inside every menu.
 | `menu.border.padding_horizontal` | `Frame::inner_margin`; global `menu_margin` (`frame.rs:207`) | SCOPED | distinct from *item* padding, which `menu_style` forces to `vec2(2.0, 0.0)` (`menu.rs:23`) and which native-theme does not model |
 | `menu.border.padding_vertical` | `Frame::inner_margin.top`/`.bottom` | SCOPED | also feeds submenu alignment (`menu.rs:499`) |
 
-**Menu: DIRECT 0 · SCOPED 14 · DERIVED 1 · UNMAPPABLE 6 = 21.**
+**Menu: DIRECT 0 · SCOPED 13 · DERIVED 2 · UNMAPPABLE 6 = 21.**
 
-**Surfaces total: DIRECT 4 · SCOPED 59 · DERIVED 6 · UNMAPPABLE 33 = 102.**
+**Surfaces total: DIRECT 4 · SCOPED 52 · DERIVED 13 · UNMAPPABLE 33 = 102.**
 Four DIRECT leaves out of 102. That ratio is the quantitative case for the
 `Surface`-frame architecture.
 
@@ -2008,8 +2341,8 @@ Four structural facts drive every verdict here:
 | leaf | egui sink | verdict | note |
 |---|---|---|---|
 | `button.background_color` | `widgets.inactive.weak_bg_fill` «Button» | SCOPED | `widget_style.rs:159` → `button.rs:331`, `:365` |
-| `button.primary_background` | `widgets.{inactive,hovered,active}.weak_bg_fill` «Button + Selected» | SCOPED | two values for one field in one state — the single-struct proof that scoping is necessary |
-| `button.primary_text_color` | `widgets.{inactive,hovered,active}.fg_stroke.color` «Button + Selected» | SCOPED | `WidgetVisuals::text_color()` *is* `fg_stroke.color` (`style.rs:1323-1325`) |
+| `button.primary_background` | `visuals.selection.bg_fill` «Button + Selected» | SCOPED | `widget_style.rs:150-155` overwrites a selected button's fill and text colour regardless of interaction state (`:159`, `:168`); a write to `widgets.*.weak_bg_fill` would be discarded |
+| `button.primary_text_color` | `visuals.selection.stroke.color` «Button + Selected» | SCOPED | same branch — `widget_style.rs:154` → `:168`; §6.2 specifies the identical sinks |
 | `button.min_width` | — | UNMAPPABLE `egui-limited` | `atom_ui` clamps only `min_size.y` (`button.rs:307-309`); `interact_size.x` drives `Grid`, `DragValue` and the colour swatch instead |
 | `button.min_height` | `spacing.interact_size.y` «Button» | SCOPED | base owner; 12 other claimants |
 | `button.icon_text_gap` | `spacing.icon_spacing` «Button» | SCOPED | `atom_layout.rs:302`, applied `(n−1)` times at `:346-348` |
@@ -2020,8 +2353,8 @@ Four structural facts drive every verdict here:
 | `button.disabled_text_color` | — | UNMAPPABLE `egui-limited` | B2 |
 | `button.active_background` | `widgets.active.weak_bg_fill` «Button» | SCOPED | `soft_option`; `None` → `hover_background` (§6.4) |
 | `button.disabled_background` | — | UNMAPPABLE `egui-limited` | B2 |
-| `button.font.family` | `override_font_id.family` «Button» | DERIVED | family requires bytes; §8.2 |
-| `button.font.size` | `override_font_id.size` «Button» | SCOPED | B3 |
+| `button.font.family` | `override_font_id.family` «Button» **and** `text_styles[Button].family` (base owner, §5.9) | DERIVED | family requires bytes; §8.2. Two sinks, not one: the base write exists because `ComboBox`, `ProgressBar`, `CollapsingHeader` and `Style::drag_value_text_style` read `TextStyle::Button` even though `Button` itself does not (§8.5) |
+| `button.font.size` | `override_font_id.size` «Button» **and** `text_styles[Button].size` (base owner, §5.9) | SCOPED | B3; same two sinks as `.family` (§8.5) |
 | `button.font.weight` | — | UNMAPPABLE `egui-limited` | `epaint/src/text/fonts.rs:27-34`; upstream's own `// TODO(emilk)` at `:33` |
 | `button.font.style` | — | UNMAPPABLE `egui-limited` | same |
 | `button.font.color` | `widgets.inactive.fg_stroke.color` «Button» | SCOPED | `widget_style.rs:133-136` → `:168` → `button.rs:361` |
@@ -2054,7 +2387,7 @@ Four structural facts drive every verdict here:
 | `link.font.size` | `override_font_id.size` «Link» | SCOPED | B3 |
 | `link.font.weight` | — | UNMAPPABLE `egui-limited` | `fonts.rs:27-34` |
 | `link.font.style` | — | UNMAPPABLE `egui-limited` | same |
-| `link.font.color` | `visuals.hyperlink_color` (`style.rs:1035`) | DIRECT | sole reader `hyperlink.rs:47`; sole claimant |
+| `link.font.color` | `visuals.hyperlink_color` (`style.rs:1035`) | DIRECT | sole reader `hyperlink.rs:47`; shares the field with `defaults.link_color`, which §5.9 names as joint base owner because `docs/inheritance-rules.toml:282` pins the two together unless a theme sets `color` under `[*.link.font]`, and no shipped preset declares that table |
 
 **Link: DIRECT 1 · SCOPED 1 · DERIVED 1 · UNMAPPABLE 9 = 12.**
 
@@ -2163,7 +2496,7 @@ egui counterpart `TextEdit` (`widgets/text_edit/builder.rs`).
 |---|---|---|---|
 | `input.background_color` | `visuals.text_edit_bg_color = Some(..)` (`style.rs:1049`) | DIRECT | writing it explicitly removes the input from the four-way `extreme_bg_color` contest; sole consumer `builder.rs:722` |
 | `input.placeholder_color` | `visuals.weak_text_color` «Input» | SCOPED | hint text `builder.rs:615`; rival `defaults.muted_color` via `RichText::weak()` (`widget_text.rs:487`) |
-| `input.caret_color` | `visuals.text_cursor.stroke.color` (`style.rs:952`, `:1078`) | DIRECT | sole consumer `text_selection/visuals.rs:268`. Caret width stays egui's `2.0` (`:970`) — no native caret width exists |
+| `input.caret_color` | `visuals.text_cursor.stroke.color` (`style.rs:952`, `:1078`) | DIRECT | sole consumer `text_selection/visuals.rs:268`. Caret width stays egui's `2.0` (`:970`) — no native caret width exists. The IME composition underlines are **not** recoloured with it: `Visuals::ime_composition` (`style.rs:1032`) is a separate struct whose two strokes egui merely initialises to the same values (`:1640`, `:1654`), and this crate never writes it (§5.10), so a written `caret_color` diverges from the IME underline |
 | `input.selection_background` | `visuals.selection.bg_fill` «Input» | SCOPED | `text_selection/visuals.rs:39` |
 | `input.selection_text_color` | `visuals.selection.stroke.color` «Input» | SCOPED | `text_selection/visuals.rs:40`; wins the intra-widget contest against `focus_border_color` (§14 item 20) |
 | `input.min_height` | — | UNMAPPABLE `egui-limited` | `TextEdit` never reads `interact_size`; height is `min_inner_height + frame.total_margin().sum().y` (`builder.rs:698`, `:504`) and the margin is a per-instance builder field defaulting to `Margin::symmetric(4, 2)` (`:82`, `:136`) |
@@ -2172,7 +2505,7 @@ egui counterpart `TextEdit` (`widgets/text_edit/builder.rs`).
 | `input.hover_border_color` | `widgets.hovered.bg_stroke.color` «Input» | SCOPED | `builder.rs:720` → `:732`; `soft_option`, `None` → `border.color` (no change on hover) |
 | `input.focus_border_color` | — | UNMAPPABLE `egui-limited` | a focused `TextEdit` strokes from `visuals.selection.stroke` (`builder.rs:725-730`), which is already the selected-text colour — an **intra-widget** collision no scope can resolve. `input_focus_border_color()` accessor |
 | `input.disabled_background` | — | UNMAPPABLE `egui-limited` | as `disabled_text_color` |
-| `input.font.family` | `text_styles[Body].family` «Input» | SCOPED | `builder.rs:472` → `FontSelection::Default` → `Body` (`style.rs:150-152`) |
+| `input.font.family` | `text_styles[Body].family` «Input» | DERIVED | `builder.rs:472` → `FontSelection::Default` → `Body` (`style.rs:150-152`); DERIVED because a family is bytes, not a name (§8.2) — `.family` only, so the `.size` row below stays SCOPED |
 | `input.font.size` | `text_styles[Body].size` «Input» | SCOPED | same key |
 | `input.font.weight` | a `FontFamily::Name` per `(family, weight, style)` triple | DERIVED | matrix verdict. **This crate declines the mechanism** — §5.8 item 2 — so the leaf is not carried; `FontId` has two fields (`epaint/src/text/fonts.rs:27-34`) |
 | `input.font.style` | a `FontFamily::Name` per `(family, weight, style)` triple | DERIVED | matrix verdict. **This crate declines the mechanism** — §5.8 item 2 — so the leaf is not carried; `FontId` has two fields (`epaint/src/text/fonts.rs:27-34`) |
@@ -2186,7 +2519,7 @@ egui counterpart `TextEdit` (`widgets/text_edit/builder.rs`).
 | `input.border.padding_horizontal` | — | UNMAPPABLE `egui-limited` | inner margin is the per-instance `TextEdit::margin` (`builder.rs:82`, `:313`); no `Style` field. `visuals.expansion` is rejected as a substitute: symmetric, applied after allocation, and read by nine other widgets |
 | `input.border.padding_vertical` | — | UNMAPPABLE `egui-limited` | same |
 
-**Input: DIRECT 2 · SCOPED 11 · DERIVED 2 · UNMAPPABLE 9 = 24.**
+**Input: DIRECT 2 · SCOPED 10 · DERIVED 3 · UNMAPPABLE 9 = 24.**
 
 `ResolvedComboBoxTheme` — `native-theme/src/model/widgets/mod.rs:714-752`.
 
@@ -2201,7 +2534,7 @@ egui counterpart `TextEdit` (`widgets/text_edit/builder.rs`).
 | `combo_box.disabled_text_color` | — | UNMAPPABLE `egui-limited` | no disabled state |
 | `combo_box.hover_background` | `widgets.hovered.weak_bg_fill` «ComboBox» | SCOPED | `soft_option`; `None` → `background_color` |
 | `combo_box.disabled_background` | — | UNMAPPABLE `egui-limited` | no disabled state |
-| `combo_box.font.family` | `text_styles[Button].family` «ComboBox» | SCOPED | `combo_box.rs:358` selects `TextStyle::Button` explicitly |
+| `combo_box.font.family` | `text_styles[Button].family` «ComboBox» | DERIVED | `combo_box.rs:358` selects `TextStyle::Button` explicitly; DERIVED because a family is bytes, not a name (§8.2) — `.family` only, so the `.size` row below stays SCOPED |
 | `combo_box.font.size` | `text_styles[Button].size` «ComboBox» | SCOPED | same |
 | `combo_box.font.weight` | a `FontFamily::Name` per `(family, weight, style)` triple | DERIVED | matrix verdict. **This crate declines the mechanism** — §5.8 item 2 — so the leaf is not carried; `FontId` has two fields (`epaint/src/text/fonts.rs:27-34`) |
 | `combo_box.font.style` | a `FontFamily::Name` per `(family, weight, style)` triple | DERIVED | matrix verdict. **This crate declines the mechanism** — §5.8 item 2 — so the leaf is not carried; `FontId` has two fields (`epaint/src/text/fonts.rs:27-34`) |
@@ -2215,7 +2548,7 @@ egui counterpart `TextEdit` (`widgets/text_edit/builder.rs`).
 | `combo_box.border.padding_horizontal` | `spacing.button_padding.x` «ComboBox» | SCOPED | `combo_box.rs:339`, `:433`, `:439`, `:443`. Note: here the value stays `f32`, while `Button` narrows the same field to `i8` (`widget_style.rs:163-165` → `epaint/src/margin.rs:117-119`), so a fractional padding renders differently on the two widgets from one `Style` |
 | `combo_box.border.padding_vertical` | `spacing.button_padding.y` «ComboBox» | SCOPED | same asymmetry |
 
-**ComboBox: DIRECT 1 · SCOPED 13 · DERIVED 3 · UNMAPPABLE 5 = 22.**
+**ComboBox: DIRECT 1 · SCOPED 12 · DERIVED 4 · UNMAPPABLE 5 = 22.**
 
 `ResolvedListTheme` — `native-theme/src/model/widgets/mod.rs:493-531`.
 Two egui realisations: `Grid` (`egui/src/grid.rs`) and `egui_extras::Table`.
@@ -2223,7 +2556,7 @@ Neither paints a container background.
 
 | leaf | egui sink | verdict | note |
 |---|---|---|---|
-| `list.background_color` | — | UNMAPPABLE `egui-limited` | no container fill in `Grid` (`grid.rs:255-273` is the only painter call) or `egui_extras` (`layout.rs:129-151`). `extreme_bg_color` is rejected: it is the scroll trough, progress trough and canvas fill |
+| `list.background_color` | — | UNMAPPABLE `egui-limited` | no container fill in `Grid` — its only non-debug fill is the per-row striping colour in `paint_row` (`grid.rs:255-273`, called from `:286` and `:492`) — or in `egui_extras` (`layout.rs:129-151`). `extreme_bg_color` is rejected: it is the scroll trough, progress trough and canvas fill |
 | `list.alternate_row_background` | `visuals.faint_bg_color` (`style.rs:1039`) | DIRECT | both readers are list-shaped (`grid.rs:505-510`, `egui_extras/src/layout.rs:129-134`). egui's own value is *additive* (`from_additive_luminance(5)`, `style.rs:1511`); a native opaque colour will look different from stock, correctly |
 | `list.selection_background` | `visuals.selection.bg_fill` «List» | SCOPED | `egui_extras/src/layout.rs:137-142`; `Grid` has no selection concept |
 | `list.selection_text_color` | `visuals.selection.stroke.color` «List» | SCOPED | `egui_extras/src/layout.rs:228-230` |
@@ -2233,13 +2566,13 @@ Neither paints a container background.
 | `list.hover_background` | `widgets.hovered.bg_fill` «List» | SCOPED | `egui_extras/src/layout.rs:145-151`. Note this is `bg_fill`, not `weak_bg_fill` |
 | `list.hover_text_color` | — | UNMAPPABLE `egui-limited` | `egui_extras` sets `override_text_color` only in the `selected` branch (`layout.rs:227-231`); the hovered branch paints a background and nothing else |
 | `list.disabled_text_color` | — | UNMAPPABLE `egui-limited` | no disabled state |
-| `list.item_font.family` | `text_styles[Body].family` «List» | SCOPED | cells are `Label`s |
+| `list.item_font.family` | `text_styles[Body].family` «List» | DERIVED | cells are `Label`s; DERIVED because a family is bytes, not a name (§8.2) — `.family` only, so the `.size` row below stays SCOPED |
 | `list.item_font.size` | `text_styles[Body].size` «List» | SCOPED | same |
 | `list.item_font.weight` | a `FontFamily::Name` per `(family, weight, style)` triple | DERIVED | matrix verdict. **This crate declines the mechanism** — §5.8 item 2 — so the leaf is not carried; `FontId` has two fields (`epaint/src/text/fonts.rs:27-34`) |
 | `list.item_font.style` | a `FontFamily::Name` per `(family, weight, style)` triple | DERIVED | matrix verdict. **This crate declines the mechanism** — §5.8 item 2 — so the leaf is not carried; `FontId` has two fields (`epaint/src/text/fonts.rs:27-34`) |
 | `list.item_font.color` | `widgets.noninteractive.fg_stroke.color` «List» | SCOPED | `widgets/label.rs:297-300` → `style.rs:1135-1138` |
-| `list.header_font.family` | `text_styles[Name("native-theme::list-header")].family` (`style.rs:93`) | DIRECT | matrix verdict: a `Name` key collides with nothing. **This crate adds no `Name` key** — §5.8 item 5 — so the leaf is effectively SCOPED, displaced onto `text_styles[Heading]` or reached through `list_header_font()` (§4.7) |
-| `list.header_font.size` | `text_styles[Name("native-theme::list-header")].size` | DIRECT | same; §5.8 item 5 |
+| `list.header_font.family` | `text_styles[Name("native-theme::list-header")].family` (`style.rs:93`) | DERIVED | the `Name` key would collide with nothing, but a family is bytes, not a name (§8.2), and a `Name` key does not escape that — so DERIVED under the same uniform rule as every other `*.font.family` leaf, not DIRECT. Separately, **this crate adds no `Name` key** (§5.8 item 5), so the leaf is displaced onto `text_styles[Heading]` or reached through `list_header_font()` (§4.7) |
+| `list.header_font.size` | `text_styles[Name("native-theme::list-header")].size` | DIRECT | matrix verdict: a `Name` key collides with nothing, and unlike `.family` a size needs no font bytes, so DIRECT survives the family rule. **This crate adds no `Name` key** — §5.8 item 5 — so the leaf is effectively SCOPED, displaced onto `text_styles[Heading]` or reached through `list_header_font()` (§4.7) |
 | `list.header_font.weight` | a `FontFamily::Name` per `(family, weight, style)` triple | DERIVED | matrix verdict. **This crate declines the mechanism** — §5.8 item 2 — so the leaf is not carried; `FontId` has two fields (`epaint/src/text/fonts.rs:27-34`) |
 | `list.header_font.style` | a `FontFamily::Name` per `(family, weight, style)` triple | DERIVED | matrix verdict. **This crate declines the mechanism** — §5.8 item 2 — so the leaf is not carried; `FontId` has two fields (`epaint/src/text/fonts.rs:27-34`) |
 | `list.header_font.color` | `widgets.active.fg_stroke.color` «List», via `Visuals::strong_text_color()` (`style.rs:1146-1148`) | SCOPED | trade-off: any interactive widget in a cell then renders its pressed text in the header colour. The recommended default is `list_header_color()` (§4.7) plus `RichText::color(..)` |
@@ -2252,9 +2585,9 @@ Neither paints a container background.
 | `list.border.padding_horizontal` | — | UNMAPPABLE `egui-limited` | `Frame::group` hardcodes `6` (`frame.rs:180`). `item_spacing` is rejected: it is the inter-cell gap **and** the gap after every widget in every layout |
 | `list.border.padding_vertical` | — | UNMAPPABLE `egui-limited` | same |
 
-**List: DIRECT 3 · SCOPED 12 · DERIVED 4 · UNMAPPABLE 9 = 28.**
+**List: DIRECT 2 · SCOPED 11 · DERIVED 6 · UNMAPPABLE 9 = 28.**
 
-**Input group total: DIRECT 6 · SCOPED 36 · DERIVED 9 · UNMAPPABLE 23 = 74.**
+**Input group total: DIRECT 5 · SCOPED 33 · DERIVED 13 · UNMAPPABLE 23 = 74.**
 
 ### 5.5 Indicators (40 leaves)
 
@@ -2301,10 +2634,10 @@ Three structural facts:
 | `progress_bar.track_color` | `visuals.extreme_bg_color` «ProgressBar» | SCOPED | `progress_bar.rs:139-140`; displaced by `scrollbar.track_color` globally |
 | `progress_bar.track_height` | `spacing.interact_size.y` «ProgressBar» | SCOPED | `progress_bar.rs:115-117` — **exact**, not a floor. Semantic loss on Windows, where the groove is 1 inside a 3-high control (`docs/platform-facts.md:1292`) and egui's bar *is* the groove |
 | `progress_bar.min_width` | — | UNMAPPABLE `egui-limited` | the `96.0` floor is a literal (`progress_bar.rs:113-114`) |
-| `progress_bar.border.color` | — | UNMAPPABLE `egui-limited` | `ProgressBar::ui` never paints a stroke (`progress_bar.rs:130-204`) |
+| `progress_bar.border.color` | — | UNMAPPABLE `egui-limited` | `ProgressBar::ui` paints only filled rects and a galley — no frame stroke and no `Frame` (`progress_bar.rs:130-204`); the sole `Stroke` in the widget is the indeterminate-animation arc at `:178-179`, inside the `animate && !has_custom_cr` branch opened at `:163`, which is not a border |
 | `progress_bar.border.corner_radius` | — | UNMAPPABLE `egui-limited` | always a pill: the radius falls back to `half_height` (`progress_bar.rs:136-138`, where `half_height = outer_rect.height() / 2.0` at `:137`); the only override is the per-instance `ProgressBar::corner_radius` (`:92-96`) |
 | `progress_bar.border.corner_radius_lg` | — | UNMAPPABLE `source-void` | always `0.0` |
-| `progress_bar.border.line_width` | — | UNMAPPABLE `egui-limited` | no stroke |
+| `progress_bar.border.line_width` | — | UNMAPPABLE `egui-limited` | no frame stroke; see `progress_bar.border.color` |
 | `progress_bar.border.opacity` | — | UNMAPPABLE `source-void` | always `0.0` |
 | `progress_bar.border.shadow_enabled` | — | UNMAPPABLE `egui-limited` | no per-widget shadow; and `docs/platform-facts.md:1295` records "no shadow" on all four platforms |
 | `progress_bar.border.padding_horizontal` | `spacing.item_spacing.x` «ProgressBar» | SCOPED | the label's only inset (`progress_bar.rs:195-196`); effective only when the app calls `ProgressBar::text`. **Not** range-checked by native-theme — must go through `finite_or(v, 0.0).max(0.0)` |
@@ -2343,16 +2676,16 @@ Conflating them is the easiest way to produce a plausible but wrong connector.
 | `tab.background_color` | `widgets.inactive.weak_bg_fill` «Tab» | SCOPED | `widget_style.rs:159` → `button.rs:365` |
 | `tab.active_background` | `visuals.selection.bg_fill` «Tab» | SCOPED | SELECTED_CLASS branch, not `widgets.active` |
 | `tab.active_text_color` | `visuals.selection.stroke.color` «Tab» | SCOPED | `widget_style.rs:153-154`. `Selection::stroke.width` has no native source; stays at egui's `1.0` (`style.rs:1619`) |
-| `tab.bar_background` | `visuals.panel_fill` and/or `Frame::fill` «Surface::Panel» | SCOPED | 5 claimants on `panel_fill` |
+| `tab.bar_background` | `visuals.panel_fill` and/or `Frame::fill` «Surface::Panel» | SCOPED | 6 claimants on `panel_fill` |
 | `tab.min_width` | — | UNMAPPABLE `egui-limited` | `Button` clamps only the cross axis (`button.rs:306-309`); `interact_size.x` is a `Grid`/`DragValue`/colour-swatch field |
 | `tab.min_height` | `spacing.interact_size.y` «Tab» | SCOPED | 13 claimants; writing only `.y` leaves `.x` inherited (§7.5) |
 | `tab.hover_text_color` | `widgets.hovered.fg_stroke.color` «Tab» | SCOPED | correctly applies to unselected tabs only |
-| `tab.hover_background` | `widgets.hovered.weak_bg_fill` «Tab» | DERIVED | `soft_option`; `None` → mirror `tab.background_color` (§6.4) |
+| `tab.hover_background` | `widgets.hovered.weak_bg_fill` «Tab» | SCOPED | `soft_option`; `None` → mirror `tab.background_color` (§6.4). One egui field, one copy — the same shape as `combo_box.hover_background` and `segmented_control.hover_background`, so SCOPED like them; only `expander.hover_background` is DERIVED, because it must be mirrored into two distinct fields |
 | `tab.font.family` | `text_styles[Button].family` «Tab» | DERIVED | §8.2 |
 | `tab.font.size` | `text_styles[Button].size` «Tab» | SCOPED | `button.rs:48-49` |
 | `tab.font.weight` | a `FontFamily::Name` per `(family, weight, style)` triple | DERIVED | matrix verdict. **This crate declines the mechanism** — §5.8 item 2 — so the leaf is not carried; `FontId` has two fields (`epaint/src/text/fonts.rs:27-34`) |
 | `tab.font.style` | a `FontFamily::Name` per `(family, weight, style)` triple | DERIVED | matrix verdict. **This crate declines the mechanism** — §5.8 item 2 — so the leaf is not carried; `FontId` has two fields (`epaint/src/text/fonts.rs:27-34`) |
-| `tab.font.color` | `widgets.inactive.fg_stroke.color` «Tab» | SCOPED | 10 claimants |
+| `tab.font.color` | `widgets.inactive.fg_stroke.color` «Tab» | SCOPED | 11 claimants |
 | `tab.border.color` | `widgets.{5}.bg_stroke.color` «Tab» | SCOPED | `widget_style.rs:160` |
 | `tab.border.corner_radius` | `widgets.{5}.corner_radius` «Tab» | SCOPED | `widget_style.rs:161`; `u8` narrowing |
 | `tab.border.corner_radius_lg` | — | UNMAPPABLE `source-void` | always `0.0` |
@@ -2362,7 +2695,7 @@ Conflating them is the easiest way to produce a plausible but wrong connector.
 | `tab.border.padding_horizontal` | `spacing.button_padding.x` «Tab» | SCOPED | per side |
 | `tab.border.padding_vertical` | `spacing.button_padding.y` «Tab» | SCOPED | realised height is `max(interact_size.y, galley + 2·round(padding.y))` |
 
-**Tab: DIRECT 0 · SCOPED 13 · DERIVED 4 · UNMAPPABLE 4 = 21.**
+**Tab: DIRECT 0 · SCOPED 14 · DERIVED 3 · UNMAPPABLE 4 = 21.**
 
 `ResolvedSidebarTheme` — `native-theme/src/model/widgets/mod.rs:413-432`,
 `border_kind = "partial"` (`:411-412`), so only `border.color` and
@@ -2396,7 +2729,7 @@ Conflating them is the easiest way to produce a plausible but wrong connector.
 
 | leaf | egui sink | verdict | note |
 |---|---|---|---|
-| `toolbar.background_color` | `visuals.panel_fill` and/or `Frame::fill` «Surface::Panel(Top)» | SCOPED | 5 claimants |
+| `toolbar.background_color` | `visuals.panel_fill` and/or `Frame::fill` «Surface::Panel(Top)» | SCOPED | 6 claimants |
 | `toolbar.bar_height` | `spacing.interact_size.y` minus the frame margin «Toolbar» | DERIVED | §6.10 (R-BAR) |
 | `toolbar.item_gap` | `spacing.item_spacing.x` «Toolbar» | SCOPED | documented as *horizontal* (`widgets/mod.rs:449`), so only `.x` is written; `.y` has no toolbar source and stays inherited |
 | `toolbar.icon_size` | — | UNMAPPABLE `egui-limited` | no general icon size in `Spacing`'s 21 fields; image atoms carry their own size (`atom_layout.rs:517`, `:569`). `toolbar_icon_size()` accessor (§4.7). **Not** `icons::icon_size`, which reads `defaults.icon_sizes` |
@@ -2475,7 +2808,7 @@ native-theme field:
 
 **Expander: DIRECT 0 · SCOPED 8 · DERIVED 5 · UNMAPPABLE 4 = 17.**
 
-**Chrome total: DIRECT 0 · SCOPED 49 · DERIVED 19 · UNMAPPABLE 18 = 86.**
+**Chrome total: DIRECT 0 · SCOPED 50 · DERIVED 18 · UNMAPPABLE 18 = 86.**
 
 `DIRECT = 0` for the entire chrome group. The three plausible candidates were
 tested individually and none survives as DIRECT — two are contested and one
@@ -2493,16 +2826,16 @@ can carry the data.
 | group | leaves | DIRECT | SCOPED | DERIVED | UNMAPPABLE |
 |---|---:|---:|---:|---:|---:|
 | Foundation (`defaults`, `text_scale`, `layout`) | 66 | 20 | 5 | 18 | 23 |
-| Surfaces (window, dialog, popover, card, tooltip, menu) | 102 | 4 | 59 | 6 | 33 |
+| Surfaces (window, dialog, popover, card, tooltip, menu) | 102 | 4 | 52 | 13 | 33 |
 | Buttons (button, link, switch, checkbox, segmented control) | 95 | 1 | 51 | 4 | 39 |
-| Inputs (input, combo box, list) | 74 | 6 | 36 | 9 | 23 |
+| Inputs (input, combo box, list) | 74 | 5 | 33 | 13 | 23 |
 | Indicators (scrollbar, slider, progress bar, splitter, separator, spinner) | 40 | 2 | 18 | 6 | 14 |
-| Chrome (tab, sidebar, toolbar, status bar, expander) | 86 | 0 | 49 | 19 | 18 |
-| **TOTAL** | **463** | **33** | **218** | **62** | **150** |
+| Chrome (tab, sidebar, toolbar, status bar, expander) | 86 | 0 | 50 | 18 | 18 |
+| **TOTAL** | **463** | **32** | **209** | **72** | **150** |
 
-Row check: `20+5+18+23 = 66`; `4+59+6+33 = 102`; `1+51+4+39 = 95`;
-`6+36+9+23 = 74`; `2+18+6+14 = 40`; `0+49+19+18 = 86`.
-Column check: `33+218+62+150 = 463` and `66+102+95+74+40+86 = 463`.
+Row check: `20+5+18+23 = 66`; `4+52+13+33 = 102`; `1+51+4+39 = 95`;
+`5+33+13+23 = 74`; `2+18+6+14 = 40`; `0+50+18+18 = 86`.
+Column check: `32+209+72+150 = 463` and `66+102+95+74+40+86 = 463`.
 
 The 150 UNMAPPABLE leaves carry the three sub-tags of §2 in the proportions
 `38 + 3 + 109 = 150`.
@@ -2538,14 +2871,14 @@ listed here with its leaf count, so nothing is silently reclassified.
 | 1 | `defaults.focus_ring_color`, `defaults.focus_ring_width` (2) | DERIVED → `widgets.active.bg_stroke` | **Declined.** egui makes focus and press the same state — `is_pointer_button_down_on() \|\| has_focus() \|\| clicked()` (`widget_style.rs:107-109`) — so writing the ring there paints a focus ring on **every mouse press** *and* displaces the role's real pressed border. A wrong ring on every press is worse than no ring. Exposed as `focus_ring_color()` / `focus_ring_width()`; paint it with `Ui::painter`. `focus_ring_offset` was UNMAPPABLE either way |
 | 2 | per-widget `*.font.weight` and `*.font.style` on `input`, `combo_box`, `list.item_font`, `list.header_font`, `tab`, `sidebar`, `toolbar`, `status_bar`, `expander` (18) | DERIVED in the inputs and chrome matrices, via a registered `FontFamily::Name` per `(family, weight, style)` triple; **UNMAPPABLE** in the buttons and surfaces matrices | **The two matrices disagree, and this is the one place they do.** Both readings are defensible against egui alone; they differ on whether the connector may emit `FontFamily::Name`. §8.1 forbids it, for reasons that are structural rather than aesthetic, so under this specification those 18 leaves are **not carried** and their effective verdict is UNMAPPABLE — matching the buttons and surfaces matrices. Applications reach per-call weight through `RichText::variation(..)` (`widget_text.rs:200-205`) |
 | 3 | `text_scale.{caption,section_heading,dialog_title,display}.weight` (4) | DERIVED, via a registered `wght` family per role | Same cause as item 2. Effective route: `text_role_weight()` tells the application which CSS weight to pass to `RichText::variation`. Not installed into any `Style` |
-| 4 | `text_scale.dialog_title.size`, `text_scale.display.size` (2) | DERIVED, via `TextStyle::Name("nt-dialog-title")` / `Name("nt-display")` keys | Effective route: `text_role_font()` + `RichText::font(..)` (`widget_text.rs:186-192`). No `TextStyle::Name` key is added, which removes an entire class of panic: `TextStyle::resolve` calls `panic!` on a missing key (`style.rs:111-119`) and sits on the hot path of essentially every widget. A `FontId` handed out by an accessor performs no map lookup and therefore has no panic path. Verdict unchanged (DERIVED); the mechanism is safer |
-| 5 | `list.header_font.family`, `list.header_font.size` (2) | **DIRECT**, via a `TextStyle::Name("native-theme::list-header")` key | Same reason as item 4: no `Name` key is added. These two are therefore **SCOPED**, not DIRECT — displaced onto `text_styles[Heading]`, whose base owner is `text_scale.section_heading`, or read directly through `list_header_font()` (§4.7). Together with item 2 this is the whole of the aggregate movement; see the paragraph below the table |
+| 4 | `text_scale.dialog_title.size`, `text_scale.display.size` (2) | DERIVED, via `TextStyle::Name("nt-dialog-title")` / `Name("nt-display")` keys | Effective route: `text_role_font()` + `RichText::font(..)` (`widget_text.rs:190-198`). No `TextStyle::Name` key is added, which removes an entire class of panic: `TextStyle::resolve` calls `panic!` on a missing key (`style.rs:111-119`) and sits on the hot path of essentially every widget. A `FontId` handed out by an accessor performs no map lookup and therefore has no panic path. Verdict unchanged (DERIVED); the mechanism is safer |
+| 5 | `list.header_font.family`, `list.header_font.size` (2, of which 1 moves bucket) | `.size` **DIRECT**, `.family` DERIVED (§8.2) — both via a `TextStyle::Name("native-theme::list-header")` key | Same reason as item 4: no `Name` key is added. `list.header_font.size` is therefore **SCOPED**, not DIRECT — displaced onto `text_styles[Heading]`, whose base owner is `text_scale.section_heading`, or read directly through `list_header_font()` (§4.7). `.family` needs font bytes with or without the `Name` key (§8.2), so it is DERIVED either way and changes no bucket. Together with item 2 this is the whole of the aggregate movement; see the paragraph below the table |
 | 6 | `dialog.max_width`, `dialog.max_height` (2) | SCOPED → `spacing.default_area_size` | **Declined.** `default_area_size` is the first-frame size of **every** free `Area` (`area.rs:470-476`; `Area::default_size` defaults to `Vec2::NAN` at `:145`) — window, popup, menu, tooltip — not a dialog constraint. Writing it would resize all of them from a dialog metric. Exposed as `dialog_max_size()`. Verdict stays SCOPED because a sink genuinely exists |
 | 7 | `checkbox.indicator_width` (1) | SCOPED → `Spacing::icon_width_inner` in earlier drafts | **Sink corrected**, verdict unchanged. `docs/platform-facts.md:969` defines `indicator_width` as "side length of the checkbox indicator (square) or diameter of the radio indicator (circle)" — the **box** — with values 14/20/20/14 at `docs/platform-facts.md:1201`, and egui reads the box as `checkbox_size: self.spacing.icon_width` (`widget_style.rs:179`) and the check **mark** as `check_size: self.spacing.icon_width_inner` (`:180`). The old rule pinned the checkbox box to egui's literal `14.0` on platforms that report 20 — precisely the hardcoded theme value the project's standing rules forbid |
 | 8 | `Spacing::icon_width_inner` on the **base** style (0 leaves) | — | Left at egui's `8.0` (`style.rs:1466`). No platform reports a check-mark size, so fabricating one from a ratio is forbidden. Inside the `Role::Expander` scope the same field *is* written, from `expander.arrow_icon_size` per §6.11 — the base style and that one scope are different objects, so there is no contradiction |
 
 **The two aggregates, stated together so neither is a surprise.** §5.7 prints
-the matrices' own **DIRECT 33 · SCOPED 218 · DERIVED 62 · UNMAPPABLE 150**,
+the matrices' own **DIRECT 32 · SCOPED 209 · DERIVED 72 · UNMAPPABLE 150**,
 because that is what the audited `mapping.toml` rows carry and what the
 verdict column of every table in §5.1–§5.6 means. Applying items 2 and 5 —
 the only two that move a leaf between buckets — gives the **effective**
@@ -2553,10 +2886,10 @@ aggregate for what this crate actually carries:
 
 | | DIRECT | SCOPED | DERIVED | UNMAPPABLE | total |
 |---|---:|---:|---:|---:|---:|
-| matrix verdicts (§5.7) | 33 | 218 | 62 | 150 | 463 |
-| item 5: 2 leaves DIRECT → SCOPED | −2 | +2 | | | |
+| matrix verdicts (§5.7) | 32 | 209 | 72 | 150 | 463 |
+| item 5: 1 leaf DIRECT → SCOPED | −1 | +1 | | | |
 | item 2: 18 leaves DERIVED → UNMAPPABLE | | | −18 | +18 | |
-| **effective under the locked decisions** | **31** | **220** | **44** | **168** | **463** |
+| **effective under the locked decisions** | **31** | **210** | **54** | **168** | **463** |
 
 Items 1, 3, 4, 6, 7 and 8 change the *mechanism* but not the bucket: the value
 still reaches the application, through a documented accessor plus a per-call
@@ -2588,12 +2921,12 @@ rustdoc, not only in the manifest.
 | `visuals.extreme_bg_color` (`:1044`) | `scrollbar.track_color` | `progress_bar.track_color` (`input.background_color` is removed from the contest by §5.4) |
 | `visuals.text_edit_bg_color` (`:1049`) | `input.background_color` | — |
 | `visuals.faint_bg_color` (`:1039`) | `list.alternate_row_background` | — |
-| `visuals.widgets.noninteractive.fg_stroke.color` (`:1310`) | `defaults.text_color` | seven per-widget `font.color`s |
+| `visuals.widgets.noninteractive.fg_stroke.color` (`:1310`) | `defaults.text_color` | eleven others: the seven per-widget `font.color`s, `defaults.font.color`, `defaults.mono_font.color`, and `checkbox.indicator_color` / `expander.font.color` via their `{5}` state sets (§5.11) |
 | `visuals.widgets.inactive.*` (`:1294-1318`) | `theme.button` (§6.1) | the other widgets' resting colours; per-field claimant counts in §5.11 |
 | `visuals.widgets.hovered.*` | `button.hover_background` / `button.hover_text_color` | the other widgets' hover colours; per-field claimant counts in §5.11 |
 | `visuals.widgets.active.*` | `button.active_background` / `button.active_text_color` | slider, scrollbar and spinner pressed colours, and `list.header_font.color` via `strong_text_color()` |
 | `visuals.widgets.open.weak_bg_fill` (`:1299`) | `window.title_bar_background` | combo-box open-trigger fill, colour-picker open-button fill |
-| `visuals.selection.bg_fill` (`:1195`) | `defaults.selection_background` | ten others, including `progress_bar.fill_color`, `slider.fill_color`, `tab.active_background`, `switch.checked_background` |
+| `visuals.selection.bg_fill` (`:1195`) | `defaults.selection_background` | eleven others, including `progress_bar.fill_color`, `slider.fill_color`, `tab.active_background`, `switch.checked_background`, `button.primary_background` |
 | `visuals.selection.stroke.color` (`:1198`) | `defaults.selection_text_color` | eight others; `input.focus_border_color` → `input_focus_border_color()` |
 | `visuals.weak_text_color` (`:1026`) | `defaults.muted_color` | `input.placeholder_color` |
 | `visuals.hyperlink_color` (`:1035`) | `defaults.link_color` (and `link.font.color`, which pins to it) | — |
@@ -2606,7 +2939,7 @@ rustdoc, not only in the manifest.
 | `visuals.widgets.*.bg_stroke` (`:1304`) | `defaults.border.{color,line_width}` | eighteen others (§5.11) |
 | `visuals.window_stroke` (`:1063`) | `defaults.border.{color,line_width}` | five surface borders |
 | `visuals.{window,popup}_shadow.color` (`:1061`, `:1073`) | `defaults.shadow_color` | — (geometry stays egui's, §14 item 10) |
-| `visuals.text_cursor.stroke.color` (`:952`) | `input.caret_color` | — (width stays egui's `2.0`; no native caret width exists) |
+| `visuals.text_cursor.stroke.color` (`:952`) | `input.caret_color` | — (width stays egui's `2.0`; no native caret width exists). The struct's other four fields are also left alone: `preview` `false` (`:955`, `:971`), `blink` `true` (`:958`, `:972`), `on_duration` and `off_duration` `0.5` (`:961`, `:964`, `:973-974`) — caret preview and blink rate are input behaviour with no native leaf, read at `text_selection/visuals.rs:297-299` and `widgets/text_edit/builder.rs:778` |
 | `visuals.slider_trailing_fill` (`:1104`) | `slider.fill_color` forces it `true` | — (`Slider` is its only reader, `slider.rs:783`) |
 | `visuals.handle_shape` (`:1109`, enum `HandleShape` at `:1234-1243`) | `HandleShape::Circle`, implied by `slider.thumb_diameter` being a *diameter* | — (`Slider` is its only reader, `slider.rs:663`, `:810`, `:996`) |
 | `spacing.interact_size.y` (`:408`) | `button.min_height` | twelve others (§5.11) — the most contested `Spacing` field in egui |
@@ -2624,11 +2957,13 @@ rustdoc, not only in the manifest.
 | `spacing.item_spacing` (`:391`) | `layout.widget_gap`, when `Builder::layout` was given | `toolbar.item_gap`, `dialog.button_gap`, `progress_bar.border.padding_horizontal` |
 | `spacing.scroll.{bar_width,handle_min_length,floating}` (`:511`, `:514`, `:502`) | `scrollbar.{groove_width,min_thumb_length,overlay_mode}` | — |
 | `spacing.scroll.foreground_color` (`:537`) | forced `false` so the handle reads `bg_fill` | — |
+| `spacing.scroll.{dormant,active,interact}_{background,handle}_opacity` (`:544`, `:551`, `:558`, `:565`, `:572`, `:579`) | **nobody — left at egui's `ScrollStyle::floating()` values**: background `0.0`/`0.4`/`0.7` and handle `0.0`/`0.6`/`1.0` (`style.rs:648`, `:606-607`, `:649`, `:610-611`) | — (no native leaf describes an auto-hide fade curve; `scrollbar.overlay_mode` is a bool, `docs/platform-facts.md:990`). They modulate the floating branch only (`scroll_area.rs:1469-1497`, gamma-multiplied at `:1506-1519`), so on a preset with `overlay_mode = true` the four mapped scrollbar colours are painted fully transparent at rest — see §6.5 |
+| `spacing.slider_width` (`:411`) | **nobody — left at egui's `100.0`** (`style.rs:1460`) | — (no native leaf states a slider length; egui's own colour picker overrides it to `275.0` inside its popup, `widgets/color_picker.rs:526`, `:532`) |
 | `spacing.default_area_size` (`:444`) | **nobody — left at egui's `vec2(600.0, 400.0)`** (§5.8 item 6) | `dialog.max_width` / `max_height` → `dialog_max_size()` |
 | `text_styles[Small]` (`:73`) | `text_scale.caption` | — |
 | `text_styles[Body]` (`:76`) | `defaults.font` | eight others |
 | `text_styles[Monospace]` (`:79`) | `defaults.mono_font` | — (the only uncontested text style) |
-| `text_styles[Button]` (`:84`) | `button.font` — read by `ComboBox`, `ProgressBar`, `CollapsingHeader` and `Style::drag_value_text_style` (`:1433`), but **not** by `Button` itself | eight others |
+| `text_styles[Button]` (`:84`) | `button.font` — read by `ComboBox` (`combo_box.rs:358`), `ProgressBar` (`progress_bar.rs:193`), `CollapsingHeader` (`collapsing_header.rs:522`) and `Style::drag_value_text_style` (`:1433`), but **not** by `Button` itself | six others (`checkbox.font` and `segmented_control.font` are carried by `override_font_id` in their own scopes instead, §5.3) |
 | `text_styles[Heading]` (`:87`) | `text_scale.section_heading` | `text_scale.dialog_title`, `window.title_bar_font`, `dialog.title_font`, `list.header_font` |
 | `override_font_id` (`:254`) | **unset on the base style**; written in every role scope with its own font | — |
 | `override_text_color` (`:1015`) | **unset on the base style**; written in the `Role::Checkbox` scope only | — |
@@ -2647,9 +2982,20 @@ rustdoc, not only in the manifest.
 | `Style::animation_time` | `:317` | native-theme carries no animation timing |
 | `Style::scroll_animation` | `:337` | same |
 | `Visuals::override_text_color` on the **base** style | `:1015` | it forces one colour on *all* text; set globally it destroys every per-state and per-widget text colour, and it would turn a `ProgressBar` label into ordinary body text on an accent fill (`progress_bar.rs:197-199`) |
+| `ScrollStyle::fade` (`ScrollFadeStyle`, `strength` + `size`) | `:581`, struct `:783-792` | left at egui's `strength 0.5` / `size 20.0` (`:794-801`). It is live on every scroll area — `paint_fade_areas_impl` is called unconditionally (`containers/scroll_area.rs:1275`, body `:1564-1568`, gradients `:1581-1593`, `:1596-1608`) — but **no platform fact records a scroll-edge fade**, so any value written here would be invented |
+| `Visuals::ime_composition` (both underline strokes) | `:1032`, struct `:1205-1229` | native-theme carries no IME-composition colour, so writing these from `input.caret_color` would be a mapping with no source. egui initialises them from the `TextCursorStyle::stroke` defaults, with upstream's own comment saying so (`:1637-1664`); readers `text_selection/visuals.rs:168-169` and `widgets/text_edit/builder.rs:856`. The consequence for `input.caret_color` is recorded in §5.4 |
+| `ImeComposition::legacy_visuals` | `:1228` | a `winit` workaround, not an appearance choice: it defaults to `cfg!(windows)` (`:1666-1670`) and switches between two IME rendering strategies (`:1212-1227`). Platform behaviour, not theme data |
+| `Visuals::code_bg_color` | `:1052` | the background behind `RichText::code`; left at `from_gray(64)` dark / `from_gray(230)` light (`:1514`, `:1577`), sole painter `widget_text.rs:440-441`. `ResolvedTheme` has no code-block colour |
+| `Visuals::indent_has_left_vline` | `:1095` | left at `true` (`:1547`). Read at `ui.rs:2259` and drawn at `:2273` with the stroke taken at `:2267` from `widgets.noninteractive.bg_stroke`, which the connector **does** write — so the rule already carries the theme's hairline colour and width. Whether an indented region is ruled at all is layout policy with no native leaf |
+| `Spacing::indent_ends_with_horizontal_line` | `:458` | left at `false` (`:1474`); same read site (`ui.rs:2260`), drawn at `:2279-2280` from the same stroke, and the same reason |
 
 Writing any of the first five is harmless but produces a silent no-op — which
-is exactly the "plausible fabrication" failure mode this project forbids.
+is exactly the "plausible fabrication" failure mode this project forbids. The
+six rows after `override_text_color` are the converse case: they have live
+readers and do affect appearance, and are listed so that "in no bucket" never
+means "overlooked". Nothing is asserted about whether any of them is *native* —
+no platform fact records a scroll-edge fade, an IME underline colour, a
+code-block background or an indent rule, and none may be invented.
 
 ### 5.11 The complete contested-field list
 
@@ -2663,39 +3009,83 @@ records that the leaf lost an intra-widget contest for exactly that field —
 `expander.arrow_color` is the one such entry, and it is what makes the
 `inactive.fg_stroke.color` row the only one with two claimants inside a single
 widget. A leaf whose per-widget row is UNMAPPABLE because egui offers no route
-to that field at all is *not* a claimant. Where a per-widget row and this list
-appear to disagree, **the per-widget row governs.**
+to that field at all is *not* a claimant, and neither is a leaf whose sink §5.8
+declines: `defaults.focus_ring_color` and `focus_ring_width` name
+`widgets.active.bg_stroke` (§5.1) but are never written, so they do not appear in
+the `bg_stroke` row. Where a per-widget row and this list appear to disagree,
+**the per-widget row governs.**
+
+Four conventions govern the numbers, stated once here instead of row by row:
+
+* **`{…}` expands.** A sink written as a `{…}` state set claims the field in
+  *every* state it names, so a `{5}` set reaches all five `Widgets` entries —
+  `noninteractive`, `inactive`, `hovered`, `active`, `open` (`style.rs:1249-1269`)
+  — and the leaf is a claimant of each per-state row below, not only of the row
+  its widget is usually discussed under. Three rows have been re-derived under
+  this rule and are exact: `inactive.fg_stroke.color` (11),
+  `noninteractive.fg_stroke.color` (12) and `active.fg_stroke.color` (7). The
+  remaining per-state rows — `hovered.fg_stroke.color`, both `weak_bg_fill`
+  rows, `hovered.bg_fill`, `noninteractive.bg_stroke` and the three `<state>`
+  rows — have **not** been regenerated under it and are therefore
+  **UNVERIFIED lower bounds**: `hovered.fg_stroke.color`, for instance, lists 4
+  but is also reached by the `{…}` sets of `checkbox.indicator_color` (§5.3),
+  `segmented_control.font.color` (§5.3), `combo_box.font.color` (§5.4) and
+  `expander.font.color` (§5.6). Regenerating them from the sink column of
+  §5.1–§5.6 with the expansion applied is what would settle each number; until
+  then no figure in those rows may be quoted as exact.
+* **The count is entries, not always leaves.** The claimant count is the number
+  of entries in that row's list, and an entry may abbreviate a group:
+  `X.border.*` stands for `{color, line_width}`. Where the distinction matters
+  the row states both (`spacing.menu_margin`, `visuals.widgets.<state>.bg_fill`).
+* **Shadows count once.** A `*_shadow.color` write and a `*_shadow` on/off gate
+  are claims on the same egui field, so `defaults.shadow_color` and the
+  `border.shadow_enabled` leaves appear together in one row per shadow field.
+* **DERIVED does not remove a claim.** A leaf that needs a formula or font bytes
+  still occupies its sink and is counted exactly like a SCOPED one; only a sink
+  §5.8 declines drops out, as above.
+* **Losing a field does not remove the claim either.** A leaf whose effective
+  route became an accessor plus a per-call mechanism *because* it lost that
+  field to its base owner (§5.8, §5.9) is still counted as a claimant of the
+  field it lost — that loss is the contest, and hiding it would make the
+  contest disappear from the evidence. `text_styles[Heading]` is the row where
+  this matters: `window.title_bar_font` is routed through `RichText::font` on
+  the title atoms (§5.2) and `list.header_font` through §5.8 item 5, yet both
+  are counted, because both wanted `Heading` and lost it to
+  `text_scale.section_heading`.
 
 | egui field | decl | claimants |
 |---|---|---|
 | `spacing.interact_size.y` | `style.rs:408` | 13: `button.min_height`, `combo_box.min_height`, `menu.row_height`, `tab.min_height`, `list.row_height`, `expander.header_height`, `toolbar.bar_height`, `segmented_control.segment_height`, `switch.track_height`, `slider.thumb_diameter` (via §6.6), `progress_bar.track_height`, `spinner.diameter`, `spinner.min_diameter`. `input.min_height` is **not** among them: `TextEdit` never reads `interact_size` (§5.4) |
 | `visuals.widgets.<state>.corner_radius` | `style.rs:1307` | 11: `defaults.border.corner_radius`, `switch.track_radius`, and the `border.corner_radius` of `button`, `checkbox`, `segmented_control`, `input`, `combo_box`, `list`, `card`, `tab`, `expander`. The other nine widget radii reach `visuals.window_corner_radius` (`window`), `visuals.menu_corner_radius` (`dialog`, `popover`, `tooltip`, `menu`), an `egui::Frame` (`sidebar`, `toolbar`, `status_bar`) or nothing at all (`progress_bar`, §5.5) |
 | `visuals.widgets.<state>.bg_stroke` (colour and width) | `style.rs:1304` | 19: `defaults.border.{color,line_width}`, `separator.{line_color,line_width}`, `splitter.{divider_color,divider_width}`, `menu.separator_color`, `list.grid_color`, `list.border.*`, `card.border.*`, `sidebar.border.*`, `status_bar.border.*`, `toolbar.border.*`, `tab.border.*`, `expander.border.*`, `button.border.*`, `checkbox.border.*`, `checkbox.unchecked_border_color`, `segmented_control.border.*`, `segmented_control.separator_width`, `input.border.*` + `input.hover_border_color`, `combo_box.border.*`. `window.border.*` is **not** among them — it reaches `visuals.window_stroke` (§5.2) |
-| `visuals.widgets.inactive.fg_stroke.color` | `style.rs:1310` | 10: `tab.font.color`, `expander.font.color`, `expander.arrow_color`, `sidebar.font.color`, `toolbar.font.color`, `button.font.color`, `combo_box.font.color`, `menu.font.color`, `segmented_control.font.color`, `input.font.color`. **Unique**: two claimants inside the *same* widget (expander), so scoping cannot resolve it. `list.item_font.color` reaches `noninteractive.fg_stroke.color` and `link.font.color` reaches `visuals.hyperlink_color`, so neither is a claimant here |
+| `visuals.widgets.inactive.fg_stroke.color` | `style.rs:1310` | 11: `tab.font.color`, `expander.font.color`, `expander.arrow_color`, `sidebar.font.color`, `toolbar.font.color`, `button.font.color`, `combo_box.font.color`, `menu.font.color`, `segmented_control.font.color`, `input.font.color`, `checkbox.indicator_color`, which reaches it via a `{5}` state set. **Unique**: two claimants inside the *same* widget (expander), so scoping cannot resolve it. `list.item_font.color` reaches `noninteractive.fg_stroke.color` and `link.font.color` reaches `visuals.hyperlink_color`, so neither is a claimant here |
 | `visuals.widgets.hovered.weak_bg_fill` | `style.rs:1299` | 8: `tab`, `sidebar`, `expander`, `button`, `menu`, `combo_box`, `segmented_control` hover backgrounds, plus `switch.hover_unchecked_background`. `list.hover_background` and `checkbox.hover_background` claim `hovered.bg_fill` instead (§5.3, §5.4); `link.hover_background` is UNMAPPABLE (§5.3) |
-| `visuals.selection.bg_fill` | `style.rs:1195` | 11: `defaults.selection_background`, `defaults.text_selection_background`, `defaults.accent_color`, `input.selection_background`, `list.selection_background`, `sidebar.selection_background`, `tab.active_background`, `segmented_control.active_background`, `switch.checked_background`, `progress_bar.fill_color`, `slider.fill_color` |
+| `visuals.selection.bg_fill` | `style.rs:1195` | 12: `defaults.selection_background`, `defaults.text_selection_background`, `defaults.accent_color`, `input.selection_background`, `list.selection_background`, `sidebar.selection_background`, `tab.active_background`, `segmented_control.active_background`, `switch.checked_background`, `progress_bar.fill_color`, `slider.fill_color`, `button.primary_background` |
 | `visuals.selection.stroke.color` | `style.rs:1198` | 9: `defaults.selection_text_color`, `defaults.text_selection_color`, `defaults.accent_text_color`, `input.selection_text_color`, `list.selection_text_color`, `sidebar.selection_text_color`, `tab.active_text_color`, `segmented_control.active_text_color`, `button.primary_text_color` |
 | `visuals.widgets.noninteractive.bg_stroke` | `style.rs:1304` | 11: `sidebar`, `status_bar`, `toolbar`, `card`, `list` `border.{color,line_width}`, `separator.{line_color,line_width}`, `splitter.{divider_color,divider_width}`, `list.grid_color`, `menu.separator_color`, `segmented_control.separator_width`, `defaults.border.*`. `window.border.*` reaches `visuals.window_stroke` instead (§5.2) |
-| `visuals.widgets.noninteractive.fg_stroke.color` | `style.rs:1310` | 10: `defaults.text_color`, `defaults.font.color`, `defaults.mono_font.color`, `status_bar.font.color`, `sidebar.font.color`, `toolbar.font.color`, `list.item_font.color`, `dialog.body_font.color`, `popover.font.color`, `tooltip.font.color` |
+| `visuals.widgets.noninteractive.fg_stroke.color` | `style.rs:1310` | 12: `defaults.text_color`, `defaults.font.color`, `defaults.mono_font.color`, `status_bar.font.color`, `sidebar.font.color`, `toolbar.font.color`, `list.item_font.color`, `dialog.body_font.color`, `popover.font.color`, `tooltip.font.color`, plus `checkbox.indicator_color` and `expander.font.color`, which reach it via a `{5}` state set |
 | `visuals.disabled_alpha` | `style.rs:1125` | 8: `defaults.disabled_opacity` plus the seven per-widget values at `widgets/mod.rs:65`, `:118`, `:166`, `:321`, `:618`, `:736`, `:781` |
 | `visuals.widgets.hovered.fg_stroke.color` | `style.rs:1310` | 4: `tab`, `button` and `menu` hover text colours, plus `splitter.hover_color`, which uses the same field for a line. `list.hover_text_color` and `link.hover_text_color` are UNMAPPABLE (§5.3, §5.4) |
 | `spacing.button_padding` | `style.rs:397` | 5: `button`, `tab`, `expander`, `combo_box`, `segmented_control` `border.padding_*`. `checkbox.border.padding_*` is UNMAPPABLE — both checkbox frames are inert (§5.3) |
 | `visuals.widgets.inactive.weak_bg_fill` | `style.rs:1299` | 4: `tab`, `button`, `combo_box`, `segmented_control` background colours. `link.background_color` is UNMAPPABLE (§5.3) |
-| `visuals.panel_fill` | `style.rs:1071` | 5: `window`, `sidebar`, `toolbar`, `status_bar` `.background_color`, `tab.bar_background` |
+| `visuals.panel_fill` | `style.rs:1071` | 6: `defaults.background_color` (base owner, §5.9), `window`, `sidebar`, `toolbar`, `status_bar` `.background_color`, `tab.bar_background` |
 | `visuals.window_fill` | `style.rs:1062` | 6: `defaults.surface_color`, `window`, `dialog`, `popover`, `tooltip`, `menu` `.background_color` |
 | `visuals.window_stroke` | `style.rs:1063` | 6: `defaults.border.*` plus `window`, `dialog`, `popover`, `tooltip`, `menu` `border.{color,line_width}` |
 | `visuals.menu_corner_radius` | `style.rs:1068` | 5: `defaults.border.corner_radius_lg`, `dialog`, `popover`, `tooltip`, `menu` `border.corner_radius` |
-| `visuals.popup_shadow` | `style.rs:1073` | 5: `defaults.border.shadow_enabled` plus `dialog`, `popover`, `tooltip`, `menu` `border.shadow_enabled` |
+| `visuals.popup_shadow` | `style.rs:1073` | 6: `defaults.shadow_color` (the colour write) plus `defaults.border.shadow_enabled`, `dialog`, `popover`, `tooltip`, `menu` `border.shadow_enabled` (the gates) |
+| `visuals.window_shadow` | `style.rs:1061` | 3: `defaults.shadow_color` (the colour write) plus `defaults.border.shadow_enabled` and `window.border.shadow_enabled` (the gates) |
 | `spacing.menu_margin` | `style.rs:400` | 4 widgets, 8 leaves: `dialog`, `popover`, `tooltip`, `menu` `border.padding_{horizontal,vertical}` |
 | `visuals.widgets.<state>.bg_fill` | `style.rs:1294` | 11 across all states: `checkbox.background_color`, `checkbox.checked_background`, `checkbox.unchecked_background`, `checkbox.hover_background`, `slider.track_color`, `slider.thumb_hover_color`, `scrollbar.thumb_color`, `scrollbar.thumb_hover_color`, `scrollbar.thumb_active_color`, `list.hover_background`, `expander.hover_background`. The `hovered` subset is the row below |
 | `visuals.widgets.hovered.bg_fill` | `style.rs:1294` | 5: `list.hover_background`, `checkbox.hover_background`, `expander.hover_background`, `scrollbar.thumb_hover_color`, `slider.thumb_hover_color` |
-| `visuals.widgets.active.fg_stroke.color` | `style.rs:1310` | 8: `spinner.fill_color`, `list.header_font.color` (via `strong_text_color()`), `button.active_text_color`, `button.primary_text_color`, `checkbox.indicator_color`, `expander.font.color`, `combo_box.font.color`, `segmented_control.font.color` — the last five reach it because their per-widget row writes a `{…}` state set that includes `active`. `splitter`'s pressed line is not a ninth: §6.9 D7 copies it from `hovered.fg_stroke`, which already counts `splitter.hover_color` |
+| `visuals.widgets.active.fg_stroke.color` | `style.rs:1310` | 7: `spinner.fill_color`, `list.header_font.color` (via `strong_text_color()`), `button.active_text_color`, `checkbox.indicator_color`, `expander.font.color`, `combo_box.font.color`, `segmented_control.font.color` — the last four reach it because their per-widget row writes a `{…}` state set that includes `active`. `button.primary_text_color` is **not** among them: its sink is `visuals.selection.stroke.color`, because `button_style` overwrites `fg_stroke` under `SELECTED_CLASS` (§5.3, `widget_style.rs:150-155`). `splitter`'s pressed line is not one either: §6.9 D7 copies it from `hovered.fg_stroke`, which already counts `splitter.hover_color` |
+| `visuals.extreme_bg_color` | `style.rs:1044` | 2: `scrollbar.track_color`, `progress_bar.track_color`. `input.background_color` is removed from the contest by `visuals.text_edit_bg_color` (§5.4) |
+| `visuals.weak_text_color` | `style.rs:1026` | 2: `defaults.muted_color`, `input.placeholder_color` |
 | `spacing.icon_width` | `style.rs:427` | 2: `checkbox.indicator_width`, `combo_box.arrow_icon_size` |
 | `spacing.icon_spacing` | `style.rs:435` | 4: `button.icon_text_gap`, `checkbox.label_gap`, `menu.icon_text_gap`, `combo_box.arrow_area_width` |
 | `spacing.item_spacing` | `style.rs:391` | 4: `layout.widget_gap`, `toolbar.item_gap`, `dialog.button_gap`, `progress_bar.border.padding_horizontal` |
 | `spacing.default_area_size` | `style.rs:444` | 2 native leaves (`dialog.max_width`, `max_height`) against the sizing of every free `Area` |
 | `text_styles[Body]` | `style.rs:76` | 9: `defaults.font`, `input.font`, `tooltip.font`, `popover.font`, `sidebar.font`, `status_bar.font`, `list.item_font`, `dialog.body_font`, `toolbar.font` |
-| `text_styles[Button]` | `style.rs:84` | 9: `button.font`, `checkbox.font`, `combo_box.font`, `tab.font`, `segmented_control.font`, `expander.font`, `menu.font`, `sidebar.font`, `toolbar.font` |
+| `text_styles[Button]` | `style.rs:84` | 7: `button.font`, `combo_box.font`, `tab.font`, `expander.font`, `menu.font`, `sidebar.font`, `toolbar.font`. `checkbox.font` and `segmented_control.font` are **not** claimants — their own rows name `override_font_id` inside their scopes instead (§5.3, spec rows for `checkbox.font.*` and `segmented_control.font.*`) |
 | `text_styles[Heading]` | `style.rs:87` | 5: `text_scale.section_heading`, `text_scale.dialog_title`, `window.title_bar_font`, `dialog.title_font`, `list.header_font` |
 | `text_styles[*].family` collectively | `epaint/src/text/fonts.rs:32` | 21: `defaults.font`, `defaults.mono_font` and the 19 per-widget `ResolvedFontSpec` slots. The four `text_scale` roles are **not** claimants: `ResolvedTextScaleEntry` is `{size, weight, line_height}` with no family (`native-theme/src/model/resolved.rs:37-47`). `family` is `FontId`'s only selector, so it would have to carry weight and slant too |
 
@@ -2763,9 +3153,12 @@ is a stated borrowing rather than a derivation.** `ResolvedDefaults` has 31
 fields and **not one of them is a hover or pressed value**
 (`native-theme/src/model/resolved.rs:71-145`). Every hover colour in the model
 lives on a widget. `Button` is by a wide margin egui's most common interactive
-widget: `ui.button`, `ui.selectable_label`, `ui.selectable_value`,
-`ui.toggle_value` and every menu entry are `Button`s (`ui.rs:1928-1950`,
-`widget_style.rs:159`). Borrowing from it is the only non-inventing choice.
+widget: `ui.button` (`ui.rs:1847`), `ui.toggle_value` (`:1874`),
+`ui.selectable_label` (`:1928`) and `ui.selectable_value` (`:1938`) all build
+one, and so does every menu entry — `MenuButton` and `SubMenuButton` each hold a
+`Button` field and construct it from the caller's atoms
+(`containers/menu.rs:291`, `:297`, `:338`, `:347`). Borrowing from it is the only
+non-inventing choice.
 
 **Rejected by name, so they are not re-proposed.** Every "obvious" derivation of
 a hover colour requires a constant that exists nowhere in `ResolvedTheme` and is
@@ -2848,9 +3241,26 @@ multiplies painter opacity by `disabled_alpha`; `1.0` makes the multiply the
 identity while interaction stays blocked, so the platform's own disabled colour
 survives instead of being faded a second time.
 
-This moves roughly eighteen leaves out of UNMAPPABLE — but **only for widgets
-the application scopes**. An unscoped disabled widget still gets egui's
+This moves **11** leaves out of UNMAPPABLE: the four `disabled_background`
+leaves (`button` `widgets/mod.rs:81`, `input` `:130`, `checkbox` `:175`,
+`combo_box` `:745`) and the seven per-widget `disabled_text_color` leaves
+(`button` `:75`, `input` `:121`, `checkbox` `:169`, `menu` `:225`, `list` `:521`,
+`combo_box` `:739`, `link` `:862`). Of those the `link` write is **inert** —
+`Link::ui` reads `visuals.hyperlink_color` for the text colour and touches
+`fg_stroke` only for the underline width (`widgets/hyperlink.rs:47`) — so **10**
+are effective. `switch.disabled_{checked,unchecked}_background` and
+`switch.disabled_thumb_color` (`widgets/mod.rs:627`, `:630`, `:633`) and
+`slider.disabled_{fill,track,thumb}_color` (`:327`, `:330`, `:333`) have neither
+of the two field shapes the cell writes, so they stay lost for the reasons their
+own rows give (§5.3, §5.5); `defaults.disabled_text_color` has no `Role` scope at
+all, because `Role` has exactly one variant per **widget** field of
+`ResolvedTheme` and none for `defaults` (§4.4). And all of it applies **only for
+widgets the application scopes**. An unscoped disabled widget still gets egui's
 opacity fade from `defaults.disabled_opacity`. §14 item 6 records the loss.
+
+The 11 rows keep their UNMAPPABLE verdict in §5: the matrix records what the
+**base** style carries, and this route reaches them only inside a scope. §5.7 and
+§5.8 are therefore unchanged by this paragraph, deliberately.
 
 Where a role has no `disabled_*` data at all, the `Disabled` cell is the
 `Normal` `Arc` and `disabled_alpha` is left at the theme's value.
@@ -2888,14 +3298,21 @@ explicitly **"May be `Color32::TRANSPARENT`"** (`:1296-1299`). "Paint nothing"
 is therefore not expressible for the expander's hover overlay; mirroring is the
 only truthful option. Where a native colour with `a == 0` would reach a
 `bg_fill`, the connector emits a `Note` rather than substituting a colour — a
-substitution would be an invented value.
+substitution would be an invented value. **Which variant is UNVERIFIED**: §4.3's
+`Note` enum has four variants and none of them describes this case —
+`ValueSanitised` is documented as "a theme value was non-finite and was replaced
+by the documented fallback", and here the value is finite and nothing is
+replaced. *What would settle it*: a maintainer decision either to add a fifth
+variant (`Note` is `#[non_exhaustive]`, §4.3) or to drop this sentence and let
+the transparent fill through unreported. Until then, do **not** reuse
+`ValueSanitised` here — §7.2's emission rule would then be false.
 
 ### 6.5 D1 — scrollbar groove and thumb widths
 
 ```text
-let g = denan(scrollbar.groove_width).max(0.0);
-let t = denan(scrollbar.thumb_width).max(0.0).min(g);   // thumb never wider than groove
-let pad = (g - t) * 0.5;                                // >= 0.0 by construction
+let g = finite_or(scrollbar.groove_width, 0.0).max(0.0);
+let t = finite_or(scrollbar.thumb_width, 0.0).max(0.0).min(g);  // thumb never wider than groove
+let pad = (g - t) * 0.5;                                        // finite and >= 0.0: so are g and t
 ```
 
 Non-overlay (`scrollbar.overlay_mode == false`):
@@ -2924,6 +3341,23 @@ spacing.scroll.floating_width           = t;      // :526  idle thickness
 spacing.scroll.bar_width                = g;      // :511  hover thickness and hit target
 ```
 
+**At rest the overlay bar is invisible, and that is accepted rather than
+corrected.** `ScrollStyle`'s six opacity fields exist only to modulate this
+branch and are left at `ScrollStyle::floating()`'s values, which is also
+`ScrollStyle`'s `Default` (`style.rs:584-588`, `:642-652`): both
+`dormant_background_opacity` (`:648`) and `dormant_handle_opacity` (`:649`) are
+`0.0`, against `0.4` / `0.7` and `0.6` / `1.0` inherited from `solid()`
+(`:606-607`, `:610-611`). Both are gated on `floating` and applied with
+`gamma_multiply` (`scroll_area.rs:1469-1497`, `:1506-1519`), so on a preset with
+`overlay_mode == true` the scrollbar colours §5.5 maps are painted **fully
+transparent** until the pointer enters the scroll area. The non-overlay branch
+short-circuits both to `1.0` (`:1483-1484`, `:1495-1497`) and is unaffected.
+That is exactly what `overlay_mode` means — auto-hiding rather than persistent
+(`docs/platform-facts.md:990`) — and native-theme carries no fade-curve leaf to
+override it with (`overlay_mode` is a bare `bool`,
+`native-theme/src/model/widgets/mod.rs:285`), so the six fields are left alone
+rather than invented.
+
 The asymmetry between the two branches is forced by egui, not chosen: in the
 floating branch `bar_inner_margin` is computed but never used
 (`scroll_area.rs:1296` feeds only the `else` arm at `:1356`), the bar's
@@ -2935,9 +3369,22 @@ describes the gutter.
 
 **Boundaries.** `g == 0` ⇒ `t == 0`, `pad == 0`: no bar is drawn, and egui never
 divides by a bar width. `t > g` ⇒ `t` clamps to `g`, `pad == 0`. Negative ⇒
-clamped to `0`. `NaN` ⇒ `0` via `denan` **before** every comparison. `1e30` ⇒ all
-three stay finite `f32`; egui only adds and subtracts them, so layout degenerates
-visually without panicking. All four targets are `f32` — no integer narrowing.
+clamped to `0`. `NaN` ⇒ `0` and `±∞` ⇒ `0`, both via `finite_or` **before** every
+comparison. `1e30` ⇒ all three stay finite `f32`; egui only adds and subtracts
+them, so layout degenerates visually without panicking. All four targets are
+`f32` — no integer narrowing.
+
+**Why the guard is on the inputs and not on `pad`.** Guarding only the result
+would still let `groove_width == thumb_width == +∞` reach `g == t == ∞` and make
+`pad` the `∞ − ∞` `NaN` that `finite_or` then has to fold, and — worse — it would
+leave `+∞` in `t` and `g` themselves, which the overlay branch writes straight
+into `floating_width` and `bar_width`, and which the non-overlay branch feeds to
+`ScrollStyle::allocated_width` (`style.rs:655-661`). Sanitising at the boundary
+is the discipline §7.2 already states ("`denan` must run first, every time"), and
+`finite_or` is the member of that family that also maps `±∞`. `finite_or` already
+maps `NaN`, so a bare `finite_or(denan(x), 0.0)` is redundant and is never
+written; where a `denan` does appear inside a `finite_or` (§6.12) it is there to
+make an intervening `.max(0.0)` well-defined, not to map `NaN` twice.
 
 Every shipped preset satisfies `g > t`: KDE 21/8, GNOME 12/8, macOS 16/7,
 Windows 17/6 (`native-theme/src/presets/kde-breeze.toml:143`, `:145`;
@@ -2960,12 +3407,8 @@ so `painted_diameter = 0.8 · thickness + 2 · expansion`. Inverting:
 let d = denan(slider.thumb_diameter).max(0.0);
 spacing.interact_size.y = 1.25 * d;                     // 0.8 * (1.25 d) == d
 
-// with a live pass (the &Ui entry point):
-let h = ui.ctx().fonts_mut(|f| f.row_height(&body_font_id));
-let thickness = h.max(1.25 * d);
-let expansion = (d - 0.8 * thickness) * 0.5;            // <= 0.0; exactly 0.0 when the floor does not bite
 for state in [noninteractive, inactive, hovered, active, open] {
-    widgets[state].expansion = finite_or(expansion, 0.0);
+    widgets[state].expansion = 0.0;                     // see the caveat below
 }
 visuals.handle_shape = HandleShape::Circle;             // style.rs:1236
 ```
@@ -2983,17 +3426,35 @@ supports; egui's default is `HandleShape::Rect { aspect_ratio: 0.75 }`
 (`style.rs:1552`) and that `0.75` has no theme value behind it, so leaving it
 would silently narrow the knob by a factor nothing in `ResolvedTheme` justifies.
 
-**Boundaries.** `d == 0` ⇒ `interact_size.y == 0`, `expansion == −0.4·h`,
-painted radius `0` — an invisible handle, the correct reading of a zero
-diameter. `d` huge ⇒ finite up to roughly `2.7e38`, beyond which `f32`
-saturates to `+∞` and layout degenerates without panicking. Negative ⇒ clamped
-to `0`. `NaN` ⇒ `0`.
+**Boundaries.** `d == 0` ⇒ `interact_size.y == 0`. The layout width collapses,
+but the *paint* does not: with the normative `expansion = 0.0` the `at_least`
+floor at `:957-959` leaves `thickness` at the body row height `h`, so the handle
+keeps a radius of `h / 2.5`. Only the live-pass correction below would push
+`expansion` to `−0.4·h` and the painted radius to `0` — the same caveat, at its
+sharpest. `d` huge ⇒ finite up to roughly `2.7e38`, beyond which `f32` saturates
+to `+∞` and layout degenerates without panicking. Negative ⇒ clamped to `0`.
+`NaN` ⇒ `0`.
 
-**Pure-function caveat, stated rather than hidden.** `h` needs a live pass, so
-the pure `fn(&ResolvedTheme)` path sets `expansion = 0.0`, which is exact only
-when `1.25·d >= h`. That holds for all four platform presets (KDE 20→25, GNOME
-20→25, Windows 18→22.5, macOS 21→26.25, against body row heights of roughly
+**Pure-function caveat, stated rather than hidden.** `expansion` is written as
+`0.0`, which is exact only when `1.25·d >= h`, i.e. when the `at_least` floor at
+`:957-959` does not bite. That holds for all four platform presets (KDE 20→25,
+GNOME 20→25, Windows 18→22.5, macOS 21→26.25, against body row heights of roughly
 17–20 px) — but it is an assumption, not a guarantee.
+
+**No `&Ui` entry point is declared for this value; the atlas always uses
+`expansion = 0.0`.** The exact correction would be
+
+```text
+let h         = ui.ctx().fonts_mut(|f| f.row_height(&body_font_id));
+let thickness = h.max(1.25 * d);
+let expansion = finite_or((d - 0.8 * thickness) * 0.5, 0.0);   // <= 0.0
+```
+
+and it needs a live pass, because `Context::fonts_mut` panics before the first
+one (`context.rs:1113-1121`, §6.15). §4.7 declares exactly one free accessor
+taking `&egui::Ui` — `extra_text_line_spacing` — and no `slider_expansion`
+sibling; adding one is not proposed here, so the block above is **not**
+normative and §15 task 19's count of 62 accessors is unchanged.
 
 **Collateral inside a slider scope, documented rather than compensated for.**
 `Slider::show_value` adds a `DragValue`, which reads `interact_size`
@@ -3018,14 +3479,42 @@ being reported.
 **Boundaries.** Both zero ⇒ `radius = -2.0` (`spinner.rs:45`) and
 `n_points = (-2.0_f32.round() as u32).clamp(8, 128)` — the `as u32` of a
 negative float is `0` by Rust's saturating float-to-int rule, then
-`.clamp(8, 128)` yields `8`. Those eight points are **not** coincident: each is
-`rect.center() + radius * vec2(cos, sin)` at a distinct angle
-(`spinner.rs:50-54`, `end_angle != start_angle` by `:49`), so they land on a
-circle of radius `2.0` about the centre and `Shape::line` paints a small arc
-with the hardcoded `Stroke::new(3.0, ..)` (`:58`). A zero diameter therefore
-still shows roughly four points of ring that no theme value can defeat —
-consistent with the `interact_size.y − 1.0` shortfall recorded at the end of
-§5.5. **No panic.**
+`.clamp(8, 128)` yields `8`. Each point is
+`rect.center() + radius * vec2(cos, sin)` (`spinner.rs:50-54`), so they land on a
+circle of radius `2.0` about the centre and `Shape::line` paints a small arc with
+the hardcoded `Stroke::new(3.0, ..)` (`:58`). A zero diameter therefore still
+shows a ring that no theme value can defeat — consistent with the
+`interact_size.y − 1.0` shortfall recorded at the end of §5.5.
+
+The eight points are **not** guaranteed distinct, and the earlier draft's
+`end_angle != start_angle` invariant does not hold: `:49` is
+`end_angle = start_angle + 240°.to_radians() * time.sin()`, so the whole spread
+collapses to one point whenever `time.sin()` is `0.0` — exactly so for a host
+that supplies `RawInput::time == 0.0`, and to within rounding near every multiple
+of π. **Still no panic**, for two independent reasons: `n_points >= 8`, so
+`Path::add_open_points`' `assert!(n >= 2, ..)`
+(`epaint/src/tessellator.rs:387`) cannot fire; and coincident points give a
+zero-length difference vector, which `Vec2::normalized` returns unchanged rather
+than dividing by zero (`emath/src/vec2.rs:171-174`). The degenerate frame paints
+nothing visible and the next frame recovers.
+
+`+∞` ⇒ `d.max(m) == +∞` passes straight through to `spacing.interact_size.y`:
+`denan` maps only `NaN`, and this formula deliberately keeps no `finite_or`,
+because a `Spinner` allocates `vec2(size, size)` from that field
+(`spinner.rs:65-68`) and there is no non-inventing finite substitute. If the
+allocated rect is infinite too, `radius` is `+∞` (`:45`) and `n_points` is
+`(+∞.round() as u32).clamp(8, 128)` `== 128` by the same saturating cast, so the
+point count stays in range and the `n >= 2` assert still cannot fire under any
+finite or infinite radius. Whether an infinite `interact_size.y` then
+degenerates harmlessly further down egui's layout path is **UNVERIFIED**: every
+assert traced on the allocation path tests `NaN` or negativity, which `+∞` does
+not trip, and `Align::align_size_within_range` guards the infinite cases it does
+guard arithmetically rather than by asserting
+(`emath/src/align.rs:127-129`, `:134-135`, with the `Min` `:132` and `Max` `:141`
+arms falling through to plain subtraction) — but no reading proves that
+*nothing* on the path from `Ui::max_rect` asserts. *What would verify it*: a
+headless pass (§13) that installs `spinner.diameter = f32::INFINITY` and runs a
+frame. `−∞` ⇒ `0.0` via `.max(0.0)`, like any negative.
 
 ### 6.8 D4 — corner radii with no native source
 
@@ -3079,7 +3568,7 @@ total_v := f32::from(frame.inner_margin.top)  + f32::from(frame.inner_margin.bot
          + 2.0 * frame.stroke.width
          + f32::from(frame.outer_margin.top)  + f32::from(frame.outer_margin.bottom)
 
-spacing.interact_size.y := (toolbar.bar_height - total_v).max(0.0)
+spacing.interact_size.y := (denan(toolbar.bar_height) - total_v).max(0.0)
 ```
 
 `total_v` is exactly `Frame::total_margin().sum().y` (`frame.rs:327-331`), which
@@ -3092,11 +3581,25 @@ resize side (`panel.rs:961-965`).
 
 | input | behaviour |
 |---|---|
-| non-finite | impossible — `#[theme(check = "non_negative")]` (`widgets/mod.rs:447`) and `check_non_negative` rejects non-finite (`validate_helpers.rs:351-365`) |
-| negative | impossible, same check |
+| `NaN` | `0.0`. `denan` maps it before the subtraction, then `.max(0.0)` holds |
+| `−∞` | `0.0`. `−∞ − total_v` is `−∞`, which `.max(0.0)` clamps |
+| `+∞` | passes through to `interact_size.y`; see the residual note in §6.7 on what is and is not verified about an infinite `interact_size.y` |
+| negative | `0.0`, by the same `.max(0.0)` |
 | `0.0` | `interact_size.y == 0.0`; widgets fall back to their content height |
 | `bar_height < total_v` | `.max(0.0)` clamps; never a negative `interact_size.y` |
 | huge | passes through as `f32`; no narrowing, no cast, no overflow — `i8 → f32` is exact |
+
+**Why the guards are here at all.** `#[theme(check = "non_negative")]` on
+`toolbar.bar_height` (`widgets/mod.rs:447`) is real, and `check_non_negative`
+does reject non-finite as well as negative values (`validate_helpers.rs:351-365`)
+— but it runs **only** from `check_ranges` inside `validate()`
+(`native-theme/src/resolve/validate.rs:166-197`). `ResolvedTheme` derives
+`Deserialize` with public fields (`native-theme/src/model/resolved.rs:154-155`),
+and so does every generated per-widget struct
+(`native-theme-derive/src/gen_structs.rs:29-31`), so a `ResolvedTheme` obtained
+by deserialisation or mutated field-by-field reaches the connector without ever
+entering `validate()`. That is exactly what §7.1 states, and it is why these
+rows describe behaviour rather than saying "impossible".
 
 **Three residuals, stated because they are real.** A persisted `PanelState`
 wins: `outer_size` reads the stored rect first (`panel.rs:1066-1067`) and only
@@ -3111,7 +3614,7 @@ that sets either can pass the platform's own height.
 ### 6.11 R-ARROW — expander arrow size
 
 ```text
-spacing.icon_width_inner := (expander.arrow_icon_size * (4.0 / 3.0)).min(f32::MAX)
+spacing.icon_width_inner := (denan(expander.arrow_icon_size).max(0.0) * (4.0 / 3.0)).min(f32::MAX)
 ```
 
 The painted triangle's bounding box is the icon rect scaled by `0.75` —
@@ -3124,12 +3627,23 @@ source, not invented.
 
 | input | behaviour |
 |---|---|
-| non-finite | impossible — `#[theme(check = "non_negative")]` (`widgets/mod.rs:823`) |
-| negative | impossible, same check |
+| `NaN` | `0.0`. `denan` maps it first; without that leading `denan`, `f32::min` returns the non-`NaN` operand and a `NaN` would have become `f32::MAX` — a large invented size, and a second `NaN` policy the crate does not have |
+| negative or `−∞` | `0.0`, held by the `.max(0.0)`. That clamp is what keeps a negative extent out of `Vec2::splat(icon_width_inner)` (`style.rs:476-477`) and therefore out of `Rect::from_center_size` at `collapsing_header.rs:342` |
 | `0.0` | `icon_width_inner == 0.0`; three coincident points tessellate to nothing (`collapsing_header.rs:351`) — no panic |
-| near `f32::MAX` | `x · 4/3` can reach `+∞`; `.min(f32::MAX)` maps `+∞ → f32::MAX`, and Rust's `f32::min` returns the non-`NaN` operand, so a hypothetical `NaN` yields `f32::MAX` rather than propagating |
+| `+∞`, or finite near `f32::MAX` | `f32::MAX`. `x · 4/3` overflows to `+∞` and `.min(f32::MAX)` brings it back to a finite value, so nothing infinite reaches `icon_rectangles` |
 
 No `as` cast, no `unwrap`, no index, no division by a runtime value.
+
+**Why the guards are here at all.** As in §6.10:
+`#[theme(check = "non_negative")]` on `expander.arrow_icon_size`
+(`widgets/mod.rs:823`) runs only inside `validate()`
+(`native-theme/src/resolve/validate.rs:166-197`), which a `Deserialize`-obtained
+or field-mutated `ResolvedTheme` never enters
+(`native-theme/src/model/resolved.rs:154-155`,
+`native-theme-derive/src/gen_structs.rs:29-31`). §7.1 states the same
+conclusion. The `denan` and the `.max(0.0)` are therefore load-bearing, not
+belt-and-braces, and `f32::MAX` is a **saturation bound**, not a virtue: it is
+the least-wrong finite value, not a size any theme asked for.
 
 **Secondary constraint, documented not compensated.** The arrow is re-centred at
 `rect.left() + ui.spacing().indent / 2.0` (`collapsing_header.rs:586-588`), so
@@ -3228,10 +3742,16 @@ use site enforces the range. *What would verify it*: a documented range or a
 **Why it cannot be computed at install time.** `Context::fonts_mut` **panics**
 before the first pass (`context.rs:1113-1121`,
 `expect("No fonts available until first call to Context::run()")`). The public
-formula therefore takes `&egui::Ui`, which is static proof that a pass is
-running, and `install_with` registers a begin-pass `egui::Plugin`
-(`egui/src/plugin.rs:13-27`) that recomputes it every pass. Plugin registration
-is idempotent — "a plugin of the same type can only be added once"
+formula therefore takes `&egui::Ui`. That is **a strong convention rather than a
+type-level proof**: `Ui::new` is public (`egui/src/ui.rs:108`), so a caller can
+in principle construct one outside a pass, and egui exposes no fallible font
+accessor to fall back on — `Context::fonts` carries the identical `expect`
+(`:1096-1106`). The **plugin** path, by contrast, *is* airtight: `Fonts` is
+created or refreshed before the root `Ui` exists (`context.rs:590`) and
+`on_begin_pass` runs inside `run_ui_dyn` after it (`:798-818`), so the begin-pass
+hook can never observe the `None`. `install_with` registers such a begin-pass
+`egui::Plugin` (`egui/src/plugin.rs:13-27`) and recomputes the value every pass.
+Plugin registration is idempotent — "a plugin of the same type can only be added once"
 (`context.rs:2041-2042`) — so installing twice registers one plugin. The cost is
 at most one pass of egui's `0.0` at start-up, and there is no protocol the
 caller can forget.
@@ -3358,6 +3878,9 @@ applied to a value already proven in range.
 /// *propagates* `NaN` and panics when `min > max`. Bare `.max()`/`.min()` are
 /// order-dependent under `NaN` — `NAN.max(lo).min(hi) == lo` but
 /// `NAN.min(hi).max(lo) == hi` — so `denan` must run first, every time.
+///
+/// A substitution made here is **reported**: the call site emits
+/// [`crate::Note::ValueSanitised`] for that leaf. See the emission rule below.
 #[inline]
 #[must_use]
 pub const fn denan(v: f32) -> f32 {
@@ -3365,8 +3888,9 @@ pub const fn denan(v: f32) -> f32 {
 }
 
 /// Saturating, rounding `f32` -> `u8`, for `epaint::CornerRadius` (four `u8`,
-/// `epaint/src/corner_radius.rs:13-25`) and `epaint::Shadow::{blur, spread}`
-/// (`epaint/src/shadow.rs:20`, `:23`).
+/// `epaint/src/corner_radius.rs:13-25`). `epaint::Shadow::{blur, spread}`
+/// (`epaint/src/shadow.rs:20`, `:23`) are cited for their representable range only —
+/// this crate never writes shadow geometry (§6.14), so they are not destinations.
 ///
 /// `NaN` -> 0; `v <= 0.0` -> 0; `v >= 255.0` -> 255; otherwise round-half-away-from-zero.
 /// `f32::round`, not `round_ties_even`, so this and epaint's own `From` impl agree bit
@@ -3379,7 +3903,9 @@ pub fn u8_from_f32_saturating(v: f32) -> u8 {
 }
 
 /// Saturating, rounding `f32` -> `i8`, for `epaint::Margin` (four `i8`,
-/// `epaint/src/margin.rs:15-20`) and `epaint::Shadow::offset` (`epaint/src/shadow.rs:15`).
+/// `epaint/src/margin.rs:15-20`) — the only `i8` sink this crate writes from theme data.
+/// `epaint::Shadow::offset` (`epaint/src/shadow.rs:15`) is cited for its representable
+/// range only; this crate never writes shadow geometry (§6.14).
 ///
 /// `NaN` -> 0, **not** −128, because `denan` runs first: `f32::NAN.max(-128.0)` is
 /// `-128.0`, so a `NaN` margin would otherwise become the most-negative margin.
@@ -3395,6 +3921,10 @@ pub fn i8_from_f32_saturating(v: f32) -> i8 {
 }
 
 /// Pass a finite `f32` through; substitute `fallback` for `NaN` and `±∞`.
+///
+/// A substitution made here is **reported**: the call site emits
+/// [`crate::Note::ValueSanitised`] for that leaf. `finite_or` already maps `NaN`,
+/// so `finite_or(denan(x), fallback)` is never written.
 #[inline]
 #[must_use]
 pub fn finite_or(v: f32, fallback: f32) -> f32 {
@@ -3402,6 +3932,10 @@ pub fn finite_or(v: f32, fallback: f32) -> f32 {
 }
 
 /// Clamp an opacity into `0.0..=1.0`, total over all `f32`.
+///
+/// A **non-finite** input is a substitution and is reported as
+/// [`crate::Note::ValueSanitised`] at the call site; a finite value merely clamped
+/// into range is not, and emits nothing. See the emission rule below.
 #[inline]
 #[must_use]
 pub fn unit_interval(v: f32) -> f32 {
@@ -3470,6 +4004,44 @@ pub fn to_shadow(base: egui::Shadow, color: Rgba, enabled: bool) -> egui::Shadow
     }
 }
 ```
+
+**Who emits the `Note`s.** Emission is owned by the **mapping layer**, never by
+the helpers. Every helper above is pure, single-valued and takes no path, which
+is why `i8_from_f32_saturating`'s doc says "at the call site" rather than
+declaring a diagnostics channel of its own. The signatures do not change; the
+rule below is what makes `Note::ValueSanitised` and `Note::ValueSaturated`
+(§4.3) reachable at all.
+
+* **`Note::ValueSanitised { path }`** — emitted **once per leaf**, at the call
+  site, whenever that leaf's input was `NaN` or `±∞` and a documented fallback
+  was substituted for it: `denan`, `finite_or`, and `unit_interval` on a
+  non-finite input. A **finite** value merely clamped into range — by
+  `unit_interval`, or by a `.max(0.0)` / `.min(..)` in one of §6's formulas — is
+  not sanitisation and emits nothing.
+* **`Note::ValueSaturated { path }`** — emitted whenever `i8_from_f32_saturating`
+  clamped. Because the helper returns a bare value, saturation is detected at the
+  call site rather than reported by the helper:
+
+  ```rust,ignore
+  let d = denan(v);
+  let saturated = d < -128.0 || d > 127.0;   // same shape at the u8 bound: d > 255.0
+  ```
+
+  `u8_from_f32_saturating` and `to_corner_radius` emit **nothing**: corner-radius
+  saturation is benign, because the tessellator re-clamps a radius to half the
+  smaller side (`epaint/src/tessellator.rs:638-642`), so `255` reads as "pill"
+  (§14 item 19). `epaint::Margin` is the only `i8` sink this crate writes from
+  theme data, so in practice `ValueSaturated` is a margin note.
+* **`path`** is the **leaf** path — the same dotted string `mapping.toml` keys
+  its rows with (§13.1), e.g. `"button.border.corner_radius"` — never the egui
+  sink path.
+* **No other producer.** §9 emits none: the icon free functions could not, since
+  `Note` is compiled into the atlas (§4.3) and surfaces only through
+  `ThemeAtlas::notes()` (§4.2), which a free function has no handle on. An
+  oversize icon is reported by returning `None` (§9.3), not by a new variant.
+  The one remaining promise of a `Note` in this document — §6.4's transparent
+  `bg_fill` — has no matching variant and is marked UNVERIFIED there; it must not
+  be quietly folded into `ValueSanitised`.
 
 ### 7.3 The colour-space trap
 
@@ -3543,8 +4115,28 @@ from `.y` through `Vec2::splat` (`checkbox.rs:85-86`, `radio_button.rs:54-55`).
 `TextStyle::resolve` calls `panic!` when a key is missing
 (`style.rs:111-119`), and it sits on the hot path of essentially every widget
 via `FontSelection::resolve` (`:150-152`) and `resolve_with_fallback`
-(`:157-171`). The connector overwrites the five built-in keys and adds nothing
-(§5.8 items 4 and 5), so that panic is unreachable by construction.
+(`:157-171`). The connector overwrites the five built-in keys and adds none of
+its own (§5.8 items 4 and 5).
+
+It does, however, **replace the whole map**, and that is not the same thing as
+leaving it alone. Every `Style` the connector publishes starts from
+`Theme::default_style()` (§3.4), which is `Style::default()` with only the
+visuals swapped (`egui/src/memory/theme.rs:24-29`), and `Style::default()` sets
+`text_styles: default_text_styles()` (`style.rs:1432`) — exactly the five stock
+keys (`:1416-1422`). Publishing it therefore **removes an application's own
+`TextStyle::Name` key**: `set_style_of` assigns `opt.dark_style` / `light_style`
+wholesale (`context.rs:2247-2252`), and every role scope replaces a child `Ui`'s
+style outright (`ui.rs:236`). The next `resolve` of that key then panics — and
+`style.rs:111-119` carries no `cfg(debug_assertions)`, so it fires in **release**
+as well as debug. The panic is therefore *not* unreachable by construction; it is
+unreachable only for an application that registers no `Name` key.
+
+Seeding `text_styles` from `ctx.style_of(..)` inside `Builder::build` is **not**
+the fix and must not be proposed: `build()` takes no `Context` (§4.3), and even
+with one it would not close the role-scope route, which replaces the map a second
+time. The two workarounds an application has are: re-register its `Name` keys
+after `install_with`, and do not use a `Name` key inside `native_scope`. §14
+carries this as a ledger row.
 
 ---
 
@@ -3567,7 +4159,7 @@ This is structural, not stylistic. Two epaint panics fire from inside
 Those two panics exist because `Style` and `FontDefinitions` land through
 **different channels**: `set_style_of` takes effect immediately
 (`context.rs:2247`) while `set_fonts` is deferred to the next pass
-(`context.rs:2100`). Any design that emits a `Name` must therefore guarantee an
+(`context.rs:2101-2103`). Any design that emits a `Name` must therefore guarantee an
 ordering across two channels, and a violated guarantee is a panic in the user's
 application. The never-`Name` invariant makes both **unreachable by
 construction**: `Style` and `FontDefinitions` become independent, and installing
@@ -3759,11 +4351,25 @@ points (freedesktop lookup is size-dependent,
 change the texture, so it must never enter the URI.
 
 The URI is always `bytes://native-theme/…`. For `IconData::Svg` it always ends
-in `.svg`, required by `egui_extras::SvgLoader::is_supported`
-(`egui_extras/src/loaders/svg_loader.rs:30-32`) and by `DefaultTextureLoader`'s
+in `.svg`, required by `egui_extras`'s `is_supported`
+(`egui_extras/src/loaders/svg_loader.rs:30-32`), which `SvgLoader::load` calls
+before it looks at anything else (`:58-61`), and by `DefaultTextureLoader`'s
 per-size cache (`egui/src/load/texture_loader.rs:152-154`). It never contains
 `#`, which egui reserves for animated-image frame indices
 (`egui/src/widgets/image.rs:891-893`).
+
+**That coupling has no mechanical protection, and the spelling matters.**
+`is_supported` is a bare module-level `fn`, private and *outside* the
+`impl SvgLoader` block at `:26-28`; the module `loaders::svg_loader` is public
+(`egui_extras/src/lib.rs:19`, `loaders.rs:121`, feature `svg`) but the item is
+not exported and `SvgLoader` itself is not re-exported at `egui_extras`'s crate
+root (`lib.rs:25-32` re-exports only `DatePickerButton`, `Size`, `strip::*`,
+`table::*` and `install_image_loaders`). So there is **no path**
+`egui_extras::SvgLoader::is_supported` to name and nothing to assert against;
+the contract can only be checked end to end. §13 must therefore carry a test
+that installs the loaders and asserts that a URI this crate produced actually
+loads — `egui_extras` is already a dev-dependency with `features = ["svg"]`
+(§11) and `Context::try_load_image` is public (`egui/src/context.rs:3858`).
 
 ### 9.3 The release-mode assert
 
@@ -3776,11 +4382,31 @@ than `..._premultiplied` is correct because native-theme raster payloads are
 straight alpha (`native-theme/src/rasterize.rs:67-69`, `sficons.rs:109`,
 `winicons.rs:169-171`).
 
-`Context::load_texture` (`context.rs:2387`) `debug_assert!`s against
-`max_texture_side` (`:2396-2403`), so the requested size is clamped against
-`ctx.input(|i| i.max_texture_side)` first. `load_texture` is documented as *not*
-immediate-mode safe (`:2357-2358`), which is exactly why the URI, not the call
-site, is the cache key.
+`Context::load_texture` carries a second `debug_assert!`, and it **cannot be
+mitigated by clamping** — there is nothing to clamp. Its signature is
+`load_texture(&self, name, image, options)` (`context.rs:2387-2392`): there is no
+requested-size parameter. It reads `max_texture_side` out of the input state
+itself (`:2395`) and asserts on the `ColorImage`'s **own** dimensions
+(`:2396-2403`), which come from `IconData::Rgba`'s baked-in `width` and `height`
+(`native-theme/src/model/icons.rs:303-310`). Any `IconData::Rgba` with a side
+larger than `max_texture_side` — a 4096-pixel system icon against the `2048`
+default a `Context` keeps until the integration raises it
+(`input_state/mod.rs:270`, `:351`) is the obvious case — therefore aborts every
+downstream `cargo test` and `cargo run` in debug.
+
+The mitigation is therefore an **admissibility test, not a resize**.
+`icons::to_image_source` and `icons::to_image` read
+`let max = ctx.input(|i| i.max_texture_side);` and return `None` when
+`width > max` or `height > max`, exactly as `to_color_image` already returns
+`None` for a zero or mismatched buffer — the oversize case joins that list.
+**Nothing is downscaled.** Resampling an icon would fabricate pixel data that no
+platform source supplies, which this crate forbids; a caller that wants a smaller
+icon asks the icon layer for a smaller one. No `Note` variant is added either:
+`Note` is compiled into the atlas (§4.3) and surfaces only through
+`ThemeAtlas::notes()` (§4.2), which these free functions cannot reach (§7.2).
+
+`load_texture` is documented as *not* immediate-mode safe (`:2357-2358`), which
+is exactly why the URI, not the call site, is the cache key.
 
 ### 9.4 Sizes and animation
 
@@ -3877,6 +4503,25 @@ change re-renders recoloured icons instead of serving the previous theme's
 cached textures. It uses `Context::forget_image` (`context.rs:3761`) per URI,
 leaving unrelated application images alone.
 
+**Lock discipline: no `Context` accessor inside a `Context` accessor.**
+`egui::Context` is one `Arc<RwLock<ContextImpl>>` (`context.rs:722`) behind
+`read` (`:758`) and `write` (`:763`), and the "read-only"-looking accessors are
+not all read locks — `Context::input` takes the **write** lock (`:990`), as does
+`data_mut` (`:1032`). epaint's `RwLock` is not reentrant and, in debug builds,
+panics after ten seconds rather than blocking forever
+(`epaint/src/mutex.rs:5`, `:98-106`). No function in this crate may therefore
+call a second `Context` accessor from inside the closure of a first one.
+
+This is not hypothetical: it is exactly the shape the icon texture cache invites.
+`Context::load_texture` calls `self.input(..)` internally (`context.rs:2395`), so
+the natural cache-then-upload spelling —
+`ctx.data_mut(|d| d.get_temp_mut_or_insert_with(key, || ctx.load_texture(..)))`
+(`egui/src/util/id_type_map.rs:514`) — deadlocks by construction. §9.1's cache
+must instead read in one `ctx.data_mut`, **drop the guard**, call `load_texture`
+outside any accessor closure, and insert in a second `ctx.data_mut`. No test is
+specified for this: a test would hang and then panic by construction, which is
+not a useful signal.
+
 ### 10.4 The worked example's spelling
 
 The showcase example must obey these rules, each of which was derived from a
@@ -3957,6 +4602,12 @@ native-theme = { workspace = true, features = ["windows"] }
 eframe = "0.36.1"
 egui_extras = { version = "0.36.1", default-features = false, features = ["svg"] }
 native-theme = { workspace = true, features = ["watch"] }
+# §13 T3 parses `mapping.toml` and T4 walks `serde_json::to_value(&resolved)`.
+# Neither crate is reachable transitively: `native-theme` depends on `toml`
+# (`native-theme/Cargo.toml:51`) but re-exports it nowhere, and its own
+# `serde_json` is dev-only (`:123`).
+serde_json = "1.0.149"
+toml = { workspace = true }
 
 [[example]]
 name = "showcase-egui"
@@ -3972,7 +4623,19 @@ direct dependency on any of them would only create a way to end up with two
 `ecolor`s in one graph. `egui_kittest` must **not** appear anywhere: a
 version-aligned `0.36.1` of that crate does exist, but its API was never read,
 so nothing in §13 is written against it and adding it would buy nothing that the
-nine headless groups do not already cover — see §16 Q-3.
+eleven headless groups do not already cover — see §16 Q-3.
+
+**egui's default features are inherited deliberately.** `egui = "0.36.1"` carries
+no `default-features = false`, so `default = ["default_fonts"]`
+(`egui/Cargo.toml:62`) stays on, chains to `epaint/default_fonts` (`:63`) and
+compiles in the four bundled faces — `Hack`, `NotoEmoji-Regular`, `Ubuntu-Light`
+and `emoji-icon-font` (`epaint/src/text/fonts.rs:512-538`). Cargo feature
+unification is additive, so a downstream binary that sets
+`default-features = false` on **its own** `egui` dependency cannot opt out of
+them while this crate is in the graph. That is the intended position, not an
+oversight: §8.2's "right metrics, wrong typeface" fallback and §8.1's emoji tail
+both assume those faces are present. It costs binary size, and the position is
+recorded here so the cost is a decision rather than an accident.
 
 ---
 
@@ -4012,11 +4675,24 @@ Seven clauses, all of which belong in the README as well as the rustdoc:
    mapping correction possible.
 4. Every public enum is `#[non_exhaustive]` except `PanelSide`, so a new `Role`,
    `Surface`, `RoleVariant`, `Note`, `TextRole`, `IconContext` or `FontBytes`
-   variant is additive.
+   variant is additive. The attribute on the *enum* does **not** protect a
+   variant's payload, so each of `Note`'s four struct variants carries its own
+   `#[non_exhaustive]` (§4.3) and enriching one of them stays additive too.
+   `Surface::Panel` and both `FontBytes` tuple variants are deliberately left
+   exhaustive: on a *tuple* variant the attribute makes the variant
+   unconstructible outside this crate, and constructing them is the documented
+   call shape.
 5. Adding a free accessor is additive.
-6. `ThemeAtlas`, `Builder`, `FontPlan` and `IconKey` are opaque, and
-   `NativeThemeContextExt`, `NativeThemeUiExt` and `SystemThemeExt` are sealed
-   (§4.5), so adding a method to any of them is additive.
+6. `ThemeAtlas`, `Builder`, `FontPlan`, `IconKey` and — behind feature `watch` —
+   `ThemeWatcher` are opaque, and `NativeThemeContextExt`, `NativeThemeUiExt`
+   and `SystemThemeExt` are sealed (§4.5), so adding a method to any of them is
+   additive. **One exception the seal does not cover:** the method-name sets of
+   `NativeThemeContextExt` and `NativeThemeUiExt` must stay **disjoint**.
+   `egui::Ui` derefs to `egui::Context` (`egui/src/ui.rs:91-98`) and the receiver
+   type wins method resolution, so a name added to `NativeThemeUiExt` that
+   already exists on `NativeThemeContextExt` raises no ambiguity error — it
+   silently rebinds every existing `ui.<name>()` call site to the new method.
+   Such an addition is **breaking** despite the seal (§4.5).
 7. The only public struct with public fields is `InstallOptions`, which is
    `#[non_exhaustive]` and has a `Default`.
 
@@ -4044,7 +4720,8 @@ The policy is published as a table in the README and there is **no**
 `EGUI_VERSION` constant: a hand-maintained string cannot be checked against the
 resolved dependency and would eventually lie.
 
-**Churn evidence, the one place 0.35.0 is cited.** Between egui 0.35.0 and
+**Churn evidence, the first of the two places 0.35.0 is cited; §14.2 is the
+other.** Between egui 0.35.0 and
 0.36.1, `egui/src/style.rs` changed by **25 lines** under
 `diff -u | grep -c '^[+-]'` (39 under default `diff`). The semantic delta is
 three items: `Spacing::extra_text_line_spacing` added (`style.rs:423`, default
@@ -4054,6 +4731,21 @@ three items: `Spacing::extra_text_line_spacing` added (`style.rs:423`, default
 axis — is **byte-identical** between the two releases, verified by `diff`. It is
 frozen, not evolving. That is the strongest available evidence both *against*
 depending on it today and *for* a well-argued upstream PR (§14.2).
+
+**What the tripwires cannot catch, and the bump step that follows from it.**
+Upstream `Style` can drift in three ways and only two of them are mechanical.
+A field **added or removed** becomes a compile error naming the field, because
+§13 T2 destructures every relevant struct with no `..` rest pattern. A field
+whose **type** changes is caught too, but by the assignment site rather than by
+T2, so the error names this crate's mapping code and not the upstream change.
+A field whose **meaning** changes with no signature change is caught by
+**nothing** — and that is not hypothetical: `Spacing::extra_text_line_spacing`
+(`style.rs:423`) could be redefined from logical pixels to a multiplier, and
+§6.15's derivation would then be silently wrong by a factor of the font size
+with every test still green. §13 T2b narrows the third mode by pinning three
+default *values* this document reasons from, but it does not close it. So the
+egui-bump procedure carries one step no tripwire can supply: **read the
+doc-comment diff for every field this crate writes, not only the field list.**
 
 ### 12.4 MSRV — workspace 1.88.0, this connector 1.95
 
@@ -4067,8 +4759,9 @@ declares `rust-version = "1.95"` explicitly and does *not* write
 | egui 0.36.1 requires `1.95` | `egui/Cargo.toml:14` |
 | the workspace declares `1.88.0` | `Cargo.toml:15` |
 | the workspace uses `resolver = "3"` | `Cargo.toml:9` |
-| no dependency in the graph declares more than `1.88.0` | highest `rust-version` across the 463 dependencies that declare one |
-| every current workspace member compiles on `1.88.0`, tests included | measured 2026-08-10: `cargo +1.88.0 check -p <member> --all-targets --locked` clean for all five |
+| no dependency in the graph declares more than `1.88.0` | `cargo metadata --offline --all-features` on the committed lockfile reports **957** packages, of which **577** declare a `rust-version` (476 distinct names; 710 packages / 432 declaring under `--filter-platform x86_64-unknown-linux-gnu`). The maximum is `1.88.0`, declared by `darling` 0.23.0 — with `image`, `serde_with`, `home`, `wgpu` and the workspace members at the same floor, some spelling it `1.88` rather than `1.88.0`. Measured 2026-08-10 |
+| our own sources need `1.88.0` too | let-chain syntax, stabilised in 1.88 and available only under `edition = "2024"` (`Cargo.toml:13`), appears **59** times under `grep -rn '&& let '` across `native-theme`, `native-theme-build`, `native-theme-derive` and both existing connectors — e.g. `native-theme/src/detect.rs:246`, `native-theme-derive/src/gen_ranges.rs:150`. That grep is a floor, not a census: it misses the `if let PATTERN = expr` + `&& cond` spelling (`native-theme/src/model/font.rs:309-310`). The floor is therefore held up from **both** sides, and lowering it would fail to compile our own code, not merely a dependency |
+| every current workspace member compiles on `1.88.0`, tests included | measured 2026-08-10: `cargo +1.88.0 check -p <member> --all-targets --locked` clean for all five. The CI job below checks lib targets only, which is what the MSRV promises a consumer — a dev-dependency is not part of a downstream build, so one that stops compiling on `1.88.0` is not an MSRV violation. The `--all-targets` measurement is belt-and-braces |
 
 `rust-version` is a per-package key whose workspace inheritance is opt-in, so
 declining to inherit is ordinary and supported, not a workaround. Under
@@ -4097,29 +4790,38 @@ the job that checks it. §15 task 22:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.88.0
-      - run: cargo check --workspace --exclude native-theme-egui --all-features
+      - run: cargo check --workspace --exclude native-theme-egui --all-features --locked
       - uses: dtolnay/rust-toolchain@1.95
-      - run: cargo check -p native-theme-egui --all-features
+      - run: cargo check -p native-theme-egui --all-features --locked
 ```
+
+`--locked` on both runs is not decoration: the floor above was measured against
+the committed `Cargo.lock`, and without it cargo may resolve a newer dependency
+whose own `rust-version` moved, so the job would stop testing the number the
+table states.
 
 ---
 
 ## 13 -- Headless testing strategy
 
-Nine groups, all headless: a bare `egui::Context` or no `Context` at all. No
-snapshot testing, no screenshots, no `egui_kittest` (§16 Q-3).
+Eleven groups, all headless: a bare `egui::Context` or no `Context` at all. No
+snapshot testing, no screenshots, no `egui_kittest` (§16 Q-3). T2b is a second,
+value-level tripwire living in T2's module rather than a group of its own.
 
 | T | Name | What it does | Why it is sufficient |
 |---|---|---|---|
 | T1 | **Determinism and total `NaN` detector** | For every bundled preset × both colour modes × both `egui::Theme`s × every `Role` × every `RoleVariant`: build the atlas twice and assert that T3's exhaustive-destructuring `style_diff` between the two produced `egui::Style`s is empty; then, per produced `Style`, `assert_eq!(*a, *a)` | `Style` derives `PartialEq` (`style.rs:240`) and one `NaN` anywhere makes the value unequal to *itself*, so the self-comparison is the finiteness sweep. It must be a *self*-comparison: `assert_eq!(*a, *b)` across two builds can never pass, because `Style::number_formatter` (`style.rs:297`) compares by `Arc::ptr_eq` (`:56-61`) and `Style::default` allocates a fresh `Arc` on every call (`:1434`). `style_diff` therefore skips `number_formatter`, and skipping it is why the two halves are separate assertions |
-| T2 | **Compile-time drift tripwires** | Exhaustive destructuring with **no `..` rest pattern** of `Spacing` (21 fields, `style.rs:391-464`), `Visuals` (36 fields, with `#[expect(deprecated)]` for `clip_rect_margin` at `:1085`), `WidgetVisuals` (6, `:1294-1318`), `Selection` (2, `:1195-1198`), `Widgets` (5, `:1254-1268`), `Interaction` (8, `:915-943`), `ScrollStyle` (16, `:502-581`), `TextCursorStyle` (5, `:952-964`), and `epaint::{Shadow, Margin, CornerRadius, Stroke}` | A new upstream field becomes a compile error **naming the field**. Strictly better than a `size_of` assertion. `Style` itself is **excluded**: its `debug` field is `#[cfg(debug_assertions)]` (`style.rs:322-323`), so the field count differs between profiles and the tripwire would fail in one of them |
+| T2 | **Compile-time drift tripwires** | Exhaustive destructuring with **no `..` rest pattern** of `Spacing` (21 fields, `style.rs:391-464`), `Visuals` (36 fields, with `#[expect(deprecated)]` for `clip_rect_margin` at `:1085`), `WidgetVisuals` (6, `:1294-1318`), `Selection` (2, `:1195-1198`), `Widgets` (5, `:1254-1268`), `Interaction` (8, `:915-943`), `ScrollStyle` (16, `:502-581`), `TextCursorStyle` (5, `:952-964`), `ImeComposition` (3, `:1207`, `:1210`, `:1228`), `ScrollFadeStyle` (2, `:787`, `:791`), `egui::Frame` (6, `containers/frame.rs:104-140`), and `epaint::{Shadow, Margin, CornerRadius, Stroke, TextOptions}` (`TextOptions` 4 fields, `epaint/src/text/mod.rs:29-53`) | A new upstream field becomes a compile error **naming the field**. Strictly better than a `size_of` assertion. `Style` itself is **excluded**: its `debug` field is `#[cfg(debug_assertions)]` (`style.rs:322-323`), so the field count differs between profiles and the tripwire would fail in one of them. A destructure binds a nested struct **by name and stops there**, so every type reachable from a destructured one is listed separately or the tripwire has a hole at that level — `Visuals::text_options` (`:1000`), `Visuals::ime_composition` (`:1032`) and `ScrollStyle::fade` (`:581`) are exactly those holes. `egui::Frame` is listed although it is not a `Style` field: it is the public return type of two §4.2 methods, the sink for the whole `Surface` axis and a normative manifest spelling (§13.1), and upstream guards it only with a `size_of` test (`containers/frame.rs:143-154`) — the weaker technique this row exists to replace |
+| T2b | **Upstream default-*value* tripwires** | Three assertions in T2's module: `egui::Style::default().spacing.extra_text_line_spacing == 0.0` (`style.rs:1464`), `egui::Style::default().spacing.interact_size.x == 40.0` (`:1459`) and `egui::Visuals::dark().disabled_alpha == 0.5` (`:1559`, field `:1125`) | T2 catches a field that appears or disappears; it cannot catch a *value* that moves under an unchanged signature. These three are the defaults this document reasons **from**: §6.15 needs `0.0` to be egui's own resting value — it is what lets T7(b) tell a wired plugin from an unwired one — §7.5 leaves `interact_size.x` deliberately inherited at `40.0`, and §7.4's whole panic argument is about `disabled_alpha`. A change of *meaning* with no change of signature or value is still caught by nothing; §12.3 names that residue and the bump step it forces |
 | T3 | **`mapping.toml` differential coverage** | For each row with `verdict != unmappable`: splice that one native leaf from preset B into preset A, rebuild, diff via an exhaustive-destructuring `style_diff`, and assert the changed sink set equals the row's declared `sinks` | **No discretionary skip allowance.** The test iterates a fixed list of preset pairs and requires every row to be exercised by at least one pair. A row that no pair differentiates fails with an actionable message and must be given an explicit `probe` value in the manifest. There is no knob a maintainer can raise instead of fixing a mapping |
 | T4 | **Converse coverage** | Walk every leaf of `serde_json::to_value(&resolved)` (`ResolvedTheme` derives `Serialize`, `native-theme/src/model/resolved.rs:154`) plus the four `LayoutTheme` leaves, and assert each has exactly one `mapping.toml` row | Without this, "463 fields accounted for" is a claim about a document rather than about the code |
-| T5 | **Hostile input** | `ResolvedTheme`'s fields are public, so write `NaN`, `+∞`, `−∞`, `-0.0`, `1e30` and `-1e30` into every `f32` leaf; assert the atlas still builds, every produced `Style` equals itself, and the expected `Note`s were emitted | Reachable in production, not hypothetical: per-widget `border.*` is not range-checked (`native-theme-derive/src/gen_ranges.rs:117-118`) and `card` is absent from the `check_ranges` dispatch (`native-theme/src/resolve/validate.rs:168-191`) |
+| T5 | **Hostile input** | `ResolvedTheme`'s fields are public, so write `NaN`, `+∞`, `−∞`, `-0.0`, `1e30` and `-1e30` into every `f32` leaf; assert the atlas still builds, every produced `Style` equals itself, and exactly the `Note`s §7.2's emission rule predicts are emitted, and no others | Reachable in production, not hypothetical: per-widget `border.*` is not range-checked (`native-theme-derive/src/gen_ranges.rs:117-118`) and `card` is absent from the `check_ranges` dispatch (`native-theme/src/resolve/validate.rs:168-191`) |
 | T6 | **egui's own asserts as the oracle** | Run T1 and T5 with `debug-assertions = true` (`cargo test`'s default) and **explicitly call `Ui::dnd_drop_zone`** with every produced `Visuals` | `Ui::dnd_drop_zone` (`ui.rs:2725-2726`) is the only path to `Visuals::disable` → `Color32::gamma_multiply`'s `debug_assert!(0.0 <= factor && factor.is_finite())` (`ecolor/src/color32.rs:295-298`). `Ui::disable` does **not** reach it (§7.4), so a test that only calls `ui.disable()` proves nothing |
-| T7 | **Headless `Context` integration** | Two contexts. **(a)** a bare `egui::Context` with `ctx.set_fonts(egui::FontDefinitions::empty())`: install, run three passes, assert the styles survive and that installing twice registers one plugin. **(b)** a second `egui::Context` with `egui::FontDefinitions::default()`: install, run two passes, then assert `ctx.global_style().spacing.extra_text_line_spacing == extra_text_line_spacing(&ui, &resolved)` (`Context::global_style`, `egui/src/context.rs:2172`; there is no `Context::style` in 0.36.1) and that for a preset whose `defaults.line_height * defaults.font.size` exceeds the loaded body row height the value is **not** `0.0` | `FontDefinitions::empty()` binds both built-in families to empty vectors (`epaint/src/text/fonts.rs:567-576`) and `CachedFamily::new` early-returns on an empty list (`:646-654`), so neither the `:1031` nor the `:1039` panic can fire — and it saves a face parse per test. **Valid only because of the never-`Name` invariant** (§8.1). It is also why the line-spacing assertion cannot live there: with no bound face, `Font::styled_metrics` falls through to `StyledMetrics::default()` (`epaint/src/text/font.rs:697-703`, `Default` derived at `:779-780`), so `FontsView::row_height` (`fonts.rs:871-881`) returns `0.0`, §6.15's `row > 0.0` guard yields `0.0`, and `0.0` is indistinguishable from egui's own default (`style.rs:1464`) — the test would pass with the plugin unregistered. Context (b) binds real faces (`fonts.rs:540-556`) and does distinguish them |
+| T7 | **Headless `Context` integration** | Two contexts. **(a)** a bare `egui::Context` with `ctx.set_fonts(egui::FontDefinitions::empty())`: install, run three passes, assert the styles survive and that installing twice registers one plugin — the observable is a `Plugin::setup` call counter, because `Context::add_plugin` runs `setup` only when the plugin was actually added (`context.rs:2047-2051`), read back with `Context::with_plugin` (`:2057`). **(b)** a second `egui::Context` with `egui::FontDefinitions::default()`: install, run two passes, then assert `ctx.global_style().spacing.extra_text_line_spacing == extra_text_line_spacing(&ui, &resolved)` (`Context::global_style`, `egui/src/context.rs:2172`; there is no `Context::style` in 0.36.1) and that for a preset whose `defaults.line_height * defaults.font.size` exceeds the loaded body row height the value is **not** `0.0` | `FontDefinitions::empty()` binds both built-in families to empty vectors (`epaint/src/text/fonts.rs:567-576`) and `CachedFamily::new` early-returns on an empty list (`:646-654`), so neither the `:1031` nor the `:1039` panic can fire — and it saves a face parse per test. **Valid only because of the never-`Name` invariant** (§8.1). It is also why the line-spacing assertion cannot live there: with no bound face, `Font::styled_metrics` falls through to `StyledMetrics::default()` (`epaint/src/text/font.rs:697-703`, `Default` derived at `:779-780`), so `FontsView::row_height` (`fonts.rs:871-881`) returns `0.0`, §6.15's `row > 0.0` guard yields `0.0`, and `0.0` is indistinguishable from egui's own default (`style.rs:1464`) — the test would pass with the plugin unregistered. Context (b) binds real faces (`fonts.rs:540-556`) and does distinguish them |
 | T8 | **Font plumbing** | `fonts::font_definitions` is pure, so assert directly: no `FontFamily::Name` key is ever produced; the emoji fallback tail survives; an empty plan is a no-op; `supports_weight_axis` returns `false` for garbage bytes without panicking | Proves the never-`Name` invariant **mechanically** rather than by review — which matters, because it is the invariant that makes two upstream panics unreachable |
-| T9 | **Lints, MSRV, package** | `clippy -- -D warnings` with `unwrap_used`, `expect_used`, `indexing_slicing` and `panic` at deny; `#![forbid(unsafe_code)]`; `cargo check` on 1.95; `cargo package` dry run via `pre-release-check.sh` | House workflow; the MSRV job is what makes `rust-version = "1.95"` non-decorative (§12.4) |
+| T9 | **Lints, MSRV, package** | `clippy -- -D warnings` with `unwrap_used`, `expect_used`, `indexing_slicing`, `panic`, `unreachable`, `todo` and `unimplemented` at deny — the same seven §4.1 declares, and no fewer; `#![forbid(unsafe_code)]`; `cargo check` on 1.95; `cargo package` dry run via `pre-release-check.sh` | House workflow; the MSRV job is what makes `rust-version = "1.95"` non-decorative (§12.4). The list is not a proof of the no-panic rule and must not be read as one: `assert!`, `assert_eq!`, `debug_assert!` and `BTreeMap`/`HashMap` indexing all compile clean under it and are banned by convention and review instead (§4.1) |
+| T10 | **Documented-limit regressions** | One assertion per ledger row that states a *behaviour* rather than an absence. **(a)** §14 item 30: register a `TextStyle::Name` key on a `Context`, call `install_with`, assert the key is gone from `ctx.global_style().text_styles`, and — in a separate `#[should_panic]` test — assert that resolving it then panics (`style.rs:111-119`). **(b)** §14 item 2b: show a `Window` with scrolling enabled, since the `ScrollArea` branch is gated on `scroll.is_any_scroll_enabled()` (`containers/window.rs:738`); apply a `Role::Scrollbar` scope as the first statement inside the closure and assert the window's own scrollbar geometry still equals the base style's. **(c)** §9.3: an `IconData::Rgba` with a side larger than `ctx.input(\|i\| i.max_texture_side)` makes `icons::to_image_source` return `None` rather than reaching `load_texture`'s `debug_assert!` | A ledger row that names a concrete loss is a testable claim, and an untested one quietly becomes false at the next egui bump — the exact failure mode §14 exists to prevent. **(a)** is the one panic this design does not make unreachable, so it is the one that needs a test rather than an argument; **(b)** is the residue that §1.5's inside-the-closure scope does *not* reach, so it is what stops item 2b being re-described as a total loss or as no loss at all; **(c)** is the one `None` that costs a visible icon, so it must be a deliberate `None` and not an accident |
+| T11 | **Icon URI, end to end** | Install `egui_extras::install_image_loaders` on a bare `Context`, build a URI through `IconKey::uri` for an `IconData::Svg`, and assert `Context::try_load_image` (`egui/src/context.rs:3858`) does **not** answer `Err(LoadError::NoMatchingImageLoader { .. })` for it — that, not `NotSupported`, is what a rejected URI produces: `try_load_image` swallows each loader's `NotSupported` and falls through to `NoMatchingImageLoader` (`:3870-3882`), while its own doc comment says `NotSupported` (`:3850`), so an assertion written from the doc would pass vacuously | §9.2's `.svg`-suffix contract has no mechanical protection: `is_supported` is a private module-level `fn` (`egui_extras/src/loaders/svg_loader.rs:30-32`) that `SvgLoader::load` calls before it looks at anything else (`:58-61`), and neither it nor `SvgLoader` is nameable from `egui_extras`'s crate root (`lib.rs:25-32`). There is nothing to assert against by path, so end-to-end is the only available check — and §9.2 requires §13 to carry it |
 
 `mapping.toml` lives at `connectors/native-theme-egui/mapping.toml`, one row per
 native leaf, carrying `verdict ∈ {direct, scoped, derived, unmappable}`, the
@@ -4201,7 +4903,8 @@ softened, and nothing here is a promise.
 | # | What is lost | Evidence | Upstream change that would fix it |
 |---|---|---|---|
 | 1 | **No widget-type axis in `Style`.** 25 native widget structs share one `Visuals.widgets` with five entries of six fields each | `style.rs:1249-1268`; `WidgetVisuals` `:1294-1318`; `WidgetState` has 4 variants (`widget_style.rs:84-90`); `Style::widget_style`, `button_style`, `checkbox_style`, `label_style` and `separator_style` are inherent methods (`widget_style.rs:120`, `:146`, `:174`, `:194`, `:212`) and `_classes` is ignored at `:120` and `:212` | `Style::class_overrides` — §14.2 |
-| 2 | **`Area`-based containers ignore the calling `Ui`'s style.** "Wrap it in a scope" is false for exactly the containers where a distinct look is most expected | `containers/area.rs:611-629` builds with a bare `UiBuilder::new()`; `ui.rs:135` falls back to `ctx.global_style()` | a `style` on the `UiBuilder` inside `Area::Prepared::content_ui`, or an `Area::style` |
+| 2 | **`Area`-based containers ignore the calling `Ui`'s style.** "Wrap it in a scope" is false for exactly the containers where a distinct look is most expected | `containers/area.rs:611-629` builds with a bare `UiBuilder::new()`; `ui.rs:135` falls back to `ctx.global_style()`. **Connector-side, and it makes the loss partial rather than total:** a role scope applied as the *first statement inside* the container's closure does reach every widget the application adds there (§1.5) — one line of application code, not an upstream change. What stays lost even then is enumerated in item 2b | a `style` on the `UiBuilder` inside `Area::Prepared::content_ui`, or an `Area::style` |
+| 2b | **A `Window`'s self-painted parts take the base style regardless.** The irreducible residue of item 2: even with a role scope inside the closure and `surface_frame` / `title_frame` on the chrome, these read the `Area` content `Ui` — or the `Context` — *outside* `add_contents` | the title bar's button size (`containers/window.rs:1307`), the heading row height that sizes those buttons (`:1312-1313`) and its active fill (`:1427`); the window's own `ScrollArea`, which wraps `add_contents` from outside (`:738-742`); the resize corner (`:766-772`, painted at `:850-859`); and the resize grab radii, read straight from `ctx.global_style()` (`:1095-1098`). The title **text** is the exception: `Window::new` takes `impl IntoAtoms` (`:102`) and an explicit `RichText::font` overrides `AtomLayout::fallback_font(TextStyle::Heading)` (`:1350`), because the explicit family and size are applied after the fallback resolves (`widget_text.rs:425-436`) | the same `Area::style` as item 2. Regression-tested by §13 T10(b) |
 | 3 | **`Response::on_hover_text` tooltips are unthemable.** `Role::Tooltip` and `Surface::Tooltip` are inert on the idiomatic path | `Tooltip::for_widget` (`containers/tooltip.rs:39-50`) reads `response.ctx.global_style()` at `:43` and accepts neither a `Frame` nor a `StyleModifier` | a `Tooltip::style` / `Tooltip::frame`, or `Response::on_hover_text_styled`. **Escape hatch that exists today**: `Tooltip::popup` is a public field (`tooltip.rs:9`), so `Tooltip::for_widget(&r).popup.frame(f).style(m)` works on the manual path |
 | 4 | **`Separator` spacing is hardcoded `6.0`** — the space a separator occupies is not themable at all | `widget_style.rs:212-217`, `spacing: 6.0` at `:215`; overridable only per instance via `Separator::spacing` (`widgets/separator.rs:45`) | `separator_style` reading spacing from the resolved `WidgetStyle` |
 | 5 | **No focus ring** — `defaults.focus_ring_color`, `focus_ring_width`, `focus_ring_offset` (3 leaves) | keyboard focus promotes the widget to `active` (`widget_style.rs:107-109`, `style.rs:1272-1281`); nothing in `Visuals` means "focus outline" | a `Visuals::focus_stroke` + `focus_offset`, painted by `AtomLayout`. Exposed here as three accessors; §5.8 item 1 explains why writing it into `widgets.active.bg_stroke` is worse than not writing it |
@@ -4210,25 +4913,26 @@ softened, and nothing here is a promise.
 | 8 | **No font-by-name.** All 21 `ResolvedFontSpec::family` slots are *names*; egui needs *bytes* | `FontData { font: Cow<'static, [u8]>, .. }` (`epaint/src/text/fonts.rs:118-128`); the `String` keys in `FontDefinitions` (`:437-450`) are arbitrary labels; no font database anywhere in egui, epaint or eframe | a font-discovery layer in eframe, or an epaint hook. Until then: platform *sizes* and *colours*, egui's bundled *glyphs* — "right metrics, wrong typeface" unless the application supplies faces |
 | 9 | **Line height is additive and only partially wired.** `RichText`, `LayoutJob` and pre-built `Galley` ignore it | `Spacing::extra_text_line_spacing` (`style.rs:423`) read at exactly two sites: `widget_text.rs:775-776` (the `Text` arm only) and `widgets/text_edit/builder.rs:473-474` | applying it in `RichText::into_layout_job`, or a multiplicative `line_height_factor` |
 | 10 | **Shadow geometry is egui's, not the platform's** | native-theme carries only `shadow_enabled: bool` (`native-theme/src/model/border.rs:106`); `epaint::Shadow` needs `offset: [i8;2]` (`shadow.rs:15`), `blur: u8` (`:20`), `spread: u8` (`:23`) | **native-theme-side**: add shadow offset, blur and spread to `BorderSpec` |
-| 11 | **`slider.thumb_diameter` has no `Style` sink** | the handle radius is derived locally from the rail rect (`widgets/slider.rs:853-857`, `:880-886`); `HandleShape` (`style.rs:1234-1242`) only scales it | a `Spacing::slider_handle_radius`. Worked around by §6.6, at the cost of also resizing a `Slider::show_value` `DragValue` |
+| 11 | **`slider.thumb_diameter` has no `Style` sink** | the handle radius is derived locally from the slider's **allocated rect** as `rect.height() / 2.5` (horizontal) or `rect.width() / 2.5` (vertical) — not from the rail rect (`widgets/slider.rs:853-857`, `:880-886`); `HandleShape` (`style.rs:1234-1242`) only scales it. The distinction is load-bearing: §6.6's workaround moves `spacing.interact_size.y` precisely because the radius keys off the widget rect | a `Spacing::slider_handle_radius`. Worked around by §6.6, at the cost of also resizing a `Slider::show_value` `DragValue` |
 | 12 | **`spinner.stroke_width`, `spinner.min_diameter`** | `egui::Spinner` exposes `.size` (`spinner.rs:25`) and `.color` (`:32`) only; its radius inset, point count and `Stroke::new(3.0, ..)` are hardcoded (`:45`, `:58`) | a `Spinner::stroke_width` builder plus a `Style` fallback |
-| 13 | **The whole `ResolvedSwitchTheme` (13 leaves)** | no switch or toggle module exists under `egui/src/widgets/`; `Ui::toggle_value` (`ui.rs:1874-1881`) is documented as looking like a `Button::selectable` | an `egui::Switch` widget. Exposed here as the thirteen `switch_*` accessors, one per leaf |
+| 13 | **No switch widget at all.** 8 of the 13 `ResolvedSwitchTheme` leaves are UNMAPPABLE (§5.3); the other five reach only the `Ui::toggle_value` substitute, which renders as a button, not a switch | no switch or toggle module exists under `egui/src/widgets/`; `Ui::toggle_value` (`ui.rs:1874-1881`) is documented as looking like a `Button::selectable` | an `egui::Switch` widget. Exposed here as the thirteen `switch_*` accessors, one per leaf |
 | 14 | **`link.visited_text_color`; the hyperlink underline stroke; every per-state link colour** | one `Visuals::hyperlink_color` (`style.rs:1035`) and no visited state; the underline is `Stroke::new(visuals.fg_stroke.width, color)` gated on hover-or-focus (`widgets/hyperlink.rs:50-54`); the text colour read at `:47` is unconditional | a `Visuals::hyperlink_visited_color`, a visited-URL set in `Memory`, and a state-dependent link colour |
 | 15 | **No success or info colour, and no "text on a status background" anywhere** — `defaults.{success,info}_color` and the four `*_text_color`s | `Visuals` models exactly two: `warn_fg_color` (`style.rs:1055`) and `error_fg_color` (`:1058`) | a `Visuals::status` block. On macOS, KDE and GNOME the four `*_text_color`s are provably the body foreground (`docs/platform-facts.md:1078-1087`, `native-theme/src/macos.rs:93-99`), so only Windows loses a genuinely distinct value |
 | 16 | **No unfocused-window styling** — `defaults.selection_inactive_background` | none of `Visuals`' 36 fields (`style.rs:988-1125`) and none of the five `Widgets` entries (`:1254-1268`) means "the window lost focus"; `widgets.open` means the *active* window title bar (`containers/window.rs:1427`) — the opposite. A real loss on macOS, where the live reader supplies a distinct value (`native-theme/src/macos.rs:76`, `:102`) | a `Visuals::selection_inactive` consulted when `ctx.input(\|i\| !i.focused)` |
-| 17 | **Four `Style` knobs are inert**, so the crate must not claim to theme them | `Spacing::menu_width` (`style.rs:452`), `Spacing::menu_spacing` (`:455`) and `Style::compact_menu_style` (`:340`) have **no** reader; `Visuals::clip_rect_margin` (`:1085-1086`) is `#[deprecated]` and documented "Setting it now has no effect" | wire them, or delete them |
-| 18 | **Container frames are values, not lookups** — panel, group and canvas inner margins cannot be themed globally | `Frame::group` `.inner_margin(6)` (`frame.rs:180`), `Frame::side_top_panel` `Margin::symmetric(8, 2)` (`:187`), `Frame::central_panel` `.inner_margin(8)` (`:192`), `Frame::canvas` `.inner_margin(2)` (`:229`) read no `Style::spacing` | those four presets reading `Spacing`. Worked around by `Surface`-supplied `Frame`s, which only help callers who pass them |
+| 17 | **Five `Style` knobs are inert**, so the crate must not claim to theme them | `Spacing::menu_width` (`style.rs:452`), `Spacing::menu_spacing` (`:455`), `Style::compact_menu_style` (`:340`) and `Visuals::window_highlight_topmost` (`:1066`) have **no functional reader anywhere in egui 0.36.1** — besides the declaration and the default, each occurs only in the settings UI, which destructures it and offers a widget for it (`:1961`/`:2031`, `:1962`/`:2036`, `:1804`/`:1910`, `:2301`/`:2475`); `Visuals::clip_rect_margin` (`:1085-1086`) is `#[deprecated]` and documented "Setting it now has no effect". §5.10 lists the same five | wire them, or delete them |
+| 18 | **Container frames are values, not lookups** — panel, group and canvas inner margins cannot be themed globally | `Frame::group` `.inner_margin(6)` (`frame.rs:180`), `Frame::side_top_panel` `Margin::symmetric(8, 2)` (`:187`), `Frame::central_panel` `.inner_margin(8)` (`:192`), `Frame::canvas` `.inner_margin(2)` (`:229`) and `Frame::dark_canvas` (`:236-237`, via `canvas`) read no `Style::spacing` | those five presets reading `Spacing`. Worked around by `Surface`-supplied `Frame`s, which only help callers who pass them |
 | 19 | **Sub-point precision and large magnitudes are lost at the epaint boundary** | `Margin` is four `i8` (`epaint/src/margin.rs:15-20`); `CornerRadius` four `u8` (`corner_radius.rs:13-25`); `Shadow::offset` `[i8;2]`, `blur`/`spread` `u8` | `MarginF32` / `CornerRadiusF32` in `Style`. Corner-radius saturation is benign (the tessellator re-clamps to half the smaller side, `epaint/src/tessellator.rs:638-642`); **margin saturation is a real loss** and emits `Note::ValueSaturated` |
 | 20 | **Three intra-widget contests that no scoping mechanism can resolve** | (a) `input.selection_text_color` vs `input.focus_border_color` — both on `visuals.selection.stroke.color` (`text_selection/visuals.rs:40` vs `widgets/text_edit/builder.rs:725-730`); (b) `slider.track_color` vs `slider.thumb_color` — the rail is hard-wired to `inactive` (`widgets/slider.rs:773-776`); (c) `expander.font.color` vs `expander.arrow_color` — both `widgets.inactive.fg_stroke.color` (`collapsing_header.rs:353` vs `:598`) | per-widget style structs upstream. Locked resolutions in §5.11 |
-| 21 | **`LayoutTheme` is unreachable from `SystemTheme`** — `widget_gap`, `container_margin`, `window_margin`, `section_gap` are lost on the OS path | `LayoutTheme` lives on `native_theme::theme::Theme` (`native-theme/src/model/mod.rs:266`), not on `ResolvedTheme` (`resolved.rs:155-212`), and `SystemTheme` (`native-theme/src/lib.rs:369-424`) has no `layout` field either. `from_preset` **can** supply it; `from_system` cannot | **native-theme-side**: add `layout: LayoutTheme` to `SystemTheme` (cheapest) or to `ResolvedTheme` (cleanest). Until then `Spacing::item_spacing` and `window_margin` stay at egui's defaults on the OS path. **APPROVED 2026-08-10** (§16 Q-2) and tracked in `docs/todo.md`; this row retires once the field lands |
-| 22 | **Fidelity is opt-in, and the failure is silent and non-uniform.** An application that calls `install()` and nothing else gets the 33 DIRECT leaves plus one elected winner per contested field | there is no hook in 0.36.1 that could change this — items 1 and 2 | §14.2. Until then the README's first paragraph is §0.1's sentence, never "full theme geometry" |
+| 21 | **`LayoutTheme` is unreachable from `SystemTheme`** — `widget_gap`, `container_margin`, `window_margin`, `section_gap` are lost on the OS path | `LayoutTheme` lives on `native_theme::theme::Theme` (`native-theme/src/model/mod.rs:266`), not on `ResolvedTheme` (`resolved.rs:155-212`), and `SystemTheme` (`native-theme/src/lib.rs:369-423`) has no `layout` field either. `from_preset` **can** supply it; `from_system` cannot | **native-theme-side**: add `layout: LayoutTheme` to `SystemTheme` (cheapest) or to `ResolvedTheme` (cleanest). Until then `Spacing::item_spacing` and `window_margin` stay at egui's defaults on the OS path. **APPROVED 2026-08-10** (§16 Q-2) and tracked in `docs/todo.md`; this row retires once the field lands |
+| 22 | **Fidelity is opt-in, and the failure is silent and non-uniform.** An application that calls `install()` and nothing else gets the 31 **effective** DIRECT leaves — §5.7's matrix 32 minus the one `list.header_font.size` leaf that §5.8 item 5 moves to SCOPED — plus one elected winner per contested field | there is no hook in 0.36.1 that could change this. Items 1 and 2 are the two consequences; the closure argument is recorded here because a negative this load-bearing is otherwise re-litigated at every egui bump. **A `Style` can be substituted at exactly three seams, all three already used by this crate**: `Options::{dark_style,light_style}` (`memory/mod.rs:196`, `:200`), `UiBuilder::style` (`ui_builder.rs:28`) and `StyleModifier` (`style.rs:193`) — a tree-wide grep for `StyleModifier` over egui, egui_extras, eframe and epaint returns 24 hits, all of them in `style.rs` and `containers/{popup,menu,combo_box}.rs`. **There is no fourth.** `Ui::new` has exactly two call sites across all eight vendored crates (`context.rs:801`, `containers/area.rs:629`) and neither passes a style, so every `Ui` that exists takes its style from one of those three seams. `Plugin` exposes six hooks (`plugin.rs:13-52`: `setup` `:22`, `on_begin_pass` `:27`, `on_end_pass` `:32`, `input_hook` `:38`, `output_hook` `:44`, and a `cfg(debug_assertions)` `on_widget_under_pointer` `:50-51`) and not one of them is handed a widget's kind. And of the 159 `pub fn` on `Context`, the eight that mention style — `global_style` (`context.rs:2172`), `global_style_mut` (`:2186`), `set_global_style` (`:2197`), `all_styles_mut` (`:2210`), `style_of` (`:2218`), `style_mut_of` (`:2234`), `set_style_of` (`:2247`) and the settings UI's `style_ui` (`:3663`) — are global or per-`Theme` without exception; none takes a widget kind. What a *class* can reach is the narrow statement item 1 already makes and must not be widened: `_classes` is ignored at `widget_style.rs:120` and `:212`, and is honoured only for `SELECTED_CLASS` at `:150` | §14.2. Until then the README's first paragraph is §0.1's sentence, never "full theme geometry" |
 | 23 | **`defaults.border.padding_horizontal` / `padding_vertical` are source-void, not egui-limited** | `DefaultsBorderSpec` has no padding fields by design (`native-theme/src/model/border.rs:12-18`) and the resolver hardcodes both to `0.0` (`validate_helpers.rs:584-585`) | nothing to fix in egui. Reading them into `Spacing::button_padding` would inject a fabricated zero and flatten every `Button`, `ComboBox`, `CollapsingHeader` and `DragValue` at once |
 | 24 | **Widget-level `border.opacity` and `corner_radius_lg` are always `0.0`** — 36 leaves — and must never be used | `validate_helpers.rs:276`, `:278`, `:330`, `:332`; sentinel `:50`, `:52`; documented at `:258-259` | nothing to fix in egui. **native-theme-side**: propagate `defaults.border.{corner_radius_lg,opacity}`, or remove the two fields from the widget-level `ResolvedBorderSpec`. The prohibition is documented on `convert::to_color32_with_opacity` itself, not only in prose |
 | 25 | **`expander.arrow_color` is dropped** | `paint_default_icon` fills the arrow with `visuals.fg_stroke.color` (`collapsing_header.rs:353`) and the label uses `visuals.text_color()` (`:598`), which *is* the same field. Not hypothetical: `macos-sonoma.toml:308` gives the arrow `#86868b` against `#1d1d1f` text; `windows-11.toml:329` uses a semi-transparent `#1a1a1ae0` | give `paint_default_icon` its own colour slot. The only escape today is `CollapsingHeader::icon(..)` (`:480`), which is `FnOnce` and therefore a fresh closure per widget instance — not installable by a theme |
-| 26 | **`egui::Button` does not honour `TextStyle::Button`** | `Button::new` sets `.fallback_font(TextStyle::Button)` (`widgets/button.rs:49`) and `atom_ui` overwrites it at `:358-360` | nothing to fix — this is `override_font_id` working as designed. Recorded because the assumption is natural and wrong, and because `text_styles[Button]` is still written for `ComboBox`, `ProgressBar`, `CollapsingHeader` and `drag_value_text_style` |
+| 26 | **`egui::Button` does not honour `TextStyle::Button`** | `Button::new` sets `.fallback_font(TextStyle::Button)` (`widgets/button.rs:49`) and `atom_ui` overwrites it at `:358-360` with `Style::button_style`'s font, which is `override_font_id.unwrap_or_else(\|\| TextStyle::Body.resolve(self))` (`widget_style.rs:122`, `:137`, `:148`, `:168`) — a hardcoded `TextStyle::Body` whenever `override_font_id` is `None`, which is egui's default (`style.rs:1429`). The overwrite is not what makes `override_font_id` win: `FontSelection::resolve_with_fallback` consults it ahead of any fallback anyway (`style.rs:157-167`, called at `widget_text.rs:774`) | `Style::button_style` resolving `TextStyle::Button` instead of inheriting `widget_style`'s `Body` fallback — the same shape of one-line fix as row 4's `separator_style`, in the same frozen module §14.2 already targets. Recorded because the assumption is natural and wrong, and because `text_styles[Button]` is still written for `ComboBox`, `ProgressBar`, `CollapsingHeader` and `drag_value_text_style` |
 | 27 | **`accessibility.text_scaling_factor` is never applied** | scaling only `Style::text_styles` would desync text from every geometry field, and egui already has a global scale (`Context::set_zoom_factor`, `context.rs:2334`) that is the application's decision | nothing to fix. Exposed as `text_scaling_factor(&SystemTheme)` |
 | 28 | **No widget is shipped** | — | a deliberate charter, §14.3 |
 | 29 | **Line height does not reach a scoped widget.** A `TextEdit` or `Label` inside `native_scope` renders with egui's `0.0` extra leading while unscoped text renders with the theme's, so leading is non-uniform and nothing reports it | `extra_text_line_spacing` needs a live pass (`Context::fonts_mut` panics before pass 1, `context.rs:1113-1121`), so the begin-pass plugin can only write the two base styles through `ctx.all_styles_mut` (`context.rs:2210`); the atlas's per-`Role` `Arc<Style>` cells are compiled at `Builder::build` and a published `Arc<Style>` cannot be patched | nothing to fix in egui. **Connector-side**: have the plugin republish a patched `ThemeAtlas` into `ctx.data_mut()` whenever the computed value changes — that rebuilds the cells once per font or zoom change, not once per frame. Until then, `extra_text_line_spacing()` (§4.7) is public precisely so an application can apply it inside a scope itself |
+| 30 | **Publishing a `Style` removes an application's own `TextStyle::Name` keys, and the next `resolve` of one panics in release.** Not a lost theme value but a lost *application* value, and the one panic this crate can still trigger in an application that did nothing wrong | every `Style` the connector publishes starts from `Theme::default_style()` (`egui/src/memory/theme.rs:24-29`), which is `Style::default()` with the visuals swapped, and `Style::default()` sets `text_styles: default_text_styles()` (`style.rs:1432`) — exactly the five stock keys (`:1416-1422`). The map is then replaced **wholesale**: `set_style_of` assigns `opt.dark_style`/`light_style` outright (`context.rs:2247-2252`) and every role scope replaces a child `Ui`'s style outright (`ui.rs:236`). `TextStyle::resolve` panics on a missing key with no `cfg(debug_assertions)` (`style.rs:111-119`), so it fires in release too. §7.5 has the full argument; §13 T10(a) is the regression test | nothing to fix in egui — the connector cannot seed `text_styles` from `ctx.style_of(..)` inside `Builder::build`, which takes no `Context` (§4.3), and doing so would not close the role-scope route anyway. **Two application-side workarounds, and they are the whole mitigation:** re-register `Name` keys after `install_with`, and do not use a `Name` key inside `native_scope` |
 
 ### 14.2 The upstream contribution — recorded, and explicitly not depended on
 
@@ -4288,8 +4992,9 @@ re-litigated every release.
 
 ## 15 -- Implementation task list
 
-Executable in order. Each task is independently reviewable, and every task from
-9 onward has a test in §13 that proves it.
+Executable in order. Each task is independently reviewable. Every task from 9 to
+18 has a test in §13 that proves it, as does task 21 (T11); tasks 19, 20 and
+24–26 are covered by review, not by a test group.
 
 **Phase A — skeleton**
 
@@ -4297,19 +5002,23 @@ Executable in order. Each task is independently reviewable, and every task from
    member to the workspace `Cargo.toml`. Verify `cargo metadata` resolves egui
    0.36.1 and that no second `ecolor` appears in `cargo tree -d`.
 2. Write `src/lib.rs` with the crate attributes and re-exports of §4.1. Confirm
-   the four `deny` lints and `forbid(unsafe_code)` are active by adding a
+   the seven `deny` lints and `forbid(unsafe_code)` are active by adding a
    temporary `unwrap()` and observing the error, then removing it.
 3. Implement `mod convert` in full (§7.2). It has no dependencies on anything
    else in the crate and is the first thing that can be unit-tested.
-4. Add T2's compile-time drift tripwires (§13). Doing this early means every
-   subsequent upstream field addition is caught by name.
+4. Add T2's compile-time drift tripwires and T2b's default-value assertions
+   (§13). Doing this early means every subsequent upstream field addition is
+   caught by name.
 
 **Phase B — the type surface**
 
 5. Define `Role`, `RoleVariant`, `Surface`, `PanelSide`, `TextRole`,
-   `IconContext`, `Note` with their `all()` and `key()` impls (§4.4). Assert in
-   a test that `Role::all().len() == 25` and that each `key()` equals the
-   corresponding `ResolvedTheme` field name.
+   `IconContext` and `Note`, with the `all()` and `key()` impls §4.4 declares —
+   which is `Role` (`§4.4` `all()`, `key()`), `RoleVariant` and `Surface` only.
+   `PanelSide`, `TextRole`, `IconContext` and `Note` are plain enums with no
+   such impls, and `key()` would be meaningless on a data-carrying diagnostic
+   enum. Assert in a test that `Role::all().len() == 25` and that each `key()`
+   equals the corresponding `ResolvedTheme` field name.
 6. Define `ThemeAtlas`, `AtlasInner`, `Builder`, `InstallOptions` with
    `Default` (§4.2, §4.3). `Builder::build` may return the passthrough atlas at
    this stage.
@@ -4329,7 +5038,9 @@ Executable in order. Each task is independently reviewable, and every task from
 12. Implement `RoleVariant::Selected` (§6.2) and `RoleVariant::Disabled`
     (§6.3), sharing the `Normal` `Arc` where a role has no such data.
 13. Implement the soft-option fallbacks (§6.4) and the derived formulas D1–D7,
-    R-BAR, R-ARROW and the combo-box arrow area (§6.5–§6.12).
+    R-BAR, R-ARROW, the combo-box arrow area, the border-opacity fold and the
+    shadow gate (§6.5–§6.14). §6.16 is **not** here: `layout.widget_gap` is a
+    base-owner row of §5.9 and is therefore covered by task 9.
 14. Implement `Surface` frames for all 12 entries, including the panel-side
     convention of §4.4.
 15. Add T1 (determinism + `NaN`), T5 (hostile input) and T6 (`dnd_drop_zone`
@@ -4352,12 +5063,15 @@ Executable in order. Each task is independently reviewable, and every task from
 20. Implement `to_theme`, `to_theme_pair`, `from_preset`, `from_system`,
     `SystemThemeExt::to_egui_atlas` (§4.6).
 21. Implement `mod icons` (§4.10, §9) and, behind `watch`, `ThemeWatcher`
-    (§4.11, §10.2).
+    (§4.11, §10.2). Add T11, the end-to-end check that a URI this crate produces
+    is one `egui_extras`' SVG loader accepts — §9.2 has no other way to assert
+    that coupling.
 
 **Phase F — release readiness**
 
 22. Add the `msrv` CI job of §12.4 to `.github/workflows/ci.yml`.
-23. Add T9 and run `./pre-release-check.sh`.
+23. Add T9 and T10 — the latter needs install (task 16) and icons (task 21) in
+    place, which is why it lands here — and run `./pre-release-check.sh`.
 24. Write `README.md` opening with §0.1's sentence verbatim, the egui version
     policy table (§12.3), the semver contract (§12.2) and the base-owner table
     (§5.9).
@@ -4415,8 +5129,8 @@ the crates.io sparse index for `egui_kittest`). Its **API is UNVERIFIED**: the
 crate is not vendored locally and none of its sources were read, so it appears
 nowhere in §11 or §13 and no claim about what it can test is made here. *What
 would verify it*: vendoring `egui_kittest` 0.36.1 and reading its harness API.
-**Recommendation:** ship the nine headless groups of §13, which need nothing
-beyond `egui` itself. Because a version-aligned harness demonstrably exists, the
+**Recommendation:** ship the eleven headless groups of §13, which need nothing
+beyond `egui` itself and the two test-only parsers of §11. Because a version-aligned harness demonstrably exists, the
 trigger for revisiting is now concrete rather than speculative: evaluate
 `egui_kittest` if a §13 group proves unable to observe a regression that
 matters — snapshot-level rendering differences being the likeliest such gap.

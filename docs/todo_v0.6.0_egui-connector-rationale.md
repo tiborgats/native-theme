@@ -94,15 +94,23 @@ these are the ones that decide the architecture:
 | `text_styles[*].family` collectively | `epaint/src/text/fonts.rs:32` | 21 | any two per-widget `font.family` values |
 | `visuals.widgets.<state>.bg_stroke` | `style.rs:1304` | 19 | `separator.line_width` vs `card.border.line_width` |
 | `spacing.interact_size.y` | `style.rs:408` | 13 | `toolbar.bar_height` vs `button.min_height` |
-| `visuals.selection.bg_fill` | `style.rs:1195` | 11 | `progress_bar.fill_color` vs `defaults.selection_background` |
+| `visuals.selection.bg_fill` | `style.rs:1195` | 12 | `progress_bar.fill_color` vs `defaults.selection_background` |
 | `visuals.widgets.<state>.corner_radius` | `style.rs:1307` | 11 | `button.border.corner_radius` vs `checkbox.border.corner_radius` |
 | `visuals.widgets.noninteractive.bg_stroke` | `style.rs:1304` | 11 | `separator.line_color` vs `list.grid_color` |
-| `visuals.widgets.inactive.fg_stroke.color` | `style.rs:1310` | 10 | `expander.font.color` vs `expander.arrow_color` |
-| `visuals.widgets.noninteractive.fg_stroke.color` | `style.rs:1310` | 10 | `tooltip.font.color` vs `status_bar.font.color` |
+| `visuals.widgets.inactive.fg_stroke.color` | `style.rs:1310` | 11 | `expander.font.color` vs `expander.arrow_color` |
+| `visuals.widgets.noninteractive.fg_stroke.color` | `style.rs:1310` | 12 | `tooltip.font.color` vs `status_bar.font.color` |
 | `visuals.widgets.hovered.weak_bg_fill` | `style.rs:1299` | 8 | `menu.hover_background` vs `button.hover_background` |
 | `visuals.disabled_alpha` | `style.rs:1125` | 8 | any two per-widget `disabled_opacity` values |
 | `visuals.window_fill` | `style.rs:1062` | 6 | `tooltip.background_color` vs `menu.background_color` |
-| `visuals.panel_fill` | `style.rs:1071` | 5 | `sidebar.background_color` vs `status_bar.background_color` |
+| `visuals.panel_fill` | `style.rs:1071` | 6 | `sidebar.background_color` vs `status_bar.background_color` |
+
+One row has a per-call escape hatch, named here so that a reader does not
+conclude none exists anywhere: `Button::corner_radius`
+(`egui/src/widgets/button.rs:200-203`) overrides the style-derived radius at a
+single call site (applied at `:349-350`, over the `Frame` that
+`Style::button_style` produced). It does not carry a second claimant *from theme
+data* — the application has to pass the number itself — so it changes nothing
+about the contest above; it is Option E's residue (§2), not a resolution.
 
 `spacing.interact_size.y` deserves its own sentence, because it is the single
 most contested `Spacing` field in egui. It must simultaneously be
@@ -141,20 +149,22 @@ rather than one, and why `Surface` exists beside `Role` (§3.3).
 
 ### 1.5 Two aggregates, and why both are printed
 
-Every number quoted in this document is the **matrix aggregate** —
-**DIRECT 33 · SCOPED 218 · DERIVED 62 · UNMAPPABLE 150** — because that is what
-the audited `mapping.toml` rows carry and what the verdict column of every
-mapping table means: *what egui 0.36.1 can express*, not what this crate chooses
-to do.
+Every aggregate quoted in this document is the **matrix aggregate** —
+**DIRECT 32 · SCOPED 209 · DERIVED 72 · UNMAPPABLE 150** — unless it says
+otherwise, because that is what the audited `mapping.toml` rows carry and what
+the verdict column of every mapping table means: *what egui 0.36.1 can express*,
+not what this crate chooses to do.
 
 Specification §5.8 also prints the **effective** aggregate under the locked
-decisions — **31 · 220 · 44 · 168** — which differs in exactly two places: two
-`list.header_font` leaves move DIRECT → SCOPED because no `TextStyle::Name` key
-is ever added (§3.11 is the reason), and eighteen per-widget `font.weight` /
-`font.style` leaves move DERIVED → UNMAPPABLE because the never-`Name` invariant
-forbids the mechanism the inputs and chrome matrices assumed. Both numbers are
-published, so neither is a surprise, and the difference is itself an argument:
-the six other decisions that override a matrix verdict change the *mechanism*
+decisions — **31 · 210 · 54 · 168** — which differs in exactly two places:
+`list.header_font.size` moves DIRECT → SCOPED because no `TextStyle::Name` key
+is ever added (§3.11 is the reason; `list.header_font.family` is DERIVED either
+way, because a family is bytes and not a name), and eighteen per-widget
+`font.weight` / `font.style` leaves move DERIVED → UNMAPPABLE because the
+never-`Name` invariant forbids the mechanism the inputs and chrome matrices
+assumed. Both numbers are published, so neither is a surprise, and the
+difference is itself an argument: the six other decisions that override a
+matrix verdict change the *mechanism*
 without changing the bucket, because the value still reaches the application
 through a documented accessor plus a per-call egui mechanism.
 
@@ -201,17 +211,18 @@ themed uniformly with zero cooperation, which is precisely the property (2) of
 §1.6 that the chosen design cannot promise.
 
 **Rejected because** it can carry exactly one claimant per contested field.
-§1.3's table is the arithmetic: 218 leaves would be silently dropped, not
-because they are hard but because there is nowhere to put them. The failure is
-invisible — the application renders, it just renders `menu.hover_background` on
+§1.3's table is the arithmetic: of the 209 SCOPED leaves only the elected winner
+of each contested field survives, and every other claimant is silently dropped —
+not because it is hard to carry, but because there is nowhere to put it. The
+failure is invisible — the application renders, it just renders `menu.hover_background` on
 the tabs and `button.min_height` on the toolbar. This is the "plausible
 fabrication" failure mode the project's rules forbid, applied to geometry
 instead of to prose.
 
 Note carefully what is *not* rejected: Option A **is** the base layer of the
-chosen design. The base `Style` is exactly this, and 33 DIRECT leaves plus one
-elected winner per contested field reach the screen through it with no
-cooperation at all. What is rejected is stopping there.
+chosen design. The base `Style` is exactly this, and the 31 **effective** DIRECT
+leaves (§1.5) plus one elected winner per contested field reach the screen
+through it with no cooperation at all. What is rejected is stopping there.
 
 ### Option B: Ship replacement widgets in the connector (rejected)
 
@@ -310,18 +321,33 @@ so on.
 **Appeal.** No `Style` cloning, no per-role allocation, complete data available
 at every call site, and the table is trivially testable in isolation.
 
-**Rejected because** egui's builders do not accept most of the values. There is
-no `Button::corner_radius`, no `TextEdit::border_width`, no `ComboBox::padding`.
-The values egui reads it reads from `Style`, which is the whole point of §1.2.
+**Rejected because** egui's builders do not accept most of the values: for the
+great majority of the 463 leaves there is no per-call setter at all — no
+`TextEdit::border_width`, no `ComboBox::padding`. The partial exceptions are
+real, and narrow. `Button` takes `fill` (`egui/src/widgets/button.rs:143`),
+`stroke` (`:151`), `min_size` (`:193`), `corner_radius` (`:200-203`, applied
+over the style-derived radius at `:349-350`) and `gap` (`:277`); `TextEdit`
+takes a whole `Frame` (`egui/src/widgets/text_edit/builder.rs:306`) plus
+`margin` (`:313`). That is exactly why the specification routes per-position
+segmented-control radii through `Button::corner_radius` at the call site
+(specification §5.3, row `segmented_control.border.corner_radius`). Everything
+else egui reads, it reads from `Style`, which is the whole point of §1.2.
 A table would therefore be a table of numbers the application must apply with
 `Ui::painter` by hand — which is Option B without the widgets, i.e. all of the
 work and none of the rendering.
 
 The useful residue of this option is kept: the 62 free accessors of
-specification §4.7 are exactly this table, restricted to the values that have
-*no* `Style` sink at all and are therefore genuinely the application's to paint.
-That is the difference between a table as the architecture (rejected) and a
-table as the honest remainder (adopted).
+specification §4.7 are exactly this table, restricted to the values that no
+`egui::Style` field carries **for that widget** — whether because no sink exists
+at all, because the leaf lost a contest to another claimant, or because a sink
+exists and writing it was deliberately declined. All three shapes are present:
+`focus_ring_color()` covers a DERIVED leaf whose sink is real and refused
+(specification §5.8 item 1, row at §5.1); `dialog_max_size()` covers a SCOPED
+leaf whose sink is real and refused (§5.8 item 6); `list_row_height()` exists
+because `egui_extras::Table` takes the row height as a **call argument** rather
+than from `Style` (specification §5.4). Those are genuinely the application's to
+paint. That is the difference between a table as the architecture (rejected) and
+a table as the honest remainder (adopted).
 
 ### Option F: Helpers only — document the mapping, install nothing (rejected)
 
@@ -395,10 +421,11 @@ fact so it is not re-proposed.
 | A `StyleSet` struct with 26 public fields | Struct-literal-constructible downstream, so adding a native-theme widget breaks every literal; and `pub const ALL: [Self; 25]` bakes a count into a public type signature |
 | Declining `#[non_exhaustive]` crate-wide on the grounds that the egui pin already buys compatibility | Wrong axis. native-theme churn is independent of egui churn: two new widget structs force two new `Role` variants with no egui bump at all. The pin buys nothing there. See §5.2 |
 | An `EGUI_VERSION: &str` constant | Cannot be checked against the resolved dependency (`egui = "0.36.1"` accepts any 0.36.x), so it would eventually become a lie. The version policy lives in `Cargo.toml` and in a README table |
-| `egui_kittest` in `[dev-dependencies]` | A version-aligned `0.36.1` does exist (`rust-version = "1.95"`, verified against the crates.io sparse index), but its **API is UNVERIFIED** — the crate was never vendored or read, so no test here is written against it. All nine test groups are expressible without it, and a dependency that buys nothing is still a dependency to track across every egui bump. *What would verify it*: vendoring `egui_kittest` 0.36.1 and reading its harness API |
+| `egui_kittest` in `[dev-dependencies]` | A version-aligned `0.36.1` does exist (`rust-version = "1.95"`, verified against the crates.io sparse index), but its **API is UNVERIFIED** — the crate was never vendored or read, so no test here is written against it. All eleven test groups are expressible without it, and a dependency that buys nothing is still a dependency to track across every egui bump. *What would verify it*: vendoring `egui_kittest` 0.36.1 and reading its harness API |
 | A direct `epaint` / `ecolor` / `emath` / `skrifa` dependency | egui re-exports the first three (`egui/src/lib.rs:436-438`), so a direct dependency only creates a way to end up with two `ecolor`s. epaint does not re-export `skrifa`, so a `skrifa` dependency here could drift from epaint's at any egui minor |
 | An `InstallReport` return value from `install` | Diagnostics belong to the *atlas*, which is where the conversions happen, not to installation, which cannot fail. `ThemeAtlas::notes()` is populated once per theme change |
 | A `refresh_line_spacing(&Ui) -> bool` two-phase protocol | A protocol on the common path whose failure mode is silent degradation. §3.12 |
+| A post-pass retint of the shapes through `Plugin::output_hook` | Recorded because it is the one mechanism a contributor will find, prototype and propose. It is **unsound**, not merely fragile: nothing in the output carries widget identity. The hook (`egui/src/plugin.rs:44`, dispatched at `:181`) is invoked after `end_pass` and before `tessellate` (`egui/src/context.rs:2458`, `:2460-2461`, `:2856`), and what it can reach is `ClippedShape`, which is `{clip_rect, shape}` (`epaint/src/lib.rs:117-124`) — and none of `Shape`'s twelve variants (`epaint/src/shapes/shape.rs:27-71`) records which widget produced it. `WidgetRect` has seven fields and no widget type (`egui/src/widget_rect.rs:9-49`); the only structure that *does* carry a kind, `WidgetRects::infos` (`:105`), is a private field whose sole writer is `#[cfg(debug_assertions)]` **and** gated on `show_interactive_widgets`, with a release body of `_ = (self, id, make_info);` (`egui/src/context.rs:1569-1581`). `Button` paints at `widgets/button.rs:380` and registers its `WidgetInfo` only afterwards at `:391`, so the attribution does not exist even in a debug build at the moment the shape is created |
 
 ---
 
@@ -484,13 +511,26 @@ Seam S1 (`Context::set_style_of`, `context.rs:2247`) is the global base. Seam S2
 **except** `Area`-based containers. Seam S3 (`egui::style::StyleModifier`) is the
 only thing that reaches `Area`-based containers' *bodies*.
 
+"All three" is an exhaustiveness claim, so it carries its own evidence rather
+than being asserted: a grep for `StyleModifier` across every vendored egui crate
+returns **24** hits, all of them in `egui/src/style.rs` and
+`egui/src/containers/{popup,menu,combo_box}.rs`; and `Ui::new` — the one
+constructor that can seed a style from nothing — has exactly **two** call sites
+in the whole tree (`egui/src/context.rs:801`,
+`egui/src/containers/area.rs:629`), neither of which supplies a style, which is
+what makes §1.4's universal `Area` statement checkable rather than merely
+plausible.
+
 The `Frame` carrier is not a `Style` at all, and it is **the only way to theme
-container margins**, because four of egui's eight `Frame` presets hardcode their
+container margins**, because five of egui's eight `Frame` presets hardcode their
 inner margin and read no `Style::spacing`:
 `Frame::group` hardcodes `.inner_margin(6)` (`containers/frame.rs:180`),
 `Frame::side_top_panel` `Margin::symmetric(8, 2)` (`:187`),
-`Frame::central_panel` `.inner_margin(8)` (`:192`) and `Frame::canvas`
-`.inner_margin(2)` (`:229`). All eight *do* read something from `Style` — even
+`Frame::central_panel` `.inner_margin(8)` (`:192`), `Frame::canvas`
+`.inner_margin(2)` (`:229`), and `Frame::dark_canvas` (`:236-237`), which
+delegates to `Frame::canvas` and so inherits its `.inner_margin(2)`. The other
+three are `window` (`:198`), `menu` (`:207`) and `popup` (`:216`), which do read
+`Style::spacing`; 5 + 3 = 8. All eight *do* read something from `Style` — even
 `Frame::group` takes its corner radius and stroke from
 `widgets.noninteractive` (`:181-182`) — so the precise claim is about
 `Style::spacing`, and specification §3.2 tabulates what each one reads.
@@ -571,16 +611,21 @@ come from `theme.button`.
 (`style.rs:1272-1281`) can never return `open`. Every use of it in egui is a
 direct field read: `containers/window.rs:1427`, `containers/combo_box.rs:371` and
 `:450`, `widgets/color_picker.rs:117`, plus `menu_style`'s write at
-`containers/menu.rs:25` and `containers/menu.rs:383`. The mapping matrices
+`containers/menu.rs:25` (`menu_style` is `:22-29` in its entirety), and
+`SubMenuButton::ui`'s read-then-copy-into-`inactive` at
+`containers/menu.rs:382-386` — which is neither inside `menu_style` nor a write
+to `widgets.open`. The mapping matrices
 treated `open` as part of the interaction-state axis; it is not, and the
 specification corrects them.
 
 **Why `theme.button` and not `defaults`.** `ResolvedDefaults` has 31 fields and
 **not one of them is a hover or pressed value** (`resolved.rs:71-145`). Every
 hover colour in the model lives on a widget. `Button` is by a wide margin egui's
-most common interactive widget: `ui.button`, `ui.selectable_label`,
-`ui.selectable_value`, `ui.toggle_value` and every menu entry are `Button`s
-(`ui.rs:1928-1950`, `widget_style.rs:159`). Borrowing from it is the only
+most common interactive widget: `ui.button` (`ui.rs:1847`), `ui.toggle_value`
+(`:1874`), `ui.selectable_label` (`:1928`) and `ui.selectable_value` (`:1938`)
+are all `Button`s, and so is every menu entry — `MenuButton` holds a `Button`
+(`containers/menu.rs:291`, constructed `:297`) and so does `SubMenuButton`
+(`:338`, `:347`). Borrowing from it is the only
 non-inventing choice, and the specification calls it a stated borrowing rather
 than dressing it up as a derivation.
 
@@ -645,9 +690,29 @@ is allowed to contain (specification §6.17).
 **The rejected objection, recorded because it was raised and answered.** One
 proposal declined this on the grounds that it would compound into
 `disabled_color.gamma_multiply(disabled_opacity)`. Setting the alpha to the
-multiplicative identity is precisely what prevents that compounding. The
-technique moves roughly eighteen leaves out of UNMAPPABLE — but **only for
-widgets the application scopes**, which is ledger item 6 and is stated as a
+multiplicative identity is precisely what prevents that compounding.
+
+**What the technique reaches, counted rather than estimated.** Specification
+§6.3's `Disabled` cell writes exactly two native leaves per role —
+`<role>.disabled_background` and `<role>.disabled_text_color` — so of the
+**eighteen** UNMAPPABLE disabled-colour rows in specification §5 it reaches
+**eleven**: the four `disabled_background` leaves (button, input, checkbox,
+combo_box — `native-theme/src/model/widgets/mod.rs:81`, `:130`, `:175`, `:745`)
+and the seven per-widget `disabled_text_color` leaves (button, input, checkbox,
+menu, list, combo_box, link — `:75`, `:121`, `:169`, `:225`, `:521`, `:739`,
+`:862`). One of those eleven is **inert**: `Link::ui` reads
+`visuals.hyperlink_color` unconditionally and paints the galley with it
+(`egui/src/widgets/hyperlink.rs:47`, used at `:58` and `:62`), so a
+`Role::Link` scope's `fg_stroke.color` never shows. **Ten** are effective. The
+other seven stay lost for the reasons their own rows already give:
+`switch.disabled_checked_background` / `disabled_unchecked_background` /
+`disabled_thumb_color` (`:627`, `:630`, `:633`) and `slider.disabled_fill_color`
+/ `disabled_track_color` / `disabled_thumb_color` (`:327`, `:330`, `:333`) are
+not field shapes §6.3 writes at all, and `defaults.disabled_text_color` has no
+`Role` to be scoped by — `defaults` is not one of the 25 widget fields of
+`ResolvedTheme`, so there is no `Role::Defaults` (specification §4.4). Their
+matrix verdict deliberately stays UNMAPPABLE, because the route exists **only
+for widgets the application scopes**, which is ledger item 6 and is stated as a
 limit, not sold as a win.
 
 **Why `Selected` and `Disabled` cannot be combined.** The only native data for
@@ -764,7 +829,7 @@ carried 18 more leaves (specification §5.8 item 2).
 and `No font data found for {font_name:?}` (`:1039`). They exist because `Style`
 and `FontDefinitions` land through **different channels**: `set_style_of` takes
 effect immediately (`context.rs:2247`) while `set_fonts` is deferred to the next
-pass (`context.rs:2100`). Any design that emits a `Name` must guarantee an
+pass (`context.rs:2101-2103` — `:2100` is a blank doc line). Any design that emits a `Name` must guarantee an
 ordering across two channels, and a violated guarantee is a panic in the *user's*
 application. The invariant makes both unreachable by construction — no pass
 counter, no promotion gate, no documented precondition whose violation panics.
@@ -835,7 +900,15 @@ pass (`context.rs:1113-1121`, `expect("No fonts available until first call to
 Context::run()")`). native-theme's `defaults.line_height` is a dimensionless
 multiplier (`resolved.rs:75-76`) while egui's field is an absolute additive delta
 in points, so the conversion needs the loaded font's row height — a runtime
-property. Taking `&egui::Ui` is static proof that a pass is running.
+property. Taking `&egui::Ui` is a **strong convention rather than a type-level
+proof**: `Ui::new` is public (`egui/src/ui.rs:108`), so a caller can build one
+outside a pass, and there is no fallible font accessor to fall back on —
+`Context::fonts` carries the same `expect` as `fonts_mut`
+(`context.rs:1096-1106`). The begin-pass plugin path that specification §6.15
+actually uses *is* airtight: `run_ui_dyn` builds the root `Ui` and invokes
+`on_begin_pass` only from inside `run_dyn` (`context.rs:798-818`, plugin call at
+`:810`), which runs after `Fonts` has been constructed (`:590`). The public
+helper therefore documents the panic rather than denying it.
 
 **Why not a caller protocol.** A two-phase protocol on the common path fails
 silently when forgotten: text simply has the wrong leading and nothing reports
@@ -1031,14 +1104,45 @@ explicitly and does **not** inherit. `rust-version` is a per-package key whose
 workspace inheritance is opt-in, so declining to inherit is ordinary and
 supported.
 
-**Why `1.88.0`.** It is the maximum of two independently checked bounds. Across
-the 463 dependencies in the graph that declare a `rust-version`, the highest is
-`1.88.0`. And on 2026-08-10 every workspace member was compiled against that
-exact toolchain — `cargo +1.88.0 check -p <member> --all-targets --locked` was
-clean for all five, tests included. Our own sources need less than that: a sweep
-for let-chain syntax, stabilised in 1.88, found none. So the floor is inherited
-from the dependencies, not from our code, and it is the lowest value the
-dependencies actually promise to support.
+**Why `1.88.0`.** It is the maximum of two independent lower bounds — what the
+dependency graph demands and what our own sources demand — and both land on the
+same number. A third check, compiling against that exact toolchain, confirms it.
+
+*The dependency bound, measured rather than asserted.* `cargo metadata
+--offline --all-features` over the committed `Cargo.lock` reports **957
+packages**, of which **577 declare a `rust-version`** (476 distinct package
+names). The highest declared anywhere is **`1.88.0`**. Every package sitting at
+that maximum is named here so the figure can be re-derived: `darling`,
+`darling_core` and `darling_macro` 0.23.0; `image` 0.25.10; `time` 0.3.47 with
+`time-core` 0.1.8 and `time-macros` 0.2.27; `home` 0.5.12; `iced` and
+`iced_program` 0.14.0; `serde_with` and `serde_with_macros` 3.18.0; `wgpu`
+27.0.1; and this workspace's own five members. Six of them — `home`, `iced`,
+`iced_program`, `serde_with`, `serde_with_macros` and `wgpu` — spell it `1.88`
+rather than `1.88.0`. Measured **2026-08-10**.
+
+*The toolchain bound.* On the same date every workspace member was compiled
+against that exact toolchain — `cargo +1.88.0 check -p <member> --all-targets
+--locked` was clean for all five, tests included.
+
+*Our own sources need `1.88.0` too.* An earlier draft of this section recorded
+that a sweep for let-chain syntax found none in our own code; **that was
+false**, and the trigger built on it is corrected below. Let-chains stabilised
+in 1.88 and are available only under edition 2024 (`Cargo.toml:13`); a grep for
+`&& let ` across `native-theme`, `native-theme-build`, `native-theme-derive` and
+both existing connectors returns **59** occurrences — for example
+`native-theme/src/detect.rs:245-247`,
+`native-theme-derive/src/gen_ranges.rs:149-150`,
+`native-theme/src/spinners.rs:78-79` and
+`native-theme/src/resolve/inheritance.rs:46`. That grep undercounts, because it
+does not see a chain whose second term is a bare boolean, such as
+`native-theme/src/model/font.rs:309-310` or
+`native-theme-derive/src/gen_ranges.rs:117-118` (the same lines §3.9 cites for
+the missing range checks).
+
+So the floor is **held up from both sides**: it is the lowest value the
+dependencies promise to support *and* the lowest value our own code compiles
+under. Lowering it would not merely outrun a dependency's promise — it would
+fail to build `native-theme` itself.
 
 **Rejected: pinning the workspace to current Rust stable** (`1.97.1` at the time
 of writing). This was briefly adopted, on the argument that all six toolchain
@@ -1117,10 +1221,16 @@ principle behind the list: **writing an inert field is a silent no-op, which is
 the "plausible fabrication" failure mode this project forbids** — the crate would
 appear to theme something it does not.
 
-`Spacing::menu_width` (`style.rs:452`), `Spacing::menu_spacing` (`:455`) and
-`Style::compact_menu_style` (`:340`) have **no reader anywhere in egui 0.36.1**;
-`Visuals::clip_rect_margin` (`:1085-1086`) is `#[deprecated]` and documented
-"Setting it now has no effect". `Style::interaction` (all eight fields,
+`Spacing::menu_width` (`style.rs:452`), `Spacing::menu_spacing` (`:455`),
+`Style::compact_menu_style` (`:340`) and `Visuals::window_highlight_topmost`
+(`:1066`) have **no functional reader anywhere in egui 0.36.1**. Each appears
+exactly four times in the crate: its declaration, its default (`:1470`, `:1471`,
+`:1446`, `:1527`), a destructure inside egui's own settings UI, and the widget
+that edits it there (`:1961`/`:2031`, `:1962`/`:2036`, `:1804`/`:1910`,
+`:2301`/`:2475`). No paint or layout path consults any of them — which is the
+precise claim, and it is stronger than "no occurrences" because the settings-UI
+occurrences do exist. `Visuals::clip_rect_margin` (`:1085-1086`) is
+`#[deprecated]` and documented "Setting it now has no effect". `Style::interaction` (all eight fields,
 `:910-944`) is input-behaviour policy — hit-test slop, tooltip timing,
 text-selection policy — and `ResolvedTheme` exposes none of it, so writing it
 would mean inventing platform behaviour, not mapping it. `Visuals::striped`
@@ -1170,7 +1280,7 @@ are `source-side gap`. The remaining 109 are `egui-limited`
 
 **Cause 1 — no widget-type axis (ledger item 1).** The root cause, proved in
 §1.2–§1.3. It does not make leaves UNMAPPABLE by itself — it makes them SCOPED,
-which is why 218 leaves are in that bucket rather than lost. What it makes
+which is why 209 leaves are in that bucket rather than lost. What it makes
 genuinely unmappable are the **intra-widget** contests, where both claimants live
 in the same widget and no scoping mechanism can help (ledger item 20): three of
 them, resolved by naming a winner and exposing or dropping the loser
@@ -1186,6 +1296,23 @@ an escape hatch today, and it is documented rather than hidden: `Tooltip::popup`
 is a **public field** (`tooltip.rs:9`), so
 `Tooltip::for_widget(&r).popup.frame(f).style(m)` works on the manual path.
 
+What a scope *around* the call cannot do, a scope **inside the closure** can,
+and both documents must say so or ledger item 2 reads as a total loss when it is
+partial. `Window::show`, `Modal::show` and `Popup::show` all hand the
+application a `Ui` that descends from the `Area`'s content `Ui`
+(`containers/window.rs:710`, used at `:719-752`; `containers/modal.rs:104-108`;
+`containers/popup.rs:508`, body at `:600-603`),
+and `Ui::set_style` (`ui.rs:386`, doc at `:383`: "Changes apply to this `Ui` and
+its subsequent children") replaces the style for that `Ui` and everything built
+from it (`ui.rs:236`). A role scope applied as the *first statement inside the
+closure* therefore reaches every widget the application adds there. It does
+**not** reach the chrome computed before the closure runs, nor the parts the
+container paints itself; specification §14 item 2 records that residue. The
+consequence is a cost reduction, not a reach increase: opt-in fidelity inside a
+`Window` costs one line of application code rather than an upstream change — and
+one line of application code is still application cooperation, which is exactly
+what reading (2) of §1.6 says is unavoidable.
+
 **Cause 3 — the field simply does not exist.** No amount of cleverness invents a
 slot. `Visuals` models exactly two status colours, `warn_fg_color`
 (`style.rs:1055`) and `error_fg_color` (`:1058`), so success and info have
@@ -1198,9 +1325,9 @@ or toggle module exists under `egui/src/widgets/` at all (item 13).
 
 **Cause 4 — the value is hardcoded in paint code.** `separator_style` hardcodes
 `spacing: 6.0` (`widget_style.rs:215`), overridable only per instance via
-`Separator::spacing` (`widgets/separator.rs:45`) — item 4. Four `Frame` presets
-hardcode their inner margins (`containers/frame.rs:180`, `:187`, `:192`, `:229`)
-— item 18. `Spinner`'s radius inset, point count and `Stroke::new(3.0, ..)` are
+`Separator::spacing` (`widgets/separator.rs:45`) — item 4. Five `Frame` presets
+hardcode their inner margins (`containers/frame.rs:180`, `:187`, `:192`, `:229`,
+and `:236-237`, where `dark_canvas` delegates to `canvas`) — item 18. `Spinner`'s radius inset, point count and `Stroke::new(3.0, ..)` are
 hardcoded (`widgets/spinner.rs:45`, `:58`) — item 12. `expander.arrow_color` is
 dropped because `paint_default_icon` fills the arrow with
 `visuals.fg_stroke.color` (`containers/collapsing_header.rs:353`) and the label
@@ -1221,7 +1348,7 @@ than total, and where the connector reports it (`Note::ValueSaturated`).
 ### 4.2 The upstream contribution to egui
 
 Framed per the house guidance for upstream PRs recorded in
-`docs/todo.md:25-38`: **more theming flexibility, not "native platform look"**;
+`docs/todo.md:51-67`: **more theming flexibility, not "native platform look"**;
 **no API breaking changes**; **one concern per PR**; **concrete benefit shown**;
 follow the project's own contribution guide, including disclosure of
 AI-generated code.
@@ -1268,9 +1395,9 @@ Smaller, independently landable PRs in the same spirit, one concern each:
 | `Visuals::hyperlink_visited_color` + a visited set in `Memory` | item 14 | two concerns; split |
 | a `Visuals::status` block | item 15 | additive |
 | `Visuals::selection_inactive`, consulted when `ctx.input(\|i\| !i.focused)` | item 16 | additive |
-| the four `Frame` presets reading `Spacing` | item 18 | behaviour-changing by definition; frame as "let themes reach panel margins", offer the fields as `Option` |
+| the five `Frame` presets reading `Spacing` | item 18 | behaviour-changing by definition; frame as "let themes reach panel margins", offer the fields as `Option` |
 | `MarginF32` / `CornerRadiusF32` in `Style` | item 19 | large; lowest priority |
-| wire or delete `menu_width`, `menu_spacing`, `compact_menu_style` | item 17 | trivially reviewable, good first contribution |
+| wire or delete `menu_width`, `menu_spacing`, `compact_menu_style`, `window_highlight_topmost` | item 17 | trivially reviewable, good first contribution |
 
 **Two honesty notes, both non-negotiable and both repeated from the
 specification.** No upstream maintainer has been consulted and egui's appetite
@@ -1321,7 +1448,7 @@ Two further native-theme-side items are losses without being `source-void`:
 * **`LayoutTheme` is unreachable from `SystemTheme` (item 21).** `LayoutTheme`
   lives on `native_theme::theme::Theme` (`native-theme/src/model/mod.rs:266`),
   not on `ResolvedTheme` (`resolved.rs:155-212`), and `SystemTheme`
-  (`native-theme/src/lib.rs:369-424`) has no `layout` field either. So
+  (`native-theme/src/lib.rs:369-423`) has no `layout` field either. So
   `from_preset` can supply `Spacing::item_spacing` and `Spacing::window_margin`
   and `from_system` cannot — and those are the two spacing fields an egui user
   looks at first. Reasoning in specification §16 Q-2, where the change is now
@@ -1381,6 +1508,24 @@ between profiles and the tripwire would fail in one of them. `Visuals` is
 included with `#[expect(deprecated)]` for `clip_rect_margin` (`:1085`), which
 would otherwise warn.
 
+**What does *not* break, and is the residual risk.** Upstream drift comes in
+three modes and the tripwire catches only the first two. (1) A field **added,
+removed or renamed** is a compile error naming the field — that is T2's own
+claim (specification §13) and it is exact. (2) A field whose **type** changes is
+caught only at the sites that assign to it, and only when the new type is not
+convertible from the old one; a widened numeric type would compile silently.
+(3) A field whose **meaning** changes with no change to its name or type is
+caught by **nothing**. This is not hypothetical: if
+`Spacing::extra_text_line_spacing` (`style.rs:423`, default `0.0` at `:1464`)
+were redefined from an additive delta in points to a multiplier, specification
+§6.15's derivation would be wrong by a factor of the font size with every test
+still green. The mitigation is a value tripwire beside the shape tripwire —
+assert egui's own published defaults, `extra_text_line_spacing == 0.0`
+(`:1464`), `interact_size.x == 40.0` (`:1459`), `Visuals::dark().disabled_alpha
+== 0.5` (`:1559`) — and reading the **doc-comment diff**, not only the field
+list, at every egui bump. Both belong to the version-policy procedure of
+specification §12.3.
+
 **How much is a semver break for the connector's users.** Clause 2: an egui minor
 bump is breaking for this crate, and users move deliberately. Clause 3 means the
 *mapping* corrections that accompany the bump are not additionally breaking.
@@ -1389,9 +1534,18 @@ bump is breaking for this crate, and users move deliberately. Clause 3 means the
 only as parameter and return types — `Context`, `Ui`, `Theme`, `Style`, `Frame`,
 `style::StyleModifier`, `Color32`, `FontId`, `Vec2`, and the epaint value types
 in `convert` — and **no public item of this crate is a re-export or a rename of
-an egui type**. `Role` is named from `ResolvedTheme`; `Surface` names attachment
-*points* in egui's vocabulary, so an upstream container rename is a cosmetic
-follow-up rather than a compile break. A renamed egui type is a find-and-replace;
+an egui type**. `Role` is named from `ResolvedTheme`; `Surface` names the
+**attachment points** at which an application can hand egui a `Frame`, which is
+not the same thing as naming egui's types. Three of the nine — `Dialog`,
+`Popover`, `Card` — have no same-named egui type at all; the types behind them
+are `Modal` (`containers/modal.rs:16`), `Popup` (`containers/popup.rs:165`) and
+`Frame` (`containers/frame.rs:96`), and a recursive grep for
+`Dialog|Popover|Card` over `egui/src` returns exactly one hit,
+`viewport.rs:998`, an unrelated window-type hint. What survives an upstream
+rename is therefore the *shape* of the axis rather than any spelling: `Surface`
+tracks where a `Frame` can be attached, so an upstream container rename is a
+cosmetic follow-up rather than a compile break. A renamed egui type is a
+find-and-replace;
 a renamed `Style` field is a compile error with the field's name in it.
 
 **Evidence for the churn rate.** Between 0.35.0 and 0.36.1, `egui/src/style.rs`
@@ -1444,7 +1598,7 @@ shape `class_overrides` wants. The change is internal: build the same values, ha
 them to one `Style` as class overrides instead of to N `Arc<Style>`s.
 `native_scope` keeps working (it becomes optional sugar), `ThemeAtlas` is opaque
 so nothing in its shape leaks, and clause 3 means the resulting change in what an
-unscoped widget looks like is not a breaking change. The 218 SCOPED leaves become
+unscoped widget looks like is not a breaking change. The 209 SCOPED leaves become
 DIRECT and the README's headline sentence is rewritten upward.
 
 **(b) egui adds something similar but differently shaped.** The blast radius is
@@ -1463,8 +1617,11 @@ is the entire reason for the non-negotiable rider in §4.2.
 
 Summarising the three walk-throughs: the design bets that **egui's `Style` struct
 is stable-ish and its `widget_style` module is frozen**, and it structures itself
-so that being wrong about either is survivable. If `Style` churns, compile errors
-name the fields. If `widget_style` unfreezes, the atlas is already the right data
+so that being wrong about either is survivable. If `Style` churns **in shape**,
+compile errors name the fields — with §5.1's caveat attached: a change of
+*meaning* with no change of name or type names nothing, and only the value
+assertions and the doc-comment diff catch it. If `widget_style` unfreezes, the
+atlas is already the right data
 structure. If native-theme churns, one `#[non_exhaustive]` enum grows and two
 tests go red. There is no scenario in the three that requires an architectural
 change.
@@ -1488,7 +1645,7 @@ question is closed.
 | Depend on `egui_extras`, or default `svg-rasterize` on | `egui_extras` and `native-theme` converge on one `resvg` major. Today they are on 0.45.1 and 0.47 |
 | Take a direct `skrifa` dependency for font pre-flight validation | epaint re-exports `skrifa`, removing the version-skew risk |
 | Add `egui_kittest` | Its API is read and understood (existence at a version-aligned `0.36.1` is verified; the **API is UNVERIFIED**, §2.8) *and* a concrete gap in the nine headless groups is identified |
-| Lower the workspace floor below `1.88.0` | Every dependency that declares a `rust-version` drops below it. Our own sources already need less — no let-chains — so only the dependency graph holds the floor up (§3.18) |
+| Lower the workspace floor below `1.88.0` | Every dependency that declares a `rust-version` drops below it **and** our own sources stop using let-chains — 59 `&& let ` occurrences today, plus chains whose second term is a bare boolean (§3.18). **Both** conditions, not either. The floor is held up from both sides, so acting on the dependency half alone would break `native-theme`'s own build |
 | Raise the workspace floor | A dependency bump forces it, caught by the MSRV job. Raise to the new measured maximum, never to whatever stable happens to be |
 | Publish a memory-footprint number for the atlas | `size_of::<egui::Style>()` is measured in both profiles. It **cannot** be stated today because `Style::debug` is `#[cfg(debug_assertions)]` (`style.rs:322-323`); no such claim appears in either document |
 | Carry per-widget font **weight** and **slant** (18 leaves, specification §5.8 item 2) | `FontId` gains the fields (§4.2). Until then applications reach per-call weight with `RichText::variation(..)` (`widget_text.rs:200-205`) and `text_role_weight()` tells them what to ask for |
@@ -1566,11 +1723,11 @@ reader must not "re-correct" the documents back to them:
 
 | # | Superseded claim | Correct, with evidence |
 |---|---|---|
-| 12 | Aggregate `DIRECT 34 · SCOPED 217 · DERIVED 65 · UNMAPPABLE 147` | **`33 · 218 · 62 · 150`.** Three widget-level `border.opacity` leaves (`input`, `combo_box`, `list`) were classed DERIVED "folded into the stroke alpha", which is the one operation the rest of both documents forbids: the resolver hardwires every widget-level opacity to `0.0` (`native-theme/src/resolve/validate_helpers.rs:278`, `:332`, `:52`), so folding one in makes every border invisible. They are `UNMAPPABLE source-void` like the other fifteen. Separately, `slider.disabled_opacity` was DIRECT on `visuals.disabled_alpha` while its seven siblings were SCOPED on the same field |
+| 12 | Aggregate `DIRECT 34 · SCOPED 217 · DERIVED 65 · UNMAPPABLE 147` | **`32 · 209 · 72 · 150`.** Three widget-level `border.opacity` leaves (`input`, `combo_box`, `list`) were classed DERIVED "folded into the stroke alpha", which is the one operation the rest of both documents forbids: the resolver hardwires every widget-level opacity to `0.0` (`native-theme/src/resolve/validate_helpers.rs:278`, `:332`, `:52`), so folding one in makes every border invisible. They are `UNMAPPABLE source-void` like the other fifteen. Separately, `slider.disabled_opacity` was DIRECT on `visuals.disabled_alpha` while its seven siblings were SCOPED on the same field. Those two causes alone give `33 · 218 · 62 · 150`; the remaining movement to the figure at left is the later uniform `*.font.family` DERIVED rule (§1.5; specification §2, §8.2), which moved ten leaves SCOPED → DERIVED (the nine per-widget `*.font.family` leaves plus `window.title_bar_font.size`, regraded with them) and one DIRECT → DERIVED (`list.header_font.family`), together with `tab.hover_background` DERIVED → SCOPED |
 | 13 | The 147 UNMAPPABLE leaves split 38 `source-void` / 109 `egui-limited` | The tables carry a **third** sub-tag, `source-side gap`, on three rows. The honest split of the 150 is `38 + 3 + 109`, and specification §2 now defines all three |
 | 14 | `Color32::from_rgba_unmultiplied_const` involves "no float" | Only `a == 0` and `a == 255` are float-free (`ecolor/src/color32.rs:167`, `:170`). For `1..=254` it runs `fast_round(channel as f32 * linear_f32_from_linear_u8(a))` per channel (`:172-176`). The route is still the right one — it premultiplies in gamma space — but the forward conversion is lossy at low alpha, so the round trip is inexact in **both** directions |
 | 15 | `FontDefinitions::default()` installs an emoji **and CJK** fallback tail | There is no CJK face. epaint registers exactly four — Hack, NotoEmoji-Regular, Ubuntu-Light, emoji-icon-font (`epaint/src/text/fonts.rs:512-538`) — and egui's own docs say "The default `egui` fonts only support latin and cyrillic alphabets" (`egui/src/context.rs:2098`) |
-| 16 | Four of egui's **seven** `Frame` presets "read no `Style` at all" | Eight presets take a `&Style` and all eight read something from it; `Frame::group` reads `widgets.noninteractive`'s corner radius and stroke (`containers/frame.rs:181-182`). The true proposition is the narrower one the specification already used elsewhere: four hardcode their inner margin and read no `Style::spacing` |
+| 16 | Four of egui's **seven** `Frame` presets "read no `Style` at all" | Eight presets take a `&Style` and all eight read something from it; `Frame::group` reads `widgets.noninteractive`'s corner radius and stroke (`containers/frame.rs:181-182`). The true proposition is the narrower one the specification already used elsewhere: **five** hardcode their inner margin and read no `Style::spacing` — `group` (`:180`), `side_top_panel` (`:187`), `central_panel` (`:192`), `canvas` (`:229`) and `dark_canvas` (`:236-237`), which delegates to `canvas` and so inherits its `.inner_margin(2)`. Only `window` (`:198`), `menu` (`:207`) and `popup` (`:216`) read `Style::spacing`, and 5 + 3 = 8. This row itself first recorded **four**, omitting `dark_canvas`; five is the counted value |
 | 17 | A panel separator wider than 127 "stops reserving space" | It reserves 127. `bg_stroke.width.round() as i8` **saturates** (`containers/panel.rs:962`) and `saturating_add` then clamps at `i8::MAX` (`:964-965`) |
 | 18 | `to_image_source` can return an `ImageSource::Texture` without retaining anything | `TextureHandle` frees its texture on drop (`epaint/src/texture_handle.rs:25-29`) and `SizedTexture` owns nothing (`egui/src/widgets/image.rs:585`), so the handle must be stored in `ctx.data_mut()`. `Context::forget_image` cannot release it either: it touches only the four loader caches (`egui/src/context.rs:3768-3777`) |
 | 19 | The begin-pass plugin "keeps `extra_text_line_spacing` up to date" everywhere | It reaches the two base styles only (`ctx.all_styles_mut`, `egui/src/context.rs:2210`). The atlas's per-`Role` `Arc<Style>` cells are frozen at build time, so scoped text keeps egui's `0.0`. Recorded as ledger item 29 rather than smoothed over |
@@ -1615,7 +1772,7 @@ implementer inventing a decision:
 * `mapping.toml` was named but not specified, while two tests compare its
   strings. Specification §13.1 now gives the schema by example and declares
   `style_diff`'s path spelling normative.
-* Two of the nine test groups could not do their job. T1's
+* Two of the nine test groups then defined could not do their job. T1's
   `assert_eq!(*a, *b)` across two builds can never pass, because
   `Style::number_formatter` compares by `Arc::ptr_eq` (`style.rs:56-61`) and
   `Style::default` allocates a fresh `Arc` every call (`:1434`); and T7's
@@ -1661,7 +1818,7 @@ sparse index). Its **API is UNVERIFIED** — never vendored, never read — so i
 appears nowhere in the manifest or the test plan and no claim is made about what
 it could test. *What would verify it*: vendoring `egui_kittest` 0.36.1 and
 reading its harness API.
-**Recommendation: ship the nine headless groups**, which need nothing beyond
+**Recommendation: ship the eleven headless groups**, which need nothing beyond
 `egui` itself. Since a version-aligned harness demonstrably exists, the trigger
 for revisiting is concrete rather than speculative: evaluate it if a §13 group
 proves unable to observe a regression that matters — snapshot-level rendering
