@@ -3916,7 +3916,9 @@ name = "native-theme-egui"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-rust-version.workspace = true   # 1.97.1 — see §12.4
+# NOT `rust-version.workspace = true` — egui needs more than the 1.88.0
+# workspace floor. See §12.4.
+rust-version = "1.95"
 repository.workspace = true
 homepage.workspace = true
 keywords = ["theme", "egui", "gui", "native", "colors"]
@@ -4053,53 +4055,51 @@ axis — is **byte-identical** between the two releases, verified by `diff`. It 
 frozen, not evolving. That is the strongest available evidence both *against*
 depending on it today and *for* a well-argued upstream PR (§14.2).
 
-### 12.4 MSRV — one workspace number, 1.97.1
+### 12.4 MSRV — workspace 1.88.0, this connector 1.95
 
 egui 0.36.1 declares `edition = "2024"` (`egui/Cargo.toml:13`) and
-`rust-version = "1.95"` (`:14`), which is above the `1.94.0` the workspace
-declared when this document was first drafted. **That conflict is now resolved
-by raising the workspace to `rust-version = "1.97.1"`** — the current Rust
-stable, released 2026-07-16 — so the connector simply writes
-`rust-version.workspace = true` like every other member. There is no per-crate
-override and no split to remember.
+`rust-version = "1.95"` (`:14`), above the workspace floor. **The connector
+declares `rust-version = "1.95"` explicitly and does *not* write
+`rust-version.workspace = true`.**
 
 | fact | evidence |
 |---|---|
 | egui 0.36.1 requires `1.95` | `egui/Cargo.toml:14` |
-| the workspace declares `1.97.1` | `Cargo.toml:15` |
+| the workspace declares `1.88.0` | `Cargo.toml:15` |
 | the workspace uses `resolver = "3"` | `Cargo.toml:9` |
-| no dependency in the graph requires more than `1.88.0` | highest `rust-version` across the 463 dependencies that declare one |
+| no dependency in the graph declares more than `1.88.0` | highest `rust-version` across the 463 dependencies that declare one |
+| every current workspace member compiles on `1.88.0`, tests included | measured 2026-08-10: `cargo +1.88.0 check -p <member> --all-targets --locked` clean for all five |
 
-**Why the single high number rather than a per-crate split.** A split was the
-earlier resolution, and it is the more compatibility-preserving one: nothing but
-this connector needs anything above `1.88.0`, so inheriting a high floor makes
+`rust-version` is a per-package key whose workspace inheritance is opt-in, so
+declining to inherit is ordinary and supported, not a workaround. Under
+`resolver = "3"` a toolchain below `1.95` produces a clear
+`rust-version`-too-low error naming the package, rather than a confusing compile
+failure inside egui.
+
+**Why the workspace floor is `1.88.0` and not current stable.** The number was
+briefly raised to current stable on the argument that an unenforced MSRV is a
+fiction and a number equal to what CI runs is at least true. That reasoning was
+wrong in its remedy: the fix for an unverified number is to verify it, not to
+raise it until verification is vacuous. Raising it to stable buys honesty by
+discarding the entire compatibility value of declaring an MSRV, and it makes
 `native-theme` — the crate with the broadest audience — demand a toolchain it
-does not use. That cost was accepted deliberately. The decisive argument is that
-the declared number was never verified: all six toolchain installs in
-`.github/workflows/ci.yml` are `@stable` (lines 18, 39, 67, 77, 96, 108), there
-is no `rust-toolchain.toml`, and `pre-release-check.sh` has no MSRV check, so
-`1.94.0` was an untested claim that may already have been false. Declaring the
-stable version CI actually runs makes the number true by construction, and one
-number is simpler to keep true than two.
+does not use. `1.88.0` is the max of what our own sources need and what our
+dependencies declare, and unlike its predecessors it was measured rather than
+asserted.
 
-**Consequence to accept.** The floor now moves whenever it is deliberately
-raised, and users on an older toolchain cannot build any crate in the workspace,
-including `native-theme` itself. For a pre-1.0 crate this is an acceptable
-trade; if a downstream user reports it as a problem, the per-crate split
-described above is the ready-made remedy and costs one line per manifest.
-
-**Still outstanding.** Raising the number does not make it enforced. Until an
-MSRV job lands, `1.97.1` is true only because it happens to equal current
-stable — the moment stable moves to `1.98`, nothing re-checks it. §15 task 22
-therefore still stands:
+**Still outstanding, and now the load-bearing part.** A measured floor decays the
+moment a dependency bumps its own requirement, so the number is only as good as
+the job that checks it. §15 task 22:
 
 ```yaml
   msrv:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.97.1
-      - run: cargo check --workspace --all-features
+      - uses: dtolnay/rust-toolchain@1.88.0
+      - run: cargo check --workspace --exclude native-theme-egui --all-features
+      - uses: dtolnay/rust-toolchain@1.95
+      - run: cargo check -p native-theme-egui --all-features
 ```
 
 ---

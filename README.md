@@ -4,7 +4,7 @@
 [![docs.rs](https://img.shields.io/docsrs/native-theme)](https://docs.rs/native-theme)
 [![CI](https://github.com/tiborgats/native-theme/actions/workflows/ci.yml/badge.svg)](https://github.com/tiborgats/native-theme/actions/workflows/ci.yml)
 [![License: MIT OR Apache-2.0 OR 0BSD](https://img.shields.io/badge/license-MIT%20%7C%20Apache--2.0%20%7C%200BSD-blue.svg)](#license)
-[![MSRV: 1.97.1](https://img.shields.io/badge/MSRV-1.97.1-blue.svg)](https://blog.rust-lang.org/2026/07/16/Rust-1.97.1/)
+[![MSRV: 1.88.0](https://img.shields.io/badge/MSRV-1.88.0-blue.svg)](https://blog.rust-lang.org/2025/06/26/Rust-1.88.0/)
 
 Cross-platform native theme loading for Rust GUI applications. Reads OS themes
 on Linux (KDE, GNOME), macOS, and Windows, or loads any of 16 bundled presets

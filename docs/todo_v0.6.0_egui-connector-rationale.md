@@ -1020,47 +1020,51 @@ written.
 exists because native-theme churn is an axis independent of egui churn. §5.2 is
 the worked example.
 
-### 3.18 MSRV: one workspace number, raised to 1.97.1
+### 3.18 MSRV: a measured workspace floor of 1.88.0, and 1.95 for this connector
 
 egui 0.36.1 declares `edition = "2024"` (`egui/Cargo.toml:13`) and
-`rust-version = "1.95"` (`:14`), above the `1.94.0` the workspace declared when
-this document was drafted.
+`rust-version = "1.95"` (`:14`), above the workspace floor.
 
-**Chosen.** Raise the workspace to `rust-version = "1.97.1"` (`Cargo.toml:15`) —
-current Rust stable, released 2026-07-16 — and let the connector inherit it with
-`rust-version.workspace = true`, like every other member.
+**Chosen.** The workspace declares `rust-version = "1.88.0"` (`Cargo.toml:15`);
+`connectors/native-theme-egui/Cargo.toml` declares `rust-version = "1.95"`
+explicitly and does **not** inherit. `rust-version` is a per-package key whose
+workspace inheritance is opt-in, so declining to inherit is ordinary and
+supported.
 
-**Rejected: the per-crate split** (connector declares `1.95`, workspace stays at
-`1.94.0`). This was the earlier decision and it is genuinely the more
-compatibility-preserving one. Across the 463 dependencies in the graph that
-declare a `rust-version`, the highest is `1.88.0`, so nothing except this
-connector needs anything above that; a high inherited floor makes `native-theme`
-— the crate with the broadest audience — demand a toolchain it does not use.
+**Why `1.88.0`.** It is the maximum of two independently checked bounds. Across
+the 463 dependencies in the graph that declare a `rust-version`, the highest is
+`1.88.0`. And on 2026-08-10 every workspace member was compiled against that
+exact toolchain — `cargo +1.88.0 check -p <member> --all-targets --locked` was
+clean for all five, tests included. Our own sources need less than that: a sweep
+for let-chain syntax, stabilised in 1.88, found none. So the floor is inherited
+from the dependencies, not from our code, and it is the lowest value the
+dependencies actually promise to support.
 
-**Why it lost anyway.** The declared number was never verified by anything. All
-six toolchain installs in `.github/workflows/ci.yml` are `@stable` (lines 18, 39,
-67, 77, 96, 108), there is no `rust-toolchain.toml`, and `pre-release-check.sh`
-has no MSRV check. `1.94.0` was therefore an untested claim that may already have
-been false — the crate is only ever proven to build on whatever stable is that
-day. Given a choice between two numbers nobody checks and one number that is true
-by construction because CI runs exactly it, the single number wins. Maintaining
-two unverified promises is strictly worse than maintaining one.
+**Rejected: pinning the workspace to current Rust stable** (`1.97.1` at the time
+of writing). This was briefly adopted, on the argument that all six toolchain
+installs in `.github/workflows/ci.yml` are `@stable` (lines 18, 39, 67, 77, 96,
+108), there is no `rust-toolchain.toml`, and `pre-release-check.sh` has no MSRV
+check — so any declared number was an untested claim, and one equal to what CI
+runs is at least true by construction.
 
-Also rejected: silently inheriting `1.94.0` and hoping, which produces a
-confusing compile failure inside egui rather than a clear
-`rust-version`-too-low error naming the package.
+**Why that reasoning was wrong.** The remedy did not match the defect. The fix
+for an unverified number is to verify it, not to raise it until verifying it is
+vacuous. Pinning to stable purchases honesty by discarding the entire point of
+declaring an MSRV: it makes `native-theme` — the crate with the broadest audience
+— demand a toolchain none of its dependencies require, excluding every user on
+anything older than the newest release, and it moves the floor every six weeks
+for no engineering reason. A low floor that is measured and enforced dominates a
+high floor that is true only by tautology.
 
-**The trade being accepted.** Users on an older toolchain can no longer build
-*any* workspace crate, `native-theme` included, even though the core crate's own
-dependencies are satisfied at `1.88.0`. For a pre-1.0 crate this is acceptable.
-The revisit trigger is concrete: **a downstream user reporting the floor as a
-problem.** The per-crate split rejected above is then the ready-made remedy and
-costs one line per manifest, so nothing here is hard to undo.
+Also rejected: silently inheriting the workspace floor in the connector and
+hoping, which produces a confusing compile failure inside egui rather than a
+clear `rust-version`-too-low error naming the package.
 
-**Honest caveat, unchanged.** Raising the number does not enforce it. `1.97.1` is
-true today only because it equals current stable; once stable moves to `1.98`,
-nothing re-checks it. The MSRV job in specification §12.4 remains task 22 of the
-implementation list for exactly that reason.
+**The caveat that now carries the weight.** A measured floor decays the moment
+any dependency raises its own requirement, and nothing currently re-checks it.
+`1.88.0` is honest as of the measurement date and no longer than that. The MSRV
+job in specification §12.4 is therefore not a nicety but the thing that keeps
+this decision true; it remains task 22 of the implementation list.
 
 ### 3.19 Diagnostics: `Note`, because silent correctness is unobservable
 
@@ -1484,7 +1488,8 @@ question is closed.
 | Depend on `egui_extras`, or default `svg-rasterize` on | `egui_extras` and `native-theme` converge on one `resvg` major. Today they are on 0.45.1 and 0.47 |
 | Take a direct `skrifa` dependency for font pre-flight validation | epaint re-exports `skrifa`, removing the version-skew risk |
 | Add `egui_kittest` | Its API is read and understood (existence at a version-aligned `0.36.1` is verified; the **API is UNVERIFIED**, §2.8) *and* a concrete gap in the nine headless groups is identified |
-| Split the MSRV back out per crate, dropping `native-theme` below the workspace floor | A downstream user reports the `1.97.1` floor as a problem. The core crate's own dependencies are satisfied at `1.88.0`, so the headroom exists (§3.18) |
+| Lower the workspace floor below `1.88.0` | Every dependency that declares a `rust-version` drops below it. Our own sources already need less — no let-chains — so only the dependency graph holds the floor up (§3.18) |
+| Raise the workspace floor | A dependency bump forces it, caught by the MSRV job. Raise to the new measured maximum, never to whatever stable happens to be |
 | Publish a memory-footprint number for the atlas | `size_of::<egui::Style>()` is measured in both profiles. It **cannot** be stated today because `Style::debug` is `#[cfg(debug_assertions)]` (`style.rs:322-323`); no such claim appears in either document |
 | Carry per-widget font **weight** and **slant** (18 leaves, specification §5.8 item 2) | `FontId` gains the fields (§4.2). Until then applications reach per-call weight with `RichText::variation(..)` (`widget_text.rs:200-205`) and `text_role_weight()` tells them what to ask for |
 | Fabricate `Spacing::icon_width_inner` on the base style | A platform reports a check-*mark* size. `docs/platform-facts.md:969` defines `indicator_width` as the **box**, so deriving a mark size from it by ratio would be an invented value; the field stays at egui's `8.0` (`style.rs:1466`) |

@@ -27,8 +27,11 @@
 - [ ] Implement the connector per `docs/todo_v0.6.0_egui-connector-spec.md`
       (rationale: `docs/todo_v0.6.0_egui-connector-rationale.md`). Targets
       egui 0.36.1.
-- [ ] Add an MSRV CI job (spec §12.4, task 22) — the declared `1.97.1` is
-      currently unenforced, since every CI job installs `@stable`.
+- [ ] Add an MSRV CI job (spec §12.4, task 22). The workspace floor of `1.88.0`
+      was measured on 2026-08-10, but nothing re-checks it: every CI job
+      installs `@stable`, there is no `rust-toolchain.toml`, and
+      `pre-release-check.sh` has no MSRV check. The job must cover the
+      workspace at `1.88.0` and the egui connector separately at `1.95`.
 
 ### native-theme-gpui connector
 

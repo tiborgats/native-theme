@@ -5,7 +5,7 @@ Thank you for your interest in contributing.
 ## Quick start
 
 1. Fork and clone the repository
-2. Install Rust stable (MSRV: **1.97.1**, edition **2024**)
+2. Install Rust stable (MSRV: **1.88.0**, edition **2024**)
 3. Verify the workspace builds and tests pass:
 
    ```bash
