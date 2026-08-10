@@ -18,6 +18,28 @@
       its fields are `Option<f32>`, so an absent layout costs nothing.
       Benefits the egui, iced and gpui connectors equally.
 
+### Font rendering preferences — read them from the platform
+
+- [ ] Research and document the platform font-rendering preferences in
+      `docs/platform-facts.md` **first**, cited to authoritative sources, then
+      add them to the theme model. Candidates, to be verified rather than
+      assumed: fontconfig `hinting` / `hintstyle` / `antialias` / `rgba`
+      (`/etc/fonts/`, `~/.config/fontconfig/`), KDE's `XftHintStyle` /
+      `XftAntialias` / `XftSubPixel` in `kdeglobals`, GNOME's
+      `org.gnome.desktop.interface font-hinting` / `font-antialiasing`,
+      Windows ClearType, macOS font smoothing.
+
+      We already read `Xft.dpi` for scaling (`native-theme/src/kde/mod.rs:159`,
+      `:174-175`, via `detect::xft_dpi()`), but nothing reads the *rendering*
+      preferences. A Qt or GTK app obeys the user's hinting and antialiasing
+      choice; an app built on our connectors silently ignores it. Reading OS
+      appearance settings is exactly this crate's remit, so this is a real gap
+      rather than a nice-to-have — it is the same shape as reading colours and
+      the icon theme.
+
+      Benefits every connector, not just egui: iced and gpui both rasterize
+      their own glyphs too.
+
 ---
 
 ## Toolkit Connectors
@@ -27,6 +49,37 @@
 - [ ] Implement the connector per `docs/todo_v0.6.0_egui-connector-spec.md`
       (rationale: `docs/todo_v0.6.0_egui-connector-rationale.md`). Targets
       egui 0.36.1.
+- [ ] Map the platform font-rendering preferences (see Core API above) onto
+      `Visuals::text_options` (`egui/src/style.rs:1000`). Only **one** of its
+      four fields has a genuine platform source:
+
+      - `font_hinting: bool` — hardcoded `true` by `TextOptions::default()`
+        (`epaint/src/text/mod.rs:61`) regardless of the user's setting. This is
+        the mappable one: fontconfig `hintnone` → `false`, otherwise `true`.
+      - `subpixel_binning` — **not** a platform preference. It renders each
+        glyph at up to four fractional horizontal offsets for more even kerning
+        (`epaint/src/text/mod.rs:44-53`); it is *sub-pixel positioning*, not
+        LCD subpixel rendering. Do not map fontconfig `rgba` onto it. Leave at
+        egui's default.
+      - `color_transfer_function` — **already correct, do not write it.**
+        `Visuals::dark()` and `Visuals::light()` set the right per-mode curve
+        (`style.rs:1500`, `:1567`) and the connector inherits it by starting
+        each scheme from its own `Theme::default_style()` (spec §3.4).
+        Writing it from theme data would fabricate a value.
+      - `max_texture_side` — overruled by `RawInput::max_texture_side`
+        (`style.rs:997-999`). Never write it.
+
+      Two platform preferences have **no egui expression** and should be
+      recorded in the spec's §14 honesty ledger rather than faked: LCD subpixel
+      order (`rgba`) — epaint computes one coverage value per pixel, so it is
+      grayscale-antialiased only; and `antialias=false` — `HintingTarget`'s own
+      docs state egui always renders anti-aliased
+      (`epaint/src/text/fonts.rs:306-308`).
+
+      Also check whether `HintingTarget` (`epaint/src/text/fonts.rs:303-314`)
+      is reachable globally or only per-font via `FontTweak`; `TextOptions`
+      exposes only the `bool`.
+
 - [ ] Add an MSRV CI job (spec §12.4, task 22). The workspace floor of `1.88.0`
       was measured on 2026-08-10, but nothing re-checks it: every CI job
       installs `@stable`, there is no `rust-toolchain.toml`, and
