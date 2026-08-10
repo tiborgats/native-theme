@@ -2,7 +2,33 @@
 
 ---
 
+## Core API
+
+### `SystemTheme` — expose layout metrics
+
+- [ ] Add `pub layout: LayoutTheme` to `SystemTheme`. Approved 2026-08-10; see
+      `docs/todo_v0.6.0_egui-connector-spec.md` §16 Q-2 and honesty-ledger item
+      21. Today `from_preset` can supply `Spacing::item_spacing` and
+      `Spacing::window_margin` but `from_system` cannot, because `SystemTheme`
+      has no `layout` field — so the two spacing values a toolkit user reaches
+      for first fall back to toolkit defaults on the system path.
+      One additive field on a struct that already carries `preset` and
+      `icon_theme`; no resolver work, since `Theme::layout` is a plain
+      `LayoutTheme` shared across the light and dark variants and all four of
+      its fields are `Option<f32>`, so an absent layout costs nothing.
+      Benefits the egui, iced and gpui connectors equally.
+
+---
+
 ## Toolkit Connectors
+
+### native-theme-egui connector
+
+- [ ] Implement the connector per `docs/todo_v0.6.0_egui-connector-spec.md`
+      (rationale: `docs/todo_v0.6.0_egui-connector-rationale.md`). Targets
+      egui 0.36.1.
+- [ ] Add an MSRV CI job (spec §12.4, task 22) — the declared `1.97.1` is
+      currently unenforced, since every CI job installs `@stable`.
 
 ### native-theme-gpui connector
 

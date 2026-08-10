@@ -3916,8 +3916,7 @@ name = "native-theme-egui"
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-# NOT `rust-version.workspace = true` — see §12.4.
-rust-version = "1.95"
+rust-version.workspace = true   # 1.97.1 — see §12.4
 repository.workspace = true
 homepage.workspace = true
 keywords = ["theme", "egui", "gui", "native", "colors"]
@@ -4054,41 +4053,53 @@ axis — is **byte-identical** between the two releases, verified by `diff`. It 
 frozen, not evolving. That is the strongest available evidence both *against*
 depending on it today and *for* a well-argued upstream PR (§14.2).
 
-### 12.4 MSRV — resolving 1.94 versus 1.95
+### 12.4 MSRV — one workspace number, 1.97.1
 
-**This is a real conflict and it is resolved explicitly, not papered over.**
+egui 0.36.1 declares `edition = "2024"` (`egui/Cargo.toml:13`) and
+`rust-version = "1.95"` (`:14`), which is above the `1.94.0` the workspace
+declared when this document was first drafted. **That conflict is now resolved
+by raising the workspace to `rust-version = "1.97.1"`** — the current Rust
+stable, released 2026-07-16 — so the connector simply writes
+`rust-version.workspace = true` like every other member. There is no per-crate
+override and no split to remember.
 
 | fact | evidence |
 |---|---|
-| egui 0.36.1 declares `edition = "2024"` | `egui/Cargo.toml:13` |
-| egui 0.36.1 declares `rust-version = "1.95"` | `egui/Cargo.toml:14` |
-| the native-theme workspace declares `rust-version = "1.94.0"` | `Cargo.toml:15` |
+| egui 0.36.1 requires `1.95` | `egui/Cargo.toml:14` |
+| the workspace declares `1.97.1` | `Cargo.toml:15` |
 | the workspace uses `resolver = "3"` | `Cargo.toml:9` |
+| no dependency in the graph requires more than `1.88.0` | highest `rust-version` across the 463 dependencies that declare one |
 
-**Resolution: the connector declares `rust-version = "1.95"` explicitly, and
-does *not* write `rust-version.workspace = true`. The workspace stays at
-1.94.0.**
+**Why the single high number rather than a per-crate split.** A split was the
+earlier resolution, and it is the more compatibility-preserving one: nothing but
+this connector needs anything above `1.88.0`, so inheriting a high floor makes
+`native-theme` — the crate with the broadest audience — demand a toolchain it
+does not use. That cost was accepted deliberately. The decisive argument is that
+the declared number was never verified: all six toolchain installs in
+`.github/workflows/ci.yml` are `@stable` (lines 18, 39, 67, 77, 96, 108), there
+is no `rust-toolchain.toml`, and `pre-release-check.sh` has no MSRV check, so
+`1.94.0` was an untested claim that may already have been false. Declaring the
+stable version CI actually runs makes the number true by construction, and one
+number is simpler to keep true than two.
 
-`rust-version` is a per-package key whose workspace inheritance is opt-in, so
-declining to inherit is a supported, ordinary thing to do — not a workaround.
-Raising the workspace value would drag `native-theme` itself, and both other
-connectors, up to 1.95 for no reason: none of them depends on egui. With
-`resolver = "3"`, a 1.94 toolchain then produces a clear
-`rust-version`-too-low error naming the package, rather than a confusing compile
-failure inside egui.
+**Consequence to accept.** The floor now moves whenever it is deliberately
+raised, and users on an older toolchain cannot build any crate in the workspace,
+including `native-theme` itself. For a pre-1.0 crate this is an acceptable
+trade; if a downstream user reports it as a problem, the per-crate split
+described above is the ready-made remedy and costs one line per manifest.
 
-**Honest caveat.** All six toolchain installs in `.github/workflows/ci.yml` are
-`@stable` (lines 18, 39, 67, 77, 96, 108) and there is **no MSRV job at all
-today**, so the declared number is decorative until one lands. It is therefore
-part of this specification's task list (§15, task 22) to add:
+**Still outstanding.** Raising the number does not make it enforced. Until an
+MSRV job lands, `1.97.1` is true only because it happens to equal current
+stable — the moment stable moves to `1.98`, nothing re-checks it. §15 task 22
+therefore still stands:
 
 ```yaml
   msrv:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: dtolnay/rust-toolchain@1.95
-      - run: cargo check -p native-theme-egui --all-features
+      - uses: dtolnay/rust-toolchain@1.97.1
+      - run: cargo check --workspace --all-features
 ```
 
 ---
@@ -4209,7 +4220,7 @@ softened, and nothing here is a promise.
 | 18 | **Container frames are values, not lookups** — panel, group and canvas inner margins cannot be themed globally | `Frame::group` `.inner_margin(6)` (`frame.rs:180`), `Frame::side_top_panel` `Margin::symmetric(8, 2)` (`:187`), `Frame::central_panel` `.inner_margin(8)` (`:192`), `Frame::canvas` `.inner_margin(2)` (`:229`) read no `Style::spacing` | those four presets reading `Spacing`. Worked around by `Surface`-supplied `Frame`s, which only help callers who pass them |
 | 19 | **Sub-point precision and large magnitudes are lost at the epaint boundary** | `Margin` is four `i8` (`epaint/src/margin.rs:15-20`); `CornerRadius` four `u8` (`corner_radius.rs:13-25`); `Shadow::offset` `[i8;2]`, `blur`/`spread` `u8` | `MarginF32` / `CornerRadiusF32` in `Style`. Corner-radius saturation is benign (the tessellator re-clamps to half the smaller side, `epaint/src/tessellator.rs:638-642`); **margin saturation is a real loss** and emits `Note::ValueSaturated` |
 | 20 | **Three intra-widget contests that no scoping mechanism can resolve** | (a) `input.selection_text_color` vs `input.focus_border_color` — both on `visuals.selection.stroke.color` (`text_selection/visuals.rs:40` vs `widgets/text_edit/builder.rs:725-730`); (b) `slider.track_color` vs `slider.thumb_color` — the rail is hard-wired to `inactive` (`widgets/slider.rs:773-776`); (c) `expander.font.color` vs `expander.arrow_color` — both `widgets.inactive.fg_stroke.color` (`collapsing_header.rs:353` vs `:598`) | per-widget style structs upstream. Locked resolutions in §5.11 |
-| 21 | **`LayoutTheme` is unreachable from `SystemTheme`** — `widget_gap`, `container_margin`, `window_margin`, `section_gap` are lost on the OS path | `LayoutTheme` lives on `native_theme::theme::Theme` (`native-theme/src/model/mod.rs:266`), not on `ResolvedTheme` (`resolved.rs:155-212`), and `SystemTheme` (`native-theme/src/lib.rs:369-424`) has no `layout` field either. `from_preset` **can** supply it; `from_system` cannot | **native-theme-side**: add `layout: LayoutTheme` to `SystemTheme` (cheapest) or to `ResolvedTheme` (cleanest). Until then `Spacing::item_spacing` and `window_margin` stay at egui's defaults on the OS path. §16 Q-2 |
+| 21 | **`LayoutTheme` is unreachable from `SystemTheme`** — `widget_gap`, `container_margin`, `window_margin`, `section_gap` are lost on the OS path | `LayoutTheme` lives on `native_theme::theme::Theme` (`native-theme/src/model/mod.rs:266`), not on `ResolvedTheme` (`resolved.rs:155-212`), and `SystemTheme` (`native-theme/src/lib.rs:369-424`) has no `layout` field either. `from_preset` **can** supply it; `from_system` cannot | **native-theme-side**: add `layout: LayoutTheme` to `SystemTheme` (cheapest) or to `ResolvedTheme` (cleanest). Until then `Spacing::item_spacing` and `window_margin` stay at egui's defaults on the OS path. **APPROVED 2026-08-10** (§16 Q-2) and tracked in `docs/todo.md`; this row retires once the field lands |
 | 22 | **Fidelity is opt-in, and the failure is silent and non-uniform.** An application that calls `install()` and nothing else gets the 33 DIRECT leaves plus one elected winner per contested field | there is no hook in 0.36.1 that could change this — items 1 and 2 | §14.2. Until then the README's first paragraph is §0.1's sentence, never "full theme geometry" |
 | 23 | **`defaults.border.padding_horizontal` / `padding_vertical` are source-void, not egui-limited** | `DefaultsBorderSpec` has no padding fields by design (`native-theme/src/model/border.rs:12-18`) and the resolver hardcodes both to `0.0` (`validate_helpers.rs:584-585`) | nothing to fix in egui. Reading them into `Spacing::button_padding` would inject a fabricated zero and flatten every `Button`, `ComboBox`, `CollapsingHeader` and `DragValue` at once |
 | 24 | **Widget-level `border.opacity` and `corner_radius_lg` are always `0.0`** — 36 leaves — and must never be used | `validate_helpers.rs:276`, `:278`, `:330`, `:332`; sentinel `:50`, `:52`; documented at `:258-259` | nothing to fix in egui. **native-theme-side**: propagate `defaults.border.{corner_radius_lg,opacity}`, or remove the two fields from the widget-level `ResolvedBorderSpec`. The prohibition is documented on `convert::to_color32_with_opacity` itself, not only in prose |
@@ -4358,8 +4369,9 @@ Executable in order. Each task is independently reviewable, and every task from
 
 ## 16 -- Open questions
 
-Four, all maintainer decisions. Each carries a recommendation, and none blocks
-implementation.
+Four were raised. **Q-2 has since been decided and approved** and is kept below
+as a record rather than a question; **three remain open**. Each carries a
+recommendation, and none blocks implementation.
 
 **Q-1 — Atlas memory footprint.** `size_of::<egui::Style>()` was **not
 measured**, and cannot be stated: it differs between debug and release because
@@ -4376,18 +4388,26 @@ the `Selected` and `Disabled` tables to per-cell `OnceLock` — which keeps
 API changes either way, so this is not a design risk.
 
 **Q-2 — Should `native-theme` gain `layout: LayoutTheme` on `SystemTheme`?**
+**DECIDED — approved by the maintainer, 2026-08-10. This is no longer an open
+question; it is scheduled work, tracked in `docs/todo.md`.**
+
 Ledger item 21: without it, `Spacing::item_spacing` and `Spacing::window_margin`
 — the two spacing fields an egui user looks at first — stay at egui's defaults
-on the `from_system()` path. **Recommendation: yes**, add
-`pub layout: LayoutTheme` to `SystemTheme` in a follow-up native-theme release.
-It is a one-field additive change to a struct that already carries `preset` and
-`icon_theme`, and it needs no resolver work: `Theme::layout` is a plain
-`LayoutTheme` guarded by `skip_serializing_if = "LayoutTheme::is_empty"`
+on the `from_system()` path. The approved change adds `pub layout: LayoutTheme`
+to `SystemTheme` in a follow-up native-theme release. It is a one-field additive
+change to a struct that already carries `preset` and `icon_theme`, and it needs
+no resolver work: `Theme::layout` is a plain `LayoutTheme` guarded by
+`skip_serializing_if = "LayoutTheme::is_empty"`
 (`native-theme/src/model/mod.rs:265-266`) and shared across the light and dark
 variants, and all four of its own fields are `Option<f32>`
 (`native-theme/src/model/widgets/mod.rs:884-901`), so an absent layout costs
-nothing. It benefits the iced and gpui connectors equally. **The egui connector must ship
-correctly without it, and does.**
+nothing. It benefits the iced and gpui connectors equally.
+
+**The egui connector must still ship correctly without it, and does** — the
+approval changes what the `from_system()` path can reach, not what the connector
+depends on. Once the field lands, ledger item 21 is retired and the two spacing
+leaves move from source-void to DIRECT; until then the shipped behaviour is
+unchanged and no connector code is blocked.
 
 **Q-3 — `egui_kittest`.** The crate **does** publish a matching `0.36.1`, with
 `rust-version = "1.95"` — the same floor egui 0.36.1 declares (verified against
