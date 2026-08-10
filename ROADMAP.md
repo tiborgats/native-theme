@@ -45,7 +45,7 @@ using `iced::Theme` as-is; geometry becomes a per-widget choice between
 iced's built-in style and the native-theme style at runtime (no Cargo
 feature flag, no wrapper type).
 
-Detailed design: [`docs/todo_v0.6.1_iced-full-theme-geometry.md`](docs/todo_v0.6.1_iced-full-theme-geometry.md).
+Detailed design: [`docs/todo_iced-full-theme-geometry.md`](docs/todo_iced-full-theme-geometry.md).
 
 ## v0.6.2 — Full per-widget geometry in the gpui connector
 
@@ -63,7 +63,7 @@ splitters, separators, segmented controls, expanders, and layout metrics.
 This requires coordinated work with gpui-component to expose receiving
 fields; the design doc spells out the widget-by-widget gap analysis.
 
-Detailed design: [`docs/todo_v0.6.2_gpui-full-theme.md`](docs/todo_v0.6.2_gpui-full-theme.md).
+Detailed design: [`docs/todo_gpui-full-theme.md`](docs/todo_gpui-full-theme.md).
 
 ## Beyond v0.6
 

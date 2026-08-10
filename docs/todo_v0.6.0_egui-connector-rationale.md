@@ -184,7 +184,7 @@ The iced connector could promise (2) because `iced::Theme` is consulted through
 per-widget `Catalog` traits. The gpui connector could aim at it only if
 gpui-component accepts the per-widget `ThemeConfig` metrics its own
 investigation proposes — an unsubmitted draft
-(`docs/todo_v0.6.2_gpui-full-theme.md:163-183`, status at `:221-222`) — so today
+(`docs/todo_gpui-full-theme.md:163-183`, status at `:221-222`) — so today
 it cannot promise (2) either. egui has no equivalent seam even to propose
 against, because `Style` has no widget-type axis at all. Promising (2) here would
 be a lie, and the phrase "full theme geometry" is therefore banned from the
@@ -194,7 +194,7 @@ crate's own claims and confined to naming the goal in §4.2.
 
 ## 2 -- Options considered
 
-House convention (`docs/todo_v0.6.1_iced-full-theme-geometry.md:21-92`): every
+House convention (`docs/todo_iced-full-theme-geometry.md:21-92`): every
 option gets a fair statement of its appeal before the reason it loses.
 
 ### Option A: Global `Style` only, no per-widget mechanism (rejected)
@@ -229,7 +229,7 @@ through it with no cooperation at all. What is rejected is stopping there.
 The connector ships `native_theme_egui::Button`, `::Checkbox`, `::TextEdit`, …,
 each reading `ResolvedTheme` directly and painting with `Ui::painter`. This is
 the gpui investigation's Option B/F shape
-(`docs/todo_v0.6.2_gpui-full-theme.md:225-258`, `:357-484`).
+(`docs/todo_gpui-full-theme.md:225-258`, `:357-484`).
 
 **Appeal.** Total fidelity. Every one of the 463 leaves is reachable, because
 the connector owns the paint code. No contest exists, because there is no shared
@@ -358,7 +358,7 @@ application build its own `Style`.
 documentation.
 
 **Rejected** for the reason the iced investigation rejected the same shape
-(`docs/todo_v0.6.1_iced-full-theme-geometry.md:80-92`): every application would
+(`docs/todo_iced-full-theme-geometry.md:80-92`): every application would
 duplicate the same boilerplate, and the connector's entire job is to bridge
 `native-theme` to the toolkit. Handing back a list of numbers is not a bridge.
 It also fails the project's own no-hardcoded-values rule in practice: an
