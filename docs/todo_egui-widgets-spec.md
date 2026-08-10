@@ -30,13 +30,13 @@ own beyond the structural constants named in §10.3.
 * **Not a fork.** It depends on published egui; it does not vendor or patch it.
 * **Not a theme mapper.** The `ResolvedTheme` → `egui::Style` mapping lives in
   the connector and is not duplicated here.
-* **Not a replacement for `TextEdit`, `ScrollArea` or `ComboBox`.** §2.3.
+* **Not a replacement for `TextEdit`, `ScrollArea` or `ComboBox`.** §2.4.
 
 ### 0.3 Relationship to `native-theme-egui`
 
 ```text
 native-theme  ──▶  native-theme-egui  ──▶  native-theme-egui-widgets
-  ResolvedTheme      ThemeAtlas               Tier 1 + Tier 2 widgets
+  ResolvedTheme      ThemeAtlas               Tier W / C / P widgets
                      fonts, icons, install    (this crate)
 ```
 
@@ -48,10 +48,10 @@ public API (`todo_v0.6.0_egui-connector-spec.md` §4.2):
 |---|---|
 | `ThemeAtlas::from_ctx(ctx)` | obtaining the atlas without the app passing it |
 | `ThemeAtlas::resolved_for(theme)` | reading leaf values for hand-painting |
-| `ThemeAtlas::role_style(theme, role)` | Tier 2 scoping |
+| `ThemeAtlas::role_style(theme, role)` | Tier W and Tier C scoping |
 | `ThemeAtlas::role_style_variant(..)` | `Selected` / `Disabled` cells |
 | `ThemeAtlas::surface_frame(theme, surface)` | container chrome |
-| the free accessors (`switch_*`, focus-ring, …) | Tier 1 painting |
+| the free accessors (`switch_*`, focus-ring, …) | Tier P painting |
 
 **The connector's 62 free accessors are this crate's primary input.** In a
 connector-only world they were consolation prizes for values egui cannot
@@ -83,45 +83,64 @@ and into a library that can be audited once.
 
 ## 2 -- The tier model
 
-Every widget in this crate belongs to exactly one tier, and the tier is
-recorded in its rustdoc. The tier decides how much this crate owns.
+Every widget belongs to exactly one tier, recorded in its rustdoc. **The tier
+says what this crate owns, and therefore what it must re-audit every egui
+release.** The tiers are ordered by that liability, cheapest first.
 
-### 2.1 Tier 1 — widgets egui does not have
+The distinction that matters is *not* "hand-painted versus wrapped". A widget
+can be **ours** — our name, our API, our layout and role choices — while egui
+still does all the painting, all the interaction and all the accessibility.
+Conflating those two things is what produced the earlier, wrong classification.
 
-We allocate, interact and paint ourselves: `Ui::allocate_response`
-(`ui.rs:1138`) or `Ui::allocate_exact_size` (`ui.rs:1150`), then
-`Ui::painter` (`ui.rs:457`).
+### 2.1 Tier W — Wrapped
 
-We own: geometry, every painted pixel, interaction semantics, the
-`WidgetInfo` emission of §8, and any animation.
-
-We do **not** own text layout internals, hit-testing primitives, input
-handling or the render backend — those stay egui's.
-
-### 2.2 Tier 2 — styled wrappers over egui's own widgets
-
-We construct egui's widget and run it inside a scope carrying the correct
-`Arc<Style>`:
+One egui widget, run inside a scope carrying the correct `Arc<Style>`:
 
 ```rust
 ui.scope_builder(egui::UiBuilder::new().style(style), |ui| { /* egui widget */ })
 ```
 
-`Ui::scope_builder` is `ui.rs:2193`; `UiBuilder::style` is
-`ui_builder.rs:155` (field `:28`); the child `Ui` takes the `Arc` by clone at
-`ui.rs:236`. This reaches every widget egui itself paints **except**
-`Area`-based containers, which build their content `Ui` with a bare
-`UiBuilder::new()` (`containers/area.rs:611-629`) and fall back to
-`ctx.global_style()` (`ui.rs:135`).
+`Ui::scope_builder` is `ui.rs:2193`; `UiBuilder::style` is `ui_builder.rs:155`
+(field `:28`); the child `Ui` takes the `Arc` by clone at `ui.rs:236`. This
+reaches every widget egui itself paints **except** `Area`-based containers,
+which build their content `Ui` with a bare `UiBuilder::new()`
+(`containers/area.rs:611-629`) and fall back to `ctx.global_style()`
+(`ui.rs:135`).
 
-We own: choosing the role, and passing container chrome (`Frame`,
-`StyleModifier`) where the container accepts one. We own **nothing** of the
-widget's behaviour.
+**We own:** the role choice, and any per-instance builder call the theme needs
+(`Separator::spacing`, `Button::corner_radius`, `TextEdit::frame`).
+**We own none of:** painting, interaction, accessibility, animation.
 
-### 2.3 Tier 3 — forbidden
+### 2.2 Tier C — Composed
+
+Several egui widgets, `Frame`s and layout arranged by us into one API.
+
+**We own:** the composition — which widgets, in what layout, under which roles,
+with which per-instance builder calls. We may also paint **non-interactive
+decoration** between them (a tab underline, a separator line).
+**We own none of:** the interaction or accessibility of the composed parts,
+because every interactive element is a real egui widget emitting its own
+`WidgetInfo`.
+
+The constraint that keeps this tier cheap, and it is absolute: **every
+interactive element must be an egui widget.** The moment a composed widget
+needs to sense its own clicks, it is Tier P and must be justified as one.
+
+### 2.3 Tier P — Painted
+
+We allocate, sense and paint ourselves: `Ui::allocate_response` (`ui.rs:1138`)
+or `Ui::allocate_exact_size` (`ui.rs:1150`), then `Ui::painter` (`ui.rs:457`).
+
+**We own:** geometry, every painted pixel, interaction semantics, the
+`WidgetInfo` emission of §8, animation, focus, and disabled rendering.
+
+This is the expensive tier. It is admitted rarely and only with the citation
+§2.5 demands.
+
+### 2.4 Tier F — Forbidden
 
 Reimplementing the internals of `TextEdit`, `ScrollArea` or `ComboBox` is
-**out of scope permanently**, not merely deferred. The measured cost:
+**out of scope permanently**, not deferred. The measured cost:
 
 | upstream file | lines |
 |---|---:|
@@ -132,23 +151,34 @@ Reimplementing the internals of `TextEdit`, `ScrollArea` or `ComboBox` is
 | all of `widgets/` + `containers/` | **17174** |
 
 `TextEdit` alone carries cursor movement, selection, undo, clipboard, IME and
-bidirectional text. Reimplementing it would buy a permanent per-release audit
-obligation for behaviour this crate has no opinion about, in exchange for
-styling that §2.2 already delivers through a scope.
+bidirectional text — behaviour this crate has no opinion about, in exchange for
+styling Tier W already delivers.
 
-### 2.4 The admission test
+### 2.5 The admission rule
 
-A widget may be added to **Tier 1** only if **both** hold, and the rustdoc
-records which:
+> **Use the cheapest tier that produces the appearance the theme specifies. A
+> widget may be promoted to a more expensive tier only by citing the upstream
+> line that makes the cheaper tier insufficient.**
 
-1. egui 0.36.1 ships no widget with that visual identity, **and**
-2. a majority of the corresponding `ResolvedTheme` struct's leaves are
-   UNMAPPABLE in the connector's §5 matrices.
+That is the whole rule. It replaces the connector charter's two-condition test
+(`todo_v0.6.0_egui-connector-spec.md` §14.3), which does not survive contact
+with this crate — see the rationale §4 for why, and why replacing it is not
+charter evasion.
 
-This is the connector charter's test (`todo_v0.6.0_egui-connector-spec.md`
-§14.3) applied in the crate where the charter says such widgets belong. A
-widget that fails the test but would still be *convenient* goes to Tier 2 or
-nowhere.
+Three properties make this rule worth keeping rather than the one it replaces:
+
+* **It measures cost, which the old test never did.** The old test asked twice
+  whether a widget was *needed* and never once what owning it would cost. Cost
+  is the entire reason the charter exists.
+* **It is mechanically checkable.** A promotion without a resolvable `file.rs:N`
+  citation fails review. There is nothing to argue about.
+* **It has no arbitrary threshold.** No line counts, no leaf-count majorities,
+  nothing that has to be re-tuned when either side changes.
+
+Every Tier P entry in §5 carries its citation. If a future egui release makes a
+cheaper tier sufficient — for instance by giving `Spinner` a stroke-width
+builder — the citation stops resolving to a hardcoded value, and that widget
+must be demoted. **Demotion is not optional**, and §12 T10 exists to catch it.
 
 ---
 
@@ -206,7 +236,7 @@ pub mod expander;
 pub mod spinner;
 pub mod segmented_control;
 
-pub mod wrap;   // Tier 2
+pub mod wrap;   // Tier W
 
 pub use native_theme_egui as connector;
 ```
@@ -279,12 +309,13 @@ with no source change in the application.
 That is deliberately **not** a task in §14, because it is not a task of this
 crate: it is the connector's upstream contribution, published as a branch
 instead of waiting on a merge. The two do not compete. If it lands upstream,
-Tier 2 becomes redundant (§15 Q-4) and Tier 1 is untouched, because Tier 1
-exists for widgets egui does not have at any styling fidelity.
+Tier W becomes redundant (§15 Q-4) while Tiers C and P are untouched, because
+they exist for widgets egui does not have at any styling fidelity.
 
 ### 4.3 The common builder shape
 
-Every Tier 1 widget follows one shape, so learning one teaches all:
+Every widget this crate defines — Tier P and Tier C alike — follows one shape,
+so learning one teaches all:
 
 ```rust
 pub struct Switch<'a> { /* … */ }
@@ -313,9 +344,9 @@ Rules that hold for every widget in the crate:
   difference so a caller picks deliberately.
 * No widget takes a `Role`. The widget *is* the role.
 
-### 4.4 Tier 2 surface
+### 4.4 Tier W surface
 
-Tier 2 lives in `mod wrap` and is spelled as functions returning the egui
+Tier W lives in `mod wrap` and is spelled as functions returning the egui
 widget already wrapped, so the call site reads like egui's:
 
 ```rust
@@ -331,46 +362,59 @@ a named struct per wrapper, which is uglier but gives callers a nameable type.
 
 ---
 
-## 5 -- Tier 1 inventory
+## 5 -- The complete widget inventory
 
-Each row states the admission test's two conditions. UNMAPPABLE counts are the
-connector's §5 matrices.
+Every widget, with its tier and — for anything above Tier W — the citation
+§2.5 requires. **Only two widgets reach Tier P.**
 
-| widget | egui counterpart | native struct | UNMAPPABLE | admitted |
-|---|---|---|---:|---|
-| `Switch` | none | `ResolvedSwitchTheme` (13 leaves) | 8 of 13 | **yes** — both conditions |
-| `Spinner` | `egui::Spinner` exists | `ResolvedSpinnerTheme` | 1 | **conditional**, see below |
-| `TabBar` | none | `ResolvedTabTheme` (21) | 4 | **yes** on condition 1; condition 2 fails |
-| `Toolbar` | none | `ResolvedToolbarTheme` (17) | 4 | **yes** on condition 1; condition 2 fails |
-| `StatusBar` | none | `ResolvedStatusBarTheme` (14) | 3 | as above |
-| `Sidebar` | none | `ResolvedSidebarTheme` (17) | 3 | as above |
-| `Card` | `Frame` only | `ResolvedCardTheme` (9) | 2 | as above |
-| `Expander` | `CollapsingHeader` exists | `ResolvedExpanderTheme` (17) | 4 | **conditional** |
-| `SegmentedControl` | none | `ResolvedSegmentedControlTheme` (20) | 5 | **yes** on condition 1 |
+### 5.1 Tier P — painted, with justification
 
-**This table is the crate's central unresolved design question, and it is
-deliberately not resolved here.** Only `Switch` passes both conditions
-outright. Six widgets pass condition 1 (egui genuinely has no tab bar, toolbar,
-status bar, sidebar, card or segmented control) but fail condition 2, because
-the connector can already carry most of their leaves into an `egui::Frame` or a
-scoped `Style`.
+| widget | native struct | why no cheaper tier suffices |
+|---|---|---|
+| `Switch` | `ResolvedSwitchTheme` (13 leaves, 8 UNMAPPABLE) | `egui/src/widgets/` contains no switch or toggle module — the full listing is `button`, `checkbox`, `color_picker`, `drag_value`, `hyperlink`, `image`, `label`, `progress_bar`, `radio_button`, `separator`, `slider`, `spinner`, `text_edit`. Nothing composes into a rounded track with an animated moving thumb; `Ui::toggle_value` (`ui.rs:1874-1881`) is documented as looking like `Button::selectable` |
+| `Spinner` | `ResolvedSpinnerTheme` | `egui::Spinner` exposes only `.size()` (`widgets/spinner.rs:25`) and `.color()` (`:32`). Its stroke width is hardcoded `Stroke::new(3.0, color)` (`:58`) and its radius inset is a literal `- 2.0` (`:45`), so `spinner.stroke_width` cannot reach it at any cheaper tier |
 
-That is a real tension: their leaves are *mappable* but there is no widget to
-map them onto, so an application must hand-assemble the widget from `Frame` and
-`Button` and get the composition right itself. Whether "egui has no such
-widget" should be sufficient on its own is **Q-2 (§15)**, and it must be
-settled before any of the six is written.
+### 5.2 Tier C — composed
 
-`Spinner` and `Expander` are conditional for the opposite reason: egui *does*
-ship a counterpart, so condition 1 fails, yet the counterpart hardcodes what
-the theme wants to set — `Spinner`'s stroke width and point count
-(`widgets/spinner.rs:45`, `:58`), `CollapsingHeader`'s arrow colour, which is
-the same field as its label colour (`collapsing_header.rs:353` vs `:598`).
-Admitting them requires a third condition, which §15 Q-2 must also decide.
+None of these needs a painted pixel except non-interactive decoration, so each
+inherits egui's interaction and accessibility unchanged.
+
+| widget | composed from | role |
+|---|---|---|
+| `TabBar` | a row of `Button::selectable`, per-position corner radii via `Button::corner_radius` (`widgets/button.rs:200-203`, applied over the style-derived radius at `:349-350`); the active-tab underline is painted decoration | `Role::Tab` |
+| `SegmentedControl` | a row of `Button` sharing borders, per-position radii by the same route | `Role::SegmentedControl` |
+| `Toolbar` | `surface_frame(Surface::Toolbar)` + a horizontal layout at `toolbar.bar_height` with `toolbar.item_gap` | `Role::Toolbar` |
+| `StatusBar` | `surface_frame(Surface::StatusBar)` + a horizontal layout | `Role::StatusBar` |
+| `Sidebar` | `surface_frame(Surface::Sidebar)` + a selectable list | `Role::Sidebar` |
+| `Expander` | `CollapsingHeader` **plus `.icon(..)`** (`containers/collapsing_header.rs:480`), which gives the arrow its own colour | `Role::Expander` |
+
+`Expander` is the clearest demonstration that the tier model was previously
+wrong. The connector records the arrow colour as permanently lost, because
+`paint_default_icon` fills it with `visuals.fg_stroke.color` — the same field
+the label uses (`collapsing_header.rs:353` vs `:598`) — and notes that the only
+escape, `CollapsingHeader::icon`, is `FnOnce` and therefore "not installable by
+a theme" (ledger item 25).
+
+That is exactly right *for a theme*, and irrelevant *for a widget crate*: a
+wrapper constructs a fresh closure on every call. A loss the connector proved
+unreachable becomes a two-line fix here, with no painting and no new liability.
+
+### 5.3 Delivered by the connector — not a widget here
+
+| wanted | how to get it |
+|---|---|
+| `Card` | `ThemeAtlas::surface_frame(theme, Surface::Card)` already returns the themed `egui::Frame`. A `Card` widget would wrap a `Frame` in a `Frame` |
+| `Window`, `Dialog`, `Popover`, `Tooltip`, `Menu` chrome | the `Surface` frames and the container helpers of §6 |
+
+Recording these here matters as much as the admitted widgets: they are the
+cases where the cheapest tier is *no widget at all*, and §2.5 requires taking
+it.
 
 ---
 
-## 6 -- Tier 2 inventory
+---
+
+## 6 -- Tier W inventory
 
 | wrapper | egui widget | role | reaches |
 |---|---|---|---|
@@ -385,7 +429,7 @@ Admitting them requires a third condition, which §15 Q-2 must also decide.
 | `wrap::combo_box` | `ComboBox` | `Role::ComboBox` | scope for the closed box + `ComboBox::popup_style` (`containers/combo_box.rs:199`) for the list |
 | `wrap::scroll_area` | `ScrollArea` | `Role::Scrollbar` | full scope |
 
-**`Area`-based containers are not Tier 2 wrappers.** `Window`, `Modal`,
+**`Area`-based containers are not Tier W wrappers.** `Window`, `Modal`,
 `Popup`, `Tooltip` and menus ignore the calling `Ui`'s style entirely
 (§2.2). They are served instead by documented helpers that pass what each
 container actually accepts — `Window::frame` (`containers/window.rs:265`),
@@ -404,7 +448,7 @@ connector's ledger item 2b.
 
 The connector cannot express font weight, because `Style::text_styles` holds
 `FontId { size, family }` and nothing else (ledger item 7). **This crate is not
-subject to that limit**, because a Tier 1 widget lays out its own text and can
+subject to that limit**, because a Tier P widget lays out its own text and can
 build a `LayoutJob` whose `TextFormat` carries far more:
 
 `font_id`, `extra_letter_spacing`, **`line_height: Option<f32>`**, `color`,
@@ -465,10 +509,10 @@ the degradation is observable rather than silent.
 ## 8 -- Accessibility
 
 A hand-painted widget is invisible to a screen reader unless it says otherwise.
-egui's own widget layer touches `WidgetInfo` in **22 files**; a Tier 1 widget
+egui's own widget layer touches `WidgetInfo` in **22 files**; a Tier P widget
 that omits it is not merely imperfect, it is inaccessible.
 
-**Every Tier 1 widget must call `Response::widget_info`** (`response.rs:868`)
+**Every Tier P widget must call `Response::widget_info`** (`response.rs:868`)
 with the closest matching constructor: `WidgetInfo::labeled` (`lib.rs:658`),
 `::selected` (`:668`), `::slider` (`:686`) or `::text_edit` (`:697`).
 
@@ -503,7 +547,7 @@ rustdoc must say why.
 ### 9.1 Focus
 
 egui has no focus-ring concept: keyboard focus promotes a widget to the
-`active` visuals (connector ledger item 5). A Tier 1 widget escapes this — it
+`active` visuals (connector ledger item 5). A Tier P widget escapes this — it
 reads `Response::has_focus` (`response.rs:348`) and paints a real ring from the
 theme's `focus_ring_color`, `focus_ring_width` and `focus_ring_offset`, which
 the connector exposes as accessors precisely because it cannot write them.
@@ -524,7 +568,7 @@ egui models disabled as a single opacity multiply — `Visuals::disabled_alpha`
 applied via `Ui::disable` → `Painter::multiply_opacity` (`ui.rs:496-501`,
 `painter.rs:100-104`) — with no disabled *colour* anywhere (ledger item 6).
 
-A Tier 1 widget with `.enabled(false)` must **not** call `Ui::disable`. It
+A Tier P widget with `.enabled(false)` must **not** call `Ui::disable`. It
 reads `Ui::is_enabled` (`ui.rs:470`) for the inherited state, combines it with
 its own flag, and paints the theme's `disabled_background` and
 `disabled_text_color` directly. It must still allocate the same space and still
@@ -613,11 +657,13 @@ Headless, no window, no GPU — the same discipline as the connector's §13.
 | T2 | **Determinism** | building the same widget twice against the same atlas produces byte-identical shapes |
 | T3 | **Font-name safety** | no code path constructs a `FontFamily::Name` that is not present in the registry — this is what makes §7.2 mechanical rather than a review promise |
 | T4 | **Hostile theme** | `NaN`, `±∞`, `-0.0` and extreme magnitudes in every `f32` leaf; every widget still allocates finite space and paints |
-| T5 | **Accessibility coverage** | every Tier 1 widget emits a `WidgetInfo`, and its `WidgetType` matches the §8 table |
+| T5 | **Accessibility coverage** | every Tier P widget emits a `WidgetInfo`, and its `WidgetType` matches the §8 table |
 | T6 | **Reduced motion** | with reduced motion set, every animating widget passes `0.0` animation time |
 | T7 | **Disabled colour** | `.enabled(false)` paints the theme's disabled colours and does **not** call `Ui::disable` |
 | T8 | **No hardcoded values** | a source scan for numeric literals in painting code, allowing only §10.3 |
-| T9 | **Tier 2 scope reach** | a wrapper's widget observes the role style, verified by reading back the style inside the scope |
+| T9 | **Tier W scope reach** | a wrapper's widget observes the role style, verified by reading back the style inside the scope |
+| T10 | **Tier P promotions are still justified** | for each Tier P widget, assert the §5.1 citation still describes a hardcoded upstream value. When egui gains a builder that removes the need, this fails and the widget must be demoted (§2.5) |
+| T11 | **Tier C stays cheap** | no Tier C widget calls `Ui::allocate_response`, `Ui::allocate_exact_size` or otherwise senses input; every interactive element is an egui widget (§2.2) |
 
 T8 is a lint-shaped test rather than a behavioural one, and it is the direct
 mechanical enforcement of this project's no-hardcoded-values rule.
@@ -632,11 +678,11 @@ The honesty ledger. Nothing here is softened.
 |---|---|---|
 | 1 | **Existing code does not benefit.** Every call site must change to `ui.add(…)`. A user who adds the crate and changes nothing sees no difference | §4.2; inherent-method resolution makes the alternative unsound, not merely ugly |
 | 2 | **Third-party egui crates are unaffected.** `egui_plot`, `egui_extras`, `egui_dock` and friends read the global `Style` and will render with the connector's base style only — the 31 DIRECT leaves plus elected winners | they call egui's widgets directly; nothing in this crate is in their path |
-| 3 | **Link state colours stay lost in Tier 2.** `Link` reads `visuals.hyperlink_color` unconditionally (`widgets/hyperlink.rs:47`) and egui has no visited-URL set | connector ledger item 14. A Tier 1 `Link` could fix it by tracking visited URLs in `ctx.data_mut()`; it is not admitted because it fails the §2.4 test |
+| 3 | **Link state colours stay lost in Tier W.** `Link` reads `visuals.hyperlink_color` unconditionally (`widgets/hyperlink.rs:47`) and egui has no visited-URL set | connector ledger item 14. A Tier P `Link` could fix it by tracking visited URLs in `ctx.data_mut()`, and §2.5 would admit it on the `hyperlink.rs:47` citation — it is declined instead because reimplementing a hyperlink to recolour it fails the *cheapest tier* half of the rule, and the loss is cosmetic rather than functional. Revisit if a theme is found where visited-link colour carries real meaning |
 | 4 | **Glyph rasterization still is not the platform's.** epaint computes one coverage value per pixel, so text is grayscale-antialiased; LCD subpixel rendering is not available at any layer | `alpha = coverage^gamma` (`epaint/src/image.rs:378-381`). Hinting and shaping *do* match closely — skrifa and harfrust |
 | 5 | **Font discovery is not solved here.** Route 2 of §7.1 needs a real Bold file located on disk, and egui has no font database | connector ledger item 8. This crate consumes whatever the connector's `mod fonts` registered and adds no discovery of its own |
 | 6 | **Compositor-level appearance is out of reach** — real window shadows, client-side decorations matching the window manager, corner rounding, blur-behind | eframe presents a single surface |
-| 7 | **Platform text interaction is egui's** — IME candidate placement, platform-specific text navigation, native context menus | Tier 3 forbids touching `TextEdit`, so these stay exactly as egui implements them |
+| 7 | **Platform text interaction is egui's** — IME candidate placement, platform-specific text navigation, native context menus | Tier F forbids touching `TextEdit`, so these stay exactly as egui implements them |
 | 8 | **Native dialogs are not provided** — file pickers, colour pickers | OS dialogs; an application should use `rfd` or a portal |
 
 ---
@@ -660,52 +706,66 @@ implemented, because every task consumes its API.
 
 5. Implement `Switch` completely: builder, painting, animation with reduced
    motion, `WidgetInfo` as `Checkbox`, focus ring, disabled colours.
-   It is the only widget that passes §2.4 outright, so it is the reference
-   implementation every later widget is reviewed against. Add T6.
+   It is one of only two Tier P widgets (§5.1), so it is the reference
+   implementation every later painted widget is reviewed against. Add T6.
 6. Add T2, T4 and T8 against `Switch` alone before writing a second widget.
 
-**Phase C — Tier 2**
+**Phase C — Tier W**
 
 7. Implement `mod wrap` for the ten entries of §6. Add T9.
 8. Implement the `Area`-container helpers of §6.
 
-**Phase D — remaining Tier 1**
+**Phase D — Tier C, cheapest first**
 
-9. **Settle Q-2 (§15) before writing any of these.** Then implement the
-   admitted subset in this order: `Spinner`, `Expander`, `SegmentedControl`,
-   `TabBar`, `Card`, `Toolbar`, `StatusBar`, `Sidebar`.
-10. Implement font weight and slant per §7, and add T3 — the panic guard.
+9. Implement the six composed widgets of §5.2 in this order, which is ascending
+   order of interaction: `Toolbar`, `StatusBar`, `Sidebar` (layout over a
+   `surface_frame`, no interaction of their own), then `Expander`
+   (`CollapsingHeader` + `.icon(..)`), then `SegmentedControl` and `TabBar`
+   (exclusive selection plus painted decoration).
+   Nothing here needs Q-2 settled — it no longer exists.
+10. Add T11: assert that no Tier C widget calls `Ui::allocate_response` or
+    senses input, which is what keeps the tier honest.
 
-**Phase E — release readiness**
+**Phase E — the second painted widget**
 
-11. Run `./pre-release-check.sh`.
-12. Write `README.md` opening with §0.1's sentence verbatim, and stating §13
+11. Implement `Spinner` (§5.1). Deliberately after all of Tier C, so that the
+    cheap tiers are exhausted before the expensive one is extended.
+12. Implement font weight and slant per §7, and add T3 — the panic guard.
+
+**Phase F — release readiness**
+
+13. Run `./pre-release-check.sh`.
+14. Write `README.md` opening with §0.1's sentence verbatim, and stating §13
     items 1 and 2 in the first section — a reader must learn what this crate
     does not change before they adopt it.
-13. Write `examples/showcase-egui-widgets.rs` covering every widget in both
+15. Write `examples/showcase-egui-widgets.rs` covering every widget in both
     colour schemes.
 
 ---
 
 ## 15 -- Open questions
 
-**Q-1 — `impl Widget` or named structs for Tier 2?** §4.4 specifies
+**Q-1 — `impl Widget` or named structs for Tier W?** §4.4 specifies
 `impl egui::Widget` returns, which keeps the surface small but gives callers no
 nameable type and makes the return opaque in rustdoc.
 *Recommendation:* keep `impl Widget` until a concrete need for the name
 appears; it is the smaller commitment and can be widened compatibly.
 
-**Q-2 — Is "egui has no such widget" sufficient for Tier 1 admission?**
-The §2.4 test requires *both* conditions, and only `Switch` passes. Six
-container-shaped widgets pass condition 1 and fail condition 2. A third
-condition would also be needed for `Spinner` and `Expander`, where egui ships a
-counterpart that hardcodes what the theme wants to set.
-*Recommendation:* replace condition 2 with "**either** a majority of the
-struct's leaves are UNMAPPABLE, **or** egui ships no widget of that identity
-and assembling one correctly from `Frame` and `Button` is more than roughly
-forty lines." That admits the six containers on their real merit — composition
-burden — rather than by stretching an UNMAPPABLE count that was never about
-them. **This blocks Phase D and nothing else.**
+**Q-2 — CLOSED.** It asked whether "egui has no such widget" was sufficient for
+admission, because the connector charter's two-condition test admitted only
+`Switch` and left six obviously-wanted widgets in limbo.
+
+The question dissolved rather than being answered, and the record is kept
+because the reasoning generalises. The test was wrong in two ways at once: it
+asked twice whether a widget was *needed* and never once what owning it would
+*cost*; and it silently assumed that "our widget" means "we paint every pixel".
+Once those are separated, the six container-shaped widgets are Tier C — egui
+keeps doing the painting, the interaction and the accessibility — and the
+liability that motivated the charter never arises. §2.5 replaces the test.
+
+The earlier proposal to add a "more than roughly forty lines" clause is
+recorded as **rejected**: an arbitrary threshold with no principle behind it,
+which would have needed re-tuning every time either side changed.
 
 **Q-3 — Where do the switch thumb inset and tab underline thickness come
 from?** §10.3 forbids inventing them.
@@ -716,11 +776,11 @@ exists. Adding fields to `ResolvedTheme` for one toolkit's widget crate is the
 wrong direction.
 
 **Q-4 — Does this crate survive the upstream `class_overrides` PR?**
-If the connector's §14.2 contribution lands, Tier 2 becomes unnecessary —
+If the connector's §14.2 contribution lands, Tier W becomes unnecessary —
 `SCOPED` collapses into `DIRECT` and plain egui widgets render natively without
 a wrapper.
-*Recommendation:* proceed anyway. Tier 1 is unaffected, because it covers
-widgets egui does not have at all, and Tier 2 wrappers would then simply become
-thin pass-throughs that can be deprecated without breaking callers. The PR is
+*Recommendation:* proceed anyway. Tiers C and P are unaffected, because they
+cover widgets egui does not have at all, and Tier W wrappers would then simply
+become thin pass-throughs that can be deprecated without breaking callers. The PR is
 explicitly **UNVERIFIED** as to upstream appetite, so making this crate wait on
 it would be waiting on something nobody has agreed to.

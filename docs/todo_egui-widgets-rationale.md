@@ -161,7 +161,7 @@ delete two lines.
 
 It does not remove the need for this crate — §1.1 again.
 
-### Option H: A companion widget crate, three tiers, `egui::Widget` API (chosen)
+### Option H: A companion widget crate, four tiers, `egui::Widget` API (chosen)
 
 Widgets in a separate crate, under distinct names, implementing
 `egui::Widget` so they compose through `ui.add()`.
@@ -176,7 +176,7 @@ Widgets in a separate crate, under distinct names, implementing
   (`ui.rs:1537`) and `add_enabled` (`ui.rs:1587`) for free, and coexist with
   every egui and third-party widget on the same screen.
 * **The cost is bounded and chosen per widget.** The tier model puts the
-  expensive widgets permanently out of scope (§2.3 of the spec) instead of
+  expensive widgets permanently out of scope (§2.4 of the spec) instead of
   leaving the boundary to be re-litigated.
 * **It solves §1.1**, which nothing else on this list does.
 
@@ -208,13 +208,13 @@ every future widget must be added twice or the set becomes inconsistent.
 This is recorded as a rule rather than a preference so that "it is only one
 method" does not reopen it.
 
-### 3.3 Three tiers, with Tier 3 named and closed
+### 3.3 Four tiers, ordered by liability, with the last one closed
 
 The alternative was to judge each widget on its merits when it came up. That
 guarantees the boundary drifts toward reimplementation, because each individual
 step looks small — `Slider` is only 1,210 lines, `ComboBox` only 487.
 
-Naming Tier 3 and closing it means the expensive cases are decided once, when
+Naming Tier F and closing it means the expensive cases are decided once, when
 nobody is under pressure to ship a particular widget.
 
 ### 3.4 The atlas comes from the `Context`, never from a parameter
@@ -340,28 +340,59 @@ does not silently acquire a rendering-maintenance obligation. Its test:
 1. egui has no widget of that visual identity, **and**
 2. a majority of the corresponding struct's leaves are otherwise UNMAPPABLE.
 
-A separate crate honours the *reason* for the charter — the obligation is
-carried openly, versioned separately, and tested separately — while the
-charter's *test* is retained verbatim as the Tier 1 admission rule.
+A separate crate honours the charter's *reason* — the obligation is carried
+openly, versioned separately, tested separately. Its *test*, however, is
+**replaced**, not inherited, and that needs justifying rather than asserting.
 
-That retention has an awkward consequence, and the spec records it rather than
-smoothing it over: **only `Switch` passes both conditions.** Six
-container-shaped widgets — tab bar, toolbar, status bar, sidebar, card,
-segmented control — pass condition 1 outright (egui has none of them) but fail
-condition 2, because the connector *can* carry most of their leaves into a
-`Frame` or a scoped `Style`.
+**The test was a proxy, and it had two defects.**
 
-The honest reading is that condition 2 was written to answer a different
-question. In the connector it meant "is a widget the only way to reach these
-values?" Here the question is "is a widget the only way to reach this
-*appearance*?" — and for a tab bar the answer is yes even though its leaves are
-individually mappable, because an application must otherwise assemble it from
-`Frame` and `Button` and get the composition right.
+*First, it measured need twice and cost never.* Both conditions ask whether a
+widget is **wanted**: "egui hasn't got one" and "the values can't be reached
+otherwise". Neither asks what owning it would **cost** — which is the entire
+reason the charter exists. A rule written to control liability that never
+mentions liability is measuring the wrong thing.
 
-Spec §15 Q-2 proposes the amended condition. It is left open rather than
-decided here because it governs eight of the nine Tier 1 widgets, and a rule
-that admits that much work should be approved deliberately rather than inferred
-from a rationale document.
+*Second, it silently assumed that "our widget" means "we paint every pixel".*
+That assumption is false, and it is the more damaging of the two. A tab bar can
+be ours — our name, our API, our layout and role choices — while egui's own
+`Button` does the painting, the hit-testing and the accessibility. The
+liability the charter fears simply never arises.
+
+**Once those are separated, cost turns out to track interaction complexity, not
+pixel count.** A status bar is a themed `Frame` with a horizontal layout: no
+state, no input, nothing to re-audit. A switch has toggle state, animation,
+focus and an accessibility mapping. They are not the same kind of object, and
+any rule that sorts them by "does egui already have one" cannot see the
+difference.
+
+Spec §2.5 therefore measures the thing that matters: use the cheapest tier that
+produces the appearance, and pay for a promotion with a citation.
+
+**`Expander` is the proof that this is not a rationalisation.** The connector
+records its arrow colour as permanently lost: `paint_default_icon` fills the
+arrow with `visuals.fg_stroke.color`, the same field the label reads
+(`collapsing_header.rs:353` vs `:598`), and the only escape,
+`CollapsingHeader::icon` (`:480`), is `FnOnce` — so, in the connector's own
+words, "not installable by a theme" (ledger item 25).
+
+Every word of that is correct **for a theme**, and irrelevant **for a widget
+crate**, because a wrapper builds a fresh closure on every call. Under the
+inherited test, `Expander` was a hand-painting candidate: egui ships a
+counterpart, so condition 1 fails, yet the counterpart hardcodes what the theme
+wants — the exact shape that would have demanded a third condition. Under §2.5
+it is Tier C and the fix is two lines, with no painting, no interaction and no
+new liability.
+
+A test that would have had us reimplement `CollapsingHeader` to change one
+colour is not a test worth inheriting out of deference.
+
+**The outcome, which is the real argument:** under the replaced rule, only two
+widgets — `Switch` and `Spinner` — are expensive, each with a citation proving
+no cheaper tier works. Six more are composition, and `Card` turns out to need no
+widget at all, because `surface_frame(Surface::Card)` already returns it. The
+charter's fear is satisfied more completely than the charter's test would have
+managed, because the test would have forced those six either into limbo or into
+a tier they never needed.
 
 ---
 
@@ -369,30 +400,30 @@ from a rationale document.
 
 ### 5.1 When egui bumps a minor
 
-Tier 2 is the exposed surface: it names egui's widgets and their builder
+Tier W and Tier C are the exposed surface: they name egui's widgets and their builder
 methods. Renames surface as compile errors, which is the good case. The version
 policy is inherited from the connector — one egui minor at a time, never a
 range.
 
-Tier 1 is far more stable, because it depends only on the primitives:
+Tier P is far more stable, because it depends only on the primitives:
 `allocate_response`, `painter`, `Response`, `WidgetInfo`. Those are the oldest
 and least volatile parts of egui's API.
 
 ### 5.2 When native-theme grows a widget
 
 Adding a widget to `ResolvedTheme` does not break this crate — it adds a
-candidate for Tier 1 admission, judged by §2.4. Nothing in the public API is
+candidate, tiered by §2.5. Nothing in the public API is
 keyed to the widget count.
 
 ### 5.3 If the upstream change lands
 
-Tier 2 becomes redundant: SCOPED collapses into DIRECT and plain egui widgets
-render natively without a wrapper. Tier 2 wrappers would then be thin
+Tier W becomes redundant: SCOPED collapses into DIRECT and plain egui widgets
+render natively without a wrapper. Tier W wrappers would then be thin
 pass-throughs and can be deprecated without breaking callers, since they are
 functions returning `impl Widget`.
 
-Tier 1 is untouched. It exists for widgets egui does not have, which no styling
-change can conjure.
+Tiers C and P are untouched. They exist for widgets egui does not have, which no
+styling change can conjure.
 
 **This asymmetry is the reason the crate is safe to build now.** Its
 speculative half degrades gracefully into a no-op; its durable half does not
@@ -410,11 +441,12 @@ widget-type axis.
 
 ## 6 -- What was deliberately not done
 
-* **No `Link` in Tier 1**, though it is the worst-covered widget (9 of 12
-  leaves lost) and a Tier 1 version could track visited URLs in
-  `ctx.data_mut()` and fix it. It fails §2.4 condition 1 — egui ships a
-  hyperlink — and admitting it would mean the test is decorative. Revisit only
-  through Q-2.
+* **No painted `Link`**, though it is the worst-covered widget (9 of 12 leaves
+  lost) and a Tier P version could track visited URLs in `ctx.data_mut()` and
+  fix it. §2.5 would admit the promotion on the `hyperlink.rs:47` citation, so
+  this is a judgement rather than a rule: reimplementing a hyperlink to
+  recolour it is a poor trade when the loss is cosmetic. Recorded so the
+  judgement is visible and revisable, not hidden behind a test.
 * **No text-rendering configuration.** Reading the platform's hinting and
   antialiasing preferences belongs in the core crate and the connector, and is
   tracked in `todo.md`. This crate consumes whatever fonts were registered.
@@ -428,9 +460,10 @@ widget-type axis.
 
 Carried from spec §15, not duplicated in detail:
 
-* **Q-1** — `impl Widget` versus named structs for Tier 2 returns.
-* **Q-2** — the Tier 1 admission rule. **This is the one that matters**: it
-  governs eight of the nine candidate widgets and blocks Phase D.
+* **Q-1** — `impl Widget` versus named structs for Tier W returns.
+* **Q-2** — **CLOSED.** It asked whether the inherited admission test should
+  be amended. It was replaced instead (§4, spec §2.5), and the six widgets it
+  had left in limbo are Tier C. Nothing is blocked.
 * **Q-3** — the switch thumb inset and tab underline thickness, which have no
   `ResolvedTheme` source and must not become hardcoded constants.
 * **Q-4** — whether the crate survives the upstream change. Answered in §5.3:
