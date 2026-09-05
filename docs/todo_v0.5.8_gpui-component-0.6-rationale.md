@@ -50,7 +50,12 @@ anchors, the connector's composite icon functions, the Linux platform crate's
 native linkage and the docs.rs question from the other side: what the
 three-target list would document. It documents nothing the default target does
 not, and the claim that nothing enables gpui-pre's `windows-manifest` feature
-was wrong (errors 50–51). Section 7 records each correction.
+was wrong (errors 50–51). A ninth pass asked what `Theme::change` reads
+from a `ThemeConfig` that the connector never writes, and what the observer
+tests can actually observe: the highlighter style was missing from the config,
+and the tests' precondition (a preset whose splitter divider differs from its
+border) is satisfied by no shipped preset (errors 52–54). Section 7 records
+each correction.
 
 ---
 
@@ -320,7 +325,7 @@ lock one step behind the rule.
 | Change | Decision | Reason |
 |--------|----------|--------|
 | `SystemTheme.layout` | **Add** | approved 2026-08-10; both sources already exist in the pipeline (`pipeline.rs:46, 120-126`); the geometry accessors are otherwise preset-only |
-| `AccessibilityPreferences::from_system()` | **Add** | the preset path needs preferences without resolving a `SystemTheme`; an extraction of the KDE/GNOME reader code plus `detect::prefers_reduced_motion()` (`detect.rs:654-700`), same coverage as today |
+| `AccessibilityPreferences::from_system()` | **Add** | the preset path needs preferences without resolving a `SystemTheme`; an extraction of the KDE/GNOME reader code plus the uncached `detect::detect_reduced_motion()` (`detect.rs:662`; the cached `prefers_reduced_motion()` would freeze the fallback at its first answer, error 54), same coverage as today |
 | `RadioTheme` | Rejected | platform-facts §2.5 defines radio metrics as the checkbox's with a circular indicator (`platform-facts.md:947, 969, 1210`); a second struct would restate the same facts |
 | `ScrollbarTheme.thumb_radius` | Rejected for now | no platform fact; adding the field means per-platform research, recorded as a todo item; until then upstream's `radius` choice is mirrored |
 | `LayoutTheme` resolved to `f32` on `ResolvedTheme` | Rejected | all 16 static presets define the four values and the 4 live presets inherit them from the reader merge, so the data would allow it for presets; but a user theme may omit `[layout]`, and platform-facts §2.20 records no layout defaults for Windows and none for macOS `container_margin` or KDE `section_gap` (`platform-facts.md:1427-1435`); a resolver fallback would invent them, whereas `None` states "the platform specifies nothing" |
@@ -342,6 +347,18 @@ native colours; the derived colours that carry alpha, `overlay`, `drag_border`,
 restores the base-layer geometry. Applications keep one idiom per concern:
 `Theme::change` / `sync_system_appearance` for the mode,
 `apply_accessibility` for preferences (§2.22).
+
+One more field had to travel with the config for this to hold: `highlight`.
+`Theme::apply_config` installs a config's highlighter style as
+`highlight_theme` only when it is `Some` and otherwise keeps whatever the
+previous mode left (`schema.rs:1066-1073`). The connector's config carried
+`None`, because `to_theme` sets `highlight_theme` directly; with both configs
+the connector's, a `Theme::change` to the other mode would have kept, say,
+the dark highlighter under a light palette. The 0.5.7 connector never showed
+this because the other mode's config was the registry default, which carries
+a highlighter. The config now carries upstream's default style for its mode,
+the same value `to_theme` installs (D41). It is upstream's default, not a
+native value; the theme has no syntax colours.
 
 ### 2.19 Iterating `IconName`
 
@@ -492,9 +509,18 @@ specification requires a visual check of every `close` and `approximate` row.
   at 1.0 and `37 > 34` at 1.5. The test still asserts the branch condition it
   exercises instead of assuming it, so a preset whose minimum dominates at
   1.5 is caught and the factor raised.
-- **The observer test asserts `resizable.handle`.** It is the only field of
-  the base theme with a readable, comparable value that upstream rewrites on
-  `Theme::change`; the scrollbar styles are opaque (§2.20). The test
+- **The observer test asserts `resizable.active_handle`.** `ResizableTheme`
+  is the only part of the base theme with readable, comparable values that
+  upstream rewrites on `Theme::change`; the scrollbar styles are opaque
+  (§2.20). Of its two slots only `active_handle` distinguishes the writer:
+  every preset inherits `splitter.divider_color` from `defaults.border.color`
+  (`inheritance-rules.toml:238`; no preset defines `[splitter]`), which is
+  exactly what upstream writes into `handle`, so that slot reads the same
+  either way; `active_handle` holds the connector's `splitter.hover_color`
+  (the border colour again, via `:273`) against upstream's translucent
+  `drag_border`, and the test asserts that they differ before relying on it.
+  The first draft searched for a preset whose divider differs from its
+  border, which none does, and would have panicked (error 53). The test
   returning is the termination proof: an observer loop would hang the test
   and fail CI's timeout, which is the intended failure mode. `Theme::change` is called with the *same* mode (with one stored variant, a different mode exercises the fallback, which has its own test) and twice, so a flag left set by the first delivery would fail the second assertion (error 40). A third `#[gpui::test]` runs `apply` and `Theme::change` inside one `cx.update`, the only way to reach the window in which the observer is installed but not yet active (§2.7, D38).
 - **`no_theme_color_field_is_left_at_default`.** The `size_of` tripwire
@@ -618,6 +644,7 @@ moment.
 | D38 | `install_observer_once` queues one deferred re-write of the base overrides | the subscription activates at the end of the flush; a rebuild in the same update as the first `apply` would otherwise stand until the next one (§2.7, error 46) |
 | D39 | Lucide `StarFill` → `None`; freedesktop `Star` → `non-starred`, `StarFill` → `starred` | one glyph must not stand for two states (§2.21, errors 48–49) |
 | D40 | Connector docs.rs metadata: `all-features = true`, no `targets` list | the crate's platform-gated public items are all Linux-gated and appear on the default target; two more targets would add nothing but the first cross-target docs build of the GPUI stack (§2.25, errors 50–51) |
+| D41 | `to_theme_config` carries upstream's default highlighter style for its mode | `apply_config` keeps the previous `highlight_theme` when the config has none; with both configs the connector's, a mode switch would keep the wrong highlighter (§2.18, error 52) |
 
 ---
 
@@ -735,7 +762,7 @@ overrides.
 Kept so the reasoning can be audited. Items 1–17 are from the first pass,
 18–26 from the second, 27–33 from the third, 34–38 from the fourth, 39–45
 from the implementation-plan pass, 46–47 from the sixth pass, 48–49 from the
-seventh, 50–51 from the eighth.
+seventh, 50–51 from the eighth, 52–54 from the ninth.
 
 1. **First field diff was wrong** (46 fields from a bad `awk` range); corrected by diffing the two upstream structs: 108 → 139.
 2. **`grep` undercounted 0.5.1 fields as 103**; the `size_of` tripwire's 108 is authoritative.
@@ -788,6 +815,9 @@ seventh, 50–51 from the eighth.
 49. **The freedesktop star reasoning claimed the themes have no outline/fill pair.** Both Breeze and Adwaita ship `non-starred` and `starred` (and `semi-starred`); the existing table mapped `Star`, Lucide's hollow star, to `starred`, the filled one, and the first draft mapped `StarFill` to the same name. `Star` now maps to `non-starred` and `StarFill` to `starred` (D39); `StarOff` keeps `non-starred`.
 50. **The sixth pass claimed that nothing in the stack enables gpui-pre's `windows-manifest` feature.** The grep looked for the feature name in the three downstream manifests and found none, but gpui-component, gpui-base and gpui-kit all depend on gpui-pre *with default features*, and `windows-manifest` is a default (gpui-pre `Cargo.toml:59-64`). For a Windows target the build script runs `embed-resource`, which on a Linux host needs `llvm-rc`. docs.rs's image has it, so the predicted outcome (pass) was probably right for the wrong reason; the corrected facts are in §2.25 and spec §1.3.
 51. **The three-target docs.rs list was inherited without asking what it documents.** The connector's only platform-gated public items are Linux-gated and the default target is Linux, so the macOS and Windows pages would show strictly less. The sixth pass added a pre-release check for a build that has no benefit; the eighth drops the target list for this crate instead (D40), amending the unreleased `ce0fdee` changelog line.
+52. **The `ThemeConfig` copies carried no highlighter style.** D34 was argued field by field for colours, fonts, radius and shadow, but `Theme::apply_config` also reads `highlight` (`schema.rs:1066-1073`) and, finding `None`, keeps the previous mode's `highlight_theme`. Both registry default themes carry one (`default-theme.json:113, 314`), which is why 0.5.7's single-config design never showed the defect. The config now carries upstream's default style for its mode (D41), and the both-variants test asserts `highlight_theme.appearance` after the switch.
+53. **The observer tests searched for a preset whose splitter divider differs from its border colour.** None exists: `splitter.divider_color` inherits `defaults.border.color` and `hover_color` inherits `divider_color` (`inheritance-rules.toml:238, 273`), and no preset defines `[splitter]`. The helper would have panicked and taken three tests with it. The observable is now `active_handle` (connector: border colour via the splitter; upstream: translucent `drag_border`), with the precondition asserted in the helper (§2.23).
+54. **`from_system()` used the cached reduce-motion detector.** `prefers_reduced_motion()` stores its first answer in a process-wide `OnceLock` (`detect.rs:654-656, 856-857`); a caller polling `from_system()` before `apply_accessibility` would have seen the reader's fresh value OR-ed with a frozen fallback. The uncached `detect_reduced_motion()` (`:662`) is used instead.
 
 ---
 

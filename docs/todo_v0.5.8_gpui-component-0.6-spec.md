@@ -139,6 +139,8 @@ versions.
 | `LayoutTheme { widget_gap, container_margin, window_margin, section_gap }`, all `Option<f32>`, lives on `Theme`; all 16 static presets define all four keys; the 4 `*-live` presets define none and take theirs from the platform reader merge; platform-facts §2.20 records no layout defaults for Windows ("app chooses"), none for macOS `container_margin`, none for KDE `section_gap`; `SystemTheme` has no `layout` field (approved 2026-08-10, pending) | `model/mod.rs:265-266`; `src/presets/*.toml`; `docs/platform-facts.md:1427-1435`; `pipeline.rs:46, 120-126`; `lib.rs:343-351`; `docs/todo.md` |
 | platform-facts treats radio buttons as checkboxes with a circular indicator: `label_gap` and `indicator_width` are defined for both, "Radio buttons use the same colors but with circular `border.corner_radius`" | `docs/platform-facts.md:947, 969, 1191-1210` |
 | platform-facts has no scrollbar thumb radius or track border colour | `docs/platform-facts.md` (search) |
+| `splitter.divider_color` inherits `defaults.border.color` and `splitter.hover_color` inherits `splitter.divider_color`; no preset defines a `[splitter]` table, so in every shipped preset both splitter colours resolve to the border colour | `docs/inheritance-rules.toml:238, 273`; `grep -l '^\[splitter\]' src/presets/*.toml` (empty) |
+| `ThemeConfig.highlight: Option<HighlightThemeStyle>`; `Theme::apply_config` installs it as `highlight_theme` when `Some` and leaves the previous `highlight_theme` when `None`; both registry default themes carry one; `HighlightTheme::default_dark() / default_light()` expose upstream's defaults with a public `style` | `src/theme/schema.rs:77, 1066-1073`; `src/theme/default-theme.json:113, 314`; `src/highlighter/registry.rs:463-485` |
 | Lucide bundle: 103 files, 99 name-table entries; **all 103 are Lucide icons** from tag **0.577.0** (byte-identical for sampled files). Ten are stored under gpui-component's icon names instead of Lucide's: `close` and `window-close` = `x`, `dash` and `window-minimize` = `minus`, `inspect` = `scan`, `resize-corner` = `grip`, `sort-ascending` = `arrow-up-narrow-wide`, `sort-descending` = `arrow-down-wide-narrow`, `window-maximize` = `maximize`, `window-restore` = `minimize-2` (path data identical after whitespace normalisation); the bundle already holds all eight of those files under their Lucide names, byte-identical, so the ten are duplicates, and the four files absent from the hand-written name table are `scan`, `grip`, `arrow-up-narrow-wide` and `arrow-down-wide-narrow`. The adding commit (`48f67c5`) records none of this. Nothing outside the connector uses those ten names: the role-based tables reference only `trash-2.svg` among the files affected by §10.2 (`bundled.rs:137, 163-164`), and the hand-written coverage test `lucide_by_name_covers_gpui_icons` (`bundled.rs:508`) lists them | `native-theme/icons/lucide`; `bundled.rs`; normalised comparison against the 0.577.0 files; repository grep |
 | Lucide 1.41.0 (2026-09-04) contains the 14 new names and every underlying icon above; it lacks `github` (brand icons removed upstream, commit `aa8f74eb`) and `trash-2`, which became a deprecated alias of `trash` whose glyph is identical to the old `trash-2` (path data compared); it has no filled star: `star`, `star-off` and `star-half` exist at the tag, `star-fill` and `star-filled` do not | git tree of tag 1.41.0; `icons/trash.json` at 1.41.0; raw probes of the tag |
 | Material bundle: `star.svg` and `star_border.svg` have identical path data (the Symbols outlined hollow star); `star_border` backs `IconName::StarOff`; Material Symbols has no star-off glyph (`star_off`, `star_outline`, `star_border` do not exist; `star_rate`, `star_half` do) | `native-theme/icons/material`; `bundled.rs:399`; connector `icons.rs:326`; GitHub contents API |
@@ -493,7 +495,7 @@ palette colours, plus one field with no `ThemeColor` counterpart,
 `group_box_title_foreground`, which stays `None` (139 − 12 + 1 = 128 config
 fields, `schema.rs:249`). `theme_color_to_config_colors`
 exports hex for all 34 new or renamed fields. `to_theme_config` exports the
-**scaled** font sizes (§3.4) so `Theme::change` reproduces them. Colours whose alpha is below 1 (`overlay`, `drag_border`, `drop_target`) are exported as `#rrggbbaa`, which gpui's `Rgba::try_from` parses (gpui-pre 0.3.3 `src/color.rs:224-262`) and gpui-component's `try_parse_color` accepts (`src/theme/color.rs:677-680`); opaque colours stay `#rrggbb` (D36).
+**scaled** font sizes (§3.4) so `Theme::change` reproduces them. Colours whose alpha is below 1 (`overlay`, `drag_border`, `drop_target`) are exported as `#rrggbbaa`, which gpui's `Rgba::try_from` parses (gpui-pre 0.3.3 `src/color.rs:224-262`) and gpui-component's `try_parse_color` accepts (`src/theme/color.rs:677-680`); opaque colours stay `#rrggbb` (D36). The config also carries upstream's default highlighter style for its mode (`highlight: Some(HighlightTheme::default_<mode>().style.clone())`), so a `Theme::change` to that mode switches code highlighting as it switches colours; `to_theme` sets `Theme.highlight_theme` to the same default directly, and `apply_config` would otherwise keep the previous mode's highlighter (D41).
 
 ### 5.4 Showcase (31 first-pass errors)
 
@@ -723,7 +725,11 @@ thumb_active_color, groove_width, min_thumb_length, thumb_width, overlay_mode }`
 
 - `ResizableTheme { handle: Some(splitter.divider_color), active_handle: Some(splitter.hover_color) }`
   (upstream projects `border` / `drag_border`, `theme/mod.rs:296-298`).
-  Handle width is a constant (`resize_handle.rs:12`), Tier U.
+  Handle width is a constant (`resize_handle.rs:12`), Tier U. In every
+  shipped preset both splitter colours inherit the border colour (§1.3), so
+  the projection differs from upstream's only in `active_handle` (upstream:
+  the translucent `drag_border`); a reader or user theme that sets
+  `[splitter]` changes both.
 - `Theme.focus_ring = defaults.focus_ring_width > 0.0`. When false upstream
   paints a tinted border (`src/styled.rs:182-184`); ring width is derived
   from the element's border (`:188-215`), so `focus_ring_width` /
@@ -990,9 +996,9 @@ generated tables compile against the directories.
 
 Approved 2026-08-10 (`docs/todo.md`). Field-wise merge of the reader's layout
 over the resolved preset's layout, the same precedence the pipeline already
-uses for colours; both sources exist at `pipeline.rs:46, 120-126`. Serde and
-`Debug`/`Clone`/`PartialEq` follow the struct's existing derives. The todo
-item is closed.
+uses for colours; both sources exist at `pipeline.rs:46, 120-126`.
+`SystemTheme` derives `Clone` and `Debug` (`lib.rs:368`), both of which
+`LayoutTheme` already implements. The todo item is closed.
 
 ### 11.2 `AccessibilityPreferences::from_system()`
 
@@ -1000,7 +1006,10 @@ An extraction, not new detection: on Linux it runs the same KDE/GNOME reader
 code that fills the struct today (`kde/mod.rs:51`, `gnome/mod.rs:194`,
 portal reads through `pollster` as `from_system` does); `reduce_motion` is
 the reader's value where a reader supplies one, OR-ed with
-`detect::prefers_reduced_motion()` (`detect.rs:654-700`), which is what covers
+`detect::detect_reduced_motion()` (`detect.rs:662`, the uncached variant:
+`from_system()` is a fresh read every call, and the cached
+`prefers_reduced_motion()` would return its first answer for the process
+lifetime), which is what covers
 macOS and Windows; the fallback never turns a preference off; fields no reader
 supplies keep their defaults. It
 exists so the preset path can honour system preferences without resolving a
@@ -1034,10 +1043,10 @@ contrast are recorded in `docs/todo.md` as research items, not guessed.
 | `scrollbar_geometry` tests | headless | widths, inset, min length, colours; `ScrollbarGeometry` derives `PartialEq + Debug` because `ScrollbarStyles` does not (`scrollbar.rs:589, 616, 655`) |
 | `to_theme` scaling test | headless | `font_size == px(size × 1.5)`; config copies scaled |
 | `hsla_to_hex_keeps_alpha_below_one`; the config test asserts the `drag_border` export has nine characters | headless | translucent colours survive the config round trip as `#rrggbbaa` (D36) |
-| `#[gpui::test] apply_installs_and_survives_theme_change` | headless App | after `apply` alone (it initialises gpui-component itself, D29): styled mode as requested, base `scrollbar.mode()` as expected, `resizable.handle` = splitter colour, `cx.reduce_motion()` follows prefs; after `Theme::change` with the *same* mode (which rebuilds the base theme), run twice: `resizable.handle` equals the stored variant's splitter colour after each change (proves the observer ran and left no stale `reapplying` flag) and the test returns (proves termination); the preset is chosen so the splitter colour differs from `border`, which upstream would write |
+| `#[gpui::test] apply_installs_and_survives_theme_change` | headless App | after `apply` alone (it initialises gpui-component itself, D29): styled mode as requested, base `scrollbar.mode()` as expected, `resizable.handle` and `resizable.active_handle` = the splitter colours, `cx.reduce_motion()` follows prefs; after `Theme::change` with the *same* mode (which rebuilds the base theme), run twice: `resizable.active_handle` equals the stored variant's `splitter.hover_color` after each change (proves the observer ran and left no stale `reapplying` flag) and the test returns (proves termination). The observable is `active_handle`, not `handle`: every preset inherits the divider colour from the border colour (§1.3), which is also what upstream writes into `handle`, whereas upstream writes the translucent `drag_border` into `active_handle`; the test asserts that precondition |
 | `#[gpui::test] apply_then_change_in_the_same_update_keeps_overrides` | headless App | `apply` and `Theme::change` inside one `cx.update`, before the observer is active: the deferred re-write (D38) leaves `resizable.handle` at the stored variant's splitter colour |
 | `#[gpui::test] apply_without_stored_variant_falls_back` | headless App | observer fallback path (§3.3 step 2) |
-| `#[gpui::test] apply_installs_configs_for_both_variants` | headless App | after `apply(dark)` then `apply(light)`: `Theme::change(Dark)` reproduces the dark variant's palette through the installed `ThemeConfig` (compared hex-for-hex, including a `button_*` field) |
+| `#[gpui::test] apply_installs_configs_for_both_variants` | headless App | after `apply(dark)` then `apply(light)`: `Theme::change(Dark)` reproduces the dark variant's palette through the installed `ThemeConfig` (compared hex-for-hex, including a `button_*` field) and `highlight_theme.appearance` is `Dark` (D41) |
 | `#[gpui::test] apply_accessibility_rescales_from_the_stored_variant` | headless App | after `apply`, `apply_accessibility` with factor 1.5: `font_size` and its config copy are scaled, `reduce_motion` forwarded, preferences stored |
 | MSRV checks (§4.4) | toolchain | both floors true |
 | `./pre-release-check.sh` | workspace | fmt, clippy, panic lint, package |
@@ -1082,7 +1091,9 @@ advice); the `init`-before-`apply` rule (D29); the GPUI surface of §4.2; compat
   three crates is amended to two.
 - **Fixed**: icon bundle provenance recorded, Lucide refreshed to 1.41.0,
   Material refreshed to upstream HEAD, duplicate `star_border.svg` removed
-  (§10); the config hex export kept alpha (`#rrggbbaa`, D36); publish.yml
+  (§10); the config hex export kept alpha (`#rrggbbaa`, D36); the
+  `ThemeConfig` copies carried no highlighter style, so a `Theme::change` to
+  the other mode kept the previous mode's code highlighting (D41); publish.yml
   soft gates removed if §5.5 passes.
 - The existing docs.rs entry is amended as above. No migration guide
   (pre-1.0 rule).

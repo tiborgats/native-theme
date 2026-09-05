@@ -287,10 +287,10 @@ on the with_overlay replay."
 - Modify: `native-theme/src/lib.rs` (`impl AccessibilityPreferences`; test)
 
 **Interfaces:**
-- Consumes: `pipeline::select_reader()` (`pipeline.rs:~612`, currently private `async fn`), `crate::reader::ThemeReader::read`, `crate::detect::prefers_reduced_motion()` (`detect.rs:654`).
+- Consumes: `pipeline::select_reader()` (`pipeline.rs:~612`, currently private `async fn`), `crate::reader::ThemeReader::read`, `crate::detect::detect_reduced_motion()` (`detect.rs:662`, the uncached variant).
 - Produces: `pub fn AccessibilityPreferences::from_system() -> AccessibilityPreferences`; the connector's preset path and README use it.
 
-Resolution of an ambiguity in §11.2 ("on every platform `reduce_motion` comes from `detect::prefers_reduced_motion()`"): the reader's value is kept where a reader supplies one (KDE's `AnimationDurationFactor`, GNOME's portal), and `prefers_reduced_motion()` is OR-ed in, so macOS and Windows (whose readers do not fill the struct) get reduce-motion detection and Linux keeps today's coverage. Nothing is ever turned *off* by the fallback.
+Resolution of an ambiguity in §11.2 ("on every platform `reduce_motion` comes from `detect::detect_reduced_motion()`"): the reader's value is kept where a reader supplies one (KDE's `AnimationDurationFactor`, GNOME's portal), and `detect_reduced_motion()` is OR-ed in, so macOS and Windows (whose readers do not fill the struct) get reduce-motion detection and Linux keeps today's coverage. Nothing is ever turned *off* by the fallback. The **uncached** `detect_reduced_motion()` is used, not `prefers_reduced_motion()`: the latter caches its first answer in a process-wide `OnceLock` (`detect.rs:654-656, 856-857`), while `from_system()` re-reads the platform reader on every call and is what a caller polls before `apply_accessibility`; mixing a cached and an uncached source would freeze the fallback at its first value.
 
 - [ ] **Step 1: Write the failing test** in the `#[cfg(test)]` module of `native-theme/src/lib.rs`:
 
@@ -309,7 +309,7 @@ Resolution of an ambiguity in §11.2 ("on every platform `reduce_motion` comes f
             assert_eq!(prefs.text_scaling_factor, sys.accessibility.text_scaling_factor);
             assert_eq!(prefs.high_contrast, sys.accessibility.high_contrast);
             assert_eq!(prefs.reduce_transparency, sys.accessibility.reduce_transparency);
-            // reduce_motion may additionally be true via detect::prefers_reduced_motion().
+            // reduce_motion may additionally be true via detect::detect_reduced_motion().
             assert!(prefs.reduce_motion || !sys.accessibility.reduce_motion);
         }
     }
@@ -332,7 +332,7 @@ In `native-theme/src/pipeline.rs` add, directly after `from_system_inner` (same 
 /// runs the same platform reader `from_system_inner` would run and returns its
 /// accessibility block without merging or resolving a theme. Where no reader
 /// is available (or it fails) the defaults are used. `reduce_motion` is OR-ed
-/// with [`crate::detect::prefers_reduced_motion`], which covers macOS and
+/// with [`crate::detect::detect_reduced_motion`], which covers macOS and
 /// Windows, whose readers do not fill the struct (spec §11.2).
 pub(crate) async fn accessibility_from_system_inner() -> crate::AccessibilityPreferences {
     let mut prefs = match select_reader().await {
@@ -343,7 +343,7 @@ pub(crate) async fn accessibility_from_system_inner() -> crate::AccessibilityPre
         None => crate::AccessibilityPreferences::default(),
     };
     if !prefs.reduce_motion {
-        prefs.reduce_motion = crate::detect::prefers_reduced_motion();
+        prefs.reduce_motion = crate::detect::detect_reduced_motion();
     }
     prefs
 }
@@ -358,7 +358,7 @@ impl AccessibilityPreferences {
     /// Runs the same platform reader [`SystemTheme::from_system`] runs (KDE
     /// `kdeglobals`, GNOME portal + gsettings) and takes its accessibility
     /// block; `reduce_motion` is additionally read through
-    /// [`crate::detect::prefers_reduced_motion`] on every platform. Fields no
+    /// [`crate::detect::detect_reduced_motion`] on every platform. Fields no
     /// reader supplies keep their defaults. Never fails: with no reader or a
     /// failing reader the defaults are returned.
     ///
@@ -405,7 +405,7 @@ git commit -m "feat(native-theme): AccessibilityPreferences::from_system()
 
 An extraction of the reader path, not new detection: the same KDE/GNOME
 reader fills the struct, reduce_motion is OR-ed with
-detect::prefers_reduced_motion() so macOS and Windows are covered too."
+detect::detect_reduced_motion() so macOS and Windows are covered too."
 ```
 
 ---
@@ -1628,6 +1628,22 @@ field left at transparent black."
     }
 ```
 
+and in `config.rs` `mod tests` (add `use gpui_component::highlighter::HighlightTheme;`):
+
+```rust
+    /// D41: the config carries upstream's default highlighter style for its
+    /// mode, so `Theme::change` to this mode switches code highlighting too.
+    #[test]
+    fn to_theme_config_carries_the_default_highlight_style_for_its_mode() {
+        let resolved = test_resolved();
+        let prefs = AccessibilityPreferences::default();
+        let dark = to_theme_config(&resolved, "H", GpuiThemeMode::Dark, &prefs);
+        let light = to_theme_config(&resolved, "H", GpuiThemeMode::Light, &prefs);
+        assert_eq!(dark.highlight.as_ref(), Some(&HighlightTheme::default_dark().style));
+        assert_eq!(light.highlight.as_ref(), Some(&HighlightTheme::default_light().style));
+    }
+```
+
 - [ ] **Step 2: Run them to verify they fail**
 
 ```bash
@@ -1738,6 +1754,16 @@ pub fn to_theme_config(
     let radius_lg = d.border.corner_radius_lg.max(0.0).round() as usize;
     let tc = to_theme_color(resolved, is_dark, prefs.reduce_transparency);
     let colors = theme_color_to_config_colors(&tc);
+    // D41: upstream's own default highlighter style for this mode. Theme::change
+    // installs a config's highlight as highlight_theme only when it is Some
+    // (gpui-component 0.6.0 src/theme/schema.rs:1066-1073) and otherwise keeps
+    // the previous mode's; to_theme sets Theme.highlight_theme to this same
+    // default directly, so both paths agree.
+    let highlight = if is_dark {
+        gpui_component::highlighter::HighlightTheme::default_dark()
+    } else {
+        gpui_component::highlighter::HighlightTheme::default_light()
+    };
     ThemeConfig {
         name: SharedString::from(name.to_string()),
         mode,
@@ -1750,12 +1776,13 @@ pub fn to_theme_config(
         radius_lg: Some(radius_lg),
         shadow: Some(d.border.shadow_enabled),
         colors,
+        highlight: Some(highlight.style.clone()),
         ..ThemeConfig::default()
     }
 }
 ```
 
-(Keep the existing explanatory comments about `highlight` and `is_default`.)
+(Delete the existing comments saying `highlight` is left at `None`, `config.rs:24-27` and `:56-58`; keep the `is_default` comment.)
 
 - [ ] **Step 4: Update every call site and doc example**
 
@@ -2075,17 +2102,22 @@ mod apply_tests {
         AccessibilityPreferences { reduce_motion, ..AccessibilityPreferences::default() }
     }
 
-    /// A dark preset whose splitter colours differ from upstream's projection
-    /// sources (`border`, `drag_border`), so restoring them is observable.
-    fn preset_with_distinct_splitter(prefs: &AccessibilityPreferences) -> (GpuiTheme, ResolvedTheme) {
-        for info in Theme::list_presets() {
-            if let Ok((theme, resolved)) = from_preset(info.key, true, prefs)
-                && resolved.splitter.divider_color != resolved.defaults.border.color
-            {
-                return (theme, resolved);
-            }
-        }
-        panic!("no preset distinguishes the splitter divider from the border colour");
+    /// The dark catppuccin preset, with the precondition every observer test
+    /// relies on: the native *active* handle colour (`splitter.hover_color`)
+    /// differs from `drag_border`, which upstream's projection writes there.
+    /// `handle` cannot serve as the observable: every preset inherits
+    /// `splitter.divider_color` from `defaults.border.color`
+    /// (`docs/inheritance-rules.toml:238`), which is also what upstream writes,
+    /// so that slot holds the same value whichever side wrote it.
+    fn preset_for_observer_tests(prefs: &AccessibilityPreferences) -> (GpuiTheme, ResolvedTheme) {
+        let (theme, resolved) =
+            from_preset("catppuccin-mocha", true, prefs).expect("preset should load");
+        assert_ne!(
+            colors::rgba_to_hsla(resolved.splitter.hover_color),
+            theme.drag_border,
+            "precondition: the native active-handle colour must differ from upstream's drag_border"
+        );
+        (theme, resolved)
     }
 
     /// A preset whose light and dark variants resolve to different backgrounds.
@@ -2109,7 +2141,7 @@ mod apply_tests {
     #[gpui::test]
     fn apply_installs_and_survives_theme_change(cx: &mut TestAppContext) {
         let prefs = prefs(true);
-        let (theme, resolved) = preset_with_distinct_splitter(&prefs);
+        let (theme, resolved) = preset_for_observer_tests(&prefs);
         let handle = colors::rgba_to_hsla(resolved.splitter.divider_color);
         let active = colors::rgba_to_hsla(resolved.splitter.hover_color);
         let expected_mode = if resolved.scrollbar.overlay_mode {
@@ -2130,23 +2162,23 @@ mod apply_tests {
             assert_eq!(base.resizable.active_handle, Some(active));
             assert!(cx.reduce_motion());
             assert!(cx.native_theme().and_then(|t| t.resolved(cx)).is_some());
-            // Upstream's projection would write `border` here; the precondition
-            // makes the restore assertion below meaningful.
-            assert_ne!(GpuiTheme::global(cx).border, handle);
+            // Upstream's projection writes `drag_border` into active_handle; the
+            // helper's precondition makes the restore assertions below meaningful.
+            assert_ne!(GpuiTheme::global(cx).drag_border, active);
             GpuiTheme::change(GpuiThemeMode::Dark, None, cx); // rebuilds gpui_base::Theme
         });
         cx.update(|cx| {
             assert_eq!(
-                gpui_base::Theme::global(cx).resizable.handle,
-                Some(handle),
+                gpui_base::Theme::global(cx).resizable.active_handle,
+                Some(active),
                 "observer restored the native value after the first rebuild"
             );
             GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
         });
         cx.update(|cx| {
             assert_eq!(
-                gpui_base::Theme::global(cx).resizable.handle,
-                Some(handle),
+                gpui_base::Theme::global(cx).resizable.active_handle,
+                Some(active),
                 "and after the second rebuild (no stale reapplying flag)"
             );
         });
@@ -2160,16 +2192,16 @@ mod apply_tests {
     #[gpui::test]
     fn apply_then_change_in_the_same_update_keeps_overrides(cx: &mut TestAppContext) {
         let prefs = AccessibilityPreferences::default();
-        let (theme, resolved) = preset_with_distinct_splitter(&prefs);
-        let handle = colors::rgba_to_hsla(resolved.splitter.divider_color);
+        let (theme, resolved) = preset_for_observer_tests(&prefs);
+        let active = colors::rgba_to_hsla(resolved.splitter.hover_color);
         cx.update(|cx| {
             apply(theme, &resolved, &prefs, cx);
             GpuiTheme::change(GpuiThemeMode::Dark, None, cx); // same update: observer not yet active
         });
         cx.update(|cx| {
             assert_eq!(
-                gpui_base::Theme::global(cx).resizable.handle,
-                Some(handle),
+                gpui_base::Theme::global(cx).resizable.active_handle,
+                Some(active),
                 "the deferred re-write restored the overrides after a same-update rebuild"
             );
         });
@@ -2180,7 +2212,7 @@ mod apply_tests {
     #[gpui::test]
     fn apply_without_stored_variant_falls_back(cx: &mut TestAppContext) {
         let prefs = AccessibilityPreferences::default();
-        let (theme, resolved) = preset_with_distinct_splitter(&prefs); // stores dark only
+        let (theme, resolved) = preset_for_observer_tests(&prefs); // stores dark only
         cx.update(|cx| apply(theme, &resolved, &prefs, cx));
         cx.update(|cx| GpuiTheme::change(GpuiThemeMode::Light, None, cx));
         cx.update(|cx| {
@@ -2243,6 +2275,9 @@ mod apply_tests {
                 colors::hsla_to_hex(colors::rgba_to_hsla(dark.button.primary_background)),
                 "button_* fields survive the config round trip"
             );
+            // D41: the config carries the mode's default highlighter style, so the
+            // switch to dark also switched code highlighting.
+            assert_eq!(styled.highlight_theme.appearance, GpuiThemeMode::Dark);
             assert!(cx.native_theme().and_then(|t| t.resolved(cx)).is_some());
         });
     }
@@ -3421,7 +3456,7 @@ Expected: `naga v29.x`, `codespan-reporting v0.13.x`; the workspace check succee
 
 - [ ] **Step 2: Remove the soft gates**
 
-In `publish.yml`: delete `continue-on-error: true` from the four connector steps (clippy, test, documentation, publish), drop "(soft)" from their names, and delete the two G11 comment blocks. If Step 1 failed instead, keep the gates and replace the G11 comment with the new cause.
+In `publish.yml`: delete `continue-on-error: true` from the four connector steps (clippy, test, documentation, publish), drop "(soft)" from their names, and delete the three G11 comments (`:38-39`, the "soft-gated for G11" note in the dependency-order comment at `:90`, and `:156-158`). If Step 1 failed instead, keep the gates and replace the G11 comment with the new cause.
 
 - [ ] **Step 3: Re-verify the apt list against what the Linux platform crate links**
 
@@ -3464,8 +3499,9 @@ gpui_kit::application().run(|cx| {
         Ok(sys) => native_theme_gpui::apply_system_theme(&sys, cx),
         Err(_) => {
             let prefs = native_theme_gpui::AccessibilityPreferences::from_system();
-            let (theme, resolved) = native_theme_gpui::from_preset("adwaita", false, &prefs)?;
-            native_theme_gpui::apply(theme, &resolved, &prefs, cx);
+            if let Ok((theme, resolved)) = native_theme_gpui::from_preset("adwaita", false, &prefs) {
+                native_theme_gpui::apply(theme, &resolved, &prefs, cx);
+            }
         }
     }
     // ...
@@ -3593,10 +3629,11 @@ Confirm the docs.rs build of `native-theme-gpui` succeeds on the new stack (`htt
 2. **Ten duplicates, not renames.** Spec §10.2 and rationale §2.15 were corrected on 2026-09-05 (rationale error 39): the ten gpui-named Lucide files are byte-identical to files already present, so Task 5 deletes them; Lucide ends at 107 files, Material at 100.
 3. **`reapplying` is set only by the observer** (spec §3.3 / §8.1 corrected, rationale error 40): the subscription activates after the effects `apply` queues, so a flag set in `apply` would go stale. Task 10's test runs `Theme::change` twice.
 4. **Fallback for the resize handle** when no variant is stored for the new mode: `border` / `drag_border` from the styled theme, upstream's own projection; now stated in spec §3.3 step 2.
-5. **`from_system()` reduce-motion rule** (§11.2 ambiguity): the reader's value where the reader supplies one, OR-ed with `detect::prefers_reduced_motion()`; never turned off by the fallback.
+5. **`from_system()` reduce-motion rule** (§11.2 ambiguity): the reader's value where the reader supplies one, OR-ed with `detect::detect_reduced_motion()`; never turned off by the fallback.
 6. **First-install gap** (D38, rationale error 46): the observer's subscription activates at the end of the flush that installs it, so `install_observer_once` also queues one deferred re-write of the overrides; the test `apply_then_change_in_the_same_update_keeps_overrides` runs `apply` and `Theme::change` in one update. Now in spec §3.3 and §12.
 7. **Star states** (D39, rationale errors 48–49): Lucide `StarFill` returns `None` (Lucide has no filled star; the hollow `star` would stand for two states); the freedesktop table maps `Star` to `non-starred` and `StarFill` to `starred`. Now in spec §10.1, §10.2, §10.4.
 8. **Connector docs.rs targets dropped** (D40, rationale errors 50–51) and **MSRV-aware re-update** (spec §4.3): the connector's `[package.metadata.docs.rs]` keeps `all-features` and declares no `targets`, because its only platform-gated public items are Linux-gated and the other two targets would add nothing but the first cross-target build of gpui-pre's platform crates; this reverses commit `ce0fdee` for this one crate and amends its unreleased CHANGELOG entry (Task 15). Task 1 re-runs `cargo update` after declaring the floor because `resolver = "3"` resolves against it.
+9. **Highlighter style in the config** (D41, rationale error 52): `to_theme_config` sets `highlight` to upstream's default style for its mode, otherwise `Theme::change` to the other mode keeps the previous mode's code highlighting. **Observer tests assert `active_handle`** (rationale error 53): every preset inherits both splitter colours from the border colour, so `handle` holds the same value whether upstream or the connector wrote it. **`from_system()` uses the uncached `detect_reduced_motion()`** (rationale error 54).
 
 Design changes made during the review of 2026-09-05 and written into the spec (§8.1) and rationale (D34, D35, errors 41–43): `apply` installs a `ThemeConfig` for every stored variant, so `Theme::change` reproduces native colours in both modes; `apply_accessibility` rebuilds the styled theme from the stored variant; the re-apply helper takes a `mark` flag so `apply`'s own write never sets `reapplying`. From the third review (D36, D37, errors 44–45): the config hex export keeps alpha as `#rrggbbaa`, and `apply` ends with `refresh_windows`.
 
