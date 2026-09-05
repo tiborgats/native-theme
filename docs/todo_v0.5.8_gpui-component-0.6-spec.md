@@ -137,7 +137,7 @@ versions.
 | `LayoutTheme { widget_gap, container_margin, window_margin, section_gap }`, all `Option<f32>`, lives on `Theme`; all 16 static presets define all four keys; the 4 `*-live` presets define none and take theirs from the platform reader merge; platform-facts §2.20 records no layout defaults for Windows ("app chooses"), none for macOS `container_margin`, none for KDE `section_gap`; `SystemTheme` has no `layout` field (approved 2026-08-10, pending) | `model/mod.rs:265-266`; `src/presets/*.toml`; `docs/platform-facts.md:1427-1435`; `pipeline.rs:46, 120-126`; `lib.rs:343-351`; `docs/todo.md` |
 | platform-facts treats radio buttons as checkboxes with a circular indicator: `label_gap` and `indicator_width` are defined for both, "Radio buttons use the same colors but with circular `border.corner_radius`" | `docs/platform-facts.md:947, 969, 1191-1210` |
 | platform-facts has no scrollbar thumb radius or track border colour | `docs/platform-facts.md` (search) |
-| Lucide bundle: 103 files, 99 name-table entries; **all 103 are Lucide icons** from tag **0.577.0** (byte-identical for sampled files). Ten are stored under gpui-component's icon names instead of Lucide's: `close` and `window-close` = `x`, `dash` and `window-minimize` = `minus`, `inspect` = `scan`, `resize-corner` = `grip`, `sort-ascending` = `arrow-up-narrow-wide`, `sort-descending` = `arrow-down-wide-narrow`, `window-maximize` = `maximize`, `window-restore` = `minimize-2` (path data identical after whitespace normalisation). The adding commit (`48f67c5`) records none of this. Nothing outside the connector uses those ten names: the role-based tables reference only `trash-2.svg` among the files affected by §10.2 (`bundled.rs:137, 163-164`), and the hand-written coverage test `lucide_by_name_covers_gpui_icons` (`bundled.rs:508`) lists them | `native-theme/icons/lucide`; `bundled.rs`; normalised comparison against the 0.577.0 files; repository grep |
+| Lucide bundle: 103 files, 99 name-table entries; **all 103 are Lucide icons** from tag **0.577.0** (byte-identical for sampled files). Ten are stored under gpui-component's icon names instead of Lucide's: `close` and `window-close` = `x`, `dash` and `window-minimize` = `minus`, `inspect` = `scan`, `resize-corner` = `grip`, `sort-ascending` = `arrow-up-narrow-wide`, `sort-descending` = `arrow-down-wide-narrow`, `window-maximize` = `maximize`, `window-restore` = `minimize-2` (path data identical after whitespace normalisation); the bundle already holds all eight of those files under their Lucide names, byte-identical, so the ten are duplicates, and the four files absent from the hand-written name table are `scan`, `grip`, `arrow-up-narrow-wide` and `arrow-down-wide-narrow`. The adding commit (`48f67c5`) records none of this. Nothing outside the connector uses those ten names: the role-based tables reference only `trash-2.svg` among the files affected by §10.2 (`bundled.rs:137, 163-164`), and the hand-written coverage test `lucide_by_name_covers_gpui_icons` (`bundled.rs:508`) lists them | `native-theme/icons/lucide`; `bundled.rs`; normalised comparison against the 0.577.0 files; repository grep |
 | Lucide 1.41.0 (2026-09-04) contains the 14 new names and every underlying icon above; it lacks `github` (brand icons removed upstream, commit `aa8f74eb`) and `trash-2`, which became a deprecated alias of `trash` whose glyph is identical to the old `trash-2` (path data compared) | git tree of tag 1.41.0; `icons/trash.json` at 1.41.0 |
 | Material bundle: `star.svg` and `star_border.svg` have identical path data (the Symbols outlined hollow star); `star_border` backs `IconName::StarOff`; Material Symbols has no star-off glyph (`star_off`, `star_outline`, `star_border` do not exist; `star_rate`, `star_half` do) | `native-theme/icons/material`; `bundled.rs:399`; connector `icons.rs:326`; GitHub contents API |
 | Material bundle: 87 files, 76 name-table entries; `search`, `settings`, `star` are byte-identical to Material Symbols **Outlined 24px** (`symbols/web/<n>/materialsymbolsoutlined/<n>_24px.svg`); `warning` and `info` match no upstream variant probed | `native-theme/icons/material`; comparisons |
@@ -249,7 +249,9 @@ Upstream rebuilds the base theme with fixed scrollbar styles in
    and picks the stored variant for that mode. If no variant is stored for
    that mode, it takes geometry from the stored variant of the other mode and
    colours from the styled theme's `scrollbar`, `scrollbar_thumb`,
-   `scrollbar_thumb_hover` (active = hover, as upstream does).
+   `scrollbar_thumb_hover` (active = hover, as upstream does) and the
+   resize-handle colours from the styled theme's `border` / `drag_border`,
+   again upstream's own projection (`theme/mod.rs:296-298`).
 3. Computes `ScrollbarGeometry` and `ResizableTheme` from that data, sets
    `reapplying`, and writes them through `gpui_base::Theme::global_mut(cx)`,
    preserving `mode()` and `motion()` by cloning the existing scrollbar theme.
@@ -258,8 +260,14 @@ Why this terminates: `global_mut` queues one notification; upstream's
 pending-mark deduplication (gpui-pre `src/app.rs:1662-1664`) collapses any
 duplicates; delivery removes the mark before calling observers
 (`:1817-1821`), so the observer's own write yields exactly one further
-delivery, which step 1 absorbs. `apply` itself sets `reapplying` before its
-own write for the same reason. The `#[gpui::test]` in §12 runs
+delivery, which step 1 absorbs. `apply` itself does **not** set
+`reapplying`: `observe_global` defers the subscription's activation to the end
+of the current effect flush (gpui-pre `src/app.rs:2087-2099`), so on the first
+`apply` the observer never receives the notification `apply` queues, and a
+flag set there would stay set and swallow the next upstream rebuild. Instead,
+the first delivery the active observer does receive re-applies the same values
+once (idempotent), and that write is the one the flag absorbs. The
+`#[gpui::test]` in §12 runs
 `Theme::change` after `apply` and asserts both that the overrides survived
 and that the test returns.
 
@@ -626,8 +634,9 @@ pub mod base_layer {
 }
 ```
 
-`apply` order: store → styled global → `sync_base` → `apply_overrides` (with
-`reapplying` set) → `set_reduce_motion` → observer once. Mode is still set on
+`apply` order: store → styled global → `sync_base` → `apply_overrides` →
+`set_reduce_motion` → observer once; `reapplying` is set only by the
+observer's own writes (§3.3). Mode is still set on
 the styled theme in `to_theme` and reaches the base through `sync_base`.
 
 **No-panic guards.** `gpui_component::Theme::global` and `global_mut` call
@@ -790,14 +799,14 @@ Bundle upgraded to **Lucide 1.41.0** (2026-09-04, the latest release) and
 stored under **Lucide's own file names**, so the directory is a subset
 mirror of `lucide-icons/lucide/icons` at one tag with one exception:
 
-- The ten files stored under gpui-component's names (§1.3) are renamed to
-  the Lucide icons they are; the two pairs that were the same icon twice
-  collapse: `close.svg` and `window-close.svg` become `x.svg`, `dash.svg` and
-  `window-minimize.svg` become `minus.svg`; `inspect.svg` → `scan.svg`,
-  `resize-corner.svg` → `grip.svg`, `sort-ascending.svg` →
-  `arrow-up-narrow-wide.svg`, `sort-descending.svg` →
-  `arrow-down-wide-narrow.svg`, `window-maximize.svg` → `maximize.svg`,
-  `window-restore.svg` → `minimize-2.svg`.
+- The ten files stored under gpui-component's names (§1.3) are byte-identical
+  duplicates of files the bundle already holds under Lucide's names (`x.svg`,
+  `minus.svg`, `scan.svg`, `grip.svg`, `arrow-up-narrow-wide.svg`,
+  `arrow-down-wide-narrow.svg`, `maximize.svg`, `minimize-2.svg`). The ten are
+  deleted: `close.svg`, `window-close.svg`, `dash.svg`, `window-minimize.svg`,
+  `inspect.svg`, `resize-corner.svg`, `sort-ascending.svg`,
+  `sort-descending.svg`, `window-maximize.svg`, `window-restore.svg`. Nothing
+  is renamed.
 - `trash-2.svg` becomes `trash.svg`, the name Lucide 1.x made canonical; the
   glyph is identical. The three role-table paths that name it
   (`bundled.rs:137, 163-164`) are updated.
@@ -815,8 +824,9 @@ connector does not use `trash-2` at all: `IconName::Delete` maps to Lucide's
 `delete` (`icons.rs:167`), and `trash-2.svg` is used only by native-theme's
 role tables for `ActionDelete`, `TrashEmpty` and `TrashFull`
 (`bundled.rs:137, 163-164`), which are what the rename to `trash.svg`
-touches. File count: 103 − 2 duplicates + 14 new = 115. The 14 new files
-come from the same tag.
+touches. File count: Lucide 103 − 10 duplicates + 14 new = 107 (the
+`trash-2` → `trash` rename is count-neutral); Material 87 − 1 (`star_border`)
++ 14 new = 100. The 14 new Lucide files come from the same tag.
 
 | Variant | Lucide name | Action |
 |---------|-------------|--------|
@@ -892,8 +902,8 @@ and Adwaita resolution tests are the gate.
    listings (feature-gated as today, `rerun-if-changed` on the directories).
    The role-based tables stay hand-written. The 99-of-103 and 76-of-87 gaps
    disappear by construction.
-4. **One exception, not eleven.** Because the ten files take Lucide's names
-   (§10.2), the Lucide set is described by one rule in the manifest
+4. **One exception, not eleven.** Because the ten duplicates are gone and
+   every remaining file carries Lucide's name (§10.2), the Lucide set is described by one rule in the manifest
    (repository, tag `1.41.0`, `icons/{name}.svg`) plus one per-file entry:
    `github.svg` pinned to tag `0.577.0`. The Material set is one rule
    (repository, commit `0cbb08816df0`, the Outlined 24px path pattern) plus
@@ -959,7 +969,7 @@ contrast are recorded in `docs/todo.md` as research items, not guessed.
 | geometry builder tests (§9.6), including `s = 1.5` | headless | values and scaling correct |
 | `scrollbar_geometry` tests | headless | widths, inset, min length, colours; `ScrollbarGeometry` derives `PartialEq + Debug` because `ScrollbarStyles` does not (`scrollbar.rs:589, 616, 655`) |
 | `to_theme` scaling test | headless | `font_size == px(size × 1.5)`; config copies scaled |
-| `#[gpui::test] apply_installs_and_survives_theme_change` | headless App | after `init` + `apply`: styled mode as requested, base `scrollbar.mode()` as expected, `resizable.handle` = splitter colour, `cx.reduce_motion()` follows prefs; after `Theme::change(other mode)`: `resizable.handle` equals the stored variant's splitter colour again (proves the observer ran) and the test returns (proves termination) |
+| `#[gpui::test] apply_installs_and_survives_theme_change` | headless App | after `apply` alone (it initialises gpui-component itself, D29): styled mode as requested, base `scrollbar.mode()` as expected, `resizable.handle` = splitter colour, `cx.reduce_motion()` follows prefs; after `Theme::change` with the *same* mode (which rebuilds the base theme), run twice: `resizable.handle` equals the stored variant's splitter colour after each change (proves the observer ran and left no stale `reapplying` flag) and the test returns (proves termination); the preset is chosen so the splitter colour differs from `border`, which upstream would write |
 | `#[gpui::test] apply_without_stored_variant_falls_back` | headless App | observer fallback path (§3.3 step 2) |
 | MSRV checks (§4.4) | toolchain | both floors true |
 | `./pre-release-check.sh` | workspace | fmt, clippy, panic lint, package |
@@ -1095,7 +1105,8 @@ Ordered; each step ends at a mechanical gate.
 3. **Connector manifest** (§4.1); provisional `rust-version = "1.95"`.
 4. **Library first pass** (§5.1). Gate: only the three non-exhaustive errors remain.
 5. **Icon bundles** (§10.2-10.5): manifest, refresh script, generated tables,
-   eleven renames with the three role-table paths, `star_border` removal,
+   ten duplicate deletions, the `trash-2` → `trash` rename with its three
+   role-table paths, `star_border` removal,
    28 new files, refresh of both sets. Gate: `cargo test -p native-theme`.
 6. **Icon tables** (§10.1, 10.6), `Option` return, `ALL_ICON_NAMES`, tripwire 101.
 7. **Colour mapping** (§6); tripwire 139; default-field test.

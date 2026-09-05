@@ -231,7 +231,9 @@ Lucide icons stored under gpui-component's icon names: `close` and
 `window-close` are `x`, `dash` and `window-minimize` are `minus`, `inspect` is
 `scan`, `resize-corner` is `grip`, `sort-ascending` is
 `arrow-up-narrow-wide`, `sort-descending` is `arrow-down-wide-narrow`,
-`window-maximize` is `maximize`, `window-restore` is `minimize-2`. So the
+`window-maximize` is `maximize`, `window-restore` is `minimize-2`; all eight
+of those Lucide-named files are already in the bundle, byte-identical, so the
+ten are plain duplicates. So the
 bundle is entirely Lucide and entirely covered by `LICENSE-LUCIDE.txt`; what
 was missing is a record of the renames, without which a refresh script cannot
 update those files and a reader cannot verify them. Two Material files
@@ -241,8 +243,8 @@ is a duplicate of `star.svg`. The name tables trail the directories
 
 | Option | Outcome |
 |--------|---------|
-| **Store every file under its upstream name; `SOURCES.toml` with one rule per set plus one per-file exception each; a coverage test; `scripts/refresh-icons.sh`; generated name tables** | **Chosen.** The project's rule is "only genuine source files"; with upstream names the manifest is one rule per set, the refresh script needs no translation table, the two duplicate pairs (`x`, `minus`) collapse, and `lucide_name_for_gpui_icon` returns what its name promises. Nothing outside the connector uses the old names (repository grep); the role tables reference only `trash-2.svg`, at three lines. Generation removes the table drift and the hand-written coverage test. The rename is breaking for `LucideLoader::new` with the old names, which pre-1.0 is acceptable and is recorded in the changelog. |
-| Keep gpui-component's names and record each rename in the manifest | Rejected: eleven per-file exceptions instead of one, two duplicate files, a `lucide_name_for_gpui_icon` that keeps returning non-Lucide names, and a translation table the refresh script must maintain forever. |
+| **Store every file under its upstream name; `SOURCES.toml` with one rule per set plus one per-file exception each; a coverage test; `scripts/refresh-icons.sh`; generated name tables** | **Chosen.** The project's rule is "only genuine source files"; with upstream names the manifest is one rule per set, the refresh script needs no translation table, the ten duplicates are deleted, and `lucide_name_for_gpui_icon` returns what its name promises. Nothing outside the connector uses the old names (repository grep); the role tables reference only `trash-2.svg`, at three lines. Generation removes the table drift and the hand-written coverage test. The rename is breaking for `LucideLoader::new` with the old names, which pre-1.0 is acceptable and is recorded in the changelog. |
+| Keep gpui-component's names and record each rename in the manifest | Rejected: eleven per-file exceptions instead of one, ten duplicate files, a `lucide_name_for_gpui_icon` that keeps returning non-Lucide names, and a translation table the refresh script must maintain forever. |
 | Leave the bundle undocumented | Rejected: adding 28 files to a bundle whose contents cannot be traced would deepen the problem, and the first refresh would silently skip the ten files. |
 | Hand-written table arms plus an invariant test | Rejected: generation makes the invariant true by construction and removes 200 lines of `include_bytes!` arms. |
 
@@ -406,7 +408,7 @@ specification requires a visual check of every `close` and `approximate` row.
   the base theme with a readable, comparable value that upstream rewrites on
   `Theme::change`; the scrollbar styles are opaque (§2.20). The test
   returning is the termination proof: an observer loop would hang the test
-  and fail CI's timeout, which is the intended failure mode.
+  and fail CI's timeout, which is the intended failure mode. `Theme::change` is called with the *same* mode (with one stored variant, a different mode exercises the fallback, which has its own test) and twice, so a flag left set by the first delivery would fail the second assertion (error 40).
 - **`no_theme_color_field_is_left_at_default`.** The `size_of` tripwire
   counts fields but cannot see an unassigned one; comparing every field with
   the zero `Hsla` catches exactly the failure 0.6.0 introduced, twenty-eight
@@ -474,7 +476,7 @@ moment.
 | D20 | Icon tables return `Option`; bundles gain genuine files | §2.9 |
 | D21 | Lucide bundle upgraded to 1.41.0; `github.svg` pinned to 0.577.0 | §2.10 |
 | D22 | Material bundle refreshed to HEAD `0cbb08816df0`; `StarOff` → `None`; duplicate `star_border.svg` removed | §2.11; no star-off glyph exists in Material Symbols |
-| D23 | Bundle files under upstream names (ten Lucide renames, `trash-2` → `trash`, two duplicates removed); `SOURCES.toml` with one exception per set; refresh script; generated tables | §2.15 |
+| D23 | Bundle files under upstream names (ten duplicate files deleted, `trash-2` → `trash`); `SOURCES.toml` with one exception per set; refresh script; generated tables | §2.15 |
 | D24 | Dependency refresh with recorded exceptions | §2.14 |
 | D25 | Two measured MSRV floors | §2.16 |
 | D26 | `SystemTheme.layout` and `AccessibilityPreferences::from_system()` added | §2.17 |
@@ -600,7 +602,8 @@ overrides.
 ## 7 -- Errors found and corrected during design
 
 Kept so the reasoning can be audited. Items 1–17 are from the first pass,
-18–26 from the second, 27–33 from the third, 34–38 from the fourth.
+18–26 from the second, 27–33 from the third, 34–38 from the fourth, 39–40
+from the implementation-plan pass.
 
 1. **First field diff was wrong** (46 fields from a bad `awk` range); corrected by diffing the two upstream structs: 108 → 139.
 2. **`grep` undercounted 0.5.1 fields as 103**; the `size_of` tripwire's 108 is authoritative.
@@ -633,13 +636,15 @@ Kept so the reasoning can be audited. Items 1–17 are from the first pass,
 29. **`apply` was specified as if the styled global always exists.** `Theme::global`/`global_mut` are thin wrappers over GPUI's panicking accessors. The specification now requires the `has_global` check with `init`, and `try_global` in the observer and accessors.
 30. **Lucide 1.41.0 was said to have removed two icons the connector needs.** `trash-2` was renamed to `trash` with an identical glyph and kept as a deprecated alias; only `github` was removed, with the rest of Lucide's brand icons. The bundle now upgrades to 1.41.0 with `github.svg` pinned (§2.10).
 31. **"Material `Star`" was posed as an open question.** The real finding is that `star_border.svg` is a byte-different duplicate of `star.svg` (same path data) and was backing `IconName::StarOff`, a slashed star, with a plain hollow star. Material Symbols has no star-off glyph; `StarOff` returns `None` in the Material set and the duplicate is removed. `Star` stays on the hollow `star`, `StarFill` gets the new `star_fill1`.
-32. **The ten renamed files were first to be "recorded, not changed".** Once it was verified that nothing outside the connector uses the gpui-component-style names and that the role tables touch only `trash-2.svg`, storing the files under Lucide's names became the cleaner design: one manifest exception instead of eleven, two duplicates gone, and a table that returns real Lucide names (§2.15).
+32. **The ten renamed files were first to be "recorded, not changed".** Once it was verified that nothing outside the connector uses the gpui-component-style names and that the role tables touch only `trash-2.svg`, storing the files under Lucide's names became the cleaner design: one manifest exception instead of eleven, ten duplicates gone, and a table that returns real Lucide names (§2.15).
 33. **Two spec sentences still described the files as non-Lucide after the correction.** The full re-read of both documents caught them (§10.1 and the rationale's §0 and §2.9); each now states the corrected finding.
 34. **The rationale recorded conclusions where it owed reasoning.** Icon-name choices, API shape, test design and task order appeared only as results in the specification. Prompted by the maintainer's observation about the two documents' relative size, §2.21–§2.25 were written and §4 extended to every limits row. The size ratio itself was not the defect (the project's egui pair is spec 5150 lines to rationale 1837); the missing arguments were.
 35. **`BatteryLow` was mapped to `battery_1_bar`.** Reading Lucide's path data shows one of three bars, a third; on Material's six-bar family that is `battery_2_bar`. `BatteryMedium`'s `battery_4_bar` was right for the wrong reason and is now labelled close, not approximate.
 36. **`MemoryStick` was mapped to Breeze `media-flash-memory-stick` on a name match.** Breeze has `devices/64/memory.svg`, a RAM module, which is what Lucide draws. Corrected to `memory`, exact.
 37. **The specification said the connector maps `Delete` to `trash`.** It maps `Delete` to Lucide's `delete` icon (`icons.rs:167`) and never used `trash-2`; only native-theme's role tables do. The `trash-2` → `trash` rename is therefore a native-theme change alone, and the sentence was corrected.
 38. **Glyph descriptions in the icon reasoning were written from memory.** Names and upstream existence were verified; glyph shapes for the Material `close` rows, `hub`, `developer_board`, `battery_low`, Breeze's `battery-missing` and `rating` were not. The descriptions were rewritten to say what was verified, and the specification now requires a visual check of every `close` row, not only the `approximate` ones.
+39. **The ten gpui-named files were described as renames with two collapsing pairs, and the Lucide file count after the milestone as 115.** Compared byte-for-byte while writing the implementation plan (2026-09-05): the bundle already holds all eight target files (`x`, `minus`, `scan`, `grip`, `arrow-up-narrow-wide`, `arrow-down-wide-narrow`, `maximize`, `minimize-2`), identical to the ten. They are deletions, not renames; the count becomes 107; and the four name-table gaps (99 of 103) are exactly the four canonical files the hand-written table never listed.
+40. **`apply` was specified to set the `reapplying` flag before its own write.** `App::observe_global` defers the subscription's activation to the end of the current effect flush (gpui-pre `src/app.rs:2087-2099`, `SubscriberSet::insert`), and effects run in order, so the notification `apply` queues is delivered before the observer is active; the flag would never be cleared and would swallow the next upstream rebuild. The flag is now set only by the observer's own writes; `apply` accepts one idempotent re-application on the first delivery. The observer test runs `Theme::change` twice to catch a stale flag.
 
 ---
 
