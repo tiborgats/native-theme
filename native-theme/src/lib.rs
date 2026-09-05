@@ -418,6 +418,11 @@ pub struct SystemTheme {
     /// exactly two across light/dark variants — `"breeze"` / `"breeze-dark"`;
     /// other platforms have one), so the `Arc<str>` dedup benefit does not apply.
     pub icon_theme: Cow<'static, str>,
+    /// Layout spacing shared by both variants: the platform reader's values
+    /// merged field-wise over the preset's, the same precedence the pipeline
+    /// uses for colours. `None` in a field means neither the platform nor the
+    /// preset specifies it (platform-facts §2.20); nothing is invented.
+    pub layout: LayoutTheme,
     /// OS-detected accessibility preferences (shared across variants).
     pub accessibility: AccessibilityPreferences,
 }
@@ -486,6 +491,9 @@ impl SystemTheme {
         merged.merge(&live_preset);
         merged.merge(&reader_as_theme);
 
+        // Shared across variants; read before the variants are moved out of `merged`.
+        let layout = merged.layout.clone();
+
         // Match on ReaderOutput for type-safe variant selection
         let (mut light, mut dark) = match &src.reader_output {
             ReaderOutput::Single { is_dark, .. } => {
@@ -530,6 +538,7 @@ impl SystemTheme {
             preset: self.preset.clone(),
             icon_set: self.icon_set,
             icon_theme: self.icon_theme.clone(),
+            layout,
             accessibility: self.accessibility.clone(),
         })
     }
@@ -657,6 +666,7 @@ mod system_theme_tests {
             preset: "catppuccin-mocha".into(),
             icon_set: IconSet::Lucide,
             icon_theme: "lucide".into(),
+            layout: LayoutTheme::default(),
             accessibility: AccessibilityPreferences::default(),
         };
         assert_eq!(
@@ -697,6 +707,7 @@ mod system_theme_tests {
             preset: "catppuccin-mocha".into(),
             icon_set: IconSet::Lucide,
             icon_theme: "lucide".into(),
+            layout: LayoutTheme::default(),
             accessibility: AccessibilityPreferences::default(),
         };
         assert_eq!(
@@ -737,6 +748,7 @@ mod system_theme_tests {
             preset: "catppuccin-mocha".into(),
             icon_set: IconSet::Lucide,
             icon_theme: "lucide".into(),
+            layout: LayoutTheme::default(),
             accessibility: AccessibilityPreferences::default(),
         };
         assert_eq!(

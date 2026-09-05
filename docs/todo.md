@@ -6,7 +6,7 @@
 
 ### `SystemTheme` — expose layout metrics
 
-- [ ] Add `pub layout: LayoutTheme` to `SystemTheme`. Approved 2026-08-10; see
+- [x] Add `pub layout: LayoutTheme` to `SystemTheme` (done in v0.5.8). Approved 2026-08-10; see
       `docs/todo_v0.6.0_egui-connector-spec.md` §16 Q-2 and honesty-ledger item
       21. Today `from_preset` can supply `Spacing::item_spacing` and
       `Spacing::window_margin` but `from_system` cannot, because `SystemTheme`

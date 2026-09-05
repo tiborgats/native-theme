@@ -91,6 +91,9 @@ pub(crate) fn run_pipeline(
             .unwrap_or_else(|| std::borrow::Cow::Owned(crate::model::icons::system_icon_theme()))
     };
 
+    // Shared across variants; read before the variants are moved out of `merged`.
+    let layout = merged.layout.clone();
+
     // Match on ReaderOutput for type-safe variant selection:
     // Single: active variant from merged, inactive from full preset.
     // Dual: both variants from merged.
@@ -137,6 +140,7 @@ pub(crate) fn run_pipeline(
         live_preset: preset_name.to_string(),
         icon_set,
         icon_theme,
+        layout,
         accessibility,
     })
 }
@@ -987,7 +991,7 @@ mod pipeline_tests {
     use crate::model::{LayoutTheme, Theme, ThemeMode};
     use crate::{ReaderOutput, ReaderResult};
 
-    use super::run_pipeline;
+    use super::{preset_as_reader, run_pipeline};
 
     /// Helper: build a ReaderResult from a preset for testing.
     fn reader_from_preset(preset_name: &str) -> ReaderResult {
@@ -1369,6 +1373,26 @@ accent_color = "#0066cc"
             !warnings.iter().any(|w| w.contains("icon_theme")),
             "lint_toml must not flag top-level icon_theme as unknown; warnings: {warnings:?}"
         );
+    }
+
+    /// §11.1: `SystemTheme.layout` is the reader's layout merged field-wise over
+    /// the preset's. On the preset-only path the reader *is* the full preset, so
+    /// the result equals full ⊕ live ⊕ full.
+    #[test]
+    fn system_theme_layout_is_the_merged_preset_layout() -> crate::Result<()> {
+        let reader = preset_as_reader("adwaita", crate::ColorMode::Light)?;
+        let sys = run_pipeline(reader, "adwaita-live", crate::ColorMode::Light)?;
+
+        let mut expected = Theme::preset("adwaita")?.layout;
+        expected.merge(&Theme::preset("adwaita-live")?.layout);
+        expected.merge(&Theme::preset("adwaita")?.layout);
+
+        assert_eq!(sys.layout, expected);
+        assert!(
+            sys.layout.widget_gap.is_some(),
+            "adwaita defines all four layout keys (spec §1.3)"
+        );
+        Ok(())
     }
 }
 
