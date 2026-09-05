@@ -8,6 +8,8 @@ Target toolkit: **gpui-component 0.6.0**, **gpui-base 0.6.0**, GPUI as the
 **`gpui-pre` 0.3.x** package; **gpui-kit 0.6.0** for the showcase example only
 Companion rationale:
 [`todo_v0.5.8_gpui-component-0.6-rationale.md`](todo_v0.5.8_gpui-component-0.6-rationale.md)
+Companion plan:
+[`todo_v0.5.8_gpui-component-0.6-plan.md`](todo_v0.5.8_gpui-component-0.6-plan.md)
 
 ---
 
@@ -215,6 +217,7 @@ ResolvedTheme + AccessibilityPreferences
 apply(theme, resolved, prefs, cx)
    1. store variant + prefs in NativeTheme (Global)
    2. *Theme::global_mut(cx) = theme
+   2b. ThemeConfig for the other stored variant     -> Theme::change(other) reproduces native colours (D34)
    3. Theme::sync_base(cx)                         upstream projection
    4. base_layer::apply_overrides(..)              native scrollbar geometry/colours, resize-handle colours
    5. cx.set_reduce_motion(prefs.reduce_motion)
@@ -427,7 +430,7 @@ Two floors, both measured, following commit `0319942`:
   the lowest up; declare the first that passes. Provisional value until
   measured: `1.95`.
 
-Both numbers go into the CHANGELOG and the crate READMEs.
+Both numbers go into the CHANGELOG, the connector README, the root README's MSRV badge, `CONTRIBUTING.md`, and the MSRV CI item in `docs/todo.md` (§13.7).
 
 ---
 
@@ -572,12 +575,18 @@ comment and recorded in the CHANGELOG.
 
 | Preference | Effect | Receiver |
 |------------|--------|----------|
-| `text_scaling_factor` | `Theme.font_size`, `mono_font_size` and their `ThemeConfig` copies are multiplied by `s` (§3.4); geometry text sizes and control heights (§9.4) | `Theme.font_size` → rem (`root.rs:579`) |
+| `text_scaling_factor` | `Theme.font_size`, `mono_font_size` and their `ThemeConfig` copies are multiplied by `s` (§3.4); geometry text sizes and control heights (§9.4); re-applied at runtime by `apply_accessibility` (§8.1) | `Theme.font_size` → rem (`root.rs:579`) |
 | `reduce_motion` | `cx.set_reduce_motion(v)` in `apply` / `apply_accessibility` | gpui-pre `App::set_reduce_motion` |
 | `reduce_transparency` | unchanged: overlay alpha in `colors.rs:391-396` | `ThemeColor.overlay` |
 | `high_contrast` | none; no GPUI or gpui-component receiver | §14 |
 
 `s` is `prefs.text_scaling_factor` if finite and `> 0.0`, else `1.0`.
+
+A runtime change of any preference goes through `apply_accessibility` (§8.1):
+with a variant stored for the current mode it rebuilds the styled theme from
+that variant with the new preferences, so scaling and transparency take effect
+without the application keeping `resolved`; reduce-motion is forwarded in every
+case.
 
 ---
 
@@ -589,7 +598,7 @@ comment and recorded in the CHANGELOG.
 /// Installed by `apply`; one per App.
 pub struct NativeTheme { /* light: Option<ResolvedTheme>, dark: Option<ResolvedTheme>,
                             accessibility: AccessibilityPreferences, reapplying: bool,
-                            observer_installed: bool */ }
+                            observer_installed: bool, last_is_dark: bool */ }
 impl Global for NativeTheme {}
 impl NativeTheme {
     /// The stored variant for the styled theme's current mode, if any.
@@ -609,13 +618,19 @@ impl<'a> Native<'a> {
     pub fn unscaled(resolved: &'a ResolvedTheme) -> Self;
 }
 
-/// Install `theme`; store `resolved` under the theme's mode; project into
-/// gpui-base; override base scrollbar and resize-handle styles; forward
+/// Install `theme`; store `resolved` under the theme's mode; install a
+/// `ThemeConfig` for the other stored variant (if any) under the same display
+/// name, so `Theme::change` reproduces native colours in either mode; project
+/// into gpui-base; override base scrollbar and resize-handle styles; forward
 /// reduce-motion; install the re-apply observer once.
 pub fn apply(theme: GpuiTheme, resolved: &ResolvedTheme, prefs: &AccessibilityPreferences, cx: &mut App);
-/// `to_gpui_theme()` for the OS mode, storing both variants, then `apply`.
+/// `to_gpui_theme()` for the OS mode, storing both variants (and installing
+/// both configs), then `apply`.
 pub fn apply_system_theme(sys: &SystemTheme, cx: &mut App);
-/// Reduce-motion write side; also updates the stored preferences.
+/// Runtime preference change: with a stored variant for the current mode,
+/// rebuilds the styled theme from it with `prefs` and re-installs it through
+/// `apply` (text scaling and transparency take effect); always forwards
+/// reduce-motion and stores `prefs`.
 pub fn apply_accessibility(prefs: &AccessibilityPreferences, cx: &mut App);
 
 pub mod base_layer {
@@ -634,9 +649,9 @@ pub mod base_layer {
 }
 ```
 
-`apply` order: store → styled global → `sync_base` → `apply_overrides` →
-`set_reduce_motion` → observer once; `reapplying` is set only by the
-observer's own writes (§3.3). Mode is still set on
+`apply` order: store → styled global → other stored variant's `ThemeConfig`
+→ `sync_base` → `apply_overrides` → `set_reduce_motion` → observer once;
+`reapplying` is set only by the observer's own writes (§3.3). Mode is still set on
 the styled theme in `to_theme` and reaches the base through `sync_base`.
 
 **No-panic guards.** `gpui_component::Theme::global` and `global_mut` call
@@ -971,6 +986,8 @@ contrast are recorded in `docs/todo.md` as research items, not guessed.
 | `to_theme` scaling test | headless | `font_size == px(size × 1.5)`; config copies scaled |
 | `#[gpui::test] apply_installs_and_survives_theme_change` | headless App | after `apply` alone (it initialises gpui-component itself, D29): styled mode as requested, base `scrollbar.mode()` as expected, `resizable.handle` = splitter colour, `cx.reduce_motion()` follows prefs; after `Theme::change` with the *same* mode (which rebuilds the base theme), run twice: `resizable.handle` equals the stored variant's splitter colour after each change (proves the observer ran and left no stale `reapplying` flag) and the test returns (proves termination); the preset is chosen so the splitter colour differs from `border`, which upstream would write |
 | `#[gpui::test] apply_without_stored_variant_falls_back` | headless App | observer fallback path (§3.3 step 2) |
+| `#[gpui::test] apply_installs_configs_for_both_variants` | headless App | after `apply(dark)` then `apply(light)`: `Theme::change(Dark)` reproduces the dark variant's palette through the installed `ThemeConfig` (compared hex-for-hex, including a `button_*` field) |
+| `#[gpui::test] apply_accessibility_rescales_from_the_stored_variant` | headless App | after `apply`, `apply_accessibility` with factor 1.5: `font_size` and its config copy are scaled, `reduce_motion` forwarded, preferences stored |
 | MSRV checks (§4.4) | toolchain | both floors true |
 | `./pre-release-check.sh` | workspace | fmt, clippy, panic lint, package |
 | screenshots workflow | visual | showcase renders on all three platforms with geometry applied |
@@ -985,15 +1002,16 @@ Quick start with `apply_system_theme` and `from_preset(.., &prefs)` + `apply`;
 "Per-widget geometry" with the `refine_style` idiom and §9.2's table;
 "How re-application works" (§3.3, including the single-writer assumption);
 "Accessibility" (§7.2); "GPUI as `gpui-pre`" (§1.1 in plain terms, pinning
-advice); compatibility line: gpui-component 0.6.x, gpui-pre 0.3.x, MSRV.
+advice); the `init`-before-`apply` rule (D29); the GPUI surface of §4.2; compatibility line: gpui-component 0.6.x, gpui-base 0.6.x, gpui-pre 0.3.x, MSRV.
 
 ### 13.2 CHANGELOG `[0.5.8]`
 
 - **Breaking** (native-theme-gpui): the rows of §7.1; `ScrollbarShow` →
   `ScrollbarMode`; `IconName::GitHub` → `Github`; connector `rust-version`.
-- **Breaking** (native-theme): eleven Lucide bundle names change to Lucide's
-  own (§10.2) and `star_border` is removed, so `LucideLoader::new` /
-  `MaterialLoader::new` with the old names return `None`.
+- **Breaking** (native-theme): eleven Lucide bundle names stop resolving (ten
+  were duplicates of files that already exist under Lucide's names, and
+  `trash-2` is now `trash`, §10.2) and `star_border` is removed, so
+  `LucideLoader::new` / `MaterialLoader::new` with the old names return `None`.
 - **Added** (native-theme-gpui): `apply`, `apply_system_theme`,
   `apply_accessibility`, `NativeTheme`, `ActiveNativeTheme`, `Native`,
   `base_layer`, `geometry`; text scaling; reduce-motion; focus-ring flag;
@@ -1053,6 +1071,9 @@ contrast).
 | `ROADMAP.md` | 52 | "108-field `ThemeColor` palette" |
 | `docs/todo_v0.6.0_egui-connector-rationale.md` | 1079 | `gpui = "0.2.2"` |
 | `docs/todo_v0.6.0_egui-connector-spec.md` | 4717 | `gpui = "0.2.2"` |
+| `README.md` | 7 | MSRV badge `1.88.0` |
+| `CONTRIBUTING.md` | 8 | "MSRV: **1.88.0**" |
+| `docs/todo.md` | 83-87 | the MSRV CI item names the workspace floor `1.88.0` and only the egui connector's separate floor |
 
 `CHANGELOG.md:879` is a past release entry and stays.
 
@@ -1096,35 +1117,46 @@ contrast).
 
 ## 15 -- Implementation task list
 
-Ordered; each step ends at a mechanical gate.
+Ordered; each step ends at a mechanical gate. The step-by-step plan with
+tests, commands and per-task model routing is
+[`todo_v0.5.8_gpui-component-0.6-plan.md`](todo_v0.5.8_gpui-component-0.6-plan.md).
 
 1. **Dependency refresh** (§4.3) on `main` before the connector work:
-   requirement bumps, `syn 3` attempt, `resvg 0.48.1`; `cargo test --workspace`
-   (connector excluded until step 3); workspace MSRV re-measured (§4.4).
-2. **native-theme additions** (§11.1, §11.2) with tests.
-3. **Connector manifest** (§4.1); provisional `rust-version = "1.95"`.
-4. **Library first pass** (§5.1). Gate: only the three non-exhaustive errors remain.
-5. **Icon bundles** (§10.2-10.5): manifest, refresh script, generated tables,
-   ten duplicate deletions, the `trash-2` → `trash` rename with its three
-   role-table paths, `star_border` removal,
-   28 new files, refresh of both sets. Gate: `cargo test -p native-theme`.
-6. **Icon tables** (§10.1, 10.6), `Option` return, `ALL_ICON_NAMES`, tripwire 101.
-7. **Colour mapping** (§6); tripwire 139; default-field test.
+   requirement bumps, `syn 3` attempt, `resvg 0.48.1`; per-member tests (the
+   connector still on 0.5.1); workspace MSRV re-measured (§4.4).
+2. **`SystemTheme.layout`** (§11.1) with a pipeline test.
+3. **`AccessibilityPreferences::from_system()`** (§11.2) with a test.
+4. **Generated icon name tables** (§10.5 item 3): `build.rs`,
+   behaviour-preserving; the four Lucide names the hand-written table missed
+   resolve.
+5. **Icon bundles** (§10.2–10.5): ten duplicate deletions, `trash-2` →
+   `trash` with its three role-table paths, `star_border` removal,
+   `SOURCES.toml`, refresh script, refresh of both sets, 28 new files, visual
+   check of the `close` / `approximate` Material rows. Gate:
+   `cargo test -p native-theme`. Precedes the connector so that no commit
+   leaves the connector library uncompilable (rationale §2.24).
+6. **Connector on 0.6.0** (§4.1, §5.1, §5.2, §10.1–10.4, §10.6): manifest
+   with provisional `rust-version = "1.95"`, mechanical first pass (about 14
+   errors → 3 non-exhaustive matches), `Option` tables with the 15 new
+   variants, `ALL_ICON_NAMES` 101, tripwire 139. Gate:
+   `cargo test -p native-theme-gpui --lib` (the showcase compiles again at
+   step 12).
+7. **Colour mapping** (§6); default-field test.
 8. **`to_theme` / `from_preset` API change and text scaling** (§7); config
    copies; tests.
-9. **`base_layer`** (§8.2-8.3) with `ScrollbarGeometry` tests.
-10. **`NativeTheme`, `apply` family, observer** (§8.1, §3.3) with the two
-    `#[gpui::test]`s.
+9. **`base_layer`** (§8.2–8.3) with `ScrollbarGeometry` tests.
+10. **`NativeTheme`, `apply` family, observer** (§8.1, §3.3) with the
+    `#[gpui::test]`s of §12.
 11. **`geometry`** (§9) with per-builder tests at `s ∈ {1.0, 1.5}`.
-12. **Showcase port** (§5.4). Gate: runs on Linux; `screenshots.yml` green.
+12. **Showcase port** (§5.4). Gate: compiles, runs on Linux;
+    `screenshots.yml` green.
 13. **Connector MSRV measurement** (§4.4).
 14. **CI/publish** (§5.5).
 15. **Docs** (§13). Gate: `./pre-release-check.sh`, link check.
-16. **Release**: CHANGELOG date; tag and publish only on explicit approval.
-17. **Post-publish**: confirm the docs.rs builds of `native-theme-gpui` for
-    all three declared targets succeed on the new stack (the 0.5.7 build
-    did; gpui-pre is new to docs.rs from this crate's side), and fix the
-    metadata if not.
+16. **Release**: CHANGELOG date; tag and publish only on explicit approval;
+    then confirm the docs.rs builds of `native-theme-gpui` for all three
+    declared targets succeed on the new stack (the 0.5.7 build did; gpui-pre
+    is new to docs.rs from this crate's side), and fix the metadata if not.
 
 ---
 

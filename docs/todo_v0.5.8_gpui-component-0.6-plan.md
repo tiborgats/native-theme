@@ -136,7 +136,7 @@ cargo test -p native-theme-iced
 cargo test -p native-theme-gpui
 ```
 
-Expected: all PASS. The connector is still on the 0.5.1 stack here and must stay green on the refreshed lock. The resvg 0.48 rasterisation change is covered by `rasterize_produces_non_empty_pixels` (`native-theme/src/rasterize.rs:130`).
+Expected: the four workspace members PASS; the resvg 0.48 rasterisation change is covered by `rasterize_produces_non_empty_pixels` (`native-theme/src/rasterize.rs:130`). The connector is still on the 0.5.1 stack and should pass too; if the refreshed lock resolves a naga / codespan-reporting pair that stack cannot compile (the G11 class of failure), record the error in the commit body and continue: Task 6 replaces the stack.
 
 - [ ] **Step 5: Measure the workspace floor**
 
@@ -536,7 +536,8 @@ Keep `bundled_icon_by_name` and the role tables (`material_svg`, `lucide_svg`) e
 ```bash
 cargo test -p native-theme --features material-icons,lucide-icons,system-icons,svg-rasterize
 cargo test -p native-theme            # no icon features: the include!s are cfg-gated
-cargo package -p native-theme --allow-dirty --no-verify --list | grep -c '^icons/'
+cargo package -p native-theme --allow-dirty --no-verify --list | grep -c '^icons/'      # expected: every icon file (Task 5 changes the count)
+cargo package -p native-theme --allow-dirty --no-verify --list | grep -c '^build.rs$'   # expected 1
 ```
 
 Expected: all PASS (the existing hand-written `lucide_by_name_covers_gpui_icons` / `material_by_name_covers_gpui_icons` still pass here; Task 5 retires them); the package listing includes every icon file and `build.rs`.
@@ -868,7 +869,7 @@ git status --short native-theme/icons | grep -c '^A\|^??'
 git diff --stat -- native-theme/icons/lucide/github.svg
 ```
 
-Expected: exit 0 on every run; 107 Lucide files, 100 Material files; 28 added files; `github.svg` unchanged (pinned to 0.577.0, same bytes). Modified files are the refreshed ones (including `material/warning.svg` and `material/info.svg`, spec §16 Q4 — expected).
+Expected: exit 0 on every run; 107 Lucide files, 100 Material files; 28 added files; `github.svg` byte-identical or whitespace-only different (pinned to 0.577.0). Modified files are the refreshed ones (including `material/warning.svg` and `material/info.svg`, spec §16 Q4 — expected).
 
 Every downloaded file must contain `<svg` (the script checks and exits non-zero otherwise).
 
@@ -1061,7 +1062,7 @@ git diff Cargo.lock | grep '^[-+]name' | sort | uniq -c | head -40
 cargo check -p native-theme-gpui --lib 2>&1 | grep -c '^error'
 ```
 
-Expected: the lock diff adds the gpui-pre / gpui-base / gpui-component / gpui-kit closures and drops the gpui 0.2.2 / gpui-component 0.5.1 ones, nothing else (Task 1 already put every other crate at its latest release, so `cargo update` is idempotent for them); the error count is `14` (the rows of §5.1).
+Expected: the lock diff adds the gpui-pre / gpui-base / gpui-component / gpui-kit closures and drops the gpui 0.2.2 / gpui-component 0.5.1 ones, nothing else (Task 1 already put every other crate at its latest release, so `cargo update` is idempotent for them); the error count is about `14` (the probe measured 14: the rows of §5.1; a later gpui-pre patch may add or remove one). If the lock diff shows other crates, that is the same latest-release policy applied to releases since Task 1.
 
 - [ ] **Step 3: Apply the §5.1 renames**
 
@@ -2016,6 +2017,21 @@ mod apply_tests {
         panic!("no preset distinguishes the splitter divider from the border colour");
     }
 
+    /// A preset whose light and dark variants resolve to different backgrounds.
+    fn preset_with_two_variants(
+        prefs: &AccessibilityPreferences,
+    ) -> ((GpuiTheme, ResolvedTheme), (GpuiTheme, ResolvedTheme)) {
+        for info in Theme::list_presets() {
+            if let (Ok(dark), Ok(light)) =
+                (from_preset(info.key, true, prefs), from_preset(info.key, false, prefs))
+                && dark.1.defaults.background_color != light.1.defaults.background_color
+            {
+                return (dark, light);
+            }
+        }
+        panic!("no preset with distinct light and dark variants");
+    }
+
     /// §12: after `apply`, every receiver holds the native value; after upstream
     /// rebuilds the base layer, the observer restores it; and the test returning
     /// proves the observer terminates. Two changes catch a stale `reapplying`.
@@ -2100,6 +2116,65 @@ mod apply_tests {
         cx.update(|cx| {
             let nt = cx.native_theme().expect("installed");
             assert!(nt.resolved(cx).is_some(), "the other variant is stored too");
+            // D34: the other mode's palette is the native one, not the registry default.
+            let other = if sys.mode.is_dark() { &sys.light } else { &sys.dark };
+            assert_eq!(
+                colors::hsla_to_hex(GpuiTheme::global(cx).background),
+                colors::hsla_to_hex(colors::rgba_to_hsla(other.defaults.background_color))
+            );
+        });
+    }
+
+    /// D34: once both variants are applied, upstream's `Theme::change` reproduces
+    /// the native palette of either mode through the installed `ThemeConfig`.
+    #[gpui::test]
+    fn apply_installs_configs_for_both_variants(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let ((dark_theme, dark), (light_theme, light)) = preset_with_two_variants(&prefs);
+        cx.update(|cx| {
+            apply(dark_theme, &dark, &prefs, cx);
+            apply(light_theme, &light, &prefs, cx); // light is current; the dark config must survive
+            GpuiTheme::change(GpuiThemeMode::Dark, None, cx);
+        });
+        cx.update(|cx| {
+            let styled = GpuiTheme::global(cx);
+            assert!(styled.is_dark());
+            // Hex comparison: the config round trip is exact for 8-bit colours.
+            assert_eq!(
+                colors::hsla_to_hex(styled.background),
+                colors::hsla_to_hex(colors::rgba_to_hsla(dark.defaults.background_color))
+            );
+            assert_eq!(
+                colors::hsla_to_hex(styled.button_primary),
+                colors::hsla_to_hex(colors::rgba_to_hsla(dark.button.primary_background)),
+                "button_* fields survive the config round trip"
+            );
+            assert!(cx.native_theme().and_then(|t| t.resolved(cx)).is_some());
+        });
+    }
+
+    /// D35: a runtime preference change rebuilds the styled theme from the
+    /// stored variant, so scaling reaches `font_size` and its config copy.
+    #[gpui::test]
+    fn apply_accessibility_rescales_from_the_stored_variant(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let (theme, resolved) =
+            from_preset("catppuccin-mocha", true, &prefs).expect("preset should load");
+        cx.update(|cx| apply(theme, &resolved, &prefs, cx));
+        let scaled = AccessibilityPreferences {
+            text_scaling_factor: 1.5,
+            reduce_motion: true,
+            ..AccessibilityPreferences::default()
+        };
+        cx.update(|cx| apply_accessibility(&scaled, cx));
+        cx.update(|cx| {
+            let styled = GpuiTheme::global(cx);
+            assert_eq!(styled.font_size, px(resolved.defaults.font.size * 1.5));
+            assert_eq!(styled.dark_theme.font_size, Some(resolved.defaults.font.size * 1.5));
+            assert!(cx.reduce_motion());
+            let nt = cx.native_theme().expect("installed");
+            assert_eq!(nt.accessibility().text_scaling_factor, 1.5);
+            assert!(nt.resolved(cx).is_some(), "the stored variant survives the rebuild");
         });
     }
 
@@ -2249,11 +2324,15 @@ impl<'a> Native<'a> {
 /// 2. initialises gpui-component if its theme global is absent (upstream
 ///    requires `gpui_component::init` before any component use; calling it
 ///    here only when the global is missing means it runs at most once);
-/// 3. writes the styled theme and projects it into gpui-base (`sync_base`);
-/// 4. writes the native scrollbar geometry/colours and resize-handle colours
+/// 3. writes the styled theme, then installs a `ThemeConfig` for the *other*
+///    stored variant (if any) under the same display name, so upstream's
+///    `Theme::change` / `sync_system_appearance` reproduces native colours in
+///    either mode (D34);
+/// 4. projects into gpui-base (`sync_base`);
+/// 5. writes the native scrollbar geometry/colours and resize-handle colours
 ///    onto gpui-base ([`base_layer::apply_overrides`]);
-/// 5. forwards `prefs.reduce_motion` to GPUI;
-/// 6. installs, once per `App`, the observer that restores step 4 whenever
+/// 6. forwards `prefs.reduce_motion` to GPUI;
+/// 7. installs, once per `App`, the observer that restores step 5 whenever
 ///    upstream rebuilds the base theme.
 ///
 /// `theme` is moved into the global; `resolved` is cloned once.
@@ -2263,22 +2342,37 @@ pub fn apply(theme: GpuiTheme, resolved: &ResolvedTheme, prefs: &AccessibilityPr
     apply_inner(theme, light, dark, prefs, cx);
 }
 
-/// [`SystemThemeExt::to_gpui_theme`] for the OS mode, storing both variants,
-/// then [`apply`].
+/// [`SystemThemeExt::to_gpui_theme`] for the OS mode, storing both variants
+/// and installing both `ThemeConfig`s, then [`apply`]; upstream's
+/// `Theme::sync_system_appearance` then reproduces native colours in either mode.
 pub fn apply_system_theme(sys: &SystemTheme, cx: &mut App) {
     let theme = sys.to_gpui_theme();
     apply_inner(theme, Some(&sys.light), Some(&sys.dark), &sys.accessibility, cx);
 }
 
-/// Update the accessibility preferences at runtime: forwards `reduce_motion`
-/// to GPUI and stores the preferences in [`NativeTheme`] when it is installed.
-/// Text scaling needs a theme built with the new preferences
-/// ([`to_theme`] + [`apply`]); this function does not rebuild fonts.
+/// Apply a runtime change of the accessibility preferences (a portal signal,
+/// a settings toggle). When a variant is stored for the current mode, the
+/// styled theme is rebuilt from it with `prefs` and re-installed through the
+/// [`apply`] path, so text scaling and transparency take effect and both
+/// configs are refreshed (D35); the stored variants are kept. Without a stored
+/// variant only `reduce_motion` is forwarded and the preferences are stored.
 pub fn apply_accessibility(prefs: &AccessibilityPreferences, cx: &mut App) {
-    if cx.has_global::<NativeTheme>() {
-        cx.global_mut::<NativeTheme>().accessibility = prefs.clone();
+    let rebuilt = cx.try_global::<NativeTheme>().and_then(|nt| {
+        let is_dark = nt.is_dark(cx);
+        let resolved = nt.variant(is_dark)?;
+        let name = cx.try_global::<GpuiTheme>()?.theme_name().clone();
+        Some(to_theme(resolved, &name, is_dark, prefs))
+    });
+    match rebuilt {
+        // `None, None` keeps the stored variants; apply_inner stores `prefs`.
+        Some(theme) => apply_inner(theme, None, None, prefs, cx),
+        None => {
+            if cx.has_global::<NativeTheme>() {
+                cx.global_mut::<NativeTheme>().accessibility = prefs.clone();
+            }
+            cx.set_reduce_motion(prefs.reduce_motion);
+        }
     }
-    cx.set_reduce_motion(prefs.reduce_motion);
 }
 
 fn apply_inner(
@@ -2289,6 +2383,9 @@ fn apply_inner(
     cx: &mut App,
 ) {
     let is_dark = theme.is_dark();
+    // The display name of the config `to_theme` built for this mode; the other
+    // variant's config takes the same name.
+    let name: SharedString = theme.theme_name().clone();
     {
         let nt = cx.default_global::<NativeTheme>();
         if let Some(light) = light {
@@ -2306,8 +2403,29 @@ fn apply_inner(
         gpui_component::init(cx);
     }
     *GpuiTheme::global_mut(cx) = theme;
+
+    // D34: the other mode's config from its stored variant, so Theme::change
+    // reproduces the native palette instead of the registry default.
+    let other_config = {
+        let nt = cx.global::<NativeTheme>();
+        nt.variant(!is_dark).map(|other| {
+            let mode = if is_dark { GpuiThemeMode::Light } else { GpuiThemeMode::Dark };
+            Rc::new(config::to_theme_config(other, &name, mode, prefs))
+        })
+    };
+    if let Some(cfg) = other_config {
+        let styled = GpuiTheme::global_mut(cx);
+        if is_dark {
+            styled.light_theme = cfg;
+        } else {
+            styled.dark_theme = cfg;
+        }
+    }
+
     GpuiTheme::sync_base(cx);
-    reapply_base_overrides(cx);
+    // `false`: this write's notification may be delivered before the observer
+    // is active (§3.3), so it must not be marked as the observer's own.
+    write_base_overrides(cx, false);
     cx.set_reduce_motion(prefs.reduce_motion);
     install_observer_once(cx);
 }
@@ -2342,15 +2460,20 @@ fn base_overrides_for(
     Some((geometry, resizable))
 }
 
-/// Compute and write the overrides for the current mode, marking the write as
-/// the connector's own so the observer ignores its notification.
-fn reapply_base_overrides(cx: &mut App) {
+/// Compute and write the overrides for the current mode. `mark` flags the
+/// write as the observer's own so the observer ignores its notification
+/// (§3.3); only the observer passes `true`, because a flag set by `apply`
+/// could be delivered before the observer is active and would then never be
+/// cleared (rationale errors 40, 42).
+fn write_base_overrides(cx: &mut App, mark: bool) {
     let Some(nt) = cx.try_global::<NativeTheme>() else { return };
     let is_dark = nt.is_dark(cx);
     let Some((geometry, resizable)) = base_overrides_for(nt, is_dark, cx.try_global::<GpuiTheme>()) else {
         return;
     };
-    cx.global_mut::<NativeTheme>().reapplying = true;
+    if mark {
+        cx.global_mut::<NativeTheme>().reapplying = true;
+    }
     base_layer::apply_overrides(&geometry, resizable, cx);
 }
 
@@ -2369,7 +2492,7 @@ fn install_observer_once(cx: &mut App) {
             cx.global_mut::<NativeTheme>().reapplying = false;
             return;
         }
-        reapply_base_overrides(cx);
+        write_base_overrides(cx, true);
     })
     .detach();
 }
@@ -2709,7 +2832,7 @@ Expected: FAIL to compile (`button`, `control_height`, … not found).
 //! cited upstream line, so the values here win. Text sizes carry the
 //! accessibility text-scaling factor; widths, paddings, radii and icon sizes
 //! do not (spec §3.4). Every value is a `ResolvedTheme` field or one of the
-//! two derivations in spec §9.4 (`text_size`, [`control_height`]).
+//! two derivations in spec §9.4 (`scaled_text_size`, [`control_height`]).
 
 use gpui::{FontWeight, Pixels, StyleRefinement, Styled, px};
 use gpui_component::Size;
@@ -2719,18 +2842,18 @@ use crate::colors::rgba_to_hsla;
 use crate::{Native, text_scale};
 
 /// `font.size × s` in pixels (spec §9.4).
-fn text_size(font: &ResolvedFontSpec, n: Native<'_>) -> Pixels {
+fn scaled_text_size(font: &ResolvedFontSpec, n: Native<'_>) -> Pixels {
     px(font.size * text_scale(n.accessibility))
 }
 
 /// CSS weight (100–900) as GPUI's `FontWeight`.
-fn font_weight(font: &ResolvedFontSpec) -> FontWeight {
+fn weight_of(font: &ResolvedFontSpec) -> FontWeight {
     FontWeight(f32::from(font.weight))
 }
 
 /// Text size and weight from a font spec.
 fn with_text(r: StyleRefinement, font: &ResolvedFontSpec, n: Native<'_>) -> StyleRefinement {
-    r.text_size(text_size(font, n)).font_weight(font_weight(font))
+    r.text_size(scaled_text_size(font, n)).font_weight(weight_of(font))
 }
 
 /// Control height (spec §9.4, rationale §5.3):
@@ -3245,7 +3368,7 @@ gpui_kit::application().run(|cx| {
 });
 ```
 
-"Core concepts" with the new signatures; new sections "Per-widget geometry" (the `refine_style` idiom and §9.2's table of builders with the fields each reads), "How re-application works" (§3.3 in plain terms, the single-writer assumption), "Accessibility" (§7.2 table), "GPUI as `gpui-pre`" (§1.1 in plain terms: what the package is, that patch bumps track Zed `main`, that pinning `gpui-pre = "=0.3.N"` in an application is the way to freeze it), a compatibility line "gpui-component 0.6.x · gpui-base 0.6.x · gpui-pre 0.3.x · MSRV <measured>". "What gets mapped": 139 fields; icons: 101 variants, Lucide names are Lucide's own, Material `StarOff` → none. Keep relative image paths (project rule).
+State that `gpui_kit::init` (or `gpui_component::init`) runs before `apply`, as upstream requires: `apply` initialises the styled layer only when it is absent, and an `init` after `apply` would reset the theme. List the GPUI types the connector's public API exposes (spec §4.2), so readers know what a gpui-pre patch bump can touch. "Core concepts" with the new signatures (`apply_accessibility` rebuilds from the stored variant; `Theme::change` reproduces native colours in both modes once both variants are applied); new sections "Per-widget geometry" (the `refine_style` idiom and §9.2's table of builders with the fields each reads), "How re-application works" (§3.3 in plain terms, the single-writer assumption), "Accessibility" (§7.2 table), "GPUI as `gpui-pre`" (§1.1 in plain terms: what the package is, that patch bumps track Zed `main`, that pinning `gpui-pre = "=0.3.N"` in an application is the way to freeze it), a compatibility line "gpui-component 0.6.x · gpui-base 0.6.x · gpui-pre 0.3.x · MSRV <measured>". "What gets mapped": 139 fields; icons: 101 variants, Lucide names are Lucide's own, Material `StarOff` → none. Keep relative image paths (project rule).
 
 - [ ] **Step 1b: Crate-level docs in `connectors/native-theme-gpui/src/lib.rs`**
 
@@ -3292,7 +3415,7 @@ Fill `<measured>` from Tasks 1 and 13. (If syn stayed on 2.0.119, say so here.)
 
 - [ ] **Step 3: ROADMAP (§13.3)**
 
-Rewrite `## v0.6.2` (line 50-64): "108-field" → "139-field"; the connector-side geometry ships in v0.5.8; v0.6.2 becomes the upstream-only list from spec §14, each row phrased as a PR to gpui-kit (checkbox/radio indicator size, switch, slider, `Tab` applying its style, separator thickness, resize-handle width, button icon gap and label size, input padding, `PopupMenu` item hook, `Button::tooltip` hook, `Size::Size` for Checkbox/Switch, shadows through tokens, `IconName::ALL`).
+Rewrite `## v0.6.2` (line 50-64): "108-field" → "139-field"; the connector-side geometry ships in v0.5.8; v0.6.2 becomes the upstream-only list from spec §14, each row phrased as a PR to gpui-kit (spec §13.5: a styled `Theme` scrollbar-style override honoured by `base_theme()`; `Tab` applying its stored `Styled` refinement; `Theme.shadow` honoured beyond `Button` / `tokens.shadow` consumed; `Size::Size` honoured by Checkbox and Switch; inner geometry: checkbox/radio indicator, switch, slider, separator thickness, resize-handle width, button icon gap, input padding, popup-menu items, select arrow, accordion arrow; a `PopupMenu` item style hook; a `Button::tooltip` style hook; button label text size independent of rem; an iterable `IconName::ALL` generated by `icon_named!`).
 
 - [ ] **Step 4: `docs/todo.md` (§13.5)**
 
@@ -3306,6 +3429,7 @@ Add a "v0.5.8" column to the gap table: for each widget row, "delivered (R)" / "
 
 - `docs/todo_v0.6.0_egui-connector-rationale.md:1079` and `docs/todo_v0.6.0_egui-connector-spec.md:4717`: `gpui = "0.2.2"` → `gpui = { package = "gpui-pre", version = "0.3.3" }`.
 - `docs/archive/v0.5.7_gaps.md` §G11 (line 569): append "Closed in v0.5.8: the 0.6 stack resolves naga 29.0.4 / codespan-reporting 0.13.1; the soft gates were removed."
+- `README.md:7` (MSRV badge), `CONTRIBUTING.md:8` and the MSRV CI item in `docs/todo.md:83-87`: the workspace floor measured in Task 1; the todo item also names the gpui connector's floor from Task 13 next to the egui connector's.
 - Grep and fix: `grep -rn "108 \|108-field\|86 gpui\|all 86\|gpui-component 0.5\b" --include='*.md' --include='*.rs' . | grep -v docs/archive | grep -v CHANGELOG.md:879` must return nothing.
 - Set `Status: Done (v0.5.8)` in the spec, the rationale and this plan.
 
@@ -3351,11 +3475,13 @@ Confirm the docs.rs builds of `native-theme-gpui` for all three declared targets
 
 ## Deviations from the specification recorded by this plan
 
-1. **Task order.** The bundles (Task 5) come before the connector manifest (Task 6), and the manifest, mechanical first pass and icon tables are one task, so no commit leaves the connector library uncompilable. Rationale §2.24 point 3 (bundles before the tables) is kept; spec §15 steps 3–6 are reordered accordingly.
+1. **Task order.** The bundles (Task 5) come before the connector manifest (Task 6), and the manifest, mechanical first pass and icon tables are one task, so no commit leaves the connector library uncompilable. Now reflected in spec §15 and rationale §2.24.
 2. **Ten duplicates, not renames.** Spec §10.2 and rationale §2.15 were corrected on 2026-09-05 (rationale error 39): the ten gpui-named Lucide files are byte-identical to files already present, so Task 5 deletes them; Lucide ends at 107 files, Material at 100.
 3. **`reapplying` is set only by the observer** (spec §3.3 / §8.1 corrected, rationale error 40): the subscription activates after the effects `apply` queues, so a flag set in `apply` would go stale. Task 10's test runs `Theme::change` twice.
 4. **Fallback for the resize handle** when no variant is stored for the new mode: `border` / `drag_border` from the styled theme, upstream's own projection; now stated in spec §3.3 step 2.
 5. **`from_system()` reduce-motion rule** (§11.2 ambiguity): the reader's value where the reader supplies one, OR-ed with `detect::prefers_reduced_motion()`; never turned off by the fallback.
+
+Design changes made during the review of 2026-09-05 and written into the spec (§8.1) and rationale (D34, D35, errors 41–43): `apply` installs a `ThemeConfig` for every stored variant, so `Theme::change` reproduces native colours in both modes; `apply_accessibility` rebuilds the styled theme from the stored variant; the re-apply helper takes a `mark` flag so `apply`'s own write never sets `reapplying`.
 
 ## Self-review against the spec
 

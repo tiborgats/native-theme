@@ -5,6 +5,8 @@ Crates: `connectors/native-theme-gpui` (primary), `native-theme` (two additive
 API items, icon bundles, dependency refresh), workspace manifests
 Companion specification:
 [`todo_v0.5.8_gpui-component-0.6-spec.md`](todo_v0.5.8_gpui-component-0.6-spec.md)
+Companion plan:
+[`todo_v0.5.8_gpui-component-0.6-plan.md`](todo_v0.5.8_gpui-component-0.6-plan.md)
 
 ---
 
@@ -31,7 +33,10 @@ observation that a rationale half the length of its specification is
 suspect, found that the reasoning behind the per-icon name choices, the API
 shape, the test design and the task order existed only as conclusions; it is
 written out in §2.21–§2.25, and §4 now covers every row of the
-specification's limits table. Section 7 records each correction.
+specification's limits table. A fifth pass, writing and reviewing the implementation
+plan, compared the ten renamed files byte-for-byte, traced the observer's
+activation order, and found that `apply_system_theme` installed a `ThemeConfig`
+for one mode only (errors 39–43). Section 7 records each correction.
 
 ---
 
@@ -273,10 +278,18 @@ design already uses the same split.
 ### 2.18 A mode-switch helper
 
 Considered: `native_theme_gpui::set_mode(is_dark, cx)` rebuilding the styled
-theme from the stored variant. Not needed: upstream's `Theme::change(mode)`
-re-derives the colours from the `ThemeConfig` the connector stores (exact,
-because native colours are 8-bit and the hex round trip is lossless), and the
-observer restores the base-layer geometry. Applications keep one idiom.
+theme from the stored variant. Not needed, on one condition found while
+reviewing the plan (error 41): `apply` must install a `ThemeConfig` for
+*every* stored variant, not only for the mode it installs. `to_theme` builds
+the config of one mode; `apply_system_theme` stored both variants but, as
+first specified, installed one config, so upstream's `Theme::change` to the
+other mode would have applied the registry's default palette under natively
+sized scrollbars. With both configs installed (D34), `Theme::change(mode)`
+re-derives the colours from the connector's own config (exact, because native
+colours are 8-bit and the hex round trip is lossless), and the observer
+restores the base-layer geometry. Applications keep one idiom per concern:
+`Theme::change` / `sync_system_appearance` for the mode,
+`apply_accessibility` for preferences (§2.22).
 
 ### 2.19 Iterating `IconName`
 
@@ -365,7 +378,8 @@ specification requires a visual check of every `close` and `approximate` row.
   modes without going through the connector, and the observer must then
   find the variant of the mode upstream switched to. `apply_system_theme`
   has both from `SystemTheme`; `apply` stores the one it receives under the
-  theme's mode.
+  theme's mode. Each `apply` also (re)builds the `ThemeConfig` of the other
+  stored variant under the same display name (§2.18, D34).
 - `NativeTheme::resolved(&self, cx)` takes `cx` to read the styled theme's
   current mode; a mode field inside `NativeTheme` would go stale after
   `Theme::change`. There is no `Deref` to `ResolvedTheme` for the same
@@ -377,7 +391,14 @@ specification requires a visual check of every `close` and `approximate` row.
   `AccessibilityPreferences` has public fields and no `#[non_exhaustive]`
   (`native-theme/src/lib.rs:229-235`).
 - `apply_accessibility` is public because preferences change at runtime
-  independently of the theme (a portal signal, a settings toggle).
+  independently of the theme (a portal signal, a settings toggle). Because
+  the variants are stored, it rebuilds the styled theme for the current mode
+  with the new preferences and re-installs it through the `apply` path, so a
+  runtime change of text scaling or transparency takes effect without the
+  application keeping `resolved`; with nothing stored it only forwards
+  reduce-motion and records the preferences (D35). The alternative, a
+  documented "call `to_theme` and `apply` again", is the same call-order
+  obligation §2.7 removed for the base layer.
 - `base_layer::apply_overrides` is public so an application that writes the
   base theme itself can restore the native values; the observer calls the
   same function.
@@ -428,8 +449,12 @@ re-running gates:
    once on the final lock instead of twice.
 2. `native-theme` additions before the connector, because the connector
    consumes `AccessibilityPreferences::from_system` and `SystemTheme.layout`.
-3. Bundles and manifest before the connector's icon tables, because the
-   tables are tested against the bundles.
+3. Bundles before the connector's manifest switch: the tables are tested
+   against the bundles, and while the connector is still on 0.5.1 the bundle
+   change reddens only a few old-name icon tests, whereas switching the
+   manifest first would leave the library uncompilable until the tables are
+   done. For the same reason the manifest, the mechanical first pass and the
+   icon tables form one step whose shared gate is the compile.
 4. Colours before geometry, because both need a compiling library and the
    colour work restores the tripwire the geometry tests also rely on.
 5. `base_layer` before `apply`, because `apply` calls it; `geometry` after
@@ -487,6 +512,8 @@ moment.
 | D31 | `ALL_ICON_NAMES` stays hand-written; `IconName::ALL` proposed upstream | §2.19 |
 | D32 | Material battery levels on the vertical bar family: `battery_0_bar`, `battery_2_bar`, `battery_4_bar`, `battery_full` | Lucide's one/two/three of three bars map to two/four/six of six; one family, side-by-side consistency (§2.21) |
 | D33 | `MemoryStick` → Breeze `memory` | an exact RAM-module icon exists; the flash-card icon matched only the name (§2.21) |
+| D34 | `apply` installs a `ThemeConfig` for every stored variant | `Theme::change` to the other mode must reproduce the native palette, not the registry default (§2.18, error 41) |
+| D35 | `apply_accessibility` rebuilds the styled theme from the stored variant | runtime preference changes take effect without the application keeping `resolved` (§2.22) |
 
 ---
 
@@ -602,7 +629,7 @@ overrides.
 ## 7 -- Errors found and corrected during design
 
 Kept so the reasoning can be audited. Items 1–17 are from the first pass,
-18–26 from the second, 27–33 from the third, 34–38 from the fourth, 39–40
+18–26 from the second, 27–33 from the third, 34–38 from the fourth, 39–43
 from the implementation-plan pass.
 
 1. **First field diff was wrong** (46 fields from a bad `awk` range); corrected by diffing the two upstream structs: 108 → 139.
@@ -645,6 +672,9 @@ from the implementation-plan pass.
 38. **Glyph descriptions in the icon reasoning were written from memory.** Names and upstream existence were verified; glyph shapes for the Material `close` rows, `hub`, `developer_board`, `battery_low`, Breeze's `battery-missing` and `rating` were not. The descriptions were rewritten to say what was verified, and the specification now requires a visual check of every `close` row, not only the `approximate` ones.
 39. **The ten gpui-named files were described as renames with two collapsing pairs, and the Lucide file count after the milestone as 115.** Compared byte-for-byte while writing the implementation plan (2026-09-05): the bundle already holds all eight target files (`x`, `minus`, `scan`, `grip`, `arrow-up-narrow-wide`, `arrow-down-wide-narrow`, `maximize`, `minimize-2`), identical to the ten. They are deletions, not renames; the count becomes 107; and the four name-table gaps (99 of 103) are exactly the four canonical files the hand-written table never listed.
 40. **`apply` was specified to set the `reapplying` flag before its own write.** `App::observe_global` defers the subscription's activation to the end of the current effect flush (gpui-pre `src/app.rs:2087-2099`, `SubscriberSet::insert`), and effects run in order, so the notification `apply` queues is delivered before the observer is active; the flag would never be cleared and would swallow the next upstream rebuild. The flag is now set only by the observer's own writes; `apply` accepts one idempotent re-application on the first delivery. The observer test runs `Theme::change` twice to catch a stale flag.
+41. **`apply_system_theme` stored both variants but installed one `ThemeConfig`.** Upstream's `Theme::change` to the other mode would have applied the registry's default palette while the observer restored native scrollbar geometry under it; §2.18 claimed an exactness that held for one mode only. Found while reviewing the plan's `apply_inner`; `apply` now installs the other stored variant's config too, and a test switches modes and compares the palette hex-for-hex (D34).
+42. **The plan's first `apply_inner` still set `reapplying` through the shared re-apply helper**, reintroducing the hazard error 40 describes. The helper gained a `mark` parameter; `apply` passes `false`, the observer `true`. The observer test's second `Theme::change` would have caught it.
+43. **The stale-reference table (§13.7) missed three MSRV mentions.** The root `README.md` badge, `CONTRIBUTING.md` and the MSRV CI item in `docs/todo.md` all say `1.88.0`; added to §13.7 and to the docs task.
 
 ---
 
