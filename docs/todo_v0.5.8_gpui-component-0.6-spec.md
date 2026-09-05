@@ -183,7 +183,7 @@ versions.
 | quote / proc-macro2 | 1.0.45 / 1.0.106 | 1.0.47 / 1.0.107 | |
 | pollster | 0.4 | 1.0.1 (2026-07-10) | only change: `FutureExt` for `IntoFuture`; MSRV 1.69 |
 | syn | 2.0.117 | 3.0.5 (2026-09-04; 3.0.0 2026-07-18) | breaking: `*Modifiers` structs, `Type::BareFn` → `Type::FnPtr`; MSRV 1.71; the derive crate uses `Type`, `Type::Path`, `Ident`, `ItemStruct`, `Fields::Named`, `Data::Struct`, `GenericArgument`, `PathArguments`, `Expr`, `Attribute`, `parse_str`, `Error` |
-| resvg | 0.47 | 0.48.1 (2026-08-02) | new font stack (skrifa, harfrust); effective MSRV 1.89 via `font-types`; "may result in small rendering changes" |
+| resvg | 0.47 | 0.48.1 (2026-08-02) | new font stack (skrifa, harfrust); declares `rust-version` 1.85.0, and `native-theme` uses it with `default-features = false`, so no text-stack crate enters through it (Task 1 measured the workspace floor unchanged at 1.88.0); "may result in small rendering changes" |
 | inventory, objc2 family, block2, freedesktop-icons, notify, png, windows 0.62.2, proptest, heck, iced 0.14, image 0.25.10 | current | current | already latest |
 
 ---
@@ -433,7 +433,7 @@ only with a recorded reason. Applying it to §1.5:
 | serde, serde_with, toml, serde_json, arc-swap, async-trait, ashpd, configparser, zbus, quote, proc-macro2 | bump requirement strings to the versions in §1.5 | patch/minor releases |
 | pollster | `0.4` → `1.0` | the only change is `FutureExt` for `IntoFuture`; API used (`block_on`) unchanged |
 | syn | `2.0.117` → `3.0.5` | the derive crate's syn surface (§1.5) is untouched by 3.0's breaking changes; gate: `cargo test -p native-theme-derive` passes with mechanical edits only; if it does not, stay on 2.0.119 and record why |
-| resvg | `0.47` → `0.48.1` | maintained font stack; the resvg-backed rasterisation test asserts only that output has non-zero pixels (`native-theme/src/rasterize.rs:130`), so glyph-level rendering changes cannot break it; consequence: the maximum declared `rust-version` in the lock becomes 1.89 (`font-types`), so the workspace floor is re-measured (§4.4) |
+| resvg | `0.47` → `0.48.1` | maintained font stack; the resvg-backed rasterisation test asserts only that output has non-zero pixels (`native-theme/src/rasterize.rs:130`), so glyph-level rendering changes cannot break it; the floor is re-measured regardless (§4.4); measured on 2026-09-06: unchanged at 1.88.0, because `resvg` is used with `default-features = false` and declares 1.85.0 |
 | windows, image, objc2 family, block2, iced, inventory, notify, png, proptest, heck, freedesktop-icons | none | already latest |
 
 The iced connector is otherwise untouched by this milestone; its two
@@ -451,9 +451,10 @@ per-member check is repeated (§4.4).
 Two floors, both measured, following commit `0319942`:
 
 - **Workspace** (`native-theme`, `native-theme-build`, `native-theme-derive`,
-  `native-theme-iced`): re-measure after §4.3. Expected 1.89.0, the highest
-  `rust-version` declared in the refreshed lock (`font-types` via resvg
-  0.48). Procedure as in `0319942`: maximum declared `rust-version` across
+  `native-theme-iced`): re-measure after §4.3. Measured 2026-09-06 (Task 1): 1.88.0, the
+  highest `rust-version` declared in the refreshed lock (`time`, `psm`); the
+  1.89.0 the design predicted rested on `font-types`, which `resvg` with
+  `default-features = false` does not pull. Procedure as in `0319942`: maximum declared `rust-version` across
   the lock, then `cargo +<floor> check -p <member> --all-targets --locked`
   per member.
 - **Connector**: the 0.6.0 closure refuses 1.88.0 and declares 1.92 as its

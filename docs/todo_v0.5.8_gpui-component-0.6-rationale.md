@@ -276,7 +276,7 @@ considered:
 | `gpui-pre` `0.3.3` | latest | caret, not exact: an exact pin in a library conflicts with any consumer whose other dependencies want a newer snapshot |
 | `pollster` `1.0` | upgrade | 1.0.1 (2026-07-10); sole change `FutureExt` for `IntoFuture`; MSRV 1.69 |
 | `syn` `3.0.5` | upgrade, gated | 3.0.0 (2026-07-18), five patch releases since; breaking changes are `*Modifiers` structs and `Type::BareFn` → `Type::FnPtr`; the derive crate touches `Type`, `Type::Path`, `Ident`, `ItemStruct`, `Fields::Named`, `Data::Struct`, `GenericArgument`, `PathArguments`, `Expr`, `Attribute`, `parse_str`, `Error`, none of them affected; gate is the derive crate's tests; stay on 2.0.119 only if the gate fails, with the reason recorded |
-| `resvg` `0.48.1` | upgrade | maintained font stack; "may result in small rendering changes" is covered by the non-zero-pixel test and regenerated screenshots; raises the maximum declared floor in the lock to 1.89 via `font-types`, handled by re-measuring (§2.16) |
+| `resvg` `0.48.1` | upgrade | maintained font stack; "may result in small rendering changes" is covered by the non-zero-pixel test and regenerated screenshots; predicted to raise the maximum declared floor to 1.89 via `font-types`; measured in Task 1 as unchanged (1.88.0), because `native-theme` uses resvg with `default-features = false` and resvg itself declares 1.85.0 (§2.16) |
 | `windows` `0.62.2`, `image`, `objc2` family, `iced 0.14` | none | already latest |
 
 ### 2.15 Bundle provenance, manifest, generated tables
@@ -309,9 +309,11 @@ is a duplicate of `star.svg`. The name tables trail the directories
 
 Two measured floors. The workspace floor is re-measured after the dependency
 refresh because the rule in commit `0319942` is "maximum declared
-`rust-version` across the lock, then a check per member"; resvg 0.48 moves
-that maximum to 1.89 (`font-types`), and an unmeasured 1.88.0 would be the
-lie the rule exists to prevent. The connector gets its own per-crate
+`rust-version` across the lock, then a check per member"; resvg 0.48 was
+predicted to move that maximum to 1.89 (`font-types`); the measurement on
+2026-09-06 found it unchanged at 1.88.0 (resvg declares 1.85.0 and is used
+without default features), which is exactly why the rule says measure, not
+predict. The connector gets its own per-crate
 `rust-version` because the gpui-pre closure declares 1.92 and the workspace
 must not inherit a floor `native-theme` does not need; the egui connector
 design already uses the same split. Cargo's MSRV-aware resolver
