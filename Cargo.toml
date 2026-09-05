@@ -20,9 +20,9 @@ categories = ["gui", "config", "os"]
 
 [workspace.dependencies]
 native-theme = { path = "native-theme", version = "0.5.8" }
-serde = { version = "1.0.228", features = ["derive", "rc"] }
-serde_with = "3.18.0"
-toml = "1.1.2"
+serde = { version = "1.0.229", features = ["derive", "rc"] }
+serde_with = "3.22.0"
+toml = "1.1.5"
 
 # Optimize dependencies in dev builds for usable UI performance
 [profile.dev.package."*"]
