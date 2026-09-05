@@ -280,7 +280,7 @@ on the with_overlay replay."
 **Model:** Opus 5 (`implement` agent)
 
 **Files:**
-- Modify: `native-theme/src/pipeline.rs` (`select_reader` visibility; new `accessibility_from_system_inner`)
+- Modify: `native-theme/src/pipeline.rs` (new `accessibility_from_system_inner`)
 - Modify: `native-theme/src/lib.rs` (`impl AccessibilityPreferences`; test)
 
 **Interfaces:**
@@ -322,7 +322,7 @@ Expected: FAIL to compile with `no function or associated item named `from_syste
 
 - [ ] **Step 3: Implement**
 
-In `native-theme/src/pipeline.rs` change `async fn select_reader()` to `pub(crate) async fn select_reader()` and add, directly after `from_system_inner`:
+In `native-theme/src/pipeline.rs` add, directly after `from_system_inner` (same module as the private `select_reader`, so no visibility change):
 
 ```rust
 /// Reader-only extraction for [`crate::AccessibilityPreferences::from_system`]:
@@ -465,7 +465,7 @@ Behaviour-preserving: the two hand-written `match` tables in `bundled.rs` become
 cargo test -p native-theme --features lucide-icons,material-icons generated_
 ```
 
-Expected: `generated_lucide_table_covers_every_bundled_file` FAILS with `Lucide table misses bundled file arrow-down-wide-narrow.svg` (the first of the four in sorted order); the Material test passes today (76 entries cover 76 of 87 files? — no: it must FAIL too if any Material file is missing from the hand-written table; today 87 files vs 76 entries, so it fails on the first missing name, e.g. `content_cut`). Both failures are the point of this task.
+Expected: both FAIL. The Lucide test on `Lucide table misses bundled file arrow-down-wide-narrow.svg` (the first of the four missing names in sorted order); the Material test on `content_cut.svg`, the first of the eleven role-table-only files the hand-written Material table lacks (`content_cut`, `content_paste`, `edit`, `error`, `help`, `home`, `lock`, `print`, `refresh`, `save`, `shield`). Both failures are the point of this task.
 
 - [ ] **Step 3: Write `native-theme/build.rs`**
 
@@ -742,14 +742,13 @@ Expected: FAIL in `manifest()` with `native-theme/icons/SOURCES.toml exists`, an
 The ten are byte-identical to files already present under Lucide's names (verified 2026-09-05 with `cmp`; spec §1.3):
 
 ```bash
-cd native-theme/icons/lucide
+L=native-theme/icons/lucide
 for pair in close:x window-close:x dash:minus window-minimize:minus inspect:scan resize-corner:grip sort-ascending:arrow-up-narrow-wide sort-descending:arrow-down-wide-narrow window-maximize:maximize window-restore:minimize-2; do
-  cmp "${pair%%:*}.svg" "${pair##*:}.svg" || { echo "NOT identical: $pair"; exit 1; }
+  cmp "$L/${pair%%:*}.svg" "$L/${pair##*:}.svg" || { echo "NOT identical: $pair"; exit 1; }
 done
-git rm close.svg window-close.svg dash.svg window-minimize.svg inspect.svg resize-corner.svg sort-ascending.svg sort-descending.svg window-maximize.svg window-restore.svg
-git mv trash-2.svg trash.svg
-cd ../material && git rm star_border.svg
-cd /home/tibi/Rust/native-theme
+git rm "$L"/close.svg "$L"/window-close.svg "$L"/dash.svg "$L"/window-minimize.svg "$L"/inspect.svg "$L"/resize-corner.svg "$L"/sort-ascending.svg "$L"/sort-descending.svg "$L"/window-maximize.svg "$L"/window-restore.svg
+git mv "$L"/trash-2.svg "$L"/trash.svg
+git rm native-theme/icons/material/star_border.svg
 ```
 
 Expected: every `cmp` silent; `ls native-theme/icons/lucide | wc -l` = 93; `ls native-theme/icons/material | wc -l` = 86.
@@ -1433,6 +1432,41 @@ In `assign_misc`, after the `tc.drop_target = ...;` line:
 
 Update the module doc (`colors.rs:1-6`) and the `to_theme_color` doc (`:133`) from 108 to 139 fields.
 
+- [ ] **Step 3b: `hsla_to_hex` keeps alpha (D36)**
+
+`ThemeConfigColors` holds hex strings. gpui's `Rgba::try_from(&str)` accepts `#rrggbbaa` (gpui-pre 0.3.3 `src/color.rs:224-262`) and gpui-component's `try_parse_color` delegates to it for `#` strings (`src/theme/color.rs:677-680`); without alpha in the export, `overlay`, `drag_border` and `drop_target` turn opaque after `Theme::change`. Replace `hsla_to_hex` in `colors.rs` (and its doc comment "Alpha is discarded"):
+
+```rust
+/// Convert an `Hsla` colour to a hex string: `#rrggbb` when opaque, `#rrggbbaa`
+/// when the alpha is below 1 (gpui parses both, gpui-pre 0.3.3
+/// `src/color.rs:224-262`). Alpha is quantised to 8 bits like the channels.
+pub(crate) fn hsla_to_hex(c: Hsla) -> String {
+    let rgba: gpui::Rgba = c.into();
+    let channel = |v: f32| (v.clamp(0.0, 1.0) * 255.0).round() as u8;
+    let (r, g, b, a) = (channel(rgba.r), channel(rgba.g), channel(rgba.b), channel(rgba.a));
+    if a == u8::MAX {
+        format!("#{r:02x}{g:02x}{b:02x}")
+    } else {
+        format!("#{r:02x}{g:02x}{b:02x}{a:02x}")
+    }
+}
+```
+
+Test, next to `hsla_to_hex_roundtrip` (which stays: opaque colours are still seven characters):
+
+```rust
+    /// D36: alpha below 1 survives the config round trip as `#rrggbbaa`.
+    #[test]
+    fn hsla_to_hex_keeps_alpha_below_one() {
+        let translucent = Hsla { h: 0.0, s: 0.0, l: 0.0, a: 0.65 };
+        let hex = hsla_to_hex(translucent);
+        assert_eq!(hex, "#000000a6", "0.65 × 255 rounds to 166 = a6");
+        let back = gpui::Rgba::try_from(hex.as_str()).expect("gpui parses #rrggbbaa");
+        assert!((back.a - 0.65).abs() < 1.0 / 255.0);
+        assert_eq!(hsla_to_hex(Hsla { a: 1.0, ..translucent }), "#000000");
+    }
+```
+
 - [ ] **Step 4: Export the 34 new or renamed fields as hex in `config.rs`**
 
 In `theme_color_to_config_colors`, after `colors.window_border = h(tc.window_border);` add one `colors.<field> = h(tc.<field>);` line for each of: `button`, `button_hover`, `button_active`, `button_foreground`, `button_secondary`, `button_secondary_hover`, `button_secondary_active`, `button_secondary_foreground`, `button_primary`, `button_primary_hover`, `button_primary_active`, `button_primary_foreground`, `button_danger`, `button_danger_hover`, `button_danger_active`, `button_danger_foreground`, `button_info`, `button_info_hover`, `button_info_active`, `button_info_foreground`, `button_success`, `button_success_hover`, `button_success_active`, `button_success_foreground`, `button_warning`, `button_warning_hover`, `button_warning_active`, `button_warning_foreground`, `status_bar`, `status_bar_border`, `table_foot`, `table_foot_foreground` (`chart_bullish` / `chart_bearish` are already there from Task 6). Update the doc comments from 108 to 139 fields and the note that the 12 private base colours plus `group_box_title_foreground` stay `None`.
@@ -1466,6 +1500,12 @@ Add the test:
         ] {
             assert!(value.is_some(), "config colour {name} not exported");
         }
+        // D36: drag_border is primary at alpha 0.65, so its export carries alpha.
+        assert_eq!(
+            c.drag_border.as_deref().map(str::len),
+            Some(9),
+            "translucent colours are exported as #rrggbbaa"
+        );
     }
 ```
 
@@ -1649,7 +1689,7 @@ pub fn from_preset(
 
 Its doc gains: "Pass `&AccessibilityPreferences::default()` for no scaling, or `&AccessibilityPreferences::from_system()` to honour the OS preferences under a preset (spec §7.1)."
 
-`from_system`: replace `let reduce_transparency = sys.accessibility.reduce_transparency;` and the call with `let theme = to_theme(&resolved, &name, is_dark, &sys.accessibility);` (move `sys.accessibility` out before `sys.dark` / `sys.light` are moved: `let accessibility = sys.accessibility;` first, then `to_theme(&resolved, &name, is_dark, &accessibility)`). `SystemThemeExt::to_gpui_theme`: `to_theme(self.pick(self.mode), &self.name, self.mode.is_dark(), &self.accessibility)`.
+`from_system`: replace `let reduce_transparency = sys.accessibility.reduce_transparency;` and the call with `let theme = to_theme(&resolved, &name, is_dark, &sys.accessibility);` (`SystemTheme` has no `Drop`, so partial moves are fine: `let accessibility = sys.accessibility;` next to `let name = sys.name;`, then `to_theme(&resolved, &name, is_dark, &accessibility)`). `SystemThemeExt::to_gpui_theme`: `to_theme(self.pick(self.mode), &self.name, self.mode.is_dark(), &self.accessibility)`.
 
 `config.rs`:
 
@@ -2333,7 +2373,8 @@ impl<'a> Native<'a> {
 ///    onto gpui-base ([`base_layer::apply_overrides`]);
 /// 6. forwards `prefs.reduce_motion` to GPUI;
 /// 7. installs, once per `App`, the observer that restores step 5 whenever
-///    upstream rebuilds the base theme.
+///    upstream rebuilds the base theme;
+/// 8. refreshes every window so the change paints at once (D37).
 ///
 /// `theme` is moved into the global; `resolved` is cloned once.
 pub fn apply(theme: GpuiTheme, resolved: &ResolvedTheme, prefs: &AccessibilityPreferences, cx: &mut App) {
@@ -2406,13 +2447,12 @@ fn apply_inner(
 
     // D34: the other mode's config from its stored variant, so Theme::change
     // reproduces the native palette instead of the registry default.
-    let other_config = {
-        let nt = cx.global::<NativeTheme>();
+    let other_config = cx.try_global::<NativeTheme>().and_then(|nt| {
         nt.variant(!is_dark).map(|other| {
             let mode = if is_dark { GpuiThemeMode::Light } else { GpuiThemeMode::Dark };
             Rc::new(config::to_theme_config(other, &name, mode, prefs))
         })
-    };
+    });
     if let Some(cfg) = other_config {
         let styled = GpuiTheme::global_mut(cx);
         if is_dark {
@@ -2428,6 +2468,10 @@ fn apply_inner(
     write_base_overrides(cx, false);
     cx.set_reduce_motion(prefs.reduce_motion);
     install_observer_once(cx);
+    // D37: paint now. A change from a timer, portal signal or menu action must
+    // not wait for the next input event; upstream refreshes only the window
+    // passed to Theme::change (gpui-pre 0.3.3 src/app.rs:1074).
+    cx.refresh_windows();
 }
 
 /// The values to write onto gpui-base for `is_dark` (spec §3.3 step 2):
@@ -3368,7 +3412,7 @@ gpui_kit::application().run(|cx| {
 });
 ```
 
-State that `gpui_kit::init` (or `gpui_component::init`) runs before `apply`, as upstream requires: `apply` initialises the styled layer only when it is absent, and an `init` after `apply` would reset the theme. List the GPUI types the connector's public API exposes (spec §4.2), so readers know what a gpui-pre patch bump can touch. "Core concepts" with the new signatures (`apply_accessibility` rebuilds from the stored variant; `Theme::change` reproduces native colours in both modes once both variants are applied); new sections "Per-widget geometry" (the `refine_style` idiom and §9.2's table of builders with the fields each reads), "How re-application works" (§3.3 in plain terms, the single-writer assumption), "Accessibility" (§7.2 table), "GPUI as `gpui-pre`" (§1.1 in plain terms: what the package is, that patch bumps track Zed `main`, that pinning `gpui-pre = "=0.3.N"` in an application is the way to freeze it), a compatibility line "gpui-component 0.6.x · gpui-base 0.6.x · gpui-pre 0.3.x · MSRV <measured>". "What gets mapped": 139 fields; icons: 101 variants, Lucide names are Lucide's own, Material `StarOff` → none. Keep relative image paths (project rule).
+State that `gpui_kit::init` (or `gpui_component::init`) runs before `apply`, as upstream requires: `apply` initialises the styled layer only when it is absent, and an `init` after `apply` would reset the theme. Add the recipe "Light and dark under a preset": `from_preset(name, false, &prefs)` + `apply`, then `from_preset(name, true, &prefs)` + `apply`; afterwards `Theme::sync_system_appearance(None, cx)` or `Theme::change` switches between the two native palettes (D34). List the GPUI types the connector's public API exposes (spec §4.2), so readers know what a gpui-pre patch bump can touch. "Core concepts" with the new signatures (`apply_accessibility` rebuilds from the stored variant; `Theme::change` reproduces native colours in both modes once both variants are applied); new sections "Per-widget geometry" (the `refine_style` idiom and §9.2's table of builders with the fields each reads), "How re-application works" (§3.3 in plain terms, the single-writer assumption), "Accessibility" (§7.2 table), "GPUI as `gpui-pre`" (§1.1 in plain terms: what the package is, that patch bumps track Zed `main`, that pinning `gpui-pre = "=0.3.N"` in an application is the way to freeze it), a compatibility line "gpui-component 0.6.x · gpui-base 0.6.x · gpui-pre 0.3.x · MSRV <measured>". "What gets mapped": 139 fields; icons: 101 variants, Lucide names are Lucide's own, Material `StarOff` → none. Keep relative image paths (project rule).
 
 - [ ] **Step 1b: Crate-level docs in `connectors/native-theme-gpui/src/lib.rs`**
 
@@ -3396,7 +3440,7 @@ Under the existing `## [0.5.8] - Unreleased` add, keeping the docs.rs entry:
 
 ### Added
 
-- **native-theme-gpui**: `apply`, `apply_system_theme`, `apply_accessibility`; `NativeTheme` global with `cx.native_theme()` (`ActiveNativeTheme`); `Native` view; `base_layer` module (native scrollbar geometry/colours and resize-handle colours written onto gpui-base, restored automatically after upstream rebuilds the base theme); `geometry` module (per-widget `StyleRefinement` builders for Button, Input, MenuItem, ListItem, Tooltip, Popover, StatusBar, Dialog family, Table, Progress, GroupBox content, Accordion title, Checkbox, Radio, Select, Combobox, TitleBar; `Size` helpers; layout accessors); text scaling through `Theme.font_size` (rem); reduce-motion forwarded to GPUI; `focus_ring` from `focus_ring_width`; 15 new `IconName` mappings in all three tables.
+- **native-theme-gpui**: `apply`, `apply_system_theme` (a `ThemeConfig` is installed for every stored variant, so upstream's `Theme::change` reproduces native colours in both modes), `apply_accessibility` (rebuilds the styled theme from the stored variant at runtime); `NativeTheme` global with `cx.native_theme()` (`ActiveNativeTheme`); `Native` view; `base_layer` module (native scrollbar geometry/colours and resize-handle colours written onto gpui-base, restored automatically after upstream rebuilds the base theme); `geometry` module (per-widget `StyleRefinement` builders for Button, Input, MenuItem, ListItem, Tooltip, Popover, StatusBar, Dialog family, Table, Progress, GroupBox content, Accordion title, Checkbox, Radio, Select, Combobox, TitleBar; `Size` helpers; layout accessors); text scaling through `Theme.font_size` (rem); reduce-motion forwarded to GPUI; `focus_ring` from `focus_ring_width`; 15 new `IconName` mappings in all three tables.
 - **native-theme**: `SystemTheme.layout: LayoutTheme`; `AccessibilityPreferences::from_system()`; 28 bundled SVGs (14 Lucide, 14 Material); `icons/SOURCES.toml` provenance manifest; `scripts/refresh-icons.sh`; by-name icon tables generated by `build.rs` from the bundle directories.
 
 ### Changed
@@ -3408,6 +3452,7 @@ Under the existing `## [0.5.8] - Unreleased` add, keeping the docs.rs entry:
 
 - Icon bundle provenance recorded; Lucide refreshed to 1.41.0 (`github.svg` kept from 0.577.0, the last tag with brand icons); Material Symbols refreshed to upstream `0cbb08816df0`; duplicate `star_border.svg` removed.
 - The connector honoured only `reduce_transparency`; the platform's text-scaling factor and reduce-motion preference were dropped.
+- The `ThemeConfig` hex export dropped alpha, so `overlay`, `drag_border` and `drop_target` turned opaque after `Theme::change`; translucent colours are now exported as `#rrggbbaa`.
 - `publish.yml`: the gpui connector is hard-gated again (the naga/codespan-reporting conflict G11 recorded does not exist on the 0.6 stack).
 ```
 
@@ -3481,7 +3526,7 @@ Confirm the docs.rs builds of `native-theme-gpui` for all three declared targets
 4. **Fallback for the resize handle** when no variant is stored for the new mode: `border` / `drag_border` from the styled theme, upstream's own projection; now stated in spec §3.3 step 2.
 5. **`from_system()` reduce-motion rule** (§11.2 ambiguity): the reader's value where the reader supplies one, OR-ed with `detect::prefers_reduced_motion()`; never turned off by the fallback.
 
-Design changes made during the review of 2026-09-05 and written into the spec (§8.1) and rationale (D34, D35, errors 41–43): `apply` installs a `ThemeConfig` for every stored variant, so `Theme::change` reproduces native colours in both modes; `apply_accessibility` rebuilds the styled theme from the stored variant; the re-apply helper takes a `mark` flag so `apply`'s own write never sets `reapplying`.
+Design changes made during the review of 2026-09-05 and written into the spec (§8.1) and rationale (D34, D35, errors 41–43): `apply` installs a `ThemeConfig` for every stored variant, so `Theme::change` reproduces native colours in both modes; `apply_accessibility` rebuilds the styled theme from the stored variant; the re-apply helper takes a `mark` flag so `apply`'s own write never sets `reapplying`. From the third review (D36, D37, errors 44–45): the config hex export keeps alpha as `#rrggbbaa`, and `apply` ends with `refresh_windows`.
 
 ## Self-review against the spec
 

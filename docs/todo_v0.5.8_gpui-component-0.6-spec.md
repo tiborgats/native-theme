@@ -222,6 +222,7 @@ apply(theme, resolved, prefs, cx)
    4. base_layer::apply_overrides(..)              native scrollbar geometry/colours, resize-handle colours
    5. cx.set_reduce_motion(prefs.reduce_motion)
    6. once: cx.observe_global::<gpui_base::Theme>(re-apply 4)   -> Theme::change etc. cannot undo 4
+   7. cx.refresh_windows()                          paint now, not on the next input event (D37)
 
 Native { resolved, accessibility } --geometry::<widget>--> StyleRefinement --refine_style--> widget
                                     --geometry::<widget>_size--> Size     --with_size----> widget
@@ -462,7 +463,7 @@ Three exhaustive tables report 15 uncovered variants; §10 gives every entry.
 palette colours, plus `chart_1`…`chart_5` and `group_box_title_foreground`
 (no `ThemeColor` counterpart; stay `None`). `theme_color_to_config_colors`
 exports hex for all 34 new or renamed fields. `to_theme_config` exports the
-**scaled** font sizes (§3.4) so `Theme::change` reproduces them.
+**scaled** font sizes (§3.4) so `Theme::change` reproduces them. Colours whose alpha is below 1 (`overlay`, `drag_border`, `drop_target`) are exported as `#rrggbbaa`, which gpui's `Rgba::try_from` parses (gpui-pre 0.3.3 `src/color.rs:224-262`) and gpui-component's `try_parse_color` accepts (`src/theme/color.rs:677-680`); opaque colours stay `#rrggbb` (D36).
 
 ### 5.4 Showcase (31 first-pass errors)
 
@@ -650,7 +651,8 @@ pub mod base_layer {
 ```
 
 `apply` order: store → styled global → other stored variant's `ThemeConfig`
-→ `sync_base` → `apply_overrides` → `set_reduce_motion` → observer once;
+→ `sync_base` → `apply_overrides` → `set_reduce_motion` → observer once →
+`refresh_windows` (a change made outside an input event paints at once, D37);
 `reapplying` is set only by the observer's own writes (§3.3). Mode is still set on
 the styled theme in `to_theme` and reaches the base through `sync_base`.
 
@@ -1104,6 +1106,7 @@ contrast).
 | Focus-ring width/offset | derived from the element's border (`styled.rs:188-215`) |
 | High contrast | no GPUI or gpui-component receiver |
 | Scrollbar thumb radius from the platform | no platform fact; upstream's `radius` mirrored |
+| Corner radius after `Theme::change` | `ThemeConfig.radius` / `radius_lg` are `usize` in upstream's schema (`schema.rs:1093-1097`), so a fractional native radius is rounded to whole pixels once upstream re-applies the config; `to_theme` itself sets the exact value |
 | macOS / Windows text scaling and high contrast in `from_system()` | no reader yet; research item |
 | Body font weight and global line height | `Root` sets only family and size (`root.rs:579, 591`); `Theme` has no weight or line-height field; per-widget builders carry weight, and line height enters only the control-height rule |
 | Button icon size | derived from the button's `Size` (`button.rs:541-542, 579-583`), inner |

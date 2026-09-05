@@ -36,7 +36,7 @@ written out in §2.21–§2.25, and §4 now covers every row of the
 specification's limits table. A fifth pass, writing and reviewing the implementation
 plan, compared the ten renamed files byte-for-byte, traced the observer's
 activation order, and found that `apply_system_theme` installed a `ThemeConfig`
-for one mode only (errors 39–43). Section 7 records each correction.
+for one mode only (errors 39–45). Section 7 records each correction.
 
 ---
 
@@ -285,8 +285,9 @@ the config of one mode; `apply_system_theme` stored both variants but, as
 first specified, installed one config, so upstream's `Theme::change` to the
 other mode would have applied the registry's default palette under natively
 sized scrollbars. With both configs installed (D34), `Theme::change(mode)`
-re-derives the colours from the connector's own config (exact, because native
-colours are 8-bit and the hex round trip is lossless), and the observer
+re-derives the colours from the connector's own config (exact for the 8-bit
+native colours; the derived colours that carry alpha, `overlay`, `drag_border`,
+`drop_target`, keep it because the connector writes `#rrggbbaa`, D36), and the observer
 restores the base-layer geometry. Applications keep one idiom per concern:
 `Theme::change` / `sync_system_appearance` for the mode,
 `apply_accessibility` for preferences (§2.22).
@@ -402,6 +403,9 @@ specification requires a visual check of every `close` and `approximate` row.
 - `base_layer::apply_overrides` is public so an application that writes the
   base theme itself can restore the native values; the observer calls the
   same function.
+- `apply` ends with `cx.refresh_windows()`: a theme installed from a timer, a
+  portal signal or a menu action must paint immediately in every window;
+  upstream refreshes only the single window passed to `Theme::change` (D37).
 
 ### 2.23 Test design
 
@@ -514,6 +518,8 @@ moment.
 | D33 | `MemoryStick` → Breeze `memory` | an exact RAM-module icon exists; the flash-card icon matched only the name (§2.21) |
 | D34 | `apply` installs a `ThemeConfig` for every stored variant | `Theme::change` to the other mode must reproduce the native palette, not the registry default (§2.18, error 41) |
 | D35 | `apply_accessibility` rebuilds the styled theme from the stored variant | runtime preference changes take effect without the application keeping `resolved` (§2.22) |
+| D36 | Config hex keeps alpha: `#rrggbbaa` when below 1 | gpui parses eight digits; without it `overlay`, `drag_border`, `drop_target` turn opaque after `Theme::change` (error 44) |
+| D37 | `apply` ends with `App::refresh_windows` | a change from a timer, portal signal or menu action must paint at once in every window; upstream refreshes only the window passed to `Theme::change` (error 45) |
 
 ---
 
@@ -629,7 +635,7 @@ overrides.
 ## 7 -- Errors found and corrected during design
 
 Kept so the reasoning can be audited. Items 1–17 are from the first pass,
-18–26 from the second, 27–33 from the third, 34–38 from the fourth, 39–43
+18–26 from the second, 27–33 from the third, 34–38 from the fourth, 39–45
 from the implementation-plan pass.
 
 1. **First field diff was wrong** (46 fields from a bad `awk` range); corrected by diffing the two upstream structs: 108 → 139.
@@ -675,6 +681,8 @@ from the implementation-plan pass.
 41. **`apply_system_theme` stored both variants but installed one `ThemeConfig`.** Upstream's `Theme::change` to the other mode would have applied the registry's default palette while the observer restored native scrollbar geometry under it; §2.18 claimed an exactness that held for one mode only. Found while reviewing the plan's `apply_inner`; `apply` now installs the other stored variant's config too, and a test switches modes and compares the palette hex-for-hex (D34).
 42. **The plan's first `apply_inner` still set `reapplying` through the shared re-apply helper**, reintroducing the hazard error 40 describes. The helper gained a `mark` parameter; `apply` passes `false`, the observer `true`. The observer test's second `Theme::change` would have caught it.
 43. **The stale-reference table (§13.7) missed three MSRV mentions.** The root `README.md` badge, `CONTRIBUTING.md` and the MSRV CI item in `docs/todo.md` all say `1.88.0`; added to §13.7 and to the docs task.
+44. **The config hex export dropped alpha.** `hsla_to_hex` wrote `#rrggbb` only, so `overlay` (alpha 0.4/0.5), `drag_border` (0.65) and `drop_target` (0.2) became opaque after `Theme::change`, contradicting D34's "reproduces the native palette". gpui's `Rgba::try_from` accepts `#rrggbbaa` (gpui-pre 0.3.3 `src/color.rs:224-262`) and gpui-component's `try_parse_color` delegates to it for `#` strings (`src/theme/color.rs:677-680`); the connector now writes eight digits when alpha is below one (D36). `ThemeConfig.radius` being `usize` is the one remaining round-trip loss, recorded in §14.
+45. **`apply` did not repaint.** Upstream's `Theme::change(mode, Some(window), cx)` refreshes the window it is given; the connector's `apply` has no window and would have relied on the next input event. `App::refresh_windows` is public (gpui-pre 0.3.3 `src/app.rs:1074`); `apply` calls it last (D37).
 
 ---
 
