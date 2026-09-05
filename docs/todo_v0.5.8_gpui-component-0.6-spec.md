@@ -742,9 +742,12 @@ the refinement seam because it also carries the radius exactly.
   as `min_h` for `select`/`combobox`):
   `h = max(min_height_or_row_height, ceil(font.size × s × defaults.line_height) + 2 × padding_vertical)`.
   At `s = 1` this is the theme's own height wherever the platform's height
-  already accommodates its text, which is the normal case; it grows only when
-  scaled text would not fit. Inputs are theme values and the accessibility
-  factor; the rule is how toolkits size controls (font metrics plus margins).
+  already accommodates its text, which is the normal case (kde-breeze
+  button at 96 dpi: text 19 + padding 12 = 31 against a minimum of 32;
+  adwaita: 18 + 10 = 28 against 34); it grows only when scaled text would not
+  fit (the same buttons at `s = 1.5`: 40 and 37). Inputs are theme values and
+  the accessibility factor; the rule is how toolkits size controls (font
+  metrics plus margins).
 - No other arithmetic. `radio` reusing `checkbox` is a platform fact, not a
   derivation.
 
@@ -807,8 +810,12 @@ The connector's Lucide table returns the real names (`Close` and
 `WindowClose` → `x`, `Dash` and `WindowMinimize` → `minus`, `Inspect` →
 `scan`, `ResizeCorner` → `grip`, `SortAscending` → `arrow-up-narrow-wide`,
 `SortDescending` → `arrow-down-wide-narrow`, `WindowMaximize` → `maximize`,
-`WindowRestore` → `minimize-2`, `Delete` → `trash`), which is what its name
-promises. File count: 103 − 2 duplicates + 14 new = 115. The 14 new files
+`WindowRestore` → `minimize-2`), which is what its name promises. The
+connector does not use `trash-2` at all: `IconName::Delete` maps to Lucide's
+`delete` (`icons.rs:167`), and `trash-2.svg` is used only by native-theme's
+role tables for `ActionDelete`, `TrashEmpty` and `TrashFull`
+(`bundled.rs:137, 163-164`), which are what the rename to `trash.svg`
+touches. File count: 103 − 2 duplicates + 14 new = 115. The 14 new files
 come from the same tag.
 
 | Variant | Lucide name | Action |
@@ -845,8 +852,10 @@ same commit. Existence of every file below was verified.
 | `Star` | `star` | exact (hollow star) | unchanged |
 | `StarOff` | — | none: Material Symbols has no star-off glyph | `None`; `star_border.svg`, a duplicate of `star.svg` that backed this variant, is removed |
 
-`approximate` rows are checked visually against the gpui-kit glyph during
-implementation and corrected if a better Symbols glyph exists.
+`close` and `approximate` rows are checked visually against the gpui-kit
+glyph during implementation and corrected if a better Symbols glyph exists;
+their upstream names and existence were verified, their glyphs were not
+inspected.
 
 ### 10.4 Freedesktop
 

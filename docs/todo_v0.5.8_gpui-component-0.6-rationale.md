@@ -319,14 +319,18 @@ three-bar body; `battery` is the empty body.
 | `Battery` | `battery_0_bar` | the empty state of the vertical family, which is what Lucide's empty outline means | `battery_unknown` (question mark), `battery_full` (a level the source does not show) |
 | `BatteryCharging` | `battery_charging_full` | Material has charging icons only with a level; full is the neutral level and the canonical name; Lucide's glyph shows a bolt with no level | `battery_charging_20` etc. (invent a level) |
 | `BatteryFull` | `battery_full` | exact | |
-| `BatteryLow` | `battery_2_bar` | one of three bars is a third; two of six bars is a third | `battery_1_bar` (a sixth, the first draft's choice); `battery_low` (a distinct warning-style glyph outside the family) |
+| `BatteryLow` | `battery_2_bar` | one of three bars is a third; two of six bars is a third | `battery_1_bar` (a sixth, the first draft's choice); `battery_low`, a separately named icon outside the bar family whose glyph was not inspected |
 | `BatteryMedium` | `battery_4_bar` | two of three bars is two thirds; four of six is two thirds | `battery_3_bar` (half); the horizontal `battery_horiz_*` family, because Android's native battery icons are the vertical ones and mixing families breaks the side-by-side reading |
 | `BatteryWarning` | `battery_alert` | exact meaning | |
-| `Cpu` | `memory` | Material's icon named "memory" is the chip-with-pins glyph that Lucide draws for `cpu`; Material has no icon named for a processor | `developer_board` (a circuit board, not a chip) |
+| `Cpu` | `memory` | by meaning Material's `memory` is the processor/memory chip icon Android uses where Lucide uses `cpu`; Material has no icon named for a processor | `developer_board`, by name a circuit board rather than a chip |
 | `MemoryStick` | `sd_card` (approximate) | Lucide draws a RAM module; Material has none; `memory` is taken by the chip and would collapse two gpui icons into one glyph; a removable memory medium is the nearest meaning | `memory_alt` exists but its glyph was not inspected; it is the alternative to check during implementation |
-| `FileText` | `description` | Material's document-with-lines icon; exact meaning; already bundled | |
+| `FileText` | `description` | Material's document icon; exact meaning; already bundled | |
 | `HardDrive` | `hard_drive` | exact | |
-| `Network` | `lan` | Lucide draws one node above three, a tree; `lan` draws the same topology | `hub` (a star topology) |
+| `Network` | `lan` | Lucide draws one node above three, a tree; a LAN topology is the nearest meaning | `hub`, by name a hub-and-spoke topology |
+
+Only the names and upstream existence of the Material rows were verified;
+glyph descriptions in this table are by meaning and name, which is why the
+specification requires a visual check of every `close` and `approximate` row.
 | `Pause`, `Play`, `RotateCw` | `pause`, `play_arrow`, `rotate_right` | exact | |
 | `Star`, `StarFill`, `StarOff` | `star`, `star_fill1`, `None` | outlined and filled variants of one glyph; no star-off glyph exists | `star_border` (a duplicate of `star`) |
 
@@ -337,16 +341,16 @@ three-bar body; `battery` is the empty body.
 | `Battery` | `battery` | `battery` | both themes have a generic battery device icon |
 | `BatteryCharging` | `battery-100-charging` | `battery-full-charging` | neither theme has a level-less charging icon; full is the neutral level, matching the Material choice |
 | `BatteryFull` | `battery-100` | `battery-full` | exact |
-| `BatteryLow` | `battery-020` | `battery-low` | Breeze names levels in tens and 20 is the lowest non-critical level; Adwaita has the named state |
+| `BatteryLow` | `battery-020` | `battery-low` | Breeze names levels in tens; 20 reads as low without being the empty (`000`) or near-empty (`010`) state; Adwaita has the named state |
 | `BatteryMedium` | `battery-050` | `battery-good` | Breeze's midpoint; among Adwaita's `low`, `good`, `full`, `good` is the medium state |
-| `BatteryWarning` | `battery-010` (approximate) | `battery-caution` | Breeze has no alert glyph; 10 is its critical level, and `battery-missing` (an X) means something else; Adwaita's `caution` is the warning state |
+| `BatteryWarning` | `battery-010` (approximate) | `battery-caution` | Breeze has no alert icon; `010` is its near-empty level, and `battery-missing` means no battery present, a different message; Adwaita's `caution` is its warning state by name |
 | `Cpu` | `cpu` | `computer` (approximate) | Breeze has a processor device icon; Adwaita has none, and the computer is the nearest device |
 | `FileText` | `text-x-generic` | `text-x-generic` | the MIME icon for text documents, exact in both |
 | `HardDrive` | `drive-harddisk` | `drive-harddisk` | exact in both |
 | `MemoryStick` | `memory` | `media-flash` (approximate) | Breeze has a RAM-module device icon (`devices/64/memory.svg`), an exact match; the first draft's `media-flash-memory-stick` matched the *name* "memory stick" (Sony's flash card) and not the meaning; Adwaita has no RAM icon |
 | `Network` | `network-workgroup` | `network-workgroup` | a group of computers; `network-wired` is a connection-status plug |
 | `Pause`, `Play`, `RotateCw` | `media-playback-pause`, `media-playback-start`, `object-rotate-right` | same | exact |
-| `StarFill` | `starred` | `starred` | freedesktop has no outline/fill pair; `Star` and `StarFill` both map to the only star state; Breeze's `rating` is another filled star and adds nothing |
+| `StarFill` | `starred` | `starred` | freedesktop has no outline/fill pair; `Star` and `StarFill` both map to the only star state; Breeze's `rating` emblem is the alternative by name and adds nothing the existing `Star` mapping does not already use |
 
 ### 2.22 API shape, detail by detail
 
@@ -387,10 +391,17 @@ three-bar body; `battery` is the empty body.
   screenshot workflow already covers rendering on all three platforms.
 - **`s ∈ {1.0, 1.5}`.** At 1.0 the control-height rule must return the
   theme's own value (first branch of the `max`); 1.5 was chosen because for
-  the presets the tests use it makes scaled text plus padding exceed the
-  declared minimum (second branch). The test asserts the branch condition it
-  exercises instead of assuming it, so a preset whose minimum still dominates
-  at 1.5 is caught and the factor raised.
+  the two presets the tests use it makes scaled text plus padding exceed the
+  declared minimum (second branch). Checked against the preset files at
+  96 dpi (`FontSize::Pt(v)` resolves to `v × dpi / 72`,
+  `native-theme/src/model/font.rs:113-115`): kde-breeze has a 10 pt button
+  font (13.33 px), line height 1.36, vertical padding 6 and minimum height 32
+  (`kde-breeze.toml:34, 48, 90, 103`), so `ceil(13.33 × 1.36) + 12 = 31 < 32`
+  at 1.0 and `ceil(20 × 1.36) + 12 = 40 > 32` at 1.5; adwaita has 11 pt
+  (14.67 px), 1.21, 5 and 34 (`adwaita.toml:34, 48, 88, 100`), so `28 < 34`
+  at 1.0 and `37 > 34` at 1.5. The test still asserts the branch condition it
+  exercises instead of assuming it, so a preset whose minimum dominates at
+  1.5 is caught and the factor raised.
 - **The observer test asserts `resizable.handle`.** It is the only field of
   the base theme with a readable, comparable value that upstream rewrites on
   `Theme::change`; the scrollbar styles are opaque (§2.20). The test
@@ -589,7 +600,7 @@ overrides.
 ## 7 -- Errors found and corrected during design
 
 Kept so the reasoning can be audited. Items 1–17 are from the first pass,
-18–26 from the second, 27–33 from the third, 34–36 from the fourth.
+18–26 from the second, 27–33 from the third, 34–38 from the fourth.
 
 1. **First field diff was wrong** (46 fields from a bad `awk` range); corrected by diffing the two upstream structs: 108 → 139.
 2. **`grep` undercounted 0.5.1 fields as 103**; the `size_of` tripwire's 108 is authoritative.
@@ -627,6 +638,8 @@ Kept so the reasoning can be audited. Items 1–17 are from the first pass,
 34. **The rationale recorded conclusions where it owed reasoning.** Icon-name choices, API shape, test design and task order appeared only as results in the specification. Prompted by the maintainer's observation about the two documents' relative size, §2.21–§2.25 were written and §4 extended to every limits row. The size ratio itself was not the defect (the project's egui pair is spec 5150 lines to rationale 1837); the missing arguments were.
 35. **`BatteryLow` was mapped to `battery_1_bar`.** Reading Lucide's path data shows one of three bars, a third; on Material's six-bar family that is `battery_2_bar`. `BatteryMedium`'s `battery_4_bar` was right for the wrong reason and is now labelled close, not approximate.
 36. **`MemoryStick` was mapped to Breeze `media-flash-memory-stick` on a name match.** Breeze has `devices/64/memory.svg`, a RAM module, which is what Lucide draws. Corrected to `memory`, exact.
+37. **The specification said the connector maps `Delete` to `trash`.** It maps `Delete` to Lucide's `delete` icon (`icons.rs:167`) and never used `trash-2`; only native-theme's role tables do. The `trash-2` → `trash` rename is therefore a native-theme change alone, and the sentence was corrected.
+38. **Glyph descriptions in the icon reasoning were written from memory.** Names and upstream existence were verified; glyph shapes for the Material `close` rows, `hub`, `developer_board`, `battery_low`, Breeze's `battery-missing` and `rating` were not. The descriptions were rewritten to say what was verified, and the specification now requires a visual check of every `close` row, not only the `approximate` ones.
 
 ---
 
