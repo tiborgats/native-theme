@@ -55,6 +55,7 @@ The plan argues from the spec; executors read both. Section numbers below (§) r
 | 16 Release | **Fable 5.1** | approval gate, irreversible actions |
 - **Intermediate red states, and where they are allowed**: after Task 5 the 0.5.1 connector's icon tests may fail until Task 6 (the bundle names it used are gone); from Task 6 until Task 12 the showcase example does not compile, so connector gates use `cargo test -p native-theme-gpui --lib` (a plain `cargo test` also builds examples). No task leaves `native-theme`, `native-theme-derive`, `native-theme-build` or `native-theme-iced` red.
 - Run every command from the repository root. Where a step says "Expected: FAIL", run it and read the failure before implementing; the failure text is part of the gate.
+- **Repository hooks** (`.claude/settings.json`, PreToolUse on Write/Edit) check every edit of a `.rs` file outside `tests/`: `no-runtime-panics.sh` rejects an edit whose text contains `.unwrap()`, `.expect(`, `panic!(` or `unsafe` unless that same text also contains `#[cfg(test)]`, `#[test]` or `#[allow(clippy::unwrap_used` (a bare `#[gpui::test]` does not count), so write each test module in one edit that includes its header; `no-invented-values.sh` rejects `unwrap_or(<number>)`, `map_or(<number>` and multiplications by `0.6x`–`0.8x`, `1.1x`–`1.3x`, `1.8x` or `2.0`, in test modules too, which is why every scaling test in this plan uses the factor `1.5`. Files under `tests/`, `.md`, `.toml`, `.sh` and `.py` are exempt.
 - Each task ends with one commit. Steps inside a task that say "Run" are the mechanical checks; do not skip them.
 
 ## File structure
@@ -779,9 +780,12 @@ license = "LICENSE-LUCIDE.txt"
 [[set]]
 name = "material"
 dir = "material"
-# Material Symbols, Outlined style, 24px, default weight, no fill.
+# Material Symbols, Outlined style, 24px, default weight, no fill. The ref is
+# the full commit SHA (the spec and rationale cite its short form 0cbb08816df0):
+# raw.githubusercontent.com resolves the short form today, but only the full
+# form is the documented stable address.
 repository = "https://github.com/google/material-design-icons"
-ref = "0cbb08816df0"
+ref = "0cbb08816df07faaae3dca060d4ebb10b66c214f"
 path = "symbols/web/{name}/materialsymbolsoutlined/{name}_24px.svg"
 license = "LICENSE-MATERIAL.txt"
 
@@ -795,7 +799,7 @@ reason = "Lucide removed every brand icon in 1.x (commit aa8f74eb) and offers no
 [[file]]
 set = "material"
 file = "star_fill1.svg"
-ref = "0cbb08816df0"
+ref = "0cbb08816df07faaae3dca060d4ebb10b66c214f"
 path = "symbols/web/star/materialsymbolsoutlined/star_fill1_24px.svg"
 reason = "filled variant of star; the upstream stem carries _fill1 before _24px, so the set pattern does not apply"
 ```
@@ -1592,8 +1596,8 @@ field left at transparent black."
     #[test]
     fn from_preset_takes_preferences() {
         let (theme, resolved) =
-            from_preset("catppuccin-latte", false, &scaled(1.25)).expect("preset should load");
-        assert_eq!(theme.font_size, px(resolved.defaults.font.size * 1.25));
+            from_preset("catppuccin-latte", false, &scaled(1.5)).expect("preset should load");
+        assert_eq!(theme.font_size, px(resolved.defaults.font.size * 1.5));
     }
 ```
 
@@ -2006,7 +2010,7 @@ git commit -m "feat(gpui): base_layer module: native scrollbar geometry and resi
 - Modify: `connectors/native-theme-gpui/src/lib.rs`
 
 **Interfaces:**
-- Consumes: `base_layer::{scrollbar_geometry, resizable_theme, apply_overrides, ScrollbarGeometry}` (Task 9); `gpui::{App, Global}`; `App::{has_global, try_global, global, global_mut, default_global, observe_global, set_reduce_motion, reduce_motion}` (gpui-pre 0.3.3 `src/app.rs:1059-1068, 2018-2099`); `gpui_component::init` (`src/lib.rs:128`); `gpui_component::theme::Theme::{global, global_mut, is_dark, sync_base, change}` (`src/theme/mod.rs:172-183, 237-260, 321-326`); `gpui_base::Theme::{global, global_mut}`.
+- Consumes: `base_layer::{scrollbar_geometry, resizable_theme, apply_overrides, ScrollbarGeometry}` (Task 9); `gpui::{App, Global}`; `App::{has_global, try_global, global, global_mut, default_global, observe_global, defer, set_reduce_motion, reduce_motion, refresh_windows}` (gpui-pre 0.3.3 `src/app.rs:1059-1074, 2001-2099`); `gpui_component::init` (`src/lib.rs:128`); `gpui_component::theme::Theme::{global, global_mut, is_dark, sync_base, change}` (`src/theme/mod.rs:172-183, 237-260, 321-326`); `gpui_base::Theme::{global, global_mut}`.
 - Produces:
 
 ```rust
@@ -2117,6 +2121,29 @@ mod apply_tests {
                 gpui_base::Theme::global(cx).resizable.handle,
                 Some(handle),
                 "and after the second rebuild (no stale reapplying flag)"
+            );
+        });
+    }
+
+    /// §3.3, D38: the observer activates at the end of the effect flush that
+    /// installs it, so a rebuild in the *same* update as the first `apply` (an
+    /// application calling `Theme::sync_system_appearance` right after it) is
+    /// delivered while the observer is inactive. The deferred re-write in
+    /// `install_observer_once` closes that gap; without it this test fails.
+    #[gpui::test]
+    fn apply_then_change_in_the_same_update_keeps_overrides(cx: &mut TestAppContext) {
+        let prefs = AccessibilityPreferences::default();
+        let (theme, resolved) = preset_with_distinct_splitter(&prefs);
+        let handle = colors::rgba_to_hsla(resolved.splitter.divider_color);
+        cx.update(|cx| {
+            apply(theme, &resolved, &prefs, cx);
+            GpuiTheme::change(GpuiThemeMode::Dark, None, cx); // same update: observer not yet active
+        });
+        cx.update(|cx| {
+            assert_eq!(
+                gpui_base::Theme::global(cx).resizable.handle,
+                Some(handle),
+                "the deferred re-write restored the overrides after a same-update rebuild"
             );
         });
     }
@@ -2363,7 +2390,9 @@ impl<'a> Native<'a> {
 ///    onto gpui-base ([`base_layer::apply_overrides`]);
 /// 6. forwards `prefs.reduce_motion` to GPUI;
 /// 7. installs, once per `App`, the observer that restores step 5 whenever
-///    upstream rebuilds the base theme;
+///    upstream rebuilds the base theme, together with one deferred repeat of
+///    step 5 for the update that installs it (the subscription activates only
+///    at the end of that update's effect flush, D38);
 /// 8. refreshes every window so the change paints at once (D37).
 ///
 /// `theme` is moved into the global; `resolved` is cloned once.
@@ -2515,6 +2544,13 @@ fn write_base_overrides(cx: &mut App, mark: bool) {
 /// deduplicated notification (gpui-pre 0.3.3 `src/app.rs:1662-1664`), delivered
 /// after the pending mark is removed (`:1817-1821`): the observer's own write
 /// yields exactly one further delivery, absorbed by `reapplying`.
+///
+/// The subscription activates through a deferred effect (`src/app.rs:2087-2099`)
+/// at the end of the flush that follows this call, so a base-theme write made by
+/// other code in the same update as the first `apply` (a
+/// `Theme::sync_system_appearance` right after it) would stand until the next
+/// rebuild. One deferred re-write, queued after the activation, closes that gap
+/// (D38); it is the first notification the active observer receives.
 fn install_observer_once(cx: &mut App) {
     if cx.try_global::<NativeTheme>().is_none_or(|nt| nt.observer_installed) {
         return;
@@ -2529,6 +2565,10 @@ fn install_observer_once(cx: &mut App) {
         write_base_overrides(cx, true);
     })
     .detach();
+    // Effects are FIFO, so this runs after the activation above and after any
+    // same-update write. `false`: the active observer re-applies once on its
+    // delivery and absorbs its own write, like any other rebuild (§3.3).
+    cx.defer(|cx| write_base_overrides(cx, false));
 }
 ```
 
@@ -3381,7 +3421,7 @@ git commit -m "ci: gpui connector hard-gated again (G11's naga/codespan conflict
 **Model:** Fable 5.1 inline
 
 **Files:**
-- Modify: `connectors/native-theme-gpui/README.md`, `CHANGELOG.md`, `ROADMAP.md`, `docs/todo.md`, `docs/todo_gpui-full-theme.md`, `docs/todo_v0.6.0_egui-connector-rationale.md:1079`, `docs/todo_v0.6.0_egui-connector-spec.md:4717`, `docs/archive/v0.5.7_gaps.md` (§G11), `docs/todo_v0.5.8_gpui-component-0.6-spec.md` (Status), `docs/todo_v0.5.8_gpui-component-0.6-rationale.md` (Status), this plan (Status)
+- Modify: `connectors/native-theme-gpui/README.md`, `connectors/native-theme-gpui/src/lib.rs` (crate-level docs, Step 1b), `CHANGELOG.md`, `ROADMAP.md`, `docs/todo.md`, `docs/todo_gpui-full-theme.md`, `docs/todo_v0.6.0_egui-connector-rationale.md:1079`, `docs/todo_v0.6.0_egui-connector-spec.md:4717`, `docs/archive/v0.5.7_gaps.md` (§G11), `docs/todo_v0.5.8_gpui-component-0.6-spec.md` (Status), `docs/todo_v0.5.8_gpui-component-0.6-rationale.md` (Status), this plan (Status)
 
 - [ ] **Step 1: Connector README (§13.1)**
 
@@ -3402,7 +3442,7 @@ gpui_kit::application().run(|cx| {
 });
 ```
 
-State that `gpui_kit::init` (or `gpui_component::init`) runs before `apply`, as upstream requires: `apply` initialises the styled layer only when it is absent, and an `init` after `apply` would reset the theme. Add the recipe "Light and dark under a preset": `from_preset(name, false, &prefs)` + `apply`, then `from_preset(name, true, &prefs)` + `apply`; afterwards `Theme::sync_system_appearance(None, cx)` or `Theme::change` switches between the two native palettes (D34). List the GPUI types the connector's public API exposes (spec §4.2), so readers know what a gpui-pre patch bump can touch. "Core concepts" with the new signatures (`apply_accessibility` rebuilds from the stored variant; `Theme::change` reproduces native colours in both modes once both variants are applied); new sections "Per-widget geometry" (the `refine_style` idiom and §9.2's table of builders with the fields each reads), "How re-application works" (§3.3 in plain terms, the single-writer assumption), "Accessibility" (§7.2 table), "GPUI as `gpui-pre`" (§1.1 in plain terms: what the package is, that patch bumps track Zed `main`, that pinning `gpui-pre = "=0.3.N"` in an application is the way to freeze it), a compatibility line "gpui-component 0.6.x · gpui-base 0.6.x · gpui-pre 0.3.x · MSRV <measured>". "What gets mapped": 139 fields; icons: 101 variants, Lucide names are Lucide's own, Material `StarOff` → none. Keep relative image paths (project rule).
+State that `gpui_kit::init` (or `gpui_component::init`) runs before `apply`, as upstream requires: `apply` initialises the styled layer only when it is absent, and an `init` after `apply` would reset the theme. Add the recipe "Light and dark under a preset": `from_preset(name, false, &prefs)` + `apply`, then `from_preset(name, true, &prefs)` + `apply`; afterwards `Theme::sync_system_appearance(None, cx)` or `Theme::change` switches between the two native palettes (D34). List the GPUI types the connector's public API exposes (spec §4.2), so readers know what a gpui-pre patch bump can touch. "Core concepts" with the new signatures (`apply_accessibility` rebuilds from the stored variant; `Theme::change` reproduces native colours in both modes once both variants are applied); new sections "Per-widget geometry" (the `refine_style` idiom and §9.2's table of builders with the fields each reads), "How re-application works" (§3.3 in plain terms; the single-writer assumption; the registry-name limit: a same-named theme loaded through `ThemeRegistry` replaces the connector's colours on a registry change, spec §3.3), "Accessibility" (§7.2 table), "GPUI as `gpui-pre`" (§1.1 in plain terms: what the package is, that patch bumps track Zed `main`, that pinning `gpui-pre = "=0.3.N"` in an application is the way to freeze it), a compatibility line "gpui-component 0.6.x · gpui-base 0.6.x · gpui-pre 0.3.x · MSRV <measured>". "What gets mapped": 139 fields; icons: 101 variants, Lucide names are Lucide's own, Material `StarOff` → none. Keep relative image paths (project rule).
 
 - [ ] **Step 1b: Crate-level docs in `connectors/native-theme-gpui/src/lib.rs`**
 
@@ -3480,6 +3520,7 @@ Expected: every check green (fmt, clippy, panic lint, package). Also check every
 
 ```bash
 git add -A -- '*.md'
+git add connectors/native-theme-gpui/src/lib.rs   # Step 1b: crate-level docs
 git commit -m "docs(v0.5.8): README, CHANGELOG, ROADMAP and todo for the gpui-component 0.6 connector"
 ```
 
@@ -3515,6 +3556,7 @@ Confirm the docs.rs builds of `native-theme-gpui` for all three declared targets
 3. **`reapplying` is set only by the observer** (spec §3.3 / §8.1 corrected, rationale error 40): the subscription activates after the effects `apply` queues, so a flag set in `apply` would go stale. Task 10's test runs `Theme::change` twice.
 4. **Fallback for the resize handle** when no variant is stored for the new mode: `border` / `drag_border` from the styled theme, upstream's own projection; now stated in spec §3.3 step 2.
 5. **`from_system()` reduce-motion rule** (§11.2 ambiguity): the reader's value where the reader supplies one, OR-ed with `detect::prefers_reduced_motion()`; never turned off by the fallback.
+6. **First-install gap** (D38, rationale error 46): the observer's subscription activates at the end of the flush that installs it, so `install_observer_once` also queues one deferred re-write of the overrides; the test `apply_then_change_in_the_same_update_keeps_overrides` runs `apply` and `Theme::change` in one update. Now in spec §3.3 and §12.
 
 Design changes made during the review of 2026-09-05 and written into the spec (§8.1) and rationale (D34, D35, errors 41–43): `apply` installs a `ThemeConfig` for every stored variant, so `Theme::change` reproduces native colours in both modes; `apply_accessibility` rebuilds the styled theme from the stored variant; the re-apply helper takes a `mark` flag so `apply`'s own write never sets `reapplying`. From the third review (D36, D37, errors 44–45): the config hex export keeps alpha as `#rrggbbaa`, and `apply` ends with `refresh_windows`.
 

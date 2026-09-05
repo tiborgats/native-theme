@@ -36,7 +36,12 @@ written out in §2.21–§2.25, and §4 now covers every row of the
 specification's limits table. A fifth pass, writing and reviewing the implementation
 plan, compared the ten renamed files byte-for-byte, traced the observer's
 activation order, and found that `apply_system_theme` installed a `ThemeConfig`
-for one mode only (errors 39–45). Section 7 records each correction.
+for one mode only (errors 39–45). A sixth pass re-verified every entry point
+the plan names against the published sources and the repository, traced the
+first `apply` through the effect queue, and found that an upstream rebuild in
+the same update as the first `apply` escaped the observer (error 46) and that
+gpui-component's registry observer can replace the connector's configs by name
+(error 47). Section 7 records each correction.
 
 ---
 
@@ -159,6 +164,39 @@ and `sync_base` rebuild the base theme with fixed styles (`theme/mod.rs:268-300`
 | **A global observer on `gpui_base::Theme` that re-applies the overrides** | **Chosen.** `App::observe_global` exists (gpui-pre `src/app.rs:2087-2099`); `set_global` and `global_mut` both queue one notification (`:2040-2043, 2062-2065`); pending notifications for one type are deduplicated (`:1662-1664`) and the mark is removed before observers run (`:1817-1821`). The observer's own write therefore produces exactly one further delivery, absorbed by a `reapplying` flag. No upstream code observes the base theme (the only upstream global observer watches `ThemeRegistry`, `theme/registry.rs:46`), so there is no competing writer. Correct mode colours come from the stored variant for the styled theme's current mode; when none is stored, geometry from the other variant and colours from the styled theme. Tested for both survival and termination. |
 | Documented "call `apply` again" rule | Rejected (this was the first draft). It puts a call-order obligation on every application and fails silently when forgotten; the observer removes it at the cost of one flag. |
 | Upstream PR first | Kept as the durable fix (`docs/todo.md`), not waited for. |
+
+**Activation gap.** `observe_global` inserts the subscription inactive and
+activates it through `defer` (gpui-pre `src/app.rs:2087-2099`);
+`SubscriberSet::retain` skips inactive entries (`src/subscription.rs:125`).
+The first `apply` therefore has a window: every base-theme write made in the
+same update after it, before the flush, is delivered while the observer is
+still inactive, and its values stand until the next rebuild. The usual
+start-up sequence, `apply_system_theme` followed by
+`Theme::sync_system_appearance`, does exactly that. Options: a documented
+"call `apply` last" rule, rejected as the call-order obligation this section
+removes; activating synchronously, impossible because `activate` is internal
+to `observe_global`; one deferred re-write queued after the activation,
+chosen (D38). Effects are FIFO, so the re-write runs after the activation and
+after any same-update write; it costs one extra write of the overrides at
+start-up; and it passes `mark = false`, so the active observer treats it like
+any other rebuild and "only the observer sets `reapplying`" stays literally
+true. Later `apply` calls need nothing, the observer is active.
+
+**The registry observer.** Error 28's grep found gpui-component's one global
+observer, on `ThemeRegistry`, and stopped at "it does not write the base
+theme". It does more (`theme/registry.rs:41-51`): on a registry change it
+replaces the styled theme's `light_theme` / `dark_theme` with the registry's
+themes **of the same name**, then calls `Theme::change`, which the
+connector's observer handles like any rebuild. The connector's configs carry
+the native display name (`Breeze`, `Adwaita`, a preset's name); the default
+registry holds `Default`, `Default Light` and `Default Dark`
+(`theme/default-theme.json`); and the registry is notified only by
+`ThemeRegistry::watch_dir` and `load_themes_from_str`. A collision therefore
+needs an application that loads a same-named theme through the registry, and
+that theme then wins for the colours while the base-layer geometry is still
+restored. Suffixing the connector's config names was rejected: `theme_name()`
+is what applications display. Recorded as a limit in the specification and
+the README.
 
 ### 2.8 Which mode's colours the observer uses
 
@@ -433,7 +471,7 @@ specification requires a visual check of every `close` and `approximate` row.
   the base theme with a readable, comparable value that upstream rewrites on
   `Theme::change`; the scrollbar styles are opaque (§2.20). The test
   returning is the termination proof: an observer loop would hang the test
-  and fail CI's timeout, which is the intended failure mode. `Theme::change` is called with the *same* mode (with one stored variant, a different mode exercises the fallback, which has its own test) and twice, so a flag left set by the first delivery would fail the second assertion (error 40).
+  and fail CI's timeout, which is the intended failure mode. `Theme::change` is called with the *same* mode (with one stored variant, a different mode exercises the fallback, which has its own test) and twice, so a flag left set by the first delivery would fail the second assertion (error 40). A third `#[gpui::test]` runs `apply` and `Theme::change` inside one `cx.update`, the only way to reach the window in which the observer is installed but not yet active (§2.7, D38).
 - **`no_theme_color_field_is_left_at_default`.** The `size_of` tripwire
   counts fields but cannot see an unassigned one; comparing every field with
   the zero `Hsla` catches exactly the failure 0.6.0 introduced, twenty-eight
@@ -520,6 +558,7 @@ moment.
 | D35 | `apply_accessibility` rebuilds the styled theme from the stored variant | runtime preference changes take effect without the application keeping `resolved` (§2.22) |
 | D36 | Config hex keeps alpha: `#rrggbbaa` when below 1 | gpui parses eight digits; without it `overlay`, `drag_border`, `drop_target` turn opaque after `Theme::change` (error 44) |
 | D37 | `apply` ends with `App::refresh_windows` | a change from a timer, portal signal or menu action must paint at once in every window; upstream refreshes only the window passed to `Theme::change` (error 45) |
+| D38 | `install_observer_once` queues one deferred re-write of the base overrides | the subscription activates at the end of the flush; a rebuild in the same update as the first `apply` would otherwise stand until the next one (§2.7, error 46) |
 
 ---
 
@@ -636,7 +675,7 @@ overrides.
 
 Kept so the reasoning can be audited. Items 1–17 are from the first pass,
 18–26 from the second, 27–33 from the third, 34–38 from the fourth, 39–45
-from the implementation-plan pass.
+from the implementation-plan pass, 46–47 from the sixth pass.
 
 1. **First field diff was wrong** (46 fields from a bad `awk` range); corrected by diffing the two upstream structs: 108 → 139.
 2. **`grep` undercounted 0.5.1 fields as 103**; the `size_of` tripwire's 108 is authoritative.
@@ -683,6 +722,8 @@ from the implementation-plan pass.
 43. **The stale-reference table (§13.7) missed three MSRV mentions.** The root `README.md` badge, `CONTRIBUTING.md` and the MSRV CI item in `docs/todo.md` all say `1.88.0`; added to §13.7 and to the docs task.
 44. **The config hex export dropped alpha.** `hsla_to_hex` wrote `#rrggbb` only, so `overlay` (alpha 0.4/0.5), `drag_border` (0.65) and `drop_target` (0.2) became opaque after `Theme::change`, contradicting D34's "reproduces the native palette". gpui's `Rgba::try_from` accepts `#rrggbbaa` (gpui-pre 0.3.3 `src/color.rs:224-262`) and gpui-component's `try_parse_color` delegates to it for `#` strings (`src/theme/color.rs:677-680`); the connector now writes eight digits when alpha is below one (D36). `ThemeConfig.radius` being `usize` is the one remaining round-trip loss, recorded in §14.
 45. **`apply` did not repaint.** Upstream's `Theme::change(mode, Some(window), cx)` refreshes the window it is given; the connector's `apply` has no window and would have relied on the next input event. `App::refresh_windows` is public (gpui-pre 0.3.3 `src/app.rs:1074`); `apply` calls it last (D37).
+46. **The first `apply` was traced only against the notifications it queued itself.** Error 40 established that the observer misses those; it did not ask what else the same update might write. A `Theme::sync_system_appearance` (or any `Theme::change`) right after the first `apply`, the usual start-up sequence, rebuilds the base theme while the observer is still inactive, and the native scrollbar geometry and handle colours would stand replaced until the next rebuild. `install_observer_once` now queues one deferred re-write after the activation (D38), and a `#[gpui::test]` runs `apply` and `Theme::change` in one update.
+47. **The single-writer check stopped at the base theme.** The registry observer (`theme/registry.rs:41-51`) does not write `gpui_base::Theme`, but it replaces the styled theme's configs with same-named registry themes before calling `Theme::change`. With the default registry (`Default`, `Default Light`, `Default Dark`) nothing collides; an application loading a same-named theme through `ThemeRegistry` would replace the connector's colours. Recorded as a limit (§2.7), in the specification (§3.3) and in the README task.
 
 ---
 

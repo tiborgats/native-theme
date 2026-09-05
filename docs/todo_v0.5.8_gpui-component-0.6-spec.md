@@ -222,6 +222,7 @@ apply(theme, resolved, prefs, cx)
    4. base_layer::apply_overrides(..)              native scrollbar geometry/colours, resize-handle colours
    5. cx.set_reduce_motion(prefs.reduce_motion)
    6. once: cx.observe_global::<gpui_base::Theme>(re-apply 4)   -> Theme::change etc. cannot undo 4
+   6b. first install only: cx.defer(re-apply 4)      -> a rebuild in the same update as 6 (D38)
    7. cx.refresh_windows()                          paint now, not on the next input event (D37)
 
 Native { resolved, accessibility } --geometry::<widget>--> StyleRefinement --refine_style--> widget
@@ -249,8 +250,9 @@ Upstream rebuilds the base theme with fixed scrollbar styles in
 
 1. Reads `NativeTheme`. If its `reapplying` flag is set, clears it and
    returns: the notification was caused by the observer's own write.
-2. Determines the current mode from `gpui_component::Theme::global(cx).is_dark()`
-   and picks the stored variant for that mode. If no variant is stored for
+2. Determines the current mode from the styled theme (`cx.try_global`, falling
+   back to the mode `apply` last installed, §8.1) and picks the stored variant
+   for that mode. If no variant is stored for
    that mode, it takes geometry from the stored variant of the other mode and
    colours from the styled theme's `scrollbar`, `scrollbar_thumb`,
    `scrollbar_thumb_hover` (active = hover, as upstream does) and the
@@ -275,10 +277,29 @@ once (idempotent), and that write is the one the flag absorbs. The
 `Theme::change` after `apply` and asserts both that the overrides survived
 and that the test returns.
 
+Activation gap: because the subscription activates only at the end of the
+flush, a base-theme write made by other code in the *same* update as the first
+`apply` (`Theme::sync_system_appearance` called right after it, the usual
+start-up sequence) is delivered while the observer is still inactive and would
+stand until the next rebuild. `install_observer_once` therefore also queues,
+after the activation, one deferred re-write of step 4 (`cx.defer`); effects are
+FIFO, so it runs after any such write and is the first notification the active
+observer receives (D38). Later `apply` calls need nothing: the observer is
+active. A `#[gpui::test]` in §12 runs `apply` and `Theme::change` inside one
+update and asserts the overrides.
+
 Limit: another observer of `gpui_base::Theme` that also writes it would race
 this one. The only global observer in gpui-base and gpui-component 0.6.0
-watches `ThemeRegistry` (`src/theme/registry.rs:46`), not the base theme;
-the README states the assumption.
+watches `ThemeRegistry` (`src/theme/registry.rs:46`), not the base theme. That
+observer does, however, replace the styled theme's `light_theme` /
+`dark_theme` with registry themes **of the same name** before calling
+`Theme::change` (`:41-51`); the connector's configs carry the native display
+name, the default registry holds only `Default`, `Default Light` and
+`Default Dark` (`src/theme/default-theme.json`), and the registry is notified
+only through its own loading API (`watch_dir`, `load_themes_from_str`), so the
+connector's colours are replaced only by an application that loads a
+same-named theme through `ThemeRegistry`; the base-layer geometry is still
+restored. The README states both assumptions.
 
 ### 3.4 Text scaling and rem
 
@@ -651,8 +672,10 @@ pub mod base_layer {
 ```
 
 `apply` order: store → styled global → other stored variant's `ThemeConfig`
-→ `sync_base` → `apply_overrides` → `set_reduce_motion` → observer once →
-`refresh_windows` (a change made outside an input event paints at once, D37);
+→ `sync_base` → `apply_overrides` → `set_reduce_motion` → observer once (plus,
+in the update that installs it, one deferred re-write of `apply_overrides`,
+D38) → `refresh_windows` (a change made outside an input event paints at
+once, D37);
 `reapplying` is set only by the observer's own writes (§3.3). Mode is still set on
 the styled theme in `to_theme` and reaches the base through `sync_base`.
 
@@ -860,7 +883,8 @@ touches. File count: Lucide 103 − 10 duplicates + 14 new = 107 (the
 Bundle style: Material Symbols **Outlined, 24px, default weight, no fill**,
 path `symbols/web/<name>/materialsymbolsoutlined/<name>_24px.svg`. All
 existing Material files are refreshed from upstream HEAD `0cbb08816df0`
-(2026-09-04) so the bundle is one revision; the 14 new files come from the
+(2026-09-04; the manifest records the full SHA
+`0cbb08816df07faaae3dca060d4ebb10b66c214f`) so the bundle is one revision; the 14 new files come from the
 same commit. Existence of every file below was verified.
 
 | Variant | Name | Confidence | Action |
@@ -994,6 +1018,7 @@ contrast are recorded in `docs/todo.md` as research items, not guessed.
 | `to_theme` scaling test | headless | `font_size == px(size × 1.5)`; config copies scaled |
 | `hsla_to_hex_keeps_alpha_below_one`; the config test asserts the `drag_border` export has nine characters | headless | translucent colours survive the config round trip as `#rrggbbaa` (D36) |
 | `#[gpui::test] apply_installs_and_survives_theme_change` | headless App | after `apply` alone (it initialises gpui-component itself, D29): styled mode as requested, base `scrollbar.mode()` as expected, `resizable.handle` = splitter colour, `cx.reduce_motion()` follows prefs; after `Theme::change` with the *same* mode (which rebuilds the base theme), run twice: `resizable.handle` equals the stored variant's splitter colour after each change (proves the observer ran and left no stale `reapplying` flag) and the test returns (proves termination); the preset is chosen so the splitter colour differs from `border`, which upstream would write |
+| `#[gpui::test] apply_then_change_in_the_same_update_keeps_overrides` | headless App | `apply` and `Theme::change` inside one `cx.update`, before the observer is active: the deferred re-write (D38) leaves `resizable.handle` at the stored variant's splitter colour |
 | `#[gpui::test] apply_without_stored_variant_falls_back` | headless App | observer fallback path (§3.3 step 2) |
 | `#[gpui::test] apply_installs_configs_for_both_variants` | headless App | after `apply(dark)` then `apply(light)`: `Theme::change(Dark)` reproduces the dark variant's palette through the installed `ThemeConfig` (compared hex-for-hex, including a `button_*` field) |
 | `#[gpui::test] apply_accessibility_rescales_from_the_stored_variant` | headless App | after `apply`, `apply_accessibility` with factor 1.5: `font_size` and its config copy are scaled, `reduce_motion` forwarded, preferences stored |
@@ -1009,7 +1034,8 @@ contrast are recorded in `docs/todo.md` as research items, not guessed.
 
 Quick start with `apply_system_theme` and `from_preset(.., &prefs)` + `apply`;
 "Per-widget geometry" with the `refine_style` idiom and §9.2's table;
-"How re-application works" (§3.3, including the single-writer assumption);
+"How re-application works" (§3.3, including the single-writer assumption and
+the registry-name limit);
 "Accessibility" (§7.2); "GPUI as `gpui-pre`" (§1.1 in plain terms, pinning
 advice); the `init`-before-`apply` rule (D29); the GPUI surface of §4.2; compatibility line: gpui-component 0.6.x, gpui-base 0.6.x, gpui-pre 0.3.x, MSRV.
 
