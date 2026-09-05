@@ -1001,12 +1001,12 @@ readme = "README.md"
 description = "gpui toolkit connector for native-theme"
 
 [package.metadata.docs.rs]
+# No `targets` list (spec §4.1, D40): every platform-gated public item of this
+# crate is Linux-gated and appears on docs.rs's default target; the other two
+# targets would render the same page minus those items at the cost of the
+# first-ever cross-target docs build of gpui-pre's macOS and Windows platform
+# crates.
 all-features = true
-targets = [
-    "x86_64-unknown-linux-gnu",
-    "x86_64-apple-darwin",
-    "x86_64-pc-windows-msvc",
-]
 
 [features]
 default = ["material-icons", "lucide-icons", "system-icons", "svg-rasterize"]
@@ -3345,6 +3345,8 @@ Add `use gpui_component::StyledExt;` and `use native_theme_gpui::{ActiveNativeTh
 
 Add one tooltip line per refined widget naming the `ResolvedTheme` fields the builder reads (the showcase's existing documentation style).
 
+Borrow note: `Native<'_>` borrows `cx` immutably for as long as it lives, so a render function that also needs `cx` mutably (`cx.listener`, `cx.new`, `cx.notify`) computes the refinements it needs into locals first (`let button_style = n.map(geometry::button);` — `StyleRefinement` is owned) and lets `n` go out of scope before the mutable uses; `Native` is `Copy`, so passing it to several builders in a row costs nothing.
+
 - [ ] **Step 4: Colour Map tab: 139 fields**
 
 Add swatches for the 34 new or renamed fields (28 `button_*`, `chart_bullish`, `chart_bearish`, `status_bar`, `status_bar_border`, `table_foot`, `table_foot_foreground`) with their `native-theme` source noted as in §6.2 (e.g. `button_primary ← button.primary_background via primary`). Remove the `accordion_hover` swatch. Update the header comment (line 21: "108-field" → "139-field"), the icon gallery count (435, 4871, 4983: "86" → "101") and add the 15 new `IconName`s to the gallery list at line ~474.
@@ -3421,14 +3423,15 @@ Expected: `naga v29.x`, `codespan-reporting v0.13.x`; the workspace check succee
 
 In `publish.yml`: delete `continue-on-error: true` from the four connector steps (clippy, test, documentation, publish), drop "(soft)" from their names, and delete the two G11 comment blocks. If Step 1 failed instead, keep the gates and replace the G11 comment with the new cause.
 
-- [ ] **Step 3: Re-verify the apt list against the gpui-pre platform build scripts**
+- [ ] **Step 3: Re-verify the apt list against what the Linux platform crate links**
+
+The gpui-pre platform crates have no build scripts of their own that probe system libraries (only `gpui-pre-0.3.3/build.rs` exists, and it handles the Windows manifest). The native libraries come from three dependencies of `gpui-pre-linux` (its `Cargo.toml`): `xkbcommon` (links `libxkbcommon`, `:281-284`), `x11rb` with `allow-unsafe-code` (links `libxcb`, `:258-263`) and `wayland-backend` with `client_system` **and** `dlopen` (`:218-224`), which loads `libwayland-client` at run time and needs no development package at build time. List the `-sys` crates in the connector's tree to confirm nothing new joined:
 
 ```bash
-R=$(ls -d ~/.cargo/registry/src/*/ | head -1)
-grep -rhn "pkg_config\|probe\|rustc-link-lib" "$R"/gpui-pre-*/build.rs 2>/dev/null | sort -u | head -30
+cargo tree -p native-theme-gpui --prefix none -e normal,build | grep -oE '^[a-z0-9_-]+-sys ' | sort -u
 ```
 
-Expected: the libraries probed are covered by `libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev` (plus what the default Ubuntu runner ships). If a new library appears (e.g. `libwayland-dev`, `libfontconfig-dev`), add it to `ci.yml:95`; the CI run on the PR is the gate.
+Expected: every `-sys` crate is one whose library the existing line `libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev` (plus what the default Ubuntu runner ships) provides, or one that dlopens. If a new one appears (e.g. `fontconfig-sys`, `freetype-sys`), add its `-dev` package to `ci.yml:95`; the CI run on the PR is the gate.
 
 - [ ] **Step 4: `screenshots.yml`**
 
@@ -3497,7 +3500,7 @@ Under the existing `## [0.5.8] - Unreleased` add, keeping the docs.rs entry:
 
 ### Added
 
-- **native-theme-gpui**: `apply`, `apply_system_theme` (a `ThemeConfig` is installed for every stored variant, so upstream's `Theme::change` reproduces native colours in both modes), `apply_accessibility` (rebuilds the styled theme from the stored variant at runtime); `NativeTheme` global with `cx.native_theme()` (`ActiveNativeTheme`); `Native` view; `base_layer` module (native scrollbar geometry/colours and resize-handle colours written onto gpui-base, restored automatically after upstream rebuilds the base theme); `geometry` module (per-widget `StyleRefinement` builders for Button, Input, MenuItem, ListItem, Tooltip, Popover, StatusBar, Dialog family, Table, Progress, GroupBox content, Accordion title, Checkbox, Radio, Select, Combobox, TitleBar; `Size` helpers; layout accessors); text scaling through `Theme.font_size` (rem); reduce-motion forwarded to GPUI; `focus_ring` from `focus_ring_width`; 15 new `IconName` mappings in all three tables.
+- **native-theme-gpui**: `apply`, `apply_system_theme` (a `ThemeConfig` is installed for every stored variant, so upstream's `Theme::change` reproduces native colours in both modes), `apply_accessibility` (rebuilds the styled theme from the stored variant at runtime); `NativeTheme` global with `cx.native_theme()` (`ActiveNativeTheme`); `Native` view; `base_layer` module (native scrollbar geometry/colours and resize-handle colours written onto gpui-base, restored automatically after upstream rebuilds the base theme); `geometry` module (per-widget `StyleRefinement` builders for Button, Input, MenuItem, ListItem, Tooltip, Popover, StatusBar, Dialog family, Table, Progress, GroupBox content, Accordion title, Checkbox, Radio, Select, Combobox, TitleBar; `Size` helpers; layout accessors); text scaling through `Theme.font_size` (rem); reduce-motion forwarded to GPUI; `focus_ring` from `focus_ring_width`; the 15 new `IconName` variants covered in all three tables (`StarFill` has no Lucide equivalent and `StarOff` no Material one; both return `None`).
 - **native-theme**: `SystemTheme.layout: LayoutTheme`; `AccessibilityPreferences::from_system()`; 28 bundled SVGs (14 Lucide, 14 Material); `icons/SOURCES.toml` provenance manifest; `scripts/refresh-icons.sh`; by-name icon tables generated by `build.rs` from the bundle directories.
 
 ### Changed
@@ -3512,6 +3515,8 @@ Under the existing `## [0.5.8] - Unreleased` add, keeping the docs.rs entry:
 - The `ThemeConfig` hex export dropped alpha, so `overlay`, `drag_border` and `drop_target` turned opaque after `Theme::change`; translucent colours are now exported as `#rrggbbaa`.
 - `publish.yml`: the gpui connector is hard-gated again (the naga/codespan-reporting conflict G11 recorded does not exist on the 0.6 stack).
 ```
+
+Under `### Changed` add one more bullet: "- **native-theme-gpui**: `[package.metadata.docs.rs]` keeps `all-features = true` and declares no `targets`: every platform-gated public item of the crate is Linux-gated and appears on the default target (spec §1.3, D40)." Then amend the existing unreleased entry at `CHANGELOG.md:12` from "on `native-theme`, `native-theme-gpui`, and `native-theme-iced`" to "on `native-theme` and `native-theme-iced`".
 
 Fill `<measured>` from Tasks 1 and 13. (If syn stayed on 2.0.119, say so here.)
 
@@ -3562,16 +3567,13 @@ git commit -m "docs(v0.5.8): README, CHANGELOG, ROADMAP and todo for the gpui-co
 
 - [ ] **Step 1: Prepare**
 
-Set `## [0.5.8] - <today>`; run `./pre-release-check.sh` once more. Then run the docs build the way docs.rs will, for each target the connector's `[package.metadata.docs.rs]` declares (spec §1.3: the three-target list is unreleased and has never run on the gpui stack; D40):
+Set `## [0.5.8] - <today>` and change the compare link at the end of `CHANGELOG.md` from `[0.5.8]: https://github.com/tiborgats/native-theme/compare/v0.5.7...HEAD` to `.../compare/v0.5.7...v0.5.8` (as `v0.5.7` did for its own link, `CHANGELOG.md:947` at that tag). Run `./pre-release-check.sh` once more, then the docs build the way docs.rs will run it (default target; D40):
 
 ```bash
-rustup target add x86_64-apple-darwin x86_64-pc-windows-msvc
-for t in x86_64-unknown-linux-gnu x86_64-apple-darwin x86_64-pc-windows-msvc; do
-  DOCS_RS=1 cargo doc -p native-theme-gpui --no-deps --all-features --target "$t" || echo "DOCS FAIL: $t"
-done
+DOCS_RS=1 cargo doc -p native-theme-gpui --no-deps --all-features 2>&1 | grep -c warning   # expected 0
 ```
 
-Expected: three successes. A target that fails for a reason docs.rs shares (a dependency's build script that needs that OS's toolchain; gpui-pre's Windows-manifest step is behind its `windows-manifest` feature, which nothing in the stack enables, so it should be inert) is removed from the connector's `targets` list in this commit with the reason in the commit body and in the CHANGELOG; a failure the local machine alone causes (missing target std, disk) is fixed and re-run. Commit as `chore(release): v0.5.8`; `git status` must be clean.
+Commit as `chore(release): v0.5.8`; `git status` must be clean.
 
 - [ ] **Step 2: STOP.** Ask the maintainer for explicit approval to tag and publish. Nothing below runs without it (project rule `feedback_never_bypass_checkpoints`).
 
@@ -3581,7 +3583,7 @@ Create the tag `v0.5.8` on the release commit, push `main`, then push that one t
 
 - [ ] **Step 4: Post-publish check**
 
-Confirm the docs.rs builds of `native-theme-gpui` for all three declared targets succeed on the new stack (`https://docs.rs/crate/native-theme-gpui/0.5.8/builds`); gpui-pre is new to docs.rs from this crate's side. If a target fails, propose the metadata fix as a patch release; never rewrite the published tag.
+Confirm the docs.rs build of `native-theme-gpui` succeeds on the new stack (`https://docs.rs/crate/native-theme-gpui/0.5.8/builds`, default target, as 0.5.7 and the gpui-pre stack itself build). If it fails, propose the fix as a patch release; never rewrite the published tag.
 
 ---
 
@@ -3594,7 +3596,7 @@ Confirm the docs.rs builds of `native-theme-gpui` for all three declared targets
 5. **`from_system()` reduce-motion rule** (§11.2 ambiguity): the reader's value where the reader supplies one, OR-ed with `detect::prefers_reduced_motion()`; never turned off by the fallback.
 6. **First-install gap** (D38, rationale error 46): the observer's subscription activates at the end of the flush that installs it, so `install_observer_once` also queues one deferred re-write of the overrides; the test `apply_then_change_in_the_same_update_keeps_overrides` runs `apply` and `Theme::change` in one update. Now in spec §3.3 and §12.
 7. **Star states** (D39, rationale errors 48–49): Lucide `StarFill` returns `None` (Lucide has no filled star; the hollow `star` would stand for two states); the freedesktop table maps `Star` to `non-starred` and `StarFill` to `starred`. Now in spec §10.1, §10.2, §10.4.
-8. **Pre-release docs.rs check** (D40) and **MSRV-aware re-update** (spec §4.3): Task 16 runs `DOCS_RS=1 cargo doc --target` per declared target before the tag; Task 1 re-runs `cargo update` after declaring the floor because `resolver = "3"` resolves against it.
+8. **Connector docs.rs targets dropped** (D40, rationale errors 50–51) and **MSRV-aware re-update** (spec §4.3): the connector's `[package.metadata.docs.rs]` keeps `all-features` and declares no `targets`, because its only platform-gated public items are Linux-gated and the other two targets would add nothing but the first cross-target build of gpui-pre's platform crates; this reverses commit `ce0fdee` for this one crate and amends its unreleased CHANGELOG entry (Task 15). Task 1 re-runs `cargo update` after declaring the floor because `resolver = "3"` resolves against it.
 
 Design changes made during the review of 2026-09-05 and written into the spec (§8.1) and rationale (D34, D35, errors 41–43): `apply` installs a `ThemeConfig` for every stored variant, so `Theme::change` reproduces native colours in both modes; `apply_accessibility` rebuilds the styled theme from the stored variant; the re-apply helper takes a `mark` flag so `apply`'s own write never sets `reapplying`. From the third review (D36, D37, errors 44–45): the config hex export keeps alpha as `#rrggbbaa`, and `apply` ends with `refresh_windows`.
 

@@ -45,7 +45,12 @@ gpui-component's registry observer can replace the connector's configs by name
 toolchain, CI, the docs.rs metadata) and judged the icon decisions by glyph
 *state* rather than by name, and found that the Lucide table served
 `StarFill` with the hollow star and the freedesktop table served `Star` with
-the filled one (errors 48–49). Section 7 records each correction.
+the filled one (errors 48–49). An eighth pass checked the showcase line
+anchors, the connector's composite icon functions, the Linux platform crate's
+native linkage and the docs.rs question from the other side: what the
+three-target list would document. It documents nothing the default target does
+not, and the claim that nothing enables gpui-pre's `windows-manifest` feature
+was wrong (errors 50–51). Section 7 records each correction.
 
 ---
 
@@ -527,19 +532,37 @@ re-running gates:
 8. Docs before release, release only on explicit approval, per the project's
    checkpoint rule.
 
-### 2.25 Pre-release docs.rs check
+### 2.25 docs.rs targets for the connector
 
-The three-target `[package.metadata.docs.rs]` list on the connector is
-unreleased and was never exercised with GPUI: 0.5.7 declared no targets.
-docs.rs builds a foreign target with `cargo doc --target` on a Linux host and
-sets `DOCS_RS=1`. gpui-pre's build script embeds a Windows manifest only
-behind its `windows-manifest` feature, which neither gpui-component nor
-gpui-kit enables, and its macOS code has no build step, so the build most
-likely succeeds; that is a prediction, not a measurement. The same command
-therefore runs locally before the tag, and a target that fails for a reason
-docs.rs shares is dropped from the metadata before the release rather than
-after it: a published tag cannot be rewritten, and a patch release that only
-edits metadata is avoidable.
+Commit `ce0fdee` (unreleased, in the `[0.5.8]` changelog) added a three-target
+`[package.metadata.docs.rs]` list to all three published crates so that
+platform-gated items stay visible after docs.rs's 2026-05-01 change to a
+single default target. For `native-theme` and `native-theme-iced` that is
+right: they have macOS- and Windows-only public items. The connector does not:
+its only `cfg(target_os)` gates on public items are Linux (`lib.rs:92-93`
+re-exports `LinuxDesktop`; `icons.rs:361` gates
+`freedesktop_name_for_gpui_icon`), and the default target *is* Linux, so the
+macOS and Windows pages would be the Linux page minus two items.
+
+What the two extra targets would cost: the first cross-target docs build of
+the GPUI stack anywhere. gpui-pre 0.3.3, gpui-component 0.6.0 and gpui-kit
+0.6.0 declare no docs.rs targets and each was built for
+`x86_64-unknown-linux-gnu` only (their `/builds` pages). A Windows target
+runs gpui-pre's build script with `windows-manifest` on, because
+gpui-component depends on gpui-pre with default features (gpui-component
+`Cargo.toml:266-267`; gpui-pre `Cargo.toml:59-64`), and `embed-resource` on a
+Linux host then needs `llvm-rc` (embed-resource 3.0.8
+`src/non_windows.rs:73-86`, `manifest_required` fails on `NotAttempted`);
+docs.rs's image ships `llvm` (`crates-build-env` `linux/packages.txt:1045`),
+so it would probably pass, and a macOS target would fetch and build the macOS
+platform crates, which this machine has never resolved. Probably passing is
+not a reason to take on a risk that buys nothing.
+
+| Option | Outcome |
+|--------|---------|
+| **Keep `all-features = true`, drop the `targets` list on the connector** | **Chosen** (D40). The default target shows every public item; the build is the one 0.5.7 and the upstream stack already do. Reverses one third of `ce0fdee`; the unreleased changelog line is amended. |
+| Keep the three targets and run each cross-target docs build locally before the tag (the sixth pass's D40) | Rejected. It guards a build that documents nothing extra; the local check's value also depended on the host mirroring docs.rs's tool set (`llvm-rc`), which is a second thing to get right. |
+| Keep the three targets, no check | Rejected: an untested cross-target build on a published crate's docs. |
 
 ### 2.26 Why a test and not a comment for the colour fields
 
@@ -594,7 +617,7 @@ moment.
 | D37 | `apply` ends with `App::refresh_windows` | a change from a timer, portal signal or menu action must paint at once in every window; upstream refreshes only the window passed to `Theme::change` (error 45) |
 | D38 | `install_observer_once` queues one deferred re-write of the base overrides | the subscription activates at the end of the flush; a rebuild in the same update as the first `apply` would otherwise stand until the next one (§2.7, error 46) |
 | D39 | Lucide `StarFill` → `None`; freedesktop `Star` → `non-starred`, `StarFill` → `starred` | one glyph must not stand for two states (§2.21, errors 48–49) |
-| D40 | Docs build per declared docs.rs target run locally before the tag | the three-target metadata is untested on the gpui stack; a failing target is removed before the release, not in a patch (§2.25) |
+| D40 | Connector docs.rs metadata: `all-features = true`, no `targets` list | the crate's platform-gated public items are all Linux-gated and appear on the default target; two more targets would add nothing but the first cross-target docs build of the GPUI stack (§2.25, errors 50–51) |
 
 ---
 
@@ -712,7 +735,7 @@ overrides.
 Kept so the reasoning can be audited. Items 1–17 are from the first pass,
 18–26 from the second, 27–33 from the third, 34–38 from the fourth, 39–45
 from the implementation-plan pass, 46–47 from the sixth pass, 48–49 from the
-seventh.
+seventh, 50–51 from the eighth.
 
 1. **First field diff was wrong** (46 fields from a bad `awk` range); corrected by diffing the two upstream structs: 108 → 139.
 2. **`grep` undercounted 0.5.1 fields as 103**; the `size_of` tripwire's 108 is authoritative.
@@ -763,6 +786,8 @@ seventh.
 47. **The single-writer check stopped at the base theme.** The registry observer (`theme/registry.rs:41-51`) does not write `gpui_base::Theme`, but it replaces the styled theme's configs with same-named registry themes before calling `Theme::change`. With the default registry (`Default`, `Default Light`, `Default Dark`) nothing collides; an application loading a same-named theme through `ThemeRegistry` would replace the connector's colours. Recorded as a limit (§2.7), in the specification (§3.3) and in the README task.
 48. **Lucide `StarFill` was served with the hollow `star`.** The row was justified by name ("gpui-kit's own file is Lucide `star` filled") without asking what the connector can draw: a bundled Lucide file has no fill, so `Star` and `StarFill` would have rendered identically, the failure §2.9 rejects for `StarOff`. Lucide 1.41.0 has no filled star (raw probes of the tag). `StarFill` returns `None` in the Lucide set (D39).
 49. **The freedesktop star reasoning claimed the themes have no outline/fill pair.** Both Breeze and Adwaita ship `non-starred` and `starred` (and `semi-starred`); the existing table mapped `Star`, Lucide's hollow star, to `starred`, the filled one, and the first draft mapped `StarFill` to the same name. `Star` now maps to `non-starred` and `StarFill` to `starred` (D39); `StarOff` keeps `non-starred`.
+50. **The sixth pass claimed that nothing in the stack enables gpui-pre's `windows-manifest` feature.** The grep looked for the feature name in the three downstream manifests and found none, but gpui-component, gpui-base and gpui-kit all depend on gpui-pre *with default features*, and `windows-manifest` is a default (gpui-pre `Cargo.toml:59-64`). For a Windows target the build script runs `embed-resource`, which on a Linux host needs `llvm-rc`. docs.rs's image has it, so the predicted outcome (pass) was probably right for the wrong reason; the corrected facts are in §2.25 and spec §1.3.
+51. **The three-target docs.rs list was inherited without asking what it documents.** The connector's only platform-gated public items are Linux-gated and the default target is Linux, so the macOS and Windows pages would show strictly less. The sixth pass added a pre-release check for a build that has no benefit; the eighth drops the target list for this crate instead (D40), amending the unreleased `ce0fdee` changelog line.
 
 ---
 

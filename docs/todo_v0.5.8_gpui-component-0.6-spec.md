@@ -146,7 +146,7 @@ versions.
 | Material Symbols files exist at upstream HEAD (`0cbb08816df0`, 2026-09-04) for every name in §10.3 | GitHub contents API |
 | Breeze and Adwaita names for all 15 icons verified on this machine | `find /usr/share/icons/{breeze,Adwaita}` |
 | Breeze (`status/{16,22,24}`) and Adwaita (`symbolic/status`) both ship the star-state pair `non-starred` / `starred` (and `semi-starred`); the connector's table maps `Star` to `starred`, the filled star | `find /usr/share/icons/{breeze,Adwaita} -iname '*starred*'`; `icons.rs:413` |
-| The connector's `[package.metadata.docs.rs]` three-target list is unreleased (added in 0.5.8); 0.5.7 declared no targets and was built on the default target only, so a multi-target docs build has never run on the gpui stack | `git show v0.5.7:connectors/native-theme-gpui/Cargo.toml`; `CHANGELOG.md:12` |
+| The connector's `[package.metadata.docs.rs]` three-target list is unreleased (added in 0.5.8, commit `ce0fdee`); 0.5.7 declared no targets and docs.rs built it for `x86_64-unknown-linux-gnu` only. The connector's only platform-gated public items are Linux-gated (the `LinuxDesktop` re-export, `freedesktop_name_for_gpui_icon`), so the default target shows every public item. gpui-pre 0.3.3, gpui-component 0.6.0 and gpui-kit 0.6.0 declare no docs.rs targets and were each built for Linux only, so no cross-target docs build of the GPUI stack has ever run. gpui-component depends on gpui-pre with its default features, which include `windows-manifest`: for a Windows target gpui-pre's build script runs `embed-resource`, which on a Linux host needs `llvm-rc` (docs.rs's image ships `llvm`, `crates-build-env` `linux/packages.txt:1045`) | `git show v0.5.7:connectors/native-theme-gpui/Cargo.toml`; `CHANGELOG.md:12`; `lib.rs:92-93`, `icons.rs:361`; docs.rs `/crate/<c>/<v>/builds`; gpui-component `Cargo.toml:266-267`; gpui-pre `Cargo.toml:59-64, 79`, `build.rs`; embed-resource 3.0.8 `src/non_windows.rs:73-86` |
 | publish.yml soft-gates the connector for G11 (naga 27.0.3 vs codespan-reporting 0.12.0 on the 0.5.1 stack) | `.github/workflows/publish.yml:38-44, 58-60, 71-75, 156-175`; `docs/archive/v0.5.7_gaps.md` §G11 |
 | CI installs `libxcb1-dev libxkbcommon-dev libxkbcommon-x11-dev` for the connector job | `.github/workflows/ci.yml:93-95` |
 | native-theme declares no default features; the workspace MSRV 1.88.0 was measured as the maximum declared `rust-version` across the lock plus a `cargo +1.88.0 check --all-targets --locked` per member | `native-theme/Cargo.toml`; commit `0319942` |
@@ -348,12 +348,11 @@ readme = "README.md"
 description = "gpui toolkit connector for native-theme"
 
 [package.metadata.docs.rs]
+# No `targets` list (D40): every platform-gated public item of this crate is
+# Linux-gated and appears on docs.rs's default target; the other two targets
+# would render the same page minus those items at the cost of the first-ever
+# cross-target docs build of gpui-pre's macOS and Windows platform crates.
 all-features = true
-targets = [
-    "x86_64-unknown-linux-gnu",
-    "x86_64-apple-darwin",
-    "x86_64-pc-windows-msvc",
-]
 
 [features]
 default = ["material-icons", "lucide-icons", "system-icons", "svg-rasterize"]
@@ -490,8 +489,9 @@ Three exhaustive tables report 15 uncovered variants; §10 gives every entry.
 ### 5.3 Config
 
 `ThemeConfigColors` carries every `ThemeColor` field except the twelve named
-palette colours, plus `chart_1`…`chart_5` and `group_box_title_foreground`
-(no `ThemeColor` counterpart; stay `None`). `theme_color_to_config_colors`
+palette colours, plus one field with no `ThemeColor` counterpart,
+`group_box_title_foreground`, which stays `None` (139 − 12 + 1 = 128 config
+fields, `schema.rs:249`). `theme_color_to_config_colors`
 exports hex for all 34 new or renamed fields. `to_theme_config` exports the
 **scaled** font sizes (§3.4) so `Theme::change` reproduces them. Colours whose alpha is below 1 (`overlay`, `drag_border`, `drop_target`) are exported as `#rrggbbaa`, which gpui's `Rgba::try_from` parses (gpui-pre 0.3.3 `src/color.rs:224-262`) and gpui-component's `try_parse_color` accepts (`src/theme/color.rs:677-680`); opaque colours stay `#rrggbb` (D36).
 
@@ -536,10 +536,13 @@ widgets with a geometry builder use it; the Color Map tab shows 139 fields.
   green, remove `continue-on-error: true` from the four connector steps
   (clippy, test, documentation, publish) and the two comments. Otherwise record the new reason in place of G11.
 - `screenshots.yml` builds the example on macOS and Windows; the
-  `test-support` dev feature also enables gpui-pre's `wayland`/`x11`
-  features (`Cargo.toml:70-77`), which should be inert off Linux; the
-  workflow is the check, and if it fails the feature moves to a
-  `cfg(target_os = "linux")` dev-dependency table.
+  `test-support` dev feature also enables gpui-pre's `wayland` and `x11`
+  features (`Cargo.toml:70-77`). Both are inert off Linux: `wayland = []`
+  is an empty flag, `x11 = ["scap?/x11"]` only touches the optional
+  screen-capture crate, and the Linux platform crate that reads them is
+  target-gated (gpui-pre `Cargo.toml:78-80`; gpui-pre-platform
+  `Cargo.toml:65`). The workflow run confirms it; should it fail anyway, the
+  feature moves to a `cfg(target_os = "linux")` dev-dependency table.
 
 ---
 
@@ -1066,17 +1069,23 @@ advice); the `init`-before-`apply` rule (D29); the GPUI surface of §4.2; compat
   `apply_system_theme`, `apply_accessibility` (rebuilds from the stored
   variant at runtime), `NativeTheme`, `ActiveNativeTheme`, `Native`,
   `base_layer`, `geometry`; text scaling; reduce-motion; focus-ring flag;
-  15 icon mappings.
+  the 15 new `IconName` variants covered in all three tables (`StarFill`
+  has no Lucide equivalent and `StarOff` no Material one; both return
+  `None`).
 - **Added** (native-theme): `SystemTheme.layout`,
   `AccessibilityPreferences::from_system`; 28 bundled SVGs; `SOURCES.toml`;
   generated name tables.
 - **Changed**: `ThemeColor` mapping 108 → 139; showcase on gpui-kit;
-  dependency refresh (§4.3); workspace MSRV re-measured.
+  dependency refresh (§4.3); workspace MSRV re-measured; the connector's
+  docs.rs metadata keeps `all-features = true` and drops the three-target
+  list (§4.1, D40), so the existing unreleased `[0.5.8]` entry that names
+  three crates is amended to two.
 - **Fixed**: icon bundle provenance recorded, Lucide refreshed to 1.41.0,
   Material refreshed to upstream HEAD, duplicate `star_border.svg` removed
   (§10); the config hex export kept alpha (`#rrggbbaa`, D36); publish.yml
   soft gates removed if §5.5 passes.
-- Existing docs.rs entry stays. No migration guide (pre-1.0 rule).
+- The existing docs.rs entry is amended as above. No migration guide
+  (pre-1.0 rule).
 
 ### 13.3 ROADMAP
 
@@ -1207,15 +1216,12 @@ tests, commands and per-task model routing is
 14. **CI/publish** (§5.5).
 15. **Docs** (§13). Gate: `./pre-release-check.sh`, link check.
 16. **Release**: CHANGELOG date; tag and publish only on explicit approval;
-    then confirm the docs.rs builds of `native-theme-gpui` for all three
-    declared targets succeed on the new stack. The three-target metadata is
-    unreleased and has never run on the gpui stack (§1.3), so before tagging
-    the docs build of each declared target is run locally the way docs.rs
-    runs it (`DOCS_RS=1 cargo doc --no-deps --all-features --target <t>`); a
-    target that fails for a reason docs.rs would share, such as a
-    dependency's build script needing that OS's toolchain, is removed from
-    the metadata before the release rather than in a patch release (D40). Fix the
-    metadata if the published build still fails.
+    then confirm the docs.rs build of `native-theme-gpui` succeeds on the
+    new stack (default target, as 0.5.7 did and as gpui-pre, gpui-component
+    and gpui-kit do, §1.3; D40). Before tagging, `DOCS_RS=1 cargo doc -p
+    native-theme-gpui --no-deps --all-features` runs locally as the
+    warning-free check. If the published build fails, fix the cause in a
+    patch release; never rewrite the tag.
 
 ---
 
